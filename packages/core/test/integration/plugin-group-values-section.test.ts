@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { code, codeOnly, declaration } from "../helpers/source-region";
 import { fileURLToPath } from "node:url";
 import type { AuthoredPluginGroup, Diagnostic, ProjectDefinition } from "../../src/contract/v5";
-import { validateKeyframes, validateV5 } from "../../src/contract/validate-v5";
+import { validateKeyframes, validateSchemaV5 } from "../../src/contract/validate-v5";
 import { flattenAuthoredKeyframes } from "../../src/domain/keyframe-groups";
 import { PluginRegistry, type PluginDefinition } from "../../src/domain/plugins";
 import { Engine } from "../../src/engine";
@@ -237,7 +237,7 @@ describe("an explicit values section inside plugin groups", () => {
   });
 
   it("Y-9 keeps the perspective warning for 3D content inside the values section", () => {
-    const result = validateV5(project({ fk: { values: { rotationY: ramp(0, 1) } } }));
+    const result = validateSchemaV5(project({ fk: { values: { rotationY: ramp(0, 1) } } }));
     expect(result.diagnostics).toContainEqual(
       expect.objectContaining({ ruleId: "perspective-usage", severity: "warning" }),
     );

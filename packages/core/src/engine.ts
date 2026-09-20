@@ -13,9 +13,9 @@ import type { SchemaTransaction } from "./contract/schema-transaction";
 import type { ValueTransaction } from "./contract/value-transaction";
 import type { TrackHandle } from "./contract/track-handle";
 import { describeDiagnostics } from "./contract/diagnostics";
-import { resolveTriggerDefinition, validateV5 } from "./contract/validate-v5";
+import { resolveTriggerDefinition } from "./contract/validate-v5";
+import { validateV5 } from "./validate-v5";
 import { readOutcome } from "./domain/outcome";
-import { buildGraphIR } from "./graph/ir";
 import { IncrementalGraphBuilder } from "./graph/builders/incremental";
 import { createDefaultTriggerFactory } from "./adapters/trigger-factory/default";
 import { compilePercentKeyframes } from "./domain/keyframe-compiler";
@@ -153,16 +153,7 @@ function createHandle(
 function assertValidProject(project: unknown): ProjectDefinition {
   return readOutcome(
     validateV5(project),
-    (value) => {
-      const graph = buildGraphIR(value);
-      if (graph.diagnostics.some(({ severity }) => severity === "error"))
-        throw new TypeError(
-          graph.diagnostics.length === 0
-            ? "Project failed graph validation."
-            : describeDiagnostics(graph.diagnostics),
-        );
-      return value;
-    },
+    (value) => value,
     (diagnostics) => {
       throw new TypeError(
         diagnostics.length === 0

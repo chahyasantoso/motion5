@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { IncrementalGraphBuilder } from "../../../src/graph/builders/incremental";
 import { buildGraphIR } from "../../../src/graph/ir";
-import { validateV5 } from "../../../src/contract/validate-v5";
+import { validateSchemaV5 } from "../../../src/contract/validate-v5";
 import type { Diagnostic, ProjectDefinition, TrackDefinition } from "../../../src/contract/v5";
 
 function ramp(from: number, to: number) {
@@ -63,7 +63,7 @@ describe("IncrementalGraphBuilder cache correctness (W1)", () => {
   });
 
   // A5: node ids are derived from (owner, ownerId, track.id), so the track object alone
-  // cannot key them. Reusing one definition across two motions is legal -- validateV5 scopes
+  // cannot key them. Reusing one definition across two motions is legal -- validateSchemaV5 scopes
   // track-id uniqueness per motion -- and buildGraphIR handles it. The cache returns motion
   // m1's node for m2, `seen` then rejects it, and Engine.load throws on a valid project.
   it("keys the cache by owner so one track object can back two motion nodes", () => {
@@ -77,7 +77,7 @@ describe("IncrementalGraphBuilder cache correctness (W1)", () => {
       ],
     };
 
-    expect(validateV5(project).kind).toBe("accepted");
+    expect(validateSchemaV5(project).kind).toBe("accepted");
 
     const incremental = new IncrementalGraphBuilder().build(project);
     expect(ruleIds(incremental.diagnostics)).not.toContain("node-duplicate");

@@ -3,7 +3,7 @@ import { code, declaration } from "../helpers/source-region";
 import { fileURLToPath } from "node:url";
 
 import type { Diagnostic } from "../../src/contract/v5";
-import { validateV5 } from "../../src/contract/validate-v5";
+import { validateSchemaV5 } from "../../src/contract/validate-v5";
 
 /**
  * The authored declaration, read where it is written rather than emitted.
@@ -40,7 +40,7 @@ const WITHOUT_TEMPLATES = { schemaVersion: 5, motions: [], freeTracks: [] };
 // owns both halves of that rule for the last field of issue #223.
 describe("ProjectDefinition.templates is removed, not ignored", () => {
   it("RA-77 refuses an authored templates field and accepts a project without one", () => {
-    const refused = validateV5(WITH_TEMPLATES);
+    const refused = validateSchemaV5(WITH_TEMPLATES);
     expect(refused.kind).toBe("refused");
     expect("value" in refused).toBe(false);
     expect(ruleIds(refused.diagnostics)).toEqual(["project-templates-unsupported"]);
@@ -48,11 +48,11 @@ describe("ProjectDefinition.templates is removed, not ignored", () => {
     // The key is the mistake rather than the value at it, so an authored `undefined` is refused
     // too, exactly as the retired track `use` field is. Relaxing the guard to a value check is the
     // mutation target: it would accept the field back from any caller spreading an older document.
-    const spread = validateV5({ ...WITHOUT_TEMPLATES, templates: undefined });
+    const spread = validateSchemaV5({ ...WITHOUT_TEMPLATES, templates: undefined });
     expect(ruleIds(spread.diagnostics)).toEqual(["project-templates-unsupported"]);
     // The accepting direction, in the same rig, because a guard that refused every project would
     // be green against the refusal alone.
-    const accepted = validateV5(WITHOUT_TEMPLATES);
+    const accepted = validateSchemaV5(WITHOUT_TEMPLATES);
     expect(accepted.kind).toBe("accepted");
     expect(accepted.diagnostics).toEqual([]);
   });

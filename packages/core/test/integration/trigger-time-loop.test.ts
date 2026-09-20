@@ -4,7 +4,7 @@ import type { Diagnostic, MotionDefinition } from "../../src/contract/v5";
 import {
   resolveTriggerDefinition,
   validateMotionTrigger,
-  validateV5,
+  validateSchemaV5,
 } from "../../src/contract/validate-v5";
 import { Motion } from "../../src/domain/motion";
 import { Engine, type ProjectHandle } from "../../src/engine";
@@ -92,7 +92,7 @@ describe("time loop semantics", () => {
   it("L-13 no longer rejects repeat and yoyo as unsupported", () => {
     // Asserted by absence, because that diagnostic was the entire reason a looping project could
     // not load. Leaving it anywhere would make the authored schema document a lie.
-    const result = validateV5({
+    const result = validateSchemaV5({
       schemaVersion: 5,
       motions: [{ id: "loop", trigger: LOOPING, tracks: [ramp("arm")] }],
     });

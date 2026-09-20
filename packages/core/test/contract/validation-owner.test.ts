@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Diagnostic, ProjectDefinition } from "../../src/contract/v5";
-import { validateV5 } from "../../src/contract/validate-v5";
+import { validateSchemaV5 } from "../../src/contract/validate-v5";
 import { buildGraphIR } from "../../src/graph/ir";
 
 interface AuthoredObservation {
@@ -37,7 +37,7 @@ function graphErrors(project: AuthoredProject) {
 }
 
 function validatorErrors(project: AuthoredProject) {
-  return errors(validateV5(project).diagnostics);
+  return errors(validateSchemaV5(project).diagnostics);
 }
 
 describe("one observation-validation owner (P1-12)", () => {
@@ -48,7 +48,7 @@ describe("one observation-validation owner (P1-12)", () => {
 
     expect(graphErrors(project)).toEqual([]);
     expect(validatorErrors(project)).toEqual([]);
-    expect(validateV5(project).kind).toBe("accepted");
+    expect(validateSchemaV5(project).kind).toBe("accepted");
   });
 
   it("reports an actual self-reference identically from both owners", () => {
@@ -108,7 +108,7 @@ describe("one observation-validation owner (P1-12)", () => {
       },
     ]);
 
-    const result = validateV5(project);
+    const result = validateSchemaV5(project);
     if (result.kind !== "accepted") throw new Error("Expected project to be accepted.");
     const accepted = result.value;
     expect(accepted).toBeDefined();

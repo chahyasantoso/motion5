@@ -27,7 +27,6 @@ import {
 } from "./keyframe-shape";
 import { PLUGIN_GOALS_SLOT } from "./solver-slots";
 
-export type ValidationResult = Outcome<ProjectDefinition>;
 export interface KeyframeValidationOptions {
   /**
    * Who is reading these keyframes, which is the whole of what the three options this replaced ever
@@ -486,7 +485,7 @@ export function validateTrackDefinition(track: unknown, path: string): TrackVali
     return refusedOutcomeFrom(frozenDiagnostics);
   return acceptedOutcome(deepFreeze(clone(track) as TrackDefinition), frozenDiagnostics);
 }
-export function validateV5(input: unknown): ValidationResult {
+export function validateSchemaV5(input: unknown): Outcome<ProjectDefinition> {
   const diagnostics: Diagnostic[] = [];
   if (!isObject(input))
     return refusedOutcome([diagnostic("project-shape", "$", "Project must be an object.")]);
@@ -581,8 +580,5 @@ export function validateV5(input: unknown): ValidationResult {
         );
   if (diagnostics.some(({ severity }) => severity === "error"))
     return refusedOutcomeFrom<ProjectDefinition, Diagnostic>(Object.freeze(diagnostics));
-  return acceptedOutcome(
-    deepFreeze(clone(input) as ProjectDefinition),
-    Object.freeze(diagnostics),
-  );
+  return acceptedOutcome(deepFreeze(clone(input) as ProjectDefinition), Object.freeze(diagnostics));
 }
