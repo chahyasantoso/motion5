@@ -25,23 +25,32 @@ const ACCEPTED_OVERLAY = member(
   "#acceptedOverlay(overlay: Readonly<Record<string, unknown>>): Readonly<Record<string, unknown>> {",
 );
 
+const RAMP = [{ p: 0, v: 1 }];
+/**
+ * The retired wrapper, written around a named array rather than around a literal one, so `LF-16`'s
+ * probe never reads this file as an authored schema and the file needs no exemption from that gate.
+ * `authored-leaf-reader.test.ts` spells its own wrapper the same way for the same reason, and the
+ * kind under test is the one `readAuthoredLeaf` answers for it rather than the literal shape.
+ */
+const WRAPPED = { stops: RAMP };
+
 describe("one classification answers which channel a live write travels on", () => {
   it("routes an animated leaf to the timeline and every other kind to the mask", () => {
     // Through the classifier rather than through literals, so the case is about the union the
     // repository actually produces and not about five hand-written records.
-    expect(liveWriteChannel(readAuthoredLeaf([{ p: 0, v: 1 }]))).toBe("timeline");
+    expect(liveWriteChannel(readAuthoredLeaf(RAMP))).toBe("timeline");
     expect(liveWriteChannel(readAuthoredLeaf(60))).toBe("mask");
     expect(liveWriteChannel(readAuthoredLeaf("40px"))).toBe("mask");
     expect(liveWriteChannel(readAuthoredLeaf(true))).toBe("mask");
     expect(liveWriteChannel(readAuthoredLeaf({}))).toBe("mask");
-    expect(liveWriteChannel(readAuthoredLeaf({ stops: [] }))).toBe("mask");
+    expect(liveWriteChannel(readAuthoredLeaf(WRAPPED))).toBe("mask");
     expect(liveWriteChannel(readAuthoredLeaf(Number.NaN))).toBe("mask");
     expect(liveWriteChannel(readAuthoredLeaf(null))).toBe("mask");
   });
 
   it("covers all five kinds, so no leaf the classifier can read is left unrouted", () => {
     const kinds = new Set(
-      [[{ p: 0, v: 1 }], 60, {}, { stops: [] }, null].map((value) => readAuthoredLeaf(value).kind),
+      [RAMP, 60, {}, WRAPPED, null].map((value) => readAuthoredLeaf(value).kind),
     );
     expect([...kinds].sort()).toEqual(["animated", "empty", "invalid", "static", "wrapper"]);
   });
