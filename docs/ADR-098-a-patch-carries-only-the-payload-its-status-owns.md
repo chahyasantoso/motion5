@@ -1,6 +1,6 @@
 # ADR-098: A patch carries only the payload its status owns
 
-- Status: accepted on both halves it was asked to decide, the union's shape and what happens to the carried-forward pose, and merged on neither. Slice 1 landed the retention answer on the owning branch, and the union itself is published there and is intent until it merges, on documentation rule 2 of [README.md](./README.md). This line names which half is decided because the first quality pass on the owning pull request found the earlier wording calling the whole record accepted while the Decision still deferred retention to a later slice.
+- Status: accepted on both halves it was asked to decide, the union's shape and what happens to the carried-forward pose, and merged. [#453](https://github.com/chahyasantoso/motion5/pull/453) squashed the union and slice 1's retention answer onto `main` as `d700dbf988611165eb9ef2709b73854a68baf83c`, so this record describes shipped code rather than intent and documentation rule 2 of [README.md](./README.md) no longer holds it open. This line still names which half was decided when, because the first quality pass on the owning pull request found the earlier wording calling the whole record accepted while the Decision still deferred retention to a later slice.
 - Date: 2026-09-18
 - Issue: [#450](https://github.com/chahyasantoso/motion5/issues/450), deferred from [#443](https://github.com/chahyasantoso/motion5/issues/443) section 2.3.
 
