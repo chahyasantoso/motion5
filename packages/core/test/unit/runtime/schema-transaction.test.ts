@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { MotionDefinition, ProjectDefinition } from "../../../src/contract/v5";
 import type { TrackHandle } from "../../../src/contract/track-handle";
-import { IncrementalGraphBuilder } from "../../../src/adapters/graph-builder/incremental";
+import { IncrementalGraphBuilder } from "../../../src/graph/builders/incremental";
 import { createManualClock } from "../../../src/ports/clock";
 import {
   ProjectRuntime,

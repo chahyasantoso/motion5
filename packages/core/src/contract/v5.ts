@@ -1,3 +1,5 @@
+import type { RuleId } from "./rule-id";
+
 export const AUTHORED_SCHEMA_VERSION = 5 as const;
 export const SUPPORTED_TRIGGER_TYPES = ["scroll", "time", "manual"] as const;
 export const DIAGNOSTIC_SEVERITIES = ["error", "warning"] as const;
@@ -39,12 +41,64 @@ export interface TriggerSignal {
   readonly progress?: number;
 }
 
-export interface Diagnostic {
-  readonly ruleId: string;
+/**
+ * One refusal, named by the rule it refuses under.
+ *
+ * `ruleId` is `RuleId` and not `string`, so this set is closed on both sides: nothing can mint a
+ * rule the enumeration does not carry, and a reader can switch on one. Adding a rule breaks the
+ * build in `contract/rule-id.ts`, at the one place the rule is named, rather than being inherited
+ * silently by every consumer that pattern-matches a string. That is the acceptance criterion issue
+ * #449 asks for, and it is a public surface change: `Diagnostic` is exported from the package
+ * entry, so a consumer constructing one with a rule id of its own invention stops compiling.
+ *
+ * It is one interface rather than a union. The three variants were paid for with a public surface
+ * and bought nothing on the read side: `runtime/patch-registry.ts` compares rule ids for identity and
+ * `runtime/refusal.ts` renders them generically, so no production reader pattern-matches one.
+ * Enforcement was never on the read side either; it is at the call site, as the argument list the
+ * rule owns, which `contract/rule.ts` now derives from one record. With no union left to narrow there
+ * is nothing for an assertion to narrow into. See ADR-097.
+ *
+ * `ids` is required, always present, always frozen, and empty for a rule that names none. It was
+ * optional while three raw producers omitted the member, and those three are converted in the same
+ * slice that requires it: `runtime/project-runtime.ts`'s `#teardown`, the private path-first producer
+ * in `contract/migrate-v4-to-v5.ts`, and `runtime/report.ts`'s `frozenDiagnostic` all forward to the
+ * one constructor now rather than hand-building an object that chooses between a payload and no
+ * member at all. So a reader spelling `ids` and a reader spelling `ids ?? []` are one reader rather
+ * than two, and `runtime/patch-registry.ts` comparing two payloads no longer has an absent member and
+ * an empty one to tell apart for the same rule.
+ *
+ * Whether a rule may name ids is still not this field's claim, and requiring the member does not make
+ * it one. `ids: []` is what a rule that owns none carries; what refuses a payload a rule does not own
+ * is `OwnedIds` at the call site, derived from the one record in `contract/rule.ts`. This closes the
+ * shape, and the ownership stays enforced one layer up, where the rule is named. See ADR-097.
+ */
+export interface Diagnostic extends DiagnosticShape {
+  readonly ruleId: RuleId;
+  readonly ids: readonly string[];
+}
+
+/**
+ * One diagnostic pinned to one rule.
+ *
+ * Naming a rule at a declaration, rather than discriminating one at a read. It was the one thing the
+ * three variants were still read for, and it now replaces all three: they are deleted, and
+ * `MigrationDiagnostic` below is one derived alias in place of what used to be a variant plus a
+ * narrowing interface.
+ *
+ * It is also what the one constructor in `./diagnostics` returns, which is what retired the widening
+ * that used to sit beside it. A producer handed a literal rule id is answered with a diagnostic
+ * pinned to that rule, so the v4 reader derives `MigrationDiagnostic` from the call rather than
+ * asserting it afterwards, and no expression in this tree casts an object into this shape any more.
+ */
+export interface DiagnosticOf<Rule extends RuleId> extends Diagnostic {
+  readonly ruleId: Rule;
+}
+
+/** What every diagnostic carries, whichever rule it names. */
+interface DiagnosticShape {
   readonly path: string;
   readonly message: string;
   readonly severity: DiagnosticSeverity;
-  readonly ids?: readonly string[];
 }
 
 /**
@@ -255,6 +309,16 @@ export interface ProjectDefinition {
   readonly motions: readonly MotionDefinition[];
   readonly freeTracks?: readonly TrackDefinition[];
 }
-export interface MigrationDiagnostic extends Diagnostic {
-  readonly ruleId: "schema-v4-migration";
-}
+/**
+ * A migration diagnostic, pinned to the one rule the v4 reader refuses under.
+ *
+ * The literal narrows `Diagnostic.ruleId` rather than sitting beside it, so `schema-v4-migration`
+ * is provably a member of `RuleId`: were the enumeration to stop carrying it, this declaration is
+ * the build failure rather than a string nobody checks.
+ *
+ * Each of the four refusals the v4 reader can report names a path and a message and no ids, which is
+ * measured rather than chosen: its constructor used to accept an `ids` that nothing passed. That fact
+ * is stated once now, where the rule is defined, as `schema-v4-migration`'s own entry in
+ * `contract/rule.ts`, rather than by extending a variant named after a group. See ADR-097.
+ */
+export type MigrationDiagnostic = DiagnosticOf<"schema-v4-migration">;

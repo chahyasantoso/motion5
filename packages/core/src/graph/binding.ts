@@ -2,7 +2,6 @@ import type { ProjectDefinition } from "../contract/v5";
 import { edgeKey, type GraphBuildResult, type GraphIR } from "./ir";
 import { ObservationState } from "./observation-state";
 import type { GraphBuilder } from "../ports/graph-builder";
-import { defaultGraphBuilder } from "../adapters/graph-builder/default";
 
 export interface GraphBindingHooks {
   /** Failure injection for the transaction stages, used by the rollback harness. */
@@ -13,7 +12,7 @@ export interface GraphBindingHooks {
 export interface GraphBindingOptions {
   readonly state?: ObservationState;
   readonly hooks?: GraphBindingHooks;
-  readonly builder?: GraphBuilder;
+  readonly builder: GraphBuilder;
 }
 
 function validateGraphResult(result: GraphBuildResult): GraphIR {
@@ -49,10 +48,10 @@ export class GraphBinding {
   readonly #builder: GraphBuilder;
   #graph: GraphIR;
 
-  constructor(project: ProjectDefinition, options: GraphBindingOptions = {}) {
+  constructor(project: ProjectDefinition, options: GraphBindingOptions) {
     this.#state = options.state ?? new ObservationState();
     this.#hooks = options.hooks ?? {};
-    this.#builder = options.builder ?? defaultGraphBuilder;
+    this.#builder = options.builder;
     this.#graph = validateGraphResult(this.#builder.build(project));
     this.#populate(this.#graph);
     this.#state.commit();

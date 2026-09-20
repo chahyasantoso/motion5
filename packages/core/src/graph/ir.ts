@@ -6,6 +6,7 @@ import type {
   ProjectDefinition,
   TrackDefinition,
 } from "../contract/v5";
+import { diagnostic } from "../contract/diagnostics";
 import { readPluginBindings, readPluginValues } from "../contract/keyframe-shape";
 import { PLUGIN_GOALS_SLOT } from "../contract/solver-slots";
 import { compareCodeUnits } from "./compare";
@@ -155,15 +156,6 @@ function freeze<T>(value: T): T {
   return Object.freeze(value);
 }
 
-export function diag(
-  ruleId: string,
-  path: string,
-  message: string,
-  ids?: readonly string[],
-): Diagnostic {
-  return { ruleId, path, message, severity: "error", ...(ids ? { ids } : {}) };
-}
-
 export function compareDiagnostics(a: Diagnostic, b: Diagnostic): number {
   return compareCodeUnits(a.ruleId, b.ruleId) || compareCodeUnits(a.path, b.path);
 }
@@ -204,22 +196,26 @@ export function resolveObservationEdge(
 ): ResolvedEdge {
   const diagnostics: Diagnostic[] = [];
   if (typeof observation.source !== "string" || observation.source.length === 0) {
-    diagnostics.push(diag("observation-source", path, "Observation source must be non-empty."));
+    diagnostics.push(
+      diagnostic("observation-source-shape", path, "Observation source must be non-empty."),
+    );
     return { diagnostics: Object.freeze(diagnostics) };
   }
   // Three removed fields, one rule id each, because a diagnostic has to name what the author
   // actually wrote rather than the removal they share. The target guard stays first, so ADR-046's
   // `V-2` through `V-4` still report a target for a fixture that also carries a role.
   if (readRemoved(observation, "target") !== undefined) {
-    diagnostics.push(diag("observation-target-unsupported", path, TARGET_UNSUPPORTED));
+    diagnostics.push(diagnostic("observation-target-unsupported", path, TARGET_UNSUPPORTED));
     return { diagnostics: Object.freeze(diagnostics) };
   }
   if (readRemoved(observation, "role") !== undefined) {
-    diagnostics.push(diag("observation-role-unsupported", path, ROLE_UNSUPPORTED));
+    diagnostics.push(diagnostic("observation-role-unsupported", path, ROLE_UNSUPPORTED));
     return { diagnostics: Object.freeze(diagnostics) };
   }
   if (readRemoved(observation, "projection") !== undefined) {
-    diagnostics.push(diag("observation-projection-unsupported", path, PROJECTION_UNSUPPORTED));
+    diagnostics.push(
+      diagnostic("observation-projection-unsupported", path, PROJECTION_UNSUPPORTED),
+    );
     return { diagnostics: Object.freeze(diagnostics) };
   }
   let sourceId: string;
@@ -227,9 +223,12 @@ export function resolveObservationEdge(
     sourceId = qualifySource(observation.source, ownerId);
   } catch (error) {
     diagnostics.push(
-      diag("observation-source", path, String(error instanceof Error ? error.message : error), [
-        observation.source,
-      ]),
+      diagnostic(
+        "observation-source",
+        path,
+        String(error instanceof Error ? error.message : error),
+        [observation.source],
+      ),
     );
     return { diagnostics: Object.freeze(diagnostics) };
   }
@@ -255,7 +254,9 @@ export function resolveRequirementEdge(
   } catch (error) {
     const message = String(error instanceof Error ? error.message : error);
     return {
-      diagnostics: Object.freeze([diag("requirement-source", path, message, [binding.source])]),
+      diagnostics: Object.freeze([
+        diagnostic("requirement-source", path, message, [binding.source]),
+      ]),
     };
   }
   // The member key is copied when the binding carries one and omitted when it does not, rather than
@@ -301,7 +302,7 @@ export function collectTrack(
     assertAuthoredTrackId(track.id);
   } catch (error) {
     diagnostics.push(
-      diag(
+      diagnostic(
         "track-id",
         `${owner === "free" ? "freeTracks" : `motions[${authoredIndex}]`}.id`,
         String(error instanceof Error ? error.message : error),
@@ -343,7 +344,7 @@ export function buildGraphIR(project: ProjectDefinition): GraphBuildResult {
       assertAuthoredMotionId(motion.id);
     } catch (error) {
       diagnostics.push(
-        diag(
+        diagnostic(
           "motion-id",
           `motions[${motionIndex}].id`,
           String(error instanceof Error ? error.message : error),
@@ -353,7 +354,7 @@ export function buildGraphIR(project: ProjectDefinition): GraphBuildResult {
     }
     if (motionIds.has(motion.id)) {
       diagnostics.push(
-        diag(
+        diagnostic(
           "motion-duplicate",
           `motions[${motionIndex}].id`,
           `Duplicate motion id "${motion.id}".`,
@@ -368,7 +369,7 @@ export function buildGraphIR(project: ProjectDefinition): GraphBuildResult {
       if (node) {
         if (seen.has(node.id))
           diagnostics.push(
-            diag(
+            diagnostic(
               "node-duplicate",
               `motions[${motionIndex}].tracks[${trackIndex}].id`,
               `Duplicate node id "${node.id}".`,
@@ -387,7 +388,7 @@ export function buildGraphIR(project: ProjectDefinition): GraphBuildResult {
     if (node) {
       if (seen.has(node.id))
         diagnostics.push(
-          diag(
+          diagnostic(
             "node-duplicate",
             `freeTracks[${trackIndex}].id`,
             `Duplicate node id "${node.id}".`,
@@ -485,7 +486,7 @@ export function resolveSolvers(
     const hasGoal = authoredGoals.bare || authoredGoals.dict.length > 0;
     if ((hasSolver && (rootCount > 0 || hasGoal)) || rootCount > 1) {
       diagnostics.push(
-        diag(
+        diagnostic(
           "ik-mode-ambiguous",
           node.id,
           `Node "${node.id}" has ambiguous IK mode configuration.`,
@@ -498,7 +499,7 @@ export function resolveSolvers(
     // merging would make which goal a leaf reaches for a property of the reader.
     if (authoredGoals.bare && authoredGoals.dict.length > 0) {
       diagnostics.push(
-        diag(
+        diagnostic(
           "ik-goal-conflict",
           node.id,
           `Solver "${node.id}" binds both "target" and the goals dict; goals are addressed one way or the other.`,
@@ -520,7 +521,7 @@ export function resolveSolvers(
     );
     if (rotationIsDead) {
       diagnostics.push(
-        diag(
+        diagnostic(
           "ik-solved-rotation-dead",
           node.id,
           `Member "${node.id}" bound to solver cannot author rotation with no weight to blend it by.`,
@@ -547,7 +548,7 @@ export function resolveSolvers(
     const inertWeight = weightGroups.filter((group) => !solverBinders.includes(group));
     if (hasSolver && inertWeight.length > 0) {
       diagnostics.push(
-        diag(
+        diagnostic(
           "ik-weight-without-solver",
           node.id,
           `Node "${node.id}" authors weight under ${inertWeight.join(", ")} without binding a solver there; there is no solved rotation to blend.`,
@@ -594,7 +595,7 @@ export function resolveSolvers(
     if (!rootEdge) {
       if (boundSolverIds.has(solver.id)) {
         diagnostics.push(
-          diag(
+          diagnostic(
             "ik-solver-no-root",
             solver.id,
             `Solver "${solver.id}" has no bound root requirement.`,
@@ -615,7 +616,7 @@ export function resolveSolvers(
     // Diagnostic 2: ik-solver-no-members
     if (members.length === 0) {
       diagnostics.push(
-        diag(
+        diagnostic(
           "ik-solver-no-members",
           solver.id,
           `Solver "${solver.id}" has no member nodes bound to it.`,
@@ -640,7 +641,7 @@ export function resolveSolvers(
     const authoredGoals = goalBindingsOf(solver);
     if (!authoredGoals.bare && authoredGoals.dict.length === 0) {
       diagnostics.push(
-        diag(
+        diagnostic(
           "ik-solver-no-goal",
           solver.id,
           `Solver "${solver.id}" has no goal; bind "target", or address a goal per chain leaf under "targets".`,
@@ -682,7 +683,7 @@ export function resolveSolvers(
         if (next === undefined || (next !== rootId && !memberById.has(next))) {
           unreachable.set(
             cursor.id,
-            diag(
+            diagnostic(
               "ik-solver-unreachable-root",
               cursor.id,
               `Member "${cursor.id}" cannot reach solver root "${rootId}".`,
@@ -747,7 +748,7 @@ export function resolveSolvers(
       // a branching chain addresses its goals by member id.
       if (authoredGoals.bare && leaves.length > 1) {
         diagnostics.push(
-          diag(
+          diagnostic(
             "ik-target-not-single-leaf",
             solver.id,
             `Solver "${solver.id}" binds "target" over a chain with ${leaves.length} leaves; address goals by member id instead.`,
@@ -769,7 +770,7 @@ export function resolveSolvers(
         }
         if (memberId === undefined || !memberById.has(memberId)) {
           diagnostics.push(
-            diag(
+            diagnostic(
               "ik-goal-unknown-member",
               solver.id,
               `Goal "${goal.authored}" of solver "${solver.id}" names no member of its chain.`,
@@ -787,7 +788,7 @@ export function resolveSolvers(
         const spellings = authoredFor.get(memberId) ?? [];
         if (spellings.length > 1) {
           diagnostics.push(
-            diag(
+            diagnostic(
               "ik-goal-duplicate",
               solver.id,
               `Member "${memberId}" of solver "${solver.id}" is named by more than one goal: ${spellings.join(", ")}.`,
@@ -798,7 +799,7 @@ export function resolveSolvers(
         }
         if (!leafIds.has(memberId)) {
           diagnostics.push(
-            diag(
+            diagnostic(
               "ik-goal-not-leaf",
               solver.id,
               `Member "${memberId}" of solver "${solver.id}" carries a goal but is not a chain leaf.`,
@@ -819,7 +820,7 @@ export function resolveSolvers(
         for (const leaf of leaves) {
           if (authoredFor.has(leaf)) continue;
           diagnostics.push(
-            diag(
+            diagnostic(
               "ik-leaf-without-goal",
               solver.id,
               `Chain leaf "${leaf}" of solver "${solver.id}" has no goal.`,
@@ -902,7 +903,7 @@ export function finalizeGraph(
       const key = edgeKey(edge);
       if (edgeKeys.has(key))
         diagnostics.push(
-          diag(
+          diagnostic(
             "observation-duplicate",
             edge.observerId,
             `Duplicate observation edge ${describeEdge(edge)}.`,
@@ -912,7 +913,7 @@ export function finalizeGraph(
       edgeKeys.add(key);
       if (!known.has(edge.sourceId))
         diagnostics.push(
-          diag(
+          diagnostic(
             "observation-unknown-source",
             edge.observerId,
             `Unknown observation source "${edge.sourceId}".`,
@@ -921,7 +922,7 @@ export function finalizeGraph(
         );
       if (edge.sourceId === edge.observerId)
         diagnostics.push(
-          diag(
+          diagnostic(
             "observation-self-reference",
             edge.observerId,
             "Observation cannot reference itself.",

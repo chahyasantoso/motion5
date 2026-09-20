@@ -1,9 +1,11 @@
+import { diagnostic } from "../contract/diagnostics";
+import type { RuleId } from "../contract/rule-id";
 import type { Diagnostic } from "../contract/v5";
 import { compareCodeUnits } from "./compare";
 import type { GraphNode } from "./ir";
 
 /** Rule id reported when the observation graph cannot be linearized. */
-export const CYCLE_RULE_ID = "graph-cycle";
+export const CYCLE_RULE_ID = "graph-cycle" satisfies RuleId;
 
 export interface GraphOrderResult {
   /** Canonical topological order. Absent when the graph contains at least one cycle. */
@@ -85,14 +87,12 @@ function shortestCycleFrom(
 
 function cycleDiagnostic(cycle: readonly string[]): Diagnostic {
   const entry = cycle[0] ?? "";
-  const diagnostic: Diagnostic = {
-    ruleId: CYCLE_RULE_ID,
-    path: entry,
-    message: `Observation cycle detected: ${[...cycle, entry].join(" -> ")}.`,
-    severity: "error",
-    ids: Object.freeze([...cycle]),
-  };
-  return Object.freeze(diagnostic);
+  return diagnostic(
+    CYCLE_RULE_ID,
+    entry,
+    `Observation cycle detected: ${[...cycle, entry].join(" -> ")}.`,
+    [...cycle],
+  );
 }
 
 /**

@@ -14,6 +14,7 @@ import {
   bookingDrain,
   deferredSeeds,
   deferredTick,
+  deferredWork,
   deferring,
   endFlush,
   isDisposed,
@@ -413,6 +414,15 @@ describe("what the runtime does with them does not move", () => {
  * preamble already gives. `deferred-payload.test.ts` is the behavioural half and it is red before
  * the change; two of the cases here are red as well, because a frame with no seeds answered false
  * and `retaining` and `requeuing` did not exist. See ADR-088.
+ *
+ * Issue #449 adds the reader beside them and the last two cases below. `deferredWork` is what the
+ * reentrancy answer switches over, and the two defects it closes were both a question answered from
+ * the request that made a deferral rather than from the payload it left: a request adding nothing to
+ * an empty payload booked a drain for work that did not exist, and a request adding only a frame was
+ * answered an empty batch while a real publication was queued. The behavioural half is in
+ * `deferred-payload.test.ts` and was red before it; these are the state-space half, and they are
+ * here because a total reader is worth cases of its own rather than only the runtime paths that
+ * happen to reach it. See ADR-097.
  */
 describe("the deferred payload carries something, or it is nothing at all", () => {
   it("answers nothing pending as a variant rather than as an empty seed set", () => {
@@ -530,5 +540,39 @@ describe("the deferred payload carries something, or it is nothing at all", () =
     };
     expect(typeof assignNothingCarryingAFrame).toBe("function");
     expect(typeof assignDeferralWithoutItsSeeds).toBe("function");
+  });
+
+  it("answers what a deferral owes, which is the read the reentrancy answer switches over", () => {
+    expect(deferredWork(NOTHING_PENDING)).toEqual({ kind: "nothing" });
+    expect(deferredWork(deferring(NOTHING_PENDING, ["hero/arm"], undefined))).toEqual({
+      kind: "seeds",
+      seeds: ["hero/arm"],
+    });
+    expect(deferredWork(deferring(NOTHING_PENDING, [], 2))).toEqual({ kind: "frame", tick: 2 });
+
+    // Owing nothing and being pending are the same answer on every payload `deferring` can mint,
+    // which is what lets one read decide the batch and the booking together rather than two reads
+    // that could disagree about whether a drain has anything to run.
+    for (const pending of [
+      NOTHING_PENDING,
+      deferring(NOTHING_PENDING, ["hero/arm"], undefined),
+      deferring(NOTHING_PENDING, [], 2),
+      deferring(NOTHING_PENDING, ["hero/arm"], 2),
+      retaining(deferring(NOTHING_PENDING, ["hero/arm"], 3), 1),
+      requeuing(IDLE, NOTHING_PENDING, ["hero/arm"]),
+    ])
+      expect(deferredWork(pending).kind === "nothing").toBe(!isPending(pending));
+  });
+
+  it("answers the seeds when a deferral carries both, and leaves the frame for the drain", () => {
+    const both = deferring(NOTHING_PENDING, ["hero/arm"], 2);
+
+    // The seed arm wins deliberately, because the seeds are what a caller can act on, and choosing
+    // it drops nothing: the payload still carries the frame, so the publication that states the
+    // seeds leaves it behind through `retaining` and the drain replays it.
+    expect(deferredWork(both)).toEqual({ kind: "seeds", seeds: ["hero/arm"] });
+    expect(deferredTick(both)).toBe(2);
+    expect(deferredWork(retaining(both, 1))).toEqual({ kind: "frame", tick: 2 });
+    expect(deferredWork(retaining(both, 2))).toEqual({ kind: "nothing" });
   });
 });

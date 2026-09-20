@@ -15,17 +15,27 @@ try {
 }
 ```
 
-A diagnostic is structured, and the shape is stable:
+A diagnostic is structured, and the shape is stable. It is one interface, and what each rule fixes about itself lives in one record rather than in the shape:
 
 ```ts
 interface Diagnostic {
-  readonly ruleId: string;
+  readonly ruleId: RuleId;
   readonly path: string;
   readonly message: string;
   readonly severity: "error" | "warning";
-  readonly ids?: readonly string[];
+  readonly ids: readonly string[];
 }
 ```
+
+Reading one is simpler than it was: `path`, `message`, `severity` and `ids` are all on it, with no variant to narrow first. Three things are worth knowing if you write one down.
+
+`ruleId` is a closed union rather than a `string`, so comparing it against a rule this project does not have stops compiling instead of quietly never matching, and constructing a `Diagnostic` of your own with a rule id you invented is refused.
+
+`severity` comes from the rule and from nothing else. It used to default to `"error"` at the constructor, so a warning rule reported by a caller that passed nothing became an error diagnostic and nothing noticed; the rule answers now, and the parameter is deleted, so there is no argument position in which any caller can name one. Read `severity` off the diagnostic.
+
+Whether a rule names `ids` is fixed by the rule too, but it is enforced where a diagnostic is built rather than by the field. A producer takes the payload its rule owns as its argument list, so a rule that names none cannot be handed one and a rule that always names them cannot omit them. The field itself is required. Every diagnostic is built through the project's one constructor and carries it, frozen and empty for a rule that names none, so `ids` and `ids ?? []` read the same thing and the fallback can go. Two rules may name one event and differ on nothing but this: a reentrant flush that deferred seeds reports `reentrant-flush-deferred` and names them, and one that deferred only the frame it carried reports `reentrant-flush-deferred-frame` and names nothing, because a frame is not a node.
+
+The three variants that used to express that ownership, `IdlessDiagnostic`, `IdentifiedDiagnostic` and `OptionalIdsDiagnostic`, are removed. A consumer that extended one extends `Diagnostic`. See ADR-097.
 
 Call `validateV5(project)` yourself if you want the diagnostics without the throw. It returns `{ valid, value, diagnostics }`, and it is the same validator the engine uses, so there is no second opinion to keep in sync.
 

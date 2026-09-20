@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { ProjectDefinition } from "../../src/contract/v5";
 import { GraphBinding, type GraphBindingHooks } from "../../src/graph/binding";
+import { defaultGraphBuilder } from "../../src/graph/builders/default";
 
 const project = (tracks: ProjectDefinition["motions"][number]["tracks"]): ProjectDefinition => ({
   schemaVersion: 5,
@@ -20,7 +21,7 @@ const changed = project([
 
 describe("GraphBinding transactions", () => {
   it("I-2 applies a valid candidate and preserves one live state identity", () => {
-    const binding = new GraphBinding(base);
+    const binding = new GraphBinding(base, { builder: defaultGraphBuilder });
     const held = binding.state;
 
     binding.replace(changed);
@@ -35,7 +36,7 @@ describe("GraphBinding transactions", () => {
   });
 
   it("I-2 rejects an invalid candidate before touching the active graph", () => {
-    const binding = new GraphBinding(base);
+    const binding = new GraphBinding(base, { builder: defaultGraphBuilder });
     const beforeGraph = binding.graph;
     const beforeState = binding.state.snapshot();
     const invalid = project([{ id: "arm", observes: [{ source: "missing" }] }]);
@@ -64,7 +65,7 @@ describe("GraphBinding transactions", () => {
       },
     ],
   ])("I-2 restores every observable state after %s fails", (_stage, hooks) => {
-    const binding = new GraphBinding(base, { hooks });
+    const binding = new GraphBinding(base, { hooks, builder: defaultGraphBuilder });
     const beforeGraph = binding.graph;
     const beforeState = binding.state.snapshot();
     const held = binding.state;

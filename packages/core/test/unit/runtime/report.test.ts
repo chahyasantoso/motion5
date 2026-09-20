@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import type { IdentifiedRuleId } from "../../../src/contract/rule";
 import type { Diagnostic } from "../../../src/contract/v5";
 import {
   CLEAN_TRACE,
@@ -40,7 +41,9 @@ import { describeError } from "../../../src/runtime/schema-refusals";
 const ARM = "hero/arm";
 const HAND = "hero/hand";
 
-function diagnostic(ruleId: string): Diagnostic {
+// Every rule this helper is called with always names ids, and the parameter says so rather than
+// taking any `RuleId` and then carrying an `ids` the rule might not own.
+function diagnostic(ruleId: IdentifiedRuleId): Diagnostic {
   const entry: Diagnostic = Object.freeze({
     ruleId,
     path: "1",
@@ -148,7 +151,10 @@ describe("one owner reports what a step failed at and what a deferral answers", 
     expect(empty).toEqual({ tick: 4, seeds: [], patches: [], diagnostics: [] });
     expect(Object.isFrozen(empty)).toBe(true);
 
-    const seeds = [ARM];
+    // Annotated rather than inferred, because a deferral now requires a seed list with at least one
+    // member and an inferred `string[]` cannot prove it. The `push` below still compiles, since a
+    // tuple with a rest element accepts one, so this case's claim about copying is unchanged.
+    const seeds: [string, ...string[]] = [ARM];
     const staged = batchFor(7, { kind: "deferred-in-batch", seeds });
     seeds.push(HAND);
     expect(staged.tick).toBe(7);
@@ -271,7 +277,10 @@ describe("one owner reports what a step failed at and what a deferral answers", 
     expect(sinkFailure(accepted)).toBe(failure);
 
     // And the newest failure wins where two of them happen, which is what overwriting a slot did.
-    const second = diagnostic("diagnostic-sink-failure-2");
+    // Named for the handover it models rather than for a clock regression: the production catch
+    // path builds this object under `diagnostic-sink-failure`, and the two failures in this case are
+    // still told apart by identity, which is what the assertions below read.
+    const second = diagnostic(DIAGNOSTIC_SINK_FAILURE_RULE);
     const again = undeliverable(accepted, newer, second);
     expect(sinkFailure(again)).toBe(second);
     expect(retainedDiagnostic(again)).toBe(newer);
@@ -341,8 +350,10 @@ describe("one owner reports what a step failed at and what a deferral answers", 
     // already carries one belonging to a newer report, and then the trace is answered unchanged.
     const older = diagnostic("flush-failure");
     const newer = diagnostic("clock-consumer-failure");
-    const nested = diagnostic("nested-sink-failure");
-    const outer = diagnostic("outer-sink-failure");
+    // Both of these are `undeliverable` failure arguments, so both name the handover rule rather
+    // than a scheduler or a clock cause this case never exercises.
+    const nested = diagnostic(DIAGNOSTIC_SINK_FAILURE_RULE);
+    const outer = diagnostic(DIAGNOSTIC_SINK_FAILURE_RULE);
     const trace = undeliverable(reporting(reporting(CLEAN_TRACE, older), newer), newer, nested);
     expect(sinkFailure(trace)).toBe(nested);
     expect(undeliverable(trace, older, outer)).toBe(trace);

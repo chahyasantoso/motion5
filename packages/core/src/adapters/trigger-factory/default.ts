@@ -48,7 +48,6 @@ export function createTriggerFactory(options: TriggerFactoryOptions = {}): Trigg
                 "trigger-driver-unavailable",
                 `motions.${context.motionId}.trigger.source`,
                 message,
-                "error",
                 [context.motionId],
               ),
             ]),

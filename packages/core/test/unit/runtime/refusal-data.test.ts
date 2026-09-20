@@ -47,11 +47,15 @@ const thrown = (body: () => never): unknown => {
   throw new Error("Expected a refusal.");
 };
 
+// Hand-built on purpose: this suite pins what a refusal renders, so it must not
+// borrow the constructor whose output it would otherwise be echoing. The payload
+// is empty because keyframes-shape is a rule that owns no ids.
 const diagnostic: Diagnostic = {
   ruleId: "keyframes-shape",
   path: "addTrack(a).keyframes",
   message: "Not a record.",
   severity: "error",
+  ids: [],
 };
 
 describe("the named refusals still say exactly what they said", () => {

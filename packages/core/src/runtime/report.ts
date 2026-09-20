@@ -1,3 +1,6 @@
+import { diagnostic as buildDiagnostic } from "../contract/diagnostics";
+import type { OwnedIds } from "../contract/rule";
+import type { RuleId } from "../contract/rule-id";
 import type { Diagnostic, PatchBatch } from "../contract/v5";
 import { collect, report } from "../domain/completion";
 import { unreachable } from "../domain/exhaustive";
@@ -112,14 +115,36 @@ export function describeWithCauses(error: unknown): string {
   return describeError(error);
 }
 
-/** The rule id a diagnostic carries when the host's own diagnostic sink threw. Issue #410. */
-export const DIAGNOSTIC_SINK_FAILURE_RULE = "diagnostic-sink-failure";
+/**
+ * The rule id a diagnostic carries when the host's own diagnostic sink threw. Issue #410.
+ *
+ * `satisfies` rather than an annotation, here and at the two below: the constant keeps its literal
+ * type, which is what lets a reader compare it against one spelling, and membership of the closed
+ * union is proved where the rule is named rather than at whichever call site happens to pass it. A
+ * rule id held in a constant is the one shape a scan of construction arguments cannot see, so the
+ * compiler answers for it instead. See ADR-097.
+ */
+export const DIAGNOSTIC_SINK_FAILURE_RULE = "diagnostic-sink-failure" satisfies RuleId;
 
 /** The rule id a value write staged inside an open batch answers under. See ADR-078. */
-export const DEFERRED_VALUE_BATCH_RULE = "value-batch-deferred";
+export const DEFERRED_VALUE_BATCH_RULE = "value-batch-deferred" satisfies RuleId;
 
 /** The rule id a flush asked for while subscribers are being notified answers under. */
-export const DEFERRED_FLUSH_RULE = "reentrant-flush-deferred";
+export const DEFERRED_FLUSH_RULE = "reentrant-flush-deferred" satisfies RuleId;
+
+/**
+ * The rule id that same deferral answers under when it named no seed and carried only a frame.
+ *
+ * A second id rather than an empty payload under the one above, and it is the `observation-source`
+ * split a second time for the same cause: one id was carrying two refusals, one of which has
+ * nothing to name. `reentrant-flush-deferred` owns its ids always, so a deferral stating no seed
+ * cannot report under it without handing an always-naming rule an empty list, which is the hole
+ * `DeferredSeeds` closed at the type and this closes at the rule. The frame is the fact that
+ * deferral has, so the message names it and the payload is empty because a frame is not a node.
+ * Prefix-preserving on purpose, so a reader or a gate matching the deferral's spelling finds both.
+ * See ADR-088, ADR-097 and issue #449.
+ */
+export const DEFERRED_FLUSH_FRAME_RULE = "reentrant-flush-deferred-frame" satisfies RuleId;
 
 declare const REPORT_BRAND: unique symbol;
 
@@ -291,20 +316,24 @@ export function undeliverable(
   }
 }
 
+/**
+ * One runtime diagnostic, whose `path` is the tick it was reported on.
+ *
+ * It kept a body of its own because it owns that `path`, and it kept everything else with it: its own
+ * `severity: "error"` and a conditional `ids` spread that omitted the member whenever no payload
+ * arrived, which made this the last producer in the runtime layer to own the shape. Both belong to
+ * the rule and to the one constructor now, so what is left is the one fact this function exists for.
+ * No severity is named here and none can be: the constructor has no such parameter. `ids` is
+ * forwarded as the open optional list `OwnedIds<RuleId>` already is. Every rule reported through here
+ * is an error rule, so nothing observable moves. See ADR-097.
+ */
 function frozenDiagnostic(
-  ruleId: string,
+  ruleId: RuleId,
   message: string,
   tick: number,
-  ids: readonly string[],
+  ids: readonly string[] | undefined,
 ): Diagnostic {
-  const diagnostic: Diagnostic = Object.freeze({
-    ruleId,
-    path: String(tick),
-    message,
-    severity: "error",
-    ids: Object.freeze([...ids]),
-  });
-  return diagnostic;
+  return buildDiagnostic(ruleId, String(tick), message, ids);
 }
 
 /**
@@ -327,14 +356,20 @@ function frozenDiagnostic(
  * diagnostic is handed to nothing, because the only sink available is the one that has just thrown.
  * Issue #410. ADR-039's clock boundaries are the precedent. See ADR-091.
  */
-export function reportDiagnostic(
+export function reportDiagnostic<Rule extends RuleId>(
   sink: ((diagnostic: Diagnostic) => void) | undefined,
   retain: RetainTrace,
-  ruleId: string,
+  ruleId: Rule,
   message: string,
   tick: number,
-  ids: readonly string[],
+  ...carried: OwnedIds<Rule>
 ): void {
+  // The derived list goes on the exported member a caller names, and `frozenDiagnostic` stays open
+  // and stays private. It is reached only from here and from the catch below, so deriving the list
+  // twice would put one fact in two signatures for no second caller. Every caller of this names its
+  // rule as a literal or as a `satisfies RuleId` constant; the one that forwards an open `RuleId` is
+  // `graph-runtime.ts` `#report`, which supplies the ids itself.
+  const [ids] = carried as unknown as readonly [(readonly string[])?];
   const diagnostic = frozenDiagnostic(ruleId, message, tick, ids);
   retain((trace) => reporting(trace, diagnostic));
   try {
@@ -344,10 +379,39 @@ export function reportDiagnostic(
       DIAGNOSTIC_SINK_FAILURE_RULE,
       `Diagnostic delivery for ${ruleId} failed: ${describeWithCauses(error)}`,
       tick,
-      ids,
+      // `diagnostic-sink-failure` always names ids, so a failed handover carries the report's payload
+      // or an empty one rather than inheriting its absence. An idless report is the only way this is
+      // reached with nothing, and a failure omitting the field would be the variant violation one
+      // layer down from the one it is describing.
+      ids ?? [],
     );
     retain((trace) => undeliverable(trace, diagnostic, failure));
   }
+}
+
+/**
+ * The seed list a deferral names, proven non-empty where the deferral is stated.
+ *
+ * `value-batch-deferred` and `reentrant-flush-deferred` both answer `ids: "always"` in
+ * `contract/rule.ts`, and `OwnedIds` proves that an argument was passed and never that it says
+ * anything. With `seeds: readonly string[]` a deferral could therefore publish a warning whose
+ * payload named nothing, for a rule claiming always to name one. A tuple with one required member
+ * moves that from something every caller has to remember into something no caller can spell. See
+ * ADR-097 and issue #449.
+ */
+export type DeferredSeeds = readonly [string, ...string[]];
+
+/**
+ * `seeds` as a list a deferral may name, or `undefined` when there is nothing to name.
+ *
+ * The one narrowing, so emptiness is asked once here rather than remembered at each caller.
+ * Destructured rather than cast: a `length` check tells a reader something and tells the compiler
+ * nothing, and a cast at this boundary would be the assertion this slice spent four commits
+ * deleting.
+ */
+export function namedSeeds(seeds: readonly string[]): DeferredSeeds | undefined {
+  const [first, ...rest] = seeds;
+  return first === undefined ? undefined : [first, ...rest];
 }
 
 /**
@@ -361,10 +425,15 @@ export function reportDiagnostic(
  */
 export type BatchReason =
   | { readonly kind: "empty" }
-  | { readonly kind: "deferred-in-batch"; readonly seeds: readonly string[] }
+  | { readonly kind: "deferred-in-batch"; readonly seeds: DeferredSeeds }
   | {
       readonly kind: "deferred-in-flush";
-      readonly seeds: readonly string[];
+      readonly seeds: DeferredSeeds;
+      readonly scheduled: boolean;
+    }
+  | {
+      readonly kind: "deferred-frame-in-flush";
+      readonly tick: number;
       readonly scheduled: boolean;
     };
 
@@ -393,11 +462,19 @@ function frozenBatch(
  * deliberate commit.
  *
  * An empty recipe carries no diagnostic at all: nothing was queued and nothing was skipped, so there
- * is nothing to report. A staged value write carries its own seed, because the seed is the one thing a
- * caller can still act on. A deferred flush carries the seeds it deferred and says which of two
- * futures the work has. `tick` is the sequence the graph is still on in all three, so a consumer
- * comparing it against the batch a later publication answers can see that nothing published in
- * between. See ADR-078, ADR-080 and ADR-084.
+ * is nothing to report. That is what a reentrant call earns when its deferral left nothing pending,
+ * and its caller decides it rather than this switch, by reading what the deferral owes rather than
+ * what the request stated. Both seed-carrying variants take a `DeferredSeeds`, so a batch that
+ * claims a payload and names nothing stays unrepresentable rather than merely
+ * unreached. A staged value write
+ * carries its own seed, because the seed is the one thing a caller can still act on. A deferred
+ * flush carries the seeds it deferred and says which of two futures the work has. A deferral that
+ * named no seed and carried only a frame is the fourth answer rather than the first: a publication
+ * is genuinely owed, so an empty batch would tell its caller that nothing was queued, and it
+ * reports under `reentrant-flush-deferred-frame` because the rule it would otherwise use always
+ * names ids and a frame is not a node to name. `tick` is the sequence the graph is still on in all
+ * four, so a consumer comparing it against the batch a later publication answers can see that
+ * nothing published in between. See ADR-078, ADR-080, ADR-084 and ADR-097.
  */
 export function batchFor(sequence: number, reason: BatchReason): PatchBatch {
   switch (reason.kind) {
@@ -405,27 +482,38 @@ export function batchFor(sequence: number, reason: BatchReason): PatchBatch {
       return frozenBatch(sequence, [], []);
     case "deferred-in-batch":
       return frozenBatch(sequence, reason.seeds, [
-        Object.freeze({
-          ruleId: DEFERRED_VALUE_BATCH_RULE,
-          path: "value-batch",
-          message:
-            "A value write inside an open batch staged its seed; the batch publishes once when the recipe returns.",
-          severity: "warning",
-          ids: Object.freeze([...reason.seeds]),
-        }),
+        buildDiagnostic(
+          DEFERRED_VALUE_BATCH_RULE,
+          "value-batch",
+          "A value write inside an open batch staged its seed; the batch publishes once when the recipe returns.",
+          reason.seeds,
+        ),
       ]);
     case "deferred-in-flush":
       return frozenBatch(sequence, reason.seeds, [
-        Object.freeze({
-          ruleId: DEFERRED_FLUSH_RULE,
-          path: "deferred-flush",
-          message: reason.scheduled
+        buildDiagnostic(
+          DEFERRED_FLUSH_RULE,
+          "deferred-flush",
+          reason.scheduled
             ? "A flush requested while subscribers were being notified was queued as one follow-up publication for a scheduled drain."
             : "A flush requested while subscribers were being notified was queued as one follow-up publication carried by the next flush.",
-          severity: "warning",
-          ids: Object.freeze([...reason.seeds]),
-        }),
+          reason.seeds,
+        ),
       ]);
+    case "deferred-frame-in-flush":
+      return frozenBatch(
+        sequence,
+        [],
+        [
+          buildDiagnostic(
+            DEFERRED_FLUSH_FRAME_RULE,
+            "deferred-flush",
+            reason.scheduled
+              ? `A flush requested while subscribers were being notified named no seed, so frame ${reason.tick} was queued as one follow-up publication for a scheduled drain.`
+              : `A flush requested while subscribers were being notified named no seed, so frame ${reason.tick} was queued as one follow-up publication carried by the next flush.`,
+          ),
+        ],
+      );
     default:
       return unreachable(reason);
   }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { IncrementalGraphBuilder } from "../../../src/adapters/graph-builder/incremental";
+import { IncrementalGraphBuilder } from "../../../src/graph/builders/incremental";
 import { buildGraphIR } from "../../../src/graph/ir";
 import { validateV5 } from "../../../src/contract/validate-v5";
 import type { Diagnostic, ProjectDefinition, TrackDefinition } from "../../../src/contract/v5";

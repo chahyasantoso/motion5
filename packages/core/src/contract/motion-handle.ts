@@ -13,7 +13,7 @@ import type { MotionDefinition, TrackDefinition } from "./v5";
 export class StaleMotionHandleError extends StaleHandleError {
   /** Stable identity, in the kebab shape every diagnostic rule id in this project uses. */
   static readonly ruleId = "stale-motion-handle";
-  readonly ruleId: string = StaleMotionHandleError.ruleId;
+  readonly ruleId = StaleMotionHandleError.ruleId;
   /** The motion id the refused handle was captured against. */
   readonly motionId: string;
   constructor(motionId: string) {
