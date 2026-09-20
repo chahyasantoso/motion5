@@ -2,8 +2,8 @@ import { createElement } from "react";
 import type { RefCallback } from "react";
 import { act, create } from "react-test-renderer";
 import { describe, expect, it } from "vitest";
-import { useDerivedDomPatch } from "@motion5/react";
-import type { Patch, PatchDerivation, PatchListener, PatchSource } from "@motion5/react";
+import { liveOrAbsent, useDerivedDomPatch } from "@motion5/react";
+import type { LivePatch, Patch, PatchDerivation, PatchListener, PatchSource } from "@motion5/react";
 
 const PARENT = "walk/pelvis";
 const CHILD = "walk/legL_thigh";
@@ -15,9 +15,16 @@ interface FakeSource extends PatchSource {
 
 // Two nodes in one store, counted across both: what a fan-in binding owes is one subscription per
 // source and the release of every one of them.
-function createFakeSource(...initial: readonly Patch[]): FakeSource {
+//
+// The store holds the live union and drops a node's entry as its terminal patch is delivered, which
+// is `PatchRegistry.evict`'s own order rather than a convenience here. `get` answers what a reader
+// may still ask for, so a fake that kept the destroyed patch answered a variant the contract says
+// cannot come back out of it, and it was that fake rather than the contract that made this narrowing
+// look like it owed a separate slice. `liveOrAbsent` is the collapse the React store makes, taken
+// from the package entry rather than spelled a second time here.
+function createFakeSource(...initial: readonly LivePatch[]): FakeSource {
   const listeners = new Map<string, Set<PatchListener>>();
-  const latest = new Map<string, Patch>(initial.map((entry) => [entry.nodeId, entry] as const));
+  const latest = new Map<string, LivePatch>(initial.map((entry) => [entry.nodeId, entry] as const));
   return {
     get: (nodeId) => latest.get(nodeId),
     subscribeNode(nodeId, listener) {
@@ -30,7 +37,9 @@ function createFakeSource(...initial: readonly Patch[]): FakeSource {
     },
     listenerCount: () => [...listeners.values()].reduce((total, set) => total + set.size, 0),
     publish(next) {
-      latest.set(next.nodeId, next);
+      const live = liveOrAbsent(next);
+      if (live === undefined) latest.delete(next.nodeId);
+      else latest.set(next.nodeId, live);
       for (const listener of [...(listeners.get(next.nodeId) ?? [])]) listener(next);
     },
   };
@@ -40,8 +49,8 @@ function patch(
   nodeId: string,
   revision: number,
   values: Readonly<Record<string, unknown>>,
-  status: Patch["status"] = "ready",
-): Patch {
+  status: LivePatch["status"] = "ready",
+): LivePatch {
   return {
     nodeId,
     revision,
@@ -51,6 +60,19 @@ function patch(
     status,
     diagnostics: [],
   };
+}
+
+/**
+ * The terminal patch, minted with the members `DestroyedPatch` actually owns.
+ *
+ * Identity and status and nothing else, which is what `#notifyTerminal` publishes since ADR-098. The
+ * helper above cannot answer this one and should not: it builds a pose, and a node that will never
+ * publish again has none, so routing `destroyed` through it handed this binding a payload the real
+ * wire has never carried. A fake that is wrong in the consumer's favour is why a contract defect can
+ * sit behind a green suite.
+ */
+function destroyed(nodeId: string, revision: number): Patch {
+  return { nodeId, revision, status: "destroyed" };
 }
 
 const endpoints: PatchDerivation = ([parent = {}, child = {}]) => ({
@@ -183,7 +205,7 @@ describe("useDerivedDomPatch", () => {
 
     // Twice, because a hide that only works on a target which was never shown works once.
     act(() => {
-      source.publish(patch(CHILD, 4, { x: 35, y: 45 }, "destroyed"));
+      source.publish(destroyed(CHILD, 4));
     });
     expect(target.style.visibility).toBe("hidden");
     expect(mounted.renders()).toBe(1);

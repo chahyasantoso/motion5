@@ -4,6 +4,7 @@ import type {
   Diagnostic,
   ErrorPatch,
   LivePatch,
+  Patch,
   PatchBatch,
   PatchListener,
   ReadyPatch,
@@ -38,6 +39,37 @@ export type {
   ReadyPatch,
 } from "../contract/v5";
 export type BatchListener = (batch: PatchBatch) => void;
+
+/**
+ * The live patch a delivered one still stands for, or nothing when it says the node is gone.
+ *
+ * The read-side complement to `LivePatch`, and the one owner of "a terminal patch means absent". The
+ * asymmetry it converts between is deliberate and is stated on `get` below: `subscribeNode` delivers
+ * every variant because a subscriber has to hear a node's last publication, and `get` answers three
+ * because `evict` deletes the entry before `#notifyTerminal` delivers. Every reader that holds the
+ * wide channel and has to answer the narrow one is making this one conversion, so it is written here
+ * beside the producer whose ordering guarantees it rather than once per consumer. Before this, the
+ * React store spelled it as its own expression, which is the second owner of one question this
+ * project refuses.
+ *
+ * A `switch` rather than `patch.status === "destroyed" ? undefined : patch`. That ternary is the one
+ * whose else arm nobody wrote down: it buckets every variant a later slice adds into "live" by
+ * omission and reports it, if at all, at whichever assignment happens to narrow. This spelling fails
+ * `typecheck` here, at the single place that owes the new variant a decision. See ADR-092 and
+ * ADR-098.
+ */
+export function liveOrAbsent(patch: Patch): LivePatch | undefined {
+  switch (patch.status) {
+    case "ready":
+    case "blocked":
+    case "error":
+      return patch;
+    case "destroyed":
+      return undefined;
+    default:
+      return unreachable(patch);
+  }
+}
 
 /**
  * One publication of a node that composed: the pose, and what it was measured against.
