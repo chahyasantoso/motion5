@@ -1,0 +1,51 @@
+{
+  "version": 1,
+  "expected_head": "b3dc8d31fcf2cb572f499fa4f26c1f8c6493e676",
+  "expected_blobs": {
+    "packages/core/src/contract/authored-leaf.ts": "340629e27e8af3ce615850adf7a653d73768b59a",
+    "packages/core/src/domain/track.ts": "57d1e9152213b406f4cf9c199ff867850973840e",
+    "packages/core/test/unit/domain/live-write-channel.test.ts": null
+  },
+  "message": "feat(core): one classification answers which channel a live write travels on",
+  "edits": [
+    {
+      "path": "packages/core/src/contract/authored-leaf.ts",
+      "find": "import type { AuthoredStaticValue, AuthoredStop } from \"./v5\";\n",
+      "replace": "import { unreachable } from \"../domain/exhaustive\";\nimport type { AuthoredStaticValue, AuthoredStop } from \"./v5\";\n"
+    },
+    {
+      "path": "packages/core/src/contract/authored-leaf.ts",
+      "find": "/**\n * The stops a leaf actually compiles to:",
+      "replace": "/**\n * Which of a live write's two channels a key authored as this leaf travels on.\n *\n * `Track` refuses a live write that arrives on the wrong channel at two members, and before this\n * the two asked one question in opposite directions: `#acceptedValues` refused `kind ===\n * \"animated\"` and `#acceptedOverlay` refused `kind !== \"animated\"`. Each was total over the five\n * kinds that exist by accident rather than by construction, and they were total in ways that could\n * disagree: a sixth kind would have been maskable at one member and patchable at the other at the\n * same time, and no gate in this repository names either site. One classification, read\n * exhaustively, is what makes those two answers one answer.\n *\n * The three shapeless kinds travel on the mask, which is what both members already did rather\n * than a decision taken here. `empty` is the deliberately accepted no-op `Y-6` pins, and `wrapper`\n * and `invalid` are refused by the validator before a live write can reach a loaded project, so\n * classifying those two decides nothing a caller can observe. The result is a closed two-member\n * union, so a reader that asks for the one channel it wants has decided about both.\n *\n * This answers the channel and nothing else. Which static value a mask may carry is a different\n * partition, because it needs the value and only `static` carries one, and\n * `runtime/authored-values.ts` still asks that question one-sidedly at two sites. See ADR-059,\n * ADR-060, and ADR-092.\n */\nexport type LiveWriteChannel = \"mask\" | \"timeline\";\n\nexport function liveWriteChannel(leaf: AuthoredLeaf): LiveWriteChannel {\n  switch (leaf.kind) {\n    case \"animated\":\n      return \"timeline\";\n    case \"static\":\n    case \"empty\":\n    case \"wrapper\":\n    case \"invalid\":\n      return \"mask\";\n    default:\n      return unreachable(leaf);\n  }\n}\n\n/**\n * The stops a leaf actually compiles to:"
+    },
+    {
+      "path": "packages/core/src/domain/track.ts",
+      "find": "import { readAuthoredLeaf } from \"../contract/authored-leaf\";\n",
+      "replace": "import { liveWriteChannel, readAuthoredLeaf } from \"../contract/authored-leaf\";\n"
+    },
+    {
+      "path": "packages/core/src/domain/track.ts",
+      "find": "   * `readAuthoredLeaf` is the one function allowed to say what shape a leaf has, which is the whole\n   * of the kind question. This class therefore holds no registry and reimplements no ownership\n   * predicate.",
+      "replace": "   * `liveWriteChannel` is the one function allowed to say which channel a leaf's key travels on,\n   * which is the whole of the kind question and is the same answer `#acceptedOverlay` reads below.\n   * This class therefore holds no registry, reimplements no ownership predicate, and no longer\n   * spells the channel rule twice in opposite directions."
+    },
+    {
+      "path": "packages/core/src/domain/track.ts",
+      "find": "      if (readAuthoredLeaf(authored[key]).kind === \"animated\")\n        throw new LiveValueKeyError(this.#nodeId, key, \"kind\");",
+      "replace": "      if (liveWriteChannel(readAuthoredLeaf(authored[key])) !== \"mask\")\n        throw new LiveValueKeyError(this.#nodeId, key, \"kind\");"
+    },
+    {
+      "path": "packages/core/src/domain/track.ts",
+      "find": "   * `authoredKeyframes` answers presence, `readAuthoredLeaf` answers which kind of leaf the key was\n   * authored as, and `preparation.keyframes` answers whether a plugin already decided this key's\n   * value.",
+      "replace": "   * `authoredKeyframes` answers presence, `liveWriteChannel` answers which channel the key was\n   * authored onto, and `preparation.keyframes` answers whether a plugin already decided this key's\n   * value."
+    },
+    {
+      "path": "packages/core/src/domain/track.ts",
+      "find": "      if (readAuthoredLeaf(authored[key]).kind !== \"animated\")\n        throw new LiveValueKeyError(this.#nodeId, key, \"kind\");",
+      "replace": "      if (liveWriteChannel(readAuthoredLeaf(authored[key])) !== \"timeline\")\n        throw new LiveValueKeyError(this.#nodeId, key, \"kind\");"
+    },
+    {
+      "path": "packages/core/test/unit/domain/live-write-channel.test.ts",
+      "create": "import { describe, expect, it } from \"vitest\";\nimport { fileURLToPath } from \"node:url\";\nimport type { AuthoredLeaf } from \"../../../src/contract/authored-leaf\";\nimport { liveWriteChannel, readAuthoredLeaf } from \"../../../src/contract/authored-leaf\";\nimport { unreachable } from \"../../../src/domain/exhaustive\";\nimport { code, member } from \"../../helpers/source-region\";\n\n/**\n * Phase 2a of issue #451. `AuthoredLeaf` has five variants and eleven readers, none of which\n * decided about all five, and two of the eleven are one decision written in opposite directions:\n * `Track.#acceptedValues` refused `kind === \"animated\"` and `Track.#acceptedOverlay` refused\n * `kind !== \"animated\"`. A sixth variant would have been maskable at the first and patchable at the\n * second, simultaneously, and nothing in the repository reads both sites together.\n *\n * So this is one classification plus two readers of it, rather than two switches. The behaviour is\n * unchanged by construction, which `track-live-values.test.ts` is the evidence for and which is why\n * that suite is not restated here: the refusals it pins have to keep answering exactly as they did.\n *\n * See ADR-059, ADR-060, ADR-092.\n */\nconst TRACK = code(fileURLToPath(new URL(\"../../../src/domain/track.ts\", import.meta.url)));\nconst ACCEPTED_VALUES = member(TRACK, \"#acceptedValues(next: LiveValues): ImmutableRecord {\");\nconst ACCEPTED_OVERLAY = member(\n  TRACK,\n  \"#acceptedOverlay(overlay: Readonly<Record<string, unknown>>): Readonly<Record<string, unknown>> {\",\n);\n\ndescribe(\"one classification answers which channel a live write travels on\", () => {\n  it(\"routes an animated leaf to the timeline and every other kind to the mask\", () => {\n    // Through the classifier rather than through literals, so the case is about the union the\n    // repository actually produces and not about five hand-written records.\n    expect(liveWriteChannel(readAuthoredLeaf([{ p: 0, v: 1 }]))).toBe(\"timeline\");\n    expect(liveWriteChannel(readAuthoredLeaf(60))).toBe(\"mask\");\n    expect(liveWriteChannel(readAuthoredLeaf(\"40px\"))).toBe(\"mask\");\n    expect(liveWriteChannel(readAuthoredLeaf(true))).toBe(\"mask\");\n    expect(liveWriteChannel(readAuthoredLeaf({}))).toBe(\"mask\");\n    expect(liveWriteChannel(readAuthoredLeaf({ stops: [] }))).toBe(\"mask\");\n    expect(liveWriteChannel(readAuthoredLeaf(Number.NaN))).toBe(\"mask\");\n    expect(liveWriteChannel(readAuthoredLeaf(null))).toBe(\"mask\");\n  });\n\n  it(\"covers all five kinds, so no leaf the classifier can read is left unrouted\", () => {\n    const kinds = new Set(\n      [[{ p: 0, v: 1 }], 60, {}, { stops: [] }, null].map((value) => readAuthoredLeaf(value).kind),\n    );\n    expect([...kinds].sort()).toEqual([\"animated\", \"empty\", \"invalid\", \"static\", \"wrapper\"]);\n  });\n\n  it(\"refuses a sixth kind that reached it across the type boundary\", () => {\n    const foreign = { kind: \"derived\" } as unknown as AuthoredLeaf;\n    expect(() => liveWriteChannel(foreign)).toThrow(TypeError);\n    expect(() => liveWriteChannel(foreign)).toThrow(/Unhandled variant/);\n  });\n\n  it(\"refuses a classification that leaves one kind undecided\", () => {\n    type Widened = AuthoredLeaf | { readonly kind: \"derived\" };\n\n    // Deliberately never called: the assertion is the `tsc` diagnostic, in the shape\n    // `exhaustive.test.ts` uses. This read decides about the five kinds that exist and says nothing\n    // about the sixth, so its subject is not `never` where the sink is handed it.\n    const routeWidened = (leaf: Widened): string => {\n      switch (leaf.kind) {\n        case \"animated\":\n          return \"timeline\";\n        case \"static\":\n        case \"empty\":\n        case \"wrapper\":\n        case \"invalid\":\n          return \"mask\";\n        default:\n          // @ts-expect-error a kind this read does not decide about is not `never`.\n          return unreachable(leaf);\n      }\n    };\n\n    expect(typeof routeWidened).toBe(\"function\");\n  });\n\n  it(\"leaves Track with one reader of the channel per member and no second spelling\", () => {\n    expect(ACCEPTED_VALUES).toContain(\n      'liveWriteChannel(readAuthoredLeaf(authored[key])) !== \"mask\"',\n    );\n    expect(ACCEPTED_OVERLAY).toContain(\n      'liveWriteChannel(readAuthoredLeaf(authored[key])) !== \"timeline\"',\n    );\n    // The opposite-direction pair is gone rather than supplemented. Either spelling surviving would\n    // be a second answer to the question this classification now owns.\n    expect(TRACK).not.toContain('.kind === \"animated\"');\n    expect(TRACK).not.toContain('.kind !== \"animated\"');\n  });\n});\n"
+    }
+  ]
+}
