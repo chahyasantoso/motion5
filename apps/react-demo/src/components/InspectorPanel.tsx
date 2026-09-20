@@ -12,7 +12,14 @@ const NodeCard: React.FC<{ handle: ProjectHandle; nodeId: string; title: string 
   title,
 }) => {
   const patch = usePatch(handle, nodeId);
-  if (!patch) return null;
+  // A pose belongs to a ready patch, so the guard asks for the status rather than for existence. The
+  // same spelling `@motion5/react`'s own `derived-dom-patch.ts` uses, which was the already-narrowed
+  // reader in the tree before ADR-098 made narrowing the only way to reach `values` at all.
+  //
+  // This card renders nothing while the node is blocked, where it used to render the pose the
+  // carry-forward republished onto the blocked patch. That pose is `PatchRegistry.lastReady`'s now and
+  // no consumer surface forwards it yet, so rendering nothing is the honest answer until one does.
+  if (patch?.status !== "ready") return null;
 
   const x = Number(patch.values.x ?? 0);
   const y = Number(patch.values.y ?? 0);
