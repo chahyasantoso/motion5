@@ -1,0 +1,162 @@
+import { describe, expect, it } from "vitest";
+import { diagnostic } from "../../../src/contract/diagnostics";
+import { PatchRegistry, type Patch, type PublishInput } from "../../../src/runtime/patch-registry";
+
+/**
+ * Slice 1 of #450 decides where the last good pose lives once a patch carries only the payload its
+ * status owns, and the answer is the registry rather than a field on a patch that is about something
+ * else. ADR-098 left that question open; these cases are what closes it.
+ *
+ * The member is reached through one intersection rather than off the class, so this round fails on
+ * assertions rather than on `tsc`: `docs/GUARDRAILS.md` does not accept a failed compile as
+ * failing-first evidence. The request that lands `lastReady` deletes this type and its cast.
+ */
+type RegistryUnderTest = PatchRegistry & {
+  lastReady(nodeId: string): Patch | undefined;
+};
+
+function open(): RegistryUnderTest {
+  return new PatchRegistry() as RegistryUnderTest;
+}
+
+function publish(registry: PatchRegistry, tick: number, input: PublishInput): Patch | undefined {
+  registry.beginBatch(tick, [input.nodeId]);
+  const patch = registry.publish(input);
+  registry.closeBatch();
+  return patch;
+}
+
+const BLOCKED = [
+  diagnostic("blocked-upstream", "hero/arm", "Upstream is blocked.", ["hero/shoulder"]),
+];
+
+describe("the registry owns the last ready patch", () => {
+  it("answers the last ready patch while the node is blocked", () => {
+    const registry = open();
+    const ready = publish(registry, 1, {
+      nodeId: "hero/arm",
+      values: { x: 1 },
+      sourceProgress: 0.5,
+      status: "ready",
+    });
+    const blocked = publish(registry, 2, {
+      nodeId: "hero/arm",
+      sourceProgress: 0,
+      status: "blocked",
+      diagnostics: BLOCKED,
+    });
+
+    expect(blocked?.status).toBe("blocked");
+    expect(registry.get("hero/arm")).toBe(blocked);
+    // The pose survives the block as the registry's own retained answer rather than as a payload on
+    // a patch whose status says the node is not ready.
+    expect(registry.lastReady("hero/arm")).toBe(ready);
+    expect(registry.lastReady("hero/arm")?.values).toEqual({ x: 1 });
+    expect(registry.lastReady("hero/arm")?.sourceProgress).toBe(0.5);
+  });
+
+  it("answers nothing for a node that has never been ready", () => {
+    const registry = open();
+    const blocked = publish(registry, 1, {
+      nodeId: "hero/arm",
+      sourceProgress: 0,
+      status: "blocked",
+      diagnostics: BLOCKED,
+    });
+
+    expect(blocked?.status).toBe("blocked");
+    expect(registry.lastReady("hero/arm")).toBeUndefined();
+  });
+
+  it("replaces what it retains only when a later ready publication is accepted", () => {
+    const registry = open();
+    publish(registry, 1, {
+      nodeId: "hero/arm",
+      values: { x: 1 },
+      sourceProgress: 0,
+      status: "ready",
+    });
+    const second = publish(registry, 2, {
+      nodeId: "hero/arm",
+      values: { x: 2 },
+      sourceProgress: 0,
+      status: "ready",
+    });
+    // A suppressed republication is not a publication, so it cannot move what is retained.
+    const suppressed = publish(registry, 3, {
+      nodeId: "hero/arm",
+      values: { x: 2 },
+      sourceProgress: 0,
+      status: "ready",
+    });
+
+    expect(suppressed).toBeUndefined();
+    expect(registry.lastReady("hero/arm")).toBe(second);
+  });
+
+  it("drops what it retains on unmount, so a remount reads nothing stale", () => {
+    const registry = open();
+    publish(registry, 1, {
+      nodeId: "hero/arm",
+      values: { x: 1 },
+      sourceProgress: 0,
+      status: "ready",
+    });
+
+    registry.remove("hero/arm");
+
+    expect(registry.get("hero/arm")).toBeUndefined();
+    expect(registry.lastReady("hero/arm")).toBeUndefined();
+  });
+
+  it("drops what it retains on eviction, because a destroyed node has no last pose", () => {
+    const registry = open();
+    publish(registry, 1, {
+      nodeId: "hero/arm",
+      values: { x: 1 },
+      sourceProgress: 0,
+      status: "ready",
+    });
+
+    registry.evict("hero/arm");
+
+    expect(registry.lastReady("hero/arm")).toBeUndefined();
+  });
+
+  it("answers nothing once the registry is disposed", () => {
+    const registry = open();
+    publish(registry, 1, {
+      nodeId: "hero/arm",
+      values: { x: 1 },
+      sourceProgress: 0,
+      status: "ready",
+    });
+
+    registry.dispose();
+
+    expect(registry.lastReady("hero/arm")).toBeUndefined();
+  });
+
+  // Green on both sides, and deliberately so: this slice moves nothing on the observation wire. The
+  // carry-forward is still what a blocked publication produces, and this case is the evidence a
+  // later slice re-reads rather than adjusts when the blocked variant stops owning `values`.
+  it("leaves the carry-forward in place, so nothing a subscriber reads has moved yet", () => {
+    const registry = open();
+    publish(registry, 1, {
+      nodeId: "hero/arm",
+      values: { x: 1 },
+      sourceProgress: 0.5,
+      status: "ready",
+    });
+    const blocked = publish(registry, 2, {
+      nodeId: "hero/arm",
+      sourceProgress: 0,
+      status: "blocked",
+      diagnostics: BLOCKED,
+    });
+
+    expect(blocked?.values).toEqual({ x: 1 });
+    expect(blocked?.sourceProgress).toBe(0.5);
+    expect(blocked?.diagnostics).toHaveLength(1);
+  });
+});
