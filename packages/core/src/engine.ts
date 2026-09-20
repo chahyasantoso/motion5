@@ -20,6 +20,7 @@ import { compilePercentKeyframes } from "./domain/keyframe-compiler";
 import { flattenAuthoredKeyframes } from "./domain/keyframe-groups";
 import { Motion, type MotionTrackEntry } from "./domain/motion";
 import { collect, report } from "./domain/completion";
+import { unreachable } from "./domain/exhaustive";
 import { PluginRegistry, type RenderMetadata, type RequirementInputs } from "./domain/plugins";
 import { Track } from "./domain/track";
 import { qualifyFreeTrack, qualifyMotionTrack } from "./graph/ids";
@@ -316,6 +317,8 @@ export class Engine {
           break;
         case "none":
           break;
+        default:
+          unreachable(binding);
       }
     };
     const buildMotion = (

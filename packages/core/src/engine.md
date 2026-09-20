@@ -36,7 +36,7 @@ Hoisted out of the runtime options because the failed-load path needs it too: wh
 
 ## bindClock
 
-One owner of the registration, because the trigger swap below has to make exactly the decision the build made, and two copies of an exhaustive switch is how they end up disagreeing about a binding kind. Total and exhaustive, with no `??` fallback, so a push-driven trigger cannot silently inherit `motion.onTick`, and no Motion can ever hold both a driver and its own clock advance.
+One owner of the registration, because the trigger swap below has to make exactly the decision the build made, and two copies of an exhaustive switch is how they end up disagreeing about a binding kind. Total and exhaustive, with no `??` fallback, so a push-driven trigger cannot silently inherit `motion.onTick`, and no Motion can ever hold both a driver and its own clock advance. Exhaustive is the compiler's claim rather than this paragraph's, since the switch ends at `unreachable`: a fourth binding kind fails `typecheck` here instead of registering no consumer at all, which is the outcome "no `??` fallback" was written to forbid and the one a `switch` without a `default` arm quietly produced. An injected factory is the reason that mattered, because `TriggerFactory` is a seam and a host can hand back a kind this build was never compiled against. See ADR-092.
 
 ## compose
 

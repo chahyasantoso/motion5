@@ -1,4 +1,5 @@
 import { compareCodeUnits } from "./compare";
+import { unreachable } from "../domain/exhaustive";
 import type { EdgeRequirement, GraphEdge } from "./ir";
 import { compareEdges, describeEdge, edgeKey } from "./ir";
 
@@ -8,7 +9,17 @@ export interface ObservationStateSnapshot {
   readonly edges: readonly GraphEdge[];
 }
 
-/** Each entry names the action that undoes one applied mutation. */
+/**
+ * Each entry names the action that undoes one applied mutation.
+ *
+ * Closed, and since ADR-092 read as closed: `rollback` names all four verbs and hands its subject to
+ * `unreachable`, so a fifth one fails `typecheck` at the only reader that owes it a decision. The
+ * `if`/`else if`/bare-`else` chain this replaced meant that a variant nobody wrote an arm for was
+ * `remove-edge`, and the two verbs that carry an edge are the two that made that dangerous: a new
+ * edge-carrying verb would have deleted a live edge during the one operation in this class that must
+ * not invent a mutation, and it would have done it silently, because a rollback that removes an edge
+ * is exactly what a rollback is allowed to look like. Nothing in this file could have caught it.
+ */
 type JournalEntry =
   | { readonly undo: "add-node"; readonly id: string }
   | { readonly undo: "remove-node"; readonly id: string }
@@ -138,10 +149,22 @@ export class ObservationState {
         const entry = this.#journal[index];
         if (entry === undefined) continue;
         try {
-          if (entry.undo === "add-node") this.addNode(entry.id);
-          else if (entry.undo === "remove-node") this.removeNode(entry.id);
-          else if (entry.undo === "add-edge") this.addEdge(entry.edge);
-          else this.removeEdge(entry.edge);
+          switch (entry.undo) {
+            case "add-node":
+              this.addNode(entry.id);
+              break;
+            case "remove-node":
+              this.removeNode(entry.id);
+              break;
+            case "add-edge":
+              this.addEdge(entry.edge);
+              break;
+            case "remove-edge":
+              this.removeEdge(entry.edge);
+              break;
+            default:
+              unreachable(entry);
+          }
         } catch (error) {
           errors.push({ index, undo: entry.undo, error });
         }
