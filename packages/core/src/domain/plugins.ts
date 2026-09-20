@@ -1,5 +1,6 @@
 // Docs: ./plugins.md
 import { readAuthoredLeaf, readCompilableStops } from "../contract/authored-leaf";
+import { diagnostic } from "../contract/diagnostics";
 import { validateKeyframes } from "../contract/validate-v5";
 import type {
   AuthoredProperty,
@@ -155,14 +156,6 @@ export interface PluginDefinition {
 const VALID_STAGES = new Set(["prepare", "compose"]);
 const RESERVED_TWEEN_VARS = new Set(["keyframes", "duration", "paused", "id", "observes"]);
 const AMBIGUOUS_KEY_HINT = "Author it inside a plugin-named group to name one.";
-function diagnostic(
-  ruleId: string,
-  path: string,
-  message: string,
-  ids?: readonly string[],
-): Diagnostic {
-  return { ruleId, path, message, severity: "error", ...(ids ? { ids } : {}) };
-}
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
@@ -231,16 +224,11 @@ function validateContributionProperty(
   diagnostics: Diagnostic[],
 ): boolean {
   const before = diagnostics.length;
-  validateKeyframes({ [output]: property }, path, diagnostics, {
-    ruleIdPrefix: "plugin-contribution-",
-    allowGroups: false,
-    ruleIdAliases: {
-      "stop-position": "stop",
-      "stop-position-range": "stop-range",
-      "stop-position-order": "stop-order",
-      "stop-position-duplicate": "stop-duplicate",
-    },
-  });
+  // The scope, and nothing else. The prefix and the alias substitution were data this file handed
+  // the validator, so one namespace had two owners and the id a contributed property reports under
+  // was assembled from open strings at run time. The contract layer owns both now, and this states
+  // which reporter is asking.
+  validateKeyframes({ [output]: property }, path, diagnostics, { scope: "contribution" });
   return !diagnostics.slice(before).some(({ severity }) => severity === "error");
 }
 function prepareContributions(

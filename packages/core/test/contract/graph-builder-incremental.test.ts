@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 import type { ProjectDefinition, TrackDefinition } from "../../src/contract/v5";
-import { IncrementalGraphBuilder } from "../../src/adapters/graph-builder/incremental";
+import { IncrementalGraphBuilder } from "../../src/graph/builders/incremental";
 import { buildGraphIR } from "../../src/graph/ir";
 
 describe("IncrementalGraphBuilder Equivalence", () => {

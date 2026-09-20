@@ -322,13 +322,15 @@ A free track is authored under `freeTracks`, participates in the same graph, and
 
 ```ts
 interface Diagnostic {
-  ruleId: string;
+  ruleId: RuleId;
   path: string;
   message: string;
   severity: "error" | "warning";
-  ids?: string[];
+  ids: readonly string[];
 }
 ```
+
+`ruleId` is the closed union `contract/rule-id.ts` enumerates, not a `string`, so the set of rules this contract refuses by name is readable in one place and a new rule breaks the build where it is named. Whether a rule names ids is a fact about that rule rather than about the diagnostic, and so is the severity it refuses at: `contract/rule.ts` owns both, as one record keyed by that same enumeration. It was three variant interfaces discriminated by ids ownership, derived from a second record in `contract/diagnostic-ids.ts`; that file is deleted and the variants are gone, so a consumer that extended one extends `Diagnostic`. Ownership is enforced where a diagnostic is built, as the argument list the rule derives, rather than by the shape of the field: `ids` is required and always present, frozen and empty for a rule that names none, and every diagnostic in the tree is built through the one constructor. `severity` is derived from the record and from nothing else, because the constructor has no parameter for it, so a rule's answer is the answer rather than a default a caller may replace. See ADR-097.
 
 Errors reject a candidate project before it replaces the active project. Warnings load and remain readable.
 

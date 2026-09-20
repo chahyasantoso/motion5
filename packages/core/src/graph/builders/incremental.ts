@@ -1,12 +1,7 @@
 import type { Diagnostic, ProjectDefinition, TrackDefinition } from "../../contract/v5";
-import {
-  collectTrack,
-  diag,
-  finalizeGraph,
-  type GraphBuildResult,
-  type GraphNode,
-} from "../../graph/ir";
-import { assertAuthoredMotionId } from "../../graph/ids";
+import { collectTrack, finalizeGraph, type GraphBuildResult, type GraphNode } from "../ir";
+import { diagnostic } from "../../contract/diagnostics";
+import { assertAuthoredMotionId } from "../ids";
 
 /**
  * The caching graph builder the runtime binds, and the owner of its own cache residency rule.
@@ -123,7 +118,7 @@ export class IncrementalGraphBuilder {
         assertAuthoredMotionId(motion.id);
       } catch (error) {
         diagnostics.push(
-          diag(
+          diagnostic(
             "motion-id",
             `motions[${motionIndex}].id`,
             String(error instanceof Error ? error.message : error),
@@ -133,7 +128,7 @@ export class IncrementalGraphBuilder {
       }
       if (motionIds.has(motion.id)) {
         diagnostics.push(
-          diag(
+          diagnostic(
             "motion-duplicate",
             `motions[${motionIndex}].id`,
             `Duplicate motion id "${motion.id}".`,
@@ -149,7 +144,7 @@ export class IncrementalGraphBuilder {
         if (node) {
           if (seen.has(node.id))
             diagnostics.push(
-              diag(
+              diagnostic(
                 "node-duplicate",
                 `motions[${motionIndex}].tracks[${trackIndex}].id`,
                 `Duplicate node id "${node.id}".`,
@@ -170,7 +165,7 @@ export class IncrementalGraphBuilder {
       if (node) {
         if (seen.has(node.id))
           diagnostics.push(
-            diag(
+            diagnostic(
               "node-duplicate",
               `freeTracks[${trackIndex}].id`,
               `Duplicate node id "${node.id}".`,
