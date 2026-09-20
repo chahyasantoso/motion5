@@ -51,9 +51,11 @@ describe("real end-to-end product path (E2)", () => {
     runtime.seek("hero/arm", 0.5);
 
     expect(patch).toBeDefined();
-    expect(patch?.values.opacity).toBeCloseTo(0.5, 10);
+    if (patch?.status !== "ready")
+      throw new Error(`patch is ${patch?.status ?? "absent"}, not ready.`);
+    expect(patch.values.opacity).toBeCloseTo(0.5, 10);
 
-    dom.apply(patch!);
+    dom.apply(patch);
     expect(target.style.opacity).toBeCloseTo(0.5, 10);
 
     // The product path must own the only clock: real GSAP, not the fixture, confirms the

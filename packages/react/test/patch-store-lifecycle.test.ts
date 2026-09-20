@@ -33,7 +33,10 @@ describe("React patch store lifecycle (C1)", () => {
     const remounted: number[] = [];
     const unmountAgain = store.subscribe((patch) => remounted.push(patch.revision));
     expect(store.getSnapshot()?.revision).toBe(2);
-    expect(store.getSnapshot()?.values).toEqual({ opacity: 0.5 });
+    const getSnapshotPatch = store.getSnapshot();
+    if (getSnapshotPatch?.status !== "ready")
+      throw new Error(`getSnapshotPatch is ${getSnapshotPatch?.status ?? "absent"}, not ready.`);
+    expect(getSnapshotPatch.values).toEqual({ opacity: 0.5 });
 
     publish(registry, 3, 0);
     expect(remounted).toEqual([3]);

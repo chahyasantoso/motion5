@@ -73,14 +73,20 @@ describe("one question, one mechanism on the runtime surface", () => {
       handle.seek("hero/arm", 0.5);
 
       expect(seen).toHaveLength(1);
-      expect(seen.at(-1)?.values).toEqual({ x: 50 });
+      const seenPatch = seen.at(-1);
+      if (seenPatch?.status !== "ready")
+        throw new Error(`seenPatch is ${seenPatch?.status ?? "absent"}, not ready.`);
+      expect(seenPatch.values).toEqual({ x: 50 });
 
       // The node keeps publishing after the unsubscribe, which is what makes the count below a
       // claim about this listener rather than about a deduplicated patch: the values move.
       unsubscribe();
       handle.seek("hero/arm", 0.75);
 
-      expect(handle.get("hero/arm")?.values).toEqual({ x: 75 });
+      const heroArmPatch = handle.get("hero/arm");
+      if (heroArmPatch?.status !== "ready")
+        throw new Error(`hero/arm is ${heroArmPatch?.status ?? "absent"}, not ready.`);
+      expect(heroArmPatch.values).toEqual({ x: 75 });
       expect(seen).toHaveLength(1);
     } finally {
       handle.dispose();

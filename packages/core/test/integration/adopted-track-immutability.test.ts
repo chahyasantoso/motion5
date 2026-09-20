@@ -57,7 +57,10 @@ describe("runtime track validation and immutability (W3)", () => {
     (stops[1] as { p: number; v: unknown }).v = 999;
 
     handle.seek(added.id, 1);
-    expect(handle.get(added.id)?.values).toEqual({ x: 100 });
+    const idPatch = handle.get(added.id);
+    if (idPatch?.status !== "ready")
+      throw new Error(`idPatch is ${idPatch?.status ?? "absent"}, not ready.`);
+    expect(idPatch.values).toEqual({ x: 100 });
 
     added.remove();
     handle.dispose();

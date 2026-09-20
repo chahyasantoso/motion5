@@ -101,7 +101,10 @@ describe("subscriber-triggered reentrancy (recovery A3)", () => {
     clock.tick();
 
     expect(ticks).toEqual([1, 2]);
-    expect(runtime.registry.get("caption/label")?.values).toEqual({ node: "caption/label" });
+    const captionLabelPatch = runtime.registry.get("caption/label");
+    if (captionLabelPatch?.status !== "ready")
+      throw new Error(`caption/label is ${captionLabelPatch?.status ?? "absent"}, not ready.`);
+    expect(captionLabelPatch.values).toEqual({ node: "caption/label" });
     expect(runtime.registry.get("caption/label")?.revision).toBe(1);
     expect(runtime.pendingSeeds).toEqual([]);
 

@@ -40,6 +40,8 @@ describe("Phase 0 Red Baseline: Engine Path & Dynamic Correctness", () => {
     handle.mount("spinner/rotation");
     let publishedAngle: number | undefined;
     handle.subscribeNode("spinner/rotation", (patch) => {
+      // A subscriber records what was published, and a patch owning no pose has nothing to record.
+      if (patch.status !== "ready") return;
       publishedAngle = patch.values.angle as number;
     });
 
@@ -146,7 +148,9 @@ describe("Phase 0 Red Baseline: Engine Path & Dynamic Correctness", () => {
       const batch = runtime.seek("~/cursor", 0.5);
       const patch = batch.patches.find((p) => p.nodeId === "~/cursor");
       expect(patch?.status).toBe("ready");
-      expect(patch?.values.opacity).toBeCloseTo(0.5, 1);
+      if (patch?.status !== "ready")
+        throw new Error(`patch is ${patch?.status ?? "absent"}, not ready.`);
+      expect(patch.values.opacity).toBeCloseTo(0.5, 1);
     } else {
       // If handle doesn't expose _runtime yet, this test fails baseline
       expect(runtime).toBeDefined();
@@ -231,6 +235,8 @@ describe("Phase 0 Red Baseline: Engine Path & Dynamic Correctness", () => {
     handle.mount("hero/t1");
     let lastValue = 0;
     handle.subscribeNode("hero/t1", (patch) => {
+      // A subscriber records what was published, and a patch owning no pose has nothing to record.
+      if (patch.status !== "ready") return;
       lastValue = patch.values.x as number;
     });
 

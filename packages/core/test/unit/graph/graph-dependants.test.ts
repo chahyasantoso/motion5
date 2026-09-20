@@ -163,8 +163,14 @@ describe("the publisher reads graph shape rather than deriving it per flush", ()
       ["source"],
       1,
     );
-    expect(reached.get("source")?.values).toEqual({ x: 1 });
-    expect(reached.get("consumer")?.values).toEqual({ y: 2 });
+    const sourcePatch = reached.get("source");
+    if (sourcePatch?.status !== "ready")
+      throw new Error(`source is ${sourcePatch?.status ?? "absent"}, not ready.`);
+    expect(sourcePatch.values).toEqual({ x: 1 });
+    const consumerPatch = reached.get("consumer");
+    if (consumerPatch?.status !== "ready")
+      throw new Error(`consumer is ${consumerPatch?.status ?? "absent"}, not ready.`);
+    expect(consumerPatch.values).toEqual({ y: 2 });
 
     // And a reader the map does not name is not reached, even though the edge that would have
     // derived it is right there on the node. Deriving one per flush is what this refuses.
@@ -174,7 +180,10 @@ describe("the publisher reads graph shape rather than deriving it per flush", ()
       ["source"],
       1,
     );
-    expect(skipped.get("source")?.values).toEqual({ x: 1 });
+    const sourcePatch2 = skipped.get("source");
+    if (sourcePatch2?.status !== "ready")
+      throw new Error(`source is ${sourcePatch2?.status ?? "absent"}, not ready.`);
+    expect(sourcePatch2.values).toEqual({ x: 1 });
     expect(skipped.get("consumer")).toBeUndefined();
   });
 
@@ -191,7 +200,10 @@ describe("the publisher reads graph shape rather than deriving it per flush", ()
       ["source"],
       1,
     );
-    expect(registry.get("source")?.values).toEqual({ x: 1 });
+    const sourcePatch3 = registry.get("source");
+    if (sourcePatch3?.status !== "ready")
+      throw new Error(`source is ${sourcePatch3?.status ?? "absent"}, not ready.`);
+    expect(sourcePatch3.values).toEqual({ x: 1 });
     expect(registry.get("consumer")).toBeUndefined();
   });
 });

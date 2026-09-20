@@ -83,7 +83,10 @@ function runtimeOf(handle: ProjectHandle): ProjectRuntime {
 function published(handle: ProjectHandle, key: string): number {
   const patch = handle.get(ARM);
   expect(patch).toBeDefined();
-  return readNumber(patch?.values ?? {}, key);
+  // `{}` used to stand in for a patch that owns no pose, and `readNumber` then read it as one.
+  if (patch?.status !== "ready")
+    throw new Error(`${ARM} is ${patch?.status ?? "absent"}, not ready.`);
+  return readNumber(patch.values, key);
 }
 /** The authored group as retained, which is what `handle.definition` answers with. */
 function retained(handle: TrackHandle): unknown {
@@ -104,7 +107,10 @@ describe("an animated live value is written on the timeline the track already ha
     expect(published(handle, "x")).toBe(200);
     expect(retained(arm)).toEqual({ values: { x: 200, y: 300, rotation: FASTER } });
     // Progress survives because nothing recompiled: the tweens were replaced in place.
-    expect(handle.get(ARM)?.sourceProgress).toBe(0.5);
+    const aRMPatch = handle.get(ARM);
+    if (aRMPatch?.status !== "ready")
+      throw new Error(`aRMPatch is ${aRMPatch?.status ?? "absent"}, not ready.`);
+    expect(aRMPatch.sourceProgress).toBe(0.5);
     expect(replaceGraph).not.toHaveBeenCalled();
     handle.dispose();
   });

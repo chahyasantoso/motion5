@@ -110,6 +110,8 @@ describe("Phase 3: TriggerPort Migration & Boundary Neutrality", () => {
     handle.mount("hero/t1");
     let patchValue = 0;
     handle.subscribeNode("hero/t1", (patch) => {
+      // A subscriber records what was published, and a patch owning no pose has nothing to record.
+      if (patch.status !== "ready") return;
       patchValue = patch.values.x as number;
     });
 

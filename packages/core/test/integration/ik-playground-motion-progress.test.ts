@@ -116,12 +116,21 @@ describe("IK playground adapter-driven progress", () => {
       scroll.update(0.5, 500);
       expect(handle.get(id)).toBe(rest);
       scheduler.flush();
-      expect(handle.get(id)?.sourceProgress).toBeCloseTo(0.5);
+      const idPatch = handle.get(id);
+      if (idPatch?.status !== "ready")
+        throw new Error(`idPatch is ${idPatch?.status ?? "absent"}, not ready.`);
+      expect(idPatch.sourceProgress).toBeCloseTo(0.5);
       // FK publishes a world frame, not its private weight input. Measure the actual blend.
-      const rotations = handle.get(nodeId(ARM.solverTrack))!.values.rotations as Readonly<
+      const solverTrackPatch = handle.get(nodeId(ARM.solverTrack));
+      if (solverTrackPatch?.status !== "ready")
+        throw new Error(`solverTrackPatch is ${solverTrackPatch?.status ?? "absent"}, not ready.`);
+      const rotations = solverTrackPatch.values.rotations as Readonly<
         Record<string, number>
       >;
-      expect(handle.get(id)?.values.rotation).toBeCloseTo(
+      const idPatch2 = handle.get(id);
+      if (idPatch2?.status !== "ready")
+        throw new Error(`idPatch2 is ${idPatch2?.status ?? "absent"}, not ready.`);
+      expect(idPatch2.values.rotation).toBeCloseTo(
         lerpAngle(ARM.restRotations[0]!, rotations[id]!, 0.5),
       );
       const held = handle.get(id);
@@ -137,9 +146,20 @@ describe("IK playground adapter-driven progress", () => {
       expect(handle.get(nodeId(ARM.goalTrack))).toBe(appliedGoal);
       scroll.update(1, 1000);
       scheduler.flush();
-      expect(handle.get(id)?.sourceProgress).toBe(1);
-      expect(handle.get(nodeId(ARM.goalTrack))?.values).toMatchObject({ x: 290, y: 360 });
-      expect(handle.get(nodeId(ARM.solverTrack))?.values.flip).toBe(true);
+      const idPatch3 = handle.get(id);
+      if (idPatch3?.status !== "ready")
+        throw new Error(`idPatch3 is ${idPatch3?.status ?? "absent"}, not ready.`);
+      expect(idPatch3.sourceProgress).toBe(1);
+      const goalTrackPatch = handle.get(nodeId(ARM.goalTrack));
+      if (goalTrackPatch?.status !== "ready")
+        throw new Error(`goalTrackPatch is ${goalTrackPatch?.status ?? "absent"}, not ready.`);
+      expect(goalTrackPatch.values).toMatchObject({ x: 290, y: 360 });
+      const solverTrackPatch2 = handle.get(nodeId(ARM.solverTrack));
+      if (solverTrackPatch2?.status !== "ready")
+        throw new Error(
+          `solverTrackPatch2 is ${solverTrackPatch2?.status ?? "absent"}, not ready.`,
+        );
+      expect(solverTrackPatch2.values.flip).toBe(true);
       const full = handle.get(id);
       controller.moveGoal(ARM.goalTrack, 310, 380);
       controller.flip(ARM.solverTrack, false);
@@ -148,14 +168,27 @@ describe("IK playground adapter-driven progress", () => {
       expect(handle.get(id)).toBe(full);
       scroll.update(0.75, 750);
       scheduler.flush();
-      expect(handle.get(nodeId(ARM.goalTrack))?.values).toMatchObject({ x: 310, y: 380 });
-      expect(handle.get(nodeId(ARM.solverTrack))?.values.flip).toBe(false);
+      const goalTrackPatch2 = handle.get(nodeId(ARM.goalTrack));
+      if (goalTrackPatch2?.status !== "ready")
+        throw new Error(`goalTrackPatch2 is ${goalTrackPatch2?.status ?? "absent"}, not ready.`);
+      expect(goalTrackPatch2.values).toMatchObject({ x: 310, y: 380 });
+      const solverTrackPatch3 = handle.get(nodeId(ARM.solverTrack));
+      if (solverTrackPatch3?.status !== "ready")
+        throw new Error(
+          `solverTrackPatch3 is ${solverTrackPatch3?.status ?? "absent"}, not ready.`,
+        );
+      expect(solverTrackPatch3.values.flip).toBe(false);
       expect(() => handle.signal(MOTION_ID, { type: "manual", progress: 1 })).toThrow(
         "does not accept external signals",
       );
       scroll.update(0, 0);
       scheduler.flush();
-      expect(handle.get(id)?.values).toEqual(rest?.values);
+      const idPatch4 = handle.get(id);
+      if (idPatch4?.status !== "ready")
+        throw new Error(`idPatch4 is ${idPatch4?.status ?? "absent"}, not ready.`);
+      if (rest?.status !== "ready")
+        throw new Error(`rest is ${rest?.status ?? "absent"}, not ready.`);
+      expect(idPatch4.values).toEqual(rest.values);
     } finally {
       handle.dispose();
     }

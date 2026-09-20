@@ -26,8 +26,10 @@ describe("PatchRegistry", () => {
     const batch = registry.closeBatch();
     expect(patch).toBeDefined();
     expect(Object.isFrozen(patch)).toBe(true);
-    expect(Object.isFrozen(patch?.values)).toBe(true);
-    expect(Object.isFrozen(patch?.values.nested as object)).toBe(true);
+    if (patch?.status !== "ready")
+      throw new Error(`patch is ${patch?.status ?? "absent"}, not ready.`);
+    expect(Object.isFrozen(patch.values)).toBe(true);
+    expect(Object.isFrozen(patch.values.nested as object)).toBe(true);
     expect(Object.isFrozen(batch)).toBe(true);
   });
 
@@ -104,8 +106,14 @@ describe("PatchRegistry", () => {
     expect(seen[0]?.status).toBe("ready");
     // Without this event the ready patch above stays the subscriber's truth forever.
     expect(seen[1]?.status).toBe("destroyed");
-    expect(seen[1]?.values).toEqual({});
-    expect(seen[1]?.revision).toBe(2);
+    const terminal = seen[1];
+    if (terminal?.status !== "destroyed")
+      throw new Error(`hero/arm is ${terminal?.status ?? "absent"}, not destroyed.`);
+    // Re-read rather than adjusted: the claim was that the terminal patch had emptied the pose, and
+    // a destroyed patch owns no pose at all now, so the same claim is the member's absence. `RA-16`
+    // is the precedent. See ADR-098.
+    expect("values" in terminal).toBe(false);
+    expect(terminal.revision).toBe(2);
     expect(registry.get("hero/arm")).toBeUndefined();
   });
 

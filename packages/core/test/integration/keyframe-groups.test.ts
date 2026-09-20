@@ -59,8 +59,10 @@ describe("plugin-named authored keyframe groups", () => {
 
     // A mid-progress value, not a load without diagnostics: a grouped property the interpolator
     // never read would compile clean and hold still at every progress.
-    expect(patch?.values.boneLength).toBeCloseTo(15, 12);
-    expect(patch?.values.boneRotation).toBeCloseTo(45, 12);
+    if (patch?.status !== "ready")
+      throw new Error(`patch is ${patch?.status ?? "absent"}, not ready.`);
+    expect(patch.values.boneLength).toBeCloseTo(15, 12);
+    expect(patch.values.boneRotation).toBeCloseTo(45, 12);
     handle.dispose();
   });
 
@@ -71,7 +73,9 @@ describe("plugin-named authored keyframe groups", () => {
     const batch = handle.seek("hero/arm", 0.5);
     const patch = batch.patches.find(({ nodeId }) => nodeId === "hero/arm");
 
-    expect(patch?.values.boneLength).toBeCloseTo(15, 12);
+    if (patch?.status !== "ready")
+      throw new Error(`patch is ${patch?.status ?? "absent"}, not ready.`);
+    expect(patch.values.boneLength).toBeCloseTo(15, 12);
     handle.dispose();
   });
 
@@ -85,8 +89,14 @@ describe("plugin-named authored keyframe groups", () => {
     flat.seek("hero/arm", 0.25);
     grouped.seek("hero/arm", 0.25);
 
-    expect(flat.get("hero/arm")?.values).toEqual({ boneLength: 12.5 });
-    expect(grouped.get("hero/arm")?.values).toEqual(flat.get("hero/arm")?.values);
+    const heroArmPatch = flat.get("hero/arm");
+    if (heroArmPatch?.status !== "ready")
+      throw new Error(`hero/arm is ${heroArmPatch?.status ?? "absent"}, not ready.`);
+    expect(heroArmPatch.values).toEqual({ boneLength: 12.5 });
+    const heroArmPatch2 = grouped.get("hero/arm");
+    if (heroArmPatch2?.status !== "ready")
+      throw new Error(`hero/arm is ${heroArmPatch2?.status ?? "absent"}, not ready.`);
+    expect(heroArmPatch2.values).toEqual(heroArmPatch.values);
     flat.dispose();
     grouped.dispose();
   });

@@ -99,9 +99,11 @@ describe("per-plugin keyframe key ownership", () => {
     // with rotation 0, a bone of length 50 at 45 degrees. A mid-rig value, not a clean load: an
     // ownership change that stopped the interpolator reading a leaf would load without diagnostics
     // and then hold still.
-    expect(thighPatch?.values.x).toBeCloseTo(35.355, 3);
-    expect(thighPatch?.values.y).toBeCloseTo(135.355, 3);
-    expect(thighPatch?.values.rotation).toBeCloseTo(45, 12);
+    if (thighPatch?.status !== "ready")
+      throw new Error(`thighPatch is ${thighPatch?.status ?? "absent"}, not ready.`);
+    expect(thighPatch.values.x).toBeCloseTo(35.355, 3);
+    expect(thighPatch.values.y).toBeCloseTo(135.355, 3);
+    expect(thighPatch.values.rotation).toBeCloseTo(45, 12);
     handle.dispose();
   });
 
@@ -129,7 +131,10 @@ describe("per-plugin keyframe key ownership", () => {
     // Green on the parent by design, and not claimed as red. This is the guard a canonical
     // `transform:x` leaf would break rather than migrate: ADR-042 drops every namespaced key
     // before publication, so the prefixed spelling would publish an empty patch. See ADR-043.
-    const values = handle.get("walk/pelvis")?.values ?? {};
+    const walkPelvisPatch = handle.get("walk/pelvis");
+    if (walkPelvisPatch?.status !== "ready")
+      throw new Error(`walk/pelvis is ${walkPelvisPatch?.status ?? "absent"}, not ready.`);
+    const values = walkPelvisPatch.values ?? {};
     expect(Object.keys(values).sort()).toEqual(["rotation", "x", "y"]);
     handle.dispose();
   });

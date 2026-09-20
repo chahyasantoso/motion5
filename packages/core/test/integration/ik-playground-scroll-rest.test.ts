@@ -67,16 +67,25 @@ function load() {
 function pose(handle: ProjectHandle) {
   return rigs.flatMap((rig) =>
     [...rig.memberTracks, rig.fkTailTrack].map((id) => {
-      expect(handle.get(nodeId(id))?.status).toBe("ready");
-      return handle.get(nodeId(id))!.values;
+      const patch = handle.get(nodeId(id));
+      expect(patch?.status).toBe("ready");
+      if (patch?.status !== "ready")
+        throw new Error(`${id} is ${patch?.status ?? "absent"}, not ready.`);
+      return patch.values;
     }),
   );
 }
 function expectLengths(handle: ProjectHandle) {
   for (const rig of rigs) {
-    let parent = handle.get(nodeId(rig.rootTrack))!.values;
+    const rootTrackPatch = handle.get(nodeId(rig.rootTrack));
+    if (rootTrackPatch?.status !== "ready")
+      throw new Error(`rootTrackPatch is ${rootTrackPatch?.status ?? "absent"}, not ready.`);
+    let parent = rootTrackPatch.values;
     [...rig.memberTracks, rig.fkTailTrack].forEach((id, index) => {
-      const child = handle.get(nodeId(id))!.values;
+      const idPatch = handle.get(nodeId(id));
+      if (idPatch?.status !== "ready")
+        throw new Error(`idPatch is ${idPatch?.status ?? "absent"}, not ready.`);
+      const child = idPatch.values;
       expect(
         Math.hypot(Number(child.x) - Number(parent.x), Number(child.y) - Number(parent.y)),
       ).toBeCloseTo(rig.lengths[index] ?? rig.fkTailLength, 7);
@@ -98,7 +107,10 @@ describe("IK playground scroll-only rest blending", () => {
           const length = rig.lengths[index] ?? rig.fkTailLength;
           x += length * Math.cos((rotation * Math.PI) / 180);
           y += length * Math.sin((rotation * Math.PI) / 180);
-          const values = handle.get(nodeId(id))!.values;
+          const idPatch2 = handle.get(nodeId(id));
+          if (idPatch2?.status !== "ready")
+            throw new Error(`idPatch2 is ${idPatch2?.status ?? "absent"}, not ready.`);
+          const values = idPatch2.values;
           expect(Number(values.x)).toBeCloseTo(x, 7);
           expect(Number(values.y)).toBeCloseTo(y, 7);
           expect(Number(values.rotation)).toBeCloseTo(rotation, 7);
@@ -132,7 +144,12 @@ describe("IK playground scroll-only rest blending", () => {
       for (const weight of [0, 0.5, 1]) {
         emit(weight);
         const before = pose(handle);
-        const applied = rigs.map((rig) => handle.get(nodeId(rig.goalTrack))!.values);
+        const applied = rigs.map((rig) => {
+          const patch = handle.get(nodeId(rig.goalTrack));
+          if (patch?.status !== "ready")
+            throw new Error(`${rig.goalTrack} is ${patch?.status ?? "absent"}, not ready.`);
+          return patch.values;
+        });
         const oldSnapshot = controller.goals;
         rigs.forEach((rig, index) => {
           controller.moveGoal(
@@ -141,7 +158,10 @@ describe("IK playground scroll-only rest blending", () => {
             rig.root.y + 60 + weight * 20,
           );
           controller.flip(rig.solverTrack, weight !== 0.5);
-          expect(handle.get(nodeId(rig.goalTrack))!.values).toEqual(applied[index]);
+          const goalTrackPatch = handle.get(nodeId(rig.goalTrack));
+          if (goalTrackPatch?.status !== "ready")
+            throw new Error(`goalTrackPatch is ${goalTrackPatch?.status ?? "absent"}, not ready.`);
+          expect(goalTrackPatch.values).toEqual(applied[index]);
         });
         expect(oldSnapshot).not.toBe(controller.goals);
         clock.tick(1000 + weight * 1000);
@@ -149,18 +169,31 @@ describe("IK playground scroll-only rest blending", () => {
         expect(pose(handle)).toEqual(before);
         emit(weight);
         for (const rig of rigs) {
-          expect(handle.get(nodeId(rig.goalTrack))!.values).toMatchObject(
+          const goalTrackPatch2 = handle.get(nodeId(rig.goalTrack));
+          if (goalTrackPatch2?.status !== "ready")
+            throw new Error(
+              `goalTrackPatch2 is ${goalTrackPatch2?.status ?? "absent"}, not ready.`,
+            );
+          expect(goalTrackPatch2.values).toMatchObject(
             controller.goals[rig.goalTrack]!,
           );
-          expect(handle.get(nodeId(rig.solverTrack))!.values.flip).toBe(weight !== 0.5);
-          const rotations = handle.get(nodeId(rig.solverTrack))!.values.rotations as Readonly<
+          const solverTrackPatch = handle.get(nodeId(rig.solverTrack));
+          if (solverTrackPatch?.status !== "ready")
+            throw new Error(
+              `solverTrackPatch is ${solverTrackPatch?.status ?? "absent"}, not ready.`,
+            );
+          expect(solverTrackPatch.values.flip).toBe(weight !== 0.5);
+          const rotations = solverTrackPatch.values.rotations as Readonly<
             Record<string, number>
           >;
           let rotation = 0;
           rig.memberTracks.forEach((id, index) => {
             rotation += lerpAngle(rig.restRotations[index]!, rotations[nodeId(id)]!, weight);
-            expect(handle.get(nodeId(id))?.sourceProgress).toBeCloseTo(weight);
-            expect(handle.get(nodeId(id))?.values.rotation).toBeCloseTo(rotation);
+            const idPatch3 = handle.get(nodeId(id));
+            if (idPatch3?.status !== "ready")
+              throw new Error(`idPatch3 is ${idPatch3?.status ?? "absent"}, not ready.`);
+            expect(idPatch3.sourceProgress).toBeCloseTo(weight);
+            expect(idPatch3.values.rotation).toBeCloseTo(rotation);
             expect(handle.track(nodeId(id)).definition.keyframes).toMatchObject({
               fk: {
                 values: {
@@ -173,7 +206,10 @@ describe("IK playground scroll-only rest blending", () => {
             });
           });
           if (weight === 1) {
-            const tip = handle.get(nodeId(rig.tipTrack))!.values;
+            const tipTrackPatch = handle.get(nodeId(rig.tipTrack));
+            if (tipTrackPatch?.status !== "ready")
+              throw new Error(`tipTrackPatch is ${tipTrackPatch?.status ?? "absent"}, not ready.`);
+            const tip = tipTrackPatch.values;
             const goal = controller.goals[rig.goalTrack]!;
             expect(Math.hypot(Number(tip.x) - goal.x, Number(tip.y) - goal.y)).toBeLessThan(0.1);
           }
@@ -201,7 +237,12 @@ describe("IK playground scroll-only rest blending", () => {
     push(0.75);
     expect(pose(handle)).toEqual(rest);
     flush();
-    for (const id of ALL_NODE_IDS) expect(handle.get(id)?.sourceProgress).toBeCloseTo(0.75);
+    for (const id of ALL_NODE_IDS) {
+      const patch = handle.get(id);
+      if (patch?.status !== "ready")
+        throw new Error(`${id} is ${patch?.status ?? "absent"}, not ready.`);
+      expect(patch.sourceProgress).toBeCloseTo(0.75);
+    }
     push(1);
     handle.dispose();
     expect(unsubscribe).toHaveBeenCalledTimes(1);
@@ -221,16 +262,25 @@ describe("IK playground scroll-only rest blending", () => {
       expect(() => controller.moveGoal("missing", 0, 0)).toThrow("Unknown pending goal");
       expect(() => controller.flip("missing", true)).toThrow("Unknown pending solver");
       emit(2);
-      expect(handle.get(nodeId(ARM.tipTrack))?.sourceProgress).toBe(1);
+      const tipTrackPatch2 = handle.get(nodeId(ARM.tipTrack));
+      if (tipTrackPatch2?.status !== "ready")
+        throw new Error(`tipTrackPatch2 is ${tipTrackPatch2?.status ?? "absent"}, not ready.`);
+      expect(tipTrackPatch2.sourceProgress).toBe(1);
       emit(-1);
-      expect(handle.get(nodeId(ARM.tipTrack))?.sourceProgress).toBe(0);
+      const tipTrackPatch3 = handle.get(nodeId(ARM.tipTrack));
+      if (tipTrackPatch3?.status !== "ready")
+        throw new Error(`tipTrackPatch3 is ${tipTrackPatch3?.status ?? "absent"}, not ready.`);
+      expect(tipTrackPatch3.sourceProgress).toBe(0);
       const applied = handle.get(nodeId(ARM.goalTrack));
       controller.moveGoal(ARM.goalTrack, 290, 360);
       expect(() => emit(NaN)).toThrow("finite");
       expect(() => emit(Infinity)).toThrow("finite");
       expect(handle.get(nodeId(ARM.goalTrack))).toBe(applied);
       emit(0.5);
-      expect(handle.get(nodeId(ARM.goalTrack))?.values).toMatchObject({ x: 290, y: 360 });
+      const goalTrackPatch3 = handle.get(nodeId(ARM.goalTrack));
+      if (goalTrackPatch3?.status !== "ready")
+        throw new Error(`goalTrackPatch3 is ${goalTrackPatch3?.status ?? "absent"}, not ready.`);
+      expect(goalTrackPatch3.values).toMatchObject({ x: 290, y: 360 });
     } finally {
       handle.dispose();
     }

@@ -123,8 +123,13 @@ describe("what a load and a mount deliberately do not publish", () => {
     // this batch empty and the caller reading `undefined` where it used to read its patch. That is
     // silent, it is public, and 18 of the 21 cases a mount seed turned red are this shape.
     expect(published?.status).toBe("ready");
-    expect(published?.values).toMatchObject({ x: 100, y: 200 });
-    expect(handle.get(HIP)?.values).toEqual(published?.values);
+    if (published?.status !== "ready")
+      throw new Error(`published is ${published?.status ?? "absent"}, not ready.`);
+    expect(published.values).toMatchObject({ x: 100, y: 200 });
+    const hIPPatch = handle.get(HIP);
+    if (hIPPatch?.status !== "ready")
+      throw new Error(`hIPPatch is ${hIPPatch?.status ?? "absent"}, not ready.`);
+    expect(hIPPatch.values).toEqual(published.values);
 
     handle.dispose();
   });

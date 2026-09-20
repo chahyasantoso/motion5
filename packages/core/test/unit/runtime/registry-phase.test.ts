@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { fileURLToPath } from "node:url";
-import type { Diagnostic, Patch } from "../../../src/contract/v5";
+import type { Diagnostic, LivePatch } from "../../../src/contract/v5";
 import { PatchRegistry, REENTRANT_BATCH_MESSAGE } from "../../../src/runtime/patch-registry";
 import {
   REGISTRY_IDLE,
@@ -50,8 +50,10 @@ function diagnostic(nodeId: string): Diagnostic {
   return entry;
 }
 
-function patchFor(nodeId: string): Patch {
-  const patch: Patch = Object.freeze({
+// `retain` takes the live union, because `publish` is its only caller and cannot mint a destroyed
+// patch, so the fixture is typed for what can actually reach it. See ADR-098.
+function patchFor(nodeId: string): LivePatch {
+  const patch: LivePatch = Object.freeze({
     nodeId,
     revision: 1,
     values: Object.freeze({}),

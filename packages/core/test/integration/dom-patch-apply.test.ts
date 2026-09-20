@@ -40,6 +40,7 @@ describe("DOM patch adapter contract (C3)", () => {
     });
     adapter.apply(first);
     expect(writes).toEqual([{ target: arm, values: { opacity: 1, "--accent": "red" } }]);
+    if (first.status !== "ready") throw new Error(`first is ${first.status}, not ready.`);
     expect(first.values).toEqual({
       opacity: 1,
       "--accent": "red",

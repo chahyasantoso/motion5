@@ -55,7 +55,10 @@ function load(motions: readonly MotionDefinition[]): Loaded {
     clock,
     scheduler,
     handle,
-    values: (nodeId) => handle.get(nodeId)?.values,
+    values: (nodeId) => {
+      const patch = handle.get(nodeId);
+      return patch?.status === "ready" ? patch.values : undefined;
+    },
     advance(delta) {
       clock.tick(delta);
       scheduler.flush();
@@ -185,7 +188,10 @@ describe("time loop semantics", () => {
     expect(subscriptions).toBe(1);
     base.tick(50);
     scheduler.flush();
-    expect(handle.get("a/arm")?.values).toEqual({ x: 50 });
+    const aArmPatch = handle.get("a/arm");
+    if (aArmPatch?.status !== "ready")
+      throw new Error(`a/arm is ${aArmPatch?.status ?? "absent"}, not ready.`);
+    expect(aArmPatch.values).toEqual({ x: 50 });
     handle.dispose();
     base.dispose();
   });

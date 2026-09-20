@@ -26,7 +26,9 @@ describe("Phase 4: Dynamic Graph Lifecycle Hardening", () => {
     const patch = runtime.graph.registry.get("~/cursor");
     expect(patch).toBeDefined();
     expect(patch?.status).toBe("ready");
-    expect(patch?.values).toEqual({ node: "~/cursor" });
+    if (patch?.status !== "ready")
+      throw new Error(`patch is ${patch?.status ?? "absent"}, not ready.`);
+    expect(patch.values).toEqual({ node: "~/cursor" });
     expect(runtime.seek("~/cursor", 0).patches).toEqual([]);
     runtime.dispose();
   });
@@ -99,7 +101,14 @@ describe("Phase 4: Dynamic Graph Lifecycle Hardening", () => {
 
     // beginBatch and publish after dispose are no-ops, not throws
     registry.beginBatch(2, ["a"]);
-    const result = registry.publish({ nodeId: "a", sourceProgress: 0, status: "ready" });
+    // `values` is required on a ready publication now, and this case is about a disposed registry
+    // refusing the publication rather than about what it carried. See ADR-098.
+    const result = registry.publish({
+      nodeId: "a",
+      values: {},
+      sourceProgress: 0,
+      status: "ready",
+    });
     expect(result).toBeUndefined();
   });
 

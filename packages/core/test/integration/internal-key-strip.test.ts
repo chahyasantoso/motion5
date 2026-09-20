@@ -40,15 +40,25 @@ describe("internal keys are stripped once, before publication", () => {
     const handle = load(plugins);
     handle.mount("hero/arm");
     const published: Array<Readonly<Record<string, unknown>>> = [];
-    handle.subscribeNode("hero/arm", (patch) => published.push(patch.values));
+    handle.subscribeNode("hero/arm", (patch) => {
+      // Only a ready patch has a pose to record, so a publication owning none records nothing.
+      // The sequence this case asserts on is what still holds the line. See ADR-098.
+      if (patch.status !== "ready") return;
+      published.push(patch.values);
+    });
 
     const batch = handle.seek("hero/arm", 1);
     const patch = batch.patches.find(({ nodeId }) => nodeId === "hero/arm");
 
     // The batch, the retained patch, and the subscriber all see the same filtered surface. No
     // declaration of any kind was needed for `fk:phase` to stay private.
-    expect(patch?.values).toEqual({ x: 1 });
-    expect(handle.get("hero/arm")?.values).toEqual({ x: 1 });
+    if (patch?.status !== "ready")
+      throw new Error(`patch is ${patch?.status ?? "absent"}, not ready.`);
+    expect(patch.values).toEqual({ x: 1 });
+    const heroArmPatch = handle.get("hero/arm");
+    if (heroArmPatch?.status !== "ready")
+      throw new Error(`hero/arm is ${heroArmPatch?.status ?? "absent"}, not ready.`);
+    expect(heroArmPatch.values).toEqual({ x: 1 });
     expect(published).toEqual([{ x: 1 }]);
     handle.dispose();
   });
@@ -68,7 +78,10 @@ describe("internal keys are stripped once, before publication", () => {
 
     // An unprefixed private key still needs the declaration, and the declaration is still honored.
     // A renderer that never reads `internalKeys`, which is both of them today, cannot leak it.
-    expect(handle.get("hero/arm")?.values).toEqual({ x: 1, rendered: true });
+    const heroArmPatch2 = handle.get("hero/arm");
+    if (heroArmPatch2?.status !== "ready")
+      throw new Error(`hero/arm is ${heroArmPatch2?.status ?? "absent"}, not ready.`);
+    expect(heroArmPatch2.values).toEqual({ x: 1, rendered: true });
     handle.dispose();
   });
 
@@ -89,7 +102,9 @@ describe("internal keys are stripped once, before publication", () => {
     // two boundaries: interpolator scratch stripped before the chain, and a plugin invention
     // rejected after it. Hiding it here instead would turn a loud error into a silent success.
     expect(patch?.status).toBe("error");
-    expect(patch?.diagnostics[0]?.ruleId).toBe("composition-output-shape");
+    if (patch?.status !== "error")
+      throw new Error(`hero/arm is ${patch?.status ?? "absent"}, not error.`);
+    expect(patch.diagnostics[0]?.ruleId).toBe("composition-output-shape");
     handle.dispose();
   });
 });

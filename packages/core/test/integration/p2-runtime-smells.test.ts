@@ -87,8 +87,11 @@ describe("P2 runtime smell hardening", () => {
       sourceRevisions: {},
     }));
     publisher.flush(snapshot([source, consumer]), ["source", "consumer"], 1);
-    expect(registry.get("consumer")?.sourceRevisions).toEqual({ source: 1 });
-    expect(registry.get("consumer")?.values).toEqual({ x: 1 });
+    const consumerPatch = registry.get("consumer");
+    if (consumerPatch?.status !== "ready")
+      throw new Error(`consumer is ${consumerPatch?.status ?? "absent"}, not ready.`);
+    expect(consumerPatch.sourceRevisions).toEqual({ source: 1 });
+    expect(consumerPatch.values).toEqual({ x: 1 });
   });
   it("reports a pending reference instead of silently composing with an input hole", () => {
     const registry = new PatchRegistry();
@@ -123,7 +126,11 @@ describe("P2 runtime smell hardening", () => {
       () => ({ values: {}, sourceProgress: 0, sourceRevisions: {} }),
     );
     publisher.flush(snapshot([failedA, failedB, consumer]), ["a", "b", "consumer"], 1);
-    expect(registry.get("consumer")?.diagnostics[0]?.ids).toEqual(["a", "consumer"]);
+    const consumerPatch = registry.get("consumer");
+    // An upstream failure blocks this node, and `blocked` is the status owning that diagnostic.
+    if (consumerPatch?.status !== "blocked")
+      throw new Error(`consumer is ${consumerPatch?.status ?? "absent"}, not blocked.`);
+    expect(consumerPatch.diagnostics[0]?.ids).toEqual(["a", "consumer"]);
   });
   it("rejects host objects from interpolator state at the renderer edge", () => {
     const { interpolator } = fakeInterpolator({ host: new Date(0) });

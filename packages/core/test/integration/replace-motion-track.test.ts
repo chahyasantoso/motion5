@@ -36,7 +36,10 @@ describe("motion-owned Track replacement", () => {
       clock.tick(0);
       scheduler.flush();
     }).not.toThrow();
-    expect(handle.get("scene/arm")?.values).toEqual({ x: 125 });
+    const sceneArmPatch = handle.get("scene/arm");
+    if (sceneArmPatch?.status !== "ready")
+      throw new Error(`scene/arm is ${sceneArmPatch?.status ?? "absent"}, not ready.`);
+    expect(sceneArmPatch.values).toEqual({ x: 125 });
 
     handle.dispose();
   });
@@ -72,9 +75,18 @@ describe("motion-owned Track replacement", () => {
       clock.tick(0);
       scheduler.flush();
     }).not.toThrow();
-    expect(handle.get("scene/first")?.values).toEqual({ x: 200 });
-    expect(handle.get("scene/second")?.values).toEqual({ x: 0 });
-    expect(handle.get("scene/third")?.values).toEqual({ x: 0 });
+    const sceneFirstPatch = handle.get("scene/first");
+    if (sceneFirstPatch?.status !== "ready")
+      throw new Error(`scene/first is ${sceneFirstPatch?.status ?? "absent"}, not ready.`);
+    expect(sceneFirstPatch.values).toEqual({ x: 200 });
+    const sceneSecondPatch = handle.get("scene/second");
+    if (sceneSecondPatch?.status !== "ready")
+      throw new Error(`scene/second is ${sceneSecondPatch?.status ?? "absent"}, not ready.`);
+    expect(sceneSecondPatch.values).toEqual({ x: 0 });
+    const sceneThirdPatch = handle.get("scene/third");
+    if (sceneThirdPatch?.status !== "ready")
+      throw new Error(`scene/third is ${sceneThirdPatch?.status ?? "absent"}, not ready.`);
+    expect(sceneThirdPatch.values).toEqual({ x: 0 });
 
     handle.dispose();
   });

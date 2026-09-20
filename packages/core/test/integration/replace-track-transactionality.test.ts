@@ -77,7 +77,10 @@ function load(): ProjectHandle {
 function valuesAfterSeek(handle: ProjectHandle, progress: number): unknown {
   const batch = handle.seek(NODE_ID, progress);
   expect(batch.patches.some(({ status }) => status === "error")).toBe(false);
-  return handle.get(NODE_ID)?.values;
+  // The return type already admits absence, so a node that did not compose answers nothing rather
+  // than the pose an earlier publication left behind.
+  const patch = handle.get(NODE_ID);
+  return patch?.status === "ready" ? patch.values : undefined;
 }
 /** Returns the thrown value, because each case asserts on more than one facet of it. */
 function thrownBy(operation: () => unknown): unknown {

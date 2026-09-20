@@ -46,7 +46,10 @@ describe("issue 114: Motion-owned Track replacement", () => {
       clock.tick(16);
       scheduler.flush();
     }).not.toThrow(/Track is disposed/);
-    expect(handle.get("scene/arm")?.values).toEqual({ x: 250 });
+    const sceneArmPatch = handle.get("scene/arm");
+    if (sceneArmPatch?.status !== "ready")
+      throw new Error(`scene/arm is ${sceneArmPatch?.status ?? "absent"}, not ready.`);
+    expect(sceneArmPatch.values).toEqual({ x: 250 });
     handle.dispose();
   });
 
@@ -58,7 +61,10 @@ describe("issue 114: Motion-owned Track replacement", () => {
     handle.track("scene/arm").replace(track("arm", 0, 200));
     flushReplacement(clock, scheduler);
 
-    expect(handle.get("scene/arm")?.values).toEqual({ x: 100 });
+    const sceneArmPatch2 = handle.get("scene/arm");
+    if (sceneArmPatch2?.status !== "ready")
+      throw new Error(`scene/arm is ${sceneArmPatch2?.status ?? "absent"}, not ready.`);
+    expect(sceneArmPatch2.values).toEqual({ x: 100 });
     handle.dispose();
   });
 
@@ -74,9 +80,18 @@ describe("issue 114: Motion-owned Track replacement", () => {
     handle.track("scene/first").replace(track("first", 0, 200));
     flushReplacement(clock, scheduler);
 
-    expect(handle.get("scene/first")?.values).toEqual({ x: 200 });
-    expect(handle.get("scene/second")?.values).toEqual({ x: 0 });
-    expect(handle.get("scene/third")?.values).toEqual({ x: 0 });
+    const sceneFirstPatch = handle.get("scene/first");
+    if (sceneFirstPatch?.status !== "ready")
+      throw new Error(`scene/first is ${sceneFirstPatch?.status ?? "absent"}, not ready.`);
+    expect(sceneFirstPatch.values).toEqual({ x: 200 });
+    const sceneSecondPatch = handle.get("scene/second");
+    if (sceneSecondPatch?.status !== "ready")
+      throw new Error(`scene/second is ${sceneSecondPatch?.status ?? "absent"}, not ready.`);
+    expect(sceneSecondPatch.values).toEqual({ x: 0 });
+    const sceneThirdPatch = handle.get("scene/third");
+    if (sceneThirdPatch?.status !== "ready")
+      throw new Error(`scene/third is ${sceneThirdPatch?.status ?? "absent"}, not ready.`);
+    expect(sceneThirdPatch.values).toEqual({ x: 0 });
     handle.dispose();
   });
 
@@ -92,8 +107,14 @@ describe("issue 114: Motion-owned Track replacement", () => {
     handle.signal("scene", { type: "manual", progress: 0.5 });
     scheduler.flush();
 
-    expect(handle.get("scene/first")?.values).toEqual({ x: 200 });
-    expect(handle.get("scene/second")?.values).toEqual({ x: 100 });
+    const sceneFirstPatch2 = handle.get("scene/first");
+    if (sceneFirstPatch2?.status !== "ready")
+      throw new Error(`scene/first is ${sceneFirstPatch2?.status ?? "absent"}, not ready.`);
+    expect(sceneFirstPatch2.values).toEqual({ x: 200 });
+    const sceneSecondPatch2 = handle.get("scene/second");
+    if (sceneSecondPatch2?.status !== "ready")
+      throw new Error(`scene/second is ${sceneSecondPatch2?.status ?? "absent"}, not ready.`);
+    expect(sceneSecondPatch2.values).toEqual({ x: 100 });
     handle.dispose();
   });
 

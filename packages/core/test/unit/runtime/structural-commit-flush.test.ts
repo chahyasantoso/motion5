@@ -208,10 +208,12 @@ describe("a structural commit ends at one flush", () => {
     // published nothing at all, and a pending upstream is what it publishes instead.
     const patch = registry.get(HAND_ID);
     expect(patch?.status).toBe("blocked");
+    if (patch?.status !== "blocked")
+      throw new Error(`${HAND_ID} is ${patch?.status ?? "absent"}, not blocked.`);
     // And the diagnostic reaches the one inspection surface, by identity, so a structural commit
     // cannot flush a diagnosis into nowhere.
     expect(runtime.diagnostics.entries).toHaveLength(1);
-    expect(runtime.diagnostics.entries[0]).toBe(patch?.diagnostics[0]);
+    expect(runtime.diagnostics.entries[0]).toBe(patch.diagnostics[0]);
 
     runtime.dispose();
   });

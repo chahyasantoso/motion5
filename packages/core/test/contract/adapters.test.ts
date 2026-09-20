@@ -78,12 +78,12 @@ describe("adapter ports", () => {
   it("applies perspective once and never applies blocked patches", () => {
     const stage: { style: { perspective?: string }; opacity?: number } = { style: {} };
     const adapter = createDomPatchAdapter(stage, 1200);
+    // The fixture loses the payload a blocked patch never owned, and the case gets stronger for it:
+    // the adapter cannot decline to write a pose that is not on the patch at all. The perspective
+    // assertion below is what still proves `apply` ran. See ADR-098.
     adapter.apply({
       nodeId: "hero/arm",
       revision: 1,
-      values: { opacity: 1 },
-      sourceProgress: 0,
-      sourceRevisions: {},
       status: "blocked",
       diagnostics: [],
     });

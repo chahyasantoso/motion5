@@ -235,15 +235,23 @@ describe("Publisher solver member inputs (Slice C3)", () => {
 
     const solverPatch = patchFor("walker/arm-solve");
     expect(solverPatch?.status).toBe("error");
-    expect(solverPatch?.diagnostics[0]?.ruleId).toBe("composition-failure");
-    expect(solverPatch?.diagnostics[0]?.message).toContain("solve diverged");
+    if (solverPatch?.status !== "error")
+      throw new Error(`walker/arm-solve is ${solverPatch?.status ?? "absent"}, not error.`);
+    expect(solverPatch.diagnostics[0]?.ruleId).toBe("composition-failure");
+    expect(solverPatch.diagnostics[0]?.message).toContain("solve diverged");
 
     for (const id of ["walker/upper-arm", "walker/forearm"]) {
-      expect(patchFor(id)?.status).toBe("blocked");
-      expect(patchFor(id)?.diagnostics[0]?.ruleId).toBe("blocked-upstream");
+      const memberPatch = patchFor(id);
+      expect(memberPatch?.status).toBe("blocked");
+      if (memberPatch?.status !== "blocked")
+        throw new Error(`${id} is ${memberPatch?.status ?? "absent"}, not blocked.`);
+      expect(memberPatch.diagnostics[0]?.ruleId).toBe("blocked-upstream");
     }
-    expect(patchFor("walker/hand")?.status).toBe("blocked");
-    expect(patchFor("walker/hand")?.diagnostics[0]?.ruleId).toBe("blocked-upstream");
+    const handPatch = patchFor("walker/hand");
+    expect(handPatch?.status).toBe("blocked");
+    if (handPatch?.status !== "blocked")
+      throw new Error(`walker/hand is ${handPatch?.status ?? "absent"}, not blocked.`);
+    expect(handPatch.diagnostics[0]?.ruleId).toBe("blocked-upstream");
   });
 
   it("IK-11 one memo, owned by Track, covering members and the solver's own timeline", () => {

@@ -60,11 +60,15 @@ describe("P5-03 unified inline diagnostics", () => {
     const runtime = new ProjectRuntime(pendingProject(), { clock: createManualClock(), compose });
     const batch = runtime.seek("~/consumer1", 0);
     const patch = batch.patches.find(({ nodeId }) => nodeId === "~/consumer1");
-    expect(patch?.diagnostics).toHaveLength(1);
-    expect(patch?.diagnostics[0]?.ruleId).toBe("observation-pending-reference");
+    // A pending reference is published as `blocked`, so this narrows on that rather than on
+    // existence: a destroyed patch owns no diagnostics at all. See ADR-098.
+    if (patch?.status !== "blocked")
+      throw new Error(`~/consumer1 is ${patch?.status ?? "absent"}, not blocked.`);
+    expect(patch.diagnostics).toHaveLength(1);
+    expect(patch.diagnostics[0]?.ruleId).toBe("observation-pending-reference");
     expect(batch.diagnostics).toHaveLength(1);
     expect(runtime.diagnostics.entries).toHaveLength(1);
-    expect(runtime.diagnostics.entries[0]).toEqual(patch?.diagnostics[0]);
+    expect(runtime.diagnostics.entries[0]).toEqual(patch.diagnostics[0]);
     runtime.dispose();
   });
 

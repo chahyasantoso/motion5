@@ -33,7 +33,10 @@ describe("GraphRuntime membership", () => {
     runtime.attach("hero/arm");
     expect(runtime.memberCount).toBe(1);
     clock.tick();
-    expect(runtime.registry.get("hero/arm")?.values).toEqual({ node: "hero/arm" });
+    const heroArmPatch = runtime.registry.get("hero/arm");
+    if (heroArmPatch?.status !== "ready")
+      throw new Error(`hero/arm is ${heroArmPatch?.status ?? "absent"}, not ready.`);
+    expect(heroArmPatch.values).toEqual({ node: "hero/arm" });
 
     // And a stated list is the one the batch reports, unfiltered: `beginBatch` is handed the seeds
     // themselves, so membership never rewrites what a caller asked for.

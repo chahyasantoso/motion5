@@ -144,10 +144,12 @@ const TREE_NODES = [
 ];
 
 function distance(a: Patch | undefined, b: Patch | undefined): number {
-  return Math.hypot(
-    (a?.values.x as number) - (b?.values.x as number),
-    (a?.values.y as number) - (b?.values.y as number),
-  );
+  // Narrowed inside rather than at the declaration, because the callers hold a `Map<string, Patch>`
+  // and can hand this either variant. A patch owning no pose contributes nothing, which is the same
+  // `NaN` an absent patch already produced rather than a new answer.
+  const av = a?.status === "ready" ? a.values : undefined;
+  const bv = b?.status === "ready" ? b.values : undefined;
+  return Math.hypot((av?.x as number) - (bv?.x as number), (av?.y as number) - (bv?.y as number));
 }
 
 function mountAll(project: ProjectDefinition, ids: readonly string[]) {
@@ -168,7 +170,10 @@ describe("iterative IK over a real rig (Slice D3)", () => {
     for (const id of TAIL_NODES) expect(patches.get(id)?.status).toBe("ready");
 
     // One solve for the whole chain, keyed by member id, and never a per-member re-solve.
-    const rotations = patches.get("rig/tail-solve")?.values.rotations as Readonly<
+    const rigTailSolvePatch = patches.get("rig/tail-solve");
+    if (rigTailSolvePatch?.status !== "ready")
+      throw new Error(`rig/tail-solve is ${rigTailSolvePatch?.status ?? "absent"}, not ready.`);
+    const rotations = rigTailSolvePatch.values.rotations as Readonly<
       Record<string, number>
     >;
     expect(Object.keys(rotations).sort()).toEqual([
@@ -181,8 +186,11 @@ describe("iterative IK over a real rig (Slice D3)", () => {
 
     // The tip reaches the goal, which is the independent check that the frame the solve reached for
     // was the goal node's own and not something the plugin defaulted to.
-    expect(patches.get("rig/t5")?.values.x).toBeCloseTo(240, 1);
-    expect(patches.get("rig/t5")?.values.y).toBeCloseTo(380, 1);
+    const rigT5Patch = patches.get("rig/t5");
+    if (rigT5Patch?.status !== "ready")
+      throw new Error(`rig/t5 is ${rigT5Patch?.status ?? "absent"}, not ready.`);
+    expect(rigT5Patch.values.x).toBeCloseTo(240, 1);
+    expect(rigT5Patch.values.y).toBeCloseTo(380, 1);
 
     // Lengths are the invariant a tolerance does not cover: an iteration that reached the goal by
     // stretching a segment would converge and be wrong. Measured on the published frames, because
@@ -198,9 +206,12 @@ describe("iterative IK over a real rig (Slice D3)", () => {
 
     // Moving the goal moves the chain. This fails by holding still rather than by erroring: a chain
     // that never re-solved would keep publishing tick one's pose with status `ready`.
-    const first = patches.get("rig/t5")?.values.x as number;
+    const first = rigT5Patch.values.x as number;
     runtime.seek("rig/tail-target", 1);
-    const second = patches.get("rig/t5")?.values.x as number;
+    const rigT5Patch2 = patches.get("rig/t5");
+    if (rigT5Patch2?.status !== "ready")
+      throw new Error(`rig/t5 is ${rigT5Patch2?.status ?? "absent"}, not ready.`);
+    const second = rigT5Patch2.values.x as number;
     expect(Number.isFinite(first)).toBe(true);
     expect(second).not.toEqual(first);
     expect(distance(patches.get("rig/t4"), patches.get("rig/t5"))).toBeCloseTo(40, 6);
@@ -215,7 +226,10 @@ describe("iterative IK over a real rig (Slice D3)", () => {
     // One solver vertex, one composition, five members. The spine belongs to both branches and is
     // solved once: a redundant per-member solve of an iterative method would be N floating-point
     // runs required to agree, which is the hazard one solver removes rather than tests for.
-    const rotations = patches.get("rig/body-solve")?.values.rotations as Readonly<
+    const rigBodySolvePatch = patches.get("rig/body-solve");
+    if (rigBodySolvePatch?.status !== "ready")
+      throw new Error(`rig/body-solve is ${rigBodySolvePatch?.status ?? "absent"}, not ready.`);
+    const rotations = rigBodySolvePatch.values.rotations as Readonly<
       Record<string, number>
     >;
     expect(Object.keys(rotations).sort()).toEqual([
@@ -226,10 +240,16 @@ describe("iterative IK over a real rig (Slice D3)", () => {
       "rig/spine",
     ]);
 
-    expect(patches.get("rig/fore-l")?.values.x).toBeCloseTo(240, 1);
-    expect(patches.get("rig/fore-l")?.values.y).toBeCloseTo(400, 1);
-    expect(patches.get("rig/fore-r")?.values.x).toBeCloseTo(160, 1);
-    expect(patches.get("rig/fore-r")?.values.y).toBeCloseTo(400, 1);
+    const rigForeLPatch = patches.get("rig/fore-l");
+    if (rigForeLPatch?.status !== "ready")
+      throw new Error(`rig/fore-l is ${rigForeLPatch?.status ?? "absent"}, not ready.`);
+    expect(rigForeLPatch.values.x).toBeCloseTo(240, 1);
+    expect(rigForeLPatch.values.y).toBeCloseTo(400, 1);
+    const rigForeRPatch = patches.get("rig/fore-r");
+    if (rigForeRPatch?.status !== "ready")
+      throw new Error(`rig/fore-r is ${rigForeRPatch?.status ?? "absent"}, not ready.`);
+    expect(rigForeRPatch.values.x).toBeCloseTo(160, 1);
+    expect(rigForeRPatch.values.y).toBeCloseTo(400, 1);
 
     // Both branches hang off the one spine tip at their own authored lengths.
     expect(distance(patches.get("rig/hip"), patches.get("rig/spine"))).toBeCloseTo(50, 6);

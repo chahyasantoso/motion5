@@ -25,7 +25,10 @@ describe("React public hook render/update (C2)", () => {
     const snapshots: Array<number | undefined> = [];
     function Consumer(): null {
       const patch = usePatch(registry, "hero/arm");
-      snapshots.push(patch?.values.opacity as number | undefined);
+      // The hook applies no filtering, which is what this case records, so a patch owning no pose
+      // contributes the same `undefined` an absent one does. The first render has no patch at all.
+      // See ADR-098.
+      snapshots.push(patch?.status === "ready" ? (patch.values.opacity as number | undefined) : undefined);
       return null;
     }
 
@@ -81,7 +84,11 @@ describe("React public hook render/update (C2)", () => {
     // memoizes the patch and the hook returns it whole.
     const values: Array<Readonly<Record<string, unknown>> | undefined> = [];
     function Consumer(): null {
-      values.push(usePatch(engine, "hero/arm")?.values);
+      const patch = usePatch(engine, "hero/arm");
+      // No filtering of its own, which is this case's claim, so a patch owning no pose contributes
+      // the same `undefined` an absent one does rather than being narrowed away. The first render
+      // has no patch at all, and the recorded sequence says so. See ADR-098.
+      values.push(patch?.status === "ready" ? patch.values : undefined);
       return null;
     }
 

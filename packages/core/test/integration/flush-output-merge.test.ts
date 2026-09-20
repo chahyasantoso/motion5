@@ -46,7 +46,10 @@ describe("GraphPublisher output edges", () => {
       () => ({ values: { x: 10 }, sourceProgress: 0, sourceRevisions: {} }),
     );
     const batch = new GraphPublisher(registry).flush(snapshot([source, observer]), ["source"], 1);
-    expect(batch.patches.find(({ nodeId }) => nodeId === "observer")?.values).toEqual({
+    const observerPatch = batch.patches.find(({ nodeId }) => nodeId === "observer");
+    if (observerPatch?.status !== "ready")
+      throw new Error(`observer is ${observerPatch?.status ?? "absent"}, not ready.`);
+    expect(observerPatch.values).toEqual({
       opacity: 0.5,
       x: 10,
     });
@@ -81,7 +84,10 @@ describe("GraphPublisher output edges", () => {
     // Derived from the ordering owner rather than hardcoded: merge precedence is whatever
     // compareEdges says it is, and the later write wins.
     const expectedWinner = compareEdges(edges[0]!, edges[1]!) < 0 ? "a" : "b";
-    expect(batch.patches.find(({ nodeId }) => nodeId === "observer")?.values).toEqual({
+    const observerPatch2 = batch.patches.find(({ nodeId }) => nodeId === "observer");
+    if (observerPatch2?.status !== "ready")
+      throw new Error(`observer is ${observerPatch2?.status ?? "absent"}, not ready.`);
+    expect(observerPatch2.values).toEqual({
       color: expectedWinner,
     });
   });

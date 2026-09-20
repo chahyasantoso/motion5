@@ -108,7 +108,11 @@ function runtimeOf(handle: ProjectHandle): ProjectRuntime {
 function values(handle: ProjectHandle, id: string): Readonly<Record<string, unknown>> {
   const patch = handle.get(id);
   expect(patch).toBeDefined();
-  return patch?.values ?? {};
+  // `{}` used to stand in for a patch that owns no pose, and every caller then read it as one. An
+  // empty record is not a pose, so this refuses by name instead. See ADR-098.
+  if (patch?.status !== "ready")
+    throw new Error(`${id} is ${patch?.status ?? "absent"}, not ready.`);
+  return patch.values;
 }
 /** The authored group as retained, which is what `handle.definition` answers with. */
 function retained(handle: TrackHandle): unknown {
@@ -251,7 +255,10 @@ describe("direct-write failures respect the actual stage lifecycle", () => {
     expect(values(handle, ARM)).toEqual({ x: 200, y: 300, rotation: 45 });
     arm.setValues({ rotation: FASTER });
     expect(values(handle, ARM)).toEqual({ x: 200, y: 300, rotation: 90 });
-    expect(handle.get(ARM)?.sourceProgress).toBe(0.5);
+    const aRMPatch = handle.get(ARM);
+    if (aRMPatch?.status !== "ready")
+      throw new Error(`aRMPatch is ${aRMPatch?.status ?? "absent"}, not ready.`);
+    expect(aRMPatch.sourceProgress).toBe(0.5);
     expect(replaceGraph).not.toHaveBeenCalled();
     handle.dispose();
   });
@@ -276,7 +283,10 @@ describe("direct-write failures respect the actual stage lifecycle", () => {
     // so asserting the old definition would certify a retained/compiled disagreement.
     expect(retained(arm)).toEqual({ values: { x: 200, y: 300, rotation: FASTER } });
     expect(values(handle, ARM)).toEqual({ x: 200, y: 300, rotation: 90 });
-    expect(handle.get(ARM)?.sourceProgress).toBe(0.5);
+    const aRMPatch2 = handle.get(ARM);
+    if (aRMPatch2?.status !== "ready")
+      throw new Error(`aRMPatch2 is ${aRMPatch2?.status ?? "absent"}, not ready.`);
+    expect(aRMPatch2.sourceProgress).toBe(0.5);
     // Caller-stated publications only, so a scheduled drain's empty seed list cannot supply the one
     // this case is about. Issue #381.
     expect(statedPublications(publication)).toHaveLength(1);
@@ -308,7 +318,10 @@ describe("direct-write failures respect the actual stage lifecycle", () => {
     expect((thrown as AggregateError).errors).toEqual([release, publish]);
     expect((thrown as AggregateError).errors[0]).toBe(release);
     expect((thrown as AggregateError).errors[1]).toBe(publish);
-    expect(handle.get(ARM)?.sourceProgress).toBe(0.5);
+    const aRMPatch3 = handle.get(ARM);
+    if (aRMPatch3?.status !== "ready")
+      throw new Error(`aRMPatch3 is ${aRMPatch3?.status ?? "absent"}, not ready.`);
+    expect(aRMPatch3.sourceProgress).toBe(0.5);
     unsubscribe();
     handle.dispose();
   });
@@ -373,8 +386,11 @@ describe("direct-write failures respect the actual stage lifecycle", () => {
     expect(commit).toHaveBeenCalledTimes(1);
     expect(rollback).not.toHaveBeenCalled();
     expect(statedPublications(publication)).toHaveLength(1);
-    expect(runtime.graph.registry.get(ARM)?.values.x).toBe(260);
-    expect(runtime.graph.registry.get(ARM)?.sourceProgress).toBe(0);
+    const aRMPatch4 = runtime.graph.registry.get(ARM);
+    if (aRMPatch4?.status !== "ready")
+      throw new Error(`aRMPatch4 is ${aRMPatch4?.status ?? "absent"}, not ready.`);
+    expect(aRMPatch4.values.x).toBe(260);
+    expect(aRMPatch4.sourceProgress).toBe(0);
     expect(arm.definition.keyframes?.fk).toEqual({ values: { x: 260 } });
     runtime.dispose();
   });
@@ -417,11 +433,17 @@ describe("direct-write failures respect the actual stage lifecycle", () => {
     expect(thrownBy(() => arm.setValues({ x: 260 }))).toBe(failure);
     expect(arm.definition).toBe(before);
     // The writer carries no inverse. Do not pretend its successful mask was rolled back.
-    expect(runtime.invalidate([ARM]).patches[0]?.values.x).toBe(260);
+    const aRMPatch5 = runtime.invalidate([ARM]).patches[0];
+    if (aRMPatch5?.status !== "ready")
+      throw new Error(`aRMPatch5 is ${aRMPatch5?.status ?? "absent"}, not ready.`);
+    expect(aRMPatch5.values.x).toBe(260);
     refuseStage = false;
     arm.setRequire("fk", "base", "~/a");
     expect(stageTrack).toHaveBeenCalledTimes(2);
-    expect(runtime.graph.registry.get(ARM)?.values.x).toBe(200);
+    const aRMPatch6 = runtime.graph.registry.get(ARM);
+    if (aRMPatch6?.status !== "ready")
+      throw new Error(`aRMPatch6 is ${aRMPatch6?.status ?? "absent"}, not ready.`);
+    expect(aRMPatch6.values.x).toBe(200);
     arm.setRequire("fk", "base", "~/b");
     expect(stageTrack).toHaveBeenCalledTimes(2);
     runtime.dispose();
@@ -521,7 +543,10 @@ describe("live values reach the graph without replacing it", () => {
     expect(track.definition.id).toBe("arm");
     expect(track.definition.duration).toBe(400);
     // Progress survives because nothing recompiled: the interpolator still holds 0.5.
-    expect(handle.get(ARM)?.sourceProgress).toBe(0.5);
+    const aRMPatch7 = handle.get(ARM);
+    if (aRMPatch7?.status !== "ready")
+      throw new Error(`aRMPatch7 is ${aRMPatch7?.status ?? "absent"}, not ready.`);
+    expect(aRMPatch7.sourceProgress).toBe(0.5);
     expect(values(handle, ARM)).toEqual({ x: 260, y: 300, rotation: 45 });
     expect(replaceGraph).not.toHaveBeenCalled();
     handle.dispose();
@@ -574,7 +599,10 @@ describe("live values reach the graph without replacing it", () => {
     // The declining backend and the patching one publish the same values at the same progress,
     // which is the substitutability claim, and neither of them rebuilds the graph.
     expect(values(handle, ARM)).toEqual({ x: 200, y: 300, rotation: 90 });
-    expect(handle.get(ARM)?.sourceProgress).toBe(0.5);
+    const aRMPatch8 = handle.get(ARM);
+    if (aRMPatch8?.status !== "ready")
+      throw new Error(`aRMPatch8 is ${aRMPatch8?.status ?? "absent"}, not ready.`);
+    expect(aRMPatch8.sourceProgress).toBe(0.5);
     expect(retained(arm)).toEqual({ values: { x: 200, y: 300, rotation: FASTER } });
     expect(replaceGraph).not.toHaveBeenCalled();
     handle.dispose();
@@ -641,7 +669,10 @@ describe("live values reach the graph without replacing it", () => {
     // Skipping the re-seek on escalation is the amendment's own defect, and it shows up as a
     // freshly compiled Track sitting at progress 0 while the runtime still reports 0.5.
     arm.setValues({ rotation: FASTER });
-    expect(handle.get(ARM)?.sourceProgress).toBe(0.5);
+    const aRMPatch9 = handle.get(ARM);
+    if (aRMPatch9?.status !== "ready")
+      throw new Error(`aRMPatch9 is ${aRMPatch9?.status ?? "absent"}, not ready.`);
+    expect(aRMPatch9.sourceProgress).toBe(0.5);
     expect(values(handle, ARM)).toEqual({ x: 200, y: 300, rotation: 90 });
 
     // An overlay left populated after a rebase would revert the sticky write on the next one, so a

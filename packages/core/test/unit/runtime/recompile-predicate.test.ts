@@ -206,8 +206,11 @@ function load(shin: TrackDefinition): ProjectHandle {
 }
 function published(handle: ProjectHandle, nodeId: string): unknown {
   const patch = handle.get(nodeId);
+  // The `expect` stays: it is the assertion, and the guard below is what the compiler needs.
   expect(patch?.status).toBe("ready");
-  return patch?.values;
+  if (patch?.status !== "ready")
+    throw new Error(`${nodeId} is ${patch?.status ?? "absent"}, not ready.`);
+  return patch.values;
 }
 
 describe("a structural edit pays the resolve and only the build it can prove it needs", () => {

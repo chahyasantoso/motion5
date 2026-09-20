@@ -102,9 +102,11 @@ describe("plugin-owned requirements end to end", () => {
     // derived an edge and delivered nothing would read as a held bone rather than as green.
     const batch = handle.seek("walk/pelvis", 0);
     const thigh = batch.patches.find(({ nodeId }) => nodeId === "walk/thigh");
-    expect(thigh?.values.x).toBeCloseTo(35.355, 3);
-    expect(thigh?.values.y).toBeCloseTo(135.355, 3);
-    expect(thigh?.values.rotation).toBeCloseTo(45, 12);
+    if (thigh?.status !== "ready")
+      throw new Error(`thigh is ${thigh?.status ?? "absent"}, not ready.`);
+    expect(thigh.values.x).toBeCloseTo(35.355, 3);
+    expect(thigh.values.y).toBeCloseTo(135.355, 3);
+    expect(thigh.values.rotation).toBeCloseTo(45, 12);
 
     expect(handle.dependantsOf("walk/pelvis")).toEqual(["walk/thigh"]);
     handle.dispose();
@@ -119,7 +121,10 @@ describe("plugin-owned requirements end to end", () => {
     handle.mount("walk/thigh");
     handle.seek("walk/thigh", 0);
 
-    const values = handle.get("walk/thigh")?.values ?? {};
+    const walkThighPatch = handle.get("walk/thigh");
+    if (walkThighPatch?.status !== "ready")
+      throw new Error(`walk/thigh is ${walkThighPatch?.status ?? "absent"}, not ready.`);
+    const values = walkThighPatch.values ?? {};
     expect(values.x).toBeCloseTo(50, 12);
     expect(values.y).toBeCloseTo(0, 12);
     expect(handle.dependantsOf("walk/pelvis")).toEqual([]);
@@ -159,7 +164,9 @@ describe("plugin-owned requirements end to end", () => {
     const batch = handle.seek("walk/pelvis", 1);
     const patch = batch.patches.find(({ nodeId }) => nodeId === "walk/span");
     expect(patch?.status).toBe("ready");
-    expect(patch?.values.span).toBeCloseTo(400, 12);
+    if (patch?.status !== "ready")
+      throw new Error(`patch is ${patch?.status ?? "absent"}, not ready.`);
+    expect(patch.values.span).toBeCloseTo(400, 12);
     handle.dispose();
   });
 
@@ -189,7 +196,10 @@ describe("plugin-owned requirements end to end", () => {
 
     // Parent 30 plus local 45. This number is the separation proof: a flat merge would have
     // replaced the bone's authored 45 with the upstream 30 and composed 60 instead.
-    expect(handle.get("walk/thigh")?.values.rotation).toBeCloseTo(75, 12);
+    const walkThighPatch2 = handle.get("walk/thigh");
+    if (walkThighPatch2?.status !== "ready")
+      throw new Error(`walk/thigh is ${walkThighPatch2?.status ?? "absent"}, not ready.`);
+    expect(walkThighPatch2.values.rotation).toBeCloseTo(75, 12);
     handle.dispose();
   });
 

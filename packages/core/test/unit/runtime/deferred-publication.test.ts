@@ -83,7 +83,10 @@ describe("a deferred publication carries the frame it arrived with", () => {
     // The half that was not: the frame the deferral carried is recorded by the publication that did
     // run, rather than discarded by a drain that had no way to name one.
     expect(runtime.tick).toBe(2);
-    expect(runtime.registry.get("caption/label")?.values.node).toBe("caption/label");
+    const captionLabelPatch = runtime.registry.get("caption/label");
+    if (captionLabelPatch?.status !== "ready")
+      throw new Error(`caption/label is ${captionLabelPatch?.status ?? "absent"}, not ready.`);
+    expect(captionLabelPatch.values.node).toBe("caption/label");
     expect(runtime.pendingSeeds).toEqual([]);
     expect(batches).toEqual([1, 2]);
     expect(runtime.lastFlushError).toBeUndefined();
@@ -134,7 +137,10 @@ describe("a deferred publication carries the frame it arrived with", () => {
     // handed it a frame, so a live edit cannot buy one by being deferred.
     expect(runtime.tick).toBe(1);
     expect(runtime.pendingSeeds).toEqual([]);
-    expect(runtime.registry.get("caption/label")?.values.node).toBe("caption/label");
+    const captionLabelPatch2 = runtime.registry.get("caption/label");
+    if (captionLabelPatch2?.status !== "ready")
+      throw new Error(`caption/label is ${captionLabelPatch2?.status ?? "absent"}, not ready.`);
+    expect(captionLabelPatch2.values.node).toBe("caption/label");
     runtime.dispose();
   });
 });

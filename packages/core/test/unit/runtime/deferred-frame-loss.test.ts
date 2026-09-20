@@ -99,7 +99,10 @@ describe("a publisher failure re-queues the seeds, and carries only a frame it n
     // The retry published the seeds through `flush`, at the frame the runtime was already on. It did
     // not re-reach frame 2 and it did not invent a later one, and both of those are what carrying
     // the frame forward would have had to mean.
-    expect(runtime.registry.get("caption/label")?.values.node).toBe("caption/label");
+    const captionLabelPatch = runtime.registry.get("caption/label");
+    if (captionLabelPatch?.status !== "ready")
+      throw new Error(`caption/label is ${captionLabelPatch?.status ?? "absent"}, not ready.`);
+    expect(captionLabelPatch.values.node).toBe("caption/label");
     expect(runtime.pendingSeeds).toEqual([]);
     expect(runtime.tick).toBe(2);
 
@@ -158,7 +161,10 @@ describe("a publisher failure re-queues the seeds, and carries only a frame it n
     // wrong, not the behaviour. Carrying the frame here would be the regression, and dropping it
     // would leave frame 3 unreachable with the seeds published at frame 1.
     expect(runtime.tick).toBe(3);
-    expect(runtime.registry.get("caption/label")?.values.node).toBe("caption/label");
+    const captionLabelPatch2 = runtime.registry.get("caption/label");
+    if (captionLabelPatch2?.status !== "ready")
+      throw new Error(`caption/label is ${captionLabelPatch2?.status ?? "absent"}, not ready.`);
+    expect(captionLabelPatch2.values.node).toBe("caption/label");
     expect(runtime.pendingSeeds).toEqual([]);
     expect(runtime.lastFlushError).toBeUndefined();
     runtime.dispose();

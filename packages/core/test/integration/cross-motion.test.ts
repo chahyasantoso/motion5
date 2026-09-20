@@ -96,7 +96,13 @@ describe("P5-01 cross-motion references", () => {
     const sourceFirstChild = sourceFirstBatch.patches.find(({ nodeId }) => nodeId === "arm/child");
     expect(observerFirstChild?.status).toBe("ready");
     expect(sourceFirstChild?.status).toBe("ready");
-    expect(observerFirstChild?.values).toEqual(sourceFirstChild?.values);
+    if (observerFirstChild?.status !== "ready")
+      throw new Error(
+        `observerFirstChild is ${observerFirstChild?.status ?? "absent"}, not ready.`,
+      );
+    if (sourceFirstChild?.status !== "ready")
+      throw new Error(`sourceFirstChild is ${sourceFirstChild?.status ?? "absent"}, not ready.`);
+    expect(observerFirstChild.values).toEqual(sourceFirstChild.values);
   });
 
   it("rejects an unknown cross-motion source at load instead of treating it as pending", () => {

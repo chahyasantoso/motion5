@@ -41,7 +41,10 @@ describe("runtime Motion lifecycle (W4)", () => {
     scheduler.flush();
 
     expect(handle.get(added.id)?.status).toBe("ready");
-    expect(handle.get(added.id)?.values).toEqual({ x: 50 });
+    const idPatch = handle.get(added.id);
+    if (idPatch?.status !== "ready")
+      throw new Error(`idPatch is ${idPatch?.status ?? "absent"}, not ready.`);
+    expect(idPatch.values).toEqual({ x: 50 });
 
     added.remove();
     handle.destroyMotion("scene");
@@ -74,8 +77,14 @@ describe("runtime Motion lifecycle (W4)", () => {
     scheduler.flush();
 
     // Track index 0 has no stagger delay; later tracks are offset by the stagger amount.
-    expect(handle.get(left.id)?.values).toEqual({ x: 50 });
-    expect(handle.get(right.id)?.values).toEqual({ x: 50 });
+    const idPatch2 = handle.get(left.id);
+    if (idPatch2?.status !== "ready")
+      throw new Error(`idPatch2 is ${idPatch2?.status ?? "absent"}, not ready.`);
+    expect(idPatch2.values).toEqual({ x: 50 });
+    const idPatch3 = handle.get(right.id);
+    if (idPatch3?.status !== "ready")
+      throw new Error(`idPatch3 is ${idPatch3?.status ?? "absent"}, not ready.`);
+    expect(idPatch3.values).toEqual({ x: 50 });
 
     left.remove();
     right.remove();

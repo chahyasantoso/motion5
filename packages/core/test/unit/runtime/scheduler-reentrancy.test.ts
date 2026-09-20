@@ -38,7 +38,10 @@ describe("scheduler-driven reentrancy (P1-7/P1-8)", () => {
     scheduler.flush();
 
     expect(runtime.pendingSeeds).toEqual([]);
-    expect(runtime.registry.get("caption/label")?.values).toEqual({ node: "caption/label" });
+    const captionLabelPatch = runtime.registry.get("caption/label");
+    if (captionLabelPatch?.status !== "ready")
+      throw new Error(`caption/label is ${captionLabelPatch?.status ?? "absent"}, not ready.`);
+    expect(captionLabelPatch.values).toEqual({ node: "caption/label" });
     expect(runtime.tick).toBe(1);
     runtime.dispose();
   });

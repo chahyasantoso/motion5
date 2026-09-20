@@ -47,7 +47,9 @@ describe("P5-04 unmount/remount recovery", () => {
     const blocked = runtime.seek(consumerId, 0);
     const blockedConsumer = blocked.patches.find(({ nodeId }) => nodeId === consumerId);
     expect(blockedConsumer?.status).toBe("blocked");
-    expect(blockedConsumer?.diagnostics[0]?.ruleId).toBe("observation-pending-reference");
+    if (blockedConsumer?.status !== "blocked")
+      throw new Error(`${consumerId} is ${blockedConsumer?.status ?? "absent"}, not blocked.`);
+    expect(blockedConsumer.diagnostics[0]?.ruleId).toBe("observation-pending-reference");
 
     runtime.mount(sourceId);
     const recovered = runtime.seek(sourceId, 1);

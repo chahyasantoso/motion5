@@ -49,7 +49,10 @@ describe("a plugin requirement is the only input channel", () => {
     handle.mount("walk/thigh");
     handle.seek("walk/pelvis", 0);
 
-    const values = handle.get("walk/thigh")?.values ?? {};
+    const walkThighPatch = handle.get("walk/thigh");
+    if (walkThighPatch?.status !== "ready")
+      throw new Error(`walk/thigh is ${walkThighPatch?.status ?? "absent"}, not ready.`);
+    const values = walkThighPatch.values ?? {};
     // Parent 30 plus local 45. A flat merge would have replaced the bone's authored 45 with the
     // upstream 30 and composed 60, which is the number this case exists to refuse.
     expect(values.rotation).toBeCloseTo(75, 12);
