@@ -1,6 +1,6 @@
 import type { ImmutableRecord } from "./values";
 import { equalValues, freezeValue } from "./values";
-import { readAuthoredLeaf } from "../contract/authored-leaf";
+import { liveWriteChannel, readAuthoredLeaf } from "../contract/authored-leaf";
 import type { LiveValues } from "../contract/track-handle";
 import type { InterpolationTimeline, Interpolator } from "../ports/interpolator";
 import type { PluginInputs, RequirementInputs, ResolvedPlugins } from "./plugins";
@@ -265,9 +265,10 @@ export class Track {
    * `authoredKeyframes` is the flattened authored record the resolver produced, so presence in it is
    * the whole of the unknown-key question: a key another plugin owns, a namespaced key, and an
    * interpolator scratch key are all absent from it, and ownership was settled at resolve time.
-   * `readAuthoredLeaf` is the one function allowed to say what shape a leaf has, which is the whole
-   * of the kind question. This class therefore holds no registry and reimplements no ownership
-   * predicate.
+   * `liveWriteChannel` is the one function allowed to say which channel a leaf's key travels on,
+   * which is the whole of the kind question and is the same answer `#acceptedOverlay` reads below.
+   * This class therefore holds no registry, reimplements no ownership predicate, and no longer
+   * spells the channel rule twice in opposite directions.
    *
    * A scalar for an animated key is refused rather than masked, and that is the invariant this class
    * still enforces: the mask shadows the timeline at every progress, so accepting one would be the
@@ -279,7 +280,7 @@ export class Track {
     const accepted: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(next)) {
       if (!Object.hasOwn(authored, key)) throw new LiveValueKeyError(this.#nodeId, key, "unknown");
-      if (readAuthoredLeaf(authored[key]).kind === "animated")
+      if (liveWriteChannel(readAuthoredLeaf(authored[key])) !== "mask")
         throw new LiveValueKeyError(this.#nodeId, key, "kind");
       accepted[key] = value;
     }
@@ -289,8 +290,8 @@ export class Track {
   /**
    * Every animated key of a live write, answered by the three owners that already exist.
    *
-   * `authoredKeyframes` answers presence, `readAuthoredLeaf` answers which kind of leaf the key was
-   * authored as, and `preparation.keyframes` answers whether a plugin already decided this key's
+   * `authoredKeyframes` answers presence, `liveWriteChannel` answers which channel the key was
+   * authored onto, and `preparation.keyframes` answers whether a plugin already decided this key's
    * value. `Track` gains no knowledge of which keys are compiled: those three already answer it,
    * and a second answer would be one that can disagree.
    *
@@ -304,7 +305,7 @@ export class Track {
     const accepted: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(overlay)) {
       if (!Object.hasOwn(authored, key)) throw new LiveValueKeyError(this.#nodeId, key, "unknown");
-      if (readAuthoredLeaf(authored[key]).kind !== "animated")
+      if (liveWriteChannel(readAuthoredLeaf(authored[key])) !== "timeline")
         throw new LiveValueKeyError(this.#nodeId, key, "kind");
       if (Object.hasOwn(prepared, key)) throw new LiveValueKeyError(this.#nodeId, key, "prepared");
       accepted[key] = value;

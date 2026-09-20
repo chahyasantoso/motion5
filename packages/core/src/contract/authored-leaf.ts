@@ -1,3 +1,4 @@
+import { unreachable } from "../domain/exhaustive";
 import type { AuthoredStaticValue, AuthoredStop } from "./v5";
 
 /**
@@ -61,6 +62,44 @@ export function readAuthoredLeaf(value: unknown): AuthoredLeaf {
   if (!isRecord(value)) return INVALID_LEAF;
   if (Array.isArray(value.stops)) return WRAPPER_LEAF;
   return Object.keys(value).length === 0 ? EMPTY_LEAF : INVALID_LEAF;
+}
+
+/**
+ * Which of a live write's two channels a key authored as this leaf travels on.
+ *
+ * `Track` refuses a live write that arrives on the wrong channel at two members, and before this
+ * the two asked one question in opposite directions: `#acceptedValues` refused `kind ===
+ * "animated"` and `#acceptedOverlay` refused `kind !== "animated"`. Each was total over the five
+ * kinds that exist by accident rather than by construction, and they were total in ways that could
+ * disagree: a sixth kind would have been maskable at one member and patchable at the other at the
+ * same time, and no gate in this repository names either site. One classification, read
+ * exhaustively, is what makes those two answers one answer.
+ *
+ * The three shapeless kinds travel on the mask, which is what both members already did rather
+ * than a decision taken here. `empty` is the deliberately accepted no-op `Y-6` pins, and `wrapper`
+ * and `invalid` are refused by the validator before a live write can reach a loaded project, so
+ * classifying those two decides nothing a caller can observe. The result is a closed two-member
+ * union, so a reader that asks for the one channel it wants has decided about both.
+ *
+ * This answers the channel and nothing else. Which static value a mask may carry is a different
+ * partition, because it needs the value and only `static` carries one, and
+ * `runtime/authored-values.ts` still asks that question one-sidedly at two sites. See ADR-059,
+ * ADR-060, and ADR-092.
+ */
+export type LiveWriteChannel = "mask" | "timeline";
+
+export function liveWriteChannel(leaf: AuthoredLeaf): LiveWriteChannel {
+  switch (leaf.kind) {
+    case "animated":
+      return "timeline";
+    case "static":
+    case "empty":
+    case "wrapper":
+    case "invalid":
+      return "mask";
+    default:
+      return unreachable(leaf);
+  }
 }
 
 /**
