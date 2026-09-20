@@ -1,0 +1,66 @@
+^[[39m()^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-20T00:08:26.5359057Z     ^[[90m109|^[[39m     ^[[34mexpect^[[39m(registry^[[33m.^[[39m^[[34mlastReady^[[39m(^[[32m"hero/arm"^[[39m))^[[33m.^[[39m^[[34mtoBeUndefined^[[39m()^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-20T00:08:26.5359850Z     ^[[90m   |^[[39m                     ^[[31m^^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-20T00:08:26.5360255Z     ^[[90m110|^[[39m   })^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-20T00:08:26.5360535Z     ^[[90m111|^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-20T00:08:26.5360632Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-20T00:08:26.5360817Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/6]⎯^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-20T00:08:26.5360975Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-20T00:08:26.5361721Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/runtime/patch-last-ready.test.ts^[[2m > ^[[22mthe registry owns the last ready patch^[[2m > ^[[22mdrops what it retains on eviction, because a destroyed node has no last pose
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-20T00:08:26.5362493Z ^[[31m^[[1mTypeError^[[22m: registry.lastReady is not a function^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-20T00:08:26.5363010Z ^[[36m ^[[2m❯^[[22m packages/core/test/unit/runtime/patch-last-ready.test.ts:^[[2m123:21^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-20T00:08:26.5363512Z     ^[[90m121|^[[39m     registry^[[33m.^[[39m^[[34mevict^[[39m(^[[32m"hero/arm"^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-20T00:08:26.5363839Z     ^[[90m122|^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-20T00:08:26.5364356Z     ^[[90m123|^[[39m     ^[[34mexpect^[[39m(registry^[[33m.^[[39m^[[34mlastReady^[[39m(^[[32m"hero/arm"^[[39m))^[[33m.^[[39m^[[34mtoBeUndefined^[[39m()^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-20T00:08:26.5364834Z     ^[[90m   |^[[39m                     ^[[31m^^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-20T00:08:26.5365111Z     ^[[90m124|^[[39m   })^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-20T00:08:26.5365334Z     ^[[90m125|^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-20T00:08:26.5365439Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-20T00:08:26.5365612Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/6]⎯^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-20T00:08:26.5365771Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-20T00:08:26.5366404Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/runtime/patch-last-ready.test.ts^[[2m > ^[[22mthe registry owns the last ready patch^[[2m > ^[[22manswers nothing once the registry is disposed
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-20T00:08:26.5367265Z ^[[31m^[[1mTypeError^[[22m: registry.lastReady is not a function^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-20T00:08:26.5367802Z ^[[36m ^[[2m❯^[[22m packages/core/test/unit/runtime/patch-last-ready.test.ts:^[[2m137:21^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-20T00:08:26.5368265Z     ^[[90m135|^[[39m     registry^[[33m.^[[39m^[[34mdispose^[[39m()^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-20T00:08:26.5368657Z     ^[[90m136|^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-20T00:08:26.5369173Z     ^[[90m137|^[[39m     ^[[34mexpect^[[39m(registry^[[33m.^[[39m^[[34mlastReady^[[39m(^[[32m"hero/arm"^[[39m))^[[33m.^[[39m^[[34mtoBeUndefined^[[39m()^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-20T00:08:26.5369794Z     ^[[90m   |^[[39m                     ^[[31m^^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-20T00:08:26.5370061Z     ^[[90m138|^[[39m   })^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-20T00:08:26.5370299Z     ^[[90m139|^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-20T00:08:26.5370457Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-20T00:08:26.5370636Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/6]⎯^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-20T00:08:26.5370797Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-20T00:08:26.5371162Z ^[[2m Test Files ^[[22m ^[[1m^[[31m1 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m239 passed^[[39m^[[22m^[[90m (240)^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-20T00:08:26.5371815Z ^[[2m      Tests ^[[22m ^[[1m^[[31m6 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m1456 passed^[[39m^[[22m^[[90m (1462)^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-20T00:08:26.5372323Z ^[[2m   Start at ^[[22m 00:07:56
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-20T00:08:26.5373008Z ^[[2m   Duration ^[[22m 29.63s^[[2m (transform 2.86s, setup 1.06s, import 18.73s, tests 37.75s, environment 24ms)^[[22m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-20T00:08:26.5373331Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-20T00:08:26.6123043Z ##[error]Process completed with exit code 1.
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	﻿2026-09-20T00:08:26.6166567Z ##[group]Run node scripts/ci-evidence.mjs verify all
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-20T00:08:26.6166892Z ^[[36;1mnode scripts/ci-evidence.mjs verify all^[[0m
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-20T00:08:26.6198192Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-20T00:08:26.6198419Z env:
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-20T00:08:26.6198583Z   NODE_VERSION: 24
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-20T00:08:26.6198797Z   CI_EVIDENCE_DIR: /home/runner/work/_temp/ci-evidence
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-20T00:08:26.6199052Z ##[endgroup]
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-20T00:08:26.6599199Z Suite did not complete successfully
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-20T00:08:26.6599669Z 
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-20T00:08:26.6599809Z 'failed' !== 'passed'
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-20T00:08:26.6599998Z 
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-20T00:08:26.6639025Z ##[error]Process completed with exit code 1.
+integration (node 24)	Require successful suite owner, including evidence verification	﻿2026-09-20T00:08:34.6700879Z ##[group]Run test "$SUITE_RESULT" = success
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-20T00:08:34.6701863Z ^[[36;1mtest "$SUITE_RESULT" = success^[[0m
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-20T00:08:34.6730982Z shell: /usr/bin/bash -e {0}
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-20T00:08:34.6732055Z env:
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-20T00:08:34.6732797Z   NODE_VERSION: 24
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-20T00:08:34.6733429Z   SUITE_RESULT: failure
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-20T00:08:34.6733997Z ##[endgroup]
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-20T00:08:34.6866382Z ##[error]Process completed with exit code 1.
+end-to-end (node 24)	Require successful suite owner, including evidence verification	﻿2026-09-20T00:08:35.1755857Z ##[group]Run test "$SUITE_RESULT" = success
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-20T00:08:35.1756685Z ^[[36;1mtest "$SUITE_RESULT" = success^[[0m
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-20T00:08:35.1797653Z shell: /usr/bin/bash -e {0}
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-20T00:08:35.1798572Z env:
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-20T00:08:35.1799063Z   NODE_VERSION: 24
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-20T00:08:35.1799801Z   SUITE_RESULT: failure
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-20T00:08:35.1800320Z ##[endgroup]
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-20T00:08:35.1935410Z ##[error]Process completed with exit code 1.
