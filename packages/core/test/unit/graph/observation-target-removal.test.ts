@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ObservationDefinition, ProjectDefinition } from "../../../src/contract/v5";
-import { validateV5 } from "../../../src/contract/validate-v5";
+import { validateV5 } from "../../../src/validate-v5";
 import type { GraphEdge } from "../../../src/graph/ir";
 import { resolveObservationEdge } from "../../../src/graph/ir";
 import { ObservationState } from "../../../src/graph/observation-state";

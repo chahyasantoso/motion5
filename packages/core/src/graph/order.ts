@@ -139,10 +139,7 @@ export function orderGraph(nodes: readonly GraphNode[]): GraphOrderResult {
   }
 
   if (order.length === slots.size)
-    return acceptedOutcome<readonly string[], Diagnostic>(
-      Object.freeze(order),
-      Object.freeze([]),
-    );
+    return acceptedOutcome<readonly string[], Diagnostic>(Object.freeze(order), Object.freeze([]));
 
   const emitted = new Set(order);
   const live = new Set<string>();

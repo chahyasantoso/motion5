@@ -5,10 +5,7 @@ import type {
   MotionDefinition,
   TrackDefinition,
 } from "../contract/v5";
-import {
-  authoredLeafPartition,
-  readAuthoredLeaf,
-} from "../contract/authored-leaf";
+import { authoredLeafPartition, readAuthoredLeaf } from "../contract/authored-leaf";
 import { readPluginBindings } from "../contract/keyframe-shape";
 import type { AuthoredValues, LiveValues, RequireView } from "../contract/track-handle";
 import { flattenAuthoredKeyframes } from "../domain/keyframe-groups";

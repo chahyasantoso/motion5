@@ -17,7 +17,6 @@ function publish(registry: PatchRegistry, tick: number, opacity: number): void {
 }
 
 describe("React patch store lifecycle (C1)", () => {
-
   it("keeps both lifecycle switches compiler-enforced", () => {
     type Widened = PatchStoreLifecycle | { readonly kind: "reviving" };
     const readWidened = (lifecycle: Widened): boolean => {

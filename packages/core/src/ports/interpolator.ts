@@ -1,6 +1,4 @@
-export type PatchKeysResult =
-  | { readonly kind: "patched" }
-  | { readonly kind: "recompile" };
+export type PatchKeysResult = { readonly kind: "patched" } | { readonly kind: "recompile" };
 
 export const PATCHED: PatchKeysResult = Object.freeze({ kind: "patched" });
 export const RECOMPILE: PatchKeysResult = Object.freeze({ kind: "recompile" });

@@ -333,7 +333,7 @@ export function collectTrack(
   // Derived from the authored form, with no plugin registry in reach. Whether `fk` is registered
   // and declares `base` is `PluginRegistry.resolveForKeyframes`' question; whether the source is a
   // node, is not this node, and introduces no cycle is this layer's. That split is what lets
-  // `validateV5` build the graph without holding a registry it must not have. See ADR-044.
+  // `validateSchemaV5` build the graph without holding a registry it must not have. See ADR-044.
   for (const binding of readPluginBindings(track.keyframes)) {
     const bindingPath = `${id}.keyframes.${binding.authoredPath}`;
     const resolved = resolveRequirementEdge(binding, id, ownerId, bindingPath);
@@ -976,9 +976,7 @@ export function finalizeGraph(
       };
     },
     (orderingDiagnostics) => ({
-      diagnostics: Object.freeze(
-        [...diagnostics, ...orderingDiagnostics].sort(compareDiagnostics),
-      ),
+      diagnostics: Object.freeze([...diagnostics, ...orderingDiagnostics].sort(compareDiagnostics)),
     }),
   );
 }

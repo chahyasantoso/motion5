@@ -206,12 +206,12 @@ describe("a live value masks the interpolated state, and nothing else", () => {
       'Key "missing" is not an authored value of track "~/live".',
     );
 
-    expect(() =>
-      new LiveValueKeyError("~/live", "missing", "future" as LiveValueRefusal),
-    ).toThrow(TypeError);
-    expect(() =>
-      new LiveValueKeyError("~/live", "missing", "future" as LiveValueRefusal),
-    ).toThrow(/Unhandled variant/);
+    expect(() => new LiveValueKeyError("~/live", "missing", "future" as LiveValueRefusal)).toThrow(
+      TypeError,
+    );
+    expect(() => new LiveValueKeyError("~/live", "missing", "future" as LiveValueRefusal)).toThrow(
+      /Unhandled variant/,
+    );
   });
 
   it("requires readers to decide every refusal reason", () => {

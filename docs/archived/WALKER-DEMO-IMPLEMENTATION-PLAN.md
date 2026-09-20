@@ -407,7 +407,7 @@ export default function WalkerPage() {
 | --------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
 | P0 — Core enablers    | C1 adapters entrypoint, C2 PatchSource, C3 trigger refactoring | New import/`get` tests fail on base, pass after; `npm run check` green                      |
 | P1 — Plugins          | fkMath, fkPlugin, transform plugins                            | Unit tests for `composeWorld`; fkPlugin compose test (flat inputs → world)                  |
-| P2 — Authored project | walkerProject.ts in schema v5                                  | `validateV5(walkerProject).kind === "accepted"`; contract test                                   |
+| P2 — Authored project | walkerProject.ts in schema v5                                  | `validateV5(walkerProject).kind === "accepted"`; contract test                              |
 | P3 — Clock + Motion   | BrowserClock, ScrollClock, create engine                       | Load + seek headless, assert patches; each bone's x/y/rotation matches `composeWorld` chain |
 | P4 — React app        | Vite app, hooks, WalkerPage, GSAP scroll clock                 | App builds; scrubbing walks the rig; RTL smoke test                                         |
 | P5 — Polish           | CSS, shadow/rail/head details, reverse-on-scroll-up            | Visual pass; boundary scan green; no leakage                                                |

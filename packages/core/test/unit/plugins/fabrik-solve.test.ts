@@ -131,7 +131,6 @@ describe("FABRIK over a solver chain (Slice D2)", () => {
     const solution = solveFabrik(ROOT, TWO_BONE);
 
     expect(solution.convergence.kind).toBe("converged");
-    expect(solution.convergence.kind).toBe("iteration-cap");
     expect(solution.convergence.iterations).toBeLessThan(FABRIK_MAX_ITERATIONS);
     expect(solution.convergence.residual).toBeLessThanOrEqual(FABRIK_TOLERANCE);
     expect(distance(solution.tips[FOREARM]!, HAND)).toBeLessThanOrEqual(FABRIK_TOLERANCE);
@@ -255,7 +254,6 @@ describe("FABRIK over a solver chain (Slice D2)", () => {
     // reported as unconverged with its residual rather than as success, which is the whole reason
     // the residual is returned.
     const slow = solveFabrik(ROOT, [bone("a", "root", 50), tip("b", "a", 40, at(280, 340))]);
-    expect(slow.convergence.kind).not.toBe("converged");
     expect(slow.convergence.kind).toBe("iteration-cap");
     expect(slow.convergence.iterations).toBe(FABRIK_MAX_ITERATIONS);
     expect(slow.convergence.residual).toBeGreaterThan(FABRIK_TOLERANCE);

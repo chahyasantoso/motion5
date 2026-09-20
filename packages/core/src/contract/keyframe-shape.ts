@@ -154,7 +154,7 @@ export function readPluginValues(group: unknown): Readonly<Record<string, unknow
  * The single owner of reading the authored bindings, so `graph/ir.ts` derives its edges and
  * `PluginRegistry` resolves its slots from one reader rather than from two that can disagree about
  * what an author wrote. Deriving the edge is purely syntactic, which is what lets it run inside
- * `validateV5` without a plugin registry.
+ * `validateSchemaV5` without a plugin registry.
  *
  * A slot whose authored value is a record binds one source per key rather than one source, and it
  * expands here into one binding per key it names. That expansion is the whole of how multi-goal

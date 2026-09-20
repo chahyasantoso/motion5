@@ -32,7 +32,6 @@ const DRIVER_SOURCE = code(new URL("time-driver.ts", FACTORY_DIR));
 const ENGINE_SOURCE = code(new URL("../../../src/engine.ts", import.meta.url));
 
 describe("T5 no manual trigger fallback", () => {
-
   it("T-14 makes bindClock refuse a binding kind it does not decide", () => {
     expect(ENGINE_SOURCE).toContain("switch (binding.kind)");
     expect(ENGINE_SOURCE).toContain("return unreachable(binding)");

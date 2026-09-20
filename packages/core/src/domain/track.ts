@@ -54,9 +54,7 @@ function describeRefusal(nodeId: string, key: string, reason: LiveValueRefusal):
     case "kind":
       return `Key "${key}" of track "${nodeId}" cannot change which kind of leaf it is.`;
     case "prepared":
-      return (
-        `Key "${key}" of track "${nodeId}" is prepared by a plugin and cannot be written live.`
-      );
+      return `Key "${key}" of track "${nodeId}" is prepared by a plugin and cannot be written live.`;
     case "unknown":
       return `Key "${key}" is not an authored value of track "${nodeId}".`;
     default:

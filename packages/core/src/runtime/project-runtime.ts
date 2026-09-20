@@ -556,9 +556,7 @@ export class ProjectRuntime {
         ? qualifyMotionTrack(motionId, track.id).value
         : qualifyFreeTrack(track.id).value;
     if (this.#readTracks().has(id)) throw new TypeError(`Track "${id}" already exists.`);
-    const accepted = expectValid(
-      validateTrackDefinition(track, `addTrack(${track.id})`),
-    );
+    const accepted = expectValid(validateTrackDefinition(track, `addTrack(${track.id})`));
     const token = this.#nextToken++;
     const tracks = this.#stageTracks();
     tracks.set(
@@ -858,8 +856,7 @@ export class ProjectRuntime {
       const rewritten = rebase || involved ? withAuthoredValues(entry.track, values) : entry.track;
       // Validated and then discarded: this write stages no definition, so the refusal is the
       // whole of what validating the candidate is for here.
-      if (involved)
-        expectValid(validateTrackDefinition(rewritten, `writeValues(${nodeId})`));
+      if (involved) expectValid(validateTrackDefinition(rewritten, `writeValues(${nodeId})`));
       const mask = { ...authoredValues(entry.track), ...statics };
       const answer = this.#ports.value.write(nodeId, mask, involved ? animated : undefined, rebase);
       // The seam has taken the write and carries no inverse, so the state it left is recorded on
@@ -878,7 +875,7 @@ export class ProjectRuntime {
           case "patched":
             break;
           case "needs-rebuild":
-            progress = written.progress;
+            progress = writtenProgress(written);
             staged = this.#ports.track.stage(rewritten, nodeId);
             break;
           default:

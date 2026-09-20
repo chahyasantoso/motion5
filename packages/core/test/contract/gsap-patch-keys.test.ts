@@ -113,9 +113,7 @@ function childrenOf(timeline: RealTimeline): readonly unknown[] {
 function tweensFor(timeline: RealTimeline, key: string): readonly unknown[] {
   return timeline
     .getChildren(false, true, false)
-    .filter((child: { vars: unknown }) =>
-      key in (child.vars as Record<string, unknown>),
-    );
+    .filter((child: { vars: unknown }) => key in (child.vars as Record<string, unknown>));
 }
 function sample(timeline: InterpolationTimeline, key: string, at: number): number {
   timeline.progress(at);
@@ -144,7 +142,7 @@ describe("a record-shaped overlay patches a live timeline, or declines", () => {
     declined.kill();
   });
 
-  it("PK-0 rejects a widened result whose reader leaves one kind undecided", () => {
+  it("PK-23 rejects a widened result whose reader leaves one kind undecided", () => {
     type Widened = PatchKeysResult | { readonly kind: "foreign" };
     const readWidened = (result: Widened): string => {
       switch (result.kind) {

@@ -10,7 +10,6 @@ export interface PatchStore {
   subscribe(listener: PatchListener): () => void;
 }
 
-
 export function unhandledLifecycle(value: never): never {
   throw new TypeError(`Unhandled variant: ${JSON.stringify(value)}`);
 }

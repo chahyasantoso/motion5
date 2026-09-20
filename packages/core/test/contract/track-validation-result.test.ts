@@ -8,7 +8,12 @@ import type { TrackDefinition } from "../../src/contract/v5";
 
 const VALID_TRACK: TrackDefinition = {
   id: "arm",
-  keyframes: { opacity: [{ p: 0, v: 0 }, { p: 1, v: 1 }] },
+  keyframes: {
+    opacity: [
+      { p: 0, v: 0 },
+      { p: 1, v: 1 },
+    ],
+  },
 };
 
 function read(result: TrackValidationResult): TrackDefinition {

@@ -23,8 +23,8 @@ This plan is written to be executed by an implementer with **no authority to cha
 3. **Do not touch `packages/core/src/domain/motion.ts`.** Neither slice needs it. ADR-031's source guard (`C-3` in `motion-track-resolution.test.ts`) must stay green without being edited, and `MotionTrackEntry` stays `{ id, duration? }`.
 4. **Do not add a second Motion construction path.** `Engine.load()`'s `buildMotion` closure is the only one. It is already reused by the `createMotion` hook, and that is the property `T4` is protecting, not introducing.
 5. **Do not add `if (trigger.type === ...)` anywhere outside the trigger factory.** `Motion` and
-`Engine` stay ignorant of trigger kinds. Capability flags and `TriggerBinding` carry the
-information.
+   `Engine` stay ignorant of trigger kinds. Capability flags and `TriggerBinding` carry the
+   information.
 6. **Do not gate `seek`.** See `T5-5`. `seek` is node-level scrubbing and is deliberately not covered by `acceptsExternalSignal`.
 7. **Every commit must leave `npm run check` green** (`format:check` plus `typecheck` plus `test`). No skipped, `.todo`, `.only`, deleted, or weakened test.
 8. **Error message strings and rule ids in this plan are the contract.** Use them verbatim; they are asserted by tests and consumed by editors.
@@ -37,7 +37,7 @@ Read these in full. They are what you change or must not break.
 - `packages/core/src/runtime/project-runtime.ts` (`addMotion`, `destroyMotion`, `#addTrack`, `#removeTrack`, `#replaceTrack`)
 - `packages/core/src/engine.ts` (`load`, `buildMotion`, `releaseMotion`, the `createMotion` and `destroyMotion` hooks, `onClockTick`, `disposeComposition`, and the outer `catch`)
 - `packages/core/src/ports/trigger-factory.ts` (`TriggerBinding`, `CreatedTrigger`,
-`TriggerFactoryContext`)
+  `TriggerFactoryContext`)
 - `packages/core/src/adapters/trigger-factory/default.ts` (`createTriggerFactory`, the scroll resolver, the `trigger-driver-unavailable` throw)
 - `packages/core/src/adapters/trigger-factory/time-driver.ts`
 - `packages/core/src/contract/validate-v5.ts` (`validateMotionTrigger`, `resolveTriggerDefinition`)
@@ -133,8 +133,8 @@ Every claim below was read out of the tree at `d022b67`, not assumed. Read it be
 6. `ProjectRuntime.destroyMotion` validates, refuses while owned tracks remain, replaces the graph, deletes from `#motions`, then calls the hook. `Engine`'s hook is `releaseMotion` then `motion.dispose()` then `motions.delete(...)`. **Ordering already matches `T4`. Only the test is missing.**
 7. `onClockTick` collects per-consumer failures and throws the single error, or an `AggregateError`, after the loop. `GraphRuntime.#onTick` catches and records a `flush-failure` diagnostic, so a driver failure is observable as a diagnostic rather than as a thrown error at the call site. Relevant to `T4`'s assertions: do not assert that a tick throws to the caller.
 8. `TriggerBinding` is a total tagged union with `driver`, `motion`, and `none`, and the
-registration site is an exhaustive `switch` with no `??` fallback. `manual` is `motion`, `time`
-is `driver`, `scroll` is `none`. **No Motion can hold both a driver and its own clock advance.**
+   registration site is an exhaustive `switch` with no `??` fallback. `manual` is `motion`, `time`
+   is `driver`, `scroll` is `none`. **No Motion can hold both a driver and its own clock advance.**
 9. `default.ts` has **no inert fallback left**. `time` returns `createTimeDriver(trigger.duration)`, `scroll` either resolves a real source or throws, and only the `manual` branch reaches `createManualTriggerPort()`. **`T5`'s structural work is already done; what is missing is the proof, the misleading tests, and the documentation.**
 10. `motion-trigger-types.test.ts` still contains three cases named "manual signals use the same scheduled progress path", "scroll signals ...", and "time signals ...", built on `vi.fn()` track doubles passed through `resolveTrack: () => current as never`. These are the `T5-2` targets, and they are the last `as never` casts in the trigger suites.
 11. `docs/PUBLIC-API.md` does not exist. `docs/ARCHITECTURE.md`, `docs/AUTHORED-SCHEMA.md`, `docs/DECISIONS.md`, and `docs/MIGRATION-V4-TO-V5.md` do.
@@ -317,7 +317,7 @@ No red-before-green evidence is required for `T5`, because it removes a claim ra
 - Adding a second Motion construction path, or a runtime-only trigger branch.
 - Reading `trigger.type` outside `adapters/trigger-factory/`, or reading `context.definition.trigger` instead of `context.trigger`.
 - Changing `TriggerBinding` into an optional callback plus a flag, or adding a `??` fallback at
-the registration site.
+  the registration site.
 - Gating `seek` behind `acceptsExternalSignal`.
 - Unifying `manual` onto the time driver. It is tracked debt from section 6.3 of the trigger plan and will break a large number of existing tests.
 - Designing `repeat`, `yoyo`, looping, or ping-pong semantics.
