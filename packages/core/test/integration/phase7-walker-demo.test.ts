@@ -498,7 +498,9 @@ describe("Phase 7: Walker Demo Integration Suite", () => {
       // The hook applies no filtering, which is what this case records, so a patch owning no pose
       // contributes the same `undefined` an absent one does. The first render has no patch at all.
       // See ADR-098.
-      patchValues.push(patch?.status === "ready" ? (patch.values.x as number | undefined) : undefined);
+      patchValues.push(
+        patch?.status === "ready" ? (patch.values.x as number | undefined) : undefined,
+      );
       return null;
     }
 

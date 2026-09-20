@@ -124,9 +124,7 @@ describe("IK playground adapter-driven progress", () => {
       const solverTrackPatch = handle.get(nodeId(ARM.solverTrack));
       if (solverTrackPatch?.status !== "ready")
         throw new Error(`solverTrackPatch is ${solverTrackPatch?.status ?? "absent"}, not ready.`);
-      const rotations = solverTrackPatch.values.rotations as Readonly<
-        Record<string, number>
-      >;
+      const rotations = solverTrackPatch.values.rotations as Readonly<Record<string, number>>;
       const idPatch2 = handle.get(id);
       if (idPatch2?.status !== "ready")
         throw new Error(`idPatch2 is ${idPatch2?.status ?? "absent"}, not ready.`);

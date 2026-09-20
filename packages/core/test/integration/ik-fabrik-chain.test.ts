@@ -173,9 +173,7 @@ describe("iterative IK over a real rig (Slice D3)", () => {
     const rigTailSolvePatch = patches.get("rig/tail-solve");
     if (rigTailSolvePatch?.status !== "ready")
       throw new Error(`rig/tail-solve is ${rigTailSolvePatch?.status ?? "absent"}, not ready.`);
-    const rotations = rigTailSolvePatch.values.rotations as Readonly<
-      Record<string, number>
-    >;
+    const rotations = rigTailSolvePatch.values.rotations as Readonly<Record<string, number>>;
     expect(Object.keys(rotations).sort()).toEqual([
       "rig/t1",
       "rig/t2",
@@ -229,9 +227,7 @@ describe("iterative IK over a real rig (Slice D3)", () => {
     const rigBodySolvePatch = patches.get("rig/body-solve");
     if (rigBodySolvePatch?.status !== "ready")
       throw new Error(`rig/body-solve is ${rigBodySolvePatch?.status ?? "absent"}, not ready.`);
-    const rotations = rigBodySolvePatch.values.rotations as Readonly<
-      Record<string, number>
-    >;
+    const rotations = rigBodySolvePatch.values.rotations as Readonly<Record<string, number>>;
     expect(Object.keys(rotations).sort()).toEqual([
       "rig/arm-l",
       "rig/arm-r",

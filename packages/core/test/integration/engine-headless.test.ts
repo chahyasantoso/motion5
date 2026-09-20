@@ -46,10 +46,7 @@ describe("Engine", () => {
     const heroArmPatch = batch.patches.find(({ nodeId }) => nodeId === "hero/arm");
     if (heroArmPatch?.status !== "ready")
       throw new Error(`hero/arm is ${heroArmPatch?.status ?? "absent"}, not ready.`);
-    expect(heroArmPatch.values.opacity).toBeCloseTo(
-      0.6,
-      12,
-    );
+    expect(heroArmPatch.values.opacity).toBeCloseTo(0.6, 12);
     expect(published?.values.opacity).toBeCloseTo(0.6, 12);
     runtime.dispose();
   });

@@ -59,7 +59,9 @@ describe("React public package surface (C2)", () => {
       // The hook applies no filtering, which is what this case records, so a patch owning no pose
       // contributes the same `undefined` an absent one does. The first render has no patch at all.
       // See ADR-098.
-      seen.push(patch?.status === "ready" ? (patch.values.opacity as number | undefined) : undefined);
+      seen.push(
+        patch?.status === "ready" ? (patch.values.opacity as number | undefined) : undefined,
+      );
       return null;
     }
 

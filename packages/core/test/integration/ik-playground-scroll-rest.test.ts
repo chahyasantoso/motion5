@@ -174,18 +174,14 @@ describe("IK playground scroll-only rest blending", () => {
             throw new Error(
               `goalTrackPatch2 is ${goalTrackPatch2?.status ?? "absent"}, not ready.`,
             );
-          expect(goalTrackPatch2.values).toMatchObject(
-            controller.goals[rig.goalTrack]!,
-          );
+          expect(goalTrackPatch2.values).toMatchObject(controller.goals[rig.goalTrack]!);
           const solverTrackPatch = handle.get(nodeId(rig.solverTrack));
           if (solverTrackPatch?.status !== "ready")
             throw new Error(
               `solverTrackPatch is ${solverTrackPatch?.status ?? "absent"}, not ready.`,
             );
           expect(solverTrackPatch.values.flip).toBe(weight !== 0.5);
-          const rotations = solverTrackPatch.values.rotations as Readonly<
-            Record<string, number>
-          >;
+          const rotations = solverTrackPatch.values.rotations as Readonly<Record<string, number>>;
           let rotation = 0;
           rig.memberTracks.forEach((id, index) => {
             rotation += lerpAngle(rig.restRotations[index]!, rotations[nodeId(id)]!, weight);
