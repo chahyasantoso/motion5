@@ -45,7 +45,6 @@ describe("the registry owns the last ready patch", () => {
     });
     const blocked = publish(registry, 2, {
       nodeId: "hero/arm",
-      sourceProgress: 0,
       status: "blocked",
       diagnostics: BLOCKED,
     });
@@ -63,7 +62,6 @@ describe("the registry owns the last ready patch", () => {
     const registry = open();
     const blocked = publish(registry, 1, {
       nodeId: "hero/arm",
-      sourceProgress: 0,
       status: "blocked",
       diagnostics: BLOCKED,
     });
@@ -151,7 +149,6 @@ describe("the registry owns the last ready patch", () => {
     });
     const errored = publish(registry, 2, {
       nodeId: "hero/arm",
-      sourceProgress: 0,
       status: "error",
       diagnostics: FAILED,
     });
@@ -162,12 +159,13 @@ describe("the registry owns the last ready patch", () => {
     expect(registry.lastReady("hero/arm")).toBe(ready);
   });
 
-  // Green on both sides, and deliberately so: this slice moves nothing on the observation wire. The
-  // carry-forward is still what a blocked publication produces, and this case is the evidence a
-  // later slice re-reads rather than adjusts when the blocked variant stops owning `values`.
-  it("leaves the carry-forward in place, so nothing a subscriber reads has moved yet", () => {
+  // Re-read rather than adjusted, which is what this case was landed for. While the carry-forward
+  // existed it asserted that a blocked publication still republished the last pose, and it was
+  // labelled green on both sides for exactly this moment. ADR-098 has deleted that carry-forward,
+  // so the same rig asserts where the pose went instead of asserting that it stayed.
+  it("moves the pose off the blocked publication and onto the retained ready patch", () => {
     const registry = open();
-    publish(registry, 1, {
+    const ready = publish(registry, 1, {
       nodeId: "hero/arm",
       values: { x: 1 },
       sourceProgress: 0.5,
@@ -175,13 +173,19 @@ describe("the registry owns the last ready patch", () => {
     });
     const blocked = publish(registry, 2, {
       nodeId: "hero/arm",
-      sourceProgress: 0,
       status: "blocked",
       diagnostics: BLOCKED,
     });
 
-    expect(blocked?.values).toEqual({ x: 1 });
-    expect(blocked?.sourceProgress).toBe(0.5);
-    expect(blocked?.diagnostics).toHaveLength(1);
+    if (blocked?.status !== "blocked")
+      throw new Error(`hero/arm is ${blocked?.status ?? "absent"}, not blocked.`);
+    expect("values" in blocked).toBe(false);
+    expect("sourceProgress" in blocked).toBe(false);
+    expect(blocked.diagnostics).toHaveLength(1);
+    // The pose is not lost, and this says so rather than leaving it to the refusals above: all
+    // three members one composition measured together are answered together, off one identity.
+    expect(registry.lastReady("hero/arm")).toBe(ready);
+    expect(registry.lastReady("hero/arm")?.values).toEqual({ x: 1 });
+    expect(registry.lastReady("hero/arm")?.sourceProgress).toBe(0.5);
   });
 });

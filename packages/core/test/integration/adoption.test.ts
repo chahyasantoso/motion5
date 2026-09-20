@@ -24,7 +24,7 @@ describe("P5-02 runtime free tracks", () => {
     // its own flush now (issue #223, `RA-9`). The seek is a no-op by construction, because the
     // value it would publish is the one already retained, and that half is asserted rather than
     // dropped: without it, published-early and published-twice look the same from here.
-    expect(runtime.graph.registry.get("~/cursor")?.values).toEqual({ node: "~/cursor" });
+    expect(runtime.graph.registry.lastReady("~/cursor")?.values).toEqual({ node: "~/cursor" });
     expect(runtime.seek("~/cursor", 0).patches).toEqual([]);
     runtime.dispose();
   });
@@ -61,8 +61,8 @@ describe("P5-02 runtime free tracks", () => {
     // following seek, and read per id, because addressability is the claim: a commit that seeded
     // the whole member set instead of the node it touched would pass a two-node assertion here and
     // fail this one on the second add, which would republish the first.
-    expect(runtime.graph.registry.get(cursor.id)?.values).toEqual({ node: "~/cursor" });
-    expect(runtime.graph.registry.get(drag.id)?.values).toEqual({ node: "~/drag" });
+    expect(runtime.graph.registry.lastReady(cursor.id)?.values).toEqual({ node: "~/cursor" });
+    expect(runtime.graph.registry.lastReady(drag.id)?.values).toEqual({ node: "~/drag" });
     expect(runtime.graph.registry.get(cursor.id)?.revision).toBe(1);
     cursor.remove();
     expect(runtime.graph.state.snapshot().nodes).not.toContain("~/cursor");
@@ -70,7 +70,7 @@ describe("P5-02 runtime free tracks", () => {
     // Eviction drops the retained patch, so the destroyed node is addressable as absent rather
     // than as its final pose.
     expect(runtime.graph.registry.get(cursor.id)).toBeUndefined();
-    expect(runtime.graph.registry.get(drag.id)?.values).toEqual({ node: "~/drag" });
+    expect(runtime.graph.registry.lastReady(drag.id)?.values).toEqual({ node: "~/drag" });
     runtime.dispose();
   });
 
@@ -133,7 +133,9 @@ describe("P5-02 runtime free tracks", () => {
 
     // Published by the commit, and after the Motion entry was written: the flush is seeded once the
     // settle steps ran, so a node that publishes here is one its Motion can already resolve.
-    expect(runtime.graph.registry.get("hero/opacity")?.values).toEqual({ node: "hero/opacity" });
+    expect(runtime.graph.registry.lastReady("hero/opacity")?.values).toEqual({
+      node: "hero/opacity",
+    });
     expect(runtime.seek("hero/opacity", 0).patches).toEqual([]);
     runtime.dispose();
   });

@@ -40,13 +40,22 @@ describe("add -> remove -> re-add lifecycle on the wire (D1)", () => {
     handle.signal("walk", { type: "manual", progress: 0.45 });
     scheduler.flush();
     expect(seen.at(-1)?.status).toBe("ready");
-    expect(seen.at(-1)?.values).toEqual({ x: 45 });
+    const composed = seen.at(-1);
+    if (composed?.status !== "ready")
+      throw new Error(`${added.id} is ${composed?.status ?? "absent"}, not ready.`);
+    expect(composed.values).toEqual({ x: 45 });
 
     // Destruction must be an event, not a silent deletion. This is the exact moment the demo
     // rig used to freeze: the graph dropped the node while the renderer kept its last pose.
     added.remove();
     expect(seen.at(-1)?.status).toBe("destroyed");
-    expect(seen.at(-1)?.values).toEqual({});
+    const terminal = seen.at(-1);
+    if (terminal?.status !== "destroyed")
+      throw new Error(`${added.id} is ${terminal?.status ?? "absent"}, not destroyed.`);
+    // Re-read rather than adjusted: the terminal patch carried four empty members, and asserting
+    // the pose had been emptied was how this case said the renderer must stop drawing it. A
+    // destroyed patch owns no payload at all since ADR-098, so the claim is the member's absence.
+    expect("values" in terminal).toBe(false);
     expect(handle.get(added.id)).toBeUndefined();
 
     // Driving the motion backwards must not resurrect the destroyed node.
@@ -61,7 +70,10 @@ describe("add -> remove -> re-add lifecycle on the wire (D1)", () => {
     handle.signal("walk", { type: "manual", progress: 0.6 });
     scheduler.flush();
     expect(seen.at(-1)?.status).toBe("ready");
-    expect(seen.at(-1)?.values).toEqual({ x: 60 });
+    const recomposed = seen.at(-1);
+    if (recomposed?.status !== "ready")
+      throw new Error(`${added.id} is ${recomposed?.status ?? "absent"}, not ready.`);
+    expect(recomposed.values).toEqual({ x: 60 });
 
     handle.dispose();
   });

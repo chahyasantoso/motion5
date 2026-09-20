@@ -52,7 +52,6 @@ describe("P2 runtime smell hardening", () => {
     registry.beginBatch(2, ["source"]);
     registry.publish({
       nodeId: "source",
-      sourceProgress: 0,
       status: "error",
       diagnostics: [
         {
@@ -65,7 +64,14 @@ describe("P2 runtime smell hardening", () => {
       ],
     });
     registry.closeBatch();
-    expect(registry.get("source")?.values).toEqual({ x: 1 });
+    // Re-read rather than adjusted: the last known good values are still preserved, and the
+    // registry is what preserves them. They were a payload the errored patch carried until
+    // ADR-098, so the pose is asked for by name and the old place is asserted empty beside it.
+    const errored = registry.get("source");
+    if (errored?.status !== "error")
+      throw new Error(`source is ${errored?.status ?? "absent"}, not error.`);
+    expect("values" in errored).toBe(false);
+    expect(registry.lastReady("source")?.values).toEqual({ x: 1 });
   });
   it("derives source revisions from the upstream patches consumed in the flush", () => {
     const registry = new PatchRegistry();
@@ -93,9 +99,14 @@ describe("P2 runtime smell hardening", () => {
       sourceRevisions: {},
     }));
     publisher.flush(snapshot([consumer]), ["consumer"], 1);
-    expect(registry.get("consumer")?.status).toBe("blocked");
-    expect(registry.get("consumer")?.diagnostics[0]?.ruleId).toBe("observation-pending-reference");
-    expect(registry.get("consumer")?.values).toEqual({});
+    const blocked = registry.get("consumer");
+    expect(blocked?.status).toBe("blocked");
+    if (blocked?.status !== "blocked")
+      throw new Error(`consumer is ${blocked?.status ?? "absent"}, not blocked.`);
+    expect(blocked.diagnostics[0]?.ruleId).toBe("observation-pending-reference");
+    // The hole is still not composed with, and it is not reported as an empty pose either: a
+    // blocked patch owns no values at all now, which is that refusal stated in the type.
+    expect("values" in blocked).toBe(false);
   });
   it("chooses the blocked upstream deterministically by edge key, not authored edge order", () => {
     const registry = new PatchRegistry();

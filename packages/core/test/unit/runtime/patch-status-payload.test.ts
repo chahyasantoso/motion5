@@ -60,7 +60,6 @@ describe("a patch carries only the payload its status owns", () => {
     const blocked = required(
       publish(registry, 2, {
         nodeId: NODE,
-        sourceProgress: 0,
         status: "blocked",
         diagnostics: BLOCKED,
       }),
@@ -73,6 +72,9 @@ describe("a patch carries only the payload its status owns", () => {
     // What a blocked patch does own, asserted here so the case above cannot be satisfied by a
     // publication that dropped everything.
     expect("diagnostics" in blocked).toBe(true);
+    // Narrowed on the discriminant rather than read off the union: `DestroyedPatch` owns no
+    // diagnostics either, and this case is about the refusal rather than about the terminal patch.
+    if (blocked.status !== "blocked") throw new Error(`${NODE} is ${blocked.status}, not blocked.`);
     expect(blocked.diagnostics).toHaveLength(1);
     expect(blocked.nodeId).toBe(NODE);
     expect(blocked.revision).toBe(2);
@@ -84,7 +86,6 @@ describe("a patch carries only the payload its status owns", () => {
     const errored = required(
       publish(registry, 2, {
         nodeId: NODE,
-        sourceProgress: 0,
         status: "error",
         diagnostics: FAILED,
       }),
@@ -96,6 +97,7 @@ describe("a patch carries only the payload its status owns", () => {
     expect("values" in errored).toBe(false);
     expect("sourceProgress" in errored).toBe(false);
     expect("sourceRevisions" in errored).toBe(false);
+    if (errored.status !== "error") throw new Error(`${NODE} is ${errored.status}, not error.`);
     expect(errored.diagnostics).toHaveLength(1);
   });
 
@@ -104,7 +106,6 @@ describe("a patch carries only the payload its status owns", () => {
     const blocked = required(
       publish(registry, 1, {
         nodeId: NODE,
-        sourceProgress: 0,
         status: "blocked",
         diagnostics: BLOCKED,
       }),
@@ -155,6 +156,7 @@ describe("a patch carries only the payload its status owns", () => {
     expect("sourceProgress" in ready).toBe(true);
     expect("sourceRevisions" in ready).toBe(true);
     expect("diagnostics" in ready).toBe(true);
+    if (ready.status !== "ready") throw new Error(`${NODE} is ${ready.status}, not ready.`);
     expect(ready.values).toEqual({ x: 1 });
     expect(ready.sourceProgress).toBe(0.5);
     expect(ready.sourceRevisions).toEqual({ "hero/shoulder": 3 });
