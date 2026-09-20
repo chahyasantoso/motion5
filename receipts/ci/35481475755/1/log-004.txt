@@ -1,0 +1,129 @@
+operty 'values' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T01:29:13.8653160Z   Property 'values' does not exist on type 'BlockedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T01:29:13.8653950Z ##[error]packages/core/test/unit/runtime/patch-last-ready.test.ts(184,21): error TS2339: Property 'sourceProgress' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T01:29:13.8654899Z   Property 'sourceProgress' does not exist on type 'BlockedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T01:29:13.8655632Z ##[error]packages/core/test/unit/runtime/patch-last-ready.test.ts(185,21): error TS2339: Property 'diagnostics' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T01:29:13.8656536Z   Property 'diagnostics' does not exist on type 'DestroyedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T01:29:13.8657704Z ##[error]packages/core/test/unit/runtime/patch-registry-structural-change.test.ts(38,5): error TS2353: Object literal may only specify known properties, and 'sourceProgress' does not exist in type 'RefusedPublishInput'.
+quality (node 24)	Run npm run typecheck	2026-09-20T01:29:13.8659184Z ##[error]packages/core/test/unit/runtime/patch-registry.test.ts(29,35): error TS2339: Property 'values' does not exist on type 'LivePatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T01:29:13.8660075Z   Property 'values' does not exist on type 'BlockedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T01:29:13.8661084Z ##[error]packages/core/test/unit/runtime/patch-registry.test.ts(30,35): error TS2339: Property 'values' does not exist on type 'LivePatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T01:29:13.8662045Z   Property 'values' does not exist on type 'BlockedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T01:29:13.8662836Z ##[error]packages/core/test/unit/runtime/patch-registry.test.ts(107,21): error TS2339: Property 'values' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T01:29:13.8663680Z   Property 'values' does not exist on type 'BlockedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T01:29:13.8664791Z ##[error]packages/core/test/unit/runtime/patch-status-payload.test.ts(63,9): error TS2353: Object literal may only specify known properties, and 'sourceProgress' does not exist in type 'RefusedPublishInput'.
+quality (node 24)	Run npm run typecheck	2026-09-20T01:29:13.8666247Z ##[error]packages/core/test/unit/runtime/patch-status-payload.test.ts(76,20): error TS2339: Property 'diagnostics' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T01:29:13.8667209Z   Property 'diagnostics' does not exist on type 'DestroyedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T01:29:13.8668235Z ##[error]packages/core/test/unit/runtime/patch-status-payload.test.ts(87,9): error TS2353: Object literal may only specify known properties, and 'sourceProgress' does not exist in type 'RefusedPublishInput'.
+quality (node 24)	Run npm run typecheck	2026-09-20T01:29:13.8669627Z ##[error]packages/core/test/unit/runtime/patch-status-payload.test.ts(99,20): error TS2339: Property 'diagnostics' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T01:29:13.8670754Z   Property 'diagnostics' does not exist on type 'DestroyedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T01:29:13.8671837Z ##[error]packages/core/test/unit/runtime/patch-status-payload.test.ts(107,9): error TS2353: Object literal may only specify known properties, and 'sourceProgress' does not exist in type 'RefusedPublishInput'.
+quality (node 24)	Run npm run typecheck	2026-09-20T01:29:13.8673226Z ##[error]packages/core/test/unit/runtime/patch-status-payload.test.ts(158,18): error TS2339: Property 'values' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T01:29:13.8674072Z   Property 'values' does not exist on type 'BlockedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T01:29:13.8674931Z ##[error]packages/core/test/unit/runtime/patch-status-payload.test.ts(159,18): error TS2339: Property 'sourceProgress' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T01:29:13.8675829Z   Property 'sourceProgress' does not exist on type 'BlockedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T01:29:13.8676624Z ##[error]packages/core/test/unit/runtime/patch-status-payload.test.ts(160,18): error TS2339: Property 'sourceRevisions' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T01:29:13.8677564Z   Property 'sourceRevisions' does not exist on type 'BlockedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T01:29:13.8678360Z ##[error]packages/core/test/unit/runtime/publication-boundary.test.ts(70,46): error TS2339: Property 'values' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T01:29:13.8679250Z   Property 'values' does not exist on type 'BlockedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T01:29:13.8680041Z ##[error]packages/core/test/unit/runtime/publication-boundary.test.ts(71,51): error TS2339: Property 'values' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T01:29:13.8681069Z   Property 'values' does not exist on type 'BlockedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T01:29:13.8682032Z ##[error]packages/core/test/unit/runtime/publisher-outcome.test.ts(122,35): error TS2345: Argument of type 'Patch' is not assignable to parameter of type 'ReadyPatch | undefined'.
+quality (node 24)	Run npm run typecheck	2026-09-20T01:29:13.8683234Z   Type 'BlockedPatch' is missing the following properties from type 'ReadyPatch': values, sourceProgress, sourceRevisions
+quality (node 24)	Run npm run typecheck	2026-09-20T01:29:13.8684284Z ##[error]packages/core/test/unit/runtime/publisher-outcome.test.ts(126,39): error TS2345: Argument of type 'Patch' is not assignable to parameter of type 'ReadyPatch | undefined'.
+quality (node 24)	Run npm run typecheck	2026-09-20T01:29:13.8685514Z   Type 'BlockedPatch' is missing the following properties from type 'ReadyPatch': values, sourceProgress, sourceRevisions
+quality (node 24)	Run npm run typecheck	2026-09-20T01:29:13.8686618Z ##[error]packages/core/test/unit/runtime/publisher-outcome.test.ts(131,57): error TS2345: Argument of type 'Patch' is not assignable to parameter of type 'ReadyPatch | undefined'.
+quality (node 24)	Run npm run typecheck	2026-09-20T01:29:13.8687721Z   Type 'BlockedPatch' is missing the following properties from type 'ReadyPatch': values, sourceProgress, sourceRevisions
+quality (node 24)	Run npm run typecheck	2026-09-20T01:29:13.8688781Z ##[error]packages/core/test/unit/runtime/publisher-outcome.test.ts(135,39): error TS2345: Argument of type 'Patch' is not assignable to parameter of type 'ReadyPatch | undefined'.
+quality (node 24)	Run npm run typecheck	2026-09-20T01:29:13.8689891Z   Type 'BlockedPatch' is missing the following properties from type 'ReadyPatch': values, sourceProgress, sourceRevisions
+quality (node 24)	Run npm run typecheck	2026-09-20T01:29:13.8691297Z ##[error]packages/core/test/unit/runtime/publisher-outcome.test.ts(139,48): error TS2345: Argument of type 'Patch' is not assignable to parameter of type 'ReadyPatch | undefined'.
+quality (node 24)	Run npm run typecheck	2026-09-20T01:29:13.8692519Z   Type 'BlockedPatch' is missing the following properties from type 'ReadyPatch': values, sourceProgress, sourceRevisions
+quality (node 24)	Run npm run typecheck	2026-09-20T01:29:13.8693706Z ##[error]packages/core/test/unit/runtime/publisher-outcome.test.ts(202,57): error TS2345: Argument of type 'Patch' is not assignable to parameter of type 'ReadyPatch | undefined'.
+quality (node 24)	Run npm run typecheck	2026-09-20T01:29:13.8694860Z   Type 'BlockedPatch' is missing the following properties from type 'ReadyPatch': values, sourceProgress, sourceRevisions
+quality (node 24)	Run npm run typecheck	2026-09-20T01:29:13.8695878Z ##[error]packages/core/test/unit/runtime/publisher-outcome.test.ts(209,68): error TS2345: Argument of type 'Patch' is not assignable to parameter of type 'ReadyPatch | undefined'.
+quality (node 24)	Run npm run typecheck	2026-09-20T01:29:13.8697071Z   Type 'BlockedPatch' is missing the following properties from type 'ReadyPatch': values, sourceProgress, sourceRevisions
+quality (node 24)	Run npm run typecheck	2026-09-20T01:29:13.8698129Z ##[error]packages/core/test/unit/runtime/publisher-outcome.test.ts(216,69): error TS2345: Argument of type 'Patch' is not assignable to parameter of type 'ReadyPatch | undefined'.
+quality (node 24)	Run npm run typecheck	2026-09-20T01:29:13.8699241Z   Type 'BlockedPatch' is missing the following properties from type 'ReadyPatch': values, sourceProgress, sourceRevisions
+quality (node 24)	Run npm run typecheck	2026-09-20T01:29:13.8700375Z ##[error]packages/core/test/unit/runtime/publisher-outcome.test.ts(226,63): error TS2345: Argument of type 'Patch' is not assignable to parameter of type 'ReadyPatch | undefined'.
+quality (node 24)	Run npm run typecheck	2026-09-20T01:29:13.8701554Z   Type 'BlockedPatch' is missing the following properties from type 'ReadyPatch': values, sourceProgress, sourceRevisions
+quality (node 24)	Run npm run typecheck	2026-09-20T01:29:13.8702447Z ##[error]packages/core/test/unit/runtime/publisher-reentrancy.test.ts(104,51): error TS2339: Property 'values' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T01:29:13.8703312Z   Property 'values' does not exist on type 'BlockedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T01:29:13.8704200Z ##[error]packages/core/test/unit/runtime/publisher-requirement-inputs.test.ts(74,43): error TS2339: Property 'values' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T01:29:13.8705137Z   Property 'values' does not exist on type 'BlockedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T01:29:13.8706032Z ##[error]packages/core/test/unit/runtime/publisher-requirement-inputs.test.ts(96,72): error TS2339: Property 'diagnostics' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T01:29:13.8706948Z   Property 'diagnostics' does not exist on type 'DestroyedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T01:29:13.8707744Z ##[error]packages/core/test/unit/runtime/publisher-solver-members.test.ts(238,25): error TS2339: Property 'diagnostics' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T01:29:13.8708733Z   Property 'diagnostics' does not exist on type 'DestroyedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T01:29:13.8709497Z ##[error]packages/core/test/unit/runtime/publisher-solver-members.test.ts(239,25): error TS2339: Property 'diagnostics' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T01:29:13.8710649Z   Property 'diagnostics' does not exist on type 'DestroyedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T01:29:13.8711463Z ##[error]packages/core/test/unit/runtime/publisher-solver-members.test.ts(243,28): error TS2339: Property 'diagnostics' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T01:29:13.8712362Z   Property 'diagnostics' does not exist on type 'DestroyedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T01:29:13.8713183Z ##[error]packages/core/test/unit/runtime/publisher-solver-members.test.ts(246,37): error TS2339: Property 'diagnostics' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T01:29:13.8714074Z   Property 'diagnostics' does not exist on type 'DestroyedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T01:29:13.8714809Z ##[error]packages/core/test/unit/runtime/recompile-predicate.test.ts(210,17): error TS2339: Property 'values' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T01:29:13.8715683Z   Property 'values' does not exist on type 'BlockedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T01:29:13.8716524Z ##[error]packages/core/test/unit/runtime/registry-phase.test.ts(191,24): error TS2345: Argument of type 'Patch' is not assignable to parameter of type 'LivePatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T01:29:13.8717446Z   Type 'DestroyedPatch' is not assignable to type 'LivePatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T01:29:13.8717944Z     Property 'diagnostics' is missing in type 'DestroyedPatch' but required in type 'ErrorPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T01:29:13.8718849Z ##[error]packages/core/test/unit/runtime/registry-phase.test.ts(196,27): error TS2345: Argument of type 'Patch' is not assignable to parameter of type 'LivePatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T01:29:13.8719744Z   Type 'DestroyedPatch' is not assignable to type 'LivePatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T01:29:13.8720398Z     Property 'diagnostics' is missing in type 'DestroyedPatch' but required in type 'ErrorPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T01:29:13.8721406Z ##[error]packages/core/test/unit/runtime/registry-phase.test.ts(197,36): error TS2345: Argument of type 'Patch' is not assignable to parameter of type 'LivePatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T01:29:13.8722389Z   Type 'DestroyedPatch' is not assignable to type 'LivePatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T01:29:13.8722885Z     Property 'diagnostics' is missing in type 'DestroyedPatch' but required in type 'ErrorPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T01:29:13.8723660Z ##[error]packages/core/test/unit/runtime/scheduler-reentrancy.test.ts(41,51): error TS2339: Property 'values' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T01:29:13.8724529Z   Property 'values' does not exist on type 'BlockedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T01:29:13.8725310Z ##[error]packages/core/test/unit/runtime/structural-commit-flush.test.ts(214,56): error TS2339: Property 'diagnostics' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T01:29:13.8726193Z   Property 'diagnostics' does not exist on type 'DestroyedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T01:29:13.8727039Z ##[error]packages/react/src/derived-dom-patch.ts(7,33): error TS2339: Property 'values' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T01:29:13.8728248Z ##[error]packages/react/test/patch-store-destroy.test.ts(21,33): error TS2339: Property 'values' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T01:29:13.8729073Z   Property 'values' does not exist on type 'BlockedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T01:29:13.8729775Z ##[error]packages/react/test/patch-store-destroy.test.ts(44,33): error TS2339: Property 'values' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T01:29:13.8730697Z   Property 'values' does not exist on type 'BlockedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T01:29:13.8731442Z ##[error]packages/react/test/patch-store-lifecycle.test.ts(36,33): error TS2339: Property 'values' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T01:29:13.8732288Z   Property 'values' does not exist on type 'BlockedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T01:29:13.8732960Z ##[error]packages/react/test/public-hook-render.test.ts(28,29): error TS2339: Property 'values' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T01:29:13.8733817Z   Property 'values' does not exist on type 'BlockedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T01:29:13.8734561Z ##[error]packages/react/test/public-hook-render.test.ts(84,49): error TS2339: Property 'values' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T01:29:13.8735370Z   Property 'values' does not exist on type 'BlockedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T01:29:13.8736116Z ##[error]packages/react/test/public-package-surface.test.ts(59,24): error TS2339: Property 'values' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T01:29:13.8736943Z   Property 'values' does not exist on type 'BlockedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T01:29:13.8739804Z ##[error]Process completed with exit code 2.
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	﻿2026-09-20T01:29:41.3133358Z ##[group]Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-20T01:29:41.3133786Z ^[[36;1mnpm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs^[[0m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-20T01:29:41.3154494Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-20T01:29:41.3154711Z env:
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-20T01:29:41.3154864Z   NODE_VERSION: 24
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-20T01:29:41.3155057Z   CI_EVIDENCE_DIR: /home/runner/work/_temp/ci-evidence
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-20T01:29:41.3155281Z ##[endgroup]
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-20T01:29:41.3855932Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-20T01:29:41.3857109Z > motion5@0.0.0 test
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-20T01:29:41.3857687Z > vitest run --reporter=default --reporter=./scripts/ci-evidence.mjs
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-20T01:29:41.3858001Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-20T01:29:41.6111021Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-20T01:29:41.6112768Z ^[[1m^[[30m^[[46m RUN ^[[49m^[[39m^[[22m ^[[36mv4.1.10 ^[[39m^[[90m/home/runner/work/motion5/motion5^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-20T01:29:41.6113385Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-20T01:29:41.8528890Z  ^[[32m✓^[[39m packages/core/test/unit/scripts/evidence-case-ids.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 31^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-20T01:29:42.1231694Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/graph-runtime-state.test.ts ^[[2m(^[[22m^[[2m23 tests^[[22m^[[2m)^[[22m^[[32m 16^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-20T01:29:42.1982680Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/structural-commit-path.test.ts ^[[2m(^[[22m^[[2m40 tests^[[22m^[[2m)^[[22m^[[32m 57^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-20T01:29:42.2956177Z  ^[[32m✓^[[39m packages/core/test/unit/scripts/session-status-shape.test.ts ^[[2m(^[[22m^[[2m25 tests^[[22m^[[2m)^[[22m^[[32m 17^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-20T01:29:42.5042541Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/keyframe-property-edit.test.ts ^[[2m(^[[22m^[[2m10 tests^[[22m^[[2m)^[[22m^[[32m 60^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-20T01:29:42.5345034Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/live-value-updates.test.ts ^[[2m(^[[22m^[[2m19 tests^[[22m^[[2m)^[[22m^[[32m 124^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-20T01:29:42.6618105Z ^[[90mstderr^[[2m | packages/core/test/integration/phase7-walker-demo.test.ts^[[2m > ^[[22m^[[2mPhase 7: Walker Demo Integration Suite^[[2m > ^[[22m^[[2m9. Use React usePatch hook at the React boundary
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-20T01:29:42.6672108Z ^[[22m^[[39mreact-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-20T01:29:42.6701905Z An update to Root inside a test was not wrapped in act(...).
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-20T01:29:42.6702225Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-20T01:29:42.6702523Z When testing, code that causes React state updates should be wrapped into act(...):
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-20T01:29:42.6702812Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-20T01:29:42.6702901Z act(() => {
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-20T01:29:42.6703111Z   /* fire events that update state */
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-20T01:29:42.6703344Z });
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-20T01:29:42.6703508Z /* assert on the output */
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-20T01:29:42.6703621Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-20T01:29:42.6703982Z This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-20T01:29:42.6704314Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-20T01:29:42.6797686Z  ^[[32m✓^[[39m packages/core/test/integration/phase7-walker-demo.test.ts ^[[2m(^[[22m^[[2m13 tests^[[22m^[[2m)^[[22m^[[32m 68^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-20T01:29:42.6974801Z  ^[[32m✓^[[39m packages/core/test/unit/plugins/pivot-offset-solve.test.ts ^[[2m(^[[22m^[[2m10 tests^[[22m^[[2m)^[[22m^[[32m 24^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-20T01:29:42.8972846Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/schema-transaction.test.ts ^[[2m(^[[22m^[[2m9 tests^[[22m^[[2m)^[[22m^[[32m 25^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-20T01:29:43.0482462Z  ^[[32m✓^[[39m packages/core/test/unit/graph/resolve-solvers.test.ts ^[[2m(^[[22m^[[2m10 tests^[[22m^[[2m)^[[22m^[[32m 17^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-20T01:29:43.1994577Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/handle-base.test.ts ^[[2m(^[[22m
