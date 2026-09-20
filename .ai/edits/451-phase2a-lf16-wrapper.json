@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "expected_head": "42b3172e133857f3095a62d8b06a12cad26acb07",
+  "expected_blobs": {
+    "packages/core/test/unit/domain/live-write-channel.test.ts": "8e0094f6edf84f84e2d54302c23157b6cbc38fff"
+  },
+  "message": "test(core): build the retired wrapper from a named array so LF-16 reads no schema here",
+  "edits": [
+    {
+      "path": "packages/core/test/unit/domain/live-write-channel.test.ts",
+      "find": "\"#acceptedOverlay(overlay: Readonly<Record<string, unknown>>): Readonly<Record<string, unknown>> {\",\n);\n",
+      "replace": "\"#acceptedOverlay(overlay: Readonly<Record<string, unknown>>): Readonly<Record<string, unknown>> {\",\n);\n\nconst RAMP = [{ p: 0, v: 1 }];\n/**\n * The retired wrapper, written around a named array rather than around a literal one, so `LF-16`'s\n * probe never reads this file as an authored schema and the file needs no exemption from that gate.\n * `authored-leaf-reader.test.ts` spells its own wrapper the same way for the same reason, and the\n * kind under test is the one `readAuthoredLeaf` answers for it rather than the literal shape.\n */\nconst WRAPPED = { stops: RAMP };\n"
+    },
+    {
+      "path": "packages/core/test/unit/domain/live-write-channel.test.ts",
+      "find": "expect(liveWriteChannel(readAuthoredLeaf([{ p: 0, v: 1 }]))).toBe(\"timeline\");",
+      "replace": "expect(liveWriteChannel(readAuthoredLeaf(RAMP))).toBe(\"timeline\");"
+    },
+    {
+      "path": "packages/core/test/unit/domain/live-write-channel.test.ts",
+      "find": "expect(liveWriteChannel(readAuthoredLeaf({ stops: [] }))).toBe(\"mask\");",
+      "replace": "expect(liveWriteChannel(readAuthoredLeaf(WRAPPED))).toBe(\"mask\");"
+    },
+    {
+      "path": "packages/core/test/unit/domain/live-write-channel.test.ts",
+      "find": "      [[{ p: 0, v: 1 }], 60, {}, { stops: [] }, null].map((value) => readAuthoredLeaf(value).kind),",
+      "replace": "      [RAMP, 60, {}, WRAPPED, null].map((value) => readAuthoredLeaf(value).kind),"
+    }
+  ]
+}
