@@ -2,8 +2,9 @@ import { createElement } from "react";
 import type { RefCallback } from "react";
 import { act, create } from "react-test-renderer";
 import { describe, expect, it } from "vitest";
-import { useDomPatch } from "@motion5/react";
+import { liveOrAbsent, useDomPatch } from "@motion5/react";
 import type {
+  LivePatch,
   Patch,
   PatchListener,
   PatchSource,
@@ -20,9 +21,15 @@ interface FakeSource extends PatchSource, RenderMetadataSource {
 
 // The hook's contract is satisfiable from the published entry alone, metadata included: a source
 // that cannot answer `renderMetadata` does not typecheck, which is the whole point of requiring it.
-function createFakeSource(initial?: Patch, metadata?: RenderMetadata): FakeSource {
+//
+// One slot, holding the live union, so the collapse is the whole of what `publish` does with a
+// terminal patch: `get` answers what a reader may still ask for, and a delivered `destroyed` leaves
+// nothing to ask about. `liveOrAbsent` comes from the entry for the same reason every other name
+// here does, which is that an implementor of `PatchSource` must be able to satisfy it without
+// reaching past the published surface.
+function createFakeSource(initial?: LivePatch, metadata?: RenderMetadata): FakeSource {
   const listeners = new Set<PatchListener>();
-  let latest = initial;
+  let latest: LivePatch | undefined = initial;
   return {
     get: () => latest,
     subscribeNode(nodeId, listener) {
@@ -35,7 +42,7 @@ function createFakeSource(initial?: Patch, metadata?: RenderMetadata): FakeSourc
     renderMetadata: () => metadata,
     listenerCount: () => listeners.size,
     publish(next) {
-      latest = next;
+      latest = liveOrAbsent(next);
       for (const listener of [...listeners]) listener(next);
     },
   };
@@ -44,8 +51,8 @@ function createFakeSource(initial?: Patch, metadata?: RenderMetadata): FakeSourc
 function patch(
   revision: number,
   values: Readonly<Record<string, unknown>>,
-  status: Patch["status"] = "ready",
-): Patch {
+  status: LivePatch["status"] = "ready",
+): LivePatch {
   return {
     nodeId: NODE_ID,
     revision,
@@ -55,6 +62,18 @@ function patch(
     status,
     diagnostics: [],
   };
+}
+
+/**
+ * The terminal patch, minted with the members `DestroyedPatch` actually owns.
+ *
+ * Identity and status and nothing else, which is what `#notifyTerminal` publishes since ADR-098. The
+ * helper above builds a pose and a destroyed node has none, so it cannot answer this case: sending
+ * `destroyed` through it published a payload the real wire has never carried, and the adapter's
+ * status gate is the only reason nothing noticed.
+ */
+function destroyed(revision: number): Patch {
+  return { nodeId: NODE_ID, revision, status: "destroyed" };
 }
 
 interface FakeStyle extends Record<string, unknown> {
@@ -133,9 +152,16 @@ describe("useDomPatch", () => {
     expect(target.style.transformBox).toBe("view-box");
     expect(target.style.transformOrigin).toBe("0px 0px");
 
-    for (const status of ["blocked", "error", "destroyed"] as const)
+    // The three publications a ready patch is held against, minted per variant rather than by
+    // varying one status on one payload: the terminal one owns no pose, so it cannot be the same
+    // object with a different word in it.
+    for (const notReady of [
+      patch(2, { x: 99, y: 99 }, "blocked"),
+      patch(2, { x: 99, y: 99 }, "error"),
+      destroyed(2),
+    ])
       act(() => {
-        source.publish(patch(2, { x: 99, y: 99 }, status));
+        source.publish(notReady);
       });
     expect(target.style.transform).toBe("translate3d(1px, 2px, 0px)");
 

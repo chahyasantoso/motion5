@@ -1,17 +1,22 @@
-import type { Patch, PatchListener, PatchSource } from "@motion5/core/internal";
+import type { LivePatch, PatchListener, PatchSource } from "@motion5/core/internal";
+import { liveOrAbsent } from "@motion5/core/internal";
 
 /**
  * Framework-neutral external store used by the React binding. React owns the hook and
  * subscription lifecycle; this object owns neither runtime internals nor composition.
  */
 export interface PatchStore {
-  getSnapshot(): Patch | undefined;
+  getSnapshot(): LivePatch | undefined;
   subscribe(listener: PatchListener): () => void;
 }
 
 export function createPatchStore(source: PatchSource, nodeId: string): PatchStore {
   const listeners = new Set<PatchListener>();
-  let snapshot: Patch | undefined;
+  // The live union rather than `Patch`, and it is a statement of what this variable already held.
+  // Both of its writers answer it: `source.get` cannot produce a terminal patch, and the delivered
+  // one below is collapsed before it is stored. Declaring it wider than that asked every reader of
+  // `getSnapshot` to narrow past a variant the store has never served.
+  let snapshot: LivePatch | undefined;
   let detachSource: (() => void) | undefined;
 
   // React mounts, unmounts, and remounts effects freely, and StrictMode does it on purpose.
@@ -22,11 +27,13 @@ export function createPatchStore(source: PatchSource, nodeId: string): PatchStor
   function attach(): void {
     snapshot = source.get(nodeId);
     detachSource = source.subscribeNode(nodeId, (patch) => {
-      // A terminal patch says the node is gone, not that it has new values. Collapsing it to
-      // `undefined` is what lets a consumer render "absent" instead of freezing on the last
-      // live pose: the memoized snapshot is authoritative while attached, so without this the
-      // destroyed node's final patch would be served forever.
-      snapshot = patch.status === "destroyed" ? undefined : patch;
+      // A terminal patch says the node is gone, not that it has new values, and collapsing it to
+      // `undefined` is what lets a consumer render "absent" instead of freezing on the last live
+      // pose: the memoized snapshot is authoritative while attached, so without this the destroyed
+      // node's final patch would be served forever. The collapse itself is core's to define rather
+      // than this store's to spell, because `source.get` already answers the narrow union and the
+      // two writers of one variable cannot be allowed to disagree about which variants it holds.
+      snapshot = liveOrAbsent(patch);
       for (const listener of [...listeners]) listener(patch);
     });
   }

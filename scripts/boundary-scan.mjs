@@ -26,6 +26,7 @@ const allowedPublicExports = new Set([
   "ScrollTriggerDefinition",
   "PatchStatus",
   "Patch",
+  "LivePatch",
   "PatchBatch",
   "PatchListener",
   "migrateV4ToV5",
