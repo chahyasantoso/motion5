@@ -1,0 +1,142 @@
+perty 'values' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1407131Z   Property 'values' does not exist on type 'BlockedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1407980Z ##[error]packages/core/test/integration/ik-two-bone.test.ts(124,26): error TS2339: Property 'values' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1408944Z   Property 'values' does not exist on type 'BlockedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1409909Z ##[error]packages/core/test/integration/ik-two-bone.test.ts(128,27): error TS2339: Property 'values' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1410917Z   Property 'values' does not exist on type 'BlockedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1411748Z ##[error]packages/core/test/integration/ik-two-bone.test.ts(132,30): error TS2339: Property 'values' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1412676Z   Property 'values' does not exist on type 'BlockedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1413524Z ##[error]packages/core/test/integration/ik-two-bone.test.ts(133,30): error TS2339: Property 'values' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1414765Z   Property 'values' does not exist on type 'BlockedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1415609Z ##[error]packages/core/test/integration/ik-two-bone.test.ts(205,30): error TS2339: Property 'values' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1416720Z   Property 'values' does not exist on type 'BlockedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1417610Z ##[error]packages/core/test/integration/ik-two-bone.test.ts(207,30): error TS2339: Property 'values' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1418601Z   Property 'values' does not exist on type 'BlockedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1419417Z ##[error]packages/core/test/integration/ik-two-bone.test.ts(270,26): error TS2339: Property 'values' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1421385Z   Property 'values' does not exist on type 'BlockedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1422273Z ##[error]packages/core/test/integration/internal-key-strip.test.ts(43,70): error TS2339: Property 'values' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1423252Z   Property 'values' does not exist on type 'BlockedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1424375Z ##[error]packages/core/test/integration/internal-key-strip.test.ts(50,19): error TS2339: Property 'values' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1425523Z   Property 'values' does not exist on type 'BlockedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1426389Z ##[error]packages/core/test/integration/internal-key-strip.test.ts(51,36): error TS2339: Property 'values' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1427365Z   Property 'values' does not exist on type 'BlockedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1428228Z ##[error]packages/core/test/integration/internal-key-strip.test.ts(71,36): error TS2339: Property 'values' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1429409Z   Property 'values' does not exist on type 'BlockedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1430360Z ##[error]packages/core/test/integration/internal-key-strip.test.ts(92,19): error TS2339: Property 'diagnostics' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1431385Z   Property 'diagnostics' does not exist on type 'DestroyedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1432312Z ##[error]packages/core/test/integration/issue-114-motion-track-regressions.test.ts(49,37): error TS2339: Property 'values' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1433356Z   Property 'values' does not exist on type 'BlockedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1434567Z ##[error]packages/core/test/integration/issue-114-motion-track-regressions.test.ts(61,37): error TS2339: Property 'values' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1435695Z   Property 'values' does not exist on type 'BlockedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1436581Z ##[error]packages/core/test/integration/issue-114-motion-track-regressions.test.ts(77,39): error TS2339: Property 'values' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1437619Z   Property 'values' does not exist on type 'BlockedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1438542Z ##[error]packages/core/test/integration/issue-114-motion-track-regressions.test.ts(78,40): error TS2339: Property 'values' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1439569Z   Property 'values' does not exist on type 'BlockedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1440490Z ##[error]packages/core/test/integration/issue-114-motion-track-regressions.test.ts(79,39): error TS2339: Property 'values' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1441657Z   Property 'values' does not exist on type 'BlockedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1442712Z ##[error]packages/core/test/integration/issue-114-motion-track-regressions.test.ts(95,39): error TS2339: Property 'values' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1443950Z   Property 'values' does not exist on type 'BlockedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1444946Z ##[error]packages/core/test/integration/issue-114-motion-track-regressions.test.ts(96,40): error TS2339: Property 'values' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1446027Z   Property 'values' does not exist on type 'BlockedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1446899Z ##[error]packages/core/test/integration/keyframe-groups.test.ts(62,19): error TS2339: Property 'values' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1447883Z   Property 'values' does not exist on type 'BlockedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1448724Z ##[error]packages/core/test/integration/keyframe-groups.test.ts(63,19): error TS2339: Property 'values' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1449739Z   Property 'values' does not exist on type 'BlockedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1450580Z ##[error]packages/core/test/integration/keyframe-groups.test.ts(74,19): error TS2339: Property 'values' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1451569Z   Property 'values' does not exist on type 'BlockedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1452424Z ##[error]packages/core/test/integration/keyframe-groups.test.ts(88,34): error TS2339: Property 'values' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1453515Z   Property 'values' does not exist on type 'BlockedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1454553Z ##[error]packages/core/test/integration/keyframe-groups.test.ts(89,37): error TS2339: Property 'values' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1455618Z   Property 'values' does not exist on type 'BlockedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1456448Z ##[error]packages/core/test/integration/keyframe-groups.test.ts(89,75): error TS2339: Property 'values' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1457535Z   Property 'values' does not exist on type 'BlockedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1458418Z ##[error]packages/core/test/integration/live-value-composition.test.ts(77,17): error TS2339: Property 'values' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1459437Z   Property 'values' does not exist on type 'BlockedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1460320Z ##[error]packages/core/test/integration/membership-gating.test.ts(36,46): error TS2339: Property 'values' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1461314Z   Property 'values' does not exist on type 'BlockedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1462180Z ##[error]packages/core/test/integration/motion-trigger-types.test.ts(114,46): error TS2339: Property 'values' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1463217Z   Property 'values' does not exist on type 'BlockedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1464746Z ##[error]packages/core/test/integration/motion-trigger-types.test.ts(127,37): error TS2339: Property 'values' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1465849Z   Property 'values' does not exist on type 'BlockedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1466892Z ##[error]packages/core/test/integration/motion-trigger-types.test.ts(131,37): error TS2339: Property 'values' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1467996Z   Property 'values' does not exist on type 'BlockedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1468984Z ##[error]packages/core/test/integration/one-mechanism-per-question.test.ts(76,27): error TS2339: Property 'values' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1470143Z   Property 'values' does not exist on type 'BlockedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1471148Z ##[error]packages/core/test/integration/one-mechanism-per-question.test.ts(83,38): error TS2339: Property 'values' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1472313Z   Property 'values' does not exist on type 'BlockedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1473282Z ##[error]packages/core/test/integration/option-c-track-resolution.test.ts(65,37): error TS2339: Property 'values' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1474774Z   Property 'values' does not exist on type 'BlockedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1475730Z ##[error]packages/core/test/integration/option-c-track-resolution.test.ts(78,39): error TS2339: Property 'values' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1476827Z   Property 'values' does not exist on type 'BlockedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1477719Z ##[error]packages/core/test/integration/option-c-track-resolution.test.ts(79,40): error TS2339: Property 'values' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1478781Z   Property 'values' does not exist on type 'BlockedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1479780Z ##[error]packages/core/test/integration/option-c-track-resolution.test.ts(80,39): error TS2339: Property 'values' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1480858Z   Property 'values' does not exist on type 'BlockedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1481724Z ##[error]packages/core/test/integration/option-c-track-resolution.test.ts(116,39): error TS2339: Property 'values' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1482731Z   Property 'values' does not exist on type 'BlockedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1483722Z ##[error]packages/core/test/integration/option-c-track-resolution.test.ts(123,37): error TS2339: Property 'values' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1484940Z   Property 'values' does not exist on type 'BlockedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1486081Z ##[error]packages/core/test/integration/p2-runtime-smells.test.ts(90,38): error TS2339: Property 'sourceRevisions' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1487180Z   Property 'sourceRevisions' does not exist on type 'BlockedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1488081Z ##[error]packages/core/test/integration/p2-runtime-smells.test.ts(91,38): error TS2339: Property 'values' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1489078Z   Property 'values' does not exist on type 'BlockedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1490047Z ##[error]packages/core/test/integration/p2-runtime-smells.test.ts(126,38): error TS2339: Property 'diagnostics' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1491081Z   Property 'diagnostics' does not exist on type 'DestroyedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1491976Z ##[error]packages/core/test/integration/partial-seed-inputs.test.ts(81,67): error TS2339: Property 'values' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1493043Z   Property 'values' does not exist on type 'BlockedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1494191Z ##[error]packages/core/test/integration/per-plugin-key-ownership.test.ts(102,24): error TS2339: Property 'values' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1495367Z   Property 'values' does not exist on type 'BlockedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1496668Z ##[error]packages/core/test/integration/per-plugin-key-ownership.test.ts(103,24): error TS2339: Property 'values' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1497776Z   Property 'values' does not exist on type 'BlockedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1498653Z ##[error]packages/core/test/integration/per-plugin-key-ownership.test.ts(104,24): error TS2339: Property 'values' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1499643Z   Property 'values' does not exist on type 'BlockedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1500519Z ##[error]packages/core/test/integration/per-plugin-key-ownership.test.ts(132,47): error TS2339: Property 'values' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1501516Z   Property 'values' does not exist on type 'BlockedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1502361Z ##[error]packages/core/test/integration/phase0-red-baseline.test.ts(43,30): error TS2339: Property 'values' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1503368Z   Property 'values' does not exist on type 'BlockedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1504779Z ##[error]packages/core/test/integration/phase0-red-baseline.test.ts(149,21): error TS2339: Property 'values' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1505844Z   Property 'values' does not exist on type 'BlockedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1506665Z ##[error]packages/core/test/integration/phase0-red-baseline.test.ts(234,25): error TS2339: Property 'values' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1507772Z   Property 'values' does not exist on type 'BlockedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1508663Z ##[error]packages/core/test/integration/phase2-motion-scheduling.test.ts(49,30): error TS2339: Property 'values' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1509649Z   Property 'values' does not exist on type 'BlockedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1510502Z ##[error]packages/core/test/integration/phase3-trigger-port.test.ts(113,26): error TS2339: Property 'values' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1511519Z   Property 'values' does not exist on type 'BlockedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1512421Z ##[error]packages/core/test/integration/phase4-dynamic-lifecycle.test.ts(29,19): error TS2339: Property 'values' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1513839Z   Property 'values' does not exist on type 'BlockedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1515987Z ##[error]packages/core/test/integration/phase4-dynamic-lifecycle.test.ts(102,37): error TS2345: Argument of type '{ nodeId: string; sourceProgress: number; status: "ready"; }' is not assignable to parameter of type 'PublishInput'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1517868Z   Property 'values' is missing in type '{ nodeId: string; sourceProgress: number; status: "ready"; }' but required in type 'ReadyPublishInput'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1518930Z ##[error]packages/core/test/integration/phase7-walker-demo.test.ts(362,25): error TS2339: Property 'values' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1519960Z   Property 'values' does not exist on type 'BlockedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1520848Z ##[error]packages/core/test/integration/phase7-walker-demo.test.ts(416,24): error TS2339: Property 'values' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1521853Z   Property 'values' does not exist on type 'BlockedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1522899Z ##[error]packages/core/test/integration/phase7-walker-demo.test.ts(417,24): error TS2339: Property 'values' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1524249Z   Property 'values' does not exist on type 'BlockedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1525241Z ##[error]packages/core/test/integration/phase7-walker-demo.test.ts(418,24): error TS2339: Property 'values' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1526208Z   Property 'values' does not exist on type 'BlockedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1527086Z ##[error]packages/core/test/integration/phase7-walker-demo.test.ts(422,23): error TS2339: Property 'values' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1528174Z   Property 'values' does not exist on type 'BlockedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1529068Z ##[error]packages/core/test/integration/phase7-walker-demo.test.ts(423,23): error TS2339: Property 'values' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1530064Z   Property 'values' does not exist on type 'BlockedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1530940Z ##[error]packages/core/test/integration/phase7-walker-demo.test.ts(424,23): error TS2339: Property 'values' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1531927Z   Property 'values' does not exist on type 'BlockedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1532777Z ##[error]packages/core/test/integration/phase7-walker-demo.test.ts(492,31): error TS2339: Property 'values' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1534058Z   Property 'values' does not exist on type 'BlockedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1534952Z ##[error]packages/core/test/integration/phase7-walker-demo.test.ts(563,24): error TS2339: Property 'values' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1535975Z   Property 'values' does not exist on type 'BlockedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1536834Z ##[error]packages/core/test/integration/phase7-walker-demo.test.ts(564,24): error TS2339: Property 'values' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1538003Z   Property 'values' does not exist on type 'BlockedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1539072Z ##[error]packages/core/test/integration/phase7-walker-demo.test.ts(565,24): error TS2339: Property 'values' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1540661Z   Property 'values' does not exist on type 'BlockedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1542057Z ##[error]packages/core/test/integration/phase7-walker-demo.test.ts(567,23): error TS2339: Property 'values' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1543706Z   Property 'values' does not exist on type 'BlockedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1544960Z ##[error]packages/core/test/integration/phase7-walker-demo.test.ts(568,23): error TS2339: Property 'values' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1546021Z   Property 'values' does not exist on type 'BlockedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1546862Z ##[error]packages/core/test/integration/phase7-walker-demo.test.ts(569,23): error TS2339: Property 'values' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1547859Z   Property 'values' does not exist on type 'BlockedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1548722Z ##[error]packages/core/test/integration/phase7-walker-demo.test.ts(574,35): error TS2339: Property 'values' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1549684Z   Property 'values' does not exist on type 'BlockedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1550556Z ##[error]packages/core/test/integration/phase7-walker-demo.test.ts(581,26): error TS2339: Property 'values' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1551539Z   Property 'values' does not exist on type 'BlockedPatch'.
+quality (node 24)	Run npm run typecheck	2026-09-20T04:08:28.1552398Z ##[error]packages/core/test/integration/phase7-walker-demo.test.ts(582,26): error TS2339: Property 'values' does not exist on type 'Patch'.
+quality (node 24)	Run npm r
