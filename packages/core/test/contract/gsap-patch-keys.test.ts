@@ -11,6 +11,8 @@ import {
 import type { InterpolationTimeline, Interpolator } from "../../src/ports/interpolator";
 import { readNumber } from "../support/real-gsap";
 import { code, member } from "../helpers/source-region";
+import { unreachable } from "../../src/domain/exhaustive";
+import type { PatchKeysResult } from "../../src/ports/interpolator";
 
 /**
  * Issue #231, plan v3. One invariant: an animated key's tweens are replaced on the still-live
@@ -101,9 +103,9 @@ function patch(
   timeline: InterpolationTimeline,
   overlay: Readonly<Record<string, unknown>>,
   rebase = false,
-): boolean {
+) {
   expect(timeline.patchKeys).toBeTypeOf("function");
-  return timeline.patchKeys?.(overlay, rebase) ?? false;
+  return timeline.patchKeys?.(overlay, rebase) ?? { kind: "recompile" as const };
 }
 function childrenOf(timeline: RealTimeline): readonly unknown[] {
   return timeline.getChildren(false, true, false);
@@ -111,7 +113,9 @@ function childrenOf(timeline: RealTimeline): readonly unknown[] {
 function tweensFor(timeline: RealTimeline, key: string): readonly unknown[] {
   return timeline
     .getChildren(false, true, false)
-    .filter((child) => key in (child.vars as unknown as Record<string, unknown>));
+    .filter((child: { vars: unknown }) =>
+      key in (child.vars as Record<string, unknown>),
+    );
 }
 function sample(timeline: InterpolationTimeline, key: string, at: number): number {
   timeline.progress(at);
@@ -119,19 +123,55 @@ function sample(timeline: InterpolationTimeline, key: string, at: number): numbe
 }
 
 describe("a record-shaped overlay patches a live timeline, or declines", () => {
+  it("PK-0 distinguishes patching from escalation and reads every result kind", () => {
+    const read = (result: PatchKeysResult): string => {
+      switch (result.kind) {
+        case "patched":
+          return "patched";
+        case "recompile":
+          return "recompile";
+        default:
+          return unreachable(result);
+      }
+    };
+    const timeline = createSeam().interpolator.create(BASE);
+    const declined = createSeam().interpolator.create(EASED);
+    expect(read(patch(timeline, { x: SLOWER_X }))).toBe("patched");
+    expect(read(patch(declined, { y: COLLIDING_Y }))).toBe("recompile");
+    const foreign = { kind: "foreign" } as unknown as PatchKeysResult;
+    expect(() => read(foreign)).toThrow(/Unhandled variant/);
+    timeline.kill();
+    declined.kill();
+  });
+
+  it("PK-0 rejects a widened result whose reader leaves one kind undecided", () => {
+    type Widened = PatchKeysResult | { readonly kind: "foreign" };
+    const readWidened = (result: Widened): string => {
+      switch (result.kind) {
+        case "patched":
+          return "patched";
+        case "recompile":
+          return "recompile";
+        default:
+          // @ts-expect-error the widened kind is not decided by this reader.
+          return unreachable(result);
+      }
+    };
+    expect(typeof readWidened).toBe("function");
+  });
   it("PK-1 rebuilds a key from a bare stop array and declines the retired wrapper", () => {
     const seam = createSeam();
     const timeline = seam.interpolator.create(BASE);
     expect(sample(timeline, "x", 0.5)).toBeCloseTo(50, 6);
 
-    expect(patch(timeline, { x: SLOWER_X })).toBe(true);
+    expect(patch(timeline, { x: SLOWER_X })).toEqual({ kind: "patched" });
     expect(readNumber(timeline.state, "x")).toBeCloseTo(20, 6);
 
     // The wrapper compiles to no property for the key, which is a kind change rather than a patch.
     const real = seam.timelines[0] as RealTimeline;
     const before = { ...timeline.state };
     const alive = childrenOf(real).length;
-    expect(patch(timeline, { x: { stops: SLOWER_X } })).toBe(false);
+    expect(patch(timeline, { x: { stops: SLOWER_X } })).toEqual({ kind: "recompile" });
     expect({ ...timeline.state }).toEqual(before);
     expect(childrenOf(real).length).toBe(alive);
     timeline.kill();
@@ -143,7 +183,7 @@ describe("a record-shaped overlay patches a live timeline, or declines", () => {
     const real = seam.timelines[0] as RealTimeline;
     const killed = vi.spyOn(real, "kill");
 
-    expect(patch(timeline, { x: SLOWER_X })).toBe(true);
+    expect(patch(timeline, { x: SLOWER_X })).toEqual({ kind: "patched" });
 
     expect(seam.created()).toBe(1);
     expect(killed).not.toHaveBeenCalled();
@@ -160,7 +200,7 @@ describe("a record-shaped overlay patches a live timeline, or declines", () => {
     expect(yBefore).toHaveLength(1);
     expect(xBefore).toHaveLength(1);
 
-    expect(patch(timeline, { x: SLOWER_X })).toBe(true);
+    expect(patch(timeline, { x: SLOWER_X })).toEqual({ kind: "patched" });
 
     // Identity, not output: a killed sibling would leave the timeline entirely.
     expect(tweensFor(real, "y")[0]).toBe(yBefore[0]);
@@ -175,8 +215,8 @@ describe("a record-shaped overlay patches a live timeline, or declines", () => {
     const timeline = seam.interpolator.create(BASE);
     const fresh = createSeam().interpolator.create(BASE);
 
-    expect(patch(timeline, { x: SLOWER_X })).toBe(true);
-    expect(patch(timeline, {})).toBe(true);
+    expect(patch(timeline, { x: SLOWER_X })).toEqual({ kind: "patched" });
+    expect(patch(timeline, {})).toEqual({ kind: "patched" });
 
     for (const at of [0, 0.5, 1]) {
       expect(sample(timeline, "x", at)).toBeCloseTo(sample(fresh, "x", at), 6);
@@ -188,13 +228,13 @@ describe("a record-shaped overlay patches a live timeline, or declines", () => {
 
   it("PK-5 makes a rebased overlay the new base and leaves a plain one revertible", () => {
     const sticky = createSeam().interpolator.create(BASE);
-    expect(patch(sticky, { x: SLOWER_X }, true)).toBe(true);
-    expect(patch(sticky, {})).toBe(true);
+    expect(patch(sticky, { x: SLOWER_X }, true)).toEqual({ kind: "patched" });
+    expect(patch(sticky, {})).toEqual({ kind: "patched" });
     expect(sample(sticky, "x", 1)).toBeCloseTo(40, 6);
 
     const revertible = createSeam().interpolator.create(BASE);
-    expect(patch(revertible, { x: SLOWER_X })).toBe(true);
-    expect(patch(revertible, {})).toBe(true);
+    expect(patch(revertible, { x: SLOWER_X })).toEqual({ kind: "patched" });
+    expect(patch(revertible, {})).toEqual({ kind: "patched" });
     expect(sample(revertible, "x", 1)).toBeCloseTo(100, 6);
     sticky.kill();
     revertible.kill();
@@ -207,7 +247,7 @@ describe("a record-shaped overlay patches a live timeline, or declines", () => {
     const before = childrenOf(real);
     const state = { ...timeline.state };
 
-    expect(patch(timeline, { y: COLLIDING_Y })).toBe(false);
+    expect(patch(timeline, { y: COLLIDING_Y })).toEqual({ kind: "recompile" });
 
     // No diagnostic is surfaced from here, and nothing was killed on the way to the decline.
     expect(childrenOf(real)).toEqual(before);
@@ -225,7 +265,7 @@ describe("a record-shaped overlay patches a live timeline, or declines", () => {
     const whole = compilePercentKeyframes(effective).diagnostics;
     expect(whole.map(({ ruleId }) => ruleId)).toEqual(["plugin-contribution-ease-collision"]);
 
-    expect(patch(timeline, { y: COLLIDING_Y })).toBe(false);
+    expect(patch(timeline, { y: COLLIDING_Y })).toEqual({ kind: "recompile" });
 
     // The escalating recompile is where the error is raised, from the one place that owns it.
     const recompile = (): InterpolationTimeline =>
@@ -244,7 +284,7 @@ describe("a record-shaped overlay patches a live timeline, or declines", () => {
 
     timeline.progress(0.5);
     const positionBefore = real.time();
-    expect(patch(timeline, { x: SHORT_X })).toBe(true);
+    expect(patch(timeline, { x: SHORT_X })).toEqual({ kind: "patched" });
     timeline.progress(0.5);
 
     // A key's last stop moved earlier, and progress still resolves to the same timeline position.
@@ -261,7 +301,7 @@ describe("a record-shaped overlay patches a live timeline, or declines", () => {
     timeline.progress(0.25);
     expect(readNumber(timeline.state, "x")).toBeCloseTo(25, 6);
 
-    expect(patch(timeline, { x: LATE_X })).toBe(true);
+    expect(patch(timeline, { x: LATE_X })).toEqual({ kind: "patched" });
 
     // The new first stop sits after 0%, so the old value would survive on the proxy unless it is
     // re-seeded from the recompiled initial and the progress is re-applied.
@@ -292,7 +332,7 @@ describe("a record-shaped overlay patches a live timeline, or declines", () => {
     for (const backend of backends) {
       const timeline = backend().create(BASE);
       expect(timeline.patchKeys).toBeTypeOf("function");
-      expect(patch(timeline, { x: SLOWER_X })).toBe(true);
+      expect(patch(timeline, { x: SLOWER_X })).toEqual({ kind: "patched" });
       const patched = { ...BASE.keyframes, x: SLOWER_X };
       const fresh = backend().create({ duration: 1, keyframes: patched });
       for (const at of [0, 0.5, 1]) {
@@ -301,7 +341,7 @@ describe("a record-shaped overlay patches a live timeline, or declines", () => {
       }
 
       const declined = backend().create(EASED);
-      expect(patch(declined, { y: COLLIDING_Y })).toBe(false);
+      expect(patch(declined, { y: COLLIDING_Y })).toEqual({ kind: "recompile" });
       const effective = { ...EASED.keyframes, y: COLLIDING_Y };
       const recompile = (): InterpolationTimeline =>
         backend().create({ duration: 1, keyframes: effective });

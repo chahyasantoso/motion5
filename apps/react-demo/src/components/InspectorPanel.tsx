@@ -1,6 +1,6 @@
 import React from "react";
 import type { ProjectHandle } from "@motion5/core";
-import { usePatch } from "@motion5/react";
+import { patchRender, usePatch } from "@motion5/react";
 
 interface InspectorPanelProps {
   readonly handle: ProjectHandle;
@@ -12,18 +12,21 @@ const NodeCard: React.FC<{ handle: ProjectHandle; nodeId: string; title: string 
   title,
 }) => {
   const patch = usePatch(handle, nodeId);
-  // A pose belongs to a ready patch, so the guard asks for the status rather than for existence. The
-  // same spelling `@motion5/react`'s own `derived-dom-patch.ts` uses, which was the already-narrowed
-  // reader in the tree before ADR-098 made narrowing the only way to reach `values` at all.
+  // A pose belongs to the render decision's `render` answer rather than to patch existence,
+  // and the decision is core-owned because the DOM adapter and the React bindings read one
+  // four-status wire.
   //
   // This card renders nothing while the node is blocked, where it used to render the pose the
-  // carry-forward republished onto the blocked patch. That pose is `PatchRegistry.lastReady`'s now and
-  // no consumer surface forwards it yet, so rendering nothing is the honest answer until one does.
-  if (patch?.status !== "ready") return null;
+  // carry-forward republished onto the blocked patch. That pose is `PatchRegistry.lastReady`'s
+  // now, and no consumer surface forwards it yet, so rendering nothing is the honest answer until
+  // one does.
+  const decision = patchRender(patch);
+  if (decision.kind !== "render") return null;
+  const ready = decision.patch;
 
-  const x = Number(patch.values.x ?? 0);
-  const y = Number(patch.values.y ?? 0);
-  const rot = patch.values.rotation !== undefined ? Number(patch.values.rotation) : undefined;
+  const x = Number(ready.values.x ?? 0);
+  const y = Number(ready.values.y ?? 0);
+  const rot = ready.values.rotation !== undefined ? Number(ready.values.rotation) : undefined;
 
   return (
     <div className="node-card">

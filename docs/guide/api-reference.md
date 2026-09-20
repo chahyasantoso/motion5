@@ -54,6 +54,14 @@ The six authoring members above are the structural tier, and each returns `void`
 
 **Schema and validation.** `AUTHORED_SCHEMA_VERSION`, `SUPPORTED_TRIGGER_TYPES`, `DIAGNOSTIC_SEVERITIES`, `validateV5`, `validateTrackDefinition`, `validateMotionTrigger`, `resolveTriggerDefinition`, `migrateV4ToV5`, `parseGolden`, and `serializeGolden`.
 
+`validateV5` returns a discriminated `ValidationResult`: `kind: "accepted"` carries the frozen
+`ProjectDefinition`, while `kind: "refused"` carries at least one `Diagnostic` and no value. Graph
+reference and cycle diagnostics are owned by graph construction and are run by the engine load
+use-case after schema validation.
+
+`migrateV4ToV5` returns the same shape with `MigrationDiagnostic`; narrow on `kind` before reading
+the migrated value.
+
 **Types.** `ProjectDefinition`, `MotionDefinition`, `TrackDefinition`, `ObservationDefinition`, `AuthoredProperty`, `AuthoredStop`, `TriggerDefinition` and its three members, `TriggerType`, `TriggerSignal`, `Patch`, `LivePatch`, `PatchBatch`, `PatchStatus`, `PatchListener`, `Diagnostic`, `DiagnosticSeverity`, `MigrationDiagnostic`, `MigrationResult`, `ValidationResult`, `TrackValidationResult`, `GoldenFixture`, and `GoldenValidationFixture`.
 
 An `ObservationDefinition` carries `source` and nothing else. There is no `target`, no `role`, and no `projection`, and an authored one of each is rejected with `observation-target-unsupported`, `observation-role-unsupported`, or `observation-projection-unsupported`. `InputProjection` is gone with the primitive it described. See ADR-046 and ADR-047.
@@ -62,9 +70,21 @@ An `ObservationDefinition` carries `source` and nothing else. There is no `targe
 
 A `PluginDefinition` may declare `requirements`, a record of optional input slots owned by that plugin. Its `compose` receives authored/interpolated values, the track's progress, and that plugin's scoped inputs. `ResolvedPlugins.requirements` reports the bindings resolved for a track.
 
-**Ports.** `createManualClock`, `createMicrotaskScheduler`, `createManualTriggerPort`, `createDefaultTriggerFactory`, `createTriggerFactory`, and the assertions `assertClock`, `assertInterpolator`, `assertScheduler`, `assertTriggerPort`, and `assertTriggerFactory`. Port types include `Clock`, `ClockTick`, `Scheduler`, `Cancel`, `SchedulerHost`, `MicrotaskSchedulerOptions`, `TriggerPort`, `Interpolator`, `InterpolationTimeline`, `ClockBinding`, `ClockConsumer`, `CreatedTrigger`, `TriggerFactory`, `TriggerFactoryContext`, `TriggerFactoryOptions`, `ScrollSource`, `ScrollSourceResolver`, and `ScrollSourceResolverContext`.
+**Ports.** `createManualClock`, `createMicrotaskScheduler`, `createManualTriggerPort`,
+`createDefaultTriggerFactory`, `createTriggerFactory`, and the helper `acceptsExternalSignal`,
+plus the assertions `assertClock`, `assertInterpolator`, `assertScheduler`, `assertTriggerPort`,
+and `assertTriggerFactory`. Port types include `Clock`, `ClockTick`, `Scheduler`, `Cancel`,
+`SchedulerHost`, `MicrotaskSchedulerOptions`, `TriggerPort`, `Interpolator`,
+`InterpolationTimeline`, `TriggerBinding`, `ClockConsumer`, `CreatedTrigger`, `TriggerFactory`,
+`TriggerFactoryContext`, `TriggerFactoryOptions`, `ScrollSource`, `ScrollSourceResolver`, and
+`ScrollSourceResolverContext`.
 
-`InterpolationTimeline` has one optional member, `patchKeys(overlay, rebase?)`. An implementation that keeps a per-key child may declare it and replace those children in place; one that cannot answers by not declaring it, and the runtime recompiles instead and publishes the same values at the same progress. `false` from it means escalate and nothing else: it is never a report about the caller's input. `assertInterpolator` does not check for it, because the capability is not part of what makes something an `Interpolator`. See ADR-060.
+`InterpolationTimeline` has one optional member, `patchKeys(overlay, rebase?)`. An implementation
+that keeps a per-key child may declare it and replace those children in place; one that cannot answers
+by not declaring it, and the runtime recompiles instead and publishes the same values at the same
+progress. A declared implementation returns `{ kind: "patched" }` when it replaces the children, or
+`{ kind: "recompile" }` when the caller must escalate. `assertInterpolator` does not check for it,
+because the capability is not part of what makes something an `Interpolator`. See ADR-060.
 
 `createMicrotaskScheduler(options?)` is the shipped Scheduler. It runs queued jobs in one pass on the injected host, honors cancellation, and reports failures through `onError` without stopping later jobs in the same pass. See ADR-038.
 

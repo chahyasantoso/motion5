@@ -28,8 +28,11 @@ describe("canonical order and cycle detection", () => {
       node("hero/root", 0),
     ]);
     expect(result.diagnostics).toEqual([]);
-    expect(result.order).toEqual(["hero/root", "hero/left", "hero/right", "hero/sink"]);
-    expect(Object.isFrozen(result.order)).toBe(true);
+    expect(result.kind).toBe("accepted");
+    if (result.kind === "accepted") {
+      expect(result.value).toEqual(["hero/root", "hero/left", "hero/right", "hero/sink"]);
+      expect(Object.isFrozen(result.value)).toBe(true);
+    }
   });
 
   it("is a pure function of qualified ids and authored order, not of input order", () => {
@@ -45,18 +48,23 @@ describe("canonical order and cycle detection", () => {
       node("hero/root", 0),
       node("hero/left", 1, ["hero/root"]),
     ]);
-    expect(first.order).toEqual(["hero/root", "hero/left", "hero/right", "~/cursor"]);
-    expect(second.order).toEqual(first.order);
+    expect(first.kind).toBe("accepted");
+    expect(second.kind).toBe("accepted");
+    if (first.kind === "accepted" && second.kind === "accepted")
+      expect(second.value).toEqual(first.value);
   });
 
   it("keeps disconnected components in canonical id order", () => {
     const result = orderGraph([node("~/cursor", 0), node("hero/arm", 0), node("caption/label", 0)]);
-    expect(result.order).toEqual(["caption/label", "hero/arm", "~/cursor"]);
+    expect(result.kind).toBe("accepted");
+    if (result.kind === "accepted")
+      expect(result.value).toEqual(["caption/label", "hero/arm", "~/cursor"]);
   });
 
   it("reports a self cycle as a single-node path", () => {
     const result = orderGraph([node("hero/loop", 0, ["hero/loop"])]);
-    expect(result.order).toBeUndefined();
+    expect(result.kind).toBe("refused");
+    expect("value" in result).toBe(false);
     expect(ruleAndIds(result.diagnostics)).toEqual([["graph-cycle", ["hero/loop"]]]);
   });
 
@@ -66,7 +74,8 @@ describe("canonical order and cycle detection", () => {
       node("rig/b", 1, ["rig/a"]),
       node("rig/c", 2, ["rig/b", "rig/a"]),
     ]);
-    expect(result.order).toBeUndefined();
+    expect(result.kind).toBe("refused");
+    expect("value" in result).toBe(false);
     expect(ruleAndIds(result.diagnostics)).toEqual([
       ["graph-cycle", ["rig/a", "rig/c"]],
       ["graph-cycle", ["rig/a", "rig/b", "rig/c"]],

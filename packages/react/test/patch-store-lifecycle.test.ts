@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { PatchRegistry, type Patch } from "../../core/src/runtime/patch-registry";
-import { createPatchStore } from "../src/patch-store";
+import { createPatchStore, unhandledLifecycle } from "../src/patch-store";
+import type { PatchStoreLifecycle } from "../src/patch-store";
 
 const NODE_ID = "hero/arm";
 
@@ -16,6 +17,24 @@ function publish(registry: PatchRegistry, tick: number, opacity: number): void {
 }
 
 describe("React patch store lifecycle (C1)", () => {
+
+  it("keeps both lifecycle switches compiler-enforced", () => {
+    type Widened = PatchStoreLifecycle | { readonly kind: "reviving" };
+    const readWidened = (lifecycle: Widened): boolean => {
+      switch (lifecycle.kind) {
+        case "detached":
+        case "attached":
+          return true;
+        default:
+          // @ts-expect-error a widened lifecycle is not decided by this reader.
+          return unhandledLifecycle(lifecycle);
+      }
+    };
+
+    expect(typeof readWidened).toBe("function");
+    expect(() => unhandledLifecycle({ kind: "reviving" } as never)).toThrow(TypeError);
+    expect(() => unhandledLifecycle({ kind: "reviving" } as never)).toThrow(/Unhandled variant/);
+  });
   it("receives patches again after the last listener leaves and a new one arrives", () => {
     const registry = new PatchRegistry();
     const store = createPatchStore(registry, NODE_ID);

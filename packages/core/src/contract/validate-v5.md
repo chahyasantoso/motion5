@@ -1,5 +1,18 @@
 # packages/core/src/contract/validate-v5.ts
 
+## ValidationResult
+
+`ValidationResult` is the public alias of the internal `Outcome<ProjectDefinition>`: an accepted
+branch carries a frozen project and diagnostics, while a refused branch carries a non-empty
+diagnostic tuple and no value. The discriminant is the only reader contract, so an accepted null
+project and a refusal without a reason cannot be represented.
+
+This validator owns authored schema shape and schema diagnostics only. Graph construction owns
+reference resolution, duplicate edges, cycles, solver resolution, and graph diagnostics. The engine
+use-case runs both in order before loading a project; the validator deliberately does not import a
+graph implementation or recombine graph diagnostics. That keeps the graph layer as the single owner
+of whether references form a loadable graph while keeping schema validation independently usable.
+
 ## STOPS_REQUIRED
 
 The shape error for a leaf that is neither canonical form.

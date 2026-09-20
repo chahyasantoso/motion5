@@ -281,7 +281,7 @@ describe("ik accounts for fk's pivot offsets (issue #214)", () => {
       leaf("c", "b", 40, { x: 2, y: -8 }, at(300, 380)),
     ];
     const solved = solveFabrik(ROOT, three);
-    expect(solved.convergence.converged).toBe(true);
+    expect(solved.convergence.kind).toBe("converged");
     expect(distance(solved.tips.c!, at(300, 380))).toBeLessThanOrEqual(FABRIK_TOLERANCE);
     for (const { id, length } of three) {
       expect(distance(solved.pivots[id]!, solved.tips[id]!)).toBeCloseTo(length, 9);
@@ -302,7 +302,7 @@ describe("ik accounts for fk's pivot offsets (issue #214)", () => {
       leaf("m5", "m4", 40, { x: -1, y: -1 }, at(260, 380)),
     ];
     const long = solveFabrik(ROOT, five);
-    expect(long.convergence.converged).toBe(true);
+    expect(long.convergence.kind).toBe("converged");
     expect(distance(long.tips.m5!, at(260, 380))).toBeLessThanOrEqual(FABRIK_TOLERANCE);
     for (const { id, length } of five) {
       expect(distance(long.pivots[id]!, long.tips[id]!)).toBeCloseTo(length, 9);
@@ -356,7 +356,7 @@ describe("ik accounts for fk's pivot offsets (issue #214)", () => {
     for (const flip of [false, true]) {
       const closed = solveTwoBone(ROOT, HAND, analytic, flip);
       const solved = solveFabrik(ROOT, iterative, flip);
-      expect(solved.convergence.converged).toBe(true);
+      expect(solved.convergence.kind).toBe("converged");
       expect(Math.abs(solved.rotations[UPPER]! - closed[UPPER]!)).toBeLessThan(bound);
       expect(Math.abs(solved.rotations[FOREARM]! - closed[FOREARM]!)).toBeLessThan(bound);
     }
@@ -383,7 +383,7 @@ describe("ik accounts for fk's pivot offsets (issue #214)", () => {
       leaf("fore-r", "arm-r", 30, { x: 1, y: -2 }, at(160, 400)),
     ];
     const solved = solveFabrik(ROOT, tree);
-    expect(solved.convergence.converged).toBe(true);
+    expect(solved.convergence.kind).toBe("converged");
     expect(distance(solved.tips["fore-l"]!, at(240, 400))).toBeLessThanOrEqual(FABRIK_TOLERANCE);
     expect(distance(solved.tips["fore-r"]!, at(160, 400))).toBeLessThanOrEqual(FABRIK_TOLERANCE);
     for (const { id, length } of tree) {

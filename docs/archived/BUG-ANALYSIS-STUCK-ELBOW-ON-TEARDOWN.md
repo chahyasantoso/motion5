@@ -77,7 +77,7 @@ whole system. `remove()` (the unmount path) has the same hole.
 
 ```ts
 getSnapshot() {
-  return detachSource === undefined ? source.get(nodeId) : snapshot;  // memoized while attached
+  return lifecycle.kind === "detached" ? source.get(nodeId) : lifecycle.snapshot;
 }
 ```
 

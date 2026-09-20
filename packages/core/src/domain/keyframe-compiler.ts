@@ -1,6 +1,11 @@
-import { readAuthoredLeaf, readCompilableStops } from "../contract/authored-leaf";
+import {
+  authoredLeafPartition,
+  readAuthoredLeaf,
+  readCompilableStops,
+} from "../contract/authored-leaf";
 import { diagnostic } from "../contract/diagnostics";
 import type { AuthoredStop, Diagnostic } from "../contract/v5";
+import { unreachable } from "./exhaustive";
 
 export interface CompiledProperty {
   readonly key: string;
@@ -82,12 +87,19 @@ export function compilePercentKeyframes(keyframes: unknown, path = "keyframes"):
     // interpolators already seed their proxy from it and expose that proxy as `state`, so a value
     // that lands here and nowhere else is published at every progress at zero cost. This is the
     // point of ADR-050 rather than an implementation detail inside it, and `LF-7` and `LF-8` pin it.
-    const leaf = readAuthoredLeaf(property);
-    if (leaf.kind === "static") {
-      initial[key] = leaf.value;
-      continue;
+    const partition = authoredLeafPartition(readAuthoredLeaf(property));
+    switch (partition.kind) {
+      case "value":
+        initial[key] = partition.value;
+        continue;
+      case "none":
+        continue;
+      case "stops":
+        break;
+      default:
+        return unreachable(partition);
     }
-    const stops = readCompilableStops(property);
+    const stops = readCompilableStops(partition.stops);
     const first = stops[0];
     if (!first) continue;
     const frozenStops = Object.freeze([...stops]);

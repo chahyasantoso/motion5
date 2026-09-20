@@ -37,11 +37,13 @@ Time-trigger validation rejected `repeat` and `yoyo` whenever present, and the d
 
 ## 3. Owner and arithmetic
 
-`createLoopCycle({ duration, repeat, yoyo })` returns `{ completed, elapsed, advance(delta) }` and is the only place the following runs:
+`createLoopCycle({ duration, repeat, yoyo })` returns an absorbing `state` union of `running` or
+`finished`, plus `advance(delta)`, and is the only place the following runs:
 
 - `totalDuration = repeat === -1 ? Infinity : (repeat + 1) * duration`
 - `period = (yoyo ? 2 : 1) * duration`
-- on advance: accumulate, clamp to `totalDuration` and latch when a finite loop is finished, otherwise reduce by whole periods when infinite
+- on advance: a `finished` state replays its endpoint; a `running` state accumulates, clamps to
+  `totalDuration` and becomes `finished`, otherwise reducing by whole periods when infinite
 - `index = ceil(elapsed / duration) - 1`, `position = clamp(elapsed / duration - index)`
 - `progress = yoyo && index odd ? 1 - position : position`
 

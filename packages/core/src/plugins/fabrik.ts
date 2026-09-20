@@ -10,11 +10,10 @@ import {
 /**
  * FABRIK over a solver chain: pure, unwired, and reviewed as arithmetic.
  *
- * Nothing under `src/` imports this module, on purpose. A numerical method landing in the slice
- * that wires it into `ikPlugin` gets reviewed as a feature, and the two questions it raises are not
- * one question: whether the arithmetic is right, and whether a dispatcher hands it the right chain.
- * This file answers only the first, so it cannot change a rig's published output, and the closed
- * form stays the only solve a rig can reach until the dispatcher lands. See issue #195.
+ * The `ik` plugin imports this module only for chains beyond the analytic two-bone case. The two
+ * questions it raises remain separate: whether the arithmetic is right, and whether the dispatcher
+ * hands it the right chain. This file owns only the first, while `ik.ts` owns that dispatch. See
+ * issue #195.
  *
  * The shape is the one ADR-051 draws for the analytic solve: a pure function of a root frame and
  * the member states, returning one **local** rotation per member in `fk`'s own degrees and
@@ -98,18 +97,15 @@ export type FabrikPoint = WorldPoint;
 /**
  * What the solve did, so a caller can diagnose it without re-deriving it.
  *
- * `converged` answers only whether the residual is inside tolerance. `stalled` separates the two
- * ways a solve ends without it, and that separation is the whole diagnostic: an unreachable goal
- * stops because the pose is a fixed point and no further iteration can help, while a slow chain
- * stops because it ran out of iterations and more would have. Reporting both as "did not converge"
- * would tell a caller to raise a cap that is not the problem.
+ * The closed kind answers all three exits: a residual inside tolerance converged, a fixed point
+ * that remains outside tolerance stalled, and a still-moving pose at the hard cap hit
+ * `iteration-cap`. The last distinction is a capability gain: a caller can raise the cap for the
+ * slow case without treating an unreachable goal as if more work could help.
  */
-export interface FabrikConvergence {
-  readonly converged: boolean;
-  readonly iterations: number;
-  readonly residual: number;
-  readonly stalled: boolean;
-}
+export type FabrikConvergence =
+  | { readonly kind: "converged"; readonly iterations: number; readonly residual: number }
+  | { readonly kind: "stalled"; readonly iterations: number; readonly residual: number }
+  | { readonly kind: "iteration-cap"; readonly iterations: number; readonly residual: number };
 
 /**
  * The solved chain: one local rotation per member id, the pivots and tips those rotations describe,
@@ -457,15 +453,14 @@ export function solveFabrik(
     solvedPivots[id] = pivots.get(id)!;
     solvedTips[id] = tips.get(id)!;
   }
+  let convergence: FabrikConvergence;
+  if (residual <= FABRIK_TOLERANCE) convergence = { kind: "converged", iterations, residual };
+  else if (stalled) convergence = { kind: "stalled", iterations, residual };
+  else convergence = { kind: "iteration-cap", iterations, residual };
   return Object.freeze({
     rotations: Object.freeze(rotations),
     pivots: Object.freeze(solvedPivots),
     tips: Object.freeze(solvedTips),
-    convergence: Object.freeze({
-      converged: residual <= FABRIK_TOLERANCE,
-      iterations,
-      residual,
-      stalled,
-    }),
+    convergence: Object.freeze(convergence),
   });
 }

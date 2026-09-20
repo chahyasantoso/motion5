@@ -14,15 +14,17 @@ describe("requirement edge construction", () => {
       "walk/chest.keyframes.fk.requires.base",
     );
 
+    expect(resolved.kind).toBe("accepted");
+    if (resolved.kind !== "accepted") return;
     expect(resolved.diagnostics).toEqual([]);
-    expect(resolved.edge).toEqual({
+    expect(resolved.value).toEqual({
       observerId: "walk/chest",
       sourceId: "walk/pelvis",
       role: "input",
       requirement: { plugin: "fk", slot: "base" },
     });
-    expect(Object.isFrozen(resolved.edge)).toBe(true);
-    expect(Object.isFrozen(resolved.edge?.requirement)).toBe(true);
+    expect(Object.isFrozen(resolved.value)).toBe(true);
+    expect(Object.isFrozen(resolved.value.requirement)).toBe(true);
   });
 
   it("Z-2 reports requirement-source at the authored path and produces no edge", () => {
@@ -33,7 +35,8 @@ describe("requirement edge construction", () => {
       "walk/chest.keyframes.fk.requires.base",
     );
 
-    expect(resolved.edge).toBeUndefined();
+    expect(resolved.kind).toBe("refused");
+    expect("value" in resolved).toBe(false);
     expect(resolved.diagnostics).toHaveLength(1);
     expect(resolved.diagnostics[0]).toMatchObject({
       ruleId: "requirement-source",

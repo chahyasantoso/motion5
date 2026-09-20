@@ -71,12 +71,13 @@ describe("the solve dispatches on derived shape (Slice D3)", () => {
   it("FB-13 a solve that does not converge publishes rotations and nothing else", () => {
     // The decision this slice owns, and it fails by producing something rather than by erroring.
     //
-    // `solveFabrik` reports `residual` and `stalled` because absorbing them would tell a caller to
-    // raise a cap that is not the problem. Publishing them is a different question: the analytic
+    // `solveFabrik` reports a convergence kind and residual because absorbing them would
+    // tell a caller to raise a cap that is not the problem. Publishing them is a different
+    // question: the analytic
     // path carries neither, so a solver's patch shape would become a function of its arity, `FB-9`'s
     // byte identity would not survive the extra key, and roughly four percent of ordinary reachable
     // rigs miss tolerance before the cap, so a per-tick report would fire on rigs nobody would call
-    // broken. A bare `converged` boolean is also the C review's Blocker 1 waiting to happen again:
+    // broken. A bare convergence boolean is also the C review's Blocker 1 waiting to happen again:
     // `renderableValues` skips a plain record and a scalar falls through to `target[key] = value`.
     const tail = [
       bone("rig/t1", "rig/hip", 30),

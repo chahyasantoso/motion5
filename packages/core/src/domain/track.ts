@@ -2,7 +2,14 @@ import type { ImmutableRecord } from "./values";
 import { equalValues, freezeValue } from "./values";
 import { liveWriteChannel, readAuthoredLeaf } from "../contract/authored-leaf";
 import type { LiveValues } from "../contract/track-handle";
-import type { InterpolationTimeline, Interpolator } from "../ports/interpolator";
+import {
+  PATCHED,
+  RECOMPILE,
+  type InterpolationTimeline,
+  type Interpolator,
+  type PatchKeysResult,
+} from "../ports/interpolator";
+import { unreachable } from "./exhaustive";
 import type { PluginInputs, RequirementInputs, ResolvedPlugins } from "./plugins";
 
 export interface TrackSnapshot {
@@ -27,13 +34,12 @@ export type LiveValueRefusal = "unknown" | "kind" | "prepared";
 /**
  * What one live value write reports back to the owner of the retained definition.
  *
- * Two facts and no more. `patched` is whether the interpolator honored the animated half, which is
- * the only thing that decides whether the caller has to escalate to a recompile; `progress` is what
- * this track is holding, so an escalation can re-seek a freshly compiled Track without asking a
- * second owner where the playhead was. See ADR-060.
+ * The interpolation seam's closed result and the playhead this track is holding. The result travels
+ * unchanged to the runtime owner that decides whether a replacement is owed; Track owns validation
+ * and forwarding, not a second boolean interpretation of the port answer. See ADR-060.
  */
 export interface LiveWriteResult {
-  readonly patched: boolean;
+  readonly patch: PatchKeysResult;
   readonly progress: number;
 }
 /**
@@ -44,11 +50,18 @@ export interface LiveWriteResult {
  * member is removed and then refused rather than left declared. See ADR-060.
  */
 function describeRefusal(nodeId: string, key: string, reason: LiveValueRefusal): string {
-  if (reason === "kind")
-    return `Key "${key}" of track "${nodeId}" cannot change which kind of leaf it is.`;
-  if (reason === "prepared")
-    return `Key "${key}" of track "${nodeId}" is prepared by a plugin and cannot be written live.`;
-  return `Key "${key}" is not an authored value of track "${nodeId}".`;
+  switch (reason) {
+    case "kind":
+      return `Key "${key}" of track "${nodeId}" cannot change which kind of leaf it is.`;
+    case "prepared":
+      return (
+        `Key "${key}" of track "${nodeId}" is prepared by a plugin and cannot be written live.`
+      );
+    case "unknown":
+      return `Key "${key}" is not an authored value of track "${nodeId}".`;
+    default:
+      return unreachable(reason);
+  }
 }
 /**
  * The one refusal a live value write reports.
@@ -256,8 +269,8 @@ export class Track {
     const animated = overlay === undefined ? undefined : this.#acceptedOverlay(overlay);
     this.#values = accepted;
     this.#dirty = true;
-    const patched = animated === undefined ? true : this.#patch(animated, rebase);
-    return { patched, progress: this.#progress };
+    const patch = animated === undefined ? PATCHED : this.#patch(animated, rebase);
+    return { patch, progress: this.#progress };
   }
   /**
    * Every static key of a live write, answered by the two owners that already exist.
@@ -315,15 +328,14 @@ export class Track {
   /**
    * Hands the animated half to the interpolator, if it declared the capability.
    *
-   * The whole of the optional member at this layer, and no branch on which backend it is. The
-   * `false` a declining backend never gets to return is the same `false` a patching one returns
-   * when it cannot do the rebuild: both mean escalate, and the caller's answer is the same on
-   * either. `Track` learns that a capability exists, never that GSAP exists.
+   * The whole of the optional member at this layer, and no branch on which backend it is. A
+   * declining backend's `recompile` result is forwarded unchanged to the runtime owner that
+   * owns escalation, so Track learns that a capability exists and never that it is GSAP.
    */
-  #patch(overlay: Readonly<Record<string, unknown>>, rebase: boolean): boolean {
+  #patch(overlay: Readonly<Record<string, unknown>>, rebase: boolean): PatchKeysResult {
     const timeline = this.#timeline;
-    if (timeline.patchKeys === undefined) return false;
-    return timeline.patchKeys(overlay, rebase);
+    if (timeline.patchKeys === undefined) return RECOMPILE;
+    return timeline.patchKeys(overlay, rebase) ?? RECOMPILE;
   }
   /**
    * This track's interpolated, renderer-neutral state, before any plugin runs.

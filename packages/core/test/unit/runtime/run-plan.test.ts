@@ -28,11 +28,10 @@ const HERO: MotionDefinition = { id: "hero", trigger: { type: "manual" }, tracks
 const ARM_NODE = "hero/arm";
 const HAND_NODE = "hero/hand";
 
-const entry = (track: TrackDefinition, motionId?: string) => ({
-  track,
-  motionId,
-  valueState: AUTHORED,
-});
+const entry = (track: TrackDefinition, motionId?: string) =>
+  motionId === undefined
+    ? { kind: "free" as const, track, valueState: AUTHORED }
+    : { kind: "owned" as const, track, motionId, valueState: AUTHORED };
 
 const doc = (
   tracks: readonly [string, ReturnType<typeof entry>][],

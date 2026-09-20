@@ -25,7 +25,9 @@ The resolver takes no second `sourceKey` argument, because `sourceKey === contex
 
 ## The clock relationship is a single total field
 
-A scroll Motion registers no clock consumer. That is expressed as `CreatedTrigger.clockBinding`, a tagged union over the three states that exist: `driver` (time), `motion` (manual, which is an implicit time trigger today), and `none` (scroll).
+A scroll Motion registers no clock consumer. That is expressed as `CreatedTrigger.clockBinding`,
+a `TriggerBinding` tagged union over the three states that exist: `driver` (time), `motion`
+(manual, which is an implicit time trigger today), and `none` (scroll).
 
 An optional `onTick` plus a `pushDriven` flag was rejected. Two fields encoding one decision can express `{ pushDriven: true, onTick: fn }`, so it needs a runtime invariant to police a state the type system should have forbidden. With one total field, the Engine's registration site is an exhaustive switch with no fallback, and "never a driver _and_ `motion.onTick`" is unrepresentable rather than merely tested.
 
@@ -39,7 +41,11 @@ Its path is id-keyed (`motions.<id>.trigger.source`) rather than index-keyed (`m
 
 ## Public seam
 
-`createTriggerFactory`, `createDefaultTriggerFactory`, `TriggerFactoryOptions`, `ScrollSourceResolver`, `ScrollSourceResolverContext`, `ClockBinding`, and `ScrollSource` are exported from the package entrypoint and the adapters barrel. Without that, "hosts opt in at the composition root" is not reachable through the `exports` map. The boundary allow list is updated in the same change, so the export gate stays a gate.
+`createTriggerFactory`, `createDefaultTriggerFactory`, `TriggerFactoryOptions`,
+`ScrollSourceResolver`, `ScrollSourceResolverContext`, `TriggerBinding`, and `ScrollSource` are
+exported from the package entrypoint and the adapters barrel. Without that, "hosts opt in at the
+composition root" is not reachable through the `exports` map. The boundary allow list is updated
+in the same change, so the export gate stays a gate.
 
 ## Failure ordering
 

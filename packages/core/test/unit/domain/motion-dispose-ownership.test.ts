@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { fileURLToPath } from "node:url";
 import type { MotionDefinition } from "../../../src/contract/v5";
 import { Motion } from "../../../src/domain/motion";
 import { Engine } from "../../../src/engine";
@@ -9,6 +10,7 @@ import {
   createFakeTriggerPort,
 } from "../../../src/testing/fakes";
 import type { CreatedTrigger, TriggerFactory } from "../../../src/ports/trigger-factory";
+import { code, member } from "../../helpers/source-region";
 
 describe("Motion compiled Track disposal ownership", () => {
   it("C-14 does not dispose resolver-owned Tracks when Motion is disposed", () => {
@@ -69,6 +71,8 @@ describe("Motion compiled Track disposal ownership", () => {
 });
 
 const PLAY_FAILURE = "play() failed after the lifecycle mounted.";
+const ENGINE_SOURCE = code(fileURLToPath(new URL("../../../src/engine.ts", import.meta.url)));
+const BUILD_MOTION_SOURCE = member(ENGINE_SOURCE, "const buildMotion = (", "    ");
 
 type FakePort = ReturnType<typeof createFakeTriggerPort>;
 
@@ -92,7 +96,6 @@ function fakeTriggers(): FakeTriggers {
       ports.push(port);
       return {
         port,
-        acceptsExternalSignal: true,
         clockBinding: { kind: "motion" },
         dispose() {
           disposals += 1;
@@ -164,6 +167,29 @@ function loadWith(factory: TriggerFactory, motions: readonly MotionDefinition[])
 }
 
 describe("Motion disposal ownership when a build fails", () => {
+  it("records each build state and removes the assertion flag from buildMotion", () => {
+    expect(BUILD_MOTION_SOURCE).toContain('kind: "trigger-created"');
+    expect(BUILD_MOTION_SOURCE).toContain('kind: "motion-created"');
+    expect(BUILD_MOTION_SOURCE).not.toContain("let motion!: Motion;");
+    expect(BUILD_MOTION_SOURCE).not.toContain("constructed");
+  });
+
+  it("disposes a trigger when Motion construction fails", () => {
+    const triggers = fakeTriggers();
+    const definition: MotionDefinition = {
+      id: "scene",
+      trigger: { type: "manual" },
+      stagger: Number.NaN,
+      tracks: [],
+    };
+
+    expect(() => loadWith(triggers.factory, [definition])).toThrow(
+      /Motion stagger must be a finite non-negative number/,
+    );
+    expect(triggers.disposals).toBe(1);
+    expect(triggers.ports[0]!.subscriberCount).toBe(0);
+  });
+
   it("C-21 disposes a Motion that was built but never returned", () => {
     // Issue #134. buildMotion's catch released the clock consumer and the created trigger and
     // stopped there. The instance is never returned on that path, so it never enters Engine's

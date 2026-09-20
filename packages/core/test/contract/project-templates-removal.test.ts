@@ -41,8 +41,8 @@ const WITHOUT_TEMPLATES = { schemaVersion: 5, motions: [], freeTracks: [] };
 describe("ProjectDefinition.templates is removed, not ignored", () => {
   it("RA-77 refuses an authored templates field and accepts a project without one", () => {
     const refused = validateV5(WITH_TEMPLATES);
-    expect(refused.valid).toBe(false);
-    expect(refused.value).toBeNull();
+    expect(refused.kind).toBe("refused");
+    expect("value" in refused).toBe(false);
     expect(ruleIds(refused.diagnostics)).toEqual(["project-templates-unsupported"]);
     expect(refused.diagnostics[0]).toMatchObject({ path: "templates", severity: "error" });
     // The key is the mistake rather than the value at it, so an authored `undefined` is refused
@@ -53,7 +53,7 @@ describe("ProjectDefinition.templates is removed, not ignored", () => {
     // The accepting direction, in the same rig, because a guard that refused every project would
     // be green against the refusal alone.
     const accepted = validateV5(WITHOUT_TEMPLATES);
-    expect(accepted.valid).toBe(true);
+    expect(accepted.kind).toBe("accepted");
     expect(accepted.diagnostics).toEqual([]);
   });
 

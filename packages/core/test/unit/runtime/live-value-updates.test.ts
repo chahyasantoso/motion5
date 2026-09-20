@@ -190,7 +190,7 @@ function directRig(disposeFrom: "writeValues" | "stageTrack", declined = false):
     writeValues: (nodeId) => {
       entries.push(`write ${nodeId}`);
       if (disposeFrom === "writeValues") runtime?.dispose();
-      return declined ? { patched: false, progress: 0.5 } : undefined;
+      return declined ? { patch: { kind: "recompile" }, progress: 0.5 } : undefined;
     },
   };
   const created = new ProjectRuntime(DIRECT_PROJECT, options);
@@ -338,7 +338,7 @@ describe("direct-write failures respect the actual stage lifecycle", () => {
         compose: () => () => ({ values: { x: 200 }, sourceProgress: 0.5, sourceRevisions: {} }),
         stageTrack,
         writeValues: () => ({
-          patched: false,
+          patch: { kind: "recompile" },
           get progress() {
             if (refuse) throw failure;
             return 0.5;
@@ -370,7 +370,7 @@ describe("direct-write failures respect the actual stage lifecycle", () => {
     const runtime = new ProjectRuntime(DIRECT_PROJECT, {
       clock: createManualClock(),
       compose: () => () => ({ values: { x: compiledX }, sourceProgress: 0, sourceRevisions: {} }),
-      writeValues: () => ({ patched: false, progress: 0.5 }),
+      writeValues: () => ({ patch: { kind: "recompile" }, progress: 0.5 }),
       stageTrack: () => {
         compiledX = 260;
         return { commit, rollback };
@@ -419,7 +419,7 @@ describe("direct-write failures respect the actual stage lifecycle", () => {
         resolveKeyframes: registry.resolveForKeyframes.bind(registry),
         writeValues: () => {
           mask = 260;
-          return { patched: false, progress: 0.5 };
+          return { patch: { kind: "recompile" }, progress: 0.5 };
         },
         stageTrack,
       },

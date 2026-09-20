@@ -123,7 +123,7 @@ describe("the value state one live write leaves is a union rather than two field
       compose,
       writeValues: (_nodeId, _values, overlay) => {
         overlays.push(overlay);
-        return { patched: false, progress: 0.5 };
+        return { patch: { kind: "recompile" }, progress: 0.5 };
       },
       stageTrack: (): StagedTrack => {
         if (refuseStage) throw failure;
@@ -160,9 +160,9 @@ describe("the value state one live write leaves is a union rather than two field
         return { commit: () => undefined, rollback: () => undefined };
       },
       writeValues: () => ({
-        get patched(): boolean {
+        get patch(): { kind: "patched" } {
           if (refuseAnswer) throw failure;
-          return true;
+          return { kind: "patched" };
         },
         progress: 0.5,
       }),

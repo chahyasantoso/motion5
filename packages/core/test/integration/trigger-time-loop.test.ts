@@ -96,7 +96,7 @@ describe("time loop semantics", () => {
       schemaVersion: 5,
       motions: [{ id: "loop", trigger: LOOPING, tracks: [ramp("arm")] }],
     });
-    expect(result.valid).toBe(true);
+    expect(result.kind).toBe("accepted");
     expect(ruleIds(result.diagnostics)).not.toContain("trigger-time-repeat-unsupported");
   });
 
@@ -269,7 +269,6 @@ describe("time loop semantics", () => {
       resolveTrack: () => undefined,
       trigger: created.port,
       listenToClock: false,
-      acceptsExternalSignal: created.acceptsExternalSignal,
     });
     const binding = created.clockBinding;
     if (binding.kind !== "driver") throw new Error("A time trigger must bind as a clock driver.");

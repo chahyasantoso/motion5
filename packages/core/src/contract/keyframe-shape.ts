@@ -1,4 +1,5 @@
 import { readAuthoredLeaf } from "./authored-leaf";
+import { unreachable } from "../domain/exhaustive";
 import type { AuthoredPluginGroup, AuthoredProperty, PluginRequiresBinding } from "./v5";
 
 /**
@@ -90,11 +91,36 @@ export function isKeyframeGroup(value: unknown): value is AuthoredPluginGroup {
  * keeps the two refusals independent of each other.
  */
 export function looksLikeLegacyGroup(value: unknown): boolean {
-  if (!isObject(value) || readAuthoredLeaf(value).kind === "wrapper") return false;
+  if (!isObject(value)) return false;
+  const leaf = readAuthoredLeaf(value);
+  switch (leaf.kind) {
+    case "wrapper":
+      return false;
+    case "animated":
+    case "static":
+    case "empty":
+    case "invalid":
+      break;
+    default:
+      return unreachable(leaf);
+  }
   const names = Object.keys(value);
   if (names.length === 0) return false;
   if (names.some((name) => PLUGIN_GROUP_SECTIONS.includes(name))) return false;
-  return names.every((name) => readAuthoredLeaf(value[name]).kind !== "invalid");
+  return names.every((name) => {
+    const member = readAuthoredLeaf(value[name]);
+    switch (member.kind) {
+      case "animated":
+      case "static":
+      case "empty":
+      case "wrapper":
+        return true;
+      case "invalid":
+        return false;
+      default:
+        return unreachable(member);
+    }
+  });
 }
 
 /**

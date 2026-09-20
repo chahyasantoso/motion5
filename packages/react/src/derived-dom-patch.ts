@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, type RefCallback } from "react";
 import type { DomPatchAdapter } from "@motion5/core/adapters";
+import { patchRender } from "@motion5/core/internal";
 import type { Patch, PatchSource } from "@motion5/core/internal";
 import { useDomBinding } from "./dom-binding";
 
@@ -69,11 +70,12 @@ export function useDerivedDomPatch<T extends Element>(
       const values: PatchValues[] = [];
       for (const id of ids) {
         const patch = source.get(id);
-        if (patch?.status !== "ready") {
+        const decision = patchRender(patch);
+        if (decision.kind !== "render") {
           adapter.applyValues(key, NOT_DERIVABLE);
           return;
         }
-        values.push(patch.values);
+        values.push(decision.patch.values);
       }
       adapter.applyValues(key, derive(values) ?? NOT_DERIVABLE);
     },

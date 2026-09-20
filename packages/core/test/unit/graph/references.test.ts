@@ -19,9 +19,10 @@ describe("cross-motion reference classification", () => {
   it("classifies an edge as pending when its source has no value yet", () => {
     const result = classifyReference(edge("base/root"), () => false);
     expect(result.status).toBe("pending");
-    expect(result.diagnostic?.ruleId).toBe(PENDING_REFERENCE_RULE_ID);
-    expect(result.diagnostic?.severity).toBe("warning");
-    expect(result.diagnostic?.ids).toEqual(["base/root", "observer"]);
+    if (result.status !== "pending") return;
+    expect(result.diagnostic.ruleId).toBe(PENDING_REFERENCE_RULE_ID);
+    expect(result.diagnostic.severity).toBe("warning");
+    expect(result.diagnostic.ids).toEqual(["base/root", "observer"]);
   });
 
   it("builds a deterministic diagnostic naming both the source and the observer", () => {
@@ -47,7 +48,7 @@ describe("cross-motion reference classification", () => {
     const pending = classifyReference(edge("base/root"), () => false);
     expect(Object.isFrozen(resolved)).toBe(true);
     expect(Object.isFrozen(pending)).toBe(true);
-    expect(Object.isFrozen(pending.diagnostic)).toBe(true);
+    if (pending.status === "pending") expect(Object.isFrozen(pending.diagnostic)).toBe(true);
   });
 
   it("finds the first pending edge in canonical edge-key order, not authored order", () => {

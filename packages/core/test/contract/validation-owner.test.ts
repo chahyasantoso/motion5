@@ -42,13 +42,13 @@ function validatorErrors(project: AuthoredProject) {
 
 describe("one observation-validation owner (P1-12)", () => {
   it("accepts a track observing a sibling named after its own motion", () => {
-    // `hero/arm` observes `hero/hero`. That is a sibling, not a self-reference. The validator
-    // compares against the motion id, so it rejects a project the graph owner accepts.
+    // `hero/arm` observes `hero/hero`. That is a sibling, not a self-reference. Schema validation
+    // checks the authored shape; graph validation resolves the reference.
     const project = motion([{ id: "hero" }, { id: "arm", observes: [{ source: "hero" }] }]);
 
     expect(graphErrors(project)).toEqual([]);
     expect(validatorErrors(project)).toEqual([]);
-    expect(validateV5(project).valid).toBe(true);
+    expect(validateV5(project).kind).toBe("accepted");
   });
 
   it("reports an actual self-reference identically from both owners", () => {
@@ -56,9 +56,8 @@ describe("one observation-validation owner (P1-12)", () => {
 
     const fromGraph = graphErrors(project);
     expect(fromGraph.map(({ ruleId }) => ruleId)).toEqual(["observation-self-reference"]);
-    // The validator misses this rule entirely and only trips its recursive cycle check, so it
-    // names the same mistake `observation-cycle` at a different path.
-    expect(validatorErrors(project)).toEqual(fromGraph);
+    // Schema validation no longer reaches into graph construction; the graph owns this refusal.
+    expect(validatorErrors(project)).toEqual([]);
   });
 
   it("reports a cycle identically from both owners", () => {
@@ -69,10 +68,9 @@ describe("one observation-validation owner (P1-12)", () => {
 
     const fromGraph = graphErrors(project);
     expect(fromGraph.map(({ ruleId }) => ruleId)).toEqual(["graph-cycle"]);
-    // One cycle algorithm, one rule id, one path, one message. The recursive DFS in the
-    // validator is a second answer to a question the ordering pass already answers, and it
-    // cannot name the participating nodes.
-    expect(validatorErrors(project)).toEqual(fromGraph);
+    // One cycle algorithm, one owner: graph construction. The schema validator returns the
+    // accepted authored shape and does not recompute graph diagnostics.
+    expect(validatorErrors(project)).toEqual([]);
   });
 
   it("spells edge identity the same way in both owners", () => {
@@ -83,7 +81,7 @@ describe("one observation-validation owner (P1-12)", () => {
 
     const fromGraph = graphErrors(project);
     expect(fromGraph.map(({ ruleId }) => ruleId)).toEqual(["observation-duplicate"]);
-    expect(validatorErrors(project)).toEqual(fromGraph);
+    expect(validatorErrors(project)).toEqual([]);
   });
 
   it("keeps two observers of one source out of each other's duplicate check", () => {
@@ -110,7 +108,9 @@ describe("one observation-validation owner (P1-12)", () => {
       },
     ]);
 
-    const accepted = validateV5(project).value;
+    const result = validateV5(project);
+    if (result.kind !== "accepted") throw new Error("Expected project to be accepted.");
+    const accepted = result.value;
     expect(accepted).toBeDefined();
     expect(accepted).not.toBe(project);
     expect(Object.isFrozen(accepted)).toBe(true);

@@ -8,7 +8,12 @@
 
 `trigger.type` was validated and then ignored. `Engine.load()` called `createManualTriggerPort()` unconditionally for every Motion, so `scroll` and `time` were decorative: they loaded, they reported no error, and they behaved exactly like `manual`. An author could not tell a working configuration from an inert one, because both produced a Motion that moved only when something called `signal()`.
 
-`T1` through `T4` removed that. `createTriggerFactory` now returns `createTimeDriver(trigger.duration)` for `time`, resolves an injected `ScrollSource` or throws `trigger-driver-unavailable` for `scroll`, and reaches `createManualTriggerPort()` only in the `manual` branch. `ClockBinding` is a total tagged union, so no Motion can hold both a driver and its own clock advance. Unsupported playback fields are rejected at validation rather than accepted and ignored.
+`T1` through `T4` removed that. `createTriggerFactory` now returns
+`createTimeDriver(trigger.duration)` for `time`, resolves an injected `ScrollSource` or throws
+`trigger-driver-unavailable` for `scroll`, and reaches `createManualTriggerPort()` only in the
+`manual` branch. `TriggerBinding` is a total tagged union, so no Motion can hold both a driver
+and its own clock advance. Unsupported playback fields are rejected at validation rather than
+accepted and ignored.
 
 So the structural work landed before this slice. What survived was the claim.
 
@@ -20,7 +25,7 @@ The documentation was worse than stale. `docs/AUTHORED-SCHEMA.md` is the normati
 
 A declared trigger type selects a real driver or fails loudly. No type resolves to a manual fallback, and that is proved by source rather than by behavior, because a behavioral test cannot see a fallback that happens to be unreachable today.
 
-What is forbidden is a manual **fallback**, not the manual port as a transport. A fallback is a port handed back with `acceptsExternalSignal: true` and a `motion` clock binding for a declared `time` or `scroll` trigger. `time-driver.ts` builds its own manual-style port as its emission channel, exactly as section 6.1 of the trigger plan specifies, and that port is driver-owned: it reports `acceptsExternalSignal: false` and a `driver` binding. The guard is therefore positional and capability-based, not a raw count of call sites across `packages/core/src`.
+What is forbidden is a manual **fallback**, not the manual port as a transport. A fallback is a port handed back with a `motion` clock binding for a declared `time` or `scroll` trigger. The binding derives external-signal capability, so an injected factory cannot state a contradictory boolean. `time-driver.ts` builds its own manual-style port as its emission channel, exactly as section 6.1 of the trigger plan specifies, and that port is driver-owned: its binding is `driver`, which derives a false external-signal capability. The guard is therefore positional and capability-based, not a raw count of call sites across `packages/core/src`.
 
 The concrete rules:
 
@@ -45,11 +50,16 @@ ADR-031 is preserved. No compiled `Track` is captured anywhere, `packages/core/s
 
 The documented schema now matches the enforced schema. An author who writes `repeat: 0`, `yoyo`, or `autoplay: false` gets an error naming the rule, and an author who declares a `scroll` source with no registered resolver gets one naming the Motion and the key. No configuration silently does nothing.
 
-The trigger factory is the only object that knows trigger kinds. `Motion` takes normalized progress in `[0, 1]` and one capability flag; `Engine` reads a three-state `ClockBinding`. Neither can be made to branch on a trigger type without a new owner appearing, which is what the source guard is for.
+The trigger factory is the only object that knows trigger kinds. `Motion` takes normalized
+progress in `[0, 1]`; `Engine` reads a three-state `TriggerBinding`, and
+`acceptsExternalSignal(binding)` is its only capability reader. Neither can be made to branch on
+a trigger type without a new owner appearing, which is what the source guard is for.
 
 The three adjacent findings from section 8 of the trigger plan remain open and are not touched here: the `edgeKey` separator collision, `seek` bypassing the Motion beyond documenting it, and the `signal()` versus manual-port range disagreement.
 
-The public surface is unchanged. No export, schema, or type changed, so `public-declaration-surface.test.ts` runs unchanged with no allowlist edit.
+The public port surface changes: the former clock-binding type is replaced by `TriggerBinding`,
+`CreatedTrigger.acceptsExternalSignal` is removed, and `acceptsExternalSignal(binding)` is added
+as the single public capability reader. The authored schema is untouched.
 
 ## Evidence
 

@@ -1,5 +1,13 @@
 # packages/core/src/engine.ts
 
+## MotionBuild
+
+What `buildMotion` has built so far, and the reason it is a tag rather than two correlated locals.
+
+The retired spelling was `let motion!: Motion` beside `let constructed = false`: a definite-assignment assertion and a boolean, hand-maintained, on the most failure-sensitive path in the engine. Two locals encoding one decision means a reader has to cross-check them to know whether the instance in scope exists, and the compiler checks neither, so the rollback obligation lived in a comment. The union states it instead. `trigger-created` is the state a failure between trigger creation and construction leaves behind, and `motion-created` is the only state that owns an instance nothing else can reach, so it is the only arm that owes `dispose()`. A third state added later fails `typecheck` at the catch and at the invalidate closure rather than inheriting whichever arm was written last.
+
+Both members carry the trigger, because the trigger exists in both and releaseMotion's half of the teardown is owed in both. Carrying it on the union rather than reading the outer local is what lets one `switch` answer the whole cleanup question.
+
 ## describeError
 
 Local on purpose. `ProjectRuntime` formats its own errors for its own layer, and promoting a shared formatter into the contract module would widen the package's declaration surface, which a governance gate scans, for two call sites.

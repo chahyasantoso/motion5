@@ -95,7 +95,6 @@ function hostileFactory(): HostileFactory {
       // interface, so a spread would silently drop a getter-backed port or clock binding.
       return {
         port: inner.port,
-        acceptsExternalSignal: inner.acceptsExternalSignal,
         clockBinding: inner.clockBinding,
         dispose() {
           disposals += 1;

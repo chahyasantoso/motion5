@@ -16,7 +16,6 @@ import {
   liveWrite,
   resolveToken,
   stale,
-  validated,
 } from "../../../src/runtime/results";
 import {
   commitInFlight,
@@ -130,20 +129,19 @@ describe("the refusals the runtime spells inline", () => {
 
 describe("the three decoded results", () => {
   it("states validity as one discriminant", () => {
-    const accepted = validated({ valid: true, value: 7, diagnostics: [] });
+    const accepted = { kind: "accepted", value: 7, diagnostics: [] } as const;
     expect(accepted.kind).toBe("accepted");
     expect(expectValid(accepted)).toBe(7);
-    expect(validated({ valid: true, value: null, diagnostics: [] }).kind).toBe("rejected");
-    const rejected = validated<number>({ valid: false, value: null, diagnostics: [diagnostic] });
+    const rejected = { kind: "refused", diagnostics: [diagnostic] } as const;
     expect(() => expectValid(rejected)).toThrow(describeDiagnostics([diagnostic]));
   });
 
   it("states the three live-write outcomes, and keeps the progress a patch answered", () => {
     expect(liveWrite(undefined).kind).toBe("no-hook");
-    const patched = liveWrite({ patched: true, progress: 0.25 });
+    const patched = liveWrite({ patch: { kind: "patched" }, progress: 0.25 });
     expect(patched.kind).toBe("patched");
     expect(patched.kind === "patched" ? patched.progress : undefined).toBe(0.25);
-    const rebuild = liveWrite({ patched: false, progress: 0.5 });
+    const rebuild = liveWrite({ patch: { kind: "recompile" }, progress: 0.5 });
     expect(rebuild.kind).toBe("needs-rebuild");
     expect(rebuild.kind === "needs-rebuild" ? rebuild.progress : undefined).toBe(0.5);
   });

@@ -137,7 +137,6 @@ describe("Engine motion edits preserve accepted state and entity lifetimes", () 
             },
           },
           clockBinding: { kind: "none" },
-          acceptsExternalSignal: context.trigger.type === "manual",
           dispose: entry.dispose,
         };
       },

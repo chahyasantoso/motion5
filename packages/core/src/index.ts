@@ -119,9 +119,9 @@ export { assertClock, createManualClock } from "./ports/clock";
 export type { Clock, ClockTick } from "./ports/clock";
 export { assertTriggerPort, createManualTriggerPort } from "./ports/trigger";
 export type { TriggerPort } from "./ports/trigger";
-export { assertTriggerFactory } from "./ports/trigger-factory";
+export { acceptsExternalSignal, assertTriggerFactory } from "./ports/trigger-factory";
 export type {
-  ClockBinding,
+  TriggerBinding,
   ClockConsumer,
   CreatedTrigger,
   TriggerFactory,
@@ -142,7 +142,7 @@ export type {
 } from "./adapters/trigger-factory/default";
 export type { ScrollSource } from "./adapters/scroll-trigger";
 export { assertInterpolator } from "./ports/interpolator";
-export type { InterpolationTimeline, Interpolator } from "./ports/interpolator";
+export type { InterpolationTimeline, Interpolator, PatchKeysResult } from "./ports/interpolator";
 export { assertScheduler } from "./ports/scheduler";
 export type { Cancel, Scheduler } from "./ports/scheduler";
 /**

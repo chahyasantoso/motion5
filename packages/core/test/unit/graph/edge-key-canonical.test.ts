@@ -16,8 +16,8 @@ describe("canonical observation edge identity", () => {
   it("shares identity with the authored observation resolver", () => {
     const resolved = resolveObservationEdge({ source: "root" }, OBSERVER, "hero", "test");
     const expected: GraphEdge = { observerId: OBSERVER, sourceId: SOURCE, role: "output" };
-    expect(resolved.edge).toBeDefined();
-    expect(edgeKey(resolved.edge!)).toBe(edgeKey(expected));
+    expect(resolved.kind).toBe("accepted");
+    if (resolved.kind === "accepted") expect(edgeKey(resolved.value)).toBe(edgeKey(expected));
   });
 
   it("shares identity with the authored requirement resolver", () => {
@@ -28,13 +28,16 @@ describe("canonical observation edge identity", () => {
       role: "input",
       requirement: { plugin: "fk", slot: "base" },
     };
-    expect(resolved.edge).toBeDefined();
-    expect(edgeKey(resolved.edge!)).toBe(edgeKey(expected));
+    expect(resolved.kind).toBe("accepted");
+    if (resolved.kind === "accepted") expect(edgeKey(resolved.value)).toBe(edgeKey(expected));
   });
 
   it("keeps two slots bound to one source distinct", () => {
     const base = resolveRequirementEdge(binding("base"), OBSERVER, "hero", "test");
     const other = resolveRequirementEdge(binding("destination"), OBSERVER, "hero", "test");
-    expect(edgeKey(base.edge!)).not.toBe(edgeKey(other.edge!));
+    expect(base.kind).toBe("accepted");
+    expect(other.kind).toBe("accepted");
+    if (base.kind === "accepted" && other.kind === "accepted")
+      expect(edgeKey(base.value)).not.toBe(edgeKey(other.value));
   });
 });

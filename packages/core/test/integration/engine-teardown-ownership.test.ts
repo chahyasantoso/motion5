@@ -107,7 +107,6 @@ function triggerProbe(options: TriggerProbeOptions = {}): TriggerProbe {
       const inner = base.create(context);
       return {
         port: inner.port,
-        acceptsExternalSignal: inner.acceptsExternalSignal,
         clockBinding: inner.clockBinding,
         dispose() {
           disposals += 1;

@@ -1,6 +1,12 @@
 import type { AuthoredStop, Diagnostic } from "../../contract/v5";
+import { describeDiagnostics } from "../../contract/diagnostics";
 import { compilePercentKeyframes, type CompiledKeyframes } from "../../domain/keyframe-compiler";
-import type { Interpolator, InterpolationTimeline } from "../../ports/interpolator";
+import {
+  PATCHED,
+  RECOMPILE,
+  type Interpolator,
+  type InterpolationTimeline,
+} from "../../ports/interpolator";
 
 export interface GsapTweenLike {
   duration(): number;
@@ -50,11 +56,6 @@ function readKeyframes(config: unknown): Readonly<Record<string, unknown>> {
 }
 function readTweenVars(config: unknown): Readonly<Record<string, unknown>> {
   return !isRecord(config) || !isRecord(config.tweenVars) ? {} : config.tweenVars;
-}
-function describeDiagnostics(diagnostics: readonly Diagnostic[]): string {
-  return diagnostics
-    .map(({ ruleId, path, message }) => `${ruleId} at ${path}: ${message}`)
-    .join(" ");
 }
 function hasError(diagnostics: readonly Diagnostic[]): boolean {
   return diagnostics.some(({ severity }) => severity === "error");
@@ -179,20 +180,20 @@ export function createGsapInterpolator(gsap: GsapLike): Interpolator {
         if (value === undefined) return timeline.progress();
         timeline.progress(value);
       }
-      function patchKeys(overlay: Readonly<Record<string, unknown>>, rebase = false): boolean {
+      function patchKeys(overlay: Readonly<Record<string, unknown>>, rebase = false) {
         const effective = { ...base, ...overlay };
         const next = compilePercentKeyframes(effective);
         // Declined, not refused. The caller recompiles, and the recompile raises the diagnostic
         // exactly as a fresh `create()` of the same record would, from the one place that owns it.
-        if (hasError(next.diagnostics)) return false;
-        if (!sameKeys(next, compiled)) return false;
+        if (hasError(next.diagnostics)) return RECOMPILE;
+        if (!sameKeys(next, compiled)) return RECOMPILE;
         const changed = next.properties.filter(
           ({ key, stops }) => !sameStops(stops, stopsOf(compiled, key)),
         );
         // A host that answered nothing for `recent()` retains no handles, so there is nothing to
         // kill and a rebuild would double the tweens. Decline instead, which is the same answer the
         // one-tween adapter gives by not declaring the member at all.
-        if (changed.some(({ key }) => (tweensByKey.get(key) ?? []).length === 0)) return false;
+        if (changed.some(({ key }) => (tweensByKey.get(key) ?? []).length === 0)) return RECOMPILE;
         const at = timeline.progress();
         // Wind the playhead back before anything is rebuilt, and re-seed from the recompiled
         // initial before any `to()` is called. That order is the correctness here rather than
@@ -214,7 +215,7 @@ export function createGsapInterpolator(gsap: GsapLike): Interpolator {
         // moved. A timeline that was already holding 0 needs no render at all, because the re-seed
         // above is the state at 0.
         timeline.progress(at);
-        return true;
+        return PATCHED;
       }
       return {
         get duration() {

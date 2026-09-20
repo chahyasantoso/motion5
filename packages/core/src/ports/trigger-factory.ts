@@ -2,6 +2,7 @@ import type { MotionDefinition, TriggerDefinition } from "../contract/v5";
 import type { Clock, ClockTick } from "./clock";
 import type { Scheduler } from "./scheduler";
 import type { TriggerPort } from "./trigger";
+import { unreachable } from "../domain/exhaustive";
 
 export interface ClockConsumer {
   onTick(event: ClockTick): void;
@@ -30,16 +31,28 @@ export interface TriggerFactoryContext {
  *   trigger today; naming that state makes the plan section 6.3 unification a later one-liner.
  * - `none`: push-driven, no clock consumer at all. Used by `scroll`.
  */
-export type ClockBinding =
+export type TriggerBinding =
   | { readonly kind: "driver"; onTick(event: ClockTick): void }
   | { readonly kind: "motion" }
   | { readonly kind: "none" };
 
+/** Derives the external-signal capability from the one total trigger binding. */
+export function acceptsExternalSignal(binding: TriggerBinding): boolean {
+  switch (binding.kind) {
+    case "driver":
+    case "none":
+      return false;
+    case "motion":
+      return true;
+    default:
+      return unreachable(binding);
+  }
+}
+
 export interface CreatedTrigger {
   readonly port: TriggerPort;
-  /** False for driver-backed Motions. Enforces locked decision 4 without type branching. */
-  readonly acceptsExternalSignal: boolean;
-  readonly clockBinding: ClockBinding;
+  /** The one total decision: clock ownership also owns external-signal capability. */
+  readonly clockBinding: TriggerBinding;
   /** Must be idempotent. */
   dispose(): void;
 }

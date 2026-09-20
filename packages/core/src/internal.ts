@@ -2,6 +2,8 @@ import type { LivePatch, PatchListener } from "./runtime/patch-registry";
 import type { RenderMetadata } from "./domain/plugins";
 
 export type { LivePatch, Patch, PatchListener } from "./runtime/patch-registry";
+export { patchRender } from "./contract/patch-render";
+export type { PatchRender } from "./contract/patch-render";
 export type { RenderMetadata } from "./domain/plugins";
 /**
  * The collapse an implementor of `PatchSource` owes, exported beside the interface that owes it.

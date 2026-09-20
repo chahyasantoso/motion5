@@ -81,10 +81,9 @@ export function readAuthoredLeaf(value: unknown): AuthoredLeaf {
  * classifying those two decides nothing a caller can observe. The result is a closed two-member
  * union, so a reader that asks for the one channel it wants has decided about both.
  *
- * This answers the channel and nothing else. Which static value a mask may carry is a different
- * partition, because it needs the value and only `static` carries one, and
- * `runtime/authored-values.ts` still asks that question one-sidedly at two sites. See ADR-059,
- * ADR-060, and ADR-092.
+ * This answers the channel and nothing else. Which authored payload a consumer needs is a different
+ * partition, because it carries either a static value or the stops that may be compiled. See
+ * ADR-059, ADR-060, and ADR-092.
  */
 export type LiveWriteChannel = "mask" | "timeline";
 
@@ -103,11 +102,48 @@ export function liveWriteChannel(leaf: AuthoredLeaf): LiveWriteChannel {
 }
 
 /**
+ * The payload role an authored leaf presents to a consumer of the compiled definition.
+ *
+ * The compiler, fake interpolator, and live-value mask each asked this same three-way question in
+ * their own words: a static leaf has a value, an animated leaf has stops, and every other leaf has
+ * neither. The old readers compared `kind` one-sidedly and then fell through, so a new leaf kind
+ * inherited whichever answer happened to be written after the comparison. This partition names all
+ * three answers once and preserves the payload needed by each owner of the next step.
+ *
+ * This is a read of `AuthoredLeaf`, not another classifier. `readAuthoredLeaf` remains the only
+ * function that inspects an unknown value, while this function exhaustively maps its five already
+ * classified kinds. The empty, retired-wrapper, and invalid forms intentionally share `none`: that
+ * is the answer those readers already produced, and validation remains the owner of refusing the
+ * two malformed forms. See ADR-050, ADR-059, ADR-060, and ADR-092.
+ */
+export type AuthoredLeafPartition =
+  | { readonly kind: "value"; readonly value: AuthoredStaticValue }
+  | { readonly kind: "stops"; readonly stops: readonly unknown[] }
+  | { readonly kind: "none" };
+
+const NO_PARTITION: AuthoredLeafPartition = Object.freeze({ kind: "none" });
+
+export function authoredLeafPartition(leaf: AuthoredLeaf): AuthoredLeafPartition {
+  switch (leaf.kind) {
+    case "animated":
+      return { kind: "stops", stops: leaf.stops };
+    case "static":
+      return { kind: "value", value: leaf.value };
+    case "empty":
+    case "wrapper":
+    case "invalid":
+      return NO_PARTITION;
+    default:
+      return unreachable(leaf);
+  }
+}
+
+/**
  * The stops a leaf actually compiles to: every authored stop with a finite position and a value.
  *
  * A static leaf compiles to no stops at all, which is what makes the interpolator bypass structural.
- * The caller reads its value from `readAuthoredLeaf` instead, so nothing downstream has to invent a
- * keyframe pair to represent a value that never changes.
+ * The caller reads its value from `authoredLeafPartition` instead, so nothing downstream has to
+ * invent a keyframe pair to represent a value that never changes.
  *
  * Tolerant by design, exactly like `readPluginValues`. A malformed stop is absent here and reported
  * by `validateKeyframes`, which owns shape. The filter lives beside the classifier rather than in
@@ -116,9 +152,18 @@ export function liveWriteChannel(leaf: AuthoredLeaf): LiveWriteChannel {
  */
 export function readCompilableStops(value: unknown): readonly AuthoredStop[] {
   const leaf = readAuthoredLeaf(value);
-  if (leaf.kind !== "animated") return NO_STOPS;
-  return leaf.stops.filter(
-    (stop): stop is AuthoredStop =>
-      isRecord(stop) && typeof stop.p === "number" && Number.isFinite(stop.p) && "v" in stop,
-  );
+  switch (leaf.kind) {
+    case "animated":
+      return leaf.stops.filter(
+        (stop): stop is AuthoredStop =>
+          isRecord(stop) && typeof stop.p === "number" && Number.isFinite(stop.p) && "v" in stop,
+      );
+    case "static":
+    case "empty":
+    case "wrapper":
+    case "invalid":
+      return NO_STOPS;
+    default:
+      return unreachable(leaf);
+  }
 }

@@ -78,7 +78,8 @@ describe("ObservationDefinition.target is removed, not ignored", () => {
 
   it("V-2 refuses an authored target on an input observation", () => {
     const resolved = resolveObservationEdge(INPUT_WITH_TARGET, "hero/child", "hero", PATH);
-    expect(resolved.edge).toBeUndefined();
+    expect(resolved.kind).toBe("refused");
+    expect("value" in resolved).toBe(false);
     expect(ruleIds(resolved.diagnostics)).toEqual(["observation-target-unsupported"]);
     expect(resolved.diagnostics[0]?.path).toBe(PATH);
   });
@@ -87,13 +88,14 @@ describe("ObservationDefinition.target is removed, not ignored", () => {
     // `observation-output-target` is gone. One rule owns the field on both roles, because it has
     // no consumer on either and a role-specific refusal implied it had one somewhere.
     const resolved = resolveObservationEdge(OUTPUT_WITH_TARGET, "hero/child", "hero", PATH);
-    expect(resolved.edge).toBeUndefined();
+    expect(resolved.kind).toBe("refused");
+    expect("value" in resolved).toBe(false);
     expect(ruleIds(resolved.diagnostics)).toEqual(["observation-target-unsupported"]);
   });
 
   it("V-4 names the removed field instead of reporting a duplicate edge", () => {
     const result = validateV5(TWO_TARGETS);
-    expect(result.valid).toBe(false);
+    expect(result.kind).toBe("refused");
     expect(ruleIds(result.diagnostics)).toEqual([
       "observation-target-unsupported",
       "observation-target-unsupported",

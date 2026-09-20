@@ -155,7 +155,6 @@ describe("time trigger integration T2", () => {
         const port = createFakeTriggerPort();
         return {
           port,
-          acceptsExternalSignal: false,
           clockBinding: {
             kind: "driver",
             onTick: () => {

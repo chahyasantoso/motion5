@@ -7,6 +7,13 @@ import type {
   TrackDefinition,
 } from "../contract/v5";
 import { diagnostic } from "../contract/diagnostics";
+import {
+  acceptedOutcome,
+  readOutcome,
+  refusedOutcome,
+  refusedOutcomeFrom,
+  type Outcome,
+} from "../domain/outcome";
 import { readPluginBindings, readPluginValues } from "../contract/keyframe-shape";
 import { PLUGIN_GOALS_SLOT } from "../contract/solver-slots";
 import { compareCodeUnits } from "./compare";
@@ -174,10 +181,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
-export interface ResolvedEdge {
-  readonly edge?: GraphEdge;
-  readonly diagnostics: readonly Diagnostic[];
-}
+export type ResolvedEdge = Outcome<GraphEdge>;
 
 const BIND_INSTEAD = "Bind the dependency under keyframes.<plugin>.requires instead.";
 const TARGET_UNSUPPORTED = `Observation target is not supported; an observes entry declares an output edge and names no destination key. ${BIND_INSTEAD}`;
@@ -199,24 +203,24 @@ export function resolveObservationEdge(
     diagnostics.push(
       diagnostic("observation-source-shape", path, "Observation source must be non-empty."),
     );
-    return { diagnostics: Object.freeze(diagnostics) };
+    return refusedOutcomeFrom<GraphEdge, Diagnostic>(Object.freeze(diagnostics));
   }
   // Three removed fields, one rule id each, because a diagnostic has to name what the author
   // actually wrote rather than the removal they share. The target guard stays first, so ADR-046's
   // `V-2` through `V-4` still report a target for a fixture that also carries a role.
   if (readRemoved(observation, "target") !== undefined) {
     diagnostics.push(diagnostic("observation-target-unsupported", path, TARGET_UNSUPPORTED));
-    return { diagnostics: Object.freeze(diagnostics) };
+    return refusedOutcomeFrom<GraphEdge, Diagnostic>(Object.freeze(diagnostics));
   }
   if (readRemoved(observation, "role") !== undefined) {
     diagnostics.push(diagnostic("observation-role-unsupported", path, ROLE_UNSUPPORTED));
-    return { diagnostics: Object.freeze(diagnostics) };
+    return refusedOutcomeFrom<GraphEdge, Diagnostic>(Object.freeze(diagnostics));
   }
   if (readRemoved(observation, "projection") !== undefined) {
     diagnostics.push(
       diagnostic("observation-projection-unsupported", path, PROJECTION_UNSUPPORTED),
     );
-    return { diagnostics: Object.freeze(diagnostics) };
+    return refusedOutcomeFrom<GraphEdge, Diagnostic>(Object.freeze(diagnostics));
   }
   let sourceId: string;
   try {
@@ -230,7 +234,7 @@ export function resolveObservationEdge(
         [observation.source],
       ),
     );
-    return { diagnostics: Object.freeze(diagnostics) };
+    return refusedOutcomeFrom<GraphEdge, Diagnostic>(Object.freeze(diagnostics));
   }
   // One literal, in one place. `role` is not read from authored input any more, so this resolver
   // and `resolveRequirementEdge` are the only two things that can set it, one value each.
@@ -239,7 +243,7 @@ export function resolveObservationEdge(
     sourceId,
     role: "output",
   });
-  return { edge, diagnostics: Object.freeze([]) };
+  return acceptedOutcome<GraphEdge, Diagnostic>(edge, Object.freeze([]));
 }
 
 export function resolveRequirementEdge(
@@ -253,11 +257,9 @@ export function resolveRequirementEdge(
     sourceId = qualifySource(binding.source, ownerId);
   } catch (error) {
     const message = String(error instanceof Error ? error.message : error);
-    return {
-      diagnostics: Object.freeze([
-        diagnostic("requirement-source", path, message, [binding.source]),
-      ]),
-    };
+    return refusedOutcome<GraphEdge, Diagnostic>([
+      diagnostic("requirement-source", path, message, [binding.source]),
+    ]);
   }
   // The member key is copied when the binding carries one and omitted when it does not, rather than
   // written as an explicit `undefined`. An absent field and a field holding `undefined` encode the
@@ -273,7 +275,7 @@ export function resolveRequirementEdge(
     role: "input",
     requirement,
   });
-  return { edge, diagnostics: Object.freeze([]) };
+  return acceptedOutcome<GraphEdge, Diagnostic>(edge, Object.freeze([]));
 }
 
 export function observationEdgeKey(
@@ -282,13 +284,17 @@ export function observationEdgeKey(
   ownerId: string,
 ): string {
   const resolved = resolveObservationEdge(observation, observerId, ownerId, "observation");
-  if (resolved.edge === undefined)
-    throw new TypeError(
-      resolved.diagnostics
-        .map(({ ruleId, path, message }) => `${ruleId} at ${path}: ${message}`)
-        .join(" "),
-    );
-  return edgeKey(resolved.edge);
+  return readOutcome(
+    resolved,
+    (edge) => edgeKey(edge),
+    (diagnostics) => {
+      throw new TypeError(
+        diagnostics
+          .map(({ ruleId, path, message }) => `${ruleId} at ${path}: ${message}`)
+          .join(" "),
+      );
+    },
+  );
 }
 
 export function collectTrack(
@@ -318,8 +324,11 @@ export function collectTrack(
   for (const [index, observation] of (track.observes ?? []).entries()) {
     const path = `${owner === "free" ? `freeTracks[${authoredIndex}]` : `motions[${authoredIndex}].tracks[${index}].observes`}`;
     const resolved = resolveObservationEdge(observation, id, ownerId, path);
-    diagnostics.push(...resolved.diagnostics);
-    if (resolved.edge !== undefined) edges.push(resolved.edge);
+    readOutcome(
+      resolved,
+      (edge) => edges.push(edge),
+      (resolvedDiagnostics) => diagnostics.push(...resolvedDiagnostics),
+    );
   }
   // Derived from the authored form, with no plugin registry in reach. Whether `fk` is registered
   // and declares `base` is `PluginRegistry.resolveForKeyframes`' question; whether the source is a
@@ -328,8 +337,11 @@ export function collectTrack(
   for (const binding of readPluginBindings(track.keyframes)) {
     const bindingPath = `${id}.keyframes.${binding.authoredPath}`;
     const resolved = resolveRequirementEdge(binding, id, ownerId, bindingPath);
-    diagnostics.push(...resolved.diagnostics);
-    if (resolved.edge !== undefined) edges.push(resolved.edge);
+    readOutcome(
+      resolved,
+      (edge) => edges.push(edge),
+      (resolvedDiagnostics) => diagnostics.push(...resolvedDiagnostics),
+    );
   }
   return Object.freeze({ id, owner, authoredIndex, track, edges: Object.freeze(edges) });
 }
@@ -943,25 +955,30 @@ export function finalizeGraph(
   if (diagnostics.some(({ severity }) => severity === "error"))
     return { diagnostics: Object.freeze(diagnostics) };
   const ordering = orderGraph(resolvedNodes);
-  if (ordering.order === undefined)
-    return {
+  return readOutcome(
+    ordering,
+    (order) => {
+      const nodeById: Record<string, GraphNode> = {};
+      for (const node of resolvedNodes) nodeById[node.id] = node;
+      // Derived here, after `resolveSolvers` returned, because the solver fan-in is half the answer
+      // and it does not exist until then. One owner, in the file that already owns `compareEdges`
+      // and delegates to `orderGraph`, so every consumer reads reverse topology instead of walking
+      // for it.
+      return {
+        graph: freeze({
+          nodes: freeze(resolvedNodes),
+          nodeById: freeze(nodeById),
+          dependants: deriveDependants(resolvedNodes),
+          order,
+          diagnostics: freeze(diagnostics),
+        }),
+        diagnostics: freeze(diagnostics),
+      };
+    },
+    (orderingDiagnostics) => ({
       diagnostics: Object.freeze(
-        [...diagnostics, ...ordering.diagnostics].sort(compareDiagnostics),
+        [...diagnostics, ...orderingDiagnostics].sort(compareDiagnostics),
       ),
-    };
-  const nodeById: Record<string, GraphNode> = {};
-  for (const node of resolvedNodes) nodeById[node.id] = node;
-  // Derived here, after `resolveSolvers` returned, because the solver fan-in is half the answer and
-  // it does not exist until then. One owner, in the file that already owns `compareEdges` and
-  // delegates to `orderGraph`, so every consumer reads reverse topology instead of walking for it.
-  return {
-    graph: freeze({
-      nodes: freeze(resolvedNodes),
-      nodeById: freeze(nodeById),
-      dependants: deriveDependants(resolvedNodes),
-      order: ordering.order,
-      diagnostics: freeze(diagnostics),
     }),
-    diagnostics: freeze(diagnostics),
-  };
+  );
 }

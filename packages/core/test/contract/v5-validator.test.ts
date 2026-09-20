@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { validateV5 } from "../../src/contract/validate-v5";
+import { buildGraphIR } from "../../src/graph/ir";
 
 const baseProject = () => ({ schemaVersion: 5, motions: [], freeTracks: [] });
 
@@ -21,7 +22,7 @@ function ramp(from: number, to: number) {
 describe("schema v5 validator", () => {
   it("accepts the minimal v5 project", () => {
     const result = validateV5(baseProject());
-    expect(result.valid).toBe(true);
+    expect(result.kind).toBe("accepted");
     expect(result.diagnostics).toEqual([]);
   });
 
@@ -44,7 +45,7 @@ describe("schema v5 validator", () => {
         ],
       }),
     );
-    expect(result.valid).toBe(false);
+    expect(result.kind).toBe("refused");
     expect(result.diagnostics.map(({ ruleId }) => ruleId)).toEqual(
       expect.arrayContaining([
         "stop-position",
@@ -57,7 +58,7 @@ describe("schema v5 validator", () => {
 
   it("warns when a property does not cover both interpolation endpoints", () => {
     const result = validateV5(projectWithKeyframes({ opacity: [{ p: 0.25, v: 0.5 }] }));
-    expect(result.valid).toBe(true);
+    expect(result.kind).toBe("accepted");
     expect(result.diagnostics).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ ruleId: "stop-missing-start", severity: "warning" }),
@@ -68,7 +69,7 @@ describe("schema v5 validator", () => {
 
   it("rejects v4 and reports the schema path", () => {
     const result = validateV5({ schemaVersion: 4, motions: [] });
-    expect(result.valid).toBe(false);
+    expect(result.kind).toBe("refused");
     expect(result.diagnostics[0]).toMatchObject({
       ruleId: "schema-version",
       path: "schemaVersion",
@@ -89,7 +90,7 @@ describe("schema v5 validator", () => {
       ],
     });
     const bad = validateV5({ schemaVersion: 5, perspective: 0, motions: [] });
-    expect(good.valid).toBe(true);
+    expect(good.kind).toBe("accepted");
     expect(bad.diagnostics).toContainEqual(
       expect.objectContaining({ ruleId: "perspective-shape", severity: "error" }),
     );
@@ -106,7 +107,7 @@ describe("schema v5 validator", () => {
         },
       ],
     });
-    expect(result.valid).toBe(true);
+    expect(result.kind).toBe("accepted");
     expect(result.diagnostics).toContainEqual(
       expect.objectContaining({ ruleId: "perspective-usage", severity: "warning" }),
     );
@@ -118,14 +119,14 @@ describe("schema v5 validator", () => {
       fk: { values: { boneLength: ramp(10, 20) } },
     });
     const result = validateV5(grouped);
-    expect(result.valid).toBe(true);
+    expect(result.kind).toBe("accepted");
     expect(result.diagnostics).toEqual([]);
   });
 
   it("F-2 keeps the perspective warning for 3D content authored inside a group", () => {
     const grouped = projectWithKeyframes({ transform: { values: { rotationY: ramp(0, 1) } } });
     const result = validateV5(grouped);
-    expect(result.valid).toBe(true);
+    expect(result.kind).toBe("accepted");
     expect(result.diagnostics).toContainEqual(
       expect.objectContaining({ ruleId: "perspective-usage", severity: "warning" }),
     );
@@ -141,7 +142,7 @@ describe("schema v5 validator", () => {
     const reserved = result.diagnostics.filter(
       ({ ruleId }) => ruleId === "keyframes-reserved-separator",
     );
-    expect(result.valid).toBe(false);
+    expect(result.kind).toBe("refused");
     expect(reserved.map(({ path }) => path)).toEqual([
       "motions[0].tracks[0].keyframes.fk:length",
       "motions[0].tracks[0].keyframes.fk.values.length:ratio",
@@ -152,7 +153,7 @@ describe("schema v5 validator", () => {
   it("F-4 reports a grouped leaf stop error at the authored path", () => {
     const leaf = { lenght: [{ p: 2, v: 1 }] };
     const result = validateV5(projectWithKeyframes({ fk: { values: leaf } }));
-    expect(result.valid).toBe(false);
+    expect(result.kind).toBe("refused");
     expect(result.diagnostics).toContainEqual(
       expect.objectContaining({
         ruleId: "stop-position-range",
@@ -164,7 +165,7 @@ describe("schema v5 validator", () => {
   it("F-5 rejects one compiled key authored under two spellings", () => {
     const authored = { x: ramp(0, 1), transform: { values: { x: ramp(0, 2) } } };
     const result = validateV5(projectWithKeyframes(authored));
-    expect(result.valid).toBe(false);
+    expect(result.kind).toBe("refused");
     expect(result.diagnostics).toContainEqual(
       expect.objectContaining({
         ruleId: "keyframes-duplicate-key",
@@ -179,7 +180,7 @@ describe("schema v5 validator", () => {
       freeTracks: {},
       motions: [{ id: "hero", trigger: { type: "unknown" }, tracks: [{ id: "x" }, { id: "x" }] }],
     });
-    expect(result.valid).toBe(false);
+    expect(result.kind).toBe("refused");
     expect(result.diagnostics.map(({ ruleId }) => ruleId)).toEqual(
       expect.arrayContaining(["free-tracks-shape", "trigger-shape", "track-duplicate-id"]),
     );
@@ -199,8 +200,11 @@ describe("schema v5 validator", () => {
         },
       ],
     });
-    expect(result.valid).toBe(false);
-    expect(result.diagnostics.map(({ ruleId }) => ruleId)).toEqual(
+    expect(result.kind).toBe("accepted");
+    if (result.kind !== "accepted") throw new Error("Expected schema validation to pass.");
+    const graph = buildGraphIR(result.value);
+    expect(graph.graph).toBeUndefined();
+    expect(graph.diagnostics.map(({ ruleId }) => ruleId)).toEqual(
       expect.arrayContaining(["graph-cycle"]),
     );
   });
@@ -217,6 +221,6 @@ describe("schema v5 validator", () => {
       ],
       freeTracks: [{ id: "cursor" }],
     });
-    expect(result.valid).toBe(true);
+    expect(result.kind).toBe("accepted");
   });
 });

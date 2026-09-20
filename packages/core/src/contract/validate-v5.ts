@@ -8,6 +8,13 @@ import {
 } from "./v5";
 import { SUPPORTED_TRIGGER_TYPES } from "./v5";
 import { readAuthoredLeaf } from "./authored-leaf";
+import { unreachable } from "../domain/exhaustive";
+import {
+  acceptedOutcome,
+  refusedOutcome,
+  refusedOutcomeFrom,
+  type Outcome,
+} from "../domain/outcome";
 import { describeDiagnostics, diagnostic } from "./diagnostics";
 import { scopedRuleId, type KeyframeRuleId, type KeyframeRuleScope } from "./rule-id";
 import {
@@ -19,13 +26,8 @@ import {
   readPluginValues,
 } from "./keyframe-shape";
 import { PLUGIN_GOALS_SLOT } from "./solver-slots";
-import { buildGraphIR } from "../graph/ir";
 
-export interface ValidationResult {
-  readonly valid: boolean;
-  readonly diagnostics: readonly Diagnostic[];
-  readonly value: ProjectDefinition | null;
-}
+export type ValidationResult = Outcome<ProjectDefinition>;
 export interface KeyframeValidationOptions {
   /**
    * Who is reading these keyframes, which is the whole of what the three options this replaced ever
@@ -130,16 +132,22 @@ export function validateKeyframes(
   };
   const validateProperty = (property: unknown, propertyPath: string): void => {
     const leaf = readAuthoredLeaf(property);
-    if (leaf.kind === "static" || leaf.kind === "empty") return;
-    if (leaf.kind === "wrapper") {
-      add("property-stops-wrapper", propertyPath, WRAPPER_RETIRED);
-      return;
+    switch (leaf.kind) {
+      case "static":
+      case "empty":
+        return;
+      case "wrapper":
+        add("property-stops-wrapper", propertyPath, WRAPPER_RETIRED);
+        return;
+      case "invalid":
+        add("stops-shape", propertyPath, STOPS_REQUIRED);
+        return;
+      case "animated":
+        validateStops(leaf.stops, propertyPath);
+        return;
+      default:
+        return unreachable(leaf);
     }
-    if (leaf.kind === "invalid") {
-      add("stops-shape", propertyPath, STOPS_REQUIRED);
-      return;
-    }
-    validateStops(leaf.stops, propertyPath);
   };
   const validateRequirementDict = (dict: RawObject, dictPath: string): void => {
     const entries = Object.entries(dict);
@@ -469,29 +477,19 @@ function deepFreeze<T>(value: T, seen = new WeakSet<object>()): T {
   for (const child of Object.values(value)) deepFreeze(child, seen);
   return Object.freeze(value);
 }
-export interface TrackValidationResult {
-  readonly valid: boolean;
-  readonly diagnostics: readonly Diagnostic[];
-  readonly value: TrackDefinition | null;
-}
+export type TrackValidationResult = Outcome<TrackDefinition>;
 export function validateTrackDefinition(track: unknown, path: string): TrackValidationResult {
   const diagnostics: Diagnostic[] = [];
   const validShape = validateTrackShape(track, path, new Set<string>(), diagnostics);
-  const valid = validShape && !diagnostics.some(({ severity }) => severity === "error");
-  return {
-    valid,
-    diagnostics: Object.freeze(diagnostics),
-    value: valid ? deepFreeze(clone(track) as TrackDefinition) : null,
-  };
+  const frozenDiagnostics = Object.freeze(diagnostics);
+  if (!validShape || diagnostics.some(({ severity }) => severity === "error"))
+    return refusedOutcomeFrom(frozenDiagnostics);
+  return acceptedOutcome(deepFreeze(clone(track) as TrackDefinition), frozenDiagnostics);
 }
 export function validateV5(input: unknown): ValidationResult {
   const diagnostics: Diagnostic[] = [];
   if (!isObject(input))
-    return {
-      valid: false,
-      diagnostics: [diagnostic("project-shape", "$", "Project must be an object.")],
-      value: null,
-    };
+    return refusedOutcome([diagnostic("project-shape", "$", "Project must be an object.")]);
   if (input.schemaVersion !== AUTHORED_SCHEMA_VERSION)
     diagnostics.push(
       diagnostic(
@@ -581,12 +579,10 @@ export function validateV5(input: unknown): ValidationResult {
             [String(track.id ?? "")],
           ),
         );
-  if (!diagnostics.some(({ severity }) => severity === "error"))
-    diagnostics.push(...buildGraphIR(input as unknown as ProjectDefinition).diagnostics);
-  const valid = !diagnostics.some(({ severity }) => severity === "error");
-  return {
-    valid,
-    diagnostics: Object.freeze(diagnostics),
-    value: valid ? deepFreeze(clone(input) as ProjectDefinition) : null,
-  };
+  if (diagnostics.some(({ severity }) => severity === "error"))
+    return refusedOutcomeFrom<ProjectDefinition, Diagnostic>(Object.freeze(diagnostics));
+  return acceptedOutcome(
+    deepFreeze(clone(input) as ProjectDefinition),
+    Object.freeze(diagnostics),
+  );
 }

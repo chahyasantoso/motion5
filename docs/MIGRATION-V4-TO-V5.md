@@ -88,6 +88,12 @@ See ADR-037. Progress that reaches a `Motion` through a `TriggerPort` is validat
 
 ## Explicit migration function
 
+`migrateV4ToV5` returns the public `MigrationResult<T>`, an `Outcome<T, MigrationDiagnostic>`.
+An accepted result has `kind: "accepted"`, a non-null `value`, and any non-blocking diagnostics. A
+refused result has `kind: "refused"` and a non-empty diagnostics tuple; it has no migrated value.
+Callers narrow on `kind` before reading `value`, rather than checking a nullable field beside a
+second success flag.
+
 The migration must be a pure transformation and must not mutate its input:
 
 ```js

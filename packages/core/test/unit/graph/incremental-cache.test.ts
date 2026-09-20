@@ -77,7 +77,7 @@ describe("IncrementalGraphBuilder cache correctness (W1)", () => {
       ],
     };
 
-    expect(validateV5(project).valid).toBe(true);
+    expect(validateV5(project).kind).toBe("accepted");
 
     const incremental = new IncrementalGraphBuilder().build(project);
     expect(ruleIds(incremental.diagnostics)).not.toContain("node-duplicate");

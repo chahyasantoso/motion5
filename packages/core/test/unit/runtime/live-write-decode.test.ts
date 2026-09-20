@@ -1,13 +1,15 @@
 import { describe, expect, it } from "vitest";
 import { fileURLToPath } from "node:url";
 import type { ProjectDefinition, TrackDefinition } from "../../../src/contract/v5";
+import { unreachable } from "../../../src/domain/exhaustive";
+import type { LiveWrite } from "../../../src/runtime/results";
 import { createManualClock } from "../../../src/ports/clock";
 import {
   ProjectRuntime,
   type ProjectRuntimeOptions,
   type StagedTrack,
 } from "../../../src/runtime/project-runtime";
-import { liveWrite, stageOwed, writtenProgress } from "../../../src/runtime/results";
+import { liveWrite, writtenProgress } from "../../../src/runtime/results";
 import { callSites, code } from "../../helpers/source-region";
 
 /**
@@ -111,7 +113,7 @@ describe("the live-write seam's three outcomes are decoded by one owner", () => 
     const { runtime, journal } = rig((_nodeId, _values, overlay) => {
       overlays.push(overlay);
       return {
-        patched: true,
+        patch: { kind: "patched" },
         get progress(): number {
           if (refuseProgress) throw failure;
           return 0.5;
@@ -141,9 +143,9 @@ describe("the live-write seam's three outcomes are decoded by one owner", () => 
     const failure = new Error("patched refused");
     let refusePatched = true;
     const { runtime, journal } = rig(() => ({
-      get patched(): boolean {
+      get patch(): { kind: "patched" } {
         if (refusePatched) throw failure;
-        return true;
+        return { kind: "patched" };
       },
       progress: 0.5,
     }));
@@ -172,14 +174,14 @@ describe("the live-write seam's three outcomes are decoded by one owner", () => 
   it("keeps all three outcomes doing exactly what the hand-decoded pair did", () => {
     // The equivalence half, green on both sides. A patched timeline owes no staged replacement and
     // no re-seek, and never did.
-    const patched = rig(() => ({ patched: true, progress: 0.5 }));
+    const patched = rig(() => ({ patch: { kind: "patched" }, progress: 0.5 }));
     patched.runtime.track(ARM).overrideValues({ rotation: FASTER });
     expect(patched.journal.staged).toEqual([]);
     expect(patched.journal.progressed).toEqual([]);
     patched.runtime.dispose();
 
     // A decline owes both, at the playhead the seam reported and before the stage it pays for.
-    const declined = rig(() => ({ patched: false, progress: 0.25 }));
+    const declined = rig(() => ({ patch: { kind: "recompile" }, progress: 0.25 }));
     declined.runtime.track(ARM).overrideValues({ rotation: FASTER });
     expect(declined.journal.staged).toEqual([ARM]);
     expect(declined.journal.progressed).toEqual([[ARM, 0.25]]);
@@ -193,19 +195,43 @@ describe("the live-write seam's three outcomes are decoded by one owner", () => 
     absent.runtime.dispose();
   });
 
+  it("refuses a foreign port patch kind instead of treating it as a rebuild", () => {
+    const foreign = {
+      patch: { kind: "foreign" },
+      progress: 0.25,
+    } as unknown as Parameters<typeof liveWrite>[0];
+    expect(() => liveWrite(foreign)).toThrow(TypeError);
+    expect(() => liveWrite(foreign)).toThrow(/Unhandled variant/);
+  });
+
+  it("requires a reader to decide every live-write variant", () => {
+    type Widened = LiveWrite | { readonly kind: "foreign"; readonly progress: number };
+    const readWidened = (write: Widened): number => {
+      switch (write.kind) {
+        case "no-hook":
+          return 0;
+        case "patched":
+        case "needs-rebuild":
+          return write.progress;
+        default:
+          // @ts-expect-error a widened kind is not decided by this reader.
+          return unreachable(write);
+      }
+    };
+
+    expect(typeof readWidened).toBe("function");
+  });
+
   it("answers both questions about every outcome, and mints each one frozen", () => {
     const noHook = liveWrite(undefined);
-    const patched = liveWrite({ patched: true, progress: 0.5 });
-    const declined = liveWrite({ patched: false, progress: 0.25 });
+    const patched = liveWrite({ patch: { kind: "patched" }, progress: 0.5 });
+    const declined = liveWrite({ patch: { kind: "recompile" }, progress: 0.25 });
 
     // An absent answer is one value rather than one per call, because it carries nothing to differ
     // in, which is the rule `stale()` in this module already follows.
     expect(liveWrite(undefined)).toBe(noHook);
-    expect(stageOwed(noHook)).toBe(false);
     expect(writtenProgress(noHook)).toBeUndefined();
-    expect(stageOwed(patched)).toBe(false);
     expect(writtenProgress(patched)).toBe(0.5);
-    expect(stageOwed(declined)).toBe(true);
     expect(writtenProgress(declined)).toBe(0.25);
     // Two readers rather than one flag, because no hook and a patched timeline are the same answer
     // to the first question and different answers to the second.
@@ -221,7 +247,8 @@ describe("the live-write seam's three outcomes are decoded by one owner", () => 
     // shape `SH-7` already uses and addressed through the pinned parser rather than by a regex.
     const runtime = code(RUNTIME_SOURCE);
     expect(callSites(runtime, "liveWrite")).toHaveLength(2);
-    expect(callSites(runtime, "stageOwed")).toHaveLength(1);
+    expect(runtime).toContain("switch (written.kind)");
+    expect(runtime).toContain('case "needs-rebuild":');
     expect(callSites(runtime, "writtenProgress")).toHaveLength(2);
     // The boolean the optional wrapped is named by the decoder and by nothing else.
     expect(runtime.split(".patched")).toHaveLength(1);
