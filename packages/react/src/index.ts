@@ -10,9 +10,11 @@ import { createPatchStore } from "./patch-store";
 // this hook answer now, and a consumer that cannot name the type a member returns cannot hold it in
 // a variable. `Patch` stays, because `subscribeNode` and `PatchListener` still carry all four
 // variants and a consumer implementing a source has to name what it publishes.
+export { patchRender } from "@motion5/core/internal";
 export type {
   LivePatch,
   Patch,
+  PatchRender,
   PatchListener,
   PatchSource,
   RenderMetadata,

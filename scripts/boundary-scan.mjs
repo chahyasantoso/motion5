@@ -29,6 +29,8 @@ const allowedPublicExports = new Set([
   "LivePatch",
   "PatchBatch",
   "PatchListener",
+  "PatchRender",
+  "patchRender",
   "migrateV4ToV5",
   "MigrationResult",
   "resolveTriggerDefinition",
