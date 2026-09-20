@@ -5,20 +5,42 @@ Consumers render published patches. They never traverse the graph, call into a t
 ## What a patch is
 
 ```ts
-interface Patch {
-  readonly nodeId: string;
-  readonly revision: number;
-  readonly values: Readonly<Record<string, unknown>>;
-  readonly sourceProgress: number;
-  readonly sourceRevisions: Readonly<Record<string, number>>;
-  readonly status: "ready" | "blocked" | "error" | "destroyed";
-  readonly diagnostics: readonly Diagnostic[];
-}
+type Patch =
+  | {
+      readonly status: "ready";
+      readonly nodeId: string;
+      readonly revision: number;
+      readonly values: Readonly<Record<string, unknown>>;
+      readonly sourceProgress: number;
+      readonly sourceRevisions: Readonly<Record<string, number>>;
+      readonly diagnostics: readonly Diagnostic[];
+    }
+  | {
+      readonly status: "blocked";
+      readonly nodeId: string;
+      readonly revision: number;
+      readonly diagnostics: readonly Diagnostic[];
+    }
+  | {
+      readonly status: "error";
+      readonly nodeId: string;
+      readonly revision: number;
+      readonly diagnostics: readonly Diagnostic[];
+    }
+  | {
+      readonly status: "destroyed";
+      readonly nodeId: string;
+      readonly revision: number;
+    };
 ```
 
 `revision` increments per published patch for that node. A patch is only published when something actually changed, so an unchanged flush is silent and you can trust `revision` as a change signal.
 
-Status is the part worth reading carefully. `ready` carries usable values. `blocked` and `error` describe a node that still exists and may publish again, and both retain the last known values rather than blanking them. `destroyed` is terminal: the node has been evicted and will never publish again, so drop your local state for it.
+Status is the part worth reading carefully, because it decides what the patch carries rather than labelling something it would carry anyway. `ready` is the only variant that owns a pose: `values`, `sourceProgress` and `sourceRevisions` are three measurements of one successful composition, so a status that did not compose declares none of them. `blocked` and `error` describe a node that still exists and may publish again, and each carries its refusal and nothing else; they are two variants rather than one with a flag, because they are two conditions. `destroyed` is terminal: the node has been evicted and will never publish again, so drop your local state for it.
+
+A non-ready patch used to carry the previous patch's `values`, `sourceProgress` and `sourceRevisions`, so a blocked node republished the last pose and a subscriber reading `patch.values` on it was reading an earlier publication's answer. That is gone, and it is a behaviour change rather than a type refinement. The DOM adapter and `useDomPatch` are unaffected, because both already ignore a non-ready patch and leave the target at the last pose they wrote. A consumer that renders from `values` itself keeps the last `ready` patch it received and renders from that, because the wire does not carry it a second time any more.
+
+The variants have names in the source and are deliberately not on the package entry, so narrow on `status` rather than importing one. `Patch`, `PatchStatus`, `PatchBatch` and `PatchListener` are the exported names, and `PatchStatus` is read off the union rather than spelled beside it, so it cannot name a status that no variant declares.
 
 ## The DOM adapter
 

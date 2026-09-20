@@ -126,7 +126,7 @@ One tick produces one batch.
 5. Input-role edges contribute to the source object before local composition. `fkPlugin` inspects `inputs.solver?.rotations[nodeId]` to override local rotation before computing parent frame extension.
 6. Output-role edges merge over the resulting patch after composition.
 7. If a node's composition throws, the node publishes an error status, its downstream closure publishes a blocked status, and traversal continues for unrelated branches.
-8. Publication is deduplicated: unchanged values, progress, source revisions, and status mean no new revision.
+8. Publication is deduplicated per variant: an unchanged status and unchanged inline diagnostics mean no new revision, and for a `ready` patch the values, progress, and source revisions have to be unchanged as well. A variant that owns no pose is never compared on one.
 9. Retry metadata is retained only for nodes whose publication failed.
 10. The batch closes and subscribers are notified, node subscribers first, then batch subscribers.
 
@@ -156,15 +156,13 @@ One clock subscription exists per project. Tick numbers are monotonic across det
 
 ## 9. Publication contract
 
-A patch is frozen and carries:
+A patch is frozen, and it is a union discriminated by `status` rather than one shape declaring seven required members at four statuses. Every variant carries `nodeId`, the qualified id, and `revision`, monotonic per node. What it carries beyond those two is exactly what its status owns:
 
-- `nodeId`, the qualified id;
-- `revision`, monotonic per node;
-- `values`, deeply frozen;
-- `sourceProgress`, the playhead of the producing node;
-- `sourceRevisions`, the revision of every node that contributed;
-- `status`, one of `ready`, `blocked`, `error`;
-- `diagnostics`, empty for `ready`.
+- `ready` owns `values`, deeply frozen; `sourceProgress`, the playhead of the producing node; `sourceRevisions`, the revision of every node that contributed; and `diagnostics`.
+- `blocked` and `error` own `diagnostics` and no pose. They are two variants rather than one carrying a flag, because they are two conditions, and a reader that treats them alike writes two arms that return the same thing.
+- `destroyed` owns nothing beyond identity and status. A node that will never publish again has nothing to refuse under.
+
+The pose a non-ready patch used to carry forward is the registry's question rather than a member of a patch that is about something else. `PatchRegistry` retains the last accepted `ready` patch per node and answers it through `lastReady(nodeId)`, and unmount, eviction and disposal drop it. That answer is reachable inside the runtime only: `PatchSource` and `ProjectHandle` expose `get` and `subscribeNode`, so forwarding it to a consumer is a public surface change that is owed rather than made. See ADR-098.
 
 A batch carries its patches, the tick number, the seed set, and a diagnostics summary. Subscribers consume batches or node patches. Nothing in the subscriber contract exposes a Track, a Motion, or a graph object.
 
