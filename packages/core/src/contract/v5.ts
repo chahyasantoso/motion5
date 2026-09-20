@@ -110,18 +110,95 @@ interface DiagnosticShape {
  * observation wire at all. Eviction dropped the retained patch silently, so the last `"ready"`
  * patch a subscriber had received stayed authoritative forever and consumers kept rendering a
  * node the graph had already destroyed.
+ *
+ * Read off the union rather than spelled beside it, so the four statuses have one owner: a variant
+ * added to `Patch` widens this, and a status named here that no variant declares stops being
+ * expressible. It was two lists for one question while the payload was flat and the status was one
+ * member among seven; it is one list now that the status is the discriminant. See ADR-098.
  */
-export type PatchStatus = "ready" | "blocked" | "error" | "destroyed";
+export type PatchStatus = Patch["status"];
 
-export interface Patch {
+/** What every patch carries, whichever status it names: which node published it, and when. */
+interface PatchIdentity {
   readonly nodeId: string;
   readonly revision: number;
+}
+
+/**
+ * A node that composed, and the one variant that owns a pose.
+ *
+ * The three payload members are measurements of one successful composition: the values it produced,
+ * the progress it was evaluated at, and the revision of every source it read. A status that did not
+ * compose owns none of them, which is what the three variants below say by declaring none. See
+ * ADR-098.
+ */
+export interface ReadyPatch extends PatchIdentity {
+  readonly status: "ready";
   readonly values: Readonly<Record<string, unknown>>;
   readonly sourceProgress: number;
   readonly sourceRevisions: Readonly<Record<string, number>>;
-  readonly status: PatchStatus;
   readonly diagnostics: readonly Diagnostic[];
 }
+
+/**
+ * A node an upstream state stopped, carrying the refusal and no pose.
+ *
+ * It declared all three payload members until ADR-098, and `PatchRegistry.publish` filled them by
+ * carrying the previous patch's forward, so a blocked patch said `blocked` while holding values no
+ * blocked evaluation produced, and a subscriber reading `values` on one was reading an earlier
+ * publication's answer. The pose is not lost: it is the registry's retained `ready` patch, answered
+ * by `lastReady(nodeId)`, which is what slice 1 of issue #450 landed.
+ */
+export interface BlockedPatch extends PatchIdentity {
+  readonly status: "blocked";
+  readonly diagnostics: readonly Diagnostic[];
+}
+
+/**
+ * A node whose own composition threw, carrying the failure and no pose.
+ *
+ * Written rather than inherited from `BlockedPatch`. The two are the same shape today and they are
+ * two answers: a reader narrowing on `status` names the one it means, and a member either of them
+ * later earns lands on the variant that earned it rather than on both.
+ */
+export interface ErrorPatch extends PatchIdentity {
+  readonly status: "error";
+  readonly diagnostics: readonly Diagnostic[];
+}
+
+/**
+ * A node evicted from the graph, which will never publish again.
+ *
+ * Identity and status and nothing else, including no diagnostics: a node that cannot publish again
+ * has nothing to refuse under, and `#notifyTerminal` built all four of those members empty, which is
+ * a payload a reader spends a narrowing on to find `{}`, `0`, `{}` and `[]`.
+ */
+export interface DestroyedPatch extends PatchIdentity {
+  readonly status: "destroyed";
+}
+
+/**
+ * One patch on the observation wire, discriminated by the status that decides what it carries.
+ *
+ * The flat interface this replaces declared every payload member as required at every status, so the
+ * type could not say that only a composition produces a pose, and every consumer either narrowed by
+ * hand or read a member its status does not own. Issue #450 calls this a type refinement with every
+ * existing test staying green; it is not. Deleting the three members from the non-ready variants
+ * deletes the carry-forward in `PatchRegistry.publish` that filled them, and that behaviour moved to
+ * `PatchRegistry.lastReady` rather than being dropped. See ADR-098.
+ */
+export type Patch = ReadyPatch | BlockedPatch | ErrorPatch | DestroyedPatch;
+
+/**
+ * A patch a node that still exists published: every variant but the terminal one.
+ *
+ * What the registry's maps and its open batch actually hold. `evict` deletes a node's entry before
+ * it delivers the terminal patch, so nothing `PatchRegistry.get` can answer is `destroyed`, and
+ * `registry-phase.ts`'s `retain` is reached only from `publish`, which cannot mint one. Declared
+ * once rather than re-narrowed at each of those readers, because it is one fact about who produces a
+ * destroyed patch.
+ */
+export type LivePatch = ReadyPatch | BlockedPatch | ErrorPatch;
 export interface PatchBatch {
   readonly tick: number;
   readonly seeds: readonly string[];

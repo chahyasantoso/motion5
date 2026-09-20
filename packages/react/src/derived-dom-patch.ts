@@ -3,8 +3,15 @@ import type { DomPatchAdapter } from "@motion5/core/adapters";
 import type { Patch, PatchSource } from "@motion5/core/internal";
 import { useDomBinding } from "./dom-binding";
 
-/** The composed values of one source node, positioned by where its id was named. */
-export type PatchValues = Patch["values"];
+/**
+ * The composed values of one source node, positioned by where its id was named.
+ *
+ * Read off the ready member rather than off `Patch`, because a status that did not compose owns no
+ * values at all since ADR-098. Extracted from the union rather than imported: `ReadyPatch` is not on
+ * the `@motion5/core/internal` entry, and adding it there is a surface decision this change does not
+ * make. The narrowing in `pose` below is what a consumer needs, not a name for the variant.
+ */
+export type PatchValues = Extract<Patch, { status: "ready" }>["values"];
 
 /**
  * A consumer's geometry, as a pure function of its source nodes' values.

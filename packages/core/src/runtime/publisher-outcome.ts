@@ -1,5 +1,5 @@
 import type { IdentifiedRuleId } from "../contract/rule";
-import type { Diagnostic, Patch } from "../contract/v5";
+import type { Diagnostic, ReadyPatch } from "../contract/v5";
 import { describeEdge, type GraphEdge } from "../graph/ir";
 import { unreachable } from "../domain/exhaustive";
 import type { PublisherComposition } from "./graph-publisher";
@@ -201,14 +201,29 @@ function valuesOf(value: unknown): SourceValues {
  * and the goal a solver joins onto a chain leaf all have to agree about which of the two wins, and a
  * solver reading the retained patch where the other two read the composition would solve against last
  * tick's goal with no error and no diagnostic. See issue #195.
+ *
+ * The fallback takes `ReadyPatch | undefined`, which is `PatchRegistry.lastReady`'s answer rather than
+ * `get`'s, and it is the one edit in ADR-098's source half that would silently lose behaviour done any
+ * other way. This function reads `values` on four non-ready outcomes deliberately, and those values
+ * used to reach it because `publish` carried them onto whatever the node published next. With the
+ * carry-forward deleted, `get` answers a blocked patch that owns no values at all, so the reader that
+ * has always wanted the last good pose asks for it by name. That is what slice 1 built the retention
+ * slot for.
+ *
+ * One consequence is stated here rather than left to be discovered. A source that published only
+ * `blocked` or `error` and never once `ready` used to answer `{}` through the carry-forward, which
+ * `hasValue` reads as published, so its readers composed against an empty input record. It answers
+ * `ABSENT` now, so `firstPendingEdge` classifies those readers pending and they publish a blocked
+ * patch naming the source instead. That is a behaviour change and it is the correct one: an empty
+ * record is not a pose, and `graph/references.ts` owns what pending means.
  */
-export function sourceValues(outcome: NodeOutcome, patch: Patch | undefined): SourceValues {
+export function sourceValues(outcome: NodeOutcome, patch: ReadyPatch | undefined): SourceValues {
   switch (outcome.kind) {
     case "composed":
       return valuesOf(outcome.composition.values);
-    // Every other outcome falls back to what the node last published, which is exactly what an
-    // absent memo entry did. A failed node keeps its retained values, and that is deliberate: the
-    // precedence above stops its readers before they can read them.
+    // Every other outcome falls back to what the node last published as ready, which is what the
+    // deleted carry-forward was answering with. A failed node keeps its last good pose, and that is
+    // deliberate: the precedence above stops its readers before they can read it.
     case "blocked-upstream":
     case "pending-upstream":
     case "failed":

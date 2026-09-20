@@ -162,7 +162,9 @@ function valuesAt(
   const batch = handle.seek("hero/arm", progress);
   const patch = batch.patches.find(({ nodeId }) => nodeId === "hero/arm");
   handle.dispose();
-  return patch?.values;
+  // A pose belongs to a ready patch, and this helper's return type already admits absence, so a
+  // node that did not compose answers nothing rather than an earlier publication's values.
+  return patch?.status === "ready" ? patch.values : undefined;
 }
 
 interface RecordedTween {

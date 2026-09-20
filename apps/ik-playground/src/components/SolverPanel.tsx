@@ -31,7 +31,17 @@ const DispatchCard: React.FC<DispatchCardProps> = ({
   const solverPatch = usePatch(handle, nodeId(rig.solverTrack));
   const tipPatch = usePatch(handle, nodeId(rig.tipTrack));
 
-  if (!rootPatch || !goalPatch || !solverPatch || !tipPatch) return null;
+  // Four ready patches, not four existing ones: every read below is a pose or a solved rotation set,
+  // and neither is a member a blocked or errored patch owns. Same guard as the react-demo inspector,
+  // and the same consequence: the card is empty while any of the four is not ready, until a consumer
+  // surface forwards `PatchRegistry.lastReady`. See ADR-098.
+  if (
+    rootPatch?.status !== "ready" ||
+    goalPatch?.status !== "ready" ||
+    solverPatch?.status !== "ready" ||
+    tipPatch?.status !== "ready"
+  )
+    return null;
 
   const rootX = Number(rootPatch.values.x ?? 0);
   const rootY = Number(rootPatch.values.y ?? 0);

@@ -212,7 +212,10 @@ describe("a Scheduler defers, and the port is what says so", () => {
     expect(runtime.pendingSeeds).toEqual(["caption/label"]);
     runtime.flush([]);
     expect(runtime.pendingSeeds).toEqual([]);
-    expect(runtime.registry.get("caption/label")?.values.node).toBe("caption/label");
+    const captionLabelPatch = runtime.registry.get("caption/label");
+    if (captionLabelPatch?.status !== "ready")
+      throw new Error(`caption/label is ${captionLabelPatch?.status ?? "absent"}, not ready.`);
+    expect(captionLabelPatch.values.node).toBe("caption/label");
     runtime.dispose();
   });
 
@@ -326,7 +329,10 @@ describe("a Scheduler defers, and the port is what says so", () => {
     expect(runtime.pendingSeeds).toEqual(["caption/label"]);
     runtime.flush([]);
     expect(runtime.pendingSeeds).toEqual([]);
-    expect(runtime.registry.get("caption/label")?.values.node).toBe("caption/label");
+    const captionLabelPatch2 = runtime.registry.get("caption/label");
+    if (captionLabelPatch2?.status !== "ready")
+      throw new Error(`caption/label is ${captionLabelPatch2?.status ?? "absent"}, not ready.`);
+    expect(captionLabelPatch2.values.node).toBe("caption/label");
     runtime.dispose();
   });
 
@@ -372,7 +378,10 @@ describe("a Scheduler defers, and the port is what says so", () => {
     // scheduler at all already does, and which is why this refusal is safe to make total.
     runtime.flush([]);
     expect(runtime.pendingSeeds).toEqual([]);
-    expect(runtime.registry.get("caption/label")?.values.node).toBe("caption/label");
+    const captionLabelPatch3 = runtime.registry.get("caption/label");
+    if (captionLabelPatch3?.status !== "ready")
+      throw new Error(`caption/label is ${captionLabelPatch3?.status ?? "absent"}, not ready.`);
+    expect(captionLabelPatch3.values.node).toBe("caption/label");
     runtime.dispose();
   });
 });

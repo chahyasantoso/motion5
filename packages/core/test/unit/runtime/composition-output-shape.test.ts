@@ -70,9 +70,11 @@ describe("composition and output-shape diagnostics", () => {
 
     runtime.mount("hero/arm");
     const batch = runtime.seek("hero/arm", 0.5);
-    expect(batch.patches.find(({ nodeId }) => nodeId === "hero/arm")?.diagnostics[0]?.ruleId).toBe(
-      "composition-output-shape",
-    );
+    const heroArmPatch = batch.patches.find(({ nodeId }) => nodeId === "hero/arm");
+    // A composition that threw is published as `error`, which is the status owning this diagnostic.
+    if (heroArmPatch?.status !== "error")
+      throw new Error(`hero/arm is ${heroArmPatch?.status ?? "absent"}, not error.`);
+    expect(heroArmPatch.diagnostics[0]?.ruleId).toBe("composition-output-shape");
     runtime.dispose();
   });
 
@@ -104,9 +106,12 @@ describe("composition and output-shape diagnostics", () => {
       2,
     );
 
-    expect(
-      batch.patches.find(({ nodeId }) => nodeId === "hero/observer")?.diagnostics[0]?.ruleId,
-    ).toBe("observation-output-shape");
+    const observerPatch = batch.patches.find(({ nodeId }) => nodeId === "hero/observer");
+    // `observation-output-shape` is raised from the publisher's catch, so the node publishes
+    // `error`. See `publishFailureRule` and ADR-098.
+    if (observerPatch?.status !== "error")
+      throw new Error(`hero/observer is ${observerPatch?.status ?? "absent"}, not error.`);
+    expect(observerPatch.diagnostics[0]?.ruleId).toBe("observation-output-shape");
   });
 
   it("does not publish malformed composition values as ready patches", () => {
@@ -120,7 +125,9 @@ describe("composition and output-shape diagnostics", () => {
     const patch = batch.patches.find(({ nodeId }) => nodeId === "hero/bad");
 
     expect(patch?.status).toBe("error");
-    expect(patch?.diagnostics[0]?.ruleId).toBe("composition-output-shape");
+    if (patch?.status !== "error")
+      throw new Error(`hero/bad is ${patch?.status ?? "absent"}, not error.`);
+    expect(patch.diagnostics[0]?.ruleId).toBe("composition-output-shape");
     expect(registry.get("hero/bad")?.status).toBe("error");
   });
 });

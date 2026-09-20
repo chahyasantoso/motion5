@@ -55,17 +55,24 @@ describe("P5-01 cross-motion references", () => {
     const pendingBatch = runtime.flush(["arm/child"]);
     const pendingPatch = pendingBatch.patches.find(({ nodeId }) => nodeId === "arm/child");
     expect(pendingPatch?.status).toBe("blocked");
-    expect(pendingPatch?.diagnostics[0]?.ruleId).toBe(PENDING_REFERENCE_RULE_ID);
-    expect(pendingPatch?.values).toEqual({});
+    if (pendingPatch?.status !== "blocked")
+      throw new Error(`arm/child is ${pendingPatch?.status ?? "absent"}, not blocked.`);
+    expect(pendingPatch.diagnostics[0]?.ruleId).toBe(PENDING_REFERENCE_RULE_ID);
+    // Re-read rather than adjusted: an unmounted source left the observer publishing an empty
+    // pose, and the claim was that it composed with nothing. A blocked patch owns no values at
+    // all now, so the same claim is the member's absence.
+    expect("values" in pendingPatch).toBe(false);
 
     runtime.attach("base/root");
     const readyBatch = runtime.flush(["arm/child", "base/root"]);
     const readyPatch = readyBatch.patches.find(({ nodeId }) => nodeId === "arm/child");
     expect(readyPatch).toBeDefined();
     expect(readyPatch?.status).toBe("ready");
-    expect(readyPatch?.values).toMatchObject({ parentWorld: "base/root", self: "arm/child" });
+    if (readyPatch?.status !== "ready")
+      throw new Error(`arm/child is ${readyPatch?.status ?? "absent"}, not ready.`);
+    expect(readyPatch.values).toMatchObject({ parentWorld: "base/root", self: "arm/child" });
     expect(Object.isFrozen(readyPatch)).toBe(true);
-    expect(Object.isFrozen(readyPatch?.values)).toBe(true);
+    expect(Object.isFrozen(readyPatch.values)).toBe(true);
 
     runtime.dispose();
   });
@@ -89,7 +96,13 @@ describe("P5-01 cross-motion references", () => {
     const sourceFirstChild = sourceFirstBatch.patches.find(({ nodeId }) => nodeId === "arm/child");
     expect(observerFirstChild?.status).toBe("ready");
     expect(sourceFirstChild?.status).toBe("ready");
-    expect(observerFirstChild?.values).toEqual(sourceFirstChild?.values);
+    if (observerFirstChild?.status !== "ready")
+      throw new Error(
+        `observerFirstChild is ${observerFirstChild?.status ?? "absent"}, not ready.`,
+      );
+    if (sourceFirstChild?.status !== "ready")
+      throw new Error(`sourceFirstChild is ${sourceFirstChild?.status ?? "absent"}, not ready.`);
+    expect(observerFirstChild.values).toEqual(sourceFirstChild.values);
   });
 
   it("rejects an unknown cross-motion source at load instead of treating it as pending", () => {

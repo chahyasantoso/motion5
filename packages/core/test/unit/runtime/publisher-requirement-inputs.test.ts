@@ -71,7 +71,10 @@ describe("requirement-scoped input observations", () => {
     publisher.flush(pair(source, observer), ["hero/source"], 1);
 
     expect(observed).toEqual({ base: { base: 1, overlay: 99 } });
-    expect(registry.get("hero/observer")?.values).toEqual({ seenBase: 1, seenOverlay: 99 });
+    const heroObserverPatch = registry.get("hero/observer");
+    if (heroObserverPatch?.status !== "ready")
+      throw new Error(`hero/observer is ${heroObserverPatch?.status ?? "absent"}, not ready.`);
+    expect(heroObserverPatch.values).toEqual({ seenBase: 1, seenOverlay: 99 });
   });
 
   it("refuses an input edge that carries no requirement", () => {
@@ -92,8 +95,11 @@ describe("requirement-scoped input observations", () => {
 
     const batch = publisher.flush(pair(source, observer), ["hero/source"], 1);
 
-    expect(
-      batch.patches.find((patch) => patch.nodeId === "hero/observer")?.diagnostics[0]?.ruleId,
-    ).toBe("observation-input-shape");
+    const observerPatch = batch.patches.find((patch) => patch.nodeId === "hero/observer");
+    // `observation-input-shape` is raised from the publisher's catch, so the node publishes
+    // `error`. See `publishFailureRule` and ADR-098.
+    if (observerPatch?.status !== "error")
+      throw new Error(`hero/observer is ${observerPatch?.status ?? "absent"}, not error.`);
+    expect(observerPatch.diagnostics[0]?.ruleId).toBe("observation-input-shape");
   });
 });

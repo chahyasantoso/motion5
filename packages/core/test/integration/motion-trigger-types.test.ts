@@ -111,7 +111,10 @@ describe("Motion trigger types and clock ownership", () => {
       clock.tick(250);
       scheduler.flush();
       // Publishing nothing at all is the scroll expectation, so the fallback keeps the shape.
-      expect(handle.get(`${motion.id}/arm`)?.values ?? { x: 0 }).toEqual(afterTick);
+      const armPatch = handle.get(`${motion.id}/arm`);
+      // The fallback stays, and it now also covers a patch that owns no pose rather than only an
+      // absent one: publishing nothing at all is what the scroll case expects. See ADR-098.
+      expect(armPatch?.status === "ready" ? armPatch.values : { x: 0 }).toEqual(afterTick);
       handle.dispose();
     }
   });
@@ -124,11 +127,17 @@ describe("Motion trigger types and clock ownership", () => {
     const { clock, scheduler, handle } = loadOne(timed);
 
     handle.seek("timed/arm", 0.9);
-    expect(handle.get("timed/arm")?.values).toEqual({ x: 90 });
+    const timedArmPatch = handle.get("timed/arm");
+    if (timedArmPatch?.status !== "ready")
+      throw new Error(`timed/arm is ${timedArmPatch?.status ?? "absent"}, not ready.`);
+    expect(timedArmPatch.values).toEqual({ x: 90 });
 
     clock.tick(250);
     scheduler.flush();
-    expect(handle.get("timed/arm")?.values).toEqual({ x: 25 });
+    const timedArmPatch2 = handle.get("timed/arm");
+    if (timedArmPatch2?.status !== "ready")
+      throw new Error(`timed/arm is ${timedArmPatch2?.status ?? "absent"}, not ready.`);
+    expect(timedArmPatch2.values).toEqual({ x: 25 });
 
     handle.dispose();
   });

@@ -127,7 +127,11 @@ function runtimeOf(handle: ProjectHandle): ProjectRuntime {
 function values(handle: ProjectHandle, id: string): Readonly<Record<string, unknown>> {
   const patch = handle.get(id);
   expect(patch).toBeDefined();
-  return patch?.values ?? {};
+  // `{}` used to stand in for a patch that owns no pose, and every caller then read it as one. An
+  // empty record is not a pose, so this refuses by name instead. See ADR-098.
+  if (patch?.status !== "ready")
+    throw new Error(`${id} is ${patch?.status ?? "absent"}, not ready.`);
+  return patch.values;
 }
 function solved(handle: ProjectHandle): Readonly<Record<string, number>> {
   return values(handle, SOLVER).rotations as Readonly<Record<string, number>>;

@@ -168,7 +168,11 @@ function declaring(handle: ProjectHandle, nodeId: string): TrackHandle {
 function values(handle: ProjectHandle, id: string): Readonly<Record<string, unknown>> {
   const patch = handle.get(id);
   expect(patch).toBeDefined();
-  return patch?.values ?? {};
+  // `{}` used to stand in for a patch that owns no pose, and every caller then read it as one. An
+  // empty record is not a pose, so this refuses by name instead. See ADR-098.
+  if (patch?.status !== "ready")
+    throw new Error(`${id} is ${patch?.status ?? "absent"}, not ready.`);
+  return patch.values;
 }
 /** The authored group as retained, which is what `handle.definition` answers with. */
 function retained(track: TrackHandle): unknown {
@@ -195,7 +199,10 @@ describe("keyframe recompilation finalizes the stage it actually owns", () => {
     expect(thrownBy(() => arm.setKeyframe("transform", "y", 300))).toBe(failure);
     expect(retained(arm)).toEqual({ values: { x: 200, y: 300, rotation: AUTHORED_ROTATION } });
     expect(values(handle, ARM)).toEqual({ x: 200, y: 300, rotation: 45 });
-    expect(handle.get(ARM)?.sourceProgress).toBe(0.5);
+    const aRMPatch = handle.get(ARM);
+    if (aRMPatch?.status !== "ready")
+      throw new Error(`aRMPatch is ${aRMPatch?.status ?? "absent"}, not ready.`);
+    expect(aRMPatch.sourceProgress).toBe(0.5);
     // Caller-stated publications only, so a scheduled drain cannot supply the one this case is
     // about. Issue #381.
     expect(statedPublications(publication)).toHaveLength(1);
@@ -227,7 +234,10 @@ describe("keyframe recompilation finalizes the stage it actually owns", () => {
     expect(publication).not.toHaveBeenCalled();
     arm.setKeyframe("transform", "y", 300);
     expect(values(handle, ARM)).toEqual({ x: 200, y: 300, rotation: 45 });
-    expect(handle.get(ARM)?.sourceProgress).toBe(0.5);
+    const aRMPatch2 = handle.get(ARM);
+    if (aRMPatch2?.status !== "ready")
+      throw new Error(`aRMPatch2 is ${aRMPatch2?.status ?? "absent"}, not ready.`);
+    expect(aRMPatch2.sourceProgress).toBe(0.5);
     handle.dispose();
   });
 });
@@ -246,7 +256,10 @@ describe("one authored property, inside a group this node already authors", () =
     // `definition` and the composition unable to disagree.
     expect(retained(arm)).toEqual({ values: { x: 260, rotation: AUTHORED_ROTATION } });
     expect(values(handle, ARM)).toEqual({ x: 260, rotation: 45 });
-    expect(handle.get(ARM)?.sourceProgress).toBe(0.5);
+    const aRMPatch3 = handle.get(ARM);
+    if (aRMPatch3?.status !== "ready")
+      throw new Error(`aRMPatch3 is ${aRMPatch3?.status ?? "absent"}, not ready.`);
+    expect(aRMPatch3.sourceProgress).toBe(0.5);
     expect(replaceGraph).not.toHaveBeenCalled();
     // The return type carries the tier: the value tier answers with the batch of its one
     // publication, where every structural verb answers `void` because it replaced the graph. The
@@ -274,7 +287,10 @@ describe("one authored property, inside a group this node already authors", () =
     // and re-seek, and the values it publishes are the ones the patching backend publishes.
     expect(retained(arm)).toEqual({ values: { x: 200, rotation: FASTER } });
     expect(values(handle, ARM)).toEqual({ x: 200, rotation: 90 });
-    expect(handle.get(ARM)?.sourceProgress).toBe(0.5);
+    const aRMPatch4 = handle.get(ARM);
+    if (aRMPatch4?.status !== "ready")
+      throw new Error(`aRMPatch4 is ${aRMPatch4?.status ?? "absent"}, not ready.`);
+    expect(aRMPatch4.sourceProgress).toBe(0.5);
     expect(replaceGraph).not.toHaveBeenCalled();
 
     // The oracle, because a call count cannot see a stale timeline: the same sweep authored rather
@@ -303,7 +319,10 @@ describe("one authored property, inside a group this node already authors", () =
     expect(replaceGraph).not.toHaveBeenCalled();
     // The playhead survives, which is this path's own mutation target: a freshly compiled Track sits
     // at zero, so a dropped re-seek publishes the whole node at the start of its own timeline.
-    expect(handle.get(ARM)?.sourceProgress).toBe(0.5);
+    const aRMPatch5 = handle.get(ARM);
+    if (aRMPatch5?.status !== "ready")
+      throw new Error(`aRMPatch5 is ${aRMPatch5?.status ?? "absent"}, not ready.`);
+    expect(aRMPatch5.sourceProgress).toBe(0.5);
 
     // The only honest oracle for a compile: the same leaf authored rather than added, loaded fresh.
     // Not green against an edit that published nothing new either, which is the other half.
@@ -332,7 +351,10 @@ describe("one authored property, inside a group this node already authors", () =
 
     expect(retained(arm)).toEqual({ values: { rotation: AUTHORED_ROTATION } });
     expect(values(handle, ARM)).toEqual({ rotation: 45 });
-    expect(handle.get(ARM)?.sourceProgress).toBe(0.5);
+    const aRMPatch6 = handle.get(ARM);
+    if (aRMPatch6?.status !== "ready")
+      throw new Error(`aRMPatch6 is ${aRMPatch6?.status ?? "absent"}, not ready.`);
+    expect(aRMPatch6.sourceProgress).toBe(0.5);
 
     arm.removeKeyframe("transform", "rotation");
 

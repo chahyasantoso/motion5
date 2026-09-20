@@ -120,17 +120,23 @@ describe("Two-bone IK Integration (Slice C3)", () => {
     const forearmPatch = patches.get("walker/forearm");
     expect(forearmPatch?.status).toBe("ready");
     // Forearm tip should land on target (320, 340)
-    expect(forearmPatch?.values.x).toBeCloseTo(320, 1);
-    expect(forearmPatch?.values.y).toBeCloseTo(340, 1);
+    if (forearmPatch?.status !== "ready")
+      throw new Error(`forearmPatch is ${forearmPatch?.status ?? "absent"}, not ready.`);
+    expect(forearmPatch.values.x).toBeCloseTo(320, 1);
+    expect(forearmPatch.values.y).toBeCloseTo(340, 1);
 
     // And the default elbow convention survives the whole pipeline, not just the solver unit.
     const upperArmPatch = patches.get("walker/upper-arm");
-    expect(upperArmPatch?.values.rotation).toBeCloseTo(40.168, 3);
+    if (upperArmPatch?.status !== "ready")
+      throw new Error(`upperArmPatch is ${upperArmPatch?.status ?? "absent"}, not ready.`);
+    expect(upperArmPatch.values.rotation).toBeCloseTo(40.168, 3);
 
     const handPatch = patches.get("walker/hand");
     expect(handPatch?.status).toBe("ready");
-    expect(typeof handPatch?.values.x).toBe("number");
-    expect(typeof handPatch?.values.y).toBe("number");
+    if (handPatch?.status !== "ready")
+      throw new Error(`handPatch is ${handPatch?.status ?? "absent"}, not ready.`);
+    expect(typeof handPatch.values.x).toBe("number");
+    expect(typeof handPatch.values.y).toBe("number");
   });
 
   it("IK-15 animating target across ticks moves solved bones smoothly with correct revisions", () => {
@@ -202,9 +208,11 @@ describe("Two-bone IK Integration (Slice C3)", () => {
     });
 
     runtime.seek("walker/hand-target", 0);
-    const x0 = forearmPatch?.values.x as number;
+    if (forearmPatch?.status !== "ready")
+      throw new Error(`forearmPatch is ${forearmPatch?.status ?? "absent"}, not ready.`);
+    const x0 = forearmPatch.values.x as number;
     runtime.seek("walker/hand-target", 1);
-    const x1 = forearmPatch?.values.x as number;
+    const x1 = forearmPatch.values.x as number;
 
     expect(x0).toBeDefined();
     expect(x1).toBeDefined();
@@ -267,6 +275,8 @@ describe("Two-bone IK Integration (Slice C3)", () => {
 
     const solverHandle = runtime.get("walker/arm-solve");
     expect(solverHandle).toBeDefined();
-    expect(solverHandle?.values).toHaveProperty("rotations");
+    if (solverHandle?.status !== "ready")
+      throw new Error(`solverHandle is ${solverHandle?.status ?? "absent"}, not ready.`);
+    expect(solverHandle.values).toHaveProperty("rotations");
   });
 });

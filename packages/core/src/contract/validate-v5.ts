@@ -8,7 +8,7 @@ import {
 } from "./v5";
 import { SUPPORTED_TRIGGER_TYPES } from "./v5";
 import { readAuthoredLeaf } from "./authored-leaf";
-import { describeDiagnostics, diagnostic as issue } from "./diagnostics";
+import { describeDiagnostics, diagnostic } from "./diagnostics";
 import { scopedRuleId, type KeyframeRuleId, type KeyframeRuleScope } from "./rule-id";
 import {
   isKeyframeGroup,
@@ -76,7 +76,7 @@ export function validateKeyframes(
   // `"warning"` by hand. A third keyframe warning would have reported as an error with nothing
   // noticing. Every rule this forwards owns no ids, so the argument list stays empty too.
   const add = (ruleId: KeyframeRuleId, rulePath: string, message: string) =>
-    diagnostics.push(issue(scopedRuleId(scope, ruleId), rulePath, message));
+    diagnostics.push(diagnostic(scopedRuleId(scope, ruleId), rulePath, message));
   if (keyframes === undefined) return;
   if (!isObject(keyframes)) {
     add("keyframes-shape", path, "Track keyframes must be an object.");
@@ -271,28 +271,36 @@ function validateId(
 ): Diagnostic[] {
   const diagnostics: Diagnostic[] = [];
   if (typeof value !== "string" || !value.length) {
-    diagnostics.push(issue("id-shape", path, `${label} id must be a non-empty string.`));
+    diagnostics.push(diagnostic("id-shape", path, `${label} id must be a non-empty string.`));
     return diagnostics;
   }
   if (value.includes("/"))
     diagnostics.push(
-      issue("id-qualified-separator", path, `${label} id '${value}' must not contain '/'.`),
+      diagnostic("id-qualified-separator", path, `${label} id '${value}' must not contain '/'.`),
     );
   if (reservedTilde && value === "~")
     diagnostics.push(
-      issue("id-reserved-namespace", path, "The motion id '~' is reserved for free tracks."),
+      diagnostic("id-reserved-namespace", path, "The motion id '~' is reserved for free tracks."),
     );
   return diagnostics;
 }
 export function validateMotionTrigger(trigger: unknown, path: string): Diagnostic[] {
   if (!isObject(trigger))
     return [
-      issue("trigger-shape", path, "Trigger must be an object with type scroll, time, or manual."),
+      diagnostic(
+        "trigger-shape",
+        path,
+        "Trigger must be an object with type scroll, time, or manual.",
+      ),
     ];
   const type = trigger.type;
   if (!SUPPORTED_TRIGGER_TYPES.includes(type as (typeof SUPPORTED_TRIGGER_TYPES)[number]))
     return [
-      issue("trigger-shape", path, "Trigger must be an object with type scroll, time, or manual."),
+      diagnostic(
+        "trigger-shape",
+        path,
+        "Trigger must be an object with type scroll, time, or manual.",
+      ),
     ];
   const diagnostics: Diagnostic[] = [];
   if (type === "time") {
@@ -302,7 +310,7 @@ export function validateMotionTrigger(trigger: unknown, path: string): Diagnosti
       trigger.duration <= 0
     )
       diagnostics.push(
-        issue(
+        diagnostic(
           "trigger-time-duration",
           `${path}.duration`,
           "Time trigger duration must be a finite number greater than zero.",
@@ -310,7 +318,7 @@ export function validateMotionTrigger(trigger: unknown, path: string): Diagnosti
       );
     if (trigger.autoplay !== undefined && trigger.autoplay !== true)
       diagnostics.push(
-        issue(
+        diagnostic(
           "trigger-time-autoplay-unsupported",
           `${path}.autoplay`,
           "Time trigger autoplay must be true when present; paused behavior is not supported.",
@@ -324,7 +332,7 @@ export function validateMotionTrigger(trigger: unknown, path: string): Diagnosti
       repeatValue !== undefined && Number.isInteger(repeatValue) && repeatValue >= -1;
     if (trigger.repeat !== undefined && !repeatValid)
       diagnostics.push(
-        issue(
+        diagnostic(
           "trigger-time-repeat-shape",
           `${path}.repeat`,
           "Time trigger repeat must be an integer, -1 for infinite or 0 and above.",
@@ -332,7 +340,7 @@ export function validateMotionTrigger(trigger: unknown, path: string): Diagnosti
       );
     if (trigger.yoyo !== undefined && typeof trigger.yoyo !== "boolean")
       diagnostics.push(
-        issue(
+        diagnostic(
           "trigger-time-yoyo-shape",
           `${path}.yoyo`,
           "Time trigger yoyo must be a boolean when present.",
@@ -343,7 +351,7 @@ export function validateMotionTrigger(trigger: unknown, path: string): Diagnosti
     // without a repeat, so the rule is about presence rather than value.
     if (trigger.yoyo !== undefined && !(repeatValid && repeatValue !== 0))
       diagnostics.push(
-        issue(
+        diagnostic(
           "trigger-time-yoyo-requires-repeat",
           `${path}.yoyo`,
           "Time trigger yoyo requires repeat to be -1 or greater than zero.",
@@ -356,7 +364,7 @@ export function validateMotionTrigger(trigger: unknown, path: string): Diagnosti
     (typeof trigger.source !== "string" || trigger.source.length === 0)
   )
     diagnostics.push(
-      issue(
+      diagnostic(
         "trigger-scroll-source",
         `${path}.source`,
         "Scroll trigger source must be a non-empty string when present.",
@@ -410,13 +418,13 @@ function validateTrackShape(
   diagnostics: Diagnostic[],
 ): track is TrackDefinition {
   if (!isObject(track)) {
-    diagnostics.push(issue("track-shape", path, "Track must be an object."));
+    diagnostics.push(diagnostic("track-shape", path, "Track must be an object."));
     return false;
   }
   diagnostics.push(...validateId(track.id, `${path}.id`, "Track"));
   if ("use" in track)
     diagnostics.push(
-      issue(
+      diagnostic(
         "plugin-contribution-unsupported-entry",
         `${path}.use`,
         "Track use is not supported; resolve plugins from authored keyframes.",
@@ -427,7 +435,7 @@ function validateTrackShape(
   if (typeof track.id === "string" && track.id.length) {
     if (seenIds.has(track.id))
       diagnostics.push(
-        issue("track-duplicate-id", `${path}.id`, `Track id '${track.id}' is duplicated.`, [
+        diagnostic("track-duplicate-id", `${path}.id`, `Track id '${track.id}' is duplicated.`, [
           track.id,
         ]),
       );
@@ -435,7 +443,7 @@ function validateTrackShape(
   }
   if (track.observes !== undefined && !Array.isArray(track.observes))
     diagnostics.push(
-      issue("observes-shape", `${path}.observes`, "Track observes must be an array."),
+      diagnostic("observes-shape", `${path}.observes`, "Track observes must be an array."),
     );
   return true;
 }
@@ -481,12 +489,12 @@ export function validateV5(input: unknown): ValidationResult {
   if (!isObject(input))
     return {
       valid: false,
-      diagnostics: [issue("project-shape", "$", "Project must be an object.")],
+      diagnostics: [diagnostic("project-shape", "$", "Project must be an object.")],
       value: null,
     };
   if (input.schemaVersion !== AUTHORED_SCHEMA_VERSION)
     diagnostics.push(
-      issue(
+      diagnostic(
         "schema-version",
         "schemaVersion",
         `Expected schemaVersion ${AUTHORED_SCHEMA_VERSION}.`,
@@ -497,18 +505,20 @@ export function validateV5(input: unknown): ValidationResult {
     (typeof input.projectId !== "string" || !input.projectId.length)
   )
     diagnostics.push(
-      issue("project-id", "projectId", "projectId must be a non-empty string when present."),
+      diagnostic("project-id", "projectId", "projectId must be a non-empty string when present."),
     );
   // The removed field, read by the key rather than by the value at it. That is the same reading the
   // retired track `use` field gets a few functions up, and for the same reason: authoring the key
   // is the mistake, so `templates: undefined` is refused too rather than being a spelling that
   // slips a removed field back in through a spread of an older document.
   if ("templates" in input)
-    diagnostics.push(issue("project-templates-unsupported", "templates", TEMPLATES_UNSUPPORTED));
+    diagnostics.push(
+      diagnostic("project-templates-unsupported", "templates", TEMPLATES_UNSUPPORTED),
+    );
   if (!Array.isArray(input.motions))
-    diagnostics.push(issue("motions-shape", "motions", "motions must be an array."));
+    diagnostics.push(diagnostic("motions-shape", "motions", "motions must be an array."));
   if (input.freeTracks !== undefined && !Array.isArray(input.freeTracks))
-    diagnostics.push(issue("free-tracks-shape", "freeTracks", "freeTracks must be an array."));
+    diagnostics.push(diagnostic("free-tracks-shape", "freeTracks", "freeTracks must be an array."));
   const motions = Array.isArray(input.motions) ? input.motions : [];
   const freeTracks = Array.isArray(input.freeTracks) ? input.freeTracks : [];
   const motionIds = new Set<string>();
@@ -517,7 +527,7 @@ export function validateV5(input: unknown): ValidationResult {
   for (const [index, rawMotion] of motions.entries()) {
     const path = `motions[${index}]`;
     if (!isObject(rawMotion)) {
-      diagnostics.push(issue("motion-shape", path, "Motion must be an object."));
+      diagnostics.push(diagnostic("motion-shape", path, "Motion must be an object."));
       continue;
     }
     diagnostics.push(...validateId(rawMotion.id, `${path}.id`, "Motion", true));
@@ -525,14 +535,14 @@ export function validateV5(input: unknown): ValidationResult {
     if (id) {
       if (motionIds.has(id))
         diagnostics.push(
-          issue("motion-duplicate-id", `${path}.id`, `Motion id '${id}' is duplicated.`, [id]),
+          diagnostic("motion-duplicate-id", `${path}.id`, `Motion id '${id}' is duplicated.`, [id]),
         );
       motionIds.add(id);
     }
     diagnostics.push(...validateMotionTrigger(rawMotion.trigger, `${path}.trigger`));
     if (!Array.isArray(rawMotion.tracks)) {
       diagnostics.push(
-        issue("motion-tracks-shape", `${path}.tracks`, "Motion tracks must be an array."),
+        diagnostic("motion-tracks-shape", `${path}.tracks`, "Motion tracks must be an array."),
       );
       continue;
     }
@@ -554,7 +564,7 @@ export function validateV5(input: unknown): ValidationResult {
     (typeof perspective !== "number" || !Number.isFinite(perspective) || perspective <= 0)
   )
     diagnostics.push(
-      issue(
+      diagnostic(
         "perspective-shape",
         "perspective",
         "Perspective must be a finite number greater than zero.",
@@ -564,9 +574,12 @@ export function validateV5(input: unknown): ValidationResult {
     for (const track of allTracks)
       if (usesThreeD(track))
         diagnostics.push(
-          issue("perspective-usage", "perspective", "3D keyframes require a project perspective.", [
-            String(track.id ?? ""),
-          ]),
+          diagnostic(
+            "perspective-usage",
+            "perspective",
+            "3D keyframes require a project perspective.",
+            [String(track.id ?? "")],
+          ),
         );
   if (!diagnostics.some(({ severity }) => severity === "error"))
     diagnostics.push(...buildGraphIR(input as unknown as ProjectDefinition).diagnostics);

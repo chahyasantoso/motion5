@@ -62,7 +62,10 @@ describe("option C: compiled Track ownership through the public surface", () => 
     handle.track("scene/arm").replace(track("arm", 0, 200));
     clock.tick(0);
     scheduler.flush();
-    expect(handle.get("scene/arm")?.values).toEqual({ x: 100 });
+    const sceneArmPatch = handle.get("scene/arm");
+    if (sceneArmPatch?.status !== "ready")
+      throw new Error(`scene/arm is ${sceneArmPatch?.status ?? "absent"}, not ready.`);
+    expect(sceneArmPatch.values).toEqual({ x: 100 });
     handle.dispose();
   });
 
@@ -75,9 +78,18 @@ describe("option C: compiled Track ownership through the public surface", () => 
     handle.track("scene/first").replace(track("first", 0, 200));
     clock.tick(0);
     scheduler.flush();
-    expect(handle.get("scene/first")?.values).toEqual({ x: 200 });
-    expect(handle.get("scene/second")?.values).toEqual({ x: 0 });
-    expect(handle.get("scene/third")?.values).toEqual({ x: 0 });
+    const sceneFirstPatch = handle.get("scene/first");
+    if (sceneFirstPatch?.status !== "ready")
+      throw new Error(`scene/first is ${sceneFirstPatch?.status ?? "absent"}, not ready.`);
+    expect(sceneFirstPatch.values).toEqual({ x: 200 });
+    const sceneSecondPatch = handle.get("scene/second");
+    if (sceneSecondPatch?.status !== "ready")
+      throw new Error(`scene/second is ${sceneSecondPatch?.status ?? "absent"}, not ready.`);
+    expect(sceneSecondPatch.values).toEqual({ x: 0 });
+    const sceneThirdPatch = handle.get("scene/third");
+    if (sceneThirdPatch?.status !== "ready")
+      throw new Error(`scene/third is ${sceneThirdPatch?.status ?? "absent"}, not ready.`);
+    expect(sceneThirdPatch.values).toEqual({ x: 0 });
     handle.dispose();
   });
 
@@ -113,14 +125,20 @@ describe("option C: compiled Track ownership through the public surface", () => 
     const added = handle.addTrack(track("extra", 0, 100), { motionId: "scene" });
     handle.signal("scene", { type: "manual", progress: 0.5 });
     scheduler.flush();
-    expect(handle.get("scene/extra")?.values).toEqual({ x: 50 });
+    const sceneExtraPatch = handle.get("scene/extra");
+    if (sceneExtraPatch?.status !== "ready")
+      throw new Error(`scene/extra is ${sceneExtraPatch?.status ?? "absent"}, not ready.`);
+    expect(sceneExtraPatch.values).toEqual({ x: 50 });
     added.remove();
     // The removed id must leave the Motion too, or the next sweep would report it unresolved.
     expect(() => {
       handle.signal("scene", { type: "manual", progress: 0.75 });
       scheduler.flush();
     }).not.toThrow();
-    expect(handle.get("scene/arm")?.values).toEqual({ x: 75 });
+    const sceneArmPatch2 = handle.get("scene/arm");
+    if (sceneArmPatch2?.status !== "ready")
+      throw new Error(`scene/arm is ${sceneArmPatch2?.status ?? "absent"}, not ready.`);
+    expect(sceneArmPatch2.values).toEqual({ x: 75 });
     const readded = handle.addTrack(track("extra", 0, 100), { motionId: "scene" });
     expect(readded.id).toBe("scene/extra");
     handle.dispose();

@@ -37,13 +37,16 @@ describe("Engine", () => {
     runtime.mount("hero/arm");
     let published: { values: Readonly<Record<string, unknown>> } | undefined;
     runtime.subscribeNode("hero/arm", (patch) => {
+      // Only a ready patch carries the pose this case reads, and the structural type it is held in
+      // says so, so the narrowing happens where the patch arrives. See ADR-098.
+      if (patch.status !== "ready") return;
       published = patch;
     });
     const batch = runtime.seek("hero/arm", 0.5);
-    expect(batch.patches.find(({ nodeId }) => nodeId === "hero/arm")?.values.opacity).toBeCloseTo(
-      0.6,
-      12,
-    );
+    const heroArmPatch = batch.patches.find(({ nodeId }) => nodeId === "hero/arm");
+    if (heroArmPatch?.status !== "ready")
+      throw new Error(`hero/arm is ${heroArmPatch?.status ?? "absent"}, not ready.`);
+    expect(heroArmPatch.values.opacity).toBeCloseTo(0.6, 12);
     expect(published?.values.opacity).toBeCloseTo(0.6, 12);
     runtime.dispose();
   });
@@ -77,6 +80,8 @@ describe("Engine", () => {
     }).load(project);
     runtime.mount("hero/arm");
     runtime.subscribeNode("hero/arm", (patch) => {
+      // A subscriber records what was published, and a patch owning no pose has nothing to record.
+      if (patch.status !== "ready") return;
       expect(patch.values).toEqual({ opacity: 1, rendered: true });
     });
     runtime.seek("hero/arm", 1);
@@ -93,6 +98,8 @@ describe("Engine", () => {
     runtime.mount("hero/arm");
     let opacity = 0;
     runtime.subscribeNode("hero/arm", (patch) => {
+      // A subscriber records what was published, and a patch owning no pose has nothing to record.
+      if (patch.status !== "ready") return;
       opacity = Number(patch.values.opacity);
     });
 

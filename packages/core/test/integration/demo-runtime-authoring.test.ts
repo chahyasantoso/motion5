@@ -68,7 +68,13 @@ function playground() {
 function expectSamePose(actual: ProjectHandle, reference: ProjectHandle) {
   for (const id of ALL_NODE_IDS) {
     expect(actual.get(id)?.status).toBe("ready");
-    expect(actual.get(id)?.values).toEqual(reference.get(id)?.values);
+    const idPatch = actual.get(id);
+    if (idPatch?.status !== "ready")
+      throw new Error(`idPatch is ${idPatch?.status ?? "absent"}, not ready.`);
+    const idPatch2 = reference.get(id);
+    if (idPatch2?.status !== "ready")
+      throw new Error(`idPatch2 is ${idPatch2?.status ?? "absent"}, not ready.`);
+    expect(idPatch.values).toEqual(idPatch2.values);
   }
 }
 
@@ -101,7 +107,10 @@ describe("demo runtime authoring", () => {
         for (const arm of arms) {
           expect(arm.live).toBe(true);
           expect(handle.get(arm.id)?.status).toBe("ready");
-          expect(handle.get(arm.id)?.sourceProgress).toBeCloseTo(0.6);
+          const idPatch3 = handle.get(arm.id);
+          if (idPatch3?.status !== "ready")
+            throw new Error(`idPatch3 is ${idPatch3?.status ?? "absent"}, not ready.`);
+          expect(idPatch3.sourceProgress).toBeCloseTo(0.6);
         }
         expect(handle.get("walk/chest")).toBe(chest);
         replace.mockClear();

@@ -46,6 +46,8 @@ describe("Phase 2: Motion Scheduling & Coalescing", () => {
 
     const trackValues: number[] = [];
     handle.subscribeNode("hero/t1", (patch) => {
+      // A subscriber records what was published, and a patch owning no pose has nothing to record.
+      if (patch.status !== "ready") return;
       trackValues.push(patch.values.x as number);
     });
 

@@ -150,7 +150,10 @@ describe("Engine motion edits preserve accepted state and entity lifetimes", () 
     expect((failure as AggregateError).errors).toEqual([subscriptionFailure, resourceFailure]);
     expect(motion.definition.trigger.type).toBe("time");
     test.flush();
-    expect(test.handle.get("hero/arm")?.sourceProgress).toBeCloseTo(0.6);
+    const heroArmPatch = test.handle.get("hero/arm");
+    if (heroArmPatch?.status !== "ready")
+      throw new Error(`hero/arm is ${heroArmPatch?.status ?? "absent"}, not ready.`);
+    expect(heroArmPatch.sourceProgress).toBeCloseTo(0.6);
     const patch = test.handle.get("hero/arm");
     entries[0]!.emit(0.9);
     test.flush();
@@ -196,7 +199,10 @@ describe("Engine motion edits preserve accepted state and entity lifetimes", () 
       expect(test.handle.motion("hero").definition.trigger.type).toBe("manual");
       test.handle.signal("hero", { type: "manual", progress: 0.4 });
       test.flush();
-      expect(test.handle.get("hero/arm")?.sourceProgress).toBeCloseTo(0.4);
+      const heroArmPatch2 = test.handle.get("hero/arm");
+      if (heroArmPatch2?.status !== "ready")
+        throw new Error(`hero/arm is ${heroArmPatch2?.status ?? "absent"}, not ready.`);
+      expect(heroArmPatch2.sourceProgress).toBeCloseTo(0.4);
       expect(releases[0]).not.toHaveBeenCalled();
       expect(releases[1]).toHaveBeenCalledTimes(1);
       test.handle.dispose();
@@ -224,11 +230,17 @@ describe("Engine motion edits preserve accepted state and entity lifetimes", () 
     expect(motion.definition.stagger).toBe(250);
     // Caller-stated publications only, so a scheduled drain cannot supply this count. Issue #381.
     expect(statedPublications(publication)).toHaveLength(1);
-    expect(test.handle.get("hero/arm")?.sourceProgress).toBeCloseTo(0.75);
+    const heroArmPatch3 = test.handle.get("hero/arm");
+    if (heroArmPatch3?.status !== "ready")
+      throw new Error(`hero/arm is ${heroArmPatch3?.status ?? "absent"}, not ready.`);
+    expect(heroArmPatch3.sourceProgress).toBeCloseTo(0.75);
     intercept = () => undefined;
     motion.setStagger();
     test.flush();
-    expect(test.handle.get("hero/leg")?.sourceProgress).toBeCloseTo(0.75);
+    const heroLegPatch = test.handle.get("hero/leg");
+    if (heroLegPatch?.status !== "ready")
+      throw new Error(`hero/leg is ${heroLegPatch?.status ?? "absent"}, not ready.`);
+    expect(heroLegPatch.sourceProgress).toBeCloseTo(0.75);
     test.handle.dispose();
     for (const kill of test.kills) expect(kill).toHaveBeenCalledTimes(1);
   });
@@ -292,7 +304,10 @@ describe("Engine motion edits preserve accepted state and entity lifetimes", () 
       );
       test.clock.tick(250);
       test.flush();
-      expect(test.handle.get("hero/arm")?.sourceProgress).toBeCloseTo(0.25);
+      const heroArmPatch4 = test.handle.get("hero/arm");
+      if (heroArmPatch4?.status !== "ready")
+        throw new Error(`hero/arm is ${heroArmPatch4?.status ?? "absent"}, not ready.`);
+      expect(heroArmPatch4.sourceProgress).toBeCloseTo(0.25);
       motion.setTrigger({ type: "manual" });
       expect(host.created).toHaveLength(3);
       expect(() => test.handle.signal("hero", { type: "manual", progress: 0.5 })).not.toThrow();
@@ -314,7 +329,10 @@ describe("Engine motion edits preserve accepted state and entity lifetimes", () 
       expect(test.handle.motion("hero").definition.trigger).toEqual({ type: "manual" });
       expect(() => test.handle.signal("hero", { type: "manual", progress: 0.4 })).not.toThrow();
       test.flush();
-      expect(test.handle.get("hero/arm")?.sourceProgress).toBeCloseTo(0.4);
+      const heroArmPatch5 = test.handle.get("hero/arm");
+      if (heroArmPatch5?.status !== "ready")
+        throw new Error(`hero/arm is ${heroArmPatch5?.status ?? "absent"}, not ready.`);
+      expect(heroArmPatch5.sourceProgress).toBeCloseTo(0.4);
       expect(host.created[0]!.dispose).not.toHaveBeenCalled();
       test.handle.dispose();
       for (const entry of host.created) expect(entry.dispose).toHaveBeenCalledTimes(1);
@@ -337,13 +355,22 @@ describe("Engine motion edits preserve accepted state and entity lifetimes", () 
     });
     expect(() => motion.setStagger(250)).not.toThrow();
     test.flush();
-    expect(test.handle.get("hero/arm")?.sourceProgress).toBeCloseTo(0.75);
-    expect(test.handle.get("hero/leg")?.sourceProgress).toBeCloseTo(0.5);
+    const heroArmPatch6 = test.handle.get("hero/arm");
+    if (heroArmPatch6?.status !== "ready")
+      throw new Error(`hero/arm is ${heroArmPatch6?.status ?? "absent"}, not ready.`);
+    expect(heroArmPatch6.sourceProgress).toBeCloseTo(0.75);
+    const heroLegPatch2 = test.handle.get("hero/leg");
+    if (heroLegPatch2?.status !== "ready")
+      throw new Error(`hero/leg is ${heroLegPatch2?.status ?? "absent"}, not ready.`);
+    expect(heroLegPatch2.sourceProgress).toBeCloseTo(0.5);
     expect(seen).toEqual([250]);
     expect(String(reentrant[0])).toContain("schema-commit-reentrant");
     motion.setStagger();
     test.flush();
-    expect(test.handle.get("hero/leg")?.sourceProgress).toBeCloseTo(0.75);
+    const heroLegPatch3 = test.handle.get("hero/leg");
+    if (heroLegPatch3?.status !== "ready")
+      throw new Error(`hero/leg is ${heroLegPatch3?.status ?? "absent"}, not ready.`);
+    expect(heroLegPatch3.sourceProgress).toBeCloseTo(0.75);
     expect(seen).toEqual([250, undefined]);
     expect(motion.definition).not.toHaveProperty("stagger");
     // Two caller-stated publications, one per adopted definition, and neither is a drain. Issue

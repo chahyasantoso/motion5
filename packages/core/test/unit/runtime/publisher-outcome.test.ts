@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { Diagnostic, Patch } from "../../../src/contract/v5";
+import type { Diagnostic, ReadyPatch } from "../../../src/contract/v5";
 import { compareEdges, type GraphEdge } from "../../../src/graph/ir";
 import {
   ABSENT,
@@ -51,7 +51,7 @@ function diagnostic(path: string): Diagnostic {
   return entry;
 }
 
-function patchFor(values: unknown): Patch {
+function patchFor(values: unknown): ReadyPatch {
   const patch = {
     nodeId: ARM,
     revision: 1,
@@ -63,7 +63,8 @@ function patchFor(values: unknown): Patch {
   };
   // Cast at one place, because the point of the `not-a-record` variant is a value the type says
   // cannot arrive and a host can still publish.
-  return Object.freeze(patch) as unknown as Patch;
+  // `sourceValues` takes the ready member now, so the fixture answers it rather than the union.
+  return Object.freeze(patch) as unknown as ReadyPatch;
 }
 
 function composition(values: Readonly<Record<string, unknown>>) {

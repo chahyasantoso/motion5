@@ -18,7 +18,10 @@ describe("React patch store under node destruction (D1)", () => {
     const unmount = store.subscribe((patch) => notifications.push(patch));
 
     publish(registry, 1, 45);
-    expect(store.getSnapshot()?.values).toEqual({ x: 45 });
+    const getSnapshotPatch = store.getSnapshot();
+    if (getSnapshotPatch?.status !== "ready")
+      throw new Error(`getSnapshotPatch is ${getSnapshotPatch?.status ?? "absent"}, not ready.`);
+    expect(getSnapshotPatch.values).toEqual({ x: 45 });
 
     registry.evict(NODE_ID);
 
@@ -41,7 +44,10 @@ describe("React patch store under node destruction (D1)", () => {
     expect(store.getSnapshot()).toBeUndefined();
 
     publish(registry, 2, 60);
-    expect(store.getSnapshot()?.values).toEqual({ x: 60 });
+    const getSnapshotPatch2 = store.getSnapshot();
+    if (getSnapshotPatch2?.status !== "ready")
+      throw new Error(`getSnapshotPatch2 is ${getSnapshotPatch2?.status ?? "absent"}, not ready.`);
+    expect(getSnapshotPatch2.values).toEqual({ x: 60 });
 
     unmount();
   });

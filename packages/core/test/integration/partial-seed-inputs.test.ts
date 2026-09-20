@@ -78,6 +78,9 @@ describe("GraphPublisher partial-seed requirement inputs", () => {
     a = 4;
     const batch = publisher.flush(graph, ["source-a"], 2);
 
-    expect(batch.patches.find(({ nodeId }) => nodeId === "sink")?.values).toEqual({ total: 7 });
+    const sinkPatch = batch.patches.find(({ nodeId }) => nodeId === "sink");
+    if (sinkPatch?.status !== "ready")
+      throw new Error(`sink is ${sinkPatch?.status ?? "absent"}, not ready.`);
+    expect(sinkPatch.values).toEqual({ total: 7 });
   });
 });

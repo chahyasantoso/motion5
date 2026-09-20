@@ -120,7 +120,9 @@ describe("goal-addressed IK integration (Slice D1)", () => {
 
     const solver = patches.get("walker/arm-solve");
     expect(solver?.status).toBe("ready");
-    const rotations = solver?.values.rotations as Readonly<Record<string, number>>;
+    if (solver?.status !== "ready")
+      throw new Error(`solver is ${solver?.status ?? "absent"}, not ready.`);
+    const rotations = solver.values.rotations as Readonly<Record<string, number>>;
     expect(rotations["walker/upper-arm"]).toBeCloseTo(40.168, 3);
     expect(rotations["walker/forearm"]).toBeCloseTo(-51.3178, 4);
 
@@ -128,8 +130,10 @@ describe("goal-addressed IK integration (Slice D1)", () => {
     // frame the solve reached for was the goal node's and not something the plugin defaulted to.
     const forearm = patches.get("walker/forearm");
     expect(forearm?.status).toBe("ready");
-    expect(forearm?.values.x).toBeCloseTo(320, 1);
-    expect(forearm?.values.y).toBeCloseTo(340, 1);
+    if (forearm?.status !== "ready")
+      throw new Error(`forearm is ${forearm?.status ?? "absent"}, not ready.`);
+    expect(forearm.values.x).toBeCloseTo(320, 1);
+    expect(forearm.values.y).toBeCloseTo(340, 1);
 
     // And the chain below is unaware any of this happened.
     expect(patches.get("walker/hand")?.status).toBe("ready");
@@ -148,9 +152,11 @@ describe("goal-addressed IK integration (Slice D1)", () => {
     });
 
     runtime.seek("walker/hand-target", 0);
-    const first = forearm?.values.x as number;
+    if (forearm?.status !== "ready")
+      throw new Error(`forearm is ${forearm?.status ?? "absent"}, not ready.`);
+    const first = forearm.values.x as number;
     runtime.seek("walker/hand-target", 1);
-    const second = forearm?.values.x as number;
+    const second = forearm.values.x as number;
 
     expect(Number.isFinite(first)).toBe(true);
     expect(Number.isFinite(second)).toBe(true);

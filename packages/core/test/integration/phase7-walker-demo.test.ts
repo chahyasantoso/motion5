@@ -359,7 +359,9 @@ describe("Phase 7: Walker Demo Integration Suite", () => {
     scheduler.flush();
 
     const pelvisPatch = handle.get("walk/pelvis");
-    expect(pelvisPatch?.values.x).toBe(100);
+    if (pelvisPatch?.status !== "ready")
+      throw new Error(`pelvisPatch is ${pelvisPatch?.status ?? "absent"}, not ready.`);
+    expect(pelvisPatch.values.x).toBe(100);
 
     handle.dispose();
     clock.dispose();
@@ -413,15 +415,19 @@ describe("Phase 7: Walker Demo Integration Suite", () => {
 
     // Thigh (base.rotation=0, own rotation=45): worldRot=45, x = 0 + 50*cos(45deg) = 35.355,
     // y = 100 + 50*sin(45deg) = 135.355
-    expect(thighPatch?.values.x).toBeCloseTo(35.355, 2);
-    expect(thighPatch?.values.y).toBeCloseTo(135.355, 2);
-    expect(thighPatch?.values.rotation).toBeCloseTo(45, 2);
+    if (thighPatch?.status !== "ready")
+      throw new Error(`thighPatch is ${thighPatch?.status ?? "absent"}, not ready.`);
+    expect(thighPatch.values.x).toBeCloseTo(35.355, 2);
+    expect(thighPatch.values.y).toBeCloseTo(135.355, 2);
+    expect(thighPatch.values.rotation).toBeCloseTo(45, 2);
 
     // Shin (base.rotation=45, own rotation=-30): worldRot=15, x = 35.355 + 40*cos(15deg) = 73.997,
     // y = 135.355 + 40*sin(15deg) = 145.707
-    expect(shinPatch?.values.x).toBeCloseTo(73.997, 2);
-    expect(shinPatch?.values.y).toBeCloseTo(145.707, 2);
-    expect(shinPatch?.values.rotation).toBeCloseTo(15, 2);
+    if (shinPatch?.status !== "ready")
+      throw new Error(`shinPatch is ${shinPatch?.status ?? "absent"}, not ready.`);
+    expect(shinPatch.values.x).toBeCloseTo(73.997, 2);
+    expect(shinPatch.values.y).toBeCloseTo(145.707, 2);
+    expect(shinPatch.values.rotation).toBeCloseTo(15, 2);
 
     handle.dispose();
     clock.dispose();
@@ -489,7 +495,12 @@ describe("Phase 7: Walker Demo Integration Suite", () => {
     const patchValues: Array<number | undefined> = [];
     function WalkerConsumer(): null {
       const patch = usePatch(handle, "walk/pelvis");
-      patchValues.push(patch?.values.x as number | undefined);
+      // The hook applies no filtering, which is what this case records, so a patch owning no pose
+      // contributes the same `undefined` an absent one does. The first render has no patch at all.
+      // See ADR-098.
+      patchValues.push(
+        patch?.status === "ready" ? (patch.values.x as number | undefined) : undefined,
+      );
       return null;
     }
 
@@ -560,26 +571,34 @@ describe("Phase 7: Walker Demo Integration Suite", () => {
     const thighPatch = batch.patches.find((p) => p.nodeId === "walk/thigh");
     const shinPatch = batch.patches.find((p) => p.nodeId === "walk/shin");
 
-    expect(thighPatch?.values.x).toBeCloseTo(35.355, 2);
-    expect(thighPatch?.values.y).toBeCloseTo(135.355, 2);
-    expect(thighPatch?.values.rotation).toBeCloseTo(45, 2);
+    if (thighPatch?.status !== "ready")
+      throw new Error(`thighPatch is ${thighPatch?.status ?? "absent"}, not ready.`);
+    expect(thighPatch.values.x).toBeCloseTo(35.355, 2);
+    expect(thighPatch.values.y).toBeCloseTo(135.355, 2);
+    expect(thighPatch.values.rotation).toBeCloseTo(45, 2);
 
-    expect(shinPatch?.values.x).toBeCloseTo(73.997, 2);
-    expect(shinPatch?.values.y).toBeCloseTo(145.707, 2);
-    expect(shinPatch?.values.rotation).toBeCloseTo(15, 2);
+    if (shinPatch?.status !== "ready")
+      throw new Error(`shinPatch is ${shinPatch?.status ?? "absent"}, not ready.`);
+    expect(shinPatch.values.x).toBeCloseTo(73.997, 2);
+    expect(shinPatch.values.y).toBeCloseTo(145.707, 2);
+    expect(shinPatch.values.rotation).toBeCloseTo(15, 2);
 
     // 2. Verify IK arm solve:
     const solvePatch = batch.patches.find((p) => p.nodeId === "walk/arm-solve");
     expect(solvePatch).toBeDefined();
-    const rotations = solvePatch?.values.rotations as Record<string, number>;
+    if (solvePatch?.status !== "ready")
+      throw new Error(`solvePatch is ${solvePatch?.status ?? "absent"}, not ready.`);
+    const rotations = solvePatch.values.rotations as Record<string, number>;
     expect(rotations).toBeDefined();
     expect(typeof rotations["walk/upper-arm"]).toBe("number");
     expect(typeof rotations["walk/forearm"]).toBe("number");
 
     // Forearm tip must reach target at (35, 75):
     const forearmPatch = batch.patches.find((p) => p.nodeId === "walk/forearm");
-    expect(forearmPatch?.values.x).toBeCloseTo(35, 1);
-    expect(forearmPatch?.values.y).toBeCloseTo(75, 1);
+    if (forearmPatch?.status !== "ready")
+      throw new Error(`forearmPatch is ${forearmPatch?.status ?? "absent"}, not ready.`);
+    expect(forearmPatch.values.x).toBeCloseTo(35, 1);
+    expect(forearmPatch.values.y).toBeCloseTo(75, 1);
 
     // Hand follows downstream at forearm tip:
     const handPatch = batch.patches.find((p) => p.nodeId === "walk/hand");
@@ -682,11 +701,16 @@ describe("Phase 7: Walker Demo Integration Suite", () => {
 
     const batch = handle.seek("walk/pelvis", 0);
     const at = (nodeId: string) => batch.patches.find((p) => p.nodeId === nodeId);
-    const between = (a: string, b: string): number =>
-      Math.hypot(
-        (at(a)?.values.x as number) - (at(b)?.values.x as number),
-        (at(a)?.values.y as number) - (at(b)?.values.y as number),
+    const between = (a: string, b: string): number => {
+      const pa = at(a);
+      const pb = at(b);
+      if (pa?.status !== "ready") throw new Error(`${a} is ${pa?.status ?? "absent"}, not ready.`);
+      if (pb?.status !== "ready") throw new Error(`${b} is ${pb?.status ?? "absent"}, not ready.`);
+      return Math.hypot(
+        (pa.values.x as number) - (pb.values.x as number),
+        (pa.values.y as number) - (pb.values.y as number),
       );
+    };
 
     // 1. Every node of the rig publishes, both solvers included.
     for (const id of ["walk/tail-1", "walk/tail-2", "walk/tail-3", "walk/tail-solve"]) {
@@ -695,7 +719,10 @@ describe("Phase 7: Walker Demo Integration Suite", () => {
 
     // 2. One solve for the whole tail, keyed by member id, and never a per-member re-solve.
     //    Three members is exactly the count `ik-solver-unsupported-arity` used to refuse.
-    const tailRotations = at("walk/tail-solve")?.values.rotations as Record<string, number>;
+    const walkTailSolvePatch = at("walk/tail-solve");
+    if (walkTailSolvePatch?.status !== "ready")
+      throw new Error(`walk/tail-solve is ${walkTailSolvePatch?.status ?? "absent"}, not ready.`);
+    const tailRotations = walkTailSolvePatch.values.rotations as Record<string, number>;
     expect(Object.keys(tailRotations).sort()).toEqual([
       "walk/tail-1",
       "walk/tail-2",
@@ -705,10 +732,16 @@ describe("Phase 7: Walker Demo Integration Suite", () => {
 
     // 3. The tip reaches the goal the dict addressed. The anchor is the pelvis at (0, 100) and
     //    the goal is (24, 132), so the chain spends 40 of its 60 units of reach.
-    expect(at("walk/tail-base")?.values.x).toBeCloseTo(0, 6);
-    expect(at("walk/tail-base")?.values.y).toBeCloseTo(100, 6);
-    expect(at("walk/tail-3")?.values.x).toBeCloseTo(24, 1);
-    expect(at("walk/tail-3")?.values.y).toBeCloseTo(132, 1);
+    const walkTailBasePatch = at("walk/tail-base");
+    if (walkTailBasePatch?.status !== "ready")
+      throw new Error(`walk/tail-base is ${walkTailBasePatch?.status ?? "absent"}, not ready.`);
+    expect(walkTailBasePatch.values.x).toBeCloseTo(0, 6);
+    expect(walkTailBasePatch.values.y).toBeCloseTo(100, 6);
+    const walkTail3Patch = at("walk/tail-3");
+    if (walkTail3Patch?.status !== "ready")
+      throw new Error(`walk/tail-3 is ${walkTail3Patch?.status ?? "absent"}, not ready.`);
+    expect(walkTail3Patch.values.x).toBeCloseTo(24, 1);
+    expect(walkTail3Patch.values.y).toBeCloseTo(132, 1);
 
     // 4. Segment lengths are the invariant a tolerance does not cover: an iteration that reached
     //    the goal by stretching a segment would converge and be wrong. Measured on the published
@@ -718,20 +751,32 @@ describe("Phase 7: Walker Demo Integration Suite", () => {
     expect(between("walk/tail-2", "walk/tail-3")).toBeCloseTo(20, 6);
 
     // 5. The FK leg is untouched, at case 6's numbers.
-    expect(at("walk/thigh")?.values.x).toBeCloseTo(35.355, 2);
-    expect(at("walk/thigh")?.values.y).toBeCloseTo(135.355, 2);
-    expect(at("walk/thigh")?.values.rotation).toBeCloseTo(45, 2);
-    expect(at("walk/shin")?.values.x).toBeCloseTo(73.997, 2);
-    expect(at("walk/shin")?.values.y).toBeCloseTo(145.707, 2);
-    expect(at("walk/shin")?.values.rotation).toBeCloseTo(15, 2);
+    const walkThighPatch = at("walk/thigh");
+    if (walkThighPatch?.status !== "ready")
+      throw new Error(`walk/thigh is ${walkThighPatch?.status ?? "absent"}, not ready.`);
+    expect(walkThighPatch.values.x).toBeCloseTo(35.355, 2);
+    expect(walkThighPatch.values.y).toBeCloseTo(135.355, 2);
+    expect(walkThighPatch.values.rotation).toBeCloseTo(45, 2);
+    const walkShinPatch = at("walk/shin");
+    if (walkShinPatch?.status !== "ready")
+      throw new Error(`walk/shin is ${walkShinPatch?.status ?? "absent"}, not ready.`);
+    expect(walkShinPatch.values.x).toBeCloseTo(73.997, 2);
+    expect(walkShinPatch.values.y).toBeCloseTo(145.707, 2);
+    expect(walkShinPatch.values.rotation).toBeCloseTo(15, 2);
 
     // 6. And the two-bone arm still takes the analytic path, at case 11's numbers, with its own
     //    solver publishing only its own two members. A dispatcher that wrongly routed the arm to
     //    the iterative solve would still reach (35, 75), so the key set is asserted beside it.
-    const armRotations = at("walk/arm-solve")?.values.rotations as Record<string, number>;
+    const walkArmSolvePatch = at("walk/arm-solve");
+    if (walkArmSolvePatch?.status !== "ready")
+      throw new Error(`walk/arm-solve is ${walkArmSolvePatch?.status ?? "absent"}, not ready.`);
+    const armRotations = walkArmSolvePatch.values.rotations as Record<string, number>;
     expect(Object.keys(armRotations).sort()).toEqual(["walk/forearm", "walk/upper-arm"]);
-    expect(at("walk/forearm")?.values.x).toBeCloseTo(35, 1);
-    expect(at("walk/forearm")?.values.y).toBeCloseTo(75, 1);
+    const walkForearmPatch = at("walk/forearm");
+    if (walkForearmPatch?.status !== "ready")
+      throw new Error(`walk/forearm is ${walkForearmPatch?.status ?? "absent"}, not ready.`);
+    expect(walkForearmPatch.values.x).toBeCloseTo(35, 1);
+    expect(walkForearmPatch.values.y).toBeCloseTo(75, 1);
     expect(at("walk/hand")?.status).toBe("ready");
 
     handle.dispose();

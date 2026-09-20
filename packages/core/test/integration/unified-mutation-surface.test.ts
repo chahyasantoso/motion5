@@ -60,7 +60,10 @@ describe("unified runtime mutation surface (W5)", () => {
     expect(first.live).toBe(false);
     expect(() => first.remove()).toThrow(StaleTrackHandleError);
     handle.seek(second.id, 1);
-    expect(handle.get(second.id)?.values).toEqual({ x: 200 });
+    const idPatch = handle.get(second.id);
+    if (idPatch?.status !== "ready")
+      throw new Error(`idPatch is ${idPatch?.status ?? "absent"}, not ready.`);
+    expect(idPatch.values).toEqual({ x: 200 });
     expect(second.live).toBe(true);
     second.remove();
     handle.dispose();
@@ -74,7 +77,10 @@ describe("unified runtime mutation surface (W5)", () => {
     const beforeRevision = handle.get(handleForTrack.id)?.revision ?? 0;
     handleForTrack.replace(track("arm", 0, 250));
     handle.seek(handleForTrack.id, 1);
-    expect(handle.get(handleForTrack.id)?.values).toEqual({ x: 250 });
+    const idPatch2 = handle.get(handleForTrack.id);
+    if (idPatch2?.status !== "ready")
+      throw new Error(`idPatch2 is ${idPatch2?.status ?? "absent"}, not ready.`);
+    expect(idPatch2.values).toEqual({ x: 250 });
     expect(handle.get(handleForTrack.id)?.revision).toBeGreaterThan(beforeRevision);
     expect(seen).not.toContain("destroyed");
     handleForTrack.remove();

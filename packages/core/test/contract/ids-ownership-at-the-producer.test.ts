@@ -23,9 +23,9 @@ import { code } from "../helpers/source-region";
  * `contract/rule.ts` and never redefined, so an alias of the constructor resolves to the same type
  * and stops compiling in the same commit the registry's shape moves in: the restatement bought reader
  * locality and no guarantee, and three duplicate declarations plus three cases is a steep price for
- * reader locality. All three are import aliases of the one constructor now, which is the form
- * `contract/validate-v5.ts` already binds it in as `issue`. What is left below is the constructor and
- * the one producer that is not a forward.
+ * reader locality. All three call the constructor directly now, the same form `contract/validate-v5.ts`
+ * already called it in once its own `issue` alias was collapsed the same way. What is left below is the
+ * constructor and the one producer that is not a forward.
  *
  * No type can observe itself and this suite cannot run `tsc`, so the claim is read off the
  * declarations as text. That is the shape `RA-78` established for a subject with no run-time form: a

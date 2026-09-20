@@ -329,8 +329,14 @@ describe("a host that cannot receive a diagnostic cannot reroute the runtime", (
     // Swallowed rather than aggregated, and retained where the runtime already retains it.
     expect(runtime.lastFlushError?.ruleId).toBe("scheduler-failure");
     expect(runtime.lastFlushError?.message).toMatch(/cancellation failed/);
-    expect(runtime.registry.get("caption/label")?.values.node).toBe("caption/label");
-    expect(runtime.registry.get("hero/arm")?.values.node).toBe("hero/arm");
+    const captionLabelPatch = runtime.registry.get("caption/label");
+    if (captionLabelPatch?.status !== "ready")
+      throw new Error(`caption/label is ${captionLabelPatch?.status ?? "absent"}, not ready.`);
+    expect(captionLabelPatch.values.node).toBe("caption/label");
+    const heroArmPatch = runtime.registry.get("hero/arm");
+    if (heroArmPatch?.status !== "ready")
+      throw new Error(`hero/arm is ${heroArmPatch?.status ?? "absent"}, not ready.`);
+    expect(heroArmPatch.values.node).toBe("hero/arm");
     expect(runtime.pendingSeeds).toEqual([]);
     runtime.dispose();
   });

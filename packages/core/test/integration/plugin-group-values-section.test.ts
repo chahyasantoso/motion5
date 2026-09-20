@@ -154,7 +154,9 @@ describe("an explicit values section inside plugin groups", () => {
     const batch = handle.seek("hero/arm", 0.5);
     const patch = batch.patches.find(({ nodeId }) => nodeId === "hero/arm");
     expect(patch?.status).toBe("ready");
-    expect(patch?.values).toEqual({ length: 15 });
+    if (patch?.status !== "ready")
+      throw new Error(`patch is ${patch?.status ?? "absent"}, not ready.`);
+    expect(patch.values).toEqual({ length: 15 });
 
     // And the binding compiled to no property at all. `values` is the only compiled value domain
     // because it is the only section flattening reads.
@@ -305,12 +307,16 @@ describe("an explicit values section inside plugin groups", () => {
     const batch = handle.seek("walk/pelvis", 0.5);
     const thigh = batch.patches.find(({ nodeId }) => nodeId === "walk/thigh");
     const shin = batch.patches.find(({ nodeId }) => nodeId === "walk/shin");
-    expect(thigh?.values.x).toBeCloseTo(135.355, 2);
-    expect(thigh?.values.y).toBeCloseTo(135.355, 2);
-    expect(thigh?.values.rotation).toBeCloseTo(45, 12);
-    expect(shin?.values.x).toBeCloseTo(173.992, 2);
-    expect(shin?.values.y).toBeCloseTo(145.708, 2);
-    expect(shin?.values.rotation).toBeCloseTo(15, 12);
+    if (thigh?.status !== "ready")
+      throw new Error(`thigh is ${thigh?.status ?? "absent"}, not ready.`);
+    expect(thigh.values.x).toBeCloseTo(135.355, 2);
+    expect(thigh.values.y).toBeCloseTo(135.355, 2);
+    expect(thigh.values.rotation).toBeCloseTo(45, 12);
+    if (shin?.status !== "ready")
+      throw new Error(`shin is ${shin?.status ?? "absent"}, not ready.`);
+    expect(shin.values.x).toBeCloseTo(173.992, 2);
+    expect(shin.values.y).toBeCloseTo(145.708, 2);
+    expect(shin.values.rotation).toBeCloseTo(15, 12);
     handle.dispose();
   });
 });

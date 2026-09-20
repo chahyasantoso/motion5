@@ -33,9 +33,10 @@ function publishBlocked(
   diagnostics: readonly Diagnostic[],
 ): Patch | undefined {
   registry.beginBatch(tick, [NODE_ID]);
+  // No `sourceProgress`: a refusal carries no progress, because the publisher only ever passed a
+  // placeholder zero there and the registry overwrote it. See ADR-098.
   const patch = registry.publish({
     nodeId: NODE_ID,
-    sourceProgress: 0,
     status: "blocked",
     diagnostics,
   });
