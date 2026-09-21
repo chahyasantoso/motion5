@@ -8,6 +8,7 @@ import {
   extractExportNames,
   importsBoundary,
   importsCoreInternals,
+  importsDomainSink,
   importsRenderer,
   importsTestingEntrypoint,
   scan,
@@ -125,6 +126,31 @@ describe("boundary scan predicates", () => {
   it("fails on a consumer reaching into core source internals", () => {
     expect(importsCoreInternals(consumerInternalViolationFixture)).toBe(true);
     expect(importsBoundary(consumerInternalViolationFixture)).toBe(false);
+  });
+
+  it("extracts every retired sink spelling from its module specifier", () => {
+    for (const source of [
+      'import { unreachable } from "../domain/exhaustive.js";',
+      'export { unreachable } from "../../domain/exhaustive.mjs";',
+      'const load = import("../domain/exhaustive.ts");',
+      'const load = require("..\\domain\\exhaustive");',
+    ])
+      expect(importsDomainSink(source)).toBe(true);
+  });
+
+  it("keeps legitimate domain imports, the new sink, aliases, and longer names clean", () => {
+    for (const source of [
+      'import { outcome } from "../domain/outcome";',
+      'import { outcome } from "../domain/outcome.ts";',
+      'import { compiler } from "../../domain/keyframe-compiler";',
+      'import type { Plugin } from "../../domain/plugins";',
+      'import type { Plugin } from "../../domain/plugins.js";',
+      'import { exhaustive } from "../lang/exhaustive";',
+      'import { helpers } from "../domain/exhaustive-helpers";',
+      'import { sink } from "@motion5/core/domain/exhaustive";',
+      "const load = import(path);",
+    ])
+      expect(importsDomainSink(source)).toBe(false);
   });
 
   it("extracts exports outside the public allow list", () => {

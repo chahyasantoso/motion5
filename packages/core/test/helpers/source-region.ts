@@ -101,8 +101,9 @@ export interface SeamResultOptions {
  * infer that an unannotated value such as `answer` has type `LiveWriteResult`. The analysis follows
  * identifier aliases, object destructuring, and direct helper calls whose arguments carry a result;
  * it also follows aliases of the named decoder so `const decode = liveWrite; decode(answer)` is not
- * hidden by a direct call-site count. It deliberately does not claim to resolve computed names,
- * dynamic calls, shadowing across arbitrary scopes, or data flow that leaves the supplied modules.
+ * hidden by a direct call-site count. Its function, taint, and decoder maps are keyed by identifier
+ * text rather than lexical scope, as `docs/TESTING-STRATEGY.md` disclaims. It does not resolve
+ * computed names, dynamic calls, or data flow that leaves the supplied modules.
  */
 export function seamResultReads(
   modules: readonly SeamResultModule[],
@@ -203,6 +204,11 @@ export function seamResultReads(
       return expressionName(node);
     }
 
+    function decoderReference(node: ts.Expression): string | undefined {
+      if (ts.isCallExpression(node)) return undefined;
+      return callTarget(node);
+    }
+
     function visitDeclarations(node: ts.Node): void {
       if (isFunctionLikeDeclaration(node)) {
         const name = functionName(node);
@@ -210,7 +216,7 @@ export function seamResultReads(
       }
       if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name)) {
         const value = node.initializer;
-        if (value !== undefined && callTarget(value) === options.decoderName)
+        if (value !== undefined && decoderReference(value) === options.decoderName)
           decoderAliases.add(node.name.text);
         if (value !== undefined && isTainted(value)) tainted.add(node.name.text);
       }
@@ -232,7 +238,7 @@ export function seamResultReads(
           const implementation = called === undefined ? undefined : functions.get(called);
           if (implementation !== undefined && returnsTainted(implementation)) bindPattern(target);
           if (ts.isIdentifier(target)) {
-            const called = callTarget(initializer);
+            const called = decoderReference(initializer);
             if (called !== undefined && decoderAliases.has(called)) decoderAliases.add(target.text);
           }
         }

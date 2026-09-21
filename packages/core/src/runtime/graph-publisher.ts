@@ -131,8 +131,8 @@ function edgesByRole<Role extends GraphEdge["role"]>(
   role: Role,
 ): readonly EdgeWithRole<Role>[] {
   return node.edges
-    .filter((edge) => edgeRole(edge) === role)
-    .sort(compareEdges) as unknown as readonly EdgeWithRole<Role>[];
+    .filter((edge): edge is EdgeWithRole<Role> => edgeRole(edge) === role)
+    .sort(compareEdges);
 }
 /**
  * The plugin whose slots a solver's members belong under, read off the edge that made it a solver.
@@ -144,9 +144,8 @@ function edgesByRole<Role extends GraphEdge["role"]>(
  * names the scope. See ADR-051.
  */
 function solvingPluginOf(node: PublisherNode): string | undefined {
-  return edgesByRole(node, "input")
-    .filter((edge) => edge.requirement?.slot === "root")
-    .sort(compareEdges)[0]?.requirement?.plugin;
+  const rootEdge = edgesByRole(node, "input").find((edge) => edge.requirement.slot === "root");
+  return rootEdge?.requirement.plugin;
 }
 function isRendererNeutral(value: unknown, seen = new WeakSet<object>()): boolean {
   if (value === null) return true;

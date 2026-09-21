@@ -7,6 +7,7 @@ import {
 } from "../../../src/runtime/graph-publisher";
 import { PatchRegistry } from "../../../src/runtime/patch-registry";
 import { slotOf } from "../../helpers/requirement-inputs";
+import { code, member } from "../../helpers/source-region";
 
 function node(
   id: string,
@@ -36,7 +37,19 @@ function pair(source: PublisherNode, observer: PublisherNode): PublisherSnapshot
 // The successor of the flat-input suite. Its first case survives here as delivery under a plugin
 // and a slot; the pick-projection and collision cases retire with the primitives they proved,
 // because a slot is the scope and there is no key left to rename or to collide with. See ADR-047.
+const PUBLISHER_SOURCE = new URL("../../../src/runtime/graph-publisher.ts", import.meta.url);
+
 describe("requirement-scoped input observations", () => {
+  it("narrows input edges through the exhaustive role classifier", () => {
+    const source = code(PUBLISHER_SOURCE);
+    const edgesByRole = member(source, "function edgesByRole<", "");
+
+    expect(edgesByRole).toContain(
+      ".filter((edge): edge is EdgeWithRole<Role> => edgeRole(edge) === role)",
+    );
+    expect(edgesByRole).not.toContain("as unknown as readonly EdgeWithRole<Role>[]");
+  });
+
   it("delivers the source record whole under its plugin and slot", () => {
     const registry = new PatchRegistry();
     const publisher = new GraphPublisher(registry);
