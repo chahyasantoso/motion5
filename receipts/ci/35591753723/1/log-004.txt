@@ -1,0 +1,75 @@
+1:02:13.1507526Z  ^[[32m✓^[[39m packages/core/test/unit/domain/lifecycle.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-21T11:02:13.3257269Z  ^[[32m✓^[[39m packages/core/test/unit/scripts/acceptance-scan.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 25^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-21T11:02:13.3717544Z  ^[[32m✓^[[39m packages/core/test/unit/graph/ids.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-21T11:02:13.4297203Z  ^[[32m✓^[[39m packages/core/test/unit/engine/motion-entry-shape.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-21T11:02:13.5286402Z  ^[[32m✓^[[39m packages/core/test/unit/domain/values.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-21T11:02:13.6042017Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/patch-registry-retention.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-21T11:02:13.6406010Z  ^[[32m✓^[[39m packages/core/test/unit/adapters/scroll-trigger-range.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-21T11:02:13.7452775Z  ^[[32m✓^[[39m packages/core/test/integration/dom-transform-removal.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-21T11:02:13.8097128Z  ^[[32m✓^[[39m packages/react/test/patch-store.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-21T11:02:13.8648827Z  ^[[32m✓^[[39m packages/core/test/unit/scripts/s7-recovery-audit.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-21T11:02:14.0377391Z  ^[[32m✓^[[39m packages/core/test/integration/runtime-motion-trigger-validation.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 14^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-21T11:02:14.0927461Z  ^[[32m✓^[[39m packages/core/test/contract/gsap-multi-stop.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-21T11:02:14.1028031Z  ^[[32m✓^[[39m packages/core/test/integration/plugin-use-contract.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-21T11:02:14.2999748Z  ^[[32m✓^[[39m packages/core/test/integration/golden-roundtrip.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 17^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-21T11:02:14.3286107Z  ^[[32m✓^[[39m packages/react/test/public-hook.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 4^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-21T11:02:14.3307009Z  ^[[32m✓^[[39m packages/core/test/unit/placeholder.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 5^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-21T11:02:14.3401070Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-21T11:02:14.3402389Z ^[[31m⎯⎯⎯⎯⎯⎯^[[39m^[[1m^[[41m Failed Suites 1 ^[[49m^[[22m^[[31m⎯⎯⎯⎯⎯⎯⎯^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-21T11:02:14.3403063Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-21T11:02:14.3406658Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/scripts/checkpoint-policy.test.ts^[[2m [ packages/core/test/unit/scripts/checkpoint-policy.test.ts ]^[[22m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-21T11:02:14.3411839Z ^[[31m^[[1mError^[[22m: Transform failed with 1 error:
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-21T11:02:14.3412212Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-21T11:02:14.3412546Z ^[[31m[PARSE_ERROR] ^[[0mExpected `,` or `)` but found `Identifier`
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-21T11:02:14.3413520Z      ^[[38;5;246m╭^[[0m^[[38;5;246m─^[[0m^[[38;5;246m[^[[0m packages/core/test/unit/scripts/checkpoint-policy.test.ts:211:18 ^[[38;5;246m]^[[0m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-21T11:02:14.3414770Z      ^[[38;5;246m│^[[0m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-21T11:02:14.3418079Z  ^[[38;5;246m202 │^[[0m ^[[38;5;249m ^[[0m^[[38;5;249m ^[[0m^[[38;5;249m ^[[0m^[[38;5;249m ^[[0m^[[38;5;249ms^[[0m^[[38;5;249mc^[[0m^[[38;5;249me^[[0m^[[38;5;249mn^[[0m^[[38;5;249ma^[[0m^[[38;5;249mr^[[0m^[[38;5;249mi^[[0m^[[38;5;249mo^[[0m(^[[38;5;249mS^[[0m^[[38;5;249mt^[[0m^[[38;5;249mr^[[0m^[[38;5;249mi^[[0m^[[38;5;249mn^[[0m^[[38;5;249mg^[[0m^[[38;5;249m.^[[0m^[[38;5;249mr^[[0m^[[38;5;249ma^[[0m^[[38;5;249mw^[[0m^[[38;5;249m`^[[0m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-21T11:02:14.3419442Z  ^[[38;5;240m    │^[[0m             ┬  
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-21T11:02:14.3420069Z  ^[[38;5;240m    │^[[0m             ╰── Opened here
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-21T11:02:14.3420858Z  ^[[38;5;240m    │^[[0m 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-21T11:02:14.3425024Z  ^[[38;5;246m211 │^[[0m ^[[38;5;249m ^[[0m^[[38;5;249m ^[[0m^[[38;5;249m ^[[0m^[[38;5;249m ^[[0m^[[38;5;249m ^[[0m^[[38;5;249m ^[[0m^[[38;5;249m/^[[0m^[[38;5;249m/^[[0m^[[38;5;249m ^[[0m^[[38;5;249ms^[[0m^[[38;5;249mh^[[0m^[[38;5;249ma^[[0m^[[38;5;249mp^[[0m^[[38;5;249me^[[0m^[[38;5;249ms^[[0m^[[38;5;249m ^[[0m^[[38;5;249m`^[[0mgit^[[38;5;249m ^[[0m^[[38;5;249md^[[0m^[[38;5;249mi^[[0m^[[38;5;249mf^[[0m^[[38;5;249mf^[[0m^[[38;5;249m`^[[0m^[[38;5;249m ^[[0m^[[38;5;249mg^[[0m^[[38;5;249me^[[0m^[[38;5;249mn^[[0m^[[38;5;249mu^[[0m^[[38;5;249mi^[[0m^[[38;5;249mn^[[0m^[[38;5;249me^[[0m^[[38;5;249ml^[[0m^[[38;5;249my^[[0m^[[38;5;249m ^[[0m^[[38;5;249me^[[0m^[[38;5;249mm^[[0m^[[38;5;249mi^[[0m^[[38;5;249mt^[[0m^[[38;5;249ms^[[0m^[[38;5;249m,^[[0m^[[38;5;249m ^[[0m^[[38;5;249ma^[[0m^[[38;5;249mn^[[0m^[[38;5;249md^[[0m^[[38;5;249m ^[[0m^[[38;5;249ma^[[0m^[[38;5;249ml^[[0m^[[38;5;249ml^[[0m^[[38;5;249m ^[[0m^[[38;5;249mt^[[0m^[[38;5;249mh^[[0m^[[38;5;249mr^[[0m^[[38;5;249me^[[0m^[[38;5;249me^[[0m^[[38;5;249m ^[[0m^[[38;5;249ms^[[0m^[[38;5;249mt^[[0m^[[38;5;249ma^[[0m^[[38;5;249my^[[0m^[[38;5;249m ^[[0m^[[38;5;249ma^[[0m^[[38;5;249mc^[[0m^[[38;5;249mc^[[0m^[[38;5;249me^[[0m^[[38;5;249mp^[[0m^[[38;5;249mt^[[0m^[[38;5;249me^[[0m^[[38;5;249md^[[0m^[[38;5;249m.^[[0m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-21T11:02:14.3430530Z  ^[[38;5;240m    │^[[0m                  ─┬─  
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-21T11:02:14.3431624Z  ^[[38;5;240m    │^[[0m                   ╰─── `,` or `)` expected
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-21T11:02:14.3432355Z ^[[38;5;246m─────╯^[[0m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-21T11:02:14.3432785Z ^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-21T11:02:14.3433249Z   Plugin: ^[[35mvite:oxc^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-21T11:02:14.3434306Z   File: ^[[36m/home/runner/work/motion5/motion5/packages/core/test/unit/scripts/checkpoint-policy.test.ts^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-21T11:02:14.3435774Z ^[[90m ^[[2m❯^[[22m transformWithOxc node_modules/vite/dist/node/chunks/node.js:^[[2m4097:19^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-21T11:02:14.3436720Z ^[[90m ^[[2m❯^[[22m TransformPluginContext.transform node_modules/vite/dist/node/chunks/node.js:^[[2m4168:26^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-21T11:02:14.3437753Z ^[[90m ^[[2m❯^[[22m EnvironmentPluginContainer.transform node_modules/vite/dist/node/chunks/node.js:^[[2m30851:51^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-21T11:02:14.3439106Z ^[[90m ^[[2m❯^[[22m loadAndTransform node_modules/vite/dist/node/chunks/node.js:^[[2m20619:26^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-21T11:02:14.3439840Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-21T11:02:14.3440408Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-21T11:02:14.3440640Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-21T11:02:14.3440685Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-21T11:02:14.3441170Z ^[[2m Test Files ^[[22m ^[[1m^[[31m1 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m251 passed^[[39m^[[22m^[[90m (252)^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-21T11:02:14.3446453Z ^[[2m      Tests ^[[22m ^[[1m^[[32m1522 passed^[[39m^[[22m^[[90m (1522)^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-21T11:02:14.3447229Z ^[[2m   Start at ^[[22m 11:01:31
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-21T11:02:14.3451548Z ^[[2m   Duration ^[[22m 42.98s^[[2m (transform 3.73s, setup 1.68s, import 29.48s, tests 52.79s, environment 40ms)^[[22m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-21T11:02:14.3453003Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-21T11:02:14.4269896Z ##[error]Process completed with exit code 1.
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	﻿2026-09-21T11:02:14.4306282Z ##[group]Run node scripts/ci-evidence.mjs verify all
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-21T11:02:14.4306709Z ^[[36;1mnode scripts/ci-evidence.mjs verify all^[[0m
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-21T11:02:14.4342962Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-21T11:02:14.4343227Z env:
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-21T11:02:14.4343421Z   NODE_VERSION: 24
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-21T11:02:14.4343701Z   CI_EVIDENCE_DIR: /home/runner/work/_temp/ci-evidence
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-21T11:02:14.4344014Z ##[endgroup]
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-21T11:02:14.4741120Z ENOENT: no such file or directory, open '/home/runner/work/_temp/ci-evidence/inventory.json'
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-21T11:02:14.4788109Z ##[error]Process completed with exit code 1.
+end-to-end (node 24)	Require successful suite owner, including evidence verification	﻿2026-09-21T11:02:21.5210507Z ##[group]Run test "$SUITE_RESULT" = success
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-21T11:02:21.5211319Z ^[[36;1mtest "$SUITE_RESULT" = success^[[0m
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-21T11:02:21.5252149Z shell: /usr/bin/bash -e {0}
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-21T11:02:21.5253050Z env:
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-21T11:02:21.5253487Z   NODE_VERSION: 24
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-21T11:02:21.5253949Z   SUITE_RESULT: failure
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-21T11:02:21.5254417Z ##[endgroup]
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-21T11:02:21.5397186Z ##[error]Process completed with exit code 1.
+integration (node 24)	Require successful suite owner, including evidence verification	﻿2026-09-21T11:02:22.4482734Z ##[group]Run test "$SUITE_RESULT" = success
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-21T11:02:22.4483607Z ^[[36;1mtest "$SUITE_RESULT" = success^[[0m
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-21T11:02:22.4524680Z shell: /usr/bin/bash -e {0}
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-21T11:02:22.4525553Z env:
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-21T11:02:22.4526024Z   NODE_VERSION: 24
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-21T11:02:22.4526514Z   SUITE_RESULT: failure
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-21T11:02:22.4527016Z ##[endgroup]
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-21T11:02:22.4668081Z ##[error]Process completed with exit code 1.
