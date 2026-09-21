@@ -250,8 +250,11 @@ describe("the live-write seam's three outcomes are decoded by one owner", () => 
     expect(runtime).toContain("switch (written.kind)");
     expect(runtime).toContain('case "needs-rebuild":');
     expect(callSites(runtime, "writtenProgress")).toHaveLength(2);
-    // The boolean the optional wrapped is named by the decoder and by nothing else.
-    expect(runtime.split(".patched")).toHaveLength(1);
-    expect(code(RESULTS_SOURCE).split(".patched")).toHaveLength(2);
+    // The patch decision that optional wraps is read by the decoder and by nothing else. Phase 7b
+    // retired the boolean this pair used to name, so the subject is the union that replaced it: the
+    // decoder asks the seam's discriminant once, and `.patch` subsumes `.patched`, so the runtime
+    // naming either spelling still fails here.
+    expect(runtime.split(".patch")).toHaveLength(1);
+    expect(code(RESULTS_SOURCE).split("result.patch.kind")).toHaveLength(2);
   });
 });
