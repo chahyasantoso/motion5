@@ -3,7 +3,7 @@ name: Archive CI logs
 # Read from the default branch. A PR that changes this file is not a rollout.
 on:
   workflow_run:
-    workflows: ["CI", "Recovery audit", "AI edit", "AI checkpoint"]
+    workflows: ["CI", "Recovery audit", "AI edit"]
     types: [completed]
   workflow_dispatch:
     inputs:
@@ -65,7 +65,6 @@ jobs:
           workflow="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$REPORT_RUN_ID/attempts/$REPORT_RUN_ATTEMPT" --jq '.path')"
           case "$workflow" in
             .github/workflows/ai-edit.yml) echo "kind=ai-edit" >> "$GITHUB_OUTPUT" ;;
-            .github/workflows/ai-checkpoint.yml) echo "kind=checkpoint" >> "$GITHUB_OUTPUT" ;;
             .github/workflows/ci.yml|.github/workflows/recovery-audit.yml) echo "kind=ci" >> "$GITHUB_OUTPUT" ;;
             *) echo "Unrecognized workflow"; exit 1 ;;
           esac
@@ -86,18 +85,6 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: node scripts/automation-publish.mjs recover
-      - name: Independently validate and publish a declared patch set
-        id: publish-checkpoint
-        if: steps.resolve.outputs.kind == 'checkpoint'
-        env:
-          GH_TOKEN: ${{ github.token }}
-          PUBLISH_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
-        run: node scripts/automation-checkpoint.mjs publish
-      - name: Recover a failed checkpoint publication without replaying a patch
-        if: failure() && steps.resolve.outputs.kind == 'checkpoint'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: node scripts/automation-checkpoint.mjs recover
 
   fallback:
     name: independent reporting fallback
@@ -134,7 +121,6 @@ jobs:
           workflow="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$REPORT_RUN_ID/attempts/$REPORT_RUN_ATTEMPT" --jq '.path')"
           case "$workflow" in
             .github/workflows/ai-edit.yml) node scripts/automation-publish.mjs recover ;;
-            .github/workflows/ai-checkpoint.yml) node scripts/automation-checkpoint.mjs recover ;;
             .github/workflows/ci.yml|.github/workflows/recovery-audit.yml) node scripts/automation-report.mjs ;;
             *) echo "Unrecognized workflow"; exit 1 ;;
           esac
