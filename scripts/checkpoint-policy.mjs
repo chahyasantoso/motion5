@@ -23,6 +23,9 @@ const MAX_ALLOW = 10;
 const MAX_PATH_BYTES = 1024;
 const MAX_SUBJECT_BYTES = 120;
 const MAX_PATCH_BYTES = 1000000;
+// A patch is bounded to MAX_PATCH_BYTES, so no line number a conforming patch can reference exceeds
+// that byte count. The bound exists to keep a coordinate a real integer rather than Infinity.
+const MAX_HUNK_LINE = MAX_PATCH_BYTES;
 const REFUSED = [
   ["GIT binary patch", "binary patch"],
   ["Binary files ", "binary file summary"],
@@ -240,8 +243,19 @@ function readHunks(lines, start) {
   while (index < lines.length && lines[index].startsWith("@@")) {
     const header = HUNK_HEADER.exec(lines[index]);
     ensure(header !== null, `malformed hunk header at patch line ${index + 1}`);
-    const before = header[2] === undefined ? 1 : Number(header[2]);
-    const after = header[4] === undefined ? 1 : Number(header[4]);
+    // A coordinate is a line number, so it is a bounded integer. `Number()` over a long enough digit
+    // run yields Infinity, which compares true against every ordering check below and then survives
+    // as a range end, so the bound is stated here rather than inferred from the body counts.
+    const coordinate = (value, what) => {
+      const number = Number(value);
+      ensure(
+        Number.isSafeInteger(number) && number <= MAX_HUNK_LINE,
+        `a hunk at patch line ${index + 1} declares an out-of-range ${what}`,
+      );
+      return number;
+    };
+    const before = header[2] === undefined ? 1 : coordinate(header[2], "line count");
+    const after = header[4] === undefined ? 1 : coordinate(header[4], "line count");
     ensure(before + after > 0, `a hunk at patch line ${index + 1} changes nothing`);
     // Ordered and non-overlapping. This is a property of the bytes rather than of applying them, so
     // it is this layer's question by the rule ADR-100 sets: the parser owns shape, Git owns
@@ -250,8 +264,8 @@ function readHunks(lines, start) {
     // What it buys is failure locality: a hand-assembled or concatenated patch fails in a pure
     // function naming its patch line, rather than as an opaque apply error after a push and a queue
     // wait. The digest still adjudicates the result, so this is defence in depth and not the gate.
-    const from = Number(header[1]);
-    const to = Number(header[3]);
+    const from = coordinate(header[1], "start line");
+    const to = coordinate(header[3], "start line");
     ensure(
       from >= priorBefore && to >= priorAfter,
       `a hunk at patch line ${index + 1} overlaps or precedes its predecessor`,

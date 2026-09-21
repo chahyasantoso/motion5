@@ -43,7 +43,14 @@ const FILE_BYTES = 1500000;
 const RETAINED_BYTES = 1000000;
 const CHUNK_BYTES = 24000;
 const MAX_EVIDENCE_FILES = 55;
-const APPLY_FLAGS = ["--whitespace=nowarn", "-p1"];
+// `--unidiff-zero` is deliberate, and ADR-100 records the reasoning. Without it the parser and the
+// applier accept different sets: `parsePatch` blesses a zero-context hunk and `git apply` then
+// refuses it with `patch does not apply`, which is the late and opaque failure this design exists to
+// avoid. The flag does not loosen context checking; measured, a hunk whose context lines disagree
+// with the file and a zero-context deletion whose removed line disagrees are both still refused with
+// it. What it leaves unverified is a zero-context pure insertion, which carries neither context nor
+// a removed line, and that is exactly the placement question the declared post-image already owns.
+const APPLY_FLAGS = ["--unidiff-zero", "--whitespace=nowarn", "-p1"];
 const SPLIT = "split the work into more, smaller checkpoints";
 const ACTOR = {
   name: "github-actions[bot]",
@@ -234,6 +241,11 @@ export async function prepareCheckpoint(root, trustedSha, formatterRoot, output)
   ensure(stored.length === 1 && stored[0] === id, "Exactly one pending checkpoint is supported");
   const chain = checkpointChain(manifest);
   const patches = [];
+  // The aggregate retained-evidence bound is checked here rather than only in the publisher. It is a
+  // third bound alongside the per-patch and per-candidate ones, and preparation is the cheap place
+  // to refuse it: the publisher enforces the same limit independently when it retains the bytes on
+  // `ci-logs`, and discovering it there costs a push and a queue wait for a deterministic refusal.
+  let retained = 0;
   for (const patch of manifest.patches) {
     const file = `${directory}/${patch.file}`;
     const bytes = await regularText(root, file);
@@ -242,6 +254,8 @@ export async function prepareCheckpoint(root, trustedSha, formatterRoot, output)
       patchDigest(Buffer.from(bytes)) === patch.sha256,
       `${JSON.stringify(file)} does not match its declared SHA-256`,
     );
+    retained += Buffer.byteLength(bytes);
+    ensure(retained <= RETAINED_BYTES, `Retained patch bytes exceed the limit; ${SPLIT}`);
     reconcilePatch(parsePatch(bytes, manifest.allow), patch);
     patches.push({ ...patch, file });
   }
@@ -492,6 +506,11 @@ async function persistCheckpointEvidence(api, run, state, candidate) {
   let retained = 0;
   for (const patch of state.manifest.patches) {
     const source = `${state.directory}/${patch.file}`;
+    // Retained chunks are sanitised, so they are evidence of what was transported rather than a
+    // byte-exact copy: a token-shaped string or a control character is redacted out of them while
+    // `sha256` below still names the digest over the original bytes. A reader comparing a chunk
+    // against that digest must expect a mismatch, which is why the evidence says so in
+    // `retained_text`. The declared digest is the authority; a chunk is a reading aid.
     const text = safeText((await api.content(source, state.request_commit)).text);
     retained += Buffer.byteLength(text);
     ensure(retained <= RETAINED_BYTES, `Retained patch bytes exceed the limit; ${SPLIT}`);
@@ -530,6 +549,7 @@ async function persistCheckpointEvidence(api, run, state, candidate) {
       request_commit: state.request_commit,
       patches,
       formatted,
+      retained_text: "sanitised_not_byte_exact",
       required_ci: "not_replaced",
       next_action: "inspect_published_commits_and_required_ci",
     }) + "\n";
@@ -562,7 +582,7 @@ async function writeCommit(writer, input) {
  * Publication writes bytes, not hunks. The disposable checkout is gone, so there is nothing to
  * apply here and no candidate code runs anywhere near the writer credential.
  */
-function buildCommits(writer, run, state, candidate) {
+export function buildCommits(writer, run, state, candidate) {
   return async () => {
     const actor = { ...ACTOR, date: state.commit.committer.date };
     const set = `${SET_TRAILER}: ${state.checkpoint_digest}`;
@@ -705,7 +725,7 @@ export async function publishCheckpointRun(api, writer, run, trustedSha) {
 }
 
 /** Reconcile recorded intent against the immutable commit chain. A patch is never replayed. */
-async function reconcileCheckpointIntent(api, run, saved) {
+export async function reconcileCheckpointIntent(api, run, saved) {
   if (!saved.candidate_sha || !run.head_branch) return null;
   const head = await api.head(run.head_branch);
   if (head !== saved.candidate_sha) {

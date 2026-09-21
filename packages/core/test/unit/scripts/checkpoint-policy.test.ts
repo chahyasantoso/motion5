@@ -150,6 +150,62 @@ describe("a checkpoint manifest is protocol v1 or it is refused", () => {
       assert.throws(() => checkpointManifest(second), /must declare/);
     `);
   });
+
+  it("enforces the fifty-path bound per map and again over the union of a stack", () => {
+    // ADR-101 says this bound is enforced twice, once per image map and once over the whole stack.
+    // Both are measured here, because a per-map check alone would let twenty patches of forty-nine
+    // distinct paths through, and the union is what a publication has to write.
+    scenario(String.raw`
+      const path = (index) => "packages/core/src/f" + index + ".ts";
+      const spread = (count, start) => {
+        const pre = {};
+        const post = {};
+        for (let index = 0; index < count; index += 1) {
+          pre[path(start + index)] = B;
+          post[path(start + index)] = C;
+        }
+        return { pre, post };
+      };
+      // Fifty paths in one map is the boundary and is accepted.
+      const wide = manifest();
+      Object.assign(wide.patches[0], spread(50, 0));
+      const accepted = checkpointManifest(wide);
+      assert.equal(checkpointChain(accepted).paths.length, 50);
+      // Fifty-one in one map is refused by the per-map bound.
+      const tooWide = manifest();
+      Object.assign(tooWide.patches[0], spread(51, 0));
+      assert.throws(() => checkpointManifest(tooWide), /must name 1 through 50 paths/);
+      // Two patches of forty distinct paths each pass every per-map bound and still exceed the
+      // union, which is the case only checkpointChain can refuse.
+      const stacked = manifest();
+      Object.assign(stacked.patches[0], spread(40, 0));
+      stacked.patches.push({
+        seq: 2,
+        after: 1,
+        file: "002-second-owner.diff",
+        sha256: patchDigest(Buffer.from(patch + "\n")),
+        message: "test(core): a second owner",
+        ...spread(40, 100),
+      });
+      const valid = checkpointManifest(stacked);
+      assert.throws(() => checkpointChain(valid), /at most 50 paths/);
+      // Overlapping paths chain rather than accumulate, so the union stays inside the bound.
+      const overlapping = manifest();
+      Object.assign(overlapping.patches[0], spread(40, 0));
+      const again = spread(40, 0);
+      for (const key of Object.keys(again.pre)) again.pre[key] = C;
+      overlapping.patches.push({
+        seq: 2,
+        after: 1,
+        file: "002-second-owner.diff",
+        sha256: patchDigest(Buffer.from(patch + "\n")),
+        message: "test(core): a second owner",
+        pre: again.pre,
+        post: again.post,
+      });
+      assert.equal(checkpointChain(checkpointManifest(overlapping)).paths.length, 40);
+    `);
+  });
 });
 
 describe("a checkpoint patch is read by an allowlisted parser, never by git apply", () => {
@@ -233,6 +289,31 @@ describe("a checkpoint patch is read by an allowlisted parser, never by git appl
       ];
       for (const value of refused)
         assert.throws(() => parsePatch(value, allow), /overlaps or precedes/, value);
+    `);
+  });
+
+  it("requires a hunk coordinate to be a bounded integer rather than Infinity", () => {
+    // A long enough digit run becomes Infinity, which satisfies every ordering comparison and then
+    // survives as a range end, so a later hunk in the same section can never be refused behind it.
+    scenario(String.raw`
+      const allow = ["packages/core/src/"];
+      const head =
+        "diff --git a/" + ONE + " b/" + ONE + "\n" +
+        "--- a/" + ONE + "\n" +
+        "+++ b/" + ONE + "\n";
+      const body = "-export const one = 1;\n+export const one = 2;\n";
+      const enormous = "9".repeat(400);
+      const refused = [
+        head + "@@ -" + enormous + " +1 @@\n" + body,
+        head + "@@ -1 +" + enormous + " @@\n" + body,
+        head + "@@ -1," + enormous + " +1,1 @@\n" + body,
+        head + "@@ -1,1 +1," + enormous + " @@\n" + body,
+      ];
+      for (const value of refused)
+        assert.throws(() => parsePatch(value, allow), /out-of-range/, value);
+      // The boundary itself stays accepted, so this refuses nothing a real patch can reference.
+      const edge = head + "@@ -1000000 +1000000 @@\n" + body;
+      assert.deepEqual(parsePatch(edge, allow), [{ path: ONE, change: "modify" }]);
     `);
   });
 

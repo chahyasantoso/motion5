@@ -13,7 +13,8 @@
     "apps/*"
   ],
   "scripts": {
-    "check": "npm run format:check && npm run typecheck && npm test",
+    "check": "npm run scan:raw-templates && npm run format:check && npm run typecheck && npm test",
+    "scan:raw-templates": "node scripts/raw-template-scan.mjs",
     "format": "prettier . --write",
     "format:check": "prettier . --check",
     "typecheck": "tsc --noEmit -p tsconfig.json",
