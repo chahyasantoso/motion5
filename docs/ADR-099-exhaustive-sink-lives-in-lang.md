@@ -52,7 +52,7 @@ The internal entry gains one repository-only export. No public export, export-ma
 
 Adapters are now scanned, so the banned-compatibility-symbol rule reaches them for the first time. It is green today; a future adapter carrying one of those names fails where it previously would not have.
 
-Historical records keep the old path where they describe the placement that existed when they were written. ADR-093 governs that, and ADR-092, ADR-094 and ADR-098 are left as authored. This record is the superseding pointer for the placement paragraph, and nothing in those three is edited to agree with it.
+Historical records keep the old path where they describe the placement that existed when they were written. ADR-093 governs that, and the archived implementation plans under `docs/archived/` are left as authored. The three live records that carried the old path were corrected later, in #470: ADR-092 took the supersede annotation this record already claimed existed, plus its two real module paths, and ADR-094 and ADR-098 took one path correction each. The distinction is the one ADR-093 draws: an archived record is immutable and a live one is corrected where it states something false about today's tree. This record stays the superseding pointer for the placement paragraph, and ADR-092's decision text is annotated rather than rewritten.
 
 ## Evidence
 

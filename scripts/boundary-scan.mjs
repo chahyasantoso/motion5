@@ -146,8 +146,12 @@ const moduleSpecifier = /(?:\bfrom\s*|\bimport\s*(?:\(\s*)?|\brequire\s*\(\s*)["
  *
  * Module specifiers are extracted from static imports and re-exports, dynamic imports, and
  * `require` calls before the exact relative path is tested. The extraction sees `.js`, `.mjs`, and
- * `.ts` suffixes plus either path separator, but a configured alias or computed specifier remains
- * invisible. Five inward imports into domain survive: `contract/migrate-v4-to-v5.ts` and
+ * `.ts` suffixes plus either path separator. Three spellings stay invisible: a configured alias, a
+ * computed specifier, and a block comment interposed between the keyword and its specifier, because
+ * `moduleSpecifier` admits only whitespace there while an interposed comment is valid TypeScript in
+ * a static import, a dynamic import and a `require` call alike. Teaching it comments widens the set
+ * this gate refuses, so that is its own slice with its own cases rather than a correction here.
+ * Five inward imports into domain survive: `contract/migrate-v4-to-v5.ts` and
  * `contract/validate-v5.ts` reach `domain/outcome`, `adapters/interpolator/gsap.ts` reaches
  * `domain/keyframe-compiler`, and `adapters/dom.ts` plus `adapters/index.ts` reach `domain/plugins`
  * type-only. A predicate over every `domain/` import would therefore refuse the tree it is added
