@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "operation": "apply",
+  "expected_head": "79cbb50f1c699ebfb89f527e3b2eefb6127cadcc",
+  "expected_blobs": {
+    "packages/core/test/unit/runtime/live-write-decode.test.ts": "afbf7339aded64c71df898acf2d1a2bce90beb19"
+  },
+  "message": "fix(test): read the one-decoder backstop against the patch decision, not the retired boolean",
+  "edits": [
+    {
+      "path": "packages/core/test/unit/runtime/live-write-decode.test.ts",
+      "find": "    // The boolean the optional wrapped is named by the decoder and by nothing else.\n    expect(runtime.split(\".patched\")).toHaveLength(1);\n    expect(code(RESULTS_SOURCE).split(\".patched\")).toHaveLength(2);",
+      "replace": "    // The patch decision that optional wraps is read by the decoder and by nothing else. Phase 7b\n    // retired the boolean this pair used to name, so the subject is the union that replaced it: the\n    // decoder asks the seam's discriminant once, and `.patch` subsumes `.patched`, so the runtime\n    // naming either spelling still fails here.\n    expect(runtime.split(\".patch\")).toHaveLength(1);\n    expect(code(RESULTS_SOURCE).split(\"result.patch.kind\")).toHaveLength(2);"
+    }
+  ]
+}
