@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { fileURLToPath } from "node:url";
 import type { LiveValues } from "../../../src/contract/track-handle";
-import { unreachable } from "../../../src/domain/exhaustive";
+import { unreachable } from "../../../src/lang/exhaustive";
 import type { PluginComposer } from "../../../src/domain/plugins";
 import { LiveValueKeyError, Track, type LiveValueRefusal } from "../../../src/domain/track";
 import { createPlugin, resolveAuthored } from "../../helpers/resolved-plugins";

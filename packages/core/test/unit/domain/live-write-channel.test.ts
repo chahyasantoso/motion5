@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { fileURLToPath } from "node:url";
 import type { AuthoredLeaf } from "../../../src/contract/authored-leaf";
 import { liveWriteChannel, readAuthoredLeaf } from "../../../src/contract/authored-leaf";
-import { unreachable } from "../../../src/domain/exhaustive";
+import { unreachable } from "../../../src/lang/exhaustive";
 import { code, member } from "../../helpers/source-region";
 
 /**

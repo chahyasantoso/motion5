@@ -109,7 +109,12 @@ describe("ObservationDefinition.target is removed, not ignored", () => {
     const state = new ObservationState();
     state.addNode("hero/child");
     state.addNode("hero/root");
-    const live: GraphEdge = { observerId: "hero/child", sourceId: "hero/root", role: "input" };
+    const live: GraphEdge = {
+      observerId: "hero/child",
+      sourceId: "hero/root",
+      role: "input",
+      requirement: { plugin: "fk", slot: "base" },
+    };
     state.addEdge(live);
     const stray = { ...live, target: "pointer" } as GraphEdge;
     expect(state.hasEdge(stray)).toBe(true);

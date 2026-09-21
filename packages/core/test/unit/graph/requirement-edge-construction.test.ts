@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Diagnostic, PluginRequiresBinding } from "../../../src/contract/v5";
-import { collectTrack, resolveRequirementEdge } from "../../../src/graph/ir";
+import { collectTrack, edgeRequirement, resolveRequirementEdge } from "../../../src/graph/ir";
 
 const binding = (source: string): PluginRequiresBinding =>
   Object.freeze({ plugin: "fk", slot: "base", source, authoredPath: "fk.requires.base" });
@@ -24,7 +24,7 @@ describe("requirement edge construction", () => {
       requirement: { plugin: "fk", slot: "base" },
     });
     expect(Object.isFrozen(resolved.value)).toBe(true);
-    expect(Object.isFrozen(resolved.value.requirement)).toBe(true);
+    expect(Object.isFrozen(edgeRequirement(resolved.value))).toBe(true);
   });
 
   it("Z-2 reports requirement-source at the authored path and produces no edge", () => {

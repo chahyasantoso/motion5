@@ -1,5 +1,5 @@
 import type { LivePatch, PatchListener, PatchSource } from "@motion5/core/internal";
-import { liveOrAbsent } from "@motion5/core/internal";
+import { liveOrAbsent, unreachable } from "@motion5/core/internal";
 
 /**
  * Framework-neutral external store used by the React binding. React owns the hook and
@@ -8,10 +8,6 @@ import { liveOrAbsent } from "@motion5/core/internal";
 export interface PatchStore {
   getSnapshot(): LivePatch | undefined;
   subscribe(listener: PatchListener): () => void;
-}
-
-export function unhandledLifecycle(value: never): never {
-  throw new TypeError(`Unhandled variant: ${JSON.stringify(value)}`);
 }
 
 export type PatchStoreLifecycle =
@@ -63,7 +59,7 @@ export function createPatchStore(source: PatchSource, nodeId: string): PatchStor
         current.detach();
         return;
       default:
-        return unhandledLifecycle(current);
+        return unreachable(current);
     }
   }
 
@@ -78,7 +74,7 @@ export function createPatchStore(source: PatchSource, nodeId: string): PatchStor
         case "attached":
           return lifecycle.snapshot;
         default:
-          return unhandledLifecycle(lifecycle);
+          return unreachable(lifecycle);
       }
     },
     subscribe(listener) {

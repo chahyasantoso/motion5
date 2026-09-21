@@ -1,5 +1,6 @@
+import { unreachable } from "../lang/exhaustive";
 import { compareCodeUnits } from "./compare";
-import type { EdgeRequirement, GraphEdge } from "./ir";
+import type { GraphEdge } from "./ir";
 import { compareEdges, describeEdge, edgeKey } from "./ir";
 
 /** A read-only structural view of live state, used for evidence and inspection. */
@@ -24,14 +25,29 @@ type JournalEntry =
  * primitive it carried. See ADR-047.
  */
 function normalizeEdge(edge: GraphEdge): GraphEdge {
-  const base: {
-    observerId: string;
-    sourceId: string;
-    role: "input" | "output";
-    requirement?: EdgeRequirement;
-  } = { observerId: edge.observerId, sourceId: edge.sourceId, role: edge.role };
-  if (edge.requirement !== undefined) base.requirement = edge.requirement;
-  return Object.freeze(base) as GraphEdge;
+  switch (edge.role) {
+    case "input":
+      return edge.requirement === undefined
+        ? (Object.freeze({
+            observerId: edge.observerId,
+            sourceId: edge.sourceId,
+            role: "input",
+          }) as GraphEdge)
+        : Object.freeze({
+            observerId: edge.observerId,
+            sourceId: edge.sourceId,
+            role: "input",
+            requirement: edge.requirement,
+          });
+    case "output":
+      return Object.freeze({
+        observerId: edge.observerId,
+        sourceId: edge.sourceId,
+        role: "output",
+      });
+    default:
+      return unreachable(edge);
+  }
 }
 
 /**

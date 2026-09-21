@@ -1,5 +1,5 @@
 import type { MotionDefinition, TrackDefinition } from "../contract/v5";
-import { unreachable } from "../domain/exhaustive";
+import { unreachable } from "../lang/exhaustive";
 import { buildOwed, type ValueState } from "./value-state";
 /**
  * What one structural commit does, as two closed unions, and the one function that derives them.

@@ -96,7 +96,7 @@ import { GraphRuntime, type ComposeResolver } from "./graph-runtime";
 import type { GraphNode } from "../graph/ir";
 import type { MemberState } from "./graph-publisher";
 import type { GraphBuilder } from "../ports/graph-builder";
-import { unreachable } from "../domain/exhaustive";
+import { unreachable } from "../lang/exhaustive";
 
 interface FreeTrackEntry {
   readonly kind: "free";

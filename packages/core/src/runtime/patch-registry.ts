@@ -11,7 +11,7 @@ import type {
 } from "../contract/v5";
 import { equalValues } from "../domain/values";
 import { collect, report } from "../domain/completion";
-import { unreachable } from "../domain/exhaustive";
+import { unreachable } from "../lang/exhaustive";
 import {
   REGISTRY_IDLE,
   closed,

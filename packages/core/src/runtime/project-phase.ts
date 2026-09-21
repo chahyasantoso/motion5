@@ -1,4 +1,4 @@
-import { unreachable } from "../domain/exhaustive";
+import { unreachable } from "../lang/exhaustive";
 import { refuse, type RefusalShape } from "./refusal";
 
 /**

@@ -9,7 +9,7 @@ import {
   type Interpolator,
   type PatchKeysResult,
 } from "../ports/interpolator";
-import { unreachable } from "./exhaustive";
+import { unreachable } from "../lang/exhaustive";
 import type { PluginInputs, RequirementInputs, ResolvedPlugins } from "./plugins";
 
 export interface TrackSnapshot {

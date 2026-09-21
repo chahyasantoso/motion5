@@ -3,7 +3,7 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { patchRender, type PatchRender } from "../../src/contract/patch-render";
 import type { Patch } from "../../src/contract/v5";
-import { unreachable } from "../../src/domain/exhaustive";
+import { unreachable } from "../../src/lang/exhaustive";
 import { code, codeOnly, member } from "../helpers/source-region";
 
 const NODE_ID = "hero/arm";

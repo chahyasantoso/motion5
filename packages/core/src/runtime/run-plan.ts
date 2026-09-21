@@ -1,5 +1,5 @@
 import type { MotionDefinition, TrackDefinition } from "../contract/v5";
-import { unreachable } from "../domain/exhaustive";
+import { unreachable } from "../lang/exhaustive";
 import { rejectAfterRollback, runSteps } from "./report";
 import { invert, type CommitPlan, type Effect, type Settlement } from "./commit-plan";
 import type { StagedTrack } from "./project-ports";

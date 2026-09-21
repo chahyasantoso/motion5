@@ -4,7 +4,7 @@ import {
   readAuthoredLeaf,
   readCompilableStops,
 } from "../contract/authored-leaf";
-import { unreachable } from "./exhaustive";
+import { unreachable } from "../lang/exhaustive";
 import { diagnostic } from "../contract/diagnostics";
 import { validateKeyframes } from "../contract/validate-v5";
 import type {

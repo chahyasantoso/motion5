@@ -8,7 +8,7 @@ import {
 } from "./v5";
 import { SUPPORTED_TRIGGER_TYPES } from "./v5";
 import { readAuthoredLeaf } from "./authored-leaf";
-import { unreachable } from "../domain/exhaustive";
+import { unreachable } from "../lang/exhaustive";
 import {
   acceptedOutcome,
   refusedOutcome,

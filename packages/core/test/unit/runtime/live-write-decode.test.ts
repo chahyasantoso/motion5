@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { fileURLToPath } from "node:url";
 import type { ProjectDefinition, TrackDefinition } from "../../../src/contract/v5";
-import { unreachable } from "../../../src/domain/exhaustive";
+import { unreachable } from "../../../src/lang/exhaustive";
 import type { LiveWrite } from "../../../src/runtime/results";
 import { createManualClock } from "../../../src/ports/clock";
 import {
@@ -10,7 +10,7 @@ import {
   type StagedTrack,
 } from "../../../src/runtime/project-runtime";
 import { liveWrite, writtenProgress } from "../../../src/runtime/results";
-import { callSites, code } from "../../helpers/source-region";
+import { code, seamResultReads } from "../../helpers/source-region";
 
 /**
  * Issue #443, phase A: the live-write seam's answer, decoded once by the module that owns it.
@@ -241,20 +241,29 @@ describe("the live-write seam's three outcomes are decoded by one owner", () => 
   });
 
   it("leaves the encoding with one decoder", () => {
-    // Counts over source text, so they fail for a legal change as well as for the one they are
-    // about, and they cannot see a reader asking the same question through another spelling. The
-    // behavioural half is the four cases above; this is the cheap backstop beside them, in the
-    // shape `SH-7` already uses and addressed through the pinned parser rather than by a regex.
     const runtime = code(RUNTIME_SOURCE);
-    expect(callSites(runtime, "liveWrite")).toHaveLength(2);
-    expect(runtime).toContain("switch (written.kind)");
-    expect(runtime).toContain('case "needs-rebuild":');
-    expect(callSites(runtime, "writtenProgress")).toHaveLength(2);
-    // The patch decision that optional wraps is read by the decoder and by nothing else. Phase 7b
-    // retired the boolean this pair used to name, so the subject is the union that replaced it: the
-    // decoder asks the seam's discriminant once, and `.patch` subsumes `.patched`, so the runtime
-    // naming either spelling still fails here.
-    expect(runtime.split(".patch")).toHaveLength(1);
-    expect(code(RESULTS_SOURCE).split("result.patch.kind")).toHaveLength(2);
+    const results = code(RESULTS_SOURCE);
+    expect(
+      seamResultReads(
+        [
+          { filename: RUNTIME_SOURCE, source: runtime },
+          { filename: RESULTS_SOURCE, source: results },
+        ],
+        {
+          resultBindings: ["answer", "result"],
+          decoderName: "liveWrite",
+          ownerFilename: RESULTS_SOURCE,
+        },
+      ),
+    ).toEqual([]);
+
+    // The positive half names the owner and the whole closed switch, including its unreachable
+    // default. The helper's negative half is deliberately separate: an owner can decode legally,
+    // while any other module that reads the seam result is a finding.
+    expect(results).toContain("switch (result.patch.kind)");
+    expect(results).toContain('case "patched":');
+    expect(results).toContain('case "recompile":');
+    expect(results).toContain("default:");
+    expect(results).toContain("return unreachable(result.patch);");
   });
 });

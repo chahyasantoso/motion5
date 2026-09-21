@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { ObservationDefinition, ProjectDefinition } from "../../../src/contract/v5";
 import type { Track } from "../../../src/domain/track";
-import type { GraphEdge } from "../../../src/graph/ir";
+import { edgeRequirement, edgeRole, type GraphEdge } from "../../../src/graph/ir";
 import { buildGraphIR, edgeKey, resolveObservationEdge } from "../../../src/graph/ir";
 import type { PublisherNode } from "../../../src/runtime/graph-publisher";
 
@@ -118,7 +118,7 @@ describe("observes declares an output edge only", () => {
     const graph = buildGraphIR(MIXED).graph;
     const edges = graph?.nodes.flatMap(({ edges: owned }) => [...owned]) ?? [];
     const mismatched = edges.filter(
-      (edge) => (edge.role === "input") !== (edge.requirement !== undefined),
+      (edge) => (edgeRole(edge) === "input") !== (edgeRequirement(edge) !== undefined),
     );
     expect(edges).toHaveLength(2);
     expect(mismatched).toEqual([]);

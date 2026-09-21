@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { deriveDependants, type GraphIR } from "../../../src/graph/ir";
+import { deriveDependants, type GraphEdge, type GraphIR } from "../../../src/graph/ir";
 import {
   GraphPublisher,
   type PublisherNode,
@@ -89,7 +89,13 @@ describe("requirement-scoped input observations", () => {
     }));
     const observer = node(
       "hero/observer",
-      [{ observerId: "hero/observer", sourceId: "hero/source", role: "input" }],
+      [
+        {
+          observerId: "hero/observer",
+          sourceId: "hero/source",
+          role: "input",
+        } as unknown as GraphEdge,
+      ],
       () => ({ values: {}, sourceProgress: 0, sourceRevisions: {} }),
     );
 

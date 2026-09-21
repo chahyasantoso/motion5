@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { unreachable } from "../../src/domain/exhaustive";
+import { unreachable } from "../../src/lang/exhaustive";
 import {
   validateTrackDefinition,
   type TrackValidationResult,

@@ -5,7 +5,7 @@ import {
 } from "../contract/authored-leaf";
 import { diagnostic } from "../contract/diagnostics";
 import type { AuthoredStop, Diagnostic } from "../contract/v5";
-import { unreachable } from "./exhaustive";
+import { unreachable } from "../lang/exhaustive";
 
 export interface CompiledProperty {
   readonly key: string;

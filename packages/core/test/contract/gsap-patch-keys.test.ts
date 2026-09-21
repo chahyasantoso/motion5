@@ -11,7 +11,7 @@ import {
 import type { InterpolationTimeline, Interpolator } from "../../src/ports/interpolator";
 import { readNumber } from "../support/real-gsap";
 import { code, member } from "../helpers/source-region";
-import { unreachable } from "../../src/domain/exhaustive";
+import { unreachable } from "../../src/lang/exhaustive";
 import type { PatchKeysResult } from "../../src/ports/interpolator";
 
 /**

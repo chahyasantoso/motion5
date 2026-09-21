@@ -1,4 +1,4 @@
-import { unreachable } from "../domain/exhaustive";
+import { unreachable } from "../lang/exhaustive";
 
 /**
  * What a compiled Track carries beyond the definition it was built from, as a closed union.
