@@ -3,16 +3,22 @@
 import { createHash } from "node:crypto";
 import { spawnSync } from "node:child_process";
 import { pathToFileURL } from "node:url";
-import { diagnostics, receipt, render, summaryAllowed } from "./automation-receipt.mjs";
+import { diagnostics, KINDS, receipt, render, summaryAllowed } from "./automation-receipt.mjs";
 
 export function ensure(condition, message) {
   if (!condition) throw new Error(message);
 }
 export const SHA = /^[a-f0-9]{40}$/;
+// Each publishing receipt kind is prepared by exactly one candidate workflow, and the reporter
+// accepts a run only from a workflow named here.
+export const AUTOMATION_WORKFLOWS = Object.freeze({
+  "ai-edit": ".github/workflows/ai-edit.yml",
+  checkpoint: ".github/workflows/ai-checkpoint.yml",
+});
 const WORKFLOWS = new Set([
   ".github/workflows/ci.yml",
   ".github/workflows/recovery-audit.yml",
-  ".github/workflows/ai-edit.yml",
+  ...Object.values(AUTOMATION_WORKFLOWS),
 ]);
 export function verifyRun(run, repository, id, attempt) {
   ensure(run.id === id && run.run_attempt === attempt, "Run identity mismatch");
@@ -107,9 +113,8 @@ export async function retainedRunDiagnostics(api, run, value) {
 
 export async function reportPreparationFailure(api, run, value) {
   ensure(
-    run.path === ".github/workflows/ai-edit.yml" &&
+    AUTOMATION_WORKFLOWS[value.kind] === run.path &&
       run.conclusion !== "success" &&
-      value.kind === "ai-edit" &&
       value.publication === "not_attempted",
     "Not an unpublished preparation failure",
   );
@@ -159,13 +164,14 @@ export async function reportOutcome(value, ports, detail = null, scope = "defaul
   const details = detail
     ? `\n\nDiagnostics: **${detail.state}**. [Retained evidence](${diagnosticLink}).\n<pre>${excerpt}</pre>`
     : "";
+  const kind = KINDS[value.kind];
   const preparation =
-    value.kind === "ai-edit" && detail?.run_conclusion
+    kind.publishes && detail?.run_conclusion
       ? `\n\nPreparation: **${diagnostics({ exit_code: 0, text: detail.run_conclusion }).excerpt}**. Publication and required CI remain separate.`
       : "";
   const operationLink =
-    value.kind === "ai-edit" && value.publication === "confirmed"
-      ? `\n\n[Operation evidence directory](https://github.com/${value.repository}/tree/ci-logs/${value.evidence_path.replace("receipt.json", "")}). For preview or validation requests, publication only consumes the request; inspect operation.json and retained diff chunks, not CI success. Required PR CI is separate.`
+    kind.evidence && value.publication === "confirmed"
+      ? `\n\n[${kind.evidence.label}](https://github.com/${value.repository}/tree/ci-logs/${value.evidence_path.replace("receipt.json", "")}). ${kind.evidence.note}`
       : "";
   const body = `${prefix}${head}:${value.run_id}:${value.run_attempt} -->\n${projection}${preparation}${details}${operationLink}`;
   await ports.writeComment(previous?.id ?? null, body);
@@ -303,7 +309,7 @@ export class GitHub {
     ensure(entries.length > 0 && entries.length <= 60, "Invalid evidence file count");
     for (const [path, content] of entries) {
       ensure(
-        /^receipts\/(?:ci|ai-edit)\/[1-9]\d*\/[1-9]\d*\/(?:(?:receipt|intent|diagnostics|manifest|operation)\.json|(?:log|diff)-\d{3}\.txt)$/.test(
+        /^receipts\/(?:ci|ai-edit|checkpoint)\/[1-9]\d*\/[1-9]\d*\/(?:(?:receipt|intent|diagnostics|manifest|operation)\.json|(?:log|diff)-\d{3}\.txt)$/.test(
           path,
         ),
         "Invalid evidence destination",
@@ -443,7 +449,10 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
       Number(process.env.REPORT_RUN_ID),
       Number(process.env.REPORT_RUN_ATTEMPT),
     );
-    ensure(run.path !== ".github/workflows/ai-edit.yml", "AI edits use the publication adapter");
+    ensure(
+      !Object.values(AUTOMATION_WORKFLOWS).includes(run.path),
+      "Automation candidates use their own publication adapter",
+    );
     console.log(JSON.stringify(await reportCompletedRun(api, run, process.env.TRUSTED_SHA)));
   } catch (error) {
     console.error(error.message);
