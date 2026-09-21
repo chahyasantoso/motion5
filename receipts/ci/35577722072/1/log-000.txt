@@ -1,0 +1,31 @@
+quality (node 24)	Run npm run format:check	﻿2026-09-21T08:24:47.6913676Z ##[group]Run npm run format:check
+quality (node 24)	Run npm run format:check	2026-09-21T08:24:47.6914064Z ^[[36;1mnpm run format:check^[[0m
+quality (node 24)	Run npm run format:check	2026-09-21T08:24:47.6935927Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Run npm run format:check	2026-09-21T08:24:47.6936275Z env:
+quality (node 24)	Run npm run format:check	2026-09-21T08:24:47.6936586Z   NODE_VERSION: 24
+quality (node 24)	Run npm run format:check	2026-09-21T08:24:47.6936904Z   CI_EVIDENCE_DIR: /home/runner/work/_temp/ci-evidence
+quality (node 24)	Run npm run format:check	2026-09-21T08:24:47.6937300Z ##[endgroup]
+quality (node 24)	Run npm run format:check	2026-09-21T08:24:47.7683281Z 
+quality (node 24)	Run npm run format:check	2026-09-21T08:24:47.7684141Z > motion5@0.0.0 format:check
+quality (node 24)	Run npm run format:check	2026-09-21T08:24:47.7685109Z > prettier . --check
+quality (node 24)	Run npm run format:check	2026-09-21T08:24:47.7685690Z 
+quality (node 24)	Run npm run format:check	2026-09-21T08:24:47.8403123Z Checking formatting...
+quality (node 24)	Run npm run format:check	2026-09-21T08:24:55.1752172Z [^[[33mwarn^[[39m] scripts/checkpoint-policy.mjs
+quality (node 24)	Run npm run format:check	2026-09-21T08:24:55.2320151Z [^[[33mwarn^[[39m] Code style issues found in the above file. Run Prettier with --write to fix.
+quality (node 24)	Run npm run format:check	2026-09-21T08:24:55.2658123Z ##[error]Process completed with exit code 1.
+integration (node 24)	Require successful suite owner, including evidence verification	﻿2026-09-21T08:26:01.4147664Z ##[group]Run test "$SUITE_RESULT" = success
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-21T08:26:01.4148575Z ^[[36;1mtest "$SUITE_RESULT" = success^[[0m
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-21T08:26:01.4174042Z shell: /usr/bin/bash -e {0}
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-21T08:26:01.4174866Z env:
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-21T08:26:01.4175336Z   NODE_VERSION: 24
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-21T08:26:01.4175875Z   SUITE_RESULT: failure
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-21T08:26:01.4176380Z ##[endgroup]
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-21T08:26:01.4283764Z ##[error]Process completed with exit code 1.
+end-to-end (node 24)	Require successful suite owner, including evidence verification	﻿2026-09-21T08:26:00.6249604Z ##[group]Run test "$SUITE_RESULT" = success
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-21T08:26:00.6250374Z ^[[36;1mtest "$SUITE_RESULT" = success^[[0m
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-21T08:26:00.6291307Z shell: /usr/bin/bash -e {0}
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-21T08:26:00.6292141Z env:
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-21T08:26:00.6292573Z   NODE_VERSION: 24
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-21T08:26:00.6293036Z   SUITE_RESULT: failure
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-21T08:26:00.6293501Z ##[endgroup]
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-21T08:26:00.6435713Z ##[error]Process completed with exit code 1.
