@@ -1,0 +1,32 @@
+diff --git a/docs/ADR-099-exhaustive-sink-lives-in-lang.md b/docs/ADR-099-exhaustive-sink-lives-in-lang.md
+index 18a3e17..dfd0991 100644
+--- a/docs/ADR-099-exhaustive-sink-lives-in-lang.md
++++ b/docs/ADR-099-exhaustive-sink-lives-in-lang.md
+@@ -52,7 +52,7 @@ The internal entry gains one repository-only export. No public export, export-ma
+ 
+ Adapters are now scanned, so the banned-compatibility-symbol rule reaches them for the first time. It is green today; a future adapter carrying one of those names fails where it previously would not have.
+ 
+-Historical records keep the old path where they describe the placement that existed when they were written. ADR-093 governs that, and ADR-092, ADR-094 and ADR-098 are left as authored. This record is the superseding pointer for the placement paragraph, and nothing in those three is edited to agree with it.
++Historical records keep the old path where they describe the placement that existed when they were written. ADR-093 governs that, and the archived implementation plans under `docs/archived/` are left as authored. The three live records that carried the old path were corrected later, in #470: ADR-092 took the supersede annotation this record already claimed existed, plus its two real module paths, and ADR-094 and ADR-098 took one path correction each. The distinction is the one ADR-093 draws: an archived record is immutable and a live one is corrected where it states something false about today's tree. This record stays the superseding pointer for the placement paragraph, and ADR-092's decision text is annotated rather than rewritten.
+ 
+ ## Evidence
+ 
+diff --git a/scripts/boundary-scan.mjs b/scripts/boundary-scan.mjs
+index 8fc00ae..7db21b9 100644
+--- a/scripts/boundary-scan.mjs
++++ b/scripts/boundary-scan.mjs
+@@ -146,8 +146,12 @@ const moduleSpecifier = /(?:\bfrom\s*|\bimport\s*(?:\(\s*)?|\brequire\s*\(\s*)["
+  *
+  * Module specifiers are extracted from static imports and re-exports, dynamic imports, and
+  * `require` calls before the exact relative path is tested. The extraction sees `.js`, `.mjs`, and
+- * `.ts` suffixes plus either path separator, but a configured alias or computed specifier remains
+- * invisible. Five inward imports into domain survive: `contract/migrate-v4-to-v5.ts` and
++ * `.ts` suffixes plus either path separator. Three spellings stay invisible: a configured alias, a
++ * computed specifier, and a block comment interposed between the keyword and its specifier, because
++ * `moduleSpecifier` admits only whitespace there while an interposed comment is valid TypeScript in
++ * a static import, a dynamic import and a `require` call alike. Teaching it comments widens the set
++ * this gate refuses, so that is its own slice with its own cases rather than a correction here.
++ * Five inward imports into domain survive: `contract/migrate-v4-to-v5.ts` and
+  * `contract/validate-v5.ts` reach `domain/outcome`, `adapters/interpolator/gsap.ts` reaches
+  * `domain/keyframe-compiler`, and `adapters/dom.ts` plus `adapters/index.ts` reach `domain/plugins`
+  * type-only. A predicate over every `domain/` import would therefore refuse the tree it is added
