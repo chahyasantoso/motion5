@@ -193,6 +193,44 @@ describe("a checkpoint patch is read by an allowlisted parser, never by git appl
     `);
   });
 
+  it("requires hunks to be ordered and non-overlapping, which is shape not applicability", () => {
+    // Added by the quality pass over this change rather than present in the first draft. Ordering
+    // is a property of the bytes, so it belongs to the parser by ADR-100's layering, and no
+    // applier this repository uses emits either shape: nothing a real `git diff` produces is
+    // refused here. What it buys is failure locality, a named patch line rather than an opaque
+    // apply error after a push and a queue wait.
+    scenario(String.raw`
+      const allow = ["packages/core/src/"];
+      const head =
+        "diff --git a/" + ONE + " b/" + ONE + "\n" +
+        "--- a/" + ONE + "\n" +
+        "+++ b/" + ONE + "\n";
+      const hunk = (from, to, body) => "@@ -" + from + " +" + to + " @@\n" + body;
+      const change = "-export const one = 1;\n+export const one = 2;\n";
+      // Separated, contiguous, and a zero-count insertion followed by a later modify: all three are
+      // shapes `git diff` genuinely emits, and all three stay accepted.
+      const accepted = [
+        head + hunk("1,1", "1,1", change) + hunk("9,1", "9,1", change),
+        head + hunk("1,2", "1,2", change + " const tail = 3;\n") + hunk("3,1", "3,1", change),
+        head + hunk("1,0", "2,1", "+const inserted = 0;\n") + hunk("4,1", "6,1", change),
+      ];
+      for (const value of accepted)
+        assert.deepEqual(parsePatch(value, allow), [{ path: ONE, change: "modify" }], value);
+      const refused = [
+        // The second hunk reaches back before the first on the old side.
+        head + hunk("9,1", "9,1", change) + hunk("2,1", "2,1", change),
+        // The second hunk overlaps the last line the first one already consumed.
+        head +
+          hunk("1,3", "1,3", change + " const b = 2;\n const c = 3;\n") +
+          hunk("3,1", "3,1", change),
+        // Ordered on the old side and backwards on the new side, so both sides are checked.
+        head + hunk("1,1", "5,1", change) + hunk("3,1", "2,1", change),
+      ];
+      for (const value of refused)
+        assert.throws(() => parsePatch(value, allow), /overlaps or precedes/, value);
+    `);
+  });
+
   it("requires the parsed patch and its manifest entry to agree on paths and on shape", () => {
     scenario(String.raw`
       const value = checkpointManifest(manifest());

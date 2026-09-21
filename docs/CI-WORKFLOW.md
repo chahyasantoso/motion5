@@ -34,13 +34,13 @@ These contexts intentionally depend on all quality evidence, including formattin
 
 ## Formatting and API-only contributions
 
-Formatting is read-only in CI. [FORMATTING.md](./FORMATTING.md) owns the pinned formatter and manual repair contract. Touched-file normalization in the gated AI-edit route is described in [AI-EDIT-WORKFLOW.md](./AI-EDIT-WORKFLOW.md); its availability depends on actual activation, not on a passing PR.
+Formatting is read-only in CI. [FORMATTING.md](./FORMATTING.md) owns the pinned formatter and manual repair contract. Touched-file normalization in the gated AI-edit route is described in [AI-EDIT-WORKFLOW.md](./AI-EDIT-WORKFLOW.md), and the checkpoint route's single pass over the surviving tip, in a commit of its own, is described in [AI-CHECKPOINT-WORKFLOW.md](./AI-CHECKPOINT-WORKFLOW.md). A published stack's intermediate commits are deliberately not formatter-clean, because `format:check` runs against the branch head. Availability of either route depends on actual activation, not on a passing PR.
 
 A contributor without the installed repository toolchain can submit direct API edits and use exact-head CI as verification. Do not claim local checks. The manual formatter requires workflow dispatch, which is not exposed by every connection. No temporary privileged formatter is introduced here.
 
 ## Reporting and deployment
 
-The slice 2 reporting implementation retains run-and-attempt receipts and bounded diagnostics on `ci-logs`, with bot-owned SHA-aware comments. [AI-EDIT-WORKFLOW.md](./AI-EDIT-WORKFLOW.md) owns its activation requirements. A workflow_run reporter is read from the default branch: an implementation PR or integration-branch merge does not deploy it.
+The slice 2 reporting implementation retains run-and-attempt receipts and bounded diagnostics on `ci-logs`, with bot-owned SHA-aware comments. The same reporter carries the `"AI checkpoint"` workflow and its `kind=checkpoint` publish and recover steps. [AI-EDIT-WORKFLOW.md](./AI-EDIT-WORKFLOW.md) and [AI-CHECKPOINT-WORKFLOW.md](./AI-CHECKPOINT-WORKFLOW.md) own their activation requirements. A workflow_run reporter is read from the default branch: an implementation PR or integration-branch merge does not deploy it.
 
 Until that rollout, the default branch can still use the legacy failed-log archive at `logs/<run-id>/failed-jobs.log`. Cite the original Actions run as primary evidence and read the actual deployed workflow before assuming a receipt exists. Never use `ci-logs` as a development branch.
 

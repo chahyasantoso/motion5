@@ -43,7 +43,9 @@ Before introducing a flag, alias, facade, second owner, compatibility path, new 
 - [CI-WORKFLOW.md](./CI-WORKFLOW.md): workflow rules, job contracts, artifacts, required versus advisory gates, and rollout schedule.
 - [PR-WORKFLOW.md](./PR-WORKFLOW.md): branch naming, commit style, pull request contents, review order, merge policy, reverts, and the status discipline every slice owes.
 - [FORMATTING.md](./FORMATTING.md): Prettier configuration, the read-only gate, why nothing in CI repairs drift, and the manual repair.
-- [AI-EDIT-WORKFLOW.md](./AI-EDIT-WORKFLOW.md): the request contract for an implementor with no local checkout, the anchor rule, the bounded file list, and the cost of a round trip. [AGENTS.md](../AGENTS.md) in the repository root is that reader's entry point.
+- [AUTOMATION-TRANSPORT-CHOICE.md](./AUTOMATION-TRANSPORT-CHOICE.md): which of the two automation transports a given piece of work belongs in, what each one costs to author, and where each hits a wall. Read it before reaching for either protocol below. [AGENTS.md](../AGENTS.md) in the repository root is that reader's entry point.
+- [AI-EDIT-WORKFLOW.md](./AI-EDIT-WORKFLOW.md): the request contract for an implementor with no local checkout, the anchor rule, the bounded file list, and the cost of a round trip.
+- [AI-CHECKPOINT-WORKFLOW.md](./AI-CHECKPOINT-WORKFLOW.md): the sibling contract for a stack of unified diffs that declare the bytes they produce, the manifest, the accepted diff grammar, and the commit topology a stack publishes.
 
 ## Lineage
 

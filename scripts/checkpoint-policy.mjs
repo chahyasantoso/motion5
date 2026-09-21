@@ -234,12 +234,30 @@ function readHeader(lines, start, allow) {
 function readHunks(lines, start) {
   let index = start;
   let hunks = 0;
+  // The end of the previous hunk's range on each side, so the next one may not reach back into it.
+  let priorBefore = 0;
+  let priorAfter = 0;
   while (index < lines.length && lines[index].startsWith("@@")) {
     const header = HUNK_HEADER.exec(lines[index]);
     ensure(header !== null, `malformed hunk header at patch line ${index + 1}`);
     const before = header[2] === undefined ? 1 : Number(header[2]);
     const after = header[4] === undefined ? 1 : Number(header[4]);
     ensure(before + after > 0, `a hunk at patch line ${index + 1} changes nothing`);
+    // Ordered and non-overlapping. This is a property of the bytes rather than of applying them, so
+    // it is this layer's question by the rule ADR-100 sets: the parser owns shape, Git owns
+    // applicability, the declared post-image owns the result. No applier this repository uses emits
+    // an out-of-order or overlapping hunk, so nothing a real `git diff` produces is refused here.
+    // What it buys is failure locality: a hand-assembled or concatenated patch fails in a pure
+    // function naming its patch line, rather than as an opaque apply error after a push and a queue
+    // wait. The digest still adjudicates the result, so this is defence in depth and not the gate.
+    const from = Number(header[1]);
+    const to = Number(header[3]);
+    ensure(
+      from >= priorBefore && to >= priorAfter,
+      `a hunk at patch line ${index + 1} overlaps or precedes its predecessor`,
+    );
+    priorBefore = from + before;
+    priorAfter = to + after;
     index += 1;
     let seenBefore = 0;
     let seenAfter = 0;
