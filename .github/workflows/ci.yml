@@ -34,6 +34,10 @@ jobs:
           cache: npm
       - run: npm ci --ignore-scripts --no-audit --no-fund
         id: install
+      # Before typecheck, format and vitest discovery on purpose: an unbalanced String.raw template
+      # is a syntax error that stops all three from reporting a useful cause.
+      - run: npm run scan:raw-templates
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
       - run: npm run typecheck
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
       - run: npm run format:check
