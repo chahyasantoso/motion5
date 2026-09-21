@@ -24,6 +24,28 @@ function assert(condition, message) {
   if (!condition) throw new Error(message);
 }
 
+// One closed union of receipt kinds. Every projection reads it by lookup rather than by a
+// predicate chain, so a new member cannot silently inherit the branch another member wrote.
+export const KINDS = Object.freeze({
+  ci: Object.freeze({ title: "CI", publishes: false, evidence: null }),
+  "ai-edit": Object.freeze({
+    title: "AI edit",
+    publishes: true,
+    evidence: Object.freeze({
+      label: "Operation evidence directory",
+      note: "For preview or validation requests, publication only consumes the request; inspect operation.json and retained diff chunks, not CI success. Required PR CI is separate.",
+    }),
+  }),
+  checkpoint: Object.freeze({
+    title: "Checkpoint",
+    publishes: true,
+    evidence: Object.freeze({
+      label: "Checkpoint evidence directory",
+      note: "Each published patch commit carries the exact bytes its manifest declared; inspect manifest.json for the per-path declared and observed blob ids and the retained patch chunks, not CI success. Required PR CI is separate.",
+    }),
+  }),
+});
+
 function keys(value, allowed) {
   assert(value !== null && typeof value === "object" && !Array.isArray(value), "Expected object");
   for (const key of Object.keys(value)) assert(allowed.includes(key), `Unknown field: ${key}`);
@@ -80,7 +102,7 @@ export function receipt(input) {
     typeof input.repository === "string" && REPOSITORY.test(input.repository),
     "Invalid repository",
   );
-  assert(["ai-edit", "ci"].includes(input.kind), "Invalid receipt kind");
+  assert(Object.hasOwn(KINDS, input.kind), "Invalid receipt kind");
   const common = {
     version: 1,
     kind: input.kind,
@@ -89,7 +111,7 @@ export function receipt(input) {
     run_attempt: positive(input.run_attempt, "run_attempt"),
   };
   const evidence_path = `receipts/${common.kind}/${common.run_id}/${common.run_attempt}/receipt.json`;
-  if (input.kind === "ci") {
+  if (!KINDS[input.kind].publishes) {
     assert(CONCLUSIONS.has(input.ci), "Invalid CI conclusion");
     for (const key of [
       "source_sha",
@@ -255,9 +277,9 @@ export function diagnostics(input) {
 }
 
 export function render(value) {
-  assert(value.version === 1 && ["ai-edit", "ci"].includes(value.kind), "Invalid receipt");
+  assert(value.version === 1 && Object.hasOwn(KINDS, value.kind), "Invalid receipt");
   const { version, evidence_path, publication, next_action, ...facts } = value;
-  if (value.kind === "ai-edit") delete facts.ci;
+  if (KINDS[value.kind].publishes) delete facts.ci;
   const normalized = receipt(facts);
   assert(
     canonical(value) === canonical(normalized),
@@ -271,7 +293,7 @@ export function render(value) {
   const root = `https://github.com/${value.repository}`;
   const body = [
     `<!-- motion5-receipt:${value.kind}:${run}:${attempt} -->`,
-    `### ${value.kind === "ci" ? "CI" : "AI edit"} outcome`,
+    `### ${KINDS[value.kind].title} outcome`,
     "",
     `Commit: [${commit}](${root}/commit/${commit}).`,
     `Publication: **${value.publication}**. CI: **${value.ci}**.`,
