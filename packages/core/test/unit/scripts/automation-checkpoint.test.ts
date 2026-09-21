@@ -155,10 +155,8 @@ function scenario(body: string): void {
 }
 
 describe("a checkpoint applies in a disposable checkout and publishes what it declared", () => {
-  it(
-    "gates each patch on its declared post-image and formats only the surviving tip",
-    () => {
-      scenario(String.raw`
+  it("gates each patch on its declared post-image and formats only the surviving tip", () => {
+    scenario(String.raw`
         const state = await prepared();
         const candidate = state.candidate;
         assert.equal(candidate.kind, "checkpoint");
@@ -202,14 +200,10 @@ describe("a checkpoint applies in a disposable checkout and publishes what it de
         widened.format.files.push({ path: "docs/note.md", content: "# other" + LF });
         assert.throws(() => validateCheckpointCandidate(widened, expected), /does not leave behind/);
       `);
-    },
-    120000,
-  );
+  }, 120000);
 
-  it(
-    "refuses a stale base, a moved pre-image, an undeclared path and a wrong post-image",
-    () => {
-      scenario(String.raw`
+  it("refuses a stale base, a moved pre-image, an undeclared path and a wrong post-image", () => {
+    scenario(String.raw`
         await assert.rejects(
           prepared((state) => {
             state.manifest.base = "b".repeat(40);
@@ -247,9 +241,7 @@ describe("a checkpoint applies in a disposable checkout and publishes what it de
           /declared SHA-256/,
         );
       `);
-    },
-    120000,
-  );
+  }, 120000);
 
   it("separates candidate preparation from the credentialed publisher", () => {
     scenario(String.raw`

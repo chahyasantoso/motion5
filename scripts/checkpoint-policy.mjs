@@ -282,10 +282,7 @@ export function parsePatch(text, allow) {
   const lines = text.split("\n");
   lines.pop();
   for (const [marker, reason] of REFUSED)
-    ensure(
-      !lines.some((line) => line.startsWith(marker)),
-      `protocol v1 carries no ${reason}`,
-    );
+    ensure(!lines.some((line) => line.startsWith(marker)), `protocol v1 carries no ${reason}`);
   const files = [];
   let index = 0;
   while (index < lines.length) {
