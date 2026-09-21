@@ -1,3 +1,4 @@
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import type { MotionDefinition, ProjectDefinition } from "../../src/contract/v5";
 import { createDefaultTriggerFactory } from "../../src/adapters/trigger-factory/default";
@@ -5,6 +6,7 @@ import { Motion } from "../../src/domain/motion";
 import { Engine, type ProjectHandle } from "../../src/engine";
 import { createManualClock, type Clock } from "../../src/ports/clock";
 import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
+import { code, declaration } from "../helpers/source-region";
 import type {
   CreatedTrigger,
   TriggerFactory,
@@ -23,6 +25,9 @@ import type {
  * Both are cleanup ordering, and neither is observable through the public surface alone, which is
  * why the two probes below exist.
  */
+
+const ENGINE_SOURCE = code(fileURLToPath(new URL("../../src/engine.ts", import.meta.url)));
+const COMPOSITION_STATE = declaration(ENGINE_SOURCE, "type CompositionState", ";");
 
 const CREATE_FAILURE = "trigger factory refused to build this Motion.";
 
@@ -324,6 +329,21 @@ describe("Engine owns the teardown of everything a failed operation created", ()
     } finally {
       probe.restore();
     }
+  });
+
+  it("D-7 names each composition phase and cleanup owner in one closed union", () => {
+    // The old runtime-undefined probe answered the cleanup question from an unrelated variable.
+    // This source claim is the lie detector: the state itself must name all phases and owners.
+    expect(COMPOSITION_STATE).toContain('kind: "building"');
+    expect(COMPOSITION_STATE).toContain('kind: "ready"');
+    expect(COMPOSITION_STATE).toContain('kind: "disposed"');
+    expect(COMPOSITION_STATE).toContain('cleanupOwner: "composition"');
+    expect(COMPOSITION_STATE).toContain('cleanupOwner: "runtime"');
+    expect(COMPOSITION_STATE).toContain('cleanupOwner: "none"');
+    expect(ENGINE_SOURCE).toContain("switch (state.kind)");
+    expect(ENGINE_SOURCE).toContain("switch (state.cleanupOwner)");
+    expect(ENGINE_SOURCE).toContain("return unreachable(state)");
+    expect(ENGINE_SOURCE).not.toContain("runtime === undefined");
   });
 
   it("D-6 reports the graph rejection unwrapped when the runtime never existed", () => {

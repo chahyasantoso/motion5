@@ -1,6 +1,6 @@
 import { diagnostic } from "../contract/diagnostics";
 import type { Diagnostic } from "../contract/v5";
-import { compareEdges, type GraphEdge, type GraphIR, type GraphNode } from "../graph/ir";
+import { compareEdges, edgeRole, type GraphEdge, type GraphIR, type GraphNode } from "../graph/ir";
 import { firstPendingEdge } from "../graph/references";
 import { CompositionOutputError } from "../domain/track";
 import type { RequirementInputs } from "../domain/plugins";
@@ -124,8 +124,15 @@ function nodeFailure(nodeId: string, error: unknown): Diagnostic {
  * merged after it. Every input edge now carries a requirement, so this split is also the split
  * between derived dependencies and authored `observes` entries. See ADR-047.
  */
-function edgesByRole(node: PublisherNode, role: GraphEdge["role"]): readonly GraphEdge[] {
-  return node.edges.filter((edge) => edge.role === role).sort(compareEdges);
+type EdgeWithRole<Role extends GraphEdge["role"]> = Extract<GraphEdge, { role: Role }>;
+
+function edgesByRole<Role extends GraphEdge["role"]>(
+  node: PublisherNode,
+  role: Role,
+): readonly EdgeWithRole<Role>[] {
+  return node.edges
+    .filter((edge) => edgeRole(edge) === role)
+    .sort(compareEdges) as unknown as readonly EdgeWithRole<Role>[];
 }
 /**
  * The plugin whose slots a solver's members belong under, read off the edge that made it a solver.
@@ -137,8 +144,8 @@ function edgesByRole(node: PublisherNode, role: GraphEdge["role"]): readonly Gra
  * names the scope. See ADR-051.
  */
 function solvingPluginOf(node: PublisherNode): string | undefined {
-  return node.edges
-    .filter((edge) => edge.role === "input" && edge.requirement?.slot === "root")
+  return edgesByRole(node, "input")
+    .filter((edge) => edge.requirement?.slot === "root")
     .sort(compareEdges)[0]?.requirement?.plugin;
 }
 function isRendererNeutral(value: unknown, seen = new WeakSet<object>()): boolean {

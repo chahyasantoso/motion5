@@ -1,7 +1,7 @@
 import type { IdentifiedRuleId } from "../contract/rule";
 import type { Diagnostic, ReadyPatch } from "../contract/v5";
 import { describeEdge, type GraphEdge } from "../graph/ir";
-import { unreachable } from "../domain/exhaustive";
+import { unreachable } from "../lang/exhaustive";
 import type { PublisherComposition } from "./graph-publisher";
 
 /**

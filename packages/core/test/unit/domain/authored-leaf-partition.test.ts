@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { fileURLToPath } from "node:url";
 import type { AuthoredLeaf, AuthoredLeafPartition } from "../../../src/contract/authored-leaf";
 import { authoredLeafPartition, readAuthoredLeaf } from "../../../src/contract/authored-leaf";
-import { unreachable } from "../../../src/domain/exhaustive";
+import { unreachable } from "../../../src/lang/exhaustive";
 import { code, declaration, member } from "../../helpers/source-region";
 
 /**

@@ -3,7 +3,7 @@ import { readdirSync } from "node:fs";
 import { code, callSites } from "../../helpers/source-region";
 import { fileURLToPath } from "node:url";
 import { createTimeDriver } from "../../../src/adapters/trigger-factory/time-driver";
-import { unreachable } from "../../../src/domain/exhaustive";
+import { unreachable } from "../../../src/lang/exhaustive";
 import { acceptsExternalSignal, type TriggerBinding } from "../../../src/ports/trigger-factory";
 
 // T5 removes a claim rather than a behavior. The inert manual fallback is already gone from the

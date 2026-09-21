@@ -1,4 +1,4 @@
-import { unreachable } from "../../domain/exhaustive";
+import { unreachable } from "../../lang/exhaustive";
 
 /**
  * Loop state and cycle arithmetic for a time-driven Motion, in one place.

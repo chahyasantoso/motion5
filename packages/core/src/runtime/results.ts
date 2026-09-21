@@ -1,6 +1,6 @@
 import type { LiveWriteResult } from "../domain/track";
 import { readOutcome, type Outcome } from "../domain/outcome";
-import { unreachable } from "../domain/exhaustive";
+import { unreachable } from "../lang/exhaustive";
 import { refuse, type HandleTarget } from "./refusal";
 
 /**

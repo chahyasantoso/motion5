@@ -2,7 +2,7 @@ import type { CreatedTrigger } from "../../ports/trigger-factory";
 import { createManualTriggerPort } from "../../ports/trigger";
 import type { ClockTick } from "../../ports/clock";
 import { createLoopCycle, type LoopCycleOptions } from "./loop-cycle";
-import { unreachable } from "../../domain/exhaustive";
+import { unreachable } from "../../lang/exhaustive";
 
 interface ActiveDriverState {
   readonly kind: "active";

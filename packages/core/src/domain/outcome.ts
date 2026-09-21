@@ -1,5 +1,5 @@
 import type { Diagnostic } from "../contract/v5";
-import { unreachable } from "./exhaustive";
+import { unreachable } from "../lang/exhaustive";
 
 /**
  * A computation that either carries its value or is refused with at least one diagnostic.

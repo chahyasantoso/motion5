@@ -10,7 +10,7 @@ import { readPluginBindings } from "../contract/keyframe-shape";
 import type { AuthoredValues, LiveValues, RequireView } from "../contract/track-handle";
 import { flattenAuthoredKeyframes } from "../domain/keyframe-groups";
 import type { AuthoredKeyframes } from "../domain/authoring/keyframes";
-import { unreachable } from "../domain/exhaustive";
+import { unreachable } from "../lang/exhaustive";
 /**
  * Pure functions over one retained definition, and the two frozen constants that stand in for none.
  *

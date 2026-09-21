@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { fileURLToPath } from "node:url";
 import type { ProjectDefinition, TrackDefinition } from "../../../src/contract/v5";
-import { unreachable } from "../../../src/domain/exhaustive";
+import { unreachable } from "../../../src/lang/exhaustive";
 import type { LiveWrite } from "../../../src/runtime/results";
 import { createManualClock } from "../../../src/ports/clock";
 import {

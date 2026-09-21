@@ -39,7 +39,11 @@ Every other rule in this document is a consequence of that one. When a change ma
   Track   owns playhead, interpolation, local plugin composition
 ```
 
-Dependencies point inward only. Contract has no dependencies. Domain depends on contract. Graph depends on contract and domain. Runtime depends on graph. Ports are depended upon, never depending. Adapters depend on ports and on their own external engine, and nothing depends on adapters except the composition root.
+Dependencies point inward only, with the dependency-free `lang/` module as the shared sink every
+layer may call. Contract has no dependencies on another core layer. Domain depends on contract.
+Graph depends on contract and domain. Runtime depends on graph. Ports are depended upon, never
+depending. Adapters depend on ports and on their own external engine, and nothing depends on
+adapters except the composition root.
 
 ## 3. Ownership
 
@@ -208,6 +212,7 @@ At runtime, diagnostics accumulate on the project in a bounded ring buffer and s
 packages/
   core/
     src/
+      lang/        dependency-free shared helpers
       contract/    authored schema constants, public types, diagnostics shape
       domain/      Track, Motion, plugins, immutable value snapshots
       graph/       qualified ids, IR, normalization, validation, ObservationState, GraphBinding

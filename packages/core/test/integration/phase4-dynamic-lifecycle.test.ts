@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import type { TrackDefinition } from "../../src/contract/v5";
+import { edgeRequirement } from "../../src/graph/ir";
 import { createManualClock } from "../../src/ports/clock";
 import { PatchRegistry } from "../../src/runtime/patch-registry";
 import { ProjectRuntime } from "../../src/runtime/project-runtime";
@@ -137,7 +138,10 @@ describe("Phase 4: Dynamic Graph Lifecycle Hardening", () => {
     // The requirement must survive into the live edge, the way the projection used to have to: one
     // optional field left out of `normalizeEdge` makes the live key disagree with the candidate
     // key, and a removal is then reported as an edge that is not live.
-    expect(edge?.requirement).toEqual({ plugin: "rig", slot: "upstream" });
+    expect(edge === undefined ? undefined : edgeRequirement(edge)).toEqual({
+      plugin: "rig",
+      slot: "upstream",
+    });
 
     runtime.dispose();
   });

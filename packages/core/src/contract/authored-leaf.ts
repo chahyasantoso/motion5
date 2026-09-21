@@ -1,4 +1,4 @@
-import { unreachable } from "../domain/exhaustive";
+import { unreachable } from "../lang/exhaustive";
 import type { AuthoredStaticValue, AuthoredStop } from "./v5";
 
 /**

@@ -10,7 +10,7 @@ import {
   type AuthoredKeyframes,
   type BoundGroup,
 } from "../domain/authoring/keyframes";
-import { unreachable } from "../domain/exhaustive";
+import { unreachable } from "../lang/exhaustive";
 import { observationEdgeKey } from "../graph/ir";
 import { EMPTY_KEYFRAMES, withKeyframes } from "./authored-values";
 import { propertyEntry, reservedGoalSlot, unboundGroup } from "./schema-refusals";
@@ -236,7 +236,7 @@ function withObserves(
  * The candidate definition one authored edit produces, or the retained one when it changes nothing.
  *
  * One total switch, so a variant added later owes a decision here rather than inheriting the last
- * arm, and it ends at `domain/exhaustive` like every other closed-union read in this folder. Every
+ * arm, and it ends at `lang/exhaustive` like every other closed-union read in this folder. Every
  * arm is the same three steps: prove the edit may address what it names, hand the pure editor the
  * record or the list, and answer what came back. No arm reaches a hook, a graph, a registry or a
  * token, which is why this is a function beside the runtime rather than nine members inside it.

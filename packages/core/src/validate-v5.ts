@@ -9,7 +9,7 @@
 import type { Diagnostic, ProjectDefinition } from "./contract/v5";
 import { validateSchemaV5 } from "./contract/validate-v5";
 import { acceptedOutcome, refusedOutcomeFrom, type Outcome } from "./domain/outcome";
-import { unreachable } from "./domain/exhaustive";
+import { unreachable } from "./lang/exhaustive";
 import { buildGraphIR } from "./graph/ir";
 
 export type ValidationResult = Outcome<ProjectDefinition>;

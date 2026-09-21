@@ -2,7 +2,7 @@ import type { MotionDefinition, TriggerDefinition } from "../contract/v5";
 import type { Clock, ClockTick } from "./clock";
 import type { Scheduler } from "./scheduler";
 import type { TriggerPort } from "./trigger";
-import { unreachable } from "../domain/exhaustive";
+import { unreachable } from "../lang/exhaustive";
 
 export interface ClockConsumer {
   onTick(event: ClockTick): void;

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { unreachable } from "../../../src/domain/exhaustive";
+import { unreachable } from "../../../src/lang/exhaustive";
 import { createLoopCycle } from "../../../src/adapters/trigger-factory/loop-cycle";
 import { createTimeDriver } from "../../../src/adapters/trigger-factory/time-driver";
 import { AUTHORED, type ValueState } from "../../../src/runtime/value-state";

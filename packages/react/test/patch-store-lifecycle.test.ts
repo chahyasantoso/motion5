@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { PatchRegistry, type Patch } from "../../core/src/runtime/patch-registry";
-import { createPatchStore, unhandledLifecycle } from "../src/patch-store";
+import { unreachable } from "@motion5/core/internal";
+import { createPatchStore } from "../src/patch-store";
 import type { PatchStoreLifecycle } from "../src/patch-store";
 
 const NODE_ID = "hero/arm";
@@ -26,13 +27,13 @@ describe("React patch store lifecycle (C1)", () => {
           return true;
         default:
           // @ts-expect-error a widened lifecycle is not decided by this reader.
-          return unhandledLifecycle(lifecycle);
+          return unreachable(lifecycle);
       }
     };
 
     expect(typeof readWidened).toBe("function");
-    expect(() => unhandledLifecycle({ kind: "reviving" } as never)).toThrow(TypeError);
-    expect(() => unhandledLifecycle({ kind: "reviving" } as never)).toThrow(/Unhandled variant/);
+    expect(() => unreachable({ kind: "reviving" } as never)).toThrow(TypeError);
+    expect(() => unreachable({ kind: "reviving" } as never)).toThrow(/Unhandled variant/);
   });
   it("receives patches again after the last listener leaves and a new one arrives", () => {
     const registry = new PatchRegistry();

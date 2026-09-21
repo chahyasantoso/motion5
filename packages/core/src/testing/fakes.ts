@@ -9,7 +9,7 @@ import {
   readCompilableStops,
 } from "../contract/authored-leaf";
 import type { AuthoredStaticValue, AuthoredStop } from "../contract/v5";
-import { unreachable } from "../domain/exhaustive";
+import { unreachable } from "../lang/exhaustive";
 import type { InterpolationTimeline, Interpolator } from "../ports/interpolator";
 import type { Cancel, Scheduler } from "../ports/scheduler";
 import type { TriggerPort } from "../ports/trigger";

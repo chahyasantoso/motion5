@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { diagnostic } from "../../../src/contract/diagnostics";
 import type { Diagnostic } from "../../../src/contract/v5";
-import { unreachable } from "../../../src/domain/exhaustive";
+import { unreachable } from "../../../src/lang/exhaustive";
 import {
   acceptedOutcome,
   readOutcome,

@@ -161,6 +161,32 @@ describe("boundary scan planted violations", () => {
     expect(violations).not.toContain("packages/vue/src/index.ts: renderer or engine import");
   });
 
+  // The three outer layers ADR-099 measured. `lang/` is absent from this fixture on purpose: the
+  // shipped scanner running green against the real tree, in the case below, is what proves the new
+  // path passes, and a fixture cannot prove that about a directory it invents.
+  it("W-8: rejects contract, ports, and adapters importing the retired domain sink", async () => {
+    const fixture = await mkdtemp(join(tmpdir(), "motion5-inward-dependency-"));
+    try {
+      await writeFile(join(fixture, "package.json"), PACKAGES_ONLY);
+      for (const layer of ["contract", "ports", "adapters"]) {
+        await mkdir(join(fixture, "packages", "core", "src", layer), { recursive: true });
+        const prefix = layer === "adapters" ? "../../" : "../";
+        await writeFile(
+          join(fixture, "packages", "core", "src", layer, "leak.ts"),
+          `import { unreachable } from "${prefix}domain/exhaustive";\n`,
+        );
+      }
+      const violations = await scan(fixture);
+      expect(violations).toEqual([
+        "packages/core/src/contract/leak.ts: retired domain sink import",
+        "packages/core/src/ports/leak.ts: retired domain sink import",
+        "packages/core/src/adapters/leak.ts: retired domain sink import",
+      ]);
+    } finally {
+      await rm(fixture, { recursive: true, force: true });
+    }
+  });
+
   it("executes the shipped scanner against the current tree", async () => {
     expect(await scan()).toEqual([]);
   });

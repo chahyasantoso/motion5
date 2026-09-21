@@ -11,6 +11,7 @@ import type {
 } from "../../../src/contract/v5";
 import {
   buildGraphIR,
+  edgeRequirement,
   compareEdges,
   describeEdge,
   edgeKey,
@@ -263,7 +264,7 @@ describe("dict-valued requirement slots (issue #220)", () => {
     expect(built.diagnostics).toEqual([]);
     const solver = built.graph?.nodeById["walker/arm-solve"];
     const goals = (solver?.edges ?? []).filter(
-      (edge) => edge.requirement?.slot === PLUGIN_GOALS_SLOT,
+      (edge) => edgeRequirement(edge)?.slot === PLUGIN_GOALS_SLOT,
     );
     expect(goals).toHaveLength(2);
     expect(goals.map((edge) => edge.sourceId)).toEqual(["walker/goal", "walker/goal"]);

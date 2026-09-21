@@ -1,5 +1,17 @@
 # packages/core/src/engine.ts
 
+## CompositionState
+
+The outer composition has one owner for its six mutable maps and its runtime boundary. `building`
+means the composition owns cleanup because no runtime has been handed to the caller; `ready` means
+the `ProjectRuntime` owns cleanup and reaches the composition through its host port; `disposed` is a
+terminal no-op. The `cleanupOwner` tag is the answer used by failed-load rollback, rather than an
+inference from whether an unrelated runtime variable happens to be undefined. A runtime constructor
+that fails may already have called the composition hook, so the hook transitions to `disposed`
+before it releases anything; the outer catch then has no second owner to invoke. The state is
+private to `Engine` because it describes composition-root assembly, not a contract, domain, graph,
+runtime, or port concern.
+
 ## MotionBuild
 
 What `buildMotion` has built so far, and the reason it is a tag rather than two correlated locals.
@@ -40,7 +52,11 @@ Drops both registrations before disposing, so a created trigger has exactly one 
 
 ## disposeComposition
 
-Hoisted out of the runtime options because the failed-load path needs it too: when `load()` throws before the runtime exists, there is no `runtime.dispose()` to route through. Emptying the maps before disposing anything also makes this idempotent, which it must be, because `ProjectRuntime`'s constructor already calls it when `GraphRuntime` throws. Issue #143.
+Hoisted out of the runtime options because the failed-load path needs it too. It is the composition
+state's building/ready cleanup hook: the hook snapshots and clears the owned maps before releasing
+triggers, Motions, and Tracks, then marks the state disposed, so a constructor failure or a repeated
+runtime disposal cannot release anything twice. A ready runtime reaches this same hook through its
+host port; a building composition reaches it directly. Issue #143.
 
 ## bindClock
 

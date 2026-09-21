@@ -1,5 +1,5 @@
 import { readAuthoredLeaf } from "./authored-leaf";
-import { unreachable } from "../domain/exhaustive";
+import { unreachable } from "../lang/exhaustive";
 import type { AuthoredPluginGroup, AuthoredProperty, PluginRequiresBinding } from "./v5";
 
 /**

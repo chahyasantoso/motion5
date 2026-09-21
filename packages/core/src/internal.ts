@@ -17,6 +17,19 @@ export type { RenderMetadata } from "./domain/plugins";
 export { liveOrAbsent } from "./runtime/patch-registry";
 
 /**
+ * The one `never` sink, on the internal entry because `packages/react` reads closed unions too.
+ *
+ * `patch-store.ts` declared a private `unhandledLifecycle` with this body byte for byte, because
+ * the sink used to live in a private core layer, and reaching into one from another package would
+ * have traded a missing invariant for a layer violation. Exposing the owner here is what makes
+ * that copy deletable: a second `never` sink is a second answer to "which variant was not
+ * decided", and one of two answers is always the stale one. It stays off the public
+ * `@motion5/core` entry and off the boundary allow-list, because a consumer outside this
+ * repository narrows its own unions with its own sink. See ADR-099.
+ */
+export { unreachable } from "./lang/exhaustive";
+
+/**
  * The metadata half of a renderer-facing source: how a node's plugin output is serialized.
  *
  * Declared beside `PatchSource` rather than inside it, and required by the binding that needs it, so

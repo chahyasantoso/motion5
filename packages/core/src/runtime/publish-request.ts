@@ -1,4 +1,4 @@
-import { unreachable } from "../domain/exhaustive";
+import { unreachable } from "../lang/exhaustive";
 
 /**
  * What one caller asked a `GraphRuntime` to publish: a seed list, or a seed list at a frame.
