@@ -53,14 +53,15 @@ Drops both registrations before disposing, so a created trigger has exactly one 
 ## disposeComposition
 
 Hoisted out of the runtime options because the failed-load path needs it too. It is the composition
-state's building/ready cleanup hook: the hook snapshots and clears the owned maps before releasing
-triggers, Motions, and Tracks, then marks the state disposed, so a constructor failure or a repeated
-runtime disposal cannot release anything twice. A ready runtime reaches this same hook through its
+state's building/ready cleanup hook: the hook marks the state disposed first, then snapshots and
+clears the owned maps before releasing triggers, Motions, and Tracks, so a constructor failure or a
+repeated runtime disposal cannot release anything twice. Marking first is the order that makes it
+re-entrant, and it is the order the code takes. A ready runtime reaches this same hook through its
 host port; a building composition reaches it directly. Issue #143.
 
 ## bindClock
 
-One owner of the registration, because the trigger swap below has to make exactly the decision the build made, and two copies of an exhaustive switch is how they end up disagreeing about a binding kind. Total and exhaustive, with no `??` fallback, so a push-driven trigger cannot silently inherit `motion.onTick`, and no Motion can ever hold both a driver and its own clock advance.
+One owner of the registration, because the trigger swap below has to make exactly the decision the build made, and two copies of an exhaustive switch is how they end up disagreeing about a binding kind. Total and exhaustive, with no `??` fallback, so a push-driven trigger cannot silently inherit `motion.onTick`, and no Motion can ever hold both a driver and its own clock advance. Exhaustive is the compiler's claim rather than this paragraph's, since the switch ends at `unreachable`: a fourth binding kind fails `typecheck` here instead of registering no consumer at all, which is the outcome "no `??` fallback" was written to forbid and the one a `switch` without a `default` arm quietly produced. An injected factory is the reason that mattered, because `TriggerFactory` is a seam and a host can hand back a kind this build was never compiled against. The capability projection beside the union reads it through the same sink, so an arriving kind is refused at whichever of the two reads it first rather than absorbed by either. See ADR-092 and ADR-099.
 
 ## compose
 
