@@ -1,0 +1,180 @@
+{
+  "version": 1,
+  "expected_head": "1f72a1e946544468d03128a5598d74b275999a1e",
+  "expected_blobs": {
+    "docs/ADR-030-scroll-trigger-source-injection.md": "90a71bd06f382d1e95bd0aa3d88c88a7ee7031ed",
+    "docs/ADR-032-runtime-motion-creation-ordering.md": "17f0d64643a529f5465a70481b90f0662208728d",
+    "docs/ADR-092-reading-a-closed-union-is-exhaustive.md": "c25df23c1a9458495e95b818f68197b55fd9e665",
+    "docs/ADR-094-one-closed-value-per-runtime-decision.md": "525856937223da252d18b76652c4ed419dfa9db8",
+    "docs/ADR-098-a-patch-carries-only-the-payload-its-status-owns.md": "17b5709cad96243cb56a5af9902da7b37943dea8",
+    "docs/SESSION-STATUS.md": "2c6f286c111216fd4c09b768285664b8475352c0",
+    "packages/core/src/domain/outcome.ts": "db9b1e8e1aecc404348d0e51fd0c915af19bab52",
+    "packages/core/src/graph/ir.ts": "6f0c18b1cec0be39fc8f57fc7f2ce28e60444dbc",
+    "packages/core/src/runtime/graph-publisher.ts": "4124c8839e270c5ce8faaf09d357a880599bda6e",
+    "packages/core/test/helpers/source-region.ts": "b2dfa21d56b831446a1b42661f4410890868c434",
+    "packages/core/test/unit/domain/outcome.test.ts": "35c696f811d26b029ddc0bb15f935cf0cc69895c",
+    "packages/core/test/unit/runtime/publisher-requirement-inputs.test.ts": "09654224f0e2ae7b572e68707bfd6b56c1a95e1b",
+    "packages/core/test/unit/scripts/boundary-scan.test.ts": "5d5a66feb59621657e17dbeae14450e10638a06a",
+    "packages/core/test/unit/scripts/source-region-anchors.test.ts": "773b2e3ead6965840e4e313d17352f682da2964a",
+    "scripts/boundary-scan.d.mts": "264d3f9230d761e489f0877df8638e26f4152635",
+    "scripts/boundary-scan.mjs": "932327e869ea466fdd5fc7b64fe61de2041e8d53"
+  },
+  "message": "fix(core): #469 measured follow-ups, proven narrowing, gate spellings, refusal tuple, records",
+  "edits": [
+    {
+      "path": "docs/ADR-030-scroll-trigger-source-injection.md",
+      "find": "`TriggerBinding`, and `ScrollSource` are\nexported from the package entrypoint and the adapters barrel. Without that, \"hosts opt in at the\ncomposition root\" is not reachable through the `exports` map. The boundary allow list is updated\nin the same ",
+      "replace": "and `ScrollSource` are exported from both the\npackage entrypoint and the adapters barrel; `TriggerBinding` is exported only from the package\nentrypoint. Without the shared factory and adapter-facing exports, \"hosts opt in at the composition\nroot\" is not reachable through the `exports` map. The boundary allow list is updated in the same\n"
+    },
+    {
+      "path": "docs/ADR-032-runtime-motion-creation-ordering.md",
+      "find": "and the same exhaustive `TriggerBinding` switch. No trigger kind is read outside the factory.",
+      "replace": "and the same exhaustive `TriggerBinding` switch. No authored trigger kind is read outside the\nfactory, and `Engine` reads the factory-returned `TriggerBinding` only through\n`acceptsExternalSignal` and `bindClock`."
+    },
+    {
+      "path": "docs/ADR-092-reading-a-closed-union-is-exhaustive.md",
+      "find": "domain/exhaustive.ts` declares `unreachable(value: never): never`, and it is the one such function in the repository. A `switch` whose arms cover every discriminant narrows its subject to `never` at `default`, so passing the subject to `unreachable` compiles exactly while the arms are complete. A variant added later stops being assignable and fails `typecheck` at every reader that owes it a decision.\n\nIt lives in `domain/` because a dependency-free helper every layer may call belongs at the innermost layer every layer already reaches. `lang/` was measured and rejected: `scripts/boundary-scan.mjs` declares its layers explicitly, so a new directory would be unscanned rather than safe. It is not exported from the package entry, so the public surface and the export allow-list do not move",
+      "replace": "lang/exhaustive.ts` declares `unreachable(value: never): never`, and it is the one such function in the repository. A `switch` whose arms cover every discriminant narrows its subject to `never` at `default`, so passing the subject to `unreachable` compiles exactly while the arms are complete. A variant added later stops being assignable and fails `typecheck` at every reader that owes it a decision.\n\nIt lives in `domain/` because a dependency-free helper every layer may call belongs at the innermost layer every layer already reaches. `lang/` was measured and rejected: `scripts/boundary-scan.mjs` declares its layers explicitly, so a new directory would be unscanned rather than safe. It is not exported from the package entry, so the public surface and the export allow-list do not move. **Superseded in part by [ADR-099](./ADR-099-exhaustive-sink-lives-in-lang.md), 2026-09-21.** The rejection of `lang/` and the `domain/` placement are replaced by ADR-099's decision to place the sink in `packages/core/src/lang/exhaustive.ts`; the export decision remains. The two module paths this record names are refined to the relocated module and to the test that now owns the guarantee, because a path is a reference rather than a decision"
+    },
+    {
+      "path": "docs/ADR-092-reading-a-closed-union-is-exhaustive.md",
+      "find": "tee itself, in `packages/core/test/unit/domain",
+      "replace": "tee itself, in `packages/core/test/unit/lang"
+    },
+    {
+      "path": "docs/ADR-094-one-closed-value-per-runtime-decision.md",
+      "find": "ph-runtime-state.ts`'s and the sink is `domain",
+      "replace": "ph-runtime-state.ts`'s and the sink is `packages/core/src/lang"
+    },
+    {
+      "path": "docs/ADR-098-a-patch-carries-only-the-payload-its-status-owns.md",
+      "find": "domain/exhaustive",
+      "replace": "packages/core/src/lang/exhaustive.ts"
+    },
+    {
+      "path": "docs/SESSION-STATUS.md",
+      "find": "d4e1126a`, the reconciliation head of [#462](https://github.com/chahyasantoso/motion5/pull/462), with all seven required jobs passed on [run 35563776472](https://github.com/chahyasantoso/motion5/actions/runs/35563776472). This is the state this file describes: phase 1 is folded into #462, and [#461](https://github.com/chahyasantoso/motion5/pull/461) is closed as superseded rather than merged or reverted. The exact squash commit on `main` is not claimed here",
+      "replace": "main` at `1f72a1e9`; [#462](https://github.com/chahyasantoso/motion5/pull/462) is merged"
+    },
+    {
+      "path": "docs/SESSION-STATUS.md",
+      "find": "Reading a closed union is exhaustive in every layer, not only in `runtime/`:** [#451](https://github.com/chahyasantoso/motion5/issues/451) surveyed a codebase where `unreachable` was imported by twelve files and all twelve were in `runtime/`, so every other layer absorbed a new union variant into whichever branch was written last. [#462](https://github.com/chahyasantoso/motion5/pull/462) is the landing PR, reconciled at `d4e1126a` with all seven required jobs passed: it carries phases 2a through 9 as one branch, including `liveWriteChannel` and `authoredLeafPartition` over `AuthoredLeaf`, the `PatchRender` decision that replaced four spellings of one render policy, `Outcome<T, E>` replacing seven hand-correlated `{ optional value + diagnostics[] }` pairs including both public result shapes, `MotionBuild` deleting a definite-assignment assertion on the engine's most failure-sensitive path, ADR-033's external-signal capability derived from `TriggerBinding` rather than stated beside it, the Tier 3 batch across the runtime, the adapters and `packages/react`, and phase 1's `JournalEntry` rollback switch plus the `bindClock` exhaustive sink. The phase 1 work was forwarded from sibling [#461](https://github.com/chahyasantoso/motion5/pull/461), which is closed as superseded rather than merged or reverted, so the reconciled `bindClock` reader retains one exhaustive sink arm and the one relocated-sink import, with no branch race and no rebase owed. [#463](https://github.com/chahyasantoso/motion5/pull/463) and [#464](https://github.com/chahyasantoso/motion5/pull/464) were already closed as superseded by the same branch, and [#465](https://github.com/chahyasantoso/motion5/pull/465) is squashed into it, so #462 is the only pull request #451 still lands through. The remaining unstarted work is the `domain/outcome` dependency question and `PluginDefinition.stage` as a closed capability. The exact commits and runs stay in the owning pull requests rather than here",
+      "replace": "#451's union work has landed on `main`:** [#462](https://github.com/chahyasantoso/motion5/pull/462) is merged and `main` is at `1f72a1e9`. The open follow-up slice is this small correctness batch: the publisher's `edgesByRole` narrowing proven instead of cast; the retired-sink boundary gate seeing the `.js`/dynamic/backslash spellings it refused; the seam-result helper's alias admission pinned by a regression case; `refusedOutcomeFrom`'s emptiness test fixed and the five single-diagnostic graph refusals moved onto the compile-time tuple; plus these record corrections"
+    },
+    {
+      "path": "docs/SESSION-STATUS.md",
+      "find": "is owed once the union work clears",
+      "replace": "remains next"
+    },
+    {
+      "path": "packages/core/src/domain/outcome.ts",
+      "find": "Convert a runtime diagnostic collection into a refused outcome without permitting an empty one.\n */\nexport function refusedOutcomeFrom<T, E = Diagnostic>(diagnostics: readonly E[]): Outcome<T, E> {\n  const [first, ...rest] = diagnostics;\n  if (first === undefined)\n    throw new TypeError(\"A refused outcome requires at least one diagnostic.\");\n  return refusedOutcome([first, ...rest",
+      "replace": "A collection with at least one member, proven to the compiler rather than asserted at a call.\n *\n * The length test is the whole rule, and it is stated here so the refusal constructor receives a\n * tuple the type system already accepts. Reading the first element to decide emptiness was the\n * earlier spelling, and it refused a valid collection whose first member is legitimately\n * `undefined`, which an `Outcome<T, undefined>` may carry.\n */\nfunction isNonEmpty<E>(values: readonly E[]): values is readonly [E, ...E[]] {\n  return values.length > 0;\n}\n\n/**\n * Convert a runtime diagnostic collection into a refused outcome without permitting an empty one.\n *\n * The boundary survives for the callers that genuinely accumulate: `graph/order.ts`'s cycle site\n * and the three validation sites, where the count is a property of the input rather than of the\n * call. A caller that carries exactly one diagnostic reaches `refusedOutcome` directly instead.\n */\nexport function refusedOutcomeFrom<T, E = Diagnostic>(diagnostics: readonly E[]): Outcome<T, E> {\n  if (!isNonEmpty(diagnostics))\n    throw new TypeError(\"A refused outcome requires at least one diagnostic.\");\n  return refusedOutcome([...diagnostics"
+    },
+    {
+      "path": "packages/core/src/graph/ir.ts",
+      "find": "  refusedOutcomeFrom,\n  type Outcome,",
+      "replace": "  type Outcome,"
+    },
+    {
+      "path": "packages/core/src/graph/ir.ts",
+      "find": "const diagnostics: Diagnostic[] = [];\n  if (typeof observation.source !== \"string\" || observation.source.length === 0) {\n    diagnostics.push(\n      diagnostic(\"observation-source-shape\", path, \"Observation source must be non-empty.\"),\n    );\n    return refusedOutcomeFrom<GraphEdge, Diagnostic>(Object.freeze(diagnostics)",
+      "replace": "if (typeof observation.source !== \"string\" || observation.source.length === 0) {\n    return refusedOutcome<GraphEdge, Diagnostic>([\n      diagnostic(\"observation-source-shape\", path, \"Observation source must be non-empty.\"),\n    ]"
+    },
+    {
+      "path": "packages/core/src/graph/ir.ts",
+      "find": "diagnostics.push(diagnostic(\"observation-target-unsupported\", path, TARGET_UNSUPPORTED));\n    return refusedOutcomeFrom<GraphEdge, Diagnostic>(Object.freeze(diagnostics));\n  }\n  if (readRemoved(observation, \"role\") !== undefined) {\n    diagnostics.push(diagnostic(\"observation-role-unsupported\", path, ROLE_UNSUPPORTED));\n    return refusedOutcomeFrom<GraphEdge, Diagnostic>(Object.freeze(diagnostics));\n  }\n  if (readRemoved(observation, \"projection\") !== undefined) {\n    diagnostics.push(\n      diagnostic(\"observation-projection-unsupported\", path, PROJECTION_UNSUPPORTED),\n    );\n    return refusedOutcomeFrom<GraphEdge, Diagnostic>(Object.freeze(diagnostics)",
+      "replace": "return refusedOutcome<GraphEdge, Diagnostic>([\n      diagnostic(\"observation-target-unsupported\", path, TARGET_UNSUPPORTED),\n    ]);\n  }\n  if (readRemoved(observation, \"role\") !== undefined) {\n    return refusedOutcome<GraphEdge, Diagnostic>([\n      diagnostic(\"observation-role-unsupported\", path, ROLE_UNSUPPORTED),\n    ]);\n  }\n  if (readRemoved(observation, \"projection\") !== undefined) {\n    return refusedOutcome<GraphEdge, Diagnostic>([\n      diagnostic(\"observation-projection-unsupported\", path, PROJECTION_UNSUPPORTED),\n    ]"
+    },
+    {
+      "path": "packages/core/src/graph/ir.ts",
+      "find": "    sourceId = qualifySource(observation.source, ownerId);\n  } catch (error) {\n    diagnostics.push(",
+      "replace": "    sourceId = qualifySource(observation.source, ownerId);\n  } catch (error) {\n    return refusedOutcome<GraphEdge, Diagnostic>(["
+    },
+    {
+      "path": "packages/core/src/graph/ir.ts",
+      "find": "        [observation.source],\n      ),\n    );\n    return refusedOutcomeFrom<GraphEdge, Diagnostic>(Object.freeze(diagnostics));",
+      "replace": "        [observation.source],\n      ),\n    ]);"
+    },
+    {
+      "path": "packages/core/src/runtime/graph-publisher.ts",
+      "find": "    .filter((edge) => edgeRole(edge) === role)\n    .sort(compareEdges) as unknown as readonly EdgeWithRole<Role>[];",
+      "replace": "    .filter((edge): edge is EdgeWithRole<Role> => edgeRole(edge) === role)\n    .sort(compareEdges);"
+    },
+    {
+      "path": "packages/core/src/runtime/graph-publisher.ts",
+      "find": "  return edgesByRole(node, \"input\")\n    .filter((edge) => edge.requirement?.slot === \"root\")\n    .sort(compareEdges)[0]?.requirement?.plugin;",
+      "replace": "  const rootEdge = edgesByRole(node, \"input\").find((edge) => edge.requirement.slot === \"root\");\n  return rootEdge?.requirement.plugin;"
+    },
+    {
+      "path": "packages/core/test/helpers/source-region.ts",
+      "find": " * hidden by a direct call-site count. It deliberately does not claim to resolve computed names,\n * dynamic calls, shadowing across arbitrary scopes, or data flow that leaves the supplied modules.",
+      "replace": " * hidden by a direct call-site count. Its function, taint, and decoder maps are keyed by identifier\n * text rather than lexical scope, as `docs/TESTING-STRATEGY.md` disclaims. It does not resolve\n * computed names, dynamic calls, or data flow that leaves the supplied modules."
+    },
+    {
+      "path": "packages/core/test/helpers/source-region.ts",
+      "find": "      return expressionName(node);\n    }\n\n    function visitDeclarations(node: ts.Node): void {",
+      "replace": "      return expressionName(node);\n    }\n\n    function decoderReference(node: ts.Expression): string | undefined {\n      if (ts.isCallExpression(node)) return undefined;\n      return callTarget(node);\n    }\n\n    function visitDeclarations(node: ts.Node): void {"
+    },
+    {
+      "path": "packages/core/test/helpers/source-region.ts",
+      "find": "        const value = node.initializer;\n        if (value !== undefined && callTarget(value) === options.decoderName)",
+      "replace": "        const value = node.initializer;\n        if (value !== undefined && decoderReference(value) === options.decoderName)"
+    },
+    {
+      "path": "packages/core/test/helpers/source-region.ts",
+      "find": "          if (ts.isIdentifier(target)) {\n            const called = callTarget(initializer);",
+      "replace": "          if (ts.isIdentifier(target)) {\n            const called = decoderReference(initializer);"
+    },
+    {
+      "path": "packages/core/test/unit/domain/outcome.test.ts",
+      "find": "  acceptedOutcome,\n  readOutcome,\n  refusedOutcome,\n  type Outcome,",
+      "replace": "  acceptedOutcome,\n  readOutcome,\n  refusedOutcome,\n  refusedOutcomeFrom,\n  type Outcome,"
+    },
+    {
+      "path": "packages/core/test/unit/domain/outcome.test.ts",
+      "find": "    expect(\"value\" in outcome).toBe(false);\n  });",
+      "replace": "    expect(\"value\" in outcome).toBe(false);\n  });\n\n  it(\"accepts undefined as a diagnostic in a non-empty collection\", () => {\n    const outcome = refusedOutcomeFrom<number, undefined>([undefined]);\n\n    expect(outcome).toEqual({ kind: \"refused\", diagnostics: [undefined] });\n    expect(outcome.kind).toBe(\"refused\");\n    expect(outcome.diagnostics).toHaveLength(1);\n    expect(outcome.diagnostics[0]).toBeUndefined();\n    expect(Object.isFrozen(outcome.diagnostics)).toBe(true);\n  });\n\n  it(\"throws the original error for an empty diagnostic collection\", () => {\n    expect(() => refusedOutcomeFrom<number, Diagnostic>([])).toThrow(\n      new TypeError(\"A refused outcome requires at least one diagnostic.\"),\n    );\n  });"
+    },
+    {
+      "path": "packages/core/test/unit/runtime/publisher-requirement-inputs.test.ts",
+      "find": "import { slotOf } from \"../../helpers/requirement-inputs\";\n",
+      "replace": "import { slotOf } from \"../../helpers/requirement-inputs\";\nimport { code, member } from \"../../helpers/source-region\";\n"
+    },
+    {
+      "path": "packages/core/test/unit/runtime/publisher-requirement-inputs.test.ts",
+      "find": "describe(\"requirement-scoped input observations\", () => {",
+      "replace": "const PUBLISHER_SOURCE = new URL(\"../../../src/runtime/graph-publisher.ts\", import.meta.url);\n\ndescribe(\"requirement-scoped input observations\", () => {\n  it(\"narrows input edges through the exhaustive role classifier\", () => {\n    const source = code(PUBLISHER_SOURCE);\n    const edgesByRole = member(source, \"function edgesByRole<\", \"\");\n\n    expect(edgesByRole).toContain(\n      \".filter((edge): edge is EdgeWithRole<Role> => edgeRole(edge) === role)\",\n    );\n    expect(edgesByRole).not.toContain(\"as unknown as readonly EdgeWithRole<Role>[]\");\n  });\n"
+    },
+    {
+      "path": "packages/core/test/unit/scripts/boundary-scan.test.ts",
+      "find": "  importsBoundary,\n  importsCoreInternals,\n  importsRenderer,",
+      "replace": "  importsBoundary,\n  importsCoreInternals,\n  importsDomainSink,\n  importsRenderer,"
+    },
+    {
+      "path": "packages/core/test/unit/scripts/boundary-scan.test.ts",
+      "find": "    expect(importsBoundary(consumerInternalViolationFixture)).toBe(false);\n  });",
+      "replace": "    expect(importsBoundary(consumerInternalViolationFixture)).toBe(false);\n  });\n\n  it(\"extracts every retired sink spelling from its module specifier\", () => {\n    for (const source of [\n      'import { unreachable } from \"../domain/exhaustive.js\";',\n      'export { unreachable } from \"../../domain/exhaustive.mjs\";',\n      'const load = import(\"../domain/exhaustive.ts\");',\n      'const load = require(\"..\\\\domain\\\\exhaustive\");',\n    ])\n      expect(importsDomainSink(source)).toBe(true);\n  });\n\n  it(\"keeps legitimate domain imports, the new sink, aliases, and longer names clean\", () => {\n    for (const source of [\n      'import { outcome } from \"../domain/outcome\";',\n      'import { outcome } from \"../domain/outcome.ts\";',\n      'import { compiler } from \"../../domain/keyframe-compiler\";',\n      'import type { Plugin } from \"../../domain/plugins\";',\n      'import type { Plugin } from \"../../domain/plugins.js\";',\n      'import { exhaustive } from \"../lang/exhaustive\";',\n      'import { helpers } from \"../domain/exhaustive-helpers\";',\n      'import { sink } from \"@motion5/core/domain/exhaustive\";',\n      \"const load = import(path);\",\n    ])\n      expect(importsDomainSink(source)).toBe(false);\n  });"
+    },
+    {
+      "path": "packages/core/test/unit/scripts/source-region-anchors.test.ts",
+      "find": "    ).toEqual([{ kind: \"decoder-alias\", name: \"decode\", filename: \"runtime.ts\" }]);\n  });\n\n  it(\"reads statement syntax without comments while preserving quoted tokens\", () => {",
+      "replace": "    ).toEqual([{ kind: \"decoder-alias\", name: \"decode\", filename: \"runtime.ts\" }]);\n  });\n\n  it(\"does not treat a decoder result as a decoder alias\", () => {\n    expect(\n      seamResultReads(\n        [{ filename: \"runtime.ts\", source: \"const out = liveWrite(answer); out(1);\" }],\n        {\n          resultBindings: [\"answer\"],\n          decoderName: \"liveWrite\",\n          ownerFilename: \"results.ts\",\n        },\n      ),\n    ).toEqual([]);\n  });\n\n  it(\"follows a direct decoder alias\", () => {\n    expect(\n      seamResultReads(\n        [{ filename: \"runtime.ts\", source: \"const decode = liveWrite; decode(answer);\" }],\n        {\n          resultBindings: [\"answer\"],\n          decoderName: \"liveWrite\",\n          ownerFilename: \"results.ts\",\n        },\n      ).map(({ kind, name }) => ({ kind, name })),\n    ).toEqual([{ kind: \"decoder-alias\", name: \"decode\" }]);\n  });\n\n  it(\"reads statement syntax without comments while preserving quoted tokens\", () => {"
+    },
+    {
+      "path": "scripts/boundary-scan.d.mts",
+      "find": "export function importsTestingEntrypoint(source: string): boolean;\nexport function bannedSymbol(source: string): boolean;",
+      "replace": "export function importsTestingEntrypoint(source: string): boolean;\nexport function importsDomainSink(source: string): boolean;\nexport function bannedSymbol(source: string): boolean;"
+    },
+    {
+      "path": "scripts/boundary-scan.mjs",
+      "find": "  return /(?:from|import)\\s*[\"'](?:@motion5\\/core\\/testing|[^\"']*core\\/src\\/testing)(?:[\"'/]|$)/.test(\n    source,\n  );\n}\n/**",
+      "replace": "  return /(?:from|import)\\s*[\"'](?:@motion5\\/core\\/testing|[^\"']*core\\/src\\/testing)(?:[\"'/]|$)/.test(\n    source,\n  );\n}\nconst moduleSpecifier = /(?:\\bfrom\\s*|\\bimport\\s*(?:\\(\\s*)?|\\brequire\\s*\\(\\s*)[\"']([^\"']+)[\"']/g;\n/**"
+    },
+    {
+      "path": "scripts/boundary-scan.mjs",
+      "find": "Narrower than the inward-dependency rule it serves, on purpose. Five inward imports into domain\n * survive: `contract/migrate-v4-to-v5.ts` and `contract/validate-v5.ts` reach `domain/outcome`,\n * `adapters/interpolator/gsap.ts` reaches `domain/keyframe-compiler`, and `adapters/dom.ts` plus\n * `adapters/index.ts` reach `domain/plugins` type-only. A predicate over every `domain/` import\n * would therefore refuse the tree it is added to, and a gate introduced red earns an exemption list\n * instead of a fix. This one is green the moment the move lands and refuses the exact regression\n * the move exists to prevent. ADR-099 names all five and says which slice each belongs to.\n */\nexport function importsDomainSink(source) {\n  return /(?:from|import)\\s*[\"'](?:\\.\\.\\/)+domain\\/exhaustive(?:[\"'/]|$)/.test(source)",
+      "replace": "Module specifiers are extracted from static imports and re-exports, dynamic imports, and\n * `require` calls before the exact relative path is tested. The extraction sees `.js`, `.mjs`, and\n * `.ts` suffixes plus either path separator, but a configured alias or computed specifier remains\n * invisible. Five inward imports into domain survive: `contract/migrate-v4-to-v5.ts` and\n * `contract/validate-v5.ts` reach `domain/outcome`, `adapters/interpolator/gsap.ts` reaches\n * `domain/keyframe-compiler`, and `adapters/dom.ts` plus `adapters/index.ts` reach `domain/plugins`\n * type-only. A predicate over every `domain/` import would therefore refuse the tree it is added\n * to, and a gate introduced red earns an exemption list instead of a fix. This one is green the\n * moment the move lands and refuses the exact regression the move exists to prevent. ADR-099 names\n * all five and says which slice each belongs to.\n */\nexport function importsDomainSink(source) {\n  for (const match of source.matchAll(moduleSpecifier)) {\n    const specifier = match[1].replaceAll(\"\\\\\", \"/\");\n    if (/^(?:\\.\\.\\/)+domain\\/exhaustive(?:\\.(?:js|mjs|ts))?$/.test(specifier)) return true;\n  }\n  return false"
+    }
+  ]
+}
