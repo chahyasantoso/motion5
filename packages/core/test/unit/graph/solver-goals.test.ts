@@ -8,6 +8,7 @@ import type {
 } from "../../../src/contract/v5";
 import {
   buildGraphIR,
+  edgeRequirement,
   resolveSolvers,
   type GraphBuildResult,
   type GraphNode,
@@ -183,8 +184,8 @@ describe("goal-addressed solving (Slice D1)", () => {
     // The goal on `solves` is a qualified node id rather than the authored key, because the publisher
     // reads it straight off the registry and holds no owner to qualify against.
     const solver = built.graph?.nodeById["walker/arm-solve"];
-    const goal = solver?.edges.find((edge) => edge.requirement?.memberKey === "forearm");
-    expect(goal?.requirement?.slot).toBe("targets");
+    const goal = solver?.edges.find((edge) => edgeRequirement(edge)?.memberKey === "forearm");
+    expect(goal === undefined ? undefined : edgeRequirement(goal)?.slot).toBe("targets");
     expect(goal?.sourceId).toBe("walker/hand-target");
 
     // Both builders answer identically, because both finalize through `finalizeGraph`.

@@ -16,7 +16,12 @@ What made this a design rather than a patch is that four separate questions all 
 
 ## Decision
 
-**One owner.** `createLoopCycle` in `packages/core/src/adapters/trigger-factory/loop-cycle.ts` owns loop state, the cycle index, the direction, and completion. `createTimeDriver` keeps the emission channel, the rule that a finished loop stops emitting, and disposal; it no longer counts elapsed time itself. `Motion` is untouched, and no trigger-kind branch was added to it.
+**One owner.** `createLoopCycle` in
+`packages/core/src/adapters/trigger-factory/loop-cycle.ts` owns loop state, the cycle index, the
+direction, and completion. Its absorbing `running | finished` state carries elapsed time, so a finished
+cycle never re-derives a running state. `createTimeDriver` keeps the emission channel, the rule that
+a finished loop stops emitting, and disposal; it no longer counts elapsed time itself. `Motion` is
+untouched, and no trigger-kind branch was added to it.
 
 **`repeat` counts the passes after the initial one.** A finite loop runs `repeat + 1` cycles, so `repeat: 0` is a single pass and is byte-for-byte the previous behavior. `-1` is infinite. This matches the interpolation engine ADR-015 keeps as the behavioral oracle, which is what lets a migrated v4 document keep its timing rather than gain a cycle.
 
@@ -62,7 +67,9 @@ A v4 document with `repeat` or `yoyo` now migrates and loads instead of failing 
 
 `TimeTriggerDefinition` gains two optional fields. No new export and no export removed, so `boundary-scan.mjs` and `public-declaration-surface.test.ts` run unchanged.
 
-`createTimeDriver` gains an optional second argument and keeps its positional `duration`, so `T-9` in `trigger-factory-no-fallback.test.ts` still constructs it the same way.
+`createTimeDriver` gains an optional second argument and keeps its positional `duration`, so `T-9` in
+`trigger-factory-no-fallback.test.ts` still constructs it the same way. Its own lifecycle is an
+absorbing `active | disposed` state, separate from the cycle state.
 
 ## Evidence
 

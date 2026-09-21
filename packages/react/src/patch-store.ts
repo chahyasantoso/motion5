@@ -1,5 +1,5 @@
 import type { LivePatch, PatchListener, PatchSource } from "@motion5/core/internal";
-import { liveOrAbsent } from "@motion5/core/internal";
+import { liveOrAbsent, unreachable } from "@motion5/core/internal";
 
 /**
  * Framework-neutral external store used by the React binding. React owns the hook and
@@ -10,14 +10,18 @@ export interface PatchStore {
   subscribe(listener: PatchListener): () => void;
 }
 
+export type PatchStoreLifecycle =
+  | { readonly kind: "detached" }
+  | { readonly kind: "attached"; snapshot: LivePatch | undefined; readonly detach: () => void };
+
 export function createPatchStore(source: PatchSource, nodeId: string): PatchStore {
   const listeners = new Set<PatchListener>();
   // The live union rather than `Patch`, and it is a statement of what this variable already held.
   // Both of its writers answer it: `source.get` cannot produce a terminal patch, and the delivered
   // one below is collapsed before it is stored. Declaring it wider than that asked every reader of
   // `getSnapshot` to narrow past a variant the store has never served.
-  let snapshot: LivePatch | undefined;
-  let detachSource: (() => void) | undefined;
+  const DETACHED: PatchStoreLifecycle = Object.freeze({ kind: "detached" });
+  let lifecycle: PatchStoreLifecycle = DETACHED;
 
   // React mounts, unmounts, and remounts effects freely, and StrictMode does it on purpose.
   // The source subscription therefore follows the listener set instead of the store's own
@@ -25,23 +29,38 @@ export function createPatchStore(source: PatchSource, nodeId: string): PatchStor
   // one leaves, so the same store can be mounted again rather than going permanently deaf
   // after its first teardown.
   function attach(): void {
-    snapshot = source.get(nodeId);
-    detachSource = source.subscribeNode(nodeId, (patch) => {
+    let release = (): void => undefined;
+    const attached: Extract<PatchStoreLifecycle, { readonly kind: "attached" }> = {
+      kind: "attached",
+      snapshot: source.get(nodeId),
+      detach: () => release(),
+    };
+    lifecycle = attached;
+    release = source.subscribeNode(nodeId, (patch) => {
       // A terminal patch says the node is gone, not that it has new values, and collapsing it to
       // `undefined` is what lets a consumer render "absent" instead of freezing on the last live
       // pose: the memoized snapshot is authoritative while attached, so without this the destroyed
       // node's final patch would be served forever. The collapse itself is core's to define rather
       // than this store's to spell, because `source.get` already answers the narrow union and the
       // two writers of one variable cannot be allowed to disagree about which variants it holds.
-      snapshot = liveOrAbsent(patch);
+      if (lifecycle.kind !== "attached") return;
+      lifecycle.snapshot = liveOrAbsent(patch);
       for (const listener of [...listeners]) listener(patch);
     });
   }
 
   function detach(): void {
-    const release = detachSource;
-    detachSource = undefined;
-    release?.();
+    const current = lifecycle;
+    lifecycle = DETACHED;
+    switch (current.kind) {
+      case "detached":
+        return;
+      case "attached":
+        current.detach();
+        return;
+      default:
+        return unreachable(current);
+    }
   }
 
   return {
@@ -49,11 +68,18 @@ export function createPatchStore(source: PatchSource, nodeId: string): PatchStor
       // Patches published while detached were never delivered here, so the source is the only
       // truthful snapshot until the next attach. While attached the delivered patch is
       // memoized, which keeps snapshot identity stable for useSyncExternalStore.
-      return detachSource === undefined ? source.get(nodeId) : snapshot;
+      switch (lifecycle.kind) {
+        case "detached":
+          return source.get(nodeId);
+        case "attached":
+          return lifecycle.snapshot;
+        default:
+          return unreachable(lifecycle);
+      }
     },
     subscribe(listener) {
       listeners.add(listener);
-      if (detachSource === undefined) attach();
+      if (lifecycle.kind === "detached") attach();
       return () => {
         listeners.delete(listener);
         if (listeners.size === 0) detach();

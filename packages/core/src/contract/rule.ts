@@ -48,9 +48,9 @@ const WARNING_WITH_IDS = { severity: "warning", ids: "always" } as const;
  * `satisfies Record<BaseRuleId, RuleFacts>` rather than an annotation, so the record keeps its
  * literal values and every derivation below reads them. The `satisfies` is the exhaustive read: a
  * rule added to `BASE_RULE_IDS` without an answer here fails `typecheck` at this record, which is the
- * argument `SCOPED_RULE_ID` in `./rule-id` already makes. `domain/exhaustive` is deliberately not
+ * argument `SCOPED_RULE_ID` in `./rule-id` already makes. `lang/exhaustive` is deliberately not
  * imported, because the contract layer does not read the domain layer for a totality it can state in
- * the type. See ADR-092.
+ * the type. See ADR-092 and ADR-099.
  *
  * Declaration order follows `BASE_RULE_IDS`, so a reader comparing the two reads them in the same
  * sequence. `RuleId` is not `keyof typeof` this record: `./rule-id` keeps owning which rules exist,

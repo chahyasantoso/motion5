@@ -1,24 +1,18 @@
-import type { Diagnostic } from "../contract/v5";
 import type { LiveWriteResult } from "../domain/track";
-import { unreachable } from "../domain/exhaustive";
+import { readOutcome, type Outcome } from "../domain/outcome";
+import { unreachable } from "../lang/exhaustive";
 import { refuse, type HandleTarget } from "./refusal";
 
 /**
- * The three boolean-plus-optional pairs the project runtime decodes by hand, as closed unions.
+ * Closed runtime results owned at the boundary where their producers answer them.
  *
- * Each of them is a type that cannot state the implication its callers rely on, so each caller
- * restates it. `{ valid, value? }` cannot say that valid implies a value, so `project-runtime.ts`
- * writes `!validation.valid || !validation.value` five times, and that second clause is dead weight
- * that exists only to satisfy the compiler. `LiveWriteResult | undefined` is three outcomes wearing
- * an optional over a boolean, decoded by the same three-line dance in two places. And handle
- * liveness is ten private methods that differ in whether they throw, whether they assert liveness,
- * and whether they answer an entry or an id.
+ * Track validation is an `Outcome`, so its accepted value and refusal diagnostics are mutually
+ * exclusive before this runtime reads it. Live writes carry their patch decision and progress as
+ * one union, while handle resolution carries liveness and its entry as one union. Each reader
+ * below decides one question once, without reconstructing a boolean from nullable fields.
  *
- * One deliberate departure from the shape issue #443 sketches. Its `LiveWrite` gives `patched` no
- * payload, but `#recompileKeyframes` reads `written?.progress` on both outcomes, so a `patched`
- * carrying nothing would drop a progress the runtime seeks to today. The hook always answers a
- * progress; only whether a rebuild is owed differs, so that is the only thing the discriminant says.
- *
+ * The live-write union retains progress on both patch outcomes because the recompilation path seeks
+ * the playhead after it stages a fresh track. Only the patch decision differs between those arms.
  * Issue #443, phase A step 2.
  */
 declare const RESULT_BRAND: unique symbol;
@@ -39,47 +33,13 @@ function mint<Shape extends { readonly kind: string }>(shape: Shape): Minted<Sha
   return Object.freeze(shape) as unknown as Minted<Shape>;
 }
 
-interface AcceptedShape<T> {
-  readonly kind: "accepted";
-  readonly value: T;
-  readonly diagnostics: readonly Diagnostic[];
-}
-
-interface RejectedShape {
-  readonly kind: "rejected";
-  readonly diagnostics: readonly Diagnostic[];
-}
-
-/** A validated candidate: accepted with its value, or rejected with why. No non-null assertion. */
-export type Validated<T> = Minted<AcceptedShape<T>> | Minted<RejectedShape>;
-
-/**
- * Reads one validation result as a union, and is the only place the two-field encoding is decoded.
- *
- * Structural in its parameter rather than naming `TrackValidationResult`, because the same encoding
- * is answered for more than one candidate shape and this module owns none of them.
- */
-export function validated<T>(result: {
-  readonly valid: boolean;
-  readonly value: T | null;
-  readonly diagnostics: readonly Diagnostic[];
-}): Validated<T> {
-  const diagnostics = result.diagnostics;
-  if (!result.valid || result.value === null)
-    return mint<RejectedShape>({ kind: "rejected", diagnostics });
-  return mint<AcceptedShape<T>>({ kind: "accepted", value: result.value, diagnostics });
-}
-
-/** The accepted value, or the refusal every one of those five sites throws today. */
-export function expectValid<T>(result: Validated<T>): T {
-  switch (result.kind) {
-    case "accepted":
-      return result.value;
-    case "rejected":
-      return refuse({ kind: "invalid-definition", diagnostics: result.diagnostics });
-    default:
-      return unreachable(result);
-  }
+/** Reads a shared validation outcome and raises the runtime refusal for its refused branch. */
+export function expectValid<T>(result: Outcome<T>): T {
+  return readOutcome(
+    result,
+    (value) => value,
+    (diagnostics) => refuse({ kind: "invalid-definition", diagnostics }),
+  );
 }
 
 interface NoHookShape {
@@ -104,29 +64,13 @@ const NO_HOOK: LiveWrite = mint<NoHookShape>({ kind: "no-hook" });
 /** Reads the seam's answer as a union. `undefined` was never a fourth outcome, only an absent one. */
 export function liveWrite(result: LiveWriteResult | undefined): LiveWrite {
   if (result === undefined) return NO_HOOK;
-  if (result.patched) return mint<PatchedShape>({ kind: "patched", progress: result.progress });
-  return mint<NeedsRebuildShape>({ kind: "needs-rebuild", progress: result.progress });
-}
-
-/**
- * Whether the seam declined to patch, so this write owes a staged replacement.
- *
- * A reader rather than a discriminant comparison spelled at the call site, on the precedent
- * `value-state.ts` set: the module that owns a union owns the switch over it, so a variant added
- * later breaks here instead of falling into whichever arm happened to be written last. Named for
- * what the caller owes rather than for the variant, because `buildOwed` in `value-state.ts` answers
- * a different question about a different union, and two names one letter apart would be a second
- * owner of neither.
- */
-export function stageOwed(write: LiveWrite): boolean {
-  switch (write.kind) {
-    case "no-hook":
+  switch (result.patch.kind) {
     case "patched":
-      return false;
-    case "needs-rebuild":
-      return true;
+      return mint<PatchedShape>({ kind: "patched", progress: result.progress });
+    case "recompile":
+      return mint<NeedsRebuildShape>({ kind: "needs-rebuild", progress: result.progress });
     default:
-      return unreachable(write);
+      return unreachable(result.patch);
   }
 }
 

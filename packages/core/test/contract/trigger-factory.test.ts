@@ -13,9 +13,11 @@ import {
   createFakeScheduler,
   createFakeTriggerPort,
 } from "../../src/testing/fakes";
+import { acceptsExternalSignal } from "../../src/ports/trigger-factory";
 import {
   assertTriggerFactory,
   type TriggerFactory,
+  type CreatedTrigger,
   type TriggerFactoryContext,
 } from "../../src/ports/trigger-factory";
 
@@ -101,6 +103,18 @@ describe("trigger contract T1/T2/T3", () => {
     expect(() => assertTriggerFactory({ create: 1 })).toThrow(/TriggerFactory/);
   });
 
+  it("does not let an injected factory write a capability pair", () => {
+    const port = createFakeTriggerPort();
+    const contradictory: CreatedTrigger = {
+      port,
+      // @ts-expect-error CreatedTrigger derives capability from its one total binding.
+      acceptsExternalSignal: true,
+      clockBinding: { kind: "driver", onTick: () => undefined },
+      dispose: () => port.dispose(),
+    };
+    contradictory.dispose();
+  });
+
   it("selects manual, time, and injected scroll drivers", () => {
     const scroll: ScrollSource = { subscribe: () => () => undefined };
     const factory = createTriggerFactory({ scroll: () => scroll });
@@ -110,9 +124,9 @@ describe("trigger contract T1/T2/T3", () => {
       [{ type: "time", duration: 1000, repeat: -1, yoyo: true }, false, "driver"],
       [{ type: "scroll", source: "hero" }, false, "none"],
     ] as const;
-    for (const [trigger, acceptsExternalSignal, kind] of cases) {
+    for (const [trigger, expectedAcceptsExternalSignal, kind] of cases) {
       const created = factory.create(context(trigger));
-      expect(created.acceptsExternalSignal).toBe(acceptsExternalSignal);
+      expect(acceptsExternalSignal(created.clockBinding)).toBe(expectedAcceptsExternalSignal);
       // One total field. "A driver *and* motion.onTick" is unrepresentable, not merely untested.
       expect(created.clockBinding.kind).toBe(kind);
       created.dispose();
@@ -148,7 +162,6 @@ describe("injected trigger factory", () => {
         const port = createFakeTriggerPort();
         return {
           port,
-          acceptsExternalSignal: true,
           clockBinding: { kind: "motion" },
           dispose: () => port.dispose(),
         };

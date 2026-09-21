@@ -76,9 +76,7 @@ import {
   isLive,
   liveWrite,
   resolveToken,
-  stageOwed,
   stale,
-  validated,
   writtenProgress,
   type Resolved,
 } from "./results";
@@ -98,13 +96,35 @@ import { GraphRuntime, type ComposeResolver } from "./graph-runtime";
 import type { GraphNode } from "../graph/ir";
 import type { MemberState } from "./graph-publisher";
 import type { GraphBuilder } from "../ports/graph-builder";
+import { unreachable } from "../lang/exhaustive";
 
-type TrackEntry = {
-  track: TrackDefinition;
-  motionId?: string;
-  token: number;
-  valueState: ValueState;
-};
+interface FreeTrackEntry {
+  readonly kind: "free";
+  readonly track: TrackDefinition;
+  readonly token: number;
+  readonly valueState: ValueState;
+}
+
+interface OwnedTrackEntry {
+  readonly kind: "owned";
+  readonly track: TrackDefinition;
+  readonly motionId: string;
+  readonly token: number;
+  readonly valueState: ValueState;
+}
+
+type TrackEntry = FreeTrackEntry | OwnedTrackEntry;
+
+function trackMotionId(entry: TrackEntry): string | undefined {
+  switch (entry.kind) {
+    case "free":
+      return undefined;
+    case "owned":
+      return entry.motionId;
+    default:
+      return unreachable(entry);
+  }
+}
 
 type MotionEntry = {
   definition: MotionDefinition;
@@ -115,10 +135,41 @@ interface OpenTransaction {
   motions: Map<string, MotionEntry>;
 }
 
-interface StagedPair {
-  readonly tracks?: Map<string, TrackEntry>;
-  readonly motions?: Map<string, MotionEntry>;
+interface TracksStaged {
+  readonly kind: "tracks";
+  readonly tracks: Map<string, TrackEntry>;
 }
+
+interface MotionsStaged {
+  readonly kind: "motions";
+  readonly motions: Map<string, MotionEntry>;
+}
+
+interface BothStaged {
+  readonly kind: "both";
+  readonly tracks: Map<string, TrackEntry>;
+  readonly motions: Map<string, MotionEntry>;
+}
+
+type StagedPair = TracksStaged | MotionsStaged | BothStaged;
+
+function resolveStagedPair(
+  plan: StagedPair,
+  retainedTracks: Map<string, TrackEntry>,
+  retainedMotions: Map<string, MotionEntry>,
+): { readonly tracks: Map<string, TrackEntry>; readonly motions: Map<string, MotionEntry> } {
+  switch (plan.kind) {
+    case "tracks":
+      return { tracks: plan.tracks, motions: retainedMotions };
+    case "motions":
+      return { tracks: retainedTracks, motions: plan.motions };
+    case "both":
+      return { tracks: plan.tracks, motions: plan.motions };
+    default:
+      return unreachable(plan);
+  }
+}
+
 export type { KeyframeResolver, LiveValueWriter, StagedTrack };
 export interface ProjectRuntimeOptions {
   readonly clock: Clock;
@@ -198,6 +249,7 @@ export class ProjectRuntime {
       this.#motions.set(motion.id, { definition: motion, token: this.#nextToken++ });
       for (const track of motion.tracks)
         this.#tracks.set(qualifyMotionTrack(motion.id, track.id).value, {
+          kind: "owned",
           track,
           motionId: motion.id,
           token: this.#nextToken++,
@@ -206,6 +258,7 @@ export class ProjectRuntime {
     }
     for (const track of project.freeTracks ?? [])
       this.#tracks.set(qualifyFreeTrack(track.id).value, {
+        kind: "free",
         track,
         token: this.#nextToken++,
         valueState: AUTHORED,
@@ -365,7 +418,7 @@ export class ProjectRuntime {
     }
     if (isRetiring(this.#phase)) return answer;
     if (open.tracks !== this.#tracks || open.motions !== this.#motions)
-      this.#commit({ tracks: open.tracks, motions: open.motions });
+      this.#commit({ kind: "both", tracks: open.tracks, motions: open.motions });
     return answer;
   }
 
@@ -396,7 +449,7 @@ export class ProjectRuntime {
     const accepted = { ...definition, tracks: [] };
     const motions = this.#stageMotions();
     motions.set(accepted.id, { definition: accepted, token: this.#nextToken++ });
-    this.#commit({ motions });
+    this.#commit({ kind: "motions", motions });
     return Object.freeze({ id: accepted.id });
   }
   destroyMotion(motionId: string): void {
@@ -503,18 +556,16 @@ export class ProjectRuntime {
         ? qualifyMotionTrack(motionId, track.id).value
         : qualifyFreeTrack(track.id).value;
     if (this.#readTracks().has(id)) throw new TypeError(`Track "${id}" already exists.`);
-    const accepted = expectValid(
-      validated(validateTrackDefinition(track, `addTrack(${track.id})`)),
-    );
+    const accepted = expectValid(validateTrackDefinition(track, `addTrack(${track.id})`));
     const token = this.#nextToken++;
     const tracks = this.#stageTracks();
-    tracks.set(id, {
-      track: accepted,
-      motionId,
-      token,
-      valueState: AUTHORED,
-    });
-    this.#commit({ tracks });
+    tracks.set(
+      id,
+      motionId === undefined
+        ? { kind: "free", track: accepted, token, valueState: AUTHORED }
+        : { kind: "owned", track: accepted, motionId, token, valueState: AUTHORED },
+    );
+    this.#commit({ kind: "tracks", tracks });
     return this.#handle(id, token);
   }
 
@@ -522,7 +573,7 @@ export class ProjectRuntime {
     tracks: ReadonlyMap<string, TrackEntry>,
     motionId: string | undefined,
   ): readonly (readonly [string, TrackEntry])[] {
-    return [...tracks.entries()].filter(([, entry]) => entry.motionId === motionId);
+    return [...tracks.entries()].filter(([, entry]) => trackMotionId(entry) === motionId);
   }
 
   #entryOf(nodeId: string): TrackEntry {
@@ -593,7 +644,7 @@ export class ProjectRuntime {
       );
     const motions = this.#stageMotions();
     motions.delete(motionId);
-    this.#commit({ motions });
+    this.#commit({ kind: "motions", motions });
   }
 
   #admit(verb: VerbClass): "allow" | "join" {
@@ -652,7 +703,7 @@ export class ProjectRuntime {
     this.#writableEntry(id, token);
     const tracks = this.#stageTracks();
     tracks.delete(id);
-    this.#commit({ tracks });
+    this.#commit({ kind: "tracks", tracks });
   }
 
   #resolve(nodeId: string, track: TrackDefinition): ResolvedPlugins | undefined {
@@ -679,25 +730,25 @@ export class ProjectRuntime {
 
   #replaceTrack(id: string, token: number, next: TrackDefinition): void {
     const entry = this.#writableEntry(id, token);
+    const owner = trackMotionId(entry);
     const expected =
-      entry.motionId !== undefined
-        ? qualifyMotionTrack(entry.motionId, next.id).value
+      owner !== undefined
+        ? qualifyMotionTrack(owner, next.id).value
         : qualifyFreeTrack(next.id).value;
     if (expected !== id) throw new TypeError(`Replacement must preserve node id "${id}".`);
-    const accepted = expectValid(validated(validateTrackDefinition(next, `replaceTrack(${id})`)));
+    const accepted = expectValid(validateTrackDefinition(next, `replaceTrack(${id})`));
     const tracks = this.#stageTracks();
     tracks.set(id, {
       ...entry,
       track: accepted,
       valueState: AUTHORED,
     });
-    this.#commit({ tracks });
+    this.#commit({ kind: "tracks", tracks });
   }
 
   #commit(plan: StagedPair): void {
     if (this.#admit(COMMIT) === "join") return;
-    const tracks = plan.tracks ?? this.#tracks,
-      motions = plan.motions ?? this.#motions;
+    const { tracks, motions } = resolveStagedPair(plan, this.#tracks, this.#motions);
     this.#boundary(() => {
       this.#assertSameLifetimes(this.#motions, motions);
       this.#assertSameLifetimes(this.#tracks, tracks);
@@ -805,8 +856,7 @@ export class ProjectRuntime {
       const rewritten = rebase || involved ? withAuthoredValues(entry.track, values) : entry.track;
       // Validated and then discarded: this write stages no definition, so the refusal is the
       // whole of what validating the candidate is for here.
-      if (involved)
-        expectValid(validated(validateTrackDefinition(rewritten, `writeValues(${nodeId})`)));
+      if (involved) expectValid(validateTrackDefinition(rewritten, `writeValues(${nodeId})`));
       const mask = { ...authoredValues(entry.track), ...statics };
       const answer = this.#ports.value.write(nodeId, mask, involved ? animated : undefined, rebase);
       // The seam has taken the write and carries no inverse, so the state it left is recorded on
@@ -820,9 +870,16 @@ export class ProjectRuntime {
       let progress: number | undefined;
       try {
         const written = liveWrite(answer);
-        if (stageOwed(written)) {
-          progress = writtenProgress(written);
-          staged = this.#ports.track.stage(rewritten, nodeId);
+        switch (written.kind) {
+          case "no-hook":
+          case "patched":
+            break;
+          case "needs-rebuild":
+            progress = writtenProgress(written);
+            staged = this.#ports.track.stage(rewritten, nodeId);
+            break;
+          default:
+            return unreachable(written);
         }
         if (rebase) adopted = { ...adopted, track: rewritten };
       } finally {
@@ -872,7 +929,7 @@ export class ProjectRuntime {
   ) {
     return this.#boundary(() => {
       const next = withKeyframes(entry.track, keyframes);
-      const accepted = expectValid(validated(validateTrackDefinition(next, `${verb}(${nodeId})`)));
+      const accepted = expectValid(validateTrackDefinition(next, `${verb}(${nodeId})`));
       const resolved = this.#resolve(nodeId, accepted);
       if (resolved?.diagnostics.some(({ severity }) => severity === "error"))
         refuse({ kind: "invalid-definition", diagnostics: resolved.diagnostics });
@@ -922,7 +979,10 @@ export class ProjectRuntime {
   }
   #authorEdit(id: string, token: number, edit: AuthoringEdit): void {
     const entry = this.#writableEntry(id, token);
-    const next = applyEdit({ nodeId: id, motionId: entry.motionId, track: entry.track }, edit);
+    const next = applyEdit(
+      { nodeId: id, motionId: trackMotionId(entry), track: entry.track },
+      edit,
+    );
     if (next === entry.track) return;
     this.#replaceTrack(id, token, next);
   }
@@ -934,12 +994,13 @@ export class ProjectRuntime {
     const owned = new Map<string, TrackDefinition[]>();
     const freeTracks: TrackDefinition[] = [];
     for (const entry of tracks.values()) {
-      if (entry.motionId === undefined) {
+      const motionId = trackMotionId(entry);
+      if (motionId === undefined) {
         freeTracks.push(entry.track);
         continue;
       }
-      const bucket = owned.get(entry.motionId);
-      if (bucket === undefined) owned.set(entry.motionId, [entry.track]);
+      const bucket = owned.get(motionId);
+      if (bucket === undefined) owned.set(motionId, [entry.track]);
       else bucket.push(entry.track);
     }
     return {

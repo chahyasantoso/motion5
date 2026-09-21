@@ -3,8 +3,13 @@
  * app may import; `scripts/boundary-scan.mjs` enforces that. These are the implementations the
  * core suite runs the port contract suite against, per TR-P-05. See ADR-048.
  */
-import { readAuthoredLeaf, readCompilableStops } from "../contract/authored-leaf";
+import {
+  authoredLeafPartition,
+  readAuthoredLeaf,
+  readCompilableStops,
+} from "../contract/authored-leaf";
 import type { AuthoredStaticValue, AuthoredStop } from "../contract/v5";
+import { unreachable } from "../lang/exhaustive";
 import type { InterpolationTimeline, Interpolator } from "../ports/interpolator";
 import type { Cancel, Scheduler } from "../ports/scheduler";
 import type { TriggerPort } from "../ports/trigger";
@@ -15,16 +20,17 @@ interface AuthoredLeaves {
 }
 
 /**
- * Which authored leaves this fake publishes, decided by the shared reader rather than by a private
- * copy of it.
+ * Which authored leaves this fake publishes, decided by the shared leaf reader and payload
+ * partition rather than by a private copy of either.
  *
  * The private copy this replaced accepted any non-empty authored list, so a stop whose position did
  * not parse, or one carrying no value, published a key the real compiler drops. A fake that
  * publishes keys the production pipeline never produces makes a schema mistake look like a
  * composition bug, which is the failure `LF-3` states as an assertion. See issue #192.
  *
- * A static leaf is separated from an animated one here for the same reason the compiler separates
- * them: it enters `state` once and is never interpolated, so this double agrees with
+ * A static leaf is separated from an animated one here through the shared payload partition for
+ * the same reason the compiler separates them: it enters `state` once and is never interpolated, so
+ * this double agrees with
  * `compilePercentKeyframes` about what a value that never changes costs. See ADR-050.
  */
 function readLeaves(config: unknown): AuthoredLeaves {
@@ -36,12 +42,19 @@ function readLeaves(config: unknown): AuthoredLeaves {
   if (!keyframes || typeof keyframes !== "object" || Array.isArray(keyframes))
     return { animated, statics };
   for (const [key, property] of Object.entries(keyframes)) {
-    const leaf = readAuthoredLeaf(property);
-    if (leaf.kind === "static") {
-      statics[key] = leaf.value;
-      continue;
+    const partition = authoredLeafPartition(readAuthoredLeaf(property));
+    switch (partition.kind) {
+      case "value":
+        statics[key] = partition.value;
+        continue;
+      case "none":
+        continue;
+      case "stops":
+        break;
+      default:
+        return unreachable(partition);
     }
-    const stops = readCompilableStops(property);
+    const stops = readCompilableStops(partition.stops);
     if (stops.length === 0) continue;
     animated[key] = stops;
   }

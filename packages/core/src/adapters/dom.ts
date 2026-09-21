@@ -1,4 +1,5 @@
-import type { Patch } from "../runtime/patch-registry";
+import type { Patch } from "../contract/v5";
+import { patchRender } from "../contract/patch-render";
 import type { RenderMetadata } from "../domain/plugins";
 
 export interface StageLike {
@@ -226,20 +227,22 @@ export function createDomPatchAdapter(
   }
   return {
     apply(patch) {
-      if (patch.status !== "ready") return;
-      const target = resolveTarget(patch.nodeId);
+      const decision = patchRender(patch);
+      if (decision.kind !== "render") return;
+      const ready = decision.patch;
+      const target = resolveTarget(ready.nodeId);
       if (target === undefined) return;
       const revisions = appliedRevisions.get(target) ?? new Map<string, number>();
-      const accepted = revisions.get(patch.nodeId);
+      const accepted = revisions.get(ready.nodeId);
       // Refused before the diff, and recorded even when the diff turns out empty. `lastApplied` is
       // what the next frame's dirty set is measured against, so an older patch does not cost one
       // stale frame: it leaves every later diff wrong about what the element holds. An accepted
       // patch that wrote nothing is still the newest one seen, and calling it unseen would let the
       // patch before it through.
-      if (accepted !== undefined && patch.revision <= accepted) return;
-      revisions.set(patch.nodeId, patch.revision);
+      if (accepted !== undefined && ready.revision <= accepted) return;
+      revisions.set(ready.nodeId, ready.revision);
       appliedRevisions.set(target, revisions);
-      writeValues(target, patch.values);
+      writeValues(target, ready.values);
     },
     applyValues(nodeId, values) {
       const target = resolveTarget(nodeId);

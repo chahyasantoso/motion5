@@ -47,10 +47,10 @@ record the new base, which is `setValues`: one boolean at the adapter mirroring 
 one difference at the runtime. The boolean selects which retained record the effective set is written
 into, not which behavior runs, and there is exactly one behavior.
 
-**`patchKeys` has no refusal set, and that is what makes the optional member Liskov-safe.** `false`
-means escalate, always, and nothing else. Key legality is `Track`'s and is answered before the call.
-Compilation failure is `create()`'s, which already throws `KeyframeCompilationError` from the one
-place that owns it, so an overlay that cannot compile is declined, escalated, and the recompile
+**`patchKeys` has no refusal set, and that is what makes the optional member Liskov-safe.**
+`{ kind: "recompile" }` means escalate, always, and nothing else. Key legality is `Track`'s and is answered before the call.
+Compilation failure is `create()`'s, which already throws `KeyframeCompilationError` from the one place
+that owns it, so an overlay that cannot compile is declined, escalated, and the recompile
 raises the same error the same way it would have without the capability. The patching backend and the
 declining backend are therefore observably identical on success and on failure.
 

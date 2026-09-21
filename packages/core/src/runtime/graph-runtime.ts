@@ -8,7 +8,7 @@ import { GraphPublisher, type PublisherNode, type PublisherSnapshot } from "./gr
 import { PatchRegistry, type PatchBatch } from "./patch-registry";
 import { deferredScheduler, type Cancel, type Scheduler } from "../ports/scheduler";
 import type { RuleId } from "../contract/rule-id";
-import { unreachable } from "../domain/exhaustive";
+import { unreachable } from "../lang/exhaustive";
 import {
   CLEAN_TRACE,
   batchFor,

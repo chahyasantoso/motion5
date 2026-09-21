@@ -1,5 +1,6 @@
+import { unreachable } from "../lang/exhaustive";
 import { compareCodeUnits } from "./compare";
-import type { EdgeRequirement, GraphEdge } from "./ir";
+import type { GraphEdge } from "./ir";
 import { compareEdges, describeEdge, edgeKey } from "./ir";
 
 /** A read-only structural view of live state, used for evidence and inspection. */
@@ -8,7 +9,17 @@ export interface ObservationStateSnapshot {
   readonly edges: readonly GraphEdge[];
 }
 
-/** Each entry names the action that undoes one applied mutation. */
+/**
+ * Each entry names the action that undoes one applied mutation.
+ *
+ * Closed, and since ADR-092 read as closed: `rollback` names all four verbs and hands its subject to
+ * `unreachable`, so a fifth one fails `typecheck` at the only reader that owes it a decision. The
+ * `if`/`else if`/bare-`else` chain this replaced meant that a variant nobody wrote an arm for was
+ * `remove-edge`, and the two verbs that carry an edge are the two that made that dangerous: a new
+ * edge-carrying verb would have deleted a live edge during the one operation in this class that must
+ * not invent a mutation, and it would have done it silently, because a rollback that removes an edge
+ * is exactly what a rollback is allowed to look like. Nothing in this file could have caught it.
+ */
 type JournalEntry =
   | { readonly undo: "add-node"; readonly id: string }
   | { readonly undo: "remove-node"; readonly id: string }
@@ -24,14 +35,29 @@ type JournalEntry =
  * primitive it carried. See ADR-047.
  */
 function normalizeEdge(edge: GraphEdge): GraphEdge {
-  const base: {
-    observerId: string;
-    sourceId: string;
-    role: "input" | "output";
-    requirement?: EdgeRequirement;
-  } = { observerId: edge.observerId, sourceId: edge.sourceId, role: edge.role };
-  if (edge.requirement !== undefined) base.requirement = edge.requirement;
-  return Object.freeze(base) as GraphEdge;
+  switch (edge.role) {
+    case "input":
+      return edge.requirement === undefined
+        ? (Object.freeze({
+            observerId: edge.observerId,
+            sourceId: edge.sourceId,
+            role: "input",
+          }) as GraphEdge)
+        : Object.freeze({
+            observerId: edge.observerId,
+            sourceId: edge.sourceId,
+            role: "input",
+            requirement: edge.requirement,
+          });
+    case "output":
+      return Object.freeze({
+        observerId: edge.observerId,
+        sourceId: edge.sourceId,
+        role: "output",
+      });
+    default:
+      return unreachable(edge);
+  }
 }
 
 /**
@@ -138,10 +164,22 @@ export class ObservationState {
         const entry = this.#journal[index];
         if (entry === undefined) continue;
         try {
-          if (entry.undo === "add-node") this.addNode(entry.id);
-          else if (entry.undo === "remove-node") this.removeNode(entry.id);
-          else if (entry.undo === "add-edge") this.addEdge(entry.edge);
-          else this.removeEdge(entry.edge);
+          switch (entry.undo) {
+            case "add-node":
+              this.addNode(entry.id);
+              break;
+            case "remove-node":
+              this.removeNode(entry.id);
+              break;
+            case "add-edge":
+              this.addEdge(entry.edge);
+              break;
+            case "remove-edge":
+              this.removeEdge(entry.edge);
+              break;
+            default:
+              unreachable(entry);
+          }
         } catch (error) {
           errors.push({ index, undo: entry.undo, error });
         }

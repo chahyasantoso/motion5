@@ -43,7 +43,9 @@ Two items in that list are vacuous at the point of rejection, and saying so is t
 
 `ADR-031` is preserved. `Motion` still resolves compiled Tracks by id, `MotionTrackEntry` stays `{ id, duration? }`, and nothing here captures a `Track`. `packages/core/src/domain/motion.ts` is not touched, so the `C-3` source guard stays green without being edited.
 
-There is still exactly one Motion construction path. Runtime Motions go through the same `buildMotion` closure, the same `resolveTriggerDefinition` narrowing, the same `triggerFactory`, and the same exhaustive `ClockBinding` switch. No trigger kind is read outside the factory.
+There is still exactly one Motion construction path. Runtime Motions go through the same
+`buildMotion` closure, the same `resolveTriggerDefinition` narrowing, the same `triggerFactory`,
+and the same exhaustive `TriggerBinding` switch. No trigger kind is read outside the factory.
 
 ## Consequences
 

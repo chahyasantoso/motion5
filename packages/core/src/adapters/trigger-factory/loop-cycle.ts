@@ -1,3 +1,5 @@
+import { unreachable } from "../../lang/exhaustive";
+
 /**
  * Loop state and cycle arithmetic for a time-driven Motion, in one place.
  *
@@ -23,15 +25,26 @@ export interface LoopCycleOptions {
   readonly yoyo?: boolean;
 }
 
+interface RunningCycle {
+  readonly kind: "running";
+  /** Loop time in clock units, reduced to a single period while the loop is infinite. */
+  readonly elapsed: number;
+}
+
+interface FinishedCycle {
+  readonly kind: "finished";
+  /** The terminal elapsed time, retained so a later advance can replay its endpoint. */
+  readonly elapsed: number;
+}
+
+type LoopCycleState = RunningCycle | FinishedCycle;
+
 export interface LoopCycleStep {
   readonly progress: number;
-  readonly completed: boolean;
 }
 
 export interface LoopCycle {
-  readonly completed: boolean;
-  /** Loop time in clock units, reduced to a single period while the loop is infinite. */
-  readonly elapsed: number;
+  readonly state: LoopCycleState;
   advance(delta: number): LoopCycleStep;
 }
 
@@ -49,8 +62,7 @@ export function createLoopCycle(options: LoopCycleOptions): LoopCycle {
   // A yoyo repeats itself every two cycles rather than every one, so the reduction below has to
   // keep both of them or it would drop the direction.
   const period = (yoyo ? 2 : 1) * duration;
-  let elapsed = 0;
-  let completed = false;
+  let state: LoopCycleState = { kind: "running", elapsed: 0 };
   /**
    * Cycles are half-open at the start and closed at the end: a tick landing exactly on a boundary
    * reads as the end of the cycle it completed, not the start of the next one.
@@ -73,27 +85,35 @@ export function createLoopCycle(options: LoopCycleOptions): LoopCycle {
     return yoyo && index % 2 === 1 ? 1 - position : position;
   }
   return {
-    get completed() {
-      return completed;
-    },
-    get elapsed() {
-      return elapsed;
+    get state() {
+      return state;
     },
     advance(delta: number): LoopCycleStep {
-      if (completed) return { progress: progressAt(elapsed), completed };
-      elapsed += delta;
-      if (elapsed >= totalDuration) {
-        elapsed = totalDuration;
-        completed = true;
-      } else if (infinite) {
-        // An infinite loop must not accumulate unbounded loop time. Past roughly 2^58 clock units
-        // a further delta is absorbed by the float and the loop freezes on one value forever, so
-        // the phase is reduced into a single period on every advance instead. The reduction is
-        // exact: subtracting whole periods cannot change the position inside the current one.
-        const wraps = Math.ceil(elapsed / period) - 1;
-        if (wraps > 0) elapsed -= wraps * period;
+      switch (state.kind) {
+        case "finished":
+          return { progress: progressAt(state.elapsed) };
+        case "running": {
+          let elapsed = state.elapsed + delta;
+          if (elapsed >= totalDuration) {
+            elapsed = totalDuration;
+            state = { kind: "finished", elapsed };
+          } else {
+            if (infinite) {
+              // An infinite loop must not accumulate unbounded loop time. Past roughly 2^58 clock
+              // units a further delta is absorbed by the float and the loop freezes on one value
+              // forever, so the phase is reduced into a single period on every advance instead.
+              // The reduction is exact: subtracting whole periods cannot change the position inside
+              // the current one.
+              const wraps = Math.ceil(elapsed / period) - 1;
+              if (wraps > 0) elapsed -= wraps * period;
+            }
+            state = { kind: "running", elapsed };
+          }
+          return { progress: progressAt(state.elapsed) };
+        }
+        default:
+          return unreachable(state);
       }
-      return { progress: progressAt(elapsed), completed };
     },
   };
 }

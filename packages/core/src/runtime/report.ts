@@ -3,7 +3,7 @@ import type { OwnedIds } from "../contract/rule";
 import type { RuleId } from "../contract/rule-id";
 import type { Diagnostic, PatchBatch } from "../contract/v5";
 import { collect, report } from "../domain/completion";
-import { unreachable } from "../domain/exhaustive";
+import { unreachable } from "../lang/exhaustive";
 // Two questions about a thrown value, and each name states which one it answers. `describeError`
 // renders one value as its own message and is this folder's owner of that; `describeWithCauses` below
 // adds the causes an `AggregateError` collected and delegates its leaf case here, so one expression

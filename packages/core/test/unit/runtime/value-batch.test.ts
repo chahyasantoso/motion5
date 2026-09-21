@@ -89,7 +89,9 @@ function rig(options: { escalate?: boolean; project?: ProjectDefinition } = {}) 
     }),
     writeValues: (nodeId, values) => {
       state.set(nodeId, { ...values });
-      return options.escalate === true ? { patched: false, progress: 0.25 } : undefined;
+      return options.escalate === true
+        ? { patch: { kind: "recompile" }, progress: 0.25 }
+        : undefined;
     },
     setProgress: (nodeId, progress) => {
       progressed.push([nodeId, progress]);

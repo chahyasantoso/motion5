@@ -5,6 +5,7 @@ import {
   FABRIK_TOLERANCE,
   seedArc,
   solveFabrik,
+  type FabrikConvergence,
   type FabrikMember,
   type FabrikPoint,
 } from "../../../src/plugins/fabrik";
@@ -116,11 +117,20 @@ function shuffle(members: readonly FabrikMember[], seed: number): FabrikMember[]
 }
 
 describe("FABRIK over a solver chain (Slice D2)", () => {
+  it("FB-0 makes the meaningless converged-and-stalled state unwritable", () => {
+    const impossible: FabrikConvergence = {
+      kind: "converged",
+      iterations: 1,
+      residual: 0,
+      // @ts-expect-error convergence has one closed outcome, not independent boolean flags.
+      stalled: true,
+    };
+    expect(impossible.kind).toBe("converged");
+  });
   it("FB-1 a two-bone chain reaches its goal and keeps both segment lengths", () => {
     const solution = solveFabrik(ROOT, TWO_BONE);
 
-    expect(solution.convergence.converged).toBe(true);
-    expect(solution.convergence.stalled).toBe(false);
+    expect(solution.convergence.kind).toBe("converged");
     expect(solution.convergence.iterations).toBeLessThan(FABRIK_MAX_ITERATIONS);
     expect(solution.convergence.residual).toBeLessThanOrEqual(FABRIK_TOLERANCE);
     expect(distance(solution.tips[FOREARM]!, HAND)).toBeLessThanOrEqual(FABRIK_TOLERANCE);
@@ -151,7 +161,7 @@ describe("FABRIK over a solver chain (Slice D2)", () => {
     for (const flip of [false, true]) {
       const closed = solveTwoBone(ROOT, HAND, analytic, flip);
       const iterative = solveFabrik(ROOT, TWO_BONE, flip);
-      expect(iterative.convergence.converged).toBe(true);
+      expect(iterative.convergence.kind).toBe("converged");
       expect(Math.abs(iterative.rotations[UPPER]! - closed[UPPER]!)).toBeLessThan(bound);
       expect(Math.abs(iterative.rotations[FOREARM]! - closed[FOREARM]!)).toBeLessThan(bound);
     }
@@ -165,14 +175,14 @@ describe("FABRIK over a solver chain (Slice D2)", () => {
 
   it("FB-3 chains past arity two reach their goal", () => {
     const three = solveFabrik(ROOT, THREE_BONE);
-    expect(three.convergence.converged).toBe(true);
+    expect(three.convergence.kind).toBe("converged");
     expect(distance(three.tips.c!, at(300, 380))).toBeLessThanOrEqual(FABRIK_TOLERANCE);
     expect(distance(ROOT, three.tips.a!)).toBeCloseTo(80, 9);
     expect(distance(three.tips.a!, three.tips.b!)).toBeCloseTo(60, 9);
     expect(distance(three.tips.b!, three.tips.c!)).toBeCloseTo(40, 9);
 
     const five = solveFabrik(ROOT, FIVE_BONE);
-    expect(five.convergence.converged).toBe(true);
+    expect(five.convergence.kind).toBe("converged");
     expect(five.convergence.iterations).toBeLessThan(FABRIK_MAX_ITERATIONS);
     expect(distance(five.tips.m5!, at(260, 380))).toBeLessThanOrEqual(FABRIK_TOLERANCE);
     expect(distance(five.tips.m4!, five.tips.m5!)).toBeCloseTo(40, 9);
@@ -207,7 +217,7 @@ describe("FABRIK over a solver chain (Slice D2)", () => {
 
   it("FB-5 two goals sharing one sub-base are both solved, and contention is deterministic", () => {
     const tree = solveFabrik(ROOT, TREE);
-    expect(tree.convergence.converged).toBe(true);
+    expect(tree.convergence.kind).toBe("converged");
     expect(distance(tree.tips["fore-l"]!, at(240, 400))).toBeLessThanOrEqual(FABRIK_TOLERANCE);
     expect(distance(tree.tips["fore-r"]!, at(160, 400))).toBeLessThanOrEqual(FABRIK_TOLERANCE);
     expect(distance(ROOT, tree.tips.spine!)).toBeCloseTo(50, 9);
@@ -219,7 +229,7 @@ describe("FABRIK over a solver chain (Slice D2)", () => {
     // poses: a solve that let one branch win, or that averaged in an order the input decided, would
     // pull it off the axis instead.
     const contested = solveFabrik(ROOT, CONTESTED_TREE);
-    expect(contested.convergence.converged).toBe(false);
+    expect(contested.convergence.kind).not.toBe("converged");
     expect(contested.tips.spine!.x).toBeCloseTo(200, 9);
     expect(contested.tips["arm-l"]!.x + contested.tips["arm-r"]!.x).toBeCloseTo(400, 9);
     expect(contested.tips["arm-l"]!.y).toBeCloseTo(contested.tips["arm-r"]!.y, 9);
@@ -230,8 +240,8 @@ describe("FABRIK over a solver chain (Slice D2)", () => {
     // chain is a fixed point of both passes. Reported as stalled, in one iteration rather than at
     // the cap, so a caller is not told to raise a cap that would change nothing.
     const unreachable = solveFabrik(ROOT, [bone("a", "root", 30), tip("b", "a", 20, at(600, 300))]);
-    expect(unreachable.convergence.converged).toBe(false);
-    expect(unreachable.convergence.stalled).toBe(true);
+    expect(unreachable.convergence.kind).not.toBe("converged");
+    expect(unreachable.convergence.kind).toBe("stalled");
     expect(unreachable.convergence.iterations).toBe(1);
     // Exactly the shortfall: 400 units away, 50 units of chain.
     expect(unreachable.convergence.residual).toBeCloseTo(350, 9);
@@ -244,8 +254,7 @@ describe("FABRIK over a solver chain (Slice D2)", () => {
     // reported as unconverged with its residual rather than as success, which is the whole reason
     // the residual is returned.
     const slow = solveFabrik(ROOT, [bone("a", "root", 50), tip("b", "a", 40, at(280, 340))]);
-    expect(slow.convergence.converged).toBe(false);
-    expect(slow.convergence.stalled).toBe(false);
+    expect(slow.convergence.kind).toBe("iteration-cap");
     expect(slow.convergence.iterations).toBe(FABRIK_MAX_ITERATIONS);
     expect(slow.convergence.residual).toBeGreaterThan(FABRIK_TOLERANCE);
     expect(slow.convergence.residual).toBeLessThan(0.01);
@@ -280,20 +289,20 @@ describe("FABRIK over a solver chain (Slice D2)", () => {
     expect(zero.rotations.a!).toBe(0);
     expect(zero.rotations.b!).toBe(0);
     expect(zero.tips.b!).toEqual({ x: 200, y: 300 });
-    expect(zero.convergence.stalled).toBe(true);
+    expect(zero.convergence.kind).toBe("stalled");
     expect(Number.isFinite(zero.convergence.residual)).toBe(true);
 
     // A negative length is a zero-length segment, read the way `readNumber` reads a bad number: the
     // damage stays inside the value that was wrong.
     const negative = solveFabrik(ROOT, [bone("a", "root", -40), tip("b", "a", 40, at(240, 300))]);
-    expect(negative.convergence.converged).toBe(true);
+    expect(negative.convergence.kind).toBe("converged");
     expect(negative.tips.a!).toEqual({ x: 200, y: 300 });
     expect(negative.tips.b!).toEqual({ x: 240, y: 300 });
 
     // A goal on the root has no direction to read, so the seed's axis is the root's own rotation
     // and the chain folds back along it. Defined, exact, and reachable.
     const folded = solveFabrik(ROOT, [bone("a", "root", 40), tip("b", "a", 40, at(200, 300))]);
-    expect(folded.convergence.converged).toBe(true);
+    expect(folded.convergence.kind).toBe("converged");
     expect(folded.convergence.residual).toBe(0);
     expect(folded.rotations.a!).toBe(90);
     expect(folded.rotations.b!).toBe(-180);

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { ObservationDefinition, ProjectDefinition } from "../../../src/contract/v5";
 import type { Track } from "../../../src/domain/track";
-import type { GraphEdge } from "../../../src/graph/ir";
+import { edgeRequirement, edgeRole, type GraphEdge } from "../../../src/graph/ir";
 import { buildGraphIR, edgeKey, resolveObservationEdge } from "../../../src/graph/ir";
 import type { PublisherNode } from "../../../src/runtime/graph-publisher";
 
@@ -87,7 +87,8 @@ describe("observes declares an output edge only", () => {
 
   it("J-2 refuses an authored input role and produces no edge", () => {
     const resolved = resolveObservationEdge(ROLE_INPUT, "hero/child", "hero", PATH);
-    expect(resolved.edge).toBeUndefined();
+    expect(resolved.kind).toBe("refused");
+    expect("value" in resolved).toBe(false);
     expect(ruleIds(resolved.diagnostics)).toEqual(["observation-role-unsupported"]);
     expect(resolved.diagnostics[0]?.path).toBe(PATH);
   });
@@ -96,7 +97,8 @@ describe("observes declares an output edge only", () => {
     // A removal, not a narrowing. If the only legal value is the default, then writing it is a
     // field accepted and then ignored, which is why ADR-046 refused a `target` on both roles too.
     const resolved = resolveObservationEdge(ROLE_OUTPUT, "hero/child", "hero", PATH);
-    expect(resolved.edge).toBeUndefined();
+    expect(resolved.kind).toBe("refused");
+    expect("value" in resolved).toBe(false);
     expect(ruleIds(resolved.diagnostics)).toEqual(["observation-role-unsupported"]);
   });
 
@@ -104,7 +106,8 @@ describe("observes declares an output edge only", () => {
     // A different authored field gets a different rule id, so the diagnostic names what the author
     // actually wrote rather than the field that happens to share its removal.
     const resolved = resolveObservationEdge(PROJECTED, "hero/child", "hero", PATH);
-    expect(resolved.edge).toBeUndefined();
+    expect(resolved.kind).toBe("refused");
+    expect("value" in resolved).toBe(false);
     expect(ruleIds(resolved.diagnostics)).toEqual(["observation-projection-unsupported"]);
   });
 
@@ -115,7 +118,7 @@ describe("observes declares an output edge only", () => {
     const graph = buildGraphIR(MIXED).graph;
     const edges = graph?.nodes.flatMap(({ edges: owned }) => [...owned]) ?? [];
     const mismatched = edges.filter(
-      (edge) => (edge.role === "input") !== (edge.requirement !== undefined),
+      (edge) => (edgeRole(edge) === "input") !== (edgeRequirement(edge) !== undefined),
     );
     expect(edges).toHaveLength(2);
     expect(mismatched).toEqual([]);

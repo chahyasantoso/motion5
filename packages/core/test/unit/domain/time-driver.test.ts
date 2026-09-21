@@ -3,6 +3,7 @@ import { createTimeDriver } from "../../../src/adapters/trigger-factory/time-dri
 import type { ClockTick } from "../../../src/ports/clock";
 import { createFakeTriggerPort } from "../../../src/testing/fakes";
 import type { CreatedTrigger } from "../../../src/ports/trigger-factory";
+import { acceptsExternalSignal } from "../../../src/ports/trigger-factory";
 
 /**
  * The time driver owns time semantics, so its clock binding must be the `driver` state. Reading
@@ -30,7 +31,7 @@ describe("time driver T2", () => {
     tick({ tick: 4, time: 1250, delta: 250 });
 
     expect(seen).toEqual([0.25, 0.5, 1]);
-    expect(driver.acceptsExternalSignal).toBe(false);
+    expect(acceptsExternalSignal(driver.clockBinding)).toBe(false);
     driver.dispose();
   });
 

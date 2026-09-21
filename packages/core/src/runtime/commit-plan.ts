@@ -1,5 +1,5 @@
 import type { MotionDefinition, TrackDefinition } from "../contract/v5";
-import { unreachable } from "../domain/exhaustive";
+import { unreachable } from "../lang/exhaustive";
 import { buildOwed, type ValueState } from "./value-state";
 /**
  * What one structural commit does, as two closed unions, and the one function that derives them.
@@ -208,11 +208,31 @@ function mintSettlement<Shape extends SettlementShape>(shape: Shape): MintedSett
   return Object.freeze(shape) as unknown as MintedSettlement<Shape>;
 }
 
-/** One track's committed facts, which is every part of a `TrackEntry` a plan may read. */
-interface PlannedTrack {
+interface FreePlannedTrack {
+  readonly kind: "free";
   readonly track: TrackDefinition;
-  readonly motionId?: string;
   readonly valueState: ValueState;
+}
+
+interface OwnedPlannedTrack {
+  readonly kind: "owned";
+  readonly track: TrackDefinition;
+  readonly motionId: string;
+  readonly valueState: ValueState;
+}
+
+/** One track's committed facts, which is every part of a `TrackEntry` a plan may read. */
+type PlannedTrack = FreePlannedTrack | OwnedPlannedTrack;
+
+function plannedMotionId(entry: PlannedTrack): string | undefined {
+  switch (entry.kind) {
+    case "free":
+      return undefined;
+    case "owned":
+      return entry.motionId;
+    default:
+      return unreachable(entry);
+  }
 }
 
 /** One motion's committed facts, which is its retained definition and nothing beside it. */
@@ -296,11 +316,12 @@ export function planCommit(
       mintSettlement<EvictNodeShape>({ kind: "evict-node", nodeId }),
       mintSettlement<DisposeSettledTrackShape>({ kind: "dispose-track", nodeId }),
     );
-    if (entry.motionId !== undefined)
+    const motionId = plannedMotionId(entry);
+    if (motionId !== undefined)
       settle.push(
         mintSettlement<RemoveMotionTrackShape>({
           kind: "remove-motion-track",
-          motionId: entry.motionId,
+          motionId,
           nodeId,
         }),
       );
@@ -317,11 +338,12 @@ export function planCommit(
       effects.push(
         mintEffect<CompileTrackShape>({ kind: "compile-track", nodeId, track: entry.track }),
       );
-      if (entry.motionId !== undefined)
+      const motionId = plannedMotionId(entry);
+      if (motionId !== undefined)
         settle.push(
           mintSettlement<AddMotionTrackShape>({
             kind: "add-motion-track",
-            motionId: entry.motionId,
+            motionId,
             nodeId,
             duration: entry.track.duration,
           }),
@@ -335,11 +357,12 @@ export function planCommit(
       effects.push(
         mintEffect<StageTrackShape>({ kind: "stage-track", nodeId, track: entry.track }),
       );
-    if (entry.motionId !== undefined)
+    const motionId = plannedMotionId(entry);
+    if (motionId !== undefined)
       effects.push(
         mintEffect<RetargetMotionTrackShape>({
           kind: "retarget-motion-track",
-          motionId: entry.motionId,
+          motionId,
           nodeId,
           duration: entry.track.duration,
           previousDuration: previous.track.duration,

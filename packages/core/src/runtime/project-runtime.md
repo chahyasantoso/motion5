@@ -4,7 +4,19 @@ Private ownership and ordering for ProjectRuntime. Exported API documentation re
 
 ## TrackEntry
 
-The retained track, optional motion owner, lifetime token, and the state of its live values. That last field replaces an overlay record beside a live-write boolean, whose four combinations included one nothing could reach; value-state.ts states the three that remain and mints them from the write being asked for rather than from what the backend answered, so nothing can under-report. A live write can survive a refused escalation because the writer has no inverse. Only a successful fresh compilation removes its effect, so structural derivation must build while buildOwed answers true even if compiled inputs compare equal. Candidate validation is never short-circuited by that answer. The overlay's keys are not retained here at all: the interpolator was handed them and owns the timeline they patched, and both readers of this state ask only whether one is standing, so a copy beside the owner would be a second owner. See ADR-059, ADR-060, ADR-062 and ADR-066.
+The retained track is either explicitly free or explicitly owned by a non-null Motion id. It also
+carries the lifetime token and the state of its live values. The free and owned variants make the
+ownership partition part of the type, so an empty or half-stated entry cannot reach #ownedBy,
+replacement, authoring or snapshot code. The value-state field replaces an overlay record beside a
+live-write boolean, whose four combinations included one nothing could reach; value-state.ts states
+the three that remain and mints them from the write being asked for rather than from what the backend
+answered, so nothing can under-report. A live write can survive a refused escalation because the
+writer has no inverse. Only a successful fresh compilation removes its effect, so structural
+derivation must build while buildOwed answers true even if compiled inputs compare equal. Candidate
+validation is never short-circuited by that answer. The overlay's keys are not retained here at all:
+the interpolator was handed them and owns the timeline they patched, and both readers of this state
+ask only whether one is standing, so a copy beside the owner would be a second owner. See ADR-059,
+ADR-060, ADR-062 and ADR-066.
 
 ## MotionEntry
 
@@ -16,7 +28,15 @@ The pending pair while one recipe executes, carried by the phase's editing varia
 
 ## StagedPair
 
-What one structural verb hands #commit: the half it staged, or both halves when a recipe staged both. An omitted half means untouched rather than empty, and #commit resolves it to the retained map, which is why this is two optional maps rather than a pair. Named rather than spelled inline at the one member that takes it, because a type written at its only call site is a type no sister document can describe and no gate can address, and because CommitPlan in commit-plan.ts is the derived effects and settlements: a second declaration called a plan would be two owners for one word. Step 6 retired the old SchemaPlan spelling along with the effect and settlement records it sat beside, and inlining the shape was the accident in that deletion rather than its point. See ADR-058 and ADR-064.
+What one structural verb hands #commit: a tagged tracks-only or motions-only candidate, or a both
+candidate when a recipe staged both halves. There is no omitted half and no empty pair: every producer
+states exactly which retained map changed, and #commit reads that tag through one exhaustive switch.
+Named rather than spelled inline at the one member that takes it, because a type written at its only
+call site is a type no sister document can describe and no gate can address, and because CommitPlan in
+commit-plan.ts is the derived effects and settlements: a second declaration called a plan would be two
+owners for one word. Step 6 retired the old SchemaPlan spelling along with the effect and settlement
+records it sat beside, and inlining the shape was the accident in that deletion rather than its point.
+See ADR-058 and ADR-064.
 
 ## #tracks
 

@@ -1,17 +1,14 @@
 import { diagnostic } from "../contract/diagnostics";
 import type { RuleId } from "../contract/rule-id";
 import type { Diagnostic } from "../contract/v5";
+import { acceptedOutcome, refusedOutcomeFrom, type Outcome } from "../domain/outcome";
 import { compareCodeUnits } from "./compare";
 import type { GraphNode } from "./ir";
 
 /** Rule id reported when the observation graph cannot be linearized. */
 export const CYCLE_RULE_ID = "graph-cycle" satisfies RuleId;
 
-export interface GraphOrderResult {
-  /** Canonical topological order. Absent when the graph contains at least one cycle. */
-  readonly order?: readonly string[];
-  readonly diagnostics: readonly Diagnostic[];
-}
+export type GraphOrderResult = Outcome<readonly string[]>;
 
 interface OrderSlot {
   readonly id: string;
@@ -142,7 +139,7 @@ export function orderGraph(nodes: readonly GraphNode[]): GraphOrderResult {
   }
 
   if (order.length === slots.size)
-    return { order: Object.freeze(order), diagnostics: Object.freeze([]) };
+    return acceptedOutcome<readonly string[], Diagnostic>(Object.freeze(order), Object.freeze([]));
 
   const emitted = new Set(order);
   const live = new Set<string>();
@@ -160,5 +157,5 @@ export function orderGraph(nodes: readonly GraphNode[]): GraphOrderResult {
   const diagnostics = [...cycles.values()]
     .sort(comparePaths)
     .map((cycle) => cycleDiagnostic(cycle));
-  return { diagnostics: Object.freeze(diagnostics) };
+  return refusedOutcomeFrom<readonly string[], Diagnostic>(Object.freeze(diagnostics));
 }

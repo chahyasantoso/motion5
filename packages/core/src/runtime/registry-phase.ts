@@ -1,5 +1,5 @@
 import type { Diagnostic, LivePatch, Patch } from "../contract/v5";
-import { unreachable } from "../domain/exhaustive";
+import { unreachable } from "../lang/exhaustive";
 
 /**
  * The lifecycle of one `PatchRegistry` as one value, with the batch buffers inside the variant that

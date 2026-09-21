@@ -1,6 +1,7 @@
 import { diagnostic } from "../contract/diagnostics";
 import type { RuleId } from "../contract/rule-id";
 import type { Diagnostic } from "../contract/v5";
+import { unreachable } from "../lang/exhaustive";
 import type { GraphEdge } from "./ir";
 
 /**
@@ -11,9 +12,14 @@ export const PENDING_REFERENCE_RULE_ID = "observation-pending-reference" satisfi
 
 export type ReferenceStatus = "resolved" | "pending";
 
-export interface ReferenceResolution {
-  readonly status: ReferenceStatus;
-  readonly diagnostic?: Diagnostic;
+export type ReferenceResolution =
+  | { readonly status: "resolved" }
+  | { readonly status: "pending"; readonly diagnostic: Diagnostic };
+
+/** A pending edge together with the diagnostic that blocks its publication. */
+export interface PendingEdge {
+  readonly edge: GraphEdge;
+  readonly diagnostic: Diagnostic;
 }
 
 /**
@@ -67,11 +73,17 @@ export function firstPendingEdge(
   edges: readonly GraphEdge[],
   compareEdges: (a: GraphEdge, b: GraphEdge) => number,
   hasValue: (sourceId: string) => boolean,
-): { readonly edge: GraphEdge; readonly diagnostic: Diagnostic } | undefined {
+): PendingEdge | undefined {
   for (const edge of [...edges].sort(compareEdges)) {
     const resolution = classifyReference(edge, hasValue);
-    if (resolution.status === "pending" && resolution.diagnostic !== undefined)
-      return { edge, diagnostic: resolution.diagnostic };
+    switch (resolution.status) {
+      case "resolved":
+        break;
+      case "pending":
+        return { edge, diagnostic: resolution.diagnostic };
+      default:
+        return unreachable(resolution);
+    }
   }
   return undefined;
 }

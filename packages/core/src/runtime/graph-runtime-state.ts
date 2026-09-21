@@ -1,6 +1,6 @@
 import type { GraphIR } from "../graph/ir";
 import type { PublisherSnapshot } from "./graph-publisher";
-import { unreachable } from "../domain/exhaustive";
+import { unreachable } from "../lang/exhaustive";
 import { namedSeeds, type DeferredSeeds } from "./report";
 
 /**

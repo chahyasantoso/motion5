@@ -11,6 +11,7 @@ import type {
 } from "../../../src/contract/v5";
 import {
   buildGraphIR,
+  edgeRequirement,
   compareEdges,
   describeEdge,
   edgeKey,
@@ -263,7 +264,7 @@ describe("dict-valued requirement slots (issue #220)", () => {
     expect(built.diagnostics).toEqual([]);
     const solver = built.graph?.nodeById["walker/arm-solve"];
     const goals = (solver?.edges ?? []).filter(
-      (edge) => edge.requirement?.slot === PLUGIN_GOALS_SLOT,
+      (edge) => edgeRequirement(edge)?.slot === PLUGIN_GOALS_SLOT,
     );
     expect(goals).toHaveLength(2);
     expect(goals.map((edge) => edge.sourceId)).toEqual(["walker/goal", "walker/goal"]);
@@ -274,12 +275,17 @@ describe("dict-valued requirement slots (issue #220)", () => {
     // Ordering and the label, because the duplicate diagnostic that does fire has to name which goal
     // it fired on. Both edges name one source, so `compareEdges` reaches the slot compare and then
     // the tiebreak after it.
-    const first = resolveRequirementEdge(goalBinding("seg-a"), "hero/solve", "hero", "test").edge;
-    const second = resolveRequirementEdge(goalBinding("seg-b"), "hero/solve", "hero", "test").edge;
-    expect(compareEdges(first!, second!)).toBeLessThan(0);
-    expect(compareEdges(second!, first!)).toBeGreaterThan(0);
-    expect(compareEdges(first!, first!)).toBe(0);
-    expect(describeEdge(first!)).toBe("hero/solve <- hero/goal (input) [ik.targets.seg-a]");
+    const firstResult = resolveRequirementEdge(goalBinding("seg-a"), "hero/solve", "hero", "test");
+    const secondResult = resolveRequirementEdge(goalBinding("seg-b"), "hero/solve", "hero", "test");
+    expect(firstResult.kind).toBe("accepted");
+    expect(secondResult.kind).toBe("accepted");
+    if (firstResult.kind !== "accepted" || secondResult.kind !== "accepted") return;
+    const first = firstResult.value;
+    const second = secondResult.value;
+    expect(compareEdges(first, second)).toBeLessThan(0);
+    expect(compareEdges(second, first)).toBeGreaterThan(0);
+    expect(compareEdges(first, first)).toBe(0);
+    expect(describeEdge(first)).toBe("hero/solve <- hero/goal (input) [ik.targets.seg-a]");
   });
 
   it("DV-6 a scalar behaves exactly as it did, at an ordinary slot and at the goals slot", () => {

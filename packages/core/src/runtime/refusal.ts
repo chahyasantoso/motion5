@@ -2,7 +2,7 @@ import type { Diagnostic } from "../contract/v5";
 import type { StaleHandleError } from "../contract/handle";
 import { StaleMotionHandleError } from "../contract/motion-handle";
 import { StaleTrackHandleError } from "../contract/track-handle";
-import { unreachable } from "../domain/exhaustive";
+import { unreachable } from "../lang/exhaustive";
 
 /**
  * Every refusal the project runtime throws, as data, and the one describer that renders each of them.

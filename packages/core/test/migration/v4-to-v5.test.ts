@@ -13,7 +13,8 @@ describe("fresh v4-to-v5 migration contract", () => {
       motions: [{ id: "hero", trigger: { type: "manual" }, tracks: [{ id: "title" }] }],
     };
     const result = migrateV4ToV5(input);
-    const migrated = result.migrated as MigratedShape | null;
+    if (result.kind !== "accepted") throw new Error("Expected migration to be accepted.");
+    const migrated = result.value as unknown as MigratedShape;
 
     expect(result.diagnostics).toEqual([]);
     expect(migrated?.schemaVersion).toBe(5);
@@ -30,7 +31,8 @@ describe("fresh v4-to-v5 migration contract", () => {
     };
     const before = JSON.parse(JSON.stringify(input));
     const result = migrateV4ToV5(input);
-    const migrated = result.migrated as MigratedShape | null;
+    if (result.kind !== "accepted") throw new Error("Expected migration to be accepted.");
+    const migrated = result.value as unknown as MigratedShape;
 
     expect(input).toEqual(before);
     expect(migrated?.freeTracks).not.toBe(input.tracks);
@@ -41,7 +43,7 @@ describe("fresh v4-to-v5 migration contract", () => {
     const input = { schemaVersion: 5, motions: [], freeTracks: [] };
     const result = migrateV4ToV5(input);
 
-    expect(result.migrated).toBeNull();
+    expect(result.kind).toBe("refused");
     expect(result.diagnostics[0]).toMatchObject({
       ruleId: "schema-v4-migration",
       path: "schemaVersion",
@@ -52,21 +54,22 @@ describe("fresh v4-to-v5 migration contract", () => {
   it("rejects ambiguous dual top-level fields instead of choosing one", () => {
     const result = migrateV4ToV5({ schemaVersion: 4, tracks: [], freeTracks: [], motions: [] });
 
-    expect(result.migrated).toBeNull();
+    expect(result.kind).toBe("refused");
     expect(result.diagnostics[0]?.path).toBe("$");
   });
 
   it("rejects malformed top-level tracks", () => {
     const result = migrateV4ToV5({ schemaVersion: 4, tracks: {}, motions: [] });
 
-    expect(result.migrated).toBeNull();
+    expect(result.kind).toBe("refused");
     expect(result.diagnostics[0]).toMatchObject({ path: "tracks", severity: "error" });
   });
 
   it("preserves perspective without inventing a value", () => {
     const input = { schemaVersion: 4, perspective: 1200, motions: [] };
     const result = migrateV4ToV5(input);
-    const migrated = result.migrated as MigratedShape | null;
+    if (result.kind !== "accepted") throw new Error("Expected migration to be accepted.");
+    const migrated = result.value as unknown as MigratedShape;
 
     expect(migrated?.perspective).toBe(1200);
     expect(migrated?.freeTracks).toEqual([]);

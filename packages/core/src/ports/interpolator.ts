@@ -1,3 +1,8 @@
+export type PatchKeysResult = { readonly kind: "patched" } | { readonly kind: "recompile" };
+
+export const PATCHED: PatchKeysResult = Object.freeze({ kind: "patched" });
+export const RECOMPILE: PatchKeysResult = Object.freeze({ kind: "recompile" });
+
 export interface InterpolationTimeline {
   readonly duration: number;
   readonly state: Readonly<Record<string, unknown>>;
@@ -17,14 +22,14 @@ export interface InterpolationTimeline {
    * Leaves arrive exactly as authored. The implementation reads stops through the keyframe
    * compiler, so no caller has to know what a leaf looks like in order to hand one over.
    *
-   * `false` means escalate, always, and nothing else. It is never "your input was bad": key
+   * `recompile` means escalate, always, and nothing else. It is never "your input was bad": key
    * legality is answered before the call, and an effective record that cannot compile raises its
    * error from the recompile the caller escalates to, exactly as it would have without this
    * capability. Optional because an implementation with no per-key child cannot honor it, and a
    * caller whose answer is total on success and on failure loses nothing when it is absent.
    * See ADR-060.
    */
-  patchKeys?(overlay: Readonly<Record<string, unknown>>, rebase?: boolean): boolean;
+  patchKeys?(overlay: Readonly<Record<string, unknown>>, rebase?: boolean): PatchKeysResult;
 }
 
 export interface Interpolator<Config = unknown> {

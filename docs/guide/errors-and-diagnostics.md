@@ -37,7 +37,7 @@ Whether a rule names `ids` is fixed by the rule too, but it is enforced where a 
 
 The three variants that used to express that ownership, `IdlessDiagnostic`, `IdentifiedDiagnostic` and `OptionalIdsDiagnostic`, are removed. A consumer that extended one extends `Diagnostic`. See ADR-097.
 
-Call `validateV5(project)` yourself if you want the diagnostics without the throw. It returns `{ valid, value, diagnostics }`, and it is the same validator the engine uses, so there is no second opinion to keep in sync.
+Call `validateV5(project)` yourself if you want the diagnostics without the throw. It returns an `Outcome`, so it is either `{ kind: "accepted", value, diagnostics }` or `{ kind: "refused", diagnostics }`, and a value never arrives beside an error. It is the same validator the engine uses, schema shape and graph topology both, so there is no second opinion to keep in sync.
 
 Warnings load and stay readable. Missing `perspective` alongside 3D content, and an unused free track, are warnings. No flag promotes a warning to an error.
 

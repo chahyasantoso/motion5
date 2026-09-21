@@ -35,11 +35,12 @@ export { migrateV4ToV5 } from "./contract/migrate-v4-to-v5";
 export type { MigrationResult } from "./contract/migrate-v4-to-v5";
 export {
   resolveTriggerDefinition,
-  validateV5,
   validateTrackDefinition,
   validateMotionTrigger,
 } from "./contract/validate-v5";
-export type { ValidationResult, TrackValidationResult } from "./contract/validate-v5";
+export { validateV5 } from "./validate-v5";
+export type { ValidationResult } from "./validate-v5";
+export type { TrackValidationResult } from "./contract/validate-v5";
 export { parseGolden, serializeGolden } from "./contract/golden";
 export type { GoldenFixture, GoldenValidationFixture } from "./contract/golden";
 export { Engine } from "./engine";
@@ -119,9 +120,9 @@ export { assertClock, createManualClock } from "./ports/clock";
 export type { Clock, ClockTick } from "./ports/clock";
 export { assertTriggerPort, createManualTriggerPort } from "./ports/trigger";
 export type { TriggerPort } from "./ports/trigger";
-export { assertTriggerFactory } from "./ports/trigger-factory";
+export { acceptsExternalSignal, assertTriggerFactory } from "./ports/trigger-factory";
 export type {
-  ClockBinding,
+  TriggerBinding,
   ClockConsumer,
   CreatedTrigger,
   TriggerFactory,
@@ -142,7 +143,7 @@ export type {
 } from "./adapters/trigger-factory/default";
 export type { ScrollSource } from "./adapters/scroll-trigger";
 export { assertInterpolator } from "./ports/interpolator";
-export type { InterpolationTimeline, Interpolator } from "./ports/interpolator";
+export type { InterpolationTimeline, Interpolator, PatchKeysResult } from "./ports/interpolator";
 export { assertScheduler } from "./ports/scheduler";
 export type { Cancel, Scheduler } from "./ports/scheduler";
 /**

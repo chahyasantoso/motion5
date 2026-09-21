@@ -56,7 +56,6 @@ export function createTriggerFactory(options: TriggerFactoryOptions = {}): Trigg
         const port = createScrollTriggerPort(source);
         return {
           port,
-          acceptsExternalSignal: false,
           clockBinding: { kind: "none" },
           dispose: () => port.dispose(),
         };
@@ -64,7 +63,6 @@ export function createTriggerFactory(options: TriggerFactoryOptions = {}): Trigg
       const port = createManualTriggerPort();
       return {
         port,
-        acceptsExternalSignal: true,
         clockBinding: { kind: "motion" },
         dispose: () => port.dispose(),
       };

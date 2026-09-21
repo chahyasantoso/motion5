@@ -1,6 +1,6 @@
 import React from "react";
 import type { ProjectHandle } from "@motion5/core";
-import { usePatch } from "@motion5/react";
+import { patchRender, usePatch } from "@motion5/react";
 import { ARM, TENTACLE, nodeId, type RigGeometry } from "../ik-playground-project";
 
 interface DispatchCardProps {
@@ -31,30 +31,38 @@ const DispatchCard: React.FC<DispatchCardProps> = ({
   const solverPatch = usePatch(handle, nodeId(rig.solverTrack));
   const tipPatch = usePatch(handle, nodeId(rig.tipTrack));
 
-  // Four ready patches, not four existing ones: every read below is a pose or a solved rotation set,
-  // and neither is a member a blocked or errored patch owns. Same guard as the react-demo inspector,
-  // and the same consequence: the card is empty while any of the four is not ready, until a consumer
-  // surface forwards `PatchRegistry.lastReady`. See ADR-098.
+  // Four render decisions, not four existing patches: every read below is a pose or a solved
+  // rotation set, and neither is a member a blocked or errored patch owns. The shared decision
+  // keeps the card empty while any of the four is refused or gone, until a consumer surface
+  // forwards `PatchRegistry.lastReady`. See ADR-098.
+  const rootDecision = patchRender(rootPatch);
+  const goalDecision = patchRender(goalPatch);
+  const solverDecision = patchRender(solverPatch);
+  const tipDecision = patchRender(tipPatch);
   if (
-    rootPatch?.status !== "ready" ||
-    goalPatch?.status !== "ready" ||
-    solverPatch?.status !== "ready" ||
-    tipPatch?.status !== "ready"
+    rootDecision.kind !== "render" ||
+    goalDecision.kind !== "render" ||
+    solverDecision.kind !== "render" ||
+    tipDecision.kind !== "render"
   )
     return null;
 
-  const rootX = Number(rootPatch.values.x ?? 0);
-  const rootY = Number(rootPatch.values.y ?? 0);
-  const goalX = Number(goalPatch.values.x ?? 0);
-  const goalY = Number(goalPatch.values.y ?? 0);
-  const tipX = Number(tipPatch.values.x ?? 0);
-  const tipY = Number(tipPatch.values.y ?? 0);
+  const root = rootDecision.patch;
+  const goal = goalDecision.patch;
+  const solver = solverDecision.patch;
+  const tip = tipDecision.patch;
+  const rootX = Number(root.values.x ?? 0);
+  const rootY = Number(root.values.y ?? 0);
+  const goalX = Number(goal.values.x ?? 0);
+  const goalY = Number(goal.values.y ?? 0);
+  const tipX = Number(tip.values.x ?? 0);
+  const tipY = Number(tip.values.y ?? 0);
 
   const reach = rig.lengths.reduce((sum, length) => sum + length, 0);
   const distance = Math.hypot(goalX - rootX, goalY - rootY);
   const reachable = distance <= reach + 0.5;
   const tipError = Math.hypot(goalX - tipX, goalY - tipY);
-  const rotations = solverPatch.values.rotations as Readonly<Record<string, number>> | undefined;
+  const rotations = solver.values.rotations as Readonly<Record<string, number>> | undefined;
 
   return (
     <div className="solver-card" data-rig={rig.solverTrack}>

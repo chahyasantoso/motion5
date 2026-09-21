@@ -3,6 +3,8 @@ import { readdirSync } from "node:fs";
 import { code, callSites } from "../../helpers/source-region";
 import { fileURLToPath } from "node:url";
 import { createTimeDriver } from "../../../src/adapters/trigger-factory/time-driver";
+import { unreachable } from "../../../src/lang/exhaustive";
+import { acceptsExternalSignal, type TriggerBinding } from "../../../src/ports/trigger-factory";
 
 // T5 removes a claim rather than a behavior. The inert manual fallback is already gone from the
 // factory, so a behavioral test cannot see it: there is nothing left to observe. The proof is
@@ -13,7 +15,6 @@ import { createTimeDriver } from "../../../src/adapters/trigger-factory/time-dri
 // builds its own manual-style port as its emission channel, exactly as section 6.1 of
 // `docs/IMPLEMENTATION-PLAN-trigger-drivers.md` specifies, which is why the plan's "exactly two
 // call sites" gate would have failed on green code. A fallback is a port handed back with
-// `acceptsExternalSignal: true` and a `motion` clock binding for a declared `time` or `scroll`
 // trigger. T-9 pins that distinction to the third call site instead of banning the site.
 const FACTORY_DIR = new URL("../../../src/adapters/trigger-factory/", import.meta.url);
 const OWNED = new Set(["default.ts", "time-driver.ts"]);
@@ -31,6 +32,32 @@ const DRIVER_SOURCE = code(new URL("time-driver.ts", FACTORY_DIR));
 const ENGINE_SOURCE = code(new URL("../../../src/engine.ts", import.meta.url));
 
 describe("T5 no manual trigger fallback", () => {
+  it("T-14 makes bindClock refuse a binding kind it does not decide", () => {
+    expect(ENGINE_SOURCE).toContain("switch (binding.kind)");
+    expect(ENGINE_SOURCE).toContain("return unreachable(binding)");
+
+    type Widened = TriggerBinding | { readonly kind: "future" };
+    const readWidened = (binding: Widened): boolean => {
+      switch (binding.kind) {
+        case "driver":
+        case "none":
+          return false;
+        case "motion":
+          return true;
+        default:
+          // @ts-expect-error a widened binding is not decided by this reader.
+          return unreachable(binding);
+      }
+    };
+
+    expect(typeof readWidened).toBe("function");
+    expect(() => acceptsExternalSignal({ kind: "future" } as unknown as TriggerBinding)).toThrow(
+      TypeError,
+    );
+    expect(() => acceptsExternalSignal({ kind: "future" } as unknown as TriggerBinding)).toThrow(
+      /Unhandled variant/,
+    );
+  });
   it("T-13 counts executable calls rather than comments or literal spellings", () => {
     const prose = [
       "// createManualTriggerPort(",
@@ -78,7 +105,7 @@ describe("T5 no manual trigger fallback", () => {
     // the file that owns the call is what makes this a transport claim rather than a count.
     expect(manualPortCalls(DRIVER_SOURCE)).toBe(1);
     const driver = createTimeDriver(1000);
-    expect(driver.acceptsExternalSignal).toBe(false);
+    expect(acceptsExternalSignal(driver.clockBinding)).toBe(false);
     expect(driver.clockBinding.kind).toBe("driver");
     driver.dispose();
   });
@@ -90,7 +117,7 @@ describe("T5 no manual trigger fallback", () => {
     const siblings = readdirSync(fileURLToPath(FACTORY_DIR), { encoding: "utf8" });
     // Not a vacuous scan: the walk has to actually see the factory it is policing.
     expect(siblings).toContain("default.ts");
-    const others = siblings.filter((entry) => entry.endsWith(".ts") && !OWNED.has(entry));
+    const others = siblings.filter((entry: string) => entry.endsWith(".ts") && !OWNED.has(entry));
     expect(others.filter(buildsManualPort)).toEqual([]);
   });
 });

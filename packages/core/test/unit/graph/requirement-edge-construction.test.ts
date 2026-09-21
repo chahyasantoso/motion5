@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Diagnostic, PluginRequiresBinding } from "../../../src/contract/v5";
-import { collectTrack, resolveRequirementEdge } from "../../../src/graph/ir";
+import { collectTrack, edgeRequirement, resolveRequirementEdge } from "../../../src/graph/ir";
 
 const binding = (source: string): PluginRequiresBinding =>
   Object.freeze({ plugin: "fk", slot: "base", source, authoredPath: "fk.requires.base" });
@@ -14,15 +14,17 @@ describe("requirement edge construction", () => {
       "walk/chest.keyframes.fk.requires.base",
     );
 
+    expect(resolved.kind).toBe("accepted");
+    if (resolved.kind !== "accepted") return;
     expect(resolved.diagnostics).toEqual([]);
-    expect(resolved.edge).toEqual({
+    expect(resolved.value).toEqual({
       observerId: "walk/chest",
       sourceId: "walk/pelvis",
       role: "input",
       requirement: { plugin: "fk", slot: "base" },
     });
-    expect(Object.isFrozen(resolved.edge)).toBe(true);
-    expect(Object.isFrozen(resolved.edge?.requirement)).toBe(true);
+    expect(Object.isFrozen(resolved.value)).toBe(true);
+    expect(Object.isFrozen(edgeRequirement(resolved.value))).toBe(true);
   });
 
   it("Z-2 reports requirement-source at the authored path and produces no edge", () => {
@@ -33,7 +35,8 @@ describe("requirement edge construction", () => {
       "walk/chest.keyframes.fk.requires.base",
     );
 
-    expect(resolved.edge).toBeUndefined();
+    expect(resolved.kind).toBe("refused");
+    expect("value" in resolved).toBe(false);
     expect(resolved.diagnostics).toHaveLength(1);
     expect(resolved.diagnostics[0]).toMatchObject({
       ruleId: "requirement-source",

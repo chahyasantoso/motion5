@@ -13,12 +13,15 @@ import type { SchemaTransaction } from "./contract/schema-transaction";
 import type { ValueTransaction } from "./contract/value-transaction";
 import type { TrackHandle } from "./contract/track-handle";
 import { describeDiagnostics } from "./contract/diagnostics";
-import { resolveTriggerDefinition, validateV5 } from "./contract/validate-v5";
+import { resolveTriggerDefinition } from "./contract/validate-v5";
+import { validateV5 } from "./validate-v5";
+import { readOutcome } from "./domain/outcome";
 import { IncrementalGraphBuilder } from "./graph/builders/incremental";
 import { createDefaultTriggerFactory } from "./adapters/trigger-factory/default";
 import { compilePercentKeyframes } from "./domain/keyframe-compiler";
 import { flattenAuthoredKeyframes } from "./domain/keyframe-groups";
 import { Motion, type MotionTrackEntry } from "./domain/motion";
+import { unreachable } from "./lang/exhaustive";
 import { collect, report } from "./domain/completion";
 import { PluginRegistry, type RenderMetadata, type RequirementInputs } from "./domain/plugins";
 import { Track } from "./domain/track";
@@ -26,6 +29,7 @@ import { qualifyFreeTrack, qualifyMotionTrack } from "./graph/ids";
 import { assertClock, type Clock } from "./ports/clock";
 import { assertInterpolator, type Interpolator } from "./ports/interpolator";
 import { assertScheduler, type Scheduler } from "./ports/scheduler";
+import { acceptsExternalSignal } from "./ports/trigger-factory";
 import type { ClockConsumer, CreatedTrigger, TriggerFactory } from "./ports/trigger-factory";
 import { ProjectRuntime, type StagedTrack } from "./runtime/project-runtime";
 
@@ -108,6 +112,27 @@ interface CompilableTrack {
   readonly duration?: number;
   readonly keyframes?: Readonly<Record<string, unknown>>;
 }
+interface Composition {
+  readonly tracks: Map<string, Track>;
+  readonly nodes: Map<string, CompilableTrack>;
+  readonly motionTrackIds: Map<string, readonly string[]>;
+  readonly motions: Map<string, Motion>;
+  readonly createdTriggers: Map<string, CreatedTrigger>;
+  readonly consumers: Map<string, ClockConsumer>;
+}
+type CompositionState =
+  | {
+      readonly kind: "building";
+      readonly cleanupOwner: "composition";
+      readonly composition: Composition;
+    }
+  | {
+      readonly kind: "ready";
+      readonly cleanupOwner: "runtime";
+      readonly composition: Composition;
+      readonly runtime: ProjectRuntime;
+    }
+  | { readonly kind: "disposed"; readonly cleanupOwner: "none" };
 type RuntimeLike = ProjectRuntime;
 function createHandle(
   runtime: RuntimeLike,
@@ -147,15 +172,23 @@ function createHandle(
   return handle;
 }
 function assertValidProject(project: unknown): ProjectDefinition {
-  const result = validateV5(project);
-  if (!result.valid || result.value === null)
-    throw new TypeError(
-      result.diagnostics.length === 0
-        ? "Project failed v5 validation."
-        : describeDiagnostics(result.diagnostics),
-    );
-  return result.value;
+  return readOutcome(
+    validateV5(project),
+    (value) => value,
+    (diagnostics) => {
+      throw new TypeError(
+        diagnostics.length === 0
+          ? "Project failed v5 validation."
+          : describeDiagnostics(diagnostics),
+      );
+    },
+  );
 }
+// The two states buildMotion passes through, so what has been built is one tag rather than a
+// definite-assignment assertion a reader has to cross-check against a boolean. engine.md owns why.
+type MotionBuild =
+  | { readonly kind: "trigger-created"; readonly trigger: CreatedTrigger }
+  | { readonly kind: "motion-created"; readonly trigger: CreatedTrigger; readonly motion: Motion };
 function describeError(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
@@ -277,8 +310,20 @@ export class Engine {
     const motions = new Map<string, Motion>();
     const createdTriggers = new Map<string, CreatedTrigger>();
     const consumers = new Map<string, ClockConsumer>();
+    const composition: Composition = {
+      tracks,
+      nodes,
+      motionTrackIds,
+      motions,
+      createdTriggers,
+      consumers,
+    };
+    let state: CompositionState = {
+      kind: "building",
+      cleanupOwner: "composition",
+      composition,
+    };
     const triggerFactory = this.#options.triggerFactory ?? createDefaultTriggerFactory();
-    let runtime: ProjectRuntime | undefined;
     const releaseMotion = (motionId: string): void => {
       const created = createdTriggers.get(motionId);
       consumers.delete(motionId);
@@ -286,24 +331,39 @@ export class Engine {
       created?.dispose();
     };
     const disposeComposition = (): void => {
-      const built = [...motions.values()];
-      const triggers = [...createdTriggers.values()];
-      const composed = [...tracks.values()];
-      motions.clear();
-      consumers.clear();
-      createdTriggers.clear();
-      tracks.clear();
-      // Triggers first, then Motions, then Tracks, unchanged: a driver must stop emitting before
-      // the Motion it feeds goes away. Every created trigger is covered here, including one built
-      // for a Motion that never reached `motions`, so releaseMotion is not repeated.
-      runAllAndReportOnce(
-        [
-          ...triggers.map((trigger) => () => trigger.dispose()),
-          ...built.map((motion) => () => motion.dispose()),
-          ...composed.map((track) => () => track.dispose()),
-        ],
-        "Composition disposal failed.",
-      );
+      switch (state.kind) {
+        case "building":
+        case "ready": {
+          const { motions, createdTriggers, tracks, consumers, nodes, motionTrackIds } =
+            state.composition;
+          state = { kind: "disposed", cleanupOwner: "none" };
+          const built = [...motions.values()];
+          const triggers = [...createdTriggers.values()];
+          const composed = [...tracks.values()];
+          motions.clear();
+          consumers.clear();
+          createdTriggers.clear();
+          tracks.clear();
+          nodes.clear();
+          motionTrackIds.clear();
+          // Triggers first, then Motions, then Tracks, unchanged: a driver must stop emitting
+          // before the Motion it feeds goes away. Every created trigger is covered here, including
+          // one built for a Motion that never reached `motions`, so releaseMotion is not repeated.
+          runAllAndReportOnce(
+            [
+              ...triggers.map((trigger) => () => trigger.dispose()),
+              ...built.map((motion) => () => motion.dispose()),
+              ...composed.map((track) => () => track.dispose()),
+            ],
+            "Composition disposal failed.",
+          );
+          return;
+        }
+        case "disposed":
+          return;
+        default:
+          return unreachable(state);
+      }
     };
     const bindClock = (motionId: string, motion: Motion, created: CreatedTrigger): void => {
       const binding = created.clockBinding;
@@ -316,6 +376,8 @@ export class Engine {
           break;
         case "none":
           break;
+        default:
+          return unreachable(binding);
       }
     };
     const buildMotion = (
@@ -336,47 +398,78 @@ export class Engine {
         scheduler: this.#options.scheduler,
       });
       createdTriggers.set(definition.id, created);
-      let motion!: Motion;
-      // A flag rather than a nullable local, so the invalidate closure and the clockBinding
-      // registration site below keep reading a Motion that is always present by the time they run.
-      // The catch is the only place that has to ask whether an instance exists at all.
-      let constructed = false;
+      let built: MotionBuild = { kind: "trigger-created", trigger: created };
       try {
-        motion = new Motion({
+        const motion = new Motion({
           clock: this.#options.clock,
           scheduler: this.#options.scheduler,
           tracks: entries,
           // The compiled map is the single owner. Motion holds ids and resolves per use, so a
           // recompiled node can never leave it driving a disposed Track. See ADR-031.
           resolveTrack: (id) => tracks.get(id),
-          trigger: created.port,
+          trigger: built.trigger.port,
           disposeTracks: false,
           listenToClock: false,
-          acceptsExternalSignal: created.acceptsExternalSignal,
+          acceptsExternalSignal: acceptsExternalSignal(built.trigger.clockBinding),
           invalidate: () => {
-            const ids = motion.tracks.map((t) => t.id);
-            // The runtime always exists by the time a Motion can invalidate: buildMotion runs from
-            // the load-time loop after construction, or from the createMotion hook the runtime
-            // itself calls. The optional call states that rather than asserting it.
-            if (ids.length > 0) runtime?.invalidate(ids);
+            switch (built.kind) {
+              case "trigger-created":
+                // The closure is handed to the constructor that produces the Motion, so the one
+                // state it can run in before there is a Motion to read is this one. The retired
+                // spelling read an unassigned local through a definite-assignment assertion here
+                // and would have thrown on a member of undefined. There is nothing to invalidate.
+                return;
+              case "motion-created": {
+                const ids = built.motion.tracks.map((t) => t.id);
+                // The runtime always exists by the time a Motion can invalidate: buildMotion runs
+                // from the load-time loop after construction, or from the createMotion hook the
+                // runtime itself calls. The state makes that owner explicit rather than asserting
+                // it through a separate local.
+                if (ids.length === 0) return;
+                switch (state.kind) {
+                  case "building":
+                  case "disposed":
+                    return;
+                  case "ready":
+                    state.runtime.invalidate(ids);
+                    return;
+                  default:
+                    return unreachable(state);
+                }
+              }
+              default:
+                return unreachable(built);
+            }
           },
           stagger: definition.stagger,
         });
-        constructed = true;
+        built = { kind: "motion-created", trigger: built.trigger, motion };
         motion.play();
         if (consumers.has(definition.id))
           throw new TypeError(`Motion "${definition.id}" already has a clock consumer.`);
-        bindClock(definition.id, motion, created);
-        return motion;
+        bindClock(definition.id, built.motion, built.trigger);
+        return built.motion;
       } catch (error) {
+        // releaseMotion owns the clock consumer and the created trigger. Nothing owns the Motion:
+        // it is never returned on this path, so it never enters `motions`, so disposeComposition
+        // cannot reach it either. Without the second step the instance keeps the lifecycle
+        // attachment and the trigger subscription play() made, and ADR-032's exactly-once disposal
+        // is exactly zero. Issue #134. The tag is what makes that obligation visible: one state
+        // owns an instance, and it is the only state that owes its disposal.
+        const state = built;
         throw afterCleanup(error, () => {
-          // releaseMotion owns the clock consumer and the created trigger. Nothing owned the
-          // Motion: it is never returned on this path, so it never enters `motions`, so
-          // disposeComposition cannot reach it either. Without this the instance keeps the
-          // lifecycle attachment and the trigger subscription play() made, and ADR-032's
-          // exactly-once disposal is exactly zero. Issue #134.
-          const steps = [() => releaseMotion(definition.id)];
-          if (constructed) steps.push(() => motion.dispose());
+          const steps: (() => void)[] = [() => releaseMotion(definition.id)];
+          switch (state.kind) {
+            case "trigger-created":
+              break;
+            case "motion-created": {
+              const { motion } = state;
+              steps.push(() => motion.dispose());
+              break;
+            }
+            default:
+              unreachable(state);
+          }
           runAllAndReportOnce(steps, `Cleaning up motion "${definition.id}" failed.`);
         });
       }
@@ -478,7 +571,10 @@ export class Engine {
           bindClock(motionId, motion, created);
           let complete: () => void;
           try {
-            complete = motion.acceptTrigger(created.port, created.acceptsExternalSignal);
+            complete = motion.acceptTrigger(
+              created.port,
+              acceptsExternalSignal(created.clockBinding),
+            );
           } catch (error) {
             // The swap never landed, so the replacement is what has no owner left. Restore the
             // displaced registrations and release what this hook built, on buildMotion's own
@@ -544,7 +640,7 @@ export class Engine {
         },
         disposeComposition,
       });
-      runtime = created;
+      state = { kind: "ready", cleanupOwner: "runtime", composition, runtime: created };
       for (const motionDefinition of acceptedProject.motions) {
         const ids = motionTrackIds.get(motionDefinition.id) ?? [];
         // Conditional spread, so a load-time entry never carries an explicitly undefined duration
@@ -558,16 +654,20 @@ export class Engine {
       return createHandle(created, (nodeId) => tracks.get(nodeId)?.plugins);
     } catch (error) {
       throw afterCleanup(error, () => {
-        // `load()` owns everything it created, including the runtime. `GraphRuntime` takes the
-        // project's only `Clock.subscribe` in its own constructor, and a caller that never received
-        // a handle can never release it, so a failed load had to dispose the runtime itself.
-        // Issue #143.
-        //
-        // Exactly one owner: `runtime.dispose()` already calls disposeComposition, which owns the
-        // Motions, the created triggers and the compiled Tracks, so calling both would dispose
-        // everything twice. Only a failure that preceded the runtime leaves the composition here.
-        if (runtime === undefined) disposeComposition();
-        else runtime.dispose();
+        // The state names the sole cleanup owner. A constructor failure may have already invoked
+        // the composition hook, so the disposed arm is intentionally a no-op.
+        switch (state.cleanupOwner) {
+          case "composition":
+            disposeComposition();
+            return;
+          case "runtime":
+            state.runtime.dispose();
+            return;
+          case "none":
+            return;
+          default:
+            return unreachable(state);
+        }
       });
     }
   }

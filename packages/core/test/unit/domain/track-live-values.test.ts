@@ -1,8 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import { fileURLToPath } from "node:url";
 import type { LiveValues } from "../../../src/contract/track-handle";
+import { unreachable } from "../../../src/lang/exhaustive";
 import type { PluginComposer } from "../../../src/domain/plugins";
-import { LiveValueKeyError, Track } from "../../../src/domain/track";
+import { LiveValueKeyError, Track, type LiveValueRefusal } from "../../../src/domain/track";
 import { createPlugin, resolveAuthored } from "../../helpers/resolved-plugins";
 import { code, declaration, member } from "../../helpers/source-region";
 
@@ -188,10 +189,46 @@ describe("a live value masks the interpolated state, and nothing else", () => {
     // and the progress the caller needs in order to re-seek a fresh Track is reported beside it.
     const written = track.writeValues({ length: 100 }, { rotation: STOPS }, false);
 
-    expect(written).toEqual({ patched: false, progress: 0.5 });
+    expect(written).toEqual({ patch: { kind: "recompile" }, progress: 0.5 });
     expect(track.interpolated().length).toBe(100);
     // A static-only write is not a decline, because nothing was asked of the interpolator.
-    expect(track.writeValues({ length: 70 }, undefined, false).patched).toBe(true);
+    expect(track.writeValues({ length: 70 }, undefined, false).patch.kind).toBe("patched");
+  });
+
+  it("keeps every refusal message exact and rejects an unknown reason", () => {
+    expect(new LiveValueKeyError("~/live", "rotation", "kind").message).toBe(
+      'Key "rotation" of track "~/live" cannot change which kind of leaf it is.',
+    );
+    expect(new LiveValueKeyError("~/live", "rotation", "prepared").message).toBe(
+      'Key "rotation" of track "~/live" is prepared by a plugin and cannot be written live.',
+    );
+    expect(new LiveValueKeyError("~/live", "missing", "unknown").message).toBe(
+      'Key "missing" is not an authored value of track "~/live".',
+    );
+
+    expect(() => new LiveValueKeyError("~/live", "missing", "future" as LiveValueRefusal)).toThrow(
+      TypeError,
+    );
+    expect(() => new LiveValueKeyError("~/live", "missing", "future" as LiveValueRefusal)).toThrow(
+      /Unhandled variant/,
+    );
+  });
+
+  it("requires readers to decide every refusal reason", () => {
+    type Widened = LiveValueRefusal | "future";
+    const readWidened = (reason: Widened): string => {
+      switch (reason) {
+        case "unknown":
+        case "kind":
+        case "prepared":
+          return reason;
+        default:
+          // @ts-expect-error a widened reason is not decided by this reader.
+          return unreachable(reason);
+      }
+    };
+
+    expect(readWidened("unknown")).toBe("unknown");
   });
 
   it("PK-18 declares the port capability and no longer declares the animated reason", () => {

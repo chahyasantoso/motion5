@@ -71,3 +71,13 @@ An empty section is refused rather than ignored. Omitting `values` is already th
 Compares leaf names, not flat record keys. A `rotationY` authored inside a group is the same 3D content as a flat one, and reading only the top level made `perspective-usage` stop firing for it: a silently lost warning rather than a rejected project. The leaves now live under `values`, so this asks `readPluginValues` for them rather than iterating the group's own entries, which would only ever see the section name and reintroduce that exact regression. See ADR-049.
 
 Both leaf forms ADR-050 introduces are non-null, so a 3D key authored as a bare array or as a bare static value still fires `perspective-usage`. `Y-9` and `LF-13` cover the section case.
+
+## validateSchemaV5
+
+Owns authored schema shape and schema diagnostics, and nothing else. Graph construction owns
+reference resolution, duplicate edges, cycles, solver resolution, and graph diagnostics, so this
+module imports no graph implementation and recombines no graph diagnostics. The composed public
+entry point is `packages/core/src/validate-v5.ts`, which runs this validator and then the graph
+builder in that order; see its sister document for the folding rule and for why the composition
+lives outside the contract layer. Returning `Outcome<ProjectDefinition>` is what makes an accepted
+null project and a refusal without a reason both unrepresentable.

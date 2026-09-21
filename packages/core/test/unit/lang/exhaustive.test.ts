@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { unreachable } from "../../../src/domain/exhaustive";
+import { unreachable } from "../../../src/lang/exhaustive";
 import { DISPOSED, IDLE, type RuntimePhase } from "../../../src/runtime/graph-runtime-state";
 
 /**
@@ -12,7 +12,7 @@ import { DISPOSED, IDLE, type RuntimePhase } from "../../../src/runtime/graph-ru
  * #408 needed one guard hand-patched at five sites and no gate named one of them.
  *
  * These cases are about the sink rather than about the switches that call it, which is why they live
- * beside `domain/exhaustive.ts` rather than in the state module's file. The first is a lie detector
+ * beside `lang/exhaustive.ts` rather than in the state module's file. The first is a lie detector
  * for the guarantee itself: it is green only because the parameter is `never`, so widening it to
  * `unknown` leaves the expectation unused and fails. The second asserts the accepting direction in
  * the same rig, because a sink that refused every subject would be green against the first on its

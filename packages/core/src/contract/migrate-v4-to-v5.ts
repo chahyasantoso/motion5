@@ -1,11 +1,9 @@
 import { diagnostic as buildDiagnostic } from "./diagnostics";
+import { acceptedOutcome, refusedOutcome, type Outcome } from "../domain/outcome";
 import type { RuleId } from "./rule-id";
 import type { MigrationDiagnostic } from "./v5";
 
-export interface MigrationResult<T = Record<string, unknown>> {
-  readonly migrated: T | null;
-  readonly diagnostics: readonly MigrationDiagnostic[];
-}
+export type MigrationResult<T = Record<string, unknown>> = Outcome<T, MigrationDiagnostic>;
 
 // Held rather than spelled at the call, the shape `graph/order.ts`, `graph/references.ts`
 // and `runtime/report.ts` already use. `satisfies` is why: it refuses an unenumerated id
@@ -42,27 +40,24 @@ export function migrateV4ToV5<T extends Record<string, unknown>>(
   input: T,
 ): MigrationResult<T & { schemaVersion: 5 }> {
   if (!input || typeof input !== "object" || Array.isArray(input)) {
-    return { migrated: null, diagnostics: [diagnostic("$", "Schema v4 input must be an object.")] };
+    return refusedOutcome<T & { schemaVersion: 5 }, MigrationDiagnostic>([
+      diagnostic("$", "Schema v4 input must be an object."),
+    ]);
   }
   if (input.schemaVersion !== 4) {
-    return {
-      migrated: null,
-      diagnostics: [diagnostic("schemaVersion", "Migration requires schemaVersion 4.")],
-    };
+    return refusedOutcome<T & { schemaVersion: 5 }, MigrationDiagnostic>([
+      diagnostic("schemaVersion", "Migration requires schemaVersion 4."),
+    ]);
   }
   if ("tracks" in input && "freeTracks" in input) {
-    return {
-      migrated: null,
-      diagnostics: [
-        diagnostic("$", "Cannot migrate when both top-level tracks and freeTracks exist."),
-      ],
-    };
+    return refusedOutcome<T & { schemaVersion: 5 }, MigrationDiagnostic>([
+      diagnostic("$", "Cannot migrate when both top-level tracks and freeTracks exist."),
+    ]);
   }
   if ("tracks" in input && input.tracks !== undefined && !Array.isArray(input.tracks)) {
-    return {
-      migrated: null,
-      diagnostics: [diagnostic("tracks", "Top-level tracks must be an array when present.")],
-    };
+    return refusedOutcome<T & { schemaVersion: 5 }, MigrationDiagnostic>([
+      diagnostic("tracks", "Top-level tracks must be an array when present."),
+    ]);
   }
 
   const source = clone(input);
@@ -72,5 +67,5 @@ export function migrateV4ToV5<T extends Record<string, unknown>>(
     schemaVersion: 5 as const,
     freeTracks: Array.isArray(tracks) ? tracks : [],
   } as unknown as T & { schemaVersion: 5 };
-  return { migrated: Object.freeze(migrated), diagnostics: Object.freeze([]) };
+  return acceptedOutcome(Object.freeze(migrated), Object.freeze([]));
 }

@@ -5,11 +5,12 @@ import type {
   MotionDefinition,
   TrackDefinition,
 } from "../contract/v5";
-import { readAuthoredLeaf } from "../contract/authored-leaf";
+import { authoredLeafPartition, readAuthoredLeaf } from "../contract/authored-leaf";
 import { readPluginBindings } from "../contract/keyframe-shape";
 import type { AuthoredValues, LiveValues, RequireView } from "../contract/track-handle";
 import { flattenAuthoredKeyframes } from "../domain/keyframe-groups";
 import type { AuthoredKeyframes } from "../domain/authoring/keyframes";
+import { unreachable } from "../lang/exhaustive";
 /**
  * Pure functions over one retained definition, and the two frozen constants that stand in for none.
  *
@@ -19,9 +20,10 @@ import type { AuthoredKeyframes } from "../domain/authoring/keyframes";
  * transaction was never the file that owned them.
  *
  * They are not a second opinion about anything either. `readAuthoredLeaf` stays the one owner of
- * what shape a leaf has, `flattenAuthoredKeyframes` stays the one owner of which record an authored
- * key came from, and `readPluginBindings` stays the one reader of the authored group shape. Every
- * function below reads one of those answers rather than deriving its own.
+ * what shape a leaf has, `authoredLeafPartition` stays the one owner of which payload that shape
+ * carries, `flattenAuthoredKeyframes` stays the one owner of which record an authored key came
+ * from, and `readPluginBindings` stays the one reader of the authored group shape. Every function
+ * below reads one of those answers rather than deriving its own.
  */
 /**
  * The empty overlay: a live write that clears every animated key, rather than one involving none.
@@ -90,15 +92,25 @@ export function requireViews(track: TrackDefinition): readonly RequireView[] {
  * writable: the mask is still closed to static values, and an animated write travels as an overlay
  * to the interpolator instead.
  *
- * `flattenAuthoredKeyframes` and `readAuthoredLeaf` answer both halves, so nothing here re-derives
- * what a group is or what shape a leaf has. See ADR-049, ADR-050, ADR-059, and ADR-060.
+ * `flattenAuthoredKeyframes` answers the record location and `authoredLeafPartition` answers the
+ * payload, so nothing here re-derives what a group is or what shape a leaf has. See ADR-049,
+ * ADR-050, ADR-059, and ADR-060.
  */
 export function authoredValues(track: TrackDefinition): Record<string, AuthoredStaticValue> {
   const flattened = flattenAuthoredKeyframes(track.keyframes ?? {});
   const values: Record<string, AuthoredStaticValue> = {};
   for (const [key, property] of Object.entries(flattened.keyframes)) {
-    const leaf = readAuthoredLeaf(property);
-    if (leaf.kind === "static") values[key] = leaf.value;
+    const partition = authoredLeafPartition(readAuthoredLeaf(property));
+    switch (partition.kind) {
+      case "value":
+        values[key] = partition.value;
+        break;
+      case "stops":
+      case "none":
+        break;
+      default:
+        return unreachable(partition);
+    }
   }
   return values;
 }
@@ -119,9 +131,18 @@ export function splitAuthoredValues(values: AuthoredValues): LiveWriteHalves {
   const statics: Record<string, AuthoredStaticValue> = {};
   const animated: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(values)) {
-    const leaf = readAuthoredLeaf(value);
-    if (leaf.kind === "static") statics[key] = leaf.value;
-    else animated[key] = value;
+    const partition = authoredLeafPartition(readAuthoredLeaf(value));
+    switch (partition.kind) {
+      case "value":
+        statics[key] = partition.value;
+        break;
+      case "stops":
+      case "none":
+        animated[key] = value;
+        break;
+      default:
+        return unreachable(partition);
+    }
   }
   return { statics, animated };
 }

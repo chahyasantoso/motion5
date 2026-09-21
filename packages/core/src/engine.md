@@ -1,5 +1,25 @@
 # packages/core/src/engine.ts
 
+## CompositionState
+
+The outer composition has one owner for its six mutable maps and its runtime boundary. `building`
+means the composition owns cleanup because no runtime has been handed to the caller; `ready` means
+the `ProjectRuntime` owns cleanup and reaches the composition through its host port; `disposed` is a
+terminal no-op. The `cleanupOwner` tag is the answer used by failed-load rollback, rather than an
+inference from whether an unrelated runtime variable happens to be undefined. A runtime constructor
+that fails may already have called the composition hook, so the hook transitions to `disposed`
+before it releases anything; the outer catch then has no second owner to invoke. The state is
+private to `Engine` because it describes composition-root assembly, not a contract, domain, graph,
+runtime, or port concern.
+
+## MotionBuild
+
+What `buildMotion` has built so far, and the reason it is a tag rather than two correlated locals.
+
+The retired spelling was `let motion!: Motion` beside `let constructed = false`: a definite-assignment assertion and a boolean, hand-maintained, on the most failure-sensitive path in the engine. Two locals encoding one decision means a reader has to cross-check them to know whether the instance in scope exists, and the compiler checks neither, so the rollback obligation lived in a comment. The union states it instead. `trigger-created` is the state a failure between trigger creation and construction leaves behind, and `motion-created` is the only state that owns an instance nothing else can reach, so it is the only arm that owes `dispose()`. A third state added later fails `typecheck` at the catch and at the invalidate closure rather than inheriting whichever arm was written last.
+
+Both members carry the trigger, because the trigger exists in both and releaseMotion's half of the teardown is owed in both. Carrying it on the union rather than reading the outer local is what lets one `switch` answer the whole cleanup question.
+
 ## describeError
 
 Local on purpose. `ProjectRuntime` formats its own errors for its own layer, and promoting a shared formatter into the contract module would widen the package's declaration surface, which a governance gate scans, for two call sites.
@@ -32,11 +52,16 @@ Drops both registrations before disposing, so a created trigger has exactly one 
 
 ## disposeComposition
 
-Hoisted out of the runtime options because the failed-load path needs it too: when `load()` throws before the runtime exists, there is no `runtime.dispose()` to route through. Emptying the maps before disposing anything also makes this idempotent, which it must be, because `ProjectRuntime`'s constructor already calls it when `GraphRuntime` throws. Issue #143.
+Hoisted out of the runtime options because the failed-load path needs it too. It is the composition
+state's building/ready cleanup hook: the hook marks the state disposed first, then snapshots and
+clears the owned maps before releasing triggers, Motions, and Tracks, so a constructor failure or a
+repeated runtime disposal cannot release anything twice. Marking first is the order that makes it
+re-entrant, and it is the order the code takes. A ready runtime reaches this same hook through its
+host port; a building composition reaches it directly. Issue #143.
 
 ## bindClock
 
-One owner of the registration, because the trigger swap below has to make exactly the decision the build made, and two copies of an exhaustive switch is how they end up disagreeing about a binding kind. Total and exhaustive, with no `??` fallback, so a push-driven trigger cannot silently inherit `motion.onTick`, and no Motion can ever hold both a driver and its own clock advance.
+One owner of the registration, because the trigger swap below has to make exactly the decision the build made, and two copies of an exhaustive switch is how they end up disagreeing about a binding kind. Total and exhaustive, with no `??` fallback, so a push-driven trigger cannot silently inherit `motion.onTick`, and no Motion can ever hold both a driver and its own clock advance. Exhaustive is the compiler's claim rather than this paragraph's, since the switch ends at `unreachable`: a fourth binding kind fails `typecheck` here instead of registering no consumer at all, which is the outcome "no `??` fallback" was written to forbid and the one a `switch` without a `default` arm quietly produced. An injected factory is the reason that mattered, because `TriggerFactory` is a seam and a host can hand back a kind this build was never compiled against. The capability projection beside the union reads it through the same sink, so an arriving kind is refused at whichever of the two reads it first rather than absorbed by either. See ADR-092 and ADR-099.
 
 ## compose
 

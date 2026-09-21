@@ -1,4 +1,5 @@
 // Docs: ./ir.md
+import { unreachable } from "../lang/exhaustive";
 import type {
   Diagnostic,
   ObservationDefinition,
@@ -7,6 +8,13 @@ import type {
   TrackDefinition,
 } from "../contract/v5";
 import { diagnostic } from "../contract/diagnostics";
+import {
+  acceptedOutcome,
+  readOutcome,
+  refusedOutcome,
+  refusedOutcomeFrom,
+  type Outcome,
+} from "../domain/outcome";
 import { readPluginBindings, readPluginValues } from "../contract/keyframe-shape";
 import { PLUGIN_GOALS_SLOT } from "../contract/solver-slots";
 import { compareCodeUnits } from "./compare";
@@ -18,21 +26,46 @@ import {
 } from "./ids";
 import { orderGraph } from "./order";
 
-export interface EdgeRequirement {
+interface ScalarEdgeRequirement {
   readonly plugin: string;
   readonly slot: string;
-  /**
-   * The key this binding was authored under inside a dict-valued slot, absent for a scalar slot.
-   *
-   * Part of edge identity rather than a label. Two entries of one slot are two dependencies, and the
-   * slot alone cannot tell them apart once the key stopped being formatted into it, so an edge per
-   * entry survives only because this field is length-prefixed into `requirementIdentity` alongside
-   * the plugin and the slot. See ADR-057.
-   */
-  readonly memberKey?: string;
+  readonly memberKey?: never;
 }
+
+interface DictEdgeRequirement {
+  readonly plugin: string;
+  readonly slot: string;
+  /** The key this binding was authored under inside this dict-valued slot. */
+  readonly memberKey: string;
+}
+
 /**
- * One edge of the observation graph.
+ * The requirement shape identifies the slot's arity: scalar slots have no member key, while dict
+ * slots carry one. The union changes no runtime field or diagnostic; it only prevents a scalar and
+ * a dict requirement from being represented by one optional field at the type boundary.
+ *
+ * `memberKey` remains part of edge identity rather than a label. Two entries of one slot are two
+ * dependencies, and the slot alone cannot tell them apart once the key stopped being formatted into
+ * it, so an edge per entry survives only because this field is length-prefixed into
+ * `requirementIdentity` alongside the plugin and the slot. See ADR-057.
+ */
+export type EdgeRequirement = ScalarEdgeRequirement | DictEdgeRequirement;
+
+interface InputGraphEdge {
+  readonly observerId: string;
+  readonly sourceId: string;
+  readonly role: "input";
+  readonly requirement: EdgeRequirement;
+}
+
+interface OutputGraphEdge {
+  readonly observerId: string;
+  readonly sourceId: string;
+  readonly role: "output";
+}
+
+/**
+ * One edge of the observation graph. Inputs always carry a requirement; outputs never carry one.
  *
  * `role` names the composition phase rather than an authored field: inputs are collected before
  * `node.compose`, outputs are merged after it. It is not derivable-and-redundant even though every
@@ -40,12 +73,7 @@ export interface EdgeRequirement {
  * worse than a field two resolvers set with one literal each. `J-5` pins the equivalence over a
  * whole built graph, so the two cannot disagree. See ADR-047.
  */
-export interface GraphEdge {
-  readonly observerId: string;
-  readonly sourceId: string;
-  readonly role: "input" | "output";
-  readonly requirement?: EdgeRequirement;
-}
+export type GraphEdge = InputGraphEdge | OutputGraphEdge;
 export interface SolveMember {
   readonly id: string;
   readonly base: string;
@@ -99,15 +127,38 @@ function field(value: string): string {
   return `${value.length}:${value}`;
 }
 
+export function edgeRole(edge: GraphEdge): GraphEdge["role"] {
+  switch (edge.role) {
+    case "input":
+      return "input";
+    case "output":
+      return "output";
+    default:
+      return unreachable(edge);
+  }
+}
+
+export function edgeRequirement(edge: GraphEdge): EdgeRequirement | undefined {
+  switch (edge.role) {
+    case "input":
+      return edge.requirement;
+    case "output":
+      return undefined;
+    default:
+      return unreachable(edge);
+  }
+}
+
 function requirementIdentity(edge: GraphEdge): string {
-  const requirement = edge.requirement;
+  const requirement = edgeRequirement(edge);
   if (requirement === undefined) return "-";
   const member = field(requirement.memberKey ?? "");
   return `${field(requirement.plugin)}${field(requirement.slot)}${member}`;
 }
 
 function requirementOrder(edge: GraphEdge): string {
-  return edge.requirement === undefined ? "-" : `:${edge.requirement.plugin}`;
+  const requirement = edgeRequirement(edge);
+  return requirement === undefined ? "-" : `:${requirement.plugin}`;
 }
 
 /**
@@ -128,7 +179,7 @@ export function edgeKey(edge: GraphEdge): string {
   return [
     field(edge.observerId),
     field(edge.sourceId),
-    field(edge.role),
+    field(edgeRole(edge)),
     field(requirementIdentity(edge)),
   ].join("");
 }
@@ -137,19 +188,19 @@ export function compareEdges(a: GraphEdge, b: GraphEdge): number {
   return (
     compareCodeUnits(a.observerId, b.observerId) ||
     compareCodeUnits(a.sourceId, b.sourceId) ||
-    compareCodeUnits(a.role, b.role) ||
+    compareCodeUnits(edgeRole(a), edgeRole(b)) ||
     compareCodeUnits(requirementOrder(a), requirementOrder(b)) ||
-    compareCodeUnits(a.requirement?.slot ?? "", b.requirement?.slot ?? "") ||
-    compareCodeUnits(a.requirement?.memberKey ?? "", b.requirement?.memberKey ?? "")
+    compareCodeUnits(edgeRequirement(a)?.slot ?? "", edgeRequirement(b)?.slot ?? "") ||
+    compareCodeUnits(edgeRequirement(a)?.memberKey ?? "", edgeRequirement(b)?.memberKey ?? "")
   );
 }
 
 export function describeEdge(edge: GraphEdge): string {
-  const requirement = edge.requirement;
+  const requirement = edgeRequirement(edge);
   const member = requirement?.memberKey === undefined ? "" : `.${requirement.memberKey}`;
   const scope =
     requirement === undefined ? "" : ` [${requirement.plugin}.${requirement.slot}${member}]`;
-  return `${edge.observerId} <- ${edge.sourceId} (${edge.role})${scope}`;
+  return `${edge.observerId} <- ${edge.sourceId} (${edgeRole(edge)})${scope}`;
 }
 
 function freeze<T>(value: T): T {
@@ -174,10 +225,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
-export interface ResolvedEdge {
-  readonly edge?: GraphEdge;
-  readonly diagnostics: readonly Diagnostic[];
-}
+export type ResolvedEdge = Outcome<GraphEdge>;
 
 const BIND_INSTEAD = "Bind the dependency under keyframes.<plugin>.requires instead.";
 const TARGET_UNSUPPORTED = `Observation target is not supported; an observes entry declares an output edge and names no destination key. ${BIND_INSTEAD}`;
@@ -199,24 +247,24 @@ export function resolveObservationEdge(
     diagnostics.push(
       diagnostic("observation-source-shape", path, "Observation source must be non-empty."),
     );
-    return { diagnostics: Object.freeze(diagnostics) };
+    return refusedOutcomeFrom<GraphEdge, Diagnostic>(Object.freeze(diagnostics));
   }
   // Three removed fields, one rule id each, because a diagnostic has to name what the author
   // actually wrote rather than the removal they share. The target guard stays first, so ADR-046's
   // `V-2` through `V-4` still report a target for a fixture that also carries a role.
   if (readRemoved(observation, "target") !== undefined) {
     diagnostics.push(diagnostic("observation-target-unsupported", path, TARGET_UNSUPPORTED));
-    return { diagnostics: Object.freeze(diagnostics) };
+    return refusedOutcomeFrom<GraphEdge, Diagnostic>(Object.freeze(diagnostics));
   }
   if (readRemoved(observation, "role") !== undefined) {
     diagnostics.push(diagnostic("observation-role-unsupported", path, ROLE_UNSUPPORTED));
-    return { diagnostics: Object.freeze(diagnostics) };
+    return refusedOutcomeFrom<GraphEdge, Diagnostic>(Object.freeze(diagnostics));
   }
   if (readRemoved(observation, "projection") !== undefined) {
     diagnostics.push(
       diagnostic("observation-projection-unsupported", path, PROJECTION_UNSUPPORTED),
     );
-    return { diagnostics: Object.freeze(diagnostics) };
+    return refusedOutcomeFrom<GraphEdge, Diagnostic>(Object.freeze(diagnostics));
   }
   let sourceId: string;
   try {
@@ -230,7 +278,7 @@ export function resolveObservationEdge(
         [observation.source],
       ),
     );
-    return { diagnostics: Object.freeze(diagnostics) };
+    return refusedOutcomeFrom<GraphEdge, Diagnostic>(Object.freeze(diagnostics));
   }
   // One literal, in one place. `role` is not read from authored input any more, so this resolver
   // and `resolveRequirementEdge` are the only two things that can set it, one value each.
@@ -239,7 +287,7 @@ export function resolveObservationEdge(
     sourceId,
     role: "output",
   });
-  return { edge, diagnostics: Object.freeze([]) };
+  return acceptedOutcome<GraphEdge, Diagnostic>(edge, Object.freeze([]));
 }
 
 export function resolveRequirementEdge(
@@ -253,11 +301,9 @@ export function resolveRequirementEdge(
     sourceId = qualifySource(binding.source, ownerId);
   } catch (error) {
     const message = String(error instanceof Error ? error.message : error);
-    return {
-      diagnostics: Object.freeze([
-        diagnostic("requirement-source", path, message, [binding.source]),
-      ]),
-    };
+    return refusedOutcome<GraphEdge, Diagnostic>([
+      diagnostic("requirement-source", path, message, [binding.source]),
+    ]);
   }
   // The member key is copied when the binding carries one and omitted when it does not, rather than
   // written as an explicit `undefined`. An absent field and a field holding `undefined` encode the
@@ -273,7 +319,7 @@ export function resolveRequirementEdge(
     role: "input",
     requirement,
   });
-  return { edge, diagnostics: Object.freeze([]) };
+  return acceptedOutcome<GraphEdge, Diagnostic>(edge, Object.freeze([]));
 }
 
 export function observationEdgeKey(
@@ -282,13 +328,17 @@ export function observationEdgeKey(
   ownerId: string,
 ): string {
   const resolved = resolveObservationEdge(observation, observerId, ownerId, "observation");
-  if (resolved.edge === undefined)
-    throw new TypeError(
-      resolved.diagnostics
-        .map(({ ruleId, path, message }) => `${ruleId} at ${path}: ${message}`)
-        .join(" "),
-    );
-  return edgeKey(resolved.edge);
+  return readOutcome(
+    resolved,
+    (edge) => edgeKey(edge),
+    (diagnostics) => {
+      throw new TypeError(
+        diagnostics
+          .map(({ ruleId, path, message }) => `${ruleId} at ${path}: ${message}`)
+          .join(" "),
+      );
+    },
+  );
 }
 
 export function collectTrack(
@@ -318,18 +368,24 @@ export function collectTrack(
   for (const [index, observation] of (track.observes ?? []).entries()) {
     const path = `${owner === "free" ? `freeTracks[${authoredIndex}]` : `motions[${authoredIndex}].tracks[${index}].observes`}`;
     const resolved = resolveObservationEdge(observation, id, ownerId, path);
-    diagnostics.push(...resolved.diagnostics);
-    if (resolved.edge !== undefined) edges.push(resolved.edge);
+    readOutcome(
+      resolved,
+      (edge) => edges.push(edge),
+      (resolvedDiagnostics) => diagnostics.push(...resolvedDiagnostics),
+    );
   }
   // Derived from the authored form, with no plugin registry in reach. Whether `fk` is registered
   // and declares `base` is `PluginRegistry.resolveForKeyframes`' question; whether the source is a
   // node, is not this node, and introduces no cycle is this layer's. That split is what lets
-  // `validateV5` build the graph without holding a registry it must not have. See ADR-044.
+  // `validateSchemaV5` build the graph without holding a registry it must not have. See ADR-044.
   for (const binding of readPluginBindings(track.keyframes)) {
     const bindingPath = `${id}.keyframes.${binding.authoredPath}`;
     const resolved = resolveRequirementEdge(binding, id, ownerId, bindingPath);
-    diagnostics.push(...resolved.diagnostics);
-    if (resolved.edge !== undefined) edges.push(resolved.edge);
+    readOutcome(
+      resolved,
+      (edge) => edges.push(edge),
+      (resolvedDiagnostics) => diagnostics.push(...resolvedDiagnostics),
+    );
   }
   return Object.freeze({ id, owner, authoredIndex, track, edges: Object.freeze(edges) });
 }
@@ -412,7 +468,7 @@ function groupsAuthoring(keyframes: unknown, key: string): readonly string[] {
 }
 
 function baseOf(node: GraphNode): string | undefined {
-  const edge = node.edges.find((e) => e.role === "input" && e.requirement?.slot === "base");
+  const edge = node.edges.find((candidate) => edgeRequirement(candidate)?.slot === "base");
   return edge?.sourceId;
 }
 
@@ -440,8 +496,9 @@ function goalBindingsOf(node: GraphNode): GoalBindings {
   const dict: AuthoredGoal[] = [];
   let bare = false;
   for (const edge of node.edges) {
-    if (edge.role !== "input" || edge.requirement === undefined) continue;
-    const { slot, memberKey } = edge.requirement;
+    const requirement = edgeRequirement(edge);
+    if (requirement === undefined) continue;
+    const { slot, memberKey } = requirement;
     if (slot === "target") {
       bare = true;
       continue;
@@ -468,10 +525,11 @@ export function resolveSolvers(
     // rotation under any other group is that plugin's own live input.
     const solverBinders: string[] = [];
     for (const edge of node.edges) {
-      if (edge.role === "input" && edge.requirement) {
-        const slot = edge.requirement.slot;
+      const requirement = edgeRequirement(edge);
+      if (requirement !== undefined) {
+        const slot = requirement.slot;
         if (slot === "root") rootCount++;
-        if (slot === "solver") solverBinders.push(edge.requirement.plugin);
+        if (slot === "solver") solverBinders.push(requirement.plugin);
       }
     }
     const keyframes = node.track.keyframes;
@@ -582,7 +640,7 @@ export function resolveSolvers(
   const boundSolverIds = new Set<string>();
   for (const node of nodes) {
     for (const edge of node.edges) {
-      if (edge.role === "input" && edge.requirement?.slot === "solver") {
+      if (edgeRequirement(edge)?.slot === "solver") {
         boundSolverIds.add(edge.sourceId);
       }
     }
@@ -590,7 +648,7 @@ export function resolveSolvers(
 
   // Resolve solvers
   for (const solver of nodes) {
-    const rootEdge = solver.edges.find((e) => e.role === "input" && e.requirement?.slot === "root");
+    const rootEdge = solver.edges.find((edge) => edgeRequirement(edge)?.slot === "root");
     // Diagnostic 1: ik-solver-no-root
     if (!rootEdge) {
       if (boundSolverIds.has(solver.id)) {
@@ -609,7 +667,7 @@ export function resolveSolvers(
 
     const members = nodes.filter((n) =>
       n.edges.some(
-        (e) => e.role === "input" && e.requirement?.slot === "solver" && e.sourceId === solver.id,
+        (edge) => edgeRequirement(edge)?.slot === "solver" && edge.sourceId === solver.id,
       ),
     );
 
@@ -943,25 +1001,28 @@ export function finalizeGraph(
   if (diagnostics.some(({ severity }) => severity === "error"))
     return { diagnostics: Object.freeze(diagnostics) };
   const ordering = orderGraph(resolvedNodes);
-  if (ordering.order === undefined)
-    return {
-      diagnostics: Object.freeze(
-        [...diagnostics, ...ordering.diagnostics].sort(compareDiagnostics),
-      ),
-    };
-  const nodeById: Record<string, GraphNode> = {};
-  for (const node of resolvedNodes) nodeById[node.id] = node;
-  // Derived here, after `resolveSolvers` returned, because the solver fan-in is half the answer and
-  // it does not exist until then. One owner, in the file that already owns `compareEdges` and
-  // delegates to `orderGraph`, so every consumer reads reverse topology instead of walking for it.
-  return {
-    graph: freeze({
-      nodes: freeze(resolvedNodes),
-      nodeById: freeze(nodeById),
-      dependants: deriveDependants(resolvedNodes),
-      order: ordering.order,
-      diagnostics: freeze(diagnostics),
+  return readOutcome(
+    ordering,
+    (order) => {
+      const nodeById: Record<string, GraphNode> = {};
+      for (const node of resolvedNodes) nodeById[node.id] = node;
+      // Derived here, after `resolveSolvers` returned, because the solver fan-in is half the answer
+      // and it does not exist until then. One owner, in the file that already owns `compareEdges`
+      // and delegates to `orderGraph`, so every consumer reads reverse topology instead of walking
+      // for it.
+      return {
+        graph: freeze({
+          nodes: freeze(resolvedNodes),
+          nodeById: freeze(nodeById),
+          dependants: deriveDependants(resolvedNodes),
+          order,
+          diagnostics: freeze(diagnostics),
+        }),
+        diagnostics: freeze(diagnostics),
+      };
+    },
+    (orderingDiagnostics) => ({
+      diagnostics: Object.freeze([...diagnostics, ...orderingDiagnostics].sort(compareDiagnostics)),
     }),
-    diagnostics: freeze(diagnostics),
-  };
+  );
 }

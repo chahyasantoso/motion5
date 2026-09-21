@@ -39,7 +39,11 @@ Every other rule in this document is a consequence of that one. When a change ma
   Track   owns playhead, interpolation, local plugin composition
 ```
 
-Dependencies point inward only. Contract has no dependencies. Domain depends on contract. Graph depends on contract and domain. Runtime depends on graph. Ports are depended upon, never depending. Adapters depend on ports and on their own external engine, and nothing depends on adapters except the composition root.
+Dependencies point inward only, with the dependency-free `lang/` module as the shared sink every
+layer may call. Contract has no dependencies on another core layer. Domain depends on contract.
+Graph depends on contract and domain. Runtime depends on graph. Ports are depended upon, never
+depending. Adapters depend on ports and on their own external engine, and nothing depends on
+adapters except the composition root.
 
 ## 3. Ownership
 
@@ -57,9 +61,15 @@ One owner per responsibility. If two things can perform an operation, one of the
 
 Some authored data has no runtime owner at all, and that is deliberate. `perspective` is validated at load and handed to the renderer untouched. Nothing in the core reads it. See [AUTHORED-SCHEMA.md](./AUTHORED-SCHEMA.md).
 
-The **trigger factory** is the only object that knows trigger kinds. A declared trigger type selects a real driver or fails loudly: there is no manual fallback for `time` or `scroll`, and a trigger field the runtime does not honor is rejected at validation rather than accepted and ignored. `Motion` never learns what a trigger type is. It takes normalized progress in `[0, 1]` and one capability flag, `acceptsExternalSignal`. See ADR-033.
+The **trigger factory** is the only object that knows trigger kinds. A declared trigger type selects a real driver or fails loudly: there is no manual fallback for `time` or `scroll`, and a trigger field the runtime does not honor is rejected at validation rather than accepted and ignored. `Motion` never learns what a trigger type is. It takes normalized progress in `[0, 1]`; the binding derives its external-signal capability. See ADR-033.
 
-A Motion's relationship to the one project clock is a three-state `ClockBinding`, not an optional callback beside a flag. `driver` feeds project ticks to a driver that owns time semantics, `motion` lets the Motion advance itself, and `none` is push-driven and registers no clock consumer at all. Two fields encoding one decision would need a runtime invariant to police a state the type system should have forbidden; with three states, holding both a driver and `motion.onTick` is unrepresentable and the registration site is an exhaustive switch with no fallback.
+A Motion's relationship to the one project clock is a three-state `TriggerBinding`, not an
+optional callback beside a capability flag. `driver` feeds project ticks to a driver that owns
+time semantics, `motion` lets the Motion advance itself, and `none` is push-driven and registers
+no clock consumer at all. Two fields encoding one decision would need a runtime invariant to
+police a state the type system should have forbidden; with three states, holding both a driver
+and `motion.onTick` is unrepresentable and the registration site is an exhaustive switch with no
+fallback.
 
 ## 4. Invariants
 
@@ -202,6 +212,7 @@ At runtime, diagnostics accumulate on the project in a bounded ring buffer and s
 packages/
   core/
     src/
+      lang/        dependency-free shared helpers
       contract/    authored schema constants, public types, diagnostics shape
       domain/      Track, Motion, plugins, immutable value snapshots
       graph/       qualified ids, IR, normalization, validation, ObservationState, GraphBinding

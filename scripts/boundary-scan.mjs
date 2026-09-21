@@ -2,7 +2,16 @@ import { readdir, readFile } from "node:fs/promises";
 import { extname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 const root = fileURLToPath(new URL("..", import.meta.url));
-const coreLayers = ["contract", "domain", "graph", "runtime", "ports", "testing"];
+const coreLayers = [
+  "contract",
+  "domain",
+  "graph",
+  "runtime",
+  "ports",
+  "testing",
+  "adapters",
+  "lang",
+];
 const corePackage = "packages/core";
 const scannedExtensions = [".ts", ".tsx", ".js", ".mjs"];
 const allowedPublicExports = new Set([
@@ -29,6 +38,8 @@ const allowedPublicExports = new Set([
   "LivePatch",
   "PatchBatch",
   "PatchListener",
+  "PatchRender",
+  "patchRender",
   "migrateV4ToV5",
   "MigrationResult",
   "resolveTriggerDefinition",
@@ -65,8 +76,9 @@ const allowedPublicExports = new Set([
   "assertTriggerPort",
   "createManualTriggerPort",
   "TriggerPort",
+  "acceptsExternalSignal",
   "assertTriggerFactory",
-  "ClockBinding",
+  "TriggerBinding",
   "ClockConsumer",
   "CreatedTrigger",
   "TriggerFactory",
@@ -80,6 +92,7 @@ const allowedPublicExports = new Set([
   "assertInterpolator",
   "InterpolationTimeline",
   "Interpolator",
+  "PatchKeysResult",
   "assertScheduler",
   "Cancel",
   "Scheduler",
@@ -127,6 +140,20 @@ export function importsTestingEntrypoint(source) {
     source,
   );
 }
+/**
+ * The retired sink path, and only that path.
+ *
+ * Narrower than the inward-dependency rule it serves, on purpose. Five inward imports into domain
+ * survive: `contract/migrate-v4-to-v5.ts` and `contract/validate-v5.ts` reach `domain/outcome`,
+ * `adapters/interpolator/gsap.ts` reaches `domain/keyframe-compiler`, and `adapters/dom.ts` plus
+ * `adapters/index.ts` reach `domain/plugins` type-only. A predicate over every `domain/` import
+ * would therefore refuse the tree it is added to, and a gate introduced red earns an exemption list
+ * instead of a fix. This one is green the moment the move lands and refuses the exact regression
+ * the move exists to prevent. ADR-099 names all five and says which slice each belongs to.
+ */
+export function importsDomainSink(source) {
+  return /(?:from|import)\s*["'](?:\.\.\/)+domain\/exhaustive(?:["'/]|$)/.test(source);
+}
 export function bannedSymbol(source) {
   return /(?:compatibility|facade|parityMode|rollout|capabilityFlag|observationAlias|groupHost)/i.test(
     source,
@@ -145,15 +172,17 @@ export function extractExportNames(source) {
     names.push(match[1]);
   return names;
 }
-function checkCoreSource(source, file, violations) {
-  if (importsBoundary(source) || importsRenderer(source))
+function checkCoreSource(source, file, layer, violations) {
+  if (layer !== "adapters" && (importsBoundary(source) || importsRenderer(source)))
     violations.push(`${file}: renderer or engine import`);
   if (bannedSymbol(source)) violations.push(`${file}: banned compatibility symbol`);
+  if (["contract", "ports", "adapters"].includes(layer) && importsDomainSink(source))
+    violations.push(`${file}: retired domain sink import`);
 }
-async function scanFiles(directory, scanRoot, violations) {
+async function scanFiles(directory, scanRoot, layer, violations) {
   for (const path of await walk(directory)) {
     const source = await readFile(path, "utf8");
-    checkCoreSource(source, relative(path, scanRoot), violations);
+    checkCoreSource(source, relative(path, scanRoot), layer, violations);
   }
 }
 async function scanCoreEntries(scanRoot, violations) {
@@ -170,7 +199,7 @@ async function scanCoreEntries(scanRoot, violations) {
     .map((entry) => entry.name)
     .sort()) {
     const path = join(directory, name);
-    checkCoreSource(await readFile(path, "utf8"), relative(path, scanRoot), violations);
+    checkCoreSource(await readFile(path, "utf8"), relative(path, scanRoot), "entry", violations);
   }
 }
 /**
@@ -214,7 +243,7 @@ async function discoverConsumerWorkspaces(scanRoot) {
 export async function scan(scanRoot = root) {
   const violations = [];
   for (const layer of coreLayers)
-    await scanFiles(join(scanRoot, "packages", "core", "src", layer), scanRoot, violations);
+    await scanFiles(join(scanRoot, "packages", "core", "src", layer), scanRoot, layer, violations);
   await scanCoreEntries(scanRoot, violations);
   for (const workspace of await discoverConsumerWorkspaces(scanRoot)) {
     for (const path of await walk(join(scanRoot, workspace, "src"))) {

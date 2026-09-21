@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ObservationDefinition, ProjectDefinition } from "../../../src/contract/v5";
-import { validateV5 } from "../../../src/contract/validate-v5";
+import { validateV5 } from "../../../src/validate-v5";
 import type { GraphEdge } from "../../../src/graph/ir";
 import { resolveObservationEdge } from "../../../src/graph/ir";
 import { ObservationState } from "../../../src/graph/observation-state";
@@ -78,7 +78,8 @@ describe("ObservationDefinition.target is removed, not ignored", () => {
 
   it("V-2 refuses an authored target on an input observation", () => {
     const resolved = resolveObservationEdge(INPUT_WITH_TARGET, "hero/child", "hero", PATH);
-    expect(resolved.edge).toBeUndefined();
+    expect(resolved.kind).toBe("refused");
+    expect("value" in resolved).toBe(false);
     expect(ruleIds(resolved.diagnostics)).toEqual(["observation-target-unsupported"]);
     expect(resolved.diagnostics[0]?.path).toBe(PATH);
   });
@@ -87,13 +88,14 @@ describe("ObservationDefinition.target is removed, not ignored", () => {
     // `observation-output-target` is gone. One rule owns the field on both roles, because it has
     // no consumer on either and a role-specific refusal implied it had one somewhere.
     const resolved = resolveObservationEdge(OUTPUT_WITH_TARGET, "hero/child", "hero", PATH);
-    expect(resolved.edge).toBeUndefined();
+    expect(resolved.kind).toBe("refused");
+    expect("value" in resolved).toBe(false);
     expect(ruleIds(resolved.diagnostics)).toEqual(["observation-target-unsupported"]);
   });
 
   it("V-4 names the removed field instead of reporting a duplicate edge", () => {
     const result = validateV5(TWO_TARGETS);
-    expect(result.valid).toBe(false);
+    expect(result.kind).toBe("refused");
     expect(ruleIds(result.diagnostics)).toEqual([
       "observation-target-unsupported",
       "observation-target-unsupported",
@@ -107,7 +109,12 @@ describe("ObservationDefinition.target is removed, not ignored", () => {
     const state = new ObservationState();
     state.addNode("hero/child");
     state.addNode("hero/root");
-    const live: GraphEdge = { observerId: "hero/child", sourceId: "hero/root", role: "input" };
+    const live: GraphEdge = {
+      observerId: "hero/child",
+      sourceId: "hero/root",
+      role: "input",
+      requirement: { plugin: "fk", slot: "base" },
+    };
     state.addEdge(live);
     const stray = { ...live, target: "pointer" } as GraphEdge;
     expect(state.hasEdge(stray)).toBe(true);

@@ -1,4 +1,5 @@
 import { readAuthoredLeaf } from "./authored-leaf";
+import { unreachable } from "../lang/exhaustive";
 import type { AuthoredPluginGroup, AuthoredProperty, PluginRequiresBinding } from "./v5";
 
 /**
@@ -90,11 +91,36 @@ export function isKeyframeGroup(value: unknown): value is AuthoredPluginGroup {
  * keeps the two refusals independent of each other.
  */
 export function looksLikeLegacyGroup(value: unknown): boolean {
-  if (!isObject(value) || readAuthoredLeaf(value).kind === "wrapper") return false;
+  if (!isObject(value)) return false;
+  const leaf = readAuthoredLeaf(value);
+  switch (leaf.kind) {
+    case "wrapper":
+      return false;
+    case "animated":
+    case "static":
+    case "empty":
+    case "invalid":
+      break;
+    default:
+      return unreachable(leaf);
+  }
   const names = Object.keys(value);
   if (names.length === 0) return false;
   if (names.some((name) => PLUGIN_GROUP_SECTIONS.includes(name))) return false;
-  return names.every((name) => readAuthoredLeaf(value[name]).kind !== "invalid");
+  return names.every((name) => {
+    const member = readAuthoredLeaf(value[name]);
+    switch (member.kind) {
+      case "animated":
+      case "static":
+      case "empty":
+      case "wrapper":
+        return true;
+      case "invalid":
+        return false;
+      default:
+        return unreachable(member);
+    }
+  });
 }
 
 /**
@@ -128,7 +154,7 @@ export function readPluginValues(group: unknown): Readonly<Record<string, unknow
  * The single owner of reading the authored bindings, so `graph/ir.ts` derives its edges and
  * `PluginRegistry` resolves its slots from one reader rather than from two that can disagree about
  * what an author wrote. Deriving the edge is purely syntactic, which is what lets it run inside
- * `validateV5` without a plugin registry.
+ * `validateSchemaV5` without a plugin registry.
  *
  * A slot whose authored value is a record binds one source per key rather than one source, and it
  * expands here into one binding per key it names. That expansion is the whole of how multi-goal

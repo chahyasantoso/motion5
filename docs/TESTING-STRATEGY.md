@@ -44,6 +44,12 @@ A declaration claim uses `declaration(source, opening, terminator)`, which selec
 
 A direct call-site claim uses `callSites(source, name)`, not an occurrence count. It counts calls whose callee names the symbol directly, through a namespace/property access, or through a literal property key, including executable template substitutions. It excludes comments, standalone strings, regex bodies, imports, and declarations. Namespace calls stay covered because the previous occurrence scan covered them too; narrowing to bare identifiers would weaken the claim. This is syntactic evidence, not semantic alias resolution or proof about a dynamically computed callee. T-8 still owns the positional comparison and T-9 the driver's transport behavior. `member()` retains its declaration-owned indentation contract from issue #314; this slice does not claim to replace every textual member assertion with an AST query.
 
+`seamResultReads` is the bounded whole-module check for a supplied seam-result binding: it follows
+local aliases, destructuring, and direct helper calls, reports reads outside the named owner, and
+flags aliases of the named decoder. Without a type checker it cannot prove inferred types, dynamic
+property names, dynamic calls, shadowing across arbitrary scopes, or data flow outside the supplied
+modules.
+
 One owner does the reading and parsing. The helper exports `code`, `codeOnly`, `member`, `declaration`, `callSites`, and `parseSource`; consumers own only their assertions. The retired two-bound `region(from, until)` and the local LF-16 stripper are removed rather than discouraged.
 
 The source-region gate discovers actual source-path URL syntax, including directory URLs and reads wrapped in local functions, independently of the receiving constant's name. It requires an actual helper value import, rejects local helper redeclarations, and keeps an empty closed `PENDING` set. It does not claim arbitrary filesystem data-flow analysis: computed paths without a recognizable source URL are outside its syntactic discovery. Ordinary production imports and quoted fixture examples are not source reads. Regression fixtures measure both the detection and exclusion directions. Issue #317 owns this correction.

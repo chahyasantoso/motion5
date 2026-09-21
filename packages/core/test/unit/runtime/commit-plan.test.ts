@@ -7,11 +7,10 @@ import { invert, planCommit, type CommitDocument } from "../../../src/runtime/co
 const A: TrackDefinition = { id: "arm" },
   H: TrackDefinition = { id: "hand", duration: 250 },
   M: MotionDefinition = { id: "hero", trigger: { type: "manual" }, tracks: [] };
-const ent = (track: TrackDefinition, motionId?: string) => ({
-  track,
-  motionId,
-  valueState: AUTHORED,
-});
+const ent = (track: TrackDefinition, motionId?: string) =>
+  motionId === undefined
+    ? { kind: "free" as const, track, valueState: AUTHORED }
+    : { kind: "owned" as const, track, motionId, valueState: AUTHORED };
 const doc = (
   tracks: readonly [string, ReturnType<typeof ent>][],
   motions: readonly [string, { definition: MotionDefinition }][] = [],
@@ -98,7 +97,7 @@ describe("commit plan", () => {
       "publish",
     ])
       expect(r).toContain(`case "${k}"`);
-    expect(p.match(/unreachable\(/g)).toHaveLength(1);
+    expect(p.match(/unreachable\(/g)).toHaveLength(2);
     expect(r.match(/unreachable\(/g)).toHaveLength(2);
   });
 });

@@ -259,8 +259,8 @@ export type KeyframeRuleScope = "authored" | "contribution";
  *
  * A record keyed by the union is as closed as a `switch` ending at `unreachable`: a third scope fails
  * `typecheck` here, at the one place a scope is answered, rather than inheriting whichever branch was
- * written first. `domain/exhaustive` is deliberately not imported, because the contract layer does
- * not read the domain layer for a totality it can state in the type. See ADR-092.
+ * written first. `lang/exhaustive` is deliberately not imported, because the contract layer does
+ * not read the domain layer for a totality it can state in the type. See ADR-092 and ADR-099.
  */
 const SCOPED_RULE_ID: Readonly<
   Record<KeyframeRuleScope, (name: KeyframeRuleId) => KeyframeRuleId | ContributionRuleId>

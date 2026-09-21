@@ -106,7 +106,6 @@ function countingFactory(scroll?: ScrollSourceResolver): CountingFactory {
       // driver that cannot drive. Naming them means the type checker catches the next added field.
       return {
         port: inner.port,
-        acceptsExternalSignal: inner.acceptsExternalSignal,
         clockBinding: inner.clockBinding,
         dispose() {
           disposals.set(context.motionId, (disposals.get(context.motionId) ?? 0) + 1);

@@ -1,5 +1,10 @@
 // Docs: ./plugins.md
-import { readAuthoredLeaf, readCompilableStops } from "../contract/authored-leaf";
+import {
+  authoredLeafPartition,
+  readAuthoredLeaf,
+  readCompilableStops,
+} from "../contract/authored-leaf";
+import { unreachable } from "../lang/exhaustive";
 import { diagnostic } from "../contract/diagnostics";
 import { validateKeyframes } from "../contract/validate-v5";
 import type {
@@ -255,17 +260,25 @@ function prepareContributions(
     // land on. Calling the hook with an empty stop list instead would be a field accepted and then
     // ignored, which rule 6 of ADR-033 forbids, and it would read as a hook that ran and declined.
     // Refused by name, so the author is told which leaf the plugin cannot work from. See ADR-050.
-    if (readAuthoredLeaf(authored[key]).kind === "static") {
-      const detail = `cannot contribute from static key "${key}"`;
-      diagnostics.push(
-        diagnostic(
-          "plugin-contribution-static-unsupported",
-          authoredPath(key),
-          `Plugin "${plugin.name}" ${detail}.`,
-          [plugin.name, key],
-        ),
-      );
-      continue;
+    const partition = authoredLeafPartition(readAuthoredLeaf(authored[key]));
+    switch (partition.kind) {
+      case "value": {
+        const detail = `cannot contribute from static key "${key}"`;
+        diagnostics.push(
+          diagnostic(
+            "plugin-contribution-static-unsupported",
+            authoredPath(key),
+            `Plugin "${plugin.name}" ${detail}.`,
+            [plugin.name, key],
+          ),
+        );
+        continue;
+      }
+      case "stops":
+      case "none":
+        break;
+      default:
+        return unreachable(partition);
     }
     let contribution: Contribution;
     try {
