@@ -11,6 +11,11 @@ import { describe, expect, it } from "vitest";
  * The owner runs as a module in a subprocess rather than being imported, which is how
  * apply-ai-edit and the automation adapters are already measured: these scripts are ESM JavaScript
  * without declaration files, and importing them here would pin a second module graph.
+ *
+ * Every scenario body below is a String.raw template, so a backtick inside one closes the template
+ * rather than quoting a command, and ${ inside one interpolates. Neither may appear in a scenario,
+ * including in its comments; name a command in prose instead. Prose about the templates belongs in
+ * a comment like this one, outside them, where a backtick is ordinary text.
  */
 
 const root = fileURLToPath(new URL("../../../../../", import.meta.url));
@@ -208,7 +213,7 @@ describe("a checkpoint patch is read by an allowlisted parser, never by git appl
       const hunk = (from, to, body) => "@@ -" + from + " +" + to + " @@\n" + body;
       const change = "-export const one = 1;\n+export const one = 2;\n";
       // Separated, contiguous, and a zero-count insertion followed by a later modify: all three are
-      // shapes `git diff` genuinely emits, and all three stay accepted.
+      // shapes a real git diff genuinely emits, and all three stay accepted.
       const accepted = [
         head + hunk("1,1", "1,1", change) + hunk("9,1", "9,1", change),
         head + hunk("1,2", "1,2", change + " const tail = 3;\n") + hunk("3,1", "3,1", change),
