@@ -76,6 +76,203 @@ export function codeOnly(source: string, filename = "source.ts"): string {
   return project(source, filename, false);
 }
 
+export interface SeamResultModule {
+  readonly filename: string;
+  readonly source: string;
+}
+
+export interface SeamResultRead {
+  readonly filename: string;
+  readonly position: number;
+  readonly kind: "member" | "decoder-alias";
+  readonly name: string;
+}
+
+export interface SeamResultOptions {
+  readonly resultBindings: readonly string[];
+  readonly decoderName: string;
+  readonly ownerFilename: string;
+}
+
+/**
+ * Reports syntactic reads of a seam result outside its owner, plus aliased decoder calls.
+ *
+ * The caller supplies the result bindings because a single-file parse without a type checker cannot
+ * infer that an unannotated value such as `answer` has type `LiveWriteResult`. The analysis follows
+ * identifier aliases, object destructuring, and direct helper calls whose arguments carry a result;
+ * it also follows aliases of the named decoder so `const decode = liveWrite; decode(answer)` is not
+ * hidden by a direct call-site count. It deliberately does not claim to resolve computed names,
+ * dynamic calls, shadowing across arbitrary scopes, or data flow that leaves the supplied modules.
+ */
+export function seamResultReads(
+  modules: readonly SeamResultModule[],
+  options: SeamResultOptions,
+): readonly SeamResultRead[] {
+  const findings: SeamResultRead[] = [];
+  for (const module of modules) {
+    const tree = parseSource(module.source, module.filename);
+    const tainted = new Set(options.resultBindings);
+    const decoderAliases = new Set([options.decoderName]);
+    const functions = new Map<string, ts.FunctionLikeDeclaration>();
+    const reported = new Set<string>();
+
+    function addFinding(node: ts.Node, kind: SeamResultRead["kind"], name: string): void {
+      if (module.filename === options.ownerFilename) return;
+      const key = `${node.getStart(tree)}:${kind}:${name}`;
+      if (reported.has(key)) return;
+      reported.add(key);
+      findings.push({
+        filename: module.filename,
+        position: node.getStart(tree),
+        kind,
+        name,
+      });
+    }
+
+    function identifierName(node: ts.Node | undefined): string | undefined {
+      return node !== undefined && ts.isIdentifier(node) ? node.text : undefined;
+    }
+
+    function expressionName(node: ts.Expression): string | undefined {
+      if (ts.isIdentifier(node)) return node.text;
+      if (ts.isPropertyAccessExpression(node)) return node.name.text;
+      if (ts.isElementAccessExpression(node) && ts.isStringLiteralLike(node.argumentExpression))
+        return node.argumentExpression.text;
+      return undefined;
+    }
+
+    function isTainted(node: ts.Node | undefined): boolean {
+      if (node === undefined) return false;
+      if (ts.isIdentifier(node)) return tainted.has(node.text);
+      if (ts.isParenthesizedExpression(node)) return isTainted(node.expression);
+      if (ts.isAsExpression(node) || ts.isTypeAssertionExpression(node))
+        return isTainted(node.expression);
+      if (ts.isNonNullExpression(node)) return isTainted(node.expression);
+      return false;
+    }
+
+    function bindPattern(pattern: ts.BindingName): void {
+      if (ts.isIdentifier(pattern)) {
+        tainted.add(pattern.text);
+        return;
+      }
+      for (const element of pattern.elements) {
+        if (ts.isOmittedExpression(element)) continue;
+        if (ts.isBindingElement(element)) {
+          if (element.dotDotDotToken) bindPattern(element.name);
+          else if (ts.isObjectBindingPattern(pattern)) {
+            const property = element.propertyName ?? element.name;
+            const member = expressionName(property as ts.Expression);
+            if (member !== undefined) addFinding(element, "member", member);
+            if (isTainted(element.initializer)) bindPattern(element.name);
+          }
+        }
+      }
+    }
+
+    function isFunctionLikeDeclaration(node: ts.Node): node is ts.FunctionLikeDeclaration {
+      return (
+        ts.isFunctionDeclaration(node) ||
+        ts.isFunctionExpression(node) ||
+        ts.isArrowFunction(node) ||
+        ts.isMethodDeclaration(node) ||
+        ts.isGetAccessorDeclaration(node) ||
+        ts.isSetAccessorDeclaration(node)
+      );
+    }
+
+    function functionName(node: ts.FunctionLikeDeclaration): string | undefined {
+      if (ts.isFunctionDeclaration(node) && node.name !== undefined) return node.name.text;
+      if (node.parent !== undefined && ts.isVariableDeclaration(node.parent))
+        return identifierName(node.parent.name);
+      return undefined;
+    }
+
+    function returnsTainted(node: ts.FunctionLikeDeclaration): boolean {
+      let result = false;
+      if (node.body === undefined) return result;
+      function visitReturn(child: ts.Node): void {
+        if (ts.isReturnStatement(child) && isTainted(child.expression)) result = true;
+        ts.forEachChild(child, visitReturn);
+      }
+      visitReturn(node.body);
+      return result;
+    }
+
+    function callTarget(node: ts.Expression): string | undefined {
+      return expressionName(node);
+    }
+
+    function visitDeclarations(node: ts.Node): void {
+      if (isFunctionLikeDeclaration(node)) {
+        const name = functionName(node);
+        if (name !== undefined) functions.set(name, node);
+      }
+      if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name)) {
+        const value = node.initializer;
+        if (value !== undefined && callTarget(value) === options.decoderName)
+          decoderAliases.add(node.name.text);
+        if (value !== undefined && isTainted(value)) tainted.add(node.name.text);
+      }
+      ts.forEachChild(node, visitDeclarations);
+    }
+    visitDeclarations(tree);
+
+    let changed = true;
+    while (changed) {
+      const before = tainted.size + decoderAliases.size;
+      function visitFlow(node: ts.Node): void {
+        if (ts.isVariableDeclaration(node) && node.initializer !== undefined) {
+          const initializer = node.initializer;
+          const target = node.name;
+          if (isTainted(initializer)) bindPattern(target);
+          const called = ts.isCallExpression(initializer)
+            ? callTarget(initializer.expression)
+            : undefined;
+          const implementation = called === undefined ? undefined : functions.get(called);
+          if (implementation !== undefined && returnsTainted(implementation)) bindPattern(target);
+          if (ts.isIdentifier(target)) {
+            const called = callTarget(initializer);
+            if (called !== undefined && decoderAliases.has(called)) decoderAliases.add(target.text);
+          }
+        }
+        if (ts.isBinaryExpression(node) && node.operatorToken.kind === ts.SyntaxKind.EqualsToken) {
+          if (isTainted(node.right) && ts.isIdentifier(node.left)) tainted.add(node.left.text);
+        }
+        if (ts.isCallExpression(node)) {
+          const called = callTarget(node.expression);
+          const implementation = called === undefined ? undefined : functions.get(called);
+          if (implementation !== undefined) {
+            implementation.parameters.forEach((parameter, index) => {
+              if (isTainted(node.arguments[index])) bindPattern(parameter.name);
+            });
+          }
+        }
+        ts.forEachChild(node, visitFlow);
+      }
+      visitFlow(tree);
+      changed = before !== tainted.size + decoderAliases.size;
+    }
+
+    function visitReads(node: ts.Node): void {
+      if (ts.isPropertyAccessExpression(node) && isTainted(node.expression))
+        addFinding(node, "member", node.name.text);
+      if (ts.isElementAccessExpression(node) && isTainted(node.expression)) {
+        const member = node.argumentExpression;
+        if (ts.isStringLiteralLike(member)) addFinding(node, "member", member.text);
+      }
+      if (ts.isCallExpression(node)) {
+        const called = callTarget(node.expression);
+        if (called !== undefined && decoderAliases.has(called) && called !== options.decoderName)
+          addFinding(node, "decoder-alias", called);
+      }
+      ts.forEachChild(node, visitReads);
+    }
+    visitReads(tree);
+  }
+  return findings;
+}
+
 /** Named calls, including namespace and literal-property access, never declarations or prose. */
 export function callSites(source: string, name: string): readonly number[] {
   const tree = parseSource(source);

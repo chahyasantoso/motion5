@@ -4,7 +4,13 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import ts from "typescript";
-import { code, codeOnly, declaration, parseSource } from "../../helpers/source-region";
+import {
+  code,
+  codeOnly,
+  declaration,
+  parseSource,
+  seamResultReads,
+} from "../../helpers/source-region";
 
 // A source-text assertion is addressed by something the claim names, and this gate refuses the shape
 // that is not. Issue #314 found two cases in `live-value-updates.test.ts` sliced between one
@@ -125,7 +131,15 @@ describe("source-region anchors", () => {
     const retired = files.filter(({ source }) => RETIRED_HELPER.test(codeOnly(source)));
     expect(retired.map(({ path }) => path).sort()).toEqual([]);
     const owner = codeOnly(sourceOf(HELPER));
-    const exported = ["code", "codeOnly", "member", "declaration", "callSites", "parseSource"];
+    const exported = [
+      "code",
+      "codeOnly",
+      "member",
+      "declaration",
+      "callSites",
+      "parseSource",
+      "seamResultReads",
+    ];
     expect(exported.filter((name) => !owner.includes(`export function ${name}(`))).toEqual([]);
   });
 
@@ -188,6 +202,54 @@ describe("source-region anchors", () => {
     expect(() =>
       declaration("export type ShapeExtra = string;", "export type Shape", ";"),
     ).toThrow();
+  });
+
+  it("PK-24 catches direct, element, alias, destructured and helper reads of a seam result", () => {
+    const source = [
+      "const answer = receive();",
+      "const alias = answer;",
+      "const direct = answer.patch;",
+      'const indexed = answer["patch"];',
+      "const { patch } = alias;",
+      "function decode(result) { return result.patch.kind; }",
+      "decode(alias);",
+    ].join("\n");
+    expect(
+      seamResultReads([{ filename: "runtime.ts", source }], {
+        resultBindings: ["answer"],
+        decoderName: "liveWrite",
+        ownerFilename: "results.ts",
+      }).map(({ kind, name }) => ({ kind, name })),
+    ).toEqual([
+      { kind: "member", name: "patch" },
+      { kind: "member", name: "patch" },
+      { kind: "member", name: "patch" },
+      { kind: "member", name: "patch" },
+    ]);
+  });
+
+  it("PK-25 tolerates an owner destructure and catches an aliased decoder outside it", () => {
+    const owner = [
+      "function readPatch(result) {",
+      "  const { patch } = result;",
+      "  return patch.kind;",
+      "}",
+      "function liveWrite(result) { return readPatch(result); }",
+    ].join("\n");
+    const runtime = ["const decode = liveWrite;", "decode(answer);"].join("\n");
+    expect(
+      seamResultReads(
+        [
+          { filename: "results.ts", source: owner },
+          { filename: "runtime.ts", source: runtime },
+        ],
+        {
+          resultBindings: ["answer", "result"],
+          decoderName: "liveWrite",
+          ownerFilename: "results.ts",
+        },
+      ).map(({ kind, name, filename }) => ({ kind, name, filename })),
+    ).toEqual([{ kind: "decoder-alias", name: "decode", filename: "runtime.ts" }]);
   });
 
   it("reads statement syntax without comments while preserving quoted tokens", () => {
