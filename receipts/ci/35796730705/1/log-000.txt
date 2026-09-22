@@ -1,0 +1,21 @@
+end-to-end (node 24)	Run node scripts/ci-evidence.mjs verify end-to-end	﻿2026-09-22T23:19:22.0592016Z ##[group]Run node scripts/ci-evidence.mjs verify end-to-end
+end-to-end (node 24)	Run node scripts/ci-evidence.mjs verify end-to-end	2026-09-22T23:19:22.0592567Z ^[[36;1mnode scripts/ci-evidence.mjs verify end-to-end^[[0m
+end-to-end (node 24)	Run node scripts/ci-evidence.mjs verify end-to-end	2026-09-22T23:19:22.0661386Z shell: /usr/bin/bash -e {0}
+end-to-end (node 24)	Run node scripts/ci-evidence.mjs verify end-to-end	2026-09-22T23:19:22.0661679Z env:
+end-to-end (node 24)	Run node scripts/ci-evidence.mjs verify end-to-end	2026-09-22T23:19:22.0661896Z   NODE_VERSION: 24
+end-to-end (node 24)	Run node scripts/ci-evidence.mjs verify end-to-end	2026-09-22T23:19:22.0662134Z   SUITE_RESULT: success
+end-to-end (node 24)	Run node scripts/ci-evidence.mjs verify end-to-end	2026-09-22T23:19:22.0662435Z   CI_EVIDENCE_DIR: /home/runner/work/_temp/ci-evidence
+end-to-end (node 24)	Run node scripts/ci-evidence.mjs verify end-to-end	2026-09-22T23:19:22.0662767Z ##[endgroup]
+end-to-end (node 24)	Run node scripts/ci-evidence.mjs verify end-to-end	2026-09-22T23:19:22.1193728Z Discovery identity mismatch
+end-to-end (node 24)	Run node scripts/ci-evidence.mjs verify end-to-end	2026-09-22T23:19:22.1194392Z + actual - expected
+end-to-end (node 24)	Run node scripts/ci-evidence.mjs verify end-to-end	2026-09-22T23:19:22.1194658Z 
+end-to-end (node 24)	Run node scripts/ci-evidence.mjs verify end-to-end	2026-09-22T23:19:22.1194824Z   {
+end-to-end (node 24)	Run node scripts/ci-evidence.mjs verify end-to-end	2026-09-22T23:19:22.1195187Z     attempt: '1',
+end-to-end (node 24)	Run node scripts/ci-evidence.mjs verify end-to-end	2026-09-22T23:19:22.1196019Z     configuration: 'de5fe50b46c7826289d3d6f1e6ac4a41041adeff45b3490c671f55679d5c6dd6',
+end-to-end (node 24)	Run node scripts/ci-evidence.mjs verify end-to-end	2026-09-22T23:19:22.1197433Z +   node: 'v24.20.0',
+end-to-end (node 24)	Run node scripts/ci-evidence.mjs verify end-to-end	2026-09-22T23:19:22.1197761Z -   node: 'v24.21.0',
+end-to-end (node 24)	Run node scripts/ci-evidence.mjs verify end-to-end	2026-09-22T23:19:22.1198081Z     run: '35796730705',
+end-to-end (node 24)	Run node scripts/ci-evidence.mjs verify end-to-end	2026-09-22T23:19:22.1198582Z     sha: '27597d2f27d665a05cb27c701add3ffbb42e88a5'
+end-to-end (node 24)	Run node scripts/ci-evidence.mjs verify end-to-end	2026-09-22T23:19:22.1199052Z   }
+end-to-end (node 24)	Run node scripts/ci-evidence.mjs verify end-to-end	2026-09-22T23:19:22.1199201Z 
+end-to-end (node 24)	Run node scripts/ci-evidence.mjs verify end-to-end	2026-09-22T23:19:22.1255451Z ##[error]Process completed with exit code 1.
