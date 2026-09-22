@@ -1,0 +1,90 @@
+diff --git a/packages/core/src/graph/ir.md b/packages/core/src/graph/ir.md
+index 2a950a2..185ec86 100644
+--- a/packages/core/src/graph/ir.md
++++ b/packages/core/src/graph/ir.md
+@@ -1,11 +1,17 @@
+ # packages/core/src/graph/ir.ts
+ 
+-## readRemoved
++## authoredRemoved
+ 
+-Reads a removed authored field through the record view.
++Whether an authored observation names a removed field, answered by the key and never by the value at it.
+ 
+ The member is gone from `ObservationDefinition`, so a TypeScript author cannot write it, and a JavaScript author still can. Reading it structurally is what turns "undeclared" into "refused", which is the difference between a removal and a field accepted and then ignored. See ADR-046.
+ 
++It was `observation[name] !== undefined`, which asked the wrong one of the two questions available. `{ source: "root", target: undefined }` loaded clean while `{ source: "root", target: "x" }` was refused, so the removal was bypassable by writing the field and leaving it empty, which is exactly how a spread of an older document arrives. GUARDRAILS states the rule for the field it was written for, `ProjectDefinition.templates`, refused "by its key rather than by the value at it, because an authored `undefined` is still a key a reader would ignore"; `contract/validate-v5.ts` already reads its own two removed fields that way, as `"use" in track` and `"templates" in input`. This is the third reader agreeing with them rather than a new decision. `V-22` through `V-24` pin it, and it changes the refusal set: the bypass becomes a refusal, and nothing that was refused stops being refused.
++
++An explicit `undefined` survives the whole path, which is what makes the bypass real rather than theoretical. `validateSchemaV5`'s clone copies `Object.entries(value)`, and an own enumerable key whose value is `undefined` is in that list, so the key reaches `buildGraphIR` intact. `contract/migrate-v4-to-v5.ts` does round-trip through JSON and would drop it, and the runtime does not call that function: callers migrate at their own boundary and hand the loader v5 data. So the loader is the layer that has to ask.
++
++The field set is closed, ordered, and read once. `REMOVED_OBSERVATION_FIELDS` is the refusal order and target is first so ADR-046's `V-2` through `V-4` keep reporting a target for a fixture that also carries a role; `removedObservationDiagnostic` maps a member to its own rule id and message through a total `switch` ending at `unreachable`. Three copied guards were three places a fourth removed field had to be remembered at the same time, and one of them silently inheriting another's rule id is the drift that shape invites. A fourth member now costs a tuple entry and a compiler error at the mapper. See ADR-092 and ADR-096.
++
+ ## groupsAuthoring
+ 
+ The plugin-named groups whose `values` section authors `key`, sorted by name.
+diff --git a/packages/core/src/graph/ir.ts b/packages/core/src/graph/ir.ts
+index bf3ea02..4cd7654 100644
+--- a/packages/core/src/graph/ir.ts
++++ b/packages/core/src/graph/ir.ts
+@@ -226,8 +226,30 @@ const TARGET_UNSUPPORTED = `Observation target is not supported; an observes ent
+ const ROLE_UNSUPPORTED = `Observation role is not supported; an observes entry declares an output edge only. ${BIND_INSTEAD}`;
+ const PROJECTION_UNSUPPORTED = `Observation projection is not supported; an output edge merges the source patch whole and renames nothing. ${BIND_INSTEAD}`;
+ 
+-function readRemoved(observation: ObservationDefinition, name: string): unknown {
+-  return isRecord(observation) ? observation[name] : undefined;
++// The three fields ADR-046 and ADR-047 removed, in refusal order, and the order is load-bearing:
++// target stays first so `V-2` through `V-4` still report a target for a fixture with a role too.
++// One closed set with one reader, because three copied guards are three places a fourth removed
++// field has to be remembered, and the mapper below fails `typecheck` instead of being forgotten.
++// ir.md owns why the read asks whether the key was authored rather than what sits at it. See #469.
++const REMOVED_OBSERVATION_FIELDS = ["target", "role", "projection"] as const;
++type RemovedObservationField = (typeof REMOVED_OBSERVATION_FIELDS)[number];
++function authoredRemoved(
++  observation: ObservationDefinition,
++  name: RemovedObservationField,
++): boolean {
++  return isRecord(observation) && name in observation;
++}
++function removedObservationDiagnostic(field: RemovedObservationField, path: string): Diagnostic {
++  switch (field) {
++    case "target":
++      return diagnostic("observation-target-unsupported", path, TARGET_UNSUPPORTED);
++    case "role":
++      return diagnostic("observation-role-unsupported", path, ROLE_UNSUPPORTED);
++    case "projection":
++      return diagnostic("observation-projection-unsupported", path, PROJECTION_UNSUPPORTED);
++    default:
++      return unreachable(field);
++  }
+ }
+ 
+ export function resolveObservationEdge(
+@@ -241,23 +263,11 @@ export function resolveObservationEdge(
+       diagnostic("observation-source-shape", path, "Observation source must be non-empty."),
+     ]);
+   }
+-  // Three removed fields, one rule id each, because a diagnostic has to name what the author
+-  // actually wrote rather than the removal they share. The target guard stays first, so ADR-046's
+-  // `V-2` through `V-4` still report a target for a fixture that also carries a role.
+-  if (readRemoved(observation, "target") !== undefined) {
+-    return refusedOutcome<GraphEdge, Diagnostic>([
+-      diagnostic("observation-target-unsupported", path, TARGET_UNSUPPORTED),
+-    ]);
+-  }
+-  if (readRemoved(observation, "role") !== undefined) {
+-    return refusedOutcome<GraphEdge, Diagnostic>([
+-      diagnostic("observation-role-unsupported", path, ROLE_UNSUPPORTED),
+-    ]);
+-  }
+-  if (readRemoved(observation, "projection") !== undefined) {
+-    return refusedOutcome<GraphEdge, Diagnostic>([
+-      diagnostic("observation-projection-unsupported", path, PROJECTION_UNSUPPORTED),
+-    ]);
++  // One rule id each, because a diagnostic has to name what the author actually wrote rather than
++  // the removal they share, and one loop over the closed set rather than a guard per member.
++  for (const field of REMOVED_OBSERVATION_FIELDS) {
++    if (!authoredRemoved(observation, field)) continue;
++    return refusedOutcome<GraphEdge, Diagnostic>([removedObservationDiagnostic(field, path)]);
+   }
+   let sourceId: string;
+   try {
