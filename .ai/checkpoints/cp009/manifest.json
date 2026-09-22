@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "checkpoint": "cp009",
+  "base": "a417dd7ece9fc1400d8e25b5cce5700dc0dd4e6a",
+  "allow": [
+    "packages/core/test/",
+    "scripts/"
+  ],
+  "patches": [
+    {
+      "seq": 1,
+      "file": "001-refuse-contract-and-ports-reaching-domain.diff",
+      "sha256": "5854206331f07a617310e9860f619b4da079c0c7ddf8f4911878dcc1e2e0136f",
+      "message": "ci(boundary): refuse contract and ports reaching the domain layer",
+      "pre": {
+        "packages/core/test/unit/scripts/boundary-scan.test.ts": "7d2ff3cc6df4703ddfa14d389649fc94cbf9ce58",
+        "scripts/boundary-scan.d.mts": "4c6501f285c45b48e94bc77da4d3bc7e9369566c",
+        "scripts/boundary-scan.mjs": "7168535cf1296ecc0788d39227ab743cefd4fa7f"
+      },
+      "post": {
+        "packages/core/test/unit/scripts/boundary-scan.test.ts": "f13bf0c45f1dea8c5288bcd12fc7103b3b7b1423",
+        "scripts/boundary-scan.d.mts": "7c8ac77cd6312000ddc17682505ae965b86b0c47",
+        "scripts/boundary-scan.mjs": "f394d26635f53d775abddc1266840f0ec47e6cd7"
+      }
+    },
+    {
+      "seq": 2,
+      "after": 1,
+      "file": "002-tighten-both-plugin-stage-assertions.diff",
+      "sha256": "17a9ce2632c52bcad8fcd50e43fbb939780da4def192f0f612ee0d10d8d0e246",
+      "message": "test(domain): assert constructor and exact message for both refused stages",
+      "pre": {
+        "packages/core/test/unit/domain/plugins.test.ts": "d8e704a3d5b787ee990b3a56e30a5968ba26dad9"
+      },
+      "post": {
+        "packages/core/test/unit/domain/plugins.test.ts": "f57b7a08f68d05871fbf420e319be7c6fe87130d"
+      }
+    }
+  ]
+}
