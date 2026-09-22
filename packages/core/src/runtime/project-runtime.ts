@@ -66,7 +66,7 @@ import {
 } from "./project-handles";
 import { collect, report } from "../domain/completion";
 import { diagnostic as buildDiagnostic } from "../contract/diagnostics";
-import { batchFor, runSteps } from "./report";
+import { afterCleanup, batchFor, runSteps } from "./report";
 import { planCommit } from "./commit-plan";
 import { runPlan } from "./run-plan";
 import { refuse } from "./refusal";
@@ -339,8 +339,10 @@ export class ProjectRuntime {
         onFlushError: (diagnostic) => this.#diagnostics.record(diagnostic),
       });
     } catch (error) {
-      this.#ports.host.disposeComposition();
-      throw error;
+      // The construction failure is the diagnosis and the host's release is a subordinate fact, so
+      // both leave together rather than the second replacing the first. `report.ts` owns that
+      // precedence for every caller of it, and `afterCleanup` is where the rule is written down.
+      throw afterCleanup(error, "cleanup", () => this.#ports.host.disposeComposition());
     }
   }
   get project(): ProjectDefinition {
