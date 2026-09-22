@@ -1,0 +1,40 @@
+diff --git a/packages/core/test/unit/scripts/ci-evidence.test.ts b/packages/core/test/unit/scripts/ci-evidence.test.ts
+index a7635e3..c9f565f 100644
+--- a/packages/core/test/unit/scripts/ci-evidence.test.ts
++++ b/packages/core/test/unit/scripts/ci-evidence.test.ts
+@@ -13,7 +13,7 @@ function scenario(body: string) {
+       `
+       import assert from "node:assert/strict";
+       import {verify} from "./scripts/ci-evidence.mjs";
+-      const identity = {sha: "a".repeat(40), run: "42", attempt: "1"};
++      const identity = {sha: "a".repeat(40), run: "42", attempt: "1", node: "v24.20.0"};
+       const test = {file: "packages/core/test/integration/end-to-end.test.ts", name: "suite > test"};
+       const inventory = {version: 1, identity, all: [test], integration: [test], "end-to-end": [test]};
+       const result = {version: 1, identity, reason: "passed", errors: [], modules: [{state: "passed"}], tests: [{...test, state: "passed"}]};
+@@ -54,6 +54,27 @@ describe("single-suite CI evidence", () => {
+     `);
+   });
+ 
++  it("accepts a conformant patch release and refuses another major or an unreadable one", () => {
++    scenario(`
++      // The workflow pins node-version 24 and nothing narrower, so the suite owner and a consuming
++      // job may resolve different patch releases of that major. Run 35727905161 did exactly that,
++      // v24.20.0 against v24.21.0, and the exact comparison reported a red that no change to this
++      // repository could clear while the integration job passed in the same run. The major is the
++      // whole of the pin; an unreadable version is refused rather than read as absent; and both
++      // sides are driven, because discovery and execution record the identity on different runners.
++      const drifted = {...identity, node: "v24.21.0"};
++      for (const scope of ["all", "integration", "end-to-end"]) {
++        assert.equal(verify({...inventory, identity: drifted}, result, identity, scope).tests, 1);
++        assert.equal(verify(inventory, {...result, identity: drifted}, drifted, scope).tests, 1);
++      }
++      for (const node of ["v22.21.0", "v25.0.0", undefined, "24.21.0", "v24"]) {
++        const other = {...identity, node};
++        assert.throws(() => verify({...inventory, identity: other}, result, identity, "all"));
++        assert.throws(() => verify(inventory, {...result, identity: other}, identity, "all"));
++      }
++    `);
++  });
++
+   it("compares discovery multiplicity and rejects missing subset assertions", () => {
+***
