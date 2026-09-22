@@ -148,11 +148,16 @@ const moduleSpecifier = /(?:\bfrom\s*|\bimport\s*(?:\(\s*)?|\brequire\s*\(\s*)["
  * One owner of the extraction, because the two predicates below ask different questions of the same
  * list, and a second copy of the walk is how they end up disagreeing about what a specifier is.
  * Specifiers are read from static imports and re-exports, dynamic imports, and `require` calls.
- * Three spellings stay invisible: a configured alias, a computed specifier, and a block comment
- * interposed between the keyword and its specifier, because `moduleSpecifier` admits only
- * whitespace there while an interposed comment is valid TypeScript in all three forms. Teaching it
- * comments widens the set these gates refuse, so that is its own slice with its own cases rather
- * than a correction here.
+ * Four spellings stay invisible. A configured alias and a computed specifier are past the reach of
+ * any pattern over source text. A template-literal delimiter is not beyond it: that is a concrete
+ * specifier this pattern cannot see, because the delimiter class admits an apostrophe and a
+ * quotation mark and nothing else, and widening it wants a backreferenced delimiter so one kind
+ * cannot be closed by another, plus a decision about a substituted literal, which is a computed
+ * specifier in concrete clothing. A block comment interposed between the keyword and its specifier
+ * is invisible for the same shape of reason: the pattern admits only whitespace there, while an
+ * interposed comment is valid TypeScript in all three forms. Each of the last two widens the set
+ * these gates refuse, so each is its own slice with its own cases rather than a correction here.
+ * Neither appears under `packages/core/src` today, measured over this scanner's own walk.
  */
 function* importSpecifiers(source) {
   for (const match of source.matchAll(moduleSpecifier)) yield match[1].replaceAll("\\", "/");
