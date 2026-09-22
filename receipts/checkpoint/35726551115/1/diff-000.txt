@@ -1,0 +1,177 @@
+diff --git a/packages/core/test/unit/scripts/boundary-scan.test.ts b/packages/core/test/unit/scripts/boundary-scan.test.ts
+index 7d2ff3c..f13bf0c 100644
+--- a/packages/core/test/unit/scripts/boundary-scan.test.ts
++++ b/packages/core/test/unit/scripts/boundary-scan.test.ts
+@@ -10,0 +11 @@ import {
++  importsDomainLayer,
+@@ -143,2 +144,2 @@ describe("boundary scan predicates", () => {
+-      'import { outcome } from "../domain/outcome";',
+-      'import { outcome } from "../domain/outcome.ts";',
++      'import { track } from "../domain/track";',
++      'import { track } from "../domain/track.ts";',
+@@ -155,0 +157,36 @@ describe("boundary scan predicates", () => {
++  it("reads any domain import for the broad rule and only the sink for the narrow one", () => {
++    // The two questions the scanner now asks, and the asymmetry between them is the whole point:
++    // `contract/` and `ports/` may not reach `domain/` at all, while `adapters/` still legitimately
++    // reaches `domain/keyframe-compiler` and `domain/plugins` and may only be held to the sink.
++    // Backslash normalisation and the `.js`/`.mjs`/`.ts` suffixes are shared, because one extractor
++    // owns them. See ADR-099 and ADR-102.
++    for (const source of [
++      'import { o } from "../lang/outcome";',
++      'import { u } from "../lang/exhaustive";',
++      'import type { D } from "../contract/v5";',
++      'import { x } from "../domain-helpers/y";',
++      'import { s } from "@motion5/core/domain/exhaustive";',
++      "const load = import(path);",
++    ]) {
++      expect(importsDomainLayer(source)).toBe(false);
++      expect(importsDomainSink(source)).toBe(false);
++    }
++    for (const source of [
++      'import { compiler } from "../../domain/keyframe-compiler";',
++      'import type { Plugin } from "../../domain/plugins.js";',
++      'const load = import("../domain/track");',
++      'import { helpers } from "../domain/exhaustive-helpers";',
++    ]) {
++      expect(importsDomainLayer(source)).toBe(true);
++      expect(importsDomainSink(source)).toBe(false);
++    }
++    for (const source of [
++      'import { unreachable } from "../domain/exhaustive.js";',
++      'export { unreachable } from "../../domain/exhaustive.mjs";',
++      'const load = require("..\\domain\\exhaustive");',
++    ]) {
++      expect(importsDomainLayer(source)).toBe(true);
++      expect(importsDomainSink(source)).toBe(true);
++    }
++  });
++
+@@ -190,4 +227,9 @@ describe("boundary scan planted violations", () => {
+-  // The three outer layers ADR-099 measured. `lang/` is absent from this fixture on purpose: the
+-  // shipped scanner running green against the real tree, in the case below, is what proves the new
+-  // path passes, and a fixture cannot prove that about a directory it invents.
+-  it("W-8: rejects contract, ports, and adapters importing the retired domain sink", async () => {
++  // The three outer layers ADR-099 measured, now held to the two different rules ADR-102 split
++  // them into: `contract/` and `ports/` owe the whole inward direction, `adapters/` owes the sink
++  // alone. The planted imports say so by being different: the first two reach an ordinary domain
++  // module and are refused for reaching `domain/` at all, while the third reaches the retired sink
++  // and is refused by name. One file per layer, because `walk` does not sort and two files in one
++  // layer would make this assertion depend on `readdir` order. `lang/` is absent from this fixture
++  // on purpose: the shipped scanner running green against the real tree, in the case below, is what
++  // proves the new path passes, and a fixture cannot prove that about a directory it invents.
++  it("W-8: refuses contract and ports reaching domain, and adapters the sink", async () => {
+@@ -197 +239,6 @@ describe("boundary scan planted violations", () => {
+-      for (const layer of ["contract", "ports", "adapters"]) {
++      const planted = [
++        ["contract", 'import type { LiveWriteResult } from "../domain/track";'],
++        ["ports", 'import type { ResolvedPlugins } from "../domain/plugins";'],
++        ["adapters", 'import { unreachable } from "../../domain/exhaustive";'],
++      ] as const;
++      for (const [layer, statement] of planted) {
+@@ -199 +245,0 @@ describe("boundary scan planted violations", () => {
+-        const prefix = layer === "adapters" ? "../../" : "../";
+@@ -202 +248 @@ describe("boundary scan planted violations", () => {
+-          `import { unreachable } from "${prefix}domain/exhaustive";\n`,
++          `${statement}\n`,
+@@ -207,2 +253,2 @@ describe("boundary scan planted violations", () => {
+-        "packages/core/src/contract/leak.ts: retired domain sink import",
+-        "packages/core/src/ports/leak.ts: retired domain sink import",
++        "packages/core/src/contract/leak.ts: inward domain import",
++        "packages/core/src/ports/leak.ts: inward domain import",
+@@ -215,0 +262,18 @@ describe("boundary scan planted violations", () => {
++  // The other half of that asymmetry, and the reason the broad rule stops at two layers: the three
++  // adapter imports of `domain/` ADR-099 measured are still legal, so a gate that refused them
++  // would have been introduced red. Deleting this case is how that fact gets lost.
++  it("keeps an adapter reaching an ordinary domain module clean", async () => {
++    const fixture = await mkdtemp(join(tmpdir(), "motion5-adapter-domain-"));
++    try {
++      await writeFile(join(fixture, "package.json"), PACKAGES_ONLY);
++      await mkdir(join(fixture, "packages", "core", "src", "adapters"), { recursive: true });
++      await writeFile(
++        join(fixture, "packages", "core", "src", "adapters", "reach.ts"),
++        'import { compilePercentKeyframes } from "../../domain/keyframe-compiler";\n',
++      );
++      expect(await scan(fixture)).toEqual([]);
++    } finally {
++      await rm(fixture, { recursive: true, force: true });
++    }
++  });
++
+diff --git a/scripts/boundary-scan.d.mts b/scripts/boundary-scan.d.mts
+index 4c6501f..7c8ac77 100644
+--- a/scripts/boundary-scan.d.mts
++++ b/scripts/boundary-scan.d.mts
+@@ -5,0 +6 @@ export function importsTestingEntrypoint(source: string): boolean;
++export function importsDomainLayer(source: string): boolean;
+diff --git a/scripts/boundary-scan.mjs b/scripts/boundary-scan.mjs
+index 7168535..f394d26 100644
+--- a/scripts/boundary-scan.mjs
++++ b/scripts/boundary-scan.mjs
+@@ -146 +146 @@ const moduleSpecifier = /(?:\bfrom\s*|\bimport\s*(?:\(\s*)?|\brequire\s*\(\s*)["
+- * The retired sink path, and only that path.
++ * Every module specifier this scanner can see, normalised to forward slashes.
+@@ -148,14 +148,39 @@ const moduleSpecifier = /(?:\bfrom\s*|\bimport\s*(?:\(\s*)?|\brequire\s*\(\s*)["
+- * Module specifiers are extracted from static imports and re-exports, dynamic imports, and
+- * `require` calls before the exact relative path is tested. The extraction sees `.js`, `.mjs`, and
+- * `.ts` suffixes plus either path separator. Three spellings stay invisible: a configured alias, a
+- * computed specifier, and a block comment interposed between the keyword and its specifier, because
+- * `moduleSpecifier` admits only whitespace there while an interposed comment is valid TypeScript in
+- * a static import, a dynamic import and a `require` call alike. Teaching it comments widens the set
+- * this gate refuses, so that is its own slice with its own cases rather than a correction here.
+- * Five inward imports into domain survive: `contract/migrate-v4-to-v5.ts` and
+- * `contract/validate-v5.ts` reach `domain/outcome`, `adapters/interpolator/gsap.ts` reaches
+- * `domain/keyframe-compiler`, and `adapters/dom.ts` plus `adapters/index.ts` reach `domain/plugins`
+- * type-only. A predicate over every `domain/` import would therefore refuse the tree it is added
+- * to, and a gate introduced red earns an exemption list instead of a fix. This one is green the
+- * moment the move lands and refuses the exact regression the move exists to prevent. ADR-099 names
+- * all five and says which slice each belongs to.
++ * One owner of the extraction, because the two predicates below ask different questions of the same
++ * list, and a second copy of the walk is how they end up disagreeing about what a specifier is.
++ * Specifiers are read from static imports and re-exports, dynamic imports, and `require` calls.
++ * Three spellings stay invisible: a configured alias, a computed specifier, and a block comment
++ * interposed between the keyword and its specifier, because `moduleSpecifier` admits only
++ * whitespace there while an interposed comment is valid TypeScript in all three forms. Teaching it
++ * comments widens the set these gates refuse, so that is its own slice with its own cases rather
++ * than a correction here.
++ */
++function* importSpecifiers(source) {
++  for (const match of source.matchAll(moduleSpecifier)) yield match[1].replaceAll("\\", "/");
++}
++/**
++ * Any relative import of the domain layer, which is what ARCHITECTURE section 2 actually forbids.
++ *
++ * ADR-102 relocated the outcome algebra to `lang/` and dropped the `E = Diagnostic` default that
++ * made it reach `contract/`. Those were the only two `contract/` imports of `domain/` in the tree,
++ * so this predicate is green on `contract/` and on `ports/`, and it is applied to exactly those two
++ * layers. `adapters/` keeps the narrower retired-sink rule below, because three real adapter
++ * imports of `domain/` survive: `adapters/interpolator/gsap.ts` reaches `domain/keyframe-compiler`
++ * for a value, and `adapters/dom.ts` plus `adapters/index.ts` reach `domain/plugins` type-only.
++ * Widening this rule to adapters would refuse the tree it was added to, and a gate introduced red
++ * earns an exemption list instead of a fix. ADR-099 named all three and ADR-102 records why they
++ * stay their own slice.
++ */
++export function importsDomainLayer(source) {
++  for (const specifier of importSpecifiers(source))
++    if (/^(?:\.\.\/)+domain\//.test(specifier)) return true;
++  return false;
++}
++/**
++ * The retired sink path, and only that path, for the one layer the broad rule cannot reach yet.
++ *
++ * Kept as its own question rather than folded into `importsDomainLayer`, because `adapters/` may
++ * import `domain/` and may not import the sink. The extraction sees `.js`, `.mjs`, and `.ts`
++ * suffixes plus either path separator, and the anchored path is why `../lang/exhaustive` and
++ * `../domain/exhaustive-helpers` stay clean. `contract/` and `ports/` no longer carry this rule: a
++ * retired-sink import is a `domain/` import, so `importsDomainLayer` already refuses it there, and
++ * two spellings of one question is the duplication this project files against itself.
+@@ -164,2 +189 @@ export function importsDomainSink(source) {
+-  for (const match of source.matchAll(moduleSpecifier)) {
+-    const specifier = match[1].replaceAll("\\", "/");
++  for (const specifier of importSpecifiers(source))
+@@ -167 +190,0 @@ export function importsDomainSink(source) {
+-  }
+@@ -192 +215,3 @@ function checkCoreSource(source, file, layer, violations) {
+-  if (["contract", "ports", "adapters"].includes(layer) && importsDomainSink(source))
++  if (["contract", "ports"].includes(layer) && importsDomainLayer(source))
++    violations.push(`${file}: inward domain import`);
++  if (layer === "adapters" && importsDomainSink(source))
