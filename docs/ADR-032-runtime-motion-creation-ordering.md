@@ -45,7 +45,9 @@ Two items in that list are vacuous at the point of rejection, and saying so is t
 
 There is still exactly one Motion construction path. Runtime Motions go through the same
 `buildMotion` closure, the same `resolveTriggerDefinition` narrowing, the same `triggerFactory`,
-and the same exhaustive `TriggerBinding` switch. No trigger kind is read outside the factory.
+and the same exhaustive `TriggerBinding` switch. No authored trigger kind is read outside the
+factory, and `Engine` reads the factory-returned `TriggerBinding` only through
+`acceptsExternalSignal` and `bindClock`.
 
 ## Consequences
 

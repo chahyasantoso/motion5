@@ -30,13 +30,28 @@ export function refusedOutcome<T, E = Diagnostic>(
 }
 
 /**
+ * A collection with at least one member, proven to the compiler rather than asserted at a call.
+ *
+ * The length test is the whole rule, and it is stated here so the refusal constructor receives a
+ * tuple the type system already accepts. Reading the first element to decide emptiness was the
+ * earlier spelling, and it refused a valid collection whose first member is legitimately
+ * `undefined`, which an `Outcome<T, undefined>` may carry.
+ */
+function isNonEmpty<E>(values: readonly E[]): values is readonly [E, ...E[]] {
+  return values.length > 0;
+}
+
+/**
  * Convert a runtime diagnostic collection into a refused outcome without permitting an empty one.
+ *
+ * The boundary survives for the callers that genuinely accumulate: `graph/order.ts`'s cycle site
+ * and the three validation sites, where the count is a property of the input rather than of the
+ * call. A caller that carries exactly one diagnostic reaches `refusedOutcome` directly instead.
  */
 export function refusedOutcomeFrom<T, E = Diagnostic>(diagnostics: readonly E[]): Outcome<T, E> {
-  const [first, ...rest] = diagnostics;
-  if (first === undefined)
+  if (!isNonEmpty(diagnostics))
     throw new TypeError("A refused outcome requires at least one diagnostic.");
-  return refusedOutcome([first, ...rest]);
+  return refusedOutcome([...diagnostics]);
 }
 
 /**

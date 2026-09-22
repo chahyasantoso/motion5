@@ -131,8 +131,8 @@ function edgesByRole<Role extends GraphEdge["role"]>(
   role: Role,
 ): readonly EdgeWithRole<Role>[] {
   return node.edges
-    .filter((edge) => edgeRole(edge) === role)
-    .sort(compareEdges) as unknown as readonly EdgeWithRole<Role>[];
+    .filter((edge): edge is EdgeWithRole<Role> => edgeRole(edge) === role)
+    .sort(compareEdges);
 }
 /**
  * The plugin whose slots a solver's members belong under, read off the edge that made it a solver.
@@ -144,9 +144,13 @@ function edgesByRole<Role extends GraphEdge["role"]>(
  * names the scope. See ADR-051.
  */
 function solvingPluginOf(node: PublisherNode): string | undefined {
-  return edgesByRole(node, "input")
-    .filter((edge) => edge.requirement?.slot === "root")
-    .sort(compareEdges)[0]?.requirement?.plugin;
+  // Read optionally even though `InputGraphEdge.requirement` is required, because the publisher
+  // composes snapshots it did not build and the malformed-input diagnostic has exactly one owner:
+  // the `input-requirement` guard in the requirement-inputs loop below. Dereferencing here moves
+  // that report ahead of its owner, so a solver whose root edge arrived without a requirement
+  // names a reading-'slot' `TypeError` instead of its own scope. `IK-20` is the case. See ADR-096.
+  const rootEdge = edgesByRole(node, "input").find((edge) => edge.requirement?.slot === "root");
+  return rootEdge?.requirement?.plugin;
 }
 function isRendererNeutral(value: unknown, seen = new WeakSet<object>()): boolean {
   if (value === null) return true;

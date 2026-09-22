@@ -140,19 +140,31 @@ export function importsTestingEntrypoint(source) {
     source,
   );
 }
+const moduleSpecifier = /(?:\bfrom\s*|\bimport\s*(?:\(\s*)?|\brequire\s*\(\s*)["']([^"']+)["']/g;
 /**
  * The retired sink path, and only that path.
  *
- * Narrower than the inward-dependency rule it serves, on purpose. Five inward imports into domain
- * survive: `contract/migrate-v4-to-v5.ts` and `contract/validate-v5.ts` reach `domain/outcome`,
- * `adapters/interpolator/gsap.ts` reaches `domain/keyframe-compiler`, and `adapters/dom.ts` plus
- * `adapters/index.ts` reach `domain/plugins` type-only. A predicate over every `domain/` import
- * would therefore refuse the tree it is added to, and a gate introduced red earns an exemption list
- * instead of a fix. This one is green the moment the move lands and refuses the exact regression
- * the move exists to prevent. ADR-099 names all five and says which slice each belongs to.
+ * Module specifiers are extracted from static imports and re-exports, dynamic imports, and
+ * `require` calls before the exact relative path is tested. The extraction sees `.js`, `.mjs`, and
+ * `.ts` suffixes plus either path separator. Three spellings stay invisible: a configured alias, a
+ * computed specifier, and a block comment interposed between the keyword and its specifier, because
+ * `moduleSpecifier` admits only whitespace there while an interposed comment is valid TypeScript in
+ * a static import, a dynamic import and a `require` call alike. Teaching it comments widens the set
+ * this gate refuses, so that is its own slice with its own cases rather than a correction here.
+ * Five inward imports into domain survive: `contract/migrate-v4-to-v5.ts` and
+ * `contract/validate-v5.ts` reach `domain/outcome`, `adapters/interpolator/gsap.ts` reaches
+ * `domain/keyframe-compiler`, and `adapters/dom.ts` plus `adapters/index.ts` reach `domain/plugins`
+ * type-only. A predicate over every `domain/` import would therefore refuse the tree it is added
+ * to, and a gate introduced red earns an exemption list instead of a fix. This one is green the
+ * moment the move lands and refuses the exact regression the move exists to prevent. ADR-099 names
+ * all five and says which slice each belongs to.
  */
 export function importsDomainSink(source) {
-  return /(?:from|import)\s*["'](?:\.\.\/)+domain\/exhaustive(?:["'/]|$)/.test(source);
+  for (const match of source.matchAll(moduleSpecifier)) {
+    const specifier = match[1].replaceAll("\\", "/");
+    if (/^(?:\.\.\/)+domain\/exhaustive(?:\.(?:js|mjs|ts))?$/.test(specifier)) return true;
+  }
+  return false;
 }
 export function bannedSymbol(source) {
   return /(?:compatibility|facade|parityMode|rollout|capabilityFlag|observationAlias|groupHost)/i.test(

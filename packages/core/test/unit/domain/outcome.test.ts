@@ -6,6 +6,7 @@ import {
   acceptedOutcome,
   readOutcome,
   refusedOutcome,
+  refusedOutcomeFrom,
   type Outcome,
 } from "../../../src/domain/outcome";
 
@@ -30,6 +31,22 @@ describe("accepted and refused outcomes keep values and diagnostics exclusive", 
     expect(outcome).toEqual({ kind: "refused", diagnostics: [refusal] });
     expect(outcome.kind).toBe("refused");
     expect("value" in outcome).toBe(false);
+  });
+
+  it("accepts undefined as a diagnostic in a non-empty collection", () => {
+    const outcome = refusedOutcomeFrom<number, undefined>([undefined]);
+
+    expect(outcome).toEqual({ kind: "refused", diagnostics: [undefined] });
+    expect(outcome.kind).toBe("refused");
+    expect(outcome.diagnostics).toHaveLength(1);
+    expect(outcome.diagnostics[0]).toBeUndefined();
+    expect(Object.isFrozen(outcome.diagnostics)).toBe(true);
+  });
+
+  it("throws the original error for an empty diagnostic collection", () => {
+    expect(() => refusedOutcomeFrom<number, Diagnostic>([])).toThrow(
+      new TypeError("A refused outcome requires at least one diagnostic."),
+    );
   });
 
   it("reads both branches through one exhaustive reader", () => {

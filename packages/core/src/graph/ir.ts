@@ -8,13 +8,7 @@ import type {
   TrackDefinition,
 } from "../contract/v5";
 import { diagnostic } from "../contract/diagnostics";
-import {
-  acceptedOutcome,
-  readOutcome,
-  refusedOutcome,
-  refusedOutcomeFrom,
-  type Outcome,
-} from "../domain/outcome";
+import { acceptedOutcome, readOutcome, refusedOutcome, type Outcome } from "../domain/outcome";
 import { readPluginBindings, readPluginValues } from "../contract/keyframe-shape";
 import { PLUGIN_GOALS_SLOT } from "../contract/solver-slots";
 import { compareCodeUnits } from "./compare";
@@ -242,43 +236,41 @@ export function resolveObservationEdge(
   ownerId: string,
   path: string,
 ): ResolvedEdge {
-  const diagnostics: Diagnostic[] = [];
   if (typeof observation.source !== "string" || observation.source.length === 0) {
-    diagnostics.push(
+    return refusedOutcome<GraphEdge, Diagnostic>([
       diagnostic("observation-source-shape", path, "Observation source must be non-empty."),
-    );
-    return refusedOutcomeFrom<GraphEdge, Diagnostic>(Object.freeze(diagnostics));
+    ]);
   }
   // Three removed fields, one rule id each, because a diagnostic has to name what the author
   // actually wrote rather than the removal they share. The target guard stays first, so ADR-046's
   // `V-2` through `V-4` still report a target for a fixture that also carries a role.
   if (readRemoved(observation, "target") !== undefined) {
-    diagnostics.push(diagnostic("observation-target-unsupported", path, TARGET_UNSUPPORTED));
-    return refusedOutcomeFrom<GraphEdge, Diagnostic>(Object.freeze(diagnostics));
+    return refusedOutcome<GraphEdge, Diagnostic>([
+      diagnostic("observation-target-unsupported", path, TARGET_UNSUPPORTED),
+    ]);
   }
   if (readRemoved(observation, "role") !== undefined) {
-    diagnostics.push(diagnostic("observation-role-unsupported", path, ROLE_UNSUPPORTED));
-    return refusedOutcomeFrom<GraphEdge, Diagnostic>(Object.freeze(diagnostics));
+    return refusedOutcome<GraphEdge, Diagnostic>([
+      diagnostic("observation-role-unsupported", path, ROLE_UNSUPPORTED),
+    ]);
   }
   if (readRemoved(observation, "projection") !== undefined) {
-    diagnostics.push(
+    return refusedOutcome<GraphEdge, Diagnostic>([
       diagnostic("observation-projection-unsupported", path, PROJECTION_UNSUPPORTED),
-    );
-    return refusedOutcomeFrom<GraphEdge, Diagnostic>(Object.freeze(diagnostics));
+    ]);
   }
   let sourceId: string;
   try {
     sourceId = qualifySource(observation.source, ownerId);
   } catch (error) {
-    diagnostics.push(
+    return refusedOutcome<GraphEdge, Diagnostic>([
       diagnostic(
         "observation-source",
         path,
         String(error instanceof Error ? error.message : error),
         [observation.source],
       ),
-    );
-    return refusedOutcomeFrom<GraphEdge, Diagnostic>(Object.freeze(diagnostics));
+    ]);
   }
   // One literal, in one place. `role` is not read from authored input any more, so this resolver
   // and `resolveRequirementEdge` are the only two things that can set it, one value each.

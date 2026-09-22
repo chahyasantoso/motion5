@@ -42,10 +42,11 @@ Its path is id-keyed (`motions.<id>.trigger.source`) rather than index-keyed (`m
 ## Public seam
 
 `createTriggerFactory`, `createDefaultTriggerFactory`, `TriggerFactoryOptions`,
-`ScrollSourceResolver`, `ScrollSourceResolverContext`, `TriggerBinding`, and `ScrollSource` are
-exported from the package entrypoint and the adapters barrel. Without that, "hosts opt in at the
-composition root" is not reachable through the `exports` map. The boundary allow list is updated
-in the same change, so the export gate stays a gate.
+`ScrollSourceResolver`, `ScrollSourceResolverContext`, and `ScrollSource` are exported from both the
+package entrypoint and the adapters barrel; `TriggerBinding` is exported only from the package
+entrypoint. Without the shared factory and adapter-facing exports, "hosts opt in at the composition
+root" is not reachable through the `exports` map. The boundary allow list is updated in the same
+change, so the export gate stays a gate.
 
 ## Failure ordering
 

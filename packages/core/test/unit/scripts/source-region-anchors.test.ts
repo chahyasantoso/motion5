@@ -252,6 +252,32 @@ describe("source-region anchors", () => {
     ).toEqual([{ kind: "decoder-alias", name: "decode", filename: "runtime.ts" }]);
   });
 
+  it("does not treat a decoder result as a decoder alias", () => {
+    expect(
+      seamResultReads(
+        [{ filename: "runtime.ts", source: "const out = liveWrite(answer); out(1);" }],
+        {
+          resultBindings: ["answer"],
+          decoderName: "liveWrite",
+          ownerFilename: "results.ts",
+        },
+      ),
+    ).toEqual([]);
+  });
+
+  it("follows a direct decoder alias", () => {
+    expect(
+      seamResultReads(
+        [{ filename: "runtime.ts", source: "const decode = liveWrite; decode(answer);" }],
+        {
+          resultBindings: ["answer"],
+          decoderName: "liveWrite",
+          ownerFilename: "results.ts",
+        },
+      ).map(({ kind, name }) => ({ kind, name })),
+    ).toEqual([{ kind: "decoder-alias", name: "decode" }]);
+  });
+
   it("reads statement syntax without comments while preserving quoted tokens", () => {
     const directory = mkdtempSync(join(tmpdir(), "motion5-source-projection-"));
     const path = join(directory, "fixture.ts");
