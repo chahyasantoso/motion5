@@ -45,6 +45,13 @@ Graph depends on contract and domain. Runtime depends on graph. Ports are depend
 depending. Adapters depend on ports and on their own external engine, and nothing depends on
 adapters except the composition root.
 
+Two of those sentences are gated rather than asserted. `scripts/boundary-scan.mjs` refuses any
+relative `domain/` import from `contract/` and from `ports/`, which is the contract sentence and
+half the ports sentence. The gate deliberately stops there: three adapter imports of `domain/` are
+still legal, `ports/graph-builder.ts` still reaches `graph/` type-only, and a gate introduced red
+earns an exemption list instead of a fix. ADR-099 and ADR-102 own that reasoning, and issue #474
+owns the adapter remainder.
+
 ## 3. Ownership
 
 One owner per responsibility. If two things can perform an operation, one of them is wrong.
@@ -212,7 +219,7 @@ At runtime, diagnostics accumulate on the project in a bounded ring buffer and s
 packages/
   core/
     src/
-      lang/        dependency-free shared helpers
+      lang/        dependency-free shared helpers: the exhaustive sink, the outcome algebra
       contract/    authored schema constants, public types, diagnostics shape
       domain/      Track, Motion, plugins, immutable value snapshots
       graph/       qualified ids, IR, normalization, validation, ObservationState, GraphBinding
