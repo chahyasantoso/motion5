@@ -20,23 +20,13 @@ The retired spelling was `let motion!: Motion` beside `let constructed = false`:
 
 Both members carry the trigger, because the trigger exists in both and releaseMotion's half of the teardown is owed in both. Carrying it on the union rather than reading the outer local is what lets one `switch` answer the whole cleanup question.
 
-## describeError
-
-Local on purpose. `ProjectRuntime` formats its own errors for its own layer, and promoting a shared formatter into the contract module would widen the package's declaration surface, which a governance gate scans, for two call sites.
-
 ## runAllAndReportOnce
 
 Runs every step, then reports once.
 
 Teardown has no partial success worth keeping. A step that throws leaves the steps behind it unrun, and those are the ones that dispose the Motion, drop the map entry, and release the compiled Track, so stopping early converts one host failure into a leak. Every step is therefore attempted and the failures are collected. Issues #143 and #145.
 
-A lone failure is rethrown verbatim rather than wrapped. `ProjectRuntime.rejectAfterRollback` attaches whatever a rollback hook threw to its own `AggregateError`, and callers assert on that value's identity and message, so renaming a single host failure here would break the precedence contract this is meant to support. See ADR-035.
-
-## afterCleanup
-
-Returns the error to throw for `failure`, after running `cleanup`.
-
-A cleanup failure is attached, never substituted. The reason an operation was refused outranks anything its teardown reports, because the caller can act on the first and not on the second. Same rule and same shape as `ProjectRuntime.rejectAfterRollback`, applied at the owner that created the things being released. Returns rather than throws so control flow at each call site is a plain `throw`, with no reliance on never-returning call analysis.
+A lone failure is rethrown verbatim rather than wrapped. `report.ts`'s `afterCleanup` attaches whatever a release hook threw to its own `AggregateError`, and callers assert on that value's identity and message, so renaming a single host failure here would break the precedence contract this is meant to support. That precedence used to be spelled twice, once here as a local `afterCleanup` beside a local `describeError` and once in the runtime as `rejectAfterRollback`, differing in one word of prose. It is one owner now, read with a closed `CleanupPhase`, and this file imports it rather than restating it. See ADR-035 and ADR-096.
 
 ## registry
 
@@ -62,6 +52,18 @@ host port; a building composition reaches it directly. Issue #143.
 ## bindClock
 
 One owner of the registration, because the trigger swap below has to make exactly the decision the build made, and two copies of an exhaustive switch is how they end up disagreeing about a binding kind. Total and exhaustive, with no `??` fallback, so a push-driven trigger cannot silently inherit `motion.onTick`, and no Motion can ever hold both a driver and its own clock advance. Exhaustive is the compiler's claim rather than this paragraph's, since the switch ends at `unreachable`: a fourth binding kind fails `typecheck` here instead of registering no consumer at all, which is the outcome "no `??` fallback" was written to forbid and the one a `switch` without a `default` arm quietly produced. An injected factory is the reason that mattered, because `TriggerFactory` is a seam and a host can hand back a kind this build was never compiled against. The capability projection beside the union reads it through the same sink, so an arriving kind is refused at whichever of the two reads it first rather than absorbed by either. See ADR-092 and ADR-099.
+
+## adoptMotion
+
+Builds a Motion and decides whether this composition may take it, which is one question with one owner.
+
+Both adoption sites read `motions.set(id, buildMotion(...))` before this existed, and an argument is evaluated before the call that receives it. So the map write happened after everything the build reached, including any host callback `Motion.play()` entered, and neither site said what kept that safe. What kept it safe was `ProjectRuntime` deferring its release past the commit boundary it was called inside, which is ADR-067's decision and a policy this file neither owns nor names. A composition whose safety is held by another module's unwind order is the same shape as a reader asserting a narrowing the union already proves: correct today, and correct for a reason nothing at the site states. See ADR-067.
+
+The state answers it instead. `building` and `ready` adopt, and `disposed` releases what the build created through `releaseMotion` and the instance's own `dispose`, rather than writing it into maps `disposeComposition` has already snapshotted and cleared. That last case is the one worth naming: an entry written after the clear is reachable by id and absent from the teardown snapshot, so it is the one Motion a one-pass disposal can never reach, and ADR-032's exactly-once becomes exactly zero. The release also drops the clock consumer `bindClock` registered after `play()` returned, which is the second write the same shape exposes.
+
+Read after the build rather than before, because before answers a question that has not happened yet: construction is where a host callback reenters, so liveness at entry says nothing about liveness at adoption. The refusal outranks what its release reports, which is `buildMotion`'s own cleanup shape applied one level out, and it is a refusal rather than a silent release because a caller told its Motion was created would hold an id this composition does not have. See ADR-090 and ADR-092.
+
+No behavioural case covers the `disposed` arm, and that is measured rather than omitted. Issue #469 recorded this as a live defect reachable from a trigger port that disposes the handle from inside `Motion.play()`; it is not, because `dispose()` from inside the `createMotion` hook sets the phase retiring and leaves the release to the boundary's unwind, and the load-time loop hands a host no reference to the runtime it is building. `RA-153` is the fixture that proves the deferral. So the arm is unreachable by construction while ADR-067 holds, exactly as the publisher's `input-requirement` guard is, and `D-8` pins the owner and the exhaustive read rather than claiming an arm it cannot enter. A later slice that moves ADR-067's deferral finds a reader here that already owes it a decision.
 
 ## compose
 
