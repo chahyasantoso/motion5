@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "checkpoint": "cp013",
+  "base": "c4b69f763b4bfab01b85bfcde2bc3ec40022c873",
+  "allow": [
+    "scripts/"
+  ],
+  "patches": [
+    {
+      "seq": 1,
+      "file": "001-evidence-runtime-pin.diff",
+      "sha256": "8642efef137cef3ef9d8a31389d6ea20d39437a67f4342a0724c873f33e312b6",
+      "message": "fix(ci): bind evidence to its run and hold the runtime to the pin the workflow declares",
+      "pre": {
+        "scripts/ci-evidence.mjs": "4d39b2c4dc425426adc658cf0c5b563db5599335"
+      },
+      "post": {
+        "scripts/ci-evidence.mjs": "0776835482d5cc3bf4dc844a9d45cf0d52b0a4ce"
+      }
+    }
+  ]
+}

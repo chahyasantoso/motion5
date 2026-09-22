@@ -1,0 +1,54 @@
+diff --git a/scripts/ci-evidence.mjs b/scripts/ci-evidence.mjs
+index 4d39b2c..0776835 100644
+--- a/scripts/ci-evidence.mjs
++++ b/scripts/ci-evidence.mjs
+@@ -37,6 +37,35 @@ function identity() {
+     node: process.version,
+   };
+ }
++/**
++ * The major version of a recorded runtime, which is the whole of the pin `ci.yml` declares.
++ *
++ * An unreadable version is refused rather than read as absent, so a recorded identity that lost the
++ * field cannot pass the comparison below by agreeing with another one that lost it too.
++ */
++function runtimeMajor(version) {
++  const major = /^v(\d+)\.\d+\.\d+$/.exec(String(version))?.[1];
++  assert.ok(major, "Unreadable runtime version");
++  return major;
++}
++/**
++ * Whether a recorded identity describes the same run as the verifying job's, named for its context.
++ *
++ * One owner for what "the same run" means, because discovery and execution ask it of the same pair,
++ * and the split is the decision rather than a convenience. `sha`, `run`, `attempt` and
++ * `configuration` must reproduce exactly. The runtime is held to its major version alone, because
++ * `ci.yml` asks every job for `node-version: 24` and nothing narrower, so two runners of one run
++ * may resolve different patch releases of that major and both be conformant. Run 35727905161 is
++ * the measurement: the suite owner recorded `v24.20.0`, `integration` drew the same and passed,
++ * `end-to-end` drew `v24.21.0`, and the exact comparison reported a failure that no change to this
++ * repository could clear. A red that no fix can reach is a gate that gets deleted, so the check
++ * asserts the pin the workflow declares, while the identity still records the exact version for a
++ * reader of the evidence.
++ */
++function sameRun(recorded, expected, context) {
++  const { node: recordedRuntime, ...recordedRun } = recorded;
++  const { node: expectedRuntime, ...expectedRun } = expected;
++  assert.deepEqual(recordedRun, expectedRun, `${context} identity mismatch`);
++  assert.equal(
++    runtimeMajor(recordedRuntime),
++    runtimeMajor(expectedRuntime),
++    `${context} runtime major mismatch`,
++  );
++}
+ function relative(file) {
+@@ -61,8 +61,8 @@ export function verify(inventory, result, expected, scope {
+   assert.ok(Object.hasOwn(filters, scope), "Unknown evidence scope");
+   assert.equal(inventory.version, 1);
+   assert.equal(result.version, 1);
+-  assert.deepEqual(inventory.identity, expected, "Discovery identity mismatch");
+-  assert.deepEqual(result.identity, expected, "Execution identity mismatch");
++  sameRun(inventory.identity, expected, "Discovery");
++  sameRun(result.identity, expected, "Execution");
+   assert.equal(result.reason, "passed", "Suite did not complete successfully");
+***
