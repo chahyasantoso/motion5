@@ -190,6 +190,53 @@ describe("boundary scan predicates", () => {
     }
   });
 
+  it("reads a specifier from code rather than from prose", () => {
+    // The repair this gate needed before it could ship. Measured on the first cut: a `contract/`
+    // module whose only mention of the layer was the line comment `used to read from
+    // "../domain/outcome"` returned one `inward domain import` from the shipped scan, with no
+    // import anywhere in the file. This repository quotes module paths in prose constantly, so a
+    // gate a documentation edit can turn red is a gate that gets deleted. The second group is the
+    // other direction: stripping a comment must not hide a real import, including one a comment is
+    // interposed into, and must not mistake an escaped slash in a regular expression for a comment
+    // opener and swallow the line after it. See ADR-102.
+    for (const source of [
+      '// it used to read from "../domain/outcome" before ADR-102 moved it',
+      '/** Once imported from "../domain/track". */',
+      '/* from "../domain/exhaustive" */ export const clean = 1;',
+      'const pattern = /domain\//; // from "../domain/track" is prose here',
+    ]) {
+      expect(importsDomainLayer(source)).toBe(false);
+      expect(importsDomainSink(source)).toBe(false);
+    }
+    expect(importsDomainLayer('import /* interposed */ { u } from "../domain/track";')).toBe(true);
+    expect(importsDomainSink('const load = import(/* interposed */ "../domain/exhaustive");')).toBe(
+      true,
+    );
+    const afterRegex = 'const pattern = /domain\//;\nimport { t } from "../domain/track";';
+    expect(importsDomainLayer(afterRegex)).toBe(true);
+  });
+
+  it("refuses the spellings that step around the anchor without widening past it", () => {
+    // A leading `./` and an absent trailing slash are concrete spellings a violator can write and a
+    // reviewer will not see, so the anchor admits both rather than reporting a clean boundary it
+    // does not have. It stays anchored at the front, which is why a longer sibling directory is
+    // still clean. See ADR-102.
+    for (const source of [
+      'import { t } from "./../domain/track";',
+      'import { t } from "../domain";',
+      'import { t } from "../domain/";',
+    ])
+      expect(importsDomainLayer(source)).toBe(true);
+    expect(importsDomainSink('import { u } from "./../domain/exhaustive";')).toBe(true);
+    for (const source of [
+      'import { x } from "../domainfoo";',
+      'import { x } from "../domain-helpers/y";',
+    ]) {
+      expect(importsDomainLayer(source)).toBe(false);
+      expect(importsDomainSink(source)).toBe(false);
+    }
+  });
+
   it("extracts exports outside the public allow list", () => {
     expect(extractExportNames(publicExportViolationFixture)).toEqual(["InternalGraphRuntime"]);
   });
@@ -270,6 +317,24 @@ describe("boundary scan planted violations", () => {
       await writeFile(
         join(fixture, "packages", "core", "src", "adapters", "reach.ts"),
         'import { compilePercentKeyframes } from "../../domain/keyframe-compiler";\n',
+      );
+      expect(await scan(fixture)).toEqual([]);
+    } finally {
+      await rm(fixture, { recursive: true, force: true });
+    }
+  });
+
+  // The same repair, planted through the shipped scanner rather than asserted at the predicate,
+  // because prose is the one thing a `contract/` module reliably contains and the scan is what CI
+  // runs. Red before the extraction read code, where this file alone turned the gate red.
+  it("keeps a contract module whose only domain mention is a comment clean", async () => {
+    const fixture = await mkdtemp(join(tmpdir(), "motion5-domain-prose-"));
+    try {
+      await writeFile(join(fixture, "package.json"), PACKAGES_ONLY);
+      await mkdir(join(fixture, "packages", "core", "src", "contract"), { recursive: true });
+      await writeFile(
+        join(fixture, "packages", "core", "src", "contract", "prose.ts"),
+        '// ADR-102 moved this; it read from "../domain/outcome".\nexport const kept = 1;\n',
       );
       expect(await scan(fixture)).toEqual([]);
     } finally {

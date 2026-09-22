@@ -143,24 +143,92 @@ export function importsTestingEntrypoint(source) {
 }
 const moduleSpecifier = /(?:\bfrom\s*|\bimport\s*(?:\(\s*)?|\brequire\s*\(\s*)["']([^"']+)["']/g;
 /**
+ * The end of the string literal opening at `start`, honouring backslash escapes.
+ *
+ * An unterminated literal returns the last index, which consumes the rest of the file. Such a file
+ * does not compile, so this answer only has to be safe rather than useful.
+ */
+function closingDelimiter(source, start, delimiter) {
+  for (let index = start + 1; index < source.length; index += 1) {
+    if (source[index] === "\\") {
+      index += 1;
+      continue;
+    }
+    if (source[index] === delimiter) return index;
+  }
+  return source.length - 1;
+}
+/**
+ * The source with its comments removed and its string literals intact.
+ *
+ * A specifier is a property of code, and `moduleSpecifier` cannot tell code from prose: it accepts
+ * any `from`, `import` or `require` that a quotation mark follows, so a doc comment naming a module
+ * path read as an import of it. That was measured rather than imagined. A `contract/` module whose
+ * only mention of the layer was the line comment `used to read from "../domain/outcome"` returned
+ * one `inward domain import` from the shipped scan with no import anywhere in the file, and this
+ * repository quotes module paths in prose constantly. A gate a documentation edit can turn red is a
+ * gate that gets deleted, so the extraction reads code.
+ *
+ * Scanning left to right is what makes one pass enough. A comment opener inside a string literal is
+ * never reached, because the literal is consumed whole at its opening delimiter; an apostrophe or a
+ * quotation mark inside a comment never opens a literal, because the comment is consumed whole at
+ * its opener. A backslash in code is consumed together with the character after it, which is what
+ * keeps an escaped slash in a regular-expression literal from reading as a comment opener and
+ * swallowing the rest of its line. A comment is replaced rather than deleted so that no two tokens
+ * it separated can join.
+ */
+function withoutComments(source) {
+  let code = "";
+  let index = 0;
+  while (index < source.length) {
+    const char = source[index];
+    if (char === "\\") {
+      code += source.slice(index, index + 2);
+      index += 2;
+    } else if (char === '"' || char === "'" || char === "`") {
+      const end = closingDelimiter(source, index, char);
+      code += source.slice(index, end + 1);
+      index = end + 1;
+    } else if (char === "/" && source[index + 1] === "/") {
+      const end = source.indexOf("\n", index);
+      code += "\n";
+      index = end === -1 ? source.length : end + 1;
+    } else if (char === "/" && source[index + 1] === "*") {
+      const end = source.indexOf("*/", index + 2);
+      code += " ";
+      index = end === -1 ? source.length : end + 2;
+    } else {
+      code += char;
+      index += 1;
+    }
+  }
+  return code;
+}
+/**
  * Every module specifier this scanner can see, normalised to forward slashes.
  *
  * One owner of the extraction, because the two predicates below ask different questions of the same
  * list, and a second copy of the walk is how they end up disagreeing about what a specifier is.
- * Specifiers are read from static imports and re-exports, dynamic imports, and `require` calls.
- * Four spellings stay invisible. A configured alias and a computed specifier are past the reach of
- * any pattern over source text. A template-literal delimiter is not beyond it: that is a concrete
- * specifier this pattern cannot see, because the delimiter class admits an apostrophe and a
- * quotation mark and nothing else, and widening it wants a backreferenced delimiter so one kind
- * cannot be closed by another, plus a decision about a substituted literal, which is a computed
- * specifier in concrete clothing. A block comment interposed between the keyword and its specifier
- * is invisible for the same shape of reason: the pattern admits only whitespace there, while an
- * interposed comment is valid TypeScript in all three forms. Each of the last two widens the set
- * these gates refuse, so each is its own slice with its own cases rather than a correction here.
- * Neither appears under `packages/core/src` today, measured over this scanner's own walk.
+ * Specifiers are read from code, through `withoutComments`, in static imports and re-exports,
+ * dynamic imports and `require` calls.
+ *
+ * Three spellings stay invisible. A configured alias and a computed specifier are past the reach of
+ * any pattern over source text: an alias is resolved by configuration this scanner does not read,
+ * and a computed specifier has no literal to read. A template-literal delimiter is not past it,
+ * which is what makes it the one a later slice can close without first deciding what an
+ * unresolvable specifier means: the delimiter class admits an apostrophe and a quotation mark and
+ * nothing else, and widening it wants a backreferenced delimiter so one kind cannot close another,
+ * plus a decision about a substituted literal, which is a computed specifier in concrete clothing.
+ * That widens the set these gates refuse, so it is its own slice with its own cases. None of the
+ * three appears under `packages/core/src` today, measured over this scanner's own walk.
+ *
+ * One spelling is still read too eagerly, and it is named rather than chased: a specifier-shaped
+ * phrase inside a string literal. Prose lives in comments here and no such string exists in the
+ * tree, and narrowing it wants the keyword's own statement rather than a tighter delimiter class.
  */
 function* importSpecifiers(source) {
-  for (const match of source.matchAll(moduleSpecifier)) yield match[1].replaceAll("\\", "/");
+  for (const match of withoutComments(source).matchAll(moduleSpecifier))
+    yield match[1].replaceAll("\\", "/");
 }
 /**
  * Any relative import of the domain layer, which is what ARCHITECTURE section 2 actually forbids.
@@ -174,10 +242,17 @@ function* importSpecifiers(source) {
  * Widening this rule to adapters would refuse the tree it was added to, and a gate introduced red
  * earns an exemption list instead of a fix. ADR-099 named all three and ADR-102 records why they
  * stay their own slice.
+ *
+ * The anchor admits a leading `./` and an absent trailing slash, so `./../domain/track` and a bare
+ * `../domain` are refused alongside `../domain/track`. Neither spelling appears in the tree and
+ * neither is one a formatter would produce, which is the reason they are worth refusing: a gate
+ * whose anchor can be stepped around by a character nobody would notice in review is a gate that
+ * reports a clean boundary it does not have. It stays anchored at the front, so `../domain-helpers`
+ * and `../domainfoo` are still clean.
  */
 export function importsDomainLayer(source) {
   for (const specifier of importSpecifiers(source))
-    if (/^(?:\.\.\/)+domain\//.test(specifier)) return true;
+    if (/^(?:\.\/)?(?:\.\.\/)+domain(?:\/|$)/.test(specifier)) return true;
   return false;
 }
 /**
@@ -192,7 +267,8 @@ export function importsDomainLayer(source) {
  */
 export function importsDomainSink(source) {
   for (const specifier of importSpecifiers(source))
-    if (/^(?:\.\.\/)+domain\/exhaustive(?:\.(?:js|mjs|ts))?$/.test(specifier)) return true;
+    if (/^(?:\.\/)?(?:\.\.\/)+domain\/exhaustive(?:\.(?:js|mjs|ts))?$/.test(specifier))
+      return true;
   return false;
 }
 export function bannedSymbol(source) {
