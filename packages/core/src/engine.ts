@@ -31,6 +31,7 @@ import { assertInterpolator, type Interpolator } from "./ports/interpolator";
 import { assertScheduler, type Scheduler } from "./ports/scheduler";
 import { acceptsExternalSignal } from "./ports/trigger-factory";
 import type { ClockConsumer, CreatedTrigger, TriggerFactory } from "./ports/trigger-factory";
+import { afterCleanup } from "./runtime/report";
 import { ProjectRuntime, type StagedTrack } from "./runtime/project-runtime";
 
 export interface EngineOptions {
@@ -189,22 +190,8 @@ function assertValidProject(project: unknown): ProjectDefinition {
 type MotionBuild =
   | { readonly kind: "trigger-created"; readonly trigger: CreatedTrigger }
   | { readonly kind: "motion-created"; readonly trigger: CreatedTrigger; readonly motion: Motion };
-function describeError(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
-}
 function runAllAndReportOnce(steps: readonly (() => void)[], context: string): void {
   report(collect(steps), context);
-}
-function afterCleanup(failure: unknown, cleanup: () => void): unknown {
-  try {
-    cleanup();
-  } catch (cleanupFailure) {
-    return new AggregateError(
-      [failure, cleanupFailure],
-      `${describeError(failure)} Cleanup failed: ${describeError(cleanupFailure)}`,
-    );
-  }
-  return failure;
 }
 export class Engine {
   readonly #options: EngineOptions;
@@ -457,7 +444,7 @@ export class Engine {
         // is exactly zero. Issue #134. The tag is what makes that obligation visible: one state
         // owns an instance, and it is the only state that owes its disposal.
         const state = built;
-        throw afterCleanup(error, () => {
+        throw afterCleanup(error, "cleanup", () => {
           const steps: (() => void)[] = [() => releaseMotion(definition.id)];
           switch (state.kind) {
             case "trigger-created":
@@ -472,6 +459,41 @@ export class Engine {
           }
           runAllAndReportOnce(steps, `Cleaning up motion "${definition.id}" failed.`);
         });
+      }
+    };
+    // One owner of whether this composition may take a Motion, and both adoption sites go through
+    // it. `motions.set(id, buildMotion(...))` evaluated its argument first and neither site said
+    // what made that safe, so the guarantee was held by a deferral policy two modules away that
+    // nothing here names. The state is the answer instead: `building` and `ready` adopt, `disposed`
+    // releases what the build created rather than writing it into maps disposeComposition has
+    // already snapshotted and cleared, where it would be the one Motion a one-pass teardown cannot
+    // reach. Read after the build rather than before, because construction is where a host callback
+    // reenters. The refusal outranks what its release reports, on buildMotion's own cleanup shape.
+    // engine.md owns why the disposed arm has no behavioural case. Issue #469, and see ADR-092.
+    const adoptMotion = (
+      definition: MotionDefinition,
+      entries: readonly MotionTrackEntry[],
+    ): Motion => {
+      const motion = buildMotion(definition, entries);
+      switch (state.kind) {
+        case "building":
+        case "ready":
+          motions.set(definition.id, motion);
+          return motion;
+        case "disposed":
+          throw afterCleanup(
+            new TypeError(
+              `Composition for motion "${definition.id}" was disposed before it was adopted.`,
+            ),
+            "cleanup",
+            () =>
+              runAllAndReportOnce(
+                [() => releaseMotion(definition.id), () => motion.dispose()],
+                `Releasing unadopted motion "${definition.id}" failed.`,
+              ),
+          );
+        default:
+          return unreachable(state);
       }
     };
     try {
@@ -586,7 +608,7 @@ export class Engine {
               createdTriggers.set(motionId, displaced);
               bindClock(motionId, motion, displaced);
             }
-            throw afterCleanup(error, () => created.dispose());
+            throw afterCleanup(error, "cleanup", () => created.dispose());
           }
           // Returning marks acceptance. Runtime adopts the definition before asking for cleanup.
           // Motion's displaced subscription and the factory's resource are independent releases:
@@ -613,7 +635,7 @@ export class Engine {
           if (!motion) throw new TypeError(`Unknown motion "${motionId}".`);
           motion.signal(signal);
         },
-        createMotion: (definition) => motions.set(definition.id, buildMotion(definition, [])),
+        createMotion: (definition) => adoptMotion(definition, []),
         destroyMotion: (motionId) => {
           const motion = motions.get(motionId);
           if (!motion) return;
@@ -649,11 +671,11 @@ export class Engine {
           const duration = nodes.get(id)?.duration;
           return { id, ...(duration === undefined ? {} : { duration }) };
         });
-        motions.set(motionDefinition.id, buildMotion(motionDefinition, entries));
+        adoptMotion(motionDefinition, entries);
       }
       return createHandle(created, (nodeId) => tracks.get(nodeId)?.plugins);
     } catch (error) {
-      throw afterCleanup(error, () => {
+      throw afterCleanup(error, "cleanup", () => {
         // The state names the sole cleanup owner. A constructor failure may have already invoked
         // the composition hook, so the disposed arm is intentionally a no-op.
         switch (state.cleanupOwner) {

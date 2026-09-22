@@ -6,7 +6,7 @@ import { Motion } from "../../src/domain/motion";
 import { Engine, type ProjectHandle } from "../../src/engine";
 import { createManualClock, type Clock } from "../../src/ports/clock";
 import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
-import { code, declaration } from "../helpers/source-region";
+import { code, declaration, member } from "../helpers/source-region";
 import type {
   CreatedTrigger,
   TriggerFactory,
@@ -28,6 +28,9 @@ import type {
 
 const ENGINE_SOURCE = code(fileURLToPath(new URL("../../src/engine.ts", import.meta.url)));
 const COMPOSITION_STATE = declaration(ENGINE_SOURCE, "type CompositionState", ";");
+// The one owner of whether a composition may take a Motion, addressed by its own opening and
+// its own column so that no claim about its arms can be satisfied by a neighbour of it.
+const ADOPT_MOTION = member(ENGINE_SOURCE, "const adoptMotion = (", "    ");
 
 const CREATE_FAILURE = "trigger factory refused to build this Motion.";
 
@@ -41,6 +44,29 @@ const REJECTED_MOTION: MotionDefinition = {
 function manual(id: string): MotionDefinition {
   return { id, trigger: { type: "manual" }, tracks: [] };
 }
+
+/**
+ * A Motion whose only Track observes a free track nobody authored.
+ *
+ * Refused by `validateV5` inside `assertValidProject`, the first statement of `Engine.load`, so
+ * the refusal is raised before the `try` the load owner cleans up from ever opens and this load
+ * compiles no Track, constructs no `ProjectRuntime` and has nothing whatever to release. An earlier
+ * revision of this comment claimed the refusal landed after the Tracks compiled and before any
+ * Motion existed, so that a compiled Track was the whole of what the composition still held. It
+ * does not, and the case built on that premise asserted a release with nothing to release. `P-4` in
+ * `rollback-error-precedence.test.ts` is where that invariant is measured instead, at the layer
+ * that owns it.
+ */
+const MISSING_SOURCE_PROJECT: ProjectDefinition = {
+  schemaVersion: 5,
+  motions: [
+    {
+      id: "hero",
+      trigger: { type: "manual" },
+      tracks: [{ id: "arm", observes: [{ source: "~/missing" }] }],
+    },
+  ],
+};
 
 interface CountingClock extends Clock {
   tick(delta?: number): number;
@@ -346,32 +372,46 @@ describe("Engine owns the teardown of everything a failed operation created", ()
     expect(ENGINE_SOURCE).not.toContain("runtime === undefined");
   });
 
+  it("D-8 routes both adoption sites through one owner that reads the composition state", () => {
+    // Issue #469. `motions.set(id, buildMotion(...))` evaluates its argument before it reads
+    // anything, so the `createMotion` hook and the load-time loop each wrote a Motion into maps
+    // without asking whether the composition would still be there to own it, and what made that
+    // safe was a deferral policy two modules away that neither site named. One owner reads the
+    // state after the build instead. This is the probe of that, because `adoptMotion` is a closure
+    // Engine never publishes, so a third adoption site written beside these two has no other
+    // observation surface at all. `D-7`'s shape. Red on `main`, where there is no `adoptMotion`
+    // and two bare sites.
+    expect(ENGINE_SOURCE).toContain("createMotion: (definition) => adoptMotion(definition, []),");
+    expect(ENGINE_SOURCE).toContain("adoptMotion(motionDefinition, entries);");
+    // Whole-file negatives rather than region-scoped ones, because `code()` erases comments, so the
+    // owner's own comment quoting the retired shape cannot satisfy them. That is what makes this
+    // the claim that neither site writes it rather than the claim that one declaration does not.
+    expect(ENGINE_SOURCE).not.toContain("motions.set(definition.id, buildMotion(");
+    expect(ENGINE_SOURCE).not.toContain("motions.set(motionDefinition.id, buildMotion(");
+    // The state is read exhaustively, so the disposed arm is a decision this owner owes rather than
+    // a case a later reader may quietly omit. `engine.md` owns why that arm has no behavioural
+    // case, and this is what stops it being deleted as dead instead.
+    expect(ADOPT_MOTION).toContain('case "disposed":');
+    expect(ADOPT_MOTION).toContain("unreachable(state)");
+  });
+
   it("D-6 reports the graph rejection unwrapped when the runtime never existed", () => {
-    // The other branch of the failed-load teardown, and the reason it is a branch: when
-    // `GraphRuntime` throws, `ProjectRuntime`'s own constructor has already run the composition
-    // teardown, so the load owner must not run it a second time. Not claimed red; it pins the
-    // branch and proves the ordinary diagnosis is not buried in an AggregateError.
+    // The other branch of the failed-load teardown, and the reason it is a branch: authored
+    // validation refuses this project before the load owner's `try` opens, so there is no
+    // composition, no runtime and no cleanup owner to ask. Not claimed red; it pins that a load
+    // with nothing to undo does not bury the ordinary diagnosis in an AggregateError anyway.
     const clock = countingClock();
     const triggers = triggerProbe();
-    const project: ProjectDefinition = {
-      schemaVersion: 5,
-      motions: [
-        {
-          id: "hero",
-          trigger: { type: "manual" },
-          tracks: [{ id: "arm", observes: [{ source: "~/missing" }] }],
-        },
-      ],
-    };
 
-    const thrown = thrownBy(() => load(clock, triggers.factory, project));
+    const thrown = thrownBy(() => load(clock, triggers.factory, MISSING_SOURCE_PROJECT));
 
     expect(thrown).toBeInstanceOf(TypeError);
     expect(thrown).not.toBeInstanceOf(AggregateError);
     expect((thrown as Error).message).toMatch(/^observation-unknown-source at /);
-    // The refusal lands before the first Motion is built, so there was nothing to release but the
-    // compiled Track, and no subscription was ever taken.
+    // The refusal lands before anything is compiled, built or subscribed at all.
     expect(triggers.created).toBe(0);
     expect(clock.liveSubscriptions).toBe(0);
+    // Zero taken rather than one taken and released, which `liveSubscriptions` alone cannot say.
+    expect(clock.releases).toBe(0);
   });
 });
