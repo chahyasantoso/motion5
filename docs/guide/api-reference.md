@@ -66,9 +66,11 @@ the migrated value.
 
 An `ObservationDefinition` carries `source` and nothing else. There is no `target`, no `role`, and no `projection`, and an authored one of each is rejected with `observation-target-unsupported`, `observation-role-unsupported`, or `observation-projection-unsupported`. `InputProjection` is gone with the primitive it described. See ADR-046 and ADR-047.
 
-**Plugins.** `PluginRegistry`, and the types `PluginDefinition` and `ResolvedPlugins`.
+**Plugins.** `PluginRegistry`, and the types `PluginDefinition`, `PluginStage` and `ResolvedPlugins`.
 
 A `PluginDefinition` may declare `requirements`, a record of optional input slots owned by that plugin. Its `compose` receives authored/interpolated values, the track's progress, and that plugin's scoped inputs. `ResolvedPlugins.requirements` reports the bindings resolved for a track.
+
+`PluginDefinition.stage` is optional and closed to `PluginStage`, which is `"prepare"` or `"compose"`. An omitted stage composes, and a plugin that declares `contribute` must name `"prepare"`. It is a union rather than a `string` so that a third stage fails `typecheck` at every reader that owes it a decision instead of silently taking the compose rank; registration still refuses an unknown stage at run time, because a caller arriving from JavaScript or from a separately built module is not held to the declaration. See ADR-092.
 
 **Ports.** `createManualClock`, `createMicrotaskScheduler`, `createManualTriggerPort`,
 `createDefaultTriggerFactory`, `createTriggerFactory`, and the helper `acceptsExternalSignal`,
