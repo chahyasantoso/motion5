@@ -230,9 +230,10 @@ describe("a rollback failure never outranks the rejection that triggered it", ()
  *
  * Driven through the constructor rather than through `Engine.load`, which is the correction issue
  * #469's first attempt at this case earned. `Engine.load` cannot reach this boundary with any
- * refusal currently in the tree: `validateV5` refuses an unknown observation source two statements
- * before the load owner's `try`, so no composition, runtime or release exists to test. A fixture
- * whose timing has to be argued for is the wrong fixture for an invariant about ordering.
+ * refusal currently in the tree: `validateV5` refuses an unknown observation source in the first
+ * statement of `load`, before the owner's `try` opens, so no composition, runtime or release exists
+ * to test. A fixture whose timing has to be argued for is the wrong fixture for an invariant about
+ * ordering.
  */
 describe("a construction failure outranks the composition release it triggers", () => {
   it("P-4 reports the construction failure first when the composition release throws", () => {

@@ -48,13 +48,14 @@ function manual(id: string): MotionDefinition {
 /**
  * A Motion whose only Track observes a free track nobody authored.
  *
- * Refused by `validateV5` inside `assertValidProject`, which is two statements before the `try`
- * the load owner cleans up from, so this load compiles no Track, constructs no `ProjectRuntime`
- * and has nothing whatever to release. An earlier revision of this comment claimed the refusal
- * landed after the Tracks compiled and before any Motion existed, so that a compiled Track was
- * the whole of what the composition still held. It does not, and the case built on that premise
- * asserted a release with nothing to release. `P-4` in `rollback-error-precedence.test.ts` is
- * where that invariant is measured instead, at the layer that owns it.
+ * Refused by `validateV5` inside `assertValidProject`, the first statement of `Engine.load`, so
+ * the refusal is raised before the `try` the load owner cleans up from ever opens and this load
+ * compiles no Track, constructs no `ProjectRuntime` and has nothing whatever to release. An earlier
+ * revision of this comment claimed the refusal landed after the Tracks compiled and before any
+ * Motion existed, so that a compiled Track was the whole of what the composition still held. It
+ * does not, and the case built on that premise asserted a release with nothing to release. `P-4` in
+ * `rollback-error-precedence.test.ts` is where that invariant is measured instead, at the layer
+ * that owns it.
  */
 const MISSING_SOURCE_PROJECT: ProjectDefinition = {
   schemaVersion: 5,
