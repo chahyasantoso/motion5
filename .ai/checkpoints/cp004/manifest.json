@@ -1,0 +1,51 @@
+{
+  "version": 1,
+  "checkpoint": "cp004",
+  "base": "ac766ec47479b670a45bdae6687ceb2a132536d2",
+  "allow": [
+    "docs/",
+    "packages/core/test/"
+  ],
+  "patches": [
+    {
+      "seq": 1,
+      "file": "001-move-construction-precedence-case.diff",
+      "sha256": "87eac7a494ee09810718e46a3aaa946ee93f1ffe6fceef6a2c33e4001ac0239f",
+      "message": "test(core): retire the construction-precedence case built on a false premise",
+      "pre": {
+        "packages/core/test/integration/engine-teardown-ownership.test.ts": "529013b56dbc9e522e8a438ae5b35275a91014f9"
+      },
+      "post": {
+        "packages/core/test/integration/engine-teardown-ownership.test.ts": "a312525698786862db11863932df71502d3defb5"
+      }
+    },
+    {
+      "seq": 2,
+      "after": 1,
+      "file": "002-cover-construction-precedence-at-its-owner.diff",
+      "sha256": "bfc0f49a57b9e39a7317307a6947a882ba60e207c3b6a9f896637b1fa2f80f9a",
+      "message": "test(core): cover the construction cleanup precedence at its owner",
+      "pre": {
+        "packages/core/test/integration/rollback-error-precedence.test.ts": "6b55aee672ec4f72fca444aed78c700d5ab244f2"
+      },
+      "post": {
+        "packages/core/test/integration/rollback-error-precedence.test.ts": "cb34c63e5cd015dc528665dadb60cd51e62c2251"
+      }
+    },
+    {
+      "seq": 3,
+      "after": 2,
+      "file": "003-record-the-correction.diff",
+      "sha256": "5759e7ede096de08a76185b9602ad1b6a9fe1ef9a4a707dee93796f466900aec",
+      "message": "docs: record the corrected construction-precedence evidence",
+      "pre": {
+        "docs/ADR-035-rollback-error-precedence.md": "f3ad1b738a466a6f8cd3e1314ccde295c2164df5",
+        "docs/SESSION-STATUS.md": "4fd79f580aab12d780da3e2f11308ffa41ece200"
+      },
+      "post": {
+        "docs/ADR-035-rollback-error-precedence.md": "c9cbfd43c19833358112c7c508586b682eed9755",
+        "docs/SESSION-STATUS.md": "1b0186a636a818abed005df050daf2868a0cf172"
+      }
+    }
+  ]
+}
