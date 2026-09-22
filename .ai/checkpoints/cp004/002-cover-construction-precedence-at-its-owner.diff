@@ -1,3 +1,54 @@
+diff --git a/packages/core/test/integration/engine-teardown-ownership.test.ts b/packages/core/test/integration/engine-teardown-ownership.test.ts
+index ec4366b..a312525 100644
+--- a/packages/core/test/integration/engine-teardown-ownership.test.ts
++++ b/packages/core/test/integration/engine-teardown-ownership.test.ts
+@@ -48,11 +48,13 @@ function manual(id: string): MotionDefinition {
+ /**
+  * A Motion whose only Track observes a free track nobody authored.
+  *
+- * The one load refusal that lands after the Tracks compile and before any Motion or trigger
+- * exists: `compileTrack` is happy with the entry and `GraphRuntime`'s constructor is not, so a
+- * compiled Track is the whole of what the composition still holds at that instant. `D-6` and
+- * `D-9` are the two halves of what happens next, so the project is declared once rather than
+- * copied into the second of them.
++ * Refused by `validateV5` inside `assertValidProject`, which is two statements before the `try`
++ * the load owner cleans up from, so this load compiles no Track, constructs no `ProjectRuntime`
++ * and has nothing whatever to release. An earlier revision of this comment claimed the refusal
++ * landed after the Tracks compiled and before any Motion existed, so that a compiled Track was
++ * the whole of what the composition still held. It does not, and the case built on that premise
++ * asserted a release with nothing to release. `P-4` in `rollback-error-precedence.test.ts` is
++ * where that invariant is measured instead, at the layer that owns it.
+  */
+ const MISSING_SOURCE_PROJECT: ProjectDefinition = {
+   schemaVersion: 5,
+@@ -393,10 +395,10 @@ describe("Engine owns the teardown of everything a failed operation created", ()
+   });
+ 
+   it("D-6 reports the graph rejection unwrapped when the runtime never existed", () => {
+-    // The other branch of the failed-load teardown, and the reason it is a branch: when
+-    // `GraphRuntime` throws, `ProjectRuntime`'s own constructor has already run the composition
+-    // teardown, so the load owner must not run it a second time. Not claimed red; it pins the
+-    // branch and proves the ordinary diagnosis is not buried in an AggregateError.
++    // The other branch of the failed-load teardown, and the reason it is a branch: authored
++    // validation refuses this project before the load owner's `try` opens, so there is no
++    // composition, no runtime and no cleanup owner to ask. Not claimed red; it pins that a load
++    // with nothing to undo does not bury the ordinary diagnosis in an AggregateError anyway.
+     const clock = countingClock();
+     const triggers = triggerProbe();
+ 
+@@ -405,9 +407,10 @@ describe("Engine owns the teardown of everything a failed operation created", ()
+     expect(thrown).toBeInstanceOf(TypeError);
+     expect(thrown).not.toBeInstanceOf(AggregateError);
+     expect((thrown as Error).message).toMatch(/^observation-unknown-source at /);
+-    // The refusal lands before the first Motion is built, so there was nothing to release but the
+-    // compiled Track, and no subscription was ever taken.
++    // The refusal lands before anything is compiled, built or subscribed at all.
+     expect(triggers.created).toBe(0);
+     expect(clock.liveSubscriptions).toBe(0);
++    // Zero taken rather than one taken and released, which `liveSubscriptions` alone cannot say.
++    expect(clock.releases).toBe(0);
+   });
+ });
 diff --git a/packages/core/test/integration/rollback-error-precedence.test.ts b/packages/core/test/integration/rollback-error-precedence.test.ts
 index 6b55aee..cb34c63 100644
 --- a/packages/core/test/integration/rollback-error-precedence.test.ts

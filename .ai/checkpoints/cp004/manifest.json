@@ -1,7 +1,7 @@
 {
   "version": 1,
   "checkpoint": "cp004",
-  "base": "ac766ec47479b670a45bdae6687ceb2a132536d2",
+  "base": "94bc690be10621e5a6ff8a7a10143219fef104ce",
   "allow": [
     "docs/",
     "packages/core/test/"
@@ -10,25 +10,27 @@
     {
       "seq": 1,
       "file": "001-move-construction-precedence-case.diff",
-      "sha256": "87eac7a494ee09810718e46a3aaa946ee93f1ffe6fceef6a2c33e4001ac0239f",
+      "sha256": "72105ae4850c0cec3854327bada0c8028da86321843a90386be896b3ca502657",
       "message": "test(core): retire the construction-precedence case built on a false premise",
       "pre": {
         "packages/core/test/integration/engine-teardown-ownership.test.ts": "529013b56dbc9e522e8a438ae5b35275a91014f9"
       },
       "post": {
-        "packages/core/test/integration/engine-teardown-ownership.test.ts": "a312525698786862db11863932df71502d3defb5"
+        "packages/core/test/integration/engine-teardown-ownership.test.ts": "ec4366b269fb74e836cc6cefd54fa5a242fee2c2"
       }
     },
     {
       "seq": 2,
       "after": 1,
       "file": "002-cover-construction-precedence-at-its-owner.diff",
-      "sha256": "bfc0f49a57b9e39a7317307a6947a882ba60e207c3b6a9f896637b1fa2f80f9a",
-      "message": "test(core): cover the construction cleanup precedence at its owner",
+      "sha256": "f1fc8c317cbcecabb13cfcc0b293fc6c69c78c6389791d72c76fc9a1dba99f9c",
+      "message": "test(core): cover the cleanup precedence at its owner and pin the untaken subscription",
       "pre": {
+        "packages/core/test/integration/engine-teardown-ownership.test.ts": "ec4366b269fb74e836cc6cefd54fa5a242fee2c2",
         "packages/core/test/integration/rollback-error-precedence.test.ts": "6b55aee672ec4f72fca444aed78c700d5ab244f2"
       },
       "post": {
+        "packages/core/test/integration/engine-teardown-ownership.test.ts": "a312525698786862db11863932df71502d3defb5",
         "packages/core/test/integration/rollback-error-precedence.test.ts": "cb34c63e5cd015dc528665dadb60cd51e62c2251"
       }
     },
