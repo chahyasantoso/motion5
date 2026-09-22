@@ -6,7 +6,8 @@ import { describe, expect, it } from "vitest";
  * A checkpoint patch is authority for what changes, and its declared post-image blob ids are
  * authority for what resulted. This file measures the pure half of that contract: the manifest
  * schema, the unified-diff grammar protocol v1 accepts, and the chain arithmetic that lets patch N
- * declare its predecessor by sequence while proving it by content. See ADR-100 and ADR-101.
+ * declare its predecessor by sequence while proving it by content. See ADR-100 and ADR-101. The
+ * last block measures ADR-102: a request is sealed by its manifest and assembled by a range.
  *
  * The owner runs as a module in a subprocess rather than being imported, which is how
  * apply-ai-edit and the automation adapters are already measured: these scripts are ESM JavaScript
@@ -23,12 +24,20 @@ const root = fileURLToPath(new URL("../../../../../", import.meta.url));
 const PRELUDE = String.raw`
   import assert from "node:assert/strict";
   import {
+    MAX_ASSEMBLY_COMMITS,
+    MAX_PATCHES,
+    MAX_TRANSPORT_BYTES,
+    assemblyAggregate,
+    assemblyRange,
     checkpointChain,
     checkpointFiles,
     checkpointManifest,
+    confinedAssemblyCommit,
     parsePatch,
     patchDigest,
     reconcilePatch,
+    sealedStore,
+    transportBound,
   } from "./scripts/checkpoint-policy.mjs";
   const A = "a".repeat(40);
   const B = "b".repeat(40);
@@ -328,6 +337,91 @@ describe("a checkpoint patch is read by an allowlisted parser, never by git appl
       assert.throws(() => reconcilePatch(parsed, creation), /as a create/);
       const deletion = { ...value.patches[0], post: { [ONE]: null } };
       assert.throws(() => reconcilePatch(parsed, deletion), /as a delete/);
+    `);
+  });
+});
+
+describe("a checkpoint request is sealed by its manifest and carried by an assembly range", () => {
+  it("accepts a linear single-parent range rooted at the base, and nothing else", () => {
+    scenario(String.raw`
+      const sha = (index) => "e" + String(index).padStart(39, "0");
+      const linear = (length) =>
+        Array.from({ length }, (_, index) => ({
+          sha: sha(index + 1),
+          parents: [index === 0 ? A : sha(index)],
+        }));
+      assert.equal(MAX_ASSEMBLY_COMMITS, MAX_PATCHES + 4);
+      assert.equal(assemblyRange(linear(1), A).length, 1);
+      assert.equal(assemblyRange(linear(MAX_ASSEMBLY_COMMITS), A).length, MAX_ASSEMBLY_COMMITS);
+      assert.throws(
+        () => assemblyRange(linear(MAX_ASSEMBLY_COMMITS + 1), A),
+        /not within 24 single-parent commits/,
+      );
+      assert.throws(() => assemblyRange([], A), /not within 24/);
+      assert.throws(() => assemblyRange(linear(2), B), /stale base: the assembly range starts at/);
+      const root = linear(2);
+      root[0] = { sha: root[0].sha, parents: [] };
+      assert.throws(() => assemblyRange(root, A), /reached the root commit/);
+      const merge = linear(3);
+      merge[1] = { sha: merge[1].sha, parents: [merge[0].sha, C] };
+      assert.throws(() => assemblyRange(merge, A), /has 2 parents; it needs exactly one/);
+      const gap = linear(3);
+      gap[2] = { sha: gap[2].sha, parents: [C] };
+      assert.throws(() => assemblyRange(gap, A), /does not follow/);
+      const short = linear(1);
+      short[0] = { sha: "e1", parents: [A] };
+      assert.throws(() => assemblyRange(short, A), /full commit SHA/);
+    `);
+  });
+
+  it("confines each assembly commit to its own folder and the aggregate to the declaration", () => {
+    scenario(String.raw`
+      const value = checkpointManifest(manifest());
+      const files = checkpointFiles(value);
+      confinedAssemblyCommit(A, files, value);
+      confinedAssemblyCommit(A, [], value);
+      assert.throws(
+        () => confinedAssemblyCommit(A, [files[0], ONE], value),
+        /changes "packages\/core\/src\/one\.ts", which is not a checkpoint file of cp001/,
+      );
+      assert.throws(
+        () => confinedAssemblyCommit(A, [".ai/checkpoints/cp002/manifest.json"], value),
+        /not a checkpoint file of cp001/,
+      );
+      // A sibling folder sharing the prefix is still another folder.
+      assert.throws(
+        () => confinedAssemblyCommit(A, [".ai/checkpoints/cp0010/manifest.json"], value),
+        /not a checkpoint file/,
+      );
+      assemblyAggregate(files.slice().reverse(), value);
+      assert.throws(() => assemblyAggregate([...files, ONE], value), /it also changes/);
+      assert.throws(() => assemblyAggregate(files.slice(1), value), /it leaves .*manifest\.json/);
+    `);
+  });
+
+  it("names a missing patch with its repair, and a stray file by name", () => {
+    scenario(String.raw`
+      const value = checkpointManifest(manifest());
+      const files = checkpointFiles(value);
+      sealedStore(files, value);
+      assert.throws(
+        () => sealedStore([files[0]], value),
+        /001-.*is declared by the manifest but absent; the manifest seals the request, so delete it, push the missing patches, then push the manifest again/,
+      );
+      assert.throws(
+        () => sealedStore([...files, ".ai/checkpoints/cp001/notes.txt"], value),
+        /notes\.txt" is stored but not declared by the manifest; delete it/,
+      );
+    `);
+  });
+
+  it("bounds every checkpoint file to one transport call", () => {
+    scenario(String.raw`
+      assert.equal(MAX_TRANSPORT_BYTES, 32000);
+      transportBound("m", 0);
+      transportBound("m", MAX_TRANSPORT_BYTES);
+      for (const size of [MAX_TRANSPORT_BYTES + 1, -1, 1.5, undefined, Infinity])
+        assert.throws(() => transportBound("m", size), /per-file transport bound/, String(size));
     `);
   });
 });
