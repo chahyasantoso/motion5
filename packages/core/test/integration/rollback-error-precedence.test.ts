@@ -21,6 +21,13 @@ import { ProjectRuntime } from "../../src/runtime/project-runtime";
  * `t4-runtime-motion-parity.test.ts` already asserts that the rejection propagates unchanged, but
  * it holds there only because that suite's fake does not throw on dispose, so the invariant it
  * claims was never enforced by the code.
+ *
+ * Issue #469 then found the same shape at this class's constructor, which released the composition
+ * it had been handed and rethrew whatever came back, and generalised the policy to
+ * `afterCleanup(failure, phase, cleanup)` in `runtime/report.ts` rather than spelling it a third
+ * time. `P-4` and `P-5` are that boundary, in the second describe below. They are `P-` and not `D-`
+ * because the series split is by question and by owner: `D-` asks whether `Engine` ran its cleanup
+ * at all, and which error a caller sees when a `ProjectRuntime` cleanup fails is this one.
  */
 
 const BASE_PROJECT: ProjectDefinition = {
@@ -32,6 +39,18 @@ const BASE_PROJECT: ProjectDefinition = {
 const REJECTED_TRACK: TrackDefinition = {
   id: "child",
   observes: [{ source: "~/missing" }],
+};
+
+/**
+ * The unknown source `REJECTED_TRACK` carries, authored into a project instead of added to one.
+ *
+ * `GraphRuntime`'s constructor refuses this where `replaceGraph` refuses that, which is the only
+ * difference the constructor boundary needs: one refusal arrives while the composition is still
+ * the caller's to release, the other while it is already this runtime's.
+ */
+const REFUSED_PROJECT: ProjectDefinition = {
+  schemaVersion: 5,
+  motions: [{ id: "hero", trigger: { type: "manual" }, tracks: [REJECTED_TRACK] }],
 };
 
 /** A slashed id reaches assertAuthoredMotionId, the same graph rejection `T-6` uses. */
@@ -196,5 +215,77 @@ describe("a rollback failure never outranks the rejection that triggered it", ()
     expect(disposals).toBe(1);
 
     runtime.dispose();
+  });
+});
+
+/**
+ * The third caller of the one precedence owner, and the one whose failure has no handle behind it.
+ *
+ * `addMotion` and `#addTrack` refuse an operation on a runtime the caller already holds. This
+ * refuses the construction of the runtime itself, so there is nothing to return, nothing to retry
+ * against, and the thrown value is the whole of what the caller is ever told. That is why the
+ * diagnosis has to survive a host release that throws: `ProjectRuntime`'s constructor released the
+ * composition it had been handed and then rethrew whatever came back, so a `GraphRuntime` refusal
+ * was replaced by an unrelated teardown failure and the reason the load was refused was gone.
+ *
+ * Driven through the constructor rather than through `Engine.load`, which is the correction issue
+ * #469's first attempt at this case earned. `Engine.load` cannot reach this boundary with any
+ * refusal currently in the tree: `validateV5` refuses an unknown observation source two statements
+ * before the load owner's `try`, so no composition, runtime or release exists to test. A fixture
+ * whose timing has to be argued for is the wrong fixture for an invariant about ordering.
+ */
+describe("a construction failure outranks the composition release it triggers", () => {
+  it("P-4 reports the construction failure first when the composition release throws", () => {
+    const failure = new Error("host composition release failed");
+    let releases = 0;
+
+    const thrown = thrownBy(
+      () =>
+        new ProjectRuntime(REFUSED_PROJECT, {
+          clock: createManualClock(),
+          compose,
+          compileTrack: () => undefined,
+          disposeComposition: () => {
+            releases += 1;
+            throw failure;
+          },
+        }),
+    );
+
+    // Red before the fix, where the constructor was `disposeComposition(); throw error;` outside a
+    // `try` and this message was "host composition release failed". `P-1`'s assertion shape.
+    expect((thrown as Error).message).toMatch(/^observation-unknown-source at /);
+    expect(thrown).toBeInstanceOf(AggregateError);
+    const errors = (thrown as AggregateError).errors as readonly unknown[];
+    expect(errors[0]).toBeInstanceOf(TypeError);
+    // Identity, not a message match. The host's failure is attached, not re-described.
+    expect(errors[1]).toBe(failure);
+    // Precedence is not bought by skipping the release. Attempted exactly once, as the issue asks.
+    expect(releases).toBe(1);
+  });
+
+  it("P-5 rethrows the construction failure itself, unwrapped, when the release succeeds", () => {
+    // `P-3`'s bound at this boundary, and not claimed red. Without it the fix could become "wrap
+    // every construction failure", which would change the error `D-6` and every caller that
+    // anchors on an unwrapped `TypeError` from a refused project already sees.
+    let releases = 0;
+
+    const thrown = thrownBy(
+      () =>
+        new ProjectRuntime(REFUSED_PROJECT, {
+          clock: createManualClock(),
+          compose,
+          compileTrack: () => undefined,
+          disposeComposition: () => {
+            releases += 1;
+          },
+        }),
+    );
+
+    expect(thrown).toBeInstanceOf(TypeError);
+    expect(thrown).not.toBeInstanceOf(AggregateError);
+    expect((thrown as Error).message).toMatch(/^observation-unknown-source at /);
+    // The release still ran, so the unwrapped path is not the path that skipped it.
+    expect(releases).toBe(1);
   });
 });
