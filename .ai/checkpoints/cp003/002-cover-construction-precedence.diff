@@ -1,0 +1,150 @@
+diff --git a/packages/core/test/integration/engine-teardown-ownership.test.ts b/packages/core/test/integration/engine-teardown-ownership.test.ts
+index d542f6b..529013b 100644
+--- a/packages/core/test/integration/engine-teardown-ownership.test.ts
++++ b/packages/core/test/integration/engine-teardown-ownership.test.ts
+@@ -4,6 +4,7 @@ import type { MotionDefinition, ProjectDefinition } from "../../src/contract/v5"
+ import { createDefaultTriggerFactory } from "../../src/adapters/trigger-factory/default";
+ import { Motion } from "../../src/domain/motion";
+ import { Engine, type ProjectHandle } from "../../src/engine";
++import type { Interpolator } from "../../src/ports/interpolator";
+ import { createManualClock, type Clock } from "../../src/ports/clock";
+ import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
+ import { code, declaration, member } from "../helpers/source-region";
+@@ -45,6 +46,26 @@ function manual(id: string): MotionDefinition {
+   return { id, trigger: { type: "manual" }, tracks: [] };
+ }
+ 
++/**
++ * A Motion whose only Track observes a free track nobody authored.
++ *
++ * The one load refusal that lands after the Tracks compile and before any Motion or trigger
++ * exists: `compileTrack` is happy with the entry and `GraphRuntime`'s constructor is not, so a
++ * compiled Track is the whole of what the composition still holds at that instant. `D-6` and
++ * `D-9` are the two halves of what happens next, so the project is declared once rather than
++ * copied into the second of them.
++ */
++const MISSING_SOURCE_PROJECT: ProjectDefinition = {
++  schemaVersion: 5,
++  motions: [
++    {
++      id: "hero",
++      trigger: { type: "manual" },
++      tracks: [{ id: "arm", observes: [{ source: "~/missing" }] }],
++    },
++  ],
++};
++
+ interface CountingClock extends Clock {
+   tick(delta?: number): number;
+   /** Subscriptions taken minus unsubscribes run, so a leak reads as a positive number. */
+@@ -139,6 +160,35 @@ function triggerProbe(options: TriggerProbeOptions = {}): TriggerProbe {
+   };
+ }
+ 
++interface InterpolatorProbe {
++  readonly interpolator: Interpolator;
++  /** The exact instance a hostile Track release throws, so a case asserts identity. */
++  readonly killFailure: Error;
++}
++
++/**
++ * Wraps the shipped fake so a compiled Track is ordinary in everything but its release.
++ *
++ * `Track.dispose()` reaches exactly one injected thing, `#timeline.kill()`, so the timeline is
++ * the only seam a hostile Track release has. `kill` is replaced on the instance the fake built
++ * rather than copied onto a second object, for the reason `triggerProbe` names every field it
++ * forwards: a spread over an interface silently drops whatever the implementation put behind it.
++ */
++function interpolatorProbe(): InterpolatorProbe {
++  const base = createFakeInterpolator();
++  const killFailure = new Error("host timeline teardown failed");
++  const interpolator: Interpolator = {
++    create(config) {
++      return Object.assign(base.create(config), {
++        kill() {
++          throw killFailure;
++        },
++      });
++    },
++  };
++  return { interpolator, killFailure };
++}
++
+ interface MotionProbe {
+   /** Every Motion that reached play(), in creation order. */
+   readonly built: readonly Motion[];
+@@ -175,10 +225,15 @@ function probeMotions(): MotionProbe {
+   };
+ }
+ 
+-function load(clock: Clock, factory: TriggerFactory, project: ProjectDefinition): ProjectHandle {
++function load(
++  clock: Clock,
++  factory: TriggerFactory,
++  project: ProjectDefinition,
++  interpolator: Interpolator = createFakeInterpolator(),
++): ProjectHandle {
+   return new Engine({
+     clock,
+-    interpolator: createFakeInterpolator(),
++    interpolator,
+     scheduler: createFakeScheduler(),
+     triggerFactory: factory,
+   }).load(project);
+@@ -379,18 +434,8 @@ describe("Engine owns the teardown of everything a failed operation created", ()
+     // branch and proves the ordinary diagnosis is not buried in an AggregateError.
+     const clock = countingClock();
+     const triggers = triggerProbe();
+-    const project: ProjectDefinition = {
+-      schemaVersion: 5,
+-      motions: [
+-        {
+-          id: "hero",
+-          trigger: { type: "manual" },
+-          tracks: [{ id: "arm", observes: [{ source: "~/missing" }] }],
+-        },
+-      ],
+-    };
+ 
+-    const thrown = thrownBy(() => load(clock, triggers.factory, project));
++    const thrown = thrownBy(() => load(clock, triggers.factory, MISSING_SOURCE_PROJECT));
+ 
+     expect(thrown).toBeInstanceOf(TypeError);
+     expect(thrown).not.toBeInstanceOf(AggregateError);
+@@ -400,4 +445,36 @@ describe("Engine owns the teardown of everything a failed operation created", ()
+     expect(triggers.created).toBe(0);
+     expect(clock.liveSubscriptions).toBe(0);
+   });
++
++  it("D-9 keeps the construction failure in front when the composition release throws", () => {
++    // Issue #469. `ProjectRuntime`'s constructor released the composition and then rethrew whatever
++    // came back, so a `GraphRuntime` refusal was replaced by the host's release failure and the
++    // reason the load was refused was gone. It reaches the one owner of that precedence now.
++    // `D-6`'s project is the fixture because it is the one refusal that lands while a compiled
++    // Track is all there is to release, and a Track's release reaches exactly one injected thing.
++    // Red on `main`, where the thrown value is the release failure alone; `D-6` keeps asserting the
++    // unwrapped `TypeError`, which is what proves the aggregation is conditional. ADR-035's
++    // precedence, applied one layer above the call sites that record named.
++    const clock = countingClock();
++    const triggers = triggerProbe();
++    const interpolators = interpolatorProbe();
++
++    const thrown = thrownBy(() =>
++      load(clock, triggers.factory, MISSING_SOURCE_PROJECT, interpolators.interpolator),
++    );
++
++    expect(thrown).toBeInstanceOf(AggregateError);
++    // The diagnosis keeps its message verbatim and in front, so a caller that anchored on it before
++    // a release could fail still matches. Same anchor `D-6` asserts on the unwrapped value.
++    expect((thrown as Error).message).toMatch(/^observation-unknown-source at /);
++    const errors = (thrown as AggregateError).errors as readonly unknown[];
++    // Order is the contract: the construction failure first, the release attached behind it.
++    expect(errors[0]).toBeInstanceOf(TypeError);
++    expect((errors[0] as Error).message).toMatch(/^observation-unknown-source at /);
++    // Identity, not a message match. The host's failure is attached, not re-described.
++    expect(errors[1]).toBe(interpolators.killFailure);
++    // Precedence is not bought by skipping the release, and nothing was built that could leak.
++    expect(clock.liveSubscriptions).toBe(0);
++    expect(triggers.created).toBe(0);
++  });
+ });

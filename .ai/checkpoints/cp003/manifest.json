@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "checkpoint": "cp003",
+  "base": "1d5e5ef41522ec9ca8c7b7b4ce68ef65bec38aa5",
+  "allow": [
+    "docs/",
+    "packages/core/test/"
+  ],
+  "patches": [
+    {
+      "seq": 1,
+      "file": "001-cover-adoption-owner.diff",
+      "sha256": "cdf58ad01ffd5a7c5ebc41ec07b3de8db5222554c565418fe7e75a05338d6c46",
+      "message": "test(core): cover the adoption owner",
+      "pre": {
+        "packages/core/test/integration/engine-teardown-ownership.test.ts": "b8c6b3c3067391e4ca03702374e66574aa7466c0"
+      },
+      "post": {
+        "packages/core/test/integration/engine-teardown-ownership.test.ts": "d542f6bd66528c3a9011fe242dc3ee5027ac5594"
+      }
+    },
+    {
+      "seq": 2,
+      "after": 1,
+      "file": "002-cover-construction-precedence.diff",
+      "sha256": "d8ed0a44d10b238eb1b24d05a26629e0121ccc01f20a37cd5bf868f1bca1cc6a",
+      "message": "test(core): cover the construction failure precedence",
+      "pre": {
+        "packages/core/test/integration/engine-teardown-ownership.test.ts": "d542f6bd66528c3a9011fe242dc3ee5027ac5594"
+      },
+      "post": {
+        "packages/core/test/integration/engine-teardown-ownership.test.ts": "529013b56dbc9e522e8a438ae5b35275a91014f9"
+      }
+    },
+    {
+      "seq": 3,
+      "after": 2,
+      "file": "003-cover-removed-fields-by-key.diff",
+      "sha256": "3a603811ec8bf4ab404b1b107bbeb351b48d36bb5cc6697598092e2377353ef3",
+      "message": "test(core): cover the removed observation fields by key",
+      "pre": {
+        "packages/core/test/unit/graph/observation-target-removal.test.ts": "a042b5aeb7215d332c7e948b8d92ad4e503acfed"
+      },
+      "post": {
+        "packages/core/test/unit/graph/observation-target-removal.test.ts": "292ff2b09caf5d34625525bd9304a020b4fec32b"
+      }
+    },
+    {
+      "seq": 4,
+      "after": 3,
+      "file": "004-record-the-slice.diff",
+      "sha256": "70f36b1fd8c8a4f631f3af186db640bd12db9175072de991ce88750f35aaecc2",
+      "message": "docs: record the #469 slice and the moved cleanup owner",
+      "pre": {
+        "docs/ADR-035-rollback-error-precedence.md": "a87ba443b5acd3b2b4a1739c86b794134a11658e",
+        "docs/SESSION-STATUS.md": "78b8a5ab04cba61fc562a6206b7c744546c777a2"
+      },
+      "post": {
+        "docs/ADR-035-rollback-error-precedence.md": "f3ad1b738a466a6f8cd3e1314ccde295c2164df5",
+        "docs/SESSION-STATUS.md": "4fd79f580aab12d780da3e2f11308ffa41ece200"
+      }
+    }
+  ]
+}

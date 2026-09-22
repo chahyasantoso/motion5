@@ -1,0 +1,41 @@
+diff --git a/docs/ADR-035-rollback-error-precedence.md b/docs/ADR-035-rollback-error-precedence.md
+index a87ba44..f3ad1b7 100644
+--- a/docs/ADR-035-rollback-error-precedence.md
++++ b/docs/ADR-035-rollback-error-precedence.md
+@@ -83,3 +83,11 @@ Red on the parent, executed rather than derived, and the run is the pull request
+ The same job proves the red is assertion-level rather than infrastructure: `typecheck` and `format:check` passed before `npm test` failed, and the other 461 cases are green on that parent.
+ 
+ `P-` is a new citation series. The gate in `packages/core/test/unit/scripts/evidence-case-ids.test.ts` was widened by exactly one prefix to admit it, and nothing was reserved for a series that does not exist yet: both letters reserved in advance there were later claimed by the issues they were reserved against, so reserving has twice failed to prevent a widening.
++
++## Amendment, 2026-09-22: the owner this record names has moved, and one expression decides both phases
++
++`rejectAfterRollback` is no longer declared in `project-runtime.ts`. `rollback.ts` held it when issue #443 split that module up, and deleting `rollback.ts` moved it to `runtime/report.ts`, which is where the ownership sentence under **Decision** should now be read: one module-level owner in `runtime/report.ts`, used by both call sites. Nothing above it changed hands. The rollback set, the `errors` order, the verbatim message and the refusal to assign `cause` are all unchanged, and `P-1` through `P-3` still measure them from where they always did.
++
++Issue #469 then generalised the policy rather than copying it a third time. `engine.ts` had declared its own `afterCleanup` one import away, differing from `rejectAfterRollback` in one word of prose, so the precedence this record decided had two spellings and no call site said which of them it wanted. There is one now: `afterCleanup(failure, phase, cleanup)` in `runtime/report.ts`, where `phase` is a closed `CleanupPhase` of `"cleanup"` and `"rollback"` read by a total `switch`, so the summary a caller reports under is a value rather than prose it hands in, and a third phase fails `typecheck` at that switch instead of inheriting whichever arm was written last. `rejectAfterRollback` keeps its name, its signature and its `never`, and is now `throw afterCleanup(rejection, "rollback", rollback)`. Both messages are byte-identical to what each function built before. ADR-092 owns the exhaustive read, and ADR-096 owns the `describeError` that the same slice stopped declaring twice.
++
++The adjacent hole **Consequences** recorded is closed, and a third caller has joined the two this record named. Issue #145 fixed `Engine`'s `destroyMotion` hook stopping before `motion.dispose()` when a trigger's `dispose` threw, in that hook's own ordering. What #469 fixed is this precedence at `ProjectRuntime`'s constructor, which released the composition it had been handed and then rethrew whatever came back, so a `GraphRuntime` construction failure was replaced by a host's release failure and the diagnosis was lost. It reaches this policy now. `D-9` in `packages/core/test/integration/engine-teardown-ownership.test.ts` is the case, and `D-6` asserts the unwrapped `TypeError` beside it so that the aggregation stays conditional rather than becoming "wrap every failure", which is the same bound `P-3` holds for the rollback path.
+diff --git a/docs/SESSION-STATUS.md b/docs/SESSION-STATUS.md
+index 78b8a5a..4fd79f5 100644
+--- a/docs/SESSION-STATUS.md
++++ b/docs/SESSION-STATUS.md
+@@ -2,16 +2,16 @@
+ 
+ Current project state only. Replace stale entries rather than append history. The four sections below are the complete shape, **Now** and **Next in line** carry exactly one bullet each, and no bullet states a phase; `packages/core/test/unit/scripts/session-status-shape.test.ts` enforces all three and the byte ceiling.
+ 
+-- **Captured:** 2026-09-21, Asia/Jakarta.
+-- **Read against:** `main` at `1f72a1e9`; [#462](https://github.com/chahyasantoso/motion5/pull/462) is merged.
++- **Captured:** 2026-09-22, Asia/Jakarta.
++- **Read against:** `main` at `4134a78a`; [#470](https://github.com/chahyasantoso/motion5/pull/470) is merged.
+ 
+ ## Now
+ 
+-- **#451's union work has landed on `main`:** [#462](https://github.com/chahyasantoso/motion5/pull/462) is merged and `main` is at `1f72a1e9`. The open follow-up slice is this small correctness batch: the publisher's `edgesByRole` narrowing proven instead of cast; the retired-sink boundary gate seeing the `.js`/dynamic/backslash spellings it refused; the seam-result helper's alias admission pinned by a regression case; `refusedOutcomeFrom`'s emptiness test fixed and the five single-diagnostic graph refusals moved onto the compile-time tuple; plus these record corrections.
++- **#469's behavioural items are in review on `fix/469-behavioural`:** [#471](https://github.com/chahyasantoso/motion5/pull/471) carries four source slices published as checkpoint `cp002` and their cases published as `cp003`: one owner of cleanup precedence in `runtime/report.ts` reached by both spellings that existed for it; a construction failure that outranks the release it triggers; an adoption owner that reads `CompositionState` after the build so a Motion enters a composition only while that composition is live; and a removed authored observation field refused by its key rather than by the value at it, which changes the refusal set. One item filed on [#469](https://github.com/chahyasantoso/motion5/issues/469) does not reproduce and the correction is owed there: ADR-067's deferred teardown already prevents the re-entrant adoption it describes. The pull request is a draft until CI is green on the published head and the independent quality pass it owes has landed.
+ 
+ ## Next in line
+ 
+-- **The mutation baseline [#419](https://github.com/chahyasantoso/motion5/issues/419) remains next:** the `mutate` list names `graph-runtime-state.ts` and `ports/scheduler.ts` on `main`, [#445](https://github.com/chahyasantoso/motion5/pull/445) adds `report.ts`, `registry-phase.ts` and `publish-request.ts` while `diagnostic-report.ts` leaves the list with the module it named, the modules both halves of [#443](https://github.com/chahyasantoso/motion5/issues/443) created are otherwise still absent from it, and the union work above has since added `outcome.ts`, `patch-render.ts` and `lang/exhaustive.ts` to the set a baseline would have to cover. No Stryker run is reported before or after any of that widening, so `break` at 65.42 is an honestly stale number rather than a measured one. The next slice measures it and re-pins the thresholds in the pull request that measures them; [TESTING-STRATEGY.md](./TESTING-STRATEGY.md) owns that rule and says never to move a threshold to keep a run green. Not started, and no run is claimed.
++- **The mutation baseline [#419](https://github.com/chahyasantoso/motion5/issues/419) remains next:** the `mutate` list names `graph-runtime-state.ts` and `ports/scheduler.ts` on `main`, [#445](https://github.com/chahyasantoso/motion5/pull/445) adds `report.ts`, `registry-phase.ts` and `publish-request.ts` while `diagnostic-report.ts` leaves the list with the module it named, the modules both halves of [#443](https://github.com/chahyasantoso/motion5/issues/443) created are otherwise still absent from it, and [#462](https://github.com/chahyasantoso/motion5/pull/462)'s union work has since added `outcome.ts`, `patch-render.ts` and `lang/exhaustive.ts` to the set a baseline would have to cover. No Stryker run is reported before or after any of that widening, so `break` at 65.42 is an honestly stale number rather than a measured one. The next slice measures it and re-pins the thresholds in the pull request that measures them; [TESTING-STRATEGY.md](./TESTING-STRATEGY.md) owns that rule and says never to move a threshold to keep a run green. Not started, and no run is claimed.
+ 
+ ## Open, and not scheduled
+ 
