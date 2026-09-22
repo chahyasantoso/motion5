@@ -1,4 +1,5 @@
 node_modules
+.tools/prettier
 dist
 coverage
 package-lock.json
