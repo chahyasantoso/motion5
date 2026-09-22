@@ -6,7 +6,7 @@ import { Motion } from "../../src/domain/motion";
 import { Engine, type ProjectHandle } from "../../src/engine";
 import { createManualClock, type Clock } from "../../src/ports/clock";
 import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
-import { code, declaration } from "../helpers/source-region";
+import { code, declaration, member } from "../helpers/source-region";
 import type {
   CreatedTrigger,
   TriggerFactory,
@@ -28,6 +28,9 @@ import type {
 
 const ENGINE_SOURCE = code(fileURLToPath(new URL("../../src/engine.ts", import.meta.url)));
 const COMPOSITION_STATE = declaration(ENGINE_SOURCE, "type CompositionState", ";");
+// The one owner of whether a composition may take a Motion, addressed by its own opening and
+// its own column so that no claim about its arms can be satisfied by a neighbour of it.
+const ADOPT_MOTION = member(ENGINE_SOURCE, "const adoptMotion = (", "    ");
 
 const CREATE_FAILURE = "trigger factory refused to build this Motion.";
 
@@ -344,6 +347,29 @@ describe("Engine owns the teardown of everything a failed operation created", ()
     expect(ENGINE_SOURCE).toContain("switch (state.cleanupOwner)");
     expect(ENGINE_SOURCE).toContain("return unreachable(state)");
     expect(ENGINE_SOURCE).not.toContain("runtime === undefined");
+  });
+
+  it("D-8 routes both adoption sites through one owner that reads the composition state", () => {
+    // Issue #469. `motions.set(id, buildMotion(...))` evaluates its argument before it reads
+    // anything, so the `createMotion` hook and the load-time loop each wrote a Motion into maps
+    // without asking whether the composition would still be there to own it, and what made that
+    // safe was a deferral policy two modules away that neither site named. One owner reads the
+    // state after the build instead. This is the probe of that, because `adoptMotion` is a closure
+    // Engine never publishes, so a third adoption site written beside these two has no other
+    // observation surface at all. `D-7`'s shape. Red on `main`, where there is no `adoptMotion`
+    // and two bare sites.
+    expect(ENGINE_SOURCE).toContain("createMotion: (definition) => adoptMotion(definition, []),");
+    expect(ENGINE_SOURCE).toContain("adoptMotion(motionDefinition, entries);");
+    // Whole-file negatives rather than region-scoped ones, because `code()` erases comments, so the
+    // owner's own comment quoting the retired shape cannot satisfy them. That is what makes this
+    // the claim that neither site writes it rather than the claim that one declaration does not.
+    expect(ENGINE_SOURCE).not.toContain("motions.set(definition.id, buildMotion(");
+    expect(ENGINE_SOURCE).not.toContain("motions.set(motionDefinition.id, buildMotion(");
+    // The state is read exhaustively, so the disposed arm is a decision this owner owes rather than
+    // a case a later reader may quietly omit. `engine.md` owns why that arm has no behavioural
+    // case, and this is what stops it being deleted as dead instead.
+    expect(ADOPT_MOTION).toContain('case "disposed":');
+    expect(ADOPT_MOTION).toContain("unreachable(state)");
   });
 
   it("D-6 reports the graph rejection unwrapped when the runtime never existed", () => {
