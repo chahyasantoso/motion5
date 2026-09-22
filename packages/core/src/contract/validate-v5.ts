@@ -14,7 +14,7 @@ import {
   refusedOutcome,
   refusedOutcomeFrom,
   type Outcome,
-} from "../domain/outcome";
+} from "../lang/outcome";
 import { describeDiagnostics, diagnostic } from "./diagnostics";
 import { scopedRuleId, type KeyframeRuleId, type KeyframeRuleScope } from "./rule-id";
 import {
@@ -476,7 +476,7 @@ function deepFreeze<T>(value: T, seen = new WeakSet<object>()): T {
   for (const child of Object.values(value)) deepFreeze(child, seen);
   return Object.freeze(value);
 }
-export type TrackValidationResult = Outcome<TrackDefinition>;
+export type TrackValidationResult = Outcome<TrackDefinition, Diagnostic>;
 export function validateTrackDefinition(track: unknown, path: string): TrackValidationResult {
   const diagnostics: Diagnostic[] = [];
   const validShape = validateTrackShape(track, path, new Set<string>(), diagnostics);
@@ -485,7 +485,7 @@ export function validateTrackDefinition(track: unknown, path: string): TrackVali
     return refusedOutcomeFrom(frozenDiagnostics);
   return acceptedOutcome(deepFreeze(clone(track) as TrackDefinition), frozenDiagnostics);
 }
-export function validateSchemaV5(input: unknown): Outcome<ProjectDefinition> {
+export function validateSchemaV5(input: unknown): Outcome<ProjectDefinition, Diagnostic> {
   const diagnostics: Diagnostic[] = [];
   if (!isObject(input))
     return refusedOutcome([diagnostic("project-shape", "$", "Project must be an object.")]);

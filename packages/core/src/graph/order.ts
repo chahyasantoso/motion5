@@ -1,14 +1,14 @@
 import { diagnostic } from "../contract/diagnostics";
 import type { RuleId } from "../contract/rule-id";
 import type { Diagnostic } from "../contract/v5";
-import { acceptedOutcome, refusedOutcomeFrom, type Outcome } from "../domain/outcome";
+import { acceptedOutcome, refusedOutcomeFrom, type Outcome } from "../lang/outcome";
 import { compareCodeUnits } from "./compare";
 import type { GraphNode } from "./ir";
 
 /** Rule id reported when the observation graph cannot be linearized. */
 export const CYCLE_RULE_ID = "graph-cycle" satisfies RuleId;
 
-export type GraphOrderResult = Outcome<readonly string[]>;
+export type GraphOrderResult = Outcome<readonly string[], Diagnostic>;
 
 interface OrderSlot {
   readonly id: string;

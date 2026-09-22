@@ -8,11 +8,11 @@
  */
 import type { Diagnostic, ProjectDefinition } from "./contract/v5";
 import { validateSchemaV5 } from "./contract/validate-v5";
-import { acceptedOutcome, refusedOutcomeFrom, type Outcome } from "./domain/outcome";
+import { acceptedOutcome, refusedOutcomeFrom, type Outcome } from "./lang/outcome";
 import { unreachable } from "./lang/exhaustive";
 import { buildGraphIR } from "./graph/ir";
 
-export type ValidationResult = Outcome<ProjectDefinition>;
+export type ValidationResult = Outcome<ProjectDefinition, Diagnostic>;
 
 /**
  * Validate a complete authored project, preserving schema and graph diagnostics in their original
