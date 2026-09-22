@@ -1,0 +1,56 @@
+{
+  "version": 1,
+  "checkpoint": "cp008",
+  "base": "88a7c5be04828a05e0b7e61b2a7c98fc8a17e9c4",
+  "allow": [
+    "packages/core/src/",
+    "packages/core/test/"
+  ],
+  "patches": [
+    {
+      "seq": 1,
+      "file": "001-relocate-the-outcome-algebra-to-lang.diff",
+      "sha256": "095f999c5ef43ed3e18e18b85236e38af86a2797c081a085ddf5c93bcb349152",
+      "message": "refactor(core): move the outcome algebra to lang and name its error type",
+      "pre": {
+        "packages/core/src/contract/migrate-v4-to-v5.ts": "9f64f6c3b7d706c05ecd7527b59bd2e89d52b7ac",
+        "packages/core/src/contract/validate-v5.md": "ac10c06c5ad87bc1865e1c6b8e94bc549e416837",
+        "packages/core/src/contract/validate-v5.ts": "680fd3921ab3d2017de640003326fc04410f5ebe",
+        "packages/core/src/domain/outcome.ts": "5485677bd94241354ceff6c4f29372a0eecc7a84",
+        "packages/core/src/engine.ts": "a99d698c90eedf31342946da1b83d440d7a2637f",
+        "packages/core/src/graph/ir.ts": "4cd7654bd3ba6cff499598f48f86b1ce5924a48a",
+        "packages/core/src/graph/order.ts": "cceeba8ea6809c45241c2e2e7aa60684d28bf77c",
+        "packages/core/src/lang/outcome.ts": null,
+        "packages/core/src/runtime/results.ts": "d31ee30a759d732a2220560d649d3b12f71faaaf",
+        "packages/core/src/validate-v5.ts": "2090d37fe75db54fa39f7dcf344cdf8add4b8fde"
+      },
+      "post": {
+        "packages/core/src/contract/migrate-v4-to-v5.ts": "e8f07156e476493e50ccc8784ac0756bad2cda6f",
+        "packages/core/src/contract/validate-v5.md": "bc6aae66dd0d5f68ba3562e9408a8696aaecc266",
+        "packages/core/src/contract/validate-v5.ts": "5961901d945c9a6f32a32af50cbb8ea28316f8e9",
+        "packages/core/src/domain/outcome.ts": null,
+        "packages/core/src/engine.ts": "19282d870d48ccc45ba14f33a07aeebbaa17b971",
+        "packages/core/src/graph/ir.ts": "65b51b77b57654130cc7daaf913890f61b124372",
+        "packages/core/src/graph/order.ts": "06afd0b9b8d05558960e247511bed6d48c4b5aab",
+        "packages/core/src/lang/outcome.ts": "607fea881a3e8c9aceb73134ac0f79e3ea598cda",
+        "packages/core/src/runtime/results.ts": "864672c54f0d515963faf69fab2c7f949b8cb64d",
+        "packages/core/src/validate-v5.ts": "d1f4b0f300f97ae414a4e2b253fa101fb87c671d"
+      }
+    },
+    {
+      "seq": 2,
+      "after": 1,
+      "file": "002-move-the-outcome-case-beside-its-subject.diff",
+      "sha256": "3c27192e7710372010b6816fff1d7a5844e8636cc50f0c147cfbdfadfe76a2ec",
+      "message": "test(lang): move the outcome case beside its relocated subject",
+      "pre": {
+        "packages/core/test/unit/domain/outcome.test.ts": "4acb20dbba79689d100428e05586de2e355445b3",
+        "packages/core/test/unit/lang/outcome.test.ts": null
+      },
+      "post": {
+        "packages/core/test/unit/domain/outcome.test.ts": null,
+        "packages/core/test/unit/lang/outcome.test.ts": "31cef98b6b67fafc28b3240311c092fe5641e7d7"
+      }
+    }
+  ]
+}
