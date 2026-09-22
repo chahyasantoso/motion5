@@ -1,0 +1,142 @@
+       at walkAssembly (file:///home/runner/work/motion5/motion5/scripts/automation-checkpoint.mjs:113:10)
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8833490Z       at prepareCheckpoint (file:///home/runner/work/motion5/motion5/scripts/automation-checkpoint.mjs:274:3)
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8834164Z       at async prepared (file:///home/runner/work/motion5/motion5/[eval1]:126:23)
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8834618Z       at async waitForActual (node:assert:646:5)
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8834978Z       at async strict.rejects (node:assert:769:25)
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8835395Z       at async file:///home/runner/work/motion5/motion5/[eval1]:130:9,
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8835776Z   expected: /Stale base/,
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8836025Z   operator: 'rejects',
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8836251Z   diff: 'simple'
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8836461Z }
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8836561Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8836658Z Node.js v24.20.0
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8837177Z : expected 1 to be +0 // Object.is equality^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8837398Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8837539Z ^[[32m- Expected^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8838142Z ^[[31m+ Received^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8838385Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8839089Z ^[[32m- 0^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8839477Z ^[[31m+ 1^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8839677Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8840094Z ^[[90m ^[[2m❯^[[22m ensure scripts/checkpoint-policy.mjs:^[[2m53:25^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8849176Z ^[[90m ^[[2m❯^[[22m scripts/checkpoint-policy.mjs:^[[2m424:5^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8858309Z ^[[90m ^[[2m❯^[[22m assemblyRange scripts/checkpoint-policy.mjs:^[[2m422:9^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8859091Z ^[[90m ^[[2m❯^[[22m walkAssembly scripts/automation-checkpoint.mjs:^[[2m113:10^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8859869Z ^[[90m ^[[2m❯^[[22m prepareCheckpoint scripts/automation-checkpoint.mjs:^[[2m274:3^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8860731Z ^[[90m ^[[2m❯^[[22m prepared [eval1]:^[[2m126:23^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8861486Z ^[[36m ^[[2m❯^[[22m scenario packages/core/test/unit/scripts/automation-checkpoint.test.ts:^[[2m154:40^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8862525Z     ^[[90m152|^[[39m     maxBuffer^[[33m:^[[39m ^[[34m4000000^[[39m^[[33m,^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8863208Z     ^[[90m153|^[[39m   })^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8864524Z     ^[[90m154|^[[39m   ^[[34mexpect^[[39m(result^[[33m.^[[39mstatus^[[33m,^[[39m result^[[33m.^[[39mstderr)^[[33m.^[[39m^[[34mtoBe^[[39m(^[[34m0^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8865776Z     ^[[90m   |^[[39m                                        ^[[31m^^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8866443Z     ^[[90m155|^[[39m }
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8866868Z     ^[[90m156|^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8868091Z ^[[90m ^[[2m❯^[[22m packages/core/test/unit/scripts/automation-checkpoint.test.ts:^[[2m206:5^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8868591Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8868884Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8869107Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8870289Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/scripts/automation-checkpoint.test.ts^[[2m > ^[[22mpublication writes one commit per patch and never replays a hunk^[[2m > ^[[22mconfirms a publication whose response was lost, without replaying a patch
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8878356Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8879015Z ^[[31m^[[1mAssertionError^[[22m: file:///home/runner/work/motion5/motion5/scripts/checkpoint-policy.mjs:53
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8879860Z   if (!condition) throw new Error(message);
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8880385Z                         ^
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8880671Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8881383Z Error: the manifest base is not within 24 single-parent commits of the head; the base is stale or the assembly range is too long
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8882176Z     at ensure (file:///home/runner/work/motion5/motion5/scripts/checkpoint-policy.mjs:53:25)
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8882888Z     at assemblyRange (file:///home/runner/work/motion5/motion5/scripts/checkpoint-policy.mjs:417:3)
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8883658Z     at assemblyCompare (file:///home/runner/work/motion5/motion5/scripts/automation-checkpoint.mjs:466:17)
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8884511Z     at async reconcileCheckpointIntent (file:///home/runner/work/motion5/motion5/scripts/automation-checkpoint.mjs:811:5)
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8885186Z     at async file:///home/runner/work/motion5/motion5/[eval1]:161:23
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8885463Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8885560Z Node.js v24.20.0
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8885925Z : expected 1 to be +0 // Object.is equality^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8886151Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8886282Z ^[[32m- Expected^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8886619Z ^[[31m+ Received^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8886779Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8886891Z ^[[32m- 0^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8887109Z ^[[31m+ 1^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8887227Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8887582Z ^[[90m ^[[2m❯^[[22m ensure scripts/checkpoint-policy.mjs:^[[2m53:25^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8888837Z ^[[90m ^[[2m❯^[[22m assemblyRange scripts/checkpoint-policy.mjs:^[[2m417:3^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8890483Z ^[[90m ^[[2m❯^[[22m assemblyCompare scripts/automation-checkpoint.mjs:^[[2m466:17^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8891637Z ^[[90m ^[[2m❯^[[22m reconcileCheckpointIntent scripts/automation-checkpoint.mjs:^[[2m811:5^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8892228Z ^[[90m ^[[2m❯^[[22m [eval1]:^[[2m161:23^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8892979Z ^[[36m ^[[2m❯^[[22m publishScenario packages/core/test/unit/scripts/automation-checkpoint.test.ts:^[[2m527:40^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8894107Z     ^[[90m525|^[[39m     }^[[33m,^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8894778Z     ^[[90m526|^[[39m   )^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8896189Z     ^[[90m527|^[[39m   ^[[34mexpect^[[39m(result^[[33m.^[[39mstatus^[[33m,^[[39m result^[[33m.^[[39mstderr)^[[33m.^[[39m^[[34mtoBe^[[39m(^[[34m0^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8897502Z     ^[[90m   |^[[39m                                        ^[[31m^^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8898258Z     ^[[90m528|^[[39m }
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8898527Z     ^[[90m529|^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8899676Z ^[[90m ^[[2m❯^[[22m packages/core/test/unit/scripts/automation-checkpoint.test.ts:^[[2m602:5^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8900329Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8900749Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8901112Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8903182Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/scripts/automation-checkpoint.test.ts^[[2m > ^[[22mpublication writes one commit per patch and never replays a hunk^[[2m > ^[[22mwalks the recorded chain within budget and refuses every missing property
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8904997Z ^[[31m^[[1mAssertionError^[[22m: file:///home/runner/work/motion5/motion5/scripts/checkpoint-policy.mjs:53
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8906023Z   if (!condition) throw new Error(message);
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8906519Z                         ^
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8906768Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8907315Z Error: the manifest base is not within 24 single-parent commits of the head; the base is stale or the assembly range is too long
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8908503Z     at ensure (file:///home/runner/work/motion5/motion5/scripts/checkpoint-policy.mjs:53:25)
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8909225Z     at assemblyRange (file:///home/runner/work/motion5/motion5/scripts/checkpoint-policy.mjs:417:3)
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8910146Z     at assemblyCompare (file:///home/runner/work/motion5/motion5/scripts/automation-checkpoint.mjs:466:17)
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8911135Z     at async reconcileCheckpointIntent (file:///home/runner/work/motion5/motion5/scripts/automation-checkpoint.mjs:811:5)
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8912251Z     at async file:///home/runner/work/motion5/motion5/[eval1]:163:9
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8912525Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8912613Z Node.js v24.20.0
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8913000Z : expected 1 to be +0 // Object.is equality^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8913211Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8913345Z ^[[32m- Expected^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8913659Z ^[[31m+ Received^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8913891Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8914072Z ^[[32m- 0^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8914429Z ^[[31m+ 1^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8914623Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8914983Z ^[[90m ^[[2m❯^[[22m ensure scripts/checkpoint-policy.mjs:^[[2m53:25^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8915649Z ^[[90m ^[[2m❯^[[22m assemblyRange scripts/checkpoint-policy.mjs:^[[2m417:3^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8916344Z ^[[90m ^[[2m❯^[[22m assemblyCompare scripts/automation-checkpoint.mjs:^[[2m466:17^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8917115Z ^[[90m ^[[2m❯^[[22m reconcileCheckpointIntent scripts/automation-checkpoint.mjs:^[[2m811:5^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8917698Z ^[[90m ^[[2m❯^[[22m [eval1]:^[[2m163:9^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8918712Z ^[[36m ^[[2m❯^[[22m publishScenario packages/core/test/unit/scripts/automation-checkpoint.test.ts:^[[2m527:40^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8919329Z     ^[[90m525|^[[39m     }^[[33m,^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8919648Z     ^[[90m526|^[[39m   )^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8920364Z     ^[[90m527|^[[39m   ^[[34mexpect^[[39m(result^[[33m.^[[39mstatus^[[33m,^[[39m result^[[33m.^[[39mstderr)^[[33m.^[[39m^[[34mtoBe^[[39m(^[[34m0^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8921057Z     ^[[90m   |^[[39m                                        ^[[31m^^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8921405Z     ^[[90m528|^[[39m }
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8921642Z     ^[[90m529|^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8922214Z ^[[90m ^[[2m❯^[[22m packages/core/test/unit/scripts/automation-checkpoint.test.ts:^[[2m615:5^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8922600Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8922842Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8923046Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8923563Z ^[[2m Test Files ^[[22m ^[[1m^[[31m1 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m251 passed^[[39m^[[22m^[[90m (252)^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8925469Z ^[[2m      Tests ^[[22m ^[[1m^[[31m3 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m1549 passed^[[39m^[[22m^[[90m (1552)^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8926732Z ^[[2m   Start at ^[[22m 22:51:55
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8928210Z ^[[2m   Duration ^[[22m 45.07s^[[2m (transform 4.00s, setup 1.67s, import 31.33s, tests 55.52s, environment 41ms)^[[22m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.8928929Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-22T22:52:40.9802319Z ##[error]Process completed with exit code 1.
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	﻿2026-09-22T22:52:40.9856053Z ##[group]Run node scripts/ci-evidence.mjs verify all
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-22T22:52:40.9856478Z ^[[36;1mnode scripts/ci-evidence.mjs verify all^[[0m
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-22T22:52:40.9893264Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-22T22:52:40.9893543Z env:
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-22T22:52:40.9893736Z   NODE_VERSION: 24
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-22T22:52:40.9894011Z   CI_EVIDENCE_DIR: /home/runner/work/_temp/ci-evidence
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-22T22:52:40.9894321Z ##[endgroup]
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-22T22:52:41.0403178Z Suite did not complete successfully
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-22T22:52:41.0403599Z 
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-22T22:52:41.0403742Z 'failed' !== 'passed'
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-22T22:52:41.0403906Z 
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-22T22:52:41.0455440Z ##[error]Process completed with exit code 1.
+integration (node 24)	Require successful suite owner, including evidence verification	﻿2026-09-22T22:52:47.9368473Z ##[group]Run test "$SUITE_RESULT" = success
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-22T22:52:47.9369293Z ^[[36;1mtest "$SUITE_RESULT" = success^[[0m
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-22T22:52:47.9410344Z shell: /usr/bin/bash -e {0}
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-22T22:52:47.9411215Z env:
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-22T22:52:47.9411686Z   NODE_VERSION: 24
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-22T22:52:47.9412190Z   SUITE_RESULT: failure
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-22T22:52:47.9412700Z ##[endgroup]
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-22T22:52:47.9549242Z ##[error]Process completed with exit code 1.
+end-to-end (node 24)	Require successful suite owner, including evidence verification	﻿2026-09-22T22:52:47.2222616Z ##[group]Run test "$SUITE_RESULT" = success
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-22T22:52:47.2223416Z ^[[36;1mtest "$SUITE_RESULT" = success^[[0m
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-22T22:52:47.2263691Z shell: /usr/bin/bash -e {0}
+end-to-end (node 24)	Require
