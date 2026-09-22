@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "checkpoint": "cp007",
+  "base": "20337a82eb4fb0faa5b81bbd32865a47f10c7538",
+  "allow": ["packages/core/", "docs/"],
+  "patches": [
+    {
+      "seq": 1,
+      "file": "001-refuse-a-coercing-stage-by-identity.diff",
+      "sha256": "6fe0c43fbe63633570fa7013dcc7768bdc78210f5f8bf4a4db116ea0c0a36afe",
+      "message": "fix(domain): refuse a plugin stage by identity rather than by coercion",
+      "pre": { "packages/core/src/domain/plugins.ts": "7930bbe3fceb006f306a72653edea91c1ea30ac9" },
+      "post": { "packages/core/src/domain/plugins.ts": "3c680bac1a8a6718bbe13206839093a0e326fce3" }
+    },
+    {
+      "seq": 2,
+      "after": 1,
+      "file": "002-name-the-column-and-pin-the-coercing-arrivals.diff",
+      "sha256": "03eddcffd9bf3429859ec4ce82a8258526bbd88dcb1f3319bf24b1b938aefba6",
+      "message": "test(domain): name the stage rank column and pin the coercing arrivals",
+      "pre": { "packages/core/test/unit/domain/plugins.test.ts": "3173c4f9e8178cf205ba6bc2f074b55e26ecaa89" },
+      "post": { "packages/core/test/unit/domain/plugins.test.ts": "d8e704a3d5b787ee990b3a56e30a5968ba26dad9" }
+    },
+    {
+      "seq": 3,
+      "after": 2,
+      "file": "003-record-the-restored-refusal-set.diff",
+      "sha256": "1e28c555341cd076575b6e0196e7c1f139e28489146c6c373e6f2205f9a376a1",
+      "message": "docs: record the restored refusal set and the case that could not pass",
+      "pre": {
+        "docs/SESSION-STATUS.md": "77b277f9368a63b24c6495514d2564100be3ba76",
+        "docs/guide/api-reference.md": "4b147f9f688b11be1742b0339e41428acd824e9b"
+      },
+      "post": {
+        "docs/SESSION-STATUS.md": "f24ba46035b83e1b457c4a0839bd38a094819460",
+        "docs/guide/api-reference.md": "224c8b8b29540bdff0ffbcea4117fb5b9eab4aeb"
+      }
+    }
+  ]
+}

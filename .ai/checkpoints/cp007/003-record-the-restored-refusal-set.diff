@@ -1,0 +1,26 @@
+diff --git a/docs/SESSION-STATUS.md b/docs/SESSION-STATUS.md
+index 77b277f..f24ba46 100644
+--- a/docs/SESSION-STATUS.md
++++ b/docs/SESSION-STATUS.md
+@@ -7,7 +7,7 @@ Current project state only. Replace stale entries rather than append history. Th
+ 
+ ## Now
+ 
+-- **#469's `PluginDefinition.stage` item is in review as checkpoint `cp006`:** `PluginStage` closes the stage vocabulary to `"prepare" | "compose"`, `VALID_STAGES` becomes a record keyed by that union so a third member owes an entry beside an arm rather than only a set element, and `stageRank` reads both members through a `switch` ending at `unreachable(stage)` instead of testing one member and ranking every other value last. The type is exported from the package entrypoint and allow-listed in `boundary-scan.mjs`, and `plugins.test.ts` pins the declaration, the narrowed field and both arms off the source the way `bind-clock-exhaustive` reads its own. The registration guard still refuses an unknown stage at run time, so the refusal set does not move: `Object.hasOwn` and the retired `Set` answer identically for every input, including `toString` and `__proto__`. The four scanners pass on the working tree; no `npm`, `vitest` or `prettier` run is claimed and required CI on the published head is the authority. What is left of [#469](https://github.com/chahyasantoso/motion5/issues/469) after this is the inward `domain/outcome` imports ADR-099 owns, `exactOptionalPropertyTypes`, and the archived references ADR-093 leaves alone.
++- **#469's `PluginDefinition.stage` item is in review, and its first transport shipped a regression the follow-up checkpoint repairs:** `PluginStage` closes the stage vocabulary to `"prepare" | "compose"`, `VALID_STAGES` becomes a record keyed by that union so a third member owes an entry beside an arm, and `stageRank` reads both members through a `switch` ending at `unreachable(stage)` instead of testing one member and ranking every other value last. `cp006` also swapped the registration guard from `VALID_STAGES.has` to `Object.hasOwn`, which **moved the refusal set**: `Object.hasOwn` coerces its key, so `["prepare"]`, a boxed string and any object whose `toString` spells a member registered as members and the refusal arrived later as `Unhandled variant` from `stageRank`. `cp007` puts identity back behind one named reader, `isPluginStage`, measured against the retired set over twenty inputs with every message byte-identical, and pins the three coercing arrivals as cases. `cp006` also shipped a case that could not pass: it addressed the module-level `stageRank` with `member`'s class-member indent, so the helper refused the region; `cp007` names the column. An independent quality pass found both, and neither was caught by the four scanners, which is the honest limit of a slice prepared where `vitest` cannot run.
+ 
+ ## Next in line
+ 
+diff --git a/docs/guide/api-reference.md b/docs/guide/api-reference.md
+index 4b147f9..224c8b8 100644
+--- a/docs/guide/api-reference.md
++++ b/docs/guide/api-reference.md
+@@ -70,7 +70,7 @@ An `ObservationDefinition` carries `source` and nothing else. There is no `targe
+ 
+ A `PluginDefinition` may declare `requirements`, a record of optional input slots owned by that plugin. Its `compose` receives authored/interpolated values, the track's progress, and that plugin's scoped inputs. `ResolvedPlugins.requirements` reports the bindings resolved for a track.
+ 
+-`PluginDefinition.stage` is optional and closed to `PluginStage`, which is `"prepare"` or `"compose"`. An omitted stage composes, and a plugin that declares `contribute` must name `"prepare"`. It is a union rather than a `string` so that a third stage fails `typecheck` at every reader that owes it a decision instead of silently taking the compose rank; registration still refuses an unknown stage at run time, because a caller arriving from JavaScript or from a separately built module is not held to the declaration. See ADR-092.
++`PluginDefinition.stage` is optional and closed to `PluginStage`, which is `"prepare"` or `"compose"`. An omitted stage composes, and a plugin that declares `contribute` must name `"prepare"`. It is a union rather than a `string` so that a third stage fails `typecheck` at every reader that owes it a decision instead of silently taking the compose rank; registration still refuses an unknown stage at run time, because a caller arriving from JavaScript or from a separately built module is not held to the declaration. That refusal is by identity, so a value that merely coerces to a member, an array or a boxed string, is refused as well rather than admitted and read later. See ADR-092.
+ 
+ **Ports.** `createManualClock`, `createMicrotaskScheduler`, `createManualTriggerPort`,
+ `createDefaultTriggerFactory`, `createTriggerFactory`, and the helper `acceptsExternalSignal`,
