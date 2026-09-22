@@ -1,0 +1,54 @@
+{
+  "version": 1,
+  "checkpoint": "cp011",
+  "base": "984a543d2d12a98b73d8b6aa81eea0b901bdcfcf",
+  "allow": [
+    "docs/",
+    "packages/core/test/",
+    "scripts/"
+  ],
+  "patches": [
+    {
+      "seq": 1,
+      "file": "001-name-the-fourth-invisible-spelling.diff",
+      "sha256": "a3725d9b6606739906518cdef210717dd496561bbccf21ec66e3e63325bd4d27",
+      "message": "docs(record): name the fourth invisible spelling and correct the column claim",
+      "pre": {
+        "docs/ADR-102-the-outcome-algebra-lives-in-lang.md": "28bfe5bfe42fd3362ecec2e266fc6b6817a2f50f",
+        "scripts/boundary-scan.mjs": "f394d26635f53d775abddc1266840f0ec47e6cd7"
+      },
+      "post": {
+        "docs/ADR-102-the-outcome-algebra-lives-in-lang.md": "85bf5edaec1045911250adb225a70246aa7f04a6",
+        "scripts/boundary-scan.mjs": "c14c279eb35df8da283554bdaf9ba02e414bfaf1"
+      }
+    },
+    {
+      "seq": 2,
+      "after": 1,
+      "file": "002-read-specifiers-from-code.diff",
+      "sha256": "e5ca1036b6d1ca09660e8285cfc8ccb452e77eb5815de43b859040cdcdc0fdb4",
+      "message": "fix(boundary): read module specifiers from code rather than from prose",
+      "pre": {
+        "packages/core/test/unit/scripts/boundary-scan.test.ts": "f13bf0c45f1dea8c5288bcd12fc7103b3b7b1423",
+        "scripts/boundary-scan.mjs": "c14c279eb35df8da283554bdaf9ba02e414bfaf1"
+      },
+      "post": {
+        "packages/core/test/unit/scripts/boundary-scan.test.ts": "4c00ee524179b88613806d94a7ff352e8fe7c678",
+        "scripts/boundary-scan.mjs": "58b9b09a8ad3db9bfafcd2781adb953f4e1ea4e2"
+      }
+    },
+    {
+      "seq": 3,
+      "after": 2,
+      "file": "003-correct-the-signature-and-blind-spot-claims.diff",
+      "sha256": "7367506876ee3c2a1523ef8a65155035aae1efa59d002c94b2533dfcd0debe92",
+      "message": "docs(record): correct ADR-102's signature claim and name the repaired gate",
+      "pre": {
+        "docs/ADR-102-the-outcome-algebra-lives-in-lang.md": "85bf5edaec1045911250adb225a70246aa7f04a6"
+      },
+      "post": {
+        "docs/ADR-102-the-outcome-algebra-lives-in-lang.md": "b62ef96370ecd49957b19cd83a3db64d85af62e8"
+      }
+    }
+  ]
+}
