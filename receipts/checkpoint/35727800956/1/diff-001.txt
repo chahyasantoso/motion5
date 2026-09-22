@@ -1,0 +1,185 @@
+diff --git a/packages/core/test/unit/scripts/boundary-scan.test.ts b/packages/core/test/unit/scripts/boundary-scan.test.ts
+index f13bf0c..4c00ee5 100644
+--- a/packages/core/test/unit/scripts/boundary-scan.test.ts
++++ b/packages/core/test/unit/scripts/boundary-scan.test.ts
+@@ -192,0 +193,47 @@ describe("boundary scan predicates", () => {
++  it("reads a specifier from code rather than from prose", () => {
++    // The repair this gate needed before it could ship. Measured on the first cut: a `contract/`
++    // module whose only mention of the layer was the line comment `used to read from
++    // "../domain/outcome"` returned one `inward domain import` from the shipped scan, with no
++    // import anywhere in the file. This repository quotes module paths in prose constantly, so a
++    // gate a documentation edit can turn red is a gate that gets deleted. The second group is the
++    // other direction: stripping a comment must not hide a real import, including one a comment is
++    // interposed into, and must not mistake an escaped slash in a regular expression for a comment
++    // opener and swallow the line after it. See ADR-102.
++    for (const source of [
++      '// it used to read from "../domain/outcome" before ADR-102 moved it',
++      '/** Once imported from "../domain/track". */',
++      '/* from "../domain/exhaustive" */ export const clean = 1;',
++      'const pattern = /domain\//; // from "../domain/track" is prose here',
++    ]) {
++      expect(importsDomainLayer(source)).toBe(false);
++      expect(importsDomainSink(source)).toBe(false);
++    }
++    expect(importsDomainLayer('import /* interposed */ { u } from "../domain/track";')).toBe(true);
++    expect(importsDomainSink('const load = import(/* interposed */ "../domain/exhaustive");')).toBe(
++      true,
++    );
++    const afterRegex = 'const pattern = /domain\//;\nimport { t } from "../domain/track";';
++    expect(importsDomainLayer(afterRegex)).toBe(true);
++  });
++
++  it("refuses the spellings that step around the anchor without widening past it", () => {
++    // A leading `./` and an absent trailing slash are concrete spellings a violator can write and a
++    // reviewer will not see, so the anchor admits both rather than reporting a clean boundary it
++    // does not have. It stays anchored at the front, which is why a longer sibling directory is
++    // still clean. See ADR-102.
++    for (const source of [
++      'import { t } from "./../domain/track";',
++      'import { t } from "../domain";',
++      'import { t } from "../domain/";',
++    ])
++      expect(importsDomainLayer(source)).toBe(true);
++    expect(importsDomainSink('import { u } from "./../domain/exhaustive";')).toBe(true);
++    for (const source of [
++      'import { x } from "../domainfoo";',
++      'import { x } from "../domain-helpers/y";',
++    ]) {
++      expect(importsDomainLayer(source)).toBe(false);
++      expect(importsDomainSink(source)).toBe(false);
++    }
++  });
++
+@@ -279,0 +327,18 @@ describe("boundary scan planted violations", () => {
++  // The same repair, planted through the shipped scanner rather than asserted at the predicate,
++  // because prose is the one thing a `contract/` module reliably contains and the scan is what CI
++  // runs. Red before the extraction read code, where this file alone turned the gate red.
++  it("keeps a contract module whose only domain mention is a comment clean", async () => {
++    const fixture = await mkdtemp(join(tmpdir(), "motion5-domain-prose-"));
++    try {
++      await writeFile(join(fixture, "package.json"), PACKAGES_ONLY);
++      await mkdir(join(fixture, "packages", "core", "src", "contract"), { recursive: true });
++      await writeFile(
++        join(fixture, "packages", "core", "src", "contract", "prose.ts"),
++        '// ADR-102 moved this; it read from "../domain/outcome".\nexport const kept = 1;\n',
++      );
++      expect(await scan(fixture)).toEqual([]);
++    } finally {
++      await rm(fixture, { recursive: true, force: true });
++    }
++  });
++
+diff --git a/scripts/boundary-scan.mjs b/scripts/boundary-scan.mjs
+index c14c279..58b9b09 100644
+--- a/scripts/boundary-scan.mjs
++++ b/scripts/boundary-scan.mjs
+@@ -144,0 +145,62 @@ const moduleSpecifier = /(?:\bfrom\s*|\bimport\s*(?:\(\s*)?|\brequire\s*\(\s*)["
++/**
++ * The end of the string literal opening at `start`, honouring backslash escapes.
++ *
++ * An unterminated literal returns the last index, which consumes the rest of the file. Such a file
++ * does not compile, so this answer only has to be safe rather than useful.
++ */
++function closingDelimiter(source, start, delimiter) {
++  for (let index = start + 1; index < source.length; index += 1) {
++    if (source[index] === "\\") {
++      index += 1;
++      continue;
++    }
++    if (source[index] === delimiter) return index;
++  }
++  return source.length - 1;
++}
++/**
++ * The source with its comments removed and its string literals intact.
++ *
++ * A specifier is a property of code, and `moduleSpecifier` cannot tell code from prose: it accepts
++ * any `from`, `import` or `require` that a quotation mark follows, so a doc comment naming a module
++ * path read as an import of it. That was measured rather than imagined. A `contract/` module whose
++ * only mention of the layer was the line comment `used to read from "../domain/outcome"` returned
++ * one `inward domain import` from the shipped scan with no import anywhere in the file, and this
++ * repository quotes module paths in prose constantly. A gate a documentation edit can turn red is a
++ * gate that gets deleted, so the extraction reads code.
++ *
++ * Scanning left to right is what makes one pass enough. A comment opener inside a string literal is
++ * never reached, because the literal is consumed whole at its opening delimiter; an apostrophe or a
++ * quotation mark inside a comment never opens a literal, because the comment is consumed whole at
++ * its opener. A backslash in code is consumed together with the character after it, which is what
++ * keeps an escaped slash in a regular-expression literal from reading as a comment opener and
++ * swallowing the rest of its line. A comment is replaced rather than deleted so that no two tokens
++ * it separated can join.
++ */
++function withoutComments(source) {
++  let code = "";
++  let index = 0;
++  while (index < source.length) {
++    const char = source[index];
++    if (char === "\\") {
++      code += source.slice(index, index + 2);
++      index += 2;
++    } else if (char === '"' || char === "'" || char === "`") {
++      const end = closingDelimiter(source, index, char);
++      code += source.slice(index, end + 1);
++      index = end + 1;
++    } else if (char === "/" && source[index + 1] === "/") {
++      const end = source.indexOf("\n", index);
++      code += "\n";
++      index = end === -1 ? source.length : end + 1;
++    } else if (char === "/" && source[index + 1] === "*") {
++      const end = source.indexOf("*/", index + 2);
++      code += " ";
++      index = end === -1 ? source.length : end + 2;
++    } else {
++      code += char;
++      index += 1;
++    }
++  }
++  return code;
++}
+@@ -150,11 +212,16 @@ const moduleSpecifier = /(?:\bfrom\s*|\bimport\s*(?:\(\s*)?|\brequire\s*\(\s*)["
+- * Specifiers are read from static imports and re-exports, dynamic imports, and `require` calls.
+- * Four spellings stay invisible. A configured alias and a computed specifier are past the reach of
+- * any pattern over source text. A template-literal delimiter is not beyond it: that is a concrete
+- * specifier this pattern cannot see, because the delimiter class admits an apostrophe and a
+- * quotation mark and nothing else, and widening it wants a backreferenced delimiter so one kind
+- * cannot be closed by another, plus a decision about a substituted literal, which is a computed
+- * specifier in concrete clothing. A block comment interposed between the keyword and its specifier
+- * is invisible for the same shape of reason: the pattern admits only whitespace there, while an
+- * interposed comment is valid TypeScript in all three forms. Each of the last two widens the set
+- * these gates refuse, so each is its own slice with its own cases rather than a correction here.
+- * Neither appears under `packages/core/src` today, measured over this scanner's own walk.
++ * Specifiers are read from code, through `withoutComments`, in static imports and re-exports,
++ * dynamic imports and `require` calls.
++ *
++ * Three spellings stay invisible. A configured alias and a computed specifier are past the reach of
++ * any pattern over source text: an alias is resolved by configuration this scanner does not read,
++ * and a computed specifier has no literal to read. A template-literal delimiter is not past it,
++ * which is what makes it the one a later slice can close without first deciding what an
++ * unresolvable specifier means: the delimiter class admits an apostrophe and a quotation mark and
++ * nothing else, and widening it wants a backreferenced delimiter so one kind cannot close another,
++ * plus a decision about a substituted literal, which is a computed specifier in concrete clothing.
++ * That widens the set these gates refuse, so it is its own slice with its own cases. None of the
++ * three appears under `packages/core/src` today, measured over this scanner's own walk.
++ *
++ * One spelling is still read too eagerly, and it is named rather than chased: a specifier-shaped
++ * phrase inside a string literal. Prose lives in comments here and no such string exists in the
++ * tree, and narrowing it wants the keyword's own statement rather than a tighter delimiter class.
+@@ -163 +230,2 @@ function* importSpecifiers(source) {
+-  for (const match of source.matchAll(moduleSpecifier)) yield match[1].replaceAll("\\", "/");
++  for (const match of withoutComments(source).matchAll(moduleSpecifier))
++    yield match[1].replaceAll("\\", "/");
+@@ -176,0 +245,7 @@ function* importSpecifiers(source) {
++ *
++ * The anchor admits a leading `./` and an absent trailing slash, so `./../domain/track` and a bare
++ * `../domain` are refused alongside `../domain/track`. Neither spelling appears in the tree and
++ * neither is one a formatter would produce, which is the reason they are worth refusing: a gate
++ * whose anchor can be stepped around by a character nobody would notice in review is a gate that
++ * reports a clean boundary it does not have. It stays anchored at the front, so `../domain-helpers`
++ * and `../domainfoo` are still clean.
+@@ -180 +255 @@ export function importsDomainLayer(source) {
+-    if (/^(?:\.\.\/)+domain\//.test(specifier)) return true;
++    if (/^(?:\.\/)?(?:\.\.\/)+domain(?:\/|$)/.test(specifier)) return true;
+@@ -195 +270,2 @@ export function importsDomainSink(source) {
+-    if (/^(?:\.\.\/)+domain\/exhaustive(?:\.(?:js|mjs|ts))?$/.test(specifier)) return true;
++    if (/^(?:\.\/)?(?:\.\.\/)+domain\/exhaustive(?:\.(?:js|mjs|ts))?$/.test(specifier))
++      return true;
