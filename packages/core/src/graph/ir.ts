@@ -226,8 +226,30 @@ const TARGET_UNSUPPORTED = `Observation target is not supported; an observes ent
 const ROLE_UNSUPPORTED = `Observation role is not supported; an observes entry declares an output edge only. ${BIND_INSTEAD}`;
 const PROJECTION_UNSUPPORTED = `Observation projection is not supported; an output edge merges the source patch whole and renames nothing. ${BIND_INSTEAD}`;
 
-function readRemoved(observation: ObservationDefinition, name: string): unknown {
-  return isRecord(observation) ? observation[name] : undefined;
+// The three fields ADR-046 and ADR-047 removed, in refusal order, and the order is load-bearing:
+// target stays first so `V-2` through `V-4` still report a target for a fixture with a role too.
+// One closed set with one reader, because three copied guards are three places a fourth removed
+// field has to be remembered, and the mapper below fails `typecheck` instead of being forgotten.
+// ir.md owns why the read asks whether the key was authored rather than what sits at it. See #469.
+const REMOVED_OBSERVATION_FIELDS = ["target", "role", "projection"] as const;
+type RemovedObservationField = (typeof REMOVED_OBSERVATION_FIELDS)[number];
+function authoredRemoved(
+  observation: ObservationDefinition,
+  name: RemovedObservationField,
+): boolean {
+  return isRecord(observation) && name in observation;
+}
+function removedObservationDiagnostic(field: RemovedObservationField, path: string): Diagnostic {
+  switch (field) {
+    case "target":
+      return diagnostic("observation-target-unsupported", path, TARGET_UNSUPPORTED);
+    case "role":
+      return diagnostic("observation-role-unsupported", path, ROLE_UNSUPPORTED);
+    case "projection":
+      return diagnostic("observation-projection-unsupported", path, PROJECTION_UNSUPPORTED);
+    default:
+      return unreachable(field);
+  }
 }
 
 export function resolveObservationEdge(
@@ -241,23 +263,11 @@ export function resolveObservationEdge(
       diagnostic("observation-source-shape", path, "Observation source must be non-empty."),
     ]);
   }
-  // Three removed fields, one rule id each, because a diagnostic has to name what the author
-  // actually wrote rather than the removal they share. The target guard stays first, so ADR-046's
-  // `V-2` through `V-4` still report a target for a fixture that also carries a role.
-  if (readRemoved(observation, "target") !== undefined) {
-    return refusedOutcome<GraphEdge, Diagnostic>([
-      diagnostic("observation-target-unsupported", path, TARGET_UNSUPPORTED),
-    ]);
-  }
-  if (readRemoved(observation, "role") !== undefined) {
-    return refusedOutcome<GraphEdge, Diagnostic>([
-      diagnostic("observation-role-unsupported", path, ROLE_UNSUPPORTED),
-    ]);
-  }
-  if (readRemoved(observation, "projection") !== undefined) {
-    return refusedOutcome<GraphEdge, Diagnostic>([
-      diagnostic("observation-projection-unsupported", path, PROJECTION_UNSUPPORTED),
-    ]);
+  // One rule id each, because a diagnostic has to name what the author actually wrote rather than
+  // the removal they share, and one loop over the closed set rather than a guard per member.
+  for (const field of REMOVED_OBSERVATION_FIELDS) {
+    if (!authoredRemoved(observation, field)) continue;
+    return refusedOutcome<GraphEdge, Diagnostic>([removedObservationDiagnostic(field, path)]);
   }
   let sourceId: string;
   try {

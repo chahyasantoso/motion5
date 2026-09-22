@@ -1,10 +1,16 @@
 # packages/core/src/graph/ir.ts
 
-## readRemoved
+## authoredRemoved
 
-Reads a removed authored field through the record view.
+Whether an authored observation names a removed field, answered by the key and never by the value at it.
 
 The member is gone from `ObservationDefinition`, so a TypeScript author cannot write it, and a JavaScript author still can. Reading it structurally is what turns "undeclared" into "refused", which is the difference between a removal and a field accepted and then ignored. See ADR-046.
+
+It was `observation[name] !== undefined`, which asked the wrong one of the two questions available. `{ source: "root", target: undefined }` loaded clean while `{ source: "root", target: "x" }` was refused, so the removal was bypassable by writing the field and leaving it empty, which is exactly how a spread of an older document arrives. GUARDRAILS states the rule for the field it was written for, `ProjectDefinition.templates`, refused "by its key rather than by the value at it, because an authored `undefined` is still a key a reader would ignore"; `contract/validate-v5.ts` already reads its own two removed fields that way, as `"use" in track` and `"templates" in input`. This is the third reader agreeing with them rather than a new decision. `V-22` through `V-24` pin it, and it changes the refusal set: the bypass becomes a refusal, and nothing that was refused stops being refused.
+
+An explicit `undefined` survives the whole path, which is what makes the bypass real rather than theoretical. `validateSchemaV5`'s clone copies `Object.entries(value)`, and an own enumerable key whose value is `undefined` is in that list, so the key reaches `buildGraphIR` intact. `contract/migrate-v4-to-v5.ts` does round-trip through JSON and would drop it, and the runtime does not call that function: callers migrate at their own boundary and hand the loader v5 data. So the loader is the layer that has to ask.
+
+The field set is closed, ordered, and read once. `REMOVED_OBSERVATION_FIELDS` is the refusal order and target is first so ADR-046's `V-2` through `V-4` keep reporting a target for a fixture that also carries a role; `removedObservationDiagnostic` maps a member to its own rule id and message through a total `switch` ending at `unreachable`. Three copied guards were three places a fourth removed field had to be remembered at the same time, and one of them silently inheriting another's rule id is the drift that shape invites. A fourth member now costs a tuple entry and a compiler error at the mapper. See ADR-092 and ADR-096.
 
 ## groupsAuthoring
 
