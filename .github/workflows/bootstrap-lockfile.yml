@@ -1,7 +1,7 @@
 name: Bootstrap lockfile (manual)
 
 # Run this once from the Actions tab while package-lock.json is absent.
-# It generates the lockfile with Node 24/npm, verifies npm ci, and commits it.
+# It generates the lockfile with Node 24.21.0/npm, verifies npm ci, and commits it.
 
 on:
   workflow_dispatch:
@@ -21,7 +21,7 @@ permissions:
 
 jobs:
   bootstrap:
-    name: generate package-lock.json (node 24)
+    name: generate package-lock.json (node 24.21.0)
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -31,10 +31,10 @@ jobs:
           ref: ${{ inputs.branch }}
           fetch-depth: 0
 
-      - name: Set up Node 24
+      - name: Set up Node 24.21.0
         uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version: 24.21.0
 
       - name: Generate lockfile
         run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund

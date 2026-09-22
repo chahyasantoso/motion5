@@ -10,7 +10,7 @@ The seven existing check names remain intact because branch-protection configura
 
 ## Quality and independent evidence
 
-`quality (node 24)` is the single full-suite execution owner. Typechecking, read-only formatting, discovery, and full-suite execution each run after a successful install even when an earlier check fails. Failures are not marked continue-on-error: the job remains failed. Cancellation does not become a successful result.
+`quality (node 24.21.0)` is the single full-suite execution owner. Typechecking, read-only formatting, discovery, and full-suite execution each run after a successful install even when an earlier check fails. Failures are not marked continue-on-error: the job remains failed. Cancellation does not become a successful result.
 
 Discovery invokes the installed Vitest CLI with the repository configuration for the whole suite, the integration filter, and the end-to-end filter. These commands collect tests without executing test bodies. Their machine-readable inventories must be nonempty. Each filtered inventory must equal its projection from the full inventory, including duplicate-name multiplicity.
 
@@ -20,17 +20,17 @@ Evidence is uploaded under `ci-evidence-<run-id>-<attempt>` for 14 days. Invento
 
 ## Compatibility check names, not duplicate test runs
 
-`integration (node 24)` and `end-to-end (node 24)` always evaluate their dependency result. They require successful quality completion, download the artifact from this same run and attempt, and independently verify its identity, discovery parity, and corresponding passed results. Absent artifacts, failed or cancelled producers, skipped evidence, and mismatched identities cannot produce a green placeholder. Neither job installs dependencies or executes the suite again.
+`integration (node 24.21.0)` and `end-to-end (node 24.21.0)` always evaluate their dependency result. They require successful quality completion, download the artifact from this same run and attempt, and independently verify its identity, discovery parity, and corresponding passed results. Absent artifacts, failed or cancelled producers, skipped evidence, and mismatched identities cannot produce a green placeholder. Neither job installs dependencies or executes the suite again.
 
 These contexts intentionally depend on all quality evidence, including formatting and typechecking. Behavioral evidence is still collected when either fails, but a red quality job does not yield green compatibility contexts.
 
 ## Distinct assertions retained
 
-`boundaries (node 24)` runs `node scripts/boundary-scan.mjs` against the actual repository. `read-budget (node 24)` runs `node scripts/read-budget-scan.mjs` against the actual core source and sister documents. Their scanner unit tests remain in the single full suite instead of running twice. The existing convenience package scripts still run scans plus their self-tests for manual use.
+`boundaries (node 24.21.0)` runs `node scripts/boundary-scan.mjs` against the actual repository. `read-budget (node 24.21.0)` runs `node scripts/read-budget-scan.mjs` against the actual core source and sister documents. Their scanner unit tests remain in the single full suite instead of running twice. The existing convenience package scripts still run scans plus their self-tests for manual use.
 
-`build (node 24)` compiles declaration output and checks both `packages/core/dist/index.js` and `packages/core/dist/index.d.ts`. These assertions are unchanged.
+`build (node 24.21.0)` compiles declaration output and checks both `packages/core/dist/index.js` and `packages/core/dist/index.d.ts`. These assertions are unchanged.
 
-`performance (node 24)` runs the existing benchmark and uploads its report. The benchmark exits nonzero when its structural budgets fail, and the workflow does not use continue-on-error. The advisory label and 2026-08-17 expiry in historical budget metadata are not a current exemption from failure. This slice preserves behavior and does not claim to have inspected or changed branch protection, recalibrated the benchmark, or promoted the synthetic measurement into runtime performance evidence.
+`performance (node 24.21.0)` runs the existing benchmark and uploads its report. The benchmark exits nonzero when its structural budgets fail, and the workflow does not use continue-on-error. The advisory label and 2026-08-17 expiry in historical budget metadata are not a current exemption from failure. This slice preserves behavior and does not claim to have inspected or changed branch protection, recalibrated the benchmark, or promoted the synthetic measurement into runtime performance evidence.
 
 ## Formatting and API-only contributions
 

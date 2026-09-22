@@ -15,11 +15,11 @@ permissions:
   contents: read
 
 env:
-  NODE_VERSION: 24
+  NODE_VERSION: 24.21.0
 
 jobs:
   quality:
-    name: quality (node 24)
+    name: quality (node 24.21.0)
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -30,7 +30,7 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version: ${{ env.NODE_VERSION }}
           cache: npm
       - run: npm ci --ignore-scripts --no-audit --no-fund
         id: install
@@ -57,7 +57,7 @@ jobs:
           retention-days: 14
 
   integration:
-    name: integration (node 24)
+    name: integration (node 24.21.0)
     needs: quality
     if: always()
     runs-on: ubuntu-latest
@@ -74,7 +74,7 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version: ${{ env.NODE_VERSION }}
       - uses: actions/download-artifact@v4
         with:
           name: ci-evidence-${{ github.run_id }}-${{ github.run_attempt }}
@@ -82,7 +82,7 @@ jobs:
       - run: node scripts/ci-evidence.mjs verify integration
 
   boundaries:
-    name: boundaries (node 24)
+    name: boundaries (node 24.21.0)
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -92,13 +92,13 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version: ${{ env.NODE_VERSION }}
           cache: npm
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - run: node scripts/boundary-scan.mjs
 
   read-budget:
-    name: read-budget (node 24)
+    name: read-budget (node 24.21.0)
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -108,13 +108,13 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version: ${{ env.NODE_VERSION }}
           cache: npm
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - run: node scripts/read-budget-scan.mjs
 
   build:
-    name: build (node 24)
+    name: build (node 24.21.0)
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -124,7 +124,7 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version: ${{ env.NODE_VERSION }}
           cache: npm
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - run: npx tsc -p packages/core/tsconfig.build.json
@@ -132,7 +132,7 @@ jobs:
       - run: test -f packages/core/dist/index.d.ts
 
   end-to-end:
-    name: end-to-end (node 24)
+    name: end-to-end (node 24.21.0)
     needs: quality
     if: always()
     runs-on: ubuntu-latest
@@ -149,7 +149,7 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version: ${{ env.NODE_VERSION }}
       - uses: actions/download-artifact@v4
         with:
           name: ci-evidence-${{ github.run_id }}-${{ github.run_attempt }}
@@ -157,7 +157,7 @@ jobs:
       - run: node scripts/ci-evidence.mjs verify end-to-end
 
   performance:
-    name: performance (node 24)
+    name: performance (node 24.21.0)
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -167,7 +167,7 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version: ${{ env.NODE_VERSION }}
           cache: npm
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - run: npm run benchmark

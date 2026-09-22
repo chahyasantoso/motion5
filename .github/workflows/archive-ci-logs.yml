@@ -55,7 +55,7 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version: 24.21.0
       - name: Resolve workflow from GitHub metadata
         id: resolve
         env:
@@ -125,7 +125,7 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version: 24.21.0
       - name: Retry only evidence recovery on a fresh runner
         env:
           GH_TOKEN: ${{ github.token }}
