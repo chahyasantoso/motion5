@@ -42,7 +42,7 @@ index 4d39b2c..0776835 100644
 +  );
 +}
  function relative(file) {
-@@ -61,8 +61,8 @@ export function verify(inventory, result, expected, scope {
+@@ -61,8 +61,8 @@ export function verify(inventory, result, expected, scope) {
    assert.ok(Object.hasOwn(filters, scope), "Unknown evidence scope");
    assert.equal(inventory.version, 1);
    assert.equal(result.version, 1);
