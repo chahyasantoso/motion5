@@ -267,8 +267,7 @@ export function importsDomainLayer(source) {
  */
 export function importsDomainSink(source) {
   for (const specifier of importSpecifiers(source))
-    if (/^(?:\.\/)?(?:\.\.\/)+domain\/exhaustive(?:\.(?:js|mjs|ts))?$/.test(specifier))
-      return true;
+    if (/^(?:\.\/)?(?:\.\.\/)+domain\/exhaustive(?:\.(?:js|mjs|ts))?$/.test(specifier)) return true;
   return false;
 }
 export function bannedSymbol(source) {
