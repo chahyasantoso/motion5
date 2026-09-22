@@ -1,0 +1,12 @@
+prepare isolated candidate	Apply the stack, adjudicate by digest, then format the surviving tip	﻿2026-09-22T13:08:04.4130879Z ##[group]Run set -euo pipefail
+prepare isolated candidate	Apply the stack, adjudicate by digest, then format the surviving tip	2026-09-22T13:08:04.4131259Z ^[[36;1mset -euo pipefail^[[0m
+prepare isolated candidate	Apply the stack, adjudicate by digest, then format the surviving tip	2026-09-22T13:08:04.4131583Z ^[[36;1mexport CANDIDATE_ROOT="$GITHUB_WORKSPACE/candidate"^[[0m
+prepare isolated candidate	Apply the stack, adjudicate by digest, then format the surviving tip	2026-09-22T13:08:04.4132021Z ^[[36;1mexport FORMATTER_ROOT="$RUNNER_TEMP/motion5-formatter"^[[0m
+prepare isolated candidate	Apply the stack, adjudicate by digest, then format the surviving tip	2026-09-22T13:08:04.4132458Z ^[[36;1mexport CANDIDATE_OUTPUT="$RUNNER_TEMP/candidate.json"^[[0m
+prepare isolated candidate	Apply the stack, adjudicate by digest, then format the surviving tip	2026-09-22T13:08:04.4132904Z ^[[36;1mnode trusted/scripts/automation-checkpoint.mjs prepare^[[0m
+prepare isolated candidate	Apply the stack, adjudicate by digest, then format the surviving tip	2026-09-22T13:08:04.4169675Z shell: /usr/bin/bash -e {0}
+prepare isolated candidate	Apply the stack, adjudicate by digest, then format the surviving tip	2026-09-22T13:08:04.4169960Z env:
+prepare isolated candidate	Apply the stack, adjudicate by digest, then format the surviving tip	2026-09-22T13:08:04.4170204Z   TRUSTED_SHA: 1f72a1e946544468d03128a5598d74b275999a1e
+prepare isolated candidate	Apply the stack, adjudicate by digest, then format the surviving tip	2026-09-22T13:08:04.4170533Z ##[endgroup]
+prepare isolated candidate	Apply the stack, adjudicate by digest, then format the surviving tip	2026-09-22T13:08:04.4865611Z ".ai/checkpoints/cp012/001-evidence-runtime-pin.diff" does not match its declared SHA-256
+prepare isolated candidate	Apply the stack, adjudicate by digest, then format the surviving tip	2026-09-22T13:08:04.4930410Z ##[error]Process completed with exit code 1.
