@@ -9,12 +9,7 @@ import {
 import { SUPPORTED_TRIGGER_TYPES } from "./v5";
 import { readAuthoredLeaf } from "./authored-leaf";
 import { unreachable } from "../lang/exhaustive";
-import {
-  acceptedOutcome,
-  refusedOutcome,
-  refusedOutcomeFrom,
-  type Outcome,
-} from "../lang/outcome";
+import { acceptedOutcome, refusedOutcome, refusedOutcomeFrom, type Outcome } from "../lang/outcome";
 import { describeDiagnostics, diagnostic } from "./diagnostics";
 import { scopedRuleId, type KeyframeRuleId, type KeyframeRuleScope } from "./rule-id";
 import {
