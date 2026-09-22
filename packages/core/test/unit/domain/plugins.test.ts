@@ -1,6 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
+import { fileURLToPath } from "node:url";
 import type { ImmutableRecord } from "../../../src/domain/values";
 import { PluginRegistry } from "../../../src/domain/plugins";
+import { code, member } from "../../helpers/source-region";
+
+const PLUGINS = code(fileURLToPath(new URL("../../../src/domain/plugins.ts", import.meta.url)));
 
 describe("plugin registry", () => {
   const plugin = (name: string, extra: Record<string, unknown> = {}) => ({
@@ -241,6 +245,34 @@ describe("plugin registry", () => {
       /priority/,
     );
     expect(() => registry.register(plugin("bad-stage", { stage: "typo" }))).toThrow(/stage/);
+  });
+
+  it("declares one closed stage vocabulary and reads it exhaustively", () => {
+    // A literal union leaves no run-time witness, so the guarantee is read off the source the way
+    // `bind-clock-exhaustive` reads its own. Red before issue #469's slice, where `stage` was
+    // `string` and `stageRank` tested one member and ranked everything else last, so a third stage
+    // took the compose rank without any reader owing it a decision. The registration guard above
+    // still refuses an unknown stage, because that is the arrival a caller can reach from
+    // JavaScript. See ADR-092 and ADR-097.
+    expect(PLUGINS).toContain('export type PluginStage = "prepare" | "compose";');
+    expect(PLUGINS).toContain("readonly stage?: PluginStage;");
+    expect(PLUGINS).not.toContain("readonly stage?: string;");
+    const rank = member(PLUGINS, "function stageRank(stage: PluginStage): number {", "");
+    expect(rank).toContain('case "prepare":');
+    expect(rank).toContain('case "compose":');
+    expect(rank).toContain("unreachable(stage)");
+  });
+
+  it("refuses a stage that only coerces to a member, the way the retired set did", () => {
+    // `Object.hasOwn` coerces its key, so each of these registered as a member and then reached
+    // `stageRank`, which owes no arm to a value the union cannot hold: the refusal arrived as
+    // `Unhandled variant` at the next compose instead of at the registration that caused it. Only
+    // JavaScript can make these arrivals, which is why the run-time read is the one that owes them.
+    const registry = new PluginRegistry();
+    const refused = [["prepare"], new String("compose"), { toString: () => "prepare" }];
+    for (const stage of refused) {
+      expect(() => registry.register(plugin("coerces", { stage }))).toThrow(/stage/);
+    }
   });
 
   it("detaches resolved plugins from later registry mutation", () => {
