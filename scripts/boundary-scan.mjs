@@ -68,6 +68,7 @@ const allowedPublicExports = new Set([
   "LiveValueKeyError",
   "PluginRegistry",
   "PluginDefinition",
+  "PluginStage",
   "ResolvedPlugins",
   "assertClock",
   "createManualClock",
