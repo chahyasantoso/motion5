@@ -143,28 +143,51 @@ export function importsTestingEntrypoint(source) {
 }
 const moduleSpecifier = /(?:\bfrom\s*|\bimport\s*(?:\(\s*)?|\brequire\s*\(\s*)["']([^"']+)["']/g;
 /**
- * The retired sink path, and only that path.
+ * Every module specifier this scanner can see, normalised to forward slashes.
  *
- * Module specifiers are extracted from static imports and re-exports, dynamic imports, and
- * `require` calls before the exact relative path is tested. The extraction sees `.js`, `.mjs`, and
- * `.ts` suffixes plus either path separator. Three spellings stay invisible: a configured alias, a
- * computed specifier, and a block comment interposed between the keyword and its specifier, because
- * `moduleSpecifier` admits only whitespace there while an interposed comment is valid TypeScript in
- * a static import, a dynamic import and a `require` call alike. Teaching it comments widens the set
- * this gate refuses, so that is its own slice with its own cases rather than a correction here.
- * Five inward imports into domain survive: `contract/migrate-v4-to-v5.ts` and
- * `contract/validate-v5.ts` reach `domain/outcome`, `adapters/interpolator/gsap.ts` reaches
- * `domain/keyframe-compiler`, and `adapters/dom.ts` plus `adapters/index.ts` reach `domain/plugins`
- * type-only. A predicate over every `domain/` import would therefore refuse the tree it is added
- * to, and a gate introduced red earns an exemption list instead of a fix. This one is green the
- * moment the move lands and refuses the exact regression the move exists to prevent. ADR-099 names
- * all five and says which slice each belongs to.
+ * One owner of the extraction, because the two predicates below ask different questions of the same
+ * list, and a second copy of the walk is how they end up disagreeing about what a specifier is.
+ * Specifiers are read from static imports and re-exports, dynamic imports, and `require` calls.
+ * Three spellings stay invisible: a configured alias, a computed specifier, and a block comment
+ * interposed between the keyword and its specifier, because `moduleSpecifier` admits only
+ * whitespace there while an interposed comment is valid TypeScript in all three forms. Teaching it
+ * comments widens the set these gates refuse, so that is its own slice with its own cases rather
+ * than a correction here.
+ */
+function* importSpecifiers(source) {
+  for (const match of source.matchAll(moduleSpecifier)) yield match[1].replaceAll("\\", "/");
+}
+/**
+ * Any relative import of the domain layer, which is what ARCHITECTURE section 2 actually forbids.
+ *
+ * ADR-102 relocated the outcome algebra to `lang/` and dropped the `E = Diagnostic` default that
+ * made it reach `contract/`. Those were the only two `contract/` imports of `domain/` in the tree,
+ * so this predicate is green on `contract/` and on `ports/`, and it is applied to exactly those two
+ * layers. `adapters/` keeps the narrower retired-sink rule below, because three real adapter
+ * imports of `domain/` survive: `adapters/interpolator/gsap.ts` reaches `domain/keyframe-compiler`
+ * for a value, and `adapters/dom.ts` plus `adapters/index.ts` reach `domain/plugins` type-only.
+ * Widening this rule to adapters would refuse the tree it was added to, and a gate introduced red
+ * earns an exemption list instead of a fix. ADR-099 named all three and ADR-102 records why they
+ * stay their own slice.
+ */
+export function importsDomainLayer(source) {
+  for (const specifier of importSpecifiers(source))
+    if (/^(?:\.\.\/)+domain\//.test(specifier)) return true;
+  return false;
+}
+/**
+ * The retired sink path, and only that path, for the one layer the broad rule cannot reach yet.
+ *
+ * Kept as its own question rather than folded into `importsDomainLayer`, because `adapters/` may
+ * import `domain/` and may not import the sink. The extraction sees `.js`, `.mjs`, and `.ts`
+ * suffixes plus either path separator, and the anchored path is why `../lang/exhaustive` and
+ * `../domain/exhaustive-helpers` stay clean. `contract/` and `ports/` no longer carry this rule: a
+ * retired-sink import is a `domain/` import, so `importsDomainLayer` already refuses it there, and
+ * two spellings of one question is the duplication this project files against itself.
  */
 export function importsDomainSink(source) {
-  for (const match of source.matchAll(moduleSpecifier)) {
-    const specifier = match[1].replaceAll("\\", "/");
+  for (const specifier of importSpecifiers(source))
     if (/^(?:\.\.\/)+domain\/exhaustive(?:\.(?:js|mjs|ts))?$/.test(specifier)) return true;
-  }
   return false;
 }
 export function bannedSymbol(source) {
@@ -189,7 +212,9 @@ function checkCoreSource(source, file, layer, violations) {
   if (layer !== "adapters" && (importsBoundary(source) || importsRenderer(source)))
     violations.push(`${file}: renderer or engine import`);
   if (bannedSymbol(source)) violations.push(`${file}: banned compatibility symbol`);
-  if (["contract", "ports", "adapters"].includes(layer) && importsDomainSink(source))
+  if (["contract", "ports"].includes(layer) && importsDomainLayer(source))
+    violations.push(`${file}: inward domain import`);
+  if (layer === "adapters" && importsDomainSink(source))
     violations.push(`${file}: retired domain sink import`);
 }
 async function scanFiles(directory, scanRoot, layer, violations) {
