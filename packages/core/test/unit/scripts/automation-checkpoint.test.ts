@@ -451,7 +451,8 @@ describe("a checkpoint applies in a disposable checkout and publishes what it de
       assert.ok(!candidate.includes("contents: write") && !candidate.includes("secrets."));
       assert.ok(candidate.includes("persist-credentials: false"));
       assert.ok(candidate.includes("automation-checkpoint.mjs prepare"));
-      assert.ok(candidate.includes('paths: [".ai/checkpoints/**"]'));
+      assert.ok(candidate.includes('paths: [".ai/checkpoints/*/manifest.json"]'));
+      assert.ok(candidate.includes("fetch-depth: 30"));
       assert.ok(candidate.includes("AI-Checkpoint-Set: "));
       assert.ok(reporter.includes("AI checkpoint"));
       assert.ok(reporter.includes("automation-checkpoint.mjs publish"));
