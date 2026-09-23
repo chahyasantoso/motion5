@@ -36,7 +36,10 @@ export function createTriggerFactory(options: TriggerFactoryOptions = {}): Trigg
       // The loop fields are forwarded rather than interpreted here. This function selects a driver;
       // what the driver does with time belongs to the driver and its loop cycle. See ADR-040.
       if (trigger.type === "time")
-        return createTimeDriver(trigger.duration, { repeat: trigger.repeat, yoyo: trigger.yoyo });
+        return createTimeDriver(trigger.duration, {
+          ...(trigger.repeat === undefined ? {} : { repeat: trigger.repeat }),
+          ...(trigger.yoyo === undefined ? {} : { yoyo: trigger.yoyo }),
+        });
       if (trigger.type === "scroll") {
         const source = options.scroll?.({ ...context, trigger });
         if (source === undefined) {

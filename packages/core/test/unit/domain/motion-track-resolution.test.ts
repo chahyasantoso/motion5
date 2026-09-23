@@ -36,9 +36,9 @@ function setup(ids: readonly string[], options: SetupOptions = {}) {
     scheduler,
     tracks: ids.map((id) => ({ id })),
     resolveTrack: registry.resolveTrack,
-    stagger: options.stagger,
-    disposeTracks: options.disposeTracks,
-    invalidate: options.invalidate,
+    ...(options.stagger === undefined ? {} : { stagger: options.stagger }),
+    ...(options.disposeTracks === undefined ? {} : { disposeTracks: options.disposeTracks }),
+    ...(options.invalidate === undefined ? {} : { invalidate: options.invalidate }),
   });
   return { clock, scheduler, interpolator, registry, created, motion };
 }

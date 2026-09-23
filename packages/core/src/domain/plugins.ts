@@ -15,6 +15,7 @@ import type {
 } from "../contract/v5";
 import { flattenAuthoredKeyframes, type FlattenedKeyframe } from "./keyframe-groups";
 import type { ImmutableRecord } from "./values";
+import type { OutputSerializer, RenderMetadata } from "../ports/render-metadata";
 
 /**
  * The values one plugin's declared requirement slots resolved to, keyed by slot name.
@@ -47,6 +48,22 @@ export interface TrackConfigView {
   readonly id?: string;
   readonly duration?: number;
 }
+
+/**
+ * The one constructor of a {@link TrackConfigView}, so an absent field is omitted rather than
+ * written as `undefined`. Under `exactOptionalPropertyTypes` the two are different types, and a
+ * plugin's `contribute` must not be able to tell a track with no duration from one whose duration
+ * was forwarded as `undefined`. Frozen, because every reader is handed it by reference. See #473.
+ */
+export function trackConfigView(
+  id: string | undefined,
+  duration: number | undefined,
+): TrackConfigView {
+  return Object.freeze({
+    ...(id === undefined ? {} : { id }),
+    ...(duration === undefined ? {} : { duration }),
+  });
+}
 export interface Contribution {
   readonly keyframes?: Readonly<Record<string, AuthoredProperty>>;
   readonly tweenVars?: Readonly<Record<string, unknown>>;
@@ -64,7 +81,7 @@ export type PluginContributor = (
   track: TrackConfigView,
 ) => Contribution | undefined;
 export type PluginKeyClaim = (key: string) => boolean;
-export type OutputSerializer = (value: unknown) => unknown;
+
 /**
  * One input slot a plugin declares and an author may bind through `keyframes.<plugin>.requires`.
  *
@@ -116,9 +133,6 @@ export interface PreparedContribution {
  * restating the member, so what turns a plugin output into something writable has one declaration.
  * See ADR-073.
  */
-export interface RenderMetadata {
-  readonly outputSerializers: Readonly<Record<string, OutputSerializer>>;
-}
 export interface ResolvedPlugins extends RenderMetadata {
   readonly plugins: readonly PluginDefinition[];
   readonly diagnostics: readonly Diagnostic[];
@@ -312,7 +326,7 @@ function prepareContributions(
         plugin.contribute(
           key,
           readCompilableStops(authored[key]),
-          Object.freeze({ id: track.id, duration: track.duration }),
+          trackConfigView(track.id, track.duration),
         ),
         plugin,
         authoredPath(key),

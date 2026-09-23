@@ -83,7 +83,7 @@ function rig(writeValues: ProjectRuntimeOptions["writeValues"]): {
   const runtime = new ProjectRuntime(PROJECT, {
     clock: createManualClock(),
     compose,
-    writeValues,
+    ...(writeValues === undefined ? {} : { writeValues }),
     setProgress: (nodeId, progress) => {
       journal.progressed.push([nodeId, progress]);
     },
