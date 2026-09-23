@@ -18,6 +18,7 @@ export const MAX_TRANSPORT_BYTES = 32000;
 const SHA = /^[0-9a-f]{40}$/;
 const DIGEST = /^[0-9a-f]{64}$/;
 const CHECKPOINT_ID = /^cp[0-9]{3}$/;
+const CHECKPOINT_FILE = /^\.ai\/checkpoints\/(cp[0-9]{3})\/[A-Za-z0-9][A-Za-z0-9.-]*$/;
 const PATCH_FILE = /^([0-9]{3})-[a-z0-9][a-z0-9-]*\.diff$/;
 const HUNK_HEADER = /^@@ -([0-9]+)(?:,([0-9]+))? \+([0-9]+)(?:,([0-9]+))? @@/;
 const FILE_HEADER = /^diff --git a\/(.+) b\/(.+)$/;
@@ -368,10 +369,14 @@ export function checkpointDirectory(manifest) {
   return `${CHECKPOINT_ROOT}/${manifest.checkpoint}`;
 }
 
+function manifestFile(directory) {
+  return `${directory}/manifest.json`;
+}
+
 export function checkpointFiles(manifest) {
   const directory = checkpointDirectory(manifest);
   const patches = manifest.patches.map((patch) => `${directory}/${patch.file}`);
-  return [`${directory}/manifest.json`, ...patches];
+  return [manifestFile(directory), ...patches];
 }
 
 /** Every checkpoint file, the manifest included, must fit in one transport call. */
@@ -381,6 +386,50 @@ export function transportBound(file, bytes) {
     `${JSON.stringify(file)} exceeds the ${MAX_TRANSPORT_BYTES}-byte per-file transport bound; ` +
       "one file is one transport call, so split the patch into more, smaller patches",
   );
+}
+
+/**
+ * Store discovery, stated once for both verifiers. Preparation lists the committed head tree with
+ * Git and the publisher reads it from the tree API; each hands over the same entry shape, so the
+ * mode, the per-file transport bound and the one-folder rule cannot drift between them. The store
+ * is sized from tree entries, so an oversized file is refused before any byte of it is read.
+ */
+export function checkpointStore(entries) {
+  ensure(
+    Array.isArray(entries) && entries.length > 0,
+    `No checkpoint is stored under ${CHECKPOINT_ROOT}`,
+  );
+  const ids = new Set();
+  for (const entry of entries) {
+    const match = CHECKPOINT_FILE.exec(entry?.path ?? "");
+    ensure(match !== null, `${JSON.stringify(entry?.path)} is not a checkpoint file`);
+    ensure(
+      entry.type === "blob" && entry.mode === MODE,
+      `${JSON.stringify(entry.path)} must be a regular file`,
+    );
+    transportBound(entry.path, entry.size);
+    ids.add(match[1]);
+  }
+  ensure(ids.size === 1, "Exactly one pending checkpoint is supported");
+  const [id] = ids;
+  const manifest = manifestFile(`${CHECKPOINT_ROOT}/${id}`);
+  const files = entries.map((entry) => entry.path).sort();
+  // The manifest deletion that starts a repair matches the workflow filter, so it lands here.
+  ensure(
+    files.includes(manifest),
+    `nothing is sealed: ${JSON.stringify(manifest)} is absent. A store without its manifest is ` +
+      "not a request; this is the expected refusal after deleting a manifest to repair it, so " +
+      "push the missing patches and then the manifest",
+  );
+  return { id, files, manifest };
+}
+
+/** The stored manifest must be valid, name its own folder, and seal exactly the stored files. */
+export function sealedRequest(value, store) {
+  const manifest = checkpointManifest(value);
+  ensure(manifest.checkpoint === store.id, "The manifest names another checkpoint");
+  sealedStore(store.files, manifest);
+  return manifest;
 }
 
 function difference(actual, manifest) {
@@ -420,7 +469,15 @@ export function assemblyRange(range, base) {
       "the base is stale or the assembly range is too long",
   );
   range.forEach((commit, index) => {
-    ensure(SHA.test(commit.sha ?? ""), "an assembly commit needs a full commit SHA");
+    ensure(
+      isObject(commit) && typeof commit.sha === "string" && SHA.test(commit.sha),
+      "an assembly commit needs a full commit SHA",
+    );
+    ensure(
+      Array.isArray(commit.parents) &&
+        commit.parents.every((parent) => typeof parent === "string" && SHA.test(parent)),
+      `assembly commit ${commit.sha} needs its parents as full commit SHAs`,
+    );
     ensure(
       commit.parents.length !== 0,
       `stale base: the assembly range reached the root commit ${commit.sha} without meeting it`,
@@ -462,4 +519,44 @@ export function assemblyAggregate(changed, manifest) {
     missing.length === 0 && stray.length === 0,
     `the assembly range must change exactly the declared checkpoint files; ${detail}`,
   );
+}
+
+/**
+ * GitHub's compare status is a closed union, so it is classified exhaustively and an unknown value
+ * is refused rather than read as either answer.
+ */
+export function compareRelation(status) {
+  switch (status) {
+    case "ahead":
+    case "identical":
+    case "behind":
+    case "diverged":
+      return status;
+    default:
+      throw new Error(`Unknown compare status ${JSON.stringify(status)}`);
+  }
+}
+
+/** Whether the compared head contains the compared base. */
+export function descends(status) {
+  const relation = compareRelation(status);
+  return relation === "ahead" || relation === "identical";
+}
+
+/** An assembly range is at least one commit ahead of its base, and each other relation says why not. */
+export function assemblyRelation(status) {
+  const relation = compareRelation(status);
+  switch (relation) {
+    case "ahead":
+      return;
+    case "identical":
+      throw new Error("The head is the manifest base; nothing was assembled");
+    case "behind":
+    case "diverged":
+      throw new Error(
+        "Stale base; the patch set was cut against a commit the head does not descend from",
+      );
+    default:
+      throw new Error(`Unclassified compare relation ${JSON.stringify(relation)}`);
+  }
 }
