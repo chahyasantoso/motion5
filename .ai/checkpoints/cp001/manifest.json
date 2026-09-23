@@ -1,0 +1,140 @@
+{
+  "version": 1,
+  "checkpoint": "cp001",
+  "base": "b609fbdaecf3fe99283dac337d9653cd409bc400",
+  "allow": [
+    "docs/",
+    "packages/core/src/plugins/",
+    "packages/core/test/unit/plugins/"
+  ],
+  "patches": [
+    {
+      "seq": 1,
+      "file": "001-solve-member-read-model.diff",
+      "sha256": "afde655db3035089f585e4e841b670ea4458d58ef9d9d6be6a71d10819958985",
+      "message": "refactor(ik): one solve-member read model, and fabrik reads it",
+      "pre": {
+        "packages/core/src/plugins/fabrik.ts": "42d934afd80ef0146ba8d65381e9ac9ddf8f4fd8",
+        "packages/core/src/plugins/ik-member.ts": null
+      },
+      "post": {
+        "packages/core/src/plugins/fabrik.ts": "c90af3d07e7c32ed321fc5e9bb3f54966c1f01cd",
+        "packages/core/src/plugins/ik-member.ts": "9c2a04ebfb83091da1fd5eda508213aa612c926e"
+      }
+    },
+    {
+      "seq": 2,
+      "after": 1,
+      "file": "002-chain-analytic-dispatch-owners.diff",
+      "sha256": "cdb168c4ba2d275165516090164c5c950e535ab7f240ab61fdeec22faa7ddc52",
+      "message": "refactor(ik): chain adapter, closed-form strategy and exhaustive dispatch get one owner each",
+      "pre": {
+        "packages/core/src/plugins/ik-analytic.ts": null,
+        "packages/core/src/plugins/ik-chain.ts": null,
+        "packages/core/src/plugins/ik-solve.ts": null
+      },
+      "post": {
+        "packages/core/src/plugins/ik-analytic.ts": "0a837dc78866024dfaa469ec8440e05265792574",
+        "packages/core/src/plugins/ik-chain.ts": "5e78d2d9df4f2fa59785849e7c5b69da88fe02e0",
+        "packages/core/src/plugins/ik-solve.ts": "45f1e12519969fc29d1f95545b228d9e4bac7ab5"
+      }
+    },
+    {
+      "seq": 3,
+      "after": 2,
+      "file": "003-ik-keeps-plugin-only.diff",
+      "sha256": "de6bf5fc4f2f83391a6a3df5881de3d4947807efa2055eba83e4cbe11da05622",
+      "message": "refactor(ik): ik.ts keeps the plugin declaration and its wiring only",
+      "pre": {
+        "packages/core/src/plugins/ik.ts": "221b78133ce5775b694eb7b33726d5192b6eb4bf"
+      },
+      "post": {
+        "packages/core/src/plugins/ik.ts": "efd538ff898a791553438838fa8d018ed5835070"
+      }
+    },
+    {
+      "seq": 4,
+      "after": 3,
+      "file": "004-solve-cases-read-solve-member.diff",
+      "sha256": "24fd02f1d2ee75a90759d58d09cc410fa05d8611e2dbb4470404f573b83f6122",
+      "message": "test(ik): read the solve cases through SolveMember and the adapter",
+      "pre": {
+        "packages/core/test/unit/plugins/angle-blend.test.ts": "ea9c13069e5ea78e2ce9730ebe074562d3d53cf8",
+        "packages/core/test/unit/plugins/fabrik-solve.test.ts": "2648188d4a1353d42c88c63f812837e6652a119a",
+        "packages/core/test/unit/plugins/pivot-offset-solve.test.ts": "c3ff916133b0f7627035ac1e95f09e67a5d3ded8"
+      },
+      "post": {
+        "packages/core/test/unit/plugins/angle-blend.test.ts": "1b947df9d914106d7bc32b2d12c23cc58fe8b936",
+        "packages/core/test/unit/plugins/fabrik-solve.test.ts": "3aaffdcea08583126e3597a7cdc1a76a4f61a9ae",
+        "packages/core/test/unit/plugins/pivot-offset-solve.test.ts": "65c92e8a7af95367638ba5300cdf8b1931c7130d"
+      }
+    },
+    {
+      "seq": 5,
+      "after": 4,
+      "file": "005-dispatch-cases-and-chain-shape.diff",
+      "sha256": "35ef951ff625914a5d7f71ae43fcc1bc9ce969c90a59344c5daa008f52ac5b34",
+      "message": "test(ik): move dispatch cases to their owners and pin the chain shape union",
+      "pre": {
+        "docs/acceptance-map.json": "516ddf44f0952ec5d97c68e4a9f6a17b572bcfd1",
+        "packages/core/test/unit/plugins/fabrik-arity-one.test.ts": "ff75077029e542aa7260b7cee1fe9c47fb22590c",
+        "packages/core/test/unit/plugins/fabrik-dispatch.test.ts": "042adf81264d28abca4f574978f06336b0e9621a",
+        "packages/core/test/unit/plugins/ik-chain-shape.test.ts": null,
+        "packages/core/test/unit/plugins/ik-solve.test.ts": "3fa12aebc827189b8153319d3fedafb877c7c0eb"
+      },
+      "post": {
+        "docs/acceptance-map.json": "648eea04de20824f44b072dc8957f6141a77423f",
+        "packages/core/test/unit/plugins/fabrik-arity-one.test.ts": "61be0a899450287d167e44e9faa6b6db66f20b13",
+        "packages/core/test/unit/plugins/fabrik-dispatch.test.ts": "5f9f424ebffd2f70d4711091295f572c7a7ccac4",
+        "packages/core/test/unit/plugins/ik-chain-shape.test.ts": "6d91aef31b1780b033a81b5ca69d210abcb76b06",
+        "packages/core/test/unit/plugins/ik-solve.test.ts": "681fa94c98999816cc622bcf67240898a01c88fd"
+      }
+    },
+    {
+      "seq": 6,
+      "after": 5,
+      "file": "006-record-adr-106-and-status.diff",
+      "sha256": "ce4979fb42cc90f07e13bbb60d78a5625d2037c8b321cc55ff7e9d933d2d6bd7",
+      "message": "docs(adr-106): record one owner per ik solve question and the replanned phases",
+      "pre": {
+        "docs/ADR-106-one-owner-per-ik-solve-question.md": null,
+        "docs/SESSION-STATUS.md": "94840271038013a0c036ea95f3e59a6fde8acf93"
+      },
+      "post": {
+        "docs/ADR-106-one-owner-per-ik-solve-question.md": "175fda8a2b87ffbd773102de7b406fa9cb1993e0",
+        "docs/SESSION-STATUS.md": "eca1c9d018a461eb6c7cae4b63c4c2c345a543a2"
+      }
+    },
+    {
+      "seq": 7,
+      "after": 6,
+      "file": "007-quality-pass-owners-and-names.diff",
+      "sha256": "ed1dbd922f8216bf53f9b4883d71bf396dc3abab0643998144beb2d7c22dd609",
+      "message": "fix(ik): one owner for a negative length, DeliveredMember named for what it is, ADR-054 caught up",
+      "pre": {
+        "docs/ADR-054-offset-aware-ik-solving.md": "641f63a9bd550d5b4c7017180510901fb0dac29b",
+        "docs/ADR-106-one-owner-per-ik-solve-question.md": "175fda8a2b87ffbd773102de7b406fa9cb1993e0",
+        "packages/core/src/plugins/fabrik.ts": "c90af3d07e7c32ed321fc5e9bb3f54966c1f01cd",
+        "packages/core/src/plugins/frame.ts": "0687c864d044b50e7f50560b183e9e8f94ae61cb",
+        "packages/core/src/plugins/ik-chain.ts": "5e78d2d9df4f2fa59785849e7c5b69da88fe02e0",
+        "packages/core/src/plugins/ik-member.ts": "9c2a04ebfb83091da1fd5eda508213aa612c926e",
+        "packages/core/test/unit/plugins/angle-blend.test.ts": "1b947df9d914106d7bc32b2d12c23cc58fe8b936",
+        "packages/core/test/unit/plugins/fabrik-solve.test.ts": "3aaffdcea08583126e3597a7cdc1a76a4f61a9ae",
+        "packages/core/test/unit/plugins/ik-chain-shape.test.ts": "6d91aef31b1780b033a81b5ca69d210abcb76b06",
+        "packages/core/test/unit/plugins/pivot-offset-solve.test.ts": "65c92e8a7af95367638ba5300cdf8b1931c7130d"
+      },
+      "post": {
+        "docs/ADR-054-offset-aware-ik-solving.md": "e895cbe560af0067ad90e71d0e74adc9d258e5ca",
+        "docs/ADR-106-one-owner-per-ik-solve-question.md": "7d2cd0aedc441c00b5293ac0e5c37cc287151500",
+        "packages/core/src/plugins/fabrik.ts": "f5a5ebcefe46b29319326b28ccf45b3a5607a3df",
+        "packages/core/src/plugins/frame.ts": "53cf0f17064a79ffd241dac7092df2ca8b2b5c21",
+        "packages/core/src/plugins/ik-chain.ts": "ee02a133e0c16785ada3dedfa6ef5535486e4c47",
+        "packages/core/src/plugins/ik-member.ts": "dee135e057e2eabdbf27d7f01d0dcb250e2f4faa",
+        "packages/core/test/unit/plugins/angle-blend.test.ts": "e7ef85112ff2c78c261a3f6d7693e2fbda3ebf44",
+        "packages/core/test/unit/plugins/fabrik-solve.test.ts": "76dfd6b947c4480b9c05189dabab23fda1fe3048",
+        "packages/core/test/unit/plugins/ik-chain-shape.test.ts": "d06af517041b3d7c05799c686c291cd1f187181d",
+        "packages/core/test/unit/plugins/pivot-offset-solve.test.ts": "0e7d6bd64e7e03aecd70e7e8259c8a5e93c4b2ba"
+      }
+    }
+  ]
+}
