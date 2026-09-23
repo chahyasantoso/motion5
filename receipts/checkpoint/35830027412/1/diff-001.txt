@@ -1,0 +1,330 @@
+diff --git a/packages/core/src/adapters/dom.ts b/packages/core/src/adapters/dom.ts
+index fbd383b..9d98236 100644
+--- a/packages/core/src/adapters/dom.ts
++++ b/packages/core/src/adapters/dom.ts
+@@ -1,6 +1,6 @@
+ import type { Patch } from "../contract/v5";
+ import { patchRender } from "../contract/patch-render";
+-import type { RenderMetadata } from "../domain/plugins";
++import type { RenderMetadata } from "../ports/render-metadata";
+ 
+ export interface StageLike {
+   style: { perspective?: string; [key: string]: unknown };
+diff --git a/packages/core/src/adapters/index.ts b/packages/core/src/adapters/index.ts
+index 3ef6647..225c187 100644
+--- a/packages/core/src/adapters/index.ts
++++ b/packages/core/src/adapters/index.ts
+@@ -5,7 +5,7 @@ export { createMicrotaskScheduler } from "./microtask-scheduler";
+ export type { MicrotaskSchedulerOptions, SchedulerHost } from "./microtask-scheduler";
+ 
+ export { createDomPatchAdapter } from "./dom";
+-export type { RenderMetadata } from "../domain/plugins";
++export type { RenderMetadata } from "../ports/render-metadata";
+ export type {
+   DomPatchAdapter,
+   DomPatchWriter,
+diff --git a/packages/core/src/adapters/interpolator/gsap.ts b/packages/core/src/adapters/interpolator/gsap.ts
+index 13a3134..e624819 100644
+--- a/packages/core/src/adapters/interpolator/gsap.ts
++++ b/packages/core/src/adapters/interpolator/gsap.ts
+@@ -1,6 +1,6 @@
+ import type { AuthoredStop, Diagnostic } from "../../contract/v5";
+ import { describeDiagnostics } from "../../contract/diagnostics";
+-import { compilePercentKeyframes, type CompiledKeyframes } from "../../domain/keyframe-compiler";
++import { compilePercentKeyframes, type CompiledKeyframes } from "../../contract/keyframe-compiler";
+ import {
+   PATCHED,
+   RECOMPILE,
+diff --git a/packages/core/src/contract/keyframe-compiler.ts b/packages/core/src/contract/keyframe-compiler.ts
+new file mode 100644
+index 0000000..bb20c23
+--- /dev/null
++++ b/packages/core/src/contract/keyframe-compiler.ts
+@@ -0,0 +1,109 @@
++import { authoredLeafPartition, readAuthoredLeaf, readCompilableStops } from "./authored-leaf";
++import { diagnostic } from "./diagnostics";
++import type { AuthoredStop, Diagnostic } from "./v5";
++import { unreachable } from "../lang/exhaustive";
++
++export interface CompiledKeyframes {
++  readonly map: Readonly<Record<string, Readonly<Record<string, unknown>>>>;
++  readonly initial: Readonly<Record<string, unknown>>;
++  readonly properties: readonly CompiledProperty[];
++  readonly diagnostics: readonly Diagnostic[];
++}
++export interface CompiledProperty {
++  readonly key: string;
++  readonly stops: readonly AuthoredStop[];
++}
++
++function isRecord(value: unknown): value is Record<string, unknown> {
++  return value !== null && typeof value === "object" && !Array.isArray(value);
++}
++function toPercentKey(position: number): string {
++  return `${position * 100}%`;
++}
++function percentValue(percent: string): number {
++  return Number.parseFloat(percent.slice(0, -1));
++}
++
++/**
++ * Compile authored leaves once per interpolator call. The contract owns stop eligibility via
++ * `readCompilableStops`, so the domain and every backend agree about malformed authored leaves.
++ */
++export function compilePercentKeyframes(keyframes: unknown, path = "keyframes"): CompiledKeyframes {
++  if (!isRecord(keyframes))
++    return Object.freeze({
++      map: Object.freeze({}),
++      initial: Object.freeze({}),
++      properties: Object.freeze([]),
++      diagnostics: Object.freeze([]),
++    });
++
++  const map: Record<string, Record<string, unknown>> = {};
++  const initial: Record<string, unknown> = {};
++  const properties: CompiledProperty[] = [];
++  const diagnostics: Diagnostic[] = [];
++  const easeOwners = new Map<string, { ease: unknown; keys: string[] }>();
++
++  const addValue = (percent: string, key: string, value: unknown): void => {
++    (map[percent] ??= {})[key] = value;
++  };
++  const addEase = (percent: string, key: string, ease: unknown): void => {
++    const owner = easeOwners.get(percent);
++    if (owner && !Object.is(owner.ease, ease)) {
++      const ids = [...new Set([...owner.keys, key])].sort();
++      diagnostics.push(
++        diagnostic(
++          "plugin-contribution-ease-collision",
++          `${path}["${percent}"].ease`,
++          `Conflicting ease values were authored at ${percent}.`,
++          ids,
++        ),
++      );
++      return;
++    }
++    if (owner) owner.keys.push(key);
++    else {
++      easeOwners.set(percent, { ease, keys: [key] });
++      (map[percent] ??= {}).ease = ease;
++    }
++  };
++
++  for (const [key, property] of Object.entries(keyframes).sort(([left], [right]) =>
++    left.localeCompare(right),
++  )) {
++    const partition = authoredLeafPartition(readAuthoredLeaf(property));
++    switch (partition.kind) {
++      case "value":
++        initial[key] = partition.value;
++        continue;
++      case "none":
++        continue;
++      case "stops":
++        break;
++      default:
++        return unreachable(partition);
++    }
++    const stops = readCompilableStops(partition.stops);
++    const first = stops[0];
++    if (!first) continue;
++    const frozenStops = Object.freeze([...stops]);
++    properties.push(Object.freeze({ key, stops: frozenStops }));
++    initial[key] = first.v;
++    for (const stop of stops) {
++      const percent = toPercentKey(stop.p);
++      addValue(percent, key, stop.v);
++      if (stop.ease !== undefined) addEase(percent, key, stop.ease);
++    }
++  }
++
++  const orderedMap = Object.fromEntries(
++    Object.entries(map)
++      .sort(([left], [right]) => percentValue(left) - percentValue(right))
++      .map(([percent, frame]) => [percent, Object.freeze(frame)]),
++  );
++  return Object.freeze({
++    map: Object.freeze(orderedMap),
++    initial: Object.freeze(initial),
++    properties: Object.freeze(properties),
++    diagnostics: Object.freeze(diagnostics),
++  });
++}
+diff --git a/packages/core/src/domain/keyframe-compiler.ts b/packages/core/src/domain/keyframe-compiler.ts
+index 29d6a72..699d3cd 100644
+--- a/packages/core/src/domain/keyframe-compiler.ts
++++ b/packages/core/src/domain/keyframe-compiler.ts
+@@ -1,126 +1,6 @@
+-import {
+-  authoredLeafPartition,
+-  readAuthoredLeaf,
+-  readCompilableStops,
+-} from "../contract/authored-leaf";
+-import { diagnostic } from "../contract/diagnostics";
+-import type { AuthoredStop, Diagnostic } from "../contract/v5";
+-import { unreachable } from "../lang/exhaustive";
+-
+-export interface CompiledProperty {
+-  readonly key: string;
+-  readonly stops: readonly AuthoredStop[];
+-}
+-export interface CompiledKeyframes {
+-  readonly map: Readonly<Record<string, Readonly<Record<string, unknown>>>>;
+-  readonly initial: Readonly<Record<string, unknown>>;
+-  readonly properties: readonly CompiledProperty[];
+-  readonly diagnostics: readonly Diagnostic[];
+-}
+-
+-function isRecord(value: unknown): value is Record<string, unknown> {
+-  return value !== null && typeof value === "object" && !Array.isArray(value);
+-}
+-function toPercentKey(position: number): string {
+-  return `${position * 100}%`;
+-}
+-function percentValue(percent: string): number {
+-  return Number.parseFloat(percent.slice(0, -1));
+-}
+-
+-/**
+- * Compile authored properties without projecting them onto a sibling's percent grid.
+- *
+- * Motion5 intentionally seeds each proxy property from its first authored value, even
+- * when that stop is after 0%. This preserves the leading hold without inventing a 0%
+- * keyframe, unlike the oracle's 0%-only proxy seeding.
+- *
+- * Which stops a leaf contributes is `readCompilableStops`, not a local reader. That is the one
+- * owner of the leaf shape, so this compiler and the fake interpolator cannot disagree about what a
+- * malformed stop publishes. See issue #192.
+- */
+-export function compilePercentKeyframes(keyframes: unknown, path = "keyframes"): CompiledKeyframes {
+-  if (!isRecord(keyframes))
+-    return Object.freeze({
+-      map: Object.freeze({}),
+-      initial: Object.freeze({}),
+-      properties: Object.freeze([]),
+-      diagnostics: Object.freeze([]),
+-    });
+-
+-  const map: Record<string, Record<string, unknown>> = {};
+-  const initial: Record<string, unknown> = {};
+-  const properties: CompiledProperty[] = [];
+-  const diagnostics: Diagnostic[] = [];
+-  const easeOwners = new Map<string, { ease: unknown; keys: string[] }>();
+-
+-  const addValue = (percent: string, key: string, value: unknown): void => {
+-    (map[percent] ??= {})[key] = value;
+-  };
+-  const addEase = (percent: string, key: string, ease: unknown): void => {
+-    const owner = easeOwners.get(percent);
+-    if (owner && !Object.is(owner.ease, ease)) {
+-      const ids = [...new Set([...owner.keys, key])].sort();
+-      diagnostics.push(
+-        diagnostic(
+-          "plugin-contribution-ease-collision",
+-          `${path}[\"${percent}\"].ease`,
+-          `Conflicting ease values were authored at ${percent}.`,
+-          ids,
+-        ),
+-      );
+-      return;
+-    }
+-    if (owner) owner.keys.push(key);
+-    else {
+-      easeOwners.set(percent, { ease, keys: [key] });
+-      (map[percent] ??= {}).ease = ease;
+-    }
+-  };
+-
+-  for (const [key, property] of Object.entries(keyframes).sort(([left], [right]) =>
+-    left.localeCompare(right),
+-  )) {
+-    // A static leaf genuinely bypasses interpolation rather than being normalized into an
+-    // equivalent two-stop hold: no percent-map entry, no compiled property, and therefore no tween
+-    // var and no `gsap.to()` contribution. `initial` is its whole publication path, and both GSAP
+-    // interpolators already seed their proxy from it and expose that proxy as `state`, so a value
+-    // that lands here and nowhere else is published at every progress at zero cost. This is the
+-    // point of ADR-050 rather than an implementation detail inside it, and `LF-7` and `LF-8` pin it.
+-    const partition = authoredLeafPartition(readAuthoredLeaf(property));
+-    switch (partition.kind) {
+-      case "value":
+-        initial[key] = partition.value;
+-        continue;
+-      case "none":
+-        continue;
+-      case "stops":
+-        break;
+-      default:
+-        return unreachable(partition);
+-    }
+-    const stops = readCompilableStops(partition.stops);
+-    const first = stops[0];
+-    if (!first) continue;
+-    const frozenStops = Object.freeze([...stops]);
+-    properties.push(Object.freeze({ key, stops: frozenStops }));
+-    initial[key] = first.v;
+-    for (const stop of stops) {
+-      const percent = toPercentKey(stop.p);
+-      addValue(percent, key, stop.v);
+-      if (stop.ease !== undefined) addEase(percent, key, stop.ease);
+-    }
+-  }
+-
+-  const orderedMap = Object.fromEntries(
+-    Object.entries(map)
+-      .sort(([left], [right]) => percentValue(left) - percentValue(right))
+-      .map(([percent, frame]) => [percent, Object.freeze(frame)]),
+-  );
+-  return Object.freeze({
+-    map: Object.freeze(orderedMap),
+-    initial: Object.freeze(initial),
+-    properties: Object.freeze(properties),
+-    diagnostics: Object.freeze(diagnostics),
+-  });
+-}
++/** Domain-side import path; the authored contract owns compilation. */
++export {
++  compilePercentKeyframes,
++  type CompiledKeyframes,
++  type CompiledProperty,
++} from "../contract/keyframe-compiler";
+diff --git a/packages/core/src/internal.ts b/packages/core/src/internal.ts
+index ac2638f..26a3cda 100644
+--- a/packages/core/src/internal.ts
++++ b/packages/core/src/internal.ts
+@@ -1,10 +1,10 @@
+ import type { LivePatch, PatchListener } from "./runtime/patch-registry";
+-import type { RenderMetadata } from "./domain/plugins";
++import type { RenderMetadata } from "./ports/render-metadata";
+ 
+ export type { LivePatch, Patch, PatchListener } from "./runtime/patch-registry";
+ export { patchRender } from "./contract/patch-render";
+ export type { PatchRender } from "./contract/patch-render";
+-export type { RenderMetadata } from "./domain/plugins";
++export type { RenderMetadata } from "./ports/render-metadata";
+ /**
+  * The collapse an implementor of `PatchSource` owes, exported beside the interface that owes it.
+  *
+diff --git a/packages/core/src/ports/render-metadata.ts b/packages/core/src/ports/render-metadata.ts
+new file mode 100644
+index 0000000..12d37e0
+--- /dev/null
++++ b/packages/core/src/ports/render-metadata.ts
+@@ -0,0 +1,5 @@
++/** Renderer-facing serializer metadata, independent of plugin resolution. */
++export type OutputSerializer = (value: unknown) => unknown;
++export interface RenderMetadata {
++  readonly outputSerializers: Readonly<Record<string, OutputSerializer>>;
++}
+diff --git a/packages/core/test/unit/domain/authored-leaf-partition.test.ts b/packages/core/test/unit/domain/authored-leaf-partition.test.ts
+index 1334e73..5e5e398 100644
+--- a/packages/core/test/unit/domain/authored-leaf-partition.test.ts
++++ b/packages/core/test/unit/domain/authored-leaf-partition.test.ts
+@@ -85,7 +85,7 @@ describe("the authored leaf payload partition answers every leaf kind", () => {
+ 
+   it("keeps every changed reader on an exhaustive or owned spelling", () => {
+     const validator = code(`${SOURCE_ROOT}contract/validate-v5.ts`);
+-    const compiler = code(`${SOURCE_ROOT}domain/keyframe-compiler.ts`);
++    const compiler = code(`${SOURCE_ROOT}contract/keyframe-compiler.ts`);
+     const plugins = code(`${SOURCE_ROOT}domain/plugins.ts`);
+     const authoredValues = code(`${SOURCE_ROOT}runtime/authored-values.ts`);
+     const fakes = code(`${SOURCE_ROOT}testing/fakes.ts`);
