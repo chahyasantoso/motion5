@@ -1,0 +1,12 @@
+prepare isolated candidate	Apply the stack, adjudicate by digest, then format the surviving tip	﻿2026-09-23T01:21:11.7444387Z ##[group]Run set -euo pipefail
+prepare isolated candidate	Apply the stack, adjudicate by digest, then format the surviving tip	2026-09-23T01:21:11.7444736Z ^[[36;1mset -euo pipefail^[[0m
+prepare isolated candidate	Apply the stack, adjudicate by digest, then format the surviving tip	2026-09-23T01:21:11.7445045Z ^[[36;1mexport CANDIDATE_ROOT="$GITHUB_WORKSPACE/candidate"^[[0m
+prepare isolated candidate	Apply the stack, adjudicate by digest, then format the surviving tip	2026-09-23T01:21:11.7445478Z ^[[36;1mexport FORMATTER_ROOT="$RUNNER_TEMP/motion5-formatter"^[[0m
+prepare isolated candidate	Apply the stack, adjudicate by digest, then format the surviving tip	2026-09-23T01:21:11.7445891Z ^[[36;1mexport CANDIDATE_OUTPUT="$RUNNER_TEMP/candidate.json"^[[0m
+prepare isolated candidate	Apply the stack, adjudicate by digest, then format the surviving tip	2026-09-23T01:21:11.7446325Z ^[[36;1mnode trusted/scripts/automation-checkpoint.mjs prepare^[[0m
+prepare isolated candidate	Apply the stack, adjudicate by digest, then format the surviving tip	2026-09-23T01:21:11.7483405Z shell: /usr/bin/bash -e {0}
+prepare isolated candidate	Apply the stack, adjudicate by digest, then format the surviving tip	2026-09-23T01:21:11.7483661Z env:
+prepare isolated candidate	Apply the stack, adjudicate by digest, then format the surviving tip	2026-09-23T01:21:11.7483901Z   TRUSTED_SHA: 83b41a6cfa85b0928b6ec1744463f86c8a7fb892
+prepare isolated candidate	Apply the stack, adjudicate by digest, then format the surviving tip	2026-09-23T01:21:11.7484214Z ##[endgroup]
+prepare isolated candidate	Apply the stack, adjudicate by digest, then format the surviving tip	2026-09-23T01:21:11.8327193Z ".ai/checkpoints/cp001/004-record-the-placement-as-adr-103.diff" does not match its declared SHA-256
+prepare isolated candidate	Apply the stack, adjudicate by digest, then format the surviving tip	2026-09-23T01:21:11.8372489Z ##[error]Process completed with exit code 1.
