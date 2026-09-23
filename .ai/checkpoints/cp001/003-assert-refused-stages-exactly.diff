@@ -1,0 +1,55 @@
+diff --git a/packages/core/test/unit/domain/plugins.test.ts b/packages/core/test/unit/domain/plugins.test.ts
+index d8e704a..f57b7a0 100644
+--- a/packages/core/test/unit/domain/plugins.test.ts
++++ b/packages/core/test/unit/domain/plugins.test.ts
+@@ -13,6 +13,23 @@ describe("plugin registry", () => {
+     ...extra,
+   });
+ 
++  // One spelling of "this stage is refused", asserting the constructor and the exact message. The
++  // quality pass on #472 filed `toThrow(/stage/)` at the coercion case and accepted it only because
++  // the bad-stage case beside it had always used the same loose matcher, on the record that whoever
++  // touched either would tighten both together. This is that. A regular expression over the word
++  // `stage` is satisfied by five other guards in `register` and by any unrelated error carrying the
++  // word, so it could not tell "refused for its stage" from "refused before the stage was read".
++  // Registering twice is safe: the guard throws ahead of both the duplicate check and the insert,
++  // so the second call reaches the same arm rather than "already registered".
++  const refusesStage = (stage: unknown, message: string): void => {
++    const registry = new PluginRegistry();
++    const register = (): void => {
++      registry.register(plugin("staged", { stage }));
++    };
++    expect(register).toThrow(TypeError);
++    expect(register).toThrow(new TypeError(message));
++  };
++
+   it("resolves authored keys in deterministic order", () => {
+     const registry = new PluginRegistry();
+     const first = plugin("first", { keys: ["a"] });
+@@ -244,7 +261,7 @@ describe("plugin registry", () => {
+     expect(() => registry.register(plugin("bad-priority", { priority: Number.NaN }))).toThrow(
+       /priority/,
+     );
+-    expect(() => registry.register(plugin("bad-stage", { stage: "typo" }))).toThrow(/stage/);
++    refusesStage("typo", 'Unknown plugin stage "typo".');
+   });
+ 
+   it("declares one closed stage vocabulary and reads it exhaustively", () => {
+@@ -268,11 +285,12 @@ describe("plugin registry", () => {
+     // `stageRank`, which owes no arm to a value the union cannot hold: the refusal arrived as
+     // `Unhandled variant` at the next compose instead of at the registration that caused it. Only
+     // JavaScript can make these arrivals, which is why the run-time read is the one that owes them.
+-    const registry = new PluginRegistry();
+-    const refused = [["prepare"], new String("compose"), { toString: () => "prepare" }];
+-    for (const stage of refused) {
+-      expect(() => registry.register(plugin("coerces", { stage }))).toThrow(/stage/);
+-    }
++    // Every expected message spells a real member, because the guard interpolates the value it
++    // refused and all three of these coerce to one. That is the proof the refusal is by identity
++    // rather than by the text: a guard that read the spelling would have accepted all three.
++    refusesStage(["prepare"], 'Unknown plugin stage "prepare".');
++    refusesStage(new String("compose"), 'Unknown plugin stage "compose".');
++    refusesStage({ toString: () => "prepare" }, 'Unknown plugin stage "prepare".');
+   });
+ 
+   it("detaches resolved plugins from later registry mutation", () => {
