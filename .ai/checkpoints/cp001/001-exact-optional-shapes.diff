@@ -14,7 +14,12 @@ index eea2b5d..3e7b6e4 100644
        if (trigger.type === "scroll") {
          const source = options.scroll?.({ ...context, trigger });
          if (source === undefined) {
-@@ -1,5 +1,10 @@
+@@
+ diff --git a/packages/core/src/domain/plugins.md b/packages/core/src/domain/plugins.md
+ index f428978..0063aa1 100644
+ --- a/packages/core/src/domain/plugins.md
+ +++ b/packages/core/src/domain/plugins.md
+ @@ -1,5 +1,10 @@
  # packages/core/src/domain/plugins.ts
  
 +`RenderMetadata` is the renderer-facing port contract declared in `../ports/render-metadata.ts`.
@@ -70,6 +75,8 @@ index eea2b5d..3e7b6e4 100644
 -  readonly outputSerializers: Readonly<Record<string, OutputSerializer>>;
 -}
  export interface ResolvedPlugins extends RenderMetadata {
+   readonly plugins: readonly PluginDefinition[];
+   readonly diagnostics: readonly Diagnostic[];
 @@ -312,7 +326,7 @@ function prepareContributions(
          plugin.contribute(
            key,
