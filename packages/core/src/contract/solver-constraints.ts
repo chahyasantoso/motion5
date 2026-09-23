@@ -3,23 +3,27 @@ import { isKeyframeGroup, PLUGIN_VALUES_SECTION, readPluginValues } from "./keyf
 
 /**
  * The authored vocabulary of a constrained 2D solve, and the one owner of what a well-formed value
- * of it is. See ADR-108.
+ * of it is. See ADR-108 and ADR-109.
  *
  * `minRotation` and `maxRotation` are per-member local-angle bounds in degrees, `bend` is the
- * solver's branch hint and `flip` its older boolean spelling. The graph layer asks this module
- * whether an authored value is well formed, and the runtime asks it whether a live value is in the
- * limit domain, so the domain `[-180, 180]` is stated once and read by both.
+ * solver's branch hint and `flip` its older boolean spelling. `inspect` is the solver's static
+ * opt-in to its `inspection` output, and `inspection` is the name of that output, kept beside the
+ * switch so the authored name and the published one cannot drift apart. The graph layer asks this
+ * module whether an authored value is well formed, and the runtime asks it whether a live value is
+ * in the limit domain, so the domain `[-180, 180]` is stated once and read by both.
  */
 export const MIN_ROTATION_KEY = "minRotation" as const;
 export const MAX_ROTATION_KEY = "maxRotation" as const;
 export const BEND_KEY = "bend" as const;
 export const FLIP_KEY = "flip" as const;
+export const INSPECT_KEY = "inspect" as const;
+export const INSPECTION_KEY = "inspection" as const;
 
 export type LimitKey = typeof MIN_ROTATION_KEY | typeof MAX_ROTATION_KEY;
 export const LIMIT_KEYS: readonly LimitKey[] = Object.freeze([MIN_ROTATION_KEY, MAX_ROTATION_KEY]);
 
 /** A key the solver node authors itself, scoped to the group that bound its `root`. */
-export type SolverKey = typeof BEND_KEY | typeof FLIP_KEY;
+export type SolverKey = typeof BEND_KEY | typeof FLIP_KEY | typeof INSPECT_KEY;
 
 /** The bound an omitted `minRotation` means, and the floor of the limit domain. */
 export const LIMIT_FLOOR = -180;
@@ -90,6 +94,24 @@ export function classifyBend(value: unknown): BendAuthored {
   const bend = leaf.value;
   return bend === "positive" || bend === "negative"
     ? { kind: "bend", bend }
+    : { kind: "malformed" };
+}
+
+/**
+ * One authored `inspect` spelling, classified. There is no `absent` arm, unlike `BendAuthored`,
+ * because the rule reads only spellings `authoredSpellings` found, so every value here was written.
+ */
+export type InspectAuthored =
+  | { readonly kind: "valid"; readonly enabled: boolean }
+  | { readonly kind: "malformed" };
+
+/**
+ * Inspection is a static boolean opt-in, never an animated value, so a keyframed switch is refused.
+ */
+export function classifyInspect(value: unknown): InspectAuthored {
+  const leaf = readAuthoredLeaf(value);
+  return leaf.kind === "static" && typeof leaf.value === "boolean"
+    ? { kind: "valid", enabled: leaf.value }
     : { kind: "malformed" };
 }
 

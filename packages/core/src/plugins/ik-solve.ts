@@ -90,7 +90,8 @@ export function chainShape(members: readonly SolveMember[]): ChainShape {
  *
  * Both arms return the one `SolveResult`, so what the chain's solve achieved has one shape
  * whichever strategy answered it: the closed form's geometric kinds or FABRIK's iterative ones,
- * read from one discriminant. `ik.ts` publishes `rotations` only. See `ik-result.ts` and ADR-107.
+ * read from one discriminant. `ik.ts` publishes `rotations`, and adds the fixed-shape `inspection`
+ * projection of `quality` only when its author opted in. See `ik-result.ts`, ADR-107 and ADR-109.
  *
  * Nothing here knows about a member's blend `weight`, and that is the ownership split rather than an
  * omission. The solve publishes the exact angle that puts the tip on the goal, at every arity, and
@@ -111,10 +112,10 @@ export function solveChain(
       // the variant exists so the dispatch decision is visible and the closed form is never picked.
       // `pivots` and `tips` are FABRIK's own and stay behind: the analytic path carries neither,
       // so returning them here would make the result's shape a function of arity. The quality
-      // record travels, because both strategies state one, but nothing publishes it. Roughly four
-      // percent of ordinary reachable rigs do not reach tolerance before the cap, so a per-tick
-      // report would be noise on rigs nobody would call broken. `FB-13` pins the published shape
-      // and `docs/ADR-051-derived-solver-membership.md` records the decision.
+      // record travels, because both strategies state one, and it is published only as the opt-in
+      // `inspection` projection. Roughly four percent of ordinary reachable rigs do not reach
+      // tolerance before the cap, so an unrequested per-tick report would be noise on rigs nobody
+      // would call broken. `FB-13` pins the unopted shape and ADR-109 records the opt-in.
       const { rotations, quality } = solveFabrik(root, shape.members, flip);
       return Object.freeze({ rotations, quality });
     }

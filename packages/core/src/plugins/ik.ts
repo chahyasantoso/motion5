@@ -1,9 +1,11 @@
+import { BEND_KEY, FLIP_KEY, INSPECTION_KEY, INSPECT_KEY } from "../contract/solver-constraints";
 import type { PluginDefinition } from "../domain/plugins";
 import type { ImmutableRecord } from "../domain/values";
 import { readFrame } from "./frame";
 import { readGoals, readMembers, readSolveMembers } from "./ik-chain";
 import { solveChain } from "./ik-solve";
 import { readBend } from "./ik-constraint";
+import { inspectSolve } from "./ik-result";
 
 /**
  * The `ik` plugin: its declaration and the wiring from its slots to a solve, and nothing else.
@@ -26,6 +28,14 @@ import { readBend } from "./ik-constraint";
  * `ik` on the same node. The spread is a correctness requirement of the chaining rule, not a style
  * choice, and `IK-18` pins it.
  *
+ * `inspection` is published only when the solver's own static `inspect` is exactly `true`, so its
+ * presence is a function of authoring rather than of arity or strategy, and an unopted patch keeps
+ * the keys and doubles it had before ADR-109. Both output names are declared in `outputs` for every
+ * registration, because ownership of a name is a property of the plugin, not of one rig. The value
+ * is `inspectSolve(quality)`, whose shape `ik-result.ts` owns; this module only decides whether to
+ * ask. `ik-inspect-malformed` refuses a non-boolean or keyframed switch at load, so the strict
+ * comparison is the whole runtime reading rather than a second validator.
+ *
  * `targets` is an ordinary declared slot carrying `dict: true`, which is how the goal family reaches
  * this plugin now. The slot set is enumerable again: the member ids belong to the rig, but they are
  * keys inside one declared slot rather than slot names of their own, so `requirements` answers for
@@ -34,23 +44,24 @@ import { readBend } from "./ik-constraint";
  */
 export const ikPlugin: PluginDefinition = {
   name: "ik",
-  keys: ["flip", "bend"],
+  keys: [FLIP_KEY, BEND_KEY, INSPECT_KEY],
   requirements: {
     root: { description: "base frame of the solver chain" },
     target: { description: "target position to reach" },
     targets: { description: "one goal per chain leaf, keyed by member id", dict: true },
   },
   stage: "compose",
-  outputs: ["rotations"],
+  outputs: ["rotations", INSPECTION_KEY],
   compose: (values, _progress, inputs) => {
     const root = readFrame(inputs.root);
     const members = readMembers(inputs.members);
     const goals = readGoals(inputs.target, members);
     const flip = readBend(values);
-    const { rotations } = solveChain(root, readSolveMembers(members, goals), flip);
+    const { rotations, quality } = solveChain(root, readSolveMembers(members, goals), flip);
     return Object.freeze({
       ...values,
       rotations: Object.freeze(rotations as unknown as ImmutableRecord),
+      ...(values[INSPECT_KEY] === true ? { [INSPECTION_KEY]: inspectSolve(quality) } : {}),
     });
   },
 };
