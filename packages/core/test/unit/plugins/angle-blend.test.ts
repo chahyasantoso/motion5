@@ -33,7 +33,7 @@ describe("shared angle numerics (issue #211)", () => {
     const root = { x: 200, y: 300, rotation: 0 };
     const unreachable = { x: 2000, y: 300, rotation: 0 };
     const [first, second] = readSolveMembers([member("a", 80), member("b", 60)], new Map());
-    const solved = solveTwoBone(root, unreachable, first!, second!);
+    const solved = solveTwoBone(root, unreachable, first!, second!).rotations;
     expect(Number.isFinite(solved.a as number)).toBe(true);
     expect(Number.isFinite(solved.b as number)).toBe(true);
   });

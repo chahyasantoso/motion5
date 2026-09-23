@@ -45,7 +45,7 @@ describe("a one-member chain is a solve rather than a fallback (Slice D4)", () =
     // 1. A goal exactly at the bone's reach. The tolerance is imported rather than typed, so the
     //    assertion moves with the module instead of pinning a number beside it.
     const reachable = { x: 30, y: 40, rotation: 0 };
-    const solved = solveChain(ROOT, [{ ...chain[0]!, goal: reachable }], false);
+    const solved = solveChain(ROOT, [{ ...chain[0]!, goal: reachable }], false).rotations;
     expect(Object.keys(solved)).toEqual([ONLY]);
     expect(distance(tipOf(solved[ONLY]!), reachable)).toBeLessThanOrEqual(FABRIK_TOLERANCE);
     // The pin for the deleted branch. Zero is a legal rotation, so it is refused by name rather
@@ -57,21 +57,21 @@ describe("a one-member chain is a solve rather than a fallback (Slice D4)", () =
     // 2. A goal past the bone's reach. A single segment cannot stretch, so the honest answer is the
     //    same direction fully extended, which is what the analytic path's reach clamp does too.
     const far = { x: 300, y: 400, rotation: 0 };
-    const extended = solveChain(ROOT, [{ ...chain[0]!, goal: far }], false);
+    const extended = solveChain(ROOT, [{ ...chain[0]!, goal: far }], false).rotations;
     expect(extended[ONLY]).toBeCloseTo(Math.atan2(400, 300) * DEGREES, 3);
     expect(distance(tipOf(extended[ONLY]!), ROOT)).toBeCloseTo(LENGTH, 6);
 
     // 3. A goal short of the bone's reach. Also unreachable, in the other direction, and also a
     //    direction rather than an error: nothing here may fold the bone or shorten it.
     const near = { x: 9, y: 12, rotation: 0 };
-    const shortened = solveChain(ROOT, [{ ...chain[0]!, goal: near }], false);
+    const shortened = solveChain(ROOT, [{ ...chain[0]!, goal: near }], false).rotations;
     expect(shortened[ONLY]).toBeCloseTo(Math.atan2(12, 9) * DEGREES, 3);
     expect(distance(tipOf(shortened[ONLY]!), ROOT)).toBeCloseTo(LENGTH, 6);
 
     // 4. A goal on the root leaves no direction to read at all. Defined rather than `NaN`, since a
     //    non-finite rotation reaches a published frame and blocks every child below it.
     const onRoot = { x: 0, y: 0, rotation: 0 };
-    const degenerate = solveChain(ROOT, [{ ...chain[0]!, goal: onRoot }], false);
+    const degenerate = solveChain(ROOT, [{ ...chain[0]!, goal: onRoot }], false).rotations;
     expect(Number.isFinite(degenerate[ONLY]!)).toBe(true);
 
     // 5. A chain of one with no goal at all is still thrown rather than answered with the seed

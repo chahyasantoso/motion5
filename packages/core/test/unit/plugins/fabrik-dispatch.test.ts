@@ -59,8 +59,12 @@ describe("the solve dispatches on derived shape (Slice D3)", () => {
     // against literals copied out of it: a literal would keep passing if the dispatcher started
     // rounding, and it would stop meaning "unchanged" the first time the convention moved on purpose.
     for (const flip of [false, true]) {
-      const analytic = solveTwoBone(ROOT, HAND, ARM[0]!, ARM[1]!, flip);
-      const dispatched = solveChain(ROOT, [{ ...ARM[0]! }, { ...ARM[1]!, goal: HAND }], flip);
+      const analytic = solveTwoBone(ROOT, HAND, ARM[0]!, ARM[1]!, flip).rotations;
+      const dispatched = solveChain(
+        ROOT,
+        [{ ...ARM[0]! }, { ...ARM[1]!, goal: HAND }],
+        flip,
+      ).rotations;
       expect(dispatched).toEqual(analytic);
       expect(JSON.stringify(dispatched)).toEqual(JSON.stringify(analytic));
     }
@@ -71,35 +75,35 @@ describe("the solve dispatches on derived shape (Slice D3)", () => {
       ROOT,
       readSolveMembers(AUTHORED_ARM, readGoals(HAND, AUTHORED_ARM)),
       false,
-    );
+    ).rotations;
     expect(solved[UPPER]).toBeCloseTo(40.168, 3);
     expect(solved[FOREARM]).toBeCloseTo(-51.3178, 4);
 
     // An unreachable target is the analytic clamp rather than a stalled iteration, on the same path.
     const far = { x: 400, y: 300, rotation: 0 };
-    expect(solveChain(ROOT, [{ ...ARM[0]! }, { ...ARM[1]!, goal: far }], false)).toEqual(
-      solveTwoBone(ROOT, far, ARM[0]!, ARM[1]!, false),
+    expect(solveChain(ROOT, [{ ...ARM[0]! }, { ...ARM[1]!, goal: far }], false).rotations).toEqual(
+      solveTwoBone(ROOT, far, ARM[0]!, ARM[1]!, false).rotations,
     );
 
     // Dispatch reads shape, not spelling. The goal dict and the bare slot are one map by the time
     // `solveChain` sees them, so a rig re-expressed with `targets` takes the same path and lands on
     // the same doubles.
-    const addressed = solveChain(ROOT, ADDRESSED_ARM, false);
+    const addressed = solveChain(ROOT, ADDRESSED_ARM, false).rotations;
     expect(JSON.stringify(addressed)).toEqual(
-      JSON.stringify(solveTwoBone(ROOT, HAND, ARM[0]!, ARM[1]!, false)),
+      JSON.stringify(solveTwoBone(ROOT, HAND, ARM[0]!, ARM[1]!, false).rotations),
     );
   });
 
   it("FB-13 a solve that does not converge publishes rotations and nothing else", () => {
     // The decision this slice owns, and it fails by producing something rather than by erroring.
     //
-    // `solveFabrik` reports a convergence kind and residual because absorbing them would
-    // tell a caller to raise a cap that is not the problem. Publishing them is a different
-    // question: the analytic
-    // path carries neither, so a solver's patch shape would become a function of its arity, `FB-9`'s
-    // byte identity would not survive the extra key, and roughly four percent of ordinary reachable
-    // rigs miss tolerance before the cap, so a per-tick report would fire on rigs nobody would call
-    // broken. A bare convergence boolean is also the C review's Blocker 1 waiting to happen again:
+    // `solveFabrik` reports a quality kind and residual because absorbing them would tell a caller to
+    // raise a cap that is not the problem, and since issue #349's second phase the closed form states
+    // one too. Publishing either is a different question: `FB-9`'s byte identity would not survive
+    // the extra key, and roughly four percent of ordinary reachable rigs miss tolerance before the
+    // cap, so a per-tick report would fire on rigs nobody would call broken. `pivots` and `tips` stay
+    // FABRIK's own, so publishing them would also make a patch shape a function of arity. A bare
+    // quality flag is also the C review's Blocker 1 waiting to happen again:
     // `renderableValues` skips a plain record and a scalar falls through to `target[key] = value`.
     const tail = [
       authoredBone("rig/t1", "rig/hip", 30),

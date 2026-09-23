@@ -88,7 +88,7 @@ function solveTwoBone(
   if (first === undefined || second === undefined) {
     throw new Error("two-bone fixture requires two members");
   }
-  return solveTwoBoneDirect(root, target, first, second, flip);
+  return solveTwoBoneDirect(root, target, first, second, flip).rotations;
 }
 
 /**
@@ -301,7 +301,7 @@ describe("ik accounts for fk's pivot offsets (issue #214)", () => {
       leaf("c", "b", 40, { x: 2, y: -8 }, at(300, 380)),
     ];
     const solved = solveFabrik(ROOT, three);
-    expect(solved.convergence.kind).toBe("converged");
+    expect(solved.quality.kind).toBe("converged");
     expect(distance(solved.tips.c!, at(300, 380))).toBeLessThanOrEqual(FABRIK_TOLERANCE);
     for (const { id, length } of three) {
       expect(distance(solved.pivots[id]!, solved.tips[id]!)).toBeCloseTo(length, 9);
@@ -322,7 +322,7 @@ describe("ik accounts for fk's pivot offsets (issue #214)", () => {
       leaf("m5", "m4", 40, { x: -1, y: -1 }, at(260, 380)),
     ];
     const long = solveFabrik(ROOT, five);
-    expect(long.convergence.kind).toBe("converged");
+    expect(long.quality.kind).toBe("converged");
     expect(distance(long.tips.m5!, at(260, 380))).toBeLessThanOrEqual(FABRIK_TOLERANCE);
     for (const { id, length } of five) {
       expect(distance(long.pivots[id]!, long.tips[id]!)).toBeCloseTo(length, 9);
@@ -331,7 +331,7 @@ describe("ik accounts for fk's pivot offsets (issue #214)", () => {
 
   it("PV-6 an absent offset and an authored zero are the same solve", () => {
     // The default is a documented value rather than a field accepted and ignored, and this is what
-    // says so. It is byte identity over the whole solution, including the convergence record, so a
+    // says so. It is byte identity over the whole solution, including the quality record, so a
     // zero that took a different code path and landed within tolerance would still fail.
     const absent: readonly SolveMember[] = [
       { id: "a", base: "root", length: 80 },
@@ -376,7 +376,7 @@ describe("ik accounts for fk's pivot offsets (issue #214)", () => {
     for (const flip of [false, true]) {
       const closed = solveTwoBone(ROOT, HAND, analytic, flip);
       const solved = solveFabrik(ROOT, iterative, flip);
-      expect(solved.convergence.kind).toBe("converged");
+      expect(solved.quality.kind).toBe("converged");
       expect(Math.abs(solved.rotations[UPPER]! - closed[UPPER]!)).toBeLessThan(bound);
       expect(Math.abs(solved.rotations[FOREARM]! - closed[FOREARM]!)).toBeLessThan(bound);
     }
@@ -384,9 +384,9 @@ describe("ik accounts for fk's pivot offsets (issue #214)", () => {
     // And the dispatcher still routes this rig to the closed form, so the agreement above is between
     // two solves rather than between one solve and itself.
     const goals = new Map([[FOREARM, HAND]]);
-    expect(JSON.stringify(solveChain(ROOT, readSolveMembers(analytic, goals), false))).toEqual(
-      JSON.stringify(solveTwoBone(ROOT, HAND, analytic, false)),
-    );
+    expect(
+      JSON.stringify(solveChain(ROOT, readSolveMembers(analytic, goals), false).rotations),
+    ).toEqual(JSON.stringify(solveTwoBone(ROOT, HAND, analytic, false)));
   });
 
   it("PV-8 a branching chain with offsets solves every goal, deterministically", () => {
@@ -403,7 +403,7 @@ describe("ik accounts for fk's pivot offsets (issue #214)", () => {
       leaf("fore-r", "arm-r", 30, { x: 1, y: -2 }, at(160, 400)),
     ];
     const solved = solveFabrik(ROOT, tree);
-    expect(solved.convergence.kind).toBe("converged");
+    expect(solved.quality.kind).toBe("converged");
     expect(distance(solved.tips["fore-l"]!, at(240, 400))).toBeLessThanOrEqual(FABRIK_TOLERANCE);
     expect(distance(solved.tips["fore-r"]!, at(160, 400))).toBeLessThanOrEqual(FABRIK_TOLERANCE);
     for (const { id, length } of tree) {
