@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "expected_head": "41407bcf2b4c04c610a0cb374af7572e87dda8de",
+  "expected_blobs": {
+    "AGENTS.md": "7d023a1b9b0c6541cabfacaaf4225e88e951f6b4",
+    "docs/SESSION-STATUS.md": "d6c74d83dbd36ebdd98d4d0231db4afe9d7ef86d",
+    "packages/core/test/unit/scripts/checkpoint-transport.test.ts": "f4c9f002256025dd99279ac76cb66fdebf79b680",
+    "scripts/checkpoint-transport.mjs": "7066fc3d9d7cacd275c4e670ef243e51f72edb81"
+  },
+  "message": "docs(agents): carry the read-back rule, and decode the manifest fatally in readStore (#478)",
+  "edits": [
+    {
+      "path": "AGENTS.md",
+      "find": "A checkpoint is the route when the work is a stack.",
+      "replace": "**A write is not done until its blob id is read back.** After every contents-API write, compare the `content.sha` in the response with the Git blob id declared for that path before the write. A mismatch stops the push: do not write the next file, do not push the manifest, and do not report success. Re-write the file and compare again. Before pushing a manifest, list the store directory at the branch head and confirm every patch's blob id and size equal the plan. `push_files` returns no per-file blob id, so transport checkpoint files with `create_or_update_file`, one file per call. The lines a transcriber normalises are the ones to watch: a line that is exactly one space, which is every blank context line of a unified diff, the line after a hunk header, trailing whitespace, the final line and its LF, backtick spans, and non-ASCII. [ADR-104](docs/ADR-104-a-transport-write-is-read-back-before-it-counts.md) records why this is a rule rather than a serializer.\n\nWith a runtime, `node scripts/checkpoint-transport.mjs plan <store-dir>` prints every store file in push order with its size, blob id, SHA-256 and a numbered map of those lines; print it outside the repository, since a stray file under `.ai/checkpoints/` refuses every later checkpoint. `node scripts/checkpoint-transport.mjs verify <store-dir> <path>=<blob-id>...` compares observed ids with the plan and exits non-zero unless every patch matches and nothing stray is stored, and `localize <expected-file> <observed-file>` names the first differing line. The helper is first-party and lives in `scripts/` with its cases; `.tools/` holds only the retained Prettier archive, and no helper belongs there.\n\nA checkpoint is the route when the work is a stack."
+    },
+    {
+      "path": "AGENTS.md",
+      "find": "authored from blob reads alone. It has no `preview` equivalent.",
+      "replace": "authored from blob reads alone. Push the patches first and the manifest last, under the write rule above: every write's returned id compared with the plan before the next write, and `verify` over the listed store before the manifest. It has no `preview` equivalent."
+    },
+    {
+      "path": "scripts/checkpoint-transport.mjs",
+      "find": "  let value;\n  try {\n    value = JSON.parse(required(files, MANIFEST).toString(\"utf8\"));",
+      "replace": "  // Decoded like every other store file, so a malformed byte is refused rather than parsed.\n  const text = transportText(required(files, MANIFEST), `${CHECKPOINT_ROOT}/${id}/${MANIFEST}`);\n  let value;\n  try {\n    value = JSON.parse(text);"
+    },
+    {
+      "path": "packages/core/test/unit/scripts/checkpoint-transport.test.ts",
+      "find": "    await expect(readStore(unsealed)).rejects.toThrow(\"nothing is sealed\");\n",
+      "replace": "    await expect(readStore(unsealed)).rejects.toThrow(\"nothing is sealed\");\n    // A byte a lossy decode would read as U+FFFD inside a string the manifest still parses.\n    const garbled = await plant();\n    const manifest = await readFile(join(garbled, MANIFEST));\n    const at = manifest.indexOf(\"add a note\");\n    await writeFile(\n      join(garbled, MANIFEST),\n      Buffer.concat([manifest.subarray(0, at), Buffer.from([0xff]), manifest.subarray(at + 1)]),\n    );\n    await expect(readStore(garbled)).rejects.toThrow(\n      '\".ai/checkpoints/cp042/manifest.json\" is not valid UTF-8',\n    );\n"
+    },
+    {
+      "path": "docs/SESSION-STATUS.md",
+      "find": "the retained Prettier 3.6.2 checks every touched path.",
+      "replace": "the retained Prettier 3.6.2 checks every touched path it has a parser for, which excludes the byte-exact `.txt` fixtures by design."
+    }
+  ]
+}
