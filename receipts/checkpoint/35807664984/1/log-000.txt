@@ -1,0 +1,12 @@
+prepare isolated candidate	Apply the stack, adjudicate by digest, then format the surviving tip	﻿2026-09-23T01:46:36.1659981Z ##[group]Run set -euo pipefail
+prepare isolated candidate	Apply the stack, adjudicate by digest, then format the surviving tip	2026-09-23T01:46:36.1660345Z ^[[36;1mset -euo pipefail^[[0m
+prepare isolated candidate	Apply the stack, adjudicate by digest, then format the surviving tip	2026-09-23T01:46:36.1660689Z ^[[36;1mexport CANDIDATE_ROOT="$GITHUB_WORKSPACE/candidate"^[[0m
+prepare isolated candidate	Apply the stack, adjudicate by digest, then format the surviving tip	2026-09-23T01:46:36.1661137Z ^[[36;1mexport FORMATTER_ROOT="$RUNNER_TEMP/motion5-formatter"^[[0m
+prepare isolated candidate	Apply the stack, adjudicate by digest, then format the surviving tip	2026-09-23T01:46:36.1661598Z ^[[36;1mexport CANDIDATE_OUTPUT="$RUNNER_TEMP/candidate.json"^[[0m
+prepare isolated candidate	Apply the stack, adjudicate by digest, then format the surviving tip	2026-09-23T01:46:36.1662005Z ^[[36;1mnode trusted/scripts/automation-checkpoint.mjs prepare^[[0m
+prepare isolated candidate	Apply the stack, adjudicate by digest, then format the surviving tip	2026-09-23T01:46:36.1683354Z shell: /usr/bin/bash -e {0}
+prepare isolated candidate	Apply the stack, adjudicate by digest, then format the surviving tip	2026-09-23T01:46:36.1683806Z env:
+prepare isolated candidate	Apply the stack, adjudicate by digest, then format the surviving tip	2026-09-23T01:46:36.1684120Z   TRUSTED_SHA: 83b41a6cfa85b0928b6ec1744463f86c8a7fb892
+prepare isolated candidate	Apply the stack, adjudicate by digest, then format the surviving tip	2026-09-23T01:46:36.1684472Z ##[endgroup]
+prepare isolated candidate	Apply the stack, adjudicate by digest, then format the surviving tip	2026-09-23T01:46:36.2067580Z nothing is sealed: ".ai/checkpoints/cp001/manifest.json" is absent. A store without its manifest is not a request; this is the expected refusal after deleting a manifest to repair it, so push the missing patches and then the manifest
+prepare isolated candidate	Apply the stack, adjudicate by digest, then format the surviving tip	2026-09-23T01:46:36.2104438Z ##[error]Process completed with exit code 1.
