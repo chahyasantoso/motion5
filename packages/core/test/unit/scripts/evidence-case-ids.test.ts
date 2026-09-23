@@ -297,6 +297,16 @@ import { fileURLToPath } from "node:url";
 // neither asks. It is the twentieth two-letter series, under the policy the `P-` paragraph sets,
 // and `C-` alone is the option C plan. Like `AE-` it joined the pattern after the slice that
 // opened it had already declared cases, and CI refused that slice for exactly that reason.
+//
+// `IR-` belongs to the one IK solve result, issue #349's second phase and ADR-107: that both
+// strategies and both arms of the dispatch return one `SolveResult`, that the closed form's stated
+// residual equals the miss `fk`'s composition measures, that the collapsed and coincident exits
+// name the kind and residual they reach, and that the flat `SolveQuality` union reads
+// exhaustively into its strategy families. `CS-` owns which strategy a chain reaches; `IR-` owns
+// what that strategy reports back. It is the twenty-first two-letter series, under the policy the
+// `P-` paragraph sets. `I` alone is the architecture invariant space, which the alternation does
+// not name and the carve-out below passes over, so like `IK-` it has no single-letter neighbour.
+//
 // The scan root is the repository rather than `packages/core/test`, because an id names one test in
 // the suite and the suite is not one package. `H-4` is declared in
 // `packages/react/test/public-hook-render.test.ts`, which the old root could not see, so one id
@@ -359,7 +369,7 @@ const TEST_FILE = /\.test\.tsx?$/;
 // this pattern belongs beside the pattern rather than once per series, so those paragraphs now
 // say what a series owns and this one says where it sorts. Issue #294.
 const CASE_TITLE =
-  /it\(\s*"((?:AE|CF|CN|CS|DV|EV|FB|FO|IK|LF|LV|MG|PK|PV|RA|RB|RS|SH|WT|B|C|D|E|F|G|H|J|K|L|M|N|P|Q|R|S|T|U|V|W|Y|Z)-\d+)/g;
+  /it\(\s*"((?:AE|CF|CN|CS|DV|EV|FB|FO|IK|IR|LF|LV|MG|PK|PV|RA|RB|RS|SH|WT|B|C|D|E|F|G|H|J|K|L|M|N|P|Q|R|S|T|U|V|W|Y|Z)-\d+)/g;
 const REACT_RENDER = "packages/react/test/public-hook-render.test.ts";
 const SERIES_SHAPED_TITLE = /it\(\s*"([A-Z]{1,2}\d*)-(\d+)(?![\w-])/g;
 const SERIES_PREFIX = /^[A-Z]{1,2}$/;
