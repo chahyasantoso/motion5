@@ -143,7 +143,7 @@ describe("boundary scan predicates", () => {
       'import { compiler } from "../../contract/keyframe-compiler";',
       'import type { RenderMetadata } from "../../ports/render-metadata";',
       'import { exhaustive } from "../lang/exhaustive";',
-      'import { helpers } from "../domain/exhaustive-helpers";',
+      'import { helpers } from "../domain-helpers/exhaustive";',
       'import { sink } from "@motion5/core/domain/exhaustive";',
       "const load = import(path);",
     ])

@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 import { readAuthoredLeaf, readCompilableStops } from "../../src/contract/authored-leaf";
 import type { Diagnostic } from "../../src/contract/v5";
 import { validateKeyframes } from "../../src/contract/validate-v5";
-import { compilePercentKeyframes } from "../../src/domain/keyframe-compiler";
+import { compilePercentKeyframes } from "../../src/contract/keyframe-compiler";
 import { createFakeInterpolator } from "../../src/testing/fakes";
 
 // Issue #192, slice A. One owner for the question "what shape is this authored leaf".
@@ -30,7 +30,7 @@ const SOURCE_ROOT = fileURLToPath(new URL("../../src/", import.meta.url));
 const READ_SITES = [
   "contract/validate-v5.ts",
   "contract/keyframe-shape.ts",
-  "domain/keyframe-compiler.ts",
+  "contract/keyframe-compiler.ts",
   "domain/plugins.ts",
   "testing/fakes.ts",
 ];

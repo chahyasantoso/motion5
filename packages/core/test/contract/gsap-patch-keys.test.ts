@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { gsap } from "gsap";
 import { fileURLToPath } from "node:url";
-import { compilePercentKeyframes } from "../../src/domain/keyframe-compiler";
+import { compilePercentKeyframes } from "../../src/contract/keyframe-compiler";
 import {
   createGsapInterpolator,
   createGsapOneTweenInterpolator,

@@ -18,7 +18,7 @@ import { validateV5 } from "./validate-v5";
 import { readOutcome } from "./lang/outcome";
 import { IncrementalGraphBuilder } from "./graph/builders/incremental";
 import { createDefaultTriggerFactory } from "./adapters/trigger-factory/default";
-import { compilePercentKeyframes } from "./domain/keyframe-compiler";
+import { compilePercentKeyframes } from "./contract/keyframe-compiler";
 import { flattenAuthoredKeyframes } from "./domain/keyframe-groups";
 import { Motion, type MotionTrackEntry } from "./domain/motion";
 import { unreachable } from "./lang/exhaustive";
