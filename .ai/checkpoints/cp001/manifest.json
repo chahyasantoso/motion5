@@ -1,0 +1,110 @@
+{
+  "version": 1,
+  "checkpoint": "cp001",
+  "base": "130691e4c14cf879680aa45d3f7d224600eb690b",
+  "allow": [
+    "docs/",
+    "packages/core/test/",
+    "scripts/"
+  ],
+  "patches": [
+    {
+      "seq": 1,
+      "file": "001-add-the-checkpoint-transport-helper.diff",
+      "sha256": "cdd03c64b0e73f407c10f930d317843a767e0146b44ed1c8e32a5be6446d5511",
+      "message": "feat(scripts): add checkpoint-transport plan, verify and localize over the checkpoint policy",
+      "pre": {
+        "scripts/checkpoint-policy.mjs": "9e84e191140532caa412f9f8031953550e9969fb",
+        "scripts/checkpoint-transport.d.mts": null,
+        "scripts/checkpoint-transport.mjs": null
+      },
+      "post": {
+        "scripts/checkpoint-policy.mjs": "dc6a66cbfc508c71cd0fd2c193dafd65fd1ac7d6",
+        "scripts/checkpoint-transport.d.mts": "ac84a121e56aa71efbcb766356338b5b7ec75106",
+        "scripts/checkpoint-transport.mjs": "7066fc3d9d7cacd275c4e670ef243e51f72edb81"
+      }
+    },
+    {
+      "seq": 2,
+      "after": 1,
+      "file": "002-carry-cp001-patch-004-as-a-fixture.diff",
+      "sha256": "df0701070a3a7fdd088bac8b72197cfd070c16adfb37cdf4a4adc39285dd5dfe",
+      "message": "test(scripts): carry cp001 patch 004 from #477 as a byte-exact transport fixture",
+      "pre": {
+        "packages/core/test/fixtures/checkpoint-transport/cp001/004-record-the-placement-as-adr-103.diff.txt": null
+      },
+      "post": {
+        "packages/core/test/fixtures/checkpoint-transport/cp001/004-record-the-placement-as-adr-103.diff.txt": "80b7bee185e45f273f9ed3395c2e71d3f0fcfe32"
+      }
+    },
+    {
+      "seq": 3,
+      "after": 2,
+      "file": "003-carry-cp001-patch-005-and-manifest.diff",
+      "sha256": "451b93788671655d2079790e4aa6aad5d156b5517a95f61eadf132cd60b08bab",
+      "message": "test(scripts): carry cp001 patch 005 and its manifest as byte-exact transport fixtures",
+      "pre": {
+        "packages/core/test/fixtures/checkpoint-transport/cp001/005-refresh-the-status-file.diff.txt": null,
+        "packages/core/test/fixtures/checkpoint-transport/cp001/manifest.json.txt": null
+      },
+      "post": {
+        "packages/core/test/fixtures/checkpoint-transport/cp001/005-refresh-the-status-file.diff.txt": "a06c81f53ad69fbdd041bdfe3fbac5c4f07b5735",
+        "packages/core/test/fixtures/checkpoint-transport/cp001/manifest.json.txt": "f95a9fc3cf25c9a878d889020b2ff7518eac116e"
+      }
+    },
+    {
+      "seq": 4,
+      "after": 3,
+      "file": "004-cover-the-transport-helper.diff",
+      "sha256": "fd27488dd71ef93dcda40a3f48c1605ef202cddee4ef02063dc1ba1503815e4a",
+      "message": "test(scripts): cover the transport hazard map, verdicts and first differing line",
+      "pre": {
+        "packages/core/test/unit/scripts/checkpoint-transport.test.ts": null
+      },
+      "post": {
+        "packages/core/test/unit/scripts/checkpoint-transport.test.ts": "f4c9f002256025dd99279ac76cb66fdebf79b680"
+      }
+    },
+    {
+      "seq": 5,
+      "after": 4,
+      "file": "005-record-the-read-back-rule-as-adr-104.diff",
+      "sha256": "e4090d8eabd2df1fb21e45229a4012b5c122342b76f4657c09039d527eb39a02",
+      "message": "docs(adr): ADR-104 records that a transport write is read back before it counts",
+      "pre": {
+        "docs/ADR-104-a-transport-write-is-read-back-before-it-counts.md": null
+      },
+      "post": {
+        "docs/ADR-104-a-transport-write-is-read-back-before-it-counts.md": "41975f42649906cb5da61767af2a31473c36f7a9"
+      }
+    },
+    {
+      "seq": 6,
+      "after": 5,
+      "file": "006-point-the-workflows-at-the-rule.diff",
+      "sha256": "495b375d955c366855cf80bbf9dfa59b9cb1f4339f7771c8e084e2b82c0e9a29",
+      "message": "docs(automation): point both transport workflows at the read-back rule",
+      "pre": {
+        "docs/AI-CHECKPOINT-WORKFLOW.md": "a0bf10ba72aef495f0f929ef4bdba9aeadb67811",
+        "docs/AI-EDIT-WORKFLOW.md": "f18c2382fe68ee2300f871751aac41df709db143"
+      },
+      "post": {
+        "docs/AI-CHECKPOINT-WORKFLOW.md": "9ddf871f5bb6609e18c64fb52823b9c11add20d0",
+        "docs/AI-EDIT-WORKFLOW.md": "be8097a9db635a9e6c7bbb6672e8db8a2a841065"
+      }
+    },
+    {
+      "seq": 7,
+      "after": 6,
+      "file": "007-refresh-the-status-file.diff",
+      "sha256": "76690679ab757e81da3d980b758b4010f4a8fb475179a028dc4a9ce9111e0555",
+      "message": "docs(status): read against main after #477 and record the #478 slice",
+      "pre": {
+        "docs/SESSION-STATUS.md": "7430baea8afa9ea0e6eb3f546e1d10d03680e445"
+      },
+      "post": {
+        "docs/SESSION-STATUS.md": "d6c74d83dbd36ebdd98d4d0231db4afe9d7ef86d"
+      }
+    }
+  ]
+}
