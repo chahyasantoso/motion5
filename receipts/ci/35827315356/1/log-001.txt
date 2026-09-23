@@ -1,0 +1,25 @@
+ts(55,29): error TS2379: Argument of type '{ clock: Clock & { readonly tickNumber: number; readonly time: number; tick(delta?: number): number; dispose(): void; }; scheduler: Scheduler<() => void, unknown> & { ...; }; interpolator: Interpolator<...>; triggerFactory: TriggerFactory | undefined; }' is not assignable to parameter of type 'EngineOptions' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-23T06:33:54.6966782Z   Types of property 'triggerFactory' are incompatible.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-23T06:33:54.6967428Z     Type 'TriggerFactory | undefined' is not assignable to type 'TriggerFactory'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-23T06:33:54.6968118Z       Type 'undefined' is not assignable to type 'TriggerFactory'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-23T06:33:54.6971346Z ##[error]packages/core/test/unit/runtime/plugin-require-edit.test.ts(123,99): error TS2379: Argument of type '{ id: string; duration: number | undefined; }' is not assignable to parameter of type 'TrackConfigView' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-23T06:33:54.6973510Z   Types of property 'duration' are incompatible.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-23T06:33:54.6974047Z     Type 'number | undefined' is not assignable to type 'number'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-23T06:33:54.6974581Z       Type 'undefined' is not assignable to type 'number'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-23T06:33:54.7341880Z ##[error]Process completed with exit code 2.
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	﻿2026-09-23T06:35:12.6567950Z ##[group]Run test "$SUITE_RESULT" = success
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-23T06:35:12.6568994Z ^[[36;1mtest "$SUITE_RESULT" = success^[[0m
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-23T06:35:12.6605356Z shell: /usr/bin/bash -e {0}
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-23T06:35:12.6606215Z env:
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-23T06:35:12.6606781Z   NODE_VERSION: 24.21.0
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-23T06:35:12.6607408Z   SUITE_RESULT: failure
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-23T06:35:12.6608150Z ##[endgroup]
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-23T06:35:12.6720825Z ##[error]Process completed with exit code 1.
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	﻿2026-09-23T06:35:12.1035709Z ##[group]Run test "$SUITE_RESULT" = success
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-23T06:35:12.1036451Z ^[[36;1mtest "$SUITE_RESULT" = success^[[0m
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-23T06:35:12.1303674Z shell: /usr/bin/bash -e {0}
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-23T06:35:12.1304687Z env:
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-23T06:35:12.1305182Z   NODE_VERSION: 24.21.0
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-23T06:35:12.1305722Z   SUITE_RESULT: failure
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-23T06:35:12.1306247Z ##[endgroup]
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-23T06:35:12.1466749Z ##[error]Process completed with exit code 1.
