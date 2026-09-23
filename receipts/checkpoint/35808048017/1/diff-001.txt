@@ -1,0 +1,8 @@
+(OUTCOME).toContain("export type Outcome<T, E> =");
++    expect(OUTCOME).not.toContain("E = Diagnostic");
++    expect(OUTCOME).not.toContain("../contract/");
++    expect(OUTCOME).not.toContain("../domain/");
++    const reader = member(OUTCOME, "export function readOutcome<T, E, R>(", "");
++    expect(reader).toContain("unreachable(outcome)");
++  });
++});

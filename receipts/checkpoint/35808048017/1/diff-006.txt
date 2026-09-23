@@ -1,0 +1,32 @@
+ause it bounds the claim: Node 22 with `--experimental-strip-types` and a hand-written `describe`, `it` and `expect` shim, not `vitest`, so a matcher this suite uses and that shim implements differently would not be caught. `outcome.test.ts` and `plugins.test.ts` could not be executed, because `test/helpers/source-region.ts` imports the TypeScript compiler and no package is installable here; their assertions were replayed by hand against the real modules instead, including `member`'s indent argument, which is the read that silently refused a region in `cp006`. The planted scans were **executed** against the shipped scanner in a throwaway tree, not merely written. `W-8` returned `contract/leak.ts: inward domain import`, `ports/leak.ts: inward domain import`, `adapters/leak.ts: retired domain sink import`, in that order. The adapter case returned the empty array. The thirteen-specifier case was executed against the shipped predicates with zero divergences from what it asserts.
++
++`node scripts/boundary-scan.mjs`, `node scripts/read-budget-scan.mjs`, `node scripts/acceptance-scan.mjs` and `node scripts/raw-template-scan.mjs` were run on the exact tree this slice produces and all four pass. No added line in any `.ts` or `.mjs` file exceeds 100 columns, measured over added lines. Markdown is not held to that number and this record was wrong to claim it was: `proseWrap` is `preserve` and `docs/FORMATTING.md` asks for a paragraph on one line or a hand wrap under 100 columns, so the prose here is one line per paragraph like every record beside it. No new evidence-case id is introduced, so the id series and `docs/acceptance-map.json` are untouched.
++
++Not claimed, and required CI is the authority for all of it: no `npm`, no `vitest` and no `tsc` run backs a statement here, and the shim runs named above are not `vitest` runs. `prettier --check` was run with the retained 3.6.2 under `.tools/prettier` over every path this slice touches, which is the formatter CI pins but not CI's `format:check`. None of the rest is installable in the preparing environment and no network was available, so `typecheck` and every "red on `main`" claim above are claims about what a checked-in case asserts rather than observed failures, except where a predicate was executed and its output quoted. The relocation's type correctness in particular rests on reading every use site rather than on a compiler: the four inferred constructor calls were left inferred precisely because removing a default cannot change inference that already succeeds.
+diff --git a/docs/ARCHITECTURE.md b/docs/ARCHITECTURE.md
+index cf98bf9..cd5ed76 100644
+--- a/docs/ARCHITECTURE.md
++++ b/docs/ARCHITECTURE.md
+@@ -45,6 +45,13 @@ Graph depends on contract and domain. Runtime depends on graph. Ports are depend
+ depending. Adapters depend on ports and on their own external engine, and nothing depends on
+ adapters except the composition root.
+ 
++Two of those sentences are gated rather than asserted. `scripts/boundary-scan.mjs` refuses any
++relative `domain/` import from `contract/` and from `ports/`, which is the contract sentence and
++half the ports sentence. The gate deliberately stops there: three adapter imports of `domain/` are
++still legal, `ports/graph-builder.ts` still reaches `graph/` type-only, and a gate introduced red
++earns an exemption list instead of a fix. ADR-099 and ADR-103 own that reasoning, and issue #474
++owns the adapter remainder.
++
+ ## 3. Ownership
+ 
+ One owner per responsibility. If two things can perform an operation, one of them is wrong.
+@@ -212,7 +219,7 @@ At runtime, diagnostics accumulate on the project in a bounded ring buffer and s
+ packages/
+   core/
+     src/
+-      lang/        dependency-free shared helpers
++      lang/        dependency-free shared helpers: the exhaustive sink, the outcome algebra
+       contract/    authored schema constants, public types, diagnostics shape
+       domain/      Track, Motion, plugins, immutable value snapshots
+       graph/       qualified ids, IR, normalization, validation, ObservationState, GraphBinding

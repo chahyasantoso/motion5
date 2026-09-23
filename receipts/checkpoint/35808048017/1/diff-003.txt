@@ -1,0 +1,51 @@
+ and on `ports/`, and it is applied to exactly those two
++ * layers. `adapters/` keeps the narrower retired-sink rule below, because three real adapter
++ * imports of `domain/` survive: `adapters/interpolator/gsap.ts` reaches `domain/keyframe-compiler`
++ * for a value, and `adapters/dom.ts` plus `adapters/index.ts` reach `domain/plugins` type-only.
++ * Widening this rule to adapters would refuse the tree it was added to, and a gate introduced red
++ * earns an exemption list instead of a fix. ADR-099 named all three and ADR-103 records why they
++ * stay their own slice.
++ *
++ * The anchor admits an absent trailing slash, so a bare `../domain` is refused alongside
++ * `../domain/track`, and it reads canonical specifiers, so `./../domain/track`, `.././domain/track`
++ * and `..//domain/track` are refused as the spelling they resolve to. None of them appears in the
++ * tree and none is one a formatter would produce, which is the reason they are worth refusing: a
++ * gate whose anchor can be stepped around by a character nobody would notice in review is a gate
++ * that reports a clean boundary it does not have. It stays anchored at the front, so
++ * `../domain-helpers` and `../domainfoo` are still clean.
++ */
++export function importsDomainLayer(source) {
++  for (const specifier of importSpecifiers(source))
++    if (/^(?:\.\.\/)+domain(?:\/|$)/.test(specifier)) return true;
++  return false;
++}
++/**
++ * The retired sink path, and only that path, for the one layer the broad rule cannot reach yet.
++ *
++ * Kept as its own question rather than folded into `importsDomainLayer`, because `adapters/` may
++ * import `domain/` and may not import the sink. The extraction sees `.js`, `.mjs`, and `.ts`
++ * suffixes plus either path separator, and the anchored path is why `../lang/exhaustive` and
++ * `../domain/exhaustive-helpers` stay clean. `contract/` and `ports/` no longer carry this rule: a
++ * retired-sink import is a `domain/` import, so `importsDomainLayer` already refuses it there, and
++ * two spellings of one question is the duplication this project files against itself.
+  */
+ export function importsDomainSink(source) {
+-  for (const match of source.matchAll(moduleSpecifier)) {
+-    const specifier = match[1].replaceAll("\\", "/");
++  for (const specifier of importSpecifiers(source))
+     if (/^(?:\.\.\/)+domain\/exhaustive(?:\.(?:js|mjs|ts))?$/.test(specifier)) return true;
+-  }
+   return false;
+ }
+ export function bannedSymbol(source) {
+@@ -189,7 +374,9 @@ function checkCoreSource(source, file, layer, violations) {
+   if (layer !== "adapters" && (importsBoundary(source) || importsRenderer(source)))
+     violations.push(`${file}: renderer or engine import`);
+   if (bannedSymbol(source)) violations.push(`${file}: banned compatibility symbol`);
+-  if (["contract", "ports", "adapters"].includes(layer) && importsDomainSink(source))
++  if (["contract", "ports"].includes(layer) && importsDomainLayer(source))
++    violations.push(`${file}: inward domain import`);
++  if (layer === "adapters" && importsDomainSink(source))
+     violations.push(`${file}: retired domain sink import`);
+ }
+ async function scanFiles(directory, scanRoot, layer, violations) {
