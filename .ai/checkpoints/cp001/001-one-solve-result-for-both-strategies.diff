@@ -1,0 +1,362 @@
+diff --git a/packages/core/src/plugins/fabrik.ts b/packages/core/src/plugins/fabrik.ts
+index f5a5ebc..31c60b4 100644
+--- a/packages/core/src/plugins/fabrik.ts
++++ b/packages/core/src/plugins/fabrik.ts
+@@ -7,6 +7,7 @@ import {
+   type WorldPoint,
+ } from "./frame";
+ import { solveLength, solveOffset, type SolveMember } from "./ik-member";
++import type { IterativeQuality, SolveResult } from "./ik-result";
+ 
+ /**
+  * FABRIK over a solver chain: pure, and reviewed as arithmetic.
+@@ -72,23 +73,18 @@ export const FABRIK_ARC_BISECTIONS = 60;
+  */
+ export type FabrikPoint = WorldPoint;
+ 
+-/**
+- * What the solve did, so a caller can diagnose it without re-deriving it.
+- *
+- * The closed kind answers all three exits: a residual inside tolerance converged, a fixed point
+- * that remains outside tolerance stalled, and a still-moving pose at the hard cap hit
+- * `iteration-cap`. The last distinction is a capability gain: a caller can raise the cap for the
+- * slow case without treating an unreachable goal as if more work could help.
+- */
+-export type FabrikConvergence =
+-  | { readonly kind: "converged"; readonly iterations: number; readonly residual: number }
+-  | { readonly kind: "stalled"; readonly iterations: number; readonly residual: number }
+-  | { readonly kind: "iteration-cap"; readonly iterations: number; readonly residual: number };
+-
+ /**
+  * The solved chain: one local rotation per member id, the pivots and tips those rotations describe,
+  * and what the iteration did.
+  *
++ * The rotations and the quality are the shared `SolveResult` every strategy returns, narrowed to the
++ * iterative kinds: a residual inside tolerance converged, a fixed point that remains outside it
++ * stalled, and a still-moving pose at the hard cap hit `iteration-cap`. The last distinction is a
++ * capability gain, because a caller can raise the cap for the slow case without treating an
++ * unreachable goal as if more work could help. The field was `convergence` and its type
++ * `FabrikConvergence` until issue #349's second phase moved the kinds into `ik-result.ts`, where the
++ * closed form's kinds sit beside them. See ADR-107.
++ *
+  * `tips` and `pivots` are returned because length preservation is a statement about positions rather
+  * than angles, and a case that re-derived them from the rotations would re-derive the thing under
+  * test. Both halves are needed once a member may carry an offset: its length is the distance from
+@@ -96,11 +92,9 @@ export type FabrikConvergence =
+  * when the offset is zero. A publisher carries `rotations` and nothing else; the positions are
+  * `fk`'s to recompute, which is the point of returning rotations rather than a pose.
+  */
+-export interface FabrikSolution {
+-  readonly rotations: Readonly<Record<string, number>>;
++export interface FabrikSolution extends SolveResult<IterativeQuality> {
+   readonly pivots: Readonly<Record<string, FabrikPoint>>;
+   readonly tips: Readonly<Record<string, FabrikPoint>>;
+-  readonly convergence: FabrikConvergence;
+ }
+ 
+ const DEGREES = 180 / Math.PI;
+@@ -431,14 +425,14 @@ export function solveFabrik(
+     solvedPivots[id] = pivots.get(id)!;
+     solvedTips[id] = tips.get(id)!;
+   }
+-  let convergence: FabrikConvergence;
+-  if (residual <= FABRIK_TOLERANCE) convergence = { kind: "converged", iterations, residual };
+-  else if (stalled) convergence = { kind: "stalled", iterations, residual };
+-  else convergence = { kind: "iteration-cap", iterations, residual };
++  let quality: IterativeQuality;
++  if (residual <= FABRIK_TOLERANCE) quality = { kind: "converged", iterations, residual };
++  else if (stalled) quality = { kind: "stalled", iterations, residual };
++  else quality = { kind: "iteration-cap", iterations, residual };
+   return Object.freeze({
+     rotations: Object.freeze(rotations),
+     pivots: Object.freeze(solvedPivots),
+     tips: Object.freeze(solvedTips),
+-    convergence: Object.freeze(convergence),
++    quality: Object.freeze(quality),
+   });
+ }
+diff --git a/packages/core/src/plugins/ik-analytic.ts b/packages/core/src/plugins/ik-analytic.ts
+index 0a837dc..3d1fdf0 100644
+--- a/packages/core/src/plugins/ik-analytic.ts
++++ b/packages/core/src/plugins/ik-analytic.ts
+@@ -1,5 +1,6 @@
+ import { clamp, effectiveLink, pivotFromBaseTip, type WorldFrame } from "./frame";
+ import { solveLength, solveOffset, type SolveMember } from "./ik-member";
++import type { ClosedFormQuality, SolveResult } from "./ik-result";
+ 
+ /**
+  * The analytic two-bone solve, in `fk`'s own degrees and rotate-then-translate convention.
+@@ -49,6 +50,16 @@ import { solveLength, solveOffset, type SolveMember } from "./ik-member";
+  *
+  * Every exit returns through one frozen record. The degenerate cases are a pair of angles each,
+  * not a return statement each, so the record's key order and freezing are stated once.
++ *
++ * **The result says how well the angles answer the goal, and it is stated rather than measured.**
++ * The rotations are exact for every goal in the reach band, so the residual is the clamp's own
++ * `|d - clampedD|` rather than a forward composition this function would have to run: zero inside
++ * the band, and the distance to the nearer bound outside it. The degenerate exits read the same
++ * band, because with extents already clamped to zero `[|reach - l2|, reach + l2]` is exactly
++ * `[reach, reach]` when the second segment has no extent and `[l2, l2]` when the link has none, so
++ * no exit needs a band of its own. The one miss inside the band is the coincident goal, which the
++ * rest pose answers; its residual is where that pose leaves the tip. `IR-6` holds every residual to
++ * the miss `fk`'s own composition measures. See `ik-result.ts` and ADR-107.
+  */
+ export function solveTwoBone(
+   root: WorldFrame,
+@@ -56,22 +67,32 @@ export function solveTwoBone(
+   first: SolveMember,
+   second: SolveMember,
+   flip = false,
+-): Readonly<Record<string, number>> {
+-  const [r1, r2] = twoBoneAngles(root, target, first, second, flip);
++): SolveResult<ClosedFormQuality> {
++  const { angles, quality } = twoBone(root, target, first, second, flip);
++  const [r1, r2] = angles;
+   return Object.freeze({
+-    [first.id]: r1,
+-    [second.id]: r2,
++    rotations: Object.freeze({
++      [first.id]: r1,
++      [second.id]: r2,
++    }),
++    quality: Object.freeze(quality),
+   });
+ }
+ 
+-/** The two local angles `solveTwoBone` publishes, in member order. */
+-function twoBoneAngles(
++/** The two local angles `solveTwoBone` publishes, in member order, and how well they answer. */
++interface TwoBoneAnswer {
++  readonly angles: readonly [number, number];
++  readonly quality: ClosedFormQuality;
++}
++
++/** The closed form itself. Every exit reads one reach band and one residual. */
++function twoBone(
+   root: WorldFrame,
+   target: WorldFrame,
+   first: SolveMember,
+   second: SolveMember,
+   flip: boolean,
+-): readonly [number, number] {
++): TwoBoneAnswer {
+   const l1 = solveLength(first);
+   const l2 = solveLength(second);
+   // The chain's own base, and the rigid link that leaves it. Both are pure functions of the root
+@@ -86,18 +107,26 @@ function twoBoneAngles(
+   const d = Math.hypot(dx, dy);
+   const targetAngle = (Math.atan2(dy, dx) * 180) / Math.PI;
+ 
++  const minReach = Math.abs(reach - l2);
++  const maxReach = reach + l2;
++  const clampedD = clamp(d, minReach, maxReach);
++  const band = bandQuality(d, minReach, maxReach, Math.abs(d - clampedD));
++
+   // A link with no extent has no twist either, which `effectiveLink` guarantees, so the degenerate
+   // cases aim whichever segment is left and subtract a twist that is exactly zero. A missing second
+   // segment aims the link, whether or not the link itself has extent; a missing link with a real
+   // second segment aims the second segment.
+-  if (l2 <= 0) return [targetAngle - twist - root.rotation, 0];
+-  if (reach <= 0) return [0, targetAngle - root.rotation];
+-
+-  const minReach = Math.abs(reach - l2);
+-  const maxReach = reach + l2;
+-  const clampedD = clamp(d, minReach, maxReach);
++  if (l2 <= 0) return { angles: [targetAngle - twist - root.rotation, 0], quality: band };
++  if (reach <= 0) return { angles: [0, targetAngle - root.rotation], quality: band };
+ 
+-  if (clampedD <= 0) return [0, 0];
++  // Only a goal on the base with `reach === l2` clamps to zero: the band's lower bound is zero only
++  // then, and a positive distance clamps to itself. It has no direction, so the rest pose answers.
++  if (clampedD <= 0) {
++    return {
++      angles: [0, 0],
++      quality: { kind: "coincident", residual: restMiss(root, reach, twist, l2) },
++    };
++  }
+ 
+   const cosAlpha = clamp(
+     (reach * reach + clampedD * clampedD - l2 * l2) / (2 * reach * clampedD),
+@@ -109,7 +138,42 @@ function twoBoneAngles(
+   const cosBeta = clamp((reach * reach + l2 * l2 - clampedD * clampedD) / (2 * reach * l2), -1, 1);
+   const beta = (Math.acos(cosBeta) * 180) / Math.PI;
+ 
+-  return flip
++  const angles: readonly [number, number] = flip
+     ? [targetAngle - alpha - twist - root.rotation, 180 - beta + twist]
+     : [targetAngle + alpha - twist - root.rotation, beta - 180 + twist];
++  return { angles, quality: band };
++}
++
++/**
++ * Where a goal at distance `d` sits against the reach band, and the residual the clamp leaves.
++ *
++ * Read in this order so a band that has collapsed to one point still names the side it was missed
++ * on. A non-finite distance or bound compares false against both and reads as `reached` with the
++ * non-finite residual it produced: the angles it publishes are non-finite too, the quality reports
++ * the geometry it was handed rather than validating it, and the residual is not laundered to zero.
++ */
++function bandQuality(
++  d: number,
++  minReach: number,
++  maxReach: number,
++  residual: number,
++): ClosedFormQuality {
++  if (d > maxReach) return { kind: "too-far", residual };
++  if (d < minReach) return { kind: "too-near", residual };
++  return { kind: "reached", residual };
++}
++
++/**
++ * The distance the rest pose leaves the tip from the chain's own base, which is where a coincident
++ * goal sits. With both local angles zero the link leaves the base at the root's rotation plus its
++ * twist and the second segment continues at the root's rotation, so the tip is the sum of those two
++ * vectors.
++ */
++function restMiss(root: WorldFrame, reach: number, twist: number, l2: number): number {
++  const link = ((root.rotation + twist) * Math.PI) / 180;
++  const segment = (root.rotation * Math.PI) / 180;
++  return Math.hypot(
++    reach * Math.cos(link) + l2 * Math.cos(segment),
++    reach * Math.sin(link) + l2 * Math.sin(segment),
++  );
+ }
+diff --git a/packages/core/src/plugins/ik-result.ts b/packages/core/src/plugins/ik-result.ts
+new file mode 100644
+index 0000000..6cd193a
+--- /dev/null
++++ b/packages/core/src/plugins/ik-result.ts
+@@ -0,0 +1,64 @@
++/**
++ * What one IK solve answers: the local rotations it publishes, and how well they answer the goal.
++ *
++ * **One result type for every strategy.** Before issue #349's second phase the closed form returned
++ * a bare rotations record and FABRIK returned rotations beside a convergence record only it could
++ * state, so "did this solve reach its goal" had an answer on one path and no answer on the other,
++ * and a caller that wanted it had to know which strategy the dispatcher had picked. Both strategies
++ * now return this record and `solveChain` returns it from both arms, so the question has one shape
++ * whichever strategy answered it. See ADR-107.
++ *
++ * `rotations` is the only half anything publishes. `ik.ts` reads it and drops `quality`, because a
++ * solver's patch shape must not become a function of its arity and `FB-9` pins the published keys;
++ * the quality record is for a caller that diagnoses a solve, not for the patch.
++ */
++export interface SolveResult<Q extends SolveQuality = SolveQuality> {
++  readonly rotations: Readonly<Record<string, number>>;
++  readonly quality: Q;
++}
++
++/**
++ * How well a solve's rotations answer its goal: one flat closed union across both strategies.
++ *
++ * Every variant carries `residual`, the world-unit distance the composed tip is left from the goal,
++ * so a caller that only wants the miss reads it without a `switch`. The kind says why the miss is
++ * what it is, and that is where the two strategies differ rather than where they agree:
++ *
++ * The closed form is exact, so its kinds describe the geometry. `reached` means the goal lies in
++ * the reach band and the residual is zero. `too-far` and `too-near` mean the goal lies outside the
++ * band `[|reach - l2|, reach + l2]` and the chain was extended or folded toward it; the residual is
++ * `|d - clampedD|`, the distance the clamp already computes. `coincident` is the one geometric
++ * miss inside the band: a goal on the chain's own base with `reach === l2`, which has no direction
++ * to aim at, so the closed form answers with the rest pose and the residual is where that pose puts
++ * the tip.
++ *
++ * FABRIK is iterative, so its kinds describe the iteration: a residual inside tolerance
++ * `converged`, a fixed point outside it `stalled`, and a still-moving pose at the hard cap hit
++ * `iteration-cap`. Those three moved here from `fabrik.ts`, whose `FabrikConvergence` is deleted
++ * rather than aliased, and they keep the iteration count only they can state.
++ *
++ * Flat rather than nested under a strategy tag. A caller reads one discriminant and a `switch`
++ * over it ending in `unreachable` is exhaustive over every answer any strategy gives; a nested
++ * `{ strategy, quality }` would make that two reads and let a strategy tag disagree with the kinds
++ * beside it. The strategy family is recoverable from the kind, which `IR-7` pins. See ADR-092.
++ */
++export type SolveQuality =
++  | { readonly kind: "reached"; readonly residual: number }
++  | { readonly kind: "too-far"; readonly residual: number }
++  | { readonly kind: "too-near"; readonly residual: number }
++  | { readonly kind: "coincident"; readonly residual: number }
++  | { readonly kind: "converged"; readonly iterations: number; readonly residual: number }
++  | { readonly kind: "stalled"; readonly iterations: number; readonly residual: number }
++  | { readonly kind: "iteration-cap"; readonly iterations: number; readonly residual: number };
++
++/** The kinds the closed form can answer with, as a subset of the union rather than a second one. */
++export type ClosedFormQuality = Extract<
++  SolveQuality,
++  { readonly kind: "reached" | "too-far" | "too-near" | "coincident" }
++>;
++
++/** The kinds FABRIK can answer with, as a subset of the union rather than a second one. */
++export type IterativeQuality = Extract<
++  SolveQuality,
++  { readonly kind: "converged" | "stalled" | "iteration-cap" }
++>;
+diff --git a/packages/core/src/plugins/ik-solve.ts b/packages/core/src/plugins/ik-solve.ts
+index 45f1e12..2814fa9 100644
+--- a/packages/core/src/plugins/ik-solve.ts
++++ b/packages/core/src/plugins/ik-solve.ts
+@@ -3,6 +3,7 @@ import { solveFabrik } from "./fabrik";
+ import type { WorldFrame } from "./frame";
+ import { solveTwoBone } from "./ik-analytic";
+ import type { SolveMember } from "./ik-member";
++import type { SolveResult } from "./ik-result";
+ 
+ /**
+  * Which solve answers for a chain, decided once and read exhaustively.
+@@ -80,6 +81,10 @@ export function chainShape(members: readonly SolveMember[]): ChainShape {
+  * tip exactly as `fk` does. Both read length and offset through `ik-member.ts`, so the convention
+  * has one reader as well as one statement. See ADR-053, ADR-054, and issue #214.
+  *
++ * Both arms return the one `SolveResult`, so what the chain's solve achieved has one shape
++ * whichever strategy answered it: the closed form's geometric kinds or FABRIK's iterative ones,
++ * read from one discriminant. `ik.ts` publishes `rotations` only. See `ik-result.ts` and ADR-107.
++ *
+  * Nothing here knows about a member's blend `weight`, and that is the ownership split rather than an
+  * omission. The solve publishes the exact angle that puts the tip on the goal, at every arity, and
+  * how much of that angle a bone actually composes with is the bone's question. See ADR-055.
+@@ -88,21 +93,21 @@ export function solveChain(
+   root: WorldFrame,
+   members: readonly SolveMember[],
+   flip = false,
+-): Readonly<Record<string, number>> {
++): SolveResult {
+   const shape = chainShape(members);
+   switch (shape.kind) {
+     case "two-bone":
+       return solveTwoBone(root, shape.goal, shape.first, shape.second, flip);
+-    case "tree":
+-      // `pivots`, `tips` and `convergence` are deliberately dropped rather than published. The
+-      // analytic path carries none of them, so publishing them here would make a solver's patch
+-      // shape a function of its arity and would move every existing solver's published keys, which
+-      // `FB-9` pins as unchanged. Roughly four percent of ordinary reachable rigs do not reach
+-      // tolerance before the cap, so a per-tick report would be noise on rigs nobody would call
+-      // broken. `FB-13` pins the shape and `docs/ADR-051-derived-solver-membership.md` records the
+-      // decision. Issue #349's second phase gives both strategies one result type that carries the
+-      // quality record without publishing it.
+-      return solveFabrik(root, shape.members, flip).rotations;
++    case "tree": {
++      // `pivots` and `tips` are FABRIK's own and stay behind: the analytic path carries neither,
++      // so returning them here would make the result's shape a function of arity. The quality
++      // record travels, because both strategies state one, but nothing publishes it. Roughly four
++      // percent of ordinary reachable rigs do not reach tolerance before the cap, so a per-tick
++      // report would be noise on rigs nobody would call broken. `FB-13` pins the published shape
++      // and `docs/ADR-051-derived-solver-membership.md` records the decision.
++      const { rotations, quality } = solveFabrik(root, shape.members, flip);
++      return Object.freeze({ rotations, quality });
++    }
+     default:
+       return unreachable(shape);
+   }
+diff --git a/packages/core/src/plugins/ik.ts b/packages/core/src/plugins/ik.ts
+index efd538f..0216df3 100644
+--- a/packages/core/src/plugins/ik.ts
++++ b/packages/core/src/plugins/ik.ts
+@@ -46,7 +46,7 @@ export const ikPlugin: PluginDefinition = {
+     const members = readMembers(inputs.members);
+     const goals = readGoals(inputs.target, members);
+     const flip = Boolean(values.flip);
+-    const rotations = solveChain(root, readSolveMembers(members, goals), flip);
++    const { rotations } = solveChain(root, readSolveMembers(members, goals), flip);
+     return Object.freeze({
+       ...values,
+       rotations: Object.freeze(rotations as unknown as ImmutableRecord),
