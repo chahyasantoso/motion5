@@ -17,8 +17,9 @@ import { code } from "../helpers/source-region";
  * either, because the one constructor has no parameter for one.
  *
  * Two rather than five, and the three that went were not weakened away. `graph/ir.ts`'s `diag` and
- * the private `diagnostic` in `domain/plugins.ts` and `domain/keyframe-compiler.ts` each declared the
- * constructor's whole signature and then forwarded to it unchanged, so what this suite read in those
+ * the private `diagnostic` in `domain/plugins.ts` and in the keyframe compiler (then under
+ * `domain/`, now `contract/keyframe-compiler.ts`) each declared the constructor's whole signature
+ * and then forwarded to it unchanged, so what this suite read in those
  * three files was a restatement rather than a second mechanism. `OwnedIds<Rule>` is referenced from
  * `contract/rule.ts` and never redefined, so an alias of the constructor resolves to the same type
  * and stops compiling in the same commit the registry's shape moves in: the restatement bought reader

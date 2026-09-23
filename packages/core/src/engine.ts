@@ -18,12 +18,13 @@ import { validateV5 } from "./validate-v5";
 import { readOutcome } from "./lang/outcome";
 import { IncrementalGraphBuilder } from "./graph/builders/incremental";
 import { createDefaultTriggerFactory } from "./adapters/trigger-factory/default";
-import { compilePercentKeyframes } from "./domain/keyframe-compiler";
+import { compilePercentKeyframes } from "./contract/keyframe-compiler";
 import { flattenAuthoredKeyframes } from "./domain/keyframe-groups";
 import { Motion, type MotionTrackEntry } from "./domain/motion";
 import { unreachable } from "./lang/exhaustive";
 import { collect, report } from "./domain/completion";
-import { PluginRegistry, type RenderMetadata, type RequirementInputs } from "./domain/plugins";
+import { PluginRegistry, trackConfigView, type RequirementInputs } from "./domain/plugins";
+import type { RenderMetadata } from "./ports/render-metadata";
 import { Track } from "./domain/track";
 import { qualifyFreeTrack, qualifyMotionTrack } from "./graph/ids";
 import { assertClock, type Clock } from "./ports/clock";
@@ -221,10 +222,11 @@ export class Engine {
       const existing = tracks.get(nodeId);
       if (existing) return existing;
       const path = `${nodeId}.keyframes`;
-      const resolved = registry?.resolveForKeyframes(trackDef.keyframes ?? {}, path, {
-        id: nodeId,
-        duration: trackDef.duration,
-      });
+      const resolved = registry?.resolveForKeyframes(
+        trackDef.keyframes ?? {},
+        path,
+        trackConfigView(nodeId, trackDef.duration),
+      );
       // Flattened with or without a registry. The resolver already did it when one exists; when
       // none does there is no resolver to fall back on, and an authored group would reach the
       // percent map and the interpolator as a nested object neither reads any stops from, so the
@@ -428,7 +430,7 @@ export class Engine {
                 return unreachable(built);
             }
           },
-          stagger: definition.stagger,
+          ...(definition.stagger === undefined ? {} : { stagger: definition.stagger }),
         });
         built = { kind: "motion-created", trigger: built.trigger, motion };
         motion.play();
@@ -555,7 +557,9 @@ export class Engine {
         // no layer gains a registry it has no other reason to hold. With none injected there is
         // nothing to resolve and nothing to compare, which is the posture `compileTrack` already
         // takes above, and every replacement builds exactly as it did before. See ADR-062.
-        resolveKeyframes: registry?.resolveForKeyframes.bind(registry),
+        ...(registry === undefined
+          ? {}
+          : { resolveKeyframes: registry.resolveForKeyframes.bind(registry) }),
         addMotionTrack: (motionId, trackId, duration) => {
           const motion = motions.get(motionId);
           if (!motion) throw new TypeError(`Unknown motion "${motionId}".`);

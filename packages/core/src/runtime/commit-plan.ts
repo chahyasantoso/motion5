@@ -93,6 +93,26 @@ interface RetargetMotionTrackShape {
   readonly previousDuration?: number;
 }
 
+/**
+ * The one constructor of a retarget, shared by the plan and by `invert`, which swaps the two
+ * durations. A track with no duration omits the field rather than carrying `undefined`, so a
+ * retarget and its inverse's inverse are the same shape under `exactOptionalPropertyTypes`. #473.
+ */
+function retargetEffect(
+  motionId: string,
+  nodeId: string,
+  duration: number | undefined,
+  previousDuration: number | undefined,
+): MintedEffect<RetargetMotionTrackShape> {
+  return mintEffect<RetargetMotionTrackShape>({
+    kind: "retarget-motion-track",
+    motionId,
+    nodeId,
+    ...(duration === undefined ? {} : { duration }),
+    ...(previousDuration === undefined ? {} : { previousDuration }),
+  });
+}
+
 type EffectShape =
   | CreateMotionShape
   | DestroyMotionShape
@@ -345,7 +365,7 @@ export function planCommit(
             kind: "add-motion-track",
             motionId,
             nodeId,
-            duration: entry.track.duration,
+            ...(entry.track.duration === undefined ? {} : { duration: entry.track.duration }),
           }),
         );
       settle.push(mintSettlement<MountNodeShape>({ kind: "mount-node", nodeId }));
@@ -359,15 +379,7 @@ export function planCommit(
       );
     const motionId = plannedMotionId(entry);
     if (motionId !== undefined)
-      effects.push(
-        mintEffect<RetargetMotionTrackShape>({
-          kind: "retarget-motion-track",
-          motionId,
-          nodeId,
-          duration: entry.track.duration,
-          previousDuration: previous.track.duration,
-        }),
-      );
+      effects.push(retargetEffect(motionId, nodeId, entry.track.duration, previous.track.duration));
     settle.push(mintSettlement<CommitStagedShape>({ kind: "commit-staged", nodeId }));
     touched.push(nodeId);
   }
@@ -403,13 +415,12 @@ export function invert(effect: Effect): Effect | undefined {
     case "stage-track":
       return mintEffect<RollbackStageShape>({ kind: "rollback-stage", nodeId: effect.nodeId });
     case "retarget-motion-track":
-      return mintEffect<RetargetMotionTrackShape>({
-        kind: "retarget-motion-track",
-        motionId: effect.motionId,
-        nodeId: effect.nodeId,
-        duration: effect.previousDuration,
-        previousDuration: effect.duration,
-      });
+      return retargetEffect(
+        effect.motionId,
+        effect.nodeId,
+        effect.previousDuration,
+        effect.duration,
+      );
     case "destroy-motion":
     case "dispose-track":
     case "rollback-stage":

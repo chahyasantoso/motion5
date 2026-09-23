@@ -65,13 +65,16 @@ describe("commit plan", () => {
       { needsBuild: new Set(["hero/arm"]), readers: new Map() },
     );
     expect(invert(q.effects[0]!)).toEqual({ kind: "rollback-stage", nodeId: "hero/arm" });
-    expect(invert(q.effects[1]!)).toEqual({
+    const inverse = invert(q.effects[1]!);
+    expect(inverse).toEqual({
       kind: "retarget-motion-track",
       motionId: "hero",
       nodeId: "hero/arm",
-      duration: undefined,
       previousDuration: 500,
     });
+    // Absent rather than `undefined`: `toEqual` cannot tell the two apart, and under
+    // `exactOptionalPropertyTypes` they are different shapes. See #473.
+    expect(inverse !== undefined && "duration" in inverse).toBe(false);
   });
   it("checks brands and exhaustiveness", () => {
     const p = code(P),

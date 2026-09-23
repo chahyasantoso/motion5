@@ -2,7 +2,11 @@ import { describe, expect, it, vi } from "vitest";
 import { declaresMembers } from "../../helpers/handle-surface";
 import type { ProjectDefinition, TrackDefinition } from "../../../src/contract/v5";
 import type { TrackHandle } from "../../../src/contract/track-handle";
-import { PluginRegistry, type PluginDefinition } from "../../../src/domain/plugins";
+import {
+  PluginRegistry,
+  trackConfigView,
+  type PluginDefinition,
+} from "../../../src/domain/plugins";
 import { createManualClock } from "../../../src/ports/clock";
 import { ProjectRuntime, type StagedTrack } from "../../../src/runtime/project-runtime";
 
@@ -120,10 +124,11 @@ function registryRuntime(journal: StageJournal): ProjectRuntime {
     clock: createManualClock(),
     compose,
     stageTrack: (track, nodeId): StagedTrack => {
-      const resolved = registry.resolveForKeyframes(track.keyframes ?? {}, `${nodeId}.keyframes`, {
-        id: nodeId,
-        duration: track.duration,
-      });
+      const resolved = registry.resolveForKeyframes(
+        track.keyframes ?? {},
+        `${nodeId}.keyframes`,
+        trackConfigView(nodeId, track.duration),
+      );
       const errors = resolved.diagnostics.filter(({ severity }) => severity === "error");
       if (errors.length > 0)
         throw new TypeError(

@@ -81,7 +81,7 @@ export const CONTRIBUTION_RULE_ID_ALIASES = {
  * directions, and a figure in a comment is a claim no gate reads: the coverage case owns it.
  *
  * The `plugin-contribution-` members here are their own literals in `domain/plugins.ts`,
- * `domain/keyframe-compiler.ts` and `contract/validate-v5.ts`. They are not outputs of the prefix
+ * `contract/keyframe-compiler.ts` and `contract/validate-v5.ts`. They are not outputs of the prefix
  * site and share only a spelling with the family derived below.
  *
  * Four members are minted on a thrown error class rather than at a diagnostic construction site.

@@ -42,15 +42,14 @@ Every other rule in this document is a consequence of that one. When a change ma
 Dependencies point inward only, with the dependency-free `lang/` module as the shared sink every
 layer may call. Contract has no dependencies on another core layer. Domain depends on contract.
 Graph depends on contract and domain. Runtime depends on graph. Ports are depended upon, never
-depending. Adapters depend on ports and on their own external engine, and nothing depends on
+depending. Adapters depend on contract, ports, and on their own external engine, and nothing depends on
 adapters except the composition root.
 
-Two of those sentences are gated rather than asserted. `scripts/boundary-scan.mjs` refuses any
-relative `domain/` import from `contract/` and from `ports/`, which is the contract sentence and
-half the ports sentence. The gate deliberately stops there: three adapter imports of `domain/` are
-still legal, `ports/graph-builder.ts` still reaches `graph/` type-only, and a gate introduced red
-earns an exemption list instead of a fix. ADR-099 and ADR-103 own that reasoning, and issue #474
-owns the adapter remainder.
+The scanner refuses relative `domain/` imports from `contract/`, `ports/`, and `adapters/`.
+Adapters may import the authored contract, including its shared keyframe compiler, without asking
+the domain for a compiler implementation. `ports/graph-builder.ts` still reaches `graph/` type-only;
+this gate protects the inward domain direction rather than claiming every direction is empty.
+See ADR-105.
 
 ## 3. Ownership
 

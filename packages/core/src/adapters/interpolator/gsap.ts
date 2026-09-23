@@ -1,6 +1,6 @@
 import type { AuthoredStop, Diagnostic } from "../../contract/v5";
 import { describeDiagnostics } from "../../contract/diagnostics";
-import { compilePercentKeyframes, type CompiledKeyframes } from "../../domain/keyframe-compiler";
+import { compilePercentKeyframes, type CompiledKeyframes } from "../../contract/keyframe-compiler";
 import {
   PATCHED,
   RECOMPILE,

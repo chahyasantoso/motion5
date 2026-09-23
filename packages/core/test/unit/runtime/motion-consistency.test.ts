@@ -52,7 +52,12 @@ function rig(definition = project(), triggerFactory?: TriggerFactory, onProgress
       return { ...timeline, progress, kill };
     },
   };
-  const handle = new Engine({ clock, scheduler, interpolator, triggerFactory }).load(definition);
+  const handle = new Engine({
+    clock,
+    scheduler,
+    interpolator,
+    ...(triggerFactory === undefined ? {} : { triggerFactory }),
+  }).load(definition);
   const runtime = (handle as typeof handle & { readonly _runtime: ProjectRuntime })._runtime;
   const flush = () => {
     for (let rounds = 0; scheduler.pending.length; rounds++) {

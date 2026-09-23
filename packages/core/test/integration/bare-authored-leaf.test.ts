@@ -11,7 +11,7 @@ import type {
   ProjectDefinition,
 } from "../../src/contract/v5";
 import { validateKeyframes } from "../../src/contract/validate-v5";
-import { compilePercentKeyframes } from "../../src/domain/keyframe-compiler";
+import { compilePercentKeyframes } from "../../src/contract/keyframe-compiler";
 import { flattenAuthoredKeyframes } from "../../src/domain/keyframe-groups";
 import { PluginRegistry, type PluginDefinition } from "../../src/domain/plugins";
 import { Engine } from "../../src/engine";

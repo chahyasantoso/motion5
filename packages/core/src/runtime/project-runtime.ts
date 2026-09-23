@@ -15,7 +15,7 @@ import type { AuthoredValues, TrackHandle } from "../contract/track-handle";
 import { validateMotionTrigger, validateTrackDefinition } from "../contract/validate-v5";
 import type { Clock, ClockTick } from "../ports/clock";
 import type { Scheduler } from "../ports/scheduler";
-import type { ResolvedPlugins } from "../domain/plugins";
+import { trackConfigView, type ResolvedPlugins } from "../domain/plugins";
 import {
   removeKeyframe as removeAuthoredKeyframe,
   setKeyframe as setAuthoredKeyframe,
@@ -332,10 +332,10 @@ export class ProjectRuntime {
     this.#diagnostics = new Diagnostics(options.diagnosticsCapacity);
     try {
       this.#graph = new GraphRuntime(project, options.clock, options.compose, {
-        scheduler: options.scheduler,
-        onClockTick: options.onClockTick,
-        graphBuilder: options.graphBuilder,
-        interpolated: options.interpolated,
+        ...(options.scheduler === undefined ? {} : { scheduler: options.scheduler }),
+        ...(options.onClockTick === undefined ? {} : { onClockTick: options.onClockTick }),
+        ...(options.graphBuilder === undefined ? {} : { graphBuilder: options.graphBuilder }),
+        ...(options.interpolated === undefined ? {} : { interpolated: options.interpolated }),
         onFlushError: (diagnostic) => this.#diagnostics.record(diagnostic),
       });
     } catch (error) {
@@ -709,10 +709,11 @@ export class ProjectRuntime {
   }
 
   #resolve(nodeId: string, track: TrackDefinition): ResolvedPlugins | undefined {
-    return this.#ports.host.resolveKeyframes(track.keyframes ?? {}, `${nodeId}.keyframes`, {
-      id: nodeId,
-      duration: track.duration,
-    });
+    return this.#ports.host.resolveKeyframes(
+      track.keyframes ?? {},
+      `${nodeId}.keyframes`,
+      trackConfigView(nodeId, track.duration),
+    );
   }
 
   #needsTimelineBuild(

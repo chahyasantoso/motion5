@@ -1,21 +1,17 @@
-import {
-  authoredLeafPartition,
-  readAuthoredLeaf,
-  readCompilableStops,
-} from "../contract/authored-leaf";
-import { diagnostic } from "../contract/diagnostics";
-import type { AuthoredStop, Diagnostic } from "../contract/v5";
+import { authoredLeafPartition, readAuthoredLeaf, readCompilableStops } from "./authored-leaf";
+import { diagnostic } from "./diagnostics";
+import type { AuthoredStop, Diagnostic } from "./v5";
 import { unreachable } from "../lang/exhaustive";
 
-export interface CompiledProperty {
-  readonly key: string;
-  readonly stops: readonly AuthoredStop[];
-}
 export interface CompiledKeyframes {
   readonly map: Readonly<Record<string, Readonly<Record<string, unknown>>>>;
   readonly initial: Readonly<Record<string, unknown>>;
   readonly properties: readonly CompiledProperty[];
   readonly diagnostics: readonly Diagnostic[];
+}
+export interface CompiledProperty {
+  readonly key: string;
+  readonly stops: readonly AuthoredStop[];
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -29,15 +25,8 @@ function percentValue(percent: string): number {
 }
 
 /**
- * Compile authored properties without projecting them onto a sibling's percent grid.
- *
- * Motion5 intentionally seeds each proxy property from its first authored value, even
- * when that stop is after 0%. This preserves the leading hold without inventing a 0%
- * keyframe, unlike the oracle's 0%-only proxy seeding.
- *
- * Which stops a leaf contributes is `readCompilableStops`, not a local reader. That is the one
- * owner of the leaf shape, so this compiler and the fake interpolator cannot disagree about what a
- * malformed stop publishes. See issue #192.
+ * Compile authored leaves once per interpolator call. The contract owns stop eligibility via
+ * `readCompilableStops`, so the domain and every backend agree about malformed authored leaves.
  */
 export function compilePercentKeyframes(keyframes: unknown, path = "keyframes"): CompiledKeyframes {
   if (!isRecord(keyframes))
@@ -64,7 +53,7 @@ export function compilePercentKeyframes(keyframes: unknown, path = "keyframes"):
       diagnostics.push(
         diagnostic(
           "plugin-contribution-ease-collision",
-          `${path}[\"${percent}\"].ease`,
+          `${path}["${percent}"].ease`,
           `Conflicting ease values were authored at ${percent}.`,
           ids,
         ),
@@ -81,12 +70,6 @@ export function compilePercentKeyframes(keyframes: unknown, path = "keyframes"):
   for (const [key, property] of Object.entries(keyframes).sort(([left], [right]) =>
     left.localeCompare(right),
   )) {
-    // A static leaf genuinely bypasses interpolation rather than being normalized into an
-    // equivalent two-stop hold: no percent-map entry, no compiled property, and therefore no tween
-    // var and no `gsap.to()` contribution. `initial` is its whole publication path, and both GSAP
-    // interpolators already seed their proxy from it and expose that proxy as `state`, so a value
-    // that lands here and nowhere else is published at every progress at zero cost. This is the
-    // point of ADR-050 rather than an implementation detail inside it, and `LF-7` and `LF-8` pin it.
     const partition = authoredLeafPartition(readAuthoredLeaf(property));
     switch (partition.kind) {
       case "value":

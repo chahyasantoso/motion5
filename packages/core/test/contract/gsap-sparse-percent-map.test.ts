@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { compilePercentKeyframes } from "../../src/domain/keyframe-compiler";
+import { compilePercentKeyframes } from "../../src/contract/keyframe-compiler";
 
 describe("S2 sparse percent-keyframe compilation", () => {
   it("does not inject sibling or boundary properties into authored percent entries", () => {

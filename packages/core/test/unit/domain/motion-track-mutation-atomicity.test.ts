@@ -41,7 +41,7 @@ function fixture(entries: readonly MotionTrackEntry[], stagger?: number) {
     scheduler: createFakeScheduler(),
     tracks: entries,
     resolveTrack: registry.resolveTrack,
-    stagger,
+    ...(stagger === undefined ? {} : { stagger }),
   });
   // Registers under an id the registry may already know, because a rotated instance is a normal
   // state under ADR-031 and is how these cases reach a resolvable-but-dead Track.
