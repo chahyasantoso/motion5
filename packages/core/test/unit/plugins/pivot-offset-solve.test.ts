@@ -1,8 +1,12 @@
 import { describe, expect, it } from "vitest";
 import type { ImmutableRecord } from "../../../src/domain/values";
 import { fkPlugin } from "../../../src/plugins/fk";
-import { FABRIK_TOLERANCE, solveFabrik, type FabrikMember } from "../../../src/plugins/fabrik";
-import { solveChain, solveTwoBone, type MemberState } from "../../../src/plugins/ik";
+import { FABRIK_TOLERANCE, solveFabrik } from "../../../src/plugins/fabrik";
+import type { SolveMember } from "../../../src/plugins/ik-member";
+import type { WorldFrame } from "../../../src/plugins/frame";
+import { readSolveMembers, type MemberState } from "../../../src/plugins/ik-chain";
+import { solveTwoBone as solveTwoBoneDirect } from "../../../src/plugins/ik-analytic";
+import { solveChain } from "../../../src/plugins/ik-solve";
 
 // Issue #214: `ik` accounts for `fk`'s authored pivot offsets, in both solves.
 //
@@ -69,6 +73,22 @@ function leaf(
  */
 interface SolvedMember extends MemberState {
   readonly values: Readonly<ImmutableRecord>;
+}
+
+/** Adapt authored member values once before calling the explicit two-member analytic API. */
+function solveTwoBone(
+  root: WorldFrame,
+  target: WorldFrame,
+  members: readonly SolvedMember[],
+  flip = false,
+): Readonly<Record<string, number>> {
+  const solved = readSolveMembers(members, new Map());
+  const first = solved[0];
+  const second = solved[1];
+  if (first === undefined || second === undefined) {
+    throw new Error("two-bone fixture requires two members");
+  }
+  return solveTwoBoneDirect(root, target, first, second, flip);
 }
 
 /**
@@ -148,7 +168,7 @@ function legacyTwoBone(
 function nextState(state: number): number {
   return (state * 16807) % 2147483647;
 }
-function shuffle(members: readonly FabrikMember[], seed: number): FabrikMember[] {
+function shuffle(members: readonly SolveMember[], seed: number): SolveMember[] {
   const result = [...members];
   let state = nextState(seed);
   for (let index = result.length - 1; index > 0; index -= 1) {
@@ -275,7 +295,7 @@ describe("ik accounts for fk's pivot offsets (issue #214)", () => {
     // assertion that says the solve carries pivots at all, because a member's length is the distance
     // from its own pivot to its own tip and the gap between two consecutive tips is that length only
     // when the offset is zero.
-    const three: readonly FabrikMember[] = [
+    const three: readonly SolveMember[] = [
       link("a", "root", 80, { x: 5, y: 3 }),
       link("b", "a", 60, { x: -4, y: 6 }),
       leaf("c", "b", 40, { x: 2, y: -8 }, at(300, 380)),
@@ -294,7 +314,7 @@ describe("ik accounts for fk's pivot offsets (issue #214)", () => {
     const tip = composeChain(ROOT, states, solved.rotations);
     expect(distance(tip, at(300, 380))).toBeLessThanOrEqual(FABRIK_TOLERANCE);
 
-    const five: readonly FabrikMember[] = [
+    const five: readonly SolveMember[] = [
       link("m1", "root", 40, { x: 3, y: 2 }),
       link("m2", "m1", 40, { x: -2, y: 4 }),
       link("m3", "m2", 40, { x: 1, y: -3 }),
@@ -313,11 +333,11 @@ describe("ik accounts for fk's pivot offsets (issue #214)", () => {
     // The default is a documented value rather than a field accepted and ignored, and this is what
     // says so. It is byte identity over the whole solution, including the convergence record, so a
     // zero that took a different code path and landed within tolerance would still fail.
-    const absent: readonly FabrikMember[] = [
+    const absent: readonly SolveMember[] = [
       { id: "a", base: "root", length: 80 },
       { id: "b", base: "a", length: 60, goal: HAND },
     ];
-    const explicit: readonly FabrikMember[] = [
+    const explicit: readonly SolveMember[] = [
       link("a", "root", 80, { x: 0, y: 0 }),
       leaf("b", "a", 60, { x: 0, y: 0 }, HAND),
     ];
@@ -348,7 +368,7 @@ describe("ik accounts for fk's pivot offsets (issue #214)", () => {
     // about `0.001` of a degree, and the bound is ten times that.
     const bound = 0.01;
     const analytic = [member(UPPER, SHOULDER, 80, 12, -4), member(FOREARM, UPPER, 60, -7, 9)];
-    const iterative: readonly FabrikMember[] = [
+    const iterative: readonly SolveMember[] = [
       link(UPPER, SHOULDER, 80, { x: 12, y: -4 }),
       leaf(FOREARM, UPPER, 60, { x: -7, y: 9 }, HAND),
     ];
@@ -364,7 +384,7 @@ describe("ik accounts for fk's pivot offsets (issue #214)", () => {
     // And the dispatcher still routes this rig to the closed form, so the agreement above is between
     // two solves rather than between one solve and itself.
     const goals = new Map([[FOREARM, HAND]]);
-    expect(JSON.stringify(solveChain(ROOT, analytic, goals, false))).toEqual(
+    expect(JSON.stringify(solveChain(ROOT, readSolveMembers(analytic, goals), false))).toEqual(
       JSON.stringify(solveTwoBone(ROOT, HAND, analytic, false)),
     );
   });
@@ -375,7 +395,7 @@ describe("ik accounts for fk's pivot offsets (issue #214)", () => {
     // pivots are not independent quantities to average. Each branch un-offsets its pivot proposal
     // into a proposal about the sub-base's own tip first, and the average is over those tips, so it
     // is an average of one geometric quantity rather than of incompatible twists.
-    const tree: readonly FabrikMember[] = [
+    const tree: readonly SolveMember[] = [
       link("spine", "hip", 50, { x: 4, y: 2 }),
       link("arm-l", "spine", 40, { x: 3, y: -6 }),
       leaf("fore-l", "arm-l", 30, { x: 1, y: 2 }, at(240, 400)),
