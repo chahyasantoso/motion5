@@ -1,0 +1,121 @@
+diff --git a/packages/core/src/adapters/trigger-factory/default.ts b/packages/core/src/adapters/trigger-factory/default.ts
+index eea2b5d..3e7b6e4 100644
+--- a/packages/core/src/adapters/trigger-factory/default.ts
++++ b/packages/core/src/adapters/trigger-factory/default.ts
+@@ -36,7 +36,10 @@ export function createTriggerFactory(options: TriggerFactoryOptions = {}): Trigg
+       // The loop fields are forwarded rather than interpreted here. This function selects a driver;
+       // what the driver does with time belongs to the driver and its loop cycle. See ADR-040.
+       if (trigger.type === "time")
+-        return createTimeDriver(trigger.duration, { repeat: trigger.repeat, yoyo: trigger.yoyo });
++        return createTimeDriver(trigger.duration, {
++          ...(trigger.repeat === undefined ? {} : { repeat: trigger.repeat }),
++          ...(trigger.yoyo === undefined ? {} : { yoyo: trigger.yoyo }),
++        });
+       if (trigger.type === "scroll") {
+         const source = options.scroll?.({ ...context, trigger });
+         if (source === undefined) {
+@@ -1,5 +1,10 @@
+ # packages/core/src/domain/plugins.ts
+ 
++`RenderMetadata` is the renderer-facing port contract declared in `../ports/render-metadata.ts`.
++`ResolvedPlugins` extends it here so the registry remains the owner of the resolved serializer map,
++while adapters consume the port without reaching into this domain module. The exported type name is
++unchanged. See ADR-105.
++
+ ## listNames
+ 
+ `"a" and "b"`, or `"a", "b" and "c"`: the wording every multi-plugin message here already uses.
+@@ -15,6 +20,7 @@ import type {
+ } from "../contract/v5";
+ import { flattenAuthoredKeyframes, type FlattenedKeyframe } from "./keyframe-groups";
+ import type { ImmutableRecord } from "./values";
++import type { OutputSerializer, RenderMetadata } from "../ports/render-metadata";
+ 
+ /**
+@@ -47,6 +53,22 @@ export interface TrackConfigView {
+   readonly id?: string;
+   readonly duration?: number;
+ }
++
++/**
++ * The one constructor of a {@link TrackConfigView}, so an absent field is omitted rather than
++ * written as `undefined`. Under `exactOptionalPropertyTypes` the two are different types, and a
++ * plugin's `contribute` must not be able to tell a track with no duration from one whose duration
++ * was forwarded as `undefined`. Frozen, because every reader is handed it by reference. See #473.
++ */
++export function trackConfigView(
++  id: string | undefined,
++  duration: number | undefined,
++): TrackConfigView {
++  return Object.freeze({
++    ...(id === undefined ? {} : { id }),
++    ...(duration === undefined ? {} : { duration }),
++  });
++}
+ export interface Contribution {
+   readonly keyframes?: Readonly<Record<string, AuthoredProperty>>;
+   readonly tweenVars?: Readonly<Record<string, unknown>>;
+@@ -64,7 +81,7 @@ export type PluginContributor = (
+   track: TrackConfigView,
+ ) => Contribution | undefined;
+ export type PluginKeyClaim = (key: string) => boolean;
+-export type OutputSerializer = (value: unknown) => unknown;
++
+ /**
+@@ -116,9 +133,6 @@ export interface PreparedContribution {
+  * restating the member, so what turns a plugin output into something writable has one declaration.
+  * See ADR-073.
+  */
+-export interface RenderMetadata {
+-  readonly outputSerializers: Readonly<Record<string, OutputSerializer>>;
+-}
+ export interface ResolvedPlugins extends RenderMetadata {
+@@ -312,7 +326,7 @@ function prepareContributions(
+         plugin.contribute(
+           key,
+           readCompilableStops(authored[key]),
+-          Object.freeze({ id: track.id, duration: track.duration }),
++          trackConfigView(track.id, track.duration),
+         ),
+         plugin,
+         authoredPath(key),
+@@ -345,7 +365,7 @@ export function planCommit(
+             kind: "add-motion-track",
+             motionId,
+             nodeId,
+-            duration: entry.track.duration,
++            ...(entry.track.duration === undefined ? {} : { duration: entry.track.duration }),
+           }),
+         );
+@@ -359,15 +379,7 @@ export function planCommit(
+       );
+     const motionId = plannedMotionId(entry);
+     if (motionId !== undefined)
+-      effects.push(
+-        mintEffect<RetargetMotionTrackShape>({
+-          kind: "retarget-motion-track",
+-          motionId,
+-          nodeId,
+-          duration: entry.track.duration,
+-          previousDuration: previous.track.duration,
+-        }),
+-      );
++      effects.push(retargetEffect(motionId, nodeId, entry.track.duration, previous.track.duration));
+@@ -403,13 +415,12 @@ export function invert(effect: Effect): Effect | undefined {
+     case "stage-track":
+       return mintEffect<RollbackStageShape>({ kind: "rollback-stage", nodeId: effect.nodeId });
+     case "retarget-motion-track":
+-      return mintEffect<RetargetMotionTrackShape>({
+-        kind: "retarget-motion-track",
+-        motionId: effect.motionId,
+-        nodeId: effect.nodeId,
+-        duration: effect.previousDuration,
+-        previousDuration: effect.duration,
+-      });
++      return retargetEffect(
++        effect.motionId,
++        effect.nodeId,
++        effect.previousDuration,
++        effect.duration,
++      );
+*** End Patch
