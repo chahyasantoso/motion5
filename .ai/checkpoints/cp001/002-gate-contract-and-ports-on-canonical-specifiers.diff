@@ -1,0 +1,488 @@
+diff --git a/packages/core/test/unit/scripts/boundary-scan.test.ts b/packages/core/test/unit/scripts/boundary-scan.test.ts
+index 7d2ff3c..8f0e44c 100644
+--- a/packages/core/test/unit/scripts/boundary-scan.test.ts
++++ b/packages/core/test/unit/scripts/boundary-scan.test.ts
+@@ -8,6 +8,7 @@ import {
+   extractExportNames,
+   importsBoundary,
+   importsCoreInternals,
++  importsDomainLayer,
+   importsDomainSink,
+   importsRenderer,
+   importsTestingEntrypoint,
+@@ -140,8 +141,8 @@ describe("boundary scan predicates", () => {
+ 
+   it("keeps legitimate domain imports, the new sink, aliases, and longer names clean", () => {
+     for (const source of [
+-      'import { outcome } from "../domain/outcome";',
+-      'import { outcome } from "../domain/outcome.ts";',
++      'import { track } from "../domain/track";',
++      'import { track } from "../domain/track.ts";',
+       'import { compiler } from "../../domain/keyframe-compiler";',
+       'import type { Plugin } from "../../domain/plugins";',
+       'import type { Plugin } from "../../domain/plugins.js";',
+@@ -153,6 +154,111 @@ describe("boundary scan predicates", () => {
+       expect(importsDomainSink(source)).toBe(false);
+   });
+ 
++  it("reads any domain import for the broad rule and only the sink for the narrow one", () => {
++    // The two questions the scanner now asks, and the asymmetry between them is the whole point:
++    // `contract/` and `ports/` may not reach `domain/` at all, while `adapters/` still legitimately
++    // reaches `domain/keyframe-compiler` and `domain/plugins` and may only be held to the sink.
++    // Backslash normalisation and the `.js`/`.mjs`/`.ts` suffixes are shared, because one extractor
++    // owns them. See ADR-099 and ADR-103.
++    for (const source of [
++      'import { o } from "../lang/outcome";',
++      'import { u } from "../lang/exhaustive";',
++      'import type { D } from "../contract/v5";',
++      'import { x } from "../domain-helpers/y";',
++      'import { s } from "@motion5/core/domain/exhaustive";',
++      "const load = import(path);",
++    ]) {
++      expect(importsDomainLayer(source)).toBe(false);
++      expect(importsDomainSink(source)).toBe(false);
++    }
++    for (const source of [
++      'import { compiler } from "../../domain/keyframe-compiler";',
++      'import type { Plugin } from "../../domain/plugins.js";',
++      'const load = import("../domain/track");',
++      'import { helpers } from "../domain/exhaustive-helpers";',
++    ]) {
++      expect(importsDomainLayer(source)).toBe(true);
++      expect(importsDomainSink(source)).toBe(false);
++    }
++    for (const source of [
++      'import { unreachable } from "../domain/exhaustive.js";',
++      'export { unreachable } from "../../domain/exhaustive.mjs";',
++      'const load = require("..\\domain\\exhaustive");',
++    ]) {
++      expect(importsDomainLayer(source)).toBe(true);
++      expect(importsDomainSink(source)).toBe(true);
++    }
++  });
++
++  it("reads a specifier from code rather than from prose", () => {
++    // The repair this gate needed before it could ship. Measured on the first cut: a `contract/`
++    // module whose only mention of the layer was the line comment `used to read from
++    // "../domain/outcome"` returned one `inward domain import` from the shipped scan, with no
++    // import anywhere in the file. This repository quotes module paths in prose constantly, so a
++    // gate a documentation edit can turn red is a gate that gets deleted. The second group is the
++    // other direction: stripping a comment must not hide a real import, including one a comment is
++    // interposed into, and must not mistake an escaped slash in a regular expression for a comment
++    // opener and swallow the line after it. See ADR-103.
++    for (const source of [
++      '// it used to read from "../domain/outcome" before ADR-103 moved it',
++      '/** Once imported from "../domain/track". */',
++      '/* from "../domain/exhaustive" */ export const clean = 1;',
++      'const pattern = /domain\//; // from "../domain/track" is prose here',
++    ]) {
++      expect(importsDomainLayer(source)).toBe(false);
++      expect(importsDomainSink(source)).toBe(false);
++    }
++    expect(importsDomainLayer('import /* interposed */ { u } from "../domain/track";')).toBe(true);
++    expect(importsDomainSink('const load = import(/* interposed */ "../domain/exhaustive");')).toBe(
++      true,
++    );
++    const afterRegex = 'const pattern = /domain\//;\nimport { t } from "../domain/track";';
++    expect(importsDomainLayer(afterRegex)).toBe(true);
++    // A regular-expression literal is read whole, because it is the other place a comment opener
++    // appears in code: `/[/*]/` opened a block comment inside its class on the first cut and hid
++    // the import after it. Its body is not code either, so a specifier-shaped pattern is not an
++    // import, and a division is still a division, so a comment after it is still prose.
++    expect(importsDomainLayer('const p = /[/*]/;\nimport("../domain/x");')).toBe(true);
++    expect(importsDomainSink('const p = /[/*]/g;\nimport("../domain/exhaustive");')).toBe(true);
++    expect(importsDomainLayer('const pattern = /from "../domain/x"/;')).toBe(false);
++    expect(importsDomainLayer('const half = total / 2; // from "../domain/x"')).toBe(false);
++    expect(importsDomainLayer('const r = a / b / c;\nimport { t } from "../domain/track";')).toBe(
++      true,
++    );
++  });
++
++  it("refuses the spellings that step around the anchor without widening past it", () => {
++    // A leading `./`, an absent trailing slash, a doubled separator, an interior `./` and an
++    // interior `..` are concrete spellings a violator can write and a reviewer will not see. Each
++    // resolves to the layer, so the extraction canonicalises it and the anchor reads what module
++    // resolution would reach rather than reporting a clean boundary it does not have. It stays
++    // anchored at the front, which is why a longer sibling directory is still clean, and a path
++    // that passes through `domain/` and leaves it again never reached the layer. See ADR-103.
++    for (const source of [
++      'import { t } from "./../domain/track";',
++      'import { t } from ".././domain/track";',
++      'import { t } from "..//domain/track";',
++      'import { t } from "../lang/../domain/track";',
++      'import { t } from "../domain";',
++      'import { t } from "../domain/";',
++    ])
++      expect(importsDomainLayer(source)).toBe(true);
++    for (const source of [
++      'import { u } from "./../domain/exhaustive";',
++      'import { u } from ".././domain/exhaustive";',
++      'import { u } from "..//domain//exhaustive.js";',
++    ])
++      expect(importsDomainSink(source)).toBe(true);
++    for (const source of [
++      'import { x } from "../domainfoo";',
++      'import { x } from "../domain-helpers/y";',
++      'import { x } from "../domain/../lang/outcome";',
++    ]) {
++      expect(importsDomainLayer(source)).toBe(false);
++      expect(importsDomainSink(source)).toBe(false);
++    }
++  });
++
+   it("extracts exports outside the public allow list", () => {
+     expect(extractExportNames(publicExportViolationFixture)).toEqual(["InternalGraphRuntime"]);
+   });
+@@ -187,25 +293,34 @@ describe("boundary scan planted violations", () => {
+     expect(violations).not.toContain("packages/vue/src/index.ts: renderer or engine import");
+   });
+ 
+-  // The three outer layers ADR-099 measured. `lang/` is absent from this fixture on purpose: the
+-  // shipped scanner running green against the real tree, in the case below, is what proves the new
+-  // path passes, and a fixture cannot prove that about a directory it invents.
+-  it("W-8: rejects contract, ports, and adapters importing the retired domain sink", async () => {
++  // The three outer layers ADR-099 measured, now held to the two different rules ADR-103 split
++  // them into: `contract/` and `ports/` owe the whole inward direction, `adapters/` owes the sink
++  // alone. The planted imports say so by being different: the first two reach an ordinary domain
++  // module and are refused for reaching `domain/` at all, while the third reaches the retired sink
++  // and is refused by name. One file per layer, because `walk` does not sort and two files in one
++  // layer would make this assertion depend on `readdir` order. `lang/` is absent from this fixture
++  // on purpose: the shipped scanner running green against the real tree, in the case below, is what
++  // proves the new path passes, and a fixture cannot prove that about a directory it invents.
++  it("W-8: refuses contract and ports reaching domain, and adapters the sink", async () => {
+     const fixture = await mkdtemp(join(tmpdir(), "motion5-inward-dependency-"));
+     try {
+       await writeFile(join(fixture, "package.json"), PACKAGES_ONLY);
+-      for (const layer of ["contract", "ports", "adapters"]) {
++      const planted = [
++        ["contract", 'import type { LiveWriteResult } from "../domain/track";'],
++        ["ports", 'import type { ResolvedPlugins } from "../domain/plugins";'],
++        ["adapters", 'import { unreachable } from "../../domain/exhaustive";'],
++      ] as const;
++      for (const [layer, statement] of planted) {
+         await mkdir(join(fixture, "packages", "core", "src", layer), { recursive: true });
+-        const prefix = layer === "adapters" ? "../../" : "../";
+         await writeFile(
+           join(fixture, "packages", "core", "src", layer, "leak.ts"),
+-          `import { unreachable } from "${prefix}domain/exhaustive";\n`,
++          `${statement}\n`,
+         );
+       }
+       const violations = await scan(fixture);
+       expect(violations).toEqual([
+-        "packages/core/src/contract/leak.ts: retired domain sink import",
+-        "packages/core/src/ports/leak.ts: retired domain sink import",
++        "packages/core/src/contract/leak.ts: inward domain import",
++        "packages/core/src/ports/leak.ts: inward domain import",
+         "packages/core/src/adapters/leak.ts: retired domain sink import",
+       ]);
+     } finally {
+@@ -213,6 +328,42 @@ describe("boundary scan planted violations", () => {
+     }
+   });
+ 
++  // The other half of that asymmetry, and the reason the broad rule stops at two layers: the three
++  // adapter imports of `domain/` ADR-099 measured are still legal, so a gate that refused them
++  // would have been introduced red. Deleting this case is how that fact gets lost.
++  it("keeps an adapter reaching an ordinary domain module clean", async () => {
++    const fixture = await mkdtemp(join(tmpdir(), "motion5-adapter-domain-"));
++    try {
++      await writeFile(join(fixture, "package.json"), PACKAGES_ONLY);
++      await mkdir(join(fixture, "packages", "core", "src", "adapters"), { recursive: true });
++      await writeFile(
++        join(fixture, "packages", "core", "src", "adapters", "reach.ts"),
++        'import { compilePercentKeyframes } from "../../domain/keyframe-compiler";\n',
++      );
++      expect(await scan(fixture)).toEqual([]);
++    } finally {
++      await rm(fixture, { recursive: true, force: true });
++    }
++  });
++
++  // The same repair, planted through the shipped scanner rather than asserted at the predicate,
++  // because prose is the one thing a `contract/` module reliably contains and the scan is what CI
++  // runs. Red before the extraction read code, where this file alone turned the gate red.
++  it("keeps a contract module whose only domain mention is a comment clean", async () => {
++    const fixture = await mkdtemp(join(tmpdir(), "motion5-domain-prose-"));
++    try {
++      await writeFile(join(fixture, "package.json"), PACKAGES_ONLY);
++      await mkdir(join(fixture, "packages", "core", "src", "contract"), { recursive: true });
++      await writeFile(
++        join(fixture, "packages", "core", "src", "contract", "prose.ts"),
++        '// ADR-103 moved this; it read from "../domain/outcome".\nexport const kept = 1;\n',
++      );
++      expect(await scan(fixture)).toEqual([]);
++    } finally {
++      await rm(fixture, { recursive: true, force: true });
++    }
++  });
++
+   it("executes the shipped scanner against the current tree", async () => {
+     expect(await scan()).toEqual([]);
+   });
+diff --git a/scripts/boundary-scan.d.mts b/scripts/boundary-scan.d.mts
+index 4c6501f..7c8ac77 100644
+--- a/scripts/boundary-scan.d.mts
++++ b/scripts/boundary-scan.d.mts
+@@ -3,6 +3,7 @@ export function importsBoundary(source: string): boolean;
+ export function importsRenderer(source: string): boolean;
+ export function importsCoreInternals(source: string): boolean;
+ export function importsTestingEntrypoint(source: string): boolean;
++export function importsDomainLayer(source: string): boolean;
+ export function importsDomainSink(source: string): boolean;
+ export function bannedSymbol(source: string): boolean;
+ export function extractExportNames(source: string): string[];
+diff --git a/scripts/boundary-scan.mjs b/scripts/boundary-scan.mjs
+index 7168535..d586312 100644
+--- a/scripts/boundary-scan.mjs
++++ b/scripts/boundary-scan.mjs
+@@ -1,5 +1,5 @@
+ import { readdir, readFile } from "node:fs/promises";
+-import { extname, join } from "node:path";
++import { extname, join, posix } from "node:path";
+ import { fileURLToPath } from "node:url";
+ const root = fileURLToPath(new URL("..", import.meta.url));
+ const coreLayers = [
+@@ -143,28 +143,213 @@ export function importsTestingEntrypoint(source) {
+ }
+ const moduleSpecifier = /(?:\bfrom\s*|\bimport\s*(?:\(\s*)?|\brequire\s*\(\s*)["']([^"']+)["']/g;
+ /**
+- * The retired sink path, and only that path.
++ * The end of the string literal opening at `start`, honouring backslash escapes.
+  *
+- * Module specifiers are extracted from static imports and re-exports, dynamic imports, and
+- * `require` calls before the exact relative path is tested. The extraction sees `.js`, `.mjs`, and
+- * `.ts` suffixes plus either path separator. Three spellings stay invisible: a configured alias, a
+- * computed specifier, and a block comment interposed between the keyword and its specifier, because
+- * `moduleSpecifier` admits only whitespace there while an interposed comment is valid TypeScript in
+- * a static import, a dynamic import and a `require` call alike. Teaching it comments widens the set
+- * this gate refuses, so that is its own slice with its own cases rather than a correction here.
+- * Five inward imports into domain survive: `contract/migrate-v4-to-v5.ts` and
+- * `contract/validate-v5.ts` reach `domain/outcome`, `adapters/interpolator/gsap.ts` reaches
+- * `domain/keyframe-compiler`, and `adapters/dom.ts` plus `adapters/index.ts` reach `domain/plugins`
+- * type-only. A predicate over every `domain/` import would therefore refuse the tree it is added
+- * to, and a gate introduced red earns an exemption list instead of a fix. This one is green the
+- * moment the move lands and refuses the exact regression the move exists to prevent. ADR-099 names
+- * all five and says which slice each belongs to.
++ * An unterminated literal returns the last index, which consumes the rest of the file. Such a file
++ * does not compile, so this answer only has to be safe rather than useful.
++ */
++function closingDelimiter(source, start, delimiter) {
++  for (let index = start + 1; index < source.length; index += 1) {
++    if (source[index] === "\\") {
++      index += 1;
++      continue;
++    }
++    if (source[index] === delimiter) return index;
++  }
++  return source.length - 1;
++}
++/** Keywords after which a `/` begins an operand: a regular-expression literal, not a division. */
++const regexKeywords = new Set([
++  "await",
++  "case",
++  "delete",
++  "do",
++  "else",
++  "in",
++  "instanceof",
++  "new",
++  "of",
++  "return",
++  "throw",
++  "typeof",
++  "void",
++  "yield",
++]);
++/**
++ * Whether a `/` after the code read so far opens a regular-expression literal rather than dividing.
++ *
++ * The question a lexer answers from the previous token, answered the same way: a value ends in an
++ * identifier character, a closing bracket or a string delimiter, and a `/` after a value divides,
++ * unless the identifier is a keyword that expects an operand. Everything else, an operator, an
++ * opening bracket, a separator or the start of the file, expects an operand. It is a lexer's
++ * approximation, not a parser's answer, and it errs one way: a literal directly after the `)` of an
++ * `if (…)` or `while (…)` head reads as a division, so its body is read as code.
++ */
++function regexStarts(code) {
++  const before = code.trimEnd();
++  const last = before.at(-1);
++  if (last === undefined) return true;
++  if (/[)\]}"'`]/.test(last)) return false;
++  if (!/[\w$]/.test(last)) return true;
++  return regexKeywords.has(/[\w$]+$/.exec(before)?.[0] ?? "");
++}
++/**
++ * The index after the regular-expression literal opening at `start`, flags included, or -1.
++ *
++ * A `/` inside a character class does not close the literal, and a backslash escapes the character
++ * after it. A line break before the closing `/` means this was not a literal, because a literal
++ * cannot span lines, and `//` or `/*` at `start` is a comment opener rather than an empty literal.
++ */
++function regexLiteralEnd(source, start) {
++  if (source[start + 1] === "/" || source[start + 1] === "*") return -1;
++  let inClass = false;
++  for (let index = start + 1; index < source.length; index += 1) {
++    const char = source[index];
++    if (char === "\n") return -1;
++    if (char === "\\") index += 1;
++    else if (char === "[") inClass = true;
++    else if (char === "]") inClass = false;
++    else if (char === "/" && !inClass) {
++      let end = index + 1;
++      while (end < source.length && /[a-z]/i.test(source[end])) end += 1;
++      return end;
++    }
++  }
++  return -1;
++}
++/**
++ * The source with its comments and regular-expression literals removed and its strings intact.
++ *
++ * A specifier is a property of code, and `moduleSpecifier` cannot tell code from prose: it accepts
++ * any `from`, `import` or `require` that a quotation mark follows, so a doc comment naming a module
++ * path read as an import of it. That was measured rather than imagined. A `contract/` module whose
++ * only mention of the layer was the line comment `used to read from "../domain/outcome"` returned
++ * one `inward domain import` from the shipped scan with no import anywhere in the file, and this
++ * repository quotes module paths in prose constantly. A gate a documentation edit can turn red is a
++ * gate that gets deleted, so the extraction reads code.
++ *
++ * Scanning left to right is what makes one pass enough. A comment opener inside a string literal is
++ * never reached, because the literal is consumed whole at its opening delimiter; an apostrophe or a
++ * quotation mark inside a comment never opens a literal, because the comment is consumed whole at
++ * its opener. A regular-expression literal is consumed whole the same way, because it is the one
++ * other place a comment opener can appear in code: measured on the first cut, `/[/*]/` opened a
++ * block comment inside its character class and swallowed the import after it, so the scan reported
++ * a clean file that reached `domain/`. The literal is replaced by an empty string, which keeps it a
++ * value for `regexStarts` and removes its body, so `/from "../domain/x"/` is not read as an import.
++ * A comment is replaced rather than deleted so that no two tokens it separated can join.
++ */
++function withoutComments(source) {
++  let code = "";
++  let index = 0;
++  while (index < source.length) {
++    const char = source[index];
++    const regexEnd = char === "/" && regexStarts(code) ? regexLiteralEnd(source, index) : -1;
++    if (regexEnd !== -1) {
++      code += '""';
++      index = regexEnd;
++    } else if (char === "\\") {
++      code += source.slice(index, index + 2);
++      index += 2;
++    } else if (char === '"' || char === "'" || char === "`") {
++      const end = closingDelimiter(source, index, char);
++      code += source.slice(index, end + 1);
++      index = end + 1;
++    } else if (char === "/" && source[index + 1] === "/") {
++      const end = source.indexOf("\n", index);
++      code += "\n";
++      index = end === -1 ? source.length : end + 1;
++    } else if (char === "/" && source[index + 1] === "*") {
++      const end = source.indexOf("*/", index + 2);
++      code += " ";
++      index = end === -1 ? source.length : end + 2;
++    } else {
++      code += char;
++      index += 1;
++    }
++  }
++  return code;
++}
++/**
++ * Every module specifier this scanner can see, in canonical form.
++ *
++ * One owner of the extraction, because the two predicates below ask different questions of the same
++ * list, and a second copy of the walk is how they end up disagreeing about what a specifier is.
++ * Specifiers are read from code, through `withoutComments`, in static imports and re-exports,
++ * dynamic imports and `require` calls.
++ *
++ * Canonical means the spelling module resolution would reach, and it has one owner here so both
++ * anchors stay literal. Backslashes become forward slashes, then `posix.normalize` collapses
++ * repeated separators, drops interior `.` segments and folds an interior `..` into the segment it
++ * cancels. Measured on the first cut: `.././domain/x` and `..//domain/x` both resolve to
++ * `../domain/x` and both read clean, and so would `../lang/../domain/x`. After normalisation all
++ * three are `../domain/x`, while `../domain/../lang/x` becomes `../lang/x` and stays clean because
++ * it never reaches the layer. A leading `./` is folded too, which is why the anchors no longer
++ * spell it. A package specifier has no dot segment and comes through unchanged.
++ *
++ * Three spellings stay invisible. A configured alias and a computed specifier are past the reach of
++ * any pattern over source text: an alias is resolved by configuration this scanner does not read,
++ * and a computed specifier has no literal to read. A template-literal delimiter is not past it,
++ * which is what makes it the one a later slice can close without first deciding what an
++ * unresolvable specifier means: the delimiter class admits an apostrophe and a quotation mark and
++ * nothing else, and widening it wants a backreferenced delimiter so one kind cannot close another,
++ * plus a decision about a substituted literal, which is a computed specifier in concrete clothing.
++ * That widens the set these gates refuse, so it is its own slice with its own cases. None of the
++ * three appears under `packages/core/src` today, measured over this scanner's own walk.
++ *
++ * One spelling is still read too eagerly, and it is named rather than chased: a specifier-shaped
++ * phrase inside a string literal. Prose lives in comments here and no such string exists in the
++ * tree, and narrowing it wants the keyword's own statement rather than a tighter delimiter class.
++ *
++ * One file kind is read without its grammar, and that is named too: `withoutComments` knows string,
++ * template and comment delimiters and nothing of JSX, while `scannedExtensions` includes `.tsx`. A
++ * `/*` in JSX element text therefore opens a comment that swallows the rest of the file, and a `//`
++ * there hides the rest of its line, so a real import after either reads as absent. No `.tsx` file
++ * exists under `packages/` today, so the gap is latent rather than live, and the repair is a JSX
++ * lexer or a refusal of `.tsx` under the layers these gates read, not a wider pattern.
++ */
++function* importSpecifiers(source) {
++  for (const match of withoutComments(source).matchAll(moduleSpecifier))
++    yield posix.normalize(match[1].replaceAll("\\", "/"));
++}
++/**
++ * Any relative import of the domain layer, which is what ARCHITECTURE section 2 actually forbids.
++ *
++ * ADR-103 relocated the outcome algebra to `lang/` and dropped the `E = Diagnostic` default that
++ * made it reach `contract/`. Those were the only two `contract/` imports of `domain/` in the tree,
++ * so this predicate is green on `contract/` and on `ports/`, and it is applied to exactly those two
++ * layers. `adapters/` keeps the narrower retired-sink rule below, because three real adapter
++ * imports of `domain/` survive: `adapters/interpolator/gsap.ts` reaches `domain/keyframe-compiler`
++ * for a value, and `adapters/dom.ts` plus `adapters/index.ts` reach `domain/plugins` type-only.
++ * Widening this rule to adapters would refuse the tree it was added to, and a gate introduced red
++ * earns an exemption list instead of a fix. ADR-099 named all three and ADR-103 records why they
++ * stay their own slice.
++ *
++ * The anchor admits an absent trailing slash, so a bare `../domain` is refused alongside
++ * `../domain/track`, and it reads canonical specifiers, so `./../domain/track`, `.././domain/track`
++ * and `..//domain/track` are refused as the spelling they resolve to. None of them appears in the
++ * tree and none is one a formatter would produce, which is the reason they are worth refusing: a
++ * gate whose anchor can be stepped around by a character nobody would notice in review is a gate
++ * that reports a clean boundary it does not have. It stays anchored at the front, so
++ * `../domain-helpers` and `../domainfoo` are still clean.
++ */
++export function importsDomainLayer(source) {
++  for (const specifier of importSpecifiers(source))
++    if (/^(?:\.\.\/)+domain(?:\/|$)/.test(specifier)) return true;
++  return false;
++}
++/**
++ * The retired sink path, and only that path, for the one layer the broad rule cannot reach yet.
++ *
++ * Kept as its own question rather than folded into `importsDomainLayer`, because `adapters/` may
++ * import `domain/` and may not import the sink. The extraction sees `.js`, `.mjs`, and `.ts`
++ * suffixes plus either path separator, and the anchored path is why `../lang/exhaustive` and
++ * `../domain/exhaustive-helpers` stay clean. `contract/` and `ports/` no longer carry this rule: a
++ * retired-sink import is a `domain/` import, so `importsDomainLayer` already refuses it there, and
++ * two spellings of one question is the duplication this project files against itself.
+  */
+ export function importsDomainSink(source) {
+-  for (const match of source.matchAll(moduleSpecifier)) {
+-    const specifier = match[1].replaceAll("\\", "/");
++  for (const specifier of importSpecifiers(source))
+     if (/^(?:\.\.\/)+domain\/exhaustive(?:\.(?:js|mjs|ts))?$/.test(specifier)) return true;
+-  }
+   return false;
+ }
+ export function bannedSymbol(source) {
+@@ -189,7 +374,9 @@ function checkCoreSource(source, file, layer, violations) {
+   if (layer !== "adapters" && (importsBoundary(source) || importsRenderer(source)))
+     violations.push(`${file}: renderer or engine import`);
+   if (bannedSymbol(source)) violations.push(`${file}: banned compatibility symbol`);
+-  if (["contract", "ports", "adapters"].includes(layer) && importsDomainSink(source))
++  if (["contract", "ports"].includes(layer) && importsDomainLayer(source))
++    violations.push(`${file}: inward domain import`);
++  if (layer === "adapters" && importsDomainSink(source))
+     violations.push(`${file}: retired domain sink import`);
+ }
+ async function scanFiles(directory, scanRoot, layer, violations) {
