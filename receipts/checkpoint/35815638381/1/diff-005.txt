@@ -1,0 +1,9 @@
+.execPath, [SCRIPT, "plan", await plant()], {
++      cwd: root,
++      encoding: "utf8",
++    });
++
++    expect(result.status).toBe(0);
++    expect(result.stdout).toContain("# Transport plan for cp042");
++  });
++});
