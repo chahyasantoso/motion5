@@ -3,11 +3,11 @@
 Current project state only. Replace stale entries rather than append history. The four sections below are the complete shape, **Now** and **Next in line** carry exactly one bullet each, and no bullet states a phase; `packages/core/test/unit/scripts/session-status-shape.test.ts` enforces all three and the byte ceiling.
 
 - **Captured:** 2026-09-23, Asia/Jakarta.
-- **Read against:** `main` at `b609fbda`; [#480](https://github.com/chahyasantoso/motion5/pull/480) is merged. PR #481 remains unmerged; a prepared checkpoint is not landed code.
+- **Read against:** `main` at `95bef276`; [#481](https://github.com/chahyasantoso/motion5/pull/481) is merged. The phase 2 pull request is unmerged; a prepared checkpoint is not landed code.
 
 ## Now
 
-- **[#481](https://github.com/chahyasantoso/motion5/pull/481) is in review, as phase 1 of [#349](https://github.com/chahyasantoso/motion5/issues/349):** the branch splits the `ik` solve into one owner per question (`ik-member.ts`, `ik-chain.ts`, `ik-solve.ts`, `ik-analytic.ts`, `fabrik.ts`, with `ik.ts` holding only the plugin), dispatches on a closed `ChainShape` union read exhaustively, and publishes byte-identical output. [ADR-106](./ADR-106-one-owner-per-ik-solve-question.md) records it and the replanned phases. Nothing in it has landed on `main`, and no green run is claimed here; the pull request carries its CI evidence.
+- **One IK solve result, the second step of [#349](https://github.com/chahyasantoso/motion5/issues/349), is in review:** both `ik` strategies and both arms of `solveChain` return one `SolveResult` (`plugins/ik-result.ts`) carrying `rotations` and a flat closed `SolveQuality` union with a residual on every kind; `ik.ts` still publishes `rotations` only. [ADR-107](./ADR-107-one-solve-result.md) records it. Nothing in it has landed on `main`, and no green run is claimed here; the pull request carries its CI evidence.
 
 ## Next in line
 
@@ -17,7 +17,7 @@ Current project state only. Replace stale entries rather than append history. Th
 
 - [Issue #328](https://github.com/chahyasantoso/motion5/issues/328) remains open for remaining activation/failure-recovery exercises, lifecycle limits, and maintenance usage/replacement validation before any separately confirmed retirement. Historical workflows and the manual formatting escape hatch are retained; dependency maintenance through the bounded API protocol remains disabled.
 - [Issue #411](https://github.com/chahyasantoso/motion5/issues/411) stays open on a recorded refusal rather than a fix: a drain replays at the frame it deferred, so the assertion it recommends cannot distinguish the two implementations it is about. `deferred-frame-loss.test.ts` says what each of its cases actually pins, and #417's unreached-frame case is the witness it asked for.
-- [Issue #349](https://github.com/chahyasantoso/motion5/issues/349) holds the 2D IK/FK contract study; phases 2 through 8 are planned in ADR-106 and none has started.
+- [Issue #349](https://github.com/chahyasantoso/motion5/issues/349) holds the 2D IK/FK contract study; phase 1 landed as [ADR-106](./ADR-106-one-owner-per-ik-solve-question.md), phases 3 through 8 are planned there and none has started, and [#482](https://github.com/chahyasantoso/motion5/issues/482) owns the negative-length disagreement between `fk` and the solves.
 - Packaging follows the current work. [IMPLEMENTATION-PLAN.md](./IMPLEMENTATION-PLAN.md) owns scope; no implementation is claimed here.
 
 ## Where the rest of it lives

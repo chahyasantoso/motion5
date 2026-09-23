@@ -5,10 +5,10 @@ import {
   FABRIK_TOLERANCE,
   seedArc,
   solveFabrik,
-  type FabrikConvergence,
   type FabrikPoint,
 } from "../../../src/plugins/fabrik";
 import type { WorldFrame } from "../../../src/plugins/frame";
+import type { IterativeQuality } from "../../../src/plugins/ik-result";
 import type { SolveMember } from "../../../src/plugins/ik-member";
 import { solveTwoBone } from "../../../src/plugins/ik-analytic";
 
@@ -113,11 +113,11 @@ function shuffle(members: readonly SolveMember[], seed: number): SolveMember[] {
 
 describe("FABRIK over a solver chain (Slice D2)", () => {
   it("FB-0 makes the meaningless converged-and-stalled state unwritable", () => {
-    const impossible: FabrikConvergence = {
+    const impossible: IterativeQuality = {
       kind: "converged",
       iterations: 1,
       residual: 0,
-      // @ts-expect-error convergence has one closed outcome, not independent boolean flags.
+      // @ts-expect-error quality has one closed outcome, not independent boolean flags.
       stalled: true,
     };
     expect(impossible.kind).toBe("converged");
@@ -125,9 +125,9 @@ describe("FABRIK over a solver chain (Slice D2)", () => {
   it("FB-1 a two-bone chain reaches its goal and keeps both segment lengths", () => {
     const solution = solveFabrik(ROOT, TWO_BONE);
 
-    expect(solution.convergence.kind).toBe("converged");
-    expect(solution.convergence.iterations).toBeLessThan(FABRIK_MAX_ITERATIONS);
-    expect(solution.convergence.residual).toBeLessThanOrEqual(FABRIK_TOLERANCE);
+    expect(solution.quality.kind).toBe("converged");
+    expect(solution.quality.iterations).toBeLessThan(FABRIK_MAX_ITERATIONS);
+    expect(solution.quality.residual).toBeLessThanOrEqual(FABRIK_TOLERANCE);
     expect(distance(solution.tips[FOREARM]!, HAND)).toBeLessThanOrEqual(FABRIK_TOLERANCE);
 
     // Lengths are the invariant the tolerance does not cover: an iteration that reached the goal by
@@ -154,31 +154,31 @@ describe("FABRIK over a solver chain (Slice D2)", () => {
     const analytic = [bone(UPPER, "walker/shoulder", 80), bone(FOREARM, UPPER, 60)];
 
     for (const flip of [false, true]) {
-      const closed = solveTwoBone(ROOT, HAND, analytic[0]!, analytic[1]!, flip);
+      const closed = solveTwoBone(ROOT, HAND, analytic[0]!, analytic[1]!, flip).rotations;
       const iterative = solveFabrik(ROOT, TWO_BONE, flip);
-      expect(iterative.convergence.kind).toBe("converged");
+      expect(iterative.quality.kind).toBe("converged");
       expect(Math.abs(iterative.rotations[UPPER]! - closed[UPPER]!)).toBeLessThan(bound);
       expect(Math.abs(iterative.rotations[FOREARM]! - closed[FOREARM]!)).toBeLessThan(bound);
     }
 
     // The two branches are genuinely different poses, so neither assertion above can pass by the
     // solve ignoring `flip` and both comparisons landing on one answer.
-    const closed = solveTwoBone(ROOT, HAND, analytic[0]!, analytic[1]!, false);
-    const mirrored = solveTwoBone(ROOT, HAND, analytic[0]!, analytic[1]!, true);
+    const closed = solveTwoBone(ROOT, HAND, analytic[0]!, analytic[1]!, false).rotations;
+    const mirrored = solveTwoBone(ROOT, HAND, analytic[0]!, analytic[1]!, true).rotations;
     expect(Math.abs(closed[UPPER]! - mirrored[UPPER]!)).toBeGreaterThan(1);
   });
 
   it("FB-3 chains past arity two reach their goal", () => {
     const three = solveFabrik(ROOT, THREE_BONE);
-    expect(three.convergence.kind).toBe("converged");
+    expect(three.quality.kind).toBe("converged");
     expect(distance(three.tips.c!, at(300, 380))).toBeLessThanOrEqual(FABRIK_TOLERANCE);
     expect(distance(ROOT, three.tips.a!)).toBeCloseTo(80, 9);
     expect(distance(three.tips.a!, three.tips.b!)).toBeCloseTo(60, 9);
     expect(distance(three.tips.b!, three.tips.c!)).toBeCloseTo(40, 9);
 
     const five = solveFabrik(ROOT, FIVE_BONE);
-    expect(five.convergence.kind).toBe("converged");
-    expect(five.convergence.iterations).toBeLessThan(FABRIK_MAX_ITERATIONS);
+    expect(five.quality.kind).toBe("converged");
+    expect(five.quality.iterations).toBeLessThan(FABRIK_MAX_ITERATIONS);
     expect(distance(five.tips.m5!, at(260, 380))).toBeLessThanOrEqual(FABRIK_TOLERANCE);
     expect(distance(five.tips.m4!, five.tips.m5!)).toBeCloseTo(40, 9);
   });
@@ -212,7 +212,7 @@ describe("FABRIK over a solver chain (Slice D2)", () => {
 
   it("FB-5 two goals sharing one sub-base are both solved, and contention is deterministic", () => {
     const tree = solveFabrik(ROOT, TREE);
-    expect(tree.convergence.kind).toBe("converged");
+    expect(tree.quality.kind).toBe("converged");
     expect(distance(tree.tips["fore-l"]!, at(240, 400))).toBeLessThanOrEqual(FABRIK_TOLERANCE);
     expect(distance(tree.tips["fore-r"]!, at(160, 400))).toBeLessThanOrEqual(FABRIK_TOLERANCE);
     expect(distance(ROOT, tree.tips.spine!)).toBeCloseTo(50, 9);
@@ -224,7 +224,7 @@ describe("FABRIK over a solver chain (Slice D2)", () => {
     // poses: a solve that let one branch win, or that averaged in an order the input decided, would
     // pull it off the axis instead.
     const contested = solveFabrik(ROOT, CONTESTED_TREE);
-    expect(contested.convergence.kind).not.toBe("converged");
+    expect(contested.quality.kind).not.toBe("converged");
     expect(contested.tips.spine!.x).toBeCloseTo(200, 9);
     expect(contested.tips["arm-l"]!.x + contested.tips["arm-r"]!.x).toBeCloseTo(400, 9);
     expect(contested.tips["arm-l"]!.y).toBeCloseTo(contested.tips["arm-r"]!.y, 9);
@@ -235,11 +235,11 @@ describe("FABRIK over a solver chain (Slice D2)", () => {
     // chain is a fixed point of both passes. Reported as stalled, in one iteration rather than at
     // the cap, so a caller is not told to raise a cap that would change nothing.
     const unreachable = solveFabrik(ROOT, [bone("a", "root", 30), tip("b", "a", 20, at(600, 300))]);
-    expect(unreachable.convergence.kind).not.toBe("converged");
-    expect(unreachable.convergence.kind).toBe("stalled");
-    expect(unreachable.convergence.iterations).toBe(1);
+    expect(unreachable.quality.kind).not.toBe("converged");
+    expect(unreachable.quality.kind).toBe("stalled");
+    expect(unreachable.quality.iterations).toBe(1);
     // Exactly the shortfall: 400 units away, 50 units of chain.
-    expect(unreachable.convergence.residual).toBeCloseTo(350, 9);
+    expect(unreachable.quality.residual).toBeCloseTo(350, 9);
     expect(unreachable.tips.b!).toEqual({ x: 250, y: 300 });
     expect(unreachable.rotations.a!).toBe(0);
     expect(unreachable.rotations.b!).toBe(0);
@@ -249,10 +249,10 @@ describe("FABRIK over a solver chain (Slice D2)", () => {
     // reported as unconverged with its residual rather than as success, which is the whole reason
     // the residual is returned.
     const slow = solveFabrik(ROOT, [bone("a", "root", 50), tip("b", "a", 40, at(280, 340))]);
-    expect(slow.convergence.kind).toBe("iteration-cap");
-    expect(slow.convergence.iterations).toBe(FABRIK_MAX_ITERATIONS);
-    expect(slow.convergence.residual).toBeGreaterThan(FABRIK_TOLERANCE);
-    expect(slow.convergence.residual).toBeLessThan(0.01);
+    expect(slow.quality.kind).toBe("iteration-cap");
+    expect(slow.quality.iterations).toBe(FABRIK_MAX_ITERATIONS);
+    expect(slow.quality.residual).toBeGreaterThan(FABRIK_TOLERANCE);
+    expect(slow.quality.residual).toBeLessThan(0.01);
   });
 
   it("FB-7 the solve is deterministic under member permutation", () => {
@@ -284,13 +284,13 @@ describe("FABRIK over a solver chain (Slice D2)", () => {
     expect(zero.rotations.a!).toBe(0);
     expect(zero.rotations.b!).toBe(0);
     expect(zero.tips.b!).toEqual({ x: 200, y: 300 });
-    expect(zero.convergence.kind).toBe("stalled");
-    expect(Number.isFinite(zero.convergence.residual)).toBe(true);
+    expect(zero.quality.kind).toBe("stalled");
+    expect(Number.isFinite(zero.quality.residual)).toBe(true);
 
     // A negative length is a zero-length segment, read the way `readNumber` reads a bad number: the
     // damage stays inside the value that was wrong.
     const negative = solveFabrik(ROOT, [bone("a", "root", -40), tip("b", "a", 40, at(240, 300))]);
-    expect(negative.convergence.kind).toBe("converged");
+    expect(negative.quality.kind).toBe("converged");
     expect(negative.tips.a!).toEqual({ x: 200, y: 300 });
     expect(negative.tips.b!).toEqual({ x: 240, y: 300 });
     // The seed reads a raw length through the same owner, `segmentExtent`, so a negative length
@@ -300,15 +300,15 @@ describe("FABRIK over a solver chain (Slice D2)", () => {
     // A goal on the root has no direction to read, so the seed's axis is the root's own rotation
     // and the chain folds back along it. Defined, exact, and reachable.
     const folded = solveFabrik(ROOT, [bone("a", "root", 40), tip("b", "a", 40, at(200, 300))]);
-    expect(folded.convergence.kind).toBe("converged");
-    expect(folded.convergence.residual).toBe(0);
+    expect(folded.quality.kind).toBe("converged");
+    expect(folded.quality.residual).toBe(0);
     expect(folded.rotations.a!).toBe(90);
     expect(folded.rotations.b!).toBe(-180);
 
     // One member is a chain, and an unreachable one-member chain still reports its shortfall.
     const single = solveFabrik(ROOT, [tip("only", "root", 40, at(200, 360))]);
     expect(single.rotations.only!).toBe(90);
-    expect(single.convergence.residual).toBeCloseTo(20, 9);
+    expect(single.quality.residual).toBeCloseTo(20, 9);
 
     // Cycling bases are refused rather than looped over. Graph construction refuses a cycle long
     // before a solve is reached, so this is an invariant guard and it fails by name.

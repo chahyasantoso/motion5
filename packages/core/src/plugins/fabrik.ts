@@ -7,6 +7,7 @@ import {
   type WorldPoint,
 } from "./frame";
 import { solveLength, solveOffset, type SolveMember } from "./ik-member";
+import type { IterativeQuality, SolveResult } from "./ik-result";
 
 /**
  * FABRIK over a solver chain: pure, and reviewed as arithmetic.
@@ -73,21 +74,16 @@ export const FABRIK_ARC_BISECTIONS = 60;
 export type FabrikPoint = WorldPoint;
 
 /**
- * What the solve did, so a caller can diagnose it without re-deriving it.
- *
- * The closed kind answers all three exits: a residual inside tolerance converged, a fixed point
- * that remains outside tolerance stalled, and a still-moving pose at the hard cap hit
- * `iteration-cap`. The last distinction is a capability gain: a caller can raise the cap for the
- * slow case without treating an unreachable goal as if more work could help.
- */
-export type FabrikConvergence =
-  | { readonly kind: "converged"; readonly iterations: number; readonly residual: number }
-  | { readonly kind: "stalled"; readonly iterations: number; readonly residual: number }
-  | { readonly kind: "iteration-cap"; readonly iterations: number; readonly residual: number };
-
-/**
  * The solved chain: one local rotation per member id, the pivots and tips those rotations describe,
  * and what the iteration did.
+ *
+ * The rotations and the quality are the shared `SolveResult` every strategy returns, narrowed to the
+ * iterative kinds: a residual inside tolerance converged, a fixed point that remains outside it
+ * stalled, and a still-moving pose at the hard cap hit `iteration-cap`. The last distinction is a
+ * capability gain, because a caller can raise the cap for the slow case without treating an
+ * unreachable goal as if more work could help. The field was `convergence` and its type
+ * `FabrikConvergence` until issue #349's second phase moved the kinds into `ik-result.ts`, where the
+ * closed form's kinds sit beside them. See ADR-107.
  *
  * `tips` and `pivots` are returned because length preservation is a statement about positions rather
  * than angles, and a case that re-derived them from the rotations would re-derive the thing under
@@ -96,11 +92,9 @@ export type FabrikConvergence =
  * when the offset is zero. A publisher carries `rotations` and nothing else; the positions are
  * `fk`'s to recompute, which is the point of returning rotations rather than a pose.
  */
-export interface FabrikSolution {
-  readonly rotations: Readonly<Record<string, number>>;
+export interface FabrikSolution extends SolveResult<IterativeQuality> {
   readonly pivots: Readonly<Record<string, FabrikPoint>>;
   readonly tips: Readonly<Record<string, FabrikPoint>>;
-  readonly convergence: FabrikConvergence;
 }
 
 const DEGREES = 180 / Math.PI;
@@ -431,14 +425,14 @@ export function solveFabrik(
     solvedPivots[id] = pivots.get(id)!;
     solvedTips[id] = tips.get(id)!;
   }
-  let convergence: FabrikConvergence;
-  if (residual <= FABRIK_TOLERANCE) convergence = { kind: "converged", iterations, residual };
-  else if (stalled) convergence = { kind: "stalled", iterations, residual };
-  else convergence = { kind: "iteration-cap", iterations, residual };
+  let quality: IterativeQuality;
+  if (residual <= FABRIK_TOLERANCE) quality = { kind: "converged", iterations, residual };
+  else if (stalled) quality = { kind: "stalled", iterations, residual };
+  else quality = { kind: "iteration-cap", iterations, residual };
   return Object.freeze({
     rotations: Object.freeze(rotations),
     pivots: Object.freeze(solvedPivots),
     tips: Object.freeze(solvedTips),
-    convergence: Object.freeze(convergence),
+    quality: Object.freeze(quality),
   });
 }

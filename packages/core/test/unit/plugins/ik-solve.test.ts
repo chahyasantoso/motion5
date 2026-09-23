@@ -57,7 +57,13 @@ function forwardTip(
 describe("ikPlugin and solveTwoBone (Slice C3)", () => {
   it("IK-1 solveTwoBone reaches the target tip and pins the default elbow branch", () => {
     const target = { x: 320, y: 340, rotation: 0 };
-    const rotations = solveTwoBone(ROOT, target, armMembers()[0]!, armMembers()[1]!, false);
+    const rotations = solveTwoBone(
+      ROOT,
+      target,
+      armMembers()[0]!,
+      armMembers()[1]!,
+      false,
+    ).rotations;
 
     const r1 = rotations[UPPER_ARM]!;
     const r2 = rotations[FOREARM]!;
@@ -76,7 +82,13 @@ describe("ikPlugin and solveTwoBone (Slice C3)", () => {
   it("IK-2 unreachable target produces finite angles fully extended toward it", () => {
     // The target is 200 units away and the chain reaches 80 + 60 = 140.
     const target = { x: 400, y: 300, rotation: 0 };
-    const rotations = solveTwoBone(ROOT, target, armMembers()[0]!, armMembers()[1]!, false);
+    const rotations = solveTwoBone(
+      ROOT,
+      target,
+      armMembers()[0]!,
+      armMembers()[1]!,
+      false,
+    ).rotations;
 
     const r1 = rotations[UPPER_ARM]!;
     const r2 = rotations[FOREARM]!;
@@ -90,8 +102,8 @@ describe("ikPlugin and solveTwoBone (Slice C3)", () => {
   it("IK-3 flip mirrors the elbow across the root-to-target line, both branches pinned", () => {
     const target = { x: 300, y: 350, rotation: 0 };
     const members = armMembers();
-    const unflipped = solveTwoBone(ROOT, target, members[0]!, members[1]!, false);
-    const flipped = solveTwoBone(ROOT, target, members[0]!, members[1]!, true);
+    const unflipped = solveTwoBone(ROOT, target, members[0]!, members[1]!, false).rotations;
+    const flipped = solveTwoBone(ROOT, target, members[0]!, members[1]!, true).rotations;
 
     // Exact on both sides. `not.toEqual` on one key, which is all this case asserted before, holds
     // for any two distinct solutions: it would survive the branches being swapped, and it would
@@ -121,7 +133,7 @@ describe("ikPlugin and solveTwoBone (Slice C3)", () => {
       { x: 200, y: 300, rotation: 0 },
       armMembers()[0]!,
       armMembers()[1]!,
-    );
+    ).rotations;
     expect(Number.isFinite(samePoint[UPPER_ARM])).toBe(true);
     expect(Number.isFinite(samePoint[FOREARM])).toBe(true);
 
@@ -130,7 +142,7 @@ describe("ikPlugin and solveTwoBone (Slice C3)", () => {
       { x: 250, y: 300, rotation: 0 },
       armMembers(0, 60)[0]!,
       armMembers(0, 60)[1]!,
-    );
+    ).rotations;
     expect(Number.isFinite(zeroLength[UPPER_ARM])).toBe(true);
     expect(Number.isFinite(zeroLength[FOREARM])).toBe(true);
   });

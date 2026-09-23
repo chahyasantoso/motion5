@@ -216,6 +216,7 @@
     { "id": "resolve-solvers", "test": "packages/core/test/unit/graph/resolve-solvers.test.ts" },
     { "id": "ik-solve", "test": "packages/core/test/unit/plugins/ik-solve.test.ts" },
     { "id": "ik-chain-shape", "test": "packages/core/test/unit/plugins/ik-chain-shape.test.ts" },
+    { "id": "ik-result", "test": "packages/core/test/unit/plugins/ik-result.test.ts" },
     {
       "id": "fk-solver-override",
       "test": "packages/core/test/unit/plugins/fk-solver-override.test.ts"

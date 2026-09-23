@@ -1,5 +1,6 @@
 import { clamp, effectiveLink, pivotFromBaseTip, type WorldFrame } from "./frame";
 import { solveLength, solveOffset, type SolveMember } from "./ik-member";
+import type { ClosedFormQuality, SolveResult } from "./ik-result";
 
 /**
  * The analytic two-bone solve, in `fk`'s own degrees and rotate-then-translate convention.
@@ -49,6 +50,16 @@ import { solveLength, solveOffset, type SolveMember } from "./ik-member";
  *
  * Every exit returns through one frozen record. The degenerate cases are a pair of angles each,
  * not a return statement each, so the record's key order and freezing are stated once.
+ *
+ * **The result says how well the angles answer the goal, and it is stated rather than measured.**
+ * The rotations are exact for every goal in the reach band, so the residual is the clamp's own
+ * `|d - clampedD|` rather than a forward composition this function would have to run: zero inside
+ * the band, and the distance to the nearer bound outside it. The degenerate exits read the same
+ * band, because with extents already clamped to zero `[|reach - l2|, reach + l2]` is exactly
+ * `[reach, reach]` when the second segment has no extent and `[l2, l2]` when the link has none, so
+ * no exit needs a band of its own. The one miss inside the band is the coincident goal, which the
+ * rest pose answers; its residual is where that pose leaves the tip. `IR-6` holds every residual to
+ * the miss `fk`'s own composition measures. See `ik-result.ts` and ADR-107.
  */
 export function solveTwoBone(
   root: WorldFrame,
@@ -56,22 +67,32 @@ export function solveTwoBone(
   first: SolveMember,
   second: SolveMember,
   flip = false,
-): Readonly<Record<string, number>> {
-  const [r1, r2] = twoBoneAngles(root, target, first, second, flip);
+): SolveResult<ClosedFormQuality> {
+  const { angles, quality } = twoBone(root, target, first, second, flip);
+  const [r1, r2] = angles;
   return Object.freeze({
-    [first.id]: r1,
-    [second.id]: r2,
+    rotations: Object.freeze({
+      [first.id]: r1,
+      [second.id]: r2,
+    }),
+    quality: Object.freeze(quality),
   });
 }
 
-/** The two local angles `solveTwoBone` publishes, in member order. */
-function twoBoneAngles(
+/** The two local angles `solveTwoBone` publishes, in member order, and how well they answer. */
+interface TwoBoneAnswer {
+  readonly angles: readonly [number, number];
+  readonly quality: ClosedFormQuality;
+}
+
+/** The closed form itself. Every exit reads one reach band and one residual. */
+function twoBone(
   root: WorldFrame,
   target: WorldFrame,
   first: SolveMember,
   second: SolveMember,
   flip: boolean,
-): readonly [number, number] {
+): TwoBoneAnswer {
   const l1 = solveLength(first);
   const l2 = solveLength(second);
   // The chain's own base, and the rigid link that leaves it. Both are pure functions of the root
@@ -86,18 +107,26 @@ function twoBoneAngles(
   const d = Math.hypot(dx, dy);
   const targetAngle = (Math.atan2(dy, dx) * 180) / Math.PI;
 
+  const minReach = Math.abs(reach - l2);
+  const maxReach = reach + l2;
+  const clampedD = clamp(d, minReach, maxReach);
+  const band = bandQuality(d, minReach, maxReach, Math.abs(d - clampedD));
+
   // A link with no extent has no twist either, which `effectiveLink` guarantees, so the degenerate
   // cases aim whichever segment is left and subtract a twist that is exactly zero. A missing second
   // segment aims the link, whether or not the link itself has extent; a missing link with a real
   // second segment aims the second segment.
-  if (l2 <= 0) return [targetAngle - twist - root.rotation, 0];
-  if (reach <= 0) return [0, targetAngle - root.rotation];
+  if (l2 <= 0) return { angles: [targetAngle - twist - root.rotation, 0], quality: band };
+  if (reach <= 0) return { angles: [0, targetAngle - root.rotation], quality: band };
 
-  const minReach = Math.abs(reach - l2);
-  const maxReach = reach + l2;
-  const clampedD = clamp(d, minReach, maxReach);
-
-  if (clampedD <= 0) return [0, 0];
+  // Only a goal on the base with `reach === l2` clamps to zero: the band's lower bound is zero only
+  // then, and a positive distance clamps to itself. It has no direction, so the rest pose answers.
+  if (clampedD <= 0) {
+    return {
+      angles: [0, 0],
+      quality: { kind: "coincident", residual: restMiss(root, reach, twist, l2) },
+    };
+  }
 
   const cosAlpha = clamp(
     (reach * reach + clampedD * clampedD - l2 * l2) / (2 * reach * clampedD),
@@ -109,7 +138,45 @@ function twoBoneAngles(
   const cosBeta = clamp((reach * reach + l2 * l2 - clampedD * clampedD) / (2 * reach * l2), -1, 1);
   const beta = (Math.acos(cosBeta) * 180) / Math.PI;
 
-  return flip
+  const angles: readonly [number, number] = flip
     ? [targetAngle - alpha - twist - root.rotation, 180 - beta + twist]
     : [targetAngle + alpha - twist - root.rotation, beta - 180 + twist];
+  return { angles, quality: band };
+}
+
+/**
+ * Where a goal at distance `d` sits against the reach band, and the residual the clamp leaves.
+ *
+ * Read in this order so a band that has collapsed to one point still names the side it was missed
+ * on. The quality reports the geometry it was handed rather than validating it, and a non-finite
+ * residual is never laundered to zero. An infinite distance is directional: it is past every finite
+ * outer bound, so it reads as `too-far` with an infinite residual, and the angles still aim along
+ * the direction `atan2` finds for it. A `NaN` distance or bound compares false against both bounds
+ * and reads as `reached` with a `NaN` residual, beside angles that are `NaN` too, so
+ * `residual <= tolerance` is false for it on every path. `IR-9` pins both.
+ */
+function bandQuality(
+  d: number,
+  minReach: number,
+  maxReach: number,
+  residual: number,
+): ClosedFormQuality {
+  if (d > maxReach) return { kind: "too-far", residual };
+  if (d < minReach) return { kind: "too-near", residual };
+  return { kind: "reached", residual };
+}
+
+/**
+ * The distance the rest pose leaves the tip from the chain's own base, which is where a coincident
+ * goal sits. With both local angles zero the link leaves the base at the root's rotation plus its
+ * twist and the second segment continues at the root's rotation, so the tip is the sum of those two
+ * vectors.
+ */
+function restMiss(root: WorldFrame, reach: number, twist: number, l2: number): number {
+  const link = ((root.rotation + twist) * Math.PI) / 180;
+  const segment = (root.rotation * Math.PI) / 180;
+  return Math.hypot(
+    reach * Math.cos(link) + l2 * Math.cos(segment),
+    reach * Math.sin(link) + l2 * Math.sin(segment),
+  );
 }

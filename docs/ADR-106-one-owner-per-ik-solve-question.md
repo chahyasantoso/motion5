@@ -1,6 +1,8 @@
 # ADR-106: One owner per question an IK solve answers
 
-**Status:** Proposed in PR #481 as issue #349 phase 1, 2026-09-23. Accepted when #481 merges.
+**Status:** Accepted, 2026-09-23. Issue #349 phase 1, squash-merged from [#481](https://github.com/chahyasantoso/motion5/pull/481) as `95bef276`. Phase 2 is [ADR-107](./ADR-107-one-solve-result.md).
+
+**Corrected by ADR-107.** The invariant below says `segmentExtent` owns the length clamp for `fk` and both solves alike. It owns it for `effectiveLink` and both solves; `fk.compose` still reads an authored `length` raw, and [#482](https://github.com/chahyasantoso/motion5/issues/482) owns that disagreement.
 
 ## Invariant
 
