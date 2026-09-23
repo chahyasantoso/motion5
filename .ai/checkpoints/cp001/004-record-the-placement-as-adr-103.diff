@@ -13,8 +13,8 @@ index dfd0991..c2ce1fa 100644
 +The `domain/outcome` pair is the interesting one, and it is a real slice rather than a tidy-up: `Outcome<T, E = Diagnostic>` defaults its error type to a contract type, so the question is whether the outcome algebra was ever domain knowledge at all, or belongs in `contract/` beside the diagnostic it carries. Phases 4a and 4b of #451 created both imports and neither asked. Moving it is not a path rewrite either, because `Outcome` is the declared shape of the public `ValidationResult` and `MigrationResult`. It needs its own measurement and its own record, and it does not belong in a relocation slice. **Answered by [ADR-103](./ADR-103-the-outcome-algebra-lives-in-lang.md), 2026-09-22.** The measurement says neither: the module read no Track, Motion, plugin or value snapshot, and its only project-specific tokens were the default and the import serving it, so the algebra was never domain knowledge; and `contract/` is refused on this record's own ground, that a language-level primitive is not a contract this project offers anyone. It lives in `lang/` with no default, `ValidationResult` and `MigrationResult` stay declared where they were, and the deferral recorded in this paragraph was correct rather than superseded.
  
  ## Alternatives rejected
- 
-diff --git a/docs/ADR-103-the-outcome-algebra-lives-in-lang.md b/docs/ADR-103-the-outcome-algebra-lives-in-lang.md
+
+ diff --git a/docs/ADR-103-the-outcome-algebra-lives-in-lang.md b/docs/ADR-103-the-outcome-algebra-lives-in-lang.md
 new file mode 100644
 index 0000000..81bd2e9
 --- /dev/null
@@ -66,7 +66,7 @@ index 0000000..81bd2e9
 +
 +**One file kind is read without its grammar.** `withoutComments` knows string, template and comment delimiters and nothing of JSX, while the scanner walks `.tsx`. A `/*` in JSX element text opens a comment that swallows the rest of the file, and a `//` there hides the rest of its line, so an import after either reads as absent. No `.tsx` file exists under `packages/` today, so the gap is latent, and it is named in the extractor's own doc comment rather than closed here: the repair is a JSX lexer or a refusal of `.tsx` in the layers these gates read, and either is a decision about what the scanner accepts, not a correction of what it reads.
 +
-+**One spelling is still read too eagerly.** A specifier-shaped phrase inside a string literal, such as `"read from '../domain/track'"`, is still a false positive: comments are erased and literals are not, because a literal is where a specifier lives. Prose lives in comments in this tree and no such string exists in it. Narrowing it wants the keyword's own statement rather than a tighter delimiter class, and that is its own slice.
++**One spelling is still read too eagerly.** A specifier-shaped phrase inside a string literal, such as "read from '../domain/track'", is still a false positive: comments are erased and literals are not, because a literal is where a specifier lives. Prose lives in comments in this tree and no such string exists in it. Narrowing it wants the keyword's own statement rather than a tighter delimiter class, and that is its own slice.
 +
 +## Alternatives rejected
 +
@@ -105,3 +105,31 @@ index 0000000..81bd2e9
 +`node scripts/boundary-scan.mjs`, `node scripts/read-budget-scan.mjs`, `node scripts/acceptance-scan.mjs` and `node scripts/raw-template-scan.mjs` were run on the exact tree this slice produces and all four pass. No added line in any `.ts` or `.mjs` file exceeds 100 columns, measured over added lines. Markdown is not held to that number and this record was wrong to claim it was: `proseWrap` is `preserve` and `docs/FORMATTING.md` asks for a paragraph on one line or a hand wrap under 100 columns, so the prose here is one line per paragraph like every record beside it. No new evidence-case id is introduced, so the id series and `docs/acceptance-map.json` are untouched.
 +
 +Not claimed, and required CI is the authority for all of it: no `npm`, no `vitest` and no `tsc` run backs a statement here, and the shim runs named above are not `vitest` runs. `prettier --check` was run with the retained 3.6.2 under `.tools/prettier` over every path this slice touches, which is the formatter CI pins but not CI's `format:check`. None of the rest is installable in the preparing environment and no network was available, so `typecheck` and every "red on `main`" claim above are claims about what a checked-in case asserts rather than observed failures, except where a predicate was executed and its output quoted. The relocation's type correctness in particular rests on reading every use site rather than on a compiler: the four inferred constructor calls were left inferred precisely because removing a default cannot change inference that already succeeds.
+
+diff --git a/docs/ARCHITECTURE.md b/docs/ARCHITECTURE.md
+index cf98bf9..cd5ed76 100644
+--- a/docs/ARCHITECTURE.md
++++ b/docs/ARCHITECTURE.md
+@@ -45,6 +45,13 @@ Graph depends on contract and domain. Runtime depends on graph. Ports are depend
+ depending. Adapters depend on ports and on their own external engine, and nothing depends on
+ adapters except the composition root.
+ 
++Two of those sentences are gated rather than asserted. `scripts/boundary-scan.mjs` refuses any
++relative `domain/` import from `contract/` and from `ports/`, which is the contract sentence and
++half the ports sentence. The gate deliberately stops there: three adapter imports of `domain/` are
++still legal, `ports/graph-builder.ts` still reaches `graph/` type-only, and a gate introduced red
++earns an exemption list instead of a fix. ADR-099 and ADR-103 own that reasoning, and issue #474
++owns the adapter remainder.
++
+ ## 3. Ownership
+ 
+ One owner per responsibility. If two things can perform an operation, one of them is wrong.
+@@ -212,7 +219,7 @@ At runtime, diagnostics accumulate on the project in a bounded ring buffer and s
+ packages/
+   core/
+     src/
+-      lang/        dependency-free shared helpers
++      lang/        dependency-free shared helpers: the exhaustive sink, the outcome algebra
+       contract/    authored schema constants, public types, diagnostics shape
+       domain/      Track, Motion, plugins, immutable value snapshots
+       graph/       qualified ids, IR, normalization, validation, ObservationState, GraphBinding
