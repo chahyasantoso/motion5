@@ -1,5 +1,5 @@
 import { diagnostic as buildDiagnostic } from "./diagnostics";
-import { acceptedOutcome, refusedOutcome, type Outcome } from "../domain/outcome";
+import { acceptedOutcome, refusedOutcome, type Outcome } from "../lang/outcome";
 import type { RuleId } from "./rule-id";
 import type { MigrationDiagnostic } from "./v5";
 

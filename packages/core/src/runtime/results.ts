@@ -1,5 +1,6 @@
+import type { Diagnostic } from "../contract/v5";
 import type { LiveWriteResult } from "../domain/track";
-import { readOutcome, type Outcome } from "../domain/outcome";
+import { readOutcome, type Outcome } from "../lang/outcome";
 import { unreachable } from "../lang/exhaustive";
 import { refuse, type HandleTarget } from "./refusal";
 
@@ -34,7 +35,7 @@ function mint<Shape extends { readonly kind: string }>(shape: Shape): Minted<Sha
 }
 
 /** Reads a shared validation outcome and raises the runtime refusal for its refused branch. */
-export function expectValid<T>(result: Outcome<T>): T {
+export function expectValid<T>(result: Outcome<T, Diagnostic>): T {
   return readOutcome(
     result,
     (value) => value,

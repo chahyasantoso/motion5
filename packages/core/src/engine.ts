@@ -15,7 +15,7 @@ import type { TrackHandle } from "./contract/track-handle";
 import { describeDiagnostics } from "./contract/diagnostics";
 import { resolveTriggerDefinition } from "./contract/validate-v5";
 import { validateV5 } from "./validate-v5";
-import { readOutcome } from "./domain/outcome";
+import { readOutcome } from "./lang/outcome";
 import { IncrementalGraphBuilder } from "./graph/builders/incremental";
 import { createDefaultTriggerFactory } from "./adapters/trigger-factory/default";
 import { compilePercentKeyframes } from "./domain/keyframe-compiler";
