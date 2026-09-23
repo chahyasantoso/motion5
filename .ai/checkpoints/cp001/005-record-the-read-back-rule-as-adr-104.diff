@@ -1,0 +1,73 @@
+diff --git a/docs/ADR-104-a-transport-write-is-read-back-before-it-counts.md b/docs/ADR-104-a-transport-write-is-read-back-before-it-counts.md
+new file mode 100644
+index 0000000..41975f4
+--- /dev/null
++++ b/docs/ADR-104-a-transport-write-is-read-back-before-it-counts.md
+@@ -0,0 +1,67 @@
++# ADR-104: A transport write is read back before it counts
++
++**Status:** Accepted, 2026-09-23. Closes [#478](https://github.com/chahyasantoso/motion5/issues/478).
++
++## Context
++
++[ADR-100](./ADR-100-a-patch-declares-the-bytes-it-produces.md) made a patch declare the bytes it produces, and [ADR-102](./ADR-102-a-request-is-sealed-by-its-manifest.md) made a request sealed by its manifest, so a checkpoint store arrives across several contents-API writes and only the manifest starts a run. Both decisions are about what CI does with bytes that have arrived. Neither says anything about the step before, where an implementor with no local checkout re-emits every byte of every store file into a JSON string argument, and [#477](https://github.com/chahyasantoso/motion5/pull/477) is what that step costs when nobody checks it.
++
++Everything below was measured on 2026-09-23 against the cp001 store on #477's branch, read as tree listings at `cc4c947`, `2442b5e` and `ed190b3`, and against the three sealed files carried byte for byte into this repository as fixtures and verified by Git blob id.
++
++**What the first seal carried.** At `cc4c947`, the seal that preparation run [35805919432](https://github.com/chahyasantoso/motion5/actions/runs/35805919432) refused with `does not match its declared SHA-256`, patch 004 was blob `36731f6` at 26,548 bytes against a declared `80b7bee` at 28,080, and patch 005 was `d559264` at 6,523 bytes against `a06c81f` at 6,524. Issue #478's table names `267a7fa` as 004's first failure. The listing says otherwise: `267a7fa`, 28,079 bytes, is what the later "exact bytes" re-push `db4a471` left behind, and it is the 004 blob the unsealed listing at `2442b5e` shows. Both are wrong, and the correction matters only because a record that cites the wrong id for the refused seal is a record the next reader cannot check.
++
++**What the repair carried.** At `2442b5e`, the first repair of 005 was `a3354d3` at 6,522 bytes: its final line, a single space, was gone with its LF. `8b527da` then matched `a06c81f`, `17d685e` matched `80b7bee`, and the re-seal `ed190b3` carried manifest `f95a9fc`. Every write in the repair was compared with its declared id before the next one, which is the only reason the repair took two writes of 005 rather than another refused run.
++
++**Where the bytes go wrong.** Mapped over the sealed files, 004 carries exactly seven lines that are one space and nothing else, at lines 6, 8, 11, 14, 16, 115 and 124, and 005 carries eight, at 6, 8, 13, 15, 18, 20, 23 and 25. The defects #478 diffed out of the botched blobs all sit on one of those lines, on the line after a hunk header, on a backtick span, or at the end of the file. In a unified diff every blank line of context is a line containing exactly one space, so this is not a property of these two patches; it is a property of the format meeting a transcriber that normalises whitespace, and a stronger model dropping line 25 of 005 on the repair is the measurement that says the transcriber's tier does not decide it.
++
++**What the check costs.** Nothing. `create_or_update_file` returns `content.sha`, the Git blob id of what it stored. The id it should equal is already written down before the write, because ADR-100 requires a mirror in which it can be computed. The incident is the absence of one string comparison between two values both already in hand.
++
++## Decision
++
++The invariant is one sentence: **a transport write is not done until its returned blob id equals the id declared before it, and the manifest is never pushed over a store that has not been read back.** It has two owners, and they own different questions, so neither restates the other.
++
++**The rule is owned by [AGENTS.md](../AGENTS.md).** It needs no runtime, so every implementor can follow it: compare every write's `content.sha` with the id declared for that path, stop at a mismatch without writing the next file or the manifest or claiming success, re-write and compare again, and before the manifest list the store at the branch head and confirm every patch's id and size. `push_files` returns no per-file blob id, so checkpoint files travel through `create_or_update_file`, one file per call. The rule lives in AGENTS.md because that is the file an API-only implementor reads first, and [AI-CHECKPOINT-WORKFLOW.md](./AI-CHECKPOINT-WORKFLOW.md) and [AI-EDIT-WORKFLOW.md](./AI-EDIT-WORKFLOW.md) point at it rather than carrying a second copy that can drift.
++
++**The helper is owned by `scripts/checkpoint-transport.mjs`,** with its declaration file beside it and its cases in `packages/core/test/unit/scripts/checkpoint-transport.test.ts`. It serves the implementor who has a runtime, which a checkpoint author always does. It is a pure core and a thin command line, and it restates no bound and no store rule: a local store is read through `checkpointStore()` and `sealedRequest()`, the same owners preparation and publication use, so the file-name rule, the regular-file rule, the 32,000-byte transport bound and the exact manifest-plus-patches set cannot drift between planning a push and refusing one. The Git blob id is `blobSha()` from `automation-report.mjs`, the one both checkpoint and AI edit publication already read, and the hunk header is the parser's own `HUNK_HEADER`, exported from `checkpoint-policy.mjs` for this rather than copied.
++
++`plan <store-dir>` prints, in push order with the manifest last, each file's path, byte size, Git blob id, SHA-256, and a numbered hazard map. It prints rather than writes: the store must hold exactly its manifest and patches, a stray file under `.ai/checkpoints/` refuses every later checkpoint, and so no default location inside a mirror is safe. Redirect it to a file outside the repository. A patch whose bytes disagree with its declared digest is refused by `plan` itself, and so is one that `parsePatch()` would refuse or that `reconcilePatch()` finds disagreeing with its manifest entry, since carrying it would only move the same refusal to a preparation run.
++
++The map is stated only over bytes that are lines. A store file is decoded as UTF-8 with a fatal decoder and a byte-order mark kept, and a file carrying an invalid sequence or a CR is refused by name rather than mapped. A lossy decode reads every invalid byte as U+FFFD, so the map would name a code point the file does not hold, and a CRLF line that is one space and a CR is neither whitespace-only nor trailing-whitespace to a reader splitting on LF, so the hazard the map exists for would be the one it misses.
++
++Hazards are a closed union read through an exhaustive `switch`: `whitespace-only-line` with its exact bytes, `adjacent-to-hunk-header`, `trailing-whitespace` on a line that is not wholly whitespace, `final-line` with its exact bytes and whether an LF follows it, `non-ascii` with its distinct code points, and `backtick-span` with its count. A line carrying several lists them in that declared order. The `newline` field on `final-line` is the one addition to the shape #478 proposed, because the hazard is the final line and its terminator together: `a3354d3` lost both, and a transcriber told only the line's bytes is not told whether an LF follows.
++
++`verify <store-dir> <path>=<blob-id>...` answers one verdict per planned path and one per unplanned observation: `match`, `mismatch`, `absent`, `stray`, and `unsealed`. `unsealed` is the second addition, and it is what makes the rule's own gate passable. The listing the rule demands before the manifest is taken while the manifest is legitimately missing, so reading that absence as `absent` would make `verify` fail at the only moment it is asked. `unsealed` is the manifest not yet observed, and it passes; a missing patch is `absent`, and it fails. Exit status is 0 only when every verdict passes, 1 when one does not, and 2 when the invocation or the local store is refused. An observation must carry a full 40-character id, because a prefix comparison is a weaker claim than the one the rule makes, and a bare file name is read as a file of the planned store.
++
++`localize <expected-file> <observed-file>` reports the first differing line with both sides escaped and its byte offset, and a missing line as the end of the file, so a lost final LF is itself a difference. It compares bytes, never decoded text, and it renders them byte-safely: printable ASCII stands for itself, a byte that starts no valid UTF-8 sequence or is a control is `\xNN`, and a valid non-ASCII character is `\u{N}`. Two different invalid bytes therefore never render alike, and a no-break space or a curly quote, which a transcriber substitutes for the ASCII it resembles, cannot pass for it by eye. Unlike `plan`, it refuses nothing, because the remote bytes it is handed are the ones already known to be wrong. When a mismatch happens the question is always which line, and answering it by eye on a 28 KB diff is how the second attempt goes wrong too.
++
++The helper's exhaustive sink is a local function rather than `lang/exhaustive.ts`, because a script is plain ESM and cannot import TypeScript source. The declaration file types every reader's subject as the union, the cases pin that the declared kinds, the exported kind lists and the rendered arms agree, and a value outside the union is refused by name with a `TypeError`, the way [ADR-092](./ADR-092-reading-a-closed-union-is-exhaustive.md) says a reader refuses one.
++
++**A patch can be cut to be cheaper to carry.** When a model transports a slice, prefer splitting a large slice into smaller patches over one near the bound, and prefer a cut with fewer whitespace-only context lines. `-U0` is accepted and adjudicated by the declared post-image under ADR-100, but it costs reviewers their context, so it is a judgement per slice, never a default, and never an edit to a diff already generated. AI-CHECKPOINT-WORKFLOW's procedure owns that paragraph.
++
++**`.tools/` holds only the retained Prettier archive.** It is third-party, checksummed, and excluded from formatting. First-party automation lives in `scripts/` with its cases under `packages/core/test/unit/scripts/`, and a helper placed in `.tools/` would escape the ownership and the testing every other automation owner is held to. AGENTS.md says so, so no agent goes looking there.
++
++## Rejected
++
++**A serializer whose output a model copies into the tool argument.** The corruption happens when the model types the argument, and no script can sit between the model and the call. A serializer moves the copying and does not remove it; an agent whose tool path passes script output to the call verbatim does not need one, and an API-only agent has no runtime to run it in.
++
++**Base64 or archive transport.** ADR-102 already rejected it: a JSON string is not a byte channel, an archive destroys the reviewability of a self-certifying diff, and the saving is about 40 percent at best. It is worse for fidelity, not better, because an encoding has no redundancy and one dropped character corrupts everything after it.
++
++**A no-credential workflow that reports blob ids on patch-only pushes.** Every write response already carries the id, and a run per patch contradicts ADR-102's decision that a patch-only push is inert.
++
++**Lowering `MAX_TRANSPORT_BYTES` as the fix.** 005 failed at 6.5 KB, twice. The bound stays a size ceiling rather than a fidelity control.
++
++**A partial mode for `verify`.** Checking one write needs no command: the plan already states the id to compare `content.sha` with. A flag that suppresses `absent` would give one verdict two meanings, and `unsealed` already covers the one absence the protocol makes legitimate.
++
++**Carrying the whole cp001 store as fixtures.** Patches 001 to 003 are 54,775 bytes that no hazard question is about. The three fixtures carried are the files the incident altered or sealed, 40,007 bytes, and 001 to 003 enter the cases as the ids their listing returns. The fixtures end in `.txt`: `.gitattributes` marks `*.diff` as `-diff`, which would make a checkpoint cutting them read as a binary patch, and the pinned formatter infers no parser for `.txt`, so no format pass can rewrite a manifest whose id is the assertion.
++
++## What this does not fix, stated rather than discovered
++
++The model still types every byte. This decision makes a wrong byte visible at the write that introduced it, not impossible, and it is a rule rather than a gate: nothing in CI can observe whether an implementor compared an id before writing the next file. What CI can observe it already refuses, at preparation, one round trip later.
++
++`verify` reads ids an implementor pasted, and `localize` needs the remote bytes, which an API-only reader receives the same way it sends them. Both narrow the question; neither removes the transcriber from it.
++
++A tab is a byte shape models are known to rewrite, and it is not a hazard kind. Nothing in #477 or #478 measured it, the accepted grammar deliberately allows it, and a kind added without an incident behind it is a guess in a union that otherwise records measurements. It is the obvious next member if one is measured.
++
++## Evidence
++
++`checkpoint-transport.test.ts` asserts, over the sealed fixtures, the seven whitespace-only lines of 004, the eight of 005 with its final line and the line after its hunk header, the ids `80b7bee`, `a06c81f` and `f95a9fc`, and that the fixtures' SHA-256 digests equal what the sealed manifest declares. It asserts `mismatch` for 004 at `36731f6` and `267a7fa` and for 005 at `d559264` and `a3354d3`, `match` for the repaired store before and after the seal, `absent` and `stray`, `localize` finding line 25 of 005 and the header merge at line 5 and rendering invalid, look-alike and truncated bytes distinctly, `plan` refusing invalid UTF-8, a CR, a patch outside `allow` and a patch its entry misdeclares, and every hazard and verdict kind read through one exhaustive reader that refuses a kind outside its union.
