@@ -6,18 +6,17 @@ import {
   seedArc,
   solveFabrik,
   type FabrikConvergence,
-  type FabrikMember,
   type FabrikPoint,
 } from "../../../src/plugins/fabrik";
 import type { WorldFrame } from "../../../src/plugins/frame";
-import { solveTwoBone, type MemberState } from "../../../src/plugins/ik";
+import type { SolveMember } from "../../../src/plugins/ik-member";
+import { solveTwoBone } from "../../../src/plugins/ik-analytic";
 
 // Slice D2 of issue #195: FABRIK as arithmetic, before anything wires it.
 //
-// `plugins/fabrik.ts` is imported by nothing under `src/`, so no rig can reach it and no published
-// value can change. That is the point of the slice: the numerical method is reviewed on its own,
-// and the dispatcher that chooses between it and the closed form is a separate change with its own
-// regression pin. Every case below therefore calls the solver directly.
+// `plugins/fabrik.ts` is dispatched to by `plugins/ik-solve.ts`, but its numerical method is reviewed
+// on its own here, separate from the dispatcher that chooses between it and the closed form. Every
+// case below therefore calls the solver directly.
 //
 // Assertions are stated against `FABRIK_TOLERANCE` rather than against typed literals wherever the
 // answer is iterative. An exact expectation on a converged position would pin a floating-point
@@ -33,17 +32,13 @@ function at(x: number, y: number): WorldFrame {
   return { x, y, rotation: 0 };
 }
 
-function bone(id: string, base: string, length: number): FabrikMember {
+function bone(id: string, base: string, length: number): SolveMember {
   return { id, base, length };
 }
 
 /** A chain leaf: the same member, plus the goal that makes it addressed. */
-function tip(id: string, base: string, length: number, goal: WorldFrame): FabrikMember {
+function tip(id: string, base: string, length: number, goal: WorldFrame): SolveMember {
   return { id, base, length, goal };
-}
-
-function memberState(id: string, base: string, length: number): MemberState {
-  return { id, base, values: { length }, progress: 0 };
 }
 
 function distance(a: FabrikPoint, b: FabrikPoint): number {
@@ -56,18 +51,18 @@ function cross(a: FabrikPoint, b: FabrikPoint, c: FabrikPoint): number {
 }
 
 const HAND = at(320, 340);
-const TWO_BONE: readonly FabrikMember[] = [
+const TWO_BONE: readonly SolveMember[] = [
   bone(UPPER, "walker/shoulder", 80),
   tip(FOREARM, UPPER, 60, HAND),
 ];
 
-const THREE_BONE: readonly FabrikMember[] = [
+const THREE_BONE: readonly SolveMember[] = [
   bone("a", "root", 80),
   bone("b", "a", 60),
   tip("c", "b", 40, at(300, 380)),
 ];
 
-const FIVE_BONE: readonly FabrikMember[] = [
+const FIVE_BONE: readonly SolveMember[] = [
   bone("m1", "root", 40),
   bone("m2", "m1", 40),
   bone("m3", "m2", 40),
@@ -76,7 +71,7 @@ const FIVE_BONE: readonly FabrikMember[] = [
 ];
 
 /** Two branches off one sub-base, both goals inside reach. */
-const TREE: readonly FabrikMember[] = [
+const TREE: readonly SolveMember[] = [
   bone("spine", "hip", 50),
   bone("arm-l", "spine", 40),
   tip("fore-l", "arm-l", 30, at(240, 400)),
@@ -90,7 +85,7 @@ const TREE: readonly FabrikMember[] = [
  * Each goal is inside its own branch's reach, and they are mirrored about the root, so the only
  * question left is what the shared sub-base does when its branches disagree.
  */
-const CONTESTED_TREE: readonly FabrikMember[] = [
+const CONTESTED_TREE: readonly SolveMember[] = [
   bone("spine", "hip", 50),
   bone("arm-l", "spine", 40),
   tip("fore-l", "arm-l", 30, at(260, 400)),
@@ -103,7 +98,7 @@ function nextState(state: number): number {
   return (state * 16807) % 2147483647;
 }
 
-function shuffle(members: readonly FabrikMember[], seed: number): FabrikMember[] {
+function shuffle(members: readonly SolveMember[], seed: number): SolveMember[] {
   const result = [...members];
   let state = nextState(seed);
   for (let index = result.length - 1; index > 0; index -= 1) {
@@ -156,10 +151,10 @@ describe("FABRIK over a solver chain (Slice D2)", () => {
     // `FABRIK_TOLERANCE` over the shorter 60-unit bone is about `0.001` of a degree, and the bound
     // is ten times that, so the case pins agreement without pinning a trajectory.
     const bound = 0.01;
-    const analytic = [memberState(UPPER, "walker/shoulder", 80), memberState(FOREARM, UPPER, 60)];
+    const analytic = [bone(UPPER, "walker/shoulder", 80), bone(FOREARM, UPPER, 60)];
 
     for (const flip of [false, true]) {
-      const closed = solveTwoBone(ROOT, HAND, analytic, flip);
+      const closed = solveTwoBone(ROOT, HAND, analytic[0]!, analytic[1]!, flip);
       const iterative = solveFabrik(ROOT, TWO_BONE, flip);
       expect(iterative.convergence.kind).toBe("converged");
       expect(Math.abs(iterative.rotations[UPPER]! - closed[UPPER]!)).toBeLessThan(bound);
@@ -168,8 +163,8 @@ describe("FABRIK over a solver chain (Slice D2)", () => {
 
     // The two branches are genuinely different poses, so neither assertion above can pass by the
     // solve ignoring `flip` and both comparisons landing on one answer.
-    const closed = solveTwoBone(ROOT, HAND, analytic, false);
-    const mirrored = solveTwoBone(ROOT, HAND, analytic, true);
+    const closed = solveTwoBone(ROOT, HAND, analytic[0]!, analytic[1]!, false);
+    const mirrored = solveTwoBone(ROOT, HAND, analytic[0]!, analytic[1]!, true);
     expect(Math.abs(closed[UPPER]! - mirrored[UPPER]!)).toBeGreaterThan(1);
   });
 
@@ -298,6 +293,9 @@ describe("FABRIK over a solver chain (Slice D2)", () => {
     expect(negative.convergence.kind).toBe("converged");
     expect(negative.tips.a!).toEqual({ x: 200, y: 300 });
     expect(negative.tips.b!).toEqual({ x: 240, y: 300 });
+    // The seed reads a raw length through the same owner, `segmentExtent`, so a negative length
+    // handed to it directly is the zero-length segment the solve reads, not a backwards one.
+    expect(seedArc(ROOT, HAND, [-40, 60])).toEqual(seedArc(ROOT, HAND, [0, 60]));
 
     // A goal on the root has no direction to read, so the seed's axis is the root's own rotation
     // and the chain folds back along it. Defined, exact, and reachable.

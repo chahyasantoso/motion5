@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { clamp, lerpAngle } from "../../../src/plugins/frame";
-import { solveTwoBone, type MemberState } from "../../../src/plugins/ik";
+import { readSolveMembers, type DeliveredMember } from "../../../src/plugins/ik-chain";
+import { solveTwoBone } from "../../../src/plugins/ik-analytic";
 
 // Issue #211: the two numerics the per-member `weight` blend is built out of.
 //
@@ -11,7 +12,7 @@ import { solveTwoBone, type MemberState } from "../../../src/plugins/ik";
 // composition. A pure function is also what makes the wrap a unit assertion rather than a rig one.
 // See ADR-055.
 
-function member(id: string, length: number): MemberState {
+function member(id: string, length: number): DeliveredMember {
   return { id, base: "", values: { length }, progress: 0 };
 }
 
@@ -31,7 +32,8 @@ describe("shared angle numerics (issue #211)", () => {
     // producing `NaN` out of `acos`, which is the whole of what `ik`'s five call sites are for.
     const root = { x: 200, y: 300, rotation: 0 };
     const unreachable = { x: 2000, y: 300, rotation: 0 };
-    const solved = solveTwoBone(root, unreachable, [member("a", 80), member("b", 60)]);
+    const [first, second] = readSolveMembers([member("a", 80), member("b", 60)], new Map());
+    const solved = solveTwoBone(root, unreachable, first!, second!);
     expect(Number.isFinite(solved.a as number)).toBe(true);
     expect(Number.isFinite(solved.b as number)).toBe(true);
   });
