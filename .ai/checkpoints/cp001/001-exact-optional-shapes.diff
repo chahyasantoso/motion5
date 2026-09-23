@@ -15,4 +15,9 @@ index eea2b5d..3e7b6e4 100644
          const source = options.scroll?.({ ...context, trigger });
          if (source === undefined) {
            return unavailableScroll(trigger, context);
-@@ -
+         }
+         return createScrollDriver(trigger, source, context);
+       }
+@@ -89,6 +92,24 @@ export function createTriggerFactory(options: TriggerFactoryOptions = {}): Trigg
+   };
+ }
