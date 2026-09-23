@@ -333,6 +333,17 @@ describe("plan: a local store is read through the checkpoint policy", () => {
     const unsealed = await plant();
     await rm(join(unsealed, MANIFEST));
     await expect(readStore(unsealed)).rejects.toThrow("nothing is sealed");
+    // A byte a lossy decode would read as U+FFFD inside a string the manifest still parses.
+    const garbled = await plant();
+    const manifest = await readFile(join(garbled, MANIFEST));
+    const at = manifest.indexOf("add a note");
+    await writeFile(
+      join(garbled, MANIFEST),
+      Buffer.concat([manifest.subarray(0, at), Buffer.from([0xff]), manifest.subarray(at + 1)]),
+    );
+    await expect(readStore(garbled)).rejects.toThrow(
+      '".ai/checkpoints/cp042/manifest.json" is not valid UTF-8',
+    );
   });
 });
 

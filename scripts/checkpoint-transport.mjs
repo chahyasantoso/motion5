@@ -432,9 +432,11 @@ export async function readStore(directory) {
   const store = checkpointStore(entries);
   const files = new Map();
   for (const name of names) files.set(name, await readFile(path.join(directory, name)));
+  // Decoded like every other store file, so a malformed byte is refused rather than parsed.
+  const text = transportText(required(files, MANIFEST), `${CHECKPOINT_ROOT}/${id}/${MANIFEST}`);
   let value;
   try {
-    value = JSON.parse(required(files, MANIFEST).toString("utf8"));
+    value = JSON.parse(text);
   } catch (error) {
     throw new Error(`${MANIFEST} is not JSON: ${error.message}`);
   }
