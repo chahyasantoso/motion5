@@ -149,14 +149,22 @@ joint limits and the bend hint:
 - `ik-bend-conflicts-flip`, when one solver authors both `bend` and the legacy `flip` spelling, in any
   mix of flat and grouped under the group that bound its `root`. Use `bend` alone; `"positive"` is
   `flip: true` and bends the elbow toward increasing rotation, and `"negative"` is `flip: false`.
-- `ik-solver-key-misgrouped`, when a solver node authors `bend` or `flip` under a group that did not
-  bind its `root`. The solve reads the flattened values, so `spring.values.bend` beside
+- `ik-solver-key-misgrouped`, when a solver node authors `bend`, `flip` or `inspect` under a group
+  that did not bind its `root`. The solve reads the flattened values, so `spring.values.bend` beside
   `ik.requires.root` would steer the solve from a group that does not own it. Author the key flat or
   under the group that bound `root`. On a node that bound no `root` these keys are not solver
   vocabulary, so another plugin's own `bend` or `flip` there is neither read nor refused.
 
 An out-of-range solved angle is not an error: the solve moves it to the bound nearer on the circle,
 so `[90, 170]` answers `-170` with `170`, and a miss caused by a bound is reported as `limited` quality.
+
+Opt-in solve inspection ([ADR-109](../ADR-109-opt-in-solve-inspection.md)) adds one load rule, and
+`ik-solver-key-misgrouped` above covers `inspect` exactly as it covers `bend` and `flip`:
+
+- `ik-inspect-malformed`, when a solver's `inspect`, flat or under the group that bound its `root`,
+  is not a static boolean. Use `ik.values.inspect: true` to request the solver's fixed-shape
+  `inspection` output, or `false` to opt out. A keyframed switch is refused because an output that
+  appears mid-timeline would make the patch shape unstable. Inspection is data, not a warning.
 
 Goal addressing has six rules of its own, and they are answered during graph construction rather than by the contract layer, because membership is derived from `solver` edges and the contract layer holds no graph:
 
@@ -190,7 +198,7 @@ A node that exists but cannot produce a value publishes with status `blocked` or
 
 That means a rendering consumer should branch on `patch.status` rather than assume every patch is renderable, and an inspector can read `patch.diagnostics` without any extra wiring.
 
-A solve that does not reach its goal is not one of these. An iterative solve converges to within a tolerance, and an unreachable goal leaves the chain fully extended toward it, so both publish ordinary `ready` patches carrying only `rotations`. No solve `quality` record reaches a patch, deliberately (the solve result carries one for every strategy, see ADR-107, and `ik` publishes `rotations` alone): roughly four percent of ordinary reachable chains do not reach tolerance before the iteration cap, so a per-tick diagnostic would fire on rigs nobody would call broken. See ADR-052.
+A solve that does not reach its goal is not one of these. An iterative solve converges to within a tolerance, and an unreachable goal leaves the chain fully extended toward it, so both publish ordinary `ready` patches carrying only `rotations`. The solve result carries one `SolveQuality` record for every strategy (ADR-107); an author may opt into it with `ik.values.inspect: true`, which retains the authored `inspect` value and adds one `inspection` value without emitting a per-tick diagnostic or warning. The visible tip gap caused by partial FK weight is composition-space data owned by `fk`, not this solver-space record. See ADR-109.
 
 A solver that cannot solve at all is not one of these either, and that is the point of the load-time rules above. Every shape that would make a composition throw is refused before the graph is built, so `composition-failure` on a solver node means a bug in the plugin or the publisher rather than a rig you can fix by editing it. See ADR-053.
 

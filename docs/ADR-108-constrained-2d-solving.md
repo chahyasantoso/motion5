@@ -123,4 +123,5 @@ reviewed rather than trusted and the pull request's CI run is the evidence that 
 Authors gain static per-member limits and an explicit bend spelling. Invalid authored values fail with
 named diagnostics at load, while live writes remain total. Limited chains may miss their goals and now
 explain that miss with `limited` quality. Unconstrained rigs retain the old closed-form and unlimited
-FABRIK behavior. The runtime plugin surface still publishes rotations only.
+FABRIK behavior. The runtime plugin surface still publishes rotations only by default; ADR-109 adds
+the opt-in fixed-shape `inspection` projection without changing unopted patches.

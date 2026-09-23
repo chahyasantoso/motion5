@@ -145,6 +145,13 @@ cap that is not the problem.
 
 **Amended by [ADR-107](./ADR-107-one-solve-result.md).** The convergence kind is now the `quality` of the one `SolveResult` both strategies return, and the closed form reports its own reachability beside it; `FabrikConvergence` is deleted. Nothing about publication changes: `ik.ts` publishes `rotations` only, `FB-13` still pins that, and the reasoning above still owns why.
 
+**Amended by [ADR-109](./ADR-109-opt-in-solve-inspection.md), 2026-09-24.** The policy above is
+kept for every unopted rig: solve quality is not published and no tick emits a diagnostic. An author
+who writes the static `ik.values.inspect: true` opts into one declared `inspection` output carrying
+the fixed-shape projection of the existing `SolveQuality` record. The authored `inspect` value stays
+beside `rotations`, the output uses the separate `inspection` name, and nothing about it depends on
+arity. The visible FK composition-space tip gap is not part of it.
+
 **Extended by [ADR-052](./ADR-052-goal-addressing-by-member-id.md), 2026-08-28.** This record owns how a solver finds its bones. How a solver is told what to reach for is ADR-052: the goal-addressing grammar keyed by member id, the split across the contract layer, the plugin registry and graph construction, the rules that police it, and the withdrawal of the FABRIK benchmark claim. The dispatch clarifications above are the dispatch half of that work and stay here, because dispatch is a property of this record's solve.
 
 ---
