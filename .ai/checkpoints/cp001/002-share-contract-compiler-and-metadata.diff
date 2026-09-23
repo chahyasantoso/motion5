@@ -221,7 +221,7 @@ index 29d6a72..699d3cd 100644
 -      diagnostics.push(
 -        diagnostic(
 -          "plugin-contribution-ease-collision",
--          `${path}["${percent}"].ease`,
+-          `${path}[\"${percent}\"].ease`,
 -          `Conflicting ease values were authored at ${percent}.`,
 -          ids,
 -        ),
