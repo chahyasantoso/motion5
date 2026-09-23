@@ -1,0 +1,259 @@
+diff --git a/docs/ADR-051-derived-solver-membership.md b/docs/ADR-051-derived-solver-membership.md
+index e4f562b..66973d1 100644
+--- a/docs/ADR-051-derived-solver-membership.md
++++ b/docs/ADR-051-derived-solver-membership.md
+@@ -145,6 +145,13 @@ cap that is not the problem.
+ 
+ **Amended by [ADR-107](./ADR-107-one-solve-result.md).** The convergence kind is now the `quality` of the one `SolveResult` both strategies return, and the closed form reports its own reachability beside it; `FabrikConvergence` is deleted. Nothing about publication changes: `ik.ts` publishes `rotations` only, `FB-13` still pins that, and the reasoning above still owns why.
+ 
++**Amended by [ADR-109](./ADR-109-opt-in-solve-inspection.md), 2026-09-24.** The policy above is
++kept for every unopted rig: solve quality is not published and no tick emits a diagnostic. An author
++who writes the static `ik.values.inspect: true` opts into one declared `inspection` output carrying
++the fixed-shape projection of the existing `SolveQuality` record. The authored `inspect` value stays
++beside `rotations`, the output uses the separate `inspection` name, and nothing about it depends on
++arity. The visible FK composition-space tip gap is not part of it.
++
+ **Extended by [ADR-052](./ADR-052-goal-addressing-by-member-id.md), 2026-08-28.** This record owns how a solver finds its bones. How a solver is told what to reach for is ADR-052: the goal-addressing grammar keyed by member id, the split across the contract layer, the plugin registry and graph construction, the rules that police it, and the withdrawal of the FABRIK benchmark claim. The dispatch clarifications above are the dispatch half of that work and stay here, because dispatch is a property of this record's solve.
+ 
+ ---
+diff --git a/docs/ADR-107-one-solve-result.md b/docs/ADR-107-one-solve-result.md
+index d3dd473..48e1fd7 100644
+--- a/docs/ADR-107-one-solve-result.md
++++ b/docs/ADR-107-one-solve-result.md
+@@ -1,6 +1,6 @@
+ # ADR-107: One solve result for every IK strategy
+ 
+-**Amended by [ADR-108](./ADR-108-constrained-2d-solving.md).**
++**Amended by [ADR-108](./ADR-108-constrained-2d-solving.md) and [ADR-109](./ADR-109-opt-in-solve-inspection.md).**
+ 
+ **Status:** Proposed as issue [#349](https://github.com/chahyasantoso/motion5/issues/349) phase 2, 2026-09-23, against `main` at `95bef276`. Accepted when its pull request merges.
+ 
+@@ -47,3 +47,5 @@ ADR-106 split the solve into one owner per question and left one question with t
+ ## Consequences
+ 
+ Constrained solving (phase 3) returns this record from its new `ChainShape` arm and reports a limit-clamped miss as a kind of its own, which fails to compile at every exhaustive reader until it is answered. Opt-in inspection (phase 4) has one record to project rather than two.
++
++**Amended by [ADR-109](./ADR-109-opt-in-solve-inspection.md), 2026-09-24.** The invariant above still holds for every unopted rig. An author who writes the static `inspect: true` on a solver opts into one extra `inspection` output, the fixed-shape projection of this record's `quality`; its rotations are unchanged bit for bit. Two sentences above are therefore read with their amendments: the union has eight kinds rather than seven, because ADR-108 added `limited`, and "publishes nothing else" holds for an unopted rig only.
+diff --git a/docs/ADR-108-constrained-2d-solving.md b/docs/ADR-108-constrained-2d-solving.md
+index 74a8a25..2091287 100644
+--- a/docs/ADR-108-constrained-2d-solving.md
++++ b/docs/ADR-108-constrained-2d-solving.md
+@@ -123,4 +123,5 @@ reviewed rather than trusted and the pull request's CI run is the evidence that
+ Authors gain static per-member limits and an explicit bend spelling. Invalid authored values fail with
+ named diagnostics at load, while live writes remain total. Limited chains may miss their goals and now
+ explain that miss with `limited` quality. Unconstrained rigs retain the old closed-form and unlimited
+-FABRIK behavior. The runtime plugin surface still publishes rotations only.
++FABRIK behavior. The runtime plugin surface still publishes rotations only by default; ADR-109 adds
++the opt-in fixed-shape `inspection` projection without changing unopted patches.
+diff --git a/docs/ADR-109-opt-in-solve-inspection.md b/docs/ADR-109-opt-in-solve-inspection.md
+new file mode 100644
+index 0000000..e69b38c
+--- /dev/null
++++ b/docs/ADR-109-opt-in-solve-inspection.md
+@@ -0,0 +1,110 @@
++# ADR-109: Opt-in solve inspection
++
++**Status:** Proposed as issue [#349](https://github.com/chahyasantoso/motion5/issues/349) phase 4,
++2026-09-24, against `main` at `0f75d101` (phase 3 merged as ADR-108). Accepted when its pull request
++merges.
++
++## Invariant
++
++An IK solver publishes exactly the rotations it published before, bit for bit, unless its author
++opts into inspection with the static boolean `ik.values.inspect: true` (or the flat `inspect`
++spelling on the node that bound `root`). When opted in, it publishes one `inspection` output with
++the fixed shape `{ kind, residual, iterations, atBound }`, and its rotations do not move by a single
++bit. The shape is independent of chain arity and strategy: the closed form and FABRIK fill the same
++four keys. No per-frame diagnostic or warning is emitted for any quality kind.
++
++## Why
++
++ADR-051 deliberately kept convergence metadata out of patches: a per-tick diagnostic turns ordinary
++iterative misses into noise, and arity-dependent fields would make the published render surface
++unstable. That policy is right for unopted rigs but leaves an author who is diagnosing a rig with no
++way to see solver-space residuals, iterations, stalls, or limited members. ADR-107 already made the
++quality record total on both strategies, so what remained was a publication decision, and making it
++a function of authoring is the one reading that keeps both of ADR-051's reasons: nothing is inferred
++from arity, and nothing speaks unless asked.
++
++## Decisions taken, not asked
++
++**`inspect` is an `ik` key and a static boolean.** `ik` claims `inspect`; `true` enables the output
++and `false` is a valid explicit opt-out. An animated, non-boolean or otherwise malformed leaf is
++refused as `ik-inspect-malformed`. A keyframed switch is refused rather than honoured because an
++output that appears and disappears mid-timeline is exactly the unstable patch shape ADR-051 exists
++to prevent.
++
++**`inspect` is solver vocabulary, scoped like `bend` and `flip`.** `SolverKey` names all three, and
++the rule reads `inspect` through the same `solverSpellings` reader ADR-108's cp002 introduced: flat
++or under the group that bound `root` is read and classified, under any other group on a solver node
++is refused as `ik-solver-key-misgrouped` (the composer reads the flattened bag, so that spelling
++would switch the output on from a group that does not own it), and on a node that bound no `root`
++it is some other plugin's key and neither read nor refused. The first draft of this phase read every
++spelling on every node, which repeated the exact defect cp002 fixed for `bend`; one reader for the
++scope is what keeps it one decision. `IN-7` and `IN-8` pin both halves.
++
++**The output is a fixed projection owned by `ik-result.ts`.** `ik` passes through the existing
++`SolveQuality` without recomputing a residual or translating FABRIK metadata. `inspectSolve` reads
++the union by an exhaustive switch: every closed-form kind maps to zero iterations and an empty
++`atBound`, the iterative kinds keep their iteration count with an empty `atBound`, and `limited`
++copies and freezes its bound ids. The record is frozen, always has the same four keys, and holds
++only renderer-neutral values. A new quality kind fails to compile here until it is answered.
++
++**The authored and published names are separate.** `inspect` is the static authored switch and stays
++in the returned values through the existing `...values` spread, like `flip`. `inspection` is the
++published projection. Both names live in `contract/solver-constraints.ts` beside each other, so the
++switch and the output cannot drift apart. `ik.outputs` declares `rotations` and `inspection` for
++every registration, because owning an output name is a property of the plugin rather than of one
++rig, while the value is present only when the live `inspect` is exactly `true`.
++
++**The record reaches consumers and not the renderer.** `ImmutableRecord` admits recursive immutable
++arrays, `freezeValue` accepts the frozen projection, and the publisher's renderer-neutral check
++passes it. The DOM adapter already skips a plain record as a property it cannot write (ADR-051's
++`rotations` reason), so the composite `inspection` is delivered in the patch and never written to a
++stage. `IN-9` pins this end to end through the engine and the DOM adapter.
++
++**`ik` owns solver-space residuals only.** The reported residual is the quality already produced in
++solver space. The visible tip gap caused by a partially weighted FK composition is a different
++question, answered after `fk` blends each member, and is withdrawn to a follow-up below.
++
++**No runtime diagnostics.** Inspection is data requested by an author, not a failure classification.
++No tick path logs, warns, or adds a diagnostic for any quality kind.
++
++## Withdrawn
++
++The output name `inspect` is withdrawn. It collided with the authored `inspect` switch and made it
++unclear whether a value was configuration or solver data. `inspection` is the published name, so the
++two contracts stay distinguishable at the top level of a patch.
++
++The `withoutInspect` strip helper is withdrawn. It was needed only because the first draft published
++a derived value under the authored name. Keeping `...values` is the existing composition contract
++(`IK-18`) and preserves the authored switch, so no filtering helper and no second owner of key
++removal is needed.
++
++Reading `inspect` through `authoredSpellings` on every node is withdrawn in favour of
++`solverSpellings`, for the reason above.
++
++The FK partial-weight visible tip gap is withdrawn to a follow-up. It needs a composition-space
++measurement after `fk` applies each member's blend, and adding it here would give `ik` a second
++owner of a fact that is not in the solve result. It is not implemented, named as an IK field, or
++added to published patches.
++
++## Evidence
++
++`packages/core/test/unit/plugins/ik-inspection.test.ts` covers `IN-1` through `IN-9`: the opt-in
++output, byte identity of unopted rigs against the solve itself and bit identity of opted-in
++rotations, an explicit `false` retained, analytic and FABRIK output-key parity, flat and grouped
++malformed refusals, the misgrouped refusal and the bystander-plugin exemption, the exhaustive
++projection of every quality kind with frozen `atBound` arrays, and the published patch through the
++engine with the DOM adapter declining to write the record. The rule id is registered in
++`contract/rule-id.ts` and `contract/rule.ts`; the evidence-id gate and the acceptance map register
++the series.
++
++The sandbox esbuild harness is behavioural evidence only. Full-suite, formatter, scanner and
++typecheck results belong to the pull request's CI run on its exact head and must not be inferred
++from this record.
++
++## Consequences
++
++An opted-in solver patch has one additional renderer-neutral `inspection` value and keeps its
++authored `inspect` value. An unopted solver publishes the phase 3 patch byte for byte. Consumers
++read the same top-level key at every arity and either switch exhaustively on `kind` or read the four
++keys directly. Phase 5's goal policy reports an infeasible goal through this record rather than
++through a new channel. `fk` remains the future owner of any visible, partially weighted tip gap.
+diff --git a/docs/AUTHORED-SCHEMA.md b/docs/AUTHORED-SCHEMA.md
+index fcdd4a0..4d9dfe6 100644
+--- a/docs/AUTHORED-SCHEMA.md
++++ b/docs/AUTHORED-SCHEMA.md
+@@ -126,7 +126,7 @@ keyframes: {
+ }
+ ```
+ 
+-A leaf inside `values` is held to exactly the rules a flat property is held to, both forms included. A group name addresses a registered plugin and every leaf of its `values` section must be a key that plugin claims. The section is flattened to unprefixed leaves before interpolation and composition, and it is the only compiled value domain. Nesting is one level deep inside `values`.
++A leaf inside `values` is held to exactly the rules a flat property is held to, both forms included. A group name addresses a registered plugin and every leaf of its `values` section must be a key that plugin claims. The section is flattened to unprefixed leaves before interpolation and composition, and it is the only compiled value domain. Nesting is one level deep inside `values`. The `ik` group may author the static boolean `inspect` key to opt into the solver's `inspection` output (ADR-109); a flat `inspect` on the node that bound `root` is equivalent, a malformed value is refused as `ik-inspect-malformed`, and a spelling under another group of a solver node as `ik-solver-key-misgrouped`.
+ 
+ Because both section names are reserved, a group is recognised by the sections it names rather than by the shape of its leaves. That is what lets the registry-free contract layer tell a section from a property, report a typo'd section as `keyframes-unknown-section`, and refuse the pre-v5-final leaf form as `keyframes-missing-values-section` instead of as a property of an unknown shape. There is one authored group shape and no compatibility form. See ADR-049.
+ 
+diff --git a/docs/SESSION-STATUS.md b/docs/SESSION-STATUS.md
+index 8c2ce3c..1990086 100644
+--- a/docs/SESSION-STATUS.md
++++ b/docs/SESSION-STATUS.md
+@@ -2,12 +2,12 @@
+ 
+ Current project state only. Replace stale entries rather than append history. The four sections below are the complete shape, **Now** and **Next in line** carry exactly one bullet each, and no bullet states a phase; `packages/core/test/unit/scripts/session-status-shape.test.ts` enforces all three and the byte ceiling.
+ 
+-- **Captured:** 2026-09-23, Asia/Jakarta.
+-- **Read against:** `main` at `c03c6b19`; phase 2 ([#483](https://github.com/chahyasantoso/motion5/pull/483)) is merged as [ADR-107](./ADR-107-one-solve-result.md).
++- **Captured:** 2026-09-24, Asia/Jakarta.
++- **Read against:** `main` at `0f75d101`; phase 3 ([#484](https://github.com/chahyasantoso/motion5/pull/484)) is merged as [ADR-108](./ADR-108-constrained-2d-solving.md).
+ 
+ ## Now
+ 
+-- **Constrained 2D IK for [#349](https://github.com/chahyasantoso/motion5/issues/349) is in review:** static per-member FK angle limits, solver bend hints, six named load rules, constrained FABRIK, and limited solve quality are implemented as [ADR-108](./ADR-108-constrained-2d-solving.md). No merge is claimed here; the pull request carries its test, scan, and corpus evidence.
++- **Opt-in IK solve inspection for [#349](https://github.com/chahyasantoso/motion5/issues/349) is in review:** authored static `inspect` enables the declared fixed-shape `inspection` output without changing unopted patches, as [ADR-109](./ADR-109-opt-in-solve-inspection.md) records. The pull request carries the exact commits, tests, scans, and corpus measurement; no merge is claimed here.
+ 
+ ## Next in line
+ 
+@@ -17,7 +17,7 @@ Current project state only. Replace stale entries rather than append history. Th
+ 
+ - [Issue #328](https://github.com/chahyasantoso/motion5/issues/328) remains open for remaining activation/failure-recovery exercises, lifecycle limits, and maintenance usage/replacement validation before any separately confirmed retirement. Historical workflows and the manual formatting escape hatch are retained; dependency maintenance through the bounded API protocol remains disabled.
+ - [Issue #411](https://github.com/chahyasantoso/motion5/issues/411) stays open on a recorded refusal rather than a fix: a drain replays at the frame it deferred, so the assertion it recommends cannot distinguish the two implementations it is about. `deferred-frame-loss.test.ts` says what each of its cases actually pins, and #417's unreached-frame case is the witness it asked for.
+-- [Issue #349](https://github.com/chahyasantoso/motion5/issues/349) holds the 2D IK/FK contract study; phase 1 landed as [ADR-106](./ADR-106-one-owner-per-ik-solve-question.md), and remaining phases stay planned there. [#482](https://github.com/chahyasantoso/motion5/issues/482) owns the negative-length disagreement between `fk` and the solves.
++- [Issue #349](https://github.com/chahyasantoso/motion5/issues/349) holds the 2D IK/FK contract study; phases 1 to 3 landed as [ADR-106](./ADR-106-one-owner-per-ik-solve-question.md), [ADR-107](./ADR-107-one-solve-result.md) and [ADR-108](./ADR-108-constrained-2d-solving.md), and remaining phases stay planned there. [#482](https://github.com/chahyasantoso/motion5/issues/482) owns the negative-length disagreement between `fk` and the solves.
+ - Packaging follows the current work. [IMPLEMENTATION-PLAN.md](./IMPLEMENTATION-PLAN.md) owns scope; no implementation is claimed here.
+ 
+ ## Where the rest of it lives
+diff --git a/docs/acceptance-map.json b/docs/acceptance-map.json
+index f4bf21b..abe375b 100644
+--- a/docs/acceptance-map.json
++++ b/docs/acceptance-map.json
+@@ -283,6 +283,10 @@
+     {
+       "id": "solver-constraints",
+       "test": "packages/core/test/unit/graph/solver-constraints.test.ts"
++    },
++    {
++      "id": "ik-inspection",
++      "test": "packages/core/test/unit/plugins/ik-inspection.test.ts"
+     }
+   ]
+ }
+diff --git a/docs/guide/errors-and-diagnostics.md b/docs/guide/errors-and-diagnostics.md
+index 594c767..832dfa7 100644
+--- a/docs/guide/errors-and-diagnostics.md
++++ b/docs/guide/errors-and-diagnostics.md
+@@ -149,8 +149,8 @@ joint limits and the bend hint:
+ - `ik-bend-conflicts-flip`, when one solver authors both `bend` and the legacy `flip` spelling, in any
+   mix of flat and grouped under the group that bound its `root`. Use `bend` alone; `"positive"` is
+   `flip: true` and bends the elbow toward increasing rotation, and `"negative"` is `flip: false`.
+-- `ik-solver-key-misgrouped`, when a solver node authors `bend` or `flip` under a group that did not
+-  bind its `root`. The solve reads the flattened values, so `spring.values.bend` beside
++- `ik-solver-key-misgrouped`, when a solver node authors `bend`, `flip` or `inspect` under a group
++  that did not bind its `root`. The solve reads the flattened values, so `spring.values.bend` beside
+   `ik.requires.root` would steer the solve from a group that does not own it. Author the key flat or
+   under the group that bound `root`. On a node that bound no `root` these keys are not solver
+   vocabulary, so another plugin's own `bend` or `flip` there is neither read nor refused.
+@@ -158,6 +158,14 @@ joint limits and the bend hint:
+ An out-of-range solved angle is not an error: the solve moves it to the bound nearer on the circle,
+ so `[90, 170]` answers `-170` with `170`, and a miss caused by a bound is reported as `limited` quality.
+ 
++Opt-in solve inspection ([ADR-109](../ADR-109-opt-in-solve-inspection.md)) adds one load rule, and
++`ik-solver-key-misgrouped` above covers `inspect` exactly as it covers `bend` and `flip`:
++
++- `ik-inspect-malformed`, when a solver's `inspect`, flat or under the group that bound its `root`,
++  is not a static boolean. Use `ik.values.inspect: true` to request the solver's fixed-shape
++  `inspection` output, or `false` to opt out. A keyframed switch is refused because an output that
++  appears mid-timeline would make the patch shape unstable. Inspection is data, not a warning.
++
+ Goal addressing has six rules of its own, and they are answered during graph construction rather than by the contract layer, because membership is derived from `solver` edges and the contract layer holds no graph:
+ 
+ - `ik-goal-unknown-member`, when a key inside `targets` qualifies to no member of that solver's chain.
+@@ -190,7 +198,7 @@ A node that exists but cannot produce a value publishes with status `blocked` or
+ 
+ That means a rendering consumer should branch on `patch.status` rather than assume every patch is renderable, and an inspector can read `patch.diagnostics` without any extra wiring.
+ 
+-A solve that does not reach its goal is not one of these. An iterative solve converges to within a tolerance, and an unreachable goal leaves the chain fully extended toward it, so both publish ordinary `ready` patches carrying only `rotations`. No solve `quality` record reaches a patch, deliberately (the solve result carries one for every strategy, see ADR-107, and `ik` publishes `rotations` alone): roughly four percent of ordinary reachable chains do not reach tolerance before the iteration cap, so a per-tick diagnostic would fire on rigs nobody would call broken. See ADR-052.
++A solve that does not reach its goal is not one of these. An iterative solve converges to within a tolerance, and an unreachable goal leaves the chain fully extended toward it, so both publish ordinary `ready` patches carrying only `rotations`. The solve result carries one `SolveQuality` record for every strategy (ADR-107); an author may opt into it with `ik.values.inspect: true`, which retains the authored `inspect` value and adds one `inspection` value without emitting a per-tick diagnostic or warning. The visible tip gap caused by partial FK weight is composition-space data owned by `fk`, not this solver-space record. See ADR-109.
+ 
+ A solver that cannot solve at all is not one of these either, and that is the point of the load-time rules above. Every shape that would make a composition throw is refused before the graph is built, so `composition-failure` on a solver node means a bug in the plugin or the publisher rather than a rig you can fix by editing it. See ADR-053.
+ 
