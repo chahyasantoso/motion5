@@ -124,7 +124,9 @@ spellings of one operation.
   `Interpolator`, and `EngineOptions.interpolator` needs no new member for it to be reachable.
 - Nothing in `graph/`, `contract/authored-leaf`, `domain/keyframe-compiler`, `runtime/` below
   `project-runtime`, or the plugins is touched. `domain/keyframe-compiler.ts` and
-  `contract/authored-leaf.ts` gain no import, and `domain/track.ts` gains no GSAP type.
+  `contract/authored-leaf.ts` gain no import, and `domain/track.ts` gains no GSAP type. **Refined by
+  [ADR-105](./ADR-105-adapters-do-not-depend-on-domain.md), 2026-09-23:** the compiler now lives in
+  `contract/keyframe-compiler.ts`, and the domain path no longer exists.
 
 ## Evidence
 

@@ -2,8 +2,9 @@
 
 `RenderMetadata` is the renderer-facing port contract declared in `../ports/render-metadata.ts`.
 `ResolvedPlugins` extends it here so the registry remains the owner of the resolved serializer map,
-while adapters consume the port without reaching into this domain module. The exported type name is
-unchanged. See ADR-105.
+while adapters consume the port without reaching into this domain module. This module no longer
+exports `RenderMetadata`; the adapter barrel and the internal entry re-export it from the port under
+the same name, so there is one declaration and one import path. See ADR-105.
 
 ## listNames
 
