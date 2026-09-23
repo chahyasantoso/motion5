@@ -1,6 +1,6 @@
 import type { Patch } from "../contract/v5";
 import { patchRender } from "../contract/patch-render";
-import type { RenderMetadata } from "../domain/plugins";
+import type { RenderMetadata } from "../ports/render-metadata";
 
 export interface StageLike {
   style: { perspective?: string; [key: string]: unknown };

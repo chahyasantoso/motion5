@@ -85,7 +85,7 @@ describe("the authored leaf payload partition answers every leaf kind", () => {
 
   it("keeps every changed reader on an exhaustive or owned spelling", () => {
     const validator = code(`${SOURCE_ROOT}contract/validate-v5.ts`);
-    const compiler = code(`${SOURCE_ROOT}domain/keyframe-compiler.ts`);
+    const compiler = code(`${SOURCE_ROOT}contract/keyframe-compiler.ts`);
     const plugins = code(`${SOURCE_ROOT}domain/plugins.ts`);
     const authoredValues = code(`${SOURCE_ROOT}runtime/authored-values.ts`);
     const fakes = code(`${SOURCE_ROOT}testing/fakes.ts`);
