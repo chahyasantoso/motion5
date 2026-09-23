@@ -143,6 +143,8 @@ When `fkPlugin.compose` executes:
 merely slow chain both end without converging and reporting them as one thing tells a caller to raise a
 cap that is not the problem.
 
+**Amended by [ADR-107](./ADR-107-one-solve-result.md).** The convergence kind is now the `quality` of the one `SolveResult` both strategies return, and the closed form reports its own reachability beside it; `FabrikConvergence` is deleted. Nothing about publication changes: `ik.ts` publishes `rotations` only, `FB-13` still pins that, and the reasoning above still owns why.
+
 **Extended by [ADR-052](./ADR-052-goal-addressing-by-member-id.md), 2026-08-28.** This record owns how a solver finds its bones. How a solver is told what to reach for is ADR-052: the goal-addressing grammar keyed by member id, the split across the contract layer, the plugin registry and graph construction, the rules that police it, and the withdrawal of the FABRIK benchmark claim. The dispatch clarifications above are the dispatch half of that work and stay here, because dispatch is a property of this record's solve.
 
 ---
