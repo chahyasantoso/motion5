@@ -426,6 +426,27 @@ index 2814fa9..2081bee 100644
        // `pivots` and `tips` are FABRIK's own and stay behind: the analytic path carries neither,
        // so returning them here would make the result's shape a function of arity. The quality
        // record travels, because both strategies state one, but nothing publishes it. Roughly four
+diff --git a/packages/core/src/plugins/ik.ts b/packages/core/src/plugins/ik.ts
+index 0216df3..fcc9f3a 100644
+--- a/packages/core/src/plugins/ik.ts
++++ b/packages/core/src/plugins/ik.ts
+@@ -3,6 +3,7 @@ import type { ImmutableRecord } from "../domain/values";
+ import { readFrame } from "./frame";
+ import { readGoals, readMembers, readSolveMembers } from "./ik-chain";
+ import { solveChain } from "./ik-solve";
++import { readBend } from "./ik-constraint";
+ 
+ /**
+  * The `ik` plugin: its declaration and the wiring from its slots to a solve, and nothing else.
+@@ -33,7 +34,7 @@ import { solveChain } from "./ik-solve";
+  */
+ export const ikPlugin: PluginDefinition = {
+   name: "ik",
+-  keys: ["flip"],
++  keys: ["flip", "bend"],
+   requirements: {
+     root: { description: "base frame of the solver chain" },
+     target: { description: "target position to reach" },
 @@ -45,7 +46,7 @@ export const ikPlugin: PluginDefinition = {
      const root = readFrame(inputs.root);
      const members = readMembers(inputs.members);
