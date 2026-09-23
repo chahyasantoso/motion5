@@ -321,3 +321,4 @@ index 65c92e8..0e7d6bd 100644
 +interface SolvedMember extends DeliveredMember {
    readonly values: Readonly<ImmutableRecord>;
  }
+ 
