@@ -8,6 +8,7 @@ import {
   extractExportNames,
   importsBoundary,
   importsCoreInternals,
+  importsDomainLayer,
   importsDomainSink,
   importsRenderer,
   importsTestingEntrypoint,
@@ -140,8 +141,8 @@ describe("boundary scan predicates", () => {
 
   it("keeps legitimate domain imports, the new sink, aliases, and longer names clean", () => {
     for (const source of [
-      'import { outcome } from "../domain/outcome";',
-      'import { outcome } from "../domain/outcome.ts";',
+      'import { track } from "../domain/track";',
+      'import { track } from "../domain/track.ts";',
       'import { compiler } from "../../domain/keyframe-compiler";',
       'import type { Plugin } from "../../domain/plugins";',
       'import type { Plugin } from "../../domain/plugins.js";',
@@ -151,6 +152,111 @@ describe("boundary scan predicates", () => {
       "const load = import(path);",
     ])
       expect(importsDomainSink(source)).toBe(false);
+  });
+
+  it("reads any domain import for the broad rule and only the sink for the narrow one", () => {
+    // The two questions the scanner now asks, and the asymmetry between them is the whole point:
+    // `contract/` and `ports/` may not reach `domain/` at all, while `adapters/` still legitimately
+    // reaches `domain/keyframe-compiler` and `domain/plugins` and may only be held to the sink.
+    // Backslash normalisation and the `.js`/`.mjs`/`.ts` suffixes are shared, because one extractor
+    // owns them. See ADR-099 and ADR-103.
+    for (const source of [
+      'import { o } from "../lang/outcome";',
+      'import { u } from "../lang/exhaustive";',
+      'import type { D } from "../contract/v5";',
+      'import { x } from "../domain-helpers/y";',
+      'import { s } from "@motion5/core/domain/exhaustive";',
+      "const load = import(path);",
+    ]) {
+      expect(importsDomainLayer(source)).toBe(false);
+      expect(importsDomainSink(source)).toBe(false);
+    }
+    for (const source of [
+      'import { compiler } from "../../domain/keyframe-compiler";',
+      'import type { Plugin } from "../../domain/plugins.js";',
+      'const load = import("../domain/track");',
+      'import { helpers } from "../domain/exhaustive-helpers";',
+    ]) {
+      expect(importsDomainLayer(source)).toBe(true);
+      expect(importsDomainSink(source)).toBe(false);
+    }
+    for (const source of [
+      'import { unreachable } from "../domain/exhaustive.js";',
+      'export { unreachable } from "../../domain/exhaustive.mjs";',
+      'const load = require("..\\domain\\exhaustive");',
+    ]) {
+      expect(importsDomainLayer(source)).toBe(true);
+      expect(importsDomainSink(source)).toBe(true);
+    }
+  });
+
+  it("reads a specifier from code rather than from prose", () => {
+    // The repair this gate needed before it could ship. Measured on the first cut: a `contract/`
+    // module whose only mention of the layer was the line comment `used to read from
+    // "../domain/outcome"` returned one `inward domain import` from the shipped scan, with no
+    // import anywhere in the file. This repository quotes module paths in prose constantly, so a
+    // gate a documentation edit can turn red is a gate that gets deleted. The second group is the
+    // other direction: stripping a comment must not hide a real import, including one a comment is
+    // interposed into, and must not mistake an escaped slash in a regular expression for a comment
+    // opener and swallow the line after it. See ADR-103.
+    for (const source of [
+      '// it used to read from "../domain/outcome" before ADR-103 moved it',
+      '/** Once imported from "../domain/track". */',
+      '/* from "../domain/exhaustive" */ export const clean = 1;',
+      'const pattern = /domain\//; // from "../domain/track" is prose here',
+    ]) {
+      expect(importsDomainLayer(source)).toBe(false);
+      expect(importsDomainSink(source)).toBe(false);
+    }
+    expect(importsDomainLayer('import /* interposed */ { u } from "../domain/track";')).toBe(true);
+    expect(importsDomainSink('const load = import(/* interposed */ "../domain/exhaustive");')).toBe(
+      true,
+    );
+    const afterRegex = 'const pattern = /domain\//;\nimport { t } from "../domain/track";';
+    expect(importsDomainLayer(afterRegex)).toBe(true);
+    // A regular-expression literal is read whole, because it is the other place a comment opener
+    // appears in code: `/[/*]/` opened a block comment inside its class on the first cut and hid
+    // the import after it. Its body is not code either, so a specifier-shaped pattern is not an
+    // import, and a division is still a division, so a comment after it is still prose.
+    expect(importsDomainLayer('const p = /[/*]/;\nimport("../domain/x");')).toBe(true);
+    expect(importsDomainSink('const p = /[/*]/g;\nimport("../domain/exhaustive");')).toBe(true);
+    expect(importsDomainLayer('const pattern = /from "../domain/x"/;')).toBe(false);
+    expect(importsDomainLayer('const half = total / 2; // from "../domain/x"')).toBe(false);
+    expect(importsDomainLayer('const r = a / b / c;\nimport { t } from "../domain/track";')).toBe(
+      true,
+    );
+  });
+
+  it("refuses the spellings that step around the anchor without widening past it", () => {
+    // A leading `./`, an absent trailing slash, a doubled separator, an interior `./` and an
+    // interior `..` are concrete spellings a violator can write and a reviewer will not see. Each
+    // resolves to the layer, so the extraction canonicalises it and the anchor reads what module
+    // resolution would reach rather than reporting a clean boundary it does not have. It stays
+    // anchored at the front, which is why a longer sibling directory is still clean, and a path
+    // that passes through `domain/` and leaves it again never reached the layer. See ADR-103.
+    for (const source of [
+      'import { t } from "./../domain/track";',
+      'import { t } from ".././domain/track";',
+      'import { t } from "..//domain/track";',
+      'import { t } from "../lang/../domain/track";',
+      'import { t } from "../domain";',
+      'import { t } from "../domain/";',
+    ])
+      expect(importsDomainLayer(source)).toBe(true);
+    for (const source of [
+      'import { u } from "./../domain/exhaustive";',
+      'import { u } from ".././domain/exhaustive";',
+      'import { u } from "..//domain//exhaustive.js";',
+    ])
+      expect(importsDomainSink(source)).toBe(true);
+    for (const source of [
+      'import { x } from "../domainfoo";',
+      'import { x } from "../domain-helpers/y";',
+      'import { x } from "../domain/../lang/outcome";',
+    ]) {
+      expect(importsDomainLayer(source)).toBe(false);
+      expect(importsDomainSink(source)).toBe(false);
+    }
   });
 
   it("extracts exports outside the public allow list", () => {
@@ -187,27 +293,72 @@ describe("boundary scan planted violations", () => {
     expect(violations).not.toContain("packages/vue/src/index.ts: renderer or engine import");
   });
 
-  // The three outer layers ADR-099 measured. `lang/` is absent from this fixture on purpose: the
-  // shipped scanner running green against the real tree, in the case below, is what proves the new
-  // path passes, and a fixture cannot prove that about a directory it invents.
-  it("W-8: rejects contract, ports, and adapters importing the retired domain sink", async () => {
+  // The three outer layers ADR-099 measured, now held to the two different rules ADR-103 split
+  // them into: `contract/` and `ports/` owe the whole inward direction, `adapters/` owes the sink
+  // alone. The planted imports say so by being different: the first two reach an ordinary domain
+  // module and are refused for reaching `domain/` at all, while the third reaches the retired sink
+  // and is refused by name. One file per layer, because `walk` does not sort and two files in one
+  // layer would make this assertion depend on `readdir` order. `lang/` is absent from this fixture
+  // on purpose: the shipped scanner running green against the real tree, in the case below, is what
+  // proves the new path passes, and a fixture cannot prove that about a directory it invents.
+  it("W-8: refuses contract and ports reaching domain, and adapters the sink", async () => {
     const fixture = await mkdtemp(join(tmpdir(), "motion5-inward-dependency-"));
     try {
       await writeFile(join(fixture, "package.json"), PACKAGES_ONLY);
-      for (const layer of ["contract", "ports", "adapters"]) {
+      const planted = [
+        ["contract", 'import type { LiveWriteResult } from "../domain/track";'],
+        ["ports", 'import type { ResolvedPlugins } from "../domain/plugins";'],
+        ["adapters", 'import { unreachable } from "../../domain/exhaustive";'],
+      ] as const;
+      for (const [layer, statement] of planted) {
         await mkdir(join(fixture, "packages", "core", "src", layer), { recursive: true });
-        const prefix = layer === "adapters" ? "../../" : "../";
         await writeFile(
           join(fixture, "packages", "core", "src", layer, "leak.ts"),
-          `import { unreachable } from "${prefix}domain/exhaustive";\n`,
+          `${statement}\n`,
         );
       }
       const violations = await scan(fixture);
       expect(violations).toEqual([
-        "packages/core/src/contract/leak.ts: retired domain sink import",
-        "packages/core/src/ports/leak.ts: retired domain sink import",
+        "packages/core/src/contract/leak.ts: inward domain import",
+        "packages/core/src/ports/leak.ts: inward domain import",
         "packages/core/src/adapters/leak.ts: retired domain sink import",
       ]);
+    } finally {
+      await rm(fixture, { recursive: true, force: true });
+    }
+  });
+
+  // The other half of that asymmetry, and the reason the broad rule stops at two layers: the three
+  // adapter imports of `domain/` ADR-099 measured are still legal, so a gate that refused them
+  // would have been introduced red. Deleting this case is how that fact gets lost.
+  it("keeps an adapter reaching an ordinary domain module clean", async () => {
+    const fixture = await mkdtemp(join(tmpdir(), "motion5-adapter-domain-"));
+    try {
+      await writeFile(join(fixture, "package.json"), PACKAGES_ONLY);
+      await mkdir(join(fixture, "packages", "core", "src", "adapters"), { recursive: true });
+      await writeFile(
+        join(fixture, "packages", "core", "src", "adapters", "reach.ts"),
+        'import { compilePercentKeyframes } from "../../domain/keyframe-compiler";\n',
+      );
+      expect(await scan(fixture)).toEqual([]);
+    } finally {
+      await rm(fixture, { recursive: true, force: true });
+    }
+  });
+
+  // The same repair, planted through the shipped scanner rather than asserted at the predicate,
+  // because prose is the one thing a `contract/` module reliably contains and the scan is what CI
+  // runs. Red before the extraction read code, where this file alone turned the gate red.
+  it("keeps a contract module whose only domain mention is a comment clean", async () => {
+    const fixture = await mkdtemp(join(tmpdir(), "motion5-domain-prose-"));
+    try {
+      await writeFile(join(fixture, "package.json"), PACKAGES_ONLY);
+      await mkdir(join(fixture, "packages", "core", "src", "contract"), { recursive: true });
+      await writeFile(
+        join(fixture, "packages", "core", "src", "contract", "prose.ts"),
+        '// ADR-103 moved this; it read from "../domain/outcome".\nexport const kept = 1;\n',
+      );
+      expect(await scan(fixture)).toEqual([]);
     } finally {
       await rm(fixture, { recursive: true, force: true });
     }
