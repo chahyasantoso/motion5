@@ -1,0 +1,82 @@
+{
+  "version": 1,
+  "checkpoint": "cp001",
+  "base": "0f75d101f9973cc664f7a841bfa25f71db20feb7",
+  "allow": [
+    "packages/core/src/",
+    "packages/core/test/",
+    "docs/"
+  ],
+  "patches": [
+    {
+      "seq": 1,
+      "file": "001-inspection-source.diff",
+      "sha256": "2b50c938a9f54635ce09e41b810ff5dda0b41e5f14243b4ac9e46bf3dc3571b2",
+      "message": "feat(ik): publish opt-in solve inspection as a fixed-shape record (#349)",
+      "pre": {
+        "packages/core/src/contract/rule-id.ts": "b45422864913233e215f547b48442b600ea57510",
+        "packages/core/src/contract/rule.ts": "662d49572562a6a4d5782df83ecc121a788cfa43",
+        "packages/core/src/contract/solver-constraints.ts": "1b70e59d711b679fa9c2569ab93ebfd5f6986800",
+        "packages/core/src/graph/solver-constraints.ts": "cffb4e7c66ca22a5425f020984b1cb5b526951ae",
+        "packages/core/src/plugins/ik-result.ts": "79b61f09823b3638c73366c46f2240be97bdc3af",
+        "packages/core/src/plugins/ik-solve.ts": "2081bee03fc40d14f6797516ade2e85eb2ee1588",
+        "packages/core/src/plugins/ik.ts": "fcc9f3a1aca00a94ae7c258fee7b3b3bafa6a0f3"
+      },
+      "post": {
+        "packages/core/src/contract/rule-id.ts": "7158f69cb7406e2c4a2290625fa43c0ca5d26251",
+        "packages/core/src/contract/rule.ts": "ff60ec9946342265a5e088d4176ed42e63765fa5",
+        "packages/core/src/contract/solver-constraints.ts": "394576f4e2e4e79b96ce8a435a5be9f4d9be1000",
+        "packages/core/src/graph/solver-constraints.ts": "1169ca072c9a562815266da40bee6a9ce6798b3c",
+        "packages/core/src/plugins/ik-result.ts": "3db4c78e3403c440e99abec9ccb8b6326f1c4570",
+        "packages/core/src/plugins/ik-solve.ts": "19085f9d2827736ee19f56de1e6c884489bad823",
+        "packages/core/src/plugins/ik.ts": "4e84a635c5a4e6efd1fab762439ec663ffb78436"
+      }
+    },
+    {
+      "seq": 2,
+      "after": 1,
+      "file": "002-inspection-tests.diff",
+      "sha256": "7ef7759a7d82d80a1b84513d302b22dd084c159b6afaf467821d9c3e7c66391c",
+      "message": "test(ik): pin opt-in solve inspection as IN-1 to IN-9 (#349)",
+      "pre": {
+        "packages/core/test/unit/plugins/fabrik-dispatch.test.ts": "6b2f6698d227a72a7024ba6a6f2fe5320dfc4532",
+        "packages/core/test/unit/plugins/ik-inspection.test.ts": null,
+        "packages/core/test/unit/plugins/pivot-offset-solve.test.ts": "085e7e5fac8f55bf207dc6446ef979471d3af2cd",
+        "packages/core/test/unit/scripts/evidence-case-ids.test.ts": "fb8d427a60ad7f5508974cfc188305568c319978"
+      },
+      "post": {
+        "packages/core/test/unit/plugins/fabrik-dispatch.test.ts": "2da2e00073d8271d49909ae5faf62731b925e257",
+        "packages/core/test/unit/plugins/ik-inspection.test.ts": "a13c77836adad023a4a6e07c0a61530cbd0d5c09",
+        "packages/core/test/unit/plugins/pivot-offset-solve.test.ts": "75ccc0b4c78abaa5460ad9da59e1882dc569e1e2",
+        "packages/core/test/unit/scripts/evidence-case-ids.test.ts": "1b0a20ecdf4bb1ce9b32337ca2d73e6f3b72ff69"
+      }
+    },
+    {
+      "seq": 3,
+      "after": 2,
+      "file": "003-inspection-docs.diff",
+      "sha256": "5da30e5f714857a41d22ebe53412c3f391463d5f15614de3202fb163493204aa",
+      "message": "docs(adr-109): record opt-in solve inspection and amend ADR-051 and ADR-107 (#349)",
+      "pre": {
+        "docs/ADR-051-derived-solver-membership.md": "e4f562b5df930ffcd6a4d53709e07a83a0a5c54d",
+        "docs/ADR-107-one-solve-result.md": "d3dd4732829a7b4639eaa5721cb1be0448a2b5cf",
+        "docs/ADR-108-constrained-2d-solving.md": "74a8a25f3fb83f3001a3a1cef3c6245e33161f77",
+        "docs/ADR-109-opt-in-solve-inspection.md": null,
+        "docs/AUTHORED-SCHEMA.md": "fcdd4a05e1c00d00429b1cf7a7af9cff0a5777b7",
+        "docs/SESSION-STATUS.md": "8c2ce3c7687367ae612664359ada358b23440dec",
+        "docs/acceptance-map.json": "f4bf21b10b49912fc3a2082c5cbe8503446a3385",
+        "docs/guide/errors-and-diagnostics.md": "594c767e8aa68ea7c7855f9596d12250b62a5998"
+      },
+      "post": {
+        "docs/ADR-051-derived-solver-membership.md": "66973d1b781cc065c8a7aa6d10bbb7b771f90506",
+        "docs/ADR-107-one-solve-result.md": "48e1fd785c17394508bab4a0fc205398ffeb51fe",
+        "docs/ADR-108-constrained-2d-solving.md": "2091287484011707a87d2c56c87d04681d8b049c",
+        "docs/ADR-109-opt-in-solve-inspection.md": "e69b38cd16d59644df7cf24370664eed5d50d513",
+        "docs/AUTHORED-SCHEMA.md": "4d9dfe63d8dfadd8f054dc9dd4fc415a8aca4e83",
+        "docs/SESSION-STATUS.md": "1990086c40c363fc337d3f74d46002cf9645ddc2",
+        "docs/acceptance-map.json": "abe375b4b7c8386f1ec394c399104fc208e488ae",
+        "docs/guide/errors-and-diagnostics.md": "832dfa7a9ec7423cab1a0533eec55505dfa909df"
+      }
+    }
+  ]
+}
