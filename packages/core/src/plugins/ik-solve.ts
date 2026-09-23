@@ -3,6 +3,7 @@ import { solveFabrik } from "./fabrik";
 import type { WorldFrame } from "./frame";
 import { solveTwoBone } from "./ik-analytic";
 import type { SolveMember } from "./ik-member";
+import type { SolveResult } from "./ik-result";
 
 /**
  * Which solve answers for a chain, decided once and read exhaustively.
@@ -80,6 +81,10 @@ export function chainShape(members: readonly SolveMember[]): ChainShape {
  * tip exactly as `fk` does. Both read length and offset through `ik-member.ts`, so the convention
  * has one reader as well as one statement. See ADR-053, ADR-054, and issue #214.
  *
+ * Both arms return the one `SolveResult`, so what the chain's solve achieved has one shape
+ * whichever strategy answered it: the closed form's geometric kinds or FABRIK's iterative ones,
+ * read from one discriminant. `ik.ts` publishes `rotations` only. See `ik-result.ts` and ADR-107.
+ *
  * Nothing here knows about a member's blend `weight`, and that is the ownership split rather than an
  * omission. The solve publishes the exact angle that puts the tip on the goal, at every arity, and
  * how much of that angle a bone actually composes with is the bone's question. See ADR-055.
@@ -88,21 +93,21 @@ export function solveChain(
   root: WorldFrame,
   members: readonly SolveMember[],
   flip = false,
-): Readonly<Record<string, number>> {
+): SolveResult {
   const shape = chainShape(members);
   switch (shape.kind) {
     case "two-bone":
       return solveTwoBone(root, shape.goal, shape.first, shape.second, flip);
-    case "tree":
-      // `pivots`, `tips` and `convergence` are deliberately dropped rather than published. The
-      // analytic path carries none of them, so publishing them here would make a solver's patch
-      // shape a function of its arity and would move every existing solver's published keys, which
-      // `FB-9` pins as unchanged. Roughly four percent of ordinary reachable rigs do not reach
-      // tolerance before the cap, so a per-tick report would be noise on rigs nobody would call
-      // broken. `FB-13` pins the shape and `docs/ADR-051-derived-solver-membership.md` records the
-      // decision. Issue #349's second phase gives both strategies one result type that carries the
-      // quality record without publishing it.
-      return solveFabrik(root, shape.members, flip).rotations;
+    case "tree": {
+      // `pivots` and `tips` are FABRIK's own and stay behind: the analytic path carries neither,
+      // so returning them here would make the result's shape a function of arity. The quality
+      // record travels, because both strategies state one, but nothing publishes it. Roughly four
+      // percent of ordinary reachable rigs do not reach tolerance before the cap, so a per-tick
+      // report would be noise on rigs nobody would call broken. `FB-13` pins the published shape
+      // and `docs/ADR-051-derived-solver-membership.md` records the decision.
+      const { rotations, quality } = solveFabrik(root, shape.members, flip);
+      return Object.freeze({ rotations, quality });
+    }
     default:
       return unreachable(shape);
   }

@@ -46,7 +46,7 @@ export const ikPlugin: PluginDefinition = {
     const members = readMembers(inputs.members);
     const goals = readGoals(inputs.target, members);
     const flip = Boolean(values.flip);
-    const rotations = solveChain(root, readSolveMembers(members, goals), flip);
+    const { rotations } = solveChain(root, readSolveMembers(members, goals), flip);
     return Object.freeze({
       ...values,
       rotations: Object.freeze(rotations as unknown as ImmutableRecord),
