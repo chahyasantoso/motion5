@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { WorldFrame } from "../../../src/plugins/frame";
 import { chainShape } from "../../../src/plugins/ik-solve";
-import { readSolveMembers, type MemberState } from "../../../src/plugins/ik-chain";
+import { readSolveMembers, type DeliveredMember } from "../../../src/plugins/ik-chain";
 
 // Issue #349 phase 1: the dispatch union and the adapter that feeds it, owned by ADR-106.
 //
@@ -70,7 +70,7 @@ describe("chain shape and solve-member adaptation", () => {
   });
 
   it("CS-6 readSolveMembers joins goals and reads length and pivot values", () => {
-    const states: readonly MemberState[] = [
+    const states: readonly DeliveredMember[] = [
       member("a", ROOT, Number.NaN, { x: 1.5, y: -2.5 }),
       member("b", "a", 60),
     ];

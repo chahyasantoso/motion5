@@ -4,7 +4,7 @@ import { fkPlugin } from "../../../src/plugins/fk";
 import { FABRIK_TOLERANCE, solveFabrik } from "../../../src/plugins/fabrik";
 import type { SolveMember } from "../../../src/plugins/ik-member";
 import type { WorldFrame } from "../../../src/plugins/frame";
-import { readSolveMembers, type MemberState } from "../../../src/plugins/ik-chain";
+import { readSolveMembers, type DeliveredMember } from "../../../src/plugins/ik-chain";
 import { solveTwoBone as solveTwoBoneDirect } from "../../../src/plugins/ik-analytic";
 import { solveChain } from "../../../src/plugins/ik-solve";
 
@@ -61,7 +61,7 @@ function leaf(
 /**
  * A member state narrowed to values a composition can be handed.
  *
- * `MemberState.values` is `unknown`-valued, and correctly so: `ik` reads every authored number
+ * `DeliveredMember.values` is `unknown`-valued, and correctly so: `ik` reads every authored number
  * through the shared reader and holds no opinion about what else a member carries. `fk`'s composer
  * takes a `Readonly<ImmutableRecord>`, because that is what a published patch is made of, so
  * composing a member through the real plugin needs the narrower fact stated somewhere.
@@ -71,7 +71,7 @@ function leaf(
  * narrowing with nothing checking it, on the one argument the oracle below depends on the shape of.
  * As an extension, every fixture in this file is held to it at its own literal.
  */
-interface SolvedMember extends MemberState {
+interface SolvedMember extends DeliveredMember {
   readonly values: Readonly<ImmutableRecord>;
 }
 

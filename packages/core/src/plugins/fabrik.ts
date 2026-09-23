@@ -1,6 +1,7 @@
 import {
   baseTipFromPivot,
   pivotFromBaseTip,
+  segmentExtent,
   type PivotOffset,
   type WorldFrame,
   type WorldPoint,
@@ -167,7 +168,7 @@ export function seedArc(
   lengths: readonly number[],
   flip = false,
 ): readonly FabrikPoint[] {
-  const total = lengths.reduce((sum, length) => sum + Math.max(0, length), 0);
+  const total = lengths.reduce((sum, length) => sum + segmentExtent(length), 0);
   const chord = Math.hypot(goal.x - root.x, goal.y - root.y);
   // A goal on the root leaves no direction to read, so the root's own rotation is the axis. The
   // chain still folds out and back along it rather than collapsing, because an arc at a zero chord
@@ -182,7 +183,7 @@ export function seedArc(
   const points: FabrikPoint[] = [];
   let travelled = 0;
   for (const length of lengths) {
-    travelled += Math.max(0, length);
+    travelled += segmentExtent(length);
     const fraction = total > 0 ? travelled / total : 1;
     const angle = -halfAngle + 2 * halfAngle * fraction;
     const axial = halfAngle > 0 ? chord / 2 + radius * Math.sin(angle) : fraction * chord;

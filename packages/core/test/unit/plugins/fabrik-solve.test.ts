@@ -293,6 +293,9 @@ describe("FABRIK over a solver chain (Slice D2)", () => {
     expect(negative.convergence.kind).toBe("converged");
     expect(negative.tips.a!).toEqual({ x: 200, y: 300 });
     expect(negative.tips.b!).toEqual({ x: 240, y: 300 });
+    // The seed reads a raw length through the same owner, `segmentExtent`, so a negative length
+    // handed to it directly is the zero-length segment the solve reads, not a backwards one.
+    expect(seedArc(ROOT, HAND, [-40, 60])).toEqual(seedArc(ROOT, HAND, [0, 60]));
 
     // A goal on the root has no direction to read, so the seed's axis is the root's own rotation
     // and the chain folds back along it. Defined, exact, and reachable.

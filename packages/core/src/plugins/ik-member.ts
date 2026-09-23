@@ -1,4 +1,4 @@
-import { ZERO_PIVOT_OFFSET, type PivotOffset, type WorldFrame } from "./frame";
+import { segmentExtent, ZERO_PIVOT_OFFSET, type PivotOffset, type WorldFrame } from "./frame";
 
 /**
  * One member as every solve strategy reads it: its id, the node it hangs from, its segment length,
@@ -6,11 +6,11 @@ import { ZERO_PIVOT_OFFSET, type PivotOffset, type WorldFrame } from "./frame";
  * addressed.
  *
  * **One read model, built once, consumed by every strategy.** Before issue #349's first phase the
- * closed form read `MemberState.values.length` and `readPivotOffset(values)` straight out of the
- * opaque authored record while FABRIK read a narrow view built beside it, so the two strategies
- * answered "how long is this bone" through two different paths that happened to agree. The adapter
- * in `ik-chain.ts` now builds this record once per solve and both strategies read only it, which is
- * the drift `frame.ts` exists to refuse, one level up. See ADR-106.
+ * closed form read the delivered member's `values.length` and `readPivotOffset(values)` straight
+ * out of the opaque authored record while FABRIK read a narrow view built beside it, so the two
+ * strategies answered "how long is this bone" through two different paths that happened to agree.
+ * The adapter in `ik-chain.ts` now builds this record once per solve and both strategies read only
+ * it, which is the drift `frame.ts` exists to refuse, one level up. See ADR-106.
  *
  * `base` may name another member or a node outside the member set. The one outside is the chain's
  * root, and it is read from the root frame rather than looked up: membership is derived once, in
@@ -37,14 +37,16 @@ export interface SolveMember {
 }
 
 /**
- * The extent a strategy solves with: the authored length, never negative.
+ * The extent a strategy solves with: the member's authored length, never negative.
  *
- * The single owner of that clamp. The closed form and FABRIK each applied `Math.max(0, length)`
- * privately; a third strategy (constraints, or `ik3d`'s shared traversal) calling this instead of
- * restating it is what keeps a negative authored length meaning one thing on every path.
+ * The member reading of `segmentExtent`, which owns the clamp itself. The closed form and FABRIK
+ * each applied `Math.max(0, length)` privately; a third strategy (constraints, or `ik3d`'s shared
+ * traversal) calling this instead of restating it is what keeps a negative authored length meaning
+ * one thing on every path, and `fk`'s `effectiveLink` reading the same owner is what keeps it
+ * meaning that thing in the composition too.
  */
 export function solveLength(member: SolveMember): number {
-  return Math.max(0, member.length);
+  return segmentExtent(member.length);
 }
 
 /**

@@ -12,7 +12,17 @@ import type { SolveMember } from "./ik-member";
  * the dimension, which is why they sit apart from `ik-analytic.ts` and `fabrik.ts`. See ADR-106.
  */
 
-export interface MemberState {
+/**
+ * One chain member as the `members` slot delivers it: the publisher's joined solver member.
+ *
+ * The runtime names this shape `SolverMember` in `runtime/graph-publisher.ts`, where it extends
+ * the runtime's own `MemberState` (id, values, progress) with the `base` the derivation placed it
+ * under and the `goal` it was joined to. It is restated here rather than imported because a plugin
+ * does not import the runtime, and it is named for what it is to this module, a delivered record,
+ * so it is not read as the runtime's narrower `MemberState` nor confused with `SolveMember`, the
+ * read model `readSolveMembers` turns it into.
+ */
+export interface DeliveredMember {
   readonly id: string;
   readonly base: string;
   readonly values: Readonly<Record<string, unknown>>;
@@ -38,11 +48,11 @@ export interface MemberState {
  * already refuses that shape at load time as `ik-solver-no-members`, so reaching here at all is a
  * publisher invariant violation and it is thrown, not absorbed.
  */
-export function readMembers(membersInput: unknown): readonly MemberState[] {
+export function readMembers(membersInput: unknown): readonly DeliveredMember[] {
   if (!Array.isArray(membersInput) || membersInput.length === 0) {
     throw new Error("ikPlugin requires non-empty members array in inputs.");
   }
-  return membersInput as readonly MemberState[];
+  return membersInput as readonly DeliveredMember[];
 }
 
 /**
@@ -53,7 +63,7 @@ export function readMembers(membersInput: unknown): readonly MemberState[] {
  * goal unanswerable, so this read never disagrees with it; it exists because the bare `target`
  * slot names no member and something has to say which member it is a goal for.
  */
-function chainLeaves(members: readonly MemberState[]): readonly string[] {
+function chainLeaves(members: readonly DeliveredMember[]): readonly string[] {
   const based = new Set(members.map((member) => member.base));
   return members.filter((member) => !based.has(member.id)).map((member) => member.id);
 }
@@ -77,7 +87,7 @@ function chainLeaves(members: readonly MemberState[]): readonly string[] {
  */
 export function readGoals(
   target: unknown,
-  members: readonly MemberState[],
+  members: readonly DeliveredMember[],
 ): ReadonlyMap<string, WorldFrame> {
   const goals = new Map<string, WorldFrame>();
   for (const member of members) {
@@ -111,7 +121,7 @@ export function readGoals(
  * `exactOptionalPropertyTypes` requires and what the goal count in `ik-solve.ts` reads.
  */
 export function readSolveMembers(
-  members: readonly MemberState[],
+  members: readonly DeliveredMember[],
   goals: ReadonlyMap<string, WorldFrame>,
 ): readonly SolveMember[] {
   return members.map((member) => {

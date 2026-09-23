@@ -6,8 +6,8 @@
 
 Each question an `ik` solve answers has exactly one owning module under `packages/core/src/plugins/`, and every solve strategy reads a chain member through one read model:
 
-- `ik-member.ts` owns `SolveMember`, the record every strategy reads, and the two readings of it every strategy shares: `solveLength` (the authored length, never negative) and `solveOffset` (the authored pivot offset, absent read as the shared frozen zero).
-- `ik-chain.ts` owns slot adaptation and topology: `MemberState` as the publisher delivers it, `readMembers`, the private `chainLeaves`, `readGoals` over both goal spellings, and `readSolveMembers`, the one adapter from delivered member states to `SolveMember`.
+- `ik-member.ts` owns `SolveMember`, the record every strategy reads, and the two readings of it every strategy shares: `solveLength` (the authored length, never negative, read through `frame.ts`'s `segmentExtent`, which owns that clamp for `fk` and both solves alike) and `solveOffset` (the authored pivot offset, absent read as the shared frozen zero).
+- `ik-chain.ts` owns slot adaptation and topology: `DeliveredMember`, the joined solver member the `members` slot delivers (the runtime's `SolverMember`, restated because a plugin does not import the runtime), `readMembers`, the private `chainLeaves`, `readGoals` over both goal spellings, and `readSolveMembers`, the one adapter from delivered member states to `SolveMember`.
 - `ik-solve.ts` owns strategy selection: `ChainShape`, a closed union with the variants `two-bone` and `tree`, derived by `chainShape`, and `solveChain`, which reads it with a `switch` that ends in `unreachable`.
 - `ik-analytic.ts` owns the closed form (`solveTwoBone`) and `fabrik.ts` owns the iterative solve (`solveFabrik`). Neither reads an authored record.
 - `ik.ts` owns the `PluginDefinition` and the wiring from its slots to the modules above, and exports `ikPlugin` only.
@@ -28,13 +28,17 @@ Issue #349's study and the implementation plan in its first comment both find th
 
 **The degenerate cases of the closed form are one table.** The four zero-extent early returns in `solveTwoBone` are now two guarded pairs plus the coincident-target pair, returned through one frozen record. The first and third of the old returns were the same expression, and an early `l2 <= 0` covers both because the old order tested `reach <= 0 && l2 <= 0` before `reach <= 0` alone.
 
-**`FabrikMember` is deleted, not aliased.** `SolveMember` has its exact shape and its docblock, and a second name for one type would be a second owner of the read model.
+**`FabrikMember` is deleted, not aliased.** `SolveMember` has its exact shape and its docblock, and a second name for one type would be a second owner of the read model. ADR-054's consequence that named `FabrikMember.pivot` now names `SolveMember.pivot`.
+
+**One owner for a negative length.** `Math.max(0, length)` was restated in the closed form, twice in FABRIK's seed, once more in FABRIK's solve, and in `frame.ts`'s `effectiveLink`, which `fk` composes through. It is now `segmentExtent` in `frame.ts`, beside the kinematic convention it is part of, and `solveLength`, `seedArc` and `effectiveLink` all read it.
+
+**The delivered member is `DeliveredMember`, not `MemberState`.** The old `ik.ts` declared its own `MemberState` with `base` and `goal`, while the runtime's `MemberState` has neither and its joined shape is `SolverMember`. One name for two shapes sent a reader to the wrong owner, so `ik-chain.ts` names the restated shape for what it is to the plugin.
 
 **The stale header in `fabrik.ts` is corrected in the slice that touches the file.** It called the module unwired; the dispatcher has imported it since issue #195's slice D3.
 
 **Withdrawn from the plan: a shared `reachBand`.** The plan said the reachability band `[|reach - l2|, reach + l2]` is stated twice, once in the closed form and once in the iterative path. Re-read at `b609fbda`, `fabrik.ts` states no such band; FABRIK reaches its bound by enforcing lengths outward. The band has one caller, so extracting it now would be a module for one line. Phase 2 extracts it if its reachability report needs the band on both paths.
 
-**Public surface narrows, deliberately.** `@motion5/core/plugins/ik` exported `readMembers`, `readGoals`, `solveTwoBone`, `solveChain`, `MemberState` and `BaseFrame` beside `ikPlugin`. It now exports `ikPlugin` only. No app, package entry or document consumed the others, and `BaseFrame` was an alias of `WorldFrame` with nothing to add. Tests import each owner directly.
+**Public surface narrows, deliberately.** `@motion5/core/plugins/ik` exported `readMembers`, `readGoals`, `solveTwoBone`, `solveChain`, `MemberState` (now `DeliveredMember` in `ik-chain.ts`) and `BaseFrame` beside `ikPlugin`. It now exports `ikPlugin` only. No app, package entry or document consumed the others, and `BaseFrame` was an alias of `WorldFrame` with nothing to add. Tests import each owner directly.
 
 ## Delivery order after this record
 

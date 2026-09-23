@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { clamp, lerpAngle } from "../../../src/plugins/frame";
-import { readSolveMembers, type MemberState } from "../../../src/plugins/ik-chain";
+import { readSolveMembers, type DeliveredMember } from "../../../src/plugins/ik-chain";
 import { solveTwoBone } from "../../../src/plugins/ik-analytic";
 
 // Issue #211: the two numerics the per-member `weight` blend is built out of.
@@ -12,7 +12,7 @@ import { solveTwoBone } from "../../../src/plugins/ik-analytic";
 // composition. A pure function is also what makes the wrap a unit assertion rather than a rig one.
 // See ADR-055.
 
-function member(id: string, length: number): MemberState {
+function member(id: string, length: number): DeliveredMember {
   return { id, base: "", values: { length }, progress: 0 };
 }
 

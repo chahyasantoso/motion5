@@ -222,20 +222,33 @@ export function baseTipFromPivot(
 }
 
 /**
+ * The extent a segment of authored `length` spans: the length itself, never negative.
+ *
+ * The one owner of what a negative authored length means, which is a segment with no extent rather
+ * than an error or a bone pointing backwards. `effectiveLink` below, `ik`'s `solveLength` and
+ * FABRIK's `seedArc` all read a length through this, so the composition and every solve strategy
+ * cannot disagree about it. It lives here, beside the kinematic convention, because it is part of
+ * that convention rather than of any one solve. See ADR-106.
+ */
+export function segmentExtent(length: number): number {
+  return Math.max(0, length);
+}
+
+/**
  * A member's extension composed with its child's offset, as one rigid link.
  *
- * `length` is clamped at zero exactly as both solves clamp it, so a negative authored length is a
- * segment with no extent here as well. The offset's `x` runs along the member's own direction and
- * adds to that extent, its `y` runs across and twists the link off it, and a total reach that goes
- * negative is a link that points backwards rather than an error: `hypot` and `atan2` are total, and
- * the twist past a right angle is a real pose a rig can author.
+ * `length` is read through `segmentExtent`, exactly as both solves read it, so a negative authored
+ * length is a segment with no extent here as well. The offset's `x` runs along the member's own
+ * direction and adds to that extent, its `y` runs across and twists the link off it, and a total
+ * reach that goes negative is a link that points backwards rather than an error: `hypot` and
+ * `atan2` are total, and the twist past a right angle is a real pose a rig can author.
  *
  * Zero returns the length untouched and no twist, for the reason `pivotFromBaseTip` short-circuits:
  * `Math.hypot(l, 0)` is not guaranteed to be the identity on `l`, and every existing rig's numbers
  * ride on it being one.
  */
 export function effectiveLink(length: number, offset: PivotOffset): EffectiveLink {
-  const extent = Math.max(0, length);
+  const extent = segmentExtent(length);
   if (offset.x === 0 && offset.y === 0) return { length: extent, twist: 0 };
   const reach = extent + offset.x;
   return {
