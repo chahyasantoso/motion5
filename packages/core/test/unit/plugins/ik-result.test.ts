@@ -158,7 +158,7 @@ describe("one solve result for every strategy", () => {
     expect(short.miss).toBeCloseTo(30, 9);
   });
 
-  it("IR-6 every closed-form residual equals the miss fk composes, over a seeded sample", () => {
+  it("IR-6 a finite non-negative sample: the stated residual is the miss fk composes", () => {
     const next = random(0x349_0002);
     const seen = new Set<string>();
     for (let index = 0; index < 4000; index += 1) {
@@ -218,5 +218,46 @@ describe("one solve result for every strategy", () => {
   it("IR-8 a value outside the union is refused by name rather than read as a family", () => {
     const forged = { kind: "unreached", residual: 1 } as unknown as SolveQuality;
     expect(() => family(forged)).toThrow(/Unhandled variant: .*unreached/);
+  });
+
+  it("IR-9 a non-finite goal is reported as the geometry it is, never laundered to zero", () => {
+    const [first, second] = pair(80, 60);
+    const east = solveTwoBone(ROOT, { x: Infinity, y: ROOT.y, rotation: 0 }, first, second);
+    expect(east.quality).toEqual({ kind: "too-far", residual: Infinity });
+    expect(east.rotations[first.id]).toBe(0);
+    expect(east.rotations[second.id]).toBe(0);
+
+    const south = solveTwoBone(ROOT, { x: ROOT.x, y: -Infinity, rotation: 0 }, first, second);
+    expect(south.quality).toEqual({ kind: "too-far", residual: Infinity });
+    expect(south.rotations[first.id]).toBeCloseTo(-90, 12);
+
+    const lost = solveTwoBone(ROOT, { x: NaN, y: ROOT.y, rotation: 0 }, first, second);
+    expect(lost.quality.kind).toBe("reached");
+    expect(lost.quality.residual).toBeNaN();
+    expect(lost.rotations[first.id]).toBeNaN();
+    expect(lost.quality.residual <= 1e-6).toBe(false);
+  });
+
+  it("IR-10 a negative authored length answers exactly as a zero one, on every exit", () => {
+    const targets: readonly WorldFrame[] = [
+      { x: ROOT.x + 60, y: ROOT.y, rotation: 0 },
+      { x: ROOT.x + 30, y: ROOT.y, rotation: 0 },
+      { x: ROOT.x, y: ROOT.y + 200, rotation: 0 },
+      ROOT,
+    ];
+    const shapes: readonly (readonly [number, number, number, number])[] = [
+      [-80, 60, 0, 60],
+      [80, -60, 80, 0],
+      [-50, -50, 0, 0],
+    ];
+    for (const target of targets) {
+      for (const [n1, n2, z1, z2] of shapes) {
+        const negative = pair(n1, n2);
+        const zero = pair(z1, z2);
+        expect(solveTwoBone(ROOT, target, negative[0], negative[1])).toEqual(
+          solveTwoBone(ROOT, target, zero[0], zero[1]),
+        );
+      }
+    }
   });
 });

@@ -148,9 +148,12 @@ function twoBone(
  * Where a goal at distance `d` sits against the reach band, and the residual the clamp leaves.
  *
  * Read in this order so a band that has collapsed to one point still names the side it was missed
- * on. A non-finite distance or bound compares false against both and reads as `reached` with the
- * non-finite residual it produced: the angles it publishes are non-finite too, the quality reports
- * the geometry it was handed rather than validating it, and the residual is not laundered to zero.
+ * on. The quality reports the geometry it was handed rather than validating it, and a non-finite
+ * residual is never laundered to zero. An infinite distance is directional: it is past every finite
+ * outer bound, so it reads as `too-far` with an infinite residual, and the angles still aim along
+ * the direction `atan2` finds for it. A `NaN` distance or bound compares false against both bounds
+ * and reads as `reached` with a `NaN` residual, beside angles that are `NaN` too, so
+ * `residual <= tolerance` is false for it on every path. `IR-9` pins both.
  */
 function bandQuality(
   d: number,
