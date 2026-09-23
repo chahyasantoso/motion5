@@ -16,12 +16,13 @@ import { solveChain } from "../../../src/plugins/ik-solve";
 // patch and no diagnostic. The refusal was a safety stop. ADR-054 replaces it with the geometry,
 // and this file is its evidence.
 //
-// The ownership split is unchanged and is what the cases are written against. `fk` still applies the
-// offset; `ik` predicts the frame that application composes and publishes rotations only. So the
-// oracle here is `fkPlugin.compose` itself rather than a copy of the trigonometry: a case asks the
-// solve for rotations, composes the chain forward through the real plugin with the real authored
-// offsets, and measures where the leaf actually landed. A convention error between the two halves
-// cannot hide from that, which is the failure ADR-053 says went silent.
+// The ownership split is unchanged and is what the cases are written against. `fk` still applies
+// the offset; `ik` predicts the frame that application composes and publishes rotations only, since
+// no rig here opts into ADR-109's `inspection`. So the oracle here is `fkPlugin.compose` itself
+// rather than a copy of the trigonometry: a case asks the solve for rotations, composes the chain
+// forward through the real plugin with the real authored offsets, and measures where the leaf
+// actually landed. A convention error between the two halves cannot hide from that, which is the
+// failure ADR-053 says went silent.
 //
 // `PV-` belongs to offset-aware solving. `FO-` owns what an authored `x` and `y` mean on a bone and
 // in whose space `fk` reads them, which is unchanged. `IK-` owns the analytic two-bone solve and

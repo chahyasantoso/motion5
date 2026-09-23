@@ -312,6 +312,12 @@ import { fileURLToPath } from "node:url";
 // `P-` paragraph sets. `I` alone is the architecture invariant space, which the alternation does
 // not name and the carve-out below passes over, so like `IK-` it has no single-letter neighbour.
 //
+// `IN-` belongs to opt-in IK solve inspection, issue #349 phase 4 and ADR-109: the authored static
+// `inspect` switch and the separate `inspection` output, the projection of every quality kind, byte
+// identity for unopted rigs, the load refusals for malformed and misgrouped spellings, and the
+// published patch end to end. It is a separate series from `IR-` because `IR-` owns the solve
+// result itself while `IN-` owns the authoring and publication opt-in around that result.
+//
 // The scan root is the repository rather than `packages/core/test`, because an id names one test in
 // the suite and the suite is not one package. `H-4` is declared in
 // `packages/react/test/public-hook-render.test.ts`, which the old root could not see, so one id
@@ -374,7 +380,7 @@ const TEST_FILE = /\.test\.tsx?$/;
 // this pattern belongs beside the pattern rather than once per series, so those paragraphs now
 // say what a series owns and this one says where it sorts. Issue #294.
 const CASE_TITLE =
-  /it\(\s*"((?:AE|CF|CL|CN|CS|DV|EV|FB|FO|IK|IR|LF|LV|MG|PK|PV|RA|RB|RS|SH|WT|B|C|D|E|F|G|H|J|K|L|M|N|P|Q|R|S|T|U|V|W|Y|Z)-\d+)/g;
+  /it\(\s*"((?:AE|CF|CL|CN|CS|DV|EV|FB|FO|IK|IN|IR|LF|LV|MG|PK|PV|RA|RB|RS|SH|WT|B|C|D|E|F|G|H|J|K|L|M|N|P|Q|R|S|T|U|V|W|Y|Z)-\d+)/g;
 const REACT_RENDER = "packages/react/test/public-hook-render.test.ts";
 const SERIES_SHAPED_TITLE = /it\(\s*"([A-Z]{1,2}\d*)-(\d+)(?![\w-])/g;
 const SERIES_PREFIX = /^[A-Z]{1,2}$/;
