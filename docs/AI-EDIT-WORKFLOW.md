@@ -38,7 +38,7 @@ The canonical request identity is bounded to 1,500,000 bytes and 32 nesting leve
 
 1. Read the current head and complete files at that immutable revision. Record every original blob SHA. Read the relevant invariant, owner, tests, and sister documents before choosing anchors.
 2. Put the bounded edits in one request at `.ai/edits/<name>.json`. Names use letters, digits, dots, underscores, and hyphens, starting with a letter or digit. Only one pending JSON request is allowed.
-3. Commit only that request. Its sole parent must be `expected_head`. Do not combine source edits, workflow changes, or other requests with submission.
+3. Commit only that request. Its sole parent must be `expected_head`. Do not combine source edits, workflow changes, or other requests with submission. The request file is a contents-API write like any other, so the transport rule in [AGENTS.md](../AGENTS.md) applies to it: when you can compute its blob id, compare the write's returned `content.sha` with it before waiting on a run.
 4. Wait for the candidate run and the separate reporting run. Do not advance the branch while publication is pending. Snapshot checks are repeated independently before publication.
 5. Inspect the durable outcome and exact published commit. Check CI on that commit, not the submission commit or an older green head.
 
