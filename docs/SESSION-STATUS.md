@@ -7,7 +7,7 @@ Current project state only. Replace stale entries rather than append history. Th
 
 ## Now
 
-- **[#480](https://github.com/chahyasantoso/motion5/pull/480) is in review:** the branch turns on `exactOptionalPropertyTypes`, and its required CI inventory is red at 15 optional-property sites. The prepared follow-up omits absent fields, shares the keyframe compiler in the authored contract, moves renderer metadata to a port, and widens the adapter boundary gate. No published green run is claimed; the checkpoint and CI on its resulting commit remain outstanding.
+- **[#480](https://github.com/chahyasantoso/motion5/pull/480) is in review:** the branch turns on `exactOptionalPropertyTypes`, omits absent optional fields at the 15 sites it surfaced, moves the keyframe compiler into the authored contract as its only import path, moves renderer metadata to a port, and widens the adapter boundary gate. Nothing in it has landed on `main`, and no green run is claimed here; the pull request carries its CI evidence.
 
 ## Next in line
 
