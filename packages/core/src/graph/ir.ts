@@ -19,6 +19,7 @@ import {
   qualifyMotionTrack,
 } from "./ids";
 import { orderGraph } from "./order";
+import { validateSolverConstraints } from "./solver-constraints";
 
 interface ScalarEdgeRequirement {
   readonly plugin: string;
@@ -516,6 +517,7 @@ export function resolveSolvers(
   nodes: readonly GraphNode[],
   diagnostics: Diagnostic[],
 ): readonly GraphNode[] {
+  validateSolverConstraints(nodes, diagnostics);
   // Diagnostic 3: ik-mode-ambiguous
   // Diagnostic 4: ik-solved-rotation-dead
   // Diagnostic 7: ik-goal-conflict
