@@ -1,19 +1,20 @@
 import {
   baseTipFromPivot,
   pivotFromBaseTip,
-  ZERO_PIVOT_OFFSET,
   type PivotOffset,
   type WorldFrame,
   type WorldPoint,
 } from "./frame";
+import { solveLength, solveOffset, type SolveMember } from "./ik-member";
 
 /**
- * FABRIK over a solver chain: pure, unwired, and reviewed as arithmetic.
+ * FABRIK over a solver chain: pure, and reviewed as arithmetic.
  *
- * The `ik` plugin imports this module only for chains beyond the analytic two-bone case. The two
- * questions it raises remain separate: whether the arithmetic is right, and whether the dispatcher
- * hands it the right chain. This file owns only the first, while `ik.ts` owns that dispatch. See
- * issue #195.
+ * This is one of the two strategies `ik-solve.ts` dispatches to, the one every chain that is not
+ * exactly two members with one goal takes. The two questions it raises remain separate: whether the
+ * arithmetic is right, and whether the dispatcher hands it the right chain. This file owns only the
+ * first, while `ik-solve.ts` owns that dispatch. An earlier header called this module unwired; it
+ * has been imported by the dispatcher since issue #195's slice D3. See issue #195 and ADR-106.
  *
  * The shape is the one ADR-051 draws for the analytic solve: a pure function of a root frame and
  * the member states, returning one **local** rotation per member in `fk`'s own degrees and
@@ -60,30 +61,6 @@ export const FABRIK_MAX_ITERATIONS = 64;
 
 /** Bisection steps for the seed's arc half-angle. A fixed count, so the seed is reproducible. */
 export const FABRIK_ARC_BISECTIONS = 60;
-
-/**
- * One member as the solve reads it: its id, the node it hangs from, its segment length, its
- * authored pivot offset, and the frame it reaches toward when it is a chain leaf the author
- * addressed.
- *
- * `base` may name another member or a node outside the member set. The one outside is the chain's
- * root, and it is read from the root frame rather than looked up, which is the same split
- * `SolveMember.base` already carries: membership is derived once, in `resolveSolvers`, and this
- * function re-derives nothing about the graph.
- *
- * `pivot` is optional and absent means zero, which is what `fk` composes for a bone that authored
- * neither key. Optional rather than required because zero is the overwhelming majority and a
- * required field would put `{ x: 0, y: 0 }` on every fixture in the suite to say nothing; the
- * default is a documented value here rather than a field accepted and ignored, and `PV-6` pins that
- * an explicit zero and an absent offset solve to the same doubles.
- */
-export interface FabrikMember {
-  readonly id: string;
-  readonly base: string;
-  readonly length: number;
-  readonly pivot?: PivotOffset;
-  readonly goal?: WorldFrame;
-}
 
 /**
  * A point in the solve's working state.
@@ -246,14 +223,14 @@ export function seedArc(
  */
 export function solveFabrik(
   root: WorldFrame,
-  members: readonly FabrikMember[],
+  members: readonly SolveMember[],
   flip = false,
 ): FabrikSolution {
   const byId = new Map(members.map((member) => [member.id, member]));
   const isMember = (id: string): boolean => byId.has(id);
   const baseOf = (id: string): string => byId.get(id)!.base;
-  const lengthOf = (id: string): number => Math.max(0, byId.get(id)!.length);
-  const offsetOf = (id: string): PivotOffset => byId.get(id)!.pivot ?? ZERO_PIVOT_OFFSET;
+  const lengthOf = (id: string): number => solveLength(byId.get(id)!);
+  const offsetOf = (id: string): PivotOffset => solveOffset(byId.get(id)!);
   const goalOf = (id: string): WorldFrame | undefined => byId.get(id)!.goal;
   /**
    * Depth from the root, and a refusal if the bases cycle.
@@ -262,7 +239,7 @@ export function solveFabrik(
    * guard and not a validation step: it exists so a caller that broke the invariant gets a named
    * failure instead of this function never returning.
    */
-  const depthOf = (member: FabrikMember): number => {
+  const depthOf = (member: SolveMember): number => {
     const seen = new Set<string>([member.id]);
     let current = member;
     let depth = 0;
