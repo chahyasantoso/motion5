@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 // The checkpoint transport: a patch set declares the bytes it produces, and publication writes
-// exactly those bytes. Contract: ADR-100 and ADR-101. Preparation holds no credential.
+// exactly those bytes. Contract: ADR-100, ADR-101 and ADR-102. Preparation holds no credential.
 import { execFileSync, spawnSync } from "node:child_process";
-import { lstat, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import { lstat, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
@@ -21,23 +21,30 @@ import {
 import { publishCandidate } from "./automation-publish.mjs";
 import {
   CHECKPOINT_ROOT,
+  MAX_ASSEMBLY_COMMITS,
   MAX_PATCHES,
   MAX_PATHS,
+  assemblyAggregate,
+  assemblyRange,
+  assemblyRelation,
   checkpointChain,
   checkpointDigest,
   checkpointDirectory,
   checkpointFiles,
   checkpointManifest,
+  checkpointStore,
+  confinedAssemblyCommit,
+  descends,
   parsePatch,
   patchDigest,
   reconcilePatch,
+  sealedRequest,
 } from "./checkpoint-policy.mjs";
 
 const KIND = "checkpoint";
 const WORKFLOW = AUTOMATION_WORKFLOWS.checkpoint;
 const SET_TRAILER = "AI-Checkpoint-Set";
 const PATCH_LINE = /^AI-Checkpoint: (\.ai\/checkpoints\/cp[0-9]{3}\/[0-9]{3}-[a-z0-9-]+\.diff)$/m;
-const CHECKPOINT_FILE = /^\.ai\/checkpoints\/(cp[0-9]{3})\/[A-Za-z0-9][A-Za-z0-9.-]*$/;
 const CANDIDATE_BYTES = 1800000;
 const FILE_BYTES = 1500000;
 const RETAINED_BYTES = 1000000;
@@ -69,17 +76,45 @@ function consumeMessage(checkpoint) {
   return `chore(checkpoint): consume ${checkpoint}`;
 }
 
-/** One patch-set commit carries the files of exactly one numbered checkpoint folder. */
-function checkpointId(changed) {
-  ensure(changed.length >= 2, "A patch-set commit carries a manifest and at least one patch");
-  const ids = new Set();
-  for (const file of changed) {
-    const match = CHECKPOINT_FILE.exec(file);
-    ensure(match !== null, `${JSON.stringify(file)} is not a checkpoint file`);
-    ids.add(match[1]);
+/** One `git ls-tree -r -l -z` record, in the tree API's entry shape. */
+function treeRecord(record) {
+  const tab = record.indexOf("\t");
+  const [mode, type, , size] = record.slice(0, tab).trim().split(/\s+/);
+  return { path: record.slice(tab + 1), mode, type, size: Number(size) };
+}
+
+/**
+ * Walk from the head back to the manifest base through local Git. A parentless commit inside a
+ * shallow clone is a fetch boundary, not a root, and the two mean opposite things to a reader: one
+ * is a workflow defect and the other is a stale base. So the boundary is refused by name, first.
+ */
+function walkAssembly(git, shallow, head, manifest) {
+  const range = [];
+  let current = head;
+  while (range.length <= MAX_ASSEMBLY_COMMITS) {
+    const [sha, ...parents] = git("rev-list", "--parents", "-n", "1", current).split(" ");
+    ensure(
+      parents.length > 0 || !shallow.has(sha),
+      `Insufficient fetch depth: the candidate checkout ends at ${sha} before the manifest base`,
+    );
+    range.unshift({ sha, parents });
+    if (parents.length !== 1) break;
+    const changed = git("diff", "--no-renames", "--name-only", parents[0], sha);
+    confinedAssemblyCommit(sha, changed.split("\n").filter(Boolean), manifest);
+    if (parents[0] === manifest.base) break;
+    current = parents[0];
   }
-  ensure(ids.size === 1, "A patch-set commit carries exactly one checkpoint folder");
-  return [...ids][0];
+  return assemblyRange(range, manifest.base);
+}
+
+async function shallowBoundary(root, git) {
+  try {
+    const text = await readFile(path.resolve(root, git("rev-parse", "--git-path", "shallow")));
+    return new Set(text.toString("utf8").split("\n").filter(Boolean));
+  } catch (error) {
+    if (error.code === "ENOENT") return new Set();
+    throw error;
+  }
 }
 
 async function regularText(root, file) {
@@ -211,34 +246,30 @@ export async function prepareCheckpoint(root, trustedSha, formatterRoot, output)
         GIT_TERMINAL_PROMPT: "0",
       },
     }).trim();
-  const parents = git("rev-list", "--parents", "-n", "1", "HEAD").split(" ");
-  ensure(
-    parents.length === 2 && parents.every((sha) => SHA.test(sha)),
-    "A patch-set commit needs exactly one parent",
+  const requestCommit = git("rev-parse", "HEAD");
+  ensure(SHA.test(requestCommit), "The candidate head is not a commit");
+  // The store is read from the committed tree, so a mode, a type or a size is visible before any
+  // byte is.
+  const listing = git(
+    "ls-tree",
+    "-r",
+    "-l",
+    "-z",
+    "--full-tree",
+    requestCommit,
+    "--",
+    CHECKPOINT_ROOT,
   );
-  const [requestCommit, source] = parents;
-  const changed = git("diff", "--no-renames", "--name-only", source, requestCommit)
-    .split("\n")
-    .filter(Boolean);
-  const id = checkpointId(changed);
-  const manifestPath = `${CHECKPOINT_ROOT}/${id}/manifest.json`;
-  const text = await regularText(root, manifestPath);
-  ensure(text !== null, `${JSON.stringify(manifestPath)} is absent`);
-  const manifest = checkpointManifest(JSON.parse(text));
-  ensure(manifest.checkpoint === id, "The manifest names another checkpoint");
-  ensure(manifest.base === source, "Stale base; the patch set was cut against another commit");
-  const files = checkpointFiles(manifest);
-  const declared = files.slice().sort().join("\n");
-  ensure(changed.slice().sort().join("\n") === declared, "A patch-set-only commit is required");
+  const store = checkpointStore(listing.split("\0").filter(Boolean).map(treeRecord));
+  const id = store.id;
+  const text = await regularText(root, store.manifest);
+  ensure(text !== null, `${JSON.stringify(store.manifest)} is absent from the checkout`);
+  const manifest = sealedRequest(JSON.parse(text), store);
+  walkAssembly(git, await shallowBoundary(root, git), requestCommit, manifest);
+  const source = manifest.base;
+  const changed = git("diff", "--no-renames", "--name-only", source, requestCommit);
+  assemblyAggregate(changed.split("\n").filter(Boolean), manifest);
   const directory = checkpointDirectory(manifest);
-  const present = await readdir(path.join(root, directory));
-  const names = files.map((file) => path.posix.basename(file));
-  ensure(
-    present.slice().sort().join("\n") === names.slice().sort().join("\n"),
-    "The checkpoint folder carries a file its manifest does not declare",
-  );
-  const stored = await readdir(path.join(root, CHECKPOINT_ROOT));
-  ensure(stored.length === 1 && stored[0] === id, "Exactly one pending checkpoint is supported");
   const chain = checkpointChain(manifest);
   const patches = [];
   // The aggregate retained-evidence bound is checked here rather than only in the publisher. It is a
@@ -414,6 +445,28 @@ function blobEntries(tree) {
   return new Map(entries.map((entry) => [entry.path, entry]));
 }
 
+/**
+ * The publisher's own reading of an assembly range, from immutable GitHub data rather than from
+ * anything preparation reported. Recovery reads the same range the same way.
+ */
+async function assemblyCompare(api, base, head) {
+  const comparison = await api.request("GET", `/compare/${base}...${head}`);
+  assemblyRelation(comparison.status);
+  const commits = Array.isArray(comparison.commits) ? comparison.commits : [];
+  const range = assemblyRange(
+    commits.map((commit) => ({
+      sha: commit.sha,
+      parents: commit.parents.map((parent) => parent.sha),
+    })),
+    base,
+  );
+  ensure(
+    comparison.ahead_by === range.length && range[range.length - 1].sha === head,
+    "The assembly range read from GitHub is incomplete",
+  );
+  return range;
+}
+
 export async function checkpointSnapshot(api, run, trustedSha) {
   ensure(SHA.test(trustedSha ?? "") && run.path === WORKFLOW, "Untrusted publication workflow");
   ensure(
@@ -428,34 +481,32 @@ export async function checkpointSnapshot(api, run, trustedSha) {
   ]);
   ensure(actual.sha === trusted.sha, "Candidate workflow differs from reviewed runner");
   const commit = await api.request("GET", `/git/commits/${run.head_sha}`);
-  ensure(commit.parents.length === 1, "A patch-set commit needs one parent");
-  const source = commit.parents[0].sha;
-  const sourceCommit = await api.request("GET", `/git/commits/${source}`);
-  const [before, after] = await Promise.all([
-    api.request("GET", `/git/trees/${sourceCommit.tree.sha}?recursive=1`),
-    api.request("GET", `/git/trees/${commit.tree.sha}?recursive=1`),
-  ]);
-  ensure(!before.truncated && !after.truncated, "Snapshot tree is incomplete");
-  const original = blobEntries(before);
+  const after = await api.request("GET", `/git/trees/${commit.tree.sha}?recursive=1`);
+  ensure(!after.truncated, "Snapshot tree is incomplete");
   const current = blobEntries(after);
+  const store = checkpointStore(
+    [...current.values()].filter((entry) => entry.path.startsWith(`${CHECKPOINT_ROOT}/`)),
+  );
+  const id = store.id;
+  const text = (await api.content(store.manifest, run.head_sha)).text;
+  const manifest = sealedRequest(JSON.parse(text), store);
+  const directory = checkpointDirectory(manifest);
+  const source = manifest.base;
+  await assemblyCompare(api, source, run.head_sha);
+  const sourceCommit = await api.request("GET", `/git/commits/${source}`);
+  const before = await api.request("GET", `/git/trees/${sourceCommit.tree.sha}?recursive=1`);
+  ensure(!before.truncated, "Snapshot tree is incomplete");
+  const original = blobEntries(before);
+  // The aggregate is independently sufficient for what publication can emit: it starts from the
+  // head's tree and overlays only declared post-images, so a change added and reverted inside the
+  // range leaves no published byte. Per-commit confinement stays in preparation, for locality.
   const changed = [...new Set([...original.keys(), ...current.keys()])].filter(
     (file) =>
       original.get(file)?.sha !== current.get(file)?.sha ||
       original.get(file)?.mode !== current.get(file)?.mode,
   );
-  const id = checkpointId(changed.slice().sort());
-  for (const file of changed)
-    ensure(current.get(file)?.mode === "100644", "A patch file must be a regular file");
-  const directory = `${CHECKPOINT_ROOT}/${id}`;
-  const text = (await api.content(`${directory}/manifest.json`, run.head_sha)).text;
-  const manifest = checkpointManifest(JSON.parse(text));
-  ensure(manifest.checkpoint === id, "The manifest names another checkpoint");
-  ensure(manifest.base === source, "Stale base; the patch set was cut against another commit");
+  assemblyAggregate(changed, manifest);
   const files = checkpointFiles(manifest);
-  const declared = files.slice().sort().join("\n");
-  ensure(changed.slice().sort().join("\n") === declared, "A patch-set-only commit is required");
-  const stored = [...current.keys()].filter((file) => file.startsWith(`${CHECKPOINT_ROOT}/`));
-  ensure(stored.slice().sort().join("\n") === declared, "Exactly one pending checkpoint");
   const chain = checkpointChain(manifest);
   for (const [file, blob] of chain.base) {
     const entry = original.get(file);
@@ -707,7 +758,7 @@ export async function publishCheckpointRun(api, writer, run, trustedSha) {
     currentHead: () => api.head(run.head_branch),
     contains: async (candidateSha, head) => {
       const comparison = await api.request("GET", `/compare/${candidateSha}...${head}`);
-      return comparison.status === "ahead" || comparison.status === "identical";
+      return descends(comparison.status);
     },
     saveIntent: (value) =>
       api.persist({ [`${directory}intent.json`]: `${JSON.stringify(value)}\n` }),
@@ -730,7 +781,7 @@ export async function reconcileCheckpointIntent(api, run, saved) {
   const head = await api.head(run.head_branch);
   if (head !== saved.candidate_sha) {
     const comparison = await api.request("GET", `/compare/${saved.candidate_sha}...${head}`);
-    if (!["ahead", "identical"].includes(comparison.status)) return null;
+    if (!descends(comparison.status)) return null;
   }
   const set = `${SET_TRAILER}: ${saved.request_digest}`;
   let current = saved.candidate_sha;
@@ -742,11 +793,7 @@ export async function reconcileCheckpointIntent(api, run, saved) {
     current = commit.parents[0].sha;
     if (current !== saved.request_commit) continue;
     ensure(patch !== undefined, "The first published commit lost its patch trailer");
-    const source = await api.request("GET", `/git/commits/${saved.request_commit}`);
-    ensure(
-      source.parents.length === 1 && source.parents[0].sha === saved.source_sha,
-      "Recorded source parent mismatch",
-    );
+    await assemblyCompare(api, saved.source_sha, saved.request_commit);
     const directory = path.posix.dirname(patch);
     const file = `${directory}/manifest.json`;
     const manifest = checkpointManifest(

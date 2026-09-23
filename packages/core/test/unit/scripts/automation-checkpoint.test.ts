@@ -24,7 +24,10 @@ const PRELUDE = String.raw`
   const { prepareCheckpoint, validateCheckpointCandidate } = await import(
     "./scripts/automation-checkpoint.mjs"
   );
-  const { checkpointChain, checkpointDigest } = await import("./scripts/checkpoint-policy.mjs");
+  const { MAX_ASSEMBLY_COMMITS, checkpointChain, checkpointDigest } = await import(
+    "./scripts/checkpoint-policy.mjs"
+  );
+  const RANGE_BOUND = new RegExp("not within " + MAX_ASSEMBLY_COMMITS + " single-parent commits");
   const LF = String.fromCharCode(10);
   const NUL = String.fromCharCode(0);
   const A = "a".repeat(40);
@@ -142,6 +145,38 @@ const PRELUDE = String.raw`
     state.candidate = await prepareCheckpoint(state.dir, A, process.cwd(), null);
     return state;
   }
+  /**
+   * ADR-102: commit the store across several assembly commits, one step per commit in the order
+   * given, then prepare the head. A step maps a store filename, or a repository path when it holds
+   * a slash, to its text; true means the fixture's own bytes for that file and null deletes it.
+   * A depth clones the result shallowly first, the way the candidate checkout fetches it.
+   */
+  async function assembled(steps, depth) {
+    const state = await stack();
+    const directory = ".ai/checkpoints/" + state.manifest.checkpoint;
+    const own = { "manifest.json": JSON.stringify(state.manifest, null, 2) + LF, ...state.patches };
+    for (const [index, step] of steps.entries()) {
+      for (const [name, text] of Object.entries(step)) {
+        const file = name.includes("/") ? name : directory + "/" + name;
+        const value = text === true ? own[name] : text;
+        if (value === null) await rm(path.join(state.dir, file), { force: true });
+        else await put(state.dir, file, value);
+      }
+      git(state.dir, "add", "-A");
+      git(state.dir, "commit", "-qm", "chore(checkpoint): assemble step " + (index + 1));
+    }
+    state.requestCommit = git(state.dir, "rev-parse", "HEAD");
+    let checkout = state.dir;
+    if (depth) {
+      checkout = await mkdtemp(path.join(tmpdir(), "motion5-shallow-"));
+      git(checkout, "clone", "-q", "--depth", String(depth), "file://" + state.dir, ".");
+    }
+    state.candidate = await prepareCheckpoint(checkout, A, process.cwd(), null);
+    return state;
+  }
+  const ONE = { "001-one-decoder-owner.diff": true };
+  const TWO = { "002-red-evidence-cases.diff": true };
+  const SEAL = { "manifest.json": true };
 `;
 
 function scenario(body: string): void {
@@ -208,7 +243,7 @@ describe("a checkpoint applies in a disposable checkout and publishes what it de
           prepared((state) => {
             state.manifest.base = "b".repeat(40);
           }),
-          /Stale base/,
+          /stale base/i,
         );
         await assert.rejects(
           prepared((state) => {
@@ -327,6 +362,94 @@ describe("a checkpoint applies in a disposable checkout and publishes what it de
     `);
   }, 120000);
 
+  it("accepts a request assembled across several commits and sealed by its manifest", () => {
+    scenario(String.raw`
+      const state = await assembled([ONE, TWO, SEAL]);
+      assert.equal(state.candidate.source_sha, state.base);
+      assert.equal(state.candidate.request_commit, state.requestCommit);
+      assert.equal(state.candidate.commits.length, 2);
+      // A patch commit carries its patch in the same commit, and the legacy single commit remains
+      // the degenerate range of one.
+      const together = await assembled([{ ...ONE, ...TWO, ...SEAL }]);
+      assert.equal(together.candidate.source_sha, together.base);
+    `);
+  }, 120000);
+
+  it("refuses a source change anywhere in the range, and a range past its bound", () => {
+    scenario(String.raw`
+      await assert.rejects(
+        assembled([ONE, { "docs/note.md": "# changed" + LF }, TWO, SEAL]),
+        /changes "docs\/note\.md", which is not a checkpoint file of cp001/,
+      );
+      // A change reverted inside the range still names the commit that carried it.
+      await assert.rejects(
+        assembled([{ "docs/note.md": "# changed" + LF }, { "docs/note.md": "# note" + LF }, ONE, TWO, SEAL]),
+        /a source change rode along or the manifest base is stale/,
+      );
+      const drafts = (count) =>
+        Array.from({ length: count }, (_, index) => ({
+          "001-one-decoder-owner.diff": "draft " + index + LF,
+        }));
+      // Twenty-two drafts, the patches and the seal is exactly the bound of twenty-four.
+      const widest = await assembled([...drafts(22), { ...ONE, ...TWO }, SEAL]);
+      assert.equal(widest.candidate.commits.length, 2);
+      await assert.rejects(
+        assembled([...drafts(23), { ...ONE, ...TWO }, SEAL]),
+        RANGE_BOUND,
+      );
+    `);
+  }, 240000);
+
+  it("refuses a shallow boundary distinctly from a stale base", () => {
+    scenario(String.raw`
+      // Three assembly commits put the base at depth four, so a depth of two ends inside the range.
+      await assert.rejects(assembled([ONE, TWO, SEAL], 2), /Insufficient fetch depth/);
+      const deep = await assembled([ONE, TWO, SEAL], 4);
+      assert.equal(deep.candidate.commits.length, 2);
+      // A base that is simply wrong walks to the root instead, and says so.
+      await assert.rejects(
+        prepared((state) => {
+          state.manifest.base = "b".repeat(40);
+        }),
+        /reached the root commit/,
+      );
+    `);
+  }, 120000);
+
+  it("refuses a manifest that arrived first, then heals by the repair it names", () => {
+    scenario(String.raw`
+      await assert.rejects(
+        assembled([SEAL]),
+        /declared by the manifest but absent; the manifest seals the request, so delete it, push the missing patches, then push the manifest again/,
+      );
+      await assert.rejects(assembled([ONE, SEAL]), /002-red-evidence-cases\.diff" is declared/);
+      // The first step of the repair deletes the manifest, and that push is refused by name.
+      await assert.rejects(
+        assembled([ONE, SEAL, { "manifest.json": null }]),
+        /nothing is sealed: .*manifest\.json" is absent.*expected refusal after deleting a manifest/,
+      );
+      // The repair is new commits on top, never a force update: delete, push the rest, seal again.
+      const healed = await assembled([ONE, SEAL, { "manifest.json": null }, TWO, SEAL]);
+      assert.equal(healed.candidate.source_sha, healed.base);
+      assert.equal(healed.candidate.commits.length, 2);
+      await assert.rejects(
+        assembled([ONE, TWO, { "notes.txt": "stray" + LF }, SEAL]),
+        /"\.ai\/checkpoints\/cp001\/notes\.txt" is stored but not declared by the manifest; delete it/,
+      );
+    `);
+  }, 120000);
+
+  it("refuses a checkpoint file past the per-file transport bound before reading its digest", () => {
+    scenario(String.raw`
+      await assert.rejects(
+        prepared((state) => {
+          state.patches["002-red-evidence-cases.diff"] += "x".repeat(32000) + LF;
+        }),
+        /exceeds the 32000-byte per-file transport bound/,
+      );
+    `);
+  }, 120000);
+
   it("separates candidate preparation from the credentialed publisher", () => {
     scenario(String.raw`
       const { readFile } = await import("node:fs/promises");
@@ -336,7 +459,11 @@ describe("a checkpoint applies in a disposable checkout and publishes what it de
       assert.ok(!candidate.includes("contents: write") && !candidate.includes("secrets."));
       assert.ok(candidate.includes("persist-credentials: false"));
       assert.ok(candidate.includes("automation-checkpoint.mjs prepare"));
-      assert.ok(candidate.includes('paths: [".ai/checkpoints/**"]'));
+      assert.ok(candidate.includes('paths: [".ai/checkpoints/*/manifest.json"]'));
+      assert.ok(candidate.includes("fetch-depth: 30"));
+      // The walk visits at most MAX_ASSEMBLY_COMMITS + 1 commits, so the base must be inside the fetch.
+      const depth = Number(/fetch-depth: ([0-9]+)/.exec(candidate)[1]);
+      assert.ok(depth > MAX_ASSEMBLY_COMMITS, "fetch-depth must exceed MAX_ASSEMBLY_COMMITS");
       assert.ok(candidate.includes("AI-Checkpoint-Set: "));
       assert.ok(reporter.includes("AI checkpoint"));
       assert.ok(reporter.includes("automation-checkpoint.mjs publish"));
@@ -355,10 +482,13 @@ describe("a checkpoint applies in a disposable checkout and publishes what it de
  */
 const PUBLISH_PRELUDE = String.raw`
   import assert from "node:assert/strict";
-  const { buildCommits, reconcileCheckpointIntent } = await import(
+  const { buildCommits, checkpointSnapshot, reconcileCheckpointIntent } = await import(
     "./scripts/automation-checkpoint.mjs"
   );
-  const { checkpointDigest } = await import("./scripts/checkpoint-policy.mjs");
+  const { MAX_ASSEMBLY_COMMITS, checkpointDigest } = await import(
+    "./scripts/checkpoint-policy.mjs"
+  );
+  const RANGE_BOUND = new RegExp("not within " + MAX_ASSEMBLY_COMMITS + " single-parent commits");
   const LF = String.fromCharCode(10);
   const SET = "AI-Checkpoint-Set: ";
   const SRC = "packages/core/src/one.ts";
@@ -459,7 +589,14 @@ const PUBLISH_PRELUDE = String.raw`
    * requires, so a refusal names which one was missing.
    */
   function world(options) {
-    const settings = { length: 2, head: null, dropSet: -1, dropPatch: false, ...options };
+    const settings = { length: 2, range: 1, head: null, dropSet: -1, dropPatch: false, ...options };
+    // ADR-102: the request commit is the tip of an assembly range rooted at the source.
+    const assembly = Array.from({ length: settings.range - 1 }, (_, i) => "a" + String(i + 1).padStart(39, "0"));
+    const ordered = [...assembly, REQUEST];
+    const range = ordered.map((sha, index) => ({
+      sha,
+      parents: [{ sha: index === 0 ? SOURCE : ordered[index - 1] }],
+    }));
     const shas = Array.from({ length: settings.length }, (_, i) => "f" + String(i + 1).padStart(39, "0"));
     const commits = new Map();
     shas.forEach((sha, index) => {
@@ -484,6 +621,12 @@ const PUBLISH_PRELUDE = String.raw`
       api: {
         head: () => Promise.resolve(settings.head ?? shas[shas.length - 1]),
         request(method, route) {
+          if (route === "/compare/" + SOURCE + "..." + REQUEST)
+            return Promise.resolve({
+              status: settings.rangeStatus ?? "ahead",
+              ahead_by: range.length,
+              commits: range,
+            });
           if (route.indexOf("/compare/") === 0)
             return Promise.resolve({ status: settings.compare ?? "ahead" });
           const match = /^\/git\/commits\/(.+)$/.exec(route);
@@ -511,6 +654,58 @@ const PUBLISH_PRELUDE = String.raw`
     };
   }
   const RUN = { head_branch: "work", head_sha: REQUEST };
+  /**
+   * ADR-102: the publisher's independent reading of an assembly range. The head tree holds the
+   * store, the compare API describes the range, and the base tree is the aggregate's other side.
+   * Each knob breaks exactly one property, so a refusal names the property it measured.
+   */
+  function snapshotWorld(options) {
+    const settings = { range: 3, status: "ahead", merge: false, extraTree: [], ...options };
+    const store = ".ai/checkpoints/cp001/";
+    const blob = (path, sha, size) => ({ path, mode: "100644", type: "blob", sha, size });
+    const baseTree = [blob(SRC, "a".repeat(40), 22)];
+    const headTree = [
+      ...baseTree,
+      blob(store + "manifest.json", "1".repeat(40), 400),
+      blob(store + "001-a.diff", "2".repeat(40), settings.patchSize ?? 200),
+      ...settings.extraTree,
+    ];
+    const shas = Array.from({ length: settings.range }, (_, i) => "b" + String(i + 1).padStart(39, "0"));
+    const commits = shas.map((sha, index) => ({
+      sha,
+      parents: [{ sha: index === 0 ? SOURCE : shas[index - 1] }].concat(
+        settings.merge && index === 1 ? [{ sha: "9".repeat(40) }] : [],
+      ),
+    }));
+    const head = shas[shas.length - 1];
+    const api = {
+      content(file) {
+        if (file === ".github/workflows/ai-checkpoint.yml") return Promise.resolve({ sha: "w" });
+        return Promise.resolve({ text: JSON.stringify(MANIFEST) });
+      },
+      request(method, route) {
+        if (route === "/git/commits/" + head)
+          return Promise.resolve({ tree: { sha: "t1" }, parents: [{ sha: shas[shas.length - 2] }] });
+        if (route === "/git/commits/" + SOURCE) return Promise.resolve({ tree: { sha: "t0" } });
+        if (route === "/git/trees/t0?recursive=1") return Promise.resolve({ tree: baseTree });
+        if (route === "/git/trees/t1?recursive=1") return Promise.resolve({ tree: headTree });
+        if (route === "/compare/" + SOURCE + "..." + head)
+          return Promise.resolve({
+            status: settings.status,
+            ahead_by: settings.aheadBy ?? commits.length,
+            commits,
+          });
+        throw new Error("unexpected route " + route);
+      },
+    };
+    const run = {
+      path: ".github/workflows/ai-checkpoint.yml",
+      event: "push",
+      head_branch: "work",
+      head_sha: head,
+    };
+    return { api, run, head };
+  }
 `;
 
 function publishScenario(body: string): void {
@@ -528,6 +723,38 @@ function publishScenario(body: string): void {
 }
 
 describe("publication writes one commit per patch and never replays a hunk", () => {
+  it("reads an assembly range and its aggregate independently of preparation", () => {
+    publishScenario(String.raw`
+      const TRUSTED = "7".repeat(40);
+      const accepted = snapshotWorld({});
+      const state = await checkpointSnapshot(accepted.api, accepted.run, TRUSTED);
+      assert.equal(state.source_sha, SOURCE);
+      assert.equal(state.request_commit, accepted.head);
+      assert.deepEqual(state.files, [
+        ".ai/checkpoints/cp001/manifest.json",
+        ".ai/checkpoints/cp001/001-a.diff",
+      ]);
+      const refusals = [
+        [{ extraTree: [{ path: "docs/x.md", mode: "100644", type: "blob", sha: "3".repeat(40) }] }, /it also changes "docs\/x\.md"/],
+        [{ extraTree: [{ path: ".ai/checkpoints/cp001/x.txt", mode: "100644", type: "blob", sha: "3".repeat(40), size: 1 }] }, /x\.txt" is stored but not declared/],
+        [{ patchSize: 32001 }, /per-file transport bound/],
+        [{ status: "diverged" }, /Stale base/],
+        [{ status: "behind" }, /Stale base/],
+        [{ status: "identical" }, /the manifest base; nothing was assembled/],
+        [{ status: "unknown" }, /Unknown compare status/],
+        [{ aheadBy: 4 }, /The assembly range read from GitHub is incomplete/],
+        [{ extraTree: [{ path: ".ai/checkpoints/cp002/manifest.json", mode: "100644", type: "blob", sha: "3".repeat(40), size: 1 }] }, /Exactly one pending checkpoint/],
+        [{ extraTree: [{ path: ".ai/checkpoints/cp001/link.diff", mode: "120000", type: "blob", sha: "3".repeat(40), size: 1 }] }, /link\.diff" must be a regular file/],
+        [{ range: MAX_ASSEMBLY_COMMITS + 1 }, RANGE_BOUND],
+        [{ merge: true }, /has 2 parents; it needs exactly one/],
+      ];
+      for (const [options, pattern] of refusals) {
+        const refused = snapshotWorld(options);
+        await assert.rejects(() => checkpointSnapshot(refused.api, refused.run, TRUSTED), pattern);
+      }
+    `);
+  });
+
   it("builds patch, formatting and consumption commits with the trailers in order", () => {
     publishScenario(String.raw`
       const writer = recorder();
@@ -647,6 +874,34 @@ describe("publication writes one commit per patch and never replays a hunk", () 
       assert.equal(
         await reconcileCheckpointIntent(diverged.api, RUN, intent(diverged.candidate)),
         null,
+      );
+      // A head that moved on past the candidate still contains it, so the publication is confirmed.
+      for (const compare of ["ahead", "identical"]) {
+        const ahead = world({ length: 2, head: "ab".repeat(20), compare });
+        assert.notEqual(await reconcileCheckpointIntent(ahead.api, RUN, intent(ahead.candidate)), null);
+      }
+      const behind = world({ length: 2, head: "ab".repeat(20), compare: "behind" });
+      assert.equal(await reconcileCheckpointIntent(behind.api, RUN, intent(behind.candidate)), null);
+      const unknown = world({ length: 2, head: "ab".repeat(20), compare: "unknown" });
+      await assert.rejects(
+        () => reconcileCheckpointIntent(unknown.api, RUN, intent(unknown.candidate)),
+        /Unknown compare status/,
+      );
+      // ADR-102: the request commit may sit atop a multi-commit assembly range, read from GitHub.
+      const assembledRange = world({ length: 2, range: 5 });
+      assert.notEqual(
+        await reconcileCheckpointIntent(assembledRange.api, RUN, intent(assembledRange.candidate)),
+        null,
+      );
+      const longRange = world({ length: 2, range: MAX_ASSEMBLY_COMMITS + 1 });
+      await assert.rejects(
+        () => reconcileCheckpointIntent(longRange.api, RUN, intent(longRange.candidate)),
+        RANGE_BOUND,
+      );
+      const staleRange = world({ length: 2, rangeStatus: "diverged" });
+      await assert.rejects(
+        () => reconcileCheckpointIntent(staleRange.api, RUN, intent(staleRange.candidate)),
+        /Stale base/,
       );
       // Nothing was recorded, so there is nothing to reconcile.
       const bare = world({ length: 2 });

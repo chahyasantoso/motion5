@@ -26,7 +26,7 @@ A checkpoint round trip is structurally identical: same preparation posture, sam
 
 The difference appears at N dependent slices, and it is not linear. `prepareCandidate()` requires exactly one pending request, and `expected_blobs` pins one blob id per edited path, so the moment a publication lands, every other prepared request touching an overlapping path is stale. N slices serialise into N full round trips **plus N-1 regenerations**, and the regeneration is the expensive part, because anchors must be re-verified against changed blobs.
 
-A checkpoint is one push, one preparation run, one publication producing N commits. The chain verifies internally through `after` and pre-image equality with the predecessor's post-image, so intermediate heads never need to exist. Nothing goes stale mid-stack because nothing waits.
+A checkpoint may arrive as one or more patch-only assembly pushes and commits followed by a final manifest push. Only the manifest arrival makes a request preparation can accept, and one publication then produces N commits. The assembly range is linear and bounded, while the chain verifies internally through `after` and pre-image equality with the predecessor's post-image, so intermediate heads never need to exist. Nothing goes stale mid-stack because nothing waits.
 
 That asymmetry was measured, not predicted. Across [#462](https://github.com/chahyasantoso/motion5/pull/462), eight diffs and two report bundles were held outside the repository and re-cut against `b3dc8d31`, then the branch tip, then `ef506e6d`, because each publication invalidated what was prepared behind it. [ADR-101](./ADR-101-a-stacked-patch-chains-by-content.md) exists to make that one reviewed transaction.
 
@@ -34,7 +34,7 @@ That asymmetry was measured, not predicted. Across [#462](https://github.com/cha
 
 AI edit's wall is anchor uniqueness and serialisation, and it is bounded to 1 through 50 edits per request.
 
-The checkpoint route's wall is the candidate envelope. Full final file content travels per commit, so a file touched by five patches in a stack appears five times and the 1,800,000-byte bound arrives fast. A 127-file stack does not fit, full stop. The answer is more, smaller checkpoints, and the validator refuses on budget with that sentence rather than silently chunking.
+The checkpoint route's walls are the per-file transport bound and the candidate envelope. Every checkpoint file, including `manifest.json`, is limited to 32,000 bytes; this is a conservative proposal rather than a measured MCP payload ceiling. Full final file content travels per commit, so a file touched by five patches in a stack appears five times and the 1,800,000-byte candidate bound arrives fast. A 127-file stack does not fit, full stop. The answer is more, smaller checkpoints, and the validator refuses on budget with that sentence rather than silently chunking.
 
 The second wall is a genuine regression against AI edit rather than a trade: AI edit has `preview` and `validate`, so you can ask what a change would do, get a bounded final diff and per-path measurements as evidence, and never touch target bytes. The checkpoint route has no equivalent. The follow-up shape is a manifest-level `operation` field with empty commit file lists and an `operation_result`; until it exists, a checkpoint's first feedback is its preparation run.
 
