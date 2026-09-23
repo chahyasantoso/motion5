@@ -18,6 +18,9 @@ export const FLIP_KEY = "flip" as const;
 export type LimitKey = typeof MIN_ROTATION_KEY | typeof MAX_ROTATION_KEY;
 export const LIMIT_KEYS: readonly LimitKey[] = Object.freeze([MIN_ROTATION_KEY, MAX_ROTATION_KEY]);
 
+/** A key the solver node authors itself, scoped to the group that bound its `root`. */
+export type SolverKey = typeof BEND_KEY | typeof FLIP_KEY;
+
 /** The bound an omitted `minRotation` means, and the floor of the limit domain. */
 export const LIMIT_FLOOR = -180;
 /** The bound an omitted `maxRotation` means, and the ceiling of the limit domain. */

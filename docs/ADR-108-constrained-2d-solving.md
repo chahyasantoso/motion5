@@ -6,7 +6,8 @@
 
 A member may author a finite local angle range as `minRotation` and `maxRotation`, grouped under
 the plugin that bound its `solver` slot (`fk.values.minRotation` in core) or flat on a node that binds
-a solver, and a solver may author one static `bend` hint, grouped or flat. The graph owns load
+a solver, and a solver may author one static `bend` hint, flat or under the group that bound its
+`root`. The graph owns load
 refusals; the constraint module owns runtime interpretation; FABRIK owns constrained positions. Every
 published limited rotation is inside its declared range, and unconstrained output remains byte
 identical.
@@ -43,9 +44,21 @@ solver somewhere. The first revision accepted `spring.values.minRotation` on a m
 bound under `fk` (old `CL-18`), and because the solve reads the flat bag, that limit silently
 constrained the solve. It is now refused as `ik-limit-without-solver`.
 
+**Solver keys belong to the node that bound `root`.** `bend` and `flip` are read by the solve of the
+node that bound `root`, so the load rules read them on that node alone, flat or under the group that
+bound `root`, which is the same scope `reachesSolve` gives limits. The first revision read `bend` under
+any group on any node, so a third-party plugin's own `spring.values.bend` on a node that is no solver
+was refused as `ik-bend-malformed`, and a `flip` under another group raised `ik-bend-conflicts-flip`.
+On a node that bound no `root` the keys are not solver vocabulary, so nothing is read or refused
+there (`CL-28`). On a solver node a spelling under any other group still reaches the solve through the
+flat bag, so it is refused as `ik-solver-key-misgrouped` rather than steering the solve from a group
+that does not own it (`CL-29`), and the conflict rule compares only the spellings the solve owns
+(`CL-30`). Withdrawn: ignoring a misgrouped spelling on a solver node. The solve would read it anyway,
+which is the silent constraint `ik-limit-without-solver` already refuses for limits.
+
 **One contract owner.** `contract/solver-constraints.ts` owns names, static-value classification, the
 finite degree domain, default bounds, and bend classification. `graph/solver-constraints.ts` owns the
-five load rules. `plugins/ik-constraint.ts` owns runtime limit arithmetic and bend reading.
+six load rules. `plugins/ik-constraint.ts` owns runtime limit arithmetic and bend reading.
 
 **Malformed runtime bounds are absent.** `SolveMember.limit` holds only the `range` variant, and an
 absent limit means free, so no strategy branches on a third state. A malformed bound is ignored
@@ -90,14 +103,14 @@ The existing negative-length FK disagreement remains owned by [#482](https://git
 dispatch, seeded constrained poses, quality, bend/flip equivalence and precedence, zero extent, and
 runtime totality under `CL-1` through `CL-3`, `CL-7` through `CL-11`, and `CL-19` through `CL-23`.
 `packages/core/test/unit/graph/solver-constraints.test.ts` covers each refusal and accepting direction
-under `CL-4` through `CL-6`, `CL-12` through `CL-18`, and `CL-24` through `CL-27`, the last four being
-the flat spellings. Both files are registered in `docs/acceptance-map.json`, and `CL-` is registered
-by the evidence-id gate.
+under `CL-4` through `CL-6`, `CL-12` through `CL-18`, and `CL-24` through `CL-30`, `CL-24` to `CL-27`
+being the flat spellings and `CL-28` to `CL-30` the solver-key scope. Both files are registered in
+`docs/acceptance-map.json`, and `CL-` is registered by the evidence-id gate.
 
 Sandbox measurements, taken with an esbuild vitest shim and without `tsc` or `gsap`, so they are
 reviewed rather than trusted and the pull request's CI run is the evidence that counts:
 
-- `CL-1` to `CL-27`: 27 of 27 pass.
+- `CL-1` to `CL-30`: 30 of 30 pass.
 - Full suite: 958 pass against 931 at `c03c6b19`, with an identical failure set, every member of which
   is blocked by the sandbox environment rather than by this change.
 - 200,000 seeded unconstrained rigs publish byte-identical rotations to `c03c6b19`, under both the

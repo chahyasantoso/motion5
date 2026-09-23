@@ -7,7 +7,7 @@ Current project state only. Replace stale entries rather than append history. Th
 
 ## Now
 
-- **Constrained 2D IK for [#349](https://github.com/chahyasantoso/motion5/issues/349) is in review:** static per-member FK angle limits, solver bend hints, five named load rules, constrained FABRIK, and limited solve quality are implemented as [ADR-108](./ADR-108-constrained-2d-solving.md). No merge is claimed here; the pull request carries its test, scan, and corpus evidence.
+- **Constrained 2D IK for [#349](https://github.com/chahyasantoso/motion5/issues/349) is in review:** static per-member FK angle limits, solver bend hints, six named load rules, constrained FABRIK, and limited solve quality are implemented as [ADR-108](./ADR-108-constrained-2d-solving.md). No merge is claimed here; the pull request carries its test, scan, and corpus evidence.
 
 ## Next in line
 

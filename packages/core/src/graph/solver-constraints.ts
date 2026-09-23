@@ -8,13 +8,14 @@ import {
   LIMIT_KEYS,
   type AuthoredSpelling,
   type LimitKey,
+  type SolverKey,
 } from "../contract/solver-constraints";
 import { diagnostic } from "../contract/diagnostics";
 import type { Diagnostic } from "../contract/v5";
 import type { GraphNode } from "./ir";
 
 /**
- * The five load rules of constrained 2D solving. See ADR-108.
+ * The six load rules of constrained 2D solving. See ADR-108.
  *
  * **Every spelling, because the solve reads the flat bag.** A member's limits reach `ik` through
  * the member's flattened values, where a flat `minRotation` and one grouped under any plugin are
@@ -27,14 +28,19 @@ import type { GraphNode } from "./ir";
  * it must sit under a group that bound a `solver` slot, which is the scope `ik-weight-without-solver`
  * already reads; flat, the node must bind a solver somewhere. `fk` is the one core claimant, so a
  * second plugin claiming the name would already make the flat spelling ambiguous at the registry.
+ *
+ * **Solver keys belong to the node that bound `root`.** `bend` and `flip` are read by the solve of
+ * the node that bound `root`, flat or under the group that bound it, and by nothing else, so the
+ * rules read exactly those spellings. The first revision read them under any group on any node,
+ * which refused a third-party plugin's own `spring.values.bend` on a node that is no solver at all.
  */
 
-/** The plugins under which this node bound a `solver` slot, read from its derived edges. */
-function solverGroups(node: GraphNode): ReadonlySet<string> {
+/** The plugins under which this node bound `slot`, read from its derived edges. */
+function slotBinders(node: GraphNode, slot: "root" | "solver"): ReadonlySet<string> {
   return new Set(
     node.edges.flatMap((edge) => {
       const requirement = edge.role === "input" ? edge.requirement : undefined;
-      return requirement?.slot === "solver" ? [requirement.plugin] : [];
+      return requirement?.slot === slot ? [requirement.plugin] : [];
     }),
   );
 }
@@ -43,8 +49,39 @@ function reachesSolve(spelling: AuthoredSpelling, binders: ReadonlySet<string>):
   return spelling.group === undefined ? binders.size > 0 : binders.has(spelling.group);
 }
 
+/**
+ * The spellings of one solver key that a solve reads, refusing the ones it reads from elsewhere.
+ *
+ * A solver key belongs to the node that bound `root`, flat or under the group that bound it. On a
+ * node that bound no `root` the key is not solver vocabulary at all, it is some other plugin's own
+ * key, so nothing is read and nothing is refused. On a solver node a spelling under any other group
+ * still reaches the solve, because the solve reads the flattened bag (ADR-043), so it is refused as
+ * `ik-solver-key-misgrouped` rather than steering the solve from a group that does not own it.
+ */
+function solverSpellings(
+  node: GraphNode,
+  key: SolverKey,
+  roots: ReadonlySet<string>,
+  diagnostics: Diagnostic[],
+): readonly AuthoredSpelling[] {
+  if (roots.size === 0) return [];
+  const spellings = authoredSpellings(node.track.keyframes, key);
+  for (const spelling of spellings) {
+    if (reachesSolve(spelling, roots)) continue;
+    diagnostics.push(
+      diagnostic(
+        "ik-solver-key-misgrouped",
+        `${node.id}.keyframes.${spelling.path}`,
+        `Solver "${node.id}" authors ${key} under ${spelling.group}, which did not bind its root; author it flat or under ${[...roots].join(", ")}.`,
+        [node.id],
+      ),
+    );
+  }
+  return spellings.filter((spelling) => reachesSolve(spelling, roots));
+}
+
 function validateMemberLimits(node: GraphNode, diagnostics: Diagnostic[]): void {
-  const binders = solverGroups(node);
+  const binders = slotBinders(node, "solver");
   const values: Partial<Record<LimitKey, unknown>> = {};
   const paths: Partial<Record<LimitKey, string>> = {};
   for (const key of LIMIT_KEYS) {
@@ -98,7 +135,9 @@ function validateMemberLimits(node: GraphNode, diagnostics: Diagnostic[]): void 
 }
 
 function validateSolverBend(node: GraphNode, diagnostics: Diagnostic[]): void {
-  const bends = authoredSpellings(node.track.keyframes, BEND_KEY);
+  const roots = slotBinders(node, "root");
+  const bends = solverSpellings(node, BEND_KEY, roots, diagnostics);
+  const flips = solverSpellings(node, FLIP_KEY, roots, diagnostics);
   for (const spelling of bends) {
     const bend = classifyBend(spelling.value);
     switch (bend.kind) {
@@ -120,7 +159,7 @@ function validateSolverBend(node: GraphNode, diagnostics: Diagnostic[]): void {
     }
   }
   const [bend] = bends;
-  if (bend !== undefined && authoredSpellings(node.track.keyframes, FLIP_KEY).length > 0) {
+  if (bend !== undefined && flips.length > 0) {
     diagnostics.push(
       diagnostic(
         "ik-bend-conflicts-flip",

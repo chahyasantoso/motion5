@@ -271,4 +271,40 @@ describe("solver constraint rules read every authored spelling", () => {
     );
     expect(conflict.map((d) => d.ruleId)).toContain("ik-bend-conflicts-flip");
   });
+
+  it("CL-28 leaves another plugin's bend and flip alone on a node that bound no root", () => {
+    const spring = { values: { bend: "side", flip: 3 } };
+    const onMember = flat({ ...bound, spring, bend: 12 });
+    expect(onMember.filter((d) => d.ruleId.startsWith("ik-"))).toEqual([]);
+  });
+
+  it("CL-29 refuses a solver key under a group that did not bind the solver's root", () => {
+    const requires = { root: "root", target: "goal" };
+    const found = flat(bound, {
+      id: "solve",
+      keyframes: { ik: { values: {}, requires }, spring: { values: { bend: "positive" } } },
+    });
+    const misgrouped = found.filter((d) => d.ruleId === "ik-solver-key-misgrouped");
+    expect(misgrouped.map((d) => d.path)).toEqual(["walker/solve.keyframes.spring.values.bend"]);
+    expect(found.map((d) => d.ruleId)).not.toContain("ik-bend-malformed");
+  });
+
+  it("CL-30 reads the conflict only between spellings the solve owns", () => {
+    const requires = { root: "root", target: "goal" };
+    const found = flat(bound, {
+      id: "solve",
+      keyframes: {
+        ik: { values: { bend: "negative" }, requires },
+        spring: { values: { flip: true } },
+      },
+    });
+    const ids = found.map((d) => d.ruleId);
+    expect(ids).toContain("ik-solver-key-misgrouped");
+    expect(ids).not.toContain("ik-bend-conflicts-flip");
+    const owned = flat(bound, {
+      id: "solve",
+      keyframes: { ik: { values: { bend: "negative", flip: true }, requires } },
+    });
+    expect(owned.map((d) => d.ruleId)).toContain("ik-bend-conflicts-flip");
+  });
 });
