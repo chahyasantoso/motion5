@@ -55,9 +55,10 @@ describe("constrained 2D IK (phase 3)", () => {
     const upperTip = composeWorld(upper, { x: 80, y: 0, rotation: 0 });
     const fore = composeWorld(upperTip, { x: 0, y: 0, rotation: solved.rotations.fore! });
     const tip = composeWorld(fore, { x: 60, y: 0, rotation: 0 });
-    const fabrik = solveFabrik(ROOT, chain);
-    expect(tip.x).toBeCloseTo(fabrik.tips.fore.x, 8);
-    expect(tip.y).toBeCloseTo(fabrik.tips.fore.y, 8);
+    const fabrikTip = solveFabrik(ROOT, chain).tips.fore;
+    expect(fabrikTip).toBeDefined();
+    expect(tip.x).toBeCloseTo(fabrikTip!.x, 8);
+    expect(tip.y).toBeCloseTo(fabrikTip!.y, 8);
     if (solved.quality.kind === "limited") expect(solved.quality.atBound).toContain("upper");
   });
 
@@ -136,8 +137,10 @@ describe("constrained 2D IK evidence details", () => {
     const aTip = composeWorld(a, { x: 60, y: 0, rotation: 0 });
     const b = composeWorld(aTip, { x: 0, y: 0, rotation: result.rotations.b! });
     const tip = composeWorld(b, { x: 40, y: 0, rotation: 0 });
-    expect(tip.x).toBeCloseTo(result.tips.b.x, 8);
-    expect(tip.y).toBeCloseTo(result.tips.b.y, 8);
+    const solvedTip = result.tips.b;
+    expect(solvedTip).toBeDefined();
+    expect(tip.x).toBeCloseTo(solvedTip!.x, 8);
+    expect(tip.y).toBeCloseTo(solvedTip!.y, 8);
   });
 });
 
