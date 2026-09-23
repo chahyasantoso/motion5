@@ -77,6 +77,9 @@ function readSolvedRotation(solver: unknown, nodeId: string): number | undefined
  * the weight at all, which is what keeps "no solve" and "a solve this bone ignores" two different
  * things. See ADR-051.
  *
+ * `minRotation` and `maxRotation` are authored metadata for the IK solve and are not read here.
+ * FK remains the owner of composition; the constraint owner reads those keys before solving.
+ *
  * `weight` is per member rather than per solver, so a chain can stagger its reach: a shoulder that
  * commits early while the wrist lags is two weights on two bones, and a solver-level weight would
  * force every bone in the chain to blend in lockstep. It defaults to `1`, so every solver-bound rig
@@ -88,7 +91,7 @@ function readSolvedRotation(solver: unknown, nodeId: string): number | undefined
  */
 export const fkPlugin: PluginDefinition = {
   name: "fk",
-  keys: ["x", "y", "length", "rotation", "weight"],
+  keys: ["x", "y", "length", "rotation", "weight", "minRotation", "maxRotation"],
   requirements: {
     base: { description: "the parent bone or root this bone hangs from" },
     solver: { description: "the IK solver providing solved rotation override" },

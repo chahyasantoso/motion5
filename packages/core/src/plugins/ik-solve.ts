@@ -12,7 +12,7 @@ import type { SolveResult } from "./ik-result";
  * strategy needs and nothing it would have to re-derive: the closed form gets the proven pair and
  * its one goal as values rather than an array it indexes on trust, and FABRIK gets the whole member
  * list. `solveChain` reads it with a `switch` that ends in `unreachable`, so a third shape added
- * here (constrained solving is the next one issue #349 plans) fails to compile at the one site that
+ * here (as `constrained` was, in issue #349's third phase) fails to compile at the one site that
  * has to answer it instead of falling through a predicate chain to whichever branch was last.
  *
  * Closed rather than an open registry of `accepts` predicates. A registry would let a strategy be
@@ -31,12 +31,18 @@ export type ChainShape =
       readonly second: SolveMember;
       readonly goal: WorldFrame;
     }
-  | { readonly kind: "tree"; readonly members: readonly SolveMember[] };
+  | { readonly kind: "tree"; readonly members: readonly SolveMember[] }
+  | { readonly kind: "constrained"; readonly members: readonly SolveMember[] };
 
 /**
  * The shape of one chain, or a throw when it has no goal at all.
  *
- * Two members and one goal take the closed form, and everything else takes FABRIK. The goal count
+ * A chain with any limited member is `constrained` and takes FABRIK even at arity two, because the
+ * closed form solves without the limit and clamping its answer afterwards would constrain a pose
+ * that was never solved under it. The goal refusal is read first, so a limited chain with no goal
+ * throws the same message an unlimited one does. See ADR-108.
+ *
+ * Otherwise two members and one goal take the closed form, and everything else takes FABRIK. The goal count
  * is read off the members because `readSolveMembers` joined every goal onto the member it belongs
  * to; every key `readGoals` produces is a member id, so the count is the map's size by
  * construction.
@@ -55,6 +61,7 @@ export function chainShape(members: readonly SolveMember[]): ChainShape {
       `ikPlugin requires at least one goal; ${members.length} members received none.`,
     );
   }
+  if (members.some((member) => member.limit !== undefined)) return { kind: "constrained", members };
   const [first, second] = members;
   if (members.length === 2 && goals.length === 1 && first !== undefined && second !== undefined) {
     return { kind: "two-bone", first, second, goal };
@@ -98,7 +105,10 @@ export function solveChain(
   switch (shape.kind) {
     case "two-bone":
       return solveTwoBone(root, shape.goal, shape.first, shape.second, flip);
-    case "tree": {
+    case "tree":
+    case "constrained": {
+      // The constrained arm shares the tree's body because FABRIK reads each member's limit itself;
+      // the variant exists so the dispatch decision is visible and the closed form is never picked.
       // `pivots` and `tips` are FABRIK's own and stay behind: the analytic path carries neither,
       // so returning them here would make the result's shape a function of arity. The quality
       // record travels, because both strategies state one, but nothing publishes it. Roughly four

@@ -1,4 +1,5 @@
 import { segmentExtent, ZERO_PIVOT_OFFSET, type PivotOffset, type WorldFrame } from "./frame";
+import type { JointRange } from "./ik-constraint";
 
 /**
  * One member as every solve strategy reads it: its id, the node it hangs from, its segment length,
@@ -27,6 +28,10 @@ import { segmentExtent, ZERO_PIVOT_OFFSET, type PivotOffset, type WorldFrame } f
  * an explicit zero and an absent offset solve to the same doubles. The adapter always supplies it.
  *
  * `goal` is present only on a chain leaf the author addressed, under either goal spelling.
+ *
+ * `limit` is present only on a member that declared a range, and absent means free, exactly as an
+ * absent `pivot` means zero. Carrying the range variant alone keeps "is this chain constrained" a
+ * presence test rather than a second read of a union the adapter already read. See ADR-108.
  */
 export interface SolveMember {
   readonly id: string;
@@ -34,6 +39,7 @@ export interface SolveMember {
   readonly length: number;
   readonly pivot?: PivotOffset;
   readonly goal?: WorldFrame;
+  readonly limit?: JointRange;
 }
 
 /**
