@@ -8,7 +8,7 @@ import type {
   TrackDefinition,
 } from "../contract/v5";
 import { diagnostic } from "../contract/diagnostics";
-import { acceptedOutcome, readOutcome, refusedOutcome, type Outcome } from "../domain/outcome";
+import { acceptedOutcome, readOutcome, refusedOutcome, type Outcome } from "../lang/outcome";
 import { readPluginBindings, readPluginValues } from "../contract/keyframe-shape";
 import { PLUGIN_GOALS_SLOT } from "../contract/solver-slots";
 import { compareCodeUnits } from "./compare";
@@ -219,7 +219,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
-export type ResolvedEdge = Outcome<GraphEdge>;
+export type ResolvedEdge = Outcome<GraphEdge, Diagnostic>;
 
 const BIND_INSTEAD = "Bind the dependency under keyframes.<plugin>.requires instead.";
 const TARGET_UNSUPPORTED = `Observation target is not supported; an observes entry declares an output edge and names no destination key. ${BIND_INSTEAD}`;

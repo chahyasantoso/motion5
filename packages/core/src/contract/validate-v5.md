@@ -79,5 +79,7 @@ reference resolution, duplicate edges, cycles, solver resolution, and graph diag
 module imports no graph implementation and recombines no graph diagnostics. The composed public
 entry point is `packages/core/src/validate-v5.ts`, which runs this validator and then the graph
 builder in that order; see its sister document for the folding rule and for why the composition
-lives outside the contract layer. Returning `Outcome<ProjectDefinition>` is what makes an accepted
-null project and a refusal without a reason both unrepresentable.
+lives outside the contract layer. Returning `Outcome<ProjectDefinition, Diagnostic>` is what
+makes an accepted null project and a refusal without a reason both unrepresentable. The error
+type is named rather than defaulted, because ADR-103 moved the algebra to `lang/` and left it
+with no knowledge of this layer's diagnostic.
