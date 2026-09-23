@@ -86,6 +86,7 @@ function family(quality: SolveQuality): "closed-form" | "iterative" {
     case "converged":
     case "stalled":
     case "iteration-cap":
+    case "limited":
       return "iterative";
     default:
       return unreachable(quality);
@@ -209,10 +210,17 @@ describe("one solve result for every strategy", () => {
       "converged",
       "stalled",
       "iteration-cap",
+      "limited",
     ];
     for (const kind of closedKinds) expect(family({ kind, residual: 0 })).toBe("closed-form");
     for (const kind of iterativeKinds)
-      expect(family({ kind, iterations: 0, residual: 0 })).toBe("iterative");
+      expect(
+        family(
+          kind === "limited"
+            ? { kind, iterations: 0, residual: 0, atBound: [] }
+            : { kind, iterations: 0, residual: 0 },
+        ),
+      ).toBe("iterative");
   });
 
   it("IR-8 a value outside the union is refused by name rather than read as a family", () => {

@@ -3,6 +3,7 @@ import type { ImmutableRecord } from "../domain/values";
 import { readFrame } from "./frame";
 import { readGoals, readMembers, readSolveMembers } from "./ik-chain";
 import { solveChain } from "./ik-solve";
+import { readBend } from "./ik-constraint";
 
 /**
  * The `ik` plugin: its declaration and the wiring from its slots to a solve, and nothing else.
@@ -33,7 +34,7 @@ import { solveChain } from "./ik-solve";
  */
 export const ikPlugin: PluginDefinition = {
   name: "ik",
-  keys: ["flip"],
+  keys: ["flip", "bend"],
   requirements: {
     root: { description: "base frame of the solver chain" },
     target: { description: "target position to reach" },
@@ -45,7 +46,7 @@ export const ikPlugin: PluginDefinition = {
     const root = readFrame(inputs.root);
     const members = readMembers(inputs.members);
     const goals = readGoals(inputs.target, members);
-    const flip = Boolean(values.flip);
+    const flip = readBend(values);
     const { rotations } = solveChain(root, readSolveMembers(members, goals), flip);
     return Object.freeze({
       ...values,

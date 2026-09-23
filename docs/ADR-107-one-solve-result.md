@@ -1,5 +1,7 @@
 # ADR-107: One solve result for every IK strategy
 
+**Amended by [ADR-108](./ADR-108-constrained-2d-solving.md).**
+
 **Status:** Proposed as issue [#349](https://github.com/chahyasantoso/motion5/issues/349) phase 2, 2026-09-23, against `main` at `95bef276`. Accepted when its pull request merges.
 
 ## Invariant

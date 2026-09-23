@@ -49,7 +49,13 @@ export type SolveQuality =
   | { readonly kind: "coincident"; readonly residual: number }
   | { readonly kind: "converged"; readonly iterations: number; readonly residual: number }
   | { readonly kind: "stalled"; readonly iterations: number; readonly residual: number }
-  | { readonly kind: "iteration-cap"; readonly iterations: number; readonly residual: number };
+  | { readonly kind: "iteration-cap"; readonly iterations: number; readonly residual: number }
+  | {
+      readonly kind: "limited";
+      readonly iterations: number;
+      readonly residual: number;
+      readonly atBound: readonly string[];
+    };
 
 /** The kinds the closed form can answer with, as a subset of the union rather than a second one. */
 export type ClosedFormQuality = Extract<
@@ -60,5 +66,5 @@ export type ClosedFormQuality = Extract<
 /** The kinds FABRIK can answer with, as a subset of the union rather than a second one. */
 export type IterativeQuality = Extract<
   SolveQuality,
-  { readonly kind: "converged" | "stalled" | "iteration-cap" }
+  { readonly kind: "converged" | "stalled" | "iteration-cap" | "limited" }
 >;

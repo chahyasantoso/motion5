@@ -132,6 +132,32 @@ Both of those rules speak only about a node that bound a solver somewhere, and t
 
 The `weight` those two rules police is the blend between a bone's authored rest pose and its solver's output, per member rather than per solver, so a chain can stagger its reach. It defaults to `1`, which is the unconditional override every rig had before the key existed, `0` is exactly the authored rotation with the solve discarded, and anything between takes the shorter of the two arcs between them. Values outside `[0, 1]`, from an overshoot-easing curve for instance, are clamped rather than extrapolated, and a non-finite weight reads as `1`, identically to omitting the key. See ADR-055.
 
+Constrained solving ([ADR-108](../ADR-108-constrained-2d-solving.md)) adds six load rules for
+joint limits and the bend hint:
+
+- `ik-limit-malformed`, when `minRotation` or `maxRotation`, flat or under any group, is not a finite
+  static number in `[-180, 180]`. Animated limits are not supported; author a static bound. A flat
+  keyframed bound is refused too, because the solve reads flat and grouped spellings as one key.
+- `ik-limit-empty`, when the resolved minimum is greater than the resolved maximum. Omit either bound
+  to use `-180` or `180` respectively.
+- `ik-limit-without-solver`, when a member authors a rotation limit under a group that does not bind
+  `solver` there, or flat on a node that binds no solver at all. Limit keys are solver vocabulary, so
+  `spring.values.minRotation` beside `fk.values.solver` is refused rather than silently constraining
+  the solve. Put the limit in the group whose solver controls that member.
+- `ik-bend-malformed`, when a solver's `bend` value, flat or under the group that bound its `root`,
+  is not the static string `"positive"` or `"negative"`.
+- `ik-bend-conflicts-flip`, when one solver authors both `bend` and the legacy `flip` spelling, in any
+  mix of flat and grouped under the group that bound its `root`. Use `bend` alone; `"positive"` is
+  `flip: true` and bends the elbow toward increasing rotation, and `"negative"` is `flip: false`.
+- `ik-solver-key-misgrouped`, when a solver node authors `bend` or `flip` under a group that did not
+  bind its `root`. The solve reads the flattened values, so `spring.values.bend` beside
+  `ik.requires.root` would steer the solve from a group that does not own it. Author the key flat or
+  under the group that bound `root`. On a node that bound no `root` these keys are not solver
+  vocabulary, so another plugin's own `bend` or `flip` there is neither read nor refused.
+
+An out-of-range solved angle is not an error: the solve moves it to the bound nearer on the circle,
+so `[90, 170]` answers `-170` with `170`, and a miss caused by a bound is reported as `limited` quality.
+
 Goal addressing has six rules of its own, and they are answered during graph construction rather than by the contract layer, because membership is derived from `solver` edges and the contract layer holds no graph:
 
 - `ik-goal-unknown-member`, when a key inside `targets` qualifies to no member of that solver's chain.

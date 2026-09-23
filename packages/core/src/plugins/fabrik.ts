@@ -7,6 +7,15 @@ import {
   type WorldPoint,
 } from "./frame";
 import { solveLength, solveOffset, type SolveMember } from "./ik-member";
+import { unreachable } from "../lang/exhaustive";
+import {
+  atBound,
+  FREE_JOINT,
+  limitRotation,
+  restDirection,
+  wrapRotation,
+  type JointLimit,
+} from "./ik-constraint";
 import type { IterativeQuality, SolveResult } from "./ik-result";
 
 /**
@@ -227,6 +236,7 @@ export function solveFabrik(
   const lengthOf = (id: string): number => solveLength(byId.get(id)!);
   const offsetOf = (id: string): PivotOffset => solveOffset(byId.get(id)!);
   const goalOf = (id: string): WorldFrame | undefined => byId.get(id)!.goal;
+  const limitOf = (id: string): JointLimit => byId.get(id)!.limit ?? FREE_JOINT;
   /**
    * Depth from the root, and a refusal if the bases cycle.
    *
@@ -276,7 +286,8 @@ export function solveFabrik(
   const worldDirection = (id: string): number => {
     const pivot = pivots.get(id)!;
     const tip = tips.get(id)!;
-    if (tip.x === pivot.x && tip.y === pivot.y) return baseDirection(id);
+    if (tip.x === pivot.x && tip.y === pivot.y)
+      return restDirection(limitOf(id), baseDirection(id));
     return Math.atan2(tip.y - pivot.y, tip.x - pivot.x) * DEGREES;
   };
   /** The direction the node a member hangs off is pointing, which is the frame its offset is in. */
@@ -344,11 +355,45 @@ export function solveFabrik(
    * That makes the pass exactly `fk`'s own forward composition over the current tip guesses, which
    * is what makes an offset chain's pose one the runtime can actually compose.
    */
+  /**
+   * Where a placed tip may actually go: unchanged for a free joint, and for a limited one turned
+   * about its pivot onto the legal local angle nearest the placed one. Enforced here, inside the
+   * pass that enforces lengths, so every later iteration starts from a legal pose and the published
+   * angle is legal because the pose is, not because the output was clamped afterwards. See ADR-108.
+   */
+  const limitTip = (
+    id: string,
+    pivot: FabrikPoint,
+    placed: FabrikPoint,
+    length: number,
+  ): FabrikPoint => {
+    const limit = limitOf(id);
+    switch (limit.kind) {
+      case "free":
+        return placed;
+      case "range": {
+        if (length <= 0) return placed;
+        const base = baseDirection(id);
+        const local = wrapRotation(
+          Math.atan2(placed.y - pivot.y, placed.x - pivot.x) * DEGREES - base,
+        );
+        const bounded = limitRotation(limit, local);
+        if (bounded === local) return placed;
+        return Object.freeze({
+          x: pivot.x + length * Math.cos((base + bounded) * RADIANS),
+          y: pivot.y + length * Math.sin((base + bounded) * RADIANS),
+        });
+      }
+      default:
+        return unreachable(limit);
+    }
+  };
   const outward = (): void => {
     for (const id of ids) {
       const pivot = Object.freeze(pivotFromBaseTip(originOf(id), baseDirection(id), offsetOf(id)));
       pivots.set(id, pivot);
-      tips.set(id, place(pivot, tips.get(id)!, lengthOf(id)));
+      const length = lengthOf(id);
+      tips.set(id, limitTip(id, pivot, place(pivot, tips.get(id)!, length), length));
     }
   };
   /** The worst goal shortfall over addressed leaves: the worst, so no branch hides behind a mean. */
@@ -420,13 +465,22 @@ export function solveFabrik(
   const rotations: Record<string, number> = {};
   const solvedPivots: Record<string, FabrikPoint> = {};
   const solvedTips: Record<string, FabrikPoint> = {};
+  const atBounds: string[] = [];
   for (const id of ids) {
-    rotations[id] = worldDirection(id) - baseDirection(id);
+    // A free joint's `limitRotation` is the identity, so its published angle is the expression it
+    // always was, byte for byte. A limited one is already legal from the outward pass and is read
+    // through the same owner, which only wraps it into the declared domain.
+    const limit = limitOf(id);
+    const local = limitRotation(limit, worldDirection(id) - baseDirection(id));
+    rotations[id] = local;
+    if (atBound(limit, local)) atBounds.push(id);
     solvedPivots[id] = pivots.get(id)!;
     solvedTips[id] = tips.get(id)!;
   }
   let quality: IterativeQuality;
-  if (residual <= FABRIK_TOLERANCE) quality = { kind: "converged", iterations, residual };
+  if (residual > FABRIK_TOLERANCE && atBounds.length > 0)
+    quality = { kind: "limited", iterations, residual, atBound: Object.freeze(atBounds) };
+  else if (residual <= FABRIK_TOLERANCE) quality = { kind: "converged", iterations, residual };
   else if (stalled) quality = { kind: "stalled", iterations, residual };
   else quality = { kind: "iteration-cap", iterations, residual };
   return Object.freeze({

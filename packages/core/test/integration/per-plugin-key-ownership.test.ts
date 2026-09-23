@@ -74,7 +74,15 @@ describe("per-plugin keyframe key ownership", () => {
     // `x` and `y` are the pivot offset from slice A of issue #195, and `weight` is the solved-rotation
     // blend from issue #211. What each of them means is `FO-2`'s, `FO-4`'s and `WT-5`'s subject; this
     // case owns the claimed list, so it is the one that moves when it grows.
-    expect(fkPlugin.keys).toEqual(["x", "y", "length", "rotation", "weight"]);
+    expect(fkPlugin.keys).toEqual([
+      "x",
+      "y",
+      "length",
+      "rotation",
+      "weight",
+      "minRotation",
+      "maxRotation",
+    ]);
 
     // `rotation` is claimed and produced. The authored value is this bone's rotation relative to
     // its parent; the composed one is its rotation in world space, which is what a child observes

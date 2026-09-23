@@ -278,6 +278,11 @@
     {
       "id": "live-value-composition",
       "test": "packages/core/test/integration/live-value-composition.test.ts"
+    },
+    { "id": "ik-constraint", "test": "packages/core/test/unit/plugins/ik-constraint.test.ts" },
+    {
+      "id": "solver-constraints",
+      "test": "packages/core/test/unit/graph/solver-constraints.test.ts"
     }
   ]
 }

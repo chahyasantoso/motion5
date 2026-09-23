@@ -3,11 +3,11 @@
 Current project state only. Replace stale entries rather than append history. The four sections below are the complete shape, **Now** and **Next in line** carry exactly one bullet each, and no bullet states a phase; `packages/core/test/unit/scripts/session-status-shape.test.ts` enforces all three and the byte ceiling.
 
 - **Captured:** 2026-09-23, Asia/Jakarta.
-- **Read against:** `main` at `95bef276`; [#481](https://github.com/chahyasantoso/motion5/pull/481) is merged. The phase 2 pull request is unmerged; a prepared checkpoint is not landed code.
+- **Read against:** `main` at `c03c6b19`; phase 2 ([#483](https://github.com/chahyasantoso/motion5/pull/483)) is merged as [ADR-107](./ADR-107-one-solve-result.md).
 
 ## Now
 
-- **One IK solve result, the second step of [#349](https://github.com/chahyasantoso/motion5/issues/349), is in review:** both `ik` strategies and both arms of `solveChain` return one `SolveResult` (`plugins/ik-result.ts`) carrying `rotations` and a flat closed `SolveQuality` union with a residual on every kind; `ik.ts` still publishes `rotations` only. [ADR-107](./ADR-107-one-solve-result.md) records it. Nothing in it has landed on `main`, and no green run is claimed here; the pull request carries its CI evidence.
+- **Constrained 2D IK for [#349](https://github.com/chahyasantoso/motion5/issues/349) is in review:** static per-member FK angle limits, solver bend hints, six named load rules, constrained FABRIK, and limited solve quality are implemented as [ADR-108](./ADR-108-constrained-2d-solving.md). No merge is claimed here; the pull request carries its test, scan, and corpus evidence.
 
 ## Next in line
 
@@ -17,7 +17,7 @@ Current project state only. Replace stale entries rather than append history. Th
 
 - [Issue #328](https://github.com/chahyasantoso/motion5/issues/328) remains open for remaining activation/failure-recovery exercises, lifecycle limits, and maintenance usage/replacement validation before any separately confirmed retirement. Historical workflows and the manual formatting escape hatch are retained; dependency maintenance through the bounded API protocol remains disabled.
 - [Issue #411](https://github.com/chahyasantoso/motion5/issues/411) stays open on a recorded refusal rather than a fix: a drain replays at the frame it deferred, so the assertion it recommends cannot distinguish the two implementations it is about. `deferred-frame-loss.test.ts` says what each of its cases actually pins, and #417's unreached-frame case is the witness it asked for.
-- [Issue #349](https://github.com/chahyasantoso/motion5/issues/349) holds the 2D IK/FK contract study; phase 1 landed as [ADR-106](./ADR-106-one-owner-per-ik-solve-question.md), phases 3 through 8 are planned there and none has started, and [#482](https://github.com/chahyasantoso/motion5/issues/482) owns the negative-length disagreement between `fk` and the solves.
+- [Issue #349](https://github.com/chahyasantoso/motion5/issues/349) holds the 2D IK/FK contract study; phase 1 landed as [ADR-106](./ADR-106-one-owner-per-ik-solve-question.md), and remaining phases stay planned there. [#482](https://github.com/chahyasantoso/motion5/issues/482) owns the negative-length disagreement between `fk` and the solves.
 - Packaging follows the current work. [IMPLEMENTATION-PLAN.md](./IMPLEMENTATION-PLAN.md) owns scope; no implementation is claimed here.
 
 ## Where the rest of it lives

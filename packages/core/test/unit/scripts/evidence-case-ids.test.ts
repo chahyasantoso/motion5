@@ -184,6 +184,11 @@ import { fileURLToPath } from "node:url";
 // ninth two-letter series, under the policy the `P-` paragraph sets, and `F-` alone is the authored
 // keyframe group series.
 //
+// `CL-` belongs to constrained 2D IK, issue #349 phase 3 and ADR-108: the authored limit and bend
+// contract, its five graph refusals, constrained FABRIK dispatch, bounded rotations, zero-extent
+// members, and the limited quality result. `FB-` owns unconstrained FABRIK; `CL-` owns what changes
+// when a member carries a range and how that range is refused or enforced.
+//
 // `PV-` belongs to offset-aware solving, issue #214 and ADR-054: that both solves account for the
 // pivot offset `fk` applies, that the closed form survives it as a fixed base point and a rigid
 // link with a twist, that the iterative one carries pivots beside tips, that a shared sub-base
@@ -369,7 +374,7 @@ const TEST_FILE = /\.test\.tsx?$/;
 // this pattern belongs beside the pattern rather than once per series, so those paragraphs now
 // say what a series owns and this one says where it sorts. Issue #294.
 const CASE_TITLE =
-  /it\(\s*"((?:AE|CF|CN|CS|DV|EV|FB|FO|IK|IR|LF|LV|MG|PK|PV|RA|RB|RS|SH|WT|B|C|D|E|F|G|H|J|K|L|M|N|P|Q|R|S|T|U|V|W|Y|Z)-\d+)/g;
+  /it\(\s*"((?:AE|CF|CL|CN|CS|DV|EV|FB|FO|IK|IR|LF|LV|MG|PK|PV|RA|RB|RS|SH|WT|B|C|D|E|F|G|H|J|K|L|M|N|P|Q|R|S|T|U|V|W|Y|Z)-\d+)/g;
 const REACT_RENDER = "packages/react/test/public-hook-render.test.ts";
 const SERIES_SHAPED_TITLE = /it\(\s*"([A-Z]{1,2}\d*)-(\d+)(?![\w-])/g;
 const SERIES_PREFIX = /^[A-Z]{1,2}$/;
