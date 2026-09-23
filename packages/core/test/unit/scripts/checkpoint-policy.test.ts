@@ -29,13 +29,18 @@ const PRELUDE = String.raw`
     MAX_TRANSPORT_BYTES,
     assemblyAggregate,
     assemblyRange,
+    assemblyRelation,
     checkpointChain,
     checkpointFiles,
     checkpointManifest,
+    checkpointStore,
+    compareRelation,
     confinedAssemblyCommit,
+    descends,
     parsePatch,
     patchDigest,
     reconcilePatch,
+    sealedRequest,
     sealedStore,
     transportBound,
   } from "./scripts/checkpoint-policy.mjs";
@@ -351,13 +356,15 @@ describe("a checkpoint request is sealed by its manifest and carried by an assem
           parents: [index === 0 ? A : sha(index)],
         }));
       assert.equal(MAX_ASSEMBLY_COMMITS, MAX_PATCHES + 4);
+      const bound = new RegExp("not within " + MAX_ASSEMBLY_COMMITS + " single-parent commits");
       assert.equal(assemblyRange(linear(1), A).length, 1);
       assert.equal(assemblyRange(linear(MAX_ASSEMBLY_COMMITS), A).length, MAX_ASSEMBLY_COMMITS);
       assert.throws(
         () => assemblyRange(linear(MAX_ASSEMBLY_COMMITS + 1), A),
-        /not within 24 single-parent commits/,
+        bound,
       );
-      assert.throws(() => assemblyRange([], A), /not within 24/);
+      assert.throws(() => assemblyRange([], A), bound);
+      assert.throws(() => assemblyRange(undefined, A), bound);
       assert.throws(() => assemblyRange(linear(2), B), /stale base: the assembly range starts at/);
       const root = linear(2);
       root[0] = { sha: root[0].sha, parents: [] };
@@ -371,6 +378,14 @@ describe("a checkpoint request is sealed by its manifest and carried by an assem
       const short = linear(1);
       short[0] = { sha: "e1", parents: [A] };
       assert.throws(() => assemblyRange(short, A), /full commit SHA/);
+      assert.throws(() => assemblyRange([null], A), /full commit SHA/);
+      // A range read from an API is validated as read, so a malformed parent is a refusal.
+      for (const parents of [undefined, "a", [1], ["e1"]])
+        assert.throws(
+          () => assemblyRange([{ sha: sha(1), parents }], A),
+          /needs its parents as full commit SHAs/,
+          String(parents),
+        );
     `);
   });
 
@@ -420,8 +435,63 @@ describe("a checkpoint request is sealed by its manifest and carried by an assem
       assert.equal(MAX_TRANSPORT_BYTES, 32000);
       transportBound("m", 0);
       transportBound("m", MAX_TRANSPORT_BYTES);
-      for (const size of [MAX_TRANSPORT_BYTES + 1, -1, 1.5, undefined, Infinity])
+      for (const size of [MAX_TRANSPORT_BYTES + 1, -1, 1.5, undefined, Infinity, NaN])
         assert.throws(() => transportBound("m", size), /per-file transport bound/, String(size));
+    `);
+  });
+
+  it("discovers the store once for both verifiers, and seals it with its manifest", () => {
+    scenario(String.raw`
+      const value = checkpointManifest(manifest());
+      const files = checkpointFiles(value);
+      const entry = (path, extra) => ({ path, mode: "100644", type: "blob", size: 10, ...extra });
+      const store = checkpointStore(files.slice().reverse().map((path) => entry(path)));
+      assert.deepEqual(store, { id: "cp001", files: files.slice().sort(), manifest: files[0] });
+      assert.equal(sealedRequest(manifest(), store).checkpoint, "cp001");
+      assert.throws(() => checkpointStore([]), /No checkpoint is stored under \.ai\/checkpoints/);
+      assert.throws(() => checkpointStore([entry("docs/x.md")]), /"docs\/x\.md" is not a checkpoint file/);
+      assert.throws(
+        () => checkpointStore([entry(files[0]), entry(".ai/checkpoints/cp002/manifest.json")]),
+        /Exactly one pending checkpoint is supported/,
+      );
+      for (const extra of [{ mode: "120000" }, { mode: "100755" }, { type: "commit", size: undefined }])
+        assert.throws(
+          () => checkpointStore([entry(files[0], extra)]),
+          /must be a regular file/,
+          JSON.stringify(extra),
+        );
+      assert.throws(
+        () => checkpointStore([entry(files[0], { size: MAX_TRANSPORT_BYTES + 1 })]),
+        /per-file transport bound/,
+      );
+      // Deleting the manifest is the first step of the repair, and it matches the workflow filter.
+      assert.throws(
+        () => checkpointStore([entry(files[1])]),
+        /nothing is sealed: ".*cp001\/manifest\.json" is absent.*expected refusal after deleting a manifest/,
+      );
+      const other = { ...manifest(), checkpoint: "cp002" };
+      assert.throws(() => sealedRequest(other, store), /The manifest names another checkpoint/);
+      const unsealed = checkpointStore([entry(files[0])]);
+      assert.throws(() => sealedRequest(manifest(), unsealed), /declared by the manifest but absent/);
+    `);
+  });
+
+  it("classifies a compare status exhaustively rather than as a boolean", () => {
+    scenario(String.raw`
+      for (const status of ["ahead", "identical", "behind", "diverged"])
+        assert.equal(compareRelation(status), status);
+      for (const status of [undefined, "", "Ahead", "unknown"])
+        assert.throws(() => compareRelation(status), /Unknown compare status/, String(status));
+      assert.equal(descends("ahead"), true);
+      assert.equal(descends("identical"), true);
+      assert.equal(descends("behind"), false);
+      assert.equal(descends("diverged"), false);
+      assert.throws(() => descends("unknown"), /Unknown compare status/);
+      assemblyRelation("ahead");
+      assert.throws(() => assemblyRelation("identical"), /the manifest base; nothing was assembled/);
+      assert.throws(() => assemblyRelation("behind"), /Stale base/);
+      assert.throws(() => assemblyRelation("diverged"), /Stale base/);
+      assert.throws(() => assemblyRelation("unknown"), /Unknown compare status/);
     `);
   });
 });
