@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "checkpoint": "cp003",
+  "base": "6fb6e9b8d75b187bd417fdb67f86af8d4c86770c",
+  "allow": [
+    "docs/",
+    "packages/core/src/",
+    "packages/core/test/"
+  ],
+  "patches": [
+    {
+      "seq": 1,
+      "file": "001-name-the-compiler-where-records-still-point.diff",
+      "sha256": "0c7f93134a5a178dd2817e0abe94660c175e0676750198d72193abcee5d60c0b",
+      "message": "docs(adr): point live records at the contract keyframe compiler (#474)",
+      "pre": {
+        "docs/ADR-050-bare-authored-leaf.md": "a0e7bf5392f35eae7e2c2927d71de5969a299d59",
+        "docs/ADR-060-animated-live-values.md": "0eae8d16771933347134bb90487ce284f0e14932",
+        "docs/ADR-097-a-rule-id-is-a-closed-union.md": "78d6536a9938c4fe3ddb917ab27cfa92e0c54e88",
+        "packages/core/src/domain/plugins.md": "0063aa1438d157f5a044d9156e94f7c812edae37",
+        "packages/core/test/contract/ids-ownership-at-the-producer.test.ts": "81b02ec9a0047b54619705720ad07b270f436e9a"
+      },
+      "post": {
+        "docs/ADR-050-bare-authored-leaf.md": "c440838f7084c8a604b76bbf093852786ed0967d",
+        "docs/ADR-060-animated-live-values.md": "d604e0bb410d6486e71f5a42885c2cb54507d5b4",
+        "docs/ADR-097-a-rule-id-is-a-closed-union.md": "27d847c12ddfebe2094975ffb902d45ffa1e8c8e",
+        "packages/core/src/domain/plugins.md": "68d4e492e5c72c20d72d044fa7cf18bac73fe766",
+        "packages/core/test/contract/ids-ownership-at-the-producer.test.ts": "745a4c8d5b20a6fe78cbc9b0d219ce00b7f4996a"
+      }
+    }
+  ]
+}
