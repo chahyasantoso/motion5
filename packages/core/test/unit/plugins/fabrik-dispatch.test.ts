@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { ikPlugin, readGoals, solveChain, solveTwoBone } from "../../../src/plugins/ik";
+import { readGoals, readSolveMembers } from "../../../src/plugins/ik-chain";
+import { solveTwoBone } from "../../../src/plugins/ik-analytic";
+import { ikPlugin } from "../../../src/plugins/ik";
+import { solveChain } from "../../../src/plugins/ik-solve";
 
 // Slice D3 of issue #195: the dispatcher, and what it is not allowed to change.
 //
@@ -8,10 +11,10 @@ import { ikPlugin, readGoals, solveChain, solveTwoBone } from "../../../src/plug
 // publish one convention by assertion rather than by construction. `FB-2` holds FABRIK to the
 // analytic numbers; the cases here hold the analytic path to itself.
 //
-// The fixtures are structural rather than annotated with `WorldFrame` and `MemberState`, and that is
-// a requirement rather than a shortcut. `PluginInputs` values are `ImmutableValue`, an interface has
-// no implicit index signature, and so an interface-annotated fixture cannot be handed to
-// `ikPlugin.compose` at all. `bone` and `tip` are the same pair `fabrik-solve.test.ts` uses.
+// The pure-solver fixtures are structural `SolveMember` records, while the authored fixtures retain
+// `values` and `progress` for the `ikPlugin.compose` and adapter checks. `PluginInputs` values are
+// `ImmutableValue`, an interface has no implicit index signature, and so an interface-annotated
+// authored fixture cannot be handed to `ikPlugin.compose` at all.
 
 type Frame = { x: number; y: number; rotation: number };
 
@@ -22,11 +25,19 @@ const SHOULDER = "walker/shoulder";
 const HAND = { x: 320, y: 340, rotation: 0 };
 
 function bone(id: string, base: string, length: number) {
+  return { id, base, length };
+}
+
+function authoredBone(id: string, base: string, length: number) {
   return { id, base, values: { length }, progress: 0 };
 }
 
 /** A chain leaf: the same member, plus the goal that makes it addressed. */
 function tip(id: string, base: string, length: number, goal: Frame) {
+  return { id, base, length, goal };
+}
+
+function authoredTip(id: string, base: string, length: number, goal: Frame) {
   return { id, base, values: { length }, progress: 0, goal };
 }
 
@@ -35,6 +46,11 @@ const ARM = [bone(UPPER, SHOULDER, 80), bone(FOREARM, UPPER, 60)];
 
 /** The same rig with the goal on the leaf, which is what the dict derives. */
 const ADDRESSED_ARM = [bone(UPPER, SHOULDER, 80), tip(FOREARM, UPPER, 60, HAND)];
+const AUTHORED_ARM = [authoredBone(UPPER, SHOULDER, 80), authoredBone(FOREARM, UPPER, 60)];
+const AUTHORED_ADDRESSED_ARM = [
+  authoredBone(UPPER, SHOULDER, 80),
+  authoredTip(FOREARM, UPPER, 60, HAND),
+];
 
 describe("the solve dispatches on derived shape (Slice D3)", () => {
   it("FB-9 two members and one goal are byte-identical to the closed form", () => {
@@ -43,29 +59,35 @@ describe("the solve dispatches on derived shape (Slice D3)", () => {
     // against literals copied out of it: a literal would keep passing if the dispatcher started
     // rounding, and it would stop meaning "unchanged" the first time the convention moved on purpose.
     for (const flip of [false, true]) {
-      const analytic = solveTwoBone(ROOT, HAND, ARM, flip);
-      const dispatched = solveChain(ROOT, ARM, readGoals(HAND, ARM), flip);
+      const analytic = solveTwoBone(ROOT, HAND, ARM[0]!, ARM[1]!, flip);
+      const dispatched = solveChain(ROOT, [{ ...ARM[0]! }, { ...ARM[1]!, goal: HAND }], flip);
       expect(dispatched).toEqual(analytic);
       expect(JSON.stringify(dispatched)).toEqual(JSON.stringify(analytic));
     }
 
     // And the two numbers ADR-051's worked rig is pinned by, so a dispatcher that routed this rig to
     // FABRIK would be caught by the convention rather than only by the byte comparison above.
-    const solved = solveChain(ROOT, ARM, readGoals(HAND, ARM), false);
+    const solved = solveChain(
+      ROOT,
+      readSolveMembers(AUTHORED_ARM, readGoals(HAND, AUTHORED_ARM)),
+      false,
+    );
     expect(solved[UPPER]).toBeCloseTo(40.168, 3);
     expect(solved[FOREARM]).toBeCloseTo(-51.3178, 4);
 
     // An unreachable target is the analytic clamp rather than a stalled iteration, on the same path.
     const far = { x: 400, y: 300, rotation: 0 };
-    expect(solveChain(ROOT, ARM, readGoals(far, ARM), false)).toEqual(
-      solveTwoBone(ROOT, far, ARM, false),
+    expect(solveChain(ROOT, [{ ...ARM[0]! }, { ...ARM[1]!, goal: far }], false)).toEqual(
+      solveTwoBone(ROOT, far, ARM[0]!, ARM[1]!, false),
     );
 
     // Dispatch reads shape, not spelling. The goal dict and the bare slot are one map by the time
     // `solveChain` sees them, so a rig re-expressed with `targets` takes the same path and lands on
     // the same doubles.
-    const addressed = solveChain(ROOT, ADDRESSED_ARM, readGoals(undefined, ADDRESSED_ARM), false);
-    expect(JSON.stringify(addressed)).toEqual(JSON.stringify(solveTwoBone(ROOT, HAND, ARM, false)));
+    const addressed = solveChain(ROOT, ADDRESSED_ARM, false);
+    expect(JSON.stringify(addressed)).toEqual(
+      JSON.stringify(solveTwoBone(ROOT, HAND, ARM[0]!, ARM[1]!, false)),
+    );
   });
 
   it("FB-13 a solve that does not converge publishes rotations and nothing else", () => {
@@ -80,9 +102,9 @@ describe("the solve dispatches on derived shape (Slice D3)", () => {
     // broken. A bare convergence boolean is also the C review's Blocker 1 waiting to happen again:
     // `renderableValues` skips a plain record and a scalar falls through to `target[key] = value`.
     const tail = [
-      bone("rig/t1", "rig/hip", 30),
-      bone("rig/t2", "rig/t1", 30),
-      tip("rig/t3", "rig/t2", 30, { x: 900, y: 300, rotation: 0 }),
+      authoredBone("rig/t1", "rig/hip", 30),
+      authoredBone("rig/t2", "rig/t1", 30),
+      authoredTip("rig/t3", "rig/t2", 30, { x: 900, y: 300, rotation: 0 }),
     ];
 
     const composed = ikPlugin.compose(
@@ -101,7 +123,7 @@ describe("the solve dispatches on derived shape (Slice D3)", () => {
     const analytic = ikPlugin.compose(
       { flip: false },
       0,
-      { root: ROOT, target: HAND, members: ARM },
+      { root: ROOT, target: HAND, members: AUTHORED_ARM },
       "walker/arm-solve",
     );
     expect(Object.keys(analytic).sort()).toEqual(Object.keys(composed).sort());
@@ -111,25 +133,27 @@ describe("the solve dispatches on derived shape (Slice D3)", () => {
     // `target` names no member, so something has to say which member it is a goal for. The leaf is
     // the only answer, and it is derived from the `base` fields the publisher already joined on
     // rather than from a second walk of the graph.
-    const goals = readGoals(HAND, ARM);
+    const goals = readGoals(HAND, AUTHORED_ARM);
     expect([...goals.keys()]).toEqual([FOREARM]);
     expect(goals.get(FOREARM)).toEqual(HAND);
 
     // A goal dict needs no target to read, and a member with no goal contributes none.
-    expect([...readGoals(undefined, ADDRESSED_ARM).keys()]).toEqual([FOREARM]);
-    expect(readGoals(undefined, ARM).size).toBe(0);
+    expect([...readGoals(undefined, AUTHORED_ADDRESSED_ARM).keys()]).toEqual([FOREARM]);
+    expect(readGoals(undefined, AUTHORED_ARM).size).toBe(0);
 
     // Two leaves and one bare target has no answer, and `ik-target-not-single-leaf` refuses the rig
     // at load, so this is the invariant guard behind that rule rather than a validation step. It
     // throws instead of picking a leaf, because a binding applied to an arbitrary member is the
     // shape ADR-033 rule 6 forbids.
-    const branched = [bone("rig/left", "rig/hip", 40), bone("rig/right", "rig/hip", 40)];
-    expect(() => readGoals(HAND, branched)).toThrow(/2 leaves/);
+    expect(() =>
+      readGoals(HAND, [
+        authoredBone("rig/left", "rig/hip", 40),
+        authoredBone("rig/right", "rig/hip", 40),
+      ]),
+    ).toThrow(/2 leaves/);
 
     // A solve with no goal at all is thrown rather than answered with the seed pose, which would
     // publish a rig reaching for nothing with status `ready`.
-    expect(() => solveChain(ROOT, ARM, new Map<string, Frame>(), false)).toThrow(
-      /at least one goal/,
-    );
+    expect(() => solveChain(ROOT, ARM, false)).toThrow(/at least one goal/);
   });
 });
