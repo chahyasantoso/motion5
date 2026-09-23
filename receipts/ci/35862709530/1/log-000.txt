@@ -1,0 +1,32 @@
+quality (node 24.21.0)	Run npm run typecheck	﻿2026-09-23T12:47:51.5011110Z ##[group]Run npm run typecheck
+quality (node 24.21.0)	Run npm run typecheck	2026-09-23T12:47:51.5011596Z ^[[36;1mnpm run typecheck^[[0m
+quality (node 24.21.0)	Run npm run typecheck	2026-09-23T12:47:51.5031968Z shell: /usr/bin/bash -e {0}
+quality (node 24.21.0)	Run npm run typecheck	2026-09-23T12:47:51.5032244Z env:
+quality (node 24.21.0)	Run npm run typecheck	2026-09-23T12:47:51.5032513Z   NODE_VERSION: 24.21.0
+quality (node 24.21.0)	Run npm run typecheck	2026-09-23T12:47:51.5032793Z   CI_EVIDENCE_DIR: /home/runner/work/_temp/ci-evidence
+quality (node 24.21.0)	Run npm run typecheck	2026-09-23T12:47:51.5033103Z ##[endgroup]
+quality (node 24.21.0)	Run npm run typecheck	2026-09-23T12:47:51.5743003Z 
+quality (node 24.21.0)	Run npm run typecheck	2026-09-23T12:47:51.5743708Z > motion5@0.0.0 typecheck
+quality (node 24.21.0)	Run npm run typecheck	2026-09-23T12:47:51.5744234Z > tsc --noEmit -p tsconfig.json
+quality (node 24.21.0)	Run npm run typecheck	2026-09-23T12:47:51.5744423Z 
+quality (node 24.21.0)	Run npm run typecheck	2026-09-23T12:47:55.8931295Z ##[error]packages/core/test/unit/plugins/ik-constraint.test.ts(59,31): error TS18048: 'fabrik.tips.fore' is possibly 'undefined'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-23T12:47:55.8937911Z ##[error]packages/core/test/unit/plugins/ik-constraint.test.ts(60,31): error TS18048: 'fabrik.tips.fore' is possibly 'undefined'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-23T12:47:55.8939769Z ##[error]packages/core/test/unit/plugins/ik-constraint.test.ts(139,31): error TS18048: 'result.tips.b' is possibly 'undefined'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-23T12:47:55.8941100Z ##[error]packages/core/test/unit/plugins/ik-constraint.test.ts(140,31): error TS18048: 'result.tips.b' is possibly 'undefined'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-23T12:47:55.9181923Z ##[error]Process completed with exit code 2.
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	﻿2026-09-23T12:49:09.0126168Z ##[group]Run test "$SUITE_RESULT" = success
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-23T12:49:09.0126904Z ^[[36;1mtest "$SUITE_RESULT" = success^[[0m
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-23T12:49:09.0363030Z shell: /usr/bin/bash -e {0}
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-23T12:49:09.0364002Z env:
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-23T12:49:09.0364409Z   NODE_VERSION: 24.21.0
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-23T12:49:09.0364839Z   SUITE_RESULT: failure
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-23T12:49:09.0365255Z ##[endgroup]
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-23T12:49:09.0522945Z ##[error]Process completed with exit code 1.
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	﻿2026-09-23T12:49:08.8255198Z ##[group]Run test "$SUITE_RESULT" = success
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-23T12:49:08.8256299Z ^[[36;1mtest "$SUITE_RESULT" = success^[[0m
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-23T12:49:08.8473412Z shell: /usr/bin/bash -e {0}
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-23T12:49:08.8474235Z env:
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-23T12:49:08.8474663Z   NODE_VERSION: 24.21.0
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-23T12:49:08.8475119Z   SUITE_RESULT: failure
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-23T12:49:08.8475565Z ##[endgroup]
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-23T12:49:08.8609941Z ##[error]Process completed with exit code 1.
