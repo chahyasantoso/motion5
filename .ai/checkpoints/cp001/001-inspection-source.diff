@@ -1,0 +1,355 @@
+diff --git a/packages/core/src/contract/rule-id.ts b/packages/core/src/contract/rule-id.ts
+index b454228..7158f69 100644
+--- a/packages/core/src/contract/rule-id.ts
++++ b/packages/core/src/contract/rule-id.ts
+@@ -111,11 +111,12 @@ export const BASE_RULE_IDS = [
+   "ik-goal-duplicate",
+   "ik-goal-not-leaf",
+   "ik-goal-unknown-member",
++  "ik-inspect-malformed",
+   "ik-leaf-without-goal",
+-  "ik-mode-ambiguous",
+   "ik-limit-empty",
+   "ik-limit-malformed",
+   "ik-limit-without-solver",
++  "ik-mode-ambiguous",
+   "ik-solved-rotation-dead",
+   "ik-solver-key-misgrouped",
+   "ik-solver-no-goal",
+diff --git a/packages/core/src/contract/rule.ts b/packages/core/src/contract/rule.ts
+index 662d495..ff60ec9 100644
+--- a/packages/core/src/contract/rule.ts
++++ b/packages/core/src/contract/rule.ts
+@@ -76,11 +76,12 @@ const BASE_RULES = {
+   "ik-goal-duplicate": ERROR_WITH_IDS,
+   "ik-goal-not-leaf": ERROR_WITH_IDS,
+   "ik-goal-unknown-member": ERROR_WITH_IDS,
++  "ik-inspect-malformed": ERROR_WITH_IDS,
+   "ik-leaf-without-goal": ERROR_WITH_IDS,
+-  "ik-mode-ambiguous": ERROR_WITH_IDS,
+   "ik-limit-empty": ERROR_WITH_IDS,
+   "ik-limit-malformed": ERROR_WITH_IDS,
+   "ik-limit-without-solver": ERROR_WITH_IDS,
++  "ik-mode-ambiguous": ERROR_WITH_IDS,
+   "ik-solved-rotation-dead": ERROR_WITH_IDS,
+   "ik-solver-key-misgrouped": ERROR_WITH_IDS,
+   "ik-solver-no-goal": ERROR_WITH_IDS,
+diff --git a/packages/core/src/contract/solver-constraints.ts b/packages/core/src/contract/solver-constraints.ts
+index 1b70e59..394576f 100644
+--- a/packages/core/src/contract/solver-constraints.ts
++++ b/packages/core/src/contract/solver-constraints.ts
+@@ -3,23 +3,27 @@ import { isKeyframeGroup, PLUGIN_VALUES_SECTION, readPluginValues } from "./keyf
+ 
+ /**
+  * The authored vocabulary of a constrained 2D solve, and the one owner of what a well-formed value
+- * of it is. See ADR-108.
++ * of it is. See ADR-108 and ADR-109.
+  *
+  * `minRotation` and `maxRotation` are per-member local-angle bounds in degrees, `bend` is the
+- * solver's branch hint and `flip` its older boolean spelling. The graph layer asks this module
+- * whether an authored value is well formed, and the runtime asks it whether a live value is in the
+- * limit domain, so the domain `[-180, 180]` is stated once and read by both.
++ * solver's branch hint and `flip` its older boolean spelling. `inspect` is the solver's static
++ * opt-in to its `inspection` output, and `inspection` is the name of that output, kept beside the
++ * switch so the authored name and the published one cannot drift apart. The graph layer asks this
++ * module whether an authored value is well formed, and the runtime asks it whether a live value is
++ * in the limit domain, so the domain `[-180, 180]` is stated once and read by both.
+  */
+ export const MIN_ROTATION_KEY = "minRotation" as const;
+ export const MAX_ROTATION_KEY = "maxRotation" as const;
+ export const BEND_KEY = "bend" as const;
+ export const FLIP_KEY = "flip" as const;
++export const INSPECT_KEY = "inspect" as const;
++export const INSPECTION_KEY = "inspection" as const;
+ 
+ export type LimitKey = typeof MIN_ROTATION_KEY | typeof MAX_ROTATION_KEY;
+ export const LIMIT_KEYS: readonly LimitKey[] = Object.freeze([MIN_ROTATION_KEY, MAX_ROTATION_KEY]);
+ 
+ /** A key the solver node authors itself, scoped to the group that bound its `root`. */
+-export type SolverKey = typeof BEND_KEY | typeof FLIP_KEY;
++export type SolverKey = typeof BEND_KEY | typeof FLIP_KEY | typeof INSPECT_KEY;
+ 
+ /** The bound an omitted `minRotation` means, and the floor of the limit domain. */
+ export const LIMIT_FLOOR = -180;
+@@ -93,6 +97,24 @@ export function classifyBend(value: unknown): BendAuthored {
+     : { kind: "malformed" };
+ }
+ 
++/**
++ * One authored `inspect` spelling, classified. There is no `absent` arm, unlike `BendAuthored`,
++ * because the rule reads only spellings `authoredSpellings` found, so every value here was written.
++ */
++export type InspectAuthored =
++  | { readonly kind: "valid"; readonly enabled: boolean }
++  | { readonly kind: "malformed" };
++
++/**
++ * Inspection is a static boolean opt-in, never an animated value, so a keyframed switch is refused.
++ */
++export function classifyInspect(value: unknown): InspectAuthored {
++  const leaf = readAuthoredLeaf(value);
++  return leaf.kind === "static" && typeof leaf.value === "boolean"
++    ? { kind: "valid", enabled: leaf.value }
++    : { kind: "malformed" };
++}
++
+ /** One authored spelling of a key on a track: grouped under a plugin, or flat (`group` undefined). */
+ export interface AuthoredSpelling {
+   readonly group: string | undefined;
+diff --git a/packages/core/src/graph/solver-constraints.ts b/packages/core/src/graph/solver-constraints.ts
+index cffb4e7..1169ca0 100644
+--- a/packages/core/src/graph/solver-constraints.ts
++++ b/packages/core/src/graph/solver-constraints.ts
+@@ -3,8 +3,10 @@ import {
+   authoredSpellings,
+   BEND_KEY,
+   classifyBend,
++  classifyInspect,
+   classifyLimit,
+   FLIP_KEY,
++  INSPECT_KEY,
+   LIMIT_KEYS,
+   type AuthoredSpelling,
+   type LimitKey,
+@@ -15,7 +17,8 @@ import type { Diagnostic } from "../contract/v5";
+ import type { GraphNode } from "./ir";
+ 
+ /**
+- * The six load rules of constrained 2D solving. See ADR-108.
++ * The load rules of the solver's authored constraints: the six of constrained 2D solving (ADR-108)
++ * and the inspection switch's one (ADR-109).
+  *
+  * **Every spelling, because the solve reads the flat bag.** A member's limits reach `ik` through
+  * the member's flattened values, where a flat `minRotation` and one grouped under any plugin are
+@@ -29,10 +32,12 @@ import type { GraphNode } from "./ir";
+  * already reads; flat, the node must bind a solver somewhere. `fk` is the one core claimant, so a
+  * second plugin claiming the name would already make the flat spelling ambiguous at the registry.
+  *
+- * **Solver keys belong to the node that bound `root`.** `bend` and `flip` are read by the solve of
+- * the node that bound `root`, flat or under the group that bound it, and by nothing else, so the
+- * rules read exactly those spellings. The first revision read them under any group on any node,
+- * which refused a third-party plugin's own `spring.values.bend` on a node that is no solver at all.
++ * **Solver keys belong to the node that bound `root`.** `bend`, `flip` and `inspect` are read by
++ * the `ik` composer of the node that bound `root`, flat or under the group that bound it, and by
++ * nothing else, so the rules read exactly those spellings through `solverSpellings`. The first
++ * revision read `bend` and `flip` under any group on any node, which refused a third-party plugin's
++ * own `spring.values.bend` on a node that is no solver at all; phase 4's first draft repeated that
++ * for `inspect`, and routing it through the same reader is what keeps the scope one decision.
+  */
+ 
+ /** The plugins under which this node bound `slot`, read from its derived edges. */
+@@ -134,8 +139,37 @@ function validateMemberLimits(node: GraphNode, diagnostics: Diagnostic[]): void
+   }
+ }
+ 
+-function validateSolverBend(node: GraphNode, diagnostics: Diagnostic[]): void {
+-  const roots = slotBinders(node, "root");
++function validateSolverInspect(
++  node: GraphNode,
++  roots: ReadonlySet<string>,
++  diagnostics: Diagnostic[],
++): void {
++  for (const spelling of solverSpellings(node, INSPECT_KEY, roots, diagnostics)) {
++    const inspect = classifyInspect(spelling.value);
++    switch (inspect.kind) {
++      case "valid":
++        break;
++      case "malformed":
++        diagnostics.push(
++          diagnostic(
++            "ik-inspect-malformed",
++            `${node.id}.keyframes.${spelling.path}`,
++            `Solver "${node.id}" has a malformed inspect switch; use one static boolean.`,
++            [node.id],
++          ),
++        );
++        break;
++      default:
++        unreachable(inspect);
++    }
++  }
++}
++
++function validateSolverBend(
++  node: GraphNode,
++  roots: ReadonlySet<string>,
++  diagnostics: Diagnostic[],
++): void {
+   const bends = solverSpellings(node, BEND_KEY, roots, diagnostics);
+   const flips = solverSpellings(node, FLIP_KEY, roots, diagnostics);
+   for (const spelling of bends) {
+@@ -177,6 +211,8 @@ export function validateSolverConstraints(
+ ): void {
+   for (const node of nodes) {
+     validateMemberLimits(node, diagnostics);
+-    validateSolverBend(node, diagnostics);
++    const roots = slotBinders(node, "root");
++    validateSolverBend(node, roots, diagnostics);
++    validateSolverInspect(node, roots, diagnostics);
+   }
+ }
+diff --git a/packages/core/src/plugins/ik-result.ts b/packages/core/src/plugins/ik-result.ts
+index 79b61f0..3db4c78 100644
+--- a/packages/core/src/plugins/ik-result.ts
++++ b/packages/core/src/plugins/ik-result.ts
+@@ -1,3 +1,5 @@
++import { unreachable } from "../lang/exhaustive";
++
+ /**
+  * What one IK solve answers: the local rotations it publishes, and how well they answer the goal.
+  *
+@@ -8,9 +10,9 @@
+  * now return this record and `solveChain` returns it from both arms, so the question has one shape
+  * whichever strategy answered it. See ADR-107.
+  *
+- * `rotations` is the only half anything publishes. `ik.ts` reads it and drops `quality`, because a
+- * solver's patch shape must not become a function of its arity and `FB-9` pins the published keys;
+- * the quality record is for a caller that diagnoses a solve, not for the patch.
++ * `rotations` is always published. An opted-in `inspection` output is a fixed-shape projection of
++ * `quality`; `ik.ts` owns the opt-in while this module owns the projection, so the solver's patch
++ * shape stays stable across arity and strategy. Unopted rigs keep the phase 3 output byte for byte.
+  */
+ export interface SolveResult<Q extends SolveQuality = SolveQuality> {
+   readonly rotations: Readonly<Record<string, number>>;
+@@ -68,3 +70,53 @@ export type IterativeQuality = Extract<
+   SolveQuality,
+   { readonly kind: "converged" | "stalled" | "iteration-cap" | "limited" }
+ >;
++
++/**
++ * The fixed-shape inspection record exposed when an IK author opts into solve inspection.
++ *
++ * A type alias rather than an interface on purpose: `PluginComposer` returns `ImmutableRecord`, an
++ * index-signature type, and TypeScript grants the implicit index signature to aliases only, so an
++ * interface here fails `typecheck` where `ik.ts` spreads it into the published values.
++ */
++export type SolveInspection = {
++  readonly kind: SolveQuality["kind"];
++  readonly residual: number;
++  readonly iterations: number;
++  readonly atBound: readonly string[];
++};
++
++const NO_BOUNDS: readonly string[] = Object.freeze([]);
++
++/** Projects every solve quality into one frozen shape suitable for a renderer-neutral output. */
++export function inspectSolve(quality: SolveQuality): SolveInspection {
++  switch (quality.kind) {
++    case "reached":
++    case "too-far":
++    case "too-near":
++    case "coincident":
++      return Object.freeze({
++        kind: quality.kind,
++        residual: quality.residual,
++        iterations: 0,
++        atBound: NO_BOUNDS,
++      });
++    case "converged":
++    case "stalled":
++    case "iteration-cap":
++      return Object.freeze({
++        kind: quality.kind,
++        residual: quality.residual,
++        iterations: quality.iterations,
++        atBound: NO_BOUNDS,
++      });
++    case "limited":
++      return Object.freeze({
++        kind: quality.kind,
++        residual: quality.residual,
++        iterations: quality.iterations,
++        atBound: Object.freeze([...quality.atBound]),
++      });
++    default:
++      return unreachable(quality);
++  }
++}
+diff --git a/packages/core/src/plugins/ik-solve.ts b/packages/core/src/plugins/ik-solve.ts
+index 2081bee..19085f9 100644
+--- a/packages/core/src/plugins/ik-solve.ts
++++ b/packages/core/src/plugins/ik-solve.ts
+@@ -90,7 +90,8 @@ export function chainShape(members: readonly SolveMember[]): ChainShape {
+  *
+  * Both arms return the one `SolveResult`, so what the chain's solve achieved has one shape
+  * whichever strategy answered it: the closed form's geometric kinds or FABRIK's iterative ones,
+- * read from one discriminant. `ik.ts` publishes `rotations` only. See `ik-result.ts` and ADR-107.
++ * read from one discriminant. `ik.ts` publishes `rotations`, and adds the fixed-shape `inspection`
++ * projection of `quality` only when its author opted in. See `ik-result.ts`, ADR-107 and ADR-109.
+  *
+  * Nothing here knows about a member's blend `weight`, and that is the ownership split rather than an
+  * omission. The solve publishes the exact angle that puts the tip on the goal, at every arity, and
+@@ -111,10 +112,10 @@ export function solveChain(
+       // the variant exists so the dispatch decision is visible and the closed form is never picked.
+       // `pivots` and `tips` are FABRIK's own and stay behind: the analytic path carries neither,
+       // so returning them here would make the result's shape a function of arity. The quality
+-      // record travels, because both strategies state one, but nothing publishes it. Roughly four
+-      // percent of ordinary reachable rigs do not reach tolerance before the cap, so a per-tick
+-      // report would be noise on rigs nobody would call broken. `FB-13` pins the published shape
+-      // and `docs/ADR-051-derived-solver-membership.md` records the decision.
++      // record travels, because both strategies state one, and it is published only as the opt-in
++      // `inspection` projection. Roughly four percent of ordinary reachable rigs do not reach
++      // tolerance before the cap, so an unrequested per-tick report would be noise on rigs nobody
++      // would call broken. `FB-13` pins the unopted shape and ADR-109 records the opt-in.
+       const { rotations, quality } = solveFabrik(root, shape.members, flip);
+       return Object.freeze({ rotations, quality });
+     }
+diff --git a/packages/core/src/plugins/ik.ts b/packages/core/src/plugins/ik.ts
+index fcc9f3a..4e84a63 100644
+--- a/packages/core/src/plugins/ik.ts
++++ b/packages/core/src/plugins/ik.ts
+@@ -1,9 +1,11 @@
++import { BEND_KEY, FLIP_KEY, INSPECTION_KEY, INSPECT_KEY } from "../contract/solver-constraints";
+ import type { PluginDefinition } from "../domain/plugins";
+ import type { ImmutableRecord } from "../domain/values";
+ import { readFrame } from "./frame";
+ import { readGoals, readMembers, readSolveMembers } from "./ik-chain";
+ import { solveChain } from "./ik-solve";
+ import { readBend } from "./ik-constraint";
++import { inspectSolve } from "./ik-result";
+ 
+ /**
+  * The `ik` plugin: its declaration and the wiring from its slots to a solve, and nothing else.
+@@ -26,6 +28,14 @@ import { readBend } from "./ik-constraint";
+  * `ik` on the same node. The spread is a correctness requirement of the chaining rule, not a style
+  * choice, and `IK-18` pins it.
+  *
++ * `inspection` is published only when the solver's own static `inspect` is exactly `true`, so its
++ * presence is a function of authoring rather than of arity or strategy, and an unopted patch keeps
++ * the keys and doubles it had before ADR-109. Both output names are declared in `outputs` for every
++ * registration, because ownership of a name is a property of the plugin, not of one rig. The value
++ * is `inspectSolve(quality)`, whose shape `ik-result.ts` owns; this module only decides whether to
++ * ask. `ik-inspect-malformed` refuses a non-boolean or keyframed switch at load, so the strict
++ * comparison is the whole runtime reading rather than a second validator.
++ *
+  * `targets` is an ordinary declared slot carrying `dict: true`, which is how the goal family reaches
+  * this plugin now. The slot set is enumerable again: the member ids belong to the rig, but they are
+  * keys inside one declared slot rather than slot names of their own, so `requirements` answers for
+@@ -34,23 +44,24 @@ import { readBend } from "./ik-constraint";
+  */
+ export const ikPlugin: PluginDefinition = {
+   name: "ik",
+-  keys: ["flip", "bend"],
++  keys: [FLIP_KEY, BEND_KEY, INSPECT_KEY],
+   requirements: {
+     root: { description: "base frame of the solver chain" },
+     target: { description: "target position to reach" },
+     targets: { description: "one goal per chain leaf, keyed by member id", dict: true },
+   },
+   stage: "compose",
+-  outputs: ["rotations"],
++  outputs: ["rotations", INSPECTION_KEY],
+   compose: (values, _progress, inputs) => {
+     const root = readFrame(inputs.root);
+     const members = readMembers(inputs.members);
+     const goals = readGoals(inputs.target, members);
+     const flip = readBend(values);
+-    const { rotations } = solveChain(root, readSolveMembers(members, goals), flip);
++    const { rotations, quality } = solveChain(root, readSolveMembers(members, goals), flip);
+     return Object.freeze({
+       ...values,
+       rotations: Object.freeze(rotations as unknown as ImmutableRecord),
++      ...(values[INSPECT_KEY] === true ? { [INSPECTION_KEY]: inspectSolve(quality) } : {}),
+     });
+   },
+ };
