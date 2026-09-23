@@ -24,7 +24,10 @@ const PRELUDE = String.raw`
   const { prepareCheckpoint, validateCheckpointCandidate } = await import(
     "./scripts/automation-checkpoint.mjs"
   );
-  const { checkpointChain, checkpointDigest } = await import("./scripts/checkpoint-policy.mjs");
+  const { MAX_ASSEMBLY_COMMITS, checkpointChain, checkpointDigest } = await import(
+    "./scripts/checkpoint-policy.mjs"
+  );
+  const RANGE_BOUND = new RegExp("not within " + MAX_ASSEMBLY_COMMITS + " single-parent commits");
   const LF = String.fromCharCode(10);
   const NUL = String.fromCharCode(0);
   const A = "a".repeat(40);
@@ -392,7 +395,7 @@ describe("a checkpoint applies in a disposable checkout and publishes what it de
       assert.equal(widest.candidate.commits.length, 2);
       await assert.rejects(
         assembled([...drafts(23), { ...ONE, ...TWO }, SEAL]),
-        /not within 24 single-parent commits/,
+        RANGE_BOUND,
       );
     `);
   }, 240000);
@@ -420,6 +423,11 @@ describe("a checkpoint applies in a disposable checkout and publishes what it de
         /declared by the manifest but absent; the manifest seals the request, so delete it, push the missing patches, then push the manifest again/,
       );
       await assert.rejects(assembled([ONE, SEAL]), /002-red-evidence-cases\.diff" is declared/);
+      // The first step of the repair deletes the manifest, and that push is refused by name.
+      await assert.rejects(
+        assembled([ONE, SEAL, { "manifest.json": null }]),
+        /nothing is sealed: .*manifest\.json" is absent.*expected refusal after deleting a manifest/,
+      );
       // The repair is new commits on top, never a force update: delete, push the rest, seal again.
       const healed = await assembled([ONE, SEAL, { "manifest.json": null }, TWO, SEAL]);
       assert.equal(healed.candidate.source_sha, healed.base);
@@ -453,6 +461,9 @@ describe("a checkpoint applies in a disposable checkout and publishes what it de
       assert.ok(candidate.includes("automation-checkpoint.mjs prepare"));
       assert.ok(candidate.includes('paths: [".ai/checkpoints/*/manifest.json"]'));
       assert.ok(candidate.includes("fetch-depth: 30"));
+      // The walk visits at most MAX_ASSEMBLY_COMMITS + 1 commits, so the base must be inside the fetch.
+      const depth = Number(/fetch-depth: ([0-9]+)/.exec(candidate)[1]);
+      assert.ok(depth > MAX_ASSEMBLY_COMMITS, "fetch-depth must exceed MAX_ASSEMBLY_COMMITS");
       assert.ok(candidate.includes("AI-Checkpoint-Set: "));
       assert.ok(reporter.includes("AI checkpoint"));
       assert.ok(reporter.includes("automation-checkpoint.mjs publish"));
@@ -474,7 +485,10 @@ const PUBLISH_PRELUDE = String.raw`
   const { buildCommits, checkpointSnapshot, reconcileCheckpointIntent } = await import(
     "./scripts/automation-checkpoint.mjs"
   );
-  const { checkpointDigest } = await import("./scripts/checkpoint-policy.mjs");
+  const { MAX_ASSEMBLY_COMMITS, checkpointDigest } = await import(
+    "./scripts/checkpoint-policy.mjs"
+  );
+  const RANGE_BOUND = new RegExp("not within " + MAX_ASSEMBLY_COMMITS + " single-parent commits");
   const LF = String.fromCharCode(10);
   const SET = "AI-Checkpoint-Set: ";
   const SRC = "packages/core/src/one.ts";
@@ -676,7 +690,11 @@ const PUBLISH_PRELUDE = String.raw`
         if (route === "/git/trees/t0?recursive=1") return Promise.resolve({ tree: baseTree });
         if (route === "/git/trees/t1?recursive=1") return Promise.resolve({ tree: headTree });
         if (route === "/compare/" + SOURCE + "..." + head)
-          return Promise.resolve({ status: settings.status, ahead_by: commits.length, commits });
+          return Promise.resolve({
+            status: settings.status,
+            ahead_by: settings.aheadBy ?? commits.length,
+            commits,
+          });
         throw new Error("unexpected route " + route);
       },
     };
@@ -721,7 +739,13 @@ describe("publication writes one commit per patch and never replays a hunk", () 
         [{ extraTree: [{ path: ".ai/checkpoints/cp001/x.txt", mode: "100644", type: "blob", sha: "3".repeat(40), size: 1 }] }, /x\.txt" is stored but not declared/],
         [{ patchSize: 32001 }, /per-file transport bound/],
         [{ status: "diverged" }, /Stale base/],
-        [{ range: 25 }, /not within 24 single-parent commits/],
+        [{ status: "behind" }, /Stale base/],
+        [{ status: "identical" }, /the manifest base; nothing was assembled/],
+        [{ status: "unknown" }, /Unknown compare status/],
+        [{ aheadBy: 4 }, /The assembly range read from GitHub is incomplete/],
+        [{ extraTree: [{ path: ".ai/checkpoints/cp002/manifest.json", mode: "100644", type: "blob", sha: "3".repeat(40), size: 1 }] }, /Exactly one pending checkpoint/],
+        [{ extraTree: [{ path: ".ai/checkpoints/cp001/link.diff", mode: "120000", type: "blob", sha: "3".repeat(40), size: 1 }] }, /link\.diff" must be a regular file/],
+        [{ range: MAX_ASSEMBLY_COMMITS + 1 }, RANGE_BOUND],
         [{ merge: true }, /has 2 parents; it needs exactly one/],
       ];
       for (const [options, pattern] of refusals) {
@@ -851,16 +875,28 @@ describe("publication writes one commit per patch and never replays a hunk", () 
         await reconcileCheckpointIntent(diverged.api, RUN, intent(diverged.candidate)),
         null,
       );
+      // A head that moved on past the candidate still contains it, so the publication is confirmed.
+      for (const compare of ["ahead", "identical"]) {
+        const ahead = world({ length: 2, head: "ab".repeat(20), compare });
+        assert.notEqual(await reconcileCheckpointIntent(ahead.api, RUN, intent(ahead.candidate)), null);
+      }
+      const behind = world({ length: 2, head: "ab".repeat(20), compare: "behind" });
+      assert.equal(await reconcileCheckpointIntent(behind.api, RUN, intent(behind.candidate)), null);
+      const unknown = world({ length: 2, head: "ab".repeat(20), compare: "unknown" });
+      await assert.rejects(
+        () => reconcileCheckpointIntent(unknown.api, RUN, intent(unknown.candidate)),
+        /Unknown compare status/,
+      );
       // ADR-102: the request commit may sit atop a multi-commit assembly range, read from GitHub.
       const assembledRange = world({ length: 2, range: 5 });
       assert.notEqual(
         await reconcileCheckpointIntent(assembledRange.api, RUN, intent(assembledRange.candidate)),
         null,
       );
-      const longRange = world({ length: 2, range: 25 });
+      const longRange = world({ length: 2, range: MAX_ASSEMBLY_COMMITS + 1 });
       await assert.rejects(
         () => reconcileCheckpointIntent(longRange.api, RUN, intent(longRange.candidate)),
-        /not within 24 single-parent commits/,
+        RANGE_BOUND,
       );
       const staleRange = world({ length: 2, rangeStatus: "diverged" });
       await assert.rejects(
