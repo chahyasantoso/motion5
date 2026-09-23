@@ -9,7 +9,6 @@ import {
   importsBoundary,
   importsCoreInternals,
   importsDomainLayer,
-  importsDomainSink,
   importsRenderer,
   importsTestingEntrypoint,
   scan,
@@ -129,37 +128,29 @@ describe("boundary scan predicates", () => {
     expect(importsBoundary(consumerInternalViolationFixture)).toBe(false);
   });
 
-  it("extracts every retired sink spelling from its module specifier", () => {
+  it("extracts every retired sink spelling as an ordinary inward import", () => {
     for (const source of [
       'import { unreachable } from "../domain/exhaustive.js";',
       'export { unreachable } from "../../domain/exhaustive.mjs";',
       'const load = import("../domain/exhaustive.ts");',
       'const load = require("..\\domain\\exhaustive");',
     ])
-      expect(importsDomainSink(source)).toBe(true);
+      expect(importsDomainLayer(source)).toBe(true);
   });
 
-  it("keeps legitimate domain imports, the new sink, aliases, and longer names clean", () => {
+  it("keeps the shared contract compiler, new sink, aliases, and longer names clean", () => {
     for (const source of [
-      'import { track } from "../domain/track";',
-      'import { track } from "../domain/track.ts";',
-      'import { compiler } from "../../domain/keyframe-compiler";',
-      'import type { Plugin } from "../../domain/plugins";',
-      'import type { Plugin } from "../../domain/plugins.js";',
+      'import { compiler } from "../../contract/keyframe-compiler";',
+      'import type { RenderMetadata } from "../../ports/render-metadata";',
       'import { exhaustive } from "../lang/exhaustive";',
       'import { helpers } from "../domain/exhaustive-helpers";',
       'import { sink } from "@motion5/core/domain/exhaustive";',
       "const load = import(path);",
     ])
-      expect(importsDomainSink(source)).toBe(false);
+      expect(importsDomainLayer(source)).toBe(false);
   });
 
-  it("reads any domain import for the broad rule and only the sink for the narrow one", () => {
-    // The two questions the scanner now asks, and the asymmetry between them is the whole point:
-    // `contract/` and `ports/` may not reach `domain/` at all, while `adapters/` still legitimately
-    // reaches `domain/keyframe-compiler` and `domain/plugins` and may only be held to the sink.
-    // Backslash normalisation and the `.js`/`.mjs`/`.ts` suffixes are shared, because one extractor
-    // owns them. See ADR-099 and ADR-103.
+  it("reads any inward domain import in all three outer layers", () => {
     for (const source of [
       'import { o } from "../lang/outcome";',
       'import { u } from "../lang/exhaustive";',
@@ -169,7 +160,6 @@ describe("boundary scan predicates", () => {
       "const load = import(path);",
     ]) {
       expect(importsDomainLayer(source)).toBe(false);
-      expect(importsDomainSink(source)).toBe(false);
     }
     for (const source of [
       'import { compiler } from "../../domain/keyframe-compiler";',
@@ -178,7 +168,6 @@ describe("boundary scan predicates", () => {
       'import { helpers } from "../domain/exhaustive-helpers";',
     ]) {
       expect(importsDomainLayer(source)).toBe(true);
-      expect(importsDomainSink(source)).toBe(false);
     }
     for (const source of [
       'import { unreachable } from "../domain/exhaustive.js";',
@@ -186,7 +175,6 @@ describe("boundary scan predicates", () => {
       'const load = require("..\\domain\\exhaustive");',
     ]) {
       expect(importsDomainLayer(source)).toBe(true);
-      expect(importsDomainSink(source)).toBe(true);
     }
   });
 
@@ -206,12 +194,11 @@ describe("boundary scan predicates", () => {
       'const pattern = /domain\//; // from "../domain/track" is prose here',
     ]) {
       expect(importsDomainLayer(source)).toBe(false);
-      expect(importsDomainSink(source)).toBe(false);
     }
     expect(importsDomainLayer('import /* interposed */ { u } from "../domain/track";')).toBe(true);
-    expect(importsDomainSink('const load = import(/* interposed */ "../domain/exhaustive");')).toBe(
-      true,
-    );
+    expect(
+      importsDomainLayer('const load = import(/* interposed */ "../domain/exhaustive");'),
+    ).toBe(true);
     const afterRegex = 'const pattern = /domain\//;\nimport { t } from "../domain/track";';
     expect(importsDomainLayer(afterRegex)).toBe(true);
     // A regular-expression literal is read whole, because it is the other place a comment opener
@@ -219,7 +206,7 @@ describe("boundary scan predicates", () => {
     // the import after it. Its body is not code either, so a specifier-shaped pattern is not an
     // import, and a division is still a division, so a comment after it is still prose.
     expect(importsDomainLayer('const p = /[/*]/;\nimport("../domain/x");')).toBe(true);
-    expect(importsDomainSink('const p = /[/*]/g;\nimport("../domain/exhaustive");')).toBe(true);
+    expect(importsDomainLayer('const p = /[/*]/g;\nimport("../domain/exhaustive");')).toBe(true);
     expect(importsDomainLayer('const pattern = /from "../domain/x"/;')).toBe(false);
     expect(importsDomainLayer('const half = total / 2; // from "../domain/x"')).toBe(false);
     expect(importsDomainLayer('const r = a / b / c;\nimport { t } from "../domain/track";')).toBe(
@@ -248,14 +235,13 @@ describe("boundary scan predicates", () => {
       'import { u } from ".././domain/exhaustive";',
       'import { u } from "..//domain//exhaustive.js";',
     ])
-      expect(importsDomainSink(source)).toBe(true);
+      expect(importsDomainLayer(source)).toBe(true);
     for (const source of [
       'import { x } from "../domainfoo";',
       'import { x } from "../domain-helpers/y";',
       'import { x } from "../domain/../lang/outcome";',
     ]) {
       expect(importsDomainLayer(source)).toBe(false);
-      expect(importsDomainSink(source)).toBe(false);
     }
   });
 
@@ -293,15 +279,8 @@ describe("boundary scan planted violations", () => {
     expect(violations).not.toContain("packages/vue/src/index.ts: renderer or engine import");
   });
 
-  // The three outer layers ADR-099 measured, now held to the two different rules ADR-103 split
-  // them into: `contract/` and `ports/` owe the whole inward direction, `adapters/` owes the sink
-  // alone. The planted imports say so by being different: the first two reach an ordinary domain
-  // module and are refused for reaching `domain/` at all, while the third reaches the retired sink
-  // and is refused by name. One file per layer, because `walk` does not sort and two files in one
-  // layer would make this assertion depend on `readdir` order. `lang/` is absent from this fixture
-  // on purpose: the shipped scanner running green against the real tree, in the case below, is what
-  // proves the new path passes, and a fixture cannot prove that about a directory it invents.
-  it("W-8: refuses contract and ports reaching domain, and adapters the sink", async () => {
+  // One planted file per layer proves the same inward rule covers adapters, ports, and contract.
+  it("W-8: refuses every outer layer reaching domain", async () => {
     const fixture = await mkdtemp(join(tmpdir(), "motion5-inward-dependency-"));
     try {
       await writeFile(join(fixture, "package.json"), PACKAGES_ONLY);
@@ -321,17 +300,14 @@ describe("boundary scan planted violations", () => {
       expect(violations).toEqual([
         "packages/core/src/contract/leak.ts: inward domain import",
         "packages/core/src/ports/leak.ts: inward domain import",
-        "packages/core/src/adapters/leak.ts: retired domain sink import",
+        "packages/core/src/adapters/leak.ts: inward domain import",
       ]);
     } finally {
       await rm(fixture, { recursive: true, force: true });
     }
   });
 
-  // The other half of that asymmetry, and the reason the broad rule stops at two layers: the three
-  // adapter imports of `domain/` ADR-099 measured are still legal, so a gate that refused them
-  // would have been introduced red. Deleting this case is how that fact gets lost.
-  it("keeps an adapter reaching an ordinary domain module clean", async () => {
+  it("refuses an adapter reaching an ordinary domain module", async () => {
     const fixture = await mkdtemp(join(tmpdir(), "motion5-adapter-domain-"));
     try {
       await writeFile(join(fixture, "package.json"), PACKAGES_ONLY);
@@ -340,7 +316,9 @@ describe("boundary scan planted violations", () => {
         join(fixture, "packages", "core", "src", "adapters", "reach.ts"),
         'import { compilePercentKeyframes } from "../../domain/keyframe-compiler";\n',
       );
-      expect(await scan(fixture)).toEqual([]);
+      expect(await scan(fixture)).toEqual([
+        "packages/core/src/adapters/reach.ts: inward domain import",
+      ]);
     } finally {
       await rm(fixture, { recursive: true, force: true });
     }

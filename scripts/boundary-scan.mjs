@@ -314,15 +314,9 @@ function* importSpecifiers(source) {
 /**
  * Any relative import of the domain layer, which is what ARCHITECTURE section 2 actually forbids.
  *
- * ADR-103 relocated the outcome algebra to `lang/` and dropped the `E = Diagnostic` default that
- * made it reach `contract/`. Those were the only two `contract/` imports of `domain/` in the tree,
- * so this predicate is green on `contract/` and on `ports/`, and it is applied to exactly those two
- * layers. `adapters/` keeps the narrower retired-sink rule below, because three real adapter
- * imports of `domain/` survive: `adapters/interpolator/gsap.ts` reaches `domain/keyframe-compiler`
- * for a value, and `adapters/dom.ts` plus `adapters/index.ts` reach `domain/plugins` type-only.
- * Widening this rule to adapters would refuse the tree it was added to, and a gate introduced red
- * earns an exemption list instead of a fix. ADR-099 named all three and ADR-103 records why they
- * stay their own slice.
+ * ADR-103 moved the outcome algebra out of domain. ADR-105 moves the shared keyframe compiler to
+ * contract and renderer metadata to ports, leaving contract, ports, and adapters without any
+ * inward domain imports. All three layers are checked by this same predicate.
  *
  * The anchor admits an absent trailing slash, so a bare `../domain` is refused alongside
  * `../domain/track`, and it reads canonical specifiers, so `./../domain/track`, `.././domain/track`
@@ -335,21 +329,6 @@ function* importSpecifiers(source) {
 export function importsDomainLayer(source) {
   for (const specifier of importSpecifiers(source))
     if (/^(?:\.\.\/)+domain(?:\/|$)/.test(specifier)) return true;
-  return false;
-}
-/**
- * The retired sink path, and only that path, for the one layer the broad rule cannot reach yet.
- *
- * Kept as its own question rather than folded into `importsDomainLayer`, because `adapters/` may
- * import `domain/` and may not import the sink. The extraction sees `.js`, `.mjs`, and `.ts`
- * suffixes plus either path separator, and the anchored path is why `../lang/exhaustive` and
- * `../domain/exhaustive-helpers` stay clean. `contract/` and `ports/` no longer carry this rule: a
- * retired-sink import is a `domain/` import, so `importsDomainLayer` already refuses it there, and
- * two spellings of one question is the duplication this project files against itself.
- */
-export function importsDomainSink(source) {
-  for (const specifier of importSpecifiers(source))
-    if (/^(?:\.\.\/)+domain\/exhaustive(?:\.(?:js|mjs|ts))?$/.test(specifier)) return true;
   return false;
 }
 export function bannedSymbol(source) {
@@ -374,10 +353,8 @@ function checkCoreSource(source, file, layer, violations) {
   if (layer !== "adapters" && (importsBoundary(source) || importsRenderer(source)))
     violations.push(`${file}: renderer or engine import`);
   if (bannedSymbol(source)) violations.push(`${file}: banned compatibility symbol`);
-  if (["contract", "ports"].includes(layer) && importsDomainLayer(source))
+  if (["contract", "ports", "adapters"].includes(layer) && importsDomainLayer(source))
     violations.push(`${file}: inward domain import`);
-  if (layer === "adapters" && importsDomainSink(source))
-    violations.push(`${file}: retired domain sink import`);
 }
 async function scanFiles(directory, scanRoot, layer, violations) {
   for (const path of await walk(directory)) {
