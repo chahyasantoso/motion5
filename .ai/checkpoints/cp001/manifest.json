@@ -1,0 +1,105 @@
+{
+  "version": 1,
+  "checkpoint": "cp001",
+  "base": "c03c6b1900a774b5becc223e0d0955d4c60a0e88",
+  "allow": [
+    "docs/",
+    "packages/core/src/",
+    "packages/core/test/"
+  ],
+  "patches": [
+    {
+      "seq": 1,
+      "file": "001-load-rules.diff",
+      "sha256": "bda361e48eb42bd24e37998b3b24e3acbf3587030c060551fd4d88296af64955",
+      "message": "feat(ik): refuse malformed, empty and unreachable joint limits and bend hints at load (#349)",
+      "pre": {
+        "packages/core/src/contract/rule-id.ts": "aa103582f03ad3c7e20fe775a314dd1b43afb0c0",
+        "packages/core/src/contract/rule.ts": "fc2201e610f91f15710c386a529693b61d07647d",
+        "packages/core/src/contract/solver-constraints.ts": null,
+        "packages/core/src/graph/ir.ts": "65b51b77b57654130cc7daaf913890f61b124372",
+        "packages/core/src/graph/solver-constraints.ts": null
+      },
+      "post": {
+        "packages/core/src/contract/rule-id.ts": "75161127b8cb2bd7a4c14341b60e15d214cc79b5",
+        "packages/core/src/contract/rule.ts": "ee34bbcbfcdf27f37688138f33a5968dc901335c",
+        "packages/core/src/contract/solver-constraints.ts": "faa285d745893cc6696e4ca5743241ce8eb07713",
+        "packages/core/src/graph/ir.ts": "6313dc4513d01e25b5f7297ead2a9fdeac3aebde",
+        "packages/core/src/graph/solver-constraints.ts": "70286a897f01fa6fde5c7627dfdf1a134cb09c4f"
+      }
+    },
+    {
+      "seq": 2,
+      "after": 1,
+      "file": "002-constrained-solve.diff",
+      "sha256": "1425cedc2e0bea71f2eed8d81c7a3361402c3c0ce545e36680a94450859fe760",
+      "message": "feat(ik): solve constrained 2D IK inside FABRIK, limited to the nearer bound (#349)",
+      "pre": {
+        "packages/core/src/plugins/fabrik.ts": "31c60b44fed8150341543cbb2abb438f9ff641ed",
+        "packages/core/src/plugins/fk.ts": "7df07db1fabed6fb84389e883d86c067c005445f",
+        "packages/core/src/plugins/ik-chain.ts": "ee02a133e0c16785ada3dedfa6ef5535486e4c47",
+        "packages/core/src/plugins/ik-constraint.ts": null,
+        "packages/core/src/plugins/ik-member.ts": "dee135e057e2eabdbf27d7f01d0dcb250e2f4faa",
+        "packages/core/src/plugins/ik-result.ts": "6cd193aa6eefb90acf93f7152e00b1275fe94aad",
+        "packages/core/src/plugins/ik-solve.ts": "2814fa9cb0ecb6bd4e974b5f9e34910c01a1831c",
+        "packages/core/src/plugins/ik.ts": "0216df3e88337f0ce8bc46ced5ac1f3ee40a99dc"
+      },
+      "post": {
+        "packages/core/src/plugins/fabrik.ts": "4bf54fca28e2f7cdf186bd36cbc9ea7bef6712e6",
+        "packages/core/src/plugins/fk.ts": "7b4f469727b6682280601fd99154541c8d0e8e95",
+        "packages/core/src/plugins/ik-chain.ts": "871ce12f1a58d071f5e83d561e42f3e53c50a3b8",
+        "packages/core/src/plugins/ik-constraint.ts": "80135fdf027907cd6cd413cb6727a8d06ab81c53",
+        "packages/core/src/plugins/ik-member.ts": "c78bd9f2e45f0283b197fd440acce6c9ee0aa66c",
+        "packages/core/src/plugins/ik-result.ts": "79b61f09823b3638c73366c46f2240be97bdc3af",
+        "packages/core/src/plugins/ik-solve.ts": "2081bee03fc40d14f6797516ade2e85eb2ee1588",
+        "packages/core/src/plugins/ik.ts": "fcc9f3a1aca00a94ae7c258fee7b3b3bafa6a0f3"
+      }
+    },
+    {
+      "seq": 3,
+      "after": 2,
+      "file": "003-constraint-tests.diff",
+      "sha256": "33100e586f7e076c5c9404b6856aab3e4ad3dec900f1043b7d8267b69aa792a5",
+      "message": "test(ik): pin constrained solving and its load rules as CL-1 to CL-27 (#349)",
+      "pre": {
+        "packages/core/test/integration/per-plugin-key-ownership.test.ts": "a51aa74d1e58758f7c598208aa1e55f72317b055",
+        "packages/core/test/unit/graph/solver-constraints.test.ts": null,
+        "packages/core/test/unit/plugins/ik-constraint.test.ts": null,
+        "packages/core/test/unit/plugins/ik-result.test.ts": "64c20e51f7e77fe5c472e624f5de8bc3eaab6da8",
+        "packages/core/test/unit/scripts/evidence-case-ids.test.ts": "e38af49bcc34341536fd0c4e1eff3a08749b4c05"
+      },
+      "post": {
+        "packages/core/test/integration/per-plugin-key-ownership.test.ts": "085a0995483d9a486448f2795a805b8d351f82c4",
+        "packages/core/test/unit/graph/solver-constraints.test.ts": "5d4feacc741927e25fd8826e446f5608794ef959",
+        "packages/core/test/unit/plugins/ik-constraint.test.ts": "acdb92d275f44dd5b9e6ea4ee7902cd6d967a53c",
+        "packages/core/test/unit/plugins/ik-result.test.ts": "123760bbb19205341f6c7c6457b364bd42264540",
+        "packages/core/test/unit/scripts/evidence-case-ids.test.ts": "fb8d427a60ad7f5508974cfc188305568c319978"
+      }
+    },
+    {
+      "seq": 4,
+      "after": 3,
+      "file": "004-adr-108.diff",
+      "sha256": "f8acab56e206004219cb6efa4efefd3d785222ee1914fddcc271c363fa73cafe",
+      "message": "docs(adr-108): record constrained 2D IK solving (#349)",
+      "pre": {
+        "docs/ADR-107-one-solve-result.md": "1b491d0d7882d576f86678bbcccb34cae6613bfb",
+        "docs/ADR-108-constrained-2d-solving.md": null,
+        "docs/AUTHORED-SCHEMA.md": "0df07879cbb529a22d0f0d3d660f50eca01aae30",
+        "docs/LIVE-EDIT-COST.md": "de70101322c5b2eaf4d27c81d6ab459768ee2ce9",
+        "docs/SESSION-STATUS.md": "a78a655d7f955042fc90ea31edef1bb7067601a8",
+        "docs/acceptance-map.json": "238d11d6e4e1c0f81dd9ed85687953dd372c8aeb",
+        "docs/guide/errors-and-diagnostics.md": "c8714dca12384b499150f5f7fb94818bd1e053e0"
+      },
+      "post": {
+        "docs/ADR-107-one-solve-result.md": "d3dd4732829a7b4639eaa5721cb1be0448a2b5cf",
+        "docs/ADR-108-constrained-2d-solving.md": "17399145cf686d3996b9523062c2dc79fddced30",
+        "docs/AUTHORED-SCHEMA.md": "fcdd4a05e1c00d00429b1cf7a7af9cff0a5777b7",
+        "docs/LIVE-EDIT-COST.md": "574323b0e704167612b95f4ec89340c809c8a62b",
+        "docs/SESSION-STATUS.md": "1d7a0f72bb89cc3c4c15aa979226e0baed20c2b0",
+        "docs/acceptance-map.json": "f4bf21b10b49912fc3a2082c5cbe8503446a3385",
+        "docs/guide/errors-and-diagnostics.md": "94671d23068cedf4458e0015dd522afc074c0368"
+      }
+    }
+  ]
+}
