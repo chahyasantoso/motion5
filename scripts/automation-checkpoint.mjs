@@ -26,24 +26,25 @@ import {
   MAX_PATHS,
   assemblyAggregate,
   assemblyRange,
+  assemblyRelation,
   checkpointChain,
   checkpointDigest,
   checkpointDirectory,
   checkpointFiles,
   checkpointManifest,
+  checkpointStore,
   confinedAssemblyCommit,
+  descends,
   parsePatch,
   patchDigest,
   reconcilePatch,
-  sealedStore,
-  transportBound,
+  sealedRequest,
 } from "./checkpoint-policy.mjs";
 
 const KIND = "checkpoint";
 const WORKFLOW = AUTOMATION_WORKFLOWS.checkpoint;
 const SET_TRAILER = "AI-Checkpoint-Set";
 const PATCH_LINE = /^AI-Checkpoint: (\.ai\/checkpoints\/cp[0-9]{3}\/[0-9]{3}-[a-z0-9-]+\.diff)$/m;
-const CHECKPOINT_FILE = /^\.ai\/checkpoints\/(cp[0-9]{3})\/[A-Za-z0-9][A-Za-z0-9.-]*$/;
 const CANDIDATE_BYTES = 1800000;
 const FILE_BYTES = 1500000;
 const RETAINED_BYTES = 1000000;
@@ -75,18 +76,11 @@ function consumeMessage(checkpoint) {
   return `chore(checkpoint): consume ${checkpoint}`;
 }
 
-/** The store at the head holds the files of exactly one numbered checkpoint folder. */
-function checkpointId(stored) {
-  // A lone manifest is let through to the seal check, which names what is missing and the repair.
-  ensure(stored.length > 0, "No checkpoint is stored under .ai/checkpoints");
-  const ids = new Set();
-  for (const file of stored) {
-    const match = CHECKPOINT_FILE.exec(file);
-    ensure(match !== null, `${JSON.stringify(file)} is not a checkpoint file`);
-    ids.add(match[1]);
-  }
-  ensure(ids.size === 1, "Exactly one pending checkpoint is supported");
-  return [...ids][0];
+/** One `git ls-tree -r -l -z` record, in the tree API's entry shape. */
+function treeRecord(record) {
+  const tab = record.indexOf("\t");
+  const [mode, type, , size] = record.slice(0, tab).trim().split(/\s+/);
+  return { path: record.slice(tab + 1), mode, type, size: Number(size) };
 }
 
 /**
@@ -254,23 +248,23 @@ export async function prepareCheckpoint(root, trustedSha, formatterRoot, output)
     }).trim();
   const requestCommit = git("rev-parse", "HEAD");
   ensure(SHA.test(requestCommit), "The candidate head is not a commit");
-  // The store is read from the committed tree, so a mode or a type is visible before any byte is.
-  const listing = git("ls-tree", "-r", "-z", "--full-tree", requestCommit, "--", CHECKPOINT_ROOT);
-  const entries = listing.split("\0").filter(Boolean);
-  const stored = [];
-  for (const entry of entries) {
-    const [meta, file] = entry.split("\t");
-    ensure(meta.startsWith("100644 blob "), `${JSON.stringify(file)} must be a regular file`);
-    stored.push(file);
-  }
-  const id = checkpointId(stored);
-  const manifestPath = `${CHECKPOINT_ROOT}/${id}/manifest.json`;
-  const text = await regularText(root, manifestPath);
-  ensure(text !== null, `${JSON.stringify(manifestPath)} is absent`);
-  transportBound(manifestPath, Buffer.byteLength(text));
-  const manifest = checkpointManifest(JSON.parse(text));
-  ensure(manifest.checkpoint === id, "The manifest names another checkpoint");
-  sealedStore(stored, manifest);
+  // The store is read from the committed tree, so a mode, a type or a size is visible before any
+  // byte is.
+  const listing = git(
+    "ls-tree",
+    "-r",
+    "-l",
+    "-z",
+    "--full-tree",
+    requestCommit,
+    "--",
+    CHECKPOINT_ROOT,
+  );
+  const store = checkpointStore(listing.split("\0").filter(Boolean).map(treeRecord));
+  const id = store.id;
+  const text = await regularText(root, store.manifest);
+  ensure(text !== null, `${JSON.stringify(store.manifest)} is absent from the checkout`);
+  const manifest = sealedRequest(JSON.parse(text), store);
   walkAssembly(git, await shallowBoundary(root, git), requestCommit, manifest);
   const source = manifest.base;
   const changed = git("diff", "--no-renames", "--name-only", source, requestCommit);
@@ -287,7 +281,6 @@ export async function prepareCheckpoint(root, trustedSha, formatterRoot, output)
     const file = `${directory}/${patch.file}`;
     const bytes = await regularText(root, file);
     ensure(bytes !== null, `${JSON.stringify(file)} is absent`);
-    transportBound(file, Buffer.byteLength(bytes));
     ensure(
       patchDigest(Buffer.from(bytes)) === patch.sha256,
       `${JSON.stringify(file)} does not match its declared SHA-256`,
@@ -458,10 +451,7 @@ function blobEntries(tree) {
  */
 async function assemblyCompare(api, base, head) {
   const comparison = await api.request("GET", `/compare/${base}...${head}`);
-  ensure(
-    comparison.status === "ahead",
-    "Stale base; the patch set was cut against a commit the head does not descend from",
-  );
+  assemblyRelation(comparison.status);
   const commits = Array.isArray(comparison.commits) ? comparison.commits : [];
   const range = assemblyRange(
     commits.map((commit) => ({
@@ -494,18 +484,13 @@ export async function checkpointSnapshot(api, run, trustedSha) {
   const after = await api.request("GET", `/git/trees/${commit.tree.sha}?recursive=1`);
   ensure(!after.truncated, "Snapshot tree is incomplete");
   const current = blobEntries(after);
-  const stored = [...current.keys()].filter((file) => file.startsWith(`${CHECKPOINT_ROOT}/`));
-  const id = checkpointId(stored.sort());
-  for (const file of stored) {
-    const entry = current.get(file);
-    ensure(entry.type === "blob" && entry.mode === "100644", "A patch file must be a regular file");
-    transportBound(file, entry.size);
-  }
-  const directory = `${CHECKPOINT_ROOT}/${id}`;
-  const text = (await api.content(`${directory}/manifest.json`, run.head_sha)).text;
-  const manifest = checkpointManifest(JSON.parse(text));
-  ensure(manifest.checkpoint === id, "The manifest names another checkpoint");
-  sealedStore(stored, manifest);
+  const store = checkpointStore(
+    [...current.values()].filter((entry) => entry.path.startsWith(`${CHECKPOINT_ROOT}/`)),
+  );
+  const id = store.id;
+  const text = (await api.content(store.manifest, run.head_sha)).text;
+  const manifest = sealedRequest(JSON.parse(text), store);
+  const directory = checkpointDirectory(manifest);
   const source = manifest.base;
   await assemblyCompare(api, source, run.head_sha);
   const sourceCommit = await api.request("GET", `/git/commits/${source}`);
@@ -773,7 +758,7 @@ export async function publishCheckpointRun(api, writer, run, trustedSha) {
     currentHead: () => api.head(run.head_branch),
     contains: async (candidateSha, head) => {
       const comparison = await api.request("GET", `/compare/${candidateSha}...${head}`);
-      return comparison.status === "ahead" || comparison.status === "identical";
+      return descends(comparison.status);
     },
     saveIntent: (value) =>
       api.persist({ [`${directory}intent.json`]: `${JSON.stringify(value)}\n` }),
@@ -796,7 +781,7 @@ export async function reconcileCheckpointIntent(api, run, saved) {
   const head = await api.head(run.head_branch);
   if (head !== saved.candidate_sha) {
     const comparison = await api.request("GET", `/compare/${saved.candidate_sha}...${head}`);
-    if (!["ahead", "identical"].includes(comparison.status)) return null;
+    if (!descends(comparison.status)) return null;
   }
   const set = `${SET_TRAILER}: ${saved.request_digest}`;
   let current = saved.candidate_sha;
