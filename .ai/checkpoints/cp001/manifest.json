@@ -1,0 +1,91 @@
+{
+  "version": 1,
+  "checkpoint": "cp001",
+  "base": "95bef276850409f47d2bf02691ca4a4a7ae726d8",
+  "allow": [
+    "packages/core/src/",
+    "packages/core/test/",
+    "docs/"
+  ],
+  "patches": [
+    {
+      "seq": 1,
+      "file": "001-one-solve-result-for-both-strategies.diff",
+      "sha256": "b95b116407965185c264b0114dc9bb3de2228af7f85f3705f1b7d65a4d13bcaa",
+      "message": "refactor(ik): both strategies return one SolveResult with a flat closed quality union (#349)",
+      "pre": {
+        "packages/core/src/plugins/fabrik.ts": "f5a5ebcefe46b29319326b28ccf45b3a5607a3df",
+        "packages/core/src/plugins/ik-analytic.ts": "0a837dc78866024dfaa469ec8440e05265792574",
+        "packages/core/src/plugins/ik-result.ts": null,
+        "packages/core/src/plugins/ik-solve.ts": "45f1e12519969fc29d1f95545b228d9e4bac7ab5",
+        "packages/core/src/plugins/ik.ts": "efd538ff898a791553438838fa8d018ed5835070"
+      },
+      "post": {
+        "packages/core/src/plugins/fabrik.ts": "31c60b44fed8150341543cbb2abb438f9ff641ed",
+        "packages/core/src/plugins/ik-analytic.ts": "3d1fdf04bd1dc151396fffeac1e5107434117ab5",
+        "packages/core/src/plugins/ik-result.ts": "6cd193aa6eefb90acf93f7152e00b1275fe94aad",
+        "packages/core/src/plugins/ik-solve.ts": "2814fa9cb0ecb6bd4e974b5f9e34910c01a1831c",
+        "packages/core/src/plugins/ik.ts": "0216df3e88337f0ce8bc46ced5ac1f3ee40a99dc"
+      }
+    },
+    {
+      "seq": 2,
+      "after": 1,
+      "file": "002-solve-cases-read-the-result.diff",
+      "sha256": "0fcb0d0f62b809f5165308ab60f44a2f48625545a93ac7317a822fa39d4bb3c2",
+      "message": "test(ik): read the solve cases through SolveResult.rotations and .quality",
+      "pre": {
+        "packages/core/test/unit/plugins/angle-blend.test.ts": "e7ef85112ff2c78c261a3f6d7693e2fbda3ebf44",
+        "packages/core/test/unit/plugins/fabrik-arity-one.test.ts": "61be0a899450287d167e44e9faa6b6db66f20b13",
+        "packages/core/test/unit/plugins/fabrik-dispatch.test.ts": "5f9f424ebffd2f70d4711091295f572c7a7ccac4",
+        "packages/core/test/unit/plugins/fabrik-solve.test.ts": "76dfd6b947c4480b9c05189dabab23fda1fe3048",
+        "packages/core/test/unit/plugins/ik-solve.test.ts": "681fa94c98999816cc622bcf67240898a01c88fd",
+        "packages/core/test/unit/plugins/pivot-offset-solve.test.ts": "0e7d6bd64e7e03aecd70e7e8259c8a5e93c4b2ba"
+      },
+      "post": {
+        "packages/core/test/unit/plugins/angle-blend.test.ts": "9f9121b56d841664fae5736a2511f0e7ba667684",
+        "packages/core/test/unit/plugins/fabrik-arity-one.test.ts": "7f8c7e1c7380b764796b1ba18b16c3a014d3ffb9",
+        "packages/core/test/unit/plugins/fabrik-dispatch.test.ts": "6b2f6698d227a72a7024ba6a6f2fe5320dfc4532",
+        "packages/core/test/unit/plugins/fabrik-solve.test.ts": "b18f37b8d096347584245fbe8c42e32c3d000ec3",
+        "packages/core/test/unit/plugins/ik-solve.test.ts": "352791f745591074c2300c09f8804693d91e463c",
+        "packages/core/test/unit/plugins/pivot-offset-solve.test.ts": "085e7e5fac8f55bf207dc6446ef979471d3af2cd"
+      }
+    },
+    {
+      "seq": 3,
+      "after": 2,
+      "file": "003-pin-the-result-as-the-ir-series.diff",
+      "sha256": "59b815217188cb34018a82710e5f0ad2a96412b07e163f706da6d51b6a69d958",
+      "message": "test(ik): pin the one solve result as the IR- series and gate it",
+      "pre": {
+        "docs/acceptance-map.json": "648eea04de20824f44b072dc8957f6141a77423f",
+        "packages/core/test/unit/plugins/ik-result.test.ts": null,
+        "packages/core/test/unit/scripts/evidence-case-ids.test.ts": "8cde0314ddb7c82652a7b331df47b7f8283a9a15"
+      },
+      "post": {
+        "docs/acceptance-map.json": "238d11d6e4e1c0f81dd9ed85687953dd372c8aeb",
+        "packages/core/test/unit/plugins/ik-result.test.ts": "63b9e1459a3e972967aaeefd1b94d1c9a9655fb2",
+        "packages/core/test/unit/scripts/evidence-case-ids.test.ts": "e38af49bcc34341536fd0c4e1eff3a08749b4c05"
+      }
+    },
+    {
+      "seq": 4,
+      "after": 3,
+      "file": "004-record-adr-107-and-status.diff",
+      "sha256": "e3116981b637faed7c8b72dc818c21cc443fe1a8d0ee5ad26055f6aaa0f131b9",
+      "message": "docs(adr-107): record one solve result, accept ADR-106, rewrite status",
+      "pre": {
+        "docs/ADR-051-derived-solver-membership.md": "da14527c25889f43df64f4ff2d2fa23c00358bdc",
+        "docs/ADR-106-one-owner-per-ik-solve-question.md": "7d2cd0aedc441c00b5293ac0e5c37cc287151500",
+        "docs/ADR-107-one-solve-result.md": null,
+        "docs/SESSION-STATUS.md": "eca1c9d018a461eb6c7cae4b63c4c2c345a543a2"
+      },
+      "post": {
+        "docs/ADR-051-derived-solver-membership.md": "e4f562b5df930ffcd6a4d53709e07a83a0a5c54d",
+        "docs/ADR-106-one-owner-per-ik-solve-question.md": "74f4f189017b3aa51a36f0a24807f29d6c856dc2",
+        "docs/ADR-107-one-solve-result.md": "9dfe20f3d437a24acb6b6e2933692a59b53bdfdd",
+        "docs/SESSION-STATUS.md": "a78a655d7f955042fc90ea31edef1bb7067601a8"
+      }
+    }
+  ]
+}
