@@ -3,11 +3,11 @@
 Current project state only. Replace stale entries rather than append history. The four sections below are the complete shape, **Now** and **Next in line** carry exactly one bullet each, and no bullet states a phase; `packages/core/test/unit/scripts/session-status-shape.test.ts` enforces all three and the byte ceiling.
 
 - **Captured:** 2026-09-24, Asia/Jakarta.
-- **Read against:** `main` at `2d8ac606`; phase 4 ([#485](https://github.com/chahyasantoso/motion5/pull/485)) is merged as [ADR-109](./ADR-109-opt-in-solve-inspection.md).
+- **Read against:** `main` at `7e6f4edc`; phase 5 ([#486](https://github.com/chahyasantoso/motion5/pull/486)) is merged as [ADR-110](./ADR-110-goal-influence-and-conflict-policy.md).
 
 ## Now
 
-- **Goal influence for [#349](https://github.com/chahyasantoso/motion5/issues/349) is in review:** [ADR-110](./ADR-110-goal-influence-and-conflict-policy.md) records per-goal influence, weighted branch compromise, `conflicted` quality, and per-leaf residuals. No merge is claimed here.
+- **Stability and determinism for [#349](https://github.com/chahyasantoso/motion5/issues/349) is in review:** [ADR-111](./ADR-111-stability-and-determinism.md) makes the 2D solve finite over every finite rig, independent of member order, and records its purity, continuity and unwrapped angle domain. No merge is claimed here.
 
 ## Next in line
 
@@ -17,7 +17,7 @@ Current project state only. Replace stale entries rather than append history. Th
 
 - [Issue #328](https://github.com/chahyasantoso/motion5/issues/328) remains open for remaining activation/failure-recovery exercises, lifecycle limits, and maintenance usage/replacement validation before any separately confirmed retirement. Historical workflows and the manual formatting escape hatch are retained; dependency maintenance through the bounded API protocol remains disabled.
 - [Issue #411](https://github.com/chahyasantoso/motion5/issues/411) stays open on a recorded refusal rather than a fix: a drain replays at the frame it deferred, so the assertion it recommends cannot distinguish the two implementations it is about. `deferred-frame-loss.test.ts` says what each of its cases actually pins, and #417's unreached-frame case is the witness it asked for.
-- [Issue #349](https://github.com/chahyasantoso/motion5/issues/349) holds the 2D IK/FK contract study; phases 1 to 4 landed as [ADR-106](./ADR-106-one-owner-per-ik-solve-question.md), [ADR-107](./ADR-107-one-solve-result.md), [ADR-108](./ADR-108-constrained-2d-solving.md), and [ADR-109](./ADR-109-opt-in-solve-inspection.md), and remaining phases stay planned there. [#482](https://github.com/chahyasantoso/motion5/issues/482) owns the negative-length disagreement between `fk` and the solves.
+- [Issue #349](https://github.com/chahyasantoso/motion5/issues/349) holds the 2D IK/FK contract study; phases 1 to 5 landed as [ADR-106](./ADR-106-one-owner-per-ik-solve-question.md), [ADR-107](./ADR-107-one-solve-result.md), [ADR-108](./ADR-108-constrained-2d-solving.md), [ADR-109](./ADR-109-opt-in-solve-inspection.md), and [ADR-110](./ADR-110-goal-influence-and-conflict-policy.md), and remaining phases stay planned there. [#482](https://github.com/chahyasantoso/motion5/issues/482) owns the negative-length disagreement between `fk` and the solves.
 - Packaging follows the current work. [IMPLEMENTATION-PLAN.md](./IMPLEMENTATION-PLAN.md) owns scope; no implementation is claimed here.
 
 ## Where the rest of it lives

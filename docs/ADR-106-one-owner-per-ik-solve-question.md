@@ -22,6 +22,13 @@ Published behavior is unchanged: every rig publishes the same doubles, the same 
 order item 5 is now recorded by ADR-110: goal influence belongs to the goal module, the weighted
 compromise is explicit, and an unweighted rig retains phase 4 rotations bit for bit.
 
+**Amended by [ADR-111](./ADR-111-stability-and-determinism.md), 2026-09-24.** Delivery order item 6
+is now recorded by ADR-111: the solve is total over finite rigs, order-free and pure, and every rig
+in the ordinary range keeps the bytes above. The closed form now receives its pair proven from the
+`base` relation rather than by position, so "the dispatcher proves the pair" below is true of member
+order as well as arity. `ChainShape` has had a third variant, `constrained`, since ADR-108, so
+the two-variant union in the invariant above describes phase 1 rather than the code.
+
 ## Why now
 
 Issue #349's study and the implementation plan in its first comment both find that `ik.ts` answered four questions at once (slot adaptation, chain topology, solver selection, and the closed form's arithmetic) and that every capability the study ranks (constraints, inspection, goal policy, a 3D seam) adds code to at least two of them. Constraints in particular would otherwise put a limit policy beside the arithmetic that consumes it, and a limit enforced by two owners is guaranteed to disagree on the case nobody tests. The extraction is therefore the first phase and ships alone, with its own evidence, before any feature needs it.

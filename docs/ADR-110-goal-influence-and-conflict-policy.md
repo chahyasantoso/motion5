@@ -1,8 +1,8 @@
 # ADR-110: Goal influence and conflict policy
 
-**Status:** Proposed as issue [#349](https://github.com/chahyasantoso/motion5/issues/349) phase 5,
-2026-09-24, against `main` at `2d8ac606` (phase 4, PR #485, ADR-109). Accepted when its pull
-request merges.
+**Status:** Accepted, 2026-09-24. Issue [#349](https://github.com/chahyasantoso/motion5/issues/349)
+phase 5, squash-merged from [#486](https://github.com/chahyasantoso/motion5/pull/486) as `7e6f4edc`.
+Phase 6 is [ADR-111](./ADR-111-stability-and-determinism.md).
 
 ## Context
 
