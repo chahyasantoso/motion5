@@ -6,13 +6,13 @@ Grouped by entrypoint, because the entrypoint is the contract. `packages/core/pa
 
 A declared subpath is not automatically production API. The tier says who may import it, and for the test-support tier that answer is enforced by `scripts/boundary-scan.mjs` rather than by this table: no package under `packages/*` except core, and no app under `apps/*`, may name it. See ADR-036 and ADR-048.
 
-| subpath                                             | tier           | may a production consumer import it |
-| --------------------------------------------------- | -------------- | ----------------------------------- |
-| `@motion5/core`                                     | public         | yes                                 |
-| `@motion5/core/adapters`, `/adapters/browser-clock` | public adapter | yes                                 |
-| `@motion5/core/plugins/fk`, `/plugins/transform`    | public plugin  | yes                                 |
-| `@motion5/core/testing`                             | test support   | no, enforced by the boundary scan   |
-| `@motion5/core/internal`                            | unadvertised   | no stability promise                |
+| subpath                                                         | tier           | may a production consumer import it |
+| --------------------------------------------------------------- | -------------- | ----------------------------------- |
+| `@motion5/core`                                                 | public         | yes                                 |
+| `@motion5/core/adapters`, `/adapters/browser-clock`             | public adapter | yes                                 |
+| `@motion5/core/plugins/fk`, `/plugins/transform`, `/plugins/ik` | public plugin  | yes                                 |
+| `@motion5/core/testing`                                         | test support   | no, enforced by the boundary scan   |
+| `@motion5/core/internal`                                        | unadvertised   | no stability promise                |
 
 ## @motion5/core
 
