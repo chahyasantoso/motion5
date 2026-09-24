@@ -6,8 +6,9 @@ handover zip and needs to apply it without asking an AI agent to edit the reposi
 ## Human procedure
 
 Download the handover zip in Codespaces. At the repository root, create `.handover/` if it does
-not exist and put exactly that one zip in it. The directory is gitignored, so the zip is not
-part of the change being applied.
+not exist and put exactly that one zip in it. The directory is gitignored, and the clean-tree
+check below skips it even on a branch that does not carry that ignore rule yet, so the zip is
+never part of the change being applied.
 
 Optionally preview the application without changing the checkout:
 
@@ -27,7 +28,8 @@ entry is a foreign entry and is refused; remove it before trying again.
 
 Before reading the archive, the command requires a committer identity, an attached branch rather
 than a detached HEAD, no Git operation in progress, and a clean tree. The clean-tree check
-includes untracked files, so commit or stash with `git stash -u` before applying a handover.
+includes untracked files everywhere except `.handover/`, so commit or stash with `git stash -u`
+before applying a handover.
 
 The command reads the zip listing before extraction, checks the archive shape and bounds,
 extracts it into a temporary directory, and compares the extracted file set with the listing. It
@@ -49,8 +51,9 @@ the inbox; do not delete it while investigating a failure.
 
 - `nothing-to-do` means `.handover/` contains no zip. The exit status is 0 and the checkout is
   unchanged.
-- `refused` means a preflight, archive, manifest, base, checkpoint, or bundle rule failed. The
-  exit status is 1, the checkout is unchanged, and the zip is retained.
+- `refused` means a preflight, archive, manifest, base, checkpoint, or bundle rule failed, or the
+  checkout moved or was edited while the series was being proved (`head-moved`, `dirty-tree`).
+  The exit status is 1, the checkout is unchanged by the command, and the zip is retained.
 - `conflict` means a patch did not apply cleanly even with `git am --3way`. The exit status is 1,
   the checkout is unchanged, the zip is retained, and the extracted series is retained in the
   temporary directory named in the output.
@@ -59,6 +62,9 @@ the inbox; do not delete it while investigating a failure.
   is read back. The exit status is 1 and the checkout is unchanged.
 - `post-mismatch` means a patch applied but a declared post-image blob did not land. The exit
   status is 1, the checkout is unchanged, and the handover must be replaced or corrected.
+- `already-applied` means a patch applied without changing anything, because this branch already
+  carries its change; the output names the patch. The exit status is 1, the checkout is unchanged,
+  and the zip is retained. If the whole series is already in, empty `.handover/` by hand.
 - `verified` is the successful dry-run result. The exit status is 0, the commits and any
   reconciled paths are printed, and the checkout is unchanged.
 - `applied` means every check passed and the real checkout was fast-forwarded. The exit status is
@@ -122,9 +128,8 @@ The closed component union is `notes`, `checkpoint`, `bundle`, and `opaque`.
   validated but never used as the patch application source.
 - `opaque` is optional and may occur any number of times. Its files are validated in a temporary
   extraction, never executed, and never copied into the checkout; they survive a successful apply
-  only in the zip, so keep your download or pass `--keep` to read them. Earlier wording said they
-  for human inspection but are never executed by the apply pipeline. Tools, corpus files, probes,
-  and evidence belong here.
+  only in the zip, so keep your download or pass `--keep` to read them. Tools, corpus files,
+  probes, and evidence belong here.
 
 Component paths may not overlap one another. A checkpoint component must contain its
 `manifest.json` and exactly the files that its own manifest declares. Its stored patch digests
@@ -246,12 +251,13 @@ node scripts/handover.mjs pack --issue <n> --from <rev> [--to <rev>] [--base <sh
   --notes <file> --out <name>.zip [--checkpoint <dir>] [--bundle] [--opaque <path>]...
 ```
 
-`--from` must be an ancestor of `--to`, no commit in the range may be a merge or empty, and
-`--out` must be outside the checkout or inside `.handover/`. The archive is built and inspected
-in a stage and copied to `--out` only when it passes. `--from` and `--to` select the range, with `--to` defaulting to `HEAD`.
-The producer writes one format-patch file per commit, computes the manifest from the actual
-patch bytes and images, copies the notes and optional components, zips the one-root layout, and
-inspects its own output with the same `inspectArchive` used by the consumer.
+`--from` must be an ancestor of `--to`, no commit in the range may be a merge, empty, or change a
+submodule gitlink, and `--out` must be outside the checkout or inside `.handover/`. The archive is
+built and inspected in a stage and copied to `--out` only when it passes. `--from` and `--to` select
+the range, with `--to` defaulting to `HEAD`. The producer writes one format-patch file per commit,
+computes the manifest from the actual patch bytes and images, copies the notes and optional
+components, zips the one-root layout, and inspects its own output with the same `inspectArchive`
+used by the consumer.
 
 Use `--base` when a sandbox has the same base tree as the intended repository base but a
 different local commit id. The patch images are content-based, so this can make the handover
@@ -303,6 +309,7 @@ refusal kinds are:
 - `checkpoint-disagrees`
 - `bundle-invalid`
 - `bundle-prerequisite`
+- `head-moved`
 
 The other closed unions are the inbox discoveries `empty`, `one`, `ambiguous`, and `foreign`;
 zip entry kinds `file`, `directory`, `symlink`, and `other`; and component kinds listed above.

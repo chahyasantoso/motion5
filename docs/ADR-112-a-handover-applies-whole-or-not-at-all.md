@@ -1,19 +1,23 @@
 # ADR-112: A handover applies whole or not at all
 
-**Status:** Accepted, 2026-09-24. Closes [#487](https://github.com/chahyasantoso/motion5/issues/487).
+**Status:** Proposed in [#488](https://github.com/chahyasantoso/motion5/pull/488), 2026-09-24,
+stacked on #349 phase 6 (ADR-111) in the same pull request. Closes
+[#487](https://github.com/chahyasantoso/motion5/issues/487) when merged; no merge is claimed here.
 
 ## Context
 
 Issue #487 is infrastructure for a human who has access to Codespaces, not an AI automation
 workflow. The intended procedure is deliberately small: download a handover zip, put it in the
-dedicated folder, run one command, and have the command scan the folder, extract the zip, apply
-the patches, and remove the folder contents only after success. The contract needs to make that
+dedicated folder, run one command, and have the command scan the folder, extract the zip, apply the
+patches, and remove the folder contents only after success. The contract needs to make that
 procedure safe without making the human understand the AI checkpoint transport. The human-facing
-contract is [HANDOVER-FORMAT.md](./HANDOVER-FORMAT.md); this record owns why its application is atomic.
+contract is [HANDOVER-FORMAT.md](./HANDOVER-FORMAT.md); this record owns why its application is
+atomic.
 
-This is infrastructure and lands separately from the #349 behavior work, which AGENTS.md
-requires of any change to transport or tooling. ADR-111 is taken by the unmerged #349 phase 6
-checkpoint, so this record takes ADR-112. The #349 phase 7 plan had earmarked 112 for its
+This is infrastructure, and AGENTS.md asks that it land separately from the #349 behavior work.
+Pull request #488 carries both, the phase 6 commits first and these after them, so the two stay
+separable commit by commit even though they share one review. ADR-111 is phase 6's record, so
+this record takes ADR-112. The #349 phase 7 plan had earmarked 112 for its
 envelope record; whichever lands second takes the next free number, and `adr-integrity` refuses
 a collision either way.
 
@@ -62,7 +66,11 @@ an archive after a successful apply.
 Preflight refuses a missing committer identity, detached HEAD, an operation in progress (`am`,
 rebase, merge, cherry-pick, or revert), and a dirty tree including untracked files. The human
 must commit or stash with `git stash -u`; the command never hides those changes as part of its
-recovery.
+recovery. The inbox itself is excluded from the dirty-tree check by pathspec rather than trusted
+to `.gitignore`: the first handover lands on a checkout that does not carry the ignore rule yet,
+where the zip is an untracked file, and relying on the rule refused exactly that handover.
+`discoverInbox` already owns what may sit in the inbox, so the exclusion hides nothing the check
+was for.
 
 ### The v1 archive and manifest
 
@@ -119,7 +127,12 @@ checked with Git.
 The series is applied patch by patch with `git am --3way` in a detached `git worktree` of HEAD
 in a temporary directory. After each patch, every declared post blob is read back from that
 worktree. Only when every patch passes does the real checkout run `git merge --ff-only` to the
-temporary tip. A conflict aborts the temporary `git am`, leaves the real checkout untouched,
+temporary tip. Nothing holds the checkout while the series is proved, so a fast-forward that fails
+because HEAD moved is the refusal `head-moved`, and one that fails because the tree was edited in
+the meantime is `dirty-tree`; both leave the checkout as the other process left it and keep the
+zip. A lock was considered and not taken: Git's own index lock already makes the fast-forward
+atomic, and a second lock would be a second owner of that question that a crash can leave behind.
+A conflict aborts the temporary `git am`, leaves the real checkout untouched,
 keeps the inbox zip, and retains the extracted series so the printed recovery command can run
 `git am --3way` with all patches, resolve and stage conflicts, then use `git am --continue` or
 `git am --abort`.
@@ -147,13 +160,21 @@ sequence and authorship that `git am` preserves.
 
 Every commit `git am` makes is read back: the paths it touched must be declared by its manifest
 entry (`undeclared-change` otherwise), because a digest proves which patch was packed and not that
-the manifest describes it. The apply commands run with an empty scratch `core.hooksPath`,
-`--whitespace=nowarn` and `--no-gpg-sign`, so repository hooks, `apply.whitespace` and
-`commit.gpgSign` cannot run code or refuse a valid handover. After the fast-forward the inbox
-state is a closed union (`emptied`, `kept`, `cleanup-failed`) so a cleanup failure never reads as
-"nothing changed". The producer refuses a range whose start is not an ancestor of its end, an
-empty commit, and an output path inside the checkout, and copies the archive out only after its
-own inspection passes. `core.autocrlf` was considered and not pinned: it changed no blob id when
+the manifest describes it. The commit is proved to exist first. `git am --3way` exits zero without
+committing when a patch's change is already in the tree, and reading `HEAD^..HEAD` then read
+whichever commit came before: an unrelated one was reported as an undeclared change, and one on the
+same path as a clean application of zero commits. A patch that makes no commit now stops the series
+as `already-applied`, naming the patch, with the checkout and the zip unchanged. Skipping it and
+carrying on was rejected, because a partly present series is exactly the state a human has to look
+at, and a handover that reports success for bytes it did not write is not whole. The apply commands
+run with an empty scratch `core.hooksPath`, `--whitespace=nowarn` and `--no-gpg-sign`, so repository
+hooks, `apply.whitespace` and `commit.gpgSign` cannot run code or refuse a valid handover. After the
+fast-forward the inbox state is a closed union (`emptied`, `kept`, `cleanup-failed`) so a cleanup
+failure never reads as "nothing changed". The producer refuses a range whose start is not an
+ancestor of its end, an empty commit, a gitlink (its id names a commit in another repository, while
+every image the format declares is a blob, so the consumer proved it absent at the very base it was
+cut from), and an output path inside the checkout, and copies the archive out only after its own
+inspection passes. `core.autocrlf` was considered and not pinned: it changed no blob id when
 measured, and the post-image comparison catches any divergence.
 
 ## Rejected
@@ -223,15 +244,22 @@ every preflight and base refusal, tampered, undeclared, unversioned, linked and 
 a series that applies onto undeclared bytes, the three inbox states, the bundle rule, checkpoint
 agreement end to end, every outcome's words and exit status, and the command line.
 
-In the sandbox all 30 cases passed, and each of these mutations was killed by at least one case:
-skipping the post-image comparison, applying on a dry run, emptying the inbox under `--keep`,
+The review of #488 added `HO-31` to `HO-34` in the same file: a patch already on the branch stops
+as `already-applied` whether the commit before it is related or not, `pack` refuses a gitlink and
+writes no archive, a checkout whose HEAD moves or whose tree is edited before the fast-forward is
+refused as `head-moved` or `dirty-tree` with the zip kept and no worktree left, and the first
+handover applies on a checkout without the ignore rule while an untracked file elsewhere is still
+refused. Each is killed by removing its fix: the pathspec exclusion, the commit check, the
+`head-moved` and `dirty-tree` mapping, and the gitlink refusal.
+
+In the sandbox all 30 original cases passed, and each of these mutations was killed by at least one
+case: skipping the post-image comparison, applying on a dry run, emptying the inbox under `--keep`,
 skipping the patch digest, skipping the dirty-tree refusal, discarding the extracted series on a
 conflict, treating every path as unreconciled, skipping the extraction-equals-listing check,
-admitting a stray file, skipping checkpoint tip agreement, admitting a second bundle
-prerequisite, admitting any path segment, and skipping the base pre-image comparison. The last
-two survivors of the first mutation round, extraction-equals-listing and a second bundle
-prerequisite, were what added the smuggling case to `HO-21` and the two-prerequisite case to
-`HO-12`.
+admitting a stray file, skipping checkpoint tip agreement, admitting a second bundle prerequisite,
+admitting any path segment, and skipping the base pre-image comparison. The last two survivors of
+the first mutation round, extraction-equals-listing and a second bundle prerequisite, were what
+added the smuggling case to `HO-21` and the two-prerequisite case to `HO-12`.
 
 The consumer and producer both call `inspectArchive`, so a producer cannot silently create an
 archive the consumer would reject. No live CI run is claimed until one exists.
