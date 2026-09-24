@@ -37,8 +37,8 @@ figures divide the measured solve time by member count; they are not additional 
 - **Tree-30:** 2,575.0832 microseconds per solve, or 2.5751 milliseconds per solve and 85.8361
   microseconds per member. All 200 reported `conflicted`, with a mean and maximum of 64 passes.
 - **Tree-14-conflicting:** 1,068.7883 microseconds per solve, or 1.0688 milliseconds per solve
-  and 76.3420 microseconds per member. This is the committed script's additional scenario and was absent
-  from the stale report.
+  and 76.3420 microseconds per member. Its goals are seeded independently rather than taken from a
+  pose, so no composed pose need satisfy them all; all 200 reported `conflicted`.
 - **Constrained-8:** 97.5334 microseconds per solve, or 12.1917 microseconds per member. Of 200
   solves, 197 reported `converged` and 3 reported `limited`; the mean was 7.46 passes and the
   maximum was 64.
@@ -72,8 +72,8 @@ fixed-point problem. A fixed cap for that case remains a policy decision for fol
 Run 2 was recorded under the same reported conditions. It produced 1.9013 microseconds for two-bone,
 75.8308 microseconds for chain-8, 858.2578 microseconds for chain-32, 2,863.6790 microseconds for
 chain-64, 1,112.1312 microseconds for tree-14, 2,606.5190 microseconds for tree-30, 1,128.9132
-microseconds for `tree-14-conflicting`, and 104.2292 microseconds for constrained-8. The corresponding
-run-2 quality counts were identical to run 1.
+microseconds for `tree-14-conflicting`, and 104.2292 microseconds for constrained-8. The
+corresponding run-2 quality counts were identical to run 1.
 
 Relative to run 1, solve timing changed by -18.3% for two-bone, -0.5% for chain-8, -7.1% for
 chain-32, -3.5% for chain-64, +2.1% for tree-14, +1.2% for tree-30, +5.6% for
