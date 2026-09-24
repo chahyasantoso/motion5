@@ -6,6 +6,8 @@ The invariant is [ADR-100](./ADR-100-a-patch-declares-the-bytes-it-produces.md):
 
 Nothing here is activated merely because this PR passes CI. [ai-checkpoint.yml](../.github/workflows/ai-checkpoint.yml) no-ops while `MOTION5_AUTOMATION_SHA` is unset, and rollback is pointing that variable back. Read the workflow at the exact branch you use. The runner's `checkpointStore()` discovery treats a store without its manifest as no request, and walks the assembly range from the head to `base`, refusing a shallow boundary as `Insufficient fetch depth` rather than as a stale base. The checked-in workflow now triggers only on `.ai/checkpoints/*/manifest.json` and checks out the candidate with `fetch-depth: 30`: patch-only pushes therefore start no run, while the manifest push starts one. A range of up to 24 commits fits that checkout. [ADR-102](./ADR-102-a-request-is-sealed-by-its-manifest.md) records the protocol.
 
+A human with a Codespaces checkout does not use this transport. [HANDOVER-FORMAT.md](./HANDOVER-FORMAT.md) owns the versioned handover zip that `npm run patches` applies whole or not at all ([ADR-112](./ADR-112-a-handover-applies-whole-or-not-at-all.md)). A handover may carry a checkpoint store as a component so the same work can still take this route, and the handover validates that store against its own patch series rather than applying it.
+
 ## Ownership
 
 - [checkpoint-policy.mjs](../scripts/checkpoint-policy.mjs) owns the manifest schema, the accepted diff grammar, the path rules, and the chain arithmetic. It is pure: no filesystem, network, Git, or credential access, which is why every refusal it owns is reproducible in a unit test.
