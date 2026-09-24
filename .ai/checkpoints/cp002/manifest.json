@@ -1,0 +1,42 @@
+{
+  "version": 1,
+  "checkpoint": "cp002",
+  "base": "6ce0a938c8df9628bec6ae8f25271311a629c9d8",
+  "allow": [
+    "docs/",
+    "packages/core/test/"
+  ],
+  "patches": [
+    {
+      "seq": 1,
+      "file": "001-make-in-2-in-5-and-in-9-fail-without-opt-in-insp.diff",
+      "sha256": "2662205501e36cf5af70afb75ca9a88d877ac3ab60e34991212ac02dc5d8dcdf",
+      "message": "test(ik): make IN-2, IN-5 and IN-9 fail without opt-in inspection and pair IN-8 (#349)",
+      "pre": {
+        "packages/core/test/unit/plugins/ik-inspection.test.ts": "a13c77836adad023a4a6e07c0a61530cbd0d5c09"
+      },
+      "post": {
+        "packages/core/test/unit/plugins/ik-inspection.test.ts": "b1dc481fd2ae22a5ad66d79057d3f7a62fd5682a"
+      }
+    },
+    {
+      "seq": 2,
+      "after": 1,
+      "file": "002-amend-adr-054-and-adr-106-and-scope-the-errors-g.diff",
+      "sha256": "b4300fea1c45d3875f2a7af7ca23b472b401ae5f9e8660df5d7f53a6586e4b30",
+      "message": "docs(adr-109): amend ADR-054 and ADR-106 and scope the errors guide to unopted solvers (#349)",
+      "pre": {
+        "docs/ADR-054-offset-aware-ik-solving.md": "e895cbe560af0067ad90e71d0e74adc9d258e5ca",
+        "docs/ADR-106-one-owner-per-ik-solve-question.md": "74f4f189017b3aa51a36f0a24807f29d6c856dc2",
+        "docs/ADR-109-opt-in-solve-inspection.md": "e69b38cd16d59644df7cf24370664eed5d50d513",
+        "docs/guide/errors-and-diagnostics.md": "832dfa7a9ec7423cab1a0533eec55505dfa909df"
+      },
+      "post": {
+        "docs/ADR-054-offset-aware-ik-solving.md": "638985136f4b62d0cbc5b5479fad02e5101959ae",
+        "docs/ADR-106-one-owner-per-ik-solve-question.md": "0562f3dd95d54a7f1d5dab61a0b7ff8dd2f8da2c",
+        "docs/ADR-109-opt-in-solve-inspection.md": "3b69ea8811ffd753cc17754a1deb3f5f10eac352",
+        "docs/guide/errors-and-diagnostics.md": "5958eb80fb37627d00b1ccd89b87a704b149835a"
+      }
+    }
+  ]
+}
