@@ -104,13 +104,15 @@ Optional implementations for the composition root.
 - `createGsapScrollSource(scrollTrigger, options)`, plus structural GSAP scroll source types. Core never imports GSAP.
 - `FrameSource`, and the default graph builder.
 
-## @motion5/core/plugins/transform and /plugins/fk
+## @motion5/core/plugins/transform, /plugins/fk, and /plugins/ik
 
 `transformPlugin` claims `x`, `y`, and `rotation` and passes them through.
 
-`fkPlugin` is a compose-stage forward-kinematics plugin. It claims `length` and `rotation`, declares the `base` requirement, reads `inputs.base`, and produces `x`, `y`, and world-space `rotation`. The authored `rotation` is relative to the parent and the composed one is world-space, so the local value is replaced rather than published beside it. `composeWorld(parent, local)` is exported alongside it.
+`fkPlugin` is a compose-stage forward-kinematics plugin. It claims `x`, `y`, `length`, `rotation`, `weight`, `minRotation`, `maxRotation`, and `influence`, declares the `base` and optional `solver` requirements, reads `inputs.base`, and produces `x`, `y`, and world-space `rotation`. `length` and `rotation` are the core geometry keys; the other claimed keys are the pivot, blend, constraint, and goal-influence vocabulary consumed by the rig. The authored `rotation` is relative to the parent and the composed one is world-space, so the local value is replaced rather than published beside it. `composeWorld(parent, local)` is exported alongside it.
 
 Registering both is the rig case: both claim `rotation`, so flat `rotation` is ambiguous. Author a bone as `fk: { length, rotation, requires: { base: "walk/pelvis" } }` and a root as `transform: { x, y, rotation }`. The parent's natural `x`, `y`, and `rotation` values arrive inside `inputs.base`; no `parentX`, `parentY`, or `parentRotation` is needed, and there is no projection primitive left with which to invent one. See ADR-043, ADR-044, and ADR-047.
+
+`ikPlugin` is the compose-stage inverse-kinematics plugin. It claims `flip`, `bend`, and `inspect`, declares `root`, scalar `target`, and dict `targets` requirements, and produces `rotations` plus opt-in `inspection`. Register it from `@motion5/core/plugins/ik`; the package declares this subpath alongside `/plugins/fk` and `/plugins/transform`. `rotations` contains local member angles, while `inspection` appears only when the solver authors `inspect: true`. See the [inverse kinematics guide](./inverse-kinematics.md) for the DOM-compatible coordinate convention, scale policy, lifecycle, and executable examples.
 
 ## @motion5/core/testing
 
