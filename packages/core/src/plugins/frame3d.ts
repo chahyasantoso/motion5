@@ -47,15 +47,22 @@ const ORIGIN: WorldFrame3d = Object.freeze({
   rotationY: 0,
 });
 
-function finite(value: number): number {
-  return Number.isFinite(value) ? value : 0;
+/**
+ * Degrees to radians, reduced by whole turns first and a non-finite angle read as zero.
+ *
+ * Whole turns are reduced before conversion, which leaves every angle inside a turn unchanged and
+ * keeps a finite angle past about `5.7e307` degrees from overflowing to `Infinity` in the product
+ * with `π`, where `sin` and `cos` would answer `NaN` for a rig that is finite (`TH-22`).
+ */
+function radiansOf(degrees: number): number {
+  return Number.isFinite(degrees) ? ((degrees % 360) * Math.PI) / 180 : 0;
 }
 
 /** CSS's Rz(rotation) * Rx(rotationX) * Ry(rotationY), with angles in degrees. */
 export function matrixFromEuler3d(euler: Euler3d): Matrix3 {
-  const z = (finite(euler.rotation) * Math.PI) / 180;
-  const x = (finite(euler.rotationX) * Math.PI) / 180;
-  const y = (finite(euler.rotationY) * Math.PI) / 180;
+  const z = radiansOf(euler.rotation);
+  const x = radiansOf(euler.rotationX);
+  const y = radiansOf(euler.rotationY);
   const cz = Math.cos(z);
   const sz = Math.sin(z);
   const cx = Math.cos(x);

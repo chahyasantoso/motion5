@@ -67,6 +67,18 @@ export function solveMagnitude(root: WorldFrame, members: readonly SolveMember[]
     if (member.pivot !== undefined) magnitudes.push(member.pivot.x, member.pivot.y);
     if (member.goal !== undefined) magnitudes.push(member.goal.x, member.goal.y);
   }
+  return magnitudeOf(magnitudes);
+}
+
+/**
+ * The magnitude decision itself, over world-unit magnitudes a solve of any dimension reads.
+ *
+ * `solveMagnitude` gathers the 2D rig's fields and the internal 3D closed form gathers its own, and
+ * both answer through this one policy, so the ceiling, the exponent and the rule for non-finite
+ * fields have one owner across dimensions rather than a sibling per solver. See ADR-111 and
+ * ADR-114.
+ */
+export function magnitudeOf(magnitudes: readonly number[]): SolveMagnitude {
   let largest = 0;
   for (const magnitude of magnitudes)
     if (Number.isFinite(magnitude)) largest = Math.max(largest, Math.abs(magnitude));
@@ -116,7 +128,7 @@ export function scaleRig(
  * infinite one is the answer to an infinite goal and stays infinite, and a `NaN` is a defect to
  * surface rather than a miss to launder into the largest double.
  */
-function restoreDistance(distance: number, exponent: number): number {
+export function restoreDistance(distance: number, exponent: number): number {
   if (!Number.isFinite(distance)) return distance;
   const restored = distance * 2 ** exponent;
   return restored <= Number.MAX_VALUE ? restored : Number.MAX_VALUE;

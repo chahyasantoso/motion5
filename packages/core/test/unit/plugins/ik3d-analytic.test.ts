@@ -122,7 +122,7 @@ describe("3D analytic two-bone solve", () => {
       const y = next() * 200 - 100;
       const l1 = 5 + next() * 95;
       const l2 = 5 + next() * 95;
-      // Every azimuth, including goals behind the root, and every reach-band outcome.
+      // Goal azimuths all the way round, goals behind the root, and all three reach-band outcomes.
       const gx = x + (next() * 2 - 1) * (l1 + l2) * 1.2;
       const gy = y + (next() * 2 - 1) * (l1 + l2) * 1.2;
       const base = readFrame3d({ x, y, rotation });
@@ -155,7 +155,8 @@ describe("3D analytic two-bone solve", () => {
       worstMiss = Math.max(worstMiss, Math.abs(miss - spatial.quality.residual));
     }
     // Not bit identity: the 3D answer is read back from a matrix through `atan2`, which rounds
-    // differently from the 2D sum of angles; 200,000 rigs measured 2.1e-11 degrees inside the band.
+    // differently from the 2D sum of angles; a 200,000-rig sandbox run of this generator, outside
+    // CI, measured 2.1e-11 degrees inside the band.
     // At a band edge the 2D elbow is `acos` of a cosine rounded next to -1 or 1, where `acos` has
     // an infinite slope, so 2D bends a straight arm by up to 2.4e-5 degrees and 3D, which lays the
     // clamped arm out along `e1`, does not. ADR-114 records both.
@@ -244,5 +245,65 @@ describe("3D analytic two-bone solve", () => {
     const worked = armPose(solveTwoBone3d(root, readFrame3d({ x: 60, z: 80 }), first, second));
     expect(distance(worked.elbow, { x: 38.4, y: 48, z: 51.2 })).toBeLessThanOrEqual(1e-9);
     expect(distance(worked.tip, { x: 60, y: 0, z: 80 })).toBeLessThanOrEqual(1e-9);
+  });
+
+  it("TH-22 keeps finite extreme geometry finite, at the 2D magnitude policy", () => {
+    const finitePose = (result: ReturnType<typeof solveTwoBone3d>) =>
+      Object.values(result.rotations3d).every((pose) =>
+        Object.values(pose).every((value) => Number.isFinite(value)),
+      );
+    // Subnormal: a reciprocal of the distance would be `Infinity`, and `0 * Infinity` is `NaN`.
+    const tiny = solveTwoBone3d(
+      root,
+      readFrame3d({ x: Number.MIN_VALUE }),
+      { id: "a", length: Number.MIN_VALUE },
+      { id: "b", length: Number.MIN_VALUE },
+    );
+    expect(finitePose(tiny)).toBe(true);
+    expect(Number.isFinite(tiny.quality.residual)).toBe(true);
+
+    // A finite root orientation past about 5.7e307 degrees overflowed its product with pi, and
+    // `sin(Infinity)` is `NaN`; whole turns are reduced first, so it reads as the angle it names.
+    const spun = solveTwoBone3d(
+      readFrame3d({ rotation: Number.MAX_VALUE, rotationX: -Number.MAX_VALUE, rotationY: 1e306 }),
+      readFrame3d({ x: 60, y: 40, z: 50 }),
+      first,
+      second,
+    );
+    expect(finitePose(spun)).toBe(true);
+    expect(spun.quality.kind).toBe("reached");
+
+    // Near `Number.MAX_VALUE`: the offset between opposite roots overflows unless the rig solves as
+    // its power-of-two image, and a residual past the largest double saturates rather than
+    // becoming `Infinity`, exactly as the 2D closed form's does.
+    const huge = solveTwoBone3d(
+      readFrame3d({ x: 1e308 }),
+      readFrame3d({ x: -1e308, y: 1e307 }),
+      { id: "a", length: 1e307 },
+      { id: "b", length: 1e307 },
+    );
+    expect(finitePose(huge)).toBe(true);
+    expect(huge.quality.kind).toBe("too-far");
+    expect(huge.quality.residual).toBe(Number.MAX_VALUE);
+    expect(huge.residuals.b).toBe(Number.MAX_VALUE);
+
+    // Planar reduction holds past the ceiling too: the same rig solved by 2D agrees.
+    const planar = solveTwoBone(
+      { x: 1e300, y: 0, rotation: 0 },
+      { x: 1e300 + 3e299, y: 4e299, rotation: 0 },
+      { id: "upper", base: "root", length: 4e299 },
+      { id: "fore", base: "upper", length: 3e299 },
+    );
+    const spatial = solveTwoBone3d(
+      readFrame3d({ x: 1e300 }),
+      readFrame3d({ x: 1e300 + 3e299, y: 4e299 }),
+      { id: "upper", length: 4e299 },
+      { id: "fore", length: 3e299 },
+    );
+    expect(spatial.quality.kind).toBe(planar.quality.kind);
+    for (const id of ["upper", "fore"])
+      expect(turnDistance(spatial.rotations3d[id]!.rotation, planar.rotations[id]!)).toBeLessThan(
+        1e-9,
+      );
   });
 });
