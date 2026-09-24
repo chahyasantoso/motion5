@@ -15,8 +15,9 @@ The paired reports were recorded on 2026-09-24 with Node `v22.23.1`, V8 `12.4.25
 other agents may have been running tests during the measurements, so these are observations rather
 than isolated-host guarantees.
 
-Run 1 was written to `/home/user/work/p7/bench-ik.json` and is the primary report below. The
-engine numbers measure a mounted runtime seeking every rig's goal once in a frame. Per-member
+Run 1 is the primary report below. Its raw JSON, like the paired Run 2 report, is a generated
+measurement artifact rather than a repository input; reproduce both with the command in Reproduce.
+The engine numbers measure a mounted runtime seeking every rig's goal once in a frame. Per-member
 figures divide the measured solve time by member count; they are not additional measurements.
 
 ## Solve scenarios
@@ -36,9 +37,8 @@ figures divide the measured solve time by member count; they are not additional 
 - **Tree-30:** 2,575.0832 microseconds per solve, or 2.5751 milliseconds per solve and 85.8361
   microseconds per member. All 200 reported `conflicted`, with a mean and maximum of 64 passes.
 - **Tree-14-conflicting:** 1,068.7883 microseconds per solve, or 1.0688 milliseconds per solve
-  and 76.3420 microseconds per member. All 200 reported `conflicted`, with a mean and maximum of
-  64 passes. This is the committed script's additional scenario and was absent from the stale
-  report.
+  and 76.3420 microseconds per member. This is the committed script's additional scenario and was absent
+  from the stale report.
 - **Constrained-8:** 97.5334 microseconds per solve, or 12.1917 microseconds per member. Of 200
   solves, 197 reported `converged` and 3 reported `limited`; the mean was 7.46 passes and the
   maximum was 64.
@@ -69,12 +69,11 @@ fixed-point problem. A fixed cap for that case remains a policy decision for fol
 
 ## Run-to-run variation
 
-Run 2 was written to `/home/user/work/p7/bench-ik-run2.json` under the same reported conditions.
-It produced 1.9013 microseconds for two-bone, 75.8308 microseconds for chain-8, 858.2578
-microseconds for chain-32, 2,863.6790 microseconds for chain-64, 1,112.1312 microseconds for
-tree-14, 2,606.5190 microseconds for tree-30, 1,128.9132 microseconds for
-`tree-14-conflicting`, and 104.2292 microseconds for constrained-8. The corresponding run-2
-quality counts were identical to run 1.
+Run 2 was recorded under the same reported conditions. It produced 1.9013 microseconds for two-bone,
+75.8308 microseconds for chain-8, 858.2578 microseconds for chain-32, 2,863.6790 microseconds for
+chain-64, 1,112.1312 microseconds for tree-14, 2,606.5190 microseconds for tree-30, 1,128.9132
+microseconds for `tree-14-conflicting`, and 104.2292 microseconds for constrained-8. The corresponding
+run-2 quality counts were identical to run 1.
 
 Relative to run 1, solve timing changed by -18.3% for two-bone, -0.5% for chain-8, -7.1% for
 chain-32, -3.5% for chain-64, +2.1% for tree-14, +1.2% for tree-30, +5.6% for
