@@ -44,8 +44,15 @@ const CEILING_EXPONENT = 500;
 const NATIVE: SolveMagnitude = Object.freeze({ kind: "native" });
 
 /**
- * Whether a solve runs natively or as its power-of-two image, from every world-unit magnitude it
- * reads: the root position, each member's length and pivot offset, and each goal position.
+ * Whether a solve runs natively or as its power-of-two image, from every finite world-unit
+ * magnitude it reads: the root position, each member's length and pivot offset, and each goal
+ * position.
+ *
+ * A non-finite field is not a magnitude and is left out. An infinite goal is directional, and
+ * ADR-107 answers it `too-far` with an infinite residual; counting it would make the exponent
+ * infinite and the scale zero, and `0 * Infinity` would turn that answer into `NaN`. Left out, it
+ * stays infinite in the image, where the strategies read it exactly as they read it natively, and
+ * a `NaN` field reaches them unchanged as well rather than silently switching the scale off.
  *
  * Rotations are not read: they are angles, and a scale leaves them alone. The exponent is the
  * whole number of binary orders the largest magnitude sits above the ceiling, rounded up, so the
@@ -54,14 +61,15 @@ const NATIVE: SolveMagnitude = Object.freeze({ kind: "native" });
  * power-of-two scale is exact; a result below one order is raised to one.
  */
 export function solveMagnitude(root: WorldFrame, members: readonly SolveMember[]): SolveMagnitude {
-  let largest = Math.max(Math.abs(root.x), Math.abs(root.y));
+  const magnitudes = [root.x, root.y];
   for (const member of members) {
-    largest = Math.max(largest, Math.abs(member.length));
-    if (member.pivot !== undefined)
-      largest = Math.max(largest, Math.abs(member.pivot.x), Math.abs(member.pivot.y));
-    if (member.goal !== undefined)
-      largest = Math.max(largest, Math.abs(member.goal.x), Math.abs(member.goal.y));
+    magnitudes.push(member.length);
+    if (member.pivot !== undefined) magnitudes.push(member.pivot.x, member.pivot.y);
+    if (member.goal !== undefined) magnitudes.push(member.goal.x, member.goal.y);
   }
+  let largest = 0;
+  for (const magnitude of magnitudes)
+    if (Number.isFinite(magnitude)) largest = Math.max(largest, Math.abs(magnitude));
   if (!(largest > SOLVE_MAGNITUDE_CEILING)) return NATIVE;
   const exponent = Math.max(1, Math.ceil(Math.log2(largest)) - CEILING_EXPONENT);
   return Object.freeze({ kind: "rescaled", exponent });
@@ -103,10 +111,13 @@ export function scaleRig(
  * A distance solved in the image, back in the rig's world units, saturating at `Number.MAX_VALUE`.
  *
  * Saturating rather than overflowing, because the one promise this module makes is a finite
- * answer, and a miss larger than the largest double is a miss no caller can act on differently from
- * one that is merely the largest double.
+ * answer for a finite rig, and a miss larger than the largest double is a miss no caller can act on
+ * differently from one that is merely the largest double. Only a finite distance saturates: an
+ * infinite one is the answer to an infinite goal and stays infinite, and a `NaN` is a defect to
+ * surface rather than a miss to launder into the largest double.
  */
 function restoreDistance(distance: number, exponent: number): number {
+  if (!Number.isFinite(distance)) return distance;
   const restored = distance * 2 ** exponent;
   return restored <= Number.MAX_VALUE ? restored : Number.MAX_VALUE;
 }

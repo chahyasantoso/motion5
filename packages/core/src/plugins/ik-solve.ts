@@ -80,7 +80,8 @@ export function chainShape(members: readonly SolveMember[]): ChainShape {
  * ever took that path, but `solveChain` is a pure function of its members and not of the order a
  * caller listed them in, and `SD-4` pins that. A pair that is not a parent and its addressed child
  * (two siblings off the root, or a goal on the parent) is not the closed form's shape and takes
- * FABRIK, which reads the relation itself. See ADR-111.
+ * FABRIK, which solves siblings as a tree and refuses a goal on a member with children by name,
+ * since load already refuses that shape as `ik-goal-not-leaf`. See ADR-111.
  */
 function twoBonePair(members: readonly SolveMember[]): TwoBonePair | undefined {
   const [a, b] = members;

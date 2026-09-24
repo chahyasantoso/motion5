@@ -261,6 +261,11 @@ describe("IK stability and determinism (issue #349 phase 6)", () => {
       { id: "b", base: "a", length: 1 },
     ];
     expect(chainShape(parentGoal).kind).toBe("tree");
+    // FABRIK reads a goal only on a leaf, so a goal on a parent used to be ignored while the
+    // solve reported `converged`. Load refuses it as `ik-goal-not-leaf`; the solve names it too.
+    expect(() => solveChain(ORIGIN, parentGoal)).toThrow(
+      'Solver goal on member "a" is not on a leaf of the chain.',
+    );
     // Malformed pairs answer the same from either order: a cycle and a self-based member reach
     // FABRIK, which refuses them by name, and a goal on both members is not the closed form's pair.
     const goal = { x: 2, y: 1, rotation: 0 };
@@ -289,12 +294,8 @@ describe("IK stability and determinism (issue #349 phase 6)", () => {
       { id: "b", base: "a", length: 1, goal },
     ];
     expect(chainShape(bothAddressed).kind).toBe("tree");
-    expect(
-      identical(
-        solveChain(ORIGIN, [bothAddressed[1]!, bothAddressed[0]!]),
-        solveChain(ORIGIN, bothAddressed),
-      ),
-    ).toBe(true);
+    for (const order of [bothAddressed, [bothAddressed[1]!, bothAddressed[0]!]])
+      expect(() => solveChain(ORIGIN, order)).toThrow(/member "a" is not on a leaf/);
     const neither = [
       { id: "a", base: "root", length: 2 },
       { id: "b", base: "a", length: 1 },
@@ -585,5 +586,91 @@ describe("IK stability and determinism (issue #349 phase 6)", () => {
       expect(identical(reverse.get(progress), forward.get(progress))).toBe(true);
       expect(identical(seek.get(progress), forward.get(progress))).toBe(true);
     }
+  });
+
+  it("SD-13 FABRIK is finite on a finite rig that mixes huge and tiny members", () => {
+    // A `1e300` member reaching across a `1e-100` gap overflowed `length / distance` in FABRIK's
+    // placement, and the `0 * Infinity` that followed published `NaN` for every member.
+    const branching: readonly SolveMember[] = [
+      { id: "a", base: "root", length: 1e-100 },
+      { id: "b", base: "a", length: 1e-200 },
+      { id: "c", base: "b", length: 1e-200 },
+      { id: "d", base: "c", length: 1e-200, goal: { x: 1e-100, y: 0, rotation: 0 } },
+      { id: "e", base: "a", length: 1e300, goal: { x: 1e-100, y: 1e-100, rotation: 0 } },
+    ];
+    const linear: readonly SolveMember[] = [
+      { id: "a", base: "root", length: 1e-200 },
+      { id: "b", base: "a", length: 1e300 },
+      { id: "c", base: "b", length: 1e-200, goal: { x: 1e-200, y: 0, rotation: 0 } },
+    ];
+    for (const members of [branching, linear]) {
+      for (const flip of [false, true]) {
+        const result = solveChain(ORIGIN, members, flip);
+        expect(everyFinite(result)).toBe(true);
+        expect(identical(solveChain(ORIGIN, [...members].reverse(), flip), result)).toBe(true);
+      }
+    }
+    // A net rather than the witness above: every member of one rig scaled by its own power of ten
+    // from `1e-300` to `1e300`, which the phase-6 tip already answered finitely on 20,000 rigs.
+    const random = seeded(0x5d13);
+    for (const rig of corpus(0x5d13, 300, 1, false)) {
+      const members = rig.members.map((member): SolveMember => {
+        const factor = 10 ** Math.round(-300 + 600 * random());
+        const { goal } = member;
+        return {
+          ...member,
+          length: member.length * factor,
+          ...(goal === undefined
+            ? {}
+            : { goal: { ...goal, x: goal.x * factor, y: goal.y * factor } }),
+        };
+      });
+      expect(everyFinite(solveChain(rig.root, members, rig.flip))).toBe(true);
+    }
+  });
+
+  it("SD-14 a non-finite field neither sets the scale nor is laundered by it", () => {
+    // An infinite goal is directional and the closed form answers it `too-far` with an infinite
+    // residual (ADR-107, IR-9), natively and past the ceiling alike: counting it as a magnitude
+    // made the scale zero, and the image then read `0 * Infinity`. FABRIK's answer to a non-finite
+    // goal is outside ADR-111's finite-rig claim and is not pinned here.
+    const far = { x: Number.POSITIVE_INFINITY, y: 0, rotation: 0 };
+    const native = [
+      { id: "a", base: "root", length: 1 },
+      { id: "b", base: "a", length: 1, goal: far },
+    ];
+    const huge = [
+      { id: "a", base: "root", length: 2 ** 600 },
+      { id: "b", base: "a", length: 2 ** 600, goal: far },
+    ];
+    expect(solveMagnitude(ORIGIN, native)).toEqual({ kind: "native" });
+    expect(solveMagnitude(ORIGIN, huge)).toEqual({ kind: "rescaled", exponent: 100 });
+    for (const members of [native, huge]) {
+      expect(solveChain(ORIGIN, members)).toEqual({
+        rotations: { a: 0, b: 0 },
+        residuals: { b: Number.POSITIVE_INFINITY },
+        quality: { kind: "too-far", residual: Number.POSITIVE_INFINITY },
+      });
+    }
+    // A restored residual saturates only when it is finite: an infinite one stays infinite and a
+    // `NaN` stays visible rather than reading as the largest double.
+    const restored = restoreResult(
+      {
+        rotations: {},
+        residuals: {
+          finite: Number.MAX_VALUE,
+          infinite: Number.POSITIVE_INFINITY,
+          nan: Number.NaN,
+        },
+        quality: { kind: "reached", residual: Number.NaN },
+      },
+      1,
+    );
+    expect(restored.residuals).toEqual({
+      finite: Number.MAX_VALUE,
+      infinite: Number.POSITIVE_INFINITY,
+      nan: Number.NaN,
+    });
+    expect(restored.quality.residual).toBeNaN();
   });
 });
