@@ -79,6 +79,10 @@ function readSolvedRotation(solver: unknown, nodeId: string): number | undefined
  *
  * `minRotation` and `maxRotation` are authored metadata for the IK solve and are not read here.
  * FK remains the owner of composition; the constraint owner reads those keys before solving.
+ * `influence` is the same kind of metadata: a leaf's weight on its goal when a multi-goal chain's
+ * branches disagree, read by `ik-goal.ts` inside the solve and never by this composition. It is
+ * claimed here for the reason the limits are, because the bone is where the author writes it and an
+ * unclaimed key is refused at load. See ADR-110.
  *
  * `weight` is per member rather than per solver, so a chain can stagger its reach: a shoulder that
  * commits early while the wrist lags is two weights on two bones, and a solver-level weight would
@@ -91,7 +95,7 @@ function readSolvedRotation(solver: unknown, nodeId: string): number | undefined
  */
 export const fkPlugin: PluginDefinition = {
   name: "fk",
-  keys: ["x", "y", "length", "rotation", "weight", "minRotation", "maxRotation"],
+  keys: ["x", "y", "length", "rotation", "weight", "minRotation", "maxRotation", "influence"],
   requirements: {
     base: { description: "the parent bone or root this bone hangs from" },
     solver: { description: "the IK solver providing solved rotation override" },

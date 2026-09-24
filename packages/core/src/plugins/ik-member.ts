@@ -32,6 +32,11 @@ import type { JointRange } from "./ik-constraint";
  * `limit` is present only on a member that declared a range, and absent means free, exactly as an
  * absent `pivot` means zero. Carrying the range variant alone keeps "is this chain constrained" a
  * presence test rather than a second read of a union the adapter already read. See ADR-108.
+ *
+ * `influence` is present only on a member whose live values carry one in its domain, and absent
+ * means the documented default, read through `goalInfluence` in `ik-goal.ts` exactly as an absent
+ * `pivot` is read through `solveOffset`. Only an addressed leaf's influence is ever read, because it
+ * is the goal's weight and not the bone's; load refuses it anywhere else. See ADR-110.
  */
 export interface SolveMember {
   readonly id: string;
@@ -40,6 +45,7 @@ export interface SolveMember {
   readonly pivot?: PivotOffset;
   readonly goal?: WorldFrame;
   readonly limit?: JointRange;
+  readonly influence?: number;
 }
 
 /**

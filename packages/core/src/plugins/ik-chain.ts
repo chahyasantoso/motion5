@@ -1,6 +1,7 @@
 import { readFrame, readNumber, readPivotOffset, type WorldFrame } from "./frame";
 import type { SolveMember } from "./ik-member";
 import { readJointLimit } from "./ik-constraint";
+import { readInfluence } from "./ik-goal";
 
 /**
  * The chain as the publisher delivers it, and the one adapter that turns it into what a solve
@@ -121,6 +122,8 @@ export function readGoals(
  * `goal` is omitted rather than set to `undefined` on an unaddressed member, which is what
  * `exactOptionalPropertyTypes` requires and what the goal count in `ik-solve.ts` reads. `limit` is
  * omitted the same way on a free member, read once through `ik-constraint.ts`. See ADR-108.
+ * `influence` is omitted the same way when absent or outside its domain, read once through
+ * `ik-goal.ts`, so an unweighted rig builds exactly the member records it built before. See ADR-110.
  */
 export function readSolveMembers(
   members: readonly DeliveredMember[],
@@ -131,6 +134,7 @@ export function readSolveMembers(
     const pivot = readPivotOffset(member.values);
     const goal = goals.get(member.id);
     const limit = readJointLimit(member.values);
+    const influence = readInfluence(member.values);
     return {
       id: member.id,
       base: member.base,
@@ -138,6 +142,7 @@ export function readSolveMembers(
       pivot,
       ...(goal === undefined ? {} : { goal }),
       ...(limit.kind === "range" ? { limit } : {}),
+      ...(influence === undefined ? {} : { influence }),
     };
   });
 }

@@ -111,6 +111,8 @@ export const BASE_RULE_IDS = [
   "ik-goal-duplicate",
   "ik-goal-not-leaf",
   "ik-goal-unknown-member",
+  "ik-influence-malformed",
+  "ik-influence-without-goal",
   "ik-inspect-malformed",
   "ik-leaf-without-goal",
   "ik-limit-empty",
