@@ -83,17 +83,25 @@ function ruleIds(project: ProjectDefinition): readonly string[] {
   return buildGraphIR(project).diagnostics.map((d) => d.ruleId);
 }
 
-function publishedSolver(project: ProjectDefinition): Patch {
+function corePlugins(): PluginRegistry {
   const plugins = new PluginRegistry();
   plugins.register(transformPlugin);
   plugins.register(fkPlugin);
   plugins.register(ikPlugin);
-  const runtime = new Engine({
+  return plugins;
+}
+
+function loadWith(project: ProjectDefinition, plugins: PluginRegistry) {
+  return new Engine({
     clock: createManualClock(),
     interpolator: createFakeInterpolator(),
     scheduler: createFakeScheduler(),
     plugins,
   }).load(project);
+}
+
+function publishedSolver(project: ProjectDefinition): Patch {
+  const runtime = loadWith(project, corePlugins());
   const published: Patch[] = [];
   for (const id of ["walker/root", "walker/goal", "walker/solve", "walker/upper", "walker/fore"])
     runtime.mount(id);
@@ -215,6 +223,10 @@ describe("opt-in IK solve inspection", () => {
       { root: ROOT, target: TARGET, members: MEMBERS },
       "walker/solve",
     );
+    // The half of this case that needs ADR-109: before it, the opted composer returned exactly the
+    // unopted keys plus the authored switch, so every identity assertion here was already true.
+    expect(Object.keys(opted).sort()).toEqual(["inspect", "inspection", "rotations"]);
+    expect(opted).toHaveProperty("inspection");
     const optedRotations = opted.rotations as unknown as Readonly<Record<string, number>>;
     for (const [id, angle] of Object.entries(solved.rotations))
       expect(Object.is(optedRotations[id], angle)).toBe(true);
@@ -258,12 +270,25 @@ describe("opt-in IK solve inspection", () => {
   });
 
   it("IN-5 accepts both static boolean spellings", () => {
-    expect(buildGraphIR(projectWithInspect(true)).diagnostics.map((d) => d.ruleId)).not.toContain(
-      "ik-inspect-malformed",
-    );
-    expect(
-      buildGraphIR(projectWithInspect(false, false)).diagnostics.map((d) => d.ruleId),
-    ).not.toContain("ik-inspect-malformed");
+    // Acceptance is a registry question as well as a graph one: `buildGraphIR` holds no registry,
+    // so a leaf `ik` does not claim reaches it unrefused and only the engine's load reports it as
+    // `plugin-unknown-key`. An assertion against the graph alone therefore passes with `inspect`
+    // missing from `ik.keys`, which is how this case was green before phase 4. It asserts both
+    // layers, and the load half is what fails without the claim.
+    const spellings = [projectWithInspect(true), projectWithInspect(false, false)];
+    for (const project of spellings) {
+      expect(buildGraphIR(project).diagnostics).toEqual([]);
+      expect(() => loadWith(project, corePlugins())).not.toThrow();
+    }
+    const unclaimed = new PluginRegistry();
+    unclaimed.register(transformPlugin);
+    unclaimed.register(fkPlugin);
+    unclaimed.register({
+      ...ikPlugin,
+      keys: (ikPlugin.keys ?? []).filter((key) => key !== "inspect"),
+    });
+    for (const project of spellings)
+      expect(() => loadWith(project, unclaimed)).toThrow(/plugin-unknown-key/);
   });
 
   it("IN-6 exhaustively projects every quality kind into one frozen shape", () => {
@@ -320,7 +345,23 @@ describe("opt-in IK solve inspection", () => {
       { id: "solve", keyframes: { ik: { requires: { root: "root", target: "goal" } } } },
       [bystander],
     );
+    // A scope guard rather than capability evidence: before phase 4 no rule read `inspect`, so
+    // the empty result below was already true. The paired half is what makes it mean something,
+    // because the same project with the malformed switch moved onto the solver is refused, so the
+    // rule is live in this rig and the bystander's exemption is its scope rather than its absence.
     expect(ruleIds(project).filter((id) => id.startsWith("ik-"))).toEqual([]);
+    const onSolver = projectWith(
+      {
+        id: "solve",
+        keyframes: {
+          ik: { values: { inspect: "verbose" }, requires: { root: "root", target: "goal" } },
+        },
+      },
+      [bystander],
+    );
+    const refused = buildGraphIR(onSolver).diagnostics.filter((d) => d.ruleId.startsWith("ik-"));
+    expect(refused.map((d) => d.ruleId)).toEqual(["ik-inspect-malformed"]);
+    expect(refused.map((d) => d.path)).toEqual(["walker/solve.keyframes.ik.values.inspect"]);
   });
 
   it("IN-9 publishes inspection through the engine and keeps it off the DOM", () => {
@@ -340,6 +381,25 @@ describe("opt-in IK solve inspection", () => {
       atBound: [],
     });
     expect(JSON.stringify(opted.values.rotations)).toBe(JSON.stringify(unopted.values.rotations));
+    // The whole envelope, not only `values`: opting in changes the published values by exactly the
+    // two added keys and leaves identity, status, progress, source revisions and diagnostics as the
+    // unopted patch has them. The unopted patch is itself `{ rotations }` of the solve (`IN-2`).
+    const { values: optedValues, ...optedEnvelope } = opted;
+    const { values: unoptedValues, ...unoptedEnvelope } = unopted;
+    expect(JSON.stringify(optedEnvelope)).toBe(JSON.stringify(unoptedEnvelope));
+    expect(Object.keys(unoptedEnvelope).sort()).toEqual([
+      "diagnostics",
+      "nodeId",
+      "revision",
+      "sourceProgress",
+      "sourceRevisions",
+      "status",
+    ]);
+    expect(unopted.diagnostics).toEqual([]);
+    const { inspect, inspection, ...optedRest } = optedValues;
+    expect(inspect).toBe(true);
+    expect(inspection).toBeDefined();
+    expect(JSON.stringify(optedRest)).toBe(JSON.stringify(unoptedValues));
 
     // The record is data for a consumer, not a property a renderer writes: the DOM adapter skips
     // a plain record, so the stage receives the scalar `inspect` switch and nothing named
