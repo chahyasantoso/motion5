@@ -95,7 +95,13 @@ malformed refusals, the misgrouped refusal and the bystander-plugin exemption, t
 projection of every quality kind with frozen `atBound` arrays, and the published patch through the
 engine with the DOM adapter declining to write the record. The rule id is registered in
 `contract/rule-id.ts` and `contract/rule.ts`; the evidence-id gate and the acceptance map register
-the series.
+the series. `IN-2`, `IN-5` and `IN-9` were tightened by this phase's quality pass: `IN-2` asserts
+the opted-in keys, `IN-5` loads both spellings through a registry and shows the load refusing them
+as `plugin-unknown-key` once `ik` stops claiming `inspect` (the graph layer holds no registry, so a
+graph-only assertion could not fail), and `IN-9` compares the whole patch envelope. `IN-8` is a
+scope guard that was green before this phase, paired with the same rig refusing a malformed switch
+on the solver, so the exemption is shown to be scope rather than absence. ADR-054 and ADR-106 carry
+amendment notes for their unqualified "rotations only" and "publication unchanged" sentences.
 
 The sandbox esbuild harness is behavioural evidence only. Full-suite, formatter, scanner and
 typecheck results belong to the pull request's CI run on its exact head and must not be inferred
