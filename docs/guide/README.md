@@ -11,7 +11,8 @@ The guide documents the surface the package declares in its `exports` map and no
 3. [Rendering patches](./rendering-patches.md): the DOM adapter, the React hook, and writing your own consumer.
 4. [Runtime changes](./runtime-changes.md): adding and removing motions and tracks on a live project.
 5. [Errors and diagnostics](./errors-and-diagnostics.md): what rejects, what warns, and what throws where.
-6. [API reference](./api-reference.md): every public export, grouped by the entrypoint that ships it.
+6. [Inverse kinematics](./inverse-kinematics.md): 2D `fk` and `ik` conventions, scale, cost, and lifecycle.
+7. [API reference](./api-reference.md): every public export, grouped by the entrypoint that ships it.
 
 ## What this guide is not
 

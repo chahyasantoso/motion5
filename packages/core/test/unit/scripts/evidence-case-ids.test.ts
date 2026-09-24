@@ -339,6 +339,19 @@ import { fileURLToPath } from "node:url";
 // `P-` paragraph sets, and the ordering note on the alternation below covers `HO` as it covers
 // `CF`.
 //
+// `EN-` belongs to the 2D solve's performance envelope, phase 7 of issue #349 and ADR-113: which
+// strategy each envelope rig dispatches to, that every rig publishes finite rotations, that the
+// iterative solve stops at its cap rather than running on, and that independent rigs in one
+// runtime do not couple. It pins the shapes `scripts/bench-ik.mjs` times, and never a duration,
+// because a timing is a measurement with recorded conditions rather than a gate (ADR-008). The
+// rigs themselves have one owner, `test/support/ik-envelope.ts`, which both read.
+//
+// `GE-` belongs to the inverse kinematics guide, `docs/guide/inverse-kinematics.md`, in the same
+// phase: its cases read the guide file itself and execute every JSON example it carries, so an
+// example that stops loading or stops publishing what the prose says it publishes is a red case
+// rather than stale prose (ADR-095). `G-` stays the series it already is; a two-letter prefix
+// beside its own initial is the policy the `P-` paragraph sets.
+//
 // The scan root is the repository rather than `packages/core/test`, because an id names one test in
 // the suite and the suite is not one package. `H-4` is declared in
 // `packages/react/test/public-hook-render.test.ts`, which the old root could not see, so one id
@@ -390,8 +403,9 @@ const TEST_FILE = /\.test\.tsx?$/;
 // convention rather than a correctness requirement. Every alternative here is followed by the
 // same hyphen-and-digits suffix, so a `C` that matched the head of `CF-3` fails on the `F` and
 // the engine retries the next alternative at the same position. `C` before `CF` and `CF` before
-// `C` both match `CF-3`, and so does every one of the seventeen two-letter-and-initial pairs
-// this pattern carries.
+// `C` both match `CF-3`, and so does every two-letter-and-initial pair this pattern carries. It
+// used to give a count, seventeen, which was already four short before `EN` and `GE` arrived; the
+// pattern is the one owner of how many there are.
 //
 // Fourteen series paragraphs used to give the opposite reason, each claiming its own place in
 // the order was forced because an alternation offering the single letter first would match it
@@ -401,7 +415,7 @@ const TEST_FILE = /\.test\.tsx?$/;
 // this pattern belongs beside the pattern rather than once per series, so those paragraphs now
 // say what a series owns and this one says where it sorts. Issue #294.
 const CASE_TITLE =
-  /it\(\s*"((?:AE|CF|CL|CN|CS|DV|EV|FB|FO|GI|HO|IK|IN|IR|LF|LV|MG|PK|PV|RA|RB|RS|SD|SH|WT|B|C|D|E|F|G|H|J|K|L|M|N|P|Q|R|S|T|U|V|W|Y|Z)-\d+)/g;
+  /it\(\s*"((?:AE|CF|CL|CN|CS|DV|EN|EV|FB|FO|GE|GI|HO|IK|IN|IR|LF|LV|MG|PK|PV|RA|RB|RS|SD|SH|WT|B|C|D|E|F|G|H|J|K|L|M|N|P|Q|R|S|T|U|V|W|Y|Z)-\d+)/g;
 const REACT_RENDER = "packages/react/test/public-hook-render.test.ts";
 const SERIES_SHAPED_TITLE = /it\(\s*"([A-Z]{1,2}\d*)-(\d+)(?![\w-])/g;
 const SERIES_PREFIX = /^[A-Z]{1,2}$/;

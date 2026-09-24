@@ -26,6 +26,7 @@
     "test:boundaries": "node scripts/boundary-scan.mjs && vitest run packages/core/test/unit/scripts/boundary-scan.test.ts",
     "test:read-budget": "node scripts/read-budget-scan.mjs && vitest run packages/core/test/unit/scripts/read-budget-scan.test.ts",
     "benchmark": "node performance/graph-benchmark.mjs",
+    "bench:ik": "node scripts/bench-ik.mjs",
     "patches": "node scripts/handover.mjs apply",
     "test:watch": "vitest",
     "dev": "npm run dev --workspace=@motion5/react-demo",

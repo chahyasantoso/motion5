@@ -202,6 +202,7 @@ Inverse Kinematics computes joint rotations so a bone chain reaches toward one o
 
 - **`ik` Plugin Group**: Declares configuration under `values` and topology under `requires`:
   - `values.flip`: boolean (optional, default `false`) to mirror the joint bend angle (e.g. elbow/knee orientation). One `flip` serves the whole solve, including every limb of a branching chain. `values.bend` may instead be the static string `"positive"` or `"negative"`; positive is exactly `flip: true` and negative is `flip: false`, and authoring both is refused.
+  - `values.inspect`: static boolean (optional, default `false`) to opt into the solver's `inspection` output alongside `rotations`; it is not animated. Use `inspect: true` when residuals and quality are needed.
   - `requires.root`: qualified ID of the world frame the chain hangs from. The root is never moved by the solve.
   - `requires.target`: qualified ID of the world-space coordinate the chain's single leaf reaches toward.
   - `requires.targets`: a dict of goals keyed by member id, for a chain with more than one leaf. Every leaf must be named once the dict is used at all.
@@ -358,23 +359,7 @@ Errors reject a candidate project before it replaces the active project. Warning
 
 A diagnostic about a grouped leaf cites the authored path, including the section: `keyframes.fk.values.length`. A diagnostic about a stop cites its index on the property: `keyframes.x[0].p`. A diagnostic about a dict entry cites the key you typed: `keyframes.ik.requires.targets.forearm`. There is no derived slot spelling for it to cite instead.
 
-Load-time solver diagnostics include:
-
-- `ik-solver-no-root`: A solver node does not bind a `root` requirement edge.
-- `ik-solver-no-members`: A solver node has no member nodes binding `solver` to it.
-- `ik-solver-no-goal`: A solver node binds neither `target` nor `targets`, so it has nothing to reach for.
-- `ik-solver-unreachable-root`: A member's `base` hierarchy walk fails to terminate at the solver's bound `root`.
-- `ik-mode-ambiguous`: A single node binds `solver` alongside `root` or a goal, or binds `root` under multiple plugins.
-- `ik-solved-rotation-dead`: A bone bound to a `solver` authors a local `rotation` with no `weight` beside it in the same group, so nothing could read the authored value.
-- `ik-weight-without-solver`: A node that bound a `solver` slot under one plugin group authors a `weight` under another, where no solved rotation reaches it.
-- `ik-goal-unknown-member`: A goal key qualifies to no member of that solver's chain.
-- `ik-goal-not-leaf`: A goal is authored on a member another member hangs from.
-- `ik-goal-duplicate`: Two goal keys qualify to one member id.
-- `ik-goal-conflict`: One solver authors both `target` and `targets`.
-- `ik-leaf-without-goal`: The goal dict was used and a chain leaf it never named has nothing to reach for.
-- `ik-target-not-single-leaf`: A solver binds the bare `target` slot over a chain with more than one leaf.
-
-Those all answer about the member a goal key names. Whether `targets` was allowed to carry keys at all is answered one layer up by the plugin's declaration, so the two never report together.
+Load-time solver diagnostics are complete in [Errors and diagnostics](./guide/errors-and-diagnostics.md#inverse-kinematics-and-solver-rules). That guide owns the full `ik-*` rule inventory and meanings; this schema document owns authored shape and field semantics rather than maintaining a second, stale list.
 
 There is no diagnostic about a solver's derived member count. `ik-solver-unsupported-arity` refused every count other than two and is deleted rather than widened, because a rule that refuses a shape the runtime solves is worse than no rule. See ADR-052.
 

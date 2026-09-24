@@ -40,6 +40,7 @@ Before introducing a flag, alias, facade, second owner, compatibility path, new 
 - [IMPLEMENTATION-PLAN.md](./IMPLEMENTATION-PLAN.md): phases, slice-level pull requests, dependencies, test obligations, exit gates, risk register, and the v1 checklist. Treat its completed-slice claims as intent until reconciled with SESSION-STATUS.
 - [PHASE5-DETAILED-PLAN.md](./PHASE5-DETAILED-PLAN.md): the detailed contract for the current phase.
 - [TESTING-STRATEGY.md](./TESTING-STRATEGY.md): test tiers, determinism rules, migration evidence, invariant evidence, and prohibited evidence.
+- [BENCH-IK.md](./BENCH-IK.md): the measured 2D IK envelope, conditions, reproduction command, and non-gating timing policy.
 - [CI-WORKFLOW.md](./CI-WORKFLOW.md): workflow rules, job contracts, artifacts, required versus advisory gates, and rollout schedule.
 - [PR-WORKFLOW.md](./PR-WORKFLOW.md): branch naming, commit style, pull request contents, review order, merge policy, reverts, and the status discipline every slice owes.
 - [FORMATTING.md](./FORMATTING.md): Prettier configuration, the read-only gate, why nothing in CI repairs drift, and the manual repair.

@@ -1,8 +1,7 @@
 # ADR-111: Stability and determinism of the 2D solve
 
-**Status:** Proposed as issue [#349](https://github.com/chahyasantoso/motion5/issues/349) phase 6,
-2026-09-24, against `main` at `7e6f4edc` (phase 5, PR #486, ADR-110). Accepted when its pull request
-merges.
+**Status:** Accepted, 2026-09-24. Issue [#349](https://github.com/chahyasantoso/motion5/issues/349)
+phase 6, against `main` at `7e6f4edc` (phase 5, PR #486, ADR-110).
 
 ## Invariant
 
