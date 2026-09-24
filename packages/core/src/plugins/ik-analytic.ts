@@ -133,20 +133,47 @@ function twoBone(
     };
   }
 
-  const cosAlpha = clamp(
-    (reach * reach + clampedD * clampedD - l2 * l2) / (2 * reach * clampedD),
-    -1,
-    1,
-  );
-  const alpha = (Math.acos(cosAlpha) * 180) / Math.PI;
-
-  const cosBeta = clamp((reach * reach + l2 * l2 - clampedD * clampedD) / (2 * reach * l2), -1, 1);
-  const beta = (Math.acos(cosBeta) * 180) / Math.PI;
+  const alpha = (Math.acos(cosineOpposite(reach, clampedD, l2)) * 180) / Math.PI;
+  const beta = (Math.acos(cosineOpposite(reach, l2, clampedD)) * 180) / Math.PI;
 
   const angles: readonly [number, number] = flip
     ? [targetAngle - alpha - twist - root.rotation, 180 - beta + twist]
     : [targetAngle + alpha - twist - root.rotation, beta - 180 + twist];
   return { angles, quality: band };
+}
+
+/**
+ * The cosine of the angle between sides `a` and `b` of a triangle whose third side is `opposite`,
+ * held inside the `acos` domain: the law of cosines, stated once for both of the closed form's
+ * angles.
+ *
+ * **Solved at unit magnitude, which is exact.** The law is homogeneous of degree zero, so every
+ * side is first scaled by the power of two nearest the largest side's reciprocal. A power-of-two
+ * scale is exact on every normal double, and so is every square, sum and quotient of the scaled
+ * sides that stays normal, so for every triangle whose arithmetic never left the normal range the
+ * scaled quotient is bit for bit the unscaled one. The worked rig still publishes `40.168` and
+ * `-51.318`, `SD-1` pins the scale-freeness, and ADR-111 records the 200,000-rig measurement of
+ * byte identity against the unscaled expression. What the scale changes is the triangle whose
+ * unscaled squares did leave the normal range: sides near `1e160` squared to `Infinity`, sides near
+ * `1e-170` squared to zero, and both quotients were `NaN`, which the clamp propagates and the
+ * publisher refuses. Before issue #349's sixth phase a two-bone rig at either scale, or a goal on a
+ * root at `x: 1` with lengths of `1e-200`, published `NaN`.
+ *
+ * The exponent is held inside `[-1000, 1000]` so the scale itself is a normal power of two, which
+ * `2 ** 1074` and `2 ** -1024` are not; a largest side outside that range is left at most `2 ** 24`
+ * from unit magnitude, which is still far inside it. A quotient that is still `NaN` is `0 / 0`: an
+ * adjacent side below `2 ** -1074` of the largest has no extent even at unit magnitude, and the
+ * angle beside a side of no extent reads nothing. It answers the aligned angle, a cosine of one,
+ * rather than a value the publisher would refuse; `SD-1` pins it. See ADR-111.
+ */
+function cosineOpposite(a: number, b: number, opposite: number): number {
+  const exponent = clamp(Math.round(Math.log2(Math.max(a, b, opposite))), -1000, 1000);
+  const scale = 2 ** -exponent;
+  const x = a * scale;
+  const y = b * scale;
+  const z = opposite * scale;
+  const cosine = (x * x + y * y - z * z) / (2 * x * y);
+  return Number.isNaN(cosine) ? 1 : clamp(cosine, -1, 1);
 }
 
 /**
@@ -160,6 +187,7 @@ function twoBone(
  * and reads as `reached` with a `NaN` residual, beside angles that are `NaN` too, so
  * `residual <= tolerance` is false for it on every path. `IR-9` pins both.
  */
+
 function bandQuality(
   d: number,
   minReach: number,
