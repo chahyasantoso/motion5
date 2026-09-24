@@ -86,6 +86,7 @@ function family(quality: SolveQuality): "closed-form" | "iterative" {
     case "converged":
     case "stalled":
     case "iteration-cap":
+    case "conflicted":
     case "limited":
       return "iterative";
     default:
@@ -197,7 +198,7 @@ describe("one solve result for every strategy", () => {
     expect(family(tree.quality)).toBe("iterative");
     expect(tree.quality).toEqual(fabrik.quality);
     expect(tree.rotations).toEqual(fabrik.rotations);
-    expect(Object.keys(tree).sort()).toEqual(["quality", "rotations"]);
+    expect(Object.keys(tree).sort()).toEqual(["quality", "residuals", "rotations"]);
     expect(Object.isFrozen(tree)).toBe(true);
 
     const closedKinds: readonly ClosedFormQuality["kind"][] = [
@@ -210,6 +211,7 @@ describe("one solve result for every strategy", () => {
       "converged",
       "stalled",
       "iteration-cap",
+      "conflicted",
       "limited",
     ];
     for (const kind of closedKinds) expect(family({ kind, residual: 0 })).toBe("closed-form");
