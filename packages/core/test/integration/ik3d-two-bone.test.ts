@@ -102,9 +102,12 @@ describe("3D seam through engine and DOM", () => {
     runtime.seek("rig/goal", 0);
     const initial = new Map(revisions);
     runtime.seek("rig/goal", 1);
-    for (const id of ["rig/root", "rig/goal", "rig/solve", "rig/upper", "rig/fore"]) {
-      expect(revisions.get(id)).toBeDefined();
-      expect(revisions.get(id)).toBeGreaterThanOrEqual(initial.get(id) ?? 0);
+    // The goal moved, so it and every node downstream of it republish; the root reads nothing
+    // that moved and must not.
+    for (const id of ["rig/goal", "rig/solve", "rig/upper", "rig/fore"]) {
+      expect(initial.get(id)).toBeDefined();
+      expect(revisions.get(id)).toBeGreaterThan(initial.get(id) ?? Number.POSITIVE_INFINITY);
     }
+    expect(revisions.get("rig/root")).toBe(initial.get("rig/root"));
   });
 });

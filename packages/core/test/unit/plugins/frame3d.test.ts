@@ -33,16 +33,6 @@ describe("3D frame convention", () => {
     expect(composed[2]).toBeCloseTo(0.171010071663, 12);
   });
 
-  it("TH-1 multiplies every matrix entry through the row-major oracle", () => {
-    const left = [1, 2, 3, 4, 5, 6, 7, 8, 9] as const;
-    const right = [9, 8, 7, 6, 5, 4, 3, 2, 1] as const;
-    expect(multiplyMatrix3(left, right)).toEqual([
-      30, 24, 18,
-      84, 69, 54,
-      138, 114, 90,
-    ]);
-  });
-
   it("TH-2 composes translation through the parent matrix", () => {
     const result = composeWorld3d(
       readFrame3d({ x: 10, y: 20, z: 30, rotation: 90 }),
@@ -94,5 +84,43 @@ describe("3D frame convention", () => {
       rotationX: 0,
       rotationY: 0,
     });
+  });
+
+  it("TH-21 multiplies and composes every entry exactly as the row-major oracle does", () => {
+    // Integer entries make every product exact, and every entry of the product distinct, so a
+    // swapped index in `multiplyMatrix3` moves at least one of the nine.
+    expect(multiplyMatrix3([1, 2, 3, 4, 5, 6, 7, 8, 9], [9, 8, 7, 6, 5, 4, 3, 2, 1])).toEqual([
+      30, 24, 18, 84, 69, 54, 138, 114, 90,
+    ]);
+
+    // The oracle is the definition, a triple loop, over non-special orientations.
+    const oracle = (left: readonly number[], right: readonly number[]): number[] => {
+      const product: number[] = [];
+      for (let row = 0; row < 3; row += 1)
+        for (let column = 0; column < 3; column += 1) {
+          let sum = 0;
+          for (let k = 0; k < 3; k += 1) sum += left[row * 3 + k]! * right[k * 3 + column]!;
+          product.push(sum);
+        }
+      return product;
+    };
+    const parent = { x: 3, y: -7, z: 11, rotation: 23, rotationX: -41, rotationY: 67 };
+    const local = { x: 13, y: 5, z: -2, rotation: -71, rotationX: 29, rotationY: -17 };
+    const parentMatrix = matrixFromEuler3d(parent);
+    const localMatrix = matrixFromEuler3d(local);
+    const expected = oracle(parentMatrix, localMatrix);
+    const product = multiplyMatrix3(parentMatrix, localMatrix);
+    for (let index = 0; index < 9; index += 1)
+      expect(Math.abs(product[index]! - expected[index]!)).toBeLessThanOrEqual(1e-15);
+
+    // `composeWorld3d` rotates the local offset by the parent and composes the two matrices.
+    const composed = composeWorld3d(parent, local);
+    const offset = oracle(parentMatrix, [local.x, 0, 0, local.y, 0, 0, local.z, 0, 0]);
+    expect(Math.abs(composed.x - (parent.x + offset[0]!))).toBeLessThanOrEqual(1e-12);
+    expect(Math.abs(composed.y - (parent.y + offset[3]!))).toBeLessThanOrEqual(1e-12);
+    expect(Math.abs(composed.z - (parent.z + offset[6]!))).toBeLessThanOrEqual(1e-12);
+    const rebuilt = matrixFromEuler3d(composed);
+    for (let index = 0; index < 9; index += 1)
+      expect(Math.abs(rebuilt[index]! - expected[index]!)).toBeLessThanOrEqual(1e-12);
   });
 });
