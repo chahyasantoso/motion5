@@ -1,7 +1,10 @@
 {
   "version": 1,
   "items": [
-    { "id": "gsap-contract", "test": "packages/core/test/contract/gsap-multi-stop.test.ts" },
+    {
+      "id": "gsap-contract",
+      "test": "packages/core/test/contract/gsap-multi-stop.test.ts"
+    },
     {
       "id": "gsap-clock-ownership",
       "test": "packages/core/test/contract/gsap-paused-timeline.test.ts"
@@ -14,9 +17,18 @@
       "id": "gsap-authored-duration",
       "test": "packages/core/test/contract/gsap-authored-duration.test.ts"
     },
-    { "id": "dom-contract", "test": "packages/core/test/integration/dom-patch-apply.test.ts" },
-    { "id": "react-lifecycle", "test": "packages/react/test" },
-    { "id": "boundaries", "test": "packages/core/test/unit/scripts/boundary-scan.test.ts" },
+    {
+      "id": "dom-contract",
+      "test": "packages/core/test/integration/dom-patch-apply.test.ts"
+    },
+    {
+      "id": "react-lifecycle",
+      "test": "packages/react/test"
+    },
+    {
+      "id": "boundaries",
+      "test": "packages/core/test/unit/scripts/boundary-scan.test.ts"
+    },
     {
       "id": "end-to-end",
       "test": "packages/core/test/integration/end-to-end.test.ts",
@@ -163,7 +175,10 @@
       "id": "s6-unsupported-use",
       "test": "packages/core/test/integration/plugin-use-contract.test.ts"
     },
-    { "id": "x3-key-ownership", "test": "packages/core/test/unit/domain/plugins.test.ts" },
+    {
+      "id": "x3-key-ownership",
+      "test": "packages/core/test/unit/domain/plugins.test.ts"
+    },
     {
       "id": "x3-contribution-cascade",
       "test": "packages/core/test/unit/domain/plugin-contribution-completeness.test.ts"
@@ -212,11 +227,26 @@
       "id": "l-time-loop-semantics",
       "test": "packages/core/test/integration/trigger-time-loop.test.ts"
     },
-    { "id": "track-node-id", "test": "packages/core/test/unit/domain/track-node-id.test.ts" },
-    { "id": "resolve-solvers", "test": "packages/core/test/unit/graph/resolve-solvers.test.ts" },
-    { "id": "ik-solve", "test": "packages/core/test/unit/plugins/ik-solve.test.ts" },
-    { "id": "ik-chain-shape", "test": "packages/core/test/unit/plugins/ik-chain-shape.test.ts" },
-    { "id": "ik-result", "test": "packages/core/test/unit/plugins/ik-result.test.ts" },
+    {
+      "id": "track-node-id",
+      "test": "packages/core/test/unit/domain/track-node-id.test.ts"
+    },
+    {
+      "id": "resolve-solvers",
+      "test": "packages/core/test/unit/graph/resolve-solvers.test.ts"
+    },
+    {
+      "id": "ik-solve",
+      "test": "packages/core/test/unit/plugins/ik-solve.test.ts"
+    },
+    {
+      "id": "ik-chain-shape",
+      "test": "packages/core/test/unit/plugins/ik-chain-shape.test.ts"
+    },
+    {
+      "id": "ik-result",
+      "test": "packages/core/test/unit/plugins/ik-result.test.ts"
+    },
     {
       "id": "fk-solver-override",
       "test": "packages/core/test/unit/plugins/fk-solver-override.test.ts"
@@ -229,18 +259,30 @@
       "id": "ik-two-bone-integration",
       "test": "packages/core/test/integration/ik-two-bone.test.ts"
     },
-    { "id": "solver-goals", "test": "packages/core/test/unit/graph/solver-goals.test.ts" },
+    {
+      "id": "solver-goals",
+      "test": "packages/core/test/unit/graph/solver-goals.test.ts"
+    },
     {
       "id": "ik-multi-goal-integration",
       "test": "packages/core/test/integration/ik-multi-goal.test.ts"
     },
-    { "id": "fabrik-solve", "test": "packages/core/test/unit/plugins/fabrik-solve.test.ts" },
-    { "id": "fabrik-dispatch", "test": "packages/core/test/unit/plugins/fabrik-dispatch.test.ts" },
+    {
+      "id": "fabrik-solve",
+      "test": "packages/core/test/unit/plugins/fabrik-solve.test.ts"
+    },
+    {
+      "id": "fabrik-dispatch",
+      "test": "packages/core/test/unit/plugins/fabrik-dispatch.test.ts"
+    },
     {
       "id": "fabrik-arity-one",
       "test": "packages/core/test/unit/plugins/fabrik-arity-one.test.ts"
     },
-    { "id": "solver-arity-lift", "test": "packages/core/test/unit/graph/arity-lift.test.ts" },
+    {
+      "id": "solver-arity-lift",
+      "test": "packages/core/test/unit/graph/arity-lift.test.ts"
+    },
     {
       "id": "solver-goal-required",
       "test": "packages/core/test/unit/graph/solver-goal-required.test.ts"
@@ -249,7 +291,10 @@
       "id": "solved-pivot-offset",
       "test": "packages/core/test/unit/graph/solved-pivot-offset.test.ts"
     },
-    { "id": "angle-blend", "test": "packages/core/test/unit/plugins/angle-blend.test.ts" },
+    {
+      "id": "angle-blend",
+      "test": "packages/core/test/unit/plugins/angle-blend.test.ts"
+    },
     {
       "id": "fk-solved-weight",
       "test": "packages/core/test/unit/plugins/fk-solved-weight.test.ts"
@@ -262,7 +307,10 @@
       "id": "ik-fabrik-chain-integration",
       "test": "packages/core/test/integration/ik-fabrik-chain.test.ts"
     },
-    { "id": "walker-demo", "test": "packages/core/test/integration/phase7-walker-demo.test.ts" },
+    {
+      "id": "walker-demo",
+      "test": "packages/core/test/integration/phase7-walker-demo.test.ts"
+    },
     {
       "id": "stale-track-handle",
       "test": "packages/core/test/unit/runtime/stale-track-handle.test.ts"
@@ -279,7 +327,10 @@
       "id": "live-value-composition",
       "test": "packages/core/test/integration/live-value-composition.test.ts"
     },
-    { "id": "ik-constraint", "test": "packages/core/test/unit/plugins/ik-constraint.test.ts" },
+    {
+      "id": "ik-constraint",
+      "test": "packages/core/test/unit/plugins/ik-constraint.test.ts"
+    },
     {
       "id": "solver-constraints",
       "test": "packages/core/test/unit/graph/solver-constraints.test.ts"
@@ -287,6 +338,10 @@
     {
       "id": "ik-inspection",
       "test": "packages/core/test/unit/plugins/ik-inspection.test.ts"
+    },
+    {
+      "id": "ik-goal-influence",
+      "test": "packages/core/test/unit/plugins/ik-goal-influence.test.ts"
     }
   ]
 }

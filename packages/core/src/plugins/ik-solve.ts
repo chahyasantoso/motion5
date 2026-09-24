@@ -91,7 +91,8 @@ export function chainShape(members: readonly SolveMember[]): ChainShape {
  * Both arms return the one `SolveResult`, so what the chain's solve achieved has one shape
  * whichever strategy answered it: the closed form's geometric kinds or FABRIK's iterative ones,
  * read from one discriminant. `ik.ts` publishes `rotations`, and adds the fixed-shape `inspection`
- * projection of `quality` only when its author opted in. See `ik-result.ts`, ADR-107 and ADR-109.
+ * projection of `quality` and `residuals` only when its author opted in. See `ik-result.ts`,
+ * ADR-107, ADR-109 and ADR-110.
  *
  * Nothing here knows about a member's blend `weight`, and that is the ownership split rather than an
  * omission. The solve publishes the exact angle that puts the tip on the goal, at every arity, and
@@ -112,12 +113,12 @@ export function solveChain(
       // the variant exists so the dispatch decision is visible and the closed form is never picked.
       // `pivots` and `tips` are FABRIK's own and stay behind: the analytic path carries neither,
       // so returning them here would make the result's shape a function of arity. The quality
-      // record travels, because both strategies state one, and it is published only as the opt-in
-      // `inspection` projection. Roughly four percent of ordinary reachable rigs do not reach
+      // record and the per-leaf `residuals` travel, because both strategies state them, and they
+      // are published only as the opt-in `inspection` projection. Roughly four percent of ordinary reachable rigs do not reach
       // tolerance before the cap, so an unrequested per-tick report would be noise on rigs nobody
       // would call broken. `FB-13` pins the unopted shape and ADR-109 records the opt-in.
-      const { rotations, quality } = solveFabrik(root, shape.members, flip);
-      return Object.freeze({ rotations, quality });
+      const { rotations, residuals, quality } = solveFabrik(root, shape.members, flip);
+      return Object.freeze({ rotations, residuals, quality });
     }
     default:
       return unreachable(shape);

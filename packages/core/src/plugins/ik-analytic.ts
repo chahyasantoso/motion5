@@ -60,6 +60,10 @@ import type { ClosedFormQuality, SolveResult } from "./ik-result";
  * no exit needs a band of its own. The one miss inside the band is the coincident goal, which the
  * rest pose answers; its residual is where that pose leaves the tip. `IR-6` holds every residual to
  * the miss `fk`'s own composition measures. See `ik-result.ts` and ADR-107.
+ *
+ * The closed form addresses exactly one leaf, `second`, so its per-leaf `residuals` record has one
+ * entry, keyed by that member and equal to the quality's own residual. It is stated from the same
+ * number rather than measured again, so the two can never disagree. See ADR-110.
  */
 export function solveTwoBone(
   root: WorldFrame,
@@ -75,6 +79,7 @@ export function solveTwoBone(
       [first.id]: r1,
       [second.id]: r2,
     }),
+    residuals: Object.freeze({ [second.id]: quality.residual }),
     quality: Object.freeze(quality),
   });
 }

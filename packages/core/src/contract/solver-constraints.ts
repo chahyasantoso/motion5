@@ -3,14 +3,17 @@ import { isKeyframeGroup, PLUGIN_VALUES_SECTION, readPluginValues } from "./keyf
 
 /**
  * The authored vocabulary of a constrained 2D solve, and the one owner of what a well-formed value
- * of it is. See ADR-108 and ADR-109.
+ * of it is. See ADR-108, ADR-109 and ADR-110.
  *
  * `minRotation` and `maxRotation` are per-member local-angle bounds in degrees, `bend` is the
  * solver's branch hint and `flip` its older boolean spelling. `inspect` is the solver's static
  * opt-in to its `inspection` output, and `inspection` is the name of that output, kept beside the
- * switch so the authored name and the published one cannot drift apart. The graph layer asks this
- * module whether an authored value is well formed, and the runtime asks it whether a live value is
- * in the limit domain, so the domain `[-180, 180]` is stated once and read by both.
+ * switch so the authored name and the published one cannot drift apart. `influence` is a member's
+ * static positive weight on the goal its leaf is addressed with, read inside the solve when branches
+ * disagree about a shared member. The graph layer asks this module whether an authored value is well
+ * formed, and the runtime asks it whether a live value is in the domain, so the limit domain
+ * `[-180, 180]` and the influence domain (finite, greater than zero) are each stated once and read
+ * by both.
  */
 export const MIN_ROTATION_KEY = "minRotation" as const;
 export const MAX_ROTATION_KEY = "maxRotation" as const;
@@ -18,6 +21,7 @@ export const BEND_KEY = "bend" as const;
 export const FLIP_KEY = "flip" as const;
 export const INSPECT_KEY = "inspect" as const;
 export const INSPECTION_KEY = "inspection" as const;
+export const INFLUENCE_KEY = "influence" as const;
 
 export type LimitKey = typeof MIN_ROTATION_KEY | typeof MAX_ROTATION_KEY;
 export const LIMIT_KEYS: readonly LimitKey[] = Object.freeze([MIN_ROTATION_KEY, MAX_ROTATION_KEY]);
@@ -148,4 +152,31 @@ export function authoredSpellings(keyframes: unknown, key: string): readonly Aut
     }
   }
   return spellings;
+}
+
+/**
+ * An influence in its domain, a finite number greater than zero, or `undefined` for anything else.
+ *
+ * The one predicate for the domain, read like `readLimitDegree`: a live value reaching the solve is
+ * read through it directly, and an authored leaf through it after `readAuthoredLeaf` has proved the
+ * leaf static. Zero is outside it on purpose, because a goal that pulls with nothing is a goal the
+ * author did not want, and the weighted compromise divides by a sum of influences.
+ */
+export function readInfluenceValue(value: unknown): number | undefined {
+  return typeof value === "number" && Number.isFinite(value) && value > 0 ? value : undefined;
+}
+
+/**
+ * One authored `influence` spelling, classified. No `absent` arm, as for `InspectAuthored`, because
+ * the rule reads only spellings `authoredSpellings` found.
+ */
+export type InfluenceAuthored =
+  | { readonly kind: "valid"; readonly influence: number }
+  | { readonly kind: "malformed" };
+
+/** Influence is a static weight, never an animated value, so a keyframed influence is refused. */
+export function classifyInfluence(value: unknown): InfluenceAuthored {
+  const leaf = readAuthoredLeaf(value);
+  const influence = leaf.kind === "static" ? readInfluenceValue(leaf.value) : undefined;
+  return influence === undefined ? { kind: "malformed" } : { kind: "valid", influence };
 }

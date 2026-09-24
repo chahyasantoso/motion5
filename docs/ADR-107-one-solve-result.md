@@ -2,7 +2,14 @@
 
 **Amended by [ADR-108](./ADR-108-constrained-2d-solving.md) and [ADR-109](./ADR-109-opt-in-solve-inspection.md).**
 
-**Status:** Proposed as issue [#349](https://github.com/chahyasantoso/motion5/issues/349) phase 2, 2026-09-23, against `main` at `95bef276`. Accepted when its pull request merges.
+**Status:** Accepted, 2026-09-24. Issue [#349](https://github.com/chahyasantoso/motion5/issues/349)
+phase 2, squash-merged from [#483](https://github.com/chahyasantoso/motion5/pull/483) as `c03c6b19`.
+Phase 3 is [ADR-108](./ADR-108-constrained-2d-solving.md).
+
+**Amended by [ADR-110](./ADR-110-goal-influence-and-conflict-policy.md), 2026-09-24.** The
+closed `SolveQuality` union has nine kinds, adding `conflicted`, and every `SolveResult` carries
+per-leaf `residuals`. Inspection projects that record alongside `quality`; the one-result invariant
+and the existing quality fields remain.
 
 ## Invariant
 
@@ -49,3 +56,7 @@ ADR-106 split the solve into one owner per question and left one question with t
 Constrained solving (phase 3) returns this record from its new `ChainShape` arm and reports a limit-clamped miss as a kind of its own, which fails to compile at every exhaustive reader until it is answered. Opt-in inspection (phase 4) has one record to project rather than two.
 
 **Amended by [ADR-109](./ADR-109-opt-in-solve-inspection.md), 2026-09-24.** The invariant above still holds for every unopted rig. An author who writes the static `inspect: true` on a solver opts into one extra `inspection` output, the fixed-shape projection of this record's `quality`; its rotations are unchanged bit for bit. Two sentences above are therefore read with their amendments: the union has eight kinds rather than seven, because ADR-108 added `limited`, and "publishes nothing else" holds for an unopted rig only.
+
+**Amended by [ADR-110](./ADR-110-goal-influence-and-conflict-policy.md), 2026-09-24.** Read the
+union and result shape above with ADR-110's additions: there are now nine kinds, including
+`conflicted`, and `SolveResult` carries per-leaf `residuals`; inspection projects that record.

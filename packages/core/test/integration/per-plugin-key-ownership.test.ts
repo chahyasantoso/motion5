@@ -82,6 +82,7 @@ describe("per-plugin keyframe key ownership", () => {
       "weight",
       "minRotation",
       "maxRotation",
+      "influence",
     ]);
 
     // `rotation` is claimed and produced. The authored value is this bone's rotation relative to

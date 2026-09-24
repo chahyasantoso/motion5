@@ -1,8 +1,13 @@
 # ADR-109: Opt-in solve inspection
 
-**Status:** Proposed as issue [#349](https://github.com/chahyasantoso/motion5/issues/349) phase 4,
-2026-09-24, against `main` at `0f75d101` (phase 3 merged as ADR-108). Accepted when its pull request
-merges.
+**Status:** Accepted, 2026-09-24. Issue [#349](https://github.com/chahyasantoso/motion5/issues/349)
+phase 4, squash-merged from [#485](https://github.com/chahyasantoso/motion5/pull/485) as `2d8ac606`.
+Phase 5 is [ADR-110](./ADR-110-goal-influence-and-conflict-policy.md).
+
+**Amended by [ADR-110](./ADR-110-goal-influence-and-conflict-policy.md), 2026-09-24.** The
+inspection projection now also carries frozen per-leaf `residuals`, and it may report the new
+`conflicted` quality kind. `inspectSolve` takes the whole `SolveResult` so the projection reads the
+result-owned residual record; the opt-in, fixed-shape and no-diagnostic rules otherwise remain.
 
 ## Invariant
 

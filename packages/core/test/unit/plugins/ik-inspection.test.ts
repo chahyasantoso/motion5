@@ -38,6 +38,7 @@ function qualityKind(quality: SolveQuality): SolveQuality["kind"] {
     case "converged":
     case "stalled":
     case "iteration-cap":
+    case "conflicted":
     case "limited":
       return quality.kind;
     default:
@@ -166,6 +167,7 @@ function expectedIterations(quality: SolveQuality): number {
     case "converged":
     case "stalled":
     case "iteration-cap":
+    case "conflicted":
     case "limited":
       return quality.iterations;
     default:
@@ -189,6 +191,7 @@ describe("opt-in IK solve inspection", () => {
       residual: 0,
       iterations: 0,
       atBound: [],
+      residuals: { "walker/fore": 0 },
     });
     expect(Object.isFrozen(composed.inspection)).toBe(true);
     expect(Object.isFrozen(inspectionOf(composed).atBound)).toBe(true);
@@ -300,21 +303,35 @@ describe("opt-in IK solve inspection", () => {
       { kind: "converged", iterations: 5, residual: 6 },
       { kind: "stalled", iterations: 7, residual: 8 },
       { kind: "iteration-cap", iterations: 9, residual: 10 },
+      { kind: "conflicted", iterations: 10, residual: 11 },
       { kind: "limited", iterations: 11, residual: 12, atBound: ["walker/upper"] },
     ];
     for (const quality of qualities) {
-      const inspection = inspectSolve(quality);
-      expect(Object.keys(inspection).sort()).toEqual(["atBound", "iterations", "kind", "residual"]);
+      const result = { rotations: {}, residuals: { "walker/fore": quality.residual }, quality };
+      const inspection = inspectSolve(result);
+      expect(Object.keys(inspection).sort()).toEqual([
+        "atBound",
+        "iterations",
+        "kind",
+        "residual",
+        "residuals",
+      ]);
       expect(Object.isFrozen(inspection)).toBe(true);
       expect(inspection.kind).toBe(qualityKind(quality));
       expect(inspection.residual).toBe(quality.residual);
       expect(inspection.iterations).toBe(expectedIterations(quality));
       expect(inspection.atBound).toEqual(quality.kind === "limited" ? quality.atBound : []);
       expect(Object.isFrozen(inspection.atBound)).toBe(true);
+      expect(inspection.residuals).toEqual({ "walker/fore": quality.residual });
+      expect(Object.isFrozen(inspection.residuals)).toBe(true);
       expect(() => freezeValue(inspection as unknown as ImmutableRecord)).not.toThrow();
     }
     const source = ["walker/fore"];
-    const limited = inspectSolve({ kind: "limited", iterations: 2, residual: 3, atBound: source });
+    const limited = inspectSolve({
+      rotations: {},
+      residuals: { "walker/fore": 3 },
+      quality: { kind: "limited", iterations: 2, residual: 3, atBound: source },
+    });
     expect(limited.atBound).not.toBe(source);
   });
 
@@ -379,6 +396,7 @@ describe("opt-in IK solve inspection", () => {
       residual: 0,
       iterations: 0,
       atBound: [],
+      residuals: { "walker/fore": 0 },
     });
     expect(JSON.stringify(opted.values.rotations)).toBe(JSON.stringify(unopted.values.rotations));
     // The whole envelope, not only `values`: opting in changes the published values by exactly the

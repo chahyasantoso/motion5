@@ -11,11 +11,19 @@ import { unreachable } from "../lang/exhaustive";
  * whichever strategy answered it. See ADR-107.
  *
  * `rotations` is always published. An opted-in `inspection` output is a fixed-shape projection of
- * `quality`; `ik.ts` owns the opt-in while this module owns the projection, so the solver's patch
- * shape stays stable across arity and strategy. Unopted rigs keep the phase 3 output byte for byte.
+ * `quality` and `residuals`; `ik.ts` owns the opt-in while this module owns the projection, so the
+ * solver's patch shape stays stable across arity and strategy. Unopted rigs keep the phase 3 output
+ * byte for byte.
+ *
+ * `residuals` holds one entry per addressed leaf, the world-unit distance its tip is left from its
+ * own goal, keyed by member id in the solve's canonical order. `quality.residual` stays the worst
+ * of them, so a caller that wants one number still reads one, and a caller asking which goal paid
+ * for a compromise reads the record instead of re-composing the pose. The closed form addresses
+ * exactly one leaf, so its record has exactly one entry, equal to its residual. See ADR-110.
  */
 export interface SolveResult<Q extends SolveQuality = SolveQuality> {
   readonly rotations: Readonly<Record<string, number>>;
+  readonly residuals: Readonly<Record<string, number>>;
   readonly quality: Q;
 }
 
@@ -37,7 +45,12 @@ export interface SolveResult<Q extends SolveQuality = SolveQuality> {
  * FABRIK is iterative, so its kinds describe the iteration: a residual inside tolerance
  * `converged`, a fixed point outside it `stalled`, and a still-moving pose at the hard cap hit
  * `iteration-cap`. Those three moved here from `fabrik.ts`, whose `FabrikConvergence` is deleted
- * rather than aliased, and they keep the iteration count only they can state.
+ * rather than aliased, and they keep the iteration count only they can state. `limited` (ADR-108)
+ * names a miss with a joint resting on its bound. `conflicted` (ADR-110) names a miss where the
+ * branches of a multi-goal chain still pulled a shared member to places more than tolerance apart
+ * in the last pass, so the published pose is their influence-weighted compromise. It says this
+ * solve did not satisfy the goals together, not that no pose could: FABRIK is not a global solver,
+ * and `residuals` says which goal paid.
  *
  * Flat rather than nested under a strategy tag. A caller reads one discriminant and a `switch`
  * over it ending in `unreachable` is exhaustive over every answer any strategy gives; a nested
@@ -52,6 +65,7 @@ export type SolveQuality =
   | { readonly kind: "converged"; readonly iterations: number; readonly residual: number }
   | { readonly kind: "stalled"; readonly iterations: number; readonly residual: number }
   | { readonly kind: "iteration-cap"; readonly iterations: number; readonly residual: number }
+  | { readonly kind: "conflicted"; readonly iterations: number; readonly residual: number }
   | {
       readonly kind: "limited";
       readonly iterations: number;
@@ -68,7 +82,7 @@ export type ClosedFormQuality = Extract<
 /** The kinds FABRIK can answer with, as a subset of the union rather than a second one. */
 export type IterativeQuality = Extract<
   SolveQuality,
-  { readonly kind: "converged" | "stalled" | "iteration-cap" | "limited" }
+  { readonly kind: "converged" | "stalled" | "iteration-cap" | "conflicted" | "limited" }
 >;
 
 /**
@@ -77,18 +91,29 @@ export type IterativeQuality = Extract<
  * A type alias rather than an interface on purpose: `PluginComposer` returns `ImmutableRecord`, an
  * index-signature type, and TypeScript grants the implicit index signature to aliases only, so an
  * interface here fails `typecheck` where `ik.ts` spreads it into the published values.
+ *
+ * `residuals` is the result's per-leaf record, present on every kind so the shape stays fixed: one
+ * entry on the closed form, one per addressed leaf on FABRIK. See ADR-110.
  */
 export type SolveInspection = {
   readonly kind: SolveQuality["kind"];
   readonly residual: number;
   readonly iterations: number;
   readonly atBound: readonly string[];
+  readonly residuals: Readonly<Record<string, number>>;
 };
 
 const NO_BOUNDS: readonly string[] = Object.freeze([]);
 
-/** Projects every solve quality into one frozen shape suitable for a renderer-neutral output. */
-export function inspectSolve(quality: SolveQuality): SolveInspection {
+/**
+ * Projects every solve result into one frozen shape suitable for a renderer-neutral output.
+ *
+ * `residuals` is copied and frozen like `atBound`, so the published record never aliases the
+ * solver's own state whoever produced the result.
+ */
+export function inspectSolve(result: SolveResult): SolveInspection {
+  const { quality } = result;
+  const residuals: Readonly<Record<string, number>> = Object.freeze({ ...result.residuals });
   switch (quality.kind) {
     case "reached":
     case "too-far":
@@ -99,15 +124,18 @@ export function inspectSolve(quality: SolveQuality): SolveInspection {
         residual: quality.residual,
         iterations: 0,
         atBound: NO_BOUNDS,
+        residuals,
       });
     case "converged":
     case "stalled":
     case "iteration-cap":
+    case "conflicted":
       return Object.freeze({
         kind: quality.kind,
         residual: quality.residual,
         iterations: quality.iterations,
         atBound: NO_BOUNDS,
+        residuals,
       });
     case "limited":
       return Object.freeze({
@@ -115,6 +143,7 @@ export function inspectSolve(quality: SolveQuality): SolveInspection {
         residual: quality.residual,
         iterations: quality.iterations,
         atBound: Object.freeze([...quality.atBound]),
+        residuals,
       });
     default:
       return unreachable(quality);

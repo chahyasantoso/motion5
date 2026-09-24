@@ -76,6 +76,8 @@ const BASE_RULES = {
   "ik-goal-duplicate": ERROR_WITH_IDS,
   "ik-goal-not-leaf": ERROR_WITH_IDS,
   "ik-goal-unknown-member": ERROR_WITH_IDS,
+  "ik-influence-malformed": ERROR_WITH_IDS,
+  "ik-influence-without-goal": ERROR_WITH_IDS,
   "ik-inspect-malformed": ERROR_WITH_IDS,
   "ik-leaf-without-goal": ERROR_WITH_IDS,
   "ik-limit-empty": ERROR_WITH_IDS,

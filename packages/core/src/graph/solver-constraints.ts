@@ -3,9 +3,11 @@ import {
   authoredSpellings,
   BEND_KEY,
   classifyBend,
+  classifyInfluence,
   classifyInspect,
   classifyLimit,
   FLIP_KEY,
+  INFLUENCE_KEY,
   INSPECT_KEY,
   LIMIT_KEYS,
   type AuthoredSpelling,
@@ -17,8 +19,8 @@ import type { Diagnostic } from "../contract/v5";
 import type { GraphNode } from "./ir";
 
 /**
- * The load rules of the solver's authored constraints: the six of constrained 2D solving (ADR-108)
- * and the inspection switch's one (ADR-109).
+ * The load rules of the solver's authored constraints: the six of constrained 2D solving (ADR-108),
+ * the inspection switch's one (ADR-109) and goal influence's two (ADR-110).
  *
  * **Every spelling, because the solve reads the flat bag.** A member's limits reach `ik` through
  * the member's flattened values, where a flat `minRotation` and one grouped under any plugin are
@@ -38,6 +40,14 @@ import type { GraphNode } from "./ir";
  * revision read `bend` and `flip` under any group on any node, which refused a third-party plugin's
  * own `spring.values.bend` on a node that is no solver at all; phase 4's first draft repeated that
  * for `inspect`, and routing it through the same reader is what keeps the scope one decision.
+ *
+ * **Influence belongs to an addressed goal.** `influence` is member vocabulary read through the
+ * limit scope, and it weighs the goal its leaf is addressed with, so it is well placed only on a
+ * member the solve addresses. Which members those are is `resolveSolvers`'s answer, after goal
+ * resolution, handed in as a `GoalScope` rather than re-derived here: this module would otherwise
+ * be a second owner of leafhood and goal addressing. It speaks only on a node that bound a solver
+ * somewhere, the narrowing `ik-weight-without-solver` makes for the same reason: this pass holds no
+ * registry and cannot tell an `fk` influence from another plugin's own key on a node no solve reads.
  */
 
 /** The plugins under which this node bound `slot`, read from its derived edges. */
@@ -215,4 +225,111 @@ export function validateSolverConstraints(
     validateSolverBend(node, roots, diagnostics);
     validateSolverInspect(node, roots, diagnostics);
   }
+}
+
+/**
+ * Whether a solve reads one member's goal influence, decided by `resolveSolvers`.
+ *
+ * `addressed` is a leaf the solve reaches toward a goal with, `unaddressed` a member it provably
+ * does not, and `undecided` a member of a chain whose goals could not be resolved (a broken chain,
+ * no goal, both goal spellings, a bare target over several leaves, a leaf the dict missed, or a
+ * refused goal). Undecided members are never refused as `ik-influence-without-goal`, because each of
+ * those shapes already has its own diagnostic and one cause is not reported twice.
+ */
+export type GoalReach = "addressed" | "unaddressed" | "undecided";
+
+/** Every solver member's goal reach, keyed by member id. A node absent from it is `undecided`. */
+export type GoalScope = ReadonlyMap<string, GoalReach>;
+
+/**
+ * How strongly each reach wins when one member belongs to more than one solve. `undecided` wins so
+ * no rule speaks over an unresolved chain, and `addressed` beats `unaddressed` because the flat bag
+ * reaches every solve the member is in, so one solve reading the influence is enough to place it.
+ */
+const REACH_PRECEDENCE: Readonly<Record<GoalReach, number>> = Object.freeze({
+  unaddressed: 0,
+  addressed: 1,
+  undecided: 2,
+});
+
+/** Records one solve's answer for one member, combining it with any earlier solve's answer. */
+export function recordGoalReach(
+  scope: Map<string, GoalReach>,
+  memberId: string,
+  reach: GoalReach,
+): void {
+  const previous = scope.get(memberId);
+  if (previous === undefined || REACH_PRECEDENCE[reach] > REACH_PRECEDENCE[previous])
+    scope.set(memberId, reach);
+}
+
+function influenceWithoutGoal(
+  node: GraphNode,
+  spelling: AuthoredSpelling,
+  why: string,
+): Diagnostic {
+  return diagnostic(
+    "ik-influence-without-goal",
+    `${node.id}.keyframes.${spelling.path}`,
+    `Member "${node.id}" authors influence ${why}; influence weighs a goal and belongs on an addressed chain leaf.`,
+    [node.id],
+  );
+}
+
+function validateMemberInfluence(
+  node: GraphNode,
+  scope: GoalScope,
+  diagnostics: Diagnostic[],
+): void {
+  const binders = slotBinders(node, "solver");
+  if (binders.size === 0) return;
+  let placed: AuthoredSpelling | undefined;
+  for (const spelling of authoredSpellings(node.track.keyframes, INFLUENCE_KEY)) {
+    if (!reachesSolve(spelling, binders)) {
+      const why = `under ${spelling.group}, which did not bind its solver`;
+      diagnostics.push(influenceWithoutGoal(node, spelling, why));
+      continue;
+    }
+    // `keyframes-duplicate-key` refuses a second spelling of one key, so the first is the one.
+    placed ??= spelling;
+  }
+  if (placed === undefined) return;
+  const reach = scope.get(node.id) ?? "undecided";
+  switch (reach) {
+    case "unaddressed":
+      // Placement first: a value no solve reads is refused for where it is, not classified.
+      diagnostics.push(influenceWithoutGoal(node, placed, "but no goal addresses it"));
+      return;
+    case "addressed":
+    case "undecided":
+      break;
+    default:
+      unreachable(reach);
+  }
+  const influence = classifyInfluence(placed.value);
+  switch (influence.kind) {
+    case "valid":
+      return;
+    case "malformed":
+      diagnostics.push(
+        diagnostic(
+          "ik-influence-malformed",
+          `${node.id}.keyframes.${placed.path}`,
+          `Member "${node.id}" has a malformed influence; use one static finite number greater than 0.`,
+          [node.id],
+        ),
+      );
+      return;
+    default:
+      unreachable(influence);
+  }
+}
+
+/** The influence rules, run after `resolveSolvers` has resolved every solve's goals into `scope`. */
+export function validateGoalInfluence(
+  nodes: readonly GraphNode[],
+  scope: GoalScope,
+  diagnostics: Diagnostic[],
+): void {
+  for (const node of nodes) validateMemberInfluence(node, scope, diagnostics);
 }

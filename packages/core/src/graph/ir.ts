@@ -19,7 +19,12 @@ import {
   qualifyMotionTrack,
 } from "./ids";
 import { orderGraph } from "./order";
-import { validateSolverConstraints } from "./solver-constraints";
+import {
+  recordGoalReach,
+  validateGoalInfluence,
+  validateSolverConstraints,
+  type GoalReach,
+} from "./solver-constraints";
 
 interface ScalarEdgeRequirement {
   readonly plugin: string;
@@ -513,6 +518,24 @@ function goalBindingsOf(node: GraphNode): GoalBindings {
   return { bare, dict };
 }
 
+function goalReachOf(
+  memberId: string,
+  goals: GoalBindings,
+  leafIds: ReadonlySet<string>,
+  named: ReadonlyMap<string, readonly string[]>,
+  resolved: ReadonlyMap<string, string>,
+): GoalReach {
+  if (goals.bare && goals.dict.length > 0) return "undecided";
+  if (goals.bare) {
+    if (leafIds.size !== 1) return "undecided";
+    return leafIds.has(memberId) ? "addressed" : "unaddressed";
+  }
+  if (goals.dict.length === 0) return "undecided";
+  if (resolved.has(memberId)) return "addressed";
+  if (leafIds.has(memberId) || named.has(memberId)) return "undecided";
+  return "unaddressed";
+}
+
 export function resolveSolvers(
   nodes: readonly GraphNode[],
   diagnostics: Diagnostic[],
@@ -630,6 +653,7 @@ export function resolveSolvers(
   }
 
   const solvesMap = new Map<string, readonly SolveMember[]>();
+  const goalScope = new Map<string, GoalReach>();
 
   // Every node that at least one member points its `solver` slot at.
   //
@@ -793,7 +817,9 @@ export function resolveSolvers(
     // derivation runs: over a chain that was never valid, leafhood answers about a shape the author
     // did not author, and one cause would be reported twice.
     const goalByMember = new Map<string, string>();
-    if (unreachable.size === 0) {
+    if (unreachable.size > 0) {
+      for (const member of members) recordGoalReach(goalScope, member.id, "undecided");
+    } else {
       const ownerId = ownerOf(solver);
       const based = new Set(chains.map((entry) => entry.base));
       const leaves = chains
@@ -891,6 +917,12 @@ export function resolveSolvers(
           );
         }
       }
+      // Which members this solve reads a goal influence from, answered once goals are resolved.
+      for (const entry of chains) {
+        const id = entry.node.id;
+        const reach = goalReachOf(id, authoredGoals, leafIds, authoredFor, goalByMember);
+        recordGoalReach(goalScope, id, reach);
+      }
     }
 
     solvesMap.set(
@@ -907,6 +939,8 @@ export function resolveSolvers(
       ),
     );
   }
+
+  validateGoalInfluence(nodes, goalScope, diagnostics);
 
   return freeze(
     nodes.map((node) => {
