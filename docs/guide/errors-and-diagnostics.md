@@ -135,8 +135,8 @@ The `weight` those two rules police is the blend between a bone's authored rest 
 Goal influence ([ADR-110](../ADR-110-goal-influence-and-conflict-policy.md)) adds two load rules:
 
 - `ik-influence-malformed`, when a member's `influence`, flat or under the group that bound its
-  `solver`, is not one static finite number greater than `0`. Author a positive finite static number;
-  animated, zero, negative, non-finite, and malformed values are refused.
+  `solver`, is not one static finite number greater than `0`. Author a positive finite static
+  number; animated, zero, negative, non-finite, and malformed values are refused.
 - `ik-influence-without-goal`, when an influence is under a group that did not bind `solver`, or a
   placed influence is on a member that no resolved goal addresses. Put it on the addressed chain
   leaf and under the group that binds the member's solver. A node with no solver is not narrowed by
@@ -144,10 +144,10 @@ Goal influence ([ADR-110](../ADR-110-goal-influence-and-conflict-policy.md)) add
   classification.
 
 A valid influence is a goal's pull when a branching solve compromises over a shared member. The
-branch pull is the mean influence of its addressed leaves, and `conflicted` quality names a remaining
-miss whose last inward-pass branch spread exceeds tolerance. Opted-in inspection has nine quality
-kinds and the fixed shape `{ kind, residual, iterations, atBound, residuals }`; `residuals` reports
-one frozen world-unit miss per addressed leaf. See ADR-110.
+branch pull is the mean influence of its addressed leaves, and `conflicted` quality names a
+remaining miss whose last inward-pass branch spread exceeds tolerance. Opted-in inspection has nine
+quality kinds and the fixed shape `{ kind, residual, iterations, atBound, residuals }`; `residuals`
+reports one frozen world-unit miss per addressed leaf. See ADR-110.
 
 Constrained solving ([ADR-108](../ADR-108-constrained-2d-solving.md)) adds six load rules for
 joint limits and the bend hint:
