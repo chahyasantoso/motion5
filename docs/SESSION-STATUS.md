@@ -7,15 +7,14 @@ Current project state only. Replace stale entries rather than append history. Th
 
 ## Now
 
-- **The 2D IK envelope and documentation slice of [#349](https://github.com/chahyasantoso/motion5/issues/349) is in review:** [ADR-113](./ADR-113-2d-ik-envelope-and-documentation.md) records the accepted envelope, conventions, lifecycle, and measured benchmark; the guide, API reference, authored schema, and `bench:ik` entry are registered. No merge is claimed here.
+- **The internal 3D seam prototype of [#349](https://github.com/chahyasantoso/motion5/issues/349) is in review, stacked on the 2D IK envelope slice:** [ADR-114](./ADR-114-3d-seam-prototype.md) records the internal `transform3d`, `fk3d`, and `ik3d` modules, the CSS Z-X-Y rotation contract, and the `ik-chain-unsupported` load rule; [ADR-113](./ADR-113-2d-ik-envelope-and-documentation.md) under it records the 2D envelope and documentation. Nothing is exported from the package, and no merge of either is claimed here.
 
 ## Next in line
 
-- **The 3D seam prototype is next:** ADR-114 will record the internal `transform3d`, `fk3d`, and `ik3d` seam and its rotation contract. It is not started, and no implementation or run is claimed.
+- **[#489](https://github.com/chahyasantoso/motion5/issues/489) is next:** non-finite goal handling and the remaining solver diagnostics follow-up. It is not started, and no implementation or run is claimed.
 
 ## Open, and not scheduled
 
-- [#489](https://github.com/chahyasantoso/motion5/issues/489) remains open for non-finite goal handling and the remaining solver diagnostics follow-up.
 - [#490](https://github.com/chahyasantoso/motion5/issues/490) remains open for feasible multi-leaf FABRIK trees settling in local minima of the centroid compromise.
 - [#491](https://github.com/chahyasantoso/motion5/issues/491) remains open for the FABRIK iteration-cap policy on long serial chains.
 - [#482](https://github.com/chahyasantoso/motion5/issues/482) remains open for the negative-length disagreement between `fk` and the solves.
