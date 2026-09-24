@@ -8,6 +8,12 @@ import type {
   TrackDefinition,
 } from "../contract/v5";
 import { diagnostic } from "../contract/diagnostics";
+import {
+  acceptsChain,
+  describeChainShape,
+  describeDerivedChain,
+  solverChainShape,
+} from "../contract/solver-shape";
 import { acceptedOutcome, readOutcome, refusedOutcome, type Outcome } from "../lang/outcome";
 import { readPluginBindings, readPluginValues } from "../contract/keyframe-shape";
 import { PLUGIN_GOALS_SLOT } from "../contract/solver-slots";
@@ -490,6 +496,16 @@ interface MemberChain {
   readonly depth: number;
 }
 
+function solverPluginsOf(member: GraphNode, solverId: string): readonly string[] {
+  const plugins = new Set<string>();
+  for (const edge of member.edges) {
+    const requirement = edgeRequirement(edge);
+    if (requirement?.slot === "solver" && edge.sourceId === solverId)
+      plugins.add(requirement.plugin);
+  }
+  return [...plugins].sort(compareCodeUnits);
+}
+
 interface AuthoredGoal {
   readonly authored: string;
   readonly sourceId: string;
@@ -802,6 +818,29 @@ export function resolveSolvers(
         a.node.authoredIndex - b.node.authoredIndex ||
         compareCodeUnits(a.node.id, b.node.id),
     );
+
+    // Diagnostic 16: ik-chain-unsupported
+    //
+    // A solver plugin may declare a narrower chain than the graph derives, and `ik3d`'s closed form
+    // does: two `fk3d` members on one path. The shape, and which member plugins are dedicated to
+    // one, is read from `contract/solver-shape.ts` rather than from a plugin name here. It is judged
+    // only over a chain every member reached, because a member that could not reach the root was
+    // named above and has no depth to judge. See ADR-114.
+    const shape = solverChainShape(edgeRequirement(rootEdge)?.plugin ?? "");
+    const derived = chains.map(({ node, depth }) => ({
+      depth,
+      plugins: solverPluginsOf(node, solver.id),
+    }));
+    if (unreachable.size === 0 && !acceptsChain(shape, derived)) {
+      diagnostics.push(
+        diagnostic(
+          "ik-chain-unsupported",
+          solver.id,
+          `Solver "${solver.id}" supports ${describeChainShape(shape)}, but its derived members are ${describeDerivedChain(derived)}.`,
+          [solver.id],
+        ),
+      );
+    }
 
     // Diagnostics 8 through 11: ik-goal-unknown-member, ik-goal-duplicate, ik-goal-not-leaf and
     // ik-leaf-without-goal, plus ik-target-not-single-leaf.

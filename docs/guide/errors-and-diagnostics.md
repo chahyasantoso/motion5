@@ -194,9 +194,20 @@ Goal addressing has six rules of its own, and they are answered during graph con
 
 Those six answer about the member a key names. Whether the slot was allowed to carry keys at all is a separate question with a separate owner, in the dict section above, and the two never report together: a solver whose `targets` binding was refused by the registry derives no goal for these rules to resolve.
 
-There is no rule about chain length. A solver's derived member count is free, and the solve dispatches on it: two members and one goal take the analytic closed form, and everything else takes the iterative one. `ik-solver-unsupported-arity` refused every derived member count other than two and is deleted rather than widened, because a rule that refuses a shape the runtime solves is worse than no rule.
+The 2D `ik` solver has no rule about chain length. Its derived member count is free, and the solve dispatches on it: two members and one goal take the analytic closed form, and everything else takes the iterative one. `ik-solver-unsupported-arity` refused every derived member count other than two and is deleted rather than widened, because a rule that refuses a shape the runtime solves is worse than no rule.
 
-There is no rule about a solved bone's pivot offset either, for the same reason. A solved member may author `x` and `y` exactly as any other bone does, and `ik-solved-pivot-unsupported` is deleted. `fk` still owns applying the offset, in its parent's rotated space; `ik` accounts for it in the geometry it solves, so the rotations it publishes are the ones that put the composed tip on the goal. Both solves share one convention: the analytic path folds the two offsets into a fixed base point and a rigid link with a twist, and the iterative one solves pivot positions and averages a shared sub-base's tip rather than its children's twists. An offset that shortens a chain's reach past its goal is an unreachable target, which extends the chain toward it and has never been a diagnostic. See ADR-054.
+A solver whose plugin cannot solve every derived shape declares the one it can, and the graph
+refuses the rest at load. That is one rule, and only the internal `ik3d` prototype declares a
+narrower shape:
+
+- `ik-chain-unsupported`, when a solver's plugin declares a narrower chain than the graph derived
+  for it. The internal phase 8 `ik3d` solver declares exactly two `fk3d` members on one path from
+  its root, so a one-member, three-member, branched or mixed-dimension `ik3d` rig is refused at load
+  rather than erroring its solver, or composing identity, on every tick. `fk3d` is dedicated to that
+  shape, so the 2D `ik` solver, which takes a chain of any count and branching, reports the rule
+  only for an `fk3d` member bound to it. See ADR-114.
+
+The 2D `ik` solver has no rule about a solved bone's pivot offset either, for the same reason. A solved member may author `x` and `y` exactly as any other bone does, and `ik-solved-pivot-unsupported` is deleted. `fk` still owns applying the offset, in its parent's rotated space; `ik` accounts for it in the geometry it solves, so the rotations it publishes are the ones that put the composed tip on the goal. Both solves share one convention: the analytic path folds the two offsets into a fixed base point and a rigid link with a twist, and the iterative one solves pivot positions and averages a shared sub-base's tip rather than its children's twists. An offset that shortens a chain's reach past its goal is an unreachable target, which extends the chain toward it and has never been a diagnostic. See ADR-054.
 
 A diagnostic about a grouped keyframe cites the path you typed, `keyframes.fk.values.length`, not the flattened key the compiler works with. A diagnostic about a stop cites its index on the property, `keyframes.x[0].p`. A diagnostic about a dict entry cites the key you typed, `keyframes.ik.requires.targets.forearm`, and there is no derived slot spelling for it to cite instead: the key is carried beside the slot as data rather than formatted into it. Every path a leaf diagnostic carries is a path you wrote. See ADR-041, ADR-049, ADR-050, ADR-051, ADR-052, and ADR-057.
 

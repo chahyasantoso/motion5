@@ -351,6 +351,10 @@ import { fileURLToPath } from "node:url";
 // example that stops loading or stops publishing what the prose says it publishes is a red case
 // rather than stale prose (ADR-095). `G-` stays the series it already is; a two-letter prefix
 // beside its own initial is the policy the `P-` paragraph sets.
+// `TH-` belongs to the internal 3D seam prototype, phase 8 of issue #349 and ADR-114: CSS Z-X-Y
+// frame matrices, deterministic bend-plane and gimbal rules, the analytic two-bone result, plugin
+// ownership, and the renderer-facing FK channel. Its cases prove the seam without widening the
+// package exports or changing the existing 2D owners; `T-` remains the trigger series.
 //
 // The scan root is the repository rather than `packages/core/test`, because an id names one test in
 // the suite and the suite is not one package. `H-4` is declared in
@@ -415,7 +419,7 @@ const TEST_FILE = /\.test\.tsx?$/;
 // this pattern belongs beside the pattern rather than once per series, so those paragraphs now
 // say what a series owns and this one says where it sorts. Issue #294.
 const CASE_TITLE =
-  /it\(\s*"((?:AE|CF|CL|CN|CS|DV|EN|EV|FB|FO|GE|GI|HO|IK|IN|IR|LF|LV|MG|PK|PV|RA|RB|RS|SD|SH|WT|B|C|D|E|F|G|H|J|K|L|M|N|P|Q|R|S|T|U|V|W|Y|Z)-\d+)/g;
+  /it\(\s*"((?:AE|CF|CL|CN|CS|DV|EN|EV|FB|FO|GE|GI|HO|IK|IN|IR|LF|LV|MG|PK|PV|RA|RB|RS|SD|SH|TH|WT|B|C|D|E|F|G|H|J|K|L|M|N|P|Q|R|S|T|U|V|W|Y|Z)-\d+)/g;
 const REACT_RENDER = "packages/react/test/public-hook-render.test.ts";
 const SERIES_SHAPED_TITLE = /it\(\s*"([A-Z]{1,2}\d*)-(\d+)(?![\w-])/g;
 const SERIES_PREFIX = /^[A-Z]{1,2}$/;
