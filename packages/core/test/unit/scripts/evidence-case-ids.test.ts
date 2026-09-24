@@ -331,6 +331,14 @@ import { fileURLToPath } from "node:url";
 // the progress state commit series inside `Track`; `SD-` owns properties every solve holds rather
 // than what any one strategy computes, which `IK-`, `FB-` and `IR-` own.
 //
+// `HO-` belongs to the handover format and its application, issue #487 and ADR-112: the archive
+// listing, the manifest and its patch chain, derived checkpoint and bundle components, the
+// `.handover/` inbox, and the whole-or-nothing application `npm run patches` performs. It owns
+// local tooling rather than runtime behaviour, so it extends no runtime series, and `H-` stays the
+// internal-key series it already is. A two-letter prefix beside its own initial is the policy the
+// `P-` paragraph sets, and the ordering note on the alternation below covers `HO` as it covers
+// `CF`.
+//
 // The scan root is the repository rather than `packages/core/test`, because an id names one test in
 // the suite and the suite is not one package. `H-4` is declared in
 // `packages/react/test/public-hook-render.test.ts`, which the old root could not see, so one id
@@ -393,7 +401,7 @@ const TEST_FILE = /\.test\.tsx?$/;
 // this pattern belongs beside the pattern rather than once per series, so those paragraphs now
 // say what a series owns and this one says where it sorts. Issue #294.
 const CASE_TITLE =
-  /it\(\s*"((?:AE|CF|CL|CN|CS|DV|EV|FB|FO|GI|IK|IN|IR|LF|LV|MG|PK|PV|RA|RB|RS|SD|SH|WT|B|C|D|E|F|G|H|J|K|L|M|N|P|Q|R|S|T|U|V|W|Y|Z)-\d+)/g;
+  /it\(\s*"((?:AE|CF|CL|CN|CS|DV|EV|FB|FO|GI|HO|IK|IN|IR|LF|LV|MG|PK|PV|RA|RB|RS|SD|SH|WT|B|C|D|E|F|G|H|J|K|L|M|N|P|Q|R|S|T|U|V|W|Y|Z)-\d+)/g;
 const REACT_RENDER = "packages/react/test/public-hook-render.test.ts";
 const SERIES_SHAPED_TITLE = /it\(\s*"([A-Z]{1,2}\d*)-(\d+)(?![\w-])/g;
 const SERIES_PREFIX = /^[A-Z]{1,2}$/;
