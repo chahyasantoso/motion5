@@ -523,6 +523,7 @@ describe("the outcome and the command line (ADR-112)", () => {
       { kind: "conflict", name: "n", seq: 1, file: "f", paths: [], patches: ["p"] },
       { kind: "undeclared-change", name: "n", seq: 1, paths: ["secret.txt"] },
       { kind: "post-mismatch", name: "n", seq: 1, path: "p", expected: null, observed: "o" },
+      { kind: "already-applied", name: "n", seq: 1, file: "f" },
       {
         kind: "verified",
         name: "n",
@@ -532,7 +533,9 @@ describe("the outcome and the command line (ADR-112)", () => {
       applied("emptied"),
     ];
     expect(samples.map((sample) => sample.kind)).toEqual([...OUTCOME_KINDS]);
-    expect(samples.map((sample) => describeOutcome(sample).status)).toEqual([0, 1, 1, 1, 1, 0, 0]);
+    expect(samples.map((sample) => describeOutcome(sample).status)).toEqual([
+      0, 1, 1, 1, 1, 1, 0, 0,
+    ]);
     const words = INBOX_STATES.map((state) => describeOutcome(applied(state)).lines.at(-1));
     expect(new Set(words).size).toBe(INBOX_STATES.length);
     expect(words[2]).toContain("do not apply the zip again");
@@ -562,5 +565,124 @@ describe("the outcome and the command line (ADR-112)", () => {
     expect(cli("unknown").status).toBe(2);
     expect(cli("apply", "--force").status).toBe(1);
     expect(cli("apply", "typo").status).toBe(1);
+  });
+});
+
+describe("what the review of #488 found (ADR-112)", () => {
+  it("HO-31 a patch already on the branch stops the series by name instead of reading the commit before it", async () => {
+    const f = await fixture();
+    const zip = await pack(f);
+    await stage(f, zip);
+    expect(await apply(f, { keep: true })).toMatchObject({ kind: "applied", inbox: "kept" });
+    // Applying the kept zip again: the base is an ancestor, every path is reconciled, and
+    // `git am --3way` exits zero on each patch without committing anything.
+    const head = git(f.repo, "rev-parse", "HEAD");
+    const again = await apply(f, { keep: true });
+    expect(again).toEqual({
+      kind: "already-applied",
+      name: "motion5-487-handover",
+      seq: 1,
+      file: "patches/0001-feat-first.patch",
+    });
+    expect(describeOutcome(again).status).toBe(1);
+    // An unrelated commit on top used to be read back as the patch's undeclared change.
+    await writeFile(join(f.repo, "unrelated.txt"), "u\n");
+    git(f.repo, "add", "unrelated.txt");
+    git(f.repo, "commit", "-qm", "local: unrelated");
+    const unrelated = git(f.repo, "rev-parse", "HEAD");
+    expect(await apply(f)).toMatchObject({ kind: "already-applied", seq: 1 });
+    expect(git(f.repo, "rev-parse", "HEAD")).toBe(unrelated);
+    expect(git(f.repo, "status", "--porcelain")).toBe("");
+    expect(await readdir(join(f.repo, ".handover"))).toEqual(["handover.zip"]);
+    expect(git(f.repo, "rev-list", "--count", `${head}..HEAD`)).toBe("1");
+    expect(git(f.repo, "worktree", "list", "--porcelain").match(/^worktree /gm)).toHaveLength(1);
+  });
+
+  it("HO-32 pack refuses a gitlink rather than declaring a commit id as a blob", async () => {
+    const f = await fixture();
+    const sub = await temporary("motion5-handover-sub-");
+    git(sub, "init", "-q", "-b", "main");
+    await writeFile(join(sub, "s.txt"), "s\n");
+    git(sub, "add", "s.txt");
+    git(sub, "commit", "-qm", "sub");
+    git(f.repo, "checkout", "-q", f.tip);
+    git(
+      f.repo,
+      "update-index",
+      "--add",
+      "--cacheinfo",
+      `160000,${git(sub, "rev-parse", "HEAD")},sub`,
+    );
+    git(f.repo, "commit", "-qm", "feat: gitlink");
+    const gitlink = git(f.repo, "rev-parse", "HEAD");
+    git(f.repo, "checkout", "-q", "main");
+    const out = join(f.work, "gitlink.zip");
+    await expect(pack({ ...f, tip: gitlink }, "gitlink")).rejects.toThrow(
+      "changes the submodule sub; a handover carries blobs, not gitlinks",
+    );
+    expect(await exists(out)).toBe(false);
+  });
+
+  it("HO-33 a checkout that moves while the series is proved is refused, and nothing is lost", async () => {
+    const f = await fixture();
+    const inbox = await stage(f, await pack(f));
+    let moved = "";
+    // The port commits on the real checkout just before the fast-forward, as a second process would.
+    const racing = (command: string, args: readonly string[], options: RunOptions = {}) => {
+      if (command === "git" && args.includes("--ff-only") && moved === "") {
+        spawnSync(
+          "sh",
+          ["-c", "echo r > racing.txt && git add racing.txt && git commit -qm racing"],
+          {
+            cwd: f.repo,
+            env: ENV,
+          },
+        );
+        moved = git(f.repo, "rev-parse", "HEAD");
+      }
+      return run(command, args, options);
+    };
+    const outcome = await applyHandover({ root: f.repo, run: racing });
+    expect(outcome).toEqual({
+      kind: "refused",
+      refusal: { kind: "head-moved", expected: f.base, observed: moved },
+    });
+    expect(describeOutcome(outcome).lines[0]).toContain("run the command again");
+    expect(git(f.repo, "rev-parse", "HEAD")).toBe(moved);
+    expect(await readdir(inbox)).toEqual(["handover.zip"]);
+    expect(git(f.repo, "worktree", "list", "--porcelain").match(/^worktree /gm)).toHaveLength(1);
+    // A checkout edited in place under the same race is refused as dirty, not thrown.
+    git(f.repo, "reset", "-q", "--hard", f.base);
+    const editing = (command: string, args: readonly string[], options: RunOptions = {}) => {
+      if (command === "git" && args.includes("--ff-only"))
+        spawnSync("sh", ["-c", "echo edited > a.txt"], { cwd: f.repo });
+      return run(command, args, options);
+    };
+    expect(await applyHandover({ root: f.repo, run: editing })).toEqual({
+      kind: "refused",
+      refusal: { kind: "dirty-tree", paths: ["a.txt"] },
+    });
+    expect(await readdir(inbox)).toEqual(["handover.zip"]);
+  });
+
+  it("HO-34 the first handover applies on a checkout that does not ignore the inbox yet", async () => {
+    const f = await fixture();
+    const zip = await pack(f);
+    // The recipient's branch predates the ignore rule, so the zip is an untracked file.
+    await stage(f, zip);
+    await writeFile(join(f.repo, ".gitignore"), "");
+    git(f.repo, "commit", "-qam", "local: no ignore rule yet");
+    expect(git(f.repo, "status", "--porcelain", "--untracked-files=all")).toBe(
+      "?? .handover/handover.zip",
+    );
+    expect(await apply(f)).toMatchObject({ kind: "applied", inbox: "emptied" });
+    // Only the inbox is exempt: an untracked file anywhere else is still dirt.
+    await mkdir(join(f.repo, ".handover"), { recursive: true });
+    await cp(zip, join(f.repo, ".handover", "handover.zip"));
+    await writeFile(join(f.repo, "stray.txt"), "s\n");
+    expect(await apply(f)).toEqual({
+      kind: "refused",
+      refusal: { kind: "dirty-tree", paths: ["stray.txt"] },
+    });
   });
 });

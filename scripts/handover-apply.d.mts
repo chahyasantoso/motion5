@@ -11,6 +11,7 @@ export const OUTCOME_KINDS: readonly [
   "conflict",
   "undeclared-change",
   "post-mismatch",
+  "already-applied",
   "verified",
   "applied",
 ];
@@ -62,6 +63,12 @@ export type HandoverOutcome =
       readonly path: string;
       readonly expected: string | null;
       readonly observed: string | null;
+    }
+  | {
+      readonly kind: "already-applied";
+      readonly name: string;
+      readonly seq: number;
+      readonly file: string;
     }
   | {
       readonly kind: "verified";

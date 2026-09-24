@@ -31,6 +31,7 @@ export const OUTCOME_KINDS = Object.freeze([
   "conflict",
   "undeclared-change",
   "post-mismatch",
+  "already-applied",
   "verified",
   "applied",
 ]);
@@ -203,6 +204,35 @@ function gitPathExists(run, root, name) {
   );
 }
 
+/**
+ * Every path that makes the checkout unclean, untracked files included, except the inbox itself.
+ *
+ * The inbox is excluded here rather than trusted to `.gitignore`, because a checkout that does not
+ * carry the ignore rule yet, which is every checkout the first handover lands on, would otherwise
+ * report the zip it is about to apply as dirt and refuse it. `discoverInbox` already owns what may
+ * sit in the inbox, so excluding it hides nothing this check was meant to see.
+ */
+function dirtyPaths(run, root) {
+  const status = must(
+    run,
+    "git",
+    [
+      "status",
+      "--porcelain=v1",
+      "-z",
+      "--untracked-files=all",
+      "--",
+      ".",
+      `:(exclude)${HANDOVER_INBOX}`,
+    ],
+    root,
+  );
+  return status
+    .split("\0")
+    .filter((record) => /^.. /.test(record))
+    .map((record) => record.slice(3));
+}
+
 /** The checkout must be a branch with an identity, no operation in flight, and a clean tree. */
 async function preflight(run, root) {
   if (run("git", ["var", "GIT_COMMITTER_IDENT"], { cwd: root }).status !== 0)
@@ -211,16 +241,7 @@ async function preflight(run, root) {
     refuse({ kind: "detached-head" });
   for (const [name, operation] of IN_PROGRESS)
     if (await gitPathExists(run, root, name)) refuse({ kind: "operation-in-progress", operation });
-  const status = must(
-    run,
-    "git",
-    ["status", "--porcelain=v1", "-z", "--untracked-files=all"],
-    root,
-  );
-  const paths = status
-    .split("\0")
-    .filter((record) => /^.. /.test(record))
-    .map((record) => record.slice(3));
+  const paths = dirtyPaths(run, root);
   if (paths.length > 0) refuse({ kind: "dirty-tree", paths: paths.slice(0, MAX_REPORTED_PATHS) });
 }
 
@@ -293,11 +314,17 @@ function commitsBetween(run, cwd, from, to) {
  * it touched must be paths its manifest entry declares, because a digest proves the patch is the
  * one packed but not that the manifest describes it, and every declared path that is not
  * reconciled must land on its declared blob. Returns null, or the outcome that stopped it.
+ *
+ * `git am --3way` exits zero without committing when a patch's change is already in the tree
+ * ("No changes -- Patch already applied"), so a commit is proved to exist before it is read back:
+ * `HEAD^..HEAD` would otherwise be whichever commit came before, and an unrelated one reads as an
+ * undeclared change while one on the same path reads as a clean application of zero commits.
  */
 function applySeries(run, worktree, hooks, inspected, reconciled) {
   const { manifest, directory } = inspected;
   const skip = new Set(reconciled);
   for (const patch of manifest.patches) {
+    const before = must(run, "git", ["rev-parse", "HEAD"], worktree).trim();
     const applied = run("git", amArguments(hooks, path.join(directory, patch.file)), {
       cwd: worktree,
     });
@@ -313,6 +340,8 @@ function applySeries(run, worktree, hooks, inspected, reconciled) {
         patches: manifest.patches.map((each) => path.join(directory, each.file)),
       };
     }
+    if (must(run, "git", ["rev-parse", "HEAD"], worktree).trim() === before)
+      return { kind: "already-applied", name: manifest.name, seq: patch.seq, file: patch.file };
     const touched = must(
       run,
       "git",
@@ -342,6 +371,28 @@ function applySeries(run, worktree, hooks, inspected, reconciled) {
         };
   }
   return null;
+}
+
+/**
+ * The one write to the checkout: a fast-forward to the proved tip. Nothing holds the checkout while
+ * the series is proved, so another process may have committed or edited it in the meantime, and
+ * `merge --ff-only` then refuses. That is a refusal with the checkout unchanged, named for what
+ * moved, rather than a raw error that reads as a defect.
+ */
+function publish(run, root, hooks, head, tip) {
+  const merged = run(
+    "git",
+    ["-c", `core.hooksPath=${hooks}`, "merge", "--ff-only", "--quiet", tip],
+    {
+      cwd: root,
+    },
+  );
+  if (merged.status === 0) return;
+  const observed = must(run, "git", ["rev-parse", "HEAD"], root).trim();
+  if (observed !== head) refuse({ kind: "head-moved", expected: head, observed });
+  const paths = dirtyPaths(run, root);
+  if (paths.length > 0) refuse({ kind: "dirty-tree", paths: paths.slice(0, MAX_REPORTED_PATHS) });
+  throw new Error(`git merge --ff-only ${tip} failed: ${String(merged.stderr).trim()}`);
 }
 
 async function inboxEntries(inbox) {
@@ -420,7 +471,7 @@ export async function applyHandover({
     const commits = commitsBetween(run, worktree, head, tip);
     const name = inspected.manifest.name;
     if (dryRun) return { kind: "verified", name, commits, reconciled };
-    must(run, "git", ["-c", `core.hooksPath=${hooks}`, "merge", "--ff-only", "--quiet", tip], root);
+    publish(run, root, hooks, head, tip);
     const state = keep ? "kept" : await emptyInbox(inbox);
     return { kind: "applied", name, commits, reconciled, inbox: state };
   } catch (error) {
@@ -502,6 +553,15 @@ export function describeOutcome(outcome) {
         lines: [
           `Patch ${outcome.seq} of ${outcome.name} applied, but ${outcome.path} landed on ${outcome.observed ?? "absent"} instead of the declared ${outcome.expected ?? "absent"}.`,
           "Nothing in your checkout changed. The handover does not describe the bytes it produces; ask for a new one.",
+        ],
+      };
+    case "already-applied":
+      return {
+        status: 1,
+        lines: [
+          `Patch ${outcome.seq} of ${outcome.name} (${outcome.file}) changes nothing on this branch: its change is already here.`,
+          `Nothing in your checkout changed, and the zip is still in ${HANDOVER_INBOX}/.`,
+          `If the whole series is already in, empty ${HANDOVER_INBOX}/; otherwise ask for a handover rebased onto this branch.`,
         ],
       };
     case "verified":

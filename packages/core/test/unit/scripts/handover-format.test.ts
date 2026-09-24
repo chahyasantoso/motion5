@@ -463,6 +463,7 @@ describe("the inbox and the words (ADR-112)", () => {
       { kind: "checkpoint-disagrees", reason: "r" },
       { kind: "bundle-invalid", reason: "r" },
       { kind: "bundle-prerequisite", expected: BASE, observed: [B1] },
+      { kind: "head-moved", expected: BASE, observed: B1 },
     ];
     expect(samples.map((sample) => sample.kind)).toEqual([...REFUSAL_KINDS]);
     for (const sample of samples) expect(describeRefusal(sample).length).toBeGreaterThan(10);

@@ -48,7 +48,15 @@ function resolve(run, root, revision) {
   return must(run, "git", ["rev-parse", "--verify", `${revision}^{commit}`], root).trim();
 }
 
-/** Each commit's touched paths with their blob ids before and after, absent as null. */
+const GITLINK = "160000";
+
+/**
+ * Each commit's touched paths with their blob ids before and after, absent as null.
+ *
+ * A gitlink is refused here rather than packed: its id names a commit in another repository, the
+ * format and the consumer read every image as a blob, and a gitlink's image would be proved absent
+ * at the very base it was cut from.
+ */
 function images(run, root, commit) {
   const raw = must(
     run,
@@ -69,8 +77,12 @@ function images(run, root, commit) {
   const pre = {};
   const post = {};
   for (let index = 0; index < fields.length; index += 2) {
-    const [, , before, after] = fields[index].slice(1).split(" ");
+    const [modeBefore, modeAfter, before, after] = fields[index].slice(1).split(" ");
     const file = fields[index + 1];
+    ensure(
+      modeBefore !== GITLINK && modeAfter !== GITLINK,
+      `${commit} changes the submodule ${file}; a handover carries blobs, not gitlinks`,
+    );
     pre[file] = ZERO.test(before) ? null : before;
     post[file] = ZERO.test(after) ? null : after;
   }

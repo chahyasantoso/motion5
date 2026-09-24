@@ -48,6 +48,7 @@ export const REFUSAL_KINDS = Object.freeze([
   "checkpoint-disagrees",
   "bundle-invalid",
   "bundle-prerequisite",
+  "head-moved",
 ]);
 
 const SHA = /^[0-9a-f]{40}$/;
@@ -549,6 +550,8 @@ export function describeRefusal(refusal) {
       return `the bundle is invalid: ${refusal.reason}`;
     case "bundle-prerequisite":
       return `the bundle needs ${list(refusal.observed)}, and the only prerequisite a handover may name is its base ${refusal.expected}`;
+    case "head-moved":
+      return `HEAD moved from ${refusal.expected} to ${refusal.observed} while the handover was being proved; run the command again`;
     default:
       return unreachable(refusal, "REFUSAL_KINDS");
   }

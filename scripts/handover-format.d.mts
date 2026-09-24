@@ -31,6 +31,7 @@ export const REFUSAL_KINDS: readonly [
   "checkpoint-disagrees",
   "bundle-invalid",
   "bundle-prerequisite",
+  "head-moved",
 ];
 
 export type ComponentKind = (typeof COMPONENT_KINDS)[number];
@@ -78,7 +79,8 @@ export type HandoverRefusalValue =
       readonly kind: "bundle-prerequisite";
       readonly expected: string;
       readonly observed: readonly string[];
-    };
+    }
+  | { readonly kind: "head-moved"; readonly expected: string; readonly observed: string };
 
 export type InboxDiscovery =
   | { readonly kind: "empty" }
