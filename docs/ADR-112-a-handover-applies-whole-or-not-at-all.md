@@ -124,18 +124,21 @@ needs are present. Content is the rule the checkpoint route already chains by
 than the ancestry check, because every post-image is then compared. A declared bundle is also
 checked with Git.
 
-The series is applied patch by patch with `git am --3way` in a detached `git worktree` of HEAD
-in a temporary directory. After each patch, every declared post blob is read back from that
-worktree. Only when every patch passes does the real checkout run `git merge --ff-only` to the
-temporary tip. Nothing holds the checkout while the series is proved, so a fast-forward that fails
-because HEAD moved is the refusal `head-moved`, and one that fails because the tree was edited in
-the meantime is `dirty-tree`; both leave the checkout as the other process left it and keep the
-zip. A lock was considered and not taken: Git's own index lock already makes the fast-forward
-atomic, and a second lock would be a second owner of that question that a crash can leave behind.
-A conflict aborts the temporary `git am`, leaves the real checkout untouched,
-keeps the inbox zip, and retains the extracted series so the printed recovery command can run
-`git am --3way` with all patches, resolve and stage conflicts, then use `git am --continue` or
-`git am --abort`.
+The series is applied patch by patch with `git am --3way` in a detached `git worktree` of HEAD in a
+temporary directory. After each patch, every declared post blob is read back from that worktree.
+Only when every patch passes does the real checkout run `git merge --ff-only` to the temporary tip.
+Nothing holds the checkout while the series is proved, so a fast-forward that fails because HEAD
+moved is the refusal `head-moved`, and one that fails because the tree was edited in the meantime is
+`dirty-tree`; both leave the checkout as the other process left it and keep the zip. An edit the
+fast-forward does not touch, such as a new file beside the series, is carried by Git as it would be
+by any `merge --ff-only`: the series lands on its proved tip and the edit survives. Refusing or
+rolling back a proved publication because another writer touched something else was rejected,
+because it would discard or undo bytes the command does not own. A lock was considered and not
+taken: Git's own index lock already makes the fast-forward atomic, and a second lock would be a
+second owner of that question that a crash can leave behind. A conflict aborts the temporary
+`git am`, leaves the real checkout untouched, keeps the inbox zip, and retains the extracted series
+so the printed recovery command can run `git am --3way` with all patches, resolve and stage
+conflicts, then use `git am --continue` or `git am --abort`.
 
 `describeRefusal` is the single owner of refusal words and `describeOutcome` is the single owner
 of outcome words and exit status. Their closed switches cover inbox discovery, refusal kinds,
@@ -247,7 +250,8 @@ agreement end to end, every outcome's words and exit status, and the command lin
 The review of #488 added `HO-31` to `HO-34` in the same file: a patch already on the branch stops
 as `already-applied` whether the commit before it is related or not, `pack` refuses a gitlink and
 writes no archive, a checkout whose HEAD moves or whose tree is edited before the fast-forward is
-refused as `head-moved` or `dirty-tree` with the zip kept and no worktree left, and the first
+refused as `head-moved` or `dirty-tree` with the zip kept and no worktree left, while an
+unrelated edit survives an applied fast-forward, and the first
 handover applies on a checkout without the ignore rule while an untracked file elsewhere is still
 refused. Each is killed by removing its fix: the pathspec exclusion, the commit check, the
 `head-moved` and `dirty-tree` mapping, and the gitlink refusal.

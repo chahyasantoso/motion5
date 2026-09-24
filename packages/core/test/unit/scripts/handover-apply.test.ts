@@ -663,6 +663,22 @@ describe("what the review of #488 found (ADR-112)", () => {
       refusal: { kind: "dirty-tree", paths: ["a.txt"] },
     });
     expect(await readdir(inbox)).toEqual(["handover.zip"]);
+    // An edit the fast-forward does not touch is the other process's, and Git carries it: the
+    // series still lands on its proved tip and the edit survives rather than being rolled back.
+    git(f.repo, "checkout", "-q", "--", "a.txt");
+    const unrelated = (command: string, args: readonly string[], options: RunOptions = {}) => {
+      if (command === "git" && args.includes("--ff-only"))
+        spawnSync("sh", ["-c", "echo mine > mine.txt"], { cwd: f.repo });
+      return run(command, args, options);
+    };
+    expect(await applyHandover({ root: f.repo, run: unrelated })).toMatchObject({
+      kind: "applied",
+    });
+    expect(git(f.repo, "rev-parse", "HEAD^{tree}")).not.toBe(
+      git(f.repo, "rev-parse", `${f.base}^{tree}`),
+    );
+    expect(git(f.repo, "diff", "--stat", f.tip, "HEAD")).toBe("");
+    expect(await readFile(join(f.repo, "mine.txt"), "utf8")).toBe("mine\n");
   });
 
   it("HO-34 the first handover applies on a checkout that does not ignore the inbox yet", async () => {
