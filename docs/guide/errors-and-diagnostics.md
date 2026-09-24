@@ -132,6 +132,23 @@ Both of those rules speak only about a node that bound a solver somewhere, and t
 
 The `weight` those two rules police is the blend between a bone's authored rest pose and its solver's output, per member rather than per solver, so a chain can stagger its reach. It defaults to `1`, which is the unconditional override every rig had before the key existed, `0` is exactly the authored rotation with the solve discarded, and anything between takes the shorter of the two arcs between them. Values outside `[0, 1]`, from an overshoot-easing curve for instance, are clamped rather than extrapolated, and a non-finite weight reads as `1`, identically to omitting the key. See ADR-055.
 
+Goal influence ([ADR-110](../ADR-110-goal-influence-and-conflict-policy.md)) adds two load rules:
+
+- `ik-influence-malformed`, when a member's `influence`, flat or under the group that bound its
+  `solver`, is not one static finite number greater than `0`. Author a positive finite static number;
+  animated, zero, negative, non-finite, and malformed values are refused.
+- `ik-influence-without-goal`, when an influence is under a group that did not bind `solver`, or a
+  placed influence is on a member that no resolved goal addresses. Put it on the addressed chain
+  leaf and under the group that binds the member's solver. A node with no solver is not narrowed by
+  this rule, and an undecided goal shape is not reported twice; placement is checked before value
+  classification.
+
+A valid influence is a goal's pull when a branching solve compromises over a shared member. The
+branch pull is the mean influence of its addressed leaves, and `conflicted` quality names a remaining
+miss whose last inward-pass branch spread exceeds tolerance. Opted-in inspection has nine quality
+kinds and the fixed shape `{ kind, residual, iterations, atBound, residuals }`; `residuals` reports
+one frozen world-unit miss per addressed leaf. See ADR-110.
+
 Constrained solving ([ADR-108](../ADR-108-constrained-2d-solving.md)) adds six load rules for
 joint limits and the bend hint:
 
@@ -198,7 +215,15 @@ A node that exists but cannot produce a value publishes with status `blocked` or
 
 That means a rendering consumer should branch on `patch.status` rather than assume every patch is renderable, and an inspector can read `patch.diagnostics` without any extra wiring.
 
-A solve that does not reach its goal is not one of these. An iterative solve converges to within a tolerance, and an unreachable goal leaves the chain fully extended toward it, so an unopted solver publishes ordinary `ready` patches carrying only `rotations` in both cases. The solve result carries one `SolveQuality` record for every strategy (ADR-107); an author may opt into it with `ik.values.inspect: true`, which retains the authored `inspect` value and adds one `inspection` value without emitting a per-tick diagnostic or warning. The visible tip gap caused by partial FK weight is composition-space data owned by `fk`, not this solver-space record. See ADR-109.
+A solve that does not reach its goal is not one of these. An iterative solve converges to within a
+tolerance, and an unreachable goal leaves the chain fully extended toward it, so an unopted solver
+publishes ordinary `ready` patches carrying only `rotations` in both cases. The solve result carries
+one `SolveQuality` record for every strategy (ADR-107); an author may opt into it with
+`ik.values.inspect: true`, which retains the authored `inspect` value and adds one `inspection` value
+without emitting a per-tick diagnostic or warning. The inspection shape includes frozen per-leaf
+`residuals`, and a multi-goal miss whose branch witness remains outside tolerance is `conflicted`,
+not a claim that no pose exists. The visible tip gap caused by partial FK weight is composition-space
+data owned by `fk`, not this solver-space record. See ADR-109 and ADR-110.
 
 A solver that cannot solve at all is not one of these either, and that is the point of the load-time rules above. Every shape that would make a composition throw is refused before the graph is built, so `composition-failure` on a solver node means a bug in the plugin or the publisher rather than a rig you can fix by editing it. See ADR-053.
 

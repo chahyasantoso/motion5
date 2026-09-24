@@ -18,6 +18,10 @@ Published behavior is unchanged: every rig publishes the same doubles, the same 
 
 **Amended by [ADR-109](./ADR-109-opt-in-solve-inspection.md), 2026-09-24.** The unchanged-publication claim above is about this extraction and still holds for every rig without the ADR-109 inspection opt-in. An author who writes the static `inspect: true` on a solver receives the additional `inspection` output ADR-109 defines, and the unopted solver path remains byte-identical.
 
+**Amended by [ADR-110](./ADR-110-goal-influence-and-conflict-policy.md), 2026-09-24.** Delivery
+order item 5 is now recorded by ADR-110: goal influence belongs to the goal module, the weighted
+compromise is explicit, and an unweighted rig retains phase 4 rotations bit for bit.
+
 ## Why now
 
 Issue #349's study and the implementation plan in its first comment both find that `ik.ts` answered four questions at once (slot adaptation, chain topology, solver selection, and the closed form's arithmetic) and that every capability the study ranks (constraints, inspection, goal policy, a 3D seam) adds code to at least two of them. Constraints in particular would otherwise put a limit policy beside the arithmetic that consumes it, and a limit enforced by two owners is guaranteed to disagree on the case nobody tests. The extraction is therefore the first phase and ships alone, with its own evidence, before any feature needs it.

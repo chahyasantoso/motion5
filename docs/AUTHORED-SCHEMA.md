@@ -206,7 +206,21 @@ Inverse Kinematics computes joint rotations so a bone chain reaches toward one o
   - `requires.target`: qualified ID of the world-space coordinate the chain's single leaf reaches toward.
   - `requires.targets`: a dict of goals keyed by member id, for a chain with more than one leaf. Every leaf must be named once the dict is used at all.
   - One of the two goal spellings is required. A solver with a root and members and no goal at all is `ik-solver-no-goal`, refused at load rather than left to a composition that has nothing to solve.
-- **`fk` Solver Binding**: A member bone binds `keyframes.fk.requires.solver` naming the solver node. It authors `values.length`, a pivot offset `x` and `y` if the rig wants one, and optionally `values.weight`, `values.minRotation`, and `values.maxRotation`. The limits are static finite degrees in `[-180, 180]`, default missing bounds to `-180` and `180`, and are read by IK rather than FK. Both solves account for the pivot offset, so it is an ordinary authored value on a member exactly as it is on any other bone. See ADR-054.
+- **`fk` Solver Binding**: A member bone binds `keyframes.fk.requires.solver` naming the solver node. It
+  authors `values.length`, a pivot offset `x` and `y` if the rig wants one, and optionally
+  `values.weight`, `values.minRotation`, `values.maxRotation`, and `values.influence`. The limits are
+  static finite degrees in `[-180, 180]`, default missing bounds to `-180` and `180`, and are read by
+  IK rather than FK. Both solves account for the pivot offset, so it is an ordinary authored value on
+  a member exactly as it is on any other bone. See ADR-054.
+- **`fk.values.influence`**: a static finite number greater than `0` that weights this member's
+  addressed goal when branches compromise over a shared member. It defaults to `1`; it is never
+  animated. The flat spelling is in scope on a node that binds a solver somewhere, and a grouped
+  spelling is in scope only under the group that bound that solver. `ik-influence-malformed` refuses
+  a non-static, non-finite, zero, negative, or otherwise malformed value;
+  `ik-influence-without-goal` refuses a spelling under a group that did not bind `solver` or a member
+  that no resolved goal addresses. A node with no solver is not narrowed by this rule because load has
+  no registry with which to distinguish a bystander plugin key. FK claims the key for authoring but
+  never reads it; IK reads it from the delivered member values. See ADR-110.
 - **`fk.values.weight`**: how much of the solved rotation this bone composes with, per member rather than per solver, so a chain can stagger its reach: a shoulder that commits early while a wrist lags is two weights on two bones. It defaults to `1`, which is the unconditional override every rig had before the key existed, `0` is exactly the authored `rotation` with the solve discarded, and anything between blends along the shorter of the two arcs between them. Values outside `[0, 1]` are clamped rather than extrapolated, and a non-finite weight reads as `1`. Authoring `rotation` on a solver-bound member is legal exactly when a `weight` sits beside it in the same group, and refused as `ik-solved-rotation-dead` when it does not. A member that bound its solver under one plugin group and authored its `weight` under another is `ik-weight-without-solver`, because the solve cannot reach a key outside the group that asked for it. See ADR-055.
 
 ```text
@@ -272,7 +286,15 @@ Two leaves may reach for the same node. Each goal is its own binding carrying it
 
 Both spellings are supported and neither is deprecated. `target` is exactly the degenerate case of the dict, so a solver picks one and `ik-goal-conflict` refuses both together. Because `target` names no member, it addresses a leaf only while there is one leaf to address, and a solver that binds it over a branching chain is `ik-target-not-single-leaf`. A linear chain has one leaf however long it is, so the bare slot keeps working past two bones.
 
-A solve publishes `rotations`, a record of one local rotation per member id, and nothing else. Convergence is not reported on the patch: an iterative solve reaches a goal within a tolerance, an unreachable goal leaves the chain fully extended toward it, and both are ordinary results rather than failures. A member's `weight` never reaches a patch either: `fk` publishes a composed frame, so the blend is applied and the key is dropped. See ADR-051, ADR-052, and ADR-055.
+A solve always publishes `rotations`, a record of one local rotation per member id. By default it
+publishes nothing else. With static `ik.values.inspect: true` (or the equivalent flat spelling on
+the node that bound `root`), it also publishes `inspection` with the fixed shape `{ kind, residual,
+iterations, atBound, residuals }`. `residuals` is a frozen record keyed by addressed leaf member id,
+with each leaf's world-unit goal miss; `quality.residual` remains the worst one. The nine quality
+kinds are `reached`, `too-far`, `too-near`, `coincident`, `converged`, `stalled`, `iteration-cap`,
+`conflicted`, and `limited`. A member's `weight` never reaches a patch either: `fk` publishes a
+composed frame, so the blend is applied and the key is dropped. See ADR-051, ADR-052, ADR-055, and
+ADR-110.
 
 ### Keyframe namespace rules
 

@@ -1,6 +1,8 @@
 # ADR-108: Constrained 2D IK solving
 
-**Status:** Proposed as issue [#349](https://github.com/chahyasantoso/motion5/issues/349) phase 3, 2026-09-23, against `main` after phase 2 merge ([PR #483](https://github.com/chahyasantoso/motion5/pull/483)). Accepted when its pull request merges.
+**Status:** Accepted, 2026-09-24. Issue [#349](https://github.com/chahyasantoso/motion5/issues/349)
+phase 3, squash-merged from [#484](https://github.com/chahyasantoso/motion5/pull/484) as `0f75d101`.
+Phase 4 is [ADR-109](./ADR-109-opt-in-solve-inspection.md).
 
 ## Invariant
 
