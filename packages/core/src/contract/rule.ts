@@ -72,6 +72,7 @@ const BASE_RULES = {
   "id-shape": ERROR_NO_IDS,
   "ik-bend-conflicts-flip": ERROR_WITH_IDS,
   "ik-bend-malformed": ERROR_WITH_IDS,
+  "ik-chain-unsupported": ERROR_WITH_IDS,
   "ik-goal-conflict": ERROR_WITH_IDS,
   "ik-goal-duplicate": ERROR_WITH_IDS,
   "ik-goal-not-leaf": ERROR_WITH_IDS,

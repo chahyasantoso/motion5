@@ -107,6 +107,7 @@ export const BASE_RULE_IDS = [
   "id-shape",
   "ik-bend-conflicts-flip",
   "ik-bend-malformed",
+  "ik-chain-unsupported",
   "ik-goal-conflict",
   "ik-goal-duplicate",
   "ik-goal-not-leaf",

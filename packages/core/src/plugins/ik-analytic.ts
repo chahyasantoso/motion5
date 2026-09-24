@@ -166,7 +166,7 @@ function twoBone(
  * angle beside a side of no extent reads nothing. It answers the aligned angle, a cosine of one,
  * rather than a value the publisher would refuse; `SD-1` pins it. See ADR-111.
  */
-function cosineOpposite(a: number, b: number, opposite: number): number {
+export function cosineOpposite(a: number, b: number, opposite: number): number {
   const exponent = clamp(Math.round(Math.log2(Math.max(a, b, opposite))), -1000, 1000);
   const scale = 2 ** -exponent;
   const x = a * scale;
@@ -188,7 +188,7 @@ function cosineOpposite(a: number, b: number, opposite: number): number {
  * `residual <= tolerance` is false for it on every path. `IR-9` pins both.
  */
 
-function bandQuality(
+export function bandQuality(
   d: number,
   minReach: number,
   maxReach: number,
