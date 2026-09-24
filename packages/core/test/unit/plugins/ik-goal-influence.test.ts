@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type {
+  AuthoredPluginRequires,
   AuthoredProperty,
   ProjectDefinition,
   TrackDefinition,
@@ -13,11 +14,12 @@ import { fkPlugin } from "../../../src/plugins/fk";
 import { ikPlugin } from "../../../src/plugins/ik";
 import { branchPulls, compromise, readInfluence } from "../../../src/plugins/ik-goal";
 import { readSolveMembers, type DeliveredMember } from "../../../src/plugins/ik-chain";
-import { solveFabrik } from "../../../src/plugins/fabrik";
+import { FABRIK_TOLERANCE, iterativeQuality, solveFabrik } from "../../../src/plugins/fabrik";
 import { solveChain } from "../../../src/plugins/ik-solve";
 import type { SolveMember } from "../../../src/plugins/ik-member";
 import { inspectSolve } from "../../../src/plugins/ik-result";
 import type { WorldFrame } from "../../../src/plugins/frame";
+import { recordGoalReach, type GoalReach } from "../../../src/graph/solver-constraints";
 import { transformPlugin } from "../../../src/plugins/transform";
 
 const ROOT: WorldFrame = { x: 0, y: 0, rotation: 0 };
@@ -77,20 +79,22 @@ function publishedSolver(project: ProjectDefinition) {
 
 function goalProject(
   leafValues: Readonly<Record<string, unknown>> = {},
-  solveValues: Readonly<Record<string, unknown>> = {},
-  solveRequires: Readonly<Record<string, unknown>> = {
+  solveValues: Readonly<Record<string, AuthoredProperty>> = {},
+  solveRequires: AuthoredPluginRequires = {
     root: "root",
     targets: { a: "goal-a", b: "goal-b" },
   },
   extra: readonly TrackDefinition[] = [],
   sharedBase = "root",
 ): ProjectDefinition {
-  const values = ["a", "b"].map((id) => {
+  const leaves = ["a", "b"].map((id): TrackDefinition => {
     const influence = leafValues[id];
-    return [
+    const authored: Readonly<Record<string, AuthoredProperty>> =
+      influence === undefined ? { length: 50 } : { length: 50, influence: property(influence) };
+    return {
       id,
-      influence === undefined ? { length: 50 } : { length: 50, influence: property(influence) },
-    ];
+      keyframes: { fk: { values: authored, requires: { base: "shared", solver: "solve" } } },
+    };
   });
   return {
     schemaVersion: 5,
@@ -126,15 +130,7 @@ function goalProject(
               },
             },
           },
-          ...values.map(([id, authored]) => ({
-            id,
-            keyframes: {
-              fk: {
-                values: authored,
-                requires: { base: "shared", solver: "solve" },
-              },
-            },
-          })),
+          ...leaves,
           ...extra,
         ],
       },
@@ -219,13 +215,13 @@ describe("IK goal influence and conflict policy", () => {
   it("GI-4 raises one branch's influence toward its goal and keeps equal authored weights default-identical", () => {
     const low = solveFabrik(ROOT, twoBranchMembers());
     const high = solveFabrik(ROOT, twoBranchMembers(20, 1));
-    const lowA = high.residuals.a!;
-    const lowB = high.residuals.b!;
-    expect(lowA).toBeLessThan(low.residuals.b!);
-    expect(lowA).toBeGreaterThanOrEqual(0);
-    expect(lowB).toBeGreaterThanOrEqual(0);
-    expect(high.residuals.a).toBeLessThan(low.residuals.a!);
-    expect(high.residuals.b).toBeGreaterThan(low.residuals.b!);
+    const lowA = low.residuals.a!;
+    const lowB = low.residuals.b!;
+    // The unweighted rig is mirror-symmetric, so neither goal is favoured before influence moves.
+    expect(lowA).toBeCloseTo(lowB, 9);
+    expect(lowA).toBeGreaterThan(FABRIK_TOLERANCE);
+    expect(high.residuals.a).toBeLessThan(lowA);
+    expect(high.residuals.b).toBeGreaterThan(lowB);
     const authored = solveFabrik(ROOT, twoBranchMembers(1, 1));
     for (const id of Object.keys(low.rotations))
       expect(Object.is(authored.rotations[id], low.rotations[id])).toBe(true);
@@ -418,5 +414,82 @@ describe("IK goal influence and conflict policy", () => {
     };
     expect(diagnostics(bareNonLeaf)).toContain("ik-influence-without-goal");
     expect(fkPlugin.keys).toContain("influence");
+  });
+
+  it("GI-13 keeps extreme finite influences finite and scale-free", () => {
+    const unweighted = solveFabrik(ROOT, twoBranchMembers());
+    for (const extreme of [Number.MAX_VALUE, Number.MIN_VALUE]) {
+      const solved = solveFabrik(ROOT, twoBranchMembers(extreme, extreme));
+      for (const id of Object.keys(unweighted.rotations))
+        expect(Object.is(solved.rotations[id], unweighted.rotations[id])).toBe(true);
+      expect(Number.isFinite(solved.quality.residual)).toBe(true);
+    }
+    const mixed = solveFabrik(ROOT, twoBranchMembers(Number.MAX_VALUE, Number.MIN_VALUE));
+    for (const value of [
+      ...Object.values(mixed.rotations),
+      ...Object.values(mixed.residuals),
+      mixed.quality.residual,
+    ])
+      expect(Number.isFinite(value)).toBe(true);
+    const pulls = branchPulls(
+      new Map<string, SolveMember>([
+        ["shared", member("shared", "root", 1)],
+        ["a", member("a", "shared", 1, { influence: Number.MAX_VALUE })],
+        ["b", member("b", "shared", 1, { influence: Number.MAX_VALUE })],
+      ]),
+      ["a", "b"],
+    );
+    expect(pulls.get("shared")).toBe(Number.MAX_VALUE);
+    const huge = compromise([
+      { point: { x: 0, y: 0 }, weight: Number.MAX_VALUE },
+      { point: { x: 4, y: 8 }, weight: Number.MAX_VALUE },
+    ]);
+    expect(huge.point).toEqual({ x: 2, y: 4 });
+  });
+
+  it("GI-14 names an iterative outcome at its exact tolerance boundaries", () => {
+    const above = FABRIK_TOLERANCE * (1 + Number.EPSILON);
+    expect(above).toBeGreaterThan(FABRIK_TOLERANCE);
+    const miss = { residual: 1, iterations: 3, atBound: [], spread: 0, stalled: false } as const;
+    expect(iterativeQuality({ ...miss, spread: FABRIK_TOLERANCE, stalled: true }).kind).toBe(
+      "stalled",
+    );
+    expect(iterativeQuality({ ...miss, spread: FABRIK_TOLERANCE }).kind).toBe("iteration-cap");
+    expect(iterativeQuality({ ...miss, spread: above, stalled: true }).kind).toBe("conflicted");
+    expect(iterativeQuality({ ...miss, residual: FABRIK_TOLERANCE, spread: 5 }).kind).toBe(
+      "converged",
+    );
+    expect(
+      iterativeQuality({ ...miss, residual: FABRIK_TOLERANCE, spread: 5, atBound: ["a"] }).kind,
+    ).toBe("converged");
+    const limited = iterativeQuality({ ...miss, residual: above, spread: 5, atBound: ["a"] });
+    expect(limited).toEqual({ kind: "limited", iterations: 3, residual: above, atBound: ["a"] });
+    expect(limited.kind === "limited" && Object.isFrozen(limited.atBound)).toBe(true);
+  });
+
+  it("GI-15 names a branching miss with a joint at its bound limited, not conflicted", () => {
+    const solved = solveFabrik(ROOT, [
+      member("s", "root", 50),
+      member("a", "s", 50, {
+        limit: { kind: "range", min: 0, max: 0 },
+        goal: { x: -100, y: -100, rotation: 0 },
+      }),
+      member("b", "s", 50, { goal: { x: -100, y: -75, rotation: 0 } }),
+    ]);
+    expect(solved.quality.kind).toBe("limited");
+    expect(solved.quality.kind === "limited" && solved.quality.atBound).toContain("a");
+  });
+
+  it("GI-16 combines one member's reach across solves as undecided, then addressed", () => {
+    const reaches: readonly GoalReach[] = ["unaddressed", "addressed", "undecided"];
+    for (const first of reaches) {
+      for (const second of reaches) {
+        const scope = new Map<string, GoalReach>();
+        recordGoalReach(scope, "m", first);
+        recordGoalReach(scope, "m", second);
+        const expected = reaches[Math.max(reaches.indexOf(first), reaches.indexOf(second))];
+        expect(scope.get("m")).toBe(expected);
+      }
+    }
   });
 });
