@@ -7,6 +7,7 @@ import {
   type WorldPoint,
 } from "./frame";
 import { solveLength, solveOffset, type SolveMember } from "./ik-member";
+import { branchPulls, compromise, type Pull } from "./ik-goal";
 import { unreachable } from "../lang/exhaustive";
 import {
   atBound,
@@ -267,6 +268,10 @@ export function solveFabrik(
     if (isMember(base)) childCount.set(base, (childCount.get(base) ?? 0) + 1);
   }
   const leaves = ids.filter((id) => (childCount.get(id) ?? 0) === 0);
+  const addressed = leaves.filter((id) => goalOf(id) !== undefined);
+  // Each member's pull on the sub-base it proposes to, from the influence of the goals under it.
+  // `ik-goal.ts` owns both the pull and the compromise; this loop only carries them. See ADR-110.
+  const pulls = branchPulls(byId, addressed);
   const tips = new Map<string, FabrikPoint>();
   const pivots = new Map<string, FabrikPoint>();
   /** The tip a member hangs off: its base member's, or the root's own point. */
@@ -396,15 +401,16 @@ export function solveFabrik(
       tips.set(id, limitTip(id, pivot, place(pivot, tips.get(id)!, length), length));
     }
   };
+  /** One addressed leaf's goal shortfall, in world units. */
+  const shortfall = (leaf: string): number => {
+    const goal = goalOf(leaf)!;
+    const tip = tips.get(leaf)!;
+    return Math.hypot(tip.x - goal.x, tip.y - goal.y);
+  };
   /** The worst goal shortfall over addressed leaves: the worst, so no branch hides behind a mean. */
   const residualNow = (): number => {
     let worst = 0;
-    for (const leaf of leaves) {
-      const goal = goalOf(leaf);
-      if (goal === undefined) continue;
-      const tip = tips.get(leaf)!;
-      worst = Math.max(worst, Math.hypot(tip.x - goal.x, tip.y - goal.y));
-    }
+    for (const leaf of addressed) worst = Math.max(worst, shortfall(leaf));
     return worst;
   };
 
@@ -412,28 +418,28 @@ export function solveFabrik(
   let iterations = 0;
   let residual = residualNow();
   let stalled = false;
+  // How far the branches still disagreed about a shared member in the last inward pass.
+  let spread = 0;
   while (residual > FABRIK_TOLERANCE && iterations < FABRIK_MAX_ITERATIONS) {
     iterations += 1;
+    spread = 0;
     const before = new Map(tips);
     // The inward pass. Every addressed leaf starts at its goal, and each member proposes where its
     // own pivot would have to sit for its length to hold, then un-offsets that pivot into a
-    // proposal about its base's tip. A sub-base takes the average of the tips its branches left it.
-    const proposals = new Map<string, FabrikPoint[]>();
-    for (const leaf of leaves) {
-      const goal = goalOf(leaf);
-      if (goal !== undefined) proposals.set(leaf, [Object.freeze({ x: goal.x, y: goal.y })]);
+    // proposal about its base's tip. A sub-base settles on the influence-weighted compromise of the
+    // tips its branches left it, which is the equal average when no goal authored an influence.
+    const proposals = new Map<string, Pull[]>();
+    for (const leaf of addressed) {
+      const goal = goalOf(leaf)!;
+      proposals.set(leaf, [{ point: Object.freeze({ x: goal.x, y: goal.y }), weight: 1 }]);
     }
     for (let index = ids.length - 1; index >= 0; index -= 1) {
       const id = ids[index]!;
       const proposed = proposals.get(id) ?? [];
       if (proposed.length > 0) {
-        let sumX = 0;
-        let sumY = 0;
-        for (const point of proposed) {
-          sumX += point.x;
-          sumY += point.y;
-        }
-        tips.set(id, Object.freeze({ x: sumX / proposed.length, y: sumY / proposed.length }));
+        const settled = compromise(proposed);
+        spread = Math.max(spread, settled.spread);
+        tips.set(id, settled.point);
       }
       const base = baseOf(id);
       // A proposal for the root is dropped rather than averaged in. The root is the one point a
@@ -442,7 +448,8 @@ export function solveFabrik(
       if (!isMember(base)) continue;
       const pivot = place(tips.get(id)!, pivots.get(id)!, lengthOf(id));
       const list = proposals.get(base) ?? [];
-      list.push(Object.freeze(baseTipFromPivot(pivot, baseDirection(id), offsetOf(id))));
+      const point = Object.freeze(baseTipFromPivot(pivot, baseDirection(id), offsetOf(id)));
+      list.push({ point, weight: pulls.get(id)! });
       proposals.set(base, list);
     }
     outward();
@@ -466,6 +473,8 @@ export function solveFabrik(
   const solvedPivots: Record<string, FabrikPoint> = {};
   const solvedTips: Record<string, FabrikPoint> = {};
   const atBounds: string[] = [];
+  const residuals: Record<string, number> = {};
+  for (const leaf of addressed) residuals[leaf] = shortfall(leaf);
   for (const id of ids) {
     // A free joint's `limitRotation` is the identity, so its published angle is the expression it
     // always was, byte for byte. A limited one is already legal from the outward pass and is read
@@ -477,14 +486,19 @@ export function solveFabrik(
     solvedPivots[id] = pivots.get(id)!;
     solvedTips[id] = tips.get(id)!;
   }
+  // A bound is the most specific cause and an authored one, so it is named first. A disagreement
+  // is named before the stall or the cap, because neither more iterations nor a different stall
+  // test answers branches that pull one member to two places. See ADR-108 and ADR-110.
   let quality: IterativeQuality;
   if (residual > FABRIK_TOLERANCE && atBounds.length > 0)
     quality = { kind: "limited", iterations, residual, atBound: Object.freeze(atBounds) };
   else if (residual <= FABRIK_TOLERANCE) quality = { kind: "converged", iterations, residual };
+  else if (spread > FABRIK_TOLERANCE) quality = { kind: "conflicted", iterations, residual };
   else if (stalled) quality = { kind: "stalled", iterations, residual };
   else quality = { kind: "iteration-cap", iterations, residual };
   return Object.freeze({
     rotations: Object.freeze(rotations),
+    residuals: Object.freeze(residuals),
     pivots: Object.freeze(solvedPivots),
     tips: Object.freeze(solvedTips),
     quality: Object.freeze(quality),

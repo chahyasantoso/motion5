@@ -32,7 +32,7 @@ import { inspectSolve } from "./ik-result";
  * presence is a function of authoring rather than of arity or strategy, and an unopted patch keeps
  * the keys and doubles it had before ADR-109. Both output names are declared in `outputs` for every
  * registration, because ownership of a name is a property of the plugin, not of one rig. The value
- * is `inspectSolve(quality)`, whose shape `ik-result.ts` owns; this module only decides whether to
+ * is `inspectSolve(result)`, whose shape `ik-result.ts` owns; this module only decides whether to
  * ask. `ik-inspect-malformed` refuses a non-boolean or keyframed switch at load, so the strict
  * comparison is the whole runtime reading rather than a second validator.
  *
@@ -57,11 +57,11 @@ export const ikPlugin: PluginDefinition = {
     const members = readMembers(inputs.members);
     const goals = readGoals(inputs.target, members);
     const flip = readBend(values);
-    const { rotations, quality } = solveChain(root, readSolveMembers(members, goals), flip);
+    const result = solveChain(root, readSolveMembers(members, goals), flip);
     return Object.freeze({
       ...values,
-      rotations: Object.freeze(rotations as unknown as ImmutableRecord),
-      ...(values[INSPECT_KEY] === true ? { [INSPECTION_KEY]: inspectSolve(quality) } : {}),
+      rotations: Object.freeze(result.rotations as unknown as ImmutableRecord),
+      ...(values[INSPECT_KEY] === true ? { [INSPECTION_KEY]: inspectSolve(result) } : {}),
     });
   },
 };
