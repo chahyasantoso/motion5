@@ -33,6 +33,16 @@ describe("3D frame convention", () => {
     expect(composed[2]).toBeCloseTo(0.171010071663, 12);
   });
 
+  it("TH-1 multiplies every matrix entry through the row-major oracle", () => {
+    const left = [1, 2, 3, 4, 5, 6, 7, 8, 9] as const;
+    const right = [9, 8, 7, 6, 5, 4, 3, 2, 1] as const;
+    expect(multiplyMatrix3(left, right)).toEqual([
+      30, 24, 18,
+      84, 69, 54,
+      138, 114, 90,
+    ]);
+  });
+
   it("TH-2 composes translation through the parent matrix", () => {
     const result = composeWorld3d(
       readFrame3d({ x: 10, y: 20, z: 30, rotation: 90 }),
