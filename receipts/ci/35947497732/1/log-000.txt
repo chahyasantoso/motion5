@@ -1,0 +1,42 @@
+quality (node 24.21.0)	Run npm run typecheck	﻿2026-09-24T02:30:11.9402773Z ##[group]Run npm run typecheck
+quality (node 24.21.0)	Run npm run typecheck	2026-09-24T02:30:11.9403133Z ^[[36;1mnpm run typecheck^[[0m
+quality (node 24.21.0)	Run npm run typecheck	2026-09-24T02:30:11.9443926Z shell: /usr/bin/bash -e {0}
+quality (node 24.21.0)	Run npm run typecheck	2026-09-24T02:30:11.9444227Z env:
+quality (node 24.21.0)	Run npm run typecheck	2026-09-24T02:30:11.9444446Z   NODE_VERSION: 24.21.0
+quality (node 24.21.0)	Run npm run typecheck	2026-09-24T02:30:11.9444734Z   CI_EVIDENCE_DIR: /home/runner/work/_temp/ci-evidence
+quality (node 24.21.0)	Run npm run typecheck	2026-09-24T02:30:11.9445047Z ##[endgroup]
+quality (node 24.21.0)	Run npm run typecheck	2026-09-24T02:30:12.0431261Z 
+quality (node 24.21.0)	Run npm run typecheck	2026-09-24T02:30:12.0432419Z > motion5@0.0.0 typecheck
+quality (node 24.21.0)	Run npm run typecheck	2026-09-24T02:30:12.0433227Z > tsc --noEmit -p tsconfig.json
+quality (node 24.21.0)	Run npm run typecheck	2026-09-24T02:30:12.0433598Z 
+quality (node 24.21.0)	Run npm run typecheck	2026-09-24T02:30:17.8321169Z ##[error]packages/core/test/unit/plugins/ik-goal-influence.test.ts(109,15): error TS2322: Type '{ requires: Readonly<Record<string, unknown>>; values?: Readonly<Record<string, unknown>>; }' is not assignable to type 'AuthoredKeyframe'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-24T02:30:17.8332645Z   Types of property 'requires' are incompatible.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-24T02:30:17.8334310Z     Type 'Readonly<Record<string, unknown>>' is not assignable to type 'Readonly<Record<string, string | Readonly<Record<string, string>>>>'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-24T02:30:17.8335917Z       'string' index signatures are incompatible.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-24T02:30:17.8336965Z         Type 'unknown' is not assignable to type 'string | Readonly<Record<string, string>>'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-24T02:30:17.8343674Z ##[error]packages/core/test/unit/plugins/ik-goal-influence.test.ts(129,11): error TS2322: Type '{ id: string | { length: number; influence?: never; } | { length: number; influence: AuthoredProperty; } | undefined; keyframes: { fk: { values: string | { length: number; influence?: never; } | { length: number; influence: AuthoredProperty; } | undefined; requires: { ...; }; }; }; }' is not assignable to type 'TrackDefinition'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-24T02:30:17.8347671Z   Types of property 'id' are incompatible.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-24T02:30:17.8349114Z     Type 'string | { length: number; influence?: never; } | { length: number; influence: AuthoredProperty; } | undefined' is not assignable to type 'string'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-24T02:30:17.8350691Z       Type 'undefined' is not assignable to type 'string'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-24T02:30:17.8357035Z ##[error]packages/core/test/unit/plugins/ik-goal-influence.test.ts(138,11): error TS2375: Type 'TrackDefinition | { id: string | { length: number; influence?: never; } | { length: number; influence: AuthoredProperty; } | undefined; keyframes: { ...; }; }' is not assignable to type 'TrackDefinition' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-24T02:30:17.8362964Z   Type '{ id: string | { length: number; influence?: never; } | { length: number; influence: AuthoredProperty; } | undefined; keyframes: { fk: { values: string | { length: number; influence?: never; } | { length: number; influence: AuthoredProperty; } | undefined; requires: { ...; }; }; }; }' is not assignable to type 'TrackDefinition'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-24T02:30:17.8365386Z     Types of property 'id' are incompatible.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-24T02:30:17.8366854Z       Type 'string | { length: number; influence?: never; } | { length: number; influence: AuthoredProperty; } | undefined' is not assignable to type 'string'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-24T02:30:17.8368294Z         Type 'undefined' is not assignable to type 'string'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-24T02:30:17.8969991Z ##[error]Process completed with exit code 2.
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	﻿2026-09-24T02:31:53.9298984Z ##[group]Run test "$SUITE_RESULT" = success
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-24T02:31:53.9299722Z ^[[36;1mtest "$SUITE_RESULT" = success^[[0m
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-24T02:31:53.9339816Z shell: /usr/bin/bash -e {0}
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-24T02:31:53.9340875Z env:
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-24T02:31:53.9341314Z   NODE_VERSION: 24.21.0
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-24T02:31:53.9341782Z   SUITE_RESULT: failure
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-24T02:31:53.9342240Z ##[endgroup]
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-24T02:31:53.9472123Z ##[error]Process completed with exit code 1.
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	﻿2026-09-24T02:31:53.9100266Z ##[group]Run test "$SUITE_RESULT" = success
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-24T02:31:53.9101021Z ^[[36;1mtest "$SUITE_RESULT" = success^[[0m
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-24T02:31:53.9369796Z shell: /usr/bin/bash -e {0}
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-24T02:31:53.9370747Z env:
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-24T02:31:53.9371246Z   NODE_VERSION: 24.21.0
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-24T02:31:53.9371779Z   SUITE_RESULT: failure
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-24T02:31:53.9372291Z ##[endgroup]
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-24T02:31:53.9532492Z ##[error]Process completed with exit code 1.
