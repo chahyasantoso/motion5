@@ -269,6 +269,13 @@ export function solveFabrik(
   }
   const leaves = ids.filter((id) => (childCount.get(id) ?? 0) === 0);
   const addressed = leaves.filter((id) => goalOf(id) !== undefined);
+  // A goal is read only on a leaf, so a goal on a member with children would be solved as if it
+  // were absent while the result reported the rig converged. Load refuses that shape as
+  // `ik-goal-not-leaf`, so reaching here is a publisher invariant violation, thrown by name after
+  // the cycle guard above so a cycle keeps its own message. See ADR-111.
+  const inner = ids.find((id) => (childCount.get(id) ?? 0) > 0 && goalOf(id) !== undefined);
+  if (inner !== undefined)
+    throw new Error(`Solver goal on member "${inner}" is not on a leaf of the chain.`);
   // Each member's pull on the sub-base it proposes to, from the influence of the goals under it.
   // `ik-goal.ts` owns both the pull and the compromise; this loop only carries them. See ADR-110.
   const pulls = branchPulls(byId, addressed);
@@ -341,16 +348,26 @@ export function solveFabrik(
    * `+x` axis, which is arbitrary but total and identical on every call. A coincident pair then
    * produces a defined pose instead of a `NaN` that reaches a published frame and blocks every
    * child of the node that published it.
+   *
+   * A finite length over a finite but tiny distance can still overflow the ratio between them: a
+   * `1e300` member reaching across a `1e-100` gap is a finite rig whose `length / distance` is
+   * `Infinity`, and the product that follows is `NaN` for any delta that is zero on one axis. Only
+   * then is the direction normalised by its larger component first, which keeps every intermediate
+   * within `[1, sqrt(2)]` of the length; every ratio that is finite takes the original expression, so
+   * a rig that never overflowed places its points byte-identically. See ADR-111.
    */
   const place = (from: FabrikPoint, to: FabrikPoint, length: number): FabrikPoint => {
     if (length <= 0) return Object.freeze({ x: from.x, y: from.y });
-    const distance = Math.hypot(to.x - from.x, to.y - from.y);
+    const dx = to.x - from.x;
+    const dy = to.y - from.y;
+    const distance = Math.hypot(dx, dy);
     if (distance <= 0) return Object.freeze({ x: from.x + length, y: from.y });
     const scale = length / distance;
-    return Object.freeze({
-      x: from.x + (to.x - from.x) * scale,
-      y: from.y + (to.y - from.y) * scale,
-    });
+    if (Number.isFinite(scale))
+      return Object.freeze({ x: from.x + dx * scale, y: from.y + dy * scale });
+    const axis = Math.max(Math.abs(dx), Math.abs(dy));
+    const extent = length / Math.hypot(dx / axis, dy / axis);
+    return Object.freeze({ x: from.x + (dx / axis) * extent, y: from.y + (dy / axis) * extent });
   };
   /**
    * The outward pass. Lengths are law, and this is the only place that enforces them.
