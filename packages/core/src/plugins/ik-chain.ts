@@ -92,8 +92,25 @@ export function readGoals(
   members: readonly DeliveredMember[],
 ): ReadonlyMap<string, WorldFrame> {
   const goals = new Map<string, WorldFrame>();
+  for (const [id, goal] of goalInputs(target, members)) goals.set(id, readFrame(goal));
+  return goals;
+}
+
+/**
+ * Which delivered goal each member reaches toward, still undecoded, keyed by member id.
+ *
+ * The addressing half of `readGoals`, apart from its 2D frame decoding: a per-leaf goal first, then
+ * the bare `target` joined onto the one leaf, over it. Which goal a member has does not depend on
+ * the dimension of the frame it decodes to, so the internal `ik3d` solver reads its goal through
+ * this too and decodes it with its own `readFrame3d` (ADR-114).
+ */
+export function goalInputs(
+  target: unknown,
+  members: readonly DeliveredMember[],
+): ReadonlyMap<string, unknown> {
+  const goals = new Map<string, unknown>();
   for (const member of members) {
-    if (member.goal !== undefined) goals.set(member.id, readFrame(member.goal));
+    if (member.goal !== undefined) goals.set(member.id, member.goal);
   }
   if (target === undefined) return goals;
   const leaves = chainLeaves(members);
@@ -102,7 +119,7 @@ export function readGoals(
       `ikPlugin cannot address the bare target slot over a chain with ${leaves.length} leaves.`,
     );
   }
-  goals.set(leaves[0]!, readFrame(target));
+  goals.set(leaves[0]!, target);
   return goals;
 }
 

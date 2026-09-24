@@ -2,7 +2,7 @@ import type { PluginDefinition } from "../domain/plugins";
 import type { ImmutableRecord } from "../domain/values";
 import { readFrame3d, type WorldFrame3d } from "./frame3d";
 import { readNumber } from "./frame";
-import type { DeliveredMember } from "./ik-chain";
+import { goalInputs, readMembers, type DeliveredMember } from "./ik-chain";
 import { solveTwoBone3d, type SolveMember3d } from "./ik3d-analytic";
 import { ROTATIONS3D_KEY } from "./ik3d-result";
 
@@ -15,19 +15,26 @@ import { ROTATIONS3D_KEY } from "./ik3d-result";
  * change with the dimension of the arithmetic that consumes it.
  */
 function readTwoBone(input: unknown): readonly [DeliveredMember, DeliveredMember] {
-  if (Array.isArray(input) && input.length === 2) {
-    const [a, b] = input as readonly [DeliveredMember, DeliveredMember];
+  const [a, b, ...rest] = readMembers(input);
+  if (a !== undefined && b !== undefined && rest.length === 0) {
     if (b.base === a.id && a.base !== b.id) return [a, b];
     if (a.base === b.id && b.base !== a.id) return [b, a];
   }
   throw new Error("ik3d requires exactly two members on one path.");
 }
 
-/** The leaf's goal: the bare `target` slot when bound, otherwise the goal delivered on the leaf. */
-function readGoal(target: unknown, leaf: DeliveredMember): WorldFrame3d {
-  if (target !== undefined) return readFrame3d(target);
-  if (leaf.goal !== undefined) return readFrame3d(leaf.goal);
-  throw new Error("ik3d requires a target goal.");
+/**
+ * The leaf's goal, addressed exactly as the 2D solver addresses it (`goalInputs`) and decoded as a
+ * 3D frame. The graph refuses a solver with no goal at load (`ik-solver-no-goal`), so the throw is
+ * an invariant rather than a runtime answer.
+ */
+function readGoal(
+  target: unknown,
+  pair: readonly [DeliveredMember, DeliveredMember],
+): WorldFrame3d {
+  const goal = goalInputs(target, pair).get(pair[1].id);
+  if (goal === undefined) throw new Error("ik3d requires a target goal.");
+  return readFrame3d(goal);
 }
 
 function solveMember(member: DeliveredMember): SolveMember3d {
@@ -53,12 +60,12 @@ export const ik3dPlugin: PluginDefinition = {
   stage: "compose",
   outputs: [ROTATIONS3D_KEY],
   compose: (values, _progress, inputs) => {
-    const [first, second] = readTwoBone(inputs.members);
+    const pair = readTwoBone(inputs.members);
     const result = solveTwoBone3d(
       readFrame3d(inputs.root),
-      readGoal(inputs.target, second),
-      solveMember(first),
-      solveMember(second),
+      readGoal(inputs.target, pair),
+      solveMember(pair[0]),
+      solveMember(pair[1]),
     );
     return Object.freeze({
       ...values,

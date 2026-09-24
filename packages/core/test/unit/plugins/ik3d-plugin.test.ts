@@ -3,10 +3,9 @@ import { fk3dPlugin } from "../../../src/plugins/fk3d";
 import { ik3dPlugin } from "../../../src/plugins/ik3d";
 import { readFrame3d } from "../../../src/plugins/frame3d";
 
-const members = [
-  { id: "upper", base: "root", values: { length: 80 }, progress: 1 },
-  { id: "fore", base: "upper", values: { length: 60 }, progress: 1 },
-];
+const upperMember = { id: "upper", base: "root", values: { length: 80 }, progress: 1 };
+const foreMember = { id: "fore", base: "upper", values: { length: 60 }, progress: 1 };
+const members = [upperMember, foreMember];
 
 describe("3D plugin seam", () => {
   it("TH-7 publishes one local Euler triple per delivered member", () => {
@@ -60,7 +59,7 @@ describe("3D plugin seam", () => {
     const reversed = ik3dPlugin.compose(
       {},
       1,
-      { ...inputs, members: [members[1], members[0]] },
+      { ...inputs, members: [foreMember, upperMember] },
       "solve",
     );
     expect(reversed.rotations3d).toEqual(delivered.rotations3d);
