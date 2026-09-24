@@ -26,7 +26,7 @@ Nobody chooses a solver; the shape of the chain does. A parent and one addressed
 
 ## What it costs
 
-A closed-form solve is a few microseconds. An iterative solve costs roughly its member count times the passes it takes, and the passes depend on the goal: a reachable goal on a serial chain converges in a handful of passes at eight members and a few dozen at sixty-four, while a branching chain whose leaves pull against each other runs to the 64-pass cap. The engine's own cost per solver per frame is larger than a closed-form solve, so on a page with many small rigs the publisher, not the arithmetic, is what you are paying for.
+A closed-form solve measured 2.3257 microseconds in one fresh run and 1.9013 in its paired run. An iterative solve costs roughly its member count times the passes it takes: chain-8 measured 76.2351 and 75.8308 microseconds, while chain-64 measured 2.9674 and 2.8637 milliseconds and had 17 of 200 results at the 64-pass cap. Branching chains whose leaves pull against a shared member mostly report `conflicted`, including 190 of 200 feasible tree-14 rigs and all 200 feasible tree-30 rigs in the first run. The engine cost per solver per frame was 49.53 microseconds for one rig in the first run, so on a page with many small rigs the publisher, not the closed-form arithmetic, is what you are paying for.
 
 The measured numbers, the machine they were measured on, and the command that reproduces them are in [BENCH-IK.md](../BENCH-IK.md). Read them as a shape rather than a promise: they are one machine's numbers, and the only part `CI` holds is the part that is not a timing.
 
