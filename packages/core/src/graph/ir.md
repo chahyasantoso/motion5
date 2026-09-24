@@ -47,3 +47,28 @@ One reader, because four rules and the derivation all ask the same question of t
 Gated on the base slot as well as on the field, and both halves are load-bearing. The field alone would classify any dict-valued binding as a goal, so a spring's or a spline's tension dict would have six IK rules run over it by a layer that holds no registry and cannot know better; the slot alone is what `"target"` already was. That puts `targets` in the same set as the `root`, `solver`, `base` and `target` literals this layer already hardcodes. `DV-8` pins it. See ADR-057.
 
 The dict is sorted by the authored key rather than by `compareEdges`, whose first key is the source id: two goals pointing at one node would otherwise be ordered by nothing, and the authored key is what a duplicate diagnostic has to list. That is the ordering the derived slot produced, because the slot was this key under a fixed prefix. Order is a pure function of authored ids either way.
+
+## goalReachOf
+
+The goal reach of one member for one solve: `addressed`, `unaddressed`, or `undecided`, as
+declared by `goalReachOf` in `ir.ts`.
+
+A solver with both bare and dict goal spellings is `undecided`. A bare goal is `addressed` only
+when the chain has one leaf and this member is that leaf; otherwise it is `undecided` for a
+branching chain or `unaddressed` for another member. With no goal spelling it is `undecided`. For a
+goal dict,
+a resolved member is `addressed`, while a leaf or authored member that was not safely resolved is
+`undecided`; another member is `unaddressed`. A broken chain marks every member undecided before
+this function is reached.
+
+`undecided` exists so one cause is never reported twice. The existing goal diagnostics own
+malformed, ambiguous, duplicate, missing, and refused goal shapes; influence validation must not turn
+the same
+uncertain shape into a second `ik-influence-without-goal`.
+
+The scope is built in `resolveSolvers`, after the graph has derived chains and resolved goals,
+because that is the one place that owns both member leafhood and goal addressing.
+`graph/solver-constraints.ts`
+receives the resulting `GoalScope` and validates influence placement without re-deriving either
+question. Keeping the scope here prevents a second graph interpretation in the rule module and lets
+several solves combine their answers with one precedence order. See ADR-110.
