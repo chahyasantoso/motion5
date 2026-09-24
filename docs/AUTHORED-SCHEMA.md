@@ -361,7 +361,7 @@ A diagnostic about a grouped leaf cites the authored path, including the section
 
 Load-time solver diagnostics are complete in [Errors and diagnostics](./guide/errors-and-diagnostics.md#inverse-kinematics-and-solver-rules). That guide owns the full `ik-*` rule inventory and meanings; this schema document owns authored shape and field semantics rather than maintaining a second, stale list.
 
-There is no diagnostic about a solver's derived member count. `ik-solver-unsupported-arity` refused every count other than two and is deleted rather than widened, because a rule that refuses a shape the runtime solves is worse than no rule. See ADR-052.
+The 2D `ik` solver has no diagnostic about its derived member count. `ik-solver-unsupported-arity` refused every count other than two and is deleted rather than widened, because a rule that refuses a shape the runtime solves is worse than no rule. See ADR-052. The internal `ik3d` prototype is the one solver that declares a narrower chain, exactly two `fk3d` members on one path, and `ik-chain-unsupported` refuses any other chain under it, and an `fk3d` member under the 2D `ik`, at load. See ADR-114.
 
 There is no diagnostic about a solved member's pivot offset either, for the same reason. `ik-solved-pivot-unsupported` refused a non-zero authored `x` or `y` on a solved member while neither solve accounted for one, and it is deleted rather than widened now that both do. See ADR-054.
 

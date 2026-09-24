@@ -23,9 +23,16 @@ that solver, reading them through the 2D `DeliveredMember` model and ordering th
 publishes a scalar world frame. The load rule's shape lives in `contract/solver-shape.ts`, because
 the graph holds no plugin registry (ADR-044) and so cannot ask a plugin definition.
 
-No 2D behaviour changes. Three existing modules gain lines: `ik-analytic.ts` exports two functions
-it already had (below), `graph/ir.ts` asks `contract/solver-shape.ts` whether a derived chain is
-one the solver's plugin accepts, and `rule-id.ts` and `rule.ts` register `ik-chain-unsupported`.
+No ordinary 2D behaviour changes: every 2D rig that loaded before loads and solves exactly as it
+did, and the one new 2D refusal is a chain with an `fk3d` member, which the shape guard below
+refuses in both directions because neither solver consumes the other dimension's output channel.
+Existing modules gain lines only where 3D reuses an owner instead of restating it: `ik-analytic.ts` exports two functions it already had (below); `ik-scale.ts` exposes
+its magnitude decision as `magnitudeOf` and its residual restoration as `restoreDistance`, which
+`solveMagnitude` and `restoreResult` keep calling; `ik-chain.ts` splits goal addressing out of
+`readGoals` as `goalInputs`, which `readGoals` decodes with `readFrame` exactly as before;
+`graph/ir.ts` asks `contract/solver-shape.ts` whether a derived chain is one the solver's plugin
+accepts; and `rule-id.ts` and `rule.ts` register `ik-chain-unsupported`. No 2D test changes,
+and no 2D message moves.
 
 The invariant is that a member's local pose is composed as a matrix, not by adding Euler fields.
 The frame convention is CSS's right-handed basis: +x is right, +y is the existing 2D positive
@@ -40,7 +47,10 @@ Ry = [ cos y, 0, sin y; 0, 1, 0; -sin y, 0, cos y ]
 ```
 
 Composition multiplies parent and local matrices, rotates the local translation by the parent
-matrix, and decomposes the resulting matrix using the same convention. At gimbal lock,
+matrix, and decomposes the resulting matrix using the same convention. Whole turns are reduced
+before an angle becomes radians, which leaves every angle inside a turn unchanged and keeps a finite
+angle past about `5.7e307` degrees from overflowing its product with pi into a `NaN` sine
+(`TH-22`). At gimbal lock,
 `rotationY` is pinned to zero and `rotation` is selected from the first matrix column.
 Every decomposed angle is canonical in `(-180, 180]`: `-180` reads as `180` and negative zero as
 positive zero, so the representation is deterministic.
@@ -60,9 +70,16 @@ reach band classification and the scaled law of cosines are the 2D module's own 
 `cosineOpposite`, now exported from `ik-analytic.ts` (an `export` keyword each, no byte of 2D
 behaviour changed) so neither is stated twice.
 
-The analytic solver accepts exactly two unbranched `fk3d` members and one target position. The
-contract layer declares that shape and the graph refuses other derived arities with
-`ik-chain-unsupported`; the compose-time check remains only as an invariant guard. Lengths keep the
+The analytic solver accepts exactly two unbranched `fk3d` members and one goal, addressed either
+by the bare `target` slot or by the leaf's `targets` entry. Which goal a member has is not a
+dimensional question, so `ik3d` reads it through the 2D chain's `goalInputs` and decodes it with
+`readFrame3d`. The contract layer declares the shape as the closed `SolverChainShape` union, and the
+graph refuses anything else with `ik-chain-unsupported` at load: a wrong member count, a branch,
+and a member bound through another plugin. The member plugin an `unbranched` shape names is
+dedicated to it, a set `solver-shape.ts` derives from its own table, so the refusal runs both ways:
+a 2D `fk` member under `ik3d` would read `rotations`, which `ik3d` never publishes, and an `fk3d`
+member under the 2D `ik` would read `rotations3d`, which `ik` never publishes. Either would compose
+identity on every tick without a symptom. The compose-time checks remain only as invariant guards. Lengths keep the
 forgiving 2D FK semantics: non-finite values read as zero and negative values are clamped by
 `segmentExtent` to zero rather than rejected. Direct solver callers must provide finite frames;
 `readFrame3d` sanitizes authored values at the plugin boundary, mirroring 2D.
@@ -74,10 +91,22 @@ promotion. The FK member consumes the member's local triple and publishes only
 `x`, `y`, `z`, `rotation`, `rotationX`, and `rotationY`. The DOM adapter therefore receives scalar
 keys it already knows how to serialize while the composite solver record remains renderer-shielded.
 
-The planar reduction gate (`TH-6`, 500 seeded rigs at every azimuth and reach outcome) requires
-zero X/Y rotations, equal quality kinds, and Z angles equal to 2D modulo 360. Measured over 200,000
-sandbox rigs on the TH-6 generator (seed `0x3493d`): at most `2.1e-11` degrees inside the reach
-band, zero X/Y rotation and no quality-kind mismatch. At a band edge 2D differs by up to `2.4e-5`
+**Total over finite rigs, at the 2D policy.** The solve reads its magnitude through `ik-scale.ts`,
+from the root and goal positions including `z` and the two lengths. A rig at or below the ceiling
+solves natively; one past it solves as its exact power-of-two image and its residuals are restored,
+saturating at `Number.MAX_VALUE` exactly as 2D's do. One owner for the policy keeps the planar
+reduction true across the whole finite range rather than only inside it. Directions are quotients
+by the norm rather than products with its reciprocal, so a subnormal distance still names a
+direction instead of `0 * Infinity`. `TH-22` pins a subnormal rig, opposite roots near
+`Number.MAX_VALUE`, a saturated residual, and planar agreement past the ceiling. Composed world
+coordinates are outside that promise, as they are in 2D: `fk3d` adding two positions near
+`Number.MAX_VALUE` overflows, and the publisher refuses the non-finite frame by name.
+
+The planar reduction gate (`TH-6`, 500 seeded random planar rigs drawn with goal azimuths all the
+way round, goals behind the root, and all three reach-band outcomes) requires zero X/Y rotations,
+equal quality kinds, and Z angles equal to 2D modulo 360. A sandbox run of the same generator over
+200,000 rigs (seed `0x3493d`), outside this repository's CI, measured at most `2.1e-11` degrees
+inside the reach band, zero X/Y rotation and no quality-kind mismatch. At a band edge 2D differs by up to `2.4e-5`
 degrees because its elbow is `acos` of a cosine rounded next to -1 or 1, so 2D bends a
 fully extended arm slightly while 3D lays it out exactly along `e1`; the gate allows `1e-4` there.
 Bit identity is not claimed. An exact planar bridge to 2D `solveTwoBone` was built and withdrawn:
@@ -111,12 +140,16 @@ separately rather than widening planar constraints.
 
 ## Evidence
 
-The `TH-1` through `TH-20` cases cover CSS matrix order, composition, gimbal behavior, near-180
+The `TH-1` through `TH-22` cases cover CSS matrix order, composition, gimbal behavior, near-180
 matrix round trips, non-finite input defaults, analytic quality, planar reduction, boundary
 continuity, singular bend fallback, non-planar closure and length preservation, plugin wiring,
-member ordering by `base` links, FK output, grouped ownership, unsupported chain load refusal,
-engine/DOM delivery, dirty propagation, and the separate `rotations3d` output channel. The
-200,000-rig corpus above also measured non-planar closure (arbitrary root orientation, reachable
-goals anywhere in space) at `1.9e-12` and segment length drift at `4.3e-14`. It is sandbox evidence
-carried as the `p8-corpus` opaque component of the phase 8 handover, with its probe and result; it
-is not repository-proven evidence and has no run in this repository's CI.
+member ordering by `base` links, FK output, grouped ownership, unsupported chain load refusal in
+both dimensions, engine/DOM delivery, dirty propagation, the separate `rotations3d` output channel,
+an all-nine-entry matrix and composition oracle (`TH-21`), and finite extreme geometry (`TH-22`).
+A mutation of the dedicated-member rule, the member-plugin rule, the angle reduction, the quotient
+normalization, the rescale, a matrix index, or the pair ordering each fails at least one of them.
+
+The 200,000-rig measurement above also measured non-planar closure (arbitrary root orientation,
+reachable goals anywhere in space) at `3.0e-12` and segment length drift at `4.3e-14`. It is
+supplementary sandbox evidence, reproducible from the `TH-6` and `TH-19` generators at a larger
+count; it is not repository-proven and has no run in this repository's CI.
