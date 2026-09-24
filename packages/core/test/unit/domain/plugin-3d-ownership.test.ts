@@ -72,7 +72,7 @@ describe("3D plugin ownership", () => {
       {
         path: "rig/solve",
         message:
-          'Solver "rig/solve" supports exactly 2 unbranched members, but its derived member depths are 1.',
+          'Solver "rig/solve" supports exactly 2 unbranched fk3d members, but its derived members are fk3d at depth 1.',
       },
     ]);
     expect(
@@ -80,6 +80,62 @@ describe("3D plugin ownership", () => {
     ).toHaveLength(1);
     // Two members is the right count on the wrong shape: siblings under the root are two paths.
     expect(refusals([member("one", "root"), member("two", "root")])).toHaveLength(1);
+
+    // Two members on one path in the wrong dimension: a 2D `fk` member reads `rotations`, which
+    // `ik3d` never publishes, so it is refused at load rather than composing identity every tick.
+    const flat = (id: string, base: string, solve: string): TrackDefinition => ({
+      id,
+      keyframes: { fk: { values: { length: 10 }, requires: { base, solver: solve } } },
+    });
+    expect(refusals([member("one", "root"), flat("two", "one", "solve")])).toEqual([
+      {
+        path: "rig/solve",
+        message:
+          'Solver "rig/solve" supports exactly 2 unbranched fk3d members, but its derived members are fk3d at depth 1, fk at depth 2.',
+      },
+    ]);
+
+    // The converse: `fk3d` is dedicated to `ik3d`, so a 2D `ik` solver refuses it by name and still
+    // takes any chain of its own members, of any count and branching.
+    const planar = (members: readonly TrackDefinition[]): ProjectDefinition => ({
+      schemaVersion: 5,
+      projectId: "planar",
+      motions: [
+        {
+          id: "rig",
+          trigger: { type: "manual" },
+          tracks: [
+            { id: "root", keyframes: { transform: { values: {} } } },
+            { id: "goal", keyframes: { transform: { values: { x: 10, y: 10 } } } },
+            { id: "flat", keyframes: { ik: { requires: { root: "root", target: "goal" } } } },
+            ...members,
+          ],
+        },
+      ],
+    });
+    const planarRefusals = (members: readonly TrackDefinition[]) =>
+      buildGraphIR(planar(members))
+        .diagnostics.filter(({ ruleId }) => ruleId === "ik-chain-unsupported")
+        .map(({ path, message }) => ({ path, message }));
+    const spatial = (id: string, base: string): TrackDefinition => ({
+      id,
+      keyframes: { fk3d: { values: { length: 10 }, requires: { base, solver: "flat" } } },
+    });
+    expect(planarRefusals([flat("one", "root", "flat"), flat("two", "one", "flat")])).toEqual([]);
+    expect(
+      planarRefusals([
+        flat("one", "root", "flat"),
+        flat("two", "one", "flat"),
+        flat("three", "two", "flat"),
+      ]),
+    ).toEqual([]);
+    expect(planarRefusals([flat("one", "root", "flat"), spatial("two", "one")])).toEqual([
+      {
+        path: "rig/flat",
+        message:
+          'Solver "rig/flat" supports any chain without fk3d members, but its derived members are fk at depth 1, fk3d at depth 2.',
+      },
+    ]);
   });
 
   it("TH-13 keeps the 3D output channel distinct from 2D rotations", () => {

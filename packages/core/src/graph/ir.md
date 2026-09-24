@@ -34,6 +34,12 @@ The owner a node's authored sources were qualified against, recovered from its o
 
 `collectTrack` qualifies against the motion id, or `~` for a free track, and both spellings put that owner before the first `/` of the node id. Recovering it here is what lets a goal key be qualified in the one layer that knows the member set, without adding a field to `GraphNode` that two owners would then have to keep in step with the id it is derived from. An authored goal key therefore qualifies exactly as an authored `base` source does, including a free-track solver having to spell its members out, which is a requirement its own bindings already carry.
 
+## solverPluginsOf
+
+Every plugin through which a member binds one solver's `solver` slot, sorted by code unit and each once.
+
+A member is derived under a solver by exactly these edges, so the list is never empty for a derived member, and it is normally one plugin. It is what `ik-chain-unsupported` reads beside each member's depth, so a solver whose declared shape names a member plugin refuses a member of another dimension at load: an `fk` member under `ik3d` reads `rotations`, which `ik3d` never publishes, and an `fk3d` member under the 2D `ik` reads `rotations3d`, which `ik` never publishes. Which plugins are dedicated to which shape is `contract/solver-shape.ts`'s answer, not this layer's. See ADR-114.
+
 ## AuthoredGoal
 
 One authored goal of a solver: the member key as written, and the node it names as a source.
