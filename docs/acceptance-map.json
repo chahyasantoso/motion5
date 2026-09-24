@@ -283,6 +283,10 @@
     {
       "id": "solver-constraints",
       "test": "packages/core/test/unit/graph/solver-constraints.test.ts"
+    },
+    {
+      "id": "ik-inspection",
+      "test": "packages/core/test/unit/plugins/ik-inspection.test.ts"
     }
   ]
 }

@@ -3,8 +3,10 @@ import {
   authoredSpellings,
   BEND_KEY,
   classifyBend,
+  classifyInspect,
   classifyLimit,
   FLIP_KEY,
+  INSPECT_KEY,
   LIMIT_KEYS,
   type AuthoredSpelling,
   type LimitKey,
@@ -15,7 +17,8 @@ import type { Diagnostic } from "../contract/v5";
 import type { GraphNode } from "./ir";
 
 /**
- * The six load rules of constrained 2D solving. See ADR-108.
+ * The load rules of the solver's authored constraints: the six of constrained 2D solving (ADR-108)
+ * and the inspection switch's one (ADR-109).
  *
  * **Every spelling, because the solve reads the flat bag.** A member's limits reach `ik` through
  * the member's flattened values, where a flat `minRotation` and one grouped under any plugin are
@@ -29,10 +32,12 @@ import type { GraphNode } from "./ir";
  * already reads; flat, the node must bind a solver somewhere. `fk` is the one core claimant, so a
  * second plugin claiming the name would already make the flat spelling ambiguous at the registry.
  *
- * **Solver keys belong to the node that bound `root`.** `bend` and `flip` are read by the solve of
- * the node that bound `root`, flat or under the group that bound it, and by nothing else, so the
- * rules read exactly those spellings. The first revision read them under any group on any node,
- * which refused a third-party plugin's own `spring.values.bend` on a node that is no solver at all.
+ * **Solver keys belong to the node that bound `root`.** `bend`, `flip` and `inspect` are read by
+ * the `ik` composer of the node that bound `root`, flat or under the group that bound it, and by
+ * nothing else, so the rules read exactly those spellings through `solverSpellings`. The first
+ * revision read `bend` and `flip` under any group on any node, which refused a third-party plugin's
+ * own `spring.values.bend` on a node that is no solver at all; phase 4's first draft repeated that
+ * for `inspect`, and routing it through the same reader is what keeps the scope one decision.
  */
 
 /** The plugins under which this node bound `slot`, read from its derived edges. */
@@ -134,8 +139,37 @@ function validateMemberLimits(node: GraphNode, diagnostics: Diagnostic[]): void 
   }
 }
 
-function validateSolverBend(node: GraphNode, diagnostics: Diagnostic[]): void {
-  const roots = slotBinders(node, "root");
+function validateSolverInspect(
+  node: GraphNode,
+  roots: ReadonlySet<string>,
+  diagnostics: Diagnostic[],
+): void {
+  for (const spelling of solverSpellings(node, INSPECT_KEY, roots, diagnostics)) {
+    const inspect = classifyInspect(spelling.value);
+    switch (inspect.kind) {
+      case "valid":
+        break;
+      case "malformed":
+        diagnostics.push(
+          diagnostic(
+            "ik-inspect-malformed",
+            `${node.id}.keyframes.${spelling.path}`,
+            `Solver "${node.id}" has a malformed inspect switch; use one static boolean.`,
+            [node.id],
+          ),
+        );
+        break;
+      default:
+        unreachable(inspect);
+    }
+  }
+}
+
+function validateSolverBend(
+  node: GraphNode,
+  roots: ReadonlySet<string>,
+  diagnostics: Diagnostic[],
+): void {
   const bends = solverSpellings(node, BEND_KEY, roots, diagnostics);
   const flips = solverSpellings(node, FLIP_KEY, roots, diagnostics);
   for (const spelling of bends) {
@@ -177,6 +211,8 @@ export function validateSolverConstraints(
 ): void {
   for (const node of nodes) {
     validateMemberLimits(node, diagnostics);
-    validateSolverBend(node, diagnostics);
+    const roots = slotBinders(node, "root");
+    validateSolverBend(node, roots, diagnostics);
+    validateSolverInspect(node, roots, diagnostics);
   }
 }

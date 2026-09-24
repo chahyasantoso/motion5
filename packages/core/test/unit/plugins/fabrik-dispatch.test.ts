@@ -94,7 +94,7 @@ describe("the solve dispatches on derived shape (Slice D3)", () => {
     );
   });
 
-  it("FB-13 a solve that does not converge publishes rotations and nothing else", () => {
+  it("FB-13 an unopted solve that does not converge publishes rotations and nothing else", () => {
     // The decision this slice owns, and it fails by producing something rather than by erroring.
     //
     // `solveFabrik` reports a quality kind and residual because absorbing them would tell a caller to
@@ -105,6 +105,8 @@ describe("the solve dispatches on derived shape (Slice D3)", () => {
     // FABRIK's own, so publishing them would also make a patch shape a function of arity. A bare
     // quality flag is also the C review's Blocker 1 waiting to happen again:
     // `renderableValues` skips a plain record and a scalar falls through to `target[key] = value`.
+    // ADR-109's opt-in `inspection` is a record for exactly that reason, and it appears only when
+    // authored, so this unopted case still publishes rotations and nothing else.
     const tail = [
       authoredBone("rig/t1", "rig/hip", 30),
       authoredBone("rig/t2", "rig/t1", 30),
@@ -123,7 +125,8 @@ describe("the solve dispatches on derived shape (Slice D3)", () => {
     expect(Object.keys(rotations).sort()).toEqual(["rig/t1", "rig/t2", "rig/t3"]);
     for (const value of Object.values(rotations)) expect(Number.isFinite(value)).toBe(true);
 
-    // And the shape is the one the analytic path publishes, so arity is invisible to a consumer.
+    // And the unopted shape is the one the analytic path publishes, so arity is invisible to a
+    // consumer.
     const analytic = ikPlugin.compose(
       { flip: false },
       0,

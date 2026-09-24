@@ -1,3 +1,5 @@
+import { unreachable } from "../lang/exhaustive";
+
 /**
  * What one IK solve answers: the local rotations it publishes, and how well they answer the goal.
  *
@@ -8,9 +10,9 @@
  * now return this record and `solveChain` returns it from both arms, so the question has one shape
  * whichever strategy answered it. See ADR-107.
  *
- * `rotations` is the only half anything publishes. `ik.ts` reads it and drops `quality`, because a
- * solver's patch shape must not become a function of its arity and `FB-9` pins the published keys;
- * the quality record is for a caller that diagnoses a solve, not for the patch.
+ * `rotations` is always published. An opted-in `inspection` output is a fixed-shape projection of
+ * `quality`; `ik.ts` owns the opt-in while this module owns the projection, so the solver's patch
+ * shape stays stable across arity and strategy. Unopted rigs keep the phase 3 output byte for byte.
  */
 export interface SolveResult<Q extends SolveQuality = SolveQuality> {
   readonly rotations: Readonly<Record<string, number>>;
@@ -68,3 +70,53 @@ export type IterativeQuality = Extract<
   SolveQuality,
   { readonly kind: "converged" | "stalled" | "iteration-cap" | "limited" }
 >;
+
+/**
+ * The fixed-shape inspection record exposed when an IK author opts into solve inspection.
+ *
+ * A type alias rather than an interface on purpose: `PluginComposer` returns `ImmutableRecord`, an
+ * index-signature type, and TypeScript grants the implicit index signature to aliases only, so an
+ * interface here fails `typecheck` where `ik.ts` spreads it into the published values.
+ */
+export type SolveInspection = {
+  readonly kind: SolveQuality["kind"];
+  readonly residual: number;
+  readonly iterations: number;
+  readonly atBound: readonly string[];
+};
+
+const NO_BOUNDS: readonly string[] = Object.freeze([]);
+
+/** Projects every solve quality into one frozen shape suitable for a renderer-neutral output. */
+export function inspectSolve(quality: SolveQuality): SolveInspection {
+  switch (quality.kind) {
+    case "reached":
+    case "too-far":
+    case "too-near":
+    case "coincident":
+      return Object.freeze({
+        kind: quality.kind,
+        residual: quality.residual,
+        iterations: 0,
+        atBound: NO_BOUNDS,
+      });
+    case "converged":
+    case "stalled":
+    case "iteration-cap":
+      return Object.freeze({
+        kind: quality.kind,
+        residual: quality.residual,
+        iterations: quality.iterations,
+        atBound: NO_BOUNDS,
+      });
+    case "limited":
+      return Object.freeze({
+        kind: quality.kind,
+        residual: quality.residual,
+        iterations: quality.iterations,
+        atBound: Object.freeze([...quality.atBound]),
+      });
+    default:
+      return unreachable(quality);
+  }
+}

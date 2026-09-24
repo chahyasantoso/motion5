@@ -20,6 +20,8 @@ Refusing it has a cost that grows. A pivot offset is the authored answer to a sh
 
 `fk` keeps sole ownership of applying an authored offset. `ik` gains ownership of predicting the frame that application composes, and it still publishes rotations and nothing else. No runtime pre-pass, no second evaluation, no solver state, and no offset applied twice: the publisher and the renderer are untouched, and the composition that puts a pivot where the solve predicted it is the same `fk.compose` every bone in the rig already ran through.
 
+**Amended by [ADR-109](./ADR-109-opt-in-solve-inspection.md), 2026-09-24.** "Publishes rotations and nothing else" holds for every rig that does not opt into inspection. An author who writes the static `ik.values.inspect: true` receives one additional `inspection` output, the fixed-shape projection of the solve's quality record; the rotations, and so every offset this record puts into the geometry, are unchanged bit for bit.
+
 That is the split the refusal was protecting, and it is why the fix is a change to two pure functions rather than to a pipeline.
 
 ### One rotate-then-translate, in `plugins/frame.ts`

@@ -126,7 +126,7 @@ keyframes: {
 }
 ```
 
-A leaf inside `values` is held to exactly the rules a flat property is held to, both forms included. A group name addresses a registered plugin and every leaf of its `values` section must be a key that plugin claims. The section is flattened to unprefixed leaves before interpolation and composition, and it is the only compiled value domain. Nesting is one level deep inside `values`.
+A leaf inside `values` is held to exactly the rules a flat property is held to, both forms included. A group name addresses a registered plugin and every leaf of its `values` section must be a key that plugin claims. The section is flattened to unprefixed leaves before interpolation and composition, and it is the only compiled value domain. Nesting is one level deep inside `values`. The `ik` group may author the static boolean `inspect` key to opt into the solver's `inspection` output (ADR-109); a flat `inspect` on the node that bound `root` is equivalent, a malformed value is refused as `ik-inspect-malformed`, and a spelling under another group of a solver node as `ik-solver-key-misgrouped`.
 
 Because both section names are reserved, a group is recognised by the sections it names rather than by the shape of its leaves. That is what lets the registry-free contract layer tell a section from a property, report a typo'd section as `keyframes-unknown-section`, and refuse the pre-v5-final leaf form as `keyframes-missing-values-section` instead of as a property of an unknown shape. There is one authored group shape and no compatibility form. See ADR-049.
 
