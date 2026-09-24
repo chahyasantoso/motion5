@@ -46,6 +46,13 @@ export function goalInfluence(member: SolveMember): number {
  * average it always was, bit for bit. A member no addressed leaf hangs under pulls with the
  * default, which is what an unaddressed branch contributed before influence existed.
  *
+ * The mean is taken relative to the subtree's largest influence, `max · (Σ(v / max) / n)`, rather
+ * than as `Σv / n`, because every admitted influence is finite but their sum need not be: two
+ * leaves at `Number.MAX_VALUE` overflow `Σv` to `Infinity`, and the compromise would then divide
+ * `Infinity` by `Infinity`. Each ratio is at most `1` and the largest is exactly `1`, so the scaled
+ * sum is finite and at least `1`, and the pull is finite and positive. With every influence at `1`
+ * the scale is `1`, every ratio is `1`, and the pull is `1 · (n / n)`, exactly `1`.
+ *
  * `addressed` is the caller's own list of the leaves it seeds from goals, so this function answers
  * about exactly the leaves the solve reaches toward rather than re-deriving leafhood.
  */
@@ -53,8 +60,7 @@ export function branchPulls(
   byId: ReadonlyMap<string, SolveMember>,
   addressed: readonly string[],
 ): ReadonlyMap<string, number> {
-  const sums = new Map<string, number>();
-  const counts = new Map<string, number>();
+  const under = new Map<string, number[]>();
   for (const leaf of addressed) {
     const member = byId.get(leaf);
     if (member === undefined) continue;
@@ -62,18 +68,26 @@ export function branchPulls(
     const seen = new Set<string>();
     for (let id: string | undefined = leaf; id !== undefined && !seen.has(id); ) {
       seen.add(id);
-      sums.set(id, (sums.get(id) ?? 0) + influence);
-      counts.set(id, (counts.get(id) ?? 0) + 1);
+      const list = under.get(id) ?? [];
+      list.push(influence);
+      under.set(id, list);
       id = byId.get(id)?.base;
       if (id !== undefined && !byId.has(id)) id = undefined;
     }
   }
   const pulls = new Map<string, number>();
-  for (const id of byId.keys()) {
-    const count = counts.get(id) ?? 0;
-    pulls.set(id, count === 0 ? DEFAULT_INFLUENCE : (sums.get(id) ?? 0) / count);
-  }
+  for (const id of byId.keys()) pulls.set(id, scaledMean(under.get(id) ?? []));
   return pulls;
+}
+
+/** The mean of positive finite influences without overflow, or the default for none. */
+function scaledMean(influences: readonly number[]): number {
+  if (influences.length === 0) return DEFAULT_INFLUENCE;
+  let scale = 0;
+  for (const influence of influences) scale = Math.max(scale, influence);
+  let ratios = 0;
+  for (const influence of influences) ratios += influence / scale;
+  return scale * (ratios / influences.length);
 }
 
 /** One branch's proposal for a shared member's tip, and the pull it is weighed by. */
@@ -99,21 +113,27 @@ export interface Compromise {
  * The influence-weighted mean of one member's proposals, `Σw·p / Σw`.
  *
  * A lone proposal is weighed by `1` whatever its pull, because a branch with nobody to compromise
- * with settles where it proposed, and `(w·x) / w` is not `x` in floating point. With every weight
- * exactly `1` the sums are the ones FABRIK always took (`0 + 1·x` is `0 + x`, including the `-0`
- * the zero-seeded sum normalises to `+0`) and the divisor is the proposal count, so an unweighted
- * rig settles on the equal mean bit for bit. Weights are positive by construction
- * (`readInfluenceValue` admits nothing else and a pull is a mean of admitted values), so the
- * divisor never vanishes, and `pulls` is never empty because FABRIK asks only about a member that
+ * with settles where it proposed, and `(w·x) / w` is not `x` in floating point. Several proposals
+ * are weighed relative to the largest pull, `w / max`, which leaves the mean unchanged in exact
+ * arithmetic and keeps it finite in floating point: every relative weight is at most `1`, the
+ * largest is exactly `1`, so `Σw` is at least `1` and never overflows or vanishes, where raw pulls
+ * near `Number.MAX_VALUE` would overflow `Σw` and settle the member on `NaN`. With every weight
+ * exactly `1` the scale is `1` and the sums are the ones FABRIK always took (`0 + 1·x` is `0 + x`,
+ * including the `-0` the zero-seeded sum normalises to `+0`) and the divisor is the proposal
+ * count, so an unweighted rig settles on the equal mean bit for bit. Weights are positive and
+ * finite by construction (`readInfluenceValue` admits nothing else and a pull is a scaled mean of
+ * admitted values), and `pulls` is never empty because FABRIK asks only about a member that
  * received a proposal.
  */
 export function compromise(pulls: readonly Pull[]): Compromise {
   const lone = pulls.length === 1;
+  let scale = 0;
+  for (const { weight } of pulls) scale = Math.max(scale, weight);
   let sumX = 0;
   let sumY = 0;
   let sumW = 0;
   for (const { point, weight } of pulls) {
-    const w = lone ? 1 : weight;
+    const w = lone ? 1 : weight / scale;
     sumX += w * point.x;
     sumY += w * point.y;
     sumW += w;

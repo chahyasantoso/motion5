@@ -486,16 +486,7 @@ export function solveFabrik(
     solvedPivots[id] = pivots.get(id)!;
     solvedTips[id] = tips.get(id)!;
   }
-  // A bound is the most specific cause and an authored one, so it is named first. A disagreement
-  // is named before the stall or the cap, because neither more iterations nor a different stall
-  // test answers branches that pull one member to two places. See ADR-108 and ADR-110.
-  let quality: IterativeQuality;
-  if (residual > FABRIK_TOLERANCE && atBounds.length > 0)
-    quality = { kind: "limited", iterations, residual, atBound: Object.freeze(atBounds) };
-  else if (residual <= FABRIK_TOLERANCE) quality = { kind: "converged", iterations, residual };
-  else if (spread > FABRIK_TOLERANCE) quality = { kind: "conflicted", iterations, residual };
-  else if (stalled) quality = { kind: "stalled", iterations, residual };
-  else quality = { kind: "iteration-cap", iterations, residual };
+  const quality = iterativeQuality({ residual, iterations, atBound: atBounds, spread, stalled });
   return Object.freeze({
     rotations: Object.freeze(rotations),
     residuals: Object.freeze(residuals),
@@ -503,4 +494,37 @@ export function solveFabrik(
     tips: Object.freeze(solvedTips),
     quality: Object.freeze(quality),
   });
+}
+
+/** What an iterative solve observed when it stopped, before it is named as one quality kind. */
+export interface IterativeOutcome {
+  /** The worst addressed-leaf shortfall after the last outward pass. */
+  readonly residual: number;
+  readonly iterations: number;
+  /** The members whose published local angle sits exactly on a declared bound, canonical order. */
+  readonly atBound: readonly string[];
+  /** How far branches still disagreed about a shared member in the last inward pass. */
+  readonly spread: number;
+  /** Whether the last pass moved nothing. */
+  readonly stalled: boolean;
+}
+
+/**
+ * The one owner of how a FABRIK outcome is named, so the order below is pinned at its boundaries
+ * rather than only through whichever rigs happen to land near them.
+ *
+ * A bound is the most specific cause and an authored one, so a miss with any joint at a bound is
+ * `limited` first. Within tolerance is `converged`. A disagreement is named before the stall or
+ * the cap, because neither more iterations nor a different stall test answers branches that pull
+ * one member to two places, and it is named only when the last pass's spread is strictly above
+ * `FABRIK_TOLERANCE`, the same strict bound the residual is judged by. See ADR-108 and ADR-110.
+ */
+export function iterativeQuality(outcome: IterativeOutcome): IterativeQuality {
+  const { residual, iterations, atBound, spread, stalled } = outcome;
+  if (residual > FABRIK_TOLERANCE && atBound.length > 0)
+    return { kind: "limited", iterations, residual, atBound: Object.freeze([...atBound]) };
+  if (residual <= FABRIK_TOLERANCE) return { kind: "converged", iterations, residual };
+  if (spread > FABRIK_TOLERANCE) return { kind: "conflicted", iterations, residual };
+  if (stalled) return { kind: "stalled", iterations, residual };
+  return { kind: "iteration-cap", iterations, residual };
 }
