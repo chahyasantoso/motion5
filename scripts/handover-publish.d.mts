@@ -1,5 +1,5 @@
 import type { AppliedCommit, Run } from "./handover-apply.mjs";
-import type { HandoverAddress, HandoverReview } from "./handover-format.mjs";
+import type { HandoverAddress, HandoverReview, HandoverTarget } from "./handover-format.mjs";
 
 export const PUBLICATION_KINDS: readonly [
   "opted-out",
@@ -16,7 +16,7 @@ export const DEFERRAL_KINDS: readonly [
   "pull-request-elsewhere",
 ];
 export const PUBLICATION_PARTS: readonly ["pull-request", "notes", "review"];
-export const MAX_NOTES_CHARACTERS: number;
+export const MAX_BODY_CHARACTERS: number;
 
 export type PublicationPart = (typeof PUBLICATION_PARTS)[number];
 export type CommentPart = Exclude<PublicationPart, "pull-request">;
@@ -74,7 +74,24 @@ export type Publication =
       readonly skipped: readonly CommentPart[];
     };
 
+/** The subset of `gh pr list --json` fields the publisher reads. */
+export interface ListedPullRequest {
+  readonly number: number;
+  readonly url: string;
+  readonly state: string;
+  readonly body?: string;
+  readonly baseRefName: string;
+  readonly headRefName: string;
+  readonly headRepository: { readonly name: string } | null;
+  readonly headRepositoryOwner: { readonly login: string } | null;
+}
+
 export function marker(identity: string, part: PublicationPart): string;
+export function bounded(body: string): string;
+export function branchPullRequest<T extends ListedPullRequest>(
+  pulls: readonly T[],
+  target: HandoverTarget,
+): T | undefined;
 export function reviewLine(review: HandoverReview | null): string;
 export function pullRequestBody(handover: AppliedHandover): string;
 export function notesComment(handover: AppliedHandover): string;

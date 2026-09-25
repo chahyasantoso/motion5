@@ -208,10 +208,34 @@ export async function inspectArchive(zip, { run = runProcess, scratch }) {
         unreachable(component.kind, "COMPONENT_KINDS");
     }
   }
-  // Names this exact archive, so a publication retried or re-run recognises its own comments and
-  // a corrected handover under the same name is a different publication rather than a duplicate.
-  const identity = `${manifest.name}@${sha256(bytes).slice(0, 12)}`;
+  const identity = await archiveIdentity(directory, manifest, bytes, components);
   return { root, directory, manifest, chain, components, review, identity };
+}
+
+/**
+ * Names this exact handover by what it publishes: the manifest bytes and the bytes of every
+ * notes and review component, each framed by its path. A publication retried or re-run recognises
+ * its own comments by it, and a handover repacked with corrected notes or a changed review is a
+ * different publication rather than one whose correction is skipped as already posted. Zip
+ * metadata is not read, so repacking identical content keeps the identity.
+ */
+async function archiveIdentity(directory, manifest, bytes, components) {
+  const hash = createHash("sha256").update(bytes);
+  for (const component of components)
+    switch (component.kind) {
+      case "notes":
+      case "review":
+        hash.update(`\0${component.path}\0`);
+        hash.update(await readFile(path.join(directory, component.path)));
+        break;
+      case "checkpoint":
+      case "bundle":
+      case "opaque":
+        break;
+      default:
+        unreachable(component.kind, "COMPONENT_KINDS");
+    }
+  return `${manifest.name}@${hash.digest("hex").slice(0, 12)}`;
 }
 
 function gitPathExists(run, root, name) {

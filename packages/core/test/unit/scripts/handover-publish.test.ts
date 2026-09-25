@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
 import {
   applyHandover,
+  inspectArchive,
   runProcess,
   type Run,
   type RunOptions,
@@ -21,9 +22,11 @@ import {
 import { packHandover } from "../../../../../scripts/handover-pack.mjs";
 import {
   DEFERRAL_KINDS,
-  MAX_NOTES_CHARACTERS,
+  MAX_BODY_CHARACTERS,
   PUBLICATION_KINDS,
   PUBLICATION_PARTS,
+  bounded,
+  branchPullRequest,
   commentParts,
   describePublication,
   isSettled,
@@ -89,8 +92,15 @@ interface PullRequest {
   state: "OPEN" | "CLOSED" | "MERGED";
   readonly headRefName: string;
   readonly baseRefName: string;
+  readonly headRepository: { readonly name: string } | null;
+  readonly headRepositoryOwner: { readonly login: string } | null;
   readonly title: string;
   readonly body: string;
+}
+
+/** What `gh pr view|list --json` prints for a pull request: everything but the title. */
+function listed({ title: _title, ...fields }: PullRequest): Omit<PullRequest, "title"> {
+  return fields;
 }
 
 const ok = (stdout = ""): RunResult => ({ status: 0, stdout, stderr: "" });
@@ -113,16 +123,23 @@ class FakeGitHub {
   failPost: string | null = null;
   private next = 600;
 
-  pull(headRefName: string, state: PullRequest["state"] = "OPEN"): PullRequest {
+  pull(
+    headRefName: string,
+    state: PullRequest["state"] = "OPEN",
+    fields: Partial<PullRequest> = {},
+  ): PullRequest {
     const number = this.next++;
-    const pull = {
+    const pull: PullRequest = {
       number,
       url: `${URL_BASE}/pull/${number}`,
       state,
       headRefName,
       baseRefName: "main",
+      headRepository: { name: "motion5" },
+      headRepositoryOwner: { login: "octo" },
       title: "existing",
       body: "",
+      ...fields,
     };
     this.pulls.push(pull);
     return pull;
@@ -150,16 +167,15 @@ class FakeGitHub {
     if (!args.includes("--repo") && first !== "api") throw new Error("gh call lacks --repo");
     if (first === "pr" && second === "view") {
       const pull = this.pulls.find((each) => each.number === Number(args[2]));
-      return pull === undefined
-        ? no("no pull requests found")
-        : ok(JSON.stringify({ number: pull.number, url: pull.url, headRefName: pull.headRefName }));
+      return pull === undefined ? no("no pull requests found") : ok(JSON.stringify(listed(pull)));
     }
     if (first === "pr" && second === "list") {
       const head = option(args, "--head");
+      expect(option(args, "--limit")).toBe("200");
       const found = this.pulls
         .filter((each) => each.headRefName === head)
         .reverse()
-        .map(({ number, url, state }) => ({ number, url, state }));
+        .map(listed);
       return ok(JSON.stringify(found));
     }
     if (first === "pr" && second === "create") {
@@ -170,6 +186,8 @@ class FakeGitHub {
         state: "OPEN",
         headRefName: option(args, "--head"),
         baseRefName: option(args, "--base"),
+        headRepository: { name: "motion5" },
+        headRepositoryOwner: { login: "octo" },
         title: option(args, "--title"),
         body: readFileSync(option(args, "--body-file"), "utf8"),
       });
@@ -308,6 +326,10 @@ describe("publishing to an existing pull request (ADR-119)", () => {
     w.github.pull(BRANCH, "CLOSED");
     const open = w.github.pull(BRANCH);
     w.github.pull("some/other-branch");
+    const fork = w.github.pull(BRANCH, "OPEN", {
+      headRepositoryOwner: { login: "forker" },
+      headRepository: { name: "motion5" },
+    });
     const outcome = await publish(w, handover(w));
     expect(outcome).toEqual({
       kind: "published",
@@ -319,7 +341,8 @@ describe("publishing to an existing pull request (ADR-119)", () => {
     expect(w.github.thread(open.number)).toHaveLength(2);
     expect(marked(w, open.number, "notes")).toBe(1);
     expect(marked(w, open.number, "review")).toBe(1);
-    expect(w.github.pulls).toHaveLength(3);
+    expect(w.github.thread(fork.number)).toEqual([]);
+    expect(w.github.pulls).toHaveLength(4);
     expect(await pendingNames(w)).toEqual([]);
     expect(w.github.calls.some((call) => call.includes("create"))).toBe(false);
   });
@@ -329,6 +352,9 @@ describe("publishing to an existing pull request (ADR-119)", () => {
     push(w);
     const mine = w.github.pull(BRANCH);
     const theirs = w.github.pull("someone/else");
+    const forked = w.github.pull(BRANCH, "OPEN", {
+      headRepositoryOwner: { login: "forker" },
+    });
     const posted = await publish(w, handover(w, { kind: "pull-request", number: mine.number }));
     expect(posted).toMatchObject({ kind: "published", destination: { number: mine.number } });
     const elsewhere = await publish(
@@ -337,9 +363,24 @@ describe("publishing to an existing pull request (ADR-119)", () => {
     );
     expect(elsewhere).toMatchObject({
       kind: "deferred",
-      reason: { kind: "pull-request-elsewhere", number: theirs.number, head: "someone/else" },
+      reason: {
+        kind: "pull-request-elsewhere",
+        number: theirs.number,
+        head: "octo/motion5:someone/else",
+      },
     });
     expect(w.github.thread(theirs.number)).toEqual([]);
+    expect(
+      await publish(w, handover(w, { kind: "pull-request", number: forked.number })),
+    ).toMatchObject({
+      kind: "deferred",
+      reason: {
+        kind: "pull-request-elsewhere",
+        head: `forker/motion5:${BRANCH}`,
+        branch: `${REPOSITORY}:${BRANCH}`,
+      },
+    });
+    expect(w.github.thread(forked.number)).toEqual([]);
     const issue = await publish(w, handover(w, { kind: "issue" }));
     expect(issue).toMatchObject({
       kind: "published",
@@ -354,7 +395,12 @@ describe("publishing when the branch has no pull request (ADR-119)", () => {
     const w = await world();
     push(w);
     const first = await publish(w, handover(w, { kind: "branch" }, passed({ status: "pending" })));
-    expect(first).toMatchObject({ kind: "published", created: true, posted: ["notes", "review"] });
+    expect(first).toMatchObject({
+      kind: "published",
+      created: true,
+      posted: ["review"],
+      skipped: ["notes"],
+    });
     expect(w.github.pulls).toHaveLength(1);
     const [pull] = w.github.pulls;
     expect(pull).toMatchObject({
@@ -366,6 +412,9 @@ describe("publishing when the branch has no pull request (ADR-119)", () => {
     expect(pull?.body).toContain("refs #507");
     expect(pull?.body).toContain("Independent review: **pending, not a pass**");
     expect(pull?.body).not.toMatch(/\*\*passed\*\*/);
+    expect(pull?.body).toContain(marker("motion5-507-handover@0123456789ab", "notes"));
+    expect(pull?.body).toContain("What changed and why.");
+    expect(pull?.body).toContain(`- \`${w.tip.slice(0, 12)}\` feat: second`);
     const again = await publish(w, handover(w, { kind: "branch" }, passed({ status: "pending" })));
     expect(again).toMatchObject({
       kind: "published",
@@ -374,7 +423,7 @@ describe("publishing when the branch has no pull request (ADR-119)", () => {
       skipped: ["notes", "review"],
     });
     expect(w.github.pulls).toHaveLength(1);
-    expect(w.github.thread(pull?.number ?? 0)).toHaveLength(2);
+    expect(w.github.thread(pull?.number ?? 0)).toHaveLength(1);
   });
 
   it("HO-42 a branch whose only pull request is closed is posted to, not given a duplicate", async () => {
@@ -516,9 +565,13 @@ describe("what a publication says about the review (ADR-119)", () => {
     expect(notesComment(pass)).toContain(marker(identity, "notes"));
     expect(notesComment(pass)).toContain(`- \`${w.tip.slice(0, 12)}\` feat: second`);
     expect(notesComment(pass)).toContain("What changed and why.");
-    const long = { ...pass, notes: "x".repeat(MAX_NOTES_CHARACTERS + 10) };
-    expect(notesComment(long)).toContain("cut at 60000 characters");
-    expect(notesComment(long).length).toBeLessThan(65536);
+    const long = { ...pass, notes: "x".repeat(MAX_BODY_CHARACTERS + 10) };
+    const huge = handover(w, { kind: "branch" }, passed({ summary: "y".repeat(70000) }));
+    for (const body of [notesComment(long), pullRequestBody(long), reviewComment(huge)]) {
+      expect(body).toContain(`Cut at ${MAX_BODY_CHARACTERS} characters to fit GitHub`);
+      expect(body.length).toBeLessThan(65536);
+    }
+    expect(bounded("short")).toBe("short");
     expect(() =>
       reviewLine({ ...passed(), status: "approved" } as unknown as HandoverReview),
     ).toThrow("Unhandled REVIEW_STATUSES");
@@ -678,22 +731,32 @@ describe("publication inside npm run patches (ADR-119)", () => {
     });
   });
 
-  it("HO-49 an applied archive publishes end to end, and a version 1 payload is unaddressed", async () => {
+  it("HO-49 an applied archive publishes end to end once its branch is pushed, and a version 1 payload is unaddressed", async () => {
     const w = await world();
     await stageArchive(w, { pullRequest: null });
-    push(w, w.tip);
     const applied = await applyHandover({
       root: w.repo,
       run: w.run,
       publish: (h) => publishHandover(h, { root: w.repo, run: w.run }),
     });
+    // `git am` makes new commits, so the tip the remote must hold exists only after the apply.
     expect(applied).toMatchObject({
       kind: "applied",
-      publication: { kind: "published", created: true, posted: ["notes"] },
+      publication: { kind: "deferred", reason: { kind: "branch-not-pushed" } },
+    });
+    expect(w.github.writes()).toEqual([]);
+    push(w);
+    const [retried] = await publishPending({ root: w.repo, run: w.run });
+    expect(retried?.publication).toMatchObject({
+      kind: "published",
+      created: true,
+      posted: [],
+      skipped: ["notes"],
     });
     const [pull] = w.github.pulls;
     expect(pull?.title).toBe("Publish the notes");
-    expect(w.github.thread(pull?.number ?? 0)[0]).toContain("Independent review: **not provided**");
+    expect(pull?.body).toContain("Independent review: **not provided**");
+    expect(w.github.thread(pull?.number ?? 0)).toEqual([]);
     const v1 = { ...handover(w), address: { kind: "unaddressed" } } as AppliedHandover;
     expect(await publish(w, v1)).toEqual({ kind: "unaddressed" });
     expect(await pendingNames(w)).toEqual([]);
@@ -798,5 +861,66 @@ describe("publication inside npm run patches (ADR-119)", () => {
     expect(retry.status).toBe(1);
     expect(retry.stderr).toContain("motion5-507-handover:");
     expect(cli("publish", "--force").status).toBe(1);
+  });
+});
+
+describe("what the review of #507 found (ADR-119)", () => {
+  it("HO-52 the identity covers the notes and the review, and not the zip's metadata", async () => {
+    const w = await world();
+    const identity = async (notes: string, name: string, review: string | null = null) => {
+      await writeFile(join(w.work, `${name}.md`), notes);
+      const built = await packHandover({
+        root: w.repo,
+        from: w.base,
+        to: w.tip,
+        issue: 507,
+        notes: join(w.work, `${name}.md`),
+        out: join(w.work, name, "motion5-507-handover.zip"),
+        title: "Same title",
+        review,
+        run: realRun,
+      });
+      const scratch = await temporary("motion5-identity-");
+      return (await inspectArchive(built.out, { run: realRun, scratch })).identity;
+    };
+    const first = await identity("# Notes\n", "a");
+    expect(await identity("# Notes\n", "b")).toBe(first);
+    expect(await identity("# Notes, corrected\n", "c")).not.toBe(first);
+    const reviewFile = join(w.work, "review.json");
+    await writeFile(reviewFile, JSON.stringify(passed()));
+    const reviewed = await identity("# Notes\n", "d", reviewFile);
+    expect(reviewed).not.toBe(first);
+    await writeFile(reviewFile, JSON.stringify(passed({ summary: "Changed." })));
+    expect(await identity("# Notes\n", "e", reviewFile)).not.toBe(reviewed);
+  });
+
+  it("HO-53 a branch's pull request is its own repository's, preferring open and then its base", () => {
+    const target = {
+      repository: "Octo/Motion5",
+      branch: BRANCH,
+      into: "main",
+      destination: { kind: "branch" as const },
+    };
+    const pull = (number: number, state: string, base: string, owner: string | null = "octo") => ({
+      number,
+      url: `${URL_BASE}/pull/${number}`,
+      state,
+      baseRefName: base,
+      headRefName: BRANCH,
+      headRepository: owner === null ? null : { name: "motion5" },
+      headRepositoryOwner: owner === null ? null : { login: owner },
+    });
+    const fork = pull(1, "OPEN", "main", "forker");
+    const deleted = pull(2, "OPEN", "main", null);
+    const closedMain = pull(3, "CLOSED", "main");
+    const openDevelop = pull(4, "OPEN", "develop");
+    const openMain = pull(5, "OPEN", "main");
+    const mergedDevelop = pull(6, "MERGED", "develop");
+    expect(branchPullRequest([fork, deleted], target)).toBeUndefined();
+    expect(branchPullRequest([fork, openDevelop, openMain], target)).toBe(openMain);
+    expect(branchPullRequest([closedMain, openDevelop], target)).toBe(openDevelop);
+    expect(branchPullRequest([mergedDevelop, closedMain], target)).toBe(closedMain);
+    expect(branchPullRequest([mergedDevelop], target)).toBe(mergedDevelop);
+    expect(branchPullRequest([{ ...openMain, headRefName: "other" }], target)).toBeUndefined();
   });
 });

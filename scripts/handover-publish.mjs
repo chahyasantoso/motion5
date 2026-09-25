@@ -33,9 +33,12 @@ export const DEFERRAL_KINDS = Object.freeze([
 /** The closed set of things a publication writes to GitHub, each marked so it is written once. */
 export const PUBLICATION_PARTS = Object.freeze(["pull-request", "notes", "review"]);
 
-// GitHub refuses a comment body over 65,536 characters; the notes are cut well inside it and the
-// cut says where the whole file still is.
-export const MAX_NOTES_CHARACTERS = 60000;
+// GitHub refuses a pull request or comment body over 65,536 characters. Every body is cut well
+// inside that, whatever part of it is long, and the cut says where the whole text still is.
+export const MAX_BODY_CHARACTERS = 60000;
+// `gh pr list` pages internally up to its limit; a branch with more pull requests than this is not
+// a case a handover meets, and the limit is what keeps "none found" from meaning "not looked".
+const PULL_REQUEST_LIMIT = "200";
 const PENDING = "motion5-handover/pending";
 const GITHUB_HOST = "github.com";
 const REMOTE_URL =
@@ -71,33 +74,15 @@ function commitLines(commits) {
   return commits.map((commit) => `- \`${commit.sha.slice(0, 12)}\` ${commit.subject}`);
 }
 
-function truncated(notes) {
-  if (notes.length <= MAX_NOTES_CHARACTERS) return notes;
-  return `${notes.slice(0, MAX_NOTES_CHARACTERS)}\n\n_The notes were cut at ${MAX_NOTES_CHARACTERS} characters; the whole file is \`NOTES.md\` in the handover zip._\n`;
+/** Any body cut to what GitHub accepts, with the cut saying where the whole text is. */
+export function bounded(body) {
+  if (body.length <= MAX_BODY_CHARACTERS) return body;
+  return `${body.slice(0, MAX_BODY_CHARACTERS)}\n\n_Cut at ${MAX_BODY_CHARACTERS} characters to fit GitHub; the whole text is \`NOTES.md\` and \`REVIEW.json\` in the handover zip._\n`;
 }
 
-/** The body of a pull request opened for a handover's branch. */
-export function pullRequestBody(handover) {
+/** The notes as every body carries them: the applied commits, the review line, then the file. */
+function notesSection(handover) {
   return [
-    marker(handover.identity, "pull-request"),
-    `Opened by \`npm run patches\` for the handover \`${handover.name}\`, refs #${handover.issue}.`,
-    "",
-    reviewLine(handover.review),
-    "",
-    `Applied as ${handover.commits.length} commit(s), tip \`${handover.tip}\`:`,
-    ...commitLines(handover.commits),
-    "",
-    "The handover notes and the review result follow as comments.",
-    "",
-  ].join("\n");
-}
-
-/** The comment carrying a handover's notes. */
-export function notesComment(handover) {
-  return [
-    marker(handover.identity, "notes"),
-    `## Handover notes: \`${handover.name}\``,
-    "",
     `Applied by \`npm run patches\` as ${handover.commits.length} commit(s), tip \`${handover.tip}\`:`,
     ...commitLines(handover.commits),
     "",
@@ -105,8 +90,37 @@ export function notesComment(handover) {
     "",
     "---",
     "",
-    truncated(handover.notes),
-  ].join("\n");
+    handover.notes,
+  ];
+}
+
+/**
+ * The body of a pull request opened for a handover's branch. It carries the notes itself, marked
+ * as the notes part, so a pull request this publisher opened owes no separate notes comment and
+ * never exists without its notes, even when every later post fails.
+ */
+export function pullRequestBody(handover) {
+  return bounded(
+    [
+      marker(handover.identity, "pull-request"),
+      marker(handover.identity, "notes"),
+      `Opened by \`npm run patches\` for the handover \`${handover.name}\`, refs #${handover.issue}.`,
+      "",
+      ...notesSection(handover),
+    ].join("\n"),
+  );
+}
+
+/** The comment carrying a handover's notes to a thread this publisher did not open. */
+export function notesComment(handover) {
+  return bounded(
+    [
+      marker(handover.identity, "notes"),
+      `## Handover notes: \`${handover.name}\``,
+      "",
+      ...notesSection(handover),
+    ].join("\n"),
+  );
 }
 
 function findingLines(findings) {
@@ -126,20 +140,22 @@ function findingLines(findings) {
 export function reviewComment(handover) {
   const { review } = handover;
   if (review === null) throw new TypeError(`${handover.name} carries no review to comment with`);
-  return [
-    marker(handover.identity, "review"),
-    `## Independent review of \`${handover.name}\`: ${statusWord(review.status)}`,
-    "",
-    `Reviewer: ${review.reviewer}`,
-    "",
-    `Summary: ${review.summary}`,
-    "",
-    "Findings:",
-    ...findingLines(review.findings),
-    "",
-    `Evidence: ${review.evidence ?? "not provided"}`,
-    "",
-  ].join("\n");
+  return bounded(
+    [
+      marker(handover.identity, "review"),
+      `## Independent review of \`${handover.name}\`: ${statusWord(review.status)}`,
+      "",
+      `Reviewer: ${review.reviewer}`,
+      "",
+      `Summary: ${review.summary}`,
+      "",
+      "Findings:",
+      ...findingLines(review.findings),
+      "",
+      `Evidence: ${review.evidence ?? "not provided"}`,
+      "",
+    ].join("\n"),
+  );
 }
 
 /** The comments a handover owes its destination, in the order they are posted. */
@@ -154,7 +170,7 @@ function commentBody(handover, part) {
     case "review":
       return reviewComment(handover);
     case "pull-request":
-      return pullRequestBody(handover);
+      throw new TypeError("a pull request body is written by `gh pr create`, never as a comment");
     default:
       return unreachable(part, "PUBLICATION_PARTS");
   }
@@ -241,10 +257,44 @@ function json(text, step) {
   }
 }
 
+const PULL_FIELDS =
+  "number,url,state,body,baseRefName,headRefName,headRepository,headRepositoryOwner";
+
+/** `owner/name` of a pull request's head repository, lower-cased, or null for a deleted fork. */
+function headRepositoryOf(pull) {
+  const owner = pull.headRepositoryOwner?.login;
+  const name = pull.headRepository?.name;
+  return typeof owner === "string" && typeof name === "string"
+    ? `${owner}/${name}`.toLowerCase()
+    : null;
+}
+
+/** Whether a pull request is the target branch's: same head branch in the target repository. */
+function isTargetBranch(pull, target) {
+  return (
+    pull.headRefName === target.branch && headRepositoryOf(pull) === target.repository.toLowerCase()
+  );
+}
+
 /**
- * The pull request or issue the handover publishes to, and whether this attempt created it. A
- * branch destination prefers an open pull request, then the most recent of any state, and opens
- * one only when the branch has none at all, so a retry finds what an earlier attempt opened.
+ * The branch's pull request to publish to, or undefined. `gh pr list --head` matches the branch
+ * name in any repository, so a fork's same-named branch is filtered out by head repository. Among
+ * the branch's own, an open one merging into `target.into` wins, then any open one, then the most
+ * recent into `target.into`, then the most recent at all: posting to a closed thread is noise,
+ * and opening a second pull request for the same branch is the duplicate issue #507 forbids.
+ */
+export function branchPullRequest(pulls, target) {
+  const own = pulls.filter((pull) => isTargetBranch(pull, target));
+  const open = own.filter((pull) => pull.state === "OPEN");
+  const into = (pull) => pull.baseRefName === target.into;
+  return open.find(into) ?? open[0] ?? own.find(into) ?? own[0];
+}
+
+/**
+ * The pull request or issue the handover publishes to, whether this attempt created it, and the
+ * body it already carries (a pull request's may hold the notes part). A branch destination opens
+ * a pull request only when the branch has none at all, so a retry finds what an earlier attempt
+ * opened.
  */
 async function destinationOf(run, root, handover, address, scratch) {
   const { target } = address;
@@ -259,18 +309,24 @@ async function destinationOf(run, root, handover, address, scratch) {
           String(destination.number),
           ...repo,
           "--json",
-          "number,url,headRefName",
+          PULL_FIELDS,
         ]),
         "view-pull-request",
       );
-      if (found.headRefName !== target.branch)
+      if (!isTargetBranch(found, target))
         defer({
           kind: "pull-request-elsewhere",
           number: destination.number,
-          head: found.headRefName,
-          branch: target.branch,
+          head: `${headRepositoryOf(found) ?? "(deleted repository)"}:${found.headRefName}`,
+          branch: `${target.repository}:${target.branch}`,
         });
-      return { kind: "pull-request", number: found.number, url: found.url, created: false };
+      return {
+        kind: "pull-request",
+        number: found.number,
+        url: found.url,
+        created: false,
+        body: String(found.body ?? ""),
+      };
     }
     case "issue": {
       const found = json(
@@ -284,7 +340,7 @@ async function destinationOf(run, root, handover, address, scratch) {
         ]),
         "view-issue",
       );
-      return { kind: "issue", number: found.number, url: found.url, created: false };
+      return { kind: "issue", number: found.number, url: found.url, created: false, body: "" };
     }
     case "branch": {
       const listed = json(
@@ -297,17 +353,24 @@ async function destinationOf(run, root, handover, address, scratch) {
           "--state",
           "all",
           "--json",
-          "number,url,state",
+          PULL_FIELDS,
           "--limit",
-          "20",
+          PULL_REQUEST_LIMIT,
         ]),
         "list-pull-requests",
       );
-      const existing = listed.find((each) => each.state === "OPEN") ?? listed[0];
+      const existing = branchPullRequest(listed, target);
       if (existing !== undefined)
-        return { kind: "pull-request", number: existing.number, url: existing.url, created: false };
+        return {
+          kind: "pull-request",
+          number: existing.number,
+          url: existing.url,
+          created: false,
+          body: String(existing.body ?? ""),
+        };
+      const text = pullRequestBody(handover);
       const body = path.join(scratch, "pull-request.md");
-      await writeFile(body, pullRequestBody(handover));
+      await writeFile(body, text);
       const url = gh(run, root, "create-pull-request", [
         "pr",
         "create",
@@ -323,15 +386,19 @@ async function destinationOf(run, root, handover, address, scratch) {
       ]).trim();
       const number = PULL_URL.exec(url);
       if (number === null) fail("create-pull-request", `gh printed no pull request URL: ${url}`);
-      return { kind: "pull-request", number: Number(number[1]), url, created: true };
+      return { kind: "pull-request", number: Number(number[1]), url, created: true, body: text };
     }
     default:
       return unreachable(destination, "DESTINATION_KINDS");
   }
 }
 
-/** Which of this handover's parts already sit in the thread, read from their markers. */
-function presentParts(run, root, repository, number, identity) {
+/**
+ * Which of this handover's parts already sit in the thread, read from their markers in every
+ * comment and in the pull request body, which carries the notes when this publisher opened it.
+ */
+function presentParts(run, root, repository, found, identity) {
+  const { number } = found;
   const out = gh(run, root, "list-comments", [
     "api",
     "--paginate",
@@ -339,10 +406,13 @@ function presentParts(run, root, repository, number, identity) {
     "--jq",
     ".[].body | @json",
   ]);
-  const bodies = out
-    .split("\n")
-    .filter(Boolean)
-    .map((line) => json(line, "list-comments"));
+  const bodies = [
+    found.body,
+    ...out
+      .split("\n")
+      .filter(Boolean)
+      .map((line) => json(line, "list-comments")),
+  ];
   return new Set(
     PUBLICATION_PARTS.filter((part) =>
       bodies.some((body) => String(body).includes(marker(identity, part))),
@@ -399,7 +469,7 @@ export async function publishHandover(handover, { root, run, temporary = tmpdir(
       defer({ kind: "gh-unauthenticated" });
     ensurePushed(run, root, remote, target.branch, handover.tip);
     const found = await destinationOf(run, root, handover, address, scratch);
-    const present = presentParts(run, root, target.repository, found.number, handover.identity);
+    const present = presentParts(run, root, target.repository, found, handover.identity);
     const posted = [];
     const skipped = [];
     for (const part of commentParts(handover)) {
