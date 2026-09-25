@@ -1,9 +1,10 @@
 # ADR-117: 3D pivot offsets
 
 **Status:** Proposed as issue [#500](https://github.com/chahyasantoso/motion5/issues/500) phase 2,
-2026-09-25, against `main` at `42c723226ed044b11e2441b06c8c7019ae4ed885` with phase 1
-([ADR-116](./ADR-116-fk3d-rest-orientation-and-solved-weight.md)) stacked beneath this change and
-not yet merged. Accepted when the implementation pull request merges.
+2026-09-25, first against `main` at `42c723226ed044b11e2441b06c8c7019ae4ed885` with phase 1
+stacked beneath it, and completed against `main` at `c9ce26665e8756614fb8f021e253dd631fcd96d7`,
+where phase 1 ([ADR-116](./ADR-116-fk3d-rest-orientation-and-solved-weight.md)) landed through
+#502. Accepted when the implementation pull request, #503, merges.
 
 ## Invariant
 
@@ -80,7 +81,7 @@ is 10,540 bytes. No 2D source changes, and no package export is added.
 - `TH-39` drives offsets through `Engine` and the DOM adapter, closes at the goal and reproduces
   bytes on a repeated seek.
 - The sandbox byte-identity probe compares at least 200,000 seeded omitted or zero-offset rigs
-  against phase-1 base `d123fce`; it reports zero mismatches when run.
+  against the phase-1 tip `31ec57f8`; it reports zero mismatches when run.
 - The mutation pass killed all 10 of 10 mutants: FK offset composition, root pivot use, effective-link length in both triangle sides, link-frame undo, offset scaling, offset magnitude accounting, coincident residual, z-only union selection, and non-finite offset reading.
 - These are sandbox-only results with no CI run, and typecheck was not run because TypeScript is not
   installable in the sandbox.

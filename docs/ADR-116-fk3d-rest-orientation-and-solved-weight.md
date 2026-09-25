@@ -73,9 +73,13 @@ plugin claims `rotationX` or `rotationY`, so no 2D rig and no 2D message moves.
 that loaded before is refused now: before this change every one of these keys under `fk3d` was
 `plugin-unknown-key`.
 
-`x`, `y` and `z` stayed unclaimed in this slice. ADR-117 claims them together with the closed form
-that accounts for their geometry, rather than ahead of it where they would compose a tip the solve
-never aimed.
+`x`, `y` and `z` stay unclaimed. A pivot offset changes the geometry the closed form has to
+predict, so it arrives with the solve that accounts for it (issue #500 phase 2) rather than ahead
+of it, where it would compose a tip the solve never aimed. **Refined by
+[ADR-117](./ADR-117-3d-pivot-offsets.md), 2026-09-25.** Phase 2 claims all three keys in the same
+change as the closed form that accounts for them, so the decision above held rather than moved:
+the offset arrived with its solve. What changed is only the tree, where `fk3d` now claims `x`, `y`
+and `z` and composes them before the local orientation, and `ik3d` reads the same values.
 
 ## What is withdrawn
 
