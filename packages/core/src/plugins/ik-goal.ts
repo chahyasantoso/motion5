@@ -1,6 +1,7 @@
 import { INFLUENCE_KEY, readInfluenceValue } from "../contract/solver-constraints";
 import type { WorldPoint } from "./frame";
 import type { SolveMember } from "./ik-member";
+import { unreachable } from "../lang/exhaustive";
 
 /**
  * The one runtime owner of goal influence: how strongly each addressed goal pulls on the members
@@ -90,10 +91,16 @@ function scaledMean(influences: readonly number[]): number {
   return scale * (ratios / influences.length);
 }
 
-/** One branch's proposal for a shared member's tip, and the pull it is weighed by. */
+/** The closed compromise policy. The centroid is the historical rule. */
+export type CompromiseRule = "centroid" | "reach-circle";
+
 export interface Pull {
   readonly point: WorldPoint;
   readonly weight: number;
+  /** The direct child tip used by the reach-circle objective. */
+  readonly childTip?: WorldPoint;
+  /** The direct child segment extent used by the reach-circle objective. */
+  readonly childLength?: number;
 }
 
 /**
@@ -125,7 +132,20 @@ export interface Compromise {
  * admitted values), and `pulls` is never empty because FABRIK asks only about a member that
  * received a proposal.
  */
-export function compromise(pulls: readonly Pull[]): Compromise {
+export function compromise(pulls: readonly Pull[], rule: CompromiseRule = "centroid"): Compromise {
+  const centroid = weightedCentroid(pulls);
+  const spread = proposalSpread(pulls, centroid);
+  switch (rule) {
+    case "centroid":
+      return { point: centroid, spread };
+    case "reach-circle":
+      return { point: reachCircleFit(pulls, centroid), spread };
+    default:
+      return unreachable(rule);
+  }
+}
+
+function weightedCentroid(pulls: readonly Pull[]): WorldPoint {
   const lone = pulls.length === 1;
   let scale = 0;
   for (const { weight } of pulls) scale = Math.max(scale, weight);
@@ -138,10 +158,75 @@ export function compromise(pulls: readonly Pull[]): Compromise {
     sumY += w * point.y;
     sumW += w;
   }
-  const point: WorldPoint = Object.freeze({ x: sumX / sumW, y: sumY / sumW });
+  return Object.freeze({ x: sumX / sumW, y: sumY / sumW });
+}
+
+function proposalSpread(pulls: readonly Pull[], point: WorldPoint): number {
   let spread = 0;
   for (const pull of pulls) {
     spread = Math.max(spread, Math.hypot(pull.point.x - point.x, pull.point.y - point.y));
   }
-  return { point, spread };
+  return spread;
+}
+
+/**
+ * Fit one parent tip to the child-tip circles by six damped Gauss-Newton steps.
+ *
+ * The centroid remains the seed and the proposal spread is measured separately, because the
+ * latter is the conflict witness rather than a property of this alternative fit. Pulls without
+ * child geometry occur only at addressed leaves; their lone proposal is exact by construction.
+ */
+function reachCircleFit(pulls: readonly Pull[], centroid: WorldPoint): WorldPoint {
+  if (pulls.length <= 1) return pulls[0]?.point ?? centroid;
+  if (pulls.some((pull) => pull.childTip === undefined || pull.childLength === undefined))
+    return centroid;
+  const circles = pulls as readonly (Pull & {
+    readonly childTip: WorldPoint;
+    readonly childLength: number;
+  })[];
+  const scale = Math.max(...circles.map(({ weight }) => weight));
+  const objective = (point: WorldPoint): number => {
+    let value = 0;
+    for (const pull of circles) {
+      const error =
+        Math.hypot(point.x - pull.childTip.x, point.y - pull.childTip.y) - pull.childLength;
+      value += (pull.weight / scale) * error * error;
+    }
+    return value;
+  };
+  const initialObjective = objective(centroid);
+  let point = centroid;
+  const damping = 1e-6;
+  for (let step = 0; step < 6; step += 1) {
+    let jxx = damping;
+    let jxy = 0;
+    let jyy = damping;
+    let bx = 0;
+    let by = 0;
+    for (const pull of circles) {
+      const dx = point.x - pull.childTip.x;
+      const dy = point.y - pull.childTip.y;
+      const distance = Math.hypot(dx, dy);
+      const axisX = distance === 0 ? 1 : dx / distance;
+      const axisY = distance === 0 ? 0 : dy / distance;
+      const error = distance - pull.childLength;
+      const weight = pull.weight / scale;
+      jxx += weight * axisX * axisX;
+      jxy += weight * axisX * axisY;
+      jyy += weight * axisY * axisY;
+      bx += weight * axisX * error;
+      by += weight * axisY * error;
+    }
+    const determinant = jxx * jyy - jxy * jxy;
+    if (!Number.isFinite(determinant) || determinant === 0) return centroid;
+    const deltaX = (-jyy * bx + jxy * by) / determinant;
+    const deltaY = (jxy * bx - jxx * by) / determinant;
+    point = { x: point.x + deltaX, y: point.y + deltaY };
+    if (!Number.isFinite(point.x) || !Number.isFinite(point.y)) return centroid;
+  }
+  return Number.isFinite(initialObjective) &&
+    Number.isFinite(objective(point)) &&
+    objective(point) < initialObjective
+    ? Object.freeze(point)
+    : centroid;
 }

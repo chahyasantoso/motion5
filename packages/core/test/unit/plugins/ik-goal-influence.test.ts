@@ -492,4 +492,32 @@ describe("IK goal influence and conflict policy", () => {
       }
     }
   });
+
+  it("GI-17 fits weighted child-tip circles and guards the centroid", () => {
+    const pulls = [
+      { point: { x: 0, y: 0 }, weight: 1, childTip: { x: 0, y: 0 }, childLength: 10 },
+      { point: { x: 10, y: 0 }, weight: 1, childTip: { x: 10, y: 0 }, childLength: 10 },
+      { point: { x: 20, y: 0 }, weight: 2, childTip: { x: 20, y: 0 }, childLength: 5 },
+    ] as const;
+    const centroid = compromise(pulls);
+    const fitted = compromise(pulls, "reach-circle");
+    const objective = (point: { x: number; y: number }): number =>
+      pulls.reduce(
+        (sum, pull) =>
+          sum +
+          (Math.hypot(point.x - pull.childTip.x, point.y - pull.childTip.y) - pull.childLength) **
+            2,
+        0,
+      );
+    expect(objective(fitted.point)).toBeLessThan(objective(centroid.point));
+    expect(compromise([{ point: { x: 3, y: 4 }, weight: 99 }], "reach-circle")).toEqual({
+      point: { x: 3, y: 4 },
+      spread: 0,
+    });
+    // A reach-circle request without the inward pass's child geometry is not allowed to invent it.
+    expect(compromise([{ point: { x: 3, y: 4 }, weight: 1 }], "reach-circle")).toEqual({
+      point: { x: 3, y: 4 },
+      spread: 0,
+    });
+  });
 });

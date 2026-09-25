@@ -8,7 +8,8 @@ import {
 } from "./frame";
 import { solveLength, solveOffset, type SolveMember } from "./ik-member";
 import { aimPoint, goalMiss, readGoal, type GoalReading } from "./ik-goal-reading";
-import { branchPulls, compromise, type Pull } from "./ik-goal";
+import { branchPulls, compromise, type CompromiseRule, type Pull } from "./ik-goal";
+import { selectFabrik } from "./fabrik-select";
 import { unreachable } from "../lang/exhaustive";
 import {
   atBound,
@@ -227,10 +228,11 @@ export function seedArc(
  * for its own slice. The forward pass then re-derives every child's pivot from that one tip and
  * direction, so no branch can hold a pose the composition would not compose. See ADR-054.
  */
-export function solveFabrik(
+export function solveFabrikAttempt(
   root: WorldFrame,
   members: readonly SolveMember[],
   flip = false,
+  compromiseRule: CompromiseRule = "centroid",
 ): FabrikSolution {
   const byId = new Map(members.map((member) => [member.id, member]));
   const isMember = (id: string): boolean => byId.has(id);
@@ -472,7 +474,7 @@ export function solveFabrik(
       const id = ids[index]!;
       const proposed = proposals.get(id) ?? [];
       if (proposed.length > 0) {
-        const settled = compromise(proposed);
+        const settled = compromise(proposed, compromiseRule);
         spread = Math.max(spread, settled.spread);
         tips.set(id, settled.point);
       }
@@ -484,7 +486,12 @@ export function solveFabrik(
       const pivot = place(tips.get(id)!, pivots.get(id)!, lengthOf(id));
       const list = proposals.get(base) ?? [];
       const point = Object.freeze(baseTipFromPivot(pivot, baseDirection(id), offsetOf(id)));
-      list.push({ point, weight: pulls.get(id)! });
+      list.push({
+        point,
+        weight: pulls.get(id)!,
+        childTip: tips.get(id)!,
+        childLength: lengthOf(id),
+      });
       proposals.set(base, list);
     }
     outward();
@@ -576,4 +583,13 @@ export function iterativeQuality(outcome: IterativeOutcome): IterativeQuality {
   if (spread > FABRIK_TOLERANCE) return { kind: "conflicted", iterations, residual };
   if (stalled) return { kind: "stalled", iterations, residual };
   return { kind: "iteration-cap", iterations, residual };
+}
+
+/** Solve once with the authored seed, and search alternatives only for a conflicted baseline. */
+export function solveFabrik(
+  root: WorldFrame,
+  members: readonly SolveMember[],
+  flip = false,
+): FabrikSolution {
+  return selectFabrik(root, members, flip, solveFabrikAttempt);
 }

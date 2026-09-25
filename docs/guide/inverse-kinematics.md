@@ -26,7 +26,7 @@ Nobody chooses a solver; the shape of the chain does. A parent and one addressed
 
 ## What it costs
 
-A closed-form solve measured 2.3257 microseconds in one fresh run and 1.9013 in its paired run. An iterative solve costs roughly its member count times the passes it takes: chain-8 measured 76.2351 and 75.8308 microseconds, while chain-64 measured 2.9674 and 2.8637 milliseconds and had 17 of 200 results at the 64-pass cap. Branching chains whose leaves pull against a shared member mostly report `conflicted`, including 190 of 200 feasible tree-14 rigs and all 200 feasible tree-30 rigs in the first run. The engine cost per solver per frame was 49.53 microseconds for one rig in the first run, so on a page with many small rigs the publisher, not the closed-form arithmetic, is what you are paying for.
+A closed-form solve measured 2.3257 microseconds in one fresh run and 1.9013 in its paired run. An iterative solve costs roughly its member count times the passes it takes: chain-8 measured 76.2351 and 75.8308 microseconds, while chain-64 measured 2.9674 and 2.8637 milliseconds and had 17 of 200 results at the 64-pass cap. A conflicted branching result now tries a fixed reach-circle alternative, so the dated #490 envelope reports 196 of 200 feasible tree-14 rigs converged and 139 of 200 feasible tree-30 rigs converged; the remaining misses are still honest `conflicted` inspection results. The engine cost per solver per frame was 49.53 microseconds for one rig in the first run, so on a page with many small rigs the publisher, not the closed-form arithmetic, is what you are paying for.
 
 The measured numbers, the machine they were measured on, and the command that reproduces them are in [BENCH-IK.md](../BENCH-IK.md). Read them as a shape rather than a promise: they are one machine's numbers, and the only part `CI` holds is the part that is not a timing.
 
@@ -264,7 +264,7 @@ The upper arm commits over the first half and the forearm over the second, so th
 
 ### Branches
 
-One spine, two arms, one goal per hand through `targets`. The spine is shared, so it takes the influence-weighted compromise of what each arm needs from it. These goals can be reached together, so the solve converges and `inspection.residuals` shows both hands within tolerance. Move one goal out of reach of the other and the kind becomes `conflicted`, with `residuals` saying which hand paid; branching goals that cannot all be met are the case that runs to the 64-pass cap.
+One spine, two arms, one goal per hand through `targets`. The spine is shared, so it takes the influence-weighted compromise of what each arm needs from it. A feasible tree normally converges; when the centroid reaches a fixed point, the solver tries a deterministic reach-circle compromise before publishing `conflicted`. Move one goal out of reach of the other and the kind remains `conflicted`, with `residuals` saying which hand paid; branching goals that cannot all be met remain honest misses rather than being labelled feasible.
 
 ```json
 {

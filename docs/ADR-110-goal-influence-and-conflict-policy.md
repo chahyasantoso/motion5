@@ -189,6 +189,38 @@ symmetric unlimited rig only and why nothing here promises monotonicity.
 The corpus ran in a sandbox esbuild bundle without `tsc`, and it is reviewed rather than trusted.
 `CI` on the published head of the pull request is the authority, and the pull request links it.
 
+## Issue #490 decision (2026-09-25)
+
+A feasible tree may still settle at a fixed point: the inward centroid can lie inside the parent
+reach circle, and the outward projection then reproduces that centroid. The compromise rule is now
+a closed union owned here: `"centroid" | "reach-circle"`. The centroid remains the authored-seed
+baseline and remains the conflict witness; the reach-circle rule is a fixed six-step Gauss-Newton
+fit seeded at that same centroid.
+
+For each direct child proposal, FABRIK supplies the child's current tip as `childTip` and that
+member's non-negative solve length as `childLength`. The fit minimizes the influence-weighted
+objective `Σ w_i (|p - childTip_i| - childLength_i)^2` for the parent tip `p`. A lone pull returns
+its proposal exactly. A coincident centre uses the deterministic positive x axis for its Jacobian.
+The damping is fixed, the step count is fixed, and a non-finite fit or a fit that does not strictly
+improve the centroid objective keeps the centroid. The proposal-point spread is still measured
+around the centroid, not around the fitted point, so the existing `conflicted` witness retains its
+meaning. Offsets remain in the proposal conversion owned by FABRIK; the reach-circle objective
+intentionally uses the direct child's tip and segment extent specified by this rule.
+
+The selector first runs the authored seed with the centroid rule. Every non-`conflicted` result is
+returned directly, preserving its object and all bytes. A conflict pays for three fixed alternatives
+in this order: opposite seed with centroid, authored seed with reach-circle, and opposite seed with
+reach-circle. One comparator selects a converged result over every miss, then the lower
+`quality.residual`, retaining the earlier candidate on an exact tie. No restart metadata is
+published, and `quality.iterations` remains the selected candidate's own count. The baseline is a
+candidate, so the selected residual cannot be worse than the prior result.
+
+The four-candidate gate was chosen instead of changing FABRIK's ordinary trajectory because the
+seeded corpus showed bit identity for every non-conflicted baseline and the envelope changed from
+190 to 3 conflicts for tree-14 and from 200 to 61 for tree-30. The change is deliberately not a
+promise that every feasible tree converges: the adversarial and independently conflicting samples
+remain `conflicted`, and their residuals remain useful inspection evidence.
+
 ## Consequences
 
 Authors can state how much each addressed goal should count when a branching solve must compromise,

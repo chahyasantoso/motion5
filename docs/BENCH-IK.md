@@ -109,3 +109,23 @@ The benchmark is not a CI gate. `EN-1` through `EN-4` pin the deterministic enve
 selection, finite output, and iteration behavior, while this document records wall-clock evidence.
 ADR-008 keeps timing gates withdrawn because a timing result includes the machine, runtime, load,
 contention, and benchmark warm-up rather than only the implementation.
+
+## Issue #490 selected and charged passes
+
+This dated report was measured on 2026-09-25 with Node `v22.23.1` using the fixed seeded envelope
+and the sandbox harness for #490. The selector's quality counts were tree-14: 196 `converged`, 1
+`iteration-cap`, 3 `conflicted`; tree-30: 139 `converged`, 61 `conflicted`; and
+tree-14-conflicting: 200 `conflicted`. Selected residual median, p90 and maximum were
+`3.1776437161565096e-14`, `6.997021959159209e-11`, `5.228793097351926` for tree-14;
+`2.5421149729252077e-13`, `1.7467344192014325`, `8.484869234423337` for tree-30; and
+`13.586018483017028`, `24.191544287957452`, `32.36464863348968` for the conflicting tree.
+
+Charged passes include every candidate attempt and are compared with the old single baseline:
+tree-14 was 26,806 versus 12,663; tree-30 was 36,671 versus 12,800; and
+tree-14-conflicting was 49,703 versus 12,800. Improvements versus baseline were 189, 172 and 115
+rigs, with zero regressions. The two-bone, chain-8, chain-32, chain-64 and constrained-8 scenarios
+had zero improvements and regressions, and every non-conflicted baseline result was Object.is
+identical. A 2,000-rig adversarial branching sample was also measured: all 2,000 remained
+`conflicted`, with residual median `63.24537829832627`, p90 `83.25611434586388`, maximum
+`103.13453618923164`; 731 improved and zero regressed, while charged passes were 461,156 versus
+110,224. These are measurements rather than timing gates.

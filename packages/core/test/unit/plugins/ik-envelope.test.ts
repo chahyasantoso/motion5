@@ -165,4 +165,19 @@ describe("IK envelope (#349 phase 7, ADR-113)", () => {
     }
     expect(latest.get(`rig-${moved}/solve`)).not.toEqual(snapshot.get(`rig-${moved}/solve`));
   });
+
+  it("EN-5 the selected gate keeps the seeded envelope finite with its measured counts", () => {
+    const counts = new Map<string, Record<string, number>>();
+    for (const scenario of scenarios) {
+      const result: Record<string, number> = {};
+      for (const solved of solveAll(scenario))
+        result[solved.quality.kind] = (result[solved.quality.kind] ?? 0) + 1;
+      counts.set(scenario.id, result);
+    }
+    expect(counts.get("tree-14")).toEqual({ converged: 39, "iteration-cap": 1 });
+    expect(counts.get("tree-30")).toEqual({ converged: 27, conflicted: 13 });
+    expect(counts.get("tree-14-conflicting")).toEqual({ conflicted: 40 });
+    for (const scenario of scenarios)
+      for (const solved of solveAll(scenario)) expect(finite(solved)).toBe(true);
+  });
 });

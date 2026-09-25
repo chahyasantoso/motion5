@@ -105,6 +105,22 @@ is slow serial convergence, a different cause from the tree centroid fixed point
 cap for that behavior is tracked by [#491](https://github.com/chahyasantoso/motion5/issues/491), not
 decided in phase 7.
 
+## Issue #490 measurement (2026-09-25)
+
+The selector was measured with the seeded 200-rig envelope on Node `v22.23.1`. Tree-14 reported
+196 `converged`, 1 `iteration-cap` and 3 `conflicted`; tree-30 reported 139 `converged` and 61
+`conflicted`; tree-14-conflicting remained 200 `conflicted`. The selected residual median, p90 and
+maximum were respectively `3.1776437161565096e-14`, `6.997021959159209e-11` and `5.228793097351926`
+for tree-14; `2.5421149729252077e-13`, `1.7467344192014325` and `8.484869234423337` for tree-30;
+and `13.586018483017028`, `24.191544287957452` and `32.36464863348968` for the conflicting tree.
+
+The charged-pass probe sums `quality.iterations` across every attempt, including losing candidates.
+Tree-14 charged 26,806 passes versus 12,663 for its baseline, tree-30 charged 36,671 versus 12,800,
+and tree-14-conflicting charged 49,703 versus 12,800. The selector improved 189, 172 and 115 rigs
+respectively and regressed none. Every one of the 10 tree-14 rigs whose baseline was not conflicted
+returned an Object.is-identical result. The full harness also checked chains and two-bone rigs; all
+had zero improvements, regressions and identity failures, as required by the direct-return gate.
+
 ## Withdrawn
 
 **Raising the iteration cap is withdrawn as a phase-7 policy.** At cap 10,000, about 150 times the
@@ -136,7 +152,7 @@ must update the owning fixtures, EN evidence, and this record's measured conditi
 
 ## Evidence
 
-`EN-1` through `EN-4` in `packages/core/test/unit/plugins/ik-envelope.test.ts` cover strategy
+`EN-1` through `EN-5` in `packages/core/test/unit/plugins/ik-envelope.test.ts` cover strategy
 selection, finite output, independent rigs, and the iteration envelope. `GE-1` through `GE-5` in
 `packages/core/test/unit/plugins/ik-guide-examples.test.ts` execute the JSON examples in the guide.
 The benchmark uses the same support module and is reproduced with `npm run bench:ik`. The recorded

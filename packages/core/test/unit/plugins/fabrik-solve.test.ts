@@ -5,6 +5,7 @@ import {
   FABRIK_TOLERANCE,
   seedArc,
   solveFabrik,
+  solveFabrikAttempt,
   type FabrikPoint,
 } from "../../../src/plugins/fabrik";
 import type { WorldFrame } from "../../../src/plugins/frame";
@@ -315,5 +316,36 @@ describe("FABRIK over a solver chain (Slice D2)", () => {
     expect(() => solveFabrik(ROOT, [bone("a", "b", 10), bone("b", "a", 10)])).toThrow(
       /cycles at member "b"/,
     );
+  });
+
+  it("FB-17 reaches the minimal feasible tree through a reach-circle candidate", () => {
+    const members: readonly SolveMember[] = [
+      bone("m0", "root", 20),
+      tip("m1", "m0", 20, at(37.32050807568878, 10)),
+      tip("m2", "m0", 20, at(39.31851652578136, 5.176380902050415)),
+    ];
+    const baseline = solveFabrikAttempt({ x: 0, y: 0, rotation: 0 }, members);
+    const solved = solveFabrik({ x: 0, y: 0, rotation: 0 }, members);
+    expect(baseline.quality.kind).toBe("conflicted");
+    expect(solved.quality.kind).toBe("converged");
+    expect(solved.quality.residual).toBeLessThan(FABRIK_TOLERANCE);
+  });
+
+  it("FB-18 publishes the lower-residual opposite-seed result, never the loser", () => {
+    const members: readonly SolveMember[] = [
+      bone("n0", "root", 20),
+      tip("n1", "root", 20, at(2.3543722651666923, 11.97487500940025)),
+      tip("n2", "n0", 20, at(-8.813572778938422, -7.940504350405937)),
+      tip("n3", "n0", 20, at(-44.77228424978123, -30.74444667079928)),
+    ];
+    const root = { x: 0, y: 0, rotation: 171.56707199290395 };
+    const baseline = solveFabrikAttempt(root, members, false, "centroid");
+    const authoredFit = solveFabrikAttempt(root, members, false, "reach-circle");
+    const oppositeFit = solveFabrikAttempt(root, members, true, "reach-circle");
+    const published = solveFabrik(root, members, false);
+    expect(baseline.quality.kind).toBe("conflicted");
+    expect(oppositeFit.quality.residual).toBeLessThan(authoredFit.quality.residual);
+    expect(published.quality).toEqual(oppositeFit.quality);
+    expect(published.quality.residual).toBeLessThan(baseline.quality.residual);
   });
 });

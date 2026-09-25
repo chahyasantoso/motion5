@@ -370,3 +370,21 @@ suite and their output is reviewed rather than trusted.
 the 30,000-byte sister-document threshold, and `frame.ts` gains `toRadians`. The published bytes of every finite rig are unchanged,
 and nothing is authorable, so no load rule is added and the authored schema is unchanged. The
 runtime answer is unchanged too, because no delivered goal is non-finite.
+
+## Amendment, 2026-09-25 (#490): selector determinism
+
+The selector has no warm state and reads no previous pose. It always evaluates the authored
+centroid baseline first and, only when that result is `conflicted`, evaluates the same three fixed
+alternatives in their recorded order. Candidate comparison reads only the existing quality kind and
+residual; exact ties retain the earlier candidate. Member order is still canonical before any
+proposal is built, and the reach-circle Jacobian's coincident-centre axis is always positive x.
+Therefore permutation, repeat and interleaving checks cover the selector as well as the underlying
+passes. A losing candidate is an implementation detail and is never published or exposed as
+restart metadata.
+
+`SD-19` covers the seeded no-regression, permutation, repeat and interleave corpus for this selector.
+
+The non-conflicted baseline is returned directly rather than reconstructed. This is the important
+compatibility boundary: the selector adds no arithmetic to an unbranched rig, a two-bone rig, a
+converged tree, a limited result or an iteration-cap result. The new work is charged only to a
+baseline classified `conflicted`; its selected result reports that candidate's own iterations.
