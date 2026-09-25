@@ -870,7 +870,7 @@ describe("IK stability and determinism (issue #349 phase 6)", () => {
     expect(turned.x).toBe(Math.cos((725 * Math.PI) / 180));
     expect(turned.y).toBe(Math.sin((725 * Math.PI) / 180));
   });
-  it("SD-19 the conflict gate is non-regressing, pure and order-independent", () => {
+  it("SD-20 the conflict gate is non-regressing, pure and order-independent", () => {
     const rigs = corpus(0x5d18, 240);
     const selected = rigs.map((rig) => solveFabrik(rig.root, rig.members, rig.flip));
     let nonConflicted = 0;

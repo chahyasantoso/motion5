@@ -11,6 +11,7 @@ import {
 import type { WorldFrame } from "../../../src/plugins/frame";
 import type { IterativeQuality } from "../../../src/plugins/ik-result";
 import type { SolveMember } from "../../../src/plugins/ik-member";
+import { outranks } from "../../../src/plugins/fabrik-select";
 import { solveTwoBone } from "../../../src/plugins/ik-analytic";
 
 // Slice D2 of issue #195: FABRIK as arithmetic, before anything wires it.
@@ -347,5 +348,61 @@ describe("FABRIK over a solver chain (Slice D2)", () => {
     expect(oppositeFit.quality.residual).toBeLessThan(authoredFit.quality.residual);
     expect(published.quality).toEqual(oppositeFit.quality);
     expect(published.quality.residual).toBeLessThan(baseline.quality.residual);
+  });
+  it("FB-19 a feasible tree with a pivot offset converges through the offset-exact reach circle", () => {
+    // Goals composed from one pose (m0 at 84.5 degrees, m1 at 98, m2 at 62.5 from an offset pivot),
+    // so an exact solution exists. The centroid baseline stalls on it, and so did a reach circle
+    // centred on the child's raw tip: the circle a base tip must lie on is the child's tip
+    // un-offset through the base's direction, the same conversion its proposal point takes.
+    const members: readonly SolveMember[] = [
+      bone("m0", "root", 20),
+      tip("m1", "m0", 20, at(-0.8665469687968257, 39.713285342174984)),
+      {
+        ...tip("m2", "m0", 20, at(16.545447423443242, 38.8868937773194)),
+        pivot: { x: 1.75, y: -5.25 },
+      },
+    ];
+    const root = { x: 0, y: 0, rotation: 0 };
+    const baseline = solveFabrikAttempt(root, members, false, "centroid");
+    const solved = solveFabrik(root, members, false);
+    expect(baseline.quality.kind).toBe("conflicted");
+    expect(solved.quality.kind).toBe("converged");
+    expect(solved.quality.residual).toBeLessThan(FABRIK_TOLERANCE);
+    // The published result is one of the attempts, whole, and not a blend of several.
+    const attempts = [true, false].flatMap((flip) =>
+      (["centroid", "reach-circle"] as const).map((rule) =>
+        solveFabrikAttempt(root, members, flip, rule),
+      ),
+    );
+    expect(attempts.some((attempt) => JSON.stringify(attempt) === JSON.stringify(solved))).toBe(
+      true,
+    );
+  });
+
+  it("FB-20 the selector's comparator is total: tier first, then residual, NaN last, ties kept", () => {
+    const miss = (kind: "conflicted" | "stalled", residual: number): IterativeQuality => ({
+      kind,
+      iterations: 1,
+      residual,
+    });
+    const met = (residual: number): IterativeQuality => ({
+      kind: "converged",
+      iterations: 1,
+      residual,
+    });
+    // Convergence outranks any miss whatever the residuals say.
+    expect(outranks(met(5e-4), miss("conflicted", 1e-9))).toBe(true);
+    expect(outranks(miss("conflicted", 1e-9), met(5e-4))).toBe(false);
+    // Within a tier the strictly lower residual wins, and an exact tie keeps the earlier candidate.
+    expect(outranks(miss("stalled", 1), miss("conflicted", 2))).toBe(true);
+    expect(outranks(miss("conflicted", 2), miss("conflicted", 2))).toBe(false);
+    expect(outranks(met(1e-4), met(1e-4))).toBe(false);
+    // NaN cannot be ordered by `<`, so it ranks below every number in either position.
+    expect(outranks(miss("conflicted", Number.NaN), miss("conflicted", 1e9))).toBe(false);
+    expect(outranks(miss("conflicted", 1e9), miss("conflicted", Number.NaN))).toBe(true);
+    expect(outranks(miss("conflicted", Number.NaN), miss("conflicted", Number.NaN))).toBe(false);
+    // Infinity orders like any other number.
+    expect(outranks(miss("conflicted", 1e308), miss("conflicted", Infinity))).toBe(true);
+    expect(outranks(miss("conflicted", Infinity), miss("conflicted", Infinity))).toBe(false);
   });
 });

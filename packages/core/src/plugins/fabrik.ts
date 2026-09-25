@@ -469,7 +469,8 @@ export function solveFabrikAttempt(
     // proposal about its base's tip. A sub-base settles on the influence-weighted compromise of the
     // tips its branches left it, which is the equal average when no goal authored an influence.
     const proposals = new Map<string, Pull[]>();
-    for (const leaf of addressed) proposals.set(leaf, [{ point: aims.get(leaf)!, weight: 1 }]);
+    for (const leaf of addressed)
+      proposals.set(leaf, [{ kind: "goal", point: aims.get(leaf)!, weight: 1 }]);
     for (let index = ids.length - 1; index >= 0; index -= 1) {
       const id = ids[index]!;
       const proposed = proposals.get(id) ?? [];
@@ -485,13 +486,12 @@ export function solveFabrikAttempt(
       if (!isMember(base)) continue;
       const pivot = place(tips.get(id)!, pivots.get(id)!, lengthOf(id));
       const list = proposals.get(base) ?? [];
-      const point = Object.freeze(baseTipFromPivot(pivot, baseDirection(id), offsetOf(id)));
-      list.push({
-        point,
-        weight: pulls.get(id)!,
-        childTip: tips.get(id)!,
-        childLength: lengthOf(id),
-      });
+      const direction = baseDirection(id);
+      const point = Object.freeze(baseTipFromPivot(pivot, direction, offsetOf(id)));
+      // The base tips that keep this child's tip and length: its tip un-offset the same way.
+      const centre = Object.freeze(baseTipFromPivot(tips.get(id)!, direction, offsetOf(id)));
+      const reach = { centre, radius: lengthOf(id) };
+      list.push({ kind: "branch", point, weight: pulls.get(id)!, reach });
       proposals.set(base, list);
     }
     outward();

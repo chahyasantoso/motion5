@@ -3,11 +3,11 @@
 Current project state only. Replace stale entries rather than append history. The four sections below are the complete shape, **Now** and **Next in line** carry exactly one bullet each, and no bullet states a phase; `packages/core/test/unit/scripts/session-status-shape.test.ts` enforces the shape and byte ceiling.
 
 - **Captured:** 2026-09-25, Asia/Jakarta.
-- **Read against:** `main` at `7aa478159c6fb30362d786c57f8195dbc9f33aec` plus #489 as handed over, not yet published; the internal 3D seam prototype of [#349](https://github.com/chahyasantoso/motion5/issues/349) ([ADR-114](./ADR-114-3d-seam-prototype.md)), the 2D IK envelope ([ADR-113](./ADR-113-2d-ik-envelope-and-documentation.md)) and the one bone extent of [#482](https://github.com/chahyasantoso/motion5/issues/482) ([ADR-107](./ADR-107-one-solve-result.md)) have landed; nothing 3D is exported from the package.
+- **Read against:** `main` at `baa5def6a1e0fd57d34c3ae23beb37741de4cbfb`, where the non-finite goal reader of [#489](https://github.com/chahyasantoso/motion5/issues/489) ([ADR-111](./ADR-111-stability-and-determinism.md), amendment of 2026-09-25), the internal 3D seam prototype of [#349](https://github.com/chahyasantoso/motion5/issues/349) ([ADR-114](./ADR-114-3d-seam-prototype.md)), the 2D IK envelope ([ADR-113](./ADR-113-2d-ik-envelope-and-documentation.md)) and the one bone extent of [#482](https://github.com/chahyasantoso/motion5/issues/482) ([ADR-107](./ADR-107-one-solve-result.md)) have landed; nothing 3D is exported from the package.
 
 ## Now
 
-- **[#490](https://github.com/chahyasantoso/motion5/issues/490) lands with this change:** conflicted FABRIK trees try a deterministic reach-circle compromise and opposite seed, selecting convergence before residual while preserving non-conflicted baseline identity ([ADR-110](./ADR-110-goal-influence-and-conflict-policy.md)).
+- **[#490](https://github.com/chahyasantoso/motion5/issues/490) lands with this change:** a `conflicted` FABRIK tree also tries the opposite seed and an offset-exact reach-circle compromise, publishing a converged candidate before a lower residual, while every non-`conflicted` result stays bit-identical ([ADR-110](./ADR-110-goal-influence-and-conflict-policy.md)).
 
 ## Next in line
 
