@@ -613,10 +613,11 @@ export function resolveSolvers(
         ),
       );
     }
-    // Presence-only, two tiers. A binder group that authors `rotation` and no `weight` is the
-    // pre-#211 shape and is refused byte-identically to before: with no weight in reach there is no
-    // runtime state in which the authored value influences the output. A `weight` beside it, in any
-    // form, passes.
+    // Presence-only, two tiers. A binder group that authors an orientation key (`ORIENTATION_KEYS`:
+    // 2D `rotation`, and `fk3d`'s `rotation`, `rotationX` and `rotationY`) and no `weight` is the
+    // pre-#211 shape, and is refused with the pre-ADR-116 message byte for byte, which still says
+    // `rotation` for all three: with no weight in reach there is no runtime state in which the
+    // authored value influences the output. A `weight` beside it, in any form, passes.
     //
     // Not "present but provably always `1`". That reading needs leaf shape and value semantics,
     // which have an owner one layer down, and it would refuse "fully solved for now, I will animate
