@@ -1,5 +1,7 @@
-import { clamp, effectiveLink, pivotFromBaseTip, type WorldFrame } from "./frame";
+import { unreachable } from "../lang/exhaustive";
+import { clamp, effectiveLink, pivotFromBaseTip, toRadians, type WorldFrame } from "./frame";
 import { solveLength, solveOffset, type SolveMember } from "./ik-member";
+import { readGoal } from "./ik-goal-reading";
 import type { ClosedFormQuality, SolveResult } from "./ik-result";
 
 /**
@@ -107,15 +109,33 @@ function twoBone(
   const reach = link.length;
   const twist = link.twist;
 
-  const dx = target.x - base.x;
-  const dy = target.y - base.y;
-  const d = Math.hypot(dx, dy);
-  const targetAngle = (Math.atan2(dy, dx) * 180) / Math.PI;
-
+  const reading = readGoal(second.id, [
+    ["x", target.x],
+    ["y", target.y],
+  ]);
   const minReach = Math.abs(reach - l2);
   const maxReach = reach + l2;
-  const clampedD = clamp(d, minReach, maxReach);
-  const band = bandQuality(d, minReach, maxReach, Math.abs(d - clampedD));
+  let targetAngle: number;
+  let clampedD: number;
+  let band: ClosedFormQuality;
+  switch (reading.kind) {
+    case "point": {
+      const dx = reading.coordinates[0]! - base.x;
+      const dy = reading.coordinates[1]! - base.y;
+      const d = Math.hypot(dx, dy);
+      targetAngle = (Math.atan2(dy, dx) * 180) / Math.PI;
+      clampedD = clamp(d, minReach, maxReach);
+      band = bandQuality(d, minReach, maxReach, Math.abs(d - clampedD));
+      break;
+    }
+    case "direction":
+      targetAngle = (Math.atan2(reading.direction[1]!, reading.direction[0]!) * 180) / Math.PI;
+      clampedD = maxReach;
+      band = { kind: "too-far", residual: Number.POSITIVE_INFINITY };
+      break;
+    default:
+      return unreachable(reading);
+  }
 
   // A link with no extent has no twist either, which `effectiveLink` guarantees, so the degenerate
   // cases aim whichever segment is left and subtract a twist that is exactly zero. A missing second
@@ -181,13 +201,13 @@ export function cosineOpposite(a: number, b: number, opposite: number): number {
  *
  * Read in this order so a band that has collapsed to one point still names the side it was missed
  * on. The quality reports the geometry it was handed rather than validating it, and a non-finite
- * residual is never laundered to zero. An infinite distance is directional: it is past every finite
- * outer bound, so it reads as `too-far` with an infinite residual, and the angles still aim along
- * the direction `atan2` finds for it. A `NaN` distance or bound compares false against both bounds
- * and reads as `reached` with a `NaN` residual, beside angles that are `NaN` too, so
- * `residual <= tolerance` is false for it on every path. `IR-9` pins both.
+ * residual is never laundered to zero. It reads a finite distance only: a goal with an infinite
+ * coordinate never reaches it, because `readGoal` names that goal a direction and the closed form
+ * reports it as `too-far` with an infinite residual itself, and a `NaN` coordinate is refused by
+ * name before any distance exists. A `NaN` bound still compares false against both bounds and reads
+ * as `reached` with a `NaN` residual, so `residual <= tolerance` stays false for it. `IR-9` and the
+ * `SD-15` to `SD-17` cases pin the goal side.
  */
-
 export function bandQuality(
   d: number,
   minReach: number,
@@ -206,8 +226,8 @@ export function bandQuality(
  * vectors.
  */
 function restMiss(root: WorldFrame, reach: number, twist: number, l2: number): number {
-  const link = ((root.rotation + twist) * Math.PI) / 180;
-  const segment = (root.rotation * Math.PI) / 180;
+  const link = toRadians(root.rotation + twist);
+  const segment = toRadians(root.rotation);
   return Math.hypot(
     reach * Math.cos(link) + l2 * Math.cos(segment),
     reach * Math.sin(link) + l2 * Math.sin(segment),

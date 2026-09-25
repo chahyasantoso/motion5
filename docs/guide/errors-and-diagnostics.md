@@ -236,7 +236,7 @@ without emitting a per-tick diagnostic or warning. The inspection shape includes
 not a claim that no pose exists. The visible tip gap caused by partial FK weight is composition-space
 data owned by `fk`, not this solver-space record. See ADR-109 and ADR-110.
 
-A solver that cannot solve at all is not one of these either, and that is the point of the load-time rules above. Every shape that would make a composition throw is refused before the graph is built, so `composition-failure` on a solver node means a bug in the plugin or the publisher rather than a rig you can fix by editing it. See ADR-053.
+A solver that cannot solve at all is not one of these either, and that is the point of the load-time rules above. Every shape that would make a composition throw is refused before the graph is built, so `composition-failure` on a solver node means a bug in the plugin or the publisher rather than a rig you can fix by editing it. See ADR-053. The same holds for the one refusal the solve itself makes about a goal, `Solver goal on member "<id>" has a NaN <axis> coordinate, which names no point or direction to solve toward.`: no rig can deliver it, because a goal field that is not a finite number is read as zero before the solve and no node may publish a non-finite value, so seeing it means a defect rather than an authoring mistake. An infinite goal coordinate is not refused; the solve reads it as a direction (ADR-111, #489).
 
 ## Contract violations throw at the call site
 

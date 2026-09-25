@@ -161,6 +161,28 @@ export function readPivotOffset(values: { readonly [key: string]: unknown }): Pi
 }
 
 /**
+ * A 2D angle in degrees as radians, spelled `(degrees * Math.PI) / 180` for every angle whose
+ * product with `π` is finite, so every angle that composed before this owner existed composes to
+ * the same bit.
+ *
+ * A finite angle past about `5.7e307` degrees overflows that product to `Infinity`, and `cos` and
+ * `sin` then answer `NaN` for a frame that is finite. Only there are whole turns reduced first,
+ * which `%` does exactly, so the frame is the one the angle names. Always reducing would be one
+ * expression instead of two, but 2D rotations are published unwrapped (ADR-111) and a reduced
+ * product differs in its last bit from the raw one past a turn, so every rotated rig would move. A
+ * non-finite angle passes through unchanged, because `readNumber` owns what a non-finite field
+ * means and no caller hands one here. FABRIK multiplies by `π / 180` instead, a factor below one
+ * whose product cannot overflow. The internal 3D frame reduces every angle in `frame3d.ts` because
+ * it had no published bytes to keep. See ADR-111's amendment of 2026-09-25 and `SD-18`.
+ */
+export function toRadians(degrees: number): number {
+  const radians = (degrees * Math.PI) / 180;
+  return Number.isFinite(radians) || !Number.isFinite(degrees)
+    ? radians
+    : ((degrees % 360) * Math.PI) / 180;
+}
+
+/**
  * `local` placed in `parent`'s frame: rotate by the parent's rotation, then translate.
  *
  * The one rotate-then-translate in the package. `fk` composes a bone out of two of them, the pivot
@@ -173,7 +195,7 @@ export function composeWorld(
   parent: { x: number; y: number; rotation: number },
   local: { x: number; y: number; rotation: number },
 ): { x: number; y: number; rotation: number } {
-  const rad = (parent.rotation * Math.PI) / 180;
+  const rad = toRadians(parent.rotation);
   const cos = Math.cos(rad);
   const sin = Math.sin(rad);
   return {
@@ -225,10 +247,11 @@ export function baseTipFromPivot(
  * The extent a segment of authored `length` spans: the length itself, never negative.
  *
  * The one owner of what a negative length means, which is a segment with no extent rather than an
- * error or a bone pointing backwards. It has four readers and no other: `fk.compose` (and the
- * internal `fk3d`) composes a bone's tip through it, `effectiveLink` below builds a rigid link
- * through it, `ik`'s `solveLength` and FABRIK's `seedArc` solve through it. So the composition and
- * every solve strategy cannot disagree about it, and a solve that puts its tip on a goal publishes
+ * error or a bone pointing backwards. Every reader of an authored length goes through it, and no
+ * reader restates the clamp: `fk.compose` and the internal `fk3d` compose a bone's tip through it,
+ * `effectiveLink` below builds a rigid link through it, `ik`'s `solveLength` (which the closed form
+ * and FABRIK's iteration read), FABRIK's `seedArc`, and the internal 3D closed form's two extents
+ * solve through it. So the composition and every solve strategy cannot disagree about it, and a solve that puts its tip on a goal publishes
  * rotations `fk` composes onto that goal. It lives here, beside the kinematic convention, because it
  * is part of that convention rather than of any one solve. See ADR-106 and issue #482.
  *

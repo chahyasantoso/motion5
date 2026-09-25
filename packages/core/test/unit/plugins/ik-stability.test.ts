@@ -8,7 +8,7 @@ import { fkPlugin } from "../../../src/plugins/fk";
 import { ikPlugin } from "../../../src/plugins/ik";
 import { transformPlugin } from "../../../src/plugins/transform";
 import { FABRIK_TOLERANCE, solveFabrik } from "../../../src/plugins/fabrik";
-import { pivotFromBaseTip, type WorldFrame } from "../../../src/plugins/frame";
+import { composeWorld, pivotFromBaseTip, type WorldFrame } from "../../../src/plugins/frame";
 import type { JointRange } from "../../../src/plugins/ik-constraint";
 import { solveLength, solveOffset, type SolveMember } from "../../../src/plugins/ik-member";
 import type { SolveResult } from "../../../src/plugins/ik-result";
@@ -19,6 +19,8 @@ import {
   solveMagnitude,
 } from "../../../src/plugins/ik-scale";
 import { chainShape, solveChain } from "../../../src/plugins/ik-solve";
+import { readFrame3d } from "../../../src/plugins/frame3d";
+import { solveTwoBone3d } from "../../../src/plugins/ik3d-analytic";
 
 // Issue #349 phase 6 and ADR-111: stability and determinism of the 2D solve.
 //
@@ -632,8 +634,9 @@ describe("IK stability and determinism (issue #349 phase 6)", () => {
   it("SD-14 a non-finite field neither sets the scale nor is laundered by it", () => {
     // An infinite goal is directional and the closed form answers it `too-far` with an infinite
     // residual (ADR-107, IR-9), natively and past the ceiling alike: counting it as a magnitude
-    // made the scale zero, and the image then read `0 * Infinity`. FABRIK's answer to a non-finite
-    // goal is outside ADR-111's finite-rig claim and is not pinned here.
+    // made the scale zero, and the image then read `0 * Infinity`. This case owns the magnitude
+    // wrapper and the restore step; `SD-15` below owns what every strategy answers a non-finite
+    // goal, FABRIK included (ADR-111, amendment of 2026-09-25).
     const far = { x: Number.POSITIVE_INFINITY, y: 0, rotation: 0 };
     const native = [
       { id: "a", base: "root", length: 1 },
@@ -672,5 +675,199 @@ describe("IK stability and determinism (issue #349 phase 6)", () => {
       nan: Number.NaN,
     });
     expect(restored.quality.residual).toBeNaN();
+  });
+
+  it("SD-15 non-finite goals are directional or refused without publishing NaN", () => {
+    // Each infinite spelling names one axis direction, so both strategies publish the whole path
+    // straightened along it: the first member turned to the direction's angle and every later one at
+    // zero. Pinning the pose, not only its finiteness, is what holds FABRIK's stand-in on the ray.
+    const angleOf = (axis: "x" | "y", value: number): number =>
+      axis === "x" ? (value > 0 ? 0 : 180) : value > 0 ? 90 : -90;
+    const spellings = [Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY, Number.NaN];
+    for (const axis of ["x", "y"] as const) {
+      for (const value of spellings) {
+        const analyticGoal = { x: 0, y: 0, rotation: 37 };
+        const analytic: SolveMember[] = [
+          { id: "a", base: "root", length: 80 },
+          { id: "b", base: "a", length: 60, goal: analyticGoal },
+        ];
+        analyticGoal[axis] = value;
+        if (Number.isNaN(value)) {
+          expect(() => solveChain(ORIGIN, analytic)).toThrow(
+            /Solver goal on member "b" has a NaN [xy] coordinate/,
+          );
+        } else {
+          const result = solveChain(ORIGIN, analytic);
+          expect(result.quality).toEqual({ kind: "too-far", residual: Infinity });
+          expect(Object.values(result.rotations).every(Number.isFinite)).toBe(true);
+          expect(result.residuals).toEqual({ b: Infinity });
+          expect(result.rotations["a"]).toBeCloseTo(angleOf(axis, value), 9);
+          expect(result.rotations["b"]).toBeCloseTo(0, 9);
+        }
+        const iterativeGoal = { x: 0, y: 0, rotation: 37 };
+        const iterative: SolveMember[] = [
+          { id: "a", base: "root", length: 30 },
+          { id: "b", base: "a", length: 30 },
+          { id: "c", base: "b", length: 30, goal: iterativeGoal },
+        ];
+        iterativeGoal[axis] = value;
+        if (Number.isNaN(value)) {
+          expect(() => solveChain(ORIGIN, iterative)).toThrow(
+            /Solver goal on member "c" has a NaN [xy] coordinate/,
+          );
+        } else {
+          const result = solveChain(ORIGIN, iterative);
+          expect(result.quality.residual).toBe(Infinity);
+          expect(["stalled", "iteration-cap", "conflicted", "limited"]).toContain(
+            result.quality.kind,
+          );
+          expect(Object.values(result.rotations).every(Number.isFinite)).toBe(true);
+          expect(result.residuals).toEqual({ c: Infinity });
+          expect(result.rotations["a"]).toBeCloseTo(angleOf(axis, value), 9);
+          expect(result.rotations["b"]).toBeCloseTo(0, 9);
+          expect(result.rotations["c"]).toBeCloseTo(0, 9);
+        }
+      }
+    }
+  });
+
+  it("SD-16 a NaN branch refuses the whole multi-goal solve in canonical order", () => {
+    const members: SolveMember[] = [
+      { id: "a", base: "root", length: 30 },
+      { id: "b", base: "a", length: 30, goal: { x: NaN, y: 0, rotation: 1 }, influence: 2 },
+      {
+        id: "c",
+        base: "a",
+        length: 30,
+        goal: { x: Infinity, y: -Infinity, rotation: 2 },
+        influence: 1,
+        limit: { kind: "range", min: -30, max: 30 },
+      },
+    ];
+    expect(() => solveChain(ORIGIN, members)).toThrow(
+      'Solver goal on member "b" has a NaN x coordinate, which names no point or direction to solve toward.',
+    );
+    expect(() =>
+      solveChain(ORIGIN, [
+        { id: "a", base: "root", length: 30 },
+        { id: "b", base: "a", length: 30, goal: { x: NaN, y: NaN, rotation: 1 } },
+        { id: "c", base: "a", length: 30, goal: { x: 20, y: 10, rotation: 0 } },
+      ]),
+    ).toThrow(
+      'Solver goal on member "b" has a NaN x coordinate, which names no point or direction to solve toward.',
+    );
+  });
+
+  it("SD-17 the internal 3D solver classifies every non-finite coordinate once", () => {
+    const root = readFrame3d({});
+    const first = { id: "a", length: 80 };
+    const second = { id: "b", length: 60 };
+    for (const goal of [
+      { x: Infinity, y: 5, z: 7 },
+      { x: -Infinity, y: Infinity, z: 7 },
+      { x: 5, y: -Infinity, z: 7 },
+      { x: 5, y: 7, z: Infinity },
+    ]) {
+      const result = solveTwoBone3d(root, { ...root, ...goal }, first, second);
+      expect(result.quality).toEqual({ kind: "too-far", residual: Infinity });
+      expect(
+        Object.values(result.rotations3d).every((pose) =>
+          Object.values(pose).every(Number.isFinite),
+        ),
+      ).toBe(true);
+    }
+    for (const goal of [
+      { x: NaN, y: 5, z: 7 },
+      { x: 5, y: NaN, z: 7 },
+      { x: 5, y: 7, z: NaN },
+    ]) {
+      expect(() => solveTwoBone3d(root, { ...root, ...goal }, first, second)).toThrow(
+        /Solver goal on member "b" has a NaN [xyz] coordinate/,
+      );
+    }
+  });
+
+  it("SD-18 delivered Infinity goals publish finite rotations; live NaN refusal is pinned above", () => {
+    const members = [
+      { id: "a", base: "root", values: { length: 80 }, progress: 1 },
+      { id: "b", base: "a", values: { length: 60 }, progress: 1 },
+    ];
+    const inputs = (goal: { x: number; y: number; rotation: number }) => ({
+      root: { x: 0, y: 0, rotation: 0 },
+      target: goal,
+      members,
+    });
+    // `readFrame` sanitizes authored requirement records before compose. The direct solve cases above
+    // pin the live-value refusal; this seam pins that an infinite delivered goal still publishes.
+    const composed = ikPlugin.compose(
+      {},
+      1,
+      inputs({ x: Number.POSITIVE_INFINITY, y: 0, rotation: 0 }),
+      "solve",
+    );
+    expect(Object.values(composed.rotations as Record<string, number>).every(Number.isFinite)).toBe(
+      true,
+    );
+  });
+
+  it("SD-19 a finite root rotation past the product's range solves as the frame it names", () => {
+    // `(rotation * Math.PI) / 180` overflows to `Infinity` past about `5.7e307` degrees, where `cos`
+    // and `sin` answer `NaN` for a finite rig. `toRadians` reduces whole turns only there, so a root
+    // at `Number.MAX_VALUE` degrees is the frame `Number.MAX_VALUE % 360` names: every residual and
+    // quality equals that rig's, and every published rotation is finite. The pivot offset reaches
+    // `composeWorld` and the coincident goal reaches the closed form's rest miss, the two sites.
+    const rigs: Record<string, SolveMember[]> = {
+      offsetPair: [
+        { id: "a", base: "root", length: 40, pivot: { x: 5, y: 3 } },
+        {
+          id: "b",
+          base: "a",
+          length: 30,
+          pivot: { x: -2, y: 1 },
+          goal: { x: 30, y: 40, rotation: 0 },
+        },
+      ],
+      coincident: [
+        { id: "a", base: "root", length: 30 },
+        { id: "b", base: "a", length: 30, goal: { x: 3, y: -2, rotation: 0 } },
+      ],
+      limitedChain: [
+        { id: "a", base: "root", length: 20, pivot: { x: 2, y: 1 } },
+        { id: "b", base: "a", length: 20, limit: { kind: "range", min: -30, max: 30 } },
+        {
+          id: "c",
+          base: "b",
+          length: 20,
+          pivot: { x: 1, y: -1 },
+          goal: { x: 20, y: 30, rotation: 0 },
+        },
+      ],
+      tree: [
+        { id: "a", base: "root", length: 20, pivot: { x: 2, y: 1 } },
+        { id: "b", base: "a", length: 20, goal: { x: 30, y: 20, rotation: 0 } },
+        { id: "c", base: "a", length: 20, goal: { x: 25, y: -15, rotation: 0 }, influence: 2 },
+      ],
+    };
+    for (const huge of [Number.MAX_VALUE, -Number.MAX_VALUE]) {
+      const reduced = huge % 360;
+      for (const [name, members] of Object.entries(rigs)) {
+        const result = solveChain({ x: 3, y: -2, rotation: huge }, members);
+        const twin = solveChain({ x: 3, y: -2, rotation: reduced }, members);
+        expect(Object.values(result.rotations).every(Number.isFinite), name).toBe(true);
+        expect(result.residuals, name).toEqual(twin.residuals);
+        expect(result.quality, name).toEqual(twin.quality);
+      }
+      expect(solveChain({ x: 3, y: -2, rotation: huge }, rigs.coincident!).quality.kind).toBe(
+        "coincident",
+      );
+      const placed = composeWorld({ x: 1, y: 2, rotation: huge }, { x: 10, y: -4, rotation: 5 });
+      const twin = composeWorld({ x: 1, y: 2, rotation: reduced }, { x: 10, y: -4, rotation: 5 });
+      expect([placed.x, placed.y]).toEqual([twin.x, twin.y]);
+    }
+    // Below the overflow the raw product is kept bit for bit, so an unwrapped rotation past a turn
+    // is not reduced: a whole turn of the root still changes the first published rotation (SD-9).
+    const turned = composeWorld({ x: 0, y: 0, rotation: 725 }, { x: 1, y: 0, rotation: 0 });
+    expect(turned.x).toBe(Math.cos((725 * Math.PI) / 180));
+    expect(turned.y).toBe(Math.sin((725 * Math.PI) / 180));
   });
 });

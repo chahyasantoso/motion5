@@ -2,22 +2,20 @@
 
 Current project state only. Replace stale entries rather than append history. The four sections below are the complete shape, **Now** and **Next in line** carry exactly one bullet each, and no bullet states a phase; `packages/core/test/unit/scripts/session-status-shape.test.ts` enforces the shape and byte ceiling.
 
-- **Captured:** 2026-09-24, Asia/Jakarta.
-- **Read against:** `main` at `7c9ffc3afc7c9fbfb813df7573d8cf0ad7dcbbf6`; PR #488 is merged and follow-up [#489](https://github.com/chahyasantoso/motion5/issues/489) is open.
+- **Captured:** 2026-09-25, Asia/Jakarta.
+- **Read against:** `main` at `7aa478159c6fb30362d786c57f8195dbc9f33aec`, where the internal 3D seam prototype of [#349](https://github.com/chahyasantoso/motion5/issues/349) ([ADR-114](./ADR-114-3d-seam-prototype.md)), the 2D IK envelope ([ADR-113](./ADR-113-2d-ik-envelope-and-documentation.md)) and the one bone extent of [#482](https://github.com/chahyasantoso/motion5/issues/482) ([ADR-107](./ADR-107-one-solve-result.md)) have landed; nothing 3D is exported from the package.
 
 ## Now
 
-- **The internal 3D seam prototype of [#349](https://github.com/chahyasantoso/motion5/issues/349) is in review, stacked on the 2D IK envelope slice:** [ADR-114](./ADR-114-3d-seam-prototype.md) records the internal `transform3d`, `fk3d`, and `ik3d` modules, the CSS Z-X-Y rotation contract, and the `ik-chain-unsupported` load rule; [ADR-113](./ADR-113-2d-ik-envelope-and-documentation.md) under it records the 2D envelope and documentation. Nothing is exported from the package, and no merge of either is claimed here.
+- **[#489](https://github.com/chahyasantoso/motion5/issues/489) lands with this change:** every solve reads a goal through `ik-goal-reading.ts`, so an infinite goal coordinate is a direction on the 2D closed form, FABRIK and the internal 3D closed form alike, and a `NaN` one refuses the solve by name rather than publishing `NaN` ([ADR-111](./ADR-111-stability-and-determinism.md), amendment of 2026-09-25).
 
 ## Next in line
 
-- **[#489](https://github.com/chahyasantoso/motion5/issues/489) is next:** non-finite goal handling and the remaining solver diagnostics follow-up. It is not started, and no implementation or run is claimed.
+- **[#490](https://github.com/chahyasantoso/motion5/issues/490) is next:** a conflicted-gated best-of over two compromise rules and two seeds for multi-leaf FABRIK trees, as decided on the issue. No implementation or run on `main` is claimed.
 
 ## Open, and not scheduled
 
-- [#490](https://github.com/chahyasantoso/motion5/issues/490) remains open for feasible multi-leaf FABRIK trees settling in local minima of the centroid compromise.
 - [#491](https://github.com/chahyasantoso/motion5/issues/491) remains open for the FABRIK iteration-cap policy on long serial chains.
-- [#482](https://github.com/chahyasantoso/motion5/issues/482) remains open for the negative-length disagreement between `fk` and the solves.
 - [#328](https://github.com/chahyasantoso/motion5/issues/328) remains open for activation and failure-recovery exercises, lifecycle limits, and maintenance usage/replacement validation before any separately confirmed retirement.
 
 ## Where the rest of it lives
