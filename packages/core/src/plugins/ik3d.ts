@@ -3,7 +3,7 @@ import type { ImmutableRecord } from "../domain/values";
 import { readFrame3d, readPivotOffset3d, type WorldFrame3d } from "./frame3d";
 import { readNumber } from "./frame";
 import { goalInputs, readMembers, type DeliveredMember } from "./ik-chain";
-import { solveTwoBone3d, type SolveMember3d } from "./ik3d-analytic";
+import { readPole3d, solveTwoBone3d, type SolveMember3d } from "./ik3d-analytic";
 import { ROTATIONS3D_KEY } from "./ik3d-result";
 
 /**
@@ -48,6 +48,11 @@ function solveMember(member: DeliveredMember): SolveMember3d {
 /**
  * The opt-in 3D analytic solver, reached by generic root/target requirement bindings.
  *
+ * `pole` is optional: unbound, the slot is absent from the delivered inputs and the solve keeps the
+ * ADR-114 root-local +z bend rule byte for byte; bound, its source's world position is the point the
+ * elbow bends toward (ADR-118). A pole bound on a node that bound no `root` under `ik3d` bends no
+ * chain and is refused at load as `ik-pole-without-chain`.
+ *
  * `SolveResult3d.quality` and `residuals` are solver-level evidence only. They are intentionally
  * not published: ADR-107 established computing quality before a publication contract, and the
  * inspection/result output contract is deferred until this prototype is promoted. The exact-two
@@ -60,6 +65,7 @@ export const ik3dPlugin: PluginDefinition = {
     root: { description: "base 3D frame of the solver chain" },
     target: { description: "target 3D position to reach" },
     targets: { description: "one goal per chain leaf", dict: true },
+    pole: { description: "optional world-space 3D point the chain's elbow bends toward" },
   },
   stage: "compose",
   outputs: [ROTATIONS3D_KEY],
@@ -70,6 +76,7 @@ export const ik3dPlugin: PluginDefinition = {
       readGoal(inputs.target, pair),
       solveMember(pair[0]),
       solveMember(pair[1]),
+      readPole3d(inputs.pole),
     );
     return Object.freeze({
       ...values,

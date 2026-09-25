@@ -20,7 +20,8 @@ import type { GraphNode } from "./ir";
 
 /**
  * The load rules of the solver's authored constraints: the six of constrained 2D solving (ADR-108),
- * the inspection switch's one (ADR-109) and goal influence's two (ADR-110).
+ * the inspection switch's one (ADR-109), goal influence's two (ADR-110) and the 3D pole's one
+ * (ADR-118).
  *
  * **Every spelling, because the solve reads the flat bag.** A member's limits reach `ik` through
  * the member's flattened values, where a flat `minRotation` and one grouped under any plugin are
@@ -48,10 +49,18 @@ import type { GraphNode } from "./ir";
  * be a second owner of leafhood and goal addressing. It speaks only on a node that bound a solver
  * somewhere, the narrowing `ik-weight-without-solver` makes for the same reason: this pass holds no
  * registry and cannot tell an `fk` influence from another plugin's own key on a node no solve reads.
+ *
+ * **A pole belongs to the group that bound `root`.** `pole` is a requirement slot rather than a key,
+ * and only `ik3d` declares it, so the registry already refuses it under any other plugin
+ * (`plugin-unknown-requirement`). What the registry cannot see is where it was bound: the solve that
+ * reads a pole is the composer of the group whose `root` edge makes the node a solver, so a pole
+ * under a group that bound no `root` on the same node bends no chain. The shape an author reaches
+ * for by mistake is the pole on the elbow member rather than on the solver, and it is refused by name
+ * as `ik-pole-without-chain` instead of loading and then erroring that group on every tick.
  */
 
 /** The plugins under which this node bound `slot`, read from its derived edges. */
-function slotBinders(node: GraphNode, slot: "root" | "solver"): ReadonlySet<string> {
+function slotBinders(node: GraphNode, slot: "root" | "solver" | "pole"): ReadonlySet<string> {
   return new Set(
     node.edges.flatMap((edge) => {
       const requirement = edge.role === "input" ? edge.requirement : undefined;
@@ -215,6 +224,24 @@ function validateSolverBend(
   }
 }
 
+function validateSolverPole(
+  node: GraphNode,
+  roots: ReadonlySet<string>,
+  diagnostics: Diagnostic[],
+): void {
+  for (const group of [...slotBinders(node, "pole")].sort()) {
+    if (roots.has(group)) continue;
+    diagnostics.push(
+      diagnostic(
+        "ik-pole-without-chain",
+        `${node.id}.keyframes.${group}.requires.pole`,
+        `Node "${node.id}" binds pole under ${group} without binding root there; no chain solved there bends toward it.`,
+        [node.id],
+      ),
+    );
+  }
+}
+
 export function validateSolverConstraints(
   nodes: readonly GraphNode[],
   diagnostics: Diagnostic[],
@@ -224,6 +251,7 @@ export function validateSolverConstraints(
     const roots = slotBinders(node, "root");
     validateSolverBend(node, roots, diagnostics);
     validateSolverInspect(node, roots, diagnostics);
+    validateSolverPole(node, roots, diagnostics);
   }
 }
 
