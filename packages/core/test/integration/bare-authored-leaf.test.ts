@@ -384,5 +384,8 @@ describe("the bare authored leaf", () => {
     // be red for a fixture that authors the retired form, but a fixture nothing exercises would not,
     // and that is the one that reads as an accepted second shape later.
     expect(offenders.sort()).toEqual([]);
-  });
+    // The budget is the tree's, not a unit's: this parses every `.ts` file under `packages/` and
+    // `apps/`, so its cost grows with the repository, and the 5,000 ms default timed it out on
+    // `CI` run 36143222650 with no offender found. It is a timeout, never a skip.
+  }, 60000);
 });

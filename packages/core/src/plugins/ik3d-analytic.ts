@@ -9,6 +9,7 @@ import {
   ZERO_EULER,
   effectiveLink3d,
   pivotFromBase3d,
+  readFrame3d,
   readPivotOffset3d,
   type EffectiveLink3d,
   type Euler3d,
@@ -34,6 +35,76 @@ export type SolveMember3d = {
    */
   readonly offset: PivotOffset3d;
 };
+
+/**
+ * The solve's authored bend control, a closed union read with exhaustive switches (ADR-092).
+ *
+ * `unbound` is a solver that bound no `pole` slot, and it keeps ADR-114's root-local +z rule byte
+ * for byte. `point` is the world-space position the elbow bends toward, the convention of every DCC
+ * tool: the bend plane is the plane through the effective root pivot, the goal and the pole, and
+ * the elbow lies on the pole's side of the line from the pivot to the goal. The two are different
+ * kinds of reference on purpose. The default rule names the plane's normal, which is what a
+ * root-local axis can name without knowing the goal; an authored pole names a side, which is what
+ * an author places in a scene. See ADR-118.
+ */
+export type Pole3d =
+  | { readonly kind: "unbound" }
+  | { readonly kind: "point"; readonly point: Vec3 };
+
+/** The solve with no pole bound, shared rather than allocated per solve. */
+export const UNBOUND_POLE3D: Pole3d = Object.freeze({ kind: "unbound" });
+
+/**
+ * Reads a delivered `pole` slot: absent is `unbound`, and anything else is the point its frame
+ * names, through `readFrame3d`, so a non-finite coordinate reads as zero exactly as a goal's does.
+ */
+export function readPole3d(input: unknown): Pole3d {
+  if (input === undefined) return UNBOUND_POLE3D;
+  const frame = readFrame3d(input);
+  return { kind: "point", point: [frame.x, frame.y, frame.z] };
+}
+
+/**
+ * The pole again, component by component through `readNumber`, as `solveTwoBone3d` re-reads a
+ * length and an offset: a direct caller's non-finite coordinate is zero here exactly as a
+ * delivered one is, and the unbound pole is returned as itself.
+ */
+function rereadPole3d(pole: Pole3d): Pole3d {
+  switch (pole.kind) {
+    case "unbound":
+      return pole;
+    case "point":
+      return {
+        kind: "point",
+        point: [readNumber(pole.point[0]), readNumber(pole.point[1]), readNumber(pole.point[2])],
+      };
+    default:
+      return unreachable(pole);
+  }
+}
+
+/** The world-unit magnitudes a pole adds to the solve's magnitude policy: none when unbound. */
+function poleMagnitudes(pole: Pole3d): readonly number[] {
+  switch (pole.kind) {
+    case "unbound":
+      return [];
+    case "point":
+      return pole.point;
+    default:
+      return unreachable(pole);
+  }
+}
+
+function scalePole(pole: Pole3d, factor: number): Pole3d {
+  switch (pole.kind) {
+    case "unbound":
+      return pole;
+    case "point":
+      return { kind: "point", point: scale(pole.point, factor) };
+    default:
+      return unreachable(pole);
+  }
+}
 
 function dot(a: Vec3, b: Vec3): number {
   return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
@@ -69,28 +140,95 @@ function normalize(a: Vec3, fallback: Vec3): Vec3 {
 }
 
 /**
- * The bend plane: `e1` points at the goal, `e2` is the side the elbow bends toward, and `normal`
- * is the plane's normal, a right-handed orthonormal triple with `e2 = normal × e1`.
+ * The relative size below which a bend reference is read as lying on the line toward the goal: of
+ * the unit default pole for the root-local rule, and of the pivot-to-pole distance for an authored
+ * pole. One number for both, because both ask the same question of the same line.
+ */
+const BEND_LINE_TOLERANCE = 1e-9;
+
+/**
+ * Which rule chose the bend plane's normal, a closed union read with an exhaustive switch.
  *
- * **The root's local +z is the pole.** The normal is root-local +z with its component along `e1`
- * removed. In the planar subset (root rotated about z only, goal in the root's plane) that is +z
- * exactly, so `e2` is the 2D solver's positive branch at every goal azimuth, and it turns
- * continuously with the goal everywhere off the root's local z axis.
+ * `authored-pole` carries the unit normal of the plane through the pivot, the goal and the pole.
+ * `default-pole` is a solve with no pole bound. `pole-on-line` is an authored pole collinear with
+ * the pivot and the goal, including one on the pivot itself, which names no plane: it takes the
+ * default rule deterministically rather than a normal rounding would choose. The two default arms
+ * compose identically and stay distinct so the reason is a value rather than a lost fact.
+ */
+type BendNormal3d =
+  | { readonly kind: "authored-pole"; readonly normal: Vec3 }
+  | { readonly kind: "default-pole" }
+  | { readonly kind: "pole-on-line" };
+
+const DEFAULT_POLE: BendNormal3d = Object.freeze({ kind: "default-pole" });
+const POLE_ON_LINE: BendNormal3d = Object.freeze({ kind: "pole-on-line" });
+
+/**
+ * The one owner of which rule bends the elbow. `e1 × (pole - base)` is normal to the plane through
+ * the pivot, the goal and the pole, and `normal × e1` is then the pole's own side of the line, so
+ * the elbow the triangle arm builds from `e2` bends toward the pole. Its size is the pole's distance
+ * from the line, so the collinear test is relative to the pole's distance from the pivot.
+ */
+function bendNormalOf(pole: Pole3d, base: Vec3, e1: Vec3): BendNormal3d {
+  switch (pole.kind) {
+    case "unbound":
+      return DEFAULT_POLE;
+    case "point": {
+      const toPole = subtract(pole.point, base);
+      const normal = cross(e1, toPole);
+      const size = norm(normal);
+      return size > BEND_LINE_TOLERANCE * norm(toPole)
+        ? { kind: "authored-pole", normal: divide(normal, size) }
+        : POLE_ON_LINE;
+    }
+    default:
+      return unreachable(pole);
+  }
+}
+
+/**
+ * The ADR-114 rule, unchanged: **the root's local +z is the pole.** The normal is root-local +z with
+ * its component along `e1` removed. In the planar subset (root rotated about z only, goal in the
+ * root's plane) that is +z exactly, so `e2` is the 2D solver's positive branch at every goal
+ * azimuth, and it turns continuously with the goal everywhere off the root's local z axis.
  *
  * **One singular line, and why it cannot be removed.** A goal on the root's local ±z axis leaves
  * no component of the pole to keep. Choosing a unit perpendicular continuously for every goal
  * direction is impossible (there is no nowhere-vanishing tangent field on the sphere), so some
  * direction must switch, and without an authored pole the least surprising place is the pole axis
  * itself. There the normal falls back to `e1 × y` with root-local `y`, which puts the elbow on the
- * root's +y side. The threshold is relative, `1e-9` of the unit pole, rather than a floating-point absolute. An authored pole is the fix, and it is withdrawn from phase 8 in ADR-114 because it is a new graph input and vocabulary.
+ * root's +y side. The threshold is `BEND_LINE_TOLERANCE` of the unit pole rather than a
+ * floating-point absolute. An authored pole is the fix for a rig that needs to cross that line
+ * smoothly, and ADR-118 adds it.
  */
-function bendBasis(rootMatrix: Matrix3, offset: Vec3, distance: number) {
-  const x = multiplyVector3(rootMatrix, [1, 0, 0]);
+function defaultNormal(rootMatrix: Matrix3, e1: Vec3): Vec3 {
   const y = multiplyVector3(rootMatrix, [0, 1, 0]);
   const z = multiplyVector3(rootMatrix, [0, 0, 1]);
-  const e1 = distance > 0 && Number.isFinite(distance) ? divide(offset, distance) : x;
   const pole = subtract(z, scale(e1, dot(z, e1)));
-  const normal = norm(pole) > 1e-9 ? normalize(pole, z) : normalize(cross(e1, y), z);
+  return norm(pole) > BEND_LINE_TOLERANCE ? normalize(pole, z) : normalize(cross(e1, y), z);
+}
+
+/**
+ * The bend plane: `e1` points at the goal, `e2` is the side the elbow bends toward, and `normal`
+ * is the plane's normal, a right-handed orthonormal triple with `e2 = normal × e1`. The normal is
+ * `bendNormalOf`'s answer, read exhaustively; both default arms take `defaultNormal`.
+ */
+function bendBasis(rootMatrix: Matrix3, offset: Vec3, distance: number, base: Vec3, pole: Pole3d) {
+  const x = multiplyVector3(rootMatrix, [1, 0, 0]);
+  const e1 = distance > 0 && Number.isFinite(distance) ? divide(offset, distance) : x;
+  const reading = bendNormalOf(pole, base, e1);
+  let normal: Vec3;
+  switch (reading.kind) {
+    case "authored-pole":
+      normal = reading.normal;
+      break;
+    case "default-pole":
+    case "pole-on-line":
+      normal = defaultNormal(rootMatrix, e1);
+      break;
+    default:
+      return unreachable(reading);
+  }
   return { e1, e2: cross(normal, e1), normal } as const;
 }
 
@@ -130,7 +268,12 @@ function armOf(l1: number, l2: number, clampedDistance: number): TwoBoneArm3d {
 }
 
 /**
- * Solves one two-bone chain in the root's bend plane with the closed form's positive branch.
+ * Solves one two-bone chain in its bend plane with the closed form's positive branch.
+ *
+ * **The bend plane is the pole's when one is bound.** `bend` defaults to `UNBOUND_POLE3D`, the
+ * ADR-114 root-local +z rule every caller before ADR-118 relied on, so a solve with no pole runs
+ * exactly the arithmetic it always did and adds nothing to the magnitude list. A bound pole is
+ * re-read, counted as a world-unit magnitude and scaled with the rig, because it is a position.
  *
  * **Total over finite rigs, at the 2D solve's magnitude policy.** `ik-scale.ts` decides whether the
  * rig solves natively or as its exact power-of-two image, from the same world-unit magnitudes the
@@ -146,11 +289,13 @@ export function solveTwoBone3d(
   target: WorldFrame3d,
   first: SolveMember3d,
   second: SolveMember3d,
+  bend: Pole3d = UNBOUND_POLE3D,
 ): SolveResult3d {
   const l1 = segmentExtent(readNumber(first.length));
   const l2 = segmentExtent(readNumber(second.length));
   const firstOffset = readPivotOffset3d(first.offset);
   const secondOffset = readPivotOffset3d(second.offset);
+  const pole = rereadPole3d(bend);
   const magnitude = magnitudeOf([
     root.x,
     root.y,
@@ -166,10 +311,21 @@ export function solveTwoBone3d(
     secondOffset.x,
     secondOffset.y,
     secondOffset.z,
+    ...poleMagnitudes(pole),
   ]);
   switch (magnitude.kind) {
     case "native":
-      return solveAtMagnitude(root, target, first.id, l1, firstOffset, second.id, l2, secondOffset);
+      return solveAtMagnitude(
+        root,
+        target,
+        first.id,
+        l1,
+        firstOffset,
+        second.id,
+        l2,
+        secondOffset,
+        pole,
+      );
     case "rescaled": {
       const factor = 2 ** -magnitude.exponent;
       const image = solveAtMagnitude(
@@ -181,6 +337,7 @@ export function solveTwoBone3d(
         second.id,
         l2 * factor,
         scaleOffset(secondOffset, factor),
+        scalePole(pole, factor),
       );
       return restoreResult3d(image, magnitude.exponent);
     }
@@ -249,6 +406,7 @@ function solveAtMagnitude(
   secondId: string,
   l2: number,
   secondOffset: PivotOffset3d,
+  pole: Pole3d,
 ): SolveResult3d {
   const reading = readGoal(secondId, [
     ["x", target.x],
@@ -285,7 +443,7 @@ function solveAtMagnitude(
       return unreachable(reading);
   }
   const rootMatrix = matrixFromEuler3d(root);
-  const { e1, e2, normal } = bendBasis(rootMatrix, offset, distance);
+  const { e1, e2, normal } = bendBasis(rootMatrix, offset, distance, base, pole);
 
   let pose: readonly [Euler3d, Euler3d];
   let quality: ClosedFormQuality = band;

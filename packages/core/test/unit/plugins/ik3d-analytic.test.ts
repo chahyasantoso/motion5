@@ -216,6 +216,20 @@ describe("3D analytic two-bone solve", () => {
     expect(distance(world.elbow, expected)).toBeLessThanOrEqual(1e-9);
   });
 
+  it("TH-51 keeps projected root-local +z as the pole down to the 1e-9 line tolerance", () => {
+    // Off the z line by a relative 1e-4, 1e-6 and 1e-8, every one of them above
+    // BEND_LINE_TOLERANCE, the default rule still projects root-local +z off the goal line, so
+    // the elbow bends to -x in the plane of the goal and that axis, lifted by 64 * lean. Only the
+    // line itself (TH-18) takes the +y fallback; a looser threshold hands these goals its elbow.
+    for (const lean of [1e-4, 1e-6, 1e-8]) {
+      const goal = { x: 0, y: 100 * lean, z: 100 };
+      const { elbow, tip } = armPose(solveTwoBone3d(root, readFrame3d(goal), first, second));
+      expect(elbow.x).toBeLessThan(-40);
+      expect(Math.abs(elbow.y - 64 * lean)).toBeLessThanOrEqual(1e-9);
+      expect(distance(tip, goal)).toBeLessThanOrEqual(1e-9);
+    }
+  });
+
   it("TH-19 closes 600 seeded non-planar rigs, keeps both lengths, and a worked pose", () => {
     const next = seeded(0x349);
     for (let index = 0; index < 600; index += 1) {

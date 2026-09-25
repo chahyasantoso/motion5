@@ -85,6 +85,7 @@ const BASE_RULES = {
   "ik-limit-malformed": ERROR_WITH_IDS,
   "ik-limit-without-solver": ERROR_WITH_IDS,
   "ik-mode-ambiguous": ERROR_WITH_IDS,
+  "ik-pole-without-chain": ERROR_WITH_IDS,
   "ik-solved-rotation-dead": ERROR_WITH_IDS,
   "ik-solver-key-misgrouped": ERROR_WITH_IDS,
   "ik-solver-no-goal": ERROR_WITH_IDS,
