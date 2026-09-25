@@ -121,4 +121,29 @@ describe("a masked value reaches composition and the publisher's MemberState", (
     expect(values(handle, FOREARM).y).toBeCloseTo(340, 1);
     handle.dispose();
   });
+  it("LV-22 a live negative length composes zero extent, where the solve placed the bone", () => {
+    // Loaded with a positive length, so no load-time rule could have seen the value this writes.
+    // That is why issue #482 made `segmentExtent` the runtime meaning instead of a load refusal.
+    const negative = load();
+    negative.track(UPPER).overrideValues({ length: -20 });
+    negative.seek(SHOULDER, 0);
+    const zero = load();
+    zero.track(UPPER).overrideValues({ length: 0 });
+    zero.seek(SHOULDER, 0);
+
+    // Red while `fk.compose` read the length raw: the upper arm's tip sat 20 units behind its
+    // pivot, and the forearm hung from that point instead of from the one the solve used.
+    expect(values(negative, UPPER).x).toBe(200);
+    expect(values(negative, UPPER).y).toBe(300);
+    for (const id of [SOLVER, UPPER, FOREARM]) {
+      expect(values(negative, id)).toEqual(values(zero, id));
+    }
+    // A zero upper arm leaves the forearm alone against a goal 126 units away: fully extended at it.
+    const forearm = values(negative, FOREARM);
+    const direction = Math.atan2(340 - 300, 320 - 200);
+    expect(forearm.x).toBeCloseTo(200 + 60 * Math.cos(direction), 9);
+    expect(forearm.y).toBeCloseTo(300 + 60 * Math.sin(direction), 9);
+    negative.dispose();
+    zero.dispose();
+  });
 });

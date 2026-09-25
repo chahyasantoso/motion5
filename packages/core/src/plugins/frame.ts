@@ -224,14 +224,26 @@ export function baseTipFromPivot(
 /**
  * The extent a segment of authored `length` spans: the length itself, never negative.
  *
- * The one owner of what a negative authored length means, which is a segment with no extent rather
- * than an error or a bone pointing backwards. `effectiveLink` below, `ik`'s `solveLength` and
- * FABRIK's `seedArc` all read a length through this, so the composition and every solve strategy
- * cannot disagree about it. It lives here, beside the kinematic convention, because it is part of
- * that convention rather than of any one solve. See ADR-106.
+ * The one owner of what a negative length means, which is a segment with no extent rather than an
+ * error or a bone pointing backwards. It has four readers and no other: `fk.compose` (and the
+ * internal `fk3d`) composes a bone's tip through it, `effectiveLink` below builds a rigid link
+ * through it, `ik`'s `solveLength` and FABRIK's `seedArc` solve through it. So the composition and
+ * every solve strategy cannot disagree about it, and a solve that puts its tip on a goal publishes
+ * rotations `fk` composes onto that goal. It lives here, beside the kinematic convention, because it
+ * is part of that convention rather than of any one solve. See ADR-106 and issue #482.
+ *
+ * It is a runtime meaning rather than a load rule, because `length` is not a load-time constant: a
+ * live `overrideValues` or `setValues` write, an animated stop and an interpolator's overshooting
+ * ease can all put a negative number here after the document loaded.
+ *
+ * A comparison rather than `Math.max(0, length)`, and that is a byte guarantee: `Math.max(0, -0)` is
+ * `+0`, so the `max` spelling would move the sign of a published zero for every bone authoring `-0`,
+ * which `fk` composed raw before it read this owner. A negative zero is still zero extent
+ * geometrically. `NaN` stays `NaN` and `+Infinity` stays itself; `fk` reads through `readNumber`
+ * first, so neither reaches it from a bone.
  */
 export function segmentExtent(length: number): number {
-  return Math.max(0, length);
+  return length < 0 ? 0 : length;
 }
 
 /**

@@ -53,9 +53,9 @@ export interface SolveMember {
  *
  * The member reading of `segmentExtent`, which owns the clamp itself. The closed form and FABRIK
  * each applied `Math.max(0, length)` privately; a third strategy (constraints, or `ik3d`'s shared
- * traversal) calling this instead of restating it is what keeps a negative authored length meaning
- * one thing on every path, and `fk`'s `effectiveLink` reading the same owner is what keeps it
- * meaning that thing in the composition too.
+ * traversal) calling this instead of restating it is what keeps a negative length meaning one thing
+ * on every path, and `fk.compose` and `effectiveLink` reading the same owner is what keeps it
+ * meaning that thing in the composition too (issue #482).
  */
 export function solveLength(member: SolveMember): number {
   return segmentExtent(member.length);
