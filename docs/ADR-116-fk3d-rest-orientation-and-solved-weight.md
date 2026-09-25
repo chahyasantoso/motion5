@@ -146,4 +146,10 @@ what was measured. Sandbox runs of that completion, reviewed rather than trusted
 under an offline Vitest stand-in (the same 1,403 cases that passed on `afb55858` still pass, plus
 the nine new ones; every file that does not run needs `gsap`, `typescript`, `react-test-renderer`
 or `npx`, none installable offline), Prettier 3.6.2 from `.tools/`, and the read-budget, boundary
-and raw-template scans. `npm run typecheck` has no run: TypeScript is not installable offline.
+and raw-template scans. `npm run typecheck` has no sandbox run: TypeScript is not installable
+offline. Its first run was `CI` on `31ec57f8` in
+[#502](https://github.com/chahyasantoso/motion5/pull/502), which refused two fixture types and
+nothing in the source: `TH-28` handed the composer an inputs record typed
+`Readonly<Record<string, unknown>>`, and `TH-30` put a `weight: unknown` in a values record. The
+quality-pass follow-up types both as the composer reads them, `PluginInputs` and `number`, with no
+assertion changed.

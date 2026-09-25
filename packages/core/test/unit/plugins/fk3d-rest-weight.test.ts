@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { PluginRegistry, type PluginDefinition } from "../../../src/domain/plugins";
+import {
+  PluginRegistry,
+  type PluginDefinition,
+  type PluginInputs,
+} from "../../../src/domain/plugins";
 import type { ProjectDefinition, TrackDefinition } from "../../../src/contract/v5";
 import { buildGraphIR } from "../../../src/graph/ir";
 import { lerpAngle } from "../../../src/plugins/frame";
@@ -205,7 +209,7 @@ describe("fk3d rest orientation and solved weight", () => {
     });
     // Unbound, a source with no `rotations3d`, a record that does not name this node, and an entry
     // that is not a triple are all "no solve", and each ignores any weight authored beside it.
-    const noSolves: readonly Readonly<Record<string, unknown>>[] = [
+    const noSolves: readonly PluginInputs[] = [
       { base: root },
       { base: root, solver: {} },
       { base: root, solver: { rotations3d: { other: solved } } },
@@ -250,7 +254,7 @@ describe("fk3d rest orientation and solved weight", () => {
 
   it("TH-30 weight is clamped into [0, 1], non-finite reads as 1, and stages the reach", () => {
     const rest = { rotation: -40, rotationX: 30, rotationY: 5 };
-    const at = (weight: unknown) =>
+    const at = (weight: number) =>
       fk3dPlugin.compose({ length: 80, ...rest, weight }, 1, { base: root, solver }, "upper");
     expect(sameBytes(at(2), at(1))).toBe(true);
     expect(sameBytes(at(-2), at(0))).toBe(true);
