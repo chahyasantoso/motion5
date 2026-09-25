@@ -26,6 +26,21 @@ export type WorldFrame3d = {
 
 export type Vec3 = readonly [number, number, number];
 
+/** A member's pivot offset, read in its parent's rotated frame. */
+export type PivotOffset3d = {
+  readonly x: number;
+  readonly y: number;
+  readonly z: number;
+};
+
+/** The omitted offset, shared rather than allocated per read. */
+export const ZERO_PIVOT_OFFSET3D: PivotOffset3d = Object.freeze({ x: 0, y: 0, z: 0 });
+
+/** A rigid extension plus a child's offset, reduced to one link in member-local coordinates. */
+export type EffectiveLink3d =
+  | { readonly kind: "axis"; readonly length: number }
+  | { readonly kind: "offset"; readonly length: number; readonly vector: Vec3 };
+
 /**
  * A quaternion `w + xi + yj + zk`, unit wherever this module produces one.
  *
@@ -170,6 +185,12 @@ function isRecord(input: unknown): input is Readonly<Record<string, unknown>> {
   return input !== null && typeof input === "object" && !Array.isArray(input);
 }
 
+/** Reads a pivot offset, defaulting absent and non-finite components to zero. */
+export function readPivotOffset3d(input: unknown): PivotOffset3d {
+  if (!isRecord(input)) return ZERO_PIVOT_OFFSET3D;
+  return { x: readNumber(input.x), y: readNumber(input.y), z: readNumber(input.z) };
+}
+
 /** Reads an Euler triple, defaulting a missing record and absent or non-finite angles to zero. */
 export function readEuler3d(input: unknown): Euler3d {
   if (!isRecord(input)) return ZERO_EULER;
@@ -203,6 +224,21 @@ export function composeWorld3d(parent: WorldFrame3d, local: WorldFrame3d): World
     z: parent.z + offset[2],
     ...euler,
   };
+}
+
+/** The position of a member's pivot, with a byte-identical zero-offset path. */
+export function pivotFromBase3d(base: WorldFrame3d, offset: PivotOffset3d): Vec3 {
+  if (offset.x === 0 && offset.y === 0 && offset.z === 0) return [base.x, base.y, base.z];
+  const composed = composeWorld3d(base, { ...offset, ...ZERO_EULER });
+  return [composed.x, composed.y, composed.z];
+}
+
+/** The member extension and child offset as one rigid local-space link. */
+export function effectiveLink3d(length: number, childOffset: PivotOffset3d): EffectiveLink3d {
+  if (childOffset.x === 0 && childOffset.y === 0 && childOffset.z === 0)
+    return { kind: "axis", length };
+  const vector: Vec3 = [length + childOffset.x, childOffset.y, childOffset.z];
+  return { kind: "offset", length: Math.hypot(vector[0], vector[1], vector[2]), vector };
 }
 
 /**

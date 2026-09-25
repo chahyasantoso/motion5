@@ -3,6 +3,7 @@ import {
   composeWorld3d,
   readFrame3d,
   ZERO_EULER,
+  ZERO_PIVOT_OFFSET3D,
   type Euler3d,
   type WorldFrame3d,
 } from "../../../src/plugins/frame3d";
@@ -10,8 +11,8 @@ import { solveTwoBone } from "../../../src/plugins/ik-analytic";
 import { solveTwoBone3d } from "../../../src/plugins/ik3d-analytic";
 
 const root: WorldFrame3d = readFrame3d({});
-const first = { id: "upper", length: 80 };
-const second = { id: "fore", length: 60 };
+const first = { id: "upper", length: 80, offset: ZERO_PIVOT_OFFSET3D };
+const second = { id: "fore", length: 60, offset: ZERO_PIVOT_OFFSET3D };
 
 type Point = { readonly x: number; readonly y: number; readonly z: number };
 
@@ -75,8 +76,12 @@ describe("3D analytic two-bone solve", () => {
         { id: "b", base: "a", length: l2 },
       ).quality;
     const spatial = (x: number, y: number, l1: number, l2: number) =>
-      solveTwoBone3d(root, readFrame3d({ x, y }), { id: "a", length: l1 }, { id: "b", length: l2 })
-        .quality;
+      solveTwoBone3d(
+        root,
+        readFrame3d({ x, y }),
+        { id: "a", length: l1, offset: ZERO_PIVOT_OFFSET3D },
+        { id: "b", length: l2, offset: ZERO_PIVOT_OFFSET3D },
+      ).quality;
     const cases: readonly (readonly [number, number, number, number])[] = [
       [200, 0, 80, 60], // too far
       [1, 0, 80, 60], // too near
@@ -94,18 +99,22 @@ describe("3D analytic two-bone solve", () => {
     const noSecond = solveTwoBone3d(
       root,
       readFrame3d({ x: 0, y: 0, z: 50 }),
-      { id: "a", length: 50 },
-      { id: "b", length: 0 },
+      { id: "a", length: 50, offset: ZERO_PIVOT_OFFSET3D },
+      { id: "b", length: 0, offset: ZERO_PIVOT_OFFSET3D },
     );
     expect(noSecond.rotations3d.b).toEqual(ZERO_EULER);
     const noFirst = solveTwoBone3d(
       root,
       readFrame3d({ x: 0, y: 0, z: 50 }),
-      { id: "a", length: 0 },
-      { id: "b", length: 50 },
+      { id: "a", length: 0, offset: ZERO_PIVOT_OFFSET3D },
+      { id: "b", length: 50, offset: ZERO_PIVOT_OFFSET3D },
     );
     expect(noFirst.rotations3d.a).toEqual(ZERO_EULER);
-    const rest = solveTwoBone3d(root, root, first, { id: "fore", length: 80 });
+    const rest = solveTwoBone3d(root, root, first, {
+      id: "fore",
+      length: 80,
+      offset: ZERO_PIVOT_OFFSET3D,
+    });
     expect(rest.quality).toEqual({ kind: "coincident", residual: 160 });
     expect(rest.rotations3d.upper).toEqual(ZERO_EULER);
     expect(rest.rotations3d.fore).toEqual(ZERO_EULER);
@@ -129,8 +138,8 @@ describe("3D analytic two-bone solve", () => {
       const spatial = solveTwoBone3d(
         base,
         readFrame3d({ x: gx, y: gy }),
-        { id: "upper", length: l1 },
-        { id: "fore", length: l2 },
+        { id: "upper", length: l1, offset: ZERO_PIVOT_OFFSET3D },
+        { id: "fore", length: l2, offset: ZERO_PIVOT_OFFSET3D },
       );
       const planar = solveTwoBone(
         { x, y, rotation },
@@ -168,8 +177,8 @@ describe("3D analytic two-bone solve", () => {
   it("TH-17 is continuous across the planar boundary, where a 2D bridge jumped 720 degrees", () => {
     const base = readFrame3d({ rotation: -323.92574921250343 });
     const lengths = [
-      { id: "upper", length: 24.2029164123 },
-      { id: "fore", length: 43.0485040788 },
+      { id: "upper", length: 24.2029164123, offset: ZERO_PIVOT_OFFSET3D },
+      { id: "fore", length: 43.0485040788, offset: ZERO_PIVOT_OFFSET3D },
     ] as const;
     const at = (z: number) =>
       solveTwoBone3d(
@@ -229,7 +238,12 @@ describe("3D analytic two-bone solve", () => {
         y: (direction[1] / size) * reach,
         z: (direction[2] / size) * reach,
       });
-      const result = solveTwoBone3d(base, goal, { id: "a", length: l1 }, { id: "b", length: l2 });
+      const result = solveTwoBone3d(
+        base,
+        goal,
+        { id: "a", length: l1, offset: ZERO_PIVOT_OFFSET3D },
+        { id: "b", length: l2, offset: ZERO_PIVOT_OFFSET3D },
+      );
       const { upper, elbow, tip } = pose(base, result.rotations3d, ["a", "b"], [l1, l2]);
       expect(result.quality.kind).toBe("reached");
       expect(distance(base, upper)).toBeLessThanOrEqual(1e-9);
@@ -256,8 +270,8 @@ describe("3D analytic two-bone solve", () => {
     const tiny = solveTwoBone3d(
       root,
       readFrame3d({ x: Number.MIN_VALUE }),
-      { id: "a", length: Number.MIN_VALUE },
-      { id: "b", length: Number.MIN_VALUE },
+      { id: "a", length: Number.MIN_VALUE, offset: ZERO_PIVOT_OFFSET3D },
+      { id: "b", length: Number.MIN_VALUE, offset: ZERO_PIVOT_OFFSET3D },
     );
     expect(finitePose(tiny)).toBe(true);
     expect(Number.isFinite(tiny.quality.residual)).toBe(true);
@@ -279,8 +293,8 @@ describe("3D analytic two-bone solve", () => {
     const huge = solveTwoBone3d(
       readFrame3d({ x: 1e308 }),
       readFrame3d({ x: -1e308, y: 1e307 }),
-      { id: "a", length: 1e307 },
-      { id: "b", length: 1e307 },
+      { id: "a", length: 1e307, offset: ZERO_PIVOT_OFFSET3D },
+      { id: "b", length: 1e307, offset: ZERO_PIVOT_OFFSET3D },
     );
     expect(finitePose(huge)).toBe(true);
     expect(huge.quality.kind).toBe("too-far");
@@ -297,8 +311,8 @@ describe("3D analytic two-bone solve", () => {
     const spatial = solveTwoBone3d(
       readFrame3d({ x: 1e300 }),
       readFrame3d({ x: 1e300 + 3e299, y: 4e299 }),
-      { id: "upper", length: 4e299 },
-      { id: "fore", length: 3e299 },
+      { id: "upper", length: 4e299, offset: ZERO_PIVOT_OFFSET3D },
+      { id: "fore", length: 3e299, offset: ZERO_PIVOT_OFFSET3D },
     );
     expect(spatial.quality.kind).toBe(planar.quality.kind);
     for (const id of ["upper", "fore"])

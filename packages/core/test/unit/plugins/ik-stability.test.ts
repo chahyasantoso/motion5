@@ -19,7 +19,7 @@ import {
   solveMagnitude,
 } from "../../../src/plugins/ik-scale";
 import { chainShape, solveChain } from "../../../src/plugins/ik-solve";
-import { readFrame3d } from "../../../src/plugins/frame3d";
+import { readFrame3d, ZERO_PIVOT_OFFSET3D } from "../../../src/plugins/frame3d";
 import { solveTwoBone3d } from "../../../src/plugins/ik3d-analytic";
 
 // Issue #349 phase 6 and ADR-111: stability and determinism of the 2D solve.
@@ -760,8 +760,8 @@ describe("IK stability and determinism (issue #349 phase 6)", () => {
 
   it("SD-17 the internal 3D solver classifies every non-finite coordinate once", () => {
     const root = readFrame3d({});
-    const first = { id: "a", length: 80 };
-    const second = { id: "b", length: 60 };
+    const first = { id: "a", length: 80, offset: ZERO_PIVOT_OFFSET3D };
+    const second = { id: "b", length: 60, offset: ZERO_PIVOT_OFFSET3D };
     for (const goal of [
       { x: Infinity, y: 5, z: 7 },
       { x: -Infinity, y: Infinity, z: 7 },

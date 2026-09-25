@@ -7,8 +7,13 @@ import {
   multiplyVector3,
   transposeMatrix3,
   ZERO_EULER,
+  effectiveLink3d,
+  pivotFromBase3d,
+  readPivotOffset3d,
+  type EffectiveLink3d,
   type Euler3d,
   type Matrix3,
+  type PivotOffset3d,
   type Vec3,
   type WorldFrame3d,
 } from "./frame3d";
@@ -22,6 +27,12 @@ import { readGoal } from "./ik-goal-reading";
 export type SolveMember3d = {
   readonly id: string;
   readonly length: number;
+  /**
+   * The member's pivot offset in its parent's rotated frame, required so the solver has one member
+   * shape. It is re-read through `readPivotOffset3d` as `length` is through `readNumber`, so a
+   * direct caller's non-finite component is zero here exactly as an authored one is (ADR-117).
+   */
+  readonly offset: PivotOffset3d;
 };
 
 function dot(a: Vec3, b: Vec3): number {
@@ -138,10 +149,27 @@ export function solveTwoBone3d(
 ): SolveResult3d {
   const l1 = segmentExtent(readNumber(first.length));
   const l2 = segmentExtent(readNumber(second.length));
-  const magnitude = magnitudeOf([root.x, root.y, root.z, target.x, target.y, target.z, l1, l2]);
+  const firstOffset = readPivotOffset3d(first.offset);
+  const secondOffset = readPivotOffset3d(second.offset);
+  const magnitude = magnitudeOf([
+    root.x,
+    root.y,
+    root.z,
+    target.x,
+    target.y,
+    target.z,
+    l1,
+    l2,
+    firstOffset.x,
+    firstOffset.y,
+    firstOffset.z,
+    secondOffset.x,
+    secondOffset.y,
+    secondOffset.z,
+  ]);
   switch (magnitude.kind) {
     case "native":
-      return solveAtMagnitude(root, target, first.id, l1, second.id, l2);
+      return solveAtMagnitude(root, target, first.id, l1, firstOffset, second.id, l2, secondOffset);
     case "rescaled": {
       const factor = 2 ** -magnitude.exponent;
       const image = solveAtMagnitude(
@@ -149,8 +177,10 @@ export function solveTwoBone3d(
         scaleFrame(target, factor),
         first.id,
         l1 * factor,
+        scaleOffset(firstOffset, factor),
         second.id,
         l2 * factor,
+        scaleOffset(secondOffset, factor),
       );
       return restoreResult3d(image, magnitude.exponent);
     }
@@ -162,6 +192,10 @@ export function solveTwoBone3d(
 /** A frame's position scaled by `factor`, its orientation untouched. */
 function scaleFrame(frame: WorldFrame3d, factor: number): WorldFrame3d {
   return { ...frame, x: frame.x * factor, y: frame.y * factor, z: frame.z * factor };
+}
+
+function scaleOffset(offset: PivotOffset3d, factor: number): PivotOffset3d {
+  return { x: offset.x * factor, y: offset.y * factor, z: offset.z * factor };
 }
 
 /** The image's result read back into the rig: the same pose, every residual restored. */
@@ -180,22 +214,52 @@ function restoreResult3d(result: SolveResult3d, exponent: number): SolveResult3d
   });
 }
 
+/** Maps the effective link's local direction into the solved first-member world direction. */
+function firstWorldOf(link: EffectiveLink3d, direction: Vec3, normal: Vec3): Matrix3 {
+  switch (link.kind) {
+    case "axis":
+      return orientation(direction, normal);
+    case "offset": {
+      const linkFrame = orientation(normalize(link.vector, [1, 0, 0]), [0, 0, 1]);
+      return multiplyMatrix3(orientation(direction, normal), transposeMatrix3(linkFrame));
+    }
+    default:
+      return unreachable(link);
+  }
+}
+
+function restMiss3d(link: EffectiveLink3d, secondLength: number): number {
+  switch (link.kind) {
+    case "axis":
+      return link.length + secondLength;
+    case "offset":
+      return norm(add(link.vector, [secondLength, 0, 0]));
+    default:
+      return unreachable(link);
+  }
+}
+
 /** One solve at a magnitude the arithmetic can hold: the bend plane, the arm, then the pose. */
 function solveAtMagnitude(
   root: WorldFrame3d,
   target: WorldFrame3d,
   firstId: string,
   l1: number,
+  firstOffset: PivotOffset3d,
   secondId: string,
   l2: number,
+  secondOffset: PivotOffset3d,
 ): SolveResult3d {
   const reading = readGoal(secondId, [
     ["x", target.x],
     ["y", target.y],
     ["z", target.z],
   ]);
-  const minReach = Math.abs(l1 - l2);
-  const maxReach = l1 + l2;
+  const base = pivotFromBase3d(root, firstOffset);
+  const link = effectiveLink3d(l1, secondOffset);
+  const firstLength = link.length;
+  const minReach = Math.abs(firstLength - l2);
+  const maxReach = firstLength + l2;
   let distance: number;
   let offset: Vec3;
   let clampedDistance: number;
@@ -204,7 +268,7 @@ function solveAtMagnitude(
     case "point":
       offset = subtract(
         [reading.coordinates[0]!, reading.coordinates[1]!, reading.coordinates[2]!],
-        [root.x, root.y, root.z],
+        base,
       );
       distance = norm(offset);
       clampedDistance = clamp(distance, minReach, maxReach);
@@ -225,24 +289,27 @@ function solveAtMagnitude(
 
   let pose: readonly [Euler3d, Euler3d];
   let quality: ClosedFormQuality = band;
-  const arm = armOf(l1, l2, clampedDistance);
+  const arm = armOf(firstLength, l2, clampedDistance);
   switch (arm.kind) {
     case "aim-first":
-      pose = [localEuler(rootMatrix, orientation(e1, normal)), ZERO_EULER];
+      pose = [localEuler(rootMatrix, firstWorldOf(link, e1, normal)), ZERO_EULER];
       break;
     case "aim-second":
       pose = [ZERO_EULER, localEuler(rootMatrix, orientation(e1, normal))];
       break;
     case "coincident":
-      // The rest pose lays both segments along the root's +x from the base the goal sits on.
+      // The rest pose lays the effective link and second segment in member-local +x.
       pose = [ZERO_EULER, ZERO_EULER];
-      quality = { kind: "coincident", residual: l1 + l2 };
+      quality = {
+        kind: "coincident",
+        residual: restMiss3d(link, l2),
+      };
       break;
     case "triangle": {
-      const alpha = Math.acos(cosineOpposite(l1, clampedDistance, l2));
+      const alpha = Math.acos(cosineOpposite(firstLength, clampedDistance, l2));
       const elbow = normalize(add(scale(e1, Math.cos(alpha)), scale(e2, Math.sin(alpha))), e1);
-      const reach = subtract(scale(e1, clampedDistance), scale(elbow, l1));
-      const firstWorld = orientation(elbow, normal);
+      const reach = subtract(scale(e1, clampedDistance), scale(elbow, firstLength));
+      const firstWorld = firstWorldOf(link, elbow, normal);
       const secondWorld = orientation(normalize(reach, e1), normal);
       pose = [localEuler(rootMatrix, firstWorld), localEuler(firstWorld, secondWorld)];
       break;

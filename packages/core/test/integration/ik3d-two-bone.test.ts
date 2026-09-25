@@ -120,6 +120,47 @@ const RESTED: ProjectDefinition = {
   ],
 };
 
+const OFFSET_PROJECT: ProjectDefinition = {
+  schemaVersion: 5,
+  projectId: "3d-offsets",
+  motions: [
+    {
+      id: "rig",
+      trigger: { type: "manual" },
+      tracks: [
+        {
+          id: "root",
+          keyframes: {
+            transform3d: {
+              values: { x: 5, y: -3, z: 2, rotation: 25, rotationX: -15, rotationY: 20 },
+            },
+          },
+        },
+        { id: "goal", keyframes: { transform3d: { values: { x: 70, y: 40, z: 50 } } } },
+        { id: "solve", keyframes: { ik3d: { requires: { root: "root", target: "goal" } } } },
+        {
+          id: "upper",
+          keyframes: {
+            fk3d: {
+              values: { length: 80, x: 5, y: -3, z: 2 },
+              requires: { base: "root", solver: "solve" },
+            },
+          },
+        },
+        {
+          id: "fore",
+          keyframes: {
+            fk3d: {
+              values: { length: 60, x: -10, y: 6, z: 4 },
+              requires: { base: "upper", solver: "solve" },
+            },
+          },
+        },
+      ],
+    },
+  ],
+};
+
 /** A member's published frame, restated from `frame3d.ts` as the oracle. */
 function tipOf(base: WorldFrame3d, local: Euler3d, length: number): WorldFrame3d {
   return composeWorld3d(composeWorld3d(base, { x: 0, y: 0, z: 0, ...local }), {
@@ -230,5 +271,32 @@ describe("3D seam through engine and DOM", () => {
     expect(seekMembers(0)).toEqual(rest);
     for (const weight of [0.75, 0.25, 0.5])
       expect(seekMembers(weight)).toEqual(partway.get(weight));
+  });
+
+  it("TH-39 carries offsets through Engine and DOM, closes, and seeks byte-for-byte", () => {
+    const runtime = createRuntime(OFFSET_PROJECT);
+    const patches = new Map<string, Patch>();
+    const target: DomTarget = { style: {} };
+    const adapter = createDomPatchAdapter({ style: {} }, undefined, () => target);
+    for (const id of ["rig/root", "rig/goal", "rig/solve", "rig/upper", "rig/fore"]) {
+      runtime.mount(id);
+      runtime.subscribeNode(id, (patch) => patches.set(id, patch));
+    }
+    runtime.seek("rig/fore", 0);
+    const first = patches.get("rig/fore");
+    if (first?.status !== "ready") throw new Error("offset fore did not publish");
+    adapter.apply(first);
+    const miss = Math.hypot(
+      Number(first.values.x) - 70,
+      Number(first.values.y) - 40,
+      Number(first.values.z) - 50,
+    );
+    expect(miss).toBeLessThanOrEqual(1e-9);
+    expect(target.style.transform).toContain("translate3d(");
+    const bytes = { ...first.values };
+    runtime.seek("rig/fore", 0);
+    const again = patches.get("rig/fore");
+    if (again?.status !== "ready") throw new Error("offset fore did not republish");
+    expect(again.values).toEqual(bytes);
   });
 });
