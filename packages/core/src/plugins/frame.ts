@@ -225,10 +225,11 @@ export function baseTipFromPivot(
  * The extent a segment of authored `length` spans: the length itself, never negative.
  *
  * The one owner of what a negative length means, which is a segment with no extent rather than an
- * error or a bone pointing backwards. It has four readers and no other: `fk.compose` (and the
- * internal `fk3d`) composes a bone's tip through it, `effectiveLink` below builds a rigid link
- * through it, `ik`'s `solveLength` and FABRIK's `seedArc` solve through it. So the composition and
- * every solve strategy cannot disagree about it, and a solve that puts its tip on a goal publishes
+ * error or a bone pointing backwards. Every reader of an authored length goes through it, and no
+ * reader restates the clamp: `fk.compose` and the internal `fk3d` compose a bone's tip through it,
+ * `effectiveLink` below builds a rigid link through it, `ik`'s `solveLength` (which the closed form
+ * and FABRIK's iteration read), FABRIK's `seedArc`, and the internal 3D closed form's two extents
+ * solve through it. So the composition and every solve strategy cannot disagree about it, and a solve that puts its tip on a goal publishes
  * rotations `fk` composes onto that goal. It lives here, beside the kinematic convention, because it
  * is part of that convention rather than of any one solve. See ADR-106 and issue #482.
  *

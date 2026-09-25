@@ -27,7 +27,7 @@ ADR-106 split the solve into one owner per question and left one question with t
 
 **`residual` on every variant.** A caller that only wants the miss reads it without a `switch`. The kind says why the miss is what it is.
 
-**The closed form states its residual; it does not measure it.** Its angles are exact inside the reach band, so the residual is the clamp's own `|d - clampedD|`: zero inside the band, the distance to the nearer bound outside it. `IR-6` holds that statement to the miss `fk`'s own composition (`composeWorld`, called twice per bone as `fk.compose` does) measures over a seeded sample, so the stated residual cannot become a second convention.
+**The closed form states its residual; it does not measure it.** Its angles are exact inside the reach band, so the residual is the clamp's own `|d - clampedD|`: zero inside the band, the distance to the nearer bound outside it. `IR-6` holds that statement to the miss `fk`'s own composition measures over a seeded sample, composing each bone through `fkPlugin.compose` itself rather than a restatement of it, so the stated residual cannot become a second convention.
 
 **One reach band serves every exit.** The degenerate exits need no band of their own: with extents already clamped to zero, `[|reach - l2|, reach + l2]` is exactly `[reach, reach]` when the second segment has no extent and `[l2, l2]` when the link has none. `IR-5` pins both collapsed bands.
 
@@ -53,7 +53,7 @@ Option (b), refusing a negative `length` at load, was withdrawn: `length` is not
 
 ## Evidence
 
-`packages/core/test/unit/plugins/ik-result.test.ts`, `IR-1` to `IR-10`, registered in `docs/acceptance-map.json` and gated by `evidence-case-ids.test.ts`. The migrated `IK-*`, `FB-*`, `PV-*` and `WT-*` cases read `.rotations` and `.quality` with every numeric assertion unchanged. Published byte identity was measured by composing 200,000 seeded random rigs through `ikPlugin` built from `main` and from this change, with rotations compared under `Object.is` plus key order, freezing and thrown messages; the result and script are in the pull request body.
+`packages/core/test/unit/plugins/ik-result.test.ts`, `IR-1` to `IR-12`, and `packages/core/test/integration/live-value-composition.test.ts`, `LV-22`, both series gated by `packages/core/test/unit/scripts/evidence-case-ids.test.ts`. The migrated `IK-*`, `FB-*`, `PV-*` and `WT-*` cases read `.rotations` and `.quality` with every numeric assertion unchanged. Published byte identity was measured by composing 200,000 seeded random rigs through `ikPlugin` built from `main` and from this change, with rotations compared under `Object.is` plus key order, freezing and thrown messages; the result and script are in the pull request body.
 
 ## Consequences
 

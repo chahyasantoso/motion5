@@ -141,13 +141,15 @@ separately rather than widening planar constraints.
 
 ## Evidence
 
-The `TH-1` through `TH-22` cases cover CSS matrix order, composition, gimbal behavior, near-180
+The `TH-1` through `TH-23` cases cover CSS matrix order, composition, gimbal behavior, near-180
 matrix round trips, non-finite input defaults, analytic quality, planar reduction, boundary
 continuity, singular bend fallback, non-planar closure and length preservation, plugin wiring,
 member ordering by `base` links, FK output, grouped ownership, unsupported chain load refusal in
 both dimensions, engine/DOM delivery, dirty propagation, the separate `rotations3d` output channel,
-an all-nine-entry matrix and composition oracle (`TH-21`), and finite extreme geometry (`TH-22`).
-A mutation of the dedicated-member rule, the member-plugin rule, the angle reduction, the quotient
+an all-nine-entry matrix and composition oracle (`TH-21`), finite extreme geometry (`TH-22`), and a
+negative first member solving and composing exactly as a zero one (`TH-23`). `TH-23` is a parity
+guard added by issue #482 and is green on the base as well, because `fk3d` and the 3D closed form
+already read `segmentExtent`; it holds the 3D path to the owner 2D `fk` joined. A mutation of the dedicated-member rule, the member-plugin rule, the angle reduction, the quotient
 normalization, the rescale, a matrix index, or the pair ordering each fails at least one of them.
 
 The 200,000-rig measurement above also measured non-planar closure (arbitrary root orientation,
