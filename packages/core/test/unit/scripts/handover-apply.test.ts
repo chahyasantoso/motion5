@@ -108,6 +108,8 @@ async function pack(
     issue: 487,
     notes: join(f.work, "NOTES.md"),
     out: join(f.work, `${name}.zip`),
+    repository: "octo/motion5",
+    branch: "feat/handover",
     run,
     ...options,
   });
@@ -307,7 +309,7 @@ describe("applying a handover (ADR-112)", () => {
     const future = await rezip(zip, async (root) => {
       const file = join(root, "handover.json");
       const value = JSON.parse(await readFile(file, "utf8"));
-      await writeFile(file, JSON.stringify({ ...value, version: 2 }));
+      await writeFile(file, JSON.stringify({ ...value, version: 3 }));
     });
     await stage(f, future);
     expect(refusalKind(await apply(f))).toBe("unsupported-version");
@@ -516,6 +518,7 @@ describe("the outcome and the command line (ADR-112)", () => {
       commits: [],
       reconciled: ["r"],
       inbox,
+      publication: { kind: "opted-out" },
     });
     const samples: HandoverOutcome[] = [
       { kind: "nothing-to-do" },

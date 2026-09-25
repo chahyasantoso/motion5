@@ -18,11 +18,14 @@ import {
   discoverInbox,
   handoverContents,
   handoverListing,
+  handoverAddress,
   handoverManifest,
+  handoverReview,
   refuse,
   unreachable,
   zipListing,
 } from "./handover-format.mjs";
+import { describePublication } from "./handover-publish.mjs";
 
 /** The closed set of ways `applyHandover` ends. */
 export const OUTCOME_KINDS = Object.freeze([
@@ -144,14 +147,16 @@ export async function inspectArchive(zip, { run = runProcess, scratch }) {
   const expected = files.map((file) => `${root}/${file}`);
   if (onDisk.join("\n") !== expected.join("\n"))
     refuse({ kind: "unreadable-archive", reason: "the extracted files differ from the listing" });
+  const bytes = await readFile(path.join(directory, HANDOVER_MANIFEST));
   let value;
   try {
-    value = JSON.parse(await readFile(path.join(directory, HANDOVER_MANIFEST), "utf8"));
+    value = JSON.parse(bytes.toString("utf8"));
   } catch (error) {
     refuse({ kind: "invalid-manifest", reason: `it is not JSON: ${error.message}` });
   }
   const { manifest, chain } = handoverManifest(value, root);
   const components = handoverContents(files, manifest);
+  let review = null;
   for (const patch of manifest.patches) {
     const observed = sha256(await readFile(path.join(directory, patch.file)));
     if (observed !== patch.sha256)
@@ -186,6 +191,16 @@ export async function inspectArchive(zip, { run = runProcess, scratch }) {
         );
         break;
       }
+      case "review": {
+        let stored;
+        try {
+          stored = JSON.parse(await readFile(path.join(directory, component.path), "utf8"));
+        } catch (error) {
+          refuse({ kind: "invalid-review", reason: `it is not JSON: ${error.message}` });
+        }
+        review = handoverReview(stored);
+        break;
+      }
       case "notes":
       case "opaque":
         break;
@@ -193,7 +208,10 @@ export async function inspectArchive(zip, { run = runProcess, scratch }) {
         unreachable(component.kind, "COMPONENT_KINDS");
     }
   }
-  return { root, directory, manifest, chain, components };
+  // Names this exact archive, so a publication retried or re-run recognises its own comments and
+  // a corrected handover under the same name is a different publication rather than a duplicate.
+  const identity = `${manifest.name}@${sha256(bytes).slice(0, 12)}`;
+  return { root, directory, manifest, chain, components, review, identity };
 }
 
 function gitPathExists(run, root, name) {
@@ -379,7 +397,7 @@ function applySeries(run, worktree, hooks, inspected, reconciled) {
  * `merge --ff-only` then refuses. That is a refusal with the checkout unchanged, named for what
  * moved, rather than a raw error that reads as a defect.
  */
-function publish(run, root, hooks, head, tip) {
+function fastForward(run, root, hooks, head, tip) {
   const merged = run(
     "git",
     ["-c", `core.hooksPath=${hooks}`, "merge", "--ff-only", "--quiet", tip],
@@ -417,14 +435,55 @@ async function emptyInbox(inbox) {
 }
 
 /**
- * `npm run patches`: find the one zip in `.handover/`, prove it, apply it, and on success empty
- * the inbox. Nothing is written to the checkout before every patch has applied and landed on its
- * declared blob, and nothing is deleted from the inbox unless the outcome is `applied`.
+ * What a publisher is handed once the series is in: the archive's identity and address, its notes
+ * and review as read from the archive, and the commits the checkout now carries. Read before the
+ * scratch directory is removed, because the notes live only in the extraction.
+ */
+async function appliedHandover(inspected, commits, tip) {
+  const notes = inspected.components.find((component) => component.kind === "notes");
+  return {
+    identity: inspected.identity,
+    name: inspected.manifest.name,
+    issue: inspected.manifest.issue,
+    address: handoverAddress(inspected.manifest),
+    notes: await readFile(path.join(inspected.directory, notes.path), "utf8"),
+    review: inspected.review,
+    tip,
+    commits,
+  };
+}
+
+/**
+ * Runs after the checkout has moved, so like the inbox cleanup it can no longer turn the outcome
+ * into a failure: a publisher that throws is reported as a failed publication with nothing saved.
+ */
+async function publishApplied(publish, handover) {
+  if (publish === null) return { kind: "opted-out" };
+  try {
+    return await publish(handover);
+  } catch (error) {
+    return {
+      kind: "failed",
+      step: "publish",
+      reason: error instanceof Error ? error.message : String(error),
+      pending: null,
+    };
+  }
+}
+
+/**
+ * `npm run patches`: find the one zip in `.handover/`, prove it, apply it, publish its notes, and
+ * on success empty the inbox. Nothing is written to the checkout before every patch has applied
+ * and landed on its declared blob, nothing is published unless the outcome is `applied` (a dry
+ * run never publishes), and nothing is deleted from the inbox unless the outcome is `applied`.
+ * `publish` is the publisher port, or null to opt out; publication happens before the inbox is
+ * emptied so a publisher that saves its payload has done so while the zip still exists.
  */
 export async function applyHandover({
   root,
   dryRun = false,
   keep = false,
+  publish = null,
   run = runProcess,
   temporary = tmpdir(),
 }) {
@@ -471,9 +530,13 @@ export async function applyHandover({
     const commits = commitsBetween(run, worktree, head, tip);
     const name = inspected.manifest.name;
     if (dryRun) return { kind: "verified", name, commits, reconciled };
-    publish(run, root, hooks, head, tip);
+    fastForward(run, root, hooks, head, tip);
+    const publication = await publishApplied(
+      publish,
+      await appliedHandover(inspected, commits, tip),
+    );
     const state = keep ? "kept" : await emptyInbox(inbox);
-    return { kind: "applied", name, commits, reconciled, inbox: state };
+    return { kind: "applied", name, commits, reconciled, inbox: state, publication };
   } catch (error) {
     if (error instanceof HandoverRefusal) return { kind: "refused", refusal: error.refusal };
     throw error;
@@ -581,6 +644,7 @@ export function describeOutcome(outcome) {
           `Applied ${outcome.name} as ${outcome.commits.length} commit(s):`,
           ...commitLines(outcome.commits),
           ...reconciledLines(outcome.reconciled),
+          ...describePublication(outcome.publication),
           inboxLine(outcome.inbox),
         ],
       };

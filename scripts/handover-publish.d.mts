@@ -1,0 +1,95 @@
+import type { AppliedCommit, Run } from "./handover-apply.mjs";
+import type { HandoverAddress, HandoverReview } from "./handover-format.mjs";
+
+export const PUBLICATION_KINDS: readonly [
+  "opted-out",
+  "unaddressed",
+  "deferred",
+  "failed",
+  "published",
+];
+export const DEFERRAL_KINDS: readonly [
+  "remote-missing",
+  "gh-missing",
+  "gh-unauthenticated",
+  "branch-not-pushed",
+  "pull-request-elsewhere",
+];
+export const PUBLICATION_PARTS: readonly ["pull-request", "notes", "review"];
+export const MAX_NOTES_CHARACTERS: number;
+
+export type PublicationPart = (typeof PUBLICATION_PARTS)[number];
+export type CommentPart = Exclude<PublicationPart, "pull-request">;
+
+/** What `applyHandover` hands a publisher once the series is in; also the pending payload. */
+export interface AppliedHandover {
+  readonly identity: string;
+  readonly name: string;
+  readonly issue: number;
+  readonly address: HandoverAddress;
+  readonly notes: string;
+  readonly review: HandoverReview | null;
+  readonly tip: string;
+  readonly commits: readonly AppliedCommit[];
+}
+
+export type Deferral =
+  | { readonly kind: "remote-missing"; readonly repository: string }
+  | { readonly kind: "gh-missing" }
+  | { readonly kind: "gh-unauthenticated" }
+  | {
+      readonly kind: "branch-not-pushed";
+      readonly remote: string;
+      readonly branch: string;
+      readonly tip: string;
+    }
+  | {
+      readonly kind: "pull-request-elsewhere";
+      readonly number: number;
+      readonly head: string;
+      readonly branch: string;
+    };
+
+export interface PublishedDestination {
+  readonly kind: "pull-request" | "issue";
+  readonly number: number;
+  readonly url: string;
+}
+
+export type Publication =
+  | { readonly kind: "opted-out" }
+  | { readonly kind: "unaddressed" }
+  | { readonly kind: "deferred"; readonly reason: Deferral; readonly pending: string }
+  | {
+      readonly kind: "failed";
+      readonly step: string;
+      readonly reason: string;
+      readonly pending: string | null;
+    }
+  | {
+      readonly kind: "published";
+      readonly destination: PublishedDestination;
+      readonly created: boolean;
+      readonly posted: readonly CommentPart[];
+      readonly skipped: readonly CommentPart[];
+    };
+
+export function marker(identity: string, part: PublicationPart): string;
+export function reviewLine(review: HandoverReview | null): string;
+export function pullRequestBody(handover: AppliedHandover): string;
+export function notesComment(handover: AppliedHandover): string;
+/** Only for a handover that carries a review; `commentParts` names when that is. */
+export function reviewComment(handover: AppliedHandover): string;
+export function commentParts(handover: AppliedHandover): CommentPart[];
+export function remoteRepository(url: string): string | null;
+export function publishHandover(
+  handover: AppliedHandover,
+  options: { readonly root: string; readonly run: Run; readonly temporary?: string },
+): Promise<Publication>;
+export function publishPending(options: {
+  readonly root: string;
+  readonly run: Run;
+  readonly temporary?: string;
+}): Promise<readonly { readonly name: string; readonly publication: Publication }[]>;
+export function describePublication(publication: Publication): string[];
+export function isSettled(publication: Publication): boolean;
