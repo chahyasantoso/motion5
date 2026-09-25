@@ -7,6 +7,7 @@ import {
   type WorldPoint,
 } from "./frame";
 import { solveLength, solveOffset, type SolveMember } from "./ik-member";
+import { aimPoint, goalMiss, readGoal, type GoalReading } from "./ik-goal-reading";
 import { branchPulls, compromise, type Pull } from "./ik-goal";
 import { unreachable } from "../lang/exhaustive";
 import {
@@ -308,12 +309,32 @@ export function solveFabrik(
     return isMember(base) ? worldDirection(base) : root.rotation;
   };
 
+  // Every addressed leaf's goal, read once through the one goal reader in canonical order, so the
+  // first `NaN` leaf is the one refused. The passes iterate toward its aim, which is the goal itself
+  // or a direction's stand-in past everything the leaf's path can reach.
+  const readings = new Map<string, GoalReading>();
+  const aims = new Map<string, FabrikPoint>();
+  const pathReach = (leaf: string): number => {
+    let reach = 0;
+    for (let cursor = leaf; isMember(cursor); cursor = baseOf(cursor))
+      reach += lengthOf(cursor) + Math.hypot(offsetOf(cursor).x, offsetOf(cursor).y);
+    return reach;
+  };
+  for (const leaf of addressed) {
+    const goal = goalOf(leaf)!;
+    const reading = readGoal(leaf, [
+      ["x", goal.x],
+      ["y", goal.y],
+    ]);
+    const [x, y] = aimPoint(reading, [root.x, root.y], () => pathReach(leaf));
+    readings.set(leaf, reading);
+    aims.set(leaf, Object.freeze({ x: x!, y: y! }));
+  }
   // Seeded one root-to-leaf path at a time, in canonical leaf order. A member two branches share is
   // seeded by the first of them, and every branch is enforced to length below, so the sharing costs
   // a direction and nothing else.
-  for (const leaf of leaves) {
-    const goal = goalOf(leaf);
-    if (goal === undefined) continue;
+  for (const leaf of addressed) {
+    const goal = aims.get(leaf)!;
     const path: string[] = [];
     let cursor = leaf;
     while (isMember(cursor)) {
@@ -420,7 +441,7 @@ export function solveFabrik(
   };
   /** One addressed leaf's goal shortfall, in world units. */
   const shortfall = (leaf: string): number => {
-    const goal = goalOf(leaf)!;
+    const goal = aims.get(leaf)!;
     const tip = tips.get(leaf)!;
     return Math.hypot(tip.x - goal.x, tip.y - goal.y);
   };
@@ -446,10 +467,7 @@ export function solveFabrik(
     // proposal about its base's tip. A sub-base settles on the influence-weighted compromise of the
     // tips its branches left it, which is the equal average when no goal authored an influence.
     const proposals = new Map<string, Pull[]>();
-    for (const leaf of addressed) {
-      const goal = goalOf(leaf)!;
-      proposals.set(leaf, [{ point: Object.freeze({ x: goal.x, y: goal.y }), weight: 1 }]);
-    }
+    for (const leaf of addressed) proposals.set(leaf, [{ point: aims.get(leaf)!, weight: 1 }]);
     for (let index = ids.length - 1; index >= 0; index -= 1) {
       const id = ids[index]!;
       const proposed = proposals.get(id) ?? [];
@@ -491,7 +509,10 @@ export function solveFabrik(
   const solvedTips: Record<string, FabrikPoint> = {};
   const atBounds: string[] = [];
   const residuals: Record<string, number> = {};
-  for (const leaf of addressed) residuals[leaf] = shortfall(leaf);
+  for (const leaf of addressed) {
+    const tip = tips.get(leaf)!;
+    residuals[leaf] = goalMiss(readings.get(leaf)!, [tip.x, tip.y]);
+  }
   for (const id of ids) {
     // A free joint's `limitRotation` is the identity, so its published angle is the expression it
     // always was, byte for byte. A limited one is already legal from the outward pass and is read
@@ -503,7 +524,18 @@ export function solveFabrik(
     solvedPivots[id] = pivots.get(id)!;
     solvedTips[id] = tips.get(id)!;
   }
-  const quality = iterativeQuality({ residual, iterations, atBound: atBounds, spread, stalled });
+  // The iteration measured its aims; the quality reports the goals. They differ only for a
+  // direction, whose miss is infinite, so its kind is the one this strategy gives any unreachable
+  // goal and its residual says how unreachable.
+  let worst = residual;
+  for (const leaf of addressed) worst = Math.max(worst, residuals[leaf]!);
+  const quality = iterativeQuality({
+    residual: worst,
+    iterations,
+    atBound: atBounds,
+    spread,
+    stalled,
+  });
   return Object.freeze({
     rotations: Object.freeze(rotations),
     residuals: Object.freeze(residuals),

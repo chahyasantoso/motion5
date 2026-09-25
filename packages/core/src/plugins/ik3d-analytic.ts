@@ -16,6 +16,7 @@ import { bandQuality, cosineOpposite } from "./ik-analytic";
 import type { ClosedFormQuality } from "./ik-result";
 import { magnitudeOf, restoreDistance } from "./ik-scale";
 import type { SolveResult3d } from "./ik3d-result";
+import { readGoal } from "./ik-goal-reading";
 
 /** One member of the 3D two-bone chain, read by the plugin from its delivered values. */
 export type SolveMember3d = {
@@ -188,14 +189,39 @@ function solveAtMagnitude(
   secondId: string,
   l2: number,
 ): SolveResult3d {
-  const offset = subtract([target.x, target.y, target.z], [root.x, root.y, root.z]);
-  const distance = norm(offset);
+  const reading = readGoal(secondId, [
+    ["x", target.x],
+    ["y", target.y],
+    ["z", target.z],
+  ]);
   const minReach = Math.abs(l1 - l2);
   const maxReach = l1 + l2;
-  const clampedDistance = clamp(distance, minReach, maxReach);
+  let distance: number;
+  let offset: Vec3;
+  let clampedDistance: number;
+  let band: ClosedFormQuality;
+  switch (reading.kind) {
+    case "point":
+      offset = subtract(
+        [reading.coordinates[0]!, reading.coordinates[1]!, reading.coordinates[2]!],
+        [root.x, root.y, root.z],
+      );
+      distance = norm(offset);
+      clampedDistance = clamp(distance, minReach, maxReach);
+      band = bandQuality(distance, minReach, maxReach, Math.abs(distance - clampedDistance));
+      break;
+    case "direction": {
+      offset = [reading.direction[0]!, reading.direction[1]!, reading.direction[2]!];
+      distance = 1;
+      clampedDistance = maxReach;
+      band = { kind: "too-far", residual: Number.POSITIVE_INFINITY };
+      break;
+    }
+    default:
+      return unreachable(reading);
+  }
   const rootMatrix = matrixFromEuler3d(root);
   const { e1, e2, normal } = bendBasis(rootMatrix, offset, distance);
-  const band = bandQuality(distance, minReach, maxReach, Math.abs(distance - clampedDistance));
 
   let pose: readonly [Euler3d, Euler3d];
   let quality: ClosedFormQuality = band;

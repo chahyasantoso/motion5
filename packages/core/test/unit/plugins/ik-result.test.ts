@@ -266,11 +266,9 @@ describe("one solve result for every strategy", () => {
     expect(south.quality).toEqual({ kind: "too-far", residual: Infinity });
     expect(south.rotations[first.id]).toBeCloseTo(-90, 12);
 
-    const lost = solveTwoBone(ROOT, { x: NaN, y: ROOT.y, rotation: 0 }, first, second);
-    expect(lost.quality.kind).toBe("reached");
-    expect(lost.quality.residual).toBeNaN();
-    expect(lost.rotations[first.id]).toBeNaN();
-    expect(lost.quality.residual <= 1e-6).toBe(false);
+    expect(() => solveTwoBone(ROOT, { x: NaN, y: ROOT.y, rotation: 0 }, first, second)).toThrow(
+      'Solver goal on member "arm/fore" has a NaN x coordinate, which names no point or direction to solve toward.',
+    );
   });
 
   it("IR-10 a negative authored length answers exactly as a zero one, on every exit", () => {

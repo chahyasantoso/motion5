@@ -19,6 +19,8 @@ import {
   solveMagnitude,
 } from "../../../src/plugins/ik-scale";
 import { chainShape, solveChain } from "../../../src/plugins/ik-solve";
+import { readFrame3d } from "../../../src/plugins/frame3d";
+import { solveTwoBone3d } from "../../../src/plugins/ik3d-analytic";
 
 // Issue #349 phase 6 and ADR-111: stability and determinism of the 2D solve.
 //
@@ -672,5 +674,126 @@ describe("IK stability and determinism (issue #349 phase 6)", () => {
       nan: Number.NaN,
     });
     expect(restored.quality.residual).toBeNaN();
+  });
+
+  it("SD-15 non-finite goals are directional or refused without publishing NaN", () => {
+    const spellings = [Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY, Number.NaN];
+    for (const axis of ["x", "y"] as const) {
+      for (const value of spellings) {
+        const analyticGoal = { x: 0, y: 0, rotation: 37 };
+        const analytic: SolveMember[] = [
+          { id: "a", base: "root", length: 80 },
+          { id: "b", base: "a", length: 60, goal: analyticGoal },
+        ];
+        analyticGoal[axis] = value;
+        if (Number.isNaN(value)) {
+          expect(() => solveChain(ORIGIN, analytic)).toThrow(
+            /Solver goal on member "b" has a NaN [xy] coordinate/,
+          );
+        } else {
+          const result = solveChain(ORIGIN, analytic);
+          expect(result.quality).toEqual({ kind: "too-far", residual: Infinity });
+          expect(Object.values(result.rotations).every(Number.isFinite)).toBe(true);
+        }
+        const iterativeGoal = { x: 0, y: 0, rotation: 37 };
+        const iterative: SolveMember[] = [
+          { id: "a", base: "root", length: 30 },
+          { id: "b", base: "a", length: 30 },
+          { id: "c", base: "b", length: 30, goal: iterativeGoal },
+        ];
+        iterativeGoal[axis] = value;
+        if (Number.isNaN(value)) {
+          expect(() => solveChain(ORIGIN, iterative)).toThrow(
+            /Solver goal on member "c" has a NaN [xy] coordinate/,
+          );
+        } else {
+          const result = solveChain(ORIGIN, iterative);
+          expect(result.quality.residual).toBe(Infinity);
+          expect(["stalled", "iteration-cap", "conflicted", "limited"]).toContain(
+            result.quality.kind,
+          );
+          expect(Object.values(result.rotations).every(Number.isFinite)).toBe(true);
+        }
+      }
+    }
+  });
+
+  it("SD-16 a NaN branch refuses the whole multi-goal solve in canonical order", () => {
+    const members: SolveMember[] = [
+      { id: "a", base: "root", length: 30 },
+      { id: "b", base: "a", length: 30, goal: { x: NaN, y: 0, rotation: 1 }, influence: 2 },
+      {
+        id: "c",
+        base: "a",
+        length: 30,
+        goal: { x: Infinity, y: -Infinity, rotation: 2 },
+        influence: 1,
+        limit: { kind: "range", min: -30, max: 30 },
+      },
+    ];
+    expect(() => solveChain(ORIGIN, members)).toThrow(
+      'Solver goal on member "b" has a NaN x coordinate, which names no point or direction to solve toward.',
+    );
+    expect(() =>
+      solveChain(ORIGIN, [
+        { id: "a", base: "root", length: 30 },
+        { id: "b", base: "a", length: 30, goal: { x: NaN, y: NaN, rotation: 1 } },
+        { id: "c", base: "a", length: 30, goal: { x: 20, y: 10, rotation: 0 } },
+      ]),
+    ).toThrow(
+      'Solver goal on member "b" has a NaN x coordinate, which names no point or direction to solve toward.',
+    );
+  });
+
+  it("SD-17 the internal 3D solver classifies every non-finite coordinate once", () => {
+    const root = readFrame3d({});
+    const first = { id: "a", length: 80 };
+    const second = { id: "b", length: 60 };
+    for (const goal of [
+      { x: Infinity, y: 5, z: 7 },
+      { x: -Infinity, y: Infinity, z: 7 },
+      { x: 5, y: -Infinity, z: 7 },
+      { x: 5, y: 7, z: Infinity },
+    ]) {
+      const result = solveTwoBone3d(root, { ...root, ...goal }, first, second);
+      expect(result.quality).toEqual({ kind: "too-far", residual: Infinity });
+      expect(
+        Object.values(result.rotations3d).every((pose) =>
+          Object.values(pose).every(Number.isFinite),
+        ),
+      ).toBe(true);
+    }
+    for (const goal of [
+      { x: NaN, y: 5, z: 7 },
+      { x: 5, y: NaN, z: 7 },
+      { x: 5, y: 7, z: NaN },
+    ]) {
+      expect(() => solveTwoBone3d(root, { ...root, ...goal }, first, second)).toThrow(
+        /Solver goal on member "b" has a NaN [xyz] coordinate/,
+      );
+    }
+  });
+
+  it("SD-18 delivered Infinity goals publish finite rotations; live NaN refusal is pinned above", () => {
+    const members = [
+      { id: "a", base: "root", values: { length: 80 }, progress: 1 },
+      { id: "b", base: "a", values: { length: 60 }, progress: 1 },
+    ];
+    const inputs = (goal: { x: number; y: number; rotation: number }) => ({
+      root: { x: 0, y: 0, rotation: 0 },
+      target: goal,
+      members,
+    });
+    // `readFrame` sanitizes authored requirement records before compose. The direct solve cases above
+    // pin the live-value refusal; this seam pins that an infinite delivered goal still publishes.
+    const composed = ikPlugin.compose(
+      {},
+      1,
+      inputs({ x: Number.POSITIVE_INFINITY, y: 0, rotation: 0 }),
+      "solve",
+    );
+    expect(Object.values(composed.rotations as Record<string, number>).every(Number.isFinite)).toBe(
+      true,
+    );
   });
 });
