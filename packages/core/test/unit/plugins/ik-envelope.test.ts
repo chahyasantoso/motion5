@@ -3,9 +3,10 @@ import { PluginRegistry } from "../../../src/domain/plugins";
 import { Engine } from "../../../src/engine";
 import { unreachable } from "../../../src/lang/exhaustive";
 import { createManualClock } from "../../../src/ports/clock";
-import { FABRIK_MAX_ITERATIONS } from "../../../src/plugins/fabrik";
+import { fabrikIterationCap } from "../../../src/plugins/fabrik-cap";
 import { fkPlugin } from "../../../src/plugins/fk";
 import { ikPlugin } from "../../../src/plugins/ik";
+import type { SolveMember } from "../../../src/plugins/ik-member";
 import type { SolveQuality, SolveResult } from "../../../src/plugins/ik-result";
 import { chainShape, solveChain } from "../../../src/plugins/ik-solve";
 import { transformPlugin } from "../../../src/plugins/transform";
@@ -57,6 +58,22 @@ function iterationsOf(quality: SolveQuality): number | undefined {
   }
 }
 
+/**
+ * Members on the rig's longest root-to-leaf path, counted here rather than read from the solver, so
+ * the cap each rig is held to is not derived by the code under test.
+ */
+function serialDepth(members: readonly SolveMember[]): number {
+  const byId = new Map(members.map((member) => [member.id, member]));
+  let deepest = 0;
+  for (const member of members) {
+    let depth = 0;
+    for (let at: SolveMember | undefined = member; at !== undefined; at = byId.get(at.base))
+      depth += 1;
+    deepest = Math.max(deepest, depth);
+  }
+  return deepest;
+}
+
 function solveAll(scenario: EnvelopeScenario): readonly SolveResult[] {
   return scenario.rigs.map((rig) => solveChain(rig.root, rig.members, rig.flip));
 }
@@ -98,17 +115,19 @@ describe("IK envelope (#349 phase 7, ADR-113)", () => {
     }
   });
 
-  it("EN-3 the closed form states no iterations and every iterative solve stays inside the cap", () => {
+  it("EN-3 the closed form states no iterations and every iterative solve stays inside its cap", () => {
     for (const scenario of scenarios) {
-      for (const result of solveAll(scenario)) {
-        const iterations = iterationsOf(result.quality);
+      const results = solveAll(scenario);
+      scenario.rigs.forEach((rig, index) => {
+        const iterations = iterationsOf(results[index]!.quality);
         if (scenario.shape === "two-bone") {
           expect(iterations).toBeUndefined();
-          continue;
+          return;
         }
         expect(iterations).toBeGreaterThanOrEqual(1);
-        expect(iterations).toBeLessThanOrEqual(FABRIK_MAX_ITERATIONS);
-      }
+        // The cap scales with serial depth (issue #491, ADR-115), so each rig is held to its own.
+        expect(iterations).toBeLessThanOrEqual(fabrikIterationCap(serialDepth(rig.members)));
+      });
     }
   });
 
@@ -174,6 +193,8 @@ describe("IK envelope (#349 phase 7, ADR-113)", () => {
         result[solved.quality.kind] = (result[solved.quality.kind] ?? 0) + 1;
       counts.set(scenario.id, result);
     }
+    // Issue #491: the depth-scaled cap finishes the chain-64 rigs a fixed 64 left moving.
+    expect(counts.get("chain-64")).toEqual({ converged: 40 });
     expect(counts.get("tree-14")).toEqual({ converged: 39, "iteration-cap": 1 });
     expect(counts.get("tree-30")).toEqual({ converged: 27, conflicted: 13 });
     expect(counts.get("tree-14-conflicting")).toEqual({ conflicted: 40 });
