@@ -9,6 +9,7 @@ import {
   ZERO_EULER,
   effectiveLink3d,
   pivotFromBase3d,
+  readPivotOffset3d,
   type EffectiveLink3d,
   type Euler3d,
   type Matrix3,
@@ -26,8 +27,12 @@ import { readGoal } from "./ik-goal-reading";
 export type SolveMember3d = {
   readonly id: string;
   readonly length: number;
-  /** Optional for direct callers predating the plugin's delivered member shape. */
-  readonly offset?: PivotOffset3d;
+  /**
+   * The member's pivot offset in its parent's rotated frame, required so the solver has one member
+   * shape. It is re-read through `readPivotOffset3d` as `length` is through `readNumber`, so a
+   * direct caller's non-finite component is zero here exactly as an authored one is (ADR-117).
+   */
+  readonly offset: PivotOffset3d;
 };
 
 function dot(a: Vec3, b: Vec3): number {
@@ -144,8 +149,8 @@ export function solveTwoBone3d(
 ): SolveResult3d {
   const l1 = segmentExtent(readNumber(first.length));
   const l2 = segmentExtent(readNumber(second.length));
-  const firstOffset = first.offset ?? { x: 0, y: 0, z: 0 };
-  const secondOffset = second.offset ?? { x: 0, y: 0, z: 0 };
+  const firstOffset = readPivotOffset3d(first.offset);
+  const secondOffset = readPivotOffset3d(second.offset);
   const magnitude = magnitudeOf([
     root.x,
     root.y,

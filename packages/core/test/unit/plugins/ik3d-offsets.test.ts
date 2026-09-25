@@ -65,6 +65,25 @@ describe("3D pivot offsets", () => {
     expect(compose(base, values, "upper", solver)).toEqual(phase1);
     expect(compose(base, { ...values, x: 0, y: 0, z: 0 }, "upper", solver)).toEqual(phase1);
     expect(compose(base, { ...values, x: -0, y: 0, z: 0 }, "upper", solver)).toEqual(phase1);
+
+    // A direct solver caller's offset is re-read by the same owner, as its length is by
+    // `readNumber`, so a non-finite component is zero there too rather than a NaN residual.
+    const goal = readFrame3d({ x: 60, y: 20, z: -30 });
+    const read = solveTwoBone3d(
+      base,
+      goal,
+      { id: "upper", length: 50, offset: { x: 5, y: 0, z: 0 } },
+      { id: "fore", length: 40, offset: { x: 0, y: 3, z: 0 } },
+    );
+    expect(Number.isFinite(read.quality.residual)).toBe(true);
+    expect(
+      solveTwoBone3d(
+        base,
+        goal,
+        { id: "upper", length: 50, offset: { x: 5, y: NaN, z: Infinity } },
+        { id: "fore", length: 40, offset: { x: -Infinity, y: 3, z: NaN } },
+      ),
+    ).toEqual(read);
   });
 
   it("TH-34 reads the effective-link union and the pivot zero short-circuit", () => {
