@@ -677,6 +677,11 @@ describe("IK stability and determinism (issue #349 phase 6)", () => {
   });
 
   it("SD-15 non-finite goals are directional or refused without publishing NaN", () => {
+    // Each infinite spelling names one axis direction, so both strategies publish the whole path
+    // straightened along it: the first member turned to the direction's angle and every later one at
+    // zero. Pinning the pose, not only its finiteness, is what holds FABRIK's stand-in on the ray.
+    const angleOf = (axis: "x" | "y", value: number): number =>
+      axis === "x" ? (value > 0 ? 0 : 180) : value > 0 ? 90 : -90;
     const spellings = [Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY, Number.NaN];
     for (const axis of ["x", "y"] as const) {
       for (const value of spellings) {
@@ -694,6 +699,9 @@ describe("IK stability and determinism (issue #349 phase 6)", () => {
           const result = solveChain(ORIGIN, analytic);
           expect(result.quality).toEqual({ kind: "too-far", residual: Infinity });
           expect(Object.values(result.rotations).every(Number.isFinite)).toBe(true);
+          expect(result.residuals).toEqual({ b: Infinity });
+          expect(result.rotations["a"]).toBeCloseTo(angleOf(axis, value), 9);
+          expect(result.rotations["b"]).toBeCloseTo(0, 9);
         }
         const iterativeGoal = { x: 0, y: 0, rotation: 37 };
         const iterative: SolveMember[] = [
@@ -713,6 +721,10 @@ describe("IK stability and determinism (issue #349 phase 6)", () => {
             result.quality.kind,
           );
           expect(Object.values(result.rotations).every(Number.isFinite)).toBe(true);
+          expect(result.residuals).toEqual({ c: Infinity });
+          expect(result.rotations["a"]).toBeCloseTo(angleOf(axis, value), 9);
+          expect(result.rotations["b"]).toBeCloseTo(0, 9);
+          expect(result.rotations["c"]).toBeCloseTo(0, 9);
         }
       }
     }
