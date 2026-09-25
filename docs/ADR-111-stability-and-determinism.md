@@ -10,8 +10,9 @@ phase 6, against `main` at `7e6f4edc` (phase 5, PR #486, ADR-110).
 - **Finite.** For every rig whose root, lengths, pivot offsets and goals are finite, every published
   rotation, every per-leaf residual and `quality.residual` is finite, including a rig that mixes
   members of very different magnitude. A finite residual that would exceed the largest double is
-  `Number.MAX_VALUE`; an infinite goal keeps ADR-107's `too-far` with an infinite residual, and a
-  `NaN` is never laundered into a finite number.
+  `Number.MAX_VALUE`, and a `NaN` is never laundered into a finite number. The amendment of
+  2026-09-25 below extends the claim to non-finite goals: an infinite goal coordinate is a direction
+  on every strategy, and a `NaN` one refuses the solve by name.
 - **Scale-free.** Scaling every world-unit field of a rig by a power of two leaves the closed form's
   rotations bit-identical, and a rig past `SOLVE_MAGNITUDE_CEILING` (`2 ** 500`) publishes exactly
   the result of its power-of-two image at the ceiling, with residuals restored to world units.
@@ -241,3 +242,109 @@ placement and the interior-goal refusal, still under the 30,000-byte sister-docu
 next strategy, including phase 8's `ik3d`, inherits totality at the dispatcher rather than restating
 it, as long as it is reached through `solveChain`. Nothing is authorable and no load rule is added,
 so the authored schema and the errors guide are unchanged.
+
+## Amendment, 2026-09-25: a goal is a point or a direction, and a `NaN` coordinate is refused by name
+
+Issue [#489](https://github.com/chahyasantoso/motion5/issues/489), found by the independent quality
+pass on [#488](https://github.com/chahyasantoso/motion5/pull/488), against `main` at `7aa47815`
+(#495 squash-merged). The **Finite** claim above was scoped to finite goals, and the gap was in the
+contract rather than a regression: FABRIK published `NaN` rotations for every non-finite goal.
+
+### Invariant
+
+For every rig whose root, lengths and pivot offsets are finite, whatever its goals hold, every
+published rotation is finite or the solve is refused by name, and no strategy publishes `NaN`. A
+goal coordinate that is `Infinity` or `-Infinity` makes the goal a direction; a `NaN` coordinate
+names neither a point nor a direction and throws
+`Solver goal on member "<id>" has a NaN <axis> coordinate, which names no point or direction to solve toward.`,
+citing the first such coordinate in canonical order (members as the strategy orders them, then axes
+`x`, `y` and, on the internal 3D closed form, `z`). The 2D closed form, FABRIK and the internal 3D
+closed form answer this one way because one module answers it for all three (ADR-106).
+
+### What was measured before the fix
+
+Through the runtime no solver receives a non-finite goal: `readFrame` reads a non-finite field as
+zero at the plugin boundary (`readNumber` in `frame.ts`), and the publisher's renderer-neutrality
+check refuses any composition holding a non-finite number, so no goal source can publish one. The
+defect lived in the pure solve functions, which is exactly what this record claims to be total. On
+`7aa47815`:
+
+- The 2D closed form already published finite rotations for `Infinity` and `-Infinity`, as
+  `too-far` with an infinite residual, because `Math.atan2` treats an infinity as a direction. A
+  `NaN` coordinate published `NaN` rotations reported as `reached` with a `NaN` residual, which
+  `IR-9` pinned.
+- FABRIK published `NaN` for every non-finite spelling. The first `NaN` came from `Math.hypot` in
+  the seed arc, and one infinite leaf in a tree contaminated every member of the tree.
+- The internal 3D closed form absorbed a non-finite goal into its rest-pose fallbacks and reported
+  a non-finite residual.
+
+### Decisions taken, not asked
+
+**One owner reads a goal.** `ik-goal-reading.ts` owns the closed union
+`GoalReading = { kind: "point", coordinates } | { kind: "direction", direction }` and three readings
+of it, each an exhaustive `switch` ending in `unreachable` (ADR-092). `readGoal(memberId, axes)`
+classifies or refuses. `aimPoint(reading, origin, reach)` is the finite point an iterative solve
+moves a tip toward. `goalMiss(reading, tip)` is the residual a solve publishes. No strategy keeps a
+private predicate or ternary on whether a goal is a direction.
+
+**An infinite coordinate is a direction.** The direction is the unit vector of the signs of the
+infinite coordinates, to which a finite coordinate contributes zero, so `(Infinity, 5)` is `+x` and
+`(Infinity, -Infinity)` is `-45` degrees. That is what `atan2` already gave the 2D closed form, now
+stated once. The closed forms aim along it fully extended and report `too-far` with an infinite
+residual. FABRIK aims at a stand-in on the ray from the root at twice the reach of the leaf's path
+(the sum of its members' solve lengths and pivot offsets, floor one unit, saturating at a quarter of
+the largest double), so the passes run unchanged and straighten the path along the direction as
+they do toward any unreachable goal; the published per-leaf residual is `Infinity`, and
+`quality.residual` is the larger of the iteration's residual and every published miss, which equals
+the iteration's residual on every finite rig. The kind is whatever FABRIK gives an unreachable goal
+(`stalled` for a single chain). No new quality kind is added, and `too-far` stays closed-form only,
+so `IR-7`'s strategy-family recovery holds.
+
+**A `NaN` coordinate refuses the whole solve.** Including a tree where one leaf is `NaN` and its
+siblings are finite: a `NaN` is a defect to surface, the rule `restoreDistance` already documents,
+and silently dropping one branch would hide it. The refusal is a thrown `Error` like every other
+solver refusal, so were it ever delivered it would surface as the node's `composition-failure`.
+
+**Withdrawn.** Refusing infinities, which regresses the closed form's pinned directional behaviour.
+Reading `NaN` as no goal for the tick, which hides a defect and invents a pose. A FABRIK `too-far`,
+which breaks ADR-107's family rule. A FABRIK-private set of directional leaves beside a ternary on
+the quality residual, which the first prototype had: two places answering whether a goal is a
+direction is the defect ADR-106 exists to prevent. A runtime case through `ikPlugin.compose` with an
+infinite goal, which would pin only `readFrame`'s laundering to zero rather than this decision.
+
+### Evidence
+
+`packages/core/test/unit/plugins/ik-stability.test.ts`:
+
+- `SD-15`: every spelling (`Infinity`, `-Infinity`, `NaN`) on `x` and on `y`, on a two-bone pair and
+  on a three-member FABRIK chain. An infinite spelling publishes the whole path straightened along
+  the axis it names (first member at `0`, `180`, `90` or `-90` degrees, every later member at zero),
+  the per-leaf residual `Infinity`, `too-far` on the closed form and `stalled` on FABRIK; `NaN`
+  throws naming the member and axis.
+- `SD-16`: a tree whose first leaf in canonical order is `NaN` and whose sibling is directional and
+  limited refuses naming the first leaf, and so does a tree with a finite sibling.
+- `SD-17`: the internal 3D closed form reads each infinite spelling on `x`, `y` and `z` as
+  `too-far` with an infinite residual and finite rotations, and refuses `NaN` on each axis.
+
+`IR-9` in `ik-result.test.ts` replaces its `NaN`-reads-`reached` expectation with the refusal.
+Mutations of `ik-goal-reading.ts`, each run against `SD-15` to `SD-17` and `IR-9`: `readGoal` always
+answering a point fails `SD-15`; removing the refusal fails all four; a direction's miss measured as
+a finite distance fails `SD-15`; a direction's aim at the origin instead of its stand-in fails
+`SD-15`. The last survived the first revision of `SD-15`, which asserted only finiteness, and is
+why `SD-15` pins the pose.
+
+Byte identity was measured against `7aa47815`: 300,000 seeded finite rigs in eight families of
+37,500 (two-bone, serial FABRIK chains of three to 64, branching trees with and without influence,
+joint limits, pivot offsets, zero, negative-zero and negative lengths, magnitudes near and past
+`SOLVE_MAGNITUDE_CEILING`, and the internal 3D two-bone solve) were solved on both trees and every
+published field, including per-leaf residuals, every quality field and `inspectSolve`'s projection,
+was identical under `Object.is` with identical key order. The harness and its output travel in the
+handover given to the requester, not in this repository; they have no run in this repository's
+suite and their output is reviewed rather than trusted.
+
+### Consequences
+
+`ik-goal-reading.ts` is a new module of about 4,500 bytes; `fabrik.ts` is 28,586 bytes, still under
+the 30,000-byte sister-document threshold. The published bytes of every finite rig are unchanged,
+and nothing is authorable, so no load rule is added and the authored schema is unchanged. The
+runtime answer is unchanged too, because no delivered goal is non-finite.

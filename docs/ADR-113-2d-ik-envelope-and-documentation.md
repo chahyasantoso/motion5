@@ -57,9 +57,10 @@ That name does not claim that no pose exists.
 
 The numerical scale policy remains the one established by ADR-111. Native finite inputs are read
 without scene scaling. Above `2 ** 500` in finite world-unit magnitude, the solve uses an exact
-power-of-two image and restores residuals to world units; rotations are unchanged. Infinite goals
-remain directional and NaN remains visible rather than being laundered into a plausible finite
-answer. The absolute FABRIK tolerance remains `0.001` world units.
+power-of-two image and restores residuals to world units; rotations are unchanged. An infinite goal
+coordinate is a direction on every strategy and a `NaN` goal coordinate refuses the solve by name
+(ADR-111, amendment of 2026-09-25, #489); any other `NaN` remains visible rather than being
+laundered into a plausible finite answer. The absolute FABRIK tolerance remains `0.001` world units.
 
 The lifecycle record is intentionally cross-linked rather than duplicated as a new runtime rule.
 Load and mount do not seed a publication. Member value writes invalidate dependants without a graph
