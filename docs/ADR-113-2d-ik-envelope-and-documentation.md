@@ -69,12 +69,13 @@ removal seed the solver. The pure solve carries no previous frame into the next 
 
 ## Measurements
 
-The paired benchmark reports were recorded on 2026-09-24 with Node `v22.23.1`, V8
-`12.4.254.21-node.56`, `linux x64`, an Intel(R) Xeon(R) Processor @ 2.60GHz, and 4 cores. Each
-solve scenario used 200 rigs. Each number was the median of 7 samples, each sample running
-back-to-back calls for at least 60 ms after one warm-up pass. The machine had no deliberate heavy
-work, although other agents may have been running tests. Run 1 is the primary report in
-[BENCH-IK.md](./BENCH-IK.md); run 2 is the paired variance check.
+This section is the phase-7 record, taken before #490; its tree quality counts are the pre-#490
+baseline, and the dated #490 section below states the current ones. The paired benchmark reports
+were recorded on 2026-09-24 with Node `v22.23.1`, V8 `12.4.254.21-node.56`, `linux x64`, an Intel(R)
+Xeon(R) Processor @ 2.60GHz, and 4 cores. Each solve scenario used 200 rigs. Each number was the
+median of 7 samples, each sample running back-to-back calls for at least 60 ms after one warm-up
+pass. The machine had no deliberate heavy work, although other agents may have been running tests.
+Run 1 is the primary report in [BENCH-IK.md](./BENCH-IK.md); run 2 is the paired variance check.
 
 Run 1 measured 2.3257 microseconds for the two-bone closed form, 76.2351 microseconds for chain-8,
 923.4225 microseconds for chain-32, and 2,967.4311 microseconds for chain-64. Chain-64 had 183
@@ -104,6 +105,24 @@ The same probe found that all 17 chain-64 results that hit the default cap conve
 is slow serial convergence, a different cause from the tree centroid fixed points. Choosing a fixed
 cap for that behavior is tracked by [#491](https://github.com/chahyasantoso/motion5/issues/491), not
 decided in phase 7.
+
+## Issue #490 measurement (2026-09-25)
+
+The #490 selector (ADR-110) changes the envelope's tree scenarios and nothing else. On the seeded
+200-rig envelope, measured in a sandbox with esbuild bundles of the real modules on Node
+`v22.23.1` (reviewed, not trusted; no run in this repository's suite): tree-14 reports 196
+`converged`, 1 `iteration-cap` and 3 `conflicted` where the pre-#490 solve reported 9, 1 and 190;
+tree-30 reports 139 `converged` and 61 `conflicted` where it reported 200 `conflicted`;
+tree-14-conflicting remains 200 `conflicted`. The selector strictly improved 189, 172 and 115 of
+those rigs and regressed none. Two-bone, chain-8, chain-32, chain-64 and constrained-8 are
+`Object.is`-identical to the pre-#490 solve on every rig, as the direct-return gate requires, and so
+is every tree rig whose pre-#490 result was not `conflicted`. The cost is paid only by conflicted
+rigs: summing `quality.iterations` over every attempt, tree-14 charges 26,806 passes against the
+pre-#490 12,663, tree-30 36,671 against 12,800, and tree-14-conflicting 49,703 against 12,800.
+`EN-5` pins the envelope's quality counts at its 40-rig test size, and
+[BENCH-IK.md](./BENCH-IK.md) carries the residual distributions. The harness that produced them was
+carried with the #490 handover rather than committed, so they are reviewed evidence that
+`npm run bench:ik` does not reproduce.
 
 ## Withdrawn
 
@@ -136,7 +155,7 @@ must update the owning fixtures, EN evidence, and this record's measured conditi
 
 ## Evidence
 
-`EN-1` through `EN-4` in `packages/core/test/unit/plugins/ik-envelope.test.ts` cover strategy
+`EN-1` through `EN-5` in `packages/core/test/unit/plugins/ik-envelope.test.ts` cover strategy
 selection, finite output, independent rigs, and the iteration envelope. `GE-1` through `GE-5` in
 `packages/core/test/unit/plugins/ik-guide-examples.test.ts` execute the JSON examples in the guide.
 The benchmark uses the same support module and is reproduced with `npm run bench:ik`. The recorded

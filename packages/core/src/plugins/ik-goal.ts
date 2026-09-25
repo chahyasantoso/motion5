@@ -1,6 +1,7 @@
 import { INFLUENCE_KEY, readInfluenceValue } from "../contract/solver-constraints";
 import type { WorldPoint } from "./frame";
 import type { SolveMember } from "./ik-member";
+import { unreachable } from "../lang/exhaustive";
 
 /**
  * The one runtime owner of goal influence: how strongly each addressed goal pulls on the members
@@ -90,10 +91,61 @@ function scaledMean(influences: readonly number[]): number {
   return scale * (ratios / influences.length);
 }
 
-/** One branch's proposal for a shared member's tip, and the pull it is weighed by. */
-export interface Pull {
-  readonly point: WorldPoint;
-  readonly weight: number;
+/**
+ * The closed compromise policy, read by one exhaustive `switch` in `compromise`.
+ *
+ * `centroid` is the historical rule and the one every authored-seed baseline uses. `reach-circle`
+ * is the alternative FABRIK's conflict selector tries only after the centroid baseline reports
+ * `conflicted` (issue #490, ADR-110). No third rule is implied by the union being closed; a new one
+ * is a decision recorded in ADR-110 and a compile error at every reader until it is handled.
+ */
+export type CompromiseRule = "centroid" | "reach-circle";
+
+/**
+ * A circle a shared member's tip should lie on for one proposal to be met exactly.
+ *
+ * `radius` is non-negative and `centre` is finite, because both come from a finite solve state.
+ */
+export interface ReachCircle {
+  readonly centre: WorldPoint;
+  readonly radius: number;
+}
+
+/**
+ * One proposal for a member's tip, and the pull it is weighed by: a closed union by `kind`.
+ *
+ * A `goal` pull is an addressed leaf's own aim. It is the only proposal a leaf ever receives,
+ * because a goal is read only on a leaf, and its reach circle is the aim itself with radius `0`.
+ *
+ * A `branch` pull is a child member's proposal about its base's tip. `point` is the tip the child
+ * proposes (its placed pivot, un-offset through the base's direction), and `reach` is where the
+ * base's tip may lie for the child's length to hold while the child's tip stays where the inward
+ * pass left it: the child's tip un-offset the same way, at radius the child's solve length. The
+ * proposal `point` lies on that circle by construction, so the centroid rule and the reach-circle
+ * rule read the same geometry, and the reach circle accounts for pivot offsets exactly because it
+ * is taken through the same `baseTipFromPivot` conversion as `point`.
+ *
+ * Read with `reachCircleOf`, never by probing for a field.
+ */
+export type Pull =
+  | { readonly kind: "goal"; readonly point: WorldPoint; readonly weight: number }
+  | {
+      readonly kind: "branch";
+      readonly point: WorldPoint;
+      readonly weight: number;
+      readonly reach: ReachCircle;
+    };
+
+/** The circle one pull is met on, read exhaustively over the closed `Pull` union. */
+export function reachCircleOf(pull: Pull): ReachCircle {
+  switch (pull.kind) {
+    case "goal":
+      return { centre: pull.point, radius: 0 };
+    case "branch":
+      return pull.reach;
+    default:
+      return unreachable(pull);
+  }
 }
 
 /**
@@ -124,8 +176,26 @@ export interface Compromise {
  * finite by construction (`readInfluenceValue` admits nothing else and a pull is a scaled mean of
  * admitted values), and `pulls` is never empty because FABRIK asks only about a member that
  * received a proposal.
+ *
+ * That mean is the `centroid` rule's point and the seed of the `reach-circle` rule's fit. Both
+ * rules report the same `spread`, measured around the mean, so `conflicted` keeps one witness
+ * whichever rule placed the member. The default rule is the historical one, so a caller that never
+ * names a rule settles exactly where it always did.
  */
-export function compromise(pulls: readonly Pull[]): Compromise {
+export function compromise(pulls: readonly Pull[], rule: CompromiseRule = "centroid"): Compromise {
+  const centroid = weightedCentroid(pulls);
+  const spread = proposalSpread(pulls, centroid);
+  switch (rule) {
+    case "centroid":
+      return { point: centroid, spread };
+    case "reach-circle":
+      return { point: reachCircleFit(pulls, centroid), spread };
+    default:
+      return unreachable(rule);
+  }
+}
+
+function weightedCentroid(pulls: readonly Pull[]): WorldPoint {
   const lone = pulls.length === 1;
   let scale = 0;
   for (const { weight } of pulls) scale = Math.max(scale, weight);
@@ -138,10 +208,82 @@ export function compromise(pulls: readonly Pull[]): Compromise {
     sumY += w * point.y;
     sumW += w;
   }
-  const point: WorldPoint = Object.freeze({ x: sumX / sumW, y: sumY / sumW });
+  return Object.freeze({ x: sumX / sumW, y: sumY / sumW });
+}
+
+function proposalSpread(pulls: readonly Pull[], point: WorldPoint): number {
   let spread = 0;
   for (const pull of pulls) {
     spread = Math.max(spread, Math.hypot(pull.point.x - point.x, pull.point.y - point.y));
   }
-  return { point, spread };
+  return spread;
+}
+
+/** Gauss-Newton steps the reach-circle fit takes, fixed so its cost and answer are fixed. */
+const REACH_CIRCLE_STEPS = 6;
+/** Levenberg damping on the normal equations, fixed; it only keeps a rank-one system solvable. */
+const REACH_CIRCLE_DAMPING = 1e-6;
+
+/**
+ * Fit one tip to its pulls' reach circles by a fixed number of damped Gauss-Newton steps.
+ *
+ * The objective is `Σ (w_i / max w) · (|p − centre_i| − radius_i)²`. Weights are taken relative to
+ * the largest pull exactly as `weightedCentroid` takes them, so the fit and the centroid share one
+ * normalisation: every relative weight is in `(0, 1]` and the largest is `1`, which keeps the
+ * normal equations finite for pulls near `Number.MAX_VALUE`, and scaling every influence by one
+ * factor changes neither answer.
+ *
+ * Seeded at the centroid, because the centroid is the rule's baseline and the fit must never be
+ * worse than it: a non-finite step, a singular system, or a final objective that does not strictly
+ * improve the centroid's keeps the centroid. A lone pull settles on its own proposal exactly, as
+ * the centroid does. A pull whose centre coincides with the current point takes the positive x axis
+ * for its Jacobian row, which is arbitrary but total and identical on every call. The proposal
+ * spread is measured by the caller around the centroid, not around this point, because the spread
+ * is the `conflicted` witness and not a property of this alternative. See ADR-110.
+ */
+function reachCircleFit(pulls: readonly Pull[], centroid: WorldPoint): WorldPoint {
+  if (pulls.length === 1) return centroid;
+  let scale = 0;
+  for (const { weight } of pulls) scale = Math.max(scale, weight);
+  const circles = pulls.map((pull) => ({ ...reachCircleOf(pull), weight: pull.weight / scale }));
+  const objective = (point: WorldPoint): number => {
+    let value = 0;
+    for (const { centre, radius, weight } of circles) {
+      const error = Math.hypot(point.x - centre.x, point.y - centre.y) - radius;
+      value += weight * error * error;
+    }
+    return value;
+  };
+  let point = centroid;
+  for (let step = 0; step < REACH_CIRCLE_STEPS; step += 1) {
+    let jxx = REACH_CIRCLE_DAMPING;
+    let jxy = 0;
+    let jyy = REACH_CIRCLE_DAMPING;
+    let bx = 0;
+    let by = 0;
+    for (const { centre, radius, weight } of circles) {
+      const dx = point.x - centre.x;
+      const dy = point.y - centre.y;
+      const distance = Math.hypot(dx, dy);
+      const axisX = distance === 0 ? 1 : dx / distance;
+      const axisY = distance === 0 ? 0 : dy / distance;
+      const error = distance - radius;
+      jxx += weight * axisX * axisX;
+      jxy += weight * axisX * axisY;
+      jyy += weight * axisY * axisY;
+      bx += weight * axisX * error;
+      by += weight * axisY * error;
+    }
+    const determinant = jxx * jyy - jxy * jxy;
+    if (!Number.isFinite(determinant) || determinant === 0) return centroid;
+    const next = {
+      x: point.x + (-jyy * bx + jxy * by) / determinant,
+      y: point.y + (jxy * bx - jxx * by) / determinant,
+    };
+    if (!Number.isFinite(next.x) || !Number.isFinite(next.y)) return centroid;
+    point = next;
+  }
+  const fitted = objective(point);
+  const seeded = objective(centroid);
+  return Number.isFinite(fitted) && fitted < seeded ? Object.freeze(point) : centroid;
 }

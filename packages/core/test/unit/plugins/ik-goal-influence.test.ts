@@ -12,7 +12,13 @@ import { createManualClock } from "../../../src/ports/clock";
 import { createFakeInterpolator, createFakeScheduler } from "../../../src/testing/fakes";
 import { fkPlugin } from "../../../src/plugins/fk";
 import { ikPlugin } from "../../../src/plugins/ik";
-import { branchPulls, compromise, readInfluence } from "../../../src/plugins/ik-goal";
+import {
+  branchPulls,
+  compromise,
+  reachCircleOf,
+  readInfluence,
+  type Pull,
+} from "../../../src/plugins/ik-goal";
 import { readSolveMembers, type DeliveredMember } from "../../../src/plugins/ik-chain";
 import { FABRIK_TOLERANCE, iterativeQuality, solveFabrik } from "../../../src/plugins/fabrik";
 import { solveChain } from "../../../src/plugins/ik-solve";
@@ -155,23 +161,23 @@ function twoBranchMembers(aInfluence?: number, bInfluence?: number): readonly So
 describe("IK goal influence and conflict policy", () => {
   it("GI-1 compromises equal and weighted proposals, including zero and spread", () => {
     const equal = compromise([
-      { point: { x: -0, y: 2 }, weight: 1 },
-      { point: { x: 4, y: 6 }, weight: 1 },
+      { kind: "goal", point: { x: -0, y: 2 }, weight: 1 },
+      { kind: "goal", point: { x: 4, y: 6 }, weight: 1 },
     ]);
     expect(equal.point).toEqual({ x: 2, y: 4 });
     expect(Object.is(equal.point.x, -0)).toBe(false);
     expect(equal.spread).toBeCloseTo(Math.hypot(2, 2), 12);
 
     const weighted = compromise([
-      { point: { x: 0, y: 0 }, weight: 1 },
-      { point: { x: 10, y: 20 }, weight: 3 },
+      { kind: "goal", point: { x: 0, y: 0 }, weight: 1 },
+      { kind: "goal", point: { x: 10, y: 20 }, weight: 3 },
     ]);
     expect(weighted.point).toEqual({ x: 7.5, y: 15 });
-    expect(compromise([{ point: { x: 3, y: -4 }, weight: 99 }])).toEqual({
+    expect(compromise([{ kind: "goal", point: { x: 3, y: -4 }, weight: 99 }])).toEqual({
       point: { x: 3, y: -4 },
       spread: 0,
     });
-    expect(compromise([{ point: { x: 3, y: 4 }, weight: 1 }]).spread).toBe(0);
+    expect(compromise([{ kind: "goal", point: { x: 3, y: 4 }, weight: 1 }]).spread).toBe(0);
   });
 
   it("GI-2 gives each subtree the mean addressed-leaf pull and defaults empty ones", () => {
@@ -441,8 +447,8 @@ describe("IK goal influence and conflict policy", () => {
     );
     expect(pulls.get("shared")).toBe(Number.MAX_VALUE);
     const huge = compromise([
-      { point: { x: 0, y: 0 }, weight: Number.MAX_VALUE },
-      { point: { x: 4, y: 8 }, weight: Number.MAX_VALUE },
+      { kind: "goal", point: { x: 0, y: 0 }, weight: Number.MAX_VALUE },
+      { kind: "goal", point: { x: 4, y: 8 }, weight: Number.MAX_VALUE },
     ]);
     expect(huge.point).toEqual({ x: 2, y: 4 });
   });
@@ -491,5 +497,49 @@ describe("IK goal influence and conflict policy", () => {
         expect(scope.get("m")).toBe(expected);
       }
     }
+  });
+
+  it("GI-17 fits weighted reach circles, reads every pull kind, and guards the centroid", () => {
+    const branch = (x: number, weight: number, radius: number): Pull => ({
+      kind: "branch",
+      point: { x, y: 0 },
+      weight,
+      reach: { centre: { x, y: 0 }, radius },
+    });
+    const pulls: readonly Pull[] = [branch(0, 1, 10), branch(10, 1, 10), branch(20, 2, 5)];
+    const centroid = compromise(pulls);
+    const fitted = compromise(pulls, "reach-circle");
+    // The objective the fit owns, with weights relative to the largest pull as ADR-110 states.
+    const objective = (point: { x: number; y: number }): number =>
+      pulls.reduce((sum, pull) => {
+        const { centre, radius } = reachCircleOf(pull);
+        const error = Math.hypot(point.x - centre.x, point.y - centre.y) - radius;
+        return sum + (pull.weight / 2) * error * error;
+      }, 0);
+    expect(objective(fitted.point)).toBeLessThan(objective(centroid.point));
+    // Both rules report the one conflict witness, measured around the centroid.
+    expect(fitted.spread).toBe(centroid.spread);
+    // Scaling every influence by one factor changes neither answer.
+    const scaled = pulls.map((pull) => ({ ...pull, weight: pull.weight * 1e300 }));
+    expect(compromise(scaled, "reach-circle").point).toEqual(fitted.point);
+    // A goal pull is met only at its own aim: a radius-zero circle there.
+    expect(reachCircleOf({ kind: "goal", point: { x: 3, y: 4 }, weight: 7 })).toEqual({
+      centre: { x: 3, y: 4 },
+      radius: 0,
+    });
+    // A lone pull of either kind settles on its own proposal under both rules, whatever its pull.
+    for (const lone of [
+      { kind: "goal", point: { x: 3, y: 4 }, weight: 99 },
+      branch(3, 99, 1),
+    ] as const)
+      expect(compromise([lone], "reach-circle")).toEqual(compromise([lone], "centroid"));
+    // A fit that cannot strictly improve the centroid keeps it: two circles already met there.
+    const circle = (x: number): Pull => ({
+      kind: "branch",
+      point: { x: 0, y: 0 },
+      weight: 1,
+      reach: { centre: { x, y: 0 }, radius: 1 },
+    });
+    expect(compromise([circle(-1), circle(1)], "reach-circle").point).toEqual({ x: 0, y: 0 });
   });
 });

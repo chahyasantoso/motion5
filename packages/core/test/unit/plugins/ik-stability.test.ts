@@ -7,7 +7,7 @@ import { createFakeInterpolator, createFakeScheduler } from "../../../src/testin
 import { fkPlugin } from "../../../src/plugins/fk";
 import { ikPlugin } from "../../../src/plugins/ik";
 import { transformPlugin } from "../../../src/plugins/transform";
-import { FABRIK_TOLERANCE, solveFabrik } from "../../../src/plugins/fabrik";
+import { FABRIK_TOLERANCE, solveFabrik, solveFabrikAttempt } from "../../../src/plugins/fabrik";
 import { composeWorld, pivotFromBaseTip, type WorldFrame } from "../../../src/plugins/frame";
 import type { JointRange } from "../../../src/plugins/ik-constraint";
 import { solveLength, solveOffset, type SolveMember } from "../../../src/plugins/ik-member";
@@ -869,5 +869,40 @@ describe("IK stability and determinism (issue #349 phase 6)", () => {
     const turned = composeWorld({ x: 0, y: 0, rotation: 725 }, { x: 1, y: 0, rotation: 0 });
     expect(turned.x).toBe(Math.cos((725 * Math.PI) / 180));
     expect(turned.y).toBe(Math.sin((725 * Math.PI) / 180));
+  });
+  it("SD-20 the conflict gate is non-regressing, pure and order-independent", () => {
+    const rigs = corpus(0x5d18, 240);
+    const selected = rigs.map((rig) => solveFabrik(rig.root, rig.members, rig.flip));
+    let nonConflicted = 0;
+    let conflicted = 0;
+    rigs.forEach((rig, index) => {
+      const baseline = solveFabrikAttempt(rig.root, rig.members, rig.flip, "centroid");
+      const result = selected[index]!;
+      if (baseline.quality.kind === "conflicted") {
+        conflicted += 1;
+        expect(result.quality.residual).toBeLessThanOrEqual(baseline.quality.residual);
+      } else {
+        nonConflicted += 1;
+        expect(identical(result, baseline)).toBe(true);
+      }
+      const shuffled = [...rig.members];
+      const random = seeded(0x18 + index);
+      for (let position = shuffled.length - 1; position > 0; position -= 1) {
+        const other = Math.floor(random() * (position + 1));
+        [shuffled[position], shuffled[other]] = [shuffled[other]!, shuffled[position]!];
+      }
+      expect(identical(solveFabrik(rig.root, shuffled, rig.flip), result)).toBe(true);
+    });
+    expect(nonConflicted).toBeGreaterThan(0);
+    expect(conflicted).toBeGreaterThan(0);
+    const repeated = rigs.map((rig) => solveFabrik(rig.root, rig.members, rig.flip));
+    const interleaved = [...rigs]
+      .reverse()
+      .map((rig) => solveFabrik(rig.root, rig.members, rig.flip))
+      .reverse();
+    rigs.forEach((_, index) => {
+      expect(identical(repeated[index], selected[index])).toBe(true);
+      expect(identical(interleaved[index], selected[index])).toBe(true);
+    });
   });
 });

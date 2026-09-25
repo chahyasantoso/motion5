@@ -189,6 +189,95 @@ symmetric unlimited rig only and why nothing here promises monotonicity.
 The corpus ran in a sandbox esbuild bundle without `tsc`, and it is reviewed rather than trusted.
 `CI` on the published head of the pull request is the authority, and the pull request links it.
 
+## Issue #490 decision (2026-09-25)
+
+A feasible tree may still settle at a fixed point: the inward centroid can lie inside the parent
+reach circle, and the outward projection then reproduces that centroid. The minimal repro on the
+issue stalls with `m0`'s tip at norm exactly 20, its two branch proposals averaging to a point of
+norm `19.6133249073`, and the outward pass projecting that average back onto the tip it started
+from. The kind is honest (`conflicted`); the compromise rule is what is weak.
+
+**The compromise rule is a closed union owned here**,
+`CompromiseRule = "centroid" | "reach-circle"`, read by one exhaustive `switch` in `compromise`
+ending in `unreachable` (ADR-092). `centroid` is the historical rule and the default, so a caller
+that names no rule settles exactly where it always did. `reach-circle` is a fixed six-step damped
+Gauss-Newton fit seeded at that same centroid.
+
+**A proposal is a closed union too.** `Pull` is `{ kind: "goal", point, weight }` or
+`{ kind: "branch", point, weight, reach: { centre, radius } }`, and `reachCircleOf` reads it
+exhaustively; no reader probes for an optional field. A `goal` pull is an addressed leaf's aim and
+is the only proposal a leaf receives, because a goal is read only on a leaf; its reach circle is the
+aim itself at radius `0`. A `branch` pull is a child's proposal about its base's tip. FABRIK builds
+both halves of it from one conversion: `point` is the child's placed pivot un-offset through the
+base's current direction (`baseTipFromPivot`), and `reach.centre` is the child's current tip
+un-offset through the same direction, at `reach.radius` the child's solve length. That circle is
+exactly the set of base tips that keep the child's tip where the inward pass left it and its length
+held, pivot offset included, and `point` lies on it by construction.
+
+The fit minimises `Σ (w_i / max w) · (|p − centre_i| − radius_i)²` over the member's tip `p`.
+**Weights are normalised by the largest pull, exactly as the centroid normalises them**: every
+relative weight is in `(0, 1]`, the largest is `1`, the normal equations stay finite for pulls near
+`Number.MAX_VALUE`, and scaling every influence by one factor changes neither rule's answer. A lone
+pull settles on its own proposal exactly, as under the centroid. A centre coinciding with the
+current point takes the positive x axis for its Jacobian row. The damping (`1e-6`) and the step
+count are fixed, so the cost and the answer are fixed. A singular system, a non-finite step or a
+final objective that does not strictly improve the centroid's keeps the centroid, so the fit is
+never worse than its seed under its own objective. The proposal spread is still measured around the
+centroid rather than the fitted point, so `conflicted` keeps one witness whichever rule placed the
+member.
+
+**The selector** (`fabrik-select.ts`) runs the authored seed with the centroid rule first. Every
+non-`conflicted` result is returned as the same object, so every rig that did not conflict before is
+bit-identical and pays nothing. A conflict pays for three fixed alternatives, in this order:
+opposite seed with centroid, authored seed with reach-circle, opposite seed with reach-circle. One
+comparator, `outranks`, selects: a `converged` result outranks every miss (a tier read by an
+exhaustive `switch` over FABRIK's five kinds), then the strictly lower `quality.residual` wins, and
+an exact tie keeps the earlier candidate. The comparator is total: the tier is read first, so a
+`NaN` residual never crosses a tier, and within a tier it ranks below every number in either
+position, while `Infinity` orders like any number. Finite FABRIK output never produces a `NaN`
+residual, and `converged` cannot carry one because `NaN <= FABRIK_TOLERANCE` is false; the rule
+exists so the answer cannot depend on candidate order if that invariant is ever broken. No restart
+metadata is published (ADR-107), and `quality.iterations` is the selected candidate's own count. The
+baseline is a candidate, so the selected result is never worse than the prior result under the
+comparator.
+
+**Measured** (sandbox, esbuild bundles of the real modules, Node `v22.23.1`; reviewed, not trusted):
+the envelope moves from 190 to 3 conflicted tree-14 rigs and from 200 to 61 tree-30 rigs, with no
+regression and every non-conflicted baseline `Object.is`-identical. The offset-exact reach circle
+was measured against the first implementation's circle, which was centred on the child's raw tip:
+the two agree bit for bit on every rig without a pivot offset, which is every envelope rig, and on
+feasible trees with pivot offsets (goals composed from one pose, 200 rigs per shape) the exact
+circle converges 189 against 171 tree-6 rigs (two shared members, four leaves), 105 against 21
+tree-14 rigs, 19 against 0 tree-30 rigs and 40 against 18 tree-14 rigs with large offsets, strictly
+improving 238 rigs and worsening none. On the 2,000-rig adversarial corpus, dominated by infeasible
+and limited rigs, the two circles differ on 100 rigs, 44 better and 38 worse among misses, with
+equal converged counts, and neither regresses any rig against the pre-#490 solve. `docs/BENCH-IK.md`
+carries the full numbers.
+
+The four-candidate gate was chosen instead of changing FABRIK's ordinary trajectory because it keeps
+bit identity for every non-conflicted baseline by construction rather than by measurement. It is
+deliberately not a promise that every feasible tree converges: 61 of 200 feasible tree-30 rigs, and
+every independently conflicting rig, remain `conflicted`, and their residuals remain useful
+inspection evidence.
+
+**Withdrawn on the way.** A reach circle centred on the child's raw tip (the first implementation)
+was withdrawn because it ignores the child's pivot offset, so the circle it fits is not the
+constraint FABRIK enforces; the measurement above is why. An optional `childTip` and `childLength`
+on `Pull`, with a fallback to the centroid when either was missing, was withdrawn for the closed
+union, because a probe on optional fields is the predicate chain ADR-092 forbids and the fallback
+hid a shape FABRIK never produces. The ungated best-of, restarts alone and per-branch sequential
+passes were withdrawn on the issue for the reasons recorded there.
+
+**Evidence.** `FB-17` (the issue's minimal repro converges through a reach-circle candidate),
+`FB-18` (the opposite-seed reach-circle result is published and the loser is not), `FB-19` (a
+feasible tree with a pivot offset converges through the offset-exact circle; red on the raw-tip
+circle) and `FB-20` (the comparator's tiers, ties, `NaN` and `Infinity`) in
+`packages/core/test/unit/plugins/fabrik-solve.test.ts`; `GI-17` (the weighted objective, the shared
+spread, weight-scale invariance, both pull kinds, the lone pull and the keep-the-centroid guard) in
+`ik-goal-influence.test.ts`; `SD-20` (no-regression, bit identity, permutation, repeat and
+interleave over a seeded corpus) in `ik-stability.test.ts`; and `EN-5` (envelope quality counts and
+finite output) in `ik-envelope.test.ts`.
+
 ## Consequences
 
 Authors can state how much each addressed goal should count when a branching solve must compromise,

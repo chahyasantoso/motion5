@@ -22,6 +22,11 @@ figures divide the measured solve time by member count; they are not additional 
 
 ## Solve scenarios
 
+These are the phase-7 runs of 2026-09-24, taken before the #490 selector landed. Their timings and
+their serial-chain and constrained quality counts describe the current solve, because #490 returns
+every non-`conflicted` result unchanged; their tree quality counts are the pre-#490 baseline, and
+the current tree counts are in the #490 section below.
+
 - **Two-bone closed form:** 2.3257 microseconds per solve, or 1.1629 microseconds per member. All
   200 solves reported `reached`; the closed form performed zero iterative passes.
 - **Chain-8:** 76.2351 microseconds per solve, or 9.5294 microseconds per member. All 200 reported
@@ -47,13 +52,15 @@ The fresh serial-chain readings are approximately 1.5 microseconds per member-it
 the useful scaling reading from the chain runs, not a timing guarantee: chain-8 measured 76.2351
 microseconds and chain-64 measured 2.9674 milliseconds in run 1.
 
-## Branching quality and cap findings
+## Branching quality and cap findings (pre-#490)
 
-The feasible tree-14 and tree-30 scenarios use 20-unit segments and pose-derived goals, so every
-goal set has a composed feasible pose. At the default cap, tree-14 is mostly `conflicted` at
-190/200 and tree-30 is `conflicted` at 200/200. The additional `tree-14-conflicting` scenario is
-also `conflicted` at 200/200. A separate seeded shape probe found that the smallest branching tree,
-one shared parent with two leaves, already ends `conflicted` on 67/200 rigs.
+This section records the pre-#490 centroid-only solve, which is why its tree counts differ from
+the issue #490 section below; it is kept because #490 was opened on this measurement. The feasible
+tree-14 and tree-30 scenarios use 20-unit segments and pose-derived goals, so every goal set has a
+composed feasible pose. At the default cap, tree-14 is mostly `conflicted` at 190/200 and tree-30 is
+`conflicted` at 200/200. The additional `tree-14-conflicting` scenario is also `conflicted` at
+200/200. A separate seeded shape probe found that the smallest branching tree, one shared parent
+with two leaves, already ends `conflicted` on 67/200 rigs.
 
 The separate cap probe found that tree-14 at cap 10,000 ends with 94 `conflicted` and 106
 `converged` results; 69 of the 94 conflicted results are exact fixed points with `moved === 0`.
@@ -105,7 +112,55 @@ conditions, solve scenarios, and engine scenarios as JSON. Use a fresh report's 
 any numbers copied into a review; do not compare runs while treating machine-dependent timing as a
 pass/fail threshold.
 
-The benchmark is not a CI gate. `EN-1` through `EN-4` pin the deterministic envelope, strategy
+The benchmark is not a CI gate. `EN-1` through `EN-5` pin the deterministic envelope, strategy
 selection, finite output, and iteration behavior, while this document records wall-clock evidence.
 ADR-008 keeps timing gates withdrawn because a timing result includes the machine, runtime, load,
 contention, and benchmark warm-up rather than only the implementation.
+
+## Issue #490 selected and charged passes
+
+Measured on 2026-09-25 in a sandbox on Node `v22.23.1`, with esbuild bundles of the real solver
+modules and the committed envelope support module. Reviewed, not trusted: no number here has a run
+in this repository's suite. The harness is `measure.mjs` with `offset-feasible.mjs`, carried as an
+opaque component of the #490 handover zip rather than in the tree, so `npm run bench:ik` does not
+reproduce the residual distributions, charged passes or corpora below; `EN-5` pins the envelope
+quality counts at its 40-rig size. "Pre-#490" is one authored-seed attempt with the centroid rule,
+which is bit-identical to the solve before #490. Residuals are the worst-leaf `quality.residual`;
+median and p90 are linearly interpolated percentiles over the rigs.
+
+Envelope, 200 rigs per scenario, quality counts, then residual median, p90 and maximum:
+
+- tree-14: 196 `converged`, 1 `iteration-cap`, 3 `conflicted`; `3.053643233605371e-14`,
+  `2.9905240654283316e-11`, `5.228793097351926`. Pre-#490: 9, 1, 190; `0.7670170117836099`,
+  `3.7447892968854277`, `15.153258992928695`.
+- tree-30: 139 `converged`, 61 `conflicted`; `2.5421149729252077e-13`, `1.7366946730510466`,
+  `8.484869234423337`. Pre-#490: 200 `conflicted`; `2.03077423502542`, `6.95958359349667`,
+  `24.069653765295488`.
+- tree-14-conflicting: 200 `conflicted`; `13.444071269626964`, `24.079440405670333`,
+  `32.36464863348968`. Pre-#490: 200 `conflicted`; `15.215079853683598`, `25.484389659774617`,
+  `32.36464863348968`.
+- The issue's minimal repro: `converged`, residual `7.944109290391274e-15`, charging 102 passes;
+  pre-#490 `conflicted` at 64 passes, residual `1.2448816986307751`.
+
+Charged passes sum `quality.iterations` over every attempt, losing candidates included: tree-14
+26,806 against the pre-#490 12,663, tree-30 36,671 against 12,800, tree-14-conflicting 49,703
+against 12,800. The selector strictly improved 189, 172 and 115 rigs and regressed none. Two-bone,
+chain-8, chain-32, chain-64 and constrained-8 had no improvement, no regression and no identity
+failure, and every rig whose pre-#490 result was not `conflicted` returned an `Object.is`-identical
+result.
+
+Feasible trees with pivot offsets, 200 rigs per shape, goals composed from one pose so an exact
+solution exists, comparing the offset-exact reach circle with the first implementation's circle
+centred on the child's raw tip: tree-6 converged 189 against 171, tree-14 105 against 21, tree-30
+19 against 0, and tree-14 with offsets up to 15 units 40 against 18; the exact circle was strictly
+better on 53, 104, 44 and 37 rigs and worse on none. The two circles are bit-identical wherever no
+member has a pivot offset, which is every envelope rig above.
+
+A deterministic 2,000-rig adversarial branching corpus (depth 2 to 6, 2 to 5 leaves, some
+influences in 0.25 to 4, some joint ranges, some pivot offsets, 28% of branches with goals past
+their reach, both seed sides): pre-#490 334 `converged`, 738 `conflicted`, 641 `limited`, 186
+`stalled`, 101 `iteration-cap`; selected 351, 664, 697, 186 and 102. Residual median, p90 and
+maximum `36.17042714751404`, `90.59913492069643`, `171.7608046099203` against the pre-#490
+`36.539986202983215`, `90.6359756427425`, `171.7608046099203`; 272 rigs improved and none regressed,
+charging 214,035 passes against 92,725. A 300-rig member-permutation check of that corpus was
+`Object.is`-identical on every rig. These are measurements rather than timing gates.
