@@ -10,6 +10,7 @@ import { solveLength, solveOffset, type SolveMember } from "./ik-member";
 import { aimPoint, goalMiss, readGoal, type GoalReading } from "./ik-goal-reading";
 import { branchPulls, compromise, type CompromiseRule, type Pull } from "./ik-goal";
 import { selectFabrik } from "./fabrik-select";
+import { fabrikIterationCap } from "./fabrik-cap";
 import { unreachable } from "../lang/exhaustive";
 import {
   atBound,
@@ -44,11 +45,11 @@ import type { IterativeQuality, SolveResult } from "./ik-result";
  * that authored no offset, and it missed such a member's goal by exactly the offset vector with a
  * `ready` patch and no diagnostic. See ADR-054 and issue #214.
  *
- * Tolerance and iteration cap are module constants rather than authored values. An interpolatable
- * tolerance would make the operation count a function of the timeline, and then a determinism case
- * could not be written at all: one rig at two progresses would take two different numbers of steps
- * toward two different residuals. They are exported so a test imports the tolerance rather than
- * typing a number beside every assertion.
+ * Tolerance is a module constant rather than an authored value, and so is the iteration cap, which
+ * `fabrik-cap.ts` owns. An interpolatable tolerance would make the operation count a function of
+ * the timeline, and then a determinism case could not be written at all: one rig at two progresses
+ * would take two different numbers of steps toward two different residuals. It is exported so a
+ * test imports the tolerance rather than typing a number beside every assertion.
  */
 
 /**
@@ -63,15 +64,6 @@ import type { IterativeQuality, SolveResult } from "./ik-result";
  * shortfall it actually got instead of trusting a boolean.
  */
 export const FABRIK_TOLERANCE = 1e-3;
-
-/**
- * The hard iteration cap.
- *
- * A cap, not a promise. The loop also exits the moment an iteration moves nothing at all, which is
- * what an unreachable goal does after its first pass, so the cap is reached only by a chain that is
- * still converging and merely slower than it.
- */
-export const FABRIK_MAX_ITERATIONS = 64;
 
 /** Bisection steps for the seed's arc half-angle. A fixed count, so the seed is reproducible. */
 export const FABRIK_ARC_BISECTIONS = 60;
@@ -91,9 +83,9 @@ export type FabrikPoint = WorldPoint;
  *
  * The rotations and the quality are the shared `SolveResult` every strategy returns, narrowed to the
  * iterative kinds: a residual inside tolerance converged, a fixed point that remains outside it
- * stalled, and a still-moving pose at the hard cap hit `iteration-cap`. The last distinction is a
- * capability gain, because a caller can raise the cap for the slow case without treating an
- * unreachable goal as if more work could help. The field was `convergence` and its type
+ * stalled, and a still-moving pose at the cap hit `iteration-cap`. The last distinction is a
+ * capability gain, because a caller can tell a solve that was still improving from an unreachable
+ * goal no amount of work would help. The field was `convergence` and its type
  * `FabrikConvergence` until issue #349's second phase moved the kinds into `ik-result.ts`, where the
  * closed form's kinds sit beside them. See ADR-107.
  *
@@ -455,12 +447,15 @@ export function solveFabrikAttempt(
   };
 
   outward();
+  // Canonical order ends at the deepest member, so its depth is the chain's serial depth.
+  const last = ids.length > 0 ? byId.get(ids[ids.length - 1]!)! : undefined;
+  const cap = fabrikIterationCap(last === undefined ? 0 : depthOf(last) + 1);
   let iterations = 0;
   let residual = residualNow();
   let stalled = false;
   // How far the branches still disagreed about a shared member in the last inward pass.
   let spread = 0;
-  while (residual > FABRIK_TOLERANCE && iterations < FABRIK_MAX_ITERATIONS) {
+  while (residual > FABRIK_TOLERANCE && iterations < cap) {
     iterations += 1;
     spread = 0;
     const before = new Map(tips);

@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
   arcHalfAngle,
-  FABRIK_MAX_ITERATIONS,
   FABRIK_TOLERANCE,
   seedArc,
   solveFabrik,
@@ -12,6 +11,12 @@ import type { WorldFrame } from "../../../src/plugins/frame";
 import type { IterativeQuality } from "../../../src/plugins/ik-result";
 import type { SolveMember } from "../../../src/plugins/ik-member";
 import { outranks } from "../../../src/plugins/fabrik-select";
+import {
+  FABRIK_ITERATIONS_PER_DEPTH,
+  FABRIK_MIN_ITERATIONS,
+  fabrikIterationCap,
+} from "../../../src/plugins/fabrik-cap";
+import { envelopeScenarios, type EnvelopeRig } from "../../support/ik-envelope";
 import { solveTwoBone } from "../../../src/plugins/ik-analytic";
 
 // Slice D2 of issue #195: FABRIK as arithmetic, before anything wires it.
@@ -128,7 +133,7 @@ describe("FABRIK over a solver chain (Slice D2)", () => {
     const solution = solveFabrik(ROOT, TWO_BONE);
 
     expect(solution.quality.kind).toBe("converged");
-    expect(solution.quality.iterations).toBeLessThan(FABRIK_MAX_ITERATIONS);
+    expect(solution.quality.iterations).toBeLessThan(fabrikIterationCap(2));
     expect(solution.quality.residual).toBeLessThanOrEqual(FABRIK_TOLERANCE);
     expect(distance(solution.tips[FOREARM]!, HAND)).toBeLessThanOrEqual(FABRIK_TOLERANCE);
 
@@ -180,7 +185,7 @@ describe("FABRIK over a solver chain (Slice D2)", () => {
 
     const five = solveFabrik(ROOT, FIVE_BONE);
     expect(five.quality.kind).toBe("converged");
-    expect(five.quality.iterations).toBeLessThan(FABRIK_MAX_ITERATIONS);
+    expect(five.quality.iterations).toBeLessThan(fabrikIterationCap(5));
     expect(distance(five.tips.m5!, at(260, 380))).toBeLessThanOrEqual(FABRIK_TOLERANCE);
     expect(distance(five.tips.m4!, five.tips.m5!)).toBeCloseTo(40, 9);
   });
@@ -252,7 +257,8 @@ describe("FABRIK over a solver chain (Slice D2)", () => {
     // the residual is returned.
     const slow = solveFabrik(ROOT, [bone("a", "root", 50), tip("b", "a", 40, at(280, 340))]);
     expect(slow.quality.kind).toBe("iteration-cap");
-    expect(slow.quality.iterations).toBe(FABRIK_MAX_ITERATIONS);
+    // A two-deep chain: the cap is the floor, which issue #491 left exactly where it was.
+    expect(slow.quality.iterations).toBe(FABRIK_MIN_ITERATIONS);
     expect(slow.quality.residual).toBeGreaterThan(FABRIK_TOLERANCE);
     expect(slow.quality.residual).toBeLessThan(0.01);
   });
@@ -409,4 +415,36 @@ describe("FABRIK over a solver chain (Slice D2)", () => {
     expect(outranks(miss("conflicted", 1e308), miss("conflicted", Infinity))).toBe(true);
     expect(outranks(miss("conflicted", Infinity), miss("conflicted", Infinity))).toBe(false);
   });
+
+  it("FB-21 the iteration cap is four passes per member of serial depth, never fewer than 64", () => {
+    // Issue #491 and ADR-115: one rule, continuous at the floor, where four per member meets 64.
+    expect(FABRIK_MIN_ITERATIONS).toBe(64);
+    expect(FABRIK_ITERATIONS_PER_DEPTH).toBe(4);
+    expect([0, 1, 16, 17, 64, 128].map(fabrikIterationCap)).toEqual([64, 64, 64, 68, 256, 512]);
+    // Depth, not member count: a 30-member tree four members deep that stays conflicted stops at the
+    // floor. A cap read from member count would have run it to 120 passes on every attempt.
+    const tree = rig("tree-30", 5);
+    expect(tree.members).toHaveLength(30);
+    const conflicted = solveFabrik(tree.root, tree.members, tree.flip);
+    expect(conflicted.quality.kind).toBe("conflicted");
+    expect(conflicted.quality.iterations).toBe(fabrikIterationCap(4));
+  });
+
+  it("FB-22 a 64-deep chain that is still converging at 64 passes finishes inside its depth's cap", () => {
+    // Committed chain-64 envelope rig 27 needs 88 passes; the fixed cap of 64 stopped it at
+    // `iteration-cap` while it was still moving. Its residual then was already tiny, so the pin is
+    // the kind and the count, not closeness.
+    const chain = rig("chain-64", 27);
+    const solved = solveFabrik(chain.root, chain.members, chain.flip);
+    expect(solved.quality.kind).toBe("converged");
+    expect(solved.quality.iterations).toBeGreaterThan(FABRIK_MIN_ITERATIONS);
+    expect(solved.quality.iterations).toBeLessThanOrEqual(fabrikIterationCap(64));
+    expect(solved.quality.residual).toBeLessThanOrEqual(FABRIK_TOLERANCE);
+  });
 });
+
+/** One committed envelope rig by scenario and index, from the module `EN-` and the bench read. */
+function rig(id: string, index: number): EnvelopeRig {
+  const scenario = envelopeScenarios(index + 1).find((candidate) => candidate.id === id);
+  return scenario!.rigs[index]!;
+}
