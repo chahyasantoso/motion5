@@ -1,3 +1,4 @@
+import { POLE_SLOT } from "../contract/solver-shape";
 import type { PluginDefinition } from "../domain/plugins";
 import type { ImmutableRecord } from "../domain/values";
 import { readFrame3d, readPivotOffset3d, type WorldFrame3d } from "./frame3d";
@@ -65,7 +66,7 @@ export const ik3dPlugin: PluginDefinition = {
     root: { description: "base 3D frame of the solver chain" },
     target: { description: "target 3D position to reach" },
     targets: { description: "one goal per chain leaf", dict: true },
-    pole: { description: "optional world-space 3D point the chain's elbow bends toward" },
+    [POLE_SLOT]: { description: "optional world-space 3D point the chain's elbow bends toward" },
   },
   stage: "compose",
   outputs: [ROTATIONS3D_KEY],
@@ -76,7 +77,7 @@ export const ik3dPlugin: PluginDefinition = {
       readGoal(inputs.target, pair),
       solveMember(pair[0]),
       solveMember(pair[1]),
-      readPole3d(inputs.pole),
+      readPole3d(inputs[POLE_SLOT]),
     );
     return Object.freeze({
       ...values,

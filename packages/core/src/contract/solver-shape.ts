@@ -56,6 +56,29 @@ const DEDICATED_MEMBER_PLUGINS: readonly string[] = Object.freeze(
   ].sort(),
 );
 
+/**
+ * The requirement slot an authored pole binds, and the one owner of which solver plugins bend a
+ * chain toward one (ADR-118).
+ *
+ * A pole is a slot rather than a key, so the registry already refuses it by name under a plugin
+ * that does not declare it (`plugin-unknown-requirement`). The graph holds no registry (ADR-044),
+ * and its own pole rule, `ik-pole-without-chain`, asks a narrower question that only means
+ * something under a plugin that does declare the slot: whether the group that bound it also bound
+ * the chain's `root`. This set is how the graph knows where that question applies, so a pole under
+ * `fk3d` is the registry's unknown requirement and never the graph's misplaced pole. It is stated
+ * as a set beside the chain-shape table rather than as a field of it, because which slots a solver
+ * reads is not a shape of the chain it solves, and `TH-47` holds it equal to the plugin
+ * definitions that declare `pole`.
+ */
+export const POLE_SLOT = "pole" as const;
+
+const POLE_SOLVERS: readonly string[] = Object.freeze(["ik3d"]);
+
+/** Whether `plugin` is a solver that declares the `pole` slot. */
+export function declaresPole(plugin: string): boolean {
+  return POLE_SOLVERS.includes(plugin);
+}
+
 /** The chain shape `plugin` declares, `any` when it declares none. */
 export function solverChainShape(plugin: string): SolverChainShape {
   return SOLVER_CHAIN_SHAPES[plugin] ?? ANY;

@@ -15,6 +15,7 @@ import {
   type SolverKey,
 } from "../contract/solver-constraints";
 import { diagnostic } from "../contract/diagnostics";
+import { declaresPole, POLE_SLOT } from "../contract/solver-shape";
 import type { Diagnostic } from "../contract/v5";
 import type { GraphNode } from "./ir";
 
@@ -51,16 +52,21 @@ import type { GraphNode } from "./ir";
  * registry and cannot tell an `fk` influence from another plugin's own key on a node no solve reads.
  *
  * **A pole belongs to the group that bound `root`.** `pole` is a requirement slot rather than a key,
- * and only `ik3d` declares it, so the registry already refuses it under any other plugin
- * (`plugin-unknown-requirement`). What the registry cannot see is where it was bound: the solve that
- * reads a pole is the composer of the group whose `root` edge makes the node a solver, so a pole
- * under a group that bound no `root` on the same node bends no chain. The shape an author reaches
- * for by mistake is the pole on the elbow member rather than on the solver, and it is refused by name
- * as `ik-pole-without-chain` instead of loading and then erroring that group on every tick.
+ * and `contract/solver-shape.ts` owns which solver plugins declare it, so under any other plugin the
+ * registry refuses it by name (`plugin-unknown-requirement`) and this pass stays silent rather than
+ * refusing the same slot a second time under a second rule. What the registry cannot see is where a
+ * declared pole was bound: the solve that reads it is the composer of the group whose `root` edge
+ * makes the node a solver, so a pole under a pole-declaring group that bound no `root` on the same
+ * node bends no chain. The shape an author reaches for by mistake is an `ik3d` group on the elbow
+ * member holding only the pole, and it is refused by name as `ik-pole-without-chain` instead of
+ * loading and then throwing from that group's composer on every tick.
  */
 
 /** The plugins under which this node bound `slot`, read from its derived edges. */
-function slotBinders(node: GraphNode, slot: "root" | "solver" | "pole"): ReadonlySet<string> {
+function slotBinders(
+  node: GraphNode,
+  slot: "root" | "solver" | typeof POLE_SLOT,
+): ReadonlySet<string> {
   return new Set(
     node.edges.flatMap((edge) => {
       const requirement = edge.role === "input" ? edge.requirement : undefined;
@@ -229,12 +235,13 @@ function validateSolverPole(
   roots: ReadonlySet<string>,
   diagnostics: Diagnostic[],
 ): void {
-  for (const group of [...slotBinders(node, "pole")].sort()) {
-    if (roots.has(group)) continue;
+  for (const group of [...slotBinders(node, POLE_SLOT)].sort()) {
+    // An undeclared pole is the registry's `plugin-unknown-requirement`, one rule for one mistake.
+    if (!declaresPole(group) || roots.has(group)) continue;
     diagnostics.push(
       diagnostic(
         "ik-pole-without-chain",
-        `${node.id}.keyframes.${group}.requires.pole`,
+        `${node.id}.keyframes.${group}.requires.${POLE_SLOT}`,
         `Node "${node.id}" binds pole under ${group} without binding root there; no chain solved there bends toward it.`,
         [node.id],
       ),

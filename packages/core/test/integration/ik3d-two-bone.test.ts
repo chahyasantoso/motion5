@@ -161,6 +161,43 @@ const OFFSET_PROJECT: ProjectDefinition = {
   ],
 };
 
+/** Issue #500 phase 3: the solver binds an animated pole that crosses the goal line. */
+const POLE_PROJECT: ProjectDefinition = {
+  schemaVersion: 5,
+  projectId: "3d-pole",
+  motions: [
+    {
+      id: "rig",
+      trigger: { type: "manual" },
+      tracks: [
+        { id: "root", keyframes: { transform3d: { values: { x: 0, y: 0, z: 0 } } } },
+        { id: "goal", keyframes: { transform3d: { values: GOAL } } },
+        {
+          id: "knee",
+          keyframes: {
+            transform3d: {
+              values: {
+                x: 30,
+                y: [
+                  { p: 0, v: 120 },
+                  { p: 1, v: -120 },
+                ],
+                z: 10,
+              },
+            },
+          },
+        },
+        {
+          id: "solve",
+          keyframes: { ik3d: { requires: { root: "root", target: "goal", pole: "knee" } } },
+        },
+        member("upper", "root", 80),
+        member("fore", "upper", 60),
+      ],
+    },
+  ],
+};
+
 /** A member's published frame, restated from `frame3d.ts` as the oracle. */
 function tipOf(base: WorldFrame3d, local: Euler3d, length: number): WorldFrame3d {
   return composeWorld3d(composeWorld3d(base, { x: 0, y: 0, z: 0, ...local }), {
@@ -298,5 +335,56 @@ describe("3D seam through engine and DOM", () => {
     const again = patches.get("rig/fore");
     if (again?.status !== "ready") throw new Error("offset fore did not republish");
     expect(again.values).toEqual(bytes);
+  });
+
+  it("TH-48 an animated pole flips the elbow through Engine and DOM and seeks byte-for-byte", () => {
+    const runtime = createRuntime(POLE_PROJECT);
+    const ids = ["rig/root", "rig/goal", "rig/knee", "rig/solve", "rig/upper", "rig/fore"];
+    const patches = new Map<string, Patch>();
+    for (const id of ids) {
+      runtime.mount(id);
+      runtime.subscribeNode(id, (patch) => patches.set(id, patch));
+    }
+    const target: DomTarget = { style: {} };
+    const adapter = createDomPatchAdapter({ style: {} }, undefined, () => target);
+    const ready = (id: string) => {
+      const patch = patches.get(id);
+      if (patch?.status !== "ready") throw new Error(`${id} is ${patch?.status ?? "absent"}.`);
+      return patch;
+    };
+    const poseAt = (progress: number) => {
+      runtime.seek("rig/knee", progress);
+      runtime.seek("rig/upper", 0);
+      runtime.seek("rig/fore", 0);
+      adapter.apply(ready("rig/fore"));
+      return { upper: { ...ready("rig/upper").values }, fore: { ...ready("rig/fore").values } };
+    };
+    // The elbow's side of the root-to-goal line, measured against the pole's own side.
+    const side = (elbow: Record<string, unknown>, poleY: number) => {
+      const line = [GOAL.x, GOAL.y, GOAL.z];
+      const unit = line.map((c) => c / Math.hypot(GOAL.x, GOAL.y, GOAL.z));
+      const off = (v: readonly number[]) => {
+        const along = v[0]! * unit[0]! + v[1]! * unit[1]! + v[2]! * unit[2]!;
+        return v.map((c, i) => c - unit[i]! * along);
+      };
+      const e = off([Number(elbow.x), Number(elbow.y), Number(elbow.z)]);
+      const p = off([30, poleY, 10]);
+      return e[0]! * p[0]! + e[1]! * p[1]! + e[2]! * p[2]!;
+    };
+    const miss = (fore: Record<string, unknown>) =>
+      Math.hypot(Number(fore.x) - GOAL.x, Number(fore.y) - GOAL.y, Number(fore.z) - GOAL.z);
+
+    const above = poseAt(0);
+    expect(miss(above.fore)).toBeLessThanOrEqual(1e-9);
+    expect(side(above.upper, 120)).toBeGreaterThan(0);
+    expect(target.style.transform).toContain("translate3d(");
+    const below = poseAt(1);
+    expect(miss(below.fore)).toBeLessThanOrEqual(1e-9);
+    expect(side(below.upper, -120)).toBeGreaterThan(0);
+    expect(below.upper).not.toEqual(above.upper);
+    // The solve is a pure function of its inputs, the pole among them, so seeking back reproduces
+    // every byte in either direction.
+    expect(poseAt(0)).toEqual(above);
+    expect(poseAt(1)).toEqual(below);
   });
 });
