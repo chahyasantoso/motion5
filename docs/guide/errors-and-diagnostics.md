@@ -207,6 +207,16 @@ narrower shape:
   shape, so the 2D `ik` solver, which takes a chain of any count and branching, reports the rule
   only for an `fk3d` member bound to it. See ADR-114.
 
+The internal `ik3d` prototype also declares an optional `pole` slot, and one rule answers where it
+was bound:
+
+- `ik-pole-without-chain`, when a node binds `pole` under a plugin that declares the slot, today
+  `ik3d` alone, in a group that bound no `root` on the same node. The solve that reads a pole is
+  the group that bound the chain's `root`, so the usual mistake, an `ik3d` group on the elbow
+  member holding only the pole, bends nothing and is refused at load rather than throwing from
+  that group on every tick. A pole under a plugin that declares no pole slot, `fk3d` or the 2D
+  `ik`, is `plugin-unknown-requirement` from the registry instead, never both. See ADR-118.
+
 The 2D `ik` solver has no rule about a solved bone's pivot offset either, for the same reason. A solved member may author `x` and `y` exactly as any other bone does, and `ik-solved-pivot-unsupported` is deleted. `fk` still owns applying the offset, in its parent's rotated space; `ik` accounts for it in the geometry it solves, so the rotations it publishes are the ones that put the composed tip on the goal. Both solves share one convention: the analytic path folds the two offsets into a fixed base point and a rigid link with a twist, and the iterative one solves pivot positions and averages a shared sub-base's tip rather than its children's twists. An offset that shortens a chain's reach past its goal is an unreachable target, which extends the chain toward it and has never been a diagnostic. See ADR-054.
 
 A diagnostic about a grouped keyframe cites the path you typed, `keyframes.fk.values.length`, not the flattened key the compiler works with. A diagnostic about a stop cites its index on the property, `keyframes.x[0].p`. A diagnostic about a dict entry cites the key you typed, `keyframes.ik.requires.targets.forearm`, and there is no derived slot spelling for it to cite instead: the key is carried beside the slot as data rather than formatted into it. Every path a leaf diagnostic carries is a path you wrote. See ADR-041, ADR-049, ADR-050, ADR-051, ADR-052, and ADR-057.

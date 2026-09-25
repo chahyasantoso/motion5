@@ -7,11 +7,11 @@ Current project state only. Replace stale entries rather than append history. Th
 
 ## Now
 
-- **[#500](https://github.com/chahyasantoso/motion5/issues/500) 3D pivot offsets land with this change:** `fk3d` claims `x`, `y` and `z`, and `ik3d` solves them exactly through one effective-link owner ([ADR-117](./ADR-117-3d-pivot-offsets.md)).
+- **[#500](https://github.com/chahyasantoso/motion5/issues/500) the 3D pole target lands with this change:** `ik3d` binds an optional world-space `pole` its elbow bends toward, an unbound solver keeps the root-local +z default byte for byte, and `ik-pole-without-chain` refuses a pole no chain reads ([ADR-118](./ADR-118-3d-pole-target.md)); the pivot offsets of [ADR-117](./ADR-117-3d-pivot-offsets.md) land beneath it through #503.
 
 ## Next in line
 
-- **[#500](https://github.com/chahyasantoso/motion5/issues/500) an authored pole target is next:** `ik3d` gains an optional world-space `pole` its elbow bends toward, and a solver that binds none keeps the root-local +z default byte for byte.
+- **[#500](https://github.com/chahyasantoso/motion5/issues/500) opt-in 3D inspection is next:** `ik3d` accepts the authored `inspect` key and publishes the ADR-109 inspection record from its solve result through the 2D inspection owner, and an unopted rig publishes nothing new.
 
 ## Open, and not scheduled
 

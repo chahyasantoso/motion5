@@ -61,7 +61,10 @@ the planar subset that is +z exactly, so `e2` is the 2D positive branch at every
 including goals behind the root, and it turns continuously with the goal everywhere except on the
 root's local z axis. There the normal falls back to `e1 x y` (root-local y), putting the elbow on
 the root's +y side (`TH-18`). A goal on the root uses root-local +x as `e1`. No authored pole or
-flip key exists in this prototype.
+flip key exists in this prototype. **Refined by [ADR-118](./ADR-118-3d-pole-target.md),
+2026-09-25.** An optional authored `pole` slot on `ik3d` now names the bend plane where one is
+bound and off the pivot-to-goal line; unbound or collinear, the rule above holds byte for byte. No
+flip key exists.
 
 The degenerate arms are a closed union read by one exhaustive switch, in the 2D closed form's order:
 no second segment aims the first; no first segment keeps it at rest and aims the second; a goal
@@ -122,6 +125,9 @@ axis itself is the least surprising place. The threshold is relative (`1e-9` of 
 
 - An authored pole key is withdrawn because it would require a new graph input and ownership
   vocabulary; root-local +z as the pole with a +y fallback is deterministic enough for this seam.
+  **Superseded by [ADR-118](./ADR-118-3d-pole-target.md)** (issue #500 phase 3): the pole is a
+  requirement slot, already a graph input, and the only vocabulary it needed is the one load rule
+  `ik-pole-without-chain`. The default rule remains the unbound answer.
 - Quaternion publication is withdrawn because the DOM contract is scalar Euler keys and currently
   has no quaternion serializer or public quaternion shape.
 - A dimension flag on the 2D plugins is withdrawn because it would give one plugin two frame
