@@ -433,11 +433,14 @@ describe("3D pole target", () => {
   });
 });
 
-function track(id: string, keyframes: TrackDefinition["keyframes"]): TrackDefinition {
+/** A track's authored keyframes as the fixtures build them: always present. */
+type Keyframes = NonNullable<TrackDefinition["keyframes"]>;
+
+function track(id: string, keyframes: Keyframes): TrackDefinition {
   return { id, keyframes };
 }
 
-function rigWith(solve: TrackDefinition, upperExtra: TrackDefinition["keyframes"] = {}) {
+function rigWith(solve: TrackDefinition, upperExtra: Keyframes = {}) {
   const project: ProjectDefinition = {
     schemaVersion: 5,
     projectId: "pole",
@@ -488,7 +491,7 @@ describe("3D pole load rule", () => {
     // rule: one mistake, one rule.
     const onMember = rigWith(solver({}));
     const member = onMember.motions[0]!.tracks[4]!;
-    const fk3dGroup = member.keyframes.fk3d as unknown as { requires: Record<string, string> };
+    const fk3dGroup = member.keyframes!.fk3d as unknown as { requires: Record<string, string> };
     fk3dGroup.requires.pole = "knee";
     expect(ruleIds(onMember)).toEqual([]);
     const plugins = [fk3dPlugin, ik3dPlugin, transform3dPlugin];
@@ -553,7 +556,7 @@ function unknownRequirements(
   return project.motions.flatMap((motion) =>
     motion.tracks.flatMap((entry) =>
       registry
-        .resolveForKeyframes(entry.keyframes)
+        .resolveForKeyframes(entry.keyframes ?? {})
         .diagnostics.filter(({ ruleId }) => ruleId === "plugin-unknown-requirement")
         .map(({ path }) => `${motion.id}/${entry.id}.${path}`),
     ),
