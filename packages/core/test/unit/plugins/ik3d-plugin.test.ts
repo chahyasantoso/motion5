@@ -85,4 +85,19 @@ describe("3D plugin seam", () => {
       "ik3d requires exactly two members on one path.",
     );
   });
+  it("TH-23 a negative first member solves and composes exactly as a zero one", () => {
+    const inputs = { root: readFrame3d({}), target: readFrame3d({ x: 80 }) };
+    const tipFor = (length: number) => {
+      const upper = { ...upperMember, values: { length } };
+      const fore = { ...foreMember, values: { length: 80 } };
+      const solver = ik3dPlugin.compose({}, 1, { ...inputs, members: [upper, fore] }, "solve");
+      const elbow = fk3dPlugin.compose({ length }, 1, { base: inputs.root, solver }, "upper");
+      return fk3dPlugin.compose({ length: 80 }, 1, { base: elbow, solver }, "fore");
+    };
+    const negative = tipFor(-20);
+    expect(negative).toEqual(tipFor(0));
+    expect(
+      Math.hypot(Number(negative.x) - 80, Number(negative.y), Number(negative.z)),
+    ).toBeLessThan(1e-9);
+  });
 });

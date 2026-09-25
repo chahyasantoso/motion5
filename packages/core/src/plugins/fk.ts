@@ -1,5 +1,13 @@
 import type { PluginDefinition } from "../domain/plugins";
-import { clamp, composeWorld, lerpAngle, readFrame, readNumber, readPivotOffset } from "./frame";
+import {
+  clamp,
+  composeWorld,
+  lerpAngle,
+  readFrame,
+  readNumber,
+  readPivotOffset,
+  segmentExtent,
+} from "./frame";
 
 /**
  * Re-exported rather than declared here.
@@ -110,8 +118,11 @@ export const fkPlugin: PluginDefinition = {
     // The pivot, then the extension. Two rotate-then-translates, and `composeWorld` owns both, so
     // the trigonometry lives in one place instead of being copied here beside an export nothing
     // called. The extension is purely along the bone's own direction, which is why its local frame
-    // carries `length` on `x` and nothing on `y` or `rotation`.
+    // carries the segment's extent on `x` and nothing on `y` or `rotation`. The extent is read
+    // through `segmentExtent`, the owner both solves read, so a negative live `length` composes a
+    // segment with no extent exactly where the solve placed it, rather than pointing backwards
+    // from a tip the solve never saw. See issue #482.
     const pivot = composeWorld(readFrame(inputs.base), { ...readPivotOffset(values), rotation });
-    return composeWorld(pivot, { x: readNumber(values.length), y: 0, rotation: 0 });
+    return composeWorld(pivot, { x: segmentExtent(readNumber(values.length)), y: 0, rotation: 0 });
   },
 };
