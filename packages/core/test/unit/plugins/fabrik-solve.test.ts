@@ -397,10 +397,14 @@ describe("FABRIK over a solver chain (Slice D2)", () => {
     expect(outranks(miss("stalled", 1), miss("conflicted", 2))).toBe(true);
     expect(outranks(miss("conflicted", 2), miss("conflicted", 2))).toBe(false);
     expect(outranks(met(1e-4), met(1e-4))).toBe(false);
-    // NaN cannot be ordered by `<`, so it ranks below every number in either position.
+    // NaN cannot be ordered by `<`, so within a tier it ranks below every number in either position.
     expect(outranks(miss("conflicted", Number.NaN), miss("conflicted", 1e9))).toBe(false);
     expect(outranks(miss("conflicted", 1e9), miss("conflicted", Number.NaN))).toBe(true);
     expect(outranks(miss("conflicted", Number.NaN), miss("conflicted", Number.NaN))).toBe(false);
+    // The tier is read first, so NaN is ordered only within its tier and never crosses one.
+    expect(outranks(met(Number.NaN), miss("conflicted", 1e-9))).toBe(true);
+    expect(outranks(miss("conflicted", 1e-9), met(Number.NaN))).toBe(false);
+    expect(outranks(met(1e-4), met(Number.NaN))).toBe(true);
     // Infinity orders like any other number.
     expect(outranks(miss("conflicted", 1e308), miss("conflicted", Infinity))).toBe(true);
     expect(outranks(miss("conflicted", Infinity), miss("conflicted", Infinity))).toBe(false);

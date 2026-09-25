@@ -60,12 +60,13 @@ export function selectFabrik(
 /**
  * Whether a candidate strictly beats the current selection: one rule, read in two steps.
  *
- * First the tier, where a `converged` result outranks every miss. Then, within a tier, the lower
- * `residual`. An exact tie is not a win, so the earlier candidate stays. A `NaN` residual cannot be
- * ordered by `<`, so it ranks below every number: a candidate with one never wins and a selection
- * with one loses to any number. Finite FABRIK output never produces one; the rule is stated so the
- * comparator is total rather than order-dependent if that invariant is ever broken. `Infinity`
- * orders by `<` like any number.
+ * First the tier, where a `converged` result outranks every miss whatever either residual is, `NaN`
+ * included. Then, within a tier, the lower `residual`. An exact tie is not a win, so the earlier
+ * candidate stays. A `NaN` residual cannot be ordered by `<`, so within a tier it ranks below every
+ * number: a candidate with one never wins its tier and a selection with one loses its tier to any
+ * number. Finite FABRIK output never produces one, and a `converged` kind never carries one because
+ * `NaN <= FABRIK_TOLERANCE` is false; the rule is stated so the comparator is total rather than
+ * order-dependent if that invariant is ever broken. `Infinity` orders by `<` like any number.
  */
 export function outranks(candidate: IterativeQuality, selected: IterativeQuality): boolean {
   const tier = qualityTier(candidate) - qualityTier(selected);

@@ -232,12 +232,14 @@ bit-identical and pays nothing. A conflict pays for three fixed alternatives, in
 opposite seed with centroid, authored seed with reach-circle, opposite seed with reach-circle. One
 comparator, `outranks`, selects: a `converged` result outranks every miss (a tier read by an
 exhaustive `switch` over FABRIK's five kinds), then the strictly lower `quality.residual` wins, and
-an exact tie keeps the earlier candidate. The comparator is total: a `NaN` residual ranks below
-every number in either position, and `Infinity` orders like any number. Finite FABRIK output never
-produces a `NaN` residual; the rule exists so the answer cannot depend on candidate order if that
-invariant is ever broken. No restart metadata is published (ADR-107), and `quality.iterations` is
-the selected candidate's own count. The baseline is a candidate, so the selected result is never
-worse than the prior result under the comparator.
+an exact tie keeps the earlier candidate. The comparator is total: the tier is read first, so a
+`NaN` residual never crosses a tier, and within a tier it ranks below every number in either
+position, while `Infinity` orders like any number. Finite FABRIK output never produces a `NaN`
+residual, and `converged` cannot carry one because `NaN <= FABRIK_TOLERANCE` is false; the rule
+exists so the answer cannot depend on candidate order if that invariant is ever broken. No restart
+metadata is published (ADR-107), and `quality.iterations` is the selected candidate's own count. The
+baseline is a candidate, so the selected result is never worse than the prior result under the
+comparator.
 
 **Measured** (sandbox, esbuild bundles of the real modules, Node `v22.23.1`; reviewed, not trusted):
 the envelope moves from 190 to 3 conflicted tree-14 rigs and from 200 to 61 tree-30 rigs, with no

@@ -22,6 +22,11 @@ figures divide the measured solve time by member count; they are not additional 
 
 ## Solve scenarios
 
+These are the phase-7 runs of 2026-09-24, taken before the #490 selector landed. Their timings and
+their serial-chain and constrained quality counts describe the current solve, because #490 returns
+every non-`conflicted` result unchanged; their tree quality counts are the pre-#490 baseline, and
+the current tree counts are in the #490 section below.
+
 - **Two-bone closed form:** 2.3257 microseconds per solve, or 1.1629 microseconds per member. All
   200 solves reported `reached`; the closed form performed zero iterative passes.
 - **Chain-8:** 76.2351 microseconds per solve, or 9.5294 microseconds per member. All 200 reported
@@ -47,13 +52,15 @@ The fresh serial-chain readings are approximately 1.5 microseconds per member-it
 the useful scaling reading from the chain runs, not a timing guarantee: chain-8 measured 76.2351
 microseconds and chain-64 measured 2.9674 milliseconds in run 1.
 
-## Branching quality and cap findings
+## Branching quality and cap findings (pre-#490)
 
-The feasible tree-14 and tree-30 scenarios use 20-unit segments and pose-derived goals, so every
-goal set has a composed feasible pose. At the default cap, tree-14 is mostly `conflicted` at
-190/200 and tree-30 is `conflicted` at 200/200. The additional `tree-14-conflicting` scenario is
-also `conflicted` at 200/200. A separate seeded shape probe found that the smallest branching tree,
-one shared parent with two leaves, already ends `conflicted` on 67/200 rigs.
+This section records the pre-#490 centroid-only solve, which is why its tree counts differ from
+the issue #490 section below; it is kept because #490 was opened on this measurement. The feasible
+tree-14 and tree-30 scenarios use 20-unit segments and pose-derived goals, so every goal set has a
+composed feasible pose. At the default cap, tree-14 is mostly `conflicted` at 190/200 and tree-30 is
+`conflicted` at 200/200. The additional `tree-14-conflicting` scenario is also `conflicted` at
+200/200. A separate seeded shape probe found that the smallest branching tree, one shared parent
+with two leaves, already ends `conflicted` on 67/200 rigs.
 
 The separate cap probe found that tree-14 at cap 10,000 ends with 94 `conflicted` and 106
 `converged` results; 69 of the 94 conflicted results are exact fixed points with `moved === 0`.
@@ -115,9 +122,11 @@ contention, and benchmark warm-up rather than only the implementation.
 Measured on 2026-09-25 in a sandbox on Node `v22.23.1`, with esbuild bundles of the real solver
 modules and the committed envelope support module. Reviewed, not trusted: no number here has a run
 in this repository's suite. The harness is `measure.mjs` with `offset-feasible.mjs`, carried as an
-opaque component of the #490 handover zip rather than in the tree. "Pre-#490" is one authored-seed
-attempt with the centroid rule, which is bit-identical to the solve before #490. Residuals are the
-worst-leaf `quality.residual`; median and p90 are linearly interpolated percentiles over the rigs.
+opaque component of the #490 handover zip rather than in the tree, so `npm run bench:ik` does not
+reproduce the residual distributions, charged passes or corpora below; `EN-5` pins the envelope
+quality counts at its 40-rig size. "Pre-#490" is one authored-seed attempt with the centroid rule,
+which is bit-identical to the solve before #490. Residuals are the worst-leaf `quality.residual`;
+median and p90 are linearly interpolated percentiles over the rigs.
 
 Envelope, 200 rigs per scenario, quality counts, then residual median, p90 and maximum:
 
