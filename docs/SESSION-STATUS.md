@@ -3,15 +3,15 @@
 Current project state only. Replace stale entries rather than append history. The four sections below are the complete shape, **Now** and **Next in line** carry exactly one bullet each, and no bullet states a phase; `packages/core/test/unit/scripts/session-status-shape.test.ts` enforces the shape and byte ceiling.
 
 - **Captured:** 2026-09-25, Asia/Jakarta.
-- **Read against:** `main` at `42c723226ed044b11e2441b06c8c7019ae4ed885`, where the conflicted FABRIK tree compromise of [#490](https://github.com/chahyasantoso/motion5/issues/490) ([ADR-110](./ADR-110-goal-influence-and-conflict-policy.md)) and the depth-scaled FABRIK iteration cap of [#491](https://github.com/chahyasantoso/motion5/issues/491) ([ADR-115](./ADR-115-fabrik-iteration-cap-scales-with-serial-depth.md)) have landed on top of the internal 3D seam prototype ([ADR-114](./ADR-114-3d-seam-prototype.md)); nothing 3D is exported from the package.
+- **Read against:** `main` at `42c723226ed044b11e2441b06c8c7019ae4ed885`, where the conflicted FABRIK tree compromise of [#490](https://github.com/chahyasantoso/motion5/issues/490) ([ADR-110](./ADR-110-goal-influence-and-conflict-policy.md)) and the depth-scaled FABRIK iteration cap of [#491](https://github.com/chahyasantoso/motion5/issues/491) ([ADR-115](./ADR-115-fabrik-iteration-cap-scales-with-serial-depth.md)) have landed on top of the internal 3D seam prototype ([ADR-114](./ADR-114-3d-seam-prototype.md)); with #500's rest orientation and weight (ADR-116) stacked beneath this change and not yet merged, nothing 3D is exported from the package.
 
 ## Now
 
-- **[#500](https://github.com/chahyasantoso/motion5/issues/500) rest orientation and solved weight lands with this change:** an `fk3d` bone composes its authored local rest orientation when unsolved and the short-arc quaternion blend toward its solved triple by its own `weight` when solved, and every rig that loaded before composes the same bytes ([ADR-116](./ADR-116-fk3d-rest-orientation-and-solved-weight.md)).
+- **[#500](https://github.com/chahyasantoso/motion5/issues/500) 3D pivot offsets land with this change:** `fk3d` claims `x`, `y` and `z`, and `ik3d` solves them exactly through one effective-link owner ([ADR-117](./ADR-117-3d-pivot-offsets.md)).
 
 ## Next in line
 
-- **[#500](https://github.com/chahyasantoso/motion5/issues/500) 3D pivot offsets are next:** `fk3d` claims `x`, `y` and `z`, and `ik3d` solves them exactly. No implementation or run on `main` is claimed.
+- **[#500](https://github.com/chahyasantoso/motion5/issues/500) authored bend control and a pole target are next:** the solver will gain the next explicit controls without moving the 2D owners.
 
 ## Open, and not scheduled
 
