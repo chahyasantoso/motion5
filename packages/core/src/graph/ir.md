@@ -12,11 +12,17 @@ An explicit `undefined` survives the whole path, which is what makes the bypass 
 
 The field set is closed, ordered, and read once. `REMOVED_OBSERVATION_FIELDS` is the refusal order and target is first so ADR-046's `V-2` through `V-4` keep reporting a target for a fixture that also carries a role; `removedObservationDiagnostic` maps a member to its own rule id and message through a total `switch` ending at `unreachable`. Three copied guards were three places a fourth removed field had to be remembered at the same time, and one of them silently inheriting another's rule id is the drift that shape invites. A fourth member now costs a tuple entry and a compiler error at the mapper. See ADR-092 and ADR-096.
 
+## ORIENTATION_KEYS
+
+The authored orientation keys a solve replaces: 2D `fk`'s `rotation`, and `fk3d`'s `rotation`, `rotationX` and `rotationY`.
+
+`ik-solved-rotation-dead` reads the union of the groups authoring any of them, because each one is dead for the same reason under a solve with no weight: at the default weight the solved orientation replaces the authored one outright. Reading `rotation` alone would refuse a 3D member authoring a dead Z angle and load one authoring a dead X angle, one rule answering two ways for one question. No 2D member plugin claims `rotationX` or `rotationY`, so no 2D rig and no 2D message moves, and nothing that loaded before is refused now: before `fk3d` claimed them, every one of these keys under `fk3d` was `plugin-unknown-key`. A closed tuple rather than a registry read, because this layer holds no registry by design (ADR-044). See ADR-116.
+
 ## groupsAuthoring
 
-The plugin-named groups whose `values` section authors `key`, sorted by name.
+The plugin-named groups whose `values` section authors at least one of `keys`, sorted by name.
 
-One walker, and the two rules that read it are set operations against the groups that bound a `solver` slot. It used to answer a single question, "what did the binder groups author for this key", which is one of the two predicates that question splits into the moment a second rule needs its complement: the dead rotation asks whether a binder group authored `rotation` and no `weight`, and the inert weight asks whether a solver-bound node authored `weight` in a group that bound none. Two near-identical group walkers is how those two drift apart, and this read has drifted once already, when it was wider than the rule that used it. See ADR-055.
+One walker, and the two rules that read it are set operations against the groups that bound a `solver` slot. It used to answer a single question, "what did the binder groups author for this key", which is one of the two predicates that question splits into the moment a second rule needs its complement: the dead rotation asks whether a binder group authored an orientation key and no `weight`, and the inert weight asks whether a solver-bound node authored `weight` in a group that bound none. Two near-identical group walkers is how those two drift apart, and this read has drifted once already, when it was wider than the rule that used it. It takes a key list rather than one key since the dead rotation reads `ORIENTATION_KEYS`, so the union is one walk rather than three walks merged by the caller. See ADR-055 and ADR-116.
 
 Presence, never value. Whether an authored `weight` is provably always `1` is a leaf-shape and value-semantics question, `contract/authored-leaf` already owns leaf shape, and hand-walking a `stops` array here would make this layer a second owner of it: the same break issue #192 closed once. This layer answers which group authored a key, and nothing about what it authored.
 

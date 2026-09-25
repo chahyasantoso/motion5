@@ -32,9 +32,11 @@ describe("3D plugin ownership", () => {
   });
 
   it("TH-11 refuses 2D constraint vocabulary in a 3D group", () => {
+    // `minRotation` is the 2D limit key a 3D bone still does not claim; `weight` was the example
+    // until ADR-116 gave `fk3d` a per-member solved weight.
     const resolved = registry(ik3dPlugin, fk3dPlugin).resolveForKeyframes({
       ik3d: { values: { bend: 1 } },
-      fk3d: { values: { weight: 1 } },
+      fk3d: { values: { minRotation: 1 } },
     });
     expect(resolved.diagnostics.map(({ ruleId }) => ruleId).sort()).toEqual([
       "plugin-unknown-key",

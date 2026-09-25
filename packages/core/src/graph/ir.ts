@@ -474,10 +474,15 @@ export function buildGraphIR(project: ProjectDefinition): GraphBuildResult {
   return finalizeGraph(nodes, diagnostics);
 }
 
-function groupsAuthoring(keyframes: unknown, key: string): readonly string[] {
+const ORIENTATION_KEYS = ["rotation", "rotationX", "rotationY"] as const;
+
+function groupsAuthoring(keyframes: unknown, keys: readonly string[]): readonly string[] {
   if (!isRecord(keyframes)) return [];
   return Object.keys(keyframes)
-    .filter((group) => readPluginValues(keyframes[group])[key] !== undefined)
+    .filter((group) => {
+      const values = readPluginValues(keyframes[group]);
+      return keys.some((key) => values[key] !== undefined);
+    })
     .sort(compareCodeUnits);
 }
 
@@ -576,8 +581,8 @@ export function resolveSolvers(
       }
     }
     const keyframes = node.track.keyframes;
-    const rotationGroups = groupsAuthoring(keyframes, "rotation");
-    const weightGroups = groupsAuthoring(keyframes, "weight");
+    const rotationGroups = groupsAuthoring(keyframes, ORIENTATION_KEYS);
+    const weightGroups = groupsAuthoring(keyframes, ["weight"]);
     const authoredGoals = goalBindingsOf(node);
     const hasSolver = solverBinders.length > 0;
     // Read through the goal classification rather than off the literal `"target"`. A member binding
@@ -608,10 +613,11 @@ export function resolveSolvers(
         ),
       );
     }
-    // Presence-only, two tiers. A binder group that authors `rotation` and no `weight` is the
-    // pre-#211 shape and is refused byte-identically to before: with no weight in reach there is no
-    // runtime state in which the authored value influences the output. A `weight` beside it, in any
-    // form, passes.
+    // Presence-only, two tiers. A binder group that authors an orientation key (`ORIENTATION_KEYS`:
+    // 2D `rotation`, and `fk3d`'s `rotation`, `rotationX` and `rotationY`) and no `weight` is the
+    // pre-#211 shape, and is refused with the pre-ADR-116 message byte for byte, which still says
+    // `rotation` for all three: with no weight in reach there is no runtime state in which the
+    // authored value influences the output. A `weight` beside it, in any form, passes.
     //
     // Not "present but provably always `1`". That reading needs leaf shape and value semantics,
     // which have an owner one layer down, and it would refuse "fully solved for now, I will animate

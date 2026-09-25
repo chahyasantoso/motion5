@@ -354,7 +354,9 @@ import { fileURLToPath } from "node:url";
 // `TH-` belongs to the internal 3D seam prototype, phase 8 of issue #349 and ADR-114: CSS Z-X-Y
 // frame matrices, deterministic bend-plane and gimbal rules, the analytic two-bone result, plugin
 // ownership, and the renderer-facing FK channel. Its cases prove the seam without widening the
-// package exports or changing the existing 2D owners; `T-` remains the trigger series.
+// package exports or changing the existing 2D owners; `T-` remains the trigger series. Issue #500
+// continues the series rather than opening one per phase, because it completes the same seam:
+// `TH-24` onward is the 3D rest orientation and solved weight of ADR-116.
 //
 // The scan root is the repository rather than `packages/core/test`, because an id names one test in
 // the suite and the suite is not one package. `H-4` is declared in
