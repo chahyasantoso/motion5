@@ -357,7 +357,8 @@ import { fileURLToPath } from "node:url";
 // package exports or changing the existing 2D owners; `T-` remains the trigger series. Issue #500
 // continues the series rather than opening one per phase, because it completes the same seam:
 // `TH-24` onward is the 3D rest orientation and solved weight of ADR-116, followed by the pivot offsets of ADR-117.
-// `TH-40` through `TH-50` are the authored pole target of ADR-118, the same issue's phase 3.
+// `TH-40` through `TH-51` are the authored pole target of ADR-118, the same issue's phase 3;
+// `TH-51` pins the line tolerance of the ADR-114 default rule that an unbound pole keeps.
 //
 // The scan root is the repository rather than `packages/core/test`, because an id names one test in
 // the suite and the suite is not one package. `H-4` is declared in
