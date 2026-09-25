@@ -4,7 +4,6 @@ import {
   composeWorld3d,
   readEuler3d,
   readFrame3d,
-  readPivotOffset3d,
   ZERO_EULER,
   type Euler3d,
 } from "./frame3d";
@@ -56,13 +55,12 @@ function readSolved(solver: unknown, nodeId: string): Euler3d | undefined {
  * same as omitting it: the 2D semantics of ADR-055 key for key. The clamp stays here although the
  * blend short-circuits outside `(0, 1)`, because the reader owns what an authored weight means.
  *
- * `x`, `y` and `z` are the member pivot offset in the parent's rotated frame. They are claimed and
- * composed before the member's local orientation, so the member's own rotation cannot move its pivot.
- * The zero offset uses the same object shape as the phase-1 call for byte identity (ADR-117).
+ * `x`, `y` and `z` stay unclaimed until the solve accounts for a pivot offset (issue #500 phase 2).
+ * See ADR-114 and ADR-116.
  */
 export const fk3dPlugin: PluginDefinition = {
   name: "fk3d",
-  keys: ["length", "rotation", "rotationX", "rotationY", "weight", "x", "y", "z"],
+  keys: ["length", "rotation", "rotationX", "rotationY", "weight"],
   requirements: {
     base: { description: "the parent 3D frame" },
     solver: { description: "the 3D solver pose" },
@@ -76,10 +74,7 @@ export const fk3dPlugin: PluginDefinition = {
       solved === undefined
         ? rest
         : blendOrientation3d(rest, solved, clamp(readNumber(values.weight, 1), 0, 1));
-    const world = composeWorld3d(readFrame3d(inputs.base), {
-      ...readPivotOffset3d(values),
-      ...local,
-    });
+    const world = composeWorld3d(readFrame3d(inputs.base), { x: 0, y: 0, z: 0, ...local });
     return composeWorld3d(world, {
       ...ZERO_EULER,
       x: segmentExtent(readNumber(values.length)),

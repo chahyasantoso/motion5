@@ -356,7 +356,7 @@ import { fileURLToPath } from "node:url";
 // ownership, and the renderer-facing FK channel. Its cases prove the seam without widening the
 // package exports or changing the existing 2D owners; `T-` remains the trigger series. Issue #500
 // continues the series rather than opening one per phase, because it completes the same seam:
-// `TH-24` onward is the 3D rest orientation and solved weight of ADR-116, followed by the pivot offsets of ADR-117.
+// `TH-24` onward is the 3D rest orientation and solved weight of ADR-116.
 //
 // The scan root is the repository rather than `packages/core/test`, because an id names one test in
 // the suite and the suite is not one package. `H-4` is declared in

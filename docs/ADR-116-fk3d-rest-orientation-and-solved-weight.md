@@ -75,11 +75,7 @@ that loaded before is refused now: before this change every one of these keys un
 
 `x`, `y` and `z` stay unclaimed. A pivot offset changes the geometry the closed form has to
 predict, so it arrives with the solve that accounts for it (issue #500 phase 2) rather than ahead
-of it, where it would compose a tip the solve never aimed. **Refined by
-[ADR-117](./ADR-117-3d-pivot-offsets.md), 2026-09-25.** Phase 2 claims all three keys in the same
-change as the closed form that accounts for them, so the decision above held rather than moved:
-the offset arrived with its solve. What changed is only the tree, where `fk3d` now claims `x`, `y`
-and `z` and composes them before the local orientation, and `ik3d` reads the same values.
+of it, where it would compose a tip the solve never aimed.
 
 ## What is withdrawn
 

@@ -1,6 +1,6 @@
 import type { PluginDefinition } from "../domain/plugins";
 import type { ImmutableRecord } from "../domain/values";
-import { readFrame3d, readPivotOffset3d, type WorldFrame3d } from "./frame3d";
+import { readFrame3d, type WorldFrame3d } from "./frame3d";
 import { readNumber } from "./frame";
 import { goalInputs, readMembers, type DeliveredMember } from "./ik-chain";
 import { solveTwoBone3d, type SolveMember3d } from "./ik3d-analytic";
@@ -38,11 +38,7 @@ function readGoal(
 }
 
 function solveMember(member: DeliveredMember): SolveMember3d {
-  return {
-    id: member.id,
-    length: readNumber(member.values.length),
-    offset: readPivotOffset3d(member.values),
-  };
+  return { id: member.id, length: readNumber(member.values.length) };
 }
 
 /**
