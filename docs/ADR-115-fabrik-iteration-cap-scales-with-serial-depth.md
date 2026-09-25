@@ -1,7 +1,7 @@
 # ADR-115: FABRIK iteration cap scales with serial depth
 
 **Status:** Proposed as issue [#491](https://github.com/chahyasantoso/motion5/issues/491),
-2026-09-25, stacked on PR #498. Accepted when its pull request merges.
+2026-09-25, stacked on PR #499. Accepted when its pull request merges.
 
 ## Invariant
 
