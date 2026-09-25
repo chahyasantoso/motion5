@@ -1,9 +1,9 @@
 # ADR-118: 3D pole target
 
 **Status:** Proposed as issue [#500](https://github.com/chahyasantoso/motion5/issues/500) phase 3,
-2026-09-25, on `feat/500-phase-3` (pull request #505), stacked on the phase 2 pivot offsets of
-[ADR-117](./ADR-117-3d-pivot-offsets.md) (#503) above `main` at
-`c9ce26665e8756614fb8f021e253dd631fcd96d7`. Accepted when #505 merges after #503.
+2026-09-25, on `feat/500-phase-3` (pull request #505), above `main` at
+`7bd3c3d022a1b9ce5f75ecc5b32c0ddcfbc6dbb4`, where the phase 2 pivot offsets of
+[ADR-117](./ADR-117-3d-pivot-offsets.md) landed through #503. Accepted when #505 merges.
 
 ## Invariant
 
@@ -131,20 +131,29 @@ exactly is the default (`TH-43`).
   refuses the load under exactly one rule id.
 - `TH-50` proves a solver that addresses its leaf through `targets` bends toward its pole on both
   sides.
+- `TH-51` proves an unbound pole keeps ADR-114's projected root-local +z down to the `1e-9` line
+  tolerance: goals leaning off the axis by `1e-4`, `1e-6` and `1e-8` bend the elbow to -x in their
+  own plane, and only the line itself takes the +y fallback of `TH-18`.
 - Sandbox mutation pass over 14 mutants (`tools/mutate/phase3-cp3.json` in the handover, run against
   the pole unit and 3D integration files): 12 killed. `unbound-counts-origin` survives as an
   equivalent mutant, since counting the origin adds zero to a maximum of magnitudes.
-  `default-tolerance-shifted` survives on ADR-114's default-rule threshold, which no case places a
-  goal within `1e-3` of the root-local z axis to measure; it predates this phase and is a named
-  follow-up rather than phase 3 evidence.
+  `default-tolerance-shifted`, which moves ADR-114's default-rule threshold from `1e-9` to `1e-3`,
+  survived that pass because no case placed a goal that close to the root-local z axis. `TH-51`
+  now does, at relative leans of `1e-4`, `1e-6` and `1e-8`, and kills it
+  (`tools/mutate/phase3-cp4.json`, next handover). A companion mutant that drops the threshold to
+  `0` survives: the projected pole of a goal exactly on the axis is exactly zero, so the two
+  thresholds differ only within rounding of the line, a boundary of the kind the Consequences
+  already decline to make a contract for the authored pole.
 - The sandbox byte-identity probe compared 290,000 seeded unbound, zero-offset and collinear-pole
   cases against the phase 2 tip and reported zero mismatches, collinear poles 50,000 of 50,000
   byte-identical. It ran against the source this ADR describes; the commits after it change tests
   and records only.
 - `CI` run 36143222650 on `1c8b3ace8a586c39dc8c9f42e2670fcba427cf3d` refused three test lines of
   `ik3d-pole.test.ts` under `exactOptionalPropertyTypes` and no source, and timed `LF-16` out at the
-  5,000 ms default with no offender; both are fixed in the commits that follow it. The sandbox
-  cannot install TypeScript, so the first compiler run of the fixed tests is the next `CI` run on
-  the pushed head, and this ADR claims no green run until it is recorded here.
+  5,000 ms default with no offender; both are fixed in the commits that follow it. `CI` run
+  36147490749 on `f8e2fc9e9767150bab67db9d1f2cae02ce29d463`, the head carrying those fixes, `TH-49`,
+  `TH-50` and this record, is green on all seven jobs, `quality` among them with `typecheck`,
+  `format:check` and the full suite. `TH-51` and this paragraph arrive after that run, so the run on
+  the head that carries them is the evidence for them, named in the pull request body.
 - The independent quality pass is recorded as a comment on #505 rather than here. Every result above
   other than `CI` is a sandbox measurement, reviewed rather than trusted.
