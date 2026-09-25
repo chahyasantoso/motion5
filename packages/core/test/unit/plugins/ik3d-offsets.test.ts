@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import type { PluginInputs } from "../../../src/domain/plugins";
+import type { ImmutableRecord } from "../../../src/domain/values";
 import { fk3dPlugin } from "../../../src/plugins/fk3d";
 import {
   composeWorld3d,
@@ -36,11 +38,14 @@ function turnDistance(a: number, b: number): number {
 
 function compose(
   base: WorldFrame3d,
-  values: Readonly<Record<string, unknown>>,
+  values: Readonly<ImmutableRecord>,
   id: string,
   solver: unknown = undefined,
 ): WorldFrame3d {
-  return fk3dPlugin.compose(values, 1, { base, solver }, id) as WorldFrame3d;
+  // The graph delivers a solve result as an immutable record; the fixture hands the composer the
+  // same bytes without restating that type for every solver shape it passes.
+  const inputs = { base, solver } as unknown as PluginInputs;
+  return fk3dPlugin.compose(values, 1, inputs, id) as WorldFrame3d;
 }
 
 describe("3D pivot offsets", () => {

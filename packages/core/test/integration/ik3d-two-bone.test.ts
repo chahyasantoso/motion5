@@ -295,6 +295,8 @@ describe("3D seam through engine and DOM", () => {
     expect(target.style.transform).toContain("translate3d(");
     const bytes = { ...first.values };
     runtime.seek("rig/fore", 0);
-    expect(patches.get("rig/fore")?.values).toEqual(bytes);
+    const again = patches.get("rig/fore");
+    if (again?.status !== "ready") throw new Error("offset fore did not republish");
+    expect(again.values).toEqual(bytes);
   });
 });
