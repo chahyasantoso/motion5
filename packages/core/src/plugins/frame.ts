@@ -161,6 +161,28 @@ export function readPivotOffset(values: { readonly [key: string]: unknown }): Pi
 }
 
 /**
+ * A 2D angle in degrees as radians, spelled `(degrees * Math.PI) / 180` for every angle whose
+ * product with `π` is finite, so every angle that composed before this owner existed composes to
+ * the same bit.
+ *
+ * A finite angle past about `5.7e307` degrees overflows that product to `Infinity`, and `cos` and
+ * `sin` then answer `NaN` for a frame that is finite. Only there are whole turns reduced first,
+ * which `%` does exactly, so the frame is the one the angle names. Always reducing would be one
+ * expression instead of two, but 2D rotations are published unwrapped (ADR-111) and a reduced
+ * product differs in its last bit from the raw one past a turn, so every rotated rig would move. A
+ * non-finite angle passes through unchanged, because `readNumber` owns what a non-finite field
+ * means and no caller hands one here. FABRIK multiplies by `π / 180` instead, a factor below one
+ * whose product cannot overflow. The internal 3D frame reduces every angle in `frame3d.ts` because
+ * it had no published bytes to keep. See ADR-111's amendment of 2026-09-25 and `SD-18`.
+ */
+export function toRadians(degrees: number): number {
+  const radians = (degrees * Math.PI) / 180;
+  return Number.isFinite(radians) || !Number.isFinite(degrees)
+    ? radians
+    : ((degrees % 360) * Math.PI) / 180;
+}
+
+/**
  * `local` placed in `parent`'s frame: rotate by the parent's rotation, then translate.
  *
  * The one rotate-then-translate in the package. `fk` composes a bone out of two of them, the pivot
@@ -173,7 +195,7 @@ export function composeWorld(
   parent: { x: number; y: number; rotation: number },
   local: { x: number; y: number; rotation: number },
 ): { x: number; y: number; rotation: number } {
-  const rad = (parent.rotation * Math.PI) / 180;
+  const rad = toRadians(parent.rotation);
   const cos = Math.cos(rad);
   const sin = Math.sin(rad);
   return {

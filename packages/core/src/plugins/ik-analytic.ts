@@ -1,5 +1,5 @@
 import { unreachable } from "../lang/exhaustive";
-import { clamp, effectiveLink, pivotFromBaseTip, type WorldFrame } from "./frame";
+import { clamp, effectiveLink, pivotFromBaseTip, toRadians, type WorldFrame } from "./frame";
 import { solveLength, solveOffset, type SolveMember } from "./ik-member";
 import { readGoal } from "./ik-goal-reading";
 import type { ClosedFormQuality, SolveResult } from "./ik-result";
@@ -226,8 +226,8 @@ export function bandQuality(
  * vectors.
  */
 function restMiss(root: WorldFrame, reach: number, twist: number, l2: number): number {
-  const link = ((root.rotation + twist) * Math.PI) / 180;
-  const segment = (root.rotation * Math.PI) / 180;
+  const link = toRadians(root.rotation + twist);
+  const segment = toRadians(root.rotation);
   return Math.hypot(
     reach * Math.cos(link) + l2 * Math.cos(segment),
     reach * Math.sin(link) + l2 * Math.sin(segment),

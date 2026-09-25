@@ -305,6 +305,22 @@ siblings are finite: a `NaN` is a defect to surface, the rule `restoreDistance` 
 and silently dropping one branch would hide it. The refusal is a thrown `Error` like every other
 solver refusal, so were it ever delivered it would surface as the node's `composition-failure`.
 
+**A finite root rotation past the product's range names a frame.** The independent quality pass on
+this change measured a rig with a finite root at `rotation: Number.MAX_VALUE`, finite lengths, a
+finite pivot offset and a finite goal publishing `a: NaN`, `reached` and a `NaN` residual:
+`(rotation * Math.PI) / 180` overflows to `Infinity` past about `5.7e307` degrees and `cos` and
+`sin` of it are `NaN`. It predates #489, but it falsified the invariant above, so it is fixed here
+rather than the invariant narrowed. `toRadians` in `frame.ts` is the one 2D degrees-to-radians
+reader: it keeps the raw product for every angle whose product is finite, so every rig that composed
+before composes to the same bit, and reduces whole turns with `%`, which is exact, only where the
+product overflows. `composeWorld`, which `fk.compose` and every pivot conversion read, and the closed
+form's rest miss read it. FABRIK's `* (Math.PI / 180)` needs no owner change: its factor is below
+one and the product cannot overflow. Always reducing was withdrawn because 2D rotations are published
+unwrapped (above) and a reduced product differs from the raw one in its last bit past a turn, so
+every rotated rig would move; the internal 3D frame reduces every angle in `frame3d.ts`, which it
+could do from birth because it had no published bytes to keep. An `fk` bone composed under such a
+rotation used to publish `NaN` and fail the publisher's renderer-neutrality check; it now publishes.
+
 **Withdrawn.** Refusing infinities, which regresses the closed form's pinned directional behaviour.
 Reading `NaN` as no goal for the tick, which hides a defect and invents a pose. A FABRIK `too-far`,
 which breaks ADR-107's family rule. A FABRIK-private set of directional leaves beside a ternary on
@@ -325,18 +341,24 @@ infinite goal, which would pin only `readFrame`'s laundering to zero rather than
   limited refuses naming the first leaf, and so does a tree with a finite sibling.
 - `SD-17`: the internal 3D closed form reads each infinite spelling on `x`, `y` and `z` as
   `too-far` with an infinite residual and finite rotations, and refuses `NaN` on each axis.
+- `SD-18`: a root at `Number.MAX_VALUE` and `-Number.MAX_VALUE` degrees solves a pivot-offset pair,
+  a coincident pair, a limited offset chain and an influenced tree with finite rotations and exactly
+  the residuals and quality of the root at `rotation % 360`, and `composeWorld` places a point as
+  that frame does; a root at `725` degrees keeps the raw product bit for bit. It fails on the
+  pre-fix source.
 
 `IR-9` in `ik-result.test.ts` replaces its `NaN`-reads-`reached` expectation with the refusal.
 Mutations of `ik-goal-reading.ts`, each run against `SD-15` to `SD-17` and `IR-9`: `readGoal` always
 answering a point fails `SD-15`; removing the refusal fails all four; a direction's miss measured as
 a finite distance fails `SD-15`; a direction's aim at the origin instead of its stand-in fails
 `SD-15`. The last survived the first revision of `SD-15`, which asserted only finiteness, and is
-why `SD-15` pins the pose.
+why `SD-15` pins the pose. Reverting `toRadians` to the raw product fails `SD-18`.
 
-Byte identity was measured against `7aa47815`: 300,000 seeded finite rigs in eight families of
+Byte identity was measured against `7aa47815`: 337,500 seeded finite rigs in nine families of
 37,500 (two-bone, serial FABRIK chains of three to 64, branching trees with and without influence,
 joint limits, pivot offsets, zero, negative-zero and negative lengths, magnitudes near and past
-`SOLVE_MAGNITUDE_CEILING`, and the internal 3D two-bone solve) were solved on both trees and every
+`SOLVE_MAGNITUDE_CEILING`, the internal 3D two-bone solve, and root rotations from one to `1e301`
+degrees under offsets, limits and trees, which is what `toRadians` reads) were solved on both trees and every
 published field, including per-leaf residuals, every quality field and `inspectSolve`'s projection,
 was identical under `Object.is` with identical key order. The harness and its output travel in the
 handover given to the requester, not in this repository; they have no run in this repository's
@@ -345,6 +367,6 @@ suite and their output is reviewed rather than trusted.
 ### Consequences
 
 `ik-goal-reading.ts` is a new module of about 4,500 bytes; `fabrik.ts` is 28,586 bytes, still under
-the 30,000-byte sister-document threshold. The published bytes of every finite rig are unchanged,
+the 30,000-byte sister-document threshold, and `frame.ts` gains `toRadians`. The published bytes of every finite rig are unchanged,
 and nothing is authorable, so no load rule is added and the authored schema is unchanged. The
 runtime answer is unchanged too, because no delivered goal is non-finite.
