@@ -1,0 +1,37 @@
+quality (node 24.21.0)	Run npm run typecheck	﻿2026-09-25T11:06:30.9894279Z ##[group]Run npm run typecheck
+quality (node 24.21.0)	Run npm run typecheck	2026-09-25T11:06:30.9894548Z ^[[36;1mnpm run typecheck^[[0m
+quality (node 24.21.0)	Run npm run typecheck	2026-09-25T11:06:30.9958753Z shell: /usr/bin/bash -e {0}
+quality (node 24.21.0)	Run npm run typecheck	2026-09-25T11:06:30.9958982Z env:
+quality (node 24.21.0)	Run npm run typecheck	2026-09-25T11:06:30.9959153Z   NODE_VERSION: 24.21.0
+quality (node 24.21.0)	Run npm run typecheck	2026-09-25T11:06:30.9959394Z   CI_EVIDENCE_DIR: /home/runner/work/_temp/ci-evidence
+quality (node 24.21.0)	Run npm run typecheck	2026-09-25T11:06:30.9959664Z ##[endgroup]
+quality (node 24.21.0)	Run npm run typecheck	2026-09-25T11:06:31.0708913Z 
+quality (node 24.21.0)	Run npm run typecheck	2026-09-25T11:06:31.0733521Z > motion5@0.0.0 typecheck
+quality (node 24.21.0)	Run npm run typecheck	2026-09-25T11:06:31.0747478Z > tsc --noEmit -p tsconfig.json
+quality (node 24.21.0)	Run npm run typecheck	2026-09-25T11:06:31.0747838Z 
+quality (node 24.21.0)	Run npm run typecheck	2026-09-25T11:06:34.8804068Z ##[error]packages/core/test/integration/ik3d-two-bone.test.ts(298,37): error TS2339: Property 'values' does not exist on type 'Patch'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-25T11:06:34.8810592Z   Property 'values' does not exist on type 'BlockedPatch'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-25T11:06:34.8812390Z ##[error]packages/core/test/unit/plugins/fk3d-rest-weight.test.ts(220,56): error TS2345: Argument of type 'Readonly<Record<string, unknown>>' is not assignable to parameter of type 'Readonly<ImmutableRecord>'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-25T11:06:34.8813607Z   'string' index signatures are incompatible.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-25T11:06:34.8813961Z     Type 'unknown' is not assignable to type 'ImmutableValue'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-25T11:06:34.8814907Z ##[error]packages/core/test/unit/plugins/fk3d-rest-weight.test.ts(254,49): error TS2322: Type 'unknown' is not assignable to type 'ImmutableValue'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-25T11:06:34.8816617Z ##[error]packages/core/test/unit/plugins/ik3d-offsets.test.ts(43,29): error TS2345: Argument of type 'Readonly<Record<string, unknown>>' is not assignable to parameter of type 'Readonly<ImmutableRecord>'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-25T11:06:34.8817582Z   'string' index signatures are incompatible.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-25T11:06:34.8817912Z     Type 'unknown' is not assignable to type 'ImmutableValue'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-25T11:06:34.9284801Z ##[error]Process completed with exit code 2.
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	﻿2026-09-25T11:07:43.1300656Z ##[group]Run test "$SUITE_RESULT" = success
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-25T11:07:43.1301430Z ^[[36;1mtest "$SUITE_RESULT" = success^[[0m
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-25T11:07:43.1612287Z shell: /usr/bin/bash -e {0}
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-25T11:07:43.1613376Z env:
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-25T11:07:43.1613848Z   NODE_VERSION: 24.21.0
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-25T11:07:43.1614361Z   SUITE_RESULT: failure
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-25T11:07:43.1614847Z ##[endgroup]
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-25T11:07:43.1787646Z ##[error]Process completed with exit code 1.
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	﻿2026-09-25T11:07:44.1323302Z ##[group]Run test "$SUITE_RESULT" = success
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-25T11:07:44.1324045Z ^[[36;1mtest "$SUITE_RESULT" = success^[[0m
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-25T11:07:44.1601545Z shell: /usr/bin/bash -e {0}
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-25T11:07:44.1602512Z env:
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-25T11:07:44.1603028Z   NODE_VERSION: 24.21.0
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-25T11:07:44.1603600Z   SUITE_RESULT: failure
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-25T11:07:44.1604145Z ##[endgroup]
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-25T11:07:44.1763976Z ##[error]Process completed with exit code 1.
