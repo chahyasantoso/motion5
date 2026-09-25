@@ -81,7 +81,8 @@ a 2D `fk` member under `ik3d` would read `rotations`, which `ik3d` never publish
 member under the 2D `ik` would read `rotations3d`, which `ik` never publishes. Either would compose
 identity on every tick without a symptom. The compose-time checks remain only as invariant guards. Lengths keep the
 forgiving 2D FK semantics: non-finite values read as zero and negative values are clamped by
-`segmentExtent` to zero rather than rejected. Direct solver callers must provide finite frames;
+`segmentExtent` to zero rather than rejected, the owner 2D `fk` also composes through since
+issue #482. Direct solver callers must provide finite frames;
 `readFrame3d` sanitizes authored values at the plugin boundary, mirroring 2D.
 
 It publishes local Euler triples under `rotations3d`, reusing `ClosedFormQuality` from the 2D result

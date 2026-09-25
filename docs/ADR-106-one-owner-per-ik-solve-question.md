@@ -2,7 +2,7 @@
 
 **Status:** Accepted, 2026-09-23. Issue #349 phase 1, squash-merged from [#481](https://github.com/chahyasantoso/motion5/pull/481) as `95bef276`. Phase 2 is [ADR-107](./ADR-107-one-solve-result.md).
 
-**Corrected by ADR-107.** The invariant below says `segmentExtent` owns the length clamp for `fk` and both solves alike. It owns it for `effectiveLink` and both solves; `fk.compose` still reads an authored `length` raw, and [#482](https://github.com/chahyasantoso/motion5/issues/482) owns that disagreement.
+**Corrected by ADR-107, then made true by [#482](https://github.com/chahyasantoso/motion5/issues/482).** The invariant below says `segmentExtent` owns the length clamp for `fk` and both solves alike. When this record landed it owned it for `effectiveLink` and both solves while `fk.compose` read an authored `length` raw, which ADR-107 recorded. Issue #482 routes `fk.compose` through `segmentExtent` as well, so the line holds as written: `fk.compose`, `effectiveLink`, `solveLength` and FABRIK's `seedArc` are its four readers, `IR-11`, `IR-12` and `LV-22` pin it, and `segmentExtent` keeps a signed zero (`length < 0 ? 0 : length`) so no published `-0` moves.
 
 ## Invariant
 

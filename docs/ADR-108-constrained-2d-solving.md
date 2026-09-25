@@ -97,7 +97,7 @@ new solver compatibility flag: `bend` and `flip` conflict rather than silently s
 
 ## Found, and left to its own issue
 
-The existing negative-length FK disagreement remains owned by [#482](https://github.com/chahyasantoso/motion5/issues/482), as recorded by ADR-107. This phase does not change that behavior.
+The negative-length FK disagreement recorded by ADR-107 was not changed by this phase; [#482](https://github.com/chahyasantoso/motion5/issues/482) later closed it by composing `fk` through `segmentExtent`, as ADR-107 now records.
 
 ## Evidence
 

@@ -43,9 +43,13 @@ ADR-106 split the solve into one owner per question and left one question with t
 
 **Withdrawn: FABRIK reachability kinds.** Reporting `too-far` from FABRIK would need a per-goal reach bound on a tree, which is phase 5's goal policy rather than this record's shape. `stalled` already distinguishes an unreachable goal from a slow chain, which is the distinction a caller acts on.
 
-## Found, and left to its own issue
+## Found here, closed by #482
 
-`fk.compose` reads an authored `length` raw, while both solves clamp it through `segmentExtent`, so a negative length composes a backwards segment in `fk` and a zero-extent one in the solve. ADR-106's invariant line says `segmentExtent` owns the clamp "for `fk` and both solves alike"; that holds for `effectiveLink` and not for `fk.compose`. Fixing it moves `fk`'s published positions for such rigs, which this record's invariant forbids, so it is [#482](https://github.com/chahyasantoso/motion5/issues/482). `IR-6` draws lengths non-negative for exactly that reason, and `IR-10` pins the solve's half of it without composing: a negative authored length answers exactly as a zero one does.
+When this record landed, `fk.compose` read an authored `length` raw while both solves clamped it through `segmentExtent`, so a negative length composed a backwards segment in `fk` and a zero-extent one in the solve, and this record's own invariant (nothing new published) kept it from fixing that. [#482](https://github.com/chahyasantoso/motion5/issues/482) closed it with option (a): `fk.compose` composes `segmentExtent(readNumber(values.length))`. That is a deliberate change to published bytes, and the only one: an `fk` bone whose live `length` is negative and finite now composes a segment with no extent where it used to point backwards. Every other length, including `-0`, `NaN` and both infinities, publishes the bytes it did, because `segmentExtent` became `length < 0 ? 0 : length` rather than `Math.max(0, length)`, which would have turned a published `-0` into `+0`.
+
+Option (b), refusing a negative `length` at load, was withdrawn: `length` is not a load-time constant. `overrideValues` and `setValues` write a live static value with no range rule, `setKeyframe` validates shape and not range, and an interpolated length is whatever the host's ease produces, so an overshooting ease crosses zero between two non-negative stops. A load rule would need a second rule at every live write plus an easing policy, which is a second owner of the question ADR-106 gave to one.
+
+`IR-6` now draws a signed sample beside its original non-negative one and composes through `fkPlugin.compose` itself, so the stated residual is the miss the published bone leaves for negative lengths too. `IR-10` still pins the solve's half without composing, `IR-11` pins the filed repro onto its goal, `IR-12` the length matrix through `fk.compose` and `segmentExtent`, and `LV-22` a live negative write after a positive load, which is the case a load rule could not have seen.
 
 ## Evidence
 
