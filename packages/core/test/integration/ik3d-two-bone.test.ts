@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { createDomPatchAdapter, type DomTarget } from "../../src/adapters/dom";
-import type { ProjectDefinition, TrackDefinition } from "../../src/contract/v5";
+import type {
+  AuthoredPluginRequires,
+  ProjectDefinition,
+  TrackDefinition,
+} from "../../src/contract/v5";
 import { PluginRegistry } from "../../src/domain/plugins";
 import { Engine } from "../../src/engine";
 import { createManualClock } from "../../src/ports/clock";
@@ -63,6 +67,70 @@ const PROJECT: ProjectDefinition = {
     },
   ],
 };
+
+/**
+ * The elbow's side of the root-to-goal line, measured against the side of a pole at
+ * `(30, poleY, 10)`: positive when the elbow bends toward the pole. The root is the origin.
+ */
+function poleSide(elbow: Readonly<Record<string, unknown>>, poleY: number): number {
+  const unit = [GOAL.x, GOAL.y, GOAL.z].map((c) => c / Math.hypot(GOAL.x, GOAL.y, GOAL.z));
+  const off = (v: readonly number[]) => {
+    const along = v[0]! * unit[0]! + v[1]! * unit[1]! + v[2]! * unit[2]!;
+    return v.map((c, i) => c - unit[i]! * along);
+  };
+  const e = off([Number(elbow.x), Number(elbow.y), Number(elbow.z)]);
+  const p = off([30, poleY, 10]);
+  return e[0]! * p[0]! + e[1]! * p[1]! + e[2]! * p[2]!;
+}
+
+/** How far a published tip is from `GOAL`. */
+function goalMiss(fore: Readonly<Record<string, unknown>>): number {
+  return Math.hypot(Number(fore.x) - GOAL.x, Number(fore.y) - GOAL.y, Number(fore.z) - GOAL.z);
+}
+
+/**
+ * A static pole rig reaching `GOAL`: `solve` binds `requires` under `ik3d`, the knee sits at
+ * `(30, poleY, 10)`, and the upper member authors `upperKeyframes`.
+ */
+function staticPoleRig(
+  requires: AuthoredPluginRequires,
+  poleY: number,
+  upperKeyframes: NonNullable<TrackDefinition["keyframes"]> = {
+    fk3d: { values: { length: 80 }, requires: { base: "root", solver: "solve" } },
+  },
+): ProjectDefinition {
+  return {
+    schemaVersion: 5,
+    projectId: "3d-pole-static",
+    motions: [
+      {
+        id: "rig",
+        trigger: { type: "manual" },
+        tracks: [
+          { id: "root", keyframes: { transform3d: { values: { x: 0, y: 0, z: 0 } } } },
+          { id: "goal", keyframes: { transform3d: { values: GOAL } } },
+          { id: "knee", keyframes: { transform3d: { values: { x: 30, y: poleY, z: 10 } } } },
+          { id: "solve", keyframes: { ik3d: { requires } } },
+          { id: "upper", keyframes: upperKeyframes },
+          member("fore", "upper", 60),
+        ],
+      },
+    ],
+  };
+}
+
+/** The rule ids a load refuses with, in the order its message names them; empty when it loads. */
+function refusedRuleIds(load: () => void): readonly string[] {
+  try {
+    load();
+  } catch (error) {
+    if (!(error instanceof TypeError)) throw error;
+    return [...error.message.matchAll(/([a-z][a-z0-9]*(?:-[a-z0-9]+)+) at rig\//g)].map(
+      (match) => match[1]!,
+    );
+  }
+  return [];
+}
 
 function createRuntime(project: ProjectDefinition = PROJECT) {
   const plugins = new PluginRegistry();
@@ -287,9 +355,7 @@ describe("3D seam through engine and DOM", () => {
     const restUpper = tipOf(root, UPPER_REST, 80);
     expect(sameBytes(rest.upper, restUpper)).toBe(true);
     expect(sameBytes(rest.fore, tipOf(restUpper, FORE_REST, 60))).toBe(true);
-    const miss = (fore: Record<string, unknown>) =>
-      Math.hypot(Number(fore.x) - GOAL.x, Number(fore.y) - GOAL.y, Number(fore.z) - GOAL.z);
-    expect(miss(rest.fore)).toBeGreaterThan(1);
+    expect(goalMiss(rest.fore)).toBeGreaterThan(1);
 
     // Partway, each member publishes the short-arc blend of its own rest and solved orientation.
     const partway = new Map<number, ReturnType<typeof seekMembers>>();
@@ -302,7 +368,7 @@ describe("3D seam through engine and DOM", () => {
     }
 
     // Weight 1 closes on the goal.
-    expect(miss(seekMembers(1).fore)).toBeLessThan(1e-9);
+    expect(goalMiss(seekMembers(1).fore)).toBeLessThan(1e-9);
 
     // The solve is a pure function of its inputs, so seeking back reproduces every byte.
     expect(seekMembers(0)).toEqual(rest);
@@ -359,32 +425,66 @@ describe("3D seam through engine and DOM", () => {
       adapter.apply(ready("rig/fore"));
       return { upper: { ...ready("rig/upper").values }, fore: { ...ready("rig/fore").values } };
     };
-    // The elbow's side of the root-to-goal line, measured against the pole's own side.
-    const side = (elbow: Record<string, unknown>, poleY: number) => {
-      const line = [GOAL.x, GOAL.y, GOAL.z];
-      const unit = line.map((c) => c / Math.hypot(GOAL.x, GOAL.y, GOAL.z));
-      const off = (v: readonly number[]) => {
-        const along = v[0]! * unit[0]! + v[1]! * unit[1]! + v[2]! * unit[2]!;
-        return v.map((c, i) => c - unit[i]! * along);
-      };
-      const e = off([Number(elbow.x), Number(elbow.y), Number(elbow.z)]);
-      const p = off([30, poleY, 10]);
-      return e[0]! * p[0]! + e[1]! * p[1]! + e[2]! * p[2]!;
-    };
-    const miss = (fore: Record<string, unknown>) =>
-      Math.hypot(Number(fore.x) - GOAL.x, Number(fore.y) - GOAL.y, Number(fore.z) - GOAL.z);
-
     const above = poseAt(0);
-    expect(miss(above.fore)).toBeLessThanOrEqual(1e-9);
-    expect(side(above.upper, 120)).toBeGreaterThan(0);
+    expect(goalMiss(above.fore)).toBeLessThanOrEqual(1e-9);
+    expect(poleSide(above.upper, 120)).toBeGreaterThan(0);
     expect(target.style.transform).toContain("translate3d(");
     const below = poseAt(1);
-    expect(miss(below.fore)).toBeLessThanOrEqual(1e-9);
-    expect(side(below.upper, -120)).toBeGreaterThan(0);
+    expect(goalMiss(below.fore)).toBeLessThanOrEqual(1e-9);
+    expect(poleSide(below.upper, -120)).toBeGreaterThan(0);
     expect(below.upper).not.toEqual(above.upper);
     // The solve is a pure function of its inputs, the pole among them, so seeking back reproduces
     // every byte in either direction.
     expect(poseAt(0)).toEqual(above);
     expect(poseAt(1)).toEqual(below);
+  });
+
+  it("TH-49 a misplaced pole refuses the whole load under exactly one rule", () => {
+    const loadAll = (project: ProjectDefinition) => () => {
+      const runtime = createRuntime(project);
+      for (const id of ["rig/root", "rig/goal", "rig/knee", "rig/solve", "rig/upper", "rig/fore"])
+        runtime.mount(id);
+    };
+    const chain = { root: "root", target: "goal" };
+    // The solver's own pole loads.
+    expect(refusedRuleIds(loadAll(staticPoleRig({ ...chain, pole: "knee" }, 120)))).toEqual([]);
+    // A pole on the member's `fk3d` group, which declares none, is the registry's rule alone.
+    const onFk3d = staticPoleRig(chain, 120, {
+      fk3d: { values: { length: 80 }, requires: { base: "root", solver: "solve", pole: "knee" } },
+    });
+    expect(refusedRuleIds(loadAll(onFk3d))).toEqual(["plugin-unknown-requirement"]);
+    // An `ik3d` group on the elbow holding only the pole is the graph's rule alone.
+    const onElbow = staticPoleRig(chain, 120, {
+      fk3d: { values: { length: 80 }, requires: { base: "root", solver: "solve" } },
+      ik3d: { requires: { pole: "knee" } },
+    });
+    expect(refusedRuleIds(loadAll(onElbow))).toEqual(["ik-pole-without-chain"]);
+  });
+
+  it("TH-50 a solver addressing its leaf through targets bends toward its pole too", () => {
+    const pose = (poleY: number) => {
+      const runtime = createRuntime(
+        staticPoleRig({ root: "root", targets: { fore: "goal" }, pole: "knee" }, poleY),
+      );
+      const patches = new Map<string, Patch>();
+      for (const id of ["rig/root", "rig/goal", "rig/knee", "rig/solve", "rig/upper", "rig/fore"]) {
+        runtime.mount(id);
+        runtime.subscribeNode(id, (patch) => patches.set(id, patch));
+      }
+      runtime.seek("rig/upper", 0);
+      runtime.seek("rig/fore", 0);
+      const ready = (id: string) => {
+        const patch = patches.get(id);
+        if (patch?.status !== "ready") throw new Error(`${id} is ${patch?.status ?? "absent"}.`);
+        return { ...patch.values };
+      };
+      return { upper: ready("rig/upper"), fore: ready("rig/fore") };
+    };
+    for (const poleY of [120, -120]) {
+      const { upper, fore } = pose(poleY);
+      expect(goalMiss(fore)).toBeLessThanOrEqual(1e-9);
+      expect(poleSide(upper, poleY)).toBeGreaterThan(0);
+    }
+    expect(pose(120).upper).not.toEqual(pose(-120).upper);
   });
 });
