@@ -1,8 +1,8 @@
 # ADR-116: fk3d rest orientation and solved weight
 
 **Status:** Proposed as issue [#500](https://github.com/chahyasantoso/motion5/issues/500) phase 1,
-2026-09-25, against `main` at `42c723226ed044b11e2441b06c8c7019ae4ed885` plus the #491 record.
-Accepted when its pull request merges. Supersedes one withdrawn bullet of
+2026-09-25, against `main` at `42c723226ed044b11e2441b06c8c7019ae4ed885` (#499). Accepted when
+its pull request merges. Supersedes one withdrawn bullet of
 [ADR-114](./ADR-114-3d-seam-prototype.md), "`fk3d` claiming authored rotation keys".
 
 ## Invariant
@@ -97,8 +97,8 @@ of it, where it would compose a tip the solve never aimed.
 ## Consequences
 
 A 3D bone has a rest pose and a per-member reach, so a phase-3 pole and a phase-5 iterative solve
-have a rest direction to swing from. `frame3d.ts` grows by about 5,500 bytes and stays below the
-30,000-byte sister-document line; `fk3d.ts` stays below 5,000. Nothing is exported from the
+have a rest direction to swing from. `frame3d.ts` grows from 6,502 to 12,278 bytes and stays below
+the 30,000-byte sister-document line; `fk3d.ts` is 4,140 bytes. Nothing is exported from the
 package, no 2D module changes, and the ADR-114 prototype's tests stand unchanged except `TH-11`,
 which used `weight` as its example of 2D vocabulary refused in a 3D group and now uses
 `minRotation`, the 2D limit key a 3D bone still does not claim.
@@ -120,11 +120,30 @@ which used `weight` as its example of 2D vocabulary refused in a 3D group and no
 - `TH-30`: clamping, non-finite weight, and a staged partial reach.
 - `TH-31`: each orientation key alone under a solve with no weight is `ik-solved-rotation-dead`,
   and any weight beside it loads.
-- `TH-32`: through the engine, a rest pose ramps into the solve, closes on the goal at weight `1`,
-  and seeking back reproduces the rest bytes.
+- `TH-32` (`test/integration/ik3d-two-bone.test.ts`): through the engine, fake interpolator and a
+  keyframed `weight` on both members, weight `0` publishes the rest pose byte for byte while the
+  solve is bound and published, `0.25`, `0.5` and `0.75` publish the blend oracle byte for byte,
+  weight `1` closes on the goal to `1e-9`, and seeking back in a different order reproduces every
+  earlier pose.
 
-A sandbox mutation pass, reviewed and not trusted, with no run in this repository's CI: Euler
-interpolation, a dropped sign flip, dropped endpoint short circuits, a reversed quaternion product,
-weight read with no solve, a malformed entry read as identity, a non-finite weight read as `0`, the
-rest orientation ignored, and the load rule reading `rotation` alone each turn at least one case
-red. Dropping `fk3d`'s clamp survives as the equivalent mutant recorded above.
+A sandbox mutation pass, reviewed and not trusted, with no run in this repository's CI, killed 13 of
+14 mutants: Euler interpolation, a dropped sign flip, each dropped endpoint short circuit, a
+reversed quaternion product term, a sign error in `matrixFromQuaternion`, the normalized linear
+blend used everywhere, weight read with no solve, a malformed entry read as identity, a non-finite
+weight read as `0`, the rest orientation ignored, the load rule reading `rotation` alone, and
+`weight` unclaimed each turn at least one case red. Dropping `fk3d`'s clamp survives as the
+equivalent mutant recorded above. The harness and the mutant list travel in the phase handover as
+opaque material.
+
+### How this record was completed
+
+The first commit on `feat/500-phase-1` (`afb55858`) carried only this record and `TH-24` to `TH-31`.
+Its message and handover notes described source, load-rule, guide, schema, `ADR-114` and status
+changes that were not in the commit, so `TH-24` to `TH-31` could not import what they tested. The
+completion commit adds the implementation this record describes, `TH-32`, the `TH-11` change, the
+`ADR-114` forward pointer, the guide, schema and status text, and corrects the figures above to
+what was measured. Sandbox runs of that completion, reviewed rather than trusted: the full suite
+under an offline Vitest stand-in (the same 1,403 cases that passed on `afb55858` still pass, plus
+the nine new ones; every file that does not run needs `gsap`, `typescript`, `react-test-renderer`
+or `npx`, none installable offline), Prettier 3.6.2 from `.tools/`, and the read-budget, boundary
+and raw-template scans. `npm run typecheck` has no run: TypeScript is not installable offline.

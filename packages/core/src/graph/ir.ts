@@ -474,10 +474,15 @@ export function buildGraphIR(project: ProjectDefinition): GraphBuildResult {
   return finalizeGraph(nodes, diagnostics);
 }
 
-function groupsAuthoring(keyframes: unknown, key: string): readonly string[] {
+const ORIENTATION_KEYS = ["rotation", "rotationX", "rotationY"] as const;
+
+function groupsAuthoring(keyframes: unknown, keys: readonly string[]): readonly string[] {
   if (!isRecord(keyframes)) return [];
   return Object.keys(keyframes)
-    .filter((group) => readPluginValues(keyframes[group])[key] !== undefined)
+    .filter((group) => {
+      const values = readPluginValues(keyframes[group]);
+      return keys.some((key) => values[key] !== undefined);
+    })
     .sort(compareCodeUnits);
 }
 
@@ -576,8 +581,8 @@ export function resolveSolvers(
       }
     }
     const keyframes = node.track.keyframes;
-    const rotationGroups = groupsAuthoring(keyframes, "rotation");
-    const weightGroups = groupsAuthoring(keyframes, "weight");
+    const rotationGroups = groupsAuthoring(keyframes, ORIENTATION_KEYS);
+    const weightGroups = groupsAuthoring(keyframes, ["weight"]);
     const authoredGoals = goalBindingsOf(node);
     const hasSolver = solverBinders.length > 0;
     // Read through the goal classification rather than off the literal `"target"`. A member binding

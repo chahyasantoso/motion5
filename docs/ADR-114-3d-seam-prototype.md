@@ -127,7 +127,10 @@ axis itself is the least surprising place. The threshold is relative (`1e-9` of 
 - A dimension flag on the 2D plugins is withdrawn because it would give one plugin two frame
   conventions and make 2D ownership conditional rather than explicit.
 - `fk3d` claiming authored rotation keys is withdrawn because solver output owns member orientation;
-  identity is the unbound member pose and authored Euler overrides are not in v1.
+  identity is the unbound member pose and authored Euler overrides are not in v1. **Superseded by
+  [ADR-116](./ADR-116-fk3d-rest-orientation-and-solved-weight.md)** (issue #500 phase 1): `fk3d`
+  now claims a local rest orientation and a per-member `weight`, and the solver's triple is blended
+  toward rather than taken outright. `TH-11` uses `minRotation` in place of `weight` as its example.
 - A wildcard package export is withdrawn because the prototype is internal-only and package exports
   are an allow list. No `index.ts` or package export is changed.
 
