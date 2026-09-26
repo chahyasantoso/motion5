@@ -6,21 +6,25 @@ import { unreachable } from "../lang/exhaustive";
  * this module whether the chain it derived is one the solver's plugin declares, so a plugin's
  * supported shape is a contract fact read at load rather than a throw at composition. See ADR-114.
  *
- * The union is closed. `unbranched` is a single path of exactly `members` members from the root to
- * one leaf, every one bound to the solver through `memberPlugin`, which is all the phase 8 `ik3d`
- * closed form solves. `any` is every other solver, the 2D `ik` among them, which dispatches on the
- * derived shape and so refuses no count or branching (issue #195 deleted the arity rule that used
- * to). A plugin missing from the table is `any`, because a solver that declares nothing has
- * promised nothing narrower than the graph's own rules.
+ * The union is closed. `tree` is any chain the graph derives, of any member count and any
+ * branching, whose every member binds the solver through `memberPlugin` alone: the 3D-dedicated
+ * shape `ik3d` declares since issue #500's fifth phase, whose dispatcher answers a parent and its
+ * addressed child with the closed form and every other chain with 3D FABRIK (ADR-122). It replaced
+ * `unbranched`, the exactly-two-members-on-one-path shape of the ADR-114 prototype, which is deleted
+ * rather than kept beside it, because no solver declares it any more and a union member nobody
+ * declares is a branch nobody can test. `any` is every other solver, the 2D `ik` among them, which
+ * dispatches on the derived shape and so refuses no count or branching (issue #195 deleted the arity
+ * rule that used to). A plugin missing from the table is `any`, because a solver that declares
+ * nothing has promised nothing narrower than the graph's own rules.
  *
- * A member plugin an `unbranched` shape names is dedicated to that shape: it publishes nothing a
- * solver of another shape reads, so an `fk3d` member under a 2D `ik` solver would compose identity
- * on every tick without a symptom. The dedicated set is derived from the table rather than stated
- * beside it, so declaring a new dedicated member plugin is one table entry.
+ * A member plugin a `tree` shape names is dedicated to that shape: it publishes nothing a solver of
+ * another shape reads, so an `fk3d` member under a 2D `ik` solver would compose identity on every
+ * tick without a symptom. The dedicated set is derived from the table rather than stated beside it,
+ * so declaring a new dedicated member plugin is one table entry.
  */
 export type SolverChainShape =
   | Readonly<{ kind: "any" }>
-  | Readonly<{ kind: "unbranched"; members: number; memberPlugin: string }>;
+  | Readonly<{ kind: "tree"; memberPlugin: string }>;
 
 /**
  * One member as the graph derived it under a solver: its `base` hop count to the root, and every
@@ -31,14 +35,14 @@ export type DerivedChainMember = Readonly<{ depth: number; plugins: readonly str
 const ANY: SolverChainShape = Object.freeze({ kind: "any" });
 
 const SOLVER_CHAIN_SHAPES: Readonly<Record<string, SolverChainShape>> = Object.freeze({
-  ik3d: Object.freeze({ kind: "unbranched", members: 2, memberPlugin: "fk3d" }),
+  ik3d: Object.freeze({ kind: "tree", memberPlugin: "fk3d" }),
 });
 
 function dedicatedPluginOf(shape: SolverChainShape): string | undefined {
   switch (shape.kind) {
     case "any":
       return undefined;
-    case "unbranched":
+    case "tree":
       return shape.memberPlugin;
     default:
       return unreachable(shape);
@@ -85,9 +89,12 @@ export function solverChainShape(plugin: string): SolverChainShape {
 }
 
 /**
- * Whether the members derived under one solver describe a chain `shape` accepts. A depth is the
- * number of `base` hops from a member to the root, so `members` members form one unbranched path
- * exactly when their depths are `1` through `members`, each once.
+ * Whether the members derived under one solver describe a chain `shape` accepts: for `any`, no
+ * member binds through a plugin some other shape dedicates, and for `tree`, every member binds
+ * through the shape's own plugin and nothing else. Count and branching are not read by either,
+ * because both strategies behind `tree` answer every count and branching the graph derives; the
+ * graph's own rules (`ik-solver-no-members`, `ik-goal-not-leaf`, `ik-target-not-single-leaf`) still
+ * refuse the shapes no solve can answer.
  */
 export function acceptsChain(
   shape: SolverChainShape,
@@ -98,16 +105,10 @@ export function acceptsChain(
       return members.every(({ plugins }) =>
         plugins.every((plugin) => !DEDICATED_MEMBER_PLUGINS.includes(plugin)),
       );
-    case "unbranched": {
-      if (members.length !== shape.members) return false;
-      const bound = members.every(({ plugins }) =>
+    case "tree":
+      return members.every(({ plugins }) =>
         plugins.every((plugin) => plugin === shape.memberPlugin),
       );
-      if (!bound) return false;
-      const seen = new Set(members.map(({ depth }) => depth));
-      for (let depth = 1; depth <= shape.members; depth += 1) if (!seen.has(depth)) return false;
-      return true;
-    }
     default:
       return unreachable(shape);
   }
@@ -118,8 +119,8 @@ export function describeChainShape(shape: SolverChainShape): string {
   switch (shape.kind) {
     case "any":
       return `any chain without ${DEDICATED_MEMBER_PLUGINS.join(" or ")} members`;
-    case "unbranched":
-      return `exactly ${String(shape.members)} unbranched ${shape.memberPlugin} members`;
+    case "tree":
+      return `any chain of ${shape.memberPlugin} members only`;
     default:
       return unreachable(shape);
   }

@@ -360,6 +360,8 @@ import { fileURLToPath } from "node:url";
 // `TH-40` through `TH-51` are the authored pole target of ADR-118, the same issue's phase 3;
 // `TH-51` pins the line tolerance of the ADR-114 default rule that an unbound pole keeps.
 // `TH-52` through `TH-57` are the opt-in 3D inspection of ADR-120, the same issue's phase 4.
+// `TH-58` through `TH-75` are the 3D FABRIK tree solve of ADR-122, the same issue's phase 5:
+// `TH-71` to `TH-74` are its envelope, and the rest its closure, planar reduction, roll and dispatch.
 //
 // The scan root is the repository rather than `packages/core/test`, because an id names one test in
 // the suite and the suite is not one package. `H-4` is declared in

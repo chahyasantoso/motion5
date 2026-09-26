@@ -202,11 +202,12 @@ refuses the rest at load. That is one rule, and only the internal `ik3d` prototy
 narrower shape:
 
 - `ik-chain-unsupported`, when a solver's plugin declares a narrower chain than the graph derived
-  for it. The internal phase 8 `ik3d` solver declares exactly two `fk3d` members on one path from
-  its root, so a one-member, three-member, branched or mixed-dimension `ik3d` rig is refused at load
-  rather than erroring its solver, or composing identity, on every tick. `fk3d` is dedicated to that
+  for it. The internal `ik3d` solver declares a chain of `fk3d` members only, of any count and any
+  branching: two members on one path take the closed form and every other chain takes 3D FABRIK, so
+  what is refused at load is a mixed-dimension rig, a member bound through `fk` or any plugin other
+  than `fk3d`, which would otherwise compose identity on every tick. `fk3d` is dedicated to that
   shape, so the 2D `ik` solver, which takes a chain of any count and branching, reports the rule
-  only for an `fk3d` member bound to it. See ADR-114.
+  only for an `fk3d` member bound to it. See ADR-114 and ADR-122.
 
 The internal `ik3d` prototype also declares an optional `pole` slot, and one rule answers where it
 was bound:
