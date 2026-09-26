@@ -78,9 +78,9 @@ describe("3D plugin ownership", () => {
     // path rules of ADR-114's prototype are withdrawn, not relaxed.
     expect(refusals([member("one", "root"), member("two", "one")])).toEqual([]);
     expect(refusals([member("one", "root")])).toEqual([]);
-    expect(
-      refusals([member("one", "root"), member("two", "one"), member("three", "two")]),
-    ).toEqual([]);
+    expect(refusals([member("one", "root"), member("two", "one"), member("three", "two")])).toEqual(
+      [],
+    );
     // Siblings under the root are two paths, which the tree solve answers; the bare `target` over
     // them is still refused by the graph's own addressing rule, not by the shape.
     expect(refusals([member("one", "root"), member("two", "root")])).toEqual([]);

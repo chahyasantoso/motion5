@@ -36,7 +36,10 @@ export interface ChainMember3d {
  * empty member list by name exactly as it does for 2D. `readFrame3d` sanitizes a non-finite goal
  * field to zero, as it does for the root.
  */
-export function readChainMembers3d(membersInput: unknown, target: unknown): readonly ChainMember3d[] {
+export function readChainMembers3d(
+  membersInput: unknown,
+  target: unknown,
+): readonly ChainMember3d[] {
   const delivered = readMembers(membersInput);
   const goals = goalInputs(target, delivered);
   return delivered.map((member): ChainMember3d => {

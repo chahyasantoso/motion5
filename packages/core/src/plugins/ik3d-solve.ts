@@ -35,9 +35,7 @@ export type ChainShape3d =
  */
 export function chainShape3d(members: readonly ChainMember3d[]): ChainShape3d {
   if (!members.some((member) => member.goal !== undefined)) {
-    throw new Error(
-      `ik3d requires at least one goal; ${members.length} members received none.`,
-    );
+    throw new Error(`ik3d requires at least one goal; ${members.length} members received none.`);
   }
   const pair = twoBonePair<WorldFrame3d, ChainMember3d>(members);
   if (pair !== undefined) return { kind: "two-bone", ...pair };
