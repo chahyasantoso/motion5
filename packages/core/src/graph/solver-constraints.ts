@@ -24,20 +24,20 @@ import type { GraphNode } from "./ir";
  * the inspection switch's one (ADR-109), goal influence's two (ADR-110) and the 3D pole's one
  * (ADR-118).
  *
- * **Every spelling, because the solve reads the flat bag.** A member's limits reach `ik` through
- * the member's flattened values, where a flat `minRotation` and one grouped under any plugin are
- * the same key (ADR-043). Each rule therefore reads every spelling through `authoredSpellings`,
+ * **Every spelling, because the solve reads the flattened bag.** A member's limits reach `ik`
+ * through the member's flattened values, where a `minRotation` grouped under any plugin is the same
+ * key (ADR-043). Each rule therefore reads every group's spelling through `authoredSpellings`,
  * never only `fk.values`: a rule narrower than the reader it guards passes the other spelling to the
- * runtime unvalidated, which is how a keyframed bound would become an animated constraint.
+ * runtime unvalidated, which is how a keyframed bound would become an animated constraint. Every
+ * spelling is grouped, since an ungrouped entry is `keyframes-ungrouped-key` (ADR-121).
  *
  * **Limit keys are solver vocabulary.** A limit is read by the solve and by nothing else, so a
- * limit anywhere a solve cannot reach it is a field accepted and ignored (ADR-033 rule 6). Grouped,
- * it must sit under a group that bound a `solver` slot, which is the scope `ik-weight-without-solver`
- * already reads; flat, the node must bind a solver somewhere. `fk` is the one core claimant, so a
- * second plugin claiming the name would already make the flat spelling ambiguous at the registry.
+ * limit anywhere a solve cannot reach it is a field accepted and ignored (ADR-033 rule 6). It must
+ * sit under a group that bound a `solver` slot, which is the scope `ik-weight-without-solver`
+ * already reads.
  *
  * **Solver keys belong to the node that bound `root`.** `bend`, `flip` and `inspect` are read by
- * the solver composer of the node that bound `root`, flat or under the group that bound it, and by
+ * the solver composer of the node that bound `root`, under the group that bound it, and by
  * nothing else, so the rules read exactly those spellings through `solverSpellings`: `bend` and
  * `flip` by the 2D `ik` alone, and `inspect` by `ik` and `ik3d` alike through the one opt-in reader
  * in `ik-result.ts` (ADR-120). Whether a solver plugin claims a key at all is the registry's
@@ -79,13 +79,13 @@ function slotBinders(
 }
 
 function reachesSolve(spelling: AuthoredSpelling, binders: ReadonlySet<string>): boolean {
-  return spelling.group === undefined ? binders.size > 0 : binders.has(spelling.group);
+  return binders.has(spelling.group);
 }
 
 /**
  * The spellings of one solver key that a solve reads, refusing the ones it reads from elsewhere.
  *
- * A solver key belongs to the node that bound `root`, flat or under the group that bound it. On a
+ * A solver key belongs to the node that bound `root`, under the group that bound it. On a
  * node that bound no `root` the key is not solver vocabulary at all, it is some other plugin's own
  * key, so nothing is read and nothing is refused. On a solver node a spelling under any other group
  * still reaches the solve, because the solve reads the flattened bag (ADR-043), so it is refused as
@@ -105,7 +105,7 @@ function solverSpellings(
       diagnostic(
         "ik-solver-key-misgrouped",
         `${node.id}.keyframes.${spelling.path}`,
-        `Solver "${node.id}" authors ${key} under ${spelling.group}, which did not bind its root; author it flat or under ${[...roots].join(", ")}.`,
+        `Solver "${node.id}" authors ${key} under ${spelling.group}, which did not bind its root; author it under ${[...roots].join(", ")}.`,
         [node.id],
       ),
     );
@@ -120,12 +120,11 @@ function validateMemberLimits(node: GraphNode, diagnostics: Diagnostic[]): void 
   for (const key of LIMIT_KEYS) {
     for (const spelling of authoredSpellings(node.track.keyframes, key)) {
       if (!reachesSolve(spelling, binders)) {
-        const where = spelling.group === undefined ? "flat" : `under ${spelling.group}`;
         diagnostics.push(
           diagnostic(
             "ik-limit-without-solver",
             `${node.id}.keyframes.${spelling.path}`,
-            `Node "${node.id}" authors ${key} ${where} without binding a solver there; no solve reads it.`,
+            `Node "${node.id}" authors ${key} under ${spelling.group} without binding a solver there; no solve reads it.`,
             [node.id],
           ),
         );
@@ -281,8 +280,8 @@ export type GoalScope = ReadonlyMap<string, GoalReach>;
 
 /**
  * How strongly each reach wins when one member belongs to more than one solve. `undecided` wins so
- * no rule speaks over an unresolved chain, and `addressed` beats `unaddressed` because the flat bag
- * reaches every solve the member is in, so one solve reading the influence is enough to place it.
+ * no rule speaks over an unresolved chain, and `addressed` beats `unaddressed` because the
+ * flattened bag reaches every solve the member is in, so one solve reading the influence is enough to place it.
  */
 const REACH_PRECEDENCE: Readonly<Record<GoalReach, number>> = Object.freeze({
   unaddressed: 0,

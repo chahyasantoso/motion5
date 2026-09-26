@@ -117,7 +117,6 @@ const BASE_RULES = {
   "observes-shape": ERROR_NO_IDS,
   "perspective-shape": ERROR_NO_IDS,
   "perspective-usage": WARNING_WITH_IDS,
-  "plugin-ambiguous-key": ERROR_WITH_IDS,
   "plugin-contribution-cascade": ERROR_WITH_IDS,
   "plugin-contribution-ease-collision": ERROR_WITH_IDS,
   "plugin-contribution-failure": ERROR_WITH_IDS,
@@ -193,6 +192,7 @@ const KEYFRAME_RULES = {
   "keyframes-unknown-section": ERROR_NO_IDS,
   "keyframes-reserved-section": ERROR_NO_IDS,
   "keyframes-missing-values-section": ERROR_NO_IDS,
+  "keyframes-ungrouped-key": ERROR_NO_IDS,
 } as const satisfies Record<KeyframeRuleId, RuleFacts>;
 
 type BaseRules = typeof BASE_RULES;

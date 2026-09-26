@@ -650,8 +650,8 @@ export function resolveSolvers(
     // tell a blend weight from another plugin's own live input: `Q-10`'s `reach` claims `weight`,
     // binds no solver slot, and refusing that rig would be this rule answering for a plugin it
     // knows nothing about. An `fk` weight on a bone that bound no solver anywhere is inert too and
-    // is not refused here; that is the stated cost of holding no registry, exactly as a flat
-    // `rotation` is, and `WT-10` is what pins the composition making it harmless. See ADR-055.
+    // is not refused here; that is the stated cost of holding no registry, and `WT-10` is what
+    // pins the composition making it harmless. See ADR-055.
     const inertWeight = weightGroups.filter((group) => !solverBinders.includes(group));
     if (hasSolver && inertWeight.length > 0) {
       diagnostics.push(

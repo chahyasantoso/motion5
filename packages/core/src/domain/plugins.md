@@ -6,10 +6,6 @@ while adapters consume the port without reaching into this domain module. This m
 exports `RenderMetadata`; the adapter barrel and the internal entry re-export it from the port under
 the same name, so there is one declaration and one import path. See ADR-105.
 
-## listNames
-
-`"a" and "b"`, or `"a", "b" and "c"`: the wording every multi-plugin message here already uses.
-
 ## prepareContributions
 
 Runs the prepare-stage `contribute` hooks.
@@ -20,15 +16,17 @@ The stops a hook receives come from `readCompilableStops`, the one owner of the 
 
 ## #claimantsOf
 
-Every plugin that claims `key`, in registration order.
+Every plugin that claims `key`, in registration order, asked only about a contributed key.
 
-An exact claim outranks a predicate, unchanged, and at most one predicate is ever returned. A predicate is the fallback for keys nobody named rather than a declaration of ownership, so two overlapping predicates keep first-registered precedence instead of becoming ambiguous: that rule has its own owner and its own evidence, and widening ambiguity to reach it would make every exactly-claimed key in a registry with a catch-all predicate unauthorable.
+No authored key reaches it. Every authored property sits in a group, and `#ownerForEntry` resolves a grouped leaf against the plugin the group names, so the claimant map answers only for a key a prepare hook contributed, which no author wrote and no group can name: whether any plugin claims it at all (`plugin-unknown-key`) and whether a claimant would contribute from it again (`plugin-contribution-cascade`). See ADR-121.
+
+An exact claim outranks a predicate, unchanged, and at most one predicate is ever returned. A predicate is the fallback for keys nobody named rather than a declaration of ownership, so two overlapping predicates keep first-registered precedence.
 
 ## #ownerForEntry
 
-A grouped leaf resolves against the plugin the group names and nothing else, which is the granularity the group form exists for: routing the leaf through the claimant map instead would accept a leaf under any group name and report nothing at all for a group that names no registered plugin.
+A leaf resolves against the plugin its group names and nothing else, which is the granularity the group form exists for: routing the leaf through the claimant map instead would accept a leaf under any group name and report nothing at all for a group that names no registered plugin.
 
-A flat key resolves against its claimants. One claimant owns it. Several is refused rather than won, because the alternative is registration order deciding which plugin an authored key meant and the losing plugin's keys becoming quietly unreachable. See ADR-043.
+There is no flat arm. A flat key used to resolve against its claimants and was refused as `plugin-ambiguous-key` when there were several, so whether a document loaded depended on which plugins the host happened to register. `validateKeyframes` refuses every ungrouped entry as `keyframes-ungrouped-key` before this runs, so every entry here carries its group, and the rule, its hint and the flat arm are deleted rather than left unreachable. See ADR-043 and ADR-121.
 
 ## #resolveRequirements
 

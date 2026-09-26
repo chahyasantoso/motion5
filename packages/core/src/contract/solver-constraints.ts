@@ -1,5 +1,5 @@
 import { readAuthoredLeaf } from "./authored-leaf";
-import { isKeyframeGroup, PLUGIN_VALUES_SECTION, readPluginValues } from "./keyframe-shape";
+import { PLUGIN_VALUES_SECTION, readPluginValues } from "./keyframe-shape";
 
 /**
  * The authored vocabulary of a constrained 2D solve, and the one owner of what a well-formed value
@@ -119,37 +119,30 @@ export function classifyInspect(value: unknown): InspectAuthored {
     : { kind: "malformed" };
 }
 
-/** One authored spelling of a key on a track: grouped under a plugin, or flat (`group` undefined). */
+/** One authored spelling of a key on a track: the leaf of that name under one plugin's group. */
 export interface AuthoredSpelling {
-  readonly group: string | undefined;
+  readonly group: string;
   readonly path: string;
   readonly value: unknown;
 }
 
 /**
- * Every spelling of `key` a track's keyframes author, flat and grouped, in canonical order.
+ * Every spelling of `key` a track's keyframes author, one per group whose values name it, in
+ * canonical order.
  *
- * Both spellings reach the same flat value bag a composer reads (ADR-043), so a rule that inspects
- * only the grouped one lets the flat one past load unvalidated. Reads groups through
- * `readPluginValues` and `isKeyframeGroup`, which own what a group is, rather than restating either.
+ * Every group's leaves reach the same flattened value bag a composer reads (ADR-043), so a rule that
+ * inspects only one group lets another group's spelling past load unvalidated. There is no flat
+ * spelling to read: an ungrouped entry is `keyframes-ungrouped-key` (ADR-121). Reads groups through
+ * `readPluginValues`, which owns the layout, rather than restating it.
  */
 export function authoredSpellings(keyframes: unknown, key: string): readonly AuthoredSpelling[] {
   if (keyframes === null || typeof keyframes !== "object" || Array.isArray(keyframes)) return [];
   const record = keyframes as Readonly<Record<string, unknown>>;
   const spellings: AuthoredSpelling[] = [];
-  for (const name of Object.keys(record).sort()) {
-    const property = record[name];
-    if (isKeyframeGroup(property)) {
-      const values = readPluginValues(property);
-      if (Object.hasOwn(values, key))
-        spellings.push({
-          group: name,
-          path: `${name}.${PLUGIN_VALUES_SECTION}.${key}`,
-          value: values[key],
-        });
-    } else if (name === key) {
-      spellings.push({ group: undefined, path: key, value: property });
-    }
+  for (const group of Object.keys(record).sort()) {
+    const values = readPluginValues(record[group]);
+    if (!Object.hasOwn(values, key)) continue;
+    spellings.push({ group, path: `${group}.${PLUGIN_VALUES_SECTION}.${key}`, value: values[key] });
   }
   return spellings;
 }

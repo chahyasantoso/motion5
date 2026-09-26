@@ -1,5 +1,4 @@
 import {
-  isKeyframeGroup,
   PLUGIN_VALUES_SECTION,
   readPluginBindings,
   readPluginValues,
@@ -7,14 +6,14 @@ import {
 import type { PluginRequiresBinding } from "../contract/v5";
 
 export interface FlattenedKeyframe {
-  /** The compiled key: a flat authored key, or a group leaf name with no prefix. */
+  /** The compiled key: the group leaf's name, with no prefix. */
   readonly key: string;
   /**
-   * The plugin name the group addressed, absent for a flat key. A grouped leaf resolves against
-   * that plugin alone, which is how an author names one owner for a key several plugins claim.
+   * The plugin name the group addressed. Required, because every authored property is grouped: a
+   * leaf resolves against that plugin alone, so its owner is named where it is written. ADR-121.
    */
-  readonly group?: string;
-  /** `key`, or `group.values.leaf`, relative to the keyframes record. Diagnostics cite this. */
+  readonly group: string;
+  /** `group.values.leaf`, relative to the keyframes record. Diagnostics cite this. */
   readonly authoredPath: string;
 }
 export interface FlattenedKeyframes {
@@ -50,6 +49,11 @@ export interface FlattenedKeyframes {
  * compiled value domain" structural rather than enforced. `requires` is not a sibling of the
  * leaves to be skipped any more; it is a section of its own, surfaced as `bindings`. See ADR-049.
  *
+ * Only groups are read. An entry naming no section is refused by `validateKeyframes` as
+ * `keyframes-ungrouped-key` and holds no `values` section, so `readPluginValues` reads it as empty
+ * and it contributes nothing here: compiling it as a property would be a second owner of a spelling
+ * the validator refuses. See ADR-121.
+ *
  * Sorted, so which spelling wins is never a property of authoring order. A collision is already
  * rejected at validation by `keyframes-duplicate-key`, so nothing here reports it a second time.
  */
@@ -65,16 +69,11 @@ export function flattenAuthoredKeyframes(
     entries.push(entry);
     authoredPaths.set(entry.key, entry.authoredPath);
   };
-  for (const key of Object.keys(authored).sort()) {
-    const property = authored[key];
-    if (!isKeyframeGroup(property)) {
-      claim({ key, authoredPath: key }, property);
-      continue;
-    }
-    const values = readPluginValues(property);
+  for (const group of Object.keys(authored).sort()) {
+    const values = readPluginValues(authored[group]);
     for (const leaf of Object.keys(values).sort()) {
-      const authoredPath = `${key}.${PLUGIN_VALUES_SECTION}.${leaf}`;
-      claim({ key: leaf, group: key, authoredPath }, values[leaf]);
+      const authoredPath = `${group}.${PLUGIN_VALUES_SECTION}.${leaf}`;
+      claim({ key: leaf, group, authoredPath }, values[leaf]);
     }
   }
   return Object.freeze({

@@ -47,6 +47,7 @@ export const KEYFRAME_RULE_IDS = [
   "keyframes-unknown-section",
   "keyframes-reserved-section",
   "keyframes-missing-values-section",
+  "keyframes-ungrouped-key",
 ] as const;
 
 /**
@@ -152,7 +153,6 @@ export const BASE_RULE_IDS = [
   "observes-shape",
   "perspective-shape",
   "perspective-usage",
-  "plugin-ambiguous-key",
   "plugin-contribution-cascade",
   "plugin-contribution-ease-collision",
   "plugin-contribution-failure",

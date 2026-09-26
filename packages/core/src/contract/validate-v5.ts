@@ -48,12 +48,15 @@ const TEMPLATES_UNSUPPORTED =
   "Project templates are not supported; author keyframes on the tracks that use them.";
 const SECTION_NAMES = PLUGIN_GROUP_SECTIONS.map((name) => `'${name}'`).join(" or ");
 const THREE_D_KEYS = ["z", "rotationX", "rotationY"];
-// Whether a scope authors groups, keyed by the scope union so a third scope has to answer here
-// rather than inheriting the answer written first. The reasoning is in validate-v5.md.
-const GROUPS_ALLOWED: Readonly<Record<KeyframeRuleScope, boolean>> = {
-  authored: true,
-  contribution: false,
+// What a top-level keyframe entry is in each scope, keyed by the scope union so a third scope has to
+// answer here rather than inheriting the answer written first. The reasoning is in validate-v5.md.
+type KeyframeEntryForm = "group" | "property";
+const ENTRY_FORM: Readonly<Record<KeyframeRuleScope, KeyframeEntryForm>> = {
+  authored: "group",
+  contribution: "property",
 };
+const UNGROUPED =
+  "must be a plugin-named group; author the property as { <plugin>: { values: { ... } } }";
 type RawObject = Record<string, unknown>;
 function isObject(value: unknown): value is RawObject {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
@@ -65,7 +68,7 @@ export function validateKeyframes(
   options: KeyframeValidationOptions = {},
 ): void {
   const scope = options.scope ?? "authored";
-  const allowGroups = GROUPS_ALLOWED[scope];
+  const form = ENTRY_FORM[scope];
   // No `severity` parameter and no default. The default here was the constructor's own bug one layer
   // above it: a keyframe rule reported through this without an explicit severity became an error
   // whatever `contract/rule.ts` says, and it was harmless only because both keyframe warnings passed
@@ -88,7 +91,7 @@ export function validateKeyframes(
     add("keyframes-reserved-separator", namePath, `Keyframe name '${name}' ${detail}.`);
   };
   // Every authored spelling of one compiled key. A group leaf that collides with another group's
-  // leaf or with a flat key is rejected here, which is why `flattenAuthoredKeyframes` may resolve
+  // leaf is rejected here, which is why `flattenAuthoredKeyframes` may resolve
   // ties by sorted order instead of reporting the same rule a second time from the domain layer.
   const owners = new Map<string, string>();
   const claim = (key: string, keyPath: string): void => {
@@ -219,39 +222,38 @@ export function validateKeyframes(
       validateProperty(leafProperty, leafPath);
     }
   };
-  for (const [key, rawProperty] of Object.entries(keyframes)) {
-    const propertyPath = `${path}.${key}`;
+  const validateGroup = (key: string, rawGroup: unknown, groupPath: string): void => {
     // A top-level section name addresses no plugin, so neither a property nor a binding written
     // there could ever have an owner. Accepting one would be a second authored spelling with no
     // destination, which is the dual namespace the group form exists to remove.
-    if (allowGroups && PLUGIN_GROUP_SECTIONS.includes(key)) {
+    if (PLUGIN_GROUP_SECTIONS.includes(key)) {
       const detail = "is reserved for a section of a plugin-named group";
-      add("keyframes-reserved-section", propertyPath, `Keyframe name '${key}' ${detail}.`);
-      continue;
+      add("keyframes-reserved-section", groupPath, `Keyframe name '${key}' ${detail}.`);
+      return;
     }
-    checkName(key, propertyPath);
-    // The pre-ADR-049 form, refused by name and never normalized. Without this branch the entry
-    // falls through to `validateProperty` and is reported as a group with no stops array, which
-    // named the group rather than the mistake the author actually made.
-    if (allowGroups && looksLikeLegacyGroup(rawProperty)) {
+    checkName(key, groupPath);
+    // The pre-ADR-049 form, refused by name and never normalized. Checked before the ungrouped
+    // refusal because it is the more specific mistake: the author did name a plugin, and only the
+    // section around its properties is missing.
+    if (looksLikeLegacyGroup(rawGroup)) {
       const detail = "must author its properties under a 'values' section";
-      add("keyframes-missing-values-section", propertyPath, `Plugin group '${key}' ${detail}.`);
-      continue;
+      add("keyframes-missing-values-section", groupPath, `Plugin group '${key}' ${detail}.`);
+      return;
     }
-    if (!allowGroups || !isKeyframeGroup(rawProperty)) {
-      claim(key, propertyPath);
-      validateProperty(rawProperty, propertyPath);
-      continue;
+    // Every authored entry is a plugin-named group, so an entry naming no section is refused by name
+    // rather than read as a property: a stops array, a static value, the retired wrapper and `{}` all
+    // land here. A flat key named no owner, so the moment two plugins claimed one name it needed a
+    // second rule to refuse the spelling this one now refuses for every name. See ADR-121.
+    if (!isKeyframeGroup(rawGroup)) {
+      add("keyframes-ungrouped-key", groupPath, `Keyframe '${key}' ${UNGROUPED}.`);
+      return;
     }
     // Two members, one level. A group holds a `values` section of properties and a `requires`
     // section of bindings; a property holds stops, so there is no third level for an author to
-    // reach for. `requires` compiles to nothing, so it claims no key and names nothing.
-    //
-    // A group of only unknown sections is reachable and is rejected by the errors below, so it
-    // needs no rule of its own. A group that is literally `{}` never reaches here: it names no
-    // section, so it is not a group, and it stays the accepted no-op property it always was.
-    for (const [section, member] of Object.entries(rawProperty)) {
-      const sectionPath = `${propertyPath}.${section}`;
+    // reach for. `requires` compiles to nothing, so it claims no key and names nothing. A group of
+    // only unknown sections is reachable and is rejected below, so it needs no rule of its own.
+    for (const [section, member] of Object.entries(rawGroup)) {
+      const sectionPath = `${groupPath}.${section}`;
       if (section === PLUGIN_VALUES_SECTION) {
         validateValues(member, sectionPath);
         continue;
@@ -262,6 +264,21 @@ export function validateKeyframes(
       }
       const detail = `must be ${SECTION_NAMES}`;
       add("keyframes-unknown-section", sectionPath, `Keyframe section '${section}' ${detail}.`);
+    }
+  };
+  for (const [key, rawEntry] of Object.entries(keyframes)) {
+    const entryPath = `${path}.${key}`;
+    switch (form) {
+      case "group":
+        validateGroup(key, rawEntry, entryPath);
+        continue;
+      case "property":
+        checkName(key, entryPath);
+        claim(key, entryPath);
+        validateProperty(rawEntry, entryPath);
+        continue;
+      default:
+        return unreachable(form);
     }
   }
 }
@@ -404,10 +421,8 @@ function isThreeDProperty(key: string, property: unknown): boolean {
 function usesThreeD(track: RawObject): boolean {
   const keyframes = isObject(track.keyframes) ? track.keyframes : null;
   if (!keyframes) return false;
-  for (const [key, property] of Object.entries(keyframes)) {
-    if (isThreeDProperty(key, property)) return true;
-    if (!isKeyframeGroup(property)) continue;
-    for (const [leaf, leafProperty] of Object.entries(readPluginValues(property))) {
+  for (const group of Object.values(keyframes)) {
+    for (const [leaf, leafProperty] of Object.entries(readPluginValues(group))) {
       if (isThreeDProperty(leaf, leafProperty)) return true;
     }
   }

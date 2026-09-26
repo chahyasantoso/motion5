@@ -138,8 +138,8 @@ export interface ResolvedPlugins extends RenderMetadata {
   readonly diagnostics: readonly Diagnostic[];
   /**
    * The authored keyframes with every plugin-named group flattened into its leaves. This is the
-   * record the interpolator and the percent map must receive; the authored one may still be
-   * grouped. Callers with no registry flatten through `flattenAuthoredKeyframes` themselves.
+   * record the interpolator and the percent map must receive; the authored one is grouped. Callers
+   * with no registry flatten through `flattenAuthoredKeyframes` themselves.
    */
   readonly authoredKeyframes: Readonly<Record<string, unknown>>;
   /**
@@ -190,7 +190,6 @@ function isPluginStage(value: unknown): value is PluginStage {
   return typeof value === "string" && Object.hasOwn(VALID_STAGES, value);
 }
 const RESERVED_TWEEN_VARS = new Set(["keyframes", "duration", "paused", "id", "observes"]);
-const AMBIGUOUS_KEY_HINT = "Author it inside a plugin-named group to name one.";
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
@@ -199,11 +198,6 @@ function claims(plugin: PluginDefinition, key: string): boolean {
 }
 function sortedNames(plugins: readonly PluginDefinition[]): readonly string[] {
   return plugins.map(({ name }) => name).sort();
-}
-function listNames(names: readonly string[]): string {
-  const quoted = names.map((name) => `"${name}"`);
-  if (quoted.length < 2) return quoted.join("");
-  return `${quoted.slice(0, -1).join(", ")} and ${quoted.at(-1)}`;
 }
 function stageRank(stage: PluginStage): number {
   // Prepare contributions are read by compose, so this is the order the two stages run in and not a
@@ -536,10 +530,10 @@ export class PluginRegistry {
       throw new TypeError(`Plugin "${plugin.name}" ${detail}.`);
     }
     // No key-collision guard. Two plugins may claim one key, and which of them owns an authored
-    // entry is a question about that entry rather than about registration order: a group names the
-    // owner, and a flat spelling with several claimants is `plugin-ambiguous-key` at resolve time.
-    // Refusing the second claimant here is what forced a plugin author to mangle a key name to
-    // route around a namespace they could not share. See ADR-043.
+    // entry is a question about that entry rather than about registration order: every authored
+    // property sits in a group, and the group names the owner. Refusing the second claimant here is
+    // what forced a plugin author to mangle a key name to route around a namespace they could not
+    // share. See ADR-043 and ADR-121.
     //
     // `inputs` keeps its guard, because an input is not addressable by a group name, so nothing
     // could ever name an owner for one and this is the only owner that rule has. `requirements`
@@ -584,25 +578,6 @@ export class PluginRegistry {
     diagnostics: Diagnostic[],
     reportedGroups: Set<string>,
   ): PluginDefinition | undefined {
-    if (entry.group === undefined) {
-      const claimants = this.#claimantsOf(entry.key);
-      const keyPath = `${path}.${entry.key}`;
-      if (claimants.length === 1) return claimants[0];
-      if (claimants.length === 0) {
-        const unknown = `No registered plugin claims authored key "${entry.key}".`;
-        diagnostics.push(diagnostic("plugin-unknown-key", keyPath, unknown, [entry.key]));
-        return undefined;
-      }
-      const names = sortedNames(claimants);
-      const message = [
-        `Authored key "${entry.key}" is claimed by plugins ${listNames(names)}.`,
-        AMBIGUOUS_KEY_HINT,
-      ].join(" ");
-      diagnostics.push(
-        diagnostic("plugin-ambiguous-key", keyPath, message, [...names, entry.key].sort()),
-      );
-      return undefined;
-    }
     const named = this.#plugins.get(entry.group);
     if (named === undefined) {
       // Once per group, not once per leaf: the author made one mistake.
@@ -690,6 +665,11 @@ export class PluginRegistry {
     }
     return Object.freeze(resolved);
   }
+  /**
+   * Resolves an authored keyframes record that `validateKeyframes` has already judged. An ungrouped
+   * entry is that validator's `keyframes-ungrouped-key` and flattens to nothing here, so a caller
+   * that skipped validation is told about it by the validator, never twice. See ADR-121.
+   */
   resolveForKeyframes(
     authored: Readonly<Record<string, unknown>>,
     path = "keyframes",
