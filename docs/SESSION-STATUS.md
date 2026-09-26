@@ -3,7 +3,7 @@
 Current project state only. Replace stale entries rather than append history. The four sections below are the complete shape, **Now** and **Next in line** carry exactly one bullet each, and no bullet states a phase; `packages/core/test/unit/scripts/session-status-shape.test.ts` enforces the shape and byte ceiling.
 
 - **Captured:** 2026-09-26, Asia/Jakarta.
-- **Read against:** `main` at `9d6d8834ac828273259714a74ee3a58b065d26ad`, where [#500](https://github.com/chahyasantoso/motion5/issues/500)'s 3D pole target ([ADR-118](./ADR-118-3d-pole-target.md), #505) landed on top of its pivot offsets ([ADR-117](./ADR-117-3d-pivot-offsets.md)), `fk3d` rest orientation and solved weight ([ADR-116](./ADR-116-fk3d-rest-orientation-and-solved-weight.md)) and the internal 3D seam prototype ([ADR-114](./ADR-114-3d-seam-prototype.md)); nothing 3D is exported from the package.
+- **Read against:** `main` at `cc8a63d612aee5492ad48ca3c9ef7a7cb1de4312`, where [#500](https://github.com/chahyasantoso/motion5/issues/500)'s opt-in 3D inspection ([ADR-120](./ADR-120-3d-opt-in-inspection.md)) landed on its 3D pole target ([ADR-118](./ADR-118-3d-pole-target.md), #505), its pivot offsets ([ADR-117](./ADR-117-3d-pivot-offsets.md)), `fk3d` rest orientation and solved weight ([ADR-116](./ADR-116-fk3d-rest-orientation-and-solved-weight.md)) and the internal 3D seam prototype ([ADR-114](./ADR-114-3d-seam-prototype.md)); nothing 3D is exported from the package.
 
 ## Now
 
