@@ -143,6 +143,11 @@ export const JOINT_BOUND_KEYS: readonly JointBoundKey[] = Object.freeze([
   MAX_SWING_KEY,
   ...TWIST_KEYS,
 ]);
+/** The whole 3D joint vocabulary, `joint` first: what `fk3d` claims and the load rules read. */
+export const JOINT_VOCABULARY_KEYS: readonly JointVocabularyKey[] = Object.freeze([
+  JOINT_KEY,
+  ...JOINT_BOUND_KEYS,
+]);
 /** The keys only a 3D joint reads: its vocabulary without the 2D range it shares with `fk`. */
 export const JOINT_ONLY_KEYS: readonly JointVocabularyKey[] = Object.freeze([
   JOINT_KEY,

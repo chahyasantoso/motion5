@@ -1,4 +1,4 @@
-import { JOINT_BOUND_KEYS, JOINT_KEY } from "../contract/solver-constraints";
+import { JOINT_VOCABULARY_KEYS } from "../contract/solver-constraints";
 import type { PluginDefinition } from "../domain/plugins";
 import {
   blendOrientation3d,
@@ -78,8 +78,7 @@ export const fk3dPlugin: PluginDefinition = {
     "x",
     "y",
     "z",
-    JOINT_KEY,
-    ...JOINT_BOUND_KEYS,
+    ...JOINT_VOCABULARY_KEYS,
   ],
   requirements: {
     base: { description: "the parent 3D frame" },

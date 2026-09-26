@@ -20,6 +20,7 @@ import {
   canonicalDegrees,
   cross3,
   dot3,
+  LOCAL_X3,
   multiplyMatrix3,
   norm3,
   normalize3,
@@ -69,8 +70,6 @@ export const FREE_JOINT3D: JointLimit3d = Object.freeze({ kind: "free" });
 
 /** The axis a hinge turns about when it authors none: the parent's +z, the 2D plane's normal. */
 const DEFAULT_HINGE_AXIS: Vec3 = Object.freeze([0, 0, 1] as const);
-
-const LOCAL_X: Vec3 = Object.freeze([1, 0, 0] as const);
 
 /**
  * How little of a member's direction may lie off a hinge's axis before the direction is read as
@@ -131,7 +130,7 @@ export function constrains(limit: JointLimit3d): boolean {
 
 /**
  * A proposed local orientation, limited: the legal one nearest to it, or `unmoved` when the proposal
- * is already legal, and whether it rests on a bound. Unmoved carries no orientation, so a caller
+ * is already legal (never for a hinge, see `limitHinge`), and whether it rests on a bound. Unmoved carries no orientation, so a caller
  * keeps the frame and tip it already had and an in-range member publishes the bytes it would
  * unlimited, rather than a copy of the proposal that invites re-deriving it.
  */
@@ -165,7 +164,12 @@ function hingeAngle(axis: Vec3, local: Matrix3): number {
   return canonicalDegrees(Math.atan2(s, c));
 }
 
-/** A hinge has one degree of freedom, so its legal orientation is rebuilt from the limited angle. */
+/**
+ * A hinge has one degree of freedom, so its legal orientation is always rebuilt from the limited
+ * angle and answered `moved`, in range or not: a proposal is legal only when it is exactly a turn
+ * about the axis, and a solve's floating-point orientation never is, so an `unmoved` arm here would
+ * publish a tilt off the hinge whenever the angle happened to sit inside the range.
+ */
 function limitHinge(axis: Vec3, range: JointLimit, local: Matrix3): LimitedLocal3d {
   const angle = limitRotation(range, hingeAngle(axis, local));
   return { kind: "moved", local: rotationAboutAxis3d(axis, angle), atBound: atBound(range, angle) };
@@ -188,7 +192,7 @@ function limitSwingTwist(maxSwing: number, twist: JointLimit, local: Matrix3): L
   const swing = swingOver ? rotationAboutAxis3d(split.swingAxis, maxSwing) : split.swing;
   return {
     kind: "moved",
-    local: multiplyMatrix3(swing, rotationAboutAxis3d(LOCAL_X, twistDegrees)),
+    local: multiplyMatrix3(swing, rotationAboutAxis3d(LOCAL_X3, twistDegrees)),
     atBound: bound,
   };
 }

@@ -8,10 +8,10 @@ import {
   BEND_KEY,
   classifyJoint,
   declaresJoint,
-  JOINT_BOUND_KEYS,
   JOINT_KEY,
   JOINT_KINDS,
   JOINT_ONLY_KEYS,
+  JOINT_VOCABULARY_KEYS,
   MAX_ROTATION_KEY,
   MAX_SWING_KEY,
   MAX_TWIST_KEY,
@@ -33,6 +33,7 @@ import {
 } from "../contract/solver-constraints";
 import { diagnostic } from "../contract/diagnostics";
 import { declaresPole, POLE_SLOT } from "../contract/solver-shape";
+import type { RuleId } from "../contract/rule-id";
 import type { Diagnostic } from "../contract/v5";
 import { compareCodeUnits } from "./compare";
 import type { GraphNode } from "./ir";
@@ -189,56 +190,67 @@ function validateMemberLimits(node: GraphNode, diagnostics: Diagnostic[]): void 
   }
 }
 
-/** The domain a bound key's refusal names, in the words of its message. */
-function boundDomain(key: JointBoundKey): string {
+/**
+ * What a malformed bound is refused as, and the domain its message names: an axis component is the
+ * joint's own vocabulary, `ik-joint-malformed`, and every angle bound is refused as the 2D range
+ * keys are, `ik-limit-malformed`, because it is one more static degree in a domain.
+ */
+function malformedBound(key: JointBoundKey): Readonly<{ ruleId: RuleId; domain: string }> {
   switch (key) {
     case MAX_SWING_KEY:
-      return "one static number in [0, 180]";
+      return { ruleId: "ik-limit-malformed", domain: "one static number in [0, 180]" };
     case AXIS_X_KEY:
     case AXIS_Y_KEY:
     case AXIS_Z_KEY:
-      return "one static finite number";
+      return { ruleId: "ik-joint-malformed", domain: "one static finite number" };
     case MIN_ROTATION_KEY:
     case MAX_ROTATION_KEY:
     case MIN_TWIST_KEY:
     case MAX_TWIST_KEY:
-      return "one static number in [-180, 180]";
+      return { ruleId: "ik-limit-malformed", domain: "one static number in [-180, 180]" };
     default:
       return unreachable(key);
   }
 }
 
 /**
- * The 3D joint rules (ADR-123), over the groups whose plugin declares the joint vocabulary.
+ * The 3D joint rules (ADR-123): where a joint key may sit, and what the joint a member authored is.
  *
- * Only there: `joint` and its bounds are common words, and under any other plugin they are that
- * plugin's own keys, whose claim is the registry's question (`plugin-unknown-key`), the scoping
- * `ik-pole-without-chain` takes for the pole. Under a joint group that bound no solver, a joint-only
- * key is refused as `ik-limit-without-solver`, the 2D range keys' own placement rule, which
- * `validateMemberLimits` already speaks for `minRotation` and `maxRotation` there. Under one that
- * did, the group's spellings are classified together, because what a bound means depends on the
- * kind beside it.
+ * **Placement.** A 3D joint is read from the member's flattened values, so a joint key reaches the
+ * 3D solve from any group on a node that is a 3D member, exactly as a 2D range key reaches `ik` from
+ * any group (the module note's first rule). A joint-only key is therefore well placed only under a
+ * joint-declaring group that bound the solver. Anywhere else on a 3D member, under another plugin's
+ * group or under a joint group that bound nothing, it is refused as `ik-limit-without-solver`, the
+ * 2D range keys' own placement rule, which `validateMemberLimits` already speaks for `minRotation`
+ * and `maxRotation` there; the checkpoint draft read only joint groups and so let a third-party
+ * `joint` steer the solve unvalidated while the load-time strategy read the member as free. On a
+ * node that is no 3D member, `joint` and its bounds are common words and belong to whichever plugin
+ * claims them, which is the registry's question (`plugin-unknown-key`), not this module's.
+ *
+ * **Classification.** Under a joint group that bound the solver, the group's spellings are
+ * classified together by `classifyJoint`, because what a bound means depends on the kind beside it.
  */
 function validateMemberJoint(node: GraphNode, diagnostics: Diagnostic[]): void {
   const binders = slotBinders(node, "solver");
+  const member3d = [...binders].some(declaresJoint);
   const bySolverGroup = new Map<string, Partial<Record<JointVocabularyKey, AuthoredSpelling>>>();
-  for (const key of [JOINT_KEY, ...JOINT_BOUND_KEYS]) {
+  for (const key of JOINT_VOCABULARY_KEYS) {
     for (const spelling of authoredSpellings(node.track.keyframes, key)) {
-      if (!declaresJoint(spelling.group)) continue;
-      if (!reachesSolve(spelling, binders)) {
-        // The 2D range keys' placement is `validateMemberLimits`'s, one rule for one mistake.
-        if (JOINT_ONLY_KEYS.includes(key))
-          diagnostics.push(limitWithoutSolver(node, key, spelling));
+      const joint = declaresJoint(spelling.group);
+      if (joint && reachesSolve(spelling, binders)) {
+        const group = bySolverGroup.get(spelling.group) ?? {};
+        group[key] = spelling;
+        bySolverGroup.set(spelling.group, group);
         continue;
       }
-      const group = bySolverGroup.get(spelling.group) ?? {};
-      group[key] = spelling;
-      bySolverGroup.set(spelling.group, group);
+      // The 2D range keys' placement is `validateMemberLimits`'s, one rule for one mistake.
+      if ((joint || member3d) && JOINT_ONLY_KEYS.includes(key))
+        diagnostics.push(limitWithoutSolver(node, key, spelling));
     }
   }
   for (const [, spellings] of [...bySolverGroup].sort(([a], [b]) => compareCodeUnits(a, b))) {
     const values: Partial<Record<JointVocabularyKey, unknown>> = {};
-    for (const key of [JOINT_KEY, ...JOINT_BOUND_KEYS]) {
+    for (const key of JOINT_VOCABULARY_KEYS) {
       const spelling = spellings[key];
       if (spelling !== undefined) values[key] = spelling.value;
     }
@@ -258,24 +270,24 @@ function validateMemberJoint(node: GraphNode, diagnostics: Diagnostic[]): void {
           ),
         );
         break;
-      case "malformed":
+      case "malformed": {
+        const refusal = malformedBound(joint.key);
         diagnostics.push(
           diagnostic(
-            AXIS_KEYS.some((key) => key === joint.key)
-              ? "ik-joint-malformed"
-              : "ik-limit-malformed",
+            refusal.ruleId,
             at(joint.key),
-            `Member "${node.id}" has a malformed ${joint.key}; use ${boundDomain(joint.key)}.`,
+            `Member "${node.id}" has a malformed ${joint.key}; use ${refusal.domain}.`,
             [node.id],
           ),
         );
         break;
+      }
       case "missing":
         diagnostics.push(
           diagnostic(
             "ik-joint-malformed",
             at(JOINT_KEY),
-            `Member "${node.id}" declares joint "${joint.joint}" without ${joint.key}; a ${joint.joint} joint needs ${boundDomain(joint.key)}.`,
+            `Member "${node.id}" declares joint "${joint.joint}" without ${joint.key}; a ${joint.joint} joint needs ${malformedBound(joint.key).domain}.`,
             [node.id],
           ),
         );

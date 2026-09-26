@@ -305,7 +305,10 @@ export function swingFrame3d(frame: Matrix3, direction: Vec3): Matrix3 {
 export const IDENTITY_MATRIX3: Matrix3 = Object.freeze([1, 0, 0, 0, 1, 0, 0, 0, 1] as const);
 
 /** A member's own long axis, local +x: the axis a twist turns about and a swing turns away from. */
-const LOCAL_X: Vec3 = Object.freeze([1, 0, 0] as const);
+export const LOCAL_X3: Vec3 = Object.freeze([1, 0, 0] as const);
+
+/** Local +z: the axis a half-turn swing takes, where `x × d` names none (see `swingFrame3d`). */
+const LOCAL_Z3: Vec3 = Object.freeze([0, 0, 1] as const);
 
 /**
  * The right-handed rotation by `degrees` about the unit `axis`, as a row-major matrix (Rodrigues).
@@ -355,17 +358,19 @@ export type SwingTwist3d = {
   readonly twistDegrees: number;
 };
 
-const LOCAL_Z: Vec3 = Object.freeze([0, 0, 1] as const);
-
+/**
+ * Splits `local` into its swing and its twist about local +x, the one decomposition a cone and a
+ * swing-twist limit read (ADR-123). Total: a direction with no length reads as +x, no swing.
+ */
 export function swingTwist3d(local: Matrix3): SwingTwist3d {
-  const direction = normalize3(axisX3(local), LOCAL_X);
+  const direction = normalize3(axisX3(local), LOCAL_X3);
   const swing = swingFrame3d(IDENTITY_MATRIX3, direction);
   // `swing` carries +x onto the direction, so what is left of `local` fixes +x: a turn about it.
   const twist = multiplyMatrix3(transposeMatrix3(swing), local);
-  const across = cross3(LOCAL_X, direction);
+  const across = cross3(LOCAL_X3, direction);
   return {
     swing,
-    swingAxis: normalize3(across, LOCAL_Z),
+    swingAxis: normalize3(across, LOCAL_Z3),
     swingDegrees: canonicalDegrees(Math.atan2(norm3(across), direction[0])),
     twistDegrees: canonicalDegrees(Math.atan2(twist[7], twist[4])),
   };
