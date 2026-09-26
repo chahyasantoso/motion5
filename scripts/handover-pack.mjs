@@ -1,5 +1,5 @@
-// The handover producer: a linear commit range becomes a v1 archive, and the archive is inspected
-// by the same code that applies it before it is reported as built. Contract: ADR-112 and
+// The handover producer: a linear commit range becomes a v2 archive, and the archive is inspected
+// by the same code that applies it before it is reported as built. Contract: ADR-112, ADR-119 and
 // docs/HANDOVER-FORMAT.md. Tests: packages/core/test/unit/scripts/handover-apply.test.ts.
 import { createHash } from "node:crypto";
 import {
@@ -16,6 +16,7 @@ import {
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { inspectArchive, runProcess } from "./handover-apply.mjs";
+import { remoteRepository } from "./handover-publish.mjs";
 import {
   HANDOVER_FORMAT,
   HANDOVER_INBOX,
@@ -27,6 +28,10 @@ import {
 
 const ZERO = /^0{40}$/;
 const NOTES = "NOTES.md";
+const REVIEW = "REVIEW.json";
+// motion5 integrates on `main`; `--into` names any other base explicitly.
+const DEFAULT_INTO = "main";
+const HEADING = /^#\s+(.+?)\s*#*\s*$/m;
 const BUNDLE = "work.bundle";
 const CHECKPOINT_PARENT = "checkpoint";
 const BUNDLE_REFERENCE = "refs/motion5-handover";
@@ -89,6 +94,49 @@ function images(run, root, commit) {
   return { pre, post };
 }
 
+/** The GitHub repository the producer's own remotes point at, preferring `origin`. */
+function originRepository(run, root) {
+  const names = must(run, "git", ["remote"], root).split("\n").filter(Boolean);
+  for (const name of [...names].sort((a, b) => (a === "origin" ? -1 : b === "origin" ? 1 : 0))) {
+    const url = run("git", ["config", "--get", `remote.${name}.url`], { cwd: root });
+    const repository = url.status === 0 ? remoteRepository(url.stdout) : null;
+    if (repository !== null) return repository;
+  }
+  return null;
+}
+
+function currentBranch(run, root) {
+  const result = run("git", ["symbolic-ref", "--short", "-q", "HEAD"], { cwd: root });
+  return result.status === 0 ? String(result.stdout).trim() : null;
+}
+
+/**
+ * The version 2 address: where the applied series lives and where its notes are posted. Each part
+ * is taken from an explicit option first and from the producer's checkout second, and a part that
+ * neither supplies is an error here rather than a guess the consumer would publish.
+ */
+function addressOf(run, root, options, notes, name) {
+  const repository = options.repository ?? originRepository(run, root);
+  ensure(repository !== null, "--repository is required: no remote here points at GitHub");
+  const branch = options.branch ?? currentBranch(run, root);
+  ensure(branch !== null, "--branch is required: HEAD is detached");
+  ensure(
+    options.pullRequest === null || !options.toIssue,
+    "--pr and --to-issue name two destinations; choose one",
+  );
+  const destination =
+    options.pullRequest !== null
+      ? { kind: "pull-request", number: options.pullRequest }
+      : options.toIssue
+        ? { kind: "issue" }
+        : { kind: "branch" };
+  const title = options.title ?? HEADING.exec(notes)?.[1] ?? name;
+  return {
+    title,
+    target: { repository, branch, into: options.into ?? DEFAULT_INTO, destination },
+  };
+}
+
 async function sha256(file) {
   return createHash("sha256")
     .update(await readFile(file))
@@ -96,7 +144,8 @@ async function sha256(file) {
 }
 
 /**
- * Builds `out` (a `.zip` whose basename is the handover name) from the commits in `from..to`.
+ * Builds `out` (a `.zip` whose basename is the handover name) from the commits in `from..to`, as a
+ * version 2 manifest addressed for publication; `review` is an independent review result file.
  * `base` defaults to `from` and may name the same tree under a different commit id, which is the
  * sandbox case: patches carry blob ids, so they apply to either. A bundle is cut only when `from`
  * is `base` itself, because a bundle is fetchable only by someone who holds its prerequisite.
@@ -112,6 +161,13 @@ export async function packHandover({
   checkpoint = null,
   bundle = false,
   opaque = [],
+  review = null,
+  title = null,
+  repository = null,
+  branch = null,
+  into = null,
+  pullRequest = null,
+  toIssue = false,
   run = runProcess,
   temporary = tmpdir(),
 }) {
@@ -144,6 +200,13 @@ export async function packHandover({
   ensure(
     !bundle || start === declaredBase,
     `a bundle cut from ${start} would need a commit no one else holds; omit --bundle or pack from the base`,
+  );
+  const { title: resolvedTitle, target: resolvedTarget } = addressOf(
+    run,
+    root,
+    { title, repository, branch, into, pullRequest, toIssue },
+    await readFile(notes, "utf8"),
+    name,
   );
   const stage = await mkdtemp(path.join(temporary, "motion5-pack-"));
   try {
@@ -184,6 +247,10 @@ export async function packHandover({
     }
     const components = [{ kind: "notes", path: NOTES }];
     await cp(notes, path.join(directory, NOTES));
+    if (review !== null) {
+      await cp(review, path.join(directory, REVIEW));
+      components.push({ kind: "review", path: REVIEW });
+    }
     if (checkpoint !== null) {
       const target = `${CHECKPOINT_PARENT}/${path.basename(checkpoint)}`;
       await cp(checkpoint, path.join(directory, target), { recursive: true });
@@ -221,6 +288,8 @@ export async function packHandover({
       name,
       issue,
       base: declaredBase,
+      title: resolvedTitle,
+      target: resolvedTarget,
       patches,
       components,
     };

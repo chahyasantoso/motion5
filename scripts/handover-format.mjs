@@ -1,11 +1,20 @@
-// Pure handover format v1: the archive listing, the manifest schema, the patch chain, and the
-// words every refusal is reported in. Contract: ADR-112 and docs/HANDOVER-FORMAT.md.
+// Pure handover format, versions 1 and 2: the archive listing, the manifest schema, the patch chain, and the
+// words every refusal is reported in. Contract: ADR-112, ADR-119 and docs/HANDOVER-FORMAT.md.
 // Tests: packages/core/test/unit/scripts/handover-format.test.ts.
 // No filesystem, process, network, or Git access: callers hand in what they read.
 import { MAX_PATCHES, checkpointChain, checkpointManifest } from "./checkpoint-policy.mjs";
 
 export const HANDOVER_FORMAT = "motion5-handover";
-export const HANDOVER_VERSION = 1;
+/**
+ * The closed set of manifest versions this script reads. Version 1 is the #487 layout; version 2
+ * adds the `title` and `target` a publication needs and the `review` component (issue #507). A
+ * version outside the set is refused by name, never read as its neighbour.
+ */
+export const HANDOVER_VERSIONS = Object.freeze([1, 2]);
+/** The version `pack` writes. */
+export const HANDOVER_VERSION = 2;
+export const REVIEW_FORMAT = "motion5-review";
+export const REVIEW_VERSION = 1;
 export const HANDOVER_MANIFEST = "handover.json";
 export const HANDOVER_INBOX = ".handover";
 export const PATCH_DIRECTORY = "patches";
@@ -16,7 +25,26 @@ export const MAX_ENTRIES = 2000;
 export const MAX_UNCOMPRESSED_BYTES = 64 * 1024 * 1024;
 
 /** The closed set of optional and required components a manifest may declare beside its patches. */
-export const COMPONENT_KINDS = Object.freeze(["notes", "checkpoint", "bundle", "opaque"]);
+export const COMPONENT_KINDS = Object.freeze(["notes", "checkpoint", "bundle", "opaque", "review"]);
+
+/**
+ * Where a version 2 handover's notes and review are published after it applies: an explicit pull
+ * request, the pull request of the target branch (found, or created when there is none), or the
+ * manifest's issue.
+ */
+export const DESTINATION_KINDS = Object.freeze(["pull-request", "branch", "issue"]);
+
+/** Whether a manifest names where its notes go: version 1 cannot, version 2 must. */
+export const ADDRESS_KINDS = Object.freeze(["unaddressed", "addressed"]);
+
+/** The closed set of verdicts an independent review reports. */
+export const REVIEW_STATUSES = Object.freeze(["passed", "failed", "pending"]);
+
+/** How much a review finding weighs: a blocking one must be fixed before a review may pass. */
+export const FINDING_SEVERITIES = Object.freeze(["blocking", "advisory"]);
+
+/** Where a finding stands; only `fixed` resolves it. */
+export const FINDING_STATES = Object.freeze(["open", "fixed", "deferred"]);
 
 /** The closed set of answers the inbox gives before anything is read from an archive. */
 export const DISCOVERY_KINDS = Object.freeze(["empty", "one", "ambiguous", "foreign"]);
@@ -49,6 +77,7 @@ export const REFUSAL_KINDS = Object.freeze([
   "bundle-invalid",
   "bundle-prerequisite",
   "head-moved",
+  "invalid-review",
 ]);
 
 const SHA = /^[0-9a-f]{40}$/;
@@ -62,6 +91,13 @@ const PATCH_FILE = /^patches\/([0-9]{4})-[A-Za-z0-9][A-Za-z0-9._-]*\.patch$/;
 const CHECKPOINT_ID = /^cp[0-9]{3}$/;
 const NOTES_FILE = /\.md$/;
 const BUNDLE_FILE = /\.bundle$/;
+const REVIEW_FILE = /\.json$/;
+// `owner/name` as GitHub spells a repository.
+const REPOSITORY = /^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})\/[A-Za-z0-9._-]{1,100}$/;
+// A branch name narrowed to what a machine-built handover needs; `git check-ref-format` accepts
+// more, and a name outside this is a defect to refuse rather than a spelling to preserve.
+const BRANCH = /^[A-Za-z0-9_][A-Za-z0-9._\/-]*$/;
+const MAX_TITLE = 256;
 const ZIP_FILE = /\.zip$/i;
 // `unzip -Z -s` (zipinfo short format): mode, version, host, size, type, method, date, time, name.
 const LISTING_LINE = /^(\S{7,10})\s+[0-9]+\.[0-9]+\s+\S+\s+([0-9]+)\s+\S+\s+\S+\s+\S+\s+\S+ (.+)$/;
@@ -71,7 +107,11 @@ const BUNDLE_SIGNATURE = /^# v[23] git bundle$/;
 const BUNDLE_PREREQUISITE = /^-([0-9a-f]{40})(?: .*)?$/;
 const BUNDLE_REFERENCE = /^([0-9a-f]{40}) (\S+)$/;
 const BUNDLE_CAPABILITY = /^@\S+$/;
-const MANIFEST_KEYS = ["format", "version", "name", "issue", "base", "patches", "components"];
+const MANIFEST_KEYS_V1 = ["format", "version", "name", "issue", "base", "patches", "components"];
+const MANIFEST_KEYS_V2 = [...MANIFEST_KEYS_V1, "title", "target"];
+const TARGET_KEYS = ["repository", "branch", "into", "destination"];
+const REVIEW_KEYS = ["format", "version", "status", "reviewer", "summary", "findings", "evidence"];
+const FINDING_KEYS = ["severity", "state", "title", "detail"];
 const PATCH_KEYS = ["seq", "file", "sha256", "pre", "post"];
 const COMPONENT_KEYS = ["kind", "path"];
 
@@ -269,12 +309,12 @@ function patchEntry(patch, index) {
     );
 }
 
-function componentEntry(component, index) {
+function componentEntry(component, index, kinds) {
   const label = `component ${index + 1}`;
   exactKeys(component, COMPONENT_KEYS, label);
   ensureManifest(
-    COMPONENT_KINDS.includes(component.kind),
-    `${label} \`kind\` must be one of ${COMPONENT_KINDS.join(", ")}`,
+    kinds.includes(component.kind),
+    `${label} \`kind\` must be one of ${kinds.join(", ")}`,
   );
   const path = manifestPath(component.path, `${label} \`path\``);
   ensureManifest(
@@ -294,10 +334,103 @@ function componentEntry(component, index) {
     case "bundle":
       ensureManifest(BUNDLE_FILE.test(path), `${label} bundle must be a .bundle file`);
       break;
+    case "review":
+      ensureManifest(REVIEW_FILE.test(path), `${label} review must be a .json file`);
+      break;
     case "opaque":
       break;
     default:
       unreachable(component.kind, "COMPONENT_KINDS");
+  }
+}
+
+/**
+ * A branch Git would accept as `refs/heads/<value>` within the narrowed `BRANCH` alphabet. Git's
+ * rules bind every slash-separated component, not only the whole name: no component may be empty,
+ * begin with a dot, or end with `.lock`, so `feat/.hidden` is refused here rather than after the
+ * series has applied, when the publisher's push would be the first thing to notice.
+ */
+function isBranch(value) {
+  return (
+    typeof value === "string" &&
+    BRANCH.test(value) &&
+    !value.includes("..") &&
+    !value.endsWith(".") &&
+    value
+      .split("/")
+      .every((part) => part.length > 0 && !part.startsWith(".") && !part.endsWith(".lock"))
+  );
+}
+
+function positive(value) {
+  return Number.isSafeInteger(value) && value > 0;
+}
+
+function destinationEntry(value) {
+  const label = "`target.destination`";
+  ensureManifest(isObject(value), `${label} must be a JSON object`);
+  ensureManifest(
+    DESTINATION_KINDS.includes(value.kind),
+    `${label} \`kind\` must be one of ${DESTINATION_KINDS.join(", ")}`,
+  );
+  switch (value.kind) {
+    case "pull-request":
+      exactKeys(value, ["kind", "number"], label);
+      ensureManifest(positive(value.number), `${label} needs a positive pull request \`number\``);
+      break;
+    case "branch":
+    case "issue":
+      exactKeys(value, ["kind"], label);
+      break;
+    default:
+      unreachable(value.kind, "DESTINATION_KINDS");
+  }
+}
+
+function titleEntry(value) {
+  ensureManifest(
+    typeof value === "string" &&
+      value.trim() === value &&
+      value.length > 0 &&
+      value.length <= MAX_TITLE &&
+      !/[\r\n]/.test(value),
+    `\`title\` must be one trimmed line of 1 through ${MAX_TITLE} characters`,
+  );
+}
+
+/** The version 2 publication address: which repository, which branch into which, posted where. */
+function targetEntry(value) {
+  exactKeys(value, TARGET_KEYS, "`target`");
+  ensureManifest(
+    typeof value.repository === "string" && REPOSITORY.test(value.repository),
+    "`target.repository` must be a GitHub `owner/name`",
+  );
+  ensureManifest(isBranch(value.branch), "`target.branch` must be a plain branch name");
+  ensureManifest(isBranch(value.into), "`target.into` must be a plain branch name");
+  ensureManifest(value.branch !== value.into, "`target.branch` and `target.into` must differ");
+  destinationEntry(value.destination);
+}
+
+function manifestKeys(version) {
+  switch (version) {
+    case 1:
+      return MANIFEST_KEYS_V1;
+    case 2:
+      return MANIFEST_KEYS_V2;
+    default:
+      return unreachable(version, "HANDOVER_VERSIONS");
+  }
+}
+
+/** Version 1 predates the review component, so a v1 manifest declaring one is invalid, not v2. */
+function componentKinds(version) {
+  switch (version) {
+    case 1:
+      return COMPONENT_KINDS.filter((kind) => kind !== "review");
+    case 2:
+      return COMPONENT_KINDS;
+    default:
+      return unreachable(version, "HANDOVER_VERSIONS");
   }
 }
 
@@ -318,13 +451,13 @@ function overlaps(a, b) {
  */
 export function handoverManifest(value, root) {
   if (!isObject(value)) invalid("the manifest must be a JSON object");
-  if (value.format !== HANDOVER_FORMAT || value.version !== HANDOVER_VERSION)
+  if (value.format !== HANDOVER_FORMAT || !HANDOVER_VERSIONS.includes(value.version))
     refuse({
       kind: "unsupported-version",
       format: value.format ?? null,
       version: value.version ?? null,
     });
-  exactKeys(value, MANIFEST_KEYS, "the manifest");
+  exactKeys(value, manifestKeys(value.version), "the manifest");
   ensureManifest(
     value.name === root,
     `\`name\` must equal the archive's root folder ${JSON.stringify(root)}`,
@@ -346,8 +479,13 @@ export function handoverManifest(value, root) {
     new Set(value.patches.map((patch) => patch.file)).size === value.patches.length,
     "`patches` repeats a file",
   );
+  if (value.version === 2) {
+    titleEntry(value.title);
+    targetEntry(value.target);
+  }
   ensureManifest(Array.isArray(value.components), "`components` must be an array");
-  value.components.forEach(componentEntry);
+  const kinds = componentKinds(value.version);
+  value.components.forEach((component, index) => componentEntry(component, index, kinds));
   ensureManifest(
     countOf(value.components, "notes") === 1,
     "exactly one `notes` component is required",
@@ -357,6 +495,7 @@ export function handoverManifest(value, root) {
     "at most one `checkpoint` component",
   );
   ensureManifest(countOf(value.components, "bundle") <= 1, "at most one `bundle` component");
+  ensureManifest(countOf(value.components, "review") <= 1, "at most one `review` component");
   value.components.forEach((component, index) =>
     value.components
       .slice(index + 1)
@@ -381,6 +520,7 @@ function componentFiles(component, files) {
   switch (component.kind) {
     case "notes":
     case "bundle":
+    case "review":
       return files.filter((file) => file === component.path);
     case "checkpoint":
       return files.filter((file) => file.startsWith(`${component.path}/`));
@@ -453,6 +593,129 @@ export function checkpointAgreement(value, component, digests, chain, base) {
         `it ends ${path} at ${tip.get(path) ?? "absent"} and the series ends it at ${chain.tip.get(path) ?? "absent"}`,
       );
   return checkpoint;
+}
+
+/**
+ * Where a validated manifest says its notes go. Version 1 carries no address, which is a value
+ * rather than an error: it applies exactly as before and its publication is `unaddressed`.
+ */
+export function handoverAddress(manifest) {
+  switch (manifest.version) {
+    case 1:
+      return { kind: "unaddressed" };
+    case 2:
+      return { kind: "addressed", title: manifest.title, target: manifest.target };
+    default:
+      return unreachable(manifest.version, "HANDOVER_VERSIONS");
+  }
+}
+
+/**
+ * An addressed publication address read back from outside a manifest, such as a pending payload
+ * saved by an earlier apply. It is held to the manifest's own title and target rules, so the one
+ * owner of what an address may say is this module whichever file it was read from.
+ */
+export function addressedAddress(value) {
+  exactKeys(value, ["kind", "title", "target"], "the address");
+  ensureManifest(value.kind === "addressed", "the address must be `addressed`");
+  titleEntry(value.title);
+  targetEntry(value.target);
+  return value;
+}
+
+function invalidReview(reason) {
+  refuse({ kind: "invalid-review", reason });
+}
+
+function ensureReview(condition, reason) {
+  if (!condition) invalidReview(reason);
+}
+
+function reviewKeys(value, allowed, label) {
+  ensureReview(isObject(value), `${label} must be a JSON object`);
+  for (const key of Object.keys(value))
+    ensureReview(allowed.includes(key), `${label} carries the unknown key ${JSON.stringify(key)}`);
+  for (const key of allowed)
+    ensureReview(Object.hasOwn(value, key), `${label} is missing ${JSON.stringify(key)}`);
+}
+
+function text(value) {
+  return typeof value === "string" && value.trim().length > 0;
+}
+
+/** Whether a finding still stands in the way: blocking and not fixed. */
+export function isUnresolvedBlocking(finding) {
+  switch (finding.severity) {
+    case "advisory":
+      return false;
+    case "blocking":
+      switch (finding.state) {
+        case "fixed":
+          return false;
+        case "open":
+        case "deferred":
+          return true;
+        default:
+          return unreachable(finding.state, "FINDING_STATES");
+      }
+    default:
+      return unreachable(finding.severity, "FINDING_SEVERITIES");
+  }
+}
+
+/**
+ * An independent review's result, validated whole. The one rule beyond shape is the one issue
+ * #507 names: a review may not claim `passed` while a blocking finding is open or deferred, so a
+ * publication can never label unresolved work as passed. `failed` and `pending` carry no such
+ * constraint, because they already say the work is not through.
+ */
+export function handoverReview(value) {
+  reviewKeys(value, REVIEW_KEYS, "the review");
+  ensureReview(
+    value.format === REVIEW_FORMAT && value.version === REVIEW_VERSION,
+    `the review must declare format ${JSON.stringify(REVIEW_FORMAT)} version ${REVIEW_VERSION}`,
+  );
+  ensureReview(
+    REVIEW_STATUSES.includes(value.status),
+    `\`status\` must be one of ${REVIEW_STATUSES.join(", ")}`,
+  );
+  ensureReview(text(value.reviewer), "`reviewer` must name who reviewed");
+  ensureReview(text(value.summary), "`summary` must say what the review concluded");
+  ensureReview(
+    value.evidence === null || text(value.evidence),
+    "`evidence` must be a link or identifier for the full evidence, or null",
+  );
+  ensureReview(Array.isArray(value.findings), "`findings` must be an array");
+  value.findings.forEach((finding, index) => {
+    const label = `finding ${index + 1}`;
+    reviewKeys(finding, FINDING_KEYS, label);
+    ensureReview(
+      FINDING_SEVERITIES.includes(finding.severity),
+      `${label} \`severity\` must be one of ${FINDING_SEVERITIES.join(", ")}`,
+    );
+    ensureReview(
+      FINDING_STATES.includes(finding.state),
+      `${label} \`state\` must be one of ${FINDING_STATES.join(", ")}`,
+    );
+    ensureReview(text(finding.title), `${label} needs a \`title\``);
+    ensureReview(typeof finding.detail === "string", `${label} \`detail\` must be a string`);
+  });
+  switch (value.status) {
+    case "passed": {
+      const standing = value.findings.findIndex(isUnresolvedBlocking);
+      ensureReview(
+        standing === -1,
+        `it claims \`passed\` while blocking finding ${standing + 1} is not fixed`,
+      );
+      break;
+    }
+    case "failed":
+    case "pending":
+      break;
+    default:
+      unreachable(value.status, "REVIEW_STATUSES");
+  }
+  return value;
 }
 
 /** The header of a Git bundle (v2 or v3), read up to the blank line that starts its pack. */
@@ -533,7 +796,7 @@ export function describeRefusal(refusal) {
     case "invalid-manifest":
       return `${HANDOVER_MANIFEST} is invalid: ${refusal.reason}`;
     case "unsupported-version":
-      return `${HANDOVER_MANIFEST} declares format ${JSON.stringify(refusal.format)} version ${JSON.stringify(refusal.version)}; this script reads ${HANDOVER_FORMAT} version ${HANDOVER_VERSION}`;
+      return `${HANDOVER_MANIFEST} declares format ${JSON.stringify(refusal.format)} version ${JSON.stringify(refusal.version)}; this script reads ${HANDOVER_FORMAT} version ${HANDOVER_VERSIONS.join(" or ")}`;
     case "digest-mismatch":
       return `${JSON.stringify(refusal.file)} has SHA-256 ${refusal.observed}, not the declared ${refusal.expected}`;
     case "broken-chain":
@@ -552,6 +815,8 @@ export function describeRefusal(refusal) {
       return `the bundle needs ${list(refusal.observed)}, and the only prerequisite a handover may name is its base ${refusal.expected}`;
     case "head-moved":
       return `HEAD moved from ${refusal.expected} to ${refusal.observed} while the handover was being proved; run the command again`;
+    case "invalid-review":
+      return `the review result is invalid: ${refusal.reason}`;
     default:
       return unreachable(refusal, "REFUSAL_KINDS");
   }

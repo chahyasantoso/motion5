@@ -28,6 +28,7 @@
     "benchmark": "node performance/graph-benchmark.mjs",
     "bench:ik": "node scripts/bench-ik.mjs",
     "patches": "node scripts/handover.mjs apply",
+    "patches:publish": "node scripts/handover.mjs publish",
     "test:watch": "vitest",
     "dev": "npm run dev --workspace=@motion5/react-demo",
     "dev:ik": "npm run dev --workspace=@motion5/ik-playground"

@@ -2,8 +2,10 @@ import type {
   HandoverChain,
   HandoverManifest,
   HandoverRefusalValue,
+  HandoverReview,
   OwnedComponent,
 } from "./handover-format.mjs";
+import type { AppliedHandover, Publication } from "./handover-publish.mjs";
 
 export const OUTCOME_KINDS: readonly [
   "nothing-to-do",
@@ -82,6 +84,7 @@ export type HandoverOutcome =
       readonly commits: readonly AppliedCommit[];
       readonly reconciled: readonly string[];
       readonly inbox: InboxState;
+      readonly publication: Publication;
     };
 
 export interface InspectedArchive {
@@ -90,7 +93,12 @@ export interface InspectedArchive {
   readonly manifest: HandoverManifest;
   readonly chain: HandoverChain;
   readonly components: readonly OwnedComponent[];
+  readonly review: HandoverReview | null;
+  readonly identity: string;
 }
+
+/** The publisher port `applyHandover` calls once the checkout has moved; null opts out. */
+export type Publisher = (handover: AppliedHandover) => Promise<Publication>;
 
 export function runProcess(
   command: string,
@@ -105,6 +113,7 @@ export function applyHandover(options: {
   readonly root: string;
   readonly dryRun?: boolean;
   readonly keep?: boolean;
+  readonly publish?: Publisher | null;
   readonly run?: Run;
   readonly temporary?: string;
 }): Promise<HandoverOutcome>;

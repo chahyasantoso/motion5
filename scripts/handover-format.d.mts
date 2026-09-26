@@ -1,11 +1,19 @@
 export const HANDOVER_FORMAT: "motion5-handover";
-export const HANDOVER_VERSION: 1;
+export const HANDOVER_VERSIONS: readonly [1, 2];
+export const HANDOVER_VERSION: 2;
+export const REVIEW_FORMAT: "motion5-review";
+export const REVIEW_VERSION: 1;
 export const HANDOVER_MANIFEST: "handover.json";
 export const HANDOVER_INBOX: ".handover";
 export const PATCH_DIRECTORY: "patches";
 export const MAX_ENTRIES: number;
 export const MAX_UNCOMPRESSED_BYTES: number;
-export const COMPONENT_KINDS: readonly ["notes", "checkpoint", "bundle", "opaque"];
+export const COMPONENT_KINDS: readonly ["notes", "checkpoint", "bundle", "opaque", "review"];
+export const DESTINATION_KINDS: readonly ["pull-request", "branch", "issue"];
+export const ADDRESS_KINDS: readonly ["unaddressed", "addressed"];
+export const REVIEW_STATUSES: readonly ["passed", "failed", "pending"];
+export const FINDING_SEVERITIES: readonly ["blocking", "advisory"];
+export const FINDING_STATES: readonly ["open", "fixed", "deferred"];
 export const DISCOVERY_KINDS: readonly ["empty", "one", "ambiguous", "foreign"];
 export const ENTRY_KINDS: readonly ["file", "directory", "symlink", "other"];
 export const REFUSAL_KINDS: readonly [
@@ -32,9 +40,14 @@ export const REFUSAL_KINDS: readonly [
   "bundle-invalid",
   "bundle-prerequisite",
   "head-moved",
+  "invalid-review",
 ];
 
+export type HandoverVersion = (typeof HANDOVER_VERSIONS)[number];
 export type ComponentKind = (typeof COMPONENT_KINDS)[number];
+export type ReviewStatus = (typeof REVIEW_STATUSES)[number];
+export type FindingSeverity = (typeof FINDING_SEVERITIES)[number];
+export type FindingState = (typeof FINDING_STATES)[number];
 export type EntryKind = (typeof ENTRY_KINDS)[number];
 
 export type HandoverRefusalValue =
@@ -80,7 +93,8 @@ export type HandoverRefusalValue =
       readonly expected: string;
       readonly observed: readonly string[];
     }
-  | { readonly kind: "head-moved"; readonly expected: string; readonly observed: string };
+  | { readonly kind: "head-moved"; readonly expected: string; readonly observed: string }
+  | { readonly kind: "invalid-review"; readonly reason: string };
 
 export type InboxDiscovery =
   | { readonly kind: "empty" }
@@ -114,14 +128,59 @@ export interface HandoverComponent {
   readonly path: string;
 }
 
-export interface HandoverManifest {
+/** Where a version 2 handover's notes and review are posted once it applies. */
+export type Destination =
+  | { readonly kind: "pull-request"; readonly number: number }
+  | { readonly kind: "branch" }
+  | { readonly kind: "issue" };
+
+export interface HandoverTarget {
+  readonly repository: string;
+  readonly branch: string;
+  readonly into: string;
+  readonly destination: Destination;
+}
+
+interface ManifestCommon {
   readonly format: typeof HANDOVER_FORMAT;
-  readonly version: typeof HANDOVER_VERSION;
   readonly name: string;
   readonly issue: number;
   readonly base: string;
   readonly patches: readonly HandoverPatch[];
   readonly components: readonly HandoverComponent[];
+}
+
+export interface HandoverManifestV1 extends ManifestCommon {
+  readonly version: 1;
+}
+
+export interface HandoverManifestV2 extends ManifestCommon {
+  readonly version: 2;
+  readonly title: string;
+  readonly target: HandoverTarget;
+}
+
+export type HandoverManifest = HandoverManifestV1 | HandoverManifestV2;
+
+export type HandoverAddress =
+  | { readonly kind: "unaddressed" }
+  | { readonly kind: "addressed"; readonly title: string; readonly target: HandoverTarget };
+
+export interface ReviewFinding {
+  readonly severity: FindingSeverity;
+  readonly state: FindingState;
+  readonly title: string;
+  readonly detail: string;
+}
+
+export interface HandoverReview {
+  readonly format: typeof REVIEW_FORMAT;
+  readonly version: typeof REVIEW_VERSION;
+  readonly status: ReviewStatus;
+  readonly reviewer: string;
+  readonly summary: string;
+  readonly findings: readonly ReviewFinding[];
+  readonly evidence: string | null;
 }
 
 export interface HandoverChain {
@@ -167,6 +226,13 @@ export function checkpointAgreement(
   chain: HandoverChain,
   base: string,
 ): unknown;
+export function handoverAddress(manifest: HandoverManifest): HandoverAddress;
+/** An addressed address read from a non-manifest source; refuses `invalid-manifest` otherwise. */
+export function addressedAddress(
+  value: unknown,
+): Extract<HandoverAddress, { readonly kind: "addressed" }>;
+export function handoverReview(value: unknown): HandoverReview;
+export function isUnresolvedBlocking(finding: ReviewFinding): boolean;
 export function bundleHeader(text: string): BundleHeader;
 export function bundleAgreement(header: BundleHeader, base: string): BundleHeader;
 export function discoverInbox(entries: readonly InboxEntry[]): InboxDiscovery;

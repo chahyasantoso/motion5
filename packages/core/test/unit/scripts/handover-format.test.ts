@@ -1,23 +1,36 @@
 import { describe, expect, it } from "vitest";
 import {
+  ADDRESS_KINDS,
   COMPONENT_KINDS,
+  DESTINATION_KINDS,
   DISCOVERY_KINDS,
+  FINDING_SEVERITIES,
+  FINDING_STATES,
   HANDOVER_FORMAT,
   HANDOVER_VERSION,
+  HANDOVER_VERSIONS,
   HandoverRefusal,
   MAX_ENTRIES,
   REFUSAL_KINDS,
+  REVIEW_FORMAT,
+  REVIEW_STATUSES,
   bundleAgreement,
   bundleHeader,
   checkpointAgreement,
   describeRefusal,
   discoverInbox,
+  handoverAddress,
   handoverContents,
   handoverListing,
   handoverManifest,
+  handoverReview,
+  addressedAddress,
+  isUnresolvedBlocking,
   unsafePath,
   zipListing,
+  type HandoverManifest,
   type HandoverRefusalValue,
+  type ReviewFinding,
   type ZipEntry,
 } from "../../../../../scripts/handover-format.mjs";
 
@@ -48,7 +61,7 @@ function refusalOf(action: () => unknown): HandoverRefusalValue {
 function manifest(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
     format: HANDOVER_FORMAT,
-    version: HANDOVER_VERSION,
+    version: 1,
     name: ROOT,
     issue: 487,
     base: BASE,
@@ -175,10 +188,10 @@ describe("handover manifest (ADR-112)", () => {
   });
 
   it("HO-6 refuses an unknown format or version by name instead of reading it as v1", () => {
-    expect(refusalOf(() => handoverManifest(manifest({ version: 2 }), ROOT))).toEqual({
+    expect(refusalOf(() => handoverManifest(manifest({ version: 3 }), ROOT))).toEqual({
       kind: "unsupported-version",
       format: HANDOVER_FORMAT,
-      version: 2,
+      version: 3,
     });
     expect(refusalOf(() => handoverManifest({ patches: [] }, ROOT))).toEqual({
       kind: "unsupported-version",
@@ -436,7 +449,7 @@ describe("the inbox and the words (ADR-112)", () => {
       ]),
     ).toEqual({ kind: "foreign", entries: [".DS_Store", "extracted"] });
     expect(DISCOVERY_KINDS).toEqual(["empty", "one", "ambiguous", "foreign"]);
-    expect(COMPONENT_KINDS).toEqual(["notes", "checkpoint", "bundle", "opaque"]);
+    expect(COMPONENT_KINDS).toEqual(["notes", "checkpoint", "bundle", "opaque", "review"]);
   });
 
   it("HO-14 words every refusal kind, and refuses a kind the union does not hold", () => {
@@ -464,6 +477,7 @@ describe("the inbox and the words (ADR-112)", () => {
       { kind: "bundle-invalid", reason: "r" },
       { kind: "bundle-prerequisite", expected: BASE, observed: [B1] },
       { kind: "head-moved", expected: BASE, observed: B1 },
+      { kind: "invalid-review", reason: "r" },
     ];
     expect(samples.map((sample) => sample.kind)).toEqual([...REFUSAL_KINDS]);
     for (const sample of samples) expect(describeRefusal(sample).length).toBeGreaterThan(10);
@@ -471,5 +485,272 @@ describe("the inbox and the words (ADR-112)", () => {
     expect(() =>
       describeRefusal({ kind: "unheard-of" } as unknown as HandoverRefusalValue),
     ).toThrow("Unhandled REFUSAL_KINDS");
+  });
+});
+
+/**
+ * Version 2 of the manifest and the review result, issue #507 and ADR-119: the address a
+ * publication needs (title, repository, branch, the branch it merges into, and where the notes are
+ * posted) and an independent review that may never claim `passed` over an unfixed blocking finding.
+ */
+function addressed(overrides: Record<string, unknown> = {}): Record<string, unknown> {
+  return manifest({
+    version: 2,
+    title: "Publish handover notes",
+    target: {
+      repository: "chahyasantoso/motion5",
+      branch: "feat/507-publish",
+      into: "main",
+      destination: { kind: "branch" },
+    },
+    ...overrides,
+  });
+}
+
+function target(overrides: Record<string, unknown>): Record<string, unknown> {
+  return addressed({
+    target: {
+      repository: "chahyasantoso/motion5",
+      branch: "feat/507-publish",
+      into: "main",
+      destination: { kind: "branch" },
+      ...overrides,
+    },
+  });
+}
+
+function review(overrides: Record<string, unknown> = {}): Record<string, unknown> {
+  return {
+    format: REVIEW_FORMAT,
+    version: 1,
+    status: "passed",
+    reviewer: "independent pass",
+    summary: "No remaining defects.",
+    findings: [],
+    evidence: null,
+    ...overrides,
+  };
+}
+
+function finding(severity: string, state: string): Record<string, unknown> {
+  return { severity, state, title: `${severity} ${state}`, detail: "" };
+}
+
+describe("handover manifest version 2 (ADR-119)", () => {
+  it("HO-35 reads versions 1 and 2, and a v2 manifest is addressed to every destination kind", () => {
+    expect(HANDOVER_VERSIONS).toEqual([1, 2]);
+    expect(HANDOVER_VERSION).toBe(2);
+    expect(ADDRESS_KINDS).toEqual(["unaddressed", "addressed"]);
+    expect(DESTINATION_KINDS).toEqual(["pull-request", "branch", "issue"]);
+    const v1 = handoverManifest(manifest(), ROOT).manifest;
+    expect(handoverAddress(v1)).toEqual({ kind: "unaddressed" });
+    for (const destination of [
+      { kind: "branch" },
+      { kind: "issue" },
+      { kind: "pull-request", number: 12 },
+    ]) {
+      const { manifest: v2 } = handoverManifest(target({ destination }), ROOT);
+      expect(handoverAddress(v2)).toEqual({
+        kind: "addressed",
+        title: "Publish handover notes",
+        target: {
+          repository: "chahyasantoso/motion5",
+          branch: "feat/507-publish",
+          into: "main",
+          destination,
+        },
+      });
+    }
+    const withReview = addressed({
+      components: [
+        { kind: "notes", path: "NOTES.md" },
+        { kind: "review", path: "REVIEW.json" },
+      ],
+    });
+    expect(handoverManifest(withReview, ROOT).manifest.components).toHaveLength(2);
+    expect(() => handoverAddress({ ...v1, version: 7 } as unknown as HandoverManifest)).toThrow(
+      "Unhandled HANDOVER_VERSIONS",
+    );
+  });
+
+  it("HO-36 refuses a v2 address that is missing, malformed, or smuggled into v1", () => {
+    const cases: Record<string, unknown>[] = [
+      manifest({ version: 2 }),
+      manifest({ title: "v1 has no title" }),
+      manifest({
+        components: [
+          { kind: "notes", path: "NOTES.md" },
+          { kind: "review", path: "REVIEW.json" },
+        ],
+      }),
+      addressed({ title: "" }),
+      addressed({ title: " padded" }),
+      addressed({ title: "two\nlines" }),
+      addressed({ title: "x".repeat(257) }),
+      addressed({ target: null }),
+      target({ extra: true }),
+      target({ repository: "no-slash" }),
+      target({ repository: "a/b/c" }),
+      target({ branch: "feat/../escape" }),
+      target({ branch: "feat/x.lock" }),
+      target({ branch: "-leading" }),
+      target({ branch: "trailing/" }),
+      target({ into: "feat/507-publish" }),
+      target({ destination: { kind: "discussion" } }),
+      target({ destination: { kind: "pull-request" } }),
+      target({ destination: { kind: "pull-request", number: 0 } }),
+      target({ destination: { kind: "branch", number: 3 } }),
+      addressed({
+        components: [
+          { kind: "notes", path: "NOTES.md" },
+          { kind: "review", path: "REVIEW.md" },
+        ],
+      }),
+      addressed({
+        components: [
+          { kind: "notes", path: "NOTES.md" },
+          { kind: "review", path: "a.json" },
+          { kind: "review", path: "b.json" },
+        ],
+      }),
+    ];
+    for (const value of cases)
+      expect(refusalOf(() => handoverManifest(value, ROOT)).kind, JSON.stringify(value)).toBe(
+        "invalid-manifest",
+      );
+    const review = addressed({
+      components: [
+        { kind: "notes", path: "NOTES.md" },
+        { kind: "review", path: "REVIEW.json" },
+      ],
+    });
+    const { manifest: parsed } = handoverManifest(review, ROOT);
+    const files = ["handover.json", "NOTES.md", ...patchFiles()];
+    expect(refusalOf(() => handoverContents(files, parsed))).toEqual({
+      kind: "missing-file",
+      path: "REVIEW.json",
+    });
+    expect(
+      handoverContents([...files, "REVIEW.json"], parsed).find((each) => each.kind === "review"),
+    ).toEqual({ kind: "review", path: "REVIEW.json", files: ["REVIEW.json"] });
+  });
+});
+
+describe("what the third independent pass found in the address (#508)", () => {
+  it("HO-64 holds every branch component to Git's rules, and one owner reads a saved address", () => {
+    const refused = [
+      "feat/.hidden",
+      "feat/.git",
+      "feat/x.lock/y",
+      ".leading",
+      "feat//double",
+      "feat/trailing.",
+    ];
+    for (const branch of refused) {
+      expect(refusalOf(() => handoverManifest(target({ branch }), ROOT)).kind, branch).toBe(
+        "invalid-manifest",
+      );
+      expect(
+        refusalOf(() => handoverManifest(target({ into: branch }), ROOT)).kind,
+        `into ${branch}`,
+      ).toBe("invalid-manifest");
+    }
+    for (const branch of ["feat/507-publish.v2", "a/b_c/d-e", "release/1.2"])
+      expect(handoverAddress(handoverManifest(target({ branch }), ROOT).manifest)).toMatchObject({
+        kind: "addressed",
+        target: { branch },
+      });
+
+    const { manifest: parsed } = handoverManifest(addressed(), ROOT);
+    const address = handoverAddress(parsed);
+    expect(addressedAddress(JSON.parse(JSON.stringify(address)))).toEqual(address);
+    for (const value of [
+      { kind: "unaddressed" },
+      { ...address, extra: true },
+      { ...address, title: "two\nlines" },
+      {
+        ...address,
+        target: {
+          repository: "chahyasantoso/motion5",
+          branch: "feat/.hidden",
+          into: "main",
+          destination: { kind: "branch" },
+        },
+      },
+      null,
+    ])
+      expect(refusalOf(() => addressedAddress(value)).kind, JSON.stringify(value)).toBe(
+        "invalid-manifest",
+      );
+  });
+});
+
+function patchFiles(): string[] {
+  return ["patches/0001-first.patch", "patches/0002-second.patch"];
+}
+
+describe("the independent review result (ADR-119)", () => {
+  it("HO-37 accepts every status and refuses a pass over a blocking finding that is not fixed", () => {
+    expect(REVIEW_STATUSES).toEqual(["passed", "failed", "pending"]);
+    expect(FINDING_SEVERITIES).toEqual(["blocking", "advisory"]);
+    expect(FINDING_STATES).toEqual(["open", "fixed", "deferred"]);
+    for (const status of REVIEW_STATUSES)
+      expect(handoverReview(review({ status })).status).toBe(status);
+    expect(
+      handoverReview(
+        review({
+          findings: [finding("blocking", "fixed"), finding("advisory", "open")],
+          evidence: "https://github.com/chahyasantoso/motion5/pull/1#issuecomment-2",
+        }),
+      ).findings,
+    ).toHaveLength(2);
+    for (const state of ["open", "deferred"]) {
+      const refused = refusalOf(() =>
+        handoverReview(
+          review({ findings: [finding("advisory", "open"), finding("blocking", state)] }),
+        ),
+      );
+      expect(refused.kind).toBe("invalid-review");
+      expect(describeRefusal(refused)).toContain("blocking finding 2 is not fixed");
+      for (const status of ["failed", "pending"])
+        expect(
+          handoverReview(review({ status, findings: [finding("blocking", state)] })).status,
+        ).toBe(status);
+    }
+  });
+
+  it("HO-38 refuses a review whose shape is not the closed one, and reads findings exhaustively", () => {
+    const cases: unknown[] = [
+      null,
+      [],
+      review({ extra: 1 }),
+      review({ format: "other" }),
+      review({ version: 2 }),
+      review({ status: "approved" }),
+      review({ reviewer: " " }),
+      review({ summary: "" }),
+      review({ evidence: "" }),
+      review({ findings: {} }),
+      review({ findings: [{ ...finding("blocking", "fixed"), extra: 1 }] }),
+      review({ findings: [finding("critical", "open")] }),
+      review({ findings: [finding("advisory", "ignored")] }),
+      review({ findings: [{ ...finding("advisory", "open"), title: "" }] }),
+      review({ findings: [{ ...finding("advisory", "open"), detail: null }] }),
+    ];
+    for (const value of cases)
+      expect(refusalOf(() => handoverReview(value)).kind, JSON.stringify(value)).toBe(
+        "invalid-review",
+      );
+    const as = (value: Record<string, unknown>) => value as unknown as ReviewFinding;
+    expect(isUnresolvedBlocking(as(finding("blocking", "open")))).toBe(true);
+    expect(isUnresolvedBlocking(as(finding("blocking", "deferred")))).toBe(true);
+    expect(isUnresolvedBlocking(as(finding("blocking", "fixed")))).toBe(false);
+    expect(isUnresolvedBlocking(as(finding("advisory", "open")))).toBe(false);
+    expect(() => isUnresolvedBlocking(as(finding("critical", "open")))).toThrow(
+      "Unhandled FINDING_SEVERITIES",
+    );
+    expect(() => isUnresolvedBlocking(as(finding("blocking", "maybe")))).toThrow(
+      "Unhandled FINDING_STATES",
+    );
   });
 });
