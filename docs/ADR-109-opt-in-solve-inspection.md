@@ -9,6 +9,12 @@ inspection projection now also carries frozen per-leaf `residuals`, and it may r
 `conflicted` quality kind. `inspectSolve` takes the whole `SolveResult` so the projection reads the
 result-owned residual record; the opt-in, fixed-shape and no-diagnostic rules otherwise remain.
 
+**Amended by [ADR-120](./ADR-120-3d-opt-in-inspection.md), 2026-09-26.** The internal 3D solver
+`ik3d` claims `inspect` and publishes the same record under the same rules. `inspectSolve` now
+takes `SolveEvidence`, the `quality` and `residuals` both dimensions' results share, and the
+reading of the opt-in moved from `ik.ts` into `inspectionOutput` in `ik-result.ts`, so one module
+owns both whether to publish and what; `ik`'s published bytes are unchanged.
+
 ## Invariant
 
 An IK solver publishes exactly the rotations it published before, bit for bit, unless its author

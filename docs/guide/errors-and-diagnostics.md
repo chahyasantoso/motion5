@@ -182,6 +182,8 @@ Opt-in solve inspection ([ADR-109](../ADR-109-opt-in-solve-inspection.md)) adds 
   is not a static boolean. Use `ik.values.inspect: true` to request the solver's fixed-shape
   `inspection` output, or `false` to opt out. A keyframed switch is refused because an output that
   appears mid-timeline would make the patch shape unstable. Inspection is data, not a warning.
+  The internal `ik3d` prototype reads the same switch under the same two rules and publishes the
+  same record ([ADR-120](../ADR-120-3d-opt-in-inspection.md)).
 
 Goal addressing has six rules of its own, and they are answered during graph construction rather than by the contract layer, because membership is derived from `solver` edges and the contract layer holds no graph:
 
