@@ -145,7 +145,7 @@ const PARITY: readonly ParityCase[] = [
     ],
   },
   {
-    what: "the pre-ADR-049 group form",
+    what: "the pre-ADR-049 group form, the one object refused by name rather than as ungrouped",
     authored: { fk: { length: RAMP } },
     expected: ["keyframes-missing-values-section at keyframes.fk"],
   },
@@ -157,6 +157,11 @@ const PARITY: readonly ParityCase[] = [
   {
     what: "an empty object at the top level, which names no plugin group",
     authored: { fk: {} },
+    expected: ["keyframes-ungrouped-key at keyframes.fk"],
+  },
+  {
+    what: "a top-level object whose members are not all leaves, which is ungrouped",
+    authored: { fk: { length: { hold: 1 } } },
     expected: ["keyframes-ungrouped-key at keyframes.fk"],
   },
   {

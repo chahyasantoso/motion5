@@ -6,6 +6,7 @@ import type {
   ProjectDefinition,
   TrackDefinition,
 } from "../../../src/contract/v5";
+import { validateSchemaV5 } from "../../../src/contract/validate-v5";
 import { buildGraphIR, type GraphBuildResult } from "../../../src/graph/ir";
 
 // Issue #214: a solved member may carry a pivot offset, because both solves now account for one.
@@ -209,7 +210,19 @@ describe("a solved member may carry a pivot offset", () => {
     // `fk`'s own live input rather than dead.
     expect(reported(buildGraphIR(ROTATION_IN_OTHER_GROUP))).toEqual([]);
 
-    // The direct graph builder does not validate authored grouping; the engine loader refuses this shape before solver ownership is read.
+    // Ungrouped: the schema owns the refusal, so the graph layer never classifies the key. Both
+    // halves are pinned, so this cannot stay green by bypassing the validator it relies on.
+    expect(validateSchemaV5(FLAT_ROTATION)).toEqual(
+      expect.objectContaining({
+        kind: "refused",
+        diagnostics: expect.arrayContaining([
+          expect.objectContaining({
+            ruleId: "keyframes-ungrouped-key",
+            path: "motions[0].tracks[3].keyframes.rotation",
+          }),
+        ]),
+      }),
+    );
     expect(reported(buildGraphIR(FLAT_ROTATION))).toEqual([]);
   });
 });

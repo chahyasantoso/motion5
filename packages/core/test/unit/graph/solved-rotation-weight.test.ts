@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { IncrementalGraphBuilder } from "../../../src/graph/builders/incremental";
 import type { ProjectDefinition, TrackDefinition } from "../../../src/contract/v5";
+import { validateSchemaV5 } from "../../../src/contract/validate-v5";
 import { buildGraphIR, type GraphBuildResult } from "../../../src/graph/ir";
 
 // Issue #211: what a solver-bound member may author once `weight` exists.
@@ -185,7 +186,8 @@ describe("solved rotation weight (issue #211)", () => {
     };
     expect(reported(buildGraphIR(rig([splitAcrossGroups])))).toEqual([]);
 
-    // Deliberately malformed ungrouped keyframe fixture; the loader must refuse it before ownership.
+    // Ungrouped: the schema owns the refusal, so the graph layer never classifies the key. Both
+    // halves are pinned, so this cannot stay green by bypassing the validator it relies on.
     const flatWeight = {
       id: "upper-arm",
       keyframes: {
@@ -193,6 +195,17 @@ describe("solved rotation weight (issue #211)", () => {
         fk: { values: { length: 80 }, requires: { base: "shoulder", solver: "arm-solve" } },
       },
     } as unknown as TrackDefinition;
+    expect(validateSchemaV5(rig([flatWeight]))).toEqual(
+      expect.objectContaining({
+        kind: "refused",
+        diagnostics: expect.arrayContaining([
+          expect.objectContaining({
+            ruleId: "keyframes-ungrouped-key",
+            path: "motions[0].tracks[3].keyframes.weight",
+          }),
+        ]),
+      }),
+    );
     expect(reported(buildGraphIR(rig([flatWeight])))).toEqual([]);
   });
 
