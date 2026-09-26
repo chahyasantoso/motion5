@@ -86,7 +86,10 @@ export type Publication =
       readonly skipped: readonly CommentPart[];
     };
 
-/** The subset of `gh pr list --json` fields the publisher reads. */
+/**
+ * The pull request fields the publisher reads, as `gh pr view --json` prints them; the branch
+ * listing reads the REST list with `--paginate` and normalises each entry to this shape.
+ */
 export interface ListedPullRequest {
   readonly number: number;
   readonly url: string;
@@ -115,6 +118,9 @@ export function publishHandover(
   handover: AppliedHandover,
   options: { readonly root: string; readonly run: Run; readonly temporary?: string },
 ): Promise<Publication>;
+/** A pending file read back: exactly a saved `AppliedHandover` named for its identity, or throws. */
+export function pendingPayload(value: unknown, file: string): AppliedHandover;
+/** Retries pending publications; each result's `name` is the publication identity or file stem. */
 export function publishPending(options: {
   readonly root: string;
   readonly run: Run;

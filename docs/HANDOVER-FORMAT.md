@@ -227,9 +227,12 @@ manifest is addressed and is eligible for publication after it applies.
 
 `title` is one trimmed, non-empty line of at most 256 characters with no carriage return or line
 feed. It is the title used when a branch destination has to open a pull request. `target` has
-exactly `repository`, `branch`, `into`, and `destination`: `repository` is a GitHub
-`owner/name`; `branch` is the branch carrying the applied tip; `into` (default `main`, motion5's integration branch, when `--into` is omitted) is the branch the handover
-branch is intended to merge into; and the two branch names must differ.
+exactly `repository`, `branch`, `into`, and `destination`: `repository` is a GitHub `owner/name`;
+`branch` is the branch carrying the applied tip; `into` (default `main`, motion5's integration
+branch, when `--into` is omitted) is the branch the handover branch is intended to merge into; and
+the two branch names must differ. Both are held to Git's ref-name rules for every slash-separated
+component: none may be empty, begin with `.`, or end with `.lock`, so `feat/.hidden` is refused when
+the archive is read rather than after it applies.
 
 `destination` is a closed union. `{ "kind": "pull-request", "number": <positive integer> }`
 selects one explicit pull request; `{ "kind": "branch" }` selects the pull request for the target
@@ -342,7 +345,9 @@ produce a new identity rather than silently suppressing a correction. A branch-c
 already contains both the notes marker and notes body, so the publisher does not add a duplicate
 notes comment.
 
-If publication does not settle, its complete payload is kept under the Git directory path `motion5-handover/pending` resolved by `git rev-parse --git-path`. The payload contains the identity, address, notes, review, applied tip, and applied commits, and is outside the working tree. `npm run patches:publish` retries pending payloads in name order; a malformed pending payload is a failed `read-pending` result and remains for investigation, whether it does not parse or parses to something that is not a payload this publisher wrote; the retry continues with the next payload. A failed or deferred publication keeps the payload so the human can correct the cause and retry.
+If publication does not settle, its complete payload is kept under the Git directory path `motion5-handover/pending` resolved by `git rev-parse --git-path`, as `<identity>.json`, so two publications of one handover name never overwrite each other. The payload contains the identity, address, notes, review, applied tip, and applied commits, and is outside the working tree. `npm run patches:publish` retries pending payloads in file-name order. Each is validated whole before any Git or GitHub call: exactly those keys, an identity naming its file, an address and review held to this format's own rules, and full-SHA commits ending at the tip. A payload that does not parse, or parses to anything else, is a failed `read-pending` result and remains for investigation; the retry continues with the next payload. A failed or deferred publication keeps the payload so the human can correct the cause and retry. A failure to save the payload is `failed` at step `save-pending` and says nothing was saved.
+
+The applied outcome keeps exit status 0 when its publication is deferred or failed, because the series is in and the checkout has moved; the printed publication lines say what is pending. `npm run patches:publish` exits 1 while any pending payload is still not settled, so automation that needs publication settled reads that command's status.
 
 ### Branch publication and destination resolution
 
@@ -367,12 +372,13 @@ A push publishes the whole history under the tip, so before pushing the publishe
 
 For `pull-request`, `gh pr view` must find the numbered pull request in `target.repository` and
 verify that its head is exactly `target.repository:target.branch`; a pull request elsewhere is not
-touched. For `branch`, pull-request discovery filters out same-named branches from forks and prefers
-an open pull request into `target.into`, then another open pull request for that branch, then an
-existing matching pull request. If no pull request exists, the publisher opens one in the target
-repository with `title`, `target.branch`, and `target.into`; its body carries the notes and the
-review line and its markers prevent a separate notes comment. For `issue`, the publisher verifies
-the manifest's `issue` in `target.repository` and posts there.
+touched. For `branch`, pull-request discovery reads the REST list filtered by
+`head=<owner>:<branch>` and `state=all` with `gh api --paginate` to its end, filters out same-named
+branches from forks, and prefers an open pull request into `target.into`, then another open pull
+request for that branch, then an existing matching pull request. If no pull request exists, the
+publisher opens one in the target repository with `title`, `target.branch`, and `target.into`; its
+body carries the notes and the review line and its markers prevent a separate notes comment. For
+`issue`, the publisher verifies the manifest's `issue` in `target.repository` and posts there.
 
 ### Posted content and bounds
 

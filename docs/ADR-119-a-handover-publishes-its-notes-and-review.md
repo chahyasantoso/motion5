@@ -48,12 +48,15 @@ The producer writes v2 and resolves missing address parts from explicit options 
 `--review`, `--title`, `--repository`, `--branch`, `--into`, `--pr`, and `--to-issue` are the
 corresponding pack options.
 
-The explicit pull-request destination is verified in the target repository and must have exactly
-the target repository and target branch as its head. A branch destination discovers pull requests
-for the target branch, filters out same-named heads from forks, and prefers an open pull request
-into `target.into`. If there is no matching pull request, it opens one with the manifest title,
-base branch, and notes-bearing body. An issue destination verifies and uses the manifest issue in
-the target repository.
+The explicit pull-request destination is verified in the target repository and must have exactly the
+target repository and target branch as its head. A branch destination discovers pull requests for
+the target branch, filters out same-named heads from forks, and prefers an open pull request into
+`target.into`. Discovery reads the REST pull-request list filtered by `head=<owner>:<branch>` and
+`state=all` with `gh api --paginate` to its end, so "no pull request" means none exists rather than
+none among a first page; a fixed `gh pr list --limit` read would open a second pull request for a
+branch whose own one sat past the limit. If there is no matching pull request, it opens one with the
+manifest title, base branch, and notes-bearing body. An issue destination verifies and uses the
+manifest issue in the target repository.
 
 ### Review contract
 
@@ -90,8 +93,19 @@ The publisher writes the complete applied payload to the Git directory under the
 `motion5-handover/pending` path before it contacts GitHub. The payload includes the identity,
 address, notes, review, exact applied tip, and applied commits. It removes that file only after all
 owed publication parts are present. Deferrals, failures, and crashes leave the payload for
-`npm run patches:publish`, which retries pending payloads in name order. A malformed saved payload
-is reported as a failed read and remains for investigation.
+`npm run patches:publish`, which retries pending payloads in file-name order. The file is named
+`<identity>.json`, not `<name>.json`, so a repacked handover with corrected notes saves beside an
+earlier publication still waiting rather than overwriting it. A retry trusts every field it
+publishes, so a saved payload is validated whole before any Git or GitHub call: exactly the saved
+keys, an identity that names its file, an address held to the manifest's own title and target
+rules by the format module (`addressedAddress`), a review held to `handoverReview`, and full-SHA
+commits ending at the applied tip. A malformed or foreign payload is reported as a failed
+`read-pending` result and remains for investigation.
+
+Saving the payload is itself inside the publication's result boundary. A failure to save is
+`failed` at step `save-pending` with `pending: null`, so the human is told nothing was saved; any
+later failure names the saved file. Removing the scratch directory is best-effort and never
+replaces a result already chosen.
 
 ### Branch publication is safe, exact, and first
 
@@ -189,6 +203,19 @@ is visibly marked as such.
 The implementation and test suite are the evidence owners for the exact command invocations and
 result shapes. This ADR records the contract and rationale; it does not claim a merge or a CI run
 that is not named here.
+
+## Third independent pass
+
+A third pass, not told what the first two concluded, read the publisher, the format and apply
+modules, and an end-to-end exercise against a bare remote and a fake `gh`. It found five things,
+and four were fixed with a case that fails without the fix: branch discovery truncated at 200 pull
+requests (HO-65), a pending payload trusted after checking two fields (HO-66), pending files keyed
+by name so a second publication of one name overwrote the first (HO-67), and saving or scratch
+setup failing outside the result boundary, which reported `pending: null` for a payload that had
+been saved (HO-68). The format module accepted branch components Git refuses, such as
+`feat/.hidden` and `feat/x.lock/y`, so an addressed handover could apply and then fail at the push;
+every slash-separated component is now held to Git's rules (HO-64). The fifth, concurrent
+publishers racing, is the lock already rejected above and stays rejected for the same reason.
 
 ## Evidence
 

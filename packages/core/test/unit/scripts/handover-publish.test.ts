@@ -35,6 +35,7 @@ import {
   marker,
   notesComment,
   publishHandover,
+  pendingPayload,
   publishPending,
   pullRequestBody,
   remoteRepository,
@@ -171,15 +172,6 @@ class FakeGitHub {
       const pull = this.pulls.find((each) => each.number === Number(args[2]));
       return pull === undefined ? no("no pull requests found") : ok(JSON.stringify(listed(pull)));
     }
-    if (first === "pr" && second === "list") {
-      const head = option(args, "--head");
-      expect(option(args, "--limit")).toBe("200");
-      const found = this.pulls
-        .filter((each) => each.headRefName === head)
-        .reverse()
-        .map(listed);
-      return ok(JSON.stringify(found));
-    }
     if (first === "pr" && second === "create") {
       const number = this.next++;
       this.pulls.push({
@@ -203,6 +195,24 @@ class FakeGitHub {
     }
     if (first === "api") {
       const endpoint = args.find((each) => each.startsWith("repos/")) ?? "";
+      const pulls = /^repos\/([^/]+\/[^/]+)\/pulls\?(.*)$/.exec(endpoint);
+      if (pulls !== null) {
+        // The REST list filtered by `head=<owner>:<branch>`, read to its end with --paginate and
+        // printed one normalised pull request per line, as the publisher's --jq program does.
+        expect(pulls[1]).toBe(REPOSITORY);
+        expect(args).toContain("--paginate");
+        const query = new URLSearchParams(pulls[2]);
+        expect(query.get("state")).toBe("all");
+        const [owner, ...branch] = (query.get("head") ?? "").split(":");
+        const found = this.pulls
+          .filter(
+            (each) =>
+              each.headRefName === branch.join(":") && each.headRepositoryOwner?.login === owner,
+          )
+          .reverse()
+          .map((each) => `${JSON.stringify(listed(each))}\n`);
+        return ok(found.join(""));
+      }
       const match = /^repos\/([^/]+\/[^/]+)\/issues\/([0-9]+)\/comments$/.exec(endpoint);
       if (match === null || match[1] !== REPOSITORY) return no(`unexpected endpoint ${endpoint}`);
       const thread = this.thread(Number(match[2]));
@@ -467,10 +477,10 @@ describe("publishing without what it needs (ADR-119)", () => {
 
     expect(w.github.writes()).toEqual([]);
     expect(git(w.bare, "for-each-ref")).toBe("");
-    expect(await pendingNames(w)).toEqual(["motion5-507-handover.json"]);
+    expect(await pendingNames(w)).toEqual(["motion5-507-handover@0123456789ab.json"]);
     const saved = JSON.parse(
       await readFile(
-        join(w.repo, ".git/motion5-handover/pending/motion5-507-handover.json"),
+        join(w.repo, ".git/motion5-handover/pending/motion5-507-handover@0123456789ab.json"),
         "utf8",
       ),
     );
@@ -482,7 +492,7 @@ describe("publishing without what it needs (ADR-119)", () => {
     const retried = await publishPending({ root: w.repo, run: w.run });
     expect(retried).toEqual([
       {
-        name: "motion5-507-handover",
+        name: "motion5-507-handover@0123456789ab",
         publication: expect.objectContaining({ kind: "published", created: true }),
       },
     ]);
@@ -500,7 +510,7 @@ describe("publishing without what it needs (ADR-119)", () => {
     expect(describePublication(failed).join("\n")).toContain("npm run patches:publish");
     expect(marked(w, pull.number, "notes")).toBe(1);
     expect(marked(w, pull.number, "review")).toBe(0);
-    expect(await pendingNames(w)).toEqual(["motion5-507-handover.json"]);
+    expect(await pendingNames(w)).toEqual(["motion5-507-handover@0123456789ab.json"]);
     w.github.failPost = null;
     const [retried] = await publishPending({ root: w.repo, run: w.run });
     expect(retried?.publication).toMatchObject({
@@ -882,7 +892,7 @@ describe("publication inside npm run patches (ADR-119)", () => {
     expect(deferred.stdout).toContain("No Git remote here points at github.com/octo/motion5");
     const retry = cli("publish");
     expect(retry.status).toBe(1);
-    expect(retry.stderr).toContain("motion5-507-handover:");
+    expect(retry.stderr).toMatch(/motion5-507-handover@[0-9a-f]{12}:/);
     expect(cli("publish", "--force").status).toBe(1);
   });
 });
@@ -1036,7 +1046,7 @@ describe("publishing a branch that is not on GitHub yet (#508)", () => {
     expect(words).toContain("never force-pushes");
     expect(remoteTip(w)).toBe(theirs);
     expect(w.github.writes()).toEqual([]);
-    expect(await pendingNames(w)).toEqual(["motion5-507-handover.json"]);
+    expect(await pendingNames(w)).toEqual(["motion5-507-handover@0123456789ab.json"]);
 
     git(w.repo, "pull", "-q", "--no-rebase", "--no-edit", "origin", BRANCH);
     git(w.repo, "push", "-q", "origin", `HEAD:refs/heads/${BRANCH}`);
@@ -1058,7 +1068,7 @@ describe("publishing a branch that is not on GitHub yet (#508)", () => {
     expect(describePublication(outcome).join("\n")).toContain("npm run patches:publish");
     expect(remoteTip(w)).toBeNull();
     expect(w.github.writes()).toEqual([]);
-    expect(await pendingNames(w)).toEqual(["motion5-507-handover.json"]);
+    expect(await pendingNames(w)).toEqual(["motion5-507-handover@0123456789ab.json"]);
     await rm(hook);
     const [retried] = await publishPending({ root: w.repo, run: w.run });
     expect(retried?.publication).toMatchObject({ kind: "published", branch: { kind: "created" } });
@@ -1079,7 +1089,7 @@ describe("publishing a branch that is not on GitHub yet (#508)", () => {
     expect(outcome).toMatchObject({ kind: "failed", step: "push" });
     expect(remoteTip(w)).toBe(theirs);
     expect(w.github.writes()).toEqual([]);
-    expect(await pendingNames(w)).toEqual(["motion5-507-handover.json"]);
+    expect(await pendingNames(w)).toEqual(["motion5-507-handover@0123456789ab.json"]);
     expect(await publish(w, handover(w))).toMatchObject({
       kind: "deferred",
       reason: { kind: "branch-diverged", remoteTip: theirs },
@@ -1177,11 +1187,150 @@ describe("publishing a branch that is not on GitHub yet (#508)", () => {
     const directory = join(w.repo, ".git/motion5-handover/pending");
     await mkdir(directory, { recursive: true });
     await writeFile(join(directory, "a-bad.json"), JSON.stringify({ name: "a-bad" }));
-    await publish(w, { ...handover(w), tip: "f".repeat(40) });
+    const unknown = "f".repeat(40);
+    await publish(w, { ...handover(w), tip: unknown, commits: [{ sha: unknown, subject: "x" }] });
     const results = await publishPending({ root: w.repo, run: w.run });
-    expect(results.map((result) => result.name)).toEqual(["a-bad", "motion5-507-handover"]);
+    expect(results.map((result) => result.name)).toEqual([
+      "a-bad",
+      "motion5-507-handover@0123456789ab",
+    ]);
     expect(results[0]?.publication).toMatchObject({ kind: "failed", step: "read-pending" });
     expect(results[1]?.publication.kind).not.toBe("failed");
     expect(await pendingNames(w)).toContain("a-bad.json");
+  });
+});
+
+/**
+ * A third independent pass over #508, not told what the first two concluded, read the publisher
+ * for what a retry trusts and what "none found" means. Each case fails without its fix.
+ */
+describe("what the third independent pass found (#508)", () => {
+  it("HO-65 a branch's pull request is found past any first page, so a second is never opened", async () => {
+    const w = await world();
+    push(w);
+    const own = w.github.pull(BRANCH, "CLOSED");
+    for (let index = 0; index < 250; index++)
+      w.github.pull(BRANCH, "OPEN", {
+        headRepository: { name: "motion5" },
+        headRepositoryOwner: { login: `forker${index}` },
+      });
+    const published = await publish(w, handover(w));
+    expect(published).toMatchObject({
+      kind: "published",
+      created: false,
+      destination: { kind: "pull-request", number: own.number },
+    });
+    expect(w.github.calls.filter((call) => call[1] === "create")).toEqual([]);
+    const listing = w.github.calls.find((call) => call.some((arg) => arg.includes("/pulls?")));
+    expect(listing).toEqual(expect.arrayContaining(["api", "--paginate"]));
+    expect(listing?.find((arg) => arg.includes("/pulls?"))).toContain(
+      `head=${encodeURIComponent(`octo:${BRANCH}`)}`,
+    );
+  });
+
+  it("HO-66 a pending payload is validated whole before any Git or GitHub call", async () => {
+    const w = await world();
+    const h = handover(w);
+    const file = `/p/${h.identity}.json`;
+    expect(pendingPayload(JSON.parse(JSON.stringify(h)), file)).toEqual(h);
+    const broken: [string, unknown][] = [
+      ["not an object", [h]],
+      ["unknown key", { ...h, extra: 1 }],
+      ["missing key", { ...h, notes: undefined }],
+      ["identity", { ...h, identity: "other@0123456789ab" }],
+      ["file name", h],
+      ["issue", { ...h, issue: 0 }],
+      ["address", { ...h, address: { kind: "unaddressed" } }],
+      [
+        "target",
+        { ...h, address: { ...h.address, target: { repository: REPOSITORY, branch: BRANCH } } },
+      ],
+      ["notes", { ...h, notes: 3 }],
+      [
+        "review",
+        {
+          ...h,
+          review: passed({
+            findings: [{ severity: "blocking", state: "open", title: "x", detail: "" }],
+          }),
+        },
+      ],
+      ["tip", { ...h, tip: "HEAD" }],
+      ["commits", { ...h, commits: [] }],
+      ["commit shape", { ...h, commits: [{ sha: h.tip }] }],
+      ["last commit", { ...h, commits: [...h.commits].reverse() }],
+    ];
+    for (const [label, value] of broken) {
+      const json = JSON.parse(JSON.stringify(value) ?? "null");
+      const at = label === "file name" ? "/p/renamed.json" : file;
+      expect(() => pendingPayload(json, at), label).toThrow(/not a pending payload/);
+    }
+
+    const directory = join(w.repo, ".git/motion5-handover/pending");
+    await mkdir(directory, { recursive: true });
+    const incomplete = { ...h, commits: [], review: null };
+    await writeFile(join(directory, `${h.identity}.json`), JSON.stringify(incomplete));
+    const results = await publishPending({ root: w.repo, run: w.run });
+    expect(results).toEqual([
+      {
+        name: h.identity,
+        publication: expect.objectContaining({ kind: "failed", step: "read-pending" }),
+      },
+    ]);
+    expect(w.github.calls).toEqual([]);
+    expect(await pendingNames(w)).toEqual([`${h.identity}.json`]);
+  });
+
+  it("HO-67 two publications of one name are saved apart, and both are retried", async () => {
+    const w = await world();
+    const first = handover(w);
+    const corrected = {
+      ...first,
+      identity: "motion5-507-handover@ba9876543210",
+      notes: "# Corrected\n",
+    };
+    w.github.authenticated = false;
+    await publish(w, first);
+    await publish(w, corrected);
+    expect((await pendingNames(w)).sort()).toEqual([
+      "motion5-507-handover@0123456789ab.json",
+      "motion5-507-handover@ba9876543210.json",
+    ]);
+    w.github.authenticated = true;
+    push(w);
+    const pull = w.github.pull(BRANCH);
+    const retried = await publishPending({ root: w.repo, run: w.run });
+    expect(retried.map((result) => [result.name, result.publication.kind])).toEqual([
+      [first.identity, "published"],
+      [corrected.identity, "published"],
+    ]);
+    expect(marked(w, pull.number, "notes")).toBe(2);
+    expect(await pendingNames(w)).toEqual([]);
+  });
+
+  it("HO-68 a failure while saving or preparing is a result that says whether a retry was saved", async () => {
+    const w = await world();
+    push(w);
+    const missing = join(w.work, "no-such-directory");
+    const unprepared = await publishHandover(handover(w), {
+      root: w.repo,
+      run: w.run,
+      temporary: missing,
+    });
+    expect(unprepared).toMatchObject({ kind: "failed", step: "unexpected" });
+    const saved = (unprepared as { pending: string | null }).pending;
+    expect(saved).toBe(
+      join(w.repo, ".git/motion5-handover/pending/motion5-507-handover@0123456789ab.json"),
+    );
+    expect(describePublication(unprepared).join("\n")).toContain("npm run patches:publish");
+
+    const unsaved = handover(w);
+    const blocked = join(w.repo, ".git/motion5-handover");
+    await rm(blocked, { recursive: true, force: true });
+    await writeFile(blocked, "a file where the pending directory belongs\n");
+    const failed = await publish(w, unsaved);
+    expect(failed).toMatchObject({ kind: "failed", step: "save-pending", pending: null });
+    expect(describePublication(failed).join("\n")).toContain("Nothing was saved for a retry");
+    expect(w.github.calls).toEqual([]);
   });
 });

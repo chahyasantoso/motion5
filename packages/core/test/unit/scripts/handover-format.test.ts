@@ -24,6 +24,7 @@ import {
   handoverListing,
   handoverManifest,
   handoverReview,
+  addressedAddress,
   isUnresolvedBlocking,
   unsafePath,
   zipListing,
@@ -632,6 +633,55 @@ describe("handover manifest version 2 (ADR-119)", () => {
     expect(
       handoverContents([...files, "REVIEW.json"], parsed).find((each) => each.kind === "review"),
     ).toEqual({ kind: "review", path: "REVIEW.json", files: ["REVIEW.json"] });
+  });
+});
+
+describe("what the third independent pass found in the address (#508)", () => {
+  it("HO-64 holds every branch component to Git's rules, and one owner reads a saved address", () => {
+    const refused = [
+      "feat/.hidden",
+      "feat/.git",
+      "feat/x.lock/y",
+      ".leading",
+      "feat//double",
+      "feat/trailing.",
+    ];
+    for (const branch of refused) {
+      expect(refusalOf(() => handoverManifest(target({ branch }), ROOT)).kind, branch).toBe(
+        "invalid-manifest",
+      );
+      expect(
+        refusalOf(() => handoverManifest(target({ into: branch }), ROOT)).kind,
+        `into ${branch}`,
+      ).toBe("invalid-manifest");
+    }
+    for (const branch of ["feat/507-publish.v2", "a/b_c/d-e", "release/1.2"])
+      expect(handoverAddress(handoverManifest(target({ branch }), ROOT).manifest)).toMatchObject({
+        kind: "addressed",
+        target: { branch },
+      });
+
+    const { manifest: parsed } = handoverManifest(addressed(), ROOT);
+    const address = handoverAddress(parsed);
+    expect(addressedAddress(JSON.parse(JSON.stringify(address)))).toEqual(address);
+    for (const value of [
+      { kind: "unaddressed" },
+      { ...address, extra: true },
+      { ...address, title: "two\nlines" },
+      {
+        ...address,
+        target: {
+          repository: "chahyasantoso/motion5",
+          branch: "feat/.hidden",
+          into: "main",
+          destination: { kind: "branch" },
+        },
+      },
+      null,
+    ])
+      expect(refusalOf(() => addressedAddress(value)).kind, JSON.stringify(value)).toBe(
+        "invalid-manifest",
+      );
   });
 });
 

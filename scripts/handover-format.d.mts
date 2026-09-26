@@ -227,6 +227,10 @@ export function checkpointAgreement(
   base: string,
 ): unknown;
 export function handoverAddress(manifest: HandoverManifest): HandoverAddress;
+/** An addressed address read from a non-manifest source; refuses `invalid-manifest` otherwise. */
+export function addressedAddress(
+  value: unknown,
+): Extract<HandoverAddress, { readonly kind: "addressed" }>;
 export function handoverReview(value: unknown): HandoverReview;
 export function isUnresolvedBlocking(finding: ReviewFinding): boolean;
 export function bundleHeader(text: string): BundleHeader;

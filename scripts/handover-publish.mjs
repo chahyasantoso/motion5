@@ -12,7 +12,12 @@
 import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { HandoverRefusal, unreachable } from "./handover-format.mjs";
+import {
+  HandoverRefusal,
+  addressedAddress,
+  handoverReview,
+  unreachable,
+} from "./handover-format.mjs";
 
 /** The closed set of ways a publication attempt ends. */
 export const PUBLICATION_KINDS = Object.freeze([
@@ -42,14 +47,15 @@ export const PUBLICATION_PARTS = Object.freeze(["pull-request", "notes", "review
 // GitHub refuses a pull request or comment body over 65,536 characters. Every body is cut well
 // inside that, whatever part of it is long, and the cut says where the whole text still is.
 export const MAX_BODY_CHARACTERS = 60000;
-// `gh pr list` pages internally up to its limit; a branch with more pull requests than this is not
-// a case a handover meets, and the limit is what keeps "none found" from meaning "not looked".
-const PULL_REQUEST_LIMIT = "200";
 const PENDING = "motion5-handover/pending";
 const GITHUB_HOST = "github.com";
 const REMOTE_URL =
   /^(?:https?:\/\/(?:[^@/]+@)?github\.com\/|ssh:\/\/git@github\.com(?::[0-9]+)?\/|git@github\.com:)([^/]+\/[^/]+?)(?:\.git)?\/?$/i;
 const PULL_URL = /\/pull\/([0-9]+)\s*$/;
+const SHA = /^[0-9a-f]{40}$/;
+const IDENTITY_DIGEST = /@[0-9a-f]{12}$/;
+const PAYLOAD_KEYS = ["identity", "name", "issue", "address", "notes", "review", "tip", "commits"];
+const COMMIT_KEYS = ["sha", "subject"];
 
 /** The hidden line that names one part of one exact handover in a GitHub body. */
 export function marker(identity, part) {
@@ -359,6 +365,45 @@ function json(text, step) {
 const PULL_FIELDS =
   "number,url,state,body,baseRefName,headRefName,headRepository,headRepositoryOwner";
 
+/**
+ * The REST pull request list read in the shape `gh pr view --json PULL_FIELDS` prints, one JSON
+ * object per line, so a listed pull request and a viewed one are judged by the same predicates.
+ * GitHub reports a merged pull request as closed with a merge time, which is `MERGED` in that shape.
+ */
+const PULL_LIST_JQ = [
+  ".[] | {number, url: .html_url, body,",
+  'state: (if .state == "open" then "OPEN" elif .merged_at != null then "MERGED" else "CLOSED" end),',
+  "baseRefName: .base.ref, headRefName: .head.ref,",
+  "headRepository: (if .head.repo == null then null else {name: .head.repo.name} end),",
+  "headRepositoryOwner: (if .head.repo == null then null else {login: .head.repo.owner.login} end)}",
+  "| @json",
+].join(" ");
+
+/**
+ * Every pull request whose head is the target branch in the target repository, in any state. The
+ * REST list is filtered by `head=<owner>:<branch>` and read with `--paginate` to its end, so "none
+ * found" means none exists rather than none among a first page: a missed pull request here is a
+ * second one opened for the same branch, the duplicate issue #507 forbids.
+ */
+function branchPullRequests(run, root, target) {
+  const owner = target.repository.slice(0, target.repository.indexOf("/"));
+  const query = new URLSearchParams({
+    head: `${owner}:${target.branch}`,
+    state: "all",
+    per_page: "100",
+  });
+  return gh(run, root, "list-pull-requests", [
+    "api",
+    "--paginate",
+    `repos/${target.repository}/pulls?${query}`,
+    "--jq",
+    PULL_LIST_JQ,
+  ])
+    .split("\n")
+    .filter(Boolean)
+    .map((line) => json(line, "list-pull-requests"));
+}
+
 /** `owner/name` of a pull request's head repository, lower-cased, or null for a deleted fork. */
 function headRepositoryOf(pull) {
   const owner = pull.headRepositoryOwner?.login;
@@ -376,8 +421,8 @@ function isTargetBranch(pull, target) {
 }
 
 /**
- * The branch's pull request to publish to, or undefined. `gh pr list --head` matches the branch
- * name in any repository, so a fork's same-named branch is filtered out by head repository. Among
+ * The branch's pull request to publish to, or undefined. Only a pull request whose head is the
+ * branch in the target repository counts, so a fork's same-named branch never does. Among
  * the branch's own, an open one merging into `target.into` wins, then any open one, then the most
  * recent into `target.into`, then the most recent at all: posting to a closed thread is noise,
  * and opening a second pull request for the same branch is the duplicate issue #507 forbids.
@@ -442,23 +487,7 @@ async function destinationOf(run, root, handover, address, scratch) {
       return { kind: "issue", number: found.number, url: found.url, created: false, body: "" };
     }
     case "branch": {
-      const listed = json(
-        gh(run, root, "list-pull-requests", [
-          "pr",
-          "list",
-          ...repo,
-          "--head",
-          target.branch,
-          "--state",
-          "all",
-          "--json",
-          PULL_FIELDS,
-          "--limit",
-          PULL_REQUEST_LIMIT,
-        ]),
-        "list-pull-requests",
-      );
-      const existing = branchPullRequest(listed, target);
+      const existing = branchPullRequest(branchPullRequests(run, root, target), target);
       if (existing !== undefined)
         return {
           kind: "pull-request",
@@ -536,8 +565,76 @@ function pendingDirectory(run, root) {
   return path.resolve(root, must(run, "git", ["rev-parse", "--git-path", PENDING], root).trim());
 }
 
+/**
+ * One file per publication identity, not per name: a repacked handover with corrected notes is a
+ * different publication, and saving it must not overwrite an earlier one still waiting to retry.
+ */
 function pendingFile(directory, handover) {
-  return path.join(directory, `${handover.name}.json`);
+  return path.join(directory, `${handover.identity}.json`);
+}
+
+function ensurePayload(condition, reason) {
+  if (!condition) throw new TypeError(`not a pending payload this publisher wrote: ${reason}`);
+}
+
+/** A rule from the format module, restated as a payload defect rather than a manifest refusal. */
+function formatRule(check, value) {
+  try {
+    return check(value);
+  } catch (error) {
+    if (error instanceof HandoverRefusal) ensurePayload(false, error.refusal.reason);
+    throw error;
+  }
+}
+
+/**
+ * A pending file read back, validated whole before any Git or GitHub call, because a retry trusts
+ * every field it publishes. Exactly the payload `publishHandover` saves: its identity names the
+ * file, its address and review satisfy the format module's own rules, and the applied tip and
+ * commits are full SHAs. Anything else fails at `read-pending` and is left for investigation.
+ */
+export function pendingPayload(value, file) {
+  ensurePayload(
+    value !== null && typeof value === "object" && !Array.isArray(value),
+    "not an object",
+  );
+  for (const key of Object.keys(value))
+    ensurePayload(PAYLOAD_KEYS.includes(key), `unknown key ${JSON.stringify(key)}`);
+  for (const key of PAYLOAD_KEYS)
+    ensurePayload(Object.hasOwn(value, key), `missing ${JSON.stringify(key)}`);
+  ensurePayload(typeof value.name === "string" && value.name.length > 0, "`name` is not text");
+  ensurePayload(
+    typeof value.identity === "string" &&
+      value.identity.startsWith(`${value.name}@`) &&
+      IDENTITY_DIGEST.test(value.identity),
+    "`identity` is not `<name>@<digest>`",
+  );
+  ensurePayload(
+    path.basename(file) === `${value.identity}.json`,
+    "the file is not named for its identity",
+  );
+  ensurePayload(Number.isSafeInteger(value.issue) && value.issue > 0, "`issue` is not positive");
+  formatRule(addressedAddress, value.address);
+  ensurePayload(typeof value.notes === "string", "`notes` is not text");
+  if (value.review !== null) formatRule(handoverReview, value.review);
+  ensurePayload(typeof value.tip === "string" && SHA.test(value.tip), "`tip` is not a full SHA");
+  ensurePayload(
+    Array.isArray(value.commits) &&
+      value.commits.length > 0 &&
+      value.commits.every(
+        (commit) =>
+          commit !== null &&
+          typeof commit === "object" &&
+          Object.keys(commit).length === COMMIT_KEYS.length &&
+          COMMIT_KEYS.every((key) => Object.hasOwn(commit, key)) &&
+          typeof commit.sha === "string" &&
+          SHA.test(commit.sha) &&
+          typeof commit.subject === "string",
+      ) &&
+      value.commits.at(-1).sha === value.tip,
+    "`commits` is not a non-empty list of applied commits ending at `tip`",
+  );
+  return value;
 }
 
 /**
@@ -556,12 +653,13 @@ export async function publishHandover(handover, { root, run, temporary = tmpdir(
       return unreachable(address, "ADDRESS_KINDS");
   }
   const target = address.target;
-  const directory = pendingDirectory(run, root);
-  const saved = pendingFile(directory, handover);
-  await mkdir(directory, { recursive: true });
-  await writeFile(saved, `${JSON.stringify(handover, null, 2)}\n`);
-  const scratch = await mkdtemp(path.join(temporary, "motion5-publish-"));
+  // Every stop is a value from here on, saving the payload included: `pending` names the file only
+  // once it is written, so a result never claims a retry that was not saved or hides one that was.
+  let saved = null;
+  let scratch = null;
   try {
+    saved = await savePayload(run, root, handover);
+    scratch = await mkdtemp(path.join(temporary, "motion5-publish-"));
     const remote = remoteFor(run, root, target.repository);
     gh(run, root, "gh-version", ["--version"]);
     if (run("gh", ["auth", "status", "--hostname", GITHUB_HOST], { cwd: root }).status !== 0)
@@ -605,7 +703,21 @@ export async function publishHandover(handover, { root, run, temporary = tmpdir(
       pending: saved,
     };
   } finally {
-    await rm(scratch, { recursive: true, force: true });
+    // Scratch holds only copies of bodies already posted or saved; failing to remove it changes
+    // nothing a retry needs, so it cannot replace the result already chosen.
+    if (scratch !== null) await rm(scratch, { recursive: true, force: true }).catch(() => {});
+  }
+}
+
+async function savePayload(run, root, handover) {
+  try {
+    const directory = pendingDirectory(run, root);
+    const file = pendingFile(directory, handover);
+    await mkdir(directory, { recursive: true });
+    await writeFile(file, `${JSON.stringify(handover, null, 2)}\n`);
+    return file;
+  } catch (error) {
+    return fail("save-pending", error instanceof Error ? error.message : String(error));
   }
 }
 
@@ -632,23 +744,26 @@ export async function publishPending({ root, run, temporary = tmpdir() }) {
       });
       continue;
     }
-    // A payload that parses but is not one this publisher wrote fails before its own error
-    // handling starts; it is reported like an unreadable one rather than ending the whole retry.
-    let publication;
+    // A payload that parses but is not one this publisher wrote is reported like an unreadable
+    // one, before any Git or GitHub call, rather than published from fields nobody validated.
     try {
-      // Only a payload this publisher wrote: addressed, and saved under its own name.
-      if (handover?.address?.kind !== "addressed" || `${handover.name}.json` !== name)
-        throw new TypeError(`${name} is not a pending payload this publisher wrote`);
-      publication = await publishHandover(handover, { root, run, temporary });
+      pendingPayload(handover, file);
     } catch (error) {
-      publication = {
-        kind: "failed",
-        step: "read-pending",
-        reason: error instanceof Error ? error.message : String(error),
-        pending: file,
-      };
+      results.push({
+        name: name.replace(/\.json$/, ""),
+        publication: {
+          kind: "failed",
+          step: "read-pending",
+          reason: error instanceof Error ? error.message : String(error),
+          pending: file,
+        },
+      });
+      continue;
     }
-    results.push({ name: handover?.name ?? name.replace(/\.json$/, ""), publication });
+    results.push({
+      name: handover.identity,
+      publication: await publishHandover(handover, { root, run, temporary }),
+    });
   }
   return results;
 }

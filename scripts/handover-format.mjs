@@ -344,15 +344,21 @@ function componentEntry(component, index, kinds) {
   }
 }
 
+/**
+ * A branch Git would accept as `refs/heads/<value>` within the narrowed `BRANCH` alphabet. Git's
+ * rules bind every slash-separated component, not only the whole name: no component may be empty,
+ * begin with a dot, or end with `.lock`, so `feat/.hidden` is refused here rather than after the
+ * series has applied, when the publisher's push would be the first thing to notice.
+ */
 function isBranch(value) {
   return (
     typeof value === "string" &&
     BRANCH.test(value) &&
     !value.includes("..") &&
-    !value.includes("//") &&
-    !value.endsWith("/") &&
     !value.endsWith(".") &&
-    !value.endsWith(".lock")
+    value
+      .split("/")
+      .every((part) => part.length > 0 && !part.startsWith(".") && !part.endsWith(".lock"))
   );
 }
 
@@ -379,6 +385,17 @@ function destinationEntry(value) {
     default:
       unreachable(value.kind, "DESTINATION_KINDS");
   }
+}
+
+function titleEntry(value) {
+  ensureManifest(
+    typeof value === "string" &&
+      value.trim() === value &&
+      value.length > 0 &&
+      value.length <= MAX_TITLE &&
+      !/[\r\n]/.test(value),
+    `\`title\` must be one trimmed line of 1 through ${MAX_TITLE} characters`,
+  );
 }
 
 /** The version 2 publication address: which repository, which branch into which, posted where. */
@@ -463,14 +480,7 @@ export function handoverManifest(value, root) {
     "`patches` repeats a file",
   );
   if (value.version === 2) {
-    ensureManifest(
-      typeof value.title === "string" &&
-        value.title.trim() === value.title &&
-        value.title.length > 0 &&
-        value.title.length <= MAX_TITLE &&
-        !/[\r\n]/.test(value.title),
-      `\`title\` must be one trimmed line of 1 through ${MAX_TITLE} characters`,
-    );
+    titleEntry(value.title);
     targetEntry(value.target);
   }
   ensureManifest(Array.isArray(value.components), "`components` must be an array");
@@ -598,6 +608,19 @@ export function handoverAddress(manifest) {
     default:
       return unreachable(manifest.version, "HANDOVER_VERSIONS");
   }
+}
+
+/**
+ * An addressed publication address read back from outside a manifest, such as a pending payload
+ * saved by an earlier apply. It is held to the manifest's own title and target rules, so the one
+ * owner of what an address may say is this module whichever file it was read from.
+ */
+export function addressedAddress(value) {
+  exactKeys(value, ["kind", "title", "target"], "the address");
+  ensureManifest(value.kind === "addressed", "the address must be `addressed`");
+  titleEntry(value.title);
+  targetEntry(value.target);
+  return value;
 }
 
 function invalidReview(reason) {
