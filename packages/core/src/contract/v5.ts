@@ -291,7 +291,7 @@ export type AuthoredPluginRequires = Readonly<Record<string, string | AuthoredRe
  * plugin registry, and the type can say what a group is instead of what it might contain. An entry
  * that names neither section is not a group, and since ADR-121 it is not a property either: it is
  * refused as `keyframes-ungrouped-key`. Anything else inside one is `keyframes-unknown-section`.
- * See ADR-049.
+ * See ADR-049 and ADR-121.
  */
 export interface AuthoredPluginGroup {
   readonly values?: Readonly<Record<string, AuthoredProperty>>;

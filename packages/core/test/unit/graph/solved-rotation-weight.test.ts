@@ -185,15 +185,14 @@ describe("solved rotation weight (issue #211)", () => {
     };
     expect(reported(buildGraphIR(rig([splitAcrossGroups])))).toEqual([]);
 
-    // A flat `weight` names no group, so it is not this layer's to attribute, exactly as a flat
-    // `rotation` is not. The registry refuses or claims it instead. See ADR-043.
-    const flatWeight: TrackDefinition = {
+    // Deliberately malformed ungrouped keyframe fixture; the loader must refuse it before ownership.
+    const flatWeight = {
       id: "upper-arm",
       keyframes: {
         weight: 0.5,
         fk: { values: { length: 80 }, requires: { base: "shoulder", solver: "arm-solve" } },
       },
-    };
+    } as unknown as TrackDefinition;
     expect(reported(buildGraphIR(rig([flatWeight])))).toEqual([]);
   });
 

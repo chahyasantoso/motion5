@@ -35,10 +35,14 @@ const PROJECT: ProjectDefinition = {
         {
           id: "arm",
           keyframes: {
-            x: [
-              { p: 0, v: 0 },
-              { p: 1, v: 100 },
-            ],
+            transform: {
+              values: {
+                x: [
+                  { p: 0, v: 0 },
+                  { p: 1, v: 100 },
+                ],
+              },
+            },
           },
         },
       ],

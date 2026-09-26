@@ -18,27 +18,21 @@ import { Engine } from "../../src/engine";
 import { createManualClock } from "../../src/ports/clock";
 import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
 
-// Issue #192 and ADR-050. An authored leaf is a bare array of stops or a bare static value:
+// Issue #192 and ADR-050. Authored leaves are legal inside a plugin group's `values` section:
 //
-//   x: [ { p: 0, v: 0 }, { p: 1, v: 100 } ]
-//   length: 62
+//   keyframes: { fk: { values: { length: [ { p: 0, v: 10 }, { p: 1, v: 20 } ] } } }
 //
-// The `{ stops: [...] }` wrapper is retired, not kept as an accepted alias, for the reason ADR-049
-// already established: two accepted shapes are two validation paths and two documentation paths.
+// The leaf reader still owns arrays, static scalars and the accepted `{}` no-op. The authored
+// validator now owns the outer boundary: a top-level leaf, including the retired `{ stops: [...] }`
+// wrapper, is refused as `keyframes-ungrouped-key` rather than entering the runtime.
 //
 // The static form is not sugar. A value that never changes should not enter the interpolator at all,
 // so it contributes no percent-map entry, no compiled property, and no tween. `LF-7` and `LF-8` are
-// that decision stated as assertions rather than left as an implementation detail, because a
-// normalized two-stop hold would satisfy every other case in this file at the same runtime cost the
-// wrapper already had.
+// that decision stated for the compiled leaf record; `LF-6` proves the same leaf remains valid when
+// authored under `values`.
 //
 // `ease` is unrepresentable on a static value by shape rather than by rule: a scalar has no slot to
 // write one into, so nothing has to reject it.
-//
-// This file lives in the integration tier on purpose. The red run fails `typecheck` in the `quality`
-// job, which runs before `npm test`, so a unit-tier case would produce no assertion output at all.
-// The `integration` job runs vitest directly and reports every case, the same way the ADR-049 red
-// run did.
 
 const REPO_ROOT = fileURLToPath(new URL("../../../../", import.meta.url));
 const V5_SOURCE = fileURLToPath(new URL("../../src/contract/v5.ts", import.meta.url));
@@ -200,23 +194,23 @@ function scannedFiles(root: string): readonly string[] {
 }
 
 describe("the bare authored leaf", () => {
-  it("LF-5 interpolates a bare array of stops", () => {
-    expect(ruleIds({ length: RAMP })).toEqual([]);
+  it("LF-5 interpolates an animated leaf inside a values section", () => {
+    const authored = { fk: { values: { length: RAMP } } };
+    expect(ruleIds(authored)).toEqual([]);
     // A mid-progress value, not a clean load: a property the interpolator never read would compile
     // without a single diagnostic and then hold still at every progress.
-    expect(valuesAt({ length: RAMP }, 0.5)).toEqual({ length: 15 });
+    expect(valuesAt(authored, 0.5)).toEqual({ length: 15 });
   });
 
-  it("LF-6 publishes a bare static value and holds it at every progress", () => {
-    expect(ruleIds({ length: 62 })).toEqual([]);
-    expect(valuesAt({ length: 62 }, 0)).toEqual({ length: 62 });
-    expect(valuesAt({ length: 62 }, 0.5)).toEqual({ length: 62 });
-    expect(valuesAt({ length: 62 }, 1)).toEqual({ length: 62 });
+  it("LF-6 publishes a static leaf inside a values section and holds it at every progress", () => {
+    const authored = { fk: { values: { length: 62 } } };
+    expect(ruleIds(authored)).toEqual([]);
+    expect(valuesAt(authored, 0)).toEqual({ length: 62 });
+    expect(valuesAt(authored, 0.5)).toEqual({ length: 62 });
+    expect(valuesAt(authored, 1)).toEqual({ length: 62 });
     // The static domain is every finite scalar, not only numbers.
-    expect(valuesAt({ label: "idle", visible: true }, 0.5)).toEqual({
-      label: "idle",
-      visible: true,
-    });
+    const scalarLeaves = { fk: { values: { label: "idle", visible: true } } };
+    expect(valuesAt(scalarLeaves, 0.5)).toEqual({ label: "idle", visible: true });
   });
 
   it("LF-7 keeps a static leaf out of the percent map and out of the compiled properties", () => {
@@ -249,44 +243,65 @@ describe("the bare authored leaf", () => {
     timeline.kill();
   });
 
-  it("LF-9 refuses the retired object wrapper by name", () => {
-    const diagnostics = diagnose({ x: { stops: RAMP } });
+  it("LF-9 refuses the retired object wrapper by name inside a group, and as ungrouped at the top", () => {
+    const diagnostics = diagnose({ fk: { values: { x: { stops: RAMP } } } });
     expect(diagnostics).toContainEqual(
-      expect.objectContaining({ ruleId: "property-stops-wrapper", path: "keyframes.x" }),
+      expect.objectContaining({ ruleId: "property-stops-wrapper", path: "keyframes.fk.values.x" }),
     );
     // Half of this case is the negative assertion. Folded into the generic shape error, the retired
     // form would be reported as a leaf of an unknown shape, which names neither the mistake nor the
     // migration. Same pattern as `Y-2`.
     expect(diagnostics.map(({ ruleId }) => ruleId)).not.toContain("stops-shape");
-    // Refused, never normalized: it does not reach the compiler as a two-stop hold either.
+    // Refused, never normalized: it does not reach the compiler as a two-stop hold either. The
+    // compiler reads flattened leaves, so its input stays flat.
     expect(compilePercentKeyframes({ x: { stops: RAMP } }).initial).toEqual({});
+    // At the top level the wrapper names no plugin, so the entry is refused as ungrouped before its
+    // value is read as a leaf (ADR-121), and the wrapper rule does not fire a second time.
+    const topLevel = diagnose({ x: { stops: RAMP } });
+    expect(topLevel.map(({ ruleId }) => ruleId)).toEqual(["keyframes-ungrouped-key"]);
+    expect(topLevel[0]?.path).toBe("keyframes.x");
   });
 
-  it("LF-10 closes the static domain instead of leaving it open", () => {
+  it("LF-10 closes the static domain inside a values section, and refuses every bare top-level leaf", () => {
     // Restricting static to a finite scalar is forced rather than chosen. If an object were a legal
     // static value then the retired wrapper would be one too, and `LF-9` would have nothing to fire
     // on. `null` and `undefined` are refused because omitting the key already spells absence.
-    expect(ruleIds({ x: null })).toEqual(["stops-shape"]);
-    expect(ruleIds({ x: undefined })).toEqual(["stops-shape"]);
-    expect(ruleIds({ x: Number.NaN })).toEqual(["stops-shape"]);
-    expect(ruleIds({ x: Number.POSITIVE_INFINITY })).toEqual(["stops-shape"]);
-    expect(ruleIds({ x: () => 1 })).toEqual(["stops-shape"]);
-    // An object is refused too, and under the rule id ADR-049 already owns rather than this one.
-    // `{ hold: 1 }` is a key holding a record of one scalar, which is exactly the pre-ADR-049 group
-    // form that `LF-12` pins; the two shapes are indistinguishable, so no predicate on the value can
-    // report one as a bad leaf and the other as a group missing its section. What this case owns is
-    // that no object is ever a static value, and the more specific rule id says that as firmly.
-    expect(ruleIds({ x: { hold: 1 } })).toEqual(["keyframes-missing-values-section"]);
+    const leaf = (value: unknown) => ({ fk: { values: { x: value } } });
+    expect(ruleIds(leaf(null))).toEqual(["stops-shape"]);
+    expect(ruleIds(leaf(undefined))).toEqual(["stops-shape"]);
+    expect(ruleIds(leaf(Number.NaN))).toEqual(["stops-shape"]);
+    expect(ruleIds(leaf(Number.POSITIVE_INFINITY))).toEqual(["stops-shape"]);
+    expect(ruleIds(leaf(() => 1))).toEqual(["stops-shape"]);
+    // An object is refused too. Inside `values` the position already names the plugin, so a record
+    // of one scalar is no longer indistinguishable from a pre-ADR-049 group (`LF-12` owns that one
+    // at the top level) and it is reported as the bad leaf it is.
+    expect(ruleIds(leaf({ hold: 1 }))).toEqual(["stops-shape"]);
     // The shape error cites the property the author wrote, not a `.stops` path that no longer
     // exists anywhere in the document.
-    expect(diagnose({ x: null })[0]?.path).toBe("keyframes.x");
+    expect(diagnose(leaf(null))[0]?.path).toBe("keyframes.fk.values.x");
+    // `{}` inside `values` keeps its accepted no-op meaning (`Y-6`); only the top level refuses it.
+    expect(ruleIds({ fk: { values: { empty: {} } } })).toEqual([]);
+    // Every bare leaf at the top level names no plugin, so it is refused as ungrouped at the entry,
+    // by the validator and through the whole load path alike.
+    const cases = [
+      { key: "static", value: 62 },
+      { key: "stops", value: RAMP },
+      { key: "wrapper", value: { stops: RAMP } },
+      { key: "empty", value: {} },
+    ] as const;
+    for (const { key, value } of cases) {
+      expect(ruleIds({ [key]: value }), key).toEqual(["keyframes-ungrouped-key"]);
+      expect(diagnose({ [key]: value })[0]?.path, key).toBe(`keyframes.${key}`);
+      expect(() => load(project({ [key]: value }), registry(passthrough)), key).toThrow(
+        `keyframes.${key}`,
+      );
+    }
   });
 
-  it("LF-11 never reads either leaf form as a plugin group", () => {
-    // Green on the parent by design, and not claimed as red. Both new forms fail `isObject` before
-    // the section test runs: arrays are excluded from its definition, and a scalar is never
-    // `typeof === "object"`. Proven rather than asserted, because it is the property most likely to
-    // regress silently.
+  it("LF-11 never reads a leaf as a plugin group", () => {
+    // Both leaf forms fail `isObject` before the section test runs: arrays are excluded from its
+    // definition, and a scalar is never `typeof === "object"`. Proven rather than asserted, because
+    // it is the property most likely to regress silently.
     expect(isKeyframeGroup(RAMP)).toBe(false);
     expect(isKeyframeGroup(62)).toBe(false);
     expect(isKeyframeGroup("idle")).toBe(false);
@@ -308,8 +323,8 @@ describe("the bare authored leaf", () => {
     const authored = { fk: { values: { length: 62, rotation: RAMP } } };
     expect(ruleIds(authored)).toEqual([]);
 
-    // Flattening is key routing and never inspects a leaf's contents, so a leaf under a section
-    // reaches the compiler through the same path a flat one does and inherits both forms for free.
+    // Flattening is key routing and never inspects a leaf's contents, so a leaf under a values
+    // section reaches the compiler and inherits both forms for free.
     const flattened = flattenAuthoredKeyframes(authored);
     expect(Object.keys(flattened.keyframes).sort()).toEqual(["length", "rotation"]);
     expect(flattened.authoredPaths.get("length")).toBe("fk.values.length");
@@ -325,15 +340,17 @@ describe("the bare authored leaf", () => {
     // An empty stop list would be a field accepted and then ignored, which rule 6 of ADR-033
     // forbids, and it would read as a hook that ran and declined. A static leaf never enters
     // compilation, so there is no percent grid for a contribution to land on.
-    const resolved = registry(contributor).resolveForKeyframes({ length: 62 });
+    const resolved = registry(contributor).resolveForKeyframes({ fk: { values: { length: 62 } } });
     expect(resolved.diagnostics).toContainEqual(
       expect.objectContaining({
         ruleId: "plugin-contribution-static-unsupported",
-        path: "keyframes.length",
+        path: "keyframes.fk.values.length",
       }),
     );
     // The hook still runs for an animated leaf, so the refusal is about the leaf and not the plugin.
-    expect(registry(contributor).resolveForKeyframes({ length: RAMP }).diagnostics).toEqual([]);
+    expect(
+      registry(contributor).resolveForKeyframes({ fk: { values: { length: RAMP } } }).diagnostics,
+    ).toEqual([]);
   });
 
   it("LF-15 declares the leaf as a union and deletes the wrapper interface", () => {

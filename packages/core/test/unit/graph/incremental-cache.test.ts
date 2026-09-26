@@ -23,13 +23,16 @@ describe("IncrementalGraphBuilder cache correctness (W1)", () => {
   // after the first reports a clean project that is missing content the author declared.
   // This is silent data loss, not a stale-cache annoyance.
   it("re-reports a rejected observation edge instead of caching the omission", () => {
-    const root: TrackDefinition = { id: "root", keyframes: { x: ramp(0, 100) } };
+    const root: TrackDefinition = {
+      id: "root",
+      keyframes: { transform: { values: { x: ramp(0, 100) } } },
+    };
     // An authored projection: `resolveObservationEdge` refuses it, `collectTrack` collects the
     // diagnostic and drops the edge, and the node comes back incomplete. Cast, because the field
     // is no longer declared and a JavaScript author can still write it.
     const child = {
       id: "child",
-      keyframes: { y: ramp(0, 50) },
+      keyframes: { transform: { values: { y: ramp(0, 50) } } },
       observes: [{ source: "~/root", projection: { pick: ["x"] } }],
     } as unknown as TrackDefinition;
     const project = freeProject([root, child]);
@@ -47,7 +50,10 @@ describe("IncrementalGraphBuilder cache correctness (W1)", () => {
   });
 
   it("re-reports an invalid track id instead of caching the absent node", () => {
-    const bad: TrackDefinition = { id: "a/b", keyframes: { x: ramp(0, 1) } };
+    const bad: TrackDefinition = {
+      id: "a/b",
+      keyframes: { transform: { values: { x: ramp(0, 1) } } },
+    };
     const project = freeProject([bad]);
     const builder = new IncrementalGraphBuilder();
 
@@ -67,7 +73,10 @@ describe("IncrementalGraphBuilder cache correctness (W1)", () => {
   // track-id uniqueness per motion -- and buildGraphIR handles it. The cache returns motion
   // m1's node for m2, `seen` then rejects it, and Engine.load throws on a valid project.
   it("keys the cache by owner so one track object can back two motion nodes", () => {
-    const shared: TrackDefinition = { id: "t", keyframes: { x: ramp(0, 100) } };
+    const shared: TrackDefinition = {
+      id: "t",
+      keyframes: { transform: { values: { x: ramp(0, 100) } } },
+    };
     const project: ProjectDefinition = {
       schemaVersion: 5,
       projectId: "cache",
@@ -87,10 +96,13 @@ describe("IncrementalGraphBuilder cache correctness (W1)", () => {
   // The real invariant: the cached builder must be observationally equivalent to the
   // uncached reference builder for any project, on any build.
   it("agrees with buildGraphIR on every project in this file", () => {
-    const shared: TrackDefinition = { id: "t", keyframes: { x: ramp(0, 100) } };
+    const shared: TrackDefinition = {
+      id: "t",
+      keyframes: { transform: { values: { x: ramp(0, 100) } } },
+    };
     const projects: readonly ProjectDefinition[] = [
-      freeProject([{ id: "root", keyframes: { x: ramp(0, 100) } }]),
-      freeProject([{ id: "a/b", keyframes: { x: ramp(0, 1) } }]),
+      freeProject([{ id: "root", keyframes: { transform: { values: { x: ramp(0, 100) } } } }]),
+      freeProject([{ id: "a/b", keyframes: { transform: { values: { x: ramp(0, 1) } } } }]),
       {
         schemaVersion: 5,
         projectId: "cache",
@@ -119,7 +131,10 @@ describe("IncrementalGraphBuilder cache correctness (W1)", () => {
   // Guards against "fix the cache" degrading into "delete the cache". Node identity is what
   // makes an add and a remove incremental rather than a full rebuild per mutation.
   it("returns the identical GraphNode for an unchanged track across builds", () => {
-    const root: TrackDefinition = { id: "root", keyframes: { x: ramp(0, 100) } };
+    const root: TrackDefinition = {
+      id: "root",
+      keyframes: { transform: { values: { x: ramp(0, 100) } } },
+    };
     const project = freeProject([root]);
     const builder = new IncrementalGraphBuilder();
 
@@ -132,8 +147,14 @@ describe("IncrementalGraphBuilder cache correctness (W1)", () => {
   // And the other half of the identity contract: a different object at the same node id is a
   // miss, so a replaced track always rebuilds. W5's replaceTrack depends on this.
   it("rebuilds when a different track object takes the same node id", () => {
-    const before: TrackDefinition = { id: "t", keyframes: { x: ramp(0, 10) } };
-    const after: TrackDefinition = { id: "t", keyframes: { x: ramp(0, 999) } };
+    const before: TrackDefinition = {
+      id: "t",
+      keyframes: { transform: { values: { x: ramp(0, 10) } } },
+    };
+    const after: TrackDefinition = {
+      id: "t",
+      keyframes: { transform: { values: { x: ramp(0, 999) } } },
+    };
     const builder = new IncrementalGraphBuilder();
 
     const first = builder.build(freeProject([before]));

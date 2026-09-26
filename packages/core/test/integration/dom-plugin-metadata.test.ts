@@ -22,7 +22,7 @@ describe("DOM plugin metadata (X-2)", () => {
       },
       compose: (values) => values,
     });
-    const resolved = registry.resolveForKeyframes({ path: {} });
+    const resolved = registry.resolveForKeyframes({ path: { values: { path: {} } } });
     expect(resolved.diagnostics).toEqual([]);
     expect(resolved.internalKeys).toEqual(["path"]);
     expect(resolved.outputSerializers?.transform?.({ x: 1, y: 2 })).toBe("translate(1px, 2px)");

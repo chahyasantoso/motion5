@@ -17,7 +17,11 @@ function track(
   to: number,
   observes?: TrackDefinition["observes"],
 ): TrackDefinition {
-  return { id, keyframes: { x: ramp(from, to) }, ...(observes ? { observes } : {}) };
+  return {
+    id,
+    keyframes: { transform: { values: { x: ramp(from, to) } } },
+    ...(observes ? { observes } : {}),
+  };
 }
 function makeHandle(project: ProjectDefinition = { schemaVersion: 5, motions: [] }) {
   return new Engine({

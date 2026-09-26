@@ -79,25 +79,23 @@ describe("plugin-named authored keyframe groups", () => {
     handle.dispose();
   });
 
-  it("F-12 publishes identical values for the flat and grouped spellings", () => {
-    const flat = load(project({ boneLength: ramp(10, 20) }), fkRegistry());
-    const values = { boneLength: ramp(10, 20) };
-    const grouped = load(project({ fk: { values } }), fkRegistry());
-    flat.mount("hero/arm");
+  it("F-12 refuses the retired flat spelling while grouped values remain accepted", () => {
+    expect(() =>
+      load(
+        project({ boneLength: ramp(10, 20) } as unknown as Readonly<
+          Record<string, AuthoredKeyframe>
+        >),
+        fkRegistry(),
+      ),
+    ).toThrow("keyframes-ungrouped-key");
+    const grouped = load(project({ fk: { values: { boneLength: ramp(10, 20) } } }), fkRegistry());
     grouped.mount("hero/arm");
-
-    flat.seek("hero/arm", 0.25);
     grouped.seek("hero/arm", 0.25);
 
-    const heroArmPatch = flat.get("hero/arm");
+    const heroArmPatch = grouped.get("hero/arm");
     if (heroArmPatch?.status !== "ready")
       throw new Error(`hero/arm is ${heroArmPatch?.status ?? "absent"}, not ready.`);
     expect(heroArmPatch.values).toEqual({ boneLength: 12.5 });
-    const heroArmPatch2 = grouped.get("hero/arm");
-    if (heroArmPatch2?.status !== "ready")
-      throw new Error(`hero/arm is ${heroArmPatch2?.status ?? "absent"}, not ready.`);
-    expect(heroArmPatch2.values).toEqual(heroArmPatch.values);
-    flat.dispose();
     grouped.dispose();
   });
 });

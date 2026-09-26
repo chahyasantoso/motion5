@@ -37,7 +37,7 @@ function ramp(from: number, to: number) {
 
 // Both plugins are registered, so `x`, `y` and `rotation` each have two claimants and every track
 // names the one it means. `fk` claims `x` and `y` as a bone's pivot offset since slice A of issue
-// #195, so no flat spelling survives here at all. See ADR-043.
+// #195, so every authored leaf is nested under its owning plugin group. See ADR-043.
 //
 // The dependent's edge is derived from `fk.requires.base`, which is now the only way a value enters
 // composition. A derived edge is held to the same topology rules, so destroying its source is still
@@ -70,9 +70,8 @@ const dependentTrack: TrackDefinition = {
 /**
  * The one-property track the two retry cases add, authored under the group that owns `x`.
  *
- * Each case is about an observation rule, so its fixture has to reach that rule: authored flat, `x`
- * is now `plugin-ambiguous-key` and the load is refused a layer earlier for a reason the case is
- * not testing. One helper rather than four copies of the shape.
+ * Each case is about an observation rule, so its fixture reaches that rule through the owning
+ * `transform` group. One helper rather than four copies of the shape.
  */
 function addable(id: string): TrackDefinition {
   return { id, keyframes: { transform: { values: { x: ramp(0, 10) } } } };

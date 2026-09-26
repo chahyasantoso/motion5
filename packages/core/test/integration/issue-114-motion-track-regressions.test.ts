@@ -11,7 +11,11 @@ function ramp(from: number, to: number) {
   ];
 }
 function track(id: string, from: number, to: number, duration?: number): TrackDefinition {
-  return { id, ...(duration === undefined ? {} : { duration }), keyframes: { x: ramp(from, to) } };
+  return {
+    id,
+    ...(duration === undefined ? {} : { duration }),
+    keyframes: { transform: { values: { x: ramp(from, to) } } },
+  };
 }
 function load(project: ProjectDefinition) {
   const clock = createManualClock();

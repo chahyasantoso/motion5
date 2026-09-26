@@ -186,7 +186,7 @@ const ROTATION_IN_OTHER_GROUP = rig([
   },
 ]);
 
-/** A flat `rotation`, which names no group and therefore no owner this layer can read. */
+/** An ungrouped `rotation`, refused before solver ownership is read. */
 const FLAT_ROTATION = rig([
   {
     id: "upper-arm",
@@ -194,7 +194,8 @@ const FLAT_ROTATION = rig([
       rotation: 45,
       fk: { values: { length: 80 }, requires: { base: "shoulder", solver: "arm-solve" } },
     },
-  },
+    // Deliberately malformed ungrouped keyframe fixture; the loader must refuse it.
+  } as unknown as TrackDefinition,
 ]);
 
 /** A member hanging from a source that resolves to no node at all. */
@@ -515,8 +516,7 @@ describe("resolveSolvers (Slice C2)", () => {
     // case above, which is what made the wider read invisible on every current fixture.
     expect(reported(buildGraphIR(ROTATION_IN_OTHER_GROUP))).toEqual([]);
 
-    // Accepted here and refused by the registry instead: a flat key names no group, and which
-    // plugin owns one is the question this layer holds no registry to answer. See ADR-043.
+    // The direct graph builder does not validate authored grouping; the engine loader refuses this shape before solver ownership is read.
     expect(reported(buildGraphIR(FLAT_ROTATION))).toEqual([]);
   });
 

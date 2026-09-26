@@ -9,7 +9,7 @@ interface AuthoredObservation {
 }
 interface AuthoredTrack {
   id: string;
-  keyframes?: Record<string, Array<{ p: number; v: unknown }>>;
+  keyframes?: Record<string, { values: Record<string, Array<{ p: number; v: unknown }>> }>;
   observes?: AuthoredObservation[];
 }
 interface AuthoredProject {
@@ -100,10 +100,14 @@ describe("one observation-validation owner (P1-12)", () => {
       {
         id: "arm",
         keyframes: {
-          opacity: [
-            { p: 0, v: 0 },
-            { p: 1, v: 1 },
-          ],
+          style: {
+            values: {
+              opacity: [
+                { p: 0, v: 0 },
+                { p: 1, v: 1 },
+              ],
+            },
+          },
         },
       },
     ]);
@@ -116,15 +120,15 @@ describe("one observation-validation owner (P1-12)", () => {
     expect(Object.isFrozen(accepted)).toBe(true);
     expect(Object.isFrozen(accepted?.motions[0]?.tracks[0])).toBe(true);
 
-    // The leaf is indexed directly since ADR-050, and an index signature yields `T | undefined`,
-    // so the chain the wrapper's property access used to hide has to be written out.
-    const stop = project.motions[0]?.tracks[0]?.keyframes?.opacity?.[1];
+    // The leaf is indexed beneath its plugin group and values section, and each index signature
+    // yields `T | undefined`, so the chain is written out rather than hidden by a wrapper.
+    const stop = project.motions[0]?.tracks[0]?.keyframes?.style?.values?.opacity?.[1];
     expect(stop).toBeDefined();
     stop!.v = 999;
 
     const authored = accepted?.motions[0]?.tracks[0]?.keyframes as
-      | Record<string, ReadonlyArray<{ p: number; v: unknown }>>
+      | Record<string, { values: Record<string, ReadonlyArray<{ p: number; v: unknown }>> }>
       | undefined;
-    expect(authored?.opacity?.[1]?.v).toBe(1);
+    expect(authored?.style?.values?.opacity?.[1]?.v).toBe(1);
   });
 });

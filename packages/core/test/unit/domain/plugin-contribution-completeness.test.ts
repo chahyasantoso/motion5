@@ -19,7 +19,10 @@ describe("S5 contribution completeness", () => {
       compose,
     });
 
-    const resolved = registry.resolveForKeyframes({ x: property(0) }, "track.keyframes");
+    const resolved = registry.resolveForKeyframes(
+      { base: { values: { x: property(0) } } },
+      "track.keyframes",
+    );
     expect(resolved.diagnostics.map(({ ruleId }) => ruleId)).toContain("plugin-unknown-key");
   });
 
@@ -33,7 +36,10 @@ describe("S5 contribution completeness", () => {
       compose,
     });
 
-    const resolved = registry.resolveForKeyframes({ x: property(0) }, "track.keyframes");
+    const resolved = registry.resolveForKeyframes(
+      { base: { values: { x: property(0) } } },
+      "track.keyframes",
+    );
     expect(resolved.diagnostics.map(({ ruleId }) => ruleId)).toContain(
       "plugin-contribution-reserved-tween-var",
     );
@@ -57,7 +63,10 @@ describe("S5 contribution completeness", () => {
       compose,
     });
 
-    const resolved = registry.resolveForKeyframes({ x: property(0) }, "track.keyframes");
+    const resolved = registry.resolveForKeyframes(
+      { base: { values: { x: property(0) } } },
+      "track.keyframes",
+    );
     expect(resolved.diagnostics.map(({ ruleId }) => ruleId)).toContain(
       "plugin-contribution-cascade",
     );

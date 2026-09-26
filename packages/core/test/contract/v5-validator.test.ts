@@ -29,20 +29,24 @@ describe("schema v5 validator", () => {
   it("rejects malformed, non-finite, out-of-range, non-monotonic, and duplicate stops", () => {
     const result = validateSchemaV5(
       projectWithKeyframes({
-        malformed: [
-          { p: 0, v: 0 },
-          { p: 0.5, v: 1 },
-        ],
-        nan: [{ p: Number.NaN, v: 0 }],
-        range: [{ p: 1.5, v: 0 }],
-        order: [
-          { p: 0.8, v: 0 },
-          { p: 0.2, v: 1 },
-        ],
-        duplicate: [
-          { p: 0.2, v: 0 },
-          { p: 0.2, v: 1 },
-        ],
+        style: {
+          values: {
+            malformed: [
+              { p: 0, v: 0 },
+              { p: 0.5, v: 1 },
+            ],
+            nan: [{ p: Number.NaN, v: 0 }],
+            range: [{ p: 1.5, v: 0 }],
+            order: [
+              { p: 0.8, v: 0 },
+              { p: 0.2, v: 1 },
+            ],
+            duplicate: [
+              { p: 0.2, v: 0 },
+              { p: 0.2, v: 1 },
+            ],
+          },
+        },
       }),
     );
     expect(result.kind).toBe("refused");
@@ -57,7 +61,9 @@ describe("schema v5 validator", () => {
   });
 
   it("warns when a property does not cover both interpolation endpoints", () => {
-    const result = validateSchemaV5(projectWithKeyframes({ opacity: [{ p: 0.25, v: 0.5 }] }));
+    const result = validateSchemaV5(
+      projectWithKeyframes({ style: { values: { opacity: [{ p: 0.25, v: 0.5 }] } } }),
+    );
     expect(result.kind).toBe("accepted");
     expect(result.diagnostics).toEqual(
       expect.arrayContaining([
@@ -85,7 +91,7 @@ describe("schema v5 validator", () => {
         {
           id: "hero",
           trigger: { type: "manual" },
-          tracks: [{ id: "tilt", keyframes: { rotationY: {} } }],
+          tracks: [{ id: "tilt", keyframes: { transform3d: { values: { rotationY: {} } } } }],
         },
       ],
     });
@@ -103,7 +109,7 @@ describe("schema v5 validator", () => {
         {
           id: "hero",
           trigger: { type: "manual" },
-          tracks: [{ id: "tilt", keyframes: { rotationY: {} } }],
+          tracks: [{ id: "tilt", keyframes: { transform3d: { values: { rotationY: {} } } } }],
         },
       ],
     });
@@ -113,9 +119,9 @@ describe("schema v5 validator", () => {
     );
   });
 
-  it("F-1 accepts plugin-named keyframe groups alongside the flat form", () => {
+  it("F-1 accepts only plugin-named keyframe groups", () => {
     const grouped = projectWithKeyframes({
-      opacity: ramp(0, 1),
+      style: { values: { opacity: ramp(0, 1) } },
       fk: { values: { boneLength: ramp(10, 20) } },
     });
     const result = validateSchemaV5(grouped);
@@ -132,9 +138,9 @@ describe("schema v5 validator", () => {
     );
   });
 
-  it("F-3 rejects a colon in flat, group, and leaf keyframe names", () => {
+  it("F-3 rejects a colon in top-level group and leaf keyframe names", () => {
     const project = projectWithKeyframes({
-      "fk:length": ramp(0, 1),
+      "fk:length": { values: { length: ramp(0, 1) } },
       fk: { values: { "length:ratio": ramp(0, 1) } },
       "trans:form": { values: { rotation: ramp(0, 1) } },
     });
@@ -163,13 +169,59 @@ describe("schema v5 validator", () => {
   });
 
   it("F-5 rejects one compiled key authored under two spellings", () => {
-    const authored = { x: ramp(0, 1), transform: { values: { x: ramp(0, 2) } } };
+    const authored = {
+      style: { values: { x: ramp(0, 1) } },
+      transform: { values: { x: ramp(0, 2) } },
+    };
     const result = validateSchemaV5(projectWithKeyframes(authored));
     expect(result.kind).toBe("refused");
     expect(result.diagnostics).toContainEqual(
       expect.objectContaining({
         ruleId: "keyframes-duplicate-key",
         path: "motions[0].tracks[0].keyframes.transform.values.x",
+      }),
+    );
+  });
+
+  it("F-13 refuses every ungrouped keyframe form", () => {
+    const result = validateSchemaV5(
+      projectWithKeyframes({
+        staticValue: 1,
+        arrayValue: ramp(0, 1),
+        retiredWrapper: { stops: ramp(0, 1) },
+        emptyObject: {},
+      }),
+    );
+    expect(result.kind).toBe("refused");
+    expect(result.diagnostics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: "keyframes-ungrouped-key",
+          path: "motions[0].tracks[0].keyframes.staticValue",
+        }),
+        expect.objectContaining({
+          ruleId: "keyframes-ungrouped-key",
+          path: "motions[0].tracks[0].keyframes.arrayValue",
+        }),
+        expect.objectContaining({
+          ruleId: "keyframes-ungrouped-key",
+          path: "motions[0].tracks[0].keyframes.retiredWrapper",
+        }),
+        expect.objectContaining({
+          ruleId: "keyframes-ungrouped-key",
+          path: "motions[0].tracks[0].keyframes.emptyObject",
+        }),
+      ]),
+    );
+  });
+
+  it("F-14 keeps the pre-ADR-049 missing-values diagnostic", () => {
+    const result = validateSchemaV5(projectWithKeyframes({ fk: { length: 62 } }));
+    expect(result.kind).toBe("refused");
+    expect(result.diagnostics).toContainEqual(
+      expect.objectContaining({
+        ruleId: "keyframes-missing-values-section",
+        path: "motions[0].tracks[0].keyframes.fk",
       }),
     );
   });

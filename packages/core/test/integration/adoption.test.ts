@@ -77,7 +77,10 @@ describe("P5-02 runtime free tracks", () => {
   it("rejects tracks with non-finite stop positions", () => {
     const runtime = new ProjectRuntime(project, { clock: createManualClock(), compose });
     expect(() =>
-      runtime.addTrack({ id: "bad", keyframes: { x: [{ p: Number.NaN, v: 0 }] } }),
+      runtime.addTrack({
+        id: "bad",
+        keyframes: { transform: { values: { x: [{ p: Number.NaN, v: 0 }] } } },
+      }),
     ).toThrow(/stop-position/);
     runtime.dispose();
   });
@@ -88,10 +91,14 @@ describe("P5-02 runtime free tracks", () => {
       runtime.addTrack({
         id: "bad",
         keyframes: {
-          x: [
-            { p: 0.5, v: 0 },
-            { p: 0.2, v: 1 },
-          ],
+          transform: {
+            values: {
+              x: [
+                { p: 0.5, v: 0 },
+                { p: 0.2, v: 1 },
+              ],
+            },
+          },
         },
       }),
     ).toThrow(/stop-position/);
@@ -104,10 +111,14 @@ describe("P5-02 runtime free tracks", () => {
       runtime.addTrack({
         id: "bad",
         keyframes: {
-          x: [
-            { p: 0, v: 0 },
-            { p: 0, v: 1 },
-          ],
+          transform: {
+            values: {
+              x: [
+                { p: 0, v: 0 },
+                { p: 0, v: 1 },
+              ],
+            },
+          },
         },
       }),
     ).toThrow(/stop-position/);

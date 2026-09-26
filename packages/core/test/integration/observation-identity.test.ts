@@ -31,10 +31,14 @@ function track(id: string, observes?: TrackDefinition["observes"]): TrackDefinit
   return {
     id,
     keyframes: {
-      x: [
-        { p: 0, v: 0 },
-        { p: 1, v: 1 },
-      ],
+      transform: {
+        values: {
+          x: [
+            { p: 0, v: 0 },
+            { p: 1, v: 1 },
+          ],
+        },
+      },
     },
     ...(observes ? { observes } : {}),
   };
