@@ -285,7 +285,7 @@ function prepareContributions(
   const keyOwners = new Map<string, string>();
   const tweenOwners = new Map<string, string>();
   // The flattened key is what the hook is called with, but the author never typed it. Diagnostics
-  // cite the authored spelling, so a mistake inside a group reads as `keyframes.fk.length`.
+  // cite the authored spelling, so a mistake inside a group reads as `keyframes.fk.values.length`.
   const authoredPath = (key: string): string => `${path}.${authoredPaths.get(key) ?? key}`;
   for (const key of Object.keys(authored).sort()) {
     const plugin = entryOwners.get(key);
@@ -531,9 +531,8 @@ export class PluginRegistry {
     }
     // No key-collision guard. Two plugins may claim one key, and which of them owns an authored
     // entry is a question about that entry rather than about registration order: every authored
-    // property sits in a group, and the group names the owner. Refusing the second claimant here is
-    // what forced a plugin author to mangle a key name to route around a namespace they could not
-    // share. See ADR-043 and ADR-121.
+    // property sits in a group, and the group names the owner, so a plugin author never renames a key
+    // to route around another plugin's claim. See ADR-043 and ADR-121.
     //
     // `inputs` keeps its guard, because an input is not addressable by a group name, so nothing
     // could ever name an owner for one and this is the only owner that rule has. `requirements`

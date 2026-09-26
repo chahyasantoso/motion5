@@ -119,10 +119,8 @@ describe("plugin registry", () => {
     const registry = new PluginRegistry();
     registry.register(plugin("first", { keys: ["x"] }));
     registry.register(plugin("second", { keys: ["x"] }));
-    // `plugin-key-collision` is deleted. A shared key is a legal registry, because which plugin
-    // owns an authored entry is a question about that entry rather than about registration order.
-    // The registration guard could only ever answer it by refusing the second plugin outright,
-    // which is why `fkPlugin` had to mangle its own key names. See ADR-043.
+    // A shared key is a legal registry: which plugin owns an authored leaf is answered by the group
+    // the leaf sits in, never by registration order. See ADR-043 and ADR-121.
     expect(registry.size).toBe(2);
   });
 
@@ -164,9 +162,8 @@ describe("plugin registry", () => {
     const registry = new PluginRegistry();
     registry.register(plugin("transform", { keys: ["x", "y", "rotation"] }));
     registry.register(plugin("opacity", { keys: ["opacity"] }));
-    // Green on the parent by design, and not claimed as red. Ambiguity is a property of the
-    // registry, not of the plugin catalog: an app that registers no second claimant for `rotation`
-    // keeps the same leaf under its named group.
+    // Green on the parent by design, and not claimed as red. The named group is the owner whatever
+    // else is registered, so an app with no second claimant for `rotation` reads the same leaf.
     const resolved = registry.resolveForKeyframes(
       { transform: { values: { rotation: {} } } },
       "track.keyframes",

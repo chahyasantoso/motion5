@@ -25,10 +25,8 @@ function project(keyframes: Readonly<Record<string, AuthoredKeyframe>>): Project
   };
 }
 
-// Keys stay `boneLength` and `boneRotation`, the names `fkPlugin` already claims. Renaming them to
-// the natural `length` and `rotation` needs key ownership scoped per plugin, because `rotation` is
-// owned by `transformPlugin` in one global map, and `PluginRegistry.register` throws on that today.
-// That is a separate slice; grouping must work without it.
+// A local plugin claiming `boneLength` and `boneRotation`. The names are arbitrary: grouping routes a
+// leaf to the plugin its group names whatever the leaf is called, so nothing here depends on them.
 function fkRegistry() {
   const plugins = new PluginRegistry();
   plugins.register({

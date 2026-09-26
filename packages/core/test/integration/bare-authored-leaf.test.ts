@@ -288,6 +288,7 @@ describe("the bare authored leaf", () => {
       { key: "stops", value: RAMP },
       { key: "wrapper", value: { stops: RAMP } },
       { key: "empty", value: {} },
+      { key: "null", value: null },
     ] as const;
     for (const { key, value } of cases) {
       expect(ruleIds({ [key]: value }), key).toEqual(["keyframes-ungrouped-key"]);
