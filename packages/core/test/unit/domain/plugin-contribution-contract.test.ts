@@ -21,7 +21,7 @@ describe("plugin contribution contract (X-3)", () => {
       },
       compose,
     });
-    registry.resolveForKeyframes({ x: stops(1) }, "track.keyframes", {
+    registry.resolveForKeyframes({ base: { values: { x: stops(1) } } }, "track.keyframes", {
       id: "hero/arm",
       duration: 2,
     });
@@ -104,7 +104,7 @@ describe("plugin contribution contract (X-3)", () => {
       compose,
     });
     registry.register({ name: "derived-owner", keys: ["derived"], compose });
-    const resolved = registry.resolveForKeyframes({ x: stops(1) });
+    const resolved = registry.resolveForKeyframes({ derived: { values: { x: stops(1) } } });
     expect(resolved.diagnostics).toEqual([]);
     expect(resolved.preparation.keyframes).toEqual({ derived: stops(4) });
     expect(resolved.preparation.tweenVars).toEqual({ overwrite: "auto" });
@@ -134,7 +134,7 @@ describe("plugin contribution contract (X-3)", () => {
       compose,
     });
     registry.register({ name: "derived-owner", keys: ["derived"], compose });
-    const resolved = registry.resolveForKeyframes({ x: stops(1) });
+    const resolved = registry.resolveForKeyframes({ first: { values: { x: stops(1) } } });
     expect(resolved.diagnostics).toEqual([]);
     expect(first).toHaveBeenCalledOnce();
     expect(second).not.toHaveBeenCalled();
@@ -160,7 +160,7 @@ describe("plugin contribution contract (X-3)", () => {
       compose,
     });
     registry.register({ name: "derived-owner", keys: ["derived"], compose });
-    const resolved = registry.resolveForKeyframes({ x: stops(1) });
+    const resolved = registry.resolveForKeyframes({ bad: { values: { x: stops(1) } } });
     expect(resolved.diagnostics.map(({ ruleId }) => ruleId)).toContain(
       "plugin-contribution-stop-order",
     );

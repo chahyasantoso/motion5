@@ -191,7 +191,10 @@ function solverWith(inspect: AuthoredProperty | undefined, grouped = true): Trac
   if (inspect === undefined) return { id: "solve", keyframes: { ik3d: { requires: CHAIN } } };
   return grouped
     ? { id: "solve", keyframes: { ik3d: { values: { inspect }, requires: CHAIN } } }
-    : { id: "solve", keyframes: { inspect, ik3d: { requires: CHAIN } } };
+    : ({
+        id: "solve",
+        keyframes: { inspect, ik3d: { requires: CHAIN } },
+      } as unknown as TrackDefinition);
 }
 
 function ruleIds(project: ProjectDefinition): readonly string[] {
@@ -370,11 +373,11 @@ describe("opt-in 3D solve inspection (issue #500 phase 4, ADR-120)", () => {
     }
   });
 
-  it("TH-56 holds ik3d's switch to the 2D load rules, flat and grouped", () => {
-    // Malformed, grouped or flat, is the 2D rule, read for the group that bound the 3D root.
+  it("TH-56 holds ik3d's switch to the 2D load rules and groups ownership", () => {
+    // A malformed value inside the ik3d group reaches the shared 2D rule; an ungrouped value is refused by the loader.
     for (const bad of ["yes", 1, [{ p: 0, v: true }]] as const) {
       expect(ruleIds(rig(solverWith(bad)))).toContain("ik-inspect-malformed");
-      expect(ruleIds(rig(solverWith(bad, false)))).toContain("ik-inspect-malformed");
+      expect(ruleIds(rig(solverWith(bad, false)))).not.toContain("ik-inspect-malformed");
     }
     const path = buildGraphIR(rig(solverWith("yes"))).diagnostics.find(
       (d) => d.ruleId === "ik-inspect-malformed",
@@ -388,21 +391,28 @@ describe("opt-in 3D solve inspection (issue #500 phase 4, ADR-120)", () => {
     expect(buildGraphIR(misgrouped).diagnostics.map((d) => [d.ruleId, d.path])).toEqual([
       ["ik-solver-key-misgrouped", "rig/solve.keyframes.transform3d.values.inspect"],
     ]);
-    // Both static booleans load through the engine, grouped and flat, with nothing refused.
-    const accepted = [solverWith(true), solverWith(false), solverWith(true, false)];
+    // Both static booleans load through the engine in the grouped form; ungrouped input is refused.
+    const accepted = [solverWith(true), solverWith(false)];
     for (const solve of accepted) {
       expect(buildGraphIR(rig(solve)).diagnostics).toEqual([]);
       expect(() => load(rig(solve))).not.toThrow();
     }
+    expect(ruleIds(rig(solverWith(true, false)))).toEqual([]);
+    expect(() => load(rig(solverWith(true, false)))).toThrow(/keyframes-ungrouped-key/);
     // The half that needs this phase: without the claim the registry refuses the switch.
     const unclaimed = plugins3d({ ...ik3dPlugin, keys: [] });
     for (const solve of accepted)
       expect(() => load(rig(solve), unclaimed)).toThrow(/plugin-unknown-key/);
-    // Two registered claimants make the flat spelling ambiguous, exactly as `x` already is between
-    // `transform` and `transform3d` (TH-10); the group names the owner (ADR-043).
+    // Grouping chooses the owner even when both dimensional plugins claim `inspect`; an ungrouped
+    // spelling is refused before ownership is considered.
     const both = registry(transform3dPlugin, fk3dPlugin, ik3dPlugin, ikPlugin);
-    expect(() => load(rig(solverWith(true, false)), both)).toThrow(/plugin-ambiguous-key/);
+    expect(() => load(rig(solverWith(true, false)), both)).toThrow(/keyframes-ungrouped-key/);
     expect(() => load(rig(solverWith(true)), both)).not.toThrow();
+    const resolved = both.resolveForKeyframes({
+      ik3d: { values: { inspect: true }, requires: CHAIN },
+    });
+    expect(resolved.plugins.map(({ name }) => name)).toContain("ik3d");
+    expect(resolved.plugins.map(({ name }) => name)).not.toContain("ik");
   });
 
   it("TH-57 publishes through the engine, stays off the DOM and seeks back byte for byte", () => {

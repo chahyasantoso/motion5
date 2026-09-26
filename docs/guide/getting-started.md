@@ -19,7 +19,7 @@ npx tsc -p packages/core/tsconfig.build.json
 - **Interpolator** turns authored keyframes into values. `createGsapInterpolator(gsap)` is the supported v1 implementation.
 - **Scheduler** decides _when_ a pending progress change is applied. `createMicrotaskScheduler()` is the shipped implementation: it drains on a microtask, so applying a change is always a separate turn from producing it. Inject a `SchedulerHost` if you need a different queue.
 
-A `PluginRegistry` is optional but practically required: every authored keyframe key must be claimed by a registered plugin, so a project with an `x` track and no plugins fails to load.
+A `PluginRegistry` is optional but practically required: every authored plugin group must name a registered plugin that claims its leaves, so a project with a `transform` group and no plugins fails to load.
 
 ## A complete first project
 
@@ -57,11 +57,13 @@ const project: ProjectDefinition = {
           id: "title",
           duration: 1,
           keyframes: {
-            x: {
-              stops: [
-                { p: 0, v: 0 },
-                { p: 1, v: 240 },
-              ],
+            transform: {
+              values: {
+                x: [
+                  { p: 0, v: 0 },
+                  { p: 1, v: 240 },
+                ],
+              },
             },
           },
         },

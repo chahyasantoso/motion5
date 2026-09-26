@@ -94,16 +94,15 @@ const WITH_FASTER: TrackDefinition = {
   keyframes: { transform: { values: { x: 200, rotation: FASTER } } },
 };
 /**
- * Authors one ordinary property and observes the bone.
+ * Authors one grouped property and observes the bone.
  *
- * The property is deliberate: a plugin name and a keyframe name share one namespace, so `rotation`
- * here is a name this node authors that is not a group, which is one of the two spellings `RA-73`
- * refuses. The observation is what proves a property edit publishes to a dependent without the edge
- * being rebuilt.
+ * The property is deliberate: `rotation` is a leaf inside the `transform` group's values section,
+ * while the edit below names a plugin with no authored group. The observation is what proves a
+ * property edit publishes to a dependent without the edge being rebuilt.
  */
 const LEG_TRACK: TrackDefinition = {
   id: "leg",
-  keyframes: { rotation: 90 },
+  keyframes: { transform: { values: { rotation: 90 } } },
   observes: [{ source: ARM }],
 };
 function project(arm: TrackDefinition): ProjectDefinition {
@@ -390,8 +389,8 @@ describe("one authored property, inside a group this node already authors", () =
     const removal = thrownBy(() => arm.removeKeyframe("fk", "length"));
     expect((removal as Error).message).toContain("keyframe-group-unbound");
 
-    // A name this node authors as an ordinary property is not a binding surface either, which is the
-    // same answer `readBoundGroup` gives a binding verb: an authored property is not a group.
+    // A plugin name without a corresponding authored group is not a binding surface, which is the
+    // same answer `readBoundGroup` gives a binding verb.
     const leg = declaring(handle, LEG);
     const flat = thrownBy(() => leg.setKeyframe("rotation", "x", 1));
     expect((flat as Error).message).toContain("keyframe-group-unbound");
@@ -408,6 +407,20 @@ describe("one authored property, inside a group this node already authors", () =
     expect(publicationsFor(publication, [ARM])).toHaveLength(1);
     expect(retained(arm)).toEqual({ values: { x: 260, rotation: AUTHORED_ROTATION } });
 
+    handle.dispose();
+  });
+
+  it("RA-172 refuses a property edit without a plugin group, without staging an ungrouped entry", () => {
+    const handle = load();
+    const leg = declaring(handle, LEG);
+    const before = leg.definition;
+
+    const thrown = thrownBy(() => leg.setKeyframe("rotation", "x", 1));
+
+    expect(thrown).toBeInstanceOf(TypeError);
+    expect((thrown as Error).message).toContain("keyframe-group-unbound");
+    expect(leg.definition).toBe(before);
+    expect(leg.definition.keyframes).toEqual({ transform: { values: { rotation: 90 } } });
     handle.dispose();
   });
 

@@ -288,30 +288,29 @@ export type AuthoredPluginRequires = Readonly<Record<string, string | AuthoredRe
  *
  * Two named members, not an open record of a union. Both section names are reserved in
  * `contract/keyframe-shape`, so the contract layer can tell a section from a property without a
- * plugin registry, and the type can say what a group is instead of what it might contain. A group
- * that names neither section is not a group at all; it stays an ordinary property. Anything else
- * inside one is `keyframes-unknown-section`. See ADR-049.
+ * plugin registry, and the type can say what a group is instead of what it might contain. An entry
+ * that names neither section is not a group, and since ADR-121 it is not a property either: it is
+ * refused as `keyframes-ungrouped-key`. Anything else inside one is `keyframes-unknown-section`.
+ * See ADR-049 and ADR-121.
  */
 export interface AuthoredPluginGroup {
   readonly values?: Readonly<Record<string, AuthoredProperty>>;
   readonly requires?: AuthoredPluginRequires;
 }
 /**
- * One authored keyframe entry: a property, or a plugin-named group of properties.
+ * One authored keyframe entry, which is always a plugin-named group.
  *
- * The group form names the plugin that owns its leaves, so `{ fk: { values: { length } } }` scopes
- * the leaf without the author inventing a disambiguated flat name. The group is flattened back to
- * its unprefixed leaves before compilation, so no interpolator, adapter, or renderer ever receives
- * a nested value.
+ * The group names the plugin that owns its leaves, so `{ fk: { values: { length } } }` scopes the
+ * leaf to one owner without the author inventing a disambiguated name. The group is flattened back
+ * to its unprefixed leaves before compilation, so no interpolator, adapter, or renderer ever
+ * receives a nested value.
  *
- * The flat form is unchanged, and stays legal for every key exactly one registered plugin claims.
- * For a key several plugins claim it is not sugar: the flat spelling is `plugin-ambiguous-key`, and
- * the group is the only way to name an owner. See ADR-041, ADR-043, and ADR-049.
- *
- * Group detection is unaffected by the leaf forms ADR-050 introduces: a bare array and a bare
- * scalar both fail the group predicate's `isObject` test before its section check ever runs.
+ * There is no ungrouped form: a top-level entry that is not a group is refused as
+ * `keyframes-ungrouped-key`, so whether a document loads never depends on which plugins the host
+ * registered. The group name is the one spelling that names the owner. See ADR-041, ADR-043,
+ * ADR-049 and ADR-121.
  */
-export type AuthoredKeyframe = AuthoredProperty | AuthoredPluginGroup;
+export type AuthoredKeyframe = AuthoredPluginGroup;
 /** One `keyframes.<plugin>.requires.<slot>` entry, as read from authored input. See ADR-044. */
 export interface PluginRequiresBinding {
   readonly plugin: string;

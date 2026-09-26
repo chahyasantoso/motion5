@@ -19,6 +19,9 @@ describe("fresh v4-to-v5 migration contract", () => {
     expect(result.diagnostics).toEqual([]);
     expect(migrated?.schemaVersion).toBe(5);
     expect(migrated?.freeTracks).toEqual(input.tracks);
+    // Migration only renames the top-level collection; it does not infer plugin ownership or
+    // rewrite keyframes. Grouping remains the responsibility of the v5 authoring boundary.
+    expect(migrated?.freeTracks?.[0]?.keyframes).toEqual({ x: 1 });
     expect(migrated?.tracks).toBeUndefined();
     expect(migrated?.motions[0]?.tracks).toEqual(input.motions[0]?.tracks);
   });

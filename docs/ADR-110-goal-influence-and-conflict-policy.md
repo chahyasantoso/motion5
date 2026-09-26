@@ -4,6 +4,11 @@
 phase 5, squash-merged from [#486](https://github.com/chahyasantoso/motion5/pull/486) as `7e6f4edc`.
 Phase 6 is [ADR-111](./ADR-111-stability-and-determinism.md).
 
+**Amended by [ADR-121](./ADR-121-grouped-only-keyframes.md), 2026-09-26.** The **Load rules and
+scope** passage saying a flat spelling is in scope when the node binds a solver no longer holds for
+authored input. Only grouped `values.influence` reaches `resolveSolvers`; an ungrouped spelling is
+`keyframes-ungrouped-key`, so the flat branch is unreachable from authored input.
+
 ## Context
 
 A branching IK solve can ask one shared member to support several goals. Phase 4 made the solve's

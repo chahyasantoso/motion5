@@ -2,6 +2,10 @@
 
 **Status:** Accepted, 2026-08-19
 
+**Amended by [ADR-121](./ADR-121-grouped-only-keyframes.md), 2026-09-26.** Groups are no longer an
+additive spelling beside top-level properties. Every authored top-level entry is now a
+plugin-named group, and a property belongs under that group's `values` section.
+
 ## Context
 
 Authored keyframes were a flat record and plugins claimed flat keys. The collision that motivated
@@ -18,11 +22,11 @@ flattens after the prepare stage.
 
 ## Decision
 
-Option B. Groups are accepted **in addition** to the flat form and flattened before compilation.
+Option B. Groups are accepted **in addition** to the flat form and flattened before compilation. **Superseded in part by [ADR-121](./ADR-121-grouped-only-keyframes.md), 2026-09-26.** Groups are no longer accepted in addition to a flat form: they are the only authored top-level form, and an ungrouped entry is refused as `keyframes-ungrouped-key`.
 
 1. **Additive.** Grouped keyframes are rejected today at load: `validateKeyframes` emits
    `stops-shape` for a property with no `stops` array, so no authored content can depend on the
-   group form and none can be broken by accepting it. The flat form stays legal forever.
+   group form and none can be broken by accepting it. The flat form stays legal forever. **Superseded in part by [ADR-121](./ADR-121-grouped-only-keyframes.md), 2026-09-26.** The flat form is no longer legal; see ADR-121.
 2. **Flattening is a pure transform with one owner,** `flattenAuthoredKeyframes` in
    `domain/keyframe-groups.ts`, and the Engine calls it whether or not a `PluginRegistry` was
    injected. Leaving it inside the resolver alone looks like one owner and is not: an Engine
@@ -73,4 +77,4 @@ keyframe on a Track constructed without plugins.
 
 A group leaf whose value is an empty object stays accepted, matching the flat form. The contract
 layer cannot tell a one-key group from a malformed property without a registry it must not have, so
-that ambiguity resolves at plugin resolution as `plugin-unknown-key`.
+that ambiguity resolves at plugin resolution as `plugin-unknown-key`. **Superseded in part by [ADR-121](./ADR-121-grouped-only-keyframes.md), 2026-09-26.** An empty leaf inside `values` stays the accepted no-op, but an empty top-level entry is not a group and is refused as `keyframes-ungrouped-key` before plugin resolution.

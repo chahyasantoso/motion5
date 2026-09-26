@@ -204,11 +204,12 @@ describe("an explicit values section inside plugin groups", () => {
     expect(ruleIds({ fk: { values: {} } })).toEqual(["keyframes-values-empty"]);
   });
 
-  it("Y-6 leaves an empty object an accepted no-op property rather than a group", () => {
-    // Green on the parent by design, and not claimed as red. `{}` names no section, so it is not a
-    // group at all; it stays the accepted no-op property that `{ opacity: {} }` already was.
-    expect(ruleIds({ fk: {} })).toEqual([]);
-    expect(flattenAuthoredKeyframes({ fk: {} }).keyframes).toEqual({ fk: {} });
+  it("Y-6 leaves an empty object leaf inside values as an accepted no-op", () => {
+    // `{}` is a valid leaf only when it is inside a plugin group's values section. A top-level `{}`
+    // entry is ungrouped and is refused as keyframes-ungrouped-key.
+    const authored = { fk: { values: { opacity: {} } } };
+    expect(ruleIds(authored)).toEqual([]);
+    expect(flattenAuthoredKeyframes(authored).keyframes).toEqual({ opacity: {} });
   });
 
   it("Y-7 cites the section in a diagnostic about a leaf inside it", () => {
@@ -302,7 +303,7 @@ describe("an explicit values section inside plugin groups", () => {
     handle.mount("walk/thigh");
     handle.mount("walk/shin");
 
-    // The world frame the top-level leaf form produced, at the same progress: a pelvis at
+    // The world frame the grouped values form produces, at the same progress: a pelvis at
     // (100, 100) with rotation 0, a thigh of 50 at 45 degrees, a shin of 40 at -30 relative.
     const batch = handle.seek("walk/pelvis", 0.5);
     const thigh = batch.patches.find(({ nodeId }) => nodeId === "walk/thigh");

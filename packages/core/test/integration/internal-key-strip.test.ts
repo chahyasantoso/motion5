@@ -11,7 +11,7 @@ function ramp() {
   ];
 }
 
-function load(plugins: PluginRegistry) {
+function load(plugins: PluginRegistry, group: string) {
   return new Engine({
     clock: createManualClock(),
     interpolator: createFakeInterpolator(),
@@ -23,7 +23,7 @@ function load(plugins: PluginRegistry) {
       {
         id: "hero",
         trigger: { type: "manual" },
-        tracks: [{ id: "arm", keyframes: { x: ramp() } }],
+        tracks: [{ id: "arm", keyframes: { [group]: { values: { x: ramp() } } } }],
       },
     ],
   });
@@ -37,7 +37,7 @@ describe("internal keys are stripped once, before publication", () => {
       keys: ["x"],
       compose: (values) => ({ ...values, "fk:phase": 42 }),
     });
-    const handle = load(plugins);
+    const handle = load(plugins, "fk");
     handle.mount("hero/arm");
     const published: Array<Readonly<Record<string, unknown>>> = [];
     handle.subscribeNode("hero/arm", (patch) => {
@@ -71,7 +71,7 @@ describe("internal keys are stripped once, before publication", () => {
       internalKeys: ["scratch"],
       compose: (values) => ({ ...values, scratch: "private", rendered: true }),
     });
-    const handle = load(plugins);
+    const handle = load(plugins, "path");
     handle.mount("hero/arm");
 
     handle.seek("hero/arm", 1);
@@ -92,7 +92,7 @@ describe("internal keys are stripped once, before publication", () => {
       keys: ["x"],
       compose: (values) => ({ ...values, _private: "hidden" }),
     });
-    const handle = load(plugins);
+    const handle = load(plugins, "leaky");
     handle.mount("hero/arm");
 
     const batch = handle.seek("hero/arm", 1);

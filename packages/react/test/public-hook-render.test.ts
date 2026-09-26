@@ -70,10 +70,14 @@ describe("React public hook render/update (C2)", () => {
             {
               id: "arm",
               keyframes: {
-                x: [
-                  { p: 0, v: 0 },
-                  { p: 1, v: 1 },
-                ],
+                fk: {
+                  values: {
+                    x: [
+                      { p: 0, v: 0 },
+                      { p: 1, v: 1 },
+                    ],
+                  },
+                },
               },
             },
           ],

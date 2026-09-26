@@ -21,7 +21,6 @@ import {
   commitInFlight,
   immediateInTransaction,
   nestedTransaction,
-  propertyEntry,
   reservedGoalSlot,
   unboundGroup,
   valueBatchImmediate,
@@ -79,9 +78,6 @@ describe("the named refusals still say exactly what they said", () => {
     );
     expect(message(() => reservedGoalSlot("ik", "goals"))).toBe(
       'keyframe-goal-slot-reserved: Slot "goals" of "ik" holds a solver\'s goals. Use setGoal to bind one entry of it, or removeGoal to drop one.',
-    );
-    expect(message(() => propertyEntry("free:a", "opacity"))).toBe(
-      'keyframe-entry-shape: "free:a" authors "opacity" as a property, not a group. Use replace() to change an entry\'s shape.',
     );
   });
 

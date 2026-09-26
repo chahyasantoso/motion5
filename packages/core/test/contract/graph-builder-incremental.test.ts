@@ -16,10 +16,14 @@ describe("IncrementalGraphBuilder Equivalence", () => {
           {
             id: "t1",
             keyframes: {
-              x: [
-                { p: 0, v: 0 },
-                { p: 1, v: 10 },
-              ],
+              transform: {
+                values: {
+                  x: [
+                    { p: 0, v: 0 },
+                    { p: 1, v: 10 },
+                  ],
+                },
+              },
             },
           },
         ],
@@ -29,10 +33,14 @@ describe("IncrementalGraphBuilder Equivalence", () => {
       {
         id: "f1",
         keyframes: {
-          y: [
-            { p: 0, v: 0 },
-            { p: 1, v: 20 },
-          ],
+          transform: {
+            values: {
+              y: [
+                { p: 0, v: 0 },
+                { p: 1, v: 20 },
+              ],
+            },
+          },
         },
         observes: [{ source: "m1/t1" }],
       },
@@ -60,10 +68,14 @@ describe("IncrementalGraphBuilder Equivalence", () => {
     const newTrack: TrackDefinition = {
       id: "f2",
       keyframes: {
-        z: [
-          { p: 0, v: 0 },
-          { p: 1, v: 30 },
-        ],
+        transform3d: {
+          values: {
+            z: [
+              { p: 0, v: 0 },
+              { p: 1, v: 30 },
+            ],
+          },
+        },
       },
       observes: [{ source: "~/f1" }],
     };

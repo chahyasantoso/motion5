@@ -47,17 +47,21 @@ const HANDLES_SOURCE = fileURLToPath(
 const OBSERVATION: ObservationDefinition = { source: ARM };
 /** One group authoring a leaf and one ordinary binding, so every binding arm has a target. */
 const FK_GROUP: AuthoredPluginGroup = { values: { length: 10 }, requires: { base: ARM } };
+const ORIGIN_GROUP: AuthoredPluginGroup = { values: { extra: 10 }, requires: { base: ARM } };
 /**
- * The retained definition every pure case edits, with a group and a name authored as a property.
+ * The retained definition every pure case edits, with two plugin-named groups.
  *
  * Never loaded: these cases drive the module, so it only has to be a record an author could write.
  */
-const LEG_TRACK: TrackDefinition = { id: "leg", keyframes: { fk: FK_GROUP, x: 200 } };
+const LEG_TRACK: TrackDefinition = {
+  id: "leg",
+  keyframes: { fk: FK_GROUP, transform: { values: { x: 200 } } },
+};
 const TARGET: EditTarget = { nodeId: LEG, motionId: "hero", track: LEG_TRACK };
 /** The same shapes as a real document, with no binding at all, so no case depends on an edge. */
 const LOADED_LEG: TrackDefinition = {
   id: "leg",
-  keyframes: { fk: { values: { length: 10 } }, x: 200 },
+  keyframes: { fk: { values: { length: 10 } }, transform: { values: { x: 200 } } },
 };
 const OBSERVE_PROJECT: ProjectDefinition = {
   schemaVersion: 5,
@@ -112,7 +116,9 @@ describe("every authored edit is one value applied by one total switch", () => {
     expect(
       applyEdit(TARGET, { kind: "unbind-slot", plugin: "fk", slot: "base", memberKey: undefined }),
     ).not.toBe(LEG_TRACK);
-    expect(applyEdit(TARGET, { kind: "remove-group", plugin: "fk" }).keyframes).toEqual({ x: 200 });
+    expect(applyEdit(TARGET, { kind: "remove-group", plugin: "fk" }).keyframes).toEqual({
+      transform: { values: { x: 200 } },
+    });
     expect(applyEdit(TARGET, { kind: "add-observe", observation: OBSERVATION }).observes).toEqual([
       OBSERVATION,
     ]);
@@ -173,14 +179,13 @@ describe("every authored edit is one value applied by one total switch", () => {
       bound,
     );
 
-    // A name authored as an ordinary property is refused by both group arms, and folds into absence
-    // for a binding arm, because `readBoundGroup` reads a property as no binding surface at all.
-    expect(
-      refusalKind(() => applyEdit(TARGET, { kind: "set-group", plugin: "x", group: FK_GROUP })),
-    ).toBe("property-entry");
-    expect(refusalKind(() => applyEdit(TARGET, { kind: "remove-group", plugin: "x" }))).toBe(
-      "property-entry",
-    );
+    // Group edits no longer have an entry-shape refusal: a name with no retained group can be
+    // originated directly, while binding edits still refuse because their group precondition is
+    // unchanged.
+    const originated = applyEdit(TARGET, { kind: "set-group", plugin: "x", group: ORIGIN_GROUP });
+    expect(originated).not.toBe(TARGET);
+    expect(originated.keyframes?.x).toEqual(ORIGIN_GROUP);
+    expect(applyEdit(TARGET, { kind: "remove-group", plugin: "x" })).toBe(TARGET.track);
     expect(
       refusalKind(() =>
         applyEdit(TARGET, {
@@ -211,13 +216,16 @@ describe("every authored edit is one value applied by one total switch", () => {
     hand.removeObserve({ source: LEG });
     expect(replaceGraph).toHaveBeenCalledTimes(1);
 
-    // The three refusals a handle reaches, each still refused before anything is staged.
+    // Binding edits still refuse before anything is staged. Group edits can originate a previously
+    // absent plugin-named group; unlike the deleted entry-shape refusal, this is a valid structural
+    // edit and therefore commits once.
     expect(refusalKind(() => leg.setRequire("fk", PLUGIN_GOALS_SLOT, ARM))).toBe(
       "reserved-goal-slot",
     );
-    expect(refusalKind(() => leg.setKeyframeGroup("x", FK_GROUP))).toBe("property-entry");
+    leg.setKeyframeGroup("x", ORIGIN_GROUP);
+    expect(leg.definition.keyframes?.x).toEqual(ORIGIN_GROUP);
     expect(refusalKind(() => hand.setRequire("fk", "base", ARM))).toBe("unbound-group");
-    expect(replaceGraph).toHaveBeenCalledTimes(1);
+    expect(replaceGraph).toHaveBeenCalledTimes(2);
     runtime.dispose();
   });
 

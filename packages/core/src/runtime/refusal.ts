@@ -99,12 +99,6 @@ interface ReservedGoalSlotShape {
   readonly slot: string;
 }
 
-interface PropertyEntryShape {
-  readonly kind: "property-entry";
-  readonly nodeId: string;
-  readonly plugin: string;
-}
-
 interface InvalidDefinitionShape {
   readonly kind: "invalid-definition";
   readonly diagnostics: readonly Diagnostic[];
@@ -123,7 +117,6 @@ export type RefusalShape =
   | StaleHandleShape
   | UnboundGroupShape
   | ReservedGoalSlotShape
-  | PropertyEntryShape
   | InvalidDefinitionShape;
 
 /**
@@ -144,7 +137,6 @@ export type Refusal =
   | Minted<StaleHandleShape>
   | Minted<UnboundGroupShape>
   | Minted<ReservedGoalSlotShape>
-  | Minted<PropertyEntryShape>
   | Minted<InvalidDefinitionShape>;
 
 /** Mints one refusal, and is the only expression in the program that produces a `Refusal`. */
@@ -212,8 +204,6 @@ export function describeRefusal(refusal: Refusal): string {
       return `keyframe-group-unbound: "${refusal.nodeId}" authors no "${refusal.plugin}" group. Use setKeyframeGroup to originate one.`;
     case "reserved-goal-slot":
       return `keyframe-goal-slot-reserved: Slot "${refusal.slot}" of "${refusal.plugin}" holds a solver's goals. Use setGoal to bind one entry of it, or removeGoal to drop one.`;
-    case "property-entry":
-      return `keyframe-entry-shape: "${refusal.nodeId}" authors "${refusal.plugin}" as a property, not a group. Use replace() to change an entry's shape.`;
     case "invalid-definition":
       return describeDiagnostics(refusal.diagnostics);
     default:
@@ -267,7 +257,6 @@ export function refusalError(refusal: Refusal): Error {
     case "unknown-node":
     case "unbound-group":
     case "reserved-goal-slot":
-    case "property-entry":
     case "invalid-definition":
       return new RefusalError(refusal);
     default:

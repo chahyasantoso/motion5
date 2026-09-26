@@ -27,7 +27,7 @@ function ramp(from: number, to: number) {
   ];
 }
 function armTrack(from: number, to: number): TrackDefinition {
-  return { id: "arm", keyframes: { x: ramp(from, to) } };
+  return { id: "arm", keyframes: { transform: { values: { x: ramp(from, to) } } } };
 }
 /**
  * Accepted by `validateTrackDefinition`, which is registry-free, and refused by the resolver, which
@@ -35,9 +35,9 @@ function armTrack(from: number, to: number): TrackDefinition {
  * recompile failure the issue reproduces, and the reason a compile step cannot be treated as
  * infallible once the graph is already committed.
  *
- * The leaf sits under `values` so the group stays well-formed. Authored at the group top level it
- * would be refused by `validateKeyframes` as `keyframes-missing-values-section` instead, one layer
- * earlier than the resolver this suite is about. See ADR-049.
+ * The leaf sits under `values` so the group stays well-formed. A top-level leaf would be refused by
+ * `validateKeyframes` as `keyframes-ungrouped-key` instead, one layer earlier than the resolver this
+ * suite is about. See ADR-121.
  */
 const UNRESOLVABLE: TrackDefinition = {
   id: "arm",
@@ -47,7 +47,7 @@ const UNRESOLVABLE: TrackDefinition = {
 const REFUSED_BY_MOTION: TrackDefinition = {
   id: "arm",
   duration: 0,
-  keyframes: { x: ramp(0, 400) },
+  keyframes: { transform: { values: { x: ramp(0, 400) } } },
 };
 
 function load(): ProjectHandle {

@@ -69,9 +69,9 @@ function readSolvedRotation(solver: unknown, nodeId: string): number | undefined
  * The offset is read in the parent's rotated space rather than in world space, because a pivot that
  * stopped following its parent when the parent turned would not be a pivot.
  *
- * Claiming them costs their flat spelling, which is stated rather than discovered: `transform`
- * claims `x` and `y` as well, so a flat `x` is `plugin-ambiguous-key` and an author names the owner
- * by authoring inside a group, exactly as a flat `rotation` already required. See ADR-043.
+ * Claiming them costs nothing now that every authored property is grouped: `transform` claims `x`
+ * and `y` as well, and an author names the owner by the group the leaf is written under, exactly as
+ * for `rotation`. See ADR-043 and ADR-121.
  *
  * This plugin stays the sole owner of applying the offset, and that ownership is unchanged now that
  * a solved member may carry one. `ik` accounts for the offset in the geometry it solves and

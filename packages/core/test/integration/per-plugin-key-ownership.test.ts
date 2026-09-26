@@ -116,19 +116,19 @@ describe("per-plugin keyframe key ownership", () => {
     handle.dispose();
   });
 
-  it("N-9 refuses the flat spelling of a key both plugins claim", () => {
-    const flatRotation: TrackDefinition = {
+  it("N-9 refuses an ungrouped spelling of a key both plugins claim", () => {
+    // Deliberately ungrouped: the literal is not a TrackDefinition, which is the point of the case.
+    const flatRotation = {
       id: "thigh",
       keyframes: {
         fk: { values: { length: hold(50) }, requires: { base: "walk/pelvis" } },
         rotation: hold(45),
       },
-    };
+    } as unknown as TrackDefinition;
 
-    // Not a winner decided by registration order, and not a silent overwrite. The load is refused
-    // with both claimants named, so the author can see which group to reach for.
-    expect(() => load(rig(flatRotation), rigRegistry())).toThrow(/plugin-ambiguous-key/);
-    expect(() => load(rig(flatRotation), rigRegistry())).toThrow(/"fk" and "transform"/);
+    // Grouping is mandatory before ownership is considered, so the load refuses the ungrouped
+    // spelling with the canonical authored-shape diagnostic.
+    expect(() => load(rig(flatRotation), rigRegistry())).toThrow(/keyframes-ungrouped-key/);
   });
 
   it("N-10 publishes grouped leaves under their unprefixed names", () => {

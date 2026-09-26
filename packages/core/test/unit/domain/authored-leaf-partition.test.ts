@@ -27,7 +27,7 @@ const READ_COMPILABLE_STOPS = member(
 );
 const LEGACY_GROUP = member(
   code(`${SOURCE_ROOT}contract/keyframe-shape.ts`),
-  "export function looksLikeLegacyGroup(value: unknown): boolean {",
+  "function looksLikeLegacyGroup(value: unknown): boolean {",
   "",
 );
 const PARTITION_DECLARATION = declaration(
@@ -111,6 +111,9 @@ describe("the authored leaf payload partition answers every leaf kind", () => {
     expect(READ_COMPILABLE_STOPS).toContain("unreachable(leaf)");
     expect(LEGACY_GROUP).toContain("unreachable(leaf)");
     expect(validator).toContain("unreachable(leaf)");
+    // The top-level entry is a closed union too, so the two refusals have one precedence owner.
+    expect(validator).toContain("readKeyframeEntry(rawGroup)");
+    expect(validator).toContain("unreachable(entry)");
     expect(PARTITION_DECLARATION).toContain('readonly kind: "value"');
     expect(PARTITION_DECLARATION).toContain('readonly kind: "stops"');
     expect(PARTITION_DECLARATION).toContain('readonly kind: "none"');

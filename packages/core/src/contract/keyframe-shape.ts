@@ -24,7 +24,7 @@ export const PLUGIN_REQUIRES_SECTION = "requires";
  * of the leaves, and it is why an unknown sibling can be reported as an unknown section instead of
  * being misread as a property with no stops.
  *
- * The cost is that no author may animate a flat property called `values` and no plugin may claim
+ * The cost is that no author may use `values` as a top-level entry name and no plugin may claim
  * the key at group level. The reservation is on section position rather than on the string
  * everywhere, so a leaf named `values` inside the section is an ordinary property. See ADR-049.
  */
@@ -61,9 +61,10 @@ function isObject(value: unknown): value is Record<string, unknown> {
  *
  * `some` and not `every`, so a group carrying an unknown sibling is still read as a group and
  * reported as `keyframes-unknown-section` rather than misdiagnosed as a property. An object naming
- * no section at all is not a group: `{ fk: {} }` stays the accepted no-op property it always was,
- * and the pre-ADR-049 leaf form is refused by name through `looksLikeLegacyGroup` instead.
- * See ADR-041, ADR-044, and ADR-049.
+ * no section at all is not a group: at the top level `{ fk: {} }` is refused as
+ * `keyframes-ungrouped-key` like every other ungrouped entry, and the pre-ADR-049 leaf form is
+ * refused by name instead; `readKeyframeEntry` below owns that three-way answer. See ADR-041,
+ * ADR-044, ADR-049, ADR-121.
  */
 export function isKeyframeGroup(value: unknown): value is AuthoredPluginGroup {
   if (!isObject(value)) return false;
@@ -77,9 +78,10 @@ export function isKeyframeGroup(value: unknown): value is AuthoredPluginGroup {
  *
  * This is the body `isKeyframeGroup` used to have, kept for a different job. It is not detection
  * any more; it exists so a document written against the old shape is refused by name rather than
- * reported as a property with no stops array, which named the group and not the mistake. Refused,
- * never normalized: two authoring shapes are two validation paths and two documentation paths.
- * See ADR-049.
+ * reported as an ungrouped entry, which would name the missing group and not the missing section.
+ * Refused, never normalized: two authoring shapes are two validation paths and two documentation
+ * paths. Private, because `readKeyframeEntry` is its only reader and owns its precedence. See
+ * ADR-049.
  *
  * Membership is "every member reads as a leaf", not "every member is an object", and that is the
  * whole of ADR-050's effect here. A legacy group written against the new leaf forms has arrays and
@@ -90,7 +92,7 @@ export function isKeyframeGroup(value: unknown): value is AuthoredPluginGroup {
  * one-leaf legacy group otherwise, and bailing here rather than relying on the caller's branch order
  * keeps the two refusals independent of each other.
  */
-export function looksLikeLegacyGroup(value: unknown): boolean {
+function looksLikeLegacyGroup(value: unknown): boolean {
   if (!isObject(value)) return false;
   const leaf = readAuthoredLeaf(value);
   switch (leaf.kind) {
@@ -121,6 +123,30 @@ export function looksLikeLegacyGroup(value: unknown): boolean {
         return unreachable(member);
     }
   });
+}
+
+/**
+ * What one top-level authored keyframe entry is: a group, the pre-ADR-049 form, or ungrouped.
+ *
+ * A closed union read by an exhaustive switch, so the precedence between the two refusals is
+ * written here once rather than encoded in the order a caller happens to test two predicates. A
+ * group is exact (`isKeyframeGroup`: an object naming a reserved section) and is answered first,
+ * although the legacy test cannot claim one anyway because it bails on any reserved section. The
+ * pre-ADR-049 form is next because it is the more specific mistake: its author named the owner and
+ * left out only the `values` section around the leaves. Everything else, a stops array, a static
+ * value, the retired wrapper, `{}`, or an object whose members are not all leaves, names no
+ * section and no leaf set, and is ungrouped. Only the authored scope asks; a contributed property is
+ * flat by definition. See ADR-049 and ADR-121.
+ */
+export type KeyframeEntry =
+  | { readonly kind: "group"; readonly group: AuthoredPluginGroup }
+  | { readonly kind: "legacy-group" }
+  | { readonly kind: "ungrouped" };
+
+export function readKeyframeEntry(value: unknown): KeyframeEntry {
+  if (isKeyframeGroup(value)) return { kind: "group", group: value };
+  if (looksLikeLegacyGroup(value)) return { kind: "legacy-group" };
+  return { kind: "ungrouped" };
 }
 
 /**

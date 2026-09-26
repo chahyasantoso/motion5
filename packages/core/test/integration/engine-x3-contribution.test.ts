@@ -34,7 +34,7 @@ describe("X-3 contribution through the product load path", () => {
     const interpolator = createFakeInterpolator();
     const create = vi.spyOn(interpolator, "create");
     const runtime = new Engine({ ...options(), interpolator, plugins: registry }).load(
-      projectWith({ x: property(1) }, 2) as never,
+      projectWith({ base: { values: { x: property(1) } } }, 2) as never,
     );
     // The hook receives the authored leaf, and since ADR-050 the leaf is the stops array itself.
     expect(contribute).toHaveBeenCalledWith("x", property(1), {
@@ -72,7 +72,7 @@ describe("X-3 contribution through the product load path", () => {
     const interpolator = createFakeInterpolator();
     const create = vi.spyOn(interpolator, "create");
     const runtime = new Engine({ ...options(), interpolator, plugins: registry }).load(
-      projectWith({ x: property(1) }) as never,
+      projectWith({ first: { values: { x: property(1) } } }) as never,
     );
     expect(first).toHaveBeenCalledOnce();
     expect(second).not.toHaveBeenCalled();
@@ -100,7 +100,7 @@ describe("X-3 contribution through the product load path", () => {
     const create = vi.spyOn(interpolator, "create");
     expect(() =>
       new Engine({ ...options(), interpolator, plugins: registry }).load(
-        projectWith({ x: property(1) }) as never,
+        projectWith({ bad: { values: { x: property(1) } } }) as never,
       ),
     ).toThrow(/plugin-contribution-stop-order/);
     expect(create).not.toHaveBeenCalled();
@@ -111,16 +111,20 @@ describe("X-3 contribution through the product load path", () => {
     expect(() =>
       new Engine({ ...options(), interpolator }).load(
         projectWith({
-          x: [
-            { p: 0, v: 0 },
-            { p: 0.5, v: 50, ease: "power1.out" },
-            { p: 1, v: 100 },
-          ],
-          y: [
-            { p: 0, v: 0 },
-            { p: 0.5, v: 50, ease: "power2.out" },
-            { p: 1, v: 100 },
-          ],
+          transform: {
+            values: {
+              x: [
+                { p: 0, v: 0 },
+                { p: 0.5, v: 50, ease: "power1.out" },
+                { p: 1, v: 100 },
+              ],
+              y: [
+                { p: 0, v: 0 },
+                { p: 0.5, v: 50, ease: "power2.out" },
+                { p: 1, v: 100 },
+              ],
+            },
+          },
         }) as never,
       ),
     ).toThrow(/plugin-contribution-ease-collision/);
@@ -149,11 +153,15 @@ describe("X-3 contribution through the product load path", () => {
     expect(() =>
       new Engine({ ...options(), interpolator, plugins: registry }).load(
         projectWith({
-          x: [
-            { p: 0, v: 0 },
-            { p: 0.5, v: 50, ease: "power1.out" },
-            { p: 1, v: 100 },
-          ],
+          base: {
+            values: {
+              x: [
+                { p: 0, v: 0 },
+                { p: 0.5, v: 50, ease: "power1.out" },
+                { p: 1, v: 100 },
+              ],
+            },
+          },
         }) as never,
       ),
     ).toThrow(/plugin-contribution-ease-collision/);

@@ -18,9 +18,11 @@ import type { AuthoredStaticValue, AuthoredStop } from "./v5";
  * - `"wrapper"`, the retired `{ stops: [...] }` object. Named here so that exactly one place decides
  *   what the old shape looks like, and refused by name rather than normalized.
  *
- * `"empty"` is a kind of its own rather than a spelling of `"invalid"`. An authored `{}` is a
- * deliberately accepted no-op property that `Y-6` pins, so collapsing it into the invalid case would
- * turn a documented acceptance into a diagnostic.
+ * `"empty"` is a kind of its own rather than a spelling of `"invalid"`. An authored `{}` leaf inside
+ * a group's `values` section is a deliberately accepted no-op property that `Y-6` pins, so
+ * collapsing it into the invalid case would turn a documented acceptance into a diagnostic. A `{}`
+ * written as a top-level entry is a different question, answered by `validateKeyframes` as
+ * `keyframes-ungrouped-key`, because every top-level entry must name its plugin. See ADR-121.
  *
  * The union is deliberately narrow. Adding a member is how the authored form changes, and the point
  * of this module is that such a change happens here and nowhere else. See issue #192.

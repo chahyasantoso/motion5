@@ -137,15 +137,15 @@ interface ParityCase {
 const PARITY: readonly ParityCase[] = [
   {
     what: "a position outside the unit range",
-    authored: { x: OUT_OF_RANGE },
+    authored: { transform: { values: { x: OUT_OF_RANGE } } },
     expected: [
-      "stop-position-range at keyframes.x[0].p",
-      "stop-missing-start at keyframes.x",
-      "stop-missing-end at keyframes.x",
+      "stop-position-range at keyframes.transform.values.x[0].p",
+      "stop-missing-start at keyframes.transform.values.x",
+      "stop-missing-end at keyframes.transform.values.x",
     ],
   },
   {
-    what: "the pre-ADR-049 group form",
+    what: "the pre-ADR-049 group form, the one object refused by name rather than as ungrouped",
     authored: { fk: { length: RAMP } },
     expected: ["keyframes-missing-values-section at keyframes.fk"],
   },
@@ -155,14 +155,19 @@ const PARITY: readonly ParityCase[] = [
     expected: ["keyframes-reserved-section at keyframes.values"],
   },
   {
-    what: "an empty object, which names no section and stays a no-op property",
+    what: "an empty object at the top level, which names no plugin group",
     authored: { fk: {} },
-    expected: [],
+    expected: ["keyframes-ungrouped-key at keyframes.fk"],
   },
   {
-    what: "a reserved separator in a key",
-    authored: { "a:b": RAMP },
-    expected: ["keyframes-reserved-separator at keyframes.a:b"],
+    what: "a top-level object whose members are not all leaves, which is ungrouped",
+    authored: { fk: { length: { hold: 1 } } },
+    expected: ["keyframes-ungrouped-key at keyframes.fk"],
+  },
+  {
+    what: "a reserved separator in a grouped leaf",
+    authored: { transform: { values: { "a:b": RAMP } } },
+    expected: ["keyframes-reserved-separator at keyframes.transform.values.a:b"],
   },
 ];
 
@@ -195,8 +200,8 @@ describe("one owner for the authored leaf shape", () => {
     expect(readAuthoredLeaf(62)).toEqual({ kind: "static", value: 62 });
     expect(readAuthoredLeaf(WRAPPED)).toEqual({ kind: "wrapper" });
 
-    // `{}` is a deliberately accepted no-op property that `Y-6` already pins, so it is a kind of
-    // its own rather than a shape the reader calls invalid.
+    // The reader still classifies `{}` as an accepted no-op leaf; authored validation rejects a
+    // top-level entry before any leaf reader is consulted.
     expect(readAuthoredLeaf({})).toEqual({ kind: "empty" });
 
     expect(readAuthoredLeaf({ a: 1 })).toEqual({ kind: "invalid" });

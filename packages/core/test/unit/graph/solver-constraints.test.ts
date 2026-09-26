@@ -228,53 +228,65 @@ describe("solver constraint rules read every authored spelling", () => {
   }
   const bound = { fk: { values: { length: 10 }, requires: { base: "root", solver: "solve" } } };
 
-  it("CL-24 refuses a keyframed flat bound as malformed, so no limit animates at runtime", () => {
+  it("CL-24 refuses a keyframed bound as malformed, so no limit animates at runtime", () => {
     const found = flat({
-      ...bound,
-      minRotation: [
-        { p: 0, v: 20 },
-        { p: 1, v: 30 },
-      ],
+      fk: {
+        ...bound.fk,
+        values: {
+          ...bound.fk.values,
+          minRotation: [
+            { p: 0, v: 20 },
+            { p: 1, v: 30 },
+          ],
+        },
+      },
     }).find((d) => d.ruleId === "ik-limit-malformed");
-    expect(found?.path).toBe("walker/bone.keyframes.minRotation");
+    expect(found?.path).toBe("walker/bone.keyframes.fk.values.minRotation");
   });
 
-  it("CL-25 classifies flat and grouped bounds as one pair", () => {
+  it("CL-25 classifies bounds in one owning group as one pair", () => {
     const ids = (keyframes: Keyframes) => flat(keyframes).map((d) => d.ruleId);
     expect(
-      ids({ ...bound, maxRotation: -40, fk: { ...bound.fk, values: { minRotation: 40 } } }),
+      ids({
+        fk: {
+          ...bound.fk,
+          values: { ...bound.fk.values, minRotation: 40, maxRotation: -40 },
+        },
+      }),
     ).toContain("ik-limit-empty");
-    expect(ids({ ...bound, maxRotation: 30 }).filter((id) => id.startsWith("ik-"))).toEqual([]);
+    expect(
+      ids({ fk: { ...bound.fk, values: { ...bound.fk.values, maxRotation: 30 } } }).filter((id) =>
+        id.startsWith("ik-"),
+      ),
+    ).toEqual([]);
   });
-
-  it("CL-26 refuses a flat limit on a node that bound no solver", () => {
+  it("CL-26 refuses a limit on a node that bound no solver", () => {
     const found = flat({
-      minRotation: 10,
-      fk: { values: { length: 10 }, requires: { base: "root" } },
+      fk: { values: { length: 10, minRotation: 10 }, requires: { base: "root" } },
     }).find((d) => d.ruleId === "ik-limit-without-solver");
-    expect(found?.path).toBe("walker/bone.keyframes.minRotation");
+    expect(found?.path).toBe("walker/bone.keyframes.fk.values.minRotation");
   });
 
-  it("CL-27 refuses a malformed flat bend and a flat bend beside a grouped flip", () => {
+  it("CL-27 refuses a malformed bend and a bend beside a grouped flip", () => {
     const solver = (keyframes: Keyframes): TrackDefinition => ({
       id: "solve",
       keyframes,
     });
     const requires = { root: "root", target: "goal" };
-    const malformed = flat(bound, solver({ bend: "side", ik: { values: {}, requires } }));
+    const malformed = flat(bound, solver({ ik: { values: { bend: "side" }, requires } }));
     expect(malformed.find((d) => d.ruleId === "ik-bend-malformed")?.path).toBe(
-      "walker/solve.keyframes.bend",
+      "walker/solve.keyframes.ik.values.bend",
     );
     const conflict = flat(
       bound,
-      solver({ bend: "positive", ik: { values: { flip: true }, requires } }),
+      solver({ ik: { values: { bend: "positive", flip: true }, requires } }),
     );
     expect(conflict.map((d) => d.ruleId)).toContain("ik-bend-conflicts-flip");
   });
 
   it("CL-28 leaves another plugin's bend and flip alone on a node that bound no root", () => {
     const spring = { values: { bend: "side", flip: 3 } };
-    const onMember = flat({ ...bound, spring, bend: 12 });
+    const onMember = flat({ ...bound, spring: { ...spring, values: { bend: 12, flip: 3 } } });
     expect(onMember.filter((d) => d.ruleId.startsWith("ik-"))).toEqual([]);
   });
 

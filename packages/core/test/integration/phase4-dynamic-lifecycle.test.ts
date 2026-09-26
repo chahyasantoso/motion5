@@ -148,15 +148,19 @@ describe("Phase 4: Dynamic Graph Lifecycle Hardening", () => {
 
   it("6. Keyframe validation is shared: malformed stops are rejected before graph commit", () => {
     const compileTrack = vi.fn((track: TrackDefinition) => {
-      for (const [, prop] of Object.entries(track.keyframes ?? {})) {
-        const stops = (prop as unknown as { stops: { p: number }[] }).stops;
-        for (const stop of stops) {
-          if (!Number.isFinite(stop.p)) throw new TypeError("Keyframe stop p must be finite.");
-        }
-        const ps = stops.map((s) => s.p);
-        for (let i = 1; i < ps.length; i++) {
-          if ((ps[i] as number) <= (ps[i - 1] as number))
-            throw new TypeError("Keyframe stops must be monotonically increasing.");
+      for (const group of Object.values(track.keyframes ?? {})) {
+        const values = (group as { values?: Record<string, unknown> }).values ?? {};
+        for (const prop of Object.values(values)) {
+          if (!Array.isArray(prop)) continue;
+          const stops = prop as { p: number }[];
+          for (const stop of stops) {
+            if (!Number.isFinite(stop.p)) throw new TypeError("Keyframe stop p must be finite.");
+          }
+          const ps = stops.map((s) => s.p);
+          for (let i = 1; i < ps.length; i++) {
+            if ((ps[i] as number) <= (ps[i - 1] as number))
+              throw new TypeError("Keyframe stops must be monotonically increasing.");
+          }
         }
       }
     });
@@ -172,10 +176,14 @@ describe("Phase 4: Dynamic Graph Lifecycle Hardening", () => {
     const badTrack: TrackDefinition = {
       id: "bad",
       keyframes: {
-        x: [
-          { p: 0, v: 0 },
-          { p: 0, v: 100 }, // duplicate p — not monotonic
-        ],
+        transform: {
+          values: {
+            x: [
+              { p: 0, v: 0 },
+              { p: 0, v: 100 }, // duplicate p — not monotonic
+            ],
+          },
+        },
       },
     };
 

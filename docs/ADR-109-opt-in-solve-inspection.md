@@ -15,6 +15,12 @@ takes `SolveEvidence`, the `quality` and `residuals` both dimensions' results sh
 reading of the opt-in moved from `ik.ts` into `inspectionOutput` in `ik-result.ts`, so one module
 owns both whether to publish and what; `ik`'s published bytes are unchanged.
 
+**Amended by [ADR-121](./ADR-121-grouped-only-keyframes.md), 2026-09-26.** The Invariant's flat
+`inspect` alternative, the `solverSpellings` decision's flat branch, and the Evidence claim about
+flat and grouped spellings no longer hold for authored input. Authored inspect is
+`ik.values.inspect` (or `ik3d.values.inspect` for the 3D solver); an ungrouped `inspect` is
+`keyframes-ungrouped-key`, not an inspection-specific diagnostic.
+
 ## Invariant
 
 An IK solver publishes exactly the rotations it published before, bit for bit, unless its author

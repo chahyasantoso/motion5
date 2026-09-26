@@ -16,10 +16,14 @@ const animated = (id: string) => ({
   id,
   duration: 1000,
   keyframes: {
-    x: [
-      { p: 0, v: 0 },
-      { p: 1, v: 100 },
-    ],
+    transform: {
+      values: {
+        x: [
+          { p: 0, v: 0 },
+          { p: 1, v: 100 },
+        ],
+      },
+    },
   },
 });
 const project = (withTracks = true): ProjectDefinition => ({

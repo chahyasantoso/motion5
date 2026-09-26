@@ -2,7 +2,6 @@ import { PLUGIN_GOALS_SLOT } from "../contract/solver-slots";
 import type { AuthoredPluginGroup, ObservationDefinition, TrackDefinition } from "../contract/v5";
 import {
   readBoundGroup,
-  readsAsProperty,
   removeGroup,
   removeRequire,
   setGroup,
@@ -13,7 +12,7 @@ import {
 import { unreachable } from "../lang/exhaustive";
 import { observationEdgeKey } from "../graph/ir";
 import { EMPTY_KEYFRAMES, withKeyframes } from "./authored-values";
-import { propertyEntry, reservedGoalSlot, unboundGroup } from "./schema-refusals";
+import { reservedGoalSlot, unboundGroup } from "./schema-refusals";
 /**
  * Every authored edit a TrackHandle can ask for, as data, and the one function that applies one.
  *
@@ -37,8 +36,9 @@ import { propertyEntry, reservedGoalSlot, unboundGroup } from "./schema-refusals
  * Nothing here decides whether an edit is allowed to happen to a project. Liveness, admission,
  * commit ordering and publication stay with the runtime, and the registry and the candidate graph
  * still judge the whole candidate at derivation. What is this layer's own is only what no other
- * layer can see: whether the group an edit addresses exists on this node, whether the name it
- * addresses is authored as an ordinary property instead, and which verb owns the slot it names.
+ * layer can see: whether the group an edit addresses exists on this node and which verb owns the slot
+ * it names. Whether the name is authored as an ordinary property instead is no longer a question,
+ * since every authored entry is a plugin group (ADR-121).
  *
  * Issue #443, phase A step 5. See ADR-045, ADR-057, ADR-062, ADR-063, ADR-064 and ADR-065.
  */
@@ -169,18 +169,16 @@ function slotGroup(target: EditTarget, plugin: string, slot: string): GroupTarge
 }
 
 /**
- * The record a group edit works from, and the one name it may not address.
+ * The record a group edit works from.
  *
  * An absent record reads as the one frozen empty one, which is what lets an originating edit run on
- * a track that authors nothing without a branch and lets a removal answer by identity on one. The
- * refusal is the entry-level twin of `keyframe-require-shape`: a plugin name and a keyframe name
- * share one namespace, both shapes are legal there, and writing a group over a property drops every
- * stop the author wrote. See ADR-063.
+ * a track that authors nothing without a branch and lets a removal answer by identity on one. There
+ * is no entry-shape refusal here any more: every authored entry is a plugin group, since an
+ * ungrouped one is refused at load as `keyframes-ungrouped-key`, so the retained record holds no
+ * property a group verb could write over. See ADR-063 and ADR-121.
  */
-function groupRecord(target: EditTarget, plugin: string): AuthoredKeyframes {
-  const keyframes = target.track.keyframes ?? EMPTY_KEYFRAMES;
-  if (readsAsProperty(keyframes, plugin)) propertyEntry(target.nodeId, plugin);
-  return keyframes;
+function groupRecord(target: EditTarget): AuthoredKeyframes {
+  return target.track.keyframes ?? EMPTY_KEYFRAMES;
 }
 
 /**
@@ -265,11 +263,11 @@ export function applyEdit(target: EditTarget, edit: AuthoringEdit): TrackDefinit
       return candidate(track, keyframes, next);
     }
     case "set-group": {
-      const keyframes = groupRecord(target, edit.plugin);
+      const keyframes = groupRecord(target);
       return candidate(track, keyframes, setGroup(keyframes, edit.plugin, edit.group));
     }
     case "remove-group": {
-      const keyframes = groupRecord(target, edit.plugin);
+      const keyframes = groupRecord(target);
       return candidate(track, keyframes, removeGroup(keyframes, edit.plugin));
     }
     case "add-observe": {

@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { PluginRegistry, type PluginDefinition } from "../../../src/domain/plugins";
+import { validateKeyframes } from "../../../src/contract/validate-v5";
 import { buildGraphIR } from "../../../src/graph/ir";
-import type { ProjectDefinition, TrackDefinition } from "../../../src/contract/v5";
+import type { Diagnostic, ProjectDefinition, TrackDefinition } from "../../../src/contract/v5";
 import { fk3dPlugin } from "../../../src/plugins/fk3d";
 import { ik3dPlugin } from "../../../src/plugins/ik3d";
 import { transform3dPlugin } from "../../../src/plugins/transform3d";
@@ -24,10 +25,13 @@ describe("3D plugin ownership", () => {
     expect(resolved.plugins.map(({ name }) => name)).toEqual(["transform3d", "fk3d", "ik3d"]);
   });
 
-  it("TH-10 leaves flat shared keys ambiguous and z unclaimed without the 3D root", () => {
-    const ambiguous = registry(transformPlugin, transform3dPlugin).resolveForKeyframes({ x: {} });
-    expect(ambiguous.diagnostics[0]?.ruleId).toBe("plugin-ambiguous-key");
-    const unknown = registry(transformPlugin).resolveForKeyframes({ z: {} });
+  it("TH-10 refuses ungrouped shared keys and leaves z unclaimed without the 3D root", () => {
+    const diagnostics: Diagnostic[] = [];
+    validateKeyframes({ x: {} }, "keyframes", diagnostics);
+    expect(diagnostics[0]?.ruleId).toBe("keyframes-ungrouped-key");
+    const unknown = registry(transformPlugin).resolveForKeyframes({
+      transform: { values: { z: {} } },
+    });
     expect(unknown.diagnostics[0]?.ruleId).toBe("plugin-unknown-key");
   });
 

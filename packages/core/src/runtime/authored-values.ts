@@ -149,9 +149,10 @@ export function splitAuthoredValues(values: AuthoredValues): LiveWriteHalves {
 /**
  * `track` with `values` written back into the authored record each key came from.
  *
- * The flattened entry carries the group that claimed a leaf, so a grouped value is rewritten inside
- * that group's `values` section and a flat one at the top level. There is no second answer about
- * where an authored key lives: the function that flattened it says so.
+ * The flattened entry carries the group that claimed a leaf, so the value is rewritten inside that
+ * group's `values` section. Every authored key has one, since an ungrouped entry is refused as
+ * `keyframes-ungrouped-key` (ADR-121). There is no second answer about where an authored key lives:
+ * the function that flattened it says so.
  *
  * A key with no flattened entry is skipped rather than invented. It cannot be reached in practice,
  * because `Track` refuses a key that is absent from the resolved authored record before this runs,
@@ -174,10 +175,6 @@ export function withAuthoredValues(
   for (const [key, value] of Object.entries(values)) {
     const entry = sources.get(key);
     if (entry === undefined) continue;
-    if (entry.group === undefined) {
-      keyframes[key] = value;
-      continue;
-    }
     const group = keyframes[entry.group] as AuthoredPluginGroup;
     keyframes[entry.group] = Object.freeze({
       ...group,

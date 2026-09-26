@@ -26,7 +26,7 @@ One walker, and the two rules that read it are set operations against the groups
 
 Presence, never value. Whether an authored `weight` is provably always `1` is a leaf-shape and value-semantics question, `contract/authored-leaf` already owns leaf shape, and hand-walking a `stops` array here would make this layer a second owner of it: the same break issue #192 closed once. This layer answers which group authored a key, and nothing about what it authored.
 
-Two shapes it deliberately does not report, because each already has a more specific owner. A value directly under the plugin name is the pre-ADR-049 group form, refused as `keyframes-missing-values-section`. And a flat key names no group at all: attributing one to a plugin is the registry's question, and this layer holds no registry by design, so a member authoring one meets `plugin-ambiguous-key` in any registry with two claimants and `plugin-unknown-key` in one with none.
+Two shapes it deliberately does not report, because each already has a more specific owner. A value directly under the plugin name is the pre-ADR-049 group form, refused as `keyframes-missing-values-section`. And an ungrouped entry names no plugin at all, so it is refused as `keyframes-ungrouped-key` by the schema validator before any rule here reads it (ADR-121).
 
 Sorted, so a diagnostic that lists the groups it fired on never depends on authoring order. `readPluginValues` stays the only answer to what a group's `values` section is. See ADR-043, ADR-044, ADR-049, ADR-051, ADR-053, ADR-054, and ADR-055.
 

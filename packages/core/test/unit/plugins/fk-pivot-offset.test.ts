@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { PluginRegistry } from "../../../src/domain/plugins";
+import type { Diagnostic } from "../../../src/contract/v5";
+import { validateKeyframes } from "../../../src/contract/validate-v5";
 import type { ImmutableRecord } from "../../../src/domain/values";
 import { composeWorld, fkPlugin } from "../../../src/plugins/fk";
 import { transformPlugin } from "../../../src/plugins/transform";
@@ -121,12 +123,12 @@ describe("fk pivot offsets", () => {
     expect(resolved.plugins.map(({ name }) => name)).toEqual(["fk"]);
   });
 
-  it("FO-6 refuses the flat spelling of an offset key both plugins now claim", () => {
-    // The cost of the claim, stated rather than discovered. `x` had one claimant and now has two,
-    // so its flat spelling is ambiguous exactly as flat `rotation` was, and an author names the
-    // owner by authoring inside a group. See ADR-043.
-    const resolved = registry().resolveForKeyframes({ x: 4 });
-    expect(resolved.diagnostics.map(({ ruleId }) => ruleId)).toEqual(["plugin-ambiguous-key"]);
-    expect(resolved.diagnostics[0]?.message).toContain('"fk" and "transform"');
+  it("FO-6 refuses an ungrouped spelling of an offset key both plugins claim", () => {
+    // Grouping is required before plugin ownership is resolved, regardless of how many plugins
+    // claim the leaf. The validator owns this authored-shape refusal.
+    const diagnostics: Diagnostic[] = [];
+    validateKeyframes({ x: 4 }, "track.keyframes", diagnostics);
+    expect(diagnostics.map(({ ruleId }) => ruleId)).toEqual(["keyframes-ungrouped-key"]);
+    expect(diagnostics[0]?.path).toBe("track.keyframes.x");
   });
 });

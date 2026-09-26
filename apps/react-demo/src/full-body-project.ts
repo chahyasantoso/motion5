@@ -9,7 +9,7 @@ export const WALK_SCROLL_SOURCE = "walk";
 /*
  * This app registers `transformPlugin` and `fkPlugin`, and both claim `rotation`, so every track
  * names the plugin that owns its keys: a bone is authored under `fk` and the pelvis under
- * `transform`. The flat spelling of a key with two claimants is `plugin-ambiguous-key` at load.
+ * `transform`. Every authored top-level keyframe entry is a plugin-named group.
  * See ADR-043 and the keyframes section of docs/AUTHORED-SCHEMA.md.
  *
  * A group has exactly two members. Its animated properties live under `values` and the graph

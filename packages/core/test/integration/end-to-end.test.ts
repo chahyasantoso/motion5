@@ -17,10 +17,14 @@ const project: ProjectDefinition = {
         {
           id: "arm",
           keyframes: {
-            opacity: [
-              { p: 0, v: 0 },
-              { p: 1, v: 1 },
-            ],
+            style: {
+              values: {
+                opacity: [
+                  { p: 0, v: 0 },
+                  { p: 1, v: 1 },
+                ],
+              },
+            },
           },
         },
       ],

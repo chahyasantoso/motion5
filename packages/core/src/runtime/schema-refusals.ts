@@ -138,15 +138,3 @@ export function unboundGroup(nodeId: string, plugin: string): never {
 export function reservedGoalSlot(plugin: string, slot: string): never {
   return refuse({ kind: "reserved-goal-slot", plugin, slot });
 }
-/**
- * Refuses a group edit addressed at a name this node authors as an ordinary property.
- *
- * The entry-level twin of `keyframe-require-shape`, and the primitive's own for the same reason: a
- * plugin name and a keyframe name share one namespace, both shapes are legal there, and nothing
- * below this layer can catch either direction. Writing a group over a property drops every stop the
- * author wrote; removing one deletes a property the caller never named. Crossing an entry's shape is
- * a `replace()`, where a whole definition is validated. See ADR-063.
- */
-export function propertyEntry(nodeId: string, plugin: string): never {
-  return refuse({ kind: "property-entry", nodeId, plugin });
-}

@@ -24,16 +24,16 @@ describe("runtime track validation and immutability (W3)", () => {
     const handle = makeHandle();
     const source: TrackDefinition = {
       id: "arm",
-      keyframes: { x: ramp(0, 100) },
+      keyframes: { transform: { values: { x: ramp(0, 100) } } },
     };
 
     const added = handle.addTrack(source);
 
-    // An authored keyframe entry is a property or a plugin-named group, so reading stops off one
-    // narrows to the property form first. Since ADR-050 that property *is* the stops array, so the
-    // levels the freeze has to reach are the array and each stop in it, not a wrapper object, its
-    // `stops` member, and then the stop.
-    const stops = added.definition.keyframes?.x as readonly AuthoredStop[] | undefined;
+    // Authored keyframes are plugin-named groups. Read the leaf through the group's values so the
+    // freeze assertion reaches the stops array and each stop in it.
+    const stops = added.definition.keyframes?.transform?.values?.x as
+      | readonly AuthoredStop[]
+      | undefined;
     expect(added.definition).not.toBe(source);
     expect(Object.isFrozen(added.definition)).toBe(true);
     expect(Object.isFrozen(added.definition.keyframes)).toBe(true);
@@ -48,12 +48,12 @@ describe("runtime track validation and immutability (W3)", () => {
     const handle = makeHandle();
     const source: TrackDefinition = {
       id: "arm",
-      keyframes: { x: ramp(0, 100) },
+      keyframes: { transform: { values: { x: ramp(0, 100) } } },
     };
     const added = handle.addTrack(source);
 
     // The caller-owned source remains mutable. The runtime-owned clone must not change with it.
-    const stops = source.keyframes!.x as readonly AuthoredStop[];
+    const stops = source.keyframes?.transform?.values?.x as readonly AuthoredStop[];
     (stops[1] as { p: number; v: unknown }).v = 999;
 
     handle.seek(added.id, 1);
@@ -70,19 +70,24 @@ describe("runtime track validation and immutability (W3)", () => {
     const handle = makeHandle();
     const malformed = {
       id: "broken",
-      keyframes: { x: ramp(0, 1) },
+      keyframes: { transform: { values: { x: ramp(0, 1) } } },
       observes: "not-an-array",
     } as unknown as TrackDefinition;
 
     expect(() => handle.addTrack(malformed)).toThrow(/observes-shape/);
-    expect(() => handle.addTrack({ id: "broken", keyframes: { x: ramp(0, 1) } })).not.toThrow();
+    expect(() =>
+      handle.addTrack({ id: "broken", keyframes: { transform: { values: { x: ramp(0, 1) } } } }),
+    ).not.toThrow();
 
     handle.dispose();
   });
 
   it("keeps the existing same-source remove and re-add path working", () => {
     const handle = makeHandle();
-    const source: TrackDefinition = { id: "arm", keyframes: { x: ramp(0, 100) } };
+    const source: TrackDefinition = {
+      id: "arm",
+      keyframes: { transform: { values: { x: ramp(0, 100) } } },
+    };
 
     const first = handle.addTrack(source);
     first.remove();

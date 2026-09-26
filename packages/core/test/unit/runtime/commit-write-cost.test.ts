@@ -221,7 +221,9 @@ describe("what a commit writes, and what an authored read derives", () => {
         {
           id: "m0",
           trigger: MANUAL,
-          tracks: [{ id: "t0", keyframes: { demo: { values: leaves }, flat: 0 } }],
+          tracks: [
+            { id: "t0", keyframes: { demo: { values: leaves }, style: { values: { flat: 0 } } } },
+          ],
         },
       ],
     };
@@ -236,11 +238,10 @@ describe("what a commit writes, and what an authored read derives", () => {
     // write over an n-entry record was O(k x n) to place k.
     expect(searches).toBe(0);
     // The oracle. Every key is still written back into the record the flatten says it came from: a
-    // grouped leaf inside that group's values section, a flat key at the top level, and nothing else
-    // in either of them moved.
+    // grouped leaves inside their values sections, and nothing else in either group moved.
     expect(runtime.track("m0/t0").definition.keyframes).toEqual({
       demo: { values: { ...leaves, leaf0: 5, leaf3: 6 } },
-      flat: 7,
+      style: { values: { flat: 7 } },
     });
 
     runtime.dispose();
@@ -336,16 +337,21 @@ describe("what a commit writes, and what an authored read derives", () => {
     // in-place tiers write through: a value-tier write after an adoption has to land where the next
     // commit's snapshot reads it, or the committed document and the retained definition disagree,
     // which is the drift the wholesale rewrite existed to prevent.
-    const added = runtime.addTrack({ id: "s", keyframes: { size: 1 } }, { motionId: "m2" });
+    const added = runtime.addTrack(
+      { id: "s", keyframes: { style: { values: { size: 1 } } } },
+      { motionId: "m2" },
+    );
     runtime.setValues(added.id, { size: 4 });
-    expect(runtime.track(added.id).definition.keyframes).toEqual({ size: 4 });
+    expect(runtime.track(added.id).definition.keyframes).toEqual({
+      style: { values: { size: 4 } },
+    });
 
     runtime.track("m0/t0").remove();
 
     const document = committed();
     expect(document.motions.map((motion) => motion.id)).toEqual(["m0", "m1", "m2"]);
     expect(idsOf(document.motions[0]?.tracks)).toEqual(["t1"]);
-    expect(document.motions[2]?.tracks[0]?.keyframes).toEqual({ size: 4 });
+    expect(document.motions[2]?.tracks[0]?.keyframes).toEqual({ style: { values: { size: 4 } } });
     expect(runtime.motion("m1").trackIds).toEqual(["m1/t0", "m1/t1"]);
 
     runtime.dispose();

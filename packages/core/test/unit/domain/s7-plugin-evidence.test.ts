@@ -22,7 +22,10 @@ describe("S7 plugin evidence", () => {
     registry.register(first);
     registry.register(second);
 
-    const resolved = registry.resolveForKeyframes({ x: [], y: [] });
+    const resolved = registry.resolveForKeyframes({
+      first: { values: { x: [] } },
+      second: { values: { y: [] } },
+    });
 
     expect(first.contribute).toHaveBeenCalledOnce();
     expect(second.contribute).toHaveBeenCalledOnce();
@@ -35,7 +38,10 @@ describe("S7 plugin evidence", () => {
       const registry = new PluginRegistry();
       const plugins = [contributor("first", "x"), contributor("second", "y")];
       for (const plugin of reverse ? plugins.reverse() : plugins) registry.register(plugin);
-      return registry.resolveForKeyframes({ x: [], y: [] });
+      return registry.resolveForKeyframes({
+        first: { values: { x: [] } },
+        second: { values: { y: [] } },
+      });
     };
 
     const forward = resolve(false);
@@ -49,10 +55,9 @@ describe("S7 plugin evidence", () => {
     registry.register({ name: "zeta", keys: ["x"], outputs: ["transform"], compose });
     registry.register({ name: "alpha", keys: ["y"], outputs: ["transform"], compose });
 
-    expect(registry.resolveForKeyframes({ x: {}, y: {} }).diagnostics[0]?.ids).toEqual([
-      "alpha",
-      "transform",
-      "zeta",
-    ]);
+    expect(
+      registry.resolveForKeyframes({ zeta: { values: { x: {} } }, alpha: { values: { y: {} } } })
+        .diagnostics[0]?.ids,
+    ).toEqual(["alpha", "transform", "zeta"]);
   });
 });

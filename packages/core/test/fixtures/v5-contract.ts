@@ -10,7 +10,7 @@ export const perspectiveWarningProject = {
     {
       id: "hero",
       trigger: { type: "manual" },
-      tracks: [{ id: "tilt", keyframes: { rotationY: {} } }],
+      tracks: [{ id: "tilt", keyframes: { transform3d: { values: { rotationY: {} } } } }],
     },
   ],
 } as const;

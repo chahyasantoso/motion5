@@ -6,6 +6,11 @@
 
 This record amends ADR-041 and ADR-044 by replacing the group's authored shape. Neither is edited: each records the decision that was correct when it was made, and this record supersedes ADR-044's "a `values` wrapper beside `requires`" rejection.
 
+**Amended by [ADR-121](./ADR-121-grouped-only-keyframes.md), 2026-09-26.** The two reserved sections
+remain the group grammar, but a plugin-named group is now mandatory at the authored top level. A
+flat property, including the retired wrapper form shown in this historical record, is not an
+authored spelling; a leaf belongs under the owning group's `values`.
+
 ## Context
 
 ADR-044 reserved `requires` inside a plugin-named group and left the animated properties at the group top level. It rejected a `values` wrapper for one reason, stated in its own alternatives section:

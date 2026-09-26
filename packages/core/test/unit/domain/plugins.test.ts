@@ -2,6 +2,8 @@ import { describe, expect, it, vi } from "vitest";
 import { fileURLToPath } from "node:url";
 import type { ImmutableRecord } from "../../../src/domain/values";
 import { PluginRegistry } from "../../../src/domain/plugins";
+import type { Diagnostic } from "../../../src/contract/v5";
+import { validateKeyframes } from "../../../src/contract/validate-v5";
 import { code, member } from "../../helpers/source-region";
 
 const PLUGINS = code(fileURLToPath(new URL("../../../src/domain/plugins.ts", import.meta.url)));
@@ -36,7 +38,10 @@ describe("plugin registry", () => {
     const second = plugin("second", { keys: ["b"] });
     registry.register(first);
     registry.register(second);
-    const resolved = registry.resolveForKeyframes({ a: {}, b: {} });
+    const resolved = registry.resolveForKeyframes({
+      first: { values: { a: {} } },
+      second: { values: { b: {} } },
+    });
     expect(resolved.diagnostics).toEqual([]);
     expect(resolved.plugins.map(({ name }) => name)).toEqual(["first", "second"]);
     expect(resolved.plugins[0]).not.toBe(first);
@@ -48,7 +53,11 @@ describe("plugin registry", () => {
     registry.register(plugin("opacity", { keys: ["opacity"] }));
     registry.register(plugin("transform", { claimsKey: (key: string) => key === "x" }));
     const resolved = registry.resolveForKeyframes(
-      { opacity: {}, x: {}, mystery: {} },
+      {
+        opacity: { values: { opacity: {} } },
+        transform: { values: { x: {} } },
+        mystery: { values: { mystery: {} } },
+      },
       "track.keyframes",
     );
     expect(resolved.plugins.map(({ name }) => name)).toEqual(["opacity", "transform"]);
@@ -56,7 +65,7 @@ describe("plugin registry", () => {
       {
         ruleId: "plugin-unknown-key",
         path: "track.keyframes.mystery",
-        message: 'No registered plugin claims authored key "mystery".',
+        message: 'No registered plugin is named "mystery".',
         severity: "error",
         ids: ["mystery"],
       },
@@ -69,7 +78,13 @@ describe("plugin registry", () => {
     registry.register(plugin("early", { keys: ["y"], stage: "prepare", priority: 99 }));
     registry.register(plugin("same", { keys: ["z"], stage: "compose", priority: 10 }));
     expect(
-      registry.resolveForKeyframes({ x: {}, y: {}, z: {} }).plugins.map(({ name }) => name),
+      registry
+        .resolveForKeyframes({
+          late: { values: { x: {} } },
+          early: { values: { y: {} } },
+          same: { values: { z: {} } },
+        })
+        .plugins.map(({ name }) => name),
     ).toEqual(["early", "same", "late"]);
   });
 
@@ -77,7 +92,7 @@ describe("plugin registry", () => {
     const registry = new PluginRegistry();
     const contribute = vi.fn(() => undefined);
     registry.register(plugin("first", { keys: ["x"], stage: "prepare", contribute }));
-    const resolved = registry.resolveForKeyframes({ x: [] });
+    const resolved = registry.resolveForKeyframes({ first: { values: { x: [] } } });
     expect(resolved.plugins[0]?.contribute).toBe(contribute);
     expect(contribute).toHaveBeenCalledOnce();
   });
@@ -86,7 +101,10 @@ describe("plugin registry", () => {
     const registry = new PluginRegistry();
     registry.register(plugin("first", { keys: ["x"], outputs: ["transform"] }));
     registry.register(plugin("second", { keys: ["y"], outputs: ["transform"] }));
-    expect(registry.resolveForKeyframes({ x: {}, y: {} }).diagnostics).toEqual([
+    expect(
+      registry.resolveForKeyframes({ first: { values: { x: {} } }, second: { values: { y: {} } } })
+        .diagnostics,
+    ).toEqual([
       {
         ruleId: "plugin-duplicate-output",
         path: "keyframes.transform",
@@ -101,32 +119,28 @@ describe("plugin registry", () => {
     const registry = new PluginRegistry();
     registry.register(plugin("first", { keys: ["x"] }));
     registry.register(plugin("second", { keys: ["x"] }));
-    // `plugin-key-collision` is deleted. A shared key is a legal registry, because which plugin
-    // owns an authored entry is a question about that entry rather than about registration order.
-    // The registration guard could only ever answer it by refusing the second plugin outright,
-    // which is why `fkPlugin` had to mangle its own key names. See ADR-043.
+    // A shared key is a legal registry: which plugin owns an authored leaf is answered by the group
+    // the leaf sits in, never by registration order. See ADR-043 and ADR-121.
     expect(registry.size).toBe(2);
   });
 
-  it("N-2 refuses a shared key authored flat instead of picking a winner", () => {
+  it("N-2 refuses a shared key authored ungrouped instead of picking a winner", () => {
     const registry = new PluginRegistry();
     registry.register(plugin("transform", { keys: ["x", "y", "rotation"] }));
     registry.register(plugin("fk", { keys: ["length", "rotation"] }));
-    const message = [
-      'Authored key "rotation" is claimed by plugins "fk" and "transform".',
-      "Author it inside a plugin-named group to name one.",
-    ].join(" ");
-    const resolved = registry.resolveForKeyframes({ rotation: {} }, "track.keyframes");
-    // No plugin is resolved and no value is compiled from an owner nobody named. The claimants are
-    // sorted, so the message never depends on which one was registered first.
-    expect(resolved.plugins).toEqual([]);
-    expect(resolved.diagnostics).toEqual([
+    const diagnostics: Diagnostic[] = [];
+    validateKeyframes({ rotation: {} }, "track.keyframes", diagnostics);
+    // The authored-shape rule runs before ownership, so claimant order is irrelevant and no
+    // ambiguity-specific rule is needed anymore.
+    expect(registry.size).toBe(2);
+    expect(diagnostics).toEqual([
       {
-        ruleId: "plugin-ambiguous-key",
+        ruleId: "keyframes-ungrouped-key",
         path: "track.keyframes.rotation",
-        message,
+        message:
+          "Keyframe 'rotation' must be a plugin-named group; author the property as { <plugin>: { values: { ... } } }.",
         severity: "error",
-        ids: ["fk", "rotation", "transform"],
+        ids: [],
       },
     ]);
   });
@@ -148,10 +162,12 @@ describe("plugin registry", () => {
     const registry = new PluginRegistry();
     registry.register(plugin("transform", { keys: ["x", "y", "rotation"] }));
     registry.register(plugin("opacity", { keys: ["opacity"] }));
-    // Green on the parent by design, and not claimed as red. Ambiguity is a property of the
-    // registry, not of the plugin catalog: an app that registers no second claimant for `rotation`
-    // keeps authoring the flat spelling forever.
-    const resolved = registry.resolveForKeyframes({ rotation: {} }, "track.keyframes");
+    // Green on the parent by design, and not claimed as red. The named group is the owner whatever
+    // else is registered, so an app with no second claimant for `rotation` reads the same leaf.
+    const resolved = registry.resolveForKeyframes(
+      { transform: { values: { rotation: {} } } },
+      "track.keyframes",
+    );
     expect(resolved.diagnostics).toEqual([]);
     expect(resolved.plugins.map(({ name }) => name)).toEqual(["transform"]);
   });
@@ -163,7 +179,10 @@ describe("plugin registry", () => {
     // Green on the parent by design, and not claimed as red. A predicate is the fallback for keys
     // nobody named, so it is not a claimant that can make a named key ambiguous; treating it as
     // one would make every exactly-claimed key in a registry with a predicate unauthorable.
-    const resolved = registry.resolveForKeyframes({ x: {} }, "track.keyframes");
+    const resolved = registry.resolveForKeyframes(
+      { exact: { values: { x: {} } } },
+      "track.keyframes",
+    );
     expect(resolved.diagnostics).toEqual([]);
     expect(resolved.plugins.map(({ name }) => name)).toEqual(["exact"]);
   });
@@ -217,7 +236,9 @@ describe("plugin registry", () => {
     ]);
   });
 
-  it("lets exact ownership beat a predicate fallback", () => {
+  // The group names the owner (ADR-121), so a predicate that claims every key is never consulted
+  // for a leaf authored under another plugin's group, and neither is its contribution hook.
+  it("lets the group name the owner even when a predicate also claims the key", () => {
     const registry = new PluginRegistry();
     const predicate = vi.fn(() => true);
     const exact = vi.fn(() => undefined);
@@ -225,7 +246,7 @@ describe("plugin registry", () => {
       plugin("predicate", { claimsKey: predicate, stage: "prepare", contribute: predicate }),
     );
     registry.register(plugin("exact", { keys: ["x"], stage: "prepare", contribute: exact }));
-    registry.resolveForKeyframes({ x: [] });
+    registry.resolveForKeyframes({ exact: { values: { x: [] } } });
     expect(exact).toHaveBeenCalledOnce();
     expect(predicate).not.toHaveBeenCalled();
   });
@@ -297,7 +318,7 @@ describe("plugin registry", () => {
     const registry = new PluginRegistry();
     const original = plugin("stable", { keys: ["stable"] });
     registry.register(original);
-    const resolved = registry.resolveForKeyframes({ stable: {} });
+    const resolved = registry.resolveForKeyframes({ stable: { values: { stable: {} } } });
     expect(Object.isFrozen(resolved)).toBe(true);
     expect(Object.isFrozen(resolved.plugins)).toBe(true);
     expect(Object.isFrozen(resolved.plugins[0])).toBe(true);

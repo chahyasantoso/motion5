@@ -2,6 +2,10 @@
 
 **Status:** Accepted, 2026-08-20
 
+**Amended by [ADR-121](./ADR-121-grouped-only-keyframes.md), 2026-09-26.** The group is now the
+only authored top-level spelling. Shared claims remain legal, but the author names the owner by
+choosing the plugin group; no flat entry reaches resolution.
+
 ## Context
 
 ADR-041 shipped plugin-named keyframe groups and deferred exactly one thing by name: per-plugin key
@@ -28,15 +32,15 @@ entry, at resolve time, and the group form is how an author names that owner.
 2. **A shared key authored flat is refused, never won.** A flat key with two or more exact claimants
    is `plugin-ambiguous-key`, naming every claimant in sorted order and pointing at the group form.
    The alternative is a winner decided by registration order, which makes the losing plugin's keys
-   quietly unreachable and is the last-write-wins this codebase rejects everywhere else.
+   quietly unreachable and is the last-write-wins this codebase rejects everywhere else. **Superseded in part by [ADR-121](./ADR-121-grouped-only-keyframes.md), 2026-09-26.** A flat key is never resolved against its claimants any more: every ungrouped top-level entry is `keyframes-ungrouped-key` however many plugins claim it, and `plugin-ambiguous-key` is deleted.
 3. **Additive, by ADR-041's own argument.** Two plugins claiming one key could not be registered
    before this change, so no registry able to report `plugin-ambiguous-key` could previously exist
    and no authored document that loads today can start failing. Ambiguity is a property of the
    registry rather than of the plugin catalog: an app that registers only `transformPlugin` keeps
-   authoring flat `rotation` forever.
+   authoring flat `rotation` forever. **Superseded in part by [ADR-121](./ADR-121-grouped-only-keyframes.md), 2026-09-26.** No app authors a flat `rotation`: grouped-only authoring is a deliberate breaking change, and `rotation` is authored under `transform.values`.
 4. **The group form stops being sugar.** For a key one plugin claims it stays an equivalent
    spelling, exactly as ADR-041 shipped it. For a shared key it is the only legal spelling, which is
-   why this record, and not ADR-041, is the one that makes grouping load-bearing.
+   why this record, and not ADR-041, is the one that makes grouping load-bearing. **Superseded in part by [ADR-121](./ADR-121-grouped-only-keyframes.md), 2026-09-26.** The group form is the only legal spelling for every key, shared or not.
 5. **One owner map, computed once.** `resolveForKeyframes` records the owner of every flattened
    entry and hands that map to `prepareContributions`, which used to re-derive ownership from the
    global key map. Under one owner per key those two lookups agreed by construction; under shared

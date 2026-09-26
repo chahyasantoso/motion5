@@ -5,6 +5,11 @@
 - Slice: C1 of [issue #223](https://github.com/chahyasantoso/motion5/issues/223), the structural tier, amended by C3 with the predicate it deferred
 - Supersedes nothing. Amends no earlier record. Closes the open question ADR-059's Correction #3 left reopenable and that `SESSION-STATUS.md` carried into slice C.
 
+**Amended by [ADR-121](./ADR-121-grouped-only-keyframes.md), 2026-09-26.** The `grouped leaf and a
+flat key are indistinguishable` passage in **Why the two candidates lose** no longer describes
+authored input. Flattening still loses group identity, but a flat key is no longer an authored
+spelling; the schema rejects it as `keyframes-ungrouped-key` before this layer.
+
 ## The question
 
 A structural authoring primitive rewrites an authored keyframes record. Something has to answer

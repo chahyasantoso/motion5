@@ -57,10 +57,14 @@ describe("composition and output-shape diagnostics", () => {
             {
               id: "arm",
               keyframes: {
-                opacity: [
-                  { p: 0, v: 0 },
-                  { p: 1, v: 1 },
-                ],
+                "bad-opacity": {
+                  values: {
+                    opacity: [
+                      { p: 0, v: 0 },
+                      { p: 1, v: 1 },
+                    ],
+                  },
+                },
               },
             },
           ],

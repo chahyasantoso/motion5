@@ -47,10 +47,14 @@ describe("runtime track addition through ProjectHandle (G2)", () => {
     const bad = {
       id: "bad",
       keyframes: {
-        x: [
-          { p: Number.NaN, v: 0 },
-          { p: 0.5, v: 1 },
-        ],
+        transform: {
+          values: {
+            x: [
+              { p: Number.NaN, v: 0 },
+              { p: 0.5, v: 1 },
+            ],
+          },
+        },
       },
     };
     expect(() => handle.addTrack(bad)).toThrow(/stop-position/);
@@ -68,10 +72,14 @@ describe("runtime track addition through ProjectHandle (G2)", () => {
       {
         id: "leg",
         keyframes: {
-          x: [
-            { p: 0, v: 0 },
-            { p: 1, v: 100 },
-          ],
+          transform: {
+            values: {
+              x: [
+                { p: 0, v: 0 },
+                { p: 1, v: 100 },
+              ],
+            },
+          },
         },
       },
       { motionId: "hero" },
