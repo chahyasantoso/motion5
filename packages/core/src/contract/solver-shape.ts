@@ -114,6 +114,83 @@ export function acceptsChain(
   }
 }
 
+/**
+ * Which strategy a solver of `shape` answers the derived members with, read at load (ADR-122).
+ *
+ * `closed-form` is a parent and its one child: exactly two members, one at depth 1 and one at depth
+ * 2, which on a chain that loads is the closed form's parent and addressed child, because the graph
+ * refuses a goal on the parent (`ik-goal-not-leaf`) and a leaf with none (`ik-leaf-without-goal`,
+ * `ik-solver-no-goal`). `iterative` is every other chain a `tree` shape accepts. `any` shapes answer
+ * `iterative` too: the 2D solve reads no member rest orientation on either of its paths, so the one
+ * question this is asked for has the same answer there. It restates at load, from depths alone,
+ * the runtime proof `plugins/ik-topology.ts`'s `twoBonePair` makes from ids and goals, because the
+ * graph holds no plugin and a plugin holds no graph; `TH-76` holds the two readings equal over
+ * every derived shape up to five members.
+ */
+export type DerivedStrategy = "closed-form" | "iterative";
+
+export function derivedStrategy(
+  shape: SolverChainShape,
+  members: readonly DerivedChainMember[],
+): DerivedStrategy {
+  switch (shape.kind) {
+    case "any":
+      return "iterative";
+    case "tree": {
+      const depths = members.map(({ depth }) => depth).sort((a, b) => a - b);
+      return depths.length === 2 && depths[0] === 1 && depths[1] === 2
+        ? "closed-form"
+        : "iterative";
+    }
+    default:
+      return unreachable(shape);
+  }
+}
+
+/**
+ * Whether a solve of `shape` over `members` reads each member's authored rest orientation, which is
+ * what decides whether `ik-solved-rotation-dead` may call that orientation dead.
+ *
+ * The 3D tree solve reconstructs every member's roll as the minimal swing from its rest orientation
+ * under its solved parent (ADR-122), so under it the rest is live input at every weight, and a
+ * refusal would reject a rig whose authored value changes the pose. The closed form publishes its
+ * triples outright and the 2D solve replaces the rotation it solves, so under either one the rest
+ * orientation still reaches the output only through a `weight`.
+ */
+export function readsMemberRest(
+  shape: SolverChainShape,
+  members: readonly DerivedChainMember[],
+): boolean {
+  switch (shape.kind) {
+    case "any":
+      return false;
+    case "tree": {
+      const strategy = derivedStrategy(shape, members);
+      switch (strategy) {
+        case "closed-form":
+          return false;
+        case "iterative":
+          return true;
+        default:
+          return unreachable(strategy);
+      }
+    }
+    default:
+      return unreachable(shape);
+  }
+}
+
+/**
+ * Whether a pole bound on a solver over `members` can bend anything: some member sits at depth 2 or
+ * deeper, so at least one root-to-leaf path has an interior joint whose plane the pole picks. A
+ * chain whose every member hangs from the root is a fan of single segments, each of which points
+ * straight at its goal in either strategy, and a pole bound there is refused at load as
+ * `ik-pole-without-bend` rather than accepted and ignored (ADR-122).
+ */
+export function poleBends(members: readonly DerivedChainMember[]): boolean {
+  return members.some(({ depth }) => depth >= 2);
+}
+
 /** What `shape` accepts, in the words the refusal message uses. */
 export function describeChainShape(shape: SolverChainShape): string {
   switch (shape.kind) {
