@@ -1,0 +1,126 @@
+er; }[]; }; }' is not assignable to type 'TrackDefinition'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.8917096Z   Types of property 'keyframes' are incompatible.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.8917721Z     Type '{ x: { p: number; v: number; }[]; }' is not assignable to type 'Readonly<Record<string, AuthoredPluginGroup>>'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.8918311Z       Property 'x' is incompatible with index signature.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.8918816Z         Type '{ p: number; v: number; }[]' is not assignable to type 'AuthoredPluginGroup'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.8919314Z           Types of property 'values' are incompatible.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.8919966Z             Type '() => ArrayIterator<{ p: number; v: number; }>' is not assignable to type 'Readonly<Record<string, AuthoredProperty>>'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.8920983Z               Index signature for type 'string' is missing in type '() => ArrayIterator<{ p: number; v: number; }>'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.8922899Z ##[error]packages/core/test/integration/trigger-time-loop.test.ts(233,48): error TS2322: Type '{ id: string; keyframes: { x: { p: number; v: number; }[]; }; }' is not assignable to type 'TrackDefinition'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.8924661Z   Types of property 'keyframes' are incompatible.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.8925448Z     Type '{ x: { p: number; v: number; }[]; }' is not assignable to type 'Readonly<Record<string, AuthoredPluginGroup>>'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.8926295Z       Property 'x' is incompatible with index signature.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.8926816Z         Type '{ p: number; v: number; }[]' is not assignable to type 'AuthoredPluginGroup'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.8927610Z           Types of property 'values' are incompatible.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.8928623Z             Type '() => ArrayIterator<{ p: number; v: number; }>' is not assignable to type 'Readonly<Record<string, AuthoredProperty>>'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.8930168Z               Index signature for type 'string' is missing in type '() => ArrayIterator<{ p: number; v: number; }>'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.8932655Z ##[error]packages/core/test/integration/trigger-time.test.ts(29,79): error TS2322: Type '{ id: string; keyframes: { x: { p: number; v: number; }[]; }; }' is not assignable to type 'TrackDefinition'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.8934778Z   Types of property 'keyframes' are incompatible.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.8935881Z     Type '{ x: { p: number; v: number; }[]; }' is not assignable to type 'Readonly<Record<string, AuthoredPluginGroup>>'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.8936594Z       Property 'x' is incompatible with index signature.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.8937399Z         Type '{ p: number; v: number; }[]' is not assignable to type 'AuthoredPluginGroup'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.8938279Z           Types of property 'values' are incompatible.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.8939461Z             Type '() => ArrayIterator<{ p: number; v: number; }>' is not assignable to type 'Readonly<Record<string, AuthoredProperty>>'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.8940999Z               Index signature for type 'string' is missing in type '() => ArrayIterator<{ p: number; v: number; }>'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.8943556Z ##[error]packages/core/test/integration/trigger-time.test.ts(132,77): error TS2322: Type '{ id: string; keyframes: { x: { p: number; v: number; }[]; }; }' is not assignable to type 'TrackDefinition'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.8945915Z   Types of property 'keyframes' are incompatible.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.8947006Z     Type '{ x: { p: number; v: number; }[]; }' is not assignable to type 'Readonly<Record<string, AuthoredPluginGroup>>'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.8948062Z       Property 'x' is incompatible with index signature.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.8948909Z         Type '{ p: number; v: number; }[]' is not assignable to type 'AuthoredPluginGroup'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.8949396Z           Types of property 'values' are incompatible.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.8950051Z             Type '() => ArrayIterator<{ p: number; v: number; }>' is not assignable to type 'Readonly<Record<string, AuthoredProperty>>'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.8950881Z               Index signature for type 'string' is missing in type '() => ArrayIterator<{ p: number; v: number; }>'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.8952766Z ##[error]packages/core/test/integration/trigger-time.test.ts(177,75): error TS2322: Type '{ id: string; keyframes: { x: { p: number; v: number; }[]; }; }' is not assignable to type 'TrackDefinition'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.8954135Z   Types of property 'keyframes' are incompatible.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.8954747Z     Type '{ x: { p: number; v: number; }[]; }' is not assignable to type 'Readonly<Record<string, AuthoredPluginGroup>>'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.8955333Z       Property 'x' is incompatible with index signature.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.8955833Z         Type '{ p: number; v: number; }[]' is not assignable to type 'AuthoredPluginGroup'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.8956321Z           Types of property 'values' are incompatible.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.8957149Z             Type '() => ArrayIterator<{ p: number; v: number; }>' is not assignable to type 'Readonly<Record<string, AuthoredProperty>>'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.8957972Z               Index signature for type 'string' is missing in type '() => ArrayIterator<{ p: number; v: number; }>'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.8959388Z ##[error]packages/core/test/integration/unified-mutation-surface.test.ts(20,29): error TS2322: Type '{ p: number; v: number; }[]' is not assignable to type 'AuthoredPluginGroup'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.8960639Z   Types of property 'values' are incompatible.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.8961296Z     Type '() => ArrayIterator<{ p: number; v: number; }>' is not assignable to type 'Readonly<Record<string, AuthoredProperty>>'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.8962374Z       Index signature for type 'string' is missing in type '() => ArrayIterator<{ p: number; v: number; }>'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.8963975Z ##[error]packages/core/test/unit/graph/incremental-cache.test.ts(26,62): error TS2322: Type '{ p: number; v: number; }[]' is not assignable to type 'AuthoredPluginGroup'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.8965217Z   Types of property 'values' are incompatible.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.8965966Z     Type '() => ArrayIterator<{ p: number; v: number; }>' is not assignable to type 'Readonly<Record<string, AuthoredProperty>>'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.8967369Z       Index signature for type 'string' is missing in type '() => ArrayIterator<{ p: number; v: number; }>'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.8969359Z ##[error]packages/core/test/unit/graph/incremental-cache.test.ts(50,60): error TS2322: Type '{ p: number; v: number; }[]' is not assignable to type 'AuthoredPluginGroup'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.8970910Z   Types of property 'values' are incompatible.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.8972278Z     Type '() => ArrayIterator<{ p: number; v: number; }>' is not assignable to type 'Readonly<Record<string, AuthoredProperty>>'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.8973818Z       Index signature for type 'string' is missing in type '() => ArrayIterator<{ p: number; v: number; }>'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.8976246Z ##[error]packages/core/test/unit/graph/incremental-cache.test.ts(70,61): error TS2322: Type '{ p: number; v: number; }[]' is not assignable to type 'AuthoredPluginGroup'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.8978688Z   Types of property 'values' are incompatible.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.8979826Z     Type '() => ArrayIterator<{ p: number; v: number; }>' is not assignable to type 'Readonly<Record<string, AuthoredProperty>>'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.8981284Z       Index signature for type 'string' is missing in type '() => ArrayIterator<{ p: number; v: number; }>'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.8983020Z ##[error]packages/core/test/unit/graph/incremental-cache.test.ts(90,61): error TS2322: Type '{ p: number; v: number; }[]' is not assignable to type 'AuthoredPluginGroup'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.8984268Z   Types of property 'values' are incompatible.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.8984939Z     Type '() => ArrayIterator<{ p: number; v: number; }>' is not assignable to type 'Readonly<Record<string, AuthoredProperty>>'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.8985741Z       Index signature for type 'string' is missing in type '() => ArrayIterator<{ p: number; v: number; }>'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.8987050Z ##[error]packages/core/test/unit/graph/incremental-cache.test.ts(92,47): error TS2322: Type '{ p: number; v: number; }[]' is not assignable to type 'AuthoredPluginGroup'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.8988327Z   Types of property 'values' are incompatible.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.8988964Z     Type '() => ArrayIterator<{ p: number; v: number; }>' is not assignable to type 'Readonly<Record<string, AuthoredProperty>>'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.8989760Z       Index signature for type 'string' is missing in type '() => ArrayIterator<{ p: number; v: number; }>'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.8992199Z ##[error]packages/core/test/unit/graph/incremental-cache.test.ts(93,46): error TS2322: Type '{ p: number; v: number; }[]' is not assignable to type 'AuthoredPluginGroup'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.8994354Z   Types of property 'values' are incompatible.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.8995487Z     Type '() => ArrayIterator<{ p: number; v: number; }>' is not assignable to type 'Readonly<Record<string, AuthoredProperty>>'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.8996908Z       Index signature for type 'string' is missing in type '() => ArrayIterator<{ p: number; v: number; }>'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.8998311Z ##[error]packages/core/test/unit/graph/incremental-cache.test.ts(122,62): error TS2322: Type '{ p: number; v: number; }[]' is not assignable to type 'AuthoredPluginGroup'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.8999528Z   Types of property 'values' are incompatible.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.9000155Z     Type '() => ArrayIterator<{ p: number; v: number; }>' is not assignable to type 'Readonly<Record<string, AuthoredProperty>>'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.9000945Z       Index signature for type 'string' is missing in type '() => ArrayIterator<{ p: number; v: number; }>'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.9002571Z ##[error]packages/core/test/unit/graph/incremental-cache.test.ts(135,61): error TS2322: Type '{ p: number; v: number; }[]' is not assignable to type 'AuthoredPluginGroup'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.9003999Z   Types of property 'values' are incompatible.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.9004645Z     Type '() => ArrayIterator<{ p: number; v: number; }>' is not assignable to type 'Readonly<Record<string, AuthoredProperty>>'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.9005454Z       Index signature for type 'string' is missing in type '() => ArrayIterator<{ p: number; v: number; }>'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.9006866Z ##[error]packages/core/test/unit/graph/incremental-cache.test.ts(136,60): error TS2322: Type '{ p: number; v: number; }[]' is not assignable to type 'AuthoredPluginGroup'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.9008055Z   Types of property 'values' are incompatible.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.9008740Z     Type '() => ArrayIterator<{ p: number; v: number; }>' is not assignable to type 'Readonly<Record<string, AuthoredProperty>>'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.9009788Z       Index signature for type 'string' is missing in type '() => ArrayIterator<{ p: number; v: number; }>'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.9011144Z ##[error]packages/core/test/unit/graph/resolve-solvers.test.ts(194,7): error TS2559: Type 'number' has no properties in common with type 'AuthoredPluginGroup'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.9014557Z ##[error]packages/core/test/unit/graph/solved-pivot-offset.test.ts(140,7): error TS2559: Type 'number' has no properties in common with type 'AuthoredPluginGroup'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.9018160Z ##[error]packages/core/test/unit/graph/solved-rotation-weight.test.ts(193,9): error TS2559: Type 'number' has no properties in common with type 'AuthoredPluginGroup'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.9021914Z ##[error]packages/core/test/unit/graph/solver-constraints.test.ts(234,7): error TS2322: Type '{ p: number; v: number; }[]' is not assignable to type 'AuthoredPluginGroup'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.9023329Z   Types of property 'values' are incompatible.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.9023979Z     Type '() => ArrayIterator<{ p: number; v: number; }>' is not assignable to type 'Readonly<Record<string, AuthoredProperty>>'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.9024771Z       Index signature for type 'string' is missing in type '() => ArrayIterator<{ p: number; v: number; }>'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.9026121Z ##[error]packages/core/test/unit/graph/solver-constraints.test.ts(245,23): error TS2559: Type 'number' has no properties in common with type 'AuthoredPluginGroup'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.9028045Z ##[error]packages/core/test/unit/graph/solver-constraints.test.ts(247,28): error TS2559: Type 'number' has no properties in common with type 'AuthoredPluginGroup'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.9030813Z ##[error]packages/core/test/unit/graph/solver-constraints.test.ts(252,7): error TS2559: Type 'number' has no properties in common with type 'AuthoredPluginGroup'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.9034597Z ##[error]packages/core/test/unit/graph/solver-constraints.test.ts(264,44): error TS2559: Type 'string' has no properties in common with type 'AuthoredPluginGroup'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.9036629Z ##[error]packages/core/test/unit/graph/solver-constraints.test.ts(270,16): error TS2559: Type 'string' has no properties in common with type 'AuthoredPluginGroup'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.9038742Z ##[error]packages/core/test/unit/graph/solver-constraints.test.ts(277,47): error TS2559: Type 'number' has no properties in common with type 'AuthoredPluginGroup'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.9040796Z ##[error]packages/core/test/unit/plugins/ik-goal-influence.test.ts(362,39): error TS2559: Type 'number' has no properties in common with type 'AuthoredPluginGroup'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.9044433Z ##[error]packages/core/test/unit/plugins/ik-inspection.test.ts(131,13): error TS2322: Type '{ ik: { values: { inspect: AuthoredProperty; }; requires: { root: string; target: string; }; }; } | { inspect: AuthoredProperty; ik: { requires: { root: string; target: string; }; }; }' is not assignable to type 'Readonly<Record<string, AuthoredPluginGroup>>'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.9046606Z   Type '{ inspect: AuthoredProperty; ik: { requires: { root: string; target: string; }; }; }' is not assignable to type 'Readonly<Record<string, AuthoredPluginGroup>>'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.9047392Z     Property 'inspect' is incompatible with index signature.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.9047930Z       Type 'AuthoredProperty' is not assignable to type 'AuthoredPluginGroup'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.9048520Z         Type 'string' has no properties in common with type 'AuthoredPluginGroup'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.9049746Z ##[error]packages/core/test/unit/plugins/ik-inspection.test.ts(360,64): error TS2559: Type 'number' has no properties in common with type 'AuthoredPluginGroup'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.9051991Z ##[error]packages/core/test/unit/plugins/ik3d-inspection.test.ts(194,35): error TS2322: Type 'AuthoredProperty' is not assignable to type 'AuthoredPluginGroup'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.9053369Z   Type 'string' has no properties in common with type 'AuthoredPluginGroup'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.9054720Z ##[error]packages/core/test/unit/runtime/authoring-edit.test.ts(55,76): error TS2559: Type 'number' has no properties in common with type 'AuthoredPluginGroup'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.9056629Z ##[error]packages/core/test/unit/runtime/authoring-edit.test.ts(60,48): error TS2559: Type 'number' has no properties in common with type 'AuthoredPluginGroup'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.9058544Z ##[error]packages/core/test/unit/runtime/commit-write-cost.test.ts(224,71): error TS2559: Type 'number' has no properties in common with type 'AuthoredPluginGroup'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.9060712Z ##[error]packages/core/test/unit/runtime/commit-write-cost.test.ts(339,60): error TS2559: Type 'number' has no properties in common with type 'AuthoredPluginGroup'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.9063044Z ##[error]packages/core/test/unit/runtime/composition-output-shape.test.ts(60,17): error TS2322: Type '{ p: number; v: number; }[]' is not assignable to type 'AuthoredPluginGroup'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.9064310Z   Types of property 'values' are incompatible.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.9064964Z     Type '() => ArrayIterator<{ p: number; v: number; }>' is not assignable to type 'Readonly<Record<string, AuthoredProperty>>'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.9065811Z       Index signature for type 'string' is missing in type '() => ArrayIterator<{ p: number; v: number; }>'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.9067689Z ##[error]packages/core/test/unit/runtime/keyframe-property-edit.test.ts(106,16): error TS2559: Type 'number' has no properties in common with type 'AuthoredPluginGroup'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.9071987Z ##[error]packages/core/test/unit/runtime/motion-consistency.test.ts(31,7): error TS2322: Type '{ id: string; duration: number; keyframes: { x: { p: number; v: number; }[]; }; }[]' is not assignable to type 'readonly TrackDefinition[]'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.9075068Z   Type '{ id: string; duration: number; keyframes: { x: { p: number; v: number; }[]; }; }' is not assignable to type 'TrackDefinition'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.9076216Z     Types of property 'keyframes' are incompatible.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.9077329Z       Type '{ x: { p: number; v: number; }[]; }' is not assignable to type 'Readonly<Record<string, AuthoredPluginGroup>>'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.9078110Z         Property 'x' is incompatible with index signature.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.9078641Z           Type '{ p: number; v: number; }[]' is not assignable to type 'AuthoredPluginGroup'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.9079320Z             Types of property 'values' are incompatible.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.9079990Z               Type '() => ArrayIterator<{ p: number; v: number; }>' is not assignable to type 'Readonly<Record<string, AuthoredProperty>>'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.9080861Z                 Index signature for type 'string' is missing in type '() => ArrayIterator<{ p: number; v: number; }>'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.9083147Z ##[error]packages/core/test/unit/runtime/motion-consistency.test.ts(410,23): error TS2345: Argument of type '{ id: string; duration: number; keyframes: { x: { p: number; v: number; }[]; }; }' is not assignable to parameter of type 'TrackDefinition'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.9084689Z   Types of property 'keyframes' are incompatible.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.9085343Z     Type '{ x: { p: number; v: number; }[]; }' is not assignable to type 'Readonly<Record<string, AuthoredPluginGroup>>'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.9085941Z       Property 'x' is incompatible with index signature.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.9086458Z         Type '{ p: number; v: number; }[]' is not assignable to type 'AuthoredPluginGroup'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T04:23:45.9086958Z           Types of property 'valu

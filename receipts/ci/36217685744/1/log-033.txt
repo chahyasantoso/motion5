@@ -1,0 +1,121 @@
+[[39mruleId ^[[33m===^[[39m ^[[32m"ik-limit-without-solver"^[[39m)^[[33m;^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5924676Z     ^[[90m255|^[[39m     ^[[34mexpect^[[39m(found^[[33m?.^[[39mpath)^[[33m.^[[39m^[[34mtoBe^[[39m(^[[32m"walker/bone.keyframes.minRotation"^[[39m)^[[33m;^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5924891Z     ^[[90m   |^[[39m                         ^[[31m^^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5925062Z     ^[[90m256|^[[39m   })^[[33m;^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5925180Z     ^[[90m257|^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5925187Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5925423Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[142/181]⎯^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5925438Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5926593Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/graph/solver-constraints.test.ts^[[2m > ^[[22msolver constraint rules read every authored spelling^[[2m > ^[[22mCL-27 refuses a malformed flat bend and a flat bend beside a grouped flip
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5927156Z ^[[31m^[[1mAssertionError^[[22m: expected undefined to be 'walker/solve.keyframes.bend' // Object.is equality^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5927166Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5927298Z ^[[32m- Expected:^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5927436Z "walker/solve.keyframes.bend"
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5927457Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5927578Z ^[[31m+ Received:^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5927681Z undefined
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5927690Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5928143Z ^[[36m ^[[2m❯^[[22m packages/core/test/unit/graph/solver-constraints.test.ts:^[[2m265:75^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5928911Z     ^[[90m263|^[[39m     ^[[35mconst^[[39m requires ^[[33m=^[[39m { root^[[33m:^[[39m ^[[32m"root"^[[39m^[[33m,^[[39m target^[[33m:^[[39m ^[[32m"goal"^[[39m }^[[33m;^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5929279Z     ^[[90m264|^[[39m     const malformed = flat(bound, solver({ bend: "side", ik: { values:…
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5929645Z     ^[[90m265|^[[39m     expect(malformed.find((d) => d.ruleId === "ik-bend-malformed")?.pa…
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5929986Z     ^[[90m   |^[[39m                                                                           ^[[31m^^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5930271Z     ^[[90m266|^[[39m       ^[[32m"walker/solve.keyframes.bend"^[[39m^[[33m,^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5930422Z     ^[[90m267|^[[39m     )^[[33m;^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5930570Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5930822Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[143/181]⎯^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5930833Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5932231Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/runtime/authoring-edit.test.ts^[[2m > ^[[22mevery authored edit is one value applied by one total switch^[[2m > ^[[22morders the two refusals a slot edit can reach, and reserves the slot by verb
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5932558Z ^[[31m^[[1mError^[[22m: Expected the operation to refuse.^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5933078Z ^[[36m ^[[2m❯^[[22m refusalKind packages/core/test/unit/runtime/authoring-edit.test.ts:^[[2m85:9^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5933306Z     ^[[90m 83|^[[39m     ^[[35mthrow^[[39m error^[[33m;^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5933444Z     ^[[90m 84|^[[39m   }
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5933919Z     ^[[90m 85|^[[39m   ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mError^[[39m(^[[32m"Expected the operation to refuse."^[[39m)^[[33m;^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5934095Z     ^[[90m   |^[[39m         ^[[31m^^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5934210Z     ^[[90m 86|^[[39m }
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5934346Z     ^[[90m 87|^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5934776Z ^[[90m ^[[2m❯^[[22m packages/core/test/unit/runtime/authoring-edit.test.ts:^[[2m179:7^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5934786Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5935029Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[144/181]⎯^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5935045Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5936119Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/runtime/authoring-edit.test.ts^[[2m > ^[[22mevery authored edit is one value applied by one total switch^[[2m > ^[[22mis reached from the handle rather than adopted at the edge
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5936656Z ^[[31m^[[1mAssertionError^[[22m: expected 'invalid-definition' to be 'property-entry' // Object.is equality^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5936666Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5936867Z Expected: ^[[32m"property-entry"^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5937081Z Received: ^[[31m"invalid-definition"^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5937090Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5937525Z ^[[36m ^[[2m❯^[[22m packages/core/test/unit/runtime/authoring-edit.test.ts:^[[2m218:68^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5937806Z     ^[[90m216|^[[39m       ^[[32m"reserved-goal-slot"^[[39m^[[33m,^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5937970Z     ^[[90m217|^[[39m     )^[[33m;^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5938329Z     ^[[90m218|^[[39m     expect(refusalKind(() => leg.setKeyframeGroup("x", FK_GROUP))).toB…
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5938641Z     ^[[90m   |^[[39m                                                                    ^[[31m^^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5938993Z     ^[[90m219|^[[39m     expect(refusalKind(() => hand.setRequire("fk", "base", ARM))).toBe…
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5939484Z     ^[[90m220|^[[39m     ^[[34mexpect^[[39m(replaceGraph)^[[33m.^[[39m^[[34mtoHaveBeenCalledTimes^[[39m(^[[34m1^[[39m)^[[33m;^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5939496Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5939734Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[145/181]⎯^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5939743Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5940929Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/runtime/commit-write-cost.test.ts^[[2m > ^[[22mwhat a commit writes, and what an authored read derives^[[2m > ^[[22mRA-94 indexes the flattened record once rather than searching it per written key
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5941500Z ^[[31m^[[1mAssertionError^[[22m: expected { demo: { values: { …(12) } }, …(1) } to deeply equal { Object (demo, flat) }^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5941511Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5942078Z ^[[32m- Expected^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5942220Z ^[[31m+ Received^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5942228Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5942399Z ^[[33m@@ -13,7 +13,7 @@^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5942549Z ^[[2m        "leaf7": 7,^[[22m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5942708Z ^[[2m        "leaf8": 8,^[[22m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5942845Z ^[[2m        "leaf9": 9,^[[22m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5942977Z ^[[2m      },^[[22m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5943083Z ^[[2m    },^[[22m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5943216Z ^[[32m-   "flat": 7,^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5943371Z ^[[31m+   "flat": 0,^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5943470Z ^[[2m  }^[[22m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5943484Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5943968Z ^[[36m ^[[2m❯^[[22m packages/core/test/unit/runtime/commit-write-cost.test.ts:^[[2m241:57^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5944479Z     ^[[90m239|^[[39m     // grouped leaf inside that group's values section, a flat key at …
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5944734Z     ^[[90m240|^[[39m     ^[[90m// in either of them moved.^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5945399Z     ^[[90m241|^[[39m     ^[[34mexpect^[[39m(runtime^[[33m.^[[39m^[[34mtrack^[[39m(^[[32m"m0/t0"^[[39m)^[[33m.^[[39mdefinition^[[33m.^[[39mkeyframes)^[[33m.^[[39m^[[34mtoEqual^[[39m({
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5945689Z     ^[[90m   |^[[39m                                                         ^[[31m^^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5946357Z     ^[[90m242|^[[39m       demo^[[33m:^[[39m { values^[[33m:^[[39m { ^[[33m...^[[39mleaves^[[33m,^[[39m leaf0^[[33m:^[[39m ^[[34m5^[[39m^[[33m,^[[39m leaf3^[[33m:^[[39m ^[[34m6^[[39m } }^[[33m,^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5946609Z     ^[[90m243|^[[39m       flat^[[33m:^[[39m ^[[34m7^[[39m^[[33m,^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5946617Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5946866Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[146/181]⎯^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5946875Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5948154Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/runtime/commit-write-cost.test.ts^[[2m > ^[[22mwhat a commit writes, and what an authored read derives^[[2m > ^[[22mRA-97 leaves the adopted pair answering for every half a commit did not move
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5949108Z ^[[31m^[[1mTypeError^[[22m: keyframes-ungrouped-key at addTrack(s).keyframes.size: Keyframe 'size' must be a plugin-named group; author the property as { <plugin>: { values: { ... } } }.^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5949547Z ^[[36m ^[[2m❯^[[22m refusalError packages/core/src/runtime/refusal.ts:^[[2m261:14^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5949864Z     ^[[90m259|^[[39m     ^[[35mcase^[[39m ^[[32m"reserved-goal-slot"^[[39m^[[33m:^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5950140Z     ^[[90m260|^[[39m     ^[[35mcase^[[39m ^[[32m"invalid-definition"^[[39m^[[33m:^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5950534Z     ^[[90m261|^[[39m       ^[[35mreturn^[[39m ^[[35mnew^[[39m ^[[33mRefusalError^[[39m(refusal)^[[33m;^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5950701Z     ^[[90m   |^[[39m              ^[[31m^^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5950908Z     ^[[90m262|^[[39m     ^[[35mdefault^[[39m^[[33m:^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5951219Z     ^[[90m263|^[[39m       ^[[35mreturn^[[39m ^[[34munreachable^[[39m(refusal)^[[33m;^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5951589Z ^[[90m ^[[2m❯^[[22m refuse packages/core/src/runtime/refusal.ts:^[[2m269:9^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5952177Z ^[[90m ^[[2m❯^[[22m packages/core/src/runtime/results.ts:^[[2m42:22^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5952577Z ^[[90m ^[[2m❯^[[22m readOutcome packages/core/src/lang/outcome.ts:^[[2m67:14^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5952997Z ^[[90m ^[[2m❯^[[22m expectValid packages/core/src/runtime/results.ts:^[[2m39:10^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5953531Z ^[[90m ^[[2m❯^[[22m ProjectRuntime.#addTrack packages/core/src/runtime/project-runtime.ts:^[[2m561:22^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5954048Z ^[[90m ^[[2m❯^[[22m ProjectRuntime.addTrack packages/core/src/runtime/project-runtime.ts:^[[2m488:17^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5954513Z ^[[90m ^[[2m❯^[[22m packages/core/test/unit/runtime/commit-write-cost.test.ts:^[[2m339:27^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5954528Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5954762Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[147/181]⎯^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5954782Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5955850Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/runtime/composition-output-shape.test.ts^[[2m > ^[[22mcomposition and output-shape diagnostics^[[2m > ^[[22mdiagnoses a plugin returning a non-record composition value
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5957026Z ^[[31m^[[1mTypeError^[[22m: keyframes-ungrouped-key at motions[0].tracks[0].keyframes.opacity: Keyframe 'opacity' must be a plugin-named group; author the property as { <plugin>: { values: { ... } } }.^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5957343Z ^[[36m ^[[2m❯^[[22m packages/core/src/engine.ts:^[[2m181:13^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5957585Z     ^[[90m179|^[[39m     (value) ^[[33m=>^[[39m value^[[33m,^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5957780Z     ^[[90m180|^[[39m     (diagnostics) ^[[33m=>^[[39m {
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5958068Z     ^[[90m181|^[[39m       ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5958243Z     ^[[90m   |^[[39m             ^[[31m^^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5958552Z     ^[[90m182|^[[39m         diagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5958981Z     ^[[90m183|^[[39m           ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5959380Z ^[[90m ^[[2m❯^[[22m readOutcome packages/core/src/lang/outcome.ts:^[[2m67:14^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5959780Z ^[[90m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m177:10^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5960134Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m208:29^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5960650Z ^[[90m ^[[2m❯^[[22m packages/core/test/unit/runtime/composition-output-shape.test.ts:^[[2m50:28^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5960661Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5960902Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[148/181]⎯^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5960912Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5962344Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/runtime/keyframe-property-edit.test.ts^[[2m > ^[[22mkeyframe recompilation finalizes the stage it actually owns^[[2m > ^[[22mPK-21 completes recompile and re-seek when real displaced cleanup fails
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5963394Z ^[[31m^[[1mTypeError^[[22m: keyframes-ungrouped-key at motions[0].tracks[1].keyframes.rotation: Keyframe 'rotation' must be a plugin-named group; author the property as { <plugin>: { values: { ... } } }.^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5963719Z ^[[36m ^[[2m❯^[[22m packages/core/src/engine.ts:^[[2m181:13^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.5963968

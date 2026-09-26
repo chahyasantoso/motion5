@@ -1,0 +1,124 @@
+es caller mutation from the frozen graph definition
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4137152Z ^[[31m^[[1mTypeError^[[22m: keyframes-ungrouped-key at addTrack(arm).keyframes.x: Keyframe 'x' must be a plugin-named group; author the property as { <plugin>: { values: { ... } } }.^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4139206Z ^[[36m ^[[2m❯^[[22m refusalError packages/core/src/runtime/refusal.ts:^[[2m261:14^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4140429Z     ^[[90m259|^[[39m     ^[[35mcase^[[39m ^[[32m"reserved-goal-slot"^[[39m^[[33m:^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4141527Z     ^[[90m260|^[[39m     ^[[35mcase^[[39m ^[[32m"invalid-definition"^[[39m^[[33m:^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4142975Z     ^[[90m261|^[[39m       ^[[35mreturn^[[39m ^[[35mnew^[[39m ^[[33mRefusalError^[[39m(refusal)^[[33m;^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4143900Z     ^[[90m   |^[[39m              ^[[31m^^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4144631Z     ^[[90m262|^[[39m     ^[[35mdefault^[[39m^[[33m:^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4145601Z     ^[[90m263|^[[39m       ^[[35mreturn^[[39m ^[[34munreachable^[[39m(refusal)^[[33m;^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4146869Z ^[[90m ^[[2m❯^[[22m refuse packages/core/src/runtime/refusal.ts:^[[2m269:9^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4148024Z ^[[90m ^[[2m❯^[[22m packages/core/src/runtime/results.ts:^[[2m42:22^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4149269Z ^[[90m ^[[2m❯^[[22m readOutcome packages/core/src/lang/outcome.ts:^[[2m67:14^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4150616Z ^[[90m ^[[2m❯^[[22m expectValid packages/core/src/runtime/results.ts:^[[2m39:10^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4152418Z ^[[90m ^[[2m❯^[[22m ProjectRuntime.#addTrack packages/core/src/runtime/project-runtime.ts:^[[2m561:22^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4154206Z ^[[90m ^[[2m❯^[[22m ProjectRuntime.addTrack packages/core/src/runtime/project-runtime.ts:^[[2m488:17^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4155667Z ^[[90m ^[[2m❯^[[22m Object.addTrack packages/core/src/engine.ts:^[[2m154:43^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4157201Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/adopted-track-immutability.test.ts:^[[2m53:26^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4157985Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4158482Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[13/181]⎯^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4159168Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4161400Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/adopted-track-immutability.test.ts^[[2m > ^[[22mruntime track validation and immutability (W3)^[[2m > ^[[22muses the authored validation owner for malformed runtime track structure
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4164464Z ^[[31m^[[1mAssertionError^[[22m: expected [Function] to not throw an error but 'TypeError: keyframes-ungrouped-key at…' was thrown^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4165384Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4165640Z ^[[32m- Expected:^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4166097Z undefined
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4166312Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4166582Z ^[[31m+ Received:^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4168220Z "TypeError: keyframes-ungrouped-key at addTrack(broken).keyframes.x: Keyframe 'x' must be a plugin-named group; author the property as { <plugin>: { values: { ... } } }."
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4169724Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4170736Z ^[[36m ^[[2m❯^[[22m packages/core/test/integration/adopted-track-immutability.test.ts:^[[2m78:87^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4172084Z     ^[[90m 76|^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4173512Z     ^[[90m 77|^[[39m     ^[[34mexpect^[[39m(() ^[[33m=>^[[39m handle^[[33m.^[[39m^[[34maddTrack^[[39m(malformed))^[[33m.^[[39m^[[34mtoThrow^[[39m(^[[36m/observes-shape/^[[39m)^[[33m;^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4175180Z     ^[[90m 78|^[[39m     expect(() => handle.addTrack({ id: "broken", keyframes: { x: ramp(…
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4176421Z     ^[[90m   |^[[39m                                                                                       ^[[31m^^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4177143Z     ^[[90m 79|^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4177850Z     ^[[90m 80|^[[39m     handle^[[33m.^[[39m^[[34mdispose^[[39m()^[[33m;^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4178335Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4178805Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[14/181]⎯^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4179204Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4181281Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/adopted-track-immutability.test.ts^[[2m > ^[[22mruntime track validation and immutability (W3)^[[2m > ^[[22mkeeps the existing same-source remove and re-add path working
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4184750Z ^[[31m^[[1mTypeError^[[22m: keyframes-ungrouped-key at addTrack(arm).keyframes.x: Keyframe 'x' must be a plugin-named group; author the property as { <plugin>: { values: { ... } } }.^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4186831Z ^[[36m ^[[2m❯^[[22m refusalError packages/core/src/runtime/refusal.ts:^[[2m261:14^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4187993Z     ^[[90m259|^[[39m     ^[[35mcase^[[39m ^[[32m"reserved-goal-slot"^[[39m^[[33m:^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4189041Z     ^[[90m260|^[[39m     ^[[35mcase^[[39m ^[[32m"invalid-definition"^[[39m^[[33m:^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4190216Z     ^[[90m261|^[[39m       ^[[35mreturn^[[39m ^[[35mnew^[[39m ^[[33mRefusalError^[[39m(refusal)^[[33m;^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4191117Z     ^[[90m   |^[[39m              ^[[31m^^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4192058Z     ^[[90m262|^[[39m     ^[[35mdefault^[[39m^[[33m:^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4192999Z     ^[[90m263|^[[39m       ^[[35mreturn^[[39m ^[[34munreachable^[[39m(refusal)^[[33m;^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4194209Z ^[[90m ^[[2m❯^[[22m refuse packages/core/src/runtime/refusal.ts:^[[2m269:9^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4195383Z ^[[90m ^[[2m❯^[[22m packages/core/src/runtime/results.ts:^[[2m42:22^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4196552Z ^[[90m ^[[2m❯^[[22m readOutcome packages/core/src/lang/outcome.ts:^[[2m67:14^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4197905Z ^[[90m ^[[2m❯^[[22m expectValid packages/core/src/runtime/results.ts:^[[2m39:10^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4199535Z ^[[90m ^[[2m❯^[[22m ProjectRuntime.#addTrack packages/core/src/runtime/project-runtime.ts:^[[2m561:22^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4201338Z ^[[90m ^[[2m❯^[[22m ProjectRuntime.addTrack packages/core/src/runtime/project-runtime.ts:^[[2m488:17^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4203077Z ^[[90m ^[[2m❯^[[22m Object.addTrack packages/core/src/engine.ts:^[[2m154:43^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4204645Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/adopted-track-immutability.test.ts:^[[2m87:26^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4205405Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4205841Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[15/181]⎯^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4206466Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4207970Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/adoption.test.ts^[[2m > ^[[22mP5-02 runtime free tracks^[[2m > ^[[22mrejects tracks with non-finite stop positions
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4210418Z ^[[31m^[[1mAssertionError^[[22m: expected [Function] to throw error matching /stop-position/ but got 'keyframes-ungrouped-key at addTrack(b…'^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4211463Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4211983Z ^[[32m- Expected:^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4212410Z /stop-position/
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4212646Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4212929Z ^[[31m+ Received:^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4214430Z "keyframes-ungrouped-key at addTrack(bad).keyframes.x: Keyframe 'x' must be a plugin-named group; author the property as { <plugin>: { values: { ... } } }."
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4215803Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4216571Z ^[[36m ^[[2m❯^[[22m packages/core/test/integration/adoption.test.ts:^[[2m81:7^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4217526Z     ^[[90m 79|^[[39m     ^[[34mexpect^[[39m(() ^[[33m=>^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4218603Z     ^[[90m 80|^[[39m       runtime.addTrack({ id: "bad", keyframes: { x: [{ p: Number.NaN, …
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4219829Z     ^[[90m 81|^[[39m     )^[[33m.^[[39m^[[34mtoThrow^[[39m(^[[36m/stop-position/^[[39m)^[[33m;^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4220683Z     ^[[90m   |^[[39m       ^[[31m^^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4221558Z     ^[[90m 82|^[[39m     runtime^[[33m.^[[39m^[[34mdispose^[[39m()^[[33m;^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4222538Z     ^[[90m 83|^[[39m   })^[[33m;^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4222863Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4223323Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[16/181]⎯^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4223721Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4225244Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/adoption.test.ts^[[2m > ^[[22mP5-02 runtime free tracks^[[2m > ^[[22mrejects tracks with non-monotonic stop positions
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4227766Z ^[[31m^[[1mAssertionError^[[22m: expected [Function] to throw error matching /stop-position/ but got 'keyframes-ungrouped-key at addTrack(b…'^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4228799Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4229114Z ^[[32m- Expected:^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4229526Z /stop-position/
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4229740Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4229974Z ^[[31m+ Received:^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4231421Z "keyframes-ungrouped-key at addTrack(bad).keyframes.x: Keyframe 'x' must be a plugin-named group; author the property as { <plugin>: { values: { ... } } }."
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4232775Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4233562Z ^[[36m ^[[2m❯^[[22m packages/core/test/integration/adoption.test.ts:^[[2m97:7^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4234471Z     ^[[90m 95|^[[39m         }^[[33m,^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4235043Z     ^[[90m 96|^[[39m       })^[[33m,^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4235978Z     ^[[90m 97|^[[39m     )^[[33m.^[[39m^[[34mtoThrow^[[39m(^[[36m/stop-position/^[[39m)^[[33m;^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4236882Z     ^[[90m   |^[[39m       ^[[31m^^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4237664Z     ^[[90m 98|^[[39m     runtime^[[33m.^[[39m^[[34mdispose^[[39m()^[[33m;^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4238431Z     ^[[90m 99|^[[39m   })^[[33m;^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4238727Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4239357Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[17/181]⎯^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4239744Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4241235Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/adoption.test.ts^[[2m > ^[[22mP5-02 runtime free tracks^[[2m > ^[[22mrejects tracks with duplicate stop positions
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4243918Z ^[[31m^[[1mAssertionError^[[22m: expected [Function] to throw error matching /stop-position/ but got 'keyframes-ungrouped-key at addTrack(b…'^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4244965Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4245236Z ^[[32m- Expected:^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4245673Z /stop-position/
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4245912Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4246173Z ^[[31m+ Received:^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4247622Z "keyframes-ungrouped-key at addTrack(bad).keyframes.x: Keyframe 'x' must be a plugin-named group; author the property as { <plugin>: { values: { ... } } }."
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4248959Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4249756Z ^[[36m ^[[2m❯^[[22m packages/core/test/integration/adoption.test.ts:^[[2m113:7^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4250745Z     ^[[90m111|^[[39m         }^[[33m,^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4251365Z     ^[[90m112|^[[39m       })^[[33m,^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4252568Z     ^[[90m113|^[[39m     )^[[33m.^[[39m^[[34mtoThrow^[[39m(^[[36m/stop-position/^[[39m)^[[33m;^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4253393Z     ^[[90m   |^[[39m       ^[[31m^^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4254199Z     ^[[90m114|^[[39m     runtime^[[33m.^[[39m^[[34mdispose^[[39m()^[[33m;^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4255001Z     ^[[90m115|^[[39m   })^[[33m;^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4255316Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4255770Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[18/181]⎯^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4256153Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4258031Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/authored-leaf-reader.test.ts^[[2m > ^[[22mone owner for the authored leaf shape^[[2m > ^[[22mLF-4 moves no diagnostic that the authored form did not move
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4260513Z ^[[31m^[[1mAssertionError^[[22m: a position outside the unit range: expected [ Array(1) ] to deeply equal [ …(3) ]^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4261353Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4261628Z ^[[32m- Expected^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4262333Z ^[[31m+ Received^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4262567Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4262775Z ^[[2m  [^[[22m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4263492Z ^[[32m-   "stop-position-range at keyframes.x[0].p",^[[39m

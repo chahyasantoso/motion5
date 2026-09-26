@@ -1,0 +1,118 @@
+4651557Z     ^[[90m125|^[[39m       )^[[33m,^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4652982Z     ^[[90m126|^[[39m     )^[[33m.^[[39m^[[34mtoThrow^[[39m(^[[36m/plugin-contribution-ease-collision/^[[39m)^[[33m;^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4654027Z     ^[[90m   |^[[39m       ^[[31m^^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4655169Z     ^[[90m127|^[[39m     ^[[34mexpect^[[39m(create)^[[33m.^[[39mnot^[[33m.^[[39m^[[34mtoHaveBeenCalled^[[39m()^[[33m;^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4656184Z     ^[[90m128|^[[39m   })^[[33m;^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4656506Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4656938Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[38/181]⎯^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4657311Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4659532Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/engine-x3-contribution.test.ts^[[2m > ^[[22mX-3 contribution through the product load path^[[2m > ^[[22mmerges contributed keyframes into compiler diagnostics before timeline creation
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4663057Z ^[[31m^[[1mAssertionError^[[22m: expected [Function] to throw error matching /plugin-contribution-ease-collision/ but got 'keyframes-ungrouped-key at motions[0]…'^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4664322Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4664622Z ^[[32m- Expected:^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4665182Z /plugin-contribution-ease-collision/
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4665568Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4665844Z ^[[31m+ Received:^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4667387Z "keyframes-ungrouped-key at motions[0].tracks[0].keyframes.x: Keyframe 'x' must be a plugin-named group; author the property as { <plugin>: { values: { ... } } }."
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4668536Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4669447Z ^[[36m ^[[2m❯^[[22m packages/core/test/integration/engine-x3-contribution.test.ts:^[[2m159:7^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4670591Z     ^[[90m157|^[[39m         }) ^[[35mas^[[39m never^[[33m,^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4671300Z     ^[[90m158|^[[39m       )^[[33m,^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4672733Z     ^[[90m159|^[[39m     )^[[33m.^[[39m^[[34mtoThrow^[[39m(^[[36m/plugin-contribution-ease-collision/^[[39m)^[[33m;^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4673763Z     ^[[90m   |^[[39m       ^[[31m^^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4674853Z     ^[[90m160|^[[39m     ^[[34mexpect^[[39m(create)^[[33m.^[[39mnot^[[33m.^[[39m^[[34mtoHaveBeenCalled^[[39m()^[[33m;^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4675818Z     ^[[90m161|^[[39m   })^[[33m;^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4676125Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4676562Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[39/181]⎯^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4676937Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4678718Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/handle-adoption.test.ts^[[2m > ^[[22mruntime track addition through ProjectHandle (G2)^[[2m > ^[[22mrejects a track with malformed keyframes
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4681378Z ^[[31m^[[1mAssertionError^[[22m: expected [Function] to throw error matching /stop-position/ but got 'keyframes-ungrouped-key at addTrack(b…'^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4682643Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4682918Z ^[[32m- Expected:^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4683307Z /stop-position/
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4683522Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4683765Z ^[[31m+ Received:^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4685238Z "keyframes-ungrouped-key at addTrack(bad).keyframes.x: Keyframe 'x' must be a plugin-named group; author the property as { <plugin>: { values: { ... } } }."
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4686647Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4687548Z ^[[36m ^[[2m❯^[[22m packages/core/test/integration/handle-adoption.test.ts:^[[2m56:40^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4688525Z     ^[[90m 54|^[[39m       }^[[33m,^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4689114Z     ^[[90m 55|^[[39m     }^[[33m;^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4690566Z     ^[[90m 56|^[[39m     ^[[34mexpect^[[39m(() ^[[33m=>^[[39m handle^[[33m.^[[39m^[[34maddTrack^[[39m(bad))^[[33m.^[[39m^[[34mtoThrow^[[39m(^[[36m/stop-position/^[[39m)^[[33m;^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4692219Z     ^[[90m   |^[[39m                                        ^[[31m^^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4693394Z     ^[[90m 57|^[[39m     handle^[[33m.^[[39m^[[34mdispose^[[39m()^[[33m;^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4694182Z     ^[[90m 58|^[[39m   })^[[33m;^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4694512Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4694962Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[40/181]⎯^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4695379Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4697366Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/handle-adoption.test.ts^[[2m > ^[[22mruntime track addition through ProjectHandle (G2)^[[2m > ^[[22madds a track into an existing motion and receives motion signals
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4700585Z ^[[31m^[[1mTypeError^[[22m: keyframes-ungrouped-key at addTrack(leg).keyframes.x: Keyframe 'x' must be a plugin-named group; author the property as { <plugin>: { values: { ... } } }.^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4702874Z ^[[36m ^[[2m❯^[[22m refusalError packages/core/src/runtime/refusal.ts:^[[2m261:14^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4704064Z     ^[[90m259|^[[39m     ^[[35mcase^[[39m ^[[32m"reserved-goal-slot"^[[39m^[[33m:^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4705135Z     ^[[90m260|^[[39m     ^[[35mcase^[[39m ^[[32m"invalid-definition"^[[39m^[[33m:^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4706355Z     ^[[90m261|^[[39m       ^[[35mreturn^[[39m ^[[35mnew^[[39m ^[[33mRefusalError^[[39m(refusal)^[[33m;^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4707267Z     ^[[90m   |^[[39m              ^[[31m^^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4707959Z     ^[[90m262|^[[39m     ^[[35mdefault^[[39m^[[33m:^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4708885Z     ^[[90m263|^[[39m       ^[[35mreturn^[[39m ^[[34munreachable^[[39m(refusal)^[[33m;^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4710099Z ^[[90m ^[[2m❯^[[22m refuse packages/core/src/runtime/refusal.ts:^[[2m269:9^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4711261Z ^[[90m ^[[2m❯^[[22m packages/core/src/runtime/results.ts:^[[2m42:22^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4712680Z ^[[90m ^[[2m❯^[[22m readOutcome packages/core/src/lang/outcome.ts:^[[2m67:14^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4713962Z ^[[90m ^[[2m❯^[[22m expectValid packages/core/src/runtime/results.ts:^[[2m39:10^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4715574Z ^[[90m ^[[2m❯^[[22m ProjectRuntime.#addTrack packages/core/src/runtime/project-runtime.ts:^[[2m561:22^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4717441Z ^[[90m ^[[2m❯^[[22m ProjectRuntime.addTrack packages/core/src/runtime/project-runtime.ts:^[[2m488:17^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4718988Z ^[[90m ^[[2m❯^[[22m Object.addTrack packages/core/src/engine.ts:^[[2m154:43^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4720444Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/handle-adoption.test.ts:^[[2m67:26^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4721153Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4721628Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[41/181]⎯^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4722297Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4724374Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/internal-key-strip.test.ts^[[2m > ^[[22minternal keys are stripped once, before publication^[[2m > ^[[22mH-1 keeps a namespaced derived key out of every published surface
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4727627Z ^[[31m^[[1mTypeError^[[22m: keyframes-ungrouped-key at motions[0].tracks[0].keyframes.x: Keyframe 'x' must be a plugin-named group; author the property as { <plugin>: { values: { ... } } }.^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4729464Z ^[[36m ^[[2m❯^[[22m packages/core/src/engine.ts:^[[2m181:13^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4730365Z     ^[[90m179|^[[39m     (value) ^[[33m=>^[[39m value^[[33m,^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4731139Z     ^[[90m180|^[[39m     (diagnostics) ^[[33m=>^[[39m {
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4732249Z     ^[[90m181|^[[39m       ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4733317Z     ^[[90m   |^[[39m             ^[[31m^^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4734193Z     ^[[90m182|^[[39m         diagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4735257Z     ^[[90m183|^[[39m           ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4736452Z ^[[90m ^[[2m❯^[[22m readOutcome packages/core/src/lang/outcome.ts:^[[2m67:14^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4737761Z ^[[90m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m177:10^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4739011Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m208:29^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4740420Z ^[[90m ^[[2m❯^[[22m load packages/core/test/integration/internal-key-strip.test.ts:^[[2m20:6^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4742401Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/internal-key-strip.test.ts:^[[2m40:20^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4743119Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4743566Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[42/181]⎯^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4743958Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4745983Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/internal-key-strip.test.ts^[[2m > ^[[22minternal keys are stripped once, before publication^[[2m > ^[[22mH-2 keeps a declared unprefixed internal key out of the patch
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4749176Z ^[[31m^[[1mTypeError^[[22m: keyframes-ungrouped-key at motions[0].tracks[0].keyframes.x: Keyframe 'x' must be a plugin-named group; author the property as { <plugin>: { values: { ... } } }.^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4751015Z ^[[36m ^[[2m❯^[[22m packages/core/src/engine.ts:^[[2m181:13^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4752099Z     ^[[90m179|^[[39m     (value) ^[[33m=>^[[39m value^[[33m,^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4752883Z     ^[[90m180|^[[39m     (diagnostics) ^[[33m=>^[[39m {
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4753745Z     ^[[90m181|^[[39m       ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4754523Z     ^[[90m   |^[[39m             ^[[31m^^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4755462Z     ^[[90m182|^[[39m         diagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4756549Z     ^[[90m183|^[[39m           ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4757783Z ^[[90m ^[[2m❯^[[22m readOutcome packages/core/src/lang/outcome.ts:^[[2m67:14^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4759145Z ^[[90m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m177:10^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4760444Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m208:29^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4762156Z ^[[90m ^[[2m❯^[[22m load packages/core/test/integration/internal-key-strip.test.ts:^[[2m20:6^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4763794Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/internal-key-strip.test.ts:^[[2m74:20^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4764517Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4764991Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[43/181]⎯^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4765401Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4767367Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/internal-key-strip.test.ts^[[2m > ^[[22minternal keys are stripped once, before publication^[[2m > ^[[22mH-3 still rejects an underscore key returned from compose
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4770629Z ^[[31m^[[1mTypeError^[[22m: keyframes-ungrouped-key at motions[0].tracks[0].keyframes.x: Keyframe 'x' must be a plugin-named group; author the property as { <plugin>: { values: { ... } } }.^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4772852Z ^[[36m ^[[2m❯^[[22m packages/core/src/engine.ts:^[[2m181:13^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4773837Z     ^[[90m179|^[[39m     (value) ^[[33m=>^[[39m value^[[33m,^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4796766Z     ^[[90m180|^[[39m     (diagnostics) ^[[33m=>^[[39m {
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4797726Z     ^[[90m181|^[[39m       ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4798537Z     ^[[90m   |^[[39m             ^[[31m^^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4799443Z     ^[[90m182|^[[39m         diagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4800495Z     ^[[90m183|^[[39m           ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4802271Z ^[[90m ^[[2m❯^[[22m readOutcome packages/core/src/lang/outcome.ts:^[[2m67:14^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4803604Z ^[[90m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m177:10^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4804856Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m208:29^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4806258Z ^[[90m ^[[2m❯^[[22m load packages/core/test/integration/internal-key-strip.test.ts:^[[2m20:6^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4807689Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/internal-key-strip.test.ts:^[[2m95:20^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4808365Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4808855Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[44/181]⎯^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4809259Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.4811277Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/issue-114

@@ -1,0 +1,85 @@
+…
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.6147502Z     ^[[90m   |^[[39m                                                              ^[[31m^^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.6147858Z     ^[[90m130|^[[39m     expect(resolved.diagnostics[0]?.message).toContain('"fk" and "tran…
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.6148025Z     ^[[90m131|^[[39m   })^[[33m;^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.6148042Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.6148283Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[174/181]⎯^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.6148293Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.6149147Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/plugins/ik-inspection.test.ts^[[2m > ^[[22mopt-in IK solve inspection^[[2m > ^[[22mIN-4 reads flat and grouped authored spellings
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.6149546Z ^[[31m^[[1mAssertionError^[[22m: expected [] to include 'ik-inspect-malformed'^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.6150039Z ^[[36m ^[[2m❯^[[22m packages/core/test/unit/plugins/ik-inspection.test.ts:^[[2m272:7^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.6150232Z     ^[[90m270|^[[39m     ^[[34mexpect^[[39m(
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.6150584Z     ^[[90m271|^[[39m       buildGraphIR(projectWithInspect("yes", false)).diagnostics.map((…
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.6150948Z     ^[[90m272|^[[39m     )^[[33m.^[[39m^[[34mtoContain^[[39m(^[[32m"ik-inspect-malformed"^[[39m)^[[33m;^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.6151131Z     ^[[90m   |^[[39m       ^[[31m^^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.6160558Z     ^[[90m273|^[[39m   })^[[33m;^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.6160811Z     ^[[90m274|^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.6160823Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.6161088Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[175/181]⎯^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.6161099Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.6162206Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/plugins/ik-inspection.test.ts^[[2m > ^[[22mopt-in IK solve inspection^[[2m > ^[[22mIN-5 accepts both static boolean spellings
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.6162874Z ^[[31m^[[1mAssertionError^[[22m: expected [Function] to not throw an error but 'TypeError: keyframes-ungrouped-key at…' was thrown^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.6162886Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.6163024Z ^[[32m- Expected:^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.6163120Z undefined
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.6163128Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.6163258Z ^[[31m+ Received:^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.6164057Z "TypeError: keyframes-ungrouped-key at motions[0].tracks[2].keyframes.inspect: Keyframe 'inspect' must be a plugin-named group; author the property as { <plugin>: { values: { ... } } }."
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.6164067Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.6164502Z ^[[36m ^[[2m❯^[[22m packages/core/test/unit/plugins/ik-inspection.test.ts:^[[2m284:58^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.6164832Z     ^[[90m282|^[[39m     ^[[35mfor^[[39m (^[[35mconst^[[39m project ^[[35mof^[[39m spellings) {
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.6165372Z     ^[[90m283|^[[39m       ^[[34mexpect^[[39m(^[[34mbuildGraphIR^[[39m(project)^[[33m.^[[39mdiagnostics)^[[33m.^[[39m^[[34mtoEqual^[[39m([])^[[33m;^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.6166211Z     ^[[90m284|^[[39m       ^[[34mexpect^[[39m(() ^[[33m=>^[[39m ^[[34mloadWith^[[39m(project^[[33m,^[[39m ^[[34mcorePlugins^[[39m()))^[[33m.^[[39mnot^[[33m.^[[39m^[[34mtoThrow^[[39m()^[[33m;^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.6166465Z     ^[[90m   |^[[39m                                                          ^[[31m^^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.6166592Z     ^[[90m285|^[[39m     }
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.6167008Z     ^[[90m286|^[[39m     ^[[35mconst^[[39m unclaimed ^[[33m=^[[39m ^[[35mnew^[[39m ^[[33mPluginRegistry^[[39m()^[[33m;^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.6167017Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.6167252Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[176/181]⎯^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.6167373Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.6168445Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/plugins/ik3d-inspection.test.ts^[[2m > ^[[22mopt-in 3D solve inspection (issue #500 phase 4, ADR-120)^[[2m > ^[[22mTH-56 holds ik3d's switch to the 2D load rules, flat and grouped
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.6168830Z ^[[31m^[[1mAssertionError^[[22m: expected [] to include 'ik-inspect-malformed'^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.6169267Z ^[[36m ^[[2m❯^[[22m packages/core/test/unit/plugins/ik3d-inspection.test.ts:^[[2m377:52^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.6170059Z     ^[[90m375|^[[39m     ^[[35mfor^[[39m (^[[35mconst^[[39m bad ^[[35mof^[[39m [^[[32m"yes"^[[39m^[[33m,^[[39m ^[[34m1^[[39m^[[33m,^[[39m [{ p^[[33m:^[[39m ^[[34m0^[[39m^[[33m,^[[39m v^[[33m:^[[39m ^[[35mtrue^[[39m }]] ^[[35mas^[[39m ^[[35mconst^[[39m) {
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.6170411Z     ^[[90m376|^[[39m       expect(ruleIds(rig(solverWith(bad)))).toContain("ik-inspect-malf…
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.6170738Z     ^[[90m377|^[[39m       expect(ruleIds(rig(solverWith(bad, false)))).toContain("ik-inspe…
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.6171000Z     ^[[90m   |^[[39m                                                    ^[[31m^^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.6171126Z     ^[[90m378|^[[39m     }
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.6172225Z     ^[[90m379|^[[39m     ^[[35mconst^[[39m path ^[[33m=^[[39m ^[[34mbuildGraphIR^[[39m(^[[34mrig^[[39m(^[[34msolverWith^[[39m(^[[32m"yes"^[[39m)))^[[33m.^[[39mdiagnostics^[[33m.^[[39m^[[34mfind^[[39m(
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.6172252Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.6172506Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[177/181]⎯^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.6172515Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.6172530Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.6172997Z ^[[2m Test Files ^[[22m ^[[1m^[[31m54 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m221 passed^[[39m^[[22m^[[90m (275)^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.6173456Z ^[[2m      Tests ^[[22m ^[[1m^[[31m181 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m1650 passed^[[39m^[[22m^[[90m (1831)^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.6173633Z ^[[2m   Start at ^[[22m 04:24:33
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.6174495Z ^[[2m   Duration ^[[22m 55.18s^[[2m (transform 4.11s, setup 1.71s, import 32.48s, tests 84.02s, environment 44ms)^[[22m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.6174524Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-26T04:25:28.6318619Z ##[error]Process completed with exit code 1.
+quality (node 24.21.0)	Run node scripts/ci-evidence.mjs verify all	﻿2026-09-26T04:25:28.6351923Z ##[group]Run node scripts/ci-evidence.mjs verify all
+quality (node 24.21.0)	Run node scripts/ci-evidence.mjs verify all	2026-09-26T04:25:28.6352142Z ^[[36;1mnode scripts/ci-evidence.mjs verify all^[[0m
+quality (node 24.21.0)	Run node scripts/ci-evidence.mjs verify all	2026-09-26T04:25:28.6414327Z shell: /usr/bin/bash -e {0}
+quality (node 24.21.0)	Run node scripts/ci-evidence.mjs verify all	2026-09-26T04:25:28.6414416Z env:
+quality (node 24.21.0)	Run node scripts/ci-evidence.mjs verify all	2026-09-26T04:25:28.6414509Z   NODE_VERSION: 24.21.0
+quality (node 24.21.0)	Run node scripts/ci-evidence.mjs verify all	2026-09-26T04:25:28.6414665Z   CI_EVIDENCE_DIR: /home/runner/work/_temp/ci-evidence
+quality (node 24.21.0)	Run node scripts/ci-evidence.mjs verify all	2026-09-26T04:25:28.6414752Z ##[endgroup]
+quality (node 24.21.0)	Run node scripts/ci-evidence.mjs verify all	2026-09-26T04:25:28.6927419Z Suite did not complete successfully
+quality (node 24.21.0)	Run node scripts/ci-evidence.mjs verify all	2026-09-26T04:25:28.6927517Z 
+quality (node 24.21.0)	Run node scripts/ci-evidence.mjs verify all	2026-09-26T04:25:28.6927726Z 'failed' !== 'passed'
+quality (node 24.21.0)	Run node scripts/ci-evidence.mjs verify all	2026-09-26T04:25:28.6927748Z 
+quality (node 24.21.0)	Run node scripts/ci-evidence.mjs verify all	2026-09-26T04:25:28.6975792Z ##[error]Process completed with exit code 1.
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	﻿2026-09-26T04:25:35.4980041Z ##[group]Run test "$SUITE_RESULT" = success
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-26T04:25:35.4980876Z ^[[36;1mtest "$SUITE_RESULT" = success^[[0m
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-26T04:25:35.5279530Z shell: /usr/bin/bash -e {0}
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-26T04:25:35.5280552Z env:
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-26T04:25:35.5281019Z   NODE_VERSION: 24.21.0
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-26T04:25:35.5281506Z   SUITE_RESULT: failure
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-26T04:25:35.5281978Z ##[endgroup]
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-26T04:25:35.5439554Z ##[error]Process completed with exit code 1.
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	﻿2026-09-26T04:25:36.8877272Z ##[group]Run test "$SUITE_RESULT" = success
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-26T04:25:36.8878151Z ^[[36;1mtest "$SUITE_RESULT" = success^[[0m
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-26T04:25:36.9060814Z shell: /usr/bin/bash -e {0}
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-26T04:25:36.9061895Z env:
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-26T04:25:36.9062399Z   NODE_VERSION: 24.21.0
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-26T04:25:36.9062937Z   SUITE_RESULT: failure
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-26T04:25:36.9063459Z ##[endgroup]
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-26T04:25:36.9216397Z ##[error]Process completed with exit code 1.
