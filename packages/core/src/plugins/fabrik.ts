@@ -12,6 +12,7 @@ import { branchPulls, compromise, type CompromiseRule, type Pull } from "./ik-go
 import { selectFabrik } from "./fabrik-select";
 import { fabrikIterationCap } from "./fabrik-cap";
 import { unreachable } from "../lang/exhaustive";
+import { canonicalChain } from "./ik-topology";
 import {
   atBound,
   FREE_JOINT,
@@ -103,17 +104,6 @@ export interface FabrikSolution extends SolveResult<IterativeQuality> {
 
 const DEGREES = 180 / Math.PI;
 const RADIANS = Math.PI / 180;
-
-/**
- * Code-unit order, the same total order `graph/compare.ts` defines for qualified ids.
- *
- * Local rather than imported, because a plugin may not depend on the graph layer. It is a total
- * order on strings and not a rule that can drift: the two copies cannot disagree about an answer
- * the language defines.
- */
-function compareCodeUnits(a: string, b: string): number {
-  return a < b ? -1 : a > b ? 1 : 0;
-}
 
 /**
  * The half-angle of the circular arc whose length is one and whose chord is `ratio`.
@@ -226,43 +216,17 @@ export function solveFabrikAttempt(
   flip = false,
   compromiseRule: CompromiseRule = "centroid",
 ): FabrikSolution {
-  const byId = new Map(members.map((member) => [member.id, member]));
+  // Canonical order, child counts, leaves and serial depth are topology rather than arithmetic, so
+  // they are read through `ik-topology.ts`, the owner the 3D solve reads too (ADR-122). It throws
+  // by name if the bases cycle, which graph construction refuses long before a solve is reached.
+  const { byId, ids, serialDepth, childCount, leaves } = canonicalChain(members);
   const isMember = (id: string): boolean => byId.has(id);
   const baseOf = (id: string): string => byId.get(id)!.base;
   const lengthOf = (id: string): number => solveLength(byId.get(id)!);
   const offsetOf = (id: string): PivotOffset => solveOffset(byId.get(id)!);
   const goalOf = (id: string): WorldFrame | undefined => byId.get(id)!.goal;
   const limitOf = (id: string): JointLimit => byId.get(id)!.limit ?? FREE_JOINT;
-  /**
-   * Depth from the root, and a refusal if the bases cycle.
-   *
-   * Graph construction refuses a cycle long before a solve is reached, so this is an invariant
-   * guard and not a validation step: it exists so a caller that broke the invariant gets a named
-   * failure instead of this function never returning.
-   */
-  const depthOf = (member: SolveMember): number => {
-    const seen = new Set<string>([member.id]);
-    let current = member;
-    let depth = 0;
-    while (isMember(current.base)) {
-      if (seen.has(current.base))
-        throw new Error(`Solver chain cycles at member "${current.base}".`);
-      seen.add(current.base);
-      current = byId.get(current.base)!;
-      depth += 1;
-    }
-    return depth;
-  };
-  const ids = [...members]
-    .sort((a, b) => depthOf(a) - depthOf(b) || compareCodeUnits(a.id, b.id))
-    .map((member) => member.id);
   const rootPoint: FabrikPoint = Object.freeze({ x: root.x, y: root.y });
-  const childCount = new Map<string, number>(ids.map((id) => [id, 0]));
-  for (const id of ids) {
-    const base = baseOf(id);
-    if (isMember(base)) childCount.set(base, (childCount.get(base) ?? 0) + 1);
-  }
-  const leaves = ids.filter((id) => (childCount.get(id) ?? 0) === 0);
   const addressed = leaves.filter((id) => goalOf(id) !== undefined);
   // A goal is read only on a leaf, so a goal on a member with children would be solved as if it
   // were absent while the result reported the rig converged. Load refuses that shape as
@@ -447,9 +411,7 @@ export function solveFabrikAttempt(
   };
 
   outward();
-  // Canonical order ends at the deepest member, so its depth is the chain's serial depth.
-  const last = ids.length > 0 ? byId.get(ids[ids.length - 1]!)! : undefined;
-  const cap = fabrikIterationCap(last === undefined ? 0 : depthOf(last) + 1);
+  const cap = fabrikIterationCap(serialDepth());
   let iterations = 0;
   let residual = residualNow();
   let stalled = false;

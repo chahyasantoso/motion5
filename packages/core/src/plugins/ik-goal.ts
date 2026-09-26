@@ -34,7 +34,7 @@ export function readInfluence(values: Readonly<Record<string, unknown>>): number
 }
 
 /** The influence a solve uses for one member's goal, absence read as the documented default. */
-export function goalInfluence(member: SolveMember): number {
+export function goalInfluence(member: Pick<SolveMember, "influence">): number {
   return member.influence ?? DEFAULT_INFLUENCE;
 }
 
@@ -56,9 +56,12 @@ export function goalInfluence(member: SolveMember): number {
  *
  * `addressed` is the caller's own list of the leaves it seeds from goals, so this function answers
  * about exactly the leaves the solve reaches toward rather than re-deriving leafhood.
+ *
+ * Typed over what it reads, a member's `base` and `influence`, so the 3D solve's members answer
+ * through it too: influence is a goal's weight whatever the dimension of the goal (ADR-122).
  */
 export function branchPulls(
-  byId: ReadonlyMap<string, SolveMember>,
+  byId: ReadonlyMap<string, Pick<SolveMember, "base" | "influence">>,
   addressed: readonly string[],
 ): ReadonlyMap<string, number> {
   const under = new Map<string, number[]>();
@@ -106,8 +109,8 @@ export type CompromiseRule = "centroid" | "reach-circle";
  *
  * `radius` is non-negative and `centre` is finite, because both come from a finite solve state.
  */
-export interface ReachCircle {
-  readonly centre: WorldPoint;
+export interface ReachCircle<P = WorldPoint> {
+  readonly centre: P;
   readonly radius: number;
 }
 
@@ -126,18 +129,22 @@ export interface ReachCircle {
  * is taken through the same `baseTipFromPivot` conversion as `point`.
  *
  * Read with `reachCircleOf`, never by probing for a field.
+ *
+ * Generic over the point it carries, defaulting to the 2D `WorldPoint`: the union, its kinds and
+ * what each kind means are the same for the 3D solve, whose reach "circle" is a sphere, so the 3D
+ * solve reads this union rather than a copy of it (ADR-122).
  */
-export type Pull =
-  | { readonly kind: "goal"; readonly point: WorldPoint; readonly weight: number }
+export type Pull<P = WorldPoint> =
+  | { readonly kind: "goal"; readonly point: P; readonly weight: number }
   | {
       readonly kind: "branch";
-      readonly point: WorldPoint;
+      readonly point: P;
       readonly weight: number;
-      readonly reach: ReachCircle;
+      readonly reach: ReachCircle<P>;
     };
 
 /** The circle one pull is met on, read exhaustively over the closed `Pull` union. */
-export function reachCircleOf(pull: Pull): ReachCircle {
+export function reachCircleOf<P>(pull: Pull<P>): ReachCircle<P> {
   switch (pull.kind) {
     case "goal":
       return { centre: pull.point, radius: 0 };
@@ -156,9 +163,46 @@ export function reachCircleOf(pull: Pull): ReachCircle {
  * branches still pull the member to different places, which is the witness FABRIK's `conflicted`
  * kind reads rather than an inference from the goal count.
  */
-export interface Compromise {
-  readonly point: WorldPoint;
+export interface Compromise<P = WorldPoint> {
+  readonly point: P;
   readonly spread: number;
+}
+
+/**
+ * The vector arithmetic a compromise needs in one dimension: the weighted centroid, the proposal
+ * spread around a point, and the reach fit seeded at the centroid.
+ *
+ * The rule dispatch and the policy that the spread is measured around the centroid whichever rule
+ * places the member are stated once, in `compromiseIn`; only this arithmetic is dimensional, which
+ * is the split issue #500 draws between shared contract and dimension-specific vector arithmetic.
+ * The 2D geometry is this module's own functions below, and `ik3d-compromise.ts` states the 3D one.
+ */
+export interface CompromiseGeometry<P> {
+  readonly centroid: (pulls: readonly Pull<P>[]) => P;
+  readonly spread: (pulls: readonly Pull<P>[], point: P) => number;
+  readonly reachFit: (pulls: readonly Pull<P>[], centroid: P) => P;
+}
+
+/**
+ * Where a shared member settles under `rule`, in whatever dimension `geometry` computes: the one
+ * reading of the closed `CompromiseRule` union. Both rules report the same `spread`, measured around
+ * the centroid, so `conflicted` keeps one witness whichever rule placed the member. See ADR-110.
+ */
+export function compromiseIn<P>(
+  geometry: CompromiseGeometry<P>,
+  pulls: readonly Pull<P>[],
+  rule: CompromiseRule,
+): Compromise<P> {
+  const centroid = geometry.centroid(pulls);
+  const spread = geometry.spread(pulls, centroid);
+  switch (rule) {
+    case "centroid":
+      return { point: centroid, spread };
+    case "reach-circle":
+      return { point: geometry.reachFit(pulls, centroid), spread };
+    default:
+      return unreachable(rule);
+  }
 }
 
 /**
@@ -183,31 +227,32 @@ export interface Compromise {
  * names a rule settles exactly where it always did.
  */
 export function compromise(pulls: readonly Pull[], rule: CompromiseRule = "centroid"): Compromise {
-  const centroid = weightedCentroid(pulls);
-  const spread = proposalSpread(pulls, centroid);
-  switch (rule) {
-    case "centroid":
-      return { point: centroid, spread };
-    case "reach-circle":
-      return { point: reachCircleFit(pulls, centroid), spread };
-    default:
-      return unreachable(rule);
-  }
+  return compromiseIn(PLANAR_GEOMETRY, pulls, rule);
+}
+
+/**
+ * The relative weight of one pull among `pulls`: `1` for a lone pull, whatever its weight, and
+ * `w / max` otherwise. Shared by both dimensions' centroid and reach fit, so the normalisation that
+ * keeps both finite near `Number.MAX_VALUE` has one statement.
+ */
+export function relativeWeights(pulls: readonly { readonly weight: number }[]): readonly number[] {
+  if (pulls.length === 1) return [1];
+  let scale = 0;
+  for (const { weight } of pulls) scale = Math.max(scale, weight);
+  return pulls.map(({ weight }) => weight / scale);
 }
 
 function weightedCentroid(pulls: readonly Pull[]): WorldPoint {
-  const lone = pulls.length === 1;
-  let scale = 0;
-  for (const { weight } of pulls) scale = Math.max(scale, weight);
+  const weights = relativeWeights(pulls);
   let sumX = 0;
   let sumY = 0;
   let sumW = 0;
-  for (const { point, weight } of pulls) {
-    const w = lone ? 1 : weight / scale;
+  pulls.forEach(({ point }, index) => {
+    const w = weights[index]!;
     sumX += w * point.x;
     sumY += w * point.y;
     sumW += w;
-  }
+  });
   return Object.freeze({ x: sumX / sumW, y: sumY / sumW });
 }
 
@@ -243,9 +288,8 @@ const REACH_CIRCLE_DAMPING = 1e-6;
  */
 function reachCircleFit(pulls: readonly Pull[], centroid: WorldPoint): WorldPoint {
   if (pulls.length === 1) return centroid;
-  let scale = 0;
-  for (const { weight } of pulls) scale = Math.max(scale, weight);
-  const circles = pulls.map((pull) => ({ ...reachCircleOf(pull), weight: pull.weight / scale }));
+  const weights = relativeWeights(pulls);
+  const circles = pulls.map((pull, index) => ({ ...reachCircleOf(pull), weight: weights[index]! }));
   const objective = (point: WorldPoint): number => {
     let value = 0;
     for (const { centre, radius, weight } of circles) {
@@ -287,3 +331,10 @@ function reachCircleFit(pulls: readonly Pull[], centroid: WorldPoint): WorldPoin
   const seeded = objective(centroid);
   return Number.isFinite(fitted) && fitted < seeded ? Object.freeze(point) : centroid;
 }
+
+/** The 2D arithmetic `compromise` hands to `compromiseIn`. */
+const PLANAR_GEOMETRY: CompromiseGeometry<WorldPoint> = Object.freeze({
+  centroid: weightedCentroid,
+  spread: proposalSpread,
+  reachFit: reachCircleFit,
+});

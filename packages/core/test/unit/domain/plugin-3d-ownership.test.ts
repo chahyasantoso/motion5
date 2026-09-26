@@ -48,7 +48,7 @@ describe("3D plugin ownership", () => {
     ]);
   });
 
-  it("TH-12 refuses a 3D chain that is not two members on one path at load, and only that", () => {
+  it("TH-12 refuses a 3D chain with a member that is not fk3d at load, and only that", () => {
     const project = (members: readonly TrackDefinition[]): ProjectDefinition => ({
       schemaVersion: 5,
       projectId: "shape",
@@ -73,19 +73,22 @@ describe("3D plugin ownership", () => {
       buildGraphIR(project(members))
         .diagnostics.filter(({ ruleId }) => ruleId === "ik-chain-unsupported")
         .map(({ path, message }) => ({ path, message }));
+    // Since ADR-122 the 3D shape is a tree of `fk3d` members: every count and every branching the
+    // graph derives loads, the closed form answering two bones and 3D FABRIK the rest. The count and
+    // path rules of ADR-114's prototype are withdrawn, not relaxed.
     expect(refusals([member("one", "root"), member("two", "one")])).toEqual([]);
-    expect(refusals([member("one", "root")])).toEqual([
-      {
-        path: "rig/solve",
-        message:
-          'Solver "rig/solve" supports exactly 2 unbranched fk3d members, but its derived members are fk3d at depth 1.',
-      },
-    ]);
+    expect(refusals([member("one", "root")])).toEqual([]);
     expect(
       refusals([member("one", "root"), member("two", "one"), member("three", "two")]),
-    ).toHaveLength(1);
-    // Two members is the right count on the wrong shape: siblings under the root are two paths.
-    expect(refusals([member("one", "root"), member("two", "root")])).toHaveLength(1);
+    ).toEqual([]);
+    // Siblings under the root are two paths, which the tree solve answers; the bare `target` over
+    // them is still refused by the graph's own addressing rule, not by the shape.
+    expect(refusals([member("one", "root"), member("two", "root")])).toEqual([]);
+    expect(
+      buildGraphIR(project([member("one", "root"), member("two", "root")]))
+        .diagnostics.map(({ ruleId }) => ruleId)
+        .filter((ruleId) => ruleId.startsWith("ik-")),
+    ).toEqual(["ik-target-not-single-leaf"]);
 
     // Two members on one path in the wrong dimension: a 2D `fk` member reads `rotations`, which
     // `ik3d` never publishes, so it is refused at load rather than composing identity every tick.
@@ -97,7 +100,7 @@ describe("3D plugin ownership", () => {
       {
         path: "rig/solve",
         message:
-          'Solver "rig/solve" supports exactly 2 unbranched fk3d members, but its derived members are fk3d at depth 1, fk at depth 2.',
+          'Solver "rig/solve" supports any chain of fk3d members only, but its derived members are fk3d at depth 1, fk at depth 2.',
       },
     ]);
 
