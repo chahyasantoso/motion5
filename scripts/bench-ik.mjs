@@ -1,15 +1,19 @@
-// Measures the wall-clock half of the 2D IK envelope and prints it with the conditions it ran under.
+// Measures the wall-clock half of the 2D and 3D IK envelopes and prints it with the conditions
+// it ran under.
 //
-// Issue #349 phase 7 and ADR-113. `docs/BENCH-IK.md` owns the published numbers and this script is
-// what regenerates them: run `npm run bench:ik` and paste the report's conditions beside the numbers
-// it produced. The deterministic half of the envelope (which strategy each scenario reaches, that
-// every answer is finite and inside the iteration cap, and that rigs do not couple) is asserted by
-// `EN-` in `packages/core/test/unit/plugins/ik-envelope.test.ts` and is not re-asserted here.
+// Issue #349 phase 7 and ADR-113. `docs/BENCH-IK.md` owns the published numbers and this script
+// is what regenerates them: run `npm run bench:ik` and paste the report's conditions beside the
+// numbers it produced. The deterministic half of the envelope (which strategy each scenario
+// reaches, whether every answer is finite and inside the iteration cap, and whether rigs couple) is
+// asserted by `EN-` in `packages/core/test/unit/plugins/ik-envelope.test.ts` and is not re-asserted
+// here.
 //
-// The rigs are `packages/core/test/support/ik-envelope.ts`, the same module `EN-` reads, so a timing
-// names exactly the scenario the suite pins. Nothing here gates CI: a timing is a property of the
-// machine as much as of the code, which is why the report carries the machine, and why ADR-008 keeps
-// gates on behaviour. The `performance` job runs `npm run benchmark`, which this script is not.
+// The rigs are `packages/core/test/support/ik-envelope.ts` and
+// `packages/core/test/support/ik3d-envelope.ts`, the same modules the envelope tests read, so a
+// timing names exactly the scenario the suite pins. Nothing here gates CI: a timing is a property
+// of the machine as much as of the code, which is why the report carries the machine, and why
+// ADR-008 keeps gates on behaviour. The `performance` job runs `npm run benchmark`, which this
+// script is not.
 //
 // The core sources import each other without file extensions, which a bundler and vitest resolve
 // and bare Node does not, so the one resolve hook below retries a relative specifier with `.ts`.
@@ -38,9 +42,12 @@ const RIGS = Number(values.rigs ?? 200);
 if (!Number.isInteger(RIGS) || RIGS < 1) throw new TypeError(`--rigs must be a positive integer`);
 
 const support = "../packages/core/test/support/ik-envelope.ts";
+const support3d = "../packages/core/test/support/ik3d-envelope.ts";
 const src = "../packages/core/src";
 const { envelopeScenarios, independentRigsProject, rigTrackIds } = await import(support);
+const { envelope3dScenarios } = await import(support3d);
 const { solveChain } = await import(`${src}/plugins/ik-solve.ts`);
+const { solveChain3d } = await import(`${src}/plugins/ik3d-solve.ts`);
 const { PluginRegistry } = await import(`${src}/domain/plugins.ts`);
 const { Engine } = await import(`${src}/engine.ts`);
 const { createManualClock } = await import(`${src}/ports/clock.ts`);
@@ -49,7 +56,9 @@ const { transformPlugin } = await import(`${src}/plugins/transform.ts`);
 const { fkPlugin } = await import(`${src}/plugins/fk.ts`);
 const { ikPlugin } = await import(`${src}/plugins/ik.ts`);
 
-/** The median of `samples` runs of `body`, each repeated until it has run for at least `floorMs`. */
+/**
+ * The median of `samples` runs of `body`, each repeated until it has run for at least `floorMs`.
+ */
 function measure(body, samples = 7, floorMs = 60) {
   body();
   const perCall = [];
@@ -85,6 +94,37 @@ const solves = envelopeScenarios(RIGS).map((scenario) => {
   }
   const nsPerSolve = measure(() => {
     for (const rig of scenario.rigs) solveChain(rig.root, rig.members, rig.flip);
+    return scenario.rigs.length;
+  });
+  return {
+    scenario: scenario.id,
+    shape: scenario.shape,
+    members: scenario.members,
+    rigs: scenario.rigs.length,
+    nsPerSolve: round(nsPerSolve),
+    nsPerMember: round(nsPerSolve / scenario.members),
+    kinds,
+    meanIterations: iterative === 0 ? 0 : round(iterations / iterative, 2),
+    maxIterations,
+  };
+});
+
+const solves3d = envelope3dScenarios(RIGS).map((scenario) => {
+  const kinds = {};
+  let iterations = 0;
+  let iterative = 0;
+  let maxIterations = 0;
+  for (const rig of scenario.rigs) {
+    const { quality } = solveChain3d(rig.root, rig.members);
+    kinds[quality.kind] = (kinds[quality.kind] ?? 0) + 1;
+    if ("iterations" in quality) {
+      iterative += 1;
+      iterations += quality.iterations;
+      maxIterations = Math.max(maxIterations, quality.iterations);
+    }
+  }
+  const nsPerSolve = measure(() => {
+    for (const rig of scenario.rigs) solveChain3d(rig.root, rig.members);
     return scenario.rigs.length;
   });
   return {
@@ -146,6 +186,7 @@ const report = {
     method: "median of 7 samples, each at least 60 ms of back-to-back calls after one warm-up pass",
   },
   solves,
+  solves3d,
   engine,
 };
 const text = `${JSON.stringify(report, null, 2)}\n`;
