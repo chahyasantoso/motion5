@@ -21,6 +21,8 @@ import {
 } from "../../../../../scripts/handover-format.mjs";
 import { packHandover } from "../../../../../scripts/handover-pack.mjs";
 import {
+  BRANCH_STATES,
+  BRANCH_SYNC_KINDS,
   DEFERRAL_KINDS,
   MAX_BODY_CHARACTERS,
   PUBLICATION_KINDS,
@@ -335,6 +337,7 @@ describe("publishing to an existing pull request (ADR-119)", () => {
       kind: "published",
       destination: { kind: "pull-request", number: open.number, url: open.url },
       created: false,
+      branch: { kind: "up-to-date" },
       posted: ["notes", "review"],
       skipped: [],
     });
@@ -440,7 +443,7 @@ describe("publishing when the branch has no pull request (ADR-119)", () => {
 });
 
 describe("publishing without what it needs (ADR-119)", () => {
-  it("HO-43 defers with instructions and keeps the payload when gh, its login, the remote or the push is missing", async () => {
+  it("HO-43 defers with instructions and keeps the payload when gh, its login or the remote is missing", async () => {
     const w = await world();
     const h = handover(w);
 
@@ -454,15 +457,6 @@ describe("publishing without what it needs (ADR-119)", () => {
     expect(await publish(w, h)).toMatchObject({ reason: { kind: "gh-unauthenticated" } });
 
     w.github.authenticated = true;
-    const unpushed = await publish(w, h);
-    expect(unpushed).toMatchObject({
-      kind: "deferred",
-      reason: { kind: "branch-not-pushed", remote: "origin", branch: BRANCH, tip: w.tip },
-    });
-    expect(describePublication(unpushed).join("\n")).toContain(`git push origin HEAD:${BRANCH}`);
-    push(w, "HEAD^");
-    expect(await publish(w, h)).toMatchObject({ reason: { kind: "branch-not-pushed" } });
-
     git(w.repo, "remote", "set-url", "origin", "https://example.com/octo/motion5.git");
     const calls = w.github.calls.length;
     expect(await publish(w, h)).toMatchObject({
@@ -472,6 +466,7 @@ describe("publishing without what it needs (ADR-119)", () => {
     expect(w.github.calls.length).toBe(calls);
 
     expect(w.github.writes()).toEqual([]);
+    expect(git(w.bare, "for-each-ref")).toBe("");
     expect(await pendingNames(w)).toEqual(["motion5-507-handover.json"]);
     const saved = JSON.parse(
       await readFile(
@@ -484,7 +479,6 @@ describe("publishing without what it needs (ADR-119)", () => {
 
     git(w.repo, "remote", "set-url", "origin", `git@github.com:${REPOSITORY}.git`);
     git(w.repo, "config", `url.${w.bare}.insteadOf`, `git@github.com:${REPOSITORY}.git`);
-    push(w);
     const retried = await publishPending({ root: w.repo, run: w.run });
     expect(retried).toEqual([
       {
@@ -587,6 +581,7 @@ describe("what a publication says about the review (ADR-119)", () => {
         kind: "published",
         destination: { kind: "pull-request", number: 5, url: `${URL_BASE}/pull/5` },
         created: true,
+        branch: { kind: "created" },
         posted: ["notes"],
         skipped: [],
       },
@@ -601,7 +596,13 @@ describe("what a publication says about the review (ADR-119)", () => {
       { kind: "remote-missing", repository: REPOSITORY },
       { kind: "gh-missing" },
       { kind: "gh-unauthenticated" },
-      { kind: "branch-not-pushed", remote: "origin", branch: BRANCH, tip: "a".repeat(40) },
+      {
+        kind: "branch-diverged",
+        remote: "origin",
+        branch: BRANCH,
+        tip: "a".repeat(40),
+        remoteTip: "b".repeat(40),
+      },
       { kind: "pull-request-elsewhere", number: 3, head: "x", branch: BRANCH },
     ] as const;
     expect(reasons.map((reason) => reason.kind)).toEqual([...DEFERRAL_KINDS]);
@@ -610,6 +611,23 @@ describe("what a publication says about the review (ADR-119)", () => {
     );
     expect(new Set(words).size).toBe(reasons.length);
     expect(PUBLICATION_PARTS).toEqual(["pull-request", "notes", "review"]);
+    const syncs = [
+      { kind: "up-to-date" },
+      { kind: "created" },
+      { kind: "fast-forwarded", from: "c".repeat(40) },
+    ] as const;
+    expect(syncs.map((sync) => sync.kind)).toEqual([...BRANCH_SYNC_KINDS]);
+    const synced = syncs.map((branch) =>
+      describePublication({ ...(samples[4] as Publication & { kind: "published" }), branch }),
+    );
+    expect(new Set(synced.map((lines) => lines[0])).size).toBe(syncs.length);
+    expect(synced[2]?.join("\n")).toContain("c".repeat(12));
+    expect(() =>
+      describePublication({
+        ...(samples[4] as Publication & { kind: "published" }),
+        branch: { kind: "forced" },
+      } as unknown as Publication),
+    ).toThrow("Unhandled BRANCH_SYNC_KINDS");
     expect(() => describePublication({ kind: "maybe" } as unknown as Publication)).toThrow(
       "Unhandled PUBLICATION_KINDS",
     );
@@ -731,7 +749,7 @@ describe("publication inside npm run patches (ADR-119)", () => {
     });
   });
 
-  it("HO-49 an applied archive publishes end to end once its branch is pushed, and a version 1 payload is unaddressed", async () => {
+  it("HO-49 an applied archive publishes its unpublished branch end to end, and a version 1 payload is unaddressed", async () => {
     const w = await world();
     await stageArchive(w, { pullRequest: null });
     const applied = await applyHandover({
@@ -739,20 +757,20 @@ describe("publication inside npm run patches (ADR-119)", () => {
       run: w.run,
       publish: (h) => publishHandover(h, { root: w.repo, run: w.run }),
     });
-    // `git am` makes new commits, so the tip the remote must hold exists only after the apply.
+    // `git am` makes new commits, so the tip the remote must hold exists only after the apply, and
+    // the branch was never on the remote: publishing is what creates it there.
     expect(applied).toMatchObject({
       kind: "applied",
-      publication: { kind: "deferred", reason: { kind: "branch-not-pushed" } },
+      publication: {
+        kind: "published",
+        created: true,
+        branch: { kind: "created" },
+        posted: [],
+        skipped: ["notes"],
+      },
     });
-    expect(w.github.writes()).toEqual([]);
-    push(w);
-    const [retried] = await publishPending({ root: w.repo, run: w.run });
-    expect(retried?.publication).toMatchObject({
-      kind: "published",
-      created: true,
-      posted: [],
-      skipped: ["notes"],
-    });
+    expect(git(w.bare, "rev-parse", `refs/heads/${BRANCH}`)).toBe(git(w.repo, "rev-parse", "HEAD"));
+    expect(await publishPending({ root: w.repo, run: w.run })).toEqual([]);
     const [pull] = w.github.pulls;
     expect(pull?.title).toBe("Publish the notes");
     expect(pull?.body).toContain("Independent review: **not provided**");
@@ -922,5 +940,172 @@ describe("what the review of #507 found (ADR-119)", () => {
     expect(branchPullRequest([mergedDevelop, closedMain], target)).toBe(closedMain);
     expect(branchPullRequest([mergedDevelop], target)).toBe(mergedDevelop);
     expect(branchPullRequest([{ ...openMain, headRefName: "other" }], target)).toBeUndefined();
+  });
+});
+
+/**
+ * The owner asked on #508 what happens when the branch is not published yet or not pushed yet.
+ * Both are settled by the publisher with a push of the exact applied tip that Git itself refuses
+ * unless it creates the branch or fast-forwards it; only a branch that holds commits the tip lacks
+ * waits for the human, and nothing is posted to GitHub until the branch holds the tip.
+ */
+describe("publishing a branch that is not on GitHub yet (#508)", () => {
+  function remoteTip(w: World): string | null {
+    const result = spawnSync("git", ["rev-parse", "--verify", "-q", `refs/heads/${BRANCH}`], {
+      cwd: w.bare,
+      encoding: "utf8",
+      env: ENV,
+    });
+    return result.status === 0 ? result.stdout.trim() : null;
+  }
+
+  /** A commit another clone pushed, which this checkout has never fetched. */
+  async function pushedElsewhere(w: World, parent: string, file: string): Promise<string> {
+    const other = await temporary("motion5-publish-other-");
+    git(other, "clone", "-q", "--no-checkout", w.bare, ".");
+    git(other, "checkout", "-q", "-B", "elsewhere", parent);
+    await writeFile(join(other, file), `${file}\n`);
+    git(other, "add", file);
+    git(other, "commit", "-qm", `elsewhere: ${file}`);
+    git(other, "push", "-q", "--force", "origin", `HEAD:refs/heads/${BRANCH}`);
+    return git(other, "rev-parse", "HEAD");
+  }
+
+  it("HO-54 creates an unpublished branch and fast-forwards an unpushed one before posting", async () => {
+    const w = await world();
+    expect(remoteTip(w)).toBeNull();
+    const created = await publish(w, handover(w));
+    expect(created).toMatchObject({
+      kind: "published",
+      created: true,
+      branch: { kind: "created" },
+    });
+    expect(describePublication(created)[0]).toContain("publishing the branch on GitHub");
+    expect(remoteTip(w)).toBe(w.tip);
+
+    const behind = await world();
+    push(behind, "HEAD^");
+    const pull = behind.github.pull(BRANCH);
+    const forwarded = await publish(behind, handover(behind));
+    const from = git(behind.repo, "rev-parse", "HEAD^");
+    expect(forwarded).toMatchObject({
+      kind: "published",
+      destination: { number: pull.number },
+      branch: { kind: "fast-forwarded", from },
+      posted: ["notes", "review"],
+    });
+    expect(describePublication(forwarded)[0]).toContain(from.slice(0, 12));
+    expect(remoteTip(behind)).toBe(behind.tip);
+    expect(await pendingNames(behind)).toEqual([]);
+    const again = await publish(behind, handover(behind));
+    expect(again).toMatchObject({ branch: { kind: "up-to-date" }, posted: [] });
+    expect(marked(behind, pull.number, "notes")).toBe(1);
+  });
+
+  it("HO-55 a remote that already holds the tip is left alone, even when this checkout never fetched it", async () => {
+    const w = await world();
+    push(w);
+    const ahead = await pushedElsewhere(w, w.tip, "c.txt");
+    expect(spawnSync("git", ["cat-file", "-e", ahead], { cwd: w.repo, env: ENV }).status).not.toBe(
+      0,
+    );
+    const outcome = await publish(w, handover(w));
+    expect(outcome).toMatchObject({ kind: "published", branch: { kind: "up-to-date" } });
+    expect(remoteTip(w)).toBe(ahead);
+    expect(git(w.repo, "status", "--porcelain")).toBe("");
+    expect(git(w.repo, "rev-parse", "HEAD")).toBe(w.tip);
+  });
+
+  it("HO-56 a diverged branch is never force-pushed: it defers with merge instructions and posts nothing", async () => {
+    const w = await world();
+    push(w);
+    const theirs = await pushedElsewhere(w, w.base, "d.txt");
+    const outcome = await publish(w, handover(w));
+    expect(outcome).toMatchObject({
+      kind: "deferred",
+      reason: { kind: "branch-diverged", remote: "origin", branch: BRANCH, tip: w.tip },
+    });
+    expect(outcome).toMatchObject({ reason: { remoteTip: theirs } });
+    const words = describePublication(outcome).join("\n");
+    expect(words).toContain(`git pull --no-rebase origin ${BRANCH}`);
+    expect(words).toContain("never force-pushes");
+    expect(remoteTip(w)).toBe(theirs);
+    expect(w.github.writes()).toEqual([]);
+    expect(await pendingNames(w)).toEqual(["motion5-507-handover.json"]);
+
+    git(w.repo, "pull", "-q", "--no-rebase", "--no-edit", "origin", BRANCH);
+    git(w.repo, "push", "-q", "origin", `HEAD:refs/heads/${BRANCH}`);
+    const [retried] = await publishPending({ root: w.repo, run: w.run });
+    expect(retried?.publication).toMatchObject({
+      kind: "published",
+      branch: { kind: "up-to-date" },
+    });
+    expect(await pendingNames(w)).toEqual([]);
+  });
+
+  it("HO-57 a refused push fails at the push step, keeps the payload, and reaches no GitHub write", async () => {
+    const w = await world();
+    const hook = join(w.bare, "hooks", "pre-receive");
+    await writeFile(hook, "#!/bin/sh\necho 'protected branch' >&2\nexit 1\n", { mode: 0o755 });
+    const outcome = await publish(w, handover(w));
+    expect(outcome).toMatchObject({ kind: "failed", step: "push" });
+    expect(outcome.kind === "failed" ? outcome.reason : "").toContain("protected branch");
+    expect(describePublication(outcome).join("\n")).toContain("npm run patches:publish");
+    expect(remoteTip(w)).toBeNull();
+    expect(w.github.writes()).toEqual([]);
+    expect(await pendingNames(w)).toEqual(["motion5-507-handover.json"]);
+    await rm(hook);
+    const [retried] = await publishPending({ root: w.repo, run: w.run });
+    expect(retried?.publication).toMatchObject({ kind: "published", branch: { kind: "created" } });
+  });
+
+  it("HO-59 a remote that moves between the read and the push is refused by Git, not overwritten", async () => {
+    const w = await world();
+    push(w, "HEAD^");
+    const read = git(w.bare, "rev-parse", `refs/heads/${BRANCH}`);
+    const theirs = git(w.bare, "commit-tree", "-p", read, "-m", "raced", `${read}^{tree}`);
+    // Another push lands after the publisher read the branch as behind and before its own push.
+    const racing: Run = (command, args, options = {}) => {
+      if (command === "git" && args[0] === "push")
+        git(w.bare, "update-ref", `refs/heads/${BRANCH}`, theirs);
+      return w.run(command, args, options);
+    };
+    const outcome = await publishHandover(handover(w), { root: w.repo, run: racing });
+    expect(outcome).toMatchObject({ kind: "failed", step: "push" });
+    expect(remoteTip(w)).toBe(theirs);
+    expect(w.github.writes()).toEqual([]);
+    expect(await pendingNames(w)).toEqual(["motion5-507-handover.json"]);
+    expect(await publish(w, handover(w))).toMatchObject({
+      kind: "deferred",
+      reason: { kind: "branch-diverged", remoteTip: theirs },
+    });
+  });
+
+  it("HO-58 the remote branch states are a closed union, and a dry run pushes nothing", async () => {
+    expect(BRANCH_STATES).toEqual(["up-to-date", "absent", "behind", "diverged"]);
+    expect(BRANCH_SYNC_KINDS).toEqual(["up-to-date", "created", "fast-forwarded"]);
+    const w = await world();
+    const out = join(w.work, "motion5-507-handover.zip");
+    await packHandover({
+      root: w.repo,
+      from: w.base,
+      to: w.tip,
+      issue: 507,
+      notes: join(w.work, "NOTES.md"),
+      out,
+      run: realRun,
+    });
+    git(w.repo, "reset", "-q", "--hard", w.base);
+    await mkdir(join(w.repo, ".handover"), { recursive: true });
+    await cp(out, join(w.repo, ".handover", "motion5-507-handover.zip"));
+    const dry = await applyHandover({
+      root: w.repo,
+      run: w.run,
+      dryRun: true,
+      publish: (h) => publishHandover(h, { root: w.repo, run: w.run }),
+    });
+    expect(dry).toMatchObject({ kind: "verified" });
+    expect(remoteTip(w)).toBeNull();
+    expect(w.github.calls).toEqual([]);
   });
 });

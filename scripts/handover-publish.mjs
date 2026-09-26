@@ -1,7 +1,9 @@
 // The handover publisher: after `npm run patches` applies a version 2 handover, its notes and its
 // independent review result are posted to the GitHub pull request or issue the manifest names, or
-// a pull request is opened for the branch when it has none. Contract: ADR-119 and
-// docs/HANDOVER-FORMAT.md. Tests: packages/core/test/unit/scripts/handover-publish.test.ts.
+// a pull request is opened for the branch when it has none. Before anything is posted the target
+// branch is made to hold the applied tip: created when it is not published yet, fast-forwarded
+// when it is behind, and never force-pushed. Contract: ADR-119 and docs/HANDOVER-FORMAT.md.
+// Tests: packages/core/test/unit/scripts/handover-publish.test.ts.
 //
 // GitHub is reached only through the human's own `gh` login, never a token this script reads, and
 // every process runs through the injected `run` port. Publication cannot fail an application: the
@@ -26,9 +28,12 @@ export const DEFERRAL_KINDS = Object.freeze([
   "remote-missing",
   "gh-missing",
   "gh-unauthenticated",
-  "branch-not-pushed",
+  "branch-diverged",
   "pull-request-elsewhere",
 ]);
+
+/** The closed set of things publishing did to the remote branch before it posted anything. */
+export const BRANCH_SYNC_KINDS = Object.freeze(["up-to-date", "created", "fast-forwarded"]);
 
 /** The closed set of things a publication writes to GitHub, each marked so it is written once. */
 export const PUBLICATION_PARTS = Object.freeze(["pull-request", "notes", "review"]);
@@ -230,23 +235,74 @@ function remoteFor(run, root, repository) {
   return defer({ kind: "remote-missing", repository });
 }
 
-/** The branch on the remote must hold the applied tip, or a comment would cite unseen commits. */
-function ensurePushed(run, root, remote, branch, tip) {
-  const listed = run("git", ["ls-remote", "--heads", remote, `refs/heads/${branch}`], {
-    cwd: root,
-  });
+/**
+ * What the remote branch is, measured against the applied tip. The owner asked on #508 what
+ * happens when the branch is not published or not pushed yet: both are states the publisher can
+ * settle itself with a fast-forward push, so only a remote that holds commits the tip lacks waits
+ * for the human, because the one write that could settle it is a force push, which is never ours.
+ */
+export const BRANCH_STATES = Object.freeze(["up-to-date", "absent", "behind", "diverged"]);
+
+function isAncestor(run, root, ancestor, descendant) {
+  return (
+    run("git", ["merge-base", "--is-ancestor", ancestor, descendant], { cwd: root }).status === 0
+  );
+}
+
+function hasCommit(run, root, sha) {
+  return run("git", ["cat-file", "-e", `${sha}^{commit}`], { cwd: root }).status === 0;
+}
+
+/** The remote branch's state; a tip this checkout has never seen is fetched before it is judged. */
+function branchState(run, root, remote, branch, tip) {
+  const ref = `refs/heads/${branch}`;
+  const listed = run("git", ["ls-remote", "--heads", remote, ref], { cwd: root });
   if (listed.status !== 0) fail("ls-remote", String(listed.stderr).trim());
   const line = String(listed.stdout)
     .split("\n")
-    .find((each) => each.endsWith(`\trefs/heads/${branch}`));
-  const remoteTip = line === undefined ? null : line.slice(0, 40);
-  if (remoteTip === tip) return;
-  if (
-    remoteTip !== null &&
-    run("git", ["merge-base", "--is-ancestor", tip, remoteTip], { cwd: root }).status === 0
-  )
-    return;
-  defer({ kind: "branch-not-pushed", remote, branch, tip });
+    .find((each) => each.endsWith(`\t${ref}`));
+  if (line === undefined) return { kind: "absent" };
+  const remoteTip = line.slice(0, line.indexOf("\t"));
+  if (remoteTip === tip) return { kind: "up-to-date" };
+  if (!hasCommit(run, root, remoteTip)) {
+    const fetched = run("git", ["fetch", "--quiet", "--no-tags", remote, ref], { cwd: root });
+    if (fetched.status !== 0) fail("fetch", String(fetched.stderr).trim());
+  }
+  if (isAncestor(run, root, tip, remoteTip)) return { kind: "up-to-date" };
+  if (isAncestor(run, root, remoteTip, tip)) return { kind: "behind", remoteTip };
+  return { kind: "diverged", remoteTip };
+}
+
+function pushTip(run, root, remote, branch, tip) {
+  // The exact applied commit rather than HEAD, and never forced: Git itself refuses anything but
+  // a creation or a fast-forward, so a remote that moved since it was read fails here instead of
+  // losing its commits.
+  const pushed = run("git", ["push", "--quiet", remote, `${tip}:refs/heads/${branch}`], {
+    cwd: root,
+  });
+  if (pushed.status !== 0) fail("push", String(pushed.stderr).trim() || "git push failed");
+}
+
+/**
+ * The remote branch must hold the applied tip before anything is posted, or a comment would cite
+ * commits GitHub cannot show. Returns what was done to get there, which the result reports.
+ */
+function publishBranch(run, root, remote, branch, tip) {
+  const state = branchState(run, root, remote, branch, tip);
+  switch (state.kind) {
+    case "up-to-date":
+      return { kind: "up-to-date" };
+    case "absent":
+      pushTip(run, root, remote, branch, tip);
+      return { kind: "created" };
+    case "behind":
+      pushTip(run, root, remote, branch, tip);
+      return { kind: "fast-forwarded", from: state.remoteTip };
+    case "diverged":
+      return defer({ kind: "branch-diverged", remote, branch, tip, remoteTip: state.remoteTip });
+    default:
+      return unreachable(state, "BRANCH_STATES");
+  }
 }
 
 function json(text, step) {
@@ -467,7 +523,7 @@ export async function publishHandover(handover, { root, run, temporary = tmpdir(
     gh(run, root, "gh-version", ["--version"]);
     if (run("gh", ["auth", "status", "--hostname", GITHUB_HOST], { cwd: root }).status !== 0)
       defer({ kind: "gh-unauthenticated" });
-    ensurePushed(run, root, remote, target.branch, handover.tip);
+    const branch = publishBranch(run, root, remote, target.branch, handover.tip);
     const found = await destinationOf(run, root, handover, address, scratch);
     const present = presentParts(run, root, target.repository, found, handover.identity);
     const posted = [];
@@ -493,6 +549,7 @@ export async function publishHandover(handover, { root, run, temporary = tmpdir(
       kind: "published",
       destination: { kind: found.kind, number: found.number, url: found.url },
       created: found.created,
+      branch,
       posted,
       skipped,
     };
@@ -557,10 +614,11 @@ function deferralLines(reason) {
         "The GitHub CLI (gh) is not logged in to github.com.",
         "Run gh auth login, then npm run patches:publish.",
       ];
-    case "branch-not-pushed":
+    case "branch-diverged":
       return [
-        `${reason.remote}/${reason.branch} does not hold the applied tip ${reason.tip.slice(0, 12)} yet, and the notes would cite commits GitHub cannot show.`,
-        `Push it (git push ${reason.remote} HEAD:${reason.branch}), then run npm run patches:publish.`,
+        `${reason.remote}/${reason.branch} is at ${reason.remoteTip.slice(0, 12)}, which has commits the applied tip ${reason.tip.slice(0, 12)} lacks; publishing never force-pushes.`,
+        `Merge it (git pull --no-rebase ${reason.remote} ${reason.branch}), push (git push ${reason.remote} HEAD:${reason.branch}), then run npm run patches:publish.`,
+        "Merge rather than rebase: a rebase rewrites the applied commits the notes cite.",
       ];
     case "pull-request-elsewhere":
       return [
@@ -569,6 +627,19 @@ function deferralLines(reason) {
       ];
     default:
       return unreachable(reason, "DEFERRAL_KINDS");
+  }
+}
+
+function branchLine(branch) {
+  switch (branch.kind) {
+    case "up-to-date":
+      return "The branch on GitHub already held the applied commits.";
+    case "created":
+      return "Pushed the applied commits, publishing the branch on GitHub.";
+    case "fast-forwarded":
+      return `Pushed the applied commits, fast-forwarding the branch on GitHub from ${branch.from.slice(0, 12)}.`;
+    default:
+      return unreachable(branch, "BRANCH_SYNC_KINDS");
   }
 }
 
@@ -599,6 +670,7 @@ export function describePublication(publication) {
       ];
     case "published":
       return [
+        branchLine(publication.branch),
         `Published to ${publication.destination.kind === "issue" ? "issue" : "pull request"} #${publication.destination.number}${publication.created ? ", which this run opened" : ""}: ${publication.destination.url}`,
         `Posted ${partList(publication.posted)}; already there: ${partList(publication.skipped)}.`,
       ];

@@ -12,9 +12,11 @@ export const DEFERRAL_KINDS: readonly [
   "remote-missing",
   "gh-missing",
   "gh-unauthenticated",
-  "branch-not-pushed",
+  "branch-diverged",
   "pull-request-elsewhere",
 ];
+export const BRANCH_STATES: readonly ["up-to-date", "absent", "behind", "diverged"];
+export const BRANCH_SYNC_KINDS: readonly ["up-to-date", "created", "fast-forwarded"];
 export const PUBLICATION_PARTS: readonly ["pull-request", "notes", "review"];
 export const MAX_BODY_CHARACTERS: number;
 
@@ -38,10 +40,11 @@ export type Deferral =
   | { readonly kind: "gh-missing" }
   | { readonly kind: "gh-unauthenticated" }
   | {
-      readonly kind: "branch-not-pushed";
+      readonly kind: "branch-diverged";
       readonly remote: string;
       readonly branch: string;
       readonly tip: string;
+      readonly remoteTip: string;
     }
   | {
       readonly kind: "pull-request-elsewhere";
@@ -49,6 +52,12 @@ export type Deferral =
       readonly head: string;
       readonly branch: string;
     };
+
+/** What publishing did to the remote branch so it holds the applied tip before any post. */
+export type BranchSync =
+  | { readonly kind: "up-to-date" }
+  | { readonly kind: "created" }
+  | { readonly kind: "fast-forwarded"; readonly from: string };
 
 export interface PublishedDestination {
   readonly kind: "pull-request" | "issue";
@@ -70,6 +79,7 @@ export type Publication =
       readonly kind: "published";
       readonly destination: PublishedDestination;
       readonly created: boolean;
+      readonly branch: BranchSync;
       readonly posted: readonly CommentPart[];
       readonly skipped: readonly CommentPart[];
     };
