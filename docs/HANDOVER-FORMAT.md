@@ -228,7 +228,7 @@ manifest is addressed and is eligible for publication after it applies.
 `title` is one trimmed, non-empty line of at most 256 characters with no carriage return or line
 feed. It is the title used when a branch destination has to open a pull request. `target` has
 exactly `repository`, `branch`, `into`, and `destination`: `repository` is a GitHub
-`owner/name`; `branch` is the branch carrying the applied tip; `into` is the branch the handover
+`owner/name`; `branch` is the branch carrying the applied tip; `into` (default `main`, motion5's integration branch, when `--into` is omitted) is the branch the handover
 branch is intended to merge into; and the two branch names must differ.
 
 `destination` is a closed union. `{ "kind": "pull-request", "number": <positive integer> }`
@@ -382,7 +382,7 @@ A notes body identifies the applied commits and tip, includes the line `Independ
 verbatim; `evidence: null` renders as `Evidence: not provided`. It is never upgraded or otherwise
 made stronger than the source review.
 
-Each body is bounded to 60,000 characters, the cut notice included. If notes or review text exceeds that bound, the body is cut and points to `NOTES.md` and `REVIEW.json` in the handover zip for the complete text. The bound is intentionally below GitHub's comment and pull-request limit.
+Each body is bounded to 60,000 characters, the cut notice included. If notes or review text exceeds that bound, the body is cut and points to `NOTES.md` (or `REVIEW.json`, for the review comment) in the handover zip for the complete text. The bound is intentionally below GitHub's comment and pull-request limit.
 
 ### Deferrals and failures
 

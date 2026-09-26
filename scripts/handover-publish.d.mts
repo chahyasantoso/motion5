@@ -99,7 +99,7 @@ export interface ListedPullRequest {
 }
 
 export function marker(identity: string, part: PublicationPart): string;
-export function bounded(body: string): string;
+export function bounded(body: string, source?: "NOTES.md" | "REVIEW.json"): string;
 export function branchPullRequest<T extends ListedPullRequest>(
   pulls: readonly T[],
   target: HandoverTarget,

@@ -81,9 +81,9 @@ function commitLines(commits) {
 }
 
 /** Any body cut to what GitHub accepts, with the cut saying where the whole text is. */
-export function bounded(body) {
+export function bounded(body, source = "NOTES.md") {
   if (body.length <= MAX_BODY_CHARACTERS) return body;
-  const cut = `\n\n_Cut at ${MAX_BODY_CHARACTERS} characters to fit GitHub; the whole text is \`NOTES.md\` and \`REVIEW.json\` in the handover zip._\n`;
+  const cut = `\n\n_Cut at ${MAX_BODY_CHARACTERS} characters to fit GitHub; the whole text is \`${source}\` in the handover zip._\n`;
   return `${body.slice(0, MAX_BODY_CHARACTERS - cut.length)}${cut}`;
 }
 
@@ -134,12 +134,7 @@ function findingLines(findings) {
   if (findings.length === 0) return ["None reported."];
   return findings.flatMap((finding) => [
     `- **${finding.severity}**, ${finding.state}: ${finding.title}`,
-    ...(finding.detail.trim() === ""
-      ? []
-      : finding.detail
-          .trim()
-          .split("\n")
-          .map((line) => `  ${line}`)),
+    ...(finding.detail.trim() === "" ? [] : finding.detail.split("\n").map((line) => `  ${line}`)),
   ]);
 }
 
@@ -162,6 +157,7 @@ export function reviewComment(handover) {
       `Evidence: ${review.evidence ?? "not provided"}`,
       "",
     ].join("\n"),
+    "REVIEW.json",
   );
 }
 
@@ -640,6 +636,9 @@ export async function publishPending({ root, run, temporary = tmpdir() }) {
     // handling starts; it is reported like an unreadable one rather than ending the whole retry.
     let publication;
     try {
+      // Only a payload this publisher wrote: addressed, and saved under its own name.
+      if (handover?.address?.kind !== "addressed" || `${handover.name}.json` !== name)
+        throw new TypeError(`${name} is not a pending payload this publisher wrote`);
       publication = await publishHandover(handover, { root, run, temporary });
     } catch (error) {
       publication = {

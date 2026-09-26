@@ -29,6 +29,7 @@ import {
 const ZERO = /^0{40}$/;
 const NOTES = "NOTES.md";
 const REVIEW = "REVIEW.json";
+// motion5 integrates on `main`; `--into` names any other base explicitly.
 const DEFAULT_INTO = "main";
 const HEADING = /^#\s+(.+?)\s*#*\s*$/m;
 const BUNDLE = "work.bundle";
