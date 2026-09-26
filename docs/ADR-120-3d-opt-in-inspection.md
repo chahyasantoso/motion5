@@ -63,12 +63,12 @@ that registers both solvers was already a mistake; it is now also refused as
 `plugin-duplicate-output` on `inspection`.
 
 **The load rules are shared, not restated.** No rule is added and no rule id changes.
-`ik-inspect-malformed` refuses an `ik3d` switch that is not one static boolean under the
+`ik-inspect-malformed` refuses an `ik3d` switch that is not one static boolean, flat or under the
 group that bound `root`, and `ik-solver-key-misgrouped` refuses one under any other group on the
 solver node, because both already read every group that bound `root`. The one change in
 `graph/solver-constraints.ts` is its module comment, which said the `ik` composer reads these keys
 and now says which solver reads which. `bend` and `flip` stay 2D vocabulary: under `ik3d` they are
-the registry's `plugin-unknown-key`, as `TH-11` already pins.
+the registry's `plugin-unknown-key`, as `TH-11` already pins. **Superseded in part by [ADR-121](./ADR-121-grouped-only-keyframes.md), 2026-09-26.** There is no flat switch any more: an ungrouped `inspect` is refused at schema validation as `keyframes-ungrouped-key`, so these two rules read only grouped spellings.
 
 ## What is withdrawn
 
@@ -97,12 +97,12 @@ the registry's `plugin-unknown-key`, as `TH-11` already pins.
 ## Consequences
 
 A 3D author opts into the same record a 2D author reads, and a consumer reads it without knowing
-the dimension. Registering `ik` and `ik3d` in one registry does not create an ownership inference: an ungrouped
-`inspect` spelling is `keyframes-ungrouped-key`, and the author must place it under the intended
-plugin group. The grouped spelling names its owner (ADR-043), and the guide's example is grouped. Nothing
+the dimension. Registering `ik` and `ik3d` in one registry makes a flat `inspect` spelling
+`plugin-ambiguous-key`, exactly as `x` already is between `transform` and `transform3d` (`TH-10`);
+the grouped spelling names its owner (ADR-043), and the guide's example is grouped. Nothing
 3D is exported from the package, and no file approaches the read budget: `ik-result.ts`,
 `ik3d.ts`, `ik3d-result.ts` and `graph/solver-constraints.ts` all stay below the 30,000-byte
-sister-document line.
+sister-document line. **Superseded in part by [ADR-121](./ADR-121-grouped-only-keyframes.md), 2026-09-26.** A flat `inspect` is no longer ambiguous between `ik` and `ik3d`, because no flat spelling is authorable: it is refused as `keyframes-ungrouped-key` before plugin resolution, and `plugin-ambiguous-key` is deleted.
 
 ## Evidence
 
@@ -116,9 +116,10 @@ sister-document line.
   magnitude ceiling whose residual is restored rather than published as its image's.
 - `TH-55` proves the published record equals the 2D `inspectSolve` of the 3D evidence for every
   kind, and that a planar 3D rig reports the 2D closed form's kind and residual to `1e-9`.
-- `TH-56` proves the 2D rules speak for `ik3d` grouped, name the authored path, refuse a
-  misgrouped switch as misgrouped only, accept both static booleans through the engine, and refuse
-  an ungrouped spelling as `keyframes-ungrouped-key` before plugin resolution.
+- `TH-56` proves the 2D rules speak for `ik3d` grouped and flat, name the authored path, refuse a
+  misgrouped switch as misgrouped only, accept both static booleans through the engine, refuse them
+  as `plugin-unknown-key` without the claim, and make the flat spelling ambiguous only when `ik` is
+  registered beside `ik3d`. **Superseded in part by [ADR-121](./ADR-121-grouped-only-keyframes.md), 2026-09-26.** `TH-56` now proves the grouped spelling only, and that an ungrouped `inspect` is `keyframes-ungrouped-key`.
 - `TH-57` proves through `Engine` that opting in adds exactly two keys to the solver's patch and
   changes no member patch, that an animated goal leaving the band turns the record `too-far`, that
   seeking back reproduces every byte, and that the DOM adapter never writes `inspection`.
