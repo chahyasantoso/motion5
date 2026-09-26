@@ -74,23 +74,10 @@ import { restoreResult3d, type SolveResult3d } from "./ik3d-result";
  * byte (ADR-111).
  */
 
-/** An attempt's full answer: the shared result plus the pivots and tips its rotations describe. */
-export interface Fabrik3dSolution extends SolveResult3d<IterativeQuality> {
-  readonly pivots: Readonly<Record<string, Vec3>>;
-  readonly tips: Readonly<Record<string, Vec3>>;
-}
+/** The index `parent` holds for a member that hangs from the root rather than from a member. */
+const ROOT = -1;
 
 const X_AXIS: Vec3 = [1, 0, 0];
-
-/** A frozen copy of `v`, so a published position never aliases the solve's working state. */
-function frozen(v: Vec3): Vec3 {
-  return Object.freeze([v[0], v[1], v[2]] as const);
-}
-
-/** Whether an offset is exactly zero, which composes its member's pivot on its base's tip. */
-function isZeroOffset(offset: Vec3): boolean {
-  return offset[0] === 0 && offset[1] === 0 && offset[2] === 0;
-}
 
 /**
  * The point at distance `length` from `from`, toward `to`: the 2D `place` over `Vec3`, with the same
@@ -114,23 +101,24 @@ export function place3d(from: Vec3, to: Vec3, length: number): Vec3 {
  * The seed for one root-to-leaf path: the joints of a constant-curvature arc from `origin` to
  * `goal` exactly as long as the path, in the plane spanned by `along` (toward the goal) and
  * `across` (the side it bulges to). The 2D `seedArc` arithmetic with its two axes replaced by
- * vectors, and the same `arcHalfAngle` bisection, so a planar rig seeds the same points.
+ * vectors, and the same `arcHalfAngle` bisection, so a planar rig seeds the same points. `lengths`
+ * are already clamped through `segmentExtent`.
  */
-export function seedArc3d(
+function seedArc3d(
   origin: Vec3,
   goal: Vec3,
   lengths: readonly number[],
   along: Vec3,
   across: Vec3,
 ): readonly Vec3[] {
-  const total = lengths.reduce((sum, length) => sum + segmentExtent(length), 0);
+  const total = lengths.reduce((sum, length) => sum + length, 0);
   const chord = norm3(subtract3(goal, origin));
   const halfAngle = total > 0 && chord < total ? arcHalfAngle(chord / total) : 0;
   const radius = halfAngle > 0 ? total / (2 * halfAngle) : 0;
   const points: Vec3[] = [];
   let travelled = 0;
   for (const length of lengths) {
-    travelled += segmentExtent(length);
+    travelled += length;
     const fraction = total > 0 ? travelled / total : 1;
     const angle = -halfAngle + 2 * halfAngle * fraction;
     const axial = halfAngle > 0 ? chord / 2 + radius * Math.sin(angle) : fraction * chord;
@@ -141,13 +129,19 @@ export function seedArc3d(
 }
 
 /**
- * One attempt from one seed side and one compromise rule.
+ * One attempt from one seed side and one compromise rule, over members as `solveTree3d` read them.
  *
  * The structure is the 2D attempt's: seed every addressed path, run an outward pass, then alternate
  * inward and outward passes until the worst addressed miss is inside `FABRIK_TOLERANCE`, a pass
  * moves nothing, or the cap is reached. A sub-base settles on the influence-weighted compromise of
  * the tips its branches propose, each branch un-offsetting its proposed pivot through its base's
  * current full frame, so positions are averaged and orientations never are (ADR-054).
+ *
+ * The chain is read once into arrays indexed by canonical position, where a member's base always
+ * sits at a smaller index than the member (canonical order is by depth), so both passes are plain
+ * index walks: no per-pass snapshot and no per-pass proposal map, only the vectors the arithmetic
+ * itself produces. Movement is measured against the tips the previous outward pass settled, which
+ * are the tips every pass starts from.
  */
 export function solveTree3dAttempt(
   root: WorldFrame3d,
@@ -155,110 +149,131 @@ export function solveTree3dAttempt(
   pole: Pole3d,
   flip: boolean,
   rule: CompromiseRule,
-): Fabrik3dSolution {
+): SolveResult3d<IterativeQuality> {
   const { byId, ids, serialDepth, childCount, leaves } = canonicalChain(members);
-  const isMember = (id: string): boolean => byId.has(id);
-  const baseOf = (id: string): string => byId.get(id)!.base;
-  const goalOf = (id: string): WorldFrame3d | undefined => byId.get(id)!.goal;
-  const lengths = new Map<string, number>();
-  const offsets = new Map<string, Vec3>();
-  const rests = new Map<string, Matrix3>();
-  for (const id of ids) {
-    const member = byId.get(id)!;
-    const offset = readPivotOffset3d(member.offset);
-    lengths.set(id, segmentExtent(readNumber(member.length)));
-    offsets.set(id, [offset.x, offset.y, offset.z]);
-    rests.set(id, matrixFromEuler3d(member.rest));
-  }
-  const lengthOf = (id: string): number => lengths.get(id)!;
-  const offsetOf = (id: string): Vec3 => offsets.get(id)!;
-  const addressed = leaves.filter((id) => goalOf(id) !== undefined);
-  const inner = ids.find((id) => (childCount.get(id) ?? 0) > 0 && goalOf(id) !== undefined);
+  const count = ids.length;
+  const chain = ids.map((id) => byId.get(id)!);
+  const indexOf = new Map(ids.map((id, index) => [id, index]));
+  // A cycle was refused by `canonicalChain`, so every base is the root or an earlier index.
+  const parent = chain.map(({ base }) => indexOf.get(base) ?? ROOT);
+  const lengths = chain.map(({ length }) => segmentExtent(length));
+  const offsets = chain.map(({ offset }): Vec3 => [offset.x, offset.y, offset.z]);
+  // A zero offset composes its member's pivot on its base's tip, so it is skipped, not multiplied.
+  const offset = offsets.map((vector) =>
+    vector[0] === 0 && vector[1] === 0 && vector[2] === 0 ? undefined : vector,
+  );
+  const rests = chain.map(({ rest }) => matrixFromEuler3d(rest));
+  const inner = ids.find((id) => (childCount.get(id) ?? 0) > 0 && byId.get(id)!.goal !== undefined);
   if (inner !== undefined)
     throw new Error(`Solver goal on member "${inner}" is not on a leaf of the chain.`);
-  const pulls = branchPulls(byId, addressed);
+  const addressedIds = leaves.filter((id) => byId.get(id)!.goal !== undefined);
+  const addressed = addressedIds.map((id) => indexOf.get(id)!);
+  const pullsById = branchPulls(byId, addressedIds);
+  const pulls = ids.map((id) => pullsById.get(id) ?? 0);
   const rootMatrix = matrixFromEuler3d(root);
   const rootPoint: Vec3 = [root.x, root.y, root.z];
-  const tips = new Map<string, Vec3>();
-  const pivots = new Map<string, Vec3>();
-  const frames = new Map<string, Matrix3>();
-  const parentFrame = (id: string): Matrix3 => {
-    const base = baseOf(id);
-    return isMember(base) ? frames.get(base)! : rootMatrix;
+  const tips: (Vec3 | undefined)[] = new Array<Vec3 | undefined>(count);
+  const pivots: Vec3[] = new Array<Vec3>(count);
+  const frames: Matrix3[] = new Array<Matrix3>(count);
+  const settled: Vec3[] = new Array<Vec3>(count);
+  const parentFrame = (index: number): Matrix3 => {
+    const base = parent[index]!;
+    return base === ROOT ? rootMatrix : frames[base]!;
   };
-  const originOf = (id: string): Vec3 => {
-    const base = baseOf(id);
-    return isMember(base) ? tips.get(base)! : rootPoint;
+  const originOf = (index: number): Vec3 => {
+    const base = parent[index]!;
+    return base === ROOT ? rootPoint : tips[base]!;
   };
-  const pathOf = (leaf: string): readonly string[] => {
-    const path: string[] = [];
-    for (let cursor = leaf; isMember(cursor); cursor = baseOf(cursor)) path.unshift(cursor);
+  /** The member indices from the root's first member down to `leaf`. */
+  const pathOf = (leaf: number): readonly number[] => {
+    const path: number[] = [];
+    for (let cursor = leaf; cursor !== ROOT; cursor = parent[cursor]!) path.unshift(cursor);
     return path;
   };
 
-  const readings = new Map<string, GoalReading>();
-  const aims = new Map<string, Vec3>();
+  const readings: GoalReading[] = [];
+  const aims: Vec3[] = new Array<Vec3>(count);
   for (const leaf of addressed) {
-    const goal = goalOf(leaf)!;
-    const reading = readGoal(leaf, [
+    const goal = chain[leaf]!.goal!;
+    const reading = readGoal(ids[leaf]!, [
       ["x", goal.x],
       ["y", goal.y],
       ["z", goal.z],
     ]);
     const reach = (): number =>
-      pathOf(leaf).reduce((sum, id) => sum + lengthOf(id) + norm3(offsetOf(id)), 0);
+      pathOf(leaf).reduce((sum, index) => sum + lengths[index]! + norm3(offsets[index]!), 0);
     const [x, y, z] = aimPoint(reading, rootPoint, reach);
-    readings.set(leaf, reading);
-    aims.set(leaf, [x!, y!, z!]);
+    readings.push(reading);
+    aims[leaf] = [x!, y!, z!];
   }
   // Seeded one addressed path at a time in canonical leaf order; a shared member takes the first
   // path's point, and the first outward pass enforces every length.
   for (const leaf of addressed) {
-    const aim = aims.get(leaf)!;
+    const aim = aims[leaf]!;
     const toAim = subtract3(aim, rootPoint);
     const { e1, e2 } = bendBasis3d(rootMatrix, toAim, norm3(toAim), rootPoint, pole);
     const path = pathOf(leaf);
     const across = flip ? scale3(e2, -1) : e2;
-    const seeded = seedArc3d(rootPoint, aim, path.map(lengthOf), e1, across);
-    path.forEach((id, index) => {
-      if (!tips.has(id)) tips.set(id, seeded[index]!);
+    const seeded = seedArc3d(
+      rootPoint,
+      aim,
+      path.map((index) => lengths[index]!),
+      e1,
+      across,
+    );
+    path.forEach((index, step) => {
+      if (tips[index] === undefined) tips[index] = seeded[step]!;
     });
   }
   // A member on no addressed path lies straight out along the root's own +x.
   const rootX = axisX3(rootMatrix);
-  for (const id of ids)
-    if (!tips.has(id)) tips.set(id, add3(originOf(id), scale3(rootX, lengthOf(id))));
+  for (let index = 0; index < count; index += 1)
+    if (tips[index] === undefined)
+      tips[index] = add3(originOf(index), scale3(rootX, lengths[index]!));
 
   /**
    * The outward pass: the only place lengths are enforced and the only place a frame is built, in
    * canonical depth order, so each member reads its base's final frame and tip. It is `fk3d`'s own
    * composition over the current tip guesses, with the orientation reconstructed by the minimal
    * swing from the member's rest frame; a zero-length member keeps its rest frame, which is what it
-   * composes, and its children hang where the solve put them.
+   * composes, and its children hang where the solve put them. Answers the largest coordinate any
+   * tip moved from where the previous outward pass settled it.
    */
-  const outward = (): void => {
-    for (const id of ids) {
-      const parent = parentFrame(id);
-      const origin = originOf(id);
-      const offset = offsetOf(id);
-      const pivot = isZeroOffset(offset) ? origin : add3(origin, multiplyVector3(parent, offset));
-      const length = lengthOf(id);
-      const tip = place3d(pivot, tips.get(id)!, length);
-      const rest = multiplyMatrix3(parent, rests.get(id)!);
-      pivots.set(id, pivot);
-      tips.set(id, tip);
-      frames.set(id, length > 0 ? swingFrame3d(rest, subtract3(tip, pivot)) : rest);
+  const outward = (): number => {
+    let moved = 0;
+    for (let index = 0; index < count; index += 1) {
+      const frame = parentFrame(index);
+      const origin = originOf(index);
+      const shift = offset[index];
+      const pivot = shift === undefined ? origin : add3(origin, multiplyVector3(frame, shift));
+      const length = lengths[index]!;
+      const tip = place3d(pivot, tips[index]!, length);
+      const rest = multiplyMatrix3(frame, rests[index]!);
+      const was = settled[index];
+      if (was !== undefined)
+        moved = Math.max(
+          moved,
+          Math.abs(was[0] - tip[0]),
+          Math.abs(was[1] - tip[1]),
+          Math.abs(was[2] - tip[2]),
+        );
+      settled[index] = tip;
+      pivots[index] = pivot;
+      tips[index] = tip;
+      frames[index] = length > 0 ? swingFrame3d(rest, subtract3(tip, pivot)) : rest;
     }
+    return moved;
   };
   const residualNow = (): number => {
     let worst = 0;
     for (const leaf of addressed)
-      worst = Math.max(worst, norm3(subtract3(tips.get(leaf)!, aims.get(leaf)!)));
+      worst = Math.max(worst, norm3(subtract3(tips[leaf]!, aims[leaf]!)));
     return worst;
   };
 
   outward();
   const cap = fabrikIterationCap(serialDepth());
+  const proposals: Pull3d[][] = Array.from({ length: count }, () => []);
   let iterations = 0;
   let residual = residualNow();
   let stalled = false;
@@ -266,47 +281,37 @@ export function solveTree3dAttempt(
   while (residual > FABRIK_TOLERANCE && iterations < cap) {
     iterations += 1;
     spread = 0;
-    const before = new Map(tips);
-    const proposals = new Map<string, Pull3d[]>();
     for (const leaf of addressed)
-      proposals.set(leaf, [{ kind: "goal", point: aims.get(leaf)!, weight: 1 }]);
-    for (let index = ids.length - 1; index >= 0; index -= 1) {
-      const id = ids[index]!;
-      const proposed = proposals.get(id) ?? [];
+      proposals[leaf]!.push({ kind: "goal", point: aims[leaf]!, weight: 1 });
+    // The inward pass, deepest first: each member settles on its proposals, then proposes its
+    // pivot, un-offset through its base's frame, to that base. The root is the one point a solve
+    // may not move, so a proposal for it is never made.
+    for (let index = count - 1; index >= 0; index -= 1) {
+      const proposed = proposals[index]!;
       if (proposed.length > 0) {
-        const settled = compromise3d(proposed, rule);
-        spread = Math.max(spread, settled.spread);
-        tips.set(id, settled.point);
+        const compromise = compromise3d(proposed, rule);
+        spread = Math.max(spread, compromise.spread);
+        tips[index] = compromise.point;
+        proposed.length = 0;
       }
-      const base = baseOf(id);
-      // The root is the one point a solve may not move, so a proposal for it is dropped.
-      if (!isMember(base)) continue;
-      const tip = tips.get(id)!;
-      const pivot = place3d(tip, pivots.get(id)!, lengthOf(id));
-      const offset = offsetOf(id);
-      const shift = isZeroOffset(offset) ? offset : multiplyVector3(frames.get(base)!, offset);
-      const list = proposals.get(base) ?? [];
-      list.push({
+      const base = parent[index]!;
+      if (base === ROOT) continue;
+      const tip = tips[index]!;
+      const pivot = place3d(tip, pivots[index]!, lengths[index]!);
+      const own = offset[index];
+      const shift = own === undefined ? undefined : multiplyVector3(frames[base]!, own);
+      proposals[base]!.push({
         kind: "branch",
-        point: subtract3(pivot, shift),
-        weight: pulls.get(id)!,
-        reach: { centre: subtract3(tip, shift), radius: lengthOf(id) },
+        point: shift === undefined ? pivot : subtract3(pivot, shift),
+        weight: pulls[index]!,
+        reach: {
+          centre: shift === undefined ? tip : subtract3(tip, shift),
+          radius: lengths[index]!,
+        },
       });
-      proposals.set(base, list);
     }
-    outward();
+    const moved = outward();
     residual = residualNow();
-    let moved = 0;
-    for (const id of ids) {
-      const was = before.get(id)!;
-      const now = tips.get(id)!;
-      moved = Math.max(
-        moved,
-        Math.abs(was[0] - now[0]),
-        Math.abs(was[1] - now[1]),
-        Math.abs(was[2] - now[2]),
-      );
-    }
     if (moved === 0) {
       stalled = true;
       break;
@@ -314,24 +319,21 @@ export function solveTree3dAttempt(
   }
 
   const rotations3d: Record<string, Euler3d> = {};
-  const solvedPivots: Record<string, Vec3> = {};
-  const solvedTips: Record<string, Vec3> = {};
   const residuals: Record<string, number> = {};
-  for (const leaf of addressed) residuals[leaf] = goalMiss(readings.get(leaf)!, tips.get(leaf)!);
-  for (const id of ids) {
-    const local = multiplyMatrix3(transposeMatrix3(parentFrame(id)), frames.get(id)!);
-    rotations3d[id] = Object.freeze(eulerFromMatrix3d(local));
-    solvedPivots[id] = frozen(pivots.get(id)!);
-    solvedTips[id] = frozen(tips.get(id)!);
-  }
   let worst = residual;
-  for (const leaf of addressed) worst = Math.max(worst, residuals[leaf]!);
+  addressed.forEach((leaf, step) => {
+    const miss = goalMiss(readings[step]!, tips[leaf]!);
+    residuals[ids[leaf]!] = miss;
+    worst = Math.max(worst, miss);
+  });
+  for (let index = 0; index < count; index += 1) {
+    const local = multiplyMatrix3(transposeMatrix3(parentFrame(index)), frames[index]!);
+    rotations3d[ids[index]!] = Object.freeze(eulerFromMatrix3d(local));
+  }
   const quality = iterativeQuality({ residual: worst, iterations, atBound: [], spread, stalled });
   return Object.freeze({
     rotations3d: Object.freeze(rotations3d),
     residuals: Object.freeze(residuals),
-    pivots: Object.freeze(solvedPivots),
-    tips: Object.freeze(solvedTips),
     quality: Object.freeze(quality),
   });
 }
@@ -345,14 +347,27 @@ function selectTree3d(
   members: readonly ChainMember3d[],
   pole: Pole3d,
 ): SolveResult3d<IterativeQuality> {
-  const { rotations3d, residuals, quality } = selectFabrik(
+  return selectFabrik(
     root,
     members,
     false,
     (frame: WorldFrame3d, chain: readonly ChainMember3d[], flip: boolean, rule: CompromiseRule) =>
       solveTree3dAttempt(frame, chain, pole, flip, rule),
   );
-  return Object.freeze({ rotations3d, residuals, quality });
+}
+
+/**
+ * A member re-read through the frame readers, as `solveTwoBone3d` re-reads its two, so a direct
+ * caller's non-finite length or offset component reads as zero exactly as a delivered one does.
+ * Done once per solve, before the magnitude policy reads it, so neither the policy, the image nor
+ * any attempt reads a raw field.
+ */
+function rereadMember3d(member: ChainMember3d): ChainMember3d {
+  return {
+    ...member,
+    length: readNumber(member.length),
+    offset: readPivotOffset3d(member.offset),
+  };
 }
 
 /** A member's image under `factor`: every world-unit field scaled, orientation carried. */
@@ -360,8 +375,8 @@ function scaleMember(member: ChainMember3d, factor: number): ChainMember3d {
   const { goal } = member;
   return {
     ...member,
-    length: readNumber(member.length) * factor,
-    offset: scaleOffset3d(readPivotOffset3d(member.offset), factor),
+    length: member.length * factor,
+    offset: scaleOffset3d(member.offset, factor),
     ...(goal === undefined ? {} : { goal: scaleFrame3d(goal, factor) }),
   };
 }
@@ -381,21 +396,21 @@ export function solveTree3d(
   bend: Pole3d,
 ): SolveResult3d<IterativeQuality> {
   const pole = rereadPole3d(bend);
+  const read = members.map(rereadMember3d);
   const magnitudes = [root.x, root.y, root.z, ...poleMagnitudes(pole)];
-  for (const member of members) {
-    const offset = readPivotOffset3d(member.offset);
-    magnitudes.push(readNumber(member.length), offset.x, offset.y, offset.z);
-    if (member.goal !== undefined) magnitudes.push(member.goal.x, member.goal.y, member.goal.z);
+  for (const { length, offset, goal } of read) {
+    magnitudes.push(length, offset.x, offset.y, offset.z);
+    if (goal !== undefined) magnitudes.push(goal.x, goal.y, goal.z);
   }
   const magnitude = magnitudeOf(magnitudes);
   switch (magnitude.kind) {
     case "native":
-      return selectTree3d(root, members, pole);
+      return selectTree3d(root, read, pole);
     case "rescaled": {
       const factor = 2 ** -magnitude.exponent;
       const image = selectTree3d(
         scaleFrame3d(root, factor),
-        members.map((member) => scaleMember(member, factor)),
+        read.map((member) => scaleMember(member, factor)),
         scalePole(pole, factor),
       );
       return restoreResult3d(image, magnitude.exponent);

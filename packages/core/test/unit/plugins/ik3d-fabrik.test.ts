@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import type { PluginInputs } from "../../../src/domain/plugins";
-import { fk3dPlugin } from "../../../src/plugins/fk3d";
 import {
   matrixFromEuler3d,
   multiplyMatrix3,
@@ -14,17 +13,13 @@ import {
   type WorldFrame3d,
 } from "../../../src/plugins/frame3d";
 import { solveChain } from "../../../src/plugins/ik-solve";
-import {
-  solveTwoBone3d,
-  UNBOUND_POLE3D,
-  type Pole3d,
-  type SolveMember3d,
-} from "../../../src/plugins/ik3d-analytic";
+import { solveTwoBone3d, UNBOUND_POLE3D, type Pole3d } from "../../../src/plugins/ik3d-analytic";
 import { ik3dPlugin } from "../../../src/plugins/ik3d";
 import { place3d } from "../../../src/plugins/ik3d-fabrik";
 import { chainShape3d, solveChain3d } from "../../../src/plugins/ik3d-solve";
 import type { ChainMember3d } from "../../../src/plugins/ik3d-chain";
 import type { SolveResult3d } from "../../../src/plugins/ik3d-result";
+import { composeChain3d, frameDistance3d } from "../../support/fk3d-compose";
 
 const ROOT = readFrame3d({ x: 0, y: 0, z: 0 });
 const ZERO_OFFSET = { x: 0, y: 0, z: 0 } as const;
@@ -52,32 +47,6 @@ function member(
   return { id, base, length, offset: ZERO_OFFSET, rest: ZERO_REST, ...extra };
 }
 
-function composeMembers(
-  root: WorldFrame3d,
-  members: readonly ChainMember3d[],
-  result: SolveResult3d,
-): Readonly<Record<string, WorldFrame3d>> {
-  const frames: Record<string, WorldFrame3d> = {};
-  for (const item of members) {
-    const base = item.base === "root" ? root : (frames[item.base] ?? root);
-    frames[item.id] = fk3dPlugin.compose(
-      {
-        length: item.length,
-        ...item.offset,
-        ...item.rest,
-      },
-      1,
-      { base, solver: result } as unknown as PluginInputs,
-      item.id,
-    ) as WorldFrame3d;
-  }
-  return frames;
-}
-
-function distance3(a: WorldFrame3d, b: WorldFrame3d): number {
-  return Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z);
-}
-
 function allFinite(result: SolveResult3d): boolean {
   return Object.values(result.rotations3d).every((euler) =>
     Object.values(euler).every(Number.isFinite),
@@ -92,7 +61,7 @@ function turnDistance(a: number, b: number): number {
 function composedInputs(
   root: WorldFrame3d,
   target: WorldFrame3d,
-  members: readonly SolveMember3d[],
+  members: readonly ChainMember3d[],
   inspect = false,
 ) {
   return {
@@ -176,10 +145,12 @@ describe("3D FABRIK evidence", () => {
       const result = solveChain3d(root, members, UNBOUND_POLE3D);
       expect(result.quality.kind).toBe("converged");
       expect(result.quality.residual).toBeLessThanOrEqual(1e-3);
-      const composed = composeMembers(root, members, result);
+      const composed = composeChain3d(root, members, result);
       const tip = composed[`m${count - 1}`];
       if (tip === undefined) throw new Error("missing composed tip");
-      expect(Math.abs(distance3(tip, goal) - result.quality.residual)).toBeLessThanOrEqual(1e-9);
+      expect(Math.abs(frameDistance3d(tip, goal) - result.quality.residual)).toBeLessThanOrEqual(
+        1e-9,
+      );
     }
   });
 
@@ -254,7 +225,7 @@ describe("3D FABRIK evidence", () => {
     );
     const pole: Pole3d = { kind: "point", point: [15, 0, -50] };
     const bound = solveChain3d(ROOT, members, pole);
-    const composed = composeMembers(ROOT, members, bound);
+    const composed = composeChain3d(ROOT, members, bound);
     const first = composed.m0;
     if (first === undefined) throw new Error("missing first member");
     const side = perpendicularSide([first.x, first.y, first.z], [30, 0, 0], [15, 0, -50]);
@@ -429,7 +400,7 @@ describe("3D FABRIK evidence", () => {
       member("right-tip", "right", 20, { goal: readFrame3d({ x: 25, y: -20, z: -10 }) }),
     ];
     const result = solveChain3d(ROOT, members);
-    const composed = composeMembers(ROOT, members, result);
+    const composed = composeChain3d(ROOT, members, result);
     const goals: Readonly<Record<string, WorldFrame3d>> = {
       "left-tip": members[2]!.goal!,
       "right-tip": members[4]!.goal!,
@@ -438,7 +409,7 @@ describe("3D FABRIK evidence", () => {
     for (const id of ["left-tip", "right-tip"] as const) {
       const tip = composed[id];
       if (tip === undefined) throw new Error(`missing composed tip ${id}`);
-      actual[id] = distance3(tip, goals[id]!);
+      actual[id] = frameDistance3d(tip, goals[id]!);
       expect(Math.abs(result.residuals[id]! - actual[id]!)).toBeLessThanOrEqual(1e-9);
     }
     expect(result.quality.residual).toBeCloseTo(
@@ -475,7 +446,7 @@ describe("3D FABRIK evidence", () => {
       members[4] = { ...members[4]!, goal };
       const result = solveChain3d(ROOT, members);
       expect(result.quality.kind).toBe("converged");
-      const composed = composeMembers(ROOT, members, result);
+      const composed = composeChain3d(ROOT, members, result);
       for (const item of members) {
         const world = composed[item.id];
         if (world === undefined) throw new Error(`missing composed member ${item.id}`);
@@ -499,7 +470,7 @@ describe("3D FABRIK evidence", () => {
       member("c", "b", 19, { goal: readFrame3d({ x: 20, y: 15, z: 12 }) }),
     ];
     const zeroResult = solveChain3d(ROOT, zeroRestMembers);
-    const zeroComposed = composeMembers(ROOT, zeroRestMembers, zeroResult);
+    const zeroComposed = composeChain3d(ROOT, zeroRestMembers, zeroResult);
     for (const item of zeroRestMembers) {
       const world = zeroComposed[item.id];
       if (world === undefined) throw new Error(`missing zero-rest member ${item.id}`);
@@ -524,10 +495,10 @@ describe("3D FABRIK evidence", () => {
     ];
     const result = solveChain3d(ROOT, members);
     expect(result.quality.kind).toBe("converged");
-    const composed = composeMembers(ROOT, members, result);
+    const composed = composeChain3d(ROOT, members, result);
     const tip = composed.tip;
     if (tip === undefined) throw new Error("missing rolled-offset tip");
-    expect(distance3(tip, goal)).toBeLessThanOrEqual(1e-3);
+    expect(frameDistance3d(tip, goal)).toBeLessThanOrEqual(1e-3);
 
     const parent = composed.parent;
     const child = composed["offset-child"];

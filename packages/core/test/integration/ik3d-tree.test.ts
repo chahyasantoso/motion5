@@ -5,42 +5,64 @@ import { Engine } from "../../src/engine";
 import { createManualClock } from "../../src/ports/clock";
 import type { Patch } from "../../src/runtime/patch-registry";
 import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
+import { FABRIK_TOLERANCE } from "../../src/plugins/fabrik";
 import { fk3dPlugin } from "../../src/plugins/fk3d";
-import { readFrame3d, type WorldFrame3d } from "../../src/plugins/frame3d";
+import { readFrame3d } from "../../src/plugins/frame3d";
 import { ik3dPlugin } from "../../src/plugins/ik3d";
-import { solveChain3d } from "../../src/plugins/ik3d-solve";
-import { UNBOUND_POLE3D } from "../../src/plugins/ik3d-analytic";
-import type { ChainMember3d } from "../../src/plugins/ik3d-chain";
 import { transform3dPlugin } from "../../src/plugins/transform3d";
 
-function member(id: string, base: string, length: number, solver: string): TrackDefinition {
+type Values = Readonly<Record<string, unknown>>;
+
+/** An `fk3d` member of `solver`, with an optional pivot offset and rest orientation. */
+function member(
+  id: string,
+  base: string,
+  solver: string,
+  length: number,
+  extra: Readonly<Record<string, number>> = {},
+): TrackDefinition {
   return {
     id,
-    keyframes: { fk3d: { values: { length }, requires: { base, solver } } },
+    keyframes: { fk3d: { values: { length, ...extra }, requires: { base, solver } } },
   };
 }
 
+/** A goal whose position is keyframed from `from` at progress 0 to `to` at progress 1. */
+function movingGoal(
+  id: string,
+  from: readonly [number, number, number],
+  to: readonly [number, number, number],
+): TrackDefinition {
+  const ramp = (axis: 0 | 1 | 2) => [
+    { p: 0, v: from[axis] },
+    { p: 1, v: to[axis] },
+  ];
+  return { id, keyframes: { transform3d: { values: { x: ramp(0), y: ramp(1), z: ramp(2) } } } };
+}
+
+/**
+ * A rotated root carrying two `ik3d` solvers: a four-member serial chain with a lateral pivot offset
+ * and a rest orientation, and a branching tree whose two leaves are addressed per leaf and which
+ * opts into inspection. Every goal moves with its own track's progress, so a seek re-solves.
+ */
 const PROJECT: ProjectDefinition = {
   schemaVersion: 5,
   projectId: "3d-tree",
+  perspective: 800,
   motions: [
     {
       id: "rig",
       trigger: { type: "manual" },
       tracks: [
-        { id: "root", keyframes: { transform3d: { values: { x: 0, y: 0, z: 0 } } } },
         {
-          id: "chain-goal",
-          keyframes: { transform3d: { values: { x: 50, y: 20, z: 10 } } },
+          id: "root",
+          keyframes: {
+            transform3d: { values: { x: 5, y: -3, z: 2, rotation: 20, rotationX: -15 } },
+          },
         },
-        {
-          id: "left-goal",
-          keyframes: { transform3d: { values: { x: 25, y: 20, z: 10 } } },
-        },
-        {
-          id: "right-goal",
-          keyframes: { transform3d: { values: { x: 25, y: -20, z: -10 } } },
-        },
+        movingGoal("chain-goal", [50, 20, 10], [30, -25, 35]),
+        movingGoal("left-goal", [25, 20, 10], [35, 10, 25]),
+        movingGoal("right-goal", [25, -20, -10], [30, -5, -30]),
         {
           id: "chain-solve",
           keyframes: { ik3d: { requires: { root: "root", target: "chain-goal" } } },
@@ -49,6 +71,7 @@ const PROJECT: ProjectDefinition = {
           id: "tree-solve",
           keyframes: {
             ik3d: {
+              values: { inspect: true },
               requires: {
                 root: "root",
                 targets: { "left-tip": "left-goal", "right-tip": "right-goal" },
@@ -56,170 +79,105 @@ const PROJECT: ProjectDefinition = {
             },
           },
         },
-        member("c0", "root", 25, "chain-solve"),
-        member("c1", "c0", 22, "chain-solve"),
-        member("c2", "c1", 20, "chain-solve"),
-        member("c3", "c2", 18, "chain-solve"),
-        member("trunk", "root", 25, "tree-solve"),
-        member("left", "trunk", 20, "tree-solve"),
-        member("left-tip", "left", 20, "tree-solve"),
-        member("right", "trunk", 20, "tree-solve"),
-        member("right-tip", "right", 20, "tree-solve"),
+        member("c0", "root", "chain-solve", 25),
+        member("c1", "c0", "chain-solve", 22, { y: 3, rotation: 10, rotationX: 25, weight: 1 }),
+        member("c2", "c1", "chain-solve", 20),
+        member("c3", "c2", "chain-solve", 18),
+        member("trunk", "root", "tree-solve", 25),
+        member("left", "trunk", "tree-solve", 20, { z: 2 }),
+        member("left-tip", "left", "tree-solve", 20),
+        member("right", "trunk", "tree-solve", 20),
+        member("right-tip", "right", "tree-solve", 20),
       ],
     },
   ],
 };
 
-function createRuntime(): Engine {
+const NODES = [
+  "root",
+  "chain-goal",
+  "left-goal",
+  "right-goal",
+  "chain-solve",
+  "tree-solve",
+  "c0",
+  "c1",
+  "c2",
+  "c3",
+  "trunk",
+  "left",
+  "left-tip",
+  "right",
+  "right-tip",
+].map((id) => `rig/${id}`);
+
+/** Each addressed leaf and the goal node it reaches for. */
+const LEAVES = [
+  ["rig/c3", "rig/chain-goal"],
+  ["rig/left-tip", "rig/left-goal"],
+  ["rig/right-tip", "rig/right-goal"],
+] as const;
+
+function mountedRig() {
   const plugins = new PluginRegistry();
   plugins.register(transform3dPlugin);
   plugins.register(fk3dPlugin);
   plugins.register(ik3dPlugin);
-  return new Engine({
+  const runtime = new Engine({
     clock: createManualClock(),
     interpolator: createFakeInterpolator(),
     scheduler: createFakeScheduler(),
     plugins,
   }).load(PROJECT);
+  const patches = new Map<string, Patch>();
+  for (const id of NODES) {
+    runtime.mount(id);
+    runtime.subscribeNode(id, (patch) => patches.set(id, patch));
+  }
+  /** Every goal at `progress`, then every published value, copied so a later seek cannot alias it. */
+  const seek = (progress: number): Readonly<Record<string, Values>> => {
+    for (const [, goal] of LEAVES) runtime.seek(goal, progress);
+    return Object.fromEntries(NODES.map((id) => [id, { ...ready(patches, id) }]));
+  };
+  return { seek };
 }
 
-function directMembers(ids: readonly [string, string, string, string]): readonly ChainMember3d[] {
-  return [
-    {
-      id: ids[0],
-      base: "rig/root",
-      length: 25,
-      offset: { x: 0, y: 0, z: 0 },
-      rest: { rotation: 0, rotationX: 0, rotationY: 0 },
-    },
-    {
-      id: ids[1],
-      base: ids[0],
-      length: 22,
-      offset: { x: 0, y: 0, z: 0 },
-      rest: { rotation: 0, rotationX: 0, rotationY: 0 },
-    },
-    {
-      id: ids[2],
-      base: ids[1],
-      length: 20,
-      offset: { x: 0, y: 0, z: 0 },
-      rest: { rotation: 0, rotationX: 0, rotationY: 0 },
-    },
-    {
-      id: ids[3],
-      base: ids[2],
-      length: 18,
-      offset: { x: 0, y: 0, z: 0 },
-      rest: { rotation: 0, rotationX: 0, rotationY: 0 },
-      goal: readFrame3d({ x: 50, y: 20, z: 10 }),
-    },
-  ];
-}
-
-function directTreeMembers(): readonly ChainMember3d[] {
-  const rest = { rotation: 0, rotationX: 0, rotationY: 0 } as const;
-  const offset = { x: 0, y: 0, z: 0 } as const;
-  return [
-    { id: "rig/trunk", base: "rig/root", length: 25, offset, rest },
-    { id: "rig/left", base: "rig/trunk", length: 20, offset, rest },
-    {
-      id: "rig/left-tip",
-      base: "rig/left",
-      length: 20,
-      offset,
-      rest,
-      goal: readFrame3d({ x: 25, y: 20, z: 10 }),
-    },
-    { id: "rig/right", base: "rig/trunk", length: 20, offset, rest },
-    {
-      id: "rig/right-tip",
-      base: "rig/right",
-      length: 20,
-      offset,
-      rest,
-      goal: readFrame3d({ x: 25, y: -20, z: -10 }),
-    },
-  ];
-}
-
-function ready(patches: ReadonlyMap<string, Patch>, id: string): Readonly<Record<string, unknown>> {
+function ready(patches: ReadonlyMap<string, Patch>, id: string): Values {
   const patch = patches.get(id);
   if (patch?.status !== "ready") throw new Error(`${id} did not publish a ready patch`);
   return patch.values;
 }
 
-function frame(values: Readonly<Record<string, unknown>>): WorldFrame3d {
-  return readFrame3d(values);
-}
-
-function snapshot(patches: ReadonlyMap<string, Patch>): Readonly<Record<string, unknown>> {
-  const ids = ["rig/chain-solve", "rig/tree-solve", "rig/c3", "rig/left-tip", "rig/right-tip"];
-  return Object.fromEntries(ids.map((id) => [id, { ...ready(patches, id) }]));
+function miss(published: Readonly<Record<string, Values>>, leaf: string, goal: string): number {
+  const tip = readFrame3d(published[leaf]);
+  const aim = readFrame3d(published[goal]);
+  return Math.hypot(tip.x - aim.x, tip.y - aim.y, tip.z - aim.z);
 }
 
 describe("3D FABRIK Engine tree integration", () => {
-  it("TH-70 publishes chain and branch solves, reaches leaves, and scrubs byte-for-byte", () => {
-    const runtime = createRuntime();
-    const patches = new Map<string, Patch>();
-    const ids = [
-      "rig/root",
-      "rig/chain-goal",
-      "rig/left-goal",
-      "rig/right-goal",
-      "rig/chain-solve",
-      "rig/tree-solve",
-      "rig/c0",
-      "rig/c1",
-      "rig/c2",
-      "rig/c3",
-      "rig/trunk",
-      "rig/left",
-      "rig/left-tip",
-      "rig/right",
-      "rig/right-tip",
-    ];
-    for (const id of ids) {
-      runtime.mount(id);
-      runtime.subscribeNode(id, (patch) => patches.set(id, patch));
-    }
-    runtime.seek("rig/c3", 0);
-    runtime.seek("rig/left-tip", 0);
+  it("TH-70 publishes chain and branch solves through Engine, closes every leaf, and scrubs byte-for-byte", () => {
+    const { seek } = mountedRig();
+    const forward = [0, 0.25, 0.5, 0.75, 1].map((progress) => {
+      const published = seek(progress);
+      // fk3d composed every published member from the solve's triples: each leaf lands on the
+      // goal it reached for, through the rotated root, the offset and the rest orientation.
+      for (const [leaf, goal] of LEAVES)
+        expect(miss(published, leaf, goal)).toBeLessThan(FABRIK_TOLERANCE);
+      const inspection = published["rig/tree-solve"]!.inspection as {
+        readonly kind: string;
+        readonly residuals: Readonly<Record<string, number>>;
+      };
+      expect(inspection.kind).toBe("converged");
+      expect(Object.keys(inspection.residuals)).toEqual(["rig/left-tip", "rig/right-tip"]);
+      expect(published["rig/chain-solve"]).not.toHaveProperty("inspection");
+      return published;
+    });
+    // The goals moved, so the solves did: the scrub is evidence only if the pose changes.
+    expect(forward[4]!["rig/c3"]).not.toEqual(forward[0]!["rig/c3"]);
+    expect(forward[4]!["rig/left-tip"]).not.toEqual(forward[0]!["rig/left-tip"]);
 
-    const root = frame(ready(patches, "rig/root"));
-    const chain = solveChain3d(
-      root,
-      directMembers(["rig/c0", "rig/c1", "rig/c2", "rig/c3"]),
-      UNBOUND_POLE3D,
-    );
-    const tree = solveChain3d(root, directTreeMembers(), UNBOUND_POLE3D);
-    const chainPublished = ready(patches, "rig/chain-solve").rotations3d;
-    const treePublished = ready(patches, "rig/tree-solve").rotations3d;
-    expect(JSON.stringify(chainPublished)).toBe(JSON.stringify(chain.rotations3d));
-    expect(JSON.stringify(treePublished)).toBe(JSON.stringify(tree.rotations3d));
-
-    const chainTip = frame(ready(patches, "rig/c3"));
-    expect(Math.hypot(chainTip.x - 50, chainTip.y - 20, chainTip.z - 10)).toBeLessThanOrEqual(1e-3);
-    const leftTip = frame(ready(patches, "rig/left-tip"));
-    const rightTip = frame(ready(patches, "rig/right-tip"));
-    expect(Math.hypot(leftTip.x - 25, leftTip.y - 20, leftTip.z - 10)).toBeLessThanOrEqual(1e-3);
-    expect(Math.hypot(rightTip.x - 25, rightTip.y + 20, rightTip.z + 10)).toBeLessThanOrEqual(1e-3);
-
-    const initial = snapshot(patches);
-    runtime.seek("rig/left-tip", 1);
-    runtime.seek("rig/c3", 1);
-    runtime.seek("rig/c3", 0);
-    runtime.seek("rig/left-tip", 0);
-    expect(snapshot(patches)).toEqual(initial);
-
-    const random = new Map<number, Readonly<Record<string, unknown>>>();
-    for (const progress of [0.37, 0.12, 0.73, 0.37]) {
-      runtime.seek("rig/c3", progress);
-      runtime.seek("rig/left-tip", progress);
-      const value = snapshot(patches);
-      const previous = random.get(progress);
-      if (previous === undefined) random.set(progress, value);
-      else expect(value).toEqual(previous);
-    }
+    // No state survives a solve (ADR-111): reverse and random seeks republish the forward bytes.
+    for (const index of [4, 3, 2, 1, 0, 2, 4, 1, 3, 0])
+      expect(seek([0, 0.25, 0.5, 0.75, 1][index]!)).toEqual(forward[index]);
   });
 });
