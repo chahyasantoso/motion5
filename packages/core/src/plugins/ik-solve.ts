@@ -5,6 +5,7 @@ import { solveTwoBone } from "./ik-analytic";
 import type { SolveMember } from "./ik-member";
 import type { SolveResult } from "./ik-result";
 import { restoreResult, scaleRig, solveMagnitude } from "./ik-scale";
+import { twoBonePair } from "./ik-topology";
 
 /**
  * Which solve answers for a chain, decided once and read exhaustively.
@@ -44,7 +45,8 @@ export type ChainShape =
  * throws the same message an unlimited one does. See ADR-108.
  *
  * Otherwise a parent and its one addressed child take the closed form, proven from the `base`
- * relation by `twoBonePair` rather than read off array position, and everything else takes FABRIK.
+ * relation by `ik-topology.ts`'s `twoBonePair` rather than read off array position, the one proof
+ * the 3D dispatcher reads too (ADR-122), and everything else takes FABRIK.
  * Goals are read off the members because `readSolveMembers` joined every goal onto the member it
  * belongs to, and every key `readGoals` produces is a member id. See ADR-111.
  *
@@ -63,49 +65,9 @@ export function chainShape(members: readonly SolveMember[]): ChainShape {
     );
   }
   if (members.some((member) => member.limit !== undefined)) return { kind: "constrained", members };
-  const pair = twoBonePair(members);
+  const pair = twoBonePair<WorldFrame, SolveMember>(members);
   if (pair !== undefined) return { kind: "two-bone", ...pair };
   return { kind: "tree", members };
-}
-
-/**
- * The parent and the addressed child of a two-member chain, proven from the `base` relation, or
- * `undefined` when the two members are not one parent and one addressed child.
- *
- * Proven rather than read off array position. The closed form solves `first` from the root and
- * `second` from `first`'s tip, so handing it the pair in the wrong order solves a different rig:
- * before issue #349's sixth phase, `[child, parent]` solved the child as if it hung from the root
- * and published a pose whose tip missed the goal while reporting `reached`. The publisher happens
- * to deliver members parent first, because `resolveSolvers` sorts them by depth, so no loaded rig
- * ever took that path, but `solveChain` is a pure function of its members and not of the order a
- * caller listed them in, and `SD-4` pins that. A pair that is not a parent and its addressed child
- * (two siblings off the root, or a goal on the parent) is not the closed form's shape and takes
- * FABRIK, which solves siblings as a tree and refuses a goal on a member with children by name,
- * since load already refuses that shape as `ik-goal-not-leaf`. See ADR-111.
- */
-function twoBonePair(members: readonly SolveMember[]): TwoBonePair | undefined {
-  const [a, b] = members;
-  if (members.length !== 2 || a === undefined || b === undefined) return undefined;
-  return provenPair(a, b) ?? provenPair(b, a);
-}
-
-type TwoBonePair = Omit<Extract<ChainShape, { readonly kind: "two-bone" }>, "kind">;
-
-/**
- * `parent` and `child` as the closed form's pair, or `undefined` unless `child` hangs from
- * `parent`, `parent` hangs from neither of the two, and only `child` carries a goal.
- *
- * The second condition is what makes `twoBonePair` symmetric: both orders cannot succeed, because
- * that would need each member to hang from the other, which is a cycle this refuses. A cycle and a
- * self-based member therefore reach FABRIK from either order, and FABRIK refuses both by name.
- * Members are read with distinct ids, which the publisher guarantees; two members sharing one id
- * are not a pair either. See ADR-111.
- */
-function provenPair(parent: SolveMember, child: SolveMember): TwoBonePair | undefined {
-  if (child.base !== parent.id || parent.id === child.id) return undefined;
-  if (parent.base === parent.id || parent.base === child.id) return undefined;
-  if (parent.goal !== undefined || child.goal === undefined) return undefined;
-  return { first: parent, second: child, goal: child.goal };
 }
 
 /**

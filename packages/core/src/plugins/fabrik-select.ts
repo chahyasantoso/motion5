@@ -11,13 +11,21 @@ import { unreachable } from "../lang/exhaustive";
  * Injected rather than imported so this module depends on `fabrik.ts` for types only: `fabrik.ts`
  * owns the arithmetic of one attempt and calls this selector, and a value import back would be a
  * module cycle. The harness and the tests pass a counting wrapper through the same seam.
+ *
+ * Generic over the rig and the solution, defaulting to the 2D ones, because the selector reads
+ * nothing of either but the solution's `quality`: the 3D tree solve passes its own attempt through
+ * the same gate, where `flip` names the seed's side of the bend plane (ADR-122).
  */
-export type FabrikAttempt = (
-  root: WorldFrame,
-  members: readonly SolveMember[],
-  flip: boolean,
-  compromiseRule: CompromiseRule,
-) => FabrikSolution;
+export type FabrikAttempt<
+  R = WorldFrame,
+  M = SolveMember,
+  S extends Selectable = FabrikSolution,
+> = (root: R, members: readonly M[], flip: boolean, compromiseRule: CompromiseRule) => S;
+
+/** What the selector reads of a solution: its iterative quality, and nothing else. */
+export interface Selectable {
+  readonly quality: IterativeQuality;
+}
 
 /**
  * The attempts a conflicted baseline pays for, in their recorded order (ADR-110, issue #490).
@@ -41,12 +49,12 @@ const ALTERNATIVES: readonly { readonly opposite: boolean; readonly rule: Compro
  * comparator below. Losing candidates are dropped; no restart metadata is published (ADR-107), and
  * the selected result reports its own `quality.iterations`.
  */
-export function selectFabrik(
-  root: WorldFrame,
-  members: readonly SolveMember[],
+export function selectFabrik<R, M, S extends Selectable>(
+  root: R,
+  members: readonly M[],
   flip: boolean,
-  attempt: FabrikAttempt,
-): FabrikSolution {
+  attempt: FabrikAttempt<R, M, S>,
+): S {
   const baseline = attempt(root, members, flip, "centroid");
   if (baseline.quality.kind !== "conflicted") return baseline;
   let selected = baseline;

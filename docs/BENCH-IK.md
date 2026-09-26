@@ -1,7 +1,8 @@
-# 2D IK benchmark
+# 2D and 3D IK benchmark
 
 This record is the measured performance envelope for the 2D `ik` and `fk` plugins in phase 7 of
-[#349](https://github.com/chahyasantoso/motion5/issues/349). It records fresh runs of the committed
+[#349](https://github.com/chahyasantoso/motion5/issues/349), with the 3D solve scenarios
+added in issue #500 phase 5. It records fresh runs of the committed
 `packages/core/test/support/ik-envelope.ts` scenarios rather than a promise about every machine.
 The deterministic shape and finiteness contract is the CI evidence; timing is deliberately not a CI
 gate under [ADR-008](./ADR-008-gates-measure-behavior-not-prose.md).
@@ -51,6 +52,46 @@ the current tree counts are in the #490 section below.
 The fresh serial-chain readings are approximately 1.5 microseconds per member-iteration. That is
 the useful scaling reading from the chain runs, not a timing guarantee: chain-8 measured 76.2351
 microseconds and chain-64 measured 2.9674 milliseconds in run 1.
+
+## 3D solve scenarios (issue #500 phase 5)
+
+This section is a sandbox measurement, not a CI gate. It was recorded on 2026-09-26 with Node
+`v22.23.1`, V8 `12.4.254.21-node.56`, `linux x64`, and `Intel(R) Xeon(R) Processor @ 2.60GHz`
+with 4 cores. CI uses Node `v24.21.0`, so these numbers are not a CI or cross-machine performance
+promise. Each scenario used 200 seeded rigs from `packages/core/test/support/ik3d-envelope.ts`.
+Each number is the median of 7 samples, each making back-to-back calls for at least 60 ms after one
+warm-up pass. Per-member figures divide the measured solve time by member count.
+
+- **Two-bone closed form:** 0.0033559 milliseconds per solve, or 0.0016780 milliseconds per
+  member. All 200 solves reported `reached`; the closed form performed zero iterative passes.
+- **Chain-8:** 0.0807036 milliseconds per solve, or 0.0100880 milliseconds per member. All 200
+  reported `converged`, with a mean of 6.38 passes and a maximum of 20.
+- **Chain-32:** 0.8409199 milliseconds per solve, or 0.0262787 milliseconds per member. All 200
+  reported `converged`, with a mean of 18.59 passes and a maximum of 55.
+- **Chain-64:** 2.6227987 milliseconds per solve, or 0.0409812 milliseconds per member. All 200
+  reported `converged`, with a mean of 29.27 passes and a maximum of 90.
+- **Tree-14 (feasible pose-derived goals):** 3.4129669 milliseconds per solve, or 0.2437833
+  milliseconds per member. Of 200 solves, 185 reported `converged`, 13 reported `conflicted`, and
+  2 reported `iteration-cap`; the mean was 21.19 passes and the maximum was 64. The goals are put
+  on leaf tips from one generated 3D pose, so a feasible pose exists by construction.
+- **Tree-14-conflicting (independent goals):** 5.2382345 milliseconds per solve, or 0.3741596
+  milliseconds per member. Of 200 solves, 191 reported `conflicted` and 9 reported `converged`; the
+  mean was 61.98 passes and the maximum was 64. Its leaf goals are drawn independently inside each
+  path's reach, so sibling goals need not be jointly satisfiable.
+
+For comparison, the 2D post-#490 tree-14 envelope reports 196 `converged`, 1 `iteration-cap`, and
+3 `conflicted` results out of 200. The corrected feasible 3D tree-14 is therefore materially less
+successful at the default cap: 185 `converged`, 13 `conflicted`, and 2 `iteration-cap`. A brief
+probe found that all 15 non-converged feasible 3D results reached 64 iterations; the 13 conflicted
+results had residuals from about 0.0054 to 0.5056 units (median about 0.0160), while the two
+iteration-cap results had residuals about 0.00107 and 0.00137. A separate cap probe re-solved
+those 15 rigs with the minimum cap raised from 64 to 5,000 passes: all 15 reported `converged`,
+after between 65 and 4,913 passes. So the difference is slow convergence that the cap cuts off,
+not a local minimum the 3D solve cannot leave. The cap stays the 2D owner's rule (ADR-115) and
+this phase changes no convergence behaviour; recorded in ADR-122 as a follow-up.
+
+The benchmark JSON keeps the existing 2D `solves` and `engine` keys and adds a `solves3d` key for
+these scenarios. The 3D timings are observations of this sandbox run, not a threshold or a gate.
 
 ## Branching quality and cap findings (pre-#490)
 

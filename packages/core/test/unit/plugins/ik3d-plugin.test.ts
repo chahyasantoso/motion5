@@ -75,14 +75,16 @@ describe("3D plugin seam", () => {
     expect(Math.hypot(Number(tip.x) - 60, Number(tip.y) - 40, Number(tip.z) - 50)).toBeLessThan(
       1e-9,
     );
-    // Siblings are two paths. The graph refuses them at load (TH-12), so reaching the solver with
-    // them is an invariant breach and throws rather than solving one as if it hung from the other.
+    // Siblings are two paths, so they are never solved as if one hung from the other. The bare
+    // `target` names no member over two leaves, which the graph refuses at load as
+    // `ik-target-not-single-leaf` (TH-12), and the addressing owner throws by name behind it; since
+    // ADR-122 siblings addressed per leaf are the tree solve's (TH-58 onward).
     const siblings = [
       { id: "upper", base: "root", values: { length: 80 }, progress: 1 },
       { id: "fore", base: "root", values: { length: 60 }, progress: 1 },
     ];
     expect(() => ik3dPlugin.compose({}, 1, { ...inputs, members: siblings }, "solve")).toThrow(
-      "ik3d requires exactly two members on one path.",
+      "ikPlugin cannot address the bare target slot over a chain with 2 leaves.",
     );
   });
   it("TH-23 a negative first member solves and composes exactly as a zero one", () => {

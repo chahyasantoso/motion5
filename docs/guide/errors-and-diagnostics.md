@@ -124,7 +124,7 @@ Solvers (`ikPlugin`) and solved bones (`fkPlugin`) enforce topological and keyfr
 - `ik-solver-no-goal`, when a solver has a root and members and binds neither the bare `target` slot nor a goal through `targets`. A solve with nothing to reach for has no answer, and this is refused at load rather than left to the composition, which used to throw on it every tick and block every member of the chain behind an `error`.
 - `ik-solver-unreachable-root`, when tracing a member bone's `base` parent walk upward fails to terminate at the solver's bound `root`. The member chain must form a contiguous ancestor hierarchy rooted at `root`.
 - `ik-mode-ambiguous`, when a single node binds `solver` alongside `root` or a goal, or binds `root` under multiple plugins. A track is either a solver or a member, never both. It reads the goal classification rather than the literal slot name `target`, because a member binding `solver` beside a goal dict of its own would otherwise load clean with one real input edge per goal and have every one of them ignored.
-- `ik-solved-rotation-dead`, when a bone that binds `keyframes.fk.requires.solver` authors `values.rotation` and no `values.weight` beside it. With no weight there is no runtime state in which the authored rotation is read, so it is dead input and refused. Either drop it, or author the `weight` that gives it something to mean. The internal 3D member is read the same way for each of its orientation keys: an `fk3d` group that binds `solver` and authors any of `rotation`, `rotationX` or `rotationY` with no `weight` beside it is refused by this rule, because the solve replaces each of them at the default weight. See ADR-116.
+- `ik-solved-rotation-dead`, when a bone that binds `keyframes.fk.requires.solver` authors `values.rotation` and no `values.weight` beside it. With no weight there is no runtime state in which the authored rotation is read, so it is dead input and refused. Either drop it, or author the `weight` that gives it something to mean. The internal 3D member is read the same way for each of its orientation keys: an `fk3d` group that binds `solver` and authors any of `rotation`, `rotationX` or `rotationY` with no `weight` beside it is refused by this rule when its chain takes the closed form (a parent and its one child), because that solve replaces each of them at the default weight. Under every other `ik3d` chain the 3D FABRIK tree solve reads the rest orientation as the frame each member's roll swings from, so there it is live input and loads. See ADR-116 and ADR-122.
 - `ik-weight-without-solver`, when a node that bound a `solver` slot under one plugin authors `values.weight` under another. It is the mirror of the rule above: the solve cannot reach a key outside the group that asked for it, so `fk` short-circuits to the authored rotation, never reads that weight, and the key is silently inert. Both rules read the group that bound the slot and no other, which is why binding `solver` under `spring` and authoring `weight` under `fk` is refused rather than passed.
 
 Both of those rules speak only about a node that bound a solver somewhere, and that is a boundary rather than a gap. A `weight` on a bone that bound no solver at all is inert too, and nothing refuses it: `weight` is claimed by `fkPlugin` and may be claimed by any other plugin under ADR-043, and the load-time rule holds no plugin registry, so on a node with no solve in reach it cannot tell a blend weight from another plugin's own live input and does not guess. It is the same boundary that keeps a member's `rotation` in an unrelated plugin group out of `ik-solved-rotation-dead`.
@@ -202,14 +202,15 @@ refuses the rest at load. That is one rule, and only the internal `ik3d` prototy
 narrower shape:
 
 - `ik-chain-unsupported`, when a solver's plugin declares a narrower chain than the graph derived
-  for it. The internal phase 8 `ik3d` solver declares exactly two `fk3d` members on one path from
-  its root, so a one-member, three-member, branched or mixed-dimension `ik3d` rig is refused at load
-  rather than erroring its solver, or composing identity, on every tick. `fk3d` is dedicated to that
+  for it. The internal `ik3d` solver declares a chain of `fk3d` members only, of any count and any
+  branching: two members on one path take the closed form and every other chain takes 3D FABRIK, so
+  what is refused at load is a mixed-dimension rig, a member bound through `fk` or any plugin other
+  than `fk3d`, which would otherwise compose identity on every tick. `fk3d` is dedicated to that
   shape, so the 2D `ik` solver, which takes a chain of any count and branching, reports the rule
-  only for an `fk3d` member bound to it. See ADR-114.
+  only for an `fk3d` member bound to it. See ADR-114 and ADR-122.
 
-The internal `ik3d` prototype also declares an optional `pole` slot, and one rule answers where it
-was bound:
+The internal `ik3d` prototype also declares an optional `pole` slot, and two rules answer where it
+was bound and whether it can bend anything:
 
 - `ik-pole-without-chain`, when a node binds `pole` under a plugin that declares the slot, today
   `ik3d` alone, in a group that bound no `root` on the same node. The solve that reads a pole is
@@ -217,6 +218,10 @@ was bound:
   member holding only the pole, bends nothing and is refused at load rather than throwing from
   that group on every tick. A pole under a plugin that declares no pole slot, `fk3d` or the 2D
   `ik`, is `plugin-unknown-requirement` from the registry instead, never both. See ADR-118.
+- `ik-pole-without-bend`, when a pole is bound where it belongs but the chain has no interior
+  joint for it to bend: every member hangs straight from the root, a single member or a fan of
+  them. Each such member is one segment pointing at its goal, so the pole would change nothing.
+  Drop the pole, or add the member it was meant to bend. See ADR-122.
 
 The 2D `ik` solver has no rule about a solved bone's pivot offset either, for the same reason. A solved member may author `x` and `y` exactly as any other bone does, and `ik-solved-pivot-unsupported` is deleted. `fk` still owns applying the offset, in its parent's rotated space; `ik` accounts for it in the geometry it solves, so the rotations it publishes are the ones that put the composed tip on the goal. Both solves share one convention: the analytic path folds the two offsets into a fixed base point and a rigid link with a twist, and the iterative one solves pivot positions and averages a shared sub-base's tip rather than its children's twists. An offset that shortens a chain's reach past its goal is an unreachable target, which extends the chain toward it and has never been a diagnostic. See ADR-054.
 

@@ -5,9 +5,10 @@ import { readNumber } from "./frame";
  *
  * `rotation` is CSS's Z rotation, followed by `rotationX` and `rotationY`; equivalently the
  * intrinsic Euler order is Z-X-Y. This module is the sole owner of that convention, including
- * matrix composition, the deterministic gimbal-lock representation, and the one rotation blend
+ * matrix composition, the deterministic gimbal-lock representation, the one rotation blend
  * (`blendOrientation3d`, ADR-116), whose unit quaternions are arithmetic here and never a published
- * or authored shape.
+ * or authored shape, the minimal swing the tree solve reconstructs orientation with
+ * (`swingFrame3d`, ADR-122), and the vector helpers every 3D solve shares.
  */
 export type Euler3d = {
   readonly rotation: number;
@@ -183,6 +184,119 @@ export function eulerFromMatrix3d(matrix: Matrix3): Euler3d {
 
 function isRecord(input: unknown): input is Readonly<Record<string, unknown>> {
   return input !== null && typeof input === "object" && !Array.isArray(input);
+}
+
+/** The dot product of two vectors. */
+export function dot3(a: Vec3, b: Vec3): number {
+  return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+}
+
+/** The right-handed cross product `a × b`. */
+export function cross3(a: Vec3, b: Vec3): Vec3 {
+  return [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+}
+
+/** `a` scaled by `amount`. */
+export function scale3(a: Vec3, amount: number): Vec3 {
+  return [a[0] * amount, a[1] * amount, a[2] * amount];
+}
+
+/** `a + b`. */
+export function add3(a: Vec3, b: Vec3): Vec3 {
+  return [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
+}
+
+/** `a - b`. */
+export function subtract3(a: Vec3, b: Vec3): Vec3 {
+  return [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+}
+
+/** The Euclidean length of `a`. */
+export function norm3(a: Vec3): number {
+  return Math.hypot(a[0], a[1], a[2]);
+}
+
+/**
+ * `a` divided by `amount`, component by component.
+ *
+ * A quotient rather than a product with `1 / amount`, because a reciprocal of a subnormal length is
+ * `Infinity` and `0 * Infinity` is `NaN`: a goal `Number.MIN_VALUE` from its root must still point
+ * somewhere. A quotient of a vector by its own norm stays inside `[-1, 1]` at every magnitude.
+ */
+export function divide3(a: Vec3, amount: number): Vec3 {
+  return [a[0] / amount, a[1] / amount, a[2] / amount];
+}
+
+/** `a` scaled to unit length, or `fallback` when it has no finite nonzero length. */
+export function normalize3(a: Vec3, fallback: Vec3): Vec3 {
+  const size = norm3(a);
+  return size > 0 && Number.isFinite(size) ? divide3(a, size) : fallback;
+}
+
+/** A matrix's first column: the world direction of the frame's local +x. */
+export function axisX3(matrix: Matrix3): Vec3 {
+  return [matrix[0], matrix[3], matrix[6]];
+}
+
+/**
+ * The relative size of `1 + cos` at or below which a swing is read as a half turn: the two
+ * directions are antiparallel to rounding and their cross product names no axis worth trusting.
+ */
+const HALF_TURN_TOLERANCE = 1e-12;
+
+/**
+ * `frame` turned by the one minimal rotation that takes its local +x onto `direction`: the swing
+ * of a swing-twist decomposition, with no twist about the new +x (ADR-122).
+ *
+ * This is how the 3D tree solve reconstructs an orientation positional FABRIK does not determine:
+ * a solved direction fixes two of a member's three degrees of freedom, and the minimal swing from
+ * its rest frame fixes the third by adding no roll the rest pose did not have. It is rotation
+ * arithmetic, so it lives beside the matrix convention it composes in rather than in a solver.
+ *
+ * `direction` need not be unit; one with no finite nonzero length names nothing, so the frame is
+ * returned unchanged, and so is a frame already pointing along it exactly, which keeps an aligned
+ * member's bytes. A direction antiparallel to the frame's +x (to `HALF_TURN_TOLERANCE` of
+ * `1 + cos`) has no minimal axis: every axis perpendicular to +x turns it by a half turn, so the
+ * frame's own local +z is chosen, deterministically. Otherwise the swing is Rodrigues' rotation
+ * about `x × d` by the angle between them, `I + [v]× + [v]×² / (1 + c)`, which needs no
+ * trigonometry and stays exact at the aligned end.
+ */
+export function swingFrame3d(frame: Matrix3, direction: Vec3): Matrix3 {
+  const size = norm3(direction);
+  if (!(size > 0 && Number.isFinite(size))) return frame;
+  const to = divide3(direction, size);
+  const from = axisX3(frame);
+  const c = dot3(from, to);
+  if (from[0] === to[0] && from[1] === to[1] && from[2] === to[2]) return frame;
+  if (1 + c <= HALF_TURN_TOLERANCE) {
+    const k: Vec3 = [frame[2], frame[5], frame[8]];
+    const halfTurn: Matrix3 = [
+      2 * k[0] * k[0] - 1,
+      2 * k[0] * k[1],
+      2 * k[0] * k[2],
+      2 * k[1] * k[0],
+      2 * k[1] * k[1] - 1,
+      2 * k[1] * k[2],
+      2 * k[2] * k[0],
+      2 * k[2] * k[1],
+      2 * k[2] * k[2] - 1,
+    ];
+    return multiplyMatrix3(halfTurn, frame);
+  }
+  const [vx, vy, vz] = cross3(from, to);
+  const f = 1 / (1 + c);
+  const swing: Matrix3 = [
+    1 - f * (vy * vy + vz * vz),
+    -vz + f * vx * vy,
+    vy + f * vx * vz,
+    vz + f * vx * vy,
+    1 - f * (vx * vx + vz * vz),
+    -vx + f * vy * vz,
+    -vy + f * vx * vz,
+    vx + f * vy * vz,
+    1 - f * (vx * vx + vy * vy),
+  ];
+  return multiplyMatrix3(swing, frame);
 }
 
 /** Reads a pivot offset, defaulting absent and non-finite components to zero. */

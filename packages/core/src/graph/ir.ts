@@ -10,8 +10,12 @@ import type {
 import { diagnostic } from "../contract/diagnostics";
 import {
   acceptsChain,
+  declaresPole,
   describeChainShape,
   describeDerivedChain,
+  poleBends,
+  POLE_SLOT,
+  readsMemberRest,
   solverChainShape,
 } from "../contract/solver-shape";
 import { acceptedOutcome, readOutcome, refusedOutcome, type Outcome } from "../lang/outcome";
@@ -566,6 +570,14 @@ export function resolveSolvers(
   // Diagnostic 4: ik-solved-rotation-dead
   // Diagnostic 7: ik-goal-conflict
   // Diagnostic 15: ik-weight-without-solver
+  //
+  // The dead rotation is decided here and reported after the chains are derived, because whether a
+  // binder group's orientation is dead depends on the strategy its solver answers the chain with:
+  // the 3D tree solve reads every member's rest orientation, so a binder whose solver does is
+  // struck from the candidates below (`restReadBy`). Diagnostics are sorted before they leave this
+  // module, so reporting later moves no order.
+  const deadRotationBinders = new Map<string, readonly string[]>();
+  const restReadBy = new Set<string>();
   for (const node of nodes) {
     let rootCount = 0;
     // The plugins under which this node bound a `solver` slot, which is what scopes the read of its
@@ -623,19 +635,10 @@ export function resolveSolvers(
     // which have an owner one layer down, and it would refuse "fully solved for now, I will animate
     // the weight next" while still passing a weight that arrives through an edge: a rule that
     // catches the careful author and misses the dynamic case is inverted. See ADR-055.
-    const rotationIsDead = solverBinders.some(
+    const deadBinders = solverBinders.filter(
       (binder) => rotationGroups.includes(binder) && !weightGroups.includes(binder),
     );
-    if (rotationIsDead) {
-      diagnostics.push(
-        diagnostic(
-          "ik-solved-rotation-dead",
-          node.id,
-          `Member "${node.id}" bound to solver cannot author rotation with no weight to blend it by.`,
-          [node.id],
-        ),
-      );
-    }
+    if (deadBinders.length > 0) deadRotationBinders.set(node.id, deadBinders);
     // The symmetric footgun, and it speaks only about a node that bound a solver somewhere.
     //
     // The group scope is what one half of that buys: a node can bind `solver` under one plugin and
@@ -827,22 +830,54 @@ export function resolveSolvers(
 
     // Diagnostic 16: ik-chain-unsupported
     //
-    // A solver plugin may declare a narrower chain than the graph derives, and `ik3d`'s closed form
-    // does: two `fk3d` members on one path. The shape, and which member plugins are dedicated to
-    // one, is read from `contract/solver-shape.ts` rather than from a plugin name here. It is judged
-    // only over a chain every member reached, because a member that could not reach the root was
-    // named above and has no depth to judge. See ADR-114.
-    const shape = solverChainShape(edgeRequirement(rootEdge)?.plugin ?? "");
+    // A solver plugin may declare a narrower chain than the graph derives, and `ik3d` does: a chain
+    // of `fk3d` members only, of any count and branching (ADR-122, replacing ADR-114's exactly two
+    // on one path). The shape, and which member plugins are dedicated to one, is read from
+    // `contract/solver-shape.ts` rather than from a plugin name here. It is judged only over a
+    // chain every member reached, because a member that could not reach the root was named above
+    // and has no depth to judge. See ADR-114.
+    const rootPlugin = edgeRequirement(rootEdge)?.plugin ?? "";
+    const shape = solverChainShape(rootPlugin);
     const derived = chains.map(({ node, depth }) => ({
       depth,
       plugins: solverPluginsOf(node, solver.id),
     }));
-    if (unreachable.size === 0 && !acceptsChain(shape, derived)) {
+    const accepted = unreachable.size === 0 && acceptsChain(shape, derived);
+    if (unreachable.size === 0 && !accepted) {
       diagnostics.push(
         diagnostic(
           "ik-chain-unsupported",
           solver.id,
           `Solver "${solver.id}" supports ${describeChainShape(shape)}, but its derived members are ${describeDerivedChain(derived)}.`,
+          [solver.id],
+        ),
+      );
+    }
+    if (accepted && readsMemberRest(shape, derived)) {
+      for (const { node } of chains) {
+        for (const plugin of solverPluginsOf(node, solver.id))
+          restReadBy.add(`${node.id}\n${plugin}`);
+      }
+    }
+
+    // Diagnostic 17: ik-pole-without-bend
+    //
+    // A pole picks the plane an interior joint bends in, so over a chain whose every member hangs
+    // from the root it has nothing to pick: each member is one segment pointing at its goal. Only
+    // a pole bound under the group that bound `root` is asked, since one bound anywhere else is
+    // already `ik-pole-without-chain` or the registry's unknown requirement, and only over a chain
+    // the solver accepts, since an unsupported one is already `ik-chain-unsupported` and no solve
+    // of it reads the pole.
+    const bindsPole = solver.edges.some((edge) => {
+      const requirement = edgeRequirement(edge);
+      return requirement?.slot === POLE_SLOT && requirement.plugin === rootPlugin;
+    });
+    if (accepted && declaresPole(rootPlugin) && bindsPole && !poleBends(derived)) {
+      diagnostics.push(
+        diagnostic(
+          "ik-pole-without-bend",
+          `${solver.id}.keyframes.${rootPlugin}.requires.${POLE_SLOT}`,
+          `Solver "${solver.id}" binds pole over a chain whose every member hangs from its root; no joint bends toward it.`,
           [solver.id],
         ),
       );
@@ -981,6 +1016,18 @@ export function resolveSolvers(
               : { id: entry.node.id, base: entry.base, goal },
           );
         }),
+      ),
+    );
+  }
+
+  for (const [nodeId, binders] of deadRotationBinders) {
+    if (binders.every((binder) => restReadBy.has(`${nodeId}\n${binder}`))) continue;
+    diagnostics.push(
+      diagnostic(
+        "ik-solved-rotation-dead",
+        nodeId,
+        `Member "${nodeId}" bound to solver cannot author rotation with no weight to blend it by.`,
+        [nodeId],
       ),
     );
   }

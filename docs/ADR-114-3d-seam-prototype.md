@@ -82,7 +82,7 @@ and a member bound through another plugin. The member plugin an `unbranched` sha
 dedicated to it, a set `solver-shape.ts` derives from its own table, so the refusal runs both ways:
 a 2D `fk` member under `ik3d` would read `rotations`, which `ik3d` never publishes, and an `fk3d`
 member under the 2D `ik` would read `rotations3d`, which `ik` never publishes. Either would compose
-identity on every tick without a symptom. The compose-time checks remain only as invariant guards. Lengths keep the
+identity on every tick without a symptom. **Superseded in part by [ADR-122](./ADR-122-3d-fabrik-tree-solve.md), 2026-09-26** (issue #500 phase 5): `ik3d` declares `tree { memberPlugin: "fk3d" }`, any count and branching of `fk3d` members, and `unbranched` is deleted; the member-plugin dedication and its refusal both ways are unchanged. The compose-time checks remain only as invariant guards. Lengths keep the
 forgiving 2D FK semantics: non-finite values read as zero and negative values are clamped by
 `segmentExtent` to zero rather than rejected, the owner 2D `fk` also composes through since
 issue #482. Direct solver callers must provide finite frames;

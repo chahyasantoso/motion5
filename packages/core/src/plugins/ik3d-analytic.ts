@@ -1,6 +1,14 @@
 import { unreachable } from "../lang/exhaustive";
 import { clamp, readNumber, segmentExtent } from "./frame";
 import {
+  add3,
+  cross3,
+  divide3,
+  dot3,
+  norm3,
+  normalize3,
+  scale3,
+  subtract3,
   eulerFromMatrix3d,
   matrixFromEuler3d,
   multiplyMatrix3,
@@ -20,8 +28,8 @@ import {
 } from "./frame3d";
 import { bandQuality, cosineOpposite } from "./ik-analytic";
 import type { ClosedFormQuality } from "./ik-result";
-import { magnitudeOf, restoreDistance } from "./ik-scale";
-import type { SolveResult3d } from "./ik3d-result";
+import { magnitudeOf } from "./ik-scale";
+import { restoreResult3d, type SolveResult3d } from "./ik3d-result";
 import { readGoal } from "./ik-goal-reading";
 
 /** One member of the 3D two-bone chain, read by the plugin from its delivered values. */
@@ -69,7 +77,7 @@ export function readPole3d(input: unknown): Pole3d {
  * length and an offset: a direct caller's non-finite coordinate is zero here exactly as a
  * delivered one is, and the unbound pole is returned as itself.
  */
-function rereadPole3d(pole: Pole3d): Pole3d {
+export function rereadPole3d(pole: Pole3d): Pole3d {
   switch (pole.kind) {
     case "unbound":
       return pole;
@@ -84,7 +92,7 @@ function rereadPole3d(pole: Pole3d): Pole3d {
 }
 
 /** The world-unit magnitudes a pole adds to the solve's magnitude policy: none when unbound. */
-function poleMagnitudes(pole: Pole3d): readonly number[] {
+export function poleMagnitudes(pole: Pole3d): readonly number[] {
   switch (pole.kind) {
     case "unbound":
       return [];
@@ -95,48 +103,16 @@ function poleMagnitudes(pole: Pole3d): readonly number[] {
   }
 }
 
-function scalePole(pole: Pole3d, factor: number): Pole3d {
+/** A pole scaled with its rig, because it is a position; the unbound pole is itself. */
+export function scalePole(pole: Pole3d, factor: number): Pole3d {
   switch (pole.kind) {
     case "unbound":
       return pole;
     case "point":
-      return { kind: "point", point: scale(pole.point, factor) };
+      return { kind: "point", point: scale3(pole.point, factor) };
     default:
       return unreachable(pole);
   }
-}
-
-function dot(a: Vec3, b: Vec3): number {
-  return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
-}
-function cross(a: Vec3, b: Vec3): Vec3 {
-  return [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
-}
-function scale(a: Vec3, amount: number): Vec3 {
-  return [a[0] * amount, a[1] * amount, a[2] * amount];
-}
-function add(a: Vec3, b: Vec3): Vec3 {
-  return [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
-}
-function subtract(a: Vec3, b: Vec3): Vec3 {
-  return [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
-}
-function norm(a: Vec3): number {
-  return Math.hypot(a[0], a[1], a[2]);
-}
-/**
- * `a` divided by `amount`, component by component.
- *
- * A quotient rather than a product with `1 / amount`, because a reciprocal of a subnormal length is
- * `Infinity` and `0 * Infinity` is `NaN`: a goal `Number.MIN_VALUE` from its root must still point
- * somewhere. A quotient of a vector by its own norm stays inside `[-1, 1]` at every magnitude.
- */
-function divide(a: Vec3, amount: number): Vec3 {
-  return [a[0] / amount, a[1] / amount, a[2] / amount];
-}
-function normalize(a: Vec3, fallback: Vec3): Vec3 {
-  const size = norm(a);
-  return size > 0 && Number.isFinite(size) ? divide(a, size) : fallback;
 }
 
 /**
@@ -174,11 +150,11 @@ function bendNormalOf(pole: Pole3d, base: Vec3, e1: Vec3): BendNormal3d {
     case "unbound":
       return DEFAULT_POLE;
     case "point": {
-      const toPole = subtract(pole.point, base);
-      const normal = cross(e1, toPole);
-      const size = norm(normal);
-      return size > BEND_LINE_TOLERANCE * norm(toPole)
-        ? { kind: "authored-pole", normal: divide(normal, size) }
+      const toPole = subtract3(pole.point, base);
+      const normal = cross3(e1, toPole);
+      const size = norm3(normal);
+      return size > BEND_LINE_TOLERANCE * norm3(toPole)
+        ? { kind: "authored-pole", normal: divide3(normal, size) }
         : POLE_ON_LINE;
     }
     default:
@@ -204,18 +180,25 @@ function bendNormalOf(pole: Pole3d, base: Vec3, e1: Vec3): BendNormal3d {
 function defaultNormal(rootMatrix: Matrix3, e1: Vec3): Vec3 {
   const y = multiplyVector3(rootMatrix, [0, 1, 0]);
   const z = multiplyVector3(rootMatrix, [0, 0, 1]);
-  const pole = subtract(z, scale(e1, dot(z, e1)));
-  return norm(pole) > BEND_LINE_TOLERANCE ? normalize(pole, z) : normalize(cross(e1, y), z);
+  const pole = subtract3(z, scale3(e1, dot3(z, e1)));
+  return norm3(pole) > BEND_LINE_TOLERANCE ? normalize3(pole, z) : normalize3(cross3(e1, y), z);
 }
 
 /**
  * The bend plane: `e1` points at the goal, `e2` is the side the elbow bends toward, and `normal`
  * is the plane's normal, a right-handed orthonormal triple with `e2 = normal × e1`. The normal is
- * `bendNormalOf`'s answer, read exhaustively; both default arms take `defaultNormal`.
+ * `bendNormalOf`'s answer, read exhaustively; both default arms take `defaultNormal`. The tree
+ * solve reads the same basis to bend its seed arc, so the pole rule has this one owner (ADR-122).
  */
-function bendBasis(rootMatrix: Matrix3, offset: Vec3, distance: number, base: Vec3, pole: Pole3d) {
+export function bendBasis3d(
+  rootMatrix: Matrix3,
+  offset: Vec3,
+  distance: number,
+  base: Vec3,
+  pole: Pole3d,
+): { readonly e1: Vec3; readonly e2: Vec3; readonly normal: Vec3 } {
   const x = multiplyVector3(rootMatrix, [1, 0, 0]);
-  const e1 = distance > 0 && Number.isFinite(distance) ? divide(offset, distance) : x;
+  const e1 = distance > 0 && Number.isFinite(distance) ? divide3(offset, distance) : x;
   const reading = bendNormalOf(pole, base, e1);
   let normal: Vec3;
   switch (reading.kind) {
@@ -229,13 +212,13 @@ function bendBasis(rootMatrix: Matrix3, offset: Vec3, distance: number, base: Ve
     default:
       return unreachable(reading);
   }
-  return { e1, e2: cross(normal, e1), normal } as const;
+  return { e1, e2: cross3(normal, e1), normal } as const;
 }
 
 /** A world orientation whose local +x is `direction`, rolled so its local +z leans on `normal`. */
 function orientation(direction: Vec3, normal: Vec3): Matrix3 {
-  const localY = normalize(cross(normal, direction), [0, 1, 0]);
-  const localZ = cross(direction, localY);
+  const localY = normalize3(cross3(normal, direction), [0, 1, 0]);
+  const localZ = cross3(direction, localY);
   return [
     direction[0],
     localY[0],
@@ -290,7 +273,7 @@ export function solveTwoBone3d(
   first: SolveMember3d,
   second: SolveMember3d,
   bend: Pole3d = UNBOUND_POLE3D,
-): SolveResult3d {
+): SolveResult3d<ClosedFormQuality> {
   const l1 = segmentExtent(readNumber(first.length));
   const l2 = segmentExtent(readNumber(second.length));
   const firstOffset = readPivotOffset3d(first.offset);
@@ -329,14 +312,14 @@ export function solveTwoBone3d(
     case "rescaled": {
       const factor = 2 ** -magnitude.exponent;
       const image = solveAtMagnitude(
-        scaleFrame(root, factor),
-        scaleFrame(target, factor),
+        scaleFrame3d(root, factor),
+        scaleFrame3d(target, factor),
         first.id,
         l1 * factor,
-        scaleOffset(firstOffset, factor),
+        scaleOffset3d(firstOffset, factor),
         second.id,
         l2 * factor,
-        scaleOffset(secondOffset, factor),
+        scaleOffset3d(secondOffset, factor),
         scalePole(pole, factor),
       );
       return restoreResult3d(image, magnitude.exponent);
@@ -347,28 +330,13 @@ export function solveTwoBone3d(
 }
 
 /** A frame's position scaled by `factor`, its orientation untouched. */
-function scaleFrame(frame: WorldFrame3d, factor: number): WorldFrame3d {
+export function scaleFrame3d(frame: WorldFrame3d, factor: number): WorldFrame3d {
   return { ...frame, x: frame.x * factor, y: frame.y * factor, z: frame.z * factor };
 }
 
-function scaleOffset(offset: PivotOffset3d, factor: number): PivotOffset3d {
+/** A pivot offset scaled by `factor`. */
+export function scaleOffset3d(offset: PivotOffset3d, factor: number): PivotOffset3d {
   return { x: offset.x * factor, y: offset.y * factor, z: offset.z * factor };
-}
-
-/** The image's result read back into the rig: the same pose, every residual restored. */
-function restoreResult3d(result: SolveResult3d, exponent: number): SolveResult3d {
-  const residuals: Record<string, number> = {};
-  for (const [id, residual] of Object.entries(result.residuals))
-    residuals[id] = restoreDistance(residual, exponent);
-  const quality: ClosedFormQuality = {
-    ...result.quality,
-    residual: restoreDistance(result.quality.residual, exponent),
-  };
-  return Object.freeze({
-    rotations3d: result.rotations3d,
-    residuals: Object.freeze(residuals),
-    quality: Object.freeze(quality),
-  });
 }
 
 /** Maps the effective link's local direction into the solved first-member world direction. */
@@ -377,7 +345,7 @@ function firstWorldOf(link: EffectiveLink3d, direction: Vec3, normal: Vec3): Mat
     case "axis":
       return orientation(direction, normal);
     case "offset": {
-      const linkFrame = orientation(normalize(link.vector, [1, 0, 0]), [0, 0, 1]);
+      const linkFrame = orientation(normalize3(link.vector, [1, 0, 0]), [0, 0, 1]);
       return multiplyMatrix3(orientation(direction, normal), transposeMatrix3(linkFrame));
     }
     default:
@@ -390,7 +358,7 @@ function restMiss3d(link: EffectiveLink3d, secondLength: number): number {
     case "axis":
       return link.length + secondLength;
     case "offset":
-      return norm(add(link.vector, [secondLength, 0, 0]));
+      return norm3(add3(link.vector, [secondLength, 0, 0]));
     default:
       return unreachable(link);
   }
@@ -407,7 +375,7 @@ function solveAtMagnitude(
   l2: number,
   secondOffset: PivotOffset3d,
   pole: Pole3d,
-): SolveResult3d {
+): SolveResult3d<ClosedFormQuality> {
   const reading = readGoal(secondId, [
     ["x", target.x],
     ["y", target.y],
@@ -424,11 +392,11 @@ function solveAtMagnitude(
   let band: ClosedFormQuality;
   switch (reading.kind) {
     case "point":
-      offset = subtract(
+      offset = subtract3(
         [reading.coordinates[0]!, reading.coordinates[1]!, reading.coordinates[2]!],
         base,
       );
-      distance = norm(offset);
+      distance = norm3(offset);
       clampedDistance = clamp(distance, minReach, maxReach);
       band = bandQuality(distance, minReach, maxReach, Math.abs(distance - clampedDistance));
       break;
@@ -443,7 +411,7 @@ function solveAtMagnitude(
       return unreachable(reading);
   }
   const rootMatrix = matrixFromEuler3d(root);
-  const { e1, e2, normal } = bendBasis(rootMatrix, offset, distance, base, pole);
+  const { e1, e2, normal } = bendBasis3d(rootMatrix, offset, distance, base, pole);
 
   let pose: readonly [Euler3d, Euler3d];
   let quality: ClosedFormQuality = band;
@@ -465,10 +433,10 @@ function solveAtMagnitude(
       break;
     case "triangle": {
       const alpha = Math.acos(cosineOpposite(firstLength, clampedDistance, l2));
-      const elbow = normalize(add(scale(e1, Math.cos(alpha)), scale(e2, Math.sin(alpha))), e1);
-      const reach = subtract(scale(e1, clampedDistance), scale(elbow, firstLength));
+      const elbow = normalize3(add3(scale3(e1, Math.cos(alpha)), scale3(e2, Math.sin(alpha))), e1);
+      const reach = subtract3(scale3(e1, clampedDistance), scale3(elbow, firstLength));
       const firstWorld = firstWorldOf(link, elbow, normal);
-      const secondWorld = orientation(normalize(reach, e1), normal);
+      const secondWorld = orientation(normalize3(reach, e1), normal);
       pose = [localEuler(rootMatrix, firstWorld), localEuler(firstWorld, secondWorld)];
       break;
     }
