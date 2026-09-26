@@ -61,9 +61,9 @@ function isObject(value: unknown): value is Record<string, unknown> {
  *
  * `some` and not `every`, so a group carrying an unknown sibling is still read as a group and
  * reported as `keyframes-unknown-section` rather than misdiagnosed as a property. An object naming
- * no section at all is not a group: `{ fk: {} }` stays the accepted no-op property it always was,
- * and the pre-ADR-049 leaf form is refused by name through `looksLikeLegacyGroup` instead.
- * See ADR-041, ADR-044, and ADR-049.
+ * no section at all is not a group: at the top level `{ fk: {} }` is refused as
+ * `keyframes-ungrouped-key` like every other ungrouped entry, and the pre-ADR-049 leaf form is
+ * refused by name through `looksLikeLegacyGroup` instead. See ADR-041, ADR-044, ADR-049, ADR-121.
  */
 export function isKeyframeGroup(value: unknown): value is AuthoredPluginGroup {
   if (!isObject(value)) return false;

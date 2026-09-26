@@ -163,13 +163,12 @@ export interface TrackHandle extends Handle<TrackDefinition> {
    * Structural, so `void`: every edge the group's `requires` section names is derived in one commit,
    * at the price the tier costs.
    *
-   * Refusals, before anything is written. `keyframe-entry-shape` when this node authors `plugin` as
-   * an ordinary property, because a plugin name and a keyframe name share one namespace and writing
-   * a group over a property would drop every stop the author wrote. `keyframe-group-shape` when
-   * `group` names neither reserved section, because such an object is the accepted no-op property it
-   * looks like rather than a group, and authoring nothing for a plugin is spelled by removing the
-   * entry. Whatever the registry answers about the candidate's keys and slots, and whatever the
-   * graph answers about its edges, rolled back transactionally.
+   * Refusals, before anything is written. `keyframe-group-shape` when `group` names neither reserved
+   * section, because such an object is not a group and the loader would refuse it as
+   * `keyframes-ungrouped-key`; authoring nothing for a plugin is spelled by removing the entry.
+   * Whatever the registry answers about the candidate's keys and slots, and whatever the graph
+   * answers about its edges, rolled back transactionally. There is no entry-shape refusal: every
+   * authored entry is a plugin group, so no property can sit under a plugin name (ADR-121).
    *
    * Handing back the group this node already authors, by identity, is a no-op.
    */
@@ -180,10 +179,9 @@ export interface TrackHandle extends Handle<TrackDefinition> {
    * Not the inverse of `removeRequire`: the values go with the bindings, because what is removed is
    * the group rather than a section of it. One commit however many edges that section named.
    *
-   * An absent group is a no-op, on this tier's idempotence rule, and `keyframe-entry-shape` refuses a
-   * name this node authors as an ordinary property rather than deleting a property the caller never
-   * named. A record that ends up holding nothing loses its `keyframes` key entirely, on the same rule
-   * that leaves an emptied `requires` section absent.
+   * An absent group is a no-op, on this tier's idempotence rule. A record that ends up holding
+   * nothing loses its `keyframes` key entirely, on the same rule that leaves an emptied `requires`
+   * section absent.
    */
   removeKeyframeGroup(plugin: string): void;
   /**

@@ -71,9 +71,10 @@ type MutableGroup = { -readonly [K in keyof AuthoredPluginGroup]: AuthoredPlugin
  * The group `plugin` authors on this record, or `undefined` when it authors none.
  *
  * `isKeyframeGroup` is the detector, unchanged: a group is an object naming at least one reserved
- * section, which is exact rather than a guess about the shape of the leaves. A record that spells
- * `plugin` as an ordinary property therefore answers `undefined` here, which is correct: an authored
- * property is not a binding surface.
+ * section, which is exact rather than a guess about the shape of the leaves. A retained record holds
+ * nothing else under a plugin name, since an ungrouped entry is refused at load as
+ * `keyframes-ungrouped-key`, so `undefined` here means the node authors no group for `plugin`. The
+ * test stays because the editors below also read groups they built themselves. See ADR-121.
  */
 export function readBoundGroup(
   keyframes: AuthoredKeyframes,
@@ -81,20 +82,6 @@ export function readBoundGroup(
 ): BoundGroup | undefined {
   const group = keyframes[plugin];
   return isKeyframeGroup(group) ? Object.freeze({ plugin, group }) : undefined;
-}
-
-/**
- * Whether this record holds an entry under `plugin` that is not a plugin group.
- *
- * The one question a group edit has that `readBoundGroup` cannot answer, because that reader folds
- * "no entry" and "an entry that is a property" into the same `undefined`. The two are opposite
- * answers here: the first is what `setGroup` exists to fill and the second is a shape no group verb
- * may cross, so the caller needs to tell them apart before it decides anything. Not a second opinion
- * about what a group is -- `isKeyframeGroup` still answers that -- just the complement of it.
- */
-export function readsAsProperty(keyframes: AuthoredKeyframes, plugin: string): boolean {
-  const entry = keyframes[plugin];
-  return entry !== undefined && !isKeyframeGroup(entry);
 }
 
 function isDict(value: unknown): value is AuthoredRequirementDict {
@@ -118,15 +105,15 @@ function crossing(plugin: string, slot: string, detail: string): never {
 /**
  * Refuses a group that names no reserved section, which is not a group at all.
  *
- * `{}` under a plugin name is the accepted no-op property it has always been: `isKeyframeGroup`
- * answers `false` for it, `readPluginBindings` derives nothing from it, and `validateKeyframes`
- * reads it as an empty leaf. Committing one would author a husk that every reader agrees is not a
- * binding surface, which is a field accepted and then ignored. Authoring nothing for a plugin is
- * spelled by removing the entry, and `removeGroup` is the verb for that.
+ * `{}` under a plugin name is not a group: `isKeyframeGroup` answers `false` for it,
+ * `readPluginBindings` derives nothing from it, and `validateKeyframes` refuses it as
+ * `keyframes-ungrouped-key`. Committing one would stage a candidate the loader refuses, so it is
+ * refused here by name first. Authoring nothing for a plugin is spelled by removing the entry, and
+ * `removeGroup` is the verb for that. See ADR-121.
  */
 function notAGroup(plugin: string): never {
   const sections = PLUGIN_GROUP_SECTIONS.map((name) => `'${name}'`).join(" or ");
-  const use = "A group naming neither is an ordinary property; remove the entry instead.";
+  const use = "An entry naming neither is not a group; remove the entry instead.";
   throw new TypeError(`keyframe-group-shape: Group "${plugin}" must name ${sections}. ${use}`);
 }
 
@@ -139,8 +126,8 @@ function notAGroup(plugin: string): never {
  *
  * A group that is left naming no section at all loses its entry, through the one owner of that, for
  * the same reason one level up: on a group that authors no `values`, removing its last binding used
- * to produce `{ plugin: {} }`, which no reader reads as a group and which the validator accepts as
- * the empty property it looks like. That was a husk committed by an edit rather than authored by
+ * to produce `{ plugin: {} }`, which no reader reads as a group and which the validator now refuses
+ * as `keyframes-ungrouped-key`. That was a husk committed by an edit rather than authored by
  * anyone, and it is the shape `notAGroup` refuses to accept from a caller. See ADR-063.
  *
  * Every untouched entry of the record is carried by identity, which is what keeps the incremental

@@ -20,13 +20,21 @@ The removed top-level field, refused by name so the diagnostic names the removal
 
 `'requires' or 'values'`, so the unknown-section message never hardcodes the legal set twice.
 
-## GROUPS_ALLOWED
+## ENTRY_FORM
 
-Whether a scope authors plugin-named groups, which is the second and last thing a scope decides.
+What a top-level keyframe entry is in each scope, which is the second and last thing a scope decides.
 
-A record keyed by `KeyframeRuleScope` rather than a `scope === "authored"` test, for the reason `SCOPED_RULE_ID` in `contract/rule-id.ts` is one: a third scope then has to answer both questions where they are asked, instead of silently inheriting whichever answer was written first. The two questions stay separate maps because they belong to different owners. Which id a rule reports under is a fact about rule ids, so the id module owns it; whether a group is authorable is a fact about this validator.
+A record keyed by `KeyframeRuleScope` rather than a `scope === "authored"` test, for the reason `SCOPED_RULE_ID` in `contract/rule-id.ts` is one: a third scope then has to answer both questions where they are asked, instead of silently inheriting whichever answer was written first. The two questions stay separate maps because they belong to different owners. Which id a rule reports under is a fact about rule ids, so the id module owns it; what an entry is, is a fact about this validator.
 
-A contributed property is one flat output, so the contribution scope answers `false` and keeps the pre-group strictness: an object of objects contributed as a property stays a `stops-shape` error rather than being read as a group, and both section names stay ordinary keys. This replaces the `allowGroups` option, which every caller that set it set together with the prefix and the alias map. See ADR-097.
+A closed pair, `"group"` or `"property"`, read by an exhaustive `switch` with `unreachable` in its default arm, rather than the boolean it replaced. A boolean had one arm nobody wrote down: it answered "may this scope author groups", and the authored scope's answer was "yes, and flat properties too", which is the dual namespace ADR-121 removes. The union makes each scope name the one form it accepts, so the loop body has two arms and neither is an else.
+
+The authored scope answers `"group"`: every top-level entry must be a plugin-named group, and an entry naming no section is `keyframes-ungrouped-key`. A contributed property is one flat output that no author writes, so the contribution scope answers `"property"` and keeps the pre-group strictness: an object of objects contributed as a property stays a `stops-shape` error rather than being read as a group, and both section names stay ordinary keys. This replaced the `allowGroups` option, which every caller that set it set together with the prefix and the alias map. See ADR-097 and ADR-121.
+
+## UNGROUPED
+
+The detail of `keyframes-ungrouped-key`, which names the shape to write rather than the shape that was refused.
+
+One message for every ungrouped form: a bare stops array, a bare static value, the retired wrapper, an unrelated object and `{}` all name no section, so each is the same mistake, a property with no owner, and the fix is the same group around it. The pre-ADR-049 form is the one exception and keeps `keyframes-missing-values-section`, because its author did name a plugin and only the section is missing, which is the more specific diagnosis. The check order in `validateKeyframes` encodes that precedence. See ADR-121.
 
 ## validateProperty
 
@@ -62,15 +70,15 @@ An empty section is refused rather than ignored. Omitting `requires` is already 
 
 The values section: every property the named plugin claims, and the only compiled value domain.
 
-A leaf is held to exactly the rules a flat property is held to, and claims its compiled key through the same `claim`, so a leaf colliding with a flat key or with another group's leaf is still one `keyframes-duplicate-key` reported by one owner.
+A leaf is held to exactly the rules a contributed property is held to, through the same `validateProperty`, and claims its compiled key through the same `claim`, so a leaf colliding with another group's leaf is one `keyframes-duplicate-key` reported by one owner. That is also what keeps a compiled key naming exactly one authored path, which `setValues` relies on.
 
 An empty section is refused rather than ignored. Omitting `values` is already the way to author no properties, so an empty one is a field accepted and then ignored, which rule 6 of ADR-033 forbids. Identical reasoning to `keyframes-requires-empty` above. See ADR-049.
 
 ## usesThreeD
 
-Compares leaf names, not flat record keys. A `rotationY` authored inside a group is the same 3D content as a flat one, and reading only the top level made `perspective-usage` stop firing for it: a silently lost warning rather than a rejected project. The leaves now live under `values`, so this asks `readPluginValues` for them rather than iterating the group's own entries, which would only ever see the section name and reintroduce that exact regression. See ADR-049.
+Compares leaf names, not top-level record keys. Every authored property sits in a group's `values` section since ADR-121, so this asks `readPluginValues` for the leaves of each entry rather than iterating the entry's own members, which would only ever see the section names and silently stop firing `perspective-usage`: a lost warning rather than a rejected project. An ungrouped entry reads as empty there and is refused as `keyframes-ungrouped-key` by `validateKeyframes`, so no second arm reads it. See ADR-049 and ADR-121.
 
-Both leaf forms ADR-050 introduces are non-null, so a 3D key authored as a bare array or as a bare static value still fires `perspective-usage`. `Y-9` and `LF-13` cover the section case.
+Both leaf forms ADR-050 introduces are non-null, so a 3D key authored as a bare array or as a bare static value inside a group still fires `perspective-usage`. `Y-9` and `LF-13` cover the section case.
 
 ## validateSchemaV5
 
