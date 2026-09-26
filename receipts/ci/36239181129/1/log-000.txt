@@ -1,0 +1,44 @@
+quality (node 24.21.0)	Run npm run typecheck	﻿2026-09-26T11:33:30.3252514Z ##[group]Run npm run typecheck
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T11:33:30.3252870Z ^[[36;1mnpm run typecheck^[[0m
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T11:33:30.3288344Z shell: /usr/bin/bash -e {0}
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T11:33:30.3288661Z env:
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T11:33:30.3288882Z   NODE_VERSION: 24.21.0
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T11:33:30.3289197Z   CI_EVIDENCE_DIR: /home/runner/work/_temp/ci-evidence
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T11:33:30.3289502Z ##[endgroup]
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T11:33:30.4019014Z 
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T11:33:30.4020227Z > motion5@0.0.0 typecheck
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T11:33:30.4021173Z > tsc --noEmit -p tsconfig.json
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T11:33:30.4021529Z 
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T11:33:34.6443974Z ##[error]packages/core/test/integration/ik3d-tree.test.ts(78,3): error TS2739: Type 'ProjectHandle' is missing the following properties from type 'Engine': #options, #plugins, load
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T11:33:34.6456027Z ##[error]packages/core/test/integration/ik3d-tree.test.ts(183,15): error TS2339: Property 'mount' does not exist on type 'Engine'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T11:33:34.6458475Z ##[error]packages/core/test/integration/ik3d-tree.test.ts(184,15): error TS2339: Property 'subscribeNode' does not exist on type 'Engine'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T11:33:34.6460279Z ##[error]packages/core/test/integration/ik3d-tree.test.ts(184,34): error TS7006: Parameter 'patch' implicitly has an 'any' type.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T11:33:34.6461986Z ##[error]packages/core/test/integration/ik3d-tree.test.ts(186,13): error TS2339: Property 'seek' does not exist on type 'Engine'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T11:33:34.6463580Z ##[error]packages/core/test/integration/ik3d-tree.test.ts(187,13): error TS2339: Property 'seek' does not exist on type 'Engine'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T11:33:34.6465495Z ##[error]packages/core/test/integration/ik3d-tree.test.ts(209,13): error TS2339: Property 'seek' does not exist on type 'Engine'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T11:33:34.6467230Z ##[error]packages/core/test/integration/ik3d-tree.test.ts(210,13): error TS2339: Property 'seek' does not exist on type 'Engine'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T11:33:34.6468934Z ##[error]packages/core/test/integration/ik3d-tree.test.ts(211,13): error TS2339: Property 'seek' does not exist on type 'Engine'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T11:33:34.6470618Z ##[error]packages/core/test/integration/ik3d-tree.test.ts(212,13): error TS2339: Property 'seek' does not exist on type 'Engine'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T11:33:34.6472613Z ##[error]packages/core/test/integration/ik3d-tree.test.ts(217,15): error TS2339: Property 'seek' does not exist on type 'Engine'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T11:33:34.6474263Z ##[error]packages/core/test/integration/ik3d-tree.test.ts(218,15): error TS2339: Property 'seek' does not exist on type 'Engine'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T11:33:34.6476750Z ##[error]packages/core/test/unit/plugins/ik3d-envelope.test.ts(6,15): error TS2459: Module '"../../../src/plugins/ik3d-result"' declares 'SolveQuality' locally, but it is not exported.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T11:33:34.6479697Z ##[error]packages/core/test/unit/plugins/ik3d-envelope.test.ts(36,26): error TS2345: Argument of type 'SolveQuality' is not assignable to parameter of type 'never'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T11:33:34.6481603Z ##[error]packages/core/test/unit/plugins/ik3d-fabrik.test.ts(103,18): error TS2339: Property 'base' does not exist on type 'SolveMember3d'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T11:33:34.6483375Z ##[error]packages/core/test/unit/plugins/ik3d-fabrik.test.ts(104,62): error TS2339: Property 'rest' does not exist on type 'SolveMember3d'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T11:33:34.6686925Z ##[error]Process completed with exit code 2.
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	﻿2026-09-26T11:34:56.1932956Z ##[group]Run test "$SUITE_RESULT" = success
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-26T11:34:56.1933848Z ^[[36;1mtest "$SUITE_RESULT" = success^[[0m
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-26T11:34:56.2123524Z shell: /usr/bin/bash -e {0}
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-26T11:34:56.2124519Z env:
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-26T11:34:56.2125046Z   NODE_VERSION: 24.21.0
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-26T11:34:56.2125602Z   SUITE_RESULT: failure
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-26T11:34:56.2126136Z ##[endgroup]
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-26T11:34:56.2274054Z ##[error]Process completed with exit code 1.
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	﻿2026-09-26T11:34:57.3475258Z ##[group]Run test "$SUITE_RESULT" = success
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-26T11:34:57.3476083Z ^[[36;1mtest "$SUITE_RESULT" = success^[[0m
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-26T11:34:57.6823346Z shell: /usr/bin/bash -e {0}
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-26T11:34:57.6824725Z env:
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-26T11:34:57.6825487Z   NODE_VERSION: 24.21.0
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-26T11:34:57.6826298Z   SUITE_RESULT: failure
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-26T11:34:57.6827069Z ##[endgroup]
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-26T11:34:57.6998221Z ##[error]Process completed with exit code 1.
