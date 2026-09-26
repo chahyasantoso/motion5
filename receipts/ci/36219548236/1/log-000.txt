@@ -1,0 +1,42 @@
+quality (node 24.21.0)	Run npm run typecheck	﻿2026-09-26T05:02:01.7422081Z ##[group]Run npm run typecheck
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T05:02:01.7422432Z ^[[36;1mnpm run typecheck^[[0m
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T05:02:01.7493030Z shell: /usr/bin/bash -e {0}
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T05:02:01.7493377Z env:
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T05:02:01.7493659Z   NODE_VERSION: 24.21.0
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T05:02:01.7494018Z   CI_EVIDENCE_DIR: /home/runner/work/_temp/ci-evidence
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T05:02:01.7494419Z ##[endgroup]
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T05:02:01.8499313Z 
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T05:02:01.8499989Z > motion5@0.0.0 typecheck
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T05:02:01.8500619Z > tsc --noEmit -p tsconfig.json
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T05:02:01.8500829Z 
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T05:02:07.6628576Z ##[error]packages/core/test/unit/domain/plugin-3d-ownership.test.ts(29,11): error TS7034: Variable 'diagnostics' implicitly has type 'any[]' in some locations where its type cannot be determined.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T05:02:07.6638872Z ##[error]packages/core/test/unit/domain/plugin-3d-ownership.test.ts(30,47): error TS7005: Variable 'diagnostics' implicitly has an 'any[]' type.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T05:02:07.6641685Z ##[error]packages/core/test/unit/domain/plugin-3d-ownership.test.ts(31,12): error TS7005: Variable 'diagnostics' implicitly has an 'any[]' type.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T05:02:07.6644923Z ##[error]packages/core/test/unit/domain/plugins.test.ts(132,11): error TS7034: Variable 'diagnostics' implicitly has type 'any[]' in some locations where its type cannot be determined.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T05:02:07.6647641Z ##[error]packages/core/test/unit/domain/plugins.test.ts(133,60): error TS7005: Variable 'diagnostics' implicitly has an 'any[]' type.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T05:02:07.6650294Z ##[error]packages/core/test/unit/domain/plugins.test.ts(137,12): error TS7005: Variable 'diagnostics' implicitly has an 'any[]' type.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T05:02:07.6653609Z ##[error]packages/core/test/unit/plugins/fk-pivot-offset.test.ts(128,11): error TS7034: Variable 'diagnostics' implicitly has type 'any[]' in some locations where its type cannot be determined.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T05:02:07.6656535Z ##[error]packages/core/test/unit/plugins/fk-pivot-offset.test.ts(129,52): error TS7005: Variable 'diagnostics' implicitly has an 'any[]' type.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T05:02:07.6659200Z ##[error]packages/core/test/unit/plugins/fk-pivot-offset.test.ts(130,12): error TS7005: Variable 'diagnostics' implicitly has an 'any[]' type.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T05:02:07.6662064Z ##[error]packages/core/test/unit/plugins/fk-pivot-offset.test.ts(131,12): error TS7005: Variable 'diagnostics' implicitly has an 'any[]' type.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T05:02:07.6696575Z ##[error]packages/core/test/unit/plugins/ik-inspection.test.ts(131,13): error TS2322: Type 'TrackDefinition | { ik: { values: { inspect: AuthoredProperty; }; requires: { root: string; target: string; }; }; }' is not assignable to type 'Readonly<Record<string, AuthoredPluginGroup>>'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T05:02:07.6699825Z   Type 'TrackDefinition' is not assignable to type 'Readonly<Record<string, AuthoredPluginGroup>>'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T05:02:07.6700890Z     Index signature for type 'string' is missing in type 'TrackDefinition'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T05:02:07.6702871Z ##[error]packages/core/test/unit/runtime/authoring-edit.test.ts(187,12): error TS18048: 'originated.keyframes' is possibly 'undefined'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-26T05:02:07.7206824Z ##[error]Process completed with exit code 2.
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	﻿2026-09-26T05:03:54.0848742Z ##[group]Run test "$SUITE_RESULT" = success
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-26T05:03:54.0849471Z ^[[36;1mtest "$SUITE_RESULT" = success^[[0m
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-26T05:03:54.1105344Z shell: /usr/bin/bash -e {0}
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-26T05:03:54.1106162Z env:
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-26T05:03:54.1106597Z   NODE_VERSION: 24.21.0
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-26T05:03:54.1107085Z   SUITE_RESULT: failure
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-26T05:03:54.1107549Z ##[endgroup]
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-26T05:03:54.1265165Z ##[error]Process completed with exit code 1.
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	﻿2026-09-26T05:03:55.3348546Z ##[group]Run test "$SUITE_RESULT" = success
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-26T05:03:55.3349465Z ^[[36;1mtest "$SUITE_RESULT" = success^[[0m
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-26T05:03:55.3536080Z shell: /usr/bin/bash -e {0}
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-26T05:03:55.3537068Z env:
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-26T05:03:55.3537612Z   NODE_VERSION: 24.21.0
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-26T05:03:55.3538211Z   SUITE_RESULT: failure
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-26T05:03:55.3538765Z ##[endgroup]
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-26T05:03:55.3689234Z ##[error]Process completed with exit code 1.
