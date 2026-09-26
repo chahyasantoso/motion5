@@ -130,7 +130,10 @@ function projectWithInspect(value: AuthoredProperty, grouped = true): ProjectDef
             id: "solve",
             keyframes: grouped
               ? { ik: { values: { inspect: value }, requires: { root: "root", target: "goal" } } }
-              : { inspect: value, ik: { requires: { root: "root", target: "goal" } } },
+              : ({
+                  inspect: value,
+                  ik: { requires: { root: "root", target: "goal" } },
+                } as unknown as TrackDefinition),
           },
           {
             id: "upper",
@@ -260,16 +263,17 @@ describe("opt-in IK solve inspection", () => {
     expect(inspectionOf(fabrik).kind).toMatch(/^(converged|stalled|iteration-cap)$/);
   });
 
-  it("IN-4 reads flat and grouped authored spellings", () => {
+  it("IN-4 rejects malformed grouped inspection and refuses ungrouped inspection", () => {
     expect(buildGraphIR(projectWithInspect("yes")).diagnostics.map((d) => d.ruleId)).toContain(
       "ik-inspect-malformed",
     );
     expect(
       buildGraphIR(projectWithInspect([{ p: 0, v: true }])).diagnostics.map((d) => d.ruleId),
     ).toContain("ik-inspect-malformed");
-    expect(
-      buildGraphIR(projectWithInspect("yes", false)).diagnostics.map((d) => d.ruleId),
-    ).toContain("ik-inspect-malformed");
+    expect(buildGraphIR(projectWithInspect("yes", false)).diagnostics).toEqual([]);
+    expect(() => loadWith(projectWithInspect("yes", false), corePlugins())).toThrow(
+      /keyframes-ungrouped-key/,
+    );
   });
 
   it("IN-5 accepts both static boolean spellings", () => {
@@ -278,11 +282,14 @@ describe("opt-in IK solve inspection", () => {
     // `plugin-unknown-key`. An assertion against the graph alone therefore passes with `inspect`
     // missing from `ik.keys`, which is how this case was green before phase 4. It asserts both
     // layers, and the load half is what fails without the claim.
-    const spellings = [projectWithInspect(true), projectWithInspect(false, false)];
-    for (const project of spellings) {
+    const groupedSpellings = [projectWithInspect(true), projectWithInspect(false)];
+    for (const project of groupedSpellings) {
       expect(buildGraphIR(project).diagnostics).toEqual([]);
       expect(() => loadWith(project, corePlugins())).not.toThrow();
     }
+    const ungrouped = projectWithInspect(true, false);
+    expect(buildGraphIR(ungrouped).diagnostics).toEqual([]);
+    expect(() => loadWith(ungrouped, corePlugins())).toThrow(/keyframes-ungrouped-key/);
     const unclaimed = new PluginRegistry();
     unclaimed.register(transformPlugin);
     unclaimed.register(fkPlugin);
@@ -290,7 +297,7 @@ describe("opt-in IK solve inspection", () => {
       ...ikPlugin,
       keys: (ikPlugin.keys ?? []).filter((key) => key !== "inspect"),
     });
-    for (const project of spellings)
+    for (const project of groupedSpellings)
       expect(() => loadWith(project, unclaimed)).toThrow(/plugin-unknown-key/);
   });
 
@@ -357,7 +364,7 @@ describe("opt-in IK solve inspection", () => {
   it("IN-8 leaves another plugin's inspect alone on a node that bound no root", () => {
     const bystander: TrackDefinition = {
       id: "bystander",
-      keyframes: { spring: { values: { inspect: "verbose" } }, inspect: 3 },
+      keyframes: { spring: { values: { inspect: "verbose" } } },
     };
     const project = projectWith(
       { id: "solve", keyframes: { ik: { requires: { root: "root", target: "goal" } } } },

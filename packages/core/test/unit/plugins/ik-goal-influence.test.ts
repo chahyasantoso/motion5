@@ -359,7 +359,7 @@ describe("IK goal influence and conflict policy", () => {
 
   it("GI-12 exempts nodes without a solver and handles bare target's leaf placement", () => {
     const noSolver = goalProject({}, {}, { root: "root", targets: { a: "goal-a", b: "goal-b" } }, [
-      { id: "bystander", keyframes: { influence: 2 } },
+      { id: "bystander", keyframes: { someplugin: { values: { influence: 2 } } } },
     ]);
     expect(diagnostics(noSolver)).toEqual([]);
 

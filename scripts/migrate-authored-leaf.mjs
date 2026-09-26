@@ -19,6 +19,12 @@
  * wrapper now trips `plugin-contribution-property-stops-wrapper`, and that is an assertion change,
  * not a shape change.
  *
+ * The output preserves the leaf's authored position: `x: { stops: RAMP }` becomes `x: RAMP` even
+ * when `x` is inside a larger record. ADR-121 now requires authored top-level keyframe entries to
+ * be plugin-named groups, so an author must place that output under the owning group's `values`
+ * section afterwards. This tool cannot infer the plugin owner and deliberately does not guess or
+ * regroup keys.
+ *
  * Usage:
  *   node scripts/migrate-authored-leaf.mjs             report the full plan, write nothing
  *   node scripts/migrate-authored-leaf.mjs --write      apply it, then run `npm run format`

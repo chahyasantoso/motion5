@@ -15,7 +15,8 @@ function benchmarkInterpolator(name, seam) {
 
   console.log(`\n--- Running Benchmark: ${name} ---`);
 
-  // Test Case 1: Small config (1 property, 2 stops)
+  // Test Case 1: Small config (1 property, 2 stops). This is an interpolator config, so its
+  // compiled keyframe map stays flat; only authored project records use plugin-named groups.
   const heapBefore1 = getHeapMb();
   const start1 = performance.now();
   const timelines1 = [];
@@ -23,12 +24,10 @@ function benchmarkInterpolator(name, seam) {
     const tl = seam.interpolator.create({
       duration: 1,
       keyframes: {
-        x: {
-          stops: [
-            { p: 0, v: 0 },
-            { p: 1, v: 100 },
-          ],
-        },
+        x: [
+          { p: 0, v: 0 },
+          { p: 1, v: 100 },
+        ],
       },
     });
     timelines1.push(tl);
@@ -59,15 +58,13 @@ function benchmarkInterpolator(name, seam) {
   // Test Case 2: Multi-stop / Multi-property config (10 props, 5 stops each)
   const keyframes2 = {};
   for (let p = 0; p < 10; p++) {
-    keyframes2[`prop_${p}`] = {
-      stops: [
-        { p: 0, v: 0 },
-        { p: 0.25, v: 25 },
-        { p: 0.5, v: 50 },
-        { p: 0.75, v: 75 },
-        { p: 1, v: 100 },
-      ],
-    };
+    keyframes2[`prop_${p}`] = [
+      { p: 0, v: 0 },
+      { p: 0.25, v: 25 },
+      { p: 0.5, v: 50 },
+      { p: 0.75, v: 75 },
+      { p: 1, v: 100 },
+    ];
   }
 
   const heapBefore2 = getHeapMb();

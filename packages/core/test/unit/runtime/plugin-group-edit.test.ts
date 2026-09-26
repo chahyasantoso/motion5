@@ -66,8 +66,11 @@ const FK_GROUP: AuthoredPluginGroup = Object.freeze({
   requires: { base: ARM, members: { left: HAND } },
 });
 const LEG_TRACK: TrackDefinition = { id: "leg", keyframes: { fk: FK_GROUP } };
-/** Authors one ordinary property, so a plugin name and a keyframe name collide on purpose. */
-const HAND_TRACK: TrackDefinition = { id: "hand", keyframes: { rotation: 90 } };
+/** Authors a grouped property; group names are no longer ambiguous with leaf names. */
+const HAND_TRACK: TrackDefinition = {
+  id: "hand",
+  keyframes: { transform: { values: { rotation: 90 } } },
+};
 /**
  * A group that authors nothing but goals, which is what makes two of these cases possible.
  *
@@ -212,36 +215,33 @@ describe("a whole plugin group and one solver goal, at the price the structural 
     project.dispose();
   });
 
-  it("RA-51 refuses a name this node authors as a property, and originates nothing", () => {
+  it("RA-51 accepts a group name independently of grouped property names", () => {
     const project = runtime();
     const handle = declaring(project, HAND);
     const retained = handle.definition;
     const replaceGraph = vi.spyOn(project.graph, "replaceGraph");
 
-    const thrown = thrownBy(() => handle.setKeyframeGroup("rotation", { values: { length: 1 } }));
+    // The deleted entry-shape refusal no longer treats a leaf name as a competing top-level
+    // property. A name with no group can be originated, and removal of that absent name is a no-op.
+    handle.setKeyframeGroup("rotation", { values: { length: 1 } });
+    expect(replaceGraph).toHaveBeenCalledTimes(1);
+    expect(handle.definition.keyframes).toEqual({
+      transform: { values: { rotation: 90 } },
+      rotation: { values: { length: 1 } },
+    });
+    handle.removeKeyframeGroup("rotation");
+    expect(replaceGraph).toHaveBeenCalledTimes(2);
+    expect(handle.definition.keyframes).toEqual(retained.keyframes);
 
-    // The entry-level twin of `keyframe-require-shape`, and the primitive's own for the same reason:
-    // a plugin name and a keyframe name share one namespace, both shapes are legal there, and
-    // nothing below this layer can tell that writing a group over an authored property drops every
-    // stop the author wrote.
-    expect(thrown).toBeInstanceOf(TypeError);
-    expect((thrown as Error).message).toContain("keyframe-entry-shape");
-    expect((thrown as Error).message).toContain("rotation");
-    // Removal crosses the same shape in the other direction, so it refuses rather than deleting a
-    // property the caller never named.
-    const removal = thrownBy(() => handle.removeKeyframeGroup("rotation"));
-    expect(removal).toBeInstanceOf(TypeError);
-    expect((removal as Error).message).toContain("keyframe-entry-shape");
-    expect(handle.definition).toBe(retained);
-    expect(replaceGraph).not.toHaveBeenCalled();
-
-    // The accepting direction, in the same rig, so this case is not green against a primitive that
-    // refuses everything: a name the node authors nothing under originates cleanly beside the
-    // property it did not touch.
+    // The accepting direction in the same rig, so this case is not green against a primitive that
+    // refuses everything: another absent name originates cleanly as well.
     handle.setKeyframeGroup("fk", { values: { length: 3 } });
 
-    expect(replaceGraph).toHaveBeenCalledTimes(1);
-    expect(handle.definition.keyframes).toEqual({ rotation: 90, fk: { values: { length: 3 } } });
+    expect(replaceGraph).toHaveBeenCalledTimes(3);
+    expect(handle.definition.keyframes).toEqual({
+      transform: { values: { rotation: 90 } },
+      fk: { values: { length: 3 } },
+    });
 
     project.dispose();
   });

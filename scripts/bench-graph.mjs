@@ -25,11 +25,13 @@ function buildProject(nodeCount, crossEdgeRatio = 0.1) {
       {
         id: `t_${i}`,
         keyframes: {
-          x: {
-            stops: [
-              { p: 0, v: 0 },
-              { p: 1, v: 100 },
-            ],
+          transform: {
+            values: {
+              x: [
+                { p: 0, v: 0 },
+                { p: 1, v: 100 },
+              ],
+            },
           },
         },
         observes:
@@ -114,18 +116,18 @@ async function runBenchmark() {
         runtime.addTrack({
           id: `edged_${b}`,
           keyframes: {
-            x: {
-              stops: [
-                { p: 0, v: 0 },
-                { p: 0.5, v: 50 },
-                { p: 1, v: 100 },
-              ],
-            },
-            y: {
-              stops: [
-                { p: 0, v: 0 },
-                { p: 1, v: 200 },
-              ],
+            transform: {
+              values: {
+                x: [
+                  { p: 0, v: 0 },
+                  { p: 0.5, v: 50 },
+                  { p: 1, v: 100 },
+                ],
+                y: [
+                  { p: 0, v: 0 },
+                  { p: 1, v: 200 },
+                ],
+              },
             },
           },
           observes: [{ source: observeTarget }],
@@ -161,11 +163,13 @@ async function runBenchmark() {
         runtime.addTrack({
           id: `chain_${c}`,
           keyframes: {
-            x: {
-              stops: [
-                { p: 0, v: 0 },
-                { p: 1, v: 100 },
-              ],
+            transform: {
+              values: {
+                x: [
+                  { p: 0, v: 0 },
+                  { p: 1, v: 100 },
+                ],
+              },
             },
           },
           observes: [{ source: previousSource }],
@@ -208,18 +212,18 @@ async function runBenchmark() {
         incrementalRuntime.addTrack({
           id: `edged_incremental_${d}`,
           keyframes: {
-            x: {
-              stops: [
-                { p: 0, v: 0 },
-                { p: 0.5, v: 50 },
-                { p: 1, v: 100 },
-              ],
-            },
-            y: {
-              stops: [
-                { p: 0, v: 0 },
-                { p: 1, v: 200 },
-              ],
+            transform: {
+              values: {
+                x: [
+                  { p: 0, v: 0 },
+                  { p: 0.5, v: 50 },
+                  { p: 1, v: 100 },
+                ],
+                y: [
+                  { p: 0, v: 0 },
+                  { p: 1, v: 200 },
+                ],
+              },
             },
           },
           observes: [{ source: observeTarget }],

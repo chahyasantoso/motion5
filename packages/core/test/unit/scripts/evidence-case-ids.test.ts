@@ -69,7 +69,7 @@ import { fileURLToPath } from "node:url";
 // legal to compose, and still never publishable.
 //
 // `N-` belongs to per-plugin key ownership (ADR-043): how many plugins may claim one key, which
-// one owns an authored entry, and what a flat spelling with several claimants does. It does not
+// one owns an authored entry, and that an ungrouped spelling is refused rather than resolved. It does not
 // extend `F-`, which owns the authored shapes a document may use; this owns who is allowed to
 // answer for a key at all, and it is the reason the group form stopped being pure sugar.
 //
@@ -126,7 +126,7 @@ import { fileURLToPath } from "node:url";
 // `FO-` belongs to the `fk` pivot offset, slice A of issue #195: what an authored `x` and `y` on a
 // bone mean, in whose space they are read, and what a bone that authors neither composes. `N-` owns
 // how many plugins may claim a key and which one answers for an authored entry; `FO-` owns what the
-// two keys do once `fk` claims them, and what the second claim costs their flat spelling. It is the
+// two keys do once `fk` claims them, and that their ungrouped spelling is refused. It is the
 // second two-letter series, for the reason the `LF-` paragraph gives and under the policy the `P-`
 // paragraph sets: every single letter is claimed, excluded, or unusable beside a digit.
 //
