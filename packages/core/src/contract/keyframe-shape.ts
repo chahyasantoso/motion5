@@ -24,7 +24,7 @@ export const PLUGIN_REQUIRES_SECTION = "requires";
  * of the leaves, and it is why an unknown sibling can be reported as an unknown section instead of
  * being misread as a property with no stops.
  *
- * The cost is that no author may animate a flat property called `values` and no plugin may claim
+ * The cost is that no author may use `values` as a top-level entry name and no plugin may claim
  * the key at group level. The reservation is on section position rather than on the string
  * everywhere, so a leaf named `values` inside the section is an ordinary property. See ADR-049.
  */

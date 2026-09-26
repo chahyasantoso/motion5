@@ -305,11 +305,10 @@ export interface AuthoredPluginGroup {
  * to its unprefixed leaves before compilation, so no interpolator, adapter, or renderer ever
  * receives a nested value.
  *
- * There is no flat form. It predated plugins, and once two plugins could claim one name it was
- * legal only for the keys exactly one registered plugin claimed, so whether a document loaded
- * depended on which plugins the host registered and `plugin-ambiguous-key` existed only to refuse
- * it. Every property is grouped now, which is the one spelling that names its owner. See ADR-041,
- * ADR-043, ADR-049 and ADR-121.
+ * There is no ungrouped form: a top-level entry that is not a group is refused as
+ * `keyframes-ungrouped-key`, so whether a document loads never depends on which plugins the host
+ * registered. The group name is the one spelling that names the owner. See ADR-041, ADR-043,
+ * ADR-049 and ADR-121.
  */
 export type AuthoredKeyframe = AuthoredPluginGroup;
 /** One `keyframes.<plugin>.requires.<slot>` entry, as read from authored input. See ADR-044. */

@@ -253,9 +253,9 @@ describe("a whole plugin group and one solver goal, at the price the structural 
 
     const thrown = thrownBy(() => handle.setKeyframeGroup("fk", {}));
 
-    // `{}` names no section, so no reader reads it as a group at all: it is the accepted no-op
-    // property it has always been. Committing one would author a husk under a plugin name that
-    // `isKeyframeGroup` answers `false` for, which is a field accepted and then ignored.
+    // `{}` names no section, so it is not a group: the loader refuses it at the top level as
+    // `keyframes-ungrouped-key`. The edit refuses it first with its own precondition,
+    // `keyframe-group-shape`, so no husk is ever committed under a plugin name.
     expect(thrown).toBeInstanceOf(TypeError);
     expect((thrown as Error).message).toContain("keyframe-group-shape");
     expect((thrown as Error).message).toContain("values");

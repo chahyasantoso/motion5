@@ -26,7 +26,7 @@ An exact claim outranks a predicate, unchanged, and at most one predicate is eve
 
 A leaf resolves against the plugin its group names and nothing else, which is the granularity the group form exists for: routing the leaf through the claimant map instead would accept a leaf under any group name and report nothing at all for a group that names no registered plugin.
 
-There is no flat arm. A flat key used to resolve against its claimants and was refused as `plugin-ambiguous-key` when there were several, so whether a document loaded depended on which plugins the host happened to register. `validateKeyframes` refuses every ungrouped entry as `keyframes-ungrouped-key` before this runs, so every entry here carries its group, and the rule, its hint and the flat arm are deleted rather than left unreachable. See ADR-043 and ADR-121.
+There is no ungrouped arm. `validateKeyframes` refuses every ungrouped entry as `keyframes-ungrouped-key` before this runs, so every entry here carries its group and ownership never depends on which plugins the host registered. See ADR-043 and ADR-121.
 
 ## #resolveRequirements
 
