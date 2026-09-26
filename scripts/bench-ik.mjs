@@ -5,8 +5,9 @@
 // is what regenerates them: run `npm run bench:ik` and paste the report's conditions beside the
 // numbers it produced. The deterministic half of the envelope (which strategy each scenario
 // reaches, whether every answer is finite and inside the iteration cap, and whether rigs couple) is
-// asserted by `EN-` in `packages/core/test/unit/plugins/ik-envelope.test.ts` and is not re-asserted
-// here.
+// asserted by `EN-` in `packages/core/test/unit/plugins/ik-envelope.test.ts` for 2D and by `TH-71`
+// to `TH-74` in `packages/core/test/unit/plugins/ik3d-envelope.test.ts` for 3D, and is not
+// re-asserted here.
 //
 // The rigs are `packages/core/test/support/ik-envelope.ts` and
 // `packages/core/test/support/ik3d-envelope.ts`, the same modules the envelope tests read, so a

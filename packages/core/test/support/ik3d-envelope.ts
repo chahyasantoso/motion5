@@ -1,5 +1,12 @@
 import { ENVELOPE_RIGS, ENVELOPE_SEGMENT, envelopeRandom } from "./ik-envelope";
-import { axisX3, matrixFromEuler3d } from "../../src/plugins/frame3d";
+import {
+  add3,
+  axisX3,
+  cross3,
+  matrixFromEuler3d,
+  normalize3,
+  scale3,
+} from "../../src/plugins/frame3d";
 import type { Euler3d, Vec3, WorldFrame3d } from "../../src/plugins/frame3d";
 import type { ChainShape3d } from "../../src/plugins/ik3d-solve";
 import type { ChainMember3d } from "../../src/plugins/ik3d-chain";
@@ -96,23 +103,13 @@ function directionInHemisphere(random: () => number, around: Vec3): Vec3 {
     Math.sin(elevation),
   ];
   const tangent: Vec3 = Math.abs(around[0]) < 0.9 ? [1, 0, 0] : [0, 1, 0];
-  const side: Vec3 = [
-    around[1] * tangent[2] - around[2] * tangent[1],
-    around[2] * tangent[0] - around[0] * tangent[2],
-    around[0] * tangent[1] - around[1] * tangent[0],
-  ];
-  const sideLength = Math.hypot(side[0], side[1], side[2]);
-  const unitSide: Vec3 = [side[0] / sideLength, side[1] / sideLength, side[2] / sideLength];
-  const unitTangent: Vec3 = [
-    around[1] * unitSide[2] - around[2] * unitSide[1],
-    around[2] * unitSide[0] - around[0] * unitSide[2],
-    around[0] * unitSide[1] - around[1] * unitSide[0],
-  ];
-  return [
-    around[0] * local[0] + unitSide[0] * local[1] + unitTangent[0] * local[2],
-    around[1] * local[0] + unitSide[1] * local[1] + unitTangent[1] * local[2],
-    around[2] * local[0] + unitSide[2] * local[1] + unitTangent[2] * local[2],
-  ];
+  // The tangent is never parallel to `around`, so the fallback is unreachable.
+  const unitSide = normalize3(cross3(around, tangent), tangent);
+  const unitTangent = cross3(around, unitSide);
+  return add3(
+    add3(scale3(around, local[0]), scale3(unitSide, local[1])),
+    scale3(unitTangent, local[2]),
+  );
 }
 
 function treeRig(

@@ -1,10 +1,14 @@
 import { describe, expect, it } from "vitest";
 import type { PluginInputs } from "../../../src/domain/plugins";
 import {
+  dot3,
   matrixFromEuler3d,
   multiplyMatrix3,
   multiplyVector3,
+  normalize3,
   readFrame3d,
+  scale3,
+  subtract3,
   swingFrame3d,
   ZERO_EULER,
   type Euler3d,
@@ -85,22 +89,10 @@ function columns(matrix: Matrix3): readonly [Vec3, Vec3, Vec3] {
   ];
 }
 
-function dot(a: Vec3, b: Vec3): number {
-  return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
-}
-
 function perpendicularSide(point: Vec3, goal: Vec3, side: Vec3): number {
-  const length = Math.hypot(goal[0], goal[1], goal[2]);
-  const along: Vec3 = [goal[0] / length, goal[1] / length, goal[2] / length];
-  const project = (value: Vec3): Vec3 => {
-    const amount = dot(value, along);
-    return [
-      value[0] - along[0] * amount,
-      value[1] - along[1] * amount,
-      value[2] - along[2] * amount,
-    ];
-  };
-  return dot(project(point), project(side));
+  const along = normalize3(goal, [1, 0, 0]);
+  const project = (value: Vec3): Vec3 => subtract3(value, scale3(along, dot3(value, along)));
+  return dot3(project(point), project(side));
 }
 
 describe("3D FABRIK evidence", () => {
@@ -314,9 +306,9 @@ describe("3D FABRIK evidence", () => {
     expect(axis[2]).toBeCloseTo(0.8320502943378437, 12);
     for (const column of columns(swung)) expect(Math.hypot(...column)).toBeCloseTo(1, 12);
     const [first, second, third] = columns(swung);
-    expect(dot(first, second)).toBeCloseTo(0, 12);
-    expect(dot(first, third)).toBeCloseTo(0, 12);
-    expect(dot(second, third)).toBeCloseTo(0, 12);
+    expect(dot3(first, second)).toBeCloseTo(0, 12);
+    expect(dot3(first, third)).toBeCloseTo(0, 12);
+    expect(dot3(second, third)).toBeCloseTo(0, 12);
   });
 
   it("TH-64 selects a deterministic conflicted tree result", () => {
