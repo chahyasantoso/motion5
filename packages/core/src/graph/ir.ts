@@ -865,12 +865,14 @@ export function resolveSolvers(
     // A pole picks the plane an interior joint bends in, so over a chain whose every member hangs
     // from the root it has nothing to pick: each member is one segment pointing at its goal. Only
     // a pole bound under the group that bound `root` is asked, since one bound anywhere else is
-    // already `ik-pole-without-chain` or the registry's unknown requirement.
+    // already `ik-pole-without-chain` or the registry's unknown requirement, and only over a chain
+    // the solver accepts, since an unsupported one is already `ik-chain-unsupported` and no solve
+    // of it reads the pole.
     const bindsPole = solver.edges.some((edge) => {
       const requirement = edgeRequirement(edge);
       return requirement?.slot === POLE_SLOT && requirement.plugin === rootPlugin;
     });
-    if (unreachable.size === 0 && declaresPole(rootPlugin) && bindsPole && !poleBends(derived)) {
+    if (accepted && declaresPole(rootPlugin) && bindsPole && !poleBends(derived)) {
       diagnostics.push(
         diagnostic(
           "ik-pole-without-bend",

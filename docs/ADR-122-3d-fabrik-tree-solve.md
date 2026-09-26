@@ -26,7 +26,8 @@ refused. No 2D byte moves.
   two-bone proof is `ik-topology.ts`'s `twoBonePair`, the function the 2D dispatcher reads.
 - **The contract declares a tree.** `contract/solver-shape.ts` replaces `unbranched` with
   `tree { memberPlugin: "fk3d" }`; `unbranched` is deleted because no solver declares it.
-  `ik-chain-unsupported` now refuses only a mixed-dimension `ik3d` chain.
+  `ik-chain-unsupported` now refuses any `ik3d` chain containing a member bound through a plugin
+  other than `fk3d`, a 2D `fk` member among them, and no count or branching.
 - **Shared with 2D only where the contract matches.** `ik-topology.ts` owns canonical order, child
   counts, leaves, serial depth and `twoBonePair`; `ik-goal.ts` owns the generic compromise
   (`Pull<P>`, `compromiseIn`, `relativeWeights`); `fabrik-select.ts` the selector (#490);

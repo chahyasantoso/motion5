@@ -168,6 +168,13 @@ describe("3D tree load rules", () => {
     for (const topology of [TWO_BONE, SERIAL3, FORK, MIXED])
       expect(rules(rig(topology, { pole: true }))).toEqual([]);
     for (const topology of [SINGLE, FAN]) expect(rules(rig(topology))).toEqual([]);
+    // Over a chain the solver refuses, the refusal is the chain's alone: no solve reads the pole.
+    const unsupported = rig(SINGLE, { pole: true });
+    const member = unsupported.motions[0]!.tracks.find((track) => track.id === "a")!;
+    const keyframes = member.keyframes as Record<string, unknown>;
+    keyframes.fk = keyframes.fk3d;
+    delete keyframes.fk3d;
+    expect(rules(unsupported)).toEqual(["ik-chain-unsupported at rig/solve"]);
     expect(poleBends(depthsOf(FAN))).toBe(false);
     expect(poleBends(depthsOf(MIXED))).toBe(true);
     // The refusal is measured: over a fan, two opposite poles publish byte-identical solves.
