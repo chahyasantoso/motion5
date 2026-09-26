@@ -5,6 +5,12 @@
 - **Closes:** issue [#211](https://github.com/chahyasantoso/motion5/issues/211)
 - **Amends:** [ADR-051](./ADR-051-derived-solver-membership.md), which owns the solve a member reads back
 
+**Amended by [ADR-121](./ADR-121-grouped-only-keyframes.md), 2026-09-26.** The flat `rotation`
+passage outside `ik-solved-rotation-dead` and the `weight` consequence saying it acquires no
+ambiguous flat spelling no longer hold. An ungrouped `rotation` or `weight` is refused at schema
+validation as `keyframes-ungrouped-key`; no flat spelling is ambiguous any more because none is
+authorable.
+
 This record owns the seam between a bone's authored rest pose and the rotation its solver publishes: that there is one at all, what its domain is, which side of the composition owns it, and what an author may write beside it.
 
 ---

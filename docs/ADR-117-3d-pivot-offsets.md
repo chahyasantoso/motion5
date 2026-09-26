@@ -6,6 +6,11 @@ stacked beneath it, and completed against `main` at `c9ce26665e8756614fb8f021e25
 where phase 1 ([ADR-116](./ADR-116-fk3d-rest-orientation-and-solved-weight.md)) landed through
 #502. Accepted when the implementation pull request, #503, merges.
 
+**Amended by [ADR-121](./ADR-121-grouped-only-keyframes.md), 2026-09-26.** The **What is withdrawn**
+bullet saying flat `x`, `y`, and `z` remain ambiguous no longer holds for authored input. Grouped
+ownership removes that ambiguity; ungrouped `x`, `y`, and `z` are refused as
+`keyframes-ungrouped-key`.
+
 ## Invariant
 
 A 3D member's `x`, `y` and `z` values are its pivot offset in the parent's rotated frame. `fk3d`

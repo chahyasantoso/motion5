@@ -4,6 +4,13 @@
 phase 3, squash-merged from [#484](https://github.com/chahyasantoso/motion5/pull/484) as `0f75d101`.
 Phase 4 is [ADR-109](./ADR-109-opt-in-solve-inspection.md).
 
+**Amended by [ADR-121](./ADR-121-grouped-only-keyframes.md), 2026-09-26.** The Invariant's flat
+`minRotation`, `maxRotation`, and `bend` spellings; the **Every spelling is validated**, **Limit
+keys are solver vocabulary**, and **Solver keys belong to the node that bound `root`** passages;
+and the Evidence sentence about flat spellings no longer describe authored input. Only grouped
+spellings reach the solver-spelling readers; ungrouped spellings are `keyframes-ungrouped-key`, so
+the flat branches described there are unreachable from authored input.
+
 ## Invariant
 
 A member may author a finite local angle range as `minRotation` and `maxRotation`, grouped under

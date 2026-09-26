@@ -10,6 +10,11 @@
 
 **Supersedes nothing.** Extends [ADR-051](./ADR-051-derived-solver-membership.md), which owns how a solver finds its bones, and [ADR-052](./ADR-052-goal-addressing-by-member-id.md), which owns how it is told what to reach for. This record owns two shapes those two left reachable: a solver with nothing to reach for, and a member whose pivot neither solve accounts for.
 
+**Amended by [ADR-121](./ADR-121-grouped-only-keyframes.md), 2026-09-26.** The `flat key names no
+ group at all` passage and Alternative 6's acceptance of a flat level no longer describe authored
+input. Flat keys are no longer authored: an ungrouped `x` or `y` is refused as
+`keyframes-ungrouped-key` before binder scope or graph reads it.
+
 ## Context
 
 Both shapes come out of the review of `feat/d-base` against the consolidated slice D plan, and they fail the same way. Neither errors at load, and both were only noticed downstream of the loader that could have named them.

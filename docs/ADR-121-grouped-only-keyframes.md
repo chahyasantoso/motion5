@@ -101,3 +101,17 @@ silently change a rig when plugins or claims change.
 [ADR-050](./ADR-050-bare-authored-leaf.md) defined bare leaves inside `values`.
 [ADR-063](./ADR-063-whole-group-and-goal-authoring.md) owns whole-group edits.
 [ADR-097](./ADR-097-a-rule-id-is-a-closed-union.md) owns the closed rule-id inventory.
+[ADR-053](./ADR-053-solver-chain-load-contract.md) records the solver-chain load contract,
+amended for grouped authoring.
+[ADR-055](./ADR-055-per-member-solved-rotation-weight.md) records per-member solved rotation
+weight, amended for grouped authoring.
+[ADR-062](./ADR-062-candidate-key-ownership.md) records candidate key ownership, amended for
+grouped authoring.
+[ADR-108](./ADR-108-constrained-2d-solving.md) records constrained solver spellings, amended
+for grouped authoring.
+[ADR-109](./ADR-109-opt-in-solve-inspection.md) records inspection spellings, amended for grouped
+authoring.
+[ADR-110](./ADR-110-goal-influence-and-conflict-policy.md) records goal influence spellings,
+amended for grouped authoring.
+[ADR-117](./ADR-117-3d-pivot-offsets.md) records 3D pivot spellings, amended for grouped
+authoring.
