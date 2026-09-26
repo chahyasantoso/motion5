@@ -83,10 +83,10 @@ current branch.
 
 ## Archive layout
 
-A v1 zip has exactly one top-level directory. Its name is the manifest's `name`, and every
+A v1 or v2 zip has exactly one top-level directory. Its name is the manifest's `name`, and every
 archive path is relative to that directory. The root contains `handover.json`, one or more patch
-files below `patches/`, exactly one notes file, and any declared checkpoint, bundle, or opaque
-components.
+files below `patches/`, exactly one notes file, and any declared checkpoint, bundle, opaque, or
+(v2 only) review component. Version 2 also addresses where the applied notes are published.
 
 ```text
 motion5-487-handover/
@@ -118,7 +118,7 @@ than ignored.
 
 ### Components
 
-The closed component union is `notes`, `checkpoint`, `bundle`, and `opaque`.
+The v1 component union is `notes`, `checkpoint`, `bundle`, and `opaque`; v2 adds `review`.
 
 - `notes` is required exactly once and must name one Markdown file ending in `.md`.
 - `checkpoint` is optional and may occur at most once. Its path names a folder whose final segment
@@ -130,6 +130,9 @@ The closed component union is `notes`, `checkpoint`, `bundle`, and `opaque`.
   extraction, never executed, and never copied into the checkout; they survive a successful apply
   only in the zip, so keep your download or pass `--keep` to read them. Tools, corpus files,
   probes, and evidence belong here.
+- `review` is optional in v2 and may occur at most once. Its path names one `.json` file carrying
+  the independent review result described in the REVIEW component section below. It is not allowed
+  in v1.
 
 Component paths may not overlap one another. A checkpoint component must contain its
 `manifest.json` and exactly the files that its own manifest declares. Its stored patch digests
@@ -214,6 +217,189 @@ The SHA values in this example are syntactically valid examples, not claims abou
 archive. A producer must calculate the patch digests and blob ids from the actual bytes and
 commits.
 
+## Manifest v2
+
+Version 2 keeps every v1 patch and component rule and adds the publication address. Its top-level
+keys are exactly `format`, `version`, `name`, `issue`, `base`, `patches`, `components`, `title`,
+and `target`. `format` remains `motion5-handover`, `version` is `2`, `name` is the one-root folder,
+`issue` is a positive integer, and `base` is a full 40-character lowercase commit SHA. A v2
+manifest is addressed and is eligible for publication after it applies.
+
+`title` is one trimmed, non-empty line of at most 256 characters with no carriage return or line
+feed. It is the title used when a branch destination has to open a pull request. `target` has
+exactly `repository`, `branch`, `into`, and `destination`: `repository` is a GitHub
+`owner/name`; `branch` is the branch carrying the applied tip; `into` is the branch the handover
+branch is intended to merge into; and the two branch names must differ.
+
+`destination` is a closed union. `{ "kind": "pull-request", "number": <positive integer> }`
+selects one explicit pull request; `{ "kind": "branch" }` selects the pull request for the target
+branch, creating one if none exists; and `{ "kind": "issue" }` selects the manifest's `issue` in
+the target repository. An explicit pull request is still checked against the target repository and
+branch before anything is posted.
+
+This is a valid v2 manifest shape (the patch values are syntactically valid examples, not claims
+about a real archive):
+
+```json
+{
+  "format": "motion5-handover",
+  "version": 2,
+  "name": "motion5-507-handover",
+  "issue": 507,
+  "base": "7e6f4edc00000000000000000000000000000000",
+  "title": "Publish handover notes",
+  "target": {
+    "repository": "chahyasantoso/motion5",
+    "branch": "handover-507",
+    "into": "main",
+    "destination": {
+      "kind": "branch"
+    }
+  },
+  "patches": [
+    {
+      "seq": 1,
+      "file": "patches/0001-publish-notes.patch",
+      "sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+      "pre": {
+        "packages/core/src/example.ts": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "post": {
+        "packages/core/src/example.ts": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      }
+    }
+  ],
+  "components": [
+    {
+      "kind": "notes",
+      "path": "NOTES.md"
+    },
+    {
+      "kind": "review",
+      "path": "REVIEW.json"
+    }
+  ]
+}
+```
+
+A v1 manifest is deliberately not upgraded during application. Its `handoverAddress` is
+`unaddressed`, so it applies as before and is reported as not published; it never invents a
+repository, branch, title, or destination.
+
+### REVIEW.json
+
+The optional v2 review component is a JSON object with exactly `format`, `version`, `status`,
+`reviewer`, `summary`, `findings`, and `evidence`. `format` is `motion5-review` and `version` is
+`1`. `status` is one of `passed`, `failed`, or `pending`; `reviewer` and `summary` are non-empty
+text; `findings` is an array; and `evidence` is either a string or `null`. A string is a link or
+identifier for the full evidence when available. `null` is valid and means that evidence was not
+provided, rather than making the handover invalid.
+
+Each finding has exactly `severity`, `state`, `title`, and `detail`. `severity` is `blocking` or
+`advisory`; `state` is `open`, `fixed`, or `deferred`; `title` is non-empty text; and `detail` is
+a string, including an empty string when no detail is needed. A review with status `passed` is
+refused as `invalid-review` while any blocking finding is `open` or `deferred`. Advisory findings
+do not block a pass, and `failed` and `pending` do not acquire an additional blocking-finding
+constraint. The review is carried verbatim to publication: a publisher never upgrades `pending` or
+`failed` to `passed`, rewrites its findings, or infers evidence.
+
+```json
+{
+  "format": "motion5-review",
+  "version": 1,
+  "status": "passed",
+  "reviewer": "independent-reviewer",
+  "summary": "The applied change is ready for publication.",
+  "findings": [
+    {
+      "severity": "advisory",
+      "state": "fixed",
+      "title": "Example observation",
+      "detail": "The observation was addressed before handover."
+    }
+  ],
+  "evidence": null
+}
+```
+
+## Publication after application
+
+Publication is part of the v2 handover contract, but it is downstream of applying the patch series. `npm run patches` applies the archive first; a publication refusal, deferral, or failure never rolls back an already applied series. `--no-publish` opts out of publication and skips the branch push; normal inbox cleanup still applies unless `--keep` is also supplied. A dry run performs no publication and never pushes. Version 1 is the compatibility exception: it applies, reports `unaddressed`, and is never published.
+
+### Identity, markers, and retry
+
+The archive identity is `<manifest.name>@<sha256-prefix>`. The digest covers the exact bytes of
+`handover.json` followed by each `notes` and `review` component path and bytes in component order,
+with path framing. Zip metadata is excluded, so repacking identical manifest, notes, and review
+bytes keeps the identity. Checkpoint, bundle, opaque-component, compression, timestamp, and other
+archive metadata bytes do not change it.
+
+Every published part carries an identity marker: the pull-request body when this run opens the
+pull request, the notes comment, and the review comment. Before posting, the publisher reads the
+pull-request body and all issue comments and skips parts whose exact marker is already present. This
+makes retries and a repeated apply idempotent for the same identity; changed notes or review bytes
+produce a new identity rather than silently suppressing a correction. A branch-created pull request
+already contains both the notes marker and notes body, so the publisher does not add a duplicate
+notes comment.
+
+If publication does not settle, its complete payload is kept under the Git directory path
+`motion5-handover/pending` resolved by `git rev-parse --git-path`. The payload contains the
+identity, address, notes, review, applied tip, and applied commits, and is outside the working tree.
+`npm run patches:publish` retries pending payloads in name order; a malformed pending payload is a
+failed `read-pending` result and remains for investigation. A failed or deferred publication keeps
+the payload so the human can correct the cause and retry.
+
+### Branch publication and destination resolution
+
+Before any GitHub write, the publisher resolves a Git remote whose configured GitHub URL names
+`target.repository`, verifies `gh` is installed and authenticated through the human's own `gh`
+login, and proves that the target branch on that remote can show the exact applied commits. The
+publisher never reads a token; GitHub is reached only through the human's `gh` login.
+
+The publisher reads `refs/heads/<target.branch>` with `git ls-remote`. If the remote tip is not
+known locally, it first fetches it with `git fetch --no-tags <remote> refs/heads/<branch>`. It then
+classifies the branch in this closed union:
+
+- `up-to-date`: the remote tip equals the applied tip or already contains it, so nothing is pushed.
+- `absent`: the branch is not published yet, so the exact applied tip is pushed with
+  `git push <remote> <tip>:refs/heads/<branch>`.
+- `behind`: the remote tip is an ancestor of the applied tip, so that same refspec fast-forwards it.
+- `diverged`: the remote has commits the applied tip lacks, so the publisher never force-pushes and
+  defers with `branch-diverged { remote, branch, tip, remoteTip }`.
+
+A rejected push, such as a race or missing Git credentials, is a failed publication at step `push`; the payload remains for retry. The push always names the exact applied tip SHA, never `HEAD`, and is fast-forward-only. It happens before any GitHub comment, issue, or pull-request write, so every posted note cites commits GitHub can show. A successful result includes `branch: { kind: "up-to-date" }`, `{ kind: "created" }`, or `{ kind: "fast-forwarded", from: "<sha>" }`, where `from` is the remote tip that was advanced.
+
+For `pull-request`, `gh pr view` must find the numbered pull request in `target.repository` and
+verify that its head is exactly `target.repository:target.branch`; a pull request elsewhere is not
+touched. For `branch`, pull-request discovery filters out same-named branches from forks and prefers
+an open pull request into `target.into`, then another open pull request for that branch, then an
+existing matching pull request. If no pull request exists, the publisher opens one in the target
+repository with `title`, `target.branch`, and `target.into`; its body carries the notes and the
+review line and its markers prevent a separate notes comment. For `issue`, the publisher verifies
+the manifest's `issue` in `target.repository` and posts there.
+
+### Posted content and bounds
+
+A notes body identifies the applied commits and tip, includes the line `Independent review: passed`,
+`failed`, `pending, not a pass`, or `not provided`, then carries the notes text. A review body, when
+`REVIEW.json` exists, carries the review status, reviewer, summary, every finding, and evidence
+verbatim; `evidence: null` renders as `Evidence: not provided`. It is never upgraded or otherwise
+made stronger than the source review.
+
+Each body is bounded to 60,000 characters. If notes or review text exceeds that bound, the body is
+cut and points to `NOTES.md` and `REVIEW.json` in the handover zip for the complete text. The bound
+is intentionally below GitHub's comment and pull-request limit.
+
+### Deferrals and failures
+
+A deferral means the payload is retained and the human has a specific repair before `npm run patches:publish`: no matching GitHub remote (`remote-missing`), missing `gh` (`gh-missing`), unauthenticated `gh` (`gh-unauthenticated`), a divergent remote branch (`branch-diverged`), or an explicit pull request that belongs to another head (`pull-request-elsewhere`). For `remote-missing`, add a remote such as `git remote add origin https://github.com/<owner>/<name>.git`; for `gh-missing`, install `gh` and run `gh auth login`; and for `gh-unauthenticated`, run `gh auth login`.
+
+For `branch-diverged`, merge the remote branch without rewriting the applied commits, for example `git pull --no-rebase <remote> <branch>`, then push the merge and run `npm run patches:publish`. A merge keeps the applied commits so the notes cite real commits; a rebase would orphan those commits and is not the recovery instruction. For an explicit pull request that points elsewhere, address a new handover to the right pull request or post the zip's notes by hand.
+
+Unexpected GitHub, destination, comment, or push errors are `failed` publications with a step and
+reason; their payload remains for retry. A failed publication does not mean the already applied
+patches were rolled back.
+
 ## How the base is proved
 
 The base is proved by commit where the checkout can and by content where it cannot, and the
@@ -248,16 +434,19 @@ An AI implementor or other producer creates a handover with:
 
 ```text
 node scripts/handover.mjs pack --issue <n> --from <rev> [--to <rev>] [--base <sha>]
-  --notes <file> --out <name>.zip [--checkpoint <dir>] [--bundle] [--opaque <path>]...
+  --notes <file> --out <name>.zip [--review <file>] [--title <text>]
+  [--repository <owner/name>] [--branch <name>] [--into <name>] [--pr <n> | --to-issue]
+  [--checkpoint <cpNNN-dir>] [--bundle] [--opaque <path>]...
 ```
 
 `--from` must be an ancestor of `--to`, no commit in the range may be a merge, empty, or change a
 submodule gitlink, and `--out` must be outside the checkout or inside `.handover/`. The archive is
 built and inspected in a stage and copied to `--out` only when it passes. `--from` and `--to` select
 the range, with `--to` defaulting to `HEAD`. The producer writes one format-patch file per commit,
-computes the manifest from the actual patch bytes and images, copies the notes and optional
-components, zips the one-root layout, and inspects its own output with the same `inspectArchive`
-used by the consumer.
+computes the v2 manifest from the actual patch bytes and images, resolves the publication target
+from these options or the producer checkout, copies the notes and optional review/components, zips
+the one-root layout, and inspects its own output with the same `inspectArchive` used by the
+consumer. `--review` supplies `REVIEW.json`; without it, the v2 handover carries no review.
 
 Use `--base` when a sandbox has the same base tree as the intended repository base but a
 different local commit id. The patch images are content-based, so this can make the handover
@@ -310,6 +499,7 @@ refusal kinds are:
 - `bundle-invalid`
 - `bundle-prerequisite`
 - `head-moved`
+- `invalid-review`
 
 The other closed unions are the inbox discoveries `empty`, `one`, `ambiguous`, and `foreign`;
 zip entry kinds `file`, `directory`, `symlink`, and `other`; and component kinds listed above.

@@ -1,5 +1,5 @@
-// The handover producer: a linear commit range becomes a v1 archive, and the archive is inspected
-// by the same code that applies it before it is reported as built. Contract: ADR-112 and
+// The handover producer: a linear commit range becomes a v2 archive, and the archive is inspected
+// by the same code that applies it before it is reported as built. Contract: ADR-112, ADR-119 and
 // docs/HANDOVER-FORMAT.md. Tests: packages/core/test/unit/scripts/handover-apply.test.ts.
 import { createHash } from "node:crypto";
 import {

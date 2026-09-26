@@ -47,7 +47,7 @@ Before introducing a flag, alias, facade, second owner, compatibility path, new 
 - [AUTOMATION-TRANSPORT-CHOICE.md](./AUTOMATION-TRANSPORT-CHOICE.md): which of the two automation transports a given piece of work belongs in, what each one costs to author, and where each hits a wall. Read it before reaching for either protocol below. [AGENTS.md](../AGENTS.md) in the repository root is that reader's entry point.
 - [AI-EDIT-WORKFLOW.md](./AI-EDIT-WORKFLOW.md): the request contract for an implementor with no local checkout, the anchor rule, the bounded file list, and the cost of a round trip.
 - [AI-CHECKPOINT-WORKFLOW.md](./AI-CHECKPOINT-WORKFLOW.md): the sibling contract for a stack of unified diffs that declare the bytes they produce, the manifest, the accepted diff grammar, and the commit topology a stack publishes.
-- [HANDOVER-FORMAT.md](./HANDOVER-FORMAT.md): the versioned handover zip a human applies from a Codespaces checkout with `npm run patches`, its `.handover/` inbox, its manifest, and why application is whole or not at all ([ADR-112](./ADR-112-a-handover-applies-whole-or-not-at-all.md)). An AI implementor builds one with `node scripts/handover.mjs pack`.
+- [HANDOVER-FORMAT.md](./HANDOVER-FORMAT.md): the versioned handover zip a human applies from a Codespaces checkout with `npm run patches`, its `.handover/` inbox, its v1/v2 manifest, publication, and why application is whole or not at all ([ADR-112](./ADR-112-a-handover-applies-whole-or-not-at-all.md), [ADR-119](./ADR-119-a-handover-publishes-its-notes-and-review.md)). An AI implementor builds one with `node scripts/handover.mjs pack`.
 
 ## Lineage
 
