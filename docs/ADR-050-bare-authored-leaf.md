@@ -4,7 +4,11 @@
 **Date:** 2026-08-23  
 **Closes:** issue [#192](https://github.com/chahyasantoso/motion5/issues/192)
 
-This record amends ADR-049 by replacing the shape of a leaf, not the shape of a group. ADR-049 is not edited: its two reserved sections, its exact group detection, and its refusal of the pre-ADR-049 form all survive unchanged. What changes is what may appear _inside_ `values`, and what may appear as a flat authored property.
+**Amended by [ADR-121](./ADR-121-grouped-only-keyframes.md), 2026-09-26.** Bare arrays and static
+values remain the two leaf forms, but only inside a plugin group's `values`; a top-level bare leaf
+is now refused as `keyframes-ungrouped-key`.
+
+This record amends ADR-049 by replacing the shape of a leaf, not the shape of a group. ADR-049 is not edited: its two reserved sections, its exact group detection, and its refusal of the pre-ADR-049 form all survive unchanged. What changes is what may appear _inside_ `values`, and what may appear as an authored leaf inside `values`.
 
 ## Context
 
@@ -26,7 +30,11 @@ There were two separable problems in that line. The wrapper is the syntactic one
 
 ```text
 keyframes: {
-  opacity: [ { p: 0, v: 0 }, { p: 1, v: 1 } ],
+  style: {
+    values: {
+      opacity: [ { p: 0, v: 0 }, { p: 1, v: 1 } ],
+    },
+  },
   fk: {
     values: {
       length: 62,
@@ -74,7 +82,7 @@ Appendix item 2 is correct as written. `isKeyframeGroup`'s clause is genuinely i
 - `property-stops-wrapper` is new: the retired form, refused by name at the property's own path. Distinct rule id rather than folded into a generic shape error, on the naming precedent `keyframes-missing-values-section` and `observation-role-unsupported` set.
 - `plugin-contribution-static-unsupported` is new: a static leaf on a prepare-stage contributor's key.
 - `stops-shape` **keeps its id**, and that is a decision rather than an oversight. The animated form still _is_ stops, so "this is not a legal authored property" remains exactly what the rule says. Renaming it would churn the `plugin-contribution-stops-shape` alias in `domain/plugins.ts` and every citation of it across the contract suite for no semantic gain. Its message and its cited path are corrected instead.
-- Every path a leaf diagnostic cites is now a path the author wrote. `stops-shape` used to append `.stops` to it, and a stop position reported at `keyframes.x.stops[0].p`; both named a member that no longer exists anywhere in a v5 document, so they are now `keyframes.x` and `keyframes.x[0].p`.
+- Every path a leaf diagnostic cites is now a path the author wrote. `stops-shape` used to append `.stops` to it, and a stop position reported at `keyframes.fk.values.x.stops[0].p`; both named a member that no longer exists anywhere in a v5 document, so inside a group they are now `keyframes.fk.values.x` and `keyframes.fk.values.x[0].p`.
 
 ### The prepare-stage contribution path
 
@@ -86,7 +94,7 @@ Not an empty stop list. That is a field accepted and then ignored, which rule 6 
 
 Not one function moves layers, and the layering ADR-049 established is unchanged. Leaf shape is `contract/authored-leaf`. Authored legality is `contract/validate-v5`. Section names, group detection, and the legacy predicate stay in `contract/keyframe-shape`. Compilation, and therefore the static bypass, is `domain/keyframe-compiler`. Which plugin owns a leaf stays in `domain/plugins`. Topology stays in `graph/ir.ts`, whose diff is **empty** again. **Refined by [ADR-105](./ADR-105-adapters-do-not-depend-on-domain.md), 2026-09-23.** Compilation, and with it the static bypass, now lives in `contract/keyframe-compiler.ts` beside the leaf-shape owner, and `domain/keyframe-compiler.ts` no longer exists. The reasoning above is unchanged; only the module moved.
 
-Two things need no change, stated so they are not mistaken for omissions. `readPluginValues` and `flattenAuthoredKeyframes` are unaffected, because flattening is key routing and never inspects a leaf's contents: a leaf under a section reaches the compiler through the same path a flat one does and inherits both forms for free, which is scope item 8 answered. And `usesThreeD` keeps firing `perspective-usage`, because `isThreeDProperty` tests for a non-null value and both new forms are non-null.
+Two things need no change, stated so they are not mistaken for omissions. `readPluginValues` and `flattenAuthoredKeyframes` are unaffected, because flattening is key routing and never inspects a leaf's contents: a leaf under a section reaches the compiler through the same path the prior flat form used and retains both leaf forms, which is scope item 8 answered. And `usesThreeD` keeps firing `perspective-usage`, because `isThreeDProperty` tests for a non-null value and both new forms are non-null.
 
 ## Alternatives rejected
 

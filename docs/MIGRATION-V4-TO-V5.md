@@ -53,7 +53,7 @@ A v4 document that used `role: "input"` to feed a value into a track's own compo
 
 ```diff
 - observes: [{ source: "walk/pelvis", role: "input", projection: { map: { rotation: "parentRotation" } } }]
-+ keyframes: { fk: { length: { stops: [ ... ] }, requires: { base: "walk/pelvis" } } }
++ keyframes: { fk: { values: { length: [ ... ] }, requires: { base: "walk/pelvis" } } }
 ```
 
 The upstream values arrive as `inputs.base`, under their own names, scoped to the plugin that asked for them. Nothing is renamed and nothing can overwrite an authored value. See ADR-044 and ADR-047.
@@ -106,7 +106,7 @@ export function migrateV4ToV5(project) {
 
 This helper is safe only when the v4 producer’s top-level `tracks` is known to mean free tracks. Before applying it, validate that the source is an object, `tracks` is an array or absent, ids are unique, no id contains `/`, no motion is named `~`, and any free references are qualified. If both `tracks` and `freeTracks` exist, fail rather than choose one.
 
-The helper does not touch triggers, and it cannot: dropping `autoplay: false` or inventing a `duration` would be a semantic decision made behind the author's back. Trigger migration is a review step, not a transformation. It does not touch observation edges either, for the same reason: deciding which plugin should consume a v4 input edge is a design decision about the rig, not a rename.
+The helper does not touch triggers, and it cannot: dropping `autoplay: false` or inventing a `duration` would be a semantic decision made behind the author's back. Trigger migration is a review step, not a transformation. It does not touch observation edges or keyframe ownership either, for the same reason: deciding which plugin should consume a v4 input edge or which plugin group owns a flat v4 key is a design decision about the rig, not a rename. The migrator does not guess groups. After migration, an author must put every authored key under the registered plugin group that owns it, inside that group's `values` section, before loading the v5 project.
 
 ## Semantic review checklist
 

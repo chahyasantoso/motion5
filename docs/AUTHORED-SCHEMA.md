@@ -29,10 +29,14 @@ const project = {
           id: "title",
           duration: 1,
           keyframes: {
-            opacity: [
-              { p: 0, v: 0 },
-              { p: 1, v: 1 },
-            ],
+            style: {
+              values: {
+                opacity: [
+                  { p: 0, v: 0 },
+                  { p: 1, v: 1 },
+                ],
+              },
+            },
           },
         },
       ],
@@ -43,10 +47,14 @@ const project = {
       id: "cursor",
       duration: 1,
       keyframes: {
-        x: [
-          { p: 0, v: 0 },
-          { p: 1, v: 100 },
-        ],
+        transform: {
+          values: {
+            x: [
+              { p: 0, v: 0 },
+              { p: 1, v: 100 },
+            ],
+          },
+        },
       },
     },
   ],
@@ -83,15 +91,19 @@ A track has a unique local `id`, optional `duration`, optional keyframes, and op
 
 ## Keyframes
 
-A keyframe entry is either a property or a plugin-named group.
+Every top-level keyframe entry is a plugin-named group; properties are authored only inside its `values` section.
 
-### A property is the stops, or a static value
+### A group contains the stops, or a static value
 
 There are exactly two ways to author a leaf, and no wrapper around either:
 
 ```text
-opacity: [ { p: 0, v: 0 }, { p: 1, v: 1 } ]   // animated: the array is the value
-length: 62                                    // static: never changes, never interpolated
+style: {
+  values: {
+    opacity: [ { p: 0, v: 0 }, { p: 1, v: 1 } ], // animated: the array is the value
+    length: 62,                                   // static: never changes, never interpolated
+  },
+}
 ```
 
 A stop is `{ p, v }` with an optional `ease`, where `p` is a finite position between 0 and 1. Positions must be monotonic and unique. A sequence that does not define `p=0` or `p=1` loads with a warning.
@@ -100,7 +112,7 @@ A static value is a finite number, a string, or a boolean. It is not sugar for t
 
 The static domain stops at scalars deliberately. `null` and `undefined` are refused because omitting the key is already how you author nothing, a non-finite number is refused for the same reason a stop position must be finite, and an object is refused because that is what makes the retired wrapper diagnosable at all.
 
-The `{ stops: [...] }` wrapper is **retired**, and refused by name as `property-stops-wrapper`. It is not an accepted alias and it is never normalized: two authoring shapes would be two validation paths and two documentation paths. Drop the wrapper and keep the array. See ADR-050.
+The `{ stops: [...] }` wrapper is **retired**, and refused by name as `property-stops-wrapper`. It is not an accepted alias and it is never normalized: two authoring shapes would be two validation paths and two documentation paths. Drop the wrapper, keep the array inside the owning plugin group, and do not leave the leaf at the keyframes top level. See ADR-050 and ADR-121.
 
 ### A group names the plugin that owns its leaves
 
@@ -108,7 +120,11 @@ A group has exactly two members, both reserved by name: `values` holds the prope
 
 ```text
 keyframes: {
-  opacity: [ ... ],
+  style: {
+    values: {
+      opacity: [ ... ],
+    },
+  },
   transform: {
     values: {
       x: [ ... ],
@@ -126,7 +142,7 @@ keyframes: {
 }
 ```
 
-A leaf inside `values` is held to exactly the rules a flat property is held to, both forms included. A group name addresses a registered plugin and every leaf of its `values` section must be a key that plugin claims. The section is flattened to unprefixed leaves before interpolation and composition, and it is the only compiled value domain. Nesting is one level deep inside `values`. The `ik` group may author the static boolean `inspect` key to opt into the solver's `inspection` output (ADR-109); a flat `inspect` on the node that bound `root` is equivalent, a malformed value is refused as `ik-inspect-malformed`, and a spelling under another group of a solver node as `ik-solver-key-misgrouped`.
+A leaf inside `values` is held to exactly the authored leaf rules, both forms included. There is no flat authored property form. A group name addresses a registered plugin and every leaf of its `values` section must be a key that plugin claims. The section is flattened to unprefixed leaves before interpolation and composition, and it is the only compiled value domain. Nesting is one level deep inside `values`. The `ik` group may author the static boolean `inspect` key to opt into the solver's `inspection` output (ADR-109); a malformed value is refused as `ik-inspect-malformed`, and a spelling under another group of a solver node as `ik-solver-key-misgrouped`.
 
 Because both section names are reserved, a group is recognised by the sections it names rather than by the shape of its leaves. That is what lets the registry-free contract layer tell a section from a property, report a typo'd section as `keyframes-unknown-section`, and refuse the pre-v5-final leaf form as `keyframes-missing-values-section` instead of as a property of an unknown shape. There is one authored group shape and no compatibility form. See ADR-049.
 
@@ -134,7 +150,7 @@ Group detection is unaffected by the leaf forms. A bare array and a bare scalar 
 
 Two shapes are deliberately legal and worth knowing. A group may author `requires` with no `values`, which is how a plugin joins composition to receive an upstream value without animating anything itself. And a leaf named `values` inside the section is an ordinary property, because the reservation is on section position rather than on the string everywhere.
 
-More than one plugin may claim the same key. `transformPlugin` claims `x`, `y`, and `rotation`, while `fkPlugin` claims `x`, `y`, `length`, `rotation`, `weight`, `minRotation`, `maxRotation`, and `influence`. With both registered, flat `x`, `y` and `rotation` are each `plugin-ambiguous-key`; author a bone under `fk` and a root under `transform`. `length`, `weight`, `minRotation`, `maxRotation` and `influence` have one claimant each in this package, so their flat spelling stays unambiguous, and an application plugin is free to claim any of them as well.
+More than one plugin may claim the same key. `transformPlugin` claims `x`, `y`, and `rotation`, while `fkPlugin` claims `x`, `y`, `length`, `rotation`, `weight`, `minRotation`, `maxRotation`, and `influence`. Ownership is never inferred from an ungrouped spelling: a top-level `x`, `y`, or `rotation` is refused as `keyframes-ungrouped-key`, and the author names the intended owner by placing the leaf under `transform.values` or `fk.values`. The same explicit group spelling applies to keys with one claimant, so the authoring contract has one form.
 
 ### Plugin-owned requirements
 
@@ -215,8 +231,7 @@ Inverse Kinematics computes joint rotations so a bone chain reaches toward one o
   value on a member exactly as it is on any other bone. See ADR-054.
 - **`fk.values.influence`**: a static finite number greater than `0` that weights this member's
   addressed goal when branches compromise over a shared member. It defaults to `1`; it is never
-  animated. The flat spelling is in scope on a node that binds a solver somewhere, and a grouped
-  spelling is in scope only under the group that bound that solver. `ik-influence-malformed` refuses
+  animated. The grouped spelling is in scope only under the group that bound the solver. `ik-influence-malformed` refuses
   a non-static, non-finite, zero, negative, or otherwise malformed value;
   `ik-influence-without-goal` refuses a spelling under a group that did not bind `solver` or a
   member that no resolved goal addresses. A node with no solver is not narrowed by this rule because
@@ -292,8 +307,7 @@ Two leaves may reach for the same node. Each goal is its own binding carrying it
 Both spellings are supported and neither is deprecated. `target` is exactly the degenerate case of the dict, so a solver picks one and `ik-goal-conflict` refuses both together. Because `target` names no member, it addresses a leaf only while there is one leaf to address, and a solver that binds it over a branching chain is `ik-target-not-single-leaf`. A linear chain has one leaf however long it is, so the bare slot keeps working past two bones.
 
 A solve always publishes `rotations`, a record of one local rotation per member id. By default it
-publishes nothing else. With static `ik.values.inspect: true` (or the equivalent flat spelling on
-the node that bound `root`), it also publishes `inspection` with the fixed shape `{ kind, residual,
+publishes nothing else. With static `ik.values.inspect: true`, it also publishes `inspection` with the fixed shape `{ kind, residual,
 iterations, atBound, residuals }`. `residuals` is a frozen record keyed by addressed leaf member id,
 with each leaf's world-unit goal miss; `quality.residual` remains the worst one. The nine quality
 kinds are `reached`, `too-far`, `too-near`, `coincident`, `converged`, `stalled`, `iteration-cap`,
@@ -303,15 +317,15 @@ ADR-110.
 
 ### Keyframe namespace rules
 
-- A keyframe name may not contain `:` in a flat key, group name, or leaf name. The colon marks private internal keys and is rejected with `keyframes-reserved-separator`.
-- A leaf is an array of stops or a static scalar. Anything else is `stops-shape`, and the retired object wrapper is `property-stops-wrapper`.
+- A keyframe name may not contain `:` in a top-level group name or leaf name. The colon marks private internal keys and is rejected with `keyframes-reserved-separator`.
+- Every top-level entry must be a plugin-named group, or it is `keyframes-ungrouped-key`. Inside `values`, a leaf is an array of stops or a static scalar. Anything else is `stops-shape`, and the retired object wrapper is `property-stops-wrapper`.
 - A group holds only `values` and `requires`. Anything else is `keyframes-unknown-section`, and a group authoring its leaves at the top level is `keyframes-missing-values-section`.
 - A present `values` must be a non-empty object: `keyframes-values-shape` and `keyframes-values-empty`. Omitting it is how you author no properties.
 - Requirement slots may not be empty or contain `:`. Malformed sections use `keyframes-requires-shape`, `keyframes-requires-empty`, `keyframes-requires-slot`, and `keyframes-requires-source`.
 - A dict-valued slot holds a non-empty record of key to source id. `targets` specifically must be a record at all, which is `keyframes-targets-shape`, because only the slot's name can say so. The dict itself uses `keyframes-requires-dict-empty`, `keyframes-requires-dict-key`, and `keyframes-requires-dict-source`. A key may not be empty or contain `:`, `[`, or `]`: the colon is reserved in every authored name, and the brackets go with it because they were refused before and no authored spelling gains legality here.
 - Whether a slot was allowed to carry a dict at all is the plugin's declaration, reported as `plugin-requirement-dict-unsupported` for a dict at a slot that takes one source and `plugin-requirement-dict-required` for one source at a slot that takes a dict.
 - A top-level `values` or `requires` is rejected with `keyframes-reserved-section` because it has no owning plugin.
-- An empty object is an accepted no-op property rather than a group, because it names no section.
+- An empty object at the top level is `keyframes-ungrouped-key`; an empty object inside `values` is an accepted no-op leaf.
 - One compiled key may be authored once. Collisions use `keyframes-duplicate-key`.
 - 3D content is detected by leaf name, including inside a `values` section and including a static leaf, and missing perspective is a warning.
 
@@ -361,7 +375,7 @@ interface Diagnostic {
 
 Errors reject a candidate project before it replaces the active project. Warnings load and remain readable.
 
-A diagnostic about a grouped leaf cites the authored path, including the section: `keyframes.fk.values.length`. A diagnostic about a stop cites its index on the property: `keyframes.x[0].p`. A diagnostic about a dict entry cites the key you typed: `keyframes.ik.requires.targets.forearm`. There is no derived slot spelling for it to cite instead.
+A diagnostic about a grouped leaf cites the authored path, including the section: `keyframes.fk.values.length`. A diagnostic about a stop cites its index on the property: `keyframes.transform.values.x[0].p`. A diagnostic about a dict entry cites the key you typed: `keyframes.ik.requires.targets.forearm`. There is no derived slot spelling for it to cite instead.
 
 Load-time solver diagnostics are complete in [Errors and diagnostics](./guide/errors-and-diagnostics.md#inverse-kinematics-and-solver-rules). That guide owns the full `ik-*` rule inventory and meanings; this schema document owns authored shape and field semantics rather than maintaining a second, stale list.
 
@@ -369,8 +383,8 @@ The 2D `ik` solver has no diagnostic about its derived member count. `ik-solver-
 
 There is no diagnostic about a solved member's pivot offset either, for the same reason. `ik-solved-pivot-unsupported` refused a non-zero authored `x` or `y` on a solved member while neither solve accounted for one, and it is deleted rather than widened now that both do. See ADR-054.
 
-And there is no diagnostic about a `weight` on a bone that bound no solver anywhere. Such a weight is inert, exactly as an unbound one inside a chain would be, but `weight` may have more than one claimant and the load-time rule holds no plugin registry, so on a node with no solve in reach it cannot tell a blend weight from another plugin's own live input and does not guess. It is the same boundary that keeps a member's flat `rotation` out of `ik-solved-rotation-dead`. See ADR-043 and ADR-055.
+And there is no diagnostic about a `weight` on a bone that bound no solver anywhere. Such a weight is inert, exactly as an unbound one inside a chain would be, but `weight` may have more than one claimant and the load-time rule holds no plugin registry, so on a node with no solve in reach it cannot tell a blend weight from another plugin's own live input and does not guess. It is the same boundary that keeps a member's `rotation` in an unrelated plugin group out of `ik-solved-rotation-dead`. See ADR-043 and ADR-055.
 
 ## Rejected input
 
-Wrong schema version, malformed or duplicate ids, reserved namespace characters, invalid triggers, invalid perspective, the retired stops wrapper, a leaf that is neither an array nor a static scalar, malformed group sections, malformed bindings and edges, a malformed goal dict, a dict at a slot that takes one source or one source at a slot that takes a dict, unknown sources, duplicate edges, self-reference, cycles, invalid solver topologies, solvers with no goal, unaddressable or unaddressed solver goals, dead rotations and unreachable blend weights on solved bones, removed fields, and legacy `use` entries are errors. The removed fields are an observation `target`, `role`, and `projection`, reported as `observation-target-unsupported`, `observation-role-unsupported`, and `observation-projection-unsupported`, a project `templates`, reported as `project-templates-unsupported`, and a track `use`. A plugin group that names an unknown section, or that authors its properties outside `values`, is also an error. Flat keys with multiple plugin claimants are errors too. Missing perspective for detected 3D content and unused free tracks are warnings.
+Wrong schema version, malformed or duplicate ids, reserved namespace characters, invalid triggers, invalid perspective, the retired stops wrapper, a leaf that is neither an array nor a static scalar, malformed group sections, malformed bindings and edges, a malformed goal dict, a dict at a slot that takes one source or one source at a slot that takes a dict, unknown sources, duplicate edges, self-reference, cycles, invalid solver topologies, solvers with no goal, unaddressable or unaddressed solver goals, dead rotations and unreachable blend weights on solved bones, removed fields, and legacy `use` entries are errors. The removed fields are an observation `target`, `role`, and `projection`, reported as `observation-target-unsupported`, `observation-role-unsupported`, and `observation-projection-unsupported`, a project `templates`, reported as `project-templates-unsupported`, and a track `use`. A plugin group that names an unknown section, or that authors its properties outside `values`, is also an error. Ungrouped top-level entries are rejected as `keyframes-ungrouped-key`, before any plugin is consulted. Missing perspective for detected 3D content and unused free tracks are warnings.

@@ -8,7 +8,9 @@ A loaded project is not frozen. Motions and tracks can be added and removed whil
 const { id } = handle.addMotion({
   id: "outro",
   trigger: { type: "time", duration: 400 },
-  tracks: [{ id: "fade", duration: 1, keyframes: { x: [{ p: 0, v: 0 }] } }],
+  tracks: [
+    { id: "fade", duration: 1, keyframes: { transform: { values: { x: [{ p: 0, v: 0 }] } } } },
+  ],
 });
 
 handle.destroyMotion(id);
@@ -44,7 +46,7 @@ track.remove();
 
 `setGoal` and `removeGoal` edit one entry of a solver's goals slot, addressed by the member id it is authored under, so two entries of one slot stay two edges. `setRequire` and `removeRequire` refuse that slot by name, as `keyframe-goal-slot-reserved`, and point at these two: without a member key they could only write the scalar spelling the loader refuses, and with one they would write the right shape through the wrong verb.
 
-All four are no-ops when nothing changes, and each refuses before writing anything: `keyframe-entry-shape` for a name this node authors as an ordinary property, because writing a group over one would drop every stop you wrote, and `keyframe-group-shape` for a group naming neither reserved section, because that object is the ordinary property it looks like and removing the entry is how you author nothing. Everything else about the candidate is answered where it already is, by the plugin registry and by graph validation, and a refused candidate is rolled back with the handle unchanged. See ADR-062 and ADR-063.
+All four are no-ops when nothing changes, and each refuses before writing anything: `keyframe-group-shape` for a group naming neither reserved section, because a group must name `values` or `requires`, and `keyframe-group-unbound` when an edit addresses a plugin group the node does not author. Crossing the authored definition boundary belongs to `replace()`, rather than silently changing a group into another shape. Everything else about the candidate is answered where it already is, by the plugin registry and by graph validation, and a refused candidate is rolled back with the handle unchanged. See ADR-062 and ADR-063.
 
 An observation carries `source` and nothing else, and the edge it declares is always an output edge: the source's contribution merges over this track's composed patch. `addObserve` throws for each of the three removed fields, `observation-target-unsupported`, `observation-role-unsupported`, and `observation-projection-unsupported`. There is no way to declare an input edge by hand: bind the dependency under the plugin group's `requires` section, which is the only way a value enters composition. See ADR-046 and ADR-047.
 

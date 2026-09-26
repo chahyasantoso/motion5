@@ -7,6 +7,11 @@
 - Supersedes nothing. Closes the two questions [ADR-062](./ADR-062-candidate-key-ownership.md)
   deferred to "where the two goal verbs are", and corrects one shape C1 could leave behind.
 
+**Amended by [ADR-121](./ADR-121-grouped-only-keyframes.md), 2026-09-26.** Runtime group edits no
+longer need an entry-shape refusal because authored top-level properties are refused by the schema
+as `keyframes-ungrouped-key`; `replace()` remains the whole-definition operation for crossing an
+authored shape.
+
 ## The question
 
 C1 shipped one binding edit on a plugin group a node already authors, and refused everything else by
@@ -110,18 +115,12 @@ behavioural change, it wants its own equivalence evidence on both sides of itsel
 that cut B in two applies unchanged. Shipping it inside four new verbs would put one invariant and
 one refactor in one diff. It is C3.
 
-## Three new rule ids
+## Two new rule ids
 
 Each is the primitive's own, because no other layer can see the question it answers.
 
 - `keyframe-goal-slot-reserved`, on `setRequire` and `removeRequire` at the goals slot. It names
   `setGoal`, because a refusal that only says no leaves the caller guessing which verb it wanted.
-- `keyframe-entry-shape`, when the node authors that name as an ordinary property. The entry-level
-  twin of `keyframe-require-shape`, for the reason ADR-057 refused a dict/scalar mismatch in both
-  directions: a plugin name and a keyframe name share one namespace, both shapes are legal there, and
-  nothing below this layer can tell that writing a group over a property drops every stop the author
-  wrote, or that removing one deletes a property the caller never named. Crossing an entry's shape is
-  a `replace()`, where a whole definition is validated.
 - `keyframe-group-shape`, when the group handed over names no reserved section. Authoring nothing for
   a plugin is spelled by removing the entry, and `removeKeyframeGroup` is the verb for that.
 

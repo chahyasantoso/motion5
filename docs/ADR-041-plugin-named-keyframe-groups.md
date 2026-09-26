@@ -2,6 +2,10 @@
 
 **Status:** Accepted, 2026-08-19
 
+**Amended by [ADR-121](./ADR-121-grouped-only-keyframes.md), 2026-09-26.** Groups are no longer an
+additive spelling beside top-level properties. Every authored top-level entry is now a
+plugin-named group, and a property belongs under that group's `values` section.
+
 ## Context
 
 Authored keyframes were a flat record and plugins claimed flat keys. The collision that motivated
@@ -18,11 +22,11 @@ flattens after the prepare stage.
 
 ## Decision
 
-Option B. Groups are accepted **in addition** to the flat form and flattened before compilation.
+Option B. Groups are the authored form and are flattened before compilation.
 
-1. **Additive.** Grouped keyframes are rejected today at load: `validateKeyframes` emits
-   `stops-shape` for a property with no `stops` array, so no authored content can depend on the
-   group form and none can be broken by accepting it. The flat form stays legal forever.
+1. **Grouped-only.** A plugin-named group is the only authored top-level entry form. A property
+   belongs under its group's `values` section; the validator refuses an ungrouped top-level entry
+   before plugin resolution, so ownership is never inferred.
 2. **Flattening is a pure transform with one owner,** `flattenAuthoredKeyframes` in
    `domain/keyframe-groups.ts`, and the Engine calls it whether or not a `PluginRegistry` was
    injected. Leaving it inside the resolver alone looks like one owner and is not: an Engine
@@ -71,6 +75,5 @@ prepare-and-compile owner instead of two copies. `domain/track.ts` is unchanged,
 so: reading `plugins.authoredKeyframes` there would let `EMPTY_RESOLVED_PLUGINS` erase every
 keyframe on a Track constructed without plugins.
 
-A group leaf whose value is an empty object stays accepted, matching the flat form. The contract
-layer cannot tell a one-key group from a malformed property without a registry it must not have, so
-that ambiguity resolves at plugin resolution as `plugin-unknown-key`.
+A group leaf whose value is an empty object stays accepted as a no-op. An empty top-level entry is
+not a group and is refused as `keyframes-ungrouped-key`; the contract layer does not infer an owner.

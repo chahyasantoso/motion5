@@ -7,7 +7,7 @@ Current project state only. Replace stale entries rather than append history. Th
 
 ## Now
 
-- **[#500](https://github.com/chahyasantoso/motion5/issues/500) opt-in 3D inspection lands with this change:** `ik3d` claims the static `inspect` switch and publishes the 2D `inspection` record from its solve through the one 2D projection and opt-in reader, and an unopted rig publishes exactly what it did ([ADR-120](./ADR-120-3d-opt-in-inspection.md)).
+- **[#509](https://github.com/chahyasantoso/motion5/issues/509) grouped-only keyframes land with this change:** every authored top-level keyframe entry is a plugin-named group, ungrouped entries refuse as `keyframes-ungrouped-key`, and the v4-to-v5 migrator does not guess ownership ([ADR-121](./ADR-121-grouped-only-keyframes.md)).
 
 ## Next in line
 
