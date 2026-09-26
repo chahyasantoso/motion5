@@ -1,0 +1,16 @@
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	﻿2026-09-26T23:01:24.2458250Z ##[group]Run test "$SUITE_RESULT" = success
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-26T23:01:24.2459278Z ^[[36;1mtest "$SUITE_RESULT" = success^[[0m
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-26T23:01:24.2712949Z shell: /usr/bin/bash -e {0}
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-26T23:01:24.2713969Z env:
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-26T23:01:24.2714459Z   NODE_VERSION: 24.21.0
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-26T23:01:24.2715005Z   SUITE_RESULT: cancelled
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-26T23:01:24.2715541Z ##[endgroup]
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-26T23:01:24.2890487Z ##[error]Process completed with exit code 1.
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	﻿2026-09-26T23:01:24.8807699Z ##[group]Run test "$SUITE_RESULT" = success
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-26T23:01:24.8808857Z ^[[36;1mtest "$SUITE_RESULT" = success^[[0m
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-26T23:01:25.0379416Z shell: /usr/bin/bash -e {0}
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-26T23:01:25.0380504Z env:
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-26T23:01:25.0381187Z   NODE_VERSION: 24.21.0
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-26T23:01:25.0381982Z   SUITE_RESULT: cancelled
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-26T23:01:25.0382761Z ##[endgroup]
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-26T23:01:25.0524412Z ##[error]Process completed with exit code 1.
