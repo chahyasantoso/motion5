@@ -327,8 +327,9 @@ describe("opt-in IK solve inspection", () => {
       expect(() => freezeValue(inspection as unknown as ImmutableRecord)).not.toThrow();
     }
     const source = ["walker/fore"];
+    // Evidence alone, no pose: the projection reads `quality` and `residuals` and nothing else,
+    // which is what lets the 3D result reach it without a 3D copy (ADR-120).
     const limited = inspectSolve({
-      rotations: {},
       residuals: { "walker/fore": 3 },
       quality: { kind: "limited", iterations: 2, residual: 3, atBound: source },
     });

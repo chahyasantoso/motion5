@@ -146,6 +146,9 @@ describe("3D plugin ownership", () => {
       fk3d: { values: { length: 80 } },
     });
     expect(resolved.diagnostics).toEqual([]);
-    expect(ik3dPlugin.outputs).toEqual(["rotations3d"]);
+    // The pose channel is dimensional and distinct; `inspection` is shared with 2D on purpose,
+    // because it is one record read through one owner (ADR-120).
+    expect(ik3dPlugin.outputs).toEqual(["rotations3d", "inspection"]);
+    expect(ik3dPlugin.outputs).not.toContain("rotations");
   });
 });

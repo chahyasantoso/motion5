@@ -1,4 +1,4 @@
-import type { ClosedFormQuality } from "./ik-result";
+import type { ClosedFormQuality, SolveEvidence } from "./ik-result";
 import type { Euler3d } from "./frame3d";
 
 /**
@@ -9,11 +9,11 @@ import type { Euler3d } from "./frame3d";
 export const ROTATIONS3D_KEY = "rotations3d" as const;
 
 /**
- * The internal 3D solver result. It reuses the closed-form quality union so reachability has one
- * vocabulary across dimensions, while keeping the renderer-neutral Euler pose under `rotations3d`.
+ * The internal 3D solver result. Its `quality` and `residuals` are the 2D result's own
+ * `SolveEvidence`, narrowed to the closed-form kinds, so reachability has one vocabulary across
+ * dimensions and the one inspection projection reads a 3D solve without a 3D copy (ADR-120). Only
+ * the pose is dimensional: renderer-neutral Euler triples under `rotations3d`.
  */
-export type SolveResult3d = {
+export type SolveResult3d = SolveEvidence<ClosedFormQuality> & {
   readonly rotations3d: Readonly<Record<string, Euler3d>>;
-  readonly residuals: Readonly<Record<string, number>>;
-  readonly quality: ClosedFormQuality;
 };

@@ -5,7 +5,7 @@ import { readFrame } from "./frame";
 import { readGoals, readMembers, readSolveMembers } from "./ik-chain";
 import { solveChain } from "./ik-solve";
 import { readBend } from "./ik-constraint";
-import { inspectSolve } from "./ik-result";
+import { inspectionOutput } from "./ik-result";
 
 /**
  * The `ik` plugin: its declaration and the wiring from its slots to a solve, and nothing else.
@@ -28,13 +28,11 @@ import { inspectSolve } from "./ik-result";
  * `ik` on the same node. The spread is a correctness requirement of the chaining rule, not a style
  * choice, and `IK-18` pins it.
  *
- * `inspection` is published only when the solver's own static `inspect` is exactly `true`, so its
- * presence is a function of authoring rather than of arity or strategy, and an unopted patch keeps
- * the keys and doubles it had before ADR-109. Both output names are declared in `outputs` for every
- * registration, because ownership of a name is a property of the plugin, not of one rig. The value
- * is `inspectSolve(result)`, whose shape `ik-result.ts` owns; this module only decides whether to
- * ask. `ik-inspect-malformed` refuses a non-boolean or keyframed switch at load, so the strict
- * comparison is the whole runtime reading rather than a second validator.
+ * `inspection` is published only when the solver's own static `inspect` is exactly `true`. Both
+ * output names are declared in `outputs` for every registration, because ownership of a name is a
+ * property of the plugin, not of one rig. Whether to publish it and what it holds are both
+ * `inspectionOutput`'s answer in `ik-result.ts`, the one owner the 3D solver reads too (ADR-109,
+ * ADR-120); this module only spreads that answer after `rotations`.
  *
  * `targets` is an ordinary declared slot carrying `dict: true`, which is how the goal family reaches
  * this plugin now. The slot set is enumerable again: the member ids belong to the rig, but they are
@@ -61,7 +59,7 @@ export const ikPlugin: PluginDefinition = {
     return Object.freeze({
       ...values,
       rotations: Object.freeze(result.rotations as unknown as ImmutableRecord),
-      ...(values[INSPECT_KEY] === true ? { [INSPECTION_KEY]: inspectSolve(result) } : {}),
+      ...inspectionOutput(values, result),
     });
   },
 };
