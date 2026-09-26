@@ -1,9 +1,11 @@
+import { INSPECTION_KEY, INSPECT_KEY } from "../contract/solver-constraints";
 import { POLE_SLOT } from "../contract/solver-shape";
 import type { PluginDefinition } from "../domain/plugins";
 import type { ImmutableRecord } from "../domain/values";
 import { readFrame3d, readPivotOffset3d, type WorldFrame3d } from "./frame3d";
 import { readNumber } from "./frame";
 import { goalInputs, readMembers, type DeliveredMember } from "./ik-chain";
+import { inspectionOutput } from "./ik-result";
 import { readPole3d, solveTwoBone3d, type SolveMember3d } from "./ik3d-analytic";
 import { ROTATIONS3D_KEY } from "./ik3d-result";
 
@@ -54,14 +56,18 @@ function solveMember(member: DeliveredMember): SolveMember3d {
  * elbow bends toward (ADR-118). A pole bound on a node that bound no `root` under `ik3d` bends no
  * chain and is refused at load as `ik-pole-without-chain`.
  *
- * `SolveResult3d.quality` and `residuals` are solver-level evidence only. They are intentionally
- * not published: ADR-107 established computing quality before a publication contract, and the
- * inspection/result output contract is deferred until this prototype is promoted. The exact-two
+ * `inspect` is the solver's static opt-in to the same fixed-shape `inspection` record the 2D `ik`
+ * publishes, projected from `SolveResult3d`'s `quality` and `residuals` by `inspectionOutput`, the
+ * one owner of both the opt-in and the projection (ADR-109, ADR-120). An unopted solver publishes
+ * exactly the values and `rotations3d` it did before. The load rules are the 2D ones unchanged:
+ * `ik-inspect-malformed` refuses a switch that is not one static boolean, and
+ * `ik-solver-key-misgrouped` one authored under a group that did not bind `root`. The exact-two
  * chain shape is refused by the graph at load; the compose-time member guard is only an invariant.
  * `readFrame3d` sanitizes authored non-finite values before this function receives them.
  */
 export const ik3dPlugin: PluginDefinition = {
   name: "ik3d",
+  keys: [INSPECT_KEY],
   requirements: {
     root: { description: "base 3D frame of the solver chain" },
     target: { description: "target 3D position to reach" },
@@ -69,7 +75,7 @@ export const ik3dPlugin: PluginDefinition = {
     [POLE_SLOT]: { description: "optional world-space 3D point the chain's elbow bends toward" },
   },
   stage: "compose",
-  outputs: [ROTATIONS3D_KEY],
+  outputs: [ROTATIONS3D_KEY, INSPECTION_KEY],
   compose: (values, _progress, inputs) => {
     const pair = readTwoBone(inputs.members);
     const result = solveTwoBone3d(
@@ -82,6 +88,7 @@ export const ik3dPlugin: PluginDefinition = {
     return Object.freeze({
       ...values,
       [ROTATIONS3D_KEY]: result.rotations3d as unknown as ImmutableRecord,
+      ...inspectionOutput(values, result),
     });
   },
 };

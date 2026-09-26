@@ -37,8 +37,11 @@ import type { GraphNode } from "./ir";
  * second plugin claiming the name would already make the flat spelling ambiguous at the registry.
  *
  * **Solver keys belong to the node that bound `root`.** `bend`, `flip` and `inspect` are read by
- * the `ik` composer of the node that bound `root`, flat or under the group that bound it, and by
- * nothing else, so the rules read exactly those spellings through `solverSpellings`. The first
+ * the solver composer of the node that bound `root`, flat or under the group that bound it, and by
+ * nothing else, so the rules read exactly those spellings through `solverSpellings`: `bend` and
+ * `flip` by the 2D `ik` alone, and `inspect` by `ik` and `ik3d` alike through the one opt-in reader
+ * in `ik-result.ts` (ADR-120). Whether a solver plugin claims a key at all is the registry's
+ * question, so `bend` under `ik3d` is its `plugin-unknown-key` rather than a rule here. The first
  * revision read `bend` and `flip` under any group on any node, which refused a third-party plugin's
  * own `spring.values.bend` on a node that is no solver at all; phase 4's first draft repeated that
  * for `inspect`, and routing it through the same reader is what keeps the scope one decision.

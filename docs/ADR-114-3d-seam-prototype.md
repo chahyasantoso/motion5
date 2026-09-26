@@ -91,7 +91,10 @@ issue #482. Direct solver callers must provide finite frames;
 It publishes local Euler triples under `rotations3d`, reusing `ClosedFormQuality` from the 2D result
 contract. `quality` and `residuals` remain on `SolveResult3d` as solver-level evidence, following
 ADR-107; they are not published because an inspection/result output contract is deferred until
-promotion. The FK member consumes the member's local triple and publishes only
+promotion. **Superseded by [ADR-120](./ADR-120-3d-opt-in-inspection.md), 2026-09-26** (issue #500
+phase 4): an `ik3d` solver that authors the static `inspect: true` publishes the 2D `inspection`
+record from `SolveResult3d` through the 2D projection; an unopted solver still publishes neither.
+The FK member consumes the member's local triple and publishes only
 `x`, `y`, `z`, `rotation`, `rotationX`, and `rotationY`. The DOM adapter therefore receives scalar
 keys it already knows how to serialize while the composite solver record remains renderer-shielded.
 

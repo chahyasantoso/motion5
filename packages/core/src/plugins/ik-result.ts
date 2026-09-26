@@ -1,3 +1,4 @@
+import { INSPECT_KEY, INSPECTION_KEY } from "../contract/solver-constraints";
 import { unreachable } from "../lang/exhaustive";
 
 /**
@@ -11,9 +12,9 @@ import { unreachable } from "../lang/exhaustive";
  * whichever strategy answered it. See ADR-107.
  *
  * `rotations` is always published. An opted-in `inspection` output is a fixed-shape projection of
- * `quality` and `residuals`; `ik.ts` owns the opt-in while this module owns the projection, so the
- * solver's patch shape stays stable across arity and strategy. Unopted rigs keep the phase 3 output
- * byte for byte.
+ * `quality` and `residuals`, and this module owns both the projection and the reading of the opt-in
+ * (`inspectionOutput`), so the solver's patch shape stays stable across arity, strategy and
+ * dimension. Unopted rigs keep the phase 3 output byte for byte.
  *
  * `residuals` holds one entry per addressed leaf, the world-unit distance its tip is left from its
  * own goal, keyed by member id in the solve's canonical order. `quality.residual` stays the worst
@@ -21,8 +22,23 @@ import { unreachable } from "../lang/exhaustive";
  * for a compromise reads the record instead of re-composing the pose. The closed form addresses
  * exactly one leaf, so its record has exactly one entry, equal to its residual. See ADR-110.
  */
-export interface SolveResult<Q extends SolveQuality = SolveQuality> {
+export interface SolveResult<Q extends SolveQuality = SolveQuality> extends SolveEvidence<Q> {
   readonly rotations: Readonly<Record<string, number>>;
+}
+
+/**
+ * How well a solve answered its goals, without the pose it answered with: the part of a result
+ * that does not depend on the dimension the solve ran in.
+ *
+ * The pose does depend on it. A 2D solve publishes one angle per member under `rotations`, and the
+ * 3D closed form publishes one Euler triple per member under `rotations3d` (ADR-114), so the two
+ * results cannot share a pose field. They do share every word of this one: `quality` is the same
+ * closed union, `residuals` the same per-leaf record, and the inspection projection reads nothing
+ * else. Stating it once here is what lets `inspectSolve` and `inspectionOutput` serve both
+ * dimensions from one owner instead of a 3D copy (ADR-120), and `SolveResult` and `SolveResult3d`
+ * each extend it with their own pose rather than restating it.
+ */
+export interface SolveEvidence<Q extends SolveQuality = SolveQuality> {
   readonly residuals: Readonly<Record<string, number>>;
   readonly quality: Q;
 }
@@ -111,7 +127,7 @@ const NO_BOUNDS: readonly string[] = Object.freeze([]);
  * `residuals` is copied and frozen like `atBound`, so the published record never aliases the
  * solver's own state whoever produced the result.
  */
-export function inspectSolve(result: SolveResult): SolveInspection {
+export function inspectSolve(result: SolveEvidence): SolveInspection {
   const { quality } = result;
   const residuals: Readonly<Record<string, number>> = Object.freeze({ ...result.residuals });
   switch (quality.kind) {
@@ -148,4 +164,32 @@ export function inspectSolve(result: SolveResult): SolveInspection {
     default:
       return unreachable(quality);
   }
+}
+
+/** What a solver adds to its published values for inspection: the record, or nothing at all. */
+export type InspectionOutput =
+  | Readonly<Record<typeof INSPECTION_KEY, SolveInspection>>
+  | Readonly<Record<never, never>>;
+
+const NO_INSPECTION: InspectionOutput = Object.freeze({});
+
+/**
+ * The one reading of a solver's inspection opt-in, shared by every solver that publishes one.
+ *
+ * `inspection` is published only when the solver's own static `inspect` is exactly `true`, so its
+ * presence is a function of authoring rather than of arity, strategy or dimension, and an unopted
+ * patch keeps the keys and bytes it had before ADR-109. The graph's `ik-inspect-malformed`
+ * refuses a non-boolean or keyframed switch at load, so the strict comparison is the whole runtime
+ * reading rather than a second validator. A solver spreads the answer after its pose, so the key
+ * order of an opted patch is the same in 2D and in 3D. It lived inline in `ik.ts` until the 3D
+ * solver needed the same decision, and a second inline copy would have been a second owner of what
+ * `inspect: true` means (ADR-120).
+ */
+export function inspectionOutput(
+  values: Readonly<Record<string, unknown>>,
+  result: SolveEvidence,
+): InspectionOutput {
+  return values[INSPECT_KEY] === true
+    ? Object.freeze({ [INSPECTION_KEY]: inspectSolve(result) })
+    : NO_INSPECTION;
 }
