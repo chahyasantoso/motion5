@@ -1,3 +1,4 @@
+import { JOINT_BOUND_KEYS, JOINT_KEY } from "../contract/solver-constraints";
 import type { PluginDefinition } from "../domain/plugins";
 import {
   blendOrientation3d,
@@ -59,10 +60,27 @@ function readSolved(solver: unknown, nodeId: string): Euler3d | undefined {
  * `x`, `y` and `z` are the member pivot offset in the parent's rotated frame. They are claimed and
  * composed before the member's local orientation, so the member's own rotation cannot move its pivot.
  * The zero offset uses the same object shape as the phase-1 call for byte identity (ADR-117).
+ *
+ * `joint` and its bounds (`axisX`, `axisY`, `axisZ`, `minRotation`, `maxRotation`, `maxSwing`,
+ * `minTwist`, `maxTwist`) are the member's 3D joint limit, authored metadata for the `ik3d` solve
+ * exactly as 2D `fk`'s `minRotation` and `maxRotation` are for `ik`, and not read here: a limit
+ * bounds what the solve publishes, never the rest orientation or the weighted blend (ADR-123).
+ * `contract/solver-constraints.ts` owns the vocabulary, so the claim is its list rather than a copy.
  */
 export const fk3dPlugin: PluginDefinition = {
   name: "fk3d",
-  keys: ["length", "rotation", "rotationX", "rotationY", "weight", "x", "y", "z"],
+  keys: [
+    "length",
+    "rotation",
+    "rotationX",
+    "rotationY",
+    "weight",
+    "x",
+    "y",
+    "z",
+    JOINT_KEY,
+    ...JOINT_BOUND_KEYS,
+  ],
   requirements: {
     base: { description: "the parent 3D frame" },
     solver: { description: "the 3D solver pose" },

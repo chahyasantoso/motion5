@@ -1,7 +1,24 @@
 import { unreachable } from "../lang/exhaustive";
 import {
   authoredSpellings,
+  AXIS_KEYS,
+  AXIS_X_KEY,
+  AXIS_Y_KEY,
+  AXIS_Z_KEY,
   BEND_KEY,
+  classifyJoint,
+  declaresJoint,
+  JOINT_BOUND_KEYS,
+  JOINT_KEY,
+  JOINT_KINDS,
+  JOINT_ONLY_KEYS,
+  MAX_ROTATION_KEY,
+  MAX_SWING_KEY,
+  MAX_TWIST_KEY,
+  MIN_ROTATION_KEY,
+  MIN_TWIST_KEY,
+  type JointBoundKey,
+  type JointVocabularyKey,
   classifyBend,
   classifyInfluence,
   classifyInspect,
@@ -17,12 +34,13 @@ import {
 import { diagnostic } from "../contract/diagnostics";
 import { declaresPole, POLE_SLOT } from "../contract/solver-shape";
 import type { Diagnostic } from "../contract/v5";
+import { compareCodeUnits } from "./compare";
 import type { GraphNode } from "./ir";
 
 /**
  * The load rules of the solver's authored constraints: the six of constrained 2D solving (ADR-108),
- * the inspection switch's one (ADR-109), goal influence's two (ADR-110) and the 3D pole's one
- * (ADR-118).
+ * the inspection switch's one (ADR-109), goal influence's two (ADR-110), the 3D pole's one
+ * (ADR-118) and the 3D joint's two, which reuse the 2D range rules for every angle bound (ADR-123).
  *
  * **Every spelling, because the solve reads the flattened bag.** A member's limits reach `ik`
  * through the member's flattened values, where a `minRotation` grouped under any plugin is the same
@@ -113,6 +131,15 @@ function solverSpellings(
   return spellings.filter((spelling) => reachesSolve(spelling, roots));
 }
 
+function limitWithoutSolver(node: GraphNode, key: string, spelling: AuthoredSpelling): Diagnostic {
+  return diagnostic(
+    "ik-limit-without-solver",
+    `${node.id}.keyframes.${spelling.path}`,
+    `Node "${node.id}" authors ${key} under ${spelling.group} without binding a solver there; no solve reads it.`,
+    [node.id],
+  );
+}
+
 function validateMemberLimits(node: GraphNode, diagnostics: Diagnostic[]): void {
   const binders = slotBinders(node, "solver");
   const values: Partial<Record<LimitKey, unknown>> = {};
@@ -120,16 +147,12 @@ function validateMemberLimits(node: GraphNode, diagnostics: Diagnostic[]): void 
   for (const key of LIMIT_KEYS) {
     for (const spelling of authoredSpellings(node.track.keyframes, key)) {
       if (!reachesSolve(spelling, binders)) {
-        diagnostics.push(
-          diagnostic(
-            "ik-limit-without-solver",
-            `${node.id}.keyframes.${spelling.path}`,
-            `Node "${node.id}" authors ${key} under ${spelling.group} without binding a solver there; no solve reads it.`,
-            [node.id],
-          ),
-        );
+        diagnostics.push(limitWithoutSolver(node, key, spelling));
         continue;
       }
+      // Under a 3D joint group the range is a hinge's, classified with its joint by
+      // `validateMemberJoint`, so it is judged once, by the owner that knows what reads it.
+      if (declaresJoint(spelling.group)) continue;
       // `keyframes-duplicate-key` refuses a second spelling of one key, so the first is the one.
       if (Object.hasOwn(values, key)) continue;
       values[key] = spelling.value;
@@ -163,6 +186,133 @@ function validateMemberLimits(node: GraphNode, diagnostics: Diagnostic[]): void 
       return;
     default:
       return unreachable(limit);
+  }
+}
+
+/** The domain a bound key's refusal names, in the words of its message. */
+function boundDomain(key: JointBoundKey): string {
+  switch (key) {
+    case MAX_SWING_KEY:
+      return "one static number in [0, 180]";
+    case AXIS_X_KEY:
+    case AXIS_Y_KEY:
+    case AXIS_Z_KEY:
+      return "one static finite number";
+    case MIN_ROTATION_KEY:
+    case MAX_ROTATION_KEY:
+    case MIN_TWIST_KEY:
+    case MAX_TWIST_KEY:
+      return "one static number in [-180, 180]";
+    default:
+      return unreachable(key);
+  }
+}
+
+/**
+ * The 3D joint rules (ADR-123), over the groups whose plugin declares the joint vocabulary.
+ *
+ * Only there: `joint` and its bounds are common words, and under any other plugin they are that
+ * plugin's own keys, whose claim is the registry's question (`plugin-unknown-key`), the scoping
+ * `ik-pole-without-chain` takes for the pole. Under a joint group that bound no solver, a joint-only
+ * key is refused as `ik-limit-without-solver`, the 2D range keys' own placement rule, which
+ * `validateMemberLimits` already speaks for `minRotation` and `maxRotation` there. Under one that
+ * did, the group's spellings are classified together, because what a bound means depends on the
+ * kind beside it.
+ */
+function validateMemberJoint(node: GraphNode, diagnostics: Diagnostic[]): void {
+  const binders = slotBinders(node, "solver");
+  const bySolverGroup = new Map<string, Partial<Record<JointVocabularyKey, AuthoredSpelling>>>();
+  for (const key of [JOINT_KEY, ...JOINT_BOUND_KEYS]) {
+    for (const spelling of authoredSpellings(node.track.keyframes, key)) {
+      if (!declaresJoint(spelling.group)) continue;
+      if (!reachesSolve(spelling, binders)) {
+        // The 2D range keys' placement is `validateMemberLimits`'s, one rule for one mistake.
+        if (JOINT_ONLY_KEYS.includes(key))
+          diagnostics.push(limitWithoutSolver(node, key, spelling));
+        continue;
+      }
+      const group = bySolverGroup.get(spelling.group) ?? {};
+      group[key] = spelling;
+      bySolverGroup.set(spelling.group, group);
+    }
+  }
+  for (const [, spellings] of [...bySolverGroup].sort(([a], [b]) => compareCodeUnits(a, b))) {
+    const values: Partial<Record<JointVocabularyKey, unknown>> = {};
+    for (const key of [JOINT_KEY, ...JOINT_BOUND_KEYS]) {
+      const spelling = spellings[key];
+      if (spelling !== undefined) values[key] = spelling.value;
+    }
+    const at = (key: JointVocabularyKey): string =>
+      `${node.id}.keyframes.${spellings[key]?.path ?? key}`;
+    const joint = classifyJoint(values);
+    switch (joint.kind) {
+      case "valid":
+        break;
+      case "malformed-kind":
+        diagnostics.push(
+          diagnostic(
+            "ik-joint-malformed",
+            at(JOINT_KEY),
+            `Member "${node.id}" has a malformed joint; use one static ${JOINT_KINDS.map((kind) => `"${kind}"`).join(", ")}.`,
+            [node.id],
+          ),
+        );
+        break;
+      case "malformed":
+        diagnostics.push(
+          diagnostic(
+            AXIS_KEYS.some((key) => key === joint.key)
+              ? "ik-joint-malformed"
+              : "ik-limit-malformed",
+            at(joint.key),
+            `Member "${node.id}" has a malformed ${joint.key}; use ${boundDomain(joint.key)}.`,
+            [node.id],
+          ),
+        );
+        break;
+      case "missing":
+        diagnostics.push(
+          diagnostic(
+            "ik-joint-malformed",
+            at(JOINT_KEY),
+            `Member "${node.id}" declares joint "${joint.joint}" without ${joint.key}; a ${joint.joint} joint needs ${boundDomain(joint.key)}.`,
+            [node.id],
+          ),
+        );
+        break;
+      case "zero-axis":
+        diagnostics.push(
+          diagnostic(
+            "ik-joint-malformed",
+            at(AXIS_KEYS.find((key) => spellings[key] !== undefined) ?? AXIS_Z_KEY),
+            `Member "${node.id}" has a hinge axis with no direction; author a nonzero axisX, axisY or axisZ.`,
+            [node.id],
+          ),
+        );
+        break;
+      case "unused":
+        diagnostics.push(
+          diagnostic(
+            "ik-joint-key-unused",
+            at(joint.key),
+            `Member "${node.id}" authors ${joint.key}, which a ${joint.joint} joint does not read; declare the joint that reads it or remove it.`,
+            [node.id],
+          ),
+        );
+        break;
+      case "empty":
+        diagnostics.push(
+          diagnostic(
+            "ik-limit-empty",
+            at(joint.key),
+            `Member "${node.id}" has an empty angle limit range [${joint.min}, ${joint.max}].`,
+            [node.id],
+          ),
+        );
+        break;
+      default:
+        unreachable(joint);
+    }
   }
 }
 
@@ -257,6 +407,7 @@ export function validateSolverConstraints(
 ): void {
   for (const node of nodes) {
     validateMemberLimits(node, diagnostics);
+    validateMemberJoint(node, diagnostics);
     const roots = slotBinders(node, "root");
     validateSolverBend(node, roots, diagnostics);
     validateSolverInspect(node, roots, diagnostics);

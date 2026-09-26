@@ -116,6 +116,8 @@ export const BASE_RULE_IDS = [
   "ik-influence-malformed",
   "ik-influence-without-goal",
   "ik-inspect-malformed",
+  "ik-joint-key-unused",
+  "ik-joint-malformed",
   "ik-leaf-without-goal",
   "ik-limit-empty",
   "ik-limit-malformed",

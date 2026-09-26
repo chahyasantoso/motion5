@@ -8,7 +8,9 @@ import { readNumber } from "./frame";
  * matrix composition, the deterministic gimbal-lock representation, the one rotation blend
  * (`blendOrientation3d`, ADR-116), whose unit quaternions are arithmetic here and never a published
  * or authored shape, the minimal swing the tree solve reconstructs orientation with
- * (`swingFrame3d`, ADR-122), and the vector helpers every 3D solve shares.
+ * (`swingFrame3d`, ADR-122), the axis-angle and swing-twist arithmetic 3D joint limits are enforced
+ * with (`rotationAboutAxis3d`, `swingTwist3d`, `twistAbout3d`, ADR-123), and the vector helpers
+ * every 3D solve shares.
  */
 export type Euler3d = {
   readonly rotation: number;
@@ -154,7 +156,7 @@ export function transposeMatrix3(matrix: Matrix3): Matrix3 {
 
 /** Radians to degrees, canonical in `(-180, 180]` with no negative zero. `atan2` never leaves
  * `[-π, π]`, so its `-180` is the only value to move. */
-function canonicalDegrees(radians: number): number {
+export function canonicalDegrees(radians: number): number {
   const degrees = (radians * 180) / Math.PI;
   return degrees === -180 ? 180 : degrees + 0;
 }
@@ -297,6 +299,91 @@ export function swingFrame3d(frame: Matrix3, direction: Vec3): Matrix3 {
     1 - f * (vx * vx + vy * vy),
   ];
   return multiplyMatrix3(swing, frame);
+}
+
+/** The identity rotation: the frame a swing or a twist is measured from. */
+export const IDENTITY_MATRIX3: Matrix3 = Object.freeze([1, 0, 0, 0, 1, 0, 0, 0, 1] as const);
+
+/** A member's own long axis, local +x: the axis a twist turns about and a swing turns away from. */
+const LOCAL_X: Vec3 = Object.freeze([1, 0, 0] as const);
+
+/**
+ * The right-handed rotation by `degrees` about the unit `axis`, as a row-major matrix (Rodrigues).
+ *
+ * The one axis-angle constructor the 3D joint limits build a legal orientation with (ADR-123): a
+ * hinge's `R(axis, angle)`, a clamped swing and a limited twist are all this matrix. The angle is
+ * read through `radiansOf`, so a non-finite angle is no turn and whole turns reduce first, as they do
+ * for an Euler angle. `axis` must be unit; the callers normalise it once when they read it.
+ */
+export function rotationAboutAxis3d(axis: Vec3, degrees: number): Matrix3 {
+  const angle = radiansOf(degrees);
+  const c = Math.cos(angle);
+  const s = Math.sin(angle);
+  const t = 1 - c;
+  const [x, y, z] = axis;
+  return [
+    t * x * x + c,
+    t * x * y - s * z,
+    t * x * z + s * y,
+    t * x * y + s * z,
+    t * y * y + c,
+    t * y * z - s * x,
+    t * x * z - s * y,
+    t * y * z + s * x,
+    t * z * z + c,
+  ];
+}
+
+/**
+ * A local orientation split as `swing * twist` about the member's own +x (ADR-123).
+ *
+ * `twist` is the turn about local +x applied first, `swing` the minimal rotation that then carries
+ * +x onto the member's direction, the same `swingFrame3d` swing the tree solve reconstructs roll
+ * with, so a local orientation the solve built from a pure swing reads back with no twist. `swing`
+ * is kept as a matrix beside its angle so a limit that leaves the swing alone can recompose without
+ * rebuilding it. `swingAxis` is the unit axis the swing turns about, perpendicular to +x; at a half
+ * turn, where `x × d` names nothing, it is local +z, the axis `swingFrame3d` turns an identity frame
+ * about there, so the split and the swing agree on the one degenerate direction.
+ *
+ * Both angles are canonical degrees: `swingDegrees` in `[0, 180]`, the angle between +x and the
+ * member's direction, and `twistDegrees` in `(-180, 180]`.
+ */
+export type SwingTwist3d = {
+  readonly swing: Matrix3;
+  readonly swingAxis: Vec3;
+  readonly swingDegrees: number;
+  readonly twistDegrees: number;
+};
+
+const LOCAL_Z: Vec3 = Object.freeze([0, 0, 1] as const);
+
+export function swingTwist3d(local: Matrix3): SwingTwist3d {
+  const direction = normalize3(axisX3(local), LOCAL_X);
+  const swing = swingFrame3d(IDENTITY_MATRIX3, direction);
+  // `swing` carries +x onto the direction, so what is left of `local` fixes +x: a turn about it.
+  const twist = multiplyMatrix3(transposeMatrix3(swing), local);
+  const across = cross3(LOCAL_X, direction);
+  return {
+    swing,
+    swingAxis: normalize3(across, LOCAL_Z),
+    swingDegrees: canonicalDegrees(Math.atan2(norm3(across), direction[0])),
+    twistDegrees: canonicalDegrees(Math.atan2(twist[7], twist[4])),
+  };
+}
+
+/**
+ * The turn of `local` about the unit `axis`: the twist of its swing-twist split about that axis
+ * rather than about local +x (ADR-123).
+ *
+ * The split is conjugation-equivariant, so it is read by carrying `axis` onto +x with the minimal
+ * swing `B`, splitting `Bᵀ · local · B` about +x, and reading that twist. A hinge reads it where
+ * its member's direction cannot say which angle it wants: along the hinge axis itself, or on a
+ * hinge whose axis is the member's own +x, where the bone turns about itself and only roll moves.
+ */
+export function twistAbout3d(local: Matrix3, axis: Vec3): number {
+  const basis = swingFrame3d(IDENTITY_MATRIX3, axis);
+  return swingTwist3d(multiplyMatrix3(transposeMatrix3(basis), multiplyMatrix3(local, basis)))
+    .twistDegrees;
 }
 
 /** Reads a pivot offset, defaulting absent and non-finite components to zero. */

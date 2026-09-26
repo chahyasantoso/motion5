@@ -27,10 +27,16 @@ export type SolverChainShape =
   | Readonly<{ kind: "tree"; memberPlugin: string }>;
 
 /**
- * One member as the graph derived it under a solver: its `base` hop count to the root, and every
- * plugin through which it binds that solver's `solver` slot, sorted, normally exactly one.
+ * One member as the graph derived it under a solver: its `base` hop count to the root, every plugin
+ * through which it binds that solver's `solver` slot, sorted, normally exactly one, and whether it
+ * authored a 3D joint that constrains the solve under one of those plugins (ADR-123), read through
+ * `authorsConstrainingJoint`.
  */
-export type DerivedChainMember = Readonly<{ depth: number; plugins: readonly string[] }>;
+export type DerivedChainMember = Readonly<{
+  depth: number;
+  plugins: readonly string[];
+  constrained: boolean;
+}>;
 
 const ANY: SolverChainShape = Object.freeze({ kind: "any" });
 
@@ -118,14 +124,16 @@ export function acceptsChain(
  * Which strategy a solver of `shape` answers the derived members with, read at load (ADR-122).
  *
  * `closed-form` is a parent and its one child: exactly two members, one at depth 1 and one at depth
- * 2, which on a chain that loads is the closed form's parent and addressed child, because the graph
- * refuses a goal on the parent (`ik-goal-not-leaf`) and a leaf with none (`ik-leaf-without-goal`,
- * `ik-solver-no-goal`). `iterative` is every other chain a `tree` shape accepts. `any` shapes answer
+ * 2, neither constrained, which on a chain that loads is the closed form's parent and addressed
+ * child, because the graph refuses a goal on the parent (`ik-goal-not-leaf`) and a leaf with none
+ * (`ik-leaf-without-goal`, `ik-solver-no-goal`). `iterative` is every other chain a `tree` shape
+ * accepts, a constrained two-member chain among them, because the runtime sends any chain with a
+ * constraining joint to 3D FABRIK before it looks for a pair (ADR-123). `any` shapes answer
  * `iterative` too: the 2D solve reads no member rest orientation on either of its paths, so the one
  * question this is asked for has the same answer there. It restates at load, from depths alone,
  * the runtime proof `plugins/ik-topology.ts`'s `twoBonePair` makes from ids and goals, because the
  * graph holds no plugin and a plugin holds no graph; `TH-76` holds the two readings equal over
- * every derived shape up to five members.
+ * every derived shape up to five members, constrained and not.
  */
 export type DerivedStrategy = "closed-form" | "iterative";
 
@@ -137,6 +145,7 @@ export function derivedStrategy(
     case "any":
       return "iterative";
     case "tree": {
+      if (members.some(({ constrained }) => constrained)) return "iterative";
       const depths = members.map(({ depth }) => depth).sort((a, b) => a - b);
       return depths.length === 2 && depths[0] === 1 && depths[1] === 2
         ? "closed-form"
