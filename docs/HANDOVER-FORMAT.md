@@ -342,23 +342,19 @@ produce a new identity rather than silently suppressing a correction. A branch-c
 already contains both the notes marker and notes body, so the publisher does not add a duplicate
 notes comment.
 
-If publication does not settle, its complete payload is kept under the Git directory path
-`motion5-handover/pending` resolved by `git rev-parse --git-path`. The payload contains the
-identity, address, notes, review, applied tip, and applied commits, and is outside the working tree.
-`npm run patches:publish` retries pending payloads in name order; a malformed pending payload is a
-failed `read-pending` result and remains for investigation. A failed or deferred publication keeps
-the payload so the human can correct the cause and retry.
+If publication does not settle, its complete payload is kept under the Git directory path `motion5-handover/pending` resolved by `git rev-parse --git-path`. The payload contains the identity, address, notes, review, applied tip, and applied commits, and is outside the working tree. `npm run patches:publish` retries pending payloads in name order; a malformed pending payload is a failed `read-pending` result and remains for investigation, whether it does not parse or parses to something that is not a payload this publisher wrote; the retry continues with the next payload. A failed or deferred publication keeps the payload so the human can correct the cause and retry.
 
 ### Branch publication and destination resolution
 
-Before any GitHub write, the publisher resolves a Git remote whose configured GitHub URL names
-`target.repository`, verifies `gh` is installed and authenticated through the human's own `gh`
-login, and proves that the target branch on that remote can show the exact applied commits. The
-publisher never reads a token; GitHub is reached only through the human's `gh` login.
+Before any GitHub write, the publisher resolves a Git remote whose configured GitHub URL names `target.repository` and every one of whose `pushurl` entries, when any are set, names it too, since a push would otherwise land somewhere else; it then verifies `gh` is installed and authenticated through the human's own `gh` login, and proves that the target branch on that remote can show the exact applied commits. The publisher never reads a token; GitHub is reached only through the human's `gh` login.
 
 The publisher reads `refs/heads/<target.branch>` with `git ls-remote`. If the remote tip is not
-known locally, it first fetches it with `git fetch --no-tags <remote> refs/heads/<branch>`. It then
-classifies the branch in this closed union:
+known locally, it first fetches it with `git fetch --no-tags <remote> refs/heads/<branch>`. In a
+shallow checkout, two tips whose joining history is missing would read as diverged, so before it
+reports divergence there it fetches the whole history with `--unshallow` and judges again. Network
+Git commands run with `GIT_TERMINAL_PROMPT=0`, so a missing credential fails at once instead of
+waiting on a prompt nobody sees; configured credential helpers still answer. It then classifies the
+branch in this closed union:
 
 - `up-to-date`: the remote tip equals the applied tip or already contains it, so nothing is pushed.
 - `absent`: the branch is not published yet, so the exact applied tip is pushed with
@@ -367,7 +363,7 @@ classifies the branch in this closed union:
 - `diverged`: the remote has commits the applied tip lacks, so the publisher never force-pushes and
   defers with `branch-diverged { remote, branch, tip, remoteTip }`.
 
-A rejected push, such as a race or missing Git credentials, is a failed publication at step `push`; the payload remains for retry. The push always names the exact applied tip SHA, never `HEAD`, and is fast-forward-only. It happens before any GitHub comment, issue, or pull-request write, so every posted note cites commits GitHub can show. A successful result includes `branch: { kind: "up-to-date" }`, `{ kind: "created" }`, or `{ kind: "fast-forwarded", from: "<sha>" }`, where `from` is the remote tip that was advanced.
+A push publishes the whole history under the tip, so before pushing the publisher requires the checkout's own `refs/heads/<target.branch>` to contain the applied tip; otherwise it defers with `branch-not-local { branch, tip }` and pushes and posts nothing, because a handover applied on another branch would publish that branch's unrelated commits under the target's name. A rejected push, such as a race or missing Git credentials, is a failed publication at step `push`; the payload remains for retry. The push always names the exact applied tip SHA, never `HEAD`, and is fast-forward-only. It happens before any GitHub comment, issue, or pull-request write, so every posted note cites commits GitHub can show. A successful result includes `branch: { kind: "up-to-date" }`, `{ kind: "created" }`, or `{ kind: "fast-forwarded", from: "<sha>" }`, where `from` is the remote tip that was advanced.
 
 For `pull-request`, `gh pr view` must find the numbered pull request in `target.repository` and
 verify that its head is exactly `target.repository:target.branch`; a pull request elsewhere is not
@@ -386,13 +382,11 @@ A notes body identifies the applied commits and tip, includes the line `Independ
 verbatim; `evidence: null` renders as `Evidence: not provided`. It is never upgraded or otherwise
 made stronger than the source review.
 
-Each body is bounded to 60,000 characters. If notes or review text exceeds that bound, the body is
-cut and points to `NOTES.md` and `REVIEW.json` in the handover zip for the complete text. The bound
-is intentionally below GitHub's comment and pull-request limit.
+Each body is bounded to 60,000 characters, the cut notice included. If notes or review text exceeds that bound, the body is cut and points to `NOTES.md` and `REVIEW.json` in the handover zip for the complete text. The bound is intentionally below GitHub's comment and pull-request limit.
 
 ### Deferrals and failures
 
-A deferral means the payload is retained and the human has a specific repair before `npm run patches:publish`: no matching GitHub remote (`remote-missing`), missing `gh` (`gh-missing`), unauthenticated `gh` (`gh-unauthenticated`), a divergent remote branch (`branch-diverged`), or an explicit pull request that belongs to another head (`pull-request-elsewhere`). For `remote-missing`, add a remote such as `git remote add origin https://github.com/<owner>/<name>.git`; for `gh-missing`, install `gh` and run `gh auth login`; and for `gh-unauthenticated`, run `gh auth login`.
+A deferral means the payload is retained and the human has a specific repair before `npm run patches:publish`: no matching GitHub remote (`remote-missing`), missing `gh` (`gh-missing`), unauthenticated `gh` (`gh-unauthenticated`), an applied tip that is not on the local target branch (`branch-not-local`: switch to it and apply there, or `git branch -f <branch> <tip>` when the history is meant for it), a divergent remote branch (`branch-diverged`), or an explicit pull request that belongs to another head (`pull-request-elsewhere`). For `remote-missing`, add a remote such as `git remote add origin https://github.com/<owner>/<name>.git`; for `gh-missing`, install `gh` and run `gh auth login`; and for `gh-unauthenticated`, run `gh auth login`.
 
 For `branch-diverged`, merge the remote branch without rewriting the applied commits, for example `git pull --no-rebase <remote> <branch>`, then push the merge and run `npm run patches:publish`. A merge keeps the applied commits so the notes cite real commits; a rebase would orphan those commits and is not the recovery instruction. For an explicit pull request that points elsewhere, address a new handover to the right pull request or post the zip's notes by hand.
 

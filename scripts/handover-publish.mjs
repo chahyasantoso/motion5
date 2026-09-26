@@ -28,6 +28,7 @@ export const DEFERRAL_KINDS = Object.freeze([
   "remote-missing",
   "gh-missing",
   "gh-unauthenticated",
+  "branch-not-local",
   "branch-diverged",
   "pull-request-elsewhere",
 ]);
@@ -82,7 +83,8 @@ function commitLines(commits) {
 /** Any body cut to what GitHub accepts, with the cut saying where the whole text is. */
 export function bounded(body) {
   if (body.length <= MAX_BODY_CHARACTERS) return body;
-  return `${body.slice(0, MAX_BODY_CHARACTERS)}\n\n_Cut at ${MAX_BODY_CHARACTERS} characters to fit GitHub; the whole text is \`NOTES.md\` and \`REVIEW.json\` in the handover zip._\n`;
+  const cut = `\n\n_Cut at ${MAX_BODY_CHARACTERS} characters to fit GitHub; the whole text is \`NOTES.md\` and \`REVIEW.json\` in the handover zip._\n`;
+  return `${body.slice(0, MAX_BODY_CHARACTERS - cut.length)}${cut}`;
 }
 
 /** The notes as every body carries them: the applied commits, the review line, then the file. */
@@ -224,15 +226,32 @@ function gh(run, root, step, args) {
   return String(result.stdout);
 }
 
+function configured(run, root, key) {
+  const result = run("git", ["config", "--get-all", key], { cwd: root });
+  return result.status === 0 ? String(result.stdout).split("\n").filter(Boolean) : [];
+}
+
+/**
+ * The remote that both fetches from and pushes to the target repository. The raw configured URLs
+ * rather than `git remote get-url`, which expands `insteadOf`: the question is which GitHub
+ * repository the human means, not where Git would fetch it from. A `pushurl` replaces the URL for
+ * a push, so every one of them must name the repository too, or the branch would land elsewhere.
+ */
 function remoteFor(run, root, repository) {
   const wanted = repository.toLowerCase();
+  const names = (url) => remoteRepository(url)?.toLowerCase() === wanted;
   for (const name of must(run, "git", ["remote"], root).split("\n").filter(Boolean)) {
-    // The raw configured URL rather than `git remote get-url`, which expands `insteadOf`: the
-    // question is which GitHub repository the human means, not where Git would fetch it from.
-    const url = run("git", ["config", "--get", `remote.${name}.url`], { cwd: root });
-    if (url.status === 0 && remoteRepository(url.stdout)?.toLowerCase() === wanted) return name;
+    const urls = configured(run, root, `remote.${name}.url`);
+    const pushUrls = configured(run, root, `remote.${name}.pushurl`);
+    if (urls.length > 0 && urls.every(names) && pushUrls.every(names)) return name;
   }
   return defer({ kind: "remote-missing", repository });
+}
+
+// A publication runs unattended inside a bounded subprocess, so Git must fail at once rather than
+// wait on a terminal prompt nobody sees; configured credential helpers still answer.
+function networkOptions(root) {
+  return { cwd: root, env: { ...process.env, GIT_TERMINAL_PROMPT: "0" } };
 }
 
 /**
@@ -256,7 +275,7 @@ function hasCommit(run, root, sha) {
 /** The remote branch's state; a tip this checkout has never seen is fetched before it is judged. */
 function branchState(run, root, remote, branch, tip) {
   const ref = `refs/heads/${branch}`;
-  const listed = run("git", ["ls-remote", "--heads", remote, ref], { cwd: root });
+  const listed = run("git", ["ls-remote", "--heads", remote, ref], networkOptions(root));
   if (listed.status !== 0) fail("ls-remote", String(listed.stderr).trim());
   const line = String(listed.stdout)
     .split("\n")
@@ -264,22 +283,50 @@ function branchState(run, root, remote, branch, tip) {
   if (line === undefined) return { kind: "absent" };
   const remoteTip = line.slice(0, line.indexOf("\t"));
   if (remoteTip === tip) return { kind: "up-to-date" };
-  if (!hasCommit(run, root, remoteTip)) {
-    const fetched = run("git", ["fetch", "--quiet", "--no-tags", remote, ref], { cwd: root });
-    if (fetched.status !== 0) fail("fetch", String(fetched.stderr).trim());
+  if (!hasCommit(run, root, remoteTip)) fetchBranch(run, root, remote, ref, []);
+  const related = ancestry(run, root, remoteTip, tip);
+  if (related !== null) return related;
+  // A shallow checkout can hold both commits without the history that joins them, and ancestry
+  // then reads as divergence; only the whole history can tell the two apart.
+  if (must(run, "git", ["rev-parse", "--is-shallow-repository"], root).trim() === "true") {
+    fetchBranch(run, root, remote, ref, ["--unshallow"]);
+    return ancestry(run, root, remoteTip, tip) ?? { kind: "diverged", remoteTip };
   }
-  if (isAncestor(run, root, tip, remoteTip)) return { kind: "up-to-date" };
-  if (isAncestor(run, root, remoteTip, tip)) return { kind: "behind", remoteTip };
   return { kind: "diverged", remoteTip };
 }
 
+function fetchBranch(run, root, remote, ref, extra) {
+  const fetched = run(
+    "git",
+    ["fetch", "--quiet", "--no-tags", ...extra, remote, ref],
+    networkOptions(root),
+  );
+  if (fetched.status !== 0) fail("fetch", String(fetched.stderr).trim());
+}
+
+/** `up-to-date` or `behind` when the history shows how the two tips relate, else null. */
+function ancestry(run, root, remoteTip, tip) {
+  if (isAncestor(run, root, tip, remoteTip)) return { kind: "up-to-date" };
+  if (isAncestor(run, root, remoteTip, tip)) return { kind: "behind", remoteTip };
+  return null;
+}
+
+/**
+ * A push publishes the whole history under the tip, so it is made only when the checkout's own
+ * branch of that name carries the applied commits: a handover applied on another branch would
+ * otherwise publish that branch's unrelated commits under the target's name.
+ */
 function pushTip(run, root, remote, branch, tip) {
+  if (!isAncestor(run, root, tip, `refs/heads/${branch}`))
+    defer({ kind: "branch-not-local", branch, tip });
   // The exact applied commit rather than HEAD, and never forced: Git itself refuses anything but
   // a creation or a fast-forward, so a remote that moved since it was read fails here instead of
   // losing its commits.
-  const pushed = run("git", ["push", "--quiet", remote, `${tip}:refs/heads/${branch}`], {
-    cwd: root,
-  });
+  const pushed = run(
+    "git",
+    ["push", "--quiet", remote, `${tip}:refs/heads/${branch}`],
+    networkOptions(root),
+  );
   if (pushed.status !== 0) fail("push", String(pushed.stderr).trim() || "git push failed");
 }
 
@@ -589,10 +636,20 @@ export async function publishPending({ root, run, temporary = tmpdir() }) {
       });
       continue;
     }
-    results.push({
-      name: handover.name,
-      publication: await publishHandover(handover, { root, run, temporary }),
-    });
+    // A payload that parses but is not one this publisher wrote fails before its own error
+    // handling starts; it is reported like an unreadable one rather than ending the whole retry.
+    let publication;
+    try {
+      publication = await publishHandover(handover, { root, run, temporary });
+    } catch (error) {
+      publication = {
+        kind: "failed",
+        step: "read-pending",
+        reason: error instanceof Error ? error.message : String(error),
+        pending: file,
+      };
+    }
+    results.push({ name: handover?.name ?? name.replace(/\.json$/, ""), publication });
   }
   return results;
 }
@@ -613,6 +670,11 @@ function deferralLines(reason) {
       return [
         "The GitHub CLI (gh) is not logged in to github.com.",
         "Run gh auth login, then npm run patches:publish.",
+      ];
+    case "branch-not-local":
+      return [
+        `The applied tip ${reason.tip.slice(0, 12)} is not on your local branch ${reason.branch}, so pushing it would publish another branch's history under that name; nothing was pushed or posted.`,
+        `Apply the handover on ${reason.branch} (git switch ${reason.branch}), or if this history is meant for it, git branch -f ${reason.branch} ${reason.tip.slice(0, 12)}; then run npm run patches:publish.`,
       ];
     case "branch-diverged":
       return [

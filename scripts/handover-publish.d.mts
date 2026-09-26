@@ -12,6 +12,7 @@ export const DEFERRAL_KINDS: readonly [
   "remote-missing",
   "gh-missing",
   "gh-unauthenticated",
+  "branch-not-local",
   "branch-diverged",
   "pull-request-elsewhere",
 ];
@@ -39,6 +40,7 @@ export type Deferral =
   | { readonly kind: "remote-missing"; readonly repository: string }
   | { readonly kind: "gh-missing" }
   | { readonly kind: "gh-unauthenticated" }
+  | { readonly kind: "branch-not-local"; readonly branch: string; readonly tip: string }
   | {
       readonly kind: "branch-diverged";
       readonly remote: string;
