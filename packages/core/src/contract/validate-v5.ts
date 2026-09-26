@@ -13,8 +13,7 @@ import { acceptedOutcome, refusedOutcome, refusedOutcomeFrom, type Outcome } fro
 import { describeDiagnostics, diagnostic } from "./diagnostics";
 import { scopedRuleId, type KeyframeRuleId, type KeyframeRuleScope } from "./rule-id";
 import {
-  isKeyframeGroup,
-  looksLikeLegacyGroup,
+  readKeyframeEntry,
   PLUGIN_GROUP_SECTIONS,
   PLUGIN_REQUIRES_SECTION,
   PLUGIN_VALUES_SECTION,
@@ -30,8 +29,8 @@ export interface KeyframeValidationOptions {
    * `ruleIdPrefix`, `ruleIdAliases` and `allowGroups` were three fields the one caller that set any
    * of them set all of them, and two of the three were open `string` data, so the rule id union was
    * closed everywhere except at the site that mints the whole prefixed family. Which id a rule
-   * reports under is derived from this scope by `contract/rule-id`, and group permission is answered
-   * from the same scope by `GROUPS_ALLOWED` below.
+   * reports under is derived from this scope by `contract/rule-id`, and what a top-level entry is
+   * (a group or a property) is answered from the same scope by `ENTRY_FORM` below.
    *
    * Plugin-named groups are an authoring form. A contributed property is a single flat output, so
    * the contribution scope keeps the pre-group strictness: an object of objects contributed as a
@@ -232,27 +231,31 @@ export function validateKeyframes(
       return;
     }
     checkName(key, groupPath);
-    // The pre-ADR-049 form, refused by name and never normalized. Checked before the ungrouped
-    // refusal because it is the more specific mistake: the author did name a plugin, and only the
-    // section around its properties is missing.
-    if (looksLikeLegacyGroup(rawGroup)) {
-      const detail = "must author its properties under a 'values' section";
-      add("keyframes-missing-values-section", groupPath, `Plugin group '${key}' ${detail}.`);
-      return;
-    }
-    // Every authored entry is a plugin-named group, so an entry naming no section is refused by name
-    // rather than read as a property: a stops array, a static value, the retired wrapper and `{}` all
-    // land here. A flat key named no owner, so the moment two plugins claimed one name it needed a
-    // second rule to refuse the spelling this one now refuses for every name. See ADR-121.
-    if (!isKeyframeGroup(rawGroup)) {
-      add("keyframes-ungrouped-key", groupPath, `Keyframe '${key}' ${UNGROUPED}.`);
-      return;
+    // Which of the three an entry is, and which refusal wins, is `readKeyframeEntry`'s answer. The
+    // pre-ADR-049 form is refused by name and never normalized. Every other entry naming no section
+    // is refused as ungrouped rather than read as a property: a flat key named no owner, so the
+    // moment two plugins claimed one name it needed a second rule to refuse the spelling this one
+    // now refuses for every name. See ADR-049 and ADR-121.
+    const entry = readKeyframeEntry(rawGroup);
+    switch (entry.kind) {
+      case "legacy-group": {
+        const detail = "must author its properties under a 'values' section";
+        add("keyframes-missing-values-section", groupPath, `Plugin group '${key}' ${detail}.`);
+        return;
+      }
+      case "ungrouped":
+        add("keyframes-ungrouped-key", groupPath, `Keyframe '${key}' ${UNGROUPED}.`);
+        return;
+      case "group":
+        break;
+      default:
+        return unreachable(entry);
     }
     // Two members, one level. A group holds a `values` section of properties and a `requires`
     // section of bindings; a property holds stops, so there is no third level for an author to
     // reach for. `requires` compiles to nothing, so it claims no key and names nothing. A group of
     // only unknown sections is reachable and is rejected below, so it needs no rule of its own.
-    for (const [section, member] of Object.entries(rawGroup)) {
+    for (const [section, member] of Object.entries(entry.group)) {
       const sectionPath = `${groupPath}.${section}`;
       if (section === PLUGIN_VALUES_SECTION) {
         validateValues(member, sectionPath);

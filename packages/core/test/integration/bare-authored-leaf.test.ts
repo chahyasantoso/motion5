@@ -3,7 +3,7 @@ import { readdirSync } from "node:fs";
 import { code, codeOnly, declaration } from "../helpers/source-region";
 import { fileURLToPath } from "node:url";
 import { createGsapInterpolator, type GsapLike } from "../../src/adapters/interpolator/gsap";
-import { isKeyframeGroup } from "../../src/contract/keyframe-shape";
+import { isKeyframeGroup, readKeyframeEntry } from "../../src/contract/keyframe-shape";
 import type {
   AuthoredProperty,
   AuthoredStaticValue,
@@ -312,11 +312,27 @@ describe("the bare authored leaf", () => {
 
   it("LF-12 still refuses a migrated legacy group by name", () => {
     // The regression a dead-clause deletion would have caused. `looksLikeLegacyGroup` decides
-    // membership with `isObject`, and a migrated legacy group's leaves are arrays and scalars, which
-    // `isObject` excludes by definition. Left alone, both of these would be reported as a property
-    // of an unknown shape, which is the misdiagnosis ADR-049 introduced the predicate to prevent.
+    // membership by reading each member as a leaf, and a migrated legacy group's leaves are arrays
+    // and scalars, which an `isObject` test excludes by definition. Left to that test, both of these
+    // would be reported as ungrouped entries, which names the missing group rather than the missing
+    // section, the misdiagnosis ADR-049 introduced the predicate to prevent.
     expect(ruleIds({ fk: { length: RAMP } })).toEqual(["keyframes-missing-values-section"]);
     expect(ruleIds({ fk: { length: 62 } })).toEqual(["keyframes-missing-values-section"]);
+  });
+
+  it("LF-18 reads every top-level entry as exactly one of three kinds", () => {
+    // `readKeyframeEntry` owns the precedence the validator used to encode in the order it tested
+    // two predicates. Each ungrouped form, including an object whose members are not all leaves, is
+    // one kind; the pre-ADR-049 form is the only other refusal; a section-naming object is a group.
+    const group = { values: { length: 62, rotation: RAMP } };
+    expect(readKeyframeEntry(group)).toEqual({ kind: "group", group });
+    expect(readKeyframeEntry({ requires: { root: "arm" } }).kind).toBe("group");
+    expect(readKeyframeEntry({ length: 62 })).toEqual({ kind: "legacy-group" });
+    expect(readKeyframeEntry({ length: RAMP, bend: "up" })).toEqual({ kind: "legacy-group" });
+    const wrapper: unknown = { stops: RAMP };
+    for (const entry of [62, "idle", true, RAMP, wrapper, {}, { foo: { bar: 1 } }, null]) {
+      expect(readKeyframeEntry(entry), JSON.stringify(entry)).toEqual({ kind: "ungrouped" });
+    }
   });
 
   it("LF-13 accepts both leaf forms inside a values section", () => {

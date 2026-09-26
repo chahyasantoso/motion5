@@ -190,28 +190,16 @@ describe("schema v5 validator", () => {
         arrayValue: ramp(0, 1),
         retiredWrapper: { stops: ramp(0, 1) },
         emptyObject: {},
+        unrelatedObject: { foo: { bar: 1 } },
       }),
     );
     expect(result.kind).toBe("refused");
-    expect(result.diagnostics).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          ruleId: "keyframes-ungrouped-key",
-          path: "motions[0].tracks[0].keyframes.staticValue",
-        }),
-        expect.objectContaining({
-          ruleId: "keyframes-ungrouped-key",
-          path: "motions[0].tracks[0].keyframes.arrayValue",
-        }),
-        expect.objectContaining({
-          ruleId: "keyframes-ungrouped-key",
-          path: "motions[0].tracks[0].keyframes.retiredWrapper",
-        }),
-        expect.objectContaining({
-          ruleId: "keyframes-ungrouped-key",
-          path: "motions[0].tracks[0].keyframes.emptyObject",
-        }),
-      ]),
+    // Exact, not `arrayContaining`: each ungrouped entry is one diagnostic and nothing else, so a
+    // second rule answering the same entry, or a form slipping to another rule, fails here.
+    expect(result.diagnostics.map(({ ruleId, path }) => [ruleId, path])).toEqual(
+      ["staticValue", "arrayValue", "retiredWrapper", "emptyObject", "unrelatedObject"].map(
+        (key) => ["keyframes-ungrouped-key", `motions[0].tracks[0].keyframes.${key}`],
+      ),
     );
   });
 

@@ -34,7 +34,7 @@ The authored scope answers `"group"`: every top-level entry must be a plugin-nam
 
 The detail of `keyframes-ungrouped-key`, which names the shape to write rather than the shape that was refused.
 
-One message for every ungrouped form: a bare stops array, a bare static value, the retired wrapper, an unrelated object and `{}` all name no section, so each is the same mistake, a property with no owner, and the fix is the same group around it. The pre-ADR-049 form is the one exception and keeps `keyframes-missing-values-section`, because its author did name a plugin and only the section is missing, which is the more specific diagnosis. The check order in `validateKeyframes` encodes that precedence. See ADR-121.
+One message for every ungrouped form: a bare stops array, a bare static value, the retired wrapper, an unrelated object and `{}` all name no section, so each is the same mistake, a property with no owner, and the fix is the same group around it. The pre-ADR-049 form is the one exception and keeps `keyframes-missing-values-section`, because its author did name a plugin and only the section is missing, which is the more specific diagnosis. That precedence is `readKeyframeEntry` in `contract/keyframe-shape.ts`, a closed three-kind union `validateKeyframes` reads with an exhaustive `switch`, rather than the order in which this file happens to test two predicates. See ADR-121.
 
 ## validateProperty
 
