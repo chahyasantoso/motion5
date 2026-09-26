@@ -133,7 +133,7 @@ function projectWithInspect(value: AuthoredProperty, grouped = true): ProjectDef
               : ({
                   inspect: value,
                   ik: { requires: { root: "root", target: "goal" } },
-                } as unknown as TrackDefinition),
+                } as unknown as NonNullable<TrackDefinition["keyframes"]>),
           },
           {
             id: "upper",

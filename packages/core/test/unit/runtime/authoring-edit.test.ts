@@ -184,7 +184,7 @@ describe("every authored edit is one value applied by one total switch", () => {
     // unchanged.
     const originated = applyEdit(TARGET, { kind: "set-group", plugin: "x", group: ORIGIN_GROUP });
     expect(originated).not.toBe(TARGET);
-    expect(originated.keyframes.x).toEqual(ORIGIN_GROUP);
+    expect(originated.keyframes?.x).toEqual(ORIGIN_GROUP);
     expect(applyEdit(TARGET, { kind: "remove-group", plugin: "x" })).toBe(TARGET.track);
     expect(
       refusalKind(() =>

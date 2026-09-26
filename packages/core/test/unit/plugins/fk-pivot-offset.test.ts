@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { PluginRegistry } from "../../../src/domain/plugins";
+import type { Diagnostic } from "../../../src/contract/v5";
 import { validateKeyframes } from "../../../src/contract/validate-v5";
 import type { ImmutableRecord } from "../../../src/domain/values";
 import { composeWorld, fkPlugin } from "../../../src/plugins/fk";
@@ -125,7 +126,7 @@ describe("fk pivot offsets", () => {
   it("FO-6 refuses an ungrouped spelling of an offset key both plugins claim", () => {
     // Grouping is required before plugin ownership is resolved, regardless of how many plugins
     // claim the leaf. The validator owns this authored-shape refusal.
-    const diagnostics = [];
+    const diagnostics: Diagnostic[] = [];
     validateKeyframes({ x: 4 }, "track.keyframes", diagnostics);
     expect(diagnostics.map(({ ruleId }) => ruleId)).toEqual(["keyframes-ungrouped-key"]);
     expect(diagnostics[0]?.path).toBe("track.keyframes.x");

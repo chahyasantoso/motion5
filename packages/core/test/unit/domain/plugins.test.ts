@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { fileURLToPath } from "node:url";
 import type { ImmutableRecord } from "../../../src/domain/values";
 import { PluginRegistry } from "../../../src/domain/plugins";
+import type { Diagnostic } from "../../../src/contract/v5";
 import { validateKeyframes } from "../../../src/contract/validate-v5";
 import { code, member } from "../../helpers/source-region";
 
@@ -129,7 +130,7 @@ describe("plugin registry", () => {
     const registry = new PluginRegistry();
     registry.register(plugin("transform", { keys: ["x", "y", "rotation"] }));
     registry.register(plugin("fk", { keys: ["length", "rotation"] }));
-    const diagnostics = [];
+    const diagnostics: Diagnostic[] = [];
     validateKeyframes({ rotation: {} }, "track.keyframes", diagnostics);
     // The authored-shape rule runs before ownership, so claimant order is irrelevant and no
     // ambiguity-specific rule is needed anymore.
