@@ -2,6 +2,9 @@
 
 **Status:** Accepted, 2026-09-24. Issue [#349](https://github.com/chahyasantoso/motion5/issues/349)
 phase 6, against `main` at `7e6f4edc` (phase 5, PR #486, ADR-110).
+**Extended by [ADR-126][adr126],
+2026-09-27** (issue #514): the selector's limited baseline may pay one opposite-seed retry, while
+free and non-limited baselines retain the direct-result identity boundary.
 
 ## Invariant
 
@@ -386,7 +389,10 @@ restart metadata.
 
 `SD-20` covers the seeded no-regression, permutation, repeat and interleave corpus for this selector.
 
-The non-conflicted baseline is returned directly rather than reconstructed. This is the important
-compatibility boundary: the selector adds no arithmetic to an unbranched rig, a two-bone rig, a
-converged tree, a limited result or an iteration-cap result. The new work is charged only to a
-baseline classified `conflicted`; its selected result reports that candidate's own iterations.
+The baseline is returned directly rather than reconstructed whenever its closed quality selector
+has no alternatives. This is the compatibility boundary: the selector adds no arithmetic to an
+unbranched rig, a two-bone rig, a converged tree, a stalled result or an iteration-cap result. A
+baseline classified `conflicted` pays its three recorded alternatives, and a `limited` baseline pays
+one opposite-seed retry (ADR-126); each selected result reports that candidate's own iterations.
+
+[adr126]: ./ADR-126-limited-fabrik-seed-side-bidirectional-limits-and-pass-budget.md

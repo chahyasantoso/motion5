@@ -49,9 +49,10 @@ import { restoreResult3d, type SolveResult3d } from "./ik3d-result";
  * **What is shared with 2D, and why only that.** Canonical member order, child counts, leaves and
  * serial depth are `ik-topology.ts`'s; goal reading, the direction stand-in and the miss are
  * `ik-goal-reading.ts`'s; branch pulls, the `Pull` union, relative weights and the rule dispatch are
- * `ik-goal.ts`'s; the tolerance, the arc seed's half-angle and the naming of an outcome as one
- * quality kind are `fabrik.ts`'s; the iteration cap is `fabrik-cap.ts`'s (ADR-115); the four
- * candidate conflict selector is `fabrik-select.ts`'s (#490); the magnitude policy is
+ * `ik-goal.ts`'s; the tolerance and the naming of an outcome as one quality kind are `fabrik.ts`'s;
+ * the seed half-angle, depth-scaled cap and progress-gated budget are `fabrik-seed.ts` and
+ * `fabrik-cap.ts` (ADR-115, ADR-126); the closed quality selector is `fabrik-select.ts`'s (#490,
+ * ADR-126); the magnitude policy is
  * `ik-scale.ts`'s. Each of those questions has the same contract in both dimensions. Vector
  * arithmetic does not, so the passes, the placement and the compromise geometry are stated here and
  * in `ik3d-compromise.ts` over `Vec3`, rather than behind a dimension flag in the 2D file.
@@ -67,9 +68,10 @@ import { restoreResult3d, type SolveResult3d } from "./ik3d-result";
  *
  * **Bend plane.** Each root-to-leaf path is seeded on a constant-curvature arc in the plane the
  * closed form bends in, read through `bendBasis3d`, the one owner of the pole rule (ADR-118): toward
- * an authored pole, else the root-local +z rule. `flip` mirrors the arc across the line to the goal,
- * which is the opposite seed side the selector tries for a conflicted baseline; no 3D author sets
- * it, so an authored solve always starts on the pole's side.
+ * an authored pole, else the root-local +z rule. `flip` mirrors the arc across the line to the
+ * goal; a conflicted baseline pays its three alternatives and a limited baseline pays one
+ * opposite-seed retry with the centroid rule. No 3D author sets it, so an authored solve always
+ * starts on the pole's side.
  *
  * The solve is a pure function of the root, the members and the pole: no state survives a call and
  * nothing is warm-started, so a reverse scrub and a random seek republish the forward pass byte for
@@ -135,7 +137,8 @@ function seedArc3d(
  *
  * The structure is the 2D attempt's: seed every addressed path, run an outward pass, then alternate
  * inward and outward passes until the worst addressed miss is inside `FABRIK_TOLERANCE`, a pass
- * moves nothing, or the cap is reached. A sub-base settles on the influence-weighted compromise of
+ * moves nothing, or the shared pass budget denies another pass. Limited children constrain both
+ * directions; a sub-base settles on the influence-weighted compromise of
  * the tips its branches propose, each branch un-offsetting its proposed pivot through its base's
  * current full frame, so positions are averaged and orientations never are (ADR-054).
  *
@@ -424,8 +427,9 @@ export function solveTree3dAttempt(
 }
 
 /**
- * The tree solve at one magnitude: the authored-side attempt, and the three alternatives only for a
- * conflicted baseline, through the 2D selector unchanged (#490).
+ * The tree solve at one magnitude through the shared closed selector: the authored-side attempt,
+ * three alternatives for a conflicted baseline and one opposite-seed centroid retry for a limited
+ * baseline (#490, ADR-126).
  */
 function selectTree3d(
   root: WorldFrame3d,

@@ -313,9 +313,9 @@ export function solveFabrikAttempt(
    * about its pivot onto the legal local angle nearest the placed one. Enforced here, inside the
    * pass that enforces lengths, so every later iteration starts from a legal pose and the published
    * angle is legal because the pose is, not because the output was clamped afterwards. See ADR-108.
-   * Whether the member rests on a bound is recorded here too, from the angle this pass enforced, as
-   * the 3D pass records it: re-derived from published directions, rounding can land it a few ulps
-   * inside the range and report a bound pose as unbounded (ADR-126).
+   * Whether the member rests on a bound is recorded here too, from the bounded angle this pass
+   * enforced, matching the 3D record. Re-deriving it from rounded positions can land a bound pose a
+   * few ulps inside the range and report it as unbounded (ADR-126).
    */
   const onBound = new Map<string, boolean>();
   const limitTip = (
@@ -510,7 +510,10 @@ export function iterativeQuality(outcome: IterativeOutcome): IterativeQuality {
   return { kind: "iteration-cap", iterations, residual };
 }
 
-/** Solve once with the authored seed, and search alternatives only for a conflicted baseline. */
+/**
+ * Solve once with the authored seed; a conflicted baseline pays three alternatives, while a
+ * limited baseline pays one opposite-seed retry with the centroid rule.
+ */
 export function solveFabrik(
   root: WorldFrame,
   members: readonly SolveMember[],

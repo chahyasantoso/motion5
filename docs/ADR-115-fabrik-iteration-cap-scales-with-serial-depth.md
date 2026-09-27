@@ -4,6 +4,9 @@
 ([ADR-125](./ADR-125-public-3d-api.md)); landed through #499 (`main` at `42c72322`).
 Proposed as issue [#491](https://github.com/chahyasantoso/motion5/issues/491), 2026-09-25,
 stacked on PR #499.
+**Extended by [ADR-126][adr126],
+2026-09-27** (issue #514): free chains retain this cap and its bytes, while limited chains have a
+4x ceiling gated by measured convergence progress.
 
 ## Invariant
 
@@ -14,11 +17,12 @@ and its bytes.
 ## Decision
 
 `packages/core/src/plugins/fabrik-cap.ts` is the single owner: `FABRIK_MIN_ITERATIONS = 64`,
-`FABRIK_ITERATIONS_PER_DEPTH = 4`, and `fabrikIterationCap(depth)`, the larger of the two.
-`FABRIK_MAX_ITERATIONS` is deleted rather than aliased, because it was internal and is no longer a
-maximum. `solveFabrikAttempt` reads depth from its canonical order, whose last member is deepest.
-No quality kind, result field or package export changes, and no cap-policy union is introduced,
-because a union with one live member is a mode in disguise.
+`FABRIK_ITERATIONS_PER_DEPTH = 4`, and `fabrikIterationCap(depth, constraint)`. The free arm is
+the larger of the floor and the depth product, exactly as before. The limited arm is a 4x ceiling,
+and `fabrikPassBudget` admits its extra passes only when measured residual progress projects
+tolerance inside that ceiling. `FABRIK_MAX_ITERATIONS` is deleted rather than aliased, because
+it was internal and is no longer a maximum. `solveFabrikAttempt` reads depth from its canonical
+order, whose last member is deepest.
 
 ## Measurement
 
@@ -38,3 +42,5 @@ because the capped chains were still converging.
 
 `FB-21` pins the rule and that depth, not member count, sets it. `FB-22` pins chain-64 rig 27
 converging in 88 passes. `EN-3` holds each rig to its own depth's cap and `EN-5` pins chain-64.
+
+[adr126]: ./ADR-126-limited-fabrik-seed-side-bidirectional-limits-and-pass-budget.md
