@@ -55,6 +55,14 @@ function registry(): PluginRegistry {
 }
 
 function mounted(project: ProjectDefinition, nodes: readonly string[], goals: readonly string[]) {
+  return mountedHandle(project, nodes, goals).seek;
+}
+
+function mountedHandle(
+  project: ProjectDefinition,
+  nodes: readonly string[],
+  goals: readonly string[],
+) {
   const runtime = new Engine({
     clock: createManualClock(),
     interpolator: createFakeInterpolator(),
@@ -76,7 +84,7 @@ function mounted(project: ProjectDefinition, nodes: readonly string[], goals: re
       }),
     );
   };
-  return seek;
+  return { runtime, seek };
 }
 
 function orientation(values: Values): Matrix3 {
@@ -138,11 +146,13 @@ function goalTrack(
   };
 }
 
-function armProject(orient: boolean, zeroHand = false): ProjectDefinition {
+/** `orient` is the leaf's authored weight, `true` for 1 and `false` for none authored. */
+function armProject(orient: boolean | number, zeroHand = false): ProjectDefinition {
+  const weight = orient === true ? { orient: 1 } : orient === false ? {} : { orient };
   const members = [
     member("upper", "root", 55),
-    member("fore", "upper", 45, zeroHand ? {} : orient ? { orient: 1 } : {}),
-    ...(zeroHand ? [member("hand", "fore", 0, orient ? { orient: 1 } : {})] : []),
+    member("fore", "upper", 45, zeroHand ? {} : weight),
+    ...(zeroHand ? [member("hand", "fore", 0, weight)] : []),
   ];
   return {
     schemaVersion: 5,
@@ -261,5 +271,27 @@ describe("3D orientation and goal influence through Engine", () => {
     const weightedB = distance(tip(weighted["rig/b"]!), goalB);
     expect(weightedA).toBeLessThan(plainA);
     expect(weightedB).toBeGreaterThan(plainB);
+  });
+
+  it("TH-109 a live orient write turns the leaf exactly as the authored one does, a write back to 0 restores the solve, and an out-of-domain write reads as no orientation", () => {
+    const authored = mounted(armProject(true), ARM_NODES, ["rig/goal"]);
+    const plain = mounted(armProject(false), ARM_NODES, ["rig/goal"]);
+    // A value-tier write reaches only a key the track authors, so the live rig authors orient 0,
+    // which publishes the position solve itself (TH-96).
+    const live = mountedHandle(armProject(0), ARM_NODES, ["rig/goal"]);
+    const fore = live.runtime.track("rig/fore");
+    for (const progress of PROGRESS) {
+      // `orient` is read from live values on every solve (ADR-124), so a value-tier write needs no
+      // reload and lands byte for byte where the authored weight does.
+      fore.overrideValues({ orient: 1 });
+      expect(live.seek(progress)).toEqual(authored(progress));
+      fore.overrideValues({ orient: 0 });
+      expect(live.seek(progress)).toEqual(plain(progress));
+      // Load refuses an authored orient outside [0, 1]; a live write that bypasses load and leaves
+      // the domain is read as absent, the same totality `readInfluence` has.
+      fore.overrideValues({ orient: 2 });
+      expect(live.seek(progress)).toEqual(plain(progress));
+    }
+    live.runtime.dispose();
   });
 });

@@ -442,4 +442,45 @@ describe("3D end-effector orientation (ADR-124)", () => {
       ).toBeLessThanOrEqual(ROUNDING);
     }
   });
+
+  it("TH-110 a hinge about an arbitrary axis keeps its one degree of freedom under orient, and the published orientation stays a legal hinge turn", () => {
+    const root: WorldFrame3d = { x: 0, y: 0, z: 0, rotation: 0, rotationX: 0, rotationY: 0 };
+    const goal: WorldFrame3d = {
+      x: 20,
+      y: 30,
+      z: 18,
+      rotation: -35,
+      rotationX: 60,
+      rotationY: 110,
+    };
+    const axis = [2 / 3, 1 / 3, 2 / 3] as const;
+    const hinge: JointLimit3d = {
+      kind: "hinge",
+      axis,
+      range: { kind: "range", min: -120, max: 120 },
+    };
+    const chain = (orient?: number): readonly ChainMember3d[] => [
+      member("a", "root", 25),
+      member("b", "a", 20, {
+        goal,
+        limit: hinge,
+        ...(orient === undefined ? {} : { orient }),
+      }),
+    ];
+    const oriented = solveChain3d(root, chain(1));
+    const plain = solveChain3d(root, chain());
+    const local = orientationOf(oriented.rotations3d.b!);
+    // A hinge turn fixes its own axis: R · axis = axis.
+    const turnedAxis = [0, 1, 2].map(
+      (row) =>
+        local[row * 3]! * axis[0] + local[row * 3 + 1]! * axis[1] + local[row * 3 + 2]! * axis[2],
+    );
+    expect(largestDifference(turnedAxis, axis)).toBeLessThanOrEqual(ROUNDING);
+    // The direction the position solve chose fixes the hinge angle, so the roll is not its to give.
+    expect(largestDifference(local, orientationOf(plain.rotations3d.b!))).toBeLessThanOrEqual(
+      ROUNDING,
+    );
+    expect(oriented.residuals).toStrictEqual(plain.residuals);
+    expect(oriented.quality).toStrictEqual(plain.quality);
+  });
 });
