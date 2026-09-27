@@ -23,6 +23,8 @@ import {
   classifyInfluence,
   classifyOrient,
   classifyInspect,
+  type InfluenceAuthored,
+  type OrientAuthored,
   classifyLimit,
   FLIP_KEY,
   INFLUENCE_KEY,
@@ -490,6 +492,21 @@ interface GoalWeightRule {
   readonly valid: (value: unknown) => boolean;
 }
 
+/**
+ * Whether one classified goal weight is valid, the one exhaustive reading of the `valid | malformed`
+ * shape `classifyInfluence` and `classifyOrient` share, so neither rule restates the switch.
+ */
+function isValidWeight(authored: InfluenceAuthored | OrientAuthored): boolean {
+  switch (authored.kind) {
+    case "valid":
+      return true;
+    case "malformed":
+      return false;
+    default:
+      return unreachable(authored);
+  }
+}
+
 const GOAL_WEIGHT_RULES: readonly GoalWeightRule[] = Object.freeze([
   {
     key: INFLUENCE_KEY,
@@ -497,17 +514,7 @@ const GOAL_WEIGHT_RULES: readonly GoalWeightRule[] = Object.freeze([
     malformed: "ik-influence-malformed",
     purpose: "weighs a goal",
     domain: "one static finite number greater than 0",
-    valid: (value: unknown): boolean => {
-      const influence = classifyInfluence(value);
-      switch (influence.kind) {
-        case "valid":
-          return true;
-        case "malformed":
-          return false;
-        default:
-          return unreachable(influence);
-      }
-    },
+    valid: (value: unknown): boolean => isValidWeight(classifyInfluence(value)),
   },
   {
     key: ORIENT_KEY,
@@ -515,17 +522,7 @@ const GOAL_WEIGHT_RULES: readonly GoalWeightRule[] = Object.freeze([
     malformed: "ik-orient-malformed",
     purpose: "weighs a goal's orientation",
     domain: "one static finite number from 0 to 1",
-    valid: (value: unknown): boolean => {
-      const orient = classifyOrient(value);
-      switch (orient.kind) {
-        case "valid":
-          return true;
-        case "malformed":
-          return false;
-        default:
-          return unreachable(orient);
-      }
-    },
+    valid: (value: unknown): boolean => isValidWeight(classifyOrient(value)),
   },
 ]);
 
