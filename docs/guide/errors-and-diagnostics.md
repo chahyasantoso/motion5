@@ -142,6 +142,22 @@ Goal influence ([ADR-110](../ADR-110-goal-influence-and-conflict-policy.md)) add
   this rule, and an undecided goal shape is not reported twice; placement is checked before value
   classification.
 
+3D goal orientation ([ADR-124](../ADR-124-3d-goal-influence-and-end-effector-orientation.md)) adds
+two more, stated with the influence rules over one table so the placement and the classification
+read alike:
+
+- `ik-orient-malformed`, when an `fk3d` member's `orient` under the group that bound its `solver`
+  is not one static finite number from `0` to `1`. Animated, negative, above `1`, non-finite and
+  non-numeric values are refused.
+- `ik-orient-without-goal`, when an `orient` is under a group that did not bind `solver`, or a
+  placed orient is on a member that no resolved goal addresses. Put it on the addressed chain leaf
+  under `fk3d`, the group that binds the member's solver.
+
+Under `fk3d` both goal weights speak on a bone that bound no solver at all, because the 3D member
+vocabulary is the contract's own: an `fk3d` `influence` or `orient` there is refused as
+`ik-influence-without-goal` or `ik-orient-without-goal`, "which did not bind its solver". Under any
+other group the no-solver narrowing above is unchanged, so no 2D rig moves.
+
 A valid influence is a goal's pull when a branching solve compromises over a shared member. The
 branch pull is the mean influence of its addressed leaves, and `conflicted` quality names a
 remaining miss whose last inward-pass branch spread exceeds tolerance. Opted-in inspection has nine

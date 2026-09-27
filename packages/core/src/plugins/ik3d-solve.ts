@@ -5,6 +5,7 @@ import { solveTwoBone3d, UNBOUND_POLE3D, type Pole3d } from "./ik3d-analytic";
 import type { ChainMember3d } from "./ik3d-chain";
 import { constrains } from "./ik3d-constraint";
 import { solveTree3d } from "./ik3d-fabrik";
+import { orientLeaves3d } from "./ik3d-orient";
 import type { SolveResult3d } from "./ik3d-result";
 
 /**
@@ -60,13 +61,22 @@ export function chainShape3d(members: readonly ChainMember3d[]): ChainShape3d {
  * Each strategy owns its own magnitude decision through the shared `magnitudeOf`, because the
  * closed form's decision is part of the bytes a two-bone rig already publishes and must not move.
  * `bend` is the chain's pole, read by both strategies through the one pole rule (ADR-118).
+ *
+ * Every strategy answers position only. The end-effector orientation step then turns each addressed
+ * leaf authoring `orient` toward its goal's orientation, through `ik3d-orient.ts` for both strategies
+ * alike, by rotations that leave its tip where the strategy put it, so position keeps priority and
+ * neither strategy owns a second copy of the step (ADR-124).
  */
 export function solveChain3d(
   root: WorldFrame3d,
   members: readonly ChainMember3d[],
   bend: Pole3d = UNBOUND_POLE3D,
 ): SolveResult3d {
-  const shape = chainShape3d(members);
+  return orientLeaves3d(root, members, solvePosition3d(root, chainShape3d(members), bend));
+}
+
+/** The position solve alone: the strategy the chain's shape names, read exhaustively. */
+function solvePosition3d(root: WorldFrame3d, shape: ChainShape3d, bend: Pole3d): SolveResult3d {
   switch (shape.kind) {
     case "two-bone":
       return solveTwoBone3d(root, shape.goal, shape.first, shape.second, bend);

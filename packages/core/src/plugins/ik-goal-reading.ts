@@ -12,7 +12,9 @@ import { unreachable } from "../lang/exhaustive";
  * infinite goal on the closed form before this reader existed, stated once. A `NaN` coordinate names
  * neither, so it is refused by the member and the axis rather than read as a point that publishes
  * `NaN` or laundered into a plausible number. A goal's `rotation` is part of its frame and is not a
- * coordinate: no solve reads it. See ADR-106, ADR-111 and issue #489.
+ * coordinate: no position reading reads it, and the one reader of a 3D goal's orientation is the
+ * end-effector step in `ik3d-orient.ts`, after the position solve (ADR-124). See ADR-106, ADR-111
+ * and issue #489.
  */
 export type GoalReading =
   | { readonly kind: "point"; readonly coordinates: readonly number[] }

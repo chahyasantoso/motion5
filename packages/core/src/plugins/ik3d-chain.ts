@@ -2,6 +2,8 @@ import { readEuler3d, readFrame3d, readPivotOffset3d } from "./frame3d";
 import type { Euler3d, PivotOffset3d, WorldFrame3d } from "./frame3d";
 import { readNumber } from "./frame";
 import { goalInputs, readMembers } from "./ik-chain";
+import { readInfluence } from "./ik-goal";
+import { readOrient } from "./ik3d-orient";
 import { constrains, readJointLimit3d, type JointLimit3d } from "./ik3d-constraint";
 
 /**
@@ -21,9 +23,13 @@ import { constrains, readJointLimit3d, type JointLimit3d } from "./ik3d-constrai
  * authors no joint reads as it did before limits existed and its members compare equal to the ones
  * it built then.
  *
- * There is no `influence` yet: 3D goal influence is issue #500's seventh phase, and `fk3d` does not
- * claim the key, so the registry refuses it by name at load rather than this model accepting a
- * field nothing reads.
+ * `influence` is present only on a member whose live values carry one in its domain, read through
+ * `ik-goal.ts`'s `readInfluence`, the 2D goal owner, because a goal's pull does not depend on the
+ * dimension of the goal: the tree solve weighs its branches through the same `branchPulls` (ADR-110,
+ * ADR-124). `orient` is present only on a member whose live values carry a weight in its domain,
+ * read through `ik3d-orient.ts`, and only an addressed leaf's is ever read, by the orientation step
+ * the dispatcher runs after the position solve (ADR-124). Both are omitted rather than defaulted, so
+ * a rig authoring neither builds exactly the members it built before either existed.
  */
 export interface ChainMember3d {
   readonly id: string;
@@ -32,6 +38,8 @@ export interface ChainMember3d {
   readonly offset: PivotOffset3d;
   readonly rest: Euler3d;
   readonly limit?: JointLimit3d;
+  readonly influence?: number;
+  readonly orient?: number;
   readonly goal?: WorldFrame3d;
 }
 
@@ -41,7 +49,8 @@ export interface ChainMember3d {
  * Which member a goal belongs to is `goalInputs`'s answer, the 2D addressing owner, because that
  * question does not depend on the dimension the goal decodes to (ADR-114); `readMembers` refuses an
  * empty member list by name exactly as it does for 2D. `readFrame3d` sanitizes a non-finite goal
- * field to zero, as it does for the root, and `readJointLimit3d` reads the joint once per solve.
+ * field to zero, as it does for the root, and `readJointLimit3d` reads the joint once per solve, as
+ * `readInfluence` and `readOrient` read the goal weights.
  */
 export function readChainMembers3d(
   membersInput: unknown,
@@ -52,6 +61,8 @@ export function readChainMembers3d(
   return delivered.map((member): ChainMember3d => {
     const goal = goals.get(member.id);
     const limit = readJointLimit3d(member.values);
+    const influence = readInfluence(member.values);
+    const orient = readOrient(member.values);
     return {
       id: member.id,
       base: member.base,
@@ -59,6 +70,8 @@ export function readChainMembers3d(
       offset: readPivotOffset3d(member.values),
       rest: readEuler3d(member.values),
       ...(constrains(limit) ? { limit } : {}),
+      ...(influence === undefined ? {} : { influence }),
+      ...(orient === undefined ? {} : { orient }),
       ...(goal === undefined ? {} : { goal: readFrame3d(goal) }),
     };
   });

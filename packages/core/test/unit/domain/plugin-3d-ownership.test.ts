@@ -44,12 +44,12 @@ describe("3D plugin ownership", () => {
   });
 
   it("TH-11 refuses 2D constraint vocabulary in a 3D group", () => {
-    // `influence` is the 2D member key a 3D bone still does not claim until 3D goal influence
-    // exists. `weight` was the example until ADR-116 gave `fk3d` a per-member solved weight, and
-    // `minRotation` until ADR-123 made it a 3D hinge's range, claimed with the joint vocabulary.
+    // `bend` and `flip` are the 2D solver keys a 3D solver still does not claim. The 3D bone now
+    // claims every 2D member key: `weight` since ADR-116 gave `fk3d` a per-member solved weight,
+    // `minRotation` since ADR-123 made it a 3D hinge's range, and `influence` since ADR-124 made it
+    // weigh the 3D tree solve's compromise, beside the 3D-only `orient`.
     const resolved = registry(ik3dPlugin, fk3dPlugin).resolveForKeyframes({
-      ik3d: { values: { bend: 1 } },
-      fk3d: { values: { influence: 1 } },
+      ik3d: { values: { bend: 1, flip: true } },
     });
     expect(resolved.diagnostics.map(({ ruleId }) => ruleId).sort()).toEqual([
       "plugin-unknown-key",
@@ -59,6 +59,10 @@ describe("3D plugin ownership", () => {
       fk3d: { values: { joint: "hinge", axisY: 1, minRotation: -10, maxRotation: 45 } },
     });
     expect(joint.diagnostics).toEqual([]);
+    const weights = registry(ik3dPlugin, fk3dPlugin).resolveForKeyframes({
+      fk3d: { values: { influence: 2, orient: 0.5 } },
+    });
+    expect(weights.diagnostics).toEqual([]);
   });
 
   it("TH-88 the joint-declaring plugin set is exactly the plugins that claim the joint vocabulary", () => {

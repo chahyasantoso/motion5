@@ -21,10 +21,14 @@ import {
   type JointVocabularyKey,
   classifyBend,
   classifyInfluence,
+  classifyOrient,
   classifyInspect,
+  type InfluenceAuthored,
+  type OrientAuthored,
   classifyLimit,
   FLIP_KEY,
   INFLUENCE_KEY,
+  ORIENT_KEY,
   INSPECT_KEY,
   LIMIT_KEYS,
   type AuthoredSpelling,
@@ -41,7 +45,8 @@ import type { GraphNode } from "./ir";
 /**
  * The load rules of the solver's authored constraints: the six of constrained 2D solving (ADR-108),
  * the inspection switch's one (ADR-109), goal influence's two (ADR-110), the 3D pole's one
- * (ADR-118) and the 3D joint's two, which reuse the 2D range rules for every angle bound (ADR-123).
+ * (ADR-118), the 3D joint's two, which reuse the 2D range rules for every angle bound (ADR-123),
+ * and goal orientation's two (ADR-124).
  *
  * **Every spelling, because the solve reads the flattened bag.** A member's limits reach `ik`
  * through the member's flattened values, where a `minRotation` grouped under any plugin is the same
@@ -65,13 +70,17 @@ import type { GraphNode } from "./ir";
  * own `spring.values.bend` on a node that is no solver at all; phase 4's first draft repeated that
  * for `inspect`, and routing it through the same reader is what keeps the scope one decision.
  *
- * **Influence belongs to an addressed goal.** `influence` is member vocabulary read through the
- * limit scope, and it weighs the goal its leaf is addressed with, so it is well placed only on a
- * member the solve addresses. Which members those are is `resolveSolvers`'s answer, after goal
- * resolution, handed in as a `GoalScope` rather than re-derived here: this module would otherwise
- * be a second owner of leafhood and goal addressing. It speaks only on a node that bound a solver
- * somewhere, the narrowing `ik-weight-without-solver` makes for the same reason: this pass holds no
- * registry and cannot tell an `fk` influence from another plugin's own key on a node no solve reads.
+ * **Influence and orient belong to an addressed goal.** `influence` (ADR-110) and the 3D `orient`
+ * (ADR-124) are member vocabulary read through the limit scope, and each weighs the goal its leaf is
+ * addressed with, the first its position's pull and the second its orientation, so each is well
+ * placed only on a member the solve addresses. Both are stated by one pair of rules over
+ * `GOAL_WEIGHT_RULES` rather than once per key. Which members those are is `resolveSolvers`'s
+ * answer, after goal resolution, handed in as a `GoalScope` rather than re-derived here: this module
+ * would otherwise be a second owner of leafhood and goal addressing. On a node that bound no solver
+ * anywhere it speaks only under a 3D member group (`declaresJoint`), whose vocabulary the contract
+ * owns, so an `fk3d` goal weight on a bone no solve reads is refused by name. Under any other group
+ * it keeps the narrowing `ik-weight-without-solver` makes: this pass holds no registry and cannot
+ * tell a 2D `fk` goal weight from another plugin's own key on a node no solve reads.
  *
  * **A pole belongs to the group that bound `root`.** `pole` is a requirement slot rather than a key,
  * and `contract/solver-shape.ts` owns which solver plugins declare it, so under any other plugin the
@@ -463,31 +472,96 @@ export function recordGoalReach(
     scope.set(memberId, reach);
 }
 
-function influenceWithoutGoal(
+/**
+ * One weight a member authors on the goal its leaf is addressed with, as the goal-weight rules read
+ * it: the key, its two rule ids, the phrase each refusal names it by, and its classifier.
+ *
+ * `influence` (ADR-110) and `orient` (ADR-124) are placed by one rule and classified by another,
+ * and the placement question is the same for both: a goal weight is read only on a member the solve
+ * addresses, from the spelling under the group that bound its solver. So the rules are stated once
+ * over this record rather than once per key, and a key's own facts are the only thing each entry
+ * says. `classify` answers the static-and-in-domain question through the contract's own classifier,
+ * reduced to whether the spelling is valid, which is all the rule reads of it.
+ */
+interface GoalWeightRule {
+  readonly key: typeof INFLUENCE_KEY | typeof ORIENT_KEY;
+  readonly withoutGoal: RuleId;
+  readonly malformed: RuleId;
+  readonly purpose: string;
+  readonly domain: string;
+  readonly valid: (value: unknown) => boolean;
+}
+
+/**
+ * Whether one classified goal weight is valid, the one exhaustive reading of the `valid | malformed`
+ * shape `classifyInfluence` and `classifyOrient` share, so neither rule restates the switch.
+ */
+function isValidWeight(authored: InfluenceAuthored | OrientAuthored): boolean {
+  switch (authored.kind) {
+    case "valid":
+      return true;
+    case "malformed":
+      return false;
+    default:
+      return unreachable(authored);
+  }
+}
+
+const GOAL_WEIGHT_RULES: readonly GoalWeightRule[] = Object.freeze([
+  {
+    key: INFLUENCE_KEY,
+    withoutGoal: "ik-influence-without-goal",
+    malformed: "ik-influence-malformed",
+    purpose: "weighs a goal",
+    domain: "one static finite number greater than 0",
+    valid: (value: unknown): boolean => isValidWeight(classifyInfluence(value)),
+  },
+  {
+    key: ORIENT_KEY,
+    withoutGoal: "ik-orient-without-goal",
+    malformed: "ik-orient-malformed",
+    purpose: "weighs a goal's orientation",
+    domain: "one static finite number from 0 to 1",
+    valid: (value: unknown): boolean => isValidWeight(classifyOrient(value)),
+  },
+]);
+
+function weightWithoutGoal(
   node: GraphNode,
+  rule: GoalWeightRule,
   spelling: AuthoredSpelling,
   why: string,
 ): Diagnostic {
   return diagnostic(
-    "ik-influence-without-goal",
+    rule.withoutGoal,
     `${node.id}.keyframes.${spelling.path}`,
-    `Member "${node.id}" authors influence ${why}; influence weighs a goal and belongs on an addressed chain leaf.`,
+    `Member "${node.id}" authors ${rule.key} ${why}; ${rule.key} ${rule.purpose} and belongs on an addressed chain leaf.`,
     [node.id],
   );
 }
 
-function validateMemberInfluence(
+/**
+ * One goal weight on one member: refused where no solve reads it, then classified.
+ *
+ * Placement first, as for every member rule here: a spelling under a group that did not bind the
+ * member's solver never reaches the solve, and a placed value on a member no goal addresses is read
+ * by nothing, so each is refused for where it is rather than classified. An `undecided` member is
+ * classified but never placed, because its chain's own diagnostic already names the cause.
+ */
+function validateMemberGoalWeight(
   node: GraphNode,
+  rule: GoalWeightRule,
+  binders: ReadonlySet<string>,
   scope: GoalScope,
   diagnostics: Diagnostic[],
 ): void {
-  const binders = slotBinders(node, "solver");
-  if (binders.size === 0) return;
   let placed: AuthoredSpelling | undefined;
-  for (const spelling of authoredSpellings(node.track.keyframes, INFLUENCE_KEY)) {
+  for (const spelling of authoredSpellings(node.track.keyframes, rule.key)) {
     if (!reachesSolve(spelling, binders)) {
+      // No registry here: on a node that bound no solver, only a 3D member group's key is known.
+      if (binders.size === 0 && !declaresJoint(spelling.group)) continue;
       const why = `under ${spelling.group}, which did not bind its solver`;
-      diagnostics.push(influenceWithoutGoal(node, spelling, why));
+      diagnostics.push(weightWithoutGoal(node, rule, spelling, why));
       continue;
     }
     // `keyframes-duplicate-key` refuses a second spelling of one key, so the first is the one.
@@ -497,8 +571,7 @@ function validateMemberInfluence(
   const reach = scope.get(node.id) ?? "undecided";
   switch (reach) {
     case "unaddressed":
-      // Placement first: a value no solve reads is refused for where it is, not classified.
-      diagnostics.push(influenceWithoutGoal(node, placed, "but no goal addresses it"));
+      diagnostics.push(weightWithoutGoal(node, rule, placed, "but no goal addresses it"));
       return;
     case "addressed":
     case "undecided":
@@ -506,30 +579,32 @@ function validateMemberInfluence(
     default:
       unreachable(reach);
   }
-  const influence = classifyInfluence(placed.value);
-  switch (influence.kind) {
-    case "valid":
-      return;
-    case "malformed":
-      diagnostics.push(
-        diagnostic(
-          "ik-influence-malformed",
-          `${node.id}.keyframes.${placed.path}`,
-          `Member "${node.id}" has a malformed influence; use one static finite number greater than 0.`,
-          [node.id],
-        ),
-      );
-      return;
-    default:
-      unreachable(influence);
-  }
+  if (rule.valid(placed.value)) return;
+  diagnostics.push(
+    diagnostic(
+      rule.malformed,
+      `${node.id}.keyframes.${placed.path}`,
+      `Member "${node.id}" has a malformed ${rule.key}; use ${rule.domain}.`,
+      [node.id],
+    ),
+  );
 }
 
-/** The influence rules, run after `resolveSolvers` has resolved every solve's goals into `scope`. */
-export function validateGoalInfluence(
+/**
+ * The goal-weight rules, `influence` then `orient` on each member, run after `resolveSolvers` has
+ * resolved every solve's goals into `scope`. A node that bound no solver anywhere is read only
+ * under a 3D member group (`declaresJoint`); everywhere else it keeps the narrowing
+ * `ik-weight-without-solver` makes, because this pass holds no registry and cannot tell a 2D goal
+ * weight from another plugin's own key on a node no solve reads.
+ */
+export function validateGoalWeights(
   nodes: readonly GraphNode[],
   scope: GoalScope,
   diagnostics: Diagnostic[],
 ): void {
-  for (const node of nodes) validateMemberInfluence(node, scope, diagnostics);
+  for (const node of nodes) {
+    const binders = slotBinders(node, "solver");
+    for (const rule of GOAL_WEIGHT_RULES)
+      validateMemberGoalWeight(node, rule, binders, scope, diagnostics);
+  }
 }

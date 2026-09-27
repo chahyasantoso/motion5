@@ -32,7 +32,7 @@ import {
 import { orderGraph } from "./order";
 import {
   recordGoalReach,
-  validateGoalInfluence,
+  validateGoalWeights,
   validateSolverConstraints,
   type GoalReach,
 } from "./solver-constraints";
@@ -1037,7 +1037,7 @@ export function resolveSolvers(
     );
   }
 
-  validateGoalInfluence(nodes, goalScope, diagnostics);
+  validateGoalWeights(nodes, goalScope, diagnostics);
 
   return freeze(
     nodes.map((node) => {
