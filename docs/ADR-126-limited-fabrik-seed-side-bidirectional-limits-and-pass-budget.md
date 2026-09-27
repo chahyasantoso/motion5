@@ -16,7 +16,8 @@ The smallest reproductions made the first failure concrete. A one-way elbow rang
 `limited` at a residual of `141.42` units, and `[10, 90]` ended `limited` at `153.21`, while the
 opposite `flip` converged. Near-miss rigs ended `iteration-cap` a few thousandths short at the
 free cap of 64 passes. A fix must preserve the unconstrained path, must not turn every limited miss
-into a four-attempt search, and must make extra work answerable from the attempt's measured progress.
+into a four-attempt search, and must make extra work answerable from the attempt's measured
+progress.
 
 ## Invariant
 
@@ -51,14 +52,30 @@ owner, shared by 2D and 3D where the contract is shared.
   `iterations < cap` predicate, byte-identical to the old free path. A limited chain takes the free
   cap, then checks progress in windows of `FABRIK_PROGRESS_WINDOW = 8` passes. It continues only
   while the residual is finite, strictly decreasing over the window, and its geometric rate
-  projects reaching tolerance inside the remaining 4x ceiling. A zero or non-finite residual is
-  not a progress proof; the contract is to stop unless a finite, strictly decreasing projection
-  exists. The precise treatment of those values may still be adjusted by the follow-up engineer
-  without changing this contract.
+  projects reaching tolerance inside the remaining 4x ceiling. `projectsConvergence` is total over
+  every double: a residual inside tolerance, zero included, has arrived, and a fall from a
+  non-finite `before`, or any `NaN`, measures no rate and projects nothing. The bare logarithms
+  read `Infinity -> 1` as instant convergence and `1 -> 0` as `NaN` (independent pass finding
+  RV-1); the loop asks only while the residual is finite and above tolerance, so neither arm moves
+  a solve, and `CL-36` pins both.
 
 - **Two-dimensional bound witnesses use the enforced angle.** `limitTip` records `atBound` from
   the bounded angle it actually enforced, matching the 3D limit record. This removes a 2D/3D
   disagreement caused by re-deriving an angle from rounded positions after enforcement.
+
+- **One bound tolerance serves both dimensions.** `JOINT_BOUND_TOLERANCE = 1e-9` degrees is owned
+  by `atBound` in `ik-constraint.ts`, and the 3D cone swing reads the same constant. An angle a few
+  ulps inside a bound rests on it in both dimensions. Without it, 51 of 3,000 fuzzed planar rigs
+  reported a different quality kind in 2D and 3D from ulp-level bound reads (RV-2); with it, none
+  do. `CL-38` pins it.
+
+- **A legal limited child leaves its base where it was, in both dimensions.** `limitHinge` rebuilds
+  a hinge's local from the limited angle even in range, because the outward pass must not publish a
+  tilt off the hinge, so `boundBaseFrame3d` answered `moved` for every legal hinge child and the 3D
+  inward pass re-placed the pivot for a turn of a few ulps, where `boundBaseDirection` returns the
+  base it was given. A rebuilt local within `INWARD_FRAME_TOLERANCE = 1e-12` per entry of the
+  proposal now answers `unmoved`. The planar agreement census fell from 7 to 2 mismatches of 3,000,
+  every converged count held, and `TH-152` pins it.
 
 - **The seed owns its geometry.** `fabrik-seed.ts` is the pure home of the 2D arc seed and its
   half-angle arithmetic. The move is intentionally behavior-preserving; it keeps `fabrik.ts`
@@ -90,8 +107,14 @@ acceptance evidence. The corpus used `N=2000` and `SEED=7` limited rigs.
 - The constrained-8 benchmark changed from `197` to `200` converged solves, from `92.7` to
   `109.4` microseconds per solve, and from a maximum of `64` to `157` iterations under plain 4x.
   The budgeted policy keeps the quality recovery without charging every crawling miss.
+- At the #518 head with every fix above, the same corpus converged `1375` 2D, `1366` planar 3D and
+  `328` random-axis 3D rigs, out of `1771`, `1789` and `1802`. The planar agreement census over
+  3,000 seeded rigs (`tools/issue514/planar-agreement.ts` in the handover) left 2 mismatches, both
+  `stalled` in 2D against `iteration-cap` in 3D, the class `main` already shows on 2 to 4 rigs.
+  The benchmark figures are in [BENCH-IK](./BENCH-IK.md).
 - Unconstrained identity remains exact: the 3D tree hash is `7e3cf790`, the 3D two-bone hash is
-  `22b3680e`, and the 2D free lines are identical at `7e514e48`.
+  `22b3680e`, and the 2D free lines hash to `964c6d7e` on both sides (the untagged whole 2D dump
+  of `main` is `7e514e48`).
 
 ## What is withdrawn
 
@@ -103,13 +126,14 @@ passes by projected progress.
 
 ## Evidence
 
-- `CL-31` through `CL-37` and `TH-147` through `TH-151` in `limited-fabrik.test.ts` cover selector
-  ownership, retries, bidirectional enforcement, cap selection, projection and bound witnesses.
+- `CL-31` through `CL-38` and `TH-147` through `TH-152` in `limited-fabrik.test.ts` cover selector
+  ownership, retries, bidirectional enforcement, cap selection, projection, bound witnesses, the
+  shared bound tolerance and the legal-child inward answer.
   `SD-20`, `FB-21`, `EN-3` and `TH-73` were updated for the shared identity and cap contracts.
 - Mutation checks are failing-first: removing the selector fails `CL-31`, `CL-34`, `CL-35` and
   `TH-147`; removing the inward bound fails `CL-35` and `TH-151`; a 1x cap fails `CL-32` and
-  `TH-148`; removing projection fails `CL-36` and `TH-84`; and removing the 2D bound witness
-  fails `CL-37`.
+  `TH-148`; removing projection fails `CL-36` and `TH-84`; removing the 2D bound witness fails
+  `CL-37`; and removing the inward frame tolerance fails `TH-152`.
 - CI run [36317988227](https://github.com/chahyasantoso/motion5/actions/runs/36317988227) at
   commit `70e5882` found six `TS2339` errors in `limited-fabrik.test.ts`: the test read
   `quality.iterations` from the whole `SolveQuality` union. The fix is one exhaustive
@@ -130,6 +154,10 @@ Mixed-sign chains still reach local optima: the 2D mixed subset rose from `41` t
 rigs out of `452`, not all the way to the envelope. Random-axis hinges also remain poor at about
 19% converged, because a hinge whose axis is not the seed bend plane's normal is seeded outside its
 plane, making both seed sides illegal; an authored pole in the hinge plane works around it. Those
-are follow-ups, not claims of universal constrained convergence. Another engineer may still adjust
-non-finite or zero-residual handling in `projectsConvergence` and the 2D/3D bound bookkeeping, but
-must preserve the finite, strictly decreasing, inside-the-ceiling progress contract above.
+are follow-ups, not claims of universal constrained convergence.
+
+One 2D/3D disagreement is left deliberately, because it predates this record: both loops call an
+attempt `stalled` only when an outward pass moves nothing at all (`moved === 0`), so a planar rig
+whose 3D arithmetic keeps a residue of an ulp runs on to `iteration-cap` where 2D stops. Giving the
+test a tolerance would change which free rigs stall and so move free bytes, which this record
+promises not to do; it is a follow-up with its own identity evidence.

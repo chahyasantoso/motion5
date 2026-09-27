@@ -11,8 +11,9 @@ stacked on PR #499.
 ## Invariant
 
 A FABRIK attempt stops at the cap only after a budget proportional to its serial depth, the number
-of members on its longest root-to-leaf path. Every rig of depth 16 or less keeps the 64-pass bound
-and its bytes.
+of members on its longest root-to-leaf path. Every free rig of depth 16 or less keeps the 64-pass
+bound and its bytes. A limited rig takes this cap unconditionally and may continue past it only
+under [ADR-126][adr126]'s progress-gated ceiling of four times the cap.
 
 ## Decision
 
