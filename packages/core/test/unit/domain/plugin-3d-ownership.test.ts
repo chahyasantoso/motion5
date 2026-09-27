@@ -1,9 +1,17 @@
 import { describe, expect, it } from "vitest";
+import {
+  declaresJoint,
+  JOINT_KEY,
+  JOINT_ONLY_KEYS,
+  JOINT_VOCABULARY_KEYS,
+} from "../../../src/contract/solver-constraints";
 import { PluginRegistry, type PluginDefinition } from "../../../src/domain/plugins";
 import { validateKeyframes } from "../../../src/contract/validate-v5";
 import { buildGraphIR } from "../../../src/graph/ir";
 import type { Diagnostic, ProjectDefinition, TrackDefinition } from "../../../src/contract/v5";
+import { fkPlugin } from "../../../src/plugins/fk";
 import { fk3dPlugin } from "../../../src/plugins/fk3d";
+import { ikPlugin } from "../../../src/plugins/ik";
 import { ik3dPlugin } from "../../../src/plugins/ik3d";
 import { transform3dPlugin } from "../../../src/plugins/transform3d";
 import { transformPlugin } from "../../../src/plugins/transform";
@@ -36,16 +44,49 @@ describe("3D plugin ownership", () => {
   });
 
   it("TH-11 refuses 2D constraint vocabulary in a 3D group", () => {
-    // `minRotation` is the 2D limit key a 3D bone still does not claim; `weight` was the example
-    // until ADR-116 gave `fk3d` a per-member solved weight.
+    // `influence` is the 2D member key a 3D bone still does not claim until 3D goal influence
+    // exists. `weight` was the example until ADR-116 gave `fk3d` a per-member solved weight, and
+    // `minRotation` until ADR-123 made it a 3D hinge's range, claimed with the joint vocabulary.
     const resolved = registry(ik3dPlugin, fk3dPlugin).resolveForKeyframes({
       ik3d: { values: { bend: 1 } },
-      fk3d: { values: { minRotation: 1 } },
+      fk3d: { values: { influence: 1 } },
     });
     expect(resolved.diagnostics.map(({ ruleId }) => ruleId).sort()).toEqual([
       "plugin-unknown-key",
       "plugin-unknown-key",
     ]);
+    const joint = registry(ik3dPlugin, fk3dPlugin).resolveForKeyframes({
+      fk3d: { values: { joint: "hinge", axisY: 1, minRotation: -10, maxRotation: 45 } },
+    });
+    expect(joint.diagnostics).toEqual([]);
+  });
+
+  it("TH-88 the joint-declaring plugin set is exactly the plugins that claim the joint vocabulary", () => {
+    // `contract/solver-constraints.ts` owns which member plugins' values are a 3D joint, because
+    // the graph holds no registry; this holds that list equal to the claims every plugin definition
+    // the package ships makes, so a plugin that claims `joint` cannot go unvalidated and the list
+    // cannot name a plugin that never claims it (ADR-123). The six are every `PluginDefinition`
+    // under `src/plugins`; a seventh belongs in this list.
+    const definitions: readonly PluginDefinition[] = [
+      fkPlugin,
+      fk3dPlugin,
+      ikPlugin,
+      ik3dPlugin,
+      transformPlugin,
+      transform3dPlugin,
+    ];
+    for (const { name, keys: claimed } of definitions) {
+      const keys: readonly string[] = claimed ?? [];
+      expect(declaresJoint(name)).toBe(keys.includes(JOINT_KEY));
+      // A joint plugin claims the whole vocabulary: a kind with a bound it cannot author is a load
+      // rule speaking for a key nobody accepts. Any other plugin claims no joint-only key; the 2D
+      // range keys are shared with `fk`, where they keep ADR-108's meaning.
+      if (declaresJoint(name))
+        expect(JOINT_VOCABULARY_KEYS.every((key) => keys.includes(key))).toBe(true);
+      else expect(JOINT_ONLY_KEYS.filter((key) => keys.includes(key))).toEqual([]);
+    }
+    expect(declaresJoint("fk3d")).toBe(true);
+    expect(declaresJoint("fk")).toBe(false);
   });
 
   it("TH-12 refuses a 3D chain with a member that is not fk3d at load, and only that", () => {

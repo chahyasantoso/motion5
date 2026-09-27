@@ -2,6 +2,7 @@ import { readEuler3d, readFrame3d, readPivotOffset3d } from "./frame3d";
 import type { Euler3d, PivotOffset3d, WorldFrame3d } from "./frame3d";
 import { readNumber } from "./frame";
 import { goalInputs, readMembers } from "./ik-chain";
+import { constrains, readJointLimit3d, type JointLimit3d } from "./ik3d-constraint";
 
 /**
  * One member of a 3D solver chain as both 3D strategies read it (ADR-122).
@@ -15,9 +16,14 @@ import { goalInputs, readMembers } from "./ik-chain";
  * it, and the closed form, which owns its roll through the bend plane, does not read it. `goal` is
  * present only on a chain leaf the author addressed, under either goal spelling.
  *
- * There is no `limit` and no `influence` yet: 3D joint limits and 3D goal influence are issue
- * #500's sixth and seventh phases, and `fk3d` claims neither key, so the registry refuses both by
- * name at load rather than this model accepting a field nothing reads.
+ * `limit` is present only on a member whose live values declare a joint that constrains the solve,
+ * and absent means free, exactly as an absent 2D `limit` does (ADR-108, ADR-123), so a chain that
+ * authors no joint reads as it did before limits existed and its members compare equal to the ones
+ * it built then.
+ *
+ * There is no `influence` yet: 3D goal influence is issue #500's seventh phase, and `fk3d` does not
+ * claim the key, so the registry refuses it by name at load rather than this model accepting a
+ * field nothing reads.
  */
 export interface ChainMember3d {
   readonly id: string;
@@ -25,6 +31,7 @@ export interface ChainMember3d {
   readonly length: number;
   readonly offset: PivotOffset3d;
   readonly rest: Euler3d;
+  readonly limit?: JointLimit3d;
   readonly goal?: WorldFrame3d;
 }
 
@@ -34,7 +41,7 @@ export interface ChainMember3d {
  * Which member a goal belongs to is `goalInputs`'s answer, the 2D addressing owner, because that
  * question does not depend on the dimension the goal decodes to (ADR-114); `readMembers` refuses an
  * empty member list by name exactly as it does for 2D. `readFrame3d` sanitizes a non-finite goal
- * field to zero, as it does for the root.
+ * field to zero, as it does for the root, and `readJointLimit3d` reads the joint once per solve.
  */
 export function readChainMembers3d(
   membersInput: unknown,
@@ -44,12 +51,14 @@ export function readChainMembers3d(
   const goals = goalInputs(target, delivered);
   return delivered.map((member): ChainMember3d => {
     const goal = goals.get(member.id);
+    const limit = readJointLimit3d(member.values);
     return {
       id: member.id,
       base: member.base,
       length: readNumber(member.values.length),
       offset: readPivotOffset3d(member.values),
       rest: readEuler3d(member.values),
+      ...(constrains(limit) ? { limit } : {}),
       ...(goal === undefined ? {} : { goal: readFrame3d(goal) }),
     };
   });

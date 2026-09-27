@@ -111,8 +111,22 @@ export function restDirection(limit: JointLimit, baseDirection: number): number 
  * is free. An inverted pair is answered as `[min, min]` rather than thrown.
  */
 export function readJointLimit(values: Readonly<Record<string, unknown>>): JointLimit {
-  const min = readLimitDegree(values[MIN_ROTATION_KEY]);
-  const max = readLimitDegree(values[MAX_ROTATION_KEY]);
+  return readAngleRange(values, MIN_ROTATION_KEY, MAX_ROTATION_KEY);
+}
+
+/**
+ * The angle range a pair of live bound keys declares, by `readJointLimit`'s rules: the one reader of
+ * a live angle range, which a 3D hinge reads under the 2D keys and a 3D swing-twist reads under its
+ * twist keys (ADR-123), so the defaults, the domain and the `[min, min]` answer to an inverted pair
+ * are stated once for every range either dimension solves with.
+ */
+export function readAngleRange(
+  values: Readonly<Record<string, unknown>>,
+  minKey: string,
+  maxKey: string,
+): JointLimit {
+  const min = readLimitDegree(values[minKey]);
+  const max = readLimitDegree(values[maxKey]);
   if (min === undefined && max === undefined) return FREE_JOINT;
   const lower = min ?? LIMIT_FLOOR;
   return { kind: "range", min: lower, max: Math.max(lower, max ?? LIMIT_CEILING) };

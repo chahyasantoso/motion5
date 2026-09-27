@@ -1,3 +1,4 @@
+import { unreachable } from "../lang/exhaustive";
 import { readAuthoredLeaf } from "./authored-leaf";
 import { PLUGIN_VALUES_SECTION, readPluginValues } from "./keyframe-shape";
 
@@ -99,6 +100,249 @@ export function classifyBend(value: unknown): BendAuthored {
   return bend === "positive" || bend === "negative"
     ? { kind: "bend", bend }
     : { kind: "malformed" };
+}
+
+/**
+ * The authored vocabulary of a 3D joint limit (ADR-123), read by `ik3d` from its `fk3d` members.
+ *
+ * `joint` names the member's limit kind and is the union's discriminant, so which keys a limit reads
+ * is decided by one authored word rather than inferred from whichever keys happen to be present:
+ * `free` (the default, no limit), `hinge` (one degree of freedom, a turn about an axis in the parent
+ * frame, `axisX`/`axisY`/`axisZ`, default the parent's +z, through the 2D `minRotation` and
+ * `maxRotation` range), `cone` (the member's direction within `maxSwing` degrees of its parent's +x)
+ * and `swing-twist` (a cone plus a `minTwist`/`maxTwist` range about the member's own +x). Every
+ * angle bound is static degrees: `maxSwing` in `[0, 180]`, the others in the 2D limit domain.
+ */
+export const JOINT_KEY = "joint" as const;
+export const AXIS_X_KEY = "axisX" as const;
+export const AXIS_Y_KEY = "axisY" as const;
+export const AXIS_Z_KEY = "axisZ" as const;
+export const MAX_SWING_KEY = "maxSwing" as const;
+export const MIN_TWIST_KEY = "minTwist" as const;
+export const MAX_TWIST_KEY = "maxTwist" as const;
+
+export type JointKind = "free" | "hinge" | "cone" | "swing-twist";
+export const JOINT_KINDS: readonly JointKind[] = Object.freeze([
+  "free",
+  "hinge",
+  "cone",
+  "swing-twist",
+]);
+
+export type AxisKey = typeof AXIS_X_KEY | typeof AXIS_Y_KEY | typeof AXIS_Z_KEY;
+export type TwistKey = typeof MIN_TWIST_KEY | typeof MAX_TWIST_KEY;
+export const AXIS_KEYS: readonly AxisKey[] = Object.freeze([AXIS_X_KEY, AXIS_Y_KEY, AXIS_Z_KEY]);
+export const TWIST_KEYS: readonly TwistKey[] = Object.freeze([MIN_TWIST_KEY, MAX_TWIST_KEY]);
+
+/** Every key a 3D joint limit reads besides `joint` itself, the 2D range keys among them. */
+export type JointBoundKey = AxisKey | LimitKey | typeof MAX_SWING_KEY | TwistKey;
+export type JointVocabularyKey = typeof JOINT_KEY | JointBoundKey;
+export const JOINT_BOUND_KEYS: readonly JointBoundKey[] = Object.freeze([
+  ...AXIS_KEYS,
+  ...LIMIT_KEYS,
+  MAX_SWING_KEY,
+  ...TWIST_KEYS,
+]);
+/** The whole 3D joint vocabulary, `joint` first: what `fk3d` claims and the load rules read. */
+export const JOINT_VOCABULARY_KEYS: readonly JointVocabularyKey[] = Object.freeze([
+  JOINT_KEY,
+  ...JOINT_BOUND_KEYS,
+]);
+/** The keys only a 3D joint reads: its vocabulary without the 2D range it shares with `fk`. */
+export const JOINT_ONLY_KEYS: readonly JointVocabularyKey[] = Object.freeze([
+  JOINT_KEY,
+  ...AXIS_KEYS,
+  MAX_SWING_KEY,
+  ...TWIST_KEYS,
+]);
+
+/**
+ * The member plugins whose authored values carry the 3D joint vocabulary, and the one owner of that
+ * set (ADR-123). Under any other group `minRotation` and `maxRotation` keep ADR-108's 2D meaning,
+ * so the graph reads this to decide which classifier a spelling belongs to; a test holds it equal to
+ * the plugin definitions that claim `joint`.
+ */
+const JOINT_MEMBER_PLUGINS: readonly string[] = Object.freeze(["fk3d"]);
+
+/** Whether `plugin`'s values are read as a 3D joint limit. */
+export function declaresJoint(plugin: string): boolean {
+  return JOINT_MEMBER_PLUGINS.includes(plugin);
+}
+
+/** The bound keys a joint of `kind` reads; any other bound key authored beside it is unused. */
+export function jointBoundKeys(kind: JointKind): readonly JointBoundKey[] {
+  switch (kind) {
+    case "free":
+      return [];
+    case "hinge":
+      return [...AXIS_KEYS, ...LIMIT_KEYS];
+    case "cone":
+      return [MAX_SWING_KEY];
+    case "swing-twist":
+      return [MAX_SWING_KEY, ...TWIST_KEYS];
+    default:
+      return unreachable(kind);
+  }
+}
+
+/** Whether a joint of `kind` constrains the solve at all: every kind but `free`. */
+export function jointConstrains(kind: JointKind): boolean {
+  switch (kind) {
+    case "free":
+      return false;
+    case "hinge":
+    case "cone":
+    case "swing-twist":
+      return true;
+    default:
+      return unreachable(kind);
+  }
+}
+
+/** A `joint` value naming one of the four kinds, or `undefined` for anything else. */
+export function readJointKind(value: unknown): JointKind | undefined {
+  return JOINT_KINDS.find((kind) => kind === value);
+}
+
+/** A swing bound in its domain `[0, 180]` degrees, or `undefined` for anything else. */
+export function readSwingDegree(value: unknown): number | undefined {
+  return typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= LIMIT_CEILING
+    ? value
+    : undefined;
+}
+
+/** A hinge axis component: any finite number, or `undefined` for anything else. */
+export function readAxisComponent(value: unknown): number | undefined {
+  return typeof value === "number" && Number.isFinite(value) ? value : undefined;
+}
+
+/**
+ * One authored 3D joint limit, classified, each refusal arm naming what its diagnostic cites.
+ *
+ * `valid` carries the kind only: the runtime reader in `plugins/ik3d-constraint.ts` owns the numbers
+ * it solves with, and the load rules need nothing else from an accepted limit. `malformed-kind` is a
+ * `joint` that is not one static kind name; `malformed` a bound outside its domain or not static;
+ * `missing` a `maxSwing` a cone or swing-twist cannot do without; `zero-axis` an authored hinge axis
+ * with no direction; `unused` a bound key the declared kind does not read, including every bound on
+ * a member that declared no joint or `free`; `empty` an inverted range.
+ */
+export type JointAuthored =
+  | { readonly kind: "valid"; readonly joint: JointKind }
+  | { readonly kind: "malformed-kind" }
+  | { readonly kind: "malformed"; readonly key: JointBoundKey }
+  | { readonly kind: "missing"; readonly joint: JointKind; readonly key: JointBoundKey }
+  | { readonly kind: "zero-axis" }
+  | { readonly kind: "unused"; readonly joint: JointKind; readonly key: JointBoundKey }
+  | {
+      readonly kind: "empty";
+      readonly key: LimitKey | TwistKey;
+      readonly min: number;
+      readonly max: number;
+    };
+
+function readStatic<T>(value: unknown, read: (inner: unknown) => T | undefined): T | undefined {
+  const leaf = readAuthoredLeaf(value);
+  return leaf.kind === "static" ? read(leaf.value) : undefined;
+}
+
+/** An authored range pair: each present side a static degree in the limit domain, min <= max. */
+function classifyPair(
+  values: Readonly<Partial<Record<JointVocabularyKey, unknown>>>,
+  minKey: LimitKey | TwistKey,
+  maxKey: LimitKey | TwistKey,
+): JointAuthored | undefined {
+  let min = LIMIT_FLOOR;
+  let max = LIMIT_CEILING;
+  for (const key of [minKey, maxKey]) {
+    if (!Object.hasOwn(values, key)) continue;
+    const bound = readStatic(values[key], readLimitDegree);
+    if (bound === undefined) return { kind: "malformed", key };
+    if (key === minKey) min = bound;
+    else max = bound;
+  }
+  return min > max ? { kind: "empty", key: minKey, min, max } : undefined;
+}
+
+/** A hinge's authored axis: each present component static and finite, not all of them zero. */
+function classifyAxis(
+  values: Readonly<Partial<Record<JointVocabularyKey, unknown>>>,
+): JointAuthored | undefined {
+  let authored = false;
+  let direction = false;
+  for (const key of AXIS_KEYS) {
+    if (!Object.hasOwn(values, key)) continue;
+    const component = readStatic(values[key], readAxisComponent);
+    if (component === undefined) return { kind: "malformed", key };
+    authored = true;
+    direction ||= component !== 0;
+  }
+  return authored && !direction ? { kind: "zero-axis" } : undefined;
+}
+
+/** The `maxSwing` a cone or swing-twist cannot do without: present, static and in `[0, 180]`. */
+function classifySwing(
+  values: Readonly<Partial<Record<JointVocabularyKey, unknown>>>,
+  joint: JointKind,
+): JointAuthored | undefined {
+  if (!Object.hasOwn(values, MAX_SWING_KEY)) return { kind: "missing", joint, key: MAX_SWING_KEY };
+  return readStatic(values[MAX_SWING_KEY], readSwingDegree) === undefined
+    ? { kind: "malformed", key: MAX_SWING_KEY }
+    : undefined;
+}
+
+/**
+ * Classifies the 3D joint a member authored, from the joint keys it authored under the spellings
+ * that reach the solve.
+ *
+ * Read in the order a reader fixes them: the kind first, because every other answer depends on it;
+ * then any bound the kind does not read, in `JOINT_BOUND_KEYS` order, because a value nothing reads
+ * is refused for being there before it is judged; then each read bound. An absent `joint` is
+ * `free`, so a member that authored nothing is valid and one that authored only bounds is told
+ * those bounds are unused rather than having a kind guessed for it.
+ */
+export function classifyJoint(
+  values: Readonly<Partial<Record<JointVocabularyKey, unknown>>>,
+): JointAuthored {
+  const joint = Object.hasOwn(values, JOINT_KEY)
+    ? readStatic(values[JOINT_KEY], readJointKind)
+    : "free";
+  if (joint === undefined) return { kind: "malformed-kind" };
+  const read = jointBoundKeys(joint);
+  for (const key of JOINT_BOUND_KEYS)
+    if (Object.hasOwn(values, key) && !read.includes(key)) return { kind: "unused", joint, key };
+  switch (joint) {
+    case "free":
+      return { kind: "valid", joint };
+    case "hinge":
+      return (
+        classifyAxis(values) ??
+        classifyPair(values, MIN_ROTATION_KEY, MAX_ROTATION_KEY) ?? { kind: "valid", joint }
+      );
+    case "cone":
+      return classifySwing(values, joint) ?? { kind: "valid", joint };
+    case "swing-twist":
+      return (
+        classifySwing(values, joint) ??
+        classifyPair(values, MIN_TWIST_KEY, MAX_TWIST_KEY) ?? { kind: "valid", joint }
+      );
+    default:
+      return unreachable(joint);
+  }
+}
+
+/**
+ * Whether a member whose solver groups are `groups` authored a joint that constrains its solve: a
+ * static `joint` naming a kind other than `free` under one of them. The graph reads it to derive the
+ * strategy at load, restating what `ik3d-constraint.ts`'s `constrains` answers at runtime; a test
+ * holds the two equal. A malformed `joint` constrains nothing here, because `ik-joint-malformed`
+ * already refuses the load.
+ */
+export function authorsConstrainingJoint(keyframes: unknown, groups: readonly string[]): boolean {
+  return authoredSpellings(keyframes, JOINT_KEY).some((spelling) => {
+    if (!groups.includes(spelling.group)) return false;
+    const kind = readStatic(spelling.value, readJointKind);
+    return kind !== undefined && jointConstrains(kind);
+  });
 }
 
 /**

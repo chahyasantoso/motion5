@@ -11,11 +11,14 @@ import { buildGraphIR } from "../../../src/graph/ir";
 import { readFrame3d, ZERO_EULER, type Euler3d } from "../../../src/plugins/frame3d";
 import { UNBOUND_POLE3D, readPole3d } from "../../../src/plugins/ik3d-analytic";
 import type { ChainMember3d } from "../../../src/plugins/ik3d-chain";
+import type { JointLimit3d } from "../../../src/plugins/ik3d-constraint";
 import { chainShape3d, solveChain3d } from "../../../src/plugins/ik3d-solve";
 
 // Two load rules phase 5's tree shape made wrong or missing, both read from the derived chain
 // through `contract/solver-shape.ts`: a rest orientation the tree solve reads is live input, and a
-// pole over a chain with no interior joint bends nothing. See ADR-122.
+// pole over a chain with no interior joint bends nothing. See ADR-122. Phase 6 adds a member's
+// constraining joint to what the derived chain carries, and `TH-76` holds that reading equal to the
+// runtime's too (ADR-123).
 
 type Topology = Readonly<Record<string, string>>;
 
@@ -82,15 +85,22 @@ function rules(project: ProjectDefinition): readonly string[] {
   return buildGraphIR(project).diagnostics.map(({ ruleId, path }) => `${ruleId} at ${path}`);
 }
 
-function depthsOf(topology: Topology): readonly DerivedChainMember[] {
+function depthsOf(topology: Topology, constrained?: string): readonly DerivedChainMember[] {
   return Object.keys(topology).map((id) => {
     let depth = 0;
     for (let cursor = id; cursor !== "root"; cursor = topology[cursor]!) depth += 1;
-    return { depth, plugins: ["fk3d"] };
+    return { depth, plugins: ["fk3d"], constrained: id === constrained };
   });
 }
 
-function members3d(topology: Topology, rest: Euler3d = ZERO_EULER): readonly ChainMember3d[] {
+/** The joint a constrained member carries in `TH-76`; any constraining kind answers the same. */
+const CONE: JointLimit3d = { kind: "cone", maxSwing: 45 };
+
+function members3d(
+  topology: Topology,
+  rest: Euler3d = ZERO_EULER,
+  constrained?: string,
+): readonly ChainMember3d[] {
   const leaves = new Set(leavesOf(topology));
   return Object.entries(topology).map(([id, base], index) => ({
     id,
@@ -98,6 +108,7 @@ function members3d(topology: Topology, rest: Euler3d = ZERO_EULER): readonly Cha
     length: 30,
     offset: { x: 0, y: 0, z: 0 },
     rest: id === "a" ? rest : ZERO_EULER,
+    ...(id === constrained ? { limit: CONE } : {}),
     ...(leaves.has(id) ? { goal: readFrame3d({ x: 40 + 10 * index, y: 20, z: 30 - index }) } : {}),
   }));
 }
@@ -119,15 +130,24 @@ describe("3D tree load rules", () => {
   it("TH-76 the load-time strategy agrees with the runtime dispatcher on every forest up to five members", () => {
     const tree = solverChainShape("ik3d");
     let compared = 0;
+    let constrainedCompared = 0;
     for (let count = 1; count <= 5; count += 1) {
       for (const topology of forests(count)) {
-        const atLoad = derivedStrategy(tree, depthsOf(topology));
-        const atRun = chainShape3d(members3d(topology)).kind;
-        expect(atLoad).toBe(atRun === "two-bone" ? "closed-form" : "iterative");
-        compared += 1;
+        // Unconstrained, then with each member in turn carrying a constraining joint (ADR-123):
+        // either reading sends every constrained chain, two members included, to the iterative
+        // solve, and the runtime names that arm `constrained`.
+        for (const constrained of [undefined, ...Object.keys(topology)]) {
+          const atLoad = derivedStrategy(tree, depthsOf(topology, constrained));
+          const atRun = chainShape3d(members3d(topology, ZERO_EULER, constrained)).kind;
+          expect(atLoad).toBe(atRun === "two-bone" ? "closed-form" : "iterative");
+          expect(atRun === "constrained").toBe(constrained !== undefined);
+          if (constrained === undefined) compared += 1;
+          else constrainedCompared += 1;
+        }
       }
     }
     expect(compared).toBe(1 + 2 + 6 + 24 + 120);
+    expect(constrainedCompared).toBe(1 * 1 + 2 * 2 + 3 * 6 + 4 * 24 + 5 * 120);
     // The 2D solve reads no rest on any path, so `any` is never the closed-form answer to this.
     expect(derivedStrategy(solverChainShape("ik"), depthsOf(TWO_BONE))).toBe("iterative");
     expect(readsMemberRest(solverChainShape("ik"), depthsOf(SERIAL3))).toBe(false);

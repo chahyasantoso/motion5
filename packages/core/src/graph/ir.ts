@@ -21,6 +21,7 @@ import {
 import { acceptedOutcome, readOutcome, refusedOutcome, type Outcome } from "../lang/outcome";
 import { readPluginBindings, readPluginValues } from "../contract/keyframe-shape";
 import { PLUGIN_GOALS_SLOT } from "../contract/solver-slots";
+import { authorsConstrainingJoint } from "../contract/solver-constraints";
 import { compareCodeUnits } from "./compare";
 import {
   assertAuthoredMotionId,
@@ -838,10 +839,14 @@ export function resolveSolvers(
     // and has no depth to judge. See ADR-114.
     const rootPlugin = edgeRequirement(rootEdge)?.plugin ?? "";
     const shape = solverChainShape(rootPlugin);
-    const derived = chains.map(({ node, depth }) => ({
-      depth,
-      plugins: solverPluginsOf(node, solver.id),
-    }));
+    const derived = chains.map(({ node, depth }) => {
+      const plugins = solverPluginsOf(node, solver.id);
+      return {
+        depth,
+        plugins,
+        constrained: authorsConstrainingJoint(node.track.keyframes, plugins),
+      };
+    });
     const accepted = unreachable.size === 0 && acceptsChain(shape, derived);
     if (unreachable.size === 0 && !accepted) {
       diagnostics.push(

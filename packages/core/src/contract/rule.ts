@@ -80,6 +80,8 @@ const BASE_RULES = {
   "ik-influence-malformed": ERROR_WITH_IDS,
   "ik-influence-without-goal": ERROR_WITH_IDS,
   "ik-inspect-malformed": ERROR_WITH_IDS,
+  "ik-joint-key-unused": ERROR_WITH_IDS,
+  "ik-joint-malformed": ERROR_WITH_IDS,
   "ik-leaf-without-goal": ERROR_WITH_IDS,
   "ik-limit-empty": ERROR_WITH_IDS,
   "ik-limit-malformed": ERROR_WITH_IDS,

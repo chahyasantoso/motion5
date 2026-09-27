@@ -38,6 +38,7 @@ import {
 } from "./ik3d-analytic";
 import type { ChainMember3d } from "./ik3d-chain";
 import { compromise3d, type Pull3d } from "./ik3d-compromise";
+import { FREE_JOINT3D, limitLocal3d } from "./ik3d-constraint";
 import { restoreResult3d, type SolveResult3d } from "./ik3d-result";
 
 /**
@@ -163,6 +164,7 @@ export function solveTree3dAttempt(
     vector[0] === 0 && vector[1] === 0 && vector[2] === 0 ? undefined : vector,
   );
   const rests = chain.map(({ rest }) => matrixFromEuler3d(rest));
+  const limits = chain.map(({ limit }) => limit ?? FREE_JOINT3D);
   const inner = ids.find((id) => (childCount.get(id) ?? 0) > 0 && byId.get(id)!.goal !== undefined);
   if (inner !== undefined)
     throw new Error(`Solver goal on member "${inner}" is not on a leaf of the chain.`);
@@ -176,6 +178,11 @@ export function solveTree3dAttempt(
   const pivots: Vec3[] = new Array<Vec3>(count);
   const frames: Matrix3[] = new Array<Matrix3>(count);
   const settled: Vec3[] = new Array<Vec3>(count);
+  // A limited member's legal local orientation from the last outward pass, published as it is
+  // rather than re-derived from the frames, and whether it rests on a bound. Free members hold
+  // `undefined` and `false` and publish exactly the expression they always did.
+  const locals: (Matrix3 | undefined)[] = new Array<Matrix3 | undefined>(count);
+  const bounded: boolean[] = new Array<boolean>(count).fill(false);
   const parentFrame = (index: number): Matrix3 => {
     const base = parent[index]!;
     return base === ROOT ? rootMatrix : frames[base]!;
@@ -232,11 +239,15 @@ export function solveTree3dAttempt(
       tips[index] = add3(originOf(index), scale3(rootX, lengths[index]!));
 
   /**
-   * The outward pass: the only place lengths are enforced and the only place a frame is built, in
-   * canonical depth order, so each member reads its base's final frame and tip. It is `fk3d`'s own
-   * composition over the current tip guesses, with the orientation reconstructed by the minimal
-   * swing from the member's rest frame; a zero-length member keeps its rest frame, which is what it
-   * composes, and its children hang where the solve put them. Answers the largest coordinate any
+   * The outward pass: the only place lengths are enforced, the only place a frame is built and the
+   * only place a joint limit is enforced, in canonical depth order, so each member reads its base's
+   * final frame and tip. It is `fk3d`'s own composition over the current tip guesses, with the
+   * orientation reconstructed by the minimal swing from the member's rest frame; a zero-length
+   * member keeps its rest frame, which is what it composes, and its children hang where the solve
+   * put them. A limited member's proposed local orientation is then replaced by the legal one
+   * nearest it (`limitLocal3d`, ADR-123) and its tip re-placed along the legal direction, so every
+   * later pass starts from a legal pose and the published orientation is legal because the pose
+   * is, not because the output was clamped afterwards (ADR-108). Answers the largest coordinate any
    * tip moved from where the previous outward pass settled it.
    */
   const outward = (): number => {
@@ -247,8 +258,27 @@ export function solveTree3dAttempt(
       const shift = offset[index];
       const pivot = shift === undefined ? origin : add3(origin, multiplyVector3(frame, shift));
       const length = lengths[index]!;
-      const tip = place3d(pivot, tips[index]!, length);
+      const placed = place3d(pivot, tips[index]!, length);
       const rest = multiplyMatrix3(frame, rests[index]!);
+      const swung = length > 0 ? swingFrame3d(rest, subtract3(placed, pivot)) : rest;
+      const limited = limitLocal3d(limits[index]!, () =>
+        length > 0 ? multiplyMatrix3(transposeMatrix3(frame), swung) : rests[index]!,
+      );
+      bounded[index] = limited.atBound;
+      let solved = swung;
+      let tip = placed;
+      switch (limited.kind) {
+        case "unmoved":
+          locals[index] = undefined;
+          break;
+        case "moved":
+          locals[index] = limited.local;
+          solved = multiplyMatrix3(frame, limited.local);
+          if (length > 0) tip = add3(pivot, scale3(axisX3(solved), length));
+          break;
+        default:
+          unreachable(limited);
+      }
       const was = settled[index];
       if (was !== undefined)
         moved = Math.max(
@@ -260,7 +290,7 @@ export function solveTree3dAttempt(
       settled[index] = tip;
       pivots[index] = pivot;
       tips[index] = tip;
-      frames[index] = length > 0 ? swingFrame3d(rest, subtract3(tip, pivot)) : rest;
+      frames[index] = solved;
     }
     return moved;
   };
@@ -326,11 +356,20 @@ export function solveTree3dAttempt(
     residuals[ids[leaf]!] = miss;
     worst = Math.max(worst, miss);
   });
+  const atBounds: string[] = [];
   for (let index = 0; index < count; index += 1) {
-    const local = multiplyMatrix3(transposeMatrix3(parentFrame(index)), frames[index]!);
+    const local =
+      locals[index] ?? multiplyMatrix3(transposeMatrix3(parentFrame(index)), frames[index]!);
     rotations3d[ids[index]!] = Object.freeze(eulerFromMatrix3d(local));
+    if (bounded[index]) atBounds.push(ids[index]!);
   }
-  const quality = iterativeQuality({ residual: worst, iterations, atBound: [], spread, stalled });
+  const quality = iterativeQuality({
+    residual: worst,
+    iterations,
+    atBound: atBounds,
+    spread,
+    stalled,
+  });
   return Object.freeze({
     rotations3d: Object.freeze(rotations3d),
     residuals: Object.freeze(residuals),
