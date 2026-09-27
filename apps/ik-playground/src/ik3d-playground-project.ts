@@ -1,5 +1,6 @@
 import type { MotionDefinition, TrackDefinition } from "@motion5/core";
 import { SCROLL_SOURCE } from "./ik-playground-project";
+import { frameAround } from "./projection";
 
 /**
  * The 3D half of the playground: a four-member chain, so the spatial solve is 3D FABRIK.
@@ -12,7 +13,7 @@ import { SCROLL_SOURCE } from "./ik-playground-project";
  * composes it into the one project the app loads, which is also the project the suite loads.
  *
  * Every renderer on the page draws this one rig: the CSS 3D stage and the three.js stage read the
- * same published frames, and both project them with `IK3D_VIEW` (`projection.ts`).
+ * same published frames, and both project them with `IK3D_VIEW` into `IK3D_FRAME` (`projection.ts`).
  */
 export const IK3D_MOTION_ID = "rig3d";
 export const IK3D_NODE_ID = (trackId: string): string => `${IK3D_MOTION_ID}/${trackId}`;
@@ -26,11 +27,25 @@ export const IK3D_NODE_ID = (trackId: string): string => `${IK3D_MOTION_ID}/${tr
 export const IK3D_VIEW = { width: 360, height: 300, perspective: 720 } as const;
 export const IK3D_PERSPECTIVE = IK3D_VIEW.perspective;
 
-/** Where a drag may put the goal: inside the box, and never behind the viewer. */
+/**
+ * The authored box inset by a margin, at every depth a goal may take. It sizes `IK3D_FRAME`; a drag
+ * is clamped to the frame itself (`goal-control.ts`), so the whole drawn stage is reachable.
+ */
 export const IK3D_GOAL_BOUNDS = {
   min: { x: 12, y: 12, z: -160 },
   max: { x: IK3D_VIEW.width - 12, y: IK3D_VIEW.height - 12, z: 160 },
 } as const;
+
+/** The goal handle's radius in screen pixels: its 54px hit ring, drawn around the goal. */
+export const IK3D_GOAL_RADIUS = 27;
+
+/**
+ * What every 3D stage draws, in box pixels: the box widened until the goal handle stays whole
+ * wherever `IK3D_GOAL_BOUNDS` reaches. A goal toward the viewer is drawn outside the box it was
+ * authored in, so a stage that showed only the box clipped the handle and stopped the drag at an
+ * edge nobody could see.
+ */
+export const IK3D_FRAME = frameAround(IK3D_VIEW, IK3D_GOAL_BOUNDS, IK3D_GOAL_RADIUS);
 
 export const IK3D = {
   label: "FABRIK 3D chain",

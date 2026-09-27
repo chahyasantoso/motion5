@@ -42,23 +42,20 @@ package, `@motion5/three`, with `three` as a peer.
   broader: its DOM tab renders the 2D FABRIK stage on the left, the 3D FABRIK stage on the right and
   the solver panel at the far right; its `three.js` tab renders the same 3D project through
   `@motion5/three`, with the panel on the right. On phone-width screens the stages stack and the
-  panel becomes the scrollable strip below them (`TH-145` to `TH-147`).
+  panel becomes the scrollable strip below them (layout checked in headless Chromium, not a suite test).
 - The app and the integration suite use one `loadPlayground` setup path. It composes the 2D and 3D
   Motions into one authored project because `addMotion` accepts only empty-track Motions; attempting
   to add the full authored 3D Motion at runtime caused the checkpoint-2 blank page, so composition
-  and shared mounting are the owner (`TH-132`, `TH-148`, `TH-149`).
+  and shared mounting are the owner (`TH-132`).
 - The page scroll is the one trigger for both Motions, and it changes only authored member weights:
   top-to-bottom goes from unsolved to solved, while a goal drag writes immediately at the weight the
   scroll currently selected. Planar and spatial drags are separate closed goal moves but share this
   immediate value-tier publication (`TH-134`, `TH-136`, `TH-137`). Non-finite goals are refused,
-  finite goals are clamped to the stage bounds, and the planar flip is written by the same control
-  owner
-  (`TH-138`).
+  finite goals are clamped to the stage bounds, and the planar flip is written by the same control owner (`TH-138`).
 - The pending-intent model is withdrawn. The owner asked for immediate drags, so a marker does not
   wait for the next scroll event and the application does not keep pending versus applied goals.
-  Scroll owns weight only; `GoalControl` owns goal and flip writes. Coalescing and disposal still
-  cancel
-  queued work and source subscriptions exactly once (`TH-139`, `TH-146`).
+  Scroll owns weight only; `GoalControl` owns goal and flip writes. Coalescing and disposal still cancel queued
+  work and source subscriptions exactly once (`TH-139`).
 - `@motion5/three` keeps the DOM adapter's per-object, per-node revision ordering, refusing stale or
   duplicate frames and re-arming a node when an object is rebound (`TH-133`). Core import predicates
   all read the single extracted import-specifier set, so dynamic `import()` and `require()` of
@@ -71,6 +68,13 @@ package, `@motion5/three`, with `three` as a peer.
   the same view dimensions and perspective, with the mirrored y axis accounted for, so a goal at a
   given world point lands on the same pixel and pointer unprojection answers the same depth in both
   tabs (`TH-142` to `TH-144`).
+- Every 3D stage draws `IK3D_FRAME`, the box widened until the goal handle stays whole at every
+  reachable depth, and a spatial drag is clamped to that drawn frame rather than to the authored
+  box, so the handle is never clipped and never stops at an invisible edge (`TH-145`, `TH-146`). The
+  three.js renderer owns its canvas (a React-owned canvas cannot survive `forceContextLoss()` across
+  the StrictMode remount, which blanked the tab), each tab sits in an error boundary, and the goal
+  handle over the WebGL canvas is the same DOM control as in the CSS stage, so touch, focus and
+  keyboard behave identically. `three` is pinned to `^0.186.1` to match `@types/three`.
 - ADR-114, ADR-115, ADR-116, ADR-117, ADR-118, ADR-120, ADR-122, ADR-123 and ADR-124 are marked
   Accepted as the public contract. Their "nothing 3D is exported" sentences describe the surface
   each slice changed and stay as written; ADR-114's internal-only decision carries a marker.
@@ -89,9 +93,9 @@ package, `@motion5/three`, with `three` as a peer.
 
 ## Evidence
 
-`TH-111` to `TH-149`, run in the sandbox under the Vitest stand-in with real TypeScript 5.8.3,
+`TH-111` to `TH-146`, run in the sandbox under the Vitest stand-in with real TypeScript 5.8.3,
 GSAP 3.15.0 and three 0.186.1; reviewed, not trusted, and no CI run yet. The checkpoint-2 and
-checkpoint-3 records are `TH-132` through `TH-149`: shared playground setup and the blank-page fix
-(`TH-132`, `TH-148`, `TH-149`), adapter and boundary hardening (`TH-133`, `TH-135`), weight-only
+checkpoint-3 and 4 records are `TH-132` through `TH-146`: shared playground setup and the blank-page fix
+(`TH-132`), adapter and boundary hardening (`TH-133`, `TH-135`), weight-only
 scroll and immediate goal writes (`TH-134`, `TH-136` to `TH-139`), React marker derivation
-(`TH-140`, `TH-141`), and the shared CSS/WebGL projection (`TH-142` to `TH-144`).
+(`TH-140`, `TH-141`), and the shared CSS/WebGL projection and frame (`TH-142` to `TH-146`).

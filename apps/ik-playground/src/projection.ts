@@ -24,6 +24,23 @@ export interface Point3 extends Point2 {
   readonly z: number;
 }
 
+/**
+ * The screen rectangle a stage draws, in the box's own unscaled pixels. It may be larger than the
+ * box: a point toward the viewer is drawn outside the box it was authored in.
+ */
+export interface ScreenFrame {
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly height: number;
+}
+
+/** An axis-aligned world region, such as where a drag may put a goal. */
+export interface WorldBounds {
+  readonly min: Point3;
+  readonly max: Point3;
+}
+
 /** `d / (d - z)`, or `undefined` at or behind the viewer, where nothing is drawn. */
 function depthScale(view: PerspectiveView, z: number): number | undefined {
   const distance = view.perspective - z;
@@ -53,23 +70,79 @@ export function unprojectPoint(
 }
 
 /**
- * The three.js camera that sees exactly what the CSS stage draws, in the renderer's y-up space.
+ * The frame, centred on the box, that draws every point of `bounds` plus `margin` screen pixels
+ * around it (a marker's radius), so nothing a drag can reach is ever clipped by the stage.
+ *
+ * Centred because CSS `perspective-origin` and the three.js camera both look at the box centre; a
+ * centred frame keeps them agreeing without an off-axis camera. `bounds` must lie in front of the
+ * viewer, which a drag clamp guarantees.
+ */
+export function frameAround(
+  view: PerspectiveView,
+  bounds: WorldBounds,
+  margin: number,
+): ScreenFrame {
+  const cx = view.width / 2;
+  const cy = view.height / 2;
+  let halfWidth = cx;
+  let halfHeight = cy;
+  for (const x of [bounds.min.x, bounds.max.x])
+    for (const y of [bounds.min.y, bounds.max.y])
+      for (const z of [bounds.min.z, bounds.max.z]) {
+        const screen = projectPoint(view, { x, y, z });
+        if (screen === undefined) throw new RangeError("Bounds reach behind the viewer.");
+        halfWidth = Math.max(halfWidth, Math.abs(screen.x - cx) + margin);
+        halfHeight = Math.max(halfHeight, Math.abs(screen.y - cy) + margin);
+      }
+  return { x: cx - halfWidth, y: cy - halfHeight, width: 2 * halfWidth, height: 2 * halfHeight };
+}
+
+/**
+ * The point nearest `point` at its (clamped) depth whose projection lies at least `margin` screen
+ * pixels inside `frame`: a drag can move the goal anywhere the stage draws it whole, and no further.
+ * `depth` bounds the depth; it must lie in front of the viewer.
+ */
+export function clampToFrame(
+  view: PerspectiveView,
+  frame: ScreenFrame,
+  margin: number,
+  depth: { readonly min: number; readonly max: number },
+  point: Point3,
+): Point3 {
+  const z = Math.min(depth.max, Math.max(depth.min, point.z));
+  const screen = projectPoint(view, { ...point, z });
+  if (screen === undefined) throw new RangeError("Depth bounds reach behind the viewer.");
+  const inside = {
+    x: Math.min(frame.x + frame.width - margin, Math.max(frame.x + margin, screen.x)),
+    y: Math.min(frame.y + frame.height - margin, Math.max(frame.y + margin, screen.y)),
+  };
+  if (inside.x === screen.x && inside.y === screen.y) return { ...point, z };
+  return unprojectPoint(view, inside, z) ?? { ...point, z };
+}
+
+/**
+ * The three.js camera that sees exactly what the CSS stage draws in `frame`, in the renderer's
+ * y-up space.
  *
  * Frames publish in CSS space (y down, z toward the viewer). A stage that mirrors its rig group by
  * `scale.y = -1` puts world `(x, y, z)` at three.js `(x, -y, z)`, so the camera sits over the box
- * centre at `(width/2, -height/2, d)` looking down `-z`.
+ * centre at `(width/2, -height/2, d)` looking down `-z`, with the field of view that spans the
+ * frame's height at the box plane.
  */
-export function threeCamera(view: PerspectiveView): {
+export function threeCamera(
+  view: PerspectiveView,
+  frame: ScreenFrame,
+): {
   readonly fov: number;
   readonly aspect: number;
   readonly position: Point3;
   readonly target: Point3;
 } {
-  const fov = (2 * Math.atan(view.height / 2 / view.perspective) * 180) / Math.PI;
+  const fov = (2 * Math.atan(frame.height / 2 / view.perspective) * 180) / Math.PI;
   const centre = { x: view.width / 2, y: -view.height / 2 };
   return {
     fov,
-    aspect: view.width / view.height,
+    aspect: frame.width / frame.height,
     position: { ...centre, z: view.perspective },
     target: { ...centre, z: 0 },
   };

@@ -1,6 +1,16 @@
 import type { ProjectHandle } from "@motion5/core";
 import { STAGE_2D, TENTACLE, nodeId } from "./ik-playground-project";
-import { IK3D, IK3D_GOAL_BOUNDS, IK3D_NODE_ID } from "./ik3d-playground-project";
+import {
+  IK3D,
+  IK3D_FRAME,
+  IK3D_GOAL_BOUNDS,
+  IK3D_GOAL_RADIUS,
+  IK3D_NODE_ID,
+  IK3D_VIEW,
+} from "./ik3d-playground-project";
+import { clampToFrame } from "./projection";
+
+const IK3D_DEPTH = { min: IK3D_GOAL_BOUNDS.min.z, max: IK3D_GOAL_BOUNDS.max.z } as const;
 
 /**
  * A drag's answer: where one rig's goal should be, in the units that rig's frames publish.
@@ -43,7 +53,8 @@ function finite(goal: GoalMove): boolean {
  * one publication, no graph replacement, and no progress change, so the chain moves immediately at
  * the member weights the scroll set. Scroll owns weight and nothing else; this owns the goal and the
  * flip and nothing else. A non-finite point is ignored rather than written, and every point is
- * clamped to the box its stage draws, so a drag can never park a goal where nobody can grab it back.
+ * clamped to what its stage draws (the planar margin box; the spatial depth range and the frame
+ * with the whole handle inside it), so a drag can never park a goal where nobody can grab it back.
  */
 export function createGoalControl(project: Pick<ProjectHandle, "track">): GoalControl {
   return {
@@ -57,12 +68,14 @@ export function createGoalControl(project: Pick<ProjectHandle, "track">): GoalCo
           });
           return;
         case "spatial": {
-          const { min, max } = IK3D_GOAL_BOUNDS;
-          project.track(IK3D_NODE_ID(IK3D.goalTrack)).setValues({
-            x: clamp(goal.x, min.x, max.x),
-            y: clamp(goal.y, min.y, max.y),
-            z: clamp(goal.z, min.z, max.z),
-          });
+          const { x, y, z } = clampToFrame(
+            IK3D_VIEW,
+            IK3D_FRAME,
+            IK3D_GOAL_RADIUS,
+            IK3D_DEPTH,
+            goal,
+          );
+          project.track(IK3D_NODE_ID(IK3D.goalTrack)).setValues({ x, y, z });
           return;
         }
         default: {

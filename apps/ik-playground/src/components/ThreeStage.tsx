@@ -2,67 +2,31 @@ import React, { useLayoutEffect, useRef } from "react";
 import type { ProjectHandle } from "@motion5/core";
 import { createObject3dPatchAdapter } from "@motion5/three";
 import * as THREE from "three";
-import { IK3D, IK3D_NODE_ID, IK3D_NODE_IDS, IK3D_VIEW } from "../ik3d-playground-project";
-import { threeCamera, unprojectPoint } from "../projection";
-import { useGoalDrag } from "./goal-drag";
+import {
+  IK3D,
+  IK3D_FRAME,
+  IK3D_GOAL_BOUNDS,
+  IK3D_NODE_ID,
+  IK3D_NODE_IDS,
+  IK3D_VIEW,
+} from "../ik3d-playground-project";
+import { threeCamera } from "../projection";
 import type { GoalControl } from "../goal-control";
-
-/** One colour per frame marker, keyed by the closed marker-kind union. */
-type MarkerKind = "goal" | "pole" | "root";
-const MARKER_COLOR: Readonly<Record<MarkerKind, string>> = {
-  goal: "#fbbf24",
-  pole: "#34d399",
-  root: "#c084fc",
-};
-
-/** One colour per authored member, keyed by the closed member-id tuple. */
-const BONE_COLOR: Readonly<Record<(typeof IK3D.memberTracks)[number], string>> = {
-  upper: "#c084fc",
-  fore: "#818cf8",
-  wrist: "#38bdf8",
-  hand: "#22d3ee",
-};
+import { GoalHandle, Ik3dFrame, Ik3dWorld } from "./Ik3dFrame";
+import { BONE_COLOR, FRAME_COLOR, type FrameKind } from "./ik3d-palette";
 
 interface ThreeScene {
-  readonly renderer: THREE.WebGLRenderer;
-  readonly camera: THREE.PerspectiveCamera;
-  readonly raycaster: THREE.Raycaster;
-  readonly goal: THREE.Object3D;
+  /** The renderer's own canvas; the stage mounts it and removes it again on disposal. */
+  readonly canvas: HTMLCanvasElement;
   readonly adapter: ReturnType<typeof createObject3dPatchAdapter>;
-  readonly nodeMap: Map<string, THREE.Object3D>;
+  readonly resize: (width: number, height: number) => void;
   readonly render: () => void;
   readonly dispose: () => void;
 }
 
-interface GoalSession {
-  readonly zAtGrab: number;
-  readonly startScreenY: number;
-}
-
-function numberValue(
-  values: Readonly<Record<string, unknown>>,
-  key: string,
-  fallback: number,
-): number {
-  const value = values[key];
-  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
-}
-
-function screenPoint(
-  event: React.PointerEvent<Element>,
-  canvas: HTMLCanvasElement,
-): { readonly x: number; readonly y: number } | undefined {
-  const bounds = canvas.getBoundingClientRect();
-  if (bounds.width <= 0 || bounds.height <= 0) return undefined;
-  return {
-    x: ((event.clientX - bounds.left) / bounds.width) * IK3D_VIEW.width,
-    y: ((event.clientY - bounds.top) / bounds.height) * IK3D_VIEW.height,
-  };
-}
-
-function marker(kind: MarkerKind): THREE.Group {
+function marker(kind: FrameKind): THREE.Group {
   const group = new THREE.Group();
-  const color = MARKER_COLOR[kind];
+  const color = FRAME_COLOR[kind];
   const material = new THREE.MeshStandardMaterial({
     color,
     emissive: color,
@@ -76,13 +40,6 @@ function marker(kind: MarkerKind): THREE.Group {
   );
   visible.castShadow = true;
   group.add(visible);
-  if (kind === "goal") {
-    const hit = new THREE.Mesh(
-      new THREE.SphereGeometry(20, 16, 10),
-      new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false }),
-    );
-    group.add(hit);
-  }
   return group;
 }
 
@@ -115,14 +72,19 @@ function member(id: (typeof IK3D.memberTracks)[number], length: number): THREE.G
 
 function disposeScene(scene: THREE.Scene): void {
   scene.traverse((object) => {
-    if (!(object instanceof THREE.Mesh) && !(object instanceof THREE.LineSegments)) return;
+    if (!(object instanceof THREE.Mesh) && !(object instanceof THREE.Line)) return;
     object.geometry.dispose();
     const materials = Array.isArray(object.material) ? object.material : [object.material];
     for (const material of materials) material.dispose();
   });
 }
 
-function makeScene(canvas: HTMLCanvasElement): ThreeScene {
+/**
+ * Builds the scene with a renderer that owns its canvas. A React-owned canvas cannot be reused
+ * after `forceContextLoss()`, which is exactly what StrictMode's remount did: the second
+ * `WebGLRenderer` got a lost context and threw, and the page went blank.
+ */
+function makeScene(): ThreeScene {
   const scene = new THREE.Scene();
   scene.background = new THREE.Color("#080c14");
   const rig = new THREE.Group();
@@ -153,42 +115,47 @@ function makeScene(canvas: HTMLCanvasElement): ThreeScene {
   const ambient = new THREE.HemisphereLight("#dbeafe", "#111827", 1.5);
   scene.add(ambient);
   const directional = new THREE.DirectionalLight("#ffffff", 2.2);
-  directional.position.set(100, -80, 260);
+  // Scene space is y-up with the box at (0..width, 0..-height): light from above-right, in front.
+  directional.position.set(IK3D_VIEW.width, 120, 420);
+  directional.target.position.set(IK3D_VIEW.width / 2, -IK3D_VIEW.height / 2, 0);
   directional.castShadow = true;
   directional.shadow.mapSize.set(1024, 1024);
-  directional.shadow.camera.left = -220;
-  directional.shadow.camera.right = 220;
-  directional.shadow.camera.top = 220;
-  directional.shadow.camera.bottom = -220;
+  directional.shadow.camera.left = -320;
+  directional.shadow.camera.right = 320;
+  directional.shadow.camera.top = 320;
+  directional.shadow.camera.bottom = -320;
+  directional.shadow.camera.far = 1400;
+  // A soft contact cue, not a silhouette: the backdrop is far behind the chain.
+  directional.shadow.intensity = 0.35;
+  scene.add(directional.target);
   scene.add(directional);
 
-  const floorMaterial = new THREE.MeshStandardMaterial({
-    color: "#111827",
-    roughness: 0.9,
-    metalness: 0,
-    transparent: true,
-    opacity: 0.72,
-  });
-  const floor = new THREE.Mesh(new THREE.PlaneGeometry(440, 520), floorMaterial);
-  floor.rotation.x = -Math.PI / 2;
-  floor.position.set(IK3D_VIEW.width / 2, -IK3D_VIEW.height, 0);
-  floor.receiveShadow = true;
-  scene.add(floor);
-  const grid = new THREE.GridHelper(440, 22, "#334155", "#1e293b");
-  grid.position.set(IK3D_VIEW.width / 2, -IK3D_VIEW.height + 0.2, 0);
-  scene.add(grid);
+  // A backdrop at the far depth bound catches the shadows, in the mirrored rig's CSS pixels.
+  const { min, max } = IK3D_GOAL_BOUNDS;
+  const centre = { x: (min.x + max.x) / 2, y: (min.y + max.y) / 2 };
+  const backdrop = new THREE.Mesh(
+    new THREE.PlaneGeometry(IK3D_FRAME.width * 1.4, IK3D_FRAME.height * 1.4),
+    new THREE.MeshStandardMaterial({ color: "#0b1322", roughness: 0.95, metalness: 0 }),
+  );
+  backdrop.position.set(centre.x, centre.y, min.z);
+  backdrop.receiveShadow = true;
+  rig.add(backdrop);
+  const grid = new THREE.GridHelper(IK3D_FRAME.width * 1.4, 24, "#27496f", "#16253a");
+  grid.rotation.x = Math.PI / 2;
+  grid.position.set(centre.x, centre.y, min.z + 0.5);
+  rig.add(grid);
 
-  const view = threeCamera(IK3D_VIEW);
+  const view = threeCamera(IK3D_VIEW, IK3D_FRAME);
   const camera = new THREE.PerspectiveCamera(view.fov, view.aspect, 1, 3000);
   camera.position.set(view.position.x, view.position.y, view.position.z);
   camera.up.set(0, 1, 0);
   camera.lookAt(view.target.x, view.target.y, view.target.z);
   scene.add(camera);
 
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
   renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.shadowMap.type = THREE.PCFShadowMap;
 
   const adapter = createObject3dPatchAdapter((nodeId) => nodeMap.get(nodeId));
   let frame: number | undefined;
@@ -201,112 +168,84 @@ function makeScene(canvas: HTMLCanvasElement): ThreeScene {
   };
 
   return {
-    renderer,
-    camera,
-    raycaster: new THREE.Raycaster(),
-    goal,
+    canvas: renderer.domElement,
     adapter,
-    nodeMap,
+    resize(width, height) {
+      if (width <= 0 || height <= 0) return;
+      renderer.setSize(width, height, false);
+      render();
+    },
     render,
     dispose() {
       if (frame !== undefined) cancelAnimationFrame(frame);
       disposeScene(scene);
       renderer.dispose();
       renderer.forceContextLoss();
+      renderer.domElement.remove();
     },
   };
 }
 
+/** Mounts the WebGL scene in `host` and keeps it posed from the runtime until the returned stop. */
+function mountScene(host: HTMLElement, handle: ProjectHandle): () => void {
+  const scene = makeScene();
+  scene.canvas.className = "three-stage-canvas";
+  scene.canvas.setAttribute("aria-hidden", "true");
+  host.append(scene.canvas);
+
+  const subscriptions = IK3D_NODE_IDS.map((nodeId) => {
+    const initial = handle.get(nodeId);
+    if (initial !== undefined) scene.adapter.apply(initial);
+    return handle.subscribeNode(nodeId, (patch) => {
+      scene.adapter.apply(patch);
+      scene.render();
+    });
+  });
+  const observer = new ResizeObserver(([entry]) => {
+    if (entry !== undefined) scene.resize(entry.contentRect.width, entry.contentRect.height);
+  });
+  observer.observe(host);
+  scene.resize(host.clientWidth, host.clientHeight);
+
+  return () => {
+    observer.disconnect();
+    for (const unsubscribe of subscriptions) unsubscribe();
+    scene.dispose();
+  };
+}
+
+/** The WebGL canvas host; mounted inside the fitted frame, so it exists once it has a size. */
+const ThreeCanvas: React.FC<{ readonly handle: ProjectHandle }> = ({ handle }) => {
+  const hostRef = useRef<HTMLDivElement | null>(null);
+  useLayoutEffect(() => {
+    const host = hostRef.current;
+    return host === null ? undefined : mountScene(host, handle);
+  }, [handle]);
+  return <div ref={hostRef} className="three-stage-host" />;
+};
+
+/**
+ * The FABRIK 3D rig through `@motion5/three`. The canvas draws `IK3D_FRAME` exactly like the CSS
+ * stage, so the goal handle layered over it is the same component, posed by the same frames.
+ */
 export const ThreeStage: React.FC<{
   readonly handle: ProjectHandle;
   readonly goals: GoalControl;
-}> = ({ handle, goals }) => {
-  const containerRef = useRef<HTMLDivElement | null>(null);
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const sceneRef = useRef<ThreeScene | undefined>(undefined);
-  const drag = useGoalDrag<GoalSession>({
-    begin(event) {
-      const scene = sceneRef.current;
-      const canvas = canvasRef.current;
-      if (scene === undefined || canvas === null) return undefined;
-      const bounds = canvas.getBoundingClientRect();
-      if (bounds.width <= 0 || bounds.height <= 0) return undefined;
-      scene.raycaster.setFromCamera(
-        new THREE.Vector2(
-          ((event.clientX - bounds.left) / bounds.width) * 2 - 1,
-          -((event.clientY - bounds.top) / bounds.height) * 2 + 1,
-        ),
-        scene.camera,
-      );
-      if (scene.raycaster.intersectObject(scene.goal, true).length === 0) return undefined;
-      const patch = handle.get(IK3D_NODE_ID(IK3D.goalTrack));
-      const values = patch?.status === "ready" ? patch.values : {};
-      const zAtGrab = numberValue(values, "z", IK3D.goal.z);
-      const point = screenPoint(event, canvas);
-      return point === undefined ? undefined : { zAtGrab, startScreenY: point.y };
-    },
-    move(session, event) {
-      const canvas = canvasRef.current;
-      if (canvas === null) return;
-      const screen = screenPoint(event, canvas);
-      if (screen === undefined) return;
-      event.preventDefault();
-      const z = event.shiftKey
-        ? session.zAtGrab + session.startScreenY - screen.y
-        : session.zAtGrab;
-      const point = unprojectPoint(IK3D_VIEW, screen, z);
-      if (point !== undefined) goals.move({ rig: "spatial", ...point });
-    },
-  });
-
-  useLayoutEffect(() => {
-    const canvas = canvasRef.current;
-    const container = containerRef.current;
-    if (canvas === null || container === null) return undefined;
-    const scene = makeScene(canvas);
-    sceneRef.current = scene;
-
-    const subscriptions = IK3D_NODE_IDS.map((nodeId) => {
-      const initial = handle.get(nodeId);
-      if (initial !== undefined) scene.adapter.apply(initial);
-      return handle.subscribeNode(nodeId, (patch) => {
-        scene.adapter.apply(patch);
-        scene.render();
-      });
-    });
-
-    const resize = (width: number, height: number) => {
-      if (width <= 0 || height <= 0) return;
-      scene.renderer.setSize(width, height, false);
-      scene.render();
-    };
-    const observer = new ResizeObserver(([entry]) => {
-      if (entry !== undefined) resize(entry.contentRect.width, entry.contentRect.height);
-    });
-    observer.observe(container);
-    resize(container.clientWidth, container.clientHeight);
-    scene.render();
-
-    return () => {
-      observer.disconnect();
-      for (const unsubscribe of subscriptions) unsubscribe();
-      scene.dispose();
-      sceneRef.current = undefined;
-    };
-  }, [handle]);
-
-  return (
-    <div
-      ref={containerRef}
-      className="three-stage-canvas"
-      style={{ width: "100%", aspectRatio: `${IK3D_VIEW.width} / ${IK3D_VIEW.height}` }}
-    >
-      <canvas
-        ref={canvasRef}
-        aria-label="FABRIK 3D chain rendered with three.js"
-        style={{ display: "block", width: "100%", height: "100%", touchAction: "pan-y" }}
-        {...drag}
-      />
+}> = ({ handle, goals }) => (
+  <section className="stage-card three-stage" aria-label="FABRIK 3D chain rendered with three.js">
+    <div className="stage-card-heading">
+      <strong>{IK3D.label}</strong>
+      <span>four members · one goal · pole · three.js</span>
     </div>
-  );
-};
+    <Ik3dFrame className="ik3d-three">
+      {(scale, toBox) => (
+        <>
+          <ThreeCanvas handle={handle} />
+          <Ik3dWorld scale={scale}>
+            <GoalHandle handle={handle} goals={goals} scale={scale} toBox={toBox} />
+          </Ik3dWorld>
+        </>
+      )}
+    </Ik3dFrame>
+  </section>
+);

@@ -7,6 +7,7 @@ import { createGsapInterpolator, createGsapScrollSource } from "@motion5/core/ad
 import { Ik3dStage } from "./components/Ik3dStage";
 import { IkStage } from "./components/IkStage";
 import { SolverPanel } from "./components/SolverPanel";
+import { StageBoundary } from "./components/StageBoundary";
 import { ThreeStage } from "./components/ThreeStage";
 import { TENTACLE, nodeId } from "./ik-playground-project";
 import { loadPlayground, type PlaygroundRuntime } from "./playground-runtime";
@@ -149,7 +150,11 @@ export const App: React.FC = () => {
             role="tabpanel"
             aria-labelledby={`tab-${tab}`}
           >
-            {handle && goals ? tabPanel(tab, handle, goals) : <p>Loading rig…</p>}
+            {handle && goals ? (
+              <StageBoundary key={tab}>{tabPanel(tab, handle, goals)}</StageBoundary>
+            ) : (
+              <p>Loading rig…</p>
+            )}
           </div>
         </section>
         <aside className="sidebar">

@@ -187,6 +187,7 @@
       }
 
       .ik3d-viewport {
+        position: relative;
         display: flex;
         flex: 1;
         min-height: 0;
@@ -195,11 +196,33 @@
         overflow: hidden;
       }
 
-      .ik3d-world {
+      /* IK3D_FRAME at the fitted scale: every 3D layer is positioned inside it. */
+      .ik3d-frame {
         position: relative;
         flex: 0 0 auto;
-        overflow: hidden;
+      }
+
+      .ik3d-world {
+        position: absolute;
+        left: 0;
+        top: 0;
+        transform-origin: 0 0;
+        transform-style: preserve-3d;
+        perspective-origin: 50% 50%;
+        pointer-events: none;
+      }
+
+      .ik3d-css .ik3d-frame {
         background: radial-gradient(circle at 50% 45%, rgba(56, 189, 248, 0.08), transparent 70%);
+      }
+
+      /* The frame is the drag area: the goal can go anywhere inside it, so draw its edge. */
+      .ik3d-frame::after {
+        position: absolute;
+        inset: 0;
+        border: 1px dashed rgba(56, 189, 248, 0.22);
+        border-radius: 8px;
+        content: "";
         pointer-events: none;
       }
 
@@ -216,8 +239,28 @@
       }
 
       .three-stage-wrap {
+        display: flex;
         height: 100%;
         padding: 0.75rem;
+      }
+
+      .three-stage {
+        flex: 1;
+      }
+
+      .three-stage-host,
+      .three-stage-canvas {
+        position: absolute;
+        inset: 0;
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+
+      .stage-error {
+        margin: 0.75rem;
+        color: var(--amber);
+        font-size: 0.8rem;
       }
 
       .sidebar {
@@ -359,20 +402,6 @@
       input:focus-visible {
         outline: 2px solid var(--text);
         outline-offset: 3px;
-      }
-
-      .ik3d-viewport {
-        position: relative;
-      }
-
-      .ik3d-world {
-        position: absolute;
-        left: 50%;
-        top: 50%;
-        transform-origin: 50% 50%;
-        transform-style: preserve-3d;
-        perspective-origin: 50% 50%;
-        pointer-events: none;
       }
 
       .ik3d-member {

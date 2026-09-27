@@ -309,11 +309,11 @@ describe("IK playground scroll-only rest blending", () => {
         y: STAGE_2D.height - STAGE_2D.margin,
       });
       test.runtime.goals.move({ rig: "spatial", x: -100, y: 1000, z: 1000 });
-      expect(values(test.runtime, IK3D_NODE_ID(IK3D.goalTrack))).toMatchObject({
-        x: 12,
-        y: 288,
-        z: 160,
-      });
+      const spatial = values(test.runtime, IK3D_NODE_ID(IK3D.goalTrack));
+      // At the nearest depth the frame edge is exactly the authored box corner (TH-145).
+      expect(Number(spatial.x)).toBeCloseTo(12, 9);
+      expect(Number(spatial.y)).toBeCloseTo(288, 9);
+      expect(spatial.z).toBe(160);
       test.runtime.goals.move({ rig: "planar", x: TENTACLE.goal.x, y: TENTACLE.goal.y });
       test.emit(1);
       const before = TENTACLE.memberTracks.map((id) =>

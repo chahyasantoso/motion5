@@ -22,6 +22,21 @@ const endpoints: PatchDerivation = ([parent = {}, child = {}]) => {
 
 const position: PatchDerivation = ([values = {}]) => point(values);
 
+/** One line between two published frames; each line owns its binding, so an absent one costs nothing. */
+const BoneLine: React.FC<{
+  readonly handle: ProjectHandle;
+  readonly parentId: string;
+  readonly childId: string;
+  readonly stroke: string;
+  readonly width: number;
+  readonly opacity?: number;
+}> = ({ handle, parentId, childId, stroke, width, opacity }) => {
+  const bind = useDerivedDomPatch<SVGLineElement>(handle, [parentId, childId], endpoints);
+  return (
+    <line ref={bind} stroke={stroke} strokeWidth={width} strokeLinecap="round" opacity={opacity} />
+  );
+};
+
 const Bone: React.FC<{
   readonly handle: ProjectHandle;
   readonly parentId: string;
@@ -29,24 +44,21 @@ const Bone: React.FC<{
   readonly width: number;
   readonly color: string;
   readonly innerColor?: string;
-}> = ({ handle, parentId, childId, width, color, innerColor }) => {
-  const bind = useDerivedDomPatch<SVGLineElement>(handle, [parentId, childId], endpoints);
-  const bindInner = useDerivedDomPatch<SVGLineElement>(handle, [parentId, childId], endpoints);
-  return (
-    <g>
-      <line ref={bind} stroke={color} strokeWidth={width} strokeLinecap="round" />
-      {innerColor ? (
-        <line
-          ref={bindInner}
-          stroke={innerColor}
-          strokeWidth={Math.max(1, width - 3)}
-          strokeLinecap="round"
-          opacity={0.6}
-        />
-      ) : null}
-    </g>
-  );
-};
+}> = ({ handle, parentId, childId, width, color, innerColor }) => (
+  <g>
+    <BoneLine handle={handle} parentId={parentId} childId={childId} stroke={color} width={width} />
+    {innerColor ? (
+      <BoneLine
+        handle={handle}
+        parentId={parentId}
+        childId={childId}
+        stroke={innerColor}
+        width={Math.max(1, width - 3)}
+        opacity={0.6}
+      />
+    ) : null}
+  </g>
+);
 
 const Joint: React.FC<{
   readonly handle: ProjectHandle;
