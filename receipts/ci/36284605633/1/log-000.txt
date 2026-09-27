@@ -1,0 +1,32 @@
+quality (node 24.21.0)	Run npm run typecheck	﻿2026-09-27T01:08:25.3520161Z ##[group]Run npm run typecheck
+quality (node 24.21.0)	Run npm run typecheck	2026-09-27T01:08:25.3520516Z ^[[36;1mnpm run typecheck^[[0m
+quality (node 24.21.0)	Run npm run typecheck	2026-09-27T01:08:25.3583528Z shell: /usr/bin/bash -e {0}
+quality (node 24.21.0)	Run npm run typecheck	2026-09-27T01:08:25.3583784Z env:
+quality (node 24.21.0)	Run npm run typecheck	2026-09-27T01:08:25.3583980Z   NODE_VERSION: 24.21.0
+quality (node 24.21.0)	Run npm run typecheck	2026-09-27T01:08:25.3584269Z   CI_EVIDENCE_DIR: /home/runner/work/_temp/ci-evidence
+quality (node 24.21.0)	Run npm run typecheck	2026-09-27T01:08:25.3584589Z ##[endgroup]
+quality (node 24.21.0)	Run npm run typecheck	2026-09-27T01:08:25.4567731Z 
+quality (node 24.21.0)	Run npm run typecheck	2026-09-27T01:08:25.4568222Z > motion5@0.0.0 typecheck
+quality (node 24.21.0)	Run npm run typecheck	2026-09-27T01:08:25.4568719Z > tsc --noEmit -p tsconfig.json
+quality (node 24.21.0)	Run npm run typecheck	2026-09-27T01:08:25.4568932Z 
+quality (node 24.21.0)	Run npm run typecheck	2026-09-27T01:08:31.7993370Z ##[error]packages/core/test/unit/graph/ik3d-goal-weights-load.test.ts(54,17): error TS2322: Type 'Readonly<Record<string, unknown>>' is not assignable to type 'Readonly<Record<string, string | Readonly<Record<string, string>>>>'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-27T01:08:31.8004927Z   'string' index signatures are incompatible.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-27T01:08:31.8005856Z     Type 'unknown' is not assignable to type 'string | Readonly<Record<string, string>>'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-27T01:08:31.8007884Z ##[error]packages/core/test/unit/graph/ik3d-goal-weights-load.test.ts(89,50): error TS2554: Expected 1 arguments, but got 3.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-27T01:08:31.8538912Z ##[error]Process completed with exit code 2.
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	﻿2026-09-27T01:10:29.8432565Z ##[group]Run test "$SUITE_RESULT" = success
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-27T01:10:29.8433386Z ^[[36;1mtest "$SUITE_RESULT" = success^[[0m
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-27T01:10:29.8608600Z shell: /usr/bin/bash -e {0}
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-27T01:10:29.8609444Z env:
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-27T01:10:29.8609955Z   NODE_VERSION: 24.21.0
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-27T01:10:29.8610724Z   SUITE_RESULT: failure
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-27T01:10:29.8611318Z ##[endgroup]
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-27T01:10:29.8727025Z ##[error]Process completed with exit code 1.
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	﻿2026-09-27T01:10:28.7974958Z ##[group]Run test "$SUITE_RESULT" = success
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-27T01:10:28.7975576Z ^[[36;1mtest "$SUITE_RESULT" = success^[[0m
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-27T01:10:28.8181362Z shell: /usr/bin/bash -e {0}
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-27T01:10:28.8182055Z env:
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-27T01:10:28.8182409Z   NODE_VERSION: 24.21.0
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-27T01:10:28.8182806Z   SUITE_RESULT: failure
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-27T01:10:28.8183196Z ##[endgroup]
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-27T01:10:28.8320315Z ##[error]Process completed with exit code 1.
