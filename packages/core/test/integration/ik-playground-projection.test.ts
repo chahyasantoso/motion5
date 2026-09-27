@@ -8,6 +8,7 @@ import {
 } from "../../../../apps/ik-playground/src/ik3d-playground-project";
 import {
   clampToFrame,
+  drawnRadius,
   projectPoint,
   threeCamera,
   unprojectPoint,
@@ -15,15 +16,18 @@ import {
 
 const DEPTH = { min: IK3D_GOAL_BOUNDS.min.z, max: IK3D_GOAL_BOUNDS.max.z } as const;
 
+/** The handle drawn around `point` (its radius scaled by perspective) lies whole in the frame. */
 function insideFrame(point: { readonly x: number; readonly y: number; readonly z: number }): void {
   const screen = projectPoint(IK3D_VIEW, point);
+  const radius = drawnRadius(IK3D_VIEW, IK3D_GOAL_RADIUS, point.z);
   expect(screen).toBeDefined();
-  if (!screen) return;
+  expect(radius).toBeDefined();
+  if (!screen || radius === undefined) return;
   const slack = 1e-9;
-  expect(screen.x).toBeGreaterThanOrEqual(IK3D_FRAME.x + IK3D_GOAL_RADIUS - slack);
-  expect(screen.x).toBeLessThanOrEqual(IK3D_FRAME.x + IK3D_FRAME.width - IK3D_GOAL_RADIUS + slack);
-  expect(screen.y).toBeGreaterThanOrEqual(IK3D_FRAME.y + IK3D_GOAL_RADIUS - slack);
-  expect(screen.y).toBeLessThanOrEqual(IK3D_FRAME.y + IK3D_FRAME.height - IK3D_GOAL_RADIUS + slack);
+  expect(screen.x - radius).toBeGreaterThanOrEqual(IK3D_FRAME.x - slack);
+  expect(screen.x + radius).toBeLessThanOrEqual(IK3D_FRAME.x + IK3D_FRAME.width + slack);
+  expect(screen.y - radius).toBeGreaterThanOrEqual(IK3D_FRAME.y - slack);
+  expect(screen.y + radius).toBeLessThanOrEqual(IK3D_FRAME.y + IK3D_FRAME.height + slack);
 }
 
 const DEPTHS = [-120, 0, 120] as const;
@@ -96,6 +100,16 @@ describe("IK playground perspective projection", () => {
     const { min, max } = IK3D_GOAL_BOUNDS;
     for (const x of [min.x, max.x])
       for (const y of [min.y, max.y]) for (const z of [min.z, 0, max.z]) insideFrame({ x, y, z });
+    // The nearest depth draws the handle larger than authored, which a constant margin missed.
+    expect(drawnRadius(IK3D_VIEW, IK3D_GOAL_RADIUS, max.z)).toBeCloseTo(
+      (IK3D_GOAL_RADIUS * IK3D_VIEW.perspective) / (IK3D_VIEW.perspective - max.z),
+      12,
+    );
+    const nearest = projectPoint(IK3D_VIEW, { x: max.x, y: max.y, z: max.z })!;
+    expect(IK3D_FRAME.x + IK3D_FRAME.width - nearest.x).toBeCloseTo(
+      drawnRadius(IK3D_VIEW, IK3D_GOAL_RADIUS, max.z)!,
+      9,
+    );
   });
 
   it("TH-146 clamps a goal to the drawn frame at its depth, reaching past the authored box", () => {
@@ -113,10 +127,9 @@ describe("IK playground perspective projection", () => {
         expect(clamped.z).toBe(Math.min(DEPTH.max, Math.max(DEPTH.min, z)));
         insideFrame(clamped);
         const edge = projectPoint(IK3D_VIEW, clamped);
+        const radius = drawnRadius(IK3D_VIEW, IK3D_GOAL_RADIUS, clamped.z) ?? Number.NaN;
         expect(edge?.x).toBeCloseTo(
-          corner.x < 0
-            ? IK3D_FRAME.x + IK3D_GOAL_RADIUS
-            : IK3D_FRAME.x + IK3D_FRAME.width - IK3D_GOAL_RADIUS,
+          corner.x < 0 ? IK3D_FRAME.x + radius : IK3D_FRAME.x + IK3D_FRAME.width - radius,
           9,
         );
       }

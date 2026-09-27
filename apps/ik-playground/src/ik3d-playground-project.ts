@@ -36,7 +36,10 @@ export const IK3D_GOAL_BOUNDS = {
   max: { x: IK3D_VIEW.width - 12, y: IK3D_VIEW.height - 12, z: 160 },
 } as const;
 
-/** The goal handle's radius in screen pixels: its 54px hit ring, drawn around the goal. */
+/**
+ * The goal handle's radius in world pixels at the box plane: its 54px hit ring, drawn around the
+ * goal and scaled by perspective with it, so it spans more screen pixels toward the viewer.
+ */
 export const IK3D_GOAL_RADIUS = 27;
 
 /**

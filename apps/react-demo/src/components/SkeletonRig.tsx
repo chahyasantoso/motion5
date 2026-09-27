@@ -9,9 +9,10 @@ import { nodePosition, point } from "./marker-position";
  * Every rendered shape is a derivation: geometry this file computes from the values of one or more
  * nodes, written to one element by `useDerivedDomPatch` through the same DOM adapter. A joint marker
  * derives its position only, so a label inside it never turns with the bone, and a marker whose arm
- * was removed hides instead of staying where the arm last was. Presence is still not liveness, and that rule has one owner now instead of one
- * per component: a derivation runs only while every node it names is ready, and its target is hidden
- * rather than unmounted while one is not. See ADR-073 and ADR-075.
+ * was removed hides instead of staying where the arm last was. Presence is still not liveness,
+ * and that rule has one owner now instead of one per component: a derivation runs only while every
+ * node it names is ready, and its target is hidden rather than unmounted while one is not. See
+ * ADR-073 and ADR-075.
  */
 const boneEndpoints: PatchDerivation = ([parent = {}, child = {}]) => {
   const from = point(parent);

@@ -47,6 +47,17 @@ function depthScale(view: PerspectiveView, z: number): number | undefined {
   return distance > 0 ? view.perspective / distance : undefined;
 }
 
+/**
+ * How many box pixels a marker of world radius `radius` spans when drawn at depth `z`: a marker
+ * that lives in the 3D world (a CSS element translated in depth, or a mesh) is scaled by the same
+ * perspective as its centre, so a handle toward the viewer is drawn larger than it was authored.
+ * `undefined` at or behind the viewer.
+ */
+export function drawnRadius(view: PerspectiveView, radius: number, z: number): number | undefined {
+  const scale = depthScale(view, z);
+  return scale === undefined ? undefined : radius * scale;
+}
+
 /** Where a world point is drawn, in the box's own unscaled pixels. */
 export function projectPoint(view: PerspectiveView, point: Point3): Point2 | undefined {
   const scale = depthScale(view, point.z);
@@ -70,8 +81,10 @@ export function unprojectPoint(
 }
 
 /**
- * The frame, centred on the box, that draws every point of `bounds` plus `margin` screen pixels
- * around it (a marker's radius), so nothing a drag can reach is ever clipped by the stage.
+ * The frame, centred on the box, that draws every point of `bounds` with a marker of world radius
+ * `radius` around it, so nothing a drag can reach is ever clipped by the stage. The marker is
+ * scaled by perspective like its centre (`drawnRadius`), so the margin a corner needs grows toward
+ * the viewer; a constant screen margin under-framed the nearest corners by the depth scale.
  *
  * Centred because CSS `perspective-origin` and the three.js camera both look at the box centre; a
  * centred frame keeps them agreeing without an off-axis camera. `bounds` must lie in front of the
@@ -80,7 +93,7 @@ export function unprojectPoint(
 export function frameAround(
   view: PerspectiveView,
   bounds: WorldBounds,
-  margin: number,
+  radius: number,
 ): ScreenFrame {
   const cx = view.width / 2;
   const cy = view.height / 2;
@@ -90,7 +103,9 @@ export function frameAround(
     for (const y of [bounds.min.y, bounds.max.y])
       for (const z of [bounds.min.z, bounds.max.z]) {
         const screen = projectPoint(view, { x, y, z });
-        if (screen === undefined) throw new RangeError("Bounds reach behind the viewer.");
+        const margin = drawnRadius(view, radius, z);
+        if (screen === undefined || margin === undefined)
+          throw new RangeError("Bounds reach behind the viewer.");
         halfWidth = Math.max(halfWidth, Math.abs(screen.x - cx) + margin);
         halfHeight = Math.max(halfHeight, Math.abs(screen.y - cy) + margin);
       }
@@ -98,20 +113,22 @@ export function frameAround(
 }
 
 /**
- * The point nearest `point` at its (clamped) depth whose projection lies at least `margin` screen
- * pixels inside `frame`: a drag can move the goal anywhere the stage draws it whole, and no further.
- * `depth` bounds the depth; it must lie in front of the viewer.
+ * The point nearest `point` at its (clamped) depth whose marker of world radius `radius`, drawn at
+ * that depth (`drawnRadius`), lies whole inside `frame`: a drag can move the goal anywhere the stage
+ * draws it whole, and no further. `depth` bounds the depth; it must lie in front of the viewer.
  */
 export function clampToFrame(
   view: PerspectiveView,
   frame: ScreenFrame,
-  margin: number,
+  radius: number,
   depth: { readonly min: number; readonly max: number },
   point: Point3,
 ): Point3 {
   const z = Math.min(depth.max, Math.max(depth.min, point.z));
   const screen = projectPoint(view, { ...point, z });
-  if (screen === undefined) throw new RangeError("Depth bounds reach behind the viewer.");
+  const margin = drawnRadius(view, radius, z);
+  if (screen === undefined || margin === undefined)
+    throw new RangeError("Depth bounds reach behind the viewer.");
   const inside = {
     x: Math.min(frame.x + frame.width - margin, Math.max(frame.x + margin, screen.x)),
     y: Math.min(frame.y + frame.height - margin, Math.max(frame.y + margin, screen.y)),

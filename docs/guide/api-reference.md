@@ -162,10 +162,14 @@ A private channel between core and React: the `Patch`, `LivePatch`, `PatchListen
 
 The optional `@motion5/three` workspace package adapts public patches to Three.js `Object3D`
 instances. Its consumer-facing peer dependency is `three >=0.160.0`; the adapter writes world
-frames,
-converts core's degree angles to radians, and uses `EULER_ORDER_3D` (`"ZXY"`) so Three.js composes
-`Rz · Rx · Ry`. `writeFrame3d(object, values)` writes one frame, and
-`createObject3dPatchAdapter(resolve)` provides `apply(patch)` and `applyValues(nodeId, values)`.
+frames, converts core's degree angles to radians, and uses `EULER_ORDER_3D` (`"ZXY"`) so Three.js
+composes `Rz · Rx · Ry`. `writeFrame3d(object, values)` writes one frame, and
+`createObject3dPatchAdapter(resolve)` provides `apply(patch)`, `applyValues(nodeId, values)` and
+`clear(object?)`. `apply` accepts one revision per resolved object and node, in order, and refuses a
+stale or duplicate one, as core's DOM adapter does; `clear(object)` drops that revision state for
+one object so a retained patch can re-pose it after a rebind. Called without an object it clears
+nothing, exactly as the DOM adapter's `clear` does (revision state is held per object in a weak map,
+which cannot be enumerated). It never removes anything from the scene graph.
 
 ## @motion5/react
 
