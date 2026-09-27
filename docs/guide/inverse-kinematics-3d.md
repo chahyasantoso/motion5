@@ -87,8 +87,9 @@ addressed goals. A pole on a chain with no interior joint is refused at load.
 A dictionary in `targets` addresses leaves by member id. A tree can share trunk members and
 branch to multiple leaves. The tree solve uses each addressed leaf's positive `influence` as its pull
 weight; `influence` has no effect on a one-goal chain. A solve with `inspect: true` adds
-`inspection` beside `rotations3d`; it reports the quality kind, residuals, iterations and any limited members. Without
-that opt-in, the solver publishes only its pose output.
+`inspection` beside `rotations3d`; it reports the quality kind, residuals, iterations and any
+limited members. Without that opt-in, the authored `inspect` value remains beside `rotations3d`,
+and the solver omits `inspection`.
 
 ## Leaves and orientation goals
 

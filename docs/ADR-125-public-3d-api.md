@@ -37,8 +37,40 @@ package, `@motion5/three`, with `three` as a peer.
   switch with `unreachable`, reached through `@motion5/core/internal` exactly as `@motion5/react`
   reaches them, rather than restating either (`TH-123` to `TH-128`). `three` is a peer
   (`>=0.160.0`) and a dev dependency for the package's own tests; the stray React peer is removed.
-- The playground demo is renderer-neutral CSS 3D through the core DOM adapter, so the app gains no
-  dependency (`TH-129` to `TH-131`).
+- The playground's first public 3D slice is renderer-neutral CSS 3D through the core DOM adapter,
+  so the app gains no dependency (`TH-129` to `TH-131`). The checkpoint-3 playground is deliberately
+  broader: its DOM tab renders the 2D FABRIK stage on the left, the 3D FABRIK stage on the right and
+  the solver panel at the far right; its `three.js` tab renders the same 3D project through
+  `@motion5/three`, with the panel on the right. On phone-width screens the stages stack and the
+  panel becomes the scrollable strip below them (`TH-145` to `TH-147`).
+- The app and the integration suite use one `loadPlayground` setup path. It composes the 2D and 3D
+  Motions into one authored project because `addMotion` accepts only empty-track Motions; attempting
+  to add the full authored 3D Motion at runtime caused the checkpoint-2 blank page, so composition
+  and shared mounting are the owner (`TH-132`, `TH-148`, `TH-149`).
+- The page scroll is the one trigger for both Motions, and it changes only authored member weights:
+  top-to-bottom goes from unsolved to solved, while a goal drag writes immediately at the weight the
+  scroll currently selected. Planar and spatial drags are separate closed goal moves but share this
+  immediate value-tier publication (`TH-134`, `TH-136`, `TH-137`). Non-finite goals are refused,
+  finite goals are clamped to the stage bounds, and the planar flip is written by the same control
+  owner
+  (`TH-138`).
+- The pending-intent model is withdrawn. The owner asked for immediate drags, so a marker does not
+  wait for the next scroll event and the application does not keep pending versus applied goals.
+  Scroll owns weight only; `GoalControl` owns goal and flip writes. Coalescing and disposal still
+  cancel
+  queued work and source subscriptions exactly once (`TH-139`, `TH-146`).
+- `@motion5/three` keeps the DOM adapter's per-object, per-node revision ordering, refusing stale or
+  duplicate frames and re-arming a node when an object is rebound (`TH-133`). Core import predicates
+  all read the single extracted import-specifier set, so dynamic `import()` and `require()` of
+  `three`, `react`, or `gsap` are refused at the boundary rather than bypassing the static scan
+  (`TH-135`).
+- React-demo joint markers derive position only from the published joint frame: labels stay upright
+  instead of inheriting a bone rotation, and markers for removed arm members are hidden rather than
+  remaining stuck in the previous position (`TH-140`, `TH-141`).
+- CSS 3D and WebGL use one centred CSS-perspective projection. The matching three.js camera uses
+  the same view dimensions and perspective, with the mirrored y axis accounted for, so a goal at a
+  given world point lands on the same pixel and pointer unprojection answers the same depth in both
+  tabs (`TH-142` to `TH-144`).
 - ADR-114, ADR-115, ADR-116, ADR-117, ADR-118, ADR-120, ADR-122, ADR-123 and ADR-124 are marked
   Accepted as the public contract. Their "nothing 3D is exported" sentences describe the surface
   each slice changed and stay as written; ADR-114's internal-only decision carries a marker.
@@ -48,10 +80,18 @@ package, `@motion5/three`, with `three` as a peer.
 ## What is withdrawn
 
 - Re-exporting the 3D plugins from the root entry: two paths to one definition.
-- A three.js demo in the playground: it would add a renderer dependency to an app whose point is
-  core, and the adapter package already proves the mapping.
+- The earlier CSS-only playground proposal: checkpoint 3 adds a `three.js` tab because the renderer
+  adapter now exists, while keeping the DOM tab and the shared project as the two views of one rig.
+- The two-bone playground arm: the page now demonstrates 2D FABRIK on the left and 3D FABRIK on the
+  right, not an analytic arm example.
+- Pending versus applied goal intent: it contradicted the requested immediate drag behavior and made
+  scroll a second owner of goals.
 
 ## Evidence
 
-`TH-111` to `TH-131`, run in the sandbox under the Vitest stand-in with real TypeScript 5.8.3,
-GSAP 3.15.0 and three 0.186.1; reviewed, not trusted, and no CI run yet.
+`TH-111` to `TH-149`, run in the sandbox under the Vitest stand-in with real TypeScript 5.8.3,
+GSAP 3.15.0 and three 0.186.1; reviewed, not trusted, and no CI run yet. The checkpoint-2 and
+checkpoint-3 records are `TH-132` through `TH-149`: shared playground setup and the blank-page fix
+(`TH-132`, `TH-148`, `TH-149`), adapter and boundary hardening (`TH-133`, `TH-135`), weight-only
+scroll and immediate goal writes (`TH-134`, `TH-136` to `TH-139`), React marker derivation
+(`TH-140`, `TH-141`), and the shared CSS/WebGL projection (`TH-142` to `TH-144`).

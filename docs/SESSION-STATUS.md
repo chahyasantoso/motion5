@@ -7,11 +7,15 @@ Current project state only. Replace stale entries rather than append history. Th
 
 ## Now
 
-- **[#500](https://github.com/chahyasantoso/motion5/issues/500) the public 3D API lands with this change:** `transform3d`, `fk3d` and `ik3d` are package subpaths, an executed 3D guide and a CSS 3D playground demo ship, and `@motion5/three` maps published frames onto `Object3D` with Euler order `ZXY` ([ADR-125](./ADR-125-public-3d-api.md)).
+- **Main remains at the recorded 3D solver baseline:** ADR-124's goal influence and end-effector
+  orientation, the accepted 3D solver records, and the `packages/three` workspace are landed; the
+  public 3D API work is not part of that baseline.
 
 ## Next in line
 
-- **[#500](https://github.com/chahyasantoso/motion5/issues/500) closes once this change merges;** nothing further is scheduled under it.
+- **[#500](https://github.com/chahyasantoso/motion5/issues/500) is next in line for the public 3D
+  API:** its subpaths, guide, renderer adapter, and playground changes remain to be landed and then
+  verified.
 
 ## Open, and not scheduled
 

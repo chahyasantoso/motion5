@@ -4,16 +4,21 @@ Grouped by entrypoint, because the entrypoint is the contract. `packages/core/pa
 
 ## Entrypoint tiers
 
-A declared subpath is not automatically production API. The tier says who may import it, and for the test-support tier that answer is enforced by `scripts/boundary-scan.mjs` rather than by this table: no package under `packages/*` except core, and no app under `apps/*`, may name it. See ADR-036 and ADR-048.
+A declared subpath is not automatically production API. The tier says who may import it, and for
+the test-support tier that answer is enforced by `scripts/boundary-scan.mjs` rather than by this
+list: no package under `packages/*` except core, and no app under `apps/*`, may name it. See
+ADR-036 and ADR-048.
 
-| subpath                                                               | tier           | may a production consumer import it |
-| --------------------------------------------------------------------- | -------------- | ----------------------------------- |
-| `@motion5/core`                                                       | public         | yes                                 |
-| `@motion5/core/adapters`, `/adapters/browser-clock`                   | public adapter | yes                                 |
-| `@motion5/core/plugins/fk`, `/plugins/transform`, `/plugins/ik`       | public plugin  | yes                                 |
-| `@motion5/core/plugins/transform3d`, `/plugins/fk3d`, `/plugins/ik3d` | public plugin  | yes                                 |
-| `@motion5/core/testing`                                               | test support   | no, enforced by the boundary scan   |
-| `@motion5/core/internal`                                              | unadvertised   | no stability promise                |
+- `@motion5/core` — public; production consumers may import it.
+- `@motion5/core/adapters` and `/adapters/browser-clock` — public adapters; production consumers may
+  import them.
+- `@motion5/core/plugins/fk`, `/plugins/transform`, and `/plugins/ik` — public plugins; production
+  consumers may import them.
+- `@motion5/core/plugins/transform3d`, `/plugins/fk3d`, and `/plugins/ik3d` — public plugins;
+  production consumers may import them.
+- `@motion5/core/testing` — test support; production consumers may not import it, as enforced by
+  the boundary scan.
+- `@motion5/core/internal` — unadvertised; it carries no stability promise.
 
 ## @motion5/core
 
