@@ -142,8 +142,9 @@ Goal influence ([ADR-110](../ADR-110-goal-influence-and-conflict-policy.md)) add
   this rule, and an undecided goal shape is not reported twice; placement is checked before value
   classification.
 
-3D goal orientation ([ADR-124](../ADR-124-3d-goal-influence-and-end-effector-orientation.md)) adds two more, stated with the influence
-rules over one table so the placement and the classification read alike:
+3D goal orientation ([ADR-124](../ADR-124-3d-goal-influence-and-end-effector-orientation.md)) adds
+two more, stated with the influence rules over one table so the placement and the classification
+read alike:
 
 - `ik-orient-malformed`, when an `fk3d` member's `orient` under the group that bound its `solver`
   is not one static finite number from `0` to `1`. Animated, negative, above `1`, non-finite and

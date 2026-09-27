@@ -13,11 +13,12 @@ finite weight in `[0, 1]` on an addressed `fk3d` leaf, turns that leaf toward it
 orientation after the position solve, only by rotations that keep the leaf's tip where the position
 solve put it: its roll about its own axis for a leaf with length, the whole short-arc blend for a
 zero-length leaf. The joint owner (`limitLocal3d`, ADR-123) re-limits the turned orientation, so
-every published orientation stays legal. Residuals, quality and every other member's triple are
-carried unchanged, and a chain with no addressed leaf authoring a positive `orient` gets back the
-very same result object, so no rig that loaded before this change moves a byte. Every goal weight an
-author can write on a 3D member is either read by the solve or refused at load by name. No 2D byte
-moves.
+every orientation the solve publishes stays legal (the solver pose, as ADR-123 bounds it; `fk3d`'s
+weight blend toward rest is outside that claim, as it is for every limited member). Residuals,
+quality and every other member's triple are carried unchanged, and a chain with no addressed leaf
+authoring a positive `orient` gets back the very same result object, so no rig that loaded before
+this change moves a byte. Every goal weight an author can write on a 3D member is either read by the
+solve or refused at load by name. No 2D byte moves.
 
 ## Decision
 
