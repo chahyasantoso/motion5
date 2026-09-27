@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { extractExportNames } from "../../../../../scripts/boundary-scan.mjs";
+import { code } from "../../helpers/source-region";
 
 // Issue #500 phase 8 and ADR-125: the public plugin surface is the `./plugins/*` subpaths that
 // `packages/core/package.json` declares, and nothing else. The manifest is the one owner of that
@@ -61,7 +62,8 @@ describe("public plugin subpaths", () => {
       // A newly public module publishes its plugin and nothing a consumer could come to rely on.
       if (PUBLIC_3D.includes(name)) expect(Object.keys(module), name).toEqual([`${name}Plugin`]);
     }
-    const index = readFileSync(fileURLToPath(new URL("src/index.ts", CORE)), "utf8");
+    // Read through the one source-reading owner, as source-region-anchors.test.ts requires.
+    const index = code(new URL("src/index.ts", CORE));
     expect(extractExportNames(index).filter((symbol) => /Plugin$/.test(symbol))).toEqual([]);
   });
 });
