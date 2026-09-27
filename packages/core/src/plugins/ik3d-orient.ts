@@ -51,7 +51,10 @@ import type { SolveResult3d } from "./ik3d-result";
  * target authors. The position reading of the same goal (`ik-goal-reading.ts`) still reads only its
  * coordinates. The leaf's parent frame is composed from the root and the published local triples of
  * its ancestors, the orientations `fk3d` composes at a weight of `1`, so the leaf is turned toward
- * the goal in the frame it is rendered in rather than in a solver-internal one.
+ * the goal in the frame it is rendered in rather than in a solver-internal one. A `weight` below `1`
+ * on the leaf or an ancestor blends what `fk3d` renders back toward rest after the solve, for the
+ * orientation exactly as for the position: both goals are met at a weight of `1` and faded by it,
+ * which is what a weight is for (ADR-055, ADR-116), so the step never reads `rest` or `weight`.
  *
  * The step is a pure function of the root, the members and the position result, so a reverse scrub
  * and a random seek republish it byte for byte (ADR-111).
@@ -105,6 +108,11 @@ function turnToward(
   }
 }
 
+/** Whether a member is an addressed leaf authoring a positive orient, the only one the step turns. */
+function orients({ goal, orient }: ChainMember3d): boolean {
+  return goal !== undefined && orient !== undefined && orient > 0;
+}
+
 /**
  * The position result with every oriented leaf turned toward its goal's orientation: the step
  * `solveChain3d` runs after its strategy (ADR-124).
@@ -119,10 +127,9 @@ export function orientLeaves3d(
   members: readonly ChainMember3d[],
   result: SolveResult3d,
 ): SolveResult3d {
-  const oriented = members.filter(
-    ({ goal, orient }) => goal !== undefined && orient !== undefined && orient > 0,
-  );
-  if (oriented.length === 0) return result;
+  // `some` before `filter`, so the common chain with no orientation goal allocates nothing.
+  if (!members.some(orients)) return result;
+  const oriented = members.filter(orients);
   const byId = new Map(members.map((member) => [member.id, member]));
   const worlds = new Map<string, Matrix3>();
   const rootMatrix = matrixFromEuler3d(root);

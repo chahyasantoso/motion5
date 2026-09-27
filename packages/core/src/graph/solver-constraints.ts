@@ -42,8 +42,9 @@ import type { GraphNode } from "./ir";
 
 /**
  * The load rules of the solver's authored constraints: the six of constrained 2D solving (ADR-108),
- * the inspection switch's one (ADR-109), goal influence's two (ADR-110) and goal orientation's two (ADR-124), the 3D pole's one
- * (ADR-118) and the 3D joint's two, which reuse the 2D range rules for every angle bound (ADR-123).
+ * the inspection switch's one (ADR-109), goal influence's two (ADR-110), the 3D pole's one
+ * (ADR-118), the 3D joint's two, which reuse the 2D range rules for every angle bound (ADR-123),
+ * and goal orientation's two (ADR-124).
  *
  * **Every spelling, because the solve reads the flattened bag.** A member's limits reach `ik`
  * through the member's flattened values, where a `minRotation` grouped under any plugin is the same
@@ -71,11 +72,13 @@ import type { GraphNode } from "./ir";
  * (ADR-124) are member vocabulary read through the limit scope, and each weighs the goal its leaf is
  * addressed with, the first its position's pull and the second its orientation, so each is well
  * placed only on a member the solve addresses. Both are stated by one pair of rules over
- * `GOAL_WEIGHT_RULES` rather than once per key. Which members those are is `resolveSolvers`'s answer, after goal
- * resolution, handed in as a `GoalScope` rather than re-derived here: this module would otherwise
- * be a second owner of leafhood and goal addressing. It speaks only on a node that bound a solver
- * somewhere, the narrowing `ik-weight-without-solver` makes for the same reason: this pass holds no
- * registry and cannot tell a member's goal weight from another plugin's own key on a node no solve reads.
+ * `GOAL_WEIGHT_RULES` rather than once per key. Which members those are is `resolveSolvers`'s
+ * answer, after goal resolution, handed in as a `GoalScope` rather than re-derived here: this module
+ * would otherwise be a second owner of leafhood and goal addressing. On a node that bound no solver
+ * anywhere it speaks only under a 3D member group (`declaresJoint`), whose vocabulary the contract
+ * owns, so an `fk3d` goal weight on a bone no solve reads is refused by name. Under any other group
+ * it keeps the narrowing `ik-weight-without-solver` makes: this pass holds no registry and cannot
+ * tell a 2D `fk` goal weight from another plugin's own key on a node no solve reads.
  *
  * **A pole belongs to the group that bound `root`.** `pole` is a requirement slot rather than a key,
  * and `contract/solver-shape.ts` owns which solver plugins declare it, so under any other plugin the
@@ -558,6 +561,8 @@ function validateMemberGoalWeight(
   let placed: AuthoredSpelling | undefined;
   for (const spelling of authoredSpellings(node.track.keyframes, rule.key)) {
     if (!reachesSolve(spelling, binders)) {
+      // No registry here: on a node that bound no solver, only a 3D member group's key is known.
+      if (binders.size === 0 && !declaresJoint(spelling.group)) continue;
       const why = `under ${spelling.group}, which did not bind its solver`;
       diagnostics.push(weightWithoutGoal(node, rule, spelling, why));
       continue;
@@ -590,9 +595,10 @@ function validateMemberGoalWeight(
 
 /**
  * The goal-weight rules, `influence` then `orient` on each member, run after `resolveSolvers` has
- * resolved every solve's goals into `scope`. Only a node that bound a solver somewhere is read, the
- * narrowing `ik-weight-without-solver` makes: this pass holds no registry and cannot tell a member's
- * goal weight from another plugin's own key on a node no solve reads.
+ * resolved every solve's goals into `scope`. A node that bound no solver anywhere is read only
+ * under a 3D member group (`declaresJoint`); everywhere else it keeps the narrowing
+ * `ik-weight-without-solver` makes, because this pass holds no registry and cannot tell a 2D goal
+ * weight from another plugin's own key on a node no solve reads.
  */
 export function validateGoalWeights(
   nodes: readonly GraphNode[],
@@ -601,7 +607,6 @@ export function validateGoalWeights(
 ): void {
   for (const node of nodes) {
     const binders = slotBinders(node, "solver");
-    if (binders.size === 0) continue;
     for (const rule of GOAL_WEIGHT_RULES)
       validateMemberGoalWeight(node, rule, binders, scope, diagnostics);
   }

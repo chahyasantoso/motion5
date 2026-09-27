@@ -16,6 +16,7 @@ import { transform3dPlugin } from "../../../src/plugins/transform3d";
 // orientation and branch compromise are covered by the Engine tests in ik3d-orient.test.ts.
 
 type Values = Readonly<Record<string, unknown>>;
+type Keyframes = NonNullable<TrackDefinition["keyframes"]>;
 
 type Options = {
   readonly a?: Values;
@@ -176,5 +177,48 @@ describe("3D goal-weight load rules", () => {
     expect(messages(undecided)).toEqual([
       'Solver "rig/solve" has no goal; bind "target", or address a goal per chain leaf under "targets".',
     ]);
+  });
+
+  it("TH-107 refuses an fk3d goal weight on a bone no solver reads, and keeps 2D's narrowing", () => {
+    const loose = (keyframes: Keyframes): ProjectDefinition => ({
+      schemaVersion: 5,
+      projectId: "3d-goal-weights-unsolved",
+      motions: [
+        {
+          id: "rig",
+          trigger: { type: "manual" },
+          tracks: [
+            { id: "root", keyframes: { transform3d: { values: { x: 0, y: 0, z: 0 } } } },
+            { id: "bone", keyframes },
+          ],
+        },
+      ],
+    });
+    const fk3d = (values: Values): Keyframes => ({
+      fk3d: { values: { length: 30, ...values }, requires: { base: "root" } },
+    });
+    const AT = "rig/bone.keyframes.fk3d.values";
+    const unread = (key: string, purpose: string): string =>
+      `Member "rig/bone" authors ${key} under fk3d, which did not bind its solver; ${key} ${purpose} and belongs on an addressed chain leaf.`;
+
+    expect(rules(loose(fk3d({ orient: 0.5 })))).toEqual([`ik-orient-without-goal at ${AT}.orient`]);
+    expect(messages(loose(fk3d({ orient: 0.5 })))).toEqual([
+      unread("orient", "weighs a goal's orientation"),
+    ]);
+    // Placement before classification, so a malformed weight nothing reads is refused for where it is.
+    expect(rules(loose(fk3d({ orient: 2, influence: 3 })))).toEqual([
+      `ik-influence-without-goal at ${AT}.influence`,
+      `ik-orient-without-goal at ${AT}.orient`,
+    ]);
+    expect(messages(loose(fk3d({ orient: 2, influence: 3 })))).toEqual([
+      unread("influence", "weighs a goal"),
+      unread("orient", "weighs a goal's orientation"),
+    ]);
+
+    // Under any other group on a node that bound no solver, this pass holds no registry and stays
+    // silent, as it did before orient existed: the key may be that plugin's own live input.
+    expect(
+      rules(loose({ transform3d: { values: { x: 0, y: 0, z: 0, influence: 2, orient: 0.5 } } })),
+    ).not.toContainEqual(expect.stringMatching(/^ik-(orient|influence)-/));
   });
 });

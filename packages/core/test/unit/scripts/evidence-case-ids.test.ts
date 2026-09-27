@@ -366,9 +366,10 @@ import { fileURLToPath } from "node:url";
 // `TH-79` through `TH-95` are the 3D joint limits of ADR-123, the same issue's phase 6: `TH-79` to
 // `TH-87` the runtime owner and its corpus, `TH-88` the joint plugin set, `TH-89` to `TH-94` the
 // load rules, and `TH-95` the `Engine` scrub. `TH-76` carries the constrained chains as well.
-// `TH-96` through `TH-106` are the 3D goal influence and end-effector orientation of ADR-124, the
-// same issue's phase 7: `TH-96` to `TH-101` the orientation step, its readers and influence in the
-// tree solve, `TH-102` to `TH-104` the goal-weight load rules, and `TH-105` and `TH-106` `Engine`.
+// `TH-96` through `TH-108` are the 3D goal influence and end-effector orientation of ADR-124, the
+// same issue's phase 7: `TH-96` to `TH-101` and `TH-108` the orientation step, its readers and
+// influence in the tree solve, `TH-102` to `TH-104` and `TH-107` the goal-weight load rules, and
+// `TH-105` and `TH-106` `Engine`.
 //
 // The scan root is the repository rather than `packages/core/test`, because an id names one test in
 // the suite and the suite is not one package. `H-4` is declared in

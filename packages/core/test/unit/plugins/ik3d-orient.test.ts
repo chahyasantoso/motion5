@@ -393,4 +393,53 @@ describe("3D end-effector orientation (ADR-124)", () => {
     ];
     expect(solveChain3d(root, long(7))).toStrictEqual(solveChain3d(root, long()));
   });
+
+  it("TH-108 orients every addressed leaf of a branched tree with pivot offsets, each by its own freedom, and moves nothing else", () => {
+    const random = seeded(0x108);
+    const offset = () => ({
+      x: (random() - 0.5) * 10,
+      y: (random() - 0.5) * 10,
+      z: (random() - 0.5) * 10,
+    });
+    for (let trial = 0; trial < 40; trial += 1) {
+      const root = frame(random, 30);
+      const goalA = frame(random, 70);
+      const goalB = frame(random, 70);
+      const plainMembers: readonly ChainMember3d[] = [
+        member("spine", "root", 25, { offset: offset() }),
+        member("upper", "spine", 20, { offset: offset() }),
+        member("finger", "upper", 15, {
+          offset: offset(),
+          goal: goalA,
+        }),
+        // A zero-length hand with an offset: its tip is its pivot, so it turns wholly.
+        member("hand", "spine", 0, {
+          offset: offset(),
+          goal: goalB,
+        }),
+      ];
+      const plain = solveChain3d(root, plainMembers);
+      const plainFrames = composeChain3d(root, plainMembers, plain);
+      const oriented = withOrient(plainMembers, 1);
+      const result = solveChain3d(root, oriented);
+      expect(result.residuals).toStrictEqual(plain.residuals);
+      expect(result.quality).toStrictEqual(plain.quality);
+      for (const id of ["spine", "upper"])
+        expect(result.rotations3d[id]).toStrictEqual(plain.rotations3d[id]);
+      const frames = composeChain3d(root, oriented, result);
+      for (const id of ["finger", "hand"])
+        expect(frameDistance3d(frames[id]!, plainFrames[id]!)).toBeLessThanOrEqual(ROUNDING * 100);
+      // The finger only rolls: its long axis is the solve's.
+      expect(
+        largestDifference(
+          axisX3(orientationOf(frames.finger!)),
+          axisX3(orientationOf(plainFrames.finger!)),
+        ),
+      ).toBeLessThanOrEqual(ROUNDING);
+      // The hand takes the goal's orientation outright at a weight of 1.
+      expect(
+        largestDifference(orientationOf(frames.hand!), orientationOf(goalB)),
+      ).toBeLessThanOrEqual(ROUNDING);
+    }
+  });
 });
