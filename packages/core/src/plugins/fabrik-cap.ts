@@ -137,6 +137,11 @@ function limitedPassBudget(free: number, ceiling: number, tolerance: number): Fa
  * Whether a residual that fell from `before` to `now` over one `FABRIK_PROGRESS_WINDOW`, carried on
  * at that geometric rate, reaches `tolerance` within `remaining` passes. A residual that did not fall
  * projects nothing, so a limited attempt that oscillates or holds stops at the next boundary.
+ *
+ * Total over every double: a residual already inside `tolerance` (zero included) has reached it,
+ * and a fall from a non-finite `before`, or any `NaN`, measures no rate and projects nothing, where
+ * the bare logarithms would read `Infinity -> 1` as instant convergence and `1 -> 0` as `NaN`. The
+ * loop asks only while the residual is above tolerance and finite, so neither arm moves a solve.
  */
 export function projectsConvergence(
   before: number,
@@ -144,7 +149,8 @@ export function projectsConvergence(
   tolerance: number,
   remaining: number,
 ): boolean {
-  if (!(now < before)) return false;
+  if (now <= tolerance) return true;
+  if (!(now < before) || !Number.isFinite(before)) return false;
   const windows = Math.log(tolerance / now) / Math.log(now / before);
   return windows * FABRIK_PROGRESS_WINDOW <= remaining;
 }

@@ -33,6 +33,7 @@ import {
 } from "./frame3d";
 import {
   atBound,
+  JOINT_BOUND_TOLERANCE,
   FREE_JOINT,
   limitRotation,
   readAngleRange,
@@ -195,7 +196,8 @@ function limitSwingTwist(maxSwing: number, twist: JointLimit, local: Matrix3): L
   const split = swingTwist3d(local);
   const twistDegrees = limitRotation(twist, split.twistDegrees);
   const swingOver = split.swingDegrees > maxSwing;
-  const bound = split.swingDegrees >= maxSwing || atBound(twist, twistDegrees);
+  const bound =
+    split.swingDegrees >= maxSwing - JOINT_BOUND_TOLERANCE || atBound(twist, twistDegrees);
   if (!swingOver && twistDegrees === split.twistDegrees) return { kind: "unmoved", atBound: bound };
   const swing = swingOver ? rotationAboutAxis3d(split.swingAxis, maxSwing) : split.swing;
   return {

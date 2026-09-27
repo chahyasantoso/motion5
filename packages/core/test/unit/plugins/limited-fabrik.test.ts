@@ -38,7 +38,9 @@ import {
 } from "../../../src/plugins/frame3d";
 import type { WorldFrame } from "../../../src/plugins/frame";
 import {
+  atBound,
   boundBaseDirection,
+  JOINT_BOUND_TOLERANCE,
   FREE_JOINT,
   limitRotation,
   type JointLimit,
@@ -376,6 +378,11 @@ describe("limited FABRIK: seed side, bidirectional limits and the limited cap (i
     expect(projectsConvergence(1, 0.5, FABRIK_TOLERANCE, 71)).toBe(false);
     expect(projectsConvergence(1, 1, FABRIK_TOLERANCE, 1e9)).toBe(false);
     expect(projectsConvergence(1, 1.5, FABRIK_TOLERANCE, 1e9)).toBe(false);
+    // Total over every double: inside tolerance has arrived, and no rate is read off a non-finite fall.
+    expect(projectsConvergence(1, 0, FABRIK_TOLERANCE, 0)).toBe(true);
+    expect(projectsConvergence(Infinity, 1, FABRIK_TOLERANCE, 1e9)).toBe(false);
+    expect(projectsConvergence(NaN, 1, FABRIK_TOLERANCE, 1e9)).toBe(false);
+    expect(projectsConvergence(1, NaN, FABRIK_TOLERANCE, 1e9)).toBe(false);
     const limited = () => fabrikPassBudget(2, "limited", FABRIK_TOLERANCE);
     const ceiling = fabrikIterationCap(2, "limited");
     // A crawl that holds its residual stops at the free cap, as if the chain were free.
@@ -432,5 +439,15 @@ describe("limited FABRIK: seed side, bidirectional limits and the limited cap (i
     expect(spatial.quality.atBound).toEqual(flat.quality.atBound);
     expect(flat.rotations.b!).toBeCloseTo(-56.7, 9);
     expect(flat.quality.residual).toBeCloseTo(spatial.quality.residual, 9);
+  });
+
+  it("CL-38 a local a few ulps inside a bound rests on it, so 2D and 3D report one kind", () => {
+    // Independent pass RV-2: 2D measured -6.661293716169895 against a max of -6.661293716169894
+    // and reported `stalled` where 3D reported `limited`; 51 of 3,000 fuzzed planar rigs disagreed.
+    const limit = range(-61.81099883746356, -6.661293716169894);
+    expect(atBound(limit, -6.661293716169895)).toBe(true);
+    expect(atBound(limit, -6.661293716169894 - 10 * JOINT_BOUND_TOLERANCE)).toBe(false);
+    expect(atBound(range(-30, 30), 0)).toBe(false);
+    expect(atBound(FREE_JOINT, 180)).toBe(false);
   });
 });

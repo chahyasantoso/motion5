@@ -71,14 +71,33 @@ export function limitRotation(limit: JointLimit, local: number): number {
   }
 }
 
-/** Whether `local`, once limited, rests on a bound. A free joint has none. */
+/**
+ * How near a limited angle, in degrees, may sit to a bound and still rest on it (ADR-126).
+ *
+ * The 2D solve measures a member's local angle with `atan2` over placed points, and the 3D solve
+ * with `hingeAngle` over composed frames, so the same planar pose can land exactly on a bound in
+ * one dimension and a few ulps inside it in the other. The quality kind reads this answer
+ * (`limited` against `stalled` or `iteration-cap`), and the selector pays for the opposite seed on
+ * `limited` alone, so an exact comparison let the dimensions choose different poses for one rig.
+ * A nanodegree is thousands of ulps at any angle in the domain and moves no bone anyone can see.
+ */
+export const JOINT_BOUND_TOLERANCE = 1e-9;
+
+/**
+ * Whether `local`, once limited, rests on a bound: within `JOINT_BOUND_TOLERANCE` of one, measured
+ * on the circle. A free joint has none. Every "is this member on its limit" answer in both
+ * dimensions reads this owner.
+ */
 export function atBound(limit: JointLimit, local: number): boolean {
   switch (limit.kind) {
     case "free":
       return false;
     case "range": {
       const bounded = limitRotation(limit, local);
-      return bounded === limit.min || bounded === limit.max;
+      return (
+        angularDistance(bounded, limit.min) <= JOINT_BOUND_TOLERANCE ||
+        angularDistance(bounded, limit.max) <= JOINT_BOUND_TOLERANCE
+      );
     }
     default:
       return unreachable(limit);
