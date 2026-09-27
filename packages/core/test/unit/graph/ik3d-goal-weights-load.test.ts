@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
-import type { ProjectDefinition, TrackDefinition } from "../../../src/contract/v5";
-import { PluginRegistry } from "../../../src/domain/plugins";
+import type {
+  AuthoredPluginRequires,
+  ProjectDefinition,
+  TrackDefinition,
+} from "../../../src/contract/v5";
+import { PluginRegistry, type PluginDefinition } from "../../../src/domain/plugins";
 import { buildGraphIR } from "../../../src/graph/ir";
 import { fk3dPlugin } from "../../../src/plugins/fk3d";
 import { fkPlugin } from "../../../src/plugins/fk";
@@ -17,7 +21,7 @@ type Options = {
   readonly a?: Values;
   readonly b?: Values;
   readonly aGroups?: Readonly<Record<string, unknown>>;
-  readonly requires?: Readonly<Record<string, unknown>>;
+  readonly requires?: AuthoredPluginRequires;
 };
 
 function rig(options: Options = {}): ProjectDefinition {
@@ -78,7 +82,7 @@ function messages(project: ProjectDefinition): readonly string[] {
 const AT_A = "rig/a.keyframes.fk3d.values";
 const AT_B = "rig/b.keyframes.fk3d.values";
 
-function registry(...plugins: Parameters<PluginRegistry["register"]>) {
+function registry(...plugins: readonly PluginDefinition[]) {
   const result = new PluginRegistry();
   for (const plugin of plugins) result.register(plugin);
   return result;
