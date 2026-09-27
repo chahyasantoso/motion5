@@ -70,7 +70,11 @@ package, `@motion5/three`, with `three` as a peer.
   tabs (`TH-142` to `TH-144`).
 - Every 3D stage draws `IK3D_FRAME`, the box widened until the goal handle stays whole at every
   reachable depth, and a spatial drag is clamped to that drawn frame rather than to the authored
-  box, so the handle is never clipped and never stops at an invisible edge (`TH-145`, `TH-146`). The
+  box, so the handle is never clipped and never stops at an invisible edge (`TH-145`, `TH-146`).
+  The handle lives in the 3D world, so perspective scales it with its centre: the margin a frame
+  corner and the drag clamp keep is the handle's world radius times the depth scale at that corner
+  (`drawnRadius`), not a constant screen margin, which under-framed the nearest depth by about 8px
+  (27px authored, 34.7px drawn at `z = 160`). Both tests assert the drawn handle box, not the centre. The
   three.js renderer owns its canvas (a React-owned canvas cannot survive `forceContextLoss()` across
   the StrictMode remount, which blanked the tab), each tab sits in an error boundary, and the goal
   handle over the WebGL canvas is the same DOM control as in the CSS stage, so touch, focus and
@@ -94,8 +98,9 @@ package, `@motion5/three`, with `three` as a peer.
 ## Evidence
 
 `TH-111` to `TH-146`, run in the sandbox under the Vitest stand-in with real TypeScript 5.8.3,
-GSAP 3.15.0 and three 0.186.1; reviewed, not trusted, and no CI run yet. The checkpoint-2 and
-checkpoint-3 and 4 records are `TH-132` through `TH-146`: shared playground setup and the blank-page fix
+GSAP 3.15.0 and three 0.186.1 and reviewed, not trusted; CI on pull request #516 is the evidence of
+record. The checkpoint 2 to 5 records are `TH-132` through `TH-146`: shared playground setup and the
+blank-page fix
 (`TH-132`), adapter and boundary hardening (`TH-133`, `TH-135`), weight-only
 scroll and immediate goal writes (`TH-134`, `TH-136` to `TH-139`), React marker derivation
 (`TH-140`, `TH-141`), and the shared CSS/WebGL projection and frame (`TH-142` to `TH-146`).

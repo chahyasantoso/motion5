@@ -7,15 +7,15 @@ Current project state only. Replace stale entries rather than append history. Th
 
 ## Now
 
-- **Main remains at the recorded 3D solver baseline:** ADR-124's goal influence and end-effector
-  orientation, the accepted 3D solver records, and the `packages/three` workspace are landed; the
-  public 3D API work is not part of that baseline.
+- **[#500](https://github.com/chahyasantoso/motion5/issues/500)'s public 3D API lands with this
+  change ([ADR-125](./ADR-125-public-3d-api.md), #516):** the 3D plugin subpaths, the executed 3D
+  guide, the `@motion5/three` renderer adapter, and the playground's 2D and 3D FABRIK stages with
+  DOM and three.js tabs; #500 closes with it.
 
 ## Next in line
 
-- **[#500](https://github.com/chahyasantoso/motion5/issues/500) is next in line for the public 3D
-  API:** its subpaths, guide, renderer adapter, and playground changes remain to be landed and then
-  verified.
+- **[#514](https://github.com/chahyasantoso/motion5/issues/514) is next in line:** limited FABRIK
+  chains in both dimensions trap on a seed-side bound and stop short of reachable goals.
 
 ## Open, and not scheduled
 
