@@ -1,0 +1,40 @@
+quality (node 24.21.0)	Run npm run typecheck	﻿2026-09-27T12:08:33.0362939Z ##[group]Run npm run typecheck
+quality (node 24.21.0)	Run npm run typecheck	2026-09-27T12:08:33.0363316Z ^[[36;1mnpm run typecheck^[[0m
+quality (node 24.21.0)	Run npm run typecheck	2026-09-27T12:08:33.0427181Z shell: /usr/bin/bash -e {0}
+quality (node 24.21.0)	Run npm run typecheck	2026-09-27T12:08:33.0427485Z env:
+quality (node 24.21.0)	Run npm run typecheck	2026-09-27T12:08:33.0427712Z   NODE_VERSION: 24.21.0
+quality (node 24.21.0)	Run npm run typecheck	2026-09-27T12:08:33.0428024Z   CI_EVIDENCE_DIR: /home/runner/work/_temp/ci-evidence
+quality (node 24.21.0)	Run npm run typecheck	2026-09-27T12:08:33.0428365Z ##[endgroup]
+quality (node 24.21.0)	Run npm run typecheck	2026-09-27T12:08:33.1447329Z 
+quality (node 24.21.0)	Run npm run typecheck	2026-09-27T12:08:33.1447991Z > motion5@0.0.0 typecheck
+quality (node 24.21.0)	Run npm run typecheck	2026-09-27T12:08:33.1448598Z > tsc --noEmit -p tsconfig.json
+quality (node 24.21.0)	Run npm run typecheck	2026-09-27T12:08:33.1448816Z 
+quality (node 24.21.0)	Run npm run typecheck	2026-09-27T12:08:40.4022601Z ##[error]packages/core/test/unit/plugins/limited-fabrik.test.ts(163,29): error TS2339: Property 'iterations' does not exist on type 'SolveQuality'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-27T12:08:40.4032959Z   Property 'iterations' does not exist on type '{ readonly kind: "reached"; readonly residual: number; }'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-27T12:08:40.4035539Z ##[error]packages/core/test/unit/plugins/limited-fabrik.test.ts(164,29): error TS2339: Property 'iterations' does not exist on type 'SolveQuality'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-27T12:08:40.4037948Z   Property 'iterations' does not exist on type '{ readonly kind: "reached"; readonly residual: number; }'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-27T12:08:40.4040377Z ##[error]packages/core/test/unit/plugins/limited-fabrik.test.ts(251,29): error TS2339: Property 'iterations' does not exist on type 'SolveQuality'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-27T12:08:40.4042676Z   Property 'iterations' does not exist on type '{ readonly kind: "reached"; readonly residual: number; }'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-27T12:08:40.4044794Z ##[error]packages/core/test/unit/plugins/limited-fabrik.test.ts(292,29): error TS2339: Property 'iterations' does not exist on type 'SolveQuality'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-27T12:08:40.4046977Z   Property 'iterations' does not exist on type '{ readonly kind: "reached"; readonly residual: number; }'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-27T12:08:40.4049329Z ##[error]packages/core/test/unit/plugins/limited-fabrik.test.ts(293,29): error TS2339: Property 'iterations' does not exist on type 'SolveQuality'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-27T12:08:40.4051645Z   Property 'iterations' does not exist on type '{ readonly kind: "reached"; readonly residual: number; }'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-27T12:08:40.4054090Z ##[error]packages/core/test/unit/plugins/limited-fabrik.test.ts(364,24): error TS2339: Property 'iterations' does not exist on type 'SolveQuality'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-27T12:08:40.4056368Z   Property 'iterations' does not exist on type '{ readonly kind: "reached"; readonly residual: number; }'.
+quality (node 24.21.0)	Run npm run typecheck	2026-09-27T12:08:40.4600755Z ##[error]Process completed with exit code 2.
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	﻿2026-09-27T12:10:43.7308373Z ##[group]Run test "$SUITE_RESULT" = success
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-27T12:10:43.7309195Z ^[[36;1mtest "$SUITE_RESULT" = success^[[0m
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-27T12:10:43.7568361Z shell: /usr/bin/bash -e {0}
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-27T12:10:43.7569301Z env:
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-27T12:10:43.7569823Z   NODE_VERSION: 24.21.0
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-27T12:10:43.7570402Z   SUITE_RESULT: failure
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-27T12:10:43.7570957Z ##[endgroup]
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-27T12:10:43.7727768Z ##[error]Process completed with exit code 1.
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	﻿2026-09-27T12:10:43.7800360Z ##[group]Run test "$SUITE_RESULT" = success
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-27T12:10:43.7801106Z ^[[36;1mtest "$SUITE_RESULT" = success^[[0m
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-27T12:10:43.8058925Z shell: /usr/bin/bash -e {0}
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-27T12:10:43.8060073Z env:
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-27T12:10:43.8060533Z   NODE_VERSION: 24.21.0
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-27T12:10:43.8061079Z   SUITE_RESULT: failure
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-27T12:10:43.8061557Z ##[endgroup]
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-27T12:10:43.8223629Z ##[error]Process completed with exit code 1.
