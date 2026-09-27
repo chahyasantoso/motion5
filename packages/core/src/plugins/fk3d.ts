@@ -1,4 +1,4 @@
-import { JOINT_VOCABULARY_KEYS } from "../contract/solver-constraints";
+import { INFLUENCE_KEY, JOINT_VOCABULARY_KEYS, ORIENT_KEY } from "../contract/solver-constraints";
 import type { PluginDefinition } from "../domain/plugins";
 import {
   blendOrientation3d,
@@ -66,6 +66,12 @@ function readSolved(solver: unknown, nodeId: string): Euler3d | undefined {
  * exactly as 2D `fk`'s `minRotation` and `maxRotation` are for `ik`, and not read here: a limit
  * bounds what the solve publishes, never the rest orientation or the weighted blend (ADR-123).
  * `contract/solver-constraints.ts` owns the vocabulary, so the claim is its list rather than a copy.
+ *
+ * `influence` and `orient` are an addressed leaf's weights on its goal, read by the `ik3d` solve and
+ * not here, exactly as 2D `fk` claims `influence` for `ik` (ADR-110): `influence` is the goal's pull
+ * when branches disagree about a shared member, through the 2D goal owner, and `orient` how far the
+ * leaf turns toward its goal's orientation after its position is solved (ADR-124). Neither moves the
+ * rest orientation or the weighted blend; the load rules refuse both anywhere no goal addresses.
  */
 export const fk3dPlugin: PluginDefinition = {
   name: "fk3d",
@@ -79,6 +85,8 @@ export const fk3dPlugin: PluginDefinition = {
     "y",
     "z",
     ...JOINT_VOCABULARY_KEYS,
+    INFLUENCE_KEY,
+    ORIENT_KEY,
   ],
   requirements: {
     base: { description: "the parent 3D frame" },

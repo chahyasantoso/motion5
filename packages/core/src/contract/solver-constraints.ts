@@ -11,10 +11,11 @@ import { PLUGIN_VALUES_SECTION, readPluginValues } from "./keyframe-shape";
  * opt-in to its `inspection` output, and `inspection` is the name of that output, kept beside the
  * switch so the authored name and the published one cannot drift apart. `influence` is a member's
  * static positive weight on the goal its leaf is addressed with, read inside the solve when branches
- * disagree about a shared member. The graph layer asks this module whether an authored value is well
- * formed, and the runtime asks it whether a live value is in the domain, so the limit domain
- * `[-180, 180]` and the influence domain (finite, greater than zero) are each stated once and read
- * by both.
+ * disagree about a shared member. `orient` is a 3D leaf's static weight in `[0, 1]` on its goal's
+ * orientation, read by `ik3d` after the position solve (ADR-124). The graph layer asks this module
+ * whether an authored value is well formed, and the runtime asks it whether a live value is in the
+ * domain, so the limit domain `[-180, 180]`, the influence domain (finite, greater than zero) and the
+ * orient domain (finite, in `[0, 1]`) are each stated once and read by both.
  */
 export const MIN_ROTATION_KEY = "minRotation" as const;
 export const MAX_ROTATION_KEY = "maxRotation" as const;
@@ -23,6 +24,7 @@ export const FLIP_KEY = "flip" as const;
 export const INSPECT_KEY = "inspect" as const;
 export const INSPECTION_KEY = "inspection" as const;
 export const INFLUENCE_KEY = "influence" as const;
+export const ORIENT_KEY = "orient" as const;
 
 export type LimitKey = typeof MIN_ROTATION_KEY | typeof MAX_ROTATION_KEY;
 export const LIMIT_KEYS: readonly LimitKey[] = Object.freeze([MIN_ROTATION_KEY, MAX_ROTATION_KEY]);
@@ -416,4 +418,35 @@ export function classifyInfluence(value: unknown): InfluenceAuthored {
   const leaf = readAuthoredLeaf(value);
   const influence = leaf.kind === "static" ? readInfluenceValue(leaf.value) : undefined;
   return influence === undefined ? { kind: "malformed" } : { kind: "valid", influence };
+}
+
+/**
+ * An orient weight in its domain, a finite number in `[0, 1]`, or `undefined` for anything else.
+ *
+ * The one predicate for the domain, read like `readInfluenceValue`: a live value reaching the solve
+ * is read through it directly, and an authored leaf through it after `readAuthoredLeaf` has proved
+ * the leaf static. Zero is inside it, unlike influence, because it divides nothing: it is the weight
+ * at which the orientation step returns the position solve's pose unchanged, the anchor a live write
+ * fades an orientation in from (ADR-124). Past `1` a blend is undefined rather than designed, so it
+ * is outside rather than clamped, and a live value past it reads as absent.
+ */
+export function readOrientValue(value: unknown): number | undefined {
+  return typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= 1
+    ? value
+    : undefined;
+}
+
+/**
+ * One authored `orient` spelling, classified, with no `absent` arm for the reason `InfluenceAuthored`
+ * has none: the rule reads only spellings `authoredSpellings` found.
+ */
+export type OrientAuthored =
+  | { readonly kind: "valid"; readonly orient: number }
+  | { readonly kind: "malformed" };
+
+/** Orient is a static weight, as influence is, so a keyframed orient is refused (ADR-124). */
+export function classifyOrient(value: unknown): OrientAuthored {
+  const leaf = readAuthoredLeaf(value);
+  const orient = leaf.kind === "static" ? readOrientValue(leaf.value) : undefined;
+  return orient === undefined ? { kind: "malformed" } : { kind: "valid", orient };
 }

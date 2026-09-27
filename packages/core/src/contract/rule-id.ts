@@ -123,6 +123,8 @@ export const BASE_RULE_IDS = [
   "ik-limit-malformed",
   "ik-limit-without-solver",
   "ik-mode-ambiguous",
+  "ik-orient-malformed",
+  "ik-orient-without-goal",
   "ik-pole-without-bend",
   "ik-pole-without-chain",
   "ik-solved-rotation-dead",
