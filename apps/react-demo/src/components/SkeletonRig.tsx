@@ -1,25 +1,18 @@
 import React from "react";
 import type { ProjectHandle } from "@motion5/core";
-import {
-  useDerivedDomPatch,
-  useDomPatch,
-  type PatchDerivation,
-  type PatchValues,
-} from "@motion5/react";
+import { useDerivedDomPatch, type PatchDerivation, type PatchValues } from "@motion5/react";
+import { nodePosition, point } from "./marker-position";
 
 /**
  * Nothing in this rig re-renders on a tick.
  *
- * A one-node pose is `useDomPatch`. Everything else is a derivation: geometry this file computes
- * from the values of one or more nodes, written to one element by `useDerivedDomPatch` through the
- * same DOM adapter. Presence is still not liveness, and that rule has one owner now instead of one
+ * Every rendered shape is a derivation: geometry this file computes from the values of one or more
+ * nodes, written to one element by `useDerivedDomPatch` through the same DOM adapter. A joint marker
+ * derives its position only, so a label inside it never turns with the bone, and a marker whose arm
+ * was removed hides instead of staying where the arm last was. Presence is still not liveness, and that rule has one owner now instead of one
  * per component: a derivation runs only while every node it names is ready, and its target is hidden
  * rather than unmounted while one is not. See ADR-073 and ADR-075.
  */
-function point(values: PatchValues): { x: number; y: number } {
-  return { x: Number(values.x ?? 0), y: Number(values.y ?? 0) };
-}
-
 const boneEndpoints: PatchDerivation = ([parent = {}, child = {}]) => {
   const from = point(parent);
   const to = point(child);
@@ -85,7 +78,7 @@ const JointMarker: React.FC<JointMarkerProps> = ({
   label,
   glow = false,
 }) => {
-  const bind = useDomPatch<SVGGElement>(handle, nodeId);
+  const bind = useDerivedDomPatch<SVGGElement>(handle, [nodeId], nodePosition);
 
   return (
     <g ref={bind}>
