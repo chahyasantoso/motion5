@@ -1,9 +1,11 @@
 # ADR-116: fk3d rest orientation and solved weight
 
-**Status:** Proposed as issue [#500](https://github.com/chahyasantoso/motion5/issues/500) phase 1,
-2026-09-25, against `main` at `42c723226ed044b11e2441b06c8c7019ae4ed885` (#499). Accepted when
-its pull request merges. Supersedes one withdrawn bullet of
-[ADR-114](./ADR-114-3d-seam-prototype.md), "`fk3d` claiming authored rotation keys".
+**Status:** Accepted, 2026-09-27, as part of the public 3D contract
+([ADR-125](./ADR-125-public-3d-api.md)); landed through #502 (`main` at `c9ce2666`).
+Proposed as issue [#500](https://github.com/chahyasantoso/motion5/issues/500) phase 1,
+2026-09-25, against `main` at `42c723226ed044b11e2441b06c8c7019ae4ed885` (#499). Supersedes one
+withdrawn bullet of [ADR-114](./ADR-114-3d-seam-prototype.md), "`fk3d` claiming authored
+rotation keys".
 
 ## Invariant
 

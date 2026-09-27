@@ -1,9 +1,10 @@
 # ADR-120: Opt-in 3D solve inspection
 
-**Status:** Proposed as issue [#500](https://github.com/chahyasantoso/motion5/issues/500) phase 4,
+**Status:** Accepted, 2026-09-27, as part of the public 3D contract
+([ADR-125](./ADR-125-public-3d-api.md)); landed through #510 (`main` at `cc8a63d6`).
+Proposed as issue [#500](https://github.com/chahyasantoso/motion5/issues/500) phase 4,
 2026-09-26, above `main` at `9d6d8834ac828273259714a74ee3a58b065d26ad`, where the phase 3 pole
-target of [ADR-118](./ADR-118-3d-pole-target.md) landed through #505. Accepted when the pull request
-carrying it merges.
+target of [ADR-118](./ADR-118-3d-pole-target.md) landed through #505.
 
 **Amended by [ADR-121](./ADR-121-grouped-only-keyframes.md), 2026-09-26.** The `ik3d` inspection
 switch remains inside the plugin-named group; a top-level `inspect` entry is no longer an authored

@@ -1,11 +1,12 @@
 # ADR-123: 3D joint limits behind a closed per-member union, enforced inside 3D FABRIK
 
-**Status:** Proposed as issue [#500](https://github.com/chahyasantoso/motion5/issues/500) phase 6,
-2026-09-27, above `main` at `db79cc49dae9442eb7403dbe3931d90521114f16` (#512). Accepted when the
-pull request carrying it merges. **Extended by
-[ADR-124](./ADR-124-3d-goal-influence-and-end-effector-orientation.md), 2026-09-27** (phase 7):
-`limitLocal3d` also limits the orientation step's turned leaf, so an oriented leaf's solved
-orientation stays legal.
+**Status:** Accepted, 2026-09-27, as part of the public 3D contract
+([ADR-125](./ADR-125-public-3d-api.md)); landed through #513 (`main` at `7ee6980a`).
+Proposed as issue [#500](https://github.com/chahyasantoso/motion5/issues/500) phase 6,
+2026-09-27, above `main` at `db79cc49dae9442eb7403dbe3931d90521114f16` (#512).
+**Extended by [ADR-124](./ADR-124-3d-goal-influence-and-end-effector-orientation.md),
+2026-09-27** (phase 7): `limitLocal3d` also limits the orientation step's turned leaf, so an
+oriented leaf's solved orientation stays legal.
 
 ## Invariant
 

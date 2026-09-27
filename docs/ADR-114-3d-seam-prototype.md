@@ -1,8 +1,9 @@
 # ADR-114: 3D seam prototype
 
-**Status:** Proposed as issue [#349](https://github.com/chahyasantoso/motion5/issues/349)
-phase 8, 2026-09-24, against `main` at `7c9ffc3a` plus phase 7 (ADR-113). Accepted when its pull
-request merges.
+**Status:** Accepted, 2026-09-27, as part of the public 3D contract
+([ADR-125](./ADR-125-public-3d-api.md)); landed through #492 (`main` at `87154b95`).
+Proposed as issue [#349](https://github.com/chahyasantoso/motion5/issues/349) phase 8,
+2026-09-24, against `main` at `7c9ffc3a` plus phase 7 (ADR-113).
 
 ## Context
 
@@ -142,6 +143,8 @@ axis itself is the least surprising place. The threshold is relative (`1e-9` of 
   toward rather than taken outright. `TH-11` uses `minRotation` in place of `weight` as its example.
 - A wildcard package export is withdrawn because the prototype is internal-only and package exports
   are an allow list. No `index.ts` or package export is changed.
+  **Superseded in part by [ADR-125](./ADR-125-public-3d-api.md), 2026-09-27.** The prototype is
+  no longer internal-only: the three 3D plugins are declared package subpaths; still no wildcard.
 
 ## Consequences
 

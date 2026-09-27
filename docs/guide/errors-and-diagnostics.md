@@ -124,7 +124,7 @@ Solvers (`ikPlugin`) and solved bones (`fkPlugin`) enforce topological and keyfr
 - `ik-solver-no-goal`, when a solver has a root and members and binds neither the bare `target` slot nor a goal through `targets`. A solve with nothing to reach for has no answer, and this is refused at load rather than left to the composition, which used to throw on it every tick and block every member of the chain behind an `error`.
 - `ik-solver-unreachable-root`, when tracing a member bone's `base` parent walk upward fails to terminate at the solver's bound `root`. The member chain must form a contiguous ancestor hierarchy rooted at `root`.
 - `ik-mode-ambiguous`, when a single node binds `solver` alongside `root` or a goal, or binds `root` under multiple plugins. A track is either a solver or a member, never both. It reads the goal classification rather than the literal slot name `target`, because a member binding `solver` beside a goal dict of its own would otherwise load clean with one real input edge per goal and have every one of them ignored.
-- `ik-solved-rotation-dead`, when a bone that binds `keyframes.fk.requires.solver` authors `values.rotation` and no `values.weight` beside it. With no weight there is no runtime state in which the authored rotation is read, so it is dead input and refused. Either drop it, or author the `weight` that gives it something to mean. The internal 3D member is read the same way for each of its orientation keys: an `fk3d` group that binds `solver` and authors any of `rotation`, `rotationX` or `rotationY` with no `weight` beside it is refused by this rule when its chain takes the closed form (a parent and its one child), because that solve replaces each of them at the default weight. Under every other `ik3d` chain the 3D FABRIK tree solve reads the rest orientation as the frame each member's roll swings from, so there it is live input and loads. See ADR-116 and ADR-122.
+- `ik-solved-rotation-dead`, when a bone that binds `keyframes.fk.requires.solver` authors `values.rotation` and no `values.weight` beside it. With no weight there is no runtime state in which the authored rotation is read, so it is dead input and refused. Either drop it, or author the `weight` that gives it something to mean. The public 3D member is read the same way for each of its orientation keys: an `fk3d` group that binds `solver` and authors any of `rotation`, `rotationX` or `rotationY` with no `weight` beside it is refused by this rule when its chain takes the closed form (a parent and its one child), because that solve replaces each of them at the default weight. Under every other `ik3d` chain the 3D FABRIK tree solve reads the rest orientation as the frame each member's roll swings from, so there it is live input and loads. See ADR-116 and ADR-122.
 - `ik-weight-without-solver`, when a node that bound a `solver` slot under one plugin authors `values.weight` under another. It is the mirror of the rule above: the solve cannot reach a key outside the group that asked for it, so `fk` short-circuits to the authored rotation, never reads that weight, and the key is silently inert. Both rules read the group that bound the slot and no other, which is why binding `solver` under `spring` and authoring `weight` under `fk` is refused rather than passed.
 
 Both of those rules speak only about a node that bound a solver somewhere, and that is a boundary rather than a gap. A `weight` on a bone that bound no solver at all is inert too, and nothing refuses it: `weight` is claimed by `fkPlugin` and may be claimed by any other plugin under ADR-043, and the load-time rule holds no plugin registry, so on a node with no solve in reach it cannot tell a blend weight from another plugin's own live input and does not guess. It is the same boundary that keeps a member's `rotation` in an unrelated plugin group out of `ik-solved-rotation-dead`.
@@ -197,7 +197,7 @@ Opt-in solve inspection ([ADR-109](../ADR-109-opt-in-solve-inspection.md)) adds 
   static boolean. Use `ik.values.inspect: true` to request the solver's fixed-shape `inspection`
   output, or `false` to opt out. A keyframed switch is refused because an output that appears
   mid-timeline would make the patch shape unstable. Inspection is data, not a warning.
-  The internal `ik3d` prototype reads the same switch under the same two rules and publishes the
+  The public `ik3d` solver reads the same switch under the same two rules and publishes the
   same record ([ADR-120](../ADR-120-3d-opt-in-inspection.md)).
 
 Goal addressing has six rules of its own, and they are answered during graph construction rather than by the contract layer, because membership is derived from `solver` edges and the contract layer holds no graph:
@@ -214,18 +214,18 @@ Those six answer about the member a key names. Whether the slot was allowed to c
 The 2D `ik` solver has no rule about chain length. Its derived member count is free, and the solve dispatches on it: two members and one goal take the analytic closed form, and everything else takes the iterative one. `ik-solver-unsupported-arity` refused every derived member count other than two and is deleted rather than widened, because a rule that refuses a shape the runtime solves is worse than no rule.
 
 A solver whose plugin cannot solve every derived shape declares the one it can, and the graph
-refuses the rest at load. That is one rule, and only the internal `ik3d` prototype declares a
+refuses the rest at load. That is one rule, and only the public `ik3d` solver declares a
 narrower shape:
 
 - `ik-chain-unsupported`, when a solver's plugin declares a narrower chain than the graph derived
-  for it. The internal `ik3d` solver declares a chain of `fk3d` members only, of any count and any
+  for it. The public `ik3d` solver declares a chain of `fk3d` members only, of any count and any
   branching: two members on one path take the closed form and every other chain takes 3D FABRIK, so
   what is refused at load is a mixed-dimension rig, a member bound through `fk` or any plugin other
   than `fk3d`, which would otherwise compose identity on every tick. `fk3d` is dedicated to that
   shape, so the 2D `ik` solver, which takes a chain of any count and branching, reports the rule
   only for an `fk3d` member bound to it. See ADR-114 and ADR-122.
 
-The internal `ik3d` prototype also declares an optional `pole` slot, and two rules answer where it
+The public `ik3d` solver also declares an optional `pole` slot, and two rules answer where it
 was bound and whether it can bend anything:
 
 - `ik-pole-without-chain`, when a node binds `pole` under a plugin that declares the slot, today
@@ -239,7 +239,7 @@ was bound and whether it can bend anything:
   them. Each such member is one segment pointing at its goal, so the pole would change nothing.
   Drop the pole, or add the member it was meant to bend. See ADR-122.
 
-The internal `ik3d` prototype reads a 3D joint limit from each `fk3d` member's `joint`
+The public `ik3d` solver reads a 3D joint limit from each `fk3d` member's `joint`
 ([ADR-123](../ADR-123-3d-joint-limits.md)). Every angle bound reuses `ik-limit-malformed` and
 `ik-limit-empty` above, `maxSwing` (in `[0, 180]`) and the twist range included, and a joint key
 anywhere on a 3D member other than the `fk3d` group that bound its solver is

@@ -370,6 +370,9 @@ import { fileURLToPath } from "node:url";
 // same issue's phase 7: `TH-96` to `TH-101`, `TH-108` and `TH-110` the orientation step, its readers
 // and influence in the tree solve, `TH-102` to `TH-104` and `TH-107` the goal-weight load rules, and
 // `TH-105`, `TH-106` and `TH-109` `Engine`.
+// `TH-111` through `TH-131` are the public 3D API of ADR-125, the same issue's phase 8: `TH-111`,
+// `TH-122` and `TH-112` to `TH-114` the subpaths and boundary, `TH-115` to `TH-121` the 3D guide,
+// `TH-123` to `TH-128` the `@motion5/three` adapter, and `TH-129` to `TH-131` the playground rig.
 //
 // The scan root is the repository rather than `packages/core/test`, because an id names one test in
 // the suite and the suite is not one package. `H-4` is declared in

@@ -1,10 +1,12 @@
 # ADR-117: 3D pivot offsets
 
-**Status:** Proposed as issue [#500](https://github.com/chahyasantoso/motion5/issues/500) phase 2,
+**Status:** Accepted, 2026-09-27, as part of the public 3D contract
+([ADR-125](./ADR-125-public-3d-api.md)); landed through #503 (`main` at `7bd3c3d0`).
+Proposed as issue [#500](https://github.com/chahyasantoso/motion5/issues/500) phase 2,
 2026-09-25, first against `main` at `42c723226ed044b11e2441b06c8c7019ae4ed885` with phase 1
 stacked beneath it, and completed against `main` at `c9ce26665e8756614fb8f021e253dd631fcd96d7`,
 where phase 1 ([ADR-116](./ADR-116-fk3d-rest-orientation-and-solved-weight.md)) landed through
-#502. Accepted when the implementation pull request, #503, merges.
+#502.
 
 **Amended by [ADR-121](./ADR-121-grouped-only-keyframes.md), 2026-09-26.** The **What is withdrawn**
 bullet saying flat `x`, `y`, and `z` remain ambiguous no longer holds for authored input. Grouped
