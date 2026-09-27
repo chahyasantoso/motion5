@@ -56,6 +56,7 @@ import {
 } from "../../../src/plugins/ik3d-constraint";
 import { solveTree3dAttempt } from "../../../src/plugins/ik3d-fabrik";
 import { solveChain3d } from "../../../src/plugins/ik3d-solve";
+import { iterationsOf } from "../../support/solve-quality";
 
 const ROOT: WorldFrame = { x: 0, y: 0, rotation: 0 };
 const ROOT3: WorldFrame3d = { x: 0, y: 0, z: 0, rotation: 0, rotationX: 0, rotationY: 0 };
@@ -160,8 +161,8 @@ describe("limited FABRIK: seed side, bidirectional limits and the limited cap (i
     ]) {
       const solved = solveChain(ROOT, members, false);
       expect(solved.quality.kind).toBe("converged");
-      expect(solved.quality.iterations).toBeGreaterThan(FABRIK_MIN_ITERATIONS);
-      expect(solved.quality.iterations).toBeLessThanOrEqual(fabrikIterationCap(2, "limited"));
+      expect(iterationsOf(solved.quality)).toBeGreaterThan(FABRIK_MIN_ITERATIONS);
+      expect(iterationsOf(solved.quality)).toBeLessThanOrEqual(fabrikIterationCap(2, "limited"));
     }
   });
 
@@ -248,7 +249,7 @@ describe("limited FABRIK: seed side, bidirectional limits and the limited cap (i
     for (const flip of [false, true]) {
       const solved = solveChain(ROOT, members, flip);
       expect(solved.quality.kind).toBe("converged");
-      expect(solved.quality.iterations).toBeLessThan(FABRIK_MIN_ITERATIONS);
+      expect(iterationsOf(solved.quality)).toBeLessThan(FABRIK_MIN_ITERATIONS);
       expect(solved.rotations.b!).toBeGreaterThanOrEqual(0);
       expect(solved.rotations.b!).toBeLessThanOrEqual(33.2);
       expect(solved.rotations.c!).toBeGreaterThanOrEqual(-21.6);
@@ -289,8 +290,8 @@ describe("limited FABRIK: seed side, bidirectional limits and the limited cap (i
     ]) {
       const solved = solve3d(members);
       expect(solved.quality.kind).toBe("converged");
-      expect(solved.quality.iterations).toBeGreaterThan(FABRIK_MIN_ITERATIONS);
-      expect(solved.quality.iterations).toBeLessThanOrEqual(fabrikIterationCap(2, "limited"));
+      expect(iterationsOf(solved.quality)).toBeGreaterThan(FABRIK_MIN_ITERATIONS);
+      expect(iterationsOf(solved.quality)).toBeLessThanOrEqual(fabrikIterationCap(2, "limited"));
     }
   });
 
@@ -361,7 +362,7 @@ describe("limited FABRIK: seed side, bidirectional limits and the limited cap (i
     // once, so the larger cap costs it nothing.
     const far = solveChain(ROOT, elbow2d(range(-45, 45), 500, 0), false);
     expect(far.quality.kind).not.toBe("converged");
-    expect(far.quality.iterations).toBeLessThan(FABRIK_MIN_ITERATIONS);
+    expect(iterationsOf(far.quality)).toBeLessThan(FABRIK_MIN_ITERATIONS);
   });
 
   it("CL-36 past the free cap a limited attempt continues only while its residual projects convergence", () => {

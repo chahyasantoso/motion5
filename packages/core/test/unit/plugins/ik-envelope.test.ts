@@ -1,13 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { PluginRegistry } from "../../../src/domain/plugins";
 import { Engine } from "../../../src/engine";
-import { unreachable } from "../../../src/lang/exhaustive";
 import { createManualClock } from "../../../src/ports/clock";
 import { fabrikIterationCap } from "../../../src/plugins/fabrik-cap";
 import { fkPlugin } from "../../../src/plugins/fk";
 import { ikPlugin } from "../../../src/plugins/ik";
 import type { SolveMember } from "../../../src/plugins/ik-member";
-import type { SolveQuality, SolveResult } from "../../../src/plugins/ik-result";
+import type { SolveResult } from "../../../src/plugins/ik-result";
 import { chainShape, solveChain } from "../../../src/plugins/ik-solve";
 import { transformPlugin } from "../../../src/plugins/transform";
 import { createFakeInterpolator, createFakeScheduler } from "../../../src/testing/fakes";
@@ -17,6 +16,7 @@ import {
   rigTrackIds,
   type EnvelopeScenario,
 } from "../../support/ik-envelope";
+import { iterationsOf } from "../../support/solve-quality";
 
 // Issue #349 phase 7 and ADR-113: the deterministic half of the 2D IK envelope.
 //
@@ -37,25 +37,6 @@ function finite(result: SolveResult): boolean {
     Object.values(result.rotations).every(Number.isFinite) &&
     Object.values(result.residuals).every(Number.isFinite)
   );
-}
-
-/** The iterations a quality states, or `undefined` for the closed form, read exhaustively. */
-function iterationsOf(quality: SolveQuality): number | undefined {
-  switch (quality.kind) {
-    case "reached":
-    case "too-far":
-    case "too-near":
-    case "coincident":
-      return undefined;
-    case "converged":
-    case "stalled":
-    case "iteration-cap":
-    case "conflicted":
-    case "limited":
-      return quality.iterations;
-    default:
-      return unreachable(quality);
-  }
 }
 
 /**
