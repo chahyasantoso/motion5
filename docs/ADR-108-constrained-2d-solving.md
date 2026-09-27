@@ -4,6 +4,11 @@
 phase 3, squash-merged from [#484](https://github.com/chahyasantoso/motion5/pull/484) as `0f75d101`.
 Phase 4 is [ADR-109](./ADR-109-opt-in-solve-inspection.md).
 
+**Extended by [ADR-123](./ADR-123-3d-joint-limits.md), 2026-09-27.** The range reader, the
+nearer-bound rule and `atBound` are reused for 3D hinge and twist ranges through `readAngleRange`,
+and under a joint-declaring group (`fk3d`) `minRotation` and `maxRotation` are a hinge's range,
+classified with its `joint`; under every other group they keep this record's meaning and rules.
+
 **Amended by [ADR-121](./ADR-121-grouped-only-keyframes.md), 2026-09-26.** The Invariant's flat
 `minRotation`, `maxRotation`, and `bend` spellings; the **Every spelling is validated**, **Limit
 keys are solver vocabulary**, and **Solver keys belong to the node that bound `root`** passages;

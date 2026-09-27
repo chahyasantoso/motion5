@@ -2,7 +2,10 @@
 
 **Status:** Proposed as issue [#500](https://github.com/chahyasantoso/motion5/issues/500) phase 5,
 2026-09-26, above `main` at `ef47ba597a7119024dc9f0c7be7797a76b3ef80e` (#511). Accepted when the
-pull request carrying it merges.
+pull request carrying it merges. **Extended by [ADR-123](./ADR-123-3d-joint-limits.md),
+2026-09-27** (phase 6): `ChainShape3d` gains the `constrained` arm this record deferred, a
+constrained two-member chain takes 3D FABRIK rather than the closed form, and `derivedStrategy`
+reads each member's constraining joint beside its depth.
 
 ## Invariant
 

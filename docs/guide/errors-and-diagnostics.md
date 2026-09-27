@@ -223,6 +223,21 @@ was bound and whether it can bend anything:
   them. Each such member is one segment pointing at its goal, so the pole would change nothing.
   Drop the pole, or add the member it was meant to bend. See ADR-122.
 
+The internal `ik3d` prototype reads a 3D joint limit from each `fk3d` member's `joint`
+([ADR-123](../ADR-123-3d-joint-limits.md)). Every angle bound reuses `ik-limit-malformed` and
+`ik-limit-empty` above, `maxSwing` (in `[0, 180]`) and the twist range included, and a joint key
+anywhere on a 3D member other than the `fk3d` group that bound its solver is
+`ik-limit-without-solver`. Two rules are the joint's own:
+
+- `ik-joint-malformed`, when `joint` is not one static `"free"`, `"hinge"`, `"cone"` or
+  `"swing-twist"`, a hinge axis component is not a static finite number, an authored axis has no
+  direction, or a `"cone"` or `"swing-twist"` has no `maxSwing`. The kind is never guessed.
+- `ik-joint-key-unused`, when a bound sits beside a kind that does not read it: `minRotation` with
+  no `joint` (a 3D range is a hinge's, so declare `joint: "hinge"`), `maxSwing` on a hinge, an axis
+  on a cone, a twist bound on a cone. Declare the joint that reads it or remove it.
+
+A goal a limit holds off is `limited` quality with `atBound`, not an error, exactly as in 2D.
+
 The 2D `ik` solver has no rule about a solved bone's pivot offset either, for the same reason. A solved member may author `x` and `y` exactly as any other bone does, and `ik-solved-pivot-unsupported` is deleted. `fk` still owns applying the offset, in its parent's rotated space; `ik` accounts for it in the geometry it solves, so the rotations it publishes are the ones that put the composed tip on the goal. Both solves share one convention: the analytic path folds the two offsets into a fixed base point and a rigid link with a twist, and the iterative one solves pivot positions and averages a shared sub-base's tip rather than its children's twists. An offset that shortens a chain's reach past its goal is an unreachable target, which extends the chain toward it and has never been a diagnostic. See ADR-054.
 
 A diagnostic about a grouped keyframe cites the path you typed, `keyframes.fk.values.length`, not the flattened key the compiler works with. A diagnostic about a stop cites its index on the property, `keyframes.transform.values.x[0].p`. A diagnostic about a dict entry cites the key you typed, `keyframes.ik.requires.targets.forearm`, and there is no derived slot spelling for it to cite instead: the key is carried beside the slot as data rather than formatted into it. Every path a leaf diagnostic carries is a path you wrote. See ADR-041, ADR-049, ADR-050, ADR-051, ADR-052, and ADR-057.
