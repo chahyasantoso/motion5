@@ -83,6 +83,6 @@ uncertain shape into a second `ik-influence-without-goal`.
 The scope is built in `resolveSolvers`, after the graph has derived chains and resolved goals,
 because that is the one place that owns both member leafhood and goal addressing.
 `graph/solver-constraints.ts`
-receives the resulting `GoalScope` and validates influence placement without re-deriving either
-question. Keeping the scope here prevents a second graph interpretation in the rule module and lets
+receives the resulting `GoalScope`, and `validateGoalWeights` validates the placement of every goal
+weight, `influence` and the 3D `orient` (ADR-124), without re-deriving either question. Keeping the scope here prevents a second graph interpretation in the rule module and lets
 several solves combine their answers with one precedence order. See ADR-110.

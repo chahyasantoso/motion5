@@ -5,7 +5,10 @@
 pull request carrying it merges. **Extended by [ADR-123](./ADR-123-3d-joint-limits.md),
 2026-09-27** (phase 6): `ChainShape3d` gains the `constrained` arm this record deferred, a
 constrained two-member chain takes 3D FABRIK rather than the closed form, and `derivedStrategy`
-reads each member's constraining joint beside its depth.
+reads each member's constraining joint beside its depth. **Extended by
+[ADR-124](./ADR-124-3d-goal-influence-and-end-effector-orientation.md), 2026-09-27** (phase 7): the tree compromise weighs
+its branches by each addressed leaf's `influence` through the 2D `branchPulls`, and the dispatcher
+runs the end-effector orientation step after either strategy.
 
 ## Invariant
 

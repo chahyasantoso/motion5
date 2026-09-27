@@ -9,6 +9,11 @@ scope** passage saying a flat spelling is in scope when the node binds a solver 
 authored input. Only grouped `values.influence` reaches `resolveSolvers`; an ungrouped spelling is
 `keyframes-ungrouped-key`, so the flat branch is unreachable from authored input.
 
+**Extended by [ADR-124](./ADR-124-3d-goal-influence-and-end-effector-orientation.md), 2026-09-27.** Influence is read on an addressed
+`fk3d` leaf too, through the same `readInfluence` and `branchPulls`, and its two load rules are now
+stated with the 3D `orient` rules over one `GOAL_WEIGHT_RULES` table with byte-identical messages.
+The `validateGoalInfluence` that **Evidence** names is now `validateGoalWeights`.
+
 ## Context
 
 A branching IK solve can ask one shared member to support several goals. Phase 4 made the solve's
