@@ -26,12 +26,14 @@ import {
   normalize3,
   rotationAboutAxis3d,
   swingTwist3d,
+  transposeMatrix3,
   twistAbout3d,
   type Matrix3,
   type Vec3,
 } from "./frame3d";
 import {
   atBound,
+  JOINT_BOUND_TOLERANCE,
   FREE_JOINT,
   limitRotation,
   readAngleRange,
@@ -194,7 +196,8 @@ function limitSwingTwist(maxSwing: number, twist: JointLimit, local: Matrix3): L
   const split = swingTwist3d(local);
   const twistDegrees = limitRotation(twist, split.twistDegrees);
   const swingOver = split.swingDegrees > maxSwing;
-  const bound = split.swingDegrees >= maxSwing || atBound(twist, twistDegrees);
+  const bound =
+    split.swingDegrees >= maxSwing - JOINT_BOUND_TOLERANCE || atBound(twist, twistDegrees);
   if (!swingOver && twistDegrees === split.twistDegrees) return { kind: "unmoved", atBound: bound };
   const swing = swingOver ? rotationAboutAxis3d(split.swingAxis, maxSwing) : split.swing;
   return {
@@ -225,5 +228,60 @@ export function limitLocal3d(limit: JointLimit3d, proposed: () => Matrix3): Limi
       return limitSwingTwist(limit.maxSwing, limit.twist, proposed());
     default:
       return unreachable(limit);
+  }
+}
+
+/**
+ * How far, entry by entry, a legal local orientation may sit from the proposal it was rebuilt from
+ * and still count as that proposal for the inward pass.
+ *
+ * A hinge rebuilds its local from the limited angle even when the angle is in range (`limitHinge`
+ * says why the outward pass must), so a legal child always came back `moved`, and every limited
+ * hinge re-derived its base's frame and re-placed its pivot for a turn of a few ulps. The 2D rule
+ * returns the base it was given for a legal child, so a planar +z hinge answered differently from
+ * the same 2D rig. A rotation matrix's entries are at most one, so a reconstruction of a legal pose
+ * differs from it by rounding, around `1e-16`, while a real tilt or overrun is many orders larger.
+ */
+const INWARD_FRAME_TOLERANCE = 1e-12;
+
+function sameFrame(a: Matrix3, b: Matrix3): boolean {
+  for (let entry = 0; entry < 9; entry += 1)
+    if (!(Math.abs(a[entry]! - b[entry]!) <= INWARD_FRAME_TOLERANCE)) return false;
+  return true;
+}
+
+/**
+ * A base member's world frame, turned the least that makes a limited child's local orientation
+ * legal with the child's frame held: the inward half of bidirectional enforcement (ADR-126, issue
+ * #514), and the 3D statement of `boundBaseDirection`.
+ *
+ * The child's local orientation is `base^T child`, the one `limitLocal3d` bounds in the outward
+ * pass. Holding `child` and replacing that local by the legal one nearest it gives `base' = child
+ * legal^T`, which is exactly the outward rule solved for the other end. On a planar +z hinge the
+ * local is a turn by `dir(child) - dir(base)` and the answer is the base turned to `dir(child) -
+ * limitRotation(range, dir(child) - dir(base))`, the 2D formula, so the planar agreement between the
+ * dimensions holds. An `unmoved` answer carries no frame, so a caller keeps the placement it
+ * already had and a legal pose costs no re-derivation. A legal child is `unmoved` here even for a
+ * hinge, whose outward answer is always `moved`: a rebuilt local within `INWARD_FRAME_TOLERANCE` of
+ * the proposal is the proposal, which is what `boundBaseDirection` answers for the same planar rig.
+ */
+export type BoundBase3d =
+  | { readonly kind: "unmoved" }
+  | { readonly kind: "moved"; readonly frame: Matrix3 };
+
+const UNMOVED_BASE: BoundBase3d = Object.freeze({ kind: "unmoved" });
+
+export function boundBaseFrame3d(limit: JointLimit3d, child: Matrix3, base: Matrix3): BoundBase3d {
+  // Read eagerly: the inward pass asks only about a limited child, and every limit reads it.
+  const local = multiplyMatrix3(transposeMatrix3(base), child);
+  const limited = limitLocal3d(limit, () => local);
+  switch (limited.kind) {
+    case "unmoved":
+      return UNMOVED_BASE;
+    case "moved":
+      if (sameFrame(limited.local, local)) return UNMOVED_BASE;
+      return { kind: "moved", frame: multiplyMatrix3(child, transposeMatrix3(limited.local)) };
+    default:
+      return unreachable(limited);
   }
 }

@@ -1,13 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { unreachable } from "../../../src/lang/exhaustive";
 import { FABRIK_TOLERANCE } from "../../../src/plugins/fabrik";
 import { fabrikIterationCap } from "../../../src/plugins/fabrik-cap";
-import type { SolveQuality } from "../../../src/plugins/ik-result";
 import { canonicalChain } from "../../../src/plugins/ik-topology";
+import { constrains } from "../../../src/plugins/ik3d-constraint";
 import { chainShape3d, solveChain3d } from "../../../src/plugins/ik3d-solve";
 import type { SolveResult3d } from "../../../src/plugins/ik3d-result";
 import { composeChain3d, frameDistance3d } from "../../support/fk3d-compose";
 import { envelope3dScenarios, type Envelope3dScenario } from "../../support/ik3d-envelope";
+import { iterationsOf } from "../../support/solve-quality";
 
 const RIGS = 40;
 
@@ -25,24 +25,6 @@ function finite(result: SolveResult3d): boolean {
     ) &&
     Object.values(result.residuals).every(Number.isFinite)
   );
-}
-
-function iterationsOf(quality: SolveQuality): number | undefined {
-  switch (quality.kind) {
-    case "reached":
-    case "too-far":
-    case "too-near":
-    case "coincident":
-      return undefined;
-    case "converged":
-    case "stalled":
-    case "iteration-cap":
-    case "conflicted":
-    case "limited":
-      return quality.iterations;
-    default:
-      return unreachable(quality);
-  }
 }
 
 function census(scenario: Envelope3dScenario["id"]): Readonly<Record<string, number>> {
@@ -103,7 +85,10 @@ describe("IK 3D envelope (#500 phase 5)", () => {
           return;
         }
         expect(iterations).toBeGreaterThanOrEqual(1);
-        const cap = fabrikIterationCap(canonicalChain(rig.members).serialDepth());
+        const constraint = rig.members.some(({ limit }) => limit !== undefined && constrains(limit))
+          ? "limited"
+          : "free";
+        const cap = fabrikIterationCap(canonicalChain(rig.members).serialDepth(), constraint);
         expect(iterations).toBeLessThanOrEqual(cap);
       });
     }

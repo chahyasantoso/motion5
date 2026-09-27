@@ -99,8 +99,9 @@ function scaledMean(influences: readonly number[]): number {
  *
  * `centroid` is the historical rule and the one every authored-seed baseline uses. `reach-circle`
  * is the alternative FABRIK's conflict selector tries only after the centroid baseline reports
- * `conflicted` (issue #490, ADR-110). No third rule is implied by the union being closed; a new one
- * is a decision recorded in ADR-110 and a compile error at every reader until it is handled.
+ * `conflicted` (issue #490, ADR-110); a `limited` baseline retries the opposite seed side with
+ * `centroid` (ADR-126). No third rule is implied by the union being closed; a new one is a decision
+ * recorded in ADR-110 and a compile error at every reader until it is handled.
  */
 export type CompromiseRule = "centroid" | "reach-circle";
 

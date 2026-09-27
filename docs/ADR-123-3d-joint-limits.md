@@ -7,6 +7,10 @@ Proposed as issue [#500](https://github.com/chahyasantoso/motion5/issues/500) ph
 **Extended by [ADR-124](./ADR-124-3d-goal-influence-and-end-effector-orientation.md),
 2026-09-27** (phase 7): `limitLocal3d` also limits the orientation step's turned leaf, so an
 oriented leaf's solved orientation stays legal.
+**Extended by [ADR-126][adr126],
+2026-09-27** (issue #514): limited FABRIK now retries the opposite seed side, enforces limits
+inward as well as outward, records 2D bounds from the enforced angle, and uses a progress-gated
+limited pass budget.
 
 ## Invariant
 
@@ -96,20 +100,14 @@ agree on which chains are constrained. No 2D byte moves.
 
 ## Consequences
 
-A one-way range whose bound is the straight seed pose (`[0, 90]` on an elbow) starts every solve on
-that bound and holds it, so a reachable goal on the forbidden side of straight reports `limited` or
-`stalled`. 2D constrained FABRIK behaves identically, with the same residuals on the planar rigs
-measured, so this is the shared seed rather than a 3D defect; a seed-side change belongs to both
-dimensions at once and is left as a follow-up. A hinge-limited chain can also end `stalled` or
-`iteration-cap` a fraction of a unit from a reachable goal, as 2D limited chains do. On planar +z
-hinges the 3D and 2D solves agree to `1e-5` degrees, but about one rig in fifteen reports a
-different quality kind, because 2D re-derives `atBound` from positions (one ulp off a bound reads
-as not at it) while 3D records it where the limit applied. Adding `joint` to a live rig by a
-value-tier write re-derives the runtime strategy but not the load-time rest refusal; a newly
-introduced key takes the authored-property recompile path and pays load validation
-([LIVE-EDIT-COST.md](./LIVE-EDIT-COST.md)). `fk3d` now claims `joint`, `axisX`, `axisY`, `axisZ`,
-`minRotation`, `maxRotation`, `maxSwing`, `minTwist` and `maxTwist`, which were
-`plugin-unknown-key` before. Nothing 3D is exported.
+[ADR-126][adr126] extends
+this record's outward enforcement with an inward pass for bases that have limited children, and
+has the selector retry the opposite seed side only for a `limited` baseline. It also records 2D
+`atBound` from the angle the limit enforced, so planar +z hinges no longer disagree with 3D only
+because position rounding put a legal angle one ulp inside the bound. Limited attempts retain the
+shared free cap first and may continue only under the progress-gated ceiling; a residual that does
+not project tolerance still reports its honest miss. The live `joint` write, authored-property
+validation path, and `fk3d` vocabulary remain as described here. Nothing 3D is exported.
 
 ## Evidence
 
@@ -125,3 +123,5 @@ introduced key takes the authored-property recompile path and pays load validati
 - Sandbox TypeScript 5.8.3 reports the base error set; the full suite under the sandbox Vitest
   stand-in has no new failure against the base. Reviewed, not trusted; `CI` on the pull request
   head is the evidence.
+
+[adr126]: ./ADR-126-limited-fabrik-seed-side-bidirectional-limits-and-pass-budget.md

@@ -15,6 +15,10 @@ keys are solver vocabulary**, and **Solver keys belong to the node that bound `r
 and the Evidence sentence about flat spellings no longer describe authored input. Only grouped
 spellings reach the solver-spelling readers; ungrouped spellings are `keyframes-ungrouped-key`, so
 the flat branches described there are unreachable from authored input.
+**Extended by [ADR-126][adr126],
+2026-09-27** (issue #514): limited 2D FABRIK also enforces child limits during the inward pass,
+selects one opposite seed side only for a `limited` baseline, records `atBound` from the enforced
+angle, and uses a progress-gated pass budget.
 
 ## Invariant
 
@@ -86,7 +90,9 @@ read before it, so a limited chain with no goal gets the same message it always 
 unconstrained two-bone and tree routes are unchanged.
 
 **Limits are enforced during FABRIK.** The outward pass places a segment, computes its local angle,
-limits it, and re-places the tip along the limited direction.
+limits it, and re-places the tip along the limited direction. The inward pass also moves a base with
+limited children to the nearest legal angle while holding the child direction, so both ends preserve
+the same range; [ADR-126][adr126] owns the retry and progress-gated budget around these passes.
 
 **An out-of-range angle goes to the bound nearer on the circle.** The angle is wrapped into
 `(-180, 180]` first, and an angle outside the range is answered by the bound with the smaller angular
@@ -139,3 +145,5 @@ named diagnostics at load, while live writes remain total. Limited chains may mi
 explain that miss with `limited` quality. Unconstrained rigs retain the old closed-form and unlimited
 FABRIK behavior. The runtime plugin surface still publishes rotations only by default; ADR-109 adds
 the opt-in fixed-shape `inspection` projection without changing unopted patches.
+
+[adr126]: ./ADR-126-limited-fabrik-seed-side-bidirectional-limits-and-pass-budget.md

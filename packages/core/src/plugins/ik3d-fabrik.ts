@@ -1,6 +1,7 @@
 import { unreachable } from "../lang/exhaustive";
-import { arcHalfAngle, FABRIK_TOLERANCE, iterativeQuality } from "./fabrik";
-import { fabrikIterationCap } from "./fabrik-cap";
+import { FABRIK_TOLERANCE, iterativeQuality } from "./fabrik";
+import { arcHalfAngle } from "./fabrik-seed";
+import { fabrikPassBudget, type FabrikConstraint } from "./fabrik-cap";
 import { selectFabrik } from "./fabrik-select";
 import { readNumber, segmentExtent } from "./frame";
 import {
@@ -38,7 +39,7 @@ import {
 } from "./ik3d-analytic";
 import type { ChainMember3d } from "./ik3d-chain";
 import { compromise3d, type Pull3d } from "./ik3d-compromise";
-import { FREE_JOINT3D, limitLocal3d } from "./ik3d-constraint";
+import { boundBaseFrame3d, constrains, FREE_JOINT3D, limitLocal3d } from "./ik3d-constraint";
 import { restoreResult3d, type SolveResult3d } from "./ik3d-result";
 
 /**
@@ -48,9 +49,10 @@ import { restoreResult3d, type SolveResult3d } from "./ik3d-result";
  * **What is shared with 2D, and why only that.** Canonical member order, child counts, leaves and
  * serial depth are `ik-topology.ts`'s; goal reading, the direction stand-in and the miss are
  * `ik-goal-reading.ts`'s; branch pulls, the `Pull` union, relative weights and the rule dispatch are
- * `ik-goal.ts`'s; the tolerance, the arc seed's half-angle and the naming of an outcome as one
- * quality kind are `fabrik.ts`'s; the iteration cap is `fabrik-cap.ts`'s (ADR-115); the four
- * candidate conflict selector is `fabrik-select.ts`'s (#490); the magnitude policy is
+ * `ik-goal.ts`'s; the tolerance and the naming of an outcome as one quality kind are `fabrik.ts`'s;
+ * the seed half-angle, depth-scaled cap and progress-gated budget are `fabrik-seed.ts` and
+ * `fabrik-cap.ts` (ADR-115, ADR-126); the closed quality selector is `fabrik-select.ts`'s (#490,
+ * ADR-126); the magnitude policy is
  * `ik-scale.ts`'s. Each of those questions has the same contract in both dimensions. Vector
  * arithmetic does not, so the passes, the placement and the compromise geometry are stated here and
  * in `ik3d-compromise.ts` over `Vec3`, rather than behind a dimension flag in the 2D file.
@@ -66,9 +68,10 @@ import { restoreResult3d, type SolveResult3d } from "./ik3d-result";
  *
  * **Bend plane.** Each root-to-leaf path is seeded on a constant-curvature arc in the plane the
  * closed form bends in, read through `bendBasis3d`, the one owner of the pole rule (ADR-118): toward
- * an authored pole, else the root-local +z rule. `flip` mirrors the arc across the line to the goal,
- * which is the opposite seed side the selector tries for a conflicted baseline; no 3D author sets
- * it, so an authored solve always starts on the pole's side.
+ * an authored pole, else the root-local +z rule. `flip` mirrors the arc across the line to the
+ * goal; a conflicted baseline pays its three alternatives and a limited baseline pays one
+ * opposite-seed retry with the centroid rule. No 3D author sets it, so an authored solve always
+ * starts on the pole's side.
  *
  * The solve is a pure function of the root, the members and the pole: no state survives a call and
  * nothing is warm-started, so a reverse scrub and a random seek republish the forward pass byte for
@@ -134,7 +137,8 @@ function seedArc3d(
  *
  * The structure is the 2D attempt's: seed every addressed path, run an outward pass, then alternate
  * inward and outward passes until the worst addressed miss is inside `FABRIK_TOLERANCE`, a pass
- * moves nothing, or the cap is reached. A sub-base settles on the influence-weighted compromise of
+ * moves nothing, or the shared pass budget denies another pass. Limited children constrain both
+ * directions; a sub-base settles on the influence-weighted compromise of
  * the tips its branches propose, each branch un-offsetting its proposed pivot through its base's
  * current full frame, so positions are averaged and orientations never are (ADR-054).
  *
@@ -165,6 +169,12 @@ export function solveTree3dAttempt(
   );
   const rests = chain.map(({ rest }) => matrixFromEuler3d(rest));
   const limits = chain.map(({ limit }) => limit ?? FREE_JOINT3D);
+  // Each member's limited children in canonical order, whose limits the inward pass bounds its
+  // frame by (ADR-126). A member with none takes the plain inward step and its bytes.
+  const limitedChildren = new Array<number[] | undefined>(count);
+  for (let index = 0; index < count; index += 1)
+    if (parent[index] !== ROOT && constrains(limits[index]!))
+      (limitedChildren[parent[index]!] ??= []).push(index);
   const inner = ids.find((id) => (childCount.get(id) ?? 0) > 0 && byId.get(id)!.goal !== undefined);
   if (inner !== undefined)
     throw new Error(`Solver goal on member "${inner}" is not on a leaf of the chain.`);
@@ -294,6 +304,41 @@ export function solveTree3dAttempt(
     }
     return moved;
   };
+  // The frame each limited member settled on earlier in the current inward pass: its last outward
+  // frame swung onto its inward direction. Only limited members with a member base write one.
+  const inwardFrames: (Matrix3 | undefined)[] = new Array<Matrix3 | undefined>(count);
+  /**
+   * Where the inward pass puts a member's pivot: `length` back from its settled tip toward its old
+   * pivot, then, only for a member with limited children, with its frame turned by
+   * `boundBaseFrame3d` for each of them in canonical order and the pivot re-placed behind the tip
+   * along the bounded +x (ADR-126). Children sit later in canonical order and the walk is deepest
+   * first, so every child's inward frame is already written. A member with no limited child, or
+   * whose children are legal, returns the plain placement.
+   */
+  const inwardPivot = (index: number, tip: Vec3): Vec3 => {
+    const length = lengths[index]!;
+    const placed = place3d(tip, pivots[index]!, length);
+    const children = limitedChildren[index];
+    if (children === undefined || length <= 0) return placed;
+    let frame = swingFrame3d(frames[index]!, subtract3(tip, placed));
+    let moved = false;
+    for (const child of children) {
+      const childFrame = inwardFrames[child];
+      if (childFrame === undefined) continue;
+      const bound = boundBaseFrame3d(limits[child]!, childFrame, frame);
+      switch (bound.kind) {
+        case "unmoved":
+          break;
+        case "moved":
+          frame = bound.frame;
+          moved = true;
+          break;
+        default:
+          unreachable(bound);
+      }
+    }
+    return moved ? subtract3(tip, scale3(axisX3(frame), length)) : placed;
+  };
   const residualNow = (): number => {
     let worst = 0;
     for (const leaf of addressed)
@@ -302,15 +347,17 @@ export function solveTree3dAttempt(
   };
 
   outward();
-  const cap = fabrikIterationCap(serialDepth());
+  const constraint: FabrikConstraint = limits.some(constrains) ? "limited" : "free";
+  const budget = fabrikPassBudget(serialDepth(), constraint, FABRIK_TOLERANCE);
   const proposals: Pull3d[][] = Array.from({ length: count }, () => []);
   let iterations = 0;
   let residual = residualNow();
   let stalled = false;
   let spread = 0;
-  while (residual > FABRIK_TOLERANCE && iterations < cap) {
+  while (residual > FABRIK_TOLERANCE && budget.admits(iterations, residual)) {
     iterations += 1;
     spread = 0;
+    inwardFrames.fill(undefined);
     for (const leaf of addressed)
       proposals[leaf]!.push({ kind: "goal", point: aims[leaf]!, weight: 1 });
     // The inward pass, deepest first: each member settles on its proposals, then proposes its
@@ -327,7 +374,9 @@ export function solveTree3dAttempt(
       const base = parent[index]!;
       if (base === ROOT) continue;
       const tip = tips[index]!;
-      const pivot = place3d(tip, pivots[index]!, lengths[index]!);
+      const pivot = inwardPivot(index, tip);
+      if (constrains(limits[index]!) && lengths[index]! > 0)
+        inwardFrames[index] = swingFrame3d(frames[index]!, subtract3(tip, pivot));
       const own = offset[index];
       const shift = own === undefined ? undefined : multiplyVector3(frames[base]!, own);
       proposals[base]!.push({
@@ -378,8 +427,9 @@ export function solveTree3dAttempt(
 }
 
 /**
- * The tree solve at one magnitude: the authored-side attempt, and the three alternatives only for a
- * conflicted baseline, through the 2D selector unchanged (#490).
+ * The tree solve at one magnitude through the shared closed selector: the authored-side attempt,
+ * three alternatives for a conflicted baseline and one opposite-seed centroid retry for a limited
+ * baseline (#490, ADR-126).
  */
 function selectTree3d(
   root: WorldFrame3d,

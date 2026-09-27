@@ -11,6 +11,9 @@ its depth. **Extended by [ADR-124](./ADR-124-3d-goal-influence-and-end-effector-
 2026-09-27** (phase 7): the tree compromise weighs its branches by each addressed leaf's
 `influence` through the 2D `branchPulls`, and the dispatcher runs the end-effector orientation
 step after either strategy.
+**Extended by [ADR-126][adr126],
+2026-09-27** (issue #514): the shared selector and progress-gated cap now apply the limited-chain
+retry and budget to 3D as well as 2D, while free-chain behavior remains unchanged.
 
 ## Invariant
 
@@ -95,9 +98,10 @@ inherent to tree FABRIK in three dimensions rather than a port defect: the plana
 the 3D solve matches 2D FABRIK on all 200 rigs, zeroing every rest and offset changes no outcome,
 and every seed and compromise variant tried regressed another scenario. No fix is taken; the
 cap stays shared with 2D (ADR-115), and the invariant above says `converged` rather than claiming
-every reachable goal lands. A rig that authored a rest orientation with no weight on a solver-bound
-`fk3d` member now loads under a tree solve and is still refused under the closed form. Nothing 3D
-is exported.
+every reachable goal lands. ADR-126 keeps the free cap shared with 2D but gives limited chains a
+progress-gated ceiling, so its extra work is not an unconditional 4x charge. A rig that authored a
+rest orientation with no weight on a solver-bound `fk3d` member now loads under a tree solve and is
+still refused under the closed form. Nothing 3D is exported.
 
 ## Evidence
 
@@ -116,3 +120,5 @@ is exported.
 - Full suite under the sandbox Vitest stand-in: no new failure against `ef47ba5`. Sandbox
   TypeScript 5.8.3 with stubs for packages it cannot install reports the same error set as
   `ef47ba5`. Reviewed, not trusted; `CI` on the pull request head is the evidence.
+
+[adr126]: ./ADR-126-limited-fabrik-seed-side-bidirectional-limits-and-pass-budget.md

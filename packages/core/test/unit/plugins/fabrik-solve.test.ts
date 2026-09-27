@@ -1,18 +1,18 @@
 import { describe, expect, it } from "vitest";
 import {
-  arcHalfAngle,
   FABRIK_TOLERANCE,
-  seedArc,
   solveFabrik,
   solveFabrikAttempt,
   type FabrikPoint,
 } from "../../../src/plugins/fabrik";
+import { arcHalfAngle, seedArc } from "../../../src/plugins/fabrik-seed";
 import type { WorldFrame } from "../../../src/plugins/frame";
 import type { IterativeQuality } from "../../../src/plugins/ik-result";
 import type { SolveMember } from "../../../src/plugins/ik-member";
 import { outranks } from "../../../src/plugins/fabrik-select";
 import {
   FABRIK_ITERATIONS_PER_DEPTH,
+  FABRIK_LIMITED_CAP_FACTOR,
   FABRIK_MIN_ITERATIONS,
   fabrikIterationCap,
 } from "../../../src/plugins/fabrik-cap";
@@ -133,7 +133,7 @@ describe("FABRIK over a solver chain (Slice D2)", () => {
     const solution = solveFabrik(ROOT, TWO_BONE);
 
     expect(solution.quality.kind).toBe("converged");
-    expect(solution.quality.iterations).toBeLessThan(fabrikIterationCap(2));
+    expect(solution.quality.iterations).toBeLessThan(fabrikIterationCap(2, "free"));
     expect(solution.quality.residual).toBeLessThanOrEqual(FABRIK_TOLERANCE);
     expect(distance(solution.tips[FOREARM]!, HAND)).toBeLessThanOrEqual(FABRIK_TOLERANCE);
 
@@ -185,7 +185,7 @@ describe("FABRIK over a solver chain (Slice D2)", () => {
 
     const five = solveFabrik(ROOT, FIVE_BONE);
     expect(five.quality.kind).toBe("converged");
-    expect(five.quality.iterations).toBeLessThan(fabrikIterationCap(5));
+    expect(five.quality.iterations).toBeLessThan(fabrikIterationCap(5, "free"));
     expect(distance(five.tips.m5!, at(260, 380))).toBeLessThanOrEqual(FABRIK_TOLERANCE);
     expect(distance(five.tips.m4!, five.tips.m5!)).toBeCloseTo(40, 9);
   });
@@ -420,14 +420,22 @@ describe("FABRIK over a solver chain (Slice D2)", () => {
     // Issue #491 and ADR-115: one rule, continuous at the floor, where four per member meets 64.
     expect(FABRIK_MIN_ITERATIONS).toBe(64);
     expect(FABRIK_ITERATIONS_PER_DEPTH).toBe(4);
-    expect([0, 1, 16, 17, 64, 128].map(fabrikIterationCap)).toEqual([64, 64, 64, 68, 256, 512]);
+    const depths = [0, 1, 16, 17, 64, 128];
+    expect(depths.map((depth) => fabrikIterationCap(depth, "free"))).toEqual([
+      64, 64, 64, 68, 256, 512,
+    ]);
+    // ADR-126: a limited chain takes the measured factor over the same rule, and only a limited one.
+    expect(FABRIK_LIMITED_CAP_FACTOR).toBe(4);
+    expect(depths.map((depth) => fabrikIterationCap(depth, "limited"))).toEqual([
+      256, 256, 256, 272, 1024, 2048,
+    ]);
     // Depth, not member count: a 30-member tree four members deep that stays conflicted stops at the
     // floor. A cap read from member count would have run it to 120 passes on every attempt.
     const tree = rig("tree-30", 5);
     expect(tree.members).toHaveLength(30);
     const conflicted = solveFabrik(tree.root, tree.members, tree.flip);
     expect(conflicted.quality.kind).toBe("conflicted");
-    expect(conflicted.quality.iterations).toBe(fabrikIterationCap(4));
+    expect(conflicted.quality.iterations).toBe(fabrikIterationCap(4, "free"));
   });
 
   it("FB-22 a 64-deep chain that is still converging at 64 passes finishes inside its depth's cap", () => {
@@ -438,7 +446,7 @@ describe("FABRIK over a solver chain (Slice D2)", () => {
     const solved = solveFabrik(chain.root, chain.members, chain.flip);
     expect(solved.quality.kind).toBe("converged");
     expect(solved.quality.iterations).toBeGreaterThan(FABRIK_MIN_ITERATIONS);
-    expect(solved.quality.iterations).toBeLessThanOrEqual(fabrikIterationCap(64));
+    expect(solved.quality.iterations).toBeLessThanOrEqual(fabrikIterationCap(64, "free"));
     expect(solved.quality.residual).toBeLessThanOrEqual(FABRIK_TOLERANCE);
   });
 });

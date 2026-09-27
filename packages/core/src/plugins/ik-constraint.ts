@@ -71,14 +71,63 @@ export function limitRotation(limit: JointLimit, local: number): number {
   }
 }
 
-/** Whether `local`, once limited, rests on a bound. A free joint has none. */
+/**
+ * How near a limited angle, in degrees, may sit to a bound and still rest on it (ADR-126).
+ *
+ * The 2D solve measures a member's local angle with `atan2` over placed points, and the 3D solve
+ * with `hingeAngle` over composed frames, so the same planar pose can land exactly on a bound in
+ * one dimension and a few ulps inside it in the other. The quality kind reads this answer
+ * (`limited` against `stalled` or `iteration-cap`), and the selector pays for the opposite seed on
+ * `limited` alone, so an exact comparison let the dimensions choose different poses for one rig.
+ * A nanodegree is thousands of ulps at any angle in the domain and moves no bone anyone can see.
+ */
+export const JOINT_BOUND_TOLERANCE = 1e-9;
+
+/**
+ * Whether `local`, once limited, rests on a bound: within `JOINT_BOUND_TOLERANCE` of one, measured
+ * on the circle. A free joint has none. Every "is this member on its limit" answer in both
+ * dimensions reads this owner.
+ */
 export function atBound(limit: JointLimit, local: number): boolean {
   switch (limit.kind) {
     case "free":
       return false;
     case "range": {
       const bounded = limitRotation(limit, local);
-      return bounded === limit.min || bounded === limit.max;
+      return (
+        angularDistance(bounded, limit.min) <= JOINT_BOUND_TOLERANCE ||
+        angularDistance(bounded, limit.max) <= JOINT_BOUND_TOLERANCE
+      );
+    }
+    default:
+      return unreachable(limit);
+  }
+}
+
+/**
+ * A base member's world direction, turned the least that puts a limited child's local angle back in
+ * its range: the inward half of bidirectional enforcement (ADR-126, issue #514).
+ *
+ * The outward pass bounds a child's direction relative to its base. The inward pass moves the other
+ * end: with the child's direction held, the base turns so that `childDirection - baseDirection` is
+ * the legal local angle nearest to the one it was, `dir(base) = dir(child) - limitRotation(range,
+ * dir(child) - dir(base))`. Without it the inward pass is unconstrained, pulls a chain seeded on the
+ * forbidden side of a one-way range back there every pass, and the outward projection holds it on
+ * the bound. A free child and an in-range angle return `baseDirection` itself, so a member with no
+ * limited child, or one whose children are already legal, keeps the doubles it had.
+ */
+export function boundBaseDirection(
+  limit: JointLimit,
+  childDirection: number,
+  baseDirection: number,
+): number {
+  switch (limit.kind) {
+    case "free":
+      return baseDirection;
+    case "range": {
+      const local = wrapRotation(childDirection - baseDirection);
+      const bounded = limitRotation(limit, local);
+      return bounded === local ? baseDirection : childDirection - bounded;
     }
     default:
       return unreachable(limit);

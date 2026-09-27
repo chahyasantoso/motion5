@@ -14,7 +14,8 @@ import { unreachable } from "../lang/exhaustive";
  *
  * Generic over the rig and the solution, defaulting to the 2D ones, because the selector reads
  * nothing of either but the solution's `quality`: the 3D tree solve passes its own attempt through
- * the same gate, where `flip` names the seed's side of the bend plane (ADR-122).
+ * the same gate, where `flip` names the seed's side of the bend plane (ADR-122), so a remedy stated
+ * here holds in both dimensions from one statement (ADR-126).
  */
 export type FabrikAttempt<
   R = WorldFrame,
@@ -28,26 +29,76 @@ export interface Selectable {
 }
 
 /**
+ * One alternative attempt a missed baseline pays for: the seed side relative to the authored `flip`
+ * and the compromise rule it is attempted with.
+ */
+export interface FabrikAlternative {
+  readonly opposite: boolean;
+  readonly rule: CompromiseRule;
+}
+
+/**
  * The attempts a conflicted baseline pays for, in their recorded order (ADR-110, issue #490).
  *
  * `opposite` names the seed side relative to the authored `flip`. The order is part of the
  * contract, because an exact tie keeps the earlier candidate.
  */
-const ALTERNATIVES: readonly { readonly opposite: boolean; readonly rule: CompromiseRule }[] = [
-  { opposite: true, rule: "centroid" },
-  { opposite: false, rule: "reach-circle" },
-  { opposite: true, rule: "reach-circle" },
-];
+const CONFLICTED_ALTERNATIVES: readonly FabrikAlternative[] = Object.freeze([
+  Object.freeze({ opposite: true, rule: "centroid" }),
+  Object.freeze({ opposite: false, rule: "reach-circle" }),
+  Object.freeze({ opposite: true, rule: "reach-circle" }),
+]);
 
 /**
- * The four-candidate gate for a conflicted authored-seed solve.
+ * The attempt a limited baseline pays for: the opposite seed side with the baseline's rule (ADR-126,
+ * issue #514).
+ *
+ * A one-way range seeded on the side it forbids is projected onto its bound by the first outward
+ * pass and held there, so the authored side can be a fixed point on a bound while the goal is
+ * reachable from the other side. One opposite-side attempt is the whole of the remedy the selector
+ * owns: the rule stays the baseline's `centroid`, because a limit is not a branch disagreement.
+ */
+const LIMITED_ALTERNATIVES: readonly FabrikAlternative[] = Object.freeze([
+  Object.freeze({ opposite: true, rule: "centroid" }),
+]);
+
+const NO_ALTERNATIVES: readonly FabrikAlternative[] = Object.freeze([]);
+
+/**
+ * The alternatives a baseline of this quality pays for, read exhaustively over FABRIK's kinds.
+ *
+ * A met goal pays nothing. A stall or a cap pays nothing either: a stall is a fixed point that a
+ * different seed side has no evidence of escaping, and a cap is still moving, so neither overrides
+ * the authored bend. Only the two misses whose cause names a seed-side remedy pay: a conflict for
+ * the three recorded alternatives (#490), and a bound for the opposite side (#514). So a free rig
+ * that was not conflicted takes exactly the one attempt it always took, and limits outrank the bend
+ * hint only when the authored side ends on a bound and the other side scores strictly better.
+ */
+export function fabrikAlternatives(quality: IterativeQuality): readonly FabrikAlternative[] {
+  switch (quality.kind) {
+    case "conflicted":
+      return CONFLICTED_ALTERNATIVES;
+    case "limited":
+      return LIMITED_ALTERNATIVES;
+    case "converged":
+    case "stalled":
+    case "iteration-cap":
+      return NO_ALTERNATIVES;
+    default:
+      return unreachable(quality);
+  }
+}
+
+/**
+ * The candidate gate for an authored-seed solve.
  *
  * The authored seed with the centroid rule is attempted first and returned as the same object for
- * every quality other than `conflicted`, so every rig that did not conflict before issue #490 is
- * bit-identical and pays nothing more. Only a conflict pays for the three fixed alternatives. The
- * baseline is itself a candidate, so the selected result is never worse than the baseline under the
- * comparator below. Losing candidates are dropped; no restart metadata is published (ADR-107), and
- * the selected result reports its own `quality.iterations`.
+ * every quality whose alternatives are empty, so every such rig is bit-identical to a single attempt
+ * and pays nothing more. A conflict pays for its three fixed alternatives and a bound for the
+ * opposite side (`fabrikAlternatives`). The baseline is itself a candidate, so the selected result
+ * is never worse than the baseline under the comparator below. Losing candidates are dropped; no
+ * restart metadata is published (ADR-107), and the selected result reports its own
+ * `quality.iterations`.
  */
 export function selectFabrik<R, M, S extends Selectable>(
   root: R,
@@ -56,9 +107,8 @@ export function selectFabrik<R, M, S extends Selectable>(
   attempt: FabrikAttempt<R, M, S>,
 ): S {
   const baseline = attempt(root, members, flip, "centroid");
-  if (baseline.quality.kind !== "conflicted") return baseline;
   let selected = baseline;
-  for (const { opposite, rule } of ALTERNATIVES) {
+  for (const { opposite, rule } of fabrikAlternatives(baseline.quality)) {
     const candidate = attempt(root, members, opposite ? !flip : flip, rule);
     if (outranks(candidate.quality, selected.quality)) selected = candidate;
   }

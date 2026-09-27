@@ -22,11 +22,28 @@ The solve is exact over every finite rig, from lengths near the smallest double 
 
 ## Which solver answers a chain
 
-Nobody chooses a solver; the shape of the chain does. A parent and one addressed child with no limits take the closed form, which is exact, costs about the same at any distance, and reports `reached`, `too-far`, `too-near` or `coincident`. Every other chain, longer, branching or limited, takes the iterative solver, which runs at most 64 passes and reports `converged`, `stalled`, `iteration-cap`, `limited` or `conflicted`. Opt into `inspect` on the solver to see which one, with its residual.
+Nobody chooses a solver; the shape of the chain does. A parent and one addressed child with no
+limits
+take the closed form, which is exact, costs about the same at any distance, and reports `reached`,
+`too-far`, `too-near` or `coincident`. Every other chain, longer, branching or limited, takes the
+iterative solver. Free chains use a depth-scaled cap with a 64-pass floor; limited chains may use up
+to 4x that free cap only while measured residual progress projects tolerance. The solver reports
+`converged`, `stalled`, `iteration-cap`, `limited` or `conflicted`. Opt into `inspect` on the solver
+to see which one, with its residual.
 
 ## What it costs
 
-A closed-form solve measured 2.3257 microseconds in one fresh run and 1.9013 in its paired run. An iterative solve costs roughly its member count times the passes it takes: chain-8 measured 76.2351 and 75.8308 microseconds, while chain-64 measured 2.9674 and 2.8637 milliseconds and had 17 of 200 results at the 64-pass cap. A conflicted branching result now tries a fixed reach-circle alternative, so the dated #490 envelope reports 196 of 200 feasible tree-14 rigs converged and 139 of 200 feasible tree-30 rigs converged; the remaining misses, three `conflicted` and one `iteration-cap` on tree-14 and 61 `conflicted` on tree-30, are reported as exactly that by `inspect`. The engine cost per solver per frame was 49.53 microseconds for one rig in the first run, so on a page with many small rigs the publisher, not the closed-form arithmetic, is what you are paying for.
+A closed-form solve measured 2.3257 microseconds in one fresh run and 1.9013 in its paired run. An
+iterative solve costs roughly its member count times the passes it takes: chain-8 measured 76.2351
+and 75.8308 microseconds, while chain-64 measured 2.9674 and 2.8637 milliseconds and had 17 of
+200 results at the 64-pass cap. Limited chains use the progress-gated budget described above, so a
+crawling miss does not automatically spend its full 4x ceiling. A conflicted branching result now
+tries a fixed reach-circle alternative, so the dated #490 envelope reports 196 of 200 feasible
+tree-14 rigs converged and 139 of 200 feasible tree-30 rigs converged; the remaining misses, three
+`conflicted` and one `iteration-cap` on tree-14 and 61 `conflicted` on tree-30, are reported as
+exactly that by `inspect`. The engine cost per solver per frame was 49.53 microseconds for one rig
+in the first run, so on a page with many small rigs the publisher, not the closed-form arithmetic,
+is what you are paying for.
 
 The measured numbers, the machine they were measured on, and the command that reproduces them are in [BENCH-IK.md](../BENCH-IK.md). Read them as a shape rather than a promise: they are one machine's numbers, and the only part `CI` holds is the part that is not a timing.
 

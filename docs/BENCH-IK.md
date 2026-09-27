@@ -24,9 +24,10 @@ figures divide the measured solve time by member count; they are not additional 
 ## Solve scenarios
 
 These are the phase-7 runs of 2026-09-24, taken before the #490 selector landed. Their timings and
-their serial-chain and constrained quality counts describe the current solve, because #490 returns
-every non-`conflicted` result unchanged; their tree quality counts are the pre-#490 baseline, and
-the current tree counts are in the #490 section below.
+their serial-chain quality counts describe the current solve, because #490 returns every
+non-`conflicted` result unchanged and #514 leaves free chains byte-identical; their tree quality
+counts are the pre-#490 baseline, the current tree counts are in the #490 section below, and the
+constrained-8 counts are the pre-#514 baseline, with the current ones in the #514 section below.
 
 - **Two-bone closed form:** 2.3257 microseconds per solve, or 1.1629 microseconds per member. All
   200 solves reported `reached`; the closed form performed zero iterative passes.
@@ -210,3 +211,19 @@ maximum `36.17042714751404`, `90.59913492069643`, `171.7608046099203` against th
 `36.539986202983215`, `90.6359756427425`, `171.7608046099203`; 272 rigs improved and none regressed,
 charging 214,035 passes against 92,725. A 300-rig member-permutation check of that corpus was
 `Object.is`-identical on every rig. These are measurements rather than timing gates.
+
+## Issue #514 limited FABRIK
+
+Measured on 2026-09-27 in a sandbox with `node scripts/bench-ik.mjs` (Node `v22.23.1`, V8
+`12.4.254.21-node.56`, `linux x64`, `Intel(R) Xeon(R) Processor @ 2.60GHz`, 4 cores, 200 rigs, the
+method in Conditions), `main` at `1084ba67` against the #518 head with the #514 handovers applied,
+run back to back. Reviewed, not trusted. The host was shared, and identical free code paths moved by
+up to 50% between the two runs (3D chain-8 66.9 against 100.7 microseconds), so read the timings as
+scale only.
+
+- **Constrained-8:** `main` 197 `converged` and 3 `limited`, a mean of 7.46 passes and a maximum of
+  64, at 110.1 microseconds per solve; the #514 head 200 `converged`, a mean of 8.34 and a maximum
+  of 157, at 144.9. The three recovered rigs are the ones that pay the opposite-seed retry and the
+  progress-gated passes past the free cap; ADR-126 owns why.
+- **Every free scenario,** 2D and 3D, reported the same quality counts, mean and maximum passes on
+  both sides, as the free identity hashes in ADR-126 require.

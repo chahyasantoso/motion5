@@ -1,7 +1,6 @@
 import {
   baseTipFromPivot,
   pivotFromBaseTip,
-  segmentExtent,
   type PivotOffset,
   type WorldFrame,
   type WorldPoint,
@@ -10,11 +9,13 @@ import { solveLength, solveOffset, type SolveMember } from "./ik-member";
 import { aimPoint, goalMiss, readGoal, type GoalReading } from "./ik-goal-reading";
 import { branchPulls, compromise, type CompromiseRule, type Pull } from "./ik-goal";
 import { selectFabrik } from "./fabrik-select";
-import { fabrikIterationCap } from "./fabrik-cap";
+import { seedArc } from "./fabrik-seed";
+import { fabrikPassBudget, type FabrikConstraint } from "./fabrik-cap";
 import { unreachable } from "../lang/exhaustive";
 import { canonicalChain } from "./ik-topology";
 import {
   atBound,
+  boundBaseDirection,
   FREE_JOINT,
   limitRotation,
   restDirection,
@@ -66,9 +67,6 @@ import type { IterativeQuality, SolveResult } from "./ik-result";
  */
 export const FABRIK_TOLERANCE = 1e-3;
 
-/** Bisection steps for the seed's arc half-angle. A fixed count, so the seed is reproducible. */
-export const FABRIK_ARC_BISECTIONS = 60;
-
 /**
  * A point in the solve's working state.
  *
@@ -104,87 +102,6 @@ export interface FabrikSolution extends SolveResult<IterativeQuality> {
 
 const DEGREES = 180 / Math.PI;
 const RADIANS = Math.PI / 180;
-
-/**
- * The half-angle of the circular arc whose length is one and whose chord is `ratio`.
- *
- * `sin(theta) / theta` decreases strictly on `(0, pi]`, from one at a straight chord to zero at a
- * folded one, so bisection is total here: no derivative, no seed guess, and no failure branch. A
- * fixed step count rather than a convergence test is what makes the seed reproducible: two calls
- * with one ratio return the same double, which is what lets the whole solve be asserted as a pure
- * function.
- */
-export function arcHalfAngle(ratio: number): number {
-  let low = 0;
-  let high = Math.PI;
-  for (let step = 0; step < FABRIK_ARC_BISECTIONS; step += 1) {
-    const middle = (low + high) / 2;
-    if (Math.sin(middle) / middle > ratio) low = middle;
-    else high = middle;
-  }
-  return (low + high) / 2;
-}
-
-/**
- * The seed pose for one root-to-leaf path: the joints of a constant-curvature arc that leaves the
- * root, arrives at the goal, and is exactly as long as the chain.
- *
- * Derived, never authored. Reviving a member's authored `rotation` as the seed was rejected for a
- * reason that outlives this function: that key is dead at arity two, where the solve owns rotation
- * outright, so reading it at arity three would leave one authored key live or dead depending on how
- * many bones its neighbours happen to have.
- *
- * An arc rather than a straight line, because FABRIK cannot leave one. With every joint colinear,
- * both passes move along that line, so the chain slides but never bends: a straight seed is a fixed
- * point for a goal on the line and converges from the wrong side for a goal off it. The bulge is
- * the geometric slack made symmetric. It is zero at both ends by construction, largest in the
- * middle, and vanishes exactly at full extension, which is the one pose where colinear is the
- * answer rather than the trap.
- *
- * `flip` mirrors the bulge across the root-to-goal line, so it selects the same two configurations
- * the closed form's `flip` selects and both branches can be held to the analytic numbers.
- *
- * The points honour the arc, not the lengths: `solveFabrik` enforces lengths outward immediately,
- * so a seed's only job is to say which way the chain bends. That is also why it is handed segment
- * lengths and no offsets. A seed that modelled the offsets would be a better guess and a second
- * geometry to keep in step with the composition, and the first outward pass overwrites every point
- * it produces.
- */
-export function seedArc(
-  root: WorldFrame,
-  goal: FabrikPoint,
-  lengths: readonly number[],
-  flip = false,
-): readonly FabrikPoint[] {
-  const total = lengths.reduce((sum, length) => sum + segmentExtent(length), 0);
-  const chord = Math.hypot(goal.x - root.x, goal.y - root.y);
-  // A goal on the root leaves no direction to read, so the root's own rotation is the axis. The
-  // chain still folds out and back along it rather than collapsing, because an arc at a zero chord
-  // is a half turn.
-  const alongX = chord > 0 ? (goal.x - root.x) / chord : Math.cos(root.rotation * RADIANS);
-  const alongY = chord > 0 ? (goal.y - root.y) / chord : Math.sin(root.rotation * RADIANS);
-  const side = flip ? -1 : 1;
-  const acrossX = -alongY * side;
-  const acrossY = alongX * side;
-  const halfAngle = total > 0 && chord < total ? arcHalfAngle(chord / total) : 0;
-  const radius = halfAngle > 0 ? total / (2 * halfAngle) : 0;
-  const points: FabrikPoint[] = [];
-  let travelled = 0;
-  for (const length of lengths) {
-    travelled += segmentExtent(length);
-    const fraction = total > 0 ? travelled / total : 1;
-    const angle = -halfAngle + 2 * halfAngle * fraction;
-    const axial = halfAngle > 0 ? chord / 2 + radius * Math.sin(angle) : fraction * chord;
-    const lateral = halfAngle > 0 ? radius * (Math.cos(angle) - Math.cos(halfAngle)) : 0;
-    points.push(
-      Object.freeze({
-        x: root.x + alongX * axial + acrossX * lateral,
-        y: root.y + alongY * axial + acrossY * lateral,
-      }),
-    );
-  }
-  return Object.freeze(points);
-}
 
 /**
  * The solve.
@@ -226,7 +143,18 @@ export function solveFabrikAttempt(
   const offsetOf = (id: string): PivotOffset => solveOffset(byId.get(id)!);
   const goalOf = (id: string): WorldFrame | undefined => byId.get(id)!.goal;
   const limitOf = (id: string): JointLimit => byId.get(id)!.limit ?? FREE_JOINT;
+  // A `SolveMember` carries a limit only when it constrains the solve, so presence is the answer.
+  const isLimited = (id: string): boolean => byId.get(id)!.limit !== undefined;
   const rootPoint: FabrikPoint = Object.freeze({ x: root.x, y: root.y });
+  // Each member's limited children, canonical order, which bound it in the inward pass (ADR-126).
+  const limitedChildren = new Map<string, string[]>();
+  for (const id of ids) {
+    const base = baseOf(id);
+    if (!isMember(base) || !isLimited(id)) continue;
+    const list = limitedChildren.get(base) ?? [];
+    list.push(id);
+    limitedChildren.set(base, list);
+  }
   const addressed = leaves.filter((id) => goalOf(id) !== undefined);
   // A goal is read only on a leaf, so a goal on a member with children would be solved as if it
   // were absent while the result reported the rig converged. Load refuses that shape as
@@ -349,6 +277,32 @@ export function solveFabrikAttempt(
     return Object.freeze({ x: from.x + (dx / axis) * extent, y: from.y + (dy / axis) * extent });
   };
   /**
+   * The inward pivot: `length` back from the settled tip, turned for each limited child by
+   * `boundBaseDirection` (ADR-126). `inwardDirections` holds the directions limited members
+   * settled on earlier in this deepest-first pass. No limited child, or legal ones, returns the plain
+   * placement, so a free rig keeps its bytes.
+   */
+  const inwardDirections = new Map<string, number>();
+  const inwardPivot = (id: string): FabrikPoint => {
+    const tip = tips.get(id)!;
+    const length = lengthOf(id);
+    const placed = place(tip, pivots.get(id)!, length);
+    const children = limitedChildren.get(id);
+    if (children === undefined || length <= 0) return placed;
+    const direction = Math.atan2(tip.y - placed.y, tip.x - placed.x) * DEGREES;
+    let bounded = direction;
+    for (const child of children) {
+      const childDirection = inwardDirections.get(child);
+      if (childDirection !== undefined)
+        bounded = boundBaseDirection(limitOf(child), childDirection, bounded);
+    }
+    if (bounded === direction) return placed;
+    return Object.freeze({
+      x: tip.x - length * Math.cos(bounded * RADIANS),
+      y: tip.y - length * Math.sin(bounded * RADIANS),
+    });
+  };
+  /**
    * The outward pass. Lengths are law, and this is the only place that enforces them.
    *
    * It is also the only place that composes a pivot, and it does so in canonical depth order, so a
@@ -361,7 +315,11 @@ export function solveFabrikAttempt(
    * about its pivot onto the legal local angle nearest the placed one. Enforced here, inside the
    * pass that enforces lengths, so every later iteration starts from a legal pose and the published
    * angle is legal because the pose is, not because the output was clamped afterwards. See ADR-108.
+   * Whether the member rests on a bound is recorded here too, from the bounded angle this pass
+   * enforced, matching the 3D record. Re-deriving it from rounded positions can land a bound pose a
+   * few ulps inside the range and report it as unbounded (ADR-126).
    */
+  const onBound = new Map<string, boolean>();
   const limitTip = (
     id: string,
     pivot: FabrikPoint,
@@ -373,12 +331,16 @@ export function solveFabrikAttempt(
       case "free":
         return placed;
       case "range": {
-        if (length <= 0) return placed;
+        if (length <= 0) {
+          onBound.set(id, atBound(limit, 0));
+          return placed;
+        }
         const base = baseDirection(id);
         const local = wrapRotation(
           Math.atan2(placed.y - pivot.y, placed.x - pivot.x) * DEGREES - base,
         );
         const bounded = limitRotation(limit, local);
+        onBound.set(id, atBound(limit, bounded));
         if (bounded === local) return placed;
         return Object.freeze({
           x: pivot.x + length * Math.cos((base + bounded) * RADIANS),
@@ -411,15 +373,17 @@ export function solveFabrikAttempt(
   };
 
   outward();
-  const cap = fabrikIterationCap(serialDepth());
+  const constraint: FabrikConstraint = ids.some(isLimited) ? "limited" : "free";
+  const budget = fabrikPassBudget(serialDepth(), constraint, FABRIK_TOLERANCE);
   let iterations = 0;
   let residual = residualNow();
   let stalled = false;
   // How far the branches still disagreed about a shared member in the last inward pass.
   let spread = 0;
-  while (residual > FABRIK_TOLERANCE && iterations < cap) {
+  while (residual > FABRIK_TOLERANCE && budget.admits(iterations, residual)) {
     iterations += 1;
     spread = 0;
+    inwardDirections.clear();
     const before = new Map(tips);
     // The inward pass. Every addressed leaf starts at its goal, and each member proposes where its
     // own pivot would have to sit for its length to hold, then un-offsets that pivot into a
@@ -441,7 +405,11 @@ export function solveFabrikAttempt(
       // solve may not move: it is the frame the chain hangs from, published by a node this solve
       // does not own.
       if (!isMember(base)) continue;
-      const pivot = place(tips.get(id)!, pivots.get(id)!, lengthOf(id));
+      const pivot = inwardPivot(id);
+      if (isLimited(id) && lengthOf(id) > 0) {
+        const tip = tips.get(id)!;
+        inwardDirections.set(id, Math.atan2(tip.y - pivot.y, tip.x - pivot.x) * DEGREES);
+      }
       const list = proposals.get(base) ?? [];
       const direction = baseDirection(id);
       const point = Object.freeze(baseTipFromPivot(pivot, direction, offsetOf(id)));
@@ -484,7 +452,7 @@ export function solveFabrikAttempt(
     const limit = limitOf(id);
     const local = limitRotation(limit, worldDirection(id) - baseDirection(id));
     rotations[id] = local;
-    if (atBound(limit, local)) atBounds.push(id);
+    if (onBound.get(id) === true) atBounds.push(id);
     solvedPivots[id] = pivots.get(id)!;
     solvedTips[id] = tips.get(id)!;
   }
@@ -542,7 +510,10 @@ export function iterativeQuality(outcome: IterativeOutcome): IterativeQuality {
   return { kind: "iteration-cap", iterations, residual };
 }
 
-/** Solve once with the authored seed, and search alternatives only for a conflicted baseline. */
+/**
+ * Solve once with the authored seed; a conflicted baseline pays three alternatives, while a
+ * limited baseline pays one opposite-seed retry with the centroid rule.
+ */
 export function solveFabrik(
   root: WorldFrame,
   members: readonly SolveMember[],

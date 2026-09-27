@@ -1,0 +1,99 @@
+import { segmentExtent, type WorldFrame, type WorldPoint } from "./frame";
+
+/**
+ * The FABRIK seed: the constant-curvature arc every iterative solve starts from, and the only owner
+ * of its geometry.
+ *
+ * Its own module rather than a section of `fabrik.ts`, because the seed is a question the iteration
+ * does not answer: which way the chain bends before the first pass. The 2D solve seeds each path
+ * with `seedArc`, and the 3D tree solve's `seedArc3d` is the same arithmetic with vector axes over
+ * the same `arcHalfAngle`, so a planar rig seeds the same points in both dimensions from one
+ * bisection. Moved here unchanged from `fabrik.ts` when issue #514 took that file past its read
+ * budget (docs/AI-EDIT-WORKFLOW.md); every double it produces is the one it produced there.
+ */
+
+const RADIANS = Math.PI / 180;
+
+/** Bisection steps for the seed's arc half-angle. A fixed count, so the seed is reproducible. */
+export const FABRIK_ARC_BISECTIONS = 60;
+
+/**
+ * The half-angle of the circular arc whose length is one and whose chord is `ratio`.
+ *
+ * `sin(theta) / theta` decreases strictly on `(0, pi]`, from one at a straight chord to zero at a
+ * folded one, so bisection is total here: no derivative, no seed guess, and no failure branch. A
+ * fixed step count rather than a convergence test is what makes the seed reproducible: two calls
+ * with one ratio return the same double, which is what lets the whole solve be asserted as a pure
+ * function.
+ */
+export function arcHalfAngle(ratio: number): number {
+  let low = 0;
+  let high = Math.PI;
+  for (let step = 0; step < FABRIK_ARC_BISECTIONS; step += 1) {
+    const middle = (low + high) / 2;
+    if (Math.sin(middle) / middle > ratio) low = middle;
+    else high = middle;
+  }
+  return (low + high) / 2;
+}
+
+/**
+ * The seed pose for one root-to-leaf path: the joints of a constant-curvature arc that leaves the
+ * root, arrives at the goal, and is exactly as long as the chain.
+ *
+ * Derived, never authored. Reviving a member's authored `rotation` as the seed was rejected for a
+ * reason that outlives this function: that key is dead at arity two, where the solve owns rotation
+ * outright, so reading it at arity three would leave one authored key live or dead depending on how
+ * many bones its neighbours happen to have.
+ *
+ * An arc rather than a straight line, because FABRIK cannot leave one. With every joint colinear,
+ * both passes move along that line, so the chain slides but never bends: a straight seed is a fixed
+ * point for a goal on the line and converges from the wrong side for a goal off it. The bulge is
+ * the geometric slack made symmetric. It is zero at both ends by construction, largest in the
+ * middle, and vanishes exactly at full extension, which is the one pose where colinear is the
+ * answer rather than the trap.
+ *
+ * `flip` mirrors the bulge across the root-to-goal line, so it selects the same two configurations
+ * the closed form's `flip` selects and both branches can be held to the analytic numbers.
+ *
+ * The points honour the arc, not the lengths: `solveFabrik` enforces lengths outward immediately,
+ * so a seed's only job is to say which way the chain bends. That is also why it is handed segment
+ * lengths and no offsets. A seed that modelled the offsets would be a better guess and a second
+ * geometry to keep in step with the composition, and the first outward pass overwrites every point
+ * it produces.
+ */
+export function seedArc(
+  root: WorldFrame,
+  goal: WorldPoint,
+  lengths: readonly number[],
+  flip = false,
+): readonly WorldPoint[] {
+  const total = lengths.reduce((sum, length) => sum + segmentExtent(length), 0);
+  const chord = Math.hypot(goal.x - root.x, goal.y - root.y);
+  // A goal on the root leaves no direction to read, so the root's own rotation is the axis. The
+  // chain still folds out and back along it rather than collapsing, because an arc at a zero chord
+  // is a half turn.
+  const alongX = chord > 0 ? (goal.x - root.x) / chord : Math.cos(root.rotation * RADIANS);
+  const alongY = chord > 0 ? (goal.y - root.y) / chord : Math.sin(root.rotation * RADIANS);
+  const side = flip ? -1 : 1;
+  const acrossX = -alongY * side;
+  const acrossY = alongX * side;
+  const halfAngle = total > 0 && chord < total ? arcHalfAngle(chord / total) : 0;
+  const radius = halfAngle > 0 ? total / (2 * halfAngle) : 0;
+  const points: WorldPoint[] = [];
+  let travelled = 0;
+  for (const length of lengths) {
+    travelled += segmentExtent(length);
+    const fraction = total > 0 ? travelled / total : 1;
+    const angle = -halfAngle + 2 * halfAngle * fraction;
+    const axial = halfAngle > 0 ? chord / 2 + radius * Math.sin(angle) : fraction * chord;
+    const lateral = halfAngle > 0 ? radius * (Math.cos(angle) - Math.cos(halfAngle)) : 0;
+    points.push(
+      Object.freeze({
+        x: root.x + alongX * axial + acrossX * lateral,
+        y: root.y + alongY * axial + acrossY * lateral,
+      }),
+    );
+  }
+  return Object.freeze(points);
+}
