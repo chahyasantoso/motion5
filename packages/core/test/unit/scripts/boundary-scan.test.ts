@@ -12,6 +12,7 @@ import {
   importsRenderer,
   importsTestingEntrypoint,
   scan,
+  undeclaredCoreSubpaths,
   walk,
 } from "../../../../../scripts/boundary-scan.mjs";
 import {
@@ -22,11 +23,14 @@ import {
   consumerInternalViolationFixture,
   coreEntrypointFixture,
   engineViolationFixture,
+  plugin3dEntrypointFixture,
   pluginEntrypointFixture,
+  pluginRendererViolationFixture,
   publicExportViolationFixture,
   rendererViolationFixture,
   testingEntrypointViolationFixture,
   testingSourcePathViolationFixture,
+  undeclaredSubpathFixture,
 } from "../../../../../scripts/boundary-scan-fixtures";
 
 const root = fileURLToPath(new URL("../../../../..", import.meta.url));
@@ -408,5 +412,89 @@ describe("test-only entrypoint tier (issue #167, ADR-048)", () => {
     } finally {
       await rm(bare, { recursive: true, force: true });
     }
+  });
+});
+
+/**
+ * Issue #500 phase 8 and ADR-125. Promoting the 3D plugins to package subpaths makes two claims a
+ * gate has to hold: core imports no renderer, including under `plugins/`, where every solver lives
+ * and which the layer list did not name; and a consumer reaches core only through a subpath the
+ * core manifest declares, because the source aliases in `tsconfig.json` and the Vite apps resolve
+ * any path under `packages/core/src` and would let an undeclared one pass in this repository.
+ */
+describe("boundary scan: the public 3D surface", () => {
+  async function withTree<T>(
+    files: Readonly<Record<string, string>>,
+    use: (tree: string) => Promise<T>,
+  ): Promise<T> {
+    const tree = await mkdtemp(join(tmpdir(), "motion5-public-3d-"));
+    try {
+      await writeFile(join(tree, "package.json"), PACKAGES_ONLY);
+      for (const [path, source] of Object.entries(files)) {
+        await mkdir(join(tree, path, ".."), { recursive: true });
+        await writeFile(join(tree, path), `${source}\n`);
+      }
+      return await use(tree);
+    } finally {
+      await rm(tree, { recursive: true, force: true });
+    }
+  }
+  const coreManifest = readFile(join(root, "packages", "core", "package.json"), "utf8");
+  const declared = coreManifest.then(
+    (text: string) => new Set(Object.keys((JSON.parse(text) as { exports: object }).exports)),
+  );
+
+  it("TH-112 scans packages/core/src/plugins for renderer imports", async () => {
+    const violations = await withTree(
+      { "packages/core/src/plugins/solver.ts": pluginRendererViolationFixture },
+      (tree) => scan(tree),
+    );
+    expect(violations).toEqual(["packages/core/src/plugins/solver.ts: renderer or engine import"]);
+  });
+
+  it("TH-113 refuses a core source directory that no layer declares", async () => {
+    const violations = await withTree(
+      {
+        "packages/core/src/renderer3d/mesh.ts": cleanFixture,
+        "packages/core/src/plugins/clean.ts": cleanFixture,
+      },
+      (tree) => scan(tree),
+    );
+    expect(violations).toEqual(["packages/core/src/renderer3d: undeclared core layer"]);
+  });
+
+  it("TH-114 refuses a consumer import of a core subpath the manifest does not declare", async () => {
+    const subpaths = await declared;
+    expect(undeclaredCoreSubpaths(undeclaredSubpathFixture, subpaths)).toEqual([
+      "@motion5/core/plugins/fabrik",
+    ]);
+    for (const fixture of [
+      plugin3dEntrypointFixture,
+      pluginEntrypointFixture,
+      coreEntrypointFixture,
+      adapterEntrypointFixture,
+      '// see "@motion5/core/plugins/fabrik" for the solve\nexport const kept = 1;',
+    ])
+      expect(undeclaredCoreSubpaths(fixture, subpaths)).toEqual([]);
+
+    const consumer = `${plugin3dEntrypointFixture}\n${undeclaredSubpathFixture}`;
+    const withManifest = await withTree(
+      {
+        "packages/core/package.json": await coreManifest,
+        "packages/three/src/index.ts": consumer,
+      },
+      (tree) => scan(tree),
+    );
+    expect(withManifest).toEqual([
+      "packages/three/src/index.ts: undeclared core subpath @motion5/core/plugins/fabrik",
+    ]);
+    // With no core manifest nothing is declared, so the same consumer fails closed on both.
+    const withoutManifest = await withTree({ "packages/three/src/index.ts": consumer }, (tree) =>
+      scan(tree),
+    );
+    expect(withoutManifest).toEqual([
+      "packages/three/src/index.ts: undeclared core subpath @motion5/core/plugins/ik3d",
+      "packages/three/src/index.ts: undeclared core subpath @motion5/core/plugins/fabrik",
+    ]);
   });
 });

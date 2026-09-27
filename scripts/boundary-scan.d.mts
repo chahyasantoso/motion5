@@ -5,5 +5,6 @@ export function importsCoreInternals(source: string): boolean;
 export function importsTestingEntrypoint(source: string): boolean;
 export function importsDomainLayer(source: string): boolean;
 export function bannedSymbol(source: string): boolean;
+export function undeclaredCoreSubpaths(source: string, declared: ReadonlySet<string>): string[];
 export function extractExportNames(source: string): string[];
 export function scan(scanRoot?: string): Promise<string[]>;

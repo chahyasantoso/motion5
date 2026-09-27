@@ -11,6 +11,7 @@ const coreLayers = [
   "testing",
   "adapters",
   "lang",
+  "plugins",
 ];
 const corePackage = "packages/core";
 const scannedExtensions = [".ts", ".tsx", ".js", ".mjs"];
@@ -336,6 +337,24 @@ export function bannedSymbol(source) {
     source,
   );
 }
+/**
+ * Every `@motion5/core` specifier in `source` whose subpath the core manifest does not declare.
+ *
+ * `packages/core/package.json` `exports` is the one owner of what a consumer may import, so the
+ * set is read from it rather than listed here. The root `tsconfig.json` maps `@motion5/core/*` to
+ * source and both Vite apps alias the package name to the source directory, so an undeclared
+ * subpath such as `@motion5/core/plugins/fabrik` typechecks and bundles in this repository while
+ * failing for every consumer of the built package. This reads the code the way the other specifier
+ * predicates do, through `importSpecifiers`, so a path named in prose is not an import of it.
+ */
+export function undeclaredCoreSubpaths(source, declared) {
+  const undeclared = [];
+  for (const specifier of importSpecifiers(source)) {
+    const match = /^@motion5\/core(\/.*)?$/.exec(specifier);
+    if (match !== null && !declared.has(`.${match[1] ?? ""}`)) undeclared.push(specifier);
+  }
+  return undeclared;
+}
 export function extractExportNames(source) {
   const names = [];
   for (const match of source.matchAll(/export\s+(?:type\s+)?\{([^}]+)\}/g))
@@ -362,6 +381,15 @@ async function scanFiles(directory, scanRoot, layer, violations) {
     checkCoreSource(source, relative(path, scanRoot), layer, violations);
   }
 }
+/**
+ * Scans the files directly under `packages/core/src` and refuses a directory no layer declares.
+ *
+ * The layer list is what decides which rules a directory is held to, so a directory missing from
+ * it was held to none: `plugins/` sat outside the list from the first plugin until issue #500
+ * phase 8, which is where every solver lives, so a `three` import there would have passed the
+ * gate that claims core imports no renderer. Naming a new directory is now a decision the scan
+ * forces rather than one it can miss (ADR-125).
+ */
 async function scanCoreEntries(scanRoot, violations) {
   const directory = join(scanRoot, "packages", "core", "src");
   let entries;
@@ -371,6 +399,11 @@ async function scanCoreEntries(scanRoot, violations) {
     if (error?.code === "ENOENT") return;
     throw error;
   }
+  for (const name of entries
+    .filter((entry) => entry.isDirectory() && !coreLayers.includes(entry.name))
+    .map((entry) => entry.name)
+    .sort())
+    violations.push(`packages/core/src/${name}: undeclared core layer`);
   for (const name of entries
     .filter((entry) => entry.isFile() && scannedExtensions.includes(extname(entry.name)))
     .map((entry) => entry.name)
@@ -417,17 +450,43 @@ async function discoverConsumerWorkspaces(scanRoot) {
   }
   return workspaces;
 }
+/**
+ * The subpaths `packages/core/package.json` declares, read once per scan.
+ *
+ * A tree with no core manifest declares nothing, so every `@motion5/core` import in it reads as
+ * undeclared: the absence fails closed, which is the direction a discovery step owes (a consumer
+ * import checked against a set nobody read must not read as declared).
+ */
+async function declaredCoreSubpaths(scanRoot) {
+  let manifest;
+  try {
+    manifest = JSON.parse(await readFile(join(scanRoot, corePackage, "package.json"), "utf8"));
+  } catch (error) {
+    if (error?.code === "ENOENT") return new Set();
+    throw error;
+  }
+  const exports = manifest.exports;
+  return new Set(
+    exports !== null && typeof exports === "object" && !Array.isArray(exports)
+      ? Object.keys(exports)
+      : [],
+  );
+}
 export async function scan(scanRoot = root) {
   const violations = [];
   for (const layer of coreLayers)
     await scanFiles(join(scanRoot, "packages", "core", "src", layer), scanRoot, layer, violations);
   await scanCoreEntries(scanRoot, violations);
-  for (const workspace of await discoverConsumerWorkspaces(scanRoot)) {
+  const workspaces = await discoverConsumerWorkspaces(scanRoot);
+  const declared = await declaredCoreSubpaths(scanRoot);
+  for (const workspace of workspaces) {
     for (const path of await walk(join(scanRoot, workspace, "src"))) {
       const source = await readFile(path, "utf8");
       const file = relative(path, scanRoot);
       if (importsCoreInternals(source)) violations.push(`${file}: core source-internal import`);
       if (importsTestingEntrypoint(source)) violations.push(`${file}: testing entrypoint import`);
+      for (const specifier of undeclaredCoreSubpaths(source, declared))
+        violations.push(`${file}: undeclared core subpath ${specifier}`);
     }
   }
   const indexPath = join(scanRoot, "packages", "core", "src", "index.ts");
