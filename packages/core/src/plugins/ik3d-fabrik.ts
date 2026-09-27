@@ -1,5 +1,6 @@
 import { unreachable } from "../lang/exhaustive";
-import { arcHalfAngle, FABRIK_TOLERANCE, iterativeQuality } from "./fabrik";
+import { FABRIK_TOLERANCE, iterativeQuality } from "./fabrik";
+import { arcHalfAngle } from "./fabrik-seed";
 import { fabrikIterationCap, type FabrikConstraint } from "./fabrik-cap";
 import { selectFabrik } from "./fabrik-select";
 import { readNumber, segmentExtent } from "./frame";

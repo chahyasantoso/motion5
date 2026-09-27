@@ -1,12 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
-  arcHalfAngle,
   FABRIK_TOLERANCE,
-  seedArc,
   solveFabrik,
   solveFabrikAttempt,
   type FabrikPoint,
 } from "../../../src/plugins/fabrik";
+import { arcHalfAngle, seedArc } from "../../../src/plugins/fabrik-seed";
 import type { WorldFrame } from "../../../src/plugins/frame";
 import type { IterativeQuality } from "../../../src/plugins/ik-result";
 import type { SolveMember } from "../../../src/plugins/ik-member";
