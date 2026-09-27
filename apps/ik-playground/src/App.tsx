@@ -16,10 +16,15 @@ import {
 import { fkPlugin } from "@motion5/core/plugins/fk";
 import { ikPlugin } from "@motion5/core/plugins/ik";
 import { transformPlugin } from "@motion5/core/plugins/transform";
+import { transform3dPlugin } from "@motion5/core/plugins/transform3d";
+import { fk3dPlugin } from "@motion5/core/plugins/fk3d";
+import { ik3dPlugin } from "@motion5/core/plugins/ik3d";
+import { Ik3dStage } from "./components/Ik3dStage";
 import { IkStage } from "./components/IkStage";
 import { SolverPanel } from "./components/SolverPanel";
 import { ARM, TENTACLE, SCROLL_SOURCE, ikPlaygroundProject, nodeId } from "./ik-playground-project";
 import { bindScrollReach, createScrollReach, initialGoals } from "./scroll-reach";
+import { IK3D, IK3D_NODE_ID, ik3dPlaygroundProject } from "./ik3d-playground-project";
 
 export const App: React.FC = () => {
   const [handle, setHandle] = useState<ProjectHandle | undefined>(undefined);
@@ -34,6 +39,9 @@ export const App: React.FC = () => {
     plugins.register(transformPlugin);
     plugins.register(fkPlugin);
     plugins.register(ikPlugin);
+    plugins.register(transform3dPlugin);
+    plugins.register(fk3dPlugin);
+    plugins.register(ik3dPlugin);
 
     const clock = createBrowserClock({
       requestFrame: (cb: FrameRequestCallback) => requestAnimationFrame(cb),
@@ -42,10 +50,12 @@ export const App: React.FC = () => {
 
     let ownedProject: ProjectHandle | undefined;
     let unsubscribeWeight = () => {};
+    let unsubscribe3d = () => {};
     const release = () => {
       const failures: unknown[] = [];
       for (const dispose of [
         () => unsubscribeWeight(),
+        () => unsubscribe3d(),
         () => ownedProject?.dispose(),
         () => clock.dispose(),
       ]) {
@@ -79,7 +89,11 @@ export const App: React.FC = () => {
               : undefined,
         }),
       }).load(ikPlaygroundProject);
+      project.addMotion(ik3dPlaygroundProject.motions[0]!);
       ownedProject = project;
+      unsubscribe3d = scroll.subscribe((progress) => {
+        project.seek(IK3D_NODE_ID(IK3D.goalTrack), progress);
+      });
       controller = createScrollReach(project);
       // Mounted from the runtime's own answer rather than from a list written beside the document.
       for (const motionId of project.motionIds())
@@ -150,7 +164,10 @@ export const App: React.FC = () => {
             </p>
           </header>
           {handle ? (
-            <IkStage handle={handle} pendingGoals={pendingGoals} onGoalMove={moveGoal} />
+            <>
+              <IkStage handle={handle} pendingGoals={pendingGoals} onGoalMove={moveGoal} />
+              <Ik3dStage handle={handle} />
+            </>
           ) : (
             <p>Loading rig...</p>
           )}
