@@ -1,284 +1,379 @@
 import { describe, expect, it, vi } from "vitest";
-import {
-  ALL_NODE_IDS,
-  ARM,
-  TENTACLE,
-  ikPlaygroundProject,
-  nodeId,
-} from "../../../../apps/ik-playground/src/ik-playground-project";
-import {
-  bindScrollReach,
-  createScrollReach,
-} from "../../../../apps/ik-playground/src/scroll-reach";
+import type { ScrollSource } from "../../src/adapters/scroll-trigger";
+import { createManualClock } from "../../src/ports/clock";
 import { Engine, type ProjectHandle } from "../../src/engine";
 import { PluginRegistry } from "../../src/domain/plugins";
 import { fkPlugin } from "../../src/plugins/fk";
 import { ikPlugin } from "../../src/plugins/ik";
 import { transformPlugin } from "../../src/plugins/transform";
-import { createManualClock } from "../../src/ports/clock";
-import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
-import type { ProjectRuntime } from "../../src/runtime/project-runtime";
+import { fk3dPlugin } from "../../src/plugins/fk3d";
+import { ik3dPlugin } from "../../src/plugins/ik3d";
+import { transform3dPlugin } from "../../src/plugins/transform3d";
 import { createTriggerFactory } from "../../src/adapters/trigger-factory/default";
-import type { ScrollSource } from "../../src/adapters/scroll-trigger";
-import { lerpAngle } from "../../src/plugins/frame";
+import type { ProjectRuntime } from "../../src/runtime/project-runtime";
+import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
+import { FABRIK_TOLERANCE } from "../../src/plugins/fabrik";
+import {
+  ALL_NODE_IDS,
+  STAGE_2D,
+  frameTrack,
+  ikPlaygroundProject,
+  TENTACLE,
+  nodeId,
+} from "../../../../apps/ik-playground/src/ik-playground-project";
+import {
+  IK3D,
+  IK3D_NODE_ID,
+  IK3D_NODE_IDS,
+  IK3D_PERSPECTIVE,
+  ik3dPlaygroundMotion,
+} from "../../../../apps/ik-playground/src/ik3d-playground-project";
+import { loadPlayground } from "../../../../apps/ik-playground/src/playground-runtime";
 
-const rigs = [ARM, TENTACLE];
-function load() {
-  const plugins = new PluginRegistry();
-  for (const plugin of [transformPlugin, fkPlugin, ikPlugin]) plugins.register(plugin);
-  const scheduler = createFakeScheduler();
-  const clock = createManualClock();
-  let listener: ((progress: number) => void) | undefined;
-  const unsubscribe = vi.fn(() => {
-    listener = undefined;
-  });
-  const source: ScrollSource = {
-    subscribe(fn) {
-      listener = fn;
-      return unsubscribe;
+function source() {
+  const listeners = new Set<(progress: number) => void>();
+  const value: ScrollSource = {
+    subscribe(listener) {
+      listeners.add(listener);
+      return () => listeners.delete(listener);
     },
   };
-  let controller: ReturnType<typeof createScrollReach>;
-  const handle = new Engine({
-    clock,
+  return {
+    value,
+    listeners,
+    emit(progress: number) {
+      for (const listener of [...listeners]) listener(progress);
+    },
+  };
+}
+
+function load() {
+  const scroll = source();
+  const scheduler = createFakeScheduler();
+  const runtime = loadPlayground({
+    clock: createManualClock(),
     interpolator: createFakeInterpolator(),
     scheduler,
-    plugins,
-    triggerFactory: createTriggerFactory({
-      scroll: () => bindScrollReach(source, () => controller.commit()),
-    }),
-  }).load(ikPlaygroundProject);
-  controller = createScrollReach(handle);
-  for (const id of ALL_NODE_IDS) handle.mount(id);
+    scroll: scroll.value,
+  });
   const flush = () => {
     for (let rounds = 0; scheduler.pending.length; rounds++) {
       if (rounds > 20) throw new Error("Scheduler did not settle.");
       scheduler.flush();
     }
   };
-  const push = (progress: number) => listener?.(progress);
   const emit = (progress: number) => {
-    push(progress);
+    scroll.emit(progress);
     flush();
   };
+  flush();
   emit(0);
-  return { handle, controller, emit, push, flush, clock, unsubscribe };
+  return { runtime, scroll, scheduler, emit, flush };
 }
-function pose(handle: ProjectHandle) {
-  return rigs.flatMap((rig) =>
-    [...rig.memberTracks, rig.fkTailTrack].map((id) => {
-      const patch = handle.get(nodeId(id));
-      expect(patch?.status).toBe("ready");
-      if (patch?.status !== "ready")
-        throw new Error(`${id} is ${patch?.status ?? "absent"}, not ready.`);
-      return patch.values;
-    }),
-  );
+
+function registry(): PluginRegistry {
+  const plugins = new PluginRegistry();
+  for (const plugin of [
+    transformPlugin,
+    fkPlugin,
+    ikPlugin,
+    transform3dPlugin,
+    fk3dPlugin,
+    ik3dPlugin,
+  ])
+    plugins.register(plugin);
+  return plugins;
 }
-function expectLengths(handle: ProjectHandle) {
-  for (const rig of rigs) {
-    const rootTrackPatch = handle.get(nodeId(rig.rootTrack));
-    if (rootTrackPatch?.status !== "ready")
-      throw new Error(`rootTrackPatch is ${rootTrackPatch?.status ?? "absent"}, not ready.`);
-    let parent = rootTrackPatch.values;
-    [...rig.memberTracks, rig.fkTailTrack].forEach((id, index) => {
-      const idPatch = handle.get(nodeId(id));
-      if (idPatch?.status !== "ready")
-        throw new Error(`idPatch is ${idPatch?.status ?? "absent"}, not ready.`);
-      const child = idPatch.values;
-      expect(
-        Math.hypot(Number(child.x) - Number(parent.x), Number(child.y) - Number(parent.y)),
-      ).toBeCloseTo(rig.lengths[index] ?? rig.fkTailLength, 7);
-      parent = child;
-    });
+
+function reference2d(x: number, y: number) {
+  const scheduler = createFakeScheduler();
+  const handle = new Engine({
+    clock: createManualClock(),
+    interpolator: createFakeInterpolator(),
+    scheduler,
+    plugins: registry(),
+    triggerFactory: createTriggerFactory({ scroll: () => ({ subscribe: () => () => undefined }) }),
+  }).load({
+    ...ikPlaygroundProject,
+    motions: [
+      {
+        ...ikPlaygroundProject.motions[0]!,
+        trigger: { type: "manual" },
+        tracks: ikPlaygroundProject.motions[0]!.tracks.map((track) =>
+          track.id === TENTACLE.goalTrack ? frameTrack(TENTACLE.goalTrack, x, y) : track,
+        ),
+      },
+    ],
+  });
+  for (const id of ALL_NODE_IDS) handle.mount(id);
+  drain(scheduler);
+  return { handle, scheduler };
+}
+
+function reference3d(x: number, y: number, z: number) {
+  const scheduler = createFakeScheduler();
+  const handle = new Engine({
+    clock: createManualClock(),
+    interpolator: createFakeInterpolator(),
+    scheduler,
+    plugins: registry(),
+  }).load({
+    schemaVersion: 5,
+    projectId: "ik-playground-3d-reference",
+    perspective: IK3D_PERSPECTIVE,
+    motions: [
+      {
+        ...ik3dPlaygroundMotion,
+        trigger: { type: "manual" },
+        tracks: ik3dPlaygroundMotion.tracks.map((track) =>
+          track.id === IK3D.goalTrack
+            ? { id: IK3D.goalTrack, keyframes: { transform3d: { values: { x, y, z } } } }
+            : track,
+        ),
+      },
+    ],
+  });
+  for (const id of IK3D_NODE_IDS) handle.mount(id);
+  drain(scheduler);
+  return { handle, scheduler };
+}
+
+function drain(scheduler: ReturnType<typeof createFakeScheduler>): void {
+  for (let rounds = 0; scheduler.pending.length; rounds++) {
+    if (rounds > 20) throw new Error("Scheduler did not settle.");
+    scheduler.flush();
   }
 }
 
+type Values = Readonly<Record<string, unknown>>;
+function values(runtime: ReturnType<typeof load>["runtime"], id: string): Values {
+  const patch = runtime.project.get(id);
+  if (patch?.status !== "ready") throw new Error(`${id} is ${patch?.status ?? "absent"}`);
+  return patch.values;
+}
+function valuesFrom(handle: ProjectHandle, id: string): Values {
+  const patch = handle.get(id);
+  if (patch?.status !== "ready") throw new Error(`${id} is ${patch?.status ?? "absent"}`);
+  return patch.values;
+}
+function snapshot(runtime: ReturnType<typeof load>["runtime"]): Readonly<Record<string, Values>> {
+  return Object.fromEntries(
+    [...ALL_NODE_IDS, ...IK3D_NODE_IDS].map((id) => [id, values(runtime, id)]),
+  );
+}
+function distance2d(left: Values, right: { x: number; y: number }): number {
+  return Math.hypot(Number(left.x) - right.x, Number(left.y) - right.y);
+}
+function distance3d(left: Values, right: Values): number {
+  return Math.hypot(
+    Number(left.x) - Number(right.x),
+    Number(left.y) - Number(right.y),
+    Number(left.z) - Number(right.z),
+  );
+}
+
+function expectPlanarRest(runtime: ReturnType<typeof load>["runtime"]): void {
+  let x = TENTACLE.root.x;
+  let y = TENTACLE.root.y;
+  let rotation = 0;
+  [...TENTACLE.memberTracks, TENTACLE.fkTailTrack].forEach((track, index) => {
+    rotation += TENTACLE.restRotations[index] ?? 0;
+    const length = TENTACLE.lengths[index] ?? TENTACLE.fkTailLength;
+    x += length * Math.cos((rotation * Math.PI) / 180);
+    y += length * Math.sin((rotation * Math.PI) / 180);
+    const frame = values(runtime, nodeId(track));
+    expect(Number(frame.x)).toBeCloseTo(x, 7);
+    expect(Number(frame.y)).toBeCloseTo(y, 7);
+    expect(Number(frame.rotation)).toBeCloseTo(rotation, 7);
+  });
+}
+
 describe("IK playground scroll-only rest blending", () => {
-  it("starts in the authored local rest pose including ordinary FK tails", () => {
-    const { handle } = load();
+  it("TH-134 takes both FABRIK chains from authored rest to solved and back byte-identically", () => {
+    const test = load();
     try {
-      for (const rig of rigs) {
-        let x = rig.root.x,
-          y = rig.root.y,
-          rotation = 0;
-        [...rig.memberTracks, rig.fkTailTrack].forEach((id, index) => {
-          rotation += rig.restRotations[index] ?? 0;
-          const length = rig.lengths[index] ?? rig.fkTailLength;
-          x += length * Math.cos((rotation * Math.PI) / 180);
-          y += length * Math.sin((rotation * Math.PI) / 180);
-          const idPatch2 = handle.get(nodeId(id));
-          if (idPatch2?.status !== "ready")
-            throw new Error(`idPatch2 is ${idPatch2?.status ?? "absent"}, not ready.`);
-          const values = idPatch2.values;
-          expect(Number(values.x)).toBeCloseTo(x, 7);
-          expect(Number(values.y)).toBeCloseTo(y, 7);
-          expect(Number(values.rotation)).toBeCloseTo(rotation, 7);
-          if (index < rig.memberTracks.length)
-            expect(handle.track(nodeId(id)).definition.keyframes).toMatchObject({
-              fk: {
-                values: {
-                  rotation: rig.restRotations[index],
-                  weight: [
-                    { p: 0, v: 0 },
-                    { p: 1, v: 1 },
-                  ],
-                },
-              },
-            });
-        });
-      }
-      expectLengths(handle);
+      expectPlanarRest(test.runtime);
+      const rest = snapshot(test.runtime);
+      const initialGoal2d = values(test.runtime, nodeId(TENTACLE.goalTrack));
+      const initialGoal3d = values(test.runtime, IK3D_NODE_ID(IK3D.goalTrack));
+      test.emit(1);
+      const goal2d = values(test.runtime, nodeId(TENTACLE.goalTrack));
+      const tip2d = values(test.runtime, nodeId(TENTACLE.tipTrack));
+      expect(distance2d(tip2d, { x: Number(goal2d.x), y: Number(goal2d.y) })).toBeLessThan(0.1);
+      const goal3d = values(test.runtime, IK3D_NODE_ID(IK3D.goalTrack));
+      const tip3d = values(test.runtime, IK3D_NODE_ID(IK3D.tipTrack));
+      expect(distance3d(tip3d, goal3d)).toBeLessThanOrEqual(FABRIK_TOLERANCE);
+      expect(values(test.runtime, IK3D_NODE_ID(IK3D.solverTrack))).toMatchObject({
+        inspect: true,
+        inspection: { kind: "converged" },
+      });
+      test.emit(0);
+      expect(snapshot(test.runtime)).toEqual(rest);
+      expect(values(test.runtime, nodeId(TENTACLE.goalTrack))).toEqual(initialGoal2d);
+      expect(values(test.runtime, IK3D_NODE_ID(IK3D.goalTrack))).toEqual(initialGoal3d);
+
+      // Weight zero is authored rest, independently of a goal edit; this also protects the 3D FK
+      // composition without introducing a second hand-maintained spatial rest calculation.
+      test.runtime.goals.move({ rig: "spatial", x: 240, y: 130, z: -90 });
+      const movedGoal = values(test.runtime, IK3D_NODE_ID(IK3D.goalTrack));
+      expect(movedGoal).toMatchObject({ x: 240, y: 130, z: -90 });
+      for (const id of TENTACLE.memberTracks)
+        expect(values(test.runtime, nodeId(id))).toEqual(rest[nodeId(id)]);
+      for (const id of IK3D.memberTracks)
+        expect(values(test.runtime, IK3D_NODE_ID(id))).toEqual(rest[IK3D_NODE_ID(id)]);
     } finally {
-      handle.dispose();
+      test.runtime.project.dispose();
     }
   });
 
-  it("holds staged goals and flips at zero, partial and full weight until another scroll commit", () => {
-    const { handle, controller, emit, clock, flush } = load();
-    const runtime = (handle as ProjectHandle & { readonly _runtime: ProjectRuntime })._runtime;
-    const replace = vi.spyOn(runtime.graph, "replaceGraph");
-    const bindings = ALL_NODE_IDS.map((id) => handle.track(id).requires);
+  it("TH-136 moves the planar chain immediately at its current partial weight", () => {
+    const test = load();
+    // The oracle authors the goal where the drag puts it, so a live write must equal a document.
+    const reference = reference2d(240, 250);
     try {
-      const rest = pose(handle);
-      for (const weight of [0, 0.5, 1]) {
-        emit(weight);
-        const before = pose(handle);
-        const applied = rigs.map((rig) => {
-          const patch = handle.get(nodeId(rig.goalTrack));
-          if (patch?.status !== "ready")
-            throw new Error(`${rig.goalTrack} is ${patch?.status ?? "absent"}, not ready.`);
-          return patch.values;
-        });
-        const oldSnapshot = controller.goals;
-        rigs.forEach((rig, index) => {
-          controller.moveGoal(
-            rig.goalTrack,
-            rig.root.x + 40 + weight * 20,
-            rig.root.y + 60 + weight * 20,
-          );
-          controller.flip(rig.solverTrack, weight !== 0.5);
-          const goalTrackPatch = handle.get(nodeId(rig.goalTrack));
-          if (goalTrackPatch?.status !== "ready")
-            throw new Error(`goalTrackPatch is ${goalTrackPatch?.status ?? "absent"}, not ready.`);
-          expect(goalTrackPatch.values).toEqual(applied[index]);
-        });
-        expect(oldSnapshot).not.toBe(controller.goals);
-        clock.tick(1000 + weight * 1000);
-        flush();
-        expect(pose(handle)).toEqual(before);
-        emit(weight);
-        for (const rig of rigs) {
-          const goalTrackPatch2 = handle.get(nodeId(rig.goalTrack));
-          if (goalTrackPatch2?.status !== "ready")
-            throw new Error(
-              `goalTrackPatch2 is ${goalTrackPatch2?.status ?? "absent"}, not ready.`,
-            );
-          expect(goalTrackPatch2.values).toMatchObject(controller.goals[rig.goalTrack]!);
-          const solverTrackPatch = handle.get(nodeId(rig.solverTrack));
-          if (solverTrackPatch?.status !== "ready")
-            throw new Error(
-              `solverTrackPatch is ${solverTrackPatch?.status ?? "absent"}, not ready.`,
-            );
-          expect(solverTrackPatch.values.flip).toBe(weight !== 0.5);
-          const rotations = solverTrackPatch.values.rotations as Readonly<Record<string, number>>;
-          let rotation = 0;
-          rig.memberTracks.forEach((id, index) => {
-            rotation += lerpAngle(rig.restRotations[index]!, rotations[nodeId(id)]!, weight);
-            const idPatch3 = handle.get(nodeId(id));
-            if (idPatch3?.status !== "ready")
-              throw new Error(`idPatch3 is ${idPatch3?.status ?? "absent"}, not ready.`);
-            expect(idPatch3.sourceProgress).toBeCloseTo(weight);
-            expect(idPatch3.values.rotation).toBeCloseTo(rotation);
-            expect(handle.track(nodeId(id)).definition.keyframes).toMatchObject({
-              fk: {
-                values: {
-                  weight: [
-                    { p: 0, v: 0 },
-                    { p: 1, v: 1 },
-                  ],
-                },
-              },
-            });
-          });
-          if (weight === 1) {
-            const tipTrackPatch = handle.get(nodeId(rig.tipTrack));
-            if (tipTrackPatch?.status !== "ready")
-              throw new Error(`tipTrackPatch is ${tipTrackPatch?.status ?? "absent"}, not ready.`);
-            const tip = tipTrackPatch.values;
-            const goal = controller.goals[rig.goalTrack]!;
-            expect(Math.hypot(Number(tip.x) - goal.x, Number(tip.y) - goal.y)).toBeLessThan(0.1);
-          }
-        }
-        if (weight === 0) expect(pose(handle)).toEqual(rest);
-        else expect(pose(handle)).not.toEqual(before);
-        expectLengths(handle);
-      }
-      emit(0);
-      expect(pose(handle)).toEqual(rest);
-      expect(ALL_NODE_IDS.map((id) => handle.track(id).requires)).toEqual(bindings);
+      test.emit(0.5);
+      const before = test.runtime.project.get(nodeId(TENTACLE.tipTrack));
+      test.runtime.goals.move({ rig: "planar", x: 240, y: 250 });
+      const after = test.runtime.project.get(nodeId(TENTACLE.tipTrack));
+      if (after?.status !== "ready") throw new Error("The tip did not publish a ready patch.");
+      expect(after.sourceProgress).toBeCloseTo(0.5);
+      expect(after).not.toBe(before);
+      reference.handle.signal("rig", { type: "manual", progress: 0.5 });
+      drain(reference.scheduler);
+      for (const id of [...TENTACLE.memberTracks, TENTACLE.fkTailTrack])
+        expect(values(test.runtime, nodeId(id))).toEqual(valuesFrom(reference.handle, nodeId(id)));
+
+      const rest = TENTACLE.memberTracks.map((id) => values(test.runtime, nodeId(id)));
+      test.runtime.goals.move({ rig: "planar", x: 300, y: 300 });
+      // The same write at weight zero leaves all member frames at authored rest.
+      test.emit(0);
+      const zeroBefore = TENTACLE.memberTracks.map((id) => values(test.runtime, nodeId(id)));
+      test.runtime.goals.move({ rig: "planar", x: 320, y: 320 });
+      expect(TENTACLE.memberTracks.map((id) => values(test.runtime, nodeId(id)))).toEqual(
+        zeroBefore,
+      );
+      expect(rest).not.toEqual(zeroBefore);
+      test.emit(1);
+      test.runtime.goals.move({ rig: "planar", x: 320, y: 320 });
+      const tip = values(test.runtime, nodeId(TENTACLE.tipTrack));
+      expect(distance2d(tip, { x: 320, y: 320 })).toBeLessThan(0.1);
+    } finally {
+      test.runtime.project.dispose();
+      reference.handle.dispose();
+    }
+  });
+
+  it("TH-137 moves the spatial chain immediately and reaches a dragged goal at weight one", () => {
+    const test = load();
+    const reference = reference3d(190, 155, 20);
+    try {
+      test.emit(0.5);
+      test.runtime.goals.move({ rig: "spatial", x: 190, y: 155, z: 20 });
+      const patch = test.runtime.project.get(IK3D_NODE_ID(IK3D.tipTrack));
+      if (patch?.status !== "ready") throw new Error("The tip did not publish a ready patch.");
+      expect(patch.sourceProgress).toBeCloseTo(0.5);
+      reference.handle.signal("rig3d", { type: "manual", progress: 0.5 });
+      drain(reference.scheduler);
+      for (const id of IK3D_NODE_IDS)
+        expect(values(test.runtime, id)).toEqual(valuesFrom(reference.handle, id));
+      test.emit(1);
+      test.runtime.goals.move({ rig: "spatial", x: 190, y: 155, z: 20 });
+      expect(
+        distance3d(values(test.runtime, IK3D_NODE_ID(IK3D.tipTrack)), {
+          x: 190,
+          y: 155,
+          z: 20,
+        }),
+      ).toBeLessThanOrEqual(FABRIK_TOLERANCE);
+    } finally {
+      test.runtime.project.dispose();
+      reference.handle.dispose();
+    }
+  });
+
+  it("TH-138 clamps goals, ignores non-finite input, and flips without graph replacement", () => {
+    const test = load();
+    try {
+      const graph = (test.runtime.project as ProjectHandle & { readonly _runtime: ProjectRuntime })
+        ._runtime.graph;
+      const replace = vi.spyOn(graph, "replaceGraph");
+      const planarBefore = test.runtime.project.get(nodeId(TENTACLE.goalTrack));
+      const spatialBefore = test.runtime.project.get(IK3D_NODE_ID(IK3D.goalTrack));
+      test.runtime.goals.move({ rig: "planar", x: NaN, y: 20 });
+      test.runtime.goals.move({ rig: "spatial", x: Infinity, y: 20, z: 0 });
+      expect(test.runtime.project.get(nodeId(TENTACLE.goalTrack))).toBe(planarBefore);
+      expect(test.runtime.project.get(IK3D_NODE_ID(IK3D.goalTrack))).toBe(spatialBefore);
+      test.runtime.goals.move({ rig: "planar", x: -100, y: 1000 });
+      expect(values(test.runtime, nodeId(TENTACLE.goalTrack))).toMatchObject({
+        x: STAGE_2D.margin,
+        y: STAGE_2D.height - STAGE_2D.margin,
+      });
+      test.runtime.goals.move({ rig: "spatial", x: -100, y: 1000, z: 1000 });
+      const spatial = values(test.runtime, IK3D_NODE_ID(IK3D.goalTrack));
+      // At the nearest depth the frame edge is exactly the authored box corner (TH-145).
+      expect(Number(spatial.x)).toBeCloseTo(12, 9);
+      expect(Number(spatial.y)).toBeCloseTo(288, 9);
+      expect(spatial.z).toBe(160);
+      test.runtime.goals.move({ rig: "planar", x: TENTACLE.goal.x, y: TENTACLE.goal.y });
+      test.emit(1);
+      const before = TENTACLE.memberTracks.map((id) =>
+        Number(values(test.runtime, nodeId(id)).rotation),
+      );
+      test.runtime.goals.flip(true);
+      const after = TENTACLE.memberTracks.map((id) =>
+        Number(values(test.runtime, nodeId(id)).rotation),
+      );
+      expect(after).not.toEqual(before);
       expect(replace).not.toHaveBeenCalled();
-      const publication = vi.spyOn(runtime.graph, "flush");
-      controller.commit();
-      expect(publication).not.toHaveBeenCalled();
     } finally {
-      handle.dispose();
+      test.runtime.project.dispose();
     }
   });
 
-  it("coalesces progress through Motion and cancels its queued work and source on disposal", () => {
-    const { handle, push, flush, unsubscribe } = load();
-    const rest = pose(handle);
-    push(0.25);
-    push(0.75);
-    expect(pose(handle)).toEqual(rest);
-    flush();
-    for (const id of ALL_NODE_IDS) {
-      const patch = handle.get(id);
-      if (patch?.status !== "ready")
-        throw new Error(`${id} is ${patch?.status ?? "absent"}, not ready.`);
-      expect(patch.sourceProgress).toBeCloseTo(0.75);
-    }
-    push(1);
-    handle.dispose();
-    expect(unsubscribe).toHaveBeenCalledTimes(1);
+  it("TH-139 coalesces scroll and unsubscribes both Motions on disposal", () => {
+    const test = load();
+    const graph = (test.runtime.project as ProjectHandle & { readonly _runtime: ProjectRuntime })
+      ._runtime.graph;
+    const publication = vi.spyOn(graph, "flush");
+    publication.mockClear();
+    const before = test.runtime.project.get(nodeId(TENTACLE.tipTrack));
+    test.scroll.emit(0.25);
+    test.scroll.emit(0.75);
+    expect(test.runtime.project.get(nodeId(TENTACLE.tipTrack))).toBe(before);
+    test.flush();
+    const settled = test.runtime.project.get(nodeId(TENTACLE.tipTrack));
+    if (settled?.status !== "ready") throw new Error("The tip did not publish a ready patch.");
+    expect(settled.sourceProgress).toBeCloseTo(0.75);
+    expect(publication).toHaveBeenCalledTimes(2);
+    expect(test.scroll.listeners.size).toBe(2);
+    test.runtime.project.dispose();
+    expect(test.scroll.listeners.size).toBe(0);
     expect(() => {
-      push(0.5);
-      flush();
-      handle.dispose();
+      test.scroll.emit(0.5);
     }).not.toThrow();
-    expect(unsubscribe).toHaveBeenCalledTimes(1);
   });
 
-  it("clamps scroll bounds and rejects invalid pending input without poisoning the solve", () => {
-    const { handle, controller, emit } = load();
+  it("preserves authored values while the source alone changes both member weights", () => {
+    const test = load();
     try {
-      const before = controller.goals;
-      expect(controller.moveGoal(ARM.goalTrack, NaN, 20)).toBe(before);
-      expect(() => controller.moveGoal("missing", 0, 0)).toThrow("Unknown pending goal");
-      expect(() => controller.flip("missing", true)).toThrow("Unknown pending solver");
-      emit(2);
-      const tipTrackPatch2 = handle.get(nodeId(ARM.tipTrack));
-      if (tipTrackPatch2?.status !== "ready")
-        throw new Error(`tipTrackPatch2 is ${tipTrackPatch2?.status ?? "absent"}, not ready.`);
-      expect(tipTrackPatch2.sourceProgress).toBe(1);
-      emit(-1);
-      const tipTrackPatch3 = handle.get(nodeId(ARM.tipTrack));
-      if (tipTrackPatch3?.status !== "ready")
-        throw new Error(`tipTrackPatch3 is ${tipTrackPatch3?.status ?? "absent"}, not ready.`);
-      expect(tipTrackPatch3.sourceProgress).toBe(0);
-      const applied = handle.get(nodeId(ARM.goalTrack));
-      controller.moveGoal(ARM.goalTrack, 290, 360);
-      expect(() => emit(NaN)).toThrow("finite");
-      expect(() => emit(Infinity)).toThrow("finite");
-      expect(handle.get(nodeId(ARM.goalTrack))).toBe(applied);
-      emit(0.5);
-      const goalTrackPatch3 = handle.get(nodeId(ARM.goalTrack));
-      if (goalTrackPatch3?.status !== "ready")
-        throw new Error(`goalTrackPatch3 is ${goalTrackPatch3?.status ?? "absent"}, not ready.`);
-      expect(goalTrackPatch3.values).toMatchObject({ x: 290, y: 360 });
+      const before2d = values(test.runtime, nodeId(TENTACLE.goalTrack));
+      const before3d = values(test.runtime, IK3D_NODE_ID(IK3D.goalTrack));
+      const authored2d = test.runtime.project.track(nodeId(TENTACLE.goalTrack)).definition;
+      const authored3d = test.runtime.project.track(IK3D_NODE_ID(IK3D.goalTrack)).definition;
+      test.emit(0.5);
+      expect(values(test.runtime, nodeId(TENTACLE.goalTrack))).toEqual(before2d);
+      expect(values(test.runtime, IK3D_NODE_ID(IK3D.goalTrack))).toEqual(before3d);
+      expect(test.runtime.project.track(nodeId(TENTACLE.goalTrack)).definition).toEqual(authored2d);
+      expect(test.runtime.project.track(IK3D_NODE_ID(IK3D.goalTrack)).definition).toEqual(
+        authored3d,
+      );
     } finally {
-      handle.dispose();
+      test.runtime.project.dispose();
     }
+  });
+
+  it("keeps the planar rest calculation inside the authored stage bounds", () => {
+    expect(TENTACLE.root.x).toBeGreaterThanOrEqual(STAGE_2D.margin);
+    expect(TENTACLE.root.y).toBeGreaterThanOrEqual(STAGE_2D.margin);
   });
 });

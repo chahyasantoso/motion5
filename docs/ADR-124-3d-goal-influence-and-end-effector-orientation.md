@@ -1,9 +1,10 @@
 # ADR-124: 3D goal influence and end-effector orientation
 
-**Status:** Proposed as issue [#500](https://github.com/chahyasantoso/motion5/issues/500) phase 7,
+**Status:** Accepted, 2026-09-27, as part of the public 3D contract
+([ADR-125](./ADR-125-public-3d-api.md)); landed through #515 (`main` at `f8c30d1c`).
+Proposed as issue [#500](https://github.com/chahyasantoso/motion5/issues/500) phase 7,
 2026-09-27, above `main` at `7ee6980a35ed321d3a812991a166a85d956cf5b1` (#513), in
-[#515](https://github.com/chahyasantoso/motion5/pull/515). Accepted when the pull request carrying
-it merges.
+[#515](https://github.com/chahyasantoso/motion5/pull/515).
 
 ## Invariant
 

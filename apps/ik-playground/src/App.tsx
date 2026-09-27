@@ -1,52 +1,67 @@
-import React, { useLayoutEffect, useRef, useState } from "react";
+import React, { useLayoutEffect, useState } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import {
-  Engine,
-  PluginRegistry,
-  createMicrotaskScheduler,
-  type ProjectHandle,
-} from "@motion5/core";
+import { createMicrotaskScheduler, type ProjectHandle } from "@motion5/core";
 import { createBrowserClock } from "@motion5/core/adapters/browser-clock";
-import {
-  createGsapInterpolator,
-  createGsapScrollSource,
-  createTriggerFactory,
-} from "@motion5/core/adapters";
-import { fkPlugin } from "@motion5/core/plugins/fk";
-import { ikPlugin } from "@motion5/core/plugins/ik";
-import { transformPlugin } from "@motion5/core/plugins/transform";
+import { createGsapInterpolator, createGsapScrollSource } from "@motion5/core/adapters";
+import { Ik3dStage } from "./components/Ik3dStage";
 import { IkStage } from "./components/IkStage";
 import { SolverPanel } from "./components/SolverPanel";
-import { ARM, TENTACLE, SCROLL_SOURCE, ikPlaygroundProject, nodeId } from "./ik-playground-project";
-import { bindScrollReach, createScrollReach, initialGoals } from "./scroll-reach";
+import { StageBoundary } from "./components/StageBoundary";
+import { ThreeStage } from "./components/ThreeStage";
+import { TENTACLE, nodeId } from "./ik-playground-project";
+import { loadPlayground, type PlaygroundRuntime } from "./playground-runtime";
+
+type PlaygroundTab = "dom" | "three";
+const TAB_LABEL: Readonly<Record<PlaygroundTab, string>> = {
+  dom: "DOM",
+  three: "three.js",
+};
+
+function tabPanel(
+  tab: PlaygroundTab,
+  handle: ProjectHandle,
+  goals: PlaygroundRuntime["goals"],
+): React.ReactNode {
+  switch (tab) {
+    case "dom":
+      return (
+        <div className="dom-stages">
+          <IkStage handle={handle} goals={goals} />
+          <Ik3dStage handle={handle} goals={goals} />
+        </div>
+      );
+    case "three":
+      return (
+        <div className="three-stage-wrap">
+          <ThreeStage handle={handle} goals={goals} />
+        </div>
+      );
+    default: {
+      const unhandled: never = tab;
+      throw new Error(`Unhandled playground tab: ${String(unhandled)}`);
+    }
+  }
+}
 
 export const App: React.FC = () => {
-  const [handle, setHandle] = useState<ProjectHandle | undefined>(undefined);
-  const [armFlip, setArmFlip] = useState(false);
-  const [tentacleFlip, setTentacleFlip] = useState(false);
-  const controllerRef = useRef<ReturnType<typeof createScrollReach> | undefined>(undefined);
-  const [pendingGoals, setPendingGoals] = useState(initialGoals);
+  const [handle, setHandle] = useState<ProjectHandle>();
+  const [goals, setGoals] = useState<PlaygroundRuntime["goals"]>();
+  const [tab, setTab] = useState<PlaygroundTab>("dom");
   const [weight, setWeight] = useState(0);
 
   useLayoutEffect(() => {
-    const plugins = new PluginRegistry();
-    plugins.register(transformPlugin);
-    plugins.register(fkPlugin);
-    plugins.register(ikPlugin);
-
     const clock = createBrowserClock({
-      requestFrame: (cb: FrameRequestCallback) => requestAnimationFrame(cb),
-      cancelFrame: (h: number) => cancelAnimationFrame(h),
+      requestFrame: (callback: FrameRequestCallback) => requestAnimationFrame(callback),
+      cancelFrame: (id: number) => cancelAnimationFrame(id),
     });
-
-    let ownedProject: ProjectHandle | undefined;
+    let owned: PlaygroundRuntime | undefined;
     let unsubscribeWeight = () => {};
     const release = () => {
       const failures: unknown[] = [];
       for (const dispose of [
         () => unsubscribeWeight(),
-        () => ownedProject?.dispose(),
+        () => owned?.project.dispose(),
         () => clock.dispose(),
       ]) {
         try {
@@ -58,44 +73,29 @@ export const App: React.FC = () => {
       if (failures.length === 1) throw failures[0];
       if (failures.length > 1) throw new AggregateError(failures, "IK resource cleanup failed.");
     };
+
     try {
       gsap.registerPlugin(ScrollTrigger);
-      const scroll = createGsapScrollSource(ScrollTrigger, {
-        trigger: "#scroll-demo",
-        start: "top top",
-        end: "bottom bottom",
-      });
-      // The adapter defers initial delivery until load, mount and this wiring have completed.
-      let controller: ReturnType<typeof createScrollReach>;
-      const project = new Engine({
+      owned = loadPlayground({
         clock,
         interpolator: createGsapInterpolator(gsap),
         scheduler: createMicrotaskScheduler(),
-        plugins,
-        triggerFactory: createTriggerFactory({
-          scroll: ({ trigger }) =>
-            trigger.source === SCROLL_SOURCE
-              ? bindScrollReach(scroll, () => controller.commit())
-              : undefined,
+        scroll: createGsapScrollSource(ScrollTrigger, {
+          trigger: "#scroll-demo",
+          start: "top top",
+          end: "bottom bottom",
         }),
-      }).load(ikPlaygroundProject);
-      ownedProject = project;
-      controller = createScrollReach(project);
-      // Mounted from the runtime's own answer rather than from a list written beside the document.
-      for (const motionId of project.motionIds())
-        for (const trackNode of project.motion(motionId).trackIds) project.mount(trackNode);
-      for (const freeNode of project.freeTrackIds()) project.mount(freeNode);
-      controllerRef.current = controller;
-      setPendingGoals(controller.goals);
-      setArmFlip(false);
-      setTentacleFlip(false);
-      setHandle(project);
-      setWeight(0);
-      unsubscribeWeight = project.subscribeNode(nodeId(ARM.memberTracks[0]!), (patch) => {
-        if (patch.status === "ready") setWeight(patch.sourceProgress);
       });
+      setHandle(owned.project);
+      setGoals(owned.goals);
+      setWeight(0);
+      unsubscribeWeight = owned.project.subscribeNode(
+        nodeId(TENTACLE.memberTracks[0]!),
+        (patch) => {
+          if (patch.status === "ready") setWeight(patch.sourceProgress);
+        },
+      );
     } catch (error) {
-      controllerRef.current = undefined;
       try {
         release();
       } catch (cleanupError) {
@@ -105,66 +105,60 @@ export const App: React.FC = () => {
     }
 
     return () => {
-      controllerRef.current = undefined;
       setHandle(undefined);
-      // Project disposal owns the driver subscription and therefore the GSAP instance.
+      setGoals(undefined);
       release();
     };
   }, []);
 
-  // Gestures stage intent even at weight 1. Only qualifying source events commit it;
-  // movement outside the clipped trigger range need not produce an event.
-  const moveGoal = (goalTrack: string, x: number, y: number) => {
-    const controller = controllerRef.current;
-    if (controller) setPendingGoals(controller.moveGoal(goalTrack, x, y));
-  };
-
-  const flipArm = (flip: boolean) => {
-    controllerRef.current?.flip(ARM.solverTrack, flip);
-    setArmFlip(flip);
-  };
-
-  const flipTentacle = (flip: boolean) => {
-    controllerRef.current?.flip(TENTACLE.solverTrack, flip);
-    setTentacleFlip(flip);
-  };
-
   return (
     <main id="scroll-demo">
       <div id="playground">
-        <div className="stage-wrap">
+        <section className="playground-main">
           <header className="demo-header">
             <h1>motion5: IK Playground</h1>
             <p>
-              Drag a target, then scroll to reach. Scroll back to the top for rest. Targets and
-              flips stay pending until ScrollTrigger emits a qualifying progress change. Movement
-              beyond a clamped endpoint does not apply them.
+              Scroll blends rest → solved. Dragging moves the chain immediately at the current
+              blend.
             </p>
             <p className="weight-readout">
               <output aria-label="IK blend weight" data-testid="ik-weight">
                 {Math.round(weight * 100)}%
-              </output>{" "}
-              IK weight
-              <progress aria-label="Rest to IK reach" max={1} value={weight} />
-              <span>0% rest · 100% solved</span>
+              </output>
+              <span>rest → solved</span>
+              <progress aria-label="Rest to solved blend" max={1} value={weight} />
             </p>
           </header>
-          {handle ? (
-            <IkStage handle={handle} pendingGoals={pendingGoals} onGoalMove={moveGoal} />
-          ) : (
-            <p>Loading rig...</p>
-          )}
-        </div>
+          <nav className="tabs" role="tablist" aria-label="IK renderer">
+            {(Object.keys(TAB_LABEL) as PlaygroundTab[]).map((key) => (
+              <button
+                key={key}
+                id={`tab-${key}`}
+                role="tab"
+                type="button"
+                aria-selected={tab === key}
+                aria-controls={`panel-${key}`}
+                onClick={() => setTab(key)}
+              >
+                {TAB_LABEL[key]}
+              </button>
+            ))}
+          </nav>
+          <div
+            id={`panel-${tab}`}
+            className="tab-panel"
+            role="tabpanel"
+            aria-labelledby={`tab-${tab}`}
+          >
+            {handle && goals ? (
+              <StageBoundary key={tab}>{tabPanel(tab, handle, goals)}</StageBoundary>
+            ) : (
+              <p>Loading rig…</p>
+            )}
+          </div>
+        </section>
         <aside className="sidebar">
-          {handle ? (
-            <SolverPanel
-              handle={handle}
-              armFlip={armFlip}
-              tentacleFlip={tentacleFlip}
-              onArmFlip={flipArm}
-              onTentacleFlip={flipTentacle}
-            />
-          ) : null}
+          {handle && goals ? <SolverPanel handle={handle} goals={goals} /> : null}
         </aside>
       </div>
     </main>

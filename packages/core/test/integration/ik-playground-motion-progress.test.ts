@@ -1,27 +1,35 @@
 import { describe, expect, it, vi } from "vitest";
 import { gsap } from "gsap";
-import {
-  bindScrollReach,
-  createScrollReach,
-} from "../../../../apps/ik-playground/src/scroll-reach";
 import { createGsapInterpolator } from "../../src/adapters/interpolator/gsap";
-import {
-  ALL_NODE_IDS,
-  ARM,
-  MOTION_ID,
-  ikPlaygroundProject,
-  nodeId,
-} from "../../../../apps/ik-playground/src/ik-playground-project";
-import { Engine } from "../../src/engine";
-import { PluginRegistry } from "../../src/domain/plugins";
-import { fkPlugin } from "../../src/plugins/fk";
-import { lerpAngle } from "../../src/plugins/frame";
-import { ikPlugin } from "../../src/plugins/ik";
-import { transformPlugin } from "../../src/plugins/transform";
-import { createManualClock } from "../../src/ports/clock";
-import { createFakeScheduler } from "../../src/testing/fakes";
-import { createTriggerFactory } from "../../src/adapters/trigger-factory/default";
 import { createGsapScrollSource } from "../../src/adapters/scroll-trigger-gsap";
+import type { ScrollSource } from "../../src/adapters/scroll-trigger";
+import { createManualClock } from "../../src/ports/clock";
+import { Engine, type ProjectHandle } from "../../src/engine";
+import type { ProjectDefinition } from "../../src/contract/v5";
+import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
+import { ALL_NODE_IDS, nodeId } from "../../../../apps/ik-playground/src/ik-playground-project";
+import { IK3D_NODE_IDS } from "../../../../apps/ik-playground/src/ik3d-playground-project";
+import {
+  loadPlayground,
+  playgroundProject,
+} from "../../../../apps/ik-playground/src/playground-runtime";
+
+function fakeScroll() {
+  const listeners = new Set<(progress: number) => void>();
+  const source: ScrollSource = {
+    subscribe(listener) {
+      listeners.add(listener);
+      return () => listeners.delete(listener);
+    },
+  };
+  return {
+    source,
+    listeners,
+    emit(progress: number) {
+      for (const listener of [...listeners]) listener(progress);
+    },
+  };
+}
 
 function host(initialProgress = 0, initialPosition = 0) {
   let vars: Record<string, unknown> = {};
@@ -55,140 +63,98 @@ function host(initialProgress = 0, initialPosition = 0) {
   };
 }
 
-describe("IK playground adapter-driven progress", () => {
-  it("publishes a restored source position after driver subscription and cancels detached initialization", async () => {
-    const scroll = host(0.6, 600);
-    const seen = vi.fn();
-    const unsubscribe = scroll.source.subscribe(seen);
-    expect(seen).not.toHaveBeenCalled();
-    await Promise.resolve();
-    expect(seen).toHaveBeenCalledExactlyOnceWith(0.6);
-    unsubscribe();
-    expect(scroll.kill).toHaveBeenCalledTimes(1);
-    const detached = vi.fn();
-    const detach = scroll.source.subscribe(detached);
-    detach();
-    await Promise.resolve();
-    expect(detached).not.toHaveBeenCalled();
-    expect(scroll.kill).toHaveBeenCalledTimes(2);
-  });
+/** The progress a ready patch composed at; any other status fails the case where it is read. */
+function progressOf(project: ProjectHandle, id: string): number {
+  const patch = project.get(id);
+  if (patch?.status !== "ready")
+    throw new Error(`${id} is ${patch?.status ?? "absent"}, not ready.`);
+  return patch.sourceProgress;
+}
 
-  it("holds refresh-only and unchanged-position updates until the next actual scroll", async () => {
-    const scroll = host(0.5, 500);
-    const seen = vi.fn();
-    const unsubscribe = scroll.source.subscribe(seen);
-    await Promise.resolve();
-    seen.mockClear();
-    scroll.refresh(0.25, 500);
-    scroll.update(0.25, 500);
-    expect(seen).not.toHaveBeenCalled();
-    scroll.update(0.5, 1000);
-    expect(seen).toHaveBeenCalledExactlyOnceWith(0.5);
-    unsubscribe();
-  });
+function flush(scheduler: ReturnType<typeof createFakeScheduler>): void {
+  for (let rounds = 0; scheduler.pending.length; rounds++) {
+    if (rounds > 20) throw new Error("Scheduler did not settle.");
+    scheduler.flush();
+  }
+}
 
-  it("drives authored FK weights through the scroll driver and Motion scheduler, never a manual signal", async () => {
-    const scroll = host();
-    const plugins = new PluginRegistry();
-    for (const plugin of [transformPlugin, fkPlugin, ikPlugin]) plugins.register(plugin);
+describe("IK playground runtime loading and scroll progress", () => {
+  it("TH-132 loads and mounts the composed runtime answer and disposes after setup failure", () => {
+    const scroll = fakeScroll();
     const scheduler = createFakeScheduler();
-    const clock = createManualClock();
-    let controller: ReturnType<typeof createScrollReach>;
-    const handle = new Engine({
-      clock,
+    const runtime = loadPlayground({
+      clock: createManualClock(),
+      interpolator: createFakeInterpolator(),
       scheduler,
-      plugins,
-      // Only the browser producer and scheduler are controlled; interpolation is real GSAP.
-      interpolator: createGsapInterpolator(gsap),
-      triggerFactory: createTriggerFactory({
-        scroll: () => bindScrollReach(scroll.source, () => controller.commit()),
-      }),
-    }).load(ikPlaygroundProject);
-    controller = createScrollReach(handle);
+      scroll: scroll.source,
+    });
+    expect(playgroundProject.motions).toHaveLength(2);
+    expect(
+      runtime.project.motionIds().flatMap((id) => runtime.project.motion(id).trackIds),
+    ).toEqual([...ALL_NODE_IDS, ...IK3D_NODE_IDS]);
+    expect(runtime.project.mountedNodeIds()).toEqual([...ALL_NODE_IDS, ...IK3D_NODE_IDS]);
+    expect(scroll.listeners.size).toBe(2);
+    runtime.project.dispose();
+    expect(scroll.listeners.size).toBe(0);
+
+    const failureScroll = fakeScroll();
+    const loadOriginal = Engine.prototype.load;
+    const disposed = vi.fn();
+    const load = vi.spyOn(Engine.prototype, "load").mockImplementation(function (
+      this: Engine,
+      project: ProjectDefinition,
+    ) {
+      const handle = loadOriginal.call(this, project);
+      const dispose = handle.dispose;
+      handle.dispose = () => {
+        disposed();
+        dispose();
+      };
+      handle.mount = () => {
+        throw new Error("injected setup failure");
+      };
+      return handle;
+    });
     try {
-      for (const id of ALL_NODE_IDS) handle.mount(id);
+      expect(() =>
+        loadPlayground({
+          clock: createManualClock(),
+          interpolator: createFakeInterpolator(),
+          scheduler: createFakeScheduler(),
+          scroll: failureScroll.source,
+        }),
+      ).toThrow("injected setup failure");
+      expect(disposed).toHaveBeenCalledOnce();
+      expect(failureScroll.listeners.size).toBe(0);
+    } finally {
+      load.mockRestore();
+    }
+  });
+
+  it("publishes restored GSAP source progress and drives both Motions through one scroll source", async () => {
+    const scroll = host(0.6, 600);
+    const scheduler = createFakeScheduler();
+    const runtime = loadPlayground({
+      clock: createManualClock(),
+      interpolator: createGsapInterpolator(gsap),
+      scheduler,
+      scroll: scroll.source,
+    });
+    try {
       expect(scroll.create).toHaveBeenCalledTimes(1);
       await Promise.resolve();
       scheduler.flush();
-      const id = nodeId(ARM.memberTracks[0]!);
-      const rest = handle.get(id);
-      expect(rest?.status).toBe("ready");
-      scroll.update(0.5, 500);
-      expect(handle.get(id)).toBe(rest);
+      expect(progressOf(runtime.project, nodeId("seg-1"))).toBeCloseTo(0.6);
+      expect(progressOf(runtime.project, "rig3d/upper")).toBeCloseTo(0.6);
+      scroll.refresh(0.25, 600);
+      scroll.update(0.25, 600);
+      expect(progressOf(runtime.project, nodeId("seg-1"))).toBeCloseTo(0.6);
+      scroll.update(0.5, 1000);
       scheduler.flush();
-      const idPatch = handle.get(id);
-      if (idPatch?.status !== "ready")
-        throw new Error(`idPatch is ${idPatch?.status ?? "absent"}, not ready.`);
-      expect(idPatch.sourceProgress).toBeCloseTo(0.5);
-      // FK publishes a world frame, not its private weight input. Measure the actual blend.
-      const solverTrackPatch = handle.get(nodeId(ARM.solverTrack));
-      if (solverTrackPatch?.status !== "ready")
-        throw new Error(`solverTrackPatch is ${solverTrackPatch?.status ?? "absent"}, not ready.`);
-      const rotations = solverTrackPatch.values.rotations as Readonly<Record<string, number>>;
-      const idPatch2 = handle.get(id);
-      if (idPatch2?.status !== "ready")
-        throw new Error(`idPatch2 is ${idPatch2?.status ?? "absent"}, not ready.`);
-      expect(idPatch2.values.rotation).toBeCloseTo(
-        lerpAngle(ARM.restRotations[0]!, rotations[id]!, 0.5),
-      );
-      const held = handle.get(id);
-      const appliedGoal = handle.get(nodeId(ARM.goalTrack));
-      controller.moveGoal(ARM.goalTrack, 290, 360);
-      controller.flip(ARM.solverTrack, true);
-      clock.tick(1000);
-      scheduler.flush();
-      scroll.refresh(0.25, 500);
-      scroll.update(0.25, 500);
-      scheduler.flush();
-      expect(handle.get(id)).toBe(held);
-      expect(handle.get(nodeId(ARM.goalTrack))).toBe(appliedGoal);
-      scroll.update(1, 1000);
-      scheduler.flush();
-      const idPatch3 = handle.get(id);
-      if (idPatch3?.status !== "ready")
-        throw new Error(`idPatch3 is ${idPatch3?.status ?? "absent"}, not ready.`);
-      expect(idPatch3.sourceProgress).toBe(1);
-      const goalTrackPatch = handle.get(nodeId(ARM.goalTrack));
-      if (goalTrackPatch?.status !== "ready")
-        throw new Error(`goalTrackPatch is ${goalTrackPatch?.status ?? "absent"}, not ready.`);
-      expect(goalTrackPatch.values).toMatchObject({ x: 290, y: 360 });
-      const solverTrackPatch2 = handle.get(nodeId(ARM.solverTrack));
-      if (solverTrackPatch2?.status !== "ready")
-        throw new Error(
-          `solverTrackPatch2 is ${solverTrackPatch2?.status ?? "absent"}, not ready.`,
-        );
-      expect(solverTrackPatch2.values.flip).toBe(true);
-      const full = handle.get(id);
-      controller.moveGoal(ARM.goalTrack, 310, 380);
-      controller.flip(ARM.solverTrack, false);
-      clock.tick(2000);
-      scheduler.flush();
-      expect(handle.get(id)).toBe(full);
-      scroll.update(0.75, 750);
-      scheduler.flush();
-      const goalTrackPatch2 = handle.get(nodeId(ARM.goalTrack));
-      if (goalTrackPatch2?.status !== "ready")
-        throw new Error(`goalTrackPatch2 is ${goalTrackPatch2?.status ?? "absent"}, not ready.`);
-      expect(goalTrackPatch2.values).toMatchObject({ x: 310, y: 380 });
-      const solverTrackPatch3 = handle.get(nodeId(ARM.solverTrack));
-      if (solverTrackPatch3?.status !== "ready")
-        throw new Error(
-          `solverTrackPatch3 is ${solverTrackPatch3?.status ?? "absent"}, not ready.`,
-        );
-      expect(solverTrackPatch3.values.flip).toBe(false);
-      expect(() => handle.signal(MOTION_ID, { type: "manual", progress: 1 })).toThrow(
-        "does not accept external signals",
-      );
-      scroll.update(0, 0);
-      scheduler.flush();
-      const idPatch4 = handle.get(id);
-      if (idPatch4?.status !== "ready")
-        throw new Error(`idPatch4 is ${idPatch4?.status ?? "absent"}, not ready.`);
-      if (rest?.status !== "ready")
-        throw new Error(`rest is ${rest?.status ?? "absent"}, not ready.`);
-      expect(idPatch4.values).toEqual(rest.values);
+      expect(progressOf(runtime.project, nodeId("seg-1"))).toBeCloseTo(0.5);
+      expect(progressOf(runtime.project, "rig3d/upper")).toBeCloseTo(0.5);
     } finally {
-      handle.dispose();
+      runtime.project.dispose();
     }
     expect(scroll.kill).toHaveBeenCalledTimes(1);
     expect(() => {

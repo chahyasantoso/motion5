@@ -50,69 +50,119 @@ export function declarationCandidates(fromFile: string, specifier: string): stri
   return [`${base}.d.ts`, `${base}.d.mts`, `${base}.d.cts`, join(base, "index.d.ts")];
 }
 
+interface Closure {
+  readonly reachable: ReadonlySet<string>;
+  readonly unresolved: readonly string[];
+  readonly forbidden: readonly string[];
+}
+
+/** Emits declarations for `sources` into a fresh directory under the repository and reads them. */
+async function withEmitted<T>(
+  sources: readonly string[],
+  use: (out: string, emitted: ReadonlySet<string>) => Promise<T>,
+): Promise<T> {
+  const out = await mkdtemp(join(root, ".tmp-public-dts-"));
+  try {
+    await execFileAsync(
+      process.platform === "win32" ? "npx.cmd" : "npx",
+      [
+        "tsc",
+        "--declaration",
+        "--emitDeclarationOnly",
+        "--target",
+        "ES2023",
+        "--module",
+        "ESNext",
+        "--moduleResolution",
+        "Bundler",
+        "--strict",
+        "--skipLibCheck",
+        "--outDir",
+        out,
+        ...sources,
+      ],
+      { cwd: root, shell: process.platform === "win32" },
+    );
+    return await use(out, new Set(await declarationFiles(out)));
+  } finally {
+    await rm(out, { recursive: true, force: true });
+  }
+}
+
+/** Every declaration reachable from `entry` by relative edges, and every edge that did not resolve. */
+async function closureOf(
+  out: string,
+  emitted: ReadonlySet<string>,
+  entry: string,
+): Promise<Closure> {
+  const reachable = new Set<string>();
+  const unresolved: string[] = [];
+  const forbidden: string[] = [];
+  const queue = [entry];
+  while (queue.length > 0) {
+    const current = queue.shift()!;
+    if (reachable.has(current)) continue;
+    reachable.add(current);
+    const shown = relative(out, current).replaceAll("\\", "/");
+    if (FORBIDDEN_DIRECTORY.test(`/${shown}`)) forbidden.push(shown);
+    const source = await readFile(current, "utf8");
+    for (const specifier of importedSpecifiers(source)) {
+      if (!specifier.startsWith(".")) continue;
+      const target = declarationCandidates(current, specifier).find((candidate) =>
+        emitted.has(candidate),
+      );
+      if (target === undefined) {
+        unresolved.push(`${shown} -> ${specifier}`);
+        continue;
+      }
+      queue.push(target);
+    }
+  }
+  return { reachable, unresolved, forbidden };
+}
+
 describe("public declaration surface (P1-9)", () => {
   it("scans the emitted entry declaration closure, not just source strings", async () => {
-    const out = await mkdtemp(join(root, ".tmp-public-dts-"));
-    try {
-      await execFileAsync(
-        process.platform === "win32" ? "npx.cmd" : "npx",
-        [
-          "tsc",
-          "--declaration",
-          "--emitDeclarationOnly",
-          "--target",
-          "ES2023",
-          "--module",
-          "ESNext",
-          "--moduleResolution",
-          "Bundler",
-          "--strict",
-          "--skipLibCheck",
-          "--outDir",
-          out,
-          "packages/core/src/index.ts",
-        ],
-        { cwd: root, shell: process.platform === "win32" },
-      );
-      const emitted = await declarationFiles(out);
-      const emittedByPath = new Set(emitted);
-      const entries = emitted.filter((path) => path.endsWith("index.d.ts"));
+    await withEmitted(["packages/core/src/index.ts"], async (out, emitted) => {
+      const entries = [...emitted].filter((path) => path.endsWith("index.d.ts"));
       expect(entries).toHaveLength(1);
       const entry = entries[0];
       expect(entry).toBeDefined();
-
-      const reachable = new Set<string>();
-      const unresolved: string[] = [];
-      const forbidden: string[] = [];
-      const queue = [entry!];
-      while (queue.length > 0) {
-        const current = queue.shift()!;
-        if (reachable.has(current)) continue;
-        reachable.add(current);
-        const shown = relative(out, current).replaceAll("\\", "/");
-        if (FORBIDDEN_DIRECTORY.test(`/${shown}`)) forbidden.push(shown);
-        const source = await readFile(current, "utf8");
-        for (const specifier of importedSpecifiers(source)) {
-          if (!specifier.startsWith(".")) continue;
-          const target = declarationCandidates(current, specifier).find((candidate) =>
-            emittedByPath.has(candidate),
-          );
-          if (target === undefined) {
-            unresolved.push(`${shown} -> ${specifier}`);
-            continue;
-          }
-          queue.push(target);
-        }
-      }
+      const { reachable, unresolved, forbidden } = await closureOf(out, emitted, entry!);
 
       // Unresolved edges are asserted first. A traversal that silently stopped early would
       // otherwise report an empty forbidden list and look exactly like a clean boundary.
       expect(unresolved).toEqual([]);
       expect(forbidden).toEqual([]);
       expect(reachable.size).toBeGreaterThan(1);
-    } finally {
-      await rm(out, { recursive: true, force: true });
-    }
+    });
+  }, 120_000);
+
+  // Issue #500 phase 8 and ADR-125: the plugin subpaths are entries too, so the 3D ones that became
+  // public are held to the root entry's rule. The entry list is read from the core manifest, the
+  // one owner of what is declared, rather than restated.
+  it("TH-122 keeps every declared plugin subpath's declaration closure out of runtime and graph", async () => {
+    const manifest = JSON.parse(
+      await readFile(join(root, "packages", "core", "package.json"), "utf8"),
+    ) as { exports: Record<string, unknown> };
+    const plugins = Object.keys(manifest.exports).flatMap((key) => {
+      const name = /^\.\/plugins\/([a-z0-9]+)$/.exec(key)?.[1];
+      return name === undefined ? [] : [name];
+    });
+    expect(plugins).toEqual(expect.arrayContaining(["transform3d", "fk3d", "ik3d"]));
+    await withEmitted(
+      plugins.map((name) => `packages/core/src/plugins/${name}.ts`),
+      async (out, emitted) => {
+        for (const name of plugins) {
+          const entry = join(out, "plugins", `${name}.d.ts`);
+          expect(emitted.has(entry), name).toBe(true);
+          const { reachable, unresolved, forbidden } = await closureOf(out, emitted, entry);
+          expect(unresolved, name).toEqual([]);
+          expect(forbidden, name).toEqual([]);
+          expect(reachable.size, name).toBeGreaterThan(1);
+        }
+      },
+    );
   }, 120_000);
 
   it("resolves every declaration specifier shape and leaves unknown targets unresolved", () => {

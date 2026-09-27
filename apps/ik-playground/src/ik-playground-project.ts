@@ -1,20 +1,21 @@
 import type { ProjectDefinition, TrackDefinition } from "@motion5/core";
 
 /**
- * Two rigs, two goal spellings, two solvers: one project.
+ * The 2D half of the playground: one six-member chain, so the planar solve is FABRIK.
  *
- * The arm binds the bare `target` slot, the degenerate single-leaf case from ADR-051, and its
- * derived shape (two members, one goal) dispatches to the analytic two-bone solve. The tentacle
- * addresses its goal through the `targets` dict keyed by member id, the ADR-052 spelling, and its
- * six members dispatch to FABRIK. `solveChain` reads the derived shape, not an authored mode, so
- * neither rig names its solver and neither rig could choose the other one.
+ * The tentacle addresses its goal through the `targets` dict keyed by member id, the ADR-052
+ * spelling. `solveChain` reads the derived shape, not an authored mode, and six members under one
+ * goal dispatch to FABRIK; there is deliberately no two-member rig here, so the analytic two-bone
+ * solve is not what this page demonstrates.
  *
- * Only member weights animate: the scroll driver advances Motion, which seeks their authored
- * 0..1 stops. FK remains the sole rest/solved angle blend owner (ADR-055). Drags and flips
- * stage intent; accepted scroll emissions apply it through value-tier writes. No graph edits.
+ * Scroll animates only member weights: the scroll driver advances Motion, which seeks their
+ * authored 0..1 stops, and FK remains the sole rest/solved angle blend owner (ADR-055). A drag or a
+ * flip is a value-tier write that publishes at once, at whatever weight the scroll left the chain
+ * (`goal-control.ts`). No graph edits.
  */
 
 export const MOTION_ID = "rig";
+/** The one page-scroll source key both playground Motions read; the host maps it once. */
 export const SCROLL_SOURCE = "ik-scroll";
 
 /** Authored track ids qualify with the motion prefix once loaded, so renderers address nodes. */
@@ -35,23 +36,11 @@ export interface RigGeometry {
   readonly goal: { readonly x: number; readonly y: number };
 }
 
-export const ARM: RigGeometry = {
-  label: "2-bone arm",
-  rootTrack: "arm-shoulder",
-  goalTrack: "arm-goal",
-  solverTrack: "arm-solve",
-  memberTracks: ["upper-arm", "forearm"],
-  tipTrack: "forearm",
-  fkTailTrack: "hand",
-  fkTailLength: 22,
-  lengths: [80, 60],
-  restRotations: [110, -55],
-  root: { x: 250, y: 300 },
-  goal: { x: 365, y: 360 },
-};
+/** The SVG stage the chain is authored into; its world frames publish in these units. */
+export const STAGE_2D = { width: 560, height: 560, margin: 20 } as const;
 
 export const TENTACLE: RigGeometry = {
-  label: "FABRIK tentacle",
+  label: "FABRIK 2D tentacle",
   rootTrack: "tentacle-base",
   goalTrack: "tentacle-goal",
   solverTrack: "tentacle-solve",
@@ -59,15 +48,13 @@ export const TENTACLE: RigGeometry = {
   tipTrack: "seg-6",
   fkTailTrack: "fin",
   fkTailLength: 16,
-  lengths: [45, 45, 45, 45, 45, 45],
-  restRotations: [150, -30, -30, -30, -30, -30],
-  root: { x: 820, y: 180 },
-  goal: { x: 870, y: 420 },
+  lengths: [42, 42, 42, 42, 42, 42],
+  restRotations: [100, -20, -20, -20, -20, -20],
+  root: { x: 280, y: 90 },
+  goal: { x: 180, y: 290 },
 };
 
-export const RIGS = [ARM, TENTACLE] as const;
-
-/** A static transform frame: the root a chain hangs from, or the goal it reaches for. */
+/** A static transform frame: the root the chain hangs from, or the goal it reaches for. */
 export function frameTrack(id: string, x: number, y: number): TrackDefinition {
   return {
     id,
@@ -75,20 +62,7 @@ export function frameTrack(id: string, x: number, y: number): TrackDefinition {
   };
 }
 
-/** The arm's initial solver, on the bare `target` slot. Runtime flips retain these bindings. */
-export function armSolverTrack(flip: boolean): TrackDefinition {
-  return {
-    id: ARM.solverTrack,
-    keyframes: {
-      ik: {
-        values: { flip },
-        requires: { root: ARM.rootTrack, target: ARM.goalTrack },
-      },
-    },
-  };
-}
-
-/** The tentacle's solver, addressing its one goal by member id through the `targets` dict. */
+/** The solver, addressing its one goal by member id through the `targets` dict. */
 export function tentacleSolverTrack(flip: boolean): TrackDefinition {
   return {
     id: TENTACLE.solverTrack,
@@ -138,14 +112,11 @@ function fkTailTrack(id: string, base: string, length: number): TrackDefinition 
   };
 }
 
-function rigTracks(
-  rig: RigGeometry,
-  solverTrack: (flip: boolean) => TrackDefinition,
-): readonly TrackDefinition[] {
+function rigTracks(rig: RigGeometry): readonly TrackDefinition[] {
   const tracks: TrackDefinition[] = [
     frameTrack(rig.rootTrack, rig.root.x, rig.root.y),
     frameTrack(rig.goalTrack, rig.goal.x, rig.goal.y),
-    solverTrack(false),
+    tentacleSolverTrack(false),
   ];
   let base = rig.rootTrack;
   rig.memberTracks.forEach((id, index) => {
@@ -165,7 +136,7 @@ export const ikPlaygroundProject: ProjectDefinition = {
     {
       id: MOTION_ID,
       trigger: { type: "scroll", source: SCROLL_SOURCE },
-      tracks: [...rigTracks(ARM, armSolverTrack), ...rigTracks(TENTACLE, tentacleSolverTrack)],
+      tracks: rigTracks(TENTACLE),
     },
   ],
 };
@@ -177,10 +148,10 @@ export const ikPlaygroundProject: ProjectDefinition = {
  * no gate keeping them in step, and a case reading the same reader it is checking would prove
  * nothing.
  */
-export const ALL_NODE_IDS: readonly string[] = RIGS.flatMap((rig) => [
-  rig.rootTrack,
-  rig.goalTrack,
-  rig.solverTrack,
-  ...rig.memberTracks,
-  rig.fkTailTrack,
-]).map(nodeId);
+export const ALL_NODE_IDS: readonly string[] = [
+  TENTACLE.rootTrack,
+  TENTACLE.goalTrack,
+  TENTACLE.solverTrack,
+  ...TENTACLE.memberTracks,
+  TENTACLE.fkTailTrack,
+].map(nodeId);

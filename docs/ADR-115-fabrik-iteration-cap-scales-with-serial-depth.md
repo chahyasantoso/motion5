@@ -1,7 +1,9 @@
 # ADR-115: FABRIK iteration cap scales with serial depth
 
-**Status:** Proposed as issue [#491](https://github.com/chahyasantoso/motion5/issues/491),
-2026-09-25, stacked on PR #499. Accepted when its pull request merges.
+**Status:** Accepted, 2026-09-27, as part of the public 3D contract
+([ADR-125](./ADR-125-public-3d-api.md)); landed through #499 (`main` at `42c72322`).
+Proposed as issue [#491](https://github.com/chahyasantoso/motion5/issues/491), 2026-09-25,
+stacked on PR #499.
 
 ## Invariant
 

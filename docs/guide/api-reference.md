@@ -4,15 +4,21 @@ Grouped by entrypoint, because the entrypoint is the contract. `packages/core/pa
 
 ## Entrypoint tiers
 
-A declared subpath is not automatically production API. The tier says who may import it, and for the test-support tier that answer is enforced by `scripts/boundary-scan.mjs` rather than by this table: no package under `packages/*` except core, and no app under `apps/*`, may name it. See ADR-036 and ADR-048.
+A declared subpath is not automatically production API. The tier says who may import it, and for
+the test-support tier that answer is enforced by `scripts/boundary-scan.mjs` rather than by this
+list: no package under `packages/*` except core, and no app under `apps/*`, may name it. See
+ADR-036 and ADR-048.
 
-| subpath                                                         | tier           | may a production consumer import it |
-| --------------------------------------------------------------- | -------------- | ----------------------------------- |
-| `@motion5/core`                                                 | public         | yes                                 |
-| `@motion5/core/adapters`, `/adapters/browser-clock`             | public adapter | yes                                 |
-| `@motion5/core/plugins/fk`, `/plugins/transform`, `/plugins/ik` | public plugin  | yes                                 |
-| `@motion5/core/testing`                                         | test support   | no, enforced by the boundary scan   |
-| `@motion5/core/internal`                                        | unadvertised   | no stability promise                |
+- `@motion5/core` — public; production consumers may import it.
+- `@motion5/core/adapters` and `/adapters/browser-clock` — public adapters; production consumers may
+  import them.
+- `@motion5/core/plugins/fk`, `/plugins/transform`, and `/plugins/ik` — public plugins; production
+  consumers may import them.
+- `@motion5/core/plugins/transform3d`, `/plugins/fk3d`, and `/plugins/ik3d` — public plugins;
+  production consumers may import them.
+- `@motion5/core/testing` — test support; production consumers may not import it, as enforced by
+  the boundary scan.
+- `@motion5/core/internal` — unadvertised; it carries no stability promise.
 
 ## @motion5/core
 
@@ -119,6 +125,29 @@ primitive left with which to invent one. See ADR-043, ADR-044, and ADR-047.
 
 `ikPlugin` is the compose-stage inverse-kinematics plugin. It claims `flip`, `bend`, and `inspect`, declares `root`, scalar `target`, and dict `targets` requirements, and produces `rotations` plus opt-in `inspection`. Register it from `@motion5/core/plugins/ik`; the package declares this subpath alongside `/plugins/fk` and `/plugins/transform`. `rotations` contains local member angles, while `inspection` appears only when the solver authors `inspect: true`. See the [inverse kinematics guide](./inverse-kinematics.md) for the DOM-compatible coordinate convention, scale policy, lifecycle, and executable examples.
 
+## @motion5/core/plugins/transform3d, /plugins/fk3d, and /plugins/ik3d
+
+The 3D plugins use world-frame keys `x`, `y`, `z`, `rotation`, `rotationX`, and `rotationY`.
+Angles are in degrees and use the CSS `Rz · Rx · Ry` convention. Author 3D keyframes inside the
+named plugin groups; the [3D inverse-kinematics guide](./inverse-kinematics-3d.md) has executable
+projects and the coordinate, lifecycle, and renderer details.
+
+`transform3dPlugin` claims and passes through `x`, `y`, `z`, `rotation`, `rotationX`, and
+`rotationY`. It declares no requirements and no additional outputs, and is the root/goal/pole
+frame plugin.
+
+`fk3dPlugin` claims `length`, `rotation`, `rotationX`, `rotationY`, `weight`, `x`, `y`, `z`,
+`joint`, `axisX`, `axisY`, `axisZ`, `minRotation`, `maxRotation`, `maxSwing`, `minTwist`,
+`maxTwist`, `influence`, and `orient`. It declares `base` and `solver` requirements and outputs the
+world-frame keys `x`, `y`, `z`, `rotation`, `rotationX`, and `rotationY` at each member's tip.
+`rotation`, `rotationX`, and `rotationY` are local rest orientation when authored and world
+orientation when composed; `weight` blends a solved orientation toward that rest orientation.
+
+`ik3dPlugin` claims the static `inspect` key. It declares `root`, scalar `target`, dict-valued
+`targets`, and optional `pole` requirements, and outputs `rotations3d` plus opt-in `inspection`.
+It solves chains and trees of `fk3d` members; `root` and goals provide world frames, while `pole`
+selects the bend side when one is bound.
+
 ## @motion5/core/testing
 
 Test support, and the only tier a production consumer may not import: `createFakeInterpolator`, `createFakeScheduler`, `createFakeTriggerPort`, `createFakeTrackRegistry`, and `ScheduledJob`.
@@ -128,6 +157,19 @@ These are the implementations the core suite runs the port contract suite agains
 ## @motion5/core/internal
 
 A private channel between core and React: the `Patch`, `LivePatch`, `PatchListener`, `PatchSource`, `RenderMetadata`, and `RenderMetadataSource` types, plus the `liveOrAbsent` function. The metadata half is declared separately and required only by the binding that renders, so a consumer that reads values keeps the two-member source contract. `PatchSource.get` answers `LivePatch | undefined` while `subscribeNode` delivers every variant, and `liveOrAbsent` is the one function that converts between them, so an implementor discharges that obligation with a call rather than re-deriving which variants are live.
+
+## @motion5/three
+
+The optional `@motion5/three` workspace package adapts public patches to Three.js `Object3D`
+instances. Its consumer-facing peer dependency is `three >=0.160.0`; the adapter writes world
+frames, converts core's degree angles to radians, and uses `EULER_ORDER_3D` (`"ZXY"`) so Three.js
+composes `Rz · Rx · Ry`. `writeFrame3d(object, values)` writes one frame, and
+`createObject3dPatchAdapter(resolve)` provides `apply(patch)`, `applyValues(nodeId, values)` and
+`clear(object?)`. `apply` accepts one revision per resolved object and node, in order, and refuses a
+stale or duplicate one, as core's DOM adapter does; `clear(object)` drops that revision state for
+one object so a retained patch can re-pose it after a rebind. Called without an object it clears
+nothing, exactly as the DOM adapter's `clear` does (revision state is held per object in a weak map,
+which cannot be enumerated). It never removes anything from the scene graph.
 
 ## @motion5/react
 

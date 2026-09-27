@@ -1,173 +1,150 @@
 import React from "react";
 import type { ProjectHandle } from "@motion5/core";
 import { patchRender, usePatch } from "@motion5/react";
-import { ARM, TENTACLE, nodeId, type RigGeometry } from "../ik-playground-project";
+import { IK3D, IK3D_GOAL_BOUNDS, IK3D_NODE_ID } from "../ik3d-playground-project";
+import { TENTACLE, nodeId } from "../ik-playground-project";
+import type { GoalControl } from "../goal-control";
 
-interface DispatchCardProps {
-  readonly handle: ProjectHandle;
-  readonly rig: RigGeometry;
-  readonly solverLine: string;
-  readonly goalLine: string;
-  readonly methodLine: string;
-  readonly accent: string;
-  readonly flip: boolean;
-  readonly onFlip: (flip: boolean) => void;
-  readonly flipNote: string;
+function numberValue(values: Readonly<Record<string, unknown>>, key: string): number {
+  return Number(values[key] ?? 0);
 }
 
-const DispatchCard: React.FC<DispatchCardProps> = ({
-  handle,
-  rig,
-  solverLine,
-  goalLine,
-  methodLine,
-  accent,
-  flip,
-  onFlip,
-  flipNote,
-}) => {
-  const rootPatch = usePatch(handle, nodeId(rig.rootTrack));
-  const goalPatch = usePatch(handle, nodeId(rig.goalTrack));
-  const solverPatch = usePatch(handle, nodeId(rig.solverTrack));
-  const tipPatch = usePatch(handle, nodeId(rig.tipTrack));
+function inspectionLine(values: Readonly<Record<string, unknown>>): string {
+  const inspection = values.inspection;
+  if (typeof inspection !== "object" || inspection === null) return "no inspection published";
+  const record = inspection as Readonly<Record<string, unknown>>;
+  if (typeof record.kind !== "string" || typeof record.residual !== "number")
+    return "malformed inspection";
+  return `${record.kind} · residual ${record.residual.toFixed(3)}`;
+}
 
-  // Four render decisions, not four existing patches: every read below is a pose or a solved
-  // rotation set, and neither is a member a blocked or errored patch owns. The shared decision
-  // keeps the card empty while any of the four is refused or gone, until a consumer surface
-  // forwards `PatchRegistry.lastReady`. See ADR-098.
+const PlanarCard: React.FC<{ readonly handle: ProjectHandle; readonly goals: GoalControl }> = ({
+  handle,
+  goals,
+}) => {
+  const rootPatch = usePatch(handle, nodeId(TENTACLE.rootTrack));
+  const goalPatch = usePatch(handle, nodeId(TENTACLE.goalTrack));
+  const solverPatch = usePatch(handle, nodeId(TENTACLE.solverTrack));
+  const tipPatch = usePatch(handle, nodeId(TENTACLE.tipTrack));
   const rootDecision = patchRender(rootPatch);
   const goalDecision = patchRender(goalPatch);
   const solverDecision = patchRender(solverPatch);
   const tipDecision = patchRender(tipPatch);
+  const reach = TENTACLE.lengths.reduce((sum, length) => sum + length, 0);
+
   if (
     rootDecision.kind !== "render" ||
     goalDecision.kind !== "render" ||
     solverDecision.kind !== "render" ||
     tipDecision.kind !== "render"
   )
-    return null;
+    return <div className="solver-card">Waiting for the 2D FABRIK solve…</div>;
 
-  const root = rootDecision.patch;
-  const goal = goalDecision.patch;
-  const solver = solverDecision.patch;
-  const tip = tipDecision.patch;
-  const rootX = Number(root.values.x ?? 0);
-  const rootY = Number(root.values.y ?? 0);
-  const goalX = Number(goal.values.x ?? 0);
-  const goalY = Number(goal.values.y ?? 0);
-  const tipX = Number(tip.values.x ?? 0);
-  const tipY = Number(tip.values.y ?? 0);
-
-  const reach = rig.lengths.reduce((sum, length) => sum + length, 0);
-  const distance = Math.hypot(goalX - rootX, goalY - rootY);
-  const reachable = distance <= reach + 0.5;
-  const tipError = Math.hypot(goalX - tipX, goalY - tipY);
-  const rotations = solver.values.rotations as Readonly<Record<string, number>> | undefined;
+  const root = rootDecision.patch.values;
+  const goal = goalDecision.patch.values;
+  const tip = tipDecision.patch.values;
+  const solver = solverDecision.patch.values;
+  const distance = Math.hypot(
+    numberValue(goal, "x") - numberValue(root, "x"),
+    numberValue(goal, "y") - numberValue(root, "y"),
+  );
+  const gap = Math.hypot(
+    numberValue(goal, "x") - numberValue(tip, "x"),
+    numberValue(goal, "y") - numberValue(tip, "y"),
+  );
+  const rotations = solver.rotations;
+  const flip = solver.flip === true;
 
   return (
-    <div className="solver-card" data-rig={rig.solverTrack}>
-      <div className="card-title" style={{ color: accent }}>
-        {rig.label}
+    <div className="solver-card" data-rig={TENTACLE.solverTrack}>
+      <div className="card-title" style={{ color: "#34d399" }}>
+        FABRIK 2D
       </div>
-      <div className="mono-line">{solverLine}</div>
-      <div className="mono-line dim">{goalLine}</div>
-      <div className="mono-line dim">{methodLine}</div>
-
-      <div className="reach-block">
-        <div className="reach-track">
-          <div
-            className="reach-fill"
-            style={{
-              width: `${Math.min(100, (distance / reach) * 100).toFixed(1)}%`,
-              background: reachable ? accent : "#fbbf24",
-            }}
-          />
-        </div>
-        <div className="reach-labels">
-          <span>{distance.toFixed(0)} px to goal</span>
-          <span>{reach} px reach</span>
-        </div>
-        <div className={reachable ? "chip ok" : "chip warn"}>
-          {reachable
-            ? `within reach · blended tip gap ${tipError.toFixed(1)} px`
-            : `beyond reach · blended tip gap ${tipError.toFixed(0)} px`}
-        </div>
-      </div>
-
+      <div className="mono-line">distance to goal: {distance.toFixed(1)} px</div>
+      <div className="mono-line dim">reach: {reach} px</div>
+      <div className={gap < 1 ? "chip ok" : "chip warn"}>blended tip gap: {gap.toFixed(1)} px</div>
       <div className="rot-block">
         <div className="mono-line dim">solved local rotations</div>
-        {rotations
-          ? Object.entries(rotations).map(([memberId, degrees]) => (
-              <div className="rot-row" key={memberId}>
-                <span>{memberId.replace(/^rig\//, "")}</span>
-                <span>{degrees.toFixed(1)}°</span>
+        {typeof rotations === "object" && rotations !== null
+          ? Object.entries(rotations as Readonly<Record<string, unknown>>).map(([id, value]) => (
+              <div className="rot-row" key={id}>
+                <span>{id.replace(/^rig\//, "")}</span>
+                <span>{Number(value).toFixed(1)}°</span>
               </div>
             ))
           : null}
       </div>
-
       <label className="flip-toggle">
-        <input type="checkbox" checked={flip} onChange={(e) => onFlip(e.target.checked)} />
+        <input
+          type="checkbox"
+          checked={flip}
+          onChange={(event) => goals.flip(event.target.checked)}
+        />
         <span className="mono-line">flip: {flip ? "true" : "false"}</span>
-        <span className="note">{flipNote}</span>
+        <span className="note">writes immediately</span>
       </label>
     </div>
   );
 };
 
-interface SolverPanelProps {
-  readonly handle: ProjectHandle;
-  readonly armFlip: boolean;
-  readonly tentacleFlip: boolean;
-  readonly onArmFlip: (flip: boolean) => void;
-  readonly onTentacleFlip: (flip: boolean) => void;
-}
-
-export const SolverPanel: React.FC<SolverPanelProps> = ({
+const SpatialCard: React.FC<{ readonly handle: ProjectHandle; readonly goals: GoalControl }> = ({
   handle,
-  armFlip,
-  tentacleFlip,
-  onArmFlip,
-  onTentacleFlip,
-}) => (
+  goals,
+}) => {
+  const goalPatch = usePatch(handle, IK3D_NODE_ID(IK3D.goalTrack));
+  const solvePatch = usePatch(handle, IK3D_NODE_ID(IK3D.solverTrack));
+  const goalDecision = patchRender(goalPatch);
+  const solveDecision = patchRender(solvePatch);
+  if (goalDecision.kind !== "render" || solveDecision.kind !== "render")
+    return <div className="solver-card">Waiting for the 3D FABRIK solve…</div>;
+
+  const goal = goalDecision.patch.values;
+  const solve = solveDecision.patch.values;
+  const x = numberValue(goal, "x");
+  const y = numberValue(goal, "y");
+  const z = numberValue(goal, "z");
+
+  return (
+    <div className="solver-card" data-rig={IK3D.solverTrack}>
+      <div className="card-title" style={{ color: "#818cf8" }}>
+        FABRIK 3D
+      </div>
+      <div className="mono-line dim">inspection: {inspectionLine(solve)}</div>
+      <div className="mono-line">
+        goal: x {x.toFixed(0)} · y {y.toFixed(0)} · z {z.toFixed(0)}
+      </div>
+      <label className="depth-control">
+        <span className="mono-line dim">depth z</span>
+        <input
+          type="range"
+          min={IK3D_GOAL_BOUNDS.min.z}
+          max={IK3D_GOAL_BOUNDS.max.z}
+          step={1}
+          value={z}
+          aria-label="3D goal depth"
+          onChange={(event) => goals.move({ rig: "spatial", x, y, z: Number(event.target.value) })}
+        />
+      </label>
+    </div>
+  );
+};
+
+export const SolverPanel: React.FC<{
+  readonly handle: ProjectHandle;
+  readonly goals: GoalControl;
+}> = ({ handle, goals }) => (
   <>
     <div>
-      <h2>Solver dispatch</h2>
-      <DispatchCard
-        handle={handle}
-        rig={ARM}
-        solverLine={`${ARM.solverTrack} · ${ARM.memberTracks.length} members · 1 goal → solveTwoBone`}
-        goalLine="goal: ik.requires.target (bare slot)"
-        methodLine="law of cosines · exact · unreachable clamps"
-        accent="#38bdf8"
-        flip={armFlip}
-        onFlip={onArmFlip}
-        flipNote="applies on next scroll"
-      />
-      <DispatchCard
-        handle={handle}
-        rig={TENTACLE}
-        solverLine={`${TENTACLE.solverTrack} · ${TENTACLE.memberTracks.length} members · 1 goal → solveFabrik`}
-        goalLine="goal: ik.requires.targets.seg-6 (member-id dict)"
-        methodLine="iterative · length-preserving · arc seed"
-        accent="#34d399"
-        flip={tentacleFlip}
-        onFlip={onTentacleFlip}
-        flipNote="applies on next scroll"
-      />
+      <h2>Solver panel</h2>
+      <PlanarCard handle={handle} goals={goals} />
+      <SpatialCard handle={handle} goals={goals} />
     </div>
-
     <div className="panel-footer">
       <strong>How this page moves</strong>
       <br />
-      Solid targets and flip checkboxes show pending intent. Hollow targets and metrics show the
-      last applied solve.
+      Scroll = weight only; drags and flip = immediate value writes.
       <br />
-      The scroll adapter applies pending targets and flips; Motion progress drives authored{" "}
-      <code>fk.weight</code> stops. FK owns blending, without graph replacement.
-      <br />
-      The visible tip gap is expected below 100% weight, not a convergence diagnostic. Only member
-      weights animate; gestures do not advance the motion.
+      FK and fk3d own the rest-to-solved blend.
     </div>
   </>
 );

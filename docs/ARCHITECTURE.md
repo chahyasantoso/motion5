@@ -235,6 +235,8 @@ packages/
       fixtures/
   react/
     src/           patch and lifecycle hooks only
+  three/
+    src/           optional Three.js Object3D patch adapter
 performance/
   budgets.json
   graph-benchmark.mjs

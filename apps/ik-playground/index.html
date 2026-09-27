@@ -10,26 +10,35 @@
         --card: #0f1825;
         --border: #1e2d45;
         --accent: #38bdf8;
-        --accent2: #818cf8;
         --teal: #34d399;
         --amber: #fbbf24;
-        --rose: #f43f5e;
         --text: #f1f5f9;
-        --muted: #64748b;
+        --muted: #8492a6;
       }
 
       *,
       *::before,
       *::after {
         box-sizing: border-box;
+      }
+
+      html,
+      body,
+      #root {
+        min-height: 100%;
         margin: 0;
-        padding: 0;
       }
 
       body {
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        overflow-x: hidden;
         background: var(--bg);
         color: var(--text);
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      }
+
+      button,
+      input {
+        font: inherit;
       }
 
       #scroll-demo {
@@ -37,97 +46,262 @@
       }
 
       #playground {
-        height: 100vh;
-        height: 100dvh;
-        width: 100%;
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) 340px;
         position: sticky;
         top: 0;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 340px;
+        width: 100%;
+        height: 100vh;
+        height: 100dvh;
         overflow: hidden;
         background: var(--bg);
       }
 
-      .stage-wrap {
-        position: relative;
-        min-height: 0;
+      .playground-main {
         display: flex;
+        min-width: 0;
+        min-height: 0;
         flex-direction: column;
-        background: radial-gradient(ellipse 80% 60% at 50% 55%, #0f2040 0%, var(--bg) 100%);
-        border-right: 1px solid var(--border);
       }
 
       .demo-header {
-        padding: 1.25rem 2rem;
+        flex: 0 0 auto;
+        padding: 1rem 1.5rem 0.75rem;
         border-bottom: 1px solid var(--border);
         background: var(--bg);
-        z-index: 10;
       }
 
       .demo-header h1 {
+        margin: 0;
+        color: var(--accent);
         font-size: 1.35rem;
         font-weight: 800;
-        color: var(--accent);
       }
 
       .demo-header p {
+        max-width: 70rem;
+        margin: 0.3rem 0 0;
         color: var(--muted);
-        font-size: 0.825rem;
-        margin-top: 0.25rem;
+        font-size: 0.82rem;
       }
 
-      .stage-container {
+      .weight-readout {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .weight-readout output {
+        color: var(--text);
+        font-weight: 800;
+      }
+
+      .weight-readout progress {
+        width: 8rem;
+        height: 0.5rem;
+        accent-color: var(--teal);
+      }
+
+      .tabs {
+        display: flex;
+        flex: 0 0 auto;
+        gap: 0.2rem;
+        padding: 0.5rem 1.5rem 0;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .tabs button {
+        padding: 0.55rem 1rem;
+        border: 0;
+        border-bottom: 2px solid transparent;
+        background: transparent;
+        color: var(--muted);
+        cursor: pointer;
+        font-size: 0.75rem;
+        font-weight: 700;
+      }
+
+      .tabs button[aria-selected="true"] {
+        border-bottom-color: var(--accent);
+        color: var(--text);
+      }
+
+      .tab-panel {
         flex: 1;
-        position: relative;
+        min-width: 0;
+        min-height: 0;
         overflow: hidden;
       }
 
-      #stage {
+      .dom-stages {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        gap: 0.75rem;
+        height: 100%;
+        padding: 0.75rem;
+      }
+
+      .stage-card {
+        display: flex;
+        min-width: 0;
+        min-height: 0;
+        flex-direction: column;
+        overflow: hidden;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: radial-gradient(ellipse 90% 75% at 50% 45%, #102442 0%, #080e1a 100%);
+      }
+
+      .stage-card-heading {
+        display: flex;
+        flex: 0 0 auto;
+        justify-content: space-between;
+        gap: 0.5rem;
+        padding: 0.65rem 0.8rem 0.25rem;
+        color: var(--teal);
+        font-family: ui-monospace, monospace;
+        font-size: 0.78rem;
+      }
+
+      .stage-card-heading span {
+        color: var(--muted);
+        font-size: 0.68rem;
+      }
+
+      .stage-container {
+        position: relative;
+        flex: 1;
+        min-height: 0;
+      }
+
+      .ik-svg {
+        display: block;
         width: 100%;
         height: 100%;
+      }
+
+      .ik3d-stage > .mono-line {
+        flex: 0 0 auto;
+        padding: 0 0.8rem 0.35rem;
+      }
+
+      .ik3d-viewport {
+        position: relative;
+        display: flex;
+        flex: 1;
+        min-height: 0;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+      }
+
+      /* IK3D_FRAME at the fitted scale: every 3D layer is positioned inside it. */
+      .ik3d-frame {
+        position: relative;
+        flex: 0 0 auto;
+      }
+
+      .ik3d-world {
         position: absolute;
-        top: 0;
         left: 0;
-        touch-action: pan-y;
+        top: 0;
+        transform-origin: 0 0;
+        transform-style: preserve-3d;
+        perspective-origin: 50% 50%;
+        pointer-events: none;
+      }
+
+      .ik3d-css .ik3d-frame {
+        background: radial-gradient(circle at 50% 45%, rgba(56, 189, 248, 0.08), transparent 70%);
+      }
+
+      /* The frame is the drag area: the goal can go anywhere inside it, so draw its edge. */
+      .ik3d-frame::after {
+        position: absolute;
+        inset: 0;
+        border: 1px dashed rgba(56, 189, 248, 0.22);
+        border-radius: 8px;
+        content: "";
+        pointer-events: none;
+      }
+
+      .ik3d-goal-dot {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        display: block;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--amber);
+        transform: translate(-50%, -50%);
+      }
+
+      .three-stage-wrap {
+        display: flex;
+        height: 100%;
+        padding: 0.75rem;
+      }
+
+      .three-stage {
+        flex: 1;
+      }
+
+      .three-stage-host,
+      .three-stage-canvas {
+        position: absolute;
+        inset: 0;
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+
+      .stage-error {
+        margin: 0.75rem;
+        color: var(--amber);
+        font-size: 0.8rem;
       }
 
       .sidebar {
         display: flex;
+        min-width: 0;
         flex-direction: column;
         gap: 0.9rem;
-        padding: 1.25rem;
-        background: var(--card);
-        border-left: 1px solid var(--border);
         overflow-y: auto;
+        padding: 1rem;
+        border-left: 1px solid var(--border);
+        background: var(--card);
       }
 
       .sidebar h2 {
-        font-size: 0.7rem;
-        text-transform: uppercase;
-        letter-spacing: 0.1em;
+        margin: 0 0 0.35rem;
         color: var(--muted);
-        margin-bottom: 0.15rem;
+        font-size: 0.7rem;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
       }
 
       .solver-card {
-        background: #080e1a;
+        margin-bottom: 0.75rem;
+        padding: 0.75rem 0.8rem;
         border: 1px solid var(--border);
         border-radius: 8px;
-        padding: 0.7rem 0.8rem;
+        background: #080e1a;
         font-size: 0.75rem;
       }
 
       .card-title {
-        font-weight: 700;
+        margin-bottom: 0.35rem;
         font-size: 0.8rem;
+        font-weight: 700;
         letter-spacing: 0.03em;
-        margin-bottom: 0.3rem;
       }
 
       .mono-line {
+        color: var(--text);
         font-family: ui-monospace, monospace;
         line-height: 1.5;
-        color: var(--text);
       }
 
       .mono-line.dim {
@@ -135,154 +309,204 @@
         font-size: 0.7rem;
       }
 
-      .reach-block {
-        margin-top: 0.5rem;
-      }
-
-      .reach-track {
-        height: 5px;
-        background: var(--border);
-        border-radius: 3px;
-        overflow: hidden;
-      }
-
-      .reach-fill {
-        height: 100%;
-        border-radius: 3px;
-        /* Scroll owns the pose; no time-based catch-up animation. */
-      }
-
-      .reach-labels {
-        display: flex;
-        justify-content: space-between;
-        margin-top: 0.25rem;
-        font-size: 0.7rem;
-        color: var(--muted);
-        font-family: ui-monospace, monospace;
-      }
-
       .chip {
         display: inline-block;
-        margin-top: 0.35rem;
+        margin-top: 0.45rem;
         padding: 0.15rem 0.5rem;
+        border: 1px solid;
         border-radius: 9999px;
         font-family: ui-monospace, monospace;
         font-size: 0.68rem;
         font-weight: 700;
-        border: 1px solid;
       }
 
       .chip.ok {
-        color: var(--teal);
         border-color: rgba(52, 211, 153, 0.5);
         background: rgba(52, 211, 153, 0.12);
+        color: var(--teal);
       }
 
       .chip.warn {
-        color: var(--amber);
         border-color: rgba(251, 191, 36, 0.5);
         background: rgba(251, 191, 36, 0.12);
+        color: var(--amber);
       }
 
       .rot-block {
-        margin-top: 0.55rem;
-        border-top: 1px dashed var(--border);
+        margin-top: 0.6rem;
         padding-top: 0.45rem;
+        border-top: 1px dashed var(--border);
       }
 
       .rot-row {
         display: flex;
         justify-content: space-between;
+        color: var(--text);
         font-family: ui-monospace, monospace;
         font-size: 0.72rem;
         line-height: 1.55;
-        color: var(--text);
       }
 
       .rot-row span:first-child {
         color: var(--muted);
       }
 
-      .flip-toggle {
+      .flip-toggle,
+      .depth-control {
         display: flex;
         align-items: center;
         gap: 0.55rem;
-        margin-top: 0.55rem;
+        margin-top: 0.6rem;
+        padding-top: 0.55rem;
         border-top: 1px dashed var(--border);
-        padding-top: 0.5rem;
         cursor: pointer;
         user-select: none;
       }
 
       .flip-toggle input {
-        accent-color: var(--accent);
         width: 14px;
         height: 14px;
-        cursor: pointer;
+        accent-color: var(--teal);
       }
 
       .flip-toggle .note {
+        margin-left: auto;
         color: var(--muted);
         font-size: 0.68rem;
-        margin-left: auto;
+      }
+
+      .depth-control {
+        flex-wrap: wrap;
+      }
+
+      .depth-control input {
+        width: 100%;
+        accent-color: var(--accent);
       }
 
       .panel-footer {
-        font-size: 0.7rem;
-        color: var(--muted);
-        line-height: 1.55;
+        margin-top: auto;
         padding-top: 0.75rem;
         border-top: 1px solid var(--border);
-        margin-top: auto;
+        color: var(--muted);
+        font-size: 0.7rem;
+        line-height: 1.55;
       }
 
       .panel-footer strong {
         color: var(--text);
       }
 
-      .panel-footer code {
-        color: var(--accent);
-        font-family: ui-monospace, monospace;
-        font-size: 0.68rem;
-      }
-      .weight-readout {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        gap: 0.5rem;
-        font-variant-numeric: tabular-nums;
-      }
-      .weight-readout output {
-        color: var(--text);
-        font-weight: 700;
-      }
-      .weight-readout progress {
-        width: 7rem;
-        height: 0.5rem;
-        accent-color: var(--teal);
-      }
-      #stage [tabindex]:focus-visible {
+      [role="button"]:focus-visible,
+      button:focus-visible,
+      input:focus-visible {
         outline: 2px solid var(--text);
-        outline-offset: 4px;
+        outline-offset: 3px;
       }
-      @media (max-width: 760px) {
+
+      .ik3d-member {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 0;
+        height: 0;
+        transform-style: preserve-3d;
+        pointer-events: none;
+      }
+
+      .ik3d-bone {
+        position: absolute;
+        top: -4px;
+        left: 0;
+        height: 8px;
+        border-radius: 999px;
+        transform: translateX(-100%);
+      }
+
+      .ik3d-joint {
+        position: absolute;
+        left: -6px;
+        top: -6px;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        border: 2px solid #080c14;
+      }
+
+      .ik3d-marker {
+        position: absolute;
+        left: -9px;
+        top: -9px;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        border: 2px solid;
+        background: rgba(8, 12, 20, 0.72);
+        pointer-events: none;
+      }
+
+      .ik3d-marker.ik3d-goal {
+        left: -27px;
+        top: -27px;
+        width: 54px;
+        height: 54px;
+        background: rgba(251, 191, 36, 0.18);
+        pointer-events: auto;
+        touch-action: none;
+        cursor: grab;
+      }
+
+      @media (max-width: 860px) {
         #playground {
           grid-template-columns: minmax(0, 1fr);
-          grid-template-rows: minmax(0, 1fr) minmax(0, 30vh);
+          grid-template-rows: minmax(0, 1fr) minmax(0, 190px);
         }
+
         .demo-header {
-          padding: 0.75rem 1rem;
+          padding: 0.7rem 0.9rem 0.55rem;
         }
+
         .demo-header h1 {
           font-size: 1.1rem;
         }
-        .sidebar {
-          padding: 0.75rem 1rem;
-          border-left: 0;
-          border-top: 1px solid var(--border);
+
+        .tabs {
+          padding-left: 0.9rem;
         }
-        .stage-wrap {
-          border-right: 0;
+
+        .dom-stages {
+          grid-template-columns: minmax(0, 1fr);
+          grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+          overflow-y: auto;
+        }
+
+        .sidebar {
+          display: block;
+          overflow-x: auto;
+          overflow-y: auto;
+          padding: 0.65rem 0.9rem;
+          border-top: 1px solid var(--border);
+          border-left: 0;
+        }
+
+        .sidebar > div:first-child {
+          display: flex;
+          min-width: 620px;
+          gap: 0.75rem;
+        }
+
+        .sidebar h2 {
+          display: none;
+        }
+
+        .solver-card {
+          width: 280px;
+          margin-bottom: 0;
+        }
+
+        .panel-footer {
+          min-width: 620px;
+          margin-top: 0.65rem;
         }
       }
     </style>

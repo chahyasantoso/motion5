@@ -1,9 +1,11 @@
 # ADR-118: 3D pole target
 
-**Status:** Proposed as issue [#500](https://github.com/chahyasantoso/motion5/issues/500) phase 3,
+**Status:** Accepted, 2026-09-27, as part of the public 3D contract
+([ADR-125](./ADR-125-public-3d-api.md)); landed through #505 (`main` at `154d271f`).
+Proposed as issue [#500](https://github.com/chahyasantoso/motion5/issues/500) phase 3,
 2026-09-25, on `feat/500-phase-3` (pull request #505), above `main` at
 `7bd3c3d022a1b9ce5f75ecc5b32c0ddcfbc6dbb4`, where the phase 2 pivot offsets of
-[ADR-117](./ADR-117-3d-pivot-offsets.md) landed through #503. Accepted when #505 merges.
+[ADR-117](./ADR-117-3d-pivot-offsets.md) landed through #503.
 
 ## Invariant
 

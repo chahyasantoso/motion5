@@ -1,25 +1,19 @@
 import React from "react";
 import type { ProjectHandle } from "@motion5/core";
-import {
-  useDerivedDomPatch,
-  useDomPatch,
-  type PatchDerivation,
-  type PatchValues,
-} from "@motion5/react";
+import { useDerivedDomPatch, type PatchDerivation, type PatchValues } from "@motion5/react";
+import { nodePosition, point } from "./marker-position";
 
 /**
  * Nothing in this rig re-renders on a tick.
  *
- * A one-node pose is `useDomPatch`. Everything else is a derivation: geometry this file computes
- * from the values of one or more nodes, written to one element by `useDerivedDomPatch` through the
- * same DOM adapter. Presence is still not liveness, and that rule has one owner now instead of one
- * per component: a derivation runs only while every node it names is ready, and its target is hidden
- * rather than unmounted while one is not. See ADR-073 and ADR-075.
+ * Every rendered shape is a derivation: geometry this file computes from the values of one or more
+ * nodes, written to one element by `useDerivedDomPatch` through the same DOM adapter. A joint marker
+ * derives its position only, so a label inside it never turns with the bone, and a marker whose arm
+ * was removed hides instead of staying where the arm last was. Presence is still not liveness,
+ * and that rule has one owner now instead of one per component: a derivation runs only while every
+ * node it names is ready, and its target is hidden rather than unmounted while one is not. See
+ * ADR-073 and ADR-075.
  */
-function point(values: PatchValues): { x: number; y: number } {
-  return { x: Number(values.x ?? 0), y: Number(values.y ?? 0) };
-}
-
 const boneEndpoints: PatchDerivation = ([parent = {}, child = {}]) => {
   const from = point(parent);
   const to = point(child);
@@ -39,6 +33,21 @@ interface BoneSegmentProps {
   readonly innerColor?: string;
 }
 
+/** One line between two published frames; each line owns its binding, so an absent one costs nothing. */
+const SegmentLine: React.FC<{
+  readonly handle: ProjectHandle;
+  readonly parentId: string;
+  readonly childId: string;
+  readonly stroke: string;
+  readonly width: number;
+  readonly opacity?: number;
+}> = ({ handle, parentId, childId, stroke, width, opacity }) => {
+  const bind = useDerivedDomPatch<SVGLineElement>(handle, [parentId, childId], boneEndpoints);
+  return (
+    <line ref={bind} stroke={stroke} strokeWidth={width} strokeLinecap="round" opacity={opacity} />
+  );
+};
+
 const BoneSegment: React.FC<BoneSegmentProps> = ({
   handle,
   parentId,
@@ -46,27 +55,28 @@ const BoneSegment: React.FC<BoneSegmentProps> = ({
   color,
   width,
   innerColor,
-}) => {
-  // One derivation, two elements: the inner highlight is the same line at a smaller width, so it
-  // takes its own binding rather than a second derivation.
-  const bindBone = useDerivedDomPatch<SVGLineElement>(handle, [parentId, childId], boneEndpoints);
-  const bindInner = useDerivedDomPatch<SVGLineElement>(handle, [parentId, childId], boneEndpoints);
-
-  return (
-    <g>
-      <line ref={bindBone} stroke={color} strokeWidth={width} strokeLinecap="round" />
-      {innerColor && width > 3 && (
-        <line
-          ref={bindInner}
-          stroke={innerColor}
-          strokeWidth={Math.max(1, width - 3)}
-          strokeLinecap="round"
-          opacity={0.6}
-        />
-      )}
-    </g>
-  );
-};
+}) => (
+  // The inner highlight is the same segment at a smaller width, mounted only when it is drawn.
+  <g>
+    <SegmentLine
+      handle={handle}
+      parentId={parentId}
+      childId={childId}
+      stroke={color}
+      width={width}
+    />
+    {innerColor && width > 3 ? (
+      <SegmentLine
+        handle={handle}
+        parentId={parentId}
+        childId={childId}
+        stroke={innerColor}
+        width={width - 3}
+        opacity={0.6}
+      />
+    ) : null}
+  </g>
+);
 
 interface JointMarkerProps {
   readonly handle: ProjectHandle;
@@ -85,7 +95,7 @@ const JointMarker: React.FC<JointMarkerProps> = ({
   label,
   glow = false,
 }) => {
-  const bind = useDomPatch<SVGGElement>(handle, nodeId);
+  const bind = useDerivedDomPatch<SVGGElement>(handle, [nodeId], nodePosition);
 
   return (
     <g ref={bind}>

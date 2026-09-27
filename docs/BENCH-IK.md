@@ -55,6 +55,11 @@ microseconds and chain-64 measured 2.9674 milliseconds in run 1.
 
 ## 3D solve scenarios (issue #500 phase 5)
 
+With [ADR-125](./ADR-125-public-3d-api.md), this 3D section is the published envelope for the
+public 3D API. Phases 6 and 7 did not change the six unconstrained scenarios: their bytes are
+pinned by the 3D tree identity hash `7e3cf790`, equal at base `7ee6980` and phase 7, so the
+timings stand.
+
 This section is a sandbox measurement, not a CI gate. It was recorded on 2026-09-26 with Node
 `v22.23.1`, V8 `12.4.254.21-node.56`, `linux x64`, and `Intel(R) Xeon(R) Processor @ 2.60GHz`
 with 4 cores. CI uses Node `v24.21.0`, so these numbers are not a CI or cross-machine performance
