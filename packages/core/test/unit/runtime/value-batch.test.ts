@@ -363,8 +363,9 @@ describe("the value tier publishes once for a batch, and refuses every tier that
       let masked: PatchBatch | undefined;
       const batch = runtime.values((edit) => {
         // `y` is a key the authored group does not carry, so this is the recompile rather than the
-        // mask, and it is the call `apps/ik-playground/src/scroll-reach.ts` makes through the batch
-        // it now opens. The review that deferred this traced the path by hand and found it correct;
+        // mask, and it is the call the IK playground's pending-intent commit made through the batch
+        // it opened (`scroll-reach.ts`, withdrawn by ADR-125 when drags became immediate writes).
+        // The review that deferred this traced the path by hand and found it correct;
         // what it could not say is that any run had ever driven it.
         recompiled = edit.track("rig/a").setKeyframe("fk", "y", 300);
         // The same verb's other path, in the same batch, because the recompile is only interesting

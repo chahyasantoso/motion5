@@ -6,9 +6,10 @@ export default defineConfig({
     alias: {
       "@motion5/core": path.resolve(import.meta.dirname, "../../packages/core/src"),
       "@motion5/react": path.resolve(import.meta.dirname, "../../packages/react/src"),
+      "@motion5/three": path.resolve(import.meta.dirname, "../../packages/three/src"),
     },
   },
   optimizeDeps: {
-    exclude: ["@motion5/core", "@motion5/react"],
+    exclude: ["@motion5/core", "@motion5/react", "@motion5/three"],
   },
 });

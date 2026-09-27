@@ -1,99 +1,96 @@
 import type { MotionDefinition, TrackDefinition } from "@motion5/core";
-
-type AuthoredProperty =
-  | number
-  | string
-  | boolean
-  | readonly { readonly p: number; readonly v: unknown; readonly ease?: unknown }[];
+import { SCROLL_SOURCE } from "./ik-playground-project";
 
 /**
- * The 3D arm, authored as one Motion of the playground project rather than as a project of its own.
+ * The 3D half of the playground: a four-member chain, so the spatial solve is 3D FABRIK.
  *
- * It rides the same page scroll as the 2D rigs through its own trigger source, so the runtime drives
- * its goal orbit from the trigger exactly as it drives the 2D weights: no second progress driver
- * beside the Motion. `playground-runtime.ts` composes it into the one project the app loads, which
- * is also the project the suite loads, so a composition the runtime refuses cannot pass the suite.
+ * Authored as one Motion of the playground project rather than as a project of its own, on the same
+ * page-scroll source as the 2D chain, so the runtime drives both from one trigger key and there is
+ * no second progress driver beside the Motion. What the scroll animates is only each member's
+ * `fk3d.weight`, the rest-to-solved blend of ADR-116; the goal is a static `transform3d` frame a drag
+ * rewrites through the value tier (`goal-control.ts`), and the pole is fixed. `playground-runtime.ts`
+ * composes it into the one project the app loads, which is also the project the suite loads.
+ *
+ * Every renderer on the page draws this one rig: the CSS 3D stage and the three.js stage read the
+ * same published frames, and both project them with `IK3D_VIEW` (`projection.ts`).
  */
 export const IK3D_MOTION_ID = "rig3d";
-export const IK3D_SCROLL_SOURCE = "ik3d-scroll";
-/** The project perspective 3D keyframes require, and the stage's CSS perspective: one number. */
-export const IK3D_PERSPECTIVE = 720;
 export const IK3D_NODE_ID = (trackId: string): string => `${IK3D_MOTION_ID}/${trackId}`;
 
+/**
+ * The box the rig is authored into and the viewer distance it is seen from, in the pixels its
+ * world frames publish. `perspective` is also the project perspective `validate-v5.ts` requires of
+ * a project carrying 3D keyframes: one number for the document, the CSS stage and the three.js
+ * camera.
+ */
+export const IK3D_VIEW = { width: 360, height: 300, perspective: 720 } as const;
+export const IK3D_PERSPECTIVE = IK3D_VIEW.perspective;
+
+/** Where a drag may put the goal: inside the box, and never behind the viewer. */
+export const IK3D_GOAL_BOUNDS = {
+  min: { x: 12, y: 12, z: -160 },
+  max: { x: IK3D_VIEW.width - 12, y: IK3D_VIEW.height - 12, z: 160 },
+} as const;
+
 export const IK3D = {
-  label: "3D orbit rig",
+  label: "FABRIK 3D chain",
   rootTrack: "root",
   goalTrack: "goal",
   poleTrack: "pole",
   solverTrack: "solve",
-  memberTracks: ["upper", "fore", "hand"],
+  memberTracks: ["upper", "fore", "wrist", "hand"],
   tipTrack: "hand",
-  lengths: [52, 40, 26],
-  restRotations: [0, 12, -10],
+  lengths: [50, 42, 34, 26],
+  /** Local rest orientation per member, `[rotation, rotationX, rotationY]` in degrees. */
+  rest: [
+    [70, -8, 8],
+    [18, 6, -5],
+    [16, -4, 3],
+    [12, 3, -2],
+  ],
+  root: { x: 110, y: 70, z: 0 },
+  goal: { x: 205, y: 170, z: 30 },
+  /** Below and toward the viewer, off the root-to-goal line, so it bends every seed plane. */
+  pole: { x: 70, y: 200, z: 90 },
 } as const;
 
-/** The stage box the rig is authored into, in the same pixels its world frames publish. */
-export const IK3D_WORLD = { height: 190 } as const;
+type AuthoredScalars = Readonly<Record<string, number | boolean>>;
 
-const ROOT = { x: 95, y: 60, z: 0 } as const;
-/** Below, behind the goal's sweep and toward the viewer, off every orbit line through the root. */
-const POLE = { x: 45, y: 120, z: 70 } as const;
-
-function frameTrack(
-  id: string,
-  values: Readonly<Record<string, AuthoredProperty>>,
-): TrackDefinition {
+function frameTrack(id: string, values: AuthoredScalars): TrackDefinition {
   return { id, keyframes: { transform3d: { values } } };
 }
 
+/** Rest orientation and weight share the solver-bound `fk3d` group, as ADR-116 requires. */
 function memberTrack(
   id: string,
   base: string,
   length: number,
-  rotation: number,
-  rotationX: number,
-  rotationY: number,
+  [rotation, rotationX, rotationY]: readonly [number, number, number],
 ): TrackDefinition {
   return {
     id,
     keyframes: {
       fk3d: {
-        values: { length, rotation, rotationX, rotationY },
+        values: {
+          length,
+          rotation,
+          rotationX,
+          rotationY,
+          weight: [
+            { p: 0, v: 0 },
+            { p: 1, v: 1 },
+          ],
+        },
         requires: { base, solver: IK3D.solverTrack },
       },
     },
   };
 }
 
-/** A closed loop around the root, every stop inside the 118px reach and inside the stage box. */
-const ORBIT = {
-  x: [
-    { p: 0, v: 190 },
-    { p: 0.25, v: 150 },
-    { p: 0.5, v: 80 },
-    { p: 0.75, v: 35 },
-    { p: 1, v: 190 },
-  ],
-  y: [
-    { p: 0, v: 95 },
-    { p: 0.25, v: 135 },
-    { p: 0.5, v: 150 },
-    { p: 0.75, v: 115 },
-    { p: 1, v: 95 },
-  ],
-  z: [
-    { p: 0, v: 20 },
-    { p: 0.25, v: 50 },
-    { p: 0.5, v: 15 },
-    { p: 0.75, v: -45 },
-    { p: 1, v: 20 },
-  ],
-} as const;
-
 export const ik3dPlaygroundTracks: readonly TrackDefinition[] = [
-  frameTrack(IK3D.rootTrack, ROOT),
-  frameTrack(IK3D.goalTrack, ORBIT),
-  frameTrack(IK3D.poleTrack, POLE),
+  frameTrack(IK3D.rootTrack, IK3D.root),
+  frameTrack(IK3D.goalTrack, IK3D.goal),
+  frameTrack(IK3D.poleTrack, IK3D.pole),
   {
     id: IK3D.solverTrack,
     keyframes: {
@@ -107,22 +104,13 @@ export const ik3dPlaygroundTracks: readonly TrackDefinition[] = [
       },
     },
   },
-  memberTrack(IK3D.memberTracks[0], IK3D.rootTrack, IK3D.lengths[0], IK3D.restRotations[0], -8, 8),
-  memberTrack(
-    IK3D.memberTracks[1],
-    IK3D.memberTracks[0],
-    IK3D.lengths[1],
-    IK3D.restRotations[1],
-    6,
-    -5,
-  ),
-  memberTrack(
-    IK3D.memberTracks[2],
-    IK3D.memberTracks[1],
-    IK3D.lengths[2],
-    IK3D.restRotations[2],
-    -4,
-    3,
+  ...IK3D.memberTracks.map((id, index) =>
+    memberTrack(
+      id,
+      index === 0 ? IK3D.rootTrack : IK3D.memberTracks[index - 1]!,
+      IK3D.lengths[index]!,
+      IK3D.rest[index]!,
+    ),
   ),
 ];
 
@@ -132,6 +120,6 @@ export const IK3D_NODE_IDS: readonly string[] = ik3dPlaygroundTracks.map(({ id }
 
 export const ik3dPlaygroundMotion: MotionDefinition = {
   id: IK3D_MOTION_ID,
-  trigger: { type: "scroll", source: IK3D_SCROLL_SOURCE },
+  trigger: { type: "scroll", source: SCROLL_SOURCE },
   tracks: ik3dPlaygroundTracks,
 };

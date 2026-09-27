@@ -1,174 +1,175 @@
-import React from "react";
+import React, { useLayoutEffect, useRef, useState } from "react";
 import type { ProjectHandle } from "@motion5/core";
-import { patchRender, useDomPatch, usePatch } from "@motion5/react";
-import { IK3D, IK3D_NODE_ID, IK3D_PERSPECTIVE, IK3D_WORLD } from "../ik3d-playground-project";
+import { patchRender, useDomPatch } from "@motion5/react";
+import { IK3D, IK3D_NODE_ID, IK3D_VIEW } from "../ik3d-playground-project";
+import type { GoalControl } from "../goal-control";
+import { unprojectPoint, type Point3 } from "../projection";
+import { goalNudge, useGoalDrag } from "./goal-drag";
+import { BONE_COLOR, FRAME_COLOR, type FrameKind } from "./ik3d-palette";
 
-/** One colour per frame kind; a `Record` over the closed union, so a new kind cannot go unpainted. */
-type FrameKind = "goal" | "pole" | "root";
-const FRAME_COLOR: Readonly<Record<FrameKind, string>> = {
-  goal: "#fbbf24",
-  pole: "#34d399",
-  root: "#c084fc",
-};
-/** One colour per member, keyed by the authored member ids so none can go unpainted. */
-const BONE_COLOR: Readonly<Record<(typeof IK3D.memberTracks)[number], string>> = {
-  upper: "#c084fc",
-  fore: "#818cf8",
-  hand: "#38bdf8",
-};
-
-interface BoneProps {
-  readonly handle: ProjectHandle;
-  readonly id: string;
-  readonly length: number;
-  readonly color: string;
+/** The goal the runtime last published, which is where a drag or a nudge starts from. */
+function publishedGoal(handle: ProjectHandle): Point3 | undefined {
+  const decision = patchRender(handle.get(IK3D_NODE_ID(IK3D.goalTrack)));
+  if (decision.kind !== "render") return undefined;
+  const { x, y, z } = decision.patch.values;
+  return { x: Number(x ?? 0), y: Number(y ?? 0), z: Number(z ?? 0) };
 }
 
-const Bone: React.FC<BoneProps> = ({ handle, id, length, color }) => {
+const Bone: React.FC<{
+  readonly handle: ProjectHandle;
+  readonly id: (typeof IK3D.memberTracks)[number];
+  readonly length: number;
+}> = ({ handle, id, length }) => {
+  // A member's published frame is its tip with its world orientation, which is exactly the pose
+  // `useDomPatch` composes, so the bar extends back along local -x from there.
   const bind = useDomPatch<HTMLDivElement>(handle, IK3D_NODE_ID(id));
+  const color = BONE_COLOR[id];
   return (
-    <div
-      ref={bind}
-      className="ik3d-member"
-      style={{
-        position: "absolute",
-        left: 0,
-        top: 0,
-        width: 0,
-        height: 0,
-        zIndex: id === IK3D.tipTrack ? 3 : 2,
-        transformStyle: "preserve-3d",
-      }}
-    >
+    <div ref={bind} className="ik3d-member">
       <div
         className="ik3d-bone"
-        style={{
-          position: "absolute",
-          top: -4,
-          left: 0,
-          height: 8,
-          borderRadius: 999,
-          background: color,
-          boxShadow: `0 0 12px ${color}`,
-          width: `${length}px`,
-          transform: "translateX(-100%)",
-        }}
+        style={{ width: length, background: color, boxShadow: `0 0 12px ${color}` }}
       />
-      <div
-        className="ik3d-joint"
-        style={{
-          position: "absolute",
-          left: -6,
-          top: -6,
-          width: 12,
-          height: 12,
-          borderRadius: "50%",
-          background: color,
-          border: "2px solid #080c14",
-        }}
-      />
+      <div className="ik3d-joint" style={{ background: color }} />
     </div>
   );
 };
 
+/** A root or pole frame: posed by the runtime, never grabbed. */
 const FrameMarker: React.FC<{
   readonly handle: ProjectHandle;
   readonly id: string;
-  readonly kind: FrameKind;
+  readonly kind: Exclude<FrameKind, "goal">;
 }> = ({ handle, id, kind }) => {
   const bind = useDomPatch<HTMLDivElement>(handle, IK3D_NODE_ID(id));
   return (
     <div
       ref={bind}
       className={`ik3d-marker ik3d-${kind}`}
-      style={{
-        position: "absolute",
-        left: -9,
-        top: -9,
-        width: 18,
-        height: 18,
-        borderRadius: "50%",
-        border: "2px solid currentColor",
-        background: "rgba(8, 12, 20, 0.7)",
-        transformStyle: "preserve-3d",
-        color: FRAME_COLOR[kind],
-      }}
+      style={{ borderColor: FRAME_COLOR[kind] }}
     />
   );
 };
 
 /**
- * The solver's published `inspection`, the consumer of the rig's authored `inspect: true`.
+ * The goal, posed by the runtime and dragged by the pointer.
  *
- * Read as untyped plugin output, which is what the public surface promises a consumer: the record's
- * shape is documented in the 3D guide rather than exported as a type.
+ * A drag keeps the depth the goal was grabbed at and moves it in the screen plane through the shared
+ * projection, so the goal stays under the pointer whatever its depth; Shift turns vertical movement
+ * into depth. Every write goes through `GoalControl`, and the marker follows because the runtime
+ * publishes the new goal, not because this component holds a copy of it.
  */
-function inspectionLine(values: Readonly<Record<string, unknown>>): string {
-  const inspection = values.inspection;
-  if (typeof inspection !== "object" || inspection === null) return "no inspection published";
-  const { kind, residual, iterations } = inspection as Readonly<Record<string, unknown>>;
-  if (typeof kind !== "string" || typeof residual !== "number") return "malformed inspection";
-  const passes = typeof iterations === "number" && iterations > 0 ? ` · ${iterations} passes` : "";
-  return `${kind} · residual ${residual.toFixed(3)}${passes}`;
-}
-
-const SolveReadout: React.FC<{ readonly handle: ProjectHandle }> = ({ handle }) => {
-  const decision = patchRender(usePatch(handle, IK3D_NODE_ID(IK3D.solverTrack)));
-  let line: string;
-  switch (decision.kind) {
-    case "render":
-      line = inspectionLine(decision.patch.values);
-      break;
-    case "retain":
-      line = "holding the last pose";
-      break;
-    case "gone":
-      line = "solver removed";
-      break;
-    default: {
-      // A consumer has no `unreachable`; the `never` binding is the same compile-time exhaustiveness.
-      const unhandled: never = decision;
-      throw new Error(`Unhandled render decision: ${JSON.stringify(unhandled)}`);
-    }
-  }
+const GoalHandle: React.FC<{
+  readonly handle: ProjectHandle;
+  readonly goals: GoalControl;
+  readonly worldRef: React.RefObject<HTMLDivElement | null>;
+  readonly scale: number;
+}> = ({ handle, goals, worldRef, scale }) => {
+  const bind = useDomPatch<HTMLDivElement>(handle, IK3D_NODE_ID(IK3D.goalTrack));
+  const drag = useGoalDrag<{ readonly z: number; readonly clientY: number }>({
+    begin(event) {
+      const goal = publishedGoal(handle);
+      return goal === undefined ? undefined : { z: goal.z, clientY: event.clientY };
+    },
+    move(session, event) {
+      const rect = worldRef.current?.getBoundingClientRect();
+      if (rect === undefined) return;
+      if (event.shiftKey) {
+        const goal = publishedGoal(handle);
+        if (goal === undefined) return;
+        goals.move({
+          rig: "spatial",
+          ...goal,
+          z: session.z + (session.clientY - event.clientY) / scale,
+        });
+        return;
+      }
+      const local = {
+        x: (event.clientX - rect.left) / scale,
+        y: (event.clientY - rect.top) / scale,
+      };
+      const point = unprojectPoint(IK3D_VIEW, local, session.z);
+      if (point !== undefined) goals.move({ rig: "spatial", ...point });
+    },
+  });
+  const onKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    const nudge = goalNudge(event);
+    const goal = publishedGoal(handle);
+    if (nudge === undefined || goal === undefined) return;
+    event.preventDefault();
+    goals.move({
+      rig: "spatial",
+      x: goal.x + nudge.dx,
+      y: goal.y + nudge.dy,
+      z: goal.z + nudge.dz,
+    });
+  };
   return (
-    <output className="mono-line dim" aria-label="3D solve inspection" data-testid="ik3d-quality">
-      {line}
-    </output>
+    <div
+      ref={bind}
+      className="ik3d-marker ik3d-goal"
+      data-testid="ik3d-goal-handle"
+      role="button"
+      tabIndex={0}
+      aria-label="Move the FABRIK 3D goal: drag, Shift+drag for depth, arrows and PageUp/PageDown"
+      style={{ borderColor: FRAME_COLOR.goal }}
+      onKeyDown={onKeyDown}
+      {...drag}
+    >
+      <span className="ik3d-goal-dot" aria-hidden="true" />
+    </div>
   );
 };
 
-export const Ik3dStage: React.FC<{ readonly handle: ProjectHandle }> = ({ handle }) => (
-  <section className="solver-card ik3d-stage" aria-label="3D inverse kinematics playground">
-    <div className="card-title" style={{ color: FRAME_COLOR.root }}>
-      {IK3D.label}
-    </div>
-    <div className="mono-line dim">transform3d · fk3d · ik3d via public subpaths</div>
-    <SolveReadout handle={handle} />
-    <div
-      className="ik3d-world"
-      style={{
-        position: "relative",
-        height: IK3D_WORLD.height,
-        marginTop: "0.5rem",
-        perspective: `${IK3D_PERSPECTIVE}px`,
-        transformStyle: "preserve-3d",
-        overflow: "hidden",
-        pointerEvents: "none",
-      }}
-    >
-      <FrameMarker handle={handle} id={IK3D.goalTrack} kind="goal" />
-      <FrameMarker handle={handle} id={IK3D.poleTrack} kind="pole" />
-      {IK3D.memberTracks.map((id, index) => (
-        <Bone
-          key={id}
-          handle={handle}
-          id={id}
-          length={IK3D.lengths[index]!}
-          color={BONE_COLOR[id]}
-        />
-      ))}
-      <FrameMarker handle={handle} id={IK3D.rootTrack} kind="root" />
-    </div>
-  </section>
-);
+export const Ik3dStage: React.FC<{
+  readonly handle: ProjectHandle;
+  readonly goals: GoalControl;
+}> = ({ handle, goals }) => {
+  const viewportRef = useRef<HTMLDivElement | null>(null);
+  const worldRef = useRef<HTMLDivElement | null>(null);
+  const [scale, setScale] = useState(1);
+
+  // The world is authored at `IK3D_VIEW` pixels and scaled to its column, so a phone draws the same
+  // rig smaller rather than clipping it, and a drag divides the pointer by the same factor.
+  useLayoutEffect(() => {
+    const viewport = viewportRef.current;
+    if (viewport === null) return undefined;
+    const update = () => {
+      const { width, height } = viewport.getBoundingClientRect();
+      const fit = Math.min(width / IK3D_VIEW.width, height / IK3D_VIEW.height);
+      if (fit > 0) setScale(fit);
+    };
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(viewport);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <section className="stage-card ik3d-stage" aria-label="3D FABRIK inverse kinematics playground">
+      <div className="stage-card-heading">
+        <strong>{IK3D.label}</strong>
+        <span>four members · one goal · pole · CSS 3D</span>
+      </div>
+      <div ref={viewportRef} className="ik3d-viewport">
+        <div
+          ref={worldRef}
+          className="ik3d-world"
+          style={{
+            width: IK3D_VIEW.width,
+            height: IK3D_VIEW.height,
+            perspective: `${IK3D_VIEW.perspective}px`,
+            transform: `translate(-50%, -50%) scale(${scale})`,
+          }}
+        >
+          <FrameMarker handle={handle} id={IK3D.poleTrack} kind="pole" />
+          {IK3D.memberTracks.map((id, index) => (
+            <Bone key={id} handle={handle} id={id} length={IK3D.lengths[index]!} />
+          ))}
+          <FrameMarker handle={handle} id={IK3D.rootTrack} kind="root" />
+          <GoalHandle handle={handle} goals={goals} worldRef={worldRef} scale={scale} />
+        </div>
+      </div>
+    </section>
+  );
+};

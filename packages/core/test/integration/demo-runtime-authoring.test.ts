@@ -2,10 +2,8 @@ import { describe, expect, it, vi } from "vitest";
 import { statedPublications } from "../helpers/publication-spy";
 import {
   ALL_NODE_IDS,
-  ARM,
   MOTION_ID,
   TENTACLE,
-  armSolverTrack,
   frameTrack,
   ikPlaygroundProject,
   nodeId,
@@ -57,10 +55,8 @@ function playground() {
   const test = load(ikPlaygroundProject);
   for (const motionId of test.handle.motionIds())
     for (const node of test.handle.motion(motionId).trackIds) test.handle.mount(node);
-  for (const rig of [ARM, TENTACLE]) {
-    test.handle.seek(nodeId(rig.rootTrack), 0);
-    test.handle.seek(nodeId(rig.goalTrack), 0);
-  }
+  test.handle.seek(nodeId(TENTACLE.rootTrack), 0);
+  test.handle.seek(nodeId(TENTACLE.goalTrack), 0);
   test.flush();
   return test;
 }
@@ -137,17 +133,17 @@ describe("demo runtime authoring", () => {
     }
   });
 
-  it.each([ARM, TENTACLE])("moves $label goals in one value flush without graph work", (rig) => {
+  it("moves the tentacle goal in one value flush without graph work", () => {
     const actual = playground();
     const reference = playground();
     try {
       const replace = vi.spyOn(actual.runtime.graph, "replaceGraph");
       const publication = vi.spyOn(actual.runtime.graph, "flush");
-      const track = actual.handle.track(nodeId(rig.goalTrack));
+      const track = actual.handle.track(nodeId(TENTACLE.goalTrack));
       const requires = track.requires;
       for (const offset of [10, -15]) {
-        const x = rig.goal.x + offset;
-        const y = rig.goal.y - offset;
+        const x = TENTACLE.goal.x + offset;
+        const y = TENTACLE.goal.y - offset;
         publication.mockClear();
         track.setValues({ x, y });
         expect(statedPublications(publication)).toHaveLength(1);
@@ -156,8 +152,10 @@ describe("demo runtime authoring", () => {
         expect(track.definition.keyframes).toMatchObject({
           transform: { values: { x, y, rotation: 0 } },
         });
-        reference.handle.track(nodeId(rig.goalTrack)).replace(frameTrack(rig.goalTrack, x, y));
-        reference.handle.seek(nodeId(rig.goalTrack), 0);
+        reference.handle
+          .track(nodeId(TENTACLE.goalTrack))
+          .replace(frameTrack(TENTACLE.goalTrack, x, y));
+        reference.handle.seek(nodeId(TENTACLE.goalTrack), 0);
         expectSamePose(actual.handle, reference.handle);
       }
     } finally {
@@ -166,16 +164,13 @@ describe("demo runtime authoring", () => {
     }
   });
 
-  it.each([
-    { rig: ARM, solver: armSolverTrack },
-    { rig: TENTACLE, solver: tentacleSolverTrack },
-  ])("flips $rig.label without replacing its solver bindings", ({ rig, solver }) => {
+  it("flips the tentacle without replacing its solver bindings", () => {
     const actual = playground();
     const reference = playground();
     try {
       const replace = vi.spyOn(actual.runtime.graph, "replaceGraph");
       const publication = vi.spyOn(actual.runtime.graph, "flush");
-      const track = actual.handle.track(nodeId(rig.solverTrack));
+      const track = actual.handle.track(nodeId(TENTACLE.solverTrack));
       const requires = track.requires;
       for (const flip of [true, false]) {
         publication.mockClear();
@@ -184,8 +179,8 @@ describe("demo runtime authoring", () => {
         expect(replace).not.toHaveBeenCalled();
         expect(track.requires).toEqual(requires);
         expect(track.definition.keyframes).toMatchObject({ ik: { values: { flip } } });
-        reference.handle.track(nodeId(rig.solverTrack)).replace(solver(flip));
-        reference.handle.seek(nodeId(rig.solverTrack), 0);
+        reference.handle.track(nodeId(TENTACLE.solverTrack)).replace(tentacleSolverTrack(flip));
+        reference.handle.seek(nodeId(TENTACLE.solverTrack), 0);
         expectSamePose(actual.handle, reference.handle);
       }
     } finally {
