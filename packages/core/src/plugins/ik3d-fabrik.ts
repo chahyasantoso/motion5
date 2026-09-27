@@ -171,10 +171,10 @@ export function solveTree3dAttempt(
   const limits = chain.map(({ limit }) => limit ?? FREE_JOINT3D);
   // Each member's limited children in canonical order, whose limits the inward pass bounds its
   // frame by (ADR-126). A member with none takes the plain inward step and its bytes.
-  const limitedChildren: number[][] = Array.from({ length: count }, () => []);
+  const limitedChildren = new Array<number[] | undefined>(count);
   for (let index = 0; index < count; index += 1)
     if (parent[index] !== ROOT && constrains(limits[index]!))
-      limitedChildren[parent[index]!]!.push(index);
+      (limitedChildren[parent[index]!] ??= []).push(index);
   const inner = ids.find((id) => (childCount.get(id) ?? 0) > 0 && byId.get(id)!.goal !== undefined);
   if (inner !== undefined)
     throw new Error(`Solver goal on member "${inner}" is not on a leaf of the chain.`);
@@ -318,8 +318,8 @@ export function solveTree3dAttempt(
   const inwardPivot = (index: number, tip: Vec3): Vec3 => {
     const length = lengths[index]!;
     const placed = place3d(tip, pivots[index]!, length);
-    const children = limitedChildren[index]!;
-    if (children.length === 0 || length <= 0) return placed;
+    const children = limitedChildren[index];
+    if (children === undefined || length <= 0) return placed;
     let frame = swingFrame3d(frames[index]!, subtract3(tip, placed));
     let moved = false;
     for (const child of children) {

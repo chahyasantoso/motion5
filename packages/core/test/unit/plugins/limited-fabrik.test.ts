@@ -333,6 +333,36 @@ describe("limited FABRIK: seed side, bidirectional limits and the limited cap (i
     }
   });
 
+  it("TH-152 a legal hinge child leaves its base unmoved inward, as the 2D rule leaves it", () => {
+    // A hinge rebuilds its local from the limited angle even in range, so without the tolerance
+    // every legal child here came back `moved` with a frame a few ulps off its base.
+    const hinge: JointLimit3d = { kind: "hinge", axis: Z_AXIS, range: range(0, 90) };
+    const planarChild = rotationAboutAxis3d(Z_AXIS, 150);
+    for (const base of [60, 100, 150, 107.25]) {
+      expect(boundBaseFrame3d(hinge, planarChild, rotationAboutAxis3d(Z_AXIS, base))).toEqual({
+        kind: "unmoved",
+      });
+      expect(boundBaseDirection(range(0, 90), 150, base)).toBe(base);
+    }
+    // Off the planar axis, and under a tilted base: a pure in-range turn about the axis is legal.
+    const axis: Vec3 = [0.6, 0, 0.8];
+    const skewed: JointLimit3d = { kind: "hinge", axis, range: range(-40, 70) };
+    const base = multiplyMatrix3(
+      rotationAboutAxis3d([0, 1, 0], 33),
+      rotationAboutAxis3d(Z_AXIS, 21),
+    );
+    for (const angle of [-40, -3.5, 0, 55, 70]) {
+      const child = multiplyMatrix3(base, rotationAboutAxis3d(axis, angle));
+      expect(boundBaseFrame3d(skewed, child, base).kind).toBe("unmoved");
+    }
+    // A child tilted off its hinge is not legal at any angle, so the base still turns for it.
+    const tilted = multiplyMatrix3(
+      base,
+      multiplyMatrix3(rotationAboutAxis3d(axis, 20), rotationAboutAxis3d([0, 1, 0], 5)),
+    );
+    expect(boundBaseFrame3d(skewed, tilted, base).kind).toBe("moved");
+  });
+
   it("TH-151 the 3D inward pass bounds a base by its limited hinge child", () => {
     // Pre-#514: `limited` at 90.38; with the retry and the cap but no inward bound, `limited` at
     // 12.53. Only the inward bound reaches it.

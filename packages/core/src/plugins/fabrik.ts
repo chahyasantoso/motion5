@@ -143,12 +143,14 @@ export function solveFabrikAttempt(
   const offsetOf = (id: string): PivotOffset => solveOffset(byId.get(id)!);
   const goalOf = (id: string): WorldFrame | undefined => byId.get(id)!.goal;
   const limitOf = (id: string): JointLimit => byId.get(id)!.limit ?? FREE_JOINT;
+  // A `SolveMember` carries a limit only when it constrains the solve, so presence is the answer.
+  const isLimited = (id: string): boolean => byId.get(id)!.limit !== undefined;
   const rootPoint: FabrikPoint = Object.freeze({ x: root.x, y: root.y });
   // Each member's limited children, canonical order, which bound it in the inward pass (ADR-126).
   const limitedChildren = new Map<string, string[]>();
   for (const id of ids) {
     const base = baseOf(id);
-    if (!isMember(base) || byId.get(id)!.limit === undefined) continue;
+    if (!isMember(base) || !isLimited(id)) continue;
     const list = limitedChildren.get(base) ?? [];
     list.push(id);
     limitedChildren.set(base, list);
@@ -371,9 +373,7 @@ export function solveFabrikAttempt(
   };
 
   outward();
-  const constraint: FabrikConstraint = ids.some((id) => byId.get(id)!.limit !== undefined)
-    ? "limited"
-    : "free";
+  const constraint: FabrikConstraint = ids.some(isLimited) ? "limited" : "free";
   const budget = fabrikPassBudget(serialDepth(), constraint, FABRIK_TOLERANCE);
   let iterations = 0;
   let residual = residualNow();
@@ -406,7 +406,7 @@ export function solveFabrikAttempt(
       // does not own.
       if (!isMember(base)) continue;
       const pivot = inwardPivot(id);
-      if (byId.get(id)!.limit !== undefined && lengthOf(id) > 0) {
+      if (isLimited(id) && lengthOf(id) > 0) {
         const tip = tips.get(id)!;
         inwardDirections.set(id, Math.atan2(tip.y - pivot.y, tip.x - pivot.x) * DEGREES);
       }
