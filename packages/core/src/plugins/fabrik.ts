@@ -10,7 +10,7 @@ import { aimPoint, goalMiss, readGoal, type GoalReading } from "./ik-goal-readin
 import { branchPulls, compromise, type CompromiseRule, type Pull } from "./ik-goal";
 import { selectFabrik } from "./fabrik-select";
 import { seedArc } from "./fabrik-seed";
-import { fabrikIterationCap, type FabrikConstraint } from "./fabrik-cap";
+import { fabrikPassBudget, type FabrikConstraint } from "./fabrik-cap";
 import { unreachable } from "../lang/exhaustive";
 import { canonicalChain } from "./ik-topology";
 import {
@@ -313,7 +313,11 @@ export function solveFabrikAttempt(
    * about its pivot onto the legal local angle nearest the placed one. Enforced here, inside the
    * pass that enforces lengths, so every later iteration starts from a legal pose and the published
    * angle is legal because the pose is, not because the output was clamped afterwards. See ADR-108.
+   * Whether the member rests on a bound is recorded here too, from the angle this pass enforced, as
+   * the 3D pass records it: re-derived from published directions, rounding can land it a few ulps
+   * inside the range and report a bound pose as unbounded (ADR-126).
    */
+  const onBound = new Map<string, boolean>();
   const limitTip = (
     id: string,
     pivot: FabrikPoint,
@@ -325,12 +329,16 @@ export function solveFabrikAttempt(
       case "free":
         return placed;
       case "range": {
-        if (length <= 0) return placed;
+        if (length <= 0) {
+          onBound.set(id, atBound(limit, 0));
+          return placed;
+        }
         const base = baseDirection(id);
         const local = wrapRotation(
           Math.atan2(placed.y - pivot.y, placed.x - pivot.x) * DEGREES - base,
         );
         const bounded = limitRotation(limit, local);
+        onBound.set(id, atBound(limit, bounded));
         if (bounded === local) return placed;
         return Object.freeze({
           x: pivot.x + length * Math.cos((base + bounded) * RADIANS),
@@ -366,13 +374,13 @@ export function solveFabrikAttempt(
   const constraint: FabrikConstraint = ids.some((id) => byId.get(id)!.limit !== undefined)
     ? "limited"
     : "free";
-  const cap = fabrikIterationCap(serialDepth(), constraint);
+  const budget = fabrikPassBudget(serialDepth(), constraint, FABRIK_TOLERANCE);
   let iterations = 0;
   let residual = residualNow();
   let stalled = false;
   // How far the branches still disagreed about a shared member in the last inward pass.
   let spread = 0;
-  while (residual > FABRIK_TOLERANCE && iterations < cap) {
+  while (residual > FABRIK_TOLERANCE && budget.admits(iterations, residual)) {
     iterations += 1;
     spread = 0;
     inwardDirections.clear();
@@ -444,7 +452,7 @@ export function solveFabrikAttempt(
     const limit = limitOf(id);
     const local = limitRotation(limit, worldDirection(id) - baseDirection(id));
     rotations[id] = local;
-    if (atBound(limit, local)) atBounds.push(id);
+    if (onBound.get(id) === true) atBounds.push(id);
     solvedPivots[id] = pivots.get(id)!;
     solvedTips[id] = tips.get(id)!;
   }

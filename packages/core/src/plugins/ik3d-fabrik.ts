@@ -1,7 +1,7 @@
 import { unreachable } from "../lang/exhaustive";
 import { FABRIK_TOLERANCE, iterativeQuality } from "./fabrik";
 import { arcHalfAngle } from "./fabrik-seed";
-import { fabrikIterationCap, type FabrikConstraint } from "./fabrik-cap";
+import { fabrikPassBudget, type FabrikConstraint } from "./fabrik-cap";
 import { selectFabrik } from "./fabrik-select";
 import { readNumber, segmentExtent } from "./frame";
 import {
@@ -345,13 +345,13 @@ export function solveTree3dAttempt(
 
   outward();
   const constraint: FabrikConstraint = limits.some(constrains) ? "limited" : "free";
-  const cap = fabrikIterationCap(serialDepth(), constraint);
+  const budget = fabrikPassBudget(serialDepth(), constraint, FABRIK_TOLERANCE);
   const proposals: Pull3d[][] = Array.from({ length: count }, () => []);
   let iterations = 0;
   let residual = residualNow();
   let stalled = false;
   let spread = 0;
-  while (residual > FABRIK_TOLERANCE && iterations < cap) {
+  while (residual > FABRIK_TOLERANCE && budget.admits(iterations, residual)) {
     iterations += 1;
     spread = 0;
     inwardFrames.fill(undefined);

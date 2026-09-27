@@ -14,7 +14,11 @@ import {
 import {
   FABRIK_LIMITED_CAP_FACTOR,
   FABRIK_MIN_ITERATIONS,
+  FABRIK_PROGRESS_WINDOW,
   fabrikIterationCap,
+  fabrikPassBudget,
+  projectsConvergence,
+  type FabrikPassBudget,
 } from "../../../src/plugins/fabrik-cap";
 import {
   fabrikAlternatives,
@@ -50,6 +54,7 @@ import {
   FREE_JOINT3D,
   type JointLimit3d,
 } from "../../../src/plugins/ik3d-constraint";
+import { solveTree3dAttempt } from "../../../src/plugins/ik3d-fabrik";
 import { solveChain3d } from "../../../src/plugins/ik3d-solve";
 
 const ROOT: WorldFrame = { x: 0, y: 0, rotation: 0 };
@@ -107,6 +112,29 @@ function closeMatrix(a: Matrix3, b: Matrix3): void {
 
 function solve3d(members: readonly ChainMember3d[], pole: Pole3d = UNBOUND_POLE3D) {
   return solveChain3d(ROOT3, members, pole);
+}
+
+/** The same serial rig as planar +z hinges, so both dimensions can be held to one statement. */
+function planar3d(members: readonly SolveMember[]): ChainMember3d[] {
+  const offset = { x: 0, y: 0, z: 0 };
+  return members.map(({ id, base, length, limit, goal }) => ({
+    id,
+    base,
+    length,
+    offset,
+    rest: ZERO_REST,
+    ...(limit === undefined
+      ? {}
+      : { limit: { kind: "hinge" as const, axis: Z_AXIS, range: limit } }),
+    ...(goal === undefined ? {} : { goal: { x: goal.x, y: goal.y, z: 0, ...ZERO_REST } }),
+  }));
+}
+
+/** The first pass count a budget refuses, feeding it `residual(pass)` in pass order. */
+function firstRefused(budget: FabrikPassBudget, residual: (pass: number) => number): number {
+  let iterations = 0;
+  while (budget.admits(iterations, residual(iterations))) iterations += 1;
+  return iterations;
 }
 
 describe("limited FABRIK: seed side, bidirectional limits and the limited cap (issue #514)", () => {
@@ -334,5 +362,74 @@ describe("limited FABRIK: seed side, bidirectional limits and the limited cap (i
     const far = solveChain(ROOT, elbow2d(range(-45, 45), 500, 0), false);
     expect(far.quality.kind).not.toBe("converged");
     expect(far.quality.iterations).toBeLessThan(FABRIK_MIN_ITERATIONS);
+  });
+
+  it("CL-36 past the free cap a limited attempt continues only while its residual projects convergence", () => {
+    // A free chain reads exactly the `iterations < cap` it always read, so its bytes hold.
+    const free = fabrikPassBudget(2, "free", FABRIK_TOLERANCE);
+    expect(free.admits(63, 50)).toBe(true);
+    expect(free.admits(64, 1e-9)).toBe(false);
+    expect(FABRIK_PROGRESS_WINDOW).toBe(8);
+    // The projection: 1 -> 0.5 over one window needs 8 log2(500) = 71.7 more passes to tolerance.
+    expect(projectsConvergence(1, 0.5, FABRIK_TOLERANCE, 72)).toBe(true);
+    expect(projectsConvergence(1, 0.5, FABRIK_TOLERANCE, 71)).toBe(false);
+    expect(projectsConvergence(1, 1, FABRIK_TOLERANCE, 1e9)).toBe(false);
+    expect(projectsConvergence(1, 1.5, FABRIK_TOLERANCE, 1e9)).toBe(false);
+    const limited = () => fabrikPassBudget(2, "limited", FABRIK_TOLERANCE);
+    const ceiling = fabrikIterationCap(2, "limited");
+    // A crawl that holds its residual stops at the free cap, as if the chain were free.
+    expect(firstRefused(limited(), () => 12)).toBe(FABRIK_MIN_ITERATIONS);
+    // 10 * 0.97^k would reach tolerance only after the ceiling; 10 * 0.95^k projects inside it and is
+    // re-measured every window until the ceiling, which the budget still enforces on its own.
+    expect(firstRefused(limited(), (pass) => 10 * 0.97 ** pass)).toBe(FABRIK_MIN_ITERATIONS);
+    expect(firstRefused(limited(), (pass) => 10 * 0.95 ** pass)).toBe(ceiling);
+    // A residual that rises within a window stops at that window's boundary.
+    const turning = (pass: number) => (pass < 70 ? 10 * 0.9 ** pass : 1);
+    expect(firstRefused(limited(), turning)).toBe(FABRIK_MIN_ITERATIONS + FABRIK_PROGRESS_WINDOW);
+    // A still-moving limited rig whose residual holds to ten digits: at the plain 4x cap it took 256
+    // passes in each dimension to publish the pose it had at 64. Now it stops at 64, both agree.
+    const crawl: SolveMember[] = [
+      { id: "a", base: "root", length: 67.8, limit: range(-18.8, 81.6) },
+      {
+        id: "b",
+        base: "a",
+        length: 62.8,
+        limit: range(-9.2, 52.7),
+        goal: { x: 140.4, y: 21.2, rotation: 0 },
+      },
+    ];
+    const flat = solveFabrikAttempt(ROOT, crawl, false, "centroid");
+    const spatial = solveTree3dAttempt(ROOT3, planar3d(crawl), UNBOUND_POLE3D, false, "centroid");
+    for (const quality of [flat.quality, spatial.quality] as IterativeQuality[]) {
+      expect(quality.kind).toBe("iteration-cap");
+      expect(quality.iterations).toBe(FABRIK_MIN_ITERATIONS);
+      expect(quality.residual).toBeCloseTo(11.3915490443, 9);
+    }
+  });
+
+  it("CL-37 a 2D bound is read from the angle the outward pass enforced, so it agrees with 3D", () => {
+    // Pre-fix the 2D solve re-derived `b`'s local from published directions as -56.69999999999999,
+    // one ulp inside its -56.7 bound, and reported only `c` while the 3D solve reported both. The
+    // kind decides whether the selector pays for the opposite side, so the dimensions must agree.
+    const members: SolveMember[] = [
+      { id: "a", base: "root", length: 79.8 },
+      { id: "b", base: "a", length: 69.8, limit: range(-56.7, -18.8) },
+      {
+        id: "c",
+        base: "b",
+        length: 99.3,
+        limit: range(-41.8, -4.5),
+        goal: { x: -141.2, y: 17.9, rotation: 0 },
+      },
+    ];
+    const flat = solveChain(ROOT, members, false);
+    const spatial = solve3d(planar3d(members));
+    expect(flat.quality.kind).toBe("limited");
+    expect(spatial.quality.kind).toBe("limited");
+    if (flat.quality.kind !== "limited" || spatial.quality.kind !== "limited") return;
+    expect(flat.quality.atBound).toEqual(["b", "c"]);
+    expect(spatial.quality.atBound).toEqual(flat.quality.atBound);
+    expect(flat.rotations.b!).toBeCloseTo(-56.7, 9);
+    expect(flat.quality.residual).toBeCloseTo(spatial.quality.residual, 9);
   });
 });
