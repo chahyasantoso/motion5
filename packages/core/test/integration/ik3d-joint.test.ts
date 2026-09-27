@@ -30,6 +30,8 @@ type Values = Readonly<Record<string, unknown>>;
 
 const TOLERANCE = 1e-7;
 const MAX_SWING = 40;
+// A one-way elbow bending clockwise. A range whose bound is the straight pose [0, 90] would start
+// every solve on that bound and hold it there, as 2D FABRIK does (ADR-123, Consequences).
 const ELBOW = { min: -90, max: 0 } as const;
 const HINGE_AXIS: Vec3 = [0, 0, 1];
 const PROGRESS = [0, 0.25, 0.5, 0.75, 1] as const;
@@ -59,7 +61,7 @@ const PROJECT: ProjectDefinition = {
         {
           id: "goal",
           keyframes: {
-            transform3d: { values: { x: ramp(45, -40), y: ramp(20, -30), z: ramp(5, 20) } },
+            transform3d: { values: { x: ramp(58.8, -40), y: ramp(2.8, -30), z: ramp(1, 20) } },
           },
         },
         {
@@ -152,7 +154,15 @@ describe("3D joint limits through Engine", () => {
       kinds.push(inspection.kind);
       return published;
     });
-    expect(kinds).toHaveLength(PROGRESS.length);
+    // Measured, not assumed: the goal starts reachable inside both limits (the shoulder swings about
+    // 13.5 degrees, the elbow bends inside [-90, 0]) and ends behind the arm, where the cone and the
+    // hinge's straight bound both hold it.
+    expect(kinds[0]).toBe("converged");
+    expect(kinds[PROGRESS.length - 1]).toBe("limited");
+    expect(
+      (forward[PROGRESS.length - 1]!["rig/solve"]!.inspection as { atBound: readonly string[] })
+        .atBound,
+    ).toEqual(["rig/upper", "rig/lower"]);
     expect(forward[4]!["rig/lower"]).not.toEqual(forward[0]!["rig/lower"]);
     // No state survives a solve (ADR-111): reverse and random seeks republish the forward bytes.
     for (const index of [4, 3, 2, 1, 0, 2, 4, 1, 3, 0])

@@ -78,13 +78,20 @@ const DEFAULT_HINGE_AXIS: Vec3 = Object.freeze([0, 0, 1] as const);
  */
 const HINGE_DIRECTION_TOLERANCE = 1e-9;
 
+/**
+ * The unit hinge axis the live values declare. Every finite component is a direction load accepts,
+ * so the vector is first divided by its largest magnitude: `normalize3`'s length would overflow to
+ * infinity for components near `Number.MAX_VALUE` and read a legal axis as the +z fallback.
+ */
 function readHingeAxis(values: Readonly<Record<string, unknown>>): Vec3 {
   const axis: Vec3 = [
     readAxisComponent(values[AXIS_X_KEY]) ?? 0,
     readAxisComponent(values[AXIS_Y_KEY]) ?? 0,
     readAxisComponent(values[AXIS_Z_KEY]) ?? 0,
   ];
-  return normalize3(axis, DEFAULT_HINGE_AXIS);
+  const largest = Math.max(...axis.map(Math.abs));
+  if (largest === 0) return DEFAULT_HINGE_AXIS;
+  return normalize3([axis[0] / largest, axis[1] / largest, axis[2] / largest], DEFAULT_HINGE_AXIS);
 }
 
 /**

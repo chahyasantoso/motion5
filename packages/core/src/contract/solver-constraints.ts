@@ -279,6 +279,17 @@ function classifyAxis(
   return authored && !direction ? { kind: "zero-axis" } : undefined;
 }
 
+/** The `maxSwing` a cone or swing-twist cannot do without: present, static and in `[0, 180]`. */
+function classifySwing(
+  values: Readonly<Partial<Record<JointVocabularyKey, unknown>>>,
+  joint: JointKind,
+): JointAuthored | undefined {
+  if (!Object.hasOwn(values, MAX_SWING_KEY)) return { kind: "missing", joint, key: MAX_SWING_KEY };
+  return readStatic(values[MAX_SWING_KEY], readSwingDegree) === undefined
+    ? { kind: "malformed", key: MAX_SWING_KEY }
+    : undefined;
+}
+
 /**
  * Classifies the 3D joint a member authored, from the joint keys it authored under the spellings
  * that reach the solve.
@@ -308,15 +319,12 @@ export function classifyJoint(
         classifyPair(values, MIN_ROTATION_KEY, MAX_ROTATION_KEY) ?? { kind: "valid", joint }
       );
     case "cone":
-    case "swing-twist": {
-      if (!Object.hasOwn(values, MAX_SWING_KEY))
-        return { kind: "missing", joint, key: MAX_SWING_KEY };
-      if (readStatic(values[MAX_SWING_KEY], readSwingDegree) === undefined)
-        return { kind: "malformed", key: MAX_SWING_KEY };
-      return joint === "cone"
-        ? { kind: "valid", joint }
-        : (classifyPair(values, MIN_TWIST_KEY, MAX_TWIST_KEY) ?? { kind: "valid", joint });
-    }
+      return classifySwing(values, joint) ?? { kind: "valid", joint };
+    case "swing-twist":
+      return (
+        classifySwing(values, joint) ??
+        classifyPair(values, MIN_TWIST_KEY, MAX_TWIST_KEY) ?? { kind: "valid", joint }
+      );
     default:
       return unreachable(joint);
   }

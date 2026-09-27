@@ -172,6 +172,17 @@ describe("3D joint limits", () => {
       axis: [0, 0, 1],
       range: FREE_JOINT,
     });
+    // Every finite axis load accepts is a direction, including ones whose length overflows.
+    const huge = readJointLimit3d({
+      joint: "hinge",
+      axisX: 1.1e308,
+      axisY: 1.1e308,
+      axisZ: 1.1e308,
+    });
+    if (huge.kind !== "hinge") throw new Error("hinge expected");
+    for (const component of huge.axis) expect(component).toBeCloseTo(Math.sqrt(1 / 3), 12);
+    const tiny = readJointLimit3d({ joint: "hinge", axisY: -5e-324 });
+    expect(tiny).toMatchObject({ kind: "hinge", axis: [0, -1, 0] });
     expect(readJointLimit3d({ joint: "cone" })).toEqual({ kind: "cone", maxSwing: 180 });
     for (const maxSwing of [-1, 181, NaN, "30"])
       expect(readJointLimit3d({ joint: "cone", maxSwing })).toEqual({
@@ -260,11 +271,15 @@ describe("3D joint limits", () => {
     expect(axisX3(zero.local)).toEqual([1, 0, 0]);
   });
 
-  it("TH-84 seeded constrained chains keep every published local pose legal, finite, pure, and composable", () => {
+  it("TH-84 seeded constrained chains and trees keep every published local pose legal, finite, pure, and composable", () => {
     const random = seeded(500);
+    let branched = 0;
     for (let sample = 0; sample < 600; sample += 1) {
       const count = 1 + (sample % 6);
       const members: ChainMember3d[] = [];
+      const branching = sample % 3 === 2;
+      const parentOf = (index: number): string =>
+        index === 0 ? "root" : branching ? `m${Math.floor(random() * index)}` : `m${index - 1}`;
       for (let index = 0; index < count; index += 1) {
         const kind = (["free", "hinge", "cone", "swing-twist"] as const)[Math.floor(random() * 4)]!;
         const lo = random() * 300 - 150;
@@ -285,7 +300,9 @@ describe("3D joint limits", () => {
                     twist: { kind: "range", min: lo, max: lo + random() * (180 - lo) },
                   };
         members.push(
-          member(`m${index}`, index === 0 ? "root" : `m${index - 1}`, 5 + random() * 35, {
+          // Every third rig branches: a member hangs from any earlier one, so the compromise
+          // between leaves meets the limits too, not only a serial pull.
+          member(`m${index}`, parentOf(index), 5 + random() * 35, {
             offset:
               random() < 0.3 ? { x: random() * 4, y: random() * 4, z: random() * 4 } : ZERO_OFFSET,
             rest:
@@ -301,8 +318,19 @@ describe("3D joint limits", () => {
         );
       }
       const root = goal(random() * 100 - 50, random() * 100 - 50, random() * 100 - 50);
-      const target = goal(random() * 120 - 60, random() * 120 - 60, random() * 120 - 60);
-      members[count - 1] = { ...members[count - 1]!, goal: target };
+      const bases = new Set(members.map(({ base }) => base));
+      const leaves = members.filter(({ id }) => !bases.has(id)).map(({ id }) => id);
+      const targets = new Map(
+        leaves.map((id) => [
+          id,
+          goal(random() * 120 - 60, random() * 120 - 60, random() * 120 - 60),
+        ]),
+      );
+      for (const [index, item] of members.entries()) {
+        const target = targets.get(item.id);
+        if (target !== undefined) members[index] = { ...item, goal: target };
+      }
+      if (branching && leaves.length > 1) branched += 1;
       const result = solveChain3d(root, members);
       expect(solveChain3d(root, members)).toEqual(result);
       for (const item of members) {
@@ -332,11 +360,12 @@ describe("3D joint limits", () => {
         }
       }
       const frames = composeChain3d(root, members, result);
-      const leaf = frames[members[count - 1]!.id]!;
-      expect(Math.abs(frameDistance3d(leaf, target) - result.quality.residual)).toBeLessThanOrEqual(
-        1e-9,
-      );
+      for (const [id, target] of targets)
+        expect(
+          Math.abs(frameDistance3d(frames[id]!, target) - result.residuals[id]!),
+        ).toBeLessThanOrEqual(1e-9);
     }
+    expect(branched).toBeGreaterThan(50);
   });
 
   it("TH-85 planar +z hinges agree with 2D constrained angles", () => {

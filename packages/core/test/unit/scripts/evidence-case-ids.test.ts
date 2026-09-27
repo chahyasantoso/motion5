@@ -363,6 +363,9 @@ import { fileURLToPath } from "node:url";
 // `TH-58` through `TH-78` are the 3D FABRIK tree solve of ADR-122, the same issue's phase 5:
 // `TH-71` to `TH-74` are its envelope, `TH-76` to `TH-78` its load rules, and the rest its closure,
 // planar reduction, roll and dispatch.
+// `TH-79` through `TH-95` are the 3D joint limits of ADR-123, the same issue's phase 6: `TH-79` to
+// `TH-87` the runtime owner and its corpus, `TH-88` the joint plugin set, `TH-89` to `TH-94` the
+// load rules, and `TH-95` the `Engine` scrub. `TH-76` carries the constrained chains as well.
 //
 // The scan root is the repository rather than `packages/core/test`, because an id names one test in
 // the suite and the suite is not one package. `H-4` is declared in

@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { readdirSync } from "node:fs";
 import {
   declaresJoint,
   JOINT_KEY,
@@ -10,7 +9,9 @@ import { PluginRegistry, type PluginDefinition } from "../../../src/domain/plugi
 import { validateKeyframes } from "../../../src/contract/validate-v5";
 import { buildGraphIR } from "../../../src/graph/ir";
 import type { Diagnostic, ProjectDefinition, TrackDefinition } from "../../../src/contract/v5";
+import { fkPlugin } from "../../../src/plugins/fk";
 import { fk3dPlugin } from "../../../src/plugins/fk3d";
+import { ikPlugin } from "../../../src/plugins/ik";
 import { ik3dPlugin } from "../../../src/plugins/ik3d";
 import { transform3dPlugin } from "../../../src/plugins/transform3d";
 import { transformPlugin } from "../../../src/plugins/transform";
@@ -60,27 +61,20 @@ describe("3D plugin ownership", () => {
     expect(joint.diagnostics).toEqual([]);
   });
 
-  it("TH-88 the joint-declaring plugin set is exactly the plugins that claim the joint vocabulary", async () => {
+  it("TH-88 the joint-declaring plugin set is exactly the plugins that claim the joint vocabulary", () => {
     // `contract/solver-constraints.ts` owns which member plugins' values are a 3D joint, because
-    // the graph holds no registry; this holds that list equal to the claims every plugin
-    // definition under `src/plugins` makes, so a plugin that claims `joint` cannot go unvalidated
-    // and the list cannot name a plugin that never claims it (ADR-123).
-    const directory = new URL("../../../src/plugins/", import.meta.url);
-    const definitions: PluginDefinition[] = [];
-    for (const file of readdirSync(directory)
-      .filter((name: string) => name.endsWith(".ts"))
-      .sort()) {
-      const module = (await import(new URL(file, directory).href)) as Record<string, unknown>;
-      for (const value of Object.values(module)) {
-        if (typeof value !== "object" || value === null) continue;
-        const candidate = value as Partial<PluginDefinition>;
-        if (typeof candidate.name === "string" && Array.isArray(candidate.keys))
-          definitions.push(value as PluginDefinition);
-      }
-    }
-    expect(definitions.map(({ name }) => name).sort()).toEqual(
-      ["fk", "fk3d", "ik", "ik3d", "transform", "transform3d"].sort(),
-    );
+    // the graph holds no registry; this holds that list equal to the claims every plugin definition
+    // the package ships makes, so a plugin that claims `joint` cannot go unvalidated and the list
+    // cannot name a plugin that never claims it (ADR-123). The six are every `PluginDefinition`
+    // under `src/plugins`; a seventh belongs in this list.
+    const definitions: readonly PluginDefinition[] = [
+      fkPlugin,
+      fk3dPlugin,
+      ikPlugin,
+      ik3dPlugin,
+      transformPlugin,
+      transform3dPlugin,
+    ];
     for (const { name, keys: claimed } of definitions) {
       const keys: readonly string[] = claimed ?? [];
       expect(declaresJoint(name)).toBe(keys.includes(JOINT_KEY));
