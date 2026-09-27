@@ -22,7 +22,9 @@ import {
   cleanFixture,
   consumerInternalViolationFixture,
   coreEntrypointFixture,
+  dynamicRendererViolationFixture,
   engineViolationFixture,
+  importMentionFixture,
   plugin3dEntrypointFixture,
   pluginEntrypointFixture,
   pluginRendererViolationFixture,
@@ -461,6 +463,27 @@ describe("boundary scan: the public 3D surface", () => {
       (tree) => scan(tree),
     );
     expect(violations).toEqual(["packages/core/src/renderer3d: undeclared core layer"]);
+  });
+
+  it("TH-135 refuses dynamic renderer and engine imports but ignores prose mentions", async () => {
+    expect(importsBoundary(dynamicRendererViolationFixture)).toBe(true);
+    expect(importsRenderer(dynamicRendererViolationFixture)).toBe(true);
+    expect(importsBoundary(importMentionFixture)).toBe(false);
+    expect(importsRenderer(importMentionFixture)).toBe(false);
+
+    const violations = await withTree(
+      {
+        "packages/core/src/plugins/dynamic.ts": `${dynamicRendererViolationFixture}\n${importMentionFixture}`,
+      },
+      (tree) => scan(tree),
+    );
+    expect(violations).toEqual(["packages/core/src/plugins/dynamic.ts: renderer or engine import"]);
+
+    const proseOnly = await withTree(
+      { "packages/core/src/plugins/prose.ts": importMentionFixture },
+      (tree) => scan(tree),
+    );
+    expect(proseOnly).toEqual([]);
   });
 
   it("TH-114 refuses a consumer import of a core subpath the manifest does not declare", async () => {

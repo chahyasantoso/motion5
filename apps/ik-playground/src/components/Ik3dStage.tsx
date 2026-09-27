@@ -1,7 +1,21 @@
 import React from "react";
 import type { ProjectHandle } from "@motion5/core";
-import { useDomPatch } from "@motion5/react";
-import { IK3D, IK3D_NODE_ID } from "../ik3d-playground-project";
+import { patchRender, useDomPatch, usePatch } from "@motion5/react";
+import { IK3D, IK3D_NODE_ID, IK3D_PERSPECTIVE, IK3D_WORLD } from "../ik3d-playground-project";
+
+/** One colour per frame kind; a `Record` over the closed union, so a new kind cannot go unpainted. */
+type FrameKind = "goal" | "pole" | "root";
+const FRAME_COLOR: Readonly<Record<FrameKind, string>> = {
+  goal: "#fbbf24",
+  pole: "#34d399",
+  root: "#c084fc",
+};
+/** One colour per member, keyed by the authored member ids so none can go unpainted. */
+const BONE_COLOR: Readonly<Record<(typeof IK3D.memberTracks)[number], string>> = {
+  upper: "#c084fc",
+  fore: "#818cf8",
+  hand: "#38bdf8",
+};
 
 interface BoneProps {
   readonly handle: ProjectHandle;
@@ -60,13 +74,13 @@ const Bone: React.FC<BoneProps> = ({ handle, id, length, color }) => {
 const FrameMarker: React.FC<{
   readonly handle: ProjectHandle;
   readonly id: string;
-  readonly className: string;
-}> = ({ handle, id, className }) => {
+  readonly kind: FrameKind;
+}> = ({ handle, id, kind }) => {
   const bind = useDomPatch<HTMLDivElement>(handle, IK3D_NODE_ID(id));
   return (
     <div
       ref={bind}
-      className={`ik3d-marker ${className}`}
+      className={`ik3d-marker ik3d-${kind}`}
       style={{
         position: "absolute",
         left: -9,
@@ -77,71 +91,84 @@ const FrameMarker: React.FC<{
         border: "2px solid currentColor",
         background: "rgba(8, 12, 20, 0.7)",
         transformStyle: "preserve-3d",
-        color:
-          className === "ik3d-goal" ? "#fbbf24" : className === "ik3d-pole" ? "#34d399" : "#c084fc",
+        color: FRAME_COLOR[kind],
       }}
     />
   );
 };
 
+/**
+ * The solver's published `inspection`, the consumer of the rig's authored `inspect: true`.
+ *
+ * Read as untyped plugin output, which is what the public surface promises a consumer: the record's
+ * shape is documented in the 3D guide rather than exported as a type.
+ */
+function inspectionLine(values: Readonly<Record<string, unknown>>): string {
+  const inspection = values.inspection;
+  if (typeof inspection !== "object" || inspection === null) return "no inspection published";
+  const { kind, residual, iterations } = inspection as Readonly<Record<string, unknown>>;
+  if (typeof kind !== "string" || typeof residual !== "number") return "malformed inspection";
+  const passes = typeof iterations === "number" && iterations > 0 ? ` · ${iterations} passes` : "";
+  return `${kind} · residual ${residual.toFixed(3)}${passes}`;
+}
+
+const SolveReadout: React.FC<{ readonly handle: ProjectHandle }> = ({ handle }) => {
+  const decision = patchRender(usePatch(handle, IK3D_NODE_ID(IK3D.solverTrack)));
+  let line: string;
+  switch (decision.kind) {
+    case "render":
+      line = inspectionLine(decision.patch.values);
+      break;
+    case "retain":
+      line = "holding the last pose";
+      break;
+    case "gone":
+      line = "solver removed";
+      break;
+    default: {
+      // A consumer has no `unreachable`; the `never` binding is the same compile-time exhaustiveness.
+      const unhandled: never = decision;
+      throw new Error(`Unhandled render decision: ${JSON.stringify(unhandled)}`);
+    }
+  }
+  return (
+    <output className="mono-line dim" aria-label="3D solve inspection" data-testid="ik3d-quality">
+      {line}
+    </output>
+  );
+};
+
 export const Ik3dStage: React.FC<{ readonly handle: ProjectHandle }> = ({ handle }) => (
-  <section
-    className="ik3d-stage"
-    aria-label="3D inverse kinematics playground"
-    style={{
-      position: "absolute",
-      right: 18,
-      bottom: 18,
-      width: 360,
-      height: 300,
-      padding: 14,
-      border: "1px solid #1e2d45",
-      borderRadius: 10,
-      background: "rgba(8, 12, 20, 0.72)",
-      color: "#f1f5f9",
-      pointerEvents: "none",
-      zIndex: 4,
-    }}
-  >
-    <div
-      className="ik3d-stage-label"
-      style={{
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "baseline",
-        gap: 10,
-        fontFamily: "ui-monospace, monospace",
-        fontSize: 11,
-      }}
-    >
-      <strong style={{ color: "#c084fc" }}>{IK3D.label}</strong>
-      <span style={{ color: "#64748b", fontSize: 9 }}>orbiting goal · pole-guided FABRIK</span>
+  <section className="solver-card ik3d-stage" aria-label="3D inverse kinematics playground">
+    <div className="card-title" style={{ color: FRAME_COLOR.root }}>
+      {IK3D.label}
     </div>
+    <div className="mono-line dim">transform3d · fk3d · ik3d via public subpaths</div>
+    <SolveReadout handle={handle} />
     <div
       className="ik3d-world"
       style={{
-        position: "absolute",
-        left: 0,
-        top: 38,
-        right: 0,
-        bottom: 0,
-        perspective: "720px",
+        position: "relative",
+        height: IK3D_WORLD.height,
+        marginTop: "0.5rem",
+        perspective: `${IK3D_PERSPECTIVE}px`,
         transformStyle: "preserve-3d",
         overflow: "hidden",
+        pointerEvents: "none",
       }}
     >
-      <FrameMarker handle={handle} id={IK3D.goalTrack} className="ik3d-goal" />
-      <FrameMarker handle={handle} id={IK3D.poleTrack} className="ik3d-pole" />
+      <FrameMarker handle={handle} id={IK3D.goalTrack} kind="goal" />
+      <FrameMarker handle={handle} id={IK3D.poleTrack} kind="pole" />
       {IK3D.memberTracks.map((id, index) => (
         <Bone
           key={id}
           handle={handle}
           id={id}
           length={IK3D.lengths[index]!}
-          color={["#c084fc", "#818cf8", "#38bdf8"][index]!}
+          color={BONE_COLOR[id]}
         />
       ))}
-      <FrameMarker handle={handle} id={IK3D.rootTrack} className="ik3d-root" />
+      <FrameMarker handle={handle} id={IK3D.rootTrack} kind="root" />
     </div>
   </section>
 );

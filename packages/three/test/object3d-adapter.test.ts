@@ -227,4 +227,35 @@ describe("Three.js Object3D renderer adapter", () => {
     expect(object.position.toArray()).toEqual([0, 0, 0]);
     expect(object.rotation.toArray()).toEqual([0, 0, 0, "ZXY"]);
   });
+
+  it("TH-133 accepts only newer revisions per object and node, then re-arms a rebound object", () => {
+    const first = new Object3D();
+    const second = new Object3D();
+    const other = new Object3D();
+    const objects = new Map([
+      ["rig/arm", first],
+      ["rig/leg", other],
+    ]);
+    const adapter = createObject3dPatchAdapter((nodeId) => objects.get(nodeId));
+
+    adapter.apply(readyPatch("rig/arm", { x: 2 }, 2));
+    expect(first.position.x).toBe(2);
+    adapter.apply(readyPatch("rig/arm", { x: 1 }, 1));
+    expect(first.position.x).toBe(2);
+    adapter.apply(readyPatch("rig/arm", { x: 22 }, 2));
+    expect(first.position.x).toBe(2);
+    adapter.apply(readyPatch("rig/arm", { x: 3 }, 3));
+    expect(first.position.x).toBe(3);
+
+    adapter.apply(readyPatch("rig/leg", { x: 1 }, 1));
+    expect(other.position.x).toBe(1);
+
+    objects.set("rig/arm", second);
+    adapter.apply(readyPatch("rig/arm", { x: 30 }, 3));
+    expect(second.position.x).toBe(30);
+    adapter.clear(first);
+    objects.set("rig/arm", first);
+    adapter.apply(readyPatch("rig/arm", { x: 31 }, 3));
+    expect(first.position.x).toBe(31);
+  });
 });

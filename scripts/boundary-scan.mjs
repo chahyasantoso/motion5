@@ -122,24 +122,31 @@ export async function walk(directory) {
 function relative(path, scanRoot) {
   return path.slice(scanRoot.length + 1).replaceAll("\\", "/");
 }
-export function importsBoundary(source) {
-  return /(?:from|import)\s*["'](?:gsap|react|react-dom|@?motionpath|@?motion5|three|jsdom|happy-dom)(?:["'/]|$)/.test(
-    source,
+function asSpecifierList(source, specifiers) {
+  return specifiers ?? [...importSpecifiers(source)];
+}
+export function importsBoundary(source, specifiers) {
+  return asSpecifierList(source, specifiers).some((specifier) =>
+    /^(?:gsap|react|react-dom|@?motionpath|@?motion5|three|jsdom|happy-dom)(?:\/|$)/.test(
+      specifier,
+    ),
   );
 }
-export function importsRenderer(source) {
-  return /(?:from|import)\s*["'](?:gsap|react|react-dom|node:dom|domino|(?:\.\/|\.\.\/)[^"']*(?:^|\/)\b(?:dom|renderer|react|gsap)\b)["'/]/i.test(
-    source,
+export function importsRenderer(source, specifiers) {
+  return asSpecifierList(source, specifiers).some((specifier) =>
+    /^(?:gsap|react|react-dom|node:dom|domino)(?:\/|$)|^(?:\.\/|\.\.\/)(?:[^\/]+\/)*(?:dom|renderer|react|gsap)(?:\/|$)/i.test(
+      specifier,
+    ),
   );
 }
-export function importsCoreInternals(source) {
-  return /(?:from|import)\s*["'][^"']*(?:packages\/core\/src|\.\.\/\.\.\/core\/src)(?:["'/]|$)/.test(
-    source,
+export function importsCoreInternals(source, specifiers) {
+  return asSpecifierList(source, specifiers).some((specifier) =>
+    /(?:packages\/core\/src|\.\.\/\.\.\/core\/src)(?:\/|$)/.test(specifier),
   );
 }
-export function importsTestingEntrypoint(source) {
-  return /(?:from|import)\s*["'](?:@motion5\/core\/testing|[^"']*core\/src\/testing)(?:["'/]|$)/.test(
-    source,
+export function importsTestingEntrypoint(source, specifiers) {
+  return asSpecifierList(source, specifiers).some((specifier) =>
+    /(?:^@motion5\/core\/testing|.*core\/src\/testing)(?:\/|$)/.test(specifier),
   );
 }
 const moduleSpecifier = /(?:\bfrom\s*|\bimport\s*(?:\(\s*)?|\brequire\s*\(\s*)["']([^"']+)["']/g;
@@ -273,7 +280,7 @@ function withoutComments(source) {
 /**
  * Every module specifier this scanner can see, in canonical form.
  *
- * One owner of the extraction, because the two predicates below ask different questions of the same
+ * One owner of the extraction, because the predicates below ask different questions of the same
  * list, and a second copy of the walk is how they end up disagreeing about what a specifier is.
  * Specifiers are read from code, through `withoutComments`, in static imports and re-exports,
  * dynamic imports and `require` calls.
@@ -284,8 +291,9 @@ function withoutComments(source) {
  * cancels. Measured on the first cut: `.././domain/x` and `..//domain/x` both resolve to
  * `../domain/x` and both read clean, and so would `../lang/../domain/x`. After normalisation all
  * three are `../domain/x`, while `../domain/../lang/x` becomes `../lang/x` and stays clean because
- * it never reaches the layer. A leading `./` is folded too, which is why the anchors no longer
- * spell it. A package specifier has no dot segment and comes through unchanged.
+ * it never reaches the layer. An explicit leading `./` is retained so the renderer rule can tell
+ * relative paths from package names. A package specifier has no dot segment and comes through
+ * unchanged.
  *
  * Three spellings stay invisible. A configured alias and a computed specifier are past the reach of
  * any pattern over source text: an alias is resolved by configuration this scanner does not read,
@@ -297,9 +305,9 @@ function withoutComments(source) {
  * That widens the set these gates refuse, so it is its own slice with its own cases. None of the
  * three appears under `packages/core/src` today, measured over this scanner's own walk.
  *
- * One spelling is still read too eagerly, and it is named rather than chased: a specifier-shaped
- * phrase inside a string literal. Prose lives in comments here and no such string exists in the
- * tree, and narrowing it wants the keyword's own statement rather than a tighter delimiter class.
+ * Ordinary string literals are masked before matching, so a specifier-shaped phrase inside one is
+ * not an import. A template-literal interpolation is still beyond this lexer: it is treated as one
+ * literal, and narrowing it wants the template grammar rather than a wider delimiter class.
  *
  * One file kind is read without its grammar, and that is named too: `withoutComments` knows string,
  * template and comment delimiters and nothing of JSX, while `scannedExtensions` includes `.tsx`. A
@@ -308,9 +316,44 @@ function withoutComments(source) {
  * exists under `packages/` today, so the gap is latent rather than live, and the repair is a JSX
  * lexer or a refusal of `.tsx` under the layers these gates read, not a wider pattern.
  */
+/** Whether the quote at `start` is the literal part of an import expression. */
+function startsModuleSpecifier(source, start) {
+  return /(?:\bfrom|\bimport|\brequire)\s*(?:\(\s*)?$/.test(source.slice(0, start));
+}
+/**
+ * Masks ordinary strings before the shared matcher runs. A module path is retained only when its
+ * opening quote follows `from`, `import` or `require`; this keeps a string or template that merely
+ * mentions an import from becoming one. The comments and regular-expression literals have already
+ * been removed by `withoutComments`.
+ */
+function retainModuleStrings(source) {
+  let code = "";
+  let index = 0;
+  while (index < source.length) {
+    const char = source[index];
+    if (char !== '"' && char !== "'" && char !== "`") {
+      code += char;
+      index += 1;
+      continue;
+    }
+    const end = closingDelimiter(source, index, char);
+    code += startsModuleSpecifier(source, index) ? source.slice(index, end + 1) : '""';
+    index = end + 1;
+  }
+  return code;
+}
+function canonicalSpecifier(raw) {
+  const forward = raw.replaceAll("\\", "/");
+  const normalized = posix.normalize(forward);
+  // Keep an explicit `./` marker: importsRenderer's relative-path rule must not become a package
+  // rule when canonicalisation folds `./dom` to `dom`. Other dot segments still canonicalise.
+  return forward.startsWith("./") && normalized !== "." && !normalized.startsWith("./")
+    ? `./${normalized}`
+    : normalized;
+}
 function* importSpecifiers(source) {
-  for (const match of withoutComments(source).matchAll(moduleSpecifier))
-    yield posix.normalize(match[1].replaceAll("\\", "/"));
+  const code = retainModuleStrings(withoutComments(source));
+  for (const match of code.matchAll(moduleSpecifier)) yield canonicalSpecifier(match[1]);
 }
 /**
  * Any relative import of the domain layer, which is what ARCHITECTURE section 2 actually forbids.
@@ -327,9 +370,9 @@ function* importSpecifiers(source) {
  * that reports a clean boundary it does not have. It stays anchored at the front, so
  * `../domain-helpers` and `../domainfoo` are still clean.
  */
-export function importsDomainLayer(source) {
-  for (const specifier of importSpecifiers(source))
-    if (/^(?:\.\.\/)+domain(?:\/|$)/.test(specifier)) return true;
+export function importsDomainLayer(source, specifiers) {
+  for (const specifier of asSpecifierList(source, specifiers))
+    if (/^(?:\.\/)?(?:\.\.\/)+domain(?:\/|$)/.test(specifier)) return true;
   return false;
 }
 export function bannedSymbol(source) {
@@ -347,9 +390,9 @@ export function bannedSymbol(source) {
  * failing for every consumer of the built package. This reads the code the way the other specifier
  * predicates do, through `importSpecifiers`, so a path named in prose is not an import of it.
  */
-export function undeclaredCoreSubpaths(source, declared) {
+export function undeclaredCoreSubpaths(source, declared, specifiers) {
   const undeclared = [];
-  for (const specifier of importSpecifiers(source)) {
+  for (const specifier of asSpecifierList(source, specifiers)) {
     const match = /^@motion5\/core(\/.*)?$/.exec(specifier);
     if (match !== null && !declared.has(`.${match[1] ?? ""}`)) undeclared.push(specifier);
   }
@@ -369,10 +412,14 @@ export function extractExportNames(source) {
   return names;
 }
 function checkCoreSource(source, file, layer, violations) {
-  if (layer !== "adapters" && (importsBoundary(source) || importsRenderer(source)))
+  const specifiers = [...importSpecifiers(source)];
+  if (
+    layer !== "adapters" &&
+    (importsBoundary(source, specifiers) || importsRenderer(source, specifiers))
+  )
     violations.push(`${file}: renderer or engine import`);
   if (bannedSymbol(source)) violations.push(`${file}: banned compatibility symbol`);
-  if (["contract", "ports", "adapters"].includes(layer) && importsDomainLayer(source))
+  if (["contract", "ports", "adapters"].includes(layer) && importsDomainLayer(source, specifiers))
     violations.push(`${file}: inward domain import`);
 }
 async function scanFiles(directory, scanRoot, layer, violations) {
@@ -483,9 +530,12 @@ export async function scan(scanRoot = root) {
     for (const path of await walk(join(scanRoot, workspace, "src"))) {
       const source = await readFile(path, "utf8");
       const file = relative(path, scanRoot);
-      if (importsCoreInternals(source)) violations.push(`${file}: core source-internal import`);
-      if (importsTestingEntrypoint(source)) violations.push(`${file}: testing entrypoint import`);
-      for (const specifier of undeclaredCoreSubpaths(source, declared))
+      const specifiers = [...importSpecifiers(source)];
+      if (importsCoreInternals(source, specifiers))
+        violations.push(`${file}: core source-internal import`);
+      if (importsTestingEntrypoint(source, specifiers))
+        violations.push(`${file}: testing entrypoint import`);
+      for (const specifier of undeclaredCoreSubpaths(source, declared, specifiers))
         violations.push(`${file}: undeclared core subpath ${specifier}`);
     }
   }

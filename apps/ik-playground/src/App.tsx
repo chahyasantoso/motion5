@@ -1,62 +1,37 @@
 import React, { useLayoutEffect, useRef, useState } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import {
-  Engine,
-  PluginRegistry,
-  createMicrotaskScheduler,
-  type ProjectHandle,
-} from "@motion5/core";
+import { createMicrotaskScheduler, type ProjectHandle } from "@motion5/core";
 import { createBrowserClock } from "@motion5/core/adapters/browser-clock";
-import {
-  createGsapInterpolator,
-  createGsapScrollSource,
-  createTriggerFactory,
-} from "@motion5/core/adapters";
-import { fkPlugin } from "@motion5/core/plugins/fk";
-import { ikPlugin } from "@motion5/core/plugins/ik";
-import { transformPlugin } from "@motion5/core/plugins/transform";
-import { transform3dPlugin } from "@motion5/core/plugins/transform3d";
-import { fk3dPlugin } from "@motion5/core/plugins/fk3d";
-import { ik3dPlugin } from "@motion5/core/plugins/ik3d";
+import { createGsapInterpolator, createGsapScrollSource } from "@motion5/core/adapters";
 import { Ik3dStage } from "./components/Ik3dStage";
 import { IkStage } from "./components/IkStage";
 import { SolverPanel } from "./components/SolverPanel";
-import { ARM, TENTACLE, SCROLL_SOURCE, ikPlaygroundProject, nodeId } from "./ik-playground-project";
-import { bindScrollReach, createScrollReach, initialGoals } from "./scroll-reach";
-import { IK3D, IK3D_NODE_ID, ik3dPlaygroundProject } from "./ik3d-playground-project";
+import { ARM, TENTACLE, nodeId } from "./ik-playground-project";
+import { loadPlayground, type PlaygroundRuntime } from "./playground-runtime";
+import { initialGoals } from "./scroll-reach";
 
 export const App: React.FC = () => {
   const [handle, setHandle] = useState<ProjectHandle | undefined>(undefined);
   const [armFlip, setArmFlip] = useState(false);
   const [tentacleFlip, setTentacleFlip] = useState(false);
-  const controllerRef = useRef<ReturnType<typeof createScrollReach> | undefined>(undefined);
+  const controllerRef = useRef<PlaygroundRuntime["controller"] | undefined>(undefined);
   const [pendingGoals, setPendingGoals] = useState(initialGoals);
   const [weight, setWeight] = useState(0);
 
   useLayoutEffect(() => {
-    const plugins = new PluginRegistry();
-    plugins.register(transformPlugin);
-    plugins.register(fkPlugin);
-    plugins.register(ikPlugin);
-    plugins.register(transform3dPlugin);
-    plugins.register(fk3dPlugin);
-    plugins.register(ik3dPlugin);
-
     const clock = createBrowserClock({
       requestFrame: (cb: FrameRequestCallback) => requestAnimationFrame(cb),
       cancelFrame: (h: number) => cancelAnimationFrame(h),
     });
 
-    let ownedProject: ProjectHandle | undefined;
+    let owned: PlaygroundRuntime | undefined;
     let unsubscribeWeight = () => {};
-    let unsubscribe3d = () => {};
     const release = () => {
       const failures: unknown[] = [];
       for (const dispose of [
         () => unsubscribeWeight(),
-        () => unsubscribe3d(),
-        () => ownedProject?.dispose(),
+        () => owned?.project.dispose(),
         () => clock.dispose(),
       ]) {
         try {
@@ -70,35 +45,18 @@ export const App: React.FC = () => {
     };
     try {
       gsap.registerPlugin(ScrollTrigger);
-      const scroll = createGsapScrollSource(ScrollTrigger, {
-        trigger: "#scroll-demo",
-        start: "top top",
-        end: "bottom bottom",
-      });
       // The adapter defers initial delivery until load, mount and this wiring have completed.
-      let controller: ReturnType<typeof createScrollReach>;
-      const project = new Engine({
+      owned = loadPlayground({
         clock,
         interpolator: createGsapInterpolator(gsap),
         scheduler: createMicrotaskScheduler(),
-        plugins,
-        triggerFactory: createTriggerFactory({
-          scroll: ({ trigger }) =>
-            trigger.source === SCROLL_SOURCE
-              ? bindScrollReach(scroll, () => controller.commit())
-              : undefined,
+        scroll: createGsapScrollSource(ScrollTrigger, {
+          trigger: "#scroll-demo",
+          start: "top top",
+          end: "bottom bottom",
         }),
-      }).load(ikPlaygroundProject);
-      project.addMotion(ik3dPlaygroundProject.motions[0]!);
-      ownedProject = project;
-      unsubscribe3d = scroll.subscribe((progress) => {
-        project.seek(IK3D_NODE_ID(IK3D.goalTrack), progress);
       });
-      controller = createScrollReach(project);
-      // Mounted from the runtime's own answer rather than from a list written beside the document.
-      for (const motionId of project.motionIds())
-        for (const trackNode of project.motion(motionId).trackIds) project.mount(trackNode);
-      for (const freeNode of project.freeTrackIds()) project.mount(freeNode);
+      const { project, controller } = owned;
       controllerRef.current = controller;
       setPendingGoals(controller.goals);
       setArmFlip(false);
@@ -164,23 +122,26 @@ export const App: React.FC = () => {
             </p>
           </header>
           {handle ? (
-            <>
-              <IkStage handle={handle} pendingGoals={pendingGoals} onGoalMove={moveGoal} />
-              <Ik3dStage handle={handle} />
-            </>
+            <IkStage handle={handle} pendingGoals={pendingGoals} onGoalMove={moveGoal} />
           ) : (
             <p>Loading rig...</p>
           )}
         </div>
         <aside className="sidebar">
           {handle ? (
-            <SolverPanel
-              handle={handle}
-              armFlip={armFlip}
-              tentacleFlip={tentacleFlip}
-              onArmFlip={flipArm}
-              onTentacleFlip={flipTentacle}
-            />
+            <>
+              <div>
+                <h2>3D arm</h2>
+                <Ik3dStage handle={handle} />
+              </div>
+              <SolverPanel
+                handle={handle}
+                armFlip={armFlip}
+                tentacleFlip={tentacleFlip}
+                onArmFlip={flipArm}
+                onTentacleFlip={flipTentacle}
+              />
+            </>
           ) : null}
         </aside>
       </div>

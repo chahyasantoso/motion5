@@ -11,8 +11,17 @@ import {
   IK3D,
   IK3D_NODE_ID,
   IK3D_NODE_IDS,
-  ik3dPlaygroundProject,
+  IK3D_PERSPECTIVE,
+  ik3dPlaygroundMotion,
 } from "../../../../apps/ik-playground/src/ik3d-playground-project";
+
+// The 3D Motion alone, on a manual trigger so each case seeks progress directly.
+const ik3dPlaygroundProject = {
+  schemaVersion: 5,
+  projectId: "ik-playground-3d-under-test",
+  perspective: IK3D_PERSPECTIVE,
+  motions: [{ ...ik3dPlaygroundMotion, trigger: { type: "manual" } }],
+} as const;
 
 type Values = Readonly<Record<string, unknown>>;
 type Vec3 = readonly [number, number, number];
