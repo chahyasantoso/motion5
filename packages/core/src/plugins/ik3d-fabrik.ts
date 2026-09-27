@@ -1,6 +1,6 @@
 import { unreachable } from "../lang/exhaustive";
 import { arcHalfAngle, FABRIK_TOLERANCE, iterativeQuality } from "./fabrik";
-import { fabrikIterationCap } from "./fabrik-cap";
+import { fabrikIterationCap, type FabrikConstraint } from "./fabrik-cap";
 import { selectFabrik } from "./fabrik-select";
 import { readNumber, segmentExtent } from "./frame";
 import {
@@ -38,7 +38,7 @@ import {
 } from "./ik3d-analytic";
 import type { ChainMember3d } from "./ik3d-chain";
 import { compromise3d, type Pull3d } from "./ik3d-compromise";
-import { FREE_JOINT3D, limitLocal3d } from "./ik3d-constraint";
+import { boundBaseFrame3d, constrains, FREE_JOINT3D, limitLocal3d } from "./ik3d-constraint";
 import { restoreResult3d, type SolveResult3d } from "./ik3d-result";
 
 /**
@@ -165,6 +165,12 @@ export function solveTree3dAttempt(
   );
   const rests = chain.map(({ rest }) => matrixFromEuler3d(rest));
   const limits = chain.map(({ limit }) => limit ?? FREE_JOINT3D);
+  // Each member's limited children in canonical order, whose limits the inward pass bounds its
+  // frame by (ADR-126). A member with none takes the plain inward step and its bytes.
+  const limitedChildren: number[][] = Array.from({ length: count }, () => []);
+  for (let index = 0; index < count; index += 1)
+    if (parent[index] !== ROOT && constrains(limits[index]!))
+      limitedChildren[parent[index]!]!.push(index);
   const inner = ids.find((id) => (childCount.get(id) ?? 0) > 0 && byId.get(id)!.goal !== undefined);
   if (inner !== undefined)
     throw new Error(`Solver goal on member "${inner}" is not on a leaf of the chain.`);
@@ -294,6 +300,41 @@ export function solveTree3dAttempt(
     }
     return moved;
   };
+  // The frame each limited member settled on earlier in the current inward pass: its last outward
+  // frame swung onto its inward direction. Only limited members with a member base write one.
+  const inwardFrames: (Matrix3 | undefined)[] = new Array<Matrix3 | undefined>(count);
+  /**
+   * Where the inward pass puts a member's pivot: `length` back from its settled tip toward its old
+   * pivot, then, only for a member with limited children, with its frame turned by
+   * `boundBaseFrame3d` for each of them in canonical order and the pivot re-placed behind the tip
+   * along the bounded +x (ADR-126). Children sit later in canonical order and the walk is deepest
+   * first, so every child's inward frame is already written. A member with no limited child, or
+   * whose children are legal, returns the plain placement.
+   */
+  const inwardPivot = (index: number, tip: Vec3): Vec3 => {
+    const length = lengths[index]!;
+    const placed = place3d(tip, pivots[index]!, length);
+    const children = limitedChildren[index]!;
+    if (children.length === 0 || length <= 0) return placed;
+    let frame = swingFrame3d(frames[index]!, subtract3(tip, placed));
+    let moved = false;
+    for (const child of children) {
+      const childFrame = inwardFrames[child];
+      if (childFrame === undefined) continue;
+      const bound = boundBaseFrame3d(limits[child]!, childFrame, frame);
+      switch (bound.kind) {
+        case "unmoved":
+          break;
+        case "moved":
+          frame = bound.frame;
+          moved = true;
+          break;
+        default:
+          unreachable(bound);
+      }
+    }
+    return moved ? subtract3(tip, scale3(axisX3(frame), length)) : placed;
+  };
   const residualNow = (): number => {
     let worst = 0;
     for (const leaf of addressed)
@@ -302,7 +343,8 @@ export function solveTree3dAttempt(
   };
 
   outward();
-  const cap = fabrikIterationCap(serialDepth());
+  const constraint: FabrikConstraint = limits.some(constrains) ? "limited" : "free";
+  const cap = fabrikIterationCap(serialDepth(), constraint);
   const proposals: Pull3d[][] = Array.from({ length: count }, () => []);
   let iterations = 0;
   let residual = residualNow();
@@ -311,6 +353,7 @@ export function solveTree3dAttempt(
   while (residual > FABRIK_TOLERANCE && iterations < cap) {
     iterations += 1;
     spread = 0;
+    inwardFrames.fill(undefined);
     for (const leaf of addressed)
       proposals[leaf]!.push({ kind: "goal", point: aims[leaf]!, weight: 1 });
     // The inward pass, deepest first: each member settles on its proposals, then proposes its
@@ -327,7 +370,9 @@ export function solveTree3dAttempt(
       const base = parent[index]!;
       if (base === ROOT) continue;
       const tip = tips[index]!;
-      const pivot = place3d(tip, pivots[index]!, lengths[index]!);
+      const pivot = inwardPivot(index, tip);
+      if (constrains(limits[index]!) && lengths[index]! > 0)
+        inwardFrames[index] = swingFrame3d(frames[index]!, subtract3(tip, pivot));
       const own = offset[index];
       const shift = own === undefined ? undefined : multiplyVector3(frames[base]!, own);
       proposals[base]!.push({

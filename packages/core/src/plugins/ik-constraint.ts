@@ -86,6 +86,36 @@ export function atBound(limit: JointLimit, local: number): boolean {
 }
 
 /**
+ * A base member's world direction, turned the least that puts a limited child's local angle back in
+ * its range: the inward half of bidirectional enforcement (ADR-126, issue #514).
+ *
+ * The outward pass bounds a child's direction relative to its base. The inward pass moves the other
+ * end: with the child's direction held, the base turns so that `childDirection - baseDirection` is
+ * the legal local angle nearest to the one it was, `dir(base) = dir(child) - limitRotation(range,
+ * dir(child) - dir(base))`. Without it the inward pass is unconstrained, pulls a chain seeded on the
+ * forbidden side of a one-way range back there every pass, and the outward projection holds it on
+ * the bound. A free child and an in-range angle return `baseDirection` itself, so a member with no
+ * limited child, or one whose children are already legal, keeps the doubles it had.
+ */
+export function boundBaseDirection(
+  limit: JointLimit,
+  childDirection: number,
+  baseDirection: number,
+): number {
+  switch (limit.kind) {
+    case "free":
+      return baseDirection;
+    case "range": {
+      const local = wrapRotation(childDirection - baseDirection);
+      const bounded = limitRotation(limit, local);
+      return bounded === local ? baseDirection : childDirection - bounded;
+    }
+    default:
+      return unreachable(limit);
+  }
+}
+
+/**
  * The world direction of a member with no extent: its base's, turned by the legal angle nearest 0.
  *
  * A free joint inherits its base's direction exactly, which is what leaves its children where the

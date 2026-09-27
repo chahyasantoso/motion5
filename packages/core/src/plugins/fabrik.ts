@@ -10,11 +10,12 @@ import { solveLength, solveOffset, type SolveMember } from "./ik-member";
 import { aimPoint, goalMiss, readGoal, type GoalReading } from "./ik-goal-reading";
 import { branchPulls, compromise, type CompromiseRule, type Pull } from "./ik-goal";
 import { selectFabrik } from "./fabrik-select";
-import { fabrikIterationCap } from "./fabrik-cap";
+import { fabrikIterationCap, type FabrikConstraint } from "./fabrik-cap";
 import { unreachable } from "../lang/exhaustive";
 import { canonicalChain } from "./ik-topology";
 import {
   atBound,
+  boundBaseDirection,
   FREE_JOINT,
   limitRotation,
   restDirection,
@@ -227,6 +228,15 @@ export function solveFabrikAttempt(
   const goalOf = (id: string): WorldFrame | undefined => byId.get(id)!.goal;
   const limitOf = (id: string): JointLimit => byId.get(id)!.limit ?? FREE_JOINT;
   const rootPoint: FabrikPoint = Object.freeze({ x: root.x, y: root.y });
+  // Each member's limited children, canonical order, which bound it in the inward pass (ADR-126).
+  const limitedChildren = new Map<string, string[]>();
+  for (const id of ids) {
+    const base = baseOf(id);
+    if (!isMember(base) || byId.get(id)!.limit === undefined) continue;
+    const list = limitedChildren.get(base) ?? [];
+    list.push(id);
+    limitedChildren.set(base, list);
+  }
   const addressed = leaves.filter((id) => goalOf(id) !== undefined);
   // A goal is read only on a leaf, so a goal on a member with children would be solved as if it
   // were absent while the result reported the rig converged. Load refuses that shape as
@@ -349,6 +359,32 @@ export function solveFabrikAttempt(
     return Object.freeze({ x: from.x + (dx / axis) * extent, y: from.y + (dy / axis) * extent });
   };
   /**
+   * The inward pivot: `length` back from the settled tip, turned for each limited child by
+   * `boundBaseDirection` (ADR-126). `inwardDirections` holds the directions limited members
+   * settled on earlier in this deepest-first pass. No limited child, or legal ones, returns the plain
+   * placement, so a free rig keeps its bytes.
+   */
+  const inwardDirections = new Map<string, number>();
+  const inwardPivot = (id: string): FabrikPoint => {
+    const tip = tips.get(id)!;
+    const length = lengthOf(id);
+    const placed = place(tip, pivots.get(id)!, length);
+    const children = limitedChildren.get(id);
+    if (children === undefined || length <= 0) return placed;
+    const direction = Math.atan2(tip.y - placed.y, tip.x - placed.x) * DEGREES;
+    let bounded = direction;
+    for (const child of children) {
+      const childDirection = inwardDirections.get(child);
+      if (childDirection !== undefined)
+        bounded = boundBaseDirection(limitOf(child), childDirection, bounded);
+    }
+    if (bounded === direction) return placed;
+    return Object.freeze({
+      x: tip.x - length * Math.cos(bounded * RADIANS),
+      y: tip.y - length * Math.sin(bounded * RADIANS),
+    });
+  };
+  /**
    * The outward pass. Lengths are law, and this is the only place that enforces them.
    *
    * It is also the only place that composes a pivot, and it does so in canonical depth order, so a
@@ -411,7 +447,10 @@ export function solveFabrikAttempt(
   };
 
   outward();
-  const cap = fabrikIterationCap(serialDepth());
+  const constraint: FabrikConstraint = ids.some((id) => byId.get(id)!.limit !== undefined)
+    ? "limited"
+    : "free";
+  const cap = fabrikIterationCap(serialDepth(), constraint);
   let iterations = 0;
   let residual = residualNow();
   let stalled = false;
@@ -420,6 +459,7 @@ export function solveFabrikAttempt(
   while (residual > FABRIK_TOLERANCE && iterations < cap) {
     iterations += 1;
     spread = 0;
+    inwardDirections.clear();
     const before = new Map(tips);
     // The inward pass. Every addressed leaf starts at its goal, and each member proposes where its
     // own pivot would have to sit for its length to hold, then un-offsets that pivot into a
@@ -441,7 +481,11 @@ export function solveFabrikAttempt(
       // solve may not move: it is the frame the chain hangs from, published by a node this solve
       // does not own.
       if (!isMember(base)) continue;
-      const pivot = place(tips.get(id)!, pivots.get(id)!, lengthOf(id));
+      const pivot = inwardPivot(id);
+      if (byId.get(id)!.limit !== undefined && lengthOf(id) > 0) {
+        const tip = tips.get(id)!;
+        inwardDirections.set(id, Math.atan2(tip.y - pivot.y, tip.x - pivot.x) * DEGREES);
+      }
       const list = proposals.get(base) ?? [];
       const direction = baseDirection(id);
       const point = Object.freeze(baseTipFromPivot(pivot, direction, offsetOf(id)));

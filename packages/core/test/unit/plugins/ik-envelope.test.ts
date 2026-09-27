@@ -126,7 +126,13 @@ describe("IK envelope (#349 phase 7, ADR-113)", () => {
         }
         expect(iterations).toBeGreaterThanOrEqual(1);
         // The cap scales with serial depth (issue #491, ADR-115), so each rig is held to its own.
-        expect(iterations).toBeLessThanOrEqual(fabrikIterationCap(serialDepth(rig.members)));
+        // A limited rig takes the limited cap (issue #514, ADR-126).
+        const constraint = rig.members.some((member) => member.limit !== undefined)
+          ? "limited"
+          : "free";
+        expect(iterations).toBeLessThanOrEqual(
+          fabrikIterationCap(serialDepth(rig.members), constraint),
+        );
       });
     }
   });

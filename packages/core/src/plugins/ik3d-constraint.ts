@@ -26,6 +26,7 @@ import {
   normalize3,
   rotationAboutAxis3d,
   swingTwist3d,
+  transposeMatrix3,
   twistAbout3d,
   type Matrix3,
   type Vec3,
@@ -225,5 +226,36 @@ export function limitLocal3d(limit: JointLimit3d, proposed: () => Matrix3): Limi
       return limitSwingTwist(limit.maxSwing, limit.twist, proposed());
     default:
       return unreachable(limit);
+  }
+}
+
+/**
+ * A base member's world frame, turned the least that makes a limited child's local orientation
+ * legal with the child's frame held: the inward half of bidirectional enforcement (ADR-126, issue
+ * #514), and the 3D statement of `boundBaseDirection`.
+ *
+ * The child's local orientation is `base^T child`, the one `limitLocal3d` bounds in the outward
+ * pass. Holding `child` and replacing that local by the legal one nearest it gives `base' = child
+ * legal^T`, which is exactly the outward rule solved for the other end. On a planar +z hinge the
+ * local is a turn by `dir(child) - dir(base)` and the answer is the base turned to `dir(child) -
+ * limitRotation(range, dir(child) - dir(base))`, the 2D formula, so the planar agreement between the
+ * dimensions holds. An `unmoved` answer carries no frame, so a caller keeps the placement it already
+ * had and a legal pose costs no re-derivation.
+ */
+export type BoundBase3d =
+  | { readonly kind: "unmoved" }
+  | { readonly kind: "moved"; readonly frame: Matrix3 };
+
+const UNMOVED_BASE: BoundBase3d = Object.freeze({ kind: "unmoved" });
+
+export function boundBaseFrame3d(limit: JointLimit3d, child: Matrix3, base: Matrix3): BoundBase3d {
+  const limited = limitLocal3d(limit, () => multiplyMatrix3(transposeMatrix3(base), child));
+  switch (limited.kind) {
+    case "unmoved":
+      return UNMOVED_BASE;
+    case "moved":
+      return { kind: "moved", frame: multiplyMatrix3(child, transposeMatrix3(limited.local)) };
+    default:
+      return unreachable(limited);
   }
 }

@@ -4,6 +4,7 @@ import { FABRIK_TOLERANCE } from "../../../src/plugins/fabrik";
 import { fabrikIterationCap } from "../../../src/plugins/fabrik-cap";
 import type { SolveQuality } from "../../../src/plugins/ik-result";
 import { canonicalChain } from "../../../src/plugins/ik-topology";
+import { constrains } from "../../../src/plugins/ik3d-constraint";
 import { chainShape3d, solveChain3d } from "../../../src/plugins/ik3d-solve";
 import type { SolveResult3d } from "../../../src/plugins/ik3d-result";
 import { composeChain3d, frameDistance3d } from "../../support/fk3d-compose";
@@ -103,7 +104,10 @@ describe("IK 3D envelope (#500 phase 5)", () => {
           return;
         }
         expect(iterations).toBeGreaterThanOrEqual(1);
-        const cap = fabrikIterationCap(canonicalChain(rig.members).serialDepth());
+        const constraint = rig.members.some(({ limit }) => limit !== undefined && constrains(limit))
+          ? "limited"
+          : "free";
+        const cap = fabrikIterationCap(canonicalChain(rig.members).serialDepth(), constraint);
         expect(iterations).toBeLessThanOrEqual(cap);
       });
     }
