@@ -63,11 +63,12 @@ passes an attempt may take (`admits`) depends on its constraint.
 
 ## Deliberate boundary
 
-Two `atBound` disagreements on seeds 7 and 17 are unchanged from main and are tracked by
+Two `atBound` disagreements on seeds 7 and 17 were unchanged from main and were tracked by
 [#521](https://github.com/chahyasantoso/motion5/issues/521). They are not a bound-reading defect:
 the shared `atBound` rule reads a 1e-9 degree tolerance in both dimensions, and the two dimensions
-publish poses 1 to 4 degrees apart on those rigs, a different constrained fixed point or a different
-seed side chosen by the selector. A tree whose sub-base mixes very different scales may read
+published poses 1 to 4 degrees apart on those rigs.
+[ADR-128](./ADR-128-fabrik-publishes-its-best-completed-pass.md) found the cause (a capped attempt published whichever pass of a non-convergent orbit the cap cut)
+and removed it. A tree whose sub-base mixes very different scales may read
 rounding as moving; that errs toward running on, never toward masking motion.
 
 ## Evidence

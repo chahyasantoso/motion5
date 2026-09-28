@@ -33,7 +33,9 @@ owner, shared by 2D and 3D where the contract is shared.
 - **The selector is a closed quality decision in `fabrik-select.ts`.** `fabrikAlternatives(quality)`
   uses an exhaustive switch over the iterative quality union. `conflicted` keeps its three recorded
   alternatives; `limited` pays for exactly one opposite-seed retry with the `centroid` rule; and
-  `converged`, `stalled` and `iteration-cap` pay nothing. `outranks` is unchanged. The baseline is
+  `converged`, `stalled` and `iteration-cap` pay nothing. `outranks` is unchanged. ADR-128 later
+  gave `iteration-cap` the same opposite-seed retry, once an attempt published its best completed
+  pass rather than its last. The baseline is
   still selected first, so the retry can win only under the existing quality tier and residual rule.
 
 - **Limits are bidirectional.** `boundBaseDirection` in `ik-constraint.ts` and

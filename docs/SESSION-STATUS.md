@@ -11,17 +11,16 @@ shape and byte ceiling.
 
 ## Now
 
-- **[#519][issue519] lands with this change ([ADR-127][adr127]).**
+- **[#521][issue521] lands with this change ([ADR-128][adr128]), above [#519][issue519]
+  ([ADR-127][adr127]).**
 
 ## Next in line
 
-- **[#521][issue521] is next:** a capped planar FABRIK attempt publishes its last pass, so 2D and
-  its +z-hinge 3D equivalent can publish poses degrees apart and report different `atBound` lists.
+- **The next work is the #514 follow-up (no fitting open issue):** investigate random-axis hinge
+  seeding and mixed-sign local optima.
 
 ## Open, and not scheduled
 
-- The #514 follow-up has no fitting open issue: random-axis hinge seeding and mixed-sign local
-  optima.
 - [#328][issue328] remains open for activation and
   failure-recovery exercises, lifecycle limits, and maintenance usage/replacement validation before
   any separately confirmed retirement.
@@ -42,3 +41,4 @@ shape and byte ceiling.
 [issue519]: https://github.com/chahyasantoso/motion5/issues/519
 [adr127]: ./ADR-127-fabrik-settles-on-two-rounding-passes.md
 [issue521]: https://github.com/chahyasantoso/motion5/issues/521
+[adr128]: ./ADR-128-fabrik-publishes-its-best-completed-pass.md
