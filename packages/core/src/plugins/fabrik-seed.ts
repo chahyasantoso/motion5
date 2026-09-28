@@ -14,6 +14,20 @@ import { segmentExtent, type WorldFrame, type WorldPoint } from "./frame";
 
 const RADIANS = Math.PI / 180;
 
+/** Where a legal joint-space start holds each limited member within its range (#527, ADR-129). */
+export type LegalSeedFraction = 0.1 | 0.25 | 0.75 | 0.9;
+
+/**
+ * Which start one FABRIK attempt takes: the default seed (the arc, or the centred legal seed where
+ * the arc is illegal), or a legal start at `fraction` of every range. The selector passes it
+ * through opaquely; only a 3D tree attempt reads `legal-range`, so 2D always seeds by default.
+ */
+export type FabrikSeed =
+  | { readonly kind: "default" }
+  | { readonly kind: "legal-range"; readonly fraction: LegalSeedFraction };
+
+export const DEFAULT_FABRIK_SEED: FabrikSeed = Object.freeze({ kind: "default" });
+
 /** Bisection steps for the seed's arc half-angle. A fixed count, so the seed is reproducible. */
 export const FABRIK_ARC_BISECTIONS = 60;
 

@@ -22,11 +22,7 @@ import { solveChain } from "../../../src/plugins/ik-solve";
 import { solveTwoBone3d, UNBOUND_POLE3D, type Pole3d } from "../../../src/plugins/ik3d-analytic";
 import { ik3dPlugin } from "../../../src/plugins/ik3d";
 import { legalRetryReach3d, place3d, solveTree3dAttempt } from "../../../src/plugins/ik3d-fabrik";
-import {
-  solveFreeRootHingeTail3d,
-  solveHingePairRecovery3d,
-} from "../../../src/plugins/ik3d-hinge-pair";
-import { solveInterleavedFreeSerial3d } from "../../../src/plugins/ik3d-serial-recovery";
+import { solveSerialRecovery3d } from "../../../src/plugins/ik3d-serial-recovery";
 import { chainShape3d, solveChain3d } from "../../../src/plugins/ik3d-solve";
 import { limitLocal3d } from "../../../src/plugins/ik3d-constraint";
 import type { ChainMember3d } from "../../../src/plugins/ik3d-chain";
@@ -104,6 +100,43 @@ function perpendicularSide(point: Vec3, goal: Vec3, side: Vec3): number {
 }
 
 describe("3D FABRIK evidence", () => {
+  it("TH-180 recovers an interior-extremum hinge tail and a narrow free-hinge-free interval", () => {
+    const root = readFrame3d({
+      x: -8.388811768963933,
+      y: 60.30385987833142,
+      z: -70.42242581956089,
+      rotation: -74.02267802506685,
+      rotationX: 3.422397910617292,
+      rotationY: 138.74881071969867,
+    });
+    const tail = [
+      member("m0", "root", 32.90214329166338),
+      member("m1", "m0", 60.66020148922689, {
+        limit: {
+          kind: "hinge",
+          axis: [-0.7958430574347964, -0.5932190218261085, 0.12134669371890663],
+          range: { kind: "range", min: -46.52479981537908, max: 25.322788406629115 },
+        },
+      }),
+      member("m2", "m1", 6.585309301735833, {
+        limit: {
+          kind: "hinge",
+          axis: [0.01633708814613173, -0.18847931926044104, 0.9819412639063632],
+          range: { kind: "range", min: -95.05852318834513, max: -9.820594030898064 },
+        },
+        goal: readFrame3d({ x: -47.673799523067636, y: 68.38348720116291, z: 21.22687074815933 }),
+      }),
+    ];
+    const solved = solveChain3d(root, tail);
+    expect(solved.quality.kind).toBe("reached");
+    expect(frameDistance3d(composeChain3d(root, tail, solved).m2!, tail[2]!.goal!)).toBeLessThan(
+      1e-3,
+    );
+    expect(solveSerialRecovery3d(root, tail)).toEqual(
+      solveSerialRecovery3d(root, [...tail].reverse()),
+    );
+  });
+
   it("TH-179 closes a final-free block under a rolled, translated root", () => {
     const root = readFrame3d({
       x: 17,
@@ -130,7 +163,7 @@ describe("3D FABRIK evidence", () => {
       }),
       member("m2", "m1", 42.40117896348238, { goal }),
     ];
-    const result = solveInterleavedFreeSerial3d(root, members);
+    const result = solveSerialRecovery3d(root, members);
     expect(result?.quality.kind).toBe("reached");
     expect(frameDistance3d(composeChain3d(root, members, result!).m2!, goal)).toBeLessThan(1e-4);
     expect(Object.keys(result!.rotations3d).sort()).toEqual(["m0", "m1", "m2"]);
@@ -161,9 +194,9 @@ describe("3D FABRIK evidence", () => {
         goal,
       }),
     ];
-    const result = solveInterleavedFreeSerial3d(ROOT, members);
+    const result = solveSerialRecovery3d(ROOT, members);
     expect(result?.quality.kind).toBe("reached");
-    expect(result).toEqual(solveInterleavedFreeSerial3d(ROOT, [...members].reverse()));
+    expect(result).toEqual(solveSerialRecovery3d(ROOT, [...members].reverse()));
     expect(frameDistance3d(composeChain3d(ROOT, members, result!).m3!, goal)).toBeLessThan(1e-4);
     for (const item of members) {
       if (item.limit?.kind !== "hinge") continue;
@@ -176,13 +209,13 @@ describe("3D FABRIK evidence", () => {
         ).toBeLessThan(1e-9);
     }
     expect(
-      solveInterleavedFreeSerial3d(ROOT, [
+      solveSerialRecovery3d(ROOT, [
         { ...members[0]!, offset: { x: 1, y: 0, z: 0 } },
         ...members.slice(1),
       ]),
     ).toBeUndefined();
     expect(
-      solveInterleavedFreeSerial3d(
+      solveSerialRecovery3d(
         ROOT,
         members.map((item, index) =>
           index === 1 ? { ...item, limit: { kind: "cone", maxSwing: 90 } } : item,
@@ -257,7 +290,7 @@ describe("3D FABRIK evidence", () => {
     const unreachable = members.map((item, index) =>
       index === 3 ? { ...item, goal: { ...goal, x: 1000 } } : item,
     );
-    expect(solveFreeRootHingeTail3d(ROOT, unreachable)).toBeUndefined();
+    expect(solveSerialRecovery3d(ROOT, unreachable)).toBeUndefined();
   });
 
   it("TH-169 closes corpus rig 9 with a legal hinge and respects either pole side", () => {
@@ -330,7 +363,7 @@ describe("3D FABRIK evidence", () => {
         goal: readFrame3d({ x: target[0], y: target[1], z: target[2] }),
       }),
     ];
-    const recovered = solveHingePairRecovery3d(root, members, UNBOUND_POLE3D);
+    const recovered = solveSerialRecovery3d(root, members, UNBOUND_POLE3D);
     expect(recovered?.quality.kind).toBe("reached");
     const composed = composeChain3d(root, members, recovered!);
     expect(frameDistance3d(composed.b!, members[1]!.goal!)).toBeLessThan(1e-8);
@@ -341,14 +374,14 @@ describe("3D FABRIK evidence", () => {
     for (let index = 0; index < 9; index++)
       expect(Math.abs(local[index]! - limited.local[index]!)).toBeLessThan(1e-9);
     expect(
-      solveHingePairRecovery3d(
+      solveSerialRecovery3d(
         root,
         [{ ...members[0]!, offset: { x: 1, y: 0, z: 0 } }, members[1]!],
         UNBOUND_POLE3D,
       ),
     ).toBeUndefined();
     expect(
-      solveHingePairRecovery3d(
+      solveSerialRecovery3d(
         root,
         [members[0]!, { ...members[1]!, limit: { ...hinge, axis: [0, 0, 1] } }],
         UNBOUND_POLE3D,
@@ -395,7 +428,7 @@ describe("3D FABRIK evidence", () => {
           limit: hinge,
         }),
       ];
-      const solved = solveHingePairRecovery3d(root, members, UNBOUND_POLE3D);
+      const solved = solveSerialRecovery3d(root, members, UNBOUND_POLE3D);
       expect(solved?.quality.kind, String(index)).toBe("reached");
       const composed = composeChain3d(root, members, solved!);
       const miss = frameDistance3d(composed.second!, members[1]!.goal!);
@@ -413,7 +446,7 @@ describe("3D FABRIK evidence", () => {
           goal: readFrame3d({ x: root.x + firstLength + secondLength + 100, y: root.y, z: root.z }),
         },
       ];
-      expect(solveHingePairRecovery3d(root, far, UNBOUND_POLE3D)).toBeUndefined();
+      expect(solveSerialRecovery3d(root, far, UNBOUND_POLE3D)).toBeUndefined();
     }
   });
 
@@ -430,7 +463,7 @@ describe("3D FABRIK evidence", () => {
         goal: readFrame3d({ x: 50 }),
       }),
     ];
-    const result = solveHingePairRecovery3d(ROOT, members);
+    const result = solveSerialRecovery3d(ROOT, members);
     expect(result?.quality.kind).toBe("reached");
     expect(
       frameDistance3d(composeChain3d(ROOT, members, result!).b!, members[1]!.goal!),

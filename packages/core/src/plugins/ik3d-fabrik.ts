@@ -7,7 +7,8 @@ import {
   type FabrikConstraint,
   type FabrikPassMotion,
 } from "./fabrik-cap";
-import { selectFabrik, type FabrikSeed } from "./fabrik-select";
+import { selectFabrik } from "./fabrik-select";
+import type { FabrikSeed } from "./fabrik-seed";
 import { readNumber, segmentExtent } from "./frame";
 import {
   add3,
@@ -457,13 +458,6 @@ export function solveTree3dAttempt(
 }
 
 /**
- * The tree solve at one magnitude through the shared closed selector: the authored-side attempt,
- * three alternatives for a conflicted baseline and one opposite-seed centroid retry for a limited
- * or capped baseline (#490, ADR-126, ADR-128). A near miss with a non-planar hinge can pay
- * two legal quartiles and, only if they still miss, q10 then q90 (q90 only if q10 also misses).
- * The selector owns the six-attempt ceiling, not this attempt.
- */
-/**
  * Retry scale from addressed paths with a non-planar hinge only. Siblings without goals, orphan
  * members and unrelated planar paths must not enlarge the 2% near-miss window. The maximum
  * eligible path gives the selector one conservative world-unit scale for multiple leaf goals.
@@ -490,6 +484,13 @@ export function legalRetryReach3d(members: readonly ChainMember3d[]): number {
   return reach;
 }
 
+/**
+ * The tree solve at one magnitude through the shared closed selector: the authored-side attempt,
+ * three alternatives for a conflicted baseline and one opposite-seed centroid retry for a limited
+ * or capped baseline (#490, ADR-126, ADR-128). A near miss on an addressed non-planar hinge
+ * path also pays the selector's staged legal-range starts, scaled by `legalRetryReach3d`; the
+ * selector owns their order and six-attempt ceiling, not this attempt.
+ */
 function selectTree3d(
   root: WorldFrame3d,
   members: readonly ChainMember3d[],
