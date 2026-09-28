@@ -19,7 +19,7 @@ import {
 import { solveChain } from "../../../src/plugins/ik-solve";
 import { solveTwoBone3d, UNBOUND_POLE3D, type Pole3d } from "../../../src/plugins/ik3d-analytic";
 import { ik3dPlugin } from "../../../src/plugins/ik3d";
-import { place3d, solveTree3dAttempt } from "../../../src/plugins/ik3d-fabrik";
+import { legalRetryReach3d, place3d, solveTree3dAttempt } from "../../../src/plugins/ik3d-fabrik";
 import { chainShape3d, solveChain3d } from "../../../src/plugins/ik3d-solve";
 import type { ChainMember3d } from "../../../src/plugins/ik3d-chain";
 import type { SolveResult3d } from "../../../src/plugins/ik3d-result";
@@ -96,6 +96,38 @@ function perpendicularSide(point: Vec3, goal: Vec3, side: Vec3): number {
 }
 
 describe("3D FABRIK evidence", () => {
+  it("TH-165 prices legal retries by addressed non-planar paths, never an unrelated branch", () => {
+    const nearAxis = {
+      kind: "hinge",
+      axis: [1e-10, 0, 1],
+      range: { kind: "range", min: -90, max: 90 },
+    } as const;
+    const offAxis = { ...nearAxis, axis: [0.6, 0, 0.8] } as const;
+    const addressed = [
+      member("joint", "root", 10, { limit: offAxis }),
+      member("target", "joint", 5, { goal: readFrame3d({ x: 10, y: 1, z: 0 }) }),
+    ];
+    expect(legalRetryReach3d(addressed)).toBe(15);
+    expect(legalRetryReach3d([...addressed, member("unused", "root", 1e12)])).toBe(15);
+    expect(legalRetryReach3d([...addressed].reverse())).toBe(15);
+    expect(
+      legalRetryReach3d([member("joint", "root", 10, { limit: nearAxis }), addressed[1]!]),
+    ).toBe(0);
+    expect(
+      legalRetryReach3d([
+        member("joint", "root", 10, { limit: { ...offAxis, axis: [0, 0, 1] } }),
+        addressed[1]!,
+      ]),
+    ).toBe(0);
+    expect(
+      legalRetryReach3d([
+        member("joint", "root", 10),
+        member("target", "joint", 5, { goal: addressed[1]!.goal! }),
+        member("unused", "root", 1e12, { limit: offAxis }),
+      ]),
+    ).toBe(0);
+  });
+
   it("TH-162 recovers reachable corpus rig 17 from a legal quartile, not a longer cap", () => {
     // #514/#527: N=2000, seed=7, random-axis rig 17. Goal is the generator's exact FK image
     // of legal hinge angles 12.604992073353275 and 76.92486313481233 degrees.

@@ -147,6 +147,35 @@ describe("3D tree seed", () => {
     }
   });
 
+  it("TH-166 legal quartiles keep free branch turning and flip deterministic", () => {
+    const branch: SeedTree3d = {
+      ...tree,
+      parent: [-1, 0, 0],
+      lengths: [4, 6, 3],
+      rests: [tree.rests[0]!, tree.rests[0]!, tree.rests[0]!],
+      offsets: [undefined, [0, 2, 1], [0, -1, 3]],
+      limits: [{ kind: "free" }, hinge, { kind: "cone", maxSwing: 30 }],
+      paths: [
+        [0, 1],
+        [0, 2],
+      ],
+      aims: [
+        [10, 10, 10],
+        [-4, 2, 5],
+      ],
+    };
+    for (const fraction of [0.25, 0.75] as const) {
+      const policy = { kind: "legal-range", fraction } as const;
+      const normal = seedTree3d(branch, UNBOUND_POLE3D, false, policy);
+      const flipped = seedTree3d(branch, UNBOUND_POLE3D, true, policy);
+      expect(seedTree3d(branch, UNBOUND_POLE3D, false, policy)).toEqual(normal);
+      expect(seedTree3d(branch, UNBOUND_POLE3D, true, policy)).toEqual(flipped);
+      expect(flipped).not.toEqual(normal);
+      expect(normal).toHaveLength(3);
+      expect(flipped).toHaveLength(3);
+    }
+  });
+
   it("TH-159 keeps the shared identity frozen and does not expose the private fast-path array", () => {
     expect(Object.isFrozen(IDENTITY_MATRIX3)).toBe(true);
     const first = swingTwist3d(IDENTITY_MATRIX3).swing;

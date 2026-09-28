@@ -295,13 +295,64 @@ describe("limited FABRIK: seed side, bidirectional limits and the limited cap (i
       },
       100,
     );
-    expect(calls).toHaveLength(2); // a converged opposite side stops the portfolio
+    expect(calls).toHaveLength(2); // the baseline was outside the 2% gate
+    calls.length = 0;
+    selectFabrik(
+      null,
+      [],
+      false,
+      (_root, _members, flip) => {
+        calls.push([flip, "centroid", "default"]);
+        return { quality: flip ? met : miss };
+      },
+      250,
+    );
+    expect(calls).toHaveLength(4); // within the gate, quartiles can improve even an opposite-side hit
     calls.length = 0;
     selectFabrik(null, [], false, attempt, 100);
     expect(calls).toHaveLength(2); // four units of miss exceed two percent of 100 units of reach
     calls.length = 0;
     selectFabrik(null, [], false, attempt, 10);
     expect(calls).toHaveLength(2); // distant misses do not pay two extra attempts
+  });
+
+  it("TH-164 compares every prescribed converged candidate, including both legal quartiles", () => {
+    const miss = { kind: "limited", iterations: 1, residual: 0.5, atBound: ["m"] } as const;
+    const met = (residual: number) => ({ kind: "converged", iterations: 1, residual }) as const;
+    const calls: string[] = [];
+    const selected = selectFabrik(
+      null,
+      [],
+      false,
+      (_root, _members, flip, _rule, seed) => {
+        const name =
+          seed?.kind === "legal-range" ? `q${seed.fraction}` : flip ? "opposite" : "base";
+        calls.push(name);
+        return { quality: name === "q0.75" ? met(0.0001) : name === "q0.25" ? met(0.0004) : miss };
+      },
+      100,
+    );
+    expect(calls).toEqual(["base", "opposite", "q0.25", "q0.75"]);
+    expect(selected.quality).toEqual(met(0.0001));
+
+    // The existing conflict portfolio has three prescribed attempts, even if the first meets.
+    const rules: string[] = [];
+    const conflicted = selectFabrik(null, [], false, (_root, _members, flip, rule) => {
+      rules.push(`${flip}/${rule}`);
+      return {
+        quality:
+          rules.length === 1
+            ? ({ kind: "conflicted", iterations: 1, residual: 1 } as const)
+            : met(0.001 / rules.length),
+      };
+    });
+    expect(rules).toEqual([
+      "false/centroid",
+      "true/centroid",
+      "false/reach-circle",
+      "true/reach-circle",
+    ]);
+    expect(conflicted.quality).toEqual(met(0.00025));
   });
 
   it("CL-35 the inward pass bounds a base by its limited child, so a two-limit chain converges", () => {

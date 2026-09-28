@@ -82,6 +82,14 @@ const DEFAULT_HINGE_AXIS: Vec3 = Object.freeze([0, 0, 1] as const);
  */
 const HINGE_DIRECTION_TOLERANCE = 1e-9;
 
+/** A hinge plane materially different from the planar +/-z plane, on its own axis scale. */
+export function nonPlanarHinge3d(limit: JointLimit3d): boolean {
+  if (limit.kind !== "hinge") return false;
+  const [x, y, z] = limit.axis;
+  const largest = Math.max(Math.abs(x), Math.abs(y), Math.abs(z));
+  return largest > 0 && Math.max(Math.abs(x), Math.abs(y)) > HINGE_DIRECTION_TOLERANCE * largest;
+}
+
 /**
  * The unit hinge axis the live values declare. Every finite component is a direction load accepts,
  * so the vector is first divided by its largest magnitude: `normalize3`'s length would overflow to

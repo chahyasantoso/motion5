@@ -44,7 +44,13 @@ import {
 } from "./ik3d-analytic";
 import type { ChainMember3d } from "./ik3d-chain";
 import { compromise3d, type Pull3d } from "./ik3d-compromise";
-import { boundBaseFrame3d, constrains, FREE_JOINT3D, limitLocal3d } from "./ik3d-constraint";
+import {
+  boundBaseFrame3d,
+  constrains,
+  FREE_JOINT3D,
+  limitLocal3d,
+  nonPlanarHinge3d,
+} from "./ik3d-constraint";
 import { restoreResult3d, type SolveResult3d } from "./ik3d-result";
 import { ROOT_INDEX, seedTree3d } from "./ik3d-seed";
 
@@ -456,6 +462,33 @@ export function solveTree3dAttempt(
  * or capped baseline (#490, ADR-126, ADR-128). A near miss with a non-planar hinge can pay two
  * bounded legal-range starts; the selector owns that budget, not this attempt.
  */
+/**
+ * Retry scale from addressed paths with a non-planar hinge only. Siblings without goals, orphan
+ * members and unrelated planar paths must not enlarge the 2% near-miss window. The maximum
+ * eligible path gives the selector one conservative world-unit scale for multiple leaf goals.
+ */
+export function legalRetryReach3d(members: readonly ChainMember3d[]): number {
+  const byId = new Map(members.map((member) => [member.id, member]));
+  let reach = 0;
+  for (const leaf of members) {
+    if (leaf.goal === undefined) continue;
+    let pathReach = 0;
+    let eligible = false;
+    let current: ChainMember3d | undefined = leaf;
+    const seen = new Set<string>();
+    while (current !== undefined && !seen.has(current.id)) {
+      seen.add(current.id);
+      eligible ||= nonPlanarHinge3d(current.limit ?? FREE_JOINT3D);
+      pathReach +=
+        segmentExtent(current.length) +
+        norm3([current.offset.x, current.offset.y, current.offset.z]);
+      current = byId.get(current.base);
+    }
+    if (eligible) reach = Math.max(reach, pathReach);
+  }
+  return reach;
+}
+
 function selectTree3d(
   root: WorldFrame3d,
   members: readonly ChainMember3d[],
@@ -472,19 +505,7 @@ function selectTree3d(
       rule: CompromiseRule,
       seed?: FabrikSeed,
     ) => solveTree3dAttempt(frame, chain, pole, flip, rule, seed),
-    members.some(
-      ({ limit }) =>
-        limit?.kind === "hinge" &&
-        (Math.abs(limit.axis[0]) > 1e-12 || Math.abs(limit.axis[1]) > 1e-12),
-    )
-      ? members.reduce(
-          (reach, member) =>
-            reach +
-            segmentExtent(member.length) +
-            norm3([member.offset.x, member.offset.y, member.offset.z]),
-          0,
-        )
-      : 0,
+    legalRetryReach3d(members),
   );
 }
 

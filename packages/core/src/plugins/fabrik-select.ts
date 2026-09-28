@@ -140,7 +140,6 @@ export function selectFabrik<R, M, S extends Selectable>(
   for (const { opposite, rule } of fabrikAlternatives(baseline.quality)) {
     const candidate = attempt(root, members, opposite ? !flip : flip, rule);
     if (outranks(candidate.quality, selected.quality)) selected = candidate;
-    if (selected.quality.kind === "converged") return selected;
   }
   if (
     legalRangeReach > 0 &&
@@ -153,7 +152,6 @@ export function selectFabrik<R, M, S extends Selectable>(
         fraction,
       });
       if (outranks(candidate.quality, selected.quality)) selected = candidate;
-      if (selected.quality.kind === "converged") break;
     }
   return selected;
 }
