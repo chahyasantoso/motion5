@@ -72,7 +72,14 @@ function freeVectors(
     const { e1, e2 } = bendBasis3d(rootFrame, remaining, distance, origin, bend);
     const cosine =
       distance > 1e-12
-        ? Math.max(-1, Math.min(1, (distance * distance + length * length - nextRadius * nextRadius) / (2 * distance * length)))
+        ? Math.max(
+            -1,
+            Math.min(
+              1,
+              (distance * distance + length * length - nextRadius * nextRadius) /
+                (2 * distance * length),
+            ),
+          )
         : 1;
     const vector = add3(
       scale3(e1, length * cosine),
@@ -125,14 +132,26 @@ function alignedWorld(localVector: Vec3, worldVector: Vec3, poleSide: Vec3): Mat
   const localNormal = cross3(localDirection, localSide);
   const normal = cross3(direction, side);
   const localBasis: Matrix3 = [
-    localDirection[0], localSide[0], localNormal[0],
-    localDirection[1], localSide[1], localNormal[1],
-    localDirection[2], localSide[2], localNormal[2],
+    localDirection[0],
+    localSide[0],
+    localNormal[0],
+    localDirection[1],
+    localSide[1],
+    localNormal[1],
+    localDirection[2],
+    localSide[2],
+    localNormal[2],
   ];
   const worldBasis: Matrix3 = [
-    direction[0], side[0], normal[0],
-    direction[1], side[1], normal[1],
-    direction[2], side[2], normal[2],
+    direction[0],
+    side[0],
+    normal[0],
+    direction[1],
+    side[1],
+    normal[1],
+    direction[2],
+    side[2],
+    normal[2],
   ];
   return multiplyMatrix3(worldBasis, transposeMatrix3(localBasis));
 }
@@ -232,12 +251,18 @@ export function solveInterleavedFreeSerial3d(
     }
   }
   if (blocks.length < 2) return undefined;
-  for (const block of blocks)
-    for (const member of block.hinges) hinges.push(member);
+  for (const block of blocks) for (const member of block.hinges) hinges.push(member);
   if (hinges.length === 0) return undefined;
   const numbers = [
-    root.x, root.y, root.z, root.rotation, root.rotationX, root.rotationY,
-    goal.x, goal.y, goal.z,
+    root.x,
+    root.y,
+    root.z,
+    root.rotation,
+    root.rotationX,
+    root.rotationY,
+    goal.x,
+    goal.y,
+    goal.z,
     ...chain.map((member) => member.length),
     ...hinges.flatMap((member) => {
       const limit = member.limit!;

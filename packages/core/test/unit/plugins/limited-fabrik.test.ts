@@ -408,10 +408,16 @@ describe("limited FABRIK: seed side, bidirectional limits and the limited cap (i
     expect(calls).toEqual(["base", "opposite", "q0.25", "q0.75", "q0.1", "q0.9"]);
     expect(selected.quality).toBe(met);
     calls.length = 0;
-    selectFabrik(null, [], false, (_root, _members, flip, _rule, seed) => {
-      calls.push(seed?.kind === "legal-range" ? `q${seed.fraction}` : flip ? "opposite" : "base");
-      return { quality: miss };
-    }, 10);
+    selectFabrik(
+      null,
+      [],
+      false,
+      (_root, _members, flip, _rule, seed) => {
+        calls.push(seed?.kind === "legal-range" ? `q${seed.fraction}` : flip ? "opposite" : "base");
+        return { quality: miss };
+      },
+      10,
+    );
     expect(calls).toEqual(["base", "opposite"]);
   });
 

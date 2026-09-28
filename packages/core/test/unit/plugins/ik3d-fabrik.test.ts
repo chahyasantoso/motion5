@@ -132,9 +132,7 @@ describe("3D FABRIK evidence", () => {
     ];
     const result = solveInterleavedFreeSerial3d(root, members);
     expect(result?.quality.kind).toBe("reached");
-    expect(frameDistance3d(composeChain3d(root, members, result!).m2!, goal)).toBeLessThan(
-      1e-4,
-    );
+    expect(frameDistance3d(composeChain3d(root, members, result!).m2!, goal)).toBeLessThan(1e-4);
     expect(Object.keys(result!.rotations3d).sort()).toEqual(["m0", "m1", "m2"]);
   });
 
@@ -166,9 +164,7 @@ describe("3D FABRIK evidence", () => {
     const result = solveInterleavedFreeSerial3d(ROOT, members);
     expect(result?.quality.kind).toBe("reached");
     expect(result).toEqual(solveInterleavedFreeSerial3d(ROOT, [...members].reverse()));
-    expect(frameDistance3d(composeChain3d(ROOT, members, result!).m3!, goal)).toBeLessThan(
-      1e-4,
-    );
+    expect(frameDistance3d(composeChain3d(ROOT, members, result!).m3!, goal)).toBeLessThan(1e-4);
     for (const item of members) {
       if (item.limit?.kind !== "hinge") continue;
       const local = matrixFromEuler3d(result!.rotations3d[item.id]!);
@@ -179,10 +175,20 @@ describe("3D FABRIK evidence", () => {
           Math.max(...local.map((value, index) => Math.abs(value - projected.local[index]!))),
         ).toBeLessThan(1e-9);
     }
-    expect(solveInterleavedFreeSerial3d(ROOT, [{ ...members[0]!, offset: { x: 1, y: 0, z: 0 } }, ...members.slice(1)])).toBeUndefined();
-    expect(solveInterleavedFreeSerial3d(ROOT, members.map((item, index) =>
-      index === 1 ? { ...item, limit: { kind: "cone", maxSwing: 90 } } : item,
-    ))).toBeUndefined();
+    expect(
+      solveInterleavedFreeSerial3d(ROOT, [
+        { ...members[0]!, offset: { x: 1, y: 0, z: 0 } },
+        ...members.slice(1),
+      ]),
+    ).toBeUndefined();
+    expect(
+      solveInterleavedFreeSerial3d(
+        ROOT,
+        members.map((item, index) =>
+          index === 1 ? { ...item, limit: { kind: "cone", maxSwing: 90 } } : item,
+        ),
+      ),
+    ).toBeUndefined();
   });
 
   it("TH-177 recovers an interior zero-hinge radius the endpoint grid misses", () => {
@@ -211,9 +217,7 @@ describe("3D FABRIK evidence", () => {
     ];
     const result = solveChain3d(ROOT, members);
     expect(result.quality.kind).toBe("reached");
-    expect(frameDistance3d(composeChain3d(ROOT, members, result).m2!, goal)).toBeLessThan(
-      1e-4,
-    );
+    expect(frameDistance3d(composeChain3d(ROOT, members, result).m2!, goal)).toBeLessThan(1e-4);
   });
 
   it("TH-178 recovers a second interior radius and refuses an unreachable serial goal", () => {
@@ -249,9 +253,7 @@ describe("3D FABRIK evidence", () => {
     ];
     const recovered = solveChain3d(ROOT, members);
     expect(recovered.quality.kind).toBe("reached");
-    expect(frameDistance3d(composeChain3d(ROOT, members, recovered).m3!, goal)).toBeLessThan(
-      1e-4,
-    );
+    expect(frameDistance3d(composeChain3d(ROOT, members, recovered).m3!, goal)).toBeLessThan(1e-4);
     const unreachable = members.map((item, index) =>
       index === 3 ? { ...item, goal: { ...goal, x: 1000 } } : item,
     );
@@ -605,8 +607,9 @@ describe("3D FABRIK evidence", () => {
         kind: "legal-range",
         fraction,
       });
-    expect(solveTree3dAttempt(ROOT, fixture, UNBOUND_POLE3D, false, "centroid").quality.kind)
-      .toBe("iteration-cap");
+    expect(solveTree3dAttempt(ROOT, fixture, UNBOUND_POLE3D, false, "centroid").quality.kind).toBe(
+      "iteration-cap",
+    );
     for (const fraction of [0.25, 0.75, 0.1] as const)
       expect(attempt(fraction).quality.kind).not.toBe("converged");
     expect(attempt(0.9).quality.kind).toBe("converged");

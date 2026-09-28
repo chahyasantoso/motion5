@@ -196,7 +196,12 @@ export function solveFreeRootHingeTail3d(
     range: { kind: "range"; min: number; max: number };
   }[];
   const numbers = [
-    root.x, root.y, root.z, goal.x, goal.y, goal.z,
+    root.x,
+    root.y,
+    root.z,
+    goal.x,
+    goal.y,
+    goal.z,
     ...chain.map((member) => member.length),
     ...legal.flatMap(({ axis, range }) => [...axis, range.min, range.max]),
   ];
@@ -204,9 +209,7 @@ export function solveFreeRootHingeTail3d(
     !numbers.every(Number.isFinite) ||
     legal.some(
       ({ axis, range }) =>
-        Math.abs(norm3(axis) - 1) > 1e-12 ||
-        range.max < range.min ||
-        range.max - range.min > 360,
+        Math.abs(norm3(axis) - 1) > 1e-12 || range.max < range.min || range.max - range.min > 360,
     )
   )
     return undefined;
@@ -234,7 +237,10 @@ export function solveFreeRootHingeTail3d(
   let low: Sample | undefined;
   let high: Sample | undefined;
   // Maximum 3^4 + 7^4 grid evaluations, with early exit at the first bracket.
-  for (const fractions of [[0, 0.5, 1], [0, 0.1, 0.25, 0.5, 0.75, 0.9, 1]]) {
+  for (const fractions of [
+    [0, 0.5, 1],
+    [0, 0.1, 0.25, 0.5, 0.75, 0.9, 1],
+  ]) {
     const visit = (angles: number[], depth: number): void => {
       if (low !== undefined && high !== undefined) return;
       if (depth === legal.length) {
@@ -288,14 +294,26 @@ export function solveFreeRootHingeTail3d(
   const localNormal = cross3(direction, localSide);
   const { e1, e2, normal } = bendBasis3d(rootMatrix, delta, distance, origin, rereadPole3d(bend));
   const localBasis = [
-    direction[0], localSide[0], localNormal[0],
-    direction[1], localSide[1], localNormal[1],
-    direction[2], localSide[2], localNormal[2],
+    direction[0],
+    localSide[0],
+    localNormal[0],
+    direction[1],
+    localSide[1],
+    localNormal[1],
+    direction[2],
+    localSide[2],
+    localNormal[2],
   ] as const;
   const worldBasis = [
-    e1[0], e2[0], normal[0],
-    e1[1], e2[1], normal[1],
-    e1[2], e2[2], normal[2],
+    e1[0],
+    e2[0],
+    normal[0],
+    e1[1],
+    e2[1],
+    normal[1],
+    e1[2],
+    e2[2],
+    normal[2],
   ] as const;
   const firstWorld = multiplyMatrix3(worldBasis, transposeMatrix3(localBasis));
   const firstLocal = eulerFromMatrix3d(multiplyMatrix3(transposeMatrix3(rootMatrix), firstWorld));
