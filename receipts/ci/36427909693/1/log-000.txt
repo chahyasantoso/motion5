@@ -1,0 +1,33 @@
+quality (node 24.21.0)	Run npm run format:check	﻿2026-09-28T13:21:16.3034700Z ##[group]Run npm run format:check
+quality (node 24.21.0)	Run npm run format:check	2026-09-28T13:21:16.3035131Z ^[[36;1mnpm run format:check^[[0m
+quality (node 24.21.0)	Run npm run format:check	2026-09-28T13:21:16.3072665Z shell: /usr/bin/bash -e {0}
+quality (node 24.21.0)	Run npm run format:check	2026-09-28T13:21:16.3073010Z env:
+quality (node 24.21.0)	Run npm run format:check	2026-09-28T13:21:16.3073283Z   NODE_VERSION: 24.21.0
+quality (node 24.21.0)	Run npm run format:check	2026-09-28T13:21:16.3073661Z   CI_EVIDENCE_DIR: /home/runner/work/_temp/ci-evidence
+quality (node 24.21.0)	Run npm run format:check	2026-09-28T13:21:16.3074035Z ##[endgroup]
+quality (node 24.21.0)	Run npm run format:check	2026-09-28T13:21:16.3883849Z 
+quality (node 24.21.0)	Run npm run format:check	2026-09-28T13:21:16.3884746Z > motion5@0.0.0 format:check
+quality (node 24.21.0)	Run npm run format:check	2026-09-28T13:21:16.3885316Z > prettier . --check
+quality (node 24.21.0)	Run npm run format:check	2026-09-28T13:21:16.3885530Z 
+quality (node 24.21.0)	Run npm run format:check	2026-09-28T13:21:16.4612237Z Checking formatting...
+quality (node 24.21.0)	Run npm run format:check	2026-09-28T13:21:22.4281118Z [^[[33mwarn^[[39m] packages/core/src/plugins/ik3d-hinge-pair.ts
+quality (node 24.21.0)	Run npm run format:check	2026-09-28T13:21:24.8241089Z [^[[33mwarn^[[39m] packages/core/test/unit/plugins/ik3d-fabrik.test.ts
+quality (node 24.21.0)	Run npm run format:check	2026-09-28T13:21:25.0157974Z [^[[33mwarn^[[39m] packages/core/test/unit/plugins/limited-fabrik.test.ts
+quality (node 24.21.0)	Run npm run format:check	2026-09-28T13:21:26.8106445Z [^[[33mwarn^[[39m] Code style issues found in 3 files. Run Prettier with --write to fix.
+quality (node 24.21.0)	Run npm run format:check	2026-09-28T13:21:26.8487126Z ##[error]Process completed with exit code 1.
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	﻿2026-09-28T13:22:58.0920834Z ##[group]Run test "$SUITE_RESULT" = success
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-28T13:22:58.0921617Z ^[[36;1mtest "$SUITE_RESULT" = success^[[0m
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-28T13:22:58.1195235Z shell: /usr/bin/bash -e {0}
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-28T13:22:58.1196394Z env:
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-28T13:22:58.1196974Z   NODE_VERSION: 24.21.0
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-28T13:22:58.1197629Z   SUITE_RESULT: failure
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-28T13:22:58.1198265Z ##[endgroup]
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-28T13:22:58.1373774Z ##[error]Process completed with exit code 1.
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	﻿2026-09-28T13:22:56.8542507Z ##[group]Run test "$SUITE_RESULT" = success
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-28T13:22:56.8543635Z ^[[36;1mtest "$SUITE_RESULT" = success^[[0m
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-28T13:22:56.8896618Z shell: /usr/bin/bash -e {0}
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-28T13:22:56.8897575Z env:
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-28T13:22:56.8898091Z   NODE_VERSION: 24.21.0
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-28T13:22:56.8898667Z   SUITE_RESULT: failure
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-28T13:22:56.8899223Z ##[endgroup]
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-09-28T13:22:56.9057536Z ##[error]Process completed with exit code 1.
