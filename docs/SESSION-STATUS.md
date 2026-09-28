@@ -15,11 +15,13 @@ shape and byte ceiling.
 
 ## Next in line
 
-- **The next work is the #514 follow-up (no fitting open issue):** investigate random-axis hinge
-  seeding and mixed-sign local optima.
+- **[#521][issue521] is next:** a capped planar FABRIK attempt publishes its last pass, so 2D and
+  its +z-hinge 3D equivalent can publish poses degrees apart and report different `atBound` lists.
 
 ## Open, and not scheduled
 
+- The #514 follow-up has no fitting open issue: random-axis hinge seeding and mixed-sign local
+  optima.
 - [#328][issue328] remains open for activation and
   failure-recovery exercises, lifecycle limits, and maintenance usage/replacement validation before
   any separately confirmed retirement.
@@ -33,12 +35,10 @@ shape and byte ceiling.
   activation contracts: [API-CAPABILITIES.md](./API-CAPABILITIES.md).
 - Earlier long-form history remains in Git at this path; do not duplicate it into another status database.
 
-[pr516]: https://github.com/chahyasantoso/motion5/pull/516
-[adr125]: ./ADR-125-public-3d-api.md
-[issue500]: https://github.com/chahyasantoso/motion5/issues/500
 [issue514]: https://github.com/chahyasantoso/motion5/issues/514
 [adr126]: ./ADR-126-limited-fabrik-seed-side-bidirectional-limits-and-pass-budget.md
 [pr518]: https://github.com/chahyasantoso/motion5/pull/518
 [issue328]: https://github.com/chahyasantoso/motion5/issues/328
 [issue519]: https://github.com/chahyasantoso/motion5/issues/519
 [adr127]: ./ADR-127-fabrik-settles-on-two-rounding-passes.md
+[issue521]: https://github.com/chahyasantoso/motion5/issues/521
