@@ -10,7 +10,12 @@ import { aimPoint, goalMiss, readGoal, type GoalReading } from "./ik-goal-readin
 import { branchPulls, compromise, type CompromiseRule, type Pull } from "./ik-goal";
 import { selectFabrik } from "./fabrik-select";
 import { seedArc } from "./fabrik-seed";
-import { fabrikPassBudget, fabrikRelativeMove, type FabrikConstraint } from "./fabrik-cap";
+import {
+  FabrikIncumbent,
+  fabrikPassBudget,
+  fabrikRelativeMove,
+  type FabrikConstraint,
+} from "./fabrik-cap";
 import { unreachable } from "../lang/exhaustive";
 import { canonicalChain } from "./ik-topology";
 import {
@@ -381,6 +386,18 @@ export function solveFabrikAttempt(
   const budget = fabrikPassBudget(serialDepth(), constraint, FABRIK_TOLERANCE);
   let iterations = 0;
   let residual = residualNow();
+  const incumbent = new FabrikIncumbent();
+  const bestTips: FabrikPoint[] = new Array(ids.length);
+  const bestPivots: FabrikPoint[] = new Array(ids.length);
+  const bestOnBound: boolean[] = new Array(ids.length);
+  const saveIncumbent = (): void => {
+    for (let index = 0; index < ids.length; index += 1) {
+      const id = ids[index]!;
+      bestTips[index] = tips.get(id)!;
+      bestPivots[index] = pivots.get(id)!;
+      bestOnBound[index] = onBound.get(id) === true;
+    }
+  };
   let stalled = false;
   // How far the branches still disagreed about a shared member in the last inward pass.
   let spread = 0;
@@ -425,6 +442,7 @@ export function solveFabrikAttempt(
     }
     outward();
     residual = residualNow();
+    if (incumbent.offer(residual)) saveIncumbent();
     // Nothing moved, so nothing can. An unreachable goal reaches full extension in one pass and
     // holds, and exiting here rather than at the cap is what makes `iterations` mean work done and
     // lets `stalled` tell a caller that a larger cap is not the answer. What counts as nothing is
@@ -455,6 +473,17 @@ export function solveFabrikAttempt(
     }
   }
 
+  // Publish the incumbent pass rather than the last one (ADR-128); nothing is held when no pass ran.
+  const held = incumbent.residual;
+  if (held !== undefined) {
+    for (let index = 0; index < ids.length; index += 1) {
+      const id = ids[index]!;
+      tips.set(id, bestTips[index]!);
+      pivots.set(id, bestPivots[index]!);
+      onBound.set(id, bestOnBound[index]!);
+    }
+    residual = held;
+  }
   const rotations: Record<string, number> = {};
   const solvedPivots: Record<string, FabrikPoint> = {};
   const solvedTips: Record<string, FabrikPoint> = {};

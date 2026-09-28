@@ -4,6 +4,7 @@ import type { FabrikSolution } from "./fabrik";
 import type { CompromiseRule } from "./ik-goal";
 import type { IterativeQuality } from "./ik-result";
 import { unreachable } from "../lang/exhaustive";
+import { fabrikResidualOutranks } from "./fabrik-cap";
 
 /**
  * One FABRIK attempt from a seed side and a compromise rule.
@@ -50,15 +51,14 @@ const CONFLICTED_ALTERNATIVES: readonly FabrikAlternative[] = Object.freeze([
 ]);
 
 /**
- * The attempt a limited baseline pays for: the opposite seed side with the baseline's rule (ADR-126,
- * issue #514).
+ * The opposite-side remedy paid by a limited or capped baseline, with the baseline's rule.
  *
- * A one-way range seeded on the side it forbids is projected onto its bound by the first outward
- * pass and held there, so the authored side can be a fixed point on a bound while the goal is
- * reachable from the other side. One opposite-side attempt is the whole of the remedy the selector
- * owns: the rule stays the baseline's `centroid`, because a limit is not a branch disagreement.
+ * A one-way range seeded on the side it forbids can settle on a bound, while a capped attempt can
+ * orbit without settling. In either case the only seed-side remedy this selector owns is one opposite
+ * centroid attempt. A stalled attempt pays nothing: it is a fixed point, and its incumbent is its
+ * terminal pose to the rounding tolerance.
  */
-const LIMITED_ALTERNATIVES: readonly FabrikAlternative[] = Object.freeze([
+const OPPOSITE_SIDE_ALTERNATIVES: readonly FabrikAlternative[] = Object.freeze([
   Object.freeze({ opposite: true, rule: "centroid" }),
 ]);
 
@@ -67,23 +67,22 @@ const NO_ALTERNATIVES: readonly FabrikAlternative[] = Object.freeze([]);
 /**
  * The alternatives a baseline of this quality pays for, read exhaustively over FABRIK's kinds.
  *
- * A met goal pays nothing. A stall or a cap pays nothing either: a stall is a fixed point that a
- * different seed side has no evidence of escaping, and a cap is still moving, so neither overrides
- * the authored bend. Only the two misses whose cause names a seed-side remedy pay: a conflict for
- * the three recorded alternatives (#490), and a bound for the opposite side (#514). So a free rig
- * that was not conflicted takes exactly the one attempt it always took, and limits outrank the bend
- * hint only when the authored side ends on a bound and the other side scores strictly better.
+ * A met goal and a stall pay nothing. A stall is a fixed point, so its incumbent is its terminal pose
+ * to the rounding tolerance. A cap pays the opposite centroid attempt: it never settled, so its
+ * incumbent is only the best sample of a non-convergent orbit and its seed side remains in question.
+ * A conflict pays its three recorded alternatives (#490), and a bound pays the opposite side (#514).
  */
 export function fabrikAlternatives(quality: IterativeQuality): readonly FabrikAlternative[] {
   switch (quality.kind) {
     case "conflicted":
       return CONFLICTED_ALTERNATIVES;
     case "limited":
-      return LIMITED_ALTERNATIVES;
+      return OPPOSITE_SIDE_ALTERNATIVES;
     case "converged":
     case "stalled":
-    case "iteration-cap":
       return NO_ALTERNATIVES;
+    case "iteration-cap":
+      return OPPOSITE_SIDE_ALTERNATIVES;
     default:
       return unreachable(quality);
   }
@@ -94,8 +93,8 @@ export function fabrikAlternatives(quality: IterativeQuality): readonly FabrikAl
  *
  * The authored seed with the centroid rule is attempted first and returned as the same object for
  * every quality whose alternatives are empty, so every such rig is bit-identical to a single attempt
- * and pays nothing more. A conflict pays for its three fixed alternatives and a bound for the
- * opposite side (`fabrikAlternatives`). The baseline is itself a candidate, so the selected result
+ * and pays nothing more. A conflict pays its three fixed alternatives; a bound or cap pays the opposite
+ * side (`fabrikAlternatives`). The baseline is itself a candidate, so the selected result
  * is never worse than the baseline under the comparator below. Losing candidates are dropped; no
  * restart metadata is published (ADR-107), and the selected result reports its own
  * `quality.iterations`.
@@ -129,9 +128,7 @@ export function selectFabrik<R, M, S extends Selectable>(
 export function outranks(candidate: IterativeQuality, selected: IterativeQuality): boolean {
   const tier = qualityTier(candidate) - qualityTier(selected);
   if (tier !== 0) return tier < 0;
-  if (Number.isNaN(candidate.residual)) return false;
-  if (Number.isNaN(selected.residual)) return true;
-  return candidate.residual < selected.residual;
+  return fabrikResidualOutranks(candidate.residual, selected.residual);
 }
 
 /** `0` for a met result and `1` for every miss, read exhaustively over FABRIK's kinds. */

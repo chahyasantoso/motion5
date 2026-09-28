@@ -2,6 +2,7 @@ import { unreachable } from "../lang/exhaustive";
 import { FABRIK_TOLERANCE, iterativeQuality } from "./fabrik";
 import { arcHalfAngle } from "./fabrik-seed";
 import {
+  FabrikIncumbent,
   fabrikPassBudget,
   fabrikRelativeMove,
   type FabrikConstraint,
@@ -379,6 +380,21 @@ export function solveTree3dAttempt(
   const proposals: Pull3d[][] = Array.from({ length: count }, () => []);
   let iterations = 0;
   let residual = residualNow();
+  const incumbent = new FabrikIncumbent();
+  const bestTips: (Vec3 | undefined)[] = new Array<Vec3 | undefined>(count);
+  const bestPivots: (Vec3 | undefined)[] = new Array<Vec3 | undefined>(count);
+  const bestFrames: (Matrix3 | undefined)[] = new Array<Matrix3 | undefined>(count);
+  const bestLocals: (Matrix3 | undefined)[] = new Array<Matrix3 | undefined>(count);
+  const bestBounded: boolean[] = new Array<boolean>(count);
+  const saveIncumbent = (): void => {
+    for (let index = 0; index < count; index += 1) {
+      bestTips[index] = tips[index];
+      bestPivots[index] = pivots[index];
+      bestFrames[index] = frames[index];
+      bestLocals[index] = locals[index];
+      bestBounded[index] = bounded[index]!;
+    }
+  };
   let stalled = false;
   let spread = 0;
   while (residual > FABRIK_TOLERANCE && budget.admits(iterations, residual)) {
@@ -418,10 +434,24 @@ export function solveTree3dAttempt(
     }
     const motion = outward();
     residual = residualNow();
+    if (incumbent.offer(residual)) saveIncumbent();
     if (budget.settles(motion)) {
       stalled = true;
       break;
     }
+  }
+
+  // Publish the incumbent pass rather than the last one (ADR-128); nothing is held when no pass ran.
+  const held = incumbent.residual;
+  if (held !== undefined) {
+    for (let index = 0; index < count; index += 1) {
+      tips[index] = bestTips[index]!;
+      pivots[index] = bestPivots[index]!;
+      frames[index] = bestFrames[index]!;
+      locals[index] = bestLocals[index];
+      bounded[index] = bestBounded[index]!;
+    }
+    residual = held;
   }
 
   const rotations3d: Record<string, Euler3d> = {};

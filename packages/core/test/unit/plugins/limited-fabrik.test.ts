@@ -1,4 +1,4 @@
-/** Issues #514 and #519, ADR-126 and ADR-127: executable evidence that limited FABRIK no longer
+/** Issues #514, #519 and #521, ADR-126, ADR-127 and ADR-128: executable evidence that limited FABRIK no longer
  * traps on a seed-side bound, stops short of a reachable goal, or runs a rounding circle to the
  * cap, in both dimensions, through the three shared owners (`fabrik-select.ts`, the inward passes
  * with `ik-constraint.ts` / `ik3d-constraint.ts`, and `fabrik-cap.ts`), and that free rigs keep the
@@ -6,7 +6,8 @@
  * `limited` at a residual of 141 or 153 units, and the premature-termination rigs end
  * `iteration-cap` a few thousandths short at the free cap of 64. TH-153 fails on the pre-#519
  * solver: one dimension ends `iteration-cap` where the other ends `stalled`, and on the first #519
- * head for its free rig, where the settle rule still read the constraint. */
+ * head for its free rig, where the settle rule still read the constraint. TH-155 and CL-40 fail on
+ * the pre-#521 solver, which published an unsettled attempt's last pass rather than its best. */
 import { describe, expect, it } from "vitest";
 import {
   FABRIK_TOLERANCE,
@@ -19,10 +20,12 @@ import {
   FABRIK_MIN_ITERATIONS,
   FABRIK_PROGRESS_WINDOW,
   FABRIK_ROUNDING_ULPS,
+  FabrikIncumbent,
   fabrikIterationCap,
   fabrikPassBudget,
   fabrikPassMovement,
   fabrikRelativeMove,
+  fabrikResidualOutranks,
   fabrikRoundingBound,
   projectsConvergence,
   type FabrikPassBudget,
@@ -196,14 +199,16 @@ describe("limited FABRIK: seed side, bidirectional limits and the limited cap (i
         }
   });
 
-  it("CL-34 the selector pays for the opposite side only on a limited baseline, and keeps the better", () => {
+  it("CL-34 the selector pays for the opposite side on a limited or capped baseline, and keeps the better", () => {
     const quality = (kind: IterativeQuality["kind"]): IterativeQuality =>
       kind === "limited"
         ? { kind, iterations: 1, residual: 5, atBound: ["m"] }
         : { kind, iterations: 1, residual: 5 };
     expect(fabrikAlternatives(quality("converged"))).toEqual([]);
     expect(fabrikAlternatives(quality("stalled"))).toEqual([]);
-    expect(fabrikAlternatives(quality("iteration-cap"))).toEqual([]);
+    expect(fabrikAlternatives(quality("iteration-cap"))).toEqual([
+      { opposite: true, rule: "centroid" },
+    ]);
     expect(fabrikAlternatives(quality("limited"))).toEqual([{ opposite: true, rule: "centroid" }]);
     expect(fabrikAlternatives(quality("conflicted"))).toHaveLength(3);
     // A limited baseline pays exactly one attempt, on the other side, and keeps the baseline when
@@ -607,6 +612,85 @@ describe("limited FABRIK: seed side, bidirectional limits and the limited cap (i
     expect(spatial.quality.atBound).toEqual(flat.quality.atBound);
     expect(flat.rotations.b!).toBeCloseTo(-56.7, 9);
     expect(flat.quality.residual).toBeCloseTo(spatial.quality.residual, 9);
+  });
+
+  // The two issue #521 probe rigs (seeds 7 and 17 of the planar agreement probe, rigs 978 and 2028).
+  // On the last-pass rule each attempt ran to the cap, and 2D and its +z-hinge 3D equivalent
+  // published poses 1 to 4 degrees apart with different `atBound` lists: 2D ["0","3"] against 3D
+  // ["3"], and 2D ["1","2"] against 3D ["1"].
+  const issue521Rigs: readonly (readonly SolveMember[])[] = [
+    [
+      { id: "0", base: "root", length: 49.2, limit: range(-61.7, -5.6) },
+      { id: "1", base: "0", length: 29.3 },
+      { id: "2", base: "1", length: 58.1, limit: range(-87.2, 27.7) },
+      {
+        id: "3",
+        base: "2",
+        length: 77.6,
+        limit: range(-109.8, -75.1),
+        goal: { x: 20.4, y: -58, rotation: 0 },
+      },
+    ],
+    [
+      { id: "0", base: "root", length: 42.9 },
+      { id: "1", base: "0", length: 74.6, limit: range(-164.2, -106.6) },
+      {
+        id: "2",
+        base: "1",
+        length: 21.7,
+        limit: range(-34.9, -16.2),
+        goal: { x: -58.3, y: -32.6, rotation: 0 },
+      },
+    ],
+  ];
+
+  it("TH-155 an attempt that never settles publishes its best completed pass, not its last", () => {
+    // The best completed pass of each rig's attempts: 44.7738384833087 (seed 7, pass 1) and
+    // 12.359072645022295 (seed 17, pass 39). The last-pass rule published 54.51863835775088 and
+    // 12.705604321460964 in 2D, and 54.54708824706231 and 14.00764589114864 in 3D, so every
+    // assertion below fails on it.
+    const bests = [44.7738384833087, 12.359072645022295];
+    issue521Rigs.forEach((rig, index) => {
+      for (const quality of [
+        solveChain(ROOT, rig, false).quality,
+        solve3d(planar3d(rig)).quality,
+      ]) {
+        expect(quality.kind).toBe("limited");
+        expect(quality.residual).toBeLessThanOrEqual(bests[index]!);
+      }
+    });
+  });
+
+  it("CL-40 the issue #521 rigs publish the same bound members in 2D and 3D", () => {
+    for (const rig of issue521Rigs) {
+      const flat = solveChain(ROOT, rig, false).quality;
+      const spatial = solve3d(planar3d(rig)).quality;
+      expect(flat.kind).toBe("limited");
+      expect(spatial.kind).toBe("limited");
+      if (flat.kind === "limited" && spatial.kind === "limited")
+        expect(flat.atBound).toEqual(spatial.atBound);
+    }
+  });
+
+  it("CL-41 the incumbent holds the first completed pass, then only a strictly better one", () => {
+    const incumbent = new FabrikIncumbent();
+    expect(incumbent.residual).toBeUndefined();
+    // The first offer is always held, even a worse or unordered one: the seed is never offered.
+    expect(incumbent.offer(Number.NaN)).toBe(true);
+    expect(incumbent.residual).toBeNaN();
+    expect(incumbent.offer(Number.POSITIVE_INFINITY)).toBe(true);
+    expect(incumbent.offer(3)).toBe(true);
+    expect(incumbent.offer(3)).toBe(false);
+    expect(incumbent.offer(4)).toBe(false);
+    expect(incumbent.offer(Number.NaN)).toBe(false);
+    expect(incumbent.offer(2)).toBe(true);
+    expect(incumbent.residual).toBe(2);
+    // The same order the selector reads within a tier.
+    expect(fabrikResidualOutranks(1, 2)).toBe(true);
+    expect(fabrikResidualOutranks(2, 2)).toBe(false);
+    expect(fabrikResidualOutranks(Number.NaN, 2)).toBe(false);
+    expect(fabrikResidualOutranks(2, Number.NaN)).toBe(true);
+    expect(fabrikResidualOutranks(Number.NaN, Number.NaN)).toBe(false);
   });
 
   it("CL-38 a local a few ulps inside a bound rests on it, so 2D and 3D report one kind", () => {
