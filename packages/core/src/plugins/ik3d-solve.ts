@@ -5,6 +5,7 @@ import { solveTwoBone3d, UNBOUND_POLE3D, type Pole3d } from "./ik3d-analytic";
 import type { ChainMember3d } from "./ik3d-chain";
 import { constrains } from "./ik3d-constraint";
 import { solveTree3d } from "./ik3d-fabrik";
+import { solveHingePairRecovery3d } from "./ik3d-hinge-pair";
 import { orientLeaves3d } from "./ik3d-orient";
 import type { SolveResult3d } from "./ik3d-result";
 
@@ -38,10 +39,10 @@ export type ChainShape3d =
  * reaches it (`ik-solver-no-goal`, `ik-leaf-without-goal`), so it is an invariant guard.
  *
  * A chain with any constrained member is `constrained` first, after the goal guard, and takes 3D
- * FABRIK even at two members, because the closed form solves without the limit and clamping its
- * answer afterwards would constrain a pose that was never solved under it: ADR-108's rule, carried
- * into 3D. `contract/solver-shape.ts`'s `derivedStrategy` restates this at load from the authored
- * `joint`, and `TH-76` holds the two readings equal.
+ * FABRIK even at two members. Only when that solve misses can the one free-parent/non-planar-hinge
+ * pair take a geometric recovery that solves inside the legal angle range rather than clamping an
+ * unconstrained answer afterwards. `contract/solver-shape.ts` remains conservative at load: its
+ * `derivedStrategy` sees the authored joint, not this live-value recovery.
  */
 export function chainShape3d(members: readonly ChainMember3d[]): ChainShape3d {
   if (!members.some((member) => member.goal !== undefined)) {
@@ -81,8 +82,13 @@ function solvePosition3d(root: WorldFrame3d, shape: ChainShape3d, bend: Pole3d):
     case "two-bone":
       return solveTwoBone3d(root, shape.goal, shape.first, shape.second, bend);
     case "tree":
-    case "constrained":
-      return solveTree3d(root, shape.members, bend);
+    case "constrained": {
+      const result = solveTree3d(root, shape.members, bend);
+      if (shape.kind !== "constrained" || result.quality.kind === "converged") return result;
+      // A closed legal pose is published only when its rendered FK tip actually meets the goal.
+      // Otherwise the tree result is retained without changing its quality or any published byte.
+      return solveHingePairRecovery3d(root, shape.members, bend) ?? result;
+    }
     default:
       return unreachable(shape);
   }

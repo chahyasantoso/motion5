@@ -51,7 +51,9 @@ export interface SolveEvidence<Q extends SolveQuality = SolveQuality> {
  * what it is, and that is where the two strategies differ rather than where they agree:
  *
  * The closed form is exact, so its kinds describe the geometry. `reached` means the goal lies in
- * the reach band and the residual is zero. `too-far` and `too-near` mean the goal lies outside the
+ * the reach band. Ordinary two-bone solves report zero residual; the legal-hinge pair recovery
+ * reports the tiny residual of the rendered Euler pose it independently recomposes. `too-far` and
+ * `too-near` mean the goal lies outside the
  * band `[|reach - l2|, reach + l2]` and the chain was extended or folded toward it; the residual is
  * `|d - clampedD|`, the distance the clamp already computes. `coincident` is the one geometric
  * miss inside the band: a goal on the chain's own base with `reach === l2`, which has no direction
