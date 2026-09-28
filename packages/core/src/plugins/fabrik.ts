@@ -386,11 +386,17 @@ export function solveFabrikAttempt(
   const budget = fabrikPassBudget(serialDepth(), constraint, FABRIK_TOLERANCE);
   let iterations = 0;
   let residual = residualNow();
+  let stalled = false;
+  // How far the branches still disagreed about a shared member in the latest inward pass.
+  let spread = 0;
   const incumbent = new FabrikIncumbent();
   const bestTips: FabrikPoint[] = new Array(ids.length);
   const bestPivots: FabrikPoint[] = new Array(ids.length);
   const bestOnBound: boolean[] = new Array(ids.length);
+  // The incumbent pass's inward spread: whether its branches agreed is part of that pass's pose.
+  let bestSpread = 0;
   const saveIncumbent = (): void => {
+    bestSpread = spread;
     for (let index = 0; index < ids.length; index += 1) {
       const id = ids[index]!;
       bestTips[index] = tips.get(id)!;
@@ -398,9 +404,6 @@ export function solveFabrikAttempt(
       bestOnBound[index] = onBound.get(id) === true;
     }
   };
-  let stalled = false;
-  // How far the branches still disagreed about a shared member in the last inward pass.
-  let spread = 0;
   while (residual > FABRIK_TOLERANCE && budget.admits(iterations, residual)) {
     iterations += 1;
     spread = 0;
@@ -473,7 +476,7 @@ export function solveFabrikAttempt(
     }
   }
 
-  // Publish the incumbent pass rather than the last one (ADR-128); nothing is held when no pass ran.
+  // Publish the incumbent pass, not the last one (ADR-128); nothing is held when no pass ran.
   const held = incumbent.residual;
   if (held !== undefined) {
     for (let index = 0; index < ids.length; index += 1) {
@@ -483,6 +486,7 @@ export function solveFabrikAttempt(
       onBound.set(id, bestOnBound[index]!);
     }
     residual = held;
+    spread = bestSpread;
   }
   const rotations: Record<string, number> = {};
   const solvedPivots: Record<string, FabrikPoint> = {};
@@ -527,12 +531,12 @@ export function solveFabrikAttempt(
 
 /** What an iterative solve observed when it stopped, before it is named as one quality kind. */
 export interface IterativeOutcome {
-  /** The worst addressed-leaf shortfall after the last outward pass. */
+  /** The worst addressed-leaf shortfall of the published pass (ADR-128). */
   readonly residual: number;
   readonly iterations: number;
   /** The members whose published local angle sits exactly on a declared bound, canonical order. */
   readonly atBound: readonly string[];
-  /** How far branches still disagreed about a shared member in the last inward pass. */
+  /** How far branches still disagreed about a shared member in the published pass's inward pass. */
   readonly spread: number;
   /**
    * Whether the last pass left the attempt at a fixed point, as `FabrikPassBudget.settles` judges
@@ -548,7 +552,7 @@ export interface IterativeOutcome {
  * A bound is the most specific cause and an authored one, so a miss with any joint at a bound is
  * `limited` first. Within tolerance is `converged`. A disagreement is named before the stall or
  * the cap, because neither more iterations nor a different stall test answers branches that pull
- * one member to two places, and it is named only when the last pass's spread is strictly above
+ * one member to two places, and it is named only when the published pass's spread is strictly above
  * `FABRIK_TOLERANCE`, the same strict bound the residual is judged by. See ADR-108 and ADR-110.
  */
 export function iterativeQuality(outcome: IterativeOutcome): IterativeQuality {
@@ -563,7 +567,7 @@ export function iterativeQuality(outcome: IterativeOutcome): IterativeQuality {
 
 /**
  * Solve once with the authored seed; a conflicted baseline pays three alternatives, while a
- * limited baseline pays one opposite-seed retry with the centroid rule.
+ * limited or capped baseline pays one opposite-seed retry with the centroid rule (ADR-128).
  */
 export function solveFabrik(
   root: WorldFrame,

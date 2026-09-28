@@ -41,8 +41,14 @@ The published residual is therefore never worse than any completed pass of that 
 - **Best completed pass, earliest on a tie.** A pass cap is a stopping decision, not a fixed point,
   so where it cuts an orbit carries no information. The minimum over completed passes does not
   depend on where the orbit was cut. A converged attempt is unchanged by construction (it stops on
-  its first pass within tolerance, so every earlier pass was worse), and a stalled one publishes
-  its terminal pose to within the rounding band that settled it.
+  its first pass within tolerance, so every earlier pass was worse). A stalled serial rig publishes
+  its terminal pose to within about 3e-8 degrees, but a stalled tree can have passed through a
+  better pose before it settled, and then publishes that one.
+- **The kind reads the published pass, and `stalled` reads the iteration.** The inward `spread`
+  that names `conflicted` is held with the incumbent, so a published pose is never named by another
+  pass's disagreement (independent pass R-2 found terminal spread paired with an earlier pose).
+  `stalled` stays the loop's verdict: it says more passes would not help, which is true of the
+  attempt whichever of its passes is published.
 - **The seed is never offered.** It has not been through a limit-enforcing outward pass, so its
   bound bookkeeping is not a published claim. The incumbent is a closed union `empty | held`, read
   exhaustively; `empty` publishes the current state unchanged.
