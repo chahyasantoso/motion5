@@ -1,9 +1,11 @@
-/** Issue #514 and ADR-126: executable evidence that limited FABRIK no longer traps on a seed-side
- * bound or stops short of a reachable goal, in both dimensions, through the three shared owners
- * (`fabrik-select.ts`, the inward passes with `ik-constraint.ts` / `ik3d-constraint.ts`, and
- * `fabrik-cap.ts`), and that free rigs keep the path they had. Every solve case below fails on the
- * pre-#514 solver: the seed-side rigs end `limited` at a residual of 141 or 153 units, and the
- * premature-termination rigs end `iteration-cap` a few thousandths short at the free cap of 64. */
+/** Issues #514 and #519, ADR-126 and ADR-127: executable evidence that limited FABRIK no longer
+ * traps on a seed-side bound, stops short of a reachable goal, or runs a rounding circle to the
+ * cap, in both dimensions, through the three shared owners (`fabrik-select.ts`, the inward passes
+ * with `ik-constraint.ts` / `ik3d-constraint.ts`, and `fabrik-cap.ts`), and that free rigs keep the
+ * path they had. Every solve case below fails on the pre-#514 solver: the seed-side rigs end
+ * `limited` at a residual of 141 or 153 units, and the premature-termination rigs end
+ * `iteration-cap` a few thousandths short at the free cap of 64. TH-153 fails on the pre-#519
+ * solver: 3D ends `iteration-cap` where 2D ends `stalled`. */
 import { describe, expect, it } from "vitest";
 import {
   FABRIK_TOLERANCE,
@@ -15,8 +17,10 @@ import {
   FABRIK_LIMITED_CAP_FACTOR,
   FABRIK_MIN_ITERATIONS,
   FABRIK_PROGRESS_WINDOW,
+  FABRIK_ROUNDING_ULPS,
   fabrikIterationCap,
   fabrikPassBudget,
+  fabrikPassMovement,
   projectsConvergence,
   type FabrikPassBudget,
 } from "../../../src/plugins/fabrik-cap";
@@ -424,23 +428,94 @@ describe("limited FABRIK: seed side, bidirectional limits and the limited cap (i
     // A residual that rises within a window stops at that window's boundary.
     const turning = (pass: number) => (pass < 70 ? 10 * 0.9 ** pass : 1);
     expect(firstRefused(limited(), turning)).toBe(FABRIK_MIN_ITERATIONS + FABRIK_PROGRESS_WINDOW);
-    // A still-moving limited rig whose residual holds to ten digits: at the plain 4x cap it took 256
-    // passes in each dimension to publish the pose it had at 64. Now it stops at 64, both agree.
-    const crawl: SolveMember[] = [
-      { id: "a", base: "root", length: 67.8, limit: range(-18.8, 81.6) },
-      {
-        id: "b",
-        base: "a",
-        length: 62.8,
-        limit: range(-9.2, 52.7),
-        goal: { x: 140.4, y: 21.2, rotation: 0 },
-      },
+  });
+
+  it("CL-39 a pass settles an attempt by its constraint: free only on no movement, limited also on two rounding passes", () => {
+    // The movement union, relative to the pose's extent because rounding is.
+    const floor = FABRIK_ROUNDING_ULPS * Number.EPSILON;
+    expect(fabrikPassMovement(0, 300)).toBe("still");
+    expect(fabrikPassMovement(0, 0)).toBe("still");
+    expect(fabrikPassMovement(floor * 300, 300)).toBe("rounding");
+    expect(fabrikPassMovement(floor * 300 * 1.01, 300)).toBe("moving");
+    expect(fabrikPassMovement(1e-12, 0)).toBe("moving");
+    expect(fabrikPassMovement(Number.EPSILON * 2 ** 700, 2 ** 700)).toBe("rounding");
+    // Free keeps the exact `moved === 0` it always read, so no rounding residue ends it: its bytes.
+    const free = fabrikPassBudget(2, "free", FABRIK_TOLERANCE);
+    expect(free.settles(0, 300)).toBe(true);
+    for (let pass = 0; pass < 4; pass += 1) expect(free.settles(1e-14, 300)).toBe(false);
+    // Limited: no movement settles at once; one rounding pass may be a decay's last step, two are a
+    // circle around the fixed point; a moving pass in between starts the count again.
+    const limited = fabrikPassBudget(2, "limited", FABRIK_TOLERANCE);
+    expect(limited.settles(0, 300)).toBe(true);
+    const circling = fabrikPassBudget(2, "limited", FABRIK_TOLERANCE);
+    expect(circling.settles(1e-14, 300)).toBe(false);
+    expect(circling.settles(1, 300)).toBe(false);
+    expect(circling.settles(1e-14, 300)).toBe(false);
+    expect(circling.settles(2e-14, 300)).toBe(true);
+    // The deliberate boundary: a free planar rig that circles one ulp in 2D still runs to the cap
+    // there while 3D lands on an exact repeat, because moving free bytes is not this fix's to do.
+    const freeCircle: SolveMember[] = [
+      { id: "0", base: "root", length: 49.9 },
+      { id: "1", base: "0", length: 69.8 },
+      { id: "2", base: "1", length: 77, goal: { x: 91.2, y: 191.2, rotation: 0 } },
     ];
+    expect(solveChain(ROOT, freeCircle, false).quality).toEqual({
+      kind: "iteration-cap",
+      iterations: FABRIK_MIN_ITERATIONS,
+      residual: 15.136918406589361,
+    });
+    expect(solve3d(planar3d(freeCircle)).quality.kind).toBe("stalled");
+  });
+
+  it("TH-153 a planar limited rig circling its fixed point by rounding stalls in both dimensions", () => {
+    // Issue #519. Each rig reached one planar fixed point in both dimensions, but 2D landed on an
+    // exact repeat (`stalled`) while 3D circled it by an ulp until the cap (`iteration-cap`), or,
+    // for the last, both circled and published at 64 passes the pose they had after one. Found by
+    // tools/issue519/agreement.ts, seed 11 rigs 2574 and 1266, and CL-36's former crawl.
+    const rigs: SolveMember[][] = [
+      [
+        { id: "0", base: "root", length: 96.5, limit: range(-96.6, 43.6) },
+        {
+          id: "1",
+          base: "0",
+          length: 59.5,
+          limit: range(-57.4, 87.8),
+          goal: { x: -12.1, y: -172.5, rotation: 0 },
+        },
+      ],
+      [
+        { id: "0", base: "root", length: 74.4, limit: range(-116.5, -55.7) },
+        { id: "1", base: "0", length: 75.1 },
+        { id: "2", base: "1", length: 63.3, limit: range(-69.4, 29.6) },
+        { id: "3", base: "2", length: 86.9, goal: { x: -150.1, y: -308.8, rotation: 0 } },
+      ],
+      [
+        { id: "a", base: "root", length: 67.8, limit: range(-18.8, 81.6) },
+        {
+          id: "b",
+          base: "a",
+          length: 62.8,
+          limit: range(-9.2, 52.7),
+          goal: { x: 140.4, y: 21.2, rotation: 0 },
+        },
+      ],
+    ];
+    for (const rig of rigs) {
+      const flat = solveChain(ROOT, rig, false).quality;
+      const spatial = solve3d(planar3d(rig)).quality;
+      expect(flat.kind).toBe("stalled");
+      expect(spatial.kind).toBe("stalled");
+      expect(iterationsOf(spatial)).toBe(iterationsOf(flat));
+      expect(iterationsOf(flat)).toBeLessThan(FABRIK_MIN_ITERATIONS);
+      expect(spatial.residual).toBeCloseTo(flat.residual, 9);
+    }
+    // One attempt, no selector: the same answer, so the loop rather than a retry decides it.
+    const crawl = rigs[2]!;
     const flat = solveFabrikAttempt(ROOT, crawl, false, "centroid");
     const spatial = solveTree3dAttempt(ROOT3, planar3d(crawl), UNBOUND_POLE3D, false, "centroid");
     for (const quality of [flat.quality, spatial.quality] as IterativeQuality[]) {
-      expect(quality.kind).toBe("iteration-cap");
-      expect(quality.iterations).toBe(FABRIK_MIN_ITERATIONS);
+      expect(quality.kind).toBe("stalled");
+      expect(quality.iterations).toBe(2);
       expect(quality.residual).toBeCloseTo(11.3915490443, 9);
     }
   });

@@ -83,6 +83,12 @@ const ROOT = -1;
 
 const X_AXIS: Vec3 = [1, 0, 0];
 
+/** What one outward pass measured: the largest tip coordinate move, and the largest coordinate. */
+interface PassMotion {
+  readonly moved: number;
+  readonly extent: number;
+}
+
 /**
  * The point at distance `length` from `from`, toward `to`: the 2D `place` over `Vec3`, with the same
  * two chosen degeneracies (a zero length collapses onto `from`, a zero distance takes world +x) and
@@ -136,9 +142,10 @@ function seedArc3d(
  * One attempt from one seed side and one compromise rule, over members as `solveTree3d` read them.
  *
  * The structure is the 2D attempt's: seed every addressed path, run an outward pass, then alternate
- * inward and outward passes until the worst addressed miss is inside `FABRIK_TOLERANCE`, a pass
- * moves nothing, or the shared pass budget denies another pass. Limited children constrain both
- * directions; a sub-base settles on the influence-weighted compromise of
+ * inward and outward passes until the worst addressed miss is inside `FABRIK_TOLERANCE`, the shared
+ * pass budget settles the attempt at a fixed point (a pass that moved nothing, or for a limited
+ * chain two passes that moved by rounding only, issue #519), or it denies another pass. Limited
+ * children constrain both directions; a sub-base settles on the influence-weighted compromise of
  * the tips its branches propose, each branch un-offsetting its proposed pivot through its base's
  * current full frame, so positions are averaged and orientations never are (ADR-054).
  *
@@ -258,10 +265,12 @@ export function solveTree3dAttempt(
    * nearest it (`limitLocal3d`, ADR-123) and its tip re-placed along the legal direction, so every
    * later pass starts from a legal pose and the published orientation is legal because the pose
    * is, not because the output was clamped afterwards (ADR-108). Answers the largest coordinate any
-   * tip moved from where the previous outward pass settled it.
+   * tip moved from where the previous outward pass settled it, and the largest tip coordinate
+   * magnitude, which is what the budget judges that movement against (issue #519).
    */
-  const outward = (): number => {
+  const outward = (): PassMotion => {
     let moved = 0;
+    let extent = 0;
     for (let index = 0; index < count; index += 1) {
       const frame = parentFrame(index);
       const origin = originOf(index);
@@ -297,12 +306,13 @@ export function solveTree3dAttempt(
           Math.abs(was[1] - tip[1]),
           Math.abs(was[2] - tip[2]),
         );
+      extent = Math.max(extent, Math.abs(tip[0]), Math.abs(tip[1]), Math.abs(tip[2]));
       settled[index] = tip;
       pivots[index] = pivot;
       tips[index] = tip;
       frames[index] = solved;
     }
-    return moved;
+    return { moved, extent };
   };
   // The frame each limited member settled on earlier in the current inward pass: its last outward
   // frame swung onto its inward direction. Only limited members with a member base write one.
@@ -389,9 +399,9 @@ export function solveTree3dAttempt(
         },
       });
     }
-    const moved = outward();
+    const { moved, extent } = outward();
     residual = residualNow();
-    if (moved === 0) {
+    if (budget.settles(moved, extent)) {
       stalled = true;
       break;
     }

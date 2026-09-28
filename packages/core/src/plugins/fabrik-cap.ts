@@ -6,7 +6,9 @@ import { unreachable } from "../lang/exhaustive";
  * A cap, not a promise. The loop in `fabrik.ts` also exits the moment a pass moves nothing, which
  * is what an unreachable goal does after its first pass, and the moment the residual is inside
  * `FABRIK_TOLERANCE`. So the cap is reached only by an attempt that is still moving, and the
- * quality it then reports, `iteration-cap`, says exactly that: more passes would have helped.
+ * quality it then reports, `iteration-cap`, says exactly that: more passes would have helped. What
+ * "moves nothing" means is this module's too, per constraint, through `FabrikPassBudget.settles`
+ * (issue #519), so both dimensions stop an attempt on one rule.
  *
  * The cap scales with the chain's serial depth, the number of members on its longest root-to-leaf
  * path, because that is the distance a correction travels and the passes a serial chain needs grow
@@ -82,10 +84,56 @@ export function fabrikIterationCap(depth: number, constraint: FabrikConstraint):
  */
 export const FABRIK_PROGRESS_WINDOW = 8;
 
-/** How many passes one FABRIK attempt takes: asked once before every pass, in pass order. */
+/**
+ * The movement, in units of `Number.EPSILON` times the pose's extent, at or below which a limited
+ * pass moved only by rounding (issue #519).
+ *
+ * The 2D and 3D solves reach the same planar fixed point by different arithmetic: 2D projects a
+ * limited tip through `atan2`, `cos` and `sin`, 3D rebuilds every hinge frame from its limited
+ * angle and swings frames by matrix products. At that fixed point 2D usually lands on an exact
+ * repeat and 3D often circulates a few ulps around it for ever, so an exact `moved === 0` called
+ * one `stalled` and the other `iteration-cap`, 2 to 6 of every 3,000 fuzzed planar rigs. Measured
+ * over 3,000-rig planar, +z-hinge and random-axis corpora (tools/issue519/threshold-sweep.ts), the
+ * 2D rounding floor is about one unit and the 3D one wanders up to about 600, while no limited
+ * attempt that once moved 2^16 units or less ever moved more than 2^24 again (the first such
+ * revival appears at 2^20). 1,024 sits above the 3D floor and 64 times below the first revival; at
+ * an extent of 300 world units it is 7e-11, eight orders under `FABRIK_TOLERANCE`, so no pass it
+ * absorbs could have carried a residual to tolerance.
+ */
+export const FABRIK_ROUNDING_ULPS = 1024;
+
+/**
+ * What one pass did to the pose, as the stall test reads it: a closed union so each constraint's
+ * budget says, by an exhaustive switch, what a rounding-sized pass means to it.
+ *
+ * `still` moved no coordinate at all; `rounding` moved some by at most `FABRIK_ROUNDING_ULPS` ulps
+ * of the extent; `moving` moved one by more.
+ */
+export type FabrikPassMovement = "still" | "rounding" | "moving";
+
+/**
+ * Names a pass that moved no tip coordinate more than `moved`, in a pose whose largest tip
+ * coordinate magnitude is `extent`. Relative to the extent because rounding is: a coordinate's
+ * error comes from the chain-scale sums it was computed through, not from its own magnitude.
+ */
+export function fabrikPassMovement(moved: number, extent: number): FabrikPassMovement {
+  if (moved === 0) return "still";
+  return moved <= FABRIK_ROUNDING_ULPS * Number.EPSILON * extent ? "rounding" : "moving";
+}
+
+/** How many passes one FABRIK attempt takes, and when a pass leaves it at a fixed point. */
 export interface FabrikPassBudget {
-  /** Whether an attempt that has taken `iterations` passes and stands at `residual` takes another. */
+  /**
+   * Whether an attempt that has taken `iterations` passes and stands at `residual` takes another.
+   * Asked once before every pass, in pass order.
+   */
   admits(iterations: number, residual: number): boolean;
+  /**
+   * Whether the pass just taken, which moved no tip coordinate more than `moved` in a pose whose
+   * largest tip coordinate magnitude is `extent`, leaves the attempt at a fixed point, so it ends
+   * `stalled` rather than running on to the cap. Asked once after every pass, in pass order.
+   */
+  settles(moved: number, extent: number): boolean;
 }
 
 /**
@@ -101,6 +149,13 @@ export interface FabrikPassBudget {
  * converged rigs; the projection keeps all but one of them at 1.02 times the pre-#514 passes. A
  * budget that stops a limited attempt this way reports what the cap reports, because the attempt
  * was still moving: `iteration-cap`, or `limited` when it ends on a bound.
+ *
+ * The fixed point is judged per constraint too (issue #519). A free attempt settles only on a pass
+ * that moved nothing, exactly the `moved === 0` it always read, so its bytes hold. A limited
+ * attempt also settles on the second consecutive `rounding` pass: its projection onto ranges is
+ * where the 2D and 3D arithmetic part, and two passes in the rounding band are an attempt circling
+ * its fixed point, where one alone may be the last step of a decay that ends on an exact repeat
+ * anyway.
  */
 export function fabrikPassBudget(
   depth: number,
@@ -110,7 +165,7 @@ export function fabrikPassBudget(
   const free = fabrikIterationCap(depth, "free");
   switch (constraint) {
     case "free":
-      return { admits: (iterations) => iterations < free };
+      return { admits: (iterations) => iterations < free, settles: settlesFree };
     case "limited":
       return limitedPassBudget(free, fabrikIterationCap(depth, "limited"), tolerance);
     default:
@@ -118,10 +173,40 @@ export function fabrikPassBudget(
   }
 }
 
+function settlesFree(moved: number, extent: number): boolean {
+  const movement = fabrikPassMovement(moved, extent);
+  switch (movement) {
+    case "still":
+      return true;
+    case "rounding":
+    case "moving":
+      return false;
+    default:
+      return unreachable(movement);
+  }
+}
+
 function limitedPassBudget(free: number, ceiling: number, tolerance: number): FabrikPassBudget {
   // The residual each pass ended at, indexed by pass, so a window boundary reads its own start.
   const trail: number[] = [];
+  // Whether the previous pass moved by rounding only.
+  let rounding = false;
   return {
+    settles(moved, extent) {
+      const movement = fabrikPassMovement(moved, extent);
+      const previous = rounding;
+      rounding = movement === "rounding";
+      switch (movement) {
+        case "still":
+          return true;
+        case "rounding":
+          return previous;
+        case "moving":
+          return false;
+        default:
+          return unreachable(movement);
+      }
+    },
     admits(iterations, residual) {
       trail[iterations] = residual;
       if (iterations < free) return true;
