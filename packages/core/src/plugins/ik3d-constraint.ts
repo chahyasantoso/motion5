@@ -240,15 +240,36 @@ export function limitLocal3d(limit: JointLimit3d, proposed: () => Matrix3): Limi
  * A free member has no centre and keeps `rest`, what `fk3d` composes for it with no solve.
  */
 export function centreLocal3d(limit: JointLimit3d, rest: Matrix3): Matrix3 {
+  return legalLocal3d(limit, rest, 0.5);
+}
+
+/** A legal interpolation within a member's angle range; cone swing stays at zero. */
+export function legalLocal3d(limit: JointLimit3d, rest: Matrix3, fraction: number): Matrix3 {
+  const angle = (range: JointLimit): number => {
+    switch (range.kind) {
+      case "free":
+        return 0;
+      case "range":
+        return range.min + fraction * (range.max - range.min);
+      default:
+        return unreachable(range);
+    }
+  };
   switch (limit.kind) {
     case "free":
       return rest;
     case "hinge":
-      return rotationAboutAxis3d(limit.axis, rangeCentre(limit.range));
+      return rotationAboutAxis3d(
+        limit.axis,
+        fraction === 0.5 ? rangeCentre(limit.range) : angle(limit.range),
+      );
     case "cone":
       return rotationAboutAxis3d(LOCAL_X3, 0);
     case "swing-twist":
-      return rotationAboutAxis3d(LOCAL_X3, rangeCentre(limit.twist));
+      return rotationAboutAxis3d(
+        LOCAL_X3,
+        fraction === 0.5 ? rangeCentre(limit.twist) : angle(limit.twist),
+      );
     default:
       return unreachable(limit);
   }

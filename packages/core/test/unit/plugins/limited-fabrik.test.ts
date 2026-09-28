@@ -245,6 +245,65 @@ describe("limited FABRIK: seed side, bidirectional limits and the limited cap (i
     expect(selected).toEqual(solveFabrik(ROOT, free, false));
   });
 
+  it("TH-160 owns a bounded legal-range portfolio without charging met, stalled or 2D solves", () => {
+    const miss = { kind: "limited", iterations: 64, residual: 4, atBound: ["m"] } as const;
+    const met = { kind: "converged", iterations: 18, residual: 0.0005 } as const;
+    const calls: [boolean, string, string][] = [];
+    const attempt: FabrikAttempt<null, never, { quality: IterativeQuality }> = (
+      _root,
+      _members,
+      flip,
+      rule,
+      seed,
+    ) => {
+      const name = seed?.kind === "legal-range" ? `q${seed.fraction}` : "default";
+      calls.push([flip, rule, name]);
+      return { quality: name === "q0.75" ? met : miss };
+    };
+    expect(selectFabrik(null, [], false, attempt, 250).quality).toBe(met);
+    expect(calls).toEqual([
+      [false, "centroid", "default"],
+      [true, "centroid", "default"],
+      [false, "centroid", "q0.25"],
+      [false, "centroid", "q0.75"],
+    ]);
+    calls.length = 0;
+    selectFabrik(null, [], false, attempt);
+    expect(calls).toHaveLength(2);
+    for (const kind of ["converged", "stalled"] as const) {
+      calls.length = 0;
+      selectFabrik(
+        null,
+        [],
+        false,
+        () => {
+          calls.push([false, "centroid", "default"]);
+          return { quality: { kind, iterations: 1, residual: 0 } };
+        },
+        100,
+      );
+      expect(calls).toHaveLength(1);
+    }
+    calls.length = 0;
+    selectFabrik(
+      null,
+      [],
+      false,
+      (_root, _members, flip) => {
+        calls.push([flip, "centroid", "default"]);
+        return { quality: flip ? met : miss };
+      },
+      100,
+    );
+    expect(calls).toHaveLength(2); // a converged opposite side stops the portfolio
+    calls.length = 0;
+    selectFabrik(null, [], false, attempt, 100);
+    expect(calls).toHaveLength(2); // four units of miss exceed two percent of 100 units of reach
+    calls.length = 0;
+    selectFabrik(null, [], false, attempt, 10);
+    expect(calls).toHaveLength(2); // distant misses do not pay two extra attempts
+  });
+
   it("CL-35 the inward pass bounds a base by its limited child, so a two-limit chain converges", () => {
     // Pre-#514: `limited` at 7.18 (authored side) and `iteration-cap` at 2.33 (flipped). With the
     // opposite-side retry and the limited cap but no inward bound, both sides still end

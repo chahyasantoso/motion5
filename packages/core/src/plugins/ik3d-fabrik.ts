@@ -7,7 +7,7 @@ import {
   type FabrikConstraint,
   type FabrikPassMotion,
 } from "./fabrik-cap";
-import { selectFabrik } from "./fabrik-select";
+import { selectFabrik, type FabrikSeed } from "./fabrik-select";
 import { readNumber, segmentExtent } from "./frame";
 import {
   add3,
@@ -131,6 +131,7 @@ export function solveTree3dAttempt(
   pole: Pole3d,
   flip: boolean,
   rule: CompromiseRule,
+  seed?: FabrikSeed,
 ): SolveResult3d<IterativeQuality> {
   const { byId, ids, serialDepth, childCount, leaves } = canonicalChain(members);
   const count = ids.length;
@@ -219,6 +220,7 @@ export function solveTree3dAttempt(
     },
     pole,
     flip,
+    seed,
   );
 
   /**
@@ -451,7 +453,8 @@ export function solveTree3dAttempt(
 /**
  * The tree solve at one magnitude through the shared closed selector: the authored-side attempt,
  * three alternatives for a conflicted baseline and one opposite-seed centroid retry for a limited
- * or capped baseline (#490, ADR-126, ADR-128).
+ * or capped baseline (#490, ADR-126, ADR-128). A near miss with a non-planar hinge can pay two
+ * bounded legal-range starts; the selector owns that budget, not this attempt.
  */
 function selectTree3d(
   root: WorldFrame3d,
@@ -462,8 +465,26 @@ function selectTree3d(
     root,
     members,
     false,
-    (frame: WorldFrame3d, chain: readonly ChainMember3d[], flip: boolean, rule: CompromiseRule) =>
-      solveTree3dAttempt(frame, chain, pole, flip, rule),
+    (
+      frame: WorldFrame3d,
+      chain: readonly ChainMember3d[],
+      flip: boolean,
+      rule: CompromiseRule,
+      seed?: FabrikSeed,
+    ) => solveTree3dAttempt(frame, chain, pole, flip, rule, seed),
+    members.some(
+      ({ limit }) =>
+        limit?.kind === "hinge" &&
+        (Math.abs(limit.axis[0]) > 1e-12 || Math.abs(limit.axis[1]) > 1e-12),
+    )
+      ? members.reduce(
+          (reach, member) =>
+            reach +
+            segmentExtent(member.length) +
+            norm3([member.offset.x, member.offset.y, member.offset.z]),
+          0,
+        )
+      : 0,
   );
 }
 

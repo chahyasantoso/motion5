@@ -5,18 +5,18 @@ below are the complete shape. **Now** and **Next in line** carry exactly one bul
 bullet states a phase; `packages/core/test/unit/scripts/session-status-shape.test.ts` enforces the
 shape and byte ceiling.
 
-- **Captured:** 2026-09-28, Asia/Jakarta.
-- **Read against:** `main` at `58306050716894306eed93cfae80018f36dd0deb`, the base of
-  [PR #526][pr526].
+- **Captured:** 2026-09-28, Asia/Jakarta (after #526).
+- **Read against:** `main` at `08f656f0e90e0cf8956d3e41e4797656ad703a15`, after
+  [PR #526][pr526] merged.
 
 ## Now
 
-- **`main` carries the best-completed-pass fix for [#521][issue521] ([ADR-128][adr128]).**
+- **`main` carries legal arbitrary-axis seeding for [#523][issue523] ([PR #526][pr526]).**
 
 ## Next in line
 
-- **[PR #526][pr526] proposes legal joint-space seeding for [#523][issue523];** validate and merge it
-  before tackling the remaining local minima separately.
+- **[#527][issue527] tracks residual reachable arbitrary-axis misses;** its bounded legal-seed
+  portfolio is prepared locally, not merged or verified in repository CI.
 
 ## Open, and not scheduled
 
@@ -43,3 +43,4 @@ shape and byte ceiling.
 [adr128]: ./ADR-128-fabrik-publishes-its-best-completed-pass.md
 [issue523]: https://github.com/chahyasantoso/motion5/issues/523
 [pr526]: https://github.com/chahyasantoso/motion5/pull/526
+[issue527]: https://github.com/chahyasantoso/motion5/issues/527

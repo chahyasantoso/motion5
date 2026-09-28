@@ -19,7 +19,7 @@ import {
 import { solveChain } from "../../../src/plugins/ik-solve";
 import { solveTwoBone3d, UNBOUND_POLE3D, type Pole3d } from "../../../src/plugins/ik3d-analytic";
 import { ik3dPlugin } from "../../../src/plugins/ik3d";
-import { place3d } from "../../../src/plugins/ik3d-fabrik";
+import { place3d, solveTree3dAttempt } from "../../../src/plugins/ik3d-fabrik";
 import { chainShape3d, solveChain3d } from "../../../src/plugins/ik3d-solve";
 import type { ChainMember3d } from "../../../src/plugins/ik3d-chain";
 import type { SolveResult3d } from "../../../src/plugins/ik3d-result";
@@ -96,6 +96,48 @@ function perpendicularSide(point: Vec3, goal: Vec3, side: Vec3): number {
 }
 
 describe("3D FABRIK evidence", () => {
+  it("TH-162 recovers reachable corpus rig 17 from a legal quartile, not a longer cap", () => {
+    // #514/#527: N=2000, seed=7, random-axis rig 17. Goal is the generator's exact FK image
+    // of legal hinge angles 12.604992073353275 and 76.92486313481233 degrees.
+    const fixture = [
+      member("m0", "root", 40.85358144715428),
+      member("m1", "m0", 94.8467200063169, {
+        limit: {
+          kind: "hinge",
+          axis: [-0.655586166349419, 0.7289889460639496, 0.19693119358761804],
+          range: { kind: "range", min: 0, max: 106.17011815309525 },
+        },
+      }),
+      member("m2", "m1", 21.519364770501852),
+      member("m3", "m2", 73.64285262301564, {
+        limit: {
+          kind: "hinge",
+          axis: [0.5313246021533237, -0.17907773024417506, -0.8280249595738084],
+          range: { kind: "range", min: -36.05680175125599, max: 123.78932288615033 },
+        },
+        goal: {
+          x: 15.952997154532275,
+          y: -135.69848629590638,
+          z: 153.8330012396826,
+          ...ZERO_REST,
+        },
+      }),
+    ];
+    const authored = solveTree3dAttempt(ROOT, fixture, UNBOUND_POLE3D, false, "centroid");
+    const opposite = solveTree3dAttempt(ROOT, fixture, UNBOUND_POLE3D, true, "centroid");
+    expect(authored.quality.kind).toBe("iteration-cap");
+    expect(authored.quality.residual).toBeGreaterThan(1);
+    expect(opposite.quality.kind).toBe("limited");
+    const quarter = solveTree3dAttempt(ROOT, fixture, UNBOUND_POLE3D, false, "centroid", {
+      kind: "legal-range",
+      fraction: 0.25,
+    });
+    expect(quarter.quality.kind).toBe("converged");
+    const selected = solveChain3d(ROOT, fixture, UNBOUND_POLE3D);
+    expect(selected.quality.kind).toBe("converged");
+    expect(selected.quality.residual).toBeLessThan(0.001);
+    expect(solveChain3d(ROOT, fixture, UNBOUND_POLE3D)).toEqual(selected);
+  });
   it("TH-58 closes seeded serial chains and independently composes their tips", () => {
     const random = seeded(7);
     for (let sample = 0; sample < 300; sample += 1) {
