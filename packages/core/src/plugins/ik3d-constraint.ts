@@ -20,7 +20,9 @@ import {
   canonicalDegrees,
   cross3,
   dot3,
+  eulerFromMatrix3d,
   LOCAL_X3,
+  matrixFromEuler3d,
   multiplyMatrix3,
   multiplyVector3,
   norm3,
@@ -30,6 +32,7 @@ import {
   transposeMatrix3,
   twistAbout3d,
   type Matrix3,
+  type Euler3d,
   type Vec3,
 } from "./frame3d";
 import {
@@ -239,6 +242,28 @@ export function limitLocal3d(limit: JointLimit3d, proposed: () => Matrix3): Limi
     default:
       return unreachable(limit);
   }
+}
+
+/**
+ * Validate a sampled hinge pose in the actual Euler image the renderer receives. The ideal
+ * axis turn, Euler round-trip, and shared limit projection must all agree before an analytic
+ * recovery may publish it. This is deliberately separate from the ordinary FABRIK projection.
+ */
+export function renderedLegalHinge3d(
+  limit: Extract<JointLimit3d, { kind: "hinge" }>,
+  angle: number,
+): { readonly euler: Euler3d; readonly matrix: Matrix3 } | undefined {
+  const ideal = rotationAboutAxis3d(limit.axis, angle);
+  const euler = eulerFromMatrix3d(ideal);
+  const matrix = matrixFromEuler3d(euler);
+  if (matrix.some((value, index) => Math.abs(value - ideal[index]!) > 1e-9)) return undefined;
+  const projected = limitLocal3d(limit, () => matrix);
+  if (
+    projected.kind !== "moved" ||
+    projected.local.some((value, index) => Math.abs(value - matrix[index]!) > 1e-9)
+  )
+    return undefined;
+  return { euler, matrix };
 }
 
 /**

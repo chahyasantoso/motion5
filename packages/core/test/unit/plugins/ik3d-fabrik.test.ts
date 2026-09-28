@@ -22,7 +22,11 @@ import { solveChain } from "../../../src/plugins/ik-solve";
 import { solveTwoBone3d, UNBOUND_POLE3D, type Pole3d } from "../../../src/plugins/ik3d-analytic";
 import { ik3dPlugin } from "../../../src/plugins/ik3d";
 import { legalRetryReach3d, place3d, solveTree3dAttempt } from "../../../src/plugins/ik3d-fabrik";
-import { solveHingePairRecovery3d } from "../../../src/plugins/ik3d-hinge-pair";
+import {
+  solveFreeRootHingeTail3d,
+  solveHingePairRecovery3d,
+} from "../../../src/plugins/ik3d-hinge-pair";
+import { solveInterleavedFreeSerial3d } from "../../../src/plugins/ik3d-serial-recovery";
 import { chainShape3d, solveChain3d } from "../../../src/plugins/ik3d-solve";
 import { limitLocal3d } from "../../../src/plugins/ik3d-constraint";
 import type { ChainMember3d } from "../../../src/plugins/ik3d-chain";
@@ -100,6 +104,160 @@ function perpendicularSide(point: Vec3, goal: Vec3, side: Vec3): number {
 }
 
 describe("3D FABRIK evidence", () => {
+  it("TH-179 closes a final-free block under a rolled, translated root", () => {
+    const root = readFrame3d({
+      x: 17,
+      y: -9,
+      z: 23,
+      rotation: 35,
+      rotationX: -20,
+      rotationY: 14,
+    });
+    const localGoal: Vec3 = [-32.00051765859141, 134.85444580777076, -9.895349553866598];
+    const translated = add3(
+      [root.x, root.y, root.z],
+      multiplyVector3(matrixFromEuler3d(root), localGoal),
+    );
+    const goal = readFrame3d({ x: translated[0], y: translated[1], z: translated[2] });
+    const members = [
+      member("m0", "root", 71.38998994603753),
+      member("m1", "m0", 65.5161595158279, {
+        limit: {
+          kind: "hinge",
+          axis: [0.10959486834464084, 0.7671394959960741, -0.6320490159120654],
+          range: { kind: "range", min: -155.3130643069744, max: -61.4955870504491 },
+        },
+      }),
+      member("m2", "m1", 42.40117896348238, { goal }),
+    ];
+    const result = solveInterleavedFreeSerial3d(root, members);
+    expect(result?.quality.kind).toBe("reached");
+    expect(frameDistance3d(composeChain3d(root, members, result!).m2!, goal)).toBeLessThan(
+      1e-4,
+    );
+    expect(Object.keys(result!.rotations3d).sort()).toEqual(["m0", "m1", "m2"]);
+  });
+
+  it("TH-176 closes a legal FHFH chain with independently rendered FK", () => {
+    const goal = readFrame3d({
+      x: -35.6729090628118,
+      y: 22.23198194420729,
+      z: 88.61350249102914,
+    });
+    const members = [
+      member("m0", "root", 98.38177559897304),
+      member("m1", "m0", 39.75347654893994, {
+        limit: {
+          kind: "hinge",
+          axis: [0.1810763233443554, 0.48032885465079667, -0.8581931930014036],
+          range: { kind: "range", min: -149.65340234339237, max: -47.55786440568045 },
+        },
+      }),
+      member("m2", "m1", 48.81612412631512),
+      member("m3", "m2", 72.54957620054483, {
+        limit: {
+          kind: "hinge",
+          axis: [0.5721498043727001, 0.32567895511922285, 0.752713637148107],
+          range: { kind: "range", min: -88.74242354184389, max: 19.905908913351595 },
+        },
+        goal,
+      }),
+    ];
+    const result = solveInterleavedFreeSerial3d(ROOT, members);
+    expect(result?.quality.kind).toBe("reached");
+    expect(result).toEqual(solveInterleavedFreeSerial3d(ROOT, [...members].reverse()));
+    expect(frameDistance3d(composeChain3d(ROOT, members, result!).m3!, goal)).toBeLessThan(
+      1e-4,
+    );
+    for (const item of members) {
+      if (item.limit?.kind !== "hinge") continue;
+      const local = matrixFromEuler3d(result!.rotations3d[item.id]!);
+      const projected = limitLocal3d(item.limit, () => local);
+      expect(projected.kind).toBe("moved");
+      if (projected.kind === "moved")
+        expect(
+          Math.max(...local.map((value, index) => Math.abs(value - projected.local[index]!))),
+        ).toBeLessThan(1e-9);
+    }
+    expect(solveInterleavedFreeSerial3d(ROOT, [{ ...members[0]!, offset: { x: 1, y: 0, z: 0 } }, ...members.slice(1)])).toBeUndefined();
+    expect(solveInterleavedFreeSerial3d(ROOT, members.map((item, index) =>
+      index === 1 ? { ...item, limit: { kind: "cone", maxSwing: 90 } } : item,
+    ))).toBeUndefined();
+  });
+
+  it("TH-177 recovers an interior zero-hinge radius the endpoint grid misses", () => {
+    const goal = readFrame3d({
+      x: -172.76647802466633,
+      y: -72.94091720655308,
+      z: -110.13062000881749,
+    });
+    const members = [
+      member("m0", "root", 81.28483027219772),
+      member("m1", "m0", 92.40048948675394, {
+        limit: {
+          kind: "hinge",
+          axis: [-0.6812253408426044, 0.7280458768647049, -0.07668921810906969],
+          range: { kind: "range", min: -36.33798886090517, max: 83.22030252311379 },
+        },
+      }),
+      member("m2", "m1", 43.905195612460375, {
+        limit: {
+          kind: "hinge",
+          axis: [0.06048865529687174, -0.813236022164585, -0.5787817333281164],
+          range: { kind: "range", min: 0, max: 37.6502456702292 },
+        },
+        goal,
+      }),
+    ];
+    const result = solveChain3d(ROOT, members);
+    expect(result.quality.kind).toBe("reached");
+    expect(frameDistance3d(composeChain3d(ROOT, members, result).m2!, goal)).toBeLessThan(
+      1e-4,
+    );
+  });
+
+  it("TH-178 recovers a second interior radius and refuses an unreachable serial goal", () => {
+    const goal = readFrame3d({
+      x: 77.71711715606504,
+      y: -146.78821675564032,
+      z: -14.288129175911576,
+    });
+    const members = [
+      member("m0", "root", 42.932046838104725),
+      member("m1", "m0", 44.05199311673641, {
+        limit: {
+          kind: "hinge",
+          axis: [0.14158684673962427, 0.6187915235333219, -0.7726902453335621],
+          range: { kind: "range", min: -65.22472005337477, max: 85.98530996590853 },
+        },
+      }),
+      member("m2", "m1", 58.049342688173056, {
+        limit: {
+          kind: "hinge",
+          axis: [-0.6517347077577137, -0.6201130432919506, -0.4366940396240407],
+          range: { kind: "range", min: -76.5459405630827, max: 0 },
+        },
+      }),
+      member("m3", "m2", 22.17661639675498, {
+        limit: {
+          kind: "hinge",
+          axis: [-0.019901321586284455, -0.48824440730699364, -0.87247999182363],
+          range: { kind: "range", min: -59.94401156902313, max: 45.60031414264813 },
+        },
+        goal,
+      }),
+    ];
+    const recovered = solveChain3d(ROOT, members);
+    expect(recovered.quality.kind).toBe("reached");
+    expect(frameDistance3d(composeChain3d(ROOT, members, recovered).m3!, goal)).toBeLessThan(
+      1e-4,
+    );
+    const unreachable = members.map((item, index) =>
+      index === 3 ? { ...item, goal: { ...goal, x: 1000 } } : item,
+    );
+    expect(solveFreeRootHingeTail3d(ROOT, unreachable)).toBeUndefined();
+  });
+
   it("TH-169 closes corpus rig 9 with a legal hinge and respects either pole side", () => {
     const hinge = {
       kind: "hinge",

@@ -19,7 +19,7 @@ import {
 import { bendBasis3d, rereadPole3d, UNBOUND_POLE3D, type Pole3d } from "./ik3d-analytic";
 import { canonicalChain, twoBonePair } from "./ik-topology";
 import type { ChainMember3d } from "./ik3d-chain";
-import { limitLocal3d, nonPlanarHinge3d } from "./ik3d-constraint";
+import { nonPlanarHinge3d, renderedLegalHinge3d } from "./ik3d-constraint";
 import type { SolveResult3d } from "./ik3d-result";
 import type { ClosedFormQuality } from "./ik-result";
 
@@ -256,6 +256,19 @@ export function solveFreeRootHingeTail3d(
     visit([], 0);
     if (low !== undefined && high !== undefined) break;
   }
+  // A zero-angle pose can be an interior radius extremum even when the legal endpoints are
+  // sampled. Add one legal interior anchor only after the grids fail, preserving existing poses.
+  if (low === undefined || high === undefined) {
+    const angles = legal.map(({ range }) =>
+      range.min <= 0 && range.max >= 0 ? 0 : range.min + (range.max - range.min) / 2,
+    );
+    const radius = norm3(vectorAt(angles));
+    if (Number.isFinite(radius)) {
+      const sample = { angles, radius };
+      if (radius <= distance && (low === undefined || radius > low.radius)) low = sample;
+      if (radius >= distance && (high === undefined || radius < high.radius)) high = sample;
+    }
+  }
   if (low === undefined || high === undefined) return undefined;
   for (let step = 0; step < 48 && high.radius - low.radius > FABRIK_TOLERANCE / 8; step += 1) {
     const angles: number[] = low.angles.map((angle, index) => (angle + high!.angles[index]!) / 2);
@@ -290,21 +303,13 @@ export function solveFreeRootHingeTail3d(
   let frame = multiplyMatrix3(rootMatrix, matrixFromEuler3d(firstLocal));
   let tip = add3(origin, scale3(axisX3(frame), first!.length));
   for (let index = 0; index < legal.length; index += 1) {
-    const { member, axis } = legal[index]!;
+    const { member } = legal[index]!;
     const limit = member.limit!;
     if (limit.kind !== "hinge") return undefined;
-    const ideal = rotationAboutAxis3d(axis, angles[index]!);
-    const local = eulerFromMatrix3d(ideal);
-    const rendered = matrixFromEuler3d(local);
-    if (rendered.some((value, at) => Math.abs(value - ideal[at]!) > 1e-9)) return undefined;
-    const projected = limitLocal3d(limit, () => rendered);
-    if (
-      projected.kind !== "moved" ||
-      projected.local.some((value, at) => Math.abs(value - rendered[at]!) > 1e-9)
-    )
-      return undefined;
-    rotations3d[member.id] = local;
-    frame = multiplyMatrix3(frame, rendered);
+    const legalPose = renderedLegalHinge3d(limit, angles[index]!);
+    if (legalPose === undefined) return undefined;
+    rotations3d[member.id] = legalPose.euler;
+    frame = multiplyMatrix3(frame, legalPose.matrix);
     tip = add3(tip, scale3(axisX3(frame), member.length));
   }
   const residual = norm3(subtract3(tip, [goal.x, goal.y, goal.z]));

@@ -6,6 +6,7 @@ import type { ChainMember3d } from "./ik3d-chain";
 import { constrains } from "./ik3d-constraint";
 import { solveTree3d } from "./ik3d-fabrik";
 import { solveFreeRootHingeTail3d, solveHingePairRecovery3d } from "./ik3d-hinge-pair";
+import { solveInterleavedFreeSerial3d } from "./ik3d-serial-recovery";
 import { orientLeaves3d } from "./ik3d-orient";
 import type { SolveResult3d } from "./ik3d-result";
 
@@ -89,6 +90,7 @@ function solvePosition3d(root: WorldFrame3d, shape: ChainShape3d, bend: Pole3d):
       // Otherwise the tree result is retained without changing its quality or any published byte.
       return (
         solveHingePairRecovery3d(root, shape.members, bend) ??
+        solveInterleavedFreeSerial3d(root, shape.members, bend) ??
         solveFreeRootHingeTail3d(root, shape.members, bend) ??
         result
       );
