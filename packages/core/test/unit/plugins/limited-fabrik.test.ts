@@ -21,6 +21,7 @@ import {
   fabrikIterationCap,
   fabrikPassBudget,
   fabrikPassMovement,
+  fabrikRelativeMove,
   projectsConvergence,
   type FabrikPassBudget,
 } from "../../../src/plugins/fabrik-cap";
@@ -431,27 +432,36 @@ describe("limited FABRIK: seed side, bidirectional limits and the limited cap (i
   });
 
   it("CL-39 a pass settles an attempt by its constraint: free only on no movement, limited also on two rounding passes", () => {
-    // The movement union, relative to the pose's extent because rounding is.
-    const floor = FABRIK_ROUNDING_ULPS * Number.EPSILON;
-    expect(fabrikPassMovement(0, 300)).toBe("still");
-    expect(fabrikPassMovement(0, 0)).toBe("still");
-    expect(fabrikPassMovement(floor * 300, 300)).toBe("rounding");
-    expect(fabrikPassMovement(floor * 300 * 1.01, 300)).toBe("moving");
-    expect(fabrikPassMovement(1e-12, 0)).toBe("moving");
-    expect(fabrikPassMovement(Number.EPSILON * 2 ** 700, 2 ** 700)).toBe("rounding");
+    // One tip's move over its path's scale: zero only when it did not move, never underflowing to
+    // zero, and unjudgeable (so moving) without a finite positive scale.
+    expect(fabrikRelativeMove(0, 300)).toBe(0);
+    expect(fabrikRelativeMove(0, 0)).toBe(0);
+    expect(fabrikRelativeMove(3e-14, 300)).toBe(1e-16);
+    expect(fabrikRelativeMove(Number.MIN_VALUE, 1e300)).toBe(Number.MIN_VALUE);
+    expect(fabrikRelativeMove(1e-12, 0)).toBe(Infinity);
+    expect(fabrikRelativeMove(1, Infinity)).toBe(Infinity);
+    expect(fabrikRelativeMove(NaN, 300)).toBeNaN();
+    // The movement union over the largest of those.
+    const band = FABRIK_ROUNDING_ULPS * Number.EPSILON;
+    expect(fabrikPassMovement(0)).toBe("still");
+    expect(fabrikPassMovement(Number.MIN_VALUE)).toBe("rounding");
+    expect(fabrikPassMovement(band)).toBe("rounding");
+    expect(fabrikPassMovement(band * 1.01)).toBe("moving");
+    expect(fabrikPassMovement(Infinity)).toBe("moving");
+    expect(fabrikPassMovement(NaN)).toBe("moving");
     // Free keeps the exact `moved === 0` it always read, so no rounding residue ends it: its bytes.
     const free = fabrikPassBudget(2, "free", FABRIK_TOLERANCE);
-    expect(free.settles(0, 300)).toBe(true);
-    for (let pass = 0; pass < 4; pass += 1) expect(free.settles(1e-14, 300)).toBe(false);
+    expect(free.settles(0)).toBe(true);
+    for (let pass = 0; pass < 4; pass += 1) expect(free.settles(1e-16)).toBe(false);
     // Limited: no movement settles at once; one rounding pass may be a decay's last step, two are a
     // circle around the fixed point; a moving pass in between starts the count again.
     const limited = fabrikPassBudget(2, "limited", FABRIK_TOLERANCE);
-    expect(limited.settles(0, 300)).toBe(true);
+    expect(limited.settles(0)).toBe(true);
     const circling = fabrikPassBudget(2, "limited", FABRIK_TOLERANCE);
-    expect(circling.settles(1e-14, 300)).toBe(false);
-    expect(circling.settles(1, 300)).toBe(false);
-    expect(circling.settles(1e-14, 300)).toBe(false);
-    expect(circling.settles(2e-14, 300)).toBe(true);
+    expect(circling.settles(1e-16)).toBe(false);
+    expect(circling.settles(1e-3)).toBe(false);
+    expect(circling.settles(1e-16)).toBe(false);
+    expect(circling.settles(2e-16)).toBe(true);
     // The deliberate boundary: a free planar rig that circles one ulp in 2D still runs to the cap
     // there while 3D lands on an exact repeat, because moving free bytes is not this fix's to do.
     const freeCircle: SolveMember[] = [
@@ -509,6 +519,22 @@ describe("limited FABRIK: seed side, bidirectional limits and the limited cap (i
       expect(iterationsOf(flat)).toBeLessThan(FABRIK_MIN_ITERATIONS);
       expect(spatial.residual).toBeCloseTo(flat.residual, 9);
     }
+    // Independent pass QP-1: each tip is judged against its own path, so an unrelated branch a
+    // million times larger does not make the small arm's real motion read as rounding and stop it
+    // 7e-3 short; with one global extent both dimensions stalled after two passes.
+    const beside: SolveMember[] = [
+      { id: "huge", base: "root", length: 1e12 },
+      { id: "0", base: "root", length: 1.4231766843004152, limit: range(-180, 180) },
+      { id: "1", base: "0", length: 2.262208159198053, limit: range(-180, 180) },
+      {
+        id: "2",
+        base: "1",
+        length: 1.4237958857556805,
+        goal: { x: -0.2715464913628341, y: -0.10005973233703944, rotation: 0 },
+      },
+    ];
+    expect(solveChain(ROOT, beside, false).quality.kind).toBe("converged");
+    expect(solve3d(planar3d(beside)).quality.kind).toBe("converged");
     // One attempt, no selector: the same answer, so the loop rather than a retry decides it.
     const crawl = rigs[2]!;
     const flat = solveFabrikAttempt(ROOT, crawl, false, "centroid");

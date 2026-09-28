@@ -23,9 +23,10 @@ import { unreachable } from "../lang/exhaustive";
  * Module constants rather than authored values, for the reason ADR-052 gives the tolerance: an
  * interpolatable cap would make the operation count a function of the timeline.
  *
- * A limited chain may run past that cap to a measured multiple of it, because the projection onto its
- * ranges slows the contraction ADR-115 measured on free chains, but only while its own residual says
- * the extra passes will converge: `fabrikPassBudget` owns that decision for both dimensions (ADR-126).
+ * A limited chain may run past that cap to a measured multiple of it, because the projection onto
+ * its ranges slows the contraction ADR-115 measured on free chains, but only while its own residual
+ * says the extra passes will converge: `fabrikPassBudget` owns that decision for both dimensions
+ * (ADR-126).
  */
 
 /** The fewest passes any attempt may take before the cap: a 16-deep chain's four per member. */
@@ -39,9 +40,9 @@ export const FABRIK_ITERATIONS_PER_DEPTH = 4;
  *
  * ADR-115 measured the free cap on free chains only. A limited chain converges more slowly, because
  * every pass projects its members onto their ranges and a correction then travels by the part the
- * projection leaves. On issue #514's corpus of 1,771 reachable-by-construction limited serial chains
- * (legal angles, then FK, then the goal, two to five members), with the opposite-side retry and
- * bidirectional enforcement in place, a factor of two converged 47 more rigs, four 100 more and
+ * projection leaves. On issue #514's corpus of 1,771 reachable-by-construction limited serial
+ * chains (legal angles, then FK, then the goal, two to five members), with the opposite-side retry
+ * and bidirectional enforcement in place, a factor of two converged 47 more rigs, four 100 more and
  * eight 109 more, while halving the near-miss `iteration-cap` count at four (103 to 52) and gaining
  * nine rigs for twice the passes at eight. Four is the knee. It is a ceiling, not an allowance:
  * past the free cap `fabrikPassBudget` spends it only on an attempt that projects convergence.
@@ -59,7 +60,8 @@ export type FabrikConstraint = "free" | "limited";
  *
  * `depth` is a non-negative integer derived by the solve from the canonical member order, so the
  * cap is a pure function of the rig and not of the order a caller listed its members in. A free
- * chain keeps ADR-115's cap and its bytes; a limited one takes `FABRIK_LIMITED_CAP_FACTOR` times it.
+ * chain keeps ADR-115's cap and its bytes; a limited one takes `FABRIK_LIMITED_CAP_FACTOR` times
+ * it.
  */
 export function fabrikIterationCap(depth: number, constraint: FabrikConstraint): number {
   const free = Math.max(FABRIK_MIN_ITERATIONS, FABRIK_ITERATIONS_PER_DEPTH * depth);
@@ -85,40 +87,55 @@ export function fabrikIterationCap(depth: number, constraint: FabrikConstraint):
 export const FABRIK_PROGRESS_WINDOW = 8;
 
 /**
- * The movement, in units of `Number.EPSILON` times the pose's extent, at or below which a limited
- * pass moved only by rounding (issue #519).
+ * The relative movement, in units of `Number.EPSILON`, at or below which a limited pass moved only
+ * by rounding (issue #519).
  *
  * The 2D and 3D solves reach the same planar fixed point by different arithmetic: 2D projects a
  * limited tip through `atan2`, `cos` and `sin`, 3D rebuilds every hinge frame from its limited
  * angle and swings frames by matrix products. At that fixed point 2D usually lands on an exact
- * repeat and 3D often circulates a few ulps around it for ever, so an exact `moved === 0` called
- * one `stalled` and the other `iteration-cap`, 2 to 6 of every 3,000 fuzzed planar rigs. Measured
- * over 3,000-rig planar, +z-hinge and random-axis corpora (tools/issue519/threshold-sweep.ts), the
- * 2D rounding floor is about one unit and the 3D one wanders up to about 600, while no limited
- * attempt that once moved 2^16 units or less ever moved more than 2^24 again (the first such
- * revival appears at 2^20). 1,024 sits above the 3D floor and 64 times below the first revival; at
- * an extent of 300 world units it is 7e-11, eight orders under `FABRIK_TOLERANCE`, so no pass it
- * absorbs could have carried a residual to tolerance.
+ * repeat and 3D often circles it by a few ulps for ever, so an exact `moved === 0` called one
+ * `stalled` and the other `iteration-cap`: 35 of 23,245 limited rigs over eight 3,000-rig seeds of
+ * tools/issue519/agreement.ts. Measured over 3,000-rig planar, +z-hinge and random-axis corpora
+ * (tools/issue519/threshold-sweep.ts), the 2D rounding floor is about one unit and the 3D one
+ * wanders up to about 600, while no limited attempt that once moved 2^16 units or less ever moved
+ * more than 2^24 again (the first such revival appears at a cut of 2^20). 1,024 sits above the 3D
+ * floor and 1,024 times below the first revival; on a 300-unit chain it is 7e-11 world units, seven
+ * orders under `FABRIK_TOLERANCE`, so no pass it absorbs could have carried a residual to it.
  */
 export const FABRIK_ROUNDING_ULPS = 1024;
+
+/**
+ * One tip's movement over a pass relative to `scale`, the largest coordinate magnitude on the path
+ * it was computed along (the root's point, then every pivot and tip from the root's first member
+ * down to it), because rounding is relative to that: a coordinate's error comes from the sums it
+ * was computed through, not from its own magnitude, and a branch it was not computed through
+ * contributes none. An unrelated branch a million times larger therefore cannot make this tip's
+ * real motion read as rounding (independent pass QP-1).
+ *
+ * Exactly zero only for a tip that did not move, whatever the scale, so a free chain's stall test
+ * reads exactly the `moved === 0` it always read: a nonzero quotient that would underflow is held
+ * at `Number.MIN_VALUE`, a movement with no finite positive scale to judge it by is `Infinity`, and
+ * a `NaN` movement stays `NaN`, which no band holds.
+ */
+export function fabrikRelativeMove(moved: number, scale: number): number {
+  if (moved === 0) return 0;
+  if (!(scale > 0 && scale < Infinity)) return Infinity;
+  return Math.max(Number.MIN_VALUE, moved / scale);
+}
 
 /**
  * What one pass did to the pose, as the stall test reads it: a closed union so each constraint's
  * budget says, by an exhaustive switch, what a rounding-sized pass means to it.
  *
- * `still` moved no coordinate at all; `rounding` moved some by at most `FABRIK_ROUNDING_ULPS` ulps
- * of the extent; `moving` moved one by more.
+ * `still` moved no tip at all; `rounding` moved some, none by more than `FABRIK_ROUNDING_ULPS`
+ * ulps of its path's scale; `moving` moved one by more, or measured something non-finite.
  */
 export type FabrikPassMovement = "still" | "rounding" | "moving";
 
-/**
- * Names a pass that moved no tip coordinate more than `moved`, in a pose whose largest tip
- * coordinate magnitude is `extent`. Relative to the extent because rounding is: a coordinate's
- * error comes from the chain-scale sums it was computed through, not from its own magnitude.
- */
-export function fabrikPassMovement(moved: number, extent: number): FabrikPassMovement {
-  if (moved === 0) return "still";
-  return moved <= FABRIK_ROUNDING_ULPS * Number.EPSILON * extent ? "rounding" : "moving";
+/** Names a pass whose largest `fabrikRelativeMove` over every tip is `relative`. */
+export function fabrikPassMovement(relative: number): FabrikPassMovement {
+  if (relative === 0) return "still";
+  return relative <= FABRIK_ROUNDING_ULPS * Number.EPSILON ? "rounding" : "moving";
 }
 
 /** How many passes one FABRIK attempt takes, and when a pass leaves it at a fixed point. */
@@ -129,11 +146,11 @@ export interface FabrikPassBudget {
    */
   admits(iterations: number, residual: number): boolean;
   /**
-   * Whether the pass just taken, which moved no tip coordinate more than `moved` in a pose whose
-   * largest tip coordinate magnitude is `extent`, leaves the attempt at a fixed point, so it ends
-   * `stalled` rather than running on to the cap. Asked once after every pass, in pass order.
+   * Whether the pass just taken, whose largest `fabrikRelativeMove` over every tip is `relative`,
+   * leaves the attempt at a fixed point, so it ends `stalled` rather than running on to the cap.
+   * Asked once after every pass, in pass order.
    */
-  settles(moved: number, extent: number): boolean;
+  settles(relative: number): boolean;
 }
 
 /**
@@ -173,8 +190,8 @@ export function fabrikPassBudget(
   }
 }
 
-function settlesFree(moved: number, extent: number): boolean {
-  const movement = fabrikPassMovement(moved, extent);
+function settlesFree(relative: number): boolean {
+  const movement = fabrikPassMovement(relative);
   switch (movement) {
     case "still":
       return true;
@@ -192,8 +209,8 @@ function limitedPassBudget(free: number, ceiling: number, tolerance: number): Fa
   // Whether the previous pass moved by rounding only.
   let rounding = false;
   return {
-    settles(moved, extent) {
-      const movement = fabrikPassMovement(moved, extent);
+    settles(relative) {
+      const movement = fabrikPassMovement(relative);
       const previous = rounding;
       rounding = movement === "rounding";
       switch (movement) {
@@ -220,8 +237,8 @@ function limitedPassBudget(free: number, ceiling: number, tolerance: number): Fa
 
 /**
  * Whether a residual that fell from `before` to `now` over one `FABRIK_PROGRESS_WINDOW`, carried on
- * at that geometric rate, reaches `tolerance` within `remaining` passes. A residual that did not fall
- * projects nothing, so a limited attempt that oscillates or holds stops at the next boundary.
+ * at that geometric rate, reaches `tolerance` within `remaining` passes. A residual that did not
+ * fall projects nothing, so a limited attempt that oscillates or holds stops at the next boundary.
  *
  * Total over every double: a residual already inside `tolerance` (zero included) has reached it,
  * and a fall from a non-finite `before`, or any `NaN`, measures no rate and projects nothing, where

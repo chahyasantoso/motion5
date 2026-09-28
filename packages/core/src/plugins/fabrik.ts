@@ -10,7 +10,7 @@ import { aimPoint, goalMiss, readGoal, type GoalReading } from "./ik-goal-readin
 import { branchPulls, compromise, type CompromiseRule, type Pull } from "./ik-goal";
 import { selectFabrik } from "./fabrik-select";
 import { seedArc } from "./fabrik-seed";
-import { fabrikPassBudget, type FabrikConstraint } from "./fabrik-cap";
+import { fabrikPassBudget, fabrikRelativeMove, type FabrikConstraint } from "./fabrik-cap";
 import { unreachable } from "../lang/exhaustive";
 import { canonicalChain } from "./ik-topology";
 import {
@@ -80,19 +80,19 @@ export type FabrikPoint = WorldPoint;
  * The solved chain: one local rotation per member id, the pivots and tips those rotations describe,
  * and what the iteration did.
  *
- * The rotations and the quality are the shared `SolveResult` every strategy returns, narrowed to the
- * iterative kinds: a residual inside tolerance converged, a fixed point that remains outside it
+ * The rotations and the quality are the shared `SolveResult` every strategy returns, narrowed to
+ * the iterative kinds: a residual inside tolerance converged, a fixed point that remains outside it
  * stalled, and a still-moving pose at the cap hit `iteration-cap`. The last distinction is a
  * capability gain, because a caller can tell a solve that was still improving from an unreachable
- * goal no amount of work would help. The field was `convergence` and its type
- * `FabrikConvergence` until issue #349's second phase moved the kinds into `ik-result.ts`, where the
- * closed form's kinds sit beside them. See ADR-107.
+ * goal no amount of work would help. The field was `convergence` and its type `FabrikConvergence`
+ * until issue #349's second phase moved the kinds into `ik-result.ts`, where the closed form's
+ * kinds sit beside them. See ADR-107.
  *
- * `tips` and `pivots` are returned because length preservation is a statement about positions rather
- * than angles, and a case that re-derived them from the rotations would re-derive the thing under
- * test. Both halves are needed once a member may carry an offset: its length is the distance from
- * its own pivot to its own tip, and the distance between two consecutive tips is that length only
- * when the offset is zero. A publisher carries `rotations` and nothing else; the positions are
+ * `tips` and `pivots` are returned because length preservation is a statement about positions
+ * rather than angles, and a case that re-derived them from the rotations would re-derive the thing
+ * under test. Both halves are needed once a member may carry an offset: its length is the distance
+ * from its own pivot to its own tip, and the distance between two consecutive tips is that length
+ * only when the offset is zero. A publisher carries `rotations` and nothing else; the positions are
  * `fk`'s to recompute, which is the point of returning rotations rather than a pose.
  */
 export interface FabrikSolution extends SolveResult<IterativeQuality> {
@@ -121,11 +121,11 @@ const RADIANS = Math.PI / 180;
  * using the base's current direction, and the average is taken over those tips. Positions are
  * averaged and twists never are. A sub-base carries one direction and each of its children hangs
  * off that one direction at its own offset, so the children's pivots are not independent quantities
- * to average: the tip is the single quantity they all have an opinion about, and un-offsetting first
- * is what makes the average a statement about one thing. Averaging the pivots instead would average
- * geometry that is incompatible by construction, which ADR-053 named as the reason this was left
- * for its own slice. The forward pass then re-derives every child's pivot from that one tip and
- * direction, so no branch can hold a pose the composition would not compose. See ADR-054.
+ * to average: the tip is the single quantity they all have an opinion about, and un-offsetting
+ * first is what makes the average a statement about one thing. Averaging the pivots instead would
+ * average geometry that is incompatible by construction, which ADR-053 named as the reason this was
+ * left for its own slice. The forward pass then re-derives every child's pivot from that one tip
+ * and direction, so no branch can hold a pose the composition would not compose. See ADR-054.
  */
 export function solveFabrikAttempt(
   root: WorldFrame,
@@ -168,6 +168,10 @@ export function solveFabrikAttempt(
   const pulls = branchPulls(byId, addressed);
   const tips = new Map<string, FabrikPoint>();
   const pivots = new Map<string, FabrikPoint>();
+  // The largest coordinate magnitude from the root's point down each member's path, re-measured
+  // after every pass: the scale its movement is judged against (issue #519).
+  const pathScales = new Map<string, number>();
+  const rootScale = Math.max(Math.abs(rootPoint.x), Math.abs(rootPoint.y));
   /** The tip a member hangs off: its base member's, or the root's own point. */
   const originOf = (id: string): FabrikPoint => {
     const base = baseOf(id);
@@ -196,8 +200,8 @@ export function solveFabrikAttempt(
   };
 
   // Every addressed leaf's goal, read once through the one goal reader in canonical order, so the
-  // first `NaN` leaf is the one refused. The passes iterate toward its aim, which is the goal itself
-  // or a direction's stand-in past everything the leaf's path can reach.
+  // first `NaN` leaf is the one refused. The passes iterate toward its aim, which is the goal
+  // itself or a direction's stand-in past everything the leaf's path can reach.
   const readings = new Map<string, GoalReading>();
   const aims = new Map<string, FabrikPoint>();
   const pathReach = (leaf: string): number => {
@@ -260,8 +264,8 @@ export function solveFabrikAttempt(
    * `1e300` member reaching across a `1e-100` gap is a finite rig whose `length / distance` is
    * `Infinity`, and the product that follows is `NaN` for any delta that is zero on one axis. Only
    * then is the direction normalised by its larger component first, which keeps every intermediate
-   * within `[1, sqrt(2)]` of the length; every ratio that is finite takes the original expression, so
-   * a rig that never overflowed places its points byte-identically. See ADR-111.
+   * within `[1, sqrt(2)]` of the length; every ratio that is finite takes the original expression,
+   * so a rig that never overflowed places its points byte-identically. See ADR-111.
    */
   const place = (from: FabrikPoint, to: FabrikPoint, length: number): FabrikPoint => {
     if (length <= 0) return Object.freeze({ x: from.x, y: from.y });
@@ -278,8 +282,8 @@ export function solveFabrikAttempt(
   };
   /**
    * The inward pivot: `length` back from the settled tip, turned for each limited child by
-   * `boundBaseDirection` (ADR-126). `inwardDirections` holds the directions limited members
-   * settled on earlier in this deepest-first pass. No limited child, or legal ones, returns the plain
+   * `boundBaseDirection` (ADR-126). `inwardDirections` holds the directions limited members settled
+   * on earlier in this deepest-first pass. No limited child, or legal ones, returns the plain
    * placement, so a free rig keeps its bytes.
    */
   const inwardDirections = new Map<string, number>();
@@ -424,16 +428,26 @@ export function solveFabrikAttempt(
     // Nothing moved, so nothing can. An unreachable goal reaches full extension in one pass and
     // holds, and exiting here rather than at the cap is what makes `iterations` mean work done and
     // lets `stalled` tell a caller that a larger cap is not the answer. What counts as nothing is
-    // the budget's, per constraint, so 3D stops on the same rule (issue #519).
-    let moved = 0;
-    let extent = 0;
+    // the budget's, per constraint, so 3D stops on the same rule; each tip's movement is judged
+    // against the magnitudes on its own path, bases before children (issue #519).
+    let relative = 0;
     for (const id of ids) {
       const was = before.get(id)!;
       const now = tips.get(id)!;
-      moved = Math.max(moved, Math.abs(was.x - now.x), Math.abs(was.y - now.y));
-      extent = Math.max(extent, Math.abs(now.x), Math.abs(now.y));
+      const pivot = pivots.get(id)!;
+      const base = baseOf(id);
+      const scale = Math.max(
+        isMember(base) ? pathScales.get(base)! : rootScale,
+        Math.abs(pivot.x),
+        Math.abs(pivot.y),
+        Math.abs(now.x),
+        Math.abs(now.y),
+      );
+      pathScales.set(id, scale);
+      const moved = Math.max(Math.abs(was.x - now.x), Math.abs(was.y - now.y));
+      relative = Math.max(relative, fabrikRelativeMove(moved, scale));
     }
-    if (budget.settles(moved, extent)) {
+    if (budget.settles(relative)) {
       stalled = true;
       break;
     }
