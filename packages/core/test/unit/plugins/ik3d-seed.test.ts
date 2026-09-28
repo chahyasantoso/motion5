@@ -128,7 +128,7 @@ describe("3D tree seed", () => {
         [-4, 2, 5],
       ],
     };
-    for (const fraction of [0.25, 0.75] as const) {
+    for (const fraction of [0.1, 0.25, 0.75] as const) {
       const rootLocal = legalLocal3d(branch.limits[0]!, branch.rests[0]!, fraction);
       const rootFrame = multiplyMatrix3(branch.rootMatrix, rootLocal);
       const rootTip = add3(branch.rootPoint, scale3(axisX3(rootFrame), 4));
@@ -164,7 +164,7 @@ describe("3D tree seed", () => {
         [-4, 2, 5],
       ],
     };
-    for (const fraction of [0.25, 0.75] as const) {
+    for (const fraction of [0.1, 0.25, 0.75] as const) {
       const policy = { kind: "legal-range", fraction } as const;
       const normal = seedTree3d(branch, UNBOUND_POLE3D, false, policy);
       const flipped = seedTree3d(branch, UNBOUND_POLE3D, true, policy);

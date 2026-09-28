@@ -40,7 +40,7 @@ export type FabrikSeed =
   | { readonly kind: "default" }
   | {
       readonly kind: "legal-range";
-      readonly fraction: 0.25 | 0.75;
+      readonly fraction: 0.1 | 0.25 | 0.75;
     };
 
 export const DEFAULT_FABRIK_SEED: FabrikSeed = Object.freeze({ kind: "default" });
@@ -83,9 +83,11 @@ const OPPOSITE_SIDE_ALTERNATIVES: readonly FabrikAlternative[] = Object.freeze([
 const NO_ALTERNATIVES: readonly FabrikAlternative[] = Object.freeze([]);
 
 /**
- * A distant miss cannot justify two more full attempts. In the reachable 1,802-rig #527 corpus,
+ * A distant miss cannot justify more full attempts. In the reachable 1,802-rig #527 corpus,
  * a two-percent reach band buys 57 of the 113 quartile recoveries with 26,615 extra iterations,
- * instead of 121,663 for unrestricted quartiles. This is a cost policy, not a reachability proof.
+ * instead of 121,663 for unrestricted quartiles. One q10 attempt only after unresolved gated
+ * quartiles costs another 176 attempts / 11,044 iterations and recovers 14 on that corpus.
+ * These are deterministic attempt counts, not latency guarantees or reachability proofs.
  */
 const LEGAL_RETRY_REACH_FRACTION = 0.02;
 
@@ -126,7 +128,8 @@ export function fabrikAlternatives(quality: IterativeQuality): readonly FabrikAl
  * result is never worse than the baseline under the comparator below. Losing candidates are
  * dropped; no restart metadata is published (ADR-107), and the selected result reports its own
  * `quality.iterations`. `legalRangeReach` opts in a non-planar 3D hinge only. Its narrow
- * reach-relative band avoids charging far misses two more full limited-cap attempts.
+ * reach-relative band avoids charging far misses additional full limited-cap attempts.
+ * A tenth-range start is reserved for misses still unresolved after the two quartiles.
  */
 export function selectFabrik<R, M, S extends Selectable>(
   root: R,
@@ -145,7 +148,7 @@ export function selectFabrik<R, M, S extends Selectable>(
     legalRangeReach > 0 &&
     baseline.quality.residual <= LEGAL_RETRY_REACH_FRACTION * legalRangeReach &&
     (baseline.quality.kind === "limited" || baseline.quality.kind === "iteration-cap")
-  )
+  ) {
     for (const fraction of [0.25, 0.75] as const) {
       const candidate = attempt(root, members, flip, "centroid", {
         kind: "legal-range",
@@ -153,6 +156,14 @@ export function selectFabrik<R, M, S extends Selectable>(
       });
       if (outranks(candidate.quality, selected.quality)) selected = candidate;
     }
+    if (selected.quality.kind !== "converged") {
+      const candidate = attempt(root, members, flip, "centroid", {
+        kind: "legal-range",
+        fraction: 0.1,
+      });
+      if (outranks(candidate.quality, selected.quality)) selected = candidate;
+    }
+  }
   return selected;
 }
 

@@ -355,6 +355,40 @@ describe("limited FABRIK: seed side, bidirectional limits and the limited cap (i
     expect(conflicted.quality).toEqual(met(0.00025));
   });
 
+  it("TH-168 pays for one endpoint only when both quartiles still miss", () => {
+    const miss = { kind: "limited", iterations: 2, residual: 1, atBound: ["m"] } as const;
+    const met = { kind: "converged", iterations: 1, residual: 0.0002 } as const;
+    const calls: string[] = [];
+    const selected = selectFabrik(
+      null,
+      [],
+      false,
+      (_root, _members, flip, _rule, seed) => {
+        const name =
+          seed?.kind === "legal-range" ? `q${seed.fraction}` : flip ? "opposite" : "base";
+        calls.push(name);
+        return { quality: name === "q0.1" ? met : miss };
+      },
+      100,
+    );
+    expect(calls).toEqual(["base", "opposite", "q0.25", "q0.75", "q0.1"]);
+    expect(selected.quality).toBe(met);
+    calls.length = 0;
+    selectFabrik(
+      null,
+      [],
+      false,
+      (_root, _members, flip, _rule, seed) => {
+        const name =
+          seed?.kind === "legal-range" ? `q${seed.fraction}` : flip ? "opposite" : "base";
+        calls.push(name);
+        return { quality: name === "q0.25" ? met : miss };
+      },
+      100,
+    );
+    expect(calls).toEqual(["base", "opposite", "q0.25", "q0.75"]);
+  });
+
   it("CL-35 the inward pass bounds a base by its limited child, so a two-limit chain converges", () => {
     // Pre-#514: `limited` at 7.18 (authored side) and `iteration-cap` at 2.33 (flipped). With the
     // opposite-side retry and the limited cap but no inward bound, both sides still end

@@ -170,6 +170,51 @@ describe("3D FABRIK evidence", () => {
     expect(selected.quality.residual).toBeLessThan(0.001);
     expect(solveChain3d(ROOT, fixture, UNBOUND_POLE3D)).toEqual(selected);
   });
+  it("TH-167 recovers reachable corpus rig 18 from an endpoint-biased legal start", () => {
+    // Exact FK target for legal angles 9.30983765437759 and 24.389092029078217.
+    const fixture = [
+      member("m0", "root", 58.65312499925494),
+      member("m1", "m0", 65.5732256360352, {
+        limit: {
+          kind: "hinge",
+          axis: [0.5123180399942272, 0.466523432275835, 0.7210312843656979],
+          range: { kind: "range", min: 0, max: 79.40118396654725 },
+        },
+      }),
+      member("m2", "m1", 95.63809351995587),
+      member("m3", "m2", 28.141679298132658, {
+        limit: {
+          kind: "hinge",
+          axis: [0.4773589709190512, 0.7653958172811255, -0.4316221215040564],
+          range: { kind: "range", min: 0, max: 135.12245435267687 },
+        },
+        goal: readFrame3d({
+          x: 121.27809376546492,
+          y: 133.21334821678468,
+          z: 166.4276692150407,
+        }),
+      }),
+    ];
+    const baseline = solveTree3dAttempt(ROOT, fixture, UNBOUND_POLE3D, false, "centroid");
+    expect(baseline.quality.kind).toBe("limited");
+    expect(baseline.quality.residual).toBeLessThan(0.02 * legalRetryReach3d(fixture));
+    expect(
+      solveTree3dAttempt(ROOT, fixture, UNBOUND_POLE3D, true, "centroid").quality.kind,
+    ).not.toBe("converged");
+    for (const fraction of [0.25, 0.75] as const)
+      expect(
+        solveTree3dAttempt(ROOT, fixture, UNBOUND_POLE3D, false, "centroid", {
+          kind: "legal-range",
+          fraction,
+        }).quality.kind,
+      ).not.toBe("converged");
+    const endpoint = solveTree3dAttempt(ROOT, fixture, UNBOUND_POLE3D, false, "centroid", {
+      kind: "legal-range",
+      fraction: 0.1,
+    });
+    expect(endpoint.quality.kind).toBe("converged");
+    expect(solveChain3d(ROOT, fixture, UNBOUND_POLE3D).quality.kind).toBe("converged");
+  });
   it("TH-58 closes seeded serial chains and independently composes their tips", () => {
     const random = seeded(7);
     for (let sample = 0; sample < 300; sample += 1) {
