@@ -156,8 +156,6 @@ rigs out of `452`, not all the way to the envelope. Random-axis hinges also rema
 plane, making both seed sides illegal; an authored pole in the hinge plane works around it. Those
 are follow-ups, not claims of universal constrained convergence.
 
-One 2D/3D disagreement is left deliberately, because it predates this record: both loops call an
-attempt `stalled` only when an outward pass moves nothing at all (`moved === 0`), so a planar rig
-whose 3D arithmetic keeps a residue of an ulp runs on to `iteration-cap` where 2D stops. Giving the
-test a tolerance would change which free rigs stall and so move free bytes, which this record
-promises not to do; it is a follow-up with its own identity evidence.
+The exact `moved === 0` stall test this record left as a follow-up is resolved for limited chains
+by [ADR-127](./ADR-127-limited-fabrik-settles-on-two-rounding-passes.md) (issue #519); free
+chains keep it and their bytes.

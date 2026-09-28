@@ -5,15 +5,13 @@ below are the complete shape. **Now** and **Next in line** carry exactly one bul
 bullet states a phase; `packages/core/test/unit/scripts/session-status-shape.test.ts` enforces the
 shape and byte ceiling.
 
-- **Captured:** 2026-09-27, Asia/Jakarta.
-- **Read against:** `main` at `1084ba674170042c0c20f16139dd5530e0304545`, where [#516][pr516]
-  landed [ADR-125][adr125] and [#500][issue500] closed.
+- **Captured:** 2026-09-28, Asia/Jakarta.
+- **Read against:** `main` at `741fd5a48a317f1ab4349de89b5ac00283667541`, where [#518][pr518]
+  landed [ADR-126][adr126] and [#514][issue514] closed.
 
 ## Now
 
-- **[#514][issue514] lands with this change
-  ([ADR-126][adr126],
-  [#518][pr518]).**
+- **[#519][issue519] lands with this change ([ADR-127][adr127]).**
 
 ## Next in line
 
@@ -42,3 +40,5 @@ shape and byte ceiling.
 [adr126]: ./ADR-126-limited-fabrik-seed-side-bidirectional-limits-and-pass-budget.md
 [pr518]: https://github.com/chahyasantoso/motion5/pull/518
 [issue328]: https://github.com/chahyasantoso/motion5/issues/328
+[issue519]: https://github.com/chahyasantoso/motion5/issues/519
+[adr127]: ./ADR-127-limited-fabrik-settles-on-two-rounding-passes.md
