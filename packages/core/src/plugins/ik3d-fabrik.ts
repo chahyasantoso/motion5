@@ -1,6 +1,5 @@
 import { unreachable } from "../lang/exhaustive";
 import { FABRIK_TOLERANCE, iterativeQuality } from "./fabrik";
-import { arcHalfAngle } from "./fabrik-seed";
 import {
   FabrikIncumbent,
   fabrikPassBudget,
@@ -47,6 +46,7 @@ import type { ChainMember3d } from "./ik3d-chain";
 import { compromise3d, type Pull3d } from "./ik3d-compromise";
 import { boundBaseFrame3d, constrains, FREE_JOINT3D, limitLocal3d } from "./ik3d-constraint";
 import { restoreResult3d, type SolveResult3d } from "./ik3d-result";
+import { ROOT_INDEX, seedTree3d } from "./ik3d-seed";
 
 /**
  * FABRIK in three dimensions: the iterative strategy for every 3D chain that is not the closed
@@ -85,8 +85,8 @@ import { restoreResult3d, type SolveResult3d } from "./ik3d-result";
  * byte (ADR-111).
  */
 
-/** The index `parent` holds for a member that hangs from the root rather than from a member. */
-const ROOT = -1;
+/** The index `parent` holds for a member that hangs from the root: the seed's own convention. */
+const ROOT = ROOT_INDEX;
 
 const X_AXIS: Vec3 = [1, 0, 0];
 
@@ -106,37 +106,6 @@ export function place3d(from: Vec3, to: Vec3, length: number): Vec3 {
   const axis = Math.max(Math.abs(delta[0]), Math.abs(delta[1]), Math.abs(delta[2]));
   const unit = divide3(delta, axis);
   return add3(from, scale3(unit, length / norm3(unit)));
-}
-
-/**
- * The seed for one root-to-leaf path: the joints of a constant-curvature arc from `origin` to
- * `goal` exactly as long as the path, in the plane spanned by `along` (toward the goal) and
- * `across` (the side it bulges to). The 2D `seedArc` arithmetic with its two axes replaced by
- * vectors, and the same `arcHalfAngle` bisection, so a planar rig seeds the same points. `lengths`
- * are already clamped through `segmentExtent`.
- */
-function seedArc3d(
-  origin: Vec3,
-  goal: Vec3,
-  lengths: readonly number[],
-  along: Vec3,
-  across: Vec3,
-): readonly Vec3[] {
-  const total = lengths.reduce((sum, length) => sum + length, 0);
-  const chord = norm3(subtract3(goal, origin));
-  const halfAngle = total > 0 && chord < total ? arcHalfAngle(chord / total) : 0;
-  const radius = halfAngle > 0 ? total / (2 * halfAngle) : 0;
-  const points: Vec3[] = [];
-  let travelled = 0;
-  for (const length of lengths) {
-    travelled += length;
-    const fraction = total > 0 ? travelled / total : 1;
-    const angle = -halfAngle + 2 * halfAngle * fraction;
-    const axial = halfAngle > 0 ? chord / 2 + radius * Math.sin(angle) : fraction * chord;
-    const lateral = halfAngle > 0 ? radius * (Math.cos(angle) - Math.cos(halfAngle)) : 0;
-    points.push(add3(origin, add3(scale3(along, axial), scale3(across, lateral))));
-  }
-  return points;
 }
 
 /**
@@ -192,7 +161,6 @@ export function solveTree3dAttempt(
   const pulls = ids.map((id) => pullsById.get(id) ?? 0);
   const rootMatrix = matrixFromEuler3d(root);
   const rootPoint: Vec3 = [root.x, root.y, root.z];
-  const tips: (Vec3 | undefined)[] = new Array<Vec3 | undefined>(count);
   const pivots: Vec3[] = new Array<Vec3>(count);
   const frames: Matrix3[] = new Array<Matrix3>(count);
   const settled: Vec3[] = new Array<Vec3>(count);
@@ -235,30 +203,23 @@ export function solveTree3dAttempt(
     readings.push(reading);
     aims[leaf] = [x!, y!, z!];
   }
-  // Seeded one addressed path at a time in canonical leaf order; a shared member takes the first
-  // path's point, and the first outward pass enforces every length.
-  for (const leaf of addressed) {
-    const aim = aims[leaf]!;
-    const toAim = subtract3(aim, rootPoint);
-    const { e1, e2 } = bendBasis3d(rootMatrix, toAim, norm3(toAim), rootPoint, pole);
-    const path = pathOf(leaf);
-    const across = flip ? scale3(e2, -1) : e2;
-    const seeded = seedArc3d(
+  // Every tip starts where the seed puts it: the arc, or the legal seed when the arc requires a
+  // hinge-pose projection (`ik3d-seed.ts`, ADR-129). The first outward pass enforces every length.
+  const tips: Vec3[] = seedTree3d(
+    {
       rootPoint,
-      aim,
-      path.map((index) => lengths[index]!),
-      e1,
-      across,
-    );
-    path.forEach((index, step) => {
-      if (tips[index] === undefined) tips[index] = seeded[step]!;
-    });
-  }
-  // A member on no addressed path lies straight out along the root's own +x.
-  const rootX = axisX3(rootMatrix);
-  for (let index = 0; index < count; index += 1)
-    if (tips[index] === undefined)
-      tips[index] = add3(originOf(index), scale3(rootX, lengths[index]!));
+      rootMatrix,
+      parent,
+      lengths,
+      offsets: offset,
+      rests,
+      limits,
+      paths: addressed.map(pathOf),
+      aims: addressed.map((leaf) => aims[leaf]!),
+    },
+    pole,
+    flip,
+  );
 
   /**
    * The outward pass: the only place lengths are enforced, the only place a frame is built and the

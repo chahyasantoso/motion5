@@ -22,6 +22,7 @@ import {
   dot3,
   LOCAL_X3,
   multiplyMatrix3,
+  multiplyVector3,
   norm3,
   normalize3,
   rotationAboutAxis3d,
@@ -36,6 +37,7 @@ import {
   JOINT_BOUND_TOLERANCE,
   FREE_JOINT,
   limitRotation,
+  rangeCentre,
   readAngleRange,
   type JointLimit,
 } from "./ik-constraint";
@@ -226,6 +228,74 @@ export function limitLocal3d(limit: JointLimit3d, proposed: () => Matrix3): Limi
       return limitSwingTwist(limit.maxSwing, FREE_JOINT, proposed());
     case "swing-twist":
       return limitSwingTwist(limit.maxSwing, limit.twist, proposed());
+    default:
+      return unreachable(limit);
+  }
+}
+
+/**
+ * The legal local orientation at the centre of `limit`, the pose the 3D legal seed holds a limited
+ * member in (issue #523, ADR-129): a hinge turned to its range's centre about its axis, a cone with
+ * no swing, a swing-twist with no swing and its twist range's centre, each legal by construction.
+ * A free member has no centre and keeps `rest`, what `fk3d` composes for it with no solve.
+ */
+export function centreLocal3d(limit: JointLimit3d, rest: Matrix3): Matrix3 {
+  switch (limit.kind) {
+    case "free":
+      return rest;
+    case "hinge":
+      return rotationAboutAxis3d(limit.axis, rangeCentre(limit.range));
+    case "cone":
+      return rotationAboutAxis3d(LOCAL_X3, 0);
+    case "swing-twist":
+      return rotationAboutAxis3d(LOCAL_X3, rangeCentre(limit.twist));
+    default:
+      return unreachable(limit);
+  }
+}
+
+/**
+ * Whether a local orientation points its member off the circle a hinge's axis sweeps, so that no
+ * hinge angle holds it: the member's +x turned about a unit axis keeps its component along the axis,
+ * `x·a = a[0]`, so a direction is on the circle exactly when its own component `d·a` equals that, to
+ * `HINGE_DIRECTION_TOLERANCE`. Only a hinge names a plane; a free joint, a cone and a swing-twist
+ * answer `false`, because a direction they bound is projected onto a bound without leaving the
+ * plane it was proposed in. `leavesHingePose` adds the full-frame condition for seed selection
+ * (issue #523, ADR-129).
+ */
+export function leavesHingeCircle(limit: JointLimit3d, local: Matrix3): boolean {
+  switch (limit.kind) {
+    case "hinge":
+      return Math.abs(dot3(axisX3(local), limit.axis) - limit.axis[0]) > HINGE_DIRECTION_TOLERANCE;
+    case "free":
+    case "cone":
+    case "swing-twist":
+      return false;
+    default:
+      return unreachable(limit);
+  }
+}
+
+/**
+ * Whether a proposed frame requires projection onto a pure hinge pose. A direction on
+ * the swept circle is not enough: authored rest roll can keep +x on the circle while tilting the
+ * other axes. A proper rotation is a turn about `axis` exactly when it fixes that axis. Compare
+ * that invariant to the frame tolerance used by inward enforcement; range clipping is deliberately
+ * not part of seed selection, because planar arcs may be clipped without leaving their plane.
+ */
+export function leavesHingePose(limit: JointLimit3d, local: Matrix3): boolean {
+  if (leavesHingeCircle(limit, local)) return true;
+  switch (limit.kind) {
+    case "hinge": {
+      const transformed = multiplyVector3(local, limit.axis);
+      return transformed.some(
+        (value, index) => Math.abs(value - limit.axis[index]!) > INWARD_FRAME_TOLERANCE,
+      );
+    }
+    case "free":
+    case "cone":
+    case "swing-twist":
+      return false;
     default:
       return unreachable(limit);
   }

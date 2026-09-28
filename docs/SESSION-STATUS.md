@@ -6,18 +6,17 @@ bullet states a phase; `packages/core/test/unit/scripts/session-status-shape.tes
 shape and byte ceiling.
 
 - **Captured:** 2026-09-28, Asia/Jakarta.
-- **Read against:** `main` at `741fd5a48a317f1ab4349de89b5ac00283667541`, where [#518][pr518]
-  landed [ADR-126][adr126] and [#514][issue514] closed.
+- **Read against:** `main` at `58306050716894306eed93cfae80018f36dd0deb`, the base of
+  [PR #526][pr526].
 
 ## Now
 
-- **[#521][issue521] lands with this change ([ADR-128][adr128]), above [#519][issue519]
-  ([ADR-127][adr127]).**
+- **`main` carries the best-completed-pass fix for [#521][issue521] ([ADR-128][adr128]).**
 
 ## Next in line
 
-- **The next work is the #514 follow-up (no fitting open issue):** investigate random-axis hinge
-  seeding and mixed-sign local optima.
+- **[PR #526][pr526] proposes legal joint-space seeding for [#523][issue523];** validate and merge it
+  before tackling the remaining local minima separately.
 
 ## Open, and not scheduled
 
@@ -42,3 +41,5 @@ shape and byte ceiling.
 [adr127]: ./ADR-127-fabrik-settles-on-two-rounding-passes.md
 [issue521]: https://github.com/chahyasantoso/motion5/issues/521
 [adr128]: ./ADR-128-fabrik-publishes-its-best-completed-pass.md
+[issue523]: https://github.com/chahyasantoso/motion5/issues/523
+[pr526]: https://github.com/chahyasantoso/motion5/pull/526

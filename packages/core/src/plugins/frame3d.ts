@@ -304,6 +304,10 @@ export function swingFrame3d(frame: Matrix3, direction: Vec3): Matrix3 {
 /** The identity rotation: the frame a swing or a twist is measured from. */
 export const IDENTITY_MATRIX3: Matrix3 = Object.freeze([1, 0, 0, 0, 1, 0, 0, 0, 1] as const);
 
+// Preserve the frozen public identity, but pass an ordinary array through hot matrix arithmetic:
+// V8 deoptimizes when these products alternate between frozen and ordinary array maps (TH-84).
+const INTERNAL_IDENTITY_MATRIX3: Matrix3 = [1, 0, 0, 0, 1, 0, 0, 0, 1];
+
 /** A member's own long axis, local +x: the axis a twist turns about and a swing turns away from. */
 export const LOCAL_X3: Vec3 = Object.freeze([1, 0, 0] as const);
 
@@ -364,12 +368,15 @@ export type SwingTwist3d = {
  */
 export function swingTwist3d(local: Matrix3): SwingTwist3d {
   const direction = normalize3(axisX3(local), LOCAL_X3);
-  const swing = swingFrame3d(IDENTITY_MATRIX3, direction);
+  const swing = swingFrame3d(INTERNAL_IDENTITY_MATRIX3, direction);
   // `swing` carries +x onto the direction, so what is left of `local` fixes +x: a turn about it.
   const twist = multiplyMatrix3(transposeMatrix3(swing), local);
   const across = cross3(LOCAL_X3, direction);
   return {
-    swing,
+    // The aligned swing returns its input by reference. Do not expose our mutable shared identity
+    // through this otherwise caller-owned result (even to a JS caller that ignores readonly).
+    swing:
+      swing === INTERNAL_IDENTITY_MATRIX3 ? ([...INTERNAL_IDENTITY_MATRIX3] as Matrix3) : swing,
     swingAxis: normalize3(across, LOCAL_Z3),
     swingDegrees: canonicalDegrees(Math.atan2(norm3(across), direction[0])),
     twistDegrees: canonicalDegrees(Math.atan2(twist[7], twist[4])),
@@ -386,7 +393,7 @@ export function swingTwist3d(local: Matrix3): SwingTwist3d {
  * hinge whose axis is the member's own +x, where the bone turns about itself and only roll moves.
  */
 export function twistAbout3d(local: Matrix3, axis: Vec3): number {
-  const basis = swingFrame3d(IDENTITY_MATRIX3, axis);
+  const basis = swingFrame3d(INTERNAL_IDENTITY_MATRIX3, axis);
   return swingTwist3d(multiplyMatrix3(transposeMatrix3(basis), multiplyMatrix3(local, basis)))
     .twistDegrees;
 }

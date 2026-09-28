@@ -72,6 +72,23 @@ export function limitRotation(limit: JointLimit, local: number): number {
 }
 
 /**
+ * The angle at the centre of a limit's legal set: a range's midpoint, and zero, no local turn, for a
+ * free limit. Always legal, since a range is read with `min <= max` inside the wrapped domain, and
+ * as far from both bounds as the range allows, which is what a seed built from legal poses sits at
+ * (issue #523, ADR-129).
+ */
+export function rangeCentre(limit: JointLimit): number {
+  switch (limit.kind) {
+    case "free":
+      return 0;
+    case "range":
+      return (limit.min + limit.max) / 2;
+    default:
+      return unreachable(limit);
+  }
+}
+
+/**
  * How near a limited angle, in degrees, may sit to a bound and still rest on it (ADR-126).
  *
  * The 2D solve measures a member's local angle with `atan2` over placed points, and the 3D solve
