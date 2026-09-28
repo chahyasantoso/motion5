@@ -1,7 +1,12 @@
 import { unreachable } from "../lang/exhaustive";
 import { FABRIK_TOLERANCE, iterativeQuality } from "./fabrik";
 import { arcHalfAngle } from "./fabrik-seed";
-import { fabrikPassBudget, fabrikRelativeMove, type FabrikConstraint } from "./fabrik-cap";
+import {
+  fabrikPassBudget,
+  fabrikRelativeMove,
+  type FabrikConstraint,
+  type FabrikPassMotion,
+} from "./fabrik-cap";
 import { selectFabrik } from "./fabrik-select";
 import { readNumber, segmentExtent } from "./frame";
 import {
@@ -264,11 +269,13 @@ export function solveTree3dAttempt(
    * nearest it (`limitLocal3d`, ADR-123) and its tip re-placed along the legal direction, so every
    * later pass starts from a legal pose and the published orientation is legal because the pose
    * is, not because the output was clamped afterwards (ADR-108). Answers how far the tips moved
-   * from where the previous outward pass settled them: the largest `fabrikRelativeMove`, each tip's
-   * coordinate move over the magnitudes on its own path, which the budget judges (issue #519).
+   * from where the previous outward pass settled them, which the budget judges (issue #519): the
+   * largest `fabrikRelativeMove`, each tip's coordinate move over the magnitudes on its own path,
+   * and the largest coordinate move itself.
    */
-  const outward = (): number => {
+  const outward = (): FabrikPassMotion => {
     let relative = 0;
+    let farthest = 0;
     for (let index = 0; index < count; index += 1) {
       const frame = parentFrame(index);
       const origin = originOf(index);
@@ -315,13 +322,14 @@ export function solveTree3dAttempt(
           Math.abs(was[2] - tip[2]),
         );
         relative = Math.max(relative, fabrikRelativeMove(moved, scale));
+        farthest = Math.max(farthest, moved);
       }
       settled[index] = tip;
       pivots[index] = pivot;
       tips[index] = tip;
       frames[index] = solved;
     }
-    return relative;
+    return { relative, moved: farthest };
   };
   // The frame each limited member settled on earlier in the current inward pass: its last outward
   // frame swung onto its inward direction. Only limited members with a member base write one.
@@ -408,9 +416,9 @@ export function solveTree3dAttempt(
         },
       });
     }
-    const relative = outward();
+    const motion = outward();
     residual = residualNow();
-    if (budget.settles(relative)) {
+    if (budget.settles(motion)) {
       stalled = true;
       break;
     }

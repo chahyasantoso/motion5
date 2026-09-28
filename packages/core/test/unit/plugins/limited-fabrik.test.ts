@@ -23,6 +23,7 @@ import {
   fabrikPassBudget,
   fabrikPassMovement,
   fabrikRelativeMove,
+  fabrikRoundingBound,
   projectsConvergence,
   type FabrikPassBudget,
 } from "../../../src/plugins/fabrik-cap";
@@ -442,27 +443,39 @@ describe("limited FABRIK: seed side, bidirectional limits and the limited cap (i
     expect(fabrikRelativeMove(1e-12, 0)).toBe(Infinity);
     expect(fabrikRelativeMove(1, Infinity)).toBe(Infinity);
     expect(fabrikRelativeMove(NaN, 300)).toBeNaN();
-    // The movement union over the largest of those.
+    // The movement union: rounding only inside both the relative band and the world-unit bound,
+    // so a large path's band cannot swallow real motion (independent pass QP-4).
     const band = FABRIK_ROUNDING_ULPS * Number.EPSILON;
-    expect(fabrikPassMovement(0)).toBe("still");
-    expect(fabrikPassMovement(Number.MIN_VALUE)).toBe("rounding");
-    expect(fabrikPassMovement(band)).toBe("rounding");
-    expect(fabrikPassMovement(band * 1.01)).toBe("moving");
-    expect(fabrikPassMovement(Infinity)).toBe("moving");
-    expect(fabrikPassMovement(NaN)).toBe("moving");
+    const bound = fabrikRoundingBound(FABRIK_TOLERANCE, FABRIK_MIN_ITERATIONS);
+    expect(bound).toBe(FABRIK_TOLERANCE / FABRIK_MIN_ITERATIONS);
+    const pass = (relative: number, moved = 1e-12) => ({ relative, moved });
+    expect(fabrikPassMovement(pass(0, 0), bound)).toBe("still");
+    expect(fabrikPassMovement(pass(Number.MIN_VALUE), bound)).toBe("rounding");
+    expect(fabrikPassMovement(pass(band, bound), bound)).toBe("rounding");
+    expect(fabrikPassMovement(pass(band * 1.01), bound)).toBe("moving");
+    expect(fabrikPassMovement(pass(band, bound * 1.01), bound)).toBe("moving");
+    expect(fabrikPassMovement(pass(Infinity), bound)).toBe("moving");
+    expect(fabrikPassMovement(pass(NaN), bound)).toBe("moving");
+    expect(fabrikPassMovement(pass(1e-16, NaN), bound)).toBe("moving");
     // One settle rule whatever the constraint: no movement settles at once; one rounding pass may
     // be a decay's last step, two are a circle around the fixed point; a moving pass in between
-    // starts the count again. Only `admits`, how many passes an attempt may take, reads the
-    // constraint.
+    // starts the count again. The constraint reads only how many passes an attempt may take, and
+    // through them the world-unit bound: the limited ceiling's is a quarter of the free cap's.
     for (const constraint of ["free", "limited"] as const) {
-      expect(fabrikPassBudget(2, constraint, FABRIK_TOLERANCE).settles(0)).toBe(true);
+      const passes = fabrikIterationCap(2, constraint);
+      const limit = fabrikRoundingBound(FABRIK_TOLERANCE, passes);
+      expect(fabrikPassBudget(2, constraint, FABRIK_TOLERANCE).settles(pass(0, 0))).toBe(true);
       const circling = fabrikPassBudget(2, constraint, FABRIK_TOLERANCE);
-      expect(circling.settles(1e-16)).toBe(false);
-      expect(circling.settles(1e-3)).toBe(false);
-      expect(circling.settles(1e-16)).toBe(false);
-      expect(circling.settles(2e-16)).toBe(true);
+      expect(circling.settles(pass(1e-16))).toBe(false);
+      expect(circling.settles(pass(1e-3))).toBe(false);
+      expect(circling.settles(pass(1e-16))).toBe(false);
+      expect(circling.settles(pass(2e-16, limit))).toBe(true);
       const moving = fabrikPassBudget(2, constraint, FABRIK_TOLERANCE);
-      for (let pass = 0; pass < 4; pass += 1) expect(moving.settles(band * 2)).toBe(false);
+      for (let step = 0; step < 4; step += 1) expect(moving.settles(pass(band * 2))).toBe(false);
+      const coarse = fabrikPassBudget(2, constraint, FABRIK_TOLERANCE);
+      for (let step = 0; step < 4; step += 1) {
+        expect(coarse.settles(pass(1e-16, limit * 1.01))).toBe(false);
+      }
     }
   });
 
@@ -539,6 +552,34 @@ describe("limited FABRIK: seed side, bidirectional limits and the limited cap (i
       expect(quality.kind).toBe("stalled");
       expect(quality.iterations).toBe(2);
       expect(quality.residual).toBeCloseTo(11.3915490443, 9);
+    }
+  });
+
+  it("TH-154 a huge path's rounding band does not stall a chain still converging on it", () => {
+    // Independent pass QP-4: on 1e15-unit members 1,024 ulps is 227 world units, and the relative
+    // band alone stalled this free chain at pass 30 and a residual of 19.7 in both dimensions.
+    const l = 1e15;
+    const rig: SolveMember[] = [
+      { id: "m0", base: "root", length: l },
+      {
+        id: "m1",
+        base: "m0",
+        length: l,
+        goal: { x: 1799999999997258.5, y: 3141592653.588198, rotation: 0 },
+      },
+    ];
+    const flat = solveFabrikAttempt(ROOT, rig, false, "centroid").quality;
+    const spatial = solveTree3dAttempt(
+      ROOT3,
+      planar3d(rig),
+      UNBOUND_POLE3D,
+      false,
+      "centroid",
+    ).quality;
+    for (const quality of [flat, spatial] as IterativeQuality[]) {
+      expect(quality.kind).toBe("iteration-cap");
+      expect(quality.iterations).toBe(FABRIK_MIN_ITERATIONS);
+      expect(quality.residual).toBeLessThan(0.05);
     }
   });
 

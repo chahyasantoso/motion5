@@ -431,6 +431,7 @@ export function solveFabrikAttempt(
     // the budget's, one rule for every constraint, so 3D stops on it too; each tip's move is judged
     // against the magnitudes on its own path, bases before children (issue #519).
     let relative = 0;
+    let farthest = 0;
     for (const id of ids) {
       const was = before.get(id)!;
       const now = tips.get(id)!;
@@ -446,8 +447,9 @@ export function solveFabrikAttempt(
       pathScales.set(id, scale);
       const moved = Math.max(Math.abs(was.x - now.x), Math.abs(was.y - now.y));
       relative = Math.max(relative, fabrikRelativeMove(moved, scale));
+      farthest = Math.max(farthest, moved);
     }
-    if (budget.settles(relative)) {
+    if (budget.settles({ relative, moved: farthest })) {
       stalled = true;
       break;
     }

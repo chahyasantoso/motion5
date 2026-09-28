@@ -124,18 +124,51 @@ export function fabrikRelativeMove(moved: number, scale: number): number {
 }
 
 /**
+ * How far one pass moved the tips, as the loops measure it for the stall test: `relative`, the
+ * largest `fabrikRelativeMove` over every tip, and `moved`, the largest coordinate any tip moved in
+ * world units. Both are zero exactly when no tip moved.
+ */
+export interface FabrikPassMotion {
+  readonly relative: number;
+  readonly moved: number;
+}
+
+/**
  * What one pass did to the pose, as the stall test reads it: a closed union read by one exhaustive
  * switch in `settlesAfter`, so a new kind of pass has to say whether it ends an attempt.
  *
  * `still` moved no tip at all; `rounding` moved some, none by more than `FABRIK_ROUNDING_ULPS`
- * ulps of its path's scale; `moving` moved one by more, or measured something non-finite.
+ * ulps of its path's scale and none by more than `bound` world units; `moving` moved one by more,
+ * or measured something non-finite.
  */
 export type FabrikPassMovement = "still" | "rounding" | "moving";
 
-/** Names a pass whose largest `fabrikRelativeMove` over every tip is `relative`. */
-export function fabrikPassMovement(relative: number): FabrikPassMovement {
-  if (relative === 0) return "still";
-  return relative <= FABRIK_ROUNDING_ULPS * Number.EPSILON ? "rounding" : "moving";
+/**
+ * Names a pass that moved as `motion` says, where `bound` is the most world units a rounding pass
+ * may move a tip (`fabrikRoundingBound`).
+ *
+ * The relative band alone is not enough, because it grows with the path: on a 1e15-unit chain
+ * 1,024 ulps is 227 world units, and a free chain decaying geometrically toward its goal moved 52
+ * and then 20 units in two passes inside it and stalled at a residual of 19.7 where 34 more passes
+ * reached 0.037 (independent pass QP-4). A pass is rounding only when it is both.
+ */
+export function fabrikPassMovement(motion: FabrikPassMotion, bound: number): FabrikPassMovement {
+  if (motion.relative === 0) return "still";
+  return motion.relative <= FABRIK_ROUNDING_ULPS * Number.EPSILON && motion.moved <= bound
+    ? "rounding"
+    : "moving";
+}
+
+/**
+ * The most world units a rounding pass may move a tip, for an attempt that converges to
+ * `tolerance` and may take at most `passes` passes: small enough that every pass the attempt could
+ * still take, each moving that little, would not together move a tip by `tolerance`, so settling on
+ * one cannot cost a residual a tolerance's worth of progress. On every ordinary rig the relative
+ * band is the tighter one (7e-11 units on a 300-unit chain against 1.6e-5 at the free cap of 64);
+ * this bound decides only past about 1e7 units of path, where rounding is itself that coarse.
+ */
+export function fabrikRoundingBound(tolerance: number, passes: number): number {
+  return tolerance / passes;
 }
 
 /** How many passes one FABRIK attempt takes, and when a pass leaves it at a fixed point. */
@@ -146,11 +179,11 @@ export interface FabrikPassBudget {
    */
   admits(iterations: number, residual: number): boolean;
   /**
-   * Whether the pass just taken, whose largest `fabrikRelativeMove` over every tip is `relative`,
-   * leaves the attempt at a fixed point, so it ends `stalled` rather than running on to the cap.
-   * Asked once after every pass, in pass order.
+   * Whether the pass just taken, which moved the tips as `motion` says, leaves the attempt at a
+   * fixed point, so it ends `stalled` rather than running on to the cap. Asked once after every
+   * pass, in pass order.
    */
-  settles(relative: number): boolean;
+  settles(motion: FabrikPassMotion): boolean;
 }
 
 /**
@@ -180,7 +213,10 @@ export function fabrikPassBudget(
   const free = fabrikIterationCap(depth, "free");
   switch (constraint) {
     case "free":
-      return { admits: (iterations) => iterations < free, settles: settlesAfter() };
+      return {
+        admits: (iterations) => iterations < free,
+        settles: settlesAfter(fabrikRoundingBound(tolerance, free)),
+      };
     case "limited":
       return limitedPassBudget(free, fabrikIterationCap(depth, "limited"), tolerance);
     default:
@@ -189,16 +225,17 @@ export function fabrikPassBudget(
 }
 
 /**
- * The fixed-point test of one attempt, asked once after every pass in pass order: a pass that moved
- * no tip settles it at once, and so does the second consecutive `rounding` pass, because two
- * passes in the rounding band are an attempt circling its fixed point, where one alone may be the
- * last step of a decay that ends on an exact repeat anyway. A `moving` pass starts the count again.
+ * The fixed-point test of one attempt, asked once after every pass in pass order, with `bound` its
+ * `fabrikRoundingBound`: a pass that moved no tip settles it at once, and so does the second
+ * consecutive `rounding` pass, because two passes in the rounding band are an attempt circling its
+ * fixed point, where one alone may be the last step of a decay that ends on an exact repeat anyway.
+ * A `moving` pass starts the count again.
  */
-function settlesAfter(): (relative: number) => boolean {
+function settlesAfter(bound: number): (motion: FabrikPassMotion) => boolean {
   // Whether the previous pass moved by rounding only.
   let rounding = false;
-  return (relative) => {
-    const movement = fabrikPassMovement(relative);
+  return (motion) => {
+    const movement = fabrikPassMovement(motion, bound);
     const previous = rounding;
     rounding = movement === "rounding";
     switch (movement) {
@@ -218,7 +255,7 @@ function limitedPassBudget(free: number, ceiling: number, tolerance: number): Fa
   // The residual each pass ended at, indexed by pass, so a window boundary reads its own start.
   const trail: number[] = [];
   return {
-    settles: settlesAfter(),
+    settles: settlesAfter(fabrikRoundingBound(tolerance, ceiling)),
     admits(iterations, residual) {
       trail[iterations] = residual;
       if (iterations < free) return true;
