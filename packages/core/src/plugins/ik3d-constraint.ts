@@ -22,6 +22,7 @@ import {
   dot3,
   LOCAL_X3,
   multiplyMatrix3,
+  multiplyVector3,
   norm3,
   normalize3,
   rotationAboutAxis3d,
@@ -259,13 +260,38 @@ export function centreLocal3d(limit: JointLimit3d, rest: Matrix3): Matrix3 {
  * `x·a = a[0]`, so a direction is on the circle exactly when its own component `d·a` equals that, to
  * `HINGE_DIRECTION_TOLERANCE`. Only a hinge names a plane; a free joint, a cone and a swing-twist
  * answer `false`, because a direction they bound is projected onto a bound without leaving the
- * plane it was proposed in. The 3D seed reads this to decide whether its arc is a legal pose
+ * plane it was proposed in. `leavesHingePose` adds the full-frame condition for seed selection
  * (issue #523, ADR-129).
  */
 export function leavesHingeCircle(limit: JointLimit3d, local: Matrix3): boolean {
   switch (limit.kind) {
     case "hinge":
       return Math.abs(dot3(axisX3(local), limit.axis) - limit.axis[0]) > HINGE_DIRECTION_TOLERANCE;
+    case "free":
+    case "cone":
+    case "swing-twist":
+      return false;
+    default:
+      return unreachable(limit);
+  }
+}
+
+/**
+ * Whether a proposed frame requires projection onto a pure hinge pose. A direction on
+ * the swept circle is not enough: authored rest roll can keep +x on the circle while tilting the
+ * other axes. A proper rotation is a turn about `axis` exactly when it fixes that axis. Compare
+ * that invariant to the frame tolerance used by inward enforcement; range clipping is deliberately
+ * not part of seed selection, because planar arcs may be clipped without leaving their plane.
+ */
+export function leavesHingePose(limit: JointLimit3d, local: Matrix3): boolean {
+  if (leavesHingeCircle(limit, local)) return true;
+  switch (limit.kind) {
+    case "hinge": {
+      const transformed = multiplyVector3(local, limit.axis);
+      return transformed.some(
+        (value, index) => Math.abs(value - limit.axis[index]!) > INWARD_FRAME_TOLERANCE,
+      );
+    }
     case "free":
     case "cone":
     case "swing-twist":

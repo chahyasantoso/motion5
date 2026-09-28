@@ -203,8 +203,8 @@ export function solveTree3dAttempt(
     readings.push(reading);
     aims[leaf] = [x!, y!, z!];
   }
-  // Every tip starts where the seed puts it: the arc, or the legal seed when the arc would leave a
-  // hinge's plane (`ik3d-seed.ts`, ADR-129). The first outward pass enforces every length.
+  // Every tip starts where the seed puts it: the arc, or the legal seed when the arc requires a
+  // hinge-pose projection (`ik3d-seed.ts`, ADR-129). The first outward pass enforces every length.
   const tips: Vec3[] = seedTree3d(
     {
       rootPoint,

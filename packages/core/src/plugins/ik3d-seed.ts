@@ -16,7 +16,7 @@ import {
   type Vec3,
 } from "./frame3d";
 import { bendBasis3d, type Pole3d } from "./ik3d-analytic";
-import { centreLocal3d, constrains, leavesHingeCircle, type JointLimit3d } from "./ik3d-constraint";
+import { centreLocal3d, constrains, leavesHingePose, type JointLimit3d } from "./ik3d-constraint";
 
 /**
  * The 3D FABRIK seed: where every member's tip starts before the first outward pass, and the one
@@ -24,11 +24,10 @@ import { centreLocal3d, constrains, leavesHingeCircle, type JointLimit3d } from 
  *
  * Two seeds, a closed union read exhaustively (`TreeSeed3d`). The **arc** is the 2D seed's
  * constant-curvature arc in the closed form's bend plane (ADR-118, ADR-122); it is kept whenever it
- * is a legal pose for every hinge's plane, which is every planar +z rig, so those rigs seed, solve
- * and publish exactly the bytes they did and stay in agreement with 2D. The **legal** seed is taken
- * when the arc would point some hinge's member off the circle its axis sweeps: that arc is not a
- * pose the chain can hold, both of its mirrored sides are illegal, and the first outward pass would
- * spend itself projecting the seed instead of exploring legal poses. The legal seed is built in
+ * keeps each hinge's axis fixed as well as its direction on the hinge circle. Planar +z rigs do,
+ * so they seed, solve and publish exactly the bytes they did and stay in agreement with 2D. The
+ * **legal** seed is taken when the arc leaves that pose (including rest roll on the circle): the
+ * first outward pass would otherwise spend itself projecting the seed. The legal seed is built in
  * joint space rather than point space: every limited member sits at the centre of its legal set
  * (`centreLocal3d`), and every free member on an addressed path turns its subtree so the mean of
  * the subtree's addressed tips points at the mean of their aims. It is legal by construction, so
@@ -65,7 +64,7 @@ export interface SeedTree3d {
   readonly aims: readonly Vec3[];
 }
 
-/** Which seed a tree takes; `legal` exactly when the arc leaves some hinge's plane. */
+/** Which seed a tree takes; `legal` when the arc requires a hinge-pose projection. */
 export type TreeSeed3d = { readonly kind: "arc" } | { readonly kind: "legal" };
 
 const ARC_SEED: TreeSeed3d = Object.freeze({ kind: "arc" });
@@ -139,12 +138,11 @@ function arcTips(tree: SeedTree3d, pole: Pole3d, flip: boolean): Vec3[] {
 
 /**
  * Which seed the tree takes: `legal` when composing the arc the way the outward pass composes a
- * pose (each member's rest frame under its base, swung onto its seeded direction) points some
- * hinge's member off its axis's circle (`leavesHingeCircle`), otherwise `arc`.
+ * pose (each member's rest frame under its base, swung onto its seeded direction) leaves some
+ * hinge's legal orientation (`leavesHingePose`), otherwise `arc`.
  *
- * Only a hinge's plane is read. A range, a cone's swing or a twist the arc exceeds is a bound the
- * pose can be projected onto without leaving the plane the seed chose, the question issue #524
- * owns, so it does not change the seed here.
+ * A range, a cone's swing or a twist the arc exceeds is a bound the pose can be projected onto
+ * without changing this seed choice; issue #524 owns those limits.
  */
 export function treeSeed3d(tree: SeedTree3d, arc: readonly Vec3[]): TreeSeed3d {
   const { rootPoint, rootMatrix, parent, lengths, offsets, rests, limits } = tree;
@@ -158,7 +156,7 @@ export function treeSeed3d(tree: SeedTree3d, arc: readonly Vec3[]): TreeSeed3d {
     const rest = multiplyMatrix3(frame, rests[index]!);
     const swung = lengths[index]! > 0 ? swingFrame3d(rest, subtract3(arc[index]!, pivot)) : rest;
     frames[index] = swung;
-    if (leavesHingeCircle(limits[index]!, multiplyMatrix3(transposeMatrix3(frame), swung)))
+    if (leavesHingePose(limits[index]!, multiplyMatrix3(transposeMatrix3(frame), swung)))
       return LEGAL_SEED;
   }
   return ARC_SEED;
@@ -232,7 +230,7 @@ function legalTips(tree: SeedTree3d, flip: boolean): Vec3[] {
 
 /**
  * Every member's seeded tip for one attempt, from `flip`'s side: the arc when it is legal for
- * every hinge's plane, else the legal seed (`treeSeed3d`). A fresh array the attempt owns.
+ * every hinge's pose, else the legal seed (`treeSeed3d`). A fresh array the attempt owns.
  */
 export function seedTree3d(tree: SeedTree3d, pole: Pole3d, flip: boolean): Vec3[] {
   const arc = arcTips(tree, pole, flip);
