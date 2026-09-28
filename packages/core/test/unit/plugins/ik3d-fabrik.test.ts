@@ -423,6 +423,40 @@ describe("3D FABRIK evidence", () => {
     expect(endpoint.quality.kind).toBe("converged");
     expect(solveChain3d(ROOT, fixture, UNBOUND_POLE3D).quality.kind).toBe("converged");
   });
+
+  it("TH-175 recovers corpus rig 12 only from the symmetric legal endpoint", () => {
+    // Seed-7 rig 12: exact FK goal from a legal -18.384259487491136 degree final hinge.
+    const fixture = [
+      member("m0", "root", 59.20602461323142),
+      member("m1", "m0", 45.08465627208352),
+      member("m2", "m1", 35.35688554868102, {
+        limit: {
+          kind: "hinge",
+          axis: [-0.5419019284015077, -0.16543067601400707, -0.8239993880023672],
+          range: { kind: "range", min: -138.86158861219883, max: 0 },
+        },
+        goal: readFrame3d({
+          x: -18.393961986636363,
+          y: 68.82287752408351,
+          z: -42.83943076534621,
+        }),
+      }),
+    ];
+    const attempt = (fraction: 0.1 | 0.25 | 0.75 | 0.9) =>
+      solveTree3dAttempt(ROOT, fixture, UNBOUND_POLE3D, false, "centroid", {
+        kind: "legal-range",
+        fraction,
+      });
+    expect(solveTree3dAttempt(ROOT, fixture, UNBOUND_POLE3D, false, "centroid").quality.kind)
+      .toBe("iteration-cap");
+    for (const fraction of [0.25, 0.75, 0.1] as const)
+      expect(attempt(fraction).quality.kind).not.toBe("converged");
+    expect(attempt(0.9).quality.kind).toBe("converged");
+    const solved = solveChain3d(ROOT, fixture, UNBOUND_POLE3D);
+    expect(solved.quality.kind).toBe("converged");
+    expect(solved.quality.residual).toBeLessThan(0.001);
+    expect(solveChain3d(ROOT, fixture, UNBOUND_POLE3D)).toEqual(solved);
+  });
   it("TH-58 closes seeded serial chains and independently composes their tips", () => {
     const random = seeded(7);
     for (let sample = 0; sample < 300; sample += 1) {

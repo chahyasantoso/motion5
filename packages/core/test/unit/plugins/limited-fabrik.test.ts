@@ -355,7 +355,7 @@ describe("limited FABRIK: seed side, bidirectional limits and the limited cap (i
     expect(conflicted.quality).toEqual(met(0.00025));
   });
 
-  it("TH-168 pays for one endpoint only when both quartiles still miss", () => {
+  it("TH-168 skips q90 when the first endpoint resolves the missed quartiles", () => {
     const miss = { kind: "limited", iterations: 2, residual: 1, atBound: ["m"] } as const;
     const met = { kind: "converged", iterations: 1, residual: 0.0002 } as const;
     const calls: string[] = [];
@@ -387,6 +387,32 @@ describe("limited FABRIK: seed side, bidirectional limits and the limited cap (i
       100,
     );
     expect(calls).toEqual(["base", "opposite", "q0.25", "q0.75"]);
+  });
+
+  it("TH-174 pays for the symmetric endpoint only after all earlier legal starts miss", () => {
+    const miss = { kind: "limited", iterations: 2, residual: 1, atBound: ["m"] } as const;
+    const met = { kind: "converged", iterations: 3, residual: 0.0003 } as const;
+    const calls: string[] = [];
+    const selected = selectFabrik(
+      null,
+      [],
+      false,
+      (_root, _members, flip, _rule, seed) => {
+        const name =
+          seed?.kind === "legal-range" ? `q${seed.fraction}` : flip ? "opposite" : "base";
+        calls.push(name);
+        return { quality: name === "q0.9" ? met : miss };
+      },
+      100,
+    );
+    expect(calls).toEqual(["base", "opposite", "q0.25", "q0.75", "q0.1", "q0.9"]);
+    expect(selected.quality).toBe(met);
+    calls.length = 0;
+    selectFabrik(null, [], false, (_root, _members, flip, _rule, seed) => {
+      calls.push(seed?.kind === "legal-range" ? `q${seed.fraction}` : flip ? "opposite" : "base");
+      return { quality: miss };
+    }, 10);
+    expect(calls).toEqual(["base", "opposite"]);
   });
 
   it("CL-35 the inward pass bounds a base by its limited child, so a two-limit chain converges", () => {

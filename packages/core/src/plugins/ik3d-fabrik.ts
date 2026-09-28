@@ -460,8 +460,8 @@ export function solveTree3dAttempt(
  * The tree solve at one magnitude through the shared closed selector: the authored-side attempt,
  * three alternatives for a conflicted baseline and one opposite-seed centroid retry for a limited
  * or capped baseline (#490, ADR-126, ADR-128). A near miss with a non-planar hinge can pay
- * two legal quartiles and, only if both still miss, one endpoint-biased start. The selector owns
- * that bounded budget, not this attempt.
+ * two legal quartiles and, only if they still miss, q10 then q90 (q90 only if q10 also misses).
+ * The selector owns the six-attempt ceiling, not this attempt.
  */
 /**
  * Retry scale from addressed paths with a non-planar hinge only. Siblings without goals, orphan

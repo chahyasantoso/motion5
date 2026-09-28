@@ -40,7 +40,7 @@ export type FabrikSeed =
   | { readonly kind: "default" }
   | {
       readonly kind: "legal-range";
-      readonly fraction: 0.1 | 0.25 | 0.75;
+      readonly fraction: 0.1 | 0.25 | 0.75 | 0.9;
     };
 
 export const DEFAULT_FABRIK_SEED: FabrikSeed = Object.freeze({ kind: "default" });
@@ -87,7 +87,8 @@ const NO_ALTERNATIVES: readonly FabrikAlternative[] = Object.freeze([]);
  * a two-percent reach band buys 57 of the 113 quartile recoveries with 26,615 extra iterations,
  * instead of 121,663 for unrestricted quartiles. One q10 attempt only after unresolved gated
  * quartiles costs another 176 attempts / 11,044 iterations and recovers 14 on that corpus.
- * These are deterministic attempt counts, not latency guarantees or reachability proofs.
+ * A symmetric q90 is now reserved for cases still unresolved after q10; it does not change the
+ * measured historical counts above. These are attempt counts, not latency or reachability proofs.
  */
 const LEGAL_RETRY_REACH_FRACTION = 0.02;
 
@@ -129,7 +130,8 @@ export function fabrikAlternatives(quality: IterativeQuality): readonly FabrikAl
  * dropped; no restart metadata is published (ADR-107), and the selected result reports its own
  * `quality.iterations`. `legalRangeReach` opts in a non-planar 3D hinge only. Its narrow
  * reach-relative band avoids charging far misses additional full limited-cap attempts.
- * A tenth-range start is reserved for misses still unresolved after the two quartiles.
+ * Endpoint-biased starts are reserved for misses still unresolved after the two quartiles.
+ * q90 is paid only when q10 also misses, with one shared six-attempt ceiling.
  */
 export function selectFabrik<R, M, S extends Selectable>(
   root: R,
@@ -162,6 +164,13 @@ export function selectFabrik<R, M, S extends Selectable>(
         fraction: 0.1,
       });
       if (outranks(candidate.quality, selected.quality)) selected = candidate;
+      if (selected.quality.kind !== "converged") {
+        const highCandidate = attempt(root, members, flip, "centroid", {
+          kind: "legal-range",
+          fraction: 0.9,
+        });
+        if (outranks(highCandidate.quality, selected.quality)) selected = highCandidate;
+      }
     }
   }
   return selected;
