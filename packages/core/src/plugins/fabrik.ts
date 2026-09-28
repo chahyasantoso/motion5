@@ -428,7 +428,7 @@ export function solveFabrikAttempt(
     // Nothing moved, so nothing can. An unreachable goal reaches full extension in one pass and
     // holds, and exiting here rather than at the cap is what makes `iterations` mean work done and
     // lets `stalled` tell a caller that a larger cap is not the answer. What counts as nothing is
-    // the budget's, per constraint, so 3D stops on the same rule; each tip's movement is judged
+    // the budget's, one rule for every constraint, so 3D stops on it too; each tip's move is judged
     // against the magnitudes on its own path, bases before children (issue #519).
     let relative = 0;
     for (const id of ids) {
@@ -505,8 +505,7 @@ export interface IterativeOutcome {
   readonly spread: number;
   /**
    * Whether the last pass left the attempt at a fixed point, as `FabrikPassBudget.settles` judges
-   * it: nothing moved at all for a free chain, and for a limited one also a second consecutive pass
-   * that moved by rounding only (issue #519).
+   * it: nothing moved at all, or a second consecutive pass moved by rounding only (issue #519).
    */
   readonly stalled: boolean;
 }

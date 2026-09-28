@@ -5,7 +5,8 @@
  * path they had. Every solve case below fails on the pre-#514 solver: the seed-side rigs end
  * `limited` at a residual of 141 or 153 units, and the premature-termination rigs end
  * `iteration-cap` a few thousandths short at the free cap of 64. TH-153 fails on the pre-#519
- * solver: 3D ends `iteration-cap` where 2D ends `stalled`. */
+ * solver: one dimension ends `iteration-cap` where the other ends `stalled`, and on the first #519
+ * head for its free rig, where the settle rule still read the constraint. */
 import { describe, expect, it } from "vitest";
 import {
   FABRIK_TOLERANCE,
@@ -431,7 +432,7 @@ describe("limited FABRIK: seed side, bidirectional limits and the limited cap (i
     expect(firstRefused(limited(), turning)).toBe(FABRIK_MIN_ITERATIONS + FABRIK_PROGRESS_WINDOW);
   });
 
-  it("CL-39 a pass settles an attempt by its constraint: free only on no movement, limited also on two rounding passes", () => {
+  it("CL-39 a pass settles an attempt on one rule for every constraint: no movement, or two rounding passes", () => {
     // One tip's move over its path's scale: zero only when it did not move, never underflowing to
     // zero, and unjudgeable (so moving) without a finite positive scale.
     expect(fabrikRelativeMove(0, 300)).toBe(0);
@@ -449,39 +450,29 @@ describe("limited FABRIK: seed side, bidirectional limits and the limited cap (i
     expect(fabrikPassMovement(band * 1.01)).toBe("moving");
     expect(fabrikPassMovement(Infinity)).toBe("moving");
     expect(fabrikPassMovement(NaN)).toBe("moving");
-    // Free keeps the exact `moved === 0` it always read, so no rounding residue ends it: its bytes.
-    const free = fabrikPassBudget(2, "free", FABRIK_TOLERANCE);
-    expect(free.settles(0)).toBe(true);
-    for (let pass = 0; pass < 4; pass += 1) expect(free.settles(1e-16)).toBe(false);
-    // Limited: no movement settles at once; one rounding pass may be a decay's last step, two are a
-    // circle around the fixed point; a moving pass in between starts the count again.
-    const limited = fabrikPassBudget(2, "limited", FABRIK_TOLERANCE);
-    expect(limited.settles(0)).toBe(true);
-    const circling = fabrikPassBudget(2, "limited", FABRIK_TOLERANCE);
-    expect(circling.settles(1e-16)).toBe(false);
-    expect(circling.settles(1e-3)).toBe(false);
-    expect(circling.settles(1e-16)).toBe(false);
-    expect(circling.settles(2e-16)).toBe(true);
-    // The deliberate boundary: a free planar rig that circles one ulp in 2D still runs to the cap
-    // there while 3D lands on an exact repeat, because moving free bytes is not this fix's to do.
-    const freeCircle: SolveMember[] = [
-      { id: "0", base: "root", length: 49.9 },
-      { id: "1", base: "0", length: 69.8 },
-      { id: "2", base: "1", length: 77, goal: { x: 91.2, y: 191.2, rotation: 0 } },
-    ];
-    expect(solveChain(ROOT, freeCircle, false).quality).toEqual({
-      kind: "iteration-cap",
-      iterations: FABRIK_MIN_ITERATIONS,
-      residual: 15.136918406589361,
-    });
-    expect(solve3d(planar3d(freeCircle)).quality.kind).toBe("stalled");
+    // One settle rule whatever the constraint: no movement settles at once; one rounding pass may
+    // be a decay's last step, two are a circle around the fixed point; a moving pass in between
+    // starts the count again. Only `admits`, how many passes an attempt may take, reads the
+    // constraint.
+    for (const constraint of ["free", "limited"] as const) {
+      expect(fabrikPassBudget(2, constraint, FABRIK_TOLERANCE).settles(0)).toBe(true);
+      const circling = fabrikPassBudget(2, constraint, FABRIK_TOLERANCE);
+      expect(circling.settles(1e-16)).toBe(false);
+      expect(circling.settles(1e-3)).toBe(false);
+      expect(circling.settles(1e-16)).toBe(false);
+      expect(circling.settles(2e-16)).toBe(true);
+      const moving = fabrikPassBudget(2, constraint, FABRIK_TOLERANCE);
+      for (let pass = 0; pass < 4; pass += 1) expect(moving.settles(band * 2)).toBe(false);
+    }
   });
 
-  it("TH-153 a planar limited rig circling its fixed point by rounding stalls in both dimensions", () => {
+  it("TH-153 a planar rig circling its fixed point by rounding stalls in both dimensions", () => {
     // Issue #519. Each rig reached one planar fixed point in both dimensions, but 2D landed on an
     // exact repeat (`stalled`) while 3D circled it by an ulp until the cap (`iteration-cap`), or,
-    // for the last, both circled and published at 64 passes the pose they had after one. Found by
-    // tools/issue519/agreement.ts, seed 11 rigs 2574 and 1266, and CL-36's former crawl.
+    // for the third, both circled and published at 64 passes the pose they had after one. The last
+    // is free and unreachable: 2D circled one ulp to the cap and 3D landed exactly, and before the
+    // settle rule stopped reading the constraint it was pinned as a deliberate boundary. Found by
+    // tools/issue519/agreement.ts, seed 11 rigs 2574 and 1266, seed 13, and CL-36's former crawl.
     const rigs: SolveMember[][] = [
       [
         { id: "0", base: "root", length: 96.5, limit: range(-96.6, 43.6) },
@@ -508,6 +499,11 @@ describe("limited FABRIK: seed side, bidirectional limits and the limited cap (i
           limit: range(-9.2, 52.7),
           goal: { x: 140.4, y: 21.2, rotation: 0 },
         },
+      ],
+      [
+        { id: "0", base: "root", length: 49.9 },
+        { id: "1", base: "0", length: 69.8 },
+        { id: "2", base: "1", length: 77, goal: { x: 91.2, y: 191.2, rotation: 0 } },
       ],
     ];
     for (const rig of rigs) {

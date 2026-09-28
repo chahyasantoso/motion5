@@ -138,8 +138,8 @@ function seedArc3d(
  *
  * The structure is the 2D attempt's: seed every addressed path, run an outward pass, then alternate
  * inward and outward passes until the worst addressed miss is inside `FABRIK_TOLERANCE`, the shared
- * pass budget settles the attempt at a fixed point (a pass that moved nothing, or for a limited
- * chain two passes that moved by rounding only, issue #519), or it denies another pass. Limited
+ * pass budget settles the attempt at a fixed point (a pass that moved nothing, or two consecutive
+ * passes that moved by rounding only, issue #519), or it denies another pass. Limited
  * children constrain both directions; a sub-base settles on the influence-weighted compromise of
  * the tips its branches propose, each branch un-offsetting its proposed pivot through its base's
  * current full frame, so positions are averaged and orientations never are (ADR-054).
