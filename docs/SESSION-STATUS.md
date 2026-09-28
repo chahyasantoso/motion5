@@ -5,23 +5,23 @@ below are the complete shape. **Now** and **Next in line** carry exactly one bul
 bullet states a phase; `packages/core/test/unit/scripts/session-status-shape.test.ts` enforces the
 shape and byte ceiling.
 
-- **Captured:** 2026-09-27, Asia/Jakarta.
-- **Read against:** `main` at `1084ba674170042c0c20f16139dd5530e0304545`, where [#516][pr516]
-  landed [ADR-125][adr125] and [#500][issue500] closed.
+- **Captured:** 2026-09-28, Asia/Jakarta.
+- **Read against:** `main` at `741fd5a48a317f1ab4349de89b5ac00283667541`, where [#518][pr518]
+  landed [ADR-126][adr126] and [#514][issue514] closed.
 
 ## Now
 
-- **[#514][issue514] lands with this change
-  ([ADR-126][adr126],
-  [#518][pr518]).**
+- **[#519][issue519] lands with this change ([ADR-127][adr127]).**
 
 ## Next in line
 
-- **The next work is the #514 follow-up (no fitting open issue):** investigate random-axis hinge
-  seeding and mixed-sign local optima.
+- **[#521][issue521] is next:** a capped planar FABRIK attempt publishes its last pass, so 2D and
+  its +z-hinge 3D equivalent can publish poses degrees apart and report different `atBound` lists.
 
 ## Open, and not scheduled
 
+- The #514 follow-up has no fitting open issue: random-axis hinge seeding and mixed-sign local
+  optima.
 - [#328][issue328] remains open for activation and
   failure-recovery exercises, lifecycle limits, and maintenance usage/replacement validation before
   any separately confirmed retirement.
@@ -35,10 +35,10 @@ shape and byte ceiling.
   activation contracts: [API-CAPABILITIES.md](./API-CAPABILITIES.md).
 - Earlier long-form history remains in Git at this path; do not duplicate it into another status database.
 
-[pr516]: https://github.com/chahyasantoso/motion5/pull/516
-[adr125]: ./ADR-125-public-3d-api.md
-[issue500]: https://github.com/chahyasantoso/motion5/issues/500
 [issue514]: https://github.com/chahyasantoso/motion5/issues/514
 [adr126]: ./ADR-126-limited-fabrik-seed-side-bidirectional-limits-and-pass-budget.md
 [pr518]: https://github.com/chahyasantoso/motion5/pull/518
 [issue328]: https://github.com/chahyasantoso/motion5/issues/328
+[issue519]: https://github.com/chahyasantoso/motion5/issues/519
+[adr127]: ./ADR-127-fabrik-settles-on-two-rounding-passes.md
+[issue521]: https://github.com/chahyasantoso/motion5/issues/521

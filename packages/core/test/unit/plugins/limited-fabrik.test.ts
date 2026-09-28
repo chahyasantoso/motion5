@@ -1,9 +1,12 @@
-/** Issue #514 and ADR-126: executable evidence that limited FABRIK no longer traps on a seed-side
- * bound or stops short of a reachable goal, in both dimensions, through the three shared owners
- * (`fabrik-select.ts`, the inward passes with `ik-constraint.ts` / `ik3d-constraint.ts`, and
- * `fabrik-cap.ts`), and that free rigs keep the path they had. Every solve case below fails on the
- * pre-#514 solver: the seed-side rigs end `limited` at a residual of 141 or 153 units, and the
- * premature-termination rigs end `iteration-cap` a few thousandths short at the free cap of 64. */
+/** Issues #514 and #519, ADR-126 and ADR-127: executable evidence that limited FABRIK no longer
+ * traps on a seed-side bound, stops short of a reachable goal, or runs a rounding circle to the
+ * cap, in both dimensions, through the three shared owners (`fabrik-select.ts`, the inward passes
+ * with `ik-constraint.ts` / `ik3d-constraint.ts`, and `fabrik-cap.ts`), and that free rigs keep the
+ * path they had. Every solve case below fails on the pre-#514 solver: the seed-side rigs end
+ * `limited` at a residual of 141 or 153 units, and the premature-termination rigs end
+ * `iteration-cap` a few thousandths short at the free cap of 64. TH-153 fails on the pre-#519
+ * solver: one dimension ends `iteration-cap` where the other ends `stalled`, and on the first #519
+ * head for its free rig, where the settle rule still read the constraint. */
 import { describe, expect, it } from "vitest";
 import {
   FABRIK_TOLERANCE,
@@ -15,8 +18,12 @@ import {
   FABRIK_LIMITED_CAP_FACTOR,
   FABRIK_MIN_ITERATIONS,
   FABRIK_PROGRESS_WINDOW,
+  FABRIK_ROUNDING_ULPS,
   fabrikIterationCap,
   fabrikPassBudget,
+  fabrikPassMovement,
+  fabrikRelativeMove,
+  fabrikRoundingBound,
   projectsConvergence,
   type FabrikPassBudget,
 } from "../../../src/plugins/fabrik-cap";
@@ -424,24 +431,155 @@ describe("limited FABRIK: seed side, bidirectional limits and the limited cap (i
     // A residual that rises within a window stops at that window's boundary.
     const turning = (pass: number) => (pass < 70 ? 10 * 0.9 ** pass : 1);
     expect(firstRefused(limited(), turning)).toBe(FABRIK_MIN_ITERATIONS + FABRIK_PROGRESS_WINDOW);
-    // A still-moving limited rig whose residual holds to ten digits: at the plain 4x cap it took 256
-    // passes in each dimension to publish the pose it had at 64. Now it stops at 64, both agree.
-    const crawl: SolveMember[] = [
-      { id: "a", base: "root", length: 67.8, limit: range(-18.8, 81.6) },
+  });
+
+  it("CL-39 a pass settles an attempt on one rule for every constraint: no movement, or two rounding passes", () => {
+    // One tip's move over its path's scale: zero only when it did not move, never underflowing to
+    // zero, and unjudgeable (so moving) without a finite positive scale.
+    expect(fabrikRelativeMove(0, 300)).toBe(0);
+    expect(fabrikRelativeMove(0, 0)).toBe(0);
+    expect(fabrikRelativeMove(3e-14, 300)).toBe(1e-16);
+    expect(fabrikRelativeMove(Number.MIN_VALUE, 1e300)).toBe(Number.MIN_VALUE);
+    expect(fabrikRelativeMove(1e-12, 0)).toBe(Infinity);
+    expect(fabrikRelativeMove(1, Infinity)).toBe(Infinity);
+    expect(fabrikRelativeMove(NaN, 300)).toBeNaN();
+    // The movement union: rounding only inside both the relative band and the world-unit bound,
+    // so a large path's band cannot swallow real motion (independent pass QP-4).
+    const band = FABRIK_ROUNDING_ULPS * Number.EPSILON;
+    const bound = fabrikRoundingBound(FABRIK_TOLERANCE, FABRIK_MIN_ITERATIONS);
+    expect(bound).toBe(FABRIK_TOLERANCE / FABRIK_MIN_ITERATIONS);
+    const pass = (relative: number, moved = 1e-12) => ({ relative, moved });
+    expect(fabrikPassMovement(pass(0, 0), bound)).toBe("still");
+    expect(fabrikPassMovement(pass(Number.MIN_VALUE), bound)).toBe("rounding");
+    expect(fabrikPassMovement(pass(band, bound), bound)).toBe("rounding");
+    expect(fabrikPassMovement(pass(band * 1.01), bound)).toBe("moving");
+    expect(fabrikPassMovement(pass(band, bound * 1.01), bound)).toBe("moving");
+    expect(fabrikPassMovement(pass(Infinity), bound)).toBe("moving");
+    expect(fabrikPassMovement(pass(NaN), bound)).toBe("moving");
+    expect(fabrikPassMovement(pass(1e-16, NaN), bound)).toBe("moving");
+    // One settle rule whatever the constraint: no movement settles at once; one rounding pass may
+    // be a decay's last step, two are a circle around the fixed point; a moving pass in between
+    // starts the count again. The constraint reads only how many passes an attempt may take, and
+    // through them the world-unit bound: the limited ceiling's is a quarter of the free cap's.
+    for (const constraint of ["free", "limited"] as const) {
+      const passes = fabrikIterationCap(2, constraint);
+      const limit = fabrikRoundingBound(FABRIK_TOLERANCE, passes);
+      expect(fabrikPassBudget(2, constraint, FABRIK_TOLERANCE).settles(pass(0, 0))).toBe(true);
+      const circling = fabrikPassBudget(2, constraint, FABRIK_TOLERANCE);
+      expect(circling.settles(pass(1e-16))).toBe(false);
+      expect(circling.settles(pass(1e-3))).toBe(false);
+      expect(circling.settles(pass(1e-16))).toBe(false);
+      expect(circling.settles(pass(2e-16, limit))).toBe(true);
+      const moving = fabrikPassBudget(2, constraint, FABRIK_TOLERANCE);
+      for (let step = 0; step < 4; step += 1) expect(moving.settles(pass(band * 2))).toBe(false);
+      const coarse = fabrikPassBudget(2, constraint, FABRIK_TOLERANCE);
+      for (let step = 0; step < 4; step += 1) {
+        expect(coarse.settles(pass(1e-16, limit * 1.01))).toBe(false);
+      }
+    }
+  });
+
+  it("TH-153 a planar rig circling its fixed point by rounding stalls in both dimensions", () => {
+    // Issue #519. Each rig reached one planar fixed point in both dimensions, but 2D landed on an
+    // exact repeat (`stalled`) while 3D circled it by an ulp until the cap (`iteration-cap`), or,
+    // for the third, both circled and published at 64 passes the pose they had after one. The last
+    // is free and unreachable: 2D circled one ulp to the cap and 3D landed exactly, and before the
+    // settle rule stopped reading the constraint it was pinned as a deliberate boundary. Found by
+    // tools/issue519/agreement.ts, seed 11 rigs 2574 and 1266, seed 13, and CL-36's former crawl.
+    const rigs: SolveMember[][] = [
+      [
+        { id: "0", base: "root", length: 96.5, limit: range(-96.6, 43.6) },
+        {
+          id: "1",
+          base: "0",
+          length: 59.5,
+          limit: range(-57.4, 87.8),
+          goal: { x: -12.1, y: -172.5, rotation: 0 },
+        },
+      ],
+      [
+        { id: "0", base: "root", length: 74.4, limit: range(-116.5, -55.7) },
+        { id: "1", base: "0", length: 75.1 },
+        { id: "2", base: "1", length: 63.3, limit: range(-69.4, 29.6) },
+        { id: "3", base: "2", length: 86.9, goal: { x: -150.1, y: -308.8, rotation: 0 } },
+      ],
+      [
+        { id: "a", base: "root", length: 67.8, limit: range(-18.8, 81.6) },
+        {
+          id: "b",
+          base: "a",
+          length: 62.8,
+          limit: range(-9.2, 52.7),
+          goal: { x: 140.4, y: 21.2, rotation: 0 },
+        },
+      ],
+      [
+        { id: "0", base: "root", length: 49.9 },
+        { id: "1", base: "0", length: 69.8 },
+        { id: "2", base: "1", length: 77, goal: { x: 91.2, y: 191.2, rotation: 0 } },
+      ],
+    ];
+    for (const rig of rigs) {
+      const flat = solveChain(ROOT, rig, false).quality;
+      const spatial = solve3d(planar3d(rig)).quality;
+      expect(flat.kind).toBe("stalled");
+      expect(spatial.kind).toBe("stalled");
+      expect(iterationsOf(spatial)).toBe(iterationsOf(flat));
+      expect(iterationsOf(flat)).toBeLessThan(FABRIK_MIN_ITERATIONS);
+      expect(spatial.residual).toBeCloseTo(flat.residual, 9);
+    }
+    // Independent pass QP-1: each tip is judged against its own path, so an unrelated branch a
+    // million times larger does not make the small arm's real motion read as rounding and stop it
+    // 7e-3 short; with one global extent both dimensions stalled after two passes.
+    const beside: SolveMember[] = [
+      { id: "huge", base: "root", length: 1e12 },
+      { id: "0", base: "root", length: 1.4231766843004152, limit: range(-180, 180) },
+      { id: "1", base: "0", length: 2.262208159198053, limit: range(-180, 180) },
       {
-        id: "b",
-        base: "a",
-        length: 62.8,
-        limit: range(-9.2, 52.7),
-        goal: { x: 140.4, y: 21.2, rotation: 0 },
+        id: "2",
+        base: "1",
+        length: 1.4237958857556805,
+        goal: { x: -0.2715464913628341, y: -0.10005973233703944, rotation: 0 },
       },
     ];
+    expect(solveChain(ROOT, beside, false).quality.kind).toBe("converged");
+    expect(solve3d(planar3d(beside)).quality.kind).toBe("converged");
+    // One attempt, no selector: the same answer, so the loop rather than a retry decides it.
+    const crawl = rigs[2]!;
     const flat = solveFabrikAttempt(ROOT, crawl, false, "centroid");
     const spatial = solveTree3dAttempt(ROOT3, planar3d(crawl), UNBOUND_POLE3D, false, "centroid");
     for (const quality of [flat.quality, spatial.quality] as IterativeQuality[]) {
+      expect(quality.kind).toBe("stalled");
+      expect(quality.iterations).toBe(2);
+      expect(quality.residual).toBeCloseTo(11.3915490443, 9);
+    }
+  });
+
+  it("TH-154 a huge path's rounding band does not stall a chain still converging on it", () => {
+    // Independent pass QP-4: on 1e15-unit members 1,024 ulps is 227 world units, and the relative
+    // band alone stalled this free chain at pass 30 and a residual of 19.7 in both dimensions.
+    const l = 1e15;
+    const rig: SolveMember[] = [
+      { id: "m0", base: "root", length: l },
+      {
+        id: "m1",
+        base: "m0",
+        length: l,
+        goal: { x: 1799999999997258.5, y: 3141592653.588198, rotation: 0 },
+      },
+    ];
+    const flat = solveFabrikAttempt(ROOT, rig, false, "centroid").quality;
+    const spatial = solveTree3dAttempt(
+      ROOT3,
+      planar3d(rig),
+      UNBOUND_POLE3D,
+      false,
+      "centroid",
+    ).quality;
+    for (const quality of [flat, spatial] as IterativeQuality[]) {
       expect(quality.kind).toBe("iteration-cap");
       expect(quality.iterations).toBe(FABRIK_MIN_ITERATIONS);
-      expect(quality.residual).toBeCloseTo(11.3915490443, 9);
+      expect(quality.residual).toBeLessThan(0.05);
     }
   });
 

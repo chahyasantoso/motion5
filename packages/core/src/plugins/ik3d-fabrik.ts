@@ -1,7 +1,12 @@
 import { unreachable } from "../lang/exhaustive";
 import { FABRIK_TOLERANCE, iterativeQuality } from "./fabrik";
 import { arcHalfAngle } from "./fabrik-seed";
-import { fabrikPassBudget, type FabrikConstraint } from "./fabrik-cap";
+import {
+  fabrikPassBudget,
+  fabrikRelativeMove,
+  type FabrikConstraint,
+  type FabrikPassMotion,
+} from "./fabrik-cap";
 import { selectFabrik } from "./fabrik-select";
 import { readNumber, segmentExtent } from "./frame";
 import {
@@ -48,28 +53,29 @@ import { restoreResult3d, type SolveResult3d } from "./ik3d-result";
  *
  * **What is shared with 2D, and why only that.** Canonical member order, child counts, leaves and
  * serial depth are `ik-topology.ts`'s; goal reading, the direction stand-in and the miss are
- * `ik-goal-reading.ts`'s; branch pulls, the `Pull` union, relative weights and the rule dispatch are
- * `ik-goal.ts`'s; the tolerance and the naming of an outcome as one quality kind are `fabrik.ts`'s;
- * the seed half-angle, depth-scaled cap and progress-gated budget are `fabrik-seed.ts` and
- * `fabrik-cap.ts` (ADR-115, ADR-126); the closed quality selector is `fabrik-select.ts`'s (#490,
- * ADR-126); the magnitude policy is
- * `ik-scale.ts`'s. Each of those questions has the same contract in both dimensions. Vector
- * arithmetic does not, so the passes, the placement and the compromise geometry are stated here and
- * in `ik3d-compromise.ts` over `Vec3`, rather than behind a dimension flag in the 2D file.
+ * `ik-goal-reading.ts`'s; branch pulls, the `Pull` union, relative weights and the rule dispatch
+ * are `ik-goal.ts`'s; the tolerance and the naming of an outcome as one quality kind are
+ * `fabrik.ts`'s; the seed half-angle, depth-scaled cap and progress-gated budget are
+ * `fabrik-seed.ts` and `fabrik-cap.ts` (ADR-115, ADR-126); the closed quality selector is
+ * `fabrik-select.ts`'s (#490, ADR-126); the magnitude policy is `ik-scale.ts`'s. Each of those
+ * questions has the same contract in both dimensions. Vector arithmetic does not, so the passes,
+ * the placement and the compromise geometry are stated here and in `ik3d-compromise.ts` over
+ * `Vec3`, rather than behind a dimension flag in the 2D file.
  *
  * **Orientation, which positional FABRIK does not determine.** Positions fix a member's direction,
  * two of its three rotational degrees of freedom. The third, roll about the bone, is reconstructed
  * deterministically: each member's world frame is its rest frame (its authored `fk3d` rest
  * orientation under its parent's solved frame, ADR-116) turned by `swingFrame3d`, the one minimal
  * swing onto its solved direction. So a member adds no roll its rest pose did not have, a rig with
- * no authored rest reconstructs pure swings from its parent, and the planar subset reduces to the 2D
- * solve's angles. The reconstruction runs inside every outward pass, not only at the end, because
- * a child's pivot offset is read in its parent's full rotated frame, roll included (ADR-117).
+ * no authored rest reconstructs pure swings from its parent, and the planar subset reduces to the
+ * 2D solve's angles. The reconstruction runs inside every outward pass, not only at the end,
+ * because a child's pivot offset is read in its parent's full rotated frame, roll included
+ * (ADR-117).
  *
  * **Bend plane.** Each root-to-leaf path is seeded on a constant-curvature arc in the plane the
- * closed form bends in, read through `bendBasis3d`, the one owner of the pole rule (ADR-118): toward
- * an authored pole, else the root-local +z rule. `flip` mirrors the arc across the line to the
- * goal; a conflicted baseline pays its three alternatives and a limited baseline pays one
+ * closed form bends in, read through `bendBasis3d`, the one owner of the pole rule (ADR-118):
+ * toward an authored pole, else the root-local +z rule. `flip` mirrors the arc across the line to
+ * the goal; a conflicted baseline pays its three alternatives and a limited baseline pays one
  * opposite-seed retry with the centroid rule. No 3D author sets it, so an authored solve always
  * starts on the pole's side.
  *
@@ -84,10 +90,10 @@ const ROOT = -1;
 const X_AXIS: Vec3 = [1, 0, 0];
 
 /**
- * The point at distance `length` from `from`, toward `to`: the 2D `place` over `Vec3`, with the same
- * two chosen degeneracies (a zero length collapses onto `from`, a zero distance takes world +x) and
- * the same overflow guard, which normalises by the largest component only when `length / distance`
- * is not finite, so every ordinary rig takes the plain expression.
+ * The point at distance `length` from `from`, toward `to`: the 2D `place` over `Vec3`, with the
+ * same two chosen degeneracies (a zero length collapses onto `from`, a zero distance takes world
+ * +x) and the same overflow guard, which normalises by the largest component only when `length /
+ * distance` is not finite, so every ordinary rig takes the plain expression.
  */
 export function place3d(from: Vec3, to: Vec3, length: number): Vec3 {
   if (length <= 0) return from;
@@ -136,9 +142,10 @@ function seedArc3d(
  * One attempt from one seed side and one compromise rule, over members as `solveTree3d` read them.
  *
  * The structure is the 2D attempt's: seed every addressed path, run an outward pass, then alternate
- * inward and outward passes until the worst addressed miss is inside `FABRIK_TOLERANCE`, a pass
- * moves nothing, or the shared pass budget denies another pass. Limited children constrain both
- * directions; a sub-base settles on the influence-weighted compromise of
+ * inward and outward passes until the worst addressed miss is inside `FABRIK_TOLERANCE`, the shared
+ * pass budget settles the attempt at a fixed point (a pass that moved nothing, or two consecutive
+ * passes that moved by rounding only, issue #519), or it denies another pass. Limited
+ * children constrain both directions; a sub-base settles on the influence-weighted compromise of
  * the tips its branches propose, each branch un-offsetting its proposed pivot through its base's
  * current full frame, so positions are averaged and orientations never are (ADR-054).
  *
@@ -188,6 +195,10 @@ export function solveTree3dAttempt(
   const pivots: Vec3[] = new Array<Vec3>(count);
   const frames: Matrix3[] = new Array<Matrix3>(count);
   const settled: Vec3[] = new Array<Vec3>(count);
+  // The largest coordinate magnitude from the root's point down each member's path, re-measured by
+  // every outward pass: the scale its movement is judged against (issue #519).
+  const pathScales: number[] = new Array<number>(count);
+  const rootScale = Math.max(Math.abs(root.x), Math.abs(root.y), Math.abs(root.z));
   // A limited member's legal local orientation from the last outward pass, published as it is
   // rather than re-derived from the frames, and whether it rests on a bound. Free members hold
   // `undefined` and `false` and publish exactly the expression they always did.
@@ -257,11 +268,14 @@ export function solveTree3dAttempt(
    * put them. A limited member's proposed local orientation is then replaced by the legal one
    * nearest it (`limitLocal3d`, ADR-123) and its tip re-placed along the legal direction, so every
    * later pass starts from a legal pose and the published orientation is legal because the pose
-   * is, not because the output was clamped afterwards (ADR-108). Answers the largest coordinate any
-   * tip moved from where the previous outward pass settled it.
+   * is, not because the output was clamped afterwards (ADR-108). Answers how far the tips moved
+   * from where the previous outward pass settled them, which the budget judges (issue #519): the
+   * largest `fabrikRelativeMove`, each tip's coordinate move over the magnitudes on its own path,
+   * and the largest coordinate move itself.
    */
-  const outward = (): number => {
-    let moved = 0;
+  const outward = (): FabrikPassMotion => {
+    let relative = 0;
+    let farthest = 0;
     for (let index = 0; index < count; index += 1) {
       const frame = parentFrame(index);
       const origin = originOf(index);
@@ -289,20 +303,33 @@ export function solveTree3dAttempt(
         default:
           unreachable(limited);
       }
+      const base = parent[index]!;
+      const scale = Math.max(
+        base === ROOT ? rootScale : pathScales[base]!,
+        Math.abs(pivot[0]),
+        Math.abs(pivot[1]),
+        Math.abs(pivot[2]),
+        Math.abs(tip[0]),
+        Math.abs(tip[1]),
+        Math.abs(tip[2]),
+      );
+      pathScales[index] = scale;
       const was = settled[index];
-      if (was !== undefined)
-        moved = Math.max(
-          moved,
+      if (was !== undefined) {
+        const moved = Math.max(
           Math.abs(was[0] - tip[0]),
           Math.abs(was[1] - tip[1]),
           Math.abs(was[2] - tip[2]),
         );
+        relative = Math.max(relative, fabrikRelativeMove(moved, scale));
+        farthest = Math.max(farthest, moved);
+      }
       settled[index] = tip;
       pivots[index] = pivot;
       tips[index] = tip;
       frames[index] = solved;
     }
-    return moved;
+    return { relative, moved: farthest };
   };
   // The frame each limited member settled on earlier in the current inward pass: its last outward
   // frame swung onto its inward direction. Only limited members with a member base write one.
@@ -389,9 +416,9 @@ export function solveTree3dAttempt(
         },
       });
     }
-    const moved = outward();
+    const motion = outward();
     residual = residualNow();
-    if (moved === 0) {
+    if (budget.settles(motion)) {
       stalled = true;
       break;
     }
