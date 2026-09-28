@@ -5,7 +5,7 @@ import { solveTwoBone3d, UNBOUND_POLE3D, type Pole3d } from "./ik3d-analytic";
 import type { ChainMember3d } from "./ik3d-chain";
 import { constrains } from "./ik3d-constraint";
 import { solveTree3d } from "./ik3d-fabrik";
-import { solveHingePairRecovery3d } from "./ik3d-hinge-pair";
+import { solveFreeRootHingeTail3d, solveHingePairRecovery3d } from "./ik3d-hinge-pair";
 import { orientLeaves3d } from "./ik3d-orient";
 import type { SolveResult3d } from "./ik3d-result";
 
@@ -87,7 +87,11 @@ function solvePosition3d(root: WorldFrame3d, shape: ChainShape3d, bend: Pole3d):
       if (shape.kind !== "constrained" || result.quality.kind === "converged") return result;
       // A closed legal pose is published only when its rendered FK tip actually meets the goal.
       // Otherwise the tree result is retained without changing its quality or any published byte.
-      return solveHingePairRecovery3d(root, shape.members, bend) ?? result;
+      return (
+        solveHingePairRecovery3d(root, shape.members, bend) ??
+        solveFreeRootHingeTail3d(root, shape.members, bend) ??
+        result
+      );
     }
     default:
       return unreachable(shape);
