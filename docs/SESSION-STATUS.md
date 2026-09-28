@@ -41,4 +41,4 @@ shape and byte ceiling.
 [pr518]: https://github.com/chahyasantoso/motion5/pull/518
 [issue328]: https://github.com/chahyasantoso/motion5/issues/328
 [issue519]: https://github.com/chahyasantoso/motion5/issues/519
-[adr127]: ./ADR-127-limited-fabrik-settles-on-two-rounding-passes.md
+[adr127]: ./ADR-127-fabrik-settles-on-two-rounding-passes.md

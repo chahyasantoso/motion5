@@ -156,6 +156,7 @@ rigs out of `452`, not all the way to the envelope. Random-axis hinges also rema
 plane, making both seed sides illegal; an authored pole in the hinge plane works around it. Those
 are follow-ups, not claims of universal constrained convergence.
 
-The exact `moved === 0` stall test this record left as a follow-up is resolved for limited chains
-by [ADR-127](./ADR-127-limited-fabrik-settles-on-two-rounding-passes.md) (issue #519); free
-chains keep it and their bytes.
+The exact `moved === 0` stall test this record left as a follow-up is resolved by
+[ADR-127](./ADR-127-fabrik-settles-on-two-rounding-passes.md) (issue #519) for every constraint.
+The free bytes this record holds are the pass cap's; the stall test is ADR-127's, and it moves
+free rigs that circled their fixed point by rounding.
