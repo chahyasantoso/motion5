@@ -2,6 +2,7 @@ import { unreachable } from "../lang/exhaustive";
 import { FABRIK_TOLERANCE, iterativeQuality } from "./fabrik";
 import { arcHalfAngle } from "./fabrik-seed";
 import {
+  FabrikIncumbent,
   fabrikPassBudget,
   fabrikRelativeMove,
   type FabrikConstraint,
@@ -75,9 +76,9 @@ import { restoreResult3d, type SolveResult3d } from "./ik3d-result";
  * **Bend plane.** Each root-to-leaf path is seeded on a constant-curvature arc in the plane the
  * closed form bends in, read through `bendBasis3d`, the one owner of the pole rule (ADR-118):
  * toward an authored pole, else the root-local +z rule. `flip` mirrors the arc across the line to
- * the goal; a conflicted baseline pays its three alternatives and a limited baseline pays one
- * opposite-seed retry with the centroid rule. No 3D author sets it, so an authored solve always
- * starts on the pole's side.
+ * the goal; a conflicted baseline pays its three alternatives and a limited or capped baseline
+ * pays one opposite-seed retry with the centroid rule (ADR-128). No 3D author sets it, so an
+ * authored solve always starts on the pole's side.
  *
  * The solve is a pure function of the root, the members and the pole: no state survives a call and
  * nothing is warm-started, so a reverse scrub and a random seek republish the forward pass byte for
@@ -381,6 +382,24 @@ export function solveTree3dAttempt(
   let residual = residualNow();
   let stalled = false;
   let spread = 0;
+  const incumbent = new FabrikIncumbent();
+  const bestTips: (Vec3 | undefined)[] = new Array<Vec3 | undefined>(count);
+  const bestPivots: (Vec3 | undefined)[] = new Array<Vec3 | undefined>(count);
+  const bestFrames: (Matrix3 | undefined)[] = new Array<Matrix3 | undefined>(count);
+  const bestLocals: (Matrix3 | undefined)[] = new Array<Matrix3 | undefined>(count);
+  const bestBounded: boolean[] = new Array<boolean>(count);
+  // The incumbent pass's inward spread: whether its branches agreed is part of that pass's pose.
+  let bestSpread = 0;
+  const saveIncumbent = (): void => {
+    bestSpread = spread;
+    for (let index = 0; index < count; index += 1) {
+      bestTips[index] = tips[index];
+      bestPivots[index] = pivots[index];
+      bestFrames[index] = frames[index];
+      bestLocals[index] = locals[index];
+      bestBounded[index] = bounded[index]!;
+    }
+  };
   while (residual > FABRIK_TOLERANCE && budget.admits(iterations, residual)) {
     iterations += 1;
     spread = 0;
@@ -418,10 +437,25 @@ export function solveTree3dAttempt(
     }
     const motion = outward();
     residual = residualNow();
+    if (incumbent.offer(residual)) saveIncumbent();
     if (budget.settles(motion)) {
       stalled = true;
       break;
     }
+  }
+
+  // Publish the incumbent pass, not the last one (ADR-128); nothing is held when no pass ran.
+  const held = incumbent.residual;
+  if (held !== undefined) {
+    for (let index = 0; index < count; index += 1) {
+      tips[index] = bestTips[index]!;
+      pivots[index] = bestPivots[index]!;
+      frames[index] = bestFrames[index]!;
+      locals[index] = bestLocals[index];
+      bounded[index] = bestBounded[index]!;
+    }
+    residual = held;
+    spread = bestSpread;
   }
 
   const rotations3d: Record<string, Euler3d> = {};
@@ -456,7 +490,7 @@ export function solveTree3dAttempt(
 /**
  * The tree solve at one magnitude through the shared closed selector: the authored-side attempt,
  * three alternatives for a conflicted baseline and one opposite-seed centroid retry for a limited
- * baseline (#490, ADR-126).
+ * or capped baseline (#490, ADR-126, ADR-128).
  */
 function selectTree3d(
   root: WorldFrame3d,

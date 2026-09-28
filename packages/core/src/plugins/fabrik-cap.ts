@@ -124,6 +124,73 @@ export function fabrikRelativeMove(moved: number, scale: number): number {
 }
 
 /**
+ * Whether a candidate residual strictly outranks a held one: the one residual order FABRIK uses,
+ * both to keep a pass as an attempt's incumbent and to pick a candidate within a quality tier
+ * (`outranks` in `fabrik-select.ts`).
+ *
+ * A `NaN` cannot be ordered by `<`, so it ranks below every number: a `NaN` candidate never wins
+ * and a held `NaN` loses to any number. An exact tie is not a win, so the earlier value stays.
+ * `Infinity` orders by `<` like any number.
+ */
+export function fabrikResidualOutranks(candidate: number, held: number): boolean {
+  if (Number.isNaN(candidate)) return false;
+  if (Number.isNaN(held)) return true;
+  return candidate < held;
+}
+
+/** An attempt's incumbent: nothing before its first completed pass, then the best residual held. */
+type FabrikIncumbentState =
+  | { readonly kind: "empty" }
+  | { readonly kind: "held"; readonly residual: number };
+
+/**
+ * Which completed pass an attempt publishes: the one with the best residual, the earliest on a tie
+ * (ADR-128, issue #521). One owner for both dimensions, so 2D and 3D cannot disagree about it.
+ *
+ * A pass limit is a stopping decision rather than a fixed point. A constrained attempt that never
+ * settles can orbit legal poses until the cap, and publishing whatever pass the cap happened to
+ * stop on made the published pose, its `atBound` list and the selector's retry depend on the phase
+ * of that orbit, which rounding alone put degrees apart in 2D and its +z-hinge 3D equivalent. The
+ * best completed pass does not depend on where the orbit was cut, and it is never worse than the
+ * pass it replaces. The seed is never offered: it has not been through a limit-enforcing outward
+ * pass, so it is published only when no pass ran at all, exactly as before.
+ *
+ * The caller owns its pose and holds references to it when `offer` says so; both loops replace
+ * a member's point and frame values rather than mutating them, so a held reference stays that
+ * pass's value without a copy.
+ */
+export class FabrikIncumbent {
+  #state: FabrikIncumbentState = { kind: "empty" };
+
+  /** Offers a just-completed pass; `true` means it is now the incumbent and the caller holds it. */
+  offer(residual: number): boolean {
+    switch (this.#state.kind) {
+      case "empty":
+        break;
+      case "held":
+        if (!fabrikResidualOutranks(residual, this.#state.residual)) return false;
+        break;
+      default:
+        return unreachable(this.#state);
+    }
+    this.#state = { kind: "held", residual };
+    return true;
+  }
+
+  /** The held pass's residual, or `undefined` when no pass completed and nothing is held. */
+  get residual(): number | undefined {
+    switch (this.#state.kind) {
+      case "empty":
+        return undefined;
+      case "held":
+        return this.#state.residual;
+      default:
+        return unreachable(this.#state);
+    }
+  }
+}
+
+/**
  * How far one pass moved the tips, as the loops measure it for the stall test: `relative`, the
  * largest `fabrikRelativeMove` over every tip, and `moved`, the largest coordinate any tip moved in
  * world units. Both are zero exactly when no tip moved.
