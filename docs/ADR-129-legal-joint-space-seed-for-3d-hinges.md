@@ -49,3 +49,6 @@ TH-84 corpus is the published-pose legality and timeout regression. In the attac
 planar 3D and 1,375 2D limited rigs converged, with type errors no greater than the 43 recorded
 baseline errors. TH-84 ran under the 5-second shim timeout during parallel IK execution. The
 non-planar misses remain a separate follow-up, not a claim that the seed is globally optimal.
+**Refined by [ADR-130](./ADR-130-legal-range-retries-and-serial-hinge-recovery.md), 2026-09-29.**
+The non-planar follow-up is decided there: staged legal-range starts and a legal serial recovery
+meet all 1,802 corpus rigs; this record's centred seed and its bytes are unchanged.

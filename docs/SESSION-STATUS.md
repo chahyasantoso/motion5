@@ -5,18 +5,19 @@ below are the complete shape. **Now** and **Next in line** carry exactly one bul
 bullet states a phase; `packages/core/test/unit/scripts/session-status-shape.test.ts` enforces the
 shape and byte ceiling.
 
-- **Captured:** 2026-09-28, Asia/Jakarta (after #526).
-- **Read against:** `main` at `08f656f0e90e0cf8956d3e41e4797656ad703a15`, after
-  [PR #526][pr526] merged.
+- **Captured:** 2026-09-29, Asia/Jakarta.
+- **Read against:** `main` at `08f656f0e90e0cf8956d3e41e4797656ad703a15`, the base of
+  [PR #528][pr528], which lands with this entry.
 
 ## Now
 
-- **`main` carries legal arbitrary-axis seeding for [#523][issue523] ([PR #526][pr526]).**
+- **`main` carries staged legal-range retries and the legal serial hinge recovery for
+  [#527][issue527] ([ADR-130][adr130]).**
 
 ## Next in line
 
-- **[#527][issue527] tracks residual reachable arbitrary-axis misses;** its bounded legal-seed
-  portfolio is prepared locally, not merged or verified in repository CI.
+- **[#524][issue524] tracks reachable mixed-sign serial chains;** its bounded legal midpoint retry
+  is prepared on `fix/524-mixed-sign-legal-seed`, not merged.
 
 ## Open, and not scheduled
 
@@ -44,3 +45,6 @@ shape and byte ceiling.
 [issue523]: https://github.com/chahyasantoso/motion5/issues/523
 [pr526]: https://github.com/chahyasantoso/motion5/pull/526
 [issue527]: https://github.com/chahyasantoso/motion5/issues/527
+[pr528]: https://github.com/chahyasantoso/motion5/pull/528
+[adr130]: ./ADR-130-legal-range-retries-and-serial-hinge-recovery.md
+[issue524]: https://github.com/chahyasantoso/motion5/issues/524
