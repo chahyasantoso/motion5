@@ -1,5 +1,5 @@
 import { unreachable } from "../lang/exhaustive";
-import { arcHalfAngle } from "./fabrik-seed";
+import { arcHalfAngle, DEFAULT_FABRIK_SEED, type FabrikSeed } from "./fabrik-seed";
 import {
   add3,
   axisX3,
@@ -16,7 +16,7 @@ import {
   type Vec3,
 } from "./frame3d";
 import { bendBasis3d, type Pole3d } from "./ik3d-analytic";
-import { centreLocal3d, constrains, leavesHingePose, type JointLimit3d } from "./ik3d-constraint";
+import { constrains, leavesHingePose, legalLocal3d, type JointLimit3d } from "./ik3d-constraint";
 
 /**
  * The 3D FABRIK seed: where every member's tip starts before the first outward pass, and the one
@@ -171,10 +171,10 @@ export function treeSeed3d(tree: SeedTree3d, arc: readonly Vec3[]): TreeSeed3d {
  * the mean of those aims, and on the opposite side a topmost such member is also half-turned about
  * that line. Only the members at and after a turned member are recomposed.
  */
-function legalTips(tree: SeedTree3d, flip: boolean): Vec3[] {
+function legalTips(tree: SeedTree3d, flip: boolean, fraction = 0.5): Vec3[] {
   const { rootPoint, rootMatrix, parent, lengths, offsets, rests, limits, paths, aims } = tree;
   const count = lengths.length;
-  const locals = limits.map((limit, index) => centreLocal3d(limit, rests[index]!));
+  const locals = limits.map((limit, index) => legalLocal3d(limit, rests[index]!, fraction));
   const frames = new Array<Matrix3>(count);
   const pivots = new Array<Vec3>(count);
   const tips = new Array<Vec3>(count);
@@ -232,7 +232,20 @@ function legalTips(tree: SeedTree3d, flip: boolean): Vec3[] {
  * Every member's seeded tip for one attempt, from `flip`'s side: the arc when it is legal for
  * every hinge's pose, else the legal seed (`treeSeed3d`). A fresh array the attempt owns.
  */
-export function seedTree3d(tree: SeedTree3d, pole: Pole3d, flip: boolean): Vec3[] {
+export function seedTree3d(
+  tree: SeedTree3d,
+  pole: Pole3d,
+  flip: boolean,
+  policy: FabrikSeed = DEFAULT_FABRIK_SEED,
+): Vec3[] {
+  switch (policy.kind) {
+    case "legal-range":
+      return legalTips(tree, flip, policy.fraction);
+    case "default":
+      break;
+    default:
+      return unreachable(policy);
+  }
   const arc = arcTips(tree, pole, flip);
   const seed = treeSeed3d(tree, arc);
   switch (seed.kind) {

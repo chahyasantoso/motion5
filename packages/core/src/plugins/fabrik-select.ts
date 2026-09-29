@@ -5,6 +5,7 @@ import type { CompromiseRule } from "./ik-goal";
 import type { IterativeQuality } from "./ik-result";
 import { unreachable } from "../lang/exhaustive";
 import { fabrikResidualOutranks } from "./fabrik-cap";
+import type { FabrikSeed, LegalSeedFraction } from "./fabrik-seed";
 
 /**
  * One FABRIK attempt from a seed side and a compromise rule.
@@ -22,7 +23,13 @@ export type FabrikAttempt<
   R = WorldFrame,
   M = SolveMember,
   S extends Selectable = FabrikSolution,
-> = (root: R, members: readonly M[], flip: boolean, compromiseRule: CompromiseRule) => S;
+> = (
+  root: R,
+  members: readonly M[],
+  flip: boolean,
+  compromiseRule: CompromiseRule,
+  seed?: FabrikSeed,
+) => S;
 
 /** What the selector reads of a solution: its iterative quality, and nothing else. */
 export interface Selectable {
@@ -67,6 +74,42 @@ const OPPOSITE_SIDE_ALTERNATIVES: readonly FabrikAlternative[] = Object.freeze([
 const NO_ALTERNATIVES: readonly FabrikAlternative[] = Object.freeze([]);
 
 /**
+ * A distant miss cannot justify more full attempts. In the reachable 1,802-rig #527 corpus,
+ * a two-percent reach band buys 57 of the 113 quartile recoveries with 26,615 extra iterations,
+ * instead of 121,663 for unrestricted quartiles. One q10 attempt only after unresolved gated
+ * quartiles costs another 176 attempts / 11,044 iterations and recovers 14 on that corpus.
+ * A symmetric q90 is now reserved for cases still unresolved after q10; it does not change the
+ * measured historical counts above. These are attempt counts, not latency or reachability proofs.
+ */
+const LEGAL_RETRY_REACH_FRACTION = 0.02;
+
+/**
+ * The legal-range starts a gated near miss pays for, in stages: both quartiles, then q10, then
+ * q90. A later stage runs only while no candidate has converged, so the ceiling is four extra
+ * attempts on top of the baseline and its opposite side, six in all.
+ */
+const LEGAL_RANGE_STAGES: readonly (readonly LegalSeedFraction[])[] = Object.freeze([
+  Object.freeze([0.25, 0.75] as const),
+  Object.freeze([0.1] as const),
+  Object.freeze([0.9] as const),
+]);
+
+/** Whether a baseline of this quality may pay for legal-range starts, read exhaustively. */
+function legalRangeRetries(quality: IterativeQuality): boolean {
+  switch (quality.kind) {
+    case "limited":
+    case "iteration-cap":
+      return true;
+    case "converged":
+    case "stalled":
+    case "conflicted":
+      return false;
+    default:
+      return unreachable(quality);
+  }
+}
+
+/**
  * The alternatives a baseline of this quality pays for, read exhaustively over FABRIK's kinds.
  *
  * A met goal pays nothing, and neither does a stall: it settled at a fixed point that a different
@@ -102,19 +145,38 @@ export function fabrikAlternatives(quality: IterativeQuality): readonly FabrikAl
  * the opposite side (`fabrikAlternatives`). The baseline is itself a candidate, so the selected
  * result is never worse than the baseline under the comparator below. Losing candidates are
  * dropped; no restart metadata is published (ADR-107), and the selected result reports its own
- * `quality.iterations`.
+ * `quality.iterations`. `legalRangeReach` opts in a non-planar 3D hinge only: a limited or capped
+ * baseline within its narrow reach-relative band then pays for `LEGAL_RANGE_STAGES`, so a far miss
+ * is never charged additional full limited-cap attempts.
  */
 export function selectFabrik<R, M, S extends Selectable>(
   root: R,
   members: readonly M[],
   flip: boolean,
   attempt: FabrikAttempt<R, M, S>,
+  legalRangeReach = 0,
 ): S {
   const baseline = attempt(root, members, flip, "centroid");
   let selected = baseline;
   for (const { opposite, rule } of fabrikAlternatives(baseline.quality)) {
     const candidate = attempt(root, members, opposite ? !flip : flip, rule);
     if (outranks(candidate.quality, selected.quality)) selected = candidate;
+  }
+  if (
+    legalRangeReach > 0 &&
+    legalRangeRetries(baseline.quality) &&
+    baseline.quality.residual <= LEGAL_RETRY_REACH_FRACTION * legalRangeReach
+  ) {
+    for (const [stage, fractions] of LEGAL_RANGE_STAGES.entries()) {
+      if (stage > 0 && selected.quality.kind === "converged") break;
+      for (const fraction of fractions) {
+        const candidate = attempt(root, members, flip, "centroid", {
+          kind: "legal-range",
+          fraction,
+        });
+        if (outranks(candidate.quality, selected.quality)) selected = candidate;
+      }
+    }
   }
   return selected;
 }

@@ -7,6 +7,7 @@ import { constrains } from "./ik3d-constraint";
 import { solveTree3d } from "./ik3d-fabrik";
 import { orientLeaves3d } from "./ik3d-orient";
 import type { SolveResult3d } from "./ik3d-result";
+import { solveSerialRecovery3d } from "./ik3d-serial-recovery";
 
 /**
  * Which 3D strategy answers a chain, decided once and read exhaustively (ADR-092, ADR-122).
@@ -38,10 +39,11 @@ export type ChainShape3d =
  * reaches it (`ik-solver-no-goal`, `ik-leaf-without-goal`), so it is an invariant guard.
  *
  * A chain with any constrained member is `constrained` first, after the goal guard, and takes 3D
- * FABRIK even at two members, because the closed form solves without the limit and clamping its
- * answer afterwards would constrain a pose that was never solved under it: ADR-108's rule, carried
- * into 3D. `contract/solver-shape.ts`'s `derivedStrategy` restates this at load from the authored
- * `joint`, and `TH-76` holds the two readings equal.
+ * FABRIK even at two members. Only when that solve misses may a short zero-offset serial chain of
+ * free members and non-planar hinges take the legal serial recovery (`ik3d-serial-recovery.ts`),
+ * which solves inside every authored hinge range rather than clamping an unconstrained answer
+ * afterwards. `contract/solver-shape.ts` remains conservative at load: its `derivedStrategy` sees
+ * the authored joint, not this live-value recovery, and both name the iterative strategy first.
  */
 export function chainShape3d(members: readonly ChainMember3d[]): ChainShape3d {
   if (!members.some((member) => member.goal !== undefined)) {
@@ -81,8 +83,14 @@ function solvePosition3d(root: WorldFrame3d, shape: ChainShape3d, bend: Pole3d):
     case "two-bone":
       return solveTwoBone3d(root, shape.goal, shape.first, shape.second, bend);
     case "tree":
-    case "constrained":
       return solveTree3d(root, shape.members, bend);
+    case "constrained": {
+      const result = solveTree3d(root, shape.members, bend);
+      if (result.quality.kind === "converged") return result;
+      // A legal pose is published only when its rendered FK tip meets the goal; otherwise the tree
+      // result is kept with its quality and every published byte unchanged.
+      return solveSerialRecovery3d(root, shape.members, bend) ?? result;
+    }
     default:
       return unreachable(shape);
   }

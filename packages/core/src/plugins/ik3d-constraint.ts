@@ -20,7 +20,9 @@ import {
   canonicalDegrees,
   cross3,
   dot3,
+  eulerFromMatrix3d,
   LOCAL_X3,
+  matrixFromEuler3d,
   multiplyMatrix3,
   multiplyVector3,
   norm3,
@@ -30,6 +32,7 @@ import {
   transposeMatrix3,
   twistAbout3d,
   type Matrix3,
+  type Euler3d,
   type Vec3,
 } from "./frame3d";
 import {
@@ -81,6 +84,14 @@ const DEFAULT_HINGE_AXIS: Vec3 = Object.freeze([0, 0, 1] as const);
  * reads a line with (ADR-118): below it the angle is rounding, not geometry.
  */
 const HINGE_DIRECTION_TOLERANCE = 1e-9;
+
+/** A hinge plane materially different from the planar +/-z plane, on its own axis scale. */
+export function nonPlanarHinge3d(limit: JointLimit3d): boolean {
+  if (limit.kind !== "hinge") return false;
+  const [x, y, z] = limit.axis;
+  const largest = Math.max(Math.abs(x), Math.abs(y), Math.abs(z));
+  return largest > 0 && Math.max(Math.abs(x), Math.abs(y)) > HINGE_DIRECTION_TOLERANCE * largest;
+}
 
 /**
  * The unit hinge axis the live values declare. Every finite component is a direction load accepts,
@@ -233,6 +244,34 @@ export function limitLocal3d(limit: JointLimit3d, proposed: () => Matrix3): Limi
   }
 }
 
+/** The largest matrix-entry drift a rendered hinge local may show and still be the same pose. */
+const RENDERED_HINGE_TOLERANCE = 1e-9;
+
+/**
+ * Validate a sampled hinge pose in the actual Euler image the renderer receives. The ideal
+ * axis turn, Euler round-trip, and shared limit projection must all agree before an analytic
+ * recovery may publish it. This is deliberately separate from the ordinary FABRIK projection.
+ */
+export function renderedLegalHinge3d(
+  limit: Extract<JointLimit3d, { kind: "hinge" }>,
+  angle: number,
+): { readonly euler: Euler3d; readonly matrix: Matrix3 } | undefined {
+  const ideal = rotationAboutAxis3d(limit.axis, angle);
+  const euler = eulerFromMatrix3d(ideal);
+  const matrix = matrixFromEuler3d(euler);
+  if (matrix.some((value, index) => Math.abs(value - ideal[index]!) > RENDERED_HINGE_TOLERANCE))
+    return undefined;
+  const projected = limitLocal3d(limit, () => matrix);
+  if (
+    projected.kind !== "moved" ||
+    projected.local.some(
+      (value, index) => Math.abs(value - matrix[index]!) > RENDERED_HINGE_TOLERANCE,
+    )
+  )
+    return undefined;
+  return { euler, matrix };
+}
+
 /**
  * The legal local orientation at the centre of `limit`, the pose the 3D legal seed holds a limited
  * member in (issue #523, ADR-129): a hinge turned to its range's centre about its axis, a cone with
@@ -240,15 +279,36 @@ export function limitLocal3d(limit: JointLimit3d, proposed: () => Matrix3): Limi
  * A free member has no centre and keeps `rest`, what `fk3d` composes for it with no solve.
  */
 export function centreLocal3d(limit: JointLimit3d, rest: Matrix3): Matrix3 {
+  return legalLocal3d(limit, rest, 0.5);
+}
+
+/**
+ * The angle at `fraction` of a range. The centre reads `rangeCentre` rather than interpolating, so
+ * the default legal seed keeps the exact bytes it published before legal-range starts existed.
+ */
+function legalAngle(range: JointLimit, fraction: number): number {
+  if (fraction === 0.5) return rangeCentre(range);
+  switch (range.kind) {
+    case "free":
+      return 0;
+    case "range":
+      return range.min + fraction * (range.max - range.min);
+    default:
+      return unreachable(range);
+  }
+}
+
+/** A legal local at `fraction` of a member's angle range; cone swing stays at zero. */
+export function legalLocal3d(limit: JointLimit3d, rest: Matrix3, fraction: number): Matrix3 {
   switch (limit.kind) {
     case "free":
       return rest;
     case "hinge":
-      return rotationAboutAxis3d(limit.axis, rangeCentre(limit.range));
+      return rotationAboutAxis3d(limit.axis, legalAngle(limit.range, fraction));
     case "cone":
       return rotationAboutAxis3d(LOCAL_X3, 0);
     case "swing-twist":
-      return rotationAboutAxis3d(LOCAL_X3, rangeCentre(limit.twist));
+      return rotationAboutAxis3d(LOCAL_X3, legalAngle(limit.twist, fraction));
     default:
       return unreachable(limit);
   }

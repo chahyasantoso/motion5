@@ -8,6 +8,7 @@ import {
   type FabrikPassMotion,
 } from "./fabrik-cap";
 import { selectFabrik } from "./fabrik-select";
+import type { FabrikSeed } from "./fabrik-seed";
 import { readNumber, segmentExtent } from "./frame";
 import {
   add3,
@@ -44,7 +45,13 @@ import {
 } from "./ik3d-analytic";
 import type { ChainMember3d } from "./ik3d-chain";
 import { compromise3d, type Pull3d } from "./ik3d-compromise";
-import { boundBaseFrame3d, constrains, FREE_JOINT3D, limitLocal3d } from "./ik3d-constraint";
+import {
+  boundBaseFrame3d,
+  constrains,
+  FREE_JOINT3D,
+  limitLocal3d,
+  nonPlanarHinge3d,
+} from "./ik3d-constraint";
 import { restoreResult3d, type SolveResult3d } from "./ik3d-result";
 import { ROOT_INDEX, seedTree3d } from "./ik3d-seed";
 
@@ -131,6 +138,7 @@ export function solveTree3dAttempt(
   pole: Pole3d,
   flip: boolean,
   rule: CompromiseRule,
+  seed?: FabrikSeed,
 ): SolveResult3d<IterativeQuality> {
   const { byId, ids, serialDepth, childCount, leaves } = canonicalChain(members);
   const count = ids.length;
@@ -219,6 +227,7 @@ export function solveTree3dAttempt(
     },
     pole,
     flip,
+    seed,
   );
 
   /**
@@ -449,9 +458,38 @@ export function solveTree3dAttempt(
 }
 
 /**
+ * Retry scale from addressed paths with a non-planar hinge only. Siblings without goals, orphan
+ * members and unrelated planar paths must not enlarge the 2% near-miss window. The maximum
+ * eligible path gives the selector one conservative world-unit scale for multiple leaf goals.
+ */
+export function legalRetryReach3d(members: readonly ChainMember3d[]): number {
+  const byId = new Map(members.map((member) => [member.id, member]));
+  let reach = 0;
+  for (const leaf of members) {
+    if (leaf.goal === undefined) continue;
+    let pathReach = 0;
+    let eligible = false;
+    let current: ChainMember3d | undefined = leaf;
+    const seen = new Set<string>();
+    while (current !== undefined && !seen.has(current.id)) {
+      seen.add(current.id);
+      eligible ||= nonPlanarHinge3d(current.limit ?? FREE_JOINT3D);
+      pathReach +=
+        segmentExtent(current.length) +
+        norm3([current.offset.x, current.offset.y, current.offset.z]);
+      current = byId.get(current.base);
+    }
+    if (eligible) reach = Math.max(reach, pathReach);
+  }
+  return reach;
+}
+
+/**
  * The tree solve at one magnitude through the shared closed selector: the authored-side attempt,
  * three alternatives for a conflicted baseline and one opposite-seed centroid retry for a limited
- * or capped baseline (#490, ADR-126, ADR-128).
+ * or capped baseline (#490, ADR-126, ADR-128). A near miss on an addressed non-planar hinge
+ * path also pays the selector's staged legal-range starts, scaled by `legalRetryReach3d`; the
+ * selector owns their order and six-attempt ceiling, not this attempt.
  */
 function selectTree3d(
   root: WorldFrame3d,
@@ -462,8 +500,14 @@ function selectTree3d(
     root,
     members,
     false,
-    (frame: WorldFrame3d, chain: readonly ChainMember3d[], flip: boolean, rule: CompromiseRule) =>
-      solveTree3dAttempt(frame, chain, pole, flip, rule),
+    (
+      frame: WorldFrame3d,
+      chain: readonly ChainMember3d[],
+      flip: boolean,
+      rule: CompromiseRule,
+      seed?: FabrikSeed,
+    ) => solveTree3dAttempt(frame, chain, pole, flip, rule, seed),
+    legalRetryReach3d(members),
   );
 }
 

@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
   IDENTITY_MATRIX3,
+  add3,
   axisX3,
   dot3,
   matrixFromEuler3d,
+  multiplyMatrix3,
   multiplyVector3,
   rotationAboutAxis3d,
   scale3,
@@ -14,6 +16,7 @@ import { UNBOUND_POLE3D } from "../../../src/plugins/ik3d-analytic";
 import {
   centreLocal3d,
   leavesHingeCircle,
+  legalLocal3d,
   limitLocal3d,
 } from "../../../src/plugins/ik3d-constraint";
 import { seedTree3d, treeSeed3d, type SeedTree3d } from "../../../src/plugins/ik3d-seed";
@@ -78,6 +81,99 @@ describe("3D tree seed", () => {
         rest,
       ),
     ).toEqual(rotationAboutAxis3d([1, 0, 0], 30));
+  });
+
+  it("TH-161 builds legal quartile starts without changing the default or planar arc", () => {
+    const alternate = { kind: "legal-range", fraction: 0.25 } as const;
+    const q25 = seedTree3d(tree, UNBOUND_POLE3D, false, alternate);
+    const q75 = seedTree3d(tree, UNBOUND_POLE3D, false, {
+      kind: "legal-range",
+      fraction: 0.75,
+    });
+    expect(q25).toEqual([scale3(axisX3(legalLocal3d(hinge, tree.rests[0]!, 0.25)), 10)]);
+    expect(q75).toEqual([scale3(axisX3(legalLocal3d(hinge, tree.rests[0]!, 0.75)), 10)]);
+    expect(q25).toEqual(seedTree3d(tree, UNBOUND_POLE3D, true, alternate));
+    expect(q25).toEqual(seedTree3d(tree, UNBOUND_POLE3D, false, alternate));
+    expect(seedTree3d(tree, UNBOUND_POLE3D, false)).toEqual(
+      seedTree3d(tree, UNBOUND_POLE3D, false, { kind: "default" }),
+    );
+    const planar: SeedTree3d = {
+      ...tree,
+      rests: [IDENTITY_MATRIX3],
+      limits: [{ ...hinge, axis: [0, 0, 1] }],
+      aims: [[0, 10, 0]],
+    };
+    expect(treeSeed3d(planar, [[0, 10, 0]]).kind).toBe("arc");
+  });
+
+  it("TH-163 composes legal branch, offsets and rolled rests from joint space", () => {
+    const branch: SeedTree3d = {
+      rootPoint: [2, -3, 4],
+      rootMatrix: matrixFromEuler3d({ rotation: 10, rotationX: 20, rotationY: -15 }),
+      parent: [-1, 0, 0],
+      lengths: [4, 6, 3],
+      offsets: [undefined, [0, 2, 1], [0, -1, 3]],
+      rests: [tree.rests[0]!, tree.rests[0]!, tree.rests[0]!],
+      limits: [
+        { kind: "cone", maxSwing: 30 },
+        hinge,
+        { kind: "swing-twist", maxSwing: 30, twist: { kind: "range", min: 10, max: 70 } },
+      ],
+      paths: [
+        [0, 1],
+        [0, 2],
+      ],
+      aims: [
+        [10, 10, 10],
+        [-4, 2, 5],
+      ],
+    };
+    for (const fraction of [0.1, 0.25, 0.75] as const) {
+      const rootLocal = legalLocal3d(branch.limits[0]!, branch.rests[0]!, fraction);
+      const rootFrame = multiplyMatrix3(branch.rootMatrix, rootLocal);
+      const rootTip = add3(branch.rootPoint, scale3(axisX3(rootFrame), 4));
+      const childTip = (index: 1 | 2): Vec3 => {
+        const pivot = add3(rootTip, multiplyVector3(rootFrame, branch.offsets[index]!));
+        const local = legalLocal3d(branch.limits[index]!, branch.rests[index]!, fraction);
+        return add3(
+          pivot,
+          scale3(axisX3(multiplyMatrix3(rootFrame, local)), branch.lengths[index]!),
+        );
+      };
+      const expected = [rootTip, childTip(1), childTip(2)];
+      const policy = { kind: "legal-range", fraction } as const;
+      expect(seedTree3d(branch, UNBOUND_POLE3D, false, policy)).toEqual(expected);
+      expect(seedTree3d(branch, UNBOUND_POLE3D, true, policy)).toEqual(expected);
+    }
+  });
+
+  it("TH-166 legal quartiles keep free branch turning and flip deterministic", () => {
+    const branch: SeedTree3d = {
+      ...tree,
+      parent: [-1, 0, 0],
+      lengths: [4, 6, 3],
+      rests: [tree.rests[0]!, tree.rests[0]!, tree.rests[0]!],
+      offsets: [undefined, [0, 2, 1], [0, -1, 3]],
+      limits: [{ kind: "free" }, hinge, { kind: "cone", maxSwing: 30 }],
+      paths: [
+        [0, 1],
+        [0, 2],
+      ],
+      aims: [
+        [10, 10, 10],
+        [-4, 2, 5],
+      ],
+    };
+    for (const fraction of [0.1, 0.25, 0.75] as const) {
+      const policy = { kind: "legal-range", fraction } as const;
+      const normal = seedTree3d(branch, UNBOUND_POLE3D, false, policy);
+      const flipped = seedTree3d(branch, UNBOUND_POLE3D, true, policy);
+      expect(seedTree3d(branch, UNBOUND_POLE3D, false, policy)).toEqual(normal);
+      expect(seedTree3d(branch, UNBOUND_POLE3D, true, policy)).toEqual(flipped);
+      expect(flipped).not.toEqual(normal);
+      expect(normal).toHaveLength(3);
+      expect(flipped).toHaveLength(3);
+    }
   });
 
   it("TH-159 keeps the shared identity frozen and does not expose the private fast-path array", () => {
