@@ -99,8 +99,6 @@ type LegalStages = readonly (readonly LegalSeed[])[];
 const legalRange = (fraction: LegalSeedFraction): LegalSeed =>
   Object.freeze({ kind: "legal-range", fraction });
 
-
-
 /** The centre walked toward the aims in joint space (`ik-descent.ts`, ADR-132). */
 const DESCENT: LegalSeed = Object.freeze({ kind: "legal-descent" });
 
@@ -109,13 +107,18 @@ const DESCENT_STAGES: LegalStages = Object.freeze([Object.freeze([DESCENT])]);
 
 /**
  * The legal-range starts a gated near miss on a non-planar 3D hinge pays for, in stages: both
- * quartiles, then q10, then q90 (#527, ADR-130), then the descent. The ceiling is five extra
- * attempts on top of the baseline and its opposite side, seven in all.
+ * quartiles, then q10, then q90 (#527, ADR-130). Four extra attempts on top of the baseline and
+ * its opposite side, six in all.
  */
 const LEGAL_RANGE_STAGES: LegalStages = Object.freeze([
   Object.freeze([legalRange(0.25), legalRange(0.75)]),
   Object.freeze([legalRange(0.1)]),
   Object.freeze([legalRange(0.9)]),
+]);
+
+/** The same stages then the descent, for a rig whose goals lie within reach: seven in all. */
+const LEGAL_RANGE_THEN_DESCENT_STAGES: LegalStages = Object.freeze([
+  ...LEGAL_RANGE_STAGES,
   ...DESCENT_STAGES,
 ]);
 
@@ -131,7 +134,10 @@ const CENTRE_STAGES: LegalStages = Object.freeze([Object.freeze([CENTRE_LEGAL_SE
  * than a minimum of the miss, and the descent follows the legal gradient out of it. Four attempts
  * at most: baseline, opposite side, centre, descent.
  */
-const CENTRE_THEN_DESCENT_STAGES: LegalStages = Object.freeze([...CENTRE_STAGES, ...DESCENT_STAGES]);
+const CENTRE_THEN_DESCENT_STAGES: LegalStages = Object.freeze([
+  ...CENTRE_STAGES,
+  ...DESCENT_STAGES,
+]);
 
 const NO_STAGES: LegalStages = Object.freeze([]);
 
@@ -140,16 +146,20 @@ const NO_STAGES: LegalStages = Object.freeze([]);
  * read here exhaustively: the selector alone decides which of them a baseline pays for.
  *
  * `none` for a rig with no limited member; `centre` for a constrained rig with no addressed extent,
- * which no walk can turn; `centre-then-descent` for a constrained rig whose default seed is the arc
- * (every 2D and planar 3D rig, and a non-planar hinge path whose pole-side arc is legal); and
- * `staged` for a non-planar 3D hinge path whose default seed is already the legal centre, whose
- * off-centre starts stay gated on the baseline's miss against `reach` before the descent.
+ * which no walk can turn, or with a goal outside its reach (`goalsWithinReach`), which no start can
+ * meet; `centre-then-descent` for a constrained rig whose default seed is the arc (every 2D and
+ * planar 3D rig, and a non-planar hinge path whose pole-side arc is legal) and whose goals lie
+ * within reach; and `staged` or `staged-then-descent` for a non-planar 3D hinge path whose default
+ * seed is already the legal centre, whose off-centre starts stay gated on the baseline's miss
+ * against `reach`, followed by the descent only when every goal lies within reach (ADR-130,
+ * ADR-132).
  */
 export type LegalStarts =
   | { readonly kind: "none" }
   | { readonly kind: "centre" }
   | { readonly kind: "centre-then-descent" }
-  | { readonly kind: "staged"; readonly reach: number };
+  | { readonly kind: "staged"; readonly reach: number }
+  | { readonly kind: "staged-then-descent"; readonly reach: number };
 
 export const NO_LEGAL_STARTS: LegalStarts = Object.freeze({ kind: "none" });
 
@@ -157,25 +167,67 @@ export const CENTRE_LEGAL_START: LegalStarts = Object.freeze({ kind: "centre" })
 
 export const CENTRE_THEN_DESCENT: LegalStarts = Object.freeze({ kind: "centre-then-descent" });
 
+/** A member the reach helpers read: its path to the root, its extent and whether it has a goal. */
+interface ReachMember {
+  readonly id: string;
+  readonly base: string;
+  readonly length: number;
+  readonly goal?: unknown;
+}
+
+/** The extent of one leaf's root path, lengths plus offsets, in world units. */
+function pathExtent<M extends ReachMember>(
+  leaf: M,
+  byId: ReadonlyMap<string, M>,
+  offsetExtent: (member: M) => number,
+): number {
+  let extent = 0;
+  let current: M | undefined = leaf;
+  const seen = new Set<string>();
+  while (current !== undefined && !seen.has(current.id)) {
+    seen.add(current.id);
+    extent += segmentExtent(current.length) + offsetExtent(current);
+    current = byId.get(current.base);
+  }
+  return extent;
+}
+
 /** Scale of addressed paths only: unrelated siblings cannot enlarge the near-miss retry band. */
-export function addressedReach<
-  M extends { id: string; base: string; length: number; goal?: unknown },
->(members: readonly M[], offsetExtent: (member: M) => number): number {
+export function addressedReach<M extends ReachMember>(
+  members: readonly M[],
+  offsetExtent: (member: M) => number,
+): number {
   const byId = new Map(members.map((member) => [member.id, member]));
   let reach = 0;
-  for (const leaf of members) {
-    if (leaf.goal === undefined) continue;
-    let pathReach = 0;
-    let current: M | undefined = leaf;
-    const seen = new Set<string>();
-    while (current !== undefined && !seen.has(current.id)) {
-      seen.add(current.id);
-      pathReach += segmentExtent(current.length) + offsetExtent(current);
-      current = byId.get(current.base);
-    }
-    reach = Math.max(reach, pathReach);
-  }
+  for (const leaf of members)
+    if (leaf.goal !== undefined) reach = Math.max(reach, pathExtent(leaf, byId, offsetExtent));
   return reach;
+}
+
+/**
+ * Whether every addressed goal lies within its own path's extent of the root: a necessary
+ * condition for any pose to meet it (ADR-132). A goal outside it is unreachable from every start,
+ * so a walk toward it buys nothing a convergence can use; an infinite (direction) or `NaN` distance
+ * is outside too. `goalDistance` is the dimension's straight-line distance from the root point.
+ */
+export function goalsWithinReach<M extends ReachMember>(
+  members: readonly M[],
+  offsetExtent: (member: M) => number,
+  goalDistance: (leaf: M) => number,
+): boolean {
+  const byId = new Map(members.map((member) => [member.id, member]));
+  return members.every(
+    (leaf) => leaf.goal === undefined || goalDistance(leaf) <= pathExtent(leaf, byId, offsetExtent),
+  );
+}
+
+/**
+ * The legal starts of a constrained arc-seeded rig: the centre alone when it has no addressed
+ * extent or a goal lies outside its reach, else the centre then the descent. One rule, so the 2D
+ * solve and the 3D planar path cannot state it twice.
+ */
+export function arcLegalStarts(reach: number, withinReach: boolean): LegalStarts {
+  return reach > 0 && withinReach ? CENTRE_THEN_DESCENT : CENTRE_LEGAL_START;
 }
 
 /** Whether a baseline of this quality may pay for legal starts, read exhaustively. */
@@ -193,6 +245,11 @@ function legalRangeRetries(quality: IterativeQuality): boolean {
   }
 }
 
+/** Whether a baseline's miss is within the inclusive near-miss band of the addressed reach. */
+function nearMiss(baseline: IterativeQuality, reach: number): boolean {
+  return baseline.residual <= LEGAL_RETRY_REACH_FRACTION * reach;
+}
+
 /** The legal stages a baseline pays for: none unless it is limited or capped (`legalRangeRetries`). */
 function legalStages(starts: LegalStarts, baseline: IterativeQuality): LegalStages {
   if (!legalRangeRetries(baseline)) return NO_STAGES;
@@ -204,9 +261,9 @@ function legalStages(starts: LegalStarts, baseline: IterativeQuality): LegalStag
     case "centre-then-descent":
       return CENTRE_THEN_DESCENT_STAGES;
     case "staged":
-      return baseline.residual <= LEGAL_RETRY_REACH_FRACTION * starts.reach
-        ? LEGAL_RANGE_STAGES
-        : DESCENT_STAGES;
+      return nearMiss(baseline, starts.reach) ? LEGAL_RANGE_STAGES : NO_STAGES;
+    case "staged-then-descent":
+      return nearMiss(baseline, starts.reach) ? LEGAL_RANGE_THEN_DESCENT_STAGES : DESCENT_STAGES;
     default:
       return unreachable(starts);
   }

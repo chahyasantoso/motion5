@@ -8,10 +8,10 @@ import {
   type FabrikPassMotion,
 } from "./fabrik-cap";
 import {
-  CENTRE_LEGAL_START,
-  CENTRE_THEN_DESCENT,
   NO_LEGAL_STARTS,
   addressedReach,
+  arcLegalStarts,
+  goalsWithinReach,
   selectFabrik,
   type LegalStarts,
 } from "./fabrik-select";
@@ -519,8 +519,10 @@ export function legalRetryReach3d(members: readonly ChainMember3d[]): number {
 
 /**
  * The legal starts a 3D rig can use (`LegalStarts`): a non-planar addressed hinge pays the
- * centre when its actual pole-side default is an arc, but not when it is already the legal seed.
- * Planar constrained paths also pay the centre; off-centre stages remain reach-gated.
+ * centre when its actual pole-side default is an arc, but not when it is already the legal seed,
+ * whose off-centre stages stay reach-gated. Planar constrained paths also pay the centre. Every
+ * constrained rig pays the descent after them only while each goal lies within its path's reach of
+ * the root (`goalsWithinReach`, ADR-132).
  */
 export function legalStarts3d(
   root: WorldFrame3d,
@@ -528,24 +530,26 @@ export function legalStarts3d(
   pole: Pole3d,
   preparedTree?: PreparedSeedTree3d,
 ): LegalStarts {
+  const offsetExtent = ({ offset }: ChainMember3d): number => norm3([offset.x, offset.y, offset.z]);
+  const within = (): boolean =>
+    goalsWithinReach(members, offsetExtent, ({ goal }) =>
+      norm3([goal!.x - root.x, goal!.y - root.y, goal!.z - root.z]),
+    );
   const reach = legalRetryReach3d(members);
   if (reach > 0) {
     const seed = defaultTreeSeed3d((preparedTree ?? prepareSeedTree3d(root, members)).tree, pole);
     switch (seed.kind) {
       case "arc":
-        return CENTRE_THEN_DESCENT;
+        return arcLegalStarts(reach, within());
       case "legal":
-        return { kind: "staged", reach };
+        return { kind: within() ? "staged-then-descent" : "staged", reach };
       default:
         return unreachable(seed);
     }
   }
   if (!members.some(({ limit }) => limit !== undefined && constrains(limit)))
     return NO_LEGAL_STARTS;
-  const planarReach = addressedReach(members, ({ offset }) =>
-    norm3([offset.x, offset.y, offset.z]),
-  );
-  return planarReach > 0 ? CENTRE_THEN_DESCENT : CENTRE_LEGAL_START;
+  return arcLegalStarts(addressedReach(members, offsetExtent), within());
 }
 
 /**

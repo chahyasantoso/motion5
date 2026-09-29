@@ -1,18 +1,24 @@
 /** Issue #524, ADR-131: a reachable mixed-sign constrained chain is no longer trapped by the arc
- * seed. The selector pays a centred legal start after the two arc sides, then gated off-centre
- * starts only for a near unresolved miss. TH-181 and TH-182
+ * seed. ADR-131 pays a centred legal start after the two arc sides; ADR-132 then pays a monotone
+ * legal descent. Non-planar staged starts remain reach-gated. TH-181 and TH-182
  * fail on the pre-#524 solver: it paid no legal start in 2D or on a planar 3D rig, so every rig in
  * TH-182 ended `limited` in both dimensions at the residual its comment records. */
 import { describe, expect, it } from "vitest";
 import { FABRIK_TOLERANCE, solveFabrikAttempt } from "../../../src/plugins/fabrik";
 import {
   CENTRE_LEGAL_START,
+  CENTRE_THEN_DESCENT,
   NO_LEGAL_STARTS,
   addressedReach,
   selectFabrik,
   type FabrikAttempt,
 } from "../../../src/plugins/fabrik-select";
-import { seedLegal, type FabrikSeed } from "../../../src/plugins/fabrik-seed";
+import {
+  heldFromSeed,
+  legalFraction,
+  seedLegal,
+  type LegalSeed,
+} from "../../../src/plugins/fabrik-seed";
 import type { WorldFrame, WorldPoint } from "../../../src/plugins/frame";
 import type { Euler3d, Vec3, WorldFrame3d } from "../../../src/plugins/frame3d";
 import { canonicalChain } from "../../../src/plugins/ik-topology";
@@ -30,7 +36,7 @@ const ROOT3: WorldFrame3d = { x: 0, y: 0, z: 0, rotation: 0, rotationX: 0, rotat
 const ZERO_REST: Euler3d = { rotation: 0, rotationX: 0, rotationY: 0 };
 const Z_AXIS: Vec3 = [0, 0, 1];
 const RADIANS = Math.PI / 180;
-const CENTRE: FabrikSeed = { kind: "legal-range", fraction: 0.5 };
+const CENTRE: LegalSeed = { kind: "legal-range", fraction: 0.5 };
 
 const range = (min: number, max: number): JointRange => ({ kind: "range", min, max });
 
@@ -136,6 +142,205 @@ const quality = (kind: IterativeQuality["kind"], residual: number): IterativeQua
     ? { kind, iterations: 9, residual, atBound: ["m"] }
     : { kind, iterations: 9, residual };
 
+function composePlanar3d(
+  root: WorldFrame3d,
+  members: readonly ChainMember3d[],
+  rotations: Readonly<Record<string, Euler3d>>,
+): Map<string, WorldPoint> {
+  const { ids, byId } = canonicalChain(members);
+  const tips = new Map<string, WorldPoint>();
+  const directions = new Map<string, number>();
+  for (const id of ids) {
+    const member = byId.get(id)!;
+    const baseTip = tips.get(member.base) ?? { x: root.x, y: root.y };
+    const baseDirection = directions.get(member.base) ?? root.rotation;
+    const turn = baseDirection * RADIANS;
+    const pivot = {
+      x: baseTip.x + member.offset.x * Math.cos(turn) - member.offset.y * Math.sin(turn),
+      y: baseTip.y + member.offset.x * Math.sin(turn) + member.offset.y * Math.cos(turn),
+    };
+    const direction = baseDirection + rotations[id]!.rotation;
+    directions.set(id, direction);
+    tips.set(id, {
+      x: pivot.x + member.length * Math.cos(direction * RADIANS),
+      y: pivot.y + member.length * Math.sin(direction * RADIANS),
+    });
+  }
+  return tips;
+}
+
+function seedWorstMiss(
+  members: readonly SolveMember[],
+  tips: ReadonlyMap<string, WorldPoint>,
+): number {
+  const { leaves, byId } = canonicalChain(members);
+  return Math.max(
+    0,
+    ...leaves.flatMap((id) => {
+      const goal = byId.get(id)!.goal;
+      const tip = tips.get(id);
+      return goal === undefined || tip === undefined
+        ? []
+        : [Math.hypot(tip.x - goal.x, tip.y - goal.y)];
+    }),
+  );
+}
+
+/** Independent checks of a legal seed's member lengths and local constrained rotations. */
+function expectLegalSeed(
+  members: readonly SolveMember[],
+  tips: ReadonlyMap<string, WorldPoint>,
+): void {
+  const { ids, byId } = canonicalChain(members);
+  const directions = new Map<string, number>();
+  for (const id of ids) {
+    const member = byId.get(id)!;
+    const baseTip = tips.get(member.base) ?? ROOT;
+    const baseDirection = directions.get(member.base) ?? ROOT.rotation;
+    const turn = baseDirection * RADIANS;
+    const offset = member.pivot ?? { x: 0, y: 0 };
+    const pivot = {
+      x: baseTip.x + offset.x * Math.cos(turn) - offset.y * Math.sin(turn),
+      y: baseTip.y + offset.x * Math.sin(turn) + offset.y * Math.cos(turn),
+    };
+    const tip = tips.get(id)!;
+    expect(Math.hypot(tip.x - pivot.x, tip.y - pivot.y)).toBeCloseTo(member.length, 9);
+    if (member.length > 0) {
+      const direction = Math.atan2(tip.y - pivot.y, tip.x - pivot.x) / RADIANS;
+      directions.set(id, direction);
+      if (member.limit !== undefined) {
+        const local = direction - baseDirection;
+        const wrapped = local - 360 * Math.round(local / 360);
+        expect(Math.abs(limitRotation(member.limit, wrapped) - wrapped)).toBeLessThanOrEqual(1e-9);
+      }
+    }
+  }
+}
+
+const CORPUS_2D_46: SolveMember[] = [
+  { id: "m0", base: "root", length: 23.03038427606225 },
+  {
+    id: "m1",
+    base: "m0",
+    length: 30.747562032192945,
+    limit: range(-72.70604576915503, 0),
+  },
+  { id: "m2", base: "m1", length: 23.622833602130413 },
+  {
+    id: "m3",
+    base: "m2",
+    length: 67.61922193691134,
+    limit: range(0, 47.781029529869556),
+    goal: { x: 31.96367214849199, y: 18.467188438035187, rotation: 0 },
+  },
+];
+
+const CORPUS_3D_123: ChainMember3d[] = [
+  {
+    id: "m0",
+    base: "root",
+    length: 57.72178091108799,
+    offset: { x: 0, y: 0, z: 0 },
+    rest: ZERO_REST,
+  },
+  {
+    id: "m1",
+    base: "m0",
+    length: 63.89253210276365,
+    offset: { x: 0, y: 0, z: 0 },
+    rest: ZERO_REST,
+  },
+  {
+    id: "m2",
+    base: "m1",
+    length: 80.38089765235782,
+    offset: { x: 0, y: 0, z: 0 },
+    rest: ZERO_REST,
+    limit: { kind: "hinge", axis: Z_AXIS, range: range(-95.02608049660921, 0) },
+  },
+  {
+    id: "m3",
+    base: "m2",
+    length: 93.19888856261969,
+    offset: { x: 0, y: 0, z: 0 },
+    rest: ZERO_REST,
+    limit: { kind: "hinge", axis: Z_AXIS, range: range(0, 58.97718829102814) },
+  },
+  {
+    id: "m4",
+    base: "m3",
+    length: 25.128877628594637,
+    offset: { x: 0, y: 0, z: 0 },
+    rest: ZERO_REST,
+    limit: { kind: "hinge", axis: Z_AXIS, range: range(0, 50.92684479430318) },
+    goal: {
+      x: -90.01873915737744,
+      y: 180.03969931052427,
+      z: 0,
+      ...ZERO_REST,
+    },
+  },
+];
+const ROOT3_123: WorldFrame3d = {
+  x: 0,
+  y: 0,
+  z: 0,
+  rotation: -81.0414628777653,
+  rotationX: 0,
+  rotationY: 0,
+};
+
+const CORPUS_3D_1046: ChainMember3d[] = [
+  {
+    id: "m0",
+    base: "root",
+    length: 27.720380537211895,
+    offset: { x: 0, y: 0, z: 0 },
+    rest: ZERO_REST,
+  },
+  {
+    id: "m1",
+    base: "m0",
+    length: 90.65473213791847,
+    offset: { x: 0, y: 0, z: 0 },
+    rest: ZERO_REST,
+    limit: { kind: "hinge", axis: Z_AXIS, range: range(-71.82884391397238, -4.308558804914355) },
+  },
+  {
+    id: "m2",
+    base: "m1",
+    length: 96.39288689941168,
+    offset: { x: 0, y: 0, z: 0 },
+    rest: ZERO_REST,
+    limit: { kind: "hinge", axis: Z_AXIS, range: range(-103.1019298452884, 0) },
+  },
+  {
+    id: "m3",
+    base: "m2",
+    length: 98.79181670024991,
+    offset: { x: 0, y: 0, z: 0 },
+    rest: ZERO_REST,
+    limit: { kind: "hinge", axis: Z_AXIS, range: range(0, 54.34226246550679) },
+  },
+  {
+    id: "m4",
+    base: "m3",
+    length: 20.76538845896721,
+    offset: { x: 0, y: 0, z: 0 },
+    rest: ZERO_REST,
+    limit: { kind: "hinge", axis: Z_AXIS, range: range(0, 41.78618702106178) },
+    goal: { x: 247.9942498414085, y: 15.560265541183913, z: 0, ...ZERO_REST },
+  },
+];
+const ROOT3_1046: WorldFrame3d = {
+  x: 0,
+  y: 0,
+  z: 0,
+  rotation: 94.48991848155856,
+  rotationX: 0,
+  rotationY: 0,
+};
+
 /** A scripted attempt: records `base`, `opposite` or `q<fraction>` and answers from `answers`. */
 function scripted(calls: string[], answers: Readonly<Record<string, IterativeQuality>>) {
   const attempt: FabrikAttempt<null, never, { quality: IterativeQuality }> = (
@@ -145,7 +350,14 @@ function scripted(calls: string[], answers: Readonly<Record<string, IterativeQua
     _rule,
     seed,
   ) => {
-    const name = seed?.kind === "legal-range" ? `q${seed.fraction}` : flip ? "opposite" : "base";
+    const name =
+      seed?.kind === "legal-range"
+        ? `q${seed.fraction}`
+        : seed?.kind === "legal-descent"
+          ? "descent"
+          : flip
+            ? "opposite"
+            : "base";
     calls.push(name);
     return { quality: answers[name] ?? answers["base"]! };
   };
@@ -153,7 +365,7 @@ function scripted(calls: string[], answers: Readonly<Record<string, IterativeQua
 }
 
 describe("mixed-sign legal start (issue #524, ADR-131)", () => {
-  it("TH-181 the selector pays one centred legal start only after both arc sides miss", () => {
+  it("TH-181 centre-then-descent orders base, opposite, centre, descent and stops on convergence", () => {
     const calls: string[] = [];
     for (const kind of ["limited", "iteration-cap"] as const) {
       calls.length = 0;
@@ -163,7 +375,7 @@ describe("mixed-sign legal start (issue #524, ADR-131)", () => {
         [],
         false,
         scripted(calls, { base: quality(kind, 12), "q0.5": met }),
-        CENTRE_LEGAL_START,
+        CENTRE_THEN_DESCENT,
       );
       expect(calls).toEqual(["base", "opposite", "q0.5"]);
       expect(selected.quality).toBe(met);
@@ -176,7 +388,7 @@ describe("mixed-sign legal start (issue #524, ADR-131)", () => {
       [],
       false,
       scripted(calls, { base: quality("limited", 3), opposite: hit }),
-      CENTRE_LEGAL_START,
+      CENTRE_THEN_DESCENT,
     );
     expect(calls).toEqual(["base", "opposite"]);
     expect(opposite.quality).toBe(hit);
@@ -192,7 +404,7 @@ describe("mixed-sign legal start (issue #524, ADR-131)", () => {
         [],
         false,
         scripted(calls, { base: quality(kind, 2) }),
-        CENTRE_LEGAL_START,
+        CENTRE_THEN_DESCENT,
       );
       expect(calls).toHaveLength(count);
       expect(calls).not.toContain("q0.5");
@@ -218,9 +430,9 @@ describe("mixed-sign legal start (issue #524, ADR-131)", () => {
         opposite: quality("limited", 2),
         "q0.5": quality("limited", 2),
       }),
-      CENTRE_LEGAL_START,
+      CENTRE_THEN_DESCENT,
     );
-    expect(calls).toEqual(["base", "opposite", "q0.5"]);
+    expect(calls).toEqual(["base", "opposite", "q0.5", "descent"]);
     expect(tie.quality).toBe(baseline);
   });
 
@@ -272,7 +484,7 @@ describe("mixed-sign legal start (issue #524, ADR-131)", () => {
       }),
     );
     for (const fraction of [0.5, 0.25] as const) {
-      const tips = seedLegal(ROOT, ids, byId, aims, fraction);
+      const tips = seedLegal(ROOT, ids, byId, aims, { kind: "legal-range", fraction });
       expect([...tips.keys()]).toEqual([...ids]);
       // Read the seed back as local rotations: every limited member sits at `fraction` of its range.
       const directions = new Map<string, number>();
@@ -303,13 +515,13 @@ describe("mixed-sign legal start (issue #524, ADR-131)", () => {
       };
       const meanAim = { x: (20 + 75) / 2, y: (70 - 30) / 2 };
       expect(Math.atan2(meanTip.y, meanTip.x)).toBeCloseTo(Math.atan2(meanAim.y, meanAim.x), 12);
-      expect(seedLegal(ROOT, ids, byId, aims, fraction)).toEqual(tips);
+      expect(seedLegal(ROOT, ids, byId, aims, { kind: "legal-range", fraction })).toEqual(tips);
     }
     // A root past a whole turn seeds exactly the frame `%` names, down to Number.MAX_VALUE.
     for (const huge of [Number.MAX_VALUE, -Number.MAX_VALUE, 1e6 + 30]) {
       const reduced = { ...ROOT, rotation: huge % 360 };
-      expect(seedLegal({ ...ROOT, rotation: huge }, ids, byId, aims, 0.5)).toEqual(
-        seedLegal(reduced, ids, byId, aims, 0.5),
+      expect(seedLegal({ ...ROOT, rotation: huge }, ids, byId, aims, CENTRE)).toEqual(
+        seedLegal(reduced, ids, byId, aims, CENTRE),
       );
     }
   });
@@ -344,20 +556,18 @@ describe("mixed-sign legal start (issue #524, ADR-131)", () => {
     ];
     const { ids, byId } = canonicalChain(rig);
     const aims = new Map([["tip", { x: 0, y: 40 }]]);
-    const tips = seedLegal(ROOT, ids, byId, aims, 0.5);
+    const tips = seedLegal(ROOT, ids, byId, aims, CENTRE);
     expect(tips.get("zero")).toEqual({ x: 0, y: 0 });
     expect(tips.get("tip")!.x).toBeCloseTo(20 - 2.5 * Math.sqrt(3), 10);
     expect(tips.get("tip")!.y).toBeCloseTo(20 * Math.sqrt(3) + 2.5, 10);
-    expect(seedLegal(ROOT, ids, byId, aims, 0.25)).toEqual(tips);
-    expect(seedLegal(ROOT, ids, byId, aims, 0.5)).toEqual(tips);
+    expect(seedLegal(ROOT, ids, byId, aims, { kind: "legal-range", fraction: 0.25 })).toEqual(tips);
+    expect(seedLegal(ROOT, ids, byId, aims, CENTRE)).toEqual(tips);
   });
 
   it("TH-185 each dimension names the legal starts its rig can use, and a met rig pays one attempt", () => {
     const planar = planar3d(REPRODUCTIONS[0]!);
-    expect(legalStarts3d(ROOT3, planar, UNBOUND_POLE3D)).toEqual({
-      kind: "centre-then-staged",
-      reach: 244.1,
-    });
+    // Goal d (75, -30) lies beyond its 75-unit path: out of reach, so the centre alone (ADR-132).
+    expect(legalStarts3d(ROOT3, planar, UNBOUND_POLE3D)).toEqual(CENTRE_THEN_DESCENT);
     expect(
       legalStarts3d(
         ROOT3,
@@ -370,7 +580,7 @@ describe("mixed-sign legal start (issue #524, ADR-131)", () => {
         ? { ...member, limit: { ...member.limit, axis: [0, 0.6, 0.8] as Vec3 } }
         : member,
     );
-    expect(legalStarts3d(ROOT3, tilted, UNBOUND_POLE3D).kind).toBe("staged");
+    expect(legalStarts3d(ROOT3, tilted, UNBOUND_POLE3D).kind).toBe("staged-then-descent");
     // A limited rig whose baseline meets its goal takes exactly the one attempt it always took.
     const easy = serial(50, [[40, range(-90, 90)]], { x: 60, y: 30 });
     let attempts = 0;
@@ -384,7 +594,7 @@ describe("mixed-sign legal start (issue #524, ADR-131)", () => {
     expect(selected).toEqual(solveFabrikAttempt(ROOT, easy, false));
   });
 
-  it("TH-186 a near planar miss can leave the centre basin through a bounded off-centre start", () => {
+  it("TH-186 a planar miss the centre leaves is met by the legal descent", () => {
     const rig = serial(
       39.61540713906288,
       [
@@ -399,7 +609,7 @@ describe("mixed-sign legal start (issue #524, ADR-131)", () => {
     expect(arcAndCentre.quality.kind).toBe("limited");
     const planar = planar3d(rig);
     const starts = legalStarts3d(ROOT3, planar, UNBOUND_POLE3D);
-    expect(starts.kind).toBe("centre-then-staged");
+    expect(starts.kind).toBe("centre-then-descent");
     const flat = solveChain(ROOT, rig, false);
     const spatial = solveChain3d(ROOT3, planar, UNBOUND_POLE3D);
     expect(flat.quality.kind).toBe("converged");
@@ -410,61 +620,76 @@ describe("mixed-sign legal start (issue #524, ADR-131)", () => {
     expect(solveChain3d(ROOT3, planar, UNBOUND_POLE3D)).toEqual(spatial);
   });
 
-  it("TH-187 the planar off-centre stages use the selected arc miss and stop on convergence", () => {
+  it("TH-187 centre-then-descent stops after the first converged legal candidate", () => {
     const calls: string[] = [];
-    const near = { kind: "centre-then-staged", reach: 100 } as const;
     const hit = quality("converged", 0.0001);
-    const answer = scripted(calls, {
-      base: quality("limited", 50),
-      opposite: quality("limited", 1),
-      "q0.5": quality("limited", 20),
-      "q0.75": hit,
-    });
-    expect(selectFabrik(null, [], false, answer, near).quality).toBe(hit);
-    expect(calls).toEqual(["base", "opposite", "q0.5", "q0.25", "q0.75"]);
+    const selected = selectFabrik(
+      null,
+      [],
+      false,
+      scripted(calls, {
+        base: quality("limited", 50),
+        opposite: quality("limited", 1),
+        "q0.5": quality("limited", 20),
+        descent: hit,
+      }),
+      CENTRE_THEN_DESCENT,
+    );
+    expect(selected.quality).toBe(hit);
+    expect(calls).toEqual(["base", "opposite", "q0.5", "descent"]);
     calls.length = 0;
-    selectFabrik(null, [], false, scripted(calls, { base: quality("limited", 50) }), near);
-    expect(calls).toEqual(["base", "opposite", "q0.5"]);
+    selectFabrik(
+      null,
+      [],
+      false,
+      scripted(calls, { base: quality("limited", 50) }),
+      CENTRE_THEN_DESCENT,
+    );
+    expect(calls).toEqual(["base", "opposite", "q0.5", "descent"]);
     calls.length = 0;
     selectFabrik(
       null,
       [],
       false,
       scripted(calls, { base: quality("limited", 50), opposite: hit }),
-      near,
+      CENTRE_THEN_DESCENT,
     );
     expect(calls).toEqual(["base", "opposite"]);
   });
 
-  it("TH-188 the inclusive reach edge and seven-attempt ceiling belong to one selector", () => {
+  it("TH-188 staged gates on the baseline residual, with an inclusive edge and seven-attempt ceiling", () => {
     const calls: string[] = [];
     const misses = scripted(calls, {
-      base: quality("limited", 20),
-      opposite: quality("limited", 2),
-      "q0.5": quality("limited", 3),
+      base: quality("limited", 2),
+      opposite: quality("limited", 3),
+      "q0.25": quality("limited", 4),
+      "q0.75": quality("limited", 5),
+      "q0.1": quality("limited", 6),
+      "q0.9": quality("limited", 7),
+      descent: quality("limited", 8),
     });
-    selectFabrik(null, [], false, misses, { kind: "centre-then-staged", reach: 100 });
-    expect(calls).toEqual(["base", "opposite", "q0.5", "q0.25", "q0.75", "q0.1", "q0.9"]);
+    selectFabrik(null, [], false, misses, { kind: "staged-then-descent", reach: 100 });
+    expect(calls).toEqual(["base", "opposite", "q0.25", "q0.75", "q0.1", "q0.9", "descent"]);
     calls.length = 0;
-    selectFabrik(null, [], false, misses, { kind: "centre-then-staged", reach: 99 });
-    expect(calls).toEqual(["base", "opposite", "q0.5"]);
-    // Baseline is deliberately distant: only the selected opposite arc gates the planar offsets.
+    selectFabrik(null, [], false, misses, { kind: "staged-then-descent", reach: 99 });
+    expect(calls).toEqual(["base", "opposite", "descent"]);
+    // The gate reads the baseline, not the better or worse opposite-side residual.
     calls.length = 0;
     selectFabrik(
       null,
       [],
       false,
       scripted(calls, {
-        base: quality("limited", 20),
-        opposite: quality("limited", 2.01),
-        "q0.5": quality("limited", 0.1),
+        base: quality("limited", 2.01),
+        opposite: quality("limited", 0.1),
+        descent: quality("limited", 0.2),
       }),
-      { kind: "centre-then-staged", reach: 100 },
+      { kind: "staged-then-descent", reach: 100 },
     );
-    expect(calls).toEqual(["base", "opposite", "q0.5"]);
+    expect(calls).toEqual(["base", "opposite", "descent"]);
   });
 
-  it("TH-189 the recovered real planar rig prices every production attempt, not its winner", () => {
+  it("TH-189 the real planar rig prices base, opposite, centre, descent in both dimensions", () => {
     const rig = serial(
       39.61540713906288,
       [
@@ -476,64 +701,179 @@ describe("mixed-sign legal start (issue #524, ADR-131)", () => {
       { x: 113.28647554557269, y: -101.44358599430358 },
     );
     const starts = legalStarts3d(ROOT3, planar3d(rig), UNBOUND_POLE3D);
-    expect(starts.kind).toBe("centre-then-staged");
+    expect(starts).toEqual(CENTRE_THEN_DESCENT);
     const calls2d: string[] = [];
-    let iterations2d = 0;
     const counting2d: typeof solveFabrikAttempt = (...args) => {
       const seed = args[4];
       calls2d.push(
-        seed?.kind === "legal-range" ? `q${seed.fraction}` : args[2] ? "opposite" : "base",
+        seed?.kind === "legal-range"
+          ? `q${seed.fraction}`
+          : seed?.kind === "legal-descent"
+            ? "descent"
+            : args[2]
+              ? "opposite"
+              : "base",
       );
-      const result = solveFabrikAttempt(...args);
-      iterations2d += result.quality.iterations;
-      return result;
+      return solveFabrikAttempt(...args);
     };
     const flat = selectFabrik(ROOT, rig, false, counting2d, starts);
     const calls3d: string[] = [];
-    let iterations3d = 0;
     const counting3d: FabrikAttempt<
       WorldFrame3d,
       ChainMember3d,
       ReturnType<typeof solveTree3dAttempt>
     > = (root, members, flip, rule, seed) => {
-      calls3d.push(seed?.kind === "legal-range" ? `q${seed.fraction}` : flip ? "opposite" : "base");
-      const result = solveTree3dAttempt(root, members, UNBOUND_POLE3D, flip, rule, seed);
-      iterations3d += result.quality.iterations;
-      return result;
+      calls3d.push(
+        seed?.kind === "legal-range"
+          ? `q${seed.fraction}`
+          : seed?.kind === "legal-descent"
+            ? "descent"
+            : flip
+              ? "opposite"
+              : "base",
+      );
+      return solveTree3dAttempt(root, members, UNBOUND_POLE3D, flip, rule, seed);
     };
     const spatial = selectFabrik(ROOT3, planar3d(rig), false, counting3d, starts);
     expect(flat.quality.kind).toBe("converged");
     expect(spatial.quality.kind).toBe("converged");
-    expect(calls2d).toEqual(calls3d);
-    expect(calls2d[0]).toBe("base");
-    expect(calls2d[1]).toBe("opposite");
-    expect(calls2d[2]).toBe("q0.5");
-    expect(calls2d).toContain("q0.75");
-    expect(calls2d.length).toBeLessThanOrEqual(7);
-    expect(iterations2d).toBeGreaterThanOrEqual(flat.quality.iterations);
-    expect(iterations3d).toBeGreaterThanOrEqual(spatial.quality.iterations);
+    expect(calls2d).toEqual(["base", "opposite", "q0.5", "descent"]);
+    expect(calls3d).toEqual(calls2d);
+    expect(calls2d.length).toBeLessThanOrEqual(4);
   });
 
-  it("TH-190 only addressed paths, including offsets, set the real rig's retry scale", () => {
-    const reach2d = (members: readonly SolveMember[]) =>
-      addressedReach(members, ({ pivot }) => Math.hypot(pivot?.x ?? 0, pivot?.y ?? 0));
-    const reach = 40 + 30 + Math.hypot(2, -1) + 25;
-    expect(reach2d(TREE)).toBeCloseTo(reach);
-    expect(legalStarts3d(ROOT3, planar3d(TREE), UNBOUND_POLE3D)).toEqual({
-      kind: "centre-then-staged",
-      reach,
-    });
+  it("TH-190 addressed reach ignores unrelated siblings for a non-planar staged start", () => {
+    const planar = planar3d(TREE);
+    const tilted = planar.map((member) =>
+      member.limit?.kind === "hinge"
+        ? { ...member, limit: { ...member.limit, axis: [0, 0.6, 0.8] as Vec3 } }
+        : member,
+    );
+    const planarReach = addressedReach(planar, ({ offset }) =>
+      Math.hypot(offset.x, offset.y, offset.z),
+    );
+    expect(planarReach).toBeCloseTo(40 + 30 + Math.hypot(2, -1) + 25);
+    // Goal d (75, -30) lies beyond its 75-unit path: out of reach, so the centre alone (ADR-132).
+    expect(legalStarts3d(ROOT3, planar, UNBOUND_POLE3D)).toEqual(CENTRE_LEGAL_START);
+    const reach = addressedReach(tilted, ({ offset }) => Math.hypot(offset.x, offset.y, offset.z));
+    expect(legalStarts3d(ROOT3, tilted, UNBOUND_POLE3D)).toEqual({ kind: "staged", reach });
     const unused = {
       id: "unused",
       base: "a",
       length: 1e6,
-      pivot: { x: 1e6, y: 0 },
-      limit: range(-30, 30),
-    };
-    expect(reach2d([...TREE, unused])).toBeCloseTo(reach);
-    expect(legalStarts3d(ROOT3, planar3d([...TREE, unused]), UNBOUND_POLE3D)).toEqual({
-      kind: "centre-then-staged",
-      reach,
-    });
+      offset: { x: 1e6, y: 0, z: 0 },
+      rest: ZERO_REST,
+      limit: { kind: "hinge", axis: [0, 0.6, 0.8] as Vec3, range: range(-30, 30) },
+    } satisfies ChainMember3d;
+    const withUnused = [...tilted, unused];
+    expect(legalStarts3d(ROOT3, withUnused, UNBOUND_POLE3D)).toEqual({ kind: "staged", reach });
+    expect(
+      addressedReach(withUnused, ({ offset }) => Math.hypot(offset.x, offset.y, offset.z)),
+    ).toBe(reach);
+  });
+
+  it("TH-194 legal descent is deterministic, legal, monotone, and agrees across planar dimensions", () => {
+    const rigs = [...REPRODUCTIONS, TREE];
+    for (const rig of rigs) {
+      const { ids, byId, leaves } = canonicalChain(rig);
+      const aims = new Map(
+        leaves.flatMap((id) => {
+          const goal = byId.get(id)!.goal;
+          return goal === undefined ? [] : [[id, { x: goal.x, y: goal.y }] as const];
+        }),
+      );
+      const descent: LegalSeed = { kind: "legal-descent" };
+      const tips = seedLegal(ROOT, ids, byId, aims, descent);
+      expectLegalSeed(rig, tips);
+      expect(seedLegal(ROOT, ids, byId, aims, descent)).toEqual(tips);
+      expect(seedWorstMiss(rig, tips)).toBeLessThanOrEqual(
+        seedWorstMiss(rig, seedLegal(ROOT, ids, byId, aims, CENTRE)),
+      );
+      expect(legalFraction(descent)).toBe(0.5);
+
+      const flat = solveFabrikAttempt(ROOT, rig, false, "centroid", descent);
+      const spatial = solveTree3dAttempt(
+        ROOT3,
+        planar3d(rig),
+        UNBOUND_POLE3D,
+        false,
+        "centroid",
+        descent,
+      );
+      expect(spatial.quality.kind).toBe(flat.quality.kind);
+      expect(spatial.quality.residual).toBeCloseTo(flat.quality.residual, 5);
+    }
+  });
+
+  it("TH-195 classifier traps are failing-first for centre and recovered by production descent", () => {
+    const old2d = selectFabrik(ROOT, CORPUS_2D_46, true, solveFabrikAttempt, CENTRE_LEGAL_START);
+    expect(old2d.quality.kind).toBe("limited");
+    const solved2d = solveChain(ROOT, CORPUS_2D_46, true);
+    expect(solved2d.quality.kind).toBe("converged");
+    const tip2d = compose2d(CORPUS_2D_46, solved2d.rotations).get("m3")!;
+    expect(
+      Math.hypot(tip2d.x - CORPUS_2D_46[3]!.goal!.x, tip2d.y - CORPUS_2D_46[3]!.goal!.y),
+    ).toBeLessThanOrEqual(FABRIK_TOLERANCE);
+    for (const member of CORPUS_2D_46)
+      if (member.limit !== undefined)
+        expect(
+          Math.abs(
+            limitRotation(member.limit, solved2d.rotations[member.id]!) -
+              solved2d.rotations[member.id]!,
+          ),
+        ).toBeLessThanOrEqual(1e-9);
+
+    const threeD = [
+      [ROOT3_123, CORPUS_3D_123],
+      [ROOT3_1046, CORPUS_3D_1046],
+    ] as const;
+    for (const [root, rig] of threeD) {
+      const old = selectFabrik(
+        root,
+        rig,
+        false,
+        (frame, members, flip, rule, seed) =>
+          solveTree3dAttempt(frame, members, UNBOUND_POLE3D, flip, rule, seed),
+        CENTRE_LEGAL_START,
+      );
+      expect(old.quality.kind).toBe("limited");
+      const solved = solveChain3d(root, rig, UNBOUND_POLE3D);
+      expect(solved.quality.kind).toBe("converged");
+      const tips = composePlanar3d(root, rig, solved.rotations3d);
+      const leaf = rig[rig.length - 1]!;
+      expect(
+        Math.hypot(tips.get(leaf.id)!.x - leaf.goal!.x, tips.get(leaf.id)!.y - leaf.goal!.y),
+      ).toBeLessThanOrEqual(FABRIK_TOLERANCE);
+      for (const member of rig)
+        if (member.limit?.kind === "hinge") {
+          const local = solved.rotations3d[member.id]!.rotation;
+          expect(Math.abs(limitRotation(member.limit.range, local) - local)).toBeLessThanOrEqual(
+            1e-9,
+          );
+        }
+    }
+  });
+
+  it("TH-196 only legal descent holds its seed and never publishes a worse seeded miss", () => {
+    expect(heldFromSeed({ kind: "default" })).toBe(false);
+    expect(heldFromSeed({ kind: "legal-range", fraction: 0.1 })).toBe(false);
+    expect(heldFromSeed({ kind: "legal-range", fraction: 0.25 })).toBe(false);
+    expect(heldFromSeed({ kind: "legal-range", fraction: 0.5 })).toBe(false);
+    expect(heldFromSeed({ kind: "legal-range", fraction: 0.75 })).toBe(false);
+    expect(heldFromSeed({ kind: "legal-range", fraction: 0.9 })).toBe(false);
+    expect(heldFromSeed({ kind: "legal-descent" })).toBe(true);
+    for (const rig of [...REPRODUCTIONS, TREE]) {
+      const { ids, byId, leaves } = canonicalChain(rig);
+      const aims = new Map(
+        leaves.flatMap((id) => {
+          const goal = byId.get(id)!.goal;
+          return goal === undefined ? [] : [[id, { x: goal.x, y: goal.y }] as const];
+        }),
+      );
+      const descent: LegalSeed = { kind: "legal-descent" };
+      const seededMiss = seedWorstMiss(rig, seedLegal(ROOT, ids, byId, aims, descent));
+      const attempt = solveFabrikAttempt(ROOT, rig, false, "centroid", descent);
+      expect(attempt.quality.residual).toBeLessThanOrEqual(seededMiss + 1e-9);
+    }
   });
 });

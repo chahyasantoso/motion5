@@ -316,7 +316,10 @@ function descentOf(
       case "free":
       case "cone":
       case "swing-twist":
-        dofs.push({ kind: "tilt", index, about: LOCAL_Y3 }, { kind: "tilt", index, about: LOCAL_Z3 });
+        dofs.push(
+          { kind: "tilt", index, about: LOCAL_Y3 },
+          { kind: "tilt", index, about: LOCAL_Z3 },
+        );
         return;
       default:
         return unreachable(limit);

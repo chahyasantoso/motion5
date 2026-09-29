@@ -10,8 +10,8 @@ import { aimPoint, goalMiss, readGoal, type GoalReading } from "./ik-goal-readin
 import { branchPulls, compromise, type CompromiseRule, type Pull } from "./ik-goal";
 import {
   addressedReach,
-  CENTRE_LEGAL_START,
-  CENTRE_THEN_DESCENT,
+  arcLegalStarts,
+  goalsWithinReach,
   NO_LEGAL_STARTS,
   selectFabrik,
 } from "./fabrik-select";
@@ -582,9 +582,7 @@ export function iterativeQuality(outcome: IterativeOutcome): IterativeQuality {
 /**
  * Solve once with the authored seed; a conflicted baseline pays three alternatives, while a
  * limited or capped baseline pays one opposite-seed retry with the centroid rule (ADR-128) and,
- * on a rig with a limited member, a centred legal start followed by bounded off-centre starts
- * for a near miss (#524, ADR-131). The selector owns the order and ceiling; this names the
- * addressed reach, not the retry policy.
+ * on a limited rig the legal starts `arcLegalStarts` names (ADR-131, ADR-132).
  */
 export function solveFabrik(
   root: WorldFrame,
@@ -592,14 +590,19 @@ export function solveFabrik(
   flip = false,
 ): FabrikSolution {
   const limited = members.some(({ limit }) => limit !== undefined);
-  const reach = limited
-    ? addressedReach(members, ({ pivot }) => Math.hypot(pivot?.x ?? 0, pivot?.y ?? 0))
-    : 0;
+  const offsetExtent = ({ pivot }: SolveMember): number => Math.hypot(pivot?.x ?? 0, pivot?.y ?? 0);
   return selectFabrik(
     root,
     members,
     flip,
     solveFabrikAttempt,
-    limited ? (reach > 0 ? CENTRE_THEN_DESCENT : CENTRE_LEGAL_START) : NO_LEGAL_STARTS,
+    limited
+      ? arcLegalStarts(
+          addressedReach(members, offsetExtent),
+          goalsWithinReach(members, offsetExtent, ({ goal }) =>
+            Math.hypot(goal!.x - root.x, goal!.y - root.y),
+          ),
+        )
+      : NO_LEGAL_STARTS,
   );
 }

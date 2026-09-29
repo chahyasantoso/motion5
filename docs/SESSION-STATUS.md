@@ -16,8 +16,8 @@ shape and byte ceiling.
 
 ## Next in line
 
-- **[#524][issue524]'s centred legal start is prepared on `fix/524-legal-seed-retry`
-  ([ADR-131][adr131]), not merged.**
+- **[#524][issue524]'s legal descent start is prepared on `fix/524-legal-seed-retry`
+  ([ADR-131][adr131], [ADR-132][adr132]), not merged.**
 
 ## Open, and not scheduled
 
@@ -49,3 +49,4 @@ shape and byte ceiling.
 [adr130]: ./ADR-130-legal-range-retries-and-serial-hinge-recovery.md
 [issue524]: https://github.com/chahyasantoso/motion5/issues/524
 [adr131]: ./ADR-131-centred-legal-start-for-mixed-sign-chains.md
+[adr132]: ./ADR-132-legal-descent-start-for-constrained-fabrik-misses.md
