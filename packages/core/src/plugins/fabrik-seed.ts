@@ -1,5 +1,5 @@
 import { pivotFromBaseTip, segmentExtent, type WorldFrame, type WorldPoint } from "./frame";
-import { FREE_JOINT, legalRotation } from "./ik-constraint";
+import { FREE_JOINT, legalRotation, wrapRotation } from "./ik-constraint";
 import { solveLength, solveOffset, type SolveMember } from "./ik-member";
 
 /**
@@ -200,7 +200,8 @@ export function seedLegal(
     const share = 1 / leaves.length;
     const from = Math.atan2(tipY * share - pivot.y, tipX * share - pivot.x);
     const to = Math.atan2(aimY * share - pivot.y, aimX * share - pivot.x);
-    locals[index] = locals[index]! + (to - from) / RADIANS;
+    // The same minimal planar turn as the 3D swing, including the ±π branch cut.
+    locals[index] = locals[index]! + wrapRotation((to - from) / RADIANS);
     compose(index);
   }
   return new Map(ids.map((id, index) => [id, Object.freeze(tips[index]!)]));

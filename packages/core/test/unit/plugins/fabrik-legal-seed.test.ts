@@ -8,6 +8,7 @@ import { FABRIK_TOLERANCE, solveFabrikAttempt } from "../../../src/plugins/fabri
 import {
   CENTRE_LEGAL_START,
   NO_LEGAL_STARTS,
+  addressedReach,
   selectFabrik,
   type FabrikAttempt,
 } from "../../../src/plugins/fabrik-select";
@@ -405,5 +406,106 @@ describe("mixed-sign legal start (issue #524, ADR-131)", () => {
       near,
     );
     expect(calls).toEqual(["base", "opposite"]);
+  });
+
+  it("TH-188 the inclusive reach edge and seven-attempt ceiling belong to one selector", () => {
+    const calls: string[] = [];
+    const misses = scripted(calls, {
+      base: quality("limited", 20),
+      opposite: quality("limited", 2),
+      "q0.5": quality("limited", 3),
+    });
+    selectFabrik(null, [], false, misses, { kind: "centre-then-staged", reach: 100 });
+    expect(calls).toEqual(["base", "opposite", "q0.5", "q0.25", "q0.75", "q0.1", "q0.9"]);
+    calls.length = 0;
+    selectFabrik(null, [], false, misses, { kind: "centre-then-staged", reach: 99 });
+    expect(calls).toEqual(["base", "opposite", "q0.5"]);
+    // Baseline is deliberately distant: only the selected opposite arc gates the planar offsets.
+    calls.length = 0;
+    selectFabrik(
+      null,
+      [],
+      false,
+      scripted(calls, {
+        base: quality("limited", 20),
+        opposite: quality("limited", 2.01),
+        "q0.5": quality("limited", 0.1),
+      }),
+      { kind: "centre-then-staged", reach: 100 },
+    );
+    expect(calls).toEqual(["base", "opposite", "q0.5"]);
+  });
+
+  it("TH-189 the recovered real planar rig prices every production attempt, not its winner", () => {
+    const rig = serial(
+      39.61540713906288,
+      [
+        [94.90497339516878, range(0, 143.3545655105263)],
+        [46.51128927245736, range(-141.18539445102215, -28.930124437902123)],
+        [54.92882704362273, range(-97.43157058954239, -84.86721032997593)],
+        [79.52963413670659, range(-98.29837644472718, 0)],
+      ],
+      { x: 113.28647554557269, y: -101.44358599430358 },
+    );
+    const starts = legalStarts3d(planar3d(rig));
+    expect(starts.kind).toBe("centre-then-staged");
+    const calls2d: string[] = [];
+    let iterations2d = 0;
+    const counting2d: typeof solveFabrikAttempt = (...args) => {
+      const seed = args[4];
+      calls2d.push(
+        seed?.kind === "legal-range" ? `q${seed.fraction}` : args[2] ? "opposite" : "base",
+      );
+      const result = solveFabrikAttempt(...args);
+      iterations2d += result.quality.iterations;
+      return result;
+    };
+    const flat = selectFabrik(ROOT, rig, false, counting2d, starts);
+    const calls3d: string[] = [];
+    let iterations3d = 0;
+    const counting3d: FabrikAttempt<
+      WorldFrame3d,
+      ChainMember3d,
+      ReturnType<typeof solveTree3dAttempt>
+    > = (root, members, flip, rule, seed) => {
+      calls3d.push(seed?.kind === "legal-range" ? `q${seed.fraction}` : flip ? "opposite" : "base");
+      const result = solveTree3dAttempt(root, members, UNBOUND_POLE3D, flip, rule, seed);
+      iterations3d += result.quality.iterations;
+      return result;
+    };
+    const spatial = selectFabrik(ROOT3, planar3d(rig), false, counting3d, starts);
+    expect(flat.quality.kind).toBe("converged");
+    expect(spatial.quality.kind).toBe("converged");
+    expect(calls2d).toEqual(calls3d);
+    expect(calls2d[0]).toBe("base");
+    expect(calls2d[1]).toBe("opposite");
+    expect(calls2d[2]).toBe("q0.5");
+    expect(calls2d).toContain("q0.75");
+    expect(calls2d.length).toBeLessThanOrEqual(7);
+    expect(iterations2d).toBeGreaterThanOrEqual(flat.quality.iterations);
+    expect(iterations3d).toBeGreaterThanOrEqual(spatial.quality.iterations);
+  });
+
+  it("TH-190 only addressed paths, including offsets, set the real rig's retry scale", () => {
+    const reach2d = (members: readonly SolveMember[]) =>
+      addressedReach(members, ({ pivot }) => Math.hypot(pivot?.x ?? 0, pivot?.y ?? 0));
+    const reach = 40 + 30 + Math.hypot(2, -1) + 25;
+    expect(reach2d(TREE)).toBeCloseTo(reach);
+    expect(legalStarts3d(planar3d(TREE))).toEqual({
+      kind: "centre-then-staged",
+      reach,
+    });
+    const unused = {
+      id: "unused",
+      base: "a",
+      length: 1e6,
+      pivot: { x: 1e6, y: 0 },
+      limit: range(-30, 30),
+    };
+    expect(reach2d([...TREE, unused])).toBeCloseTo(reach);
+    expect(legalStarts3d(planar3d([...TREE, unused]))).toEqual({
+      kind: "centre-then-staged",
+      reach,
+    });
   });
 });

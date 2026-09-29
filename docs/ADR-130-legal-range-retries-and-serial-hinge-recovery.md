@@ -67,4 +67,4 @@ arbitrary rigs: offsets, branches, cones, swing-twist, constrained first members
 five members stay with FABRIK's answer. Mixed-sign serial chains are
 [#524](https://github.com/chahyasantoso/motion5/issues/524), a separate record.
 
-**Refined by [ADR-131](./ADR-131-centred-legal-start-for-mixed-sign-chains.md), 2026-09-29.** Every legal stage, the first included, now runs only while no candidate has converged, and 2D and planar 3D limited rigs pay one centred legal start.
+**Refined by [ADR-131](./ADR-131-centred-legal-start-for-mixed-sign-chains.md), 2026-09-29.** Every legal stage, the first included, now runs only while no candidate has converged. Addressed 2D and planar 3D constrained rigs pay a centre after two unresolved arc sides, then up to four off-centre starts for near misses (seven attempts in all); non-planar 3D retains its separately gated staged policy. The historical exclusions and iteration costs above describe the original #527 corpus, not this subsequent planar extension.
