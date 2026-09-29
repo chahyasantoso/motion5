@@ -16,7 +16,13 @@ import {
   type Vec3,
 } from "./frame3d";
 import { bendBasis3d, type Pole3d } from "./ik3d-analytic";
-import { constrains, leavesHingePose, legalLocal3d, type JointLimit3d } from "./ik3d-constraint";
+import {
+  constrains,
+  leavesHingePose,
+  legalLocal3d,
+  limitLocal3d,
+  type JointLimit3d,
+} from "./ik3d-constraint";
 
 /**
  * The 3D FABRIK seed: where every member's tip starts before the first outward pass, and the one
@@ -162,6 +168,11 @@ export function treeSeed3d(tree: SeedTree3d, arc: readonly Vec3[]): TreeSeed3d {
   return ARC_SEED;
 }
 
+/** Classify the same authored-side arc that the default attempt would actually use. */
+export function defaultTreeSeed3d(tree: SeedTree3d, pole: Pole3d): TreeSeed3d {
+  return treeSeed3d(tree, arcTips(tree, pole, false));
+}
+
 /**
  * The legal seed (see the module docblock). Built as `fk3d` composes: each member's pivot is its
  * base's tip plus its offset in the base's frame, its frame the base's frame times its local
@@ -174,7 +185,14 @@ export function treeSeed3d(tree: SeedTree3d, arc: readonly Vec3[]): TreeSeed3d {
 function legalTips(tree: SeedTree3d, flip: boolean, fraction = 0.5): Vec3[] {
   const { rootPoint, rootMatrix, parent, lengths, offsets, rests, limits, paths, aims } = tree;
   const count = lengths.length;
-  const locals = limits.map((limit, index) => legalLocal3d(limit, rests[index]!, fraction));
+  // A collapsed member has no tip direction to carry its requested fraction into the outward
+  // pass. Project its authored rest, exactly as that pass does, before composing child offsets.
+  const locals = limits.map((limit, index) => {
+    const rest = rests[index]!;
+    if (lengths[index]! > 0) return legalLocal3d(limit, rest, fraction);
+    const projected = limitLocal3d(limit, () => rest);
+    return projected.kind === "moved" ? projected.local : rest;
+  });
   const frames = new Array<Matrix3>(count);
   const pivots = new Array<Vec3>(count);
   const tips = new Array<Vec3>(count);
@@ -201,7 +219,7 @@ function legalTips(tree: SeedTree3d, flip: boolean, fraction = 0.5): Vec3[] {
     const inherited = base !== ROOT_INDEX && turnedAbove[base]!;
     const steps = below[index]!;
     turnedAbove[index] = inherited;
-    if (constrains(limits[index]!) || steps.length === 0) continue;
+    if (constrains(limits[index]!) || lengths[index] === 0 || steps.length === 0) continue;
     let tipSum: Vec3 = [0, 0, 0];
     let aimSum: Vec3 = [0, 0, 0];
     for (const step of steps) {

@@ -1,5 +1,5 @@
 import { pivotFromBaseTip, segmentExtent, type WorldFrame, type WorldPoint } from "./frame";
-import { FREE_JOINT, legalRotation, wrapRotation } from "./ik-constraint";
+import { FREE_JOINT, legalRotation, limitRotation, wrapRotation } from "./ik-constraint";
 import { solveLength, solveOffset, type SolveMember } from "./ik-member";
 
 /**
@@ -149,7 +149,13 @@ export function seedLegal(
   const at = new Map(ids.map((id, index) => [id, index]));
   const members = ids.map((id) => byId.get(id)!);
   const parent = members.map(({ base }) => at.get(base) ?? -1);
-  const locals = members.map(({ limit }) => legalRotation(limit ?? FREE_JOINT, fraction));
+  // A zero-length tip cannot encode a direction. Match the first outward pass's rest-direction
+  // fallback rather than composing descendants from an orientation that pass cannot recover.
+  const locals = members.map((member) =>
+    solveLength(member) > 0
+      ? legalRotation(member.limit ?? FREE_JOINT, fraction)
+      : limitRotation(member.limit ?? FREE_JOINT, 0),
+  );
   // `%` is exact, so this is the frame the root names; unreduced, a turn added to a root rotation
   // near `Number.MAX_VALUE` would be absorbed by its ulp and the free members would not turn.
   const rootDirection = root.rotation % 360;
@@ -183,7 +189,12 @@ export function seedLegal(
       below[index]!.push(leaf);
   for (let index = 0; index < count; index += 1) {
     const leaves = below[index]!;
-    if (members[index]!.limit !== undefined || leaves.length === 0) continue;
+    if (
+      members[index]!.limit !== undefined ||
+      solveLength(members[index]!) === 0 ||
+      leaves.length === 0
+    )
+      continue;
     let tipX = 0;
     let tipY = 0;
     let aimX = 0;

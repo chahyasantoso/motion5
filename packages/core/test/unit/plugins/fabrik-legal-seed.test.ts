@@ -331,18 +331,46 @@ describe("mixed-sign legal start (issue #524, ADR-131)", () => {
     }
   });
 
+  it("TH-191 a collapsed constrained parent seeds its child from the outward-pass rest angle", () => {
+    const rig: SolveMember[] = [
+      { id: "zero", base: "root", length: 0, limit: { kind: "range", min: 60, max: 120 } },
+      {
+        id: "tip",
+        base: "zero",
+        length: 40,
+        pivot: { x: 0, y: 5 },
+        limit: { kind: "range", min: 0, max: 0 },
+      },
+    ];
+    const { ids, byId } = canonicalChain(rig);
+    const aims = new Map([["tip", { x: 0, y: 40 }]]);
+    const tips = seedLegal(ROOT, ids, byId, aims, 0.5);
+    expect(tips.get("zero")).toEqual({ x: 0, y: 0 });
+    expect(tips.get("tip")!.x).toBeCloseTo(20 - 2.5 * Math.sqrt(3), 10);
+    expect(tips.get("tip")!.y).toBeCloseTo(20 * Math.sqrt(3) + 2.5, 10);
+    expect(seedLegal(ROOT, ids, byId, aims, 0.25)).toEqual(tips);
+    expect(seedLegal(ROOT, ids, byId, aims, 0.5)).toEqual(tips);
+  });
+
   it("TH-185 each dimension names the legal starts its rig can use, and a met rig pays one attempt", () => {
     const planar = planar3d(REPRODUCTIONS[0]!);
-    expect(legalStarts3d(planar)).toEqual({ kind: "centre-then-staged", reach: 244.1 });
-    expect(legalStarts3d(planar.map(({ limit: _limit, ...member }) => member))).toBe(
-      NO_LEGAL_STARTS,
-    );
+    expect(legalStarts3d(ROOT3, planar, UNBOUND_POLE3D)).toEqual({
+      kind: "centre-then-staged",
+      reach: 244.1,
+    });
+    expect(
+      legalStarts3d(
+        ROOT3,
+        planar.map(({ limit: _limit, ...member }) => member),
+        UNBOUND_POLE3D,
+      ),
+    ).toBe(NO_LEGAL_STARTS);
     const tilted = planar.map((member) =>
       member.limit?.kind === "hinge"
         ? { ...member, limit: { ...member.limit, axis: [0, 0.6, 0.8] as Vec3 } }
         : member,
     );
-    expect(legalStarts3d(tilted).kind).toBe("staged");
+    expect(legalStarts3d(ROOT3, tilted, UNBOUND_POLE3D).kind).toBe("staged");
     // A limited rig whose baseline meets its goal takes exactly the one attempt it always took.
     const easy = serial(50, [[40, range(-90, 90)]], { x: 60, y: 30 });
     let attempts = 0;
@@ -370,7 +398,7 @@ describe("mixed-sign legal start (issue #524, ADR-131)", () => {
     const arcAndCentre = selectFabrik(ROOT, rig, false, solveFabrikAttempt, CENTRE_LEGAL_START);
     expect(arcAndCentre.quality.kind).toBe("limited");
     const planar = planar3d(rig);
-    const starts = legalStarts3d(planar);
+    const starts = legalStarts3d(ROOT3, planar, UNBOUND_POLE3D);
     expect(starts.kind).toBe("centre-then-staged");
     const flat = solveChain(ROOT, rig, false);
     const spatial = solveChain3d(ROOT3, planar, UNBOUND_POLE3D);
@@ -447,7 +475,7 @@ describe("mixed-sign legal start (issue #524, ADR-131)", () => {
       ],
       { x: 113.28647554557269, y: -101.44358599430358 },
     );
-    const starts = legalStarts3d(planar3d(rig));
+    const starts = legalStarts3d(ROOT3, planar3d(rig), UNBOUND_POLE3D);
     expect(starts.kind).toBe("centre-then-staged");
     const calls2d: string[] = [];
     let iterations2d = 0;
@@ -491,7 +519,7 @@ describe("mixed-sign legal start (issue #524, ADR-131)", () => {
       addressedReach(members, ({ pivot }) => Math.hypot(pivot?.x ?? 0, pivot?.y ?? 0));
     const reach = 40 + 30 + Math.hypot(2, -1) + 25;
     expect(reach2d(TREE)).toBeCloseTo(reach);
-    expect(legalStarts3d(planar3d(TREE))).toEqual({
+    expect(legalStarts3d(ROOT3, planar3d(TREE), UNBOUND_POLE3D)).toEqual({
       kind: "centre-then-staged",
       reach,
     });
@@ -503,7 +531,7 @@ describe("mixed-sign legal start (issue #524, ADR-131)", () => {
       limit: range(-30, 30),
     };
     expect(reach2d([...TREE, unused])).toBeCloseTo(reach);
-    expect(legalStarts3d(planar3d([...TREE, unused]))).toEqual({
+    expect(legalStarts3d(ROOT3, planar3d([...TREE, unused]), UNBOUND_POLE3D)).toEqual({
       kind: "centre-then-staged",
       reach,
     });

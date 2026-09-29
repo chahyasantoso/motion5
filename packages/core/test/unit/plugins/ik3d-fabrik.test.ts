@@ -21,7 +21,12 @@ import {
 import { solveChain } from "../../../src/plugins/ik-solve";
 import { solveTwoBone3d, UNBOUND_POLE3D, type Pole3d } from "../../../src/plugins/ik3d-analytic";
 import { ik3dPlugin } from "../../../src/plugins/ik3d";
-import { legalRetryReach3d, place3d, solveTree3dAttempt } from "../../../src/plugins/ik3d-fabrik";
+import {
+  legalRetryReach3d,
+  legalStarts3d,
+  place3d,
+  solveTree3dAttempt,
+} from "../../../src/plugins/ik3d-fabrik";
 import { solveSerialRecovery3d } from "../../../src/plugins/ik3d-serial-recovery";
 import { chainShape3d, solveChain3d } from "../../../src/plugins/ik3d-solve";
 import { limitLocal3d } from "../../../src/plugins/ik3d-constraint";
@@ -570,6 +575,53 @@ describe("3D FABRIK evidence", () => {
     expect(selected.quality.kind).toBe("converged");
     expect(selected.quality.residual).toBeLessThan(0.001);
     expect(solveChain3d(ROOT, fixture, UNBOUND_POLE3D)).toEqual(selected);
+  });
+  it("TH-193 pays the centre when a non-planar hinge accepts the pole-side default arc", () => {
+    // Legal FK target for a six-member Y-hinge rig. The pole places the default arc in XZ,
+    // so an axis-based assumption that this default is already centred misses the goal.
+    const pole: Pole3d = { kind: "point", point: [0, 0, 100] };
+    const lengths = [
+      82.6316828164272, 13.086131042800844, 43.52013563038781, 85.0062888301909, 74.1611910588108,
+      67.79328460339457,
+    ];
+    const ranges = [
+      [72.8147910458002, 175],
+      [5.061190094619199, 86.983174124475],
+      [-76.26409559461314, 7.418871692124817],
+      [57.1623340531869, 61.88988136819761],
+      [-137.5860264740287, -42.10471231757576],
+    ];
+    const rig = lengths.map((length, index) =>
+      member(`m${index}`, index === 0 ? "root" : `m${index - 1}`, length, {
+        ...(index === 0
+          ? {}
+          : {
+              limit: {
+                kind: "hinge",
+                axis: [0, 1, 0] as Vec3,
+                range: { kind: "range", min: ranges[index - 1]![0]!, max: ranges[index - 1]![1]! },
+              },
+            }),
+        ...(index === 5
+          ? { goal: { x: 34.43033191221809, y: 0, z: -98.60828140447876, ...ZERO_REST } }
+          : {}),
+      }),
+    );
+    expect(legalStarts3d(ROOT, rig, pole)).toEqual({
+      kind: "centre-then-staged",
+      reach: lengths.reduce((sum, length) => sum + length, 0),
+    });
+    const baseline = solveTree3dAttempt(ROOT, rig, pole, false, "centroid");
+    const centre = solveTree3dAttempt(ROOT, rig, pole, false, "centroid", {
+      kind: "legal-range",
+      fraction: 0.5,
+    });
+    expect(baseline.quality.kind).not.toBe("converged");
+    expect(centre.quality.kind).toBe("converged");
+    const selected = solveChain3d(ROOT, rig, pole);
+    expect(selected.quality.kind).toBe("converged");
+    expect(selected.quality.residual).toBeLessThan(0.001);
+    expect(solveChain3d(ROOT, rig, pole)).toEqual(selected);
   });
   it("TH-167 recovers reachable corpus rig 18 from an endpoint-biased legal start", () => {
     // Exact FK target for legal angles 9.30983765437759 and 24.389092029078217.
