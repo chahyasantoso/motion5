@@ -9,6 +9,7 @@ import {
   MIN_ROTATION_KEY,
   readLimitDegree,
 } from "../contract/solver-constraints";
+import type { DofBound } from "./ik-descent";
 
 /**
  * The one runtime owner of joint-limit arithmetic and of the bend hint. See ADR-108.
@@ -136,6 +137,38 @@ export function atBound(limit: JointLimit, local: number): boolean {
         angularDistance(bounded, limit.max) <= JOINT_BOUND_TOLERANCE
       );
     }
+    default:
+      return unreachable(limit);
+  }
+}
+
+/**
+ * A legal local angle turned continuously by `degrees`: the step of a joint-space descent
+ * (`ik-descent.ts`, ADR-132). A range stops the turn at the bound it meets rather than answering
+ * the nearer bound on the circle, because a joint that moves continuously cannot jump across the
+ * arc its range forbids. A free joint, and a range spanning the whole circle, turn unchanged.
+ */
+export function turnRotation(limit: JointLimit, local: number, degrees: number): number {
+  switch (limit.kind) {
+    case "free":
+      return local + degrees;
+    case "range":
+      return limit.max - limit.min >= 360
+        ? local + degrees
+        : Math.max(limit.min, Math.min(limit.max, local + degrees));
+    default:
+      return unreachable(limit);
+  }
+}
+
+/** Which bound, if any, a legal angle `turnRotation` produced rests on, for the descent's box. */
+export function rotationSide(limit: JointLimit, local: number): DofBound {
+  switch (limit.kind) {
+    case "free":
+      return "interior";
+    case "range":
+      if (limit.max - limit.min >= 360) return "interior";
+      return local <= limit.min ? "lower" : local >= limit.max ? "upper" : "interior";
     default:
       return unreachable(limit);
   }

@@ -5,7 +5,7 @@ import type { CompromiseRule } from "./ik-goal";
 import type { IterativeQuality } from "./ik-result";
 import { unreachable } from "../lang/exhaustive";
 import { fabrikResidualOutranks } from "./fabrik-cap";
-import type { FabrikSeed, LegalSeedFraction } from "./fabrik-seed";
+import type { FabrikSeed, LegalSeed, LegalSeedFraction } from "./fabrik-seed";
 
 /**
  * One FABRIK attempt from a seed side and a compromise rule.
@@ -89,30 +89,45 @@ const LEGAL_RETRY_REACH_FRACTION = 0.02;
  * a remedy for a miss, so a rig the baseline or its opposite side already meets pays none of them
  * and keeps the pose it published before legal starts existed.
  */
-type LegalStages = readonly (readonly LegalSeedFraction[])[];
+type LegalStages = readonly (readonly LegalSeed[])[];
+
+const legalRange = (fraction: LegalSeedFraction): LegalSeed =>
+  Object.freeze({ kind: "legal-range", fraction });
+
+/** Every limited member at its range's centre (#524, ADR-131): legal for every range. */
+const CENTRE: LegalSeed = legalRange(0.5);
+
+/** The centre walked toward the aims in joint space (`ik-descent.ts`, ADR-132). */
+const DESCENT: LegalSeed = Object.freeze({ kind: "legal-descent" });
+
+/** The descent alone: a non-planar hinge path's distant miss (ADR-130, ADR-132). */
+const DESCENT_STAGES: LegalStages = Object.freeze([Object.freeze([DESCENT])]);
 
 /**
  * The legal-range starts a gated near miss on a non-planar 3D hinge pays for, in stages: both
- * quartiles, then q10, then q90. The ceiling is four extra attempts on top of the baseline and its
- * opposite side, six in all (#527, ADR-130).
+ * quartiles, then q10, then q90 (#527, ADR-130), then the descent. The ceiling is five extra
+ * attempts on top of the baseline and its opposite side, seven in all.
  */
 const LEGAL_RANGE_STAGES: LegalStages = Object.freeze([
-  Object.freeze([0.25, 0.75] as const),
-  Object.freeze([0.1] as const),
-  Object.freeze([0.9] as const),
+  Object.freeze([legalRange(0.25), legalRange(0.75)]),
+  Object.freeze([legalRange(0.1)]),
+  Object.freeze([legalRange(0.9)]),
+  ...DESCENT_STAGES,
 ]);
 
+/** The centre alone, for a constrained rig with no addressed extent: nothing a descent can turn. */
+const CENTRE_STAGES: LegalStages = Object.freeze([Object.freeze([CENTRE])]);
+
 /**
- * The first legal start a limited or capped rig seeded by the arc pays for: every limited member at
- * its range's centre (#524, ADR-131). A mixed-sign chain's arc bends every joint one way, so a
- * range that demands the other way is projected onto its bound and held there; no arc side is
- * legal for both signs, while the centre is legal for every range. A distant miss stops here.
+ * The legal starts a limited or capped rig seeded by the arc pays for: every limited member at its
+ * range's centre, then that centre walked by the legal descent (#524, ADR-131, ADR-132). A
+ * mixed-sign chain's arc bends every joint one way, so a range that demands the other way is
+ * projected onto its bound and held there; no arc side is legal for both signs, while the centre
+ * is legal for every range. What the centre still misses is a FABRIK fixed point on a bound rather
+ * than a minimum of the miss, and the descent follows the legal gradient out of it. Four attempts
+ * at most: baseline, opposite side, centre, descent.
  */
-const CENTRE_STAGES: LegalStages = Object.freeze([Object.freeze([0.5] as const)]);
-const CENTRE_THEN_RANGE_STAGES: LegalStages = Object.freeze([
-  Object.freeze([0.5] as const),
-  ...LEGAL_RANGE_STAGES,
-]);
+const CENTRE_THEN_DESCENT_STAGES: LegalStages = Object.freeze([...CENTRE_STAGES, ...DESCENT_STAGES]);
 
 const NO_STAGES: LegalStages = Object.freeze([]);
 
@@ -120,20 +135,23 @@ const NO_STAGES: LegalStages = Object.freeze([]);
  * Which legal joint-space starts a rig can use, decided by the dimension's solve from the rig and
  * read here exhaustively: the selector alone decides which of them a baseline pays for.
  *
- * `none` for a rig with no limited member, `centre` for a zero-reach constrained rig,
- * `centre-then-staged` for an addressed 2D or planar 3D constrained rig whose selected arc miss
- * gates off-centre retries, and `staged` for a non-planar 3D hinge path whose default seed is
- * already centred and whose existing off-centre gate reads the baseline.
+ * `none` for a rig with no limited member; `centre` for a constrained rig with no addressed extent,
+ * which no walk can turn; `centre-then-descent` for a constrained rig whose default seed is the arc
+ * (every 2D and planar 3D rig, and a non-planar hinge path whose pole-side arc is legal); and
+ * `staged` for a non-planar 3D hinge path whose default seed is already the legal centre, whose
+ * off-centre starts stay gated on the baseline's miss against `reach` before the descent.
  */
 export type LegalStarts =
   | { readonly kind: "none" }
   | { readonly kind: "centre" }
-  | { readonly kind: "centre-then-staged"; readonly reach: number }
+  | { readonly kind: "centre-then-descent" }
   | { readonly kind: "staged"; readonly reach: number };
 
 export const NO_LEGAL_STARTS: LegalStarts = Object.freeze({ kind: "none" });
 
 export const CENTRE_LEGAL_START: LegalStarts = Object.freeze({ kind: "centre" });
+
+export const CENTRE_THEN_DESCENT: LegalStarts = Object.freeze({ kind: "centre-then-descent" });
 
 /** Scale of addressed paths only: unrelated siblings cannot enlarge the near-miss retry band. */
 export function addressedReach<
@@ -172,25 +190,19 @@ function legalRangeRetries(quality: IterativeQuality): boolean {
 }
 
 /** The legal stages a baseline pays for: none unless it is limited or capped (`legalRangeRetries`). */
-function legalStages(
-  starts: LegalStarts,
-  baseline: IterativeQuality,
-  selected: IterativeQuality,
-): LegalStages {
+function legalStages(starts: LegalStarts, baseline: IterativeQuality): LegalStages {
   if (!legalRangeRetries(baseline)) return NO_STAGES;
   switch (starts.kind) {
     case "none":
       return NO_STAGES;
     case "centre":
       return CENTRE_STAGES;
-    case "centre-then-staged":
-      return selected.residual <= LEGAL_RETRY_REACH_FRACTION * starts.reach
-        ? CENTRE_THEN_RANGE_STAGES
-        : CENTRE_STAGES;
+    case "centre-then-descent":
+      return CENTRE_THEN_DESCENT_STAGES;
     case "staged":
       return baseline.residual <= LEGAL_RETRY_REACH_FRACTION * starts.reach
         ? LEGAL_RANGE_STAGES
-        : NO_STAGES;
+        : DESCENT_STAGES;
     default:
       return unreachable(starts);
   }
@@ -250,10 +262,10 @@ export function selectFabrik<R, M, S extends Selectable>(
     const candidate = attempt(root, members, opposite ? !flip : flip, rule);
     if (outranks(candidate.quality, selected.quality)) selected = candidate;
   }
-  for (const fractions of legalStages(legalStarts, baseline.quality, selected.quality)) {
+  for (const seeds of legalStages(legalStarts, baseline.quality)) {
     if (selected.quality.kind === "converged") break;
-    for (const fraction of fractions) {
-      const candidate = attempt(root, members, flip, "centroid", { kind: "legal-range", fraction });
+    for (const seed of seeds) {
+      const candidate = attempt(root, members, flip, "centroid", seed);
       if (outranks(candidate.quality, selected.quality)) selected = candidate;
     }
   }

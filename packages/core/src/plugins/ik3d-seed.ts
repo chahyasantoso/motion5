@@ -1,5 +1,7 @@
 import { unreachable } from "../lang/exhaustive";
 import { arcHalfAngle, DEFAULT_FABRIK_SEED, type FabrikSeed } from "./fabrik-seed";
+import { legalRotation, rotationSide, turnRotation } from "./ik-constraint";
+import { descendLegally, type DofBound, type LegalDescent } from "./ik-descent";
 import {
   add3,
   axisX3,
@@ -182,7 +184,12 @@ export function defaultTreeSeed3d(tree: SeedTree3d, pole: Pole3d): TreeSeed3d {
  * the mean of those aims, and on the opposite side a topmost such member is also half-turned about
  * that line. Only the members at and after a turned member are recomposed.
  */
-function legalTips(tree: SeedTree3d, flip: boolean, fraction = 0.5): Vec3[] {
+function legalTips(
+  tree: SeedTree3d,
+  flip: boolean,
+  fraction: number,
+  descend = false,
+): Vec3[] {
   const { rootPoint, rootMatrix, parent, lengths, offsets, rests, limits, paths, aims } = tree;
   const count = lengths.length;
   // A collapsed member has no tip direction to carry its requested fraction into the outward
@@ -196,14 +203,14 @@ function legalTips(tree: SeedTree3d, flip: boolean, fraction = 0.5): Vec3[] {
   const frames = new Array<Matrix3>(count);
   const pivots = new Array<Vec3>(count);
   const tips = new Array<Vec3>(count);
-  const compose = (from: number): void => {
+  const compose = (from: number, orientations: readonly Matrix3[] = locals): void => {
     for (let index = from; index < count; index += 1) {
       const base = parent[index]!;
       const frame = base === ROOT_INDEX ? rootMatrix : frames[base]!;
       const origin = base === ROOT_INDEX ? rootPoint : tips[base]!;
       const shift = offsets[index];
       const pivot = shift === undefined ? origin : add3(origin, multiplyVector3(frame, shift));
-      const solved = multiplyMatrix3(frame, locals[index]!);
+      const solved = multiplyMatrix3(frame, orientations[index]!);
       pivots[index] = pivot;
       frames[index] = solved;
       tips[index] = add3(pivot, scale3(axisX3(solved), lengths[index]!));
@@ -243,7 +250,137 @@ function legalTips(tree: SeedTree3d, flip: boolean, fraction = 0.5): Vec3[] {
     turnedAbove[index] = true;
     compose(index);
   }
+  if (!descend) return tips;
+  const moving = new Array<boolean>(count);
+  for (let index = 0; index < count; index += 1)
+    moving[index] = lengths[index]! > 0 && below[index]!.length > 0;
+  const walk = descentOf(tree, moving, (orientations) => {
+    compose(0, orientations);
+    return tips;
+  });
+  compose(0, descendLegally(walk.problem, walk.start(locals, fraction)).locals);
   return tips;
+}
+
+/**
+ * The legal descent's view of a 3D pose (ADR-132): each member's local orientation, and a hinge's
+ * angle beside it so its range is read in the angle it limits. A member with extent on an addressed
+ * path moves; a hinge by one angle through `turnRotation`, any other member by two turns that tilt
+ * its +x about its own +y and +z. A tilted member is rebuilt as the outward pass composes it, its
+ * rest swung onto the new direction and then limited (`limitLocal3d`), so the walk's pose is the
+ * one FABRIK's first pass recovers from its tips. Members that do not move keep their orientation.
+ */
+interface DescentPose3d {
+  readonly locals: readonly Matrix3[];
+  readonly angles: readonly number[];
+}
+
+/** One angle the 3D walk turns: a hinge's own angle, or a member's tilt about a local axis. */
+type Dof3d =
+  | {
+      readonly kind: "hinge";
+      readonly index: number;
+      readonly limit: Extract<JointLimit3d, { kind: "hinge" }>;
+    }
+  | { readonly kind: "tilt"; readonly index: number; readonly about: Vec3 };
+
+const LOCAL_Y3: Vec3 = Object.freeze([0, 1, 0] as const);
+const LOCAL_Z3: Vec3 = Object.freeze([0, 0, 1] as const);
+
+function descentOf(
+  tree: SeedTree3d,
+  moving: readonly boolean[],
+  tipsOf: (locals: readonly Matrix3[]) => readonly Vec3[],
+): {
+  readonly problem: LegalDescent<DescentPose3d>;
+  readonly start: (locals: readonly Matrix3[], fraction: number) => DescentPose3d;
+} {
+  const { rests, limits, paths, aims } = tree;
+  const dofs: Dof3d[] = [];
+  limits.forEach((limit, index) => {
+    if (!moving[index]) return;
+    switch (limit.kind) {
+      case "hinge":
+        dofs.push({ kind: "hinge", index, limit });
+        return;
+      case "free":
+      case "cone":
+      case "swing-twist":
+        dofs.push({ kind: "tilt", index, about: LOCAL_Y3 }, { kind: "tilt", index, about: LOCAL_Z3 });
+        return;
+      default:
+        return unreachable(limit);
+    }
+  });
+  const rebuild = (index: number, proposal: Matrix3): Matrix3 => {
+    const swung = swingFrame3d(rests[index]!, axisX3(proposal));
+    const limited = limitLocal3d(limits[index]!, () => swung);
+    return limited.kind === "moved" ? limited.local : swung;
+  };
+  const problem: LegalDescent<DescentPose3d> = {
+    dofs: dofs.length,
+    width: 3,
+    reach: Math.max(
+      0,
+      ...paths.map((path) =>
+        path.reduce((extent, index) => {
+          const shift = tree.offsets[index];
+          return extent + tree.lengths[index]! + (shift === undefined ? 0 : norm3(shift));
+        }, 0),
+      ),
+    ),
+    misses: ({ locals }) => {
+      const tips = tipsOf(locals);
+      return paths.flatMap((path, step) => subtract3(tips[path[path.length - 1]!]!, aims[step]!));
+    },
+    turn: ({ locals, angles }, degrees) => {
+      const nextLocals = [...locals];
+      const nextAngles = [...angles];
+      const tilted = new Set<number>();
+      dofs.forEach((dof, at) => {
+        const turn = degrees[at]!;
+        switch (dof.kind) {
+          case "hinge":
+            nextAngles[dof.index] = turnRotation(dof.limit.range, angles[dof.index]!, turn);
+            nextLocals[dof.index] = rotationAboutAxis3d(dof.limit.axis, nextAngles[dof.index]!);
+            return;
+          case "tilt":
+            if (turn === 0) return;
+            nextLocals[dof.index] = multiplyMatrix3(
+              nextLocals[dof.index]!,
+              rotationAboutAxis3d(dof.about, turn),
+            );
+            tilted.add(dof.index);
+            return;
+          default:
+            return unreachable(dof);
+        }
+      });
+      for (const index of tilted) nextLocals[index] = rebuild(index, nextLocals[index]!);
+      return { locals: nextLocals, angles: nextAngles };
+    },
+    bound: ({ angles }, at): DofBound => {
+      const dof = dofs[at]!;
+      switch (dof.kind) {
+        case "hinge":
+          return rotationSide(dof.limit.range, angles[dof.index]!);
+        case "tilt":
+          return "interior";
+        default:
+          return unreachable(dof);
+      }
+    },
+  };
+  const start = (locals: readonly Matrix3[], fraction: number): DescentPose3d => ({
+    // A tilted member starts as the outward pass would compose it, so the walk is smooth.
+    locals: locals.map((local, index) =>
+      moving[index] && limits[index]!.kind !== "hinge" ? rebuild(index, local) : local,
+    ),
+    angles: limits.map((limit) =>
+      limit.kind === "hinge" ? legalRotation(limit.range, fraction) : 0,
+    ),
+  });
+  return { problem, start };
 }
 
 /**
@@ -259,6 +396,8 @@ export function seedTree3d(
   switch (policy.kind) {
     case "legal-range":
       return legalTips(tree, flip, policy.fraction);
+    case "legal-descent":
+      return legalTips(tree, flip, 0.5, true);
     case "default":
       break;
     default:
@@ -270,7 +409,7 @@ export function seedTree3d(
     case "arc":
       return arc;
     case "legal":
-      return legalTips(tree, flip);
+      return legalTips(tree, flip, 0.5);
     default:
       return unreachable(seed);
   }

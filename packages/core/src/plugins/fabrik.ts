@@ -8,8 +8,15 @@ import {
 import { solveLength, solveOffset, type SolveMember } from "./ik-member";
 import { aimPoint, goalMiss, readGoal, type GoalReading } from "./ik-goal-reading";
 import { branchPulls, compromise, type CompromiseRule, type Pull } from "./ik-goal";
-import { addressedReach, CENTRE_LEGAL_START, NO_LEGAL_STARTS, selectFabrik } from "./fabrik-select";
-import { DEFAULT_FABRIK_SEED, seedArc, seedLegal, type FabrikSeed } from "./fabrik-seed";
+import {
+  addressedReach,
+  CENTRE_LEGAL_START,
+  CENTRE_THEN_DESCENT,
+  NO_LEGAL_STARTS,
+  selectFabrik,
+} from "./fabrik-select";
+import { DEFAULT_FABRIK_SEED, heldFromSeed, seedArc, seedLegal } from "./fabrik-seed";
+import type { FabrikSeed } from "./fabrik-seed";
 import {
   FabrikIncumbent,
   fabrikPassBudget,
@@ -241,7 +248,8 @@ export function solveFabrikAttempt(
       }
       break;
     case "legal-range":
-      for (const [id, tip] of seedLegal(root, ids, byId, aims, seed.fraction)) tips.set(id, tip);
+    case "legal-descent":
+      for (const [id, tip] of seedLegal(root, ids, byId, aims, seed)) tips.set(id, tip);
       break;
     default:
       return unreachable(seed);
@@ -409,6 +417,7 @@ export function solveFabrikAttempt(
       bestOnBound[index] = onBound.get(id) === true;
     }
   };
+  if (heldFromSeed(seed) && incumbent.offer(residual)) saveIncumbent();
   while (residual > FABRIK_TOLERANCE && budget.admits(iterations, residual)) {
     iterations += 1;
     spread = 0;
@@ -591,10 +600,6 @@ export function solveFabrik(
     members,
     flip,
     solveFabrikAttempt,
-    limited
-      ? reach > 0
-        ? { kind: "centre-then-staged", reach }
-        : CENTRE_LEGAL_START
-      : NO_LEGAL_STARTS,
+    limited ? (reach > 0 ? CENTRE_THEN_DESCENT : CENTRE_LEGAL_START) : NO_LEGAL_STARTS,
   );
 }

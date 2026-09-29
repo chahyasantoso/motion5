@@ -1,5 +1,14 @@
+import { unreachable } from "../lang/exhaustive";
 import { pivotFromBaseTip, segmentExtent, type WorldFrame, type WorldPoint } from "./frame";
-import { FREE_JOINT, legalRotation, limitRotation, wrapRotation } from "./ik-constraint";
+import {
+  FREE_JOINT,
+  legalRotation,
+  limitRotation,
+  rotationSide,
+  turnRotation,
+  wrapRotation,
+} from "./ik-constraint";
+import { descendLegally, type LegalDescent } from "./ik-descent";
 import { solveLength, solveOffset, type SolveMember } from "./ik-member";
 
 /**
@@ -25,13 +34,36 @@ export type LegalSeedFraction = 0.1 | 0.25 | 0.5 | 0.75 | 0.9;
 
 /**
  * Which start one FABRIK attempt takes: the default seed (the arc, or in 3D the centred legal seed
- * where the arc is illegal), or a legal joint-space start at `fraction` of every range. The
+ * where the arc is illegal), a legal joint-space start at `fraction` of every range, or the legal
+ * centre walked toward the aims by a bounded joint-space descent (`ik-descent.ts`, ADR-132). The
  * selector chooses which of them a solve pays for; each dimension's attempt reads the union
  * exhaustively, the 2D one through `seedLegal` below and the 3D one through `ik3d-seed.ts`.
  */
 export type FabrikSeed =
   | { readonly kind: "default" }
-  | { readonly kind: "legal-range"; readonly fraction: LegalSeedFraction };
+  | { readonly kind: "legal-range"; readonly fraction: LegalSeedFraction }
+  | { readonly kind: "legal-descent" };
+
+/** The starts built in joint space and legal by construction: every seed but the arc. */
+export type LegalSeed = Exclude<FabrikSeed, { readonly kind: "default" }>;
+
+/**
+ * Whether an attempt holds its seeded pose, after the first outward pass enforced every length and
+ * limit, as its first incumbent (ADR-128, ADR-132). Only the descent's: its end pose is the best a
+ * monotone legal walk found, and a FABRIK pass that wanders to a worse fixed point must not replace
+ * it. The arc and a fixed legal fraction are guesses about a basin, never offered, as before.
+ */
+export function heldFromSeed(seed: FabrikSeed): boolean {
+  switch (seed.kind) {
+    case "default":
+    case "legal-range":
+      return false;
+    case "legal-descent":
+      return true;
+    default:
+      return unreachable(seed);
+  }
+}
 
 export const DEFAULT_FABRIK_SEED: FabrikSeed = Object.freeze({ kind: "default" });
 
@@ -137,14 +169,20 @@ export function seedArc(
  * the plane, which the plane cannot express, and its in-plane mirror negates every limited angle
  * below it, which is not legal; the arc's opposite side is already the selector's other
  * alternative. The arithmetic is fixed for a given rig, so the seed is reproducible (ADR-111).
+ *
+ * `legal-descent` starts from the centre and walks it toward the aims (`descendLegally`) until the
+ * worst miss is inside `LEGAL_DESCENT_TOLERANCE`: one degree of freedom per member with extent on an addressed
+ * path, turned by `turnRotation`, so a range stops the walk at its bound. A collapsed member and a
+ * member no aim reads keep their centre angle, which is all the first outward pass can recover.
  */
 export function seedLegal(
   root: WorldFrame,
   ids: readonly string[],
   byId: ReadonlyMap<string, SolveMember>,
   aims: ReadonlyMap<string, WorldPoint>,
-  fraction: LegalSeedFraction,
+  start: LegalSeed,
 ): ReadonlyMap<string, WorldPoint> {
+  const fraction = legalFraction(start);
   const count = ids.length;
   const at = new Map(ids.map((id, index) => [id, index]));
   const members = ids.map((id) => byId.get(id)!);
@@ -162,7 +200,7 @@ export function seedLegal(
   const directions = new Array<number>(count);
   const pivots = new Array<WorldPoint>(count);
   const tips = new Array<WorldPoint>(count);
-  const compose = (from: number): void => {
+  const compose = (from: number, angles: readonly number[] = locals): void => {
     for (let index = from; index < count; index += 1) {
       const base = parent[index]!;
       const baseDirection = base < 0 ? rootDirection : directions[base]!;
@@ -171,7 +209,7 @@ export function seedLegal(
         baseDirection,
         solveOffset(members[index]!),
       );
-      const direction = baseDirection + locals[index]!;
+      const direction = baseDirection + angles[index]!;
       const length = solveLength(members[index]!);
       pivots[index] = pivot;
       directions[index] = direction;
@@ -215,5 +253,63 @@ export function seedLegal(
     locals[index] = locals[index]! + wrapRotation((to - from) / RADIANS);
     compose(index);
   }
+  switch (start.kind) {
+    case "legal-range":
+      break;
+    case "legal-descent": {
+      // One angle per member with extent that an aim reads; every other member keeps its centre.
+      const moving = members.flatMap((member, index) =>
+        solveLength(member) > 0 && below[index]!.length > 0 ? [index] : [],
+      );
+      const limitAt = (dof: number) => members[moving[dof]!]!.limit ?? FREE_JOINT;
+      const leaves = [...aims.keys()].map((leaf) => at.get(leaf)!);
+      const descent: LegalDescent<readonly number[]> = {
+        dofs: moving.length,
+        width: 2,
+        reach: Math.max(
+          0,
+          ...leaves.map((leaf) => {
+            let extent = 0;
+            for (let index = leaf; index >= 0; index = parent[index]!) {
+              const { x, y } = solveOffset(members[index]!);
+              extent += solveLength(members[index]!) + Math.hypot(x, y);
+            }
+            return extent;
+          }),
+        ),
+        misses: (angles) => {
+          compose(0, angles);
+          return leaves.flatMap((leaf) => {
+            const aim = aims.get(ids[leaf]!)!;
+            return [tips[leaf]!.x - aim.x, tips[leaf]!.y - aim.y];
+          });
+        },
+        turn: (angles, degrees) => {
+          const next = [...angles];
+          moving.forEach((index, dof) => {
+            next[index] = turnRotation(limitAt(dof), angles[index]!, degrees[dof]!);
+          });
+          return next;
+        },
+        bound: (angles, dof) => rotationSide(limitAt(dof), angles[moving[dof]!]!),
+      };
+      compose(0, descendLegally(descent, [...locals]));
+      break;
+    }
+    default:
+      return unreachable(start);
+  }
   return new Map(ids.map((id, index) => [id, Object.freeze(tips[index]!)]));
+}
+
+/** The fraction of every range a legal start holds its limited members at before any walk. */
+function legalFraction(start: LegalSeed): LegalSeedFraction {
+  switch (start.kind) {
+    case "legal-range":
+      return start.fraction;
+    case "legal-descent":
+      return 0.5;
+    default:
+      return unreachable(start);
+  }
 }

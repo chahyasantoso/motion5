@@ -9,12 +9,13 @@ import {
 } from "./fabrik-cap";
 import {
   CENTRE_LEGAL_START,
+  CENTRE_THEN_DESCENT,
   NO_LEGAL_STARTS,
   addressedReach,
   selectFabrik,
   type LegalStarts,
 } from "./fabrik-select";
-import type { FabrikSeed } from "./fabrik-seed";
+import { DEFAULT_FABRIK_SEED, heldFromSeed, type FabrikSeed } from "./fabrik-seed";
 import { readNumber, segmentExtent } from "./frame";
 import {
   add3,
@@ -219,7 +220,7 @@ export function solveTree3dAttempt(
   pole: Pole3d,
   flip: boolean,
   rule: CompromiseRule,
-  seed?: FabrikSeed,
+  seed: FabrikSeed = DEFAULT_FABRIK_SEED,
   preparedTree?: PreparedSeedTree3d,
 ): SolveResult3d<IterativeQuality> {
   const prepared = preparedTree ?? prepareSeedTree3d(root, members);
@@ -401,6 +402,7 @@ export function solveTree3dAttempt(
       bestBounded[index] = bounded[index]!;
     }
   };
+  if (heldFromSeed(seed) && incumbent.offer(residual)) saveIncumbent();
   while (residual > FABRIK_TOLERANCE && budget.admits(iterations, residual)) {
     iterations += 1;
     spread = 0;
@@ -531,7 +533,7 @@ export function legalStarts3d(
     const seed = defaultTreeSeed3d((preparedTree ?? prepareSeedTree3d(root, members)).tree, pole);
     switch (seed.kind) {
       case "arc":
-        return { kind: "centre-then-staged", reach };
+        return CENTRE_THEN_DESCENT;
       case "legal":
         return { kind: "staged", reach };
       default:
@@ -543,7 +545,7 @@ export function legalStarts3d(
   const planarReach = addressedReach(members, ({ offset }) =>
     norm3([offset.x, offset.y, offset.z]),
   );
-  return planarReach > 0 ? { kind: "centre-then-staged", reach: planarReach } : CENTRE_LEGAL_START;
+  return planarReach > 0 ? CENTRE_THEN_DESCENT : CENTRE_LEGAL_START;
 }
 
 /**
