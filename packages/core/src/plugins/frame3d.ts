@@ -247,6 +247,12 @@ export function axisX3(matrix: Matrix3): Vec3 {
 const HALF_TURN_TOLERANCE = 1e-12;
 
 /**
+ * The `1 + cos` below which a swing is built from `1 - cos` rather than divided by `1 + cos`: about
+ * 2.6 degrees from a half turn, where the division's rounding reaches 1e-13 of the frame.
+ */
+const NEAR_HALF_TURN = 1e-3;
+
+/**
  * `frame` turned by the one minimal rotation that takes its local +x onto `direction`: the swing
  * of a swing-twist decomposition, with no twist about the new +x (ADR-122).
  *
@@ -286,7 +292,11 @@ export function swingFrame3d(frame: Matrix3, direction: Vec3): Matrix3 {
     return multiplyMatrix3(halfTurn, frame);
   }
   const [vx, vy, vz] = cross3(from, to);
-  const f = 1 / (1 + c);
+  // `1 / (1 + c)` equals `(1 - c) / |v|²`. Near a half turn the first form magnifies the rounding
+  // of `c` by `1 / (1 + c)` into a visibly non-orthonormal frame (issue #524: 1e-9 at
+  // `1 + c ≈ 1e-6`), while the second keeps the swing orthonormal to rounding because its error
+  // scales with `|v|²`. Only the band changes; every other swing keeps its bytes.
+  const f = 1 + c < NEAR_HALF_TURN ? (1 - c) / (vx * vx + vy * vy + vz * vz) : 1 / (1 + c);
   const swing: Matrix3 = [
     1 - f * (vy * vy + vz * vz),
     -vz + f * vx * vy,

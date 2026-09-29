@@ -24,7 +24,7 @@ seed union `FabrikSeed = default | legal-range(fraction)` with `LegalSeedFractio
 paths that carry a non-planar hinge (`legalRetryReach3d`), and a later stage runs only while no
 candidate has converged. The ceiling is six attempts including the baseline and its opposite
 side. Every prescribed candidate is ranked by the existing converged-first, lower-residual rule,
-and an exact tie keeps the earlier candidate. 2D, planar 3D, free, converged, stalled and
+and an exact tie keeps the earlier candidate. **Superseded in part by [ADR-132](./ADR-132-legal-descent-start-for-constrained-fabrik-misses.md), 2026-09-29.** For the surviving non-planar staged path, legal descent now follows the quartile stages, making the near-miss ceiling seven; a distant miss pays the descent stage alone with a three-attempt ceiling. 2D, planar 3D, free, converged, stalled and
 conflicted rigs pay exactly what they paid before. `ik3d-constraint.ts` builds the legal local at
 a fraction (`legalLocal3d`); the centre keeps the bytes of ADR-129's default legal seed.
 
@@ -66,3 +66,5 @@ checks passed on the PR head. The search is finite, so this is not a completenes
 arbitrary rigs: offsets, branches, cones, swing-twist, constrained first members and more than
 five members stay with FABRIK's answer. Mixed-sign serial chains are
 [#524](https://github.com/chahyasantoso/motion5/issues/524), a separate record.
+
+**Refined by [ADR-131](./ADR-131-centred-legal-start-for-mixed-sign-chains.md), 2026-09-29.** Every legal stage, the first included, now runs only while no candidate has converged. Addressed 2D and planar 3D constrained rigs pay a centre after two unresolved arc sides, then up to four off-centre starts for near misses (seven attempts in all); non-planar 3D retains its separately gated staged policy. **Superseded in part by [ADR-132](./ADR-132-legal-descent-start-for-constrained-fabrik-misses.md), 2026-09-29.** The off-centre starts are withdrawn for arc-seeded rigs and replaced by centre-then-descent; the non-planar staged policy remains, with descent appended as described above. The historical exclusions and iteration costs above describe the original #527 corpus, not this subsequent planar extension.

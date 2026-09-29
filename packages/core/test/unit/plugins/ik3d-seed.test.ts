@@ -106,6 +106,36 @@ describe("3D tree seed", () => {
     expect(treeSeed3d(planar, [[0, 10, 0]]).kind).toBe("arc");
   });
 
+  it("TH-192 a zero-length hinge retains its outward-pass rest projection for child offsets", () => {
+    const collapsed: SeedTree3d = {
+      rootPoint: [0, 0, 0],
+      rootMatrix: IDENTITY_MATRIX3,
+      parent: [-1, 0],
+      lengths: [0, 40],
+      offsets: [undefined, [0, 5, 0]],
+      rests: [IDENTITY_MATRIX3, IDENTITY_MATRIX3],
+      limits: [
+        { kind: "hinge", axis: [0, 0, 1], range: { kind: "range", min: 60, max: 120 } },
+        { kind: "hinge", axis: [0, 0, 1], range: { kind: "range", min: 0, max: 0 } },
+      ],
+      paths: [[0, 1]],
+      aims: [[0, 40, 0]],
+    };
+    const centre = seedTree3d(collapsed, UNBOUND_POLE3D, false, {
+      kind: "legal-range",
+      fraction: 0.5,
+    });
+    expect(centre[0]).toEqual([0, 0, 0]);
+    expect(centre[1]![0]).toBeCloseTo(20 - 2.5 * Math.sqrt(3), 10);
+    expect(centre[1]![1]).toBeCloseTo(20 * Math.sqrt(3) + 2.5, 10);
+    expect(
+      seedTree3d(collapsed, UNBOUND_POLE3D, false, { kind: "legal-range", fraction: 0.25 }),
+    ).toEqual(centre);
+    expect(
+      seedTree3d(collapsed, UNBOUND_POLE3D, false, { kind: "legal-range", fraction: 0.5 }),
+    ).toEqual(centre);
+  });
+
   it("TH-163 composes legal branch, offsets and rolled rests from joint space", () => {
     const branch: SeedTree3d = {
       rootPoint: [2, -3, 4],

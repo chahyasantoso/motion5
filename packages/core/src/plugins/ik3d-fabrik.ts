@@ -7,8 +7,15 @@ import {
   type FabrikConstraint,
   type FabrikPassMotion,
 } from "./fabrik-cap";
-import { selectFabrik } from "./fabrik-select";
-import type { FabrikSeed } from "./fabrik-seed";
+import {
+  NO_LEGAL_STARTS,
+  addressedReach,
+  arcLegalStarts,
+  goalsWithinReach,
+  selectFabrik,
+  type LegalStarts,
+} from "./fabrik-select";
+import { DEFAULT_FABRIK_SEED, heldFromSeed, type FabrikSeed } from "./fabrik-seed";
 import { readNumber, segmentExtent } from "./frame";
 import {
   add3,
@@ -51,9 +58,10 @@ import {
   FREE_JOINT3D,
   limitLocal3d,
   nonPlanarHinge3d,
+  type JointLimit3d,
 } from "./ik3d-constraint";
 import { restoreResult3d, type SolveResult3d } from "./ik3d-result";
-import { ROOT_INDEX, seedTree3d } from "./ik3d-seed";
+import { ROOT_INDEX, defaultTreeSeed3d, seedTree3d, type SeedTree3d } from "./ik3d-seed";
 
 /**
  * FABRIK in three dimensions: the iterative strategy for every 3D chain that is not the closed
@@ -97,6 +105,80 @@ const ROOT = ROOT_INDEX;
 
 const X_AXIS: Vec3 = [1, 0, 0];
 
+/** The canonical geometry and addressed aims used by both retry classification and attempts. */
+function prepareSeedTree3d(
+  root: WorldFrame3d,
+  members: readonly ChainMember3d[],
+): {
+  tree: SeedTree3d;
+  readings: GoalReading[];
+  byId: ReadonlyMap<string, ChainMember3d>;
+  ids: readonly string[];
+  chain: readonly ChainMember3d[];
+  serialDepth: () => number;
+  addressed: readonly number[];
+  addressedIds: readonly string[];
+} {
+  const { byId, ids, serialDepth, childCount, leaves } = canonicalChain(members);
+  const chain = ids.map((id) => byId.get(id)!);
+  const indexOf = new Map(ids.map((id, index) => [id, index]));
+  const parent = chain.map(({ base }) => indexOf.get(base) ?? ROOT);
+  const lengths = chain.map(({ length }) => segmentExtent(length));
+  const offsets = chain.map(({ offset }): Vec3 => [offset.x, offset.y, offset.z]);
+  const compactOffsets = offsets.map((vector) =>
+    vector[0] === 0 && vector[1] === 0 && vector[2] === 0 ? undefined : vector,
+  );
+  const rests = chain.map(({ rest }) => matrixFromEuler3d(rest));
+  const limits = chain.map(({ limit }): JointLimit3d => limit ?? FREE_JOINT3D);
+  const inner = ids.find((id) => (childCount.get(id) ?? 0) > 0 && byId.get(id)!.goal !== undefined);
+  if (inner !== undefined)
+    throw new Error(`Solver goal on member "${inner}" is not on a leaf of the chain.`);
+  const addressedIds = leaves.filter((id) => byId.get(id)!.goal !== undefined);
+  const addressed = addressedIds.map((id) => indexOf.get(id)!);
+  const rootPoint: Vec3 = [root.x, root.y, root.z];
+  const paths = addressed.map((leaf) => {
+    const path: number[] = [];
+    for (let cursor = leaf; cursor !== ROOT; cursor = parent[cursor]!) path.unshift(cursor);
+    return path;
+  });
+  const readings: GoalReading[] = [];
+  const aims = addressed.map((leaf, step): Vec3 => {
+    const goal = chain[leaf]!.goal!;
+    const reading = readGoal(ids[leaf]!, [
+      ["x", goal.x],
+      ["y", goal.y],
+      ["z", goal.z],
+    ]);
+    const reach = (): number =>
+      paths[step]!.reduce((sum, index) => sum + lengths[index]! + norm3(offsets[index]!), 0);
+    const [x, y, z] = aimPoint(reading, rootPoint, reach);
+    readings.push(reading);
+    return [x!, y!, z!];
+  });
+  return {
+    tree: {
+      rootPoint,
+      rootMatrix: matrixFromEuler3d(root),
+      parent,
+      lengths,
+      offsets: compactOffsets,
+      rests,
+      limits,
+      paths,
+      aims,
+    },
+    readings,
+    byId,
+    ids,
+    chain,
+    serialDepth,
+    addressed,
+    addressedIds,
+  };
+}
+
+type PreparedSeedTree3d = ReturnType<typeof prepareSeedTree3d>;
+
 /**
  * The point at distance `length` from `from`, toward `to`: the 2D `place` over `Vec3`, with the
  * same two chosen degeneracies (a zero length collapses onto `from`, a zero distance takes world
@@ -138,37 +220,21 @@ export function solveTree3dAttempt(
   pole: Pole3d,
   flip: boolean,
   rule: CompromiseRule,
-  seed?: FabrikSeed,
+  seed: FabrikSeed = DEFAULT_FABRIK_SEED,
+  preparedTree?: PreparedSeedTree3d,
 ): SolveResult3d<IterativeQuality> {
-  const { byId, ids, serialDepth, childCount, leaves } = canonicalChain(members);
+  const prepared = preparedTree ?? prepareSeedTree3d(root, members);
+  const { byId, ids, serialDepth, chain, addressed, addressedIds, readings } = prepared;
+  const { parent, lengths, offsets: offset, rests, limits, rootPoint, rootMatrix } = prepared.tree;
   const count = ids.length;
-  const chain = ids.map((id) => byId.get(id)!);
-  const indexOf = new Map(ids.map((id, index) => [id, index]));
-  // A cycle was refused by `canonicalChain`, so every base is the root or an earlier index.
-  const parent = chain.map(({ base }) => indexOf.get(base) ?? ROOT);
-  const lengths = chain.map(({ length }) => segmentExtent(length));
-  const offsets = chain.map(({ offset }): Vec3 => [offset.x, offset.y, offset.z]);
-  // A zero offset composes its member's pivot on its base's tip, so it is skipped, not multiplied.
-  const offset = offsets.map((vector) =>
-    vector[0] === 0 && vector[1] === 0 && vector[2] === 0 ? undefined : vector,
-  );
-  const rests = chain.map(({ rest }) => matrixFromEuler3d(rest));
-  const limits = chain.map(({ limit }) => limit ?? FREE_JOINT3D);
   // Each member's limited children in canonical order, whose limits the inward pass bounds its
   // frame by (ADR-126). A member with none takes the plain inward step and its bytes.
   const limitedChildren = new Array<number[] | undefined>(count);
   for (let index = 0; index < count; index += 1)
     if (parent[index] !== ROOT && constrains(limits[index]!))
       (limitedChildren[parent[index]!] ??= []).push(index);
-  const inner = ids.find((id) => (childCount.get(id) ?? 0) > 0 && byId.get(id)!.goal !== undefined);
-  if (inner !== undefined)
-    throw new Error(`Solver goal on member "${inner}" is not on a leaf of the chain.`);
-  const addressedIds = leaves.filter((id) => byId.get(id)!.goal !== undefined);
-  const addressed = addressedIds.map((id) => indexOf.get(id)!);
   const pullsById = branchPulls(byId, addressedIds);
   const pulls = ids.map((id) => pullsById.get(id) ?? 0);
-  const rootMatrix = matrixFromEuler3d(root);
-  const rootPoint: Vec3 = [root.x, root.y, root.z];
   const pivots: Vec3[] = new Array<Vec3>(count);
   const frames: Matrix3[] = new Array<Matrix3>(count);
   const settled: Vec3[] = new Array<Vec3>(count);
@@ -189,46 +255,12 @@ export function solveTree3dAttempt(
     const base = parent[index]!;
     return base === ROOT ? rootPoint : tips[base]!;
   };
-  /** The member indices from the root's first member down to `leaf`. */
-  const pathOf = (leaf: number): readonly number[] => {
-    const path: number[] = [];
-    for (let cursor = leaf; cursor !== ROOT; cursor = parent[cursor]!) path.unshift(cursor);
-    return path;
-  };
-
-  const readings: GoalReading[] = [];
   const aims: Vec3[] = new Array<Vec3>(count);
-  for (const leaf of addressed) {
-    const goal = chain[leaf]!.goal!;
-    const reading = readGoal(ids[leaf]!, [
-      ["x", goal.x],
-      ["y", goal.y],
-      ["z", goal.z],
-    ]);
-    const reach = (): number =>
-      pathOf(leaf).reduce((sum, index) => sum + lengths[index]! + norm3(offsets[index]!), 0);
-    const [x, y, z] = aimPoint(reading, rootPoint, reach);
-    readings.push(reading);
-    aims[leaf] = [x!, y!, z!];
-  }
+  for (let step = 0; step < addressed.length; step += 1)
+    aims[addressed[step]!] = prepared.tree.aims[step]!;
   // Every tip starts where the seed puts it: the arc, or the legal seed when the arc requires a
   // hinge-pose projection (`ik3d-seed.ts`, ADR-129). The first outward pass enforces every length.
-  const tips: Vec3[] = seedTree3d(
-    {
-      rootPoint,
-      rootMatrix,
-      parent,
-      lengths,
-      offsets: offset,
-      rests,
-      limits,
-      paths: addressed.map(pathOf),
-      aims: addressed.map((leaf) => aims[leaf]!),
-    },
-    pole,
-    flip,
-    seed,
-  );
+  const tips: Vec3[] = seedTree3d(prepared.tree, pole, flip, seed);
 
   /**
    * The outward pass: the only place lengths are enforced, the only place a frame is built and the
@@ -370,6 +402,7 @@ export function solveTree3dAttempt(
       bestBounded[index] = bounded[index]!;
     }
   };
+  if (heldFromSeed(seed) && incumbent.offer(residual)) saveIncumbent();
   while (residual > FABRIK_TOLERANCE && budget.admits(iterations, residual)) {
     iterations += 1;
     spread = 0;
@@ -485,17 +518,53 @@ export function legalRetryReach3d(members: readonly ChainMember3d[]): number {
 }
 
 /**
+ * The legal starts a 3D rig can use (`LegalStarts`): a non-planar addressed hinge pays the
+ * centre when its actual pole-side default is an arc, but not when it is already the legal seed,
+ * whose off-centre stages stay reach-gated. Planar constrained paths also pay the centre. Every
+ * constrained rig pays the descent after them only while each goal lies within its path's reach of
+ * the root (`goalsWithinReach`, ADR-132).
+ */
+export function legalStarts3d(
+  root: WorldFrame3d,
+  members: readonly ChainMember3d[],
+  pole: Pole3d,
+  preparedTree?: PreparedSeedTree3d,
+): LegalStarts {
+  const offsetExtent = ({ offset }: ChainMember3d): number => norm3([offset.x, offset.y, offset.z]);
+  const within = (): boolean =>
+    goalsWithinReach(members, offsetExtent, ({ goal }) =>
+      norm3([goal!.x - root.x, goal!.y - root.y, goal!.z - root.z]),
+    );
+  const reach = legalRetryReach3d(members);
+  if (reach > 0) {
+    const seed = defaultTreeSeed3d((preparedTree ?? prepareSeedTree3d(root, members)).tree, pole);
+    switch (seed.kind) {
+      case "arc":
+        return arcLegalStarts(reach, within());
+      case "legal":
+        return { kind: within() ? "staged-then-descent" : "staged", reach };
+      default:
+        return unreachable(seed);
+    }
+  }
+  if (!members.some(({ limit }) => limit !== undefined && constrains(limit)))
+    return NO_LEGAL_STARTS;
+  return arcLegalStarts(addressedReach(members, offsetExtent), within());
+}
+
+/**
  * The tree solve at one magnitude through the shared closed selector: the authored-side attempt,
  * three alternatives for a conflicted baseline and one opposite-seed centroid retry for a limited
- * or capped baseline (#490, ADR-126, ADR-128). A near miss on an addressed non-planar hinge
- * path also pays the selector's staged legal-range starts, scaled by `legalRetryReach3d`; the
- * selector owns their order and six-attempt ceiling, not this attempt.
+ * or capped baseline (#490, ADR-126, ADR-128), then the legal starts `legalStarts3d` names. The
+ * selector owns their order and ceiling, not this attempt.
  */
 function selectTree3d(
   root: WorldFrame3d,
   members: readonly ChainMember3d[],
   pole: Pole3d,
 ): SolveResult3d<IterativeQuality> {
+  // Canonical geometry and addressed goals are invariant across seed sides and retry stages.
+  const prepared = prepareSeedTree3d(root, members);
   return selectFabrik(
     root,
     members,
@@ -506,8 +575,8 @@ function selectTree3d(
       flip: boolean,
       rule: CompromiseRule,
       seed?: FabrikSeed,
-    ) => solveTree3dAttempt(frame, chain, pole, flip, rule, seed),
-    legalRetryReach3d(members),
+    ) => solveTree3dAttempt(frame, chain, pole, flip, rule, seed, prepared),
+    legalStarts3d(root, members, pole, prepared),
   );
 }
 

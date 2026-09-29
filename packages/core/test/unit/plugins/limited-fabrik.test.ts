@@ -31,9 +31,11 @@ import {
   type FabrikPassBudget,
 } from "../../../src/plugins/fabrik-cap";
 import {
+  CENTRE_THEN_DESCENT,
   fabrikAlternatives,
   selectFabrik,
   type FabrikAttempt,
+  type LegalStarts,
 } from "../../../src/plugins/fabrik-select";
 import {
   axisX3,
@@ -80,6 +82,9 @@ const PLANAR_TOLERANCE = 1e-5;
 const MATRIX_TOLERANCE = 1e-9;
 
 const range = (min: number, max: number): JointRange => ({ kind: "range", min, max });
+
+/** The staged legal starts of a non-planar 3D hinge path with `reach` world units (ADR-130). */
+const staged = (reach: number): LegalStarts => ({ kind: "staged-then-descent", reach });
 
 /** A 2D upper arm hanging from the root and a limited forearm reaching for `(x, y)`. */
 function elbow2d(limit: JointRange, x: number, y: number, upper = 100, fore = 100): SolveMember[] {
@@ -245,75 +250,88 @@ describe("limited FABRIK: seed side, bidirectional limits and the limited cap (i
     expect(selected).toEqual(solveFabrik(ROOT, free, false));
   });
 
-  it("TH-160 owns a bounded legal-range portfolio without charging met, stalled or 2D solves", () => {
-    const miss = { kind: "limited", iterations: 64, residual: 4, atBound: ["m"] } as const;
-    const met = { kind: "converged", iterations: 18, residual: 0.0005 } as const;
+  it("TH-160 owns a bounded legal-range portfolio without charging met, stalled or unconstrained solves", () => {
     const calls: [boolean, string, string][] = [];
-    const attempt: FabrikAttempt<null, never, { quality: IterativeQuality }> = (
-      _root,
-      _members,
-      flip,
-      rule,
-      seed,
-    ) => {
-      const name = seed?.kind === "legal-range" ? `q${seed.fraction}` : "default";
-      calls.push([flip, rule, name]);
-      return { quality: name === "q0.75" ? met : miss };
-    };
-    expect(selectFabrik(null, [], false, attempt, 250).quality).toBe(met);
-    expect(calls).toEqual([
-      [false, "centroid", "default"],
-      [true, "centroid", "default"],
-      [false, "centroid", "q0.25"],
-      [false, "centroid", "q0.75"],
-    ]);
-    calls.length = 0;
-    selectFabrik(null, [], false, attempt);
-    expect(calls).toHaveLength(2);
-    for (const kind of ["converged", "stalled"] as const) {
+    const nameOf = (
+      flip: boolean,
+      seed: Parameters<FabrikAttempt<null, never, { quality: IterativeQuality }>>[4],
+    ) =>
+      seed?.kind === "legal-range"
+        ? `q${seed.fraction}`
+        : seed?.kind === "legal-descent"
+          ? "descent"
+          : flip
+            ? "opposite"
+            : "default";
+    const quality = (kind: IterativeQuality["kind"]): IterativeQuality =>
+      kind === "converged"
+        ? { kind, iterations: 18, residual: 0.0005 }
+        : kind === "limited"
+          ? { kind, iterations: 64, residual: 4, atBound: ["m"] }
+          : kind === "stalled"
+            ? { kind, iterations: 1, residual: 4 }
+            : kind === "iteration-cap"
+              ? { kind, iterations: 64, residual: 4 }
+              : { kind, iterations: 1, residual: 4 };
+
+    // A met or stalled baseline is already settled, so even an explicitly supplied portfolio costs
+    // one attempt. A limited or capped baseline pays the complete 2D bounded portfolio: opposite,
+    // centre, then the legal descent (four attempts including the baseline).
+    for (const kind of ["converged", "stalled", "limited", "iteration-cap"] as const) {
       calls.length = 0;
-      selectFabrik(
-        null,
-        [],
-        false,
-        () => {
-          calls.push([false, "centroid", "default"]);
-          return { quality: { kind, iterations: 1, residual: 0 } };
-        },
-        100,
-      );
-      expect(calls).toHaveLength(1);
+      const attempt: FabrikAttempt<null, never, { quality: IterativeQuality }> = (
+        _root,
+        _members,
+        flip,
+        rule,
+        seed,
+      ) => {
+        calls.push([flip, rule, nameOf(flip, seed)]);
+        return { quality: quality(kind) };
+      };
+      selectFabrik(null, [], false, attempt, CENTRE_THEN_DESCENT);
+      expect(calls).toHaveLength(kind === "limited" || kind === "iteration-cap" ? 4 : 1);
+      if (kind === "limited" || kind === "iteration-cap")
+        expect(calls.map(([, , name]) => name)).toEqual(["default", "opposite", "q0.5", "descent"]);
     }
+
+    // Without a rig classification, the selector's default `none` portfolio remains the old
+    // unconstrained two-attempt path: the baseline and its opposite, but no legal starts.
+    calls.length = 0;
+    const miss: IterativeQuality = { kind: "limited", iterations: 64, residual: 4, atBound: ["m"] };
+    selectFabrik(null, [], false, (_root, _members, flip, rule, seed) => {
+      calls.push([flip, rule, nameOf(flip, seed)]);
+      return { quality: miss };
+    });
+    expect(calls.map(([, , name]) => name)).toEqual(["default", "opposite"]);
+
+    // Staged starts are opt-in here, and a near miss pays every legal stage before the descent.
+    const nearMiss: IterativeQuality = {
+      kind: "limited",
+      iterations: 64,
+      residual: 1,
+      atBound: ["m"],
+    };
     calls.length = 0;
     selectFabrik(
       null,
       [],
       false,
-      (_root, _members, flip) => {
-        calls.push([flip, "centroid", "default"]);
-        return { quality: flip ? met : miss };
+      (_root, _members, flip, rule, seed) => {
+        calls.push([flip, rule, nameOf(flip, seed)]);
+        return { quality: nearMiss };
       },
-      100,
+      staged(100),
     );
-    expect(calls).toHaveLength(2); // the baseline was outside the 2% gate
-    calls.length = 0;
-    selectFabrik(
-      null,
-      [],
-      false,
-      (_root, _members, flip) => {
-        calls.push([flip, "centroid", "default"]);
-        return { quality: flip ? met : miss };
-      },
-      250,
-    );
-    expect(calls).toHaveLength(4); // within the gate, quartiles can improve even an opposite-side hit
-    calls.length = 0;
-    selectFabrik(null, [], false, attempt, 100);
-    expect(calls).toHaveLength(2); // four units of miss exceed two percent of 100 units of reach
-    calls.length = 0;
-    selectFabrik(null, [], false, attempt, 10);
-    expect(calls).toHaveLength(2); // distant misses do not pay two extra attempts
+    expect(calls.map(([, , name]) => name)).toEqual([
+      "default",
+      "opposite",
+      "q0.25",
+      "q0.75",
+      "q0.1",
+      "q0.9",
+      "descent",
+    ]);
   });
 
   it("TH-164 compares every prescribed converged candidate, including both legal quartiles", () => {
@@ -330,7 +348,7 @@ describe("limited FABRIK: seed side, bidirectional limits and the limited cap (i
         calls.push(name);
         return { quality: name === "q0.75" ? met(0.0001) : name === "q0.25" ? met(0.0004) : miss };
       },
-      100,
+      staged(100),
     );
     expect(calls).toEqual(["base", "opposite", "q0.25", "q0.75"]);
     expect(selected.quality).toEqual(met(0.0001));
@@ -369,7 +387,7 @@ describe("limited FABRIK: seed side, bidirectional limits and the limited cap (i
         calls.push(name);
         return { quality: name === "q0.1" ? met : miss };
       },
-      100,
+      staged(100),
     );
     expect(calls).toEqual(["base", "opposite", "q0.25", "q0.75", "q0.1"]);
     expect(selected.quality).toBe(met);
@@ -384,7 +402,7 @@ describe("limited FABRIK: seed side, bidirectional limits and the limited cap (i
         calls.push(name);
         return { quality: name === "q0.25" ? met : miss };
       },
-      100,
+      staged(100),
     );
     expect(calls).toEqual(["base", "opposite", "q0.25", "q0.75"]);
   });
@@ -393,32 +411,46 @@ describe("limited FABRIK: seed side, bidirectional limits and the limited cap (i
     const miss = { kind: "limited", iterations: 2, residual: 1, atBound: ["m"] } as const;
     const met = { kind: "converged", iterations: 3, residual: 0.0003 } as const;
     const calls: string[] = [];
+    const label = (
+      flip: boolean,
+      seed: Parameters<FabrikAttempt<null, never, { quality: IterativeQuality }>>[4],
+    ) =>
+      seed?.kind === "legal-range"
+        ? `q${seed.fraction}`
+        : seed?.kind === "legal-descent"
+          ? "descent"
+          : flip
+            ? "opposite"
+            : "base";
+
+    // q0.9 is attempted only after both quartiles and q0.1 miss; a q0.9 hit ends the staged walk.
     const selected = selectFabrik(
       null,
       [],
       false,
       (_root, _members, flip, _rule, seed) => {
-        const name =
-          seed?.kind === "legal-range" ? `q${seed.fraction}` : flip ? "opposite" : "base";
+        const name = label(flip, seed);
         calls.push(name);
         return { quality: name === "q0.9" ? met : miss };
       },
-      100,
+      staged(100),
     );
     expect(calls).toEqual(["base", "opposite", "q0.25", "q0.75", "q0.1", "q0.9"]);
     expect(selected.quality).toBe(met);
+
+    // If q0.9 also misses, the legal descent is the final and distinct start paid for.
     calls.length = 0;
     selectFabrik(
       null,
       [],
       false,
       (_root, _members, flip, _rule, seed) => {
-        calls.push(seed?.kind === "legal-range" ? `q${seed.fraction}` : flip ? "opposite" : "base");
+        calls.push(label(flip, seed));
         return { quality: miss };
       },
-      10,
+      staged(100),
     );
-    expect(calls).toEqual(["base", "opposite"]);
+    expect(calls).toEqual(["base", "opposite", "q0.25", "q0.75", "q0.1", "q0.9", "descent"]);
   });
 
   it("CL-35 the inward pass bounds a base by its limited child, so a two-limit chain converges", () => {
@@ -820,6 +852,18 @@ describe("limited FABRIK: seed side, bidirectional limits and the limited cap (i
     ],
   ];
 
+  /**
+   * The rigs through the arc-side portfolio alone, the baseline and its opposite side with no legal
+   * start: what #521 measured. Both are mixed-sign chains, so the full solve now meets them from
+   * the centred legal start (#524, TH-182); these cases hold the attempt-level evidence.
+   */
+  const arcOnly2d = (rig: readonly SolveMember[]) =>
+    selectFabrik(ROOT, rig, false, solveFabrikAttempt).quality;
+  const arcOnly3d = (rig: readonly SolveMember[]) =>
+    selectFabrik(ROOT3, planar3d(rig), false, (root, members, flip, rule, seed) =>
+      solveTree3dAttempt(root, members, UNBOUND_POLE3D, flip, rule, seed),
+    ).quality;
+
   it("TH-155 an attempt that never settles publishes its best completed pass, not its last", () => {
     // The best completed pass of each rig's attempts: 44.7738384833087 (seed 7, pass 1) and
     // 12.359072645022295 (seed 17, pass 39). The last-pass rule published 54.51863835775088 and
@@ -827,10 +871,7 @@ describe("limited FABRIK: seed side, bidirectional limits and the limited cap (i
     // assertion below fails on it.
     const bests = [44.7738384833087, 12.359072645022295];
     issue521Rigs.forEach((rig, index) => {
-      for (const quality of [
-        solveChain(ROOT, rig, false).quality,
-        solve3d(planar3d(rig)).quality,
-      ]) {
+      for (const quality of [arcOnly2d(rig), arcOnly3d(rig)]) {
         expect(quality.kind).toBe("limited");
         expect(quality.residual).toBeLessThanOrEqual(bests[index]!);
       }
@@ -839,8 +880,8 @@ describe("limited FABRIK: seed side, bidirectional limits and the limited cap (i
 
   it("CL-40 the issue #521 rigs publish the same bound members in 2D and 3D", () => {
     for (const rig of issue521Rigs) {
-      const flat = solveChain(ROOT, rig, false).quality;
-      const spatial = solve3d(planar3d(rig)).quality;
+      const flat = arcOnly2d(rig);
+      const spatial = arcOnly3d(rig);
       expect(flat.kind).toBe("limited");
       expect(spatial.kind).toBe("limited");
       if (flat.kind === "limited" && spatial.kind === "limited")

@@ -1,11 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
+  axisX3,
   composeWorld3d,
   eulerFromMatrix3d,
+  IDENTITY_MATRIX3,
   matrixFromEuler3d,
   multiplyMatrix3,
   multiplyVector3,
   readFrame3d,
+  swingFrame3d,
 } from "../../../src/plugins/frame3d";
 
 // Issue #349 phase 8: the 3D seam keeps CSS's Rz * Rx * Ry convention in one owner. The
@@ -122,5 +125,33 @@ describe("3D frame convention", () => {
     const rebuilt = matrixFromEuler3d(composed);
     for (let index = 0; index < 9; index += 1)
       expect(Math.abs(rebuilt[index]! - expected[index]!)).toBeLessThanOrEqual(1e-12);
+  });
+  it("TH-200 keeps a near-half-turn swing orthonormal to rounding", () => {
+    // Issue #524: a held descent pose turned a free member by 1 + cos(angle) ~ 1e-6, where the old
+    // `1 / (1 + c)` form left the frame 1e-9 from orthonormal and the published residual drifted
+    // from forward kinematics. The swing now reads `(1 - c) / |v|²` inside that band; on this sweep
+    // the old form leaves the frame 1.1e-11 from orthonormal, the new one 8.9e-16.
+    let worst = 0;
+    for (let k = 0; k < 400; k += 1) {
+      const gap = 10 ** (-3 - (5 * ((k * 7919) % 400)) / 400);
+      const polar = Math.acos(gap - 1);
+      const azimuth = k * 0.37;
+      const direction: [number, number, number] = [
+        Math.cos(polar),
+        Math.sin(polar) * Math.cos(azimuth),
+        Math.sin(polar) * Math.sin(azimuth),
+      ];
+      const frame = swingFrame3d(IDENTITY_MATRIX3, direction);
+      for (let i = 0; i < 3; i += 1) {
+        for (let j = 0; j < 3; j += 1) {
+          let product = 0;
+          for (let r = 0; r < 3; r += 1) product += frame[r * 3 + i]! * frame[r * 3 + j]!;
+          worst = Math.max(worst, Math.abs(product - (i === j ? 1 : 0)));
+        }
+      }
+      const x = axisX3(frame);
+      for (let axis = 0; axis < 3; axis += 1) expect(x[axis]).toBeCloseTo(direction[axis]!, 12);
+    }
+    expect(worst).toBeLessThan(1e-13);
   });
 });

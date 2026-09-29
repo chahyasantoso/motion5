@@ -9,6 +9,7 @@ import {
   MIN_ROTATION_KEY,
   readLimitDegree,
 } from "../contract/solver-constraints";
+import type { DofBound } from "./ik-descent";
 
 /**
  * The one runtime owner of joint-limit arithmetic and of the bend hint. See ADR-108.
@@ -89,6 +90,26 @@ export function rangeCentre(limit: JointLimit): number {
 }
 
 /**
+ * The legal angle at `fraction` of a limit's range, the one owner of where a legal joint-space
+ * start holds a limited member in both dimensions: the 2D legal seed reads it for every range, and
+ * the 3D legal seed for a hinge's range and a swing-twist's twist (issues #523, #524, #527). A free
+ * limit has no range and answers zero, no local turn. The centre reads `rangeCentre` rather than
+ * interpolating, so the centred seed keeps the exact doubles it published before other fractions
+ * existed; any other fraction interpolates from `min`, which is legal for `fraction` in `[0, 1]`.
+ */
+export function legalRotation(limit: JointLimit, fraction: number): number {
+  if (fraction === 0.5) return rangeCentre(limit);
+  switch (limit.kind) {
+    case "free":
+      return 0;
+    case "range":
+      return limit.min + fraction * (limit.max - limit.min);
+    default:
+      return unreachable(limit);
+  }
+}
+
+/**
  * How near a limited angle, in degrees, may sit to a bound and still rest on it (ADR-126).
  *
  * The 2D solve measures a member's local angle with `atan2` over placed points, and the 3D solve
@@ -116,6 +137,38 @@ export function atBound(limit: JointLimit, local: number): boolean {
         angularDistance(bounded, limit.max) <= JOINT_BOUND_TOLERANCE
       );
     }
+    default:
+      return unreachable(limit);
+  }
+}
+
+/**
+ * A legal local angle turned continuously by `degrees`: the step of a joint-space descent
+ * (`ik-descent.ts`, ADR-132). A range stops the turn at the bound it meets rather than answering
+ * the nearer bound on the circle, because a joint that moves continuously cannot jump across the
+ * arc its range forbids. A free joint, and a range spanning the whole circle, turn unchanged.
+ */
+export function turnRotation(limit: JointLimit, local: number, degrees: number): number {
+  switch (limit.kind) {
+    case "free":
+      return local + degrees;
+    case "range":
+      return limit.max - limit.min >= 360
+        ? local + degrees
+        : Math.max(limit.min, Math.min(limit.max, local + degrees));
+    default:
+      return unreachable(limit);
+  }
+}
+
+/** Which bound, if any, a legal angle `turnRotation` produced rests on, for the descent's box. */
+export function rotationSide(limit: JointLimit, local: number): DofBound {
+  switch (limit.kind) {
+    case "free":
+      return "interior";
+    case "range":
+      if (limit.max - limit.min >= 360) return "interior";
+      return local <= limit.min ? "lower" : local >= limit.max ? "upper" : "interior";
     default:
       return unreachable(limit);
   }

@@ -6,18 +6,19 @@ bullet states a phase; `packages/core/test/unit/scripts/session-status-shape.tes
 shape and byte ceiling.
 
 - **Captured:** 2026-09-29, Asia/Jakarta.
-- **Read against:** `main` at `08f656f0e90e0cf8956d3e41e4797656ad703a15`, the base of
-  [PR #528][pr528], which lands with this entry.
+- **Read against:** `main` at `1b04ac7037f696229b6f610e5bb0aac030695ed2`, the base of
+  [PR #529][pr529], which lands with this entry.
 
 ## Now
 
-- **`main` carries staged legal-range retries and the legal serial hinge recovery for
-  [#527][issue527] ([ADR-130][adr130]).**
+- **`main` carries the centred legal start and the envelope-gated legal descent for constrained
+  FABRIK misses, closing [#524][issue524] and [#523][issue523] ([ADR-131][adr131],
+  [ADR-132][adr132]).**
 
 ## Next in line
 
-- **[#524][issue524] tracks reachable mixed-sign serial chains;** its bounded legal midpoint retry
-  is prepared on `fix/524-mixed-sign-legal-seed`, not merged.
+- **[#530][issue530] plans the #501 pose gap filler experiment;** its first slice (image-space
+  pipeline, `raw` reference) is prepared on `feat/530-gap-filler-phase1`, not merged.
 
 ## Open, and not scheduled
 
@@ -46,5 +47,9 @@ shape and byte ceiling.
 [pr526]: https://github.com/chahyasantoso/motion5/pull/526
 [issue527]: https://github.com/chahyasantoso/motion5/issues/527
 [pr528]: https://github.com/chahyasantoso/motion5/pull/528
+[pr529]: https://github.com/chahyasantoso/motion5/pull/529
+[issue530]: https://github.com/chahyasantoso/motion5/issues/530
 [adr130]: ./ADR-130-legal-range-retries-and-serial-hinge-recovery.md
 [issue524]: https://github.com/chahyasantoso/motion5/issues/524
+[adr131]: ./ADR-131-centred-legal-start-for-mixed-sign-chains.md
+[adr132]: ./ADR-132-legal-descent-start-for-constrained-fabrik-misses.md

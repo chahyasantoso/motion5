@@ -21,8 +21,14 @@ import {
 import { solveChain } from "../../../src/plugins/ik-solve";
 import { solveTwoBone3d, UNBOUND_POLE3D, type Pole3d } from "../../../src/plugins/ik3d-analytic";
 import { ik3dPlugin } from "../../../src/plugins/ik3d";
-import { legalRetryReach3d, place3d, solveTree3dAttempt } from "../../../src/plugins/ik3d-fabrik";
+import {
+  legalRetryReach3d,
+  legalStarts3d,
+  place3d,
+  solveTree3dAttempt,
+} from "../../../src/plugins/ik3d-fabrik";
 import { solveSerialRecovery3d } from "../../../src/plugins/ik3d-serial-recovery";
+import { FABRIK_TOLERANCE } from "../../../src/plugins/fabrik";
 import { chainShape3d, solveChain3d } from "../../../src/plugins/ik3d-solve";
 import { limitLocal3d } from "../../../src/plugins/ik3d-constraint";
 import type { ChainMember3d } from "../../../src/plugins/ik3d-chain";
@@ -127,14 +133,15 @@ describe("3D FABRIK evidence", () => {
         goal: readFrame3d({ x: -47.673799523067636, y: 68.38348720116291, z: 21.22687074815933 }),
       }),
     ];
+    const recovered = solveSerialRecovery3d(root, tail);
+    expect(recovered?.quality.kind).toBe("reached");
+    expect(
+      frameDistance3d(composeChain3d(root, tail, recovered!).m2!, tail[2]!.goal!),
+    ).toBeLessThan(1e-3);
+    expect(recovered).toEqual(solveSerialRecovery3d(root, [...tail].reverse()));
     const solved = solveChain3d(root, tail);
-    expect(solved.quality.kind).toBe("reached");
-    expect(frameDistance3d(composeChain3d(root, tail, solved).m2!, tail[2]!.goal!)).toBeLessThan(
-      1e-3,
-    );
-    expect(solveSerialRecovery3d(root, tail)).toEqual(
-      solveSerialRecovery3d(root, [...tail].reverse()),
-    );
+    expect(solved.quality.kind).toBe("converged");
+    expect(solved.quality.residual).toBeLessThanOrEqual(FABRIK_TOLERANCE);
   });
 
   it("TH-179 closes a final-free block under a rolled, translated root", () => {
@@ -248,9 +255,12 @@ describe("3D FABRIK evidence", () => {
         goal,
       }),
     ];
+    const recovered = solveSerialRecovery3d(ROOT, members);
+    expect(recovered?.quality.kind).toBe("reached");
+    expect(frameDistance3d(composeChain3d(ROOT, members, recovered!).m2!, goal)).toBeLessThan(1e-4);
     const result = solveChain3d(ROOT, members);
-    expect(result.quality.kind).toBe("reached");
-    expect(frameDistance3d(composeChain3d(ROOT, members, result).m2!, goal)).toBeLessThan(1e-4);
+    expect(result.quality.kind).toBe("converged");
+    expect(result.quality.residual).toBeLessThanOrEqual(FABRIK_TOLERANCE);
   });
 
   it("TH-178 recovers a second interior radius and refuses an unreachable serial goal", () => {
@@ -284,9 +294,12 @@ describe("3D FABRIK evidence", () => {
         goal,
       }),
     ];
-    const recovered = solveChain3d(ROOT, members);
-    expect(recovered.quality.kind).toBe("reached");
-    expect(frameDistance3d(composeChain3d(ROOT, members, recovered).m3!, goal)).toBeLessThan(1e-4);
+    const recovered = solveSerialRecovery3d(ROOT, members);
+    expect(recovered?.quality.kind).toBe("reached");
+    expect(frameDistance3d(composeChain3d(ROOT, members, recovered!).m3!, goal)).toBeLessThan(1e-4);
+    const solved = solveChain3d(ROOT, members);
+    expect(solved.quality.kind).toBe("converged");
+    expect(solved.quality.residual).toBeLessThanOrEqual(FABRIK_TOLERANCE);
     const unreachable = members.map((item, index) =>
       index === 3 ? { ...item, goal: { ...goal, x: 1000 } } : item,
     );
@@ -313,15 +326,22 @@ describe("3D FABRIK evidence", () => {
     expect(
       solveTree3dAttempt(ROOT, members, UNBOUND_POLE3D, false, "centroid").quality.kind,
     ).not.toBe("converged");
-    const recovered = solveChain3d(ROOT, members);
-    expect(recovered.quality.kind).toBe("reached");
-    expect(recovered.quality.residual).toBeLessThan(1e-8);
-    expect(solveChain3d(ROOT, [...members].reverse())).toEqual(recovered);
+    const recovered = solveSerialRecovery3d(ROOT, members);
+    expect(recovered?.quality.kind).toBe("reached");
+    expect(recovered?.quality.residual).toBeLessThan(1e-8);
+    expect(recovered).toEqual(solveSerialRecovery3d(ROOT, [...members].reverse()));
+    const selected = solveChain3d(ROOT, members);
+    expect(selected.quality.kind).toBe("converged");
+    expect(selected.quality.residual).toBeLessThanOrEqual(FABRIK_TOLERANCE);
     for (const poleZ of [-1000, 1000]) {
       const pole: Pole3d = { kind: "point", point: [0, 0, poleZ] };
+      const recoveredWithPole = solveSerialRecovery3d(ROOT, members, pole);
+      expect(recoveredWithPole?.quality.kind).toBe("reached");
+      expect(recoveredWithPole?.quality.residual).toBeLessThan(1e-8);
       const solved = solveChain3d(ROOT, members, pole);
-      expect(solved.quality.kind).toBe("reached");
-      const composed = composeChain3d(ROOT, members, solved);
+      expect(solved.quality.kind).toBe("converged");
+      expect(solved.quality.residual).toBeLessThanOrEqual(FABRIK_TOLERANCE);
+      const composed = composeChain3d(ROOT, members, recoveredWithPole!);
       expect(frameDistance3d(composed.m1!, members[1]!.goal!)).toBeLessThan(1e-8);
       const elbow: Vec3 = [composed.m0!.x, composed.m0!.y, composed.m0!.z];
       const goal: Vec3 = [members[1]!.goal!.x, members[1]!.goal!.y, members[1]!.goal!.z];
@@ -491,11 +511,16 @@ describe("3D FABRIK evidence", () => {
         orient: 1,
       }),
     ];
+    const recovered = solveSerialRecovery3d(ROOT, members);
+    expect(recovered?.quality.kind).toBe("reached");
+    const recoveredTip = composeChain3d(ROOT, members, recovered!).b!;
+    expect(frameDistance3d(recoveredTip, goal)).toBeLessThan(1e-8);
+    expect(
+      Math.abs(frameDistance3d(recoveredTip, goal) - recovered!.quality.residual),
+    ).toBeLessThan(1e-8);
     const solved = solveChain3d(ROOT, members);
-    const tip = composeChain3d(ROOT, members, solved).b!;
-    expect(solved.quality.kind).toBe("reached");
-    expect(frameDistance3d(tip, goal)).toBeLessThan(1e-8);
-    expect(Math.abs(frameDistance3d(tip, goal) - solved.quality.residual)).toBeLessThan(1e-8);
+    expect(solved.quality.kind).toBe("converged");
+    expect(solved.quality.residual).toBeLessThanOrEqual(FABRIK_TOLERANCE);
   });
   it("TH-165 prices legal retries by addressed non-planar paths, never an unrelated branch", () => {
     const nearAxis = {
@@ -570,6 +595,52 @@ describe("3D FABRIK evidence", () => {
     expect(selected.quality.kind).toBe("converged");
     expect(selected.quality.residual).toBeLessThan(0.001);
     expect(solveChain3d(ROOT, fixture, UNBOUND_POLE3D)).toEqual(selected);
+  });
+  it("TH-193 pays the centre before descent when a non-planar hinge accepts the pole-side default arc", () => {
+    // Legal FK target for a six-member Y-hinge rig. The pole places the default arc in XZ,
+    // so an axis-based assumption that this default is already centred misses the goal.
+    const pole: Pole3d = { kind: "point", point: [0, 0, 100] };
+    const lengths = [
+      82.6316828164272, 13.086131042800844, 43.52013563038781, 85.0062888301909, 74.1611910588108,
+      67.79328460339457,
+    ];
+    const ranges = [
+      [72.8147910458002, 175],
+      [5.061190094619199, 86.983174124475],
+      [-76.26409559461314, 7.418871692124817],
+      [57.1623340531869, 61.88988136819761],
+      [-137.5860264740287, -42.10471231757576],
+    ];
+    const rig = lengths.map((length, index) =>
+      member(`m${index}`, index === 0 ? "root" : `m${index - 1}`, length, {
+        ...(index === 0
+          ? {}
+          : {
+              limit: {
+                kind: "hinge",
+                axis: [0, 1, 0] as Vec3,
+                range: { kind: "range", min: ranges[index - 1]![0]!, max: ranges[index - 1]![1]! },
+              },
+            }),
+        ...(index === 5
+          ? { goal: { x: 34.43033191221809, y: 0, z: -98.60828140447876, ...ZERO_REST } }
+          : {}),
+      }),
+    );
+    expect(legalStarts3d(ROOT, rig, pole)).toEqual({
+      kind: "centre-then-descent",
+    });
+    const baseline = solveTree3dAttempt(ROOT, rig, pole, false, "centroid");
+    const centre = solveTree3dAttempt(ROOT, rig, pole, false, "centroid", {
+      kind: "legal-range",
+      fraction: 0.5,
+    });
+    expect(baseline.quality.kind).not.toBe("converged");
+    expect(centre.quality.kind).toBe("converged");
+    const selected = solveChain3d(ROOT, rig, pole);
+    expect(selected.quality.kind).toBe("converged");
+    expect(selected.quality.residual).toBeLessThan(0.001);
+    expect(solveChain3d(ROOT, rig, pole)).toEqual(selected);
   });
   it("TH-167 recovers reachable corpus rig 18 from an endpoint-biased legal start", () => {
     // Exact FK target for legal angles 9.30983765437759 and 24.389092029078217.
