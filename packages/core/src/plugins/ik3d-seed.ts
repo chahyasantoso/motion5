@@ -1,5 +1,12 @@
 import { unreachable } from "../lang/exhaustive";
-import { arcHalfAngle, DEFAULT_FABRIK_SEED, type FabrikSeed } from "./fabrik-seed";
+import {
+  arcHalfAngle,
+  CENTRE_LEGAL_SEED,
+  DEFAULT_FABRIK_SEED,
+  legalFraction,
+  type FabrikSeed,
+  type LegalSeed,
+} from "./fabrik-seed";
 import { legalRotation, rotationSide, turnRotation } from "./ik-constraint";
 import { descendLegally, type DofBound, type LegalDescent } from "./ik-descent";
 import {
@@ -184,12 +191,8 @@ export function defaultTreeSeed3d(tree: SeedTree3d, pole: Pole3d): TreeSeed3d {
  * the mean of those aims, and on the opposite side a topmost such member is also half-turned about
  * that line. Only the members at and after a turned member are recomposed.
  */
-function legalTips(
-  tree: SeedTree3d,
-  flip: boolean,
-  fraction: number,
-  descend = false,
-): Vec3[] {
+function legalTips(tree: SeedTree3d, flip: boolean, start: LegalSeed): Vec3[] {
+  const fraction = legalFraction(start);
   const { rootPoint, rootMatrix, parent, lengths, offsets, rests, limits, paths, aims } = tree;
   const count = lengths.length;
   // A collapsed member has no tip direction to carry its requested fraction into the outward
@@ -250,16 +253,23 @@ function legalTips(
     turnedAbove[index] = true;
     compose(index);
   }
-  if (!descend) return tips;
-  const moving = new Array<boolean>(count);
-  for (let index = 0; index < count; index += 1)
-    moving[index] = lengths[index]! > 0 && below[index]!.length > 0;
-  const walk = descentOf(tree, moving, (orientations) => {
-    compose(0, orientations);
-    return tips;
-  });
-  compose(0, descendLegally(walk.problem, walk.start(locals, fraction)).locals);
-  return tips;
+  switch (start.kind) {
+    case "legal-range":
+      return tips;
+    case "legal-descent": {
+      const moving = new Array<boolean>(count);
+      for (let index = 0; index < count; index += 1)
+        moving[index] = lengths[index]! > 0 && below[index]!.length > 0;
+      const walk = descentOf(tree, moving, (orientations) => {
+        compose(0, orientations);
+        return tips;
+      });
+      compose(0, descendLegally(walk.problem, walk.start(locals, fraction)).locals);
+      return tips;
+    }
+    default:
+      return unreachable(start);
+  }
 }
 
 /**
@@ -395,9 +405,8 @@ export function seedTree3d(
 ): Vec3[] {
   switch (policy.kind) {
     case "legal-range":
-      return legalTips(tree, flip, policy.fraction);
     case "legal-descent":
-      return legalTips(tree, flip, 0.5, true);
+      return legalTips(tree, flip, policy);
     case "default":
       break;
     default:
@@ -409,7 +418,7 @@ export function seedTree3d(
     case "arc":
       return arc;
     case "legal":
-      return legalTips(tree, flip, 0.5);
+      return legalTips(tree, flip, CENTRE_LEGAL_SEED);
     default:
       return unreachable(seed);
   }

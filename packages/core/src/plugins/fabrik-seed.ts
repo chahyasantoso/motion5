@@ -67,6 +67,9 @@ export function heldFromSeed(seed: FabrikSeed): boolean {
 
 export const DEFAULT_FABRIK_SEED: FabrikSeed = Object.freeze({ kind: "default" });
 
+/** Every limited member at its range's centre (#524, ADR-131): legal for every range. */
+export const CENTRE_LEGAL_SEED: LegalSeed = Object.freeze({ kind: "legal-range", fraction: 0.5 });
+
 /** Bisection steps for the seed's arc half-angle. A fixed count, so the seed is reproducible. */
 export const FABRIK_ARC_BISECTIONS = 60;
 
@@ -302,8 +305,11 @@ export function seedLegal(
   return new Map(ids.map((id, index) => [id, Object.freeze(tips[index]!)]));
 }
 
-/** The fraction of every range a legal start holds its limited members at before any walk. */
-function legalFraction(start: LegalSeed): LegalSeedFraction {
+/**
+ * The fraction of every range a legal start holds its limited members at before any walk: the
+ * descent starts from the centre. Shared by both dimensions' seeds.
+ */
+export function legalFraction(start: LegalSeed): LegalSeedFraction {
   switch (start.kind) {
     case "legal-range":
       return start.fraction;

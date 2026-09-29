@@ -5,7 +5,12 @@ import type { CompromiseRule } from "./ik-goal";
 import type { IterativeQuality } from "./ik-result";
 import { unreachable } from "../lang/exhaustive";
 import { fabrikResidualOutranks } from "./fabrik-cap";
-import type { FabrikSeed, LegalSeed, LegalSeedFraction } from "./fabrik-seed";
+import {
+  CENTRE_LEGAL_SEED,
+  type FabrikSeed,
+  type LegalSeed,
+  type LegalSeedFraction,
+} from "./fabrik-seed";
 
 /**
  * One FABRIK attempt from a seed side and a compromise rule.
@@ -94,8 +99,7 @@ type LegalStages = readonly (readonly LegalSeed[])[];
 const legalRange = (fraction: LegalSeedFraction): LegalSeed =>
   Object.freeze({ kind: "legal-range", fraction });
 
-/** Every limited member at its range's centre (#524, ADR-131): legal for every range. */
-const CENTRE: LegalSeed = legalRange(0.5);
+
 
 /** The centre walked toward the aims in joint space (`ik-descent.ts`, ADR-132). */
 const DESCENT: LegalSeed = Object.freeze({ kind: "legal-descent" });
@@ -116,7 +120,7 @@ const LEGAL_RANGE_STAGES: LegalStages = Object.freeze([
 ]);
 
 /** The centre alone, for a constrained rig with no addressed extent: nothing a descent can turn. */
-const CENTRE_STAGES: LegalStages = Object.freeze([Object.freeze([CENTRE])]);
+const CENTRE_STAGES: LegalStages = Object.freeze([Object.freeze([CENTRE_LEGAL_SEED])]);
 
 /**
  * The legal starts a limited or capped rig seeded by the arc pays for: every limited member at its
