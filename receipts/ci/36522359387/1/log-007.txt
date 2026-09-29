@@ -1,0 +1,124 @@
+026-09-29T04:37:38.9970683Z     ^[[90m138|^[[39m       ^[[34m1e-3^[[39m^[[33m,^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:38.9970917Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:38.9971176Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/17]⎯^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:38.9971395Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:38.9972021Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/plugins/ik3d-fabrik.test.ts^[[2m > ^[[22m3D FABRIK evidence^[[2m > ^[[22mTH-177 recovers an interior zero-hinge radius the endpoint grid misses
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:38.9972752Z ^[[31m^[[1mAssertionError^[[22m: expected 'converged' to be 'reached' // Object.is equality^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:38.9973044Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:38.9973260Z Expected: ^[[32m"^[[7mreach^[[27med"^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:38.9973576Z Received: ^[[31m"^[[7mconverg^[[27med"^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:38.9973776Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:38.9974134Z ^[[36m ^[[2m❯^[[22m packages/core/test/unit/plugins/ik3d-fabrik.test.ts:^[[2m257:33^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:38.9974517Z     ^[[90m255|^[[39m     ]^[[33m;^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:38.9975170Z     ^[[90m256|^[[39m     ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34msolveChain3d^[[39m(^[[33mROOT^[[39m^[[33m,^[[39m members)^[[33m;^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:38.9975812Z     ^[[90m257|^[[39m     ^[[34mexpect^[[39m(result^[[33m.^[[39mquality^[[33m.^[[39mkind)^[[33m.^[[39m^[[34mtoBe^[[39m(^[[32m"reached"^[[39m)^[[33m;^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:38.9976278Z     ^[[90m   |^[[39m                                 ^[[31m^^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:38.9976714Z     ^[[90m258|^[[39m     expect(frameDistance3d(composeChain3d(ROOT, members, result).m2!, …
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:38.9977083Z     ^[[90m259|^[[39m   })^[[33m;^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:38.9977274Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:38.9977519Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[11/17]⎯^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:38.9977728Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:38.9978354Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/plugins/ik3d-fabrik.test.ts^[[2m > ^[[22m3D FABRIK evidence^[[2m > ^[[22mTH-178 recovers a second interior radius and refuses an unreachable serial goal
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:38.9979083Z ^[[31m^[[1mAssertionError^[[22m: expected 'converged' to be 'reached' // Object.is equality^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:38.9979369Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:38.9979583Z Expected: ^[[32m"^[[7mreach^[[27med"^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:38.9979894Z Received: ^[[31m"^[[7mconverg^[[27med"^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:38.9980121Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:38.9980627Z ^[[36m ^[[2m❯^[[22m packages/core/test/unit/plugins/ik3d-fabrik.test.ts:^[[2m293:36^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:38.9981208Z     ^[[90m291|^[[39m     ]^[[33m;^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:38.9981945Z     ^[[90m292|^[[39m     ^[[35mconst^[[39m recovered ^[[33m=^[[39m ^[[34msolveChain3d^[[39m(^[[33mROOT^[[39m^[[33m,^[[39m members)^[[33m;^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:38.9982986Z     ^[[90m293|^[[39m     ^[[34mexpect^[[39m(recovered^[[33m.^[[39mquality^[[33m.^[[39mkind)^[[33m.^[[39m^[[34mtoBe^[[39m(^[[32m"reached"^[[39m)^[[33m;^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:38.9983744Z     ^[[90m   |^[[39m                                    ^[[31m^^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:38.9984433Z     ^[[90m294|^[[39m     expect(frameDistance3d(composeChain3d(ROOT, members, recovered).m3…
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:38.9985473Z     ^[[90m295|^[[39m     ^[[35mconst^[[39m unreachable ^[[33m=^[[39m members^[[33m.^[[39m^[[34mmap^[[39m((item^[[33m,^[[39m index) ^[[33m=>^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:38.9986165Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:38.9986527Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[12/17]⎯^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:38.9986837Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:38.9987864Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/plugins/ik3d-fabrik.test.ts^[[2m > ^[[22m3D FABRIK evidence^[[2m > ^[[22mTH-169 closes corpus rig 9 with a legal hinge and respects either pole side
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:38.9989022Z ^[[31m^[[1mAssertionError^[[22m: expected 'converged' to be 'reached' // Object.is equality^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:38.9989470Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:38.9989765Z Expected: ^[[32m"^[[7mreach^[[27med"^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:38.9990231Z Received: ^[[31m"^[[7mconverg^[[27med"^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:38.9990514Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:38.9991031Z ^[[36m ^[[2m❯^[[22m packages/core/test/unit/plugins/ik3d-fabrik.test.ts:^[[2m322:36^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:38.9991964Z     ^[[90m320|^[[39m     )^[[33m.^[[39mnot^[[33m.^[[39m^[[34mtoBe^[[39m(^[[32m"converged"^[[39m)^[[33m;^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:38.9992862Z     ^[[90m321|^[[39m     ^[[35mconst^[[39m recovered ^[[33m=^[[39m ^[[34msolveChain3d^[[39m(^[[33mROOT^[[39m^[[33m,^[[39m members)^[[33m;^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:38.9993882Z     ^[[90m322|^[[39m     ^[[34mexpect^[[39m(recovered^[[33m.^[[39mquality^[[33m.^[[39mkind)^[[33m.^[[39m^[[34mtoBe^[[39m(^[[32m"reached"^[[39m)^[[33m;^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:38.9994636Z     ^[[90m   |^[[39m                                    ^[[31m^^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:38.9995649Z     ^[[90m323|^[[39m     ^[[34mexpect^[[39m(recovered^[[33m.^[[39mquality^[[33m.^[[39mresidual)^[[33m.^[[39m^[[34mtoBeLessThan^[[39m(^[[34m1e-8^[[39m)^[[33m;^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:38.9996565Z     ^[[90m324|^[[39m     expect(solveChain3d(ROOT, [...members].reverse())).toEqual(recover…
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:38.9996989Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:38.9997340Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[13/17]⎯^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:38.9997650Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:38.9998611Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/plugins/ik3d-fabrik.test.ts^[[2m > ^[[22m3D FABRIK evidence^[[2m > ^[[22mTH-173 keeps a recovered hinge tip fixed under an orientation goal
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:38.9999757Z ^[[31m^[[1mAssertionError^[[22m: expected 'converged' to be 'reached' // Object.is equality^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:39.0000211Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:39.0000515Z Expected: ^[[32m"^[[7mreach^[[27med"^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:39.0000987Z Received: ^[[31m"^[[7mconverg^[[27med"^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:39.0001278Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:39.0001797Z ^[[36m ^[[2m❯^[[22m packages/core/test/unit/plugins/ik3d-fabrik.test.ts:^[[2m501:33^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:39.0002707Z     ^[[90m499|^[[39m     ^[[35mconst^[[39m solved ^[[33m=^[[39m ^[[34msolveChain3d^[[39m(^[[33mROOT^[[39m^[[33m,^[[39m members)^[[33m;^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:39.0003830Z     ^[[90m500|^[[39m     ^[[35mconst^[[39m tip ^[[33m=^[[39m ^[[34mcomposeChain3d^[[39m(^[[33mROOT^[[39m^[[33m,^[[39m members^[[33m,^[[39m solved)^[[33m.^[[39mb^[[33m!^[[39m^[[33m;^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:39.0004943Z     ^[[90m501|^[[39m     ^[[34mexpect^[[39m(solved^[[33m.^[[39mquality^[[33m.^[[39mkind)^[[33m.^[[39m^[[34mtoBe^[[39m(^[[32m"reached"^[[39m)^[[33m;^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:39.0005784Z     ^[[90m   |^[[39m                                 ^[[31m^^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:39.0006643Z     ^[[90m502|^[[39m     ^[[34mexpect^[[39m(^[[34mframeDistance3d^[[39m(tip^[[33m,^[[39m goal))^[[33m.^[[39m^[[34mtoBeLessThan^[[39m(^[[34m1e-8^[[39m)^[[33m;^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:39.0007546Z     ^[[90m503|^[[39m     expect(Math.abs(frameDistance3d(tip, goal) - solved.quality.residu…
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:39.0007983Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:39.0008338Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[14/17]⎯^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:39.0008641Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:39.0009673Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/plugins/ik3d-fabrik.test.ts^[[2m > ^[[22m3D FABRIK evidence^[[2m > ^[[22mTH-193 pays the centre when a non-planar hinge accepts the pole-side default arc
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:39.0011047Z ^[[31m^[[1mAssertionError^[[22m: expected { kind: 'centre-then-descent' } to deeply equal { kind: 'centre-then-staged', …(1) }^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:39.0011672Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:39.0011919Z ^[[32m- Expected^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:39.0012290Z ^[[31m+ Received^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:39.0012530Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:39.0012751Z ^[[2m  {^[[22m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:39.0013383Z ^[[32m-   "kind": "centre-then-staged",^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:39.0013862Z ^[[32m-   "reach": 366.1987139820121,^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:39.0014342Z ^[[31m+   "kind": "centre-then-descent",^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:39.0014743Z ^[[2m  }^[[22m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:39.0015093Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:39.0015669Z ^[[36m ^[[2m❯^[[22m packages/core/test/unit/plugins/ik3d-fabrik.test.ts:^[[2m610:44^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:39.0016254Z     ^[[90m608|^[[39m       })^[[33m,^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:39.0016676Z     ^[[90m609|^[[39m     )^[[33m;^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:39.0017469Z     ^[[90m610|^[[39m     ^[[34mexpect^[[39m(^[[34mlegalStarts3d^[[39m(^[[33mROOT^[[39m^[[33m,^[[39m rig^[[33m,^[[39m pole))^[[33m.^[[39m^[[34mtoEqual^[[39m({
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:39.0018233Z     ^[[90m   |^[[39m                                            ^[[31m^^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:39.0019030Z     ^[[90m611|^[[39m       kind^[[33m:^[[39m ^[[32m"centre-then-staged"^[[39m^[[33m,^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:39.0020015Z     ^[[90m612|^[[39m       reach^[[33m:^[[39m lengths^[[33m.^[[39m^[[34mreduce^[[39m((sum^[[33m,^[[39m length) ^[[33m=>^[[39m sum ^[[33m+^[[39m length^[[33m,^[[39m ^[[34m0^[[39m)^[[33m,^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:39.0020620Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:39.0020974Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[15/17]⎯^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:39.0021285Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:39.0022707Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/plugins/limited-fabrik.test.ts^[[2m > ^[[22mlimited FABRIK: seed side, bidirectional limits and the limited cap (issue #514)^[[2m > ^[[22mTH-160 owns a bounded legal-range portfolio without charging met, stalled or unconstrained solves
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:39.0024087Z ^[[31m^[[1mAssertionError^[[22m: expected [ …(3) ] to have a length of 2 but got 3^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:39.0024491Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:39.0024723Z ^[[32m- Expected^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:39.0025213Z ^[[31m+ Received^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:39.0025443Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:39.0025658Z ^[[32m- 2^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:39.0025971Z ^[[31m+ 3^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:39.0026186Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:39.0026713Z ^[[36m ^[[2m❯^[[22m packages/core/test/unit/plugins/limited-fabrik.test.ts:^[[2m317:19^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:39.0034199Z     ^[[90m315|^[[39m     calls^[[33m.^[[39mlength ^[[33m=^[[39m ^[[34m0^[[39m^[[33m;^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:39.0035335Z     ^[[90m316|^[[39m     ^[[34mselectFabrik^[[39m(^[[35mnull^[[39m^[[33m,^[[39m []^[[33m,^[[39m ^[[35mfalse^[[39m^[[33m,^[[39m attempt^[[33m,^[[39m ^[[34mstaged^[[39m(^[[34m100^[[39m))^[[33m;^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:39.0036315Z     ^[[90m317|^[[39m     expect(calls).toHaveLength(2); // four units of miss exceed two pe…
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:39.0036917Z     ^[[90m   |^[[39m                   ^[[31m^^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:39.0037503Z     ^[[90m318|^[[39m     calls^[[33m.^[[39mlength ^[[33m=^[[39m ^[[34m0^[[39m^[[33m;^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:39.0038541Z     ^[[90m319|^[[39m     ^[[34mselectFabrik^[[39m(^[[35mnull^[[39m^[[33m,^[[39m []^[[33m,^[[39m ^[[35mfalse^[[39m^[[33m,^[[39m attempt^[[33m,^[[39m ^[[34mstaged^[[39m(^[[34m10^[[39m))^[[33m;^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:39.0039203Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:39.0039572Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[16/17]⎯^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:39.0039880Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:39.0041280Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/plugins/limited-fabrik.test.ts^[[2m > ^[[22mlimited FABRIK: seed side, bidirectional limits and the limited cap (issue #514)^[[2m > ^[[22mTH-174 pays for the symmetric endpoint only after all earlier legal starts miss
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:39.0042764Z ^[[31m^[[1mAssertionError^[[22m: expected [ 'base', 'opposite', 'base' ] to deeply equal [ 'base', 'opposite' ]^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:39.0043265Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:39.0043507Z ^[[32m- Expected^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:39.0043876Z ^[[31m+ Received^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:39.0044113Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:39.0044331Z ^[[2m  [^[[22m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:39.0044670Z ^[[2m    "base",^[[22m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:39.0045158Z ^[[2m    "opposite",^[[22m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:39.0045536Z ^[[31m+   "base",^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:39.0045873Z ^[[2m  ]^[[22m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:39.0046012Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:39.0046134Z 
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:39.0046679Z ^[[36m ^[[2m❯^[[22m packages/core/test/unit/plugins/limited-fabrik.test.ts:^[[2m425:19^[[22m^[[39m
+quality (node 24.21.0)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-29T04:37:39.0047587Z     ^[[90m423|^[[39m       ^[[34mstaged^[[39m(^[[34m10^[[39m)^[[33m,^[[39m
