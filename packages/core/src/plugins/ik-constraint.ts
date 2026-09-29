@@ -89,6 +89,26 @@ export function rangeCentre(limit: JointLimit): number {
 }
 
 /**
+ * The legal angle at `fraction` of a limit's range, the one owner of where a legal joint-space
+ * start holds a limited member in both dimensions: the 2D legal seed reads it for every range, and
+ * the 3D legal seed for a hinge's range and a swing-twist's twist (issues #523, #524, #527). A free
+ * limit has no range and answers zero, no local turn. The centre reads `rangeCentre` rather than
+ * interpolating, so the centred seed keeps the exact doubles it published before other fractions
+ * existed; any other fraction interpolates from `min`, which is legal for `fraction` in `[0, 1]`.
+ */
+export function legalRotation(limit: JointLimit, fraction: number): number {
+  if (fraction === 0.5) return rangeCentre(limit);
+  switch (limit.kind) {
+    case "free":
+      return 0;
+    case "range":
+      return limit.min + fraction * (limit.max - limit.min);
+    default:
+      return unreachable(limit);
+  }
+}
+
+/**
  * How near a limited angle, in degrees, may sit to a bound and still rest on it (ADR-126).
  *
  * The 2D solve measures a member's local angle with `atan2` over placed points, and the 3D solve

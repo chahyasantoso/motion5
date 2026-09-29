@@ -64,8 +64,9 @@ const CONFLICTED_ALTERNATIVES: readonly FabrikAlternative[] = Object.freeze([
  * A one-way range seeded on the side it forbids is projected onto its bound by the first outward
  * pass and held there, so the authored side can be a fixed point on a bound while the goal is
  * reachable from the other side. A capped attempt never settled at all, so its seed side is as much
- * in question. One opposite-side attempt is the whole of the remedy the selector owns: the rule
- * stays the baseline's `centroid`, because neither a limit nor a cap is a branch disagreement.
+ * in question. The rule stays the baseline's `centroid`, because neither a limit nor a cap is a
+ * branch disagreement. The legal starts that follow are the other half of the remedy
+ * (`legalStages`), because a mixed-sign chain has no arc side that is legal for every range.
  */
 const OPPOSITE_SIDE_ALTERNATIVES: readonly FabrikAlternative[] = Object.freeze([
   Object.freeze({ opposite: true, rule: "centroid" }),
@@ -84,17 +85,54 @@ const NO_ALTERNATIVES: readonly FabrikAlternative[] = Object.freeze([]);
 const LEGAL_RETRY_REACH_FRACTION = 0.02;
 
 /**
- * The legal-range starts a gated near miss pays for, in stages: both quartiles, then q10, then
- * q90. A later stage runs only while no candidate has converged, so the ceiling is four extra
- * attempts on top of the baseline and its opposite side, six in all.
+ * Legal starts in stages. Every stage runs only while no candidate has converged: a legal start is
+ * a remedy for a miss, so a rig the baseline or its opposite side already meets pays none of them
+ * and keeps the pose it published before legal starts existed.
  */
-const LEGAL_RANGE_STAGES: readonly (readonly LegalSeedFraction[])[] = Object.freeze([
+type LegalStages = readonly (readonly LegalSeedFraction[])[];
+
+/**
+ * The legal-range starts a gated near miss on a non-planar 3D hinge pays for, in stages: both
+ * quartiles, then q10, then q90. The ceiling is four extra attempts on top of the baseline and its
+ * opposite side, six in all (#527, ADR-130).
+ */
+const LEGAL_RANGE_STAGES: LegalStages = Object.freeze([
   Object.freeze([0.25, 0.75] as const),
   Object.freeze([0.1] as const),
   Object.freeze([0.9] as const),
 ]);
 
-/** Whether a baseline of this quality may pay for legal-range starts, read exhaustively. */
+/**
+ * The one legal start a limited or capped rig seeded by the arc pays for: every limited member at
+ * its range's centre (#524, ADR-131). A mixed-sign chain's arc bends every joint one way, so a
+ * range that demands the other way is projected onto its bound and held there; no arc side is
+ * legal for both signs, while the centre is legal for every range. The ceiling is one extra
+ * attempt on top of the baseline and its opposite side, three in all.
+ */
+const CENTRE_STAGES: LegalStages = Object.freeze([Object.freeze([0.5] as const)]);
+
+const NO_STAGES: LegalStages = Object.freeze([]);
+
+/**
+ * Which legal joint-space starts a rig can use, decided by the dimension's solve from the rig and
+ * read here exhaustively: the selector alone decides which of them a baseline pays for.
+ *
+ * `none` for a rig with no limited member, whose legal seed is a straight line FABRIK cannot bend
+ * out of. `centre` for a limited rig whose default seed is the arc (every 2D limited rig, and a 3D
+ * one with no addressed non-planar hinge). `staged` for an addressed non-planar 3D hinge path,
+ * whose default seed is already the centred legal one, so it pays the off-centre stages instead,
+ * and only within `LEGAL_RETRY_REACH_FRACTION` of its `reach`.
+ */
+export type LegalStarts =
+  | { readonly kind: "none" }
+  | { readonly kind: "centre" }
+  | { readonly kind: "staged"; readonly reach: number };
+
+export const NO_LEGAL_STARTS: LegalStarts = Object.freeze({ kind: "none" });
+
+export const CENTRE_LEGAL_START: LegalStarts = Object.freeze({ kind: "centre" });
+
+/** Whether a baseline of this quality may pay for legal starts, read exhaustively. */
 function legalRangeRetries(quality: IterativeQuality): boolean {
   switch (quality.kind) {
     case "limited":
@@ -106,6 +144,23 @@ function legalRangeRetries(quality: IterativeQuality): boolean {
       return false;
     default:
       return unreachable(quality);
+  }
+}
+
+/** The legal stages a baseline pays for: none unless it is limited or capped (`legalRangeRetries`). */
+function legalStages(starts: LegalStarts, baseline: IterativeQuality): LegalStages {
+  if (!legalRangeRetries(baseline)) return NO_STAGES;
+  switch (starts.kind) {
+    case "none":
+      return NO_STAGES;
+    case "centre":
+      return CENTRE_STAGES;
+    case "staged":
+      return baseline.residual <= LEGAL_RETRY_REACH_FRACTION * starts.reach
+        ? LEGAL_RANGE_STAGES
+        : NO_STAGES;
+    default:
+      return unreachable(starts);
   }
 }
 
@@ -145,16 +200,17 @@ export function fabrikAlternatives(quality: IterativeQuality): readonly FabrikAl
  * the opposite side (`fabrikAlternatives`). The baseline is itself a candidate, so the selected
  * result is never worse than the baseline under the comparator below. Losing candidates are
  * dropped; no restart metadata is published (ADR-107), and the selected result reports its own
- * `quality.iterations`. `legalRangeReach` opts in a non-planar 3D hinge only: a limited or capped
- * baseline within its narrow reach-relative band then pays for `LEGAL_RANGE_STAGES`, so a far miss
- * is never charged additional full limited-cap attempts.
+ * `quality.iterations`. A limited or capped baseline then pays the legal starts its rig can use
+ * (`legalStages`): the centre for a rig seeded by the arc, or the staged off-centre starts for a
+ * near miss on a non-planar 3D hinge, so a far miss there is never charged four more full
+ * limited-cap attempts. A free rig names `none` and keeps exactly the attempts it had.
  */
 export function selectFabrik<R, M, S extends Selectable>(
   root: R,
   members: readonly M[],
   flip: boolean,
   attempt: FabrikAttempt<R, M, S>,
-  legalRangeReach = 0,
+  legalStarts: LegalStarts = NO_LEGAL_STARTS,
 ): S {
   const baseline = attempt(root, members, flip, "centroid");
   let selected = baseline;
@@ -162,20 +218,11 @@ export function selectFabrik<R, M, S extends Selectable>(
     const candidate = attempt(root, members, opposite ? !flip : flip, rule);
     if (outranks(candidate.quality, selected.quality)) selected = candidate;
   }
-  if (
-    legalRangeReach > 0 &&
-    legalRangeRetries(baseline.quality) &&
-    baseline.quality.residual <= LEGAL_RETRY_REACH_FRACTION * legalRangeReach
-  ) {
-    for (const [stage, fractions] of LEGAL_RANGE_STAGES.entries()) {
-      if (stage > 0 && selected.quality.kind === "converged") break;
-      for (const fraction of fractions) {
-        const candidate = attempt(root, members, flip, "centroid", {
-          kind: "legal-range",
-          fraction,
-        });
-        if (outranks(candidate.quality, selected.quality)) selected = candidate;
-      }
+  for (const fractions of legalStages(legalStarts, baseline.quality)) {
+    if (selected.quality.kind === "converged") break;
+    for (const fraction of fractions) {
+      const candidate = attempt(root, members, flip, "centroid", { kind: "legal-range", fraction });
+      if (outranks(candidate.quality, selected.quality)) selected = candidate;
     }
   }
   return selected;

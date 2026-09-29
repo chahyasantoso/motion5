@@ -7,7 +7,12 @@ import {
   type FabrikConstraint,
   type FabrikPassMotion,
 } from "./fabrik-cap";
-import { selectFabrik } from "./fabrik-select";
+import {
+  CENTRE_LEGAL_START,
+  NO_LEGAL_STARTS,
+  selectFabrik,
+  type LegalStarts,
+} from "./fabrik-select";
 import type { FabrikSeed } from "./fabrik-seed";
 import { readNumber, segmentExtent } from "./frame";
 import {
@@ -485,11 +490,23 @@ export function legalRetryReach3d(members: readonly ChainMember3d[]): number {
 }
 
 /**
+ * The legal starts a 3D rig can use (`LegalStarts`): the staged off-centre starts for an addressed
+ * non-planar hinge path, whose default seed is already the centred legal one (ADR-130); else the
+ * centre for any other constrained rig, whose default seed is the arc (#524, ADR-131); else none.
+ */
+export function legalStarts3d(members: readonly ChainMember3d[]): LegalStarts {
+  const reach = legalRetryReach3d(members);
+  if (reach > 0) return { kind: "staged", reach };
+  return members.some(({ limit }) => limit !== undefined && constrains(limit))
+    ? CENTRE_LEGAL_START
+    : NO_LEGAL_STARTS;
+}
+
+/**
  * The tree solve at one magnitude through the shared closed selector: the authored-side attempt,
  * three alternatives for a conflicted baseline and one opposite-seed centroid retry for a limited
- * or capped baseline (#490, ADR-126, ADR-128). A near miss on an addressed non-planar hinge
- * path also pays the selector's staged legal-range starts, scaled by `legalRetryReach3d`; the
- * selector owns their order and six-attempt ceiling, not this attempt.
+ * or capped baseline (#490, ADR-126, ADR-128), then the legal starts `legalStarts3d` names. The
+ * selector owns their order and ceiling, not this attempt.
  */
 function selectTree3d(
   root: WorldFrame3d,
@@ -507,7 +524,7 @@ function selectTree3d(
       rule: CompromiseRule,
       seed?: FabrikSeed,
     ) => solveTree3dAttempt(frame, chain, pole, flip, rule, seed),
-    legalRetryReach3d(members),
+    legalStarts3d(members),
   );
 }
 

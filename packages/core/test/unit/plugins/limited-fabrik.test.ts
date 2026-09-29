@@ -34,6 +34,7 @@ import {
   fabrikAlternatives,
   selectFabrik,
   type FabrikAttempt,
+  type LegalStarts,
 } from "../../../src/plugins/fabrik-select";
 import {
   axisX3,
@@ -80,6 +81,9 @@ const PLANAR_TOLERANCE = 1e-5;
 const MATRIX_TOLERANCE = 1e-9;
 
 const range = (min: number, max: number): JointRange => ({ kind: "range", min, max });
+
+/** The staged legal starts of a non-planar 3D hinge path with `reach` world units (ADR-130). */
+const staged = (reach: number): LegalStarts => ({ kind: "staged", reach });
 
 /** A 2D upper arm hanging from the root and a limited forearm reaching for `(x, y)`. */
 function elbow2d(limit: JointRange, x: number, y: number, upper = 100, fore = 100): SolveMember[] {
@@ -245,7 +249,7 @@ describe("limited FABRIK: seed side, bidirectional limits and the limited cap (i
     expect(selected).toEqual(solveFabrik(ROOT, free, false));
   });
 
-  it("TH-160 owns a bounded legal-range portfolio without charging met, stalled or 2D solves", () => {
+  it("TH-160 owns a bounded legal-range portfolio without charging met, stalled or unconstrained solves", () => {
     const miss = { kind: "limited", iterations: 64, residual: 4, atBound: ["m"] } as const;
     const met = { kind: "converged", iterations: 18, residual: 0.0005 } as const;
     const calls: [boolean, string, string][] = [];
@@ -260,7 +264,7 @@ describe("limited FABRIK: seed side, bidirectional limits and the limited cap (i
       calls.push([flip, rule, name]);
       return { quality: name === "q0.75" ? met : miss };
     };
-    expect(selectFabrik(null, [], false, attempt, 250).quality).toBe(met);
+    expect(selectFabrik(null, [], false, attempt, staged(250)).quality).toBe(met);
     expect(calls).toEqual([
       [false, "centroid", "default"],
       [true, "centroid", "default"],
@@ -280,7 +284,7 @@ describe("limited FABRIK: seed side, bidirectional limits and the limited cap (i
           calls.push([false, "centroid", "default"]);
           return { quality: { kind, iterations: 1, residual: 0 } };
         },
-        100,
+        staged(100),
       );
       expect(calls).toHaveLength(1);
     }
@@ -293,7 +297,7 @@ describe("limited FABRIK: seed side, bidirectional limits and the limited cap (i
         calls.push([flip, "centroid", "default"]);
         return { quality: flip ? met : miss };
       },
-      100,
+      staged(100),
     );
     expect(calls).toHaveLength(2); // the baseline was outside the 2% gate
     calls.length = 0;
@@ -305,14 +309,14 @@ describe("limited FABRIK: seed side, bidirectional limits and the limited cap (i
         calls.push([flip, "centroid", "default"]);
         return { quality: flip ? met : miss };
       },
-      250,
+      staged(250),
     );
-    expect(calls).toHaveLength(4); // within the gate, quartiles can improve even an opposite-side hit
+    expect(calls).toHaveLength(2); // an opposite-side hit is met, so no legal start is paid (ADR-131)
     calls.length = 0;
-    selectFabrik(null, [], false, attempt, 100);
+    selectFabrik(null, [], false, attempt, staged(100));
     expect(calls).toHaveLength(2); // four units of miss exceed two percent of 100 units of reach
     calls.length = 0;
-    selectFabrik(null, [], false, attempt, 10);
+    selectFabrik(null, [], false, attempt, staged(10));
     expect(calls).toHaveLength(2); // distant misses do not pay two extra attempts
   });
 
@@ -330,7 +334,7 @@ describe("limited FABRIK: seed side, bidirectional limits and the limited cap (i
         calls.push(name);
         return { quality: name === "q0.75" ? met(0.0001) : name === "q0.25" ? met(0.0004) : miss };
       },
-      100,
+      staged(100),
     );
     expect(calls).toEqual(["base", "opposite", "q0.25", "q0.75"]);
     expect(selected.quality).toEqual(met(0.0001));
@@ -369,7 +373,7 @@ describe("limited FABRIK: seed side, bidirectional limits and the limited cap (i
         calls.push(name);
         return { quality: name === "q0.1" ? met : miss };
       },
-      100,
+      staged(100),
     );
     expect(calls).toEqual(["base", "opposite", "q0.25", "q0.75", "q0.1"]);
     expect(selected.quality).toBe(met);
@@ -384,7 +388,7 @@ describe("limited FABRIK: seed side, bidirectional limits and the limited cap (i
         calls.push(name);
         return { quality: name === "q0.25" ? met : miss };
       },
-      100,
+      staged(100),
     );
     expect(calls).toEqual(["base", "opposite", "q0.25", "q0.75"]);
   });
@@ -403,7 +407,7 @@ describe("limited FABRIK: seed side, bidirectional limits and the limited cap (i
         calls.push(name);
         return { quality: name === "q0.9" ? met : miss };
       },
-      100,
+      staged(100),
     );
     expect(calls).toEqual(["base", "opposite", "q0.25", "q0.75", "q0.1", "q0.9"]);
     expect(selected.quality).toBe(met);
@@ -416,7 +420,7 @@ describe("limited FABRIK: seed side, bidirectional limits and the limited cap (i
         calls.push(seed?.kind === "legal-range" ? `q${seed.fraction}` : flip ? "opposite" : "base");
         return { quality: miss };
       },
-      10,
+      staged(10),
     );
     expect(calls).toEqual(["base", "opposite"]);
   });
@@ -820,6 +824,18 @@ describe("limited FABRIK: seed side, bidirectional limits and the limited cap (i
     ],
   ];
 
+  /**
+   * The rigs through the arc-side portfolio alone, the baseline and its opposite side with no legal
+   * start: what #521 measured. Both are mixed-sign chains, so the full solve now meets them from
+   * the centred legal start (#524, TH-182); these cases hold the attempt-level evidence.
+   */
+  const arcOnly2d = (rig: readonly SolveMember[]) =>
+    selectFabrik(ROOT, rig, false, solveFabrikAttempt).quality;
+  const arcOnly3d = (rig: readonly SolveMember[]) =>
+    selectFabrik(ROOT3, planar3d(rig), false, (root, members, flip, rule, seed) =>
+      solveTree3dAttempt(root, members, UNBOUND_POLE3D, flip, rule, seed),
+    ).quality;
+
   it("TH-155 an attempt that never settles publishes its best completed pass, not its last", () => {
     // The best completed pass of each rig's attempts: 44.7738384833087 (seed 7, pass 1) and
     // 12.359072645022295 (seed 17, pass 39). The last-pass rule published 54.51863835775088 and
@@ -827,10 +843,7 @@ describe("limited FABRIK: seed side, bidirectional limits and the limited cap (i
     // assertion below fails on it.
     const bests = [44.7738384833087, 12.359072645022295];
     issue521Rigs.forEach((rig, index) => {
-      for (const quality of [
-        solveChain(ROOT, rig, false).quality,
-        solve3d(planar3d(rig)).quality,
-      ]) {
+      for (const quality of [arcOnly2d(rig), arcOnly3d(rig)]) {
         expect(quality.kind).toBe("limited");
         expect(quality.residual).toBeLessThanOrEqual(bests[index]!);
       }
@@ -839,8 +852,8 @@ describe("limited FABRIK: seed side, bidirectional limits and the limited cap (i
 
   it("CL-40 the issue #521 rigs publish the same bound members in 2D and 3D", () => {
     for (const rig of issue521Rigs) {
-      const flat = solveChain(ROOT, rig, false).quality;
-      const spatial = solve3d(planar3d(rig)).quality;
+      const flat = arcOnly2d(rig);
+      const spatial = arcOnly3d(rig);
       expect(flat.kind).toBe("limited");
       expect(spatial.kind).toBe("limited");
       if (flat.kind === "limited" && spatial.kind === "limited")

@@ -1,4 +1,6 @@
-import { segmentExtent, type WorldFrame, type WorldPoint } from "./frame";
+import { pivotFromBaseTip, segmentExtent, type WorldFrame, type WorldPoint } from "./frame";
+import { FREE_JOINT, legalRotation } from "./ik-constraint";
+import { solveLength, solveOffset, type SolveMember } from "./ik-member";
 
 /**
  * The FABRIK seed: the constant-curvature arc every iterative solve starts from, and the only owner
@@ -14,13 +16,18 @@ import { segmentExtent, type WorldFrame, type WorldPoint } from "./frame";
 
 const RADIANS = Math.PI / 180;
 
-/** Where a legal joint-space start holds each limited member within its range (#527, ADR-129). */
-export type LegalSeedFraction = 0.1 | 0.25 | 0.75 | 0.9;
+/**
+ * Where a legal joint-space start holds each limited member within its range: the centre (#524,
+ * ADR-131), or one of the staged fractions a near miss on a non-planar 3D hinge pays for (#527,
+ * ADR-130).
+ */
+export type LegalSeedFraction = 0.1 | 0.25 | 0.5 | 0.75 | 0.9;
 
 /**
- * Which start one FABRIK attempt takes: the default seed (the arc, or the centred legal seed where
- * the arc is illegal), or a legal start at `fraction` of every range. The selector passes it
- * through opaquely; only a 3D tree attempt reads `legal-range`, so 2D always seeds by default.
+ * Which start one FABRIK attempt takes: the default seed (the arc, or in 3D the centred legal seed
+ * where the arc is illegal), or a legal joint-space start at `fraction` of every range. The
+ * selector chooses which of them a solve pays for; each dimension's attempt reads the union
+ * exhaustively, the 2D one through `seedLegal` below and the 3D one through `ik3d-seed.ts`.
  */
 export type FabrikSeed =
   | { readonly kind: "default" }
@@ -110,4 +117,91 @@ export function seedArc(
     );
   }
   return Object.freeze(points);
+}
+
+/**
+ * The 2D legal seed: every member's tip for a start that is legal in joint space by construction,
+ * the planar image of the 3D legal seed (`ik3d-seed.ts`), so a planar rig starts from the same pose
+ * in both dimensions (issue #524, ADR-131).
+ *
+ * Built as `fk` composes, over `ids` in canonical order so a base is placed before its members:
+ * each member's pivot is its base's tip moved by its offset in the base's direction, its direction
+ * the base's plus its local angle, and its tip its length along that direction. A limited member
+ * holds `legalRotation` at `fraction` of its range. Each free member on an addressed path is then
+ * turned, ancestors first, by the angle that points the mean of its subtree's addressed tips at the
+ * mean of their aims, and only it and the members after it are recomposed. Only a free member
+ * turns, so the pose stays legal; `solveFabrik` offers it only to a rig with a limited member,
+ * because a free rig's legal seed is a straight line, the one start FABRIK cannot bend out of.
+ *
+ * It takes no `flip`. The 3D legal seed's opposite side is a half turn of a free subtree out of
+ * the plane, which the plane cannot express, and its in-plane mirror negates every limited angle
+ * below it, which is not legal; the arc's opposite side is already the selector's other
+ * alternative. The arithmetic is fixed for a given rig, so the seed is reproducible (ADR-111).
+ */
+export function seedLegal(
+  root: WorldFrame,
+  ids: readonly string[],
+  byId: ReadonlyMap<string, SolveMember>,
+  aims: ReadonlyMap<string, WorldPoint>,
+  fraction: LegalSeedFraction,
+): ReadonlyMap<string, WorldPoint> {
+  const count = ids.length;
+  const at = new Map(ids.map((id, index) => [id, index]));
+  const members = ids.map((id) => byId.get(id)!);
+  const parent = members.map(({ base }) => at.get(base) ?? -1);
+  const locals = members.map(({ limit }) => legalRotation(limit ?? FREE_JOINT, fraction));
+  // `%` is exact, so this is the frame the root names; unreduced, a turn added to a root rotation
+  // near `Number.MAX_VALUE` would be absorbed by its ulp and the free members would not turn.
+  const rootDirection = root.rotation % 360;
+  const directions = new Array<number>(count);
+  const pivots = new Array<WorldPoint>(count);
+  const tips = new Array<WorldPoint>(count);
+  const compose = (from: number): void => {
+    for (let index = from; index < count; index += 1) {
+      const base = parent[index]!;
+      const baseDirection = base < 0 ? rootDirection : directions[base]!;
+      const pivot = pivotFromBaseTip(
+        base < 0 ? root : tips[base]!,
+        baseDirection,
+        solveOffset(members[index]!),
+      );
+      const direction = baseDirection + locals[index]!;
+      const length = solveLength(members[index]!);
+      pivots[index] = pivot;
+      directions[index] = direction;
+      tips[index] = {
+        x: pivot.x + length * Math.cos(direction * RADIANS),
+        y: pivot.y + length * Math.sin(direction * RADIANS),
+      };
+    }
+  };
+  compose(0);
+  // The addressed leaves below each member, in canonical leaf order.
+  const below: string[][] = Array.from({ length: count }, () => []);
+  for (const leaf of aims.keys())
+    for (let index = at.get(leaf); index !== undefined && index >= 0; index = parent[index])
+      below[index]!.push(leaf);
+  for (let index = 0; index < count; index += 1) {
+    const leaves = below[index]!;
+    if (members[index]!.limit !== undefined || leaves.length === 0) continue;
+    let tipX = 0;
+    let tipY = 0;
+    let aimX = 0;
+    let aimY = 0;
+    for (const leaf of leaves) {
+      const tip = tips[at.get(leaf)!]!;
+      const aim = aims.get(leaf)!;
+      tipX += tip.x;
+      tipY += tip.y;
+      aimX += aim.x;
+      aimY += aim.y;
+    }
+    const pivot = pivots[index]!;
+    const share = 1 / leaves.length;
+    const from = Math.atan2(tipY * share - pivot.y, tipX * share - pivot.x);
+    const to = Math.atan2(aimY * share - pivot.y, aimX * share - pivot.x);
+    locals[index] = locals[index]! + (to - from) / RADIANS;
+    compose(index);
+  }
+  return new Map(ids.map((id, index) => [id, Object.freeze(tips[index]!)]));
 }

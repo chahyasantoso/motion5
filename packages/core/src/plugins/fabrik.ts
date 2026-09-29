@@ -8,8 +8,8 @@ import {
 import { solveLength, solveOffset, type SolveMember } from "./ik-member";
 import { aimPoint, goalMiss, readGoal, type GoalReading } from "./ik-goal-reading";
 import { branchPulls, compromise, type CompromiseRule, type Pull } from "./ik-goal";
-import { selectFabrik } from "./fabrik-select";
-import { seedArc } from "./fabrik-seed";
+import { CENTRE_LEGAL_START, NO_LEGAL_STARTS, selectFabrik } from "./fabrik-select";
+import { DEFAULT_FABRIK_SEED, seedArc, seedLegal, type FabrikSeed } from "./fabrik-seed";
 import {
   FabrikIncumbent,
   fabrikPassBudget,
@@ -137,6 +137,7 @@ export function solveFabrikAttempt(
   members: readonly SolveMember[],
   flip = false,
   compromiseRule: CompromiseRule = "centroid",
+  seed: FabrikSeed = DEFAULT_FABRIK_SEED,
 ): FabrikSolution {
   // Canonical order, child counts, leaves and serial depth are topology rather than arithmetic, so
   // they are read through `ik-topology.ts`, the owner the 3D solve reads too (ADR-122). It throws
@@ -225,21 +226,25 @@ export function solveFabrikAttempt(
     readings.set(leaf, reading);
     aims.set(leaf, Object.freeze({ x: x!, y: y! }));
   }
-  // Seeded one root-to-leaf path at a time, in canonical leaf order. A member two branches share is
-  // seeded by the first of them, and every branch is enforced to length below, so the sharing costs
-  // a direction and nothing else.
-  for (const leaf of addressed) {
-    const goal = aims.get(leaf)!;
-    const path: string[] = [];
-    let cursor = leaf;
-    while (isMember(cursor)) {
-      path.unshift(cursor);
-      cursor = baseOf(cursor);
-    }
-    const seeded = seedArc(root, goal, path.map(lengthOf), flip);
-    path.forEach((id, index) => {
-      if (!tips.has(id)) tips.set(id, seeded[index]!);
-    });
+  // The default seed takes one root-to-leaf path at a time, in canonical leaf order. A member two
+  // branches share is seeded by the first of them, and every branch is enforced to length below, so
+  // the sharing costs a direction and nothing else. A legal start places every member (ADR-131).
+  switch (seed.kind) {
+    case "default":
+      for (const leaf of addressed) {
+        const path: string[] = [];
+        for (let cursor = leaf; isMember(cursor); cursor = baseOf(cursor)) path.unshift(cursor);
+        const seeded = seedArc(root, aims.get(leaf)!, path.map(lengthOf), flip);
+        path.forEach((id, index) => {
+          if (!tips.has(id)) tips.set(id, seeded[index]!);
+        });
+      }
+      break;
+    case "legal-range":
+      for (const [id, tip] of seedLegal(root, ids, byId, aims, seed.fraction)) tips.set(id, tip);
+      break;
+    default:
+      return unreachable(seed);
   }
   // A member on no addressed path still needs a position. Straight out along the root's own
   // rotation, because a member with nothing to reach for has no direction of its own to prefer.
@@ -567,12 +572,21 @@ export function iterativeQuality(outcome: IterativeOutcome): IterativeQuality {
 
 /**
  * Solve once with the authored seed; a conflicted baseline pays three alternatives, while a
- * limited or capped baseline pays one opposite-seed retry with the centroid rule (ADR-128).
+ * limited or capped baseline pays one opposite-seed retry with the centroid rule (ADR-128) and,
+ * on a rig with a limited member, one centred legal start (#524, ADR-131). The selector owns the
+ * order and the ceiling; this only names which legal starts the rig can use.
  */
 export function solveFabrik(
   root: WorldFrame,
   members: readonly SolveMember[],
   flip = false,
 ): FabrikSolution {
-  return selectFabrik(root, members, flip, solveFabrikAttempt);
+  const limited = members.some(({ limit }) => limit !== undefined);
+  return selectFabrik(
+    root,
+    members,
+    flip,
+    solveFabrikAttempt,
+    limited ? CENTRE_LEGAL_START : NO_LEGAL_STARTS,
+  );
 }

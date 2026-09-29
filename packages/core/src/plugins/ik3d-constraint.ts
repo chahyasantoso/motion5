@@ -39,8 +39,8 @@ import {
   atBound,
   JOINT_BOUND_TOLERANCE,
   FREE_JOINT,
+  legalRotation,
   limitRotation,
-  rangeCentre,
   readAngleRange,
   type JointLimit,
 } from "./ik-constraint";
@@ -282,33 +282,17 @@ export function centreLocal3d(limit: JointLimit3d, rest: Matrix3): Matrix3 {
   return legalLocal3d(limit, rest, 0.5);
 }
 
-/**
- * The angle at `fraction` of a range. The centre reads `rangeCentre` rather than interpolating, so
- * the default legal seed keeps the exact bytes it published before legal-range starts existed.
- */
-function legalAngle(range: JointLimit, fraction: number): number {
-  if (fraction === 0.5) return rangeCentre(range);
-  switch (range.kind) {
-    case "free":
-      return 0;
-    case "range":
-      return range.min + fraction * (range.max - range.min);
-    default:
-      return unreachable(range);
-  }
-}
-
 /** A legal local at `fraction` of a member's angle range; cone swing stays at zero. */
 export function legalLocal3d(limit: JointLimit3d, rest: Matrix3, fraction: number): Matrix3 {
   switch (limit.kind) {
     case "free":
       return rest;
     case "hinge":
-      return rotationAboutAxis3d(limit.axis, legalAngle(limit.range, fraction));
+      return rotationAboutAxis3d(limit.axis, legalRotation(limit.range, fraction));
     case "cone":
       return rotationAboutAxis3d(LOCAL_X3, 0);
     case "swing-twist":
-      return rotationAboutAxis3d(LOCAL_X3, legalAngle(limit.twist, fraction));
+      return rotationAboutAxis3d(LOCAL_X3, legalRotation(limit.twist, fraction));
     default:
       return unreachable(limit);
   }
