@@ -66,3 +66,5 @@ checks passed on the PR head. The search is finite, so this is not a completenes
 arbitrary rigs: offsets, branches, cones, swing-twist, constrained first members and more than
 five members stay with FABRIK's answer. Mixed-sign serial chains are
 [#524](https://github.com/chahyasantoso/motion5/issues/524), a separate record.
+
+**Refined by [ADR-131](./ADR-131-centred-legal-start-for-mixed-sign-chains.md), 2026-09-29.** Every legal stage, the first included, now runs only while no candidate has converged, and 2D and planar 3D limited rigs pay one centred legal start.
