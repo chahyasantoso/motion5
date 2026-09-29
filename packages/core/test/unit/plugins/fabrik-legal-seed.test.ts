@@ -1,6 +1,6 @@
 /** Issue #524, ADR-131: a reachable mixed-sign constrained chain is no longer trapped by the arc
- * seed. The selector pays one centred legal start after the arc's two sides on a limited or capped
- * baseline of a limited rig, in both dimensions, and nothing more anywhere else. TH-181 and TH-182
+ * seed. The selector pays a centred legal start after the two arc sides, then gated off-centre
+ * starts only for a near unresolved miss. TH-181 and TH-182
  * fail on the pre-#524 solver: it paid no legal start in 2D or on a planar 3D rig, so every rig in
  * TH-182 ended `limited` in both dimensions at the residual its comment records. */
 import { describe, expect, it } from "vitest";
@@ -332,7 +332,7 @@ describe("mixed-sign legal start (issue #524, ADR-131)", () => {
 
   it("TH-185 each dimension names the legal starts its rig can use, and a met rig pays one attempt", () => {
     const planar = planar3d(REPRODUCTIONS[0]!);
-    expect(legalStarts3d(planar)).toBe(CENTRE_LEGAL_START);
+    expect(legalStarts3d(planar)).toEqual({ kind: "centre-then-staged", reach: 244.1 });
     expect(legalStarts3d(planar.map(({ limit: _limit, ...member }) => member))).toBe(
       NO_LEGAL_STARTS,
     );
@@ -353,5 +353,57 @@ describe("mixed-sign legal start (issue #524, ADR-131)", () => {
     expect(selected.quality.kind).toBe("converged");
     expect(attempts).toBe(1);
     expect(selected).toEqual(solveFabrikAttempt(ROOT, easy, false));
+  });
+
+  it("TH-186 a near planar miss can leave the centre basin through a bounded off-centre start", () => {
+    const rig = serial(
+      39.61540713906288,
+      [
+        [94.90497339516878, range(0, 143.3545655105263)],
+        [46.51128927245736, range(-141.18539445102215, -28.930124437902123)],
+        [54.92882704362273, range(-97.43157058954239, -84.86721032997593)],
+        [79.52963413670659, range(-98.29837644472718, 0)],
+      ],
+      { x: 113.28647554557269, y: -101.44358599430358 },
+    );
+    const arcAndCentre = selectFabrik(ROOT, rig, false, solveFabrikAttempt, CENTRE_LEGAL_START);
+    expect(arcAndCentre.quality.kind).toBe("limited");
+    const planar = planar3d(rig);
+    const starts = legalStarts3d(planar);
+    expect(starts.kind).toBe("centre-then-staged");
+    const flat = solveChain(ROOT, rig, false);
+    const spatial = solveChain3d(ROOT3, planar, UNBOUND_POLE3D);
+    expect(flat.quality.kind).toBe("converged");
+    expect(spatial.quality.kind).toBe("converged");
+    expect(flat.quality.residual).toBeLessThanOrEqual(FABRIK_TOLERANCE);
+    expect(spatial.quality.residual).toBeLessThanOrEqual(FABRIK_TOLERANCE);
+    expect(compose2d(rig, flat.rotations).get("m4")!.x).toBeCloseTo(rig[4]!.goal!.x, 3);
+    expect(solveChain3d(ROOT3, planar, UNBOUND_POLE3D)).toEqual(spatial);
+  });
+
+  it("TH-187 the planar off-centre stages use the selected arc miss and stop on convergence", () => {
+    const calls: string[] = [];
+    const near = { kind: "centre-then-staged", reach: 100 } as const;
+    const hit = quality("converged", 0.0001);
+    const answer = scripted(calls, {
+      base: quality("limited", 50),
+      opposite: quality("limited", 1),
+      "q0.5": quality("limited", 20),
+      "q0.75": hit,
+    });
+    expect(selectFabrik(null, [], false, answer, near).quality).toBe(hit);
+    expect(calls).toEqual(["base", "opposite", "q0.5", "q0.25", "q0.75"]);
+    calls.length = 0;
+    selectFabrik(null, [], false, scripted(calls, { base: quality("limited", 50) }), near);
+    expect(calls).toEqual(["base", "opposite", "q0.5"]);
+    calls.length = 0;
+    selectFabrik(
+      null,
+      [],
+      false,
+      scripted(calls, { base: quality("limited", 50), opposite: hit }),
+      near,
+    );
+    expect(calls).toEqual(["base", "opposite"]);
   });
 });

@@ -1,4 +1,4 @@
-import type { WorldFrame } from "./frame";
+import { segmentExtent, type WorldFrame } from "./frame";
 import type { SolveMember } from "./ik-member";
 import type { FabrikSolution } from "./fabrik";
 import type { CompromiseRule } from "./ik-goal";
@@ -103,13 +103,16 @@ const LEGAL_RANGE_STAGES: LegalStages = Object.freeze([
 ]);
 
 /**
- * The one legal start a limited or capped rig seeded by the arc pays for: every limited member at
+ * The first legal start a limited or capped rig seeded by the arc pays for: every limited member at
  * its range's centre (#524, ADR-131). A mixed-sign chain's arc bends every joint one way, so a
  * range that demands the other way is projected onto its bound and held there; no arc side is
- * legal for both signs, while the centre is legal for every range. The ceiling is one extra
- * attempt on top of the baseline and its opposite side, three in all.
+ * legal for both signs, while the centre is legal for every range. A distant miss stops here.
  */
 const CENTRE_STAGES: LegalStages = Object.freeze([Object.freeze([0.5] as const)]);
+const CENTRE_THEN_RANGE_STAGES: LegalStages = Object.freeze([
+  Object.freeze([0.5] as const),
+  ...LEGAL_RANGE_STAGES,
+]);
 
 const NO_STAGES: LegalStages = Object.freeze([]);
 
@@ -117,20 +120,41 @@ const NO_STAGES: LegalStages = Object.freeze([]);
  * Which legal joint-space starts a rig can use, decided by the dimension's solve from the rig and
  * read here exhaustively: the selector alone decides which of them a baseline pays for.
  *
- * `none` for a rig with no limited member, whose legal seed is a straight line FABRIK cannot bend
- * out of. `centre` for a limited rig whose default seed is the arc (every 2D limited rig, and a 3D
- * one with no addressed non-planar hinge). `staged` for an addressed non-planar 3D hinge path,
- * whose default seed is already the centred legal one, so it pays the off-centre stages instead,
- * and only within `LEGAL_RETRY_REACH_FRACTION` of its `reach`.
+ * `none` for a rig with no limited member, `centre` for a zero-reach constrained rig,
+ * `centre-then-staged` for an addressed 2D or planar 3D constrained rig whose selected arc miss
+ * gates off-centre retries, and `staged` for a non-planar 3D hinge path whose default seed is
+ * already centred and whose existing off-centre gate reads the baseline.
  */
 export type LegalStarts =
   | { readonly kind: "none" }
   | { readonly kind: "centre" }
+  | { readonly kind: "centre-then-staged"; readonly reach: number }
   | { readonly kind: "staged"; readonly reach: number };
 
 export const NO_LEGAL_STARTS: LegalStarts = Object.freeze({ kind: "none" });
 
 export const CENTRE_LEGAL_START: LegalStarts = Object.freeze({ kind: "centre" });
+
+/** Scale of addressed paths only: unrelated siblings cannot enlarge the near-miss retry band. */
+export function addressedReach<
+  M extends { id: string; base: string; length: number; goal?: unknown },
+>(members: readonly M[], offsetExtent: (member: M) => number): number {
+  const byId = new Map(members.map((member) => [member.id, member]));
+  let reach = 0;
+  for (const leaf of members) {
+    if (leaf.goal === undefined) continue;
+    let pathReach = 0;
+    let current: M | undefined = leaf;
+    const seen = new Set<string>();
+    while (current !== undefined && !seen.has(current.id)) {
+      seen.add(current.id);
+      pathReach += segmentExtent(current.length) + offsetExtent(current);
+      current = byId.get(current.base);
+    }
+    reach = Math.max(reach, pathReach);
+  }
+  return reach;
+}
 
 /** Whether a baseline of this quality may pay for legal starts, read exhaustively. */
 function legalRangeRetries(quality: IterativeQuality): boolean {
@@ -148,13 +172,21 @@ function legalRangeRetries(quality: IterativeQuality): boolean {
 }
 
 /** The legal stages a baseline pays for: none unless it is limited or capped (`legalRangeRetries`). */
-function legalStages(starts: LegalStarts, baseline: IterativeQuality): LegalStages {
+function legalStages(
+  starts: LegalStarts,
+  baseline: IterativeQuality,
+  selected: IterativeQuality,
+): LegalStages {
   if (!legalRangeRetries(baseline)) return NO_STAGES;
   switch (starts.kind) {
     case "none":
       return NO_STAGES;
     case "centre":
       return CENTRE_STAGES;
+    case "centre-then-staged":
+      return selected.residual <= LEGAL_RETRY_REACH_FRACTION * starts.reach
+        ? CENTRE_THEN_RANGE_STAGES
+        : CENTRE_STAGES;
     case "staged":
       return baseline.residual <= LEGAL_RETRY_REACH_FRACTION * starts.reach
         ? LEGAL_RANGE_STAGES
@@ -201,9 +233,9 @@ export function fabrikAlternatives(quality: IterativeQuality): readonly FabrikAl
  * result is never worse than the baseline under the comparator below. Losing candidates are
  * dropped; no restart metadata is published (ADR-107), and the selected result reports its own
  * `quality.iterations`. A limited or capped baseline then pays the legal starts its rig can use
- * (`legalStages`): the centre for a rig seeded by the arc, or the staged off-centre starts for a
- * near miss on a non-planar 3D hinge, so a far miss there is never charged four more full
- * limited-cap attempts. A free rig names `none` and keeps exactly the attempts it had.
+ * (`legalStages`): the centre for an arc-seeded rig, then off-centre starts if its best arc
+ * candidate is near enough; a non-planar path retains its baseline-gated off-centre starts.
+ * A free rig names `none` and keeps exactly the attempts it had.
  */
 export function selectFabrik<R, M, S extends Selectable>(
   root: R,
@@ -218,7 +250,7 @@ export function selectFabrik<R, M, S extends Selectable>(
     const candidate = attempt(root, members, opposite ? !flip : flip, rule);
     if (outranks(candidate.quality, selected.quality)) selected = candidate;
   }
-  for (const fractions of legalStages(legalStarts, baseline.quality)) {
+  for (const fractions of legalStages(legalStarts, baseline.quality, selected.quality)) {
     if (selected.quality.kind === "converged") break;
     for (const fraction of fractions) {
       const candidate = attempt(root, members, flip, "centroid", { kind: "legal-range", fraction });

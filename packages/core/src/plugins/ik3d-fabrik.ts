@@ -10,6 +10,7 @@ import {
 import {
   CENTRE_LEGAL_START,
   NO_LEGAL_STARTS,
+  addressedReach,
   selectFabrik,
   type LegalStarts,
 } from "./fabrik-select";
@@ -491,15 +492,18 @@ export function legalRetryReach3d(members: readonly ChainMember3d[]): number {
 
 /**
  * The legal starts a 3D rig can use (`LegalStarts`): the staged off-centre starts for an addressed
- * non-planar hinge path, whose default seed is already the centred legal one (ADR-130); else the
- * centre for any other constrained rig, whose default seed is the arc (#524, ADR-131); else none.
+ * non-planar hinge path, whose default seed is already centred (ADR-130); else the centre and
+ * gated off-centre stages for addressed planar constraints (#524, ADR-131); else none.
  */
 export function legalStarts3d(members: readonly ChainMember3d[]): LegalStarts {
   const reach = legalRetryReach3d(members);
   if (reach > 0) return { kind: "staged", reach };
-  return members.some(({ limit }) => limit !== undefined && constrains(limit))
-    ? CENTRE_LEGAL_START
-    : NO_LEGAL_STARTS;
+  if (!members.some(({ limit }) => limit !== undefined && constrains(limit)))
+    return NO_LEGAL_STARTS;
+  const planarReach = addressedReach(members, ({ offset }) =>
+    norm3([offset.x, offset.y, offset.z]),
+  );
+  return planarReach > 0 ? { kind: "centre-then-staged", reach: planarReach } : CENTRE_LEGAL_START;
 }
 
 /**
