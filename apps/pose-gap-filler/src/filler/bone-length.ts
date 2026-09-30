@@ -26,8 +26,7 @@ export const DEFAULT_LENGTH_WINDOW = 90;
 export function createBoneLengthEstimator(
   window: number = DEFAULT_LENGTH_WINDOW,
 ): BoneLengthEstimator {
-  if (!Number.isInteger(window) || window < 1)
-    throw new Error(`Bone length window must be a positive integer, got ${window}.`);
+  requirePositiveInteger(window, "Bone length window");
   const medians = new Map<BoneId, RollingMedian>();
   return {
     length: (bone) => medians.get(bone)?.value(),
@@ -60,7 +59,7 @@ export class RollingMedian {
   #next = 0;
 
   constructor(capacity: number) {
-    this.capacity = capacity;
+    this.capacity = requirePositiveInteger(capacity, "Rolling median capacity");
   }
 
   push(sample: number): void {
@@ -81,6 +80,12 @@ export class RollingMedian {
     const middle = sorted.length >> 1;
     return sorted.length % 2 === 1 ? sorted[middle]! : (sorted[middle - 1]! + sorted[middle]!) / 2;
   }
+}
+
+function requirePositiveInteger(value: number, what: string): number {
+  if (!Number.isInteger(value) || value < 1)
+    throw new Error(`${what} must be a positive integer, got ${value}.`);
+  return value;
 }
 
 /** The first index whose value is not below `value`, in an ascending array. */

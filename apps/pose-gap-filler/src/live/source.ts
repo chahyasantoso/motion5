@@ -57,6 +57,22 @@ async function loadLandmarker(): Promise<unknown> {
 }
 
 /**
+ * One timed detection. MediaPipe's VIDEO mode refuses a timestamp that does not increase, so the
+ * frame time is the clock or one past the previous one, whichever is later; `detectMs` is the wall
+ * time `detect` itself took.
+ */
+export function detectSample(
+  detect: (tMs: number) => unknown,
+  lastMs: number,
+  now: () => number = () => performance.now(),
+): SourceSample {
+  const startedAt = now();
+  const tMs = Math.max(startedAt, lastMs + 1);
+  const result = detect(tMs);
+  return { result, tMs, detectMs: now() - startedAt };
+}
+
+/**
  * The webcam through MediaPipe Pose Landmarker, one detection per animation frame.
  *
  * Every start is a generation: `stop` ends the current one, and a startup that resumes after its
@@ -99,13 +115,14 @@ export function createMediaPipeWebcamSource(video: HTMLVideoElement): LandmarkSo
         if (!live()) return releaseAll();
         const tick = () => {
           if (!live()) return;
-          // MediaPipe's VIDEO mode refuses a timestamp that does not increase.
-          const startedAt = performance.now();
-          const tMs = Math.max(startedAt, lastMs + 1);
-          lastMs = tMs;
-          const result = call(landmarker, "detectForVideo", video, tMs);
-          onSample({ result, tMs, detectMs: performance.now() - startedAt });
-          frame = requestAnimationFrame(tick);
+          const sample = detectSample(
+            (tMs) => call(landmarker, "detectForVideo", video, tMs),
+            lastMs,
+          );
+          lastMs = sample.tMs;
+          onSample(sample);
+          // A consumer may stop the source from inside `onSample`: no frame after that.
+          if (live()) frame = requestAnimationFrame(tick);
         };
         let frame = requestAnimationFrame(tick);
         acquired.push(() => cancelAnimationFrame(frame));

@@ -27,6 +27,8 @@ describe("filler factory and bone lengths", () => {
 
   it("GF-5 takes a bounded median over trusted samples only", () => {
     expect(() => createBoneLengthEstimator(0)).toThrow(/positive integer/);
+    for (const capacity of [0, -1, 1.5, Number.NaN, Number.POSITIVE_INFINITY])
+      expect(() => new RollingMedian(capacity)).toThrow(/positive integer/);
     const rolling = new RollingMedian(4);
     expect(rolling.value()).toBeUndefined();
     for (const sample of [3, 1, 2]) rolling.push(sample);
