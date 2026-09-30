@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>motion5 pose gap filler experiment</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 1rem;
+        background: #080c14;
+        color: #f1f5f9;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      }
+
+      .stage {
+        position: relative;
+        width: 640px;
+        height: 480px;
+      }
+
+      .stage video,
+      .stage svg {
+        position: absolute;
+        inset: 0;
+        width: 640px;
+        height: 480px;
+      }
+
+      .controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        align-items: center;
+        margin: 0.75rem 0;
+        font-size: 0.85rem;
+      }
+
+      #timings {
+        font-family: ui-monospace, monospace;
+        font-size: 0.75rem;
+        color: #8492a6;
+      }
+
+      .solved-chain {
+        fill: none;
+        stroke: #34d399;
+        stroke-width: 4;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .mark-raw {
+        fill: #8492a6;
+      }
+
+      .mark-measured {
+        fill: #38bdf8;
+      }
+
+      .mark-inferred {
+        fill: none;
+        stroke: #fbbf24;
+        stroke-width: 2;
+        stroke-dasharray: 3 2;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Pose gap filler</h1>
+    <div class="controls">
+      <button id="start" type="button">Start camera</button>
+    </div>
+    <div class="stage">
+      <video id="video" playsinline muted></video>
+      <svg id="overlay"></svg>
+    </div>
+    <p id="timings"></p>
+    <script type="module" src="./src/live/main.ts"></script>
+  </body>
+</html>
