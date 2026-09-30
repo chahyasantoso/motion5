@@ -1,6 +1,7 @@
 import type { JointObservation, LandmarkFrame } from "./frame";
 import { MEDIAPIPE_INDEX, jointRecord } from "./landmarks";
 import { type LandmarkSpace } from "./space";
+import { unreachable } from "./unreachable";
 import type { Vec } from "./vec";
 
 /** The stage an image-space frame is mapped onto, in the pixels the overlay and the rig use. */
@@ -43,10 +44,8 @@ function poseKey(space: LandmarkSpace): "landmarks" | "worldLandmarks" {
       return "landmarks";
     case "world":
       return "worldLandmarks";
-    default: {
-      const unhandled: never = space;
-      throw new Error(`Unhandled landmark space: ${JSON.stringify(unhandled)}`);
-    }
+    default:
+      return unreachable(space, "landmark space");
   }
 }
 
@@ -91,9 +90,7 @@ function toSpace(
       return x === undefined || y === undefined || z === undefined
         ? undefined
         : [x * WORLD_UNITS_PER_METRE, y * WORLD_UNITS_PER_METRE, z * WORLD_UNITS_PER_METRE];
-    default: {
-      const unhandled: never = space;
-      throw new Error(`Unhandled landmark space: ${JSON.stringify(unhandled)}`);
-    }
+    default:
+      return unreachable(space, "landmark space");
   }
 }

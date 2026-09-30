@@ -2,10 +2,9 @@ import { createManualClock, createMicrotaskScheduler } from "@motion5/core";
 import { createGsapInterpolator } from "@motion5/core/adapters";
 import { gsap } from "gsap";
 import { parsePoseResult, type StageSize } from "../filler/adapter";
-import { LIMBS, type LimbId } from "../filler/landmarks";
 import { createGapPipeline } from "../filler/pipeline";
 import { IMAGE_SPACE } from "../filler/space";
-import { loadImageRig, readSolvedLimb, type SolvedLimb } from "../rig/rig";
+import { loadImageRig, readWrittenLimbs } from "../rig/rig";
 import { createImageWriter } from "../rig/writer";
 import { drawOverlay } from "./overlay";
 import { createMediaPipeWebcamSource } from "./source";
@@ -43,23 +42,17 @@ function main(): void {
   start.addEventListener("click", () => {
     start.disabled = true;
     source
-      .start((result, tMs) => {
+      .start(({ result, tMs, detectMs }) => {
         const timer = createStageTimer();
-        timer.mark("detect");
         const frame = parsePoseResult(result, tMs, IMAGE_SPACE, STAGE);
         timer.mark("adapt");
         const { trusted, filled } = pipeline.step(frame);
         timer.mark("fill");
-        writer.write(filled, trusted, pipeline.lengths);
+        const writes = writer.write(filled, trusted, pipeline.lengths);
         timer.mark("write");
-        const solved = new Map<LimbId, SolvedLimb>();
-        for (const limb of LIMBS) {
-          const chain = readSolvedLimb(project, limb.id);
-          if (chain !== undefined) solved.set(limb.id, chain);
-        }
-        drawOverlay(svg, frame, filled, solved);
+        drawOverlay(svg, frame, filled, readWrittenLimbs(project, writes));
         timer.mark("draw");
-        const timings = timer.finish(tMs);
+        const timings = timer.finish(tMs, detectMs);
         readout.textContent = formatTimings(timings);
         if (log) console.debug(JSON.stringify(timings));
       })

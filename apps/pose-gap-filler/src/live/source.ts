@@ -1,10 +1,20 @@
+/** One producer result: the raw `unknown` result, its frame time and what detecting it cost. */
+export interface SourceSample {
+  readonly result: unknown;
+  /** The producer's frame time, the only clock downstream reads. */
+  readonly tMs: number;
+  /** Wall time the detector took for this result, live instrumentation only. */
+  readonly detectMs: number;
+}
+
 /**
  * The port every landmark producer sits behind. A result is `unknown` on purpose: the adapter
  * (`filler/adapter.ts`) is the only owner of MediaPipe's shape, so no producer types it.
  */
 export interface LandmarkSource {
-  /** Starts producing; `tMs` is the producer's frame time, the only clock downstream reads. */
-  start(onResult: (result: unknown, tMs: number) => void): Promise<void>;
+  /** Starts producing. Resolves once running, or once a `stop` during startup has cancelled it. */
+  start(onSample: (sample: SourceSample) => void): Promise<void>;
+  /** Stops producing and releases the camera and the detector, including a startup in flight. */
   stop(): void;
 }
 
@@ -46,32 +56,65 @@ async function loadLandmarker(): Promise<unknown> {
   });
 }
 
-/** The webcam through MediaPipe Pose Landmarker, one detection per decoded video frame. */
+/**
+ * The webcam through MediaPipe Pose Landmarker, one detection per animation frame.
+ *
+ * Every start is a generation: `stop` ends the current one, and a startup that resumes after its
+ * generation ended releases what it acquired instead of running, so a `pagehide` during the model
+ * download or the camera prompt cannot resurrect the source after teardown.
+ */
 export function createMediaPipeWebcamSource(video: HTMLVideoElement): LandmarkSource {
-  let running = false;
-  let stream: MediaStream | undefined;
+  let generation = 0;
+  let release: (() => void) | undefined;
   let lastMs = -Infinity;
+  const stop = () => {
+    generation += 1;
+    release?.();
+    release = undefined;
+  };
   return {
-    async start(onResult) {
-      const landmarker = await loadLandmarker();
-      stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } });
-      video.srcObject = stream;
-      await video.play();
-      running = true;
-      const tick = () => {
-        if (!running) return;
-        // MediaPipe's VIDEO mode refuses a timestamp that does not increase.
-        const tMs = Math.max(performance.now(), lastMs + 1);
-        lastMs = tMs;
-        onResult(call(landmarker, "detectForVideo", video, tMs), tMs);
-        requestAnimationFrame(tick);
+    async start(onSample) {
+      stop();
+      const current = generation;
+      const live = () => current === generation;
+      const acquired: Array<() => void> = [];
+      const releaseAll = () => {
+        for (const free of acquired.splice(0).reverse()) free();
       };
-      requestAnimationFrame(tick);
+      release = releaseAll;
+      try {
+        const landmarker = await loadLandmarker();
+        acquired.push(() => void call(landmarker, "close"));
+        if (!live()) return releaseAll();
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { width: 640, height: 480 },
+        });
+        acquired.push(() => {
+          for (const track of stream.getTracks()) track.stop();
+          video.srcObject = null;
+        });
+        if (!live()) return releaseAll();
+        video.srcObject = stream;
+        await video.play();
+        if (!live()) return releaseAll();
+        const tick = () => {
+          if (!live()) return;
+          // MediaPipe's VIDEO mode refuses a timestamp that does not increase.
+          const startedAt = performance.now();
+          const tMs = Math.max(startedAt, lastMs + 1);
+          lastMs = tMs;
+          const result = call(landmarker, "detectForVideo", video, tMs);
+          onSample({ result, tMs, detectMs: performance.now() - startedAt });
+          frame = requestAnimationFrame(tick);
+        };
+        let frame = requestAnimationFrame(tick);
+        acquired.push(() => cancelAnimationFrame(frame));
+      } catch (error) {
+        releaseAll();
+        if (live()) release = undefined;
+        throw error;
+      }
     },
-    stop() {
-      running = false;
-      for (const track of stream?.getTracks() ?? []) track.stop();
-      stream = undefined;
-    },
+    stop,
   };
 }

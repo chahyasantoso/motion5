@@ -5,9 +5,11 @@ import { createGapFiller } from "../src/filler/gap-filler";
 import { LIMBS } from "../src/filler/landmarks";
 import { createGapPipeline } from "../src/filler/pipeline";
 import { distance } from "../src/filler/vec";
-import { limbTracks, loadImageRig, poseNodeId, readSolvedLimb } from "../src/rig/rig";
+import { loadImageRig, readSolvedLimb, readWrittenLimbs } from "../src/rig/rig";
+import { limbTracks, poseNodeId } from "../src/rig/tracks";
 import { createImageWriter, imageBendFlip } from "../src/rig/writer";
-import { STANDING, countingProject, fakePorts, frameOf, trustedOf, without } from "./support";
+import { countingProject, fakePorts } from "./engine";
+import { STANDING, frameOf, trustedOf, without } from "./frames";
 
 describe("image rig and writer", () => {
   it("GF-6 pins the 2D bend side the writer derives to the side the solver bends", () => {
@@ -88,8 +90,26 @@ describe("image rig and writer", () => {
     );
     loaded.dispose();
   });
+
+  it("GF-11 draws only the chains written this frame, never a skipped limb's stale solve", () => {
+    const project = loadImageRig(fakePorts());
+    const writer = createImageWriter(project);
+    const lengths = createBoneLengthEstimator();
+    const first = trustedOf(frameOf(STANDING, 0));
+    lengths.observe(first);
+    const all = readWrittenLimbs(project, writer.write(fillOf(first), first, lengths));
+    expect([...all.keys()].sort()).toEqual(LIMBS.map((limb) => limb.id).sort());
+    const noWrist = trustedOf(frameOf(without(STANDING, "left-wrist"), 33));
+    const writes = writer.write(fillOf(noWrist), noWrist, lengths);
+    // The project still holds the left arm's last solve; it is not this frame's pose.
+    expect(readSolvedLimb(project, "left-arm")).toBeDefined();
+    const current = readWrittenLimbs(project, writes);
+    expect(current.has("left-arm")).toBe(false);
+    expect(current.size).toBe(LIMBS.length - 1);
+    project.dispose();
+  });
 });
 
 function fillOf(frame: TrustedFrame) {
-  return createGapFiller({ kind: "raw" }, { lengths: createBoneLengthEstimator() }).fill(frame);
+  return createGapFiller({ kind: "raw" }).fill(frame);
 }

@@ -1,3 +1,4 @@
+import { measurementOf, type FilledJoint } from "./frame";
 import type { GapFiller } from "./gap-filler";
 import { jointRecord } from "./landmarks";
 
@@ -11,18 +12,11 @@ export function createRawFiller(): GapFiller {
       return {
         tMs: frame.tMs,
         space: frame.space,
-        joints: jointRecord((joint) => {
-          const observation = frame.joints[joint];
-          switch (observation.kind) {
-            case "measured":
-              return { kind: "measured", position: observation.position };
-            case "absent":
-              return { kind: "lost" };
-            default: {
-              const unhandled: never = observation;
-              throw new Error(`Unhandled observation: ${JSON.stringify(unhandled)}`);
-            }
-          }
+        joints: jointRecord((joint): FilledJoint => {
+          const measurement = measurementOf(frame.joints[joint]);
+          return measurement === undefined
+            ? { kind: "lost" }
+            : { kind: "measured", position: measurement.position };
         }),
       };
     },

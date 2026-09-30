@@ -1,5 +1,6 @@
 import type { FilledFrame, LandmarkFrame } from "../filler/frame";
 import { JOINTS, LIMBS, type LimbId } from "../filler/landmarks";
+import { unreachable } from "../filler/unreachable";
 import type { Vec } from "../filler/vec";
 import type { SolvedLimb } from "../rig/rig";
 
@@ -23,10 +24,8 @@ function dot(position: Vec, mark: Mark): SVGElement {
       return element("circle", { cx: cx!, cy: cy!, r: 5, class: "mark-measured" });
     case "inferred":
       return element("circle", { cx: cx!, cy: cy!, r: 7, class: "mark-inferred" });
-    default: {
-      const unhandled: never = mark;
-      throw new Error(`Unhandled mark: ${JSON.stringify(unhandled)}`);
-    }
+    default:
+      return unreachable(mark, "mark");
   }
 }
 
@@ -67,10 +66,8 @@ export function drawOverlay(
         break;
       case "lost":
         break;
-      default: {
-        const unhandled: never = fill;
-        throw new Error(`Unhandled filled joint: ${JSON.stringify(unhandled)}`);
-      }
+      default:
+        unreachable(fill, "filled joint");
     }
   }
   svg.replaceChildren(layer);

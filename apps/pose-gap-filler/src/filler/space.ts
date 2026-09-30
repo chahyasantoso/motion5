@@ -1,3 +1,5 @@
+import { unreachable } from "./unreachable";
+
 /**
  * The coordinate space a landmark frame is read in, a closed union read exhaustively.
  *
@@ -18,10 +20,8 @@ export function spaceDimension(space: LandmarkSpace): 2 | 3 {
       return 2;
     case "world":
       return 3;
-    default: {
-      const unhandled: never = space;
-      throw new Error(`Unhandled landmark space: ${JSON.stringify(unhandled)}`);
-    }
+    default:
+      return unreachable(space, "landmark space");
   }
 }
 
@@ -32,9 +32,7 @@ export function spaceUnit(space: LandmarkSpace): "px" | "mm" {
       return "px";
     case "world":
       return "mm";
-    default: {
-      const unhandled: never = space;
-      throw new Error(`Unhandled landmark space: ${JSON.stringify(unhandled)}`);
-    }
+    default:
+      return unreachable(space, "landmark space");
   }
 }

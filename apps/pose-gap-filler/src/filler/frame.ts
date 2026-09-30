@@ -1,5 +1,6 @@
 import type { JointId } from "./landmarks";
 import type { LandmarkSpace } from "./space";
+import { unreachable } from "./unreachable";
 import type { Vec } from "./vec";
 
 /**
@@ -59,10 +60,8 @@ export function presentedPosition(joint: FilledJoint): Vec | undefined {
       return joint.position;
     case "lost":
       return undefined;
-    default: {
-      const unhandled: never = joint;
-      throw new Error(`Unhandled filled joint: ${JSON.stringify(unhandled)}`);
-    }
+    default:
+      return unreachable(joint, "filled joint");
   }
 }
 
@@ -73,9 +72,29 @@ export function trustedPosition(trust: JointTrust): Vec | undefined {
       return trust.position;
     case "gap":
       return undefined;
-    default: {
-      const unhandled: never = trust;
-      throw new Error(`Unhandled joint trust: ${JSON.stringify(unhandled)}`);
-    }
+    default:
+      return unreachable(trust, "joint trust");
+  }
+}
+
+/** What a measured observation carries. */
+export interface Measurement {
+  readonly position: Vec;
+  readonly visibility: number;
+}
+
+/**
+ * The one read of "did the adapter measure this joint": the measurement, or `undefined` for an
+ * absent joint. Every consumer of an observation (trust, the raw reference, fixtures) reads it
+ * through here, so a new observation variant is decided once.
+ */
+export function measurementOf(observation: JointObservation): Measurement | undefined {
+  switch (observation.kind) {
+    case "measured":
+      return observation;
+    case "absent":
+      return undefined;
+    default:
+      return unreachable(observation, "joint observation");
   }
 }

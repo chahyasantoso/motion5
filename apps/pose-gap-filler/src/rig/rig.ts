@@ -11,37 +11,9 @@ import { ikPlugin } from "@motion5/core/plugins/ik";
 import { transformPlugin } from "@motion5/core/plugins/transform";
 import { LIMBS, type LimbId } from "../filler/landmarks";
 import type { Vec } from "../filler/vec";
-
-/**
- * Four two-bone chains on one `manual` Motion: nothing drives progress, so the only thing that
- * moves the rig is the writer's value batch (`writer.ts`). Each limb is its own chain with its own
- * root, goal and solver, never a shared-root tree.
- *
- * FK weight is authored as the constant 1: the solve is the pose, and there is no rest blend to
- * animate (the playground keyframes its weight 0..1 on scroll; this rig must not).
- */
-export const POSE_MOTION_ID = "pose";
-
-export const poseNodeId = (trackId: string): string => `${POSE_MOTION_ID}/${trackId}`;
-
-/** The track ids one limb's chain is authored under. */
-export interface LimbTracks {
-  readonly root: string;
-  readonly goal: string;
-  readonly solve: string;
-  readonly upper: string;
-  readonly lower: string;
-}
-
-export function limbTracks(limb: LimbId): LimbTracks {
-  return {
-    root: `${limb}-root`,
-    goal: `${limb}-goal`,
-    solve: `${limb}-solve`,
-    upper: `${limb}-upper`,
-    lower: `${limb}-lower`,
-  };
-}
+import { unreachable } from "../filler/unreachable";
+import { POSE_MOTION_ID, limbTracks, poseNodeId } from "./tracks";
+import type { LimbWrite } from "./writer";
 
 /** Placeholder geometry until the estimator knows the person: any reachable pose loads. */
 const INITIAL_LENGTH = 100;
@@ -74,6 +46,14 @@ function imageLimbTracks(limb: LimbId): readonly TrackDefinition[] {
   ];
 }
 
+/**
+ * Four two-bone chains on one `manual` Motion: nothing drives progress, so the only thing that
+ * moves the rig is the writer's value batch (`writer.ts`). Each limb is its own chain with its own
+ * root, goal and solver, never a shared-root tree.
+ *
+ * FK weight is authored as the constant 1: the solve is the pose, and there is no rest blend to
+ * animate (the playground keyframes its weight 0..1 on scroll; this rig must not).
+ */
 export function imageRigProject(): ProjectDefinition {
   return {
     schemaVersion: 5,
@@ -131,4 +111,30 @@ export function readSolvedLimb(
   const middle = publishedTip(project, ids.upper, keys);
   const tip = publishedTip(project, ids.lower, keys);
   return middle === undefined || tip === undefined ? undefined : { middle, tip };
+}
+
+/**
+ * The solved chains that show this frame's pose: only limbs the writer placed this frame. A skipped
+ * limb keeps its last solve in the project, and drawing it would present an old pose as current.
+ */
+export function readWrittenLimbs(
+  project: ProjectHandle,
+  writes: Readonly<Record<LimbId, LimbWrite>>,
+): ReadonlyMap<LimbId, SolvedLimb> {
+  const solved = new Map<LimbId, SolvedLimb>();
+  for (const limb of LIMBS) {
+    const write = writes[limb.id];
+    switch (write.kind) {
+      case "written": {
+        const chain = readSolvedLimb(project, limb.id);
+        if (chain !== undefined) solved.set(limb.id, chain);
+        break;
+      }
+      case "skipped":
+        break;
+      default:
+        return unreachable(write, "limb write");
+    }
+  }
+  return solved;
 }

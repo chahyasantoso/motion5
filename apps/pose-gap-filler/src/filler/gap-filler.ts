@@ -1,6 +1,6 @@
-import type { BoneLengths } from "./bone-length";
 import type { FilledFrame, TrustedFrame } from "./frame";
 import { createRawFiller } from "./raw-filler";
+import { unreachable } from "./unreachable";
 
 /**
  * Every filler the experiment compares, a closed union. `createGapFiller` is the one factory and
@@ -8,27 +8,20 @@ import { createRawFiller } from "./raw-filler";
  */
 export type FillerSpec = { readonly kind: "raw" };
 
-/** What a filler may read besides the frame: bone lengths, owned by the estimator. */
-export interface FillerContext {
-  readonly lengths: BoneLengths;
-}
-
 /**
  * The one owner of "where is an untrusted joint", and nothing else. A filler reads trust from the
- * frame and lengths from the context, and never decides either.
+ * frame and never decides it. A filler that needs bone lengths receives them when it lands.
  */
 export interface GapFiller {
   fill(frame: TrustedFrame): FilledFrame;
   reset(): void;
 }
 
-export function createGapFiller(spec: FillerSpec, _context: FillerContext): GapFiller {
+export function createGapFiller(spec: FillerSpec): GapFiller {
   switch (spec.kind) {
     case "raw":
       return createRawFiller();
-    default: {
-      const unhandled: never = spec.kind;
-      throw new Error(`Unhandled filler spec: ${JSON.stringify(unhandled)}`);
-    }
+    default:
+      return unreachable(spec.kind, "filler spec");
   }
 }

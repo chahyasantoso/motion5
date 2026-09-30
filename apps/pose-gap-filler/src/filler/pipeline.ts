@@ -1,5 +1,11 @@
 import { createBoneLengthEstimator, type BoneLengths } from "./bone-length";
-import type { FilledFrame, LandmarkFrame, TrustedFrame } from "./frame";
+import {
+  measurementOf,
+  type FilledFrame,
+  type JointTrust,
+  type LandmarkFrame,
+  type TrustedFrame,
+} from "./frame";
 import { createGapFiller, type FillerSpec } from "./gap-filler";
 import { jointRecord } from "./landmarks";
 
@@ -27,22 +33,15 @@ export interface PipelineOptions {
 function trustMeasured(frame: LandmarkFrame): TrustedFrame {
   return {
     ...frame,
-    trust: jointRecord((joint) => {
-      const observation = frame.joints[joint];
-      switch (observation.kind) {
-        case "measured":
-          return {
+    trust: jointRecord((joint): JointTrust => {
+      const measurement = measurementOf(frame.joints[joint]);
+      return measurement === undefined
+        ? { kind: "gap", reason: "absent" }
+        : {
             kind: "trusted",
-            position: observation.position,
-            visibility: observation.visibility,
+            position: measurement.position,
+            visibility: measurement.visibility,
           };
-        case "absent":
-          return { kind: "gap", reason: "absent" };
-        default: {
-          const unhandled: never = observation;
-          throw new Error(`Unhandled observation: ${JSON.stringify(unhandled)}`);
-        }
-      }
     }),
   };
 }
@@ -50,7 +49,7 @@ function trustMeasured(frame: LandmarkFrame): TrustedFrame {
 /** The one composition of trust, lengths and fill, shared by the live page and the replay. */
 export function createGapPipeline(options: PipelineOptions): GapPipeline {
   const lengths = createBoneLengthEstimator(options.lengthWindow);
-  const filler = createGapFiller(options.filler, { lengths });
+  const filler = createGapFiller(options.filler);
   return {
     lengths,
     step(frame) {

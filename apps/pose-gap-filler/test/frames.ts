@@ -1,13 +1,13 @@
-import { createManualClock, type ProjectHandle } from "@motion5/core";
 import {
-  createFakeInterpolator,
-  createFakeScheduler,
-} from "../../../packages/core/src/testing/fakes";
-import type { JointObservation, LandmarkFrame, TrustedFrame } from "../src/filler/frame";
+  measurementOf,
+  type JointObservation,
+  type JointTrust,
+  type LandmarkFrame,
+  type TrustedFrame,
+} from "../src/filler/frame";
 import { jointRecord, type JointId } from "../src/filler/landmarks";
 import { IMAGE_SPACE, type LandmarkSpace } from "../src/filler/space";
 import type { Vec } from "../src/filler/vec";
-import type { RigPorts } from "../src/rig/rig";
 
 /** A frame measuring exactly `positions`, every other joint absent. */
 export function frameOf(
@@ -28,25 +28,17 @@ export function frameOf(
   };
 }
 
-/** `frame` with every measured joint trusted, except those named in `gaps`. */
+/** `frame` with every measured joint trusted, except those named in `gaps`, which are forced. */
 export function trustedOf(frame: LandmarkFrame, gaps: readonly JointId[] = []): TrustedFrame {
   return {
     ...frame,
-    trust: jointRecord((joint) => {
-      const observation = frame.joints[joint];
+    trust: jointRecord((joint): JointTrust => {
       if (gaps.includes(joint)) return { kind: "gap", reason: "forced" };
-      return observation.kind === "measured"
-        ? { kind: "trusted", position: observation.position, visibility: observation.visibility }
-        : { kind: "gap", reason: "absent" };
+      const measurement = measurementOf(frame.joints[joint]);
+      return measurement === undefined
+        ? { kind: "gap", reason: "absent" }
+        : { kind: "trusted", position: measurement.position, visibility: measurement.visibility };
     }),
-  };
-}
-
-export function fakePorts(): RigPorts {
-  return {
-    clock: createManualClock(),
-    interpolator: createFakeInterpolator(),
-    scheduler: createFakeScheduler(),
   };
 }
 
@@ -65,24 +57,6 @@ export const STANDING: Readonly<Record<JointId, Vec>> = {
   "left-ankle": [352, 450],
   "right-ankle": [288, 450],
 };
-
-/** Counts `values` batches while delegating everything to the real project. */
-export function countingProject(project: ProjectHandle): {
-  project: ProjectHandle;
-  batches: () => number;
-} {
-  let count = 0;
-  return {
-    project: {
-      ...project,
-      values(recipe) {
-        count += 1;
-        return project.values(recipe);
-      },
-    },
-    batches: () => count,
-  };
-}
 
 /** `pose` without `joint`, so a frame built from it reads that joint as absent. */
 export function without(
