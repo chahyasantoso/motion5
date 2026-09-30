@@ -5,20 +5,19 @@ below are the complete shape. **Now** and **Next in line** carry exactly one bul
 bullet states a phase; `packages/core/test/unit/scripts/session-status-shape.test.ts` enforces the
 shape and byte ceiling.
 
-- **Captured:** 2026-09-29, Asia/Jakarta.
-- **Read against:** `main` at `1b04ac7037f696229b6f610e5bb0aac030695ed2`, the base of
-  [PR #529][pr529], which lands with this entry.
+- **Captured:** 2026-09-30, Asia/Jakarta.
+- **Read against:** `main` at `74615e9c8d30787f36794f02bf6bc9266ffdb92c`, the squash of
+  [PR #532][pr532].
 
 ## Now
 
-- **`main` carries the centred legal start and the envelope-gated legal descent for constrained
-  FABRIK misses, closing [#524][issue524] and [#523][issue523] ([ADR-131][adr131],
-  [ADR-132][adr132]).**
+- **`main` carries the [#530][issue530] pose gap filler pipeline in `apps/pose-gap-filler`:
+  MediaPipe adapter, image-space rig and writer, and the `raw` reference ([PR #532][pr532]).**
 
 ## Next in line
 
-- **[#530][issue530] plans the #501 pose gap filler experiment;** its first slice (image-space
-  pipeline, `raw` reference) is prepared on `feat/530-gap-filler-phase1`, not merged.
+- **[#530][issue530] replay harness:** recording format, gap detector, `hold`, masks and metrics
+  are prepared on `feat/530-gap-filler-phase2`, not merged.
 
 ## Open, and not scheduled
 
@@ -49,6 +48,7 @@ shape and byte ceiling.
 [pr528]: https://github.com/chahyasantoso/motion5/pull/528
 [pr529]: https://github.com/chahyasantoso/motion5/pull/529
 [issue530]: https://github.com/chahyasantoso/motion5/issues/530
+[pr532]: https://github.com/chahyasantoso/motion5/pull/532
 [adr130]: ./ADR-130-legal-range-retries-and-serial-hinge-recovery.md
 [issue524]: https://github.com/chahyasantoso/motion5/issues/524
 [adr131]: ./ADR-131-centred-legal-start-for-mixed-sign-chains.md

@@ -4,7 +4,9 @@ import { jointRecord } from "./landmarks";
 
 /**
  * The reference, not a filler under test: whatever MediaPipe measured is presented as measured,
- * trusted or not, and an absent landmark is lost. Every metric is judged against this.
+ * trusted or not, and an absent landmark is lost. It reads observations, never trust, on purpose:
+ * a forced or gated joint is still a measurement, and showing it as one is what "no filler" means.
+ * Presenting a measurement as measured is not a fill, so invariant 5 holds.
  */
 export function createRawFiller(): GapFiller {
   return {

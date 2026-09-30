@@ -36,7 +36,9 @@
         font-size: 0.85rem;
       }
 
-      #timings {
+      #timings,
+      #hotkeys,
+      #report {
         font-family: ui-monospace, monospace;
         font-size: 0.75rem;
         color: #8492a6;
@@ -70,12 +72,20 @@
     <h1>Pose gap filler</h1>
     <div class="controls">
       <button id="start" type="button">Start camera</button>
+      <label
+        >Filler
+        <select id="filler"></select
+      ></label>
+      <button id="record" type="button">Record landmarks</button>
+      <label>Replay a recording <input id="replay" type="file" accept="application/json" /></label>
     </div>
+    <p id="hotkeys"></p>
     <div class="stage">
       <video id="video" playsinline muted></video>
       <svg id="overlay"></svg>
     </div>
     <p id="timings"></p>
+    <pre id="report"></pre>
     <script type="module" src="./src/live/main.ts"></script>
   </body>
 </html>
