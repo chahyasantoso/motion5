@@ -1,13 +1,8 @@
 import { createBoneLengthEstimator, type BoneLengths } from "./bone-length";
-import {
-  measurementOf,
-  type FilledFrame,
-  type JointTrust,
-  type LandmarkFrame,
-  type TrustedFrame,
-} from "./frame";
+import type { FilledFrame, LandmarkFrame, TrustedFrame } from "./frame";
+import { createGapDetector, NO_FORCED, type GapDetectorOptions } from "./gap-detector";
 import { createGapFiller, type FillerSpec } from "./gap-filler";
-import { jointRecord } from "./landmarks";
+import type { JointId } from "./landmarks";
 
 export interface PipelineStep {
   readonly trusted: TrustedFrame;
@@ -15,49 +10,39 @@ export interface PipelineStep {
 }
 
 export interface GapPipeline {
-  /** Trust, then lengths, then the fill: every stage reads the frame's own `tMs`. */
-  step(frame: LandmarkFrame): PipelineStep;
+  /**
+   * Trust, then lengths, then the fill: every stage reads the frame's own `tMs`. `forced` names the
+   * joints a hotkey or a replay mask holds out this frame.
+   */
+  step(frame: LandmarkFrame, forced?: ReadonlySet<JointId>): PipelineStep;
   readonly lengths: BoneLengths;
   reset(): void;
 }
 
 export interface PipelineOptions {
   readonly filler: FillerSpec;
-  readonly lengthWindow?: number;
+  readonly detector?: GapDetectorOptions | undefined;
+  readonly lengthWindow?: number | undefined;
 }
 
 /**
- * Phase 1 trusts every measured landmark: the gap detector, the only owner of trust, lands with the
- * replay harness in phase 2, and until then an absent landmark is the only gap.
+ * The one composition of trust, lengths and fill, shared by the live page and the replay. The
+ * detector reads the lengths earlier frames measured, then the estimator observes this frame's
+ * trusted joints, so no stage reads what it wrote this frame.
  */
-function trustMeasured(frame: LandmarkFrame): TrustedFrame {
-  return {
-    ...frame,
-    trust: jointRecord((joint): JointTrust => {
-      const measurement = measurementOf(frame.joints[joint]);
-      return measurement === undefined
-        ? { kind: "gap", reason: "absent" }
-        : {
-            kind: "trusted",
-            position: measurement.position,
-            visibility: measurement.visibility,
-          };
-    }),
-  };
-}
-
-/** The one composition of trust, lengths and fill, shared by the live page and the replay. */
 export function createGapPipeline(options: PipelineOptions): GapPipeline {
+  const detector = createGapDetector(options.detector);
   const lengths = createBoneLengthEstimator(options.lengthWindow);
   const filler = createGapFiller(options.filler);
   return {
     lengths,
-    step(frame) {
-      const trusted = trustMeasured(frame);
+    step(frame, forced = NO_FORCED) {
+      const trusted = detector.detect(frame, forced, lengths);
       lengths.observe(trusted);
       return { trusted, filled: filler.fill(trusted) };
     },
     reset() {
+      detector.reset();
       lengths.reset();
       filler.reset();
     },

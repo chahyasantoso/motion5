@@ -68,6 +68,14 @@ describe("MediaPipe adapter", () => {
       STAGE,
     );
     expect(short.joints["right-ankle"]).toEqual({ kind: "absent" });
+    // Finite in, overflowing once scaled to pixels: still refused, never an Infinity downstream.
+    const huge = parsePoseResult(
+      { landmarks: [pose(() => ({ x: Number.MAX_VALUE, y: 0, visibility: 1 }))] },
+      0,
+      IMAGE_SPACE,
+      STAGE,
+    );
+    expect(huge.joints["left-wrist"]).toEqual({ kind: "absent" });
   });
 
   it("GF-3 reads world landmarks in millimetres, requires z there, and ignores the other space", () => {

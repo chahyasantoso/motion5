@@ -2,7 +2,7 @@ import type { JointObservation, LandmarkFrame } from "./frame";
 import { MEDIAPIPE_INDEX, jointRecord } from "./landmarks";
 import { type LandmarkSpace } from "./space";
 import { unreachable } from "./unreachable";
-import type { Vec } from "./vec";
+import { isFiniteVec, type Vec } from "./vec";
 
 /** The stage an image-space frame is mapped onto, in the pixels the overlay and the rig use. */
 export interface StageSize {
@@ -14,28 +14,56 @@ export interface StageSize {
 export const WORLD_UNITS_PER_METRE = 1000;
 
 /**
- * The one place a raw MediaPipe value enters. `result` is read as `unknown` because MediaPipe is
- * loaded at runtime behind the `LandmarkSource` port and has no declaration in this repository, so
- * this parser is the only owner of its shape: `landmarks[0][i]` (normalised image coordinates) for
- * image space and `worldLandmarks[0][i]` (metres, hip-centred) for world space, each with
- * `x`, `y`, `z` and `visibility`.
- *
- * A joint whose coordinates are missing or non-finite is `absent`, never a NaN. Visibility is
- * clamped into [0, 1], and a missing or non-finite visibility reads as 0, so the landmark is kept
- * but can never be trusted. A result with no first pose is a frame of absent joints.
+ * One landmark as MediaPipe reported it, `[x, y, z, visibility]`: normalised image coordinates for
+ * `image`, metres for `world`. A component MediaPipe did not report as a number is `NaN`, so the
+ * one adapter that reads coordinates refuses it, live or replayed.
  */
+export type RawLandmark = readonly [x: number, y: number, z: number, visibility: number];
+
+/** The first pose of one space, index-aligned with MediaPipe's 33 landmarks. */
+export type RawPose = readonly RawLandmark[];
+
+/**
+ * The one reader of MediaPipe's result shape. `result` is `unknown` because MediaPipe is loaded at
+ * runtime behind the `LandmarkSource` port and has no declaration in this repository:
+ * `landmarks[0][i]` for image space and `worldLandmarks[0][i]` for world space, each with `x`, `y`,
+ * `z` and `visibility`. A result with no first pose reads as `undefined`.
+ */
+export function readRawPose(result: unknown, space: LandmarkSpace): RawPose | undefined {
+  if (typeof result !== "object" || result === null) return undefined;
+  const poses: unknown = (result as Record<string, unknown>)[poseKey(space)];
+  if (!Array.isArray(poses)) return undefined;
+  const pose: unknown = poses[0];
+  return Array.isArray(pose) ? pose.map(readRawLandmark) : undefined;
+}
+
+/**
+ * The one owner of coordinates: a raw pose becomes a `LandmarkFrame`. A joint whose coordinates are
+ * missing or non-finite is `absent`, never a NaN. Visibility is clamped into [0, 1], and a
+ * non-finite visibility reads as 0, so the landmark is kept but can never be trusted. No pose is a
+ * frame of absent joints. Live and replay both enter here, so they adapt identically.
+ */
+export function adaptPose(
+  pose: RawPose | undefined,
+  tMs: number,
+  space: LandmarkSpace,
+  stage: StageSize,
+): LandmarkFrame {
+  return {
+    tMs,
+    space,
+    joints: jointRecord((joint) => adaptLandmark(pose?.[MEDIAPIPE_INDEX[joint]], space, stage)),
+  };
+}
+
+/** A live MediaPipe result straight to a frame: `readRawPose` then `adaptPose`. */
 export function parsePoseResult(
   result: unknown,
   tMs: number,
   space: LandmarkSpace,
   stage: StageSize,
 ): LandmarkFrame {
-  const pose = firstPose(result, poseKey(space));
-  return {
-    tMs,
-    space,
-    joints: jointRecord((joint) => readLandmark(pose?.[MEDIAPIPE_INDEX[joint]], space, stage)),
-  };
+  return adaptPose(readRawPose(result, space), tMs, space, stage);
 }
 
 function poseKey(space: LandmarkSpace): "landmarks" | "worldLandmarks" {
@@ -49,31 +77,30 @@ function poseKey(space: LandmarkSpace): "landmarks" | "worldLandmarks" {
   }
 }
 
-function firstPose(result: unknown, key: string): readonly unknown[] | undefined {
-  if (typeof result !== "object" || result === null) return undefined;
-  const poses: unknown = (result as Record<string, unknown>)[key];
-  if (!Array.isArray(poses)) return undefined;
-  const pose: unknown = poses[0];
-  return Array.isArray(pose) ? pose : undefined;
+function readRawLandmark(landmark: unknown): RawLandmark {
+  const read = (key: string): number => {
+    if (typeof landmark !== "object" || landmark === null) return Number.NaN;
+    const value: unknown = (landmark as Record<string, unknown>)[key];
+    return typeof value === "number" ? value : Number.NaN;
+  };
+  return [read("x"), read("y"), read("z"), read("visibility")];
 }
 
-function field(landmark: object, key: string): unknown {
-  return (landmark as Record<string, unknown>)[key];
+function finite(value: number | undefined): number | undefined {
+  return value !== undefined && Number.isFinite(value) ? value : undefined;
 }
 
-function finiteNumber(value: unknown): number | undefined {
-  return typeof value === "number" && Number.isFinite(value) ? value : undefined;
-}
-
-function readLandmark(landmark: unknown, space: LandmarkSpace, stage: StageSize): JointObservation {
-  if (typeof landmark !== "object" || landmark === null) return { kind: "absent" };
-  const x = finiteNumber(field(landmark, "x"));
-  const y = finiteNumber(field(landmark, "y"));
-  const z = finiteNumber(field(landmark, "z"));
+function adaptLandmark(
+  landmark: RawLandmark | undefined,
+  space: LandmarkSpace,
+  stage: StageSize,
+): JointObservation {
+  if (landmark === undefined) return { kind: "absent" };
+  const [x, y, z, visibility] = landmark.map(finite);
   const position = toSpace(space, stage, x, y, z);
-  if (position === undefined) return { kind: "absent" };
-  const visibility = Math.min(1, Math.max(0, finiteNumber(field(landmark, "visibility")) ?? 0));
-  return { kind: "measured", position, visibility };
+  // Finite inputs can still overflow once scaled to pixels or millimetres.
+  if (position === undefined || !isFiniteVec(position)) return { kind: "absent" };
+  return { kind: "measured", position, visibility: Math.min(1, Math.max(0, visibility ?? 0)) };
 }
 
 function toSpace(

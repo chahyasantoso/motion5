@@ -79,7 +79,24 @@ export function detectSample(
  * generation ended releases what it acquired instead of running, so a `pagehide` during the model
  * download or the camera prompt cannot resurrect the source after teardown.
  */
-export function createMediaPipeWebcamSource(video: HTMLVideoElement): LandmarkSource {
+export interface WebcamSourcePorts {
+  loadLandmarker(): Promise<unknown>;
+  getUserMedia(): Promise<MediaStream>;
+  requestFrame(callback: FrameRequestCallback): number;
+  cancelFrame(id: number): void;
+}
+
+const WEB_CAM_PORTS: WebcamSourcePorts = {
+  loadLandmarker,
+  getUserMedia: () => navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } }),
+  requestFrame: (callback) => requestAnimationFrame(callback),
+  cancelFrame: (id) => cancelAnimationFrame(id),
+};
+
+export function createMediaPipeWebcamSource(
+  video: HTMLVideoElement,
+  ports: WebcamSourcePorts = WEB_CAM_PORTS,
+): LandmarkSource {
   let generation = 0;
   let release: (() => void) | undefined;
   let lastMs = -Infinity;
@@ -99,15 +116,13 @@ export function createMediaPipeWebcamSource(video: HTMLVideoElement): LandmarkSo
       };
       release = releaseAll;
       try {
-        const landmarker = await loadLandmarker();
+        const landmarker = await ports.loadLandmarker();
         acquired.push(() => void call(landmarker, "close"));
         if (!live()) return releaseAll();
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { width: 640, height: 480 },
-        });
+        const stream = await ports.getUserMedia();
         acquired.push(() => {
           for (const track of stream.getTracks()) track.stop();
-          video.srcObject = null;
+          if (video.srcObject === stream) video.srcObject = null;
         });
         if (!live()) return releaseAll();
         video.srcObject = stream;
@@ -115,20 +130,29 @@ export function createMediaPipeWebcamSource(video: HTMLVideoElement): LandmarkSo
         if (!live()) return releaseAll();
         const tick = () => {
           if (!live()) return;
-          const sample = detectSample(
-            (tMs) => call(landmarker, "detectForVideo", video, tMs),
-            lastMs,
-          );
-          lastMs = sample.tMs;
-          onSample(sample);
-          // A consumer may stop the source from inside `onSample`: no frame after that.
-          if (live()) frame = requestAnimationFrame(tick);
+          try {
+            const sample = detectSample(
+              (tMs) => call(landmarker, "detectForVideo", video, tMs),
+              lastMs,
+            );
+            lastMs = sample.tMs;
+            onSample(sample);
+            // A consumer may stop the source from inside `onSample`: no frame after that.
+            if (live()) frame = ports.requestFrame(tick);
+          } catch (error) {
+            // start() has already resolved: its catch cannot release a running frame's resources.
+            // A consumer may have started a new generation; never stop that newer source.
+            if (live()) stop();
+            else releaseAll();
+            throw error;
+          }
         };
-        let frame = requestAnimationFrame(tick);
-        acquired.push(() => cancelAnimationFrame(frame));
+        let frame = ports.requestFrame(tick);
+        acquired.push(() => ports.cancelFrame(frame));
       } catch (error) {
         releaseAll();
-        if (live()) release = undefined;
+        if (!live()) return;
+        release = undefined;
         throw error;
       }
     },

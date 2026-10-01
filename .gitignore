@@ -10,3 +10,6 @@ coverage
 !.tools/prettier/
 !.tools/prettier/prettier-3.6.2.tgz
 .commandcode
+# Pose recordings are landmarks of a real person: never committed (#530).
+apps/pose-gap-filler/recordings/
+pose-recording-*.json
