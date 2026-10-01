@@ -3,7 +3,9 @@ import { describe, expect, it } from "vitest";
 import { createBoneLengthEstimator } from "../src/filler/bone-length";
 import { createGapFiller } from "../src/filler/gap-filler";
 import { limbTracks, poseNodeId } from "../src/rig/tracks";
-import { createImageWriter, type ValueBatchPort } from "../src/rig/writer";
+import { createImageWriter, createWorldWriter, type ValueBatchPort } from "../src/rig/writer";
+import { WORLD_SPACE } from "../src/filler/space";
+import { jointRecord } from "../src/filler/landmarks";
 import { STANDING, frameOf, trustedOf } from "./frames";
 
 type Write = readonly [node: string, what: string, value: unknown];
@@ -47,6 +49,52 @@ function recordingPort() {
 }
 
 describe("pose writer", () => {
+  it("GF-57 does not leak a failed image bend observation into a subsequent gap", () => {
+    const { port, batches, fail } = recordingPort();
+    const writer = createImageWriter(port);
+    const lengths = createBoneLengthEstimator();
+    const first = trustedOf(frameOf(STANDING));
+    lengths.observe(first);
+    fail(true);
+    expect(() =>
+      writer.write(createGapFiller({ kind: "raw" }).fill(first), first, lengths),
+    ).toThrow(/publication/);
+    fail(false);
+    const next = trustedOf(frameOf(STANDING, 100), ["left-elbow"]);
+    writer.write(createGapFiller({ kind: "raw" }).fill(next), next, lengths);
+    const solve = poseNodeId(limbTracks("left-arm").solve);
+    expect(batches[1]!.filter(([node, what]) => node === solve && what === "ik.flip")).toEqual([]);
+  });
+
+  it("GF-58 retries every failed world write and commits held pole observations only on success", () => {
+    const { port, batches, fail } = recordingPort();
+    const writer = createWorldWriter(port);
+    const lengths = createBoneLengthEstimator();
+    const points = jointRecord((joint) => [...STANDING[joint], 30]);
+    const first = trustedOf(frameOf(points, 0, WORLD_SPACE));
+    lengths.observe(first);
+    fail(true);
+    expect(() =>
+      writer.write(createGapFiller({ kind: "raw" }).fill(first), first, lengths),
+    ).toThrow(/publication/);
+    fail(false);
+    writer.write(createGapFiller({ kind: "raw" }).fill(first), first, lengths);
+    expect(batches[1]).toEqual(batches[0]);
+    const poleNode = poseNodeId(limbTracks("left-arm").pole);
+    const writer2 = createWorldWriter(port);
+    fail(true);
+    expect(() =>
+      writer2.write(createGapFiller({ kind: "raw" }).fill(first), first, lengths),
+    ).toThrow(/publication/);
+    fail(false);
+    const gap = trustedOf(frameOf(points, 100, WORLD_SPACE), ["left-elbow"]);
+    writer2.write(createGapFiller({ kind: "raw" }).fill(gap), gap, lengths);
+    expect(batches[3]!.find(([node]) => node === poleNode)).toEqual([
+      poleNode,
+      "values",
+      { x: points["left-shoulder"][0], y: points["left-shoulder"][1], z: 31 },
+    ]);
+  });
   it("GF-10 advances what it believes is published only once a batch returns", () => {
     const { port, batches, fail } = recordingPort();
     const writer = createImageWriter(port);

@@ -13,6 +13,7 @@ export const poseNodeId = (trackId: string): string => `${POSE_MOTION_ID}/${trac
 export interface LimbTracks {
   readonly root: string;
   readonly goal: string;
+  readonly pole: string;
   readonly solve: string;
   readonly upper: string;
   readonly lower: string;
@@ -22,6 +23,7 @@ export function limbTracks(limb: LimbId): LimbTracks {
   return {
     root: `${limb}-root`,
     goal: `${limb}-goal`,
+    pole: `${limb}-pole`,
     solve: `${limb}-solve`,
     upper: `${limb}-upper`,
     lower: `${limb}-lower`,

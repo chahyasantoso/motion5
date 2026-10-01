@@ -8,7 +8,7 @@ import {
 } from "../filler/frame";
 import { LIMBS, type Limb, type LimbId } from "../filler/landmarks";
 import { unreachable } from "../filler/unreachable";
-import { sub, type Vec } from "../filler/vec";
+import { add, sub, unit, type Vec } from "../filler/vec";
 import { limbTracks, poseNodeId } from "./tracks";
 
 /** The one part of a project the writer drives, so the writer is tested without an Engine. */
@@ -65,7 +65,7 @@ type LimbPlan =
   | { readonly kind: "skip"; readonly write: LimbWrite }
   | {
       readonly kind: "write";
-      readonly next: Published;
+      readonly commit: () => void;
       readonly stage: (transaction: ValueTransaction) => void;
     };
 
@@ -80,24 +80,34 @@ export function createImageWriter(project: ValueBatchPort): PoseWriter {
   const states = new Map<LimbId, LimbState>(
     LIMBS.map((limb) => [limb.id, { bend: AUTHORED.flip, published: AUTHORED }]),
   );
+  return createBatchWriter(project, (limb, filled, trusted, lengths) =>
+    planLimb(limb, states.get(limb.id)!, filled, trusted, lengths),
+  );
+}
+
+/** One batch owner for both dimensions; publication bookkeeping commits only after success. */
+function createBatchWriter(
+  project: ValueBatchPort,
+  planLimb: (
+    limb: Limb,
+    filled: FilledFrame,
+    trusted: TrustedFrame,
+    lengths: BoneLengths,
+  ) => LimbPlan,
+): PoseWriter {
   return {
     write(filled, trusted, lengths) {
       const outcome = {} as Record<LimbId, LimbWrite>;
-      const planned: Array<{
-        readonly state: LimbState;
-        readonly next: Published;
-        readonly stage: (transaction: ValueTransaction) => void;
-      }> = [];
+      const planned: Array<Extract<LimbPlan, { kind: "write" }>> = [];
       for (const limb of LIMBS) {
-        const state = states.get(limb.id)!;
-        const plan = planLimb(limb, state, filled, trusted, lengths);
+        const plan = planLimb(limb, filled, trusted, lengths);
         switch (plan.kind) {
           case "skip":
             outcome[limb.id] = plan.write;
             break;
           case "write":
             outcome[limb.id] = WRITTEN;
-            planned.push({ state, next: plan.next, stage: plan.stage });
+            planned.push(plan);
             break;
           default:
             return unreachable(plan, "limb plan");
@@ -107,7 +117,7 @@ export function createImageWriter(project: ValueBatchPort): PoseWriter {
       project.values((transaction) => {
         for (const { stage } of planned) stage(transaction);
       });
-      for (const { state, next } of planned) state.published = next;
+      for (const { commit } of planned) commit();
       return outcome;
     },
   };
@@ -134,13 +144,15 @@ function planLimb(
   const lower = lengths.length(limb.lower);
   if (upper === undefined || lower === undefined) return skip("length-unknown");
   const middle = trustedPosition(trusted.trust[limb.middle]);
-  state.bend = (middle === undefined ? undefined : imageBendFlip(root, goal, middle)) ?? state.bend;
-  const flip = state.bend;
+  const flip = (middle === undefined ? undefined : imageBendFlip(root, goal, middle)) ?? state.bend;
   const { published } = state;
   const ids = limbTracks(limb.id);
   return {
     kind: "write",
-    next: { upper, lower, flip },
+    commit: () => {
+      state.bend = flip;
+      state.published = { upper, lower, flip };
+    },
     stage: (transaction) => {
       transaction.setValues(poseNodeId(ids.root), { x: root[0]!, y: root[1]! });
       transaction.setValues(poseNodeId(ids.goal), { x: goal[0]!, y: goal[1]! });
@@ -152,4 +164,61 @@ function planLimb(
         transaction.track(poseNodeId(ids.solve)).setKeyframe("ik", "flip", flip);
     },
   };
+}
+
+/**
+ * World bend is a held measured root-to-middle direction, never an inferred elbow.
+ * Core consumes a pole POINT: translate that direction by this frame's root. No stale point.
+ */
+export function createWorldWriter(project: ValueBatchPort): PoseWriter {
+  const states = new Map(
+    LIMBS.map((limb) => [
+      limb.id,
+      {
+        direction: undefined as Vec | undefined,
+        upper: undefined as number | undefined,
+        lower: undefined as number | undefined,
+        pole: undefined as Vec | undefined,
+      },
+    ]),
+  );
+  return createBatchWriter(project, (limb, filled, trusted, lengths) => {
+    if (filled.space.kind !== "world" || trusted.space.kind !== "world")
+      throw new Error("World writer requires world frames.");
+    const root = presentedPosition(filled.joints[limb.root]);
+    if (root === undefined) return skip("root-lost");
+    const goal = presentedPosition(filled.joints[limb.tip]);
+    if (goal === undefined) return skip("goal-lost");
+    const upper = lengths.length(limb.upper);
+    const lower = lengths.length(limb.lower);
+    if (upper === undefined || lower === undefined) return skip("length-unknown");
+    const state = states.get(limb.id)!;
+    const middle = trustedPosition(trusted.trust[limb.middle]);
+    const measuredRoot = trustedPosition(trusted.trust[limb.root]);
+    // Both endpoints must be measured: a filled root must not train a bend observation.
+    const direction =
+      middle !== undefined && measuredRoot !== undefined
+        ? (unit(sub(middle, measuredRoot)) ?? state.direction)
+        : state.direction;
+    const pole = add(root, direction ?? [0, 0, 1]);
+    const ids = limbTracks(limb.id);
+    const point = (position: Vec) => ({ x: position[0]!, y: position[1]!, z: position[2]! });
+    return {
+      kind: "write",
+      commit: () => {
+        state.direction = direction;
+        state.upper = upper;
+        state.lower = lower;
+        state.pole = pole;
+      },
+      stage: (transaction) => {
+        transaction.setValues(poseNodeId(ids.root), point(root));
+        transaction.setValues(poseNodeId(ids.goal), point(goal));
+        if (state.pole === undefined || pole.some((value, axis) => value !== state.pole![axis]))
+          transaction.setValues(poseNodeId(ids.pole), point(pole));
+        if (upper !== state.upper) transaction.setValues(poseNodeId(ids.upper), { length: upper });
+        if (lower !== state.lower) transaction.setValues(poseNodeId(ids.lower), { length: lower });
+      },
+    };
+  });
 }

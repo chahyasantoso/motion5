@@ -9,6 +9,9 @@ import {
 import { fkPlugin } from "@motion5/core/plugins/fk";
 import { ikPlugin } from "@motion5/core/plugins/ik";
 import { transformPlugin } from "@motion5/core/plugins/transform";
+import { fk3dPlugin } from "@motion5/core/plugins/fk3d";
+import { ik3dPlugin } from "@motion5/core/plugins/ik3d";
+import { transform3dPlugin } from "@motion5/core/plugins/transform3d";
 import { LIMBS, type LimbId } from "../filler/landmarks";
 import type { Vec } from "../filler/vec";
 import { unreachable } from "../filler/unreachable";
@@ -68,6 +71,42 @@ export function imageRigProject(): ProjectDefinition {
   };
 }
 
+/** A separate 3D project, with identical track names but no image/world state shared. */
+export function worldRigProject(): ProjectDefinition {
+  const tracks = LIMBS.flatMap((limb): readonly TrackDefinition[] => {
+    const ids = limbTracks(limb.id);
+    const point = (id: string, x: number, y: number, z: number): TrackDefinition => ({
+      id,
+      keyframes: { transform3d: { values: { x, y, z, rotation: 0, rotationX: 0, rotationY: 0 } } },
+    });
+    const member = (id: string, base: string): TrackDefinition => ({
+      id,
+      keyframes: {
+        fk3d: {
+          values: { length: INITIAL_LENGTH, weight: 1 },
+          requires: { base, solver: ids.solve },
+        },
+      },
+    });
+    return [
+      point(ids.root, 0, 0, 0),
+      point(ids.goal, 0, INITIAL_LENGTH * 1.5, 0),
+      point(ids.pole, 0, 0, INITIAL_LENGTH),
+      {
+        id: ids.solve,
+        keyframes: { ik3d: { requires: { root: ids.root, target: ids.goal, pole: ids.pole } } },
+      },
+      member(ids.upper, ids.root),
+      member(ids.lower, ids.upper),
+    ];
+  });
+  return {
+    schemaVersion: 5,
+    projectId: "pose-gap-filler-world",
+    motions: [{ id: POSE_MOTION_ID, trigger: { type: "manual" }, tracks }],
+  };
+}
+
 export type RigPorts = Pick<EngineOptions, "clock" | "interpolator" | "scheduler">;
 
 /**
@@ -75,9 +114,29 @@ export type RigPorts = Pick<EngineOptions, "clock" | "interpolator" | "scheduler
  * a caller owns a project only once this returns.
  */
 export function loadImageRig(ports: RigPorts): ProjectHandle {
+  return loadRig(ports, "image");
+}
+
+export function loadWorldRig(ports: RigPorts): ProjectHandle {
+  return loadRig(ports, "world");
+}
+
+function loadRig(ports: RigPorts, space: "image" | "world"): ProjectHandle {
   const plugins = new PluginRegistry();
-  for (const plugin of [transformPlugin, fkPlugin, ikPlugin]) plugins.register(plugin);
-  const project = new Engine({ ...ports, plugins }).load(imageRigProject());
+  let definition: ProjectDefinition;
+  switch (space) {
+    case "image":
+      for (const plugin of [transformPlugin, fkPlugin, ikPlugin]) plugins.register(plugin);
+      definition = imageRigProject();
+      break;
+    case "world":
+      for (const plugin of [transform3dPlugin, fk3dPlugin, ik3dPlugin]) plugins.register(plugin);
+      definition = worldRigProject();
+      break;
+    default:
+      return unreachable(space, "rig space");
+  }
+  const project = new Engine({ ...ports, plugins }).load(definition);
   try {
     for (const node of project.motion(POSE_MOTION_ID).trackIds) project.mount(node);
     return project;
@@ -120,13 +179,14 @@ export function readSolvedLimb(
 export function readWrittenLimbs(
   project: ProjectHandle,
   writes: Readonly<Record<LimbId, LimbWrite>>,
+  keys: readonly string[] = ["x", "y"],
 ): ReadonlyMap<LimbId, SolvedLimb> {
   const solved = new Map<LimbId, SolvedLimb>();
   for (const limb of LIMBS) {
     const write = writes[limb.id];
     switch (write.kind) {
       case "written": {
-        const chain = readSolvedLimb(project, limb.id);
+        const chain = readSolvedLimb(project, limb.id, keys);
         if (chain !== undefined) solved.set(limb.id, chain);
         break;
       }

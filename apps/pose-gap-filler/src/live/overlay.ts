@@ -38,13 +38,15 @@ export function drawOverlay(
   raw: LandmarkFrame,
   filled: FilledFrame,
   solved: ReadonlyMap<LimbId, SolvedLimb>,
-  project: (position: Vec) => Vec = (position) => position,
+  project: ((position: Vec) => Vec) | undefined = filled.space.kind === "image"
+    ? (position) => position
+    : undefined,
 ): void {
   const layer = document.createDocumentFragment();
   for (const limb of LIMBS) {
     const chain = solved.get(limb.id);
     const root = filled.joints[limb.root];
-    if (chain === undefined || root.kind === "lost") continue;
+    if (chain === undefined || root.kind === "lost" || project === undefined) continue;
     const points = [root.position, chain.middle, chain.tip].map(project);
     layer.append(
       element("polyline", {
@@ -55,7 +57,9 @@ export function drawOverlay(
   }
   for (const joint of JOINTS) {
     const observation = raw.joints[joint];
-    if (observation.kind === "measured") layer.append(dot(project(observation.position), "raw"));
+    // Raw always comes from the image adapter. Only rig/filler coordinates use the camera fit.
+    if (observation.kind === "measured") layer.append(dot(observation.position, "raw"));
+    if (project === undefined) continue;
     const fill = filled.joints[joint];
     switch (fill.kind) {
       case "measured":

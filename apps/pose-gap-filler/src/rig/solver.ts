@@ -2,8 +2,16 @@ import type { ProjectHandle } from "@motion5/core";
 import type { BoneLengths } from "../filler/bone-length";
 import type { LimbId } from "../filler/landmarks";
 import type { PipelineStep } from "../filler/pipeline";
-import { loadImageRig, readWrittenLimbs, type RigPorts, type SolvedLimb } from "./rig";
-import { createImageWriter } from "./writer";
+import {
+  loadImageRig,
+  loadWorldRig,
+  readWrittenLimbs,
+  type RigPorts,
+  type SolvedLimb,
+} from "./rig";
+import { createImageWriter, createWorldWriter } from "./writer";
+import type { LandmarkSpace } from "../filler/space";
+import { unreachable } from "../filler/unreachable";
 
 /** One frame's solve: the chains written this frame, keyed by limb. */
 export interface PoseSolver {
@@ -30,4 +38,30 @@ export function createImageRigSolver(ports: RigPorts): RigSolver {
   const project = loadImageRig(ports);
   const solver = createImageSolver(project);
   return { solve: solver.solve, dispose: () => project.dispose() };
+}
+
+export function createWorldRigSolver(ports: RigPorts): RigSolver {
+  const project = loadWorldRig(ports);
+  const writer = createWorldWriter(project);
+  return {
+    solve(step, lengths) {
+      return readWrittenLimbs(project, writer.write(step.filled, step.trusted, lengths), [
+        "x",
+        "y",
+        "z",
+      ]);
+    },
+    dispose: () => project.dispose(),
+  };
+}
+
+export function createRigSolver(ports: RigPorts, space: LandmarkSpace): RigSolver {
+  switch (space.kind) {
+    case "image":
+      return createImageRigSolver(ports);
+    case "world":
+      return createWorldRigSolver(ports);
+    default:
+      return unreachable(space, "rig space");
+  }
 }

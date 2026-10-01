@@ -1,6 +1,8 @@
 import { DEFAULT_DETECTOR, jointSpeed, type GapDetectorOptions } from "../filler/gap-detector";
 import type { FillerKind, FillerSpec } from "../filler/gap-filler";
 import { DEFAULT_KALMAN_NOISE, DEFAULT_COAST_MS } from "../filler/chain-kalman";
+import { DEFAULT_WORLD_KALMAN_NOISE } from "../filler/world-chain";
+import { unreachable } from "../filler/unreachable";
 import { JOINTS, scaleBone } from "../filler/landmarks";
 import { createGapPipeline } from "../filler/pipeline";
 import { IMAGE_SPACE, spaceUnit, type LandmarkSpace } from "../filler/space";
@@ -27,6 +29,22 @@ export const COMPARED_FILLERS: readonly FillerSpec[] = [
   { kind: "hold" },
   { kind: "chain-kalman", noise: DEFAULT_KALMAN_NOISE, coastMs: DEFAULT_COAST_MS },
 ];
+
+/** Same closed filler choices, explicitly tuned in their native units. */
+export function comparedFillers(space: LandmarkSpace): readonly FillerSpec[] {
+  switch (space.kind) {
+    case "image":
+      return COMPARED_FILLERS;
+    case "world":
+      return [
+        { kind: "raw" },
+        { kind: "hold" },
+        { kind: "chain-kalman", noise: DEFAULT_WORLD_KALMAN_NOISE, coastMs: DEFAULT_COAST_MS },
+      ];
+    default:
+      return unreachable(space, "comparison space");
+  }
+}
 
 /**
  * The default replay masks: a half-second gap every three seconds at 30 fps on each tip and middle

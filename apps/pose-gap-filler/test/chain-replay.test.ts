@@ -1,7 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { DEFAULT_KALMAN_NOISE } from "../src/filler/chain-kalman";
 import { IMAGE_SPACE, WORLD_SPACE } from "../src/filler/space";
-import { COMPARED_FILLERS, DEFAULT_MASKS, compareFillers } from "../src/replay/compare";
+import {
+  COMPARED_FILLERS,
+  DEFAULT_MASKS,
+  compareFillers,
+  comparedFillers,
+} from "../src/replay/compare";
+import { createWorldRigSolver } from "../src/rig/solver";
 import { runReplay } from "../src/replay/replay";
 import { createSyntheticRecording } from "../src/replay/synthetic";
 import { createImageRigSolver } from "../src/rig/solver";
@@ -46,7 +52,13 @@ describe("chain comparison in the shared Engine-backed harness", () => {
       expect(Number.isFinite(row.metrics.lagMs)).toBe(true);
     }
     expect(compareFillers(options)).toEqual(rows);
-    expect(() => compareFillers({ ...options, space: WORLD_SPACE })).toThrow(/image space only/);
+    const worldRows = compareFillers({
+      ...options,
+      space: WORLD_SPACE,
+      fillers: comparedFillers(WORLD_SPACE),
+      createSolver: () => createWorldRigSolver(fakePorts()),
+    });
+    expect(worldRows.map((row) => row.filler)).toEqual(["raw", "hold", "chain-kalman"]);
     expect(created).toBe(disposed);
   });
 
