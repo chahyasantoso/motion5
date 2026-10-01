@@ -1,5 +1,6 @@
 import { DEFAULT_DETECTOR, jointSpeed, type GapDetectorOptions } from "../filler/gap-detector";
 import type { FillerKind, FillerSpec } from "../filler/gap-filler";
+import { DEFAULT_KALMAN_NOISE, DEFAULT_COAST_MS } from "../filler/chain-kalman";
 import { JOINTS, scaleBone } from "../filler/landmarks";
 import { createGapPipeline } from "../filler/pipeline";
 import { IMAGE_SPACE, spaceUnit, type LandmarkSpace } from "../filler/space";
@@ -20,8 +21,12 @@ export interface ComparisonOptions {
   readonly createSolver?: (() => RigSolver) | undefined;
 }
 
-/** Every filler phase 2 compares, in report order: the reference first. */
-export const COMPARED_FILLERS: readonly FillerSpec[] = [{ kind: "raw" }, { kind: "hold" }];
+/** Image-space comparison order: unfiltered reference, naive hold, relative-angle predictor. */
+export const COMPARED_FILLERS: readonly FillerSpec[] = [
+  { kind: "raw" },
+  { kind: "hold" },
+  { kind: "chain-kalman", noise: DEFAULT_KALMAN_NOISE, coastMs: DEFAULT_COAST_MS },
+];
 
 /**
  * The default replay masks: a half-second gap every three seconds at 30 fps on each tip and middle
