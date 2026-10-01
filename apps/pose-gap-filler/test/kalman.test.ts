@@ -4,6 +4,15 @@ import { createCvFilter, wrapAngle } from "../src/filler/kalman";
 const noise = { measurementVariance: 0.001, accelerationVariance: 0.5 };
 
 describe("constant-velocity scalar filter", () => {
+  it("GF-42 snapshots validated noise rather than retaining caller-owned configuration", () => {
+    const options = { ...noise };
+    const filter = createCvFilter({ kind: "position" }, options);
+    options.measurementVariance = NaN;
+    options.accelerationVariance = -1;
+    const state = filter.step(0, { value: 2, visibility: 1 })!;
+    expect(state.p00).toBe(noise.measurementVariance);
+    expect(state.p11).toBe(noise.accelerationVariance);
+  });
   it("GF-33 wraps angular innovations rather than learning a full-turn velocity", () => {
     expect(wrapAngle(-3 * Math.PI)).toBeCloseTo(-Math.PI, 12);
     for (const sign of [-1, 1]) {

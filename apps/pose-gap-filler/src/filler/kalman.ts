@@ -46,7 +46,8 @@ export function validateScalarNoise(noise: ScalarNoise): ScalarNoise {
   for (const value of [noise.measurementVariance, noise.accelerationVariance])
     if (!Number.isFinite(value) || value <= 0)
       throw new Error("Kalman variances must be finite and positive.");
-  return noise;
+  // Configuration is caller-owned. Capture it once so later mutation cannot bypass validation.
+  return { ...noise };
 }
 
 /**
