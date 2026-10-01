@@ -22,6 +22,12 @@ export interface SyntheticOptions {
   readonly durationMs: number;
   readonly fps: number;
   readonly stage?: StageSize;
+  /**
+   * A factor on the position noise, 1 by default. 0 is the noiseless twin of the same seed (the
+   * draws still happen, so visibility and trust are identical), the truth a denoiser is judged
+   * against; above 1 stands in for a camera noisier than the default.
+   */
+  readonly noiseScale?: number;
 }
 
 export const DEFAULT_STAGE: StageSize = Object.freeze({ width: 640, height: 480 });
@@ -162,18 +168,21 @@ function gaussian(random: () => number): number {
   return Math.sqrt(-2 * Math.log(first)) * Math.cos(2 * Math.PI * random());
 }
 
-function validate(options: SyntheticOptions): StageSize {
+function validate(options: SyntheticOptions): { stage: StageSize; noiseScale: number } {
   if (!Number.isInteger(options.seed)) throw new Error("Synthetic seed must be an integer.");
   if (!Number.isFinite(options.durationMs) || options.durationMs < 0)
     throw new Error("Synthetic durationMs must be finite and non-negative.");
   if (!Number.isFinite(options.fps) || options.fps <= 0)
     throw new Error("Synthetic fps must be finite and greater than zero.");
+  const noiseScale = options.noiseScale ?? 1;
+  if (!(Number.isFinite(noiseScale) && noiseScale >= 0))
+    throw new Error("Synthetic noiseScale must be finite and non-negative.");
   const stage = options.stage ?? DEFAULT_STAGE;
   if (!(Number.isFinite(stage.width) && Number.isFinite(stage.height)))
     throw new Error("Synthetic stage width and height must be finite.");
   if (stage.width <= 0 || stage.height <= 0)
     throw new Error("Synthetic stage width and height must be greater than zero.");
-  return { width: stage.width, height: stage.height };
+  return { stage: { width: stage.width, height: stage.height }, noiseScale };
 }
 
 /**
@@ -199,9 +208,10 @@ const clampUnit = (value: number) => Math.min(0.999999, Math.max(0.000001, value
  * limb joints are filled; every other MediaPipe slot is a zero landmark of visibility 0.
  */
 export function createSyntheticRecording(options: SyntheticOptions): PoseRecording {
-  const stage = validate(options);
+  const { stage, noiseScale } = validate(options);
   const random = mulberry32(options.seed);
   const noise = () => gaussian(random);
+  const positionNoise = () => noiseScale * noise();
   const frameCount = Math.floor((options.durationMs * options.fps) / 1000);
   const frames = Array.from({ length: frameCount }, (_, index) => {
     const tMs = (index * 1000) / options.fps;
@@ -216,14 +226,14 @@ export function createSyntheticRecording(options: SyntheticOptions): PoseRecordi
       const visibility = Math.min(0.99, Math.max(0.88, 0.935 + wave + 0.003 * noise()));
       const [x, y, z] = projectToImage(point, stage);
       world[MEDIAPIPE_INDEX[joint]] = [
-        point[0]! + WORLD_NOISE_M * noise(),
-        point[1]! + WORLD_NOISE_M * noise(),
-        point[2]! + WORLD_NOISE_M * noise(),
+        point[0]! + WORLD_NOISE_M * positionNoise(),
+        point[1]! + WORLD_NOISE_M * positionNoise(),
+        point[2]! + WORLD_NOISE_M * positionNoise(),
         visibility,
       ];
       image[MEDIAPIPE_INDEX[joint]] = [
-        clampUnit(x! + (IMAGE_NOISE_PX / stage.width) * noise()),
-        clampUnit(y! + (IMAGE_NOISE_PX / stage.height) * noise()),
+        clampUnit(x! + (IMAGE_NOISE_PX / stage.width) * positionNoise()),
+        clampUnit(y! + (IMAGE_NOISE_PX / stage.height) * positionNoise()),
         z!,
         visibility,
       ];

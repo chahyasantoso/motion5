@@ -6,6 +6,7 @@ import { unreachable } from "../filler/unreachable";
 import { JOINTS, scaleBone } from "../filler/landmarks";
 import { createGapPipeline } from "../filler/pipeline";
 import { IMAGE_SPACE, spaceUnit, type LandmarkSpace } from "../filler/space";
+import { NO_STABILIZER, type StabilizerSpec } from "../filler/stabilizer";
 import type { RigSolver } from "../rig/solver";
 import type { Mask } from "./mask";
 import { measureReplay, quantile, type ReplayMetrics, type Summary } from "./metrics";
@@ -19,6 +20,8 @@ export interface ComparisonOptions {
   readonly masks?: readonly Mask[] | undefined;
   readonly detector?: GapDetectorOptions | undefined;
   readonly lengthWindow?: number | undefined;
+  /** One stabilizer for every row, so rows differ only by filler; `none` by default. */
+  readonly stabilizer?: StabilizerSpec | undefined;
   /** A fresh rig per filler, disposed after its run, so no run inherits another's solve. */
   readonly createSolver?: (() => RigSolver) | undefined;
 }
@@ -131,6 +134,9 @@ export function calibrateDetector(
   const pipeline = createGapPipeline({
     filler: { kind: "raw" },
     detector: { threshold: DEFAULT_DETECTOR.threshold, gate: Infinity },
+    // The gate measures raw speed, so its calibration must too: a denoised still take would set
+    // a gate below the noise the live detector actually sees.
+    stabilizer: NO_STABILIZER,
   });
   const visibilities = new Map<string, number[]>(JOINTS.map((joint) => [joint, []]));
   const speeds: number[] = [];

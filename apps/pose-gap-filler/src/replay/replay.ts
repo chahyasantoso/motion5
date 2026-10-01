@@ -4,6 +4,7 @@ import type { FillerSpec } from "../filler/gap-filler";
 import { LIMBS, jointRecord, type JointId, type LimbId } from "../filler/landmarks";
 import { createGapPipeline, type PipelineStep } from "../filler/pipeline";
 import type { LandmarkSpace } from "../filler/space";
+import type { StabilizerSpec } from "../filler/stabilizer";
 import type { Vec } from "../filler/vec";
 import type { SolvedLimb } from "../rig/rig";
 import type { PoseSolver } from "../rig/solver";
@@ -37,6 +38,8 @@ export interface ReplayOptions {
   readonly masks?: readonly Mask[] | undefined;
   readonly detector?: GapDetectorOptions | undefined;
   readonly lengthWindow?: number | undefined;
+  /** The live page's stabilizer, so a replay measures what the page shows; `none` by default. */
+  readonly stabilizer?: StabilizerSpec | undefined;
   /**
    * A fresh solver for this run. With one, a limb's middle and tip are shown where the rig solved
    * them, as the live page draws them; without one, the filled joints are shown.
@@ -75,6 +78,7 @@ export function runReplay(options: ReplayOptions): readonly ReplayFrame[] {
     filler: options.filler,
     detector: options.detector,
     lengthWindow: options.lengthWindow,
+    stabilizer: options.stabilizer,
   });
   return options.recording.frames.map((recorded, index) => {
     const frame = replayFrame(options.recording, recorded, options.space);
