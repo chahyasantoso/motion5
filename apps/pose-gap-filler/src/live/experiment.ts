@@ -1,8 +1,8 @@
 import type { GapDetectorOptions } from "../filler/gap-detector";
 import type { FillerKind } from "../filler/gap-filler";
 import { createGapPipeline } from "../filler/pipeline";
-import { IMAGE_SPACE } from "../filler/space";
-import { COMPARED_FILLERS, calibrateDetector } from "../replay/compare";
+import { IMAGE_SPACE, type LandmarkSpace } from "../filler/space";
+import { comparedFillers, calibrateDetector } from "../replay/compare";
 import type { PoseRecording } from "../replay/recording";
 
 /**
@@ -10,7 +10,8 @@ import type { PoseRecording } from "../replay/recording";
  * creates a fresh pipeline so measurements from one calibration cannot leak into another.
  * Live and replay read the same detector, and a failed calibration leaves both unchanged.
  */
-export function createExperiment() {
+export function createExperiment(space: LandmarkSpace = IMAGE_SPACE) {
+  const COMPARED_FILLERS = comparedFillers(space);
   let kind: FillerKind = COMPARED_FILLERS[0]!.kind;
   let detector: GapDetectorOptions | undefined;
   const makePipeline = () => {
@@ -33,7 +34,7 @@ export function createExperiment() {
       pipeline = makePipeline();
     },
     calibrate(recording: PoseRecording) {
-      const calibration = calibrateDetector(recording, IMAGE_SPACE);
+      const calibration = calibrateDetector(recording, space);
       detector = calibration.detector;
       pipeline = makePipeline();
       return calibration;

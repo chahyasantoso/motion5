@@ -94,12 +94,12 @@ describe("relative-angle chain filler", () => {
     }
   });
 
-  it("GF-39 never invents geometry without initialization and refuses world, missing lengths and bad time", () => {
+  it("GF-39 never invents geometry and refuses malformed dimensions, missing lengths and bad time", () => {
     const filler = createGapFiller(CHAIN);
     const lengths = createBoneLengthEstimator();
     expect(() => filler.fill(trustedOf(frameOf(STANDING)))).toThrow(/estimator/);
     expect(() => filler.fill(trustedOf(frameOf(STANDING, 0, WORLD_SPACE)), lengths)).toThrow(
-      /image space only/,
+      /three-dimensional/,
     );
     const frame = trustedOf(frameOf(STANDING), JOINTS);
     const output = filler.fill(frame, lengths);

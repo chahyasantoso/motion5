@@ -3,16 +3,19 @@ import { createGsapInterpolator } from "@motion5/core/adapters";
 import { gsap } from "gsap";
 import { parsePoseResult, type StageSize } from "../filler/adapter";
 import type { FillerKind } from "../filler/gap-filler";
-import { IMAGE_SPACE } from "../filler/space";
+import { IMAGE_SPACE, WORLD_SPACE, LANDMARK_SPACES, type LandmarkSpace } from "../filler/space";
 import {
   COMPARED_FILLERS,
+  comparedFillers,
   DEFAULT_MASKS,
   compareFillers,
   formatComparison,
 } from "../replay/compare";
 import { parseRecording } from "../replay/recording";
 import type { RigPorts } from "../rig/rig";
-import { createImageRigSolver } from "../rig/solver";
+import { createRigSolver } from "../rig/solver";
+import { createGapPipeline } from "../filler/pipeline";
+import { fitWeakPerspective } from "./projection";
 import { HOTKEYS, createForcedJoints } from "./hotkeys";
 import { createExperiment } from "./experiment";
 import { drawOverlay } from "./overlay";
@@ -54,6 +57,7 @@ function main(): void {
   const readout = required<HTMLElement>("#timings");
   const start = required<HTMLButtonElement>("#start");
   const fillerSelect = required<HTMLSelectElement>("#filler");
+  const spaceSelect = required<HTMLSelectElement>("#space");
   const record = required<HTMLButtonElement>("#record");
   const replayInput = required<HTMLInputElement>("#replay");
   const calibrationInput = required<HTMLInputElement>("#calibrate");
@@ -62,12 +66,27 @@ function main(): void {
   const log = new URLSearchParams(location.search).has("log");
 
   for (const { kind } of COMPARED_FILLERS) fillerSelect.append(new Option(kind, kind));
-  const experiment = createExperiment();
+  let space: LandmarkSpace = IMAGE_SPACE;
+  let experiment = createExperiment(space);
+  let solver = createRigSolver(rigPorts(), space);
+  const imageTrust = createGapPipeline({ filler: { kind: "raw" } });
+  spaceSelect.addEventListener("change", () => {
+    const next = LANDMARK_SPACES.find((candidate) => candidate.kind === spaceSelect.value);
+    if (next === undefined) throw new Error("Unknown landmark space.");
+    const freshSolver = createRigSolver(rigPorts(), next);
+    const freshExperiment = createExperiment(next);
+    freshExperiment.select(fillerSelect.value as FillerKind);
+    solver.dispose();
+    solver = freshSolver;
+    experiment = freshExperiment;
+    space = next;
+    imageTrust.reset();
+    report.textContent = `Switched to ${next.kind}. Recalibrate the still recording in this space.`;
+  });
   fillerSelect.addEventListener("change", () => {
     experiment.select(fillerSelect.value as FillerKind);
   });
 
-  const solver = createImageRigSolver(rigPorts());
   const forced = createForcedJoints();
   const recorder = createRecorder(STAGE);
   const source = createMediaPipeWebcamSource(video);
@@ -93,7 +112,7 @@ function main(): void {
       .text()
       .then((text) => {
         const calibration = experiment.calibrate(parseRecording(JSON.parse(text)));
-        report.textContent = `Still calibration applied to live and replay: visibility threshold ${calibration.detector.threshold.toFixed(3)}, speed gate ${calibration.detector.gate.toFixed(1)} bone lengths/s. Replay your movement recording to compare.`;
+        report.textContent = `${space.kind} still calibration applied to live and replay: visibility threshold ${calibration.detector.threshold.toFixed(3)}, speed gate ${calibration.detector.gate.toFixed(1)} bone lengths/s. Replay your movement recording to compare.`;
       })
       .catch((error: unknown) => {
         report.textContent = `Calibration failed (previous settings retained): ${String(error)}`;
@@ -106,15 +125,18 @@ function main(): void {
       .text()
       .then((text) => {
         const recording = parseRecording(JSON.parse(text));
-        const rows = compareFillers({
-          recording,
-          space: IMAGE_SPACE,
-          fillers: COMPARED_FILLERS,
-          masks: DEFAULT_MASKS,
-          detector: experiment.detector,
-          createSolver: () => createImageRigSolver(rigPorts()),
+        const reports = LANDMARK_SPACES.map((nativeSpace) => {
+          const rows = compareFillers({
+            recording,
+            space: nativeSpace,
+            fillers: comparedFillers(nativeSpace),
+            masks: DEFAULT_MASKS,
+            detector: nativeSpace.kind === space.kind ? experiment.detector : undefined,
+            createSolver: () => createRigSolver(rigPorts(), nativeSpace),
+          });
+          return `${nativeSpace.kind} (native ${nativeSpace.kind === "image" ? "px" : "mm"})\n${formatComparison(rows, nativeSpace)}`;
         });
-        report.textContent = `${recording.frames.length} frames\n${formatComparison(rows, IMAGE_SPACE)}`;
+        report.textContent = `${recording.frames.length} frames\n${reports.join("\n\n")}`;
       })
       .catch((error: unknown) => {
         report.textContent = `Replay failed: ${String(error)}`;
@@ -127,18 +149,30 @@ function main(): void {
       .start(({ result, tMs, detectMs }) => {
         const timer = createStageTimer();
         recorder.keep(result, tMs);
-        const frame = parsePoseResult(result, tMs, IMAGE_SPACE, STAGE);
+        const image = parsePoseResult(result, tMs, IMAGE_SPACE, STAGE);
+        const frame =
+          space.kind === "image" ? image : parsePoseResult(result, tMs, WORLD_SPACE, STAGE);
         timer.mark("adapt");
         const pipeline = experiment.pipeline;
         const step = pipeline.step(frame, forced.joints);
         timer.mark("fill");
         const solved = solver.solve(step, pipeline.lengths);
         timer.mark("write");
-        drawOverlay(svg, frame, step.filled, solved);
+        const fit =
+          space.kind === "world"
+            ? fitWeakPerspective(step.trusted, imageTrust.step(image, forced.joints).trusted)
+            : undefined;
+        drawOverlay(
+          svg,
+          image,
+          step.filled,
+          solved,
+          space.kind === "image" ? (position) => position : fit?.project,
+        );
         timer.mark("draw");
         const timings = timer.finish(tMs, detectMs);
         const held = [...forced.joints].join(", ") || "none";
-        readout.textContent = `${formatTimings(timings)} · forced: ${held}`;
+        readout.textContent = `${space.kind} · ${formatTimings(timings)} · forced: ${held}${space.kind === "world" ? (fit === undefined ? " · no trusted camera fit" : ` · fit ${fit.rmsPx.toFixed(1)} px (${fit.pairCount} pairs)`) : ""}`;
         if (log) console.debug(JSON.stringify(timings));
       })
       .catch((error: unknown) => {

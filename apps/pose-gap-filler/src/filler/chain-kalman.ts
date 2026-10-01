@@ -11,13 +11,14 @@ import {
 import { BONES, BONE_IDS, LIMBS, jointRecord, type BoneId, type JointId } from "./landmarks";
 import { unreachable } from "./unreachable";
 import { distance, type Vec } from "./vec";
+import { createWorldChainFiller } from "./world-chain";
 
 export interface KalmanNoise {
   readonly angle: ScalarNoise;
   readonly position: ScalarNoise;
 }
 
-/** Image-space defaults, not world-space tuning. A later phase must define a 3D direction state. */
+/** Pixel-space defaults. `comparedFillers` selects a separate mm-space root noise preset. */
 export const DEFAULT_KALMAN_NOISE: KalmanNoise = {
   angle: { measurementVariance: 0.0004, accelerationVariance: 0.5 },
   position: { measurementVariance: 9, accelerationVariance: 10000 },
@@ -41,6 +42,37 @@ function rebuild(parent: Vec, length: number, angle: number): Vec {
  * No inferred coordinate is ever used as a filter measurement or bone-length sample.
  */
 export function createChainKalmanFiller(noise: KalmanNoise, coastMs: number): GapFiller {
+  const image = createImageChainFiller(noise, coastMs);
+  const world = createWorldChainFiller(noise, coastMs);
+  let space: "image" | "world" | undefined;
+  return {
+    fill(frame, lengths) {
+      if (space !== undefined && space !== frame.space.kind)
+        throw new Error("Reset chain-kalman before changing landmark space.");
+      switch (frame.space.kind) {
+        case "image": {
+          const result = image.fill(frame, lengths);
+          space = "image";
+          return result;
+        }
+        case "world": {
+          const result = world.fill(frame, lengths);
+          space = "world";
+          return result;
+        }
+        default:
+          return unreachable(frame.space, "landmark space");
+      }
+    },
+    reset() {
+      image.reset();
+      world.reset();
+      space = undefined;
+    },
+  };
+}
+
+function createImageChainFiller(noise: KalmanNoise, coastMs: number): GapFiller {
   if (!Number.isFinite(coastMs) || coastMs < 0)
     throw new Error("Kalman coastMs must be finite and nonnegative.");
   const angleFilter = () => createCvFilter({ kind: "angle" }, noise.angle);
@@ -65,7 +97,7 @@ export function createChainKalmanFiller(noise: KalmanNoise, coastMs: number): Ga
         case "image":
           break;
         case "world":
-          throw new Error("chain-kalman supports image space only; world directions need Phase 4.");
+          throw new Error("The image-angle filter requires image space.");
         default:
           return unreachable(frame.space, "landmark space");
       }
