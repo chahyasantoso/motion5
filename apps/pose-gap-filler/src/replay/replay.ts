@@ -26,6 +26,8 @@ export interface ReplayFrame {
   /** The run under test: what it trusted, and what it showed. */
   readonly trust: Readonly<Record<JointId, JointTrust>>;
   readonly presented: Presented;
+  /** With a rig, only joints solved this frame; absent for a filler-only replay. */
+  readonly solved?: ReadonlySet<JointId> | undefined;
 }
 
 export interface ReplayOptions {
@@ -78,12 +80,21 @@ export function runReplay(options: ReplayOptions): readonly ReplayFrame[] {
     const frame = replayFrame(options.recording, recorded, options.space);
     const masked = maskedJoints(masks, index);
     const step = run.step(frame, masked);
+    const chains = options.solver?.solve(step, run.lengths);
+    const solved = chains === undefined ? undefined : new Set<JointId>();
+    if (solved !== undefined)
+      for (const limb of LIMBS)
+        if (chains!.has(limb.id)) {
+          solved.add(limb.middle);
+          solved.add(limb.tip);
+        }
     return {
       tMs: frame.tMs,
       masked,
       reference: jointRecord((joint) => measurementOf(frame.joints[joint])?.position),
       trust: step.trusted.trust,
-      presented: presentedOf(step, options.solver?.solve(step, run.lengths)),
+      presented: presentedOf(step, chains),
+      solved,
     };
   });
 }

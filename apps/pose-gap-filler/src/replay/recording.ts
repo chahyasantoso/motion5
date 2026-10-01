@@ -109,10 +109,15 @@ export function parseRecording(value: unknown): PoseRecording {
 
 /** The live recorder's half: one MediaPipe result as a recorded frame, first pose only. */
 export function recordResult(result: unknown, tMs: number): RecordedFrame {
+  if (!Number.isFinite(tMs)) fail("live tMs is not finite");
+  const pose = (space: LandmarkSpace) => {
+    const raw = readRawPose(result, space);
+    return raw?.length === MEDIAPIPE_LANDMARK_COUNT ? raw : null;
+  };
   return {
     tMs,
-    image: readRawPose(result, IMAGE_SPACE) ?? null,
-    world: readRawPose(result, WORLD_SPACE) ?? null,
+    image: pose(IMAGE_SPACE),
+    world: pose(WORLD_SPACE),
   };
 }
 

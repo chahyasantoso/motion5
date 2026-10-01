@@ -38,11 +38,11 @@ export interface ReplayMetrics {
    * space units. Only meaningful in world space, where a bone's true length is constant.
    */
   readonly boneLengthDeviation: Summary;
-  /** Frame-to-frame acceleration of every shown joint over three consecutive shown frames, units/s². */
+  /** Acceleration over three frames, units/s²: solved joints with a rig, all shown joints without. */
   readonly jitter: Summary;
   /**
-   * The frame shift, in milliseconds, that best aligns what was shown with the reference over every
-   * frame both exist: 0 for a filler that follows the measurement, positive for one that trails it.
+   * Mean actual timestamp delay of the frame shift that best aligns shown and reference positions.
+   * Zero follows the measurement; positive trails it. This is an alignment proxy, not causal latency.
    */
   readonly lagMs: number | undefined;
   /** At each gap's end, the jump from the last shown gap position to the first trusted one. */
@@ -97,6 +97,8 @@ function accelerations(frames: readonly ReplayFrame[]): Samples {
     // A window without elapsed time has no acceleration to measure.
     if (!(early > 0 && late > 0)) continue;
     for (const joint of JOINTS) {
+      if ([a, b, c].some((frame) => frame.solved !== undefined && !frame.solved.has(joint)))
+        continue;
       const [p0, p1, p2] = [a.presented[joint], b.presented[joint], c.presented[joint]];
       if (p0 === undefined || p1 === undefined || p2 === undefined) continue;
       const change = sub(scale(sub(p2, p1), 1 / late), scale(sub(p1, p0), 1 / early));
@@ -108,25 +110,26 @@ function accelerations(frames: readonly ReplayFrame[]): Samples {
 
 function lagMs(frames: readonly ReplayFrame[]): number | undefined {
   if (frames.length < 2) return undefined;
-  let best: { shift: number; error: number } | undefined;
+  let best: { delay: number; error: number } | undefined;
   for (let shift = 0; shift <= Math.min(MAX_LAG_FRAMES, frames.length - 1); shift += 1) {
     let total = 0;
     let count = 0;
+    let delay = 0;
     for (let index = shift; index < frames.length; index += 1)
       for (const joint of JOINTS) {
         const shown = frames[index]!.presented[joint];
         const reference = frames[index - shift]!.reference[joint];
         if (shown === undefined || reference === undefined) continue;
         total += distance(shown, reference);
+        delay += frames[index]!.tMs - frames[index - shift]!.tMs;
         count += 1;
       }
     if (count === 0) continue;
     const error = total / count;
-    if (best === undefined || error < best.error) best = { shift, error };
+    if (best === undefined || error < best.error) best = { delay: delay / count, error };
   }
   if (best === undefined) return undefined;
-  const periodMs = (frames.at(-1)!.tMs - frames[0]!.tMs) / (frames.length - 1);
-  return best.shift * periodMs;
+  return best.delay;
 }
 
 function recoverySnaps(frames: readonly ReplayFrame[]): Samples {

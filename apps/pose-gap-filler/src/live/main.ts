@@ -3,7 +3,6 @@ import { createGsapInterpolator } from "@motion5/core/adapters";
 import { gsap } from "gsap";
 import { parsePoseResult, type StageSize } from "../filler/adapter";
 import type { FillerKind } from "../filler/gap-filler";
-import { createGapPipeline } from "../filler/pipeline";
 import { IMAGE_SPACE } from "../filler/space";
 import {
   COMPARED_FILLERS,
@@ -15,6 +14,7 @@ import { parseRecording } from "../replay/recording";
 import type { RigPorts } from "../rig/rig";
 import { createImageRigSolver } from "../rig/solver";
 import { HOTKEYS, createForcedJoints } from "./hotkeys";
+import { createExperiment } from "./experiment";
 import { drawOverlay } from "./overlay";
 import { createRecorder } from "./recorder";
 import { createMediaPipeWebcamSource } from "./source";
@@ -56,19 +56,15 @@ function main(): void {
   const fillerSelect = required<HTMLSelectElement>("#filler");
   const record = required<HTMLButtonElement>("#record");
   const replayInput = required<HTMLInputElement>("#replay");
+  const calibrationInput = required<HTMLInputElement>("#calibrate");
   const report = required<HTMLElement>("#report");
   svg.setAttribute("viewBox", `0 0 ${STAGE.width} ${STAGE.height}`);
   const log = new URLSearchParams(location.search).has("log");
 
   for (const { kind } of COMPARED_FILLERS) fillerSelect.append(new Option(kind, kind));
-  const pipelineFor = (kind: FillerKind) => {
-    const spec = COMPARED_FILLERS.find((filler) => filler.kind === kind);
-    if (spec === undefined) throw new Error(`No compared filler ${kind}.`);
-    return createGapPipeline({ filler: spec });
-  };
-  let pipeline = pipelineFor(COMPARED_FILLERS[0]!.kind);
+  const experiment = createExperiment();
   fillerSelect.addEventListener("change", () => {
-    pipeline = pipelineFor(fillerSelect.value as FillerKind);
+    experiment.select(fillerSelect.value as FillerKind);
   });
 
   const solver = createImageRigSolver(rigPorts());
@@ -78,7 +74,7 @@ function main(): void {
   addEventListener("keydown", (event) => {
     if (event.target instanceof HTMLInputElement || event.target instanceof HTMLSelectElement)
       return;
-    if (forced.toggle(event.key)) event.preventDefault();
+    if (forced.toggle(event.key, event.repeat)) event.preventDefault();
   });
   record.addEventListener("click", () => {
     if (!recorder.recording) {
@@ -89,6 +85,19 @@ function main(): void {
     const take = recorder.stop();
     record.textContent = "Record landmarks";
     download(`pose-recording-${Date.now()}.json`, JSON.stringify(take));
+  });
+  calibrationInput.addEventListener("change", () => {
+    const file = calibrationInput.files?.[0];
+    if (file === undefined) return;
+    file
+      .text()
+      .then((text) => {
+        const calibration = experiment.calibrate(parseRecording(JSON.parse(text)));
+        report.textContent = `Still calibration applied to live and replay: visibility threshold ${calibration.detector.threshold.toFixed(3)}, speed gate ${calibration.detector.gate.toFixed(1)} bone lengths/s. Replay your movement recording to compare.`;
+      })
+      .catch((error: unknown) => {
+        report.textContent = `Calibration failed (previous settings retained): ${String(error)}`;
+      });
   });
   replayInput.addEventListener("change", () => {
     const file = replayInput.files?.[0];
@@ -102,6 +111,7 @@ function main(): void {
           space: IMAGE_SPACE,
           fillers: COMPARED_FILLERS,
           masks: DEFAULT_MASKS,
+          detector: experiment.detector,
           createSolver: () => createImageRigSolver(rigPorts()),
         });
         report.textContent = `${recording.frames.length} frames\n${formatComparison(rows, IMAGE_SPACE)}`;
@@ -119,6 +129,7 @@ function main(): void {
         recorder.keep(result, tMs);
         const frame = parsePoseResult(result, tMs, IMAGE_SPACE, STAGE);
         timer.mark("adapt");
+        const pipeline = experiment.pipeline;
         const step = pipeline.step(frame, forced.joints);
         timer.mark("fill");
         const solved = solver.solve(step, pipeline.lengths);

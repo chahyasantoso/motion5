@@ -19,7 +19,7 @@ export interface ForcedJoints {
   /** The joints forced this frame, the set the pipeline step reads. */
   readonly joints: ReadonlySet<JointId>;
   /** Toggles the joint bound to `key`; answers whether the key is bound at all. */
-  toggle(key: string): boolean;
+  toggle(key: string, repeat?: boolean): boolean;
   clear(): void;
 }
 
@@ -27,9 +27,10 @@ export function createForcedJoints(): ForcedJoints {
   const joints = new Set<JointId>();
   return {
     joints,
-    toggle(key) {
+    toggle(key, repeat = false) {
       const joint = HOTKEYS[key.toLowerCase()];
       if (joint === undefined) return false;
+      if (repeat) return true;
       if (!joints.delete(joint)) joints.add(joint);
       return true;
     },

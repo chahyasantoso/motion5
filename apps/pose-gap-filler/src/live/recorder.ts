@@ -25,7 +25,11 @@ export function createRecorder(stage: StageSize): Recorder {
       frames = [];
     },
     keep(result, tMs) {
-      frames?.push(recordResult(result, tMs));
+      if (frames === undefined) return;
+      const frame = recordResult(result, tMs);
+      if (frames.length > 0 && tMs <= frames.at(-1)!.tMs)
+        throw new Error("Recording timestamps must be strictly increasing.");
+      frames.push(frame);
     },
     stop() {
       const take: PoseRecording = {

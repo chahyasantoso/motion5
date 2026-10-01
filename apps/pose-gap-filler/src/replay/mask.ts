@@ -1,4 +1,4 @@
-import type { JointId } from "../filler/landmarks";
+import { JOINTS, type JointId } from "../filler/landmarks";
 import { unreachable } from "../filler/unreachable";
 
 /**
@@ -56,6 +56,9 @@ export function validateMask(mask: Mask): Mask {
       return unreachable(mask, "mask");
   }
   if (mask.joints.length === 0) throw new Error("A mask must name at least one joint.");
+  for (const joint of mask.joints)
+    if (!(JOINTS as readonly string[]).includes(joint))
+      throw new Error(`Unknown mask joint ${joint}.`);
   return mask;
 }
 

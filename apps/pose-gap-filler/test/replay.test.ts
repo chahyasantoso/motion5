@@ -181,7 +181,7 @@ describe("replay metrics", () => {
   it("GF-23 calibrates on a still subject and compares raw and hold on the exercise in both spaces", () => {
     const calibration = calibrateDetector(still);
     expect(calibration.visibilityP01).toBeGreaterThan(0.85);
-    expect(calibration.detector.threshold).toBeLessThanOrEqual(0.5);
+    expect(calibration.detector.threshold).toBeGreaterThanOrEqual(0.5);
     expect(calibration.detector.gate).toBeGreaterThanOrEqual(20);
     expect(calibration.detector.gate).toBeGreaterThan(4 * calibration.speedP999 - 1e-9);
     // Calibrated on stillness, the detector still trusts every joint of the moving exercise.

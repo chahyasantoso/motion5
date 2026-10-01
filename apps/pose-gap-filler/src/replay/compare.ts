@@ -84,7 +84,7 @@ export function formatComparison(rows: readonly ComparisonRow[], space: Landmark
 }
 
 export interface Calibration {
-  /** The 1st percentile of every limb joint's visibility over the still recording. */
+  /** The lowest per-joint P01 among joints with at least two usable still samples. */
   readonly visibilityP01: number;
   /** The 99.9th percentile of frame-to-frame joint speed, in scale-bone lengths per second. */
   readonly speedP999: number;
@@ -98,7 +98,7 @@ export const CALIBRATION_GATE_FACTOR = 4;
 /**
  * Calibrates the detector from a recording of a still person, which fixes the noise floor and
  * nothing more: it cannot say how fast a person moves. So calibration only ever tightens the
- * threshold under the person's worst visibility and raises the gate above their noise; it never
+ * threshold above the default floor and raises the gate above their noise; it never
  * loosens the threshold or lowers the gate below `DEFAULT_DETECTOR`.
  */
 export function calibrateDetector(
@@ -107,9 +107,9 @@ export function calibrateDetector(
 ): Calibration {
   const pipeline = createGapPipeline({
     filler: { kind: "raw" },
-    detector: { threshold: 0, gate: Infinity },
+    detector: { threshold: DEFAULT_DETECTOR.threshold, gate: Infinity },
   });
-  const visibilities: number[] = [];
+  const visibilities = new Map<string, number[]>(JOINTS.map((joint) => [joint, []]));
   const speeds: number[] = [];
   let previous: ReturnType<typeof pipeline.step> | undefined;
   for (const recorded of recording.frames) {
@@ -117,7 +117,7 @@ export function calibrateDetector(
     for (const joint of JOINTS) {
       const now = step.trusted.trust[joint];
       if (now.kind !== "trusted") continue;
-      visibilities.push(now.visibility);
+      visibilities.get(joint)!.push(now.visibility);
       const before = previous?.trusted.trust[joint];
       const scale = pipeline.lengths.length(scaleBone(joint));
       if (before?.kind !== "trusted" || scale === undefined || scale <= 0) continue;
@@ -131,12 +131,17 @@ export function calibrateDetector(
     }
     previous = step;
   }
-  if (visibilities.length === 0 || speeds.length === 0)
+  const jointFloors = [...visibilities.values()]
+    .filter((values) => values.length >= 2)
+    .map((values) =>
+      quantile(
+        values.sort((a, b) => a - b),
+        0.01,
+      ),
+    );
+  if (jointFloors.length === 0 || speeds.length === 0)
     throw new Error("Calibration needs a recording with at least two frames of trusted joints.");
-  const visibilityP01 = quantile(
-    visibilities.sort((a, b) => a - b),
-    0.01,
-  );
+  const visibilityP01 = Math.min(...jointFloors);
   const speedP999 = quantile(
     speeds.sort((a, b) => a - b),
     0.999,
@@ -146,8 +151,8 @@ export function calibrateDetector(
     speedP999,
     detector: {
       threshold: Math.max(
-        0,
-        Math.min(DEFAULT_DETECTOR.threshold, visibilityP01 - CALIBRATION_VISIBILITY_MARGIN),
+        DEFAULT_DETECTOR.threshold,
+        visibilityP01 - CALIBRATION_VISIBILITY_MARGIN,
       ),
       gate: Math.max(DEFAULT_DETECTOR.gate, CALIBRATION_GATE_FACTOR * speedP999),
     },
