@@ -39,7 +39,7 @@ export function createGapPipeline(options: PipelineOptions): GapPipeline {
     step(frame, forced = NO_FORCED) {
       const trusted = detector.detect(frame, forced, lengths);
       lengths.observe(trusted);
-      return { trusted, filled: filler.fill(trusted) };
+      return { trusted, filled: filler.fill(trusted, lengths) };
     },
     reset() {
       detector.reset();

@@ -198,7 +198,10 @@ describe("replay metrics", () => {
         compareFillers({
           recording: exercise,
           space,
-          fillers: COMPARED_FILLERS,
+          fillers:
+            space === IMAGE_SPACE
+              ? COMPARED_FILLERS
+              : COMPARED_FILLERS.filter((filler) => filler.kind !== "chain-kalman"),
           masks: DEFAULT_MASKS,
           detector: calibration.detector,
           createSolver: space === IMAGE_SPACE ? () => createImageRigSolver(fakePorts()) : undefined,
@@ -217,12 +220,14 @@ describe("replay metrics", () => {
     expect(image.get("hold")!.positionError.mean).toBeGreaterThan(
       image.get("raw")!.positionError.mean!,
     );
-    for (const metrics of image.values()) expect(metrics.lostFrames).toBe(0);
+    for (const kind of ["raw", "hold"]) expect(image.get(kind)!.lostFrames).toBe(0);
+    // Chain coasting is intentionally bounded; a reference or unbounded hold is not.
+    expect(image.get("chain-kalman")!.lostFrames).toBeGreaterThanOrEqual(0);
     const table = formatComparison(
       [...image].map(([filler, metrics]) => ({ filler: filler as "raw", metrics })),
       IMAGE_SPACE,
     );
-    expect(table.split("\n")).toHaveLength(4);
+    expect(table.split("\n")).toHaveLength(5);
     expect(table).toContain("position error px");
     expect(formatComparison([], WORLD_SPACE)).toContain("jitter mm/s²");
   });
