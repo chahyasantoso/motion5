@@ -4,11 +4,29 @@ import { unreachable } from "./unreachable";
 import type { Vec } from "./vec";
 
 /**
+ * MediaPipe's presence score for one landmark: the probability it is in the scene at all, which
+ * says nothing about whether it is occluded (that is `visibility`). `unreported` when the producer
+ * supplied none (a v1 recording, a result without the field, the legacy synthetic subject): it is
+ * never fabricated as a confident 1.
+ */
+export type Presence =
+  | { readonly kind: "reported"; readonly value: number }
+  | { readonly kind: "unreported" };
+
+export const UNREPORTED: Presence = Object.freeze({ kind: "unreported" });
+
+/**
  * What the adapter read for one joint. `absent` is a landmark missing from the result or carrying
- * a non-finite coordinate: the adapter refuses it rather than passing a NaN downstream.
+ * a non-finite coordinate: the adapter refuses it rather than passing a NaN downstream. A measured
+ * joint carries visibility and presence as reported; trust reads visibility only.
  */
 export type JointObservation =
-  | { readonly kind: "measured"; readonly position: Vec; readonly visibility: number }
+  | {
+      readonly kind: "measured";
+      readonly position: Vec;
+      readonly visibility: number;
+      readonly presence: Presence;
+    }
   | { readonly kind: "absent" };
 
 /** One adapted MediaPipe result. `tMs` is the only clock any stateful module reads. */

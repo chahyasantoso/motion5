@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { UNREPORTED } from "../src/filler/frame";
 import { WORLD_UNITS_PER_METRE, parsePoseResult } from "../src/filler/adapter";
 import { JOINTS, MEDIAPIPE_INDEX, MEDIAPIPE_LANDMARK_COUNT } from "../src/filler/landmarks";
 import { IMAGE_SPACE, WORLD_SPACE } from "../src/filler/space";
@@ -23,11 +24,13 @@ describe("MediaPipe adapter", () => {
       kind: "measured",
       position: [320, 120],
       visibility: 1,
+      presence: UNREPORTED,
     });
     expect(frame.joints["left-shoulder"]).toEqual({
       kind: "measured",
       position: [320, 120],
       visibility: 0,
+      presence: UNREPORTED,
     });
     // Every joint is read from its own MediaPipe index, and no index is read twice.
     expect(new Set(JOINTS.map((joint) => MEDIAPIPE_INDEX[joint])).size).toBe(JOINTS.length);
@@ -54,6 +57,7 @@ describe("MediaPipe adapter", () => {
       kind: "measured",
       position: [64, 48],
       visibility: 0,
+      presence: UNREPORTED,
     });
     expect(frame.joints["left-wrist"]).toMatchObject({ kind: "measured", visibility: 0 });
     for (const empty of [undefined, null, 7, {}, { landmarks: [] }, { landmarks: [{}] }]) {
@@ -98,6 +102,7 @@ describe("MediaPipe adapter", () => {
         0.05 * WORLD_UNITS_PER_METRE,
       ],
       visibility: 0.8,
+      presence: UNREPORTED,
     });
     expect(frame.joints["left-ankle"]).toEqual({ kind: "absent" });
     const image = parsePoseResult({ worldLandmarks: result.worldLandmarks }, 3, IMAGE_SPACE, STAGE);

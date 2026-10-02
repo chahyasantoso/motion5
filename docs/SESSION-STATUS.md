@@ -20,9 +20,10 @@ shape and byte ceiling.
 ## Next in line
 
 - **[#540][issue540] synthetic human rig:** a live source selector with looped synthetic takes,
-  so the page runs with no MediaPipe download and no camera, is prepared on
-  `feat/540-phase0-source-modes` and not merged; [SYNTHETIC-HUMAN.md](./SYNTHETIC-HUMAN.md) records
-  its scope. The learned prior, [#539][issue539], is measured against that simulator.
+  then presence, recording v2, one ingest gate and a display-only mirror, are prepared on
+  `feat/540-phase0-source-modes` and `feat/540-phase1-contracts` and not merged;
+  [SYNTHETIC-HUMAN.md](./SYNTHETIC-HUMAN.md) records the contracts. The learned prior,
+  [#539][issue539], is measured against that simulator.
 
 ## Open, and not scheduled
 

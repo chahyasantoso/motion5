@@ -7,14 +7,24 @@ export type SessionEnd =
   | { readonly kind: "stopped" }
   | { readonly kind: "failed"; readonly error: unknown };
 
+/**
+ * A sample stamped by the session that delivered it: `session` counts started sources from 1 and
+ * `sequence` counts that source's samples from 0, so a consumer can tell a new subject from a late
+ * sample of an old one without trusting the source's clock to say so.
+ */
+export interface SessionSample extends SourceSample {
+  readonly session: number;
+  readonly sequence: number;
+}
+
 /** What the page does around one source; the session decides when, the hooks decide what. */
 export interface SessionHooks {
   /** Builds the source for a spec; creating one must acquire nothing (`createLandmarkSource`). */
   create(spec: SourceSpec): LandmarkSource;
-  /** Before the source starts: a new source is a new subject, so reset every stateful stage. */
+  /** Before the source starts. Resetting subject state is the ingest gate's, on the first sample. */
   begin(spec: SourceSpec): void;
-  /** One sample of the running source. A throw ends the session as `failed`. */
-  sample(sample: SourceSample): void;
+  /** One stamped sample of the running source. A throw ends the session as `failed`. */
+  sample(sample: SessionSample): void;
   /** Exactly once per started source, after it is stopped, whichever way it ended. */
   end(spec: SourceSpec, ending: SessionEnd): void;
 }
@@ -37,6 +47,7 @@ export interface SourceSession {
  */
 export function createSourceSession(hooks: SessionHooks): SourceSession {
   let current: { readonly spec: SourceSpec; readonly source: LandmarkSource } | undefined;
+  let sessions = 0;
   const finish = (ending: SessionEnd) => {
     const ended = current;
     if (ended === undefined) return;
@@ -54,6 +65,9 @@ export function createSourceSession(hooks: SessionHooks): SourceSession {
       const source = hooks.create(spec);
       const mine = { spec, source };
       current = mine;
+      sessions += 1;
+      const session = sessions;
+      let sequence = 0;
       const fail = (error: unknown) => {
         if (current === mine) finish({ kind: "failed", error });
       };
@@ -61,7 +75,7 @@ export function createSourceSession(hooks: SessionHooks): SourceSession {
         .start((sample) => {
           if (current !== mine) return;
           try {
-            hooks.sample(sample);
+            hooks.sample({ ...sample, session, sequence: sequence++ });
           } catch (error) {
             fail(error);
           }

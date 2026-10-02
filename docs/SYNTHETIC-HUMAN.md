@@ -55,4 +55,30 @@ each slice adds and the decisions behind them. What has landed is claimed only b
   one source runs, and every started source ends exactly once, through one `end` hook, whether it
   was stopped, its start rejected or the page's consumer threw (`GF-85`). Starting a source resets
   the pipeline and restarts the rig, because a new source is a new subject. Ending one ends any
-  recording, saved as if stopped, so a take never spans two sources.
+  recording, saved as if stopped, so a take never spans two sources. It stamps every sample with its
+  `session` (counting started sources) and its `sequence` within it (`GF-89`).
+
+## Observations, time and coordinates
+
+- A measured joint carries `presence` beside `visibility` (`src/filler/frame.ts`):
+  `reported` with a value clamped into [0, 1], or `unreported` when the producer gave none. It is
+  never fabricated as a confident 1. Trust still reads visibility only, so a frame that differs
+  only in presence is trusted identically and the comparison record is unchanged (`GF-86`).
+- Recordings are written as version 2, `[x, y, z, visibility, presence]` with presence `null` when
+  unreported. Version 1 files are still read through their own decoder into the current shape,
+  with every presence unreported, and each version's landmark shape is refused in the other
+  (`GF-87`).
+- `createIngestGate` in `src/live/ingest.ts` is the one owner of admission and of when subject
+  state resets. Its `Admission` is `continue`, `restart` (a new session, a stall past one second,
+  or a pose reacquired after two seconds without one) or `reject` (non-finite time, time that does
+  not increase within a session, a stale session). It reads the samples' own times and stamps,
+  never a wall clock, so replay is admitted identically (`GF-88`). A restart resets the pipeline
+  and the rig; a rejected sample is neither drawn nor recorded.
+- Axes are MediaPipe's, camera-aligned and unmirrored: +x toward the image's right, which is a
+  camera-facing person's left, +y down, and smaller z nearer the camera, in world and image alike.
+  World landmarks are hip-centred and converted from metres to millimetres once, in the adapter.
+  A person turned away keeps every anatomical name; only their image side changes (`GF-91`).
+- `PreviewMirror` in `src/live/preview.ts` is display only. A mirrored preview flips drawn
+  positions and the video about the stage's centre line and nothing upstream reads it, so the
+  person's left wrist stays `left-wrist` (`GF-90`). The camera defaults to mirrored, a synthetic
+  take to unmirrored.

@@ -1,6 +1,7 @@
 import type { StageSize } from "../filler/adapter";
 import {
   RECORDING_FORMAT,
+  RECORDING_VERSION,
   recordResult,
   type PoseRecording,
   type RecordedFrame,
@@ -34,7 +35,7 @@ export function createRecorder(stage: StageSize): Recorder {
     stop() {
       const take: PoseRecording = {
         format: RECORDING_FORMAT,
-        version: 1,
+        version: RECORDING_VERSION,
         stage: { width: stage.width, height: stage.height },
         frames: frames ?? [],
       };

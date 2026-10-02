@@ -1,6 +1,6 @@
-import type { JointObservation, LandmarkFrame } from "./frame";
+import { UNREPORTED, type JointObservation, type LandmarkFrame, type Presence } from "./frame";
 import { MEDIAPIPE_INDEX, jointRecord } from "./landmarks";
-import { type LandmarkSpace } from "./space";
+import { LANDMARK_SPACES, type LandmarkSpace } from "./space";
 import { unreachable } from "./unreachable";
 import { isFiniteVec, type Vec } from "./vec";
 
@@ -14,11 +14,18 @@ export interface StageSize {
 export const WORLD_UNITS_PER_METRE = 1000;
 
 /**
- * One landmark as MediaPipe reported it, `[x, y, z, visibility]`: normalised image coordinates for
- * `image`, metres for `world`. A component MediaPipe did not report as a number is `NaN`, so the
- * one adapter that reads coordinates refuses it, live or replayed.
+ * One landmark as MediaPipe reported it, `[x, y, z, visibility, presence]`: normalised image
+ * coordinates for `image`, metres for `world`. A component MediaPipe did not report as a number is
+ * `NaN`, so the one adapter that reads coordinates refuses it, live or replayed; a `NaN` presence
+ * reads as `unreported`.
  */
-export type RawLandmark = readonly [x: number, y: number, z: number, visibility: number];
+export type RawLandmark = readonly [
+  x: number,
+  y: number,
+  z: number,
+  visibility: number,
+  presence: number,
+];
 
 /** The first pose of one space, index-aligned with MediaPipe's 33 landmarks. */
 export type RawPose = readonly RawLandmark[];
@@ -27,7 +34,7 @@ export type RawPose = readonly RawLandmark[];
  * The one reader of MediaPipe's result shape. `result` is `unknown` because MediaPipe is loaded at
  * runtime behind the `LandmarkSource` port and has no declaration in this repository:
  * `landmarks[0][i]` for image space and `worldLandmarks[0][i]` for world space, each with `x`, `y`,
- * `z` and `visibility`. A result with no first pose reads as `undefined`.
+ * `z`, `visibility` and `presence`. A result with no first pose reads as `undefined`.
  */
 export function readRawPose(result: unknown, space: LandmarkSpace): RawPose | undefined {
   if (typeof result !== "object" || result === null) return undefined;
@@ -37,11 +44,17 @@ export function readRawPose(result: unknown, space: LandmarkSpace): RawPose | un
   return Array.isArray(pose) ? pose.map(readRawLandmark) : undefined;
 }
 
+/** Whether a result carries a pose in any space; a sample without one adapts to absent joints. */
+export function hasPose(result: unknown): boolean {
+  return LANDMARK_SPACES.some((space) => readRawPose(result, space) !== undefined);
+}
+
 /**
  * The one owner of coordinates: a raw pose becomes a `LandmarkFrame`. A joint whose coordinates are
  * missing or non-finite is `absent`, never a NaN. Visibility is clamped into [0, 1], and a
  * non-finite visibility reads as 0, so the landmark is kept but can never be trusted. No pose is a
- * frame of absent joints. Live and replay both enter here, so they adapt identically.
+ * frame of absent joints. Presence is clamped likewise when it is finite and `unreported` when it
+ * is not, never invented. Live and replay both enter here, so they adapt identically.
  */
 export function adaptPose(
   pose: RawPose | undefined,
@@ -72,6 +85,7 @@ export interface ResultLandmark {
   readonly y: number;
   readonly z: number;
   readonly visibility: number;
+  readonly presence: number;
 }
 
 /** A pose landmarker result as `readRawPose` reads it: at most one pose per space. */
@@ -89,7 +103,9 @@ export interface PoseResult {
  */
 export function writePoseResult(image: RawPose | null, world: RawPose | null): PoseResult {
   const write = (pose: RawPose | null) =>
-    pose === null ? [] : [pose.map(([x, y, z, visibility]) => ({ x, y, z, visibility }))];
+    pose === null
+      ? []
+      : [pose.map(([x, y, z, visibility, presence]) => ({ x, y, z, visibility, presence }))];
   return { landmarks: write(image), worldLandmarks: write(world) };
 }
 
@@ -110,7 +126,7 @@ function readRawLandmark(landmark: unknown): RawLandmark {
     const value: unknown = (landmark as Record<string, unknown>)[key];
     return typeof value === "number" ? value : Number.NaN;
   };
-  return [read("x"), read("y"), read("z"), read("visibility")];
+  return [read("x"), read("y"), read("z"), read("visibility"), read("presence")];
 }
 
 function finite(value: number | undefined): number | undefined {
@@ -123,11 +139,22 @@ function adaptLandmark(
   stage: StageSize,
 ): JointObservation {
   if (landmark === undefined) return { kind: "absent" };
-  const [x, y, z, visibility] = landmark.map(finite);
+  const [x, y, z, visibility, presence] = landmark.map(finite);
   const position = toSpace(space, stage, x, y, z);
   // Finite inputs can still overflow once scaled to pixels or millimetres.
   if (position === undefined || !isFiniteVec(position)) return { kind: "absent" };
-  return { kind: "measured", position, visibility: Math.min(1, Math.max(0, visibility ?? 0)) };
+  return {
+    kind: "measured",
+    position,
+    visibility: clampUnit(visibility ?? 0),
+    presence: readPresence(presence),
+  };
+}
+
+const clampUnit = (value: number) => Math.min(1, Math.max(0, value));
+
+function readPresence(value: number | undefined): Presence {
+  return value === undefined ? UNREPORTED : { kind: "reported", value: clampUnit(value) };
 }
 
 function toSpace(
