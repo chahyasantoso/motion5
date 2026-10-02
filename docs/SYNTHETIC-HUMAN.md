@@ -53,10 +53,12 @@ each slice adds and the decisions behind them. What has landed is claimed only b
   (`GF-80`).
 - `createSourceSession` in `src/live/session.ts` is the one owner of the source's lifecycle: at most
   one source runs, and every started source ends exactly once, through one `end` hook, whether it
-  was stopped, its start rejected or the page's consumer threw (`GF-85`). Starting a source resets
-  the pipeline and restarts the rig, because a new source is a new subject. Ending one ends any
+  was stopped, its start rejected or the page's consumer threw (`GF-85`). Ending one ends any
   recording, saved as if stopped, so a take never spans two sources. It stamps every sample with its
-  `session` (counting started sources) and its `sequence` within it (`GF-89`).
+  `session` (counting started sources) and its `sequence` within it (`GF-89`). Starting a source
+  resets nothing itself: its first admitted sample is the ingest gate's `new-session` restart,
+  which resets the pipeline and the rig, so a source that never produces a sample leaves them as
+  they were.
 
 ## Observations, time and coordinates
 
