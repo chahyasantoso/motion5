@@ -121,7 +121,7 @@ describe("trusted-measurement stabilizer", () => {
     const valid = { kind: "one-euro", minCutoffHz: 1, beta: 0, derivativeCutoffHz: 1 } as const;
     expect(() => createStabilizer(valid)).not.toThrow();
     // A valid spec is snapshotted: mutating the caller's object afterwards changes nothing.
-    const mutable = { ...valid };
+    const mutable: { -readonly [K in keyof OneEuroSpec]: OneEuroSpec[K] } = { ...valid };
     const snapshot = createStabilizer(mutable);
     const reference = createStabilizer(valid);
     mutable.minCutoffHz = 1000;
