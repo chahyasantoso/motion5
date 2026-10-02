@@ -15,9 +15,11 @@ import { parseRecording } from "../replay/recording";
 import type { RigPorts } from "../rig/rig";
 import { createRigSolver } from "../rig/solver";
 import { createGapPipeline } from "../filler/pipeline";
+import { STABILIZER_KINDS, stabilizerFor, type StabilizerKind } from "../filler/stabilizer";
 import { fitWeakPerspective } from "./projection";
 import { HOTKEYS, createForcedJoints } from "./hotkeys";
-import { createExperiment } from "./experiment";
+import { createExperiment, LIVE_FILLER, LIVE_STABILIZER } from "./experiment";
+import { createLiveRig } from "./live-rig";
 import { drawOverlay } from "./overlay";
 import { createRecorder } from "./recorder";
 import { createMediaPipeWebcamSource } from "./source";
@@ -58,6 +60,8 @@ function main(): void {
   const start = required<HTMLButtonElement>("#start");
   const fillerSelect = required<HTMLSelectElement>("#filler");
   const spaceSelect = required<HTMLSelectElement>("#space");
+  const stabilizerSelect = required<HTMLSelectElement>("#stabilizer");
+  const showRaw = required<HTMLInputElement>("#show-raw");
   const record = required<HTMLButtonElement>("#record");
   const replayInput = required<HTMLInputElement>("#replay");
   const calibrationInput = required<HTMLInputElement>("#calibrate");
@@ -66,25 +70,44 @@ function main(): void {
   const log = new URLSearchParams(location.search).has("log");
 
   for (const { kind } of COMPARED_FILLERS) fillerSelect.append(new Option(kind, kind));
+  fillerSelect.value = LIVE_FILLER;
+  for (const kind of STABILIZER_KINDS) stabilizerSelect.append(new Option(kind, kind));
+  stabilizerSelect.value = LIVE_STABILIZER;
+  const selectedStabilizer = (): StabilizerKind => {
+    const kind = STABILIZER_KINDS.find((candidate) => candidate === stabilizerSelect.value);
+    if (kind === undefined) throw new Error("Unknown stabilizer.");
+    return kind;
+  };
   let space: LandmarkSpace = IMAGE_SPACE;
   let experiment = createExperiment(space);
-  let solver = createRigSolver(rigPorts(), space);
-  const imageTrust = createGapPipeline({ filler: { kind: "raw" } });
+  // The camera fit's image half is stabilized as the world half is, on the default image detector,
+  // because a still calibration belongs to the selected space and is never copied across.
+  const rig = createLiveRig(
+    () => createRigSolver(rigPorts(), space),
+    () =>
+      createGapPipeline({
+        filler: { kind: "raw" },
+        stabilizer: stabilizerFor(selectedStabilizer(), IMAGE_SPACE),
+      }),
+  );
   spaceSelect.addEventListener("change", () => {
     const next = LANDMARK_SPACES.find((candidate) => candidate.kind === spaceSelect.value);
     if (next === undefined) throw new Error("Unknown landmark space.");
-    const freshSolver = createRigSolver(rigPorts(), next);
     const freshExperiment = createExperiment(next);
     freshExperiment.select(fillerSelect.value as FillerKind);
-    solver.dispose();
-    solver = freshSolver;
+    freshExperiment.stabilize(selectedStabilizer());
     experiment = freshExperiment;
     space = next;
-    imageTrust.reset();
+    rig.restart();
     report.textContent = `Switched to ${next.kind}. Recalibrate the still recording in this space.`;
   });
   fillerSelect.addEventListener("change", () => {
     experiment.select(fillerSelect.value as FillerKind);
+    rig.restart();
+  });
+  stabilizerSelect.addEventListener("change", () => {
+    experiment.stabilize(selectedStabilizer());
+    rig.restart();
   });
 
   const forced = createForcedJoints();
@@ -112,6 +135,7 @@ function main(): void {
       .text()
       .then((text) => {
         const calibration = experiment.calibrate(parseRecording(JSON.parse(text)));
+        rig.restart();
         report.textContent = `${space.kind} still calibration applied to live and replay: visibility threshold ${calibration.detector.threshold.toFixed(3)}, speed gate ${calibration.detector.gate.toFixed(1)} bone lengths/s. Replay your movement recording to compare.`;
       })
       .catch((error: unknown) => {
@@ -132,11 +156,12 @@ function main(): void {
             fillers: comparedFillers(nativeSpace),
             masks: DEFAULT_MASKS,
             detector: nativeSpace.kind === space.kind ? experiment.detector : undefined,
+            stabilizer: stabilizerFor(experiment.stabilizer.kind, nativeSpace),
             createSolver: () => createRigSolver(rigPorts(), nativeSpace),
           });
           return `${nativeSpace.kind} (native ${nativeSpace.kind === "image" ? "px" : "mm"})\n${formatComparison(rows, nativeSpace)}`;
         });
-        report.textContent = `${recording.frames.length} frames\n${reports.join("\n\n")}`;
+        report.textContent = `${recording.frames.length} frames · stabilizer ${experiment.stabilizer.kind}\n${reports.join("\n\n")}`;
       })
       .catch((error: unknown) => {
         report.textContent = `Replay failed: ${String(error)}`;
@@ -156,15 +181,15 @@ function main(): void {
         const pipeline = experiment.pipeline;
         const step = pipeline.step(frame, forced.joints);
         timer.mark("fill");
-        const solved = solver.solve(step, pipeline.lengths);
+        const solved = rig.solver.solve(step, pipeline.lengths);
         timer.mark("write");
         const fit =
           space.kind === "world"
-            ? fitWeakPerspective(step.trusted, imageTrust.step(image, forced.joints).trusted)
+            ? fitWeakPerspective(step.trusted, rig.imageTrust.step(image, forced.joints).trusted)
             : undefined;
         drawOverlay(
           svg,
-          image,
+          showRaw.checked ? image : undefined,
           step.filled,
           solved,
           space.kind === "image" ? (position) => position : fit?.project,
@@ -184,7 +209,7 @@ function main(): void {
   required<HTMLElement>("#hotkeys").textContent = `Force a joint missing: ${keys.join(" · ")}`;
   addEventListener("pagehide", () => {
     source.stop();
-    solver.dispose();
+    rig.dispose();
   });
 }
 

@@ -30,12 +30,14 @@ function dot(position: Vec, mark: Mark): SVGElement {
 }
 
 /**
- * Raw landmarks against the solved rig, redrawn per frame. An inferred joint is drawn as a hollow
- * ring rather than a filled dot, so a filled value is never shown as a measurement.
+ * The solved rig, and the raw landmarks when `raw` is given, redrawn per frame. An inferred joint is
+ * drawn as a hollow ring rather than a filled dot, so a filled value is never shown as a
+ * measurement. Raw is the unprocessed reference and moves with MediaPipe's noise, so the page draws
+ * it only on request.
  */
 export function drawOverlay(
   svg: SVGSVGElement,
-  raw: LandmarkFrame,
+  raw: LandmarkFrame | undefined,
   filled: FilledFrame,
   solved: ReadonlyMap<LimbId, SolvedLimb>,
   project: ((position: Vec) => Vec) | undefined = filled.space.kind === "image"
@@ -56,9 +58,9 @@ export function drawOverlay(
     );
   }
   for (const joint of JOINTS) {
-    const observation = raw.joints[joint];
+    const observation = raw?.joints[joint];
     // Raw always comes from the image adapter. Only rig/filler coordinates use the camera fit.
-    if (observation.kind === "measured") layer.append(dot(observation.position, "raw"));
+    if (observation?.kind === "measured") layer.append(dot(observation.position, "raw"));
     if (project === undefined) continue;
     const fill = filled.joints[joint];
     switch (fill.kind) {

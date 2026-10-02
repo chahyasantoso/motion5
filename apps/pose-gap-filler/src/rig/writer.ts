@@ -8,7 +8,7 @@ import {
 } from "../filler/frame";
 import { LIMBS, type Limb, type LimbId } from "../filler/landmarks";
 import { unreachable } from "../filler/unreachable";
-import { add, sub, unit, type Vec } from "../filler/vec";
+import { add, dot, norm, sub, unit, type Vec } from "../filler/vec";
 import { limbTracks, poseNodeId } from "./tracks";
 
 /** The one part of a project the writer drives, so the writer is tested without an Engine. */
@@ -44,6 +44,38 @@ export function imageBendFlip(root: Vec, goal: Vec, middle: Vec): boolean | unde
   return side === 0 ? undefined : side < 0;
 }
 
+/**
+ * The smallest |sin| of the angle at the root between the reach (root to goal) and the measured
+ * middle for that middle to overturn a held bend observation: about 5.7 degrees. Below it the limb
+ * is measured nearly straight and the side it bends to is mostly noise, so a still, straight arm
+ * whose measured elbow wobbles across the reach line would otherwise flip the solved elbow from one
+ * side to the other every few frames. Real bends far exceed it.
+ */
+export const MIN_BEND_SINE = 0.1;
+
+/**
+ * Hysteresis on the bend observation, one rule for the 2D flip and the 3D pole direction: the
+ * measured middle, when it may decide the bend, or `undefined` to keep what is held. The first
+ * measured middle always decides (a slight true bend lands on its measured side); after that only a
+ * decisive one, at least `MIN_BEND_SINE` off the reach line, may change the held observation. An
+ * absent or degenerate middle never decides.
+ */
+export function decidingMiddle(
+  root: Vec,
+  goal: Vec,
+  middle: Vec | undefined,
+  held: boolean,
+): Vec | undefined {
+  if (middle === undefined) return undefined;
+  const reach = sub(goal, root);
+  const bend = sub(middle, root);
+  const lengths = norm(reach) * norm(bend);
+  if (!(lengths > 1e-12)) return undefined;
+  if (!held) return middle;
+  const cosine = dot(reach, bend) / lengths;
+  return Math.sqrt(Math.max(0, 1 - cosine * cosine)) >= MIN_BEND_SINE ? middle : undefined;
+}
+
 /** The values one limb's chain holds in the project, as far as the writer has published them. */
 interface Published {
   readonly upper: number | undefined;
@@ -52,8 +84,11 @@ interface Published {
 }
 
 interface LimbState {
-  /** The last measured bend side: an observation, held while the middle joint is not trusted. */
-  bend: boolean;
+  /**
+   * The last deciding bend side: an observation, held while the middle joint is untrusted or not
+   * decisive; `undefined` until the first one, when the authored side is written.
+   */
+  bend: boolean | undefined;
   /** What the project holds, advanced only once a batch carrying it has returned. */
   published: Published;
 }
@@ -71,14 +106,15 @@ type LimbPlan =
 
 /**
  * The only caller of `project.values`. The bend side is read from the measured middle joint when it
- * is trusted and held otherwise, so an inferred elbow never decides which way the solve bends.
+ * is trusted and deciding (`decidingMiddle`) and held otherwise, so neither an inferred elbow nor a
+ * straight limb's noise decides which way the solve bends.
  *
  * Published state advances only after the batch returns: a batch that throws leaves the writer
  * believing what the project still holds, so the next frame writes the same changes again.
  */
 export function createImageWriter(project: ValueBatchPort): PoseWriter {
   const states = new Map<LimbId, LimbState>(
-    LIMBS.map((limb) => [limb.id, { bend: AUTHORED.flip, published: AUTHORED }]),
+    LIMBS.map((limb) => [limb.id, { bend: undefined, published: AUTHORED }]),
   );
   return createBatchWriter(project, (limb, filled, trusted, lengths) =>
     planLimb(limb, states.get(limb.id)!, filled, trusted, lengths),
@@ -144,13 +180,16 @@ function planLimb(
   const lower = lengths.length(limb.lower);
   if (upper === undefined || lower === undefined) return skip("length-unknown");
   const middle = trustedPosition(trusted.trust[limb.middle]);
-  const flip = (middle === undefined ? undefined : imageBendFlip(root, goal, middle)) ?? state.bend;
+  const deciding = decidingMiddle(root, goal, middle, state.bend !== undefined);
+  const bend =
+    (deciding === undefined ? undefined : imageBendFlip(root, goal, deciding)) ?? state.bend;
+  const flip = bend ?? AUTHORED.flip;
   const { published } = state;
   const ids = limbTracks(limb.id);
   return {
     kind: "write",
     commit: () => {
-      state.bend = flip;
+      state.bend = bend;
       state.published = { upper, lower, flip };
     },
     stage: (transaction) => {
@@ -167,7 +206,9 @@ function planLimb(
 }
 
 /**
- * World bend is a held measured root-to-middle direction, never an inferred elbow.
+ * World bend is a held measured root-to-middle direction, never an inferred elbow, updated only by
+ * a deciding middle (`decidingMiddle`): a straight limb's direction is nearly the reach itself, so
+ * its noise would otherwise spin the bend plane about the reach.
  * Core consumes a pole POINT: translate that direction by this frame's root. No stale point.
  */
 export function createWorldWriter(project: ValueBatchPort): PoseWriter {
@@ -193,7 +234,12 @@ export function createWorldWriter(project: ValueBatchPort): PoseWriter {
     const lower = lengths.length(limb.lower);
     if (upper === undefined || lower === undefined) return skip("length-unknown");
     const state = states.get(limb.id)!;
-    const middle = trustedPosition(trusted.trust[limb.middle]);
+    const middle = decidingMiddle(
+      root,
+      goal,
+      trustedPosition(trusted.trust[limb.middle]),
+      state.direction !== undefined,
+    );
     const measuredRoot = trustedPosition(trusted.trust[limb.root]);
     // Both endpoints must be measured: a filled root must not train a bend observation.
     const direction =
