@@ -1,0 +1,29 @@
+quality (node 24.21.0)	Run npm run typecheck	﻿2026-10-02T01:36:13.3084017Z ##[group]Run npm run typecheck
+quality (node 24.21.0)	Run npm run typecheck	2026-10-02T01:36:13.3084381Z ^[[36;1mnpm run typecheck^[[0m
+quality (node 24.21.0)	Run npm run typecheck	2026-10-02T01:36:13.3151981Z shell: /usr/bin/bash -e {0}
+quality (node 24.21.0)	Run npm run typecheck	2026-10-02T01:36:13.3152318Z env:
+quality (node 24.21.0)	Run npm run typecheck	2026-10-02T01:36:13.3152575Z   NODE_VERSION: 24.21.0
+quality (node 24.21.0)	Run npm run typecheck	2026-10-02T01:36:13.3152939Z   CI_EVIDENCE_DIR: /home/runner/work/_temp/ci-evidence
+quality (node 24.21.0)	Run npm run typecheck	2026-10-02T01:36:13.3153346Z ##[endgroup]
+quality (node 24.21.0)	Run npm run typecheck	2026-10-02T01:36:13.4305051Z 
+quality (node 24.21.0)	Run npm run typecheck	2026-10-02T01:36:13.4305909Z > motion5@0.0.0 typecheck
+quality (node 24.21.0)	Run npm run typecheck	2026-10-02T01:36:13.4306746Z > tsc --noEmit -p tsconfig.json
+quality (node 24.21.0)	Run npm run typecheck	2026-10-02T01:36:13.4307098Z 
+quality (node 24.21.0)	Run npm run typecheck	2026-10-02T01:36:21.0827209Z ##[error]apps/pose-gap-filler/test/stabilizer.test.ts(127,5): error TS2322: Type '1000' is not assignable to type '1'.
+quality (node 24.21.0)	Run npm run typecheck	2026-10-02T01:36:21.1433292Z ##[error]Process completed with exit code 2.
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	﻿2026-10-02T01:38:36.4921627Z ##[group]Run test "$SUITE_RESULT" = success
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-10-02T01:38:36.4922311Z ^[[36;1mtest "$SUITE_RESULT" = success^[[0m
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-10-02T01:38:36.5153278Z shell: /usr/bin/bash -e {0}
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-10-02T01:38:36.5154124Z env:
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-10-02T01:38:36.5154503Z   NODE_VERSION: 24.21.0
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-10-02T01:38:36.5154969Z   SUITE_RESULT: failure
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-10-02T01:38:36.5155381Z ##[endgroup]
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-10-02T01:38:36.5299012Z ##[error]Process completed with exit code 1.
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	﻿2026-10-02T01:39:11.4595627Z ##[group]Run test "$SUITE_RESULT" = success
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-10-02T01:39:11.4596386Z ^[[36;1mtest "$SUITE_RESULT" = success^[[0m
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-10-02T01:39:11.4855401Z shell: /usr/bin/bash -e {0}
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-10-02T01:39:11.4856321Z env:
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-10-02T01:39:11.4856773Z   NODE_VERSION: 24.21.0
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-10-02T01:39:11.4857274Z   SUITE_RESULT: failure
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-10-02T01:39:11.4857763Z ##[endgroup]
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-10-02T01:39:11.5016616Z ##[error]Process completed with exit code 1.
