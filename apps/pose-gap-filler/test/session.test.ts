@@ -27,7 +27,8 @@ function handSource(log: string[], name: string) {
 }
 
 const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
-const [SYNTHETIC, , CAMERA] = SOURCE_SPECS as readonly [SourceSpec, SourceSpec, SourceSpec];
+const SYNTHETIC = SOURCE_SPECS.find((spec) => spec.kind === "synthetic")!;
+const CAMERA = SOURCE_SPECS.find((spec) => spec.kind === "camera")!;
 
 describe("live source session (#540)", () => {
   it("GF-85 ends every started source exactly once, after stopping it, however it ended", async () => {
