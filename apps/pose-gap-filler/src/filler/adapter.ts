@@ -66,6 +66,33 @@ export function parsePoseResult(
   return adaptPose(readRawPose(result, space), tMs, space, stage);
 }
 
+/** One landmark in MediaPipe's result shape, the object `readRawPose` reads. */
+export interface ResultLandmark {
+  readonly x: number;
+  readonly y: number;
+  readonly z: number;
+  readonly visibility: number;
+}
+
+/** A pose landmarker result as `readRawPose` reads it: at most one pose per space. */
+export interface PoseResult {
+  readonly landmarks: readonly (readonly ResultLandmark[])[];
+  readonly worldLandmarks: readonly (readonly ResultLandmark[])[];
+}
+
+/**
+ * The inverse of `readRawPose`, for a producer that is not MediaPipe (a playback, later the
+ * simulator): the result shape the one reader reads, so every producer enters the pipeline through
+ * `parsePoseResult` and none is adapted by a second path. A missing pose is an empty list, which is
+ * how MediaPipe reports no detection. A `NaN` component is written as `NaN` and read back as `NaN`,
+ * so `readRawPose(writePoseResult(image, world), space)` returns the pose that went in.
+ */
+export function writePoseResult(image: RawPose | null, world: RawPose | null): PoseResult {
+  const write = (pose: RawPose | null) =>
+    pose === null ? [] : [pose.map(([x, y, z, visibility]) => ({ x, y, z, visibility }))];
+  return { landmarks: write(image), worldLandmarks: write(world) };
+}
+
 function poseKey(space: LandmarkSpace): "landmarks" | "worldLandmarks" {
   switch (space.kind) {
     case "image":

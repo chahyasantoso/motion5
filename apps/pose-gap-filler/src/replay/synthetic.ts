@@ -33,6 +33,30 @@ export interface SyntheticOptions {
 export const DEFAULT_STAGE: StageSize = Object.freeze({ width: 640, height: 480 });
 
 /**
+ * The one synthetic take per motion: the input the committed comparison record measures
+ * (`docs/POSE-GAP-FILLER-COMPARISON.md`) and the loop the live page's synthetic source plays, so what
+ * a person watches is what the record judged. Each duration is a whole number of the motion's
+ * periods (five 2.4 s repetitions, one 10 s sway), so a looped take has no seam in the pose. The
+ * seeds differ, so the still take a detector is calibrated on is never the take it judges. A new
+ * motion fails to compile here until it has a take.
+ */
+export const SYNTHETIC_TAKES: Readonly<Record<SyntheticMotion["kind"], SyntheticOptions>> =
+  Object.freeze({
+    still: Object.freeze({
+      motion: Object.freeze({ kind: "still" }),
+      seed: 7,
+      durationMs: 10000,
+      fps: 30,
+    }),
+    exercise: Object.freeze({
+      motion: Object.freeze({ kind: "exercise" }),
+      seed: 11,
+      durationMs: 12000,
+      fps: 30,
+    }),
+  });
+
+/**
  * The figure is hip-centred and camera-facing, in metres: person-left is +x, down is +y and
  * negative z is toward the camera. Limbs are built by forward kinematics, so these lengths are
  * exact in world space.
