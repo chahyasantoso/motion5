@@ -4,12 +4,13 @@ import { DEFAULT_KALMAN_NOISE, DEFAULT_COAST_MS } from "../filler/chain-kalman";
 import { DEFAULT_WORLD_KALMAN_NOISE } from "../filler/world-chain";
 import { unreachable } from "../filler/unreachable";
 import { JOINTS, scaleBone } from "../filler/landmarks";
+import { distance } from "../filler/vec";
 import { createGapPipeline } from "../filler/pipeline";
-import { IMAGE_SPACE, spaceUnit, type LandmarkSpace } from "../filler/space";
+import { IMAGE_SPACE, WORLD_SPACE, type LandmarkSpace } from "../filler/space";
 import { NO_STABILIZER, type StabilizerSpec } from "../filler/stabilizer";
 import type { RigSolver } from "../rig/solver";
 import type { Mask } from "./mask";
-import { measureReplay, quantile, type ReplayMetrics, type Summary } from "./metrics";
+import { measureReplay, quantile, type ReplayMetrics } from "./metrics";
 import { replayFrame, type PoseRecording } from "./recording";
 import { runReplay } from "./replay";
 
@@ -80,40 +81,19 @@ export function compareFillers(options: ComparisonOptions): readonly ComparisonR
   });
 }
 
-const cell = (value: number | undefined) => (value === undefined ? "–" : value.toFixed(1));
-const summary = (value: Summary) => `${cell(value.mean)} / ${cell(value.p95)} / ${cell(value.max)}`;
-
-/** One markdown table, units named per column, mean / p95 / max where a column summarises. */
-export function formatComparison(rows: readonly ComparisonRow[], space: LandmarkSpace): string {
-  const unit = spaceUnit(space);
-  const header = [
-    "filler",
-    `position error ${unit}`,
-    "lost frames",
-    `bone-length deviation ${unit}`,
-    `jitter ${unit}/s²`,
-    "lag ms",
-    `recovery snap ${unit}`,
-  ];
-  const lines = rows.map(({ filler, metrics }) => [
-    filler,
-    summary(metrics.positionError),
-    String(metrics.lostFrames),
-    summary(metrics.boneLengthDeviation),
-    summary(metrics.jitter),
-    cell(metrics.lagMs),
-    summary(metrics.recoverySnap),
-  ]);
-  return [header, header.map(() => "---"), ...lines]
-    .map((row) => `| ${row.join(" | ")} |`)
-    .join("\n");
-}
-
 export interface Calibration {
   /** The lowest per-joint P01 among joints with at least two usable still samples. */
   readonly visibilityP01: number;
   /** The 99.9th percentile of frame-to-frame joint speed, in scale-bone lengths per second. */
   readonly speedP999: number;
+  /**
+   * The reference's own noise in space units: the mean distance of one trusted sample from where a
+   * noiseless measurement would put it, estimated as the mean frame-to-frame step over consecutive
+   * trusted samples divided by sqrt 2. The step of two independent isotropic noise draws is sqrt 2
+   * times one draw in any dimension, so the estimate needs no truth; the still person's slow sway
+   * only adds to it, so it errs high, toward withholding a claim rather than inventing one.
+   */
+  readonly referenceNoise: number;
   readonly detector: GapDetectorOptions;
 }
 
@@ -123,9 +103,10 @@ export const CALIBRATION_GATE_FACTOR = 4;
 
 /**
  * Calibrates the detector from a recording of a still person, which fixes the noise floor and
- * nothing more: it cannot say how fast a person moves. So calibration only ever tightens the
- * threshold above the default floor and raises the gate above their noise; it never
- * loosens the threshold or lowers the gate below `DEFAULT_DETECTOR`.
+ * nothing more: it cannot say how fast a person moves. The same still samples measure the
+ * reference's own noise, the floor a filler's masked error is judged against. So calibration only
+ * ever tightens the threshold above the default floor and raises the gate above their noise; it
+ * never loosens the threshold or lowers the gate below `DEFAULT_DETECTOR`.
  */
 export function calibrateDetector(
   recording: PoseRecording,
@@ -140,6 +121,7 @@ export function calibrateDetector(
   });
   const visibilities = new Map<string, number[]>(JOINTS.map((joint) => [joint, []]));
   const speeds: number[] = [];
+  const steps: number[] = [];
   let previous: ReturnType<typeof pipeline.step> | undefined;
   for (const recorded of recording.frames) {
     const step = pipeline.step(replayFrame(recording, recorded, space));
@@ -148,8 +130,10 @@ export function calibrateDetector(
       if (now.kind !== "trusted") continue;
       visibilities.get(joint)!.push(now.visibility);
       const before = previous?.trusted.trust[joint];
+      if (before?.kind !== "trusted") continue;
+      steps.push(distance(before.position, now.position));
       const scale = pipeline.lengths.length(scaleBone(joint));
-      if (before?.kind !== "trusted" || scale === undefined || scale <= 0) continue;
+      if (scale === undefined || scale <= 0) continue;
       speeds.push(
         jointSpeed(
           { position: before.position, tMs: previous!.trusted.tMs },
@@ -178,6 +162,7 @@ export function calibrateDetector(
   return {
     visibilityP01,
     speedP999,
+    referenceNoise: steps.reduce((total, step) => total + step, 0) / steps.length / Math.SQRT2,
     detector: {
       threshold: Math.max(
         DEFAULT_DETECTOR.threshold,
@@ -185,5 +170,21 @@ export function calibrateDetector(
       ),
       gate: Math.max(DEFAULT_DETECTOR.gate, CALIBRATION_GATE_FACTOR * speedP999),
     },
+  };
+}
+
+/** One still take's calibration in every landmark space, keyed by the space's kind. */
+export type SpaceCalibrations = { readonly [Kind in LandmarkSpace["kind"]]: Calibration };
+
+/**
+ * Calibrates every landmark space from one still take. A recording keeps both forms of each
+ * landmark, so one take is the noise floor of both spaces, and the mapped type is the exhaustive
+ * check: a third space fails to compile here until it is calibrated. Either space failing throws
+ * before anything is returned, so a caller never holds a half-calibrated pair.
+ */
+export function calibrateSpaces(recording: PoseRecording): SpaceCalibrations {
+  return {
+    image: calibrateDetector(recording, IMAGE_SPACE),
+    world: calibrateDetector(recording, WORLD_SPACE),
   };
 }

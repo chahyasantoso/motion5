@@ -6,19 +6,21 @@ bullet states a phase; `packages/core/test/unit/scripts/session-status-shape.tes
 shape and byte ceiling.
 
 - **Captured:** 2026-10-02, Asia/Jakarta.
-- **Read against:** `main` at `bc86a6704fcacc7f9df95c686dbb6f1e1e04c8de`, the squash of
-  [PR #536][pr536].
+- **Read against:** `main` at `e67df50563e1e648c270203ace368a1e08db2abc`, the squash of
+  [PR #537][pr537].
 
 ## Now
 
 - **`main` carries the [#530][issue530] pose gap filler in `apps/pose-gap-filler`: adapter, `raw`
-  reference, gap detector, replay harness, `hold`, `chain-kalman`, and the image and world rigs
-  with the camera fit ([PR #532][pr532], [PR #533][pr533], [PR #535][pr535], [PR #536][pr536]).**
+  reference, gap detector, replay harness, `hold`, `chain-kalman`, the image and world rigs with
+  the camera fit, and the trusted-landmark stabilizer with bend-side hysteresis ([PR #532][pr532],
+  [PR #533][pr533], [PR #535][pr535], [PR #536][pr536], [PR #537][pr537]).**
 
 ## Next in line
 
-- **[#530][issue530] rig stabilizer:** trusted-landmark stabilizer and bend-side hysteresis are
-  in review on `feat/530-rig-stabilizer` ([PR #537][pr537]), not merged.
+- **[#530][issue530] comparison record:** `docs/POSE-GAP-FILLER-COMPARISON.md` reads `INN: open`
+  and is in review on `feat/530-gap-filler-phase5` ([PR #538][pr538]), not merged; the learned
+  filler that must beat `chain-kalman` is [#539][issue539].
 
 ## Open, and not scheduled
 
@@ -54,6 +56,8 @@ shape and byte ceiling.
 [pr535]: https://github.com/chahyasantoso/motion5/pull/535
 [pr536]: https://github.com/chahyasantoso/motion5/pull/536
 [pr537]: https://github.com/chahyasantoso/motion5/pull/537
+[pr538]: https://github.com/chahyasantoso/motion5/pull/538
+[issue539]: https://github.com/chahyasantoso/motion5/issues/539
 [adr130]: ./ADR-130-legal-range-retries-and-serial-hinge-recovery.md
 [issue524]: https://github.com/chahyasantoso/motion5/issues/524
 [adr131]: ./ADR-131-centred-legal-start-for-mixed-sign-chains.md
