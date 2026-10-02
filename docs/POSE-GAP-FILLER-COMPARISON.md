@@ -149,16 +149,19 @@ then a movement take with "Replay", and the report is this block for that take.
   visibility, and a real gap can begin with a gated teleport rather than a clean hold-out.
 - One seed per take. The record is deterministic, so it pins the code's behaviour on this input,
   not the spread over inputs.
-- The numbers were generated in a sandbox on Node 22; `GF-75` re-derives them on every CI run, so a
-  CI run is where they become evidence.
+- The numbers were generated in a sandbox on Node 22, and `GF-75` re-derived them byte for byte on
+  Node 24.21.0 in CI (PR #538 run 36958413903), so the record does not depend on the Node version.
 
 ## Decision
 
-- The INN issue is warranted by this record, and its acceptance bar is the INN line above: beat
-  `chain-kalman` in each space on mean masked error without losing more frames, never `raw`.
-- It is opened once a real still take and a real movement take, replayed on the live page, also
-  read `INN: open` in the space they were calibrated in. A synthetic gap alone does not open it,
-  because the synthetic noise model is the input's weakest assumption.
+- The record reads `INN: open`, and the follow-up is
+  [#539](https://github.com/chahyasantoso/motion5/issues/539). Its acceptance bar is the INN line
+  above: beat `chain-kalman` in each space on mean masked error without losing more frames, never
+  `raw`, on this record and on a real still and movement take replayed on the live page.
+- #539 withdraws an invertible network (a normalizing flow) as the first learned filler: it models
+  one frame's ambiguity, not a half-second of motion. It takes a small causal temporal convolution
+  fused into `chain-kalman` as an uncertain measurement, so with no confident prior it is
+  `chain-kalman`.
 - Withdrawn: judging the call on rig rows, which would charge the writer's bend-side hold to the
   filler; judging against `raw`, which the plan forbids; a noise floor from the noiseless twin,
   which a real take does not have; a fixed error threshold in px or mm, which would not carry
