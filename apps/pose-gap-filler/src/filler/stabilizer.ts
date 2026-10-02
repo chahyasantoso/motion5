@@ -9,8 +9,9 @@ import { norm, scale, sub, type Vec } from "./vec";
  * by `createStabilizer`, the one exhaustive switch over it.
  *
  * `none` passes the detector's trusted frame through unchanged (the identity, not a copy).
- * `one-euro` is the 1€ filter (Casiez, Roussel and Vogel, CHI 2012) per joint on the whole vector,
- * in the filtered-derivative form `oneEuroStep` records:
+ * `one-euro` is a variant of the 1€ filter (Casiez, Roussel and Vogel, CHI 2012) per joint on the
+ * whole vector. It differs from the paper in one place, the speed estimate, which `oneEuroStep`
+ * records with the measurement that chose it:
  * a first-order low-pass whose cutoff rises with the joint's own filtered speed,
  * `cutoff = minCutoffHz + beta * |velocity|`. A still joint is filtered at `minCutoffHz`, which
  * removes MediaPipe's frame-to-frame noise; a moving joint raises its cutoff and follows with
