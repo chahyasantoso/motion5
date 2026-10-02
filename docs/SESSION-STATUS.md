@@ -5,19 +5,20 @@ below are the complete shape. **Now** and **Next in line** carry exactly one bul
 bullet states a phase; `packages/core/test/unit/scripts/session-status-shape.test.ts` enforces the
 shape and byte ceiling.
 
-- **Captured:** 2026-09-30, Asia/Jakarta.
-- **Read against:** `main` at `74615e9c8d30787f36794f02bf6bc9266ffdb92c`, the squash of
-  [PR #532][pr532].
+- **Captured:** 2026-10-02, Asia/Jakarta.
+- **Read against:** `main` at `bc86a6704fcacc7f9df95c686dbb6f1e1e04c8de`, the squash of
+  [PR #536][pr536].
 
 ## Now
 
-- **`main` carries the [#530][issue530] pose gap filler pipeline in `apps/pose-gap-filler`:
-  MediaPipe adapter, image-space rig and writer, and the `raw` reference ([PR #532][pr532]).**
+- **`main` carries the [#530][issue530] pose gap filler in `apps/pose-gap-filler`: adapter, `raw`
+  reference, gap detector, replay harness, `hold`, `chain-kalman`, and the image and world rigs
+  with the camera fit ([PR #532][pr532], [PR #533][pr533], [PR #535][pr535], [PR #536][pr536]).**
 
 ## Next in line
 
-- **[#530][issue530] replay harness:** recording format, gap detector, `hold`, masks and metrics
-  are prepared on `feat/530-gap-filler-phase2`, not merged.
+- **[#530][issue530] rig stabilizer:** trusted-landmark stabilizer and bend-side hysteresis are
+  in review on `feat/530-rig-stabilizer` ([PR #537][pr537]), not merged.
 
 ## Open, and not scheduled
 
@@ -49,6 +50,10 @@ shape and byte ceiling.
 [pr529]: https://github.com/chahyasantoso/motion5/pull/529
 [issue530]: https://github.com/chahyasantoso/motion5/issues/530
 [pr532]: https://github.com/chahyasantoso/motion5/pull/532
+[pr533]: https://github.com/chahyasantoso/motion5/pull/533
+[pr535]: https://github.com/chahyasantoso/motion5/pull/535
+[pr536]: https://github.com/chahyasantoso/motion5/pull/536
+[pr537]: https://github.com/chahyasantoso/motion5/pull/537
 [adr130]: ./ADR-130-legal-range-retries-and-serial-hinge-recovery.md
 [issue524]: https://github.com/chahyasantoso/motion5/issues/524
 [adr131]: ./ADR-131-centred-legal-start-for-mixed-sign-chains.md
