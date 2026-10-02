@@ -18,7 +18,8 @@ import { createExperiment, LIVE_FILLER, LIVE_STABILIZER } from "./experiment";
 import { createLiveRig } from "./live-rig";
 import { drawOverlay } from "./overlay";
 import { createRecorder } from "./recorder";
-import type { LandmarkSource, SourceSample } from "./source";
+import { createSourceSession, describeEnd } from "./session";
+import type { SourceSample } from "./source";
 import { SOURCE_SPECS, createLandmarkSource, sourceId, sourceLabel } from "./sources";
 import { createStageTimer, formatTimings } from "./timings";
 
@@ -118,15 +119,17 @@ function main(): void {
       return;
     if (forced.toggle(event.key, event.repeat)) event.preventDefault();
   });
-  record.addEventListener("click", () => {
-    if (!recorder.recording) {
-      recorder.start();
-      record.textContent = "Stop recording";
-      return;
-    }
+  // A take is one subject from one source: ending the source ends the take, saved as if stopped.
+  const finishRecording = () => {
+    if (!recorder.recording) return;
     const take = recorder.stop();
     record.textContent = "Record landmarks";
     download(`pose-recording-${Date.now()}.json`, JSON.stringify(take));
+  };
+  record.addEventListener("click", () => {
+    if (recorder.recording) return finishRecording();
+    recorder.start();
+    record.textContent = "Stop recording";
   });
   calibrationInput.addEventListener("change", () => {
     const file = calibrationInput.files?.[0];
@@ -199,33 +202,44 @@ function main(): void {
     readout.textContent = `${space.kind} · ${formatTimings(timings)} · forced: ${held}${space.kind === "world" ? (fit === undefined ? " · no trusted camera fit" : ` · fit ${fit.rmsPx.toFixed(1)} px (${fit.pairCount} pairs)`) : ""}`;
     if (log) console.debug(JSON.stringify(timings));
   };
-  let source: LandmarkSource | undefined;
-  const stopSource = () => {
-    source?.stop();
-    source = undefined;
-    start.textContent = "Start";
-  };
-  start.addEventListener("click", () => {
-    if (source !== undefined) return stopSource();
+  const selectedSource = () => {
     const spec = SOURCE_SPECS.find((candidate) => sourceId(candidate) === sourceSelect.value);
     if (spec === undefined) throw new Error("Unknown landmark source.");
-    // A new source is a new subject: no trust, length, filter or bend state crosses into it.
-    experiment.pipeline.reset();
-    rig.restart();
-    video.hidden = spec.kind !== "camera";
-    const started = createLandmarkSource(spec, { video });
-    source = started;
-    start.textContent = "Stop";
-    started.start(onSample).catch((error: unknown) => {
-      readout.textContent = `${sourceLabel(spec)} failed: ${String(error)}`;
-      if (source === started) stopSource();
-    });
+    return spec;
+  };
+  const showVideo = () => {
+    video.hidden = selectedSource().kind !== "camera";
+  };
+  const session = createSourceSession({
+    create: (spec) => createLandmarkSource(spec, { video }),
+    begin() {
+      // A new source is a new subject: no trust, length, filter or bend state crosses into it.
+      experiment.pipeline.reset();
+      rig.restart();
+      start.textContent = "Stop";
+    },
+    sample: onSample,
+    end(spec, ending) {
+      finishRecording();
+      start.textContent = "Start";
+      const failure = describeEnd(sourceLabel(spec), ending);
+      if (failure !== undefined) readout.textContent = failure;
+    },
   });
-  sourceSelect.addEventListener("change", stopSource);
+  start.addEventListener("click", () => {
+    if (session.running !== undefined) return session.stop();
+    showVideo();
+    session.start(selectedSource());
+  });
+  sourceSelect.addEventListener("change", () => {
+    session.stop();
+    showVideo();
+  });
+  showVideo();
   const keys = Object.entries(HOTKEYS).map(([key, joint]) => `${key} ${joint}`);
   required<HTMLElement>("#hotkeys").textContent = `Force a joint missing: ${keys.join(" · ")}`;
   addEventListener("pagehide", () => {
-    stopSource();
+    session.stop();
     rig.dispose();
   });
 }

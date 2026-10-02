@@ -1,9 +1,9 @@
 # Synthetic human rig
 
 This is the design record for [#540](https://github.com/chahyasantoso/motion5/issues/540): a 3D
-human driven by MediaPipe's 33 pose landmarks, and a synthetic human whose simulated MediaPipe output
-the pipeline can be tested against, occlusion included. It states the scope, the contracts each
-slice adds and the decisions behind them. What has landed is claimed only by
+human driven by MediaPipe's 33 pose landmarks, and a synthetic human whose simulated MediaPipe
+output the pipeline can be tested against, occlusion included. It states the scope, the contracts
+each slice adds and the decisions behind them. What has landed is claimed only by
 [SESSION-STATUS.md](./SESSION-STATUS.md).
 
 ## Scope
@@ -51,5 +51,8 @@ slice adds and the decisions behind them. What has landed is claimed only by
 - `writePoseResult` in `src/filler/adapter.ts` writes a recorded pose in the shape `readRawPose`
   reads, so every producer enters the pipeline through the one reader of MediaPipe's shape
   (`GF-80`).
-- Starting a source resets the pipeline and restarts the rig: a new source is a new subject, and no
-  trust, length, filter or bend state crosses into it.
+- `createSourceSession` in `src/live/session.ts` is the one owner of the source's lifecycle: at most
+  one source runs, and every started source ends exactly once, through one `end` hook, whether it
+  was stopped, its start rejected or the page's consumer threw (`GF-85`). Starting a source resets
+  the pipeline and restarts the rig, because a new source is a new subject. Ending one ends any
+  recording, saved as if stopped, so a take never spans two sources.
