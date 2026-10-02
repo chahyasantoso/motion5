@@ -6,7 +6,7 @@ import { unreachable } from "../filler/unreachable";
 import { JOINTS, scaleBone } from "../filler/landmarks";
 import { distance } from "../filler/vec";
 import { createGapPipeline } from "../filler/pipeline";
-import { IMAGE_SPACE, type LandmarkSpace } from "../filler/space";
+import { IMAGE_SPACE, WORLD_SPACE, type LandmarkSpace } from "../filler/space";
 import { NO_STABILIZER, type StabilizerSpec } from "../filler/stabilizer";
 import type { RigSolver } from "../rig/solver";
 import type { Mask } from "./mask";
@@ -104,9 +104,9 @@ export const CALIBRATION_GATE_FACTOR = 4;
 /**
  * Calibrates the detector from a recording of a still person, which fixes the noise floor and
  * nothing more: it cannot say how fast a person moves. The same still samples measure the
- * reference's own noise, the floor no filler can be shown to beat against that reference. So calibration only ever tightens the
- * threshold above the default floor and raises the gate above their noise; it never
- * loosens the threshold or lowers the gate below `DEFAULT_DETECTOR`.
+ * reference's own noise, the floor a filler's masked error is judged against. So calibration only
+ * ever tightens the threshold above the default floor and raises the gate above their noise; it
+ * never loosens the threshold or lowers the gate below `DEFAULT_DETECTOR`.
  */
 export function calibrateDetector(
   recording: PoseRecording,
@@ -170,5 +170,21 @@ export function calibrateDetector(
       ),
       gate: Math.max(DEFAULT_DETECTOR.gate, CALIBRATION_GATE_FACTOR * speedP999),
     },
+  };
+}
+
+/** One still take's calibration in every landmark space, keyed by the space's kind. */
+export type SpaceCalibrations = { readonly [Kind in LandmarkSpace["kind"]]: Calibration };
+
+/**
+ * Calibrates every landmark space from one still take. A recording keeps both forms of each
+ * landmark, so one take is the noise floor of both spaces, and the mapped type is the exhaustive
+ * check: a third space fails to compile here until it is calibrated. Either space failing throws
+ * before anything is returned, so a caller never holds a half-calibrated pair.
+ */
+export function calibrateSpaces(recording: PoseRecording): SpaceCalibrations {
+  return {
+    image: calibrateDetector(recording, IMAGE_SPACE),
+    world: calibrateDetector(recording, WORLD_SPACE),
   };
 }

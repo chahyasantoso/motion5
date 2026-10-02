@@ -81,7 +81,7 @@ export interface SpaceRecord {
   readonly verdict: GapVerdict;
 }
 
-/** The one comparison record: every metric of every compared filler in both spaces, and the call. */
+/** The one comparison record: every compared filler's metrics in both spaces, and the call. */
 export interface ComparisonRecord {
   /** What was replayed, in words, for the record's first line. */
   readonly label: string;
@@ -196,7 +196,7 @@ export function buildComparisonRecord(input: ComparisonRecordInput): ComparisonR
   };
 }
 
-/** The widest line the formatter writes, Prettier's `printWidth`, so the record is format-stable. */
+/** The widest line the formatter writes, Prettier's `printWidth`, so the record is stable. */
 export const RECORD_WIDTH = 100;
 
 const number = (value: number | undefined, digits = 1) =>
@@ -204,11 +204,30 @@ const number = (value: number | undefined, digits = 1) =>
 const summary = (value: Summary) =>
   `${number(value.mean)} / ${number(value.p95)} / ${number(value.max)}`;
 
+/** The widest word a bullet line holds after its two-column `- ` or continuation indent. */
+const WORD_WIDTH = RECORD_WIDTH - 2;
+
+/**
+ * The words of one bullet. Any whitespace run, a newline in a file name included, is one break, so
+ * a label cannot end the bullet early; a word wider than a line is split into line-wide pieces, so
+ * no input can push a line past `RECORD_WIDTH`.
+ */
+function words(text: string): string[] {
+  return text
+    .split(/\s+/)
+    .filter((word) => word !== "")
+    .flatMap((word) =>
+      Array.from({ length: Math.ceil(word.length / WORD_WIDTH) }, (_, index) =>
+        word.slice(index * WORD_WIDTH, (index + 1) * WORD_WIDTH),
+      ),
+    );
+}
+
 /** Greedy word wrap of one bullet: `- ` on the first line, two spaces on every continuation. */
 function bullet(text: string): string[] {
   const lines: string[] = [];
   let line = "-";
-  for (const word of text.split(" ")) {
+  for (const word of words(text)) {
     if (line !== "-" && line.length + 1 + word.length > RECORD_WIDTH) {
       lines.push(line);
       line = " ";

@@ -1,4 +1,6 @@
-import { readFileSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { measurementOf } from "../src/filler/frame";
 import type { FillerKind } from "../src/filler/gap-filler";
@@ -30,16 +32,33 @@ import {
 import { replayFrame } from "../src/replay/recording";
 import { createSyntheticRecording, type SyntheticOptions } from "../src/replay/synthetic";
 import { createRigSolver } from "../src/rig/solver";
-import { RECORD_EXERCISE, RECORD_STILL, syntheticComparisonRecord } from "./comparison-record";
+import {
+  RECORD_BEGIN,
+  RECORD_END,
+  RECORD_PATH,
+  RECORD_STILL,
+  replaceRecordBlock,
+  syntheticComparisonRecord,
+  writeRecordBlock,
+} from "./comparison-record";
 import { fakePorts } from "./engine";
 
-/** Prettier's `printWidth`, the owner of how wide a committed line may be, read rather than copied. */
+/** Prettier's `printWidth`, the owner of how wide a committed line may be, read, not copied. */
 const PRINT_WIDTH: number = JSON.parse(
   readFileSync(new URL("../../../.prettierrc.json", import.meta.url), "utf8"),
 ).printWidth;
-const RECORD_PATH = new URL("../../../docs/POSE-GAP-FILLER-COMPARISON.md", import.meta.url);
-const BEGIN = "<!-- comparison-record:begin -->";
-const END = "<!-- comparison-record:end -->";
+/**
+ * GF-73's own movement and still takes: long enough that `chain-kalman` still leaves a measurable
+ * image gap, short enough that its two builds stay well inside a shared CI runner's case timeout.
+ * The committed record's full-length input is GF-74 and GF-75's.
+ */
+const SHORT_EXERCISE: SyntheticOptions = {
+  motion: { kind: "exercise" },
+  seed: 11,
+  durationMs: 4000,
+  fps: 30,
+};
+const SHORT_STILL: SyntheticOptions = { ...RECORD_STILL, durationMs: 4000 };
 
 /** Mean distance of each trusted reference sample from its noiseless twin, the true noise floor. */
 function trueNoise(options: SyntheticOptions, space: LandmarkSpace): number {
@@ -127,6 +146,18 @@ describe("comparison record (#530 phase 5)", () => {
       referenceNoise: 2,
       gap: 3,
     });
+    // The bar says this record shows no gap, not that none exists: at 1.9 times the noise the call
+    // is within noise, and a later filler at 1.0 times the noise still ranks as the better one.
+    const noise = 10;
+    const current = row("chain-kalman", [1.9 * noise]);
+    const later = row("hold", [1.0 * noise]);
+    expect(judgeGap([current], calibration(noise)).kind).toBe("within-noise");
+    expect(bestFiller([current, later]).filler).toBe("hold");
+    expect(judgeGap([current, later], calibration(noise))).toEqual({
+      kind: "within-noise",
+      best: { filler: "hold", errorMean: noise, lostFrames: 0 },
+      referenceNoise: noise,
+    });
   });
 
   it("GF-72 opens the INN only on a measurable gap, and names the filler it must beat", () => {
@@ -158,8 +189,8 @@ describe("comparison record (#530 phase 5)", () => {
   });
 
   it("GF-73 compares every filler filler-only and on fresh rigs in both spaces, deterministically", () => {
-    const still = createSyntheticRecording(RECORD_STILL);
-    const recording = createSyntheticRecording(RECORD_EXERCISE);
+    const still = createSyntheticRecording(SHORT_STILL);
+    const recording = createSyntheticRecording(SHORT_EXERCISE);
     let created = 0;
     let disposed = 0;
     const input = {
@@ -251,17 +282,67 @@ describe("comparison record (#530 phase 5)", () => {
     expect(flat).toContain("never `raw`");
   });
 
+  it("GF-79 shares one frozen committed record, so no reader can change another's", () => {
+    const record = syntheticComparisonRecord();
+    expect(syntheticComparisonRecord()).toBe(record);
+    const [image] = record.spaces;
+    for (const value of [record, record.spaces, image, image!.filled, image!.filled[0]])
+      expect(Object.isFrozen(value)).toBe(true);
+    expect(Object.isFrozen(image!.filled[0]!.metrics.positionError)).toBe(true);
+    expect(Object.isFrozen(image!.calibration!.detector)).toBe(true);
+    expect(Object.isFrozen(record.inn)).toBe(true);
+  });
+
   it("GF-75 the committed record is the regenerated record, byte for byte", () => {
     const generated = formatComparisonRecord(syntheticComparisonRecord());
-    const document = readFileSync(RECORD_PATH, "utf8");
-    const begin = document.indexOf(BEGIN);
-    const end = document.indexOf(END);
-    expect(begin).toBeGreaterThan(-1);
-    expect(end).toBeGreaterThan(begin);
-    const block = `${BEGIN}\n\n${generated}\n\n`;
     // Regenerate with POSE_COMPARISON_WRITE=1 after any change to a filler, the rig or the input.
-    if (process.env.POSE_COMPARISON_WRITE === "1")
-      writeFileSync(RECORD_PATH, document.slice(0, begin) + block + document.slice(end));
-    else expect(document.slice(begin, end)).toBe(block);
+    if (process.env.POSE_COMPARISON_WRITE === "1") writeRecordBlock(RECORD_PATH, generated);
+    const document = readFileSync(RECORD_PATH, "utf8");
+    expect(replaceRecordBlock(document, generated)).toBe(document);
+  });
+
+  it("GF-76 regenerates only between one begin and one end marker, through a renamed file", () => {
+    const block = (body: string) => `${RECORD_BEGIN}\n\n${body}\n\n${RECORD_END}`;
+    const document = `# Title\n\n${block("- old")}\n\n## After\n`;
+    expect(replaceRecordBlock(document, "- new")).toBe(
+      `# Title\n\n${block("- new")}\n\n## After\n`,
+    );
+    for (const broken of [
+      "no markers",
+      `${RECORD_BEGIN} only`,
+      `${RECORD_END} only`,
+      `${RECORD_END}\n${RECORD_BEGIN}`,
+      `${block("- a")}\n${block("- b")}`,
+      `${RECORD_BEGIN}\n${block("- a")}`,
+    ])
+      expect(() => replaceRecordBlock(broken, "- new")).toThrow(/marker/);
+    const directory = mkdtempSync(join(tmpdir(), "gf-76-"));
+    try {
+      const path = join(directory, "record.md");
+      writeFileSync(path, document);
+      writeRecordBlock(path, "- new");
+      expect(readFileSync(path, "utf8")).toBe(replaceRecordBlock(document, "- new"));
+      expect(readdirSync(directory)).toEqual(["record.md"]);
+      writeFileSync(path, "no markers");
+      expect(() => writeRecordBlock(path, "- new")).toThrow(/marker/);
+      expect(readFileSync(path, "utf8")).toBe("no markers");
+      expect(readdirSync(directory)).toEqual(["record.md"]);
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
+    }
+  });
+
+  it("GF-77 keeps any label, newline or overlong file name included, within print width", () => {
+    const record = syntheticComparisonRecord();
+    const name = `take-${"x".repeat(250)}.json`;
+    const text = formatComparisonRecord({ ...record, label: `recording a\nb\r\n\tc ${name}` });
+    const lines = text.split("\n");
+    for (const line of lines) expect(line.length).toBeLessThanOrEqual(PRINT_WIDTH);
+    // The newline in the label is a word break, so the input bullet is one bullet.
+    expect(lines[0]).toBe("- Input: recording a b c");
+    expect(lines[1]!.startsWith("  ")).toBe(true);
+    expect(text.replace(/\n {2}/g, "")).toContain(name);
+    const input = lines.slice(0, lines.indexOf(""));
+    expect(input.filter((line) => line.startsWith("- "))).toHaveLength(1);
   });
 });

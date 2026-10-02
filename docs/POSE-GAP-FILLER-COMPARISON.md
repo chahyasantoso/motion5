@@ -27,8 +27,9 @@ then a movement take with "Replay", and the report is this block for that take.
   reaches the run only as `forced` trust, and every metric is judged against the landmark the mask
   hid.
 - **Settings.** The live page's defaults: the `one-euro` stabilizer tuned per space, and in each
-  space the detector calibrated on the still take. On the live page a still take calibrates only
-  the selected space, so a real-take record judges that space and reports the other uncalibrated.
+  space the detector calibrated on the still take. A recording keeps both forms of every landmark,
+  so one still take calibrates both spaces (`calibrateSpaces`), on the live page as here, and the
+  calibration survives a space switch.
 - **Populations.** Filled rows are the fillers' own output with no rig, the answer to "where is an
   untrusted joint" that the filler alone owns and that an INN would replace behind the same
   interface. Rig rows are what the live page draws: a limb's middle and tip where a fresh Engine

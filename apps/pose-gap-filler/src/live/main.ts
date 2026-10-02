@@ -3,7 +3,7 @@ import { createGsapInterpolator } from "@motion5/core/adapters";
 import { gsap } from "gsap";
 import { parsePoseResult, type StageSize } from "../filler/adapter";
 import type { FillerKind } from "../filler/gap-filler";
-import { IMAGE_SPACE, WORLD_SPACE, LANDMARK_SPACES, type LandmarkSpace } from "../filler/space";
+import { IMAGE_SPACE, WORLD_SPACE, LANDMARK_SPACES } from "../filler/space";
 import { COMPARED_FILLERS } from "../replay/compare";
 import { buildComparisonRecord, formatComparisonRecord } from "../replay/record";
 import { parseRecording } from "../replay/recording";
@@ -73,28 +73,27 @@ function main(): void {
     if (kind === undefined) throw new Error("Unknown stabilizer.");
     return kind;
   };
-  let space: LandmarkSpace = IMAGE_SPACE;
-  let experiment = createExperiment(space);
-  // The camera fit's image half is stabilized as the world half is, on the default image detector,
-  // because a still calibration belongs to the selected space and is never copied across.
+  const experiment = createExperiment(IMAGE_SPACE);
+  // The camera fit's image half is stabilized as the world half is, on the image detector the
+  // still take calibrated (the default until one), so the fit trusts what the image replay trusts.
   const rig = createLiveRig(
-    () => createRigSolver(rigPorts(), space),
+    () => createRigSolver(rigPorts(), experiment.space),
     () =>
       createGapPipeline({
         filler: { kind: "raw" },
+        detector: experiment.calibrations?.image.detector,
         stabilizer: stabilizerFor(selectedStabilizer(), IMAGE_SPACE),
       }),
   );
   spaceSelect.addEventListener("change", () => {
     const next = LANDMARK_SPACES.find((candidate) => candidate.kind === spaceSelect.value);
     if (next === undefined) throw new Error("Unknown landmark space.");
-    const freshExperiment = createExperiment(next);
-    freshExperiment.select(fillerSelect.value as FillerKind);
-    freshExperiment.stabilize(selectedStabilizer());
-    experiment = freshExperiment;
-    space = next;
+    experiment.switchSpace(next);
     rig.restart();
-    report.textContent = `Switched to ${next.kind}. Recalibrate the still recording in this space.`;
+    report.textContent =
+      experiment.calibration === undefined
+        ? `Switched to ${next.kind}. Calibrate a still recording to judge either space.`
+        : `Switched to ${next.kind}. The still calibration covers both spaces and still applies.`;
   });
   fillerSelect.addEventListener("change", () => {
     experiment.select(fillerSelect.value as FillerKind);
@@ -129,9 +128,15 @@ function main(): void {
     file
       .text()
       .then((text) => {
-        const calibration = experiment.calibrate(parseRecording(JSON.parse(text)));
+        const calibrations = experiment.calibrate(parseRecording(JSON.parse(text)));
         rig.restart();
-        report.textContent = `${space.kind} still calibration applied to live and replay: visibility threshold ${calibration.detector.threshold.toFixed(3)}, speed gate ${calibration.detector.gate.toFixed(1)} bone lengths/s. Replay your movement recording to compare.`;
+        const applied = LANDMARK_SPACES.map(({ kind }) => {
+          const { threshold, gate } = calibrations[kind].detector;
+          const visibility = `threshold ${threshold.toFixed(3)}`;
+          return `${kind} ${visibility}, gate ${gate.toFixed(1)} bone lengths/s`;
+        });
+        const summary = `Still calibration applied to live and replay: ${applied.join("; ")}.`;
+        report.textContent = `${summary} Replay your movement recording to compare.`;
       })
       .catch((error: unknown) => {
         report.textContent = `Calibration failed (previous settings retained): ${String(error)}`;
@@ -148,9 +153,8 @@ function main(): void {
           label: `recording ${file.name}`,
           recording,
           stabilizer: experiment.stabilizer.kind,
-          // A still calibration belongs to the space it was taken in and is never copied across.
-          calibrationFor: (nativeSpace) =>
-            nativeSpace.kind === space.kind ? experiment.calibration : undefined,
+          // One still take calibrates both spaces, so the record judges both.
+          calibrationFor: (nativeSpace) => experiment.calibrations?.[nativeSpace.kind],
           createSolver: (nativeSpace) => createRigSolver(rigPorts(), nativeSpace),
         });
         report.textContent = formatComparisonRecord(comparison);
@@ -165,6 +169,7 @@ function main(): void {
     source
       .start(({ result, tMs, detectMs }) => {
         const timer = createStageTimer();
+        const space = experiment.space;
         recorder.keep(result, tMs);
         const image = parsePoseResult(result, tMs, IMAGE_SPACE, STAGE);
         const frame =
