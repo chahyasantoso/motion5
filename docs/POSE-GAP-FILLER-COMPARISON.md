@@ -27,7 +27,8 @@ then a movement take with "Replay", and the report is this block for that take.
   reaches the run only as `forced` trust, and every metric is judged against the landmark the mask
   hid.
 - **Settings.** The live page's defaults: the `one-euro` stabilizer tuned per space, and in each
-  space the detector calibrated on the still take.
+  space the detector calibrated on the still take. On the live page a still take calibrates only
+  the selected space, so a real-take record judges that space and reports the other uncalibrated.
 - **Populations.** Filled rows are the fillers' own output with no rig, the answer to "where is an
   untrusted joint" that the filler alone owns and that an INN would replace behind the same
   interface. Rig rows are what the live page draws: a limb's middle and tip where a fresh Engine
@@ -50,8 +51,8 @@ then a movement take with "Replay", and the report is this block for that take.
   position error; fewer lost frames break a tie. `raw` is the reference and is never a candidate.
 - **Measurable gap.** The best error must exceed `MEASURABLE_GAP_FACTOR` (2) times the reference
   noise. A perfect predictor of the true pose still scores the reference's noise against that
-  noisy reference, so an error inside twice the noise cannot be told from none, and no later filler
-  could be shown to beat it.
+  noisy reference, so an error inside twice the noise establishes no meaningful gap by this rule.
+  It is a heuristic bar, not a proof that no later filler could do better.
 - **Why filled rows decide.** The rig places a masked middle joint from the bone lengths and the
   writer's held bend side, which no filler owns, so rig rows mix the filler's answer with the
   writer's. The verdict reads the filler's own answer; the rig rows show what a person would see.

@@ -17,8 +17,8 @@ import type { PoseRecording } from "./recording";
 /**
  * A gap is measurable when the best filler's mean error over the masked frames exceeds this many
  * times the reference's own noise. A perfect predictor of the true pose still scores the
- * reference's noise against that noisy reference, so an error inside twice the noise cannot be
- * told apart from no error at all, and no later filler could be shown to beat it.
+ * reference's noise against that noisy reference, so an error inside twice the noise establishes
+ * no meaningful gap by this rule; it is a heuristic bar, not a proof that nothing could do better.
  */
 export const MEASURABLE_GAP_FACTOR = 2;
 

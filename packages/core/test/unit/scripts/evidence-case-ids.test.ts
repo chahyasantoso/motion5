@@ -353,8 +353,8 @@ import { fileURLToPath } from "node:url";
 // beside its own initial is the policy the `P-` paragraph sets.
 // `GF-` belongs to the pose gap filler experiment, issue #530 under #501: the MediaPipe adapter,
 // the gap detector, the bone-length estimator, the `raw`, `hold` and `chain-kalman` fillers, the
-// four-limb rig and its writer, the replay harness and its metrics, and the comparison record
-// `docs/POSE-GAP-FILLER-COMPARISON.md` that `GF-75` regenerates, all in `apps/pose-gap-filler`. It owns an application experiment rather than runtime behaviour, so it
+// four-limb rig and its writer, and the replay harness and its metrics, all in
+// `apps/pose-gap-filler`. It owns an application experiment rather than runtime behaviour, so it
 // extends no runtime series; `G-` stays the GSAP scroll source series and `GE-` the inverse
 // kinematics guide. A two-letter prefix is the policy the `P-` paragraph sets.
 //
