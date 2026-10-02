@@ -13,14 +13,14 @@ describe("live calibration composition", () => {
       fps: 30,
     });
     const result = experiment.calibrate(recording);
-    expect(experiment.detector).toEqual(result.detector);
+    expect(experiment.calibration).toEqual(result);
     expect(experiment.pipeline).not.toBe(before);
     const calibrated = experiment.pipeline;
     expect(() => experiment.calibrate({ ...recording, frames: [] })).toThrow(/Calibration/);
     expect(experiment.pipeline).toBe(calibrated);
-    expect(experiment.detector).toEqual(result.detector);
+    expect(experiment.calibration).toEqual(result);
     experiment.select("hold");
     expect(experiment.pipeline).not.toBe(calibrated);
-    expect(experiment.detector).toEqual(result.detector);
+    expect(experiment.calibration).toEqual(result);
   });
 });

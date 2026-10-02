@@ -1,9 +1,8 @@
-import type { GapDetectorOptions } from "../filler/gap-detector";
 import type { FillerKind } from "../filler/gap-filler";
 import { createGapPipeline } from "../filler/pipeline";
 import { IMAGE_SPACE, type LandmarkSpace } from "../filler/space";
 import { stabilizerFor, type StabilizerKind, type StabilizerSpec } from "../filler/stabilizer";
-import { comparedFillers, calibrateDetector } from "../replay/compare";
+import { comparedFillers, calibrateDetector, type Calibration } from "../replay/compare";
 import type { PoseRecording } from "../replay/recording";
 
 /**
@@ -24,19 +23,20 @@ export function createExperiment(space: LandmarkSpace = IMAGE_SPACE) {
   const fillers = comparedFillers(space);
   let kind: FillerKind = LIVE_FILLER;
   let stabilizer: StabilizerSpec = stabilizerFor(LIVE_STABILIZER, space);
-  let detector: GapDetectorOptions | undefined;
+  let calibration: Calibration | undefined;
   const makePipeline = () => {
     const filler = fillers.find((spec) => spec.kind === kind);
     if (filler === undefined) throw new Error(`No compared filler ${kind}.`);
-    return createGapPipeline({ filler, detector, stabilizer });
+    return createGapPipeline({ filler, detector: calibration?.detector, stabilizer });
   };
   let pipeline = makePipeline();
   return {
     get pipeline() {
       return pipeline;
     },
-    get detector() {
-      return detector;
+    /** The last still calibration in this space, the replay record's noise floor; none until one. */
+    get calibration() {
+      return calibration;
     },
     get filler(): FillerKind {
       return kind;
@@ -55,10 +55,10 @@ export function createExperiment(space: LandmarkSpace = IMAGE_SPACE) {
       pipeline = makePipeline();
     },
     calibrate(recording: PoseRecording) {
-      const calibration = calibrateDetector(recording, space);
-      detector = calibration.detector;
+      const next = calibrateDetector(recording, space);
+      calibration = next;
       pipeline = makePipeline();
-      return calibration;
+      return next;
     },
   };
 }

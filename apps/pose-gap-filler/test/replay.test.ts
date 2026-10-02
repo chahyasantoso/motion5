@@ -7,7 +7,6 @@ import {
   DEFAULT_MASKS,
   calibrateDetector,
   compareFillers,
-  formatComparison,
 } from "../src/replay/compare";
 import { maskedJoints, validateMask, type Mask } from "../src/replay/mask";
 import { measureReplay, summarize, type ReplayMetrics } from "../src/replay/metrics";
@@ -223,12 +222,5 @@ describe("replay metrics", () => {
     for (const kind of ["raw", "hold"]) expect(image.get(kind)!.lostFrames).toBe(0);
     // Chain coasting is intentionally bounded; a reference or unbounded hold is not.
     expect(image.get("chain-kalman")!.lostFrames).toBeGreaterThanOrEqual(0);
-    const table = formatComparison(
-      [...image].map(([filler, metrics]) => ({ filler: filler as "raw", metrics })),
-      IMAGE_SPACE,
-    );
-    expect(table.split("\n")).toHaveLength(5);
-    expect(table).toContain("position error px");
-    expect(formatComparison([], WORLD_SPACE)).toContain("jitter mm/s²");
   });
 });

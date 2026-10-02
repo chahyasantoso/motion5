@@ -4,13 +4,8 @@ import { gsap } from "gsap";
 import { parsePoseResult, type StageSize } from "../filler/adapter";
 import type { FillerKind } from "../filler/gap-filler";
 import { IMAGE_SPACE, WORLD_SPACE, LANDMARK_SPACES, type LandmarkSpace } from "../filler/space";
-import {
-  COMPARED_FILLERS,
-  comparedFillers,
-  DEFAULT_MASKS,
-  compareFillers,
-  formatComparison,
-} from "../replay/compare";
+import { COMPARED_FILLERS } from "../replay/compare";
+import { buildComparisonRecord, formatComparisonRecord } from "../replay/record";
 import { parseRecording } from "../replay/recording";
 import type { RigPorts } from "../rig/rig";
 import { createRigSolver } from "../rig/solver";
@@ -149,19 +144,16 @@ function main(): void {
       .text()
       .then((text) => {
         const recording = parseRecording(JSON.parse(text));
-        const reports = LANDMARK_SPACES.map((nativeSpace) => {
-          const rows = compareFillers({
-            recording,
-            space: nativeSpace,
-            fillers: comparedFillers(nativeSpace),
-            masks: DEFAULT_MASKS,
-            detector: nativeSpace.kind === space.kind ? experiment.detector : undefined,
-            stabilizer: stabilizerFor(experiment.stabilizer.kind, nativeSpace),
-            createSolver: () => createRigSolver(rigPorts(), nativeSpace),
-          });
-          return `${nativeSpace.kind} (native ${nativeSpace.kind === "image" ? "px" : "mm"})\n${formatComparison(rows, nativeSpace)}`;
+        const comparison = buildComparisonRecord({
+          label: `recording ${file.name}`,
+          recording,
+          stabilizer: experiment.stabilizer.kind,
+          // A still calibration belongs to the space it was taken in and is never copied across.
+          calibrationFor: (nativeSpace) =>
+            nativeSpace.kind === space.kind ? experiment.calibration : undefined,
+          createSolver: (nativeSpace) => createRigSolver(rigPorts(), nativeSpace),
         });
-        report.textContent = `${recording.frames.length} frames · stabilizer ${experiment.stabilizer.kind}\n${reports.join("\n\n")}`;
+        report.textContent = formatComparisonRecord(comparison);
       })
       .catch((error: unknown) => {
         report.textContent = `Replay failed: ${String(error)}`;
