@@ -1,7 +1,7 @@
 import { createManualClock, createMicrotaskScheduler } from "@motion5/core";
 import { createGsapInterpolator } from "@motion5/core/adapters";
 import { gsap } from "gsap";
-import { hasPose, parsePoseResult, type StageSize } from "../filler/adapter";
+import { hasPose, parsePoseResult, readRawPose, type StageSize } from "../filler/adapter";
 import { unreachable } from "../filler/unreachable";
 import type { FillerKind } from "../filler/gap-filler";
 import { IMAGE_SPACE, WORLD_SPACE, LANDMARK_SPACES } from "../filler/space";
@@ -29,6 +29,7 @@ import { defaultCameraSpec } from "../synthetic/camera";
 import { createSimulator } from "../synthetic/simulator";
 import { required } from "../view/dom";
 import { mountSimulatorPanel } from "../view/simulator-panel";
+import { mountAvatarViewport } from "../view/avatar-viewport";
 
 /** The synthetic takes are generated on the stage the page draws, so one size owns both. */
 const STAGE: StageSize = DEFAULT_STAGE;
@@ -69,6 +70,20 @@ function main(): void {
   const replayInput = required<HTMLInputElement>("#replay");
   const calibrationInput = required<HTMLInputElement>("#calibrate");
   const report = required<HTMLElement>("#report");
+  const avatarSection = required<HTMLElement>("#avatar-section");
+  const avatarEnabled = required<HTMLInputElement>("#show-avatar");
+  const viewport = mountAvatarViewport(
+    required<HTMLCanvasElement>("#avatar-view"),
+    required<HTMLElement>("#avatar-info"),
+    required<HTMLInputElement>("#avatar-yaw"),
+    required<HTMLInputElement>("#avatar-pitch"),
+  );
+  const showAvatar = () => {
+    avatarSection.hidden = !avatarEnabled.checked || spaceSelect.value !== "world";
+    viewport.clear();
+  };
+  avatarEnabled.addEventListener("change", showAvatar);
+  showAvatar();
   svg.setAttribute("viewBox", `0 0 ${STAGE.width} ${STAGE.height}`);
   const log = new URLSearchParams(location.search).has("log");
 
@@ -100,6 +115,7 @@ function main(): void {
     if (next === undefined) throw new Error("Unknown landmark space.");
     experiment.switchSpace(next);
     rig.restart();
+    showAvatar();
     report.textContent =
       experiment.calibration === undefined
         ? `Switched to ${next.kind}. Calibrate a still recording to judge either space.`
@@ -201,6 +217,15 @@ function main(): void {
     const step = pipeline.step(frame, forced.joints);
     timer.mark("fill");
     const solved = rig.solver.solve(step, pipeline.lengths);
+    if (avatarEnabled.checked && space.kind === "world")
+      viewport.update(
+        step,
+        solved,
+        pipeline.lengths,
+        rig.solver,
+        readRawPose(result, WORLD_SPACE),
+        experiment.calibration?.detector.threshold ?? 0.5,
+      );
     timer.mark("write");
     const fit =
       space.kind === "world"
@@ -263,6 +288,7 @@ function main(): void {
       onSample(sample);
     },
     end(spec, ending) {
+      viewport.clear();
       finishRecording();
       start.textContent = "Start";
       const failure = describeEnd(sourceLabel(spec), ending);
@@ -284,6 +310,7 @@ function main(): void {
   addEventListener("pagehide", () => {
     session.stop();
     rig.dispose();
+    viewport.dispose();
   });
 }
 

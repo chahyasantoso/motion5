@@ -1,4 +1,4 @@
-import type { ProjectHandle } from "@motion5/core";
+import type { Patch, ProjectHandle } from "@motion5/core";
 import type { BoneLengths } from "../filler/bone-length";
 import type { LimbId } from "../filler/landmarks";
 import type { PipelineStep } from "../filler/pipeline";
@@ -30,6 +30,8 @@ export function createImageSolver(project: ProjectHandle): PoseSolver {
 
 /** A solver that owns its project, for a caller that owns nothing else of the rig. */
 export interface RigSolver extends PoseSolver {
+  /** Read-only publications from this solver's sole project. Image/test solvers may omit it. */
+  readPatch?(nodeId: string): Patch | undefined;
   dispose(): void;
 }
 
@@ -44,6 +46,7 @@ export function createWorldRigSolver(ports: RigPorts): RigSolver {
   const project = loadWorldRig(ports);
   const writer = createWorldWriter(project);
   return {
+    readPatch: (nodeId) => project.get(nodeId),
     solve(step, lengths) {
       return readWrittenLimbs(project, writer.write(step.filled, step.trusted, lengths), [
         "x",

@@ -2,6 +2,7 @@ import type { JointId } from "./landmarks";
 import type { LandmarkSpace } from "./space";
 import { unreachable } from "./unreachable";
 import type { Vec } from "./vec";
+import type { BodyState } from "../body/state";
 
 /**
  * MediaPipe's presence score for one landmark: the probability it is in the scene at all, which
@@ -52,6 +53,7 @@ export type JointTrust =
   | { readonly kind: "gap"; readonly reason: GapReason };
 
 export interface TrustedFrame extends LandmarkFrame {
+  readonly body?: BodyState;
   readonly trust: Readonly<Record<JointId, JointTrust>>;
 }
 
@@ -65,6 +67,7 @@ export type FilledJoint =
   | { readonly kind: "lost" };
 
 export interface FilledFrame {
+  readonly body?: BodyState;
   readonly tMs: number;
   readonly space: LandmarkSpace;
   readonly joints: Readonly<Record<JointId, FilledJoint>>;
