@@ -70,6 +70,15 @@ export function createDirectionFilter(options: ScalarNoise) {
     get state() {
       return state;
     },
+    /** Roll back this filter when a later member of an app-level frame transaction fails. */
+    checkpoint(): () => void {
+      const savedState = state,
+        savedMs = previousMs;
+      return () => {
+        state = savedState;
+        previousMs = savedMs;
+      };
+    },
     step(tMs: number, measurement?: DirectionMeasurement): DirectionState | undefined {
       if (!Number.isFinite(tMs) || (previousMs !== undefined && tMs < previousMs))
         throw new Error("Direction timestamps must be finite and nondecreasing.");
@@ -167,7 +176,8 @@ export function basis(x: Vec, y: Vec): Basis | undefined {
   if (axisX === undefined) return undefined;
   const axisY = unit(sub(y, scale(axisX, dot(y, axisX))));
   if (axisY === undefined) return undefined;
-  return { x: axisX, y: axisY, z: unit(cross(axisX, axisY))! };
+  const axisZ = unit(cross(axisX, axisY));
+  return axisZ === undefined ? undefined : { x: axisX, y: axisY, z: axisZ };
 }
 
 export function toLocal(frame: Basis, vector: Vec): Vec {

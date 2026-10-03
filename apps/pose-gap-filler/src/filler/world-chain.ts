@@ -2,7 +2,6 @@ import { presentedPosition, trustedPosition, type FilledJoint } from "./frame";
 import type { GapFiller } from "./gap-filler";
 import type { KalmanNoise } from "./chain-kalman";
 import {
-  basis,
   createDirectionFilter,
   continuedSegmentBasis,
   toLocal,
@@ -10,7 +9,7 @@ import {
   type Basis,
   type DirectionFilter,
 } from "./direction";
-import { createCvFilter, type CvFilter } from "./kalman";
+import { createBodyStateOwner, type BodyRoot } from "../body/state";
 import {
   BONES,
   BONE_IDS,
@@ -39,14 +38,7 @@ export function createWorldChainFiller(noise: KalmanNoise, coastMs: number): Gap
   const angles = new Map<BoneId, DirectionFilter>(
     BONE_IDS.map((id) => [id, createDirectionFilter(noise.angle)]),
   );
-  const torsoX = createDirectionFilter(noise.angle);
-  const torsoY = createDirectionFilter(noise.angle);
-  const roots = new Map<JointId, readonly CvFilter[]>(
-    LIMBS.map((limb) => [
-      limb.root,
-      [0, 1, 2].map(() => createCvFilter({ kind: "position" }, noise.position)),
-    ]),
-  );
+  const bodyOwner = createBodyStateOwner(noise, coastMs);
   const lastTrusted = new Map<JointId, number>();
   const gaps = new Map<JointId, number>();
   const gauges = new Map<LimbId, { readonly local: Basis; readonly measuredMs: number }>();
@@ -79,7 +71,21 @@ export function createWorldChainFiller(noise: KalmanNoise, coastMs: number): Gap
           default:
             return unreachable(joint, "joint trust");
         }
-      previousMs = frame.tMs;
+      if (frame.body !== undefined && frame.body.tMs !== frame.tMs)
+        throw new Error("Body state timestamp does not match trusted frame.");
+      if (frame.body !== undefined) {
+        if (!Object.isFrozen(frame.body)) throw new Error("Shared body state must be immutable.");
+        for (const limb of LIMBS) {
+          const trust = frame.trust[limb.root];
+          const anchor = frame.body.anchors[limb.root as BodyRoot].joint;
+          if (
+            trust.kind === "trusted" &&
+            (anchor.kind !== "measured" ||
+              trust.position.some((value, axis) => value !== anchor.position[axis]))
+          )
+            throw new Error("Shared body state does not match trusted roots.");
+        }
+      }
       const visibility = (joints: readonly JointId[]) =>
         Math.min(
           ...joints.map((joint) => {
@@ -100,39 +106,14 @@ export function createWorldChainFiller(noise: KalmanNoise, coastMs: number): Gap
           value === undefined ? undefined : { direction: value, visibility: visibility(joints) },
         );
       };
-      const torsoJoints: JointId[] = [];
-      let transverse: Vec = [0, 0, 0];
-      let vertical: Vec = [0, 0, 0];
-      for (const [from, to] of [
-        ["right-shoulder", "left-shoulder"],
-        ["right-hip", "left-hip"],
-      ] as const) {
-        const dir = direction(measured[from], measured[to]);
-        if (dir !== undefined) {
-          transverse = add(transverse, dir);
-          torsoJoints.push(from, to);
-        }
-      }
-      for (const [from, to] of [
-        ["left-shoulder", "left-hip"],
-        ["right-shoulder", "right-hip"],
-      ] as const) {
-        const a = measured[from];
-        const b = measured[to];
-        if (a !== undefined && b !== undefined) {
-          vertical = add(vertical, sub(b, a));
-          torsoJoints.push(from, to);
-        }
-      }
-      // Projecting the long axis off the width removes taper bias on a single trusted side.
-      const torsoMeasured: Basis | undefined = basis(transverse, vertical);
-      advance(torsoX, torsoMeasured?.x, torsoJoints);
-      advance(torsoY, torsoMeasured?.y, torsoJoints);
-      const torso =
-        torsoMeasured ??
-        (fresh(torsoX) && fresh(torsoY)
-          ? basis(torsoX.state!.direction, torsoY.state!.direction)
-          : undefined);
+      const body = frame.body ?? bodyOwner.step(frame, lengths);
+      previousMs = frame.tMs;
+      const torsoJoints = LIMBS.map((limb) => limb.root).filter(
+        (root) => measured[root] !== undefined,
+      );
+      const torsoMeasured =
+        body.orientation.kind === "observed" ? body.orientation.basis : undefined;
+      const torso = body.orientation.kind === "unavailable" ? undefined : body.orientation.basis;
       const absolute = new Map(
         BONE_IDS.map((bone) => [
           bone,
@@ -173,15 +154,6 @@ export function createWorldChainFiller(noise: KalmanNoise, coastMs: number): Gap
           joints,
         );
       }
-      for (const [root, filters] of roots)
-        filters.forEach((filter, axis) => {
-          if (filter.state !== undefined && !fresh(filter)) filter.reset();
-          const value = measured[root]?.[axis];
-          filter.step(
-            frame.tMs,
-            value === undefined ? undefined : { value, visibility: visibility([root]) },
-          );
-        });
       const filled = jointRecord((joint): FilledJoint => {
         const trust = frame.trust[joint];
         switch (trust.kind) {
@@ -224,19 +196,7 @@ export function createWorldChainFiller(noise: KalmanNoise, coastMs: number): Gap
           : add(parent, scale(dir, length));
       };
       for (const limb of LIMBS) {
-        if (frame.trust[limb.root].kind !== "gap") continue;
-        const canonical = boneDirection(limb.width, torsoMeasured);
-        let position = child(
-          limb.width,
-          measured[limb.partner],
-          canonical === undefined
-            ? undefined
-            : scale(canonical, BONES[limb.width].to === limb.root ? 1 : -1),
-        );
-        const filters = roots.get(limb.root)!;
-        if (position === undefined && filters.every(fresh))
-          position = filters.map((filter) => filter.state!.value);
-        infer(limb.root, position);
+        filled[limb.root] = body.anchors[limb.root as BodyRoot].joint;
       }
       for (const limb of LIMBS) {
         const root = presentedPosition(filled[limb.root]);
@@ -249,13 +209,11 @@ export function createWorldChainFiller(noise: KalmanNoise, coastMs: number): Gap
             : continuedSegmentBasis(torso, upper, gauges.get(limb.id)?.local);
         infer(limb.tip, child(limb.lower, middle, boneDirection(limb.lower, parent)));
       }
-      return { tMs: frame.tMs, space: frame.space, joints: filled };
+      return { tMs: frame.tMs, space: frame.space, joints: filled, body };
     },
     reset() {
       for (const filter of angles.values()) filter.reset();
-      torsoX.reset();
-      torsoY.reset();
-      for (const filters of roots.values()) for (const filter of filters) filter.reset();
+      bodyOwner.reset();
       lastTrusted.clear();
       gaps.clear();
       gauges.clear();

@@ -128,6 +128,7 @@
         <select id="stabilizer"></select
       ></label>
       <label><input id="show-raw" type="checkbox" /> Show raw landmarks</label>
+      <label><input id="show-avatar" type="checkbox" checked /> Three avatar (world space)</label>
       <label><input id="mirror" type="checkbox" /> Mirror preview</label>
       <button id="record" type="button">Record landmarks</button>
       <label
@@ -142,6 +143,29 @@
       <canvas id="truth" hidden></canvas>
       <svg id="overlay"></svg>
     </div>
+    <section id="avatar-section" hidden>
+      <h2>Reconstructed body</h2>
+      <div class="controls">
+        <label
+          >View yaw <input id="avatar-yaw" type="range" min="-180" max="180" value="0"
+        /></label>
+        <label
+          >View pitch <input id="avatar-pitch" type="range" min="-60" max="60" value="0"
+        /></label>
+      </div>
+      <canvas
+        id="avatar-view"
+        width="640"
+        height="480"
+        style="max-width: 100%; aspect-ratio: 4 / 3"
+      ></canvas>
+      <pre id="avatar-info"></pre>
+      <p>
+        Blue: measured inputs. Amber wireframe: inferred inputs. Grey: neutral orientation/anatomy.
+        Orbit changes presentation only, never the observation camera. Head proportions are an
+        authored approximation; palm/foot planes do not observe forearm twist or fingers.
+      </p>
+    </section>
     <section id="simulator" hidden>
       <div class="controls">
         <label

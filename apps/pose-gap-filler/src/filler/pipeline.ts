@@ -4,6 +4,9 @@ import { createGapDetector, NO_FORCED, type GapDetectorOptions } from "./gap-det
 import { createGapFiller, type FillerSpec } from "./gap-filler";
 import type { JointId } from "./landmarks";
 import { createStabilizer, NO_STABILIZER, type StabilizerSpec } from "./stabilizer";
+import { createBodyStateOwner } from "../body/state";
+import { DEFAULT_WORLD_KALMAN_NOISE } from "./world-chain";
+import { DEFAULT_COAST_MS } from "./chain-kalman";
 
 export interface PipelineStep {
   /** The detector's trust, with every trusted position as the stabilizer denoised it. */
@@ -41,18 +44,28 @@ export function createGapPipeline(options: PipelineOptions): GapPipeline {
   const lengths = createBoneLengthEstimator(options.lengthWindow);
   const filler = createGapFiller(options.filler);
   const stabilizer = createStabilizer(options.stabilizer ?? NO_STABILIZER);
+  const body = createBodyStateOwner(
+    options.filler.kind === "chain-kalman" ? options.filler.noise : DEFAULT_WORLD_KALMAN_NOISE,
+    options.filler.kind === "chain-kalman" ? options.filler.coastMs : DEFAULT_COAST_MS,
+  );
   return {
     lengths,
     step(frame, forced = NO_FORCED) {
-      const trusted = stabilizer.stabilize(detector.detect(frame, forced, lengths));
+      let trusted = stabilizer.stabilize(detector.detect(frame, forced, lengths));
       lengths.observe(trusted);
-      return { trusted, filled: filler.fill(trusted, lengths) };
+      if (frame.space.kind === "world") trusted = { ...trusted, body: body.step(trusted, lengths) };
+      const filled = filler.fill(trusted, lengths);
+      return {
+        trusted,
+        filled: trusted.body === undefined ? filled : { ...filled, body: trusted.body },
+      };
     },
     reset() {
       detector.reset();
       stabilizer.reset();
       lengths.reset();
       filler.reset();
+      body.reset();
     },
   };
 }

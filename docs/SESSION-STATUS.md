@@ -22,9 +22,11 @@ shape and byte ceiling.
 - **[#540][issue540] synthetic human rig:** a live source selector, then presence, recording v2,
   one ingest gate and a display-only mirror, then an articulated truth actor with a camera,
   observation edits, constrained handles, scripted scenarios, geometric occlusion, seeded
-  detector corruption and capture/delivery timing, are
+  detector corruption and capture/delivery timing, plus shared body state and a reconstructed
+  flat Three avatar with provenance and residuals, are
   prepared on `feat/540-phase0-source-modes`, `feat/540-phase1-contracts` and
-  `feat/540-phase2-actor`, with the occlusion follow-up to [PR #544][pr544], and not merged;
+  `feat/540-phase2-actor`, with the occlusion follow-up to [PR #544][pr544] and the new
+  `feat/540-phase4-visible-body` handover based on that PR, and not merged;
   [SYNTHETIC-HUMAN.md](./SYNTHETIC-HUMAN.md) records the contracts and exit tests.
   Apply the handover and rerun Node 24 CI before merging. The learned prior,
   [#539][issue539], is measured against that simulator.
