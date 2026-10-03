@@ -8,11 +8,11 @@ import {
 } from "./frame";
 import { jointRecord, scaleBone, type JointId } from "./landmarks";
 import { distance, type Vec } from "./vec";
-import { spaceDimension } from "./space";
 import {
   DEFAULT_INNOVATION,
   innovationStep,
   validateInnovation,
+  validProcessingPosition,
   type InnovationOptions,
   type InnovationState,
 } from "./innovation-gate";
@@ -44,8 +44,9 @@ export const NO_FORCED: ReadonlySet<JointId> = new Set<JointId>();
 export interface GapDetector {
   /**
    * The one owner of "is this joint trusted". Reasons are decided in a fixed order: `absent` (the
-   * adapter measured nothing), `forced` (a hotkey or a replay mask), `low-visibility`, then
-   * `gate`. `lengths` is read, never written: the gate scales by what earlier frames measured.
+   * adapter measured nothing), `forced`, invalid numeric input, `low-visibility`, then speed and
+   * innovation. Invalid joints consume this frame as gaps; invalid time/space reject the frame.
+   * `lengths` is read, never written: the gate scales by what earlier raw frames measured.
    */
   detect(frame: LandmarkFrame, forced: ReadonlySet<JointId>, lengths: BoneLengths): TrustedFrame;
   reset(): void;
@@ -75,10 +76,10 @@ export function validateDetectorOptions(options: GapDetectorOptions): GapDetecto
 }
 
 /**
- * Filler-independent by construction: the gate compares against the joint's last trusted sample,
- * never against any filler's prediction, so every filler in a comparison sees the same gaps. A
- * gated joint keeps its old sample, so a real move the gate cut is re-accepted once the elapsed time
- * brings its implied speed under the gate. Slow drift at high visibility passes: a stated limit.
+ * Detector-owned raw history, never a filler/solver prediction. The pipeline supplies raw accepted
+ * motion scales so smoother selection cannot change admission. Innovation rejection uses bounded
+ * prediction and explicit temporal confirmation; only accepted positions teach either history.
+ * `innovation: false` retains the legacy elapsed-speed ablation. Slow drift can still pass.
  */
 export function createGapDetector(options: GapDetectorOptions = DEFAULT_DETECTOR): GapDetector {
   const { threshold, gate } = validateDetectorOptions(options);
@@ -86,13 +87,17 @@ export function createGapDetector(options: GapDetectorOptions = DEFAULT_DETECTOR
   const optionsInnovation =
     options.innovation === false
       ? false
-      : validateInnovation(options.innovation ?? DEFAULT_INNOVATION);
+      : Object.freeze({ ...validateInnovation(options.innovation ?? DEFAULT_INNOVATION) });
   const innovations = new Map<JointId, InnovationState>();
   let lastMs = -Infinity;
   let space: LandmarkFrame["space"]["kind"] | undefined;
   return {
     detect(frame, forced, lengths) {
-      if (!Number.isFinite(frame.tMs) || frame.tMs <= lastMs)
+      if (
+        !Number.isFinite(frame.tMs) ||
+        frame.tMs <= lastMs ||
+        (lastMs !== -Infinity && !Number.isFinite(frame.tMs - lastMs))
+      )
         throw new Error("Detector frame time must be finite and strictly increasing.");
       if (space !== undefined && frame.space.kind !== space)
         throw new Error("Reset the detector before changing landmark space.");
@@ -107,9 +112,10 @@ export function createGapDetector(options: GapDetectorOptions = DEFAULT_DETECTOR
         if (measurement === undefined) return gap("absent");
         if (forced.has(joint)) return gap("forced");
         if (
-          measurement.position.length !== spaceDimension(frame.space) ||
-          !measurement.position.every(Number.isFinite) ||
-          !Number.isFinite(measurement.visibility)
+          !validProcessingPosition(measurement.position, frame.space) ||
+          !Number.isFinite(measurement.visibility) ||
+          measurement.visibility < 0 ||
+          measurement.visibility > 1
         ) {
           rejections[joint] = { kind: "invalid" };
           return gap("invalid");
@@ -143,13 +149,21 @@ export function createGapDetector(options: GapDetectorOptions = DEFAULT_DETECTOR
         last.set(joint, { ...sample, position: [...sample.position] });
         return {
           kind: "trusted",
-          position: measurement.position,
+          position: [...measurement.position],
           visibility: measurement.visibility,
         };
       });
       lastMs = frame.tMs;
       space = frame.space.kind;
-      return { ...frame, trust, rejections };
+      return {
+        ...frame,
+        trust,
+        rejections: Object.freeze(
+          Object.fromEntries(
+            Object.entries(rejections).map(([id, diagnostic]) => [id, Object.freeze(diagnostic)]),
+          ),
+        ),
+      };
     },
     reset() {
       last.clear();

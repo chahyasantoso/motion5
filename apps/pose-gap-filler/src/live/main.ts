@@ -37,6 +37,7 @@ import { createSimulator } from "../synthetic/simulator";
 import { interactiveTarget, required } from "../view/dom";
 import { mountSimulatorPanel } from "../view/simulator-panel";
 import { mountAvatarViewport } from "../view/avatar-viewport";
+import { publishFrame } from "./publish-frame";
 
 /** The synthetic takes are generated on the stage the page draws, so one size owns both. */
 const STAGE: StageSize = DEFAULT_STAGE;
@@ -246,12 +247,17 @@ function main(): void {
     const step = pipeline.step(frame, forced.joints);
     timer.mark("fill");
     // Publication failures retain display history, never publish yesterday's chains as today's.
-    let solved: ReturnType<typeof rig.solver.solve> = new Map();
+    const publication = publishFrame(rig.solver, step, pipeline.lengths);
+    const solved = publication.solved;
     let solveFailure: string | undefined;
-    try {
-      solved = rig.solver.solve(step, pipeline.lengths);
-    } catch (error) {
-      solveFailure = `solver publication unavailable: ${String(error)}`;
+    switch (publication.kind) {
+      case "published":
+        break;
+      case "unavailable":
+        solveFailure = `solver publication unavailable: ${String(publication.error)}`;
+        break;
+      default:
+        unreachable(publication, "frame publication");
     }
     timer.mark("write");
     if (avatarEnabled.checked && space.kind === "world")
@@ -284,7 +290,7 @@ function main(): void {
     const ingest = `in ${counts.accepted}, restarts ${counts.restarts}, dropped ${counts.rejected}`;
     const rejected = Object.entries(step.trusted.rejections ?? {}).map(
       ([joint, rejection]) =>
-        `${joint}: ${rejection.kind === "invalid" ? "invalid" : `${rejection.reason} (${rejection.innovation.toFixed(1)} > ${rejection.limit.toFixed(1)} native units, confirmation ${rejection.candidates})`}`,
+        `${joint}: ${rejection.kind === "invalid" ? "invalid" : `${rejection.reason} (innovation ${rejection.innovation.toFixed(1)}, limit ${rejection.limit.toFixed(1)} native units, confirmation ${rejection.candidates})`}`,
     );
     readout.textContent = `${space.kind} · ${formatTimings(timings)} · ${ingest} · forced: ${held}${space.kind === "world" ? (fit === undefined ? " · no trusted camera fit" : ` · fit ${fit.rmsPx.toFixed(1)} px (${fit.pairCount} pairs)`) : ""}${rejected.length === 0 ? "" : ` · rejected ${rejected.join("; ")}`}${solveFailure === undefined ? "" : ` · ${solveFailure}`}`;
     if (log) console.debug(JSON.stringify(timings));

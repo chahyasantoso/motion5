@@ -1,5 +1,5 @@
 import type { JointSample } from "./gap-detector";
-import type { LandmarkSpace } from "./space";
+import { spaceDimension, type LandmarkSpace } from "./space";
 import { unreachable } from "./unreachable";
 import { add, distance, scale, sub, type Vec } from "./vec";
 
@@ -16,13 +16,23 @@ export interface InnovationOptions {
 }
 
 export const DEFAULT_INNOVATION: InnovationOptions = Object.freeze({
-  imageFloorPx: 24,
-  worldFloorMm: 80,
+  imageFloorPx: 30,
+  worldFloorMm: 120,
   boneFraction: 0.3,
   predictMs: 100,
   candidateMs: 150,
   candidateCount: 3,
 });
+
+/** Generous numeric processing domain, one million native px/mm. Unsafe geometry is not clipped. */
+export const MAX_NATIVE_COORDINATE = 1_000_000;
+
+export function validProcessingPosition(position: Vec, space: LandmarkSpace): boolean {
+  return (
+    position.length === spaceDimension(space) &&
+    position.every((value) => Number.isFinite(value) && Math.abs(value) <= MAX_NATIVE_COORDINATE)
+  );
+}
 
 export type InnovationDecision =
   | { readonly kind: "accepted"; readonly reacquired: boolean }
@@ -86,10 +96,20 @@ export function innovationStep(
   speedRejected: boolean,
   options: InnovationOptions,
 ): InnovationDecision {
+  // Direct callers get the same no-mutation-on-invalid-time contract as the detector.
+  if (
+    !Number.isFinite(sample.tMs) ||
+    sample.tMs <= Math.max(state.accepted?.tMs ?? -Infinity, state.candidate?.tMs ?? -Infinity) ||
+    (state.accepted !== undefined && !Number.isFinite(sample.tMs - state.accepted.tMs))
+  )
+    throw new Error("Innovation sample time must be finite and increasing.");
+  if (!validProcessingPosition(sample.position, space))
+    throw new Error("Innovation sample must have safe finite coordinates in the selected space.");
   const previous = state.accepted;
   const validScale =
     boneLength !== undefined && Number.isFinite(boneLength) && boneLength > 0 ? boneLength : 0;
-  const limit = Math.max(floor(space, options), validScale * options.boneFraction);
+  const relativeLimit = validScale * options.boneFraction;
+  const limit = Math.max(floor(space, options), Number.isFinite(relativeLimit) ? relativeLimit : 0);
   if (previous === undefined) {
     state.accepted = {
       ...sample,
@@ -106,10 +126,14 @@ export function innovationStep(
   );
   const innovation = distance(sample.position, predicted);
   if (!speedRejected && Number.isFinite(innovation) && innovation <= limit) {
+    const gain = dt / (dt + options.predictMs);
     // Long gaps do not teach an artificial high velocity. Short accepted steps alone update it.
     const velocity =
       dt > 0 && dt <= options.predictMs
-        ? scale(sub(sample.position, previous.position), 1000 / dt)
+        ? add(
+            scale(previous.velocity, 1 - gain),
+            scale(sub(sample.position, previous.position), (1000 * gain) / dt),
+          )
         : sample.position.map(() => 0);
     state.accepted = { ...sample, position: [...sample.position], velocity };
     delete state.candidate;
@@ -117,14 +141,17 @@ export function innovationStep(
   }
   const candidate = state.candidate;
   const elapsed = candidate === undefined ? Infinity : sample.tMs - candidate.tMs;
+  const candidateDistance =
+    candidate === undefined ? Infinity : distance(candidate.position, sample.position);
   const consistent =
     candidate !== undefined &&
     elapsed > 0 &&
     elapsed <= options.candidateMs &&
-    distance(candidate.position, sample.position) <= floor(space, options);
+    Number.isFinite(candidateDistance) &&
+    candidateDistance <= floor(space, options);
   const count = consistent ? candidate!.count + 1 : 1;
   state.candidate = { ...sample, position: [...sample.position], count };
-  if (count >= options.candidateCount) {
+  if (!speedRejected && Number.isFinite(innovation) && count >= options.candidateCount) {
     state.accepted = {
       ...sample,
       position: [...sample.position],

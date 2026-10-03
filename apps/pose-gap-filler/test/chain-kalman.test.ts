@@ -22,7 +22,10 @@ const rotating = (tMs: number): Record<JointId, Vec> => {
   };
 };
 const pipeline = () =>
-  createGapPipeline({ filler: CHAIN, detector: { threshold: 0.5, gate: Infinity } });
+  createGapPipeline({
+    filler: CHAIN,
+    detector: { threshold: 0.5, gate: Infinity, innovation: false },
+  });
 const warm = (run: ReturnType<typeof pipeline>) => {
   for (let tMs = 0; tMs <= 900; tMs += 30) run.step(frameOf(rotating(tMs), tMs));
 };

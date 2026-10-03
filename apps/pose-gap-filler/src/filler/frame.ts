@@ -39,8 +39,8 @@ export interface LandmarkFrame {
 
 /**
  * Why a joint is not trusted. `absent` is the adapter's refusal; `low-visibility` is visibility
- * under the threshold; `gate` is a speed since the last trusted sample above the gate, in bone
- * lengths per second (a teleport or a left/right swap); `forced` is a hotkey or a replay mask.
+ * under the threshold; `gate` is excessive raw speed; `innovation` is an implausible residual
+ * against detector-owned history; `invalid` is malformed raw input; `forced` is a replay/hotkey mask.
  */
 export type GapReason = "absent" | "low-visibility" | "gate" | "forced" | "innovation" | "invalid";
 

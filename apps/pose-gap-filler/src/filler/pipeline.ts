@@ -34,13 +34,16 @@ export interface PipelineOptions {
 
 /**
  * The one composition of trust, stabilizer, lengths and fill, shared by the live page and the
- * replay. The detector decides trust on the raw measurement (its gate reads raw speed against the
- * lengths earlier frames measured); the stabilizer then denoises only the joints it trusted, so the
+ * replay. The detector decides trust on raw observations and raw accepted motion scales before
+ * either filter sees them; the stabilizer then denoises only the joints it trusted, so the
  * estimator, the filler, the writer's bend observations and the camera fit all read one denoised
  * measurement and no stage reads what it wrote this frame.
  */
 export function createGapPipeline(options: PipelineOptions): GapPipeline {
   const detector = createGapDetector(options.detector);
+  // Detector motion scale must not depend on the selected smoother. It observes accepted RAW
+  // endpoints; the public anatomical estimator below observes accepted stabilized endpoints.
+  const detectorScale = createBoneLengthEstimator(options.lengthWindow);
   const lengths = createBoneLengthEstimator(options.lengthWindow);
   const filler = createGapFiller(options.filler);
   const stabilizer = createStabilizer(options.stabilizer ?? NO_STABILIZER);
@@ -51,7 +54,9 @@ export function createGapPipeline(options: PipelineOptions): GapPipeline {
   return {
     lengths,
     step(frame, forced = NO_FORCED) {
-      let trusted = stabilizer.stabilize(detector.detect(frame, forced, lengths));
+      const detected = detector.detect(frame, forced, detectorScale);
+      detectorScale.observe(detected);
+      let trusted = stabilizer.stabilize(detected);
       lengths.observe(trusted);
       if (frame.space.kind === "world") trusted = { ...trusted, body: body.step(trusted, lengths) };
       const filled = filler.fill(trusted, lengths);
@@ -62,6 +67,7 @@ export function createGapPipeline(options: PipelineOptions): GapPipeline {
     },
     reset() {
       detector.reset();
+      detectorScale.reset();
       stabilizer.reset();
       lengths.reset();
       filler.reset();
