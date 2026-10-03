@@ -2,27 +2,21 @@ import { readFileSync, renameSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { calibrateSpaces } from "../src/replay/compare";
 import { buildComparisonRecord, type ComparisonRecord } from "../src/replay/record";
-import { createSyntheticRecording, type SyntheticOptions } from "../src/replay/synthetic";
+import {
+  SYNTHETIC_TAKES,
+  createSyntheticRecording,
+  type SyntheticOptions,
+} from "../src/replay/synthetic";
 import { createRigSolver } from "../src/rig/solver";
 import { fakePorts } from "./engine";
 
 /**
  * The committed record's input, the one owner of what `docs/POSE-GAP-FILLER-COMPARISON.md`
  * measured: a still take the detector and the noise floor are calibrated on, and an exercise take
- * every filler is replayed over. Seeds differ, so calibration never sees the frames it judges.
+ * every filler is replayed over. Both are `SYNTHETIC_TAKES`, which the live synthetic source plays.
  */
-export const RECORD_STILL: SyntheticOptions = Object.freeze({
-  motion: Object.freeze({ kind: "still" }),
-  seed: 7,
-  durationMs: 10000,
-  fps: 30,
-});
-export const RECORD_EXERCISE: SyntheticOptions = Object.freeze({
-  motion: Object.freeze({ kind: "exercise" }),
-  seed: 11,
-  durationMs: 12000,
-  fps: 30,
-});
+export const RECORD_STILL: SyntheticOptions = SYNTHETIC_TAKES.still;
+export const RECORD_EXERCISE: SyntheticOptions = SYNTHETIC_TAKES.exercise;
 
 export const RECORD_PATH = fileURLToPath(
   new URL("../../../docs/POSE-GAP-FILLER-COMPARISON.md", import.meta.url),

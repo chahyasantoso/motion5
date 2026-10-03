@@ -6,21 +6,23 @@ bullet states a phase; `packages/core/test/unit/scripts/session-status-shape.tes
 shape and byte ceiling.
 
 - **Captured:** 2026-10-02, Asia/Jakarta.
-- **Read against:** `main` at `e67df50563e1e648c270203ace368a1e08db2abc`, the squash of
-  [PR #537][pr537].
+- **Read against:** `main` at `95e08e10722a31696c4da5e235325780f9b50ee8`, the squash of
+  [PR #538][pr538].
 
 ## Now
 
 - **`main` carries the [#530][issue530] pose gap filler in `apps/pose-gap-filler`: adapter, `raw`
   reference, gap detector, replay harness, `hold`, `chain-kalman`, the image and world rigs with
-  the camera fit, and the trusted-landmark stabilizer with bend-side hysteresis ([PR #532][pr532],
-  [PR #533][pr533], [PR #535][pr535], [PR #536][pr536], [PR #537][pr537]).**
+  the camera fit, the trusted-landmark stabilizer, and the comparison record that reads `INN: open`
+  ([PR #532][pr532], [PR #533][pr533], [PR #535][pr535], [PR #536][pr536], [PR #537][pr537],
+  [PR #538][pr538]).**
 
 ## Next in line
 
-- **[#530][issue530] comparison record:** `docs/POSE-GAP-FILLER-COMPARISON.md` reads `INN: open`
-  and is in review on `feat/530-gap-filler-phase5` ([PR #538][pr538]), not merged; the learned
-  filler that must beat `chain-kalman` is [#539][issue539].
+- **[#540][issue540] synthetic human rig:** a live source selector with looped synthetic takes,
+  so the page runs with no MediaPipe download and no camera, is prepared on
+  `feat/540-phase0-source-modes` and not merged; [SYNTHETIC-HUMAN.md](./SYNTHETIC-HUMAN.md) records
+  its scope. The learned prior, [#539][issue539], is measured against that simulator.
 
 ## Open, and not scheduled
 
@@ -58,6 +60,7 @@ shape and byte ceiling.
 [pr537]: https://github.com/chahyasantoso/motion5/pull/537
 [pr538]: https://github.com/chahyasantoso/motion5/pull/538
 [issue539]: https://github.com/chahyasantoso/motion5/issues/539
+[issue540]: https://github.com/chahyasantoso/motion5/issues/540
 [adr130]: ./ADR-130-legal-range-retries-and-serial-hinge-recovery.md
 [issue524]: https://github.com/chahyasantoso/motion5/issues/524
 [adr131]: ./ADR-131-centred-legal-start-for-mixed-sign-chains.md
