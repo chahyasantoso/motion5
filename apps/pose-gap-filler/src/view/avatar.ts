@@ -246,12 +246,16 @@ export function createAvatarScene(parent = new Group()) {
       }
       const body = step.filled.body;
       if (body === undefined) return residuals;
-      const anchor = (id: BodyRoot) => presentedPosition(body.anchors[id].joint);
+      // Raw/hold ablations retain their own roots. Connect to this frame's actual chains,
+      // never secretly substitute stabilized model anchors for the raw reference.
+      const anchor = (id: BodyRoot) => presentedPosition(step.filled.joints[id]);
       const ls = anchor("left-shoulder"),
         rs = anchor("right-shoulder");
       const lh = anchor("left-hip"),
         rh = anchor("right-hip");
-      const provenance = Object.values(body.anchors).every(({ joint }) => joint.kind === "measured")
+      const provenance = Object.keys(body.anchors).every(
+        (id) => step.filled.joints[id as BodyRoot].kind === "measured",
+      )
         ? "measured"
         : "inferred";
       if (lh !== undefined && rh !== undefined) segment("pelvis", rh, lh, 100, provenance);
