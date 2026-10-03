@@ -126,3 +126,50 @@ each slice adds and the decisions behind them. What has landed is claimed only b
   actor. The debug view has its own orbit, which nothing measured reads. Truth and estimate are
   separate layers the person toggles. The form, pick and info helpers are pure and tested
   (`GF-101`).
+
+## Geometric visibility and detector corruption
+
+- `src/synthetic/occlusion.ts` classifies every anatomical landmark from truth and the observation
+  camera only. Its closed `SyntheticVisibility` union has precedence `behind-camera`,
+  `out-of-frame`, `occluded { occluderId }`, `visible`. The body has a torso, chest, pelvis, head
+  sphere and six limb capsules per side; each limb excludes its own attached landmarks. Props
+  are `none`, an axis-aligned `table`, or a capsule `pillar`. Rays stop 20 mm short of a landmark
+  to tolerate surface grazing. Capsule tests use actual first contact with the finite cylinder
+  and endpoint spheres; box tests use slabs. The nearest first contact names the blocker, not
+  the nearest centreline (`GF-102` through `GF-107`).
+- `DetectorScores` maps geometry to confidence without changing it. `IDEAL_SCORES` keeps the
+  legacy ideal scores; `GEOMETRIC_SCORES` uses the exhaustive `SCORE_PROFILE` table. An occluded
+  joint is visibility 0.3 but presence 0.9. The same adapter and gap detector read both image and
+  world reports; presence never decides trust. Neither corruption nor hand swaps move the
+  geometric truth attached to an anatomical slot (`GF-108`, `GF-109`).
+- `CorruptionSpec` is seeded, counter-based and independent of evaluation order. Jitter shares
+  a noise field between image pixels and camera-world metres. Its stationary finite-kernel
+  AR(1) approximation truncates at a 1% tail or 64 taps, whichever comes first, then normalises
+  variance. The 64-tap cap bounds cost even for correlation near 1; such values are an approximation,
+  not exact AR(1). Zero jitter skips Gaussian evaluation. Outliers displace both spaces at the
+  landmark's depth; false-high visibility contradicts hidden geometry without rewriting presence.
+  Swap episodes exchange the whole arm pair (shoulders through hands) or leg pair (hips through
+  feet), preserving slot geometry. Individual starts last 2 to 8 frames; overlapping starts keep
+  the group swapped and can extend the continuous episode. Missing positions stay missing
+  (`GF-110` through `GF-114`).
+- `FrameTiming` is `captured { tMs }` or `dropped`; `tMs` is delivery time. Camera frame `k` has
+  truth sampled at `k * SIMULATOR_FRAME_MS` (30 fps), not at its delayed delivery time. Lateness
+  remains under one camera period, preserving timestamp order. Dropped frames never reach the
+  adapter. A source generation resets its selection cursor, including a restart after only one
+  sample. Scripted loss membership follows camera time, never lateness. Finite input validation
+  refuses invalid magnitudes, rates, times and frame indices (`GF-115` through `GF-120`).
+- The panel selects ideal/geometric confidence, none/table/pillar props and none/phone/harsh
+  corruption. `phone` and `harsh` are deliberately synthetic proposals, not calibrated detector
+  measurements. Debug landmark colours show camera geometry independently of confidence:
+  green visible, orange occluded, yellow out of frame, purple behind camera. The info panel
+  names the blocker even when the report is confidently wrong (`GF-121`). The independent
+  debug camera never changes measured geometry.
+- `SimulatorInit` permits observation defaults; `SimulatorState` always contains the resolved
+  scores, props and corruption. Test fixtures use the initial-state contract, avoiding the
+  incomplete resolved-state fixture caught by PR #544's full typecheck.
+- Follow-up exit checks enforce safe nonnegative frame indices even on the no-corruption fast
+  path, validate direct observation/corruption inputs, and forbid swap episode starts before
+  frame zero (`GF-122`, `GF-123`). Jitter kernel taps and normalisation are computed once per
+  frame. Prop records/coordinates and degenerate/tangent cylinder cases are checked (`GF-124`).
+  A minimal injected DOM/canvas-port test proves every panel select updates observation state
+  without moving truth (`GF-125`); it is not a browser smoke test.

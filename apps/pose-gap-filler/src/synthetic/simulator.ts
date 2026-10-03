@@ -97,8 +97,11 @@ export const SIMULATOR_FRAME_MS = 1000 / SIMULATOR_FPS;
 
 /** The camera frame a time falls in: frame `k` spans `[k, k + 1)` periods, lateness included. */
 export function frameIndexAt(tMs: number): number {
-  if (!Number.isFinite(tMs)) throw new Error("Simulator frame time must be finite.");
-  return Math.floor(tMs / SIMULATOR_FRAME_MS + 1e-9);
+  if (!(Number.isFinite(tMs) && tMs >= 0))
+    throw new Error("Simulator frame time must be finite and nonnegative.");
+  const k = Math.floor(tMs / SIMULATOR_FRAME_MS + 1e-9);
+  if (!Number.isSafeInteger(k)) throw new Error("Simulator frame index must be safe.");
+  return k;
 }
 
 export interface Simulator {

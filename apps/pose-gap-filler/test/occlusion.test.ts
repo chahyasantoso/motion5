@@ -247,4 +247,59 @@ describe("#540 geometric visibility", () => {
       (truth.segments.head.rotation as unknown as number[])[0] = 99;
     }).toThrow();
   });
+
+  it("GF-124 covers finite-cylinder containment and tangency, parallel misses, tiny axes and immutable props", () => {
+    const nose = standing.landmarks[0]!;
+    // Horizontal, axis-aligned viewing ray makes exact tangency independent of camera pitch.
+    const camera = createCamera({ ...front.spec, position: [0, nose[1], 2.6], target: nose });
+    const pointAt = (fraction: number) =>
+      add3(camera.spec.position, scale3(sub3(nose, camera.spec.position), fraction));
+    const mid = pointAt(0.5);
+    const parts: Occluder[] = [
+      {
+        kind: "capsule",
+        id: "inside-cylinder",
+        a: add3(camera.spec.position, [0, -0.5, 0]),
+        b: add3(camera.spec.position, [0, 0.5, 0]),
+        radius: 0.1,
+        attached: new Set(),
+      },
+      {
+        kind: "capsule",
+        id: "tangent-cylinder",
+        a: add3(mid, [0.1, -0.5, 0]),
+        b: add3(mid, [0.1, 0.5, 0]),
+        radius: 0.1,
+        attached: new Set(),
+      },
+      {
+        kind: "capsule",
+        id: "tiny-axis",
+        a: mid,
+        b: add3(mid, [0, 1e-8, 0]),
+        radius: 0.1,
+        attached: new Set(),
+      },
+    ];
+    for (const part of parts)
+      expect(classifyVisibility(standing, camera, [part])[0]).toEqual({
+        kind: "occluded",
+        occluderId: part.id,
+      });
+    const miss: Occluder = {
+      kind: "capsule",
+      id: "parallel-miss",
+      a: add3(pointAt(0.3), [0.2, 0, 0]),
+      b: add3(pointAt(0.7), [0.2, 0, 0]),
+      radius: 0.1,
+      attached: new Set(),
+    };
+    expect(classifyVisibility(standing, camera, [miss])[0]).toEqual({ kind: "visible" });
+    for (const props of [PROPS.table, PROPS.pillar])
+      for (const prop of props) {
+        expect(Object.isFrozen(prop)).toBe(true);
+        expect(Object.isFrozen(prop.kind === "box" ? prop.centre : prop.a)).toBe(true);
+        expect(Object.isFrozen(prop.kind === "box" ? prop.half : prop.b)).toBe(true);
+      }
+  });
 });

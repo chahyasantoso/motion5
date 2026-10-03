@@ -91,11 +91,9 @@ const STREAM = Object.freeze({
 const rate = (value: number) => Number.isFinite(value) && value >= 0 && value <= 1;
 const magnitude = (value: number) => Number.isFinite(value) && value >= 0;
 
-/** `spec` if every field is in range; a frame period bounds the timing jitter. */
-export function validateCorruption(spec: CorruptionSpec, frameMs: number): CorruptionSpec {
+/** Frame-independent validation, shared by direct observation and paced simulator boundaries. */
+export function validateCorruptionSpec(spec: CorruptionSpec): CorruptionSpec {
   const { jitter } = spec;
-  if (!(Number.isFinite(frameMs) && frameMs > 0))
-    throw new Error("A frame period must be finite and positive.");
   if (!Number.isSafeInteger(spec.seed)) throw new Error("Corruption seed must be a safe integer.");
   if (
     !(magnitude(jitter.sigmaPx) && magnitude(jitter.sigmaM) && rate(jitter.rho) && jitter.rho < 1)
@@ -107,9 +105,24 @@ export function validateCorruption(spec: CorruptionSpec, frameMs: number): Corru
     throw new Error("A drop rate must be in [0, 1), or no frame would ever arrive.");
   if (!magnitude(spec.outlierPx))
     throw new Error("Outlier distance must be finite and nonnegative.");
-  if (!(magnitude(spec.timingJitterMs) && spec.timingJitterMs < frameMs))
-    throw new Error("Timing jitter must be nonnegative and under one frame period.");
+  if (!magnitude(spec.timingJitterMs))
+    throw new Error("Timing jitter must be finite and nonnegative.");
   return spec;
+}
+
+/** `spec` if every field is in range; a frame period additionally bounds timing jitter. */
+export function validateCorruption(spec: CorruptionSpec, frameMs: number): CorruptionSpec {
+  validateCorruptionSpec(spec);
+  if (!(Number.isFinite(frameMs) && frameMs > 0))
+    throw new Error("A frame period must be finite and positive.");
+  if (!(spec.timingJitterMs < frameMs))
+    throw new Error("Timing jitter must be under one frame period.");
+  return spec;
+}
+
+function validateFrameIndex(k: number): void {
+  if (!(Number.isSafeInteger(k) && k >= 0))
+    throw new Error("Camera frame index must be nonnegative and safe.");
 }
 
 /** When camera frame `k` reaches the detector, a closed union: `captured` at a time, or `dropped`. */
@@ -121,8 +134,7 @@ const DROPPED: FrameTiming = Object.freeze({ kind: "dropped" });
 
 /** Frame `k`'s arrival: dropped at `dropRate`, else `k` periods plus its seeded lateness. */
 export function frameTiming(spec: CorruptionSpec, k: number, frameMs: number): FrameTiming {
-  if (!(Number.isSafeInteger(k) && k >= 0))
-    throw new Error("Camera frame index must be nonnegative and safe.");
+  validateFrameIndex(k);
   validateCorruption(spec, frameMs);
   if (uniformAt(spec.seed, STREAM.drop, k) < spec.dropRate) return DROPPED;
   return {
@@ -135,17 +147,22 @@ export function frameTiming(spec: CorruptionSpec, k: number, frameMs: number): F
  * Stationary finite-kernel approximation of AR(1), truncated at 1% or 64 taps, whichever comes
  * first. The cap bounds frame cost for rho near 1; normalisation preserves unit variance.
  */
-function ar1(seed: number, rho: number, k: number, landmark: number, axis: number): number {
-  const taps = rho === 0 ? 1 : Math.min(64, Math.ceil(Math.log(0.01) / Math.log(rho)));
+function ar1(
+  seed: number,
+  rho: number,
+  k: number,
+  landmark: number,
+  axis: number,
+  taps: number,
+  normaliser: number,
+): number {
   let sum = 0;
   let weight = 1;
   for (let lag = 0; lag < taps; lag += 1) {
     sum += weight * gaussianAt(seed, STREAM.jitter, k - lag, landmark, axis);
     weight *= rho;
   }
-  // Normalised so the truncated sum keeps unit variance: sum of rho^(2j) over the taps.
-  const variance = rho === 0 ? 1 : (1 - rho ** (2 * taps)) / (1 - rho * rho);
-  return sum / Math.sqrt(variance);
+  return sum / normaliser;
 }
 
 const sided = (names: readonly string[]) =>
@@ -160,8 +177,12 @@ const SWAP_GROUPS: readonly (readonly number[])[] = [
 
 /** Whether swap group `group` is swapped at frame `k`: an episode began within its length. */
 export function swapActive(spec: CorruptionSpec, group: number, k: number): boolean {
+  validateFrameIndex(k);
+  validateCorruptionSpec(spec);
+  if (!(Number.isInteger(group) && group >= 0 && group < SWAP_GROUPS.length))
+    throw new Error("Unknown limb swap group.");
   if (spec.swapRate === 0) return false;
-  for (let start = k - MAX_SWAP_FRAMES + 1; start <= k; start += 1) {
+  for (let start = Math.max(0, k - MAX_SWAP_FRAMES + 1); start <= k; start += 1) {
     if (uniformAt(spec.seed, STREAM.swapStart, group, start) >= spec.swapRate) continue;
     const span = MAX_SWAP_FRAMES - MIN_SWAP_FRAMES + 1;
     const length =
@@ -183,15 +204,23 @@ export function corrupt(
   k: number,
   camera: Camera,
 ): readonly ObservedLandmark[] {
+  validateFrameIndex(k);
   if (spec === NO_CORRUPTION) return observed;
+  validateCorruptionSpec(spec);
   const { width, height } = camera.spec.stage;
   const { seed, jitter } = spec;
+  // One kernel per frame, rather than repeating logarithms/powers for every landmark and axis.
+  const taps =
+    jitter.rho === 0 ? 1 : Math.min(64, Math.ceil(Math.log(0.01) / Math.log(jitter.rho)));
+  const normaliser = Math.sqrt(
+    jitter.rho === 0 ? 1 : (1 - jitter.rho ** (2 * taps)) / (1 - jitter.rho * jitter.rho),
+  );
   const moved = observed.map((landmark, index): ObservedLandmark => {
     if (landmark.image === undefined || landmark.world === undefined) return landmark;
     const noise =
       jitter.sigmaPx === 0 && jitter.sigmaM === 0
         ? [0, 0, 0]
-        : [0, 1, 2].map((axis) => ar1(seed, jitter.rho, k, index, axis));
+        : [0, 1, 2].map((axis) => ar1(seed, jitter.rho, k, index, axis, taps, normaliser));
     let [u, v] = [
       landmark.image[0] + (noise[0]! * jitter.sigmaPx) / width,
       landmark.image[1] + (noise[1]! * jitter.sigmaPx) / height,

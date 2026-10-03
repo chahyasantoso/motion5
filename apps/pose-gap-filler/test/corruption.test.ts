@@ -226,4 +226,33 @@ describe("#540 seeded detector corruption", () => {
     ).toThrow();
     expect(simulator.state).toBe(original);
   });
+
+  it("GF-122 validates direct observation and corruption boundaries before even the no-error fast path", () => {
+    const invalid = corruption({ jitter: { sigmaPx: Infinity, sigmaM: 0, rho: 0 } });
+    expect(() => corrupt(clean, invalid, 0, camera)).toThrow();
+    expect(() => observe(truth, camera, { corruption: invalid })).toThrow();
+    for (const k of [NaN, Infinity, -1, 0.5, 2 ** 53]) {
+      expect(() => corrupt(clean, NO_CORRUPTION, k, camera)).toThrow();
+      expect(() => observe(truth, camera, { frameIndex: k })).toThrow();
+      expect(() => swapActive(NO_CORRUPTION, 0, k)).toThrow();
+    }
+    expect(() => swapActive(NO_CORRUPTION, 2, 0)).toThrow();
+    expect(() => frameIndexAt(-1)).toThrow();
+  });
+
+  it("GF-123 starts swap episodes at frame zero or later and carries the first start for at least two frames", () => {
+    const rate = 0.1;
+    let starts = 0;
+    for (let seed = 0; seed < 10000; seed += 1) {
+      const spec = corruption({ seed, swapRate: rate });
+      const first = swapActive(spec, 0, 0);
+      expect(first).toBe(uniformAt(seed, 3, 0, 0) < rate);
+      if (first) {
+        starts += 1;
+        expect(swapActive(spec, 0, 1)).toBe(true);
+      }
+    }
+    expect(starts / 10000).toBeGreaterThan(0.08);
+    expect(starts / 10000).toBeLessThan(0.12);
+  });
 });

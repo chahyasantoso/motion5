@@ -9,10 +9,11 @@ import { createSimulator, reportResult, SIMULATOR_FRAME_MS } from "../src/synthe
 import { SCENARIOS } from "../src/synthetic/scenarios";
 import { landmarkInfo } from "../src/synthetic/inspect";
 import { createSyntheticRecording, SYNTHETIC_TAKES } from "../src/replay/synthetic";
-import { drawActor, GEOMETRY_COLOURS, projector, TRUTH_STYLE } from "../src/view/scene-view";
+import * as sceneView from "../src/view/scene-view";
 import { manualFrames } from "./frame-ports";
 
 const STAGE = { width: 640, height: 480 };
+const { drawActor, GEOMETRY_COLOURS, projector, TRUTH_STYLE } = sceneView;
 const camera = defaultCameraSpec(STAGE, hipMidpoint(actorFrame(actorPose())));
 const create = () =>
   createSimulator({ drive: { kind: "scenario", scenario: "arm-reversal" }, camera });
@@ -144,5 +145,28 @@ describe("#540 simulator delivery and geometry diagnostics", () => {
     expect(wrist.geometry.kind).toBe("occluded");
     expect(landmarkInfo(frame, 15).join("\n")).toContain("geometry occluded by");
     expect(landmarkInfo(frame, 15).join("\n")).toContain("visibility 1.00");
+    colours.length = 0;
+    const kinds = ["visible", "occluded", "out-of-frame", "behind-camera"] as const;
+    const geometry = frame.observed.map((_, index) => {
+      const kind = kinds[index % kinds.length]!;
+      return kind === "occluded" ? { kind, occluderId: "fixture" } : { kind };
+    });
+    drawActor(
+      context as unknown as CanvasRenderingContext2D,
+      frame.truth,
+      projector(frame.camera),
+      TRUTH_STYLE,
+      geometry,
+    );
+    expect(colours.slice(0, 4)).toEqual(["#4ade80", "#fb923c", "#facc15", "#a78bfa"]);
+    colours.length = 0;
+    drawActor(
+      context as unknown as CanvasRenderingContext2D,
+      frame.truth,
+      projector(frame.camera),
+      TRUTH_STYLE,
+      [],
+    );
+    expect(new Set(colours)).toEqual(new Set([TRUTH_STYLE.joint]));
   });
 });

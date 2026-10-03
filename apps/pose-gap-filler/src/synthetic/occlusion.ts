@@ -75,7 +75,15 @@ const capsule = (
   b: Vec3,
   radius: number,
   attached: ReadonlySet<number>,
-): Occluder => ({ kind: "capsule", id, a, b, radius, attached });
+): Occluder =>
+  Object.freeze({
+    kind: "capsule",
+    id,
+    a: Object.freeze(a),
+    b: Object.freeze(b),
+    radius,
+    attached,
+  });
 
 function limbOccluders(frame: ActorFrame, side: Side): Occluder[] {
   const at = (name: string) => frame.landmarks[index(`${side}-${name}`)]!;
@@ -150,7 +158,13 @@ export function bodyOccluders(frame: ActorFrame): readonly Occluder[] {
 export const PROPS = Object.freeze({
   none: Object.freeze([]) as readonly Occluder[],
   table: Object.freeze([
-    { kind: "box", id: "table", centre: [0, 0.4, 0.6], half: [0.6, 0.4, 0.3], attached: NONE },
+    Object.freeze({
+      kind: "box",
+      id: "table",
+      centre: Object.freeze([0, 0.4, 0.6] as const),
+      half: Object.freeze([0.6, 0.4, 0.3] as const),
+      attached: NONE,
+    }),
   ]) as readonly Occluder[],
   pillar: Object.freeze([
     capsule("pillar", [0.25, 0, 0.7], [0.25, 2.2, 0.7], 0.12, NONE),

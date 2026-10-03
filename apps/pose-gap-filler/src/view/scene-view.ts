@@ -98,8 +98,8 @@ export function drawActor(
   for (const [index, point] of frame.landmarks.entries()) {
     const at = project(point);
     if (at === undefined) continue;
-    context.fillStyle =
-      geometry === undefined ? style.joint : GEOMETRY_COLOURS[geometry[index]!.kind];
+    const visibility = geometry?.[index];
+    context.fillStyle = visibility === undefined ? style.joint : GEOMETRY_COLOURS[visibility.kind];
     context.beginPath();
     context.arc(at[0]!, at[1]!, 2.5, 0, 2 * Math.PI);
     context.fill();
