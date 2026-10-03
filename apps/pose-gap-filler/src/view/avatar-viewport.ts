@@ -111,6 +111,25 @@ export function mountAvatarViewport(
           `${id}: ${residual.provenance}, middle ${residual.middleMm?.toFixed(1) ?? "unobserved"} / tip ${residual.tipMm?.toFixed(1) ?? "unobserved"} mm, orientation ${residual.orientation}`,
       );
       const body = step.filled.body;
+      const diagnostics = solver.readDiagnostics?.();
+      const bends =
+        diagnostics === undefined
+          ? []
+          : [...diagnostics.bends].map(
+              ([id, bend]) =>
+                `${id} bend: ${bend.kind}${bend.kind === "predicted" ? ` (${bend.basis}, last observation ${bend.lastObservedTMs} ms)` : ""}`,
+            );
+      const contacts =
+        diagnostics === undefined
+          ? []
+          : [
+              "Coarse capsule penetration diagnostics only, not collision correction:",
+              ...diagnostics.penetration.map(
+                (contact) =>
+                  `${contact.a} / ${contact.b}: ${contact.depthMm.toFixed(1)} mm unresolved`,
+              ),
+              ...(diagnostics.penetration.length === 0 ? ["No coarse penetration detected."] : []),
+            ];
       const roots =
         body === undefined
           ? []
@@ -125,6 +144,8 @@ export function mountAvatarViewport(
         `Body orientation: ${body?.orientation.kind ?? "unavailable"}. Skipped limbs hidden.`,
         ...limbs,
         ...roots,
+        ...bends,
+        ...contacts,
       ].join("\n");
       draw();
     },

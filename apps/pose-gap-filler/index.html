@@ -129,6 +129,13 @@
       ></label>
       <label><input id="show-raw" type="checkbox" /> Show raw landmarks</label>
       <label><input id="show-avatar" type="checkbox" checked /> Three avatar (world space)</label>
+      <label
+        >Bend policy (world)
+        <select id="bend-policy">
+          <option value="legacy">Legacy measured hold</option>
+          <option value="predict">Bounded inferred bend (experimental)</option>
+        </select>
+      </label>
       <label><input id="mirror" type="checkbox" /> Mirror preview</label>
       <button id="record" type="button">Record landmarks</button>
       <label

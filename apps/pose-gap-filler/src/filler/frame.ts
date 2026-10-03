@@ -63,8 +63,31 @@ export interface TrustedFrame extends LandmarkFrame {
  */
 export type FilledJoint =
   | { readonly kind: "measured"; readonly position: Vec }
-  | { readonly kind: "inferred"; readonly position: Vec; readonly sinceMs: number }
+  | {
+      readonly kind: "inferred";
+      readonly position: Vec;
+      readonly sinceMs: number;
+      /** Absent on hold/legacy fills. Only the prediction owner may supply this evidence. */
+      readonly prediction?: JointPrediction;
+    }
   | { readonly kind: "lost" };
+
+/** Prediction age is measured evidence age, not the time the current gap began. */
+export type JointPrediction =
+  | {
+      readonly kind: "coast";
+      readonly lastObservedTMs: number;
+      readonly expiresTMs: number;
+      /** Local tangent filter variance, not a calibrated detector accuracy claim. */
+      readonly angularVarianceRad2: number;
+    }
+  | {
+      readonly kind: "prior";
+      readonly lastObservedTMs: number;
+      readonly expiresTMs: number;
+      readonly angularVarianceRad2: number;
+      readonly uncertaintyCalibrated: boolean;
+    };
 
 export interface FilledFrame {
   readonly body?: BodyState;

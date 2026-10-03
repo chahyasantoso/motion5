@@ -8,16 +8,30 @@ import {
 } from "../filler/frame";
 import { LIMBS, type Limb, type LimbId } from "../filler/landmarks";
 import { unreachable } from "../filler/unreachable";
-import { add, dot, norm, sub, unit, type Vec } from "../filler/vec";
+import { add, sub, unit, type Vec } from "../filler/vec";
 import { limbTracks, poseNodeId } from "./tracks";
+import {
+  decidingMiddle,
+  decideBend,
+  LEGACY_BEND_POLICY,
+  validateBendPolicy,
+  type BendPolicy,
+  type BendReference,
+  type BendState,
+} from "./bend-policy";
+
+export { decidingMiddle, MIN_BEND_SINE } from "./bend-policy";
 
 /** The one part of a project the writer drives, so the writer is tested without an Engine. */
 export type ValueBatchPort = Pick<ProjectHandle, "values">;
 
 /** What the writer did for one limb this frame, a closed union. */
 export type LimbWrite =
-  | { readonly kind: "written" }
-  | { readonly kind: "skipped"; readonly reason: "root-lost" | "goal-lost" | "length-unknown" };
+  | { readonly kind: "written"; readonly bend?: BendReference }
+  | {
+      readonly kind: "skipped";
+      readonly reason: "root-lost" | "goal-lost" | "length-unknown" | "bend-lost";
+    };
 
 export interface PoseWriter {
   /**
@@ -51,7 +65,6 @@ export function imageBendFlip(root: Vec, goal: Vec, middle: Vec): boolean | unde
  * whose measured elbow wobbles across the reach line would otherwise flip the solved elbow from one
  * side to the other every few frames. Real bends far exceed it.
  */
-export const MIN_BEND_SINE = 0.1;
 
 /**
  * Hysteresis on the bend observation, one rule for the 2D flip and the 3D pole direction: the
@@ -60,21 +73,6 @@ export const MIN_BEND_SINE = 0.1;
  * decisive one, at least `MIN_BEND_SINE` off the reach line, may change the held observation. An
  * absent or degenerate middle never decides.
  */
-export function decidingMiddle(
-  root: Vec,
-  goal: Vec,
-  middle: Vec | undefined,
-  held: boolean,
-): Vec | undefined {
-  if (middle === undefined) return undefined;
-  const reach = sub(goal, root);
-  const bend = sub(middle, root);
-  const lengths = norm(reach) * norm(bend);
-  if (!(lengths > 1e-12)) return undefined;
-  if (!held) return middle;
-  const cosine = dot(reach, bend) / lengths;
-  return Math.sqrt(Math.max(0, 1 - cosine * cosine)) >= MIN_BEND_SINE ? middle : undefined;
-}
 
 /** The values one limb's chain holds in the project, as far as the writer has published them. */
 interface Published {
@@ -100,6 +98,7 @@ type LimbPlan =
   | { readonly kind: "skip"; readonly write: LimbWrite }
   | {
       readonly kind: "write";
+      readonly write?: LimbWrite;
       readonly commit: () => void;
       readonly stage: (transaction: ValueTransaction) => void;
     };
@@ -142,7 +141,7 @@ function createBatchWriter(
             outcome[limb.id] = plan.write;
             break;
           case "write":
-            outcome[limb.id] = WRITTEN;
+            outcome[limb.id] = plan.write ?? WRITTEN;
             planned.push(plan);
             break;
           default:
@@ -161,7 +160,7 @@ function createBatchWriter(
 
 const WRITTEN: LimbWrite = Object.freeze({ kind: "written" });
 
-function skip(reason: "root-lost" | "goal-lost" | "length-unknown"): LimbPlan {
+function skip(reason: "root-lost" | "goal-lost" | "length-unknown" | "bend-lost"): LimbPlan {
   return { kind: "skip", write: { kind: "skipped", reason } };
 }
 
@@ -211,7 +210,13 @@ function planLimb(
  * its noise would otherwise spin the bend plane about the reach.
  * Core consumes a pole POINT: translate that direction by this frame's root. No stale point.
  */
-export function createWorldWriter(project: ValueBatchPort): PoseWriter {
+export function createWorldWriter(
+  project: ValueBatchPort,
+  policy: BendPolicy = LEGACY_BEND_POLICY,
+): PoseWriter {
+  validateBendPolicy(policy);
+  // Snapshot caller settings: mutations must not change a writer mid-session.
+  policy = Object.freeze({ ...policy });
   const states = new Map(
     LIMBS.map((limb) => [
       limb.id,
@@ -220,6 +225,7 @@ export function createWorldWriter(project: ValueBatchPort): PoseWriter {
         upper: undefined as number | undefined,
         lower: undefined as number | undefined,
         pole: undefined as Vec | undefined,
+        bendState: {} as BendState,
       },
     ]),
   );
@@ -246,13 +252,41 @@ export function createWorldWriter(project: ValueBatchPort): PoseWriter {
       middle !== undefined && measuredRoot !== undefined
         ? (unit(sub(middle, measuredRoot)) ?? state.direction)
         : state.direction;
-    const pole = add(root, direction ?? [0, 0, 1]);
+    let bend: BendReference | undefined;
+    let nextBendState = state.bendState;
+    switch (policy.kind) {
+      case "legacy":
+        break;
+      case "predict": {
+        if (filled.tMs !== trusted.tMs) throw new Error("World bend frame timestamps differ.");
+        const decision = decideBend(policy, state.bendState, {
+          tMs: filled.tMs,
+          root,
+          goal,
+          measuredRoot,
+          measuredMiddle: trustedPosition(trusted.trust[limb.middle]),
+          filledMiddle: filled.joints[limb.middle],
+        });
+        bend = decision.reference;
+        nextBendState = decision.next;
+        if (bend.kind === "unavailable") return skip("bend-lost");
+        break;
+      }
+      default:
+        return unreachable(policy, "world bend policy");
+    }
+    const pole = add(
+      root,
+      bend === undefined || bend.kind === "unavailable" ? (direction ?? [0, 0, 1]) : bend.direction,
+    );
     const ids = limbTracks(limb.id);
     const point = (position: Vec) => ({ x: position[0]!, y: position[1]!, z: position[2]! });
     return {
       kind: "write",
+      ...(bend === undefined ? {} : { write: { kind: "written" as const, bend } }),
       commit: () => {
         state.direction = direction;
+        state.bendState = nextBendState;
         state.upper = upper;
         state.lower = lower;
         state.pole = pole;

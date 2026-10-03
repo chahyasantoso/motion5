@@ -17,6 +17,7 @@ import { parseRecording } from "../replay/recording";
 import { DEFAULT_STAGE } from "../replay/synthetic";
 import type { RigPorts } from "../rig/rig";
 import { createRigSolver } from "../rig/solver";
+import { LEGACY_BEND_POLICY, PREDICTED_BEND_POLICY } from "../rig/bend-policy";
 import { createGapPipeline } from "../filler/pipeline";
 import { STABILIZER_KINDS, stabilizerFor, type StabilizerKind } from "../filler/stabilizer";
 import { fitWeakPerspective } from "./projection";
@@ -78,6 +79,17 @@ function main(): void {
   const report = required<HTMLElement>("#report");
   const avatarSection = required<HTMLElement>("#avatar-section");
   const avatarEnabled = required<HTMLInputElement>("#show-avatar");
+  const bendSelect = required<HTMLSelectElement>("#bend-policy");
+  const selectedBend = () => {
+    switch (bendSelect.value) {
+      case "legacy":
+        return LEGACY_BEND_POLICY;
+      case "predict":
+        return PREDICTED_BEND_POLICY;
+      default:
+        throw new Error("Unknown bend policy.");
+    }
+  };
   const viewport = mountAvatarViewport(
     required<HTMLCanvasElement>("#avatar-view"),
     required<HTMLElement>("#avatar-info"),
@@ -108,7 +120,11 @@ function main(): void {
   // The camera fit's image half is stabilized as the world half is, on the image detector the
   // still take calibrated (the default until one), so the fit trusts what the image replay trusts.
   const rig = createLiveRig(
-    () => createRigSolver(rigPorts(), experiment.space),
+    () =>
+      createRigSolver(rigPorts(), experiment.space, {
+        bendPolicy: selectedBend(),
+        diagnostics: true,
+      }),
     () =>
       createGapPipeline({
         filler: { kind: "raw" },
@@ -117,6 +133,11 @@ function main(): void {
       }),
     viewport.clear,
   );
+  bendSelect.addEventListener("change", () => {
+    experiment.pipeline.reset();
+    rig.restart();
+    report.textContent = `World bend policy: ${bendSelect.value}. State reset; predictions never become observations.`;
+  });
   spaceSelect.addEventListener("change", () => {
     const next = LANDMARK_SPACES.find((candidate) => candidate.kind === spaceSelect.value);
     if (next === undefined) throw new Error("Unknown landmark space.");
@@ -189,7 +210,8 @@ function main(): void {
           stabilizer: experiment.stabilizer.kind,
           // One still take calibrates both spaces, so the record judges both.
           calibrationFor: (nativeSpace) => experiment.calibrations?.[nativeSpace.kind],
-          createSolver: (nativeSpace) => createRigSolver(rigPorts(), nativeSpace),
+          createSolver: (nativeSpace) =>
+            createRigSolver(rigPorts(), nativeSpace, { bendPolicy: selectedBend() }),
         });
         report.textContent = formatComparisonRecord(comparison);
       })
