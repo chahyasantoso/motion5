@@ -1,0 +1,29 @@
+quality (node 24.21.0)	Run npm run typecheck	﻿2026-10-03T02:33:50.1871082Z ##[group]Run npm run typecheck
+quality (node 24.21.0)	Run npm run typecheck	2026-10-03T02:33:50.1871429Z ^[[36;1mnpm run typecheck^[[0m
+quality (node 24.21.0)	Run npm run typecheck	2026-10-03T02:33:50.1934233Z shell: /usr/bin/bash -e {0}
+quality (node 24.21.0)	Run npm run typecheck	2026-10-03T02:33:50.1934497Z env:
+quality (node 24.21.0)	Run npm run typecheck	2026-10-03T02:33:50.1934702Z   NODE_VERSION: 24.21.0
+quality (node 24.21.0)	Run npm run typecheck	2026-10-03T02:33:50.1934996Z   CI_EVIDENCE_DIR: /home/runner/work/_temp/ci-evidence
+quality (node 24.21.0)	Run npm run typecheck	2026-10-03T02:33:50.1935327Z ##[endgroup]
+quality (node 24.21.0)	Run npm run typecheck	2026-10-03T02:33:50.2976066Z 
+quality (node 24.21.0)	Run npm run typecheck	2026-10-03T02:33:50.2977086Z > motion5@0.0.0 typecheck
+quality (node 24.21.0)	Run npm run typecheck	2026-10-03T02:33:50.2977986Z > tsc --noEmit -p tsconfig.json
+quality (node 24.21.0)	Run npm run typecheck	2026-10-03T02:33:50.2978573Z 
+quality (node 24.21.0)	Run npm run typecheck	2026-10-03T02:33:58.4749435Z ##[error]apps/pose-gap-filler/test/synthetic-human.test.ts(322,11): error TS2739: Type '{ drive: { kind: "scenario"; scenario: "arm-reversal"; }; camera: CameraSpec; edits: never[]; }' is missing the following properties from type 'SimulatorState': scores, props, corruption
+quality (node 24.21.0)	Run npm run typecheck	2026-10-03T02:33:58.5467782Z ##[error]Process completed with exit code 2.
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	﻿2026-10-03T02:36:12.0647030Z ##[group]Run test "$SUITE_RESULT" = success
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-10-03T02:36:12.0647837Z ^[[36;1mtest "$SUITE_RESULT" = success^[[0m
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-10-03T02:36:12.0899477Z shell: /usr/bin/bash -e {0}
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-10-03T02:36:12.0900400Z env:
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-10-03T02:36:12.0900895Z   NODE_VERSION: 24.21.0
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-10-03T02:36:12.0901457Z   SUITE_RESULT: failure
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-10-03T02:36:12.0901971Z ##[endgroup]
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-10-03T02:36:12.1067678Z ##[error]Process completed with exit code 1.
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	﻿2026-10-03T02:36:11.4451085Z ##[group]Run test "$SUITE_RESULT" = success
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-10-03T02:36:11.4451953Z ^[[36;1mtest "$SUITE_RESULT" = success^[[0m
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-10-03T02:36:11.4633404Z shell: /usr/bin/bash -e {0}
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-10-03T02:36:11.4634245Z env:
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-10-03T02:36:11.4634888Z   NODE_VERSION: 24.21.0
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-10-03T02:36:11.4635403Z   SUITE_RESULT: failure
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-10-03T02:36:11.4635901Z ##[endgroup]
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-10-03T02:36:11.4755664Z ##[error]Process completed with exit code 1.
