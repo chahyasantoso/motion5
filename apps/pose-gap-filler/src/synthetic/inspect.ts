@@ -99,6 +99,7 @@ export function landmarkInfo(frame: SimulatorFrame, index: number): readonly str
   const lines = [
     `${index} ${landmark.name}: ${attachment}`,
     `truth scene ${metres(frame.truth.landmarks[index])} m`,
+    `geometry ${observed.geometry.kind}${observed.geometry.kind === "occluded" ? ` by ${observed.geometry.occluderId}` : ""}`,
   ];
   switch (frame.report.kind) {
     case "none":

@@ -151,6 +151,18 @@
         <label><input id="layer-truth" type="checkbox" checked /> Truth layer</label>
         <label><input id="layer-estimate" type="checkbox" checked /> Estimate layer</label>
         <label
+          >Detector
+          <select id="sim-detector"></select
+        ></label>
+        <label
+          >Prop
+          <select id="sim-prop"></select
+        ></label>
+        <label
+          >Corruption
+          <select id="sim-corruption"></select
+        ></label>
+        <label
           >Camera yaw <input id="cam-yaw" type="range" min="-180" max="180" step="1" value="0"
         /></label>
         <label
@@ -171,6 +183,11 @@
         <canvas id="debug-view"></canvas>
         <pre id="sim-info"></pre>
       </div>
+      <p>
+        Debug geometry: green visible, orange occluded, yellow out of frame, purple behind camera.
+        Colours describe truth, not detector confidence. Phone and harsh corruption are synthetic
+        proposals, not measured detector profiles.
+      </p>
       <details>
         <summary>Pose mode: joint angles</summary>
         <div id="sim-dofs" class="dofs"></div>

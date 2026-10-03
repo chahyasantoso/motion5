@@ -107,7 +107,10 @@ export function actorFrame(pose: ActorPose, body: Proportions = DEFAULT_PROPORTI
         : segments[definition.parent];
     const origin = add3(parent.origin, apply(parent.rotation, definition.offset(body)));
     const rotation = multiply(parent.rotation, segmentRotation(definition.id, pose));
-    segments[definition.id] = Object.freeze({ origin, rotation });
+    segments[definition.id] = Object.freeze({
+      origin: Object.freeze(origin),
+      rotation: Object.freeze(rotation),
+    });
   }
   const landmarks = LANDMARKS.map((landmark) =>
     Object.freeze(attach(landmark.attachment, segments, body)),

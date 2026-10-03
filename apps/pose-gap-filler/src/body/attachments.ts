@@ -37,6 +37,10 @@ const face = (side: Side | undefined, x: number, up: number, forward: number): A
     forward,
   ]);
 
+/** An ear on the head sphere's side, so a camera in front grazes it rather than looking through. */
+const ear = (side: Side): Attachment =>
+  surface("head", (b) => [SIDE_SIGN[side] * b.headRadius, b.neckToHeadCentre + 0.02, 0]);
+
 /** A hand point in the hand frame, which hangs along -y with the palm forward and the thumb out. */
 const hand = (side: Side, out: number, down: number, forward: number): Attachment =>
   surface(`${side}-hand`, () => [SIDE_SIGN[side] * out, -down, forward]);
@@ -65,8 +69,8 @@ const BY_NAME = new Map<string, Attachment>([
   ["right-eye-inner", face("right", 0.015, 0.04, 0.09)],
   ["right-eye", face("right", 0.032, 0.04, 0.085)],
   ["right-eye-outer", face("right", 0.05, 0.04, 0.075)],
-  ["left-ear", face("left", 0.075, 0.02, 0)],
-  ["right-ear", face("right", 0.075, 0.02, 0)],
+  ["left-ear", ear("left")],
+  ["right-ear", ear("right")],
   ["mouth-left", face("left", 0.025, -0.035, 0.095)],
   ["mouth-right", face("right", 0.025, -0.035, 0.095)],
   ...sided("left").flatMap((entry, index) => [entry, sided("right")[index]!]),

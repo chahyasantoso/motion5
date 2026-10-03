@@ -2,6 +2,7 @@ import { LANDMARKS } from "../body/attachments";
 import type { SegmentId } from "../body/skeleton";
 import { segmentEnd, type ActorFrame } from "../synthetic/actor";
 import type { Camera } from "../synthetic/camera";
+import type { SyntheticVisibility, VisibilityKind } from "../synthetic/occlusion";
 import type { Vec3 } from "../synthetic/rotation";
 
 /** A bone drawn between two scene points of the truth: a segment's origin and a reached point. */
@@ -62,6 +63,14 @@ export const TRUTH_STYLE: SceneStyle = Object.freeze({
   width: 9,
 });
 
+/** Geometry colours are independent of reported confidence, including confidently wrong scores. */
+export const GEOMETRY_COLOURS: Readonly<Record<VisibilityKind, string>> = Object.freeze({
+  visible: "#4ade80",
+  occluded: "#fb923c",
+  "out-of-frame": "#facc15",
+  "behind-camera": "#a78bfa",
+});
+
 /**
  * Draws the truth actor as a capsule stick figure and its 33 landmarks, through `project`. A point
  * behind the camera is skipped rather than wrapped. Drawing reads the frozen truth and writes only
@@ -72,6 +81,7 @@ export function drawActor(
   frame: ActorFrame,
   project: (point: Vec3) => readonly number[] | undefined,
   style: SceneStyle = TRUTH_STYLE,
+  geometry?: readonly SyntheticVisibility[],
 ): void {
   context.lineCap = "round";
   context.strokeStyle = style.bone;
@@ -85,9 +95,11 @@ export function drawActor(
     context.stroke();
   }
   context.fillStyle = style.joint;
-  for (const point of frame.landmarks) {
+  for (const [index, point] of frame.landmarks.entries()) {
     const at = project(point);
     if (at === undefined) continue;
+    const visibility = geometry?.[index];
+    context.fillStyle = visibility === undefined ? style.joint : GEOMETRY_COLOURS[visibility.kind];
     context.beginPath();
     context.arc(at[0]!, at[1]!, 2.5, 0, 2 * Math.PI);
     context.fill();
