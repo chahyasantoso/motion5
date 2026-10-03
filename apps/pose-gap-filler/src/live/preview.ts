@@ -61,6 +61,7 @@ export function defaultMirror(spec: SourceSpec): PreviewMirror {
     case "camera":
       return MIRRORED;
     case "synthetic":
+    case "simulator":
       return UNMIRRORED;
     default:
       return unreachable(spec, "source spec");

@@ -2,7 +2,7 @@ import { writePoseResult } from "../filler/adapter";
 import type { PoseRecording } from "../replay/recording";
 import type { LandmarkSource } from "./source";
 
-/** The browser's frame loop and clock, injected so a playback is tested without either. */
+/** The browser's frame loop and clock, injected so a paced source is tested without either. */
 export interface FramePorts {
   requestFrame(callback: () => void): number;
   cancelFrame(id: number): void;
@@ -14,6 +14,74 @@ export const BROWSER_FRAMES: FramePorts = {
   cancelFrame: (id) => cancelAnimationFrame(id),
   now: () => performance.now(),
 };
+
+/**
+ * A stream of frames by index, what a paced source plays: `timeOf(i)` is frame `i`'s time, or
+ * `undefined` past the end, and `resultOf(i)` builds its result only when it is emitted. Times must
+ * strictly increase with the index.
+ */
+export interface FrameStream {
+  timeOf(index: number): number | undefined;
+  resultOf(index: number): unknown;
+}
+
+/**
+ * The one pacing loop every non-camera source shares. Frame `i` is emitted on the first animation
+ * frame at least `timeOf(i) - timeOf(0)` after `start`, and at most one frame per animation frame,
+ * so a slow device plays slower instead of skipping, and the emitted sequence is exactly the
+ * stream's. `detectMs` is 0: nothing was detected.
+ *
+ * Every start is a generation, as for the webcam source: `stop` ends it, and a consumer that stops
+ * the source from inside `onSample` gets no further frame. A throw from `onSample` stops the source
+ * and propagates, so a broken consumer is never fed again.
+ */
+export function createPacedSource(
+  stream: FrameStream,
+  ports: FramePorts = BROWSER_FRAMES,
+): LandmarkSource {
+  let generation = 0;
+  let cancel: (() => void) | undefined;
+  const stop = () => {
+    generation += 1;
+    cancel?.();
+    cancel = undefined;
+  };
+  return {
+    start(onSample) {
+      stop();
+      const current = generation;
+      const live = () => current === generation;
+      const first = stream.timeOf(0);
+      if (first === undefined) return Promise.resolve();
+      const startedAt = ports.now();
+      let index = 0;
+      let frame = 0;
+      const tick = () => {
+        if (!live()) return;
+        const tMs = stream.timeOf(index);
+        if (tMs === undefined) {
+          cancel = undefined;
+          return;
+        }
+        if (ports.now() - startedAt >= tMs - first) {
+          try {
+            onSample({ result: stream.resultOf(index), tMs, detectMs: 0 });
+          } catch (error) {
+            if (live()) stop();
+            throw error;
+          }
+          if (!live()) return;
+          index += 1;
+        }
+        frame = ports.requestFrame(tick);
+      };
+      frame = ports.requestFrame(tick);
+      cancel = () => ports.cancelFrame(frame);
+      return Promise.resolve();
+    },
+    stop,
+  };
+}
 
 export interface PlaybackOptions {
   /** Starts again at the first frame after the last, the take's own period later. */
@@ -36,18 +104,10 @@ export function loopPeriod(recording: PoseRecording): number {
 }
 
 /**
- * A recording played as a live source: what the live page runs when nothing is detected, so a
- * synthetic take exercises the whole pipeline with no MediaPipe download and no camera prompt.
- *
- * A frame is emitted on the first animation frame at least its own offset from the take's first
- * frame after `start`, and at most one frame per animation frame. A slow device therefore plays
- * slower instead of skipping, and the emitted sequence is exactly the recording's, the sequence
- * replay steps through. Each sample's `tMs` is the recorded time plus one `loopPeriod` per completed
- * lap, so time only increases across a loop. `detectMs` is 0: nothing was detected.
- *
- * Every start is a generation, as for the webcam source: `stop` ends it, and a consumer that stops
- * the source from inside `onSample` gets no further frame. A throw from `onSample` stops the source
- * and propagates, so a broken consumer is never fed again.
+ * A recording played as a live source: what the live page runs for a committed synthetic take, so
+ * it exercises the whole pipeline with no MediaPipe download and no camera prompt. Each sample's
+ * `tMs` is the recorded time plus one `loopPeriod` per completed lap, so time only increases across
+ * a loop, and the sequence is the one replay steps through.
  */
 export function createPlaybackSource(
   recording: PoseRecording,
@@ -56,55 +116,17 @@ export function createPlaybackSource(
 ): LandmarkSource {
   const period = loopPeriod(recording);
   const { frames } = recording;
-  const first = frames[0]!.tMs;
-  let generation = 0;
-  let cancel: (() => void) | undefined;
-  const stop = () => {
-    generation += 1;
-    cancel?.();
-    cancel = undefined;
-  };
-  return {
-    start(onSample) {
-      stop();
-      const current = generation;
-      const live = () => current === generation;
-      const startedAt = ports.now();
-      let index = 0;
-      let lap = 0;
-      let frame = 0;
-      const tick = () => {
-        if (!live()) return;
-        const recorded = frames[index]!;
-        const offset = lap * period;
-        if (ports.now() - startedAt >= recorded.tMs - first + offset) {
-          try {
-            onSample({
-              result: writePoseResult(recorded.image, recorded.world),
-              tMs: recorded.tMs + offset,
-              detectMs: 0,
-            });
-          } catch (error) {
-            if (live()) stop();
-            throw error;
-          }
-          if (!live()) return;
-          index += 1;
-          if (index === frames.length) {
-            if (!options.loop) {
-              cancel = undefined;
-              return;
-            }
-            index = 0;
-            lap += 1;
-          }
-        }
-        frame = ports.requestFrame(tick);
-      };
-      frame = ports.requestFrame(tick);
-      cancel = () => ports.cancelFrame(frame);
-      return Promise.resolve();
+  const lapOf = (index: number) => Math.floor(index / frames.length);
+  const ended = (index: number) => !options.loop && index >= frames.length;
+  return createPacedSource(
+    {
+      timeOf: (index) =>
+        ended(index) ? undefined : frames[index % frames.length]!.tMs + lapOf(index) * period,
+      resultOf: (index) => {
+        const recorded = frames[index % frames.length]!;
+        return writePoseResult(recorded.image, recorded.world);
+      },
     },
-    stop,
-  };
+    ports,
+  );
 }

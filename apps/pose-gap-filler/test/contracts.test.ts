@@ -211,6 +211,7 @@ describe("#540 observation, time and coordinate contracts", () => {
     expect(SOURCE_SPECS.map((spec) => defaultMirror(spec).kind)).toEqual([
       "none",
       "none",
+      "none",
       "mirrored",
     ]);
     // The person's left wrist is on the image's right, unmirrored, and keeps its name mirrored.

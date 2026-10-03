@@ -24,15 +24,14 @@ import { defaultMirror, mirrorChecked, mirrorOf, previewPoint, previewTransform 
 import { createSourceSession, describeEnd, type SessionSample } from "./session";
 import { SOURCE_SPECS, createLandmarkSource, sourceId, sourceLabel } from "./sources";
 import { createStageTimer, formatTimings } from "./timings";
+import { actorFrame, actorPose, hipMidpoint } from "../synthetic/actor";
+import { defaultCameraSpec } from "../synthetic/camera";
+import { createSimulator } from "../synthetic/simulator";
+import { required } from "../view/dom";
+import { mountSimulatorPanel } from "../view/simulator-panel";
 
 /** The synthetic takes are generated on the stage the page draws, so one size owns both. */
 const STAGE: StageSize = DEFAULT_STAGE;
-
-function required<T extends Element>(selector: string): T {
-  const node = document.querySelector<T>(selector);
-  if (node === null) throw new Error(`${selector} not found`);
-  return node;
-}
 
 function rigPorts(): RigPorts {
   return {
@@ -50,10 +49,10 @@ function download(name: string, text: string): void {
 }
 
 /**
- * The live page: a landmark source (the webcam through MediaPipe, or a looped synthetic take), the
- * gap pipeline, the rig and the overlay, one frame at a time, plus the recorder and the replay
- * comparison. Everything with memory is in the pipeline and the rig; this file only wires ports,
- * keys and drawing.
+ * The live page: a landmark source (the webcam through MediaPipe, a looped synthetic take, or the
+ * synthetic human), the gap pipeline, the rig and the overlay, one frame at a time, plus the
+ * recorder and the replay comparison. Everything with memory is in the pipeline and the rig; this
+ * file only wires ports, keys and drawing.
  */
 function main(): void {
   const video = required<HTMLVideoElement>("#video");
@@ -176,6 +175,15 @@ function main(): void {
       });
   });
 
+  // The synthetic human: its truth starts standing, seen by the default camera; the panel owns its
+  // controls and reads nothing the pipeline or rig computes.
+  const simulator = createSimulator({
+    drive: { kind: "scenario", scenario: "standing" },
+    camera: defaultCameraSpec(STAGE, hipMidpoint(actorFrame(actorPose()))),
+    edits: [],
+  });
+  const panel = mountSimulatorPanel(simulator, STAGE);
+
   const gate = createIngestGate();
   let counts = EMPTY_TALLY;
   const showMirror = () => {
@@ -198,14 +206,17 @@ function main(): void {
       space.kind === "world"
         ? fitWeakPerspective(step.trusted, rig.imageTrust.step(image, forced.joints).trusted)
         : undefined;
+    const display = previewPoint(mirrorOf(mirror.checked), STAGE);
     drawOverlay(
       svg,
       showRaw.checked ? image : undefined,
       step.filled,
       solved,
       space.kind === "image" ? (position) => position : fit?.project,
-      previewPoint(mirrorOf(mirror.checked), STAGE),
+      display,
     );
+    if (selectedSource().kind === "simulator" && simulator.last !== undefined)
+      panel.render(simulator.last, display);
     timer.mark("draw");
     const timings = timer.finish(tMs, detectMs);
     const held = [...forced.joints].join(", ") || "none";
@@ -222,11 +233,12 @@ function main(): void {
   const showVideo = () => {
     const spec = selectedSource();
     video.hidden = spec.kind !== "camera";
+    panel.show(spec.kind === "simulator");
     mirror.checked = mirrorChecked(defaultMirror(spec));
     showMirror();
   };
   const session = createSourceSession({
-    create: (spec) => createLandmarkSource(spec, { video }),
+    create: (spec) => createLandmarkSource(spec, { video, simulator }),
     begin() {
       counts = EMPTY_TALLY;
       start.textContent = "Stop";

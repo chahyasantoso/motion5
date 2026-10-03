@@ -38,7 +38,8 @@ each slice adds and the decisions behind them. What has landed is claimed only b
 
 - `SourceSpec` in `src/live/sources.ts` is the closed union of where the live page's landmarks come
   from, and `createLandmarkSource` is its one factory. `camera` is the webcam through MediaPipe.
-  `synthetic` loops the motion's committed take.
+  `synthetic` loops the motion's committed take. `simulator` measures the page's synthetic human at
+  30 fps as its person edits it, through `reportResult` and the same reader (`GF-99`).
 - `SYNTHETIC_TAKES` in `src/replay/synthetic.ts` owns one take per motion: the comparison record's
   input and the live loop, so what a person watches is what the record judged. Each take is a whole
   number of its motion's periods, so the loop has no seam in the pose (`GF-84`).
@@ -84,3 +85,44 @@ each slice adds and the decisions behind them. What has landed is claimed only b
   positions and the video about the stage's centre line and nothing upstream reads it, so the
   person's left wrist stays `left-wrist` (`GF-90`). The camera defaults to mirrored, a synthetic
   take to unmirrored.
+
+## The synthetic actor
+
+- `src/body/skeleton.ts` owns the body: 15 segments in one parent-first tree, 39 rotational degrees
+  of freedom with anatomical ranges, and `DEFAULT_PROPORTIONS`, the legacy synthetic subject's
+  bones, so the twelve limb joints keep the lengths the filler was proven on. +y is up and the
+  actor faces +z, so its left is +x.
+- `src/body/attachments.ts` attaches MediaPipe's 33 landmarks in index order. `joint` is a segment
+  origin, which is what the twelve limb joints mean. `surface` is a point on a segment chosen to
+  resemble a face, hand or foot landmark, a synthetic approximation the info panel labels so
+  (`GF-93`).
+- `actorFrame` is the one forward kinematics and the one owner of where the truth is. Its result
+  is frozen, so no observation edit, corruption or page code can move the truth it is judged
+  against. Independent fixtures check its axes and every bone's length (`GF-92`).
+- `createCamera` is a pinhole in MediaPipe's camera axes, with `unproject` its inverse at a depth
+  (`GF-94`). `observe` measures the truth through it. World landmarks are hip-centred on the hips
+  as seen and keep every distance of the truth. Image z is an approximation of MediaPipe's learned
+  relative depth, not a reproduction of it (`GF-95`).
+- `ObservationEdit` is the closed union of what observation mode may do to the detector's output:
+  `displace`, `swap` with the anatomical partner, `score`, `drop`. Edits apply in `EDIT_ORDER`
+  whatever order they were made, and never write the truth (`GF-96`).
+- `SCENARIOS` are data read by one interpolator: standing, a fast arm reversal, a squat, a half
+  turn, a hand on the lower back, crossed arms, stepping out of frame, joints lost together, a
+  short whole-pose loss and a loss long enough to reacquire after. They are deterministic in time,
+  periodic, legal at every frame and seamless across the loop (`GF-97`). `ScriptedLoss` drops
+  landmarks or the whole pose for a window; a 0.8 s loss continues the subject through the ingest
+  gate and a 2.5 s one is reacquired as a new subject exactly once (`GF-100`).
+- `dragHandle` poses one limb so its wrist or ankle reaches a target: the hinge from the law of
+  cosines, the swing analytically on both branches, then damped least squares within the ranges.
+  It reaches every target a legal pose of that limb reaches and reports `clamped` with
+  `out-of-reach` or `joint-limit` otherwise, never stretching a bone. It is the truth actor's own
+  solve, independent of the rig's IK, so the rig is never judged by its own algorithm (`GF-98`).
+- `createSimulator` owns no clock and reads nothing from the pipeline. A frame is a pure function
+  of its state (drive, camera, edits) and time. `SimulatorReport` is `pose` or `none`. Running the
+  estimate on every frame changes nothing the simulator measures (`GF-99`, `GF-101`).
+- The page's panel (`src/view/simulator-panel.ts`) has two modes. Pose mode edits the truth:
+  the drive, one slider per degree of freedom, and the four handles dragged in the debug view.
+  Observation mode edits only what the detector reports. The observation camera orbits the
+  actor. The debug view has its own orbit, which nothing measured reads. Truth and estimate are
+  separate layers the person toggles. The form, pick and info helpers are pure and tested
+  (`GF-101`).
