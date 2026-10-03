@@ -2,6 +2,7 @@ import { PerspectiveCamera, Scene, WebGLRenderer } from "three";
 import { BODY_ROOTS } from "../body/state";
 import type { RawPose } from "../filler/adapter";
 import type { BoneLengths } from "../filler/bone-length";
+import { bendLabel } from "./bend-label";
 import type { PipelineStep } from "../filler/pipeline";
 import type { LimbId } from "../filler/landmarks";
 import type { RigSolver } from "../rig/solver";
@@ -116,8 +117,7 @@ export function mountAvatarViewport(
         diagnostics === undefined
           ? []
           : [...diagnostics.bends].map(
-              ([id, bend]) =>
-                `${id} bend: ${bend.kind}${bend.kind === "predicted" ? ` (${bend.basis}, last observation ${bend.lastObservedTMs} ms)` : ""}`,
+              ([id, bend]) => `${id} bend: ${bendLabel(bend, solved.has(id))}`,
             );
       const contacts =
         diagnostics === undefined

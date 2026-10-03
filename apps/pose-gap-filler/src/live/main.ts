@@ -34,7 +34,7 @@ import { createStageTimer, formatTimings } from "./timings";
 import { actorFrame, actorPose, hipMidpoint } from "../synthetic/actor";
 import { defaultCameraSpec } from "../synthetic/camera";
 import { createSimulator } from "../synthetic/simulator";
-import { required } from "../view/dom";
+import { interactiveTarget, required } from "../view/dom";
 import { mountSimulatorPanel } from "../view/simulator-panel";
 import { mountAvatarViewport } from "../view/avatar-viewport";
 
@@ -161,8 +161,7 @@ function main(): void {
   const forced = createForcedJoints();
   const recorder = createRecorder(STAGE);
   addEventListener("keydown", (event) => {
-    if (event.target instanceof HTMLInputElement || event.target instanceof HTMLSelectElement)
-      return;
+    if (interactiveTarget(event.target) || event.ctrlKey || event.metaKey || event.altKey) return;
     if (forced.toggle(event.key, event.repeat)) event.preventDefault();
   });
   // A take is one subject from one source: ending the source ends the take, saved as if stopped.

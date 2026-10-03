@@ -21,8 +21,8 @@ import {
 import { SCENARIOS, SCENARIO_IDS, type ScenarioId } from "../synthetic/scenarios";
 import type { Simulator, SimulatorFrame } from "../synthetic/simulator";
 import type { Vec3 } from "../synthetic/rotation";
-import { canvasPoint, required } from "./dom";
-import { pickHandle } from "./pose-drag";
+import { canvasPoint, canvasRadius, required } from "./dom";
+import { GRAB_RADIUS_PX, pickHandle } from "./pose-drag";
 import { TRUTH_STYLE, drawActor, drawCameraMarker, projector } from "./scene-view";
 
 const MANUAL = "manual";
@@ -185,7 +185,12 @@ export function mountSimulatorPanel(simulator: Simulator, stage: StageSize): Sim
   debugView.addEventListener("pointerdown", (event) => {
     const camera = debugCamera();
     const truth = simulator.frame(simulator.last?.tMs ?? 0).truth;
-    const handle = pickHandle(truth, projector(camera), canvasPoint(debugView, event));
+    const handle = pickHandle(
+      truth,
+      projector(camera),
+      canvasPoint(debugView, event),
+      canvasRadius(debugView, event.pointerType === "touch" ? 24 : GRAB_RADIUS_PX),
+    );
     if (handle === undefined) return;
     const effector = truth.segments[HANDLES[handle].effector].origin;
     drag = { handle, depth: camera.toCamera(effector)[2] };
@@ -210,6 +215,7 @@ export function mountSimulatorPanel(simulator: Simulator, stage: StageSize): Sim
   };
   debugView.addEventListener("pointerup", release);
   debugView.addEventListener("pointercancel", release);
+  debugView.addEventListener("lostpointercapture", release);
 
   const panel: SimulatorPanel = {
     render(frame, display) {

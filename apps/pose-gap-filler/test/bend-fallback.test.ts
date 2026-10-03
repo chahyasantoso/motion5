@@ -259,4 +259,40 @@ describe("optional bend evidence never gates valid world geometry", () => {
       expect(writes[limb.id]).toEqual({ kind: "written", bend: { kind: "unavailable" } });
     expect(recorded.batches.length).toBe(2);
   });
+
+  it("GF-203 writer reacquisition is bounded from the successfully emitted held fallback", () => {
+    const recorded = recordingValues();
+    const writer = createWorldWriter(recorded.port, enabled);
+    const first = initial();
+    writer.write(first.filled, first.trusted, lengths);
+    const predicted = gap(400, [0, 0, 0], coast);
+    writer.write(predicted.filled, predicted.trusted, lengths);
+    const expired = gap(501, [10, 0, 0], coast);
+    writer.write(expired.filled, expired.trusted, lengths);
+    const points = bendPose(Math.PI, [10, 0, 0]);
+    const trusted = trustedOf(frameOf(points, 521, WORLD_SPACE));
+    writer.write(raw.fill(trusted), trusted, lengths);
+    for (const limb of LIMBS) {
+      const id = poseNodeId(limbTracks(limb.id).pole);
+      const root = points[limb.root];
+      const before = unit(sub(valueAt(recorded.batches[2]!, id), root))!;
+      const after = unit(sub(valueAt(recorded.batches[3]!, id), root))!;
+      expect(Math.acos(Math.min(1, dot(before, after)))).toBeLessThanOrEqual(0.120001);
+    }
+  });
+
+  it("GF-204 the first measured bend is bounded from a no-history default publication", () => {
+    const recorded = recordingValues();
+    const writer = createWorldWriter(recorded.port, enabled);
+    const unseen = gap(100);
+    writer.write(unseen.filled, unseen.trusted, lengths);
+    const measured = initial(120);
+    writer.write(measured.filled, measured.trusted, lengths);
+    const points = bendPose(0);
+    for (const limb of LIMBS) {
+      const id = poseNodeId(limbTracks(limb.id).pole);
+      const after = unit(sub(valueAt(recorded.batches[1]!, id), points[limb.root]))!;
+      expect(Math.acos(Math.min(1, dot([0, 0, 1], after)))).toBeLessThanOrEqual(0.120001);
+    }
+  });
 });

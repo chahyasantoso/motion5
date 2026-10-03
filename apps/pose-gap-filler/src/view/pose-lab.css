@@ -1,0 +1,490 @@
+/* A light instrument shell around dark observation scopes. No fonts, icons or UI dependencies. */
+:root {
+  color-scheme: light;
+  --paper: #f3f7f6;
+  --surface: #ffffff;
+  --ink: #1e302c;
+  --muted: #516862;
+  --line: #d7e3de;
+  --accent: #08765e;
+  --accent-soft: #d9f3e9;
+  --scope: #080c14;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 16px;
+  color: var(--ink);
+  background: var(--paper);
+}
+
+* {
+  box-sizing: border-box;
+}
+[hidden] {
+  display: none !important;
+}
+body {
+  margin: 0;
+}
+button,
+input,
+select {
+  font: inherit;
+}
+button,
+select,
+input:not([type="checkbox"]):not([type="range"]) {
+  min-height: 44px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--ink);
+}
+button {
+  padding: 10px 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+button:hover {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+button:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+select {
+  width: 100%;
+  padding: 8px 30px 8px 10px;
+}
+input {
+  max-width: 100%;
+  accent-color: var(--accent);
+}
+input[type="range"] {
+  width: 100%;
+  min-height: 32px;
+  margin: 0;
+}
+input[type="number"] {
+  width: 100%;
+  padding: 8px 10px;
+}
+input[type="file"] {
+  width: 100%;
+  padding: 6px;
+  font-size: 14px;
+}
+input::file-selector-button {
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 4px;
+  cursor: pointer;
+}
+input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  margin: 0;
+}
+:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 4px;
+}
+label {
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.5;
+  min-width: 0;
+}
+h1 {
+  font-size: clamp(28px, 4vw, 44px);
+  font-weight: 650;
+  letter-spacing: -0.045em;
+  margin: 18px 0 8px;
+  line-height: 1.1;
+}
+h2,
+summary {
+  font-size: 17px;
+  font-weight: 650;
+  margin: 0;
+}
+p {
+  line-height: 1.5;
+}
+.lab {
+  max-width: 1480px;
+  margin: 0 auto;
+  padding: 32px clamp(16px, 3vw, 48px);
+}
+.lab-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 28px;
+}
+.wordmark {
+  margin: 0;
+  font-size: 21px;
+  font-weight: 750;
+  letter-spacing: -0.04em;
+}
+.wordmark > span:first-child {
+  color: var(--accent);
+}
+.edition {
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0;
+  margin-left: 10px;
+}
+.intro {
+  margin: 0;
+  color: var(--muted);
+  font-size: 16px;
+}
+.local-note {
+  font-size: 14px;
+  color: var(--muted);
+  text-align: right;
+  margin: 0 0 4px;
+}
+.run-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 16px;
+  background: var(--accent-soft);
+  border-radius: 12px;
+  padding: 18px 20px;
+  margin-bottom: 24px;
+}
+.source-control {
+  display: grid;
+  gap: 6px;
+  flex: 1 1 280px;
+  max-width: 430px;
+}
+.primary {
+  min-width: 112px;
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+.primary:hover {
+  background: #075c4b;
+  color: #fff;
+}
+.run-hint {
+  font-size: 14px;
+  color: var(--muted);
+  align-self: center;
+  margin-left: auto;
+}
+.workspace {
+  display: grid;
+  grid-template-columns: 290px minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+.settings {
+  display: grid;
+  gap: 16px;
+}
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 20px;
+  min-width: 0;
+}
+.help {
+  font-size: 14px;
+  color: var(--muted);
+  line-height: 1.55;
+  margin: 10px 0 14px;
+}
+.fields {
+  display: grid;
+  gap: 14px;
+  margin-top: 14px;
+}
+.fields > label {
+  display: grid;
+  gap: 6px;
+}
+.checks {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+}
+.checks label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 36px;
+}
+.view-stack {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 400px), 1fr));
+  gap: 24px;
+  align-items: start;
+  min-width: 0;
+}
+.view-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.eyebrow {
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 14px;
+  color: var(--muted);
+  margin: 0 0 5px;
+}
+.view-tag {
+  color: var(--muted);
+  font-size: 14px;
+  white-space: nowrap;
+}
+.stage {
+  position: relative;
+  width: 100%;
+  max-width: 640px;
+  aspect-ratio: 4 / 3;
+  margin: 0 auto;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--scope);
+}
+.stage video,
+.stage canvas,
+.stage svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+#avatar-view {
+  display: block;
+  width: 100%;
+  max-width: 640px;
+  aspect-ratio: 4 / 3;
+  border-radius: 8px;
+  background: var(--scope);
+  margin: 0 auto;
+}
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 14px;
+  font-size: 14px;
+  color: var(--muted);
+}
+.legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.legend-dot.measured {
+  background: #0284c7;
+}
+.legend-dot.inferred {
+  border: 2px dashed #a86508;
+}
+.legend-line {
+  display: inline-block;
+  width: 14px;
+  height: 3px;
+  background: #08765e;
+  border-radius: 2px;
+}
+.solved-chain {
+  fill: none;
+  stroke: #34d399;
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.mark-raw {
+  fill: #8492a6;
+}
+.mark-measured {
+  fill: #38bdf8;
+}
+.mark-inferred {
+  fill: none;
+  stroke: #fbbf24;
+  stroke-width: 2;
+  stroke-dasharray: 3 2;
+}
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  align-items: end;
+  margin: 16px 0;
+}
+.controls > label {
+  display: grid;
+  gap: 6px;
+  flex: 1 1 160px;
+}
+.simulator-panel {
+  margin-top: 24px;
+}
+.studio-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 24px;
+  align-items: start;
+}
+#debug-view {
+  display: block;
+  width: 100%;
+  max-width: 640px;
+  aspect-ratio: 4 / 3;
+  border-radius: 8px;
+  background: #0f172a;
+  touch-action: none;
+  cursor: grab;
+}
+.inline-checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+.readout {
+  border-top: 1px solid var(--line);
+  padding-top: 14px;
+  margin-top: 16px;
+}
+summary {
+  cursor: pointer;
+  min-height: 32px;
+  line-height: 1.5;
+}
+details[open] > summary {
+  color: var(--accent);
+}
+pre,
+.diagnostic {
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 14px;
+  color: var(--muted);
+  line-height: 1.65;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  margin: 12px 0 0;
+  max-width: 100%;
+}
+.dofs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  gap: 16px 24px;
+  margin-top: 18px;
+}
+.dofs label {
+  display: grid;
+  gap: 6px;
+}
+.edit-controls label {
+  flex-basis: 150px;
+}
+.session-report {
+  margin-top: 24px;
+}
+#report:empty::before {
+  content: "Calibration, replay results and session messages appear here.";
+}
+.lab-footer {
+  margin-top: 24px;
+  color: var(--muted);
+  font-size: 14px;
+}
+.skip-link {
+  position: absolute;
+  top: -100px;
+  left: 16px;
+  z-index: 10;
+  background: var(--surface);
+  color: var(--accent);
+  padding: 12px 16px;
+  border-radius: 8px;
+}
+.skip-link:focus {
+  top: 16px;
+}
+@media (max-width: 900px) {
+  .workspace {
+    grid-template-columns: 240px minmax(0, 1fr);
+    gap: 16px;
+  }
+  .panel {
+    padding: 16px;
+  }
+  .studio-grid {
+    grid-template-columns: minmax(0, 1fr) 240px;
+    gap: 16px;
+  }
+  .run-hint {
+    display: none;
+  }
+}
+@media (max-width: 680px) {
+  .lab {
+    padding-top: 20px;
+  }
+  .lab-header {
+    display: block;
+    margin-bottom: 20px;
+  }
+  .local-note {
+    text-align: left;
+    margin-top: 12px;
+  }
+  .local-note br {
+    display: none;
+  }
+  .workspace,
+  .studio-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .settings {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  }
+  .view-stack {
+    grid-row: 1;
+  }
+  .run-bar {
+    padding: 16px;
+    gap: 12px;
+  }
+  .source-control {
+    flex-basis: 180px;
+  }
+  .primary {
+    min-width: 84px;
+  }
+  .view-tag {
+    white-space: normal;
+    text-align: right;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  button {
+    transition:
+      background-color 120ms ease,
+      border-color 120ms ease;
+  }
+}
