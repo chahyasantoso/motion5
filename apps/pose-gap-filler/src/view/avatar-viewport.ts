@@ -8,22 +8,33 @@ import type { RigSolver } from "../rig/solver";
 import type { SolvedLimb } from "../rig/rig";
 import { createAvatarScene } from "./avatar";
 
+/** The WebGL ownership port is injectable for lifecycle tests, never a second pose engine. */
+export interface AvatarRenderer {
+  setPixelRatio(ratio: number): void;
+  readonly shadowMap: { enabled: boolean };
+  setSize(width: number, height: number, updateStyle: boolean): void;
+  render(scene: Scene, camera: PerspectiveCamera): void;
+  dispose(): void;
+}
+
 /** Presentation lifecycle only. Source cadence remains the only pose clock and solve owner. */
 export function mountAvatarViewport(
   canvas: HTMLCanvasElement,
   readout: HTMLElement,
   yaw: HTMLInputElement,
   pitch: HTMLInputElement,
+  createRenderer: (canvas: HTMLCanvasElement) => AvatarRenderer = (target) =>
+    new WebGLRenderer({ canvas: target, antialias: false, alpha: true }),
 ) {
   const avatar = createAvatarScene();
   const scene = new Scene();
   scene.add(avatar.parent);
   const camera = new PerspectiveCamera(38, 4 / 3, 0.01, 100);
-  let renderer: WebGLRenderer | undefined;
+  let renderer: AvatarRenderer | undefined;
   let available = true;
   let disposed = false;
   try {
-    renderer = new WebGLRenderer({ canvas, antialias: false, alpha: true });
+    renderer = createRenderer(canvas);
     renderer.setPixelRatio(1);
     renderer.shadowMap.enabled = false;
   } catch (error) {
@@ -32,28 +43,36 @@ export function mountAvatarViewport(
   }
   const draw = () => {
     if (disposed || !available || renderer === undefined) return;
-    const width = Math.max(1, canvas.clientWidth || 640),
-      height = Math.max(1, canvas.clientHeight || 480);
-    renderer.setSize(width, height, false);
-    camera.aspect = width / height;
-    camera.updateProjectionMatrix();
-    const a = (Number(yaw.value) * Math.PI) / 180,
-      p = (Number(pitch.value) * Math.PI) / 180;
-    camera.position.set(
-      3 * Math.sin(a) * Math.cos(p),
-      0.35 + 3 * Math.sin(p),
-      3 * Math.cos(a) * Math.cos(p),
-    );
-    camera.lookAt(0, 0.35, 0);
-    renderer.render(scene, camera);
+    try {
+      const width = Math.max(1, canvas.clientWidth || 640),
+        height = Math.max(1, canvas.clientHeight || 480);
+      renderer.setSize(width, height, false);
+      camera.aspect = width / height;
+      camera.updateProjectionMatrix();
+      const a = (Number(yaw.value) * Math.PI) / 180,
+        p = (Number(pitch.value) * Math.PI) / 180;
+      camera.position.set(
+        3 * Math.sin(a) * Math.cos(p),
+        0.35 + 3 * Math.sin(p),
+        3 * Math.cos(a) * Math.cos(p),
+      );
+      camera.lookAt(0, 0.35, 0);
+      renderer.render(scene, camera);
+    } catch (error) {
+      available = false;
+      avatar.clear();
+      readout.textContent = `Three rendering failed; overlay/sources still work: ${String(error)}`;
+    }
   };
   const lost = (event: Event) => {
     event.preventDefault();
     available = false;
+    avatar.clear();
     readout.textContent = "Three context lost; overlay/sources still work.";
   };
   const restored = () => {
     available = true;
+    readout.textContent = "Three context restored; waiting for the next accepted world pose.";
     draw();
   };
   canvas.addEventListener("webglcontextlost", lost);
@@ -64,6 +83,8 @@ export function mountAvatarViewport(
   resize?.observe(canvas);
   const clear = () => {
     avatar.clear();
+    if (available)
+      readout.textContent = "No current avatar pose; waiting for an accepted world frame.";
     draw();
   };
   return {

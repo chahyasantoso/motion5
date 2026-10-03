@@ -4,7 +4,7 @@ import type { KalmanNoise } from "../filler/chain-kalman";
 import type { BoneLengths } from "../filler/bone-length";
 import { trustedPosition, type FilledJoint, type TrustedFrame } from "../filler/frame";
 import { LIMBS, type JointId } from "../filler/landmarks";
-import { add, distance, scale, sub, unit, type Vec } from "../filler/vec";
+import { add, distance, norm, scale, sub, unit, type Vec } from "../filler/vec";
 
 export const BODY_ROOTS = ["left-shoulder", "right-shoulder", "left-hip", "right-hip"] as const;
 export type BodyRoot = (typeof BODY_ROOTS)[number];
@@ -63,7 +63,11 @@ function torsoMeasurement(measured: Partial<Record<JointId, Vec>>) {
     height = true;
     y = add(y, sub(measured[b]!, measured[a]!));
   }
-  return { basis: basis(x, y), degenerate: width && height };
+  return {
+    basis: basis(x, y),
+    degenerate:
+      (width && unit(x) === undefined) || (height && unit(y) === undefined) || (width && height),
+  };
 }
 
 export function createBodyStateOwner(noise: KalmanNoise, coastMs: number) {
@@ -101,163 +105,205 @@ export function createBodyStateOwner(noise: KalmanNoise, coastMs: number) {
         )
           throw new Error("Body needs finite 3D measurements and visibility in [0, 1].");
         measured[joint as JointId] = point;
+        if (!Number.isFinite(norm(point))) throw new Error("Body coordinate magnitude overflow.");
       }
-      previousMs = frame.tMs;
-      const current = torsoMeasurement(measured);
-      const fresh = (time: number | undefined) => time !== undefined && frame.tMs - time <= coastMs;
-      if (!fresh(measuredMs)) {
-        x.reset();
-        y.reset();
-      }
-      const confidence = Math.min(
-        ...BODY_ROOTS.flatMap((root) => {
-          const trust = frame.trust[root];
-          return trust.kind === "trusted" ? [trust.visibility] : [];
-        }),
-      );
-      x.step(
-        frame.tMs,
-        current.basis === undefined
-          ? undefined
-          : { direction: current.basis.x, visibility: confidence },
-      );
-      y.step(
-        frame.tMs,
-        current.basis === undefined
-          ? undefined
-          : { direction: current.basis.y, visibility: confidence },
-      );
-      let orientation: BodyOrientation;
-      if (current.basis !== undefined) {
-        measuredMs = frame.tMs;
-        orientation = { kind: "observed", basis: frozenBasis(current.basis), measuredMs };
-      } else if (current.degenerate) {
-        orientation = { kind: "unavailable", reason: "degenerate" };
-      } else {
-        const held =
-          fresh(measuredMs) && x.state !== undefined && y.state !== undefined
-            ? basis(x.state.direction, y.state.direction)
-            : undefined;
-        orientation =
-          held === undefined
-            ? { kind: "unavailable", reason: measuredMs === undefined ? "missing" : "expired" }
-            : {
-                kind: "inferred",
-                basis: frozenBasis(held),
-                measuredMs: measuredMs!,
-                expiresMs: measuredMs! + coastMs,
-              };
-      }
-      const torso = orientation.kind === "unavailable" ? undefined : orientation.basis;
-      // Only fully trusted, nondegenerate anchors calibrate the body model.
-      if (
-        Object.keys(offsets).length === 0 &&
-        current.basis !== undefined &&
-        BODY_ROOTS.every((root) => measured[root] !== undefined)
-      ) {
-        const origin = midpoint(measured["left-hip"]!, measured["right-hip"]!);
-        offsets = Object.fromEntries(
-          BODY_ROOTS.map((root) => [
-            root,
-            frozenVec(toLocal(current.basis!, sub(measured[root]!, origin))),
-          ]),
-        );
-      }
-      const origins =
-        torso === undefined
-          ? []
-          : BODY_ROOTS.flatMap((root) => {
-              const point = measured[root];
-              const offset = offsets[root];
-              return point === undefined || offset === undefined
-                ? []
-                : [sub(point, toWorld(torso, offset))];
-            });
-      const origin =
-        origins.length === 0
-          ? undefined
-          : frozenVec(
-              scale(
-                origins.reduce((sum, point) => add(sum, point), [0, 0, 0] as Vec),
-                1 / origins.length,
-              ),
-            );
-      const anchors = {} as Record<BodyRoot, BodyAnchor>;
-      for (const root of BODY_ROOTS) {
-        const point = measured[root];
-        if (point !== undefined) {
-          last.set(root, frame.tMs);
-          gaps.delete(root);
-        } else if (!gaps.has(root)) gaps.set(root, frame.tMs);
-        const filters = roots.get(root)!;
-        filters.forEach((filter, axis) => {
-          if (filter.state !== undefined && !fresh(filter.state.measuredMs)) filter.reset();
-          const trust = frame.trust[root];
-          filter.step(
-            frame.tMs,
-            point === undefined || trust.kind !== "trusted"
-              ? undefined
-              : { value: point[axis]!, visibility: trust.visibility },
-          );
-        });
-        const offset = offsets[root];
-        const modelPosition =
-          torso === undefined || origin === undefined || offset === undefined
-            ? undefined
-            : frozenVec(add(origin, toWorld(torso, offset)));
-        let inferred: Vec | undefined;
-        if (point === undefined && fresh(last.get(root))) {
-          const limb = LIMBS.find((item) => item.root === root)!;
-          const partner = measured[limb.partner];
-          const length = lengths.length(limb.width);
-          const partnerOffset = offsets[limb.partner as BodyRoot];
-          const localWidth =
-            offset === undefined || partnerOffset === undefined
-              ? undefined
-              : unit(sub(offset, partnerOffset));
-          if (
-            partner !== undefined &&
-            torso !== undefined &&
-            localWidth !== undefined &&
-            length !== undefined &&
-            Number.isFinite(length) &&
-            length > 0
-          )
-            inferred = add(partner, scale(toWorld(torso, localWidth), length));
-          inferred ??= modelPosition;
-          if (
-            inferred === undefined &&
-            filters.every((filter) => filter.state !== undefined && fresh(filter.state.measuredMs))
-          )
-            inferred = filters.map((filter) => filter.state!.value);
+      const restore = [
+        x.checkpoint(),
+        y.checkpoint(),
+        ...[...roots.values()].flatMap((filters) => filters.map((filter) => filter.checkpoint())),
+      ];
+      const savedLast = new Map(last),
+        savedGaps = new Map(gaps);
+      const savedOffsets = offsets,
+        savedMeasuredMs = measuredMs;
+      try {
+        const current = torsoMeasurement(measured);
+        const fresh = (time: number | undefined) =>
+          time !== undefined && frame.tMs - time <= coastMs;
+        if (!fresh(measuredMs)) {
+          x.reset();
+          y.reset();
         }
-        const joint: FilledJoint =
-          point !== undefined
-            ? Object.freeze({ kind: "measured", position: frozenVec(point) })
-            : inferred !== undefined && inferred.every(Number.isFinite)
-              ? Object.freeze({
+        const confidence = Math.min(
+          ...BODY_ROOTS.flatMap((root) => {
+            const trust = frame.trust[root];
+            return trust.kind === "trusted" ? [trust.visibility] : [];
+          }),
+        );
+        x.step(
+          frame.tMs,
+          current.basis === undefined
+            ? undefined
+            : { direction: current.basis.x, visibility: confidence },
+        );
+        y.step(
+          frame.tMs,
+          current.basis === undefined
+            ? undefined
+            : { direction: current.basis.y, visibility: confidence },
+        );
+        let orientation: BodyOrientation;
+        if (current.basis !== undefined) {
+          measuredMs = frame.tMs;
+          orientation = { kind: "observed", basis: frozenBasis(current.basis), measuredMs };
+        } else if (current.degenerate) {
+          orientation = { kind: "unavailable", reason: "degenerate" };
+        } else {
+          const held =
+            fresh(measuredMs) && x.state !== undefined && y.state !== undefined
+              ? basis(x.state.direction, y.state.direction)
+              : undefined;
+          orientation =
+            held === undefined
+              ? { kind: "unavailable", reason: measuredMs === undefined ? "missing" : "expired" }
+              : {
                   kind: "inferred",
-                  position: frozenVec(inferred),
-                  sinceMs: gaps.get(root)!,
-                })
-              : Object.freeze({ kind: "lost" });
-        anchors[root] = Object.freeze({
-          joint,
-          modelPosition,
-          expiresMs: joint.kind === "inferred" ? last.get(root)! + coastMs : undefined,
-          residualMm:
-            point === undefined || modelPosition === undefined
+                  basis: frozenBasis(held),
+                  measuredMs: measuredMs!,
+                  expiresMs: measuredMs! + coastMs,
+                };
+        }
+        const torso = orientation.kind === "unavailable" ? undefined : orientation.basis;
+        // Only fully trusted, nondegenerate anchors calibrate the body model.
+        if (
+          Object.keys(offsets).length === 0 &&
+          current.basis !== undefined &&
+          BODY_ROOTS.every((root) => measured[root] !== undefined)
+        ) {
+          const origin = midpoint(measured["left-hip"]!, measured["right-hip"]!);
+          offsets = Object.fromEntries(
+            BODY_ROOTS.map((root) => [
+              root,
+              frozenVec(toLocal(current.basis!, sub(measured[root]!, origin))),
+            ]),
+          );
+        }
+        const originEntries =
+          torso === undefined
+            ? []
+            : BODY_ROOTS.flatMap((root) => {
+                const point = measured[root];
+                const offset = offsets[root];
+                return point === undefined || offset === undefined
+                  ? []
+                  : [{ root, position: sub(point, toWorld(torso, offset)) }];
+              });
+        const origins = originEntries.map((entry) => entry.position);
+        const origin =
+          origins.length === 0
+            ? undefined
+            : frozenVec(
+                scale(
+                  origins.reduce((sum, point) => add(sum, point), [0, 0, 0] as Vec),
+                  1 / origins.length,
+                ),
+              );
+        const anchors = {} as Record<BodyRoot, BodyAnchor>;
+        for (const root of BODY_ROOTS) {
+          const point = measured[root];
+          if (point !== undefined) {
+            last.set(root, frame.tMs);
+            gaps.delete(root);
+          } else if (!gaps.has(root)) gaps.set(root, frame.tMs);
+          const filters = roots.get(root)!;
+          filters.forEach((filter, axis) => {
+            if (filter.state !== undefined && !fresh(filter.state.measuredMs)) filter.reset();
+            const trust = frame.trust[root];
+            filter.step(
+              frame.tMs,
+              point === undefined || trust.kind !== "trusted"
+                ? undefined
+                : { value: point[axis]!, visibility: trust.visibility },
+            );
+          });
+          const offset = offsets[root];
+          // A root cannot score its own origin fit: use other trusted anchors for a residual.
+          // A single visible anchor establishes placement, but provides no independent residual.
+          const otherOrigins = originEntries
+            .filter((entry) => entry.root !== root)
+            .map((entry) => entry.position);
+          const diagnosticOrigin =
+            point === undefined
+              ? origin
+              : otherOrigins.length === 0
+                ? undefined
+                : scale(
+                    otherOrigins.reduce((sum, position) => add(sum, position), [0, 0, 0] as Vec),
+                    1 / otherOrigins.length,
+                  );
+          const modelPosition =
+            torso === undefined || diagnosticOrigin === undefined || offset === undefined
               ? undefined
-              : distance(point, modelPosition),
+              : frozenVec(add(diagnosticOrigin, toWorld(torso, offset)));
+          if (modelPosition !== undefined && !modelPosition.every(Number.isFinite))
+            throw new Error("Body model position overflow.");
+          let inferred: Vec | undefined;
+          if (point === undefined && fresh(last.get(root))) {
+            const limb = LIMBS.find((item) => item.root === root)!;
+            const partner = measured[limb.partner];
+            const length = lengths.length(limb.width);
+            const partnerOffset = offsets[limb.partner as BodyRoot];
+            const localWidth =
+              offset === undefined || partnerOffset === undefined
+                ? undefined
+                : unit(sub(offset, partnerOffset));
+            if (
+              partner !== undefined &&
+              torso !== undefined &&
+              localWidth !== undefined &&
+              length !== undefined &&
+              Number.isFinite(length) &&
+              length > 0
+            )
+              inferred = add(partner, scale(toWorld(torso, localWidth), length));
+            inferred ??= modelPosition;
+            if (
+              inferred === undefined &&
+              filters.every(
+                (filter) => filter.state !== undefined && fresh(filter.state.measuredMs),
+              )
+            )
+              inferred = filters.map((filter) => filter.state!.value);
+          }
+          const joint: FilledJoint =
+            point !== undefined
+              ? Object.freeze({ kind: "measured", position: frozenVec(point) })
+              : inferred !== undefined && inferred.every(Number.isFinite)
+                ? Object.freeze({
+                    kind: "inferred",
+                    position: frozenVec(inferred),
+                    sinceMs: gaps.get(root)!,
+                  })
+                : Object.freeze({ kind: "lost" });
+          anchors[root] = Object.freeze({
+            joint,
+            modelPosition,
+            expiresMs: joint.kind === "inferred" ? last.get(root)! + coastMs : undefined,
+            residualMm:
+              point === undefined || modelPosition === undefined
+                ? undefined
+                : distance(point, modelPosition),
+          });
+        }
+        const result = Object.freeze({
+          tMs: frame.tMs,
+          orientation: Object.freeze(orientation),
+          origin,
+          anchors: Object.freeze(anchors),
+          offsets: Object.freeze({ ...offsets }),
         });
+        previousMs = frame.tMs;
+        return result;
+      } catch (error) {
+        for (const rollback of restore) rollback();
+        last.clear();
+        for (const [root, time] of savedLast) last.set(root, time);
+        gaps.clear();
+        for (const [root, time] of savedGaps) gaps.set(root, time);
+        offsets = savedOffsets;
+        measuredMs = savedMeasuredMs;
+        throw error;
       }
-      return Object.freeze({
-        tMs: frame.tMs,
-        orientation: Object.freeze(orientation),
-        origin,
-        anchors: Object.freeze(anchors),
-        offsets: Object.freeze({ ...offsets }),
-      });
     },
     reset() {
       x.reset();

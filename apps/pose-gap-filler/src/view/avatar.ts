@@ -96,6 +96,7 @@ const vector = (point: Vec) => new Vector3(point[0]!, point[1]!, point[2]!);
  */
 export function createAvatarScene(parent = new Group()) {
   calibrateAvatarParent(parent);
+  requireUniformScale(parent);
   const box = new BoxGeometry(1, 1, 1);
   const sphere = new SphereGeometry(1, 10, 8);
   const materials = Object.fromEntries(

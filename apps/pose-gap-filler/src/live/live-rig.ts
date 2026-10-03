@@ -19,6 +19,7 @@ export interface LiveRig {
 export function createLiveRig(
   createSolver: () => RigSolver,
   createImageTrust: () => GapPipeline,
+  clearPresentation: () => void = () => {},
 ): LiveRig {
   let solver = createSolver();
   let imageTrust = createImageTrust();
@@ -32,14 +33,23 @@ export function createLiveRig(
     },
     restart() {
       if (disposed) return;
+      clearPresentation();
       const fresh = createSolver();
+      let freshImageTrust: GapPipeline;
+      try {
+        freshImageTrust = createImageTrust();
+      } catch (error) {
+        fresh.dispose();
+        throw error;
+      }
       solver.dispose();
       solver = fresh;
-      imageTrust = createImageTrust();
+      imageTrust = freshImageTrust;
     },
     dispose() {
       if (disposed) return;
       disposed = true;
+      clearPresentation();
       solver.dispose();
     },
   };

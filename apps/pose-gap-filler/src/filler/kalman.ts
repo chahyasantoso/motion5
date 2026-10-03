@@ -63,6 +63,15 @@ export function createCvFilter(domain: ScalarDomain, options: ScalarNoise) {
     get state(): CvState | undefined {
       return state;
     },
+    /** Small app-level multi-filter transactions save state references, not a filter clone. */
+    checkpoint(): () => void {
+      const savedState = state,
+        savedMs = previousMs;
+      return () => {
+        state = savedState;
+        previousMs = savedMs;
+      };
+    },
     step(tMs: number, measurement?: ScalarMeasurement): CvState | undefined {
       if (!Number.isFinite(tMs) || (previousMs !== undefined && tMs < previousMs))
         throw new Error("Kalman timestamps must be finite and nondecreasing.");

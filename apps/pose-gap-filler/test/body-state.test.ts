@@ -5,6 +5,8 @@ import { createGapPipeline } from "../src/filler/pipeline";
 import { presentedPosition } from "../src/filler/frame";
 import { DEFAULT_WORLD_KALMAN_NOISE } from "../src/filler/world-chain";
 import { WORLD_SPACE } from "../src/filler/space";
+import { rotate } from "../src/filler/direction";
+import { createGapFiller } from "../src/filler/gap-filler";
 import { jointRecord, type JointId } from "../src/filler/landmarks";
 import { add, distance, scale, type Vec } from "../src/filler/vec";
 import { syntheticWorldPose } from "../src/replay/synthetic";
@@ -41,6 +43,7 @@ describe("shared body state", () => {
       expect(step.filled.joints[root]).toBe(step.filled.body!.anchors[root].joint);
       expect(presentedPosition(step.filled.joints[root])).toEqual(points[root]);
       expect(Object.isFrozen(presentedPosition(step.filled.joints[root]))).toBe(true);
+      expect(step.filled.body!.anchors[root].expiresMs).toBeUndefined();
     }
   });
 
@@ -141,5 +144,121 @@ describe("shared body state", () => {
     expect(() => run.owner.step(bad, run.lengths)).toThrow(/finite/);
     expect(run.owner.step(frame, run.lengths).orientation.kind).toBe("observed");
     expect(() => run.owner.step(frame, run.lengths)).toThrow(/timestamps/);
+  });
+
+  it("GF-148 rolls back every filter and metadata record when a later body operation fails", () => {
+    const a = setup(),
+      b = setup(),
+      points = pose();
+    a.step(points, 0);
+    b.step(points, 0);
+    const frame = trustedOf(frameOf(points, 100, WORLD_SPACE), ["left-shoulder", "left-hip"]);
+    const faulty = {
+      length: (bone: Parameters<typeof a.lengths.length>[0]) => {
+        if (bone === "hip-width") throw new Error("length port failed");
+        return a.lengths.length(bone);
+      },
+    };
+    expect(() => a.owner.step(frame, faulty)).toThrow(/length port/);
+    expect(a.owner.step(frame, a.lengths)).toEqual(b.owner.step(frame, b.lengths));
+  });
+
+  it("GF-149 exposes no independent residual from a single root and preserves rigid equivariance", () => {
+    const one = setup(),
+      points = pose();
+    one.step(points, 0);
+    const lone = one.step({ "left-hip": add(points["left-hip"], [100, 40, -20]) }, 100);
+    expect(lone.anchors["left-hip"].residualMm).toBeUndefined();
+    const a = setup(),
+      b = setup(),
+      rotation: Vec = [0.3, -0.7, 0.2];
+    const turned = (p: Record<JointId, Vec>) => jointRecord((joint) => rotate(p[joint], rotation));
+    a.step(points, 0);
+    b.step(turned(points), 0);
+    const moved = jointRecord((joint) => add(points[joint], [30, -40, 70]));
+    const plain = a.step(moved, 100, ["left-shoulder"]);
+    const result = b.step(turned(moved), 100, ["left-shoulder"]);
+    expect(distance(result.origin!, rotate(plain.origin!, rotation))).toBeLessThan(1e-6);
+    for (const root of BODY_ROOTS) {
+      expect(
+        distance(
+          presentedPosition(result.anchors[root].joint)!,
+          rotate(presentedPosition(plain.anchors[root].joint)!, rotation),
+        ),
+      ).toBeLessThan(1e-6);
+      expect(
+        Math.abs(result.anchors[root].residualMm! - plain.anchors[root].residualMm!) || 0,
+      ).toBeLessThan(1e-6);
+    }
+  });
+
+  it("GF-150 rejects stale shared-body input before advancing the direct world filler", () => {
+    const pipeline = createGapPipeline({
+      filler: { kind: "chain-kalman", noise: DEFAULT_WORLD_KALMAN_NOISE, coastMs: 500 },
+      detector: { threshold: 0.5, gate: Infinity },
+    });
+    const first = pipeline.step(frameOf(pose(), 0, WORLD_SPACE));
+    const next = trustedOf(frameOf(pose(), 100, WORLD_SPACE));
+    const filler = createGapFiller({
+      kind: "chain-kalman",
+      noise: DEFAULT_WORLD_KALMAN_NOISE,
+      coastMs: 500,
+    });
+    expect(() => filler.fill({ ...next, body: first.filled.body! }, pipeline.lengths)).toThrow(
+      /timestamp/,
+    );
+    expect(filler.fill(next, pipeline.lengths).body!.tMs).toBe(100);
+  });
+
+  it("GF-151 distinguishes actual degenerate evidence from merely missing axes", () => {
+    const points = pose();
+    const variants: Partial<Record<JointId, Vec>>[] = [
+      { "left-shoulder": [0, 0, 0], "right-shoulder": [0, 0, 0] },
+      {
+        ...points,
+        "left-shoulder": points["right-shoulder"],
+        "right-shoulder": points["left-shoulder"],
+        "left-hip": points["right-shoulder"],
+        "right-hip": points["left-shoulder"],
+      },
+      { "left-shoulder": [0, 0, 0], "left-hip": [0, 0, 0] },
+    ];
+    for (const variant of variants) {
+      const run = setup();
+      run.step(points, 0);
+      expect(run.step(variant, 100).orientation).toEqual({
+        kind: "unavailable",
+        reason: "degenerate",
+      });
+    }
+    const run = setup();
+    run.step(points, 0);
+    expect(run.step({ "left-hip": points["left-hip"] }, 100).orientation.kind).toBe("inferred");
+  });
+
+  it("GF-157 rejects foreign shared roots and overflow magnitudes without consuming time", () => {
+    const run = setup(),
+      points = pose();
+    const bad = trustedOf(frameOf({ ...points, "left-hip": [1e308, 0, 0] }, 0, WORLD_SPACE));
+    expect(() => run.owner.step(bad, run.lengths)).toThrow(/overflow/);
+    const body = run.step(points, 0),
+      frame = trustedOf(frameOf(points, 0, WORLD_SPACE));
+    const filler = createGapFiller({
+      kind: "chain-kalman",
+      noise: DEFAULT_WORLD_KALMAN_NOISE,
+      coastMs: 500,
+    });
+    const foreign = Object.freeze({
+      ...body,
+      anchors: {
+        ...body.anchors,
+        "left-hip": {
+          ...body.anchors["left-hip"],
+          joint: { kind: "measured" as const, position: [1, 2, 3] },
+        },
+      },
+    });
+    expect(() => filler.fill({ ...frame, body: foreign }, run.lengths)).toThrow(/trusted roots/);
+    expect(filler.fill({ ...frame, body }, run.lengths).body).toBe(body);
   });
 });

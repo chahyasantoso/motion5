@@ -173,3 +173,67 @@ each slice adds and the decisions behind them. What has landed is claimed only b
   frame. Prop records/coordinates and degenerate/tangent cylinder cases are checked (`GF-124`).
   A minimal injected DOM/canvas-port test proves every panel select updates observation state
   without moving truth (`GF-125`); it is not a browser smoke test.
+
+## Shared body and reconstructed Three avatar
+
+The world pipeline owns `src/body/state.ts`, one immutable body estimate shared by the world
+filler and the renderer. Direct filler callers use the same owner internally, not a second torso
+algorithm. The estimate contains a camera-relative origin, calibrated torso-local shoulder/hip
+offsets, observed/inferred/unavailable orientation, root provenance and expiry. Attachment offsets
+are captured on the first fully trusted nondegenerate torso after reset; the existing estimator
+still owns shoulder/hip widths and limb lengths. This is measured person calibration, not the
+synthetic actor's authored anatomy or the avatar's display scale.
+
+Trusted roots are copied exactly, never pulled toward the model. Missing roots use a trusted
+partner and estimator-owned width, then shared calibrated placement; with no usable body placement
+they may use their own bounded position coast. Inferred roots never recursively train other
+anchors, lengths, trust or observed age. Each root expires against its own last trusted timestamp.
+Merely missing torso evidence may coast its previous basis within the same horizon, explicitly
+labeled inferred. Zero/collinear/canceling current torso evidence publishes no orientation.
+All body/filter state resets with the subject. Body updates roll back every filter and metadata
+record if a later operation fails (`GF-126` through `GF-133`, `GF-148` through `GF-151`).
+
+Per-root model residuals use an origin fitted from the **other** trusted calibrated roots; a
+single visible anchor provides placement but no independent residual. These are body-fit
+diagnostics, not detector ground truth or a new trust gate. Current torso orientation still uses
+trusted torso evidence, so even the leave-one-out origin residual is not independent measurement
+validation. The body model does not promise exact fitting of inconsistent noise.
+
+Select **world (mm)** and enable **Three avatar** to see the reconstructed pelvis, trunk,
+shoulder bar, neck/neutral head and the four solved chains. The view reads the same rig project's
+ready patches through the read-only `RigSolver.readPatch` port and `@motion5/three`. Every frame-
+bound group is a direct child of a calibrated parent: `Rx(pi)` maps camera x/right, y/down,
+z/away to Three x/right, y/up, z/toward, and one uniform `0.001` parent scale converts mm to
+metres. No preview mirror or extra Y reflection is applied. Motion5 FK frames are **distal
+tips**; limb boxes extend backward along local `-x`. Parent rotation/positive uniform scale
+compose normally; nonuniform, nonfinite and nonpositive scales are rejected (`GF-134` through
+`GF-138`, `GF-153`). These are flat procedural primitives, not a nested GLTF/skinning adapter.
+
+Geometry/materials/topology are built once and reused. The viewport owns no project, clock,
+pose filter or solve. Only the existing writer submits one value batch per accepted pose, with
+one pole per limb; measured middle/root pairs remain the only inputs that update observed bend
+history. An inferred root translates the held pole but cannot retrain it (`GF-152`).
+
+Blue means measured **inputs**, not guaranteed truth or an exact solved middle.
+Amber wireframe means inferred inputs; grey means neutral orientation/anatomy.
+Noiseless consistent calibrated limbs reproduce middle and tip; the readout exposes separate
+solved-versus-trusted middle and tip residuals for inconsistent noisy inputs (`GF-154`).
+Unobserved residuals are unavailable, not zero. Skipped/lost limbs are hidden even when the
+project retains old ready patches, and solver replacement re-arms renderer revisions
+(`GF-139` through `GF-141`). Raw/hold ablations keep their own root presentation, so the coarse
+body connects to those actual chain roots rather than substituting stabilized anchors.
+
+Coarse palm/foot planes use wrist/index/pinky or ankle/foot-index/heel extra world slots when
+coordinates and confidence are finite, reported presence is not below threshold, and the plane
+is nondegenerate. The 12-joint trust/model topology is unchanged; this local extra-slot evidence
+is not a full speed-gated trust model. Missing/unusable evidence or an inferred tip uses an
+explicit neutral orientation. It never claims full forearm twist, fingers, measured head
+orientation or calibrated head dimensions (`GF-142`).
+
+The independent avatar orbit changes presentation only, never simulator visibility. Source end,
+setting/calibration/subject restart and WebGL context loss clear geometry immediately. Context
+restoration stays empty until the next accepted pose. GPU initialization/runtime failures leave
+the overlay and all sources usable. Resize/input/resource ownership is disposed on pagehide
+(`GF-143` through `GF-147`, `GF-155`). Low-tier defaults use reused basic materials, pixel ratio
+one, no antialiasing and no shadows. Lifecycle tests use injected rendering ports and actual
+Three CPU scene objects, not a browser/WebGL smoke test.

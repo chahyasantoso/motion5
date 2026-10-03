@@ -2,7 +2,6 @@ import { presentedPosition, trustedPosition, type FilledJoint } from "./frame";
 import type { GapFiller } from "./gap-filler";
 import type { KalmanNoise } from "./chain-kalman";
 import {
-  basis,
   createDirectionFilter,
   continuedSegmentBasis,
   toLocal,
@@ -72,7 +71,21 @@ export function createWorldChainFiller(noise: KalmanNoise, coastMs: number): Gap
           default:
             return unreachable(joint, "joint trust");
         }
-      previousMs = frame.tMs;
+      if (frame.body !== undefined && frame.body.tMs !== frame.tMs)
+        throw new Error("Body state timestamp does not match trusted frame.");
+      if (frame.body !== undefined) {
+        if (!Object.isFrozen(frame.body)) throw new Error("Shared body state must be immutable.");
+        for (const limb of LIMBS) {
+          const trust = frame.trust[limb.root];
+          const anchor = frame.body.anchors[limb.root as BodyRoot].joint;
+          if (
+            trust.kind === "trusted" &&
+            (anchor.kind !== "measured" ||
+              trust.position.some((value, axis) => value !== anchor.position[axis]))
+          )
+            throw new Error("Shared body state does not match trusted roots.");
+        }
+      }
       const visibility = (joints: readonly JointId[]) =>
         Math.min(
           ...joints.map((joint) => {
@@ -94,6 +107,7 @@ export function createWorldChainFiller(noise: KalmanNoise, coastMs: number): Gap
         );
       };
       const body = frame.body ?? bodyOwner.step(frame, lengths);
+      previousMs = frame.tMs;
       const torsoJoints = LIMBS.map((limb) => limb.root).filter(
         (root) => measured[root] !== undefined,
       );

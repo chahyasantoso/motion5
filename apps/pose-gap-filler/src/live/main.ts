@@ -1,7 +1,13 @@
 import { createManualClock, createMicrotaskScheduler } from "@motion5/core";
 import { createGsapInterpolator } from "@motion5/core/adapters";
 import { gsap } from "gsap";
-import { hasPose, parsePoseResult, readRawPose, type StageSize } from "../filler/adapter";
+import {
+  adaptPose,
+  hasPose,
+  parsePoseResult,
+  readRawPose,
+  type StageSize,
+} from "../filler/adapter";
 import { unreachable } from "../filler/unreachable";
 import type { FillerKind } from "../filler/gap-filler";
 import { IMAGE_SPACE, WORLD_SPACE, LANDMARK_SPACES } from "../filler/space";
@@ -109,6 +115,7 @@ function main(): void {
         detector: experiment.calibrations?.image.detector,
         stabilizer: stabilizerFor(selectedStabilizer(), IMAGE_SPACE),
       }),
+    viewport.clear,
   );
   spaceSelect.addEventListener("change", () => {
     const next = LANDMARK_SPACES.find((candidate) => candidate.kind === spaceSelect.value);
@@ -211,22 +218,23 @@ function main(): void {
     const space = experiment.space;
     recorder.keep(result, tMs);
     const image = parsePoseResult(result, tMs, IMAGE_SPACE, STAGE);
-    const frame = space.kind === "image" ? image : parsePoseResult(result, tMs, WORLD_SPACE, STAGE);
+    const worldPose = space.kind === "world" ? readRawPose(result, WORLD_SPACE) : undefined;
+    const frame = space.kind === "image" ? image : adaptPose(worldPose, tMs, WORLD_SPACE, STAGE);
     timer.mark("adapt");
     const pipeline = experiment.pipeline;
     const step = pipeline.step(frame, forced.joints);
     timer.mark("fill");
     const solved = rig.solver.solve(step, pipeline.lengths);
+    timer.mark("write");
     if (avatarEnabled.checked && space.kind === "world")
       viewport.update(
         step,
         solved,
         pipeline.lengths,
         rig.solver,
-        readRawPose(result, WORLD_SPACE),
+        worldPose,
         experiment.calibration?.detector.threshold ?? 0.5,
       );
-    timer.mark("write");
     const fit =
       space.kind === "world"
         ? fitWeakPerspective(step.trusted, rig.imageTrust.step(image, forced.joints).trusted)

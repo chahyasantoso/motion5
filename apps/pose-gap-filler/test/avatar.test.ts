@@ -13,6 +13,7 @@ import { createWorldWriter } from "../src/rig/writer";
 import { limbTracks, poseNodeId } from "../src/rig/tracks";
 import type { RawLandmark } from "../src/filler/adapter";
 import { presentedPosition } from "../src/filler/frame";
+import { add, sub, distance } from "../src/filler/vec";
 import { countingProject, fakePorts } from "./engine";
 import { frameOf } from "./frames";
 
@@ -224,5 +225,98 @@ describe("flat reconstructed avatar", () => {
       /disposed/,
     );
     f.solver.dispose();
+  });
+
+  it("GF-152 holds observed poles through inferred body roots and skips them after expiry", () => {
+    const loaded = loadWorldRig(fakePorts()),
+      run = pipeline(),
+      writer = createWorldWriter(loaded);
+    try {
+      const points = pose(),
+        first = run.step(frameOf(points, 0, WORLD_SPACE));
+      writer.write(first.filled, first.trusted, run.lengths);
+      const ids = limbTracks("left-arm"),
+        readPole = () => {
+          const patch = loaded.get(poseNodeId(ids.pole))!;
+          return patch.status === "ready"
+            ? ["x", "y", "z"].map((key) => patch.values[key] as number)
+            : [];
+        };
+      const held = sub(readPole(), points["left-shoulder"]);
+      const moved = jointRecord((joint) => add(points[joint], [40, -20, 60]));
+      moved["left-elbow"] = add(moved["left-shoulder"], [-100, 100, -300]);
+      const next = run.step(frameOf(moved, 100, WORLD_SPACE), new Set(["left-shoulder"]));
+      writer.write(next.filled, next.trusted, run.lengths);
+      const root = presentedPosition(next.filled.joints["left-shoulder"])!;
+      expect(distance(sub(readPole(), root), held)).toBeLessThan(1e-6);
+      const expired = run.step(frameOf(moved, 501, WORLD_SPACE), new Set(["left-shoulder"]));
+      expect(writer.write(expired.filled, expired.trusted, run.lengths)["left-arm"].kind).toBe(
+        "skipped",
+      );
+    } finally {
+      loaded.dispose();
+    }
+  });
+
+  it("GF-153 refuses unsupported ancestor scale at construction and verifies connected body endpoints", () => {
+    const outer = new Group(),
+      parent = new Group();
+    outer.scale.set(1, 2, 1);
+    outer.add(parent);
+    expect(() => createAvatarScene(parent)).toThrow(/uniform/);
+    const f = fixture();
+    try {
+      const { step } = f.update(0);
+      const root = (id: JointId) =>
+        new Vector3().fromArray(presentedPosition(step.filled.joints[id])!);
+      const end = (id: string, x: number) => {
+        const mesh = f.avatar.objects.get(id)!.children[0]!;
+        return f.avatar.parent.worldToLocal(mesh.localToWorld(new Vector3(x, 0, 0)));
+      };
+      expect(end("pelvis", -0.5).distanceTo(root("right-hip"))).toBeLessThan(1e-5);
+      expect(end("pelvis", 0.5).distanceTo(root("left-hip"))).toBeLessThan(1e-5);
+      expect(end("shoulders", -0.5).distanceTo(root("right-shoulder"))).toBeLessThan(1e-5);
+      expect(end("trunk", 0.5).distanceTo(end("neck", -0.5))).toBeLessThan(1e-5);
+    } finally {
+      f.dispose();
+    }
+  });
+
+  it("GF-154 reports inconsistent noisy middle residuals rather than promising exact fitting", () => {
+    const f = fixture();
+    try {
+      f.update(0);
+      const points = pose();
+      points["left-elbow"] = add(points["left-elbow"], [60, 40, 30]);
+      const step = f.run.step(frameOf(points, 100, WORLD_SPACE));
+      const solved = f.solver.solve(step, f.run.lengths);
+      const result = f.avatar.update(step, solved, f.run.lengths, f.solver.readPatch);
+      expect(result.get("left-arm")!.middleMm!).toBeGreaterThan(1);
+      expect(result.get("left-arm")!.tipMm!).toBeLessThan(1e-5);
+    } finally {
+      f.dispose();
+    }
+  });
+
+  it("GF-156 rejects overflow/invalid extra-slot bases and suppresses stale head geometry", () => {
+    const raw: RawLandmark[] = Array.from({ length: 33 }, () => [NaN, NaN, NaN, 0, NaN]);
+    raw[15] = [0, 0, 0, 1, NaN];
+    raw[19] = [1e153, 0, 0, 1, NaN];
+    raw[17] = [0, 1e153, 0, 1, NaN];
+    expect(extremityOrientation("left-arm", raw, 0.5).kind).toBe("neutral");
+    expect(() => extremityOrientation("left-arm", raw, NaN)).toThrow(/threshold/);
+    raw[19] = [0.1, 0, 0, NaN, NaN];
+    expect(extremityOrientation("left-arm", raw, 0.5).kind).toBe("neutral");
+    const f = fixture();
+    try {
+      f.update(0);
+      f.update(100, new Set(["left-shoulder", "right-shoulder"]));
+      expect(f.avatar.objects.get("head")!.userData.provenance).toBe("neutral");
+      f.update(501, new Set(["left-shoulder", "right-shoulder"]));
+      expect(f.avatar.objects.get("head")!.visible).toBe(false);
+      expect(f.avatar.objects.get("neck")!.visible).toBe(false);
+    } finally {
+      f.dispose();
+    }
   });
 });
