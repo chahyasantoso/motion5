@@ -50,6 +50,8 @@ export interface Proportions {
   readonly footForward: number;
   readonly heelBack: number;
   readonly neckToHeadCentre: number;
+  /** The head as a sphere about its centre: where the ears sit, and what hides a turned face. */
+  readonly headRadius: number;
 }
 
 export const DEFAULT_PROPORTIONS: Proportions = Object.freeze({
@@ -65,6 +67,7 @@ export const DEFAULT_PROPORTIONS: Proportions = Object.freeze({
   footForward: 0.19,
   heelBack: 0.06,
   neckToHeadCentre: 0.17,
+  headRadius: 0.085,
 });
 
 /** Where a segment's origin sits in its parent's frame, from the proportions. */

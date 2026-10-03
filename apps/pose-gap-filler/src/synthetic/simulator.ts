@@ -3,6 +3,14 @@ import { unreachable } from "../filler/unreachable";
 import { actorFrame, type ActorFrame, type ActorPose } from "./actor";
 import { createCamera, type Camera, type CameraSpec } from "./camera";
 import {
+  NO_CORRUPTION,
+  frameTiming,
+  validateCorruption,
+  type CorruptionSpec,
+  type FrameTiming,
+} from "./corruption";
+import { PROPS, type Occluder } from "./occlusion";
+import {
   IDEAL_SCORES,
   observe,
   rawPoses,
@@ -58,10 +66,38 @@ export function reportResult(report: SimulatorReport): PoseResult {
   }
 }
 
-export interface SimulatorState {
+/** How the truth is observed beyond the camera: the detector's scores, the props, its errors. */
+export interface ObservationSetup {
+  readonly scores: DetectorScores;
+  readonly props: readonly Occluder[];
+  readonly corruption: CorruptionSpec;
+}
+
+/** An ideal detector, an empty scene and no corruption, what a simulator starts with by default. */
+export const IDEAL_OBSERVATION: ObservationSetup = Object.freeze({
+  scores: IDEAL_SCORES,
+  props: PROPS.none,
+  corruption: NO_CORRUPTION,
+});
+
+export interface SimulatorState extends ObservationSetup {
   readonly drive: ActorDrive;
   readonly camera: CameraSpec;
   readonly edits: readonly ObservationEdit[];
+}
+
+/** A simulator's starting state: the drive and camera, with any part of the setup overridden. */
+export type SimulatorInit = Pick<SimulatorState, "drive" | "camera"> &
+  Partial<Pick<SimulatorState, "edits">> &
+  Partial<ObservationSetup>;
+
+/** The camera rate the simulator is sampled at, the rate the committed takes were made at. */
+export const SIMULATOR_FPS = 30;
+export const SIMULATOR_FRAME_MS = 1000 / SIMULATOR_FPS;
+
+/** The camera frame a time falls in: frame `k` spans `[k, k + 1)` periods, lateness included. */
+export function frameIndexAt(tMs: number): number {
+  return Math.floor(tMs / SIMULATOR_FRAME_MS + 1e-9);
 }
 
 export interface Simulator {
@@ -70,9 +106,13 @@ export interface Simulator {
   poseAt(tMs: number): ActorPose;
   /** The frame at `tMs`: a pure function of the state and `tMs`, remembered as `last`. */
   frame(tMs: number): SimulatorFrame;
+  /** When camera frame `k` reaches the detector under the current corruption. */
+  timing(k: number): FrameTiming;
   readonly last: SimulatorFrame | undefined;
   drive(next: ActorDrive): void;
   aim(camera: CameraSpec): void;
+  /** Changes how the truth is observed: the detector's scores, the props, the corruption. */
+  observeWith(setup: Partial<ObservationSetup>): void;
   /** Adds an observation edit; an edit of the same kind on the same landmark replaces it. */
   edit(next: ObservationEdit): void;
   clearEdits(): void;
@@ -80,16 +120,16 @@ export interface Simulator {
 
 /**
  * The synthetic human: a truth actor driven by a scenario or a manual pose, an observation camera,
- * a detector (`scores`) and the person's observation edits. It owns no clock and reads nothing from
+ * a detector (its scores, the scene's props and its corruption) and the person's observation edits. It owns no clock and reads nothing from
  * the pipeline, so the estimate can never move what it is judged against, and a frame is
  * reproducible from the state and its time alone.
  */
 export function createSimulator(
-  initial: SimulatorState,
-  scores: DetectorScores = IDEAL_SCORES,
+  initial: SimulatorInit,
   body: Proportions = DEFAULT_PROPORTIONS,
 ): Simulator {
-  let state = initial;
+  let state: SimulatorState = { ...IDEAL_OBSERVATION, edits: [], ...initial };
+  validateCorruption(state.corruption, SIMULATOR_FRAME_MS);
   let camera = createCamera(state.camera);
   let last: SimulatorFrame | undefined;
   const poseAt = (tMs: number): ActorPose => {
@@ -130,11 +170,23 @@ export function createSimulator(
         loss.kind === "landmarks"
           ? loss.landmarks.map((landmark) => ({ kind: "drop", landmark }))
           : [];
-      const observed = observe(truth, camera, scores, [...state.edits, ...scripted]);
+      const observed = observe(truth, camera, {
+        scores: state.scores,
+        props: state.props,
+        corruption: state.corruption,
+        frameIndex: frameIndexAt(tMs),
+        edits: [...state.edits, ...scripted],
+      });
       const report: SimulatorReport =
         loss.kind === "pose" ? NO_POSE : { kind: "pose", ...rawPoses(observed) };
       last = Object.freeze({ tMs, truth, camera, observed, report });
       return last;
+    },
+    timing: (k) => frameTiming(state.corruption, k, SIMULATOR_FRAME_MS),
+    observeWith(setup) {
+      const next = { ...state, ...setup };
+      validateCorruption(next.corruption, SIMULATOR_FRAME_MS);
+      state = next;
     },
     drive(next) {
       state = { ...state, drive: next };
