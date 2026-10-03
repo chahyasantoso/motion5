@@ -20,7 +20,8 @@
           <p class="intro">Inspect the gaps. Compare the reconstruction.</p>
         </div>
         <p class="local-note">
-          Synthetic sources run locally.<br />Camera starts only when you ask.
+          Synthetic sources run locally.<br />
+          Camera starts only when you ask.
         </p>
       </header>
       <section class="run-bar" aria-label="Session controls">
@@ -29,7 +30,7 @@
           <select id="source"></select
         ></label>
         <button id="start" class="primary" type="button">Start</button>
-        <span class="run-hint">Choose a source, then start the session.</span>
+        <span class="run-hint">Local simulation or camera input.</span>
       </section>
       <div class="workspace">
         <aside class="settings" aria-label="Experiment settings">
@@ -123,6 +124,12 @@
               </div>
               <span class="view-tag">3D</span>
             </div>
+            <canvas
+              id="avatar-view"
+              width="640"
+              height="480"
+              aria-label="Reconstructed 3D body"
+            ></canvas>
             <div class="controls">
               <label
                 >View yaw <input id="avatar-yaw" type="range" min="-180" max="180" value="0"
@@ -131,12 +138,6 @@
                 >View pitch <input id="avatar-pitch" type="range" min="-60" max="60" value="0"
               /></label>
             </div>
-            <canvas
-              id="avatar-view"
-              width="640"
-              height="480"
-              aria-label="Reconstructed 3D body"
-            ></canvas>
             <details class="readout">
               <summary>Body &amp; bend diagnostics</summary>
               <pre id="avatar-info"></pre>

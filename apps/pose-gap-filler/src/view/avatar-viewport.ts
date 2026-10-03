@@ -8,6 +8,7 @@ import type { LimbId } from "../filler/landmarks";
 import type { RigSolver } from "../rig/solver";
 import type { SolvedLimb } from "../rig/rig";
 import { createAvatarScene } from "./avatar";
+import { createAvatarFraming } from "./avatar-framing";
 
 /** The WebGL ownership port is injectable for lifecycle tests, never a second pose engine. */
 export interface AvatarRenderer {
@@ -31,6 +32,7 @@ export function mountAvatarViewport(
   const scene = new Scene();
   scene.add(avatar.parent);
   const camera = new PerspectiveCamera(38, 4 / 3, 0.01, 100);
+  const frameAvatar = createAvatarFraming();
   let renderer: AvatarRenderer | undefined;
   let available = true;
   let disposed = false;
@@ -49,15 +51,7 @@ export function mountAvatarViewport(
         height = Math.max(1, canvas.clientHeight || 480);
       renderer.setSize(width, height, false);
       camera.aspect = width / height;
-      camera.updateProjectionMatrix();
-      const a = (Number(yaw.value) * Math.PI) / 180,
-        p = (Number(pitch.value) * Math.PI) / 180;
-      camera.position.set(
-        3 * Math.sin(a) * Math.cos(p),
-        0.35 + 3 * Math.sin(p),
-        3 * Math.cos(a) * Math.cos(p),
-      );
-      camera.lookAt(0, 0.35, 0);
+      frameAvatar(camera, avatar.parent, Number(yaw.value), Number(pitch.value));
       renderer.render(scene, camera);
     } catch (error) {
       available = false;
