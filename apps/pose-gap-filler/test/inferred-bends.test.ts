@@ -140,7 +140,7 @@ describe("inferred bends through the real world rig", () => {
       bend: { kind: "held", lastObservedTMs: 0 },
     });
   });
-  it("GF-177 complete loss, expiry and fresh-rig reacquisition cannot show old solves as fresh", () => {
+  it("GF-177 expiry uses fallback solves, while complete endpoint loss still hides old solves", () => {
     const solver = createWorldRigSolver(fakePorts(), {
       bendPolicy: PREDICTED_BEND_POLICY,
       diagnostics: true,
@@ -148,7 +148,7 @@ describe("inferred bends through the real world rig", () => {
     try {
       const first = trustedOf(frameOf(bendPose(0), 0, WORLD_SPACE));
       solver.solve({ trusted: first, filled: raw.fill(first) }, lengths);
-      expect(solver.solve(predictedFrame(501, 0.3), lengths).size).toBe(0);
+      expect(solver.solve(predictedFrame(501, 0.3), lengths).size).toBe(4);
       for (const bend of solver.readDiagnostics!()!.bends.values())
         expect(bend.kind).toBe("unavailable");
       const absent = trustedOf(frameOf({}, 600, WORLD_SPACE));
@@ -160,13 +160,11 @@ describe("inferred bends through the real world rig", () => {
     expect(solver.readDiagnostics!()).toBeUndefined();
     const fresh = createWorldRigSolver(fakePorts(), { bendPolicy: PREDICTED_BEND_POLICY });
     try {
-      expect(fresh.solve(predictedFrame(100, Math.PI), lengths).size).toBe(0);
+      expect(fresh.solve(predictedFrame(100, Math.PI), lengths).size).toBe(4);
       const observed = trustedOf(frameOf(bendPose(Math.PI), 200, WORLD_SPACE));
       const solved = fresh.solve({ trusted: observed, filled: raw.fill(observed) }, lengths);
       for (const limb of LIMBS)
-        expect(distance(solved.get(limb.id)!.middle, bendPose(Math.PI)[limb.middle])).toBeLessThan(
-          1e-5,
-        );
+        expect(distance(solved.get(limb.id)!.tip, bendPose(Math.PI)[limb.tip])).toBeLessThan(1e-5);
     } finally {
       fresh.dispose();
     }

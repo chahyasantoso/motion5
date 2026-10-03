@@ -44,9 +44,12 @@ export interface BendState {
   readonly applied?: { readonly direction: Vec; readonly tMs: number };
 }
 export interface BendDecision {
+  /** Evidence provenance, not a publication gate. Unavailable evidence still has a fallback pole. */
   readonly reference: BendReference;
-  /** Proposed immutable state. The writer commits it only after publication succeeds. */
-  readonly next: BendState;
+  /** Proposed publication direction and state, committed only after the values batch succeeds. */
+  readonly next: BendState & {
+    readonly applied: { readonly direction: Vec; readonly tMs: number };
+  };
 }
 
 export function validateBendPolicy(policy: BendPolicy): void {
@@ -222,7 +225,13 @@ export function decideBend(
   }
   switch (reference.kind) {
     case "unavailable":
-      return { reference, next: { observed } };
+      // Evidence expiry stops prediction, not the limb solve. Use the legacy measured hold or
+      // authored default without refreshing observation age or retaining an expired prediction.
+      // Record the actual fallback as the next bounded-reacquisition baseline.
+      return {
+        reference,
+        next: { observed, applied: { direction: observed?.direction ?? [0, 0, 1], tMs } },
+      };
     case "observed":
     case "predicted":
     case "held": {

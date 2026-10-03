@@ -157,7 +157,7 @@ describe("bend provenance boundaries", () => {
         bend: { kind: "held", lastObservedTMs: 0 },
       });
   });
-  it("GF-187 prediction keeps one batch per frame, and expired/all-skipped frames publish no values", () => {
+  it("GF-187 expired bend evidence still publishes all valid limbs in one batch", () => {
     const recorded = recordingValues();
     const writer = createWorldWriter(recorded.port, PREDICTED_BEND_POLICY);
     const first = trustedOf(frameOf(bendPose(0), 0, WORLD_SPACE));
@@ -187,8 +187,10 @@ describe("bend provenance boundaries", () => {
     const expired = { ...gap, tMs: 501 };
     const outcomes = writer.write({ ...filled, tMs: 501, joints }, expired, lengths);
     for (const limb of LIMBS)
-      expect(outcomes[limb.id]).toEqual({ kind: "skipped", reason: "bend-lost" });
-    expect(recorded.batches.length).toBe(2);
+      expect(outcomes[limb.id]).toEqual({ kind: "written", bend: { kind: "unavailable" } });
+    expect(recorded.batches.length).toBe(3);
+    expect(recorded.batches[2]!.filter(([id]) => id.endsWith("-root")).length).toBe(4);
+    expect(recorded.batches[2]!.filter(([id]) => id.endsWith("-goal")).length).toBe(4);
   });
   it("GF-188 abrupt 180-degree body turns and gap reversals retain bounded rendered bend sides on all limbs", () => {
     const solver = createWorldRigSolver(fakePorts(), {

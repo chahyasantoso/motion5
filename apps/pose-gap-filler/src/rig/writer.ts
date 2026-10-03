@@ -30,7 +30,7 @@ export type LimbWrite =
   | { readonly kind: "written"; readonly bend?: BendReference }
   | {
       readonly kind: "skipped";
-      readonly reason: "root-lost" | "goal-lost" | "length-unknown" | "bend-lost";
+      readonly reason: "root-lost" | "goal-lost" | "length-unknown";
     };
 
 export interface PoseWriter {
@@ -144,7 +144,7 @@ function createBatchWriter(
 
 const WRITTEN: LimbWrite = Object.freeze({ kind: "written" });
 
-function skip(reason: "root-lost" | "goal-lost" | "length-unknown" | "bend-lost"): LimbPlan {
+function skip(reason: Extract<LimbWrite, { kind: "skipped" }>["reason"]): LimbPlan {
   return { kind: "skip", write: { kind: "skipped", reason } };
 }
 
@@ -253,16 +253,13 @@ export function createWorldWriter(
         });
         bend = decision.reference;
         nextBendState = decision.next;
-        if (bend.kind === "unavailable") return skip("bend-lost");
+        direction = decision.next.applied.direction;
         break;
       }
       default:
         return unreachable(policy, "world bend policy");
     }
-    const pole = add(
-      root,
-      bend === undefined || bend.kind === "unavailable" ? (direction ?? [0, 0, 1]) : bend.direction,
-    );
+    const pole = add(root, direction ?? [0, 0, 1]);
     const ids = limbTracks(limb.id);
     const point = (position: Vec) => ({ x: position[0]!, y: position[1]!, z: position[2]! });
     return {
