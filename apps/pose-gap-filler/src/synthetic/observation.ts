@@ -7,8 +7,8 @@ import { add3, sub3, type Vec3 } from "./rotation";
 
 /**
  * What the simulated detector reports for one landmark before it is written in MediaPipe's shape:
- * where it was seen in the scene, its image position (normalised `[x, y, z]`, or `undefined` when it
- * cannot be imaged), its hip-centred world position in camera axes (metres), and its scores. A
+ * where it was seen in the scene, its image position (normalised `[x, y, z]`, or `undefined` when
+ * it cannot be imaged), its hip-centred world position in camera axes (metres), and its scores. A
  * dropped landmark has neither position, as MediaPipe has none for it.
  */
 export interface ObservedLandmark {

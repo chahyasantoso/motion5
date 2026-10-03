@@ -94,7 +94,7 @@ export function drawActor(
   }
 }
 
-/** Marks the observation camera's position in a debug view, so the person sees where it looks from. */
+/** Marks the observation camera in a debug view, so the person sees where it looks from. */
 export function drawCameraMarker(
   context: CanvasRenderingContext2D,
   observation: Camera,

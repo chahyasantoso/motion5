@@ -1,8 +1,7 @@
 import { DEFAULT_STAGE, SYNTHETIC_TAKES, createSyntheticRecording } from "../replay/synthetic";
 import type { SyntheticMotion } from "../replay/synthetic";
 import { unreachable } from "../filler/unreachable";
-import { writePoseResult } from "../filler/adapter";
-import type { Simulator } from "../synthetic/simulator";
+import { reportResult, type Simulator } from "../synthetic/simulator";
 import {
   BROWSER_FRAMES,
   createPacedSource,
@@ -86,10 +85,7 @@ export function createSimulatorSource(
   return createPacedSource(
     {
       timeOf,
-      resultOf: (index) => {
-        const frame = simulator.frame(timeOf(index));
-        return writePoseResult(frame.image, frame.world);
-      },
+      resultOf: (index) => reportResult(simulator.frame(timeOf(index)).report),
     },
     ports,
   );

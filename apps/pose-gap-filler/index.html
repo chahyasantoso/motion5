@@ -20,6 +20,7 @@
       }
 
       .stage video,
+      .stage canvas,
       .stage svg {
         position: absolute;
         inset: 0;
@@ -50,6 +51,41 @@
         stroke-width: 4;
         stroke-linecap: round;
         stroke-linejoin: round;
+      }
+
+      .simulator-views {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        align-items: flex-start;
+      }
+
+      #debug-view {
+        width: 480px;
+        height: 360px;
+        background: #0f172a;
+        touch-action: none;
+        cursor: grab;
+      }
+
+      #sim-info,
+      #sim-edits {
+        font-family: ui-monospace, monospace;
+        font-size: 0.75rem;
+        color: #cbd5e1;
+        margin: 0;
+      }
+
+      .dofs {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+        gap: 0.25rem 0.75rem;
+        font-size: 0.75rem;
+      }
+
+      .dofs input {
+        width: 8rem;
+        vertical-align: middle;
       }
 
       .mark-raw {
@@ -103,8 +139,70 @@
     <p id="hotkeys"></p>
     <div class="stage">
       <video id="video" playsinline muted></video>
+      <canvas id="truth" hidden></canvas>
       <svg id="overlay"></svg>
     </div>
+    <section id="simulator" hidden>
+      <div class="controls">
+        <label
+          >Drive
+          <select id="sim-drive"></select
+        ></label>
+        <label><input id="layer-truth" type="checkbox" checked /> Truth layer</label>
+        <label><input id="layer-estimate" type="checkbox" checked /> Estimate layer</label>
+        <label
+          >Camera yaw <input id="cam-yaw" type="range" min="-180" max="180" step="1" value="0"
+        /></label>
+        <label
+          >pitch <input id="cam-pitch" type="range" min="-60" max="60" step="1" value="0"
+        /></label>
+        <label
+          >distance <input id="cam-distance" type="range" min="1.2" max="6" step="0.1" value="2.6"
+        /></label>
+        <label
+          >Debug view yaw
+          <input id="debug-yaw" type="range" min="-180" max="180" step="1" value="55"
+        /></label>
+        <label
+          >pitch <input id="debug-pitch" type="range" min="-60" max="60" step="1" value="20"
+        /></label>
+      </div>
+      <div class="simulator-views">
+        <canvas id="debug-view"></canvas>
+        <pre id="sim-info"></pre>
+      </div>
+      <details>
+        <summary>Pose mode: joint angles</summary>
+        <div id="sim-dofs" class="dofs"></div>
+      </details>
+      <details>
+        <summary>Observation mode: edit what the detector reports</summary>
+        <div class="controls">
+          <label
+            >Landmark
+            <select id="edit-landmark"></select
+          ></label>
+          <label
+            >Edit
+            <select id="edit-kind"></select
+          ></label>
+          <label>dx cm <input id="edit-dx" type="number" step="1" value="10" size="4" /></label>
+          <label>dy cm <input id="edit-dy" type="number" step="1" value="0" size="4" /></label>
+          <label>dz cm <input id="edit-dz" type="number" step="1" value="0" size="4" /></label>
+          <label
+            >visibility
+            <input id="edit-visibility" type="number" min="0" max="1" step="0.05" value="0.1"
+          /></label>
+          <label
+            >presence
+            <input id="edit-presence" type="number" min="0" max="1" step="0.05" value="0.9"
+          /></label>
+          <button id="edit-apply" type="button">Apply edit</button>
+          <button id="edit-clear" type="button">Clear edits</button>
+        </div>
+        <pre id="sim-edits"></pre>
+      </details>
+    </section>
     <p id="timings"></p>
     <pre id="report"></pre>
     <script type="module" src="./src/live/main.ts"></script>

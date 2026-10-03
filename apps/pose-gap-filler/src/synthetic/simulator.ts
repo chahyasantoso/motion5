@@ -10,8 +10,8 @@ import {
   type ObservationEdit,
   type ObservedLandmark,
 } from "./observation";
-import { scenarioPose, type ScenarioId } from "./scenarios";
-import type { RawPose } from "../filler/adapter";
+import { NO_LOSS, scenarioLoss, scenarioPose, type LossAt, type ScenarioId } from "./scenarios";
+import { writePoseResult, type PoseResult, type RawPose } from "../filler/adapter";
 
 /**
  * What moves the truth, a closed union: a scripted scenario over time, or a manual pose the
@@ -22,17 +22,40 @@ export type ActorDrive =
   | { readonly kind: "manual"; readonly pose: ActorPose };
 
 /**
+ * What the simulated detector reports at one instant, a closed union: a `pose` in both of
+ * MediaPipe's spaces, or `none`, MediaPipe's empty result, when a scripted loss takes the whole
+ * detection.
+ */
+export type SimulatorReport =
+  | { readonly kind: "pose"; readonly image: RawPose; readonly world: RawPose }
+  | { readonly kind: "none" };
+
+/**
  * One simulated instant. `truth` is the frozen actor the observation was measured from; the
- * pipeline is fed only `image` and `world`, through the same adapter as a camera, and never sees
- * `truth`, which exists for the person and for metrics.
+ * pipeline is fed only the `report`, through the same adapter as a camera, and never sees `truth`,
+ * which exists for the person and for metrics. `observed` is what the detector measured before a
+ * whole-pose loss, kept for the info panel.
  */
 export interface SimulatorFrame {
   readonly tMs: number;
   readonly truth: ActorFrame;
   readonly camera: Camera;
   readonly observed: readonly ObservedLandmark[];
-  readonly image: RawPose;
-  readonly world: RawPose;
+  readonly report: SimulatorReport;
+}
+
+const NO_POSE: SimulatorReport = Object.freeze({ kind: "none" });
+
+/** The report in MediaPipe's result shape, the one producer-side writer `readRawPose` reads. */
+export function reportResult(report: SimulatorReport): PoseResult {
+  switch (report.kind) {
+    case "pose":
+      return writePoseResult(report.image, report.world);
+    case "none":
+      return writePoseResult(null, null);
+    default:
+      return unreachable(report, "simulator report");
+  }
 }
 
 export interface SimulatorState {
@@ -80,6 +103,18 @@ export function createSimulator(
         return unreachable(drive, "actor drive");
     }
   };
+  // Only a scenario scripts losses; a manual pose is observed as the person edited it.
+  const lossAt = (tMs: number): LossAt => {
+    const { drive } = state;
+    switch (drive.kind) {
+      case "scenario":
+        return scenarioLoss(drive.scenario, tMs);
+      case "manual":
+        return NO_LOSS;
+      default:
+        return unreachable(drive, "actor drive");
+    }
+  };
   return {
     get state() {
       return state;
@@ -90,9 +125,15 @@ export function createSimulator(
     poseAt,
     frame(tMs) {
       const truth = actorFrame(poseAt(tMs), body);
-      const observed = observe(truth, camera, scores, state.edits);
-      const { image, world } = rawPoses(observed);
-      last = Object.freeze({ tMs, truth, camera, observed, image, world });
+      const loss = lossAt(tMs);
+      const scripted: ObservationEdit[] =
+        loss.kind === "landmarks"
+          ? loss.landmarks.map((landmark) => ({ kind: "drop", landmark }))
+          : [];
+      const observed = observe(truth, camera, scores, [...state.edits, ...scripted]);
+      const report: SimulatorReport =
+        loss.kind === "pose" ? NO_POSE : { kind: "pose", ...rawPoses(observed) };
+      last = Object.freeze({ tMs, truth, camera, observed, report });
       return last;
     },
     drive(next) {
