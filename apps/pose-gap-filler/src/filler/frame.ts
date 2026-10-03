@@ -42,7 +42,18 @@ export interface LandmarkFrame {
  * under the threshold; `gate` is a speed since the last trusted sample above the gate, in bone
  * lengths per second (a teleport or a left/right swap); `forced` is a hotkey or a replay mask.
  */
-export type GapReason = "absent" | "low-visibility" | "gate" | "forced";
+export type GapReason = "absent" | "low-visibility" | "gate" | "forced" | "innovation" | "invalid";
+
+/** Raw detector decision, in this frame's native px/mm units, before either filter. */
+export type RejectionDiagnostic =
+  | { readonly kind: "invalid" }
+  | {
+      readonly kind: "outlier";
+      readonly reason: "innovation" | "speed";
+      readonly innovation: number;
+      readonly limit: number;
+      readonly candidates: number;
+    };
 
 /**
  * The gap detector's answer, the one owner of "is this joint trusted". A trusted joint carries the
@@ -55,6 +66,7 @@ export type JointTrust =
 export interface TrustedFrame extends LandmarkFrame {
   readonly body?: BodyState;
   readonly trust: Readonly<Record<JointId, JointTrust>>;
+  readonly rejections?: Readonly<Partial<Record<JointId, RejectionDiagnostic>>>;
 }
 
 /**

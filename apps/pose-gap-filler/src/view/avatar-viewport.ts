@@ -103,10 +103,12 @@ export function mountAvatarViewport(
       );
       const limbs = [...residuals].map(
         ([id, residual]) =>
-          `${id}: ${residual.provenance}, middle ${residual.middleMm?.toFixed(1) ?? "unobserved"} / tip ${residual.tipMm?.toFixed(1) ?? "unobserved"} mm, orientation ${residual.orientation}`,
+          `${id}: ${residual.freshness.kind}${residual.freshness.kind === "stale" ? ` (last valid ${residual.freshness.lastCurrentMs} ms, evidence unavailable)` : ""}, ${residual.provenance}, middle ${residual.middleMm?.toFixed(1) ?? "unobserved"} / tip ${residual.tipMm?.toFixed(1) ?? "unobserved"} mm, orientation ${residual.orientation}`,
       );
       const body = step.filled.body;
-      const diagnostics = solver.readDiagnostics?.();
+      const candidateDiagnostics = solver.readDiagnostics?.();
+      const diagnostics =
+        candidateDiagnostics?.tMs === step.filled.tMs ? candidateDiagnostics : undefined;
       const bends =
         diagnostics === undefined
           ? []
@@ -137,7 +139,8 @@ export function mountAvatarViewport(
             });
       readout.textContent = [
         "Solved vs trusted residuals (not synthetic truth error). Grey head is neutral anatomy.",
-        `Body orientation: ${body?.orientation.kind ?? "unavailable"}. Skipped limbs hidden.`,
+        `Body orientation evidence: ${body?.orientation.kind ?? "unavailable"}. Last valid geometry is display-only; grey wireframe means stale.`,
+        `Body presentation: ${["pelvis", "trunk", "shoulders", "neck", "head"].map((id) => `${id} ${avatar.objects.get(id)!.userData.freshness?.kind ?? "unavailable"}`).join(", ")}.`,
         ...limbs,
         ...roots,
         ...bends,

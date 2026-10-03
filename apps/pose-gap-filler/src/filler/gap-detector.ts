@@ -1,7 +1,21 @@
 import type { BoneLengths } from "./bone-length";
-import { measurementOf, type JointTrust, type LandmarkFrame, type TrustedFrame } from "./frame";
+import {
+  measurementOf,
+  type JointTrust,
+  type LandmarkFrame,
+  type TrustedFrame,
+  type RejectionDiagnostic,
+} from "./frame";
 import { jointRecord, scaleBone, type JointId } from "./landmarks";
 import { distance, type Vec } from "./vec";
+import { spaceDimension } from "./space";
+import {
+  DEFAULT_INNOVATION,
+  innovationStep,
+  validateInnovation,
+  type InnovationOptions,
+  type InnovationState,
+} from "./innovation-gate";
 
 export interface GapDetectorOptions {
   /** Visibility below this is a `low-visibility` gap. In [0, 1]. */
@@ -12,6 +26,8 @@ export interface GapDetectorOptions {
    * from the camera. `Infinity` disables the gate.
    */
   readonly gate: number;
+  /** On by default. `false` is only for explicit legacy/calibration ablations. */
+  readonly innovation?: InnovationOptions | false;
 }
 
 /**
@@ -67,29 +83,79 @@ export function validateDetectorOptions(options: GapDetectorOptions): GapDetecto
 export function createGapDetector(options: GapDetectorOptions = DEFAULT_DETECTOR): GapDetector {
   const { threshold, gate } = validateDetectorOptions(options);
   const last = new Map<JointId, JointSample>();
+  const optionsInnovation =
+    options.innovation === false
+      ? false
+      : validateInnovation(options.innovation ?? DEFAULT_INNOVATION);
+  const innovations = new Map<JointId, InnovationState>();
+  let lastMs = -Infinity;
+  let space: LandmarkFrame["space"]["kind"] | undefined;
   return {
     detect(frame, forced, lengths) {
+      if (!Number.isFinite(frame.tMs) || frame.tMs <= lastMs)
+        throw new Error("Detector frame time must be finite and strictly increasing.");
+      if (space !== undefined && frame.space.kind !== space)
+        throw new Error("Reset the detector before changing landmark space.");
+      const rejections: Partial<Record<JointId, RejectionDiagnostic>> = {};
       const trust = jointRecord((joint): JointTrust => {
         const measurement = measurementOf(frame.joints[joint]);
-        if (measurement === undefined) return { kind: "gap", reason: "absent" };
-        if (forced.has(joint)) return { kind: "gap", reason: "forced" };
-        if (measurement.visibility < threshold) return { kind: "gap", reason: "low-visibility" };
+        const gap = (reason: Extract<JointTrust, { kind: "gap" }>["reason"]): JointTrust => {
+          const state = innovations.get(joint);
+          if (state !== undefined) delete state.candidate;
+          return { kind: "gap", reason };
+        };
+        if (measurement === undefined) return gap("absent");
+        if (forced.has(joint)) return gap("forced");
+        if (
+          measurement.position.length !== spaceDimension(frame.space) ||
+          !measurement.position.every(Number.isFinite) ||
+          !Number.isFinite(measurement.visibility)
+        ) {
+          rejections[joint] = { kind: "invalid" };
+          return gap("invalid");
+        }
+        if (measurement.visibility < threshold) return gap("low-visibility");
         const sample: JointSample = { position: measurement.position, tMs: frame.tMs };
         const previous = last.get(joint);
         const scale = lengths.length(scaleBone(joint));
-        if (previous !== undefined && scale !== undefined && scale > 0)
-          if (jointSpeed(previous, sample, scale) > gate) return { kind: "gap", reason: "gate" };
-        last.set(joint, sample);
+        const speedRejected =
+          previous !== undefined &&
+          scale !== undefined &&
+          Number.isFinite(scale) &&
+          scale > 0 &&
+          jointSpeed(previous, sample, scale) > gate;
+        if (optionsInnovation !== false) {
+          const state = innovations.get(joint) ?? {};
+          innovations.set(joint, state);
+          const decision = innovationStep(
+            state,
+            sample,
+            frame.space,
+            scale,
+            speedRejected,
+            optionsInnovation,
+          );
+          if (decision.kind === "rejected") {
+            rejections[joint] = { ...decision, kind: "outlier" };
+            return { kind: "gap", reason: decision.reason === "speed" ? "gate" : "innovation" };
+          }
+        } else if (speedRejected) return gap("gate");
+        last.set(joint, { ...sample, position: [...sample.position] });
         return {
           kind: "trusted",
           position: measurement.position,
           visibility: measurement.visibility,
         };
       });
-      return { ...frame, trust };
+      lastMs = frame.tMs;
+      space = frame.space.kind;
+      return { ...frame, trust, rejections };
     },
     reset() {
       last.clear();
+      innovations.clear();
+      lastMs = -Infinity;
+      space = undefined;
     },
   };
 }

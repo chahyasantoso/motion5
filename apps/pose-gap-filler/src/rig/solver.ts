@@ -79,6 +79,7 @@ export function createWorldRigSolver(ports: RigPorts, options: WorldSolveOptions
     readPatch: (nodeId) => project.get(nodeId),
     readDiagnostics: () => diagnostics,
     solve(step, lengths) {
+      diagnostics = undefined;
       const writes = writer.write(step.filled, step.trusted, lengths);
       const solved = readWrittenLimbs(project, writes, ["x", "y", "z"]);
       if (diagnosticsEnabled) {
