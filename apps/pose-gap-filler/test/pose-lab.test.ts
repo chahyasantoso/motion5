@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { bendLabel } from "../src/view/bend-label";
 import { canvasPoint, canvasRadius } from "../src/view/dom";
+import { code } from "../../../packages/core/test/helpers/source-region";
 
 describe("lightweight pose lab UI contracts", () => {
   it("GF-199 distinguishes fallback solves from unpublished limbs without inventing evidence", () => {
@@ -31,7 +32,7 @@ describe("lightweight pose lab UI contracts", () => {
   it("GF-201 every required live control appears exactly once after UI restructuring", () => {
     const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
     const sources = ["live/main.ts", "view/simulator-panel.ts"].map((file) =>
-      readFileSync(new URL(`../src/${file}`, import.meta.url), "utf8"),
+      code(new URL(`../src/${file}`, import.meta.url)),
     );
     const ids = new Set(
       sources.flatMap((source) =>
