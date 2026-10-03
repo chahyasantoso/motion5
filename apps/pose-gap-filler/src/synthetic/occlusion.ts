@@ -160,44 +160,57 @@ export const PROPS = Object.freeze({
 export type PropId = keyof typeof PROPS;
 export const PROP_IDS = Object.keys(PROPS) as readonly PropId[];
 
-/**
- * The parameter along `p1 -> q1` of the closest approach to the segment `p2 -> q2`, and the
- * distance there (Ericson, Real-Time Collision Detection, 5.1.9), degenerate segments included.
- */
-function closestApproach(p1: Vec3, q1: Vec3, p2: Vec3, q2: Vec3): { s: number; distance: number } {
-  const d1 = sub3(q1, p1);
-  const d2 = sub3(q2, p2);
-  const r = sub3(p1, p2);
-  const a = dot(d1, d1);
-  const e = dot(d2, d2);
-  const f = dot(d2, r);
-  const clamp = (value: number) => Math.min(1, Math.max(0, value));
-  let s: number;
-  let t: number;
-  if (a <= 1e-12 && e <= 1e-12) [s, t] = [0, 0];
-  else if (a <= 1e-12) [s, t] = [0, clamp(f / e)];
-  else {
-    const c = dot(d1, r);
-    if (e <= 1e-12) [s, t] = [clamp(-c / a), 0];
-    else {
-      const b = dot(d1, d2);
-      const denominator = a * e - b * b;
-      s = denominator > 1e-12 ? clamp((b * f - c * e) / denominator) : 0;
-      t = (b * s + f) / e;
-      if (t < 0) [s, t] = [clamp(-c / a), 0];
-      else if (t > 1) [s, t] = [clamp((b - c) / a), 1];
+/** Entry into a sphere along a finite ray, including a camera already inside it. */
+function sphereEntry(offset: Vec3, ray: Vec3, radius: number): number | undefined {
+  const c = dot(offset, offset) - radius * radius;
+  if (c <= 0) return 0;
+  const a = dot(ray, ray);
+  if (a === 0) return undefined;
+  const b = dot(offset, ray);
+  const discriminant = b * b - a * c;
+  if (discriminant < 0) return undefined;
+  const entry = (-b - Math.sqrt(discriminant)) / a;
+  return entry >= 0 && entry <= 1 ? entry : undefined;
+}
+
+/** A capsule is a finite cylinder plus its two endpoint spheres. Return first contact, not
+ * closest approach: the latter orders blockers incorrectly when their radii differ. */
+function capsuleEntry(from: Vec3, to: Vec3, a: Vec3, b: Vec3, radius: number): number | undefined {
+  const ray = sub3(to, from);
+  const axis = sub3(b, a);
+  const length2 = dot(axis, axis);
+  const offset = sub3(from, a);
+  if (length2 <= 1e-12) return sphereEntry(offset, ray, radius);
+  const axial = dot(offset, axis) / length2;
+  const axialRay = dot(ray, axis) / length2;
+  const radial = sub3(offset, scale3(axis, axial));
+  const radialRay = sub3(ray, scale3(axis, axialRay));
+  if (axial >= 0 && axial <= 1 && dot(radial, radial) <= radius * radius) return 0;
+  let nearest: number | undefined;
+  const consider = (entry: number | undefined) => {
+    if (entry !== undefined && (nearest === undefined || entry < nearest)) nearest = entry;
+  };
+  consider(sphereEntry(offset, ray, radius));
+  consider(sphereEntry(sub3(from, b), ray, radius));
+  const qa = dot(radialRay, radialRay);
+  const qb = dot(radial, radialRay);
+  const qc = dot(radial, radial) - radius * radius;
+  const discriminant = qb * qb - qa * qc;
+  if (qa > 1e-12 && discriminant >= 0) {
+    const root = Math.sqrt(discriminant);
+    for (const entry of [(-qb - root) / qa, (-qb + root) / qa]) {
+      const along = axial + entry * axialRay;
+      if (entry >= 0 && entry <= 1 && along >= 0 && along <= 1) consider(entry);
     }
   }
-  const gap = sub3(add3(p1, scale3(d1, s)), add3(p2, scale3(d2, t)));
-  return { s, distance: Math.sqrt(dot(gap, gap)) };
+  return nearest;
 }
 
 /** Where along `from -> to` (0 to 1) the occluder first blocks it, or `undefined`. */
 function blocksAt(occluder: Occluder, from: Vec3, to: Vec3): number | undefined {
   switch (occluder.kind) {
     case "capsule": {
-      const { s, distance } = closestApproach(from, to, occluder.a, occluder.b);
-      return distance <= occluder.radius ? s : undefined;
+      return capsuleEntry(from, to, occluder.a, occluder.b, occluder.radius);
     }
     case "box": {
       // Slabs: the segment's parameter interval inside each axis's pair of planes.
@@ -212,9 +225,10 @@ function blocksAt(occluder: Occluder, from: Vec3, to: Vec3): number | undefined 
           if (origin < low || origin > high) return undefined;
           continue;
         }
-        const [near, far] = [(low - origin) / span, (high - origin) / span].sort((x, y) => x - y);
-        enter = Math.max(enter, near!);
-        exit = Math.min(exit, far!);
+        const a = (low - origin) / span;
+        const b = (high - origin) / span;
+        enter = Math.max(enter, Math.min(a, b));
+        exit = Math.min(exit, Math.max(a, b));
         if (enter > exit) return undefined;
       }
       return enter;
@@ -245,7 +259,7 @@ export function classifyVisibility(
     const ray = sub3(point, eye);
     const length = Math.sqrt(dot(ray, ray));
     const stop = add3(eye, scale3(ray, Math.max(0, 1 - SURFACE_TOLERANCE_M / length)));
-    // The blocker whose closest approach to the ray is nearest the camera is the one named.
+    // Name the first surface encountered along the camera ray.
     let nearest: { id: string; at: number } | undefined;
     for (const occluder of occluders) {
       if (occluder.attached.has(landmark)) continue;

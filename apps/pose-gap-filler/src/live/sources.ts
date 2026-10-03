@@ -1,7 +1,7 @@
 import { DEFAULT_STAGE, SYNTHETIC_TAKES, createSyntheticRecording } from "../replay/synthetic";
 import type { SyntheticMotion } from "../replay/synthetic";
 import { unreachable } from "../filler/unreachable";
-import { reportResult, type Simulator } from "../synthetic/simulator";
+import { SIMULATOR_FRAME_MS, reportResult, type Simulator } from "../synthetic/simulator";
 import {
   BROWSER_FRAMES,
   createPacedSource,
@@ -72,10 +72,10 @@ export interface SourcePorts {
 
 /**
  * The simulator as a paced source. It walks the camera's frames in order and emits each one that
- * reaches the detector, at its capture time, so a dropped frame never arrives and arrival is as
+ * reaches the detector, at its delivery time, so a dropped frame never arrives and arrival is as
  * irregular as the corruption makes it. A frame is measured only when it is emitted, so an edit
- * made between frames is in the next one. Times strictly increase: frame `k` is captured within
- * its own period.
+ * made between frames is in the next one. Truth is sampled at camera time `k * frameMs`, never
+ * advanced by delivery lateness. Delivery timestamps stay within their own camera period.
  */
 export function createSimulatorSource(
   simulator: Simulator,
@@ -83,9 +83,10 @@ export function createSimulatorSource(
 ): LandmarkSource {
   // The paced source reads the stream in order, asking for the same index until it is emitted,
   // so one cursor over the camera's frames answers it without keeping every time.
-  let cursor = { index: -1, k: -1, tMs: Number.NaN };
+  const resetCursor = () => ({ index: -1, k: -1, tMs: Number.NaN });
+  let cursor = resetCursor();
   const timeOf = (index: number): number => {
-    if (index < cursor.index) cursor = { index: -1, k: -1, tMs: Number.NaN };
+    if (index < cursor.index) cursor = resetCursor();
     while (cursor.index < index) {
       let k = cursor.k + 1;
       for (let timing = simulator.timing(k); ; timing = simulator.timing(++k))
@@ -97,7 +98,16 @@ export function createSimulatorSource(
     return cursor.tMs;
   };
   return createPacedSource(
-    { timeOf, resultOf: (index) => reportResult(simulator.frame(timeOf(index)).report) },
+    {
+      reset: () => {
+        cursor = resetCursor();
+      },
+      timeOf,
+      resultOf: (index) => {
+        timeOf(index);
+        return reportResult(simulator.frame(cursor.k * SIMULATOR_FRAME_MS).report);
+      },
+    },
     ports,
   );
 }

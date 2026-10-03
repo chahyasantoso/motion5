@@ -180,8 +180,8 @@ function applyEdit(
     case "swap": {
       const partner = partnerIndex(edit.landmark);
       if (partner === undefined) return next;
-      next[edit.landmark] = observed[partner]!;
-      next[partner] = current;
+      next[edit.landmark] = { ...observed[partner]!, geometry: current.geometry };
+      next[partner] = { ...current, geometry: observed[partner]!.geometry };
       return next;
     }
     case "score":

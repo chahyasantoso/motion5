@@ -89,19 +89,25 @@ const STREAM = Object.freeze({
 });
 
 const rate = (value: number) => Number.isFinite(value) && value >= 0 && value <= 1;
+const magnitude = (value: number) => Number.isFinite(value) && value >= 0;
 
 /** `spec` if every field is in range; a frame period bounds the timing jitter. */
 export function validateCorruption(spec: CorruptionSpec, frameMs: number): CorruptionSpec {
   const { jitter } = spec;
-  if (!Number.isInteger(spec.seed)) throw new Error("Corruption seed must be an integer.");
-  if (!(jitter.sigmaPx >= 0 && jitter.sigmaM >= 0 && jitter.rho >= 0 && jitter.rho < 1))
+  if (!(Number.isFinite(frameMs) && frameMs > 0))
+    throw new Error("A frame period must be finite and positive.");
+  if (!Number.isSafeInteger(spec.seed)) throw new Error("Corruption seed must be a safe integer.");
+  if (
+    !(magnitude(jitter.sigmaPx) && magnitude(jitter.sigmaM) && rate(jitter.rho) && jitter.rho < 1)
+  )
     throw new Error("Jitter needs nonnegative sigmas and a correlation in [0, 1).");
   for (const value of [spec.falseHighRate, spec.swapRate, spec.outlierRate])
     if (!rate(value)) throw new Error("Corruption rates must be in [0, 1].");
   if (!(rate(spec.dropRate) && spec.dropRate < 1))
     throw new Error("A drop rate must be in [0, 1), or no frame would ever arrive.");
-  if (!(spec.outlierPx >= 0)) throw new Error("Outlier distance must be nonnegative.");
-  if (!(spec.timingJitterMs >= 0 && spec.timingJitterMs < frameMs))
+  if (!magnitude(spec.outlierPx))
+    throw new Error("Outlier distance must be finite and nonnegative.");
+  if (!(magnitude(spec.timingJitterMs) && spec.timingJitterMs < frameMs))
     throw new Error("Timing jitter must be nonnegative and under one frame period.");
   return spec;
 }
@@ -115,6 +121,9 @@ const DROPPED: FrameTiming = Object.freeze({ kind: "dropped" });
 
 /** Frame `k`'s arrival: dropped at `dropRate`, else `k` periods plus its seeded lateness. */
 export function frameTiming(spec: CorruptionSpec, k: number, frameMs: number): FrameTiming {
+  if (!(Number.isSafeInteger(k) && k >= 0))
+    throw new Error("Camera frame index must be nonnegative and safe.");
+  validateCorruption(spec, frameMs);
   if (uniformAt(spec.seed, STREAM.drop, k) < spec.dropRate) return DROPPED;
   return {
     kind: "captured",
@@ -123,8 +132,8 @@ export function frameTiming(spec: CorruptionSpec, k: number, frameMs: number): F
 }
 
 /**
- * Stationary AR(1) noise at frame `k`, truncated where the kernel falls under 1%: the weighted sum
- * of the last innovations, so it is correlated over time yet a pure function of `k`.
+ * Stationary finite-kernel approximation of AR(1), truncated at 1% or 64 taps, whichever comes
+ * first. The cap bounds frame cost for rho near 1; normalisation preserves unit variance.
  */
 function ar1(seed: number, rho: number, k: number, landmark: number, axis: number): number {
   const taps = rho === 0 ? 1 : Math.min(64, Math.ceil(Math.log(0.01) / Math.log(rho)));
@@ -145,8 +154,8 @@ const sided = (names: readonly string[]) =>
   );
 /** Detector swaps take a whole limb pair at once: the arms with the hands, or the legs with the feet. */
 const SWAP_GROUPS: readonly (readonly number[])[] = [
-  sided(["elbow", "wrist", "pinky", "index", "thumb"]),
-  sided(["knee", "ankle", "heel", "foot-index"]),
+  sided(["shoulder", "elbow", "wrist", "pinky", "index", "thumb"]),
+  sided(["hip", "knee", "ankle", "heel", "foot-index"]),
 ];
 
 /** Whether swap group `group` is swapped at frame `k`: an episode began within its length. */
@@ -179,7 +188,10 @@ export function corrupt(
   const { seed, jitter } = spec;
   const moved = observed.map((landmark, index): ObservedLandmark => {
     if (landmark.image === undefined || landmark.world === undefined) return landmark;
-    const noise = [0, 1, 2].map((axis) => ar1(seed, jitter.rho, k, index, axis));
+    const noise =
+      jitter.sigmaPx === 0 && jitter.sigmaM === 0
+        ? [0, 0, 0]
+        : [0, 1, 2].map((axis) => ar1(seed, jitter.rho, k, index, axis));
     let [u, v] = [
       landmark.image[0] + (noise[0]! * jitter.sigmaPx) / width,
       landmark.image[1] + (noise[1]! * jitter.sigmaPx) / height,

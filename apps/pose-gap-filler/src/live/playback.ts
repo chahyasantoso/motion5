@@ -21,6 +21,8 @@ export const BROWSER_FRAMES: FramePorts = {
  * strictly increase with the index.
  */
 export interface FrameStream {
+  /** Clears generation-local selection state before the first frame of every start. */
+  reset?(): void;
   timeOf(index: number): number | undefined;
   resultOf(index: number): unknown;
 }
@@ -51,17 +53,24 @@ export function createPacedSource(
       stop();
       const current = generation;
       const live = () => current === generation;
+      stream.reset?.();
       const first = stream.timeOf(0);
       if (first === undefined) return Promise.resolve();
+      if (!Number.isFinite(first)) throw new Error("Stream timestamps must be finite.");
       const startedAt = ports.now();
       let index = 0;
       let frame = 0;
+      let previous: number | undefined;
       const tick = () => {
         if (!live()) return;
         const tMs = stream.timeOf(index);
         if (tMs === undefined) {
           cancel = undefined;
           return;
+        }
+        if (!Number.isFinite(tMs) || (previous !== undefined && tMs <= previous)) {
+          stop();
+          throw new Error("Stream timestamps must be finite and strictly increasing.");
         }
         if (ports.now() - startedAt >= tMs - first) {
           try {
@@ -71,6 +80,7 @@ export function createPacedSource(
             throw error;
           }
           if (!live()) return;
+          previous = tMs;
           index += 1;
         }
         frame = ports.requestFrame(tick);
@@ -99,8 +109,15 @@ export function loopPeriod(recording: PoseRecording): number {
   const { frames } = recording;
   const count = frames.length;
   if (count === 0) throw new Error("Playback needs a recording with at least one frame.");
+  for (let index = 0; index < count; index += 1) {
+    const tMs = frames[index]!.tMs;
+    if (!Number.isFinite(tMs) || (index > 0 && tMs <= frames[index - 1]!.tMs))
+      throw new Error("Playback timestamps must be finite and strictly increasing.");
+  }
   if (count === 1) return SINGLE_FRAME_MS;
-  return ((frames[count - 1]!.tMs - frames[0]!.tMs) * count) / (count - 1);
+  const period = ((frames[count - 1]!.tMs - frames[0]!.tMs) * count) / (count - 1);
+  if (!Number.isFinite(period)) throw new Error("Playback period must be finite.");
+  return period;
 }
 
 /**

@@ -19,7 +19,7 @@ import { SCENARIOS, SCENARIO_IDS, scenarioLoss, scenarioPose } from "../src/synt
 import { describeHandle, editOf, landmarkInfo } from "../src/synthetic/inspect";
 import { pickHandle } from "../src/view/pose-drag";
 import { projector } from "../src/view/scene-view";
-import { createSimulator, reportResult, type SimulatorState } from "../src/synthetic/simulator";
+import { createSimulator, reportResult, type SimulatorInit } from "../src/synthetic/simulator";
 import type { Vec3 } from "../src/synthetic/rotation";
 import { manualFrames } from "./frame-ports";
 
@@ -319,7 +319,7 @@ describe("synthetic human, motion and handles", () => {
 
   it("GF-99 a simulator frame is pure in state and time, paced as a 30 fps source", async () => {
     const hips = hipMidpoint(standing());
-    const state: SimulatorState = {
+    const state: SimulatorInit = {
       drive: { kind: "scenario", scenario: "arm-reversal" },
       camera: defaultCameraSpec(STAGE, hips),
       edits: [],
