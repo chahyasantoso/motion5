@@ -36,6 +36,7 @@ export const PREDICTED_BEND_POLICY: BendPolicy = Object.freeze({
   maxRateRadPerSecond: 6,
   maxStepRad: 0.35,
 });
+/** About 5.7 degrees: suppress near-straight middle noise after a bend is established. */
 export const MIN_BEND_SINE = 0.1;
 
 export interface BendState {
@@ -73,6 +74,7 @@ export function validateBendPolicy(policy: BendPolicy): void {
   }
 }
 
+/** First measured middle decides; later samples must decisively leave the reach line. */
 export function decidingMiddle(
   root: Vec,
   goal: Vec,
@@ -139,16 +141,18 @@ export function decideBend(
     readonly root: Vec;
     readonly goal: Vec;
     readonly measuredRoot: Vec | undefined;
+    readonly measuredGoal?: Vec | undefined;
     readonly measuredMiddle: Vec | undefined;
     readonly filledMiddle: FilledJoint;
   },
 ): BendDecision {
-  const { tMs, root, goal, measuredRoot, measuredMiddle, filledMiddle } = input;
+  const { tMs, root, goal, measuredRoot, measuredGoal, measuredMiddle, filledMiddle } = input;
   if (
     !Number.isFinite(tMs) ||
     !finitePoint(root) ||
     !finitePoint(goal) ||
     (measuredRoot !== undefined && !finitePoint(measuredRoot)) ||
+    (measuredGoal !== undefined && !finitePoint(measuredGoal)) ||
     (measuredMiddle !== undefined && !finitePoint(measuredMiddle)) ||
     (state.applied !== undefined && tMs < state.applied.tMs)
   )
@@ -159,9 +163,9 @@ export function decideBend(
     tMs >= state.observed.tMs &&
     tMs - state.observed.tMs <= policy.maxAgeMs;
   const deciding =
-    measuredRoot === undefined
+    measuredRoot === undefined || measuredGoal === undefined
       ? undefined
-      : decidingMiddle(measuredRoot, goal, measuredMiddle, state.observed !== undefined);
+      : decidingMiddle(measuredRoot, measuredGoal, measuredMiddle, state.observed !== undefined);
   const measured = deciding === undefined ? undefined : unit(sub(deciding, measuredRoot!));
   let observed = state.observed;
   let reference: BendReference;

@@ -16,20 +16,18 @@ import { presentedPosition, trustedPosition } from "../filler/frame";
 import { LIMBS } from "../filler/landmarks";
 import { distance } from "../filler/vec";
 import { LEGACY_BEND_POLICY, type BendPolicy, type BendReference } from "./bend-policy";
-import { diagnosePenetration, type Penetration } from "./penetration";
+import { diagnosePenetration, type PenetrationReport } from "./penetration";
 
 export interface RigDiagnostics {
   readonly tMs: number;
   readonly bends: ReadonlyMap<LimbId, BendReference>;
-  readonly residuals: ReadonlyMap<
-    LimbId,
-    {
-      readonly middleToFilledMm: number | undefined;
-      readonly middleToObservedMm: number | undefined;
-      readonly tipToFilledMm: number | undefined;
-    }
-  >;
-  readonly penetration: readonly Penetration[];
+  readonly residuals: ReadonlyMap<LimbId, SolveResidual>;
+  readonly penetration: PenetrationReport;
+}
+export interface SolveResidual {
+  readonly middleToFilledMm: number | undefined;
+  readonly middleToObservedMm: number | undefined;
+  readonly tipToFilledMm: number | undefined;
 }
 export interface WorldSolveOptions {
   readonly bendPolicy?: BendPolicy;
@@ -85,10 +83,7 @@ export function createWorldRigSolver(ports: RigPorts, options: WorldSolveOptions
       const solved = readWrittenLimbs(project, writes, ["x", "y", "z"]);
       if (diagnosticsEnabled) {
         const bends = new Map<LimbId, BendReference>();
-        const residuals = new Map<
-          LimbId,
-          RigDiagnostics["residuals"] extends ReadonlyMap<LimbId, infer V> ? V : never
-        >();
+        const residuals = new Map<LimbId, SolveResidual>();
         for (const limb of LIMBS) {
           const write = writes[limb.id];
           // Legacy has no age-bounded evidence contract. Do not fabricate a provenance label.

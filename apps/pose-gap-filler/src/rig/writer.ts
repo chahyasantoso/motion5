@@ -58,22 +58,6 @@ export function imageBendFlip(root: Vec, goal: Vec, middle: Vec): boolean | unde
   return side === 0 ? undefined : side < 0;
 }
 
-/**
- * The smallest |sin| of the angle at the root between the reach (root to goal) and the measured
- * middle for that middle to overturn a held bend observation: about 5.7 degrees. Below it the limb
- * is measured nearly straight and the side it bends to is mostly noise, so a still, straight arm
- * whose measured elbow wobbles across the reach line would otherwise flip the solved elbow from one
- * side to the other every few frames. Real bends far exceed it.
- */
-
-/**
- * Hysteresis on the bend observation, one rule for the 2D flip and the 3D pole direction: the
- * measured middle, when it may decide the bend, or `undefined` to keep what is held. The first
- * measured middle always decides (a slight true bend lands on its measured side); after that only a
- * decisive one, at least `MIN_BEND_SINE` off the reach line, may change the held observation. An
- * absent or degenerate middle never decides.
- */
-
 /** The values one limb's chain holds in the project, as far as the writer has published them. */
 interface Published {
   readonly upper: number | undefined;
@@ -205,9 +189,8 @@ function planLimb(
 }
 
 /**
- * World bend is a held measured root-to-middle direction, never an inferred elbow, updated only by
- * a deciding middle (`decidingMiddle`): a straight limb's direction is nearly the reach itself, so
- * its noise would otherwise spin the bend plane about the reach.
+ * Legacy world bend holds only deciding measured root-to-middle directions. The opt-in policy
+ * separately proposes bounded prediction state; neither path commits before the batch succeeds.
  * Core consumes a pole POINT: translate that direction by this frame's root. No stale point.
  */
 export function createWorldWriter(
@@ -240,23 +223,23 @@ export function createWorldWriter(
     const lower = lengths.length(limb.lower);
     if (upper === undefined || lower === undefined) return skip("length-unknown");
     const state = states.get(limb.id)!;
-    const middle = decidingMiddle(
-      root,
-      goal,
-      trustedPosition(trusted.trust[limb.middle]),
-      state.direction !== undefined,
-    );
     const measuredRoot = trustedPosition(trusted.trust[limb.root]);
-    // Both endpoints must be measured: a filled root must not train a bend observation.
-    const direction =
-      middle !== undefined && measuredRoot !== undefined
-        ? (unit(sub(middle, measuredRoot)) ?? state.direction)
-        : state.direction;
+    let direction = state.direction;
     let bend: BendReference | undefined;
     let nextBendState = state.bendState;
     switch (policy.kind) {
-      case "legacy":
+      case "legacy": {
+        const middle = decidingMiddle(
+          root,
+          goal,
+          trustedPosition(trusted.trust[limb.middle]),
+          state.direction !== undefined,
+        );
+        // Keep the disabled-path arithmetic and held transitions exactly as PR545.
+        if (middle !== undefined && measuredRoot !== undefined)
+          direction = unit(sub(middle, measuredRoot)) ?? state.direction;
         break;
+      }
       case "predict": {
         if (filled.tMs !== trusted.tMs) throw new Error("World bend frame timestamps differ.");
         const decision = decideBend(policy, state.bendState, {
@@ -264,6 +247,7 @@ export function createWorldWriter(
           root,
           goal,
           measuredRoot,
+          measuredGoal: trustedPosition(trusted.trust[limb.tip]),
           measuredMiddle: trustedPosition(trusted.trust[limb.middle]),
           filledMiddle: filled.joints[limb.middle],
         });

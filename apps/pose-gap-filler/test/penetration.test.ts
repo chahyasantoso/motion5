@@ -53,7 +53,7 @@ describe("coarse solved capsule diagnostics", () => {
       space: WORLD_SPACE,
       joints: jointRecord(() => ({ kind: "lost" as const })),
     };
-    expect(diagnosePenetration(frame, new Map())).toEqual([]);
+    expect(diagnosePenetration(frame, new Map())).toEqual({ kind: "unavailable", contacts: [] });
     const presented = {
       ...frame,
       joints: {
@@ -62,7 +62,65 @@ describe("coarse solved capsule diagnostics", () => {
       },
     };
     const limb = { middle: [100, 0, 0], tip: [0, 0, 0] };
-    expect(diagnosePenetration(presented, new Map([["left-arm", limb]]))).toEqual([]);
+    expect(diagnosePenetration(presented, new Map([["left-arm", limb]]))).toEqual({
+      kind: "unavailable",
+      contacts: [],
+    });
     expect(limb).toEqual({ middle: [100, 0, 0], tip: [0, 0, 0] });
+  });
+  it("GF-185 diagnoses nearly parallel long crossings without cancellation and bounds unsupported geometry", () => {
+    expect(
+      segmentDistance([-1e6, 0, 0], [1e6, 0, 0], [-1e6, -0.01, 0], [1e6, 0.01, 0]),
+    ).toBeCloseTo(0, 8);
+    expect(() =>
+      capsulePenetration(
+        capsule("a", [0, 0, 0], [1, 0, 0], Number.MAX_VALUE),
+        capsule("b", [0, 0, 0], [0, 1, 0]),
+      ),
+    ).toThrow();
+    const frame = {
+      tMs: 0,
+      space: WORLD_SPACE,
+      joints: {
+        ...jointRecord(() => ({ kind: "lost" as const })),
+        "left-shoulder": { kind: "measured" as const, position: [1e13, 0, 0] },
+        "right-shoulder": { kind: "measured" as const, position: [1e13, 1, 0] },
+      },
+    };
+    const report = diagnosePenetration(
+      frame,
+      new Map([
+        ["left-arm", { middle: [1e13, 100, 0], tip: [1e13, 200, 0] }],
+        ["right-arm", { middle: [1e13, 100, 0], tip: [1e13, 200, 0] }],
+      ]),
+    );
+    expect(report).toEqual({ kind: "unavailable", contacts: [] });
+  });
+  it("GF-186 reports unresolved forearm/trunk penetration, not intended shoulder attachment", () => {
+    const frame = {
+      tMs: 0,
+      space: WORLD_SPACE,
+      joints: {
+        ...jointRecord(() => ({ kind: "lost" as const })),
+        "left-shoulder": { kind: "measured" as const, position: [100, -100, 0] },
+        "right-shoulder": { kind: "measured" as const, position: [-100, -100, 0] },
+        "left-hip": { kind: "measured" as const, position: [100, 100, 0] },
+        "right-hip": { kind: "measured" as const, position: [-100, 100, 0] },
+      },
+    };
+    const report = diagnosePenetration(
+      frame,
+      new Map([
+        [
+          "left-arm",
+          {
+            middle: [100, 0, 0],
+            tip: [-100, 0, 0],
+          },
+        ],
+      ]),
+    );
+    expect(report.kind).toBe("partial");
+    expect(report.contacts).toEqual([{ a: "left-forearm", b: "trunk", depthMm: 105 }]);
   });
 });

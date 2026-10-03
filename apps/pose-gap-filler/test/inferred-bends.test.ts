@@ -153,7 +153,7 @@ describe("inferred bends through the real world rig", () => {
         expect(bend.kind).toBe("unavailable");
       const absent = trustedOf(frameOf({}, 600, WORLD_SPACE));
       expect(solver.solve({ trusted: absent, filled: raw.fill(absent) }, lengths).size).toBe(0);
-      expect(solver.readDiagnostics!()!.penetration).toEqual([]);
+      expect(solver.readDiagnostics!()!.penetration).toEqual({ kind: "unavailable", contacts: [] });
     } finally {
       solver.dispose();
     }
@@ -232,24 +232,27 @@ describe("inferred bends through the real world rig", () => {
     const build = (constrained: boolean) => {
       const definition = worldRigProject();
       const motion = definition.motions[0]!;
-      const ids = limbTracks("left-arm");
+      const solvers = new Set(LIMBS.map((limb) => limbTracks(limb.id).solve));
+      const uppers = new Set(LIMBS.map((limb) => limbTracks(limb.id).upper));
       const changed: ProjectDefinition = {
         ...definition,
         motions: [
           {
             ...motion,
             tracks: motion.tracks.map((track) => {
-              if (track.id === ids.solve)
+              const keyframes = track.keyframes;
+              if (keyframes === undefined) throw new Error("World rig fixture needs keyframes.");
+              if (solvers.has(track.id))
                 return {
                   ...track,
-                  keyframes: { ik3d: { ...track.keyframes.ik3d, values: { inspect: true } } },
+                  keyframes: { ik3d: { ...keyframes.ik3d, values: { inspect: true } } },
                 };
-              if (constrained && track.id === ids.upper)
+              if (constrained && uppers.has(track.id))
                 return {
                   ...track,
                   keyframes: {
                     fk3d: {
-                      ...track.keyframes.fk3d,
+                      ...keyframes.fk3d,
                       values: {
                         length: 100,
                         weight: 1,
@@ -257,8 +260,8 @@ describe("inferred bends through the real world rig", () => {
                         axisX: 0,
                         axisY: 0,
                         axisZ: 1,
-                        minRotation: 0,
-                        maxRotation: 0,
+                        minRotation: 15,
+                        maxRotation: 15,
                       },
                     },
                   },
@@ -274,34 +277,45 @@ describe("inferred bends through the real world rig", () => {
       for (const node of project.motion(POSE_MOTION_ID).trackIds) project.mount(node);
       return project;
     };
-    const analytic = build(false),
-      constrained = build(true);
-    try {
-      const first = trustedOf(frameOf(bendPose(0.3), 0, WORLD_SPACE));
-      const filled = raw.fill(first);
-      for (const project of [analytic, constrained])
-        createWorldWriter(project, PREDICTED_BEND_POLICY).write(filled, first, lengths);
-      const ids = limbTracks("left-arm");
-      for (const id of [ids.root, ids.goal, ids.pole])
-        expect(analytic.get(poseNodeId(id))!.values).toEqual(
-          constrained.get(poseNodeId(id))!.values,
-        );
-      const free = analytic.get(poseNodeId(ids.solve))!;
-      const limited = constrained.get(poseNodeId(ids.solve))!;
-      expect(free.status).toBe("ready");
-      expect(limited.status).toBe("ready");
-      if (free.status !== "ready" || limited.status !== "ready") throw new Error("not ready");
-      expect(free.values.inspection).toMatchObject({ kind: "reached", iterations: 0 });
-      expect(limited.values.inspection).toMatchObject({ kind: "limited" });
-      const a = readSolvedLimb(analytic, "left-arm", ["x", "y", "z"])!;
-      const b = readSolvedLimb(constrained, "left-arm", ["x", "y", "z"])!;
-      expect(distance(a.middle, bendPose(0.3)["left-elbow"])).toBeLessThan(1e-5);
-      expect(distance(b.middle, bendPose(0.3)["left-elbow"])).toBeGreaterThan(10);
-      expect(distance(b.middle, bendPose(0.3)["left-shoulder"])).toBeCloseTo(100, 7);
-      expect(distance(b.tip, b.middle)).toBeCloseTo(100, 7);
-    } finally {
-      analytic.dispose();
-      constrained.dispose();
+    for (const angle of [0.3, -0.3, Math.PI + 0.3, Math.PI - 0.3]) {
+      const analytic = build(false),
+        constrained = build(true);
+      try {
+        const points = bendPose(angle);
+        const first = trustedOf(frameOf(points, 0, WORLD_SPACE));
+        const filled = raw.fill(first);
+        for (const project of [analytic, constrained])
+          createWorldWriter(project, PREDICTED_BEND_POLICY).write(filled, first, lengths);
+        for (const limb of LIMBS) {
+          const ids = limbTracks(limb.id);
+          for (const id of [ids.root, ids.goal, ids.pole]) {
+            const a = analytic.get(poseNodeId(id))!,
+              b = constrained.get(poseNodeId(id))!;
+            if (a.status !== "ready" || b.status !== "ready") throw new Error("not ready");
+            expect(a.values).toEqual(b.values);
+          }
+          const free = analytic.get(poseNodeId(ids.solve))!,
+            limited = constrained.get(poseNodeId(ids.solve))!;
+          if (free.status !== "ready" || limited.status !== "ready") throw new Error("not ready");
+          expect(free.values.inspection).toMatchObject({ kind: "reached", iterations: 0 });
+          expect(limited.values.inspection).toMatchObject({ kind: "limited" });
+          const a = readSolvedLimb(analytic, limb.id, ["x", "y", "z"])!;
+          const b = readSolvedLimb(constrained, limb.id, ["x", "y", "z"])!;
+          expect(distance(a.middle, points[limb.middle])).toBeLessThan(1e-5);
+          expect(distance(b.middle, points[limb.middle])).toBeGreaterThan(10);
+          expect(distance(b.middle, points[limb.root])).toBeCloseTo(100, 7);
+          expect(distance(b.tip, b.middle)).toBeCloseTo(100, 7);
+          const inspection = limited.values.inspection as {
+            readonly residual: number;
+            readonly iterations: number;
+          };
+          expect(inspection.residual).toBeCloseTo(distance(b.tip, points[limb.tip]), 7);
+          expect(inspection.iterations).toBeGreaterThan(0);
+        }
+      } finally {
+        analytic.dispose();
+        constrained.dispose();
+      }
     }
   });
 });

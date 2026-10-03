@@ -3,6 +3,7 @@ import { presentedPosition, type FilledFrame } from "../filler/frame";
 import { LIMBS } from "../filler/landmarks";
 import type { SolvedLimb } from "./rig";
 import type { LimbId } from "../filler/landmarks";
+import { cross } from "../filler/direction";
 
 export interface Capsule {
   readonly id: string;
@@ -14,6 +15,20 @@ export interface Penetration {
   readonly a: string;
   readonly b: string;
   readonly depthMm: number;
+}
+export interface PenetrationReport {
+  readonly kind: "complete" | "partial" | "unavailable";
+  readonly contacts: readonly Penetration[];
+}
+function validCapsule(capsule: Capsule): boolean {
+  return (
+    Number.isFinite(capsule.radiusMm) &&
+    capsule.radiusMm >= 0 &&
+    capsule.radiusMm <= 1e12 &&
+    [capsule.from, capsule.to].every(
+      (p) => p.length === 3 && p.every(Number.isFinite) && norm(p) <= 1e12,
+    )
+  );
 }
 const clamp = (x: number) => Math.max(0, Math.min(1, x));
 
@@ -35,10 +50,12 @@ export function segmentDistance(a: Vec, b: Vec, c: Vec, d: Vec): number {
   consider(1, cc > 0 ? clamp((ee + bb) / cc) : 0);
   consider(aa > 0 ? clamp(-dd / aa) : 0, 0);
   consider(aa > 0 ? clamp((bb - dd) / aa) : 0, 1);
-  const determinant = aa * cc - bb * bb;
-  if (determinant > 1e-12 * aa * cc) {
-    const s = (bb * ee - cc * dd) / determinant;
-    const t = (aa * ee - bb * dd) / determinant;
+  // Cross products avoid catastrophic cancellation of aa*cc - bb*bb for nearly parallel lines.
+  const normal = cross(u, v);
+  const determinant = dot(normal, normal);
+  if (determinant > 0) {
+    const s = dot(cross(v, w), normal) / determinant;
+    const t = dot(cross(u, w), normal) / determinant;
     if (s >= 0 && s <= 1 && t >= 0 && t <= 1) consider(s, t);
   }
   return best;
@@ -46,13 +63,7 @@ export function segmentDistance(a: Vec, b: Vec, c: Vec, d: Vec): number {
 
 export function capsulePenetration(a: Capsule, b: Capsule): Penetration | undefined {
   for (const capsule of [a, b]) {
-    if (
-      !Number.isFinite(capsule.radiusMm) ||
-      capsule.radiusMm < 0 ||
-      ![capsule.from, capsule.to].every(
-        (p) => p.length === 3 && p.every(Number.isFinite) && norm(p) <= 1e12,
-      )
-    )
+    if (!validCapsule(capsule))
       throw new Error("Capsules need finite bounded 3D points and nonnegative radii.");
   }
   const depthMm = a.radiusMm + b.radiusMm - segmentDistance(a.from, a.to, b.from, b.to);
@@ -63,7 +74,7 @@ export function capsulePenetration(a: Capsule, b: Capsule): Penetration | undefi
 export function diagnosePenetration(
   frame: FilledFrame,
   solved: ReadonlyMap<LimbId, SolvedLimb>,
-): readonly Penetration[] {
+): PenetrationReport {
   const capsules: Array<Capsule & { readonly limb: LimbId; readonly lower: boolean }> = [];
   for (const limb of LIMBS) {
     const pose = solved.get(limb.id);
@@ -75,7 +86,15 @@ export function diagnosePenetration(
     );
   }
   const contacts: Penetration[] = [];
+  let tested = 0;
+  let invalid = false;
   const keep = (a: Capsule, b: Capsule) => {
+    // Diagnostics must not fail an otherwise published frame outside the coarse model's domain.
+    if (!validCapsule(a) || !validCapsule(b)) {
+      invalid = true;
+      return;
+    }
+    tested++;
     const contact = capsulePenetration(a, b);
     if (contact !== undefined) contacts.push(contact);
   };
@@ -84,7 +103,8 @@ export function diagnosePenetration(
       if (capsules[i]!.limb !== capsules[j]!.limb) keep(capsules[i]!, capsules[j]!);
   const roots = ["left-shoulder", "right-shoulder", "left-hip", "right-hip"] as const;
   const points = roots.map((id) => presentedPosition(frame.joints[id]));
-  if (points.every((p) => p !== undefined)) {
+  const hasTrunk = points.every((p) => p !== undefined);
+  if (hasTrunk) {
     const [ls, rs, lh, rh] = points as [Vec, Vec, Vec, Vec];
     const trunk: Capsule = {
       id: "trunk",
@@ -95,5 +115,13 @@ export function diagnosePenetration(
     // Proximal attachment intersections are intentional, not collision evidence.
     for (const capsule of capsules) if (capsule.lower) keep(capsule, trunk);
   }
-  return contacts;
+  return {
+    kind:
+      tested === 0
+        ? "unavailable"
+        : capsules.length === 8 && hasTrunk && !invalid
+          ? "complete"
+          : "partial",
+    contacts,
+  };
 }

@@ -50,6 +50,7 @@ describe("world bend decision", () => {
         goal: [0, 150, 0],
         measuredRoot: [0, 0, 0],
         measuredMiddle: [100, 100, 0],
+        measuredGoal: [0, 150, 0],
         filledMiddle: { kind: "measured", position: [100, 100, 0] },
       },
     );
@@ -143,6 +144,7 @@ describe("world bend decision", () => {
       goal: [0, 150, 0],
       measuredRoot: [0, 0, 0],
       measuredMiddle: [-100, 100, 0],
+      measuredGoal: [0, 150, 0],
       filledMiddle: { kind: "measured", position: [-100, 100, 0] },
     });
     expect(result.reference.kind).toBe("observed");
@@ -160,6 +162,7 @@ describe("world bend decision", () => {
         goal: [0, 150, 0],
         measuredRoot: [0, 0, 0],
         measuredMiddle: [x, 100, 0],
+        measuredGoal: [0, 150, 0],
         filledMiddle: { kind: "measured", position: [x, 100, 0] },
       });
       expect(result.reference.kind).toBe("held");

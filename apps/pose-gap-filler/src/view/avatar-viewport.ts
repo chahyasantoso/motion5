@@ -124,11 +124,13 @@ export function mountAvatarViewport(
           ? []
           : [
               "Coarse capsule penetration diagnostics only, not collision correction:",
-              ...diagnostics.penetration.map(
+              ...diagnostics.penetration.contacts.map(
                 (contact) =>
                   `${contact.a} / ${contact.b}: ${contact.depthMm.toFixed(1)} mm unresolved`,
               ),
-              ...(diagnostics.penetration.length === 0 ? ["No coarse penetration detected."] : []),
+              ...(diagnostics.penetration.contacts.length === 0
+                ? [`No coarse contact reported; coverage ${diagnostics.penetration.kind}.`]
+                : []),
             ];
       const roots =
         body === undefined
