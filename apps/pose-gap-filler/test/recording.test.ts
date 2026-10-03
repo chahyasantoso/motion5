@@ -75,7 +75,7 @@ describe("pose recording", () => {
       [null, /not an object/],
       [{ ...valid, extra: 1 }, /unexpected|keys/],
       [{ ...valid, format: "other" }, /format is other/],
-      [{ ...valid, version: 2 }, /version is 2/],
+      [{ ...valid, version: 3 }, /version is 3/],
       [{ ...valid, stage: { width: Infinity, height: 480 } }, /stage/],
       [{ ...valid, stage: { width: 640, height: 480, depth: 1 } }, /stage has keys/],
       [{ ...valid, frames: {} }, /frames is not an array/],

@@ -33,7 +33,8 @@ function dot(position: Vec, mark: Mark): SVGElement {
  * The solved rig, and the raw landmarks when `raw` is given, redrawn per frame. An inferred joint is
  * drawn as a hollow ring rather than a filled dot, so a filled value is never shown as a
  * measurement. Raw is the unprocessed reference and moves with MediaPipe's noise, so the page draws
- * it only on request.
+ * it only on request. `display` maps a stage position to where it is shown (`previewPoint`); it is
+ * applied last, to every drawn point, and changes no joint's identity.
  */
 export function drawOverlay(
   svg: SVGSVGElement,
@@ -43,13 +44,14 @@ export function drawOverlay(
   project: ((position: Vec) => Vec) | undefined = filled.space.kind === "image"
     ? (position) => position
     : undefined,
+  display: (position: Vec) => Vec = (position) => position,
 ): void {
   const layer = document.createDocumentFragment();
   for (const limb of LIMBS) {
     const chain = solved.get(limb.id);
     const root = filled.joints[limb.root];
     if (chain === undefined || root.kind === "lost" || project === undefined) continue;
-    const points = [root.position, chain.middle, chain.tip].map(project);
+    const points = [root.position, chain.middle, chain.tip].map((point) => display(project(point)));
     layer.append(
       element("polyline", {
         points: points.map((point) => `${point[0]},${point[1]}`).join(" "),
@@ -60,15 +62,15 @@ export function drawOverlay(
   for (const joint of JOINTS) {
     const observation = raw?.joints[joint];
     // Raw always comes from the image adapter. Only rig/filler coordinates use the camera fit.
-    if (observation?.kind === "measured") layer.append(dot(observation.position, "raw"));
+    if (observation?.kind === "measured") layer.append(dot(display(observation.position), "raw"));
     if (project === undefined) continue;
     const fill = filled.joints[joint];
     switch (fill.kind) {
       case "measured":
-        layer.append(dot(project(fill.position), "measured"));
+        layer.append(dot(display(project(fill.position)), "measured"));
         break;
       case "inferred":
-        layer.append(dot(project(fill.position), "inferred"));
+        layer.append(dot(display(project(fill.position)), "inferred"));
         break;
       case "lost":
         break;

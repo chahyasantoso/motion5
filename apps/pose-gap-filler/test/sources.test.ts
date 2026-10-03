@@ -51,7 +51,9 @@ describe("landmark sources (#540)", () => {
   it("GF-80 writes a recorded pose as the result the one reader reads, NaN and no-pose included", () => {
     const frame = SHORT.frames[2]!;
     const holed = frame.image!.map((landmark, index) =>
-      index === 13 ? ([Number.NaN, landmark[1], landmark[2], landmark[3]] as const) : landmark,
+      index === 13
+        ? ([Number.NaN, landmark[1], landmark[2], landmark[3], landmark[4]] as const)
+        : landmark,
     );
     for (const space of LANDMARK_SPACES)
       expect(

@@ -7,7 +7,7 @@ import {
 } from "../filler/landmarks";
 import { unreachable } from "../filler/unreachable";
 import { add, dot, scale, sub, unit, type Vec } from "../filler/vec";
-import { RECORDING_FORMAT, type PoseRecording } from "./recording";
+import { RECORDING_FORMAT, RECORDING_VERSION, type PoseRecording } from "./recording";
 
 /**
  * The deterministic subject the harness is proven on before any recording exists. `still` is a
@@ -240,8 +240,13 @@ export function createSyntheticRecording(options: SyntheticOptions): PoseRecordi
   const frames = Array.from({ length: frameCount }, (_, index) => {
     const tMs = (index * 1000) / options.fps;
     const truth = syntheticWorldPose(options.motion, tMs);
+    // The legacy subject reports no presence: `NaN`, which reads as `unreported`, never a 1.
     const image: RawLandmark[] = Array.from({ length: MEDIAPIPE_LANDMARK_COUNT }, () => [
-      0, 0, 0, 0,
+      0,
+      0,
+      0,
+      0,
+      Number.NaN,
     ]);
     const world = image.slice();
     JOINTS.forEach((joint, jointIndex) => {
@@ -254,15 +259,17 @@ export function createSyntheticRecording(options: SyntheticOptions): PoseRecordi
         point[1]! + WORLD_NOISE_M * positionNoise(),
         point[2]! + WORLD_NOISE_M * positionNoise(),
         visibility,
+        Number.NaN,
       ];
       image[MEDIAPIPE_INDEX[joint]] = [
         clampUnit(x! + (IMAGE_NOISE_PX / stage.width) * positionNoise()),
         clampUnit(y! + (IMAGE_NOISE_PX / stage.height) * positionNoise()),
         z!,
         visibility,
+        Number.NaN,
       ];
     });
     return { tMs, image, world };
   });
-  return { format: RECORDING_FORMAT, version: 1, stage, frames };
+  return { format: RECORDING_FORMAT, version: RECORDING_VERSION, stage, frames };
 }

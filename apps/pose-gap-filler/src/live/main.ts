@@ -1,7 +1,8 @@
 import { createManualClock, createMicrotaskScheduler } from "@motion5/core";
 import { createGsapInterpolator } from "@motion5/core/adapters";
 import { gsap } from "gsap";
-import { parsePoseResult, type StageSize } from "../filler/adapter";
+import { hasPose, parsePoseResult, type StageSize } from "../filler/adapter";
+import { unreachable } from "../filler/unreachable";
 import type { FillerKind } from "../filler/gap-filler";
 import { IMAGE_SPACE, WORLD_SPACE, LANDMARK_SPACES } from "../filler/space";
 import { COMPARED_FILLERS } from "../replay/compare";
@@ -18,8 +19,9 @@ import { createExperiment, LIVE_FILLER, LIVE_STABILIZER } from "./experiment";
 import { createLiveRig } from "./live-rig";
 import { drawOverlay } from "./overlay";
 import { createRecorder } from "./recorder";
-import { createSourceSession, describeEnd } from "./session";
-import type { SourceSample } from "./source";
+import { EMPTY_TALLY, createIngestGate, tally } from "./ingest";
+import { defaultMirror, mirrorChecked, mirrorOf, previewPoint, previewTransform } from "./preview";
+import { createSourceSession, describeEnd, type SessionSample } from "./session";
 import { SOURCE_SPECS, createLandmarkSource, sourceId, sourceLabel } from "./sources";
 import { createStageTimer, formatTimings } from "./timings";
 
@@ -59,6 +61,7 @@ function main(): void {
   const readout = required<HTMLElement>("#timings");
   const start = required<HTMLButtonElement>("#start");
   const sourceSelect = required<HTMLSelectElement>("#source");
+  const mirror = required<HTMLInputElement>("#mirror");
   const fillerSelect = required<HTMLSelectElement>("#filler");
   const spaceSelect = required<HTMLSelectElement>("#space");
   const stabilizerSelect = required<HTMLSelectElement>("#stabilizer");
@@ -173,7 +176,13 @@ function main(): void {
       });
   });
 
-  const onSample = ({ result, tMs, detectMs }: SourceSample) => {
+  const gate = createIngestGate();
+  let counts = EMPTY_TALLY;
+  const showMirror = () => {
+    video.style.transform = previewTransform(mirrorOf(mirror.checked));
+  };
+  mirror.addEventListener("change", showMirror);
+  const onSample = ({ result, tMs, detectMs }: SessionSample) => {
     const timer = createStageTimer();
     const space = experiment.space;
     recorder.keep(result, tMs);
@@ -195,11 +204,13 @@ function main(): void {
       step.filled,
       solved,
       space.kind === "image" ? (position) => position : fit?.project,
+      previewPoint(mirrorOf(mirror.checked), STAGE),
     );
     timer.mark("draw");
     const timings = timer.finish(tMs, detectMs);
     const held = [...forced.joints].join(", ") || "none";
-    readout.textContent = `${space.kind} · ${formatTimings(timings)} · forced: ${held}${space.kind === "world" ? (fit === undefined ? " · no trusted camera fit" : ` · fit ${fit.rmsPx.toFixed(1)} px (${fit.pairCount} pairs)`) : ""}`;
+    const ingest = `in ${counts.accepted}, restarts ${counts.restarts}, dropped ${counts.rejected}`;
+    readout.textContent = `${space.kind} · ${formatTimings(timings)} · ${ingest} · forced: ${held}${space.kind === "world" ? (fit === undefined ? " · no trusted camera fit" : ` · fit ${fit.rmsPx.toFixed(1)} px (${fit.pairCount} pairs)`) : ""}`;
     if (log) console.debug(JSON.stringify(timings));
   };
   const selectedSource = () => {
@@ -207,18 +218,38 @@ function main(): void {
     if (spec === undefined) throw new Error("Unknown landmark source.");
     return spec;
   };
+  // Shows the selected source's video and its default mirror; the person may flip the mirror after.
   const showVideo = () => {
-    video.hidden = selectedSource().kind !== "camera";
+    const spec = selectedSource();
+    video.hidden = spec.kind !== "camera";
+    mirror.checked = mirrorChecked(defaultMirror(spec));
+    showMirror();
   };
   const session = createSourceSession({
     create: (spec) => createLandmarkSource(spec, { video }),
     begin() {
-      // A new source is a new subject: no trust, length, filter or bend state crosses into it.
-      experiment.pipeline.reset();
-      rig.restart();
+      counts = EMPTY_TALLY;
       start.textContent = "Stop";
     },
-    sample: onSample,
+    sample(sample) {
+      // The gate owns admission and subject restarts: a new session, a stall or a reacquired pose
+      // resets every stateful stage, so no trust, length, filter or bend state crosses subjects.
+      const admission = gate.admit(sample, hasPose(sample.result));
+      counts = tally(counts, admission);
+      switch (admission.kind) {
+        case "reject":
+          return;
+        case "restart":
+          experiment.pipeline.reset();
+          rig.restart();
+          break;
+        case "continue":
+          break;
+        default:
+          unreachable(admission, "admission");
+      }
+      onSample(sample);
+    },
     end(spec, ending) {
       finishRecording();
       start.textContent = "Start";
