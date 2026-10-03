@@ -22,6 +22,7 @@ import { add, distance, scale, sub, unit, type Vec } from "../filler/vec";
 import type { BodyRoot } from "../body/state";
 import type { SolvedLimb } from "../rig/rig";
 import { limbTracks, poseNodeId } from "../rig/tracks";
+import { createPresentationHistory, type PresentationFreshness } from "./presentation-history";
 
 export type OrientationEvidence =
   | { readonly kind: "observed"; readonly basis: Basis }
@@ -32,6 +33,7 @@ export interface LimbResidual {
   readonly tipMm: number | undefined;
   readonly provenance: AvatarProvenance;
   readonly orientation: OrientationEvidence["kind"];
+  readonly freshness: PresentationFreshness;
 }
 
 /** Proper rotation, not the playground's Y reflection: mm / camera axes to metres / Three axes. */
@@ -128,10 +130,13 @@ export function createAvatarScene(parent = new Group()) {
   }
   for (const id of ["pelvis", "trunk", "shoulders", "neck"]) make(id);
   make("head", true);
+  const history = createPresentationHistory(objects);
+  const staleMaterial = new MeshBasicMaterial({ color: 0x64748b, wireframe: true });
   const adapter = createObject3dPatchAdapter((id) => objects.get(id));
   const style = (id: string, provenance: AvatarProvenance) => {
     objects.get(id)!.userData.provenance = provenance;
     meshes.get(id)!.material = materials[provenance];
+    history.accept(id);
   };
   const segment = (id: string, from: Vec, to: Vec, width: number, provenance: AvatarProvenance) => {
     const delta = sub(to, from);
@@ -152,7 +157,9 @@ export function createAvatarScene(parent = new Group()) {
     /** Exposed for read-only inspection/tests, not nested skeletal retargeting. */
     objects: objects as ReadonlyMap<string, Group>,
     clear() {
-      for (const object of objects.values()) object.visible = false;
+      history.clear();
+      for (const object of objects.values()) adapter.clear(object);
+      previousReader = undefined;
     },
     update(
       step: PipelineStep,
@@ -166,11 +173,33 @@ export function createAvatarScene(parent = new Group()) {
       requireUniformScale(parent);
       if (readPatch !== previousReader) {
         for (const object of objects.values()) adapter.clear(object);
+        history.clear();
         previousReader = readPatch;
       }
-      for (const object of objects.values()) object.visible = false;
       const residuals = new Map<LimbId, LimbResidual>();
-      if (step.filled.space.kind !== "world") return residuals;
+      if (step.filled.space.kind !== "world") {
+        history.clear();
+        return residuals;
+      }
+      history.begin(step.filled.tMs);
+      const finish = () => {
+        history.finish((id) => {
+          meshes.get(id)!.material = staleMaterial;
+        });
+        for (const limb of LIMBS) {
+          const upper = objects.get(poseNodeId(limbTracks(limb.id).upper))!;
+          const freshness = upper.userData.freshness as PresentationFreshness;
+          if (freshness.kind !== "current")
+            residuals.set(limb.id, {
+              middleMm: undefined,
+              tipMm: undefined,
+              provenance: (upper.userData.provenance as AvatarProvenance | undefined) ?? "neutral",
+              orientation: "neutral",
+              freshness,
+            });
+        }
+        return residuals;
+      };
       for (const limb of LIMBS) {
         const chain = solved.get(limb.id);
         const root = presentedPosition(step.filled.joints[limb.root]);
@@ -243,10 +272,11 @@ export function createAvatarScene(parent = new Group()) {
           tipMm: tip.kind === "trusted" ? distance(tip.position, chain.tip) : undefined,
           provenance,
           orientation: orientation.kind,
+          freshness: { kind: "current", tMs: step.filled.tMs },
         });
       }
       const body = step.filled.body;
-      if (body === undefined) return residuals;
+      if (body === undefined) return finish();
       // Raw/hold ablations retain their own roots. Connect to this frame's actual chains,
       // never secretly substitute stabilized model anchors for the raw reference.
       const anchor = (id: BodyRoot) => presentedPosition(step.filled.joints[id]);
@@ -277,15 +307,17 @@ export function createAvatarScene(parent = new Group()) {
           style("head", "neutral");
         }
       }
-      return residuals;
+      return finish();
     },
     dispose() {
       if (disposed) return;
       disposed = true;
+      history.clear();
       for (const object of objects.values()) parent.remove(object);
       box.dispose();
       sphere.dispose();
       for (const material of Object.values(materials)) material.dispose();
+      staleMaterial.dispose();
     },
   };
 }

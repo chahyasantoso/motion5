@@ -201,6 +201,33 @@ export function createWorldChainFiller(noise: KalmanNoise, coastMs: number): Gap
       for (const limb of LIMBS) {
         const root = presentedPosition(filled[limb.root]);
         infer(limb.middle, child(limb.upper, root, boneDirection(limb.upper, torso)));
+        const middleJoint = filled[limb.middle];
+        const angleState = angles.get(limb.upper)!.state;
+        if (
+          middleJoint.kind === "inferred" &&
+          angleState !== undefined &&
+          body.orientation.kind !== "unavailable"
+        ) {
+          const lastObservedTMs = Math.min(
+            lastTrusted.get(limb.middle)!,
+            angleState.measuredMs,
+            body.orientation.measuredMs,
+          );
+          const anchor = body.anchors[limb.root as BodyRoot];
+          filled[limb.middle] = {
+            ...middleJoint,
+            prediction: {
+              kind: "coast",
+              lastObservedTMs,
+              expiresTMs: Math.min(
+                lastObservedTMs + coastMs,
+                anchor.expiresMs ?? Infinity,
+                body.orientation.kind === "inferred" ? body.orientation.expiresMs : Infinity,
+              ),
+              angularVarianceRad2: angleState.p00,
+            },
+          };
+        }
         const middle = presentedPosition(filled[limb.middle]);
         const upper = direction(root, middle);
         const parent =

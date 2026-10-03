@@ -258,7 +258,7 @@ describe("bend-side hysteresis", () => {
       const writer = createImageWriter(loaded);
       const pipeline = createGapPipeline({
         filler: { kind: "raw" },
-        detector: { threshold: 0.5, gate: Infinity },
+        detector: { threshold: 0.5, gate: Infinity, innovation: false },
       });
       const write = (offset: number, tMs: number) => {
         const step = pipeline.step(frameOf(arm(offset), tMs));
@@ -288,7 +288,7 @@ describe("bend-side hysteresis", () => {
       const writer = createWorldWriter(loaded);
       const pipeline = createGapPipeline({
         filler: { kind: "raw" },
-        detector: { threshold: 0.5, gate: Infinity },
+        detector: { threshold: 0.5, gate: Infinity, innovation: false },
       });
       const root: Vec = [0, 0, 0];
       const goal: Vec = [0, 500, 0];

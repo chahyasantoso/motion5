@@ -140,7 +140,7 @@ describe("flat reconstructed avatar", () => {
     }
   });
 
-  it("GF-139 hides skipped limbs even when their project retains a ready patch", () => {
+  it("GF-139 holds skipped solved limbs outside the current project publication", () => {
     const f = fixture();
     try {
       f.update(0);
@@ -149,8 +149,10 @@ describe("flat reconstructed avatar", () => {
       // First gap sample is already past observation age, so the writer skips the lost goal.
       expect(after.solved.has("left-arm")).toBe(false);
       expect(f.solver.readPatch!(id)?.status).toBe("ready");
-      expect(f.avatar.objects.get(id)!.visible).toBe(false);
-      expect(f.avatar.objects.get("left-arm-extremity")!.visible).toBe(false);
+      expect(f.avatar.objects.get(id)!.visible).toBe(true);
+      expect(f.avatar.objects.get(id)!.userData.freshness.kind).toBe("stale");
+      expect(after.residuals.get("left-arm")!.middleMm).toBeUndefined();
+      expect(f.avatar.objects.get("left-arm-extremity")!.visible).toBe(true);
       expect(f.update(600).solved.has("left-arm")).toBe(true);
       expect(f.avatar.objects.get(id)!.visible).toBe(true);
     } finally {
@@ -298,7 +300,7 @@ describe("flat reconstructed avatar", () => {
     }
   });
 
-  it("GF-156 rejects overflow/invalid extra-slot bases and suppresses stale head geometry", () => {
+  it("GF-156 rejects overflow/invalid extra-slot bases and labels held head geometry stale", () => {
     const raw: RawLandmark[] = Array.from({ length: 33 }, () => [NaN, NaN, NaN, 0, NaN]);
     raw[15] = [0, 0, 0, 1, NaN];
     raw[19] = [1e153, 0, 0, 1, NaN];
@@ -313,8 +315,9 @@ describe("flat reconstructed avatar", () => {
       f.update(100, new Set(["left-shoulder", "right-shoulder"]));
       expect(f.avatar.objects.get("head")!.userData.provenance).toBe("neutral");
       f.update(501, new Set(["left-shoulder", "right-shoulder"]));
-      expect(f.avatar.objects.get("head")!.visible).toBe(false);
-      expect(f.avatar.objects.get("neck")!.visible).toBe(false);
+      expect(f.avatar.objects.get("head")!.visible).toBe(true);
+      expect(f.avatar.objects.get("neck")!.visible).toBe(true);
+      expect(f.avatar.objects.get("head")!.userData.freshness.kind).toBe("stale");
     } finally {
       f.dispose();
     }

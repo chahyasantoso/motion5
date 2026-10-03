@@ -30,10 +30,14 @@ then a movement take with "Replay", and the report is this block for that take.
   space the detector calibrated on the still take. A recording keeps both forms of every landmark,
   so one still take calibrates both spaces (`calibrateSpaces`), on the live page as here, and the
   calibration survives a space switch.
+  Calibration tunes visibility/speed, not the additional pre-filter innovation gate: its
+  engineering defaults remain 30 px / 120 mm or 0.3 raw bone lengths, bounded 100 ms prediction,
+  and three consistent candidate confirmations. Raw observations remain the ungated reference.
 - **Populations.** Filled rows are the fillers' own output with no rig, the answer to "where is an
   untrusted joint" that the filler alone owns and that an INN would replace behind the same
-  interface. Rig rows are what the live page draws: a limb's middle and tip where a fresh Engine
-  rig solved them.
+  interface. Rig rows contain current Engine publications, not presentation-only stale avatar
+  geometry. The avatar can stay visible while a rig metric correctly counts an unavailable solve;
+  visual persistence never reduces lost-frame counts or manufactures observations.
 - **Metrics.** Position error is the distance from what was shown to the hidden landmark over
   masked frames. Lost frames are masked frames where nothing was shown. Bone-length deviation
   covers bones touching a masked joint. Jitter is the three-frame acceleration of shown (or, with a
@@ -73,50 +77,50 @@ then a movement take with "Replay", and the report is this block for that take.
 - Detector: calibrated on the still recording, visibility threshold 0.861 and speed gate 20.0 bone
   lengths/s; reference noise 1.91 px.
 - Filled `raw`: position error 0.0 / 0.0 / 0.0 px, lost frames 0, bone-length deviation 0.0 / 0.0 /
-  0.0 px, jitter 4153.9 / 8064.6 / 12688.0 px/s², lag 0.0 ms, recovery snap 5.0 / 13.9 / 13.9 px.
+  0.0 px, jitter 4153.9 / 8064.6 / 12688.0 px/s², lag 0.0 ms, recovery snap 4.7 / 12.8 / 12.8 px.
 - Filled `hold`: position error 27.7 / 94.1 / 130.9 px, lost frames 0, bone-length deviation 12.7 /
-  42.0 / 111.3 px, jitter 1245.3 / 3130.3 / 118724.6 px/s², lag 33.3 ms, recovery snap 38.8 / 131.9
-  / 131.9 px.
-- Filled `chain-kalman`: position error 21.9 / 70.8 / 103.3 px, lost frames 2, bone-length deviation
-  10.6 / 32.3 / 48.4 px, jitter 1342.2 / 3349.4 / 74781.0 px/s², lag 33.3 ms, recovery snap 28.5 /
-  78.1 / 78.1 px.
-- Rig `raw`: position error 11.5 / 45.5 / 51.5 px, lost frames 0, bone-length deviation 9.0 / 32.3 /
-  45.5 px, jitter 5972.0 / 13021.9 / 94993.9 px/s², lag 0.0 ms, recovery snap 5.6 / 14.3 / 14.3 px.
-- Rig `hold`: position error 29.4 / 94.1 / 130.9 px, lost frames 0, bone-length deviation 9.0 / 32.3
-  / 45.5 px, jitter 3013.5 / 5696.0 / 118724.6 px/s², lag 33.3 ms, recovery snap 30.7 / 131.9 /
-  131.9 px.
-- Rig `chain-kalman`: position error 24.1 / 74.7 / 103.3 px, lost frames 2, bone-length deviation
-  8.9 / 32.3 / 44.0 px, jitter 2989.3 / 6631.2 / 114302.0 px/s², lag 33.3 ms, recovery snap 17.0 /
-  97.7 / 97.7 px.
-- Verdict (filled rows): measurable gap. The best filler is `chain-kalman` at 21.9 px mean masked
-  error with 2 lost frames, 11.5 times the reference noise of 1.9 px, a gap of 20.0 px.
+  42.0 / 111.3 px, jitter 1266.6 / 3133.7 / 128112.6 px/s², lag 33.3 ms, recovery snap 43.2 / 142.3
+  / 142.3 px.
+- Filled `chain-kalman`: position error 22.1 / 71.5 / 104.3 px, lost frames 2, bone-length deviation
+  10.8 / 32.3 / 48.4 px, jitter 1284.6 / 3271.7 / 74875.9 px/s², lag 33.3 ms, recovery snap 30.1 /
+  78.2 / 78.2 px.
+- Rig `raw`: position error 11.7 / 45.5 / 51.5 px, lost frames 0, bone-length deviation 9.3 / 32.3 /
+  45.5 px, jitter 5979.3 / 13021.9 / 94993.9 px/s², lag 0.0 ms, recovery snap 10.2 / 81.8 / 81.8 px.
+- Rig `hold`: position error 29.6 / 94.1 / 130.9 px, lost frames 0, bone-length deviation 9.3 / 32.3
+  / 45.5 px, jitter 2983.5 / 5812.0 / 128112.6 px/s², lag 33.3 ms, recovery snap 38.5 / 142.3 /
+  142.3 px.
+- Rig `chain-kalman`: position error 24.3 / 75.1 / 104.3 px, lost frames 2, bone-length deviation
+  9.2 / 32.3 / 44.1 px, jitter 2876.6 / 6423.6 / 114302.0 px/s², lag 33.3 ms, recovery snap 22.6 /
+  97.8 / 97.8 px.
+- Verdict (filled rows): measurable gap. The best filler is `chain-kalman` at 22.1 px mean masked
+  error with 2 lost frames, 11.6 times the reference noise of 1.9 px, a gap of 20.2 px.
 
 ### world space (mm)
 
 - Detector: calibrated on the still recording, visibility threshold 0.861 and speed gate 20.0 bone
   lengths/s; reference noise 13.02 mm.
 - Filled `raw`: position error 0.0 / 0.0 / 0.0 mm, lost frames 0, bone-length deviation 0.0 / 0.0 /
-  0.0 mm, jitter 28051.7 / 48886.8 / 76956.5 mm/s², lag 0.0 ms, recovery snap 29.4 / 69.3 / 69.3 mm.
+  0.0 mm, jitter 28051.7 / 48886.8 / 76956.5 mm/s², lag 0.0 ms, recovery snap 26.5 / 68.1 / 68.1 mm.
 - Filled `hold`: position error 154.0 / 466.9 / 659.3 mm, lost frames 0, bone-length deviation 53.4
-  / 197.2 / 357.5 mm, jitter 9297.4 / 20358.5 / 596876.0 mm/s², lag 33.3 ms, recovery snap 232.3 /
-  663.2 / 663.2 mm.
+  / 197.2 / 357.5 mm, jitter 9384.1 / 20332.7 / 649809.0 mm/s², lag 33.3 ms, recovery snap 256.2 /
+  722.0 / 722.0 mm.
 - Filled `chain-kalman`: position error 117.5 / 326.0 / 425.7 mm, lost frames 2, bone-length
-  deviation 26.6 / 152.5 / 370.5 mm, jitter 9775.0 / 20977.8 / 420681.7 mm/s², lag 33.3 ms, recovery
-  snap 240.1 / 406.3 / 406.3 mm.
-- Rig `raw`: position error 26.1 / 109.0 / 255.6 mm, lost frames 0, bone-length deviation 9.2 / 24.7
-  / 42.3 mm, jitter 35741.5 / 87702.1 / 233122.9 mm/s², lag 0.0 ms, recovery snap 46.0 / 236.2 /
-  236.2 mm.
+  deviation 26.6 / 152.5 / 370.5 mm, jitter 8819.7 / 20483.3 / 355151.8 mm/s², lag 33.3 ms, recovery
+  snap 274.6 / 366.3 / 366.3 mm.
+- Rig `raw`: position error 26.0 / 109.0 / 255.6 mm, lost frames 0, bone-length deviation 9.2 / 24.8
+  / 42.1 mm, jitter 35780.2 / 87679.7 / 233122.9 mm/s², lag 0.0 ms, recovery snap 45.6 / 225.3 /
+  225.3 mm.
 - Rig `hold`: position error 114.5 / 466.9 / 659.3 mm, lost frames 0, bone-length deviation 9.2 /
-  24.7 / 42.3 mm, jitter 14123.7 / 32372.4 / 596876.0 mm/s², lag 33.3 ms, recovery snap 157.1 /
-  663.2 / 663.2 mm.
-- Rig `chain-kalman`: position error 83.8 / 274.8 / 425.7 mm, lost frames 2, bone-length deviation
-  9.2 / 24.7 / 42.3 mm, jitter 14055.0 / 33143.2 / 420681.7 mm/s², lag 33.3 ms, recovery snap 135.0
-  / 406.3 / 406.3 mm.
+  24.8 / 42.1 mm, jitter 14354.5 / 32348.2 / 649809.0 mm/s², lag 33.3 ms, recovery snap 175.4 /
+  722.0 / 722.0 mm.
+- Rig `chain-kalman`: position error 83.7 / 274.8 / 425.7 mm, lost frames 2, bone-length deviation
+  9.2 / 24.8 / 42.1 mm, jitter 13248.3 / 32348.2 / 204350.4 mm/s², lag 33.3 ms, recovery snap 58.8 /
+  234.1 / 234.1 mm.
 - Verdict (filled rows): measurable gap. The best filler is `chain-kalman` at 117.5 mm mean masked
   error with 2 lost frames, 9.0 times the reference noise of 13.0 mm, a gap of 104.5 mm.
 
 - INN: open. The best filler leaves a measurable gap, so the INN issue is warranted, and it must
-  beat `chain-kalman` in image space (21.9 px, 2 lost frames) and `chain-kalman` in world space
+  beat `chain-kalman` in image space (22.1 px, 2 lost frames) and `chain-kalman` in world space
   (117.5 mm, 2 lost frames) on mean masked error without losing more frames, never `raw`.
 
 <!-- comparison-record:end -->
