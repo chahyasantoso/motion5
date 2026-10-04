@@ -1,0 +1,34 @@
+quality (node 24.21.0)	Run npm run typecheck	﻿2026-10-04T13:25:52.2049549Z ##[group]Run npm run typecheck
+quality (node 24.21.0)	Run npm run typecheck	2026-10-04T13:25:52.2049888Z ^[[36;1mnpm run typecheck^[[0m
+quality (node 24.21.0)	Run npm run typecheck	2026-10-04T13:25:52.2114726Z shell: /usr/bin/bash -e {0}
+quality (node 24.21.0)	Run npm run typecheck	2026-10-04T13:25:52.2115055Z env:
+quality (node 24.21.0)	Run npm run typecheck	2026-10-04T13:25:52.2115296Z   NODE_VERSION: 24.21.0
+quality (node 24.21.0)	Run npm run typecheck	2026-10-04T13:25:52.2115636Z   CI_EVIDENCE_DIR: /home/runner/work/_temp/ci-evidence
+quality (node 24.21.0)	Run npm run typecheck	2026-10-04T13:25:52.2116025Z ##[endgroup]
+quality (node 24.21.0)	Run npm run typecheck	2026-10-04T13:25:52.3139900Z 
+quality (node 24.21.0)	Run npm run typecheck	2026-10-04T13:25:52.3140297Z > motion5@0.0.0 typecheck
+quality (node 24.21.0)	Run npm run typecheck	2026-10-04T13:25:52.3140931Z > tsc --noEmit -p tsconfig.json
+quality (node 24.21.0)	Run npm run typecheck	2026-10-04T13:25:52.3141395Z 
+quality (node 24.21.0)	Run npm run typecheck	2026-10-04T13:26:00.6220505Z ##[error]packages/core/test/unit/domain/plugin-register-all.test.ts(333,7): error TS2322: Type '() => { keyframes: { generated: {}; }; }' is not assignable to type 'PluginContributor'.
+quality (node 24.21.0)	Run npm run typecheck	2026-10-04T13:26:00.6232024Z   Call signature return types '{ keyframes: { generated: {}; }; }' and 'Contribution | undefined' are incompatible.
+quality (node 24.21.0)	Run npm run typecheck	2026-10-04T13:26:00.6233491Z     The types of 'keyframes' are incompatible between these types.
+quality (node 24.21.0)	Run npm run typecheck	2026-10-04T13:26:00.6234569Z       Type '{ generated: {}; }' is not assignable to type 'Readonly<Record<string, AuthoredProperty>>'.
+quality (node 24.21.0)	Run npm run typecheck	2026-10-04T13:26:00.6235683Z         Property 'generated' is incompatible with index signature.
+quality (node 24.21.0)	Run npm run typecheck	2026-10-04T13:26:00.6236493Z           Type '{}' is not assignable to type 'AuthoredProperty'.
+quality (node 24.21.0)	Run npm run typecheck	2026-10-04T13:26:00.6867278Z ##[error]Process completed with exit code 2.
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	﻿2026-10-04T13:28:27.4051016Z ##[group]Run test "$SUITE_RESULT" = success
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-10-04T13:28:27.4051828Z ^[[36;1mtest "$SUITE_RESULT" = success^[[0m
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-10-04T13:28:27.4330225Z shell: /usr/bin/bash -e {0}
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-10-04T13:28:27.4331378Z env:
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-10-04T13:28:27.4331956Z   NODE_VERSION: 24.21.0
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-10-04T13:28:27.4332614Z   SUITE_RESULT: failure
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-10-04T13:28:27.4333219Z ##[endgroup]
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-10-04T13:28:27.4509118Z ##[error]Process completed with exit code 1.
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	﻿2026-10-04T13:28:29.5910578Z ##[group]Run test "$SUITE_RESULT" = success
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-10-04T13:28:29.5910965Z ^[[36;1mtest "$SUITE_RESULT" = success^[[0m
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-10-04T13:28:29.6316601Z shell: /usr/bin/bash -e {0}
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-10-04T13:28:29.6317169Z env:
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-10-04T13:28:29.6317339Z   NODE_VERSION: 24.21.0
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-10-04T13:28:29.6317542Z   SUITE_RESULT: failure
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-10-04T13:28:29.6317726Z ##[endgroup]
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-10-04T13:28:29.6591586Z ##[error]Process completed with exit code 1.
