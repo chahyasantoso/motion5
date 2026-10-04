@@ -1,15 +1,8 @@
 import { ENVELOPE_RIGS, ENVELOPE_SEGMENT, envelopeRandom } from "./ik-envelope";
-import {
-  add3,
-  axisX3,
-  cross3,
-  matrixFromEuler3d,
-  normalize3,
-  scale3,
-} from "../../../plugins/src/frame3d";
-import type { Euler3d, Vec3, WorldFrame3d } from "../../../plugins/src/frame3d";
-import type { ChainShape3d } from "../../../plugins/src/ik3d-solve";
-import type { ChainMember3d } from "../../../plugins/src/ik3d-chain";
+import { add3, axisX3, cross3, matrixFromEuler3d, normalize3, scale3 } from "../../src/frame3d";
+import type { Euler3d, Vec3, WorldFrame3d } from "../../src/frame3d";
+import type { ChainShape3d } from "../../src/ik3d-solve";
+import type { ChainMember3d } from "../../src/ik3d-chain";
 
 /** The closed set of 3D performance scenarios for issue #500 phase 5. */
 export type Envelope3dScenarioId =

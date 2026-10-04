@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { PluginInputs } from "../../../src/domain/plugins";
+import type { PluginInputs } from "@motion5/core/plugin-api";
 import {
   add3,
   dot3,
@@ -17,23 +17,23 @@ import {
   type Matrix3,
   type Vec3,
   type WorldFrame3d,
-} from "../../../../plugins/src/frame3d";
-import { solveChain } from "../../../../plugins/src/ik-solve";
-import { solveTwoBone3d, UNBOUND_POLE3D, type Pole3d } from "../../../../plugins/src/ik3d-analytic";
-import { ik3dPlugin } from "../../../../plugins/src/ik3d";
+} from "../../src/frame3d";
+import { solveChain } from "../../src/ik-solve";
+import { solveTwoBone3d, UNBOUND_POLE3D, type Pole3d } from "../../src/ik3d-analytic";
+import { ik3dPlugin } from "../../src/ik3d";
 import {
   legalRetryReach3d,
   legalStarts3d,
   place3d,
   solveTree3dAttempt,
-} from "../../../../plugins/src/ik3d-fabrik";
-import { solveSerialRecovery3d } from "../../../../plugins/src/ik3d-serial-recovery";
-import { FABRIK_TOLERANCE } from "../../../../plugins/src/fabrik";
-import { chainShape3d, solveChain3d } from "../../../../plugins/src/ik3d-solve";
-import { limitLocal3d } from "../../../../plugins/src/ik3d-constraint";
-import type { ChainMember3d } from "../../../../plugins/src/ik3d-chain";
-import type { SolveResult3d } from "../../../../plugins/src/ik3d-result";
-import { composeChain3d, frameDistance3d } from "../../support/fk3d-compose";
+} from "../../src/ik3d-fabrik";
+import { solveSerialRecovery3d } from "../../src/ik3d-serial-recovery";
+import { FABRIK_TOLERANCE } from "../../src/fabrik";
+import { chainShape3d, solveChain3d } from "../../src/ik3d-solve";
+import { limitLocal3d } from "../../src/ik3d-constraint";
+import type { ChainMember3d } from "../../src/ik3d-chain";
+import type { SolveResult3d } from "../../src/ik3d-result";
+import { composeChain3d, frameDistance3d } from "../support/fk3d-compose";
 
 const ROOT = readFrame3d({ x: 0, y: 0, z: 0 });
 const ZERO_OFFSET = { x: 0, y: 0, z: 0 } as const;

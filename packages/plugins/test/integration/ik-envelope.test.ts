@@ -1,22 +1,22 @@
 import { describe, expect, it } from "vitest";
-import { PluginRegistry } from "../../../src/domain/plugins";
-import { Engine } from "../../../src/engine";
-import { createManualClock } from "../../../src/ports/clock";
-import { fabrikIterationCap } from "../../../../plugins/src/fabrik-cap";
-import { fkPlugin } from "../../../../plugins/src/fk";
-import { ikPlugin } from "../../../../plugins/src/ik";
-import type { SolveMember } from "../../../../plugins/src/ik-member";
-import type { SolveResult } from "../../../../plugins/src/ik-result";
-import { chainShape, solveChain } from "../../../../plugins/src/ik-solve";
-import { transformPlugin } from "../../../../plugins/src/transform";
-import { createFakeInterpolator, createFakeScheduler } from "../../../src/testing/fakes";
+import { PluginRegistry } from "@motion5/core";
+import { Engine } from "@motion5/core";
+import { createManualClock } from "@motion5/core";
+import { fabrikIterationCap } from "../../src/fabrik-cap";
+import { fkPlugin } from "../../src/fk";
+import { ikPlugin } from "../../src/ik";
+import type { SolveMember } from "../../src/ik-member";
+import type { SolveResult } from "../../src/ik-result";
+import { chainShape, solveChain } from "../../src/ik-solve";
+import { transformPlugin } from "../../src/transform";
+import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/testing";
 import {
   envelopeScenarios,
   independentRigsProject,
   rigTrackIds,
   type EnvelopeScenario,
-} from "../../support/ik-envelope";
-import { iterationsOf } from "../../support/solve-quality";
+} from "../support/ik-envelope";
+import { iterationsOf } from "../support/solve-quality";
 
 // Issue #349 phase 7 and ADR-113: the deterministic half of the 2D IK envelope.
 //

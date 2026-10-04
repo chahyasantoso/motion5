@@ -1,13 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { FABRIK_TOLERANCE } from "../../../../plugins/src/fabrik";
-import { fabrikIterationCap } from "../../../../plugins/src/fabrik-cap";
-import { canonicalChain } from "../../../../plugins/src/ik-topology";
-import { constrains } from "../../../../plugins/src/ik3d-constraint";
-import { chainShape3d, solveChain3d } from "../../../../plugins/src/ik3d-solve";
-import type { SolveResult3d } from "../../../../plugins/src/ik3d-result";
-import { composeChain3d, frameDistance3d } from "../../support/fk3d-compose";
-import { envelope3dScenarios, type Envelope3dScenario } from "../../support/ik3d-envelope";
-import { iterationsOf } from "../../support/solve-quality";
+import { FABRIK_TOLERANCE } from "../../src/fabrik";
+import { fabrikIterationCap } from "../../src/fabrik-cap";
+import { canonicalChain } from "../../src/ik-topology";
+import { constrains } from "../../src/ik3d-constraint";
+import { chainShape3d, solveChain3d } from "../../src/ik3d-solve";
+import type { SolveResult3d } from "../../src/ik3d-result";
+import { composeChain3d, frameDistance3d } from "../support/fk3d-compose";
+import { envelope3dScenarios, type Envelope3dScenario } from "../support/ik3d-envelope";
+import { iterationsOf } from "../support/solve-quality";
 
 const RIGS = 40;
 

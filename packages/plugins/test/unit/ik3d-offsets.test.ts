@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import type { PluginInputs } from "../../../src/domain/plugins";
-import type { ImmutableRecord } from "../../../src/domain/values";
-import { fk3dPlugin } from "../../../../plugins/src/fk3d";
+import type { PluginInputs } from "@motion5/core/plugin-api";
+import type { ImmutableRecord } from "@motion5/core/plugin-api";
+import { fk3dPlugin } from "../../src/fk3d";
 import {
   composeWorld3d,
   effectiveLink3d,
@@ -12,9 +12,9 @@ import {
   type Euler3d,
   type PivotOffset3d,
   type WorldFrame3d,
-} from "../../../../plugins/src/frame3d";
-import { solveTwoBone } from "../../../../plugins/src/ik-analytic";
-import { solveTwoBone3d } from "../../../../plugins/src/ik3d-analytic";
+} from "../../src/frame3d";
+import { solveTwoBone } from "../../src/ik-analytic";
+import { solveTwoBone3d } from "../../src/ik3d-analytic";
 
 function seeded(seed: number): () => number {
   let state = seed >>> 0;

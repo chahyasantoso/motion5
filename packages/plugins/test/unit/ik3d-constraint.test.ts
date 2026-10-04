@@ -19,25 +19,20 @@ import {
   type Matrix3,
   type Vec3,
   type WorldFrame3d,
-} from "../../../../plugins/src/frame3d";
-import {
-  FREE_JOINT,
-  atBound,
-  limitRotation,
-  readAngleRange,
-} from "../../../../plugins/src/ik-constraint";
+} from "../../src/frame3d";
+import { FREE_JOINT, atBound, limitRotation, readAngleRange } from "../../src/ik-constraint";
 import {
   FREE_JOINT3D,
   constrains,
   readJointLimit3d,
   limitLocal3d,
   type JointLimit3d,
-} from "../../../../plugins/src/ik3d-constraint";
-import { readChainMembers3d, type ChainMember3d } from "../../../../plugins/src/ik3d-chain";
-import { chainShape3d, solveChain3d } from "../../../../plugins/src/ik3d-solve";
-import { solveChain } from "../../../../plugins/src/ik-solve";
-import type { SolveMember } from "../../../../plugins/src/ik-member";
-import { composeChain3d, frameDistance3d } from "../../support/fk3d-compose";
+} from "../../src/ik3d-constraint";
+import { readChainMembers3d, type ChainMember3d } from "../../src/ik3d-chain";
+import { chainShape3d, solveChain3d } from "../../src/ik3d-solve";
+import { solveChain } from "../../src/ik-solve";
+import type { SolveMember } from "../../src/ik-member";
+import { composeChain3d, frameDistance3d } from "../support/fk3d-compose";
 
 const MATRIX_TOLERANCE = 1e-9;
 const ANGLE_TOLERANCE = 1e-7;

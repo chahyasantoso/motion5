@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
-import type { ImmutableRecord } from "../../../src/domain/values";
-import { fkPlugin } from "../../../../plugins/src/fk";
-import { FABRIK_TOLERANCE, solveFabrik } from "../../../../plugins/src/fabrik";
-import type { SolveMember } from "../../../../plugins/src/ik-member";
-import type { WorldFrame } from "../../../../plugins/src/frame";
-import { readSolveMembers, type DeliveredMember } from "../../../../plugins/src/ik-chain";
-import { solveTwoBone as solveTwoBoneDirect } from "../../../../plugins/src/ik-analytic";
-import { solveChain } from "../../../../plugins/src/ik-solve";
+import type { ImmutableRecord } from "@motion5/core/plugin-api";
+import { fkPlugin } from "../../src/fk";
+import { FABRIK_TOLERANCE, solveFabrik } from "../../src/fabrik";
+import type { SolveMember } from "../../src/ik-member";
+import type { WorldFrame } from "../../src/frame";
+import { readSolveMembers, type DeliveredMember } from "../../src/ik-chain";
+import { solveTwoBone as solveTwoBoneDirect } from "../../src/ik-analytic";
+import { solveChain } from "../../src/ik-solve";
 
 // Issue #214: `ik` accounts for `fk`'s authored pivot offsets, in both solves.
 //

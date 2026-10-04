@@ -5,7 +5,7 @@ import { Engine, PluginRegistry, createManualClock, type ProjectDefinition } fro
 import { fk3dPlugin } from "@motion5/plugins/fk3d";
 import { ik3dPlugin } from "@motion5/plugins/ik3d";
 import { transform3dPlugin } from "@motion5/plugins/transform3d";
-import { createFakeInterpolator, createFakeScheduler } from "../../../src/testing/fakes";
+import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/testing";
 
 // Issue #500 phase 8 and ADR-095: the examples in `docs/guide/inverse-kinematics-3d.md` are executed.
 //
@@ -16,7 +16,7 @@ import { createFakeInterpolator, createFakeScheduler } from "../../../src/testin
 // the paragraph uses, rather than a table of doubles that would only restate today's output.
 
 const GUIDE = fileURLToPath(
-  new URL("../../../../../docs/guide/inverse-kinematics-3d.md", import.meta.url),
+  new URL("../../../../docs/guide/inverse-kinematics-3d.md", import.meta.url),
 );
 const JSON_BLOCK = /^```json\n([\s\S]*?)^```$/gm;
 const CLOSE = 1e-7;

@@ -1,27 +1,27 @@
 import { describe, expect, it } from "vitest";
-import type { ProjectDefinition } from "../../../src/contract/v5";
-import { PluginRegistry } from "../../../src/domain/plugins";
-import { Engine } from "../../../src/engine";
-import { createManualClock } from "../../../src/ports/clock";
-import { createFakeInterpolator, createFakeScheduler } from "../../../src/testing/fakes";
-import { fkPlugin } from "../../../../plugins/src/fk";
-import { ikPlugin } from "../../../../plugins/src/ik";
-import { transformPlugin } from "../../../../plugins/src/transform";
-import { FABRIK_TOLERANCE, solveFabrik, solveFabrikAttempt } from "../../../../plugins/src/fabrik";
-import { fabrikAlternatives, outranks } from "../../../../plugins/src/fabrik-select";
-import { composeWorld, pivotFromBaseTip, type WorldFrame } from "../../../../plugins/src/frame";
-import type { JointRange } from "../../../../plugins/src/ik-constraint";
-import { solveLength, solveOffset, type SolveMember } from "../../../../plugins/src/ik-member";
-import type { SolveResult } from "../../../../plugins/src/ik-result";
+import type { ProjectDefinition } from "@motion5/core";
+import { PluginRegistry } from "@motion5/core";
+import { Engine } from "@motion5/core";
+import { createManualClock } from "@motion5/core";
+import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/testing";
+import { fkPlugin } from "../../src/fk";
+import { ikPlugin } from "../../src/ik";
+import { transformPlugin } from "../../src/transform";
+import { FABRIK_TOLERANCE, solveFabrik, solveFabrikAttempt } from "../../src/fabrik";
+import { fabrikAlternatives, outranks } from "../../src/fabrik-select";
+import { composeWorld, pivotFromBaseTip, type WorldFrame } from "../../src/frame";
+import type { JointRange } from "../../src/ik-constraint";
+import { solveLength, solveOffset, type SolveMember } from "../../src/ik-member";
+import type { SolveResult } from "../../src/ik-result";
 import {
   SOLVE_MAGNITUDE_CEILING,
   restoreResult,
   scaleRig,
   solveMagnitude,
-} from "../../../../plugins/src/ik-scale";
-import { chainShape, solveChain } from "../../../../plugins/src/ik-solve";
-import { readFrame3d, ZERO_PIVOT_OFFSET3D } from "../../../../plugins/src/frame3d";
-import { solveTwoBone3d } from "../../../../plugins/src/ik3d-analytic";
+} from "../../src/ik-scale";
+import { chainShape, solveChain } from "../../src/ik-solve";
+import { readFrame3d, ZERO_PIVOT_OFFSET3D } from "../../src/frame3d";
+import { solveTwoBone3d } from "../../src/ik3d-analytic";
 
 // Issue #349 phase 6 and ADR-111: stability and determinism of the 2D solve.
 //

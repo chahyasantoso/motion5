@@ -1,8 +1,8 @@
-import type { ProjectDefinition } from "../../src/contract/v5";
-import type { WorldFrame } from "../../../plugins/src/frame";
-import type { JointRange } from "../../../plugins/src/ik-constraint";
-import type { SolveMember } from "../../../plugins/src/ik-member";
-import type { ChainShape } from "../../../plugins/src/ik-solve";
+import type { ProjectDefinition } from "@motion5/core";
+import type { WorldFrame } from "../../src/frame";
+import type { JointRange } from "../../src/ik-constraint";
+import type { SolveMember } from "../../src/ik-member";
+import type { ChainShape } from "../../src/ik-solve";
 
 /**
  * The rigs the 2D IK envelope is measured on, built once for the two readers that need them.

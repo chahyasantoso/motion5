@@ -1,15 +1,15 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import type { ProjectDefinition } from "../../../src/contract/v5";
-import { PluginRegistry } from "../../../src/domain/plugins";
-import { Engine } from "../../../src/engine";
-import { createManualClock } from "../../../src/ports/clock";
-import { FABRIK_TOLERANCE } from "../../../../plugins/src/fabrik";
-import { fkPlugin } from "../../../../plugins/src/fk";
-import { ikPlugin } from "../../../../plugins/src/ik";
-import { transformPlugin } from "../../../../plugins/src/transform";
-import { createFakeInterpolator, createFakeScheduler } from "../../../src/testing/fakes";
+import type { ProjectDefinition } from "@motion5/core";
+import { PluginRegistry } from "@motion5/core";
+import { Engine } from "@motion5/core";
+import { createManualClock } from "@motion5/core";
+import { FABRIK_TOLERANCE } from "../../src/fabrik";
+import { fkPlugin } from "../../src/fk";
+import { ikPlugin } from "../../src/ik";
+import { transformPlugin } from "../../src/transform";
+import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/testing";
 
 // Issue #349 phase 7 and ADR-113: the examples in `docs/guide/inverse-kinematics.md` are executed.
 //
@@ -21,7 +21,7 @@ import { createFakeInterpolator, createFakeScheduler } from "../../../src/testin
 // than a table of doubles that would only restate today's output.
 
 const GUIDE = fileURLToPath(
-  new URL("../../../../../docs/guide/inverse-kinematics.md", import.meta.url),
+  new URL("../../../../docs/guide/inverse-kinematics.md", import.meta.url),
 );
 const JSON_BLOCK = /^```json\n([\s\S]*?)^```$/gm;
 const CLOSE = 1e-9;
