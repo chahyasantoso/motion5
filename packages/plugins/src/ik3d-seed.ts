@@ -1,4 +1,4 @@
-import { unreachable } from "../plugin-api";
+import { unreachable } from "@motion5/core/plugin-api";
 import {
   arcHalfAngle,
   CENTRE_LEGAL_SEED,

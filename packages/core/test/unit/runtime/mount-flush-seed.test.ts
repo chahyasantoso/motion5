@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { ProjectDefinition, TrackDefinition } from "../../../src/contract/v5";
 import { Engine, type ProjectHandle } from "../../../src/engine";
 import { PluginRegistry } from "../../../src/domain/plugins";
-import { transformPlugin } from "../../../src/plugins/transform";
+import { transformPlugin } from "../../../../plugins/src/transform";
 import { createManualClock } from "../../../src/ports/clock";
 import { ProjectRuntime } from "../../../src/runtime/project-runtime";
 import { createFakeInterpolator, createFakeScheduler } from "../../../src/testing/fakes";

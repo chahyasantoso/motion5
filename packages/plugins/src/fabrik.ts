@@ -23,7 +23,7 @@ import {
   fabrikRelativeMove,
   type FabrikConstraint,
 } from "./fabrik-cap";
-import { unreachable } from "../plugin-api";
+import { unreachable } from "@motion5/core/plugin-api";
 import { canonicalChain } from "./ik-topology";
 import {
   atBound,

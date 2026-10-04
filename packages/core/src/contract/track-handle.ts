@@ -85,8 +85,8 @@ export type AuthoredValues = Readonly<Record<string, AuthoredProperty>>;
  *
  * Declared once, here, and named by both `ProjectRuntime` and `engine.ts` rather than declared in
  * each. Two structurally identical interfaces drift the first time one of them gains a member,
- * which is exactly what happened to the two private `readNumber` copies that `plugins/frame.ts`
- * was created to close.
+ * which is exactly what happened to the two private `readNumber` copies that
+ * `packages/plugins/src/frame.ts` was created to close.
  *
  * `id`, `live` and `definition` come from `Handle`, which owns the contract every member below reads:
  * `live` never throws and everything else refuses once stale. `definition` is what this interface

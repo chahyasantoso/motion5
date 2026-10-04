@@ -1,6 +1,6 @@
 # API reference
 
-Grouped by entrypoint, because the entrypoint is the contract. `packages/core/package.json` declares these and nothing else; source paths in a workspace checkout are not covered by this document.
+Grouped by entrypoint, because the entrypoint is the contract. Each workspace package's `package.json` declares its own exports; source paths in a workspace checkout are not covered by this document.
 
 ## Entrypoint tiers
 
@@ -12,14 +12,16 @@ ADR-036 and ADR-048.
 - `@motion5/core` — public; production consumers may import it.
 - `@motion5/core/adapters` and `/adapters/browser-clock` — public adapters; production consumers may
   import them.
-- `@motion5/core/plugins/fk`, `/plugins/transform`, and `/plugins/ik` — public plugins; production
+- `@motion5/plugins/fk`, `/transform`, and `/ik` — public plugins; production
   consumers may import them.
-- `@motion5/core/plugins/transform3d`, `/plugins/fk3d`, and `/plugins/ik3d` — public plugins;
+- `@motion5/plugins/transform3d`, `/fk3d`, and `/ik3d` — public plugins;
   production consumers may import them.
 - `@motion5/core/testing` — test support; production consumers may not import it, as enforced by
   the boundary scan.
 - `@motion5/core/plugin-api` — the plugin-authoring contract; plugin implementations may import this entrypoint and sibling implementation modules only.
 - `@motion5/core/internal` — unadvertised; it carries no stability promise.
+- `@motion5/plugins/frame3d` exposes the complete unchanged frame utility module, including
+  `readFrame3d` and its nameable types. There is no bare `@motion5/plugins` entrypoint.
 
 ## @motion5/core
 
@@ -111,7 +113,7 @@ Optional implementations for the composition root.
 - `createGsapScrollSource(scrollTrigger, options)`, plus structural GSAP scroll source types. Core never imports GSAP.
 - `FrameSource`, and the default graph builder.
 
-## @motion5/core/plugins/transform, /plugins/fk, and /plugins/ik
+## @motion5/plugins/transform, /fk, and /ik
 
 `transformPlugin` claims `x`, `y`, and `rotation` and passes them through.
 
@@ -124,9 +126,9 @@ and a root as `transform: { values: { x, y, rotation } }`. An ungrouped `rotatio
 `inputs.base`, no `parentX`, `parentY`, or `parentRotation` is needed, and there is no projection
 primitive left with which to invent one. See ADR-043, ADR-044, and ADR-047.
 
-`ikPlugin` is the compose-stage inverse-kinematics plugin. It claims `flip`, `bend`, and `inspect`, declares `root`, scalar `target`, and dict `targets` requirements, and produces `rotations` plus opt-in `inspection`. Register it from `@motion5/core/plugins/ik`; the package declares this subpath alongside `/plugins/fk` and `/plugins/transform`. `rotations` contains local member angles, while `inspection` appears only when the solver authors `inspect: true`. See the [inverse kinematics guide](./inverse-kinematics.md) for the DOM-compatible coordinate convention, scale policy, lifecycle, and executable examples.
+`ikPlugin` is the compose-stage inverse-kinematics plugin. It claims `flip`, `bend`, and `inspect`, declares `root`, scalar `target`, and dict `targets` requirements, and produces `rotations` plus opt-in `inspection`. Register it from `@motion5/plugins/ik`; the package declares this subpath alongside `/fk` and `/transform`. `rotations` contains local member angles, while `inspection` appears only when the solver authors `inspect: true`. See the [inverse kinematics guide](./inverse-kinematics.md) for the DOM-compatible coordinate convention, scale policy, lifecycle, and executable examples.
 
-## @motion5/core/plugins/transform3d, /plugins/fk3d, and /plugins/ik3d
+## @motion5/plugins/transform3d, /fk3d, and /ik3d
 
 The 3D plugins use world-frame keys `x`, `y`, `z`, `rotation`, `rotationX`, and `rotationY`.
 Angles are in degrees and use the CSS `Rz · Rx · Ry` convention. Author 3D keyframes inside the

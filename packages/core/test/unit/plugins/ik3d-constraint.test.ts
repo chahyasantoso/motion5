@@ -19,24 +19,24 @@ import {
   type Matrix3,
   type Vec3,
   type WorldFrame3d,
-} from "../../../src/plugins/frame3d";
+} from "../../../../plugins/src/frame3d";
 import {
   FREE_JOINT,
   atBound,
   limitRotation,
   readAngleRange,
-} from "../../../src/plugins/ik-constraint";
+} from "../../../../plugins/src/ik-constraint";
 import {
   FREE_JOINT3D,
   constrains,
   readJointLimit3d,
   limitLocal3d,
   type JointLimit3d,
-} from "../../../src/plugins/ik3d-constraint";
-import { readChainMembers3d, type ChainMember3d } from "../../../src/plugins/ik3d-chain";
-import { chainShape3d, solveChain3d } from "../../../src/plugins/ik3d-solve";
-import { solveChain } from "../../../src/plugins/ik-solve";
-import type { SolveMember } from "../../../src/plugins/ik-member";
+} from "../../../../plugins/src/ik3d-constraint";
+import { readChainMembers3d, type ChainMember3d } from "../../../../plugins/src/ik3d-chain";
+import { chainShape3d, solveChain3d } from "../../../../plugins/src/ik3d-solve";
+import { solveChain } from "../../../../plugins/src/ik-solve";
+import type { SolveMember } from "../../../../plugins/src/ik-member";
 import { composeChain3d, frameDistance3d } from "../../support/fk3d-compose";
 
 const MATRIX_TOLERANCE = 1e-9;
@@ -271,6 +271,9 @@ describe("3D joint limits", () => {
     expect(axisX3(zero.local)).toEqual([1, 0, 0]);
   });
 
+  // This deterministic corpus solves 600 constrained rigs twice and composes every result.
+  // Keep all samples and assertions; shared CI workers need more than Vitest's 5-second default.
+  // Structural solver budgets remain enforced separately by the performance gate.
   it("TH-84 seeded constrained chains and trees keep every published local pose legal, finite, pure, and composable", () => {
     const random = seeded(500);
     let branched = 0;
@@ -366,7 +369,7 @@ describe("3D joint limits", () => {
         ).toBeLessThanOrEqual(1e-9);
     }
     expect(branched).toBeGreaterThan(50);
-  });
+  }, 30_000);
 
   it("TH-85 planar +z hinges agree with 2D constrained angles", () => {
     const random = seeded(506);

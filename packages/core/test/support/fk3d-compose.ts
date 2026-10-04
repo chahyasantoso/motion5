@@ -1,9 +1,9 @@
 import type { PluginInputs } from "../../src/domain/plugins";
-import { fk3dPlugin } from "../../src/plugins/fk3d";
-import { readFrame3d, type WorldFrame3d } from "../../src/plugins/frame3d";
-import { canonicalChain } from "../../src/plugins/ik-topology";
-import type { ChainMember3d } from "../../src/plugins/ik3d-chain";
-import type { SolveResult3d } from "../../src/plugins/ik3d-result";
+import { fk3dPlugin } from "../../../plugins/src/fk3d";
+import { readFrame3d, type WorldFrame3d } from "../../../plugins/src/frame3d";
+import { canonicalChain } from "../../../plugins/src/ik-topology";
+import type { ChainMember3d } from "../../../plugins/src/ik3d-chain";
+import type { SolveResult3d } from "../../../plugins/src/ik3d-result";
 
 /**
  * Every member's published world frame, composed by `fk3d` itself from a 3D solve's local triples:

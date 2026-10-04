@@ -2,8 +2,8 @@ import { describe, expect, it, vi } from "vitest";
 import type { ProjectDefinition, TrackDefinition } from "../../../src/contract/v5";
 import { PluginRegistry, type PluginDefinition } from "../../../src/domain/plugins";
 import { Engine, type ProjectHandle } from "../../../src/engine";
-import { fkPlugin } from "../../../src/plugins/fk";
-import { transformPlugin } from "../../../src/plugins/transform";
+import { fkPlugin } from "../../../../plugins/src/fk";
+import { transformPlugin } from "../../../../plugins/src/transform";
 import { createManualClock } from "../../../src/ports/clock";
 import {
   ProjectRuntime,

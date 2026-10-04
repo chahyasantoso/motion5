@@ -4,8 +4,8 @@ import {
   LEGAL_DESCENT_STEPS,
   LEGAL_DESCENT_TOLERANCE,
   type LegalDescent,
-} from "../../../src/plugins/ik-descent";
-import { FABRIK_TOLERANCE } from "../../../src/plugins/fabrik";
+} from "../../../../plugins/src/ik-descent";
+import { FABRIK_TOLERANCE } from "../../../../plugins/src/fabrik";
 
 type ArmState = Readonly<{ first: number; second: number; degrees?: readonly number[] }>;
 const RADIANS = Math.PI / 180;

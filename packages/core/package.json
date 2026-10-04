@@ -25,30 +25,6 @@
       "types": "./dist/adapters/browser-clock.d.ts",
       "default": "./dist/adapters/browser-clock.js"
     },
-    "./plugins/transform": {
-      "types": "./dist/plugins/transform.d.ts",
-      "default": "./dist/plugins/transform.js"
-    },
-    "./plugins/fk": {
-      "types": "./dist/plugins/fk.d.ts",
-      "default": "./dist/plugins/fk.js"
-    },
-    "./plugins/ik": {
-      "types": "./dist/plugins/ik.d.ts",
-      "default": "./dist/plugins/ik.js"
-    },
-    "./plugins/transform3d": {
-      "types": "./dist/plugins/transform3d.d.ts",
-      "default": "./dist/plugins/transform3d.js"
-    },
-    "./plugins/fk3d": {
-      "types": "./dist/plugins/fk3d.d.ts",
-      "default": "./dist/plugins/fk3d.js"
-    },
-    "./plugins/ik3d": {
-      "types": "./dist/plugins/ik3d.d.ts",
-      "default": "./dist/plugins/ik3d.js"
-    },
     "./testing": {
       "types": "./dist/testing/fakes.d.ts",
       "default": "./dist/testing/fakes.js"

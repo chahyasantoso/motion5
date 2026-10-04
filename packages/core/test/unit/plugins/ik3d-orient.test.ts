@@ -16,12 +16,12 @@ import {
   type Euler3d,
   type Matrix3,
   type WorldFrame3d,
-} from "../../../src/plugins/frame3d";
-import { readChainMembers3d, type ChainMember3d } from "../../../src/plugins/ik3d-chain";
-import type { JointLimit3d } from "../../../src/plugins/ik3d-constraint";
-import { orientFreedom, orientLeaves3d, readOrient } from "../../../src/plugins/ik3d-orient";
-import type { SolveResult3d } from "../../../src/plugins/ik3d-result";
-import { solveChain3d } from "../../../src/plugins/ik3d-solve";
+} from "../../../../plugins/src/frame3d";
+import { readChainMembers3d, type ChainMember3d } from "../../../../plugins/src/ik3d-chain";
+import type { JointLimit3d } from "../../../../plugins/src/ik3d-constraint";
+import { orientFreedom, orientLeaves3d, readOrient } from "../../../../plugins/src/ik3d-orient";
+import type { SolveResult3d } from "../../../../plugins/src/ik3d-result";
+import { solveChain3d } from "../../../../plugins/src/ik3d-solve";
 import { composeChain3d, frameDistance3d } from "../../support/fk3d-compose";
 
 const ZERO_OFFSET = Object.freeze({ x: 0, y: 0, z: 0 });

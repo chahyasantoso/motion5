@@ -8,7 +8,7 @@ import {
   MIN_ROTATION_KEY,
   readLimitDegree,
   unreachable,
-} from "../plugin-api";
+} from "@motion5/core/plugin-api";
 import type { DofBound } from "./ik-descent";
 
 /**

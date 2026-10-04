@@ -2,13 +2,13 @@ import { describe, expect, it } from "vitest";
 import { PluginRegistry } from "../../../src/domain/plugins";
 import { Engine } from "../../../src/engine";
 import { createManualClock } from "../../../src/ports/clock";
-import { fabrikIterationCap } from "../../../src/plugins/fabrik-cap";
-import { fkPlugin } from "../../../src/plugins/fk";
-import { ikPlugin } from "../../../src/plugins/ik";
-import type { SolveMember } from "../../../src/plugins/ik-member";
-import type { SolveResult } from "../../../src/plugins/ik-result";
-import { chainShape, solveChain } from "../../../src/plugins/ik-solve";
-import { transformPlugin } from "../../../src/plugins/transform";
+import { fabrikIterationCap } from "../../../../plugins/src/fabrik-cap";
+import { fkPlugin } from "../../../../plugins/src/fk";
+import { ikPlugin } from "../../../../plugins/src/ik";
+import type { SolveMember } from "../../../../plugins/src/ik-member";
+import type { SolveResult } from "../../../../plugins/src/ik-result";
+import { chainShape, solveChain } from "../../../../plugins/src/ik-solve";
+import { transformPlugin } from "../../../../plugins/src/transform";
 import { createFakeInterpolator, createFakeScheduler } from "../../../src/testing/fakes";
 import {
   envelopeScenarios,

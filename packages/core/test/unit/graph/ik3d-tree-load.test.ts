@@ -8,11 +8,11 @@ import {
 } from "../../../src/contract/solver-shape";
 import type { ProjectDefinition, TrackDefinition } from "../../../src/contract/v5";
 import { buildGraphIR } from "../../../src/graph/ir";
-import { readFrame3d, ZERO_EULER, type Euler3d } from "../../../src/plugins/frame3d";
-import { UNBOUND_POLE3D, readPole3d } from "../../../src/plugins/ik3d-analytic";
-import type { ChainMember3d } from "../../../src/plugins/ik3d-chain";
-import type { JointLimit3d } from "../../../src/plugins/ik3d-constraint";
-import { chainShape3d, solveChain3d } from "../../../src/plugins/ik3d-solve";
+import { readFrame3d, ZERO_EULER, type Euler3d } from "../../../../plugins/src/frame3d";
+import { UNBOUND_POLE3D, readPole3d } from "../../../../plugins/src/ik3d-analytic";
+import type { ChainMember3d } from "../../../../plugins/src/ik3d-chain";
+import type { JointLimit3d } from "../../../../plugins/src/ik3d-constraint";
+import { chainShape3d, solveChain3d } from "../../../../plugins/src/ik3d-solve";
 
 // Two load rules phase 5's tree shape made wrong or missing, both read from the derived chain
 // through `contract/solver-shape.ts`: a rest orientation the tree solve reads is live input, and a

@@ -5,9 +5,9 @@ export function importsCoreInternals(source: string, specifiers?: readonly strin
 export function importsTestingEntrypoint(source: string, specifiers?: readonly string[]): boolean;
 export function importsDomainLayer(source: string, specifiers?: readonly string[]): boolean;
 export function bannedSymbol(source: string): boolean;
-export function undeclaredCoreSubpaths(
+export function undeclaredWorkspaceSubpaths(
   source: string,
-  declared: ReadonlySet<string>,
+  declared: ReadonlyMap<string, ReadonlySet<string>>,
   specifiers?: readonly string[],
 ): string[];
 export function extractExportNames(source: string): string[];

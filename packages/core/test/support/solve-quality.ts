@@ -1,5 +1,5 @@
 import { unreachable } from "../../src/lang/exhaustive";
-import type { SolveQuality } from "../../src/plugins/ik-result";
+import type { SolveQuality } from "../../../plugins/src/ik-result";
 
 /**
  * The iterations a solve's quality states, or `undefined` for a closed-form kind, read by an

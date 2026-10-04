@@ -14,7 +14,7 @@ import {
   readSwingDegree,
   LIMIT_CEILING,
   unreachable,
-} from "../plugin-api";
+} from "@motion5/core/plugin-api";
 import {
   axisX3,
   canonicalDegrees,

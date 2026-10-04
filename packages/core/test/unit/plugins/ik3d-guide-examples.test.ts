@@ -2,9 +2,9 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { Engine, PluginRegistry, createManualClock, type ProjectDefinition } from "@motion5/core";
-import { fk3dPlugin } from "@motion5/core/plugins/fk3d";
-import { ik3dPlugin } from "@motion5/core/plugins/ik3d";
-import { transform3dPlugin } from "@motion5/core/plugins/transform3d";
+import { fk3dPlugin } from "@motion5/plugins/fk3d";
+import { ik3dPlugin } from "@motion5/plugins/ik3d";
+import { transform3dPlugin } from "@motion5/plugins/transform3d";
 import { createFakeInterpolator, createFakeScheduler } from "../../../src/testing/fakes";
 
 // Issue #500 phase 8 and ADR-095: the examples in `docs/guide/inverse-kinematics-3d.md` are executed.

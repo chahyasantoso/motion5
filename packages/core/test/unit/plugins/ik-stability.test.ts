@@ -4,24 +4,24 @@ import { PluginRegistry } from "../../../src/domain/plugins";
 import { Engine } from "../../../src/engine";
 import { createManualClock } from "../../../src/ports/clock";
 import { createFakeInterpolator, createFakeScheduler } from "../../../src/testing/fakes";
-import { fkPlugin } from "../../../src/plugins/fk";
-import { ikPlugin } from "../../../src/plugins/ik";
-import { transformPlugin } from "../../../src/plugins/transform";
-import { FABRIK_TOLERANCE, solveFabrik, solveFabrikAttempt } from "../../../src/plugins/fabrik";
-import { fabrikAlternatives, outranks } from "../../../src/plugins/fabrik-select";
-import { composeWorld, pivotFromBaseTip, type WorldFrame } from "../../../src/plugins/frame";
-import type { JointRange } from "../../../src/plugins/ik-constraint";
-import { solveLength, solveOffset, type SolveMember } from "../../../src/plugins/ik-member";
-import type { SolveResult } from "../../../src/plugins/ik-result";
+import { fkPlugin } from "../../../../plugins/src/fk";
+import { ikPlugin } from "../../../../plugins/src/ik";
+import { transformPlugin } from "../../../../plugins/src/transform";
+import { FABRIK_TOLERANCE, solveFabrik, solveFabrikAttempt } from "../../../../plugins/src/fabrik";
+import { fabrikAlternatives, outranks } from "../../../../plugins/src/fabrik-select";
+import { composeWorld, pivotFromBaseTip, type WorldFrame } from "../../../../plugins/src/frame";
+import type { JointRange } from "../../../../plugins/src/ik-constraint";
+import { solveLength, solveOffset, type SolveMember } from "../../../../plugins/src/ik-member";
+import type { SolveResult } from "../../../../plugins/src/ik-result";
 import {
   SOLVE_MAGNITUDE_CEILING,
   restoreResult,
   scaleRig,
   solveMagnitude,
-} from "../../../src/plugins/ik-scale";
-import { chainShape, solveChain } from "../../../src/plugins/ik-solve";
-import { readFrame3d, ZERO_PIVOT_OFFSET3D } from "../../../src/plugins/frame3d";
-import { solveTwoBone3d } from "../../../src/plugins/ik3d-analytic";
+} from "../../../../plugins/src/ik-scale";
+import { chainShape, solveChain } from "../../../../plugins/src/ik-solve";
+import { readFrame3d, ZERO_PIVOT_OFFSET3D } from "../../../../plugins/src/frame3d";
+import { solveTwoBone3d } from "../../../../plugins/src/ik3d-analytic";
 
 // Issue #349 phase 6 and ADR-111: stability and determinism of the 2D solve.
 //

@@ -1,4 +1,4 @@
-import { unreachable } from "../plugin-api";
+import { unreachable } from "@motion5/core/plugin-api";
 import { solveFabrik } from "./fabrik";
 import type { WorldFrame } from "./frame";
 import { solveTwoBone } from "./ik-analytic";

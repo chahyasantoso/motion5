@@ -6,12 +6,12 @@ import {
   type ProjectHandle,
   type TrackDefinition,
 } from "@motion5/core";
-import { fkPlugin } from "@motion5/core/plugins/fk";
-import { ikPlugin } from "@motion5/core/plugins/ik";
-import { transformPlugin } from "@motion5/core/plugins/transform";
-import { fk3dPlugin } from "@motion5/core/plugins/fk3d";
-import { ik3dPlugin } from "@motion5/core/plugins/ik3d";
-import { transform3dPlugin } from "@motion5/core/plugins/transform3d";
+import { fkPlugin } from "@motion5/plugins/fk";
+import { ikPlugin } from "@motion5/plugins/ik";
+import { transformPlugin } from "@motion5/plugins/transform";
+import { fk3dPlugin } from "@motion5/plugins/fk3d";
+import { ik3dPlugin } from "@motion5/plugins/ik3d";
+import { transform3dPlugin } from "@motion5/plugins/transform3d";
 import { LIMBS, type LimbId } from "../filler/landmarks";
 import type { Vec } from "../filler/vec";
 import { unreachable } from "../filler/unreachable";

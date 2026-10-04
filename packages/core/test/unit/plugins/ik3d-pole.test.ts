@@ -8,8 +8,8 @@ import {
 } from "../../../src/domain/plugins";
 import type { ImmutableRecord } from "../../../src/domain/values";
 import { buildGraphIR } from "../../../src/graph/ir";
-import { fkPlugin } from "../../../src/plugins/fk";
-import { fk3dPlugin } from "../../../src/plugins/fk3d";
+import { fkPlugin } from "../../../../plugins/src/fk";
+import { fk3dPlugin } from "../../../../plugins/src/fk3d";
 import {
   composeWorld3d,
   effectiveLink3d,
@@ -18,19 +18,19 @@ import {
   ZERO_EULER,
   type PivotOffset3d,
   type WorldFrame3d,
-} from "../../../src/plugins/frame3d";
-import { ikPlugin } from "../../../src/plugins/ik";
-import { solveTwoBone } from "../../../src/plugins/ik-analytic";
-import { ik3dPlugin } from "../../../src/plugins/ik3d";
+} from "../../../../plugins/src/frame3d";
+import { ikPlugin } from "../../../../plugins/src/ik";
+import { solveTwoBone } from "../../../../plugins/src/ik-analytic";
+import { ik3dPlugin } from "../../../../plugins/src/ik3d";
 import {
   readPole3d,
   solveTwoBone3d,
   UNBOUND_POLE3D,
   type Pole3d,
   type SolveMember3d,
-} from "../../../src/plugins/ik3d-analytic";
-import { transformPlugin } from "../../../src/plugins/transform";
-import { transform3dPlugin } from "../../../src/plugins/transform3d";
+} from "../../../../plugins/src/ik3d-analytic";
+import { transformPlugin } from "../../../../plugins/src/transform";
+import { transform3dPlugin } from "../../../../plugins/src/transform3d";
 
 type Vec = readonly [number, number, number];
 

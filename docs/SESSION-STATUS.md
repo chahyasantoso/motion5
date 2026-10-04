@@ -6,31 +6,33 @@ states a phase; `packages/core/test/unit/scripts/session-status-shape.test.ts` e
 byte ceiling.
 
 - **Captured:** 2026-10-04, Asia/Jakarta.
-- **Read against:** the supplied `motion5-main.zip` at `c5e317582c8b6848d734c6f0876dd722a0a92d5f`.
+- **Read against:** `main` at `f2589922d6ba099f2756274968a2ad1e05bfc9c0`, the squash of
+  [PR #547][pr547].
 
 ## Now
 
-- **`main` carries the pose gap filler and its accepted image-space pipeline; the repository is
-  unchanged by the unmerged #534 handover branch.**
+- **`main` carries the pose gap filler and the plugin-authoring contract ([PR #547][pr547] merged
+  as `f2589922`); [PR #548][pr548] extracts all 33 plugin implementations into `@motion5/plugins`,
+  keeps core implementation-free, and awaits seven green Node 24 CI contexts.**
 
 ## Next in line
 
-- **[#534][issue534] phase 1 plugin authoring contract:** the separate branch adds
-  `@motion5/core/plugin-api`, migrates current plugin imports to that contract, and gates the layer
-  boundary and declaration closure; the handover is prepared but not merged.
+- **[#534][issue534] plugin-only tests move:** after [PR #548][pr548] merges, tests that need only
+  public core entrypoints move from `packages/core/test` to `packages/plugins/test`.
 
 ## Open, and not scheduled
 
-- **#534 later phases:** extracting `@motion5/plugins`, atomic registration, lazy loading, solver
-  capabilities, labels, rig, runners and 3D avatar driving remain unmerged and unscheduled here.
+- Atomic registration, lazy loading, solver capabilities, labels, rig, runners and 3D avatar driving
+  remain unmerged.
 
 ## Where the rest of it lives
 
-- Slice narrative, exact SHAs, CI links, and red/green evidence: the owning handover and pull request.
+- Exact commits, runs, decisions and equivalence evidence: the owning handover and pull request.
 - Standing rules: [GUARDRAILS.md](./GUARDRAILS.md). Caller cost: [LIVE-EDIT-COST.md](./LIVE-EDIT-COST.md).
-- Contributor and status discipline: [PR-WORKFLOW.md](./PR-WORKFLOW.md). API navigation and
-  activation contracts: [API-CAPABILITIES.md](./API-CAPABILITIES.md).
-- Earlier long-form history remains in Git at this path; do not duplicate it into another status
-  database.
+- Contributor discipline: [PR-WORKFLOW.md](./PR-WORKFLOW.md). API navigation:
+  [API-CAPABILITIES.md](./API-CAPABILITIES.md).
+- Earlier long-form history remains in Git, not in this status file.
 
 [issue534]: https://github.com/chahyasantoso/motion5/issues/534
+[pr547]: https://github.com/chahyasantoso/motion5/pull/547
+[pr548]: https://github.com/chahyasantoso/motion5/pull/548

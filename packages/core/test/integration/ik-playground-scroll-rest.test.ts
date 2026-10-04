@@ -3,16 +3,16 @@ import type { ScrollSource } from "../../src/adapters/scroll-trigger";
 import { createManualClock } from "../../src/ports/clock";
 import { Engine, type ProjectHandle } from "../../src/engine";
 import { PluginRegistry } from "../../src/domain/plugins";
-import { fkPlugin } from "../../src/plugins/fk";
-import { ikPlugin } from "../../src/plugins/ik";
-import { transformPlugin } from "../../src/plugins/transform";
-import { fk3dPlugin } from "../../src/plugins/fk3d";
-import { ik3dPlugin } from "../../src/plugins/ik3d";
-import { transform3dPlugin } from "../../src/plugins/transform3d";
+import { fkPlugin } from "../../../plugins/src/fk";
+import { ikPlugin } from "../../../plugins/src/ik";
+import { transformPlugin } from "../../../plugins/src/transform";
+import { fk3dPlugin } from "../../../plugins/src/fk3d";
+import { ik3dPlugin } from "../../../plugins/src/ik3d";
+import { transform3dPlugin } from "../../../plugins/src/transform3d";
 import { createTriggerFactory } from "../../src/adapters/trigger-factory/default";
 import type { ProjectRuntime } from "../../src/runtime/project-runtime";
 import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
-import { FABRIK_TOLERANCE } from "../../src/plugins/fabrik";
+import { FABRIK_TOLERANCE } from "../../../plugins/src/fabrik";
 import {
   ALL_NODE_IDS,
   STAGE_2D,
