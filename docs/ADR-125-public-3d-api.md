@@ -1,5 +1,7 @@
 # ADR-125: Public 3D API
 
+**Superseded in part by ADR-133, 2026-10-04.**
+
 **Status:** Proposed as issue [#500](https://github.com/chahyasantoso/motion5/issues/500) phase 8,
 2026-09-27, above `main` at `6f598965074d50c5c90271ff4d8087620e487fbc`. Accepted when the pull
 request carrying it merges.

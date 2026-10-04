@@ -10,10 +10,10 @@ import {
   readFrame3d,
   transposeMatrix3,
   type Matrix3,
-} from "../../src/plugins/frame3d";
-import { fk3dPlugin } from "../../src/plugins/fk3d";
-import { ik3dPlugin } from "../../src/plugins/ik3d";
-import { transform3dPlugin } from "../../src/plugins/transform3d";
+} from "../../../plugins/src/frame3d";
+import { fk3dPlugin } from "../../../plugins/src/fk3d";
+import { ik3dPlugin } from "../../../plugins/src/ik3d";
+import { transform3dPlugin } from "../../../plugins/src/transform3d";
 import type { Patch } from "../../src/runtime/patch-registry";
 import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
 

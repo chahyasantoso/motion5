@@ -27,7 +27,7 @@ A `PluginRegistry` is optional but practically required: every authored plugin g
 import { Engine, PluginRegistry, createManualClock } from "@motion5/core";
 import type { ProjectDefinition } from "@motion5/core";
 import { createGsapInterpolator, createMicrotaskScheduler } from "@motion5/core/adapters";
-import { transformPlugin } from "@motion5/core/plugins/transform";
+import { transformPlugin } from "@motion5/plugins/transform";
 import gsap from "gsap";
 
 // The scheduler drains on a microtask, so let the queue run before reading a value. Two passes can

@@ -7,12 +7,12 @@ import {
   type ProjectHandle,
   type ScrollSource,
 } from "@motion5/core";
-import { fkPlugin } from "@motion5/core/plugins/fk";
-import { ikPlugin } from "@motion5/core/plugins/ik";
-import { transformPlugin } from "@motion5/core/plugins/transform";
-import { transform3dPlugin } from "@motion5/core/plugins/transform3d";
-import { fk3dPlugin } from "@motion5/core/plugins/fk3d";
-import { ik3dPlugin } from "@motion5/core/plugins/ik3d";
+import { fkPlugin } from "@motion5/plugins/fk";
+import { ikPlugin } from "@motion5/plugins/ik";
+import { transformPlugin } from "@motion5/plugins/transform";
+import { transform3dPlugin } from "@motion5/plugins/transform3d";
+import { fk3dPlugin } from "@motion5/plugins/fk3d";
+import { ik3dPlugin } from "@motion5/plugins/ik3d";
 import { createGoalControl, type GoalControl } from "./goal-control";
 import { SCROLL_SOURCE, ikPlaygroundProject } from "./ik-playground-project";
 import { IK3D_PERSPECTIVE, ik3dPlaygroundMotion } from "./ik3d-playground-project";

@@ -10,8 +10,8 @@ import {
 } from "@motion5/core";
 import { createBrowserClock } from "@motion5/core/adapters/browser-clock";
 import { createGsapInterpolator } from "@motion5/core/adapters";
-import { fkPlugin } from "@motion5/core/plugins/fk";
-import { transformPlugin } from "@motion5/core/plugins/transform";
+import { fkPlugin } from "@motion5/plugins/fk";
+import { transformPlugin } from "@motion5/plugins/transform";
 import { armTracks, initialWalkerProject, WALK_SCROLL_SOURCE } from "./full-body-project";
 import { createWalkScrollSource } from "./scroll-source-gsap";
 import { SkeletonRig } from "./components/SkeletonRig";
