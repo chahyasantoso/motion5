@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
-import type { ProjectDefinition } from "../../src/contract/v5";
-import { PluginRegistry } from "../../src/domain/plugins";
-import { Engine, type ProjectHandle } from "../../src/engine";
-import { fkPlugin } from "../../../plugins/src/fk";
-import { ikPlugin } from "../../../plugins/src/ik";
-import { transformPlugin } from "../../../plugins/src/transform";
-import { createManualClock } from "../../src/ports/clock";
-import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
+import type { ProjectDefinition } from "@motion5/core";
+import { PluginRegistry } from "@motion5/core";
+import { Engine, type ProjectHandle } from "@motion5/core";
+import { fkPlugin } from "../../src/fk";
+import { ikPlugin } from "../../src/ik";
+import { transformPlugin } from "../../src/transform";
+import { createManualClock } from "@motion5/core";
+import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/testing";
 
 /**
  * Issue #218, part B of #212. The two surfaces one call has to reach.

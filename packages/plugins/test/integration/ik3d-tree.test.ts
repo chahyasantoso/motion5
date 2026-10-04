@@ -1,15 +1,15 @@
 import { describe, expect, it } from "vitest";
-import type { ProjectDefinition, TrackDefinition } from "../../src/contract/v5";
-import { PluginRegistry } from "../../src/domain/plugins";
-import { Engine } from "../../src/engine";
-import { createManualClock } from "../../src/ports/clock";
-import type { Patch } from "../../src/runtime/patch-registry";
-import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
-import { FABRIK_TOLERANCE } from "../../../plugins/src/fabrik";
-import { fk3dPlugin } from "../../../plugins/src/fk3d";
-import { readFrame3d } from "../../../plugins/src/frame3d";
-import { ik3dPlugin } from "../../../plugins/src/ik3d";
-import { transform3dPlugin } from "../../../plugins/src/transform3d";
+import type { ProjectDefinition, TrackDefinition } from "@motion5/core";
+import { PluginRegistry } from "@motion5/core";
+import { Engine } from "@motion5/core";
+import { createManualClock } from "@motion5/core";
+import type { Patch } from "@motion5/core";
+import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/testing";
+import { FABRIK_TOLERANCE } from "../../src/fabrik";
+import { fk3dPlugin } from "../../src/fk3d";
+import { readFrame3d } from "../../src/frame3d";
+import { ik3dPlugin } from "../../src/ik3d";
+import { transform3dPlugin } from "../../src/transform3d";
 
 type Values = Readonly<Record<string, unknown>>;
 

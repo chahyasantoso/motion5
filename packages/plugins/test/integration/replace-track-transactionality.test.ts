@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import type { ProjectDefinition, TrackDefinition } from "../../src/contract/v5";
-import { PluginRegistry } from "../../src/domain/plugins";
-import { Engine, type ProjectHandle } from "../../src/engine";
-import { transformPlugin } from "../../../plugins/src/transform";
-import { createManualClock } from "../../src/ports/clock";
-import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
+import type { ProjectDefinition, TrackDefinition } from "@motion5/core";
+import { PluginRegistry } from "@motion5/core";
+import { Engine, type ProjectHandle } from "@motion5/core";
+import { transformPlugin } from "../../src/transform";
+import { createManualClock } from "@motion5/core";
+import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/testing";
 
 /**
  * Issue #176. `ProjectRuntime.#replaceTrack` committed the candidate graph first and only then

@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import type { ProjectDefinition, TrackDefinition } from "../../src/contract/v5";
-import { PluginRegistry } from "../../src/domain/plugins";
-import { Engine } from "../../src/engine";
-import { createManualClock } from "../../src/ports/clock";
+import type { ProjectDefinition, TrackDefinition } from "@motion5/core";
+import { PluginRegistry } from "@motion5/core";
+import { Engine } from "@motion5/core";
+import { createManualClock } from "@motion5/core";
 import {
   axisX3,
   matrixFromEuler3d,
@@ -10,12 +10,12 @@ import {
   readFrame3d,
   transposeMatrix3,
   type Matrix3,
-} from "../../../plugins/src/frame3d";
-import { fk3dPlugin } from "../../../plugins/src/fk3d";
-import { ik3dPlugin } from "../../../plugins/src/ik3d";
-import { transform3dPlugin } from "../../../plugins/src/transform3d";
-import type { Patch } from "../../src/runtime/patch-registry";
-import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
+} from "../../src/frame3d";
+import { fk3dPlugin } from "../../src/fk3d";
+import { ik3dPlugin } from "../../src/ik3d";
+import { transform3dPlugin } from "../../src/transform3d";
+import type { Patch } from "@motion5/core";
+import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/testing";
 
 // 3D goal orientation through Engine (issue #500 phase 7, ADR-124): orientation is applied after
 // the position solve without moving a positive-length tip, a zero-length hand can take the whole

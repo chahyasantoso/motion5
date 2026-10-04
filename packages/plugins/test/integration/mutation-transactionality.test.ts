@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { Engine } from "../../src/engine";
-import { PluginRegistry } from "../../src/domain/plugins";
-import { fkPlugin } from "../../../plugins/src/fk";
-import { transformPlugin } from "../../../plugins/src/transform";
-import { createManualClock } from "../../src/ports/clock";
-import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
-import type { Patch } from "../../src/contract/v5";
-import type { ProjectDefinition, TrackDefinition } from "../../src/contract/v5";
+import { Engine } from "@motion5/core";
+import { PluginRegistry } from "@motion5/core";
+import { fkPlugin } from "../../src/fk";
+import { transformPlugin } from "../../src/transform";
+import { createManualClock } from "@motion5/core";
+import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/testing";
+import type { Patch } from "@motion5/core";
+import type { ProjectDefinition, TrackDefinition } from "@motion5/core";
 
 const project: ProjectDefinition = {
   schemaVersion: 5,

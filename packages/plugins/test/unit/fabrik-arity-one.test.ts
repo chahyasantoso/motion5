@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { FABRIK_TOLERANCE } from "../../../../plugins/src/fabrik";
-import { solveChain } from "../../../../plugins/src/ik-solve";
+import { FABRIK_TOLERANCE } from "../../src/fabrik";
+import { solveChain } from "../../src/ik-solve";
 
 // Slice D4 of issue #195: the shape the deleted fallback used to answer.
 //

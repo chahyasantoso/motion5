@@ -4,7 +4,7 @@
  * fail on the pre-#524 solver: it paid no legal start in 2D or on a planar 3D rig, so every rig in
  * TH-182 ended `limited` in both dimensions at the residual its comment records. */
 import { describe, expect, it } from "vitest";
-import { FABRIK_TOLERANCE, solveFabrikAttempt } from "../../../../plugins/src/fabrik";
+import { FABRIK_TOLERANCE, solveFabrikAttempt } from "../../src/fabrik";
 import {
   CENTRE_LEGAL_START,
   CENTRE_THEN_DESCENT,
@@ -12,28 +12,19 @@ import {
   addressedReach,
   selectFabrik,
   type FabrikAttempt,
-} from "../../../../plugins/src/fabrik-select";
-import {
-  heldFromSeed,
-  legalFraction,
-  seedLegal,
-  type LegalSeed,
-} from "../../../../plugins/src/fabrik-seed";
-import type { WorldFrame, WorldPoint } from "../../../../plugins/src/frame";
-import type { Euler3d, Vec3, WorldFrame3d } from "../../../../plugins/src/frame3d";
-import { canonicalChain } from "../../../../plugins/src/ik-topology";
-import {
-  legalRotation,
-  limitRotation,
-  type JointRange,
-} from "../../../../plugins/src/ik-constraint";
-import type { SolveMember } from "../../../../plugins/src/ik-member";
-import type { IterativeQuality } from "../../../../plugins/src/ik-result";
-import { solveChain } from "../../../../plugins/src/ik-solve";
-import { UNBOUND_POLE3D } from "../../../../plugins/src/ik3d-analytic";
-import type { ChainMember3d } from "../../../../plugins/src/ik3d-chain";
-import { legalStarts3d, solveTree3dAttempt } from "../../../../plugins/src/ik3d-fabrik";
-import { solveChain3d } from "../../../../plugins/src/ik3d-solve";
+} from "../../src/fabrik-select";
+import { heldFromSeed, legalFraction, seedLegal, type LegalSeed } from "../../src/fabrik-seed";
+import type { WorldFrame, WorldPoint } from "../../src/frame";
+import type { Euler3d, Vec3, WorldFrame3d } from "../../src/frame3d";
+import { canonicalChain } from "../../src/ik-topology";
+import { legalRotation, limitRotation, type JointRange } from "../../src/ik-constraint";
+import type { SolveMember } from "../../src/ik-member";
+import type { IterativeQuality } from "../../src/ik-result";
+import { solveChain } from "../../src/ik-solve";
+import { UNBOUND_POLE3D } from "../../src/ik3d-analytic";
+import type { ChainMember3d } from "../../src/ik3d-chain";
+import { legalStarts3d, solveTree3dAttempt } from "../../src/ik3d-fabrik";
+import { solveChain3d } from "../../src/ik3d-solve";
 
 const ROOT: WorldFrame = { x: 0, y: 0, rotation: 0 };
 const ROOT3: WorldFrame3d = { x: 0, y: 0, z: 0, rotation: 0, rotationX: 0, rotationY: 0 };

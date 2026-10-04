@@ -9,7 +9,7 @@ import {
   multiplyVector3,
   readFrame3d,
   swingFrame3d,
-} from "../../../../plugins/src/frame3d";
+} from "../../src/frame3d";
 
 // Issue #349 phase 8: the 3D seam keeps CSS's Rz * Rx * Ry convention in one owner. The
 // gimbal-lock branch is intentionally deterministic rather than pretending Euler coordinates are
