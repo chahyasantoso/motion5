@@ -1,4 +1,4 @@
-import { unreachable } from "../lang/exhaustive";
+import { unreachable } from "../plugin-api";
 import { clamp, readNumber, segmentExtent } from "./frame";
 import {
   add3,

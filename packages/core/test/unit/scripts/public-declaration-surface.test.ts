@@ -181,6 +181,24 @@ describe("public declaration surface (P1-9)", () => {
     expect(pick("./runtime/project-runtime.js")).toBeUndefined();
   });
 
+  it("TH-201 keeps the declared plugin-authoring API closure out of runtime and graph", async () => {
+    const manifest = JSON.parse(
+      await readFile(join(root, "packages/core/package.json"), "utf8"),
+    ) as { exports: Record<string, unknown> };
+    expect(manifest.exports["./plugin-api"]).toEqual({
+      types: "./dist/plugin-api.d.ts",
+      default: "./dist/plugin-api.js",
+    });
+    await withEmitted(["packages/core/src/plugin-api.ts"], async (out, emitted) => {
+      const entry = join(out, "plugin-api.d.ts");
+      expect(emitted.has(entry)).toBe(true);
+      const { reachable, unresolved, forbidden } = await closureOf(out, emitted, entry);
+      expect(unresolved).toEqual([]);
+      expect(forbidden).toEqual([]);
+      expect(reachable.size).toBeGreaterThan(1);
+    });
+  }, 120_000);
+
   it("reads relative specifiers from re-exports and inline dynamic type imports", () => {
     const source = [
       'export * from "./contract/v5";',

@@ -411,7 +411,7 @@ export function extractExportNames(source) {
     names.push(match[1]);
   return names;
 }
-function checkCoreSource(source, file, layer, violations) {
+function checkCoreSource(source, file, layer, violations, sourcePath = file) {
   const specifiers = [...importSpecifiers(source)];
   if (
     layer !== "adapters" &&
@@ -421,11 +421,25 @@ function checkCoreSource(source, file, layer, violations) {
   if (bannedSymbol(source)) violations.push(`${file}: banned compatibility symbol`);
   if (["contract", "ports", "adapters"].includes(layer) && importsDomainLayer(source, specifiers))
     violations.push(`${file}: inward domain import`);
+  if (
+    layer === "plugins" &&
+    specifiers.some((specifier) => {
+      if (!specifier.startsWith(".")) return false;
+      const target = posix.normalize(posix.join(posix.dirname(sourcePath), specifier));
+      return (
+        !target.startsWith("packages/core/src/plugins/") &&
+        !/^packages\/core\/src\/plugin-api(?:\.(?:ts|js))?$/.test(target)
+      );
+    })
+  )
+    violations.push(`${file}: private core import outside plugin-api`);
 }
 async function scanFiles(directory, scanRoot, layer, violations) {
   for (const path of await walk(directory)) {
     const source = await readFile(path, "utf8");
-    checkCoreSource(source, relative(path, scanRoot), layer, violations);
+    const file = relative(path, scanRoot);
+    const sourcePath = posix.join("packages/core/src", layer, relative(path, directory));
+    checkCoreSource(source, file, layer, violations, sourcePath);
   }
 }
 /**

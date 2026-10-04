@@ -1,4 +1,4 @@
-import type { PluginDefinition } from "../domain/plugins";
+import type { PluginDefinition } from "../plugin-api";
 import {
   clamp,
   composeWorld,

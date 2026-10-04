@@ -1,4 +1,4 @@
-import { unreachable } from "../lang/exhaustive";
+import { unreachable } from "../plugin-api";
 
 /**
  * What a solve reaches for when it reads one goal's world coordinates: a point, or a direction.

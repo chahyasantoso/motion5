@@ -1,5 +1,5 @@
-import { INFLUENCE_KEY, JOINT_VOCABULARY_KEYS, ORIENT_KEY } from "../contract/solver-constraints";
-import type { PluginDefinition } from "../domain/plugins";
+import { INFLUENCE_KEY, JOINT_VOCABULARY_KEYS, ORIENT_KEY } from "../plugin-api";
+import type { PluginDefinition } from "../plugin-api";
 import {
   blendOrientation3d,
   composeWorld3d,

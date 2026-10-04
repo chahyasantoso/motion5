@@ -1,4 +1,4 @@
-import { unreachable } from "../lang/exhaustive";
+import { unreachable } from "../plugin-api";
 import { pivotFromBaseTip, segmentExtent, type WorldFrame, type WorldPoint } from "./frame";
 import {
   FREE_JOINT,

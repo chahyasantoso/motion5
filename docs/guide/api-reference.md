@@ -18,6 +18,7 @@ ADR-036 and ADR-048.
   production consumers may import them.
 - `@motion5/core/testing` — test support; production consumers may not import it, as enforced by
   the boundary scan.
+- `@motion5/core/plugin-api` — the plugin-authoring contract; plugin implementations may import this entrypoint and sibling implementation modules only.
 - `@motion5/core/internal` — unadvertised; it carries no stability promise.
 
 ## @motion5/core

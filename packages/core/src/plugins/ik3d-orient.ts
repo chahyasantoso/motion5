@@ -1,5 +1,4 @@
-import { ORIENT_KEY, readOrientValue } from "../contract/solver-constraints";
-import { unreachable } from "../lang/exhaustive";
+import { ORIENT_KEY, readOrientValue, unreachable } from "../plugin-api";
 import { readNumber, segmentExtent } from "./frame";
 import {
   blendOrientation3d,

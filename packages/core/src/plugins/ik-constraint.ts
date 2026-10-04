@@ -1,4 +1,3 @@
-import { unreachable } from "../lang/exhaustive";
 import {
   BEND_KEY,
   classifyBend,
@@ -8,7 +7,8 @@ import {
   MAX_ROTATION_KEY,
   MIN_ROTATION_KEY,
   readLimitDegree,
-} from "../contract/solver-constraints";
+  unreachable,
+} from "../plugin-api";
 import type { DofBound } from "./ik-descent";
 
 /**
