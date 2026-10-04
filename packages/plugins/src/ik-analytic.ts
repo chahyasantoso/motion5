@@ -1,4 +1,4 @@
-import { unreachable } from "../plugin-api";
+import { unreachable } from "@motion5/core/plugin-api";
 import { clamp, effectiveLink, pivotFromBaseTip, toRadians, type WorldFrame } from "./frame";
 import { solveLength, solveOffset, type SolveMember } from "./ik-member";
 import { readGoal } from "./ik-goal-reading";

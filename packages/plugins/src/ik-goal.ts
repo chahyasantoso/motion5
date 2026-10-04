@@ -1,4 +1,4 @@
-import { INFLUENCE_KEY, readInfluenceValue, unreachable } from "../plugin-api";
+import { INFLUENCE_KEY, readInfluenceValue, unreachable } from "@motion5/core/plugin-api";
 import type { WorldPoint } from "./frame";
 import type { SolveMember } from "./ik-member";
 

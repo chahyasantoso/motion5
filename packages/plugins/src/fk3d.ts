@@ -1,5 +1,5 @@
-import { INFLUENCE_KEY, JOINT_VOCABULARY_KEYS, ORIENT_KEY } from "../plugin-api";
-import type { PluginDefinition } from "../plugin-api";
+import { INFLUENCE_KEY, JOINT_VOCABULARY_KEYS, ORIENT_KEY } from "@motion5/core/plugin-api";
+import type { PluginDefinition } from "@motion5/core/plugin-api";
 import {
   blendOrientation3d,
   composeWorld3d,

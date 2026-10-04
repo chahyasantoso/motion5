@@ -1,5 +1,5 @@
-import { BEND_KEY, FLIP_KEY, INSPECTION_KEY, INSPECT_KEY } from "../plugin-api";
-import type { ImmutableRecord, PluginDefinition } from "../plugin-api";
+import { BEND_KEY, FLIP_KEY, INSPECTION_KEY, INSPECT_KEY } from "@motion5/core/plugin-api";
+import type { ImmutableRecord, PluginDefinition } from "@motion5/core/plugin-api";
 import { readFrame } from "./frame";
 import { readGoals, readMembers, readSolveMembers } from "./ik-chain";
 import { solveChain } from "./ik-solve";
