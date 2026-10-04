@@ -7,6 +7,11 @@ import { unreachable } from "./unreachable";
  * video without a camera model, and foreshortened, so a bone's image length is not constant.
  * `world` is MediaPipe's metric world landmark in millimetres: three components, hip-centred, and
  * the only space where a fixed bone length is physically right (#501's front-view problem).
+ *
+ * Both read MediaPipe's camera-aligned axes, unmirrored: +x toward the image's right (a person
+ * facing the camera has their left there), +y down, and smaller z nearer the camera. World is
+ * hip-centred, never a position in the room. A mirrored preview is display only
+ * (`live/preview.ts`).
  */
 export type LandmarkSpace = { readonly kind: "image" } | { readonly kind: "world" };
 

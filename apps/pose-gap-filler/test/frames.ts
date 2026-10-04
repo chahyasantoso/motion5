@@ -1,4 +1,5 @@
 import {
+  UNREPORTED,
   measurementOf,
   type JointObservation,
   type JointTrust,
@@ -23,7 +24,7 @@ export function frameOf(
       const position = positions[joint];
       return position === undefined
         ? { kind: "absent" }
-        : { kind: "measured", position, visibility: visibility[joint] ?? 1 };
+        : { kind: "measured", position, visibility: visibility[joint] ?? 1, presence: UNREPORTED };
     }),
   };
 }

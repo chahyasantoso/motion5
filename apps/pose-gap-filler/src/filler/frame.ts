@@ -2,13 +2,32 @@ import type { JointId } from "./landmarks";
 import type { LandmarkSpace } from "./space";
 import { unreachable } from "./unreachable";
 import type { Vec } from "./vec";
+import type { BodyState } from "../body/state";
+
+/**
+ * MediaPipe's presence score for one landmark: the probability it is in the scene at all, which
+ * says nothing about whether it is occluded (that is `visibility`). `unreported` when the producer
+ * supplied none (a v1 recording, a result without the field, the legacy synthetic subject): it is
+ * never fabricated as a confident 1.
+ */
+export type Presence =
+  | { readonly kind: "reported"; readonly value: number }
+  | { readonly kind: "unreported" };
+
+export const UNREPORTED: Presence = Object.freeze({ kind: "unreported" });
 
 /**
  * What the adapter read for one joint. `absent` is a landmark missing from the result or carrying
- * a non-finite coordinate: the adapter refuses it rather than passing a NaN downstream.
+ * a non-finite coordinate: the adapter refuses it rather than passing a NaN downstream. A measured
+ * joint carries visibility and presence as reported; trust reads visibility only.
  */
 export type JointObservation =
-  | { readonly kind: "measured"; readonly position: Vec; readonly visibility: number }
+  | {
+      readonly kind: "measured";
+      readonly position: Vec;
+      readonly visibility: number;
+      readonly presence: Presence;
+    }
   | { readonly kind: "absent" };
 
 /** One adapted MediaPipe result. `tMs` is the only clock any stateful module reads. */
@@ -20,10 +39,21 @@ export interface LandmarkFrame {
 
 /**
  * Why a joint is not trusted. `absent` is the adapter's refusal; `low-visibility` is visibility
- * under the threshold; `gate` is a speed since the last trusted sample above the gate, in bone
- * lengths per second (a teleport or a left/right swap); `forced` is a hotkey or a replay mask.
+ * under the threshold; `gate` is excessive raw speed; `innovation` is an implausible residual
+ * against detector-owned history; `invalid` is malformed raw input; `forced` is a replay/hotkey mask.
  */
-export type GapReason = "absent" | "low-visibility" | "gate" | "forced";
+export type GapReason = "absent" | "low-visibility" | "gate" | "forced" | "innovation" | "invalid";
+
+/** Raw detector decision, in this frame's native px/mm units, before either filter. */
+export type RejectionDiagnostic =
+  | { readonly kind: "invalid" }
+  | {
+      readonly kind: "outlier";
+      readonly reason: "innovation" | "speed";
+      readonly innovation: number;
+      readonly limit: number;
+      readonly candidates: number;
+    };
 
 /**
  * The gap detector's answer, the one owner of "is this joint trusted". A trusted joint carries the
@@ -34,7 +64,9 @@ export type JointTrust =
   | { readonly kind: "gap"; readonly reason: GapReason };
 
 export interface TrustedFrame extends LandmarkFrame {
+  readonly body?: BodyState;
   readonly trust: Readonly<Record<JointId, JointTrust>>;
+  readonly rejections?: Readonly<Partial<Record<JointId, RejectionDiagnostic>>>;
 }
 
 /**
@@ -43,10 +75,34 @@ export interface TrustedFrame extends LandmarkFrame {
  */
 export type FilledJoint =
   | { readonly kind: "measured"; readonly position: Vec }
-  | { readonly kind: "inferred"; readonly position: Vec; readonly sinceMs: number }
+  | {
+      readonly kind: "inferred";
+      readonly position: Vec;
+      readonly sinceMs: number;
+      /** Absent on hold/legacy fills. Only the prediction owner may supply this evidence. */
+      readonly prediction?: JointPrediction;
+    }
   | { readonly kind: "lost" };
 
+/** Prediction age is measured evidence age, not the time the current gap began. */
+export type JointPrediction =
+  | {
+      readonly kind: "coast";
+      readonly lastObservedTMs: number;
+      readonly expiresTMs: number;
+      /** Local tangent filter variance, not a calibrated detector accuracy claim. */
+      readonly angularVarianceRad2: number;
+    }
+  | {
+      readonly kind: "prior";
+      readonly lastObservedTMs: number;
+      readonly expiresTMs: number;
+      readonly angularVarianceRad2: number;
+      readonly uncertaintyCalibrated: boolean;
+    };
+
 export interface FilledFrame {
+  readonly body?: BodyState;
   readonly tMs: number;
   readonly space: LandmarkSpace;
   readonly joints: Readonly<Record<JointId, FilledJoint>>;

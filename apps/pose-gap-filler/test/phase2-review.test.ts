@@ -71,7 +71,7 @@ describe("independent phase 2 regression cases", () => {
       frames: still.frames.map((frame) => ({
         ...frame,
         image: frame.image!.map((point, index) =>
-          index === MEDIAPIPE_INDEX["left-wrist"] ? ([0, 0, 0, 0] as const) : point,
+          index === MEDIAPIPE_INDEX["left-wrist"] ? ([0, 0, 0, 0, Number.NaN] as const) : point,
         ),
       })),
     };
