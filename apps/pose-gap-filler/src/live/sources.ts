@@ -1,22 +1,31 @@
 import { DEFAULT_STAGE, SYNTHETIC_TAKES, createSyntheticRecording } from "../replay/synthetic";
 import type { SyntheticMotion } from "../replay/synthetic";
 import { unreachable } from "../filler/unreachable";
-import { BROWSER_FRAMES, createPlaybackSource, type FramePorts } from "./playback";
+import { SIMULATOR_FRAME_MS, reportResult, type Simulator } from "../synthetic/simulator";
+import {
+  BROWSER_FRAMES,
+  createPacedSource,
+  createPlaybackSource,
+  type FramePorts,
+} from "./playback";
 import { createMediaPipeWebcamSource, type LandmarkSource, type WebcamSourcePorts } from "./source";
 
 /**
  * Where the live page's landmarks come from, a closed union read exhaustively. `camera` is the
- * webcam through MediaPipe; `synthetic` loops the motion's committed take (`SYNTHETIC_TAKES`) and
- * never loads MediaPipe or asks for a camera, so the page runs with no download and no permission.
+ * webcam through MediaPipe; `synthetic` loops the motion's committed take (`SYNTHETIC_TAKES`);
+ * `simulator` measures the page's synthetic human live, as its person edits it. Neither of the last
+ * two loads MediaPipe or asks for a camera, so the page runs with no download and no permission.
  */
 export type SourceSpec =
   | { readonly kind: "camera" }
-  | { readonly kind: "synthetic"; readonly motion: SyntheticMotion };
+  | { readonly kind: "synthetic"; readonly motion: SyntheticMotion }
+  | { readonly kind: "simulator" };
 
 export type SourceKind = SourceSpec["kind"];
 
 /** Every selectable source, in the order the page lists them. */
 export const SOURCE_SPECS: readonly SourceSpec[] = Object.freeze([
+  Object.freeze({ kind: "simulator" }),
   Object.freeze({ kind: "synthetic", motion: SYNTHETIC_TAKES.exercise.motion }),
   Object.freeze({ kind: "synthetic", motion: SYNTHETIC_TAKES.still.motion }),
   Object.freeze({ kind: "camera" }),
@@ -29,6 +38,8 @@ export function sourceId(spec: SourceSpec): string {
       return "camera";
     case "synthetic":
       return `synthetic-${spec.motion.kind}`;
+    case "simulator":
+      return "simulator";
     default:
       return unreachable(spec, "source spec");
   }
@@ -43,6 +54,8 @@ export function sourceLabel(spec: SourceSpec): string {
       const take = SYNTHETIC_TAKES[spec.motion.kind];
       return `Synthetic ${spec.motion.kind} (seed ${take.seed}, looped)`;
     }
+    case "simulator":
+      return "Synthetic human (simulator)";
     default:
       return unreachable(spec, "source spec");
   }
@@ -53,12 +66,56 @@ export interface SourcePorts {
   readonly video: HTMLVideoElement;
   readonly webcam?: WebcamSourcePorts;
   readonly frames?: FramePorts;
+  /** The page's synthetic human, which the `simulator` arm measures. */
+  readonly simulator?: Simulator;
+}
+
+/**
+ * The simulator as a paced source. It walks the camera's frames in order and emits each one that
+ * reaches the detector, at its delivery time, so a dropped frame never arrives and arrival is as
+ * irregular as the corruption makes it. A frame is measured only when it is emitted, so an edit
+ * made between frames is in the next one. Truth is sampled at camera time `k * frameMs`, never
+ * advanced by delivery lateness. Delivery timestamps stay within their own camera period.
+ */
+export function createSimulatorSource(
+  simulator: Simulator,
+  ports: FramePorts = BROWSER_FRAMES,
+): LandmarkSource {
+  // The paced source reads the stream in order, asking for the same index until it is emitted,
+  // so one cursor over the camera's frames answers it without keeping every time.
+  const resetCursor = () => ({ index: -1, k: -1, tMs: Number.NaN });
+  let cursor = resetCursor();
+  const timeOf = (index: number): number => {
+    if (index < cursor.index) cursor = resetCursor();
+    while (cursor.index < index) {
+      let k = cursor.k + 1;
+      for (let timing = simulator.timing(k); ; timing = simulator.timing(++k))
+        if (timing.kind === "captured") {
+          cursor = { index: cursor.index + 1, k, tMs: timing.tMs };
+          break;
+        }
+    }
+    return cursor.tMs;
+  };
+  return createPacedSource(
+    {
+      reset: () => {
+        cursor = resetCursor();
+      },
+      timeOf,
+      resultOf: (index) => {
+        timeOf(index);
+        return reportResult(simulator.frame(cursor.k * SIMULATOR_FRAME_MS).report);
+      },
+    },
+    ports,
+  );
 }
 
 /**
  * The one factory for live sources. Creating a source acquires nothing: the webcam source loads
  * MediaPipe and asks for the camera only in `start`, and only the `camera` arm creates one, so a
- * synthetic session never reaches either.
+ * synthetic or simulated session never reaches either.
  */
 export function createLandmarkSource(spec: SourceSpec, ports: SourcePorts): LandmarkSource {
   switch (spec.kind) {
@@ -70,6 +127,9 @@ export function createLandmarkSource(spec: SourceSpec, ports: SourcePorts): Land
         { loop: true },
         ports.frames ?? BROWSER_FRAMES,
       );
+    case "simulator":
+      if (ports.simulator === undefined) throw new Error("The simulator source needs a simulator.");
+      return createSimulatorSource(ports.simulator, ports.frames ?? BROWSER_FRAMES);
     default:
       return unreachable(spec, "source spec");
   }

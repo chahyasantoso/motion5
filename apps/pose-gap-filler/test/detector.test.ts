@@ -18,7 +18,8 @@ const moved = (dx: number) => ({
 
 describe("gap detector", () => {
   it("GF-17 decides absent, then forced, then low visibility, then the gate", () => {
-    const detector = createGapDetector({ threshold: 0.5, gate: 10 });
+    // This case isolates the legacy speed gate; innovation is covered independently.
+    const detector = createGapDetector({ threshold: 0.5, gate: 10, innovation: false });
     const frame = frameOf(without(STANDING, "left-elbow"), 0, undefined, {
       "left-knee": 0.49,
       "right-knee": 0.5,
@@ -51,7 +52,7 @@ describe("gap detector", () => {
         .kind,
     ).toBe("trusted");
     // No length known yet: no scale, so no gate; after reset, no previous sample, so no gate.
-    const fresh = createGapDetector({ threshold: 0.5, gate: 10 });
+    const fresh = createGapDetector({ threshold: 0.5, gate: 10, innovation: false });
     fresh.detect(frameOf(STANDING, 0), NO_FORCED, UNKNOWN);
     expect(fresh.detect(frameOf(moved(5000), 1), NO_FORCED, UNKNOWN).trust["left-wrist"].kind).toBe(
       "trusted",

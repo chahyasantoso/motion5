@@ -190,7 +190,11 @@ describe("trusted-measurement stabilizer", () => {
         for (const joint of JOINTS)
           expect(b.trusted.trust[joint].kind).toBe(a.trusted.trust[joint].kind);
         // `raw` reads observations, so it is the unprocessed reference with or without a stabilizer.
-        expect(b.filled).toEqual(a.filled);
+        // Body metadata deliberately describes stabilized trust, not the raw-reference joints.
+        expect(b.filled.joints).toEqual(a.filled.joints);
+        expect(b.filled.tMs).toBe(a.filled.tMs);
+        expect(b.filled.space).toEqual(a.filled.space);
+        if (space.kind === "world") expect(b.filled.body).toBe(b.trusted.body);
         expect(b.trusted.joints).toBe(frame.joints);
       });
     }
@@ -254,7 +258,7 @@ describe("bend-side hysteresis", () => {
       const writer = createImageWriter(loaded);
       const pipeline = createGapPipeline({
         filler: { kind: "raw" },
-        detector: { threshold: 0.5, gate: Infinity },
+        detector: { threshold: 0.5, gate: Infinity, innovation: false },
       });
       const write = (offset: number, tMs: number) => {
         const step = pipeline.step(frameOf(arm(offset), tMs));
@@ -284,7 +288,7 @@ describe("bend-side hysteresis", () => {
       const writer = createWorldWriter(loaded);
       const pipeline = createGapPipeline({
         filler: { kind: "raw" },
-        detector: { threshold: 0.5, gate: Infinity },
+        detector: { threshold: 0.5, gate: Infinity, innovation: false },
       });
       const root: Vec = [0, 0, 0];
       const goal: Vec = [0, 500, 0];

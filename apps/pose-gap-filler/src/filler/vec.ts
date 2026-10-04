@@ -34,7 +34,7 @@ export function distance(a: Vec, b: Vec): number {
 /** The unit vector along `a`, or `undefined` for a vector too short to have a direction. */
 export function unit(a: Vec): Vec | undefined {
   const length = norm(a);
-  return length > 1e-9 ? scale(a, 1 / length) : undefined;
+  return Number.isFinite(length) && length > 1e-9 ? scale(a, 1 / length) : undefined;
 }
 
 export function isFiniteVec(a: Vec): boolean {

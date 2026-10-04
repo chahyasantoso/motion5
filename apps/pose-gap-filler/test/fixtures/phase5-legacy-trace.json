@@ -1,0 +1,4017 @@
+[
+  {
+    "tMs": 0,
+    "writes": [
+      [
+        "pose/left-arm-root",
+        {
+          "x": 200,
+          "y": -400,
+          "z": 0
+        }
+      ],
+      [
+        "pose/left-arm-goal",
+        {
+          "x": 200,
+          "y": -240,
+          "z": 0
+        }
+      ],
+      [
+        "pose/left-arm-pole",
+        {
+          "x": 200.6,
+          "y": -399.2,
+          "z": 0
+        }
+      ],
+      [
+        "pose/left-arm-upper",
+        {
+          "length": 100
+        }
+      ],
+      [
+        "pose/left-arm-lower",
+        {
+          "length": 100
+        }
+      ],
+      [
+        "pose/right-arm-root",
+        {
+          "x": -200,
+          "y": -400,
+          "z": 0
+        }
+      ],
+      [
+        "pose/right-arm-goal",
+        {
+          "x": -200,
+          "y": -240,
+          "z": 0
+        }
+      ],
+      [
+        "pose/right-arm-pole",
+        {
+          "x": -200.6,
+          "y": -399.2,
+          "z": 0
+        }
+      ],
+      [
+        "pose/right-arm-upper",
+        {
+          "length": 100
+        }
+      ],
+      [
+        "pose/right-arm-lower",
+        {
+          "length": 100
+        }
+      ],
+      [
+        "pose/left-leg-root",
+        {
+          "x": 120,
+          "y": 0,
+          "z": 0
+        }
+      ],
+      [
+        "pose/left-leg-goal",
+        {
+          "x": 120,
+          "y": 160,
+          "z": 0
+        }
+      ],
+      [
+        "pose/left-leg-pole",
+        {
+          "x": 120.6,
+          "y": 0.8,
+          "z": 0
+        }
+      ],
+      [
+        "pose/left-leg-upper",
+        {
+          "length": 100
+        }
+      ],
+      [
+        "pose/left-leg-lower",
+        {
+          "length": 100
+        }
+      ],
+      [
+        "pose/right-leg-root",
+        {
+          "x": -120,
+          "y": 0,
+          "z": 0
+        }
+      ],
+      [
+        "pose/right-leg-goal",
+        {
+          "x": -120,
+          "y": 160,
+          "z": 0
+        }
+      ],
+      [
+        "pose/right-leg-pole",
+        {
+          "x": -120.6,
+          "y": 0.8,
+          "z": 0
+        }
+      ],
+      [
+        "pose/right-leg-upper",
+        {
+          "length": 100
+        }
+      ],
+      [
+        "pose/right-leg-lower",
+        {
+          "length": 100
+        }
+      ]
+    ],
+    "outcome": {
+      "left-arm": {
+        "kind": "written"
+      },
+      "right-arm": {
+        "kind": "written"
+      },
+      "left-leg": {
+        "kind": "written"
+      },
+      "right-leg": {
+        "kind": "written"
+      }
+    },
+    "patches": [
+      {
+        "nodeId": "pose/left-arm-root",
+        "revision": 1,
+        "status": "ready",
+        "values": {
+          "rotation": 0,
+          "rotationX": 0,
+          "rotationY": 0,
+          "x": 200,
+          "y": -400,
+          "z": 0
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {},
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/left-arm-goal",
+        "revision": 1,
+        "status": "ready",
+        "values": {
+          "rotation": 0,
+          "rotationX": 0,
+          "rotationY": 0,
+          "x": 200,
+          "y": -240,
+          "z": 0
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {},
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/left-arm-pole",
+        "revision": 1,
+        "status": "ready",
+        "values": {
+          "rotation": 0,
+          "rotationX": 0,
+          "rotationY": 0,
+          "x": 200.6,
+          "y": -399.2,
+          "z": 0
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {},
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/left-arm-solve",
+        "revision": 1,
+        "status": "ready",
+        "values": {
+          "rotations3d": {
+            "pose/left-arm-upper": {
+              "rotation": -126.86989764584402,
+              "rotationX": 0,
+              "rotationY": 180
+            },
+            "pose/left-arm-lower": {
+              "rotation": -73.73979529168804,
+              "rotationX": 0,
+              "rotationY": 0
+            }
+          }
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {
+          "pose/left-arm-goal": 1,
+          "pose/left-arm-pole": 1,
+          "pose/left-arm-root": 1
+        },
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/left-arm-upper",
+        "revision": 1,
+        "status": "ready",
+        "values": {
+          "x": 260,
+          "y": -320,
+          "z": -1.2246467991473532e-14,
+          "rotation": -126.86989764584402,
+          "rotationX": 0,
+          "rotationY": 180
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {
+          "pose/left-arm-root": 1,
+          "pose/left-arm-solve": 1
+        },
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/left-arm-lower",
+        "revision": 1,
+        "status": "ready",
+        "values": {
+          "x": 200,
+          "y": -240,
+          "z": -2.4492935982947064e-14,
+          "rotation": -53.13010235415597,
+          "rotationX": -6.7360409265934804e-15,
+          "rotationY": 180
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {
+          "pose/left-arm-solve": 1,
+          "pose/left-arm-upper": 1
+        },
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/right-arm-root",
+        "revision": 1,
+        "status": "ready",
+        "values": {
+          "rotation": 0,
+          "rotationX": 0,
+          "rotationY": 0,
+          "x": -200,
+          "y": -400,
+          "z": 0
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {},
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/right-arm-goal",
+        "revision": 1,
+        "status": "ready",
+        "values": {
+          "rotation": 0,
+          "rotationX": 0,
+          "rotationY": 0,
+          "x": -200,
+          "y": -240,
+          "z": 0
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {},
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/right-arm-pole",
+        "revision": 1,
+        "status": "ready",
+        "values": {
+          "rotation": 0,
+          "rotationX": 0,
+          "rotationY": 0,
+          "x": -200.6,
+          "y": -399.2,
+          "z": 0
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {},
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/right-arm-solve",
+        "revision": 1,
+        "status": "ready",
+        "values": {
+          "rotations3d": {
+            "pose/right-arm-upper": {
+              "rotation": 126.86989764584402,
+              "rotationX": 0,
+              "rotationY": 0
+            },
+            "pose/right-arm-lower": {
+              "rotation": -73.73979529168804,
+              "rotationX": 0,
+              "rotationY": 0
+            }
+          }
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {
+          "pose/right-arm-goal": 1,
+          "pose/right-arm-pole": 1,
+          "pose/right-arm-root": 1
+        },
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/right-arm-upper",
+        "revision": 1,
+        "status": "ready",
+        "values": {
+          "x": -260,
+          "y": -320,
+          "z": 0,
+          "rotation": 126.86989764584402,
+          "rotationX": 0,
+          "rotationY": 0
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {
+          "pose/right-arm-root": 1,
+          "pose/right-arm-solve": 1
+        },
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/right-arm-lower",
+        "revision": 1,
+        "status": "ready",
+        "values": {
+          "x": -200,
+          "y": -240,
+          "z": 0,
+          "rotation": 53.13010235415597,
+          "rotationX": 0,
+          "rotationY": 0
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {
+          "pose/right-arm-solve": 1,
+          "pose/right-arm-upper": 1
+        },
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/left-leg-root",
+        "revision": 1,
+        "status": "ready",
+        "values": {
+          "rotation": 0,
+          "rotationX": 0,
+          "rotationY": 0,
+          "x": 120,
+          "y": 0,
+          "z": 0
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {},
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/left-leg-goal",
+        "revision": 1,
+        "status": "ready",
+        "values": {
+          "rotation": 0,
+          "rotationX": 0,
+          "rotationY": 0,
+          "x": 120,
+          "y": 160,
+          "z": 0
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {},
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/left-leg-pole",
+        "revision": 1,
+        "status": "ready",
+        "values": {
+          "rotation": 0,
+          "rotationX": 0,
+          "rotationY": 0,
+          "x": 120.6,
+          "y": 0.8,
+          "z": 0
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {},
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/left-leg-solve",
+        "revision": 1,
+        "status": "ready",
+        "values": {
+          "rotations3d": {
+            "pose/left-leg-upper": {
+              "rotation": -126.86989764584402,
+              "rotationX": 0,
+              "rotationY": 180
+            },
+            "pose/left-leg-lower": {
+              "rotation": -73.73979529168804,
+              "rotationX": 0,
+              "rotationY": 0
+            }
+          }
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {
+          "pose/left-leg-goal": 1,
+          "pose/left-leg-pole": 1,
+          "pose/left-leg-root": 1
+        },
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/left-leg-upper",
+        "revision": 1,
+        "status": "ready",
+        "values": {
+          "x": 180,
+          "y": 80.00000000000001,
+          "z": -1.2246467991473532e-14,
+          "rotation": -126.86989764584402,
+          "rotationX": 0,
+          "rotationY": 180
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {
+          "pose/left-leg-root": 1,
+          "pose/left-leg-solve": 1
+        },
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/left-leg-lower",
+        "revision": 1,
+        "status": "ready",
+        "values": {
+          "x": 120,
+          "y": 160,
+          "z": -2.4492935982947064e-14,
+          "rotation": -53.13010235415597,
+          "rotationX": -6.7360409265934804e-15,
+          "rotationY": 180
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {
+          "pose/left-leg-solve": 1,
+          "pose/left-leg-upper": 1
+        },
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/right-leg-root",
+        "revision": 1,
+        "status": "ready",
+        "values": {
+          "rotation": 0,
+          "rotationX": 0,
+          "rotationY": 0,
+          "x": -120,
+          "y": 0,
+          "z": 0
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {},
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/right-leg-goal",
+        "revision": 1,
+        "status": "ready",
+        "values": {
+          "rotation": 0,
+          "rotationX": 0,
+          "rotationY": 0,
+          "x": -120,
+          "y": 160,
+          "z": 0
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {},
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/right-leg-pole",
+        "revision": 1,
+        "status": "ready",
+        "values": {
+          "rotation": 0,
+          "rotationX": 0,
+          "rotationY": 0,
+          "x": -120.6,
+          "y": 0.8,
+          "z": 0
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {},
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/right-leg-solve",
+        "revision": 1,
+        "status": "ready",
+        "values": {
+          "rotations3d": {
+            "pose/right-leg-upper": {
+              "rotation": 126.86989764584402,
+              "rotationX": 0,
+              "rotationY": 0
+            },
+            "pose/right-leg-lower": {
+              "rotation": -73.73979529168804,
+              "rotationX": 0,
+              "rotationY": 0
+            }
+          }
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {
+          "pose/right-leg-goal": 1,
+          "pose/right-leg-pole": 1,
+          "pose/right-leg-root": 1
+        },
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/right-leg-upper",
+        "revision": 1,
+        "status": "ready",
+        "values": {
+          "x": -180,
+          "y": 80.00000000000001,
+          "z": 0,
+          "rotation": 126.86989764584402,
+          "rotationX": 0,
+          "rotationY": 0
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {
+          "pose/right-leg-root": 1,
+          "pose/right-leg-solve": 1
+        },
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/right-leg-lower",
+        "revision": 1,
+        "status": "ready",
+        "values": {
+          "x": -120,
+          "y": 160,
+          "z": 0,
+          "rotation": 53.13010235415597,
+          "rotationX": 0,
+          "rotationY": 0
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {
+          "pose/right-leg-solve": 1,
+          "pose/right-leg-upper": 1
+        },
+        "diagnostics": []
+      }
+    ]
+  },
+  {
+    "tMs": 20,
+    "writes": [
+      [
+        "pose/left-arm-root",
+        {
+          "x": 202,
+          "y": -400,
+          "z": 1
+        }
+      ],
+      [
+        "pose/left-arm-goal",
+        {
+          "x": 202,
+          "y": -240,
+          "z": 1
+        }
+      ],
+      [
+        "pose/left-arm-pole",
+        {
+          "x": 202.6,
+          "y": -399.2,
+          "z": 1
+        }
+      ],
+      [
+        "pose/right-arm-root",
+        {
+          "x": -198,
+          "y": -400,
+          "z": 1
+        }
+      ],
+      [
+        "pose/right-arm-goal",
+        {
+          "x": -198,
+          "y": -240,
+          "z": 1
+        }
+      ],
+      [
+        "pose/right-arm-pole",
+        {
+          "x": -198.57320189347536,
+          "y": -399.2,
+          "z": 1.1773121239968036
+        }
+      ],
+      [
+        "pose/left-leg-root",
+        {
+          "x": 122,
+          "y": 0,
+          "z": 1
+        }
+      ],
+      [
+        "pose/left-leg-goal",
+        {
+          "x": 122.00000000000001,
+          "y": 160,
+          "z": 1
+        }
+      ],
+      [
+        "pose/left-leg-pole",
+        {
+          "x": 122.57320189347536,
+          "y": 0.8,
+          "z": 1.1773121239968036
+        }
+      ],
+      [
+        "pose/right-leg-root",
+        {
+          "x": -118,
+          "y": 0,
+          "z": 1
+        }
+      ],
+      [
+        "pose/right-leg-goal",
+        {
+          "x": -118.00000000000001,
+          "y": 160,
+          "z": 1
+        }
+      ],
+      [
+        "pose/right-leg-pole",
+        {
+          "x": -118.6,
+          "y": 0.8,
+          "z": 1
+        }
+      ]
+    ],
+    "outcome": {
+      "left-arm": {
+        "kind": "written"
+      },
+      "right-arm": {
+        "kind": "written"
+      },
+      "left-leg": {
+        "kind": "written"
+      },
+      "right-leg": {
+        "kind": "written"
+      }
+    },
+    "patches": [
+      {
+        "nodeId": "pose/left-arm-root",
+        "revision": 2,
+        "status": "ready",
+        "values": {
+          "rotation": 0,
+          "rotationX": 0,
+          "rotationY": 0,
+          "x": 202,
+          "y": -400,
+          "z": 1
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {},
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/left-arm-goal",
+        "revision": 2,
+        "status": "ready",
+        "values": {
+          "rotation": 0,
+          "rotationX": 0,
+          "rotationY": 0,
+          "x": 202,
+          "y": -240,
+          "z": 1
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {},
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/left-arm-pole",
+        "revision": 2,
+        "status": "ready",
+        "values": {
+          "rotation": 0,
+          "rotationX": 0,
+          "rotationY": 0,
+          "x": 202.6,
+          "y": -399.2,
+          "z": 1
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {},
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/left-arm-solve",
+        "revision": 2,
+        "status": "ready",
+        "values": {
+          "rotations3d": {
+            "pose/left-arm-upper": {
+              "rotation": -126.86989764584402,
+              "rotationX": 0,
+              "rotationY": 180
+            },
+            "pose/left-arm-lower": {
+              "rotation": -73.73979529168804,
+              "rotationX": 0,
+              "rotationY": 0
+            }
+          }
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {
+          "pose/left-arm-goal": 2,
+          "pose/left-arm-pole": 2,
+          "pose/left-arm-root": 2
+        },
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/left-arm-upper",
+        "revision": 2,
+        "status": "ready",
+        "values": {
+          "x": 262,
+          "y": -320,
+          "z": 0.9999999999999878,
+          "rotation": -126.86989764584402,
+          "rotationX": 0,
+          "rotationY": 180
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {
+          "pose/left-arm-root": 2,
+          "pose/left-arm-solve": 2
+        },
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/left-arm-lower",
+        "revision": 2,
+        "status": "ready",
+        "values": {
+          "x": 202,
+          "y": -240,
+          "z": 0.9999999999999756,
+          "rotation": -53.13010235415597,
+          "rotationX": -6.7360409265934804e-15,
+          "rotationY": 180
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {
+          "pose/left-arm-solve": 2,
+          "pose/left-arm-upper": 2
+        },
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/right-arm-root",
+        "revision": 2,
+        "status": "ready",
+        "values": {
+          "rotation": 0,
+          "rotationX": 0,
+          "rotationY": 0,
+          "x": -198,
+          "y": -400,
+          "z": 1
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {},
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/right-arm-goal",
+        "revision": 2,
+        "status": "ready",
+        "values": {
+          "rotation": 0,
+          "rotationX": 0,
+          "rotationY": 0,
+          "x": -198,
+          "y": -240,
+          "z": 1
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {},
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/right-arm-pole",
+        "revision": 2,
+        "status": "ready",
+        "values": {
+          "rotation": 0,
+          "rotationX": 0,
+          "rotationY": 0,
+          "x": -198.57320189347536,
+          "y": -399.2,
+          "z": 1.1773121239968036
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {},
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/right-arm-solve",
+        "revision": 2,
+        "status": "ready",
+        "values": {
+          "rotations3d": {
+            "pose/right-arm-upper": {
+              "rotation": 128.13417183540452,
+              "rotationX": 13.675115580193479,
+              "rotationY": -10.514551323312531
+            },
+            "pose/right-arm-lower": {
+              "rotation": -73.73979529168803,
+              "rotationX": 0,
+              "rotationY": 1.5902773407317582e-15
+            }
+          }
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {
+          "pose/right-arm-goal": 2,
+          "pose/right-arm-pole": 2,
+          "pose/right-arm-root": 2
+        },
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/right-arm-upper",
+        "revision": 2,
+        "status": "ready",
+        "values": {
+          "x": -255.32018934753629,
+          "y": -320,
+          "z": 18.731212399680555,
+          "rotation": 128.13417183540452,
+          "rotationX": 13.675115580193479,
+          "rotationY": -10.514551323312535
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {
+          "pose/right-arm-root": 2,
+          "pose/right-arm-solve": 2
+        },
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/right-arm-lower",
+        "revision": 2,
+        "status": "ready",
+        "values": {
+          "x": -198,
+          "y": -240,
+          "z": 1.0000000000000107,
+          "rotation": 51.86582816459548,
+          "rotationX": 13.67511558019349,
+          "rotationY": 10.514551323312528
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {
+          "pose/right-arm-solve": 2,
+          "pose/right-arm-upper": 2
+        },
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/left-leg-root",
+        "revision": 2,
+        "status": "ready",
+        "values": {
+          "rotation": 0,
+          "rotationX": 0,
+          "rotationY": 0,
+          "x": 122,
+          "y": 0,
+          "z": 1
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {},
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/left-leg-goal",
+        "revision": 2,
+        "status": "ready",
+        "values": {
+          "rotation": 0,
+          "rotationX": 0,
+          "rotationY": 0,
+          "x": 122.00000000000001,
+          "y": 160,
+          "z": 1
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {},
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/left-leg-pole",
+        "revision": 2,
+        "status": "ready",
+        "values": {
+          "rotation": 0,
+          "rotationX": 0,
+          "rotationY": 0,
+          "x": 122.57320189347536,
+          "y": 0.8,
+          "z": 1.1773121239968036
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {},
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/left-leg-solve",
+        "revision": 2,
+        "status": "ready",
+        "values": {
+          "rotations3d": {
+            "pose/left-leg-upper": {
+              "rotation": -128.13417183540452,
+              "rotationX": 13.675115580193483,
+              "rotationY": -169.48544867668747
+            },
+            "pose/left-leg-lower": {
+              "rotation": -73.73979529168803,
+              "rotationX": 1.5902773407317584e-15,
+              "rotationY": 0
+            }
+          }
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {
+          "pose/left-leg-goal": 2,
+          "pose/left-leg-pole": 2,
+          "pose/left-leg-root": 2
+        },
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/left-leg-upper",
+        "revision": 2,
+        "status": "ready",
+        "values": {
+          "x": 179.32018934753629,
+          "y": 80.00000000000001,
+          "z": 18.73121239968056,
+          "rotation": -128.13417183540452,
+          "rotationX": 13.675115580193483,
+          "rotationY": -169.48544867668747
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {
+          "pose/left-leg-root": 2,
+          "pose/left-leg-solve": 2
+        },
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/left-leg-lower",
+        "revision": 2,
+        "status": "ready",
+        "values": {
+          "x": 122,
+          "y": 160,
+          "z": 1,
+          "rotation": -51.86582816459548,
+          "rotationX": 13.675115580193491,
+          "rotationY": 169.48544867668747
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {
+          "pose/left-leg-solve": 2,
+          "pose/left-leg-upper": 2
+        },
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/right-leg-root",
+        "revision": 2,
+        "status": "ready",
+        "values": {
+          "rotation": 0,
+          "rotationX": 0,
+          "rotationY": 0,
+          "x": -118,
+          "y": 0,
+          "z": 1
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {},
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/right-leg-goal",
+        "revision": 2,
+        "status": "ready",
+        "values": {
+          "rotation": 0,
+          "rotationX": 0,
+          "rotationY": 0,
+          "x": -118.00000000000001,
+          "y": 160,
+          "z": 1
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {},
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/right-leg-pole",
+        "revision": 2,
+        "status": "ready",
+        "values": {
+          "rotation": 0,
+          "rotationX": 0,
+          "rotationY": 0,
+          "x": -118.6,
+          "y": 0.8,
+          "z": 1
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {},
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/right-leg-solve",
+        "revision": 2,
+        "status": "ready",
+        "values": {
+          "rotations3d": {
+            "pose/right-leg-upper": {
+              "rotation": 126.86989764584402,
+              "rotationX": 0,
+              "rotationY": 0
+            },
+            "pose/right-leg-lower": {
+              "rotation": -73.73979529168803,
+              "rotationX": 0,
+              "rotationY": 0
+            }
+          }
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {
+          "pose/right-leg-goal": 2,
+          "pose/right-leg-pole": 2,
+          "pose/right-leg-root": 2
+        },
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/right-leg-upper",
+        "revision": 2,
+        "status": "ready",
+        "values": {
+          "x": -178,
+          "y": 80.00000000000001,
+          "z": 1,
+          "rotation": 126.86989764584402,
+          "rotationX": 0,
+          "rotationY": 0
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {
+          "pose/right-leg-root": 2,
+          "pose/right-leg-solve": 2
+        },
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/right-leg-lower",
+        "revision": 2,
+        "status": "ready",
+        "values": {
+          "x": -118.00000000000003,
+          "y": 160.00000000000003,
+          "z": 1,
+          "rotation": 53.130102354156,
+          "rotationX": 0,
+          "rotationY": 0
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {
+          "pose/right-leg-solve": 2,
+          "pose/right-leg-upper": 2
+        },
+        "diagnostics": []
+      }
+    ]
+  },
+  {
+    "tMs": 40,
+    "writes": [
+      [
+        "pose/left-arm-root",
+        {
+          "x": 204,
+          "y": -400,
+          "z": 2
+        }
+      ],
+      [
+        "pose/left-arm-goal",
+        {
+          "x": 204,
+          "y": -240,
+          "z": 2
+        }
+      ],
+      [
+        "pose/left-arm-pole",
+        {
+          "x": 203.4,
+          "y": -399.2,
+          "z": 2
+        }
+      ],
+      [
+        "pose/right-arm-root",
+        {
+          "x": -196,
+          "y": -400,
+          "z": 2
+        }
+      ],
+      [
+        "pose/right-arm-goal",
+        {
+          "x": -196,
+          "y": -240,
+          "z": 2
+        }
+      ],
+      [
+        "pose/right-arm-pole",
+        {
+          "x": -195.4,
+          "y": -399.2,
+          "z": 2
+        }
+      ],
+      [
+        "pose/left-leg-root",
+        {
+          "x": 124,
+          "y": 0,
+          "z": 2
+        }
+      ],
+      [
+        "pose/left-leg-goal",
+        {
+          "x": 124,
+          "y": 160,
+          "z": 2
+        }
+      ],
+      [
+        "pose/left-leg-pole",
+        {
+          "x": 123.4,
+          "y": 0.8,
+          "z": 2
+        }
+      ],
+      [
+        "pose/right-leg-root",
+        {
+          "x": -116,
+          "y": 0,
+          "z": 2
+        }
+      ],
+      [
+        "pose/right-leg-goal",
+        {
+          "x": -116,
+          "y": 160,
+          "z": 2
+        }
+      ],
+      [
+        "pose/right-leg-pole",
+        {
+          "x": -115.4,
+          "y": 0.8,
+          "z": 2
+        }
+      ]
+    ],
+    "outcome": "Error: publication failed",
+    "patches": [
+      {
+        "nodeId": "pose/left-arm-root",
+        "revision": 2,
+        "status": "ready",
+        "values": {
+          "rotation": 0,
+          "rotationX": 0,
+          "rotationY": 0,
+          "x": 202,
+          "y": -400,
+          "z": 1
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {},
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/left-arm-goal",
+        "revision": 2,
+        "status": "ready",
+        "values": {
+          "rotation": 0,
+          "rotationX": 0,
+          "rotationY": 0,
+          "x": 202,
+          "y": -240,
+          "z": 1
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {},
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/left-arm-pole",
+        "revision": 2,
+        "status": "ready",
+        "values": {
+          "rotation": 0,
+          "rotationX": 0,
+          "rotationY": 0,
+          "x": 202.6,
+          "y": -399.2,
+          "z": 1
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {},
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/left-arm-solve",
+        "revision": 2,
+        "status": "ready",
+        "values": {
+          "rotations3d": {
+            "pose/left-arm-upper": {
+              "rotation": -126.86989764584402,
+              "rotationX": 0,
+              "rotationY": 180
+            },
+            "pose/left-arm-lower": {
+              "rotation": -73.73979529168804,
+              "rotationX": 0,
+              "rotationY": 0
+            }
+          }
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {
+          "pose/left-arm-goal": 2,
+          "pose/left-arm-pole": 2,
+          "pose/left-arm-root": 2
+        },
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/left-arm-upper",
+        "revision": 2,
+        "status": "ready",
+        "values": {
+          "x": 262,
+          "y": -320,
+          "z": 0.9999999999999878,
+          "rotation": -126.86989764584402,
+          "rotationX": 0,
+          "rotationY": 180
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {
+          "pose/left-arm-root": 2,
+          "pose/left-arm-solve": 2
+        },
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/left-arm-lower",
+        "revision": 2,
+        "status": "ready",
+        "values": {
+          "x": 202,
+          "y": -240,
+          "z": 0.9999999999999756,
+          "rotation": -53.13010235415597,
+          "rotationX": -6.7360409265934804e-15,
+          "rotationY": 180
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {
+          "pose/left-arm-solve": 2,
+          "pose/left-arm-upper": 2
+        },
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/right-arm-root",
+        "revision": 2,
+        "status": "ready",
+        "values": {
+          "rotation": 0,
+          "rotationX": 0,
+          "rotationY": 0,
+          "x": -198,
+          "y": -400,
+          "z": 1
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {},
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/right-arm-goal",
+        "revision": 2,
+        "status": "ready",
+        "values": {
+          "rotation": 0,
+          "rotationX": 0,
+          "rotationY": 0,
+          "x": -198,
+          "y": -240,
+          "z": 1
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {},
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/right-arm-pole",
+        "revision": 2,
+        "status": "ready",
+        "values": {
+          "rotation": 0,
+          "rotationX": 0,
+          "rotationY": 0,
+          "x": -198.57320189347536,
+          "y": -399.2,
+          "z": 1.1773121239968036
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {},
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/right-arm-solve",
+        "revision": 2,
+        "status": "ready",
+        "values": {
+          "rotations3d": {
+            "pose/right-arm-upper": {
+              "rotation": 128.13417183540452,
+              "rotationX": 13.675115580193479,
+              "rotationY": -10.514551323312531
+            },
+            "pose/right-arm-lower": {
+              "rotation": -73.73979529168803,
+              "rotationX": 0,
+              "rotationY": 1.5902773407317582e-15
+            }
+          }
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {
+          "pose/right-arm-goal": 2,
+          "pose/right-arm-pole": 2,
+          "pose/right-arm-root": 2
+        },
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/right-arm-upper",
+        "revision": 2,
+        "status": "ready",
+        "values": {
+          "x": -255.32018934753629,
+          "y": -320,
+          "z": 18.731212399680555,
+          "rotation": 128.13417183540452,
+          "rotationX": 13.675115580193479,
+          "rotationY": -10.514551323312535
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {
+          "pose/right-arm-root": 2,
+          "pose/right-arm-solve": 2
+        },
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/right-arm-lower",
+        "revision": 2,
+        "status": "ready",
+        "values": {
+          "x": -198,
+          "y": -240,
+          "z": 1.0000000000000107,
+          "rotation": 51.86582816459548,
+          "rotationX": 13.67511558019349,
+          "rotationY": 10.514551323312528
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {
+          "pose/right-arm-solve": 2,
+          "pose/right-arm-upper": 2
+        },
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/left-leg-root",
+        "revision": 2,
+        "status": "ready",
+        "values": {
+          "rotation": 0,
+          "rotationX": 0,
+          "rotationY": 0,
+          "x": 122,
+          "y": 0,
+          "z": 1
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {},
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/left-leg-goal",
+        "revision": 2,
+        "status": "ready",
+        "values": {
+          "rotation": 0,
+          "rotationX": 0,
+          "rotationY": 0,
+          "x": 122.00000000000001,
+          "y": 160,
+          "z": 1
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {},
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/left-leg-pole",
+        "revision": 2,
+        "status": "ready",
+        "values": {
+          "rotation": 0,
+          "rotationX": 0,
+          "rotationY": 0,
+          "x": 122.57320189347536,
+          "y": 0.8,
+          "z": 1.1773121239968036
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {},
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/left-leg-solve",
+        "revision": 2,
+        "status": "ready",
+        "values": {
+          "rotations3d": {
+            "pose/left-leg-upper": {
+              "rotation": -128.13417183540452,
+              "rotationX": 13.675115580193483,
+              "rotationY": -169.48544867668747
+            },
+            "pose/left-leg-lower": {
+              "rotation": -73.73979529168803,
+              "rotationX": 1.5902773407317584e-15,
+              "rotationY": 0
+            }
+          }
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {
+          "pose/left-leg-goal": 2,
+          "pose/left-leg-pole": 2,
+          "pose/left-leg-root": 2
+        },
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/left-leg-upper",
+        "revision": 2,
+        "status": "ready",
+        "values": {
+          "x": 179.32018934753629,
+          "y": 80.00000000000001,
+          "z": 18.73121239968056,
+          "rotation": -128.13417183540452,
+          "rotationX": 13.675115580193483,
+          "rotationY": -169.48544867668747
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {
+          "pose/left-leg-root": 2,
+          "pose/left-leg-solve": 2
+        },
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/left-leg-lower",
+        "revision": 2,
+        "status": "ready",
+        "values": {
+          "x": 122,
+          "y": 160,
+          "z": 1,
+          "rotation": -51.86582816459548,
+          "rotationX": 13.675115580193491,
+          "rotationY": 169.48544867668747
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {
+          "pose/left-leg-solve": 2,
+          "pose/left-leg-upper": 2
+        },
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/right-leg-root",
+        "revision": 2,
+        "status": "ready",
+        "values": {
+          "rotation": 0,
+          "rotationX": 0,
+          "rotationY": 0,
+          "x": -118,
+          "y": 0,
+          "z": 1
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {},
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/right-leg-goal",
+        "revision": 2,
+        "status": "ready",
+        "values": {
+          "rotation": 0,
+          "rotationX": 0,
+          "rotationY": 0,
+          "x": -118.00000000000001,
+          "y": 160,
+          "z": 1
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {},
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/right-leg-pole",
+        "revision": 2,
+        "status": "ready",
+        "values": {
+          "rotation": 0,
+          "rotationX": 0,
+          "rotationY": 0,
+          "x": -118.6,
+          "y": 0.8,
+          "z": 1
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {},
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/right-leg-solve",
+        "revision": 2,
+        "status": "ready",
+        "values": {
+          "rotations3d": {
+            "pose/right-leg-upper": {
+              "rotation": 126.86989764584402,
+              "rotationX": 0,
+              "rotationY": 0
+            },
+            "pose/right-leg-lower": {
+              "rotation": -73.73979529168803,
+              "rotationX": 0,
+              "rotationY": 0
+            }
+          }
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {
+          "pose/right-leg-goal": 2,
+          "pose/right-leg-pole": 2,
+          "pose/right-leg-root": 2
+        },
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/right-leg-upper",
+        "revision": 2,
+        "status": "ready",
+        "values": {
+          "x": -178,
+          "y": 80.00000000000001,
+          "z": 1,
+          "rotation": 126.86989764584402,
+          "rotationX": 0,
+          "rotationY": 0
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {
+          "pose/right-leg-root": 2,
+          "pose/right-leg-solve": 2
+        },
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/right-leg-lower",
+        "revision": 2,
+        "status": "ready",
+        "values": {
+          "x": -118.00000000000003,
+          "y": 160.00000000000003,
+          "z": 1,
+          "rotation": 53.130102354156,
+          "rotationX": 0,
+          "rotationY": 0
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {
+          "pose/right-leg-solve": 2,
+          "pose/right-leg-upper": 2
+        },
+        "diagnostics": []
+      }
+    ]
+  },
+  {
+    "tMs": 40,
+    "writes": [
+      [
+        "pose/left-arm-root",
+        {
+          "x": 204,
+          "y": -400,
+          "z": 2
+        }
+      ],
+      [
+        "pose/left-arm-goal",
+        {
+          "x": 204,
+          "y": -240,
+          "z": 2
+        }
+      ],
+      [
+        "pose/left-arm-pole",
+        {
+          "x": 203.4,
+          "y": -399.2,
+          "z": 2
+        }
+      ],
+      [
+        "pose/right-arm-root",
+        {
+          "x": -196,
+          "y": -400,
+          "z": 2
+        }
+      ],
+      [
+        "pose/right-arm-goal",
+        {
+          "x": -196,
+          "y": -240,
+          "z": 2
+        }
+      ],
+      [
+        "pose/right-arm-pole",
+        {
+          "x": -195.4,
+          "y": -399.2,
+          "z": 2
+        }
+      ],
+      [
+        "pose/left-leg-root",
+        {
+          "x": 124,
+          "y": 0,
+          "z": 2
+        }
+      ],
+      [
+        "pose/left-leg-goal",
+        {
+          "x": 124,
+          "y": 160,
+          "z": 2
+        }
+      ],
+      [
+        "pose/left-leg-pole",
+        {
+          "x": 123.4,
+          "y": 0.8,
+          "z": 2
+        }
+      ],
+      [
+        "pose/right-leg-root",
+        {
+          "x": -116,
+          "y": 0,
+          "z": 2
+        }
+      ],
+      [
+        "pose/right-leg-goal",
+        {
+          "x": -116,
+          "y": 160,
+          "z": 2
+        }
+      ],
+      [
+        "pose/right-leg-pole",
+        {
+          "x": -115.4,
+          "y": 0.8,
+          "z": 2
+        }
+      ]
+    ],
+    "outcome": {
+      "left-arm": {
+        "kind": "written"
+      },
+      "right-arm": {
+        "kind": "written"
+      },
+      "left-leg": {
+        "kind": "written"
+      },
+      "right-leg": {
+        "kind": "written"
+      }
+    },
+    "patches": [
+      {
+        "nodeId": "pose/left-arm-root",
+        "revision": 3,
+        "status": "ready",
+        "values": {
+          "rotation": 0,
+          "rotationX": 0,
+          "rotationY": 0,
+          "x": 204,
+          "y": -400,
+          "z": 2
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {},
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/left-arm-goal",
+        "revision": 3,
+        "status": "ready",
+        "values": {
+          "rotation": 0,
+          "rotationX": 0,
+          "rotationY": 0,
+          "x": 204,
+          "y": -240,
+          "z": 2
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {},
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/left-arm-pole",
+        "revision": 3,
+        "status": "ready",
+        "values": {
+          "rotation": 0,
+          "rotationX": 0,
+          "rotationY": 0,
+          "x": 203.4,
+          "y": -399.2,
+          "z": 2
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {},
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/left-arm-solve",
+        "revision": 3,
+        "status": "ready",
+        "values": {
+          "rotations3d": {
+            "pose/left-arm-upper": {
+              "rotation": 126.86989764584402,
+              "rotationX": 0,
+              "rotationY": 0
+            },
+            "pose/left-arm-lower": {
+              "rotation": -73.73979529168804,
+              "rotationX": 0,
+              "rotationY": 0
+            }
+          }
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {
+          "pose/left-arm-goal": 3,
+          "pose/left-arm-pole": 3,
+          "pose/left-arm-root": 3
+        },
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/left-arm-upper",
+        "revision": 3,
+        "status": "ready",
+        "values": {
+          "x": 144,
+          "y": -320,
+          "z": 2,
+          "rotation": 126.86989764584402,
+          "rotationX": 0,
+          "rotationY": 0
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {
+          "pose/left-arm-root": 3,
+          "pose/left-arm-solve": 3
+        },
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/left-arm-lower",
+        "revision": 3,
+        "status": "ready",
+        "values": {
+          "x": 204,
+          "y": -240,
+          "z": 2,
+          "rotation": 53.13010235415597,
+          "rotationX": 0,
+          "rotationY": 0
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {
+          "pose/left-arm-solve": 3,
+          "pose/left-arm-upper": 3
+        },
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/right-arm-root",
+        "revision": 3,
+        "status": "ready",
+        "values": {
+          "rotation": 0,
+          "rotationX": 0,
+          "rotationY": 0,
+          "x": -196,
+          "y": -400,
+          "z": 2
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {},
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/right-arm-goal",
+        "revision": 3,
+        "status": "ready",
+        "values": {
+          "rotation": 0,
+          "rotationX": 0,
+          "rotationY": 0,
+          "x": -196,
+          "y": -240,
+          "z": 2
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {},
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/right-arm-pole",
+        "revision": 3,
+        "status": "ready",
+        "values": {
+          "rotation": 0,
+          "rotationX": 0,
+          "rotationY": 0,
+          "x": -195.4,
+          "y": -399.2,
+          "z": 2
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {},
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/right-arm-solve",
+        "revision": 3,
+        "status": "ready",
+        "values": {
+          "rotations3d": {
+            "pose/right-arm-upper": {
+              "rotation": -126.86989764584402,
+              "rotationX": 0,
+              "rotationY": 180
+            },
+            "pose/right-arm-lower": {
+              "rotation": -73.73979529168804,
+              "rotationX": 0,
+              "rotationY": 0
+            }
+          }
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {
+          "pose/right-arm-goal": 3,
+          "pose/right-arm-pole": 3,
+          "pose/right-arm-root": 3
+        },
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/right-arm-upper",
+        "revision": 3,
+        "status": "ready",
+        "values": {
+          "x": -136,
+          "y": -320,
+          "z": 1.9999999999999878,
+          "rotation": -126.86989764584402,
+          "rotationX": 0,
+          "rotationY": 180
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {
+          "pose/right-arm-root": 3,
+          "pose/right-arm-solve": 3
+        },
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/right-arm-lower",
+        "revision": 3,
+        "status": "ready",
+        "values": {
+          "x": -196,
+          "y": -240,
+          "z": 1.9999999999999756,
+          "rotation": -53.13010235415597,
+          "rotationX": -6.7360409265934804e-15,
+          "rotationY": 180
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {
+          "pose/right-arm-solve": 3,
+          "pose/right-arm-upper": 3
+        },
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/left-leg-root",
+        "revision": 3,
+        "status": "ready",
+        "values": {
+          "rotation": 0,
+          "rotationX": 0,
+          "rotationY": 0,
+          "x": 124,
+          "y": 0,
+          "z": 2
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {},
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/left-leg-goal",
+        "revision": 3,
+        "status": "ready",
+        "values": {
+          "rotation": 0,
+          "rotationX": 0,
+          "rotationY": 0,
+          "x": 124,
+          "y": 160,
+          "z": 2
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {},
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/left-leg-pole",
+        "revision": 3,
+        "status": "ready",
+        "values": {
+          "rotation": 0,
+          "rotationX": 0,
+          "rotationY": 0,
+          "x": 123.4,
+          "y": 0.8,
+          "z": 2
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {},
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/left-leg-solve",
+        "revision": 3,
+        "status": "ready",
+        "values": {
+          "rotations3d": {
+            "pose/left-leg-upper": {
+              "rotation": 126.86989764584402,
+              "rotationX": 0,
+              "rotationY": 0
+            },
+            "pose/left-leg-lower": {
+              "rotation": -73.73979529168804,
+              "rotationX": 0,
+              "rotationY": 0
+            }
+          }
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {
+          "pose/left-leg-goal": 3,
+          "pose/left-leg-pole": 3,
+          "pose/left-leg-root": 3
+        },
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/left-leg-upper",
+        "revision": 3,
+        "status": "ready",
+        "values": {
+          "x": 64.00000000000001,
+          "y": 80.00000000000001,
+          "z": 2,
+          "rotation": 126.86989764584402,
+          "rotationX": 0,
+          "rotationY": 0
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {
+          "pose/left-leg-root": 3,
+          "pose/left-leg-solve": 3
+        },
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/left-leg-lower",
+        "revision": 3,
+        "status": "ready",
+        "values": {
+          "x": 124.00000000000003,
+          "y": 160,
+          "z": 2,
+          "rotation": 53.13010235415597,
+          "rotationX": 0,
+          "rotationY": 0
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {
+          "pose/left-leg-solve": 3,
+          "pose/left-leg-upper": 3
+        },
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/right-leg-root",
+        "revision": 3,
+        "status": "ready",
+        "values": {
+          "rotation": 0,
+          "rotationX": 0,
+          "rotationY": 0,
+          "x": -116,
+          "y": 0,
+          "z": 2
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {},
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/right-leg-goal",
+        "revision": 3,
+        "status": "ready",
+        "values": {
+          "rotation": 0,
+          "rotationX": 0,
+          "rotationY": 0,
+          "x": -116,
+          "y": 160,
+          "z": 2
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {},
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/right-leg-pole",
+        "revision": 3,
+        "status": "ready",
+        "values": {
+          "rotation": 0,
+          "rotationX": 0,
+          "rotationY": 0,
+          "x": -115.4,
+          "y": 0.8,
+          "z": 2
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {},
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/right-leg-solve",
+        "revision": 3,
+        "status": "ready",
+        "values": {
+          "rotations3d": {
+            "pose/right-leg-upper": {
+              "rotation": -126.86989764584402,
+              "rotationX": 0,
+              "rotationY": 180
+            },
+            "pose/right-leg-lower": {
+              "rotation": -73.73979529168804,
+              "rotationX": 0,
+              "rotationY": 0
+            }
+          }
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {
+          "pose/right-leg-goal": 3,
+          "pose/right-leg-pole": 3,
+          "pose/right-leg-root": 3
+        },
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/right-leg-upper",
+        "revision": 3,
+        "status": "ready",
+        "values": {
+          "x": -56.000000000000014,
+          "y": 80.00000000000001,
+          "z": 1.9999999999999878,
+          "rotation": -126.86989764584402,
+          "rotationX": 0,
+          "rotationY": 180
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {
+          "pose/right-leg-root": 3,
+          "pose/right-leg-solve": 3
+        },
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/right-leg-lower",
+        "revision": 3,
+        "status": "ready",
+        "values": {
+          "x": -116.00000000000003,
+          "y": 160,
+          "z": 1.9999999999999756,
+          "rotation": -53.13010235415597,
+          "rotationX": -6.7360409265934804e-15,
+          "rotationY": 180
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {
+          "pose/right-leg-solve": 3,
+          "pose/right-leg-upper": 3
+        },
+        "diagnostics": []
+      }
+    ]
+  },
+  {
+    "tMs": 60,
+    "writes": [
+      [
+        "pose/left-arm-root",
+        {
+          "x": 206,
+          "y": -400,
+          "z": 3
+        }
+      ],
+      [
+        "pose/left-arm-goal",
+        {
+          "x": 206,
+          "y": -240,
+          "z": 3
+        }
+      ],
+      [
+        "pose/left-arm-pole",
+        {
+          "x": 205.4,
+          "y": -399.2,
+          "z": 3
+        }
+      ],
+      [
+        "pose/right-arm-root",
+        {
+          "x": -194,
+          "y": -400,
+          "z": 3
+        }
+      ],
+      [
+        "pose/right-arm-goal",
+        {
+          "x": -194,
+          "y": -240,
+          "z": 3
+        }
+      ],
+      [
+        "pose/right-arm-pole",
+        {
+          "x": -193.4,
+          "y": -399.2,
+          "z": 3
+        }
+      ],
+      [
+        "pose/left-leg-root",
+        {
+          "x": 126,
+          "y": 0,
+          "z": 3
+        }
+      ],
+      [
+        "pose/left-leg-goal",
+        {
+          "x": 126,
+          "y": 160,
+          "z": 3
+        }
+      ],
+      [
+        "pose/left-leg-pole",
+        {
+          "x": 125.4,
+          "y": 0.8,
+          "z": 3
+        }
+      ],
+      [
+        "pose/right-leg-root",
+        {
+          "x": -114,
+          "y": 0,
+          "z": 3
+        }
+      ],
+      [
+        "pose/right-leg-goal",
+        {
+          "x": -114,
+          "y": 160,
+          "z": 3
+        }
+      ],
+      [
+        "pose/right-leg-pole",
+        {
+          "x": -113.4,
+          "y": 0.8,
+          "z": 3
+        }
+      ]
+    ],
+    "outcome": {
+      "left-arm": {
+        "kind": "written"
+      },
+      "right-arm": {
+        "kind": "written"
+      },
+      "left-leg": {
+        "kind": "written"
+      },
+      "right-leg": {
+        "kind": "written"
+      }
+    },
+    "patches": [
+      {
+        "nodeId": "pose/left-arm-root",
+        "revision": 4,
+        "status": "ready",
+        "values": {
+          "rotation": 0,
+          "rotationX": 0,
+          "rotationY": 0,
+          "x": 206,
+          "y": -400,
+          "z": 3
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {},
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/left-arm-goal",
+        "revision": 4,
+        "status": "ready",
+        "values": {
+          "rotation": 0,
+          "rotationX": 0,
+          "rotationY": 0,
+          "x": 206,
+          "y": -240,
+          "z": 3
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {},
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/left-arm-pole",
+        "revision": 4,
+        "status": "ready",
+        "values": {
+          "rotation": 0,
+          "rotationX": 0,
+          "rotationY": 0,
+          "x": 205.4,
+          "y": -399.2,
+          "z": 3
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {},
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/left-arm-solve",
+        "revision": 4,
+        "status": "ready",
+        "values": {
+          "rotations3d": {
+            "pose/left-arm-upper": {
+              "rotation": 126.86989764584402,
+              "rotationX": 0,
+              "rotationY": 0
+            },
+            "pose/left-arm-lower": {
+              "rotation": -73.73979529168804,
+              "rotationX": 0,
+              "rotationY": 0
+            }
+          }
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {
+          "pose/left-arm-goal": 4,
+          "pose/left-arm-pole": 4,
+          "pose/left-arm-root": 4
+        },
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/left-arm-upper",
+        "revision": 4,
+        "status": "ready",
+        "values": {
+          "x": 146,
+          "y": -320,
+          "z": 3,
+          "rotation": 126.86989764584402,
+          "rotationX": 0,
+          "rotationY": 0
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {
+          "pose/left-arm-root": 4,
+          "pose/left-arm-solve": 4
+        },
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/left-arm-lower",
+        "revision": 4,
+        "status": "ready",
+        "values": {
+          "x": 206,
+          "y": -240,
+          "z": 3,
+          "rotation": 53.13010235415597,
+          "rotationX": 0,
+          "rotationY": 0
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {
+          "pose/left-arm-solve": 4,
+          "pose/left-arm-upper": 4
+        },
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/right-arm-root",
+        "revision": 4,
+        "status": "ready",
+        "values": {
+          "rotation": 0,
+          "rotationX": 0,
+          "rotationY": 0,
+          "x": -194,
+          "y": -400,
+          "z": 3
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {},
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/right-arm-goal",
+        "revision": 4,
+        "status": "ready",
+        "values": {
+          "rotation": 0,
+          "rotationX": 0,
+          "rotationY": 0,
+          "x": -194,
+          "y": -240,
+          "z": 3
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {},
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/right-arm-pole",
+        "revision": 4,
+        "status": "ready",
+        "values": {
+          "rotation": 0,
+          "rotationX": 0,
+          "rotationY": 0,
+          "x": -193.4,
+          "y": -399.2,
+          "z": 3
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {},
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/right-arm-solve",
+        "revision": 4,
+        "status": "ready",
+        "values": {
+          "rotations3d": {
+            "pose/right-arm-upper": {
+              "rotation": -126.86989764584402,
+              "rotationX": 0,
+              "rotationY": 180
+            },
+            "pose/right-arm-lower": {
+              "rotation": -73.73979529168804,
+              "rotationX": 0,
+              "rotationY": 0
+            }
+          }
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {
+          "pose/right-arm-goal": 4,
+          "pose/right-arm-pole": 4,
+          "pose/right-arm-root": 4
+        },
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/right-arm-upper",
+        "revision": 4,
+        "status": "ready",
+        "values": {
+          "x": -134,
+          "y": -320,
+          "z": 2.9999999999999876,
+          "rotation": -126.86989764584402,
+          "rotationX": 0,
+          "rotationY": 180
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {
+          "pose/right-arm-root": 4,
+          "pose/right-arm-solve": 4
+        },
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/right-arm-lower",
+        "revision": 4,
+        "status": "ready",
+        "values": {
+          "x": -194,
+          "y": -240,
+          "z": 2.999999999999975,
+          "rotation": -53.13010235415597,
+          "rotationX": -6.7360409265934804e-15,
+          "rotationY": 180
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {
+          "pose/right-arm-solve": 4,
+          "pose/right-arm-upper": 4
+        },
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/left-leg-root",
+        "revision": 4,
+        "status": "ready",
+        "values": {
+          "rotation": 0,
+          "rotationX": 0,
+          "rotationY": 0,
+          "x": 126,
+          "y": 0,
+          "z": 3
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {},
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/left-leg-goal",
+        "revision": 4,
+        "status": "ready",
+        "values": {
+          "rotation": 0,
+          "rotationX": 0,
+          "rotationY": 0,
+          "x": 126,
+          "y": 160,
+          "z": 3
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {},
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/left-leg-pole",
+        "revision": 4,
+        "status": "ready",
+        "values": {
+          "rotation": 0,
+          "rotationX": 0,
+          "rotationY": 0,
+          "x": 125.4,
+          "y": 0.8,
+          "z": 3
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {},
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/left-leg-solve",
+        "revision": 4,
+        "status": "ready",
+        "values": {
+          "rotations3d": {
+            "pose/left-leg-upper": {
+              "rotation": 126.86989764584402,
+              "rotationX": 0,
+              "rotationY": 0
+            },
+            "pose/left-leg-lower": {
+              "rotation": -73.73979529168804,
+              "rotationX": 0,
+              "rotationY": 0
+            }
+          }
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {
+          "pose/left-leg-goal": 4,
+          "pose/left-leg-pole": 4,
+          "pose/left-leg-root": 4
+        },
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/left-leg-upper",
+        "revision": 4,
+        "status": "ready",
+        "values": {
+          "x": 66.00000000000001,
+          "y": 80.00000000000001,
+          "z": 3,
+          "rotation": 126.86989764584402,
+          "rotationX": 0,
+          "rotationY": 0
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {
+          "pose/left-leg-root": 4,
+          "pose/left-leg-solve": 4
+        },
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/left-leg-lower",
+        "revision": 4,
+        "status": "ready",
+        "values": {
+          "x": 126.00000000000003,
+          "y": 160,
+          "z": 3,
+          "rotation": 53.13010235415597,
+          "rotationX": 0,
+          "rotationY": 0
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {
+          "pose/left-leg-solve": 4,
+          "pose/left-leg-upper": 4
+        },
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/right-leg-root",
+        "revision": 4,
+        "status": "ready",
+        "values": {
+          "rotation": 0,
+          "rotationX": 0,
+          "rotationY": 0,
+          "x": -114,
+          "y": 0,
+          "z": 3
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {},
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/right-leg-goal",
+        "revision": 4,
+        "status": "ready",
+        "values": {
+          "rotation": 0,
+          "rotationX": 0,
+          "rotationY": 0,
+          "x": -114,
+          "y": 160,
+          "z": 3
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {},
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/right-leg-pole",
+        "revision": 4,
+        "status": "ready",
+        "values": {
+          "rotation": 0,
+          "rotationX": 0,
+          "rotationY": 0,
+          "x": -113.4,
+          "y": 0.8,
+          "z": 3
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {},
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/right-leg-solve",
+        "revision": 4,
+        "status": "ready",
+        "values": {
+          "rotations3d": {
+            "pose/right-leg-upper": {
+              "rotation": -126.86989764584402,
+              "rotationX": 0,
+              "rotationY": 180
+            },
+            "pose/right-leg-lower": {
+              "rotation": -73.73979529168804,
+              "rotationX": 0,
+              "rotationY": 0
+            }
+          }
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {
+          "pose/right-leg-goal": 4,
+          "pose/right-leg-pole": 4,
+          "pose/right-leg-root": 4
+        },
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/right-leg-upper",
+        "revision": 4,
+        "status": "ready",
+        "values": {
+          "x": -54.000000000000014,
+          "y": 80.00000000000001,
+          "z": 2.9999999999999876,
+          "rotation": -126.86989764584402,
+          "rotationX": 0,
+          "rotationY": 180
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {
+          "pose/right-leg-root": 4,
+          "pose/right-leg-solve": 4
+        },
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/right-leg-lower",
+        "revision": 4,
+        "status": "ready",
+        "values": {
+          "x": -114.00000000000003,
+          "y": 160,
+          "z": 2.999999999999975,
+          "rotation": -53.13010235415597,
+          "rotationX": -6.7360409265934804e-15,
+          "rotationY": 180
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {
+          "pose/right-leg-solve": 4,
+          "pose/right-leg-upper": 4
+        },
+        "diagnostics": []
+      }
+    ]
+  },
+  {
+    "tMs": 600,
+    "writes": [
+      [
+        "pose/left-arm-root",
+        {
+          "x": 206,
+          "y": -400,
+          "z": 3
+        }
+      ],
+      [
+        "pose/left-arm-goal",
+        {
+          "x": 206,
+          "y": -240,
+          "z": 3
+        }
+      ],
+      [
+        "pose/right-arm-root",
+        {
+          "x": -140,
+          "y": -400,
+          "z": 30
+        }
+      ],
+      [
+        "pose/right-arm-goal",
+        {
+          "x": -140,
+          "y": -240,
+          "z": 30
+        }
+      ],
+      [
+        "pose/right-arm-pole",
+        {
+          "x": -140.6,
+          "y": -399.2,
+          "z": 30
+        }
+      ],
+      [
+        "pose/left-leg-root",
+        {
+          "x": 180,
+          "y": 0,
+          "z": 30
+        }
+      ],
+      [
+        "pose/left-leg-goal",
+        {
+          "x": 180,
+          "y": 160,
+          "z": 30
+        }
+      ],
+      [
+        "pose/left-leg-pole",
+        {
+          "x": 180.6,
+          "y": 0.8,
+          "z": 30
+        }
+      ],
+      [
+        "pose/right-leg-root",
+        {
+          "x": -114,
+          "y": 0,
+          "z": 3
+        }
+      ],
+      [
+        "pose/right-leg-goal",
+        {
+          "x": -114,
+          "y": 160,
+          "z": 3
+        }
+      ]
+    ],
+    "outcome": {
+      "left-arm": {
+        "kind": "written"
+      },
+      "right-arm": {
+        "kind": "written"
+      },
+      "left-leg": {
+        "kind": "written"
+      },
+      "right-leg": {
+        "kind": "written"
+      }
+    },
+    "patches": [
+      {
+        "nodeId": "pose/left-arm-root",
+        "revision": 4,
+        "status": "ready",
+        "values": {
+          "rotation": 0,
+          "rotationX": 0,
+          "rotationY": 0,
+          "x": 206,
+          "y": -400,
+          "z": 3
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {},
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/left-arm-goal",
+        "revision": 4,
+        "status": "ready",
+        "values": {
+          "rotation": 0,
+          "rotationX": 0,
+          "rotationY": 0,
+          "x": 206,
+          "y": -240,
+          "z": 3
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {},
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/left-arm-pole",
+        "revision": 4,
+        "status": "ready",
+        "values": {
+          "rotation": 0,
+          "rotationX": 0,
+          "rotationY": 0,
+          "x": 205.4,
+          "y": -399.2,
+          "z": 3
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {},
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/left-arm-solve",
+        "revision": 4,
+        "status": "ready",
+        "values": {
+          "rotations3d": {
+            "pose/left-arm-upper": {
+              "rotation": 126.86989764584402,
+              "rotationX": 0,
+              "rotationY": 0
+            },
+            "pose/left-arm-lower": {
+              "rotation": -73.73979529168804,
+              "rotationX": 0,
+              "rotationY": 0
+            }
+          }
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {
+          "pose/left-arm-goal": 4,
+          "pose/left-arm-pole": 4,
+          "pose/left-arm-root": 4
+        },
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/left-arm-upper",
+        "revision": 4,
+        "status": "ready",
+        "values": {
+          "x": 146,
+          "y": -320,
+          "z": 3,
+          "rotation": 126.86989764584402,
+          "rotationX": 0,
+          "rotationY": 0
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {
+          "pose/left-arm-root": 4,
+          "pose/left-arm-solve": 4
+        },
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/left-arm-lower",
+        "revision": 4,
+        "status": "ready",
+        "values": {
+          "x": 206,
+          "y": -240,
+          "z": 3,
+          "rotation": 53.13010235415597,
+          "rotationX": 0,
+          "rotationY": 0
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {
+          "pose/left-arm-solve": 4,
+          "pose/left-arm-upper": 4
+        },
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/right-arm-root",
+        "revision": 5,
+        "status": "ready",
+        "values": {
+          "rotation": 0,
+          "rotationX": 0,
+          "rotationY": 0,
+          "x": -140,
+          "y": -400,
+          "z": 30
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {},
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/right-arm-goal",
+        "revision": 5,
+        "status": "ready",
+        "values": {
+          "rotation": 0,
+          "rotationX": 0,
+          "rotationY": 0,
+          "x": -140,
+          "y": -240,
+          "z": 30
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {},
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/right-arm-pole",
+        "revision": 5,
+        "status": "ready",
+        "values": {
+          "rotation": 0,
+          "rotationX": 0,
+          "rotationY": 0,
+          "x": -140.6,
+          "y": -399.2,
+          "z": 30
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {},
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/right-arm-solve",
+        "revision": 5,
+        "status": "ready",
+        "values": {
+          "rotations3d": {
+            "pose/right-arm-upper": {
+              "rotation": 126.86989764584402,
+              "rotationX": 0,
+              "rotationY": 0
+            },
+            "pose/right-arm-lower": {
+              "rotation": -73.73979529168804,
+              "rotationX": 0,
+              "rotationY": 0
+            }
+          }
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {
+          "pose/right-arm-goal": 5,
+          "pose/right-arm-pole": 5,
+          "pose/right-arm-root": 5
+        },
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/right-arm-upper",
+        "revision": 5,
+        "status": "ready",
+        "values": {
+          "x": -200,
+          "y": -320,
+          "z": 30,
+          "rotation": 126.86989764584402,
+          "rotationX": 0,
+          "rotationY": 0
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {
+          "pose/right-arm-root": 5,
+          "pose/right-arm-solve": 5
+        },
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/right-arm-lower",
+        "revision": 5,
+        "status": "ready",
+        "values": {
+          "x": -140,
+          "y": -240,
+          "z": 30,
+          "rotation": 53.13010235415597,
+          "rotationX": 0,
+          "rotationY": 0
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {
+          "pose/right-arm-solve": 5,
+          "pose/right-arm-upper": 5
+        },
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/left-leg-root",
+        "revision": 5,
+        "status": "ready",
+        "values": {
+          "rotation": 0,
+          "rotationX": 0,
+          "rotationY": 0,
+          "x": 180,
+          "y": 0,
+          "z": 30
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {},
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/left-leg-goal",
+        "revision": 5,
+        "status": "ready",
+        "values": {
+          "rotation": 0,
+          "rotationX": 0,
+          "rotationY": 0,
+          "x": 180,
+          "y": 160,
+          "z": 30
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {},
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/left-leg-pole",
+        "revision": 5,
+        "status": "ready",
+        "values": {
+          "rotation": 0,
+          "rotationX": 0,
+          "rotationY": 0,
+          "x": 180.6,
+          "y": 0.8,
+          "z": 30
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {},
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/left-leg-solve",
+        "revision": 5,
+        "status": "ready",
+        "values": {
+          "rotations3d": {
+            "pose/left-leg-upper": {
+              "rotation": -126.86989764584402,
+              "rotationX": 0,
+              "rotationY": 180
+            },
+            "pose/left-leg-lower": {
+              "rotation": -73.73979529168804,
+              "rotationX": 0,
+              "rotationY": 0
+            }
+          }
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {
+          "pose/left-leg-goal": 5,
+          "pose/left-leg-pole": 5,
+          "pose/left-leg-root": 5
+        },
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/left-leg-upper",
+        "revision": 5,
+        "status": "ready",
+        "values": {
+          "x": 240,
+          "y": 80.00000000000001,
+          "z": 29.99999999999999,
+          "rotation": -126.86989764584402,
+          "rotationX": 0,
+          "rotationY": 180
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {
+          "pose/left-leg-root": 5,
+          "pose/left-leg-solve": 5
+        },
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/left-leg-lower",
+        "revision": 5,
+        "status": "ready",
+        "values": {
+          "x": 180,
+          "y": 160,
+          "z": 29.99999999999998,
+          "rotation": -53.13010235415597,
+          "rotationX": -6.7360409265934804e-15,
+          "rotationY": 180
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {
+          "pose/left-leg-solve": 5,
+          "pose/left-leg-upper": 5
+        },
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/right-leg-root",
+        "revision": 4,
+        "status": "ready",
+        "values": {
+          "rotation": 0,
+          "rotationX": 0,
+          "rotationY": 0,
+          "x": -114,
+          "y": 0,
+          "z": 3
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {},
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/right-leg-goal",
+        "revision": 4,
+        "status": "ready",
+        "values": {
+          "rotation": 0,
+          "rotationX": 0,
+          "rotationY": 0,
+          "x": -114,
+          "y": 160,
+          "z": 3
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {},
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/right-leg-pole",
+        "revision": 4,
+        "status": "ready",
+        "values": {
+          "rotation": 0,
+          "rotationX": 0,
+          "rotationY": 0,
+          "x": -113.4,
+          "y": 0.8,
+          "z": 3
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {},
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/right-leg-solve",
+        "revision": 4,
+        "status": "ready",
+        "values": {
+          "rotations3d": {
+            "pose/right-leg-upper": {
+              "rotation": -126.86989764584402,
+              "rotationX": 0,
+              "rotationY": 180
+            },
+            "pose/right-leg-lower": {
+              "rotation": -73.73979529168804,
+              "rotationX": 0,
+              "rotationY": 0
+            }
+          }
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {
+          "pose/right-leg-goal": 4,
+          "pose/right-leg-pole": 4,
+          "pose/right-leg-root": 4
+        },
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/right-leg-upper",
+        "revision": 4,
+        "status": "ready",
+        "values": {
+          "x": -54.000000000000014,
+          "y": 80.00000000000001,
+          "z": 2.9999999999999876,
+          "rotation": -126.86989764584402,
+          "rotationX": 0,
+          "rotationY": 180
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {
+          "pose/right-leg-root": 4,
+          "pose/right-leg-solve": 4
+        },
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/right-leg-lower",
+        "revision": 4,
+        "status": "ready",
+        "values": {
+          "x": -114.00000000000003,
+          "y": 160,
+          "z": 2.999999999999975,
+          "rotation": -53.13010235415597,
+          "rotationX": -6.7360409265934804e-15,
+          "rotationY": 180
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {
+          "pose/right-leg-solve": 4,
+          "pose/right-leg-upper": 4
+        },
+        "diagnostics": []
+      }
+    ]
+  },
+  {
+    "tMs": 700,
+    "writes": [
+      [
+        "pose/left-arm-root",
+        {
+          "x": 270,
+          "y": -400,
+          "z": 35
+        }
+      ],
+      [
+        "pose/left-arm-goal",
+        {
+          "x": 270,
+          "y": -240,
+          "z": 35
+        }
+      ],
+      [
+        "pose/left-arm-pole",
+        {
+          "x": 270.6,
+          "y": -399.2,
+          "z": 35
+        }
+      ],
+      [
+        "pose/right-arm-root",
+        {
+          "x": -130,
+          "y": -400,
+          "z": 35
+        }
+      ],
+      [
+        "pose/right-arm-goal",
+        {
+          "x": -130,
+          "y": -240,
+          "z": 35
+        }
+      ],
+      [
+        "pose/right-arm-pole",
+        {
+          "x": -130.6,
+          "y": -399.2,
+          "z": 35
+        }
+      ],
+      [
+        "pose/left-leg-root",
+        {
+          "x": 190,
+          "y": 0,
+          "z": 35
+        }
+      ],
+      [
+        "pose/left-leg-goal",
+        {
+          "x": 190,
+          "y": 160,
+          "z": 35
+        }
+      ],
+      [
+        "pose/left-leg-pole",
+        {
+          "x": 190.6,
+          "y": 0.8,
+          "z": 35
+        }
+      ],
+      [
+        "pose/right-leg-root",
+        {
+          "x": -50,
+          "y": 0,
+          "z": 35
+        }
+      ],
+      [
+        "pose/right-leg-goal",
+        {
+          "x": -50,
+          "y": 160,
+          "z": 35
+        }
+      ],
+      [
+        "pose/right-leg-pole",
+        {
+          "x": -50.6,
+          "y": 0.8,
+          "z": 35
+        }
+      ]
+    ],
+    "outcome": {
+      "left-arm": {
+        "kind": "written"
+      },
+      "right-arm": {
+        "kind": "written"
+      },
+      "left-leg": {
+        "kind": "written"
+      },
+      "right-leg": {
+        "kind": "written"
+      }
+    },
+    "patches": [
+      {
+        "nodeId": "pose/left-arm-root",
+        "revision": 5,
+        "status": "ready",
+        "values": {
+          "rotation": 0,
+          "rotationX": 0,
+          "rotationY": 0,
+          "x": 270,
+          "y": -400,
+          "z": 35
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {},
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/left-arm-goal",
+        "revision": 5,
+        "status": "ready",
+        "values": {
+          "rotation": 0,
+          "rotationX": 0,
+          "rotationY": 0,
+          "x": 270,
+          "y": -240,
+          "z": 35
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {},
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/left-arm-pole",
+        "revision": 5,
+        "status": "ready",
+        "values": {
+          "rotation": 0,
+          "rotationX": 0,
+          "rotationY": 0,
+          "x": 270.6,
+          "y": -399.2,
+          "z": 35
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {},
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/left-arm-solve",
+        "revision": 5,
+        "status": "ready",
+        "values": {
+          "rotations3d": {
+            "pose/left-arm-upper": {
+              "rotation": -126.86989764584402,
+              "rotationX": 0,
+              "rotationY": 180
+            },
+            "pose/left-arm-lower": {
+              "rotation": -73.73979529168804,
+              "rotationX": 0,
+              "rotationY": 0
+            }
+          }
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {
+          "pose/left-arm-goal": 5,
+          "pose/left-arm-pole": 5,
+          "pose/left-arm-root": 5
+        },
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/left-arm-upper",
+        "revision": 5,
+        "status": "ready",
+        "values": {
+          "x": 330,
+          "y": -320,
+          "z": 34.999999999999986,
+          "rotation": -126.86989764584402,
+          "rotationX": 0,
+          "rotationY": 180
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {
+          "pose/left-arm-root": 5,
+          "pose/left-arm-solve": 5
+        },
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/left-arm-lower",
+        "revision": 5,
+        "status": "ready",
+        "values": {
+          "x": 270,
+          "y": -240,
+          "z": 34.99999999999997,
+          "rotation": -53.13010235415597,
+          "rotationX": -6.7360409265934804e-15,
+          "rotationY": 180
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {
+          "pose/left-arm-solve": 5,
+          "pose/left-arm-upper": 5
+        },
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/right-arm-root",
+        "revision": 6,
+        "status": "ready",
+        "values": {
+          "rotation": 0,
+          "rotationX": 0,
+          "rotationY": 0,
+          "x": -130,
+          "y": -400,
+          "z": 35
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {},
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/right-arm-goal",
+        "revision": 6,
+        "status": "ready",
+        "values": {
+          "rotation": 0,
+          "rotationX": 0,
+          "rotationY": 0,
+          "x": -130,
+          "y": -240,
+          "z": 35
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {},
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/right-arm-pole",
+        "revision": 6,
+        "status": "ready",
+        "values": {
+          "rotation": 0,
+          "rotationX": 0,
+          "rotationY": 0,
+          "x": -130.6,
+          "y": -399.2,
+          "z": 35
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {},
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/right-arm-solve",
+        "revision": 6,
+        "status": "ready",
+        "values": {
+          "rotations3d": {
+            "pose/right-arm-upper": {
+              "rotation": 126.86989764584402,
+              "rotationX": 0,
+              "rotationY": 0
+            },
+            "pose/right-arm-lower": {
+              "rotation": -73.73979529168804,
+              "rotationX": 0,
+              "rotationY": 0
+            }
+          }
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {
+          "pose/right-arm-goal": 6,
+          "pose/right-arm-pole": 6,
+          "pose/right-arm-root": 6
+        },
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/right-arm-upper",
+        "revision": 6,
+        "status": "ready",
+        "values": {
+          "x": -190,
+          "y": -320,
+          "z": 35,
+          "rotation": 126.86989764584402,
+          "rotationX": 0,
+          "rotationY": 0
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {
+          "pose/right-arm-root": 6,
+          "pose/right-arm-solve": 6
+        },
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/right-arm-lower",
+        "revision": 6,
+        "status": "ready",
+        "values": {
+          "x": -130,
+          "y": -240,
+          "z": 35,
+          "rotation": 53.13010235415597,
+          "rotationX": 0,
+          "rotationY": 0
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {
+          "pose/right-arm-solve": 6,
+          "pose/right-arm-upper": 6
+        },
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/left-leg-root",
+        "revision": 6,
+        "status": "ready",
+        "values": {
+          "rotation": 0,
+          "rotationX": 0,
+          "rotationY": 0,
+          "x": 190,
+          "y": 0,
+          "z": 35
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {},
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/left-leg-goal",
+        "revision": 6,
+        "status": "ready",
+        "values": {
+          "rotation": 0,
+          "rotationX": 0,
+          "rotationY": 0,
+          "x": 190,
+          "y": 160,
+          "z": 35
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {},
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/left-leg-pole",
+        "revision": 6,
+        "status": "ready",
+        "values": {
+          "rotation": 0,
+          "rotationX": 0,
+          "rotationY": 0,
+          "x": 190.6,
+          "y": 0.8,
+          "z": 35
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {},
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/left-leg-solve",
+        "revision": 6,
+        "status": "ready",
+        "values": {
+          "rotations3d": {
+            "pose/left-leg-upper": {
+              "rotation": -126.86989764584402,
+              "rotationX": 0,
+              "rotationY": 180
+            },
+            "pose/left-leg-lower": {
+              "rotation": -73.73979529168804,
+              "rotationX": 0,
+              "rotationY": 0
+            }
+          }
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {
+          "pose/left-leg-goal": 6,
+          "pose/left-leg-pole": 6,
+          "pose/left-leg-root": 6
+        },
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/left-leg-upper",
+        "revision": 6,
+        "status": "ready",
+        "values": {
+          "x": 250,
+          "y": 80.00000000000001,
+          "z": 34.999999999999986,
+          "rotation": -126.86989764584402,
+          "rotationX": 0,
+          "rotationY": 180
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {
+          "pose/left-leg-root": 6,
+          "pose/left-leg-solve": 6
+        },
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/left-leg-lower",
+        "revision": 6,
+        "status": "ready",
+        "values": {
+          "x": 190,
+          "y": 160,
+          "z": 34.99999999999997,
+          "rotation": -53.13010235415597,
+          "rotationX": -6.7360409265934804e-15,
+          "rotationY": 180
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {
+          "pose/left-leg-solve": 6,
+          "pose/left-leg-upper": 6
+        },
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/right-leg-root",
+        "revision": 5,
+        "status": "ready",
+        "values": {
+          "rotation": 0,
+          "rotationX": 0,
+          "rotationY": 0,
+          "x": -50,
+          "y": 0,
+          "z": 35
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {},
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/right-leg-goal",
+        "revision": 5,
+        "status": "ready",
+        "values": {
+          "rotation": 0,
+          "rotationX": 0,
+          "rotationY": 0,
+          "x": -50,
+          "y": 160,
+          "z": 35
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {},
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/right-leg-pole",
+        "revision": 5,
+        "status": "ready",
+        "values": {
+          "rotation": 0,
+          "rotationX": 0,
+          "rotationY": 0,
+          "x": -50.6,
+          "y": 0.8,
+          "z": 35
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {},
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/right-leg-solve",
+        "revision": 5,
+        "status": "ready",
+        "values": {
+          "rotations3d": {
+            "pose/right-leg-upper": {
+              "rotation": 126.86989764584402,
+              "rotationX": 0,
+              "rotationY": 0
+            },
+            "pose/right-leg-lower": {
+              "rotation": -73.73979529168804,
+              "rotationX": 0,
+              "rotationY": 0
+            }
+          }
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {
+          "pose/right-leg-goal": 5,
+          "pose/right-leg-pole": 5,
+          "pose/right-leg-root": 5
+        },
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/right-leg-upper",
+        "revision": 5,
+        "status": "ready",
+        "values": {
+          "x": -109.99999999999999,
+          "y": 80.00000000000001,
+          "z": 35,
+          "rotation": 126.86989764584402,
+          "rotationX": 0,
+          "rotationY": 0
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {
+          "pose/right-leg-root": 5,
+          "pose/right-leg-solve": 5
+        },
+        "diagnostics": []
+      },
+      {
+        "nodeId": "pose/right-leg-lower",
+        "revision": 5,
+        "status": "ready",
+        "values": {
+          "x": -49.99999999999998,
+          "y": 160,
+          "z": 35,
+          "rotation": 53.13010235415597,
+          "rotationX": 0,
+          "rotationY": 0
+        },
+        "sourceProgress": 0,
+        "sourceRevisions": {
+          "pose/right-leg-solve": 5,
+          "pose/right-leg-upper": 5
+        },
+        "diagnostics": []
+      }
+    ]
+  },
+  {
+    "outcome": {
+      "left-arm": {
+        "kind": "skipped",
+        "reason": "root-lost"
+      },
+      "right-arm": {
+        "kind": "skipped",
+        "reason": "root-lost"
+      },
+      "left-leg": {
+        "kind": "skipped",
+        "reason": "root-lost"
+      },
+      "right-leg": {
+        "kind": "skipped",
+        "reason": "root-lost"
+      }
+    },
+    "addedBatches": 0
+  },
+  {
+    "outcome": {
+      "left-arm": {
+        "kind": "skipped",
+        "reason": "length-unknown"
+      },
+      "right-arm": {
+        "kind": "skipped",
+        "reason": "length-unknown"
+      },
+      "left-leg": {
+        "kind": "skipped",
+        "reason": "length-unknown"
+      },
+      "right-leg": {
+        "kind": "skipped",
+        "reason": "length-unknown"
+      }
+    }
+  }
+]

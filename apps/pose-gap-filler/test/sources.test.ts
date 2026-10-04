@@ -144,12 +144,13 @@ describe("landmark sources (#540)", () => {
     const frames = manualFrames();
     for (const spec of SOURCE_SPECS) {
       // Creating any source, the camera's included, acquires nothing.
+      if (spec.kind === "simulator") continue;
       const source = createLandmarkSource(spec, {
         video: NO_VIDEO,
         webcam: FORBIDDEN_WEBCAM,
         frames: frames.ports,
       });
-      if (spec.kind === "camera") continue;
+      if (spec.kind !== "synthetic") continue;
       const { samples, onSample } = collect();
       void source.start(onSample);
       frames.advance(STEP * 10);
@@ -168,9 +169,9 @@ describe("landmark sources (#540)", () => {
   it("GF-84 lists every source once, and each committed take loops without a seam in the pose", () => {
     const ids = SOURCE_SPECS.map(sourceId);
     expect(new Set(ids).size).toBe(ids.length);
-    expect(ids).toEqual(["synthetic-exercise", "synthetic-still", "camera"]);
+    expect(ids).toEqual(["simulator", "synthetic-exercise", "synthetic-still", "camera"]);
     const kinds = new Set(SOURCE_SPECS.map((spec: SourceSpec) => spec.kind));
-    expect(kinds).toEqual(new Set(["camera", "synthetic"]));
+    expect(kinds).toEqual(new Set(["camera", "synthetic", "simulator"]));
     for (const spec of SOURCE_SPECS) expect(sourceLabel(spec).length).toBeGreaterThan(0);
     for (const take of Object.values(SYNTHETIC_TAKES)) {
       expect(loopPeriod(createSyntheticRecording(take))).toBeCloseTo(take.durationMs, 9);
