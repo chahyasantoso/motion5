@@ -221,12 +221,12 @@ export function readAxisComponent(value: unknown): number | undefined {
 /**
  * One authored 3D joint limit, classified, each refusal arm naming what its diagnostic cites.
  *
- * `valid` carries the kind only: the runtime reader in `plugins/ik3d-constraint.ts` owns the numbers
- * it solves with, and the load rules need nothing else from an accepted limit. `malformed-kind` is a
- * `joint` that is not one static kind name; `malformed` a bound outside its domain or not static;
- * `missing` a `maxSwing` a cone or swing-twist cannot do without; `zero-axis` an authored hinge axis
- * with no direction; `unused` a bound key the declared kind does not read, including every bound on
- * a member that declared no joint or `free`; `empty` an inverted range.
+ * `valid` carries the kind only: the runtime reader in `packages/plugins/src/ik3d-constraint.ts`
+ * owns the numbers it solves with, and the load rules need nothing else from an accepted limit.
+ * `malformed-kind` is a `joint` that is not one static kind name; `malformed` a bound outside its
+ * domain or not static; `missing` a `maxSwing` a cone or swing-twist cannot do without; `zero-axis`
+ * an authored hinge axis with no direction; `unused` a bound key the declared kind does not read,
+ * including every bound on a member that declared no joint or `free`; `empty` an inverted range.
  */
 export type JointAuthored =
   | { readonly kind: "valid"; readonly joint: JointKind }

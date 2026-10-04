@@ -130,10 +130,10 @@ export function acceptsChain(
  * accepts, a constrained two-member chain among them, because the runtime sends any chain with a
  * constraining joint to 3D FABRIK before it looks for a pair (ADR-123). `any` shapes answer
  * `iterative` too: the 2D solve reads no member rest orientation on either of its paths, so the one
- * question this is asked for has the same answer there. It restates at load, from depths alone,
- * the runtime proof `plugins/ik-topology.ts`'s `twoBonePair` makes from ids and goals, because the
- * graph holds no plugin and a plugin holds no graph; `TH-76` holds the two readings equal over
- * every derived shape up to five members, constrained and not.
+ * question this is asked for has the same answer there. It restates at load, from depths alone, the
+ * runtime proof `packages/plugins/src/ik-topology.ts`'s `twoBonePair` makes from ids and goals,
+ * because the graph holds no plugin and a plugin holds no graph; `TH-76` holds the two readings
+ * equal over every derived shape up to five members, constrained and not.
  */
 export type DerivedStrategy = "closed-form" | "iterative";
 
