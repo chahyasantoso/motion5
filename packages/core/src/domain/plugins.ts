@@ -16,6 +16,13 @@ import type {
 import { flattenAuthoredKeyframes, type FlattenedKeyframe } from "./keyframe-groups";
 import type { ImmutableRecord } from "./values";
 import type { OutputSerializer, RenderMetadata } from "../ports/render-metadata";
+import {
+  admitPlugin,
+  deepFreeze,
+  isRecord,
+  type AdmissionContext,
+  type AdmittedPlugin,
+} from "./plugin-admission";
 
 /**
  * The values one plugin's declared requirement slots resolved to, keyed by slot name.
@@ -177,22 +184,7 @@ export interface PluginDefinition {
   readonly compose: PluginComposer;
 }
 
-// Keyed by the union rather than listed beside it, so a new member owes an entry here as well as an
-// arm in `stageRank`. The read stays at run time because `register` is reachable from JavaScript
-// and from a separately built module, where the declaration above is not enforcement.
-const VALID_STAGES: Readonly<Record<PluginStage, true>> = { prepare: true, compose: true };
-// Identity, which is the question the retired `VALID_STAGES.has` asked and the one this guard owes.
-// `Object.hasOwn` coerces its key, so it answered `true` for `["prepare"]`, for a boxed string and
-// for any object whose `toString` spells a member, admitting a stage the union cannot hold and
-// deferring the refusal to `stageRank`, which owes no arm to it. One reader of the question, so the
-// registration guard and any later one cannot drift apart on what a member is.
-function isPluginStage(value: unknown): value is PluginStage {
-  return typeof value === "string" && Object.hasOwn(VALID_STAGES, value);
-}
 const RESERVED_TWEEN_VARS = new Set(["keyframes", "duration", "paused", "id", "observes"]);
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return value !== null && typeof value === "object" && !Array.isArray(value);
-}
 function claims(plugin: PluginDefinition, key: string): boolean {
   return Boolean(plugin.keys?.includes(key) || plugin.claimsKey?.(key));
 }
@@ -214,12 +206,6 @@ function stageRank(stage: PluginStage): number {
 }
 function comparePlugins(a: PluginDefinition, b: PluginDefinition): number {
   return stageRank(a.stage ?? "compose") - stageRank(b.stage ?? "compose");
-}
-function deepFreeze<T>(value: T, seen = new WeakSet<object>()): T {
-  if (value === null || typeof value !== "object" || seen.has(value)) return value;
-  seen.add(value);
-  for (const child of Object.values(value as Record<string, unknown>)) deepFreeze(child, seen);
-  return Object.freeze(value);
 }
 function normalizeContribution(
   value: unknown,
@@ -480,83 +466,42 @@ export class PluginRegistry {
   readonly #predicates: PluginDefinition[] = [];
   readonly #orders = new Map<string, number>();
   #registrationOrder = 0;
+  #admitting = false;
+  /** Admits every definition or none; a refused batch leaves all indexes intact. See ADR-134. */
+  registerAll(plugins: readonly PluginDefinition[]): void {
+    if (!Array.isArray(plugins)) throw new TypeError("Plugin definitions must be an array.");
+    // Own getters and metadata proxies can call back into this registry during snapshotting.
+    if (this.#admitting) throw new TypeError("Plugin registration is already in progress.");
+    this.#admitting = true;
+    try {
+      const batchNames = new Set<string>();
+      const batchInputs = new Map<string, string>();
+      const context: AdmissionContext = {
+        isRegistered: (name) => this.#plugins.has(name) || batchNames.has(name),
+        inputOwner: (input) => this.#inputOwners.get(input)?.name ?? batchInputs.get(input),
+      };
+      const admitted: AdmittedPlugin[] = [];
+      for (const plugin of [...plugins]) {
+        const entry = admitPlugin(plugin, context);
+        batchNames.add(entry.definition.name);
+        for (const input of entry.inputs) batchInputs.set(input, entry.definition.name);
+        admitted.push(entry);
+      }
+      // No user callbacks or property access on caller-owned objects after this point.
+      for (const entry of admitted) this.#store(entry);
+    } finally {
+      this.#admitting = false;
+    }
+  }
   register(plugin: PluginDefinition): void {
-    if (typeof plugin?.name !== "string" || !plugin.name.trim())
-      throw new TypeError("Plugin name must be a non-empty string.");
-    if (typeof plugin.compose !== "function")
-      throw new TypeError("Plugin compose must be a function.");
-    if (plugin.keys !== undefined && !Array.isArray(plugin.keys))
-      throw new TypeError("Plugin keys must be an array when provided.");
-    if (plugin.claimsKey !== undefined && typeof plugin.claimsKey !== "function")
-      throw new TypeError("Plugin claimsKey must be a function when provided.");
-    if (plugin.inputs !== undefined && !Array.isArray(plugin.inputs))
-      throw new TypeError("Plugin inputs must be an array when provided.");
-    if (plugin.outputs !== undefined && !Array.isArray(plugin.outputs))
-      throw new TypeError("Plugin outputs must be an array when provided.");
-    if (plugin.requirements !== undefined && !isRecord(plugin.requirements))
-      throw new TypeError("Plugin requirements must be an object when provided.");
-    if (plugin.stage !== undefined && !isPluginStage(plugin.stage))
-      throw new TypeError(`Unknown plugin stage "${plugin.stage}".`);
-    if (plugin.contribute && plugin.stage !== "prepare")
-      throw new TypeError(`Plugin "${plugin.name}" contribute requires stage "prepare".`);
-    if (
-      plugin.priority !== undefined &&
-      (!Number.isFinite(plugin.priority) || !Number.isInteger(plugin.priority))
-    )
-      throw new TypeError("Plugin priority must be a finite integer when provided.");
-    if (this.#plugins.has(plugin.name))
-      throw new Error(`Plugin "${plugin.name}" is already registered.`);
-    const keys = [...(plugin.keys ?? [])];
-    const inputs = [...(plugin.inputs ?? [])];
-    const outputs = [...(plugin.outputs ?? [])];
-    const slots = Object.keys(plugin.requirements ?? {});
-    for (const slot of slots)
-      if (!slot.trim())
-        throw new TypeError(`Plugin "${plugin.name}" requirement slot must be non-empty.`);
-    // No reservation for the goals slot any more. It was reserved as a declared slot name because a
-    // goal reached its plugin through `claimsSlot`, so a named `targets` would have been a second,
-    // unreachable spelling of the same binding while the authored dict expanded straight past it.
-    // Declaring it is now how the capability is declared at all, and `ikPlugin` does exactly that.
-    // See ADR-057.
-    //
-    // The colon belongs to the internal-key rule, and this is where that reservation becomes real
-    // rather than a convention. A plugin free to declare an output named `fk:world` would have its
-    // public output treated as private and silently dropped before publication. A requirement slot
-    // is held to the same rule, because a namespaced slot would name a scoped input the author can
-    // never spell inside a group: `keyframes` rejects the colon in every authored name.
-    for (const name of [...keys, ...inputs, ...outputs, ...slots]) {
-      if (!name.includes(":")) continue;
-      const detail = `metadata name "${name}" must not contain ':'`;
-      throw new TypeError(`Plugin "${plugin.name}" ${detail}.`);
-    }
-    // No key-collision guard. Two plugins may claim one key, and which of them owns an authored
-    // entry is a question about that entry rather than about registration order: every authored
-    // property sits in a group, and the group names the owner, so a plugin author never renames a key
-    // to route around another plugin's claim. See ADR-043 and ADR-121.
-    //
-    // `inputs` keeps its guard, because an input is not addressable by a group name, so nothing
-    // could ever name an owner for one and this is the only owner that rule has. `requirements`
-    // needs no such guard for the opposite reason: a slot is addressed through its owning plugin's
-    // group and delivered scoped to it, so two plugins declaring `base` never share a namespace.
-    for (const input of inputs) {
-      const owner = this.#inputOwners.get(input);
-      if (owner)
-        throw new TypeError(
-          `plugin-input-collision: Plugin "${owner.name}" already owns input "${input}".`,
-        );
-    }
-    const frozen = Object.freeze({
-      ...plugin,
-      ...(plugin.keys ? { keys: Object.freeze(keys) } : {}),
-      ...(plugin.inputs ? { inputs: Object.freeze(inputs) } : {}),
-      ...(plugin.outputs ? { outputs: Object.freeze(outputs) } : {}),
-      ...(plugin.requirements ? { requirements: deepFreeze({ ...plugin.requirements }) } : {}),
-    });
-    this.#plugins.set(plugin.name, frozen);
-    this.#orders.set(plugin.name, this.#registrationOrder++);
-    for (const key of keys) this.#claimantsFor(key).push(frozen);
-    for (const input of inputs) this.#inputOwners.set(input, frozen);
-    if (keys.length === 0 && plugin.claimsKey) this.#predicates.push(frozen);
+    this.registerAll([plugin]);
+  }
+  #store({ definition, keys, inputs }: AdmittedPlugin): void {
+    this.#plugins.set(definition.name, definition);
+    this.#orders.set(definition.name, this.#registrationOrder++);
+    for (const key of keys) this.#claimantsFor(key).push(definition);
+    for (const input of inputs) this.#inputOwners.set(input, definition);
+    if (keys.length === 0 && definition.claimsKey) this.#predicates.push(definition);
   }
   #claimantsFor(key: string): PluginDefinition[] {
     const existing = this.#keyClaimants.get(key);

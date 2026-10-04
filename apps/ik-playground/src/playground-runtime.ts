@@ -33,15 +33,14 @@ export const playgroundProject: ProjectDefinition = {
 /** Every plugin the composed project authors, through the public subpaths only. */
 function playgroundPlugins(): PluginRegistry {
   const plugins = new PluginRegistry();
-  for (const plugin of [
+  plugins.registerAll([
     transformPlugin,
     fkPlugin,
     ikPlugin,
     transform3dPlugin,
     fk3dPlugin,
     ik3dPlugin,
-  ])
-    plugins.register(plugin);
+  ]);
   return plugins;
 }
 

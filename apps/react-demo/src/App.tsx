@@ -28,8 +28,7 @@ export const App: React.FC = () => {
     // Together with the initial root commit, its pin spacer exists before native scroll
     // restoration. The source still defers its snapshot; core load/mount do not publish.
     const plugins = new PluginRegistry();
-    plugins.register(transformPlugin);
-    plugins.register(fkPlugin);
+    plugins.registerAll([transformPlugin, fkPlugin]);
 
     const clock = createBrowserClock({
       requestFrame: (cb: FrameRequestCallback) => requestAnimationFrame(cb),

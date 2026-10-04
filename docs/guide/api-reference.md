@@ -77,6 +77,15 @@ An `ObservationDefinition` carries `source` and nothing else. There is no `targe
 
 **Plugins.** `PluginRegistry`, and the types `PluginDefinition`, `PluginStage` and `ResolvedPlugins`.
 
+`PluginRegistry.registerAll(definitions)` admits an array atomically in its authored order: a
+refusal stores none of the batch and preserves existing plugins. `register(definition)` uses the
+same admission path for one member. An empty array is a no-op; non-arrays throw
+`TypeError("Plugin definitions must be an array.")`. Definitions are validated and stored from one
+own-property snapshot, so an inherited-only `compose` is refused. Registration from a getter during
+admission is refused as `TypeError("Plugin registration is already in progress.")`.
+No imports or asynchronous work happen in either method. See
+[ADR-134](../ADR-134-atomic-plugin-registration.md).
+
 A `PluginDefinition` may declare `requirements`, a record of optional input slots owned by that plugin. Its `compose` receives authored/interpolated values, the track's progress, and that plugin's scoped inputs. `ResolvedPlugins.requirements` reports the bindings resolved for a track.
 
 `PluginDefinition.stage` is optional and closed to `PluginStage`, which is `"prepare"` or `"compose"`. An omitted stage composes, and a plugin that declares `contribute` must name `"prepare"`. It is a union rather than a `string` so that a third stage fails `typecheck` at every reader that owes it a decision instead of silently taking the compose rank; registration still refuses an unknown stage at run time, because a caller arriving from JavaScript or from a separately built module is not held to the declaration. That refusal is by identity, so a value that merely coerces to a member, an array or a boxed string, is refused as well rather than admitted and read later. See ADR-092.

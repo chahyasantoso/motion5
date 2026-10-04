@@ -149,9 +149,7 @@ const solves3d = envelope3dScenarios(RIGS).map((scenario) => {
 /** One runtime with `count` independent two-bone rigs; a frame seeks every rig's goal once. */
 function engineScenario(count) {
   const plugins = new PluginRegistry();
-  plugins.register(transformPlugin);
-  plugins.register(fkPlugin);
-  plugins.register(ikPlugin);
+  plugins.registerAll([transformPlugin, fkPlugin, ikPlugin]);
   const loadStart = performance.now();
   const runtime = new Engine({
     clock: createManualClock(),
