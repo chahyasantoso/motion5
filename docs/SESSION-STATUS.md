@@ -6,6 +6,21 @@ states a phase; `packages/core/test/unit/scripts/session-status-shape.test.ts` e
 byte ceiling.
 
 - **Captured:** 2026-10-04, Asia/Jakarta.
+<<<<<<< HEAD
+- **Read against:** `main` at `c5e317582c8b6848d734c6f0876dd722a0a92d5f` and the open
+  [PR #547][pr547] at `41a422f5f8f3038debb9012ed0e8a757394943e5`.
+
+## Now
+
+- **`main` carries the pose gap filler; the plugin-authoring contract is verified on open PR #547
+  with seven successful Node 24 CI contexts, but has not been merged.**
+
+## Next in line
+
+- **[#534][issue534] plugin package extraction:** prepared separately on
+  `refactor/534-plugins-package`, above PR #547. The handover moves implementations into
+  `@motion5/plugins` and keeps core implementation-free; publication and Node 24 CI remain pending.
+=======
 - **Read against:** `main` at `f2589922d6ba099f2756274968a2ad1e05bfc9c0`, the squash of
   [PR #547][pr547].
 
@@ -20,6 +35,7 @@ byte ceiling.
 - **[#534][issue534] plugin package extraction:** [PR #548][pr548] on
   `refactor/534-plugins-package`. The handover moves all 33 plugin implementations into
   `@motion5/plugins` and keeps core implementation-free; Node 24 CI remains pending.
+>>>>>>> 531ab9a6163f23d892d1a1eaa682d7115e507064
 
 ## Open, and not scheduled
 
@@ -36,4 +52,7 @@ byte ceiling.
 
 [issue534]: https://github.com/chahyasantoso/motion5/issues/534
 [pr547]: https://github.com/chahyasantoso/motion5/pull/547
+<<<<<<< HEAD
+=======
 [pr548]: https://github.com/chahyasantoso/motion5/pull/548
+>>>>>>> 531ab9a6163f23d892d1a1eaa682d7115e507064
