@@ -6,13 +6,24 @@ import { actorPose, hipMidpoint, standingRoot, type ActorPose } from "../synthet
 import { createCamera, orbitCameraSpec, type Camera } from "../synthetic/camera";
 import { HANDLES, dragHandle, type Handle } from "../synthetic/handles";
 import { describeEdit, describeHandle, editOf, landmarkInfo } from "../synthetic/inspect";
-import { EDIT_ORDER, type ObservationEditKind } from "../synthetic/observation";
+import {
+  EDIT_ORDER,
+  GEOMETRIC_SCORES,
+  IDEAL_SCORES,
+  type ObservationEditKind,
+} from "../synthetic/observation";
+import { PROPS, PROP_IDS, type PropId } from "../synthetic/occlusion";
+import {
+  CORRUPTION_PRESETS,
+  CORRUPTION_PRESET_IDS,
+  type CorruptionPresetId,
+} from "../synthetic/corruption";
 import { SCENARIOS, SCENARIO_IDS, type ScenarioId } from "../synthetic/scenarios";
 import type { Simulator, SimulatorFrame } from "../synthetic/simulator";
 import type { Vec3 } from "../synthetic/rotation";
-import { canvasPoint, required } from "./dom";
-import { pickHandle } from "./pose-drag";
-import { drawActor, drawCameraMarker, projector } from "./scene-view";
+import { canvasPoint, canvasRadius, required } from "./dom";
+import { GRAB_RADIUS_PX, pickHandle } from "./pose-drag";
+import { TRUTH_STYLE, drawActor, drawCameraMarker, projector } from "./scene-view";
 
 const MANUAL = "manual";
 /** The point both cameras orbit: the standing actor's hips. */
@@ -40,6 +51,9 @@ export function mountSimulatorPanel(simulator: Simulator, stage: StageSize): Sim
   const showEstimate = required<HTMLInputElement>("#layer-estimate");
   const estimate = required<SVGSVGElement>("#overlay");
   const driveSelect = required<HTMLSelectElement>("#sim-drive");
+  const detectorSelect = required<HTMLSelectElement>("#sim-detector");
+  const propSelect = required<HTMLSelectElement>("#sim-prop");
+  const corruptionSelect = required<HTMLSelectElement>("#sim-corruption");
   const cameraInputs = ["#cam-yaw", "#cam-pitch", "#cam-distance"].map((id) =>
     required<HTMLInputElement>(id),
   );
@@ -62,6 +76,17 @@ export function mountSimulatorPanel(simulator: Simulator, stage: StageSize): Sim
 
   for (const id of SCENARIO_IDS) driveSelect.append(new Option(SCENARIOS[id].label, id));
   driveSelect.append(new Option("Manual pose (sliders and handles)", MANUAL));
+  detectorSelect.append(
+    new Option("Ideal scores", "ideal"),
+    new Option("Geometric scores", "geometric"),
+  );
+  detectorSelect.value = simulator.state.scores === GEOMETRIC_SCORES ? "geometric" : "ideal";
+  for (const id of PROP_IDS) propSelect.append(new Option(id, id));
+  for (const id of CORRUPTION_PRESET_IDS) corruptionSelect.append(new Option(id, id));
+  propSelect.value = PROP_IDS.find((id) => PROPS[id] === simulator.state.props) ?? "none";
+  corruptionSelect.value =
+    CORRUPTION_PRESET_IDS.find((id) => CORRUPTION_PRESETS[id] === simulator.state.corruption) ??
+    "none";
   for (const landmark of LANDMARKS)
     editLandmark.append(new Option(`${landmark.index} ${landmark.name}`, String(landmark.index)));
   editLandmark.value = String(LANDMARKS.findIndex((landmark) => landmark.name === "left-wrist"));
@@ -111,6 +136,22 @@ export function mountSimulatorPanel(simulator: Simulator, stage: StageSize): Sim
     simulator.drive({ kind: "scenario", scenario: driveSelect.value as ScenarioId });
     redraw();
   });
+  detectorSelect.addEventListener("change", () => {
+    simulator.observeWith({
+      scores: detectorSelect.value === "geometric" ? GEOMETRIC_SCORES : IDEAL_SCORES,
+    });
+    redraw();
+  });
+  propSelect.addEventListener("change", () => {
+    simulator.observeWith({ props: PROPS[propSelect.value as PropId] });
+    redraw();
+  });
+  corruptionSelect.addEventListener("change", () => {
+    simulator.observeWith({
+      corruption: CORRUPTION_PRESETS[corruptionSelect.value as CorruptionPresetId],
+    });
+    redraw();
+  });
   for (const input of cameraInputs)
     input.addEventListener("input", () => {
       const [yaw, pitch, distance] = cameraInputs.map((each) => Number(each.value)) as [
@@ -144,7 +185,12 @@ export function mountSimulatorPanel(simulator: Simulator, stage: StageSize): Sim
   debugView.addEventListener("pointerdown", (event) => {
     const camera = debugCamera();
     const truth = simulator.frame(simulator.last?.tMs ?? 0).truth;
-    const handle = pickHandle(truth, projector(camera), canvasPoint(debugView, event));
+    const handle = pickHandle(
+      truth,
+      projector(camera),
+      canvasPoint(debugView, event),
+      canvasRadius(debugView, event.pointerType === "touch" ? 24 : GRAB_RADIUS_PX),
+    );
     if (handle === undefined) return;
     const effector = truth.segments[HANDLES[handle].effector].origin;
     drag = { handle, depth: camera.toCamera(effector)[2] };
@@ -169,6 +215,7 @@ export function mountSimulatorPanel(simulator: Simulator, stage: StageSize): Sim
   };
   debugView.addEventListener("pointerup", release);
   debugView.addEventListener("pointercancel", release);
+  debugView.addEventListener("lostpointercapture", release);
 
   const panel: SimulatorPanel = {
     render(frame, display) {
@@ -181,7 +228,13 @@ export function mountSimulatorPanel(simulator: Simulator, stage: StageSize): Sim
       debug.fillStyle = "#0f172a";
       debug.fillRect(0, 0, stage.width, stage.height);
       const project = projector(debugCamera());
-      drawActor(debug, frame.truth, project);
+      drawActor(
+        debug,
+        frame.truth,
+        project,
+        TRUTH_STYLE,
+        frame.observed.map((landmark) => landmark.geometry),
+      );
       drawCameraMarker(debug, frame.camera, project);
       for (const [id, input] of sliders)
         if (document.activeElement !== input) input.value = String(frame.truth.pose.angles[id]);

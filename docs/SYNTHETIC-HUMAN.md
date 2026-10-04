@@ -126,3 +126,143 @@ each slice adds and the decisions behind them. What has landed is claimed only b
   actor. The debug view has its own orbit, which nothing measured reads. Truth and estimate are
   separate layers the person toggles. The form, pick and info helpers are pure and tested
   (`GF-101`).
+
+## Geometric visibility and detector corruption
+
+- `src/synthetic/occlusion.ts` classifies every anatomical landmark from truth and the observation
+  camera only. Its closed `SyntheticVisibility` union has precedence `behind-camera`,
+  `out-of-frame`, `occluded { occluderId }`, `visible`. The body has a torso, chest, pelvis, head
+  sphere and six limb capsules per side; each limb excludes its own attached landmarks. Props
+  are `none`, an axis-aligned `table`, or a capsule `pillar`. Rays stop 20 mm short of a landmark
+  to tolerate surface grazing. Capsule tests use actual first contact with the finite cylinder
+  and endpoint spheres; box tests use slabs. The nearest first contact names the blocker, not
+  the nearest centreline (`GF-102` through `GF-107`).
+- `DetectorScores` maps geometry to confidence without changing it. `IDEAL_SCORES` keeps the
+  legacy ideal scores; `GEOMETRIC_SCORES` uses the exhaustive `SCORE_PROFILE` table. An occluded
+  joint is visibility 0.3 but presence 0.9. The same adapter and gap detector read both image and
+  world reports; presence never decides trust. Neither corruption nor hand swaps move the
+  geometric truth attached to an anatomical slot (`GF-108`, `GF-109`).
+- `CorruptionSpec` is seeded, counter-based and independent of evaluation order. Jitter shares
+  a noise field between image pixels and camera-world metres. Its stationary finite-kernel
+  AR(1) approximation truncates at a 1% tail or 64 taps, whichever comes first, then normalises
+  variance. The 64-tap cap bounds cost even for correlation near 1; such values are an approximation,
+  not exact AR(1). Zero jitter skips Gaussian evaluation. Outliers displace both spaces at the
+  landmark's depth; false-high visibility contradicts hidden geometry without rewriting presence.
+  Swap episodes exchange the whole arm pair (shoulders through hands) or leg pair (hips through
+  feet), preserving slot geometry. Individual starts last 2 to 8 frames; overlapping starts keep
+  the group swapped and can extend the continuous episode. Missing positions stay missing
+  (`GF-110` through `GF-114`).
+- `FrameTiming` is `captured { tMs }` or `dropped`; `tMs` is delivery time. Camera frame `k` has
+  truth sampled at `k * SIMULATOR_FRAME_MS` (30 fps), not at its delayed delivery time. Lateness
+  remains under one camera period, preserving timestamp order. Dropped frames never reach the
+  adapter. A source generation resets its selection cursor, including a restart after only one
+  sample. Scripted loss membership follows camera time, never lateness. Finite input validation
+  refuses invalid magnitudes, rates, times and frame indices (`GF-115` through `GF-120`).
+- The panel selects ideal/geometric confidence, none/table/pillar props and none/phone/harsh
+  corruption. `phone` and `harsh` are deliberately synthetic proposals, not calibrated detector
+  measurements. Debug landmark colours show camera geometry independently of confidence:
+  green visible, orange occluded, yellow out of frame, purple behind camera. The info panel
+  names the blocker even when the report is confidently wrong (`GF-121`). The independent
+  debug camera never changes measured geometry.
+- `SimulatorInit` permits observation defaults; `SimulatorState` always contains the resolved
+  scores, props and corruption. Test fixtures use the initial-state contract, avoiding the
+  incomplete resolved-state fixture caught by PR #544's full typecheck.
+- Follow-up exit checks enforce safe nonnegative frame indices even on the no-corruption fast
+  path, validate direct observation/corruption inputs, and forbid swap episode starts before
+  frame zero (`GF-122`, `GF-123`). Jitter kernel taps and normalisation are computed once per
+  frame. Prop records/coordinates and degenerate/tangent cylinder cases are checked (`GF-124`).
+  A minimal injected DOM/canvas-port test proves every panel select updates observation state
+  without moving truth (`GF-125`); it is not a browser smoke test.
+
+## Shared body and reconstructed Three avatar
+
+The world pipeline owns `src/body/state.ts`, one immutable body estimate shared by the world
+filler and the renderer. Direct filler callers use the same owner internally, not a second torso
+algorithm. The estimate contains a camera-relative origin, calibrated torso-local shoulder/hip
+offsets, observed/inferred/unavailable orientation, root provenance and expiry. Attachment offsets
+are captured on the first fully trusted nondegenerate torso after reset; the existing estimator
+still owns shoulder/hip widths and limb lengths. This is measured person calibration, not the
+synthetic actor's authored anatomy or the avatar's display scale.
+
+Trusted roots are copied exactly, never pulled toward the model. Missing roots use a trusted
+partner and estimator-owned width, then shared calibrated placement; with no usable body placement
+they may use their own bounded position coast. Inferred roots never recursively train other
+anchors, lengths, trust or observed age. Each root expires against its own last trusted timestamp.
+Merely missing torso evidence may coast its previous basis within the same horizon, explicitly
+labeled inferred. Zero/collinear/canceling current torso evidence publishes no orientation.
+All body/filter state resets with the subject. Body updates roll back every filter and metadata
+record if a later operation fails (`GF-126` through `GF-133`, `GF-148` through `GF-151`).
+
+Per-root model residuals use an origin fitted from the **other** trusted calibrated roots; a
+single visible anchor provides placement but no independent residual. These are body-fit
+diagnostics, not detector ground truth or a new trust gate. Current torso orientation still uses
+trusted torso evidence, so even the leave-one-out origin residual is not independent measurement
+validation. The body model does not promise exact fitting of inconsistent noise.
+
+Select **world (mm)** and enable **Three avatar** to see the reconstructed pelvis, trunk,
+shoulder bar, neck/neutral head and the four solved chains. The view reads the same rig project's
+ready patches through the read-only `RigSolver.readPatch` port and `@motion5/three`. Every frame-
+bound group is a direct child of a calibrated parent: `Rx(pi)` maps camera x/right, y/down,
+z/away to Three x/right, y/up, z/toward, and one uniform `0.001` parent scale converts mm to
+metres. No preview mirror or extra Y reflection is applied. Motion5 FK frames are **distal
+tips**; limb boxes extend backward along local `-x`. Parent rotation/positive uniform scale
+compose normally; nonuniform, nonfinite and nonpositive scales are rejected (`GF-134` through
+`GF-138`, `GF-153`). These are flat procedural primitives, not a nested GLTF/skinning adapter.
+
+Geometry/materials/topology are built once and reused. The viewport owns no project, clock,
+pose filter or solve. Only the existing writer submits one value batch per accepted pose, with
+one pole per limb; measured middle/root pairs remain the only inputs that update observed bend
+history. An inferred root translates the held pole but cannot retrain it (`GF-152`).
+
+Blue means measured **inputs**, not guaranteed truth or an exact solved middle.
+Amber wireframe means inferred inputs; solid grey means neutral orientation/anatomy.
+Grey wireframe means stale presentation geometry with current evidence unavailable.
+Noiseless consistent calibrated limbs reproduce middle and tip; the readout exposes separate
+solved-versus-trusted middle and tip residuals for inconsistent noisy inputs (`GF-154`).
+Unobserved residuals are unavailable, not zero. Skipped/lost limbs retain their last accepted
+display transforms, never arbitrary old ready project patches (`GF-139` through `GF-141`).
+Each limb and body primitive reports current, stale or unavailable presentation independently.
+Before a primitive has any valid display geometry it remains unavailable; no authored simulator
+truth or unseen anatomy is fabricated. Partial/complete evidence loss holds only already accepted
+geometry, unchanged in world coordinates. A moving current body can therefore be disconnected
+from a stale limb: attachment reconstruction would be a separate inferred presentation policy.
+Stale residuals are unavailable and stale geometry is excluded from solver penetration diagnostics,
+observed camera fit and replay metrics. Orbit framing includes visible stale geometry because it
+is display-only. Raw/hold ablations keep their own roots rather than substituting stabilized anchors.
+
+The single freshness owner, `view/presentation-history.ts`, retains timestamps and current-frame
+membership only; the persistent Three primitives retain their display transforms. No held geometry
+can enter trust, One Euro, Chain Kalman, length training, bend history or future observations.
+Solver/project replacement and `clear()` invalidate display history and adapter revisions.
+`live/publish-frame.ts` catches live solver publication failures, returns an empty current solve,
+and leaves the source alive so the next frame can retry. Replay still fails on actual solver errors.
+
+Before either smoother or filler sees a sample, the detector applies an independent per-joint
+innovation gate using only accepted raw history. Engineering defaults are a 30 px / 120 mm floor
+or 0.3 raw bone lengths, whichever is larger; velocity is low-pass estimated and extrapolated at
+most 100 ms. The raw accepted detector-scale estimator is separate from stabilized anatomical
+lengths, so choosing a smoother cannot change trust. Three nearby candidates at most 150 ms
+apart can confirm persistent relocation, but never bypass the legacy speed limit.
+Absent/forced/low-visibility/invalid samples break confirmation. A rejected candidate cannot train
+any downstream stage; promoted candidates become new accepted evidence with zero initial velocity.
+Rejections carry explicit innovation/speed/invalid diagnostics in native units.
+Raw remains an intentionally ungated observation reference, including rejected coordinates.
+Invalid joints consume a frame as gaps while valid joints still advance, just like absent joints;
+invalid/non-increasing frame times or changing space without reset fail before state mutation.
+First observations, slow drift and a persistent wrong plateau cannot be proven correct temporally.
+These thresholds are synthetic engineering defaults, not calibrated phone data or an accuracy claim.
+
+Coarse palm/foot planes use wrist/index/pinky or ankle/foot-index/heel extra world slots when
+coordinates and confidence are finite, reported presence is not below threshold, and the plane
+is nondegenerate. The 12-joint trust/model topology is unchanged; this local extra-slot evidence
+is not a full speed-gated trust model. Missing/unusable evidence or an inferred tip uses an
+explicit neutral orientation. It never claims full forearm twist, fingers, measured head
+orientation or calibrated head dimensions (`GF-142`).
+
+The independent avatar orbit changes presentation only, never simulator visibility. Source end,
+setting/calibration/subject restart and WebGL context loss clear geometry immediately. Context
+restoration stays empty until the next accepted pose. GPU initialization/runtime failures leave
+the overlay and all sources usable. Resize/input/resource ownership is disposed on pagehide
+(`GF-143` through `GF-147`, `GF-155`). Low-tier defaults use reused basic materials, pixel ratio
+one, no antialiasing and no shadows. Lifecycle tests use injected rendering ports and actual
+Three CPU scene objects, not a browser/WebGL smoke test.

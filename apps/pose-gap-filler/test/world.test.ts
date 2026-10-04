@@ -30,7 +30,10 @@ const pose = () => {
   return jointRecord((joint) => scale(meters[joint], 1000));
 };
 const pipeline = () =>
-  createGapPipeline({ filler: CHAIN, detector: { threshold: 0.5, gate: Infinity } });
+  createGapPipeline({
+    filler: CHAIN,
+    detector: { threshold: 0.5, gate: Infinity, innovation: false },
+  });
 const rotating = (tMs: number) => {
   const points = pose();
   const root = points["left-shoulder"];

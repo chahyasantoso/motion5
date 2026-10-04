@@ -1,7 +1,7 @@
 import { DEFAULT_STAGE, SYNTHETIC_TAKES, createSyntheticRecording } from "../replay/synthetic";
 import type { SyntheticMotion } from "../replay/synthetic";
 import { unreachable } from "../filler/unreachable";
-import { reportResult, type Simulator } from "../synthetic/simulator";
+import { SIMULATOR_FRAME_MS, reportResult, type Simulator } from "../synthetic/simulator";
 import {
   BROWSER_FRAMES,
   createPacedSource,
@@ -70,22 +70,43 @@ export interface SourcePorts {
   readonly simulator?: Simulator;
 }
 
-/** The simulator is sampled at the camera rate the committed takes were made at. */
-export const SIMULATOR_FPS = 30;
-
 /**
- * The simulator as a paced source: frame `k` is the simulator measured at `k / SIMULATOR_FPS`
- * seconds, built only when it is emitted, so an edit made between frames is in the next one.
+ * The simulator as a paced source. It walks the camera's frames in order and emits each one that
+ * reaches the detector, at its delivery time, so a dropped frame never arrives and arrival is as
+ * irregular as the corruption makes it. A frame is measured only when it is emitted, so an edit
+ * made between frames is in the next one. Truth is sampled at camera time `k * frameMs`, never
+ * advanced by delivery lateness. Delivery timestamps stay within their own camera period.
  */
 export function createSimulatorSource(
   simulator: Simulator,
   ports: FramePorts = BROWSER_FRAMES,
 ): LandmarkSource {
-  const timeOf = (index: number) => (index * 1000) / SIMULATOR_FPS;
+  // The paced source reads the stream in order, asking for the same index until it is emitted,
+  // so one cursor over the camera's frames answers it without keeping every time.
+  const resetCursor = () => ({ index: -1, k: -1, tMs: Number.NaN });
+  let cursor = resetCursor();
+  const timeOf = (index: number): number => {
+    if (index < cursor.index) cursor = resetCursor();
+    while (cursor.index < index) {
+      let k = cursor.k + 1;
+      for (let timing = simulator.timing(k); ; timing = simulator.timing(++k))
+        if (timing.kind === "captured") {
+          cursor = { index: cursor.index + 1, k, tMs: timing.tMs };
+          break;
+        }
+    }
+    return cursor.tMs;
+  };
   return createPacedSource(
     {
+      reset: () => {
+        cursor = resetCursor();
+      },
       timeOf,
-      resultOf: (index) => reportResult(simulator.frame(timeOf(index)).report),
+      resultOf: (index) => {
+        timeOf(index);
+        return reportResult(simulator.frame(cursor.k * SIMULATOR_FRAME_MS).report);
+      },
     },
     ports,
   );

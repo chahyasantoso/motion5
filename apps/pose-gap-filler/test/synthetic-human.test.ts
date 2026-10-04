@@ -8,7 +8,8 @@ import { createIngestGate, type Admission } from "../src/live/ingest";
 import { JOINTS, MEDIAPIPE_INDEX } from "../src/filler/landmarks";
 import { IMAGE_SPACE, WORLD_SPACE } from "../src/filler/space";
 import { distance } from "../src/filler/vec";
-import { createSimulatorSource, SIMULATOR_FPS } from "../src/live/sources";
+import { createSimulatorSource } from "../src/live/sources";
+import { SIMULATOR_FPS } from "../src/synthetic/simulator";
 import type { SourceSample } from "../src/live/source";
 import { actorFrame, actorPose, hipMidpoint, standingRoot } from "../src/synthetic/actor";
 import { createCamera, defaultCameraSpec, orbitCameraSpec } from "../src/synthetic/camera";
@@ -18,7 +19,7 @@ import { SCENARIOS, SCENARIO_IDS, scenarioLoss, scenarioPose } from "../src/synt
 import { describeHandle, editOf, landmarkInfo } from "../src/synthetic/inspect";
 import { pickHandle } from "../src/view/pose-drag";
 import { projector } from "../src/view/scene-view";
-import { createSimulator, reportResult, type SimulatorState } from "../src/synthetic/simulator";
+import { createSimulator, reportResult, type SimulatorInit } from "../src/synthetic/simulator";
 import type { Vec3 } from "../src/synthetic/rotation";
 import { manualFrames } from "./frame-ports";
 
@@ -192,7 +193,7 @@ describe("synthetic human, camera and observation", () => {
       presence: 0.2,
     };
     const drop: ObservationEdit = { kind: "drop", landmark: at("left-knee") };
-    const edited = observe(frame, camera, undefined, [drop, score, swap, displace]);
+    const edited = observe(frame, camera, { edits: [drop, score, swap, displace] });
     expect(EDIT_ORDER).toEqual(["displace", "swap", "score", "drop"]);
     // Displaced, then swapped: the right wrist slot reports the left wrist moved 10 cm outward.
     near(edited[partner]!.scene!, [
@@ -208,7 +209,7 @@ describe("synthetic human, camera and observation", () => {
     expect([edited[wrist]!.visibility, edited[wrist]!.presence]).toEqual([0.1, 0.2]);
     expect(edited[at("left-knee")]!.image).toBeUndefined();
     expect(edited[at("left-knee")]!.world).toBeUndefined();
-    const reordered = observe(frame, camera, undefined, [displace, swap, score, drop]);
+    const reordered = observe(frame, camera, { edits: [displace, swap, score, drop] });
     expect(reordered).toEqual(edited);
     expect(JSON.stringify(frame)).toBe(before);
     // A dropped landmark reaches the pipeline as MediaPipe's missing landmark, absent.
@@ -216,7 +217,7 @@ describe("synthetic human, camera and observation", () => {
     expect(
       parsePoseResult(writePoseResult(image, world), 0, IMAGE_SPACE, STAGE).joints["left-knee"],
     ).toEqual({ kind: "absent" });
-    expect(() => observe(frame, camera, undefined, [{ kind: "swap", landmark: 40 }])).toThrow(/40/);
+    expect(() => observe(frame, camera, { edits: [{ kind: "swap", landmark: 40 }] })).toThrow(/40/);
   });
 });
 
@@ -318,7 +319,7 @@ describe("synthetic human, motion and handles", () => {
 
   it("GF-99 a simulator frame is pure in state and time, paced as a 30 fps source", async () => {
     const hips = hipMidpoint(standing());
-    const state: SimulatorState = {
+    const state: SimulatorInit = {
       drive: { kind: "scenario", scenario: "arm-reversal" },
       camera: defaultCameraSpec(STAGE, hips),
       edits: [],
