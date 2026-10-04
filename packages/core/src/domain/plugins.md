@@ -24,7 +24,8 @@ existing and staged names/input owners, stages the resulting entries, then store
 An empty batch is a no-op; a non-array throws `TypeError("Plugin definitions must be an array.")`.
 Getter failures propagate without inserting earlier candidates. A compose method present only on a
 prototype is refused because it would disappear from the stored own-property snapshot. Own compose
-fields remain valid. Keys, inputs and outputs are copied and frozen before commit.
+fields remain valid. Keys, inputs and outputs must hold strings and are copied and frozen
+before commit; requirements are stored as a frozen copy, never frozen in place.
 
 `#admitting` rejects nested registration during snapshotting with
 `TypeError("Plugin registration is already in progress.")` and resets in `finally`. Getters and

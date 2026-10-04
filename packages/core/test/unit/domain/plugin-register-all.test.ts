@@ -149,6 +149,30 @@ describe("atomic plugin batch admission", () => {
     expect(registry.size).toBe(0);
   });
 
+  it("TH-213 refuses non-string metadata entries by name without storing the batch", () => {
+    for (const field of ["keys", "inputs", "outputs"] as const) {
+      const registry = new PluginRegistry();
+      const bad = plugin("bad", { [field]: ["ok", 7] } as unknown as Partial<PluginDefinition>);
+      expect(thrown(() => registry.registerAll([plugin("first"), bad]))).toEqual(
+        new TypeError(`Plugin "bad" ${field} must contain only strings.`),
+      );
+      expect(registry.size).toBe(0);
+    }
+  });
+
+  it("TH-214 stores a frozen requirements copy and leaves the caller's objects unfrozen", () => {
+    const base = { description: "parent bone", extra: { tags: ["a"] } };
+    const registry = new PluginRegistry();
+    registry.register(plugin("req", { requirements: { base } }));
+    expect(Object.isFrozen(base)).toBe(false);
+    expect(Object.isFrozen(base.extra.tags)).toBe(false);
+    const stored = registry.resolveForKeyframes({ req: { values: { req: {} } } }).plugins[0]
+      ?.requirements as Record<string, typeof base> | undefined;
+    expect(stored?.base).toEqual(base);
+    expect(stored?.base).not.toBe(base);
+    expect(Object.isFrozen(stored?.base?.extra.tags)).toBe(true);
+  });
+
   it("admits own compose fields and copies and freezes array metadata", () => {
     class OwnComposer {
       readonly name = "own";

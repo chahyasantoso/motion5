@@ -23,6 +23,15 @@ export function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
+/** A frozen copy of plain records and arrays; the caller's objects are never frozen. */
+function frozenCopy(value: unknown): unknown {
+  if (Array.isArray(value)) return Object.freeze(value.map(frozenCopy));
+  if (!isRecord(value)) return value;
+  const copy: Record<string, unknown> = {};
+  for (const key of Object.keys(value)) copy[key] = frozenCopy(value[key]);
+  return Object.freeze(copy);
+}
+
 export function deepFreeze<T>(value: T, seen = new WeakSet<object>()): T {
   if (value === null || typeof value !== "object" || seen.has(value)) return value;
   seen.add(value);
@@ -64,12 +73,22 @@ export function admitPlugin(plugin: PluginDefinition, context: AdmissionContext)
   const keys = Object.freeze([...(source.keys ?? [])]);
   const inputs = Object.freeze([...(source.inputs ?? [])]);
   const outputs = Object.freeze([...(source.outputs ?? [])]);
-  // One copy: the slots validated are exactly the slots stored.
-  const requirements = source.requirements === undefined ? undefined : { ...source.requirements };
+  // One copy: the slots validated are exactly the slots stored, and the caller's data stays theirs.
+  const requirements =
+    source.requirements === undefined
+      ? undefined
+      : (frozenCopy(source.requirements) as NonNullable<PluginDefinition["requirements"]>);
   const slots = Object.keys(requirements ?? {});
   for (const slot of slots)
     if (!slot.trim())
       throw new TypeError(`Plugin "${source.name}" requirement slot must be non-empty.`);
+  for (const [field, names] of [
+    ["keys", keys],
+    ["inputs", inputs],
+    ["outputs", outputs],
+  ] as const)
+    if (names.some((name) => typeof name !== "string"))
+      throw new TypeError(`Plugin "${source.name}" ${field} must contain only strings.`);
   // The colon is the internal-key namespace: a public `fk:world` output would be dropped before
   // publication, and a namespaced slot could never be spelled inside an authored group. See ADR-057.
   for (const name of [...keys, ...inputs, ...outputs, ...slots]) {
@@ -91,7 +110,7 @@ export function admitPlugin(plugin: PluginDefinition, context: AdmissionContext)
     ...(source.keys ? { keys } : {}),
     ...(source.inputs ? { inputs } : {}),
     ...(source.outputs ? { outputs } : {}),
-    ...(requirements ? { requirements: deepFreeze(requirements) } : {}),
+    ...(requirements ? { requirements } : {}),
   });
   return { definition, keys, inputs };
 }

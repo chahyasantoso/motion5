@@ -60,15 +60,17 @@ changes. Validation is linear in the batch's metadata plus constant-time name/in
 staging costs one entry per definition and one owner per declared input.
 
 Top-level getter reads now occur once while constructing the snapshot. A throwing getter propagates
-before insertion; its own external side effects are not transactional. Requirement freezing keeps
-its pre-existing side effects on nested caller-owned objects. No impossible guarantee about memory
+before insertion; its own external side effects are not transactional. Requirements are stored as a
+frozen copy, so admission no longer freezes caller-owned nested objects. Non-string `keys`,
+`inputs` or `outputs` entries are refused by name instead of failing inside the colon check. No impossible guarantee about memory
 exhaustion or modified host built-ins is made.
 
 ## Evidence
 
-`plugin-register-all.test.ts` covers TH-205 through TH-212: malformed members anywhere, in-batch
+`plugin-register-all.test.ts` covers TH-205 through TH-214: malformed members anywhere, in-batch
 name/input collisions, existing collisions, input order, empty/non-array demand, one keys read,
-and prototype-only compose refusal. Additional cases pin own compose fields, frozen metadata,
+prototype-only compose refusal, non-string metadata entries and
+requirement copying. Additional cases pin own compose fields, frozen metadata,
 unchanged output-collision timing, getter failure, reentrancy and exact guard messages.
 
 Failing-first assertion reports and exact local checkpoint identities belong in the owning handover
