@@ -1,4 +1,4 @@
-import { INSPECT_KEY, INSPECTION_KEY, unreachable } from "../plugin-api";
+import { INSPECT_KEY, INSPECTION_KEY, unreachable } from "@motion5/core/plugin-api";
 
 /**
  * What one IK solve answers: the local rotations it publishes, and how well they answer the goal.

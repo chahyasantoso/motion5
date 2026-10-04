@@ -1,4 +1,4 @@
-import { unreachable } from "../plugin-api";
+import { unreachable } from "@motion5/core/plugin-api";
 import { pivotFromBaseTip, segmentExtent, type WorldFrame, type WorldPoint } from "./frame";
 import {
   FREE_JOINT,

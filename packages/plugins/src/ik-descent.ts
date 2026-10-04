@@ -1,4 +1,4 @@
-import { unreachable } from "../plugin-api";
+import { unreachable } from "@motion5/core/plugin-api";
 
 /**
  * Bounded legal descent: a damped least-squares walk in joint space from a legal pose toward the

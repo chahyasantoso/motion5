@@ -1,4 +1,4 @@
-import { unreachable } from "../plugin-api";
+import { unreachable } from "@motion5/core/plugin-api";
 
 /**
  * How many passes one FABRIK attempt may take: the iteration cap, and the only owner of it.
