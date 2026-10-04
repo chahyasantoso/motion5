@@ -51,6 +51,12 @@ describe("recovery governance gates (G-1/G-3/G-4/G-5/G-7)", () => {
   it("puts build and end-to-end on the required CI path", async () => {
     const source = await text(".github/workflows/ci.yml");
     expect(source).toContain("build:");
+    const coreBuild = source.indexOf("npx tsc -p packages/core/tsconfig.build.json");
+    const pluginsBuild = source.indexOf("npx tsc -p packages/plugins/tsconfig.build.json");
+    expect(coreBuild).toBeGreaterThanOrEqual(0);
+    expect(pluginsBuild).toBeGreaterThan(coreBuild);
+    expect(source).toContain("test -f packages/plugins/dist/fk.js");
+    expect(source).toContain("test -f packages/plugins/dist/fk.d.ts");
     expect(source).toContain("end-to-end:");
     expect(source).not.toContain("continue-on-error: true");
   });

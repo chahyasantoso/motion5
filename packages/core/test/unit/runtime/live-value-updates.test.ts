@@ -9,7 +9,7 @@ import type {
 import { StaleTrackHandleError, type TrackHandle } from "../../../src/contract/track-handle";
 import { PluginRegistry } from "../../../src/domain/plugins";
 import { Engine, type ProjectHandle } from "../../../src/engine";
-import { transformPlugin } from "../../../src/plugins/transform";
+import { transformPlugin } from "../../../../plugins/src/transform";
 import { createManualClock } from "../../../src/ports/clock";
 import type { InterpolationTimeline } from "../../../src/ports/interpolator";
 import {

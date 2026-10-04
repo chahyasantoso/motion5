@@ -12,16 +12,14 @@ export const testingEntrypointViolationFixture =
 export const testingSourcePathViolationFixture =
   "import { createFakeScheduler } from '../../core/src/testing/fakes';";
 export const coreEntrypointFixture = "import { Engine } from '@motion5/core';";
-export const pluginEntrypointFixture = "import { fkPlugin } from '@motion5/core/plugins/fk';";
+export const pluginEntrypointFixture = "import { fkPlugin } from '@motion5/plugins/fk';";
 export const adapterEntrypointFixture =
   "import { createBrowserClock } from '@motion5/core/adapters/browser-clock';";
-export const plugin3dEntrypointFixture = "import { ik3dPlugin } from '@motion5/core/plugins/ik3d';";
-export const undeclaredSubpathFixture =
-  "import { solveFabrik } from '@motion5/core/plugins/fabrik';";
+export const plugin3dEntrypointFixture = "import { ik3dPlugin } from '@motion5/plugins/ik3d';";
+export const undeclaredSubpathFixture = "import { solveFabrik } from '@motion5/plugins/fabrik';";
 export const pluginRendererViolationFixture = "import { Object3D } from 'three';";
-export const pluginApiFixture = 'import type { PluginDefinition } from "../plugin-api";';
-export const pluginPrivateCoreFixture =
-  'import type { PluginDefinition } from "../domain/plugins";';
+export const pluginApiFixture = 'import type { PluginDefinition } from "@motion5/core/plugin-api";';
+export const pluginPrivateCoreFixture = 'import { patchRender } from "@motion5/core/internal";';
 export const pluginSiblingFixture = 'export { readFrame } from "./frame";';
 
 export const dynamicRendererViolationFixture = [

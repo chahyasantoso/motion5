@@ -11,7 +11,6 @@ const coreLayers = [
   "testing",
   "adapters",
   "lang",
-  "plugins",
 ];
 const corePackage = "packages/core";
 const scannedExtensions = [".ts", ".tsx", ".js", ".mjs"];
@@ -120,7 +119,7 @@ export async function walk(directory) {
   return files;
 }
 function relative(path, scanRoot) {
-  return path.slice(scanRoot.length + 1).replaceAll("\\", "/");
+  return path.slice(scanRoot.replace(/[\\/]$/, "").length + 1).replaceAll("\\", "/");
 }
 function asSpecifierList(source, specifiers) {
   return specifiers ?? [...importSpecifiers(source)];
@@ -381,20 +380,20 @@ export function bannedSymbol(source) {
   );
 }
 /**
- * Every `@motion5/core` specifier in `source` whose subpath the core manifest does not declare.
+ * Every workspace package specifier whose package manifest does not declare its subpath.
  *
- * `packages/core/package.json` `exports` is the one owner of what a consumer may import, so the
- * set is read from it rather than listed here. The root `tsconfig.json` maps `@motion5/core/*` to
- * source and both Vite apps alias the package name to the source directory, so an undeclared
- * subpath such as `@motion5/core/plugins/fabrik` typechecks and bundles in this repository while
+ * Each workspace manifest's `exports` is the owner of what a consumer may import, so the
+ * sets are read from them rather than listed here. The root `tsconfig.json` maps package subpaths
+ * to source, so an undeclared subpath such as `@motion5/plugins/fabrik` typechecks here while
  * failing for every consumer of the built package. This reads the code the way the other specifier
  * predicates do, through `importSpecifiers`, so a path named in prose is not an import of it.
  */
-export function undeclaredCoreSubpaths(source, declared, specifiers) {
+export function undeclaredWorkspaceSubpaths(source, declared, specifiers) {
   const undeclared = [];
   for (const specifier of asSpecifierList(source, specifiers)) {
-    const match = /^@motion5\/core(\/.*)?$/.exec(specifier);
-    if (match !== null && !declared.has(`.${match[1] ?? ""}`)) undeclared.push(specifier);
+    const match = /^(@motion5\/[^/]+)(\/.*)?$/.exec(specifier);
+    if (match !== null && !declared.get(match[1])?.has(`.${match[2] ?? ""}`))
+      undeclared.push(specifier);
   }
   return undeclared;
 }
@@ -411,7 +410,7 @@ export function extractExportNames(source) {
     names.push(match[1]);
   return names;
 }
-function checkCoreSource(source, file, layer, violations, sourcePath = file) {
+function checkCoreSource(source, file, layer, violations) {
   const specifiers = [...importSpecifiers(source)];
   if (
     layer !== "adapters" &&
@@ -421,25 +420,12 @@ function checkCoreSource(source, file, layer, violations, sourcePath = file) {
   if (bannedSymbol(source)) violations.push(`${file}: banned compatibility symbol`);
   if (["contract", "ports", "adapters"].includes(layer) && importsDomainLayer(source, specifiers))
     violations.push(`${file}: inward domain import`);
-  if (
-    layer === "plugins" &&
-    specifiers.some((specifier) => {
-      if (!specifier.startsWith(".")) return false;
-      const target = posix.normalize(posix.join(posix.dirname(sourcePath), specifier));
-      return (
-        !target.startsWith("packages/core/src/plugins/") &&
-        !/^packages\/core\/src\/plugin-api(?:\.(?:ts|js))?$/.test(target)
-      );
-    })
-  )
-    violations.push(`${file}: private core import outside plugin-api`);
 }
 async function scanFiles(directory, scanRoot, layer, violations) {
   for (const path of await walk(directory)) {
     const source = await readFile(path, "utf8");
     const file = relative(path, scanRoot);
-    const sourcePath = posix.join("packages/core/src", layer, relative(path, directory));
-    checkCoreSource(source, file, layer, violations, sourcePath);
+    checkCoreSource(source, file, layer, violations);
   }
 }
 /**
@@ -506,32 +492,51 @@ async function discoverConsumerWorkspaces(scanRoot) {
       throw error;
     }
     for (const entry of entries.filter((candidate) => candidate.isDirectory()))
-      if (`${workspaceRoot}/${entry.name}` !== corePackage)
-        workspaces.push(`${workspaceRoot}/${entry.name}`);
+      workspaces.push(`${workspaceRoot}/${entry.name}`);
   }
   return workspaces;
 }
 /**
- * The subpaths `packages/core/package.json` declares, read once per scan.
+ * Every workspace package's declared subpaths, read once per scan.
  *
- * A tree with no core manifest declares nothing, so every `@motion5/core` import in it reads as
+ * A tree with no target manifest declares nothing, so every import of that package reads as
  * undeclared: the absence fails closed, which is the direction a discovery step owes (a consumer
  * import checked against a set nobody read must not read as declared).
  */
-async function declaredCoreSubpaths(scanRoot) {
-  let manifest;
-  try {
-    manifest = JSON.parse(await readFile(join(scanRoot, corePackage, "package.json"), "utf8"));
-  } catch (error) {
-    if (error?.code === "ENOENT") return new Set();
-    throw error;
+async function declaredWorkspaceSubpaths(scanRoot, workspaces) {
+  const declared = new Map();
+  for (const workspace of workspaces) {
+    let manifest;
+    try {
+      manifest = JSON.parse(await readFile(join(scanRoot, workspace, "package.json"), "utf8"));
+    } catch (error) {
+      if (error?.code === "ENOENT") continue;
+      throw error;
+    }
+    if (typeof manifest.name !== "string") continue;
+    const exports = manifest.exports;
+    declared.set(
+      manifest.name,
+      new Set(
+        exports !== null && typeof exports === "object" && !Array.isArray(exports)
+          ? Object.keys(exports)
+          : [],
+      ),
+    );
   }
-  const exports = manifest.exports;
-  return new Set(
-    exports !== null && typeof exports === "object" && !Array.isArray(exports)
-      ? Object.keys(exports)
-      : [],
-  );
+  return declared;
+}
+
+/** Extracted implementations have one core contract and no dependency on a host or renderer. */
+function checkPluginSource(source, file, specifiers, violations) {
+  const allowed = specifiers.every((specifier) => {
+    if (specifier === "@motion5/core" || specifier === "@motion5/core/plugin-api") return true;
+    if (!specifier.startsWith(".")) return false;
+    const target = posix.normalize(posix.join(posix.dirname(file), specifier));
+    return target.startsWith("packages/plugins/src/");
+  });
+  if (!allowed) violations.push(`${file}: import outside plugin package contract`);
+  if (bannedSymbol(source)) violations.push(`${file}: banned compatibility symbol`);
 }
 export async function scan(scanRoot = root) {
   const violations = [];
@@ -539,18 +544,20 @@ export async function scan(scanRoot = root) {
     await scanFiles(join(scanRoot, "packages", "core", "src", layer), scanRoot, layer, violations);
   await scanCoreEntries(scanRoot, violations);
   const workspaces = await discoverConsumerWorkspaces(scanRoot);
-  const declared = await declaredCoreSubpaths(scanRoot);
+  const declared = await declaredWorkspaceSubpaths(scanRoot, workspaces);
   for (const workspace of workspaces) {
+    if (workspace === corePackage) continue;
     for (const path of await walk(join(scanRoot, workspace, "src"))) {
       const source = await readFile(path, "utf8");
       const file = relative(path, scanRoot);
       const specifiers = [...importSpecifiers(source)];
+      if (workspace === "packages/plugins") checkPluginSource(source, file, specifiers, violations);
       if (importsCoreInternals(source, specifiers))
         violations.push(`${file}: core source-internal import`);
       if (importsTestingEntrypoint(source, specifiers))
         violations.push(`${file}: testing entrypoint import`);
-      for (const specifier of undeclaredCoreSubpaths(source, declared, specifiers))
-        violations.push(`${file}: undeclared core subpath ${specifier}`);
+      for (const specifier of undeclaredWorkspaceSubpaths(source, declared, specifiers))
+        violations.push(`${file}: undeclared workspace subpath ${specifier}`);
     }
   }
   const indexPath = join(scanRoot, "packages", "core", "src", "index.ts");

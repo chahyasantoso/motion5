@@ -5,7 +5,8 @@
   "type": "module",
   "types": "./src/index.ts",
   "dependencies": {
-    "@motion5/core": "0.0.0"
+    "@motion5/core": "0.0.0",
+    "@motion5/plugins": "0.0.0"
   },
   "devDependencies": {
     "@types/three": "^0.186.0",
