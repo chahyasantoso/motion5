@@ -3,225 +3,274 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>motion5 pose gap filler experiment</title>
-    <style>
-      body {
-        margin: 0;
-        padding: 1rem;
-        background: #080c14;
-        color: #f1f5f9;
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      }
-
-      .stage {
-        position: relative;
-        width: 640px;
-        height: 480px;
-      }
-
-      .stage video,
-      .stage canvas,
-      .stage svg {
-        position: absolute;
-        inset: 0;
-        width: 640px;
-        height: 480px;
-      }
-
-      .controls {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.75rem;
-        align-items: center;
-        margin: 0.75rem 0;
-        font-size: 0.85rem;
-      }
-
-      #timings,
-      #hotkeys,
-      #report {
-        font-family: ui-monospace, monospace;
-        font-size: 0.75rem;
-        color: #8492a6;
-      }
-
-      .solved-chain {
-        fill: none;
-        stroke: #34d399;
-        stroke-width: 4;
-        stroke-linecap: round;
-        stroke-linejoin: round;
-      }
-
-      .simulator-views {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.75rem;
-        align-items: flex-start;
-      }
-
-      #debug-view {
-        width: 480px;
-        height: 360px;
-        background: #0f172a;
-        touch-action: none;
-        cursor: grab;
-      }
-
-      #sim-info,
-      #sim-edits {
-        font-family: ui-monospace, monospace;
-        font-size: 0.75rem;
-        color: #cbd5e1;
-        margin: 0;
-      }
-
-      .dofs {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
-        gap: 0.25rem 0.75rem;
-        font-size: 0.75rem;
-      }
-
-      .dofs input {
-        width: 8rem;
-        vertical-align: middle;
-      }
-
-      .mark-raw {
-        fill: #8492a6;
-      }
-
-      .mark-measured {
-        fill: #38bdf8;
-      }
-
-      .mark-inferred {
-        fill: none;
-        stroke: #fbbf24;
-        stroke-width: 2;
-        stroke-dasharray: 3 2;
-      }
-    </style>
+    <meta
+      name="description"
+      content="Inspect, reconstruct and replay pose landmarks in the Motion5 pose lab."
+    />
+    <title>Pose lab · motion5</title>
+    <link rel="stylesheet" href="./src/view/pose-lab.css" />
   </head>
   <body>
-    <h1>Pose gap filler</h1>
-    <div class="controls">
-      <label
-        >Source
-        <select id="source"></select
-      ></label>
-      <button id="start" type="button">Start</button>
-      <label
-        >Space
-        <select id="space">
-          <option value="image">image (px)</option>
-          <option value="world">world (mm)</option>
-        </select></label
-      >
-      <label
-        >Filler
-        <select id="filler"></select
-      ></label>
-      <label
-        >Stabilizer
-        <select id="stabilizer"></select
-      ></label>
-      <label><input id="show-raw" type="checkbox" /> Show raw landmarks</label>
-      <label><input id="mirror" type="checkbox" /> Mirror preview</label>
-      <button id="record" type="button">Record landmarks</button>
-      <label
-        >Calibrate from a still recording
-        <input id="calibrate" type="file" accept="application/json"
-      /></label>
-      <label>Replay a recording <input id="replay" type="file" accept="application/json" /></label>
-    </div>
-    <p id="hotkeys"></p>
-    <div class="stage">
-      <video id="video" playsinline muted></video>
-      <canvas id="truth" hidden></canvas>
-      <svg id="overlay"></svg>
-    </div>
-    <section id="simulator" hidden>
-      <div class="controls">
-        <label
-          >Drive
-          <select id="sim-drive"></select
-        ></label>
-        <label><input id="layer-truth" type="checkbox" checked /> Truth layer</label>
-        <label><input id="layer-estimate" type="checkbox" checked /> Estimate layer</label>
-        <label
-          >Detector
-          <select id="sim-detector"></select
-        ></label>
-        <label
-          >Prop
-          <select id="sim-prop"></select
-        ></label>
-        <label
-          >Corruption
-          <select id="sim-corruption"></select
-        ></label>
-        <label
-          >Camera yaw <input id="cam-yaw" type="range" min="-180" max="180" step="1" value="0"
-        /></label>
-        <label
-          >pitch <input id="cam-pitch" type="range" min="-60" max="60" step="1" value="0"
-        /></label>
-        <label
-          >distance <input id="cam-distance" type="range" min="1.2" max="6" step="0.1" value="2.6"
-        /></label>
-        <label
-          >Debug view yaw
-          <input id="debug-yaw" type="range" min="-180" max="180" step="1" value="55"
-        /></label>
-        <label
-          >pitch <input id="debug-pitch" type="range" min="-60" max="60" step="1" value="20"
-        /></label>
-      </div>
-      <div class="simulator-views">
-        <canvas id="debug-view"></canvas>
-        <pre id="sim-info"></pre>
-      </div>
-      <p>
-        Debug geometry: green visible, orange occluded, yellow out of frame, purple behind camera.
-        Colours describe truth, not detector confidence. Phone and harsh corruption are synthetic
-        proposals, not measured detector profiles.
-      </p>
-      <details>
-        <summary>Pose mode: joint angles</summary>
-        <div id="sim-dofs" class="dofs"></div>
-      </details>
-      <details>
-        <summary>Observation mode: edit what the detector reports</summary>
-        <div class="controls">
-          <label
-            >Landmark
-            <select id="edit-landmark"></select
-          ></label>
-          <label
-            >Edit
-            <select id="edit-kind"></select
-          ></label>
-          <label>dx cm <input id="edit-dx" type="number" step="1" value="10" size="4" /></label>
-          <label>dy cm <input id="edit-dy" type="number" step="1" value="0" size="4" /></label>
-          <label>dz cm <input id="edit-dz" type="number" step="1" value="0" size="4" /></label>
-          <label
-            >visibility
-            <input id="edit-visibility" type="number" min="0" max="1" step="0.05" value="0.1"
-          /></label>
-          <label
-            >presence
-            <input id="edit-presence" type="number" min="0" max="1" step="0.05" value="0.9"
-          /></label>
-          <button id="edit-apply" type="button">Apply edit</button>
-          <button id="edit-clear" type="button">Clear edits</button>
+    <a class="skip-link" href="#observation">Skip to observation</a>
+    <main class="lab">
+      <header class="lab-header">
+        <div>
+          <p class="wordmark">motion<span>5</span> <span class="edition">/ pose lab</span></p>
+          <h1>Keep motion in view.</h1>
+          <p class="intro">Inspect the gaps. Compare the reconstruction.</p>
         </div>
-        <pre id="sim-edits"></pre>
-      </details>
-    </section>
-    <p id="timings"></p>
-    <pre id="report"></pre>
+        <p class="local-note">
+          Synthetic sources run locally.<br />
+          Camera starts only when you ask.
+        </p>
+      </header>
+      <section class="run-bar" aria-label="Session controls">
+        <label class="source-control"
+          >Landmark source
+          <select id="source"></select
+        ></label>
+        <button id="start" class="primary" type="button">Start</button>
+        <span class="run-hint">Local simulation or camera input.</span>
+      </section>
+      <div class="workspace">
+        <aside class="settings" aria-label="Experiment settings">
+          <section class="panel">
+            <h2>Reconstruction</h2>
+            <p class="help">Changes reset the pipeline and rig.</p>
+            <div class="fields">
+              <label
+                >Coordinate space
+                <select id="space">
+                  <option value="image">Image (pixels)</option>
+                  <option value="world">World (millimeters)</option>
+                </select></label
+              >
+              <label
+                >Filler
+                <select id="filler"></select
+              ></label>
+              <label
+                >Stabilizer
+                <select id="stabilizer"></select
+              ></label>
+              <label
+                >Bend policy (world)
+                <select id="bend-policy">
+                  <option value="legacy">Legacy measured hold</option>
+                  <option value="predict">Bounded inferred bend (experimental)</option>
+                </select>
+              </label>
+            </div>
+            <p class="help">Prediction is opt-in. Expired evidence uses a held or default pole.</p>
+          </section>
+          <section class="panel">
+            <h2>Display</h2>
+            <div class="checks">
+              <label><input id="show-raw" type="checkbox" /> Raw landmarks</label>
+              <label
+                ><input id="show-avatar" type="checkbox" checked /> 3D body (world space)</label
+              >
+              <label><input id="mirror" type="checkbox" /> Mirror preview</label>
+            </div>
+          </section>
+          <details class="panel recording-tools">
+            <summary>Record &amp; replay</summary>
+            <p class="help">
+              Save landmarks as JSON, calibrate from a still take, or compare a replay.
+            </p>
+            <div class="fields">
+              <button id="record" type="button">Record landmarks</button>
+              <label
+                >Calibrate from a still recording
+                <input id="calibrate" type="file" accept="application/json"
+              /></label>
+              <label
+                >Replay a recording <input id="replay" type="file" accept="application/json"
+              /></label>
+            </div>
+          </details>
+        </aside>
+        <div class="view-stack">
+          <section id="observation" class="panel view-panel" tabindex="-1">
+            <div class="view-heading">
+              <div>
+                <p class="eyebrow">Landmark feed</p>
+                <h2>Live observation</h2>
+              </div>
+              <span class="view-tag">640 × 480</span>
+            </div>
+            <div class="stage">
+              <video id="video" playsinline muted aria-label="Camera preview"></video>
+              <canvas id="truth" hidden aria-hidden="true"></canvas>
+              <svg
+                id="overlay"
+                role="img"
+                aria-label="Measured and reconstructed pose landmarks"
+              ></svg>
+            </div>
+            <div class="legend" aria-label="Landmark legend">
+              <span><i class="legend-dot measured"></i> Measured</span>
+              <span><i class="legend-dot inferred"></i> Inferred</span>
+              <span><i class="legend-line"></i> Solved chain</span>
+            </div>
+            <p id="hotkeys" class="help"></p>
+            <p id="timings" class="diagnostic"></p>
+          </section>
+          <section id="avatar-section" class="panel view-panel" hidden>
+            <div class="view-heading">
+              <div>
+                <p class="eyebrow">World-space solve</p>
+                <h2>Reconstructed body</h2>
+              </div>
+              <span class="view-tag">3D</span>
+            </div>
+            <canvas
+              id="avatar-view"
+              width="640"
+              height="480"
+              aria-label="Reconstructed 3D body"
+            ></canvas>
+            <div class="controls">
+              <label
+                >View yaw <input id="avatar-yaw" type="range" min="-180" max="180" value="0"
+              /></label>
+              <label
+                >View pitch <input id="avatar-pitch" type="range" min="-60" max="60" value="0"
+              /></label>
+            </div>
+            <details class="readout">
+              <summary>Body &amp; bend diagnostics</summary>
+              <pre id="avatar-info"></pre>
+              <p class="help">
+                Blue: measured inputs. Amber wireframe: inferred inputs. Grey: neutral
+                orientation/anatomy. Orbit changes presentation only, never the observation camera.
+                Head proportions are an authored approximation; palm/foot planes do not observe
+                forearm twist or fingers.
+              </p>
+            </details>
+          </section>
+        </div>
+      </div>
+      <section id="simulator" class="panel simulator-panel" hidden>
+        <div class="view-heading">
+          <div>
+            <p class="eyebrow">Independent truth</p>
+            <h2>Synthetic studio</h2>
+          </div>
+          <span class="view-tag">No camera required</span>
+        </div>
+        <div class="controls studio-controls">
+          <label
+            >Drive
+            <select id="sim-drive"></select
+          ></label>
+          <label
+            >Detector
+            <select id="sim-detector"></select
+          ></label>
+          <label
+            >Prop
+            <select id="sim-prop"></select
+          ></label>
+          <label
+            >Corruption
+            <select id="sim-corruption"></select
+          ></label>
+        </div>
+        <div class="studio-grid">
+          <div>
+            <canvas
+              id="debug-view"
+              aria-label="Synthetic actor pose editor"
+              aria-describedby="pose-help"
+            ></canvas>
+            <p id="pose-help" class="help">
+              Drag a wrist or ankle to pose a limb. For keyboard control, open Joint angles below.
+            </p>
+            <div class="checks inline-checks">
+              <label><input id="layer-truth" type="checkbox" checked /> Truth layer</label>
+              <label><input id="layer-estimate" type="checkbox" checked /> Estimate layer</label>
+            </div>
+          </div>
+          <div class="studio-settings">
+            <details class="readout" open>
+              <summary>Camera &amp; debug orbit</summary>
+              <div class="fields">
+                <label
+                  >Observation yaw
+                  <input id="cam-yaw" type="range" min="-180" max="180" step="1" value="0"
+                /></label>
+                <label
+                  >Observation pitch
+                  <input id="cam-pitch" type="range" min="-60" max="60" step="1" value="0"
+                /></label>
+                <label
+                  >Observation distance
+                  <input id="cam-distance" type="range" min="1.2" max="6" step="0.1" value="2.6"
+                /></label>
+                <label
+                  >Debug yaw
+                  <input id="debug-yaw" type="range" min="-180" max="180" step="1" value="55"
+                /></label>
+                <label
+                  >Debug pitch
+                  <input id="debug-pitch" type="range" min="-60" max="60" step="1" value="20"
+                /></label>
+              </div>
+            </details>
+            <details class="readout">
+              <summary>Simulator diagnostics</summary>
+              <pre id="sim-info"></pre>
+            </details>
+            <p class="help">
+              Phone and harsh corruption are synthetic proposals, not measured detector profiles.
+            </p>
+          </div>
+        </div>
+        <p class="help">
+          Debug geometry: green visible, orange occluded, yellow out of frame, purple behind camera.
+          Colours describe truth, not detector confidence.
+        </p>
+        <details class="readout">
+          <summary>Joint angles · manual pose</summary>
+          <div id="sim-dofs" class="dofs"></div>
+        </details>
+        <details class="readout">
+          <summary>Observation edits · detector output only</summary>
+          <div class="controls edit-controls">
+            <label
+              >Landmark
+              <select id="edit-landmark"></select
+            ></label>
+            <label
+              >Edit
+              <select id="edit-kind"></select
+            ></label>
+            <label>dx cm <input id="edit-dx" type="number" step="1" value="10" size="4" /></label>
+            <label>dy cm <input id="edit-dy" type="number" step="1" value="0" size="4" /></label>
+            <label>dz cm <input id="edit-dz" type="number" step="1" value="0" size="4" /></label>
+            <label
+              >visibility
+              <input id="edit-visibility" type="number" min="0" max="1" step="0.05" value="0.1"
+            /></label>
+            <label
+              >presence
+              <input id="edit-presence" type="number" min="0" max="1" step="0.05" value="0.9"
+            /></label>
+            <button id="edit-apply" type="button">Apply edit</button>
+            <button id="edit-clear" type="button">Clear edits</button>
+          </div>
+          <pre id="sim-edits"></pre>
+        </details>
+      </section>
+      <section class="panel session-report" aria-label="Session results">
+        <h2>Session results</h2>
+        <pre id="report" role="status" aria-live="polite" aria-atomic="true"></pre>
+      </section>
+      <footer class="lab-footer">
+        motion5 / Pose reconstruction experiment. Inference is not ground truth.
+      </footer>
+    </main>
     <script type="module" src="./src/live/main.ts"></script>
   </body>
 </html>
