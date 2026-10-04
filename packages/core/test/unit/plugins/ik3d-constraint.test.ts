@@ -271,6 +271,9 @@ describe("3D joint limits", () => {
     expect(axisX3(zero.local)).toEqual([1, 0, 0]);
   });
 
+  // This deterministic corpus solves 600 constrained rigs twice and composes every result.
+  // Keep all samples and assertions; shared CI workers need more than Vitest's 5-second default.
+  // Structural solver budgets remain enforced separately by the performance gate.
   it("TH-84 seeded constrained chains and trees keep every published local pose legal, finite, pure, and composable", () => {
     const random = seeded(500);
     let branched = 0;
@@ -366,7 +369,7 @@ describe("3D joint limits", () => {
         ).toBeLessThanOrEqual(1e-9);
     }
     expect(branched).toBeGreaterThan(50);
-  });
+  }, 30_000);
 
   it("TH-85 planar +z hinges agree with 2D constrained angles", () => {
     const random = seeded(506);
