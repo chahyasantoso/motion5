@@ -8,8 +8,8 @@ import { Engine } from "../../src/engine";
 import { patchRender } from "../../src/contract/patch-render";
 import { PluginRegistry } from "../../src/domain/plugins";
 import type { TrackHandle } from "../../src/contract/track-handle";
-import { fkPlugin } from "../../src/plugins/fk";
-import { transformPlugin } from "../../src/plugins/transform";
+import { fkPlugin } from "../../../plugins/src/fk";
+import { transformPlugin } from "../../../plugins/src/transform";
 import { createManualClock } from "../../src/ports/clock";
 import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
 import {

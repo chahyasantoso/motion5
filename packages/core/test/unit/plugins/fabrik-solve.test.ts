@@ -4,20 +4,20 @@ import {
   solveFabrik,
   solveFabrikAttempt,
   type FabrikPoint,
-} from "../../../src/plugins/fabrik";
-import { arcHalfAngle, seedArc } from "../../../src/plugins/fabrik-seed";
-import type { WorldFrame } from "../../../src/plugins/frame";
-import type { IterativeQuality } from "../../../src/plugins/ik-result";
-import type { SolveMember } from "../../../src/plugins/ik-member";
-import { outranks } from "../../../src/plugins/fabrik-select";
+} from "../../../../plugins/src/fabrik";
+import { arcHalfAngle, seedArc } from "../../../../plugins/src/fabrik-seed";
+import type { WorldFrame } from "../../../../plugins/src/frame";
+import type { IterativeQuality } from "../../../../plugins/src/ik-result";
+import type { SolveMember } from "../../../../plugins/src/ik-member";
+import { outranks } from "../../../../plugins/src/fabrik-select";
 import {
   FABRIK_ITERATIONS_PER_DEPTH,
   FABRIK_LIMITED_CAP_FACTOR,
   FABRIK_MIN_ITERATIONS,
   fabrikIterationCap,
-} from "../../../src/plugins/fabrik-cap";
+} from "../../../../plugins/src/fabrik-cap";
 import { envelopeScenarios, type EnvelopeRig } from "../../support/ik-envelope";
-import { solveTwoBone } from "../../../src/plugins/ik-analytic";
+import { solveTwoBone } from "../../../../plugins/src/ik-analytic";
 
 // Slice D2 of issue #195: FABRIK as arithmetic, before anything wires it.
 //

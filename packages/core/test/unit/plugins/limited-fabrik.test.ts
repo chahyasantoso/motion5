@@ -14,7 +14,7 @@ import {
   solveFabrik,
   solveFabrikAttempt,
   type FabrikSolution,
-} from "../../../src/plugins/fabrik";
+} from "../../../../plugins/src/fabrik";
 import {
   FABRIK_LIMITED_CAP_FACTOR,
   FABRIK_MIN_ITERATIONS,
@@ -29,14 +29,14 @@ import {
   fabrikRoundingBound,
   projectsConvergence,
   type FabrikPassBudget,
-} from "../../../src/plugins/fabrik-cap";
+} from "../../../../plugins/src/fabrik-cap";
 import {
   CENTRE_THEN_DESCENT,
   fabrikAlternatives,
   selectFabrik,
   type FabrikAttempt,
   type LegalStarts,
-} from "../../../src/plugins/fabrik-select";
+} from "../../../../plugins/src/fabrik-select";
 import {
   axisX3,
   multiplyMatrix3,
@@ -47,8 +47,8 @@ import {
   type Matrix3,
   type Vec3,
   type WorldFrame3d,
-} from "../../../src/plugins/frame3d";
-import type { WorldFrame } from "../../../src/plugins/frame";
+} from "../../../../plugins/src/frame3d";
+import type { WorldFrame } from "../../../../plugins/src/frame";
 import {
   atBound,
   boundBaseDirection,
@@ -57,19 +57,19 @@ import {
   limitRotation,
   type JointLimit,
   type JointRange,
-} from "../../../src/plugins/ik-constraint";
-import type { SolveMember } from "../../../src/plugins/ik-member";
-import type { IterativeQuality } from "../../../src/plugins/ik-result";
-import { solveChain } from "../../../src/plugins/ik-solve";
-import { readPole3d, UNBOUND_POLE3D, type Pole3d } from "../../../src/plugins/ik3d-analytic";
-import type { ChainMember3d } from "../../../src/plugins/ik3d-chain";
+} from "../../../../plugins/src/ik-constraint";
+import type { SolveMember } from "../../../../plugins/src/ik-member";
+import type { IterativeQuality } from "../../../../plugins/src/ik-result";
+import { solveChain } from "../../../../plugins/src/ik-solve";
+import { readPole3d, UNBOUND_POLE3D, type Pole3d } from "../../../../plugins/src/ik3d-analytic";
+import type { ChainMember3d } from "../../../../plugins/src/ik3d-chain";
 import {
   boundBaseFrame3d,
   FREE_JOINT3D,
   type JointLimit3d,
-} from "../../../src/plugins/ik3d-constraint";
-import { solveTree3dAttempt } from "../../../src/plugins/ik3d-fabrik";
-import { solveChain3d } from "../../../src/plugins/ik3d-solve";
+} from "../../../../plugins/src/ik3d-constraint";
+import { solveTree3dAttempt } from "../../../../plugins/src/ik3d-fabrik";
+import { solveChain3d } from "../../../../plugins/src/ik3d-solve";
 import { iterationsOf } from "../../support/solve-quality";
 
 const ROOT: WorldFrame = { x: 0, y: 0, rotation: 0 };

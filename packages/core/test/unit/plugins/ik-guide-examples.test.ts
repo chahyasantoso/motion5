@@ -5,10 +5,10 @@ import type { ProjectDefinition } from "../../../src/contract/v5";
 import { PluginRegistry } from "../../../src/domain/plugins";
 import { Engine } from "../../../src/engine";
 import { createManualClock } from "../../../src/ports/clock";
-import { FABRIK_TOLERANCE } from "../../../src/plugins/fabrik";
-import { fkPlugin } from "../../../src/plugins/fk";
-import { ikPlugin } from "../../../src/plugins/ik";
-import { transformPlugin } from "../../../src/plugins/transform";
+import { FABRIK_TOLERANCE } from "../../../../plugins/src/fabrik";
+import { fkPlugin } from "../../../../plugins/src/fk";
+import { ikPlugin } from "../../../../plugins/src/ik";
+import { transformPlugin } from "../../../../plugins/src/transform";
 import { createFakeInterpolator, createFakeScheduler } from "../../../src/testing/fakes";
 
 // Issue #349 phase 7 and ADR-113: the examples in `docs/guide/inverse-kinematics.md` are executed.

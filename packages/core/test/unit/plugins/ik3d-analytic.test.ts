@@ -6,9 +6,9 @@ import {
   ZERO_PIVOT_OFFSET3D,
   type Euler3d,
   type WorldFrame3d,
-} from "../../../src/plugins/frame3d";
-import { solveTwoBone } from "../../../src/plugins/ik-analytic";
-import { solveTwoBone3d } from "../../../src/plugins/ik3d-analytic";
+} from "../../../../plugins/src/frame3d";
+import { solveTwoBone } from "../../../../plugins/src/ik-analytic";
+import { solveTwoBone3d } from "../../../../plugins/src/ik3d-analytic";
 
 const root: WorldFrame3d = readFrame3d({});
 const first = { id: "upper", length: 80, offset: ZERO_PIVOT_OFFSET3D };

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { composeWorld, type WorldFrame } from "../../../src/plugins/frame";
-import { solveFabrik } from "../../../src/plugins/fabrik";
+import { composeWorld, type WorldFrame } from "../../../../plugins/src/frame";
+import { solveFabrik } from "../../../../plugins/src/fabrik";
 import {
   atBound,
   limitRotation,
@@ -9,9 +9,9 @@ import {
   restDirection,
   wrapRotation,
   type JointRange,
-} from "../../../src/plugins/ik-constraint";
-import { chainShape, solveChain } from "../../../src/plugins/ik-solve";
-import type { SolveMember } from "../../../src/plugins/ik-member";
+} from "../../../../plugins/src/ik-constraint";
+import { chainShape, solveChain } from "../../../../plugins/src/ik-solve";
+import type { SolveMember } from "../../../../plugins/src/ik-member";
 
 const ROOT: WorldFrame = { x: 0, y: 0, rotation: 0 };
 const GOAL: WorldFrame = { x: 0, y: 140, rotation: 0 };

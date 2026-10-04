@@ -14,19 +14,23 @@ import { unreachable } from "../../../src/lang/exhaustive";
 import { createManualClock } from "../../../src/ports/clock";
 import type { Patch } from "../../../src/runtime/patch-registry";
 import { createFakeInterpolator, createFakeScheduler } from "../../../src/testing/fakes";
-import { fk3dPlugin } from "../../../src/plugins/fk3d";
-import { readFrame3d, ZERO_PIVOT_OFFSET3D, type WorldFrame3d } from "../../../src/plugins/frame3d";
-import { ikPlugin } from "../../../src/plugins/ik";
+import { fk3dPlugin } from "../../../../plugins/src/fk3d";
+import {
+  readFrame3d,
+  ZERO_PIVOT_OFFSET3D,
+  type WorldFrame3d,
+} from "../../../../plugins/src/frame3d";
+import { ikPlugin } from "../../../../plugins/src/ik";
 import {
   inspectSolve,
   inspectionOutput,
   type ClosedFormQuality,
   type SolveInspection,
-} from "../../../src/plugins/ik-result";
-import { ik3dPlugin } from "../../../src/plugins/ik3d";
-import { solveTwoBone3d, type SolveMember3d } from "../../../src/plugins/ik3d-analytic";
-import type { SolveResult3d } from "../../../src/plugins/ik3d-result";
-import { transform3dPlugin } from "../../../src/plugins/transform3d";
+} from "../../../../plugins/src/ik-result";
+import { ik3dPlugin } from "../../../../plugins/src/ik3d";
+import { solveTwoBone3d, type SolveMember3d } from "../../../../plugins/src/ik3d-analytic";
+import type { SolveResult3d } from "../../../../plugins/src/ik3d-result";
+import { transform3dPlugin } from "../../../../plugins/src/transform3d";
 
 /** A 3D solve's delivered inputs, as the publisher hands them to `ik3d`. */
 function inputsOf(

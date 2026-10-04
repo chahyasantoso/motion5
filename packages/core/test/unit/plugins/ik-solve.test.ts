@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { ikPlugin } from "../../../src/plugins/ik";
-import { readMembers } from "../../../src/plugins/ik-chain";
-import { solveTwoBone } from "../../../src/plugins/ik-analytic";
-import type { WorldFrame } from "../../../src/plugins/frame";
+import { ikPlugin } from "../../../../plugins/src/ik";
+import { readMembers } from "../../../../plugins/src/ik-chain";
+import { solveTwoBone } from "../../../../plugins/src/ik-analytic";
+import type { WorldFrame } from "../../../../plugins/src/frame";
 
 // Slice C3 of issue #195: the `ik` solver plugin and the `solveTwoBone` math.
 //

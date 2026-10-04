@@ -10,23 +10,23 @@ import { buildGraphIR } from "../../../src/graph/ir";
 import { Engine } from "../../../src/engine";
 import { createManualClock } from "../../../src/ports/clock";
 import { createFakeInterpolator, createFakeScheduler } from "../../../src/testing/fakes";
-import { fkPlugin } from "../../../src/plugins/fk";
-import { ikPlugin } from "../../../src/plugins/ik";
+import { fkPlugin } from "../../../../plugins/src/fk";
+import { ikPlugin } from "../../../../plugins/src/ik";
 import {
   branchPulls,
   compromise,
   reachCircleOf,
   readInfluence,
   type Pull,
-} from "../../../src/plugins/ik-goal";
-import { readSolveMembers, type DeliveredMember } from "../../../src/plugins/ik-chain";
-import { FABRIK_TOLERANCE, iterativeQuality, solveFabrik } from "../../../src/plugins/fabrik";
-import { solveChain } from "../../../src/plugins/ik-solve";
-import type { SolveMember } from "../../../src/plugins/ik-member";
-import { inspectSolve } from "../../../src/plugins/ik-result";
-import type { WorldFrame } from "../../../src/plugins/frame";
+} from "../../../../plugins/src/ik-goal";
+import { readSolveMembers, type DeliveredMember } from "../../../../plugins/src/ik-chain";
+import { FABRIK_TOLERANCE, iterativeQuality, solveFabrik } from "../../../../plugins/src/fabrik";
+import { solveChain } from "../../../../plugins/src/ik-solve";
+import type { SolveMember } from "../../../../plugins/src/ik-member";
+import { inspectSolve } from "../../../../plugins/src/ik-result";
+import type { WorldFrame } from "../../../../plugins/src/frame";
 import { recordGoalReach, type GoalReach } from "../../../src/graph/solver-constraints";
-import { transformPlugin } from "../../../src/plugins/transform";
+import { transformPlugin } from "../../../../plugins/src/transform";
 
 const ROOT: WorldFrame = { x: 0, y: 0, rotation: 0 };
 const property = (value: unknown): AuthoredProperty => value as AuthoredProperty;

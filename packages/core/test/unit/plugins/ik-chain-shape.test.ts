@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import type { WorldFrame } from "../../../src/plugins/frame";
-import { chainShape } from "../../../src/plugins/ik-solve";
-import { readSolveMembers, type DeliveredMember } from "../../../src/plugins/ik-chain";
+import type { WorldFrame } from "../../../../plugins/src/frame";
+import { chainShape } from "../../../../plugins/src/ik-solve";
+import { readSolveMembers, type DeliveredMember } from "../../../../plugins/src/ik-chain";
 
 // Issue #349 phase 1: the dispatch union and the adapter that feeds it, owned by ADR-106.
 //

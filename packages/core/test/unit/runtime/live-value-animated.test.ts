@@ -3,7 +3,7 @@ import type { ProjectDefinition, TrackDefinition } from "../../../src/contract/v
 import type { TrackHandle } from "../../../src/contract/track-handle";
 import { PluginRegistry } from "../../../src/domain/plugins";
 import { Engine, type ProjectHandle } from "../../../src/engine";
-import { transformPlugin } from "../../../src/plugins/transform";
+import { transformPlugin } from "../../../../plugins/src/transform";
 import { createManualClock } from "../../../src/ports/clock";
 import type { ProjectRuntime } from "../../../src/runtime/project-runtime";
 import { createFakeScheduler } from "../../../src/testing/fakes";

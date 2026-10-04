@@ -11,15 +11,15 @@ import {
   scale3,
   swingTwist3d,
   type Vec3,
-} from "../../../src/plugins/frame3d";
-import { UNBOUND_POLE3D } from "../../../src/plugins/ik3d-analytic";
+} from "../../../../plugins/src/frame3d";
+import { UNBOUND_POLE3D } from "../../../../plugins/src/ik3d-analytic";
 import {
   centreLocal3d,
   leavesHingeCircle,
   legalLocal3d,
   limitLocal3d,
-} from "../../../src/plugins/ik3d-constraint";
-import { seedTree3d, treeSeed3d, type SeedTree3d } from "../../../src/plugins/ik3d-seed";
+} from "../../../../plugins/src/ik3d-constraint";
+import { seedTree3d, treeSeed3d, type SeedTree3d } from "../../../../plugins/src/ik3d-seed";
 
 const axis: Vec3 = [0.6, 0, 0.8];
 const hinge = {

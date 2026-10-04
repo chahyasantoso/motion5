@@ -1,21 +1,21 @@
 import { describe, expect, it } from "vitest";
 import { unreachable } from "../../../src/lang/exhaustive";
-import { solveFabrik } from "../../../src/plugins/fabrik";
-import { fkPlugin } from "../../../src/plugins/fk";
+import { solveFabrik } from "../../../../plugins/src/fabrik";
+import { fkPlugin } from "../../../../plugins/src/fk";
 import {
   composeWorld,
   segmentExtent,
   type PivotOffset,
   type WorldFrame,
-} from "../../../src/plugins/frame";
-import { solveTwoBone } from "../../../src/plugins/ik-analytic";
-import type { SolveMember } from "../../../src/plugins/ik-member";
+} from "../../../../plugins/src/frame";
+import { solveTwoBone } from "../../../../plugins/src/ik-analytic";
+import type { SolveMember } from "../../../../plugins/src/ik-member";
 import type {
   ClosedFormQuality,
   IterativeQuality,
   SolveQuality,
-} from "../../../src/plugins/ik-result";
-import { solveChain } from "../../../src/plugins/ik-solve";
+} from "../../../../plugins/src/ik-result";
+import { solveChain } from "../../../../plugins/src/ik-solve";
 
 // Issue #349 phase 2: one `SolveResult` for every strategy, owned by ADR-107.
 //
