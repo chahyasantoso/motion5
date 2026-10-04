@@ -1,5 +1,5 @@
 import { execFile } from "node:child_process";
-import { mkdtemp, readFile, readdir, rm } from "node:fs/promises";
+import { mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
 import { dirname, join, relative, resolve } from "node:path";
@@ -63,27 +63,35 @@ async function withEmitted<T>(
 ): Promise<T> {
   const out = await mkdtemp(join(root, ".tmp-public-dts-"));
   try {
-    await execFileAsync(
-      process.platform === "win32" ? "npx.cmd" : "npx",
-      [
-        "tsc",
-        "--declaration",
-        "--emitDeclarationOnly",
-        "--target",
-        "ES2023",
-        "--module",
-        "ESNext",
-        "--moduleResolution",
-        "Bundler",
-        "--strict",
-        "--skipLibCheck",
-        "--outDir",
-        out,
-        ...sources,
-      ],
-      { cwd: root, shell: process.platform === "win32" },
+    const config = join(out, "tsconfig.json");
+    await writeFile(
+      config,
+      JSON.stringify({
+        compilerOptions: {
+          declaration: true,
+          emitDeclarationOnly: true,
+          target: "ES2023",
+          module: "ESNext",
+          moduleResolution: "Bundler",
+          strict: true,
+          skipLibCheck: true,
+          outDir: join(out, "emitted"),
+          rootDir: join(root, "packages"),
+          baseUrl: root,
+          paths: {
+            "@motion5/core": ["packages/core/src/index.ts"],
+            "@motion5/core/*": ["packages/core/src/*"],
+          },
+        },
+        files: sources.map((source) => join(root, source)),
+      }),
     );
-    return await use(out, new Set(await declarationFiles(out)));
+    await execFileAsync(process.platform === "win32" ? "npx.cmd" : "npx", ["tsc", "-p", config], {
+      cwd: root,
+      shell: process.platform === "win32",
+    });
+    const emitted = join(out, "emitted");
+    return await use(emitted, new Set(await declarationFiles(emitted)));
   } finally {
     await rm(out, { recursive: true, force: true });
   }
@@ -107,10 +115,21 @@ async function closureOf(
     if (FORBIDDEN_DIRECTORY.test(`/${shown}`)) forbidden.push(shown);
     const source = await readFile(current, "utf8");
     for (const specifier of importedSpecifiers(source)) {
-      if (!specifier.startsWith(".")) continue;
-      const target = declarationCandidates(current, specifier).find((candidate) =>
-        emitted.has(candidate),
-      );
+      // Source aliases emit the core declarations into the same tree. Follow the declared
+      // package edges too: stopping at plugin-api would prove only the plugin's first hop.
+      const candidates =
+        specifier === "@motion5/core/plugin-api"
+          ? [join(out, "core", "src", "plugin-api.d.ts")]
+          : specifier === "@motion5/core"
+            ? [join(out, "core", "src", "index.d.ts")]
+            : specifier.startsWith(".")
+              ? declarationCandidates(current, specifier)
+              : [];
+      if (candidates.length === 0) {
+        unresolved.push(`${shown} -> ${specifier}`);
+        continue;
+      }
+      const target = candidates.find((candidate) => emitted.has(candidate));
       if (target === undefined) {
         unresolved.push(`${shown} -> ${specifier}`);
         continue;
@@ -143,23 +162,25 @@ describe("public declaration surface (P1-9)", () => {
   // one owner of what is declared, rather than restated.
   it("TH-122 keeps every declared plugin subpath's declaration closure out of runtime and graph", async () => {
     const manifest = JSON.parse(
-      await readFile(join(root, "packages", "core", "package.json"), "utf8"),
+      await readFile(join(root, "packages", "plugins", "package.json"), "utf8"),
     ) as { exports: Record<string, unknown> };
     const plugins = Object.keys(manifest.exports).flatMap((key) => {
-      const name = /^\.\/plugins\/([a-z0-9]+)$/.exec(key)?.[1];
+      const name = /^\.\/([a-z0-9]+)$/.exec(key)?.[1];
       return name === undefined ? [] : [name];
     });
     expect(plugins).toEqual(expect.arrayContaining(["transform3d", "fk3d", "ik3d"]));
     await withEmitted(
-      plugins.map((name) => `packages/core/src/plugins/${name}.ts`),
+      plugins.map((name) => `packages/plugins/src/${name}.ts`),
       async (out, emitted) => {
         for (const name of plugins) {
-          const entry = join(out, "plugins", `${name}.d.ts`);
+          const entry = join(out, "plugins", "src", `${name}.d.ts`);
           expect(emitted.has(entry), name).toBe(true);
           const { reachable, unresolved, forbidden } = await closureOf(out, emitted, entry);
           expect(unresolved, name).toEqual([]);
           expect(forbidden, name).toEqual([]);
-          expect(reachable.size, name).toBeGreaterThan(1);
+          // Frame utility signatures are self-contained; definition signatures name plugin-api.
+          expect(reachable.size, name).toBeGreaterThanOrEqual(1);
+          if (name !== "frame3d") expect(reachable.size, name).toBeGreaterThan(1);
         }
       },
     );
@@ -190,7 +211,7 @@ describe("public declaration surface (P1-9)", () => {
       default: "./dist/plugin-api.js",
     });
     await withEmitted(["packages/core/src/plugin-api.ts"], async (out, emitted) => {
-      const entry = join(out, "plugin-api.d.ts");
+      const entry = join(out, "core", "src", "plugin-api.d.ts");
       expect(emitted.has(entry)).toBe(true);
       const { reachable, unresolved, forbidden } = await closureOf(out, emitted, entry);
       expect(unresolved).toEqual([]);

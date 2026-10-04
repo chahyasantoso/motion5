@@ -26,7 +26,9 @@ import { writeFile } from "node:fs/promises";
 import os from "node:os";
 import { performance } from "node:perf_hooks";
 
+const pluginApi = new URL("../packages/core/src/plugin-api.ts", import.meta.url).href;
 const HOOK = `export async function resolve(specifier, context, next) {
+  if (specifier === "@motion5/core/plugin-api") return next(${JSON.stringify(pluginApi)}, context);
   try {
     return await next(specifier, context);
   } catch (error) {
@@ -45,17 +47,18 @@ if (!Number.isInteger(RIGS) || RIGS < 1) throw new TypeError(`--rigs must be a p
 const support = "../packages/core/test/support/ik-envelope.ts";
 const support3d = "../packages/core/test/support/ik3d-envelope.ts";
 const src = "../packages/core/src";
+const plugins = "../packages/plugins/src";
 const { envelopeScenarios, independentRigsProject, rigTrackIds } = await import(support);
 const { envelope3dScenarios } = await import(support3d);
-const { solveChain } = await import(`${src}/plugins/ik-solve.ts`);
-const { solveChain3d } = await import(`${src}/plugins/ik3d-solve.ts`);
+const { solveChain } = await import(`${plugins}/ik-solve.ts`);
+const { solveChain3d } = await import(`${plugins}/ik3d-solve.ts`);
 const { PluginRegistry } = await import(`${src}/domain/plugins.ts`);
 const { Engine } = await import(`${src}/engine.ts`);
 const { createManualClock } = await import(`${src}/ports/clock.ts`);
 const { createFakeInterpolator, createFakeScheduler } = await import(`${src}/testing/fakes.ts`);
-const { transformPlugin } = await import(`${src}/plugins/transform.ts`);
-const { fkPlugin } = await import(`${src}/plugins/fk.ts`);
-const { ikPlugin } = await import(`${src}/plugins/ik.ts`);
+const { transformPlugin } = await import(`${plugins}/transform.ts`);
+const { fkPlugin } = await import(`${plugins}/fk.ts`);
+const { ikPlugin } = await import(`${plugins}/ik.ts`);
 
 /**
  * The median of `samples` runs of `body`, each repeated until it has run for at least `floorMs`.

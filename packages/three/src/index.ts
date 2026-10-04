@@ -2,7 +2,8 @@ import type { Patch } from "@motion5/core";
 // The render decision and the never sink have one owner each in core, reached through the same
 // first-party channel `@motion5/react` reads them from, rather than restated here (ADR-094,
 // ADR-099).
-import { patchRender, readFrame3d, unreachable } from "@motion5/core/internal";
+import { patchRender, unreachable } from "@motion5/core/internal";
+import { readFrame3d } from "@motion5/plugins/frame3d";
 import type { EulerOrder, Object3D } from "three";
 
 /**

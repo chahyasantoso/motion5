@@ -1,0 +1,43 @@
+{
+  "name": "@motion5/plugins",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "sideEffects": false,
+  "peerDependencies": {
+    "@motion5/core": "0.0.0"
+  },
+  "devDependencies": {
+    "@motion5/core": "0.0.0"
+  },
+  "exports": {
+    "./transform": {
+      "types": "./dist/transform.d.ts",
+      "default": "./dist/transform.js"
+    },
+    "./fk": {
+      "types": "./dist/fk.d.ts",
+      "default": "./dist/fk.js"
+    },
+    "./ik": {
+      "types": "./dist/ik.d.ts",
+      "default": "./dist/ik.js"
+    },
+    "./transform3d": {
+      "types": "./dist/transform3d.d.ts",
+      "default": "./dist/transform3d.js"
+    },
+    "./fk3d": {
+      "types": "./dist/fk3d.d.ts",
+      "default": "./dist/fk3d.js"
+    },
+    "./ik3d": {
+      "types": "./dist/ik3d.d.ts",
+      "default": "./dist/ik3d.js"
+    },
+    "./frame3d": {
+      "types": "./dist/frame3d.d.ts",
+      "default": "./dist/frame3d.js"
+    }
+  }
+}

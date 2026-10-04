@@ -12,7 +12,7 @@ import {
   importsRenderer,
   importsTestingEntrypoint,
   scan,
-  undeclaredCoreSubpaths,
+  undeclaredWorkspaceSubpaths,
   walk,
 } from "../../../../../scripts/boundary-scan.mjs";
 import {
@@ -435,6 +435,13 @@ describe("boundary scan: the public 3D surface", () => {
     const tree = await mkdtemp(join(tmpdir(), "motion5-public-3d-"));
     try {
       await writeFile(join(tree, "package.json"), PACKAGES_ONLY);
+      for (const workspace of ["core", "plugins"]) {
+        await mkdir(join(tree, "packages", workspace), { recursive: true });
+        await writeFile(
+          join(tree, "packages", workspace, "package.json"),
+          await readFile(join(root, "packages", workspace, "package.json"), "utf8"),
+        );
+      }
       for (const [path, source] of Object.entries(files)) {
         await mkdir(join(tree, path, ".."), { recursive: true });
         await writeFile(join(tree, path), `${source}\n`);
@@ -445,55 +452,65 @@ describe("boundary scan: the public 3D surface", () => {
     }
   }
   const coreManifest = readFile(join(root, "packages", "core", "package.json"), "utf8");
-  const declared = coreManifest.then(
-    (text: string) => new Set(Object.keys((JSON.parse(text) as { exports: object }).exports)),
+  const pluginsManifest = readFile(join(root, "packages", "plugins", "package.json"), "utf8");
+  const declared = Promise.all([coreManifest, pluginsManifest]).then(
+    (texts) =>
+      new Map<string, ReadonlySet<string>>(
+        texts.map((text: string) => {
+          const manifest = JSON.parse(text) as { name: string; exports: object };
+          return [manifest.name, new Set(Object.keys(manifest.exports))] as const;
+        }),
+      ),
   );
 
-  it("TH-112 scans packages/core/src/plugins for renderer imports", async () => {
+  it("TH-112 discovers the extracted plugin workspace and refuses renderer imports", async () => {
     const violations = await withTree(
-      { "packages/core/src/plugins/solver.ts": pluginRendererViolationFixture },
+      { "packages/plugins/src/solver.ts": pluginRendererViolationFixture },
       (tree) => scan(tree),
     );
-    expect(violations).toEqual(["packages/core/src/plugins/solver.ts: renderer or engine import"]);
+    expect(violations).toEqual([
+      "packages/plugins/src/solver.ts: import outside plugin package contract",
+    ]);
   });
 
   it("TH-202 allows plugin siblings and the single plugin-authoring entrypoint", async () => {
     await withTree(
       {
-        "packages/core/src/plugins/solver.ts": `${pluginApiFixture}\n${pluginSiblingFixture}`,
+        "packages/plugins/src/solver.ts": `${pluginApiFixture}\n${pluginSiblingFixture}`,
       },
       async (tree) => {
-        expect(await walk(join(tree, "packages/core/src/plugins"))).toHaveLength(1);
+        expect(await walk(join(tree, "packages/plugins/src"))).toHaveLength(1);
         expect(await scan(tree)).toEqual([]);
+        expect(await scan(`${tree}/`)).toEqual([]);
       },
     );
   });
 
   it("TH-203 refuses a plugin reaching past the plugin-authoring entrypoint", async () => {
     const violations = await withTree(
-      { "packages/core/src/plugins/solver.ts": pluginPrivateCoreFixture },
+      { "packages/plugins/src/solver.ts": pluginPrivateCoreFixture },
       (tree) => scan(tree),
     );
     expect(violations).toEqual([
-      "packages/core/src/plugins/solver.ts: private core import outside plugin-api",
+      "packages/plugins/src/solver.ts: import outside plugin package contract",
     ]);
   });
 
   it("TH-204 checks nested, dynamic, and re-export plugin edges after path normalization", async () => {
     const violations = await withTree(
       {
-        "packages/core/src/plugins/nested/good.ts":
-          'import type { PluginDefinition } from "../../plugin-api";\nexport * from "../frame";',
-        "packages/core/src/plugins/nested/bad.ts": 'export * from "../../domain/values";',
-        "packages/core/src/plugins/dynamic.ts": 'const privateCore = import("../lang/exhaustive");',
-        "packages/core/src/plugins/lookalike.ts": 'export * from "../plugin-api-private";',
+        "packages/plugins/src/nested/good.ts":
+          'import type { PluginDefinition } from "@motion5/core/plugin-api";\nexport * from "../frame";',
+        "packages/plugins/src/nested/bad.ts": 'export * from "../../outside";',
+        "packages/plugins/src/dynamic.ts": 'const privateCore = import("@motion5/core/internal");',
+        "packages/plugins/src/lookalike.ts": 'export * from "../plugin-api-private";',
       },
       (tree) => scan(tree),
     );
     expect(violations.sort()).toEqual([
-      "packages/core/src/plugins/dynamic.ts: private core import outside plugin-api",
-      "packages/core/src/plugins/lookalike.ts: private core import outside plugin-api",
-      "packages/core/src/plugins/nested/bad.ts: private core import outside plugin-api",
+      "packages/plugins/src/dynamic.ts: import outside plugin package contract",
+      "packages/plugins/src/lookalike.ts: import outside plugin package contract",
+      "packages/plugins/src/nested/bad.ts: import outside plugin package contract",
     ]);
   });
 
@@ -501,7 +518,7 @@ describe("boundary scan: the public 3D surface", () => {
     const violations = await withTree(
       {
         "packages/core/src/renderer3d/mesh.ts": cleanFixture,
-        "packages/core/src/plugins/clean.ts": cleanFixture,
+        "packages/plugins/src/clean.ts": cleanFixture,
       },
       (tree) => scan(tree),
     );
@@ -516,32 +533,34 @@ describe("boundary scan: the public 3D surface", () => {
 
     const violations = await withTree(
       {
-        "packages/core/src/plugins/dynamic.ts": `${dynamicRendererViolationFixture}\n${importMentionFixture}`,
+        "packages/plugins/src/dynamic.ts": `${dynamicRendererViolationFixture}\n${importMentionFixture}`,
       },
       (tree) => scan(tree),
     );
-    expect(violations).toEqual(["packages/core/src/plugins/dynamic.ts: renderer or engine import"]);
+    expect(violations).toEqual([
+      "packages/plugins/src/dynamic.ts: import outside plugin package contract",
+    ]);
 
     const proseOnly = await withTree(
-      { "packages/core/src/plugins/prose.ts": importMentionFixture },
+      { "packages/plugins/src/prose.ts": importMentionFixture },
       (tree) => scan(tree),
     );
     expect(proseOnly).toEqual([]);
   });
 
-  it("TH-114 refuses a consumer import of a core subpath the manifest does not declare", async () => {
+  it("TH-114 refuses an undeclared subpath of any workspace package", async () => {
     const subpaths = await declared;
-    expect(undeclaredCoreSubpaths(undeclaredSubpathFixture, subpaths)).toEqual([
-      "@motion5/core/plugins/fabrik",
+    expect(undeclaredWorkspaceSubpaths(undeclaredSubpathFixture, subpaths)).toEqual([
+      "@motion5/plugins/fabrik",
     ]);
     for (const fixture of [
       plugin3dEntrypointFixture,
       pluginEntrypointFixture,
       coreEntrypointFixture,
       adapterEntrypointFixture,
-      '// see "@motion5/core/plugins/fabrik" for the solve\nexport const kept = 1;',
+      '// see "@motion5/plugins/fabrik" for the solve\nexport const kept = 1;',
     ])
-      expect(undeclaredCoreSubpaths(fixture, subpaths)).toEqual([]);
+      expect(undeclaredWorkspaceSubpaths(fixture, subpaths)).toEqual([]);
 
     const consumer = `${plugin3dEntrypointFixture}\n${undeclaredSubpathFixture}`;
     const withManifest = await withTree(
@@ -552,15 +571,19 @@ describe("boundary scan: the public 3D surface", () => {
       (tree) => scan(tree),
     );
     expect(withManifest).toEqual([
-      "packages/three/src/index.ts: undeclared core subpath @motion5/core/plugins/fabrik",
+      "packages/three/src/index.ts: undeclared workspace subpath @motion5/plugins/fabrik",
     ]);
     // With no core manifest nothing is declared, so the same consumer fails closed on both.
-    const withoutManifest = await withTree({ "packages/three/src/index.ts": consumer }, (tree) =>
-      scan(tree),
+    const withoutManifest = await withTree(
+      {
+        "packages/plugins/package.json": '{"name":"@motion5/plugins"}',
+        "packages/three/src/index.ts": consumer,
+      },
+      (tree) => scan(tree),
     );
     expect(withoutManifest).toEqual([
-      "packages/three/src/index.ts: undeclared core subpath @motion5/core/plugins/ik3d",
-      "packages/three/src/index.ts: undeclared core subpath @motion5/core/plugins/fabrik",
+      "packages/three/src/index.ts: undeclared workspace subpath @motion5/plugins/ik3d",
+      "packages/three/src/index.ts: undeclared workspace subpath @motion5/plugins/fabrik",
     ]);
   });
 });
