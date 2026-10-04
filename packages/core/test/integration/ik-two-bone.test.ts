@@ -77,9 +77,9 @@ const SIX_NODE_IK_PROJECT: ProjectDefinition = {
 };
 
 import { PluginRegistry } from "../../src/domain/plugins";
-import { transformPlugin } from "../../src/plugins/transform";
-import { fkPlugin } from "../../src/plugins/fk";
-import { ikPlugin } from "../../src/plugins/ik";
+import { transformPlugin } from "../../../plugins/src/transform";
+import { fkPlugin } from "../../../plugins/src/fk";
+import { ikPlugin } from "../../../plugins/src/ik";
 
 function createEngine(project: ProjectDefinition) {
   const seam = createRealGsapSeam();

@@ -35,9 +35,9 @@ The registry has no implicit 3D plugins. Register all three explicitly before lo
 
 ```ts
 import { PluginRegistry } from "@motion5/core";
-import { fk3dPlugin } from "@motion5/core/plugins/fk3d";
-import { ik3dPlugin } from "@motion5/core/plugins/ik3d";
-import { transform3dPlugin } from "@motion5/core/plugins/transform3d";
+import { fk3dPlugin } from "@motion5/plugins/fk3d";
+import { ik3dPlugin } from "@motion5/plugins/ik3d";
+import { transform3dPlugin } from "@motion5/plugins/transform3d";
 
 const plugins = new PluginRegistry();
 plugins.register(transform3dPlugin);

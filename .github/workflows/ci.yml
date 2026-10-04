@@ -130,6 +130,9 @@ jobs:
       - run: npx tsc -p packages/core/tsconfig.build.json
       - run: test -f packages/core/dist/index.js
       - run: test -f packages/core/dist/index.d.ts
+      - run: npx tsc -p packages/plugins/tsconfig.build.json
+      - run: test -f packages/plugins/dist/fk.js
+      - run: test -f packages/plugins/dist/fk.d.ts
 
   end-to-end:
     name: end-to-end (node 24.21.0)

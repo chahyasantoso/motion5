@@ -5,8 +5,8 @@ import { Engine } from "../../src/engine";
 import { createManualClock } from "../../src/ports/clock";
 import type { Patch } from "../../src/runtime/patch-registry";
 import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
-import { FABRIK_TOLERANCE } from "../../src/plugins/fabrik";
-import { fk3dPlugin } from "../../src/plugins/fk3d";
+import { FABRIK_TOLERANCE } from "../../../plugins/src/fabrik";
+import { fk3dPlugin } from "../../../plugins/src/fk3d";
 import {
   matrixFromEuler3d,
   multiplyMatrix3,
@@ -17,9 +17,9 @@ import {
   twistAbout3d,
   type Matrix3,
   type Vec3,
-} from "../../src/plugins/frame3d";
-import { ik3dPlugin } from "../../src/plugins/ik3d";
-import { transform3dPlugin } from "../../src/plugins/transform3d";
+} from "../../../plugins/src/frame3d";
+import { ik3dPlugin } from "../../../plugins/src/ik3d";
+import { transform3dPlugin } from "../../../plugins/src/transform3d";
 
 // 3D joint limits through `Engine` (issue #500 phase 6, ADR-123): a two-bone arm whose shoulder is
 // a cone and whose elbow is a one-way hinge loads, is solved by 3D FABRIK rather than the closed

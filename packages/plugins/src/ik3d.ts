@@ -1,5 +1,5 @@
-import { INSPECTION_KEY, INSPECT_KEY, POLE_SLOT } from "../plugin-api";
-import type { ImmutableRecord, PluginDefinition } from "../plugin-api";
+import { INSPECTION_KEY, INSPECT_KEY, POLE_SLOT } from "@motion5/core/plugin-api";
+import type { ImmutableRecord, PluginDefinition } from "@motion5/core/plugin-api";
 import { readFrame3d } from "./frame3d";
 import { inspectionOutput } from "./ik-result";
 import { readPole3d } from "./ik3d-analytic";

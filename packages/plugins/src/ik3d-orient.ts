@@ -1,4 +1,4 @@
-import { ORIENT_KEY, readOrientValue, unreachable } from "../plugin-api";
+import { ORIENT_KEY, readOrientValue, unreachable } from "@motion5/core/plugin-api";
 import { readNumber, segmentExtent } from "./frame";
 import {
   blendOrientation3d,

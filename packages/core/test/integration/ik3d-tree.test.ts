@@ -5,11 +5,11 @@ import { Engine } from "../../src/engine";
 import { createManualClock } from "../../src/ports/clock";
 import type { Patch } from "../../src/runtime/patch-registry";
 import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
-import { FABRIK_TOLERANCE } from "../../src/plugins/fabrik";
-import { fk3dPlugin } from "../../src/plugins/fk3d";
-import { readFrame3d } from "../../src/plugins/frame3d";
-import { ik3dPlugin } from "../../src/plugins/ik3d";
-import { transform3dPlugin } from "../../src/plugins/transform3d";
+import { FABRIK_TOLERANCE } from "../../../plugins/src/fabrik";
+import { fk3dPlugin } from "../../../plugins/src/fk3d";
+import { readFrame3d } from "../../../plugins/src/frame3d";
+import { ik3dPlugin } from "../../../plugins/src/ik3d";
+import { transform3dPlugin } from "../../../plugins/src/transform3d";
 
 type Values = Readonly<Record<string, unknown>>;
 

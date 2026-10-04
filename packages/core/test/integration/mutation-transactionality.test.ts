@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { Engine } from "../../src/engine";
 import { PluginRegistry } from "../../src/domain/plugins";
-import { fkPlugin } from "../../src/plugins/fk";
-import { transformPlugin } from "../../src/plugins/transform";
+import { fkPlugin } from "../../../plugins/src/fk";
+import { transformPlugin } from "../../../plugins/src/transform";
 import { createManualClock } from "../../src/ports/clock";
 import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
 import type { Patch } from "../../src/contract/v5";

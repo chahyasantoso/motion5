@@ -3,7 +3,6 @@ import type { RenderMetadata } from "./ports/render-metadata";
 
 export type { LivePatch, Patch, PatchListener } from "./runtime/patch-registry";
 export { patchRender } from "./contract/patch-render";
-export { readFrame3d } from "./plugins/frame3d";
 export type { PatchRender } from "./contract/patch-render";
 export type { RenderMetadata } from "./ports/render-metadata";
 /**

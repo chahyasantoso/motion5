@@ -9,7 +9,7 @@ import { PluginRegistry } from "../../src/domain/plugins";
 import { Engine } from "../../src/engine";
 import { createManualClock } from "../../src/ports/clock";
 import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
-import { fk3dPlugin } from "../../src/plugins/fk3d";
+import { fk3dPlugin } from "../../../plugins/src/fk3d";
 import {
   blendOrientation3d,
   composeWorld3d,
@@ -18,9 +18,9 @@ import {
   ZERO_EULER,
   type Euler3d,
   type WorldFrame3d,
-} from "../../src/plugins/frame3d";
-import { ik3dPlugin } from "../../src/plugins/ik3d";
-import { transform3dPlugin } from "../../src/plugins/transform3d";
+} from "../../../plugins/src/frame3d";
+import { ik3dPlugin } from "../../../plugins/src/ik3d";
+import { transform3dPlugin } from "../../../plugins/src/transform3d";
 import type { Patch } from "../../src/runtime/patch-registry";
 
 function member(id: string, base: string, length: number): TrackDefinition {

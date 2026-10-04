@@ -1,4 +1,4 @@
-import type { PluginDefinition } from "../plugin-api";
+import type { PluginDefinition } from "@motion5/core/plugin-api";
 
 export const transformPlugin: PluginDefinition = {
   name: "transform",

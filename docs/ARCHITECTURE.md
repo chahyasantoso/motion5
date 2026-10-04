@@ -228,15 +228,19 @@ packages/
       errors/
       index.ts     allow-listed public surface
       internal.ts  unadvertised entrypoint, repository use only
+      plugin-api.ts declared plugin-authoring protocol, re-exports only
     test/
       unit/
       integration/
       contract/    port contract suites run against fake and real
       fixtures/
+  plugins/
+    src/           first-party implementations and frame utilities; core contract imports only
+    test/          declared subpath surface; implementation tests remain in core for now
   react/
     src/           patch and lifecycle hooks only
   three/
-    src/           optional Three.js Object3D patch adapter
+    src/           optional Three.js Object3D patch adapter; reads plugins/frame3d
 performance/
   budgets.json
   graph-benchmark.mjs

@@ -1,5 +1,7 @@
 # ADR-036: the declared entrypoints are the public surface
 
+**Superseded in part by ADR-133, 2026-10-04.**
+
 **Status:** accepted
 
 **Date:** 2026-08-18

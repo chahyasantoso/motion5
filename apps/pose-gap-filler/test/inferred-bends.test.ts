@@ -1,9 +1,9 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { Engine, PluginRegistry, type ProjectDefinition } from "@motion5/core";
-import { transform3dPlugin } from "@motion5/core/plugins/transform3d";
-import { fk3dPlugin } from "@motion5/core/plugins/fk3d";
-import { ik3dPlugin } from "@motion5/core/plugins/ik3d";
+import { transform3dPlugin } from "@motion5/plugins/transform3d";
+import { fk3dPlugin } from "@motion5/plugins/fk3d";
+import { ik3dPlugin } from "@motion5/plugins/ik3d";
 import type { FilledFrame, FilledJoint } from "../src/filler/frame";
 import { createGapFiller } from "../src/filler/gap-filler";
 import { createGapPipeline } from "../src/filler/pipeline";
