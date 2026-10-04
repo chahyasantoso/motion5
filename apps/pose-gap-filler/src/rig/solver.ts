@@ -12,6 +12,27 @@ import {
 import { createImageWriter, createWorldWriter } from "./writer";
 import type { LandmarkSpace } from "../filler/space";
 import { unreachable } from "../filler/unreachable";
+import { presentedPosition, trustedPosition } from "../filler/frame";
+import { LIMBS } from "../filler/landmarks";
+import { distance } from "../filler/vec";
+import { LEGACY_BEND_POLICY, type BendPolicy, type BendReference } from "./bend-policy";
+import { diagnosePenetration, type PenetrationReport } from "./penetration";
+
+export interface RigDiagnostics {
+  readonly tMs: number;
+  readonly bends: ReadonlyMap<LimbId, BendReference>;
+  readonly residuals: ReadonlyMap<LimbId, SolveResidual>;
+  readonly penetration: PenetrationReport;
+}
+export interface SolveResidual {
+  readonly middleToFilledMm: number | undefined;
+  readonly middleToObservedMm: number | undefined;
+  readonly tipToFilledMm: number | undefined;
+}
+export interface WorldSolveOptions {
+  readonly bendPolicy?: BendPolicy;
+  readonly diagnostics?: boolean;
+}
 
 /** One frame's solve: the chains written this frame, keyed by limb. */
 export interface PoseSolver {
@@ -32,6 +53,7 @@ export function createImageSolver(project: ProjectHandle): PoseSolver {
 export interface RigSolver extends PoseSolver {
   /** Read-only publications from this solver's sole project. Image/test solvers may omit it. */
   readPatch?(nodeId: string): Patch | undefined;
+  readDiagnostics?(): RigDiagnostics | undefined;
   dispose(): void;
 }
 
@@ -42,28 +64,75 @@ export function createImageRigSolver(ports: RigPorts): RigSolver {
   return { solve: solver.solve, dispose: () => project.dispose() };
 }
 
-export function createWorldRigSolver(ports: RigPorts): RigSolver {
+export function createWorldRigSolver(ports: RigPorts, options: WorldSolveOptions = {}): RigSolver {
   const project = loadWorldRig(ports);
-  const writer = createWorldWriter(project);
+  let writer;
+  try {
+    writer = createWorldWriter(project, options.bendPolicy ?? LEGACY_BEND_POLICY);
+  } catch (error) {
+    project.dispose();
+    throw error;
+  }
+  const diagnosticsEnabled = options.diagnostics ?? false;
+  let diagnostics: RigDiagnostics | undefined;
   return {
     readPatch: (nodeId) => project.get(nodeId),
+    readDiagnostics: () => diagnostics,
     solve(step, lengths) {
-      return readWrittenLimbs(project, writer.write(step.filled, step.trusted, lengths), [
-        "x",
-        "y",
-        "z",
-      ]);
+      diagnostics = undefined;
+      const writes = writer.write(step.filled, step.trusted, lengths);
+      const solved = readWrittenLimbs(project, writes, ["x", "y", "z"]);
+      if (diagnosticsEnabled) {
+        const bends = new Map<LimbId, BendReference>();
+        const residuals = new Map<LimbId, SolveResidual>();
+        for (const limb of LIMBS) {
+          const write = writes[limb.id];
+          // Legacy has no age-bounded evidence contract. Do not fabricate a provenance label.
+          if (write.kind === "skipped") bends.set(limb.id, { kind: "unavailable" });
+          else if (write.bend !== undefined) bends.set(limb.id, write.bend);
+          const pose = solved.get(limb.id);
+          const filledMiddle = presentedPosition(step.filled.joints[limb.middle]);
+          const observedMiddle = trustedPosition(step.trusted.trust[limb.middle]);
+          const tip = presentedPosition(step.filled.joints[limb.tip]);
+          residuals.set(limb.id, {
+            middleToFilledMm:
+              pose === undefined || filledMiddle === undefined
+                ? undefined
+                : distance(pose.middle, filledMiddle),
+            middleToObservedMm:
+              pose === undefined || observedMiddle === undefined
+                ? undefined
+                : distance(pose.middle, observedMiddle),
+            tipToFilledMm:
+              pose === undefined || tip === undefined ? undefined : distance(pose.tip, tip),
+          });
+        }
+        diagnostics = {
+          tMs: step.filled.tMs,
+          bends,
+          residuals,
+          penetration: diagnosePenetration(step.filled, solved),
+        };
+      }
+      return solved;
     },
-    dispose: () => project.dispose(),
+    dispose() {
+      diagnostics = undefined;
+      project.dispose();
+    },
   };
 }
 
-export function createRigSolver(ports: RigPorts, space: LandmarkSpace): RigSolver {
+export function createRigSolver(
+  ports: RigPorts,
+  space: LandmarkSpace,
+  options: WorldSolveOptions = {},
+): RigSolver {
   switch (space.kind) {
     case "image":
       return createImageRigSolver(ports);
     case "world":
-      return createWorldRigSolver(ports);
+      return createWorldRigSolver(ports, options);
     default:
       return unreachable(space, "rig space");
   }

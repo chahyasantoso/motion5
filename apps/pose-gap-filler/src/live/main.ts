@@ -17,6 +17,7 @@ import { parseRecording } from "../replay/recording";
 import { DEFAULT_STAGE } from "../replay/synthetic";
 import type { RigPorts } from "../rig/rig";
 import { createRigSolver } from "../rig/solver";
+import { LEGACY_BEND_POLICY, PREDICTED_BEND_POLICY } from "../rig/bend-policy";
 import { createGapPipeline } from "../filler/pipeline";
 import { STABILIZER_KINDS, stabilizerFor, type StabilizerKind } from "../filler/stabilizer";
 import { fitWeakPerspective } from "./projection";
@@ -33,9 +34,10 @@ import { createStageTimer, formatTimings } from "./timings";
 import { actorFrame, actorPose, hipMidpoint } from "../synthetic/actor";
 import { defaultCameraSpec } from "../synthetic/camera";
 import { createSimulator } from "../synthetic/simulator";
-import { required } from "../view/dom";
+import { interactiveTarget, required } from "../view/dom";
 import { mountSimulatorPanel } from "../view/simulator-panel";
 import { mountAvatarViewport } from "../view/avatar-viewport";
+import { publishFrame } from "./publish-frame";
 
 /** The synthetic takes are generated on the stage the page draws, so one size owns both. */
 const STAGE: StageSize = DEFAULT_STAGE;
@@ -78,6 +80,17 @@ function main(): void {
   const report = required<HTMLElement>("#report");
   const avatarSection = required<HTMLElement>("#avatar-section");
   const avatarEnabled = required<HTMLInputElement>("#show-avatar");
+  const bendSelect = required<HTMLSelectElement>("#bend-policy");
+  const selectedBend = () => {
+    switch (bendSelect.value) {
+      case "legacy":
+        return LEGACY_BEND_POLICY;
+      case "predict":
+        return PREDICTED_BEND_POLICY;
+      default:
+        throw new Error("Unknown bend policy.");
+    }
+  };
   const viewport = mountAvatarViewport(
     required<HTMLCanvasElement>("#avatar-view"),
     required<HTMLElement>("#avatar-info"),
@@ -108,7 +121,11 @@ function main(): void {
   // The camera fit's image half is stabilized as the world half is, on the image detector the
   // still take calibrated (the default until one), so the fit trusts what the image replay trusts.
   const rig = createLiveRig(
-    () => createRigSolver(rigPorts(), experiment.space),
+    () =>
+      createRigSolver(rigPorts(), experiment.space, {
+        bendPolicy: selectedBend(),
+        diagnostics: true,
+      }),
     () =>
       createGapPipeline({
         filler: { kind: "raw" },
@@ -117,6 +134,11 @@ function main(): void {
       }),
     viewport.clear,
   );
+  bendSelect.addEventListener("change", () => {
+    experiment.pipeline.reset();
+    rig.restart();
+    report.textContent = `World bend policy: ${bendSelect.value}. State reset; predictions never become observations.`;
+  });
   spaceSelect.addEventListener("change", () => {
     const next = LANDMARK_SPACES.find((candidate) => candidate.kind === spaceSelect.value);
     if (next === undefined) throw new Error("Unknown landmark space.");
@@ -140,8 +162,7 @@ function main(): void {
   const forced = createForcedJoints();
   const recorder = createRecorder(STAGE);
   addEventListener("keydown", (event) => {
-    if (event.target instanceof HTMLInputElement || event.target instanceof HTMLSelectElement)
-      return;
+    if (interactiveTarget(event.target) || event.ctrlKey || event.metaKey || event.altKey) return;
     if (forced.toggle(event.key, event.repeat)) event.preventDefault();
   });
   // A take is one subject from one source: ending the source ends the take, saved as if stopped.
@@ -189,7 +210,8 @@ function main(): void {
           stabilizer: experiment.stabilizer.kind,
           // One still take calibrates both spaces, so the record judges both.
           calibrationFor: (nativeSpace) => experiment.calibrations?.[nativeSpace.kind],
-          createSolver: (nativeSpace) => createRigSolver(rigPorts(), nativeSpace),
+          createSolver: (nativeSpace) =>
+            createRigSolver(rigPorts(), nativeSpace, { bendPolicy: selectedBend() }),
         });
         report.textContent = formatComparisonRecord(comparison);
       })
@@ -224,7 +246,19 @@ function main(): void {
     const pipeline = experiment.pipeline;
     const step = pipeline.step(frame, forced.joints);
     timer.mark("fill");
-    const solved = rig.solver.solve(step, pipeline.lengths);
+    // Publication failures retain display history, never publish yesterday's chains as today's.
+    const publication = publishFrame(rig.solver, step, pipeline.lengths);
+    const solved = publication.solved;
+    let solveFailure: string | undefined;
+    switch (publication.kind) {
+      case "published":
+        break;
+      case "unavailable":
+        solveFailure = `solver publication unavailable: ${String(publication.error)}`;
+        break;
+      default:
+        unreachable(publication, "frame publication");
+    }
     timer.mark("write");
     if (avatarEnabled.checked && space.kind === "world")
       viewport.update(
@@ -254,7 +288,11 @@ function main(): void {
     const timings = timer.finish(tMs, detectMs);
     const held = [...forced.joints].join(", ") || "none";
     const ingest = `in ${counts.accepted}, restarts ${counts.restarts}, dropped ${counts.rejected}`;
-    readout.textContent = `${space.kind} · ${formatTimings(timings)} · ${ingest} · forced: ${held}${space.kind === "world" ? (fit === undefined ? " · no trusted camera fit" : ` · fit ${fit.rmsPx.toFixed(1)} px (${fit.pairCount} pairs)`) : ""}`;
+    const rejected = Object.entries(step.trusted.rejections ?? {}).map(
+      ([joint, rejection]) =>
+        `${joint}: ${rejection.kind === "invalid" ? "invalid" : `${rejection.reason} (innovation ${rejection.innovation.toFixed(1)}, limit ${rejection.limit.toFixed(1)} native units, confirmation ${rejection.candidates})`}`,
+    );
+    readout.textContent = `${space.kind} · ${formatTimings(timings)} · ${ingest} · forced: ${held}${space.kind === "world" ? (fit === undefined ? " · no trusted camera fit" : ` · fit ${fit.rmsPx.toFixed(1)} px (${fit.pairCount} pairs)`) : ""}${rejected.length === 0 ? "" : ` · rejected ${rejected.join("; ")}`}${solveFailure === undefined ? "" : ` · ${solveFailure}`}`;
     if (log) console.debug(JSON.stringify(timings));
   };
   const selectedSource = () => {

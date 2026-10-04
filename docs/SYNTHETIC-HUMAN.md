@@ -215,13 +215,42 @@ one pole per limb; measured middle/root pairs remain the only inputs that update
 history. An inferred root translates the held pole but cannot retrain it (`GF-152`).
 
 Blue means measured **inputs**, not guaranteed truth or an exact solved middle.
-Amber wireframe means inferred inputs; grey means neutral orientation/anatomy.
+Amber wireframe means inferred inputs; solid grey means neutral orientation/anatomy.
+Grey wireframe means stale presentation geometry with current evidence unavailable.
 Noiseless consistent calibrated limbs reproduce middle and tip; the readout exposes separate
 solved-versus-trusted middle and tip residuals for inconsistent noisy inputs (`GF-154`).
-Unobserved residuals are unavailable, not zero. Skipped/lost limbs are hidden even when the
-project retains old ready patches, and solver replacement re-arms renderer revisions
-(`GF-139` through `GF-141`). Raw/hold ablations keep their own root presentation, so the coarse
-body connects to those actual chain roots rather than substituting stabilized anchors.
+Unobserved residuals are unavailable, not zero. Skipped/lost limbs retain their last accepted
+display transforms, never arbitrary old ready project patches (`GF-139` through `GF-141`).
+Each limb and body primitive reports current, stale or unavailable presentation independently.
+Before a primitive has any valid display geometry it remains unavailable; no authored simulator
+truth or unseen anatomy is fabricated. Partial/complete evidence loss holds only already accepted
+geometry, unchanged in world coordinates. A moving current body can therefore be disconnected
+from a stale limb: attachment reconstruction would be a separate inferred presentation policy.
+Stale residuals are unavailable and stale geometry is excluded from solver penetration diagnostics,
+observed camera fit and replay metrics. Orbit framing includes visible stale geometry because it
+is display-only. Raw/hold ablations keep their own roots rather than substituting stabilized anchors.
+
+The single freshness owner, `view/presentation-history.ts`, retains timestamps and current-frame
+membership only; the persistent Three primitives retain their display transforms. No held geometry
+can enter trust, One Euro, Chain Kalman, length training, bend history or future observations.
+Solver/project replacement and `clear()` invalidate display history and adapter revisions.
+`live/publish-frame.ts` catches live solver publication failures, returns an empty current solve,
+and leaves the source alive so the next frame can retry. Replay still fails on actual solver errors.
+
+Before either smoother or filler sees a sample, the detector applies an independent per-joint
+innovation gate using only accepted raw history. Engineering defaults are a 30 px / 120 mm floor
+or 0.3 raw bone lengths, whichever is larger; velocity is low-pass estimated and extrapolated at
+most 100 ms. The raw accepted detector-scale estimator is separate from stabilized anatomical
+lengths, so choosing a smoother cannot change trust. Three nearby candidates at most 150 ms
+apart can confirm persistent relocation, but never bypass the legacy speed limit.
+Absent/forced/low-visibility/invalid samples break confirmation. A rejected candidate cannot train
+any downstream stage; promoted candidates become new accepted evidence with zero initial velocity.
+Rejections carry explicit innovation/speed/invalid diagnostics in native units.
+Raw remains an intentionally ungated observation reference, including rejected coordinates.
+Invalid joints consume a frame as gaps while valid joints still advance, just like absent joints;
+invalid/non-increasing frame times or changing space without reset fail before state mutation.
+First observations, slow drift and a persistent wrong plateau cannot be proven correct temporally.
+These thresholds are synthetic engineering defaults, not calibrated phone data or an accuracy claim.
 
 Coarse palm/foot planes use wrist/index/pinky or ankle/foot-index/heel extra world slots when
 coordinates and confidence are finite, reported presence is not below threshold, and the plane

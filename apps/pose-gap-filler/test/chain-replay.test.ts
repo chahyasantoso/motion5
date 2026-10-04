@@ -69,6 +69,8 @@ describe("chain comparison in the shared Engine-backed harness", () => {
         recording: exercise,
         space: IMAGE_SPACE,
         filler: { kind: "chain-kalman", noise: DEFAULT_KALMAN_NOISE, coastMs: 100 },
+        // Isolate coast publication; innovation reacquisition has its own integration cases.
+        detector: { threshold: 0.5, gate: Infinity, innovation: false },
         masks: [{ kind: "span", joints: ["left-elbow", "left-wrist"], from: 30, to: 50 }],
         solver,
       });
