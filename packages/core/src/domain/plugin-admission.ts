@@ -11,7 +11,10 @@ export interface AdmissionContext {
   inputOwner(input: string): string | undefined;
 }
 
+// Keyed by the union, so a new stage owes an entry here as well as an arm in `stageRank`. Checked
+// at run time because admission is reachable from JavaScript and separately built modules.
 const VALID_STAGES: Readonly<Record<PluginStage, true>> = { prepare: true, compose: true };
+// `typeof` first: `Object.hasOwn` coerces its key, so `["prepare"]` or a boxed string would pass.
 function isPluginStage(value: unknown): value is PluginStage {
   return typeof value === "string" && Object.hasOwn(VALID_STAGES, value);
 }
@@ -31,6 +34,7 @@ export function deepFreeze<T>(value: T, seen = new WeakSet<object>()): T {
 export function admitPlugin(plugin: PluginDefinition, context: AdmissionContext): AdmittedPlugin {
   if (typeof plugin !== "object" || plugin === null)
     throw new TypeError("Plugin name must be a non-empty string.");
+  // Own enumerable properties, each getter read exactly once; every later check reads `source`.
   const source: PluginDefinition = { ...plugin };
   if (typeof source.name !== "string" || !source.name.trim())
     throw new TypeError("Plugin name must be a non-empty string.");
@@ -60,17 +64,21 @@ export function admitPlugin(plugin: PluginDefinition, context: AdmissionContext)
   const keys = Object.freeze([...(source.keys ?? [])]);
   const inputs = Object.freeze([...(source.inputs ?? [])]);
   const outputs = Object.freeze([...(source.outputs ?? [])]);
-  const slots = Object.keys(source.requirements ?? {});
+  // One copy: the slots validated are exactly the slots stored.
+  const requirements = source.requirements === undefined ? undefined : { ...source.requirements };
+  const slots = Object.keys(requirements ?? {});
   for (const slot of slots)
     if (!slot.trim())
       throw new TypeError(`Plugin "${source.name}" requirement slot must be non-empty.`);
-  // Public metadata must not enter the colon-namespaced internal-key space. See ADR-057.
+  // The colon is the internal-key namespace: a public `fk:world` output would be dropped before
+  // publication, and a namespaced slot could never be spelled inside an authored group. See ADR-057.
   for (const name of [...keys, ...inputs, ...outputs, ...slots]) {
     if (!name.includes(":")) continue;
     const detail = `metadata name "${name}" must not contain ':'`;
     throw new TypeError(`Plugin "${source.name}" ${detail}.`);
   }
-  // Inputs have no authored group that could select an owner. Keys and slots do.
+  // No key or slot collision guard: an authored group names the owner of its keys and scopes its
+  // slots (ADR-043, ADR-121). An input has no group to name an owner, so this is its only owner.
   for (const input of inputs) {
     const owner = context.inputOwner(input);
     if (owner !== undefined)
@@ -83,7 +91,7 @@ export function admitPlugin(plugin: PluginDefinition, context: AdmissionContext)
     ...(source.keys ? { keys } : {}),
     ...(source.inputs ? { inputs } : {}),
     ...(source.outputs ? { outputs } : {}),
-    ...(source.requirements ? { requirements: deepFreeze({ ...source.requirements }) } : {}),
+    ...(requirements ? { requirements: deepFreeze(requirements) } : {}),
   });
   return { definition, keys, inputs };
 }

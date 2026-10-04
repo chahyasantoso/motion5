@@ -330,7 +330,7 @@ describe("atomic plugin batch admission", () => {
       name: "prepare",
       keys: ["prepare"],
       stage: "prepare",
-      contribute: () => ({ keyframes: { generated: {} } }),
+      contribute: () => ({ keyframes: { generated: [] } }),
       compose: (values) => values,
     });
     expect(
