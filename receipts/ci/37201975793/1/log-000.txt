@@ -1,0 +1,41 @@
+quality (node 24.21.0)	Run npm run typecheck	﻿2026-10-04T12:24:25.1054556Z ##[group]Run npm run typecheck
+quality (node 24.21.0)	Run npm run typecheck	2026-10-04T12:24:25.1054904Z ^[[36;1mnpm run typecheck^[[0m
+quality (node 24.21.0)	Run npm run typecheck	2026-10-04T12:24:25.1119240Z shell: /usr/bin/bash -e {0}
+quality (node 24.21.0)	Run npm run typecheck	2026-10-04T12:24:25.1119528Z env:
+quality (node 24.21.0)	Run npm run typecheck	2026-10-04T12:24:25.1119735Z   NODE_VERSION: 24.21.0
+quality (node 24.21.0)	Run npm run typecheck	2026-10-04T12:24:25.1120020Z   CI_EVIDENCE_DIR: /home/runner/work/_temp/ci-evidence
+quality (node 24.21.0)	Run npm run typecheck	2026-10-04T12:24:25.1120342Z ##[endgroup]
+quality (node 24.21.0)	Run npm run typecheck	2026-10-04T12:24:25.2141472Z 
+quality (node 24.21.0)	Run npm run typecheck	2026-10-04T12:24:25.2142333Z > motion5@0.0.0 typecheck
+quality (node 24.21.0)	Run npm run typecheck	2026-10-04T12:24:25.2143531Z > tsc --noEmit -p tsconfig.json
+quality (node 24.21.0)	Run npm run typecheck	2026-10-04T12:24:25.2144239Z 
+quality (node 24.21.0)	Run npm run typecheck	2026-10-04T12:24:33.6911092Z ##[error]packages/plugins/test/integration/ik-envelope.test.ts(12,61): error TS2307: Cannot find module '@motion5/core/testing' or its corresponding type declarations.
+quality (node 24.21.0)	Run npm run typecheck	2026-10-04T12:24:33.6920910Z ##[error]packages/plugins/test/integration/ik-guide-examples.test.ts(12,61): error TS2307: Cannot find module '@motion5/core/testing' or its corresponding type declarations.
+quality (node 24.21.0)	Run npm run typecheck	2026-10-04T12:24:33.6923174Z ##[error]packages/plugins/test/integration/ik-stability.test.ts(6,61): error TS2307: Cannot find module '@motion5/core/testing' or its corresponding type declarations.
+quality (node 24.21.0)	Run npm run typecheck	2026-10-04T12:24:33.6925354Z ##[error]packages/plugins/test/integration/ik3d-guide-examples.test.ts(8,61): error TS2307: Cannot find module '@motion5/core/testing' or its corresponding type declarations.
+quality (node 24.21.0)	Run npm run typecheck	2026-10-04T12:24:33.6927382Z ##[error]packages/plugins/test/integration/ik3d-joint.test.ts(7,61): error TS2307: Cannot find module '@motion5/core/testing' or its corresponding type declarations.
+quality (node 24.21.0)	Run npm run typecheck	2026-10-04T12:24:33.6929777Z ##[error]packages/plugins/test/integration/ik3d-orient.test.ts(18,61): error TS2307: Cannot find module '@motion5/core/testing' or its corresponding type declarations.
+quality (node 24.21.0)	Run npm run typecheck	2026-10-04T12:24:33.6931855Z ##[error]packages/plugins/test/integration/ik3d-tree.test.ts(7,61): error TS2307: Cannot find module '@motion5/core/testing' or its corresponding type declarations.
+quality (node 24.21.0)	Run npm run typecheck	2026-10-04T12:24:33.6933929Z ##[error]packages/plugins/test/integration/live-value-composition.test.ts(9,61): error TS2307: Cannot find module '@motion5/core/testing' or its corresponding type declarations.
+quality (node 24.21.0)	Run npm run typecheck	2026-10-04T12:24:33.6936069Z ##[error]packages/plugins/test/integration/mutation-transactionality.test.ts(7,61): error TS2307: Cannot find module '@motion5/core/testing' or its corresponding type declarations.
+quality (node 24.21.0)	Run npm run typecheck	2026-10-04T12:24:33.6938822Z ##[error]packages/plugins/test/integration/per-plugin-key-ownership.test.ts(8,61): error TS2307: Cannot find module '@motion5/core/testing' or its corresponding type declarations.
+quality (node 24.21.0)	Run npm run typecheck	2026-10-04T12:24:33.6963093Z ##[error]packages/plugins/test/integration/plugin-owned-requirements.test.ts(8,61): error TS2307: Cannot find module '@motion5/core/testing' or its corresponding type declarations.
+quality (node 24.21.0)	Run npm run typecheck	2026-10-04T12:24:33.6967284Z ##[error]packages/plugins/test/integration/replace-track-transactionality.test.ts(7,61): error TS2307: Cannot find module '@motion5/core/testing' or its corresponding type declarations.
+quality (node 24.21.0)	Run npm run typecheck	2026-10-04T12:24:33.6971655Z ##[error]packages/plugins/test/integration/single-input-channel.test.ts(8,61): error TS2307: Cannot find module '@motion5/core/testing' or its corresponding type declarations.
+quality (node 24.21.0)	Run npm run typecheck	2026-10-04T12:24:33.7561858Z ##[error]Process completed with exit code 2.
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	﻿2026-10-04T12:26:59.5143242Z ##[group]Run test "$SUITE_RESULT" = success
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-10-04T12:26:59.5144018Z ^[[36;1mtest "$SUITE_RESULT" = success^[[0m
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-10-04T12:26:59.5491660Z shell: /usr/bin/bash -e {0}
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-10-04T12:26:59.5492677Z env:
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-10-04T12:26:59.5493387Z   NODE_VERSION: 24.21.0
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-10-04T12:26:59.5493931Z   SUITE_RESULT: failure
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-10-04T12:26:59.5494460Z ##[endgroup]
+end-to-end (node 24.21.0)	Require successful suite owner, including evidence verification	2026-10-04T12:26:59.5705784Z ##[error]Process completed with exit code 1.
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	﻿2026-10-04T12:27:01.2906128Z ##[group]Run test "$SUITE_RESULT" = success
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-10-04T12:27:01.2906556Z ^[[36;1mtest "$SUITE_RESULT" = success^[[0m
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-10-04T12:27:01.3137856Z shell: /usr/bin/bash -e {0}
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-10-04T12:27:01.3138395Z env:
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-10-04T12:27:01.3138622Z   NODE_VERSION: 24.21.0
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-10-04T12:27:01.3138859Z   SUITE_RESULT: failure
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-10-04T12:27:01.3139091Z ##[endgroup]
+integration (node 24.21.0)	Require successful suite owner, including evidence verification	2026-10-04T12:27:01.3263787Z ##[error]Process completed with exit code 1.
