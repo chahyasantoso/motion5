@@ -283,7 +283,7 @@ passes were withdrawn on the issue for the reasons recorded there.
 `FB-18` (the opposite-seed reach-circle result is published and the loser is not), `FB-19` (a
 feasible tree with a pivot offset converges through the offset-exact circle; red on the raw-tip
 circle) and `FB-20` (the comparator's tiers, ties, `NaN` and `Infinity`) in
-`packages/core/test/unit/plugins/fabrik-solve.test.ts`; `GI-17` (the weighted objective, the shared
+`packages/plugins/test/unit/fabrik-solve.test.ts`; `GI-17` (the weighted objective, the shared
 spread, weight-scale invariance, both pull kinds, the lone pull and the keep-the-centroid guard) in
 `ik-goal-influence.test.ts`; `SD-20` (no-regression, bit identity, permutation, repeat and
 interleave over a seeded corpus) in `ik-stability.test.ts`; and `EN-5` (envelope quality counts and

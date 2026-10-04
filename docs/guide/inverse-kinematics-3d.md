@@ -4,7 +4,7 @@ This page is for someone rigging a three-dimensional chain with the `transform3d
 `ik3d` plugins: which way the frame points, what a solve reads, how a rig branches, and how the
 published pose reaches a renderer. Authored keys are normative in [AUTHORED-SCHEMA.md](../AUTHORED-SCHEMA.md#inverse-kinematics-ik-and-fkrequiressolver), and every load refusal is listed in [Errors and diagnostics](./errors-and-diagnostics.md#inverse-kinematics-and-solver-rules). This page does not duplicate either contract.
 
-Every JSON project on this page is executed by `packages/core/test/unit/plugins/ik3d-guide-examples.test.ts`, exactly as printed. That test reads this file, parses every `json` block, loads each project, registers all three 3D plugins, mounts every track and seeks the cases described below. The examples are executable evidence, not illustrative pseudocode.
+Every JSON project on this page is executed by `packages/plugins/test/integration/ik3d-guide-examples.test.ts`, exactly as printed. That test reads this file, parses every `json` block, loads each project, registers all three 3D plugins, mounts every track and seeks the cases described below. The examples are executable evidence, not illustrative pseudocode.
 
 ## Conventions
 

@@ -3,7 +3,7 @@
 This record is the measured performance envelope for the 2D `ik` and `fk` plugins in phase 7 of
 [#349](https://github.com/chahyasantoso/motion5/issues/349), with the 3D solve scenarios
 added in issue #500 phase 5. It records fresh runs of the committed
-`packages/core/test/support/ik-envelope.ts` scenarios rather than a promise about every machine.
+`packages/plugins/test/support/ik-envelope.ts` scenarios rather than a promise about every machine.
 The deterministic shape and finiteness contract is the CI evidence; timing is deliberately not a CI
 gate under [ADR-008](./ADR-008-gates-measure-behavior-not-prose.md).
 
@@ -64,7 +64,7 @@ timings stand.
 This section is a sandbox measurement, not a CI gate. It was recorded on 2026-09-26 with Node
 `v22.23.1`, V8 `12.4.254.21-node.56`, `linux x64`, and `Intel(R) Xeon(R) Processor @ 2.60GHz`
 with 4 cores. CI uses Node `v24.21.0`, so these numbers are not a CI or cross-machine performance
-promise. Each scenario used 200 seeded rigs from `packages/core/test/support/ik3d-envelope.ts`.
+promise. Each scenario used 200 seeded rigs from `packages/plugins/test/support/ik3d-envelope.ts`.
 Each number is the median of 7 samples, each making back-to-back calls for at least 60 ms after one
 warm-up pass. Per-member figures divide the measured solve time by member count.
 

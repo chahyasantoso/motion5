@@ -211,14 +211,14 @@ arity. The visible FK composition-space tip gap is not part of it.
 - **Slice C1 (`CN-1`..`CN-3`)**: `packages/core/test/unit/domain/track-node-id.test.ts` (`nodeId` in composer contract).
 - **Slice C2 (`RS-1`..`RS-10`)**: `packages/core/test/unit/graph/resolve-solvers.test.ts` (Load-time IK diagnostics, determinism under permutation, derivation from live state alone, the one confined member walk, the scope of the dead-rotation read, and the reference bail).
 - **Slice C3 (`IK-1`..`IK-19`)**:
-  - `packages/core/test/unit/plugins/ik-solve.test.ts` (Analytical 2-bone solve math, both elbow branches, and the composed-values spread).
-  - `packages/core/test/unit/plugins/fk-solver-override.test.ts` (FK rotation override).
+  - `packages/plugins/test/unit/ik-solve.test.ts` (Analytical 2-bone solve math, both elbow branches, and the composed-values spread).
+  - `packages/plugins/test/unit/fk-solver-override.test.ts` (FK rotation override).
   - `packages/core/test/unit/runtime/publisher-solver-members.test.ts` (Publisher member gathering, member scope, failure semantics, and the one memo).
   - `packages/core/test/integration/ik-two-bone.test.ts` (Full 6-node rig integration and renderer shielding).
 - **Slice C4**: `packages/core/test/integration/phase7-walker-demo.test.ts` (Hybrid FK/IK walker demo & `T-C4.1` dynamic mutation rollback).
-- **Slice D2 (`FB-1`..`FB-8`)**: `packages/core/test/unit/plugins/fabrik-solve.test.ts` (The iterative solve as arithmetic, unwired: the derived seed, the closed-form equivalence, sub-base averaging, permutation determinism, and the two non-convergent exits).
+- **Slice D2 (`FB-1`..`FB-8`)**: `packages/plugins/test/unit/fabrik-solve.test.ts` (The iterative solve as arithmetic, unwired: the derived seed, the closed-form equivalence, sub-base averaging, permutation determinism, and the two non-convergent exits).
 - **Slice D3 (`FB-9`..`FB-15`)**:
-  - `packages/core/test/unit/plugins/fabrik-dispatch.test.ts` (The analytic path byte-identical behind the dispatcher, the unpublished convergence record, and the bare-target join).
+  - `packages/plugins/test/unit/fabrik-dispatch.test.ts` (The analytic path byte-identical behind the dispatcher, the unpublished convergence record, and the bare-target join).
   - `packages/core/test/unit/graph/arity-lift.test.ts` (Chains past and short of arity two loading, and `ik-target-not-single-leaf`).
   - `packages/core/test/integration/ik-fabrik-chain.test.ts` (A five-bone chain tracking an animated goal, and a two-arm tree solved once).
 - **Blend weight (`WT-1`..`WT-16`)**: ADR-055 and the three files it names, which own the seam between an authored rest pose and the solve this record derives.

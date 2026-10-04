@@ -81,7 +81,7 @@ Evidence ids gain the `J-` series, and `packages/core/test/unit/scripts/evidence
 
 - `J-7` `TrackHandle.addObserve` refuses an authored role on either value and an authored projection, adds no live edge, and still accepts and removes the one authored form that is left.
 
-`packages/core/test/integration/single-input-channel.test.ts`:
+`packages/plugins/test/integration/single-input-channel.test.ts`:
 
 - `J-8` a bone authoring `rotation` under `fk`, whose `base` binds an upstream publishing its own `rotation`, composes the parent's 30 with its local 45 into a world-space 75, and publishes exactly `rotation`, `x`, and `y`. A flat merge anywhere would replace the authored 45 with the upstream 30 and compose 60, or add a bare key beside it. It passes on the parent by design, because the walker rig is already pure `requires`; it is the mutation guard rather than red evidence.
 

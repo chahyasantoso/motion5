@@ -175,7 +175,7 @@ asked for by anything measured here. The scale policy is phase 7's to document.
 
 ## Evidence
 
-`SD-1` to `SD-14` in `packages/core/test/unit/plugins/ik-stability.test.ts`:
+`SD-1` to `SD-14` in `packages/plugins/test/integration/ik-stability.test.ts`:
 
 - `SD-1`: the closed form is finite at `2 ** -700`, `2 ** -560`, `2 ** 480` and `2 ** 530` and
   bit-identical to the unit rig, the mixed-scale rig is finite and `too-near`, the sliver arm
@@ -333,7 +333,7 @@ infinite goal, which would pin only `readFrame`'s laundering to zero rather than
 
 ### Evidence
 
-`packages/core/test/unit/plugins/ik-stability.test.ts`:
+`packages/plugins/test/integration/ik-stability.test.ts`:
 
 - `SD-15`: every spelling (`Infinity`, `-Infinity`, `NaN`) on `x` and on `y`, on a two-bone pair and
   on a three-member FABRIK chain. An infinite spelling publishes the whole path straightened along

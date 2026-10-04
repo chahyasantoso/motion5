@@ -155,9 +155,9 @@ must update the owning fixtures, EN evidence, and this record's measured conditi
 
 ## Evidence
 
-`EN-1` through `EN-5` in `packages/core/test/unit/plugins/ik-envelope.test.ts` cover strategy
+`EN-1` through `EN-5` in `packages/plugins/test/integration/ik-envelope.test.ts` cover strategy
 selection, finite output, independent rigs, and the iteration envelope. `GE-1` through `GE-5` in
-`packages/core/test/unit/plugins/ik-guide-examples.test.ts` execute the JSON examples in the guide.
+`packages/plugins/test/integration/ik-guide-examples.test.ts` execute the JSON examples in the guide.
 The benchmark uses the same support module and is reproduced with `npm run bench:ik`. The recorded
 numbers and full scenario fields are in [BENCH-IK.md](./BENCH-IK.md). The accepted coordinate,
 scale, lifecycle, and determinism decisions are also described by the guide and ADR-111.

@@ -7,6 +7,10 @@ export default defineConfig({
     alias: [
       ...pluginSourceAliases(),
       {
+        find: "@motion5/core/testing",
+        replacement: path.resolve(import.meta.dirname, "packages/core/src/testing/fakes.ts"),
+      },
+      {
         find: "@motion5/core/adapters",
         replacement: path.resolve(import.meta.dirname, "packages/core/src/adapters/index.ts"),
       },
