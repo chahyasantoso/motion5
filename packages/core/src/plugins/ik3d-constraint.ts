@@ -1,4 +1,3 @@
-import { unreachable } from "../lang/exhaustive";
 import {
   AXIS_X_KEY,
   AXIS_Y_KEY,
@@ -14,7 +13,8 @@ import {
   readJointKind,
   readSwingDegree,
   LIMIT_CEILING,
-} from "../contract/solver-constraints";
+  unreachable,
+} from "../plugin-api";
 import {
   axisX3,
   canonicalDegrees,

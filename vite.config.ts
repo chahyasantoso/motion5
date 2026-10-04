@@ -19,6 +19,10 @@ export default defineConfig({
         replacement: path.resolve(import.meta.dirname, "packages/core/src/internal.ts"),
       },
       {
+        find: "@motion5/core/plugin-api",
+        replacement: path.resolve(import.meta.dirname, "packages/core/src/plugin-api.ts"),
+      },
+      {
         find: "@motion5/core",
         replacement: path.resolve(import.meta.dirname, "packages/core/src/index.ts"),
       },

@@ -1,4 +1,4 @@
-import { unreachable } from "../lang/exhaustive";
+import { unreachable } from "../plugin-api";
 import { clamp, effectiveLink, pivotFromBaseTip, toRadians, type WorldFrame } from "./frame";
 import { solveLength, solveOffset, type SolveMember } from "./ik-member";
 import { readGoal } from "./ik-goal-reading";

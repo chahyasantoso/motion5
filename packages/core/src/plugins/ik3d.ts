@@ -1,7 +1,5 @@
-import { INSPECTION_KEY, INSPECT_KEY } from "../contract/solver-constraints";
-import { POLE_SLOT } from "../contract/solver-shape";
-import type { PluginDefinition } from "../domain/plugins";
-import type { ImmutableRecord } from "../domain/values";
+import { INSPECTION_KEY, INSPECT_KEY, POLE_SLOT } from "../plugin-api";
+import type { ImmutableRecord, PluginDefinition } from "../plugin-api";
 import { readFrame3d } from "./frame3d";
 import { inspectionOutput } from "./ik-result";
 import { readPole3d } from "./ik3d-analytic";

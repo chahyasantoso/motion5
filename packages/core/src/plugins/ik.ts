@@ -1,6 +1,5 @@
-import { BEND_KEY, FLIP_KEY, INSPECTION_KEY, INSPECT_KEY } from "../contract/solver-constraints";
-import type { PluginDefinition } from "../domain/plugins";
-import type { ImmutableRecord } from "../domain/values";
+import { BEND_KEY, FLIP_KEY, INSPECTION_KEY, INSPECT_KEY } from "../plugin-api";
+import type { ImmutableRecord, PluginDefinition } from "../plugin-api";
 import { readFrame } from "./frame";
 import { readGoals, readMembers, readSolveMembers } from "./ik-chain";
 import { solveChain } from "./ik-solve";

@@ -19,6 +19,10 @@ export const plugin3dEntrypointFixture = "import { ik3dPlugin } from '@motion5/c
 export const undeclaredSubpathFixture =
   "import { solveFabrik } from '@motion5/core/plugins/fabrik';";
 export const pluginRendererViolationFixture = "import { Object3D } from 'three';";
+export const pluginApiFixture = 'import type { PluginDefinition } from "../plugin-api";';
+export const pluginPrivateCoreFixture =
+  'import type { PluginDefinition } from "../domain/plugins";';
+export const pluginSiblingFixture = 'export { readFrame } from "./frame";';
 
 export const dynamicRendererViolationFixture = [
   'const three = import("three");',

@@ -1,4 +1,4 @@
-import { unreachable } from "../lang/exhaustive";
+import { unreachable } from "../plugin-api";
 import { FABRIK_TOLERANCE, iterativeQuality } from "./fabrik";
 import {
   FabrikIncumbent,

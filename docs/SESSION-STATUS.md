@@ -1,75 +1,36 @@
 # Session status
 
-Current project state only. Replace stale entries rather than append history. The four sections
-below are the complete shape. **Now** and **Next in line** carry exactly one bullet each, and no
-bullet states a phase; `packages/core/test/unit/scripts/session-status-shape.test.ts` enforces the
-shape and byte ceiling.
+Current project state only. Replace stale entries rather than append history. The four sections below
+are the complete shape. **Now** and **Next in line** carry exactly one bullet each, and no bullet
+states a phase; `packages/core/test/unit/scripts/session-status-shape.test.ts` enforces the shape and
+byte ceiling.
 
-- **Captured:** 2026-10-03, Asia/Jakarta.
-- **Read against:** `main` at `95e08e10722a31696c4da5e235325780f9b50ee8`, the squash of
-  [PR #538][pr538].
+- **Captured:** 2026-10-04, Asia/Jakarta.
+- **Read against:** the supplied `motion5-main.zip` at `c5e317582c8b6848d734c6f0876dd722a0a92d5f`.
 
 ## Now
 
-- **`main` carries the [#530][issue530] pose gap filler in `apps/pose-gap-filler`: adapter, `raw`
-  reference, gap detector, replay harness, `hold`, `chain-kalman`, the image and world rigs with
-  the camera fit, the trusted-landmark stabilizer, and the comparison record that reads `INN: open`
-  ([PR #532][pr532], [PR #533][pr533], [PR #535][pr535], [PR #536][pr536], [PR #537][pr537],
-  [PR #538][pr538]).**
+- **`main` carries the pose gap filler and its accepted image-space pipeline; the repository is
+  unchanged by the unmerged #534 handover branch.**
 
 ## Next in line
 
-- **[#540][issue540] synthetic human rig:** a live source selector, then presence, recording v2,
-  one ingest gate and a display-only mirror, then an articulated truth actor with a camera,
-  observation edits, constrained handles, scripted scenarios, geometric occlusion, seeded
-  detector corruption and capture/delivery timing, plus shared body state and a reconstructed
-  flat Three avatar with provenance and residuals, are
-  prepared on `feat/540-phase0-source-modes`, `feat/540-phase1-contracts` and
-  `feat/540-phase2-actor`, with the occlusion follow-up to [PR #544][pr544] and the new
-  `feat/540-phase4-visible-body` handover based on that PR, and not merged;
-  [SYNTHETIC-HUMAN.md](./SYNTHETIC-HUMAN.md) records the contracts and exit tests.
-  Apply the handover and rerun Node 24 CI before merging. The learned prior,
-  [#539][issue539], is measured against that simulator.
+- **[#534][issue534] phase 1 plugin authoring contract:** the separate branch adds
+  `@motion5/core/plugin-api`, migrates current plugin imports to that contract, and gates the layer
+  boundary and declaration closure; the handover is prepared but not merged.
 
 ## Open, and not scheduled
 
-- [#328][issue328] remains open for activation and
-  failure-recovery exercises, lifecycle limits, and maintenance usage/replacement validation before
-  any separately confirmed retirement.
+- **#534 later phases:** extracting `@motion5/plugins`, atomic registration, lazy loading, solver
+  capabilities, labels, rig, runners and 3D avatar driving remain unmerged and unscheduled here.
 
 ## Where the rest of it lives
 
-- Slice narrative, exact SHAs, CI links, and red/green evidence: the owning PR and ADR, not this file.
-- Standing rules: [GUARDRAILS.md](./GUARDRAILS.md). Caller cost:
-  [LIVE-EDIT-COST.md](./LIVE-EDIT-COST.md).
+- Slice narrative, exact SHAs, CI links, and red/green evidence: the owning handover and pull request.
+- Standing rules: [GUARDRAILS.md](./GUARDRAILS.md). Caller cost: [LIVE-EDIT-COST.md](./LIVE-EDIT-COST.md).
 - Contributor and status discipline: [PR-WORKFLOW.md](./PR-WORKFLOW.md). API navigation and
   activation contracts: [API-CAPABILITIES.md](./API-CAPABILITIES.md).
-- Earlier long-form history remains in Git at this path; do not duplicate it into another status database.
+- Earlier long-form history remains in Git at this path; do not duplicate it into another status
+  database.
 
-[issue514]: https://github.com/chahyasantoso/motion5/issues/514
-[adr126]: ./ADR-126-limited-fabrik-seed-side-bidirectional-limits-and-pass-budget.md
-[pr518]: https://github.com/chahyasantoso/motion5/pull/518
-[issue328]: https://github.com/chahyasantoso/motion5/issues/328
-[issue519]: https://github.com/chahyasantoso/motion5/issues/519
-[adr127]: ./ADR-127-fabrik-settles-on-two-rounding-passes.md
-[issue521]: https://github.com/chahyasantoso/motion5/issues/521
-[adr128]: ./ADR-128-fabrik-publishes-its-best-completed-pass.md
-[issue523]: https://github.com/chahyasantoso/motion5/issues/523
-[pr526]: https://github.com/chahyasantoso/motion5/pull/526
-[issue527]: https://github.com/chahyasantoso/motion5/issues/527
-[pr528]: https://github.com/chahyasantoso/motion5/pull/528
-[pr529]: https://github.com/chahyasantoso/motion5/pull/529
-[issue530]: https://github.com/chahyasantoso/motion5/issues/530
-[pr532]: https://github.com/chahyasantoso/motion5/pull/532
-[pr533]: https://github.com/chahyasantoso/motion5/pull/533
-[pr535]: https://github.com/chahyasantoso/motion5/pull/535
-[pr536]: https://github.com/chahyasantoso/motion5/pull/536
-[pr537]: https://github.com/chahyasantoso/motion5/pull/537
-[pr538]: https://github.com/chahyasantoso/motion5/pull/538
-[pr544]: https://github.com/chahyasantoso/motion5/pull/544
-[issue539]: https://github.com/chahyasantoso/motion5/issues/539
-[issue540]: https://github.com/chahyasantoso/motion5/issues/540
-[adr130]: ./ADR-130-legal-range-retries-and-serial-hinge-recovery.md
-[issue524]: https://github.com/chahyasantoso/motion5/issues/524
-[adr131]: ./ADR-131-centred-legal-start-for-mixed-sign-chains.md
-[adr132]: ./ADR-132-legal-descent-start-for-constrained-fabrik-misses.md
+[issue534]: https://github.com/chahyasantoso/motion5/issues/534

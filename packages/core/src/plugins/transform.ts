@@ -1,4 +1,4 @@
-import type { PluginDefinition } from "../domain/plugins";
+import type { PluginDefinition } from "../plugin-api";
 
 export const transformPlugin: PluginDefinition = {
   name: "transform",

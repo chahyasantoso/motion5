@@ -1,4 +1,4 @@
-import { unreachable } from "../lang/exhaustive";
+import { unreachable } from "../plugin-api";
 
 /**
  * How many passes one FABRIK attempt may take: the iteration cap, and the only owner of it.

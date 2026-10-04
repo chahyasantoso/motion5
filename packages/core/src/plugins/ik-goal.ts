@@ -1,7 +1,6 @@
-import { INFLUENCE_KEY, readInfluenceValue } from "../contract/solver-constraints";
+import { INFLUENCE_KEY, readInfluenceValue, unreachable } from "../plugin-api";
 import type { WorldPoint } from "./frame";
 import type { SolveMember } from "./ik-member";
-import { unreachable } from "../lang/exhaustive";
 
 /**
  * The one runtime owner of goal influence: how strongly each addressed goal pulls on the members

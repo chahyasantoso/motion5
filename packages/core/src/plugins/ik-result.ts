@@ -1,5 +1,4 @@
-import { INSPECT_KEY, INSPECTION_KEY } from "../contract/solver-constraints";
-import { unreachable } from "../lang/exhaustive";
+import { INSPECT_KEY, INSPECTION_KEY, unreachable } from "../plugin-api";
 
 /**
  * What one IK solve answers: the local rotations it publishes, and how well they answer the goal.

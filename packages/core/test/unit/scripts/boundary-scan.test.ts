@@ -28,6 +28,9 @@ import {
   plugin3dEntrypointFixture,
   pluginEntrypointFixture,
   pluginRendererViolationFixture,
+  pluginApiFixture,
+  pluginPrivateCoreFixture,
+  pluginSiblingFixture,
   publicExportViolationFixture,
   rendererViolationFixture,
   testingEntrypointViolationFixture,
@@ -452,6 +455,46 @@ describe("boundary scan: the public 3D surface", () => {
       (tree) => scan(tree),
     );
     expect(violations).toEqual(["packages/core/src/plugins/solver.ts: renderer or engine import"]);
+  });
+
+  it("TH-202 allows plugin siblings and the single plugin-authoring entrypoint", async () => {
+    await withTree(
+      {
+        "packages/core/src/plugins/solver.ts": `${pluginApiFixture}\n${pluginSiblingFixture}`,
+      },
+      async (tree) => {
+        expect(await walk(join(tree, "packages/core/src/plugins"))).toHaveLength(1);
+        expect(await scan(tree)).toEqual([]);
+      },
+    );
+  });
+
+  it("TH-203 refuses a plugin reaching past the plugin-authoring entrypoint", async () => {
+    const violations = await withTree(
+      { "packages/core/src/plugins/solver.ts": pluginPrivateCoreFixture },
+      (tree) => scan(tree),
+    );
+    expect(violations).toEqual([
+      "packages/core/src/plugins/solver.ts: private core import outside plugin-api",
+    ]);
+  });
+
+  it("TH-204 checks nested, dynamic, and re-export plugin edges after path normalization", async () => {
+    const violations = await withTree(
+      {
+        "packages/core/src/plugins/nested/good.ts":
+          'import type { PluginDefinition } from "../../plugin-api";\nexport * from "../frame";',
+        "packages/core/src/plugins/nested/bad.ts": 'export * from "../../domain/values";',
+        "packages/core/src/plugins/dynamic.ts": 'const privateCore = import("../lang/exhaustive");',
+        "packages/core/src/plugins/lookalike.ts": 'export * from "../plugin-api-private";',
+      },
+      (tree) => scan(tree),
+    );
+    expect(violations.sort()).toEqual([
+      "packages/core/src/plugins/dynamic.ts: private core import outside plugin-api",
+      "packages/core/src/plugins/lookalike.ts: private core import outside plugin-api",
+      "packages/core/src/plugins/nested/bad.ts: private core import outside plugin-api",
+    ]);
   });
 
   it("TH-113 refuses a core source directory that no layer declares", async () => {

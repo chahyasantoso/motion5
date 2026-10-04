@@ -1,4 +1,4 @@
-import { unreachable } from "../lang/exhaustive";
+import { unreachable } from "../plugin-api";
 
 /**
  * Bounded legal descent: a damped least-squares walk in joint space from a legal pose toward the

@@ -3,7 +3,7 @@ import type { SolveMember } from "./ik-member";
 import type { FabrikSolution } from "./fabrik";
 import type { CompromiseRule } from "./ik-goal";
 import type { IterativeQuality } from "./ik-result";
-import { unreachable } from "../lang/exhaustive";
+import { unreachable } from "../plugin-api";
 import { fabrikResidualOutranks } from "./fabrik-cap";
 import {
   CENTRE_LEGAL_SEED,
