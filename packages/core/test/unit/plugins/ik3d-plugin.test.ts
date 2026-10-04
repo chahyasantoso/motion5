@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { fk3dPlugin } from "../../../src/plugins/fk3d";
-import { ik3dPlugin } from "../../../src/plugins/ik3d";
-import { readFrame3d } from "../../../src/plugins/frame3d";
+import { fk3dPlugin } from "../../../../plugins/src/fk3d";
+import { ik3dPlugin } from "../../../../plugins/src/ik3d";
+import { readFrame3d } from "../../../../plugins/src/frame3d";
 
 const upperMember = { id: "upper", base: "root", values: { length: 80 }, progress: 1 };
 const foreMember = { id: "fore", base: "upper", values: { length: 60 }, progress: 1 };

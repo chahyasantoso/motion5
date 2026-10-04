@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fkPlugin } from "../../../src/plugins/fk";
+import { fkPlugin } from "../../../../plugins/src/fk";
 
 // Slice C3 of issue #195: FK plugin solver slot override.
 //

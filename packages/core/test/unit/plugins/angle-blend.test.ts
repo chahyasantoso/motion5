@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { clamp, lerpAngle } from "../../../src/plugins/frame";
-import { readSolveMembers, type DeliveredMember } from "../../../src/plugins/ik-chain";
-import { solveTwoBone } from "../../../src/plugins/ik-analytic";
+import { clamp, lerpAngle } from "../../../../plugins/src/frame";
+import { readSolveMembers, type DeliveredMember } from "../../../../plugins/src/ik-chain";
+import { solveTwoBone } from "../../../../plugins/src/ik-analytic";
 
 // Issue #211: the two numerics the per-member `weight` blend is built out of.
 //

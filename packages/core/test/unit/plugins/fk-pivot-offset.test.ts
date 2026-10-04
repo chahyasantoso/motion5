@@ -3,8 +3,8 @@ import { PluginRegistry } from "../../../src/domain/plugins";
 import type { Diagnostic } from "../../../src/contract/v5";
 import { validateKeyframes } from "../../../src/contract/validate-v5";
 import type { ImmutableRecord } from "../../../src/domain/values";
-import { composeWorld, fkPlugin } from "../../../src/plugins/fk";
-import { transformPlugin } from "../../../src/plugins/transform";
+import { composeWorld, fkPlugin } from "../../../../plugins/src/fk";
+import { transformPlugin } from "../../../../plugins/src/transform";
 
 // Slice A of issue #195. A bone's pivot is not always exactly at its parent's tip, so `fk` claims
 // an authored `x` and `y` beside `length` and `rotation`. Both default to zero, so a bone authored

@@ -6,10 +6,10 @@ import {
   matrixFromEuler3d,
   normalize3,
   scale3,
-} from "../../src/plugins/frame3d";
-import type { Euler3d, Vec3, WorldFrame3d } from "../../src/plugins/frame3d";
-import type { ChainShape3d } from "../../src/plugins/ik3d-solve";
-import type { ChainMember3d } from "../../src/plugins/ik3d-chain";
+} from "../../../plugins/src/frame3d";
+import type { Euler3d, Vec3, WorldFrame3d } from "../../../plugins/src/frame3d";
+import type { ChainShape3d } from "../../../plugins/src/ik3d-solve";
+import type { ChainMember3d } from "../../../plugins/src/ik3d-chain";
 
 /** The closed set of 3D performance scenarios for issue #500 phase 5. */
 export type Envelope3dScenarioId =

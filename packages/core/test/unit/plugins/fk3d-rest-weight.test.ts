@@ -6,7 +6,7 @@ import {
 } from "../../../src/domain/plugins";
 import type { ProjectDefinition, TrackDefinition } from "../../../src/contract/v5";
 import { buildGraphIR } from "../../../src/graph/ir";
-import { lerpAngle } from "../../../src/plugins/frame";
+import { lerpAngle } from "../../../../plugins/src/frame";
 import {
   blendOrientation3d,
   composeWorld3d,
@@ -19,10 +19,10 @@ import {
   ZERO_EULER,
   type Euler3d,
   type Quaternion,
-} from "../../../src/plugins/frame3d";
-import { fk3dPlugin } from "../../../src/plugins/fk3d";
-import { ik3dPlugin } from "../../../src/plugins/ik3d";
-import { transform3dPlugin } from "../../../src/plugins/transform3d";
+} from "../../../../plugins/src/frame3d";
+import { fk3dPlugin } from "../../../../plugins/src/fk3d";
+import { ik3dPlugin } from "../../../../plugins/src/ik3d";
+import { transform3dPlugin } from "../../../../plugins/src/transform3d";
 
 // Issue #500 phase 1 (ADR-116): an `fk3d` bone has an authored local rest orientation and a
 // per-member solved weight, and the one blend between them is a short-arc quaternion slerp owned by

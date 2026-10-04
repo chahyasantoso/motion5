@@ -6,10 +6,10 @@ import type {
 } from "../../../src/contract/v5";
 import { PluginRegistry, type PluginDefinition } from "../../../src/domain/plugins";
 import { buildGraphIR } from "../../../src/graph/ir";
-import { fk3dPlugin } from "../../../src/plugins/fk3d";
-import { fkPlugin } from "../../../src/plugins/fk";
-import { ik3dPlugin } from "../../../src/plugins/ik3d";
-import { transform3dPlugin } from "../../../src/plugins/transform3d";
+import { fk3dPlugin } from "../../../../plugins/src/fk3d";
+import { fkPlugin } from "../../../../plugins/src/fk";
+import { ik3dPlugin } from "../../../../plugins/src/ik3d";
+import { transform3dPlugin } from "../../../../plugins/src/transform3d";
 
 // 3D goal weights at load (issue #500 phase 7, ADR-124): fk3d owns influence and orient, both are
 // placed only on addressed leaves, and orient is one static finite number in [0, 1]. Runtime

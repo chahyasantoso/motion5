@@ -9,12 +9,12 @@ import { PluginRegistry, type PluginDefinition } from "../../../src/domain/plugi
 import { validateKeyframes } from "../../../src/contract/validate-v5";
 import { buildGraphIR } from "../../../src/graph/ir";
 import type { Diagnostic, ProjectDefinition, TrackDefinition } from "../../../src/contract/v5";
-import { fkPlugin } from "../../../src/plugins/fk";
-import { fk3dPlugin } from "../../../src/plugins/fk3d";
-import { ikPlugin } from "../../../src/plugins/ik";
-import { ik3dPlugin } from "../../../src/plugins/ik3d";
-import { transform3dPlugin } from "../../../src/plugins/transform3d";
-import { transformPlugin } from "../../../src/plugins/transform";
+import { fkPlugin } from "../../../../plugins/src/fk";
+import { fk3dPlugin } from "../../../../plugins/src/fk3d";
+import { ikPlugin } from "../../../../plugins/src/ik";
+import { ik3dPlugin } from "../../../../plugins/src/ik3d";
+import { transform3dPlugin } from "../../../../plugins/src/transform3d";
+import { transformPlugin } from "../../../../plugins/src/transform";
 
 function registry(...plugins: readonly PluginDefinition[]) {
   const result = new PluginRegistry();

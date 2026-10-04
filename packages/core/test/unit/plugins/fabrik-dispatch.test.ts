@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { readGoals, readSolveMembers } from "../../../src/plugins/ik-chain";
-import { solveTwoBone } from "../../../src/plugins/ik-analytic";
-import { ikPlugin } from "../../../src/plugins/ik";
-import { solveChain } from "../../../src/plugins/ik-solve";
+import { readGoals, readSolveMembers } from "../../../../plugins/src/ik-chain";
+import { solveTwoBone } from "../../../../plugins/src/ik-analytic";
+import { ikPlugin } from "../../../../plugins/src/ik";
+import { solveChain } from "../../../../plugins/src/ik-solve";
 
 // Slice D3 of issue #195: the dispatcher, and what it is not allowed to change.
 //
