@@ -1,3 +1,4 @@
+import { builtinRegistry } from "../../support/builtin-registry";
 import { describe, expect, it } from "vitest";
 import type { ProjectDefinition } from "../../../src/contract/v5";
 import type { GraphNode } from "../../../src/graph/ir";
@@ -94,7 +95,7 @@ describe("canonical order and cycle detection", () => {
       ],
       freeTracks: [{ id: "cursor" }],
     };
-    const result = buildGraphIR(project);
+    const result = buildGraphIR(project, builtinRegistry());
     expect(result.diagnostics).toEqual([]);
     expect(result.graph?.order).toEqual(["~/cursor", "hero/arm"]);
     expect(Object.isFrozen(result.graph?.order)).toBe(true);
@@ -114,7 +115,7 @@ describe("canonical order and cycle detection", () => {
         },
       ],
     };
-    const result = buildGraphIR(project);
+    const result = buildGraphIR(project, builtinRegistry());
     expect(result.graph).toBeUndefined();
     expect(ruleAndIds(result.diagnostics)).toEqual([["graph-cycle", ["rig/a", "rig/b"]]]);
   });

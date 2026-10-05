@@ -1,3 +1,4 @@
+import { builtinRegistry } from "../../support/builtin-registry";
 import { describe, expect, it } from "vitest";
 import { authorsConstrainingJoint, classifyJoint } from "../../../src/contract/solver-constraints";
 import type { ProjectDefinition, TrackDefinition } from "../../../src/contract/v5";
@@ -59,11 +60,18 @@ function rig(options: MemberOptions = {}): ProjectDefinition {
 }
 
 function rules(project: ProjectDefinition): readonly string[] {
-  return buildGraphIR(project).diagnostics.map(({ ruleId, path }) => `${ruleId} at ${path}`);
+  return buildGraphIR(
+    project,
+    builtinRegistry({
+      name: "spring",
+      keys: ["maxSwing"],
+      compose: () => ({}),
+    }),
+  ).diagnostics.map(({ ruleId, path }) => `${ruleId} at ${path}`);
 }
 
 function messages(project: ProjectDefinition): readonly string[] {
-  return buildGraphIR(project).diagnostics.map(({ message }) => message);
+  return buildGraphIR(project, builtinRegistry()).diagnostics.map(({ message }) => message);
 }
 
 const AT_A = "rig/a.keyframes.fk3d.values";

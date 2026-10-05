@@ -140,11 +140,142 @@ describe("registry-owned solver declarations (ADR-136)", () => {
     const result = new PluginRegistry();
     result.registerAll([transformPlugin, ikPlugin, fk3dPlugin]);
     const project = chain("ik", "fk3d");
-    const before = engine(result).load(project);
-    before.dispose();
+    expect(() => engine(result).load(project).dispose()).not.toThrow();
     result.register(spring());
     expect(() => engine(result).load(project)).toThrow(
       'Solver "scene/solve" supports any chain without fk3d members, but its derived members are fk3d at depth 1.',
     );
+  });
+
+  it("C7 registry conforms to the port and every built-in matches its own declarations", () => {
+    const view: PluginCapabilities = registry();
+    for (const definition of definitions) {
+      expect(view.capabilityOf(definition.name)).toEqual({
+        chain: definition.solverChain ?? { kind: "any" },
+        pole: Object.hasOwn(definition.requirements ?? {}, "pole"),
+        joint: Boolean(definition.keys?.includes("joint") || definition.claimsKey?.("joint")),
+      });
+    }
+  });
+
+  it("admission snapshots shape metadata and updates dedication only for new tree members", () => {
+    const result = new PluginRegistry();
+    const shape = { kind: "tree" as const, memberPlugin: "z-member" };
+    result.register({ name: "z-solver", solverChain: shape, compose: () => ({}) });
+    const first = result.dedicatedMembers();
+    const capability = result.capabilityOf("z-solver")!;
+    shape.memberPlugin = "mutated";
+    expect(capability.chain).toEqual({ kind: "tree", memberPlugin: "z-member" });
+    expect(Object.isFrozen(capability)).toBe(true);
+    expect(Object.isFrozen(capability.chain)).toBe(true);
+    result.register({ name: "ordinary", compose: () => ({}) });
+    expect(result.dedicatedMembers()).toBe(first);
+    result.register({ name: "same", solverChain: capability.chain, compose: () => ({}) });
+    expect(result.dedicatedMembers()).toBe(first);
+    result.register({
+      name: "a-solver",
+      solverChain: { kind: "tree", memberPlugin: "a-member" },
+      compose: () => ({}),
+    });
+    expect(result.dedicatedMembers()).toEqual(["a-member", "z-member"]);
+    expect(first).toEqual(["z-member"]);
+    expect(Object.isFrozen(shape)).toBe(false);
+  });
+
+  it("late declarations reach the same Engine and incremental builder on a live edit", () => {
+    const result = new PluginRegistry();
+    result.registerAll([transformPlugin, ikPlugin, fk3dPlugin]);
+    const host = engine(result);
+    const project = chain("ik", "fk3d");
+    const loaded = host.load(project);
+    result.register(spring());
+    expect(() =>
+      loaded.addTrack(
+        {
+          id: "extra",
+          keyframes: { transform: { values: { x: 0 } } },
+        },
+        { motionId: "scene" },
+      ),
+    ).toThrow("ik-chain-unsupported");
+    expect(loaded.tryTrack("scene/extra")).toBeUndefined();
+    expect(() => host.load(project)).toThrow("ik-chain-unsupported");
+    loaded.dispose();
+  });
+
+  it("a throwing joint predicate cannot publish any capability from its batch", () => {
+    const result = new PluginRegistry();
+    expect(() =>
+      result.registerAll([
+        spring(),
+        {
+          name: "bad",
+          claimsKey: () => {
+            throw new Error("predicate");
+          },
+          compose: () => ({}),
+        },
+      ]),
+    ).toThrow("predicate");
+    expect(result.size).toBe(0);
+    expect(result.capabilityOf("spring3d")).toBeUndefined();
+    expect(result.dedicatedMembers()).toEqual([]);
+    result.register(transformPlugin);
+    expect(result.size).toBe(1);
+  });
+
+  it("standalone validation leaves declaration-dependent constraints unjudged, never topology", () => {
+    const cases = [
+      { solver: "ik", member: "fk", values: { minRotation: -200, rotation: 20 }, pole: false },
+      { solver: "ik3d", member: "fk3d", values: { joint: "hinge", axisX: 0 }, pole: false },
+      { solver: "ik3d", member: "fk3d", values: { length: 10 }, pole: true },
+    ];
+    for (const entry of cases) {
+      const project = chain(entry.solver, entry.member);
+      const motion = project.motions[0]!;
+      const candidate: ProjectDefinition = {
+        ...project,
+        motions: [
+          {
+            ...motion,
+            tracks: motion.tracks.map((track) => {
+              if (track.id === "bone")
+                return {
+                  ...track,
+                  keyframes: {
+                    [entry.member]: {
+                      ...track.keyframes?.[entry.member],
+                      values: { length: 10, ...entry.values },
+                    },
+                  },
+                };
+              if (track.id === "solve" && entry.pole)
+                return {
+                  ...track,
+                  keyframes: {
+                    [entry.solver]: {
+                      requires: { root: "root", target: "goal", pole: "goal" },
+                    },
+                  },
+                };
+              return track;
+            }),
+          },
+        ],
+      };
+      expect(validateV5(candidate).kind).toBe("accepted");
+      expect(validateV5(candidate, registry()).kind).toBe("refused");
+    }
+    const project = chain("ik", "fk");
+    const broken: ProjectDefinition = {
+      ...project,
+      motions: [
+        {
+          ...project.motions[0]!,
+          tracks: project.motions[0]!.tracks.filter((track) => track.id !== "goal"),
+        },
+      ],
+    };
+    expect(validateV5(broken).kind).toBe("refused");
   });
 });

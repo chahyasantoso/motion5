@@ -1,3 +1,4 @@
+import { builtinRegistry } from "../support/builtin-registry";
 import { describe, expect, it } from "vitest";
 import { diagnostic } from "../../src/contract/diagnostics";
 import { RULES, type OwnedIds } from "../../src/contract/rule";
@@ -41,7 +42,7 @@ const observing = (source: string): ProjectDefinition => ({
 
 /** Every rule the graph builder refuses one authored `observes` source under. */
 function refusalsFor(source: string): readonly { readonly rule: string; readonly ids: unknown }[] {
-  return buildGraphIR(observing(source)).diagnostics.map((entry) => ({
+  return buildGraphIR(observing(source), builtinRegistry()).diagnostics.map((entry) => ({
     rule: entry.ruleId as string,
     ids: entry.ids,
   }));
@@ -130,7 +131,7 @@ describe("every rule reaches a diagnostic whose payload is present and frozen", 
       diagnostic("observation-source", "$", "named", ["arm"]),
       ...staged.diagnostics,
       ...flushed.diagnostics,
-      ...buildGraphIR(observing("")).diagnostics,
+      ...buildGraphIR(observing(""), builtinRegistry()).diagnostics,
     ];
 
     // The scan asserts it found its own subjects before it asserts anything about them.

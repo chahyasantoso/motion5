@@ -857,10 +857,9 @@ export function resolveSolvers(
 
     // Diagnostic 16: ik-chain-unsupported
     //
-    // A solver plugin may declare a narrower chain than the graph derives, and `ik3d` does: a chain
-    // of `fk3d` members only, of any count and branching (ADR-122, replacing ADR-114's exactly two
-    // on one path). The shape, and which member plugins are dedicated to one, is read from
-    // `contract/solver-shape.ts` rather than from a plugin name here. It is judged only over a
+    // A solver plugin may declare a narrower chain than the graph derives. The capabilities port
+    // supplies its shape and registry-wide dedication; core names no implementation (ADR-136).
+    // An unknown capability is unjudged. A known declaration is judged only over a
     // chain every member reached, because a member that could not reach the root was named above
     // and has no depth to judge. See ADR-114.
     const rootPlugin = edgeRequirement(rootEdge)?.plugin ?? "";

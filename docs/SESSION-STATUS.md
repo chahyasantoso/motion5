@@ -17,8 +17,9 @@ byte ceiling.
 ## Next in line
 
 - **[#534][issue534] review alignment:** `review/534-phase6-quality` carries the playground's one
-  exhaustive-default owner and these docs; obtain exact-head Node 24 CI, then start solver
-  capabilities on the amended plan.
+  exhaustive-default owner and these docs; the handover prepares registry-owned solver
+  capabilities on `fix/534-plugin-capabilities`. Obtain independent review and exact-head Node 24 CI
+  before claiming publication or merge.
 
 ## Open, and not scheduled
 

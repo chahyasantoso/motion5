@@ -1,3 +1,4 @@
+import { builtinRegistry } from "../support/builtin-registry";
 import { describe, expect, it } from "vitest";
 
 import { validateSchemaV5 } from "../../src/contract/validate-v5";
@@ -248,7 +249,7 @@ describe("schema v5 validator", () => {
     });
     expect(result.kind).toBe("accepted");
     if (result.kind !== "accepted") throw new Error("Expected schema validation to pass.");
-    const graph = buildGraphIR(result.value);
+    const graph = buildGraphIR(result.value, builtinRegistry());
     expect(graph.graph).toBeUndefined();
     expect(graph.diagnostics.map(({ ruleId }) => ruleId)).toEqual(
       expect.arrayContaining(["graph-cycle"]),

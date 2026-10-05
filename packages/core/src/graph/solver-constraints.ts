@@ -77,13 +77,13 @@ import type { GraphNode } from "./ir";
  * `GOAL_WEIGHT_RULES` rather than once per key. Which members those are is `resolveSolvers`'s
  * answer, after goal resolution, handed in as a `GoalScope` rather than re-derived here: this module
  * would otherwise be a second owner of leafhood and goal addressing. On a node that bound no solver
- * anywhere it speaks only under a 3D member group (`declaresJoint`), whose vocabulary the contract
+ * anywhere it speaks only under a joint-declaring member group, whose vocabulary the contract
  * owns, so an `fk3d` goal weight on a bone no solve reads is refused by name. Under any other group
  * it keeps the narrowing `ik-weight-without-solver` makes: this pass holds no registry and cannot
  * tell a 2D `fk` goal weight from another plugin's own key on a node no solve reads.
  *
  * **A pole belongs to the group that bound `root`.** `pole` is a requirement slot rather than a key,
- * and `contract/solver-shape.ts` owns which solver plugins declare it, so under any other plugin the
+ * and the capabilities port reports which solver plugins declare it, so under any other plugin the
  * registry refuses it by name (`plugin-unknown-requirement`) and this pass stays silent rather than
  * refusing the same slot a second time under a second rule. What the registry cannot see is where a
  * declared pole was bound: the solve that reads it is the composer of the group whose `root` edge
@@ -610,7 +610,7 @@ function validateMemberGoalWeight(
 /**
  * The goal-weight rules, `influence` then `orient` on each member, run after `resolveSolvers` has
  * resolved every solve's goals into `scope`. A node that bound no solver anywhere is read only
- * under a 3D member group (`declaresJoint`); everywhere else it keeps the narrowing
+ * under a joint-declaring member group; everywhere else it keeps the narrowing
  * `ik-weight-without-solver` makes, because this pass holds no registry and cannot tell a 2D goal
  * weight from another plugin's own key on a node no solve reads.
  */

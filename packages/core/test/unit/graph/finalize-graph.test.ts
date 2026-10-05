@@ -1,3 +1,4 @@
+import { builtinRegistry } from "../../support/builtin-registry";
 import { describe, expect, it } from "vitest";
 import { IncrementalGraphBuilder } from "../../../src/graph/builders/incremental";
 import { buildGraphIR, type GraphBuildResult } from "../../../src/graph/ir";
@@ -18,7 +19,10 @@ function freeProject(tracks: readonly TrackDefinition[]): ProjectDefinition {
 }
 
 function buildPair(project: ProjectDefinition): [GraphBuildResult, GraphBuildResult] {
-  return [buildGraphIR(project), new IncrementalGraphBuilder().build(project)];
+  return [
+    buildGraphIR(project, builtinRegistry()),
+    new IncrementalGraphBuilder(builtinRegistry()).build(project),
+  ];
 }
 
 // Each corpus entry declares the expected ground truth alongside the project.
@@ -100,9 +104,9 @@ describe("finalizeGraph", () => {
     // every entry after the first is answered by a builder whose cache holds the previous entry's
     // tracks and sweeps them on the way through. Eviction must not change one diagnostic. Issue
     // #225.
-    const incremental = new IncrementalGraphBuilder();
+    const incremental = new IncrementalGraphBuilder(builtinRegistry());
     for (const { label, project, expectOrder, expectRuleIds } of CORPUS) {
-      const reference = buildGraphIR(project);
+      const reference = buildGraphIR(project, builtinRegistry());
       const swept = incremental.build(project);
 
       expect(swept.diagnostics, `${label}: diagnostics agree after a sweep`).toEqual(
@@ -151,7 +155,7 @@ describe("finalizeGraph", () => {
   // loudly in strict mode rather than silently corrupting shared state.
   it("T-C0.2 freezes every object in the result", () => {
     const { project } = CORPUS.find((c) => c.label === "clean")!;
-    const result = buildGraphIR(project);
+    const result = buildGraphIR(project, builtinRegistry());
     expect(result.graph).toBeDefined();
     const graph = result.graph!;
 

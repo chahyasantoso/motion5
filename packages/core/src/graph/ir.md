@@ -46,7 +46,7 @@ The owner a node's authored sources were qualified against, recovered from its o
 
 Every plugin through which a member binds one solver's `solver` slot, sorted by code unit and each once.
 
-A member is derived under a solver by exactly these edges, so the list is never empty for a derived member, and it is normally one plugin. It is what `ik-chain-unsupported` reads beside each member's depth, so a solver whose declared shape names a member plugin refuses a member of another dimension at load: an `fk` member under `ik3d` reads `rotations`, which `ik3d` never publishes, and an `fk3d` member under the 2D `ik` reads `rotations3d`, which `ik` never publishes. Which plugins are dedicated to which shape is `contract/solver-shape.ts`'s answer, not this layer's. See ADR-114.
+A member is derived under a solver by exactly these edges, so the list is never empty for a derived member, and it is normally one plugin. It is what `ik-chain-unsupported` reads beside each member's depth, so a solver whose declared shape names a member plugin refuses a member of another dimension at load: an `fk` member under `ik3d` reads `rotations`, which `ik3d` never publishes, and an `fk3d` member under the 2D `ik` reads `rotations3d`, which `ik` never publishes. The capabilities port supplies each shape and registry-wide dedication; the registry derives them at admission and the graph never imports the registry (ADR-044, ADR-136).
 
 ## AuthoredGoal
 

@@ -30,8 +30,17 @@ before commit; requirements are stored as a frozen copy, never frozen in place.
 `#admitting` rejects nested registration during snapshotting with
 `TypeError("Plugin registration is already in progress.")` and resets in `finally`. Getters and
 metadata proxies are user code, so otherwise a callback could publish a nested partial registration
-inside a batch that later fails. No plugin hook runs during admission. The store phase reads only
+inside a batch that later fails. Compose and contribution hooks never run during admission.
+The joint-key predicate is consulted once when the explicit keys do not already claim it.
+The store phase reads only
 admitted data and performs map/array writes. See ADR-134.
+
+The registry implements `PluginCapabilities`, the graph's narrow declaration port (ADR-136).
+Admission validates and freezes one chain snapshot, derives pole from the requirements record and
+joint from the key claim, then stages that capability beside the definition. A refused batch stores
+neither definitions nor capabilities. Dedication is registry-wide: every admitted tree contributes
+its member name, including a solver unused by the current project. A private Set owns uniqueness;
+the exposed array is sorted, frozen, and replaced only when a new dedicated member is admitted.
 
 ## #claimantsOf
 

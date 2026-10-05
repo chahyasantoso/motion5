@@ -1,3 +1,4 @@
+import { builtinRegistry } from "../../support/builtin-registry";
 import { describe, expect, it } from "vitest";
 import { IncrementalGraphBuilder } from "../../../src/graph/builders/incremental";
 import type { ProjectDefinition } from "../../../src/contract/v5";
@@ -127,11 +128,13 @@ function snapshot(
 
 describe("reverse topology is derived once, by the graph that owns every other edge rule", () => {
   it("RA-18 names every reader of every node, edges and solver membership alike", () => {
-    expect(walkerGraph(buildGraphIR).dependants).toEqual(EXPECTED);
+    expect(walkerGraph((project) => buildGraphIR(project, builtinRegistry())).dependants).toEqual(
+      EXPECTED,
+    );
   });
 
   it("RA-19 answers for every node, frozen, including the ones nothing reads", () => {
-    const graph = walkerGraph(buildGraphIR);
+    const graph = walkerGraph((project) => buildGraphIR(project, builtinRegistry()));
     const dependants = graph.dependants;
 
     // Total rather than sparse. A missing key and an empty list are the same answer to a consumer
@@ -144,9 +147,11 @@ describe("reverse topology is derived once, by the graph that owns every other e
   });
 
   it("RA-20 answers identically from both builders, which finalize through one owner", () => {
-    const builder = new IncrementalGraphBuilder();
+    const builder = new IncrementalGraphBuilder(builtinRegistry());
     const incremental = walkerGraph((project) => builder.build(project)).dependants;
-    expect(incremental).toEqual(walkerGraph(buildGraphIR).dependants);
+    expect(incremental).toEqual(
+      walkerGraph((project) => buildGraphIR(project, builtinRegistry())).dependants,
+    );
   });
 });
 

@@ -70,6 +70,11 @@ The six authoring members above are the structural tier, and each returns `void`
 reference and cycle diagnostics are owned by graph construction and are run by the engine load
 use-case after schema validation.
 
+`validateV5(input, capabilities?)` accepts `PluginCapabilities`, which `PluginRegistry` implements.
+Without the port it does not judge plugin-dependent chain, pole, joint, limit, goal-weight or
+dead-orientation rules. Pass the registry to obtain those checks; Engine does so automatically.
+General schema, references, duplicate edges, cycles and solver topology are always validated.
+
 `migrateV4ToV5` returns the same shape with `MigrationDiagnostic`; narrow on `kind` before reading
 the migrated value.
 
@@ -87,6 +92,20 @@ own-property snapshot, so an inherited-only `compose` is refused. Registration f
 admission is refused as `TypeError("Plugin registration is already in progress.")`.
 No imports or asynchronous work happen in either method. See
 [ADR-134](../ADR-134-atomic-plugin-registration.md).
+
+`PluginDefinition.solverChain?: SolverChainShape` declares `{ kind: "any" }` or
+`{ kind: "tree", memberPlugin }`; omission means `any` for an admitted plugin. A tree member name
+must be non-empty, contain no colon and differ from the solver name. Admission snapshots and
+freezes the shape, derives `pole` from `requirements.pole` and `joint` from the `"joint"` key claim.
+If the explicit keys do not claim it, `claimsKey("joint")` is asked once at admission. Compose and
+contribution hooks never run then.
+
+`PluginRegistry.capabilityOf(name)` returns a frozen `PluginCapability` or `undefined` for an
+unknown name. `dedicatedMembers()` returns a sorted frozen array derived from every admitted tree,
+even when that solver is unused in a project. These members cannot appear under an `any` solver.
+The Engine and its graph builders retain the registry by reference, so awaited loader additions
+are visible on the next compile. The three types are nameable from core and plugin-api. See
+[ADR-136](../ADR-136-registry-owned-solver-capabilities.md).
 
 A `PluginDefinition` may declare `requirements`, a record of optional input slots owned by that plugin. Its `compose` receives authored/interpolated values, the track's progress, and that plugin's scoped inputs. `ResolvedPlugins.requirements` reports the bindings resolved for a track.
 

@@ -1,3 +1,4 @@
+import { builtinRegistry } from "../../support/builtin-registry";
 import { describe, expect, it } from "vitest";
 import { buildGraphIR } from "../../../src/graph/ir";
 import type {
@@ -41,6 +42,7 @@ function codes(
         fk: { values: memberValues, requires },
       },
     }),
+    builtinRegistry(),
   );
   return result.diagnostics;
 }
@@ -74,6 +76,7 @@ describe("solver constraint graph rules", () => {
           },
         },
       ),
+      builtinRegistry(),
     );
     expect(malformed.diagnostics.map((d) => d.ruleId)).toContain("ik-bend-malformed");
     const conflict = buildGraphIR(
@@ -94,6 +97,7 @@ describe("solver constraint graph rules", () => {
           },
         },
       ),
+      builtinRegistry(),
     );
     expect(conflict.diagnostics.map((d) => d.ruleId)).toContain("ik-bend-conflicts-flip");
   });
@@ -117,6 +121,7 @@ describe("solver constraint graph rules", () => {
           },
         },
       ),
+      builtinRegistry(),
     );
     expect(accepted.diagnostics.map((d) => d.ruleId)).not.toContain("ik-bend-malformed");
   });
@@ -158,6 +163,7 @@ describe("individual solver constraint refusals", () => {
           },
         },
       ),
+      builtinRegistry(),
     );
     expect(result.diagnostics.map((d) => d.ruleId)).toContain("ik-bend-malformed");
   });
@@ -181,6 +187,7 @@ describe("individual solver constraint refusals", () => {
           },
         },
       ),
+      builtinRegistry(),
     );
     expect(result.diagnostics.map((d) => d.ruleId)).toContain("ik-bend-conflicts-flip");
   });
@@ -201,6 +208,7 @@ describe("individual solver constraint refusals", () => {
           },
         },
       ),
+      builtinRegistry(),
     );
     expect(
       result.diagnostics.filter((d) => d.ruleId.startsWith("ik-")).map((d) => d.ruleId),
@@ -216,6 +224,7 @@ describe("individual solver constraint refusals", () => {
           fk: { values: { length: 10 }, requires: { base: "root", solver: "solve" } },
         },
       }),
+      builtinRegistry({ name: "spring", keys: ["minRotation"], compose: () => ({}) }),
     );
     const found = result.diagnostics.find((d) => d.ruleId === "ik-limit-without-solver");
     expect(found?.path).toBe("walker/bone.keyframes.spring.values.minRotation");
@@ -224,7 +233,14 @@ describe("individual solver constraint refusals", () => {
 
 describe("solver constraint rules read every authored spelling", () => {
   function flat(keyframes: Keyframes, solver?: TrackDefinition) {
-    return buildGraphIR(project({ id: "bone", keyframes }, solver)).diagnostics;
+    return buildGraphIR(
+      project({ id: "bone", keyframes }, solver),
+      builtinRegistry({
+        name: "spring",
+        keys: ["minRotation", "maxRotation"],
+        compose: () => ({}),
+      }),
+    ).diagnostics;
   }
   const bound = { fk: { values: { length: 10 }, requires: { base: "root", solver: "solve" } } };
 

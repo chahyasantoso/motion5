@@ -17,7 +17,7 @@ export type ValidationResult = Outcome<ProjectDefinition, Diagnostic>;
 
 /**
  * Validate a complete authored project, preserving schema and graph diagnostics in their original
- * order and values.
+ * order and values. Without capabilities, declaration-dependent rules are unjudged (ADR-136).
  */
 export function validateV5(
   input: unknown,

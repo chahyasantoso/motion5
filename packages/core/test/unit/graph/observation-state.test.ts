@@ -1,3 +1,4 @@
+import { builtinRegistry } from "../../support/builtin-registry";
 import { describe, expect, it } from "vitest";
 import type { ProjectDefinition } from "../../../src/contract/v5";
 import type { GraphEdge } from "../../../src/graph/ir";
@@ -30,7 +31,7 @@ const edge = (observerId: string, sourceId: string): GraphEdge => ({
  * The live state deliberately offers no way to do this for itself.
  */
 function load(state: ObservationState): void {
-  const { graph } = buildGraphIR(project);
+  const { graph } = buildGraphIR(project, builtinRegistry());
   if (graph === undefined) throw new Error("fixture project must build");
   for (const id of graph.order) state.addNode(id);
   for (const id of graph.order)

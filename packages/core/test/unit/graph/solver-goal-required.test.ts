@@ -1,3 +1,4 @@
+import { builtinRegistry } from "../../support/builtin-registry";
 import { describe, expect, it } from "vitest";
 import { IncrementalGraphBuilder } from "../../../src/graph/builders/incremental";
 import type {
@@ -89,7 +90,7 @@ const UNNAMED_LEAF = project([
 
 describe("a solver with nothing to reach for is refused at load", () => {
   it("MG-14 a solver binding neither target nor targets is refused by name", () => {
-    const result = buildGraphIR(NO_GOAL);
+    const result = buildGraphIR(NO_GOAL, builtinRegistry());
     expect(reported(result)).toEqual(["ik-solver-no-goal at walker/arm-solve"]);
 
     const refused = result.diagnostics[0]!;
@@ -101,7 +102,7 @@ describe("a solver with nothing to reach for is refused at load", () => {
     // Both builders answer identically, because both finalize through `finalizeGraph`. The runtime
     // is the half that used to reach composition, so a rule the incremental builder missed would
     // leave the throw reachable through a live mutation.
-    const incremental = new IncrementalGraphBuilder().build(NO_GOAL);
+    const incremental = new IncrementalGraphBuilder(builtinRegistry()).build(NO_GOAL);
     expect(incremental.diagnostics).toEqual(result.diagnostics);
     expect(incremental.graph).toBeUndefined();
   });
@@ -110,12 +111,14 @@ describe("a solver with nothing to reach for is refused at load", () => {
     // The rule is about absence rather than about spelling. `target` is exactly the degenerate case
     // of the dict and neither is deprecated, so a solver that bound either one is untouched and no
     // existing rig is re-authored to buy the refusal.
-    expect(reported(buildGraphIR(BARE_TARGET))).toEqual([]);
-    expect(reported(buildGraphIR(GOAL_DICT))).toEqual([]);
+    expect(reported(buildGraphIR(BARE_TARGET, builtinRegistry()))).toEqual([]);
+    expect(reported(buildGraphIR(GOAL_DICT, builtinRegistry()))).toEqual([]);
 
     // And it never reports beside `ik-leaf-without-goal`, which is guarded by the dict having been
     // used at all. One rule answers for a solver that addressed nothing and the other for a leaf
     // the dict skipped, so one cause is never reported twice.
-    expect(reported(buildGraphIR(UNNAMED_LEAF))).toEqual(["ik-leaf-without-goal at walker/solve"]);
+    expect(reported(buildGraphIR(UNNAMED_LEAF, builtinRegistry()))).toEqual([
+      "ik-leaf-without-goal at walker/solve",
+    ]);
   });
 });

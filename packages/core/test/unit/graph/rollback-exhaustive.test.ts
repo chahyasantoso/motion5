@@ -1,3 +1,4 @@
+import { builtinRegistry } from "../../support/builtin-registry";
 import { describe, expect, it } from "vitest";
 import { fileURLToPath } from "node:url";
 import { code, member } from "../../helpers/source-region";
@@ -42,7 +43,7 @@ const project: ProjectDefinition = {
 };
 
 function load(state: ObservationState): void {
-  const { graph } = buildGraphIR(project);
+  const { graph } = buildGraphIR(project, builtinRegistry());
   if (graph === undefined) throw new Error("fixture project must build");
   for (const id of graph.order) state.addNode(id);
   for (const id of graph.order)

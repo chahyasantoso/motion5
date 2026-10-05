@@ -1,3 +1,4 @@
+import { builtinRegistry } from "../support/builtin-registry";
 import { describe, expect, test } from "vitest";
 import type { ProjectDefinition, TrackDefinition } from "../../src/contract/v5";
 import { IncrementalGraphBuilder } from "../../src/graph/builders/incremental";
@@ -49,9 +50,9 @@ describe("IncrementalGraphBuilder Equivalence", () => {
 
   test("produces the exact same output as buildGraphIR on first build", () => {
     const project = getTestProject();
-    const builder = new IncrementalGraphBuilder();
+    const builder = new IncrementalGraphBuilder(builtinRegistry());
 
-    const expected = buildGraphIR(project);
+    const expected = buildGraphIR(project, builtinRegistry());
     const actual = builder.build(project);
 
     expect(actual).toEqual(expected);
@@ -59,7 +60,7 @@ describe("IncrementalGraphBuilder Equivalence", () => {
 
   test("produces the exact same output on subsequent builds with new tracks appended", () => {
     const project = getTestProject();
-    const builder = new IncrementalGraphBuilder();
+    const builder = new IncrementalGraphBuilder(builtinRegistry());
 
     // First build populates the cache
     builder.build(project);
@@ -85,7 +86,7 @@ describe("IncrementalGraphBuilder Equivalence", () => {
       freeTracks: [...(project.freeTracks ?? []), newTrack],
     };
 
-    const expected = buildGraphIR(nextProject);
+    const expected = buildGraphIR(nextProject, builtinRegistry());
     const actual = builder.build(nextProject);
 
     expect(actual).toEqual(expected);
@@ -93,7 +94,7 @@ describe("IncrementalGraphBuilder Equivalence", () => {
 
   test("memoizes GraphNode references across builds", () => {
     const project = getTestProject();
-    const builder = new IncrementalGraphBuilder();
+    const builder = new IncrementalGraphBuilder(builtinRegistry());
 
     const result1 = builder.build(project);
     const result2 = builder.build(project);
