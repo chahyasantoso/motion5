@@ -1,28 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { Bone, Object3D, Quaternion, Skeleton, Vector3 } from "three";
-import * as adapter from "../src/index";
+import { captureSkeleton as capture } from "../src/skeleton";
 import { syntheticSkeleton } from "./support/synthetic-skeleton";
-
-// Red seam is local and typecheckable before the public surface exists.
-interface CaptureSeam {
-  captureSkeleton(
-    skeleton: Skeleton,
-    options: { boneKeys: Record<string, string> },
-  ): {
-    rootParent: Object3D;
-    bones: readonly {
-      key: string | undefined;
-      index: number;
-      parent: number | undefined;
-      depth: number;
-      restPosition: Readonly<Vector3>;
-      restQuaternion: Readonly<Quaternion>;
-      restAim: Readonly<Vector3> | undefined;
-    }[];
-    boneOf(key: string): Bone;
-  };
-}
-const capture = (adapter as unknown as CaptureSeam).captureSkeleton;
 
 describe("skeleton capture", () => {
   it("S1 captures indices, depth and parent-space rest aim", () => {

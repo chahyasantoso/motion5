@@ -4,7 +4,7 @@ import type { Patch } from "@motion5/core";
 // ADR-099).
 import { patchRender, unreachable } from "@motion5/core/internal";
 import { readFrame3d } from "@motion5/plugins/frame3d";
-import type { EulerOrder, Object3D } from "three";
+import { Euler, Matrix4, type EulerOrder, type Object3D } from "three";
 
 /**
  * The three.js Euler order for exactly core's CSS convention (`frame3d.ts`): `ZXY` composes
@@ -21,15 +21,23 @@ export const EULER_ORDER_3D: EulerOrder = "ZXY";
  * parent-relative ones, so a bound object must live in the space of the rig root, for example as a
  * direct child of an untransformed scene or group.
  */
-export function writeFrame3d(object: Object3D, values: Readonly<Record<string, unknown>>): void {
+export function frameToMatrix(values: Readonly<Record<string, unknown>>, target: Matrix4): Matrix4 {
   const frame = readFrame3d(values);
-  object.position.set(frame.x, frame.y, frame.z);
-  object.rotation.set(
-    (frame.rotationX * Math.PI) / 180,
-    (frame.rotationY * Math.PI) / 180,
-    (frame.rotation * Math.PI) / 180,
-    EULER_ORDER_3D,
+  target.makeRotationFromEuler(
+    new Euler(
+      (frame.rotationX * Math.PI) / 180,
+      (frame.rotationY * Math.PI) / 180,
+      (frame.rotation * Math.PI) / 180,
+      EULER_ORDER_3D,
+    ),
   );
+  return target.setPosition(frame.x, frame.y, frame.z);
+}
+
+export function writeFrame3d(object: Object3D, values: Readonly<Record<string, unknown>>): void {
+  const matrix = frameToMatrix(values, new Matrix4());
+  object.position.setFromMatrixPosition(matrix);
+  object.rotation.setFromRotationMatrix(matrix, EULER_ORDER_3D);
 }
 
 /** An adapter that applies core patches and caller-derived values to resolved Three.js objects. */
