@@ -49,15 +49,20 @@ export const App: React.FC = () => {
   const [goals, setGoals] = useState<PlaygroundRuntime["goals"]>();
   const [tab, setTab] = useState<PlaygroundTab>("dom");
   const [weight, setWeight] = useState(0);
+  const [setupError, setSetupError] = useState<{ readonly error: unknown }>();
 
   useLayoutEffect(() => {
     const clock = createBrowserClock({
       requestFrame: (callback: FrameRequestCallback) => requestAnimationFrame(callback),
       cancelFrame: (id: number) => cancelAnimationFrame(id),
     });
+    let cancelled = false;
+    let released = false;
     let owned: PlaygroundRuntime | undefined;
     let unsubscribeWeight = () => {};
     const release = () => {
+      if (released) return;
+      released = true;
       const failures: unknown[] = [];
       for (const dispose of [
         () => unsubscribeWeight(),
@@ -73,10 +78,20 @@ export const App: React.FC = () => {
       if (failures.length === 1) throw failures[0];
       if (failures.length > 1) throw new AggregateError(failures, "IK resource cleanup failed.");
     };
+    const reportFailure = (error: unknown) => {
+      try {
+        release();
+      } catch (cleanupError) {
+        error = new AggregateError([error, cleanupError], "IK setup and cleanup failed.");
+      }
+      // Promise callbacks cannot reach a React error boundary by throwing. Store even undefined
+      // as a tagged failure and throw during render instead.
+      setSetupError({ error });
+    };
 
     try {
       gsap.registerPlugin(ScrollTrigger);
-      owned = loadPlayground({
+      void loadPlayground({
         clock,
         interpolator: createGsapInterpolator(gsap),
         scheduler: createMicrotaskScheduler(),
@@ -85,16 +100,32 @@ export const App: React.FC = () => {
           start: "top top",
           end: "bottom bottom",
         }),
-      });
-      setHandle(owned.project);
-      setGoals(owned.goals);
-      setWeight(0);
-      unsubscribeWeight = owned.project.subscribeNode(
-        nodeId(TENTACLE.memberTracks[0]!),
-        (patch) => {
-          if (patch.status === "ready") setWeight(patch.sourceProgress);
-        },
-      );
+      })
+        .then(
+          (runtime) => {
+            if (cancelled) {
+              runtime.project.dispose();
+              return;
+            }
+            owned = runtime;
+            setHandle(runtime.project);
+            setGoals(runtime.goals);
+            setWeight(0);
+            unsubscribeWeight = runtime.project.subscribeNode(
+              nodeId(TENTACLE.memberTracks[0]!),
+              (patch) => {
+                if (patch.status === "ready") setWeight(patch.sourceProgress);
+              },
+            );
+          },
+          (error: unknown) => {
+            if (!cancelled) reportFailure(error);
+          },
+        )
+        .catch((error: unknown) => {
+          if (!cancelled) reportFailure(error);
+          else console.error("IK cleanup after cancellation failed.", error);
+        });
     } catch (error) {
       try {
         release();
@@ -105,11 +136,14 @@ export const App: React.FC = () => {
     }
 
     return () => {
+      cancelled = true;
       setHandle(undefined);
       setGoals(undefined);
       release();
     };
   }, []);
+
+  if (setupError !== undefined) throw setupError.error;
 
   return (
     <main id="scroll-demo">

@@ -4,6 +4,7 @@ import { createGsapInterpolator } from "../../src/adapters/interpolator/gsap";
 import { createGsapScrollSource } from "../../src/adapters/scroll-trigger-gsap";
 import type { ScrollSource } from "../../src/adapters/scroll-trigger";
 import { createManualClock } from "../../src/ports/clock";
+import { createBrowserClock } from "../../src/adapters/browser-clock";
 import { Engine, type ProjectHandle } from "../../src/engine";
 import type { ProjectDefinition } from "../../src/contract/v5";
 import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
@@ -79,6 +80,22 @@ function flush(scheduler: ReturnType<typeof createFakeScheduler>): void {
 }
 
 describe("IK playground runtime loading and scroll progress", () => {
+  it("releases scroll resources if the caller disposes its clock during ensure", async () => {
+    const scroll = fakeScroll();
+    const cancelFrame = vi.fn();
+    const clock = createBrowserClock({ requestFrame: () => 1, cancelFrame });
+    const pending = loadPlayground({
+      clock,
+      interpolator: createFakeInterpolator(),
+      scheduler: createFakeScheduler(),
+      scroll: scroll.source,
+    });
+    clock.dispose();
+    await expect(pending).rejects.toThrow("Clock is disposed.");
+    expect(scroll.listeners.size).toBe(0);
+    expect(cancelFrame).toHaveBeenCalledOnce();
+  });
+
   it("returns a promise and ensures demand before constructing the playground engine", async () => {
     const load = vi.spyOn(Engine.prototype, "load");
     let result: ReturnType<typeof loadPlayground> | undefined;
@@ -99,10 +116,10 @@ describe("IK playground runtime loading and scroll progress", () => {
     }
   });
 
-  it("TH-132 loads and mounts the composed runtime answer and disposes after setup failure", () => {
+  it("TH-132 loads and mounts the composed runtime answer and disposes after setup failure", async () => {
     const scroll = fakeScroll();
     const scheduler = createFakeScheduler();
-    const runtime = loadPlayground({
+    const runtime = await loadPlayground({
       clock: createManualClock(),
       interpolator: createFakeInterpolator(),
       scheduler,
@@ -136,14 +153,14 @@ describe("IK playground runtime loading and scroll progress", () => {
       return handle;
     });
     try {
-      expect(() =>
+      await expect(
         loadPlayground({
           clock: createManualClock(),
           interpolator: createFakeInterpolator(),
           scheduler: createFakeScheduler(),
           scroll: failureScroll.source,
         }),
-      ).toThrow("injected setup failure");
+      ).rejects.toThrow("injected setup failure");
       expect(disposed).toHaveBeenCalledOnce();
       expect(failureScroll.listeners.size).toBe(0);
     } finally {
@@ -154,7 +171,7 @@ describe("IK playground runtime loading and scroll progress", () => {
   it("publishes restored GSAP source progress and drives both Motions through one scroll source", async () => {
     const scroll = host(0.6, 600);
     const scheduler = createFakeScheduler();
-    const runtime = loadPlayground({
+    const runtime = await loadPlayground({
       clock: createManualClock(),
       interpolator: createGsapInterpolator(gsap),
       scheduler,
