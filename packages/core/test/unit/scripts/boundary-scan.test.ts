@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
+import ts from "typescript";
 import {
   bannedSymbol,
   extractExportNames,
@@ -14,6 +15,7 @@ import {
   scan,
   undeclaredWorkspaceSubpaths,
   walk,
+  withoutComments,
 } from "../../../../../scripts/boundary-scan.mjs";
 import {
   adapterEntrypointFixture,
@@ -41,6 +43,56 @@ import {
 const root = fileURLToPath(new URL("../../../../..", import.meta.url));
 const WORKSPACES = JSON.stringify({ workspaces: ["packages/*", "apps/*"] });
 const PACKAGES_ONLY = JSON.stringify({ workspaces: ["packages/*"] });
+
+describe("plugin declaration ownership guards (ADR-136)", () => {
+  it("C5 no core source names a first-party plugin", async () => {
+    const names = new Set(["fk", "ik", "fk3d", "ik3d", "transform3d", "rig"]);
+    const violations: string[] = [];
+    for (const path of await walk(join(root, "packages/core/src"))) {
+      const source = ts.createSourceFile(
+        path,
+        withoutComments(await readFile(path, "utf8")),
+        ts.ScriptTarget.Latest,
+        true,
+      );
+      function visit(node: ts.Node): void {
+        if (ts.isStringLiteralLike(node) && names.has(node.text))
+          violations.push(`${path}: ${node.text}`);
+        ts.forEachChild(node, visit);
+      }
+      visit(source);
+    }
+    expect(violations).toEqual([]);
+  });
+
+  it("graph and contract refuse direct registry imports but admit the narrow port", async () => {
+    const fixture = await mkdtemp(join(tmpdir(), "motion5-capabilities-"));
+    try {
+      await writeFile(join(fixture, "package.json"), PACKAGES_ONLY);
+      for (const layer of ["graph", "contract"]) {
+        const directory = join(fixture, "packages/core/src", layer);
+        await mkdir(directory, { recursive: true });
+        await writeFile(
+          join(directory, "leak.ts"),
+          'import type { PluginRegistry } from "../domain/plugins";\n',
+        );
+      }
+      const violations = await scan(fixture);
+      expect(violations.filter((entry) => entry.includes("plugin capabilities port"))).toHaveLength(
+        2,
+      );
+      for (const layer of ["graph", "contract"])
+        await writeFile(
+          join(fixture, "packages/core/src", layer, "leak.ts"),
+          'import type { PluginCapabilities } from "../ports/plugin-capabilities";\n',
+        );
+      expect(await scan(fixture)).toEqual([]);
+      expect(await scan(root)).toEqual([]);
+    } finally {
+      await rm(fixture, { recursive: true, force: true });
+    }
+  });
+});
 
 /**
  * Plants one of every violation class the scanner owns into a throwaway tree:

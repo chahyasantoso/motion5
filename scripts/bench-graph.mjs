@@ -2,6 +2,7 @@ import { performance } from "node:perf_hooks";
 import v8 from "node:v8";
 import { ProjectRuntime } from "../packages/core/src/runtime/project-runtime.ts";
 import { createManualClock } from "../packages/core/src/ports/clock.ts";
+import { UNJUDGED_CAPABILITIES } from "../packages/core/src/ports/plugin-capabilities.ts";
 
 function getHeapMb() {
   if (global.gc) global.gc();
@@ -196,12 +197,12 @@ async function runBenchmark() {
     // Scenario D: IncrementalGraphBuilder — same as Scenario B (Edged), but with the memoizing builder
     // -----------------------------------------------------------------------
     const { IncrementalGraphBuilder } = await import(
-      "../packages/core/src/adapters/graph-builder/incremental.ts"
+      "../packages/core/src/graph/builders/incremental.ts"
     );
     const incrementalRuntime = new ProjectRuntime(project, {
       clock: createManualClock(),
       compose,
-      graphBuilder: new IncrementalGraphBuilder(),
+      graphBuilder: new IncrementalGraphBuilder(UNJUDGED_CAPABILITIES),
     });
 
     const adoptCountD = 50;

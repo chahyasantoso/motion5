@@ -1,4 +1,5 @@
 export function walk(directory: string): Promise<string[]>;
+export function withoutComments(source: string): string;
 export function importsBoundary(source: string, specifiers?: readonly string[]): boolean;
 export function importsRenderer(source: string, specifiers?: readonly string[]): boolean;
 export function importsCoreInternals(source: string, specifiers?: readonly string[]): boolean;
