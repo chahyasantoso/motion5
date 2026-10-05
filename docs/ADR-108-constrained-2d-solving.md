@@ -119,7 +119,7 @@ The negative-length FK disagreement recorded by ADR-107 was not changed by this 
 
 ## Evidence
 
-`packages/core/test/unit/plugins/ik-constraint.test.ts` covers wrapping, limit arithmetic, constrained
+`packages/plugins/test/unit/ik-constraint.test.ts` covers wrapping, limit arithmetic, constrained
 dispatch, seeded constrained poses, quality, bend/flip equivalence and precedence, zero extent, and
 runtime totality under `CL-1` through `CL-3`, `CL-7` through `CL-11`, and `CL-19` through `CL-23`.
 `packages/core/test/unit/graph/solver-constraints.test.ts` covers each refusal and accepting direction

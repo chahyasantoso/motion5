@@ -38,6 +38,14 @@
     "./frame3d": {
       "types": "./dist/frame3d.d.ts",
       "default": "./dist/frame3d.js"
+    },
+    "./catalog": {
+      "types": "./dist/catalog.d.ts",
+      "default": "./dist/catalog.js"
+    },
+    "./loader": {
+      "types": "./dist/loader.d.ts",
+      "default": "./dist/loader.js"
     }
   }
 }

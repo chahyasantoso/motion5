@@ -47,10 +47,10 @@ function source() {
   };
 }
 
-function load() {
+async function load() {
   const scroll = source();
   const scheduler = createFakeScheduler();
-  const runtime = loadPlayground({
+  const runtime = await loadPlayground({
     clock: createManualClock(),
     interpolator: createFakeInterpolator(),
     scheduler,
@@ -146,7 +146,7 @@ function drain(scheduler: ReturnType<typeof createFakeScheduler>): void {
 }
 
 type Values = Readonly<Record<string, unknown>>;
-function values(runtime: ReturnType<typeof load>["runtime"], id: string): Values {
+function values(runtime: Awaited<ReturnType<typeof load>>["runtime"], id: string): Values {
   const patch = runtime.project.get(id);
   if (patch?.status !== "ready") throw new Error(`${id} is ${patch?.status ?? "absent"}`);
   return patch.values;
@@ -156,7 +156,9 @@ function valuesFrom(handle: ProjectHandle, id: string): Values {
   if (patch?.status !== "ready") throw new Error(`${id} is ${patch?.status ?? "absent"}`);
   return patch.values;
 }
-function snapshot(runtime: ReturnType<typeof load>["runtime"]): Readonly<Record<string, Values>> {
+function snapshot(
+  runtime: Awaited<ReturnType<typeof load>>["runtime"],
+): Readonly<Record<string, Values>> {
   return Object.fromEntries(
     [...ALL_NODE_IDS, ...IK3D_NODE_IDS].map((id) => [id, values(runtime, id)]),
   );
@@ -172,7 +174,7 @@ function distance3d(left: Values, right: Values): number {
   );
 }
 
-function expectPlanarRest(runtime: ReturnType<typeof load>["runtime"]): void {
+function expectPlanarRest(runtime: Awaited<ReturnType<typeof load>>["runtime"]): void {
   let x = TENTACLE.root.x;
   let y = TENTACLE.root.y;
   let rotation = 0;
@@ -189,8 +191,8 @@ function expectPlanarRest(runtime: ReturnType<typeof load>["runtime"]): void {
 }
 
 describe("IK playground scroll-only rest blending", () => {
-  it("TH-134 takes both FABRIK chains from authored rest to solved and back byte-identically", () => {
-    const test = load();
+  it("TH-134 takes both FABRIK chains from authored rest to solved and back byte-identically", async () => {
+    const test = await load();
     try {
       expectPlanarRest(test.runtime);
       const rest = snapshot(test.runtime);
@@ -226,8 +228,8 @@ describe("IK playground scroll-only rest blending", () => {
     }
   });
 
-  it("TH-136 moves the planar chain immediately at its current partial weight", () => {
-    const test = load();
+  it("TH-136 moves the planar chain immediately at its current partial weight", async () => {
+    const test = await load();
     // The oracle authors the goal where the drag puts it, so a live write must equal a document.
     const reference = reference2d(240, 250);
     try {
@@ -263,8 +265,8 @@ describe("IK playground scroll-only rest blending", () => {
     }
   });
 
-  it("TH-137 moves the spatial chain immediately and reaches a dragged goal at weight one", () => {
-    const test = load();
+  it("TH-137 moves the spatial chain immediately and reaches a dragged goal at weight one", async () => {
+    const test = await load();
     const reference = reference3d(190, 155, 20);
     try {
       test.emit(0.5);
@@ -291,8 +293,8 @@ describe("IK playground scroll-only rest blending", () => {
     }
   });
 
-  it("TH-138 clamps goals, ignores non-finite input, and flips without graph replacement", () => {
-    const test = load();
+  it("TH-138 clamps goals, ignores non-finite input, and flips without graph replacement", async () => {
+    const test = await load();
     try {
       const graph = (test.runtime.project as ProjectHandle & { readonly _runtime: ProjectRuntime })
         ._runtime.graph;
@@ -330,8 +332,8 @@ describe("IK playground scroll-only rest blending", () => {
     }
   });
 
-  it("TH-139 coalesces scroll and unsubscribes both Motions on disposal", () => {
-    const test = load();
+  it("TH-139 coalesces scroll and unsubscribes both Motions on disposal", async () => {
+    const test = await load();
     const graph = (test.runtime.project as ProjectHandle & { readonly _runtime: ProjectRuntime })
       ._runtime.graph;
     const publication = vi.spyOn(graph, "flush");
@@ -353,8 +355,8 @@ describe("IK playground scroll-only rest blending", () => {
     }).not.toThrow();
   });
 
-  it("preserves authored values while the source alone changes both member weights", () => {
-    const test = load();
+  it("preserves authored values while the source alone changes both member weights", async () => {
+    const test = await load();
     try {
       const before2d = values(test.runtime, nodeId(TENTACLE.goalTrack));
       const before3d = values(test.runtime, IK3D_NODE_ID(IK3D.goalTrack));

@@ -514,6 +514,57 @@ describe("boundary scan: the public 3D surface", () => {
     ]);
   });
 
+  it("allows native lazy imports in the built-in plugin catalog", async () => {
+    const violations = await withTree(
+      {
+        "packages/plugins/src/catalog.ts":
+          'import type { PluginCatalog } from "./loader"; export const catalog: PluginCatalog = new Map([["fk", { load: () => import("./fk").then((module) => module.fkPlugin) }]]);',
+      },
+      (tree) => scan(tree),
+    );
+    expect(violations).toEqual([]);
+  });
+
+  it("refuses eager sibling imports in the built-in plugin catalog", async () => {
+    const violations = await withTree(
+      {
+        "packages/plugins/src/catalog.ts": 'import { fkPlugin } from "./fk"; export { fkPlugin };',
+      },
+      (tree) => scan(tree),
+    );
+    expect(violations).toEqual([
+      "packages/plugins/src/catalog.ts: plugin definitions must be reached through lazy imports",
+    ]);
+  });
+
+  it("refuses a value import, re-export or side-effect import in the built-in plugin catalog", async () => {
+    const eager = [
+      'import { createPluginLoader } from "./loader"; export const c = createPluginLoader;',
+      'export { fkPlugin } from "./fk";',
+      'import "./fk";',
+      'import type { PluginCatalog } from "./loader"; import * as fk from "../src/fk"; export { fk };',
+    ];
+    for (const source of eager) {
+      const violations = await withTree({ "packages/plugins/src/catalog.ts": source }, (tree) =>
+        scan(tree),
+      );
+      expect(violations, source).toEqual([
+        "packages/plugins/src/catalog.ts: plugin definitions must be reached through lazy imports",
+      ]);
+    }
+  });
+
+  it("reads catalog imports through comments and strings as code, not prose", async () => {
+    const violations = await withTree(
+      {
+        "packages/plugins/src/catalog.ts":
+          '// import { fkPlugin } from "./fk";\nimport type { PluginCatalog } from "./loader";\nconst note = \'from "./fk"\';\nexport const catalog: PluginCatalog = new Map([["fk", { load: () => import("./fk").then((m) => m.fkPlugin) }]]);\nvoid note;',
+      },
+      (tree) => scan(tree),
+    );
+    expect(violations).toEqual([]);
+  });
+
   it("TH-113 refuses a core source directory that no layer declares", async () => {
     const violations = await withTree(
       {

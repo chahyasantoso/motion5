@@ -5,12 +5,12 @@
 // is what regenerates them: run `npm run bench:ik` and paste the report's conditions beside the
 // numbers it produced. The deterministic half of the envelope (which strategy each scenario
 // reaches, whether every answer is finite and inside the iteration cap, and whether rigs couple) is
-// asserted by `EN-` in `packages/core/test/unit/plugins/ik-envelope.test.ts` for 2D and by `TH-71`
-// to `TH-74` in `packages/core/test/unit/plugins/ik3d-envelope.test.ts` for 3D, and is not
+// asserted by `EN-` in `packages/plugins/test/integration/ik-envelope.test.ts` for 2D and by `TH-71`
+// to `TH-74` in `packages/plugins/test/unit/ik3d-envelope.test.ts` for 3D, and is not
 // re-asserted here.
 //
-// The rigs are `packages/core/test/support/ik-envelope.ts` and
-// `packages/core/test/support/ik3d-envelope.ts`, the same modules the envelope tests read, so a
+// The rigs are `packages/plugins/test/support/ik-envelope.ts` and
+// `packages/plugins/test/support/ik3d-envelope.ts`, the same modules the envelope tests read, so a
 // timing names exactly the scenario the suite pins. Nothing here gates CI: a timing is a property
 // of the machine as much as of the code, which is why the report carries the machine, and why
 // ADR-008 keeps gates on behaviour. The `performance` job runs `npm run benchmark`, which this
@@ -27,8 +27,10 @@ import os from "node:os";
 import { performance } from "node:perf_hooks";
 
 const pluginApi = new URL("../packages/core/src/plugin-api.ts", import.meta.url).href;
+const coreApi = new URL("../packages/core/src/index.ts", import.meta.url).href;
 const HOOK = `export async function resolve(specifier, context, next) {
   if (specifier === "@motion5/core/plugin-api") return next(${JSON.stringify(pluginApi)}, context);
+  if (specifier === "@motion5/core") return next(${JSON.stringify(coreApi)}, context);
   try {
     return await next(specifier, context);
   } catch (error) {
@@ -44,8 +46,8 @@ const { values } = await import("node:util").then(({ parseArgs }) =>
 const RIGS = Number(values.rigs ?? 200);
 if (!Number.isInteger(RIGS) || RIGS < 1) throw new TypeError(`--rigs must be a positive integer`);
 
-const support = "../packages/core/test/support/ik-envelope.ts";
-const support3d = "../packages/core/test/support/ik3d-envelope.ts";
+const support = "../packages/plugins/test/support/ik-envelope.ts";
+const support3d = "../packages/plugins/test/support/ik3d-envelope.ts";
 const src = "../packages/core/src";
 const plugins = "../packages/plugins/src";
 const { envelopeScenarios, independentRigsProject, rigTrackIds } = await import(support);
@@ -147,9 +149,7 @@ const solves3d = envelope3dScenarios(RIGS).map((scenario) => {
 /** One runtime with `count` independent two-bone rigs; a frame seeks every rig's goal once. */
 function engineScenario(count) {
   const plugins = new PluginRegistry();
-  plugins.register(transformPlugin);
-  plugins.register(fkPlugin);
-  plugins.register(ikPlugin);
+  plugins.registerAll([transformPlugin, fkPlugin, ikPlugin]);
   const loadStart = performance.now();
   const runtime = new Engine({
     clock: createManualClock(),

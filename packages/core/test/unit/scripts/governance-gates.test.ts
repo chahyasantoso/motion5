@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
+import ts from "typescript";
 import { describe, expect, it } from "vitest";
 
 const root = fileURLToPath(new URL("../../../../../", import.meta.url));
@@ -10,6 +11,23 @@ async function text(path: string): Promise<string> {
 }
 
 describe("recovery governance gates (G-1/G-3/G-4/G-5/G-7)", () => {
+  it("resolves the public testing entrypoint to source from the plugin test home", () => {
+    const configFile = ts.readConfigFile(join(root, "tsconfig.json"), ts.sys.readFile);
+    expect(configFile.error).toBeUndefined();
+    const config = ts.parseJsonConfigFileContent(configFile.config, ts.sys, root);
+    expect(config.errors).toEqual([]);
+    const resolution = ts.resolveModuleName(
+      "@motion5/core/testing",
+      join(root, "packages/plugins/test/integration/ik-envelope.test.ts"),
+      config.options,
+      ts.sys,
+    );
+    // Vitest aliases do not affect tsc. Require source even when dist happens to exist.
+    expect(resolution.resolvedModule?.resolvedFileName).toBe(
+      join(root, "packages/core/src/testing/fakes.ts"),
+    );
+  });
+
   it("builds publishable package declarations instead of declaring source as the package", async () => {
     const packageJson = JSON.parse(await text("packages/core/package.json")) as {
       types?: string;

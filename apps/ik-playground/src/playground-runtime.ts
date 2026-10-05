@@ -7,12 +7,9 @@ import {
   type ProjectHandle,
   type ScrollSource,
 } from "@motion5/core";
-import { fkPlugin } from "@motion5/plugins/fk";
-import { ikPlugin } from "@motion5/plugins/ik";
-import { transformPlugin } from "@motion5/plugins/transform";
-import { transform3dPlugin } from "@motion5/plugins/transform3d";
-import { fk3dPlugin } from "@motion5/plugins/fk3d";
-import { ik3dPlugin } from "@motion5/plugins/ik3d";
+import { builtinCatalog } from "@motion5/plugins/catalog";
+import { createPluginLoader, ensuredOrThrow } from "@motion5/plugins/loader";
+import { afterCleanup } from "./cleanup";
 import { createGoalControl, type GoalControl } from "./goal-control";
 import { SCROLL_SOURCE, ikPlaygroundProject } from "./ik-playground-project";
 import { IK3D_PERSPECTIVE, ik3dPlaygroundMotion } from "./ik3d-playground-project";
@@ -30,20 +27,7 @@ export const playgroundProject: ProjectDefinition = {
   motions: [...ikPlaygroundProject.motions, ik3dPlaygroundMotion],
 };
 
-/** Every plugin the composed project authors, through the public subpaths only. */
-function playgroundPlugins(): PluginRegistry {
-  const plugins = new PluginRegistry();
-  for (const plugin of [
-    transformPlugin,
-    fkPlugin,
-    ikPlugin,
-    transform3dPlugin,
-    fk3dPlugin,
-    ik3dPlugin,
-  ])
-    plugins.register(plugin);
-  return plugins;
-}
+const loader = createPluginLoader(builtinCatalog);
 
 export interface PlaygroundRuntimeOptions
   extends Pick<EngineOptions, "clock" | "interpolator" | "scheduler"> {
@@ -62,13 +46,18 @@ export interface PlaygroundRuntime {
  * Both Motions read the page scroll as it is: scroll moves member weights and nothing else, and
  * gestures write through `GoalControl` without waiting for a scroll event. Nodes are mounted from the
  * runtime's own answer rather than from a list written beside the document. A failure after load
- * disposes the project it created, so a caller owns a runtime only once this returns.
+ * disposes the project it created, so a caller owns a runtime only once this resolves. The approved
+ * loader ensures the authored demand before constructing an Engine; core loading stays synchronous.
  */
-export function loadPlayground(options: PlaygroundRuntimeOptions): PlaygroundRuntime {
+export async function loadPlayground(
+  options: PlaygroundRuntimeOptions,
+): Promise<PlaygroundRuntime> {
   const { scroll, ...ports } = options;
+  const plugins = new PluginRegistry();
+  ensuredOrThrow(await loader.ensure(plugins, { kind: "project", project: playgroundProject }));
   const project = new Engine({
     ...ports,
-    plugins: playgroundPlugins(),
+    plugins,
     triggerFactory: createTriggerFactory({
       scroll: ({ trigger }) => (trigger.source === SCROLL_SOURCE ? scroll : undefined),
     }),
@@ -79,11 +68,6 @@ export function loadPlayground(options: PlaygroundRuntimeOptions): PlaygroundRun
     for (const freeNode of project.freeTrackIds()) project.mount(freeNode);
     return { project, goals: createGoalControl(project) };
   } catch (error) {
-    try {
-      project.dispose();
-    } catch (cleanupError) {
-      throw new AggregateError([error, cleanupError], "Playground setup and cleanup failed.");
-    }
-    throw error;
+    throw afterCleanup(error, () => project.dispose(), "Playground setup and cleanup failed.");
   }
 }

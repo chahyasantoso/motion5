@@ -8,10 +8,12 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 
 const filters = {
-  all: "",
-  integration: "packages/core/test/integration",
-  "end-to-end": "packages/core/test/integration/end-to-end.test.ts",
+  all: [],
+  integration: ["packages/core/test/integration/", "packages/plugins/test/integration/"],
+  "end-to-end": ["packages/core/test/integration/end-to-end.test.ts"],
 };
+const inScope = (file, scope) =>
+  filters[scope].length === 0 || filters[scope].some((filter) => file.includes(filter));
 const directory = () => process.env.CI_EVIDENCE_DIR;
 const read = (file) => {
   const bytes = readFileSync(file);
@@ -72,12 +74,12 @@ export function verify(inventory, result, expected, scope) {
   );
   const all = counts(inventory.all);
   for (const subset of ["integration", "end-to-end"]) {
-    const selected = inventory.all.filter((test) => test.file.includes(filters[subset]));
+    const selected = inventory.all.filter((test) => inScope(test.file, subset));
     assert.deepEqual(counts(inventory[subset]), counts(selected), "Discovery parity failed");
   }
   const passed = result.tests.filter((test) => test.state === "passed");
   assert.deepEqual(counts(passed), all, "Executed tests differ from discovery");
-  const selected = result.tests.filter((test) => test.file.includes(filters[scope]));
+  const selected = result.tests.filter((test) => inScope(test.file, scope));
   assert.ok(selected.length > 0, "Missing scoped results");
   if (scope !== "all")
     assert.ok(
@@ -121,12 +123,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
         const output = path.join(directory(), `${scope}.json`);
         execFileSync(
           process.execPath,
-          [
-            "node_modules/vitest/vitest.mjs",
-            "list",
-            ...(filter ? [filter] : []),
-            `--json=${output}`,
-          ],
+          ["node_modules/vitest/vitest.mjs", "list", ...filter, `--json=${output}`],
           { stdio: "inherit", timeout: 180000 },
         );
         inventory[scope] = read(output).map((test) => ({ ...test, file: relative(test.file) }));

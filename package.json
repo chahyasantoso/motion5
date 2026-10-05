@@ -22,7 +22,7 @@
     "test:migration": "vitest run packages/core/test/migration",
     "test:contract": "vitest run packages/core/test/contract",
     "test:ports": "vitest run packages/core/test/contract/ports.test.ts",
-    "test:integration": "vitest run packages/core/test/integration",
+    "test:integration": "vitest run packages/core/test/integration packages/plugins/test/integration",
     "test:boundaries": "node scripts/boundary-scan.mjs && vitest run packages/core/test/unit/scripts/boundary-scan.test.ts",
     "test:read-budget": "node scripts/read-budget-scan.mjs && vitest run packages/core/test/unit/scripts/read-budget-scan.test.ts",
     "benchmark": "node performance/graph-benchmark.mjs",

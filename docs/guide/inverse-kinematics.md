@@ -2,7 +2,7 @@
 
 This page is for someone rigging bones with the `fk` and `ik` plugins: which way the numbers point, what a solve does and does not read, what it costs, and how a rig behaves across load, edits and seeks. The authored keys themselves are normative in [AUTHORED-SCHEMA.md](../AUTHORED-SCHEMA.md#inverse-kinematics-ik-and-fkrequiressolver), and every load refusal a rig can meet is listed in [Errors and diagnostics](./errors-and-diagnostics.md#inverse-kinematics-and-solver-rules). This page does not restate either.
 
-Every JSON project on this page is executed by the test suite exactly as printed: the `GE-` cases in `packages/core/test/unit/plugins/ik-guide-examples.test.ts` read this file, load each block, and check the behaviour its paragraph claims. An example that stops doing what its paragraph says fails `CI`, so the examples are evidence rather than illustration.
+Every JSON project on this page is executed by the test suite exactly as printed: the `GE-` cases in `packages/plugins/test/integration/ik-guide-examples.test.ts` read this file, load each block, and check the behaviour its paragraph claims. An example that stops doing what its paragraph says fails `CI`, so the examples are evidence rather than illustration.
 
 ## Conventions
 

@@ -538,6 +538,19 @@ function checkPluginSource(source, file, specifiers, violations) {
   if (!allowed) violations.push(`${file}: import outside plugin package contract`);
   if (bannedSymbol(source)) violations.push(`${file}: banned compatibility symbol`);
 }
+/**
+ * ADR-135: the built-in catalog reaches definitions only through native `import("./x")`. Its one
+ * static edge is the type-only `import type { ... } from "./loader"`, which emits nothing; a value
+ * import of the loader, a re-export, or a side-effect import of any relative module is eager.
+ * Reads the same comment- and string-masked code as `importSpecifiers`.
+ */
+function catalogHasStaticRelativeImport(source) {
+  const code = retainModuleStrings(withoutComments(source)).replace(
+    /\bimport\s+type\s*\{[^}]*\}\s*from\s*["']\.\/loader["']/g,
+    "",
+  );
+  return /(?:\bfrom\s*|\bimport\s*)["']\.\.?\//.test(code);
+}
 export async function scan(scanRoot = root) {
   const violations = [];
   for (const layer of coreLayers)
@@ -551,7 +564,11 @@ export async function scan(scanRoot = root) {
       const source = await readFile(path, "utf8");
       const file = relative(path, scanRoot);
       const specifiers = [...importSpecifiers(source)];
-      if (workspace === "packages/plugins") checkPluginSource(source, file, specifiers, violations);
+      if (workspace === "packages/plugins") {
+        checkPluginSource(source, file, specifiers, violations);
+        if (file === "packages/plugins/src/catalog.ts" && catalogHasStaticRelativeImport(source))
+          violations.push(`${file}: plugin definitions must be reached through lazy imports`);
+      }
       if (importsCoreInternals(source, specifiers))
         violations.push(`${file}: core source-internal import`);
       if (importsTestingEntrypoint(source, specifiers))

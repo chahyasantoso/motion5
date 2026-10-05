@@ -16,7 +16,14 @@ const CORE = new URL("../../core/", import.meta.url);
 const PLUGIN_SUBPATH = /^\.\/([a-z0-9]+)$/;
 const PUBLIC_3D = ["transform3d", "fk3d", "ik3d"];
 export const DEFINITION_SUBPATHS = ["transform", "fk", "ik", ...PUBLIC_3D];
-export const PUBLIC_SUBPATHS = [...DEFINITION_SUBPATHS, "frame3d"];
+/** Public modules that are not one zero-config definition; R3 keeps them out of the catalog. */
+const SUPPORT_SUBPATHS = ["frame3d", "catalog", "loader"];
+/** R2: support modules other than `frame3d` publish exactly these runtime names. */
+const SUPPORT_EXPORTS: Readonly<Record<string, readonly string[]>> = {
+  catalog: ["builtinCatalog"],
+  loader: ["createPluginLoader", "describeLoadFailure", "ensuredOrThrow"],
+};
+export const PUBLIC_SUBPATHS = [...DEFINITION_SUBPATHS, ...SUPPORT_SUBPATHS];
 
 interface Manifest {
   readonly exports: Readonly<Record<string, unknown>>;
@@ -58,6 +65,11 @@ describe("public plugin subpaths", () => {
         string,
         unknown
       >;
+      const supportExports = SUPPORT_EXPORTS[name];
+      if (supportExports !== undefined) {
+        expect(Object.keys(module).sort(), name).toEqual(supportExports);
+        continue;
+      }
       const plugins = Object.entries(module).filter(([, value]) => isPluginDefinition(value));
       if (name === "frame3d") {
         // The unchanged complete frame utility module is public, not only its frame reader.
@@ -91,5 +103,15 @@ describe("public plugin subpaths", () => {
     }
     expect(aliases.some(({ find }) => find.test("@motion5/plugins/fabrik"))).toBe(false);
     expect(aliases.some(({ find }) => find.test("@motion5/plugins"))).toBe(false);
+  });
+
+  it("L15 every built-in catalog entry lazily loads its matching definition subpath", async () => {
+    const { builtinCatalog } = await import("../src/catalog");
+    // The manifest pins PUBLIC_SUBPATHS (TH-111), so this one list owns both sides of R3.
+    expect([...builtinCatalog.keys()]).toEqual(DEFINITION_SUBPATHS);
+    for (const [name, descriptor] of builtinCatalog) {
+      const definition = await descriptor.load();
+      expect(definition.name).toBe(name);
+    }
   });
 });

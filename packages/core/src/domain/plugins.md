@@ -14,6 +14,25 @@ Runs the prepare-stage `contribute` hooks.
 
 The stops a hook receives come from `readCompilableStops`, the one owner of the leaf shape, so a hook sees exactly the stops the interpolation compiler would rather than a second reading of the same authored record. See issue #192.
 
+## PluginRegistry
+
+Batch admission is atomic: every definition is admitted before any registry index is written.
+`plugin-admission.ts` owns validation against a single own-property snapshot. The registry supplies
+existing and staged names/input owners, stages the resulting entries, then stores them in input order.
+`register` delegates to a one-member batch; checks, precedence and messages have one owner.
+
+An empty batch is a no-op; a non-array throws `TypeError("Plugin definitions must be an array.")`.
+Getter failures propagate without inserting earlier candidates. A compose method present only on a
+prototype is refused because it would disappear from the stored own-property snapshot. Own compose
+fields remain valid. Keys, inputs and outputs must hold strings and are copied and frozen
+before commit; requirements are stored as a frozen copy, never frozen in place.
+
+`#admitting` rejects nested registration during snapshotting with
+`TypeError("Plugin registration is already in progress.")` and resets in `finally`. Getters and
+metadata proxies are user code, so otherwise a callback could publish a nested partial registration
+inside a batch that later fails. No plugin hook runs during admission. The store phase reads only
+admitted data and performs map/array writes. See ADR-134.
+
 ## #claimantsOf
 
 Every plugin that claims `key`, in registration order, asked only about a contributed key.

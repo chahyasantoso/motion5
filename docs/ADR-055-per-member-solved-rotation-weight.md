@@ -102,8 +102,8 @@ Both rules read one walker, `groupsAuthoring`, and are set operations against th
 
 ## Evidence
 
-- `packages/core/test/unit/plugins/angle-blend.test.ts` (`WT-1`..`WT-4`): one shared `clamp`, the two endpoint identities, the short arc through the wrap, and the positive tie-break at exactly half a turn.
-- `packages/core/test/unit/plugins/fk-solved-weight.test.ts` (`WT-5`..`WT-11`): the omitted-weight default composed against the unconditional override as its oracle, `0` and `1` as exact authored and exact solved, a blend across the `180`/`0` wrap, clamping and the non-finite fallback, an unbound slot ignoring the weight entirely, and the key never reaching a patch.
+- `packages/plugins/test/unit/angle-blend.test.ts` (`WT-1`..`WT-4`): one shared `clamp`, the two endpoint identities, the short arc through the wrap, and the positive tie-break at exactly half a turn.
+- `packages/plugins/test/unit/fk-solved-weight.test.ts` (`WT-5`..`WT-11`): the omitted-weight default composed against the unconditional override as its oracle, `0` and `1` as exact authored and exact solved, a blend across the `180`/`0` wrap, clamping and the non-finite fallback, an unbound slot ignoring the weight entirely, and the key never reaching a patch.
 - `packages/core/test/unit/graph/solved-rotation-weight.test.ts` (`WT-12`..`WT-16`): the narrowed refusal, acceptance whatever the weight is, the boundary a registry-free layer cannot cross, group scope on both rules, and the two builders agreeing.
-- `packages/core/test/integration/per-plugin-key-ownership.test.ts` (`N-7`): the claimed key list, which is the one existing case this change moves.
-- `packages/core/test/integration/plugin-owned-requirements.test.ts` (`Q-10`): the pre-existing plugin that claims `weight` and binds no solver, which is why the mirror rule is guarded rather than universal. It needed no edit.
+- `packages/plugins/test/integration/per-plugin-key-ownership.test.ts` (`N-7`): the claimed key list, which is the one existing case this change moves.
+- `packages/plugins/test/integration/plugin-owned-requirements.test.ts` (`Q-10`): the pre-existing plugin that claims `weight` and binds no solver, which is why the mirror rule is guarded rather than universal. It needed no edit.

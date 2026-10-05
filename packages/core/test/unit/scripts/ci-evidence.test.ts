@@ -56,6 +56,12 @@ describe("single-suite CI evidence", () => {
 
   it("compares discovery multiplicity and rejects missing subset assertions", () => {
     scenario(`
+      const plugin = {file: "packages/plugins/test/integration/ik3d-tree.test.ts", name: "plugin > test"};
+      const expanded = {...inventory, all: [test, plugin], integration: [test, plugin]};
+      const executed = {...result, tests: [...result.tests, {...plugin, state: "passed"}]};
+      assert.equal(verify(expanded, executed, identity, "integration").tests, 2);
+      assert.throws(() => verify({...expanded, integration: [test]}, executed, identity, "integration"));
+      assert.throws(() => verify(expanded, result, identity, "integration"));
       assert.throws(() => verify({...inventory, integration: []}, result, identity, "all"));
       assert.throws(() => verify({...inventory, integration: [test, test]}, result, identity, "all"));
       assert.throws(() => verify(inventory, {...result, tests: [...result.tests, ...result.tests]}, identity, "all"));

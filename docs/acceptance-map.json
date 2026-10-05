@@ -237,19 +237,19 @@
     },
     {
       "id": "ik-solve",
-      "test": "packages/core/test/unit/plugins/ik-solve.test.ts"
+      "test": "packages/plugins/test/unit/ik-solve.test.ts"
     },
     {
       "id": "ik-chain-shape",
-      "test": "packages/core/test/unit/plugins/ik-chain-shape.test.ts"
+      "test": "packages/plugins/test/unit/ik-chain-shape.test.ts"
     },
     {
       "id": "ik-result",
-      "test": "packages/core/test/unit/plugins/ik-result.test.ts"
+      "test": "packages/plugins/test/unit/ik-result.test.ts"
     },
     {
       "id": "fk-solver-override",
-      "test": "packages/core/test/unit/plugins/fk-solver-override.test.ts"
+      "test": "packages/plugins/test/unit/fk-solver-override.test.ts"
     },
     {
       "id": "publisher-solver-members",
@@ -269,15 +269,15 @@
     },
     {
       "id": "fabrik-solve",
-      "test": "packages/core/test/unit/plugins/fabrik-solve.test.ts"
+      "test": "packages/plugins/test/unit/fabrik-solve.test.ts"
     },
     {
       "id": "fabrik-dispatch",
-      "test": "packages/core/test/unit/plugins/fabrik-dispatch.test.ts"
+      "test": "packages/plugins/test/unit/fabrik-dispatch.test.ts"
     },
     {
       "id": "fabrik-arity-one",
-      "test": "packages/core/test/unit/plugins/fabrik-arity-one.test.ts"
+      "test": "packages/plugins/test/unit/fabrik-arity-one.test.ts"
     },
     {
       "id": "solver-arity-lift",
@@ -293,11 +293,11 @@
     },
     {
       "id": "angle-blend",
-      "test": "packages/core/test/unit/plugins/angle-blend.test.ts"
+      "test": "packages/plugins/test/unit/angle-blend.test.ts"
     },
     {
       "id": "fk-solved-weight",
-      "test": "packages/core/test/unit/plugins/fk-solved-weight.test.ts"
+      "test": "packages/plugins/test/unit/fk-solved-weight.test.ts"
     },
     {
       "id": "solved-rotation-weight",
@@ -325,11 +325,11 @@
     },
     {
       "id": "live-value-composition",
-      "test": "packages/core/test/integration/live-value-composition.test.ts"
+      "test": "packages/plugins/test/integration/live-value-composition.test.ts"
     },
     {
       "id": "ik-constraint",
-      "test": "packages/core/test/unit/plugins/ik-constraint.test.ts"
+      "test": "packages/plugins/test/unit/ik-constraint.test.ts"
     },
     {
       "id": "solver-constraints",

@@ -5,25 +5,24 @@ are the complete shape. **Now** and **Next in line** carry exactly one bullet ea
 states a phase; `packages/core/test/unit/scripts/session-status-shape.test.ts` enforces the shape and
 byte ceiling.
 
-- **Captured:** 2026-10-04, Asia/Jakarta.
-- **Read against:** `main` at `f2589922d6ba099f2756274968a2ad1e05bfc9c0`, the squash of
-  [PR #547][pr547].
+- **Captured:** 2026-10-05, Asia/Jakarta.
+- **Read against:** [PR #551][pr551] at `645fbd53cbcf12b1d6c61a3bb26dc35028192673`;
+  GitHub shows [PR #549][pr549], [PR #550][pr550] and [PR #551][pr551] open.
 
 ## Now
 
-- **`main` carries the pose gap filler and the plugin-authoring contract ([PR #547][pr547] merged
-  as `f2589922`); [PR #548][pr548] extracts all 33 plugin implementations into `@motion5/plugins`,
-  keeps core implementation-free, and awaits seven green Node 24 CI contexts.**
+- **[PR #548][pr548] is merged into `main`: all 33 plugin implementations live in
+  `@motion5/plugins`, and core exposes their declared plugin-authoring contract.**
 
 ## Next in line
 
-- **[#534][issue534] plugin-only tests move:** after [PR #548][pr548] merges, tests that need only
-  public core entrypoints move from `packages/core/test` to `packages/plugins/test`.
+- **[#534][issue534] lazy playground composition:** local `feat/534-lazy-composition-root` is
+  prepared on the approved loader in [PR #551][pr551]. Publish the handover and obtain exact-head
+  Node 24 CI; the open prerequisites are not claimed merged.
 
 ## Open, and not scheduled
 
-- Atomic registration, lazy loading, solver capabilities, labels, rig, runners and 3D avatar driving
-  remain unmerged.
+- Solver capabilities, labels, rig, runners and 3D avatar driving remain unmerged.
 
 ## Where the rest of it lives
 
@@ -34,5 +33,7 @@ byte ceiling.
 - Earlier long-form history remains in Git, not in this status file.
 
 [issue534]: https://github.com/chahyasantoso/motion5/issues/534
-[pr547]: https://github.com/chahyasantoso/motion5/pull/547
 [pr548]: https://github.com/chahyasantoso/motion5/pull/548
+[pr549]: https://github.com/chahyasantoso/motion5/pull/549
+[pr550]: https://github.com/chahyasantoso/motion5/pull/550
+[pr551]: https://github.com/chahyasantoso/motion5/pull/551

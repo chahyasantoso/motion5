@@ -16,6 +16,8 @@ ADR-036 and ADR-048.
   consumers may import them.
 - `@motion5/plugins/transform3d`, `/fk3d`, and `/ik3d` — public plugins;
   production consumers may import them.
+- `@motion5/plugins/catalog` and `/loader` — public asynchronous composition-root helpers;
+  production consumers may import them. Engine loading and live edits stay synchronous.
 - `@motion5/core/testing` — test support; production consumers may not import it, as enforced by
   the boundary scan.
 - `@motion5/core/plugin-api` — the plugin-authoring contract; plugin implementations may import this entrypoint and sibling implementation modules only.
@@ -76,6 +78,15 @@ the migrated value.
 An `ObservationDefinition` carries `source` and nothing else. There is no `target`, no `role`, and no `projection`, and an authored one of each is rejected with `observation-target-unsupported`, `observation-role-unsupported`, or `observation-projection-unsupported`. `InputProjection` is gone with the primitive it described. See ADR-046 and ADR-047.
 
 **Plugins.** `PluginRegistry`, and the types `PluginDefinition`, `PluginStage` and `ResolvedPlugins`.
+
+`PluginRegistry.registerAll(definitions)` admits an array atomically in its authored order: a
+refusal stores none of the batch and preserves existing plugins. `register(definition)` uses the
+same admission path for one member. An empty array is a no-op; non-arrays throw
+`TypeError("Plugin definitions must be an array.")`. Definitions are validated and stored from one
+own-property snapshot, so an inherited-only `compose` is refused. Registration from a getter during
+admission is refused as `TypeError("Plugin registration is already in progress.")`.
+No imports or asynchronous work happen in either method. See
+[ADR-134](../ADR-134-atomic-plugin-registration.md).
 
 A `PluginDefinition` may declare `requirements`, a record of optional input slots owned by that plugin. Its `compose` receives authored/interpolated values, the track's progress, and that plugin's scoped inputs. `ResolvedPlugins.requirements` reports the bindings resolved for a track.
 
@@ -160,6 +171,75 @@ These are the implementations the core suite runs the port contract suite agains
 ## @motion5/core/internal
 
 A private channel between core and React: the `Patch`, `LivePatch`, `PatchListener`, `PatchSource`, `RenderMetadata`, and `RenderMetadataSource` types, plus the `liveOrAbsent` function. The metadata half is declared separately and required only by the binding that renders, so a consumer that reads values keeps the two-member source contract. `PatchSource.get` answers `LivePatch | undefined` while `subscribeNode` delivers every variant, and `liveOrAbsent` is the one function that converts between them, so an implementor discharges that obligation with a call rather than re-deriving which variants are live.
+
+## @motion5/plugins/catalog and /loader
+
+`builtinCatalog` is an approved `PluginCatalog`: a `ReadonlyMap<string, PluginDescriptor>` of
+zero-configuration built-ins in historical registration order. Each descriptor declares
+`load(): Promise<PluginDefinition>` and optional `dependencies`. The catalog imports definitions
+only dynamically. Third-party definitions are approved explicitly with
+`new Map([...builtinCatalog, [name, descriptor]])`; authored strings never become import paths.
+
+`createPluginLoader(catalog)` snapshots that allowlist and returns a `PluginLoader` with
+`ensure(registry, demand): Promise<EnsuredDemand>`. A `PluginDemand` is either
+`{ kind: "project", project }` or `{ kind: "tracks", tracks }`. Ensure validates demand and plans
+its dependency closure before importing, then registers only missing definitions in catalog
+order with one synchronous atomic `registerAll`. The Engine retains that same registry by
+reference, so ensure also works after loading a project.
+
+`EnsuredDemand` is `{ kind: "ensured", added }` or `{ kind: "refused", failure }`.
+`PluginLoadFailure` has six variants: `invalid-demand` carries diagnostics, `unknown-plugin`
+carries name and authored path, `dependency-cycle` carries its cycle, `import-failed` carries
+name and cause, `identity-mismatch` carries name and received identity, and `registration-refused`
+carries cause. `describeLoadFailure(failure)` owns their wording;
+`ensuredOrThrow(result)` returns added names or throws an Error preserving the available cause.
+These types, `PluginDescriptor` and `PluginCatalog` are exported from `/loader`.
+See [ADR-135](../ADR-135-approved-plugin-loader.md).
+
+Imports are cached across registries by a loader, but admission always targets the caller's
+registry. Failed imports are evicted for retry; JavaScript's own failed-module cache is not bypassed.
+Ensure rechecks registered names after its final await, so overlapping calls are idempotent.
+An already-registered authored root needs no catalog entry, while declared catalog dependencies
+must still be approved. Native imports are not abortable: a departed caller ignores the result
+and disposes any runtime it receives late.
+
+### Ensure before a synchronous live edit
+
+Keep one registry per Engine. Await ensure outside the transaction, then call the synchronous
+edit. Neither `addTrack` nor `edit` imports plugins; an unseen group is still refused without
+changing the graph. A refused ensure registers nothing and is not permission to apply the edit.
+
+```ts
+import { Engine, PluginRegistry, type TrackDefinition } from "@motion5/core";
+import { builtinCatalog } from "@motion5/plugins/catalog";
+import { createPluginLoader, ensuredOrThrow } from "@motion5/plugins/loader";
+
+const plugins = new PluginRegistry();
+const loader = createPluginLoader(builtinCatalog);
+ensuredOrThrow(await loader.ensure(plugins, { kind: "project", project: definition }));
+const project = new Engine({ clock, interpolator, scheduler, plugins }).load(definition);
+
+const tracks: readonly TrackDefinition[] = [
+  {
+    id: "bone",
+    keyframes: {
+      fk: { values: { length: 20, rotation: 0 }, requires: { base: "~/root" } },
+    },
+  },
+];
+// The loaded definition already supplies the free transform track "~/root".
+ensuredOrThrow(await loader.ensure(plugins, { kind: "tracks", tracks }));
+project.edit((edit) => {
+  for (const track of tracks) edit.addTrack(track);
+});
+```
+
+For a single track the same preflight precedes `project.addTrack(track)`. A recipe is never async:
+it stages and commits synchronously. The IK playground uses this lazy composition-root policy;
+`loadPlayground` resolves only after load and mount. Its effect discards late results and releases
+weight subscription, project, then clock on active cleanup. React demo stays synchronous so GSAP
+measures committed DOM in `useLayoutEffect`; pose gap filler's synchronous rig loaders also remain
+first-class.
 
 ## @motion5/three
 
