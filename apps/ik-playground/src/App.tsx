@@ -12,6 +12,7 @@ import { ThreeStage } from "./components/ThreeStage";
 import { TENTACLE, nodeId } from "./ik-playground-project";
 import { loadPlayground, type PlaygroundRuntime } from "./playground-runtime";
 import { LOADING_VIEW, startPlaygroundSession, type PlaygroundView } from "./playground-session";
+import { unreachable } from "./unreachable";
 
 type PlaygroundTab = "dom" | "three";
 const TAB_LABEL: Readonly<Record<PlaygroundTab, string>> = {
@@ -38,10 +39,8 @@ function tabPanel(
           <ThreeStage handle={handle} goals={goals} />
         </div>
       );
-    default: {
-      const unhandled: never = tab;
-      throw new Error(`Unhandled playground tab: ${String(unhandled)}`);
-    }
+    default:
+      return unreachable(tab, "playground tab");
   }
 }
 
@@ -57,10 +56,8 @@ function presentation(view: PlaygroundView): {
       return { runtime: view.runtime, weight: view.weight };
     case "failed":
       throw view.error;
-    default: {
-      const unhandled: never = view;
-      throw new Error(`Unhandled playground view: ${String(unhandled)}`);
-    }
+    default:
+      return unreachable(view, "playground view");
   }
 }
 

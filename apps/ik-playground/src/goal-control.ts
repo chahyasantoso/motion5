@@ -9,6 +9,7 @@ import {
   IK3D_VIEW,
 } from "./ik3d-playground-project";
 import { clampToFrame } from "./projection";
+import { unreachable } from "./unreachable";
 
 const IK3D_DEPTH = { min: IK3D_GOAL_BOUNDS.min.z, max: IK3D_GOAL_BOUNDS.max.z } as const;
 
@@ -39,10 +40,8 @@ function finite(goal: GoalMove): boolean {
       return Number.isFinite(goal.x) && Number.isFinite(goal.y);
     case "spatial":
       return Number.isFinite(goal.x) && Number.isFinite(goal.y) && Number.isFinite(goal.z);
-    default: {
-      const unhandled: never = goal;
-      throw new Error(`Unhandled goal: ${JSON.stringify(unhandled)}`);
-    }
+    default:
+      return unreachable(goal, "goal");
   }
 }
 
@@ -78,10 +77,8 @@ export function createGoalControl(project: Pick<ProjectHandle, "track">): GoalCo
           project.track(IK3D_NODE_ID(IK3D.goalTrack)).setValues({ x, y, z });
           return;
         }
-        default: {
-          const unhandled: never = goal;
-          throw new Error(`Unhandled goal: ${JSON.stringify(unhandled)}`);
-        }
+        default:
+          return unreachable(goal, "goal");
       }
     },
     flip(value) {
