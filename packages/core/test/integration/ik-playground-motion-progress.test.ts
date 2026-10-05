@@ -79,6 +79,26 @@ function flush(scheduler: ReturnType<typeof createFakeScheduler>): void {
 }
 
 describe("IK playground runtime loading and scroll progress", () => {
+  it("returns a promise and ensures demand before constructing the playground engine", async () => {
+    const load = vi.spyOn(Engine.prototype, "load");
+    let result: ReturnType<typeof loadPlayground> | undefined;
+    try {
+      result = loadPlayground({
+        clock: createManualClock(),
+        interpolator: createFakeInterpolator(),
+        scheduler: createFakeScheduler(),
+        scroll: fakeScroll().source,
+      });
+      expect(result).toBeInstanceOf(Promise);
+      expect(load).not.toHaveBeenCalled();
+      await result;
+      expect(load).toHaveBeenCalledOnce();
+    } finally {
+      (await result)?.project.dispose();
+      load.mockRestore();
+    }
+  });
+
   it("TH-132 loads and mounts the composed runtime answer and disposes after setup failure", () => {
     const scroll = fakeScroll();
     const scheduler = createFakeScheduler();
