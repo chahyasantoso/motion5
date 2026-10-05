@@ -450,9 +450,81 @@ describe("approved lazy plugin loader", () => {
       { kind: "identity-mismatch", name: "x", received: {} },
       { kind: "registration-refused", cause: new Error("bad") },
     ];
-    expect(failures.map((failure) => describeLoadFailure(failure))).toHaveLength(6);
+    expect(failures.map((failure) => describeLoadFailure(failure))).toEqual([
+      "Plugin demand is invalid: tracks[0].id: bad",
+      'No plugin is approved for "x" at tracks[0].',
+      "Plugin dependency cycle: a -> a.",
+      'Loading plugin "x" failed: fail',
+      'The catalog entry "x" did not load a definition named "x".',
+      "The plugin batch was refused by the registry: bad",
+    ]);
     expect(ensuredOrThrow({ kind: "ensured", added: ["x"] })).toEqual(["x"]);
     expect(() => ensuredOrThrow({ kind: "refused", failure: failures[0]! })).toThrow(/invalid/);
+  });
+
+  it("L14b keeps the import or registry cause on the thrown error", () => {
+    const cause = new Error("network");
+    const thrown = (() => {
+      try {
+        ensuredOrThrow({ kind: "refused", failure: { kind: "import-failed", name: "x", cause } });
+      } catch (error) {
+        return error;
+      }
+      return undefined;
+    })();
+    expect(thrown).toBeInstanceOf(Error);
+    expect((thrown as Error).message).toBe('Loading plugin "x" failed: network');
+    expect((thrown as Error).cause).toBe(cause);
+  });
+
+  it("L16 treats a directly registered plugin outside the catalog as satisfied", async () => {
+    let calls = 0;
+    const loader = createPluginLoader(
+      new Map([
+        [
+          "a",
+          {
+            load: async () => {
+              calls++;
+              return definition("a");
+            },
+          },
+        ],
+      ]),
+    );
+    const registry = new PluginRegistry();
+    registry.register(definition("host"));
+    expect(
+      await loader.ensure(registry, { kind: "tracks", tracks: [track("host"), track("a")] }),
+    ).toEqual({ kind: "ensured", added: ["a"] });
+    expect(calls).toBe(1);
+    expect(await loader.ensure(registry, { kind: "tracks", tracks: [track("host")] })).toEqual({
+      kind: "ensured",
+      added: [],
+    });
+  });
+
+  it("L17 refuses a tracks demand with any refused track before importing", async () => {
+    let calls = 0;
+    const loader = createPluginLoader(
+      new Map([
+        [
+          "a",
+          {
+            load: async () => {
+              calls++;
+              return definition("a");
+            },
+          },
+        ],
+      ]),
+    );
+    const result = await loader.ensure(new PluginRegistry(), {
+      kind: "tracks",
+      tracks: [track("a"), { id: "", keyframes: { a: { values: { value: 1 } } } }],
+    });
+    expect(result).toMatchObject({ kind: "refused", failure: { kind: "invalid-demand" } });
+    expect(calls).toBe(0);
   });
 
   it("rejects malformed catalog declarations immediately", () => {
