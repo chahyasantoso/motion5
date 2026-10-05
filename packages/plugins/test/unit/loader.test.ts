@@ -54,6 +54,29 @@ function deferred<T>() {
 }
 
 describe("approved lazy plugin loader", () => {
+  it("snapshots descriptor getters and refuses sparse dependency arrays", () => {
+    let loadReads = 0;
+    let dependencyReads = 0;
+    const descriptor = {
+      get load() {
+        loadReads++;
+        return async () => definition("a");
+      },
+      get dependencies() {
+        dependencyReads++;
+        return [];
+      },
+    };
+    createPluginLoader(new Map([["a", descriptor]]));
+    expect([loadReads, dependencyReads]).toEqual([1, 1]);
+    const sparse = new Array(1) as string[];
+    expect(() =>
+      createPluginLoader(
+        new Map([["a", { load: async () => definition("a"), dependencies: sparse }]]),
+      ),
+    ).toThrow(/dependencies/);
+  });
+
   it("L1 loads motion groups and requires-only free groups in catalog order", async () => {
     const registry = new PluginRegistry();
     const loader = createPluginLoader(
@@ -317,6 +340,25 @@ describe("approved lazy plugin loader", () => {
     expect(registry.has("a")).toBe(false);
     expect(await loader.ensure(registry, demand)).toEqual({ kind: "ensured", added: ["a"] });
     expect(calls).toBe(2);
+  });
+
+  it("returns a typed load failure when the loaded name getter throws", async () => {
+    const received = Object.defineProperty({}, "name", {
+      get() {
+        throw new Error("name getter");
+      },
+    });
+    const loader = createPluginLoader(
+      new Map([["a", { load: async () => received as PluginDefinition }]]),
+    );
+    const result = await loader.ensure(new PluginRegistry(), {
+      kind: "tracks",
+      tracks: [track("a")],
+    });
+    expect(result).toMatchObject({
+      kind: "refused",
+      failure: { kind: "import-failed", name: "a" },
+    });
   });
 
   it("L10 refuses a loaded definition whose name differs from its catalog key", async () => {

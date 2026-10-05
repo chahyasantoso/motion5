@@ -6,8 +6,8 @@ states a phase; `packages/core/test/unit/scripts/session-status-shape.test.ts` e
 byte ceiling.
 
 - **Captured:** 2026-10-04, Asia/Jakarta.
-- **Read against:** supplied snapshot plus the test-move handover and its testing-entrypoint
-  correction; [PR #549][pr549] CI is green per the contributor, not independently retrieved.
+- **Read against:** supplied snapshot, phase 3 and phase 4 handovers; GitHub shows [PR #549][pr549]
+  and [PR #550][pr550] open, with no merge claimed.
 
 ## Now
 
@@ -16,14 +16,13 @@ byte ceiling.
 
 ## Next in line
 
-- **[#534][issue534] atomic registration:** `feat/534-register-all` prepares all-or-nothing plugin
-  batch admission and composition-root adoption on top of [PR #549][pr549]. This separate branch
-  still needs publication and exact-head Node 24 CI; neither PR's merge is claimed here.
+- **[#534][issue534] lazy plugin loading:** local `feat/534-plugin-loader` adds the approved catalog,
+  typed loader and atomic ensure path on the phase 4 checkpoint. Publish only after PRs [#549][pr549]
+  and [#550][pr550] land, then obtain exact-head Node 24 CI.
 
 ## Open, and not scheduled
 
-- Atomic registration, lazy loading, solver capabilities, labels, rig, runners and 3D avatar driving
-  remain unmerged.
+- Solver capabilities, labels, rig, runners and 3D avatar driving remain unmerged.
 
 ## Where the rest of it lives
 
@@ -36,3 +35,4 @@ byte ceiling.
 [issue534]: https://github.com/chahyasantoso/motion5/issues/534
 [pr548]: https://github.com/chahyasantoso/motion5/pull/548
 [pr549]: https://github.com/chahyasantoso/motion5/pull/549
+[pr550]: https://github.com/chahyasantoso/motion5/pull/550

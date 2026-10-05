@@ -538,6 +538,17 @@ function checkPluginSource(source, file, specifiers, violations) {
   if (!allowed) violations.push(`${file}: import outside plugin package contract`);
   if (bannedSymbol(source)) violations.push(`${file}: banned compatibility symbol`);
 }
+/** The built-in catalog may type-import its own interface, but definitions stay native-lazy. */
+function catalogHasStaticSiblingImport(source) {
+  const code = withoutComments(source);
+  const matches = [
+    ...code.matchAll(
+      /^\s*(?:import|export)\s+(?:type\s+)?[\s\S]*?\s+from\s*["'](\.\/[^"']+)["']/gm,
+    ),
+    ...code.matchAll(/^\s*import\s*["'](\.\/[^"']+)["']/gm),
+  ];
+  return matches.some((match) => match[1] !== "./loader");
+}
 export async function scan(scanRoot = root) {
   const violations = [];
   for (const layer of coreLayers)
@@ -551,7 +562,11 @@ export async function scan(scanRoot = root) {
       const source = await readFile(path, "utf8");
       const file = relative(path, scanRoot);
       const specifiers = [...importSpecifiers(source)];
-      if (workspace === "packages/plugins") checkPluginSource(source, file, specifiers, violations);
+      if (workspace === "packages/plugins") {
+        checkPluginSource(source, file, specifiers, violations);
+        if (file === "packages/plugins/src/catalog.ts" && catalogHasStaticSiblingImport(source))
+          violations.push(`${file}: plugin definitions must be reached through lazy imports`);
+      }
       if (importsCoreInternals(source, specifiers))
         violations.push(`${file}: core source-internal import`);
       if (importsTestingEntrypoint(source, specifiers))

@@ -514,6 +514,29 @@ describe("boundary scan: the public 3D surface", () => {
     ]);
   });
 
+  it("allows native lazy imports in the built-in plugin catalog", async () => {
+    const violations = await withTree(
+      {
+        "packages/plugins/src/catalog.ts":
+          'import type { PluginCatalog } from "./loader"; export const catalog: PluginCatalog = new Map([["fk", { load: () => import("./fk").then((module) => module.fkPlugin) }]]);',
+      },
+      (tree) => scan(tree),
+    );
+    expect(violations).toEqual([]);
+  });
+
+  it("refuses eager sibling imports in the built-in plugin catalog", async () => {
+    const violations = await withTree(
+      {
+        "packages/plugins/src/catalog.ts": 'import { fkPlugin } from "./fk"; export { fkPlugin };',
+      },
+      (tree) => scan(tree),
+    );
+    expect(violations).toEqual([
+      "packages/plugins/src/catalog.ts: plugin definitions must be reached through lazy imports",
+    ]);
+  });
+
   it("TH-113 refuses a core source directory that no layer declares", async () => {
     const violations = await withTree(
       {

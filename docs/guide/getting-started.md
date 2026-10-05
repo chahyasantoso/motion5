@@ -75,6 +75,29 @@ const project: ProjectDefinition = {
 const handle = engine.load(project);
 ```
 
+## Loading plugins lazily
+
+For larger catalogs, let the authored groups select definitions from the approved catalog instead of
+registering every built-in plugin up front. The loader validates the demand, resolves declared
+catalog dependencies, and registers the complete missing set atomically before `Engine.load`:
+
+```ts
+import { Engine, PluginRegistry, createManualClock } from "@motion5/core";
+import { createPluginLoader, ensuredOrThrow } from "@motion5/plugins/loader";
+import { builtinCatalog } from "@motion5/plugins/catalog";
+
+const plugins = new PluginRegistry();
+const loader = createPluginLoader(builtinCatalog);
+
+// Keep this before `engine.load(project)`. Live edits remain synchronous; ensure their tracks first.
+ensuredOrThrow(await loader.ensure(plugins, { kind: "project", project }));
+const engine = new Engine({ clock, interpolator, scheduler, plugins });
+const handle = engine.load(project);
+```
+
+The catalog is an allowlist, not a string-to-import bridge. App-owned factories can be added by
+copying the map and supplying an explicit descriptor; no plugin module path comes from project data.
+
 ## Node ids are qualified for you
 
 You author local ids. The runtime qualifies them exactly once, at load, and every call afterwards uses the qualified form:

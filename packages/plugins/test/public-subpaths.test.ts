@@ -16,7 +16,7 @@ const CORE = new URL("../../core/", import.meta.url);
 const PLUGIN_SUBPATH = /^\.\/([a-z0-9]+)$/;
 const PUBLIC_3D = ["transform3d", "fk3d", "ik3d"];
 export const DEFINITION_SUBPATHS = ["transform", "fk", "ik", ...PUBLIC_3D];
-export const PUBLIC_SUBPATHS = [...DEFINITION_SUBPATHS, "frame3d"];
+export const PUBLIC_SUBPATHS = [...DEFINITION_SUBPATHS, "frame3d", "catalog", "loader"];
 
 interface Manifest {
   readonly exports: Readonly<Record<string, unknown>>;
@@ -54,6 +54,7 @@ describe("public plugin subpaths", () => {
         types: `./dist/${name}.d.ts`,
         default: `./dist/${name}.js`,
       });
+      if (name === "catalog" || name === "loader") continue;
       const module = (await import(new URL(`src/${name}.ts`, PLUGINS).href)) as Record<
         string,
         unknown
@@ -91,5 +92,21 @@ describe("public plugin subpaths", () => {
     }
     expect(aliases.some(({ find }) => find.test("@motion5/plugins/fabrik"))).toBe(false);
     expect(aliases.some(({ find }) => find.test("@motion5/plugins"))).toBe(false);
+  });
+
+  it("L15 every built-in catalog entry lazily loads its matching definition subpath", async () => {
+    const [{ builtinCatalog }, manifest] = await Promise.all([
+      import("../src/catalog"),
+      Promise.resolve(readManifest()),
+    ]);
+    const definitionSubpaths = declaredPlugins(manifest).filter((name) => {
+      if (name === "frame3d" || name === "catalog" || name === "loader") return false;
+      return true;
+    });
+    expect([...builtinCatalog.keys()]).toEqual(definitionSubpaths);
+    for (const [name, descriptor] of builtinCatalog) {
+      const definition = await descriptor.load();
+      expect(definition.name).toBe(name);
+    }
   });
 });
