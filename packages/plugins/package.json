@@ -35,6 +35,10 @@
       "types": "./dist/ik3d.d.ts",
       "default": "./dist/ik3d.js"
     },
+    "./rig": {
+      "types": "./dist/rig.d.ts",
+      "default": "./dist/rig.js"
+    },
     "./frame3d": {
       "types": "./dist/frame3d.d.ts",
       "default": "./dist/frame3d.js"

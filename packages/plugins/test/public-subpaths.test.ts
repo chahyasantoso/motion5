@@ -15,7 +15,7 @@ const PLUGINS = new URL("../", import.meta.url);
 const CORE = new URL("../../core/", import.meta.url);
 const PLUGIN_SUBPATH = /^\.\/([a-z0-9]+)$/;
 const PUBLIC_3D = ["transform3d", "fk3d", "ik3d"];
-export const DEFINITION_SUBPATHS = ["transform", "fk", "ik", ...PUBLIC_3D];
+export const DEFINITION_SUBPATHS = ["transform", "fk", "ik", ...PUBLIC_3D, "rig"];
 /** Public modules that are not one zero-config definition; R3 keeps them out of the catalog. */
 const SUPPORT_SUBPATHS = ["frame3d", "catalog", "loader", "labels"];
 /** R2: support modules other than `frame3d` publish exactly these runtime names. */
