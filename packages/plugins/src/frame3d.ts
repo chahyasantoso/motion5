@@ -184,7 +184,8 @@ export function eulerFromMatrix3d(matrix: Matrix3): Euler3d {
   return { rotation: canonicalDegrees(Math.atan2(matrix[3], matrix[0])), rotationX, rotationY: 0 };
 }
 
-function isRecord(input: unknown): input is Readonly<Record<string, unknown>> {
+/** The shared structural guard for frame and rig readers. */
+export function isRecord(input: unknown): input is Readonly<Record<string, unknown>> {
   return input !== null && typeof input === "object" && !Array.isArray(input);
 }
 

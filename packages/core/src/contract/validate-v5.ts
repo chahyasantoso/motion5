@@ -20,6 +20,7 @@ import {
   readPluginValues,
 } from "./keyframe-shape";
 import { PLUGIN_GOALS_SLOT } from "./solver-slots";
+import { defineOwnValue } from "../lang/own-property";
 
 export interface KeyframeValidationOptions {
   /**
@@ -479,7 +480,7 @@ function clone(value: unknown, seen = new WeakMap<object, unknown>()): unknown {
   }
   const result: Record<string, unknown> = {};
   seen.set(value, result);
-  for (const [key, child] of Object.entries(value)) result[key] = clone(child, seen);
+  for (const [key, child] of Object.entries(value)) defineOwnValue(result, key, clone(child, seen));
   return result;
 }
 function deepFreeze<T>(value: T, seen = new WeakSet<object>()): T {

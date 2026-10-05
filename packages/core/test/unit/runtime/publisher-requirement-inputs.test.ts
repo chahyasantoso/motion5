@@ -121,4 +121,42 @@ describe("requirement-scoped input observations", () => {
       throw new Error(`hero/observer is ${observerPatch?.status ?? "absent"}, not error.`);
     expect(observerPatch.diagnostics[0]?.ruleId).toBe("observation-input-shape");
   });
+
+  it("delivers a __proto__ dict member as an own data property, without changing prototypes", () => {
+    const registry = new PatchRegistry();
+    const publisher = new GraphPublisher(registry);
+    let observed: Readonly<Record<string, unknown>> | undefined;
+    const source = node("hero/source", [], () => ({
+      values: { x: 7 },
+      sourceProgress: 0,
+      sourceRevisions: {},
+    }));
+    const observer = node(
+      "hero/observer",
+      [
+        {
+          observerId: "hero/observer",
+          sourceId: "hero/source",
+          role: "input",
+          requirement: { plugin: "collector", slot: "bones", memberKey: "__proto__" },
+        },
+      ],
+      (inputs) => {
+        observed = slotOf(inputs, "collector", "bones");
+        const source = Object.hasOwn(observed, "__proto__") ? observed.__proto__ : undefined;
+        return {
+          values: { seen: (source as { x?: number } | undefined)?.x ?? -1 },
+          sourceProgress: 0,
+          sourceRevisions: {},
+        };
+      },
+    );
+    publisher.flush(pair(source, observer), ["hero/source"], 1);
+    expect(Object.hasOwn(observed!, "__proto__")).toBe(true);
+    expect(Object.getPrototypeOf(observed)).toBe(Object.prototype);
+    expect(Object.isFrozen(observed)).toBe(true);
+    const patch = registry.get("hero/observer");
+    if (patch?.status !== "ready") throw new Error("Observer must publish a ready scalar.");
+    expect(patch.values).toEqual({ seen: 7 });
+  });
 });
