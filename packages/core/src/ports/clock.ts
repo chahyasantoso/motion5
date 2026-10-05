@@ -5,6 +5,10 @@ export interface ClockTick {
 }
 
 export interface Clock {
+  /**
+   * Listeners run in subscription order; one added during dispatch first runs next tick.
+   * Attach application runners after Engine creation so their writes follow engine composition.
+   */
   subscribe(listener: (event: ClockTick) => void): () => void;
 }
 

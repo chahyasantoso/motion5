@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createManualClock, type Clock, type ClockTick } from "@motion5/core";
+import { createManualClock, type Clock } from "@motion5/core";
 import { createBrowserClock, type FrameSource } from "@motion5/core/adapters/browser-clock";
 
 function assertOrder(clock: Clock, tick: () => void) {

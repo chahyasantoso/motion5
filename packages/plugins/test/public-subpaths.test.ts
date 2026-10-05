@@ -17,13 +17,14 @@ const PLUGIN_SUBPATH = /^\.\/([a-z0-9]+(?:-[a-z0-9]+)*)$/;
 const PUBLIC_3D = ["transform3d", "fk3d", "ik3d"];
 export const DEFINITION_SUBPATHS = ["transform", "fk", "ik", ...PUBLIC_3D, "rig"];
 /** Public modules that are not one zero-config definition; R3 keeps them out of the catalog. */
-const SUPPORT_SUBPATHS = ["frame3d", "catalog", "loader", "labels", "pose-classify"];
+const SUPPORT_SUBPATHS = ["frame3d", "catalog", "loader", "labels", "pose-classify", "runner"];
 /** R2: support modules other than `frame3d` publish exactly these runtime names. */
 const SUPPORT_EXPORTS: Readonly<Record<string, readonly string[]>> = {
   catalog: ["builtinCatalog"],
   loader: ["createPluginLoader", "describeLoadFailure", "ensuredOrThrow"],
   labels: ["onLabelChange", "readLabel"],
   "pose-classify": ["createPoseClassifyPlugin"],
+  runner: ["attachRunners", "createLatestSlot", "describeRunnerFailure"],
 };
 export const PUBLIC_SUBPATHS = [...DEFINITION_SUBPATHS, ...SUPPORT_SUBPATHS];
 

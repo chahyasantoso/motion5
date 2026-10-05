@@ -10,43 +10,17 @@ import {
 } from "@motion5/core";
 import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/testing";
 import { transformPlugin } from "../src/transform";
+import { patchRender, unreachable } from "@motion5/core/plugin-api";
 
-// Red-only local seam: the interface and implementation land together in the next checkpoint.
-type RunnerStep =
-  | { readonly kind: "hold" }
-  | { readonly kind: "write"; readonly values: LiveValues }
-  | { readonly kind: "release" };
-interface Runner {
-  readonly nodeId: string;
-  step(tick: ClockTick, read: (id: string) => LivePatch | undefined): RunnerStep;
-  dispose?(): void;
-}
-type RunnerFailure =
-  | {
-      readonly kind: "step-threw" | "write-refused" | "dispose-threw";
-      readonly nodeId: string;
-      readonly cause: unknown;
-    }
-  | { readonly kind: "node-missing"; readonly nodeId: string }
-  | { readonly kind: "project-unavailable"; readonly cause: unknown };
+import {
+  attachRunners,
+  createLatestSlot,
+  describeRunnerFailure,
+  type Runner,
+  type RunnerFailure,
+  type RunnerStep,
+} from "../src/runner";
 type RunnerProject = Pick<ProjectHandle, "get" | "tryTrack" | "values">;
-const attachRunners =
-  (
-    _project: RunnerProject,
-    _runners: readonly Runner[],
-    _options: {
-      clock: ReturnType<typeof createManualClock>;
-      onFailure: (failure: RunnerFailure) => void;
-    },
-  ): (() => void) =>
-  () => {};
-const createLatestSlot = <T>() => ({
-  offer(_value: T) {},
-  take(): T | undefined {
-    return undefined;
-  },
-});
-const describeRunnerFailure = (_failure: RunnerFailure): string => "";
 
 function fixture(ids = ["a", "b"]) {
   const clock = createManualClock();
@@ -67,7 +41,10 @@ function fixture(ids = ["a", "b"]) {
       },
     ],
   });
-  for (const id of ids) project.mount(`scene/${id}`);
+  for (const id of ids) {
+    project.mount(`scene/${id}`);
+    project.seek(`scene/${id}`, 0);
+  }
   const failures: RunnerFailure[] = [];
   let batches = 0;
   let inBatch = false;
@@ -105,7 +82,19 @@ const write = (nodeId: string, x: number): Runner => ({
   nodeId,
   step: () => ({ kind: "write", values: { x } }),
 });
-const xOf = (project: ProjectHandle, id = "a") => project.get(`scene/${id}`)?.values.x;
+function publishedX(patch: LivePatch | undefined): unknown {
+  const decision = patchRender(patch);
+  switch (decision.kind) {
+    case "render":
+      return decision.patch.values.x;
+    case "retain":
+    case "gone":
+      return undefined;
+    default:
+      return unreachable(decision);
+  }
+}
+const xOf = (project: ProjectHandle, id = "a") => publishedX(project.get(`scene/${id}`));
 
 describe("application-attached runners", () => {
   it("R1 writes an override without changing the authored definition", () => {
@@ -127,7 +116,7 @@ describe("application-attached runners", () => {
       {
         nodeId: "scene/b",
         step: (_tick, read) => {
-          reads.push(read("scene/a")?.values.x);
+          reads.push(publishedX(read("scene/a")));
           return { kind: "write", values: { x: 7 } };
         },
       },
