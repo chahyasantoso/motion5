@@ -402,6 +402,11 @@ every disposer. Dispose before the project. Reversed cleanup still attempts ever
 then rethrows the batch error once; the next call is silent. After a `project-unavailable` stop,
 later disposal is a no-op.
 
+Do not recursively tick the clock or dispose the attachment from `step`, runner cleanup or
+`onFailure`. Active-dispatch reentrancy is refused before changing attachment state, preserving
+the one-batch-per-tick boundary. Dispose after the tick has returned; disposal after a terminal
+stop remains a silent no-op.
+
 ## Labels
 
 `@motion5/plugins/labels` exposes `readLabel` and `onLabelChange`. Labels are `ImmutableLeaf` values (string, boolean, or finite number), read by the same `isImmutableLeaf` rule the freezer and publisher use. The listener skips its initial state, ignores blocked and error publications by retaining the last ready label, and sends one undefined edge when the node is destroyed. Listeners run during publication and must not synchronously write to the project. See [ADR-137](../ADR-137-no-null-in-renderer-neutral-values.md).

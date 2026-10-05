@@ -1,15 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  createManualClock,
-  Engine,
-  PluginRegistry,
-  type ClockTick,
-  type LivePatch,
-  type LiveValues,
-  type ProjectHandle,
-} from "@motion5/core";
-import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/testing";
-import { transformPlugin } from "../src/transform";
+import { type ClockTick, type LivePatch, type LiveValues, type ProjectHandle } from "@motion5/core";
 import { patchRender, unreachable } from "@motion5/core/plugin-api";
 
 import {
@@ -20,64 +10,7 @@ import {
   type RunnerFailure,
   type RunnerStep,
 } from "../src/runner";
-type RunnerProject = Pick<ProjectHandle, "get" | "tryTrack" | "values">;
-
-function fixture(ids = ["a", "b"]) {
-  const clock = createManualClock();
-  const registry = new PluginRegistry();
-  registry.register(transformPlugin);
-  const project = new Engine({
-    plugins: registry,
-    clock,
-    interpolator: createFakeInterpolator(),
-    scheduler: createFakeScheduler(),
-  }).load({
-    schemaVersion: 5,
-    motions: [
-      {
-        id: "scene",
-        trigger: { type: "manual" },
-        tracks: ids.map((id) => ({ id, keyframes: { transform: { values: { x: 0 } } } })),
-      },
-    ],
-  });
-  for (const id of ids) {
-    project.mount(`scene/${id}`);
-    project.seek(`scene/${id}`, 0);
-  }
-  const failures: RunnerFailure[] = [];
-  let batches = 0;
-  let inBatch = false;
-  const port: RunnerProject = {
-    get: (id) => project.get(id),
-    tryTrack: (id) => project.tryTrack(id),
-    values(recipe) {
-      batches += 1;
-      inBatch = true;
-      try {
-        return project.values(recipe);
-      } finally {
-        inBatch = false;
-      }
-    },
-  };
-  return {
-    clock,
-    project,
-    port,
-    failures,
-    batches: () => batches,
-    inBatch: () => inBatch,
-    attach(
-      runners: readonly Runner[],
-      onFailure = (failure: RunnerFailure) => {
-        failures.push(failure);
-      },
-    ) {
-      return attachRunners(port, runners, { clock, onFailure });
-    },
-  };
-}
+import { fixture } from "./support/runner-fixture";
 const write = (nodeId: string, x: number): Runner => ({
   nodeId,
   step: () => ({ kind: "write", values: { x } }),

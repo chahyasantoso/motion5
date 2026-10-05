@@ -82,6 +82,8 @@ function snapshotRunners(project: RunnerProject, runners: readonly Runner[]): En
  *
  * Dispose before project.dispose(). Reversed cleanup still disposes every runner, then rethrows
  * the batch error once. A project-unavailable stop has already cleaned up, so disposal is silent.
+ * Recursive clock dispatch and disposal during a running tick are refused before changing state.
+ * Dispose outside step, runner cleanup and onFailure; after a terminal stop disposal is a no-op.
  * Native async work stays outside step: offer its completed result to a LatestSlot.
  */
 export function attachRunners(
@@ -97,6 +99,7 @@ export function attachRunners(
   const read = (nodeId: string) => project.get(nodeId);
   const pendingDisposal = new Set<Entry>();
   let stopped = false;
+  let dispatching = false;
 
   // This is the only transition out of live; deletion before disposal makes cleanup reentrant.
   function retire(entry: Entry): void {
@@ -157,15 +160,13 @@ export function attachRunners(
     }
   }
 
-  const unsubscribe = options.clock.subscribe((tick) => {
+  function dispatch(tick: ClockTick): void {
     if (stopped) return;
     const failures: RunnerFailure[] = [];
     const writes: Write[] = [];
     for (const entry of live) {
       try {
         const step = entry.runner.step(tick, read);
-        // A caller may dispose from step; never resurrect overlays after that cleanup.
-        if (stopped) return;
         switch (step.kind) {
           case "hold":
             break;
@@ -203,10 +204,24 @@ export function attachRunners(
     }
     const errors = report(failures);
     if (errors.length > 0) throw errors[0];
+  }
+
+  const unsubscribe = options.clock.subscribe((tick) => {
+    if (stopped) return;
+    if (dispatching) throw new Error("Runner clock dispatch is already in flight.");
+    dispatching = true;
+    try {
+      dispatch(tick);
+    } finally {
+      dispatching = false;
+    }
   });
 
   return () => {
     if (stopped) return;
+    // Cleanup would otherwise open a second batch from step, disposal or a failure callback.
+    // Refuse before any state transition; the caller can retry after dispatch has returned.
+    if (dispatching) throw new Error("Runner disposal cannot run during clock dispatch.");
     stopped = true;
     unsubscribe();
     const entries = [...live];

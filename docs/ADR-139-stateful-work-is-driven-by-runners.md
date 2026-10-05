@@ -42,6 +42,12 @@ is attempted; the first thrown value escapes only after all reports. Thrown `und
 identity. A disposal batch error takes precedence over later callback errors after all attempts.
 `describeRunnerFailure` exhaustively owns wording, including disposal and project-level failures.
 
+Recursive clock dispatch and disposal during a running tick are refused before changing attachment
+state. A disposer called from `step`, runner cleanup or `onFailure` would otherwise create a
+second batch during the tick or resurrect writes after stopping. Invoke lifecycle disposal after
+dispatch returns; an already stopped attachment still has a silent disposer. This follows the
+core's synchronous reentrancy discipline rather than silently deferring cleanup to another frame.
+
 `LatestSlot<T>` retains only the latest offered result; `take` consumes it once. Async producers
 offer completed work, then synchronous steps consume it on a later tick. Small frame-local models
 can remain pure plugin factories; large or temporal models use this application-owned boundary.
