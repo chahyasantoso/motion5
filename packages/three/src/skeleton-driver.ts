@@ -3,7 +3,12 @@ import { readFrame3d } from "@motion5/plugins/frame3d";
 import { readRigValues } from "@motion5/plugins/rig";
 import { Matrix4, Quaternion, Vector3, type Object3D } from "three";
 import { frameToMatrix } from "./index";
-import type { SkeletonBinding } from "./skeleton-capture";
+import { normalizeDirection } from "./skeleton-direction";
+import {
+  assertCapturedHierarchy,
+  assertSkeletonScale,
+  type SkeletonBinding,
+} from "./skeleton-capture";
 
 export type BoneDrive =
   | { readonly kind: "frame"; readonly source: string }
@@ -77,8 +82,12 @@ export function createSkeletonDriver(
     drives.set(key, Object.freeze({ ...drive }));
   }
   const sourceSpace = options.sourceSpace;
+  assertCapturedHierarchy(binding);
+  assertSkeletonScale(
+    binding.bones.map(({ bone }) => bone),
+    binding.rootParent,
+  );
   const ordered = [...binding.bones].sort((a, b) => a.depth - b.depth || a.index - b.index);
-  const bones = [...binding.skeleton.bones];
   const matrix = new Matrix4();
   const parentFromSource = new Matrix4();
   const position = new Vector3();
@@ -90,6 +99,7 @@ export function createSkeletonDriver(
 
   return {
     apply(read) {
+      assertCapturedHierarchy(binding);
       binding.rootParent.updateWorldMatrix(true, true);
       sourceSpace.updateWorldMatrix(true, false);
       const outcomes = new Map<string, BoneOutcome>();
@@ -97,7 +107,7 @@ export function createSkeletonDriver(
         if (captured.key === undefined) continue;
         const drive = drives.get(captured.key);
         if (drive === undefined) continue;
-        const bone = bones[captured.index]!;
+        const bone = captured.bone;
         parentFromSource.copy(bone.parent!.matrixWorld).invert().multiply(sourceSpace.matrixWorld);
         switch (drive.kind) {
           case "frame": {
@@ -108,6 +118,11 @@ export function createSkeletonDriver(
             }
             matrix.multiplyMatrices(parentFromSource, frameToMatrix(values, matrix));
             matrix.decompose(position, quaternion, scale);
+            if (
+              !position.toArray().every(Number.isFinite) ||
+              !quaternion.toArray().every(Number.isFinite)
+            )
+              throw new TypeError("Bone frame cannot be represented by a finite rigid transform.");
             bone.position.copy(position);
             bone.quaternion.copy(quaternion);
             outcomes.set(captured.key, APPLIED);
@@ -124,12 +139,11 @@ export function createSkeletonDriver(
               q = readFrame3d(b);
             from.set(p.x, p.y, p.z).applyMatrix4(parentFromSource);
             to.set(q.x, q.y, q.z).applyMatrix4(parentFromSource).sub(from);
-            if (to.length() <= 1e-9 || captured.restAim === undefined) {
+            if (!normalizeDirection(to) || captured.restAim === undefined) {
               outcomes.set(captured.key, DEGENERATE);
               continue;
             }
             aim.copy(captured.restAim);
-            to.normalize();
             // Preserve q0 bit-for-bit for an unchanged direction, including inversion roundoff.
             if (aim.distanceToSquared(to) <= 1e-24) quaternion.copy(captured.restQuaternion);
             else quaternion.setFromUnitVectors(aim, to).multiply(captured.restQuaternion);
@@ -151,9 +165,10 @@ export function createSkeletonDriver(
       return { bones: outcomes };
     },
     reset() {
+      assertCapturedHierarchy(binding);
       binding.rootParent.updateWorldMatrix(true, false);
       for (const captured of ordered) {
-        const bone = bones[captured.index]!;
+        const bone = captured.bone;
         bone.position.copy(captured.restPosition);
         bone.quaternion.copy(captured.restQuaternion);
         bone.updateMatrixWorld(true);

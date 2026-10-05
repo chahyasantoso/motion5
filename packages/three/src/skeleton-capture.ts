@@ -1,4 +1,5 @@
 import { Bone, Object3D, Quaternion, Skeleton, Vector3 } from "three";
+import { normalizeDirection } from "./skeleton-direction";
 
 export interface SkeletonBindingOptions {
   /** Authored bone.name to rig key. Unmapped bones still participate in the hierarchy. */
@@ -6,6 +7,8 @@ export interface SkeletonBindingOptions {
 }
 
 export interface CapturedBone {
+  /** Stable live bone identity; Skeleton.bones may be reordered without retargeting the binding. */
+  readonly bone: Bone;
   readonly key: string | undefined;
   readonly index: number;
   readonly parent: number | undefined;
@@ -25,8 +28,8 @@ export interface SkeletonBinding {
 }
 
 /** Rigid FK cannot represent bone scale or non-uniform ancestor scale. */
-export function assertSkeletonScale(skeleton: Skeleton, rootParent: Object3D): void {
-  for (const bone of skeleton.bones) {
+export function assertSkeletonScale(bones: readonly Bone[], rootParent: Object3D): void {
+  for (const bone of bones) {
     if (
       !bone.scale.toArray().every((value) => Number.isFinite(value) && Math.abs(value - 1) <= 1e-6)
     )
@@ -41,6 +44,25 @@ export function assertSkeletonScale(skeleton: Skeleton, rootParent: Object3D): v
       Math.abs(x - z) > 1e-6
     )
       throw new TypeError("Skeleton ancestors must have non-zero uniform scale.");
+  }
+}
+
+function assertRestTransform(object: Object3D): void {
+  if (
+    !object.position.toArray().every(Number.isFinite) ||
+    !object.quaternion.toArray().every(Number.isFinite) ||
+    Math.abs(object.quaternion.lengthSq() - 1) > 1e-9
+  )
+    throw new TypeError(`Object "${object.name}" must have a finite rigid rest transform.`);
+}
+
+/** Changing the hierarchy invalidates captured topology; refuse rather than drive the wrong bones. */
+export function assertCapturedHierarchy(binding: SkeletonBinding): void {
+  for (const captured of binding.bones) {
+    const expectedParent =
+      captured.parent === undefined ? binding.rootParent : binding.bones[captured.parent]!.bone;
+    if (captured.bone.parent !== expectedParent)
+      throw new TypeError("Captured skeleton hierarchy changed.");
   }
 }
 
@@ -64,7 +86,10 @@ export function captureSkeleton(
     roots.some((bone) => bone.parent !== rootParent)
   )
     throw new TypeError("Skeleton roots must share one root parent.");
-  assertSkeletonScale(skeleton, rootParent);
+  assertSkeletonScale(bones, rootParent);
+  for (const bone of bones) assertRestTransform(bone);
+  for (let ancestor: Object3D | null = rootParent; ancestor !== null; ancestor = ancestor.parent)
+    assertRestTransform(ancestor);
 
   const keys = new Map<Bone, string>();
   const mapped = new Map<string, Bone>();
@@ -90,11 +115,16 @@ export function captureSkeleton(
     return depth;
   };
   const captured = bones.map((bone, index): CapturedBone => {
-    const child = bones.find(
-      (candidate) => candidate.parent === bone && candidate.position.length() > 1e-9,
-    );
-    const restAim = child?.position.clone().normalize().applyQuaternion(bone.quaternion);
+    let restAim: Vector3 | undefined;
+    for (const child of bones) {
+      if (child.parent !== bone) continue;
+      const direction = child.position.clone();
+      if (!normalizeDirection(direction)) continue;
+      restAim = direction.applyQuaternion(bone.quaternion);
+      break;
+    }
     return Object.freeze({
+      bone,
       key: keys.get(bone),
       index,
       parent: parents[index],

@@ -9,6 +9,7 @@ import {
 } from "../src/view/gltf-avatar";
 import { resolveHumanoid } from "../src/view/humanoid-map";
 import { syntheticGlb } from "./support/synthetic-glb";
+import { withProgressEvents } from "./support/progress-events";
 
 describe("injected avatar loading", () => {
   it("A1 returns every refusal and describes it exhaustively", async () => {
@@ -93,5 +94,28 @@ describe("injected avatar loading", () => {
       expect(result.avatar.binding.bones.length).toBe(13);
       result.avatar.dispose();
     }
+  });
+
+  it("A9 loads self-contained glTF JSON and refuses external resources without fetching", async () => {
+    const glb = syntheticGlb();
+    const view = new DataView(glb);
+    const jsonLength = view.getUint32(12, true);
+    const json = JSON.parse(new TextDecoder().decode(new Uint8Array(glb, 20, jsonLength)));
+    const binary = new Uint8Array(glb, 28 + jsonLength);
+    const encode = () => {
+      const bytes = new TextEncoder().encode(JSON.stringify(json));
+      const data = new ArrayBuffer(bytes.length);
+      new Uint8Array(data).set(bytes);
+      return data;
+    };
+    json.buffers[0].uri = `data:application/octet-stream;base64,${btoa(String.fromCharCode(...binary))}`;
+    const embedded = await withProgressEvents(() => loadGltfAvatar(encode(), parseGltf));
+    expect(embedded.kind).toBe("loaded");
+    if (embedded.kind === "loaded") embedded.avatar.dispose();
+    json.buffers[0].uri = "avatar.bin";
+    const external = await loadGltfAvatar(encode(), parseGltf);
+    expect(external.kind).toBe("refused");
+    if (external.kind !== "refused") throw new Error("Expected external resource refusal");
+    expect(describeGltfAvatarRefusal(external.refusal)).toContain("External avatar resources");
   });
 });

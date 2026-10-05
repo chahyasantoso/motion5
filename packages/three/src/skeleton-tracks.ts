@@ -1,7 +1,11 @@
 import { validateTrackDefinition, type TrackDefinition } from "@motion5/core";
 import { Euler } from "three";
 import { EULER_ORDER_3D } from "./index";
-import { assertSkeletonScale, type SkeletonBinding } from "./skeleton-capture";
+import {
+  assertCapturedHierarchy,
+  assertSkeletonScale,
+  type SkeletonBinding,
+} from "./skeleton-capture";
 
 export interface SkeletonTracksOptions {
   readonly idPrefix: string;
@@ -15,7 +19,11 @@ export function skeletonTracks(
   const validation = validateTrackDefinition({ id: idPrefix, keyframes: {} }, "track");
   if (validation.diagnostics.some((diagnostic) => diagnostic.path.endsWith(".id")))
     throw new TypeError("Skeleton track idPrefix must be a non-empty unqualified track id.");
-  assertSkeletonScale(binding.skeleton, binding.rootParent);
+  assertCapturedHierarchy(binding);
+  assertSkeletonScale(
+    binding.bones.map(({ bone }) => bone),
+    binding.rootParent,
+  );
   const rootId = `${idPrefix}-root`;
   const boneId = (index: number) => `${idPrefix}-bone-${index}`;
   const tracks: TrackDefinition[] = [

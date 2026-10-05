@@ -25,9 +25,9 @@ export function frameToMatrix(values: Readonly<Record<string, unknown>>, target:
   const frame = readFrame3d(values);
   target.makeRotationFromEuler(
     new Euler(
-      (frame.rotationX * Math.PI) / 180,
-      (frame.rotationY * Math.PI) / 180,
-      (frame.rotation * Math.PI) / 180,
+      ((frame.rotationX % 360) * Math.PI) / 180,
+      ((frame.rotationY % 360) * Math.PI) / 180,
+      ((frame.rotation % 360) * Math.PI) / 180,
       EULER_ORDER_3D,
     ),
   );

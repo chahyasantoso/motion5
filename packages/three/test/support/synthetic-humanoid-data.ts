@@ -1,0 +1,9 @@
+/** One rest-layout owner shared by in-memory Skeleton and binary glTF builders. */
+export const HUMANOID_REST = {
+  names: ["Hips", "LeftArm", "LeftForeArm", "LeftHand", "RightArm", "RightForeArm",
+    "RightHand", "LeftUpLeg", "LeftLeg", "LeftFoot", "RightUpLeg", "RightLeg", "RightFoot"],
+  parents: [-1, 0, 1, 2, 0, 4, 5, 0, 7, 8, 0, 10, 11],
+  positions: [[0, 0.9, 0], [0.2, 0.4, 0], [0.25, 0, 0], [0.25, 0, 0],
+    [-0.2, 0.4, 0], [-0.25, 0, 0], [-0.25, 0, 0], [0.1, -0.1, 0],
+    [0, -0.4, 0], [0, -0.4, 0], [-0.1, -0.1, 0], [0, -0.4, 0], [0, -0.4, 0]],
+} as const;

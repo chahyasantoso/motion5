@@ -8,6 +8,7 @@ import {
   Skeleton,
   SkinnedMesh,
 } from "three";
+import { HUMANOID_REST } from "./synthetic-humanoid-data";
 
 /** One texture-free, non-identity rest rig shared by skeleton and avatar tests. */
 export function syntheticSkeleton() {
@@ -37,37 +38,7 @@ export function syntheticSkeleton() {
 
 /** A complete named humanoid, with terminal bones so lower limbs have a measurable rest aim. */
 export function syntheticHumanoid(prefix = "mixamorig:") {
-  const names = [
-    "Hips",
-    "LeftArm",
-    "LeftForeArm",
-    "LeftHand",
-    "RightArm",
-    "RightForeArm",
-    "RightHand",
-    "LeftUpLeg",
-    "LeftLeg",
-    "LeftFoot",
-    "RightUpLeg",
-    "RightLeg",
-    "RightFoot",
-  ];
-  const parents = [-1, 0, 1, 2, 0, 4, 5, 0, 7, 8, 0, 10, 11];
-  const positions = [
-    [0, 0.9, 0],
-    [0.2, 0.4, 0],
-    [0.25, 0, 0],
-    [0.25, 0, 0],
-    [-0.2, 0.4, 0],
-    [-0.25, 0, 0],
-    [-0.25, 0, 0],
-    [0.1, -0.1, 0],
-    [0, -0.4, 0],
-    [0, -0.4, 0],
-    [-0.1, -0.1, 0],
-    [0, -0.4, 0],
-    [0, -0.4, 0],
-  ];
+  const { names, parents, positions } = HUMANOID_REST;
   const scene = new Group();
   const bones = names.map((name, index) => {
     const bone = new Bone();

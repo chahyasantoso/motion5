@@ -1,6 +1,6 @@
 import { captureSkeleton, type BoneDrive, type SkeletonBinding } from "@motion5/three/skeleton";
 import { unreachable } from "@motion5/core/plugin-api";
-import { SkinnedMesh, Texture, type Object3D, type Material } from "three";
+import { LoadingManager, SkinnedMesh, Texture, type Object3D, type Material } from "three";
 import { limbTracks, poseNodeId } from "../rig/tracks";
 import { resolveHumanoid, type HumanoidKey } from "./humanoid-map";
 
@@ -86,7 +86,12 @@ function humanoidDrives(
 /** Import is evaluated only when a file is picked; tests inject texture-free parsers. */
 export const parseGltf: GltfParse = async (data) => {
   const { GLTFLoader } = await import("three/addons/loaders/GLTFLoader.js");
-  return new GLTFLoader().parseAsync(data, "");
+  const manager = new LoadingManager();
+  manager.setURLModifier((url) => {
+    if (/^(data:|blob:)/i.test(url)) return url;
+    throw new Error("External avatar resources are not supported; use GLB or embedded data URIs.");
+  });
+  return new GLTFLoader(manager).parseAsync(data, "");
 };
 
 /** Refusals never replace the current body; ownership of a loaded avatar passes to the caller. */

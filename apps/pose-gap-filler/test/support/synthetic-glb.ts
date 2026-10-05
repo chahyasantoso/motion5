@@ -2,38 +2,10 @@
  * Deterministic texture-free glTF 2.0 binary humanoid. No committed binary or external resource.
  * Translation-only rest joints make inverse binds explicit; each tiny triangle follows one joint.
  */
+import { HUMANOID_REST } from "../../../../packages/three/test/support/synthetic-humanoid-data";
+
 export function syntheticGlb(prefix = "mixamorig:"): ArrayBuffer {
-  const names = [
-    "Hips",
-    "LeftArm",
-    "LeftForeArm",
-    "LeftHand",
-    "RightArm",
-    "RightForeArm",
-    "RightHand",
-    "LeftUpLeg",
-    "LeftLeg",
-    "LeftFoot",
-    "RightUpLeg",
-    "RightLeg",
-    "RightFoot",
-  ];
-  const parents = [-1, 0, 1, 2, 0, 4, 5, 0, 7, 8, 0, 10, 11];
-  const rest = [
-    [0, 0.9, 0],
-    [0.2, 0.4, 0],
-    [0.25, 0, 0],
-    [0.25, 0, 0],
-    [-0.2, 0.4, 0],
-    [-0.25, 0, 0],
-    [-0.25, 0, 0],
-    [0.1, -0.1, 0],
-    [0, -0.4, 0],
-    [0, -0.4, 0],
-    [-0.1, -0.1, 0],
-    [0, -0.4, 0],
-    [0, -0.4, 0],
-  ];
+  const { names, parents, positions: rest } = HUMANOID_REST;
   const world: number[][] = [];
   for (let i = 0; i < rest.length; i += 1)
     world.push(
