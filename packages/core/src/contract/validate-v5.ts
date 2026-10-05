@@ -479,7 +479,13 @@ function clone(value: unknown, seen = new WeakMap<object, unknown>()): unknown {
   }
   const result: Record<string, unknown> = {};
   seen.set(value, result);
-  for (const [key, child] of Object.entries(value)) result[key] = clone(child, seen);
+  for (const [key, child] of Object.entries(value))
+    Object.defineProperty(result, key, {
+      value: clone(child, seen),
+      enumerable: true,
+      configurable: true,
+      writable: true,
+    });
   return result;
 }
 function deepFreeze<T>(value: T, seen = new WeakSet<object>()): T {

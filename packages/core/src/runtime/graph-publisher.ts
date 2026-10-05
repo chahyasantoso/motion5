@@ -397,7 +397,14 @@ export class GraphPublisher {
         memberSlots.set(requirement.plugin, slots);
         const members = slots.get(requirement.slot) ?? {};
         slots.set(requirement.slot, members);
-        members[requirement.memberKey] = sourceRecord;
+        // Every authored member is an own data property, including "__proto__"; assignment
+        // would invoke its legacy setter and silently lose an admitted input binding.
+        Object.defineProperty(members, requirement.memberKey, {
+          value: sourceRecord,
+          enumerable: true,
+          configurable: true,
+          writable: true,
+        });
         continue;
       }
       // The slot is the scope, so the source's values arrive whole and under their own names.

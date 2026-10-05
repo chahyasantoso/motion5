@@ -3,6 +3,7 @@ import {
   createManualClock,
   Engine,
   PluginRegistry,
+  validateTrackDefinition,
   type ProjectHandle,
   type TrackDefinition,
 } from "@motion5/core";
@@ -186,5 +187,56 @@ describe("rig world-frame aggregation", () => {
     expect(Object.hasOwn(special.pose, "__proto__")).toBe(true);
     expect(special.pose.__proto__!.x).toBe(9);
     expect(Object.getPrototypeOf(special.pose)).toBe(Object.prototype);
+  });
+
+  it("preserves ordinary prototype-named bones and controls through Engine publication", () => {
+    const project = load([
+      bone,
+      {
+        id: "rig",
+        keyframes: {
+          rig: {
+            requires: {
+              bones: { constructor: "bone", toString: "bone" },
+              controls: { constructor: "bone", toString: "bone" },
+            },
+          },
+        },
+      },
+    ]);
+    try {
+      const decoded = readRigValues(values(project, "rig"));
+      for (const key of ["constructor", "toString"]) {
+        expect(Object.hasOwn(decoded.pose, key)).toBe(true);
+        expect(decoded.pose[key]).toEqual(readFrame3d(values(project, "bone")));
+        expect(decoded.controls[key]).toEqual({ x: 3, y: -2, z: 7 });
+      }
+    } finally {
+      project.dispose();
+    }
+  });
+
+  it("does not silently lose underscore-prefixed bound keys before output admission refuses them", () => {
+    const definition: TrackDefinition = {
+      id: "rig",
+      keyframes: {
+        rig: { requires: { bones: Object.fromEntries([["__proto__", "bone"]]) } },
+      },
+    };
+    const validated = validateTrackDefinition(definition, "track");
+    expect(validated.kind).toBe("accepted");
+    if (validated.kind !== "accepted") throw new Error("A dict member is structurally valid.");
+    expect(validated.value).toEqual(definition);
+    const project = load([bone, definition]);
+    try {
+      const patch = project.get("scene/rig");
+      expect(patch?.status).toBe("error");
+      if (patch?.status !== "error") throw new Error("An underscore output must be refused.");
+      expect(patch.diagnostics.some(({ ruleId }) => ruleId === "composition-output-shape")).toBe(
+        true,
+      );
+    } finally {
+      project.dispose();
+    }
   });
 });
