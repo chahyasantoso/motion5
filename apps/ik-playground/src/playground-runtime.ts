@@ -9,6 +9,7 @@ import {
 } from "@motion5/core";
 import { builtinCatalog } from "@motion5/plugins/catalog";
 import { createPluginLoader, ensuredOrThrow } from "@motion5/plugins/loader";
+import { afterCleanup } from "./cleanup";
 import { createGoalControl, type GoalControl } from "./goal-control";
 import { SCROLL_SOURCE, ikPlaygroundProject } from "./ik-playground-project";
 import { IK3D_PERSPECTIVE, ik3dPlaygroundMotion } from "./ik3d-playground-project";
@@ -67,11 +68,6 @@ export async function loadPlayground(
     for (const freeNode of project.freeTrackIds()) project.mount(freeNode);
     return { project, goals: createGoalControl(project) };
   } catch (error) {
-    try {
-      project.dispose();
-    } catch (cleanupError) {
-      throw new AggregateError([error, cleanupError], "Playground setup and cleanup failed.");
-    }
-    throw error;
+    throw afterCleanup(error, () => project.dispose(), "Playground setup and cleanup failed.");
   }
 }

@@ -11,6 +11,7 @@ import { StageBoundary } from "./components/StageBoundary";
 import { ThreeStage } from "./components/ThreeStage";
 import { TENTACLE, nodeId } from "./ik-playground-project";
 import { loadPlayground, type PlaygroundRuntime } from "./playground-runtime";
+import { LOADING_VIEW, startPlaygroundSession, type PlaygroundView } from "./playground-session";
 
 type PlaygroundTab = "dom" | "three";
 const TAB_LABEL: Readonly<Record<PlaygroundTab, string>> = {
@@ -44,106 +45,60 @@ function tabPanel(
   }
 }
 
+/** What one view shows. A failure is thrown during render, where an error boundary can catch it. */
+function presentation(view: PlaygroundView): {
+  readonly runtime: PlaygroundRuntime | undefined;
+  readonly weight: number;
+} {
+  switch (view.kind) {
+    case "loading":
+      return { runtime: undefined, weight: 0 };
+    case "ready":
+      return { runtime: view.runtime, weight: view.weight };
+    case "failed":
+      throw view.error;
+    default: {
+      const unhandled: never = view;
+      throw new Error(`Unhandled playground view: ${String(unhandled)}`);
+    }
+  }
+}
+
 export const App: React.FC = () => {
-  const [handle, setHandle] = useState<ProjectHandle>();
-  const [goals, setGoals] = useState<PlaygroundRuntime["goals"]>();
+  const [view, setView] = useState<PlaygroundView>(LOADING_VIEW);
   const [tab, setTab] = useState<PlaygroundTab>("dom");
-  const [weight, setWeight] = useState(0);
-  const [setupError, setSetupError] = useState<{ readonly error: unknown }>();
 
   useLayoutEffect(() => {
     const clock = createBrowserClock({
       requestFrame: (callback: FrameRequestCallback) => requestAnimationFrame(callback),
       cancelFrame: (id: number) => cancelAnimationFrame(id),
     });
-    let cancelled = false;
-    let released = false;
-    let owned: PlaygroundRuntime | undefined;
-    let unsubscribeWeight = () => {};
-    const release = () => {
-      if (released) return;
-      released = true;
-      const failures: unknown[] = [];
-      for (const dispose of [
-        () => unsubscribeWeight(),
-        () => owned?.project.dispose(),
-        () => clock.dispose(),
-      ]) {
-        try {
-          dispose();
-        } catch (error) {
-          failures.push(error);
-        }
-      }
-      if (failures.length === 1) throw failures[0];
-      if (failures.length > 1) throw new AggregateError(failures, "IK resource cleanup failed.");
-    };
-    const reportFailure = (error: unknown) => {
-      try {
-        release();
-      } catch (cleanupError) {
-        error = new AggregateError([error, cleanupError], "IK setup and cleanup failed.");
-      }
-      // Promise callbacks cannot reach a React error boundary by throwing. Store even undefined
-      // as a tagged failure and throw during render instead.
-      setSetupError({ error });
-    };
-
-    try {
-      gsap.registerPlugin(ScrollTrigger);
-      void loadPlayground({
-        clock,
-        interpolator: createGsapInterpolator(gsap),
-        scheduler: createMicrotaskScheduler(),
-        scroll: createGsapScrollSource(ScrollTrigger, {
-          trigger: "#scroll-demo",
-          start: "top top",
-          end: "bottom bottom",
-        }),
-      })
-        .then(
-          (runtime) => {
-            if (cancelled) {
-              runtime.project.dispose();
-              return;
-            }
-            owned = runtime;
-            setHandle(runtime.project);
-            setGoals(runtime.goals);
-            setWeight(0);
-            unsubscribeWeight = runtime.project.subscribeNode(
-              nodeId(TENTACLE.memberTracks[0]!),
-              (patch) => {
-                if (patch.status === "ready") setWeight(patch.sourceProgress);
-              },
-            );
-          },
-          (error: unknown) => {
-            if (!cancelled) reportFailure(error);
-          },
-        )
-        .catch((error: unknown) => {
-          if (!cancelled) reportFailure(error);
-          else console.error("IK cleanup after cancellation failed.", error);
+    const stop = startPlaygroundSession({
+      load: () => {
+        gsap.registerPlugin(ScrollTrigger);
+        return loadPlayground({
+          clock,
+          interpolator: createGsapInterpolator(gsap),
+          scheduler: createMicrotaskScheduler(),
+          scroll: createGsapScrollSource(ScrollTrigger, {
+            trigger: "#scroll-demo",
+            start: "top top",
+            end: "bottom bottom",
+          }),
         });
-    } catch (error) {
-      try {
-        release();
-      } catch (cleanupError) {
-        throw new AggregateError([error, cleanupError], "IK setup and cleanup failed.");
-      }
-      throw error;
-    }
-
+      },
+      releaseHost: () => clock.dispose(),
+      weightNode: nodeId(TENTACLE.memberTracks[0]!),
+      onView: setView,
+      onOrphanFailure: (error) => console.error("IK cleanup after cancellation failed.", error),
+    });
     return () => {
-      cancelled = true;
-      setHandle(undefined);
-      setGoals(undefined);
-      release();
+      setView(LOADING_VIEW);
+      stop();
     };
   }, []);
 
-  if (setupError !== undefined) throw setupError.error;
+  const { runtime, weight } = presentation(view);
 
   return (
     <main id="scroll-demo">
@@ -184,15 +139,17 @@ export const App: React.FC = () => {
             role="tabpanel"
             aria-labelledby={`tab-${tab}`}
           >
-            {handle && goals ? (
-              <StageBoundary key={tab}>{tabPanel(tab, handle, goals)}</StageBoundary>
+            {runtime ? (
+              <StageBoundary key={tab}>
+                {tabPanel(tab, runtime.project, runtime.goals)}
+              </StageBoundary>
             ) : (
               <p>Loading rig…</p>
             )}
           </div>
         </section>
         <aside className="sidebar">
-          {handle && goals ? <SolverPanel handle={handle} goals={goals} /> : null}
+          {runtime ? <SolverPanel handle={runtime.project} goals={runtime.goals} /> : null}
         </aside>
       </div>
     </main>
