@@ -16,6 +16,8 @@ import type {
 import { flattenAuthoredKeyframes, type FlattenedKeyframe } from "./keyframe-groups";
 import type { ImmutableRecord } from "./values";
 import type { OutputSerializer, RenderMetadata } from "../ports/render-metadata";
+import type { SolverChainShape } from "../contract/solver-shape";
+import type { PluginCapabilities, PluginCapability } from "../ports/plugin-capabilities";
 import {
   admitPlugin,
   deepFreeze,
@@ -171,6 +173,8 @@ export interface ResolvedPlugins extends RenderMetadata {
 export type PluginStage = "prepare" | "compose";
 export interface PluginDefinition {
   readonly name: string;
+  /** Absent means any chain; a tree dedicates its member plugin registry-wide (ADR-136). */
+  readonly solverChain?: SolverChainShape;
   readonly keys?: readonly string[];
   readonly claimsKey?: PluginKeyClaim;
   readonly inputs?: readonly string[];
@@ -459,7 +463,10 @@ function result(
   });
 }
 
-export class PluginRegistry {
+export class PluginRegistry implements PluginCapabilities {
+  readonly #capabilities = new Map<string, PluginCapability>();
+  readonly #dedicated = new Set<string>();
+  #dedicatedMembers: readonly string[] = Object.freeze([]);
   readonly #plugins = new Map<string, PluginDefinition>();
   readonly #keyClaimants = new Map<string, PluginDefinition[]>();
   readonly #inputOwners = new Map<string, PluginDefinition>();
@@ -496,8 +503,27 @@ export class PluginRegistry {
   register(plugin: PluginDefinition): void {
     this.registerAll([plugin]);
   }
-  #store({ definition, keys, inputs }: AdmittedPlugin): void {
+  capabilityOf(plugin: string): PluginCapability | undefined {
+    return this.#capabilities.get(plugin);
+  }
+  dedicatedMembers(): readonly string[] {
+    return this.#dedicatedMembers;
+  }
+  #store({ definition, keys, inputs, capability }: AdmittedPlugin): void {
     this.#plugins.set(definition.name, definition);
+    this.#capabilities.set(definition.name, capability);
+    switch (capability.chain.kind) {
+      case "any":
+        break;
+      case "tree":
+        if (!this.#dedicated.has(capability.chain.memberPlugin)) {
+          this.#dedicated.add(capability.chain.memberPlugin);
+          this.#dedicatedMembers = Object.freeze([...this.#dedicated].sort());
+        }
+        break;
+      default:
+        unreachable(capability.chain);
+    }
     this.#orders.set(definition.name, this.#registrationOrder++);
     for (const key of keys) this.#claimantsFor(key).push(definition);
     for (const input of inputs) this.#inputOwners.set(input, definition);

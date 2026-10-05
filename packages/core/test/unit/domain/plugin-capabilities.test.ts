@@ -11,17 +11,7 @@ import { ikPlugin } from "../../../../plugins/src/ik";
 import { ik3dPlugin } from "../../../../plugins/src/ik3d";
 import { transformPlugin } from "../../../../plugins/src/transform";
 import { transform3dPlugin } from "../../../../plugins/src/transform3d";
-
-// Red-only seam: the source commit replaces this declaration with the shipped port.
-type Capability = Readonly<{
-  chain: { readonly kind: "any" } | { readonly kind: "tree"; readonly memberPlugin: string };
-  pole: boolean;
-  joint: boolean;
-}>;
-interface CapabilitySeam {
-  capabilityOf(name: string): Capability | undefined;
-  dedicatedMembers(): readonly string[];
-}
+import type { PluginCapabilities } from "../../../src/ports/plugin-capabilities";
 const definitions = [
   transformPlugin,
   fkPlugin,
@@ -35,9 +25,8 @@ function registry(): PluginRegistry {
   result.registerAll(definitions);
   return result;
 }
-function capabilities(result: PluginRegistry): CapabilitySeam {
-  expect(typeof (result as unknown as CapabilitySeam).capabilityOf).toBe("function");
-  return result as unknown as CapabilitySeam;
+function capabilities(result: PluginRegistry): PluginCapabilities {
+  return result;
 }
 function engine(plugins: PluginRegistry): Engine {
   return new Engine({
@@ -55,7 +44,7 @@ function chain(solver: string, member: string): ProjectDefinition {
         id: "scene",
         trigger: { type: "manual" },
         tracks: [
-          { id: "root", keyframes: { transform: { values: {} } } },
+          { id: "root", keyframes: { transform: { values: { x: 0, y: 0 } } } },
           { id: "goal", keyframes: { transform: { values: { x: 10, y: 10 } } } },
           { id: "solve", keyframes: { [solver]: { requires: { root: "root", target: "goal" } } } },
           {
@@ -128,11 +117,7 @@ describe("registry-owned solver declarations (ADR-136)", () => {
   it("C3 standalone validation is unjudged, registry validation and Engine refuse", () => {
     const project = chain("ik3d", "fk");
     expect(validateV5(project).kind).toBe("accepted");
-    const validateWithRegistry = validateV5 as (
-      input: unknown,
-      view: PluginRegistry,
-    ) => ReturnType<typeof validateV5>;
-    expect(validateWithRegistry(project, registry()).kind).toBe("refused");
+    expect(validateV5(project, registry()).kind).toBe("refused");
     expect(() => engine(registry()).load(project)).toThrow("ik-chain-unsupported");
   });
 

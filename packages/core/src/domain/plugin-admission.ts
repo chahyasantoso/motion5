@@ -1,9 +1,38 @@
 import type { PluginDefinition, PluginStage } from "./plugins";
+import { ANY_CHAIN, POLE_SLOT, type SolverChainShape } from "../contract/solver-shape";
+import { JOINT_KEY } from "../contract/solver-constraints";
+import type { PluginCapability } from "../ports/plugin-capabilities";
 
 export interface AdmittedPlugin {
   readonly definition: PluginDefinition;
   readonly keys: readonly string[];
   readonly inputs: readonly string[];
+  readonly capability: PluginCapability;
+}
+
+/** Runtime declarations are untrusted; unknown kinds are admission errors, not unreachable. */
+function admitChain(value: unknown, name: string): SolverChainShape {
+  if (value === undefined) return ANY_CHAIN;
+  if (!isRecord(value))
+    throw new TypeError(`Plugin "${name}" solverChain must be an object when provided.`);
+  const { kind, memberPlugin } = value;
+  switch (kind) {
+    case "any":
+      return ANY_CHAIN;
+    case "tree":
+      if (
+        typeof memberPlugin !== "string" ||
+        !memberPlugin.trim() ||
+        memberPlugin.includes(":") ||
+        memberPlugin === name
+      )
+        throw new TypeError(
+          `Plugin "${name}" solverChain memberPlugin must be non-empty, contain no ':' and differ from its name.`,
+        );
+      return Object.freeze({ kind: "tree", memberPlugin });
+    default:
+      throw new TypeError(`Plugin "${name}" declares an unknown solverChain kind.`);
+  }
 }
 
 export interface AdmissionContext {
@@ -105,12 +134,19 @@ export function admitPlugin(plugin: PluginDefinition, context: AdmissionContext)
         `plugin-input-collision: Plugin "${owner}" already owns input "${input}".`,
       );
   }
+  const chain = admitChain(source.solverChain, source.name);
+  const capability: PluginCapability = Object.freeze({
+    chain,
+    pole: Object.hasOwn(requirements ?? {}, POLE_SLOT),
+    joint: Boolean(keys.includes(JOINT_KEY) || source.claimsKey?.(JOINT_KEY)),
+  });
   const definition = Object.freeze({
     ...source,
+    ...(source.solverChain === undefined ? {} : { solverChain: chain }),
     ...(source.keys ? { keys } : {}),
     ...(source.inputs ? { inputs } : {}),
     ...(source.outputs ? { outputs } : {}),
     ...(requirements ? { requirements } : {}),
   });
-  return { definition, keys, inputs };
+  return { definition, keys, inputs, capability };
 }

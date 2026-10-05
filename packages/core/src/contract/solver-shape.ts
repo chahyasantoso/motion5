@@ -38,33 +38,7 @@ export type DerivedChainMember = Readonly<{
   constrained: boolean;
 }>;
 
-const ANY: SolverChainShape = Object.freeze({ kind: "any" });
-
-const SOLVER_CHAIN_SHAPES: Readonly<Record<string, SolverChainShape>> = Object.freeze({
-  ik3d: Object.freeze({ kind: "tree", memberPlugin: "fk3d" }),
-});
-
-function dedicatedPluginOf(shape: SolverChainShape): string | undefined {
-  switch (shape.kind) {
-    case "any":
-      return undefined;
-    case "tree":
-      return shape.memberPlugin;
-    default:
-      return unreachable(shape);
-  }
-}
-
-const DEDICATED_MEMBER_PLUGINS: readonly string[] = Object.freeze(
-  [
-    ...new Set(
-      Object.values(SOLVER_CHAIN_SHAPES).flatMap((shape): readonly string[] => {
-        const plugin = dedicatedPluginOf(shape);
-        return plugin === undefined ? [] : [plugin];
-      }),
-    ),
-  ].sort(),
-);
+export const ANY_CHAIN: SolverChainShape = Object.freeze({ kind: "any" });
 
 /**
  * The requirement slot an authored pole binds, and the one owner of which solver plugins bend a
@@ -82,18 +56,6 @@ const DEDICATED_MEMBER_PLUGINS: readonly string[] = Object.freeze(
  */
 export const POLE_SLOT = "pole" as const;
 
-const POLE_SOLVERS: readonly string[] = Object.freeze(["ik3d"]);
-
-/** Whether `plugin` is a solver that declares the `pole` slot. */
-export function declaresPole(plugin: string): boolean {
-  return POLE_SOLVERS.includes(plugin);
-}
-
-/** The chain shape `plugin` declares, `any` when it declares none. */
-export function solverChainShape(plugin: string): SolverChainShape {
-  return SOLVER_CHAIN_SHAPES[plugin] ?? ANY;
-}
-
 /**
  * Whether the members derived under one solver describe a chain `shape` accepts: for `any`, no
  * member binds through a plugin some other shape dedicates, and for `tree`, every member binds
@@ -105,12 +67,11 @@ export function solverChainShape(plugin: string): SolverChainShape {
 export function acceptsChain(
   shape: SolverChainShape,
   members: readonly DerivedChainMember[],
+  dedicated: readonly string[],
 ): boolean {
   switch (shape.kind) {
     case "any":
-      return members.every(({ plugins }) =>
-        plugins.every((plugin) => !DEDICATED_MEMBER_PLUGINS.includes(plugin)),
-      );
+      return members.every(({ plugins }) => plugins.every((plugin) => !dedicated.includes(plugin)));
     case "tree":
       return members.every(({ plugins }) =>
         plugins.every((plugin) => plugin === shape.memberPlugin),
@@ -201,10 +162,10 @@ export function poleBends(members: readonly DerivedChainMember[]): boolean {
 }
 
 /** What `shape` accepts, in the words the refusal message uses. */
-export function describeChainShape(shape: SolverChainShape): string {
+export function describeChainShape(shape: SolverChainShape, dedicated: readonly string[]): string {
   switch (shape.kind) {
     case "any":
-      return `any chain without ${DEDICATED_MEMBER_PLUGINS.join(" or ")} members`;
+      return `any chain without ${dedicated.join(" or ")} members`;
     case "tree":
       return `any chain of ${shape.memberPlugin} members only`;
     default:

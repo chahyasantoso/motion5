@@ -10,19 +10,18 @@ import type {
 import { diagnostic } from "../contract/diagnostics";
 import {
   acceptsChain,
-  declaresPole,
   describeChainShape,
   describeDerivedChain,
   poleBends,
   POLE_SLOT,
   readsMemberRest,
-  solverChainShape,
 } from "../contract/solver-shape";
 import { acceptedOutcome, readOutcome, refusedOutcome, type Outcome } from "../lang/outcome";
 import { readPluginBindings, readPluginValues } from "../contract/keyframe-shape";
 import { PLUGIN_GOALS_SLOT } from "../contract/solver-slots";
 import { authorsConstrainingJoint } from "../contract/solver-constraints";
 import { compareCodeUnits } from "./compare";
+import type { PluginCapabilities } from "../ports/plugin-capabilities";
 import {
   assertAuthoredMotionId,
   assertAuthoredTrackId,
@@ -409,7 +408,10 @@ export function collectTrack(
   return Object.freeze({ id, owner, authoredIndex, track, edges: Object.freeze(edges) });
 }
 
-export function buildGraphIR(project: ProjectDefinition): GraphBuildResult {
+export function buildGraphIR(
+  project: ProjectDefinition,
+  capabilities: PluginCapabilities,
+): GraphBuildResult {
   const diagnostics: Diagnostic[] = [];
   const nodes: GraphNode[] = [];
   const seen = new Set<string>();
@@ -476,7 +478,7 @@ export function buildGraphIR(project: ProjectDefinition): GraphBuildResult {
       }
     }
   }
-  return finalizeGraph(nodes, diagnostics);
+  return finalizeGraph(nodes, diagnostics, capabilities);
 }
 
 const ORIENTATION_KEYS = ["rotation", "rotationX", "rotationY"] as const;
@@ -565,8 +567,9 @@ function goalReachOf(
 export function resolveSolvers(
   nodes: readonly GraphNode[],
   diagnostics: Diagnostic[],
+  capabilities: PluginCapabilities,
 ): readonly GraphNode[] {
-  validateSolverConstraints(nodes, diagnostics);
+  validateSolverConstraints(nodes, diagnostics, capabilities);
   // Diagnostic 3: ik-mode-ambiguous
   // Diagnostic 4: ik-solved-rotation-dead
   // Diagnostic 7: ik-goal-conflict
@@ -579,6 +582,19 @@ export function resolveSolvers(
   // module, so reporting later moves no order.
   const deadRotationBinders = new Map<string, readonly string[]>();
   const restReadBy = new Set<string>();
+  const judgedSolvers = new Set(
+    nodes
+      .filter((node) =>
+        node.edges.some((edge) => {
+          const requirement = edgeRequirement(edge);
+          return (
+            requirement?.slot === "root" &&
+            capabilities.capabilityOf(requirement.plugin) !== undefined
+          );
+        }),
+      )
+      .map((node) => node.id),
+  );
   for (const node of nodes) {
     let rootCount = 0;
     // The plugins under which this node bound a `solver` slot, which is what scopes the read of its
@@ -637,7 +653,17 @@ export function resolveSolvers(
     // the weight next" while still passing a weight that arrives through an edge: a rule that
     // catches the careful author and misses the dynamic case is inverted. See ADR-055.
     const deadBinders = solverBinders.filter(
-      (binder) => rotationGroups.includes(binder) && !weightGroups.includes(binder),
+      (binder) =>
+        rotationGroups.includes(binder) &&
+        !weightGroups.includes(binder) &&
+        node.edges.some((edge) => {
+          const requirement = edgeRequirement(edge);
+          return (
+            requirement?.slot === "solver" &&
+            requirement.plugin === binder &&
+            judgedSolvers.has(edge.sourceId)
+          );
+        }),
     );
     if (deadBinders.length > 0) deadRotationBinders.set(node.id, deadBinders);
     // The symmetric footgun, and it speaks only about a node that bound a solver somewhere.
@@ -838,7 +864,7 @@ export function resolveSolvers(
     // chain every member reached, because a member that could not reach the root was named above
     // and has no depth to judge. See ADR-114.
     const rootPlugin = edgeRequirement(rootEdge)?.plugin ?? "";
-    const shape = solverChainShape(rootPlugin);
+    const capability = capabilities.capabilityOf(rootPlugin);
     const derived = chains.map(({ node, depth }) => {
       const plugins = solverPluginsOf(node, solver.id);
       return {
@@ -847,18 +873,21 @@ export function resolveSolvers(
         constrained: authorsConstrainingJoint(node.track.keyframes, plugins),
       };
     });
-    const accepted = unreachable.size === 0 && acceptsChain(shape, derived);
-    if (unreachable.size === 0 && !accepted) {
+    const dedicated = capabilities.dedicatedMembers();
+    const accepted =
+      unreachable.size === 0 &&
+      (capability === undefined || acceptsChain(capability.chain, derived, dedicated));
+    if (capability !== undefined && unreachable.size === 0 && !accepted) {
       diagnostics.push(
         diagnostic(
           "ik-chain-unsupported",
           solver.id,
-          `Solver "${solver.id}" supports ${describeChainShape(shape)}, but its derived members are ${describeDerivedChain(derived)}.`,
+          `Solver "${solver.id}" supports ${describeChainShape(capability.chain, dedicated)}, but its derived members are ${describeDerivedChain(derived)}.`,
           [solver.id],
         ),
       );
     }
-    if (accepted && readsMemberRest(shape, derived)) {
+    if (accepted && capability !== undefined && readsMemberRest(capability.chain, derived)) {
       for (const { node } of chains) {
         for (const plugin of solverPluginsOf(node, solver.id))
           restReadBy.add(`${node.id}\n${plugin}`);
@@ -877,7 +906,7 @@ export function resolveSolvers(
       const requirement = edgeRequirement(edge);
       return requirement?.slot === POLE_SLOT && requirement.plugin === rootPlugin;
     });
-    if (accepted && declaresPole(rootPlugin) && bindsPole && !poleBends(derived)) {
+    if (accepted && capability?.pole === true && bindsPole && !poleBends(derived)) {
       diagnostics.push(
         diagnostic(
           "ik-pole-without-bend",
@@ -1037,7 +1066,7 @@ export function resolveSolvers(
     );
   }
 
-  validateGoalWeights(nodes, goalScope, diagnostics);
+  validateGoalWeights(nodes, goalScope, diagnostics, capabilities);
 
   return freeze(
     nodes.map((node) => {
@@ -1088,6 +1117,7 @@ export function deriveDependants(
 export function finalizeGraph(
   nodes: readonly GraphNode[],
   diagnostics: Diagnostic[],
+  capabilities: PluginCapabilities,
 ): GraphBuildResult {
   const known = new Set(nodes.map((node) => node.id));
   const edgeKeys = new Set<string>();
@@ -1131,7 +1161,7 @@ export function finalizeGraph(
   diagnostics.sort(compareDiagnostics);
   if (diagnostics.some(({ severity }) => severity === "error"))
     return { diagnostics: Object.freeze(diagnostics) };
-  const resolvedNodes = resolveSolvers(nodes, diagnostics);
+  const resolvedNodes = resolveSolvers(nodes, diagnostics, capabilities);
   diagnostics.sort(compareDiagnostics);
   if (diagnostics.some(({ severity }) => severity === "error"))
     return { diagnostics: Object.freeze(diagnostics) };

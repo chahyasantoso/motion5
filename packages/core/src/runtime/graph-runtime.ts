@@ -2,7 +2,8 @@
 import type { Diagnostic, ProjectDefinition } from "../contract/v5";
 import type { Clock, ClockTick } from "../ports/clock";
 import { GraphBinding } from "../graph/binding";
-import { defaultGraphBuilder } from "../graph/builders/default";
+import { createDefaultGraphBuilder } from "../graph/builders/default";
+import { UNJUDGED_CAPABILITIES } from "../ports/plugin-capabilities";
 import type { GraphNode, GraphIR } from "../graph/ir";
 import { GraphPublisher, type PublisherNode, type PublisherSnapshot } from "./graph-publisher";
 import { PatchRegistry, type PatchBatch } from "./patch-registry";
@@ -107,7 +108,7 @@ export class GraphRuntime {
     options: GraphRuntimeOptions = {},
   ) {
     this.#binding = new GraphBinding(project, {
-      builder: options.graphBuilder ?? defaultGraphBuilder,
+      builder: options.graphBuilder ?? createDefaultGraphBuilder(UNJUDGED_CAPABILITIES),
     });
     this.#registry = new PatchRegistry();
     this.#publisher = new GraphPublisher(this.#registry);

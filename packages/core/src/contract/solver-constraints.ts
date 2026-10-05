@@ -158,19 +158,6 @@ export const JOINT_ONLY_KEYS: readonly JointVocabularyKey[] = Object.freeze([
   ...TWIST_KEYS,
 ]);
 
-/**
- * The member plugins whose authored values carry the 3D joint vocabulary, and the one owner of that
- * set (ADR-123). Under any other group `minRotation` and `maxRotation` keep ADR-108's 2D meaning,
- * so the graph reads this to decide which classifier a spelling belongs to; a test holds it equal to
- * the plugin definitions that claim `joint`.
- */
-const JOINT_MEMBER_PLUGINS: readonly string[] = Object.freeze(["fk3d"]);
-
-/** Whether `plugin`'s values are read as a 3D joint limit. */
-export function declaresJoint(plugin: string): boolean {
-  return JOINT_MEMBER_PLUGINS.includes(plugin);
-}
-
 /** The bound keys a joint of `kind` reads; any other bound key authored beside it is unused. */
 export function jointBoundKeys(kind: JointKind): readonly JointBoundKey[] {
   switch (kind) {
