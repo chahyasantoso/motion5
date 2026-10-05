@@ -26,6 +26,7 @@ import {
   type SourceValues,
 } from "./publisher-outcome";
 import { closeUpstream, reachable } from "./publisher-reach";
+import { defineOwnValue } from "../lang/own-property";
 
 /**
  * One node's timeline state before any plugin runs, as the node itself reports it.
@@ -397,14 +398,8 @@ export class GraphPublisher {
         memberSlots.set(requirement.plugin, slots);
         const members = slots.get(requirement.slot) ?? {};
         slots.set(requirement.slot, members);
-        // Every authored member is an own data property, including "__proto__"; assignment
-        // would invoke its legacy setter and silently lose an admitted input binding.
-        Object.defineProperty(members, requirement.memberKey, {
-          value: sourceRecord,
-          enumerable: true,
-          configurable: true,
-          writable: true,
-        });
+        // Every authored member stays an own data property, including "__proto__".
+        defineOwnValue(members, requirement.memberKey, sourceRecord);
         continue;
       }
       // The slot is the scope, so the source's values arrive whole and under their own names.

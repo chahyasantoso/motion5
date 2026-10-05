@@ -40,6 +40,13 @@ function nonEmptyString(value: unknown, field: string): string {
   return value;
 }
 
+function finiteAngle(value: unknown, bone: string): number {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    throw new TypeError(`Pose classifier bone "${bone}" must declare finite angles.`);
+  }
+  return value;
+}
+
 function prepareTemplate(
   input: unknown,
   unknownLabel: string,
@@ -62,17 +69,9 @@ function prepareTemplate(
       if (!isRecord(angles)) {
         throw new TypeError(`Pose classifier bone "${key}" must declare finite angles.`);
       }
-      const { rotation, rotationX, rotationY } = angles;
-      if (
-        typeof rotation !== "number" ||
-        !Number.isFinite(rotation) ||
-        typeof rotationX !== "number" ||
-        !Number.isFinite(rotationX) ||
-        typeof rotationY !== "number" ||
-        !Number.isFinite(rotationY)
-      ) {
-        throw new TypeError(`Pose classifier bone "${key}" must declare finite angles.`);
-      }
+      const rotation = finiteAngle(angles.rotation, key);
+      const rotationX = finiteAngle(angles.rotationX, key);
+      const rotationY = finiteAngle(angles.rotationY, key);
       return Object.freeze({
         key,
         inverse: Object.freeze(
@@ -124,6 +123,9 @@ export function createPoseClassifyPlugin(options: PoseClassifyOptions): PluginDe
   const templates = Object.freeze(
     Array.from(options.templates, (template) => prepareTemplate(template, unknownLabel, labels)),
   );
+  const referenced = Object.freeze([
+    ...new Set(templates.flatMap((template) => template.bones.map((bone) => bone.key))),
+  ]);
   return {
     name,
     keys: [],
@@ -132,9 +134,12 @@ export function createPoseClassifyPlugin(options: PoseClassifyOptions): PluginDe
     outputs: ["label", "confidence"],
     compose: (_values, _progress, inputs) => {
       const pose = readRigValues(inputs.rig).pose;
-      const actual = new Map(
-        Object.entries(pose).map(([key, frame]) => [key, matrixFromEuler3d(frame)]),
-      );
+      // Only template-referenced bones are converted; a full humanoid pose stays cheap.
+      const actual = new Map<string, Matrix3>();
+      for (const key of referenced) {
+        const frame = Object.hasOwn(pose, key) ? pose[key] : undefined;
+        if (frame !== undefined) actual.set(key, matrixFromEuler3d(frame));
+      }
       let best = Infinity;
       let label = unknownLabel;
       for (const template of templates) {

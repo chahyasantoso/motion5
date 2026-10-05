@@ -59,6 +59,15 @@ describe("pose classifier geodesic distance", () => {
     expect(classify({ wrist: { ...ZERO, rotation: 5 } }).confidence).toBeCloseTo(0.5, 8);
   });
 
+  it("G9 ignores unreferenced bones and never reads inherited names as bones", () => {
+    const base = classify({ wrist: { ...ZERO, rotation: 4 } });
+    expect(
+      classify({ wrist: { ...ZERO, rotation: 4 }, hips: { ...ZERO, rotationX: 170 }, spine: {} }),
+    ).toEqual(base);
+    const inherited: PoseTemplate = { label: "proto", pose: { toString: ZERO } };
+    expect(classify({ wrist: ZERO }, [inherited])).toEqual({ label: "unknown", confidence: 0 });
+  });
+
   it("G8 equivalent Euler triples at gimbal lock match rather than falsely answering unknown", () => {
     const expected = template("raised", { rotation: 30, rotationX: 90, rotationY: 0 });
     const result = classify({ wrist: { rotation: 0, rotationX: 90, rotationY: 30 } }, [expected]);

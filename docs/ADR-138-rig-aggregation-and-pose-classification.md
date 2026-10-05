@@ -44,7 +44,7 @@ identity fields are refused eagerly. The default name is `pose-classify`, and th
 defaults to `unknown`. A custom name must equal its catalog key.
 
 Construction snapshots templates into deeply frozen inverse rotation matrices. Compose computes
-each actual bone matrix once and compares `transpose(template) * actual` using frame3d's existing
+each template-referenced actual bone matrix once (own keys only) and compares `transpose(template) * actual` using frame3d's existing
 matrix helpers. The geodesic angle is `acos(clamp((trace - 1) / 2, -1, 1))` in degrees, averaged
 over template bones. A missing bone scores Infinity. The lowest mean wins, ties retain the first
 template, and an inclusive maximum selects its label. Confidence is `max(0, 1 - distance / maximum)`
@@ -80,7 +80,7 @@ application-owned asynchronous loading before atomic registration.
 
 A pose aggregates existing fk/ik tracks through ordinary graph edges, so upstream seeks propagate
 without a second solve. Preparation costs one matrix per template bone once; each compose computes
-one actual matrix per bound bone and compares the prepared templates. Ranking is linear in total
+one actual matrix per bound bone some template references and compares the prepared templates. Ranking is linear in total
 template bone count.
 
 The zero-default decoder intentionally does not diagnose absent frame fields: a missing pose bone
