@@ -236,8 +236,10 @@ project.edit((edit) => {
 
 For a single track the same preflight precedes `project.addTrack(track)`. A recipe is never async:
 it stages and commits synchronously. The IK playground uses this lazy composition-root policy;
-`loadPlayground` resolves only after load and mount. Its effect discards late results and releases
-weight subscription, project, then clock on active cleanup. React demo stays synchronous so GSAP
+`loadPlayground` resolves only after load and mount. `startPlaygroundSession` is its one lifecycle
+owner, a `loading | active | ended` union: stop is idempotent and releases weight subscription,
+project, then clock; a runtime arriving after stop is disposed without publishing; a failure while
+current releases once and becomes the App's `failed` view (`TH-215` to `TH-224`). React demo stays synchronous so GSAP
 measures committed DOM in `useLayoutEffect`; pose gap filler's synchronous rig loaders also remain
 first-class.
 
