@@ -6,22 +6,21 @@ states a phase; `packages/core/test/unit/scripts/session-status-shape.test.ts` e
 byte ceiling.
 
 - **Captured:** 2026-10-05, Asia/Jakarta.
-- **Read against:** `main` at `699581b005083082333b8b52ce2167114f57aca3`, merged PR #554.
+- **Read against:** supplied `main` snapshot `e70f1c90c313bf05d1401228bbd41d257640d2d1`.
 
 ## Now
 
-- **PR #554 is merged: core reads solver declarations through registry-owned capabilities, with no
-  plugin names in graph or contract source.**
+- **The supplied main snapshot contains labels, the shared non-null leaf policy, and
+  registry-owned solver capabilities.** No fresh remote CI or merge verification is claimed here.
 
 ## Next in line
 
-- **#534 review alignment:** Phase 8 labels and the non-null renderer-neutral value policy are
-  prepared on `fix/534-null-policy-labels`; the cumulative handover is the source of truth until CI
-  verifies the branch.
+- **#534 rig and pose classification:** Prepared on `feat/534-rig`, with revision 2 geodesic
+  classification and bound-member own-key delivery; the cumulative handover awaits required CI.
 
 ## Open, and not scheduled
 
-- Rig, pose classification, 3D avatar driving, and runners remain unmerged.
+- 3D avatar driving, runners, and retargeting remain unmerged.
 
 ## Where the rest of it lives
 

@@ -165,10 +165,12 @@ describe("public declaration surface (P1-9)", () => {
       await readFile(join(root, "packages", "plugins", "package.json"), "utf8"),
     ) as { exports: Record<string, unknown> };
     const plugins = Object.keys(manifest.exports).flatMap((key) => {
-      const name = /^\.\/([a-z0-9]+)$/.exec(key)?.[1];
+      const name = /^\.\/([a-z0-9]+(?:-[a-z0-9]+)*)$/.exec(key)?.[1];
       return name === undefined ? [] : [name];
     });
-    expect(plugins).toEqual(expect.arrayContaining(["transform3d", "fk3d", "ik3d"]));
+    expect(plugins).toEqual(
+      expect.arrayContaining(["transform3d", "fk3d", "ik3d", "rig", "pose-classify"]),
+    );
     await withEmitted(
       plugins.map((name) => `packages/plugins/src/${name}.ts`),
       async (out, emitted) => {

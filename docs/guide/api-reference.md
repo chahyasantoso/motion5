@@ -18,6 +18,8 @@ ADR-036 and ADR-048.
   production consumers may import them.
 - `@motion5/plugins/catalog` and `/loader` — public asynchronous composition-root helpers;
   production consumers may import them. Engine loading and live edits stay synchronous.
+- `@motion5/plugins/rig` and `/pose-classify` are public data plugins and readers;
+  `/labels` provides label readers and change listeners.
 - `@motion5/core/testing` — test support; production consumers may not import it, as enforced by
   the boundary scan.
 - `@motion5/core/plugin-api` — the plugin-authoring contract; plugin implementations may import this entrypoint and sibling implementation modules only.
@@ -261,6 +263,65 @@ project, then clock; a runtime arriving after stop is disposed without publishin
 current releases once and becomes the App's `failed` view (`TH-215` to `TH-224`). React demo stays synchronous so GSAP
 measures committed DOM in `useLayoutEffect`; pose gap filler's synchronous rig loaders also remain
 first-class.
+
+## @motion5/plugins/rig
+
+`rigPlugin` aggregates dict-valued `requires.bones` world frames and `requires.controls` positions.
+It claims no authored keys, solves nothing, declares no limits and provides no renderer serializer.
+Its `pose` and `controls` outputs are nested records. Always decode through `readRigValues(values)`,
+which returns `RigValues` with nameable `RigPose` and `RigControls` types. Absent dictionaries are
+empty records; present bones with absent frame fields use `readFrame3d`'s zero defaults. Keys are
+sorted, and controls retain only `x`, `y` and `z`.
+
+An unbound data track has no rig group and publishes no `pose` key. Empty groups, values and
+requirement dictionaries are schema refusals, not a spelling for an unbound rig. Downstream
+consumers bind `requires: { rig: "rig-track-id" }` in their own plugin group. Rig is the last
+zero-configuration entry in `builtinCatalog`.
+
+## @motion5/plugins/pose-classify
+
+`createPoseClassifyPlugin(options)` returns a pure definition requiring a rig and publishing
+`label` and `confidence`. `PoseClassifyOptions` names `templates`, positive finite `maxDistance`
+in degrees, optional `name` (default `pose-classify`) and `unknownLabel` (default `unknown`).
+Each `PoseTemplate` contains a distinct non-empty label and a non-empty bone record of finite
+`rotation`, `rotationX` and `rotationY` angles. A template label cannot equal the unknown label.
+Invalid configuration throws TypeError eagerly; template copies are deeply frozen.
+
+Distance is the mean per-bone geodesic rotation angle, not a per-axis Euler difference. Position is
+ignored. A missing bone scores Infinity, a present zero-default bone remains a candidate, ties keep
+the first template, and a distance at or below the maximum selects that template's label.
+Confidence is `max(0, 1 - distance / maxDistance)`, or zero for a non-finite distance.
+Use `readLabel` or `onLabelChange` to consume labels; listeners must not synchronously write.
+
+The factory is deliberately absent from `builtinCatalog`. An application approves a configured
+descriptor, and any template fetch happens before the definition is returned:
+
+```ts
+import { builtinCatalog } from "@motion5/plugins/catalog";
+import { createPluginLoader } from "@motion5/plugins/loader";
+import { createPoseClassifyPlugin } from "@motion5/plugins/pose-classify";
+
+const loader = createPluginLoader(
+  new Map([
+    ...builtinCatalog,
+    [
+      "pose-classify",
+      {
+        load: async () =>
+          createPoseClassifyPlugin({
+            templates: await fetchTemplates(),
+            maxDistance: 10,
+          }),
+      },
+    ],
+  ]),
+);
+```
+
+The application's `fetchTemplates` returns `readonly PoseTemplate[]`. A custom definition name
+must equal its catalog key. No descriptor dependency is needed: authored rig requirements are
+graph edges, and the authored rig group creates its own loader demand.
+See [ADR-138](../ADR-138-rig-aggregation-and-pose-classification.md).
 
 ## @motion5/three
 
