@@ -20,6 +20,7 @@ import type { SolverChainShape } from "../contract/solver-shape";
 import type { PluginCapabilities, PluginCapability } from "../ports/plugin-capabilities";
 import {
   admitPlugin,
+  claims,
   deepFreeze,
   isRecord,
   type AdmissionContext,
@@ -189,9 +190,6 @@ export interface PluginDefinition {
 }
 
 const RESERVED_TWEEN_VARS = new Set(["keyframes", "duration", "paused", "id", "observes"]);
-function claims(plugin: PluginDefinition, key: string): boolean {
-  return Boolean(plugin.keys?.includes(key) || plugin.claimsKey?.(key));
-}
 function sortedNames(plugins: readonly PluginDefinition[]): readonly string[] {
   return plugins.map(({ name }) => name).sort();
 }

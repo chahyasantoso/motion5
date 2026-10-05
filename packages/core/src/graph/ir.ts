@@ -582,19 +582,6 @@ export function resolveSolvers(
   // module, so reporting later moves no order.
   const deadRotationBinders = new Map<string, readonly string[]>();
   const restReadBy = new Set<string>();
-  const judgedSolvers = new Set(
-    nodes
-      .filter((node) =>
-        node.edges.some((edge) => {
-          const requirement = edgeRequirement(edge);
-          return (
-            requirement?.slot === "root" &&
-            capabilities.capabilityOf(requirement.plugin) !== undefined
-          );
-        }),
-      )
-      .map((node) => node.id),
-  );
   for (const node of nodes) {
     let rootCount = 0;
     // The plugins under which this node bound a `solver` slot, which is what scopes the read of its
@@ -656,14 +643,8 @@ export function resolveSolvers(
       (binder) =>
         rotationGroups.includes(binder) &&
         !weightGroups.includes(binder) &&
-        node.edges.some((edge) => {
-          const requirement = edgeRequirement(edge);
-          return (
-            requirement?.slot === "solver" &&
-            requirement.plugin === binder &&
-            judgedSolvers.has(edge.sourceId)
-          );
-        }),
+        // An undeclared solver is not judged here (ADR-136); the binder is the solver's plugin.
+        capabilities.capabilityOf(binder) !== undefined,
     );
     if (deadBinders.length > 0) deadRotationBinders.set(node.id, deadBinders);
     // The symmetric footgun, and it speaks only about a node that bound a solver somewhere.

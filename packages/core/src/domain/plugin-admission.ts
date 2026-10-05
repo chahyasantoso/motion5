@@ -68,6 +68,11 @@ export function deepFreeze<T>(value: T, seen = new WeakSet<object>()): T {
   return Object.freeze(value);
 }
 
+/** Whether `plugin` claims `key`, by listing it or by predicate: the one claim rule. */
+export function claims(plugin: PluginDefinition, key: string): boolean {
+  return Boolean(plugin.keys?.includes(key) || plugin.claimsKey?.(key));
+}
+
 /** Validates one own-property snapshot before any registry write. See ADR-134. */
 export function admitPlugin(plugin: PluginDefinition, context: AdmissionContext): AdmittedPlugin {
   if (typeof plugin !== "object" || plugin === null)
@@ -138,7 +143,7 @@ export function admitPlugin(plugin: PluginDefinition, context: AdmissionContext)
   const capability: PluginCapability = Object.freeze({
     chain,
     pole: Object.hasOwn(requirements ?? {}, POLE_SLOT),
-    joint: Boolean(keys.includes(JOINT_KEY) || source.claimsKey?.(JOINT_KEY)),
+    joint: claims(source, JOINT_KEY),
   });
   const definition = Object.freeze({
     ...source,
