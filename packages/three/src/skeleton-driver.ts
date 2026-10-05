@@ -129,7 +129,10 @@ export function createSkeletonDriver(
               continue;
             }
             aim.copy(captured.restAim);
-            quaternion.setFromUnitVectors(aim, to.normalize()).multiply(captured.restQuaternion);
+            to.normalize();
+            // Preserve q0 bit-for-bit for an unchanged direction, including inversion roundoff.
+            if (aim.distanceToSquared(to) <= 1e-24) quaternion.copy(captured.restQuaternion);
+            else quaternion.setFromUnitVectors(aim, to).multiply(captured.restQuaternion);
             bone.position.copy(captured.restPosition);
             bone.quaternion.copy(quaternion);
             outcomes.set(captured.key, APPLIED);

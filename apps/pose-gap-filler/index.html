@@ -137,7 +137,10 @@
               <label
                 >View pitch <input id="avatar-pitch" type="range" min="-60" max="60" value="0"
               /></label>
+              <label>Avatar <input id="avatar-file" type="file" accept=".glb,.gltf" /></label>
+              <button id="avatar-primitives" type="button">Use primitives</button>
             </div>
+            <p id="avatar-file-status" role="status">Primitive avatar selected.</p>
             <details class="readout">
               <summary>Body &amp; bend diagnostics</summary>
               <pre id="avatar-info"></pre>

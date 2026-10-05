@@ -23,6 +23,9 @@ import type { BodyRoot } from "../body/state";
 import type { SolvedLimb } from "../rig/rig";
 import { limbTracks, poseNodeId } from "../rig/tracks";
 import { createPresentationHistory, type PresentationFreshness } from "./presentation-history";
+import { createAvatarBodyController, setStale } from "./avatar-body";
+import { avatarFrameSource } from "./avatar-frame-source";
+import type { GltfParse } from "./gltf-avatar";
 
 export type OrientationEvidence =
   | { readonly kind: "observed"; readonly basis: Basis }
@@ -132,6 +135,7 @@ export function createAvatarScene(parent = new Group()) {
   make("head", true);
   const history = createPresentationHistory(objects);
   const staleMaterial = new MeshBasicMaterial({ color: 0x64748b, wireframe: true });
+  const bodyController = createAvatarBodyController(parent, objects, staleMaterial);
   const adapter = createObject3dPatchAdapter((id) => objects.get(id));
   const style = (id: string, provenance: AvatarProvenance) => {
     objects.get(id)!.userData.provenance = provenance;
@@ -156,8 +160,18 @@ export function createAvatarScene(parent = new Group()) {
     parent,
     /** Exposed for read-only inspection/tests, not nested skeletal retargeting. */
     objects: objects as ReadonlyMap<string, Group>,
+    get body() {
+      return bodyController.body;
+    },
+    loadAvatar(data: ArrayBuffer | Promise<ArrayBuffer>, parse?: GltfParse) {
+      return bodyController.load(data, parse);
+    },
+    usePrimitives() {
+      bodyController.usePrimitives();
+    },
     clear() {
       history.clear();
+      bodyController.clear();
       for (const object of objects.values()) adapter.clear(object);
       previousReader = undefined;
     },
@@ -174,17 +188,19 @@ export function createAvatarScene(parent = new Group()) {
       if (readPatch !== previousReader) {
         for (const object of objects.values()) adapter.clear(object);
         history.clear();
+        bodyController.clear();
         previousReader = readPatch;
       }
       const residuals = new Map<LimbId, LimbResidual>();
       if (step.filled.space.kind !== "world") {
         history.clear();
+        bodyController.clear();
         return residuals;
       }
       history.begin(step.filled.tMs);
       const finish = () => {
         history.finish((id) => {
-          meshes.get(id)!.material = staleMaterial;
+          setStale(objects.get(id)!, staleMaterial);
         });
         for (const limb of LIMBS) {
           const upper = objects.get(poseNodeId(limbTracks(limb.id).upper))!;
@@ -198,6 +214,7 @@ export function createAvatarScene(parent = new Group()) {
               freshness,
             });
         }
+        bodyController.update(step.filled.tMs, avatarFrameSource(step, residuals, readPatch));
         return residuals;
       };
       for (const limb of LIMBS) {
@@ -312,6 +329,7 @@ export function createAvatarScene(parent = new Group()) {
     dispose() {
       if (disposed) return;
       disposed = true;
+      bodyController.dispose();
       history.clear();
       for (const object of objects.values()) parent.remove(object);
       box.dispose();

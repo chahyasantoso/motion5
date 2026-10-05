@@ -145,7 +145,7 @@ describe("parent-space skeleton driver", () => {
       drives: { hips: { kind: "aim", from: "a", to: "b" } },
     });
     driver.apply((id) => (id === "a" ? {} : { x: aim.x, y: aim.y, z: aim.z }));
-    expect(rig.root.quaternion.angleTo(captured.restQuaternion)).toBeLessThan(1e-7);
+    expect(rig.root.quaternion.equals(captured.restQuaternion)).toBe(true);
     const perpendicular = new Vector3(aim.y, -aim.x, 0).normalize();
     driver.apply((id) =>
       id === "a" ? {} : { x: perpendicular.x, y: perpendicular.y, z: perpendicular.z },
