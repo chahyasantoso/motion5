@@ -4,10 +4,13 @@ export interface ImmutableRecord {
   readonly [key: string]: ImmutableValue;
 }
 
-export type ImmutableValue = string | number | boolean | ImmutableArray | ImmutableRecord;
+/** A renderer-neutral leaf: never `null`, never a non-finite number (ADR-137). */
+export type ImmutableLeaf = string | number | boolean;
+
+export type ImmutableValue = ImmutableLeaf | ImmutableArray | ImmutableRecord;
 
 /** The one owner of which leaves a renderer-neutral value may hold. */
-export function isImmutableLeaf(value: unknown): value is string | number | boolean {
+export function isImmutableLeaf(value: unknown): value is ImmutableLeaf {
   return (
     typeof value === "string" ||
     typeof value === "boolean" ||

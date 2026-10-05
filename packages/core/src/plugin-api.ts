@@ -14,7 +14,13 @@ export type {
   RequirementInputs,
   TrackConfigView,
 } from "./domain/plugins";
-export type { ImmutableArray, ImmutableRecord, ImmutableValue } from "./domain/values";
+export type {
+  ImmutableArray,
+  ImmutableLeaf,
+  ImmutableRecord,
+  ImmutableValue,
+} from "./domain/values";
+export { isImmutableLeaf } from "./domain/values";
 export type { OutputSerializer } from "./ports/render-metadata";
 export { unreachable } from "./lang/exhaustive";
 export { patchRender, type PatchRender } from "./contract/patch-render";

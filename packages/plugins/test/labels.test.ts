@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  createManualClock,
   Engine,
   PluginRegistry,
   type LivePatch,
@@ -8,46 +9,7 @@ import {
   type ProjectHandle,
 } from "@motion5/core";
 import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/testing";
-function manualClock() {
-  const listeners = new Set<() => void>();
-  return {
-    subscribe(listener: () => void) {
-      listeners.add(listener);
-      return () => listeners.delete(listener);
-    },
-    tick() {
-      for (const listener of [...listeners]) listener();
-    },
-  };
-}
-
-// Red-only seam: absence must fail an assertion, not module resolution.
-interface LabelSeam {
-  readLabel(
-    values: Readonly<Record<string, unknown>>,
-    key: string,
-  ): string | number | boolean | undefined;
-  onLabelChange(
-    project: Pick<ProjectHandle, "get" | "subscribeNode">,
-    nodeId: string,
-    key: string,
-    listener: (
-      next: string | number | boolean | undefined,
-      previous: string | number | boolean | undefined,
-    ) => void,
-  ): () => void;
-}
-const labels = (await import(new URL("../src/labels.ts", import.meta.url).href).catch(
-  () => ({}),
-)) as LabelSeam;
-const readLabel: LabelSeam["readLabel"] = (...args) => {
-  expect(typeof labels.readLabel).toBe("function");
-  return labels.readLabel(...args);
-};
-const onLabelChange: LabelSeam["onLabelChange"] = (...args) => {
-  expect(typeof labels.onLabelChange).toBe("function");
-  return labels.onLabelChange(...args);
-};
+import { onLabelChange, readLabel } from "../src/labels";
 
 function ready(value: unknown): LivePatch {
   return {
@@ -83,6 +45,28 @@ function source(initial?: LivePatch) {
       for (const listener of [...listeners]) listener(patch);
     },
   };
+}
+
+function tagProject() {
+  const registry = new PluginRegistry();
+  registry.register({ name: "tag", keys: ["mode"], compose: (values) => values });
+  const project = new Engine({
+    plugins: registry,
+    clock: createManualClock(),
+    interpolator: createFakeInterpolator(),
+    scheduler: createFakeScheduler(),
+  }).load({
+    schemaVersion: 5,
+    motions: [
+      {
+        id: "scene",
+        trigger: { type: "manual" },
+        tracks: [{ id: "tag", keyframes: { tag: { values: { mode: "idle" } } } }],
+      },
+    ],
+  });
+  project.mount("scene/tag");
+  return project;
 }
 
 describe("label edges over published state", () => {
@@ -176,28 +160,7 @@ describe("label edges over published state", () => {
   });
 
   it("N9 refuses synchronous structural writes from a listener", () => {
-    const registry = new PluginRegistry();
-    registry.register({
-      name: "tag",
-      keys: ["mode"],
-      compose: (values) => values,
-    });
-    const project = new Engine({
-      plugins: registry,
-      clock: manualClock(),
-      interpolator: createFakeInterpolator(),
-      scheduler: createFakeScheduler(),
-    }).load({
-      schemaVersion: 5,
-      motions: [
-        {
-          id: "scene",
-          trigger: { type: "manual" },
-          tracks: [{ id: "tag", keyframes: { tag: { values: { mode: "idle" } } } }],
-        },
-      ],
-    });
-    project.mount("scene/tag");
+    const project = tagProject();
     let refusal: unknown;
     const dispose = onLabelChange(project, "scene/tag", "mode", () => {
       try {
@@ -213,5 +176,37 @@ describe("label edges over published state", () => {
     expect(patch.values.mode).toBe("walk");
     dispose();
     project.dispose();
+  });
+
+  it("N6 a graph delete fires (undefined, previous) once and unsubscribes", () => {
+    const project = tagProject();
+    project.track("scene/tag").setValues({ mode: "walk" });
+    const events: unknown[] = [];
+    onLabelChange(project, "scene/tag", "mode", (next, previous) => events.push([next, previous]));
+    project.edit((transaction) => transaction.track("scene/tag").remove());
+    project.edit((transaction) => transaction.addTrack({ id: "tag" }, { motionId: "scene" }));
+    expect(events).toEqual([[undefined, "walk"]]);
+    project.dispose();
+  });
+
+  it("N6b unmount is silent", () => {
+    const project = tagProject();
+    const events: unknown[] = [];
+    const dispose = onLabelChange(project, "scene/tag", "mode", (next) => events.push(next));
+    project.unmount("scene/tag");
+    expect(events).toEqual([]);
+    dispose();
+    project.dispose();
+  });
+
+  it("N10 destruction with no delivered label fires nothing", () => {
+    const input = source({ nodeId: "~/tag", revision: 1, status: "blocked", diagnostics: [] });
+    const events: unknown[] = [];
+    onLabelChange(input.project, "~/tag", "mode", (next, previous) =>
+      events.push([next, previous]),
+    );
+    input.send({ nodeId: "~/tag", revision: 2, status: "destroyed" });
+    expect(events).toEqual([]);
+    expect(input.count()).toBe(0);
   });
 });

@@ -290,4 +290,4 @@ which cannot be enumerated). It never removes anything from the scene graph.
 
 ## Labels
 
-`@motion5/plugins/labels` exposes `readLabel` and `onLabelChange`. Labels are string, number, or boolean leaves. The listener skips its initial state, ignores blocked and error publications by retaining the last ready label, and sends one undefined edge when the node is destroyed. Listeners run during publication and must not synchronously write to the project. See [ADR-137](../ADR-137-no-null-in-renderer-neutral-values.md).
+`@motion5/plugins/labels` exposes `readLabel` and `onLabelChange`. Labels are `ImmutableLeaf` values (string, boolean, or finite number), read by the same `isImmutableLeaf` rule the freezer and publisher use. The listener skips its initial state, ignores blocked and error publications by retaining the last ready label, and sends one undefined edge when the node is destroyed. Listeners run during publication and must not synchronously write to the project. See [ADR-137](../ADR-137-no-null-in-renderer-neutral-values.md).

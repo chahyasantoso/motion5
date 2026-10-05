@@ -19,10 +19,10 @@ admission. It accepts strings, booleans, and finite numbers. `ImmutableValue` ex
 publisher uses the same predicate. Structural rules remain with their owners: plain records,
 arrays, cycles, and underscore-prefixed publisher keys are not folded into the leaf predicate.
 
-Labels use the same leaf rule and expose only `string | number | boolean`. `patchRender` is
-re-exported from `@motion5/core/plugin-api`, so plugin consumers reuse the core status policy rather
-than copying it. A label listener retains its prior value through blocked and error patches, emits a
-destroyed edge once, and refuses synchronous structural writes with `schema-commit-reentrant`.
+`ImmutableLeaf` names the leaf type. Labels are `ImmutableLeaf` and `readLabel` calls
+`isImmutableLeaf`; both, with `patchRender`, are re-exported from `@motion5/core/plugin-api`, so
+plugin consumers reuse the core leaf rule and status policy rather than copying them. A label listener retains its prior value through blocked and error patches, emits a
+destroyed edge once when a label was delivered, and refuses synchronous structural writes with `schema-commit-reentrant`.
 
 ## Rejected
 
