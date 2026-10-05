@@ -46,6 +46,10 @@
     "./loader": {
       "types": "./dist/loader.d.ts",
       "default": "./dist/loader.js"
+    },
+    "./labels": {
+      "types": "./dist/labels.d.ts",
+      "default": "./dist/labels.js"
     }
   }
 }

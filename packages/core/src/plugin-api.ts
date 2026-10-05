@@ -17,6 +17,7 @@ export type {
 export type { ImmutableArray, ImmutableRecord, ImmutableValue } from "./domain/values";
 export type { OutputSerializer } from "./ports/render-metadata";
 export { unreachable } from "./lang/exhaustive";
+export { patchRender, type PatchRender } from "./contract/patch-render";
 export { POLE_SLOT } from "./contract/solver-shape";
 export type { SolverChainShape } from "./contract/solver-shape";
 export type { PluginCapability, PluginCapabilities } from "./ports/plugin-capabilities";
