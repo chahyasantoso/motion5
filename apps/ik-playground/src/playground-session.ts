@@ -1,5 +1,6 @@
 import { afterCleanup, disposeInOrder } from "./cleanup";
 import type { PlaygroundRuntime } from "./playground-runtime";
+import { unreachable } from "./unreachable";
 
 /**
  * Everything the App renders, as one value: a rig without goals, an error beside a live rig or a
@@ -106,10 +107,8 @@ export function startPlaygroundSession(options: PlaygroundSessionOptions): () =>
         return;
       case "ended":
         return;
-      default: {
-        const unhandled: never = owned;
-        throw new Error(`Unhandled playground lifecycle: ${String(unhandled)}`);
-      }
+      default:
+        return unreachable(owned, "playground lifecycle");
     }
   };
 }

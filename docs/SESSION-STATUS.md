@@ -6,19 +6,19 @@ states a phase; `packages/core/test/unit/scripts/session-status-shape.test.ts` e
 byte ceiling.
 
 - **Captured:** 2026-10-05, Asia/Jakarta.
-- **Read against:** [PR #551][pr551] at `645fbd53cbcf12b1d6c61a3bb26dc35028192673`;
-  GitHub shows [PR #549][pr549], [PR #550][pr550] and [PR #551][pr551] open.
+- **Read against:** `main` at `b15a042c10505f1c0d00917e4116a943c863e9a1`, the merge of
+  [PR #552][pr552].
 
 ## Now
 
-- **[PR #548][pr548] is merged into `main`: all 33 plugin implementations live in
-  `@motion5/plugins`, and core exposes their declared plugin-authoring contract.**
+- **[PR #552][pr552] is merged: the IK playground ensures its plugins through the approved loader
+  before load and before every synchronous edit, and one session union owns its async lifecycle.**
 
 ## Next in line
 
-- **[#534][issue534] lazy playground composition:** local `feat/534-lazy-composition-root` is
-  prepared on the approved loader in [PR #551][pr551]. Publish the handover and obtain exact-head
-  Node 24 CI; the open prerequisites are not claimed merged.
+- **[#534][issue534] review alignment:** `review/534-phase6-quality` carries the playground's one
+  exhaustive-default owner and these docs; obtain exact-head Node 24 CI, then start solver
+  capabilities on the amended plan.
 
 ## Open, and not scheduled
 
@@ -33,7 +33,4 @@ byte ceiling.
 - Earlier long-form history remains in Git, not in this status file.
 
 [issue534]: https://github.com/chahyasantoso/motion5/issues/534
-[pr548]: https://github.com/chahyasantoso/motion5/pull/548
-[pr549]: https://github.com/chahyasantoso/motion5/pull/549
-[pr550]: https://github.com/chahyasantoso/motion5/pull/550
-[pr551]: https://github.com/chahyasantoso/motion5/pull/551
+[pr552]: https://github.com/chahyasantoso/motion5/pull/552
