@@ -36,14 +36,18 @@ const project: ProjectDefinition = {
 // `self` is the node's own identity and `parentWorld` is the upstream's. They cannot collide any
 // more, because the slot is the scope rather than a renamed key, but the case still asserts that
 // the observer's own value is the one it publishes.
-const compose = (node: { id: string }) => (requirementInputs: RequirementInputs) => ({
-  values: Object.freeze({
-    parentWorld: slotOf(requirementInputs, "rig", "parent").self ?? null,
-    self: node.id,
-  }),
-  sourceProgress: 0,
-  sourceRevisions: {},
-});
+// An unbound parent omits `parentWorld`: renderer-neutral values hold no `null` (ADR-137).
+const compose = (node: { id: string }) => (requirementInputs: RequirementInputs) => {
+  const parentWorld = slotOf(requirementInputs, "rig", "parent").self;
+  return {
+    values: Object.freeze({
+      ...(parentWorld === undefined ? {} : { parentWorld }),
+      self: node.id,
+    }),
+    sourceProgress: 0,
+    sourceRevisions: {},
+  };
+};
 
 describe("P5-01 cross-motion references", () => {
   it("keeps an observer pending while its cross-motion source is unmounted, then resolves once it mounts", () => {

@@ -215,7 +215,7 @@ describe("fk3d rest orientation and solved weight", () => {
       { base: root, solver: {} },
       { base: root, solver: { rotations3d: { other: solved } } },
       { base: root, solver: { rotations3d: { upper: 45 } } },
-      { base: root, solver: { rotations3d: { upper: {} } } },
+      { base: root, solver: { rotations3d: { upper: true } } },
       { base: root, solver: { rotations3d: [] } },
     ];
     for (const inputs of noSolves)
