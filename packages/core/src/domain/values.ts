@@ -4,7 +4,19 @@ export interface ImmutableRecord {
   readonly [key: string]: ImmutableValue;
 }
 
-export type ImmutableValue = string | number | boolean | null | ImmutableArray | ImmutableRecord;
+/** A renderer-neutral leaf: never `null`, never a non-finite number (ADR-137). */
+export type ImmutableLeaf = string | number | boolean;
+
+export type ImmutableValue = ImmutableLeaf | ImmutableArray | ImmutableRecord;
+
+/** The one owner of which leaves a renderer-neutral value may hold. */
+export function isImmutableLeaf(value: unknown): value is ImmutableLeaf {
+  return (
+    typeof value === "string" ||
+    typeof value === "boolean" ||
+    (typeof value === "number" && Number.isFinite(value))
+  );
+}
 
 function isPlainRecord(value: unknown): value is Record<string, unknown> {
   if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
@@ -26,16 +38,10 @@ export function freezeValue<T extends ImmutableValue>(value: T): Readonly<T> {
 
   function visit(current: unknown): void {
     if (current === null || typeof current !== "object") {
-      if (
-        typeof current !== "string" &&
-        typeof current !== "number" &&
-        typeof current !== "boolean"
-      ) {
-        throw invalidValue(current);
-      }
       if (typeof current === "number" && !Number.isFinite(current)) {
         throw new TypeError("Immutable values require finite numbers.");
       }
+      if (!isImmutableLeaf(current)) throw invalidValue(current);
       return;
     }
 

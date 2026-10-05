@@ -287,3 +287,7 @@ which cannot be enumerated). It never removes anything from the scene graph.
 
 1. Neither package is published; both remain private at `0.0.0`.
 2. [Issue #176](https://github.com/chahyasantoso/motion5/issues/176) tracks transactional `replaceTrack` ordering after a failed recompile.
+
+## Labels
+
+`@motion5/plugins/labels` exposes `readLabel` and `onLabelChange`. Labels are `ImmutableLeaf` values (string, boolean, or finite number), read by the same `isImmutableLeaf` rule the freezer and publisher use. The listener skips its initial state, ignores blocked and error publications by retaining the last ready label, and sends one undefined edge when the node is destroyed. Listeners run during publication and must not synchronously write to the project. See [ADR-137](../ADR-137-no-null-in-renderer-neutral-values.md).

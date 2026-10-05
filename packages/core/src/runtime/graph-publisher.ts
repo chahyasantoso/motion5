@@ -3,6 +3,7 @@ import type { Diagnostic } from "../contract/v5";
 import { compareEdges, edgeRole, type GraphEdge, type GraphIR, type GraphNode } from "../graph/ir";
 import { firstPendingEdge } from "../graph/references";
 import { CompositionOutputError } from "../domain/track";
+import { isImmutableLeaf } from "../domain/values";
 import type { RequirementInputs } from "../domain/plugins";
 import { PatchRegistry, REENTRANT_BATCH_MESSAGE, type PatchBatch } from "./patch-registry";
 import {
@@ -153,10 +154,8 @@ function solvingPluginOf(node: PublisherNode): string | undefined {
   return rootEdge?.requirement?.plugin;
 }
 function isRendererNeutral(value: unknown, seen = new WeakSet<object>()): boolean {
-  if (value === null) return true;
-  if (typeof value === "string" || typeof value === "boolean") return true;
-  if (typeof value === "number") return Number.isFinite(value);
-  if (typeof value !== "object" || seen.has(value)) return false;
+  if (typeof value !== "object" || value === null) return isImmutableLeaf(value);
+  if (seen.has(value)) return false;
   seen.add(value);
   if (Array.isArray(value)) return value.every((item) => isRendererNeutral(item, seen));
   if (!isRecord(value)) return false;
