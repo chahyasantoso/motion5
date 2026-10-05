@@ -1,7 +1,8 @@
 import { captureSkeleton, type BoneDrive, type SkeletonBinding } from "@motion5/three/skeleton";
-import { unreachable } from "@motion5/core/plugin-api";
 import { LoadingManager, SkinnedMesh, Texture, type Object3D, type Material } from "three";
+import { unreachable } from "../filler/unreachable";
 import { limbTracks, poseNodeId } from "../rig/tracks";
+import { AVATAR_SOURCES } from "./avatar-frame-source";
 import { resolveHumanoid, type HumanoidKey } from "./humanoid-map";
 
 export type GltfParse = (data: ArrayBuffer) => Promise<{ readonly scene: Object3D }>;
@@ -34,7 +35,7 @@ export function describeGltfAvatarRefusal(refusal: GltfAvatarRefusal): string {
     case "invalid-skeleton":
       return `Invalid avatar skeleton: ${refusal.message}`;
     default:
-      return unreachable(refusal);
+      return unreachable(refusal, "avatar refusal");
   }
 }
 
@@ -67,7 +68,7 @@ function humanoidDrives(
 ): Readonly<Record<string, BoneDrive>> {
   const drives: Record<string, BoneDrive> = {};
   for (const key of Object.values(boneKeys)) drives[key] = { kind: "rest" };
-  drives.hips = { kind: "frame", source: "app/torso" };
+  drives.hips = { kind: "frame", source: AVATAR_SOURCES.torso };
   for (const [limb, upper, lower] of [
     ["left-arm", "left-upper-arm", "left-lower-arm"],
     ["right-arm", "right-upper-arm", "right-lower-arm"],
@@ -79,7 +80,8 @@ function humanoidDrives(
     drives[lower] = { kind: "aim", from: poseNodeId(ids.upper), to: poseNodeId(ids.lower) };
   }
   for (const key of ["spine", "chest"])
-    if (key in drives) drives[key] = { kind: "aim", from: "app/hips-mid", to: "app/shoulder-mid" };
+    if (key in drives)
+      drives[key] = { kind: "aim", from: AVATAR_SOURCES.hipsMid, to: AVATAR_SOURCES.shoulderMid };
   return Object.freeze(drives);
 }
 

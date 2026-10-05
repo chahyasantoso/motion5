@@ -15,7 +15,8 @@ FK pivot tracks and drives presentation bones through one caller-provided source
 Capture snapshots and freezes cloned rest transforms. Scale admission has one owner.
 Unknown keys throw TypeError. Unmapped bones get tracks and are restored by reset.
 
-`frameToMatrix` owns the ZXY degree convention for both flat writes and the driver.
+`frameToMatrix` and its inverse `frameFromMatrix` own the ZXY degree convention for flat writes,
+generated tracks, the driver and application-built frames; flat writes never decompose a matrix.
 Frames become parent-local through inverse(parent world) times source world times source frame.
 Aim and restAim share parent space: restAim is rest quaternion applied to normalized child rest
 position. Swing pre-multiplies rest rotation, preserving rest twist rather than inventing roll.

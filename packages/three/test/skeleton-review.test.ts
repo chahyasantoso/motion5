@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { Matrix4 } from "three";
-import { frameToMatrix } from "../src/index";
+import { Matrix4, Object3D } from "three";
+import { frameFromMatrix, frameToMatrix, writeFrame3d } from "../src/index";
 import { captureSkeleton, createSkeletonDriver } from "../src/skeleton";
 import { syntheticSkeleton } from "./support/synthetic-skeleton";
 
@@ -64,5 +64,19 @@ describe("skeleton review regressions", () => {
     const result = driver.apply((id) => (id === "a" ? {} : { x: 1e300, y: 1e300, z: 0 }));
     expect(result.bones.get("hips")?.kind).toBe("applied");
     expect(rig.root.quaternion.toArray().every(Number.isFinite)).toBe(true);
+  });
+
+  it("D13 frameFromMatrix inverts frameToMatrix through the one ZXY owner", () => {
+    const values = { x: 1, y: -2, z: 3, rotation: 30, rotationX: -40, rotationY: 50 };
+    const back = frameFromMatrix(frameToMatrix(values, new Matrix4()));
+    for (const [key, value] of Object.entries(values))
+      expect(Math.abs(back[key]! - value)).toBeLessThan(1e-9);
+  });
+
+  it("D14 writeFrame3d writes authored angles without matrix decomposition", () => {
+    const object = new Object3D();
+    writeFrame3d(object, { rotation: 10, rotationX: 200, rotationY: -20 });
+    expect(object.rotation.x).toBe((200 * Math.PI) / 180);
+    expect(object.rotation.order).toBe("ZXY");
   });
 });

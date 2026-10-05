@@ -97,6 +97,10 @@ export function createSkeletonDriver(
   const to = new Vector3();
   const aim = new Vector3();
 
+  // Only frame and aim drives read source space; rest drives never pay for the inversion.
+  const toParent = (bone: Object3D, target: Matrix4): Matrix4 =>
+    target.copy(bone.parent!.matrixWorld).invert().multiply(sourceSpace.matrixWorld);
+
   return {
     apply(read) {
       assertCapturedHierarchy(binding);
@@ -108,7 +112,6 @@ export function createSkeletonDriver(
         const drive = drives.get(captured.key);
         if (drive === undefined) continue;
         const bone = captured.bone;
-        parentFromSource.copy(bone.parent!.matrixWorld).invert().multiply(sourceSpace.matrixWorld);
         switch (drive.kind) {
           case "frame": {
             const values = read(drive.source);
@@ -116,6 +119,7 @@ export function createSkeletonDriver(
               outcomes.set(captured.key, MISSING);
               continue;
             }
+            toParent(bone, parentFromSource);
             matrix.multiplyMatrices(parentFromSource, frameToMatrix(values, matrix));
             matrix.decompose(position, quaternion, scale);
             if (
@@ -135,6 +139,7 @@ export function createSkeletonDriver(
               outcomes.set(captured.key, MISSING);
               continue;
             }
+            toParent(bone, parentFromSource);
             const p = readFrame3d(a),
               q = readFrame3d(b);
             from.set(p.x, p.y, p.z).applyMatrix4(parentFromSource);

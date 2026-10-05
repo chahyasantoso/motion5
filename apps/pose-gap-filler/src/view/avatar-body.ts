@@ -1,4 +1,3 @@
-import { unreachable } from "@motion5/core/plugin-api";
 import {
   createSkeletonDriver,
   type FrameSource,
@@ -9,9 +8,12 @@ import {
   loadGltfAvatar,
   parseGltf,
   type GltfAvatar,
+  type GltfAvatarLoad,
   type GltfAvatarRefusal,
   type GltfParse,
 } from "./gltf-avatar";
+import { unreachable } from "../filler/unreachable";
+import { AVATAR_SOURCES } from "./avatar-frame-source";
 import { createPresentationHistory } from "./presentation-history";
 
 export type AvatarBody =
@@ -54,7 +56,7 @@ export function createAvatarBodyController(
         body.avatar.dispose();
         return;
       default:
-        return unreachable(body);
+        return unreachable(body, "avatar body");
     }
   };
   return {
@@ -67,11 +69,11 @@ export function createAvatarBodyController(
     ): Promise<AvatarBodyLoad> {
       if (disposed) return { kind: "discarded" };
       const request = ++generation;
-      let result;
+      let result: GltfAvatarLoad;
       try {
         result = await loadGltfAvatar(await data, parse);
       } catch (cause) {
-        result = { kind: "refused" as const, refusal: { kind: "load-failed" as const, cause } };
+        result = { kind: "refused", refusal: { kind: "load-failed", cause } };
       }
       if (disposed || request !== generation) {
         switch (result.kind) {
@@ -81,7 +83,7 @@ export function createAvatarBodyController(
           case "refused":
             break;
           default:
-            return unreachable(result);
+            return unreachable(result, "avatar load");
         }
         return { kind: "discarded" };
       }
@@ -119,7 +121,7 @@ export function createAvatarBodyController(
           return { kind: "installed" };
         }
         default:
-          return unreachable(result);
+          return unreachable(result, "avatar load");
       }
     },
     usePrimitives() {
@@ -139,7 +141,7 @@ export function createAvatarBodyController(
           const current = body;
           current.history.begin(tMs);
           const outcomes = current.driver.apply(read).bones;
-          const hasTorso = read("app/torso") !== undefined;
+          const hasTorso = read(AVATAR_SOURCES.torso) !== undefined;
           for (const [key, outcome] of outcomes) {
             switch (outcome.kind) {
               case "applied":
@@ -151,7 +153,7 @@ export function createAvatarBodyController(
               case "held":
                 break;
               default:
-                unreachable(outcome);
+                unreachable(outcome, "bone outcome");
             }
           }
           let stale = false;
@@ -170,7 +172,7 @@ export function createAvatarBodyController(
           return;
         }
         default:
-          return unreachable(body);
+          return unreachable(body, "avatar body");
       }
     },
     clear() {
@@ -183,7 +185,7 @@ export function createAvatarBodyController(
           body.avatar.scene.visible = false;
           return;
         default:
-          return unreachable(body);
+          return unreachable(body, "avatar body");
       }
     },
     dispose() {

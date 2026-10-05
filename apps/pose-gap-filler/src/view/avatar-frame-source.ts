@@ -1,7 +1,7 @@
 import type { Patch } from "@motion5/core";
 import type { FrameSource } from "@motion5/three/skeleton";
-import { EULER_ORDER_3D } from "@motion5/three";
-import { Euler, Matrix4, Vector3 } from "three";
+import { frameFromMatrix } from "@motion5/three";
+import { Matrix4, Vector3 } from "three";
 import type { Basis } from "../filler/direction";
 import { presentedPosition } from "../filler/frame";
 import { LIMBS, type LimbId } from "../filler/landmarks";
@@ -10,20 +10,18 @@ import type { Vec } from "../filler/vec";
 import { limbTracks, poseNodeId } from "../rig/tracks";
 import type { LimbResidual } from "./avatar";
 
-/** The sole BodyState basis to published-frame convention conversion. */
+/** Presentation-only sources the app adds beside published pose nodes. */
+export const AVATAR_SOURCES = Object.freeze({
+  torso: "app/torso",
+  hipsMid: "app/hips-mid",
+  shoulderMid: "app/shoulder-mid",
+} as const);
+
+/** BodyState basis to published frame values, through the adapter's one convention owner. */
 export function basisToFrame3d(position: Vec, basis: Basis): Readonly<Record<string, number>> {
   const vector = (value: Vec) => new Vector3().fromArray(value);
   const matrix = new Matrix4().makeBasis(vector(basis.x), vector(basis.y), vector(basis.z));
-  const euler = new Euler().setFromRotationMatrix(matrix, EULER_ORDER_3D);
-  const degrees = 180 / Math.PI;
-  return {
-    x: position[0]!,
-    y: position[1]!,
-    z: position[2]!,
-    rotation: euler.z * degrees,
-    rotationX: euler.x * degrees,
-    rotationY: euler.y * degrees,
-  };
+  return frameFromMatrix(matrix.setPosition(position[0]!, position[1]!, position[2]!));
 }
 
 /** Only this accepted world solve can supply points; old ready patches are not current evidence. */
@@ -53,9 +51,13 @@ export function avatarFrameSource(
       const midpoint = (a: Vec, b: Vec) => a.map((value, index) => (value + b[index]!) / 2);
       const hips = midpoint(lh, rh),
         shoulders = midpoint(ls, rs);
-      sources.set("app/torso", basisToFrame3d(hips, body.orientation.basis));
-      sources.set("app/hips-mid", { x: hips[0], y: hips[1], z: hips[2] });
-      sources.set("app/shoulder-mid", { x: shoulders[0], y: shoulders[1], z: shoulders[2] });
+      sources.set(AVATAR_SOURCES.torso, basisToFrame3d(hips, body.orientation.basis));
+      sources.set(AVATAR_SOURCES.hipsMid, { x: hips[0], y: hips[1], z: hips[2] });
+      sources.set(AVATAR_SOURCES.shoulderMid, {
+        x: shoulders[0],
+        y: shoulders[1],
+        z: shoulders[2],
+      });
     }
   }
   return (id) => sources.get(id);

@@ -1,11 +1,13 @@
 import { validateTrackDefinition, type TrackDefinition } from "@motion5/core";
-import { Euler } from "three";
-import { EULER_ORDER_3D } from "./index";
+import { Matrix4, Vector3 } from "three";
+import { frameFromMatrix } from "./index";
 import {
   assertCapturedHierarchy,
   assertSkeletonScale,
   type SkeletonBinding,
 } from "./skeleton-capture";
+
+const UNIT = Object.freeze(new Vector3(1, 1, 1));
 
 export interface SkeletonTracksOptions {
   readonly idPrefix: string;
@@ -30,22 +32,14 @@ export function skeletonTracks(
     { id: rootId, keyframes: { transform3d: { values: { x: 0, y: 0, z: 0 } } } },
   ];
   const bones: Record<string, string> = {};
+  const rest = new Matrix4();
   for (const bone of binding.bones) {
-    const euler = new Euler().setFromQuaternion(bone.restQuaternion, EULER_ORDER_3D);
-    const degrees = 180 / Math.PI;
+    const local = frameFromMatrix(rest.compose(bone.restPosition, bone.restQuaternion, UNIT));
     tracks.push({
       id: boneId(bone.index),
       keyframes: {
         fk3d: {
-          values: {
-            length: 0,
-            x: bone.restPosition.x,
-            y: bone.restPosition.y,
-            z: bone.restPosition.z,
-            rotation: euler.z * degrees,
-            rotationX: euler.x * degrees,
-            rotationY: euler.y * degrees,
-          },
+          values: { length: 0, ...local },
           requires: { base: bone.parent === undefined ? rootId : boneId(bone.parent) },
         },
       },

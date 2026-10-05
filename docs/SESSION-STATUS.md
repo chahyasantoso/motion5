@@ -15,8 +15,9 @@ byte ceiling.
 
 ## Next in line
 
-- **#534 skeleton and avatar driving:** Capture, FK tracks and the pure parent-space driver are
-  prepared on `feat/534-skeleton-avatar`; application loading and required CI remain.
+- **#534 skeleton and avatar driving:** Capture, FK tracks, the parent-space driver and GLB avatar
+  loading are prepared on `feat/534-skeleton-avatar` (PR #557, reviewed); the driver measured
+  0.0169 ms per `apply` on the synthetic humanoid (browser smoke). Required Node 24 CI remains.
 
 ## Open, and not scheduled
 
