@@ -5,9 +5,9 @@ are the complete shape. **Now** and **Next in line** carry exactly one bullet ea
 states a phase; `packages/core/test/unit/scripts/session-status-shape.test.ts` enforces the shape and
 byte ceiling.
 
-- **Captured:** 2026-10-04, Asia/Jakarta.
-- **Read against:** supplied snapshot, phase 3 and phase 4 handovers; GitHub shows [PR #549][pr549]
-  and [PR #550][pr550] open, with no merge claimed.
+- **Captured:** 2026-10-05, Asia/Jakarta.
+- **Read against:** supplied snapshot, phase 3, phase 4 and reviewed loader handovers; GitHub shows
+  [PR #549][pr549] and [PR #550][pr550] open, with no merge claimed.
 
 ## Now
 
@@ -16,8 +16,8 @@ byte ceiling.
 
 ## Next in line
 
-- **[#534][issue534] lazy plugin loading:** local `feat/534-plugin-loader` adds the approved catalog,
-  typed loader and atomic ensure path on the phase 4 checkpoint. Publish only after PRs [#549][pr549]
+- **[#534][issue534] lazy plugin loading:** local `feat/534-plugin-loader` adds the reviewed approved
+  catalog, typed loader and atomic ensure path on the phase 4 checkpoint. Publish only after PRs [#549][pr549]
   and [#550][pr550] land, then obtain exact-head Node 24 CI.
 
 ## Open, and not scheduled

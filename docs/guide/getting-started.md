@@ -82,7 +82,8 @@ registering every built-in plugin up front. The loader validates the demand, res
 catalog dependencies, and registers the complete missing set atomically before `Engine.load`:
 
 ```ts
-import { Engine, PluginRegistry, createManualClock } from "@motion5/core";
+// clock, interpolator and scheduler as in the example above.
+import { Engine, PluginRegistry } from "@motion5/core";
 import { createPluginLoader, ensuredOrThrow } from "@motion5/plugins/loader";
 import { builtinCatalog } from "@motion5/plugins/catalog";
 
@@ -97,6 +98,9 @@ const handle = engine.load(project);
 
 The catalog is an allowlist, not a string-to-import bridge. App-owned factories can be added by
 copying the map and supplying an explicit descriptor; no plugin module path comes from project data.
+A group whose plugin the registry already holds is satisfied even when the catalog does not list it.
+A refusal is returned as a typed failure; `ensuredOrThrow` turns it into an `Error` that keeps the
+import or registry error as its `cause`.
 
 ## Node ids are qualified for you
 

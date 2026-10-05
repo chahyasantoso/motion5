@@ -538,16 +538,18 @@ function checkPluginSource(source, file, specifiers, violations) {
   if (!allowed) violations.push(`${file}: import outside plugin package contract`);
   if (bannedSymbol(source)) violations.push(`${file}: banned compatibility symbol`);
 }
-/** The built-in catalog may type-import its own interface, but definitions stay native-lazy. */
-function catalogHasStaticSiblingImport(source) {
-  const code = withoutComments(source);
-  const matches = [
-    ...code.matchAll(
-      /^\s*(?:import|export)\s+(?:type\s+)?[\s\S]*?\s+from\s*["'](\.\/[^"']+)["']/gm,
-    ),
-    ...code.matchAll(/^\s*import\s*["'](\.\/[^"']+)["']/gm),
-  ];
-  return matches.some((match) => match[1] !== "./loader");
+/**
+ * ADR-135: the built-in catalog reaches definitions only through native `import("./x")`. Its one
+ * static edge is the type-only `import type { ... } from "./loader"`, which emits nothing; a value
+ * import of the loader, a re-export, or a side-effect import of any relative module is eager.
+ * Reads the same comment- and string-masked code as `importSpecifiers`.
+ */
+function catalogHasStaticRelativeImport(source) {
+  const code = retainModuleStrings(withoutComments(source)).replace(
+    /\bimport\s+type\s*\{[^}]*\}\s*from\s*["']\.\/loader["']/g,
+    "",
+  );
+  return /(?:\bfrom\s*|\bimport\s*)["']\.\.?\//.test(code);
 }
 export async function scan(scanRoot = root) {
   const violations = [];
@@ -564,7 +566,7 @@ export async function scan(scanRoot = root) {
       const specifiers = [...importSpecifiers(source)];
       if (workspace === "packages/plugins") {
         checkPluginSource(source, file, specifiers, violations);
-        if (file === "packages/plugins/src/catalog.ts" && catalogHasStaticSiblingImport(source))
+        if (file === "packages/plugins/src/catalog.ts" && catalogHasStaticRelativeImport(source))
           violations.push(`${file}: plugin definitions must be reached through lazy imports`);
       }
       if (importsCoreInternals(source, specifiers))
