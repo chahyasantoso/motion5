@@ -6,17 +6,18 @@ states a phase; `packages/core/test/unit/scripts/session-status-shape.test.ts` e
 byte ceiling.
 
 - **Captured:** 2026-10-05, Asia/Jakarta.
-- **Read against:** supplied `main` snapshot `e70f1c90c313bf05d1401228bbd41d257640d2d1`.
+- **Read against:** verified remote `main` `60c6afaee74b4f01e6539035898d35714e2b0533`.
 
 ## Now
 
-- **The supplied main snapshot contains labels, the shared non-null leaf policy, and
-  registry-owned solver capabilities.** No fresh remote CI or merge verification is claimed here.
+- **Rig aggregation and geodesic pose classification are merged in PR #556.** The supplied snapshot
+  matches every root file blob and directory tree on verified remote main.
 
 ## Next in line
 
-- **#534 rig and pose classification:** Prepared on `feat/534-rig`, with revision 2 geodesic
-  classification and bound-member own-key delivery; the cumulative handover awaits required CI.
+- **#534 skeleton and avatar driving:** Capture, FK tracks, the parent-space driver and GLB avatar
+  loading are prepared on `feat/534-skeleton-avatar` (PR #557, reviewed); the driver measured
+  0.0169 ms per `apply` on the synthetic humanoid (browser smoke). Required Node 24 CI remains.
 
 ## Open, and not scheduled
 

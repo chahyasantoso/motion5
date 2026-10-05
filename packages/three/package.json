@@ -19,6 +19,10 @@
     ".": {
       "types": "./src/index.ts",
       "default": "./src/index.ts"
+    },
+    "./skeleton": {
+      "types": "./src/skeleton.ts",
+      "default": "./src/skeleton.ts"
     }
   }
 }

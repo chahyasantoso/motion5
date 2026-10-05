@@ -1,4 +1,4 @@
-import { PerspectiveCamera, Scene, WebGLRenderer } from "three";
+import { HemisphereLight, PerspectiveCamera, Scene, WebGLRenderer } from "three";
 import { BODY_ROOTS } from "../body/state";
 import type { RawPose } from "../filler/adapter";
 import type { BoneLengths } from "../filler/bone-length";
@@ -9,6 +9,14 @@ import type { RigSolver } from "../rig/solver";
 import type { SolvedLimb } from "../rig/rig";
 import { createAvatarScene } from "./avatar";
 import { createAvatarFraming } from "./avatar-framing";
+import { describeGltfAvatarRefusal, type GltfParse } from "./gltf-avatar";
+import { unreachable } from "../filler/unreachable";
+
+export interface AvatarFileControls {
+  readonly file: HTMLInputElement;
+  readonly reset: HTMLElement;
+  readonly status: HTMLElement;
+}
 
 /** The WebGL ownership port is injectable for lifecycle tests, never a second pose engine. */
 export interface AvatarRenderer {
@@ -27,10 +35,12 @@ export function mountAvatarViewport(
   pitch: HTMLInputElement,
   createRenderer: (canvas: HTMLCanvasElement) => AvatarRenderer = (target) =>
     new WebGLRenderer({ canvas: target, antialias: false, alpha: true }),
+  fileControls?: AvatarFileControls,
 ) {
   const avatar = createAvatarScene();
   const scene = new Scene();
   scene.add(avatar.parent);
+  scene.add(new HemisphereLight(0xffffff, 0x64748b, 3));
   const camera = new PerspectiveCamera(38, 4 / 3, 0.01, 100);
   const frameAvatar = createAvatarFraming();
   let renderer: AvatarRenderer | undefined;
@@ -82,8 +92,45 @@ export function mountAvatarViewport(
       readout.textContent = "No current avatar pose; waiting for an accepted world frame.";
     draw();
   };
+  const loadAvatar = async (data: ArrayBuffer | Promise<ArrayBuffer>, parse?: GltfParse) => {
+    const outcome = await avatar.loadAvatar(data, parse);
+    if (disposed) return outcome;
+    switch (outcome.kind) {
+      case "installed":
+        if (fileControls !== undefined)
+          fileControls.status.textContent = "Avatar loaded; waiting for a current world solve.";
+        draw();
+        break;
+      case "refused":
+        if (fileControls !== undefined)
+          fileControls.status.textContent = describeGltfAvatarRefusal(outcome.refusal);
+        break;
+      case "discarded":
+        break;
+      default:
+        unreachable(outcome, "avatar load");
+    }
+    return outcome;
+  };
+  const usePrimitives = () => {
+    if (disposed) return;
+    avatar.usePrimitives();
+    if (fileControls !== undefined) {
+      fileControls.file.value = "";
+      fileControls.status.textContent = "Primitive avatar selected.";
+    }
+    draw();
+  };
+  const fileChanged = () => {
+    const file = fileControls?.file.files?.[0];
+    if (file !== undefined) void loadAvatar(file.arrayBuffer());
+  };
+  fileControls?.file.addEventListener("change", fileChanged);
+  fileControls?.reset.addEventListener("click", usePrimitives);
   return {
     clear,
+    loadAvatar,
+    usePrimitives,
     update(
       step: PipelineStep,
       solved: ReadonlyMap<LimbId, SolvedLimb>,
@@ -156,6 +203,8 @@ export function mountAvatarViewport(
       pitch.removeEventListener("input", draw);
       canvas.removeEventListener("webglcontextlost", lost);
       canvas.removeEventListener("webglcontextrestored", restored);
+      fileControls?.file.removeEventListener("change", fileChanged);
+      fileControls?.reset.removeEventListener("click", usePrimitives);
       avatar.dispose();
       renderer?.dispose();
     },

@@ -1,4 +1,4 @@
-import { Box3, Mesh, Sphere, type Object3D, type PerspectiveCamera } from "three";
+import { Box3, Mesh, SkinnedMesh, Sphere, type Object3D, type PerspectiveCamera } from "three";
 
 /**
  * Frame only currently visible presentation geometry, never synthetic truth or hidden stale meshes.
@@ -13,6 +13,14 @@ export function createAvatarFraming() {
     root.updateWorldMatrix(true, true);
     root.traverseVisible((object) => {
       if (!(object instanceof Mesh)) return;
+      if (object instanceof SkinnedMesh) {
+        object.computeBoundingBox();
+        if (object.boundingBox !== null) {
+          meshBounds.copy(object.boundingBox).applyMatrix4(object.matrixWorld);
+          bounds.union(meshBounds);
+        }
+        return;
+      }
       const geometry = object.geometry;
       if (geometry.boundingBox === null) geometry.computeBoundingBox();
       if (geometry.boundingBox === null) return;

@@ -96,6 +96,12 @@ function main(): void {
     required<HTMLElement>("#avatar-info"),
     required<HTMLInputElement>("#avatar-yaw"),
     required<HTMLInputElement>("#avatar-pitch"),
+    undefined,
+    {
+      file: required<HTMLInputElement>("#avatar-file"),
+      reset: required<HTMLElement>("#avatar-primitives"),
+      status: required<HTMLElement>("#avatar-file-status"),
+    },
   );
   const showAvatar = () => {
     avatarSection.hidden = !avatarEnabled.checked || spaceSelect.value !== "world";
