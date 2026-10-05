@@ -38,6 +38,19 @@ function labelOf(patch: Patch | LivePatch | undefined, key: string): LabelRead {
   }
 }
 
+/** The label a read establishes before any change is reported: only a ready read has one. */
+function baselineOf(read: LabelRead): Label | undefined {
+  switch (read.kind) {
+    case "label":
+      return read.label;
+    case "retained":
+    case "gone":
+      return undefined;
+    default:
+      return unreachable(read);
+  }
+}
+
 /**
  * Calls `listener` when the label under `key` changes by `!==`; no initial call. Blocked and error
  * patches retain the last label and fire nothing. A `destroyed` patch (sent only on eviction: a
@@ -54,8 +67,7 @@ export function onLabelChange(
   key: string,
   listener: (next: Label | undefined, previous: Label | undefined) => void,
 ): () => void {
-  const initial = labelOf(project.get(nodeId), key);
-  let previous = initial.kind === "label" ? initial.label : undefined;
+  let previous = baselineOf(labelOf(project.get(nodeId), key));
   let active = true;
   let release: (() => void) | undefined;
   const unsubscribe = (): void => {
