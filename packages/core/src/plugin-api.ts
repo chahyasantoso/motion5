@@ -18,6 +18,8 @@ export type { ImmutableArray, ImmutableRecord, ImmutableValue } from "./domain/v
 export type { OutputSerializer } from "./ports/render-metadata";
 export { unreachable } from "./lang/exhaustive";
 export { POLE_SLOT } from "./contract/solver-shape";
+export type { SolverChainShape } from "./contract/solver-shape";
+export type { PluginCapability, PluginCapabilities } from "./ports/plugin-capabilities";
 export type {
   AxisKey,
   Bend,

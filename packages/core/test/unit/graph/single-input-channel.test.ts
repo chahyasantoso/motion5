@@ -1,3 +1,4 @@
+import { builtinRegistry } from "../../support/builtin-registry";
 import { describe, expect, it } from "vitest";
 import type { ObservationDefinition, ProjectDefinition } from "../../../src/contract/v5";
 import type { Track } from "../../../src/domain/track";
@@ -115,7 +116,7 @@ describe("observes declares an output edge only", () => {
     // Two sources of truth are only a defect if they can disagree. `role` names the composition
     // phase and stays; this is what keeps it from drifting from `requirement`. Passes on the
     // parent by design and is not claimed as red.
-    const graph = buildGraphIR(MIXED).graph;
+    const graph = buildGraphIR(MIXED, builtinRegistry()).graph;
     const edges = graph?.nodes.flatMap(({ edges: owned }) => [...owned]) ?? [];
     const mismatched = edges.filter(
       (edge) => (edgeRole(edge) === "input") !== (edgeRequirement(edge) !== undefined),

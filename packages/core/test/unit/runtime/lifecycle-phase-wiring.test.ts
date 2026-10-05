@@ -1,3 +1,4 @@
+import { builtinRegistry } from "../../support/builtin-registry";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import type { ProjectDefinition } from "../../../src/contract/v5";
@@ -86,7 +87,7 @@ function rig(onCompile: (nodeId: string) => void = () => undefined): Rig {
   const record = (line: string): void => {
     entries.push(line);
   };
-  const inner = new IncrementalGraphBuilder();
+  const inner = new IncrementalGraphBuilder(builtinRegistry());
   let releases = 0;
   const options = {
     clock: createManualClock(),

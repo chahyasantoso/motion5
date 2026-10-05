@@ -1,3 +1,4 @@
+import { builtinRegistry } from "../../support/builtin-registry";
 import { describe, expect, it } from "vitest";
 import { IncrementalGraphBuilder } from "../../../src/graph/builders/incremental";
 import type {
@@ -149,30 +150,30 @@ describe("a solved member may carry a pivot offset", () => {
   it("RS-11 accepts a non-zero pivot offset on a solved member", () => {
     // The inversion, key by key and shape by shape. Every fixture here was a diagnostic and is now a
     // graph, because `ik` accounts for the offset instead of the loader refusing it.
-    expect(reported(buildGraphIR(OFFSET_X))).toEqual([]);
-    expect(reported(buildGraphIR(OFFSET_Y))).toEqual([]);
-    expect(reported(buildGraphIR(OFFSET_BOTH))).toEqual([]);
+    expect(reported(buildGraphIR(OFFSET_X, builtinRegistry()))).toEqual([]);
+    expect(reported(buildGraphIR(OFFSET_Y, builtinRegistry()))).toEqual([]);
+    expect(reported(buildGraphIR(OFFSET_BOTH, builtinRegistry()))).toEqual([]);
 
     // A keyframed offset too. The refusal read the value rather than the key so that an authored
     // zero stayed legal; nothing reads it now, and a ramp that leaves zero is an animated pivot on a
     // solved bone, which is a rig rather than a mistake.
-    expect(reported(buildGraphIR(OFFSET_ANIMATED))).toEqual([]);
+    expect(reported(buildGraphIR(OFFSET_ANIMATED, builtinRegistry()))).toEqual([]);
 
     // Built rather than merely undiagnosed, which is the assertion an empty diagnostics array does
     // not make on its own: the chain still derives, and both builders answer identically because
     // both finalize through `finalizeGraph`.
-    const both = buildGraphIR(OFFSET_BOTH);
+    const both = buildGraphIR(OFFSET_BOTH, builtinRegistry());
     expect(both.graph).toBeDefined();
     expect(both.graph?.nodeById["walker/arm-solve"]?.solves?.map(({ id }) => id)).toEqual([
       "walker/upper-arm",
       "walker/forearm",
     ]);
-    const incremental = new IncrementalGraphBuilder().build(OFFSET_BOTH);
+    const incremental = new IncrementalGraphBuilder(builtinRegistry()).build(OFFSET_BOTH);
     expect(incremental.diagnostics).toEqual(both.diagnostics);
 
     // Every member of one chain, which is the shape the closed form reduces to a rigid link and a
     // twist and the iterative path walks as pivots. One rule refused it and no rule replaces it.
-    const every = buildGraphIR(OFFSET_EVERY_MEMBER);
+    const every = buildGraphIR(OFFSET_EVERY_MEMBER, builtinRegistry());
     expect(reported(every)).toEqual([]);
     expect(every.graph).toBeDefined();
   });
@@ -181,16 +182,16 @@ describe("a solved member may carry a pivot offset", () => {
     // The other half of a deletion: the shapes that were already legal have to stay legal, or the
     // change is a swap rather than a widening. An authored zero and a ramp that never leaves it are
     // the two the refusal was careful to allow.
-    expect(reported(buildGraphIR(OFFSET_ZERO))).toEqual([]);
-    expect(reported(buildGraphIR(OFFSET_ZERO_STOPS))).toEqual([]);
+    expect(reported(buildGraphIR(OFFSET_ZERO, builtinRegistry()))).toEqual([]);
+    expect(reported(buildGraphIR(OFFSET_ZERO_STOPS, builtinRegistry()))).toEqual([]);
 
     // The chain root is not a member, and the solve reads its composed frame whatever produced it,
     // so an offset there is ordinary FK and moves the whole chain rigidly. This is the walker's own
     // shoulder, which hangs off the pelvis at `y: -50`.
-    expect(reported(buildGraphIR(OFFSET_ON_ROOT))).toEqual([]);
+    expect(reported(buildGraphIR(OFFSET_ON_ROOT, builtinRegistry()))).toEqual([]);
 
     // And a bone below the chain composes from its base's solved frame like any other FK bone.
-    expect(reported(buildGraphIR(OFFSET_BELOW_CHAIN))).toEqual([]);
+    expect(reported(buildGraphIR(OFFSET_BELOW_CHAIN, builtinRegistry()))).toEqual([]);
   });
 
   it("RS-13 still reads the group that bound solver, for the one rule left that asks", () => {
@@ -202,13 +203,13 @@ describe("a solved member may carry a pivot offset", () => {
     // A solved rotation is still dead input, and it is still refused beside an accepted offset on
     // the same member, which is the pairing that says the deletion was scoped to one key rather than
     // to the rule beside it.
-    expect(reported(buildGraphIR(ROTATION_ON_MEMBER))).toEqual([
+    expect(reported(buildGraphIR(ROTATION_ON_MEMBER, builtinRegistry()))).toEqual([
       "ik-solved-rotation-dead at walker/upper-arm",
     ]);
 
     // `spring` binds the solver here, so no solved rotation replaces `fk`'s, and the authored one is
     // `fk`'s own live input rather than dead.
-    expect(reported(buildGraphIR(ROTATION_IN_OTHER_GROUP))).toEqual([]);
+    expect(reported(buildGraphIR(ROTATION_IN_OTHER_GROUP, builtinRegistry()))).toEqual([]);
 
     // Ungrouped: the schema owns the refusal, so the graph layer never classifies the key. Both
     // halves are pinned, so this cannot stay green by bypassing the validator it relies on.
@@ -223,6 +224,6 @@ describe("a solved member may carry a pivot offset", () => {
         ]),
       }),
     );
-    expect(reported(buildGraphIR(FLAT_ROTATION))).toEqual([]);
+    expect(reported(buildGraphIR(FLAT_ROTATION, builtinRegistry()))).toEqual([]);
   });
 });

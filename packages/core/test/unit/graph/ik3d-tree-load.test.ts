@@ -1,9 +1,10 @@
+import { builtinRegistry } from "../../support/builtin-registry";
 import { describe, expect, it } from "vitest";
 import {
   derivedStrategy,
   poleBends,
   readsMemberRest,
-  solverChainShape,
+  ANY_CHAIN,
   type DerivedChainMember,
 } from "../../../src/contract/solver-shape";
 import type { ProjectDefinition, TrackDefinition } from "../../../src/contract/v5";
@@ -82,7 +83,9 @@ function rig(
 }
 
 function rules(project: ProjectDefinition): readonly string[] {
-  return buildGraphIR(project).diagnostics.map(({ ruleId, path }) => `${ruleId} at ${path}`);
+  return buildGraphIR(project, builtinRegistry()).diagnostics.map(
+    ({ ruleId, path }) => `${ruleId} at ${path}`,
+  );
 }
 
 function depthsOf(topology: Topology, constrained?: string): readonly DerivedChainMember[] {
@@ -128,7 +131,7 @@ function forests(count: number): readonly Topology[] {
 
 describe("3D tree load rules", () => {
   it("TH-76 the load-time strategy agrees with the runtime dispatcher on every forest up to five members", () => {
-    const tree = solverChainShape("ik3d");
+    const tree = builtinRegistry().capabilityOf("ik3d")!.chain;
     let compared = 0;
     let constrainedCompared = 0;
     for (let count = 1; count <= 5; count += 1) {
@@ -149,8 +152,8 @@ describe("3D tree load rules", () => {
     expect(compared).toBe(1 + 2 + 6 + 24 + 120);
     expect(constrainedCompared).toBe(1 * 1 + 2 * 2 + 3 * 6 + 4 * 24 + 5 * 120);
     // The 2D solve reads no rest on any path, so `any` is never the closed-form answer to this.
-    expect(derivedStrategy(solverChainShape("ik"), depthsOf(TWO_BONE))).toBe("iterative");
-    expect(readsMemberRest(solverChainShape("ik"), depthsOf(SERIAL3))).toBe(false);
+    expect(derivedStrategy(ANY_CHAIN, depthsOf(TWO_BONE))).toBe("iterative");
+    expect(readsMemberRest(ANY_CHAIN, depthsOf(SERIAL3))).toBe(false);
   });
 
   it("TH-77 a rest orientation with no weight is live under the tree solve and dead under the closed form", () => {

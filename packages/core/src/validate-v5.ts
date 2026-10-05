@@ -11,20 +11,24 @@ import { validateSchemaV5 } from "./contract/validate-v5";
 import { acceptedOutcome, refusedOutcomeFrom, type Outcome } from "./lang/outcome";
 import { unreachable } from "./lang/exhaustive";
 import { buildGraphIR } from "./graph/ir";
+import { UNJUDGED_CAPABILITIES, type PluginCapabilities } from "./ports/plugin-capabilities";
 
 export type ValidationResult = Outcome<ProjectDefinition, Diagnostic>;
 
 /**
  * Validate a complete authored project, preserving schema and graph diagnostics in their original
- * order and values.
+ * order and values. Without capabilities, declaration-dependent rules are unjudged (ADR-136).
  */
-export function validateV5(input: unknown): ValidationResult {
+export function validateV5(
+  input: unknown,
+  capabilities: PluginCapabilities = UNJUDGED_CAPABILITIES,
+): ValidationResult {
   const schema = validateSchemaV5(input);
   switch (schema.kind) {
     case "refused":
       return schema;
     case "accepted": {
-      const graph = buildGraphIR(schema.value);
+      const graph = buildGraphIR(schema.value, capabilities);
       const diagnostics = Object.freeze([...schema.diagnostics, ...graph.diagnostics]);
       if (graph.diagnostics.some(({ severity }) => severity === "error"))
         return refusedOutcomeFrom<ProjectDefinition, Diagnostic>(diagnostics);

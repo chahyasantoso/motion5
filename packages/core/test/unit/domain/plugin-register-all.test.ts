@@ -243,16 +243,18 @@ describe("atomic plugin batch admission", () => {
     expect(resolvedNames(registry, ["outer", "nested"])).toEqual(["nested", "outer"]);
   });
 
-  it("reads every own metadata getter once and invokes no plugin hooks on admission", () => {
+  it("reads metadata getters once, asks the joint predicate once and never composes on admission", () => {
     const reads = new Map<string, number>();
+    const claims: string[] = [];
     const source = plugin("snapshot", {
       inputs: ["source"],
       outputs: ["output"],
       requirements: { base: {} },
       stage: "prepare",
       priority: 1,
-      claimsKey: () => {
-        throw new Error("claimsKey must not run on admission");
+      claimsKey: (key) => {
+        claims.push(key);
+        return false;
       },
       contribute: () => {
         throw new Error("contribute must not run on admission");
@@ -281,6 +283,7 @@ describe("atomic plugin batch admission", () => {
     expect(registry.size).toBe(1);
     expect([...reads.keys()].sort()).toEqual(Object.keys(source).sort());
     expect([...reads.values()]).toEqual(Object.keys(source).map(() => 1));
+    expect(claims).toEqual(["joint"]);
   });
 
   it("preserves validation order and exact refusal messages without reserving candidate names", () => {

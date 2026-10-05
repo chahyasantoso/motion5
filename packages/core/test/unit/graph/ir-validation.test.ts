@@ -1,3 +1,4 @@
+import { builtinRegistry } from "../../support/builtin-registry";
 import { describe, expect, it } from "vitest";
 import { buildGraphIR } from "../../../src/graph/ir";
 import type { ProjectDefinition } from "../../../src/contract/v5";
@@ -11,7 +12,7 @@ const project = (overrides: Partial<ProjectDefinition> = {}): ProjectDefinition 
 
 describe("graph IR and candidate validation", () => {
   it("normalizes motion and free tracks into one frozen node model", () => {
-    const result = buildGraphIR(project());
+    const result = buildGraphIR(project(), builtinRegistry());
     expect(result.diagnostics).toEqual([]);
     expect(result.graph?.nodes.map(({ id, owner }) => [id, owner])).toEqual([
       ["hero/arm", "motion"],
@@ -37,6 +38,7 @@ describe("graph IR and candidate validation", () => {
           },
         ],
       }),
+      builtinRegistry(),
     );
     expect(result.diagnostics).toEqual([]);
     expect(
@@ -68,6 +70,7 @@ describe("graph IR and candidate validation", () => {
           },
         ],
       }),
+      builtinRegistry(),
     );
     expect(result.graph).toBeUndefined();
     expect(result.diagnostics.map(({ ruleId }) => ruleId)).toEqual(
@@ -87,6 +90,7 @@ describe("graph IR and candidate validation", () => {
           { id: "hero", trigger: { type: "manual" }, tracks: [{ id: "arm" }] },
         ],
       }),
+      builtinRegistry(),
     );
     expect(result.graph).toBeUndefined();
     expect(result.diagnostics.map(({ ruleId }) => ruleId)).toContain("motion-duplicate");
@@ -103,6 +107,7 @@ describe("graph IR and candidate validation", () => {
           },
         ],
       }),
+      builtinRegistry(),
     );
     const second = buildGraphIR(
       project({
@@ -114,6 +119,7 @@ describe("graph IR and candidate validation", () => {
           },
         ],
       }),
+      builtinRegistry(),
     );
     expect(first.diagnostics).toEqual(second.diagnostics);
   });
@@ -134,6 +140,7 @@ describe("graph IR and candidate validation", () => {
           },
         ],
       }),
+      builtinRegistry(),
     );
     expect(result.graph).toBeUndefined();
     expect(result.diagnostics.map(({ path }) => path)).toEqual(["a-b/x", "a/bx"]);

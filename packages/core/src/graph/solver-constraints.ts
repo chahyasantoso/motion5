@@ -7,7 +7,6 @@ import {
   AXIS_Z_KEY,
   BEND_KEY,
   classifyJoint,
-  declaresJoint,
   JOINT_KEY,
   JOINT_KINDS,
   JOINT_ONLY_KEYS,
@@ -36,7 +35,8 @@ import {
   type SolverKey,
 } from "../contract/solver-constraints";
 import { diagnostic } from "../contract/diagnostics";
-import { declaresPole, POLE_SLOT } from "../contract/solver-shape";
+import { POLE_SLOT } from "../contract/solver-shape";
+import type { PluginCapabilities } from "../ports/plugin-capabilities";
 import type { RuleId } from "../contract/rule-id";
 import type { Diagnostic } from "../contract/v5";
 import { compareCodeUnits } from "./compare";
@@ -77,13 +77,13 @@ import type { GraphNode } from "./ir";
  * `GOAL_WEIGHT_RULES` rather than once per key. Which members those are is `resolveSolvers`'s
  * answer, after goal resolution, handed in as a `GoalScope` rather than re-derived here: this module
  * would otherwise be a second owner of leafhood and goal addressing. On a node that bound no solver
- * anywhere it speaks only under a 3D member group (`declaresJoint`), whose vocabulary the contract
+ * anywhere it speaks only under a joint-declaring member group, whose vocabulary the contract
  * owns, so an `fk3d` goal weight on a bone no solve reads is refused by name. Under any other group
  * it keeps the narrowing `ik-weight-without-solver` makes: this pass holds no registry and cannot
  * tell a 2D `fk` goal weight from another plugin's own key on a node no solve reads.
  *
  * **A pole belongs to the group that bound `root`.** `pole` is a requirement slot rather than a key,
- * and `contract/solver-shape.ts` owns which solver plugins declare it, so under any other plugin the
+ * and the capabilities port reports which solver plugins declare it, so under any other plugin the
  * registry refuses it by name (`plugin-unknown-requirement`) and this pass stays silent rather than
  * refusing the same slot a second time under a second rule. What the registry cannot see is where a
  * declared pole was bound: the solve that reads it is the composer of the group whose `root` edge
@@ -150,19 +150,25 @@ function limitWithoutSolver(node: GraphNode, key: string, spelling: AuthoredSpel
   );
 }
 
-function validateMemberLimits(node: GraphNode, diagnostics: Diagnostic[]): void {
+function validateMemberLimits(
+  node: GraphNode,
+  diagnostics: Diagnostic[],
+  capabilities: PluginCapabilities,
+): void {
   const binders = slotBinders(node, "solver");
   const values: Partial<Record<LimitKey, unknown>> = {};
   const paths: Partial<Record<LimitKey, string>> = {};
   for (const key of LIMIT_KEYS) {
     for (const spelling of authoredSpellings(node.track.keyframes, key)) {
+      const capability = capabilities.capabilityOf(spelling.group);
+      if (capability === undefined) continue;
       if (!reachesSolve(spelling, binders)) {
         diagnostics.push(limitWithoutSolver(node, key, spelling));
         continue;
       }
       // Under a 3D joint group the range is a hinge's, classified with its joint by
       // `validateMemberJoint`, so it is judged once, by the owner that knows what reads it.
-      if (declaresJoint(spelling.group)) continue;
+      if (capability.joint) continue;
       // `keyframes-duplicate-key` refuses a second spelling of one key, so the first is the one.
       if (Object.hasOwn(values, key)) continue;
       values[key] = spelling.value;
@@ -239,13 +245,19 @@ function malformedBound(key: JointBoundKey): Readonly<{ ruleId: RuleId; domain: 
  * **Classification.** Under a joint group that bound the solver, the group's spellings are
  * classified together by `classifyJoint`, because what a bound means depends on the kind beside it.
  */
-function validateMemberJoint(node: GraphNode, diagnostics: Diagnostic[]): void {
+function validateMemberJoint(
+  node: GraphNode,
+  diagnostics: Diagnostic[],
+  capabilities: PluginCapabilities,
+): void {
   const binders = slotBinders(node, "solver");
-  const member3d = [...binders].some(declaresJoint);
+  const member3d = [...binders].some((group) => capabilities.capabilityOf(group)?.joint === true);
   const bySolverGroup = new Map<string, Partial<Record<JointVocabularyKey, AuthoredSpelling>>>();
   for (const key of JOINT_VOCABULARY_KEYS) {
     for (const spelling of authoredSpellings(node.track.keyframes, key)) {
-      const joint = declaresJoint(spelling.group);
+      const capability = capabilities.capabilityOf(spelling.group);
+      if (capability === undefined) continue;
+      const joint = capability.joint;
       if (joint && reachesSolve(spelling, binders)) {
         const group = bySolverGroup.get(spelling.group) ?? {};
         group[key] = spelling;
@@ -407,10 +419,11 @@ function validateSolverPole(
   node: GraphNode,
   roots: ReadonlySet<string>,
   diagnostics: Diagnostic[],
+  capabilities: PluginCapabilities,
 ): void {
   for (const group of [...slotBinders(node, POLE_SLOT)].sort()) {
     // An undeclared pole is the registry's `plugin-unknown-requirement`, one rule for one mistake.
-    if (!declaresPole(group) || roots.has(group)) continue;
+    if (capabilities.capabilityOf(group)?.pole !== true || roots.has(group)) continue;
     diagnostics.push(
       diagnostic(
         "ik-pole-without-chain",
@@ -425,14 +438,15 @@ function validateSolverPole(
 export function validateSolverConstraints(
   nodes: readonly GraphNode[],
   diagnostics: Diagnostic[],
+  capabilities: PluginCapabilities,
 ): void {
   for (const node of nodes) {
-    validateMemberLimits(node, diagnostics);
-    validateMemberJoint(node, diagnostics);
+    validateMemberLimits(node, diagnostics, capabilities);
+    validateMemberJoint(node, diagnostics, capabilities);
     const roots = slotBinders(node, "root");
     validateSolverBend(node, roots, diagnostics);
     validateSolverInspect(node, roots, diagnostics);
-    validateSolverPole(node, roots, diagnostics);
+    validateSolverPole(node, roots, diagnostics, capabilities);
   }
 }
 
@@ -554,12 +568,15 @@ function validateMemberGoalWeight(
   binders: ReadonlySet<string>,
   scope: GoalScope,
   diagnostics: Diagnostic[],
+  capabilities: PluginCapabilities,
 ): void {
   let placed: AuthoredSpelling | undefined;
   for (const spelling of authoredSpellings(node.track.keyframes, rule.key)) {
+    const capability = capabilities.capabilityOf(spelling.group);
+    if (capability === undefined) continue;
     if (!reachesSolve(spelling, binders)) {
       // No registry here: on a node that bound no solver, only a 3D member group's key is known.
-      if (binders.size === 0 && !declaresJoint(spelling.group)) continue;
+      if (binders.size === 0 && !capability.joint) continue;
       const why = `under ${spelling.group}, which did not bind its solver`;
       diagnostics.push(weightWithoutGoal(node, rule, spelling, why));
       continue;
@@ -593,7 +610,7 @@ function validateMemberGoalWeight(
 /**
  * The goal-weight rules, `influence` then `orient` on each member, run after `resolveSolvers` has
  * resolved every solve's goals into `scope`. A node that bound no solver anywhere is read only
- * under a 3D member group (`declaresJoint`); everywhere else it keeps the narrowing
+ * under a joint-declaring member group; everywhere else it keeps the narrowing
  * `ik-weight-without-solver` makes, because this pass holds no registry and cannot tell a 2D goal
  * weight from another plugin's own key on a node no solve reads.
  */
@@ -601,10 +618,11 @@ export function validateGoalWeights(
   nodes: readonly GraphNode[],
   scope: GoalScope,
   diagnostics: Diagnostic[],
+  capabilities: PluginCapabilities,
 ): void {
   for (const node of nodes) {
     const binders = slotBinders(node, "solver");
     for (const rule of GOAL_WEIGHT_RULES)
-      validateMemberGoalWeight(node, rule, binders, scope, diagnostics);
+      validateMemberGoalWeight(node, rule, binders, scope, diagnostics, capabilities);
   }
 }

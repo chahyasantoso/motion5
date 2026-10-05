@@ -1,3 +1,4 @@
+import { builtinRegistry } from "../../support/builtin-registry";
 import { describe, expect, it } from "vitest";
 import { IncrementalGraphBuilder } from "../../../src/graph/builders/incremental";
 import type {
@@ -172,7 +173,7 @@ function shuffle(tracks: readonly TrackDefinition[], seed: number): TrackDefinit
 
 describe("goal-addressed solving (Slice D1)", () => {
   it("MG-1 an authored goal dict derives the same chain plus the leaf's goal", () => {
-    const built = buildGraphIR(GOAL_DICT);
+    const built = buildGraphIR(GOAL_DICT, builtinRegistry());
     expect(reported(built)).toEqual([]);
     expect(solvesOf(built)).toEqual(EXPECTED_SOLVES);
 
@@ -189,7 +190,7 @@ describe("goal-addressed solving (Slice D1)", () => {
     expect(goal?.sourceId).toBe("walker/hand-target");
 
     // Both builders answer identically, because both finalize through `finalizeGraph`.
-    const incremental = new IncrementalGraphBuilder().build(GOAL_DICT);
+    const incremental = new IncrementalGraphBuilder(builtinRegistry()).build(GOAL_DICT);
     expect(incremental.diagnostics).toEqual(built.diagnostics);
     expect(incremental.graph?.nodeById["walker/arm-solve"]?.solves).toEqual(EXPECTED_SOLVES);
   });
@@ -198,7 +199,7 @@ describe("goal-addressed solving (Slice D1)", () => {
     // Kept on purpose. `target` is exactly the degenerate case of the dict, so retiring it would
     // re-author every existing rig to buy one spelling. No member of this chain gains a `goal`, so
     // `ikPlugin` reads `inputs.target` exactly as it did before D1.
-    const built = buildGraphIR(BARE_TARGET);
+    const built = buildGraphIR(BARE_TARGET, builtinRegistry());
     expect(reported(built)).toEqual([]);
     expect(solvesOf(built)).toEqual([
       { id: "walker/upper-arm", base: "walker/shoulder" },
@@ -209,7 +210,7 @@ describe("goal-addressed solving (Slice D1)", () => {
   it("MG-3 a qualified and a bare goal key name the same member", () => {
     // The key goes through `qualifySource`, so it is an id in the authored sense rather than a
     // string compared against a node id. That is also what makes `ik-goal-duplicate` a real rule.
-    const built = buildGraphIR(QUALIFIED_KEY);
+    const built = buildGraphIR(QUALIFIED_KEY, builtinRegistry());
     expect(reported(built)).toEqual([]);
     expect(solvesOf(built)).toEqual(EXPECTED_SOLVES);
   });
@@ -217,17 +218,17 @@ describe("goal-addressed solving (Slice D1)", () => {
   it("MG-4 a goal naming no member of the chain is refused", () => {
     // And the leaf is still unaddressed, so both rules report: the author named something, and it
     // was not the leaf. One diagnostic would leave the second fact for them to infer.
-    expect(reported(buildGraphIR(UNKNOWN_MEMBER))).toEqual([
+    expect(reported(buildGraphIR(UNKNOWN_MEMBER, builtinRegistry()))).toEqual([
       "ik-goal-unknown-member at walker/arm-solve",
       "ik-leaf-without-goal at walker/arm-solve",
     ]);
-    expect(buildGraphIR(UNKNOWN_MEMBER).graph).toBeUndefined();
+    expect(buildGraphIR(UNKNOWN_MEMBER, builtinRegistry()).graph).toBeUndefined();
   });
 
   it("MG-5 a goal on a member another member hangs from is refused", () => {
     // A goal is what a chain reaches toward, so it belongs to the tip. `upper-arm` is inside the
     // chain, and a solve that pulled it to the goal would leave `forearm` with nothing to do.
-    expect(reported(buildGraphIR(NOT_LEAF))).toEqual([
+    expect(reported(buildGraphIR(NOT_LEAF, builtinRegistry()))).toEqual([
       "ik-goal-not-leaf at walker/arm-solve",
       "ik-leaf-without-goal at walker/arm-solve",
     ]);
@@ -236,7 +237,7 @@ describe("goal-addressed solving (Slice D1)", () => {
   it("MG-6 a leaf the dict never named is refused, on its own", () => {
     // Two leaves off one root, one of them named. The unnamed one has nothing to reach for, and
     // silently solving it toward the other's goal is the failure this rule exists for.
-    expect(reported(buildGraphIR(TWO_LEAVES))).toEqual([
+    expect(reported(buildGraphIR(TWO_LEAVES, builtinRegistry()))).toEqual([
       "ik-leaf-without-goal at walker/arm-solve",
     ]);
   });
@@ -245,26 +246,30 @@ describe("goal-addressed solving (Slice D1)", () => {
     // Object keys are unique, so two goals for one member are unrepresentable in the authored dict.
     // What survives is the pair qualification collapses: `forearm` and `walker/forearm` are two keys
     // and one node, which is why the rule is a post-qualification check rather than a shape rule.
-    expect(reported(buildGraphIR(DUPLICATE))).toEqual(["ik-goal-duplicate at walker/arm-solve"]);
+    expect(reported(buildGraphIR(DUPLICATE, builtinRegistry()))).toEqual([
+      "ik-goal-duplicate at walker/arm-solve",
+    ]);
   });
 
   it("MG-8 a solver binding both target and the dict is refused", () => {
     // Two names for one dependency. Refused rather than merged, because merging would make which
     // goal the leaf reaches for a property of the reader.
-    expect(reported(buildGraphIR(CONFLICT))).toEqual(["ik-goal-conflict at walker/arm-solve"]);
+    expect(reported(buildGraphIR(CONFLICT, builtinRegistry()))).toEqual([
+      "ik-goal-conflict at walker/arm-solve",
+    ]);
   });
 
   it("MG-9 ik-mode-ambiguous reads the goal classification, not the literal slot name", () => {
     // Reported against the member, which is the node that authored the contradiction. Before D1 this
     // rig loaded clean and the member's goals were ignored with no diagnostic behind them.
-    expect(reported(buildGraphIR(MEMBER_WITH_GOALS))).toEqual([
+    expect(reported(buildGraphIR(MEMBER_WITH_GOALS, builtinRegistry()))).toEqual([
       "ik-mode-ambiguous at walker/upper-arm",
     ]);
   });
 
   it("MG-10 goal derivation is deterministic under real track permutation", () => {
     const tracks = GOAL_DICT.motions[0]!.tracks;
-    const reference = buildGraphIR(GOAL_DICT);
+    const reference = buildGraphIR(GOAL_DICT, builtinRegistry());
     expect(reported(reference)).toEqual([]);
     const expectedOrder = reference.graph?.order;
 
@@ -272,7 +277,7 @@ describe("goal-addressed solving (Slice D1)", () => {
     for (let seed = 1; seed <= 20; seed += 1) {
       const permutedTracks = shuffle(tracks, seed);
       permutations.add(permutedTracks.map((track) => track.id).join(","));
-      const permuted = buildGraphIR(project(permutedTracks));
+      const permuted = buildGraphIR(project(permutedTracks), builtinRegistry());
       expect(reported(permuted)).toEqual([]);
       expect(permuted.graph?.order).toEqual(expectedOrder);
       expect(solvesOf(permuted)).toEqual(EXPECTED_SOLVES);
@@ -288,7 +293,7 @@ describe("goal-addressed solving (Slice D1)", () => {
     // ADR-051 banked as zero change: no `JournalEntry` variant is added for a goal, because a goal is
     // derived from the edges the journal already carries. Reconstructed nodes take a constant
     // authored index, so authored order cannot answer for anything here.
-    const built = buildGraphIR(GOAL_DICT);
+    const built = buildGraphIR(GOAL_DICT, builtinRegistry());
     expect(reported(built)).toEqual([]);
     const graph = built.graph!;
 
@@ -308,7 +313,7 @@ describe("goal-addressed solving (Slice D1)", () => {
     );
 
     const diagnostics: Diagnostic[] = [];
-    const resolved = resolveSolvers(reconstructed, diagnostics);
+    const resolved = resolveSolvers(reconstructed, diagnostics, builtinRegistry());
     expect(diagnostics).toEqual([]);
 
     const fromLive = resolved.find((node) => node.id === "walker/arm-solve");

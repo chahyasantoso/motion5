@@ -1,3 +1,4 @@
+import { builtinRegistry } from "../../support/builtin-registry";
 import { describe, expect, it } from "vitest";
 import {
   PluginRegistry,
@@ -318,7 +319,9 @@ describe("fk3d rest orientation and solved weight", () => {
       ],
     });
     const rules = (upper: Readonly<Record<string, unknown>>) =>
-      buildGraphIR(project(upper)).diagnostics.map(({ ruleId, path }) => `${ruleId} at ${path}`);
+      buildGraphIR(project(upper), builtinRegistry()).diagnostics.map(
+        ({ ruleId, path }) => `${ruleId} at ${path}`,
+      );
     expect(rules({})).toEqual([]);
     // Each orientation key alone is dead without a weight, for the reason a 2D `rotation` is.
     for (const key of ["rotation", "rotationX", "rotationY"])

@@ -246,6 +246,9 @@ describe("plugin registry", () => {
       plugin("predicate", { claimsKey: predicate, stage: "prepare", contribute: predicate }),
     );
     registry.register(plugin("exact", { keys: ["x"], stage: "prepare", contribute: exact }));
+    expect(predicate).toHaveBeenCalledOnce();
+    expect(predicate).toHaveBeenCalledWith("joint");
+    predicate.mockClear();
     registry.resolveForKeyframes({ exact: { values: { x: [] } } });
     expect(exact).toHaveBeenCalledOnce();
     expect(predicate).not.toHaveBeenCalled();

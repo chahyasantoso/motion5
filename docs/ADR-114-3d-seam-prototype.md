@@ -24,6 +24,10 @@ that solver, reading them through the 2D `DeliveredMember` model and ordering th
 publishes a scalar world frame. The load rule's shape lives in `contract/solver-shape.ts`, because
 the graph holds no plugin registry (ADR-044) and so cannot ask a plugin definition.
 
+**Superseded in part by [ADR-136](./ADR-136-registry-owned-solver-capabilities.md), 2026-10-05.**
+The shape algebra stays in contract, but the static plugin-name table and derived dedication are
+deleted. Admitted declarations reach graph only through `PluginCapabilities`, preserving ADR-044.
+
 No ordinary 2D behaviour changes: every 2D rig that loaded before loads and solves exactly as it
 did, and the one new 2D refusal is a chain with an `fk3d` member, which the shape guard below
 refuses in both directions because neither solver consumes the other dimension's output channel.

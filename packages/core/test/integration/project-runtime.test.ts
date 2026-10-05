@@ -1,3 +1,4 @@
+import { builtinRegistry } from "../support/builtin-registry";
 import { describe, expect, it } from "vitest";
 import type { ProjectDefinition } from "../../src/contract/v5";
 import { createManualClock } from "../../src/ports/clock";
@@ -70,7 +71,7 @@ describe("ProjectRuntime", () => {
     const customBuilder = {
       build: (proj: ProjectDefinition) => {
         buildCount += 1;
-        return buildGraphIR(proj);
+        return buildGraphIR(proj, builtinRegistry());
       },
     };
 

@@ -2,6 +2,7 @@ import type { Diagnostic, ProjectDefinition, TrackDefinition } from "../../contr
 import { collectTrack, finalizeGraph, type GraphBuildResult, type GraphNode } from "../ir";
 import { diagnostic } from "../../contract/diagnostics";
 import { assertAuthoredMotionId } from "../ids";
+import type { PluginCapabilities } from "../../ports/plugin-capabilities";
 
 /**
  * The caching graph builder the runtime binds, and the owner of its own cache residency rule.
@@ -19,6 +20,7 @@ import { assertAuthoredMotionId } from "../ids";
  * permanent miss. `Engine.load` constructs one builder per loaded project, which is that shape.
  */
 export class IncrementalGraphBuilder {
+  constructor(private readonly capabilities: PluginCapabilities) {}
   /**
    * Built nodes, keyed by the inputs their id is derived from.
    *
@@ -182,6 +184,6 @@ export class IncrementalGraphBuilder {
     // Both loops are done, so `visited` is the residency set for this project. Here rather than in
     // a `finally`, and before `finalizeGraph`, which owns the result and not the cache.
     this.#sweep(visited);
-    return finalizeGraph(nodes, diagnostics);
+    return finalizeGraph(nodes, diagnostics, this.capabilities);
   }
 }

@@ -1,3 +1,4 @@
+import { builtinRegistry } from "../support/builtin-registry";
 import { describe, expect, it } from "vitest";
 import type { Diagnostic, ProjectDefinition } from "../../src/contract/v5";
 import { validateSchemaV5 } from "../../src/contract/validate-v5";
@@ -33,7 +34,9 @@ function errors(diagnostics: readonly Diagnostic[]) {
 }
 
 function graphErrors(project: AuthoredProject) {
-  return errors(buildGraphIR(project as unknown as ProjectDefinition).diagnostics);
+  return errors(
+    buildGraphIR(project as unknown as ProjectDefinition, builtinRegistry()).diagnostics,
+  );
 }
 
 function validatorErrors(project: AuthoredProject) {

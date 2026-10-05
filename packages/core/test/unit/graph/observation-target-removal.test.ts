@@ -1,3 +1,4 @@
+import { builtinRegistry } from "../../support/builtin-registry";
 import { describe, expect, it } from "vitest";
 import type { ObservationDefinition, ProjectDefinition } from "../../../src/contract/v5";
 import { validateV5 } from "../../../src/validate-v5";
@@ -113,7 +114,7 @@ describe("ObservationDefinition.target is removed, not ignored", () => {
   });
 
   it("V-4 names the removed field instead of reporting a duplicate edge", () => {
-    const result = validateV5(TWO_TARGETS);
+    const result = validateV5(TWO_TARGETS, builtinRegistry());
     expect(result.kind).toBe("refused");
     expect(ruleIds(result.diagnostics)).toEqual([
       "observation-target-unsupported",

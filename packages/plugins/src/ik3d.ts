@@ -33,6 +33,7 @@ import { solveChain3d } from "./ik3d-solve";
  */
 export const ik3dPlugin: PluginDefinition = {
   name: "ik3d",
+  solverChain: { kind: "tree", memberPlugin: "fk3d" },
   keys: [INSPECT_KEY],
   requirements: {
     root: { description: "base 3D frame of the solver chain" },

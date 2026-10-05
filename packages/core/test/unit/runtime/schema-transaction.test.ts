@@ -1,3 +1,4 @@
+import { builtinRegistry } from "../../support/builtin-registry";
 import { describe, expect, it } from "vitest";
 import type { MotionDefinition, ProjectDefinition } from "../../../src/contract/v5";
 import type { TrackHandle } from "../../../src/contract/track-handle";
@@ -128,7 +129,7 @@ function rig(): Rig {
   const record = (line: string): void => {
     entries.push(line);
   };
-  const inner = new IncrementalGraphBuilder();
+  const inner = new IncrementalGraphBuilder(builtinRegistry());
   let builds = 0;
   const staged = (nodeId: string): StagedTrack => ({
     commit: () => record(`stage-commit ${nodeId}`),

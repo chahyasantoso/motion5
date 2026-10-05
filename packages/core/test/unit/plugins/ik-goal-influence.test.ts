@@ -1,3 +1,4 @@
+import { builtinRegistry } from "../../support/builtin-registry";
 import { describe, expect, it } from "vitest";
 import type {
   AuthoredPluginRequires,
@@ -41,7 +42,14 @@ function member(
 }
 
 function diagnostics(project: ProjectDefinition): readonly string[] {
-  return buildGraphIR(project).diagnostics.map(({ ruleId }) => ruleId);
+  return buildGraphIR(
+    project,
+    builtinRegistry({
+      name: "someplugin",
+      keys: ["influence"],
+      compose: () => ({}),
+    }),
+  ).diagnostics.map(({ ruleId }) => ruleId);
 }
 
 function registry(): PluginRegistry {

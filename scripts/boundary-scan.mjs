@@ -68,6 +68,9 @@ const allowedPublicExports = new Set([
   "LiveValueKeyError",
   "PluginRegistry",
   "PluginDefinition",
+  "SolverChainShape",
+  "PluginCapability",
+  "PluginCapabilities",
   "PluginStage",
   "ResolvedPlugins",
   "assertClock",
@@ -245,7 +248,7 @@ function regexLiteralEnd(source, start) {
  * value for `regexStarts` and removes its body, so `/from "../domain/x"/` is not read as an import.
  * A comment is replaced rather than deleted so that no two tokens it separated can join.
  */
-function withoutComments(source) {
+export function withoutComments(source) {
   let code = "";
   let index = 0;
   while (index < source.length) {
@@ -412,6 +415,13 @@ export function extractExportNames(source) {
 }
 function checkCoreSource(source, file, layer, violations) {
   const specifiers = [...importSpecifiers(source)];
+  if (
+    ["graph", "contract"].includes(layer) &&
+    specifiers.some((specifier) =>
+      /^(?:\.\/)?(?:\.\.\/)+domain\/plugins(?:\/index)?(?:\.[cm]?[jt]s)?$/.test(specifier),
+    )
+  )
+    violations.push(`${file}: graph declarations must read the plugin capabilities port`);
   if (
     layer !== "adapters" &&
     (importsBoundary(source, specifiers) || importsRenderer(source, specifiers))

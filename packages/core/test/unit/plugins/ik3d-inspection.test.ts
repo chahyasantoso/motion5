@@ -1,3 +1,4 @@
+import { builtinRegistry } from "../../support/builtin-registry";
 import { describe, expect, it } from "vitest";
 import { createDomPatchAdapter, type DomTarget, type StageLike } from "../../../src/adapters/dom";
 import type {
@@ -202,7 +203,7 @@ function solverWith(inspect: AuthoredProperty | undefined, grouped = true): Trac
 }
 
 function ruleIds(project: ProjectDefinition): readonly string[] {
-  return buildGraphIR(project).diagnostics.map((d) => d.ruleId);
+  return buildGraphIR(project, builtinRegistry()).diagnostics.map((d) => d.ruleId);
 }
 
 const IDS = ["rig/root", "rig/goal", "rig/solve", "rig/upper", "rig/fore"] as const;
@@ -383,7 +384,7 @@ describe("opt-in 3D solve inspection (issue #500 phase 4, ADR-120)", () => {
       expect(ruleIds(rig(solverWith(bad)))).toContain("ik-inspect-malformed");
       expect(ruleIds(rig(solverWith(bad, false)))).not.toContain("ik-inspect-malformed");
     }
-    const path = buildGraphIR(rig(solverWith("yes"))).diagnostics.find(
+    const path = buildGraphIR(rig(solverWith("yes")), builtinRegistry()).diagnostics.find(
       (d) => d.ruleId === "ik-inspect-malformed",
     )?.path;
     expect(path).toBe("rig/solve.keyframes.ik3d.values.inspect");
@@ -392,13 +393,13 @@ describe("opt-in 3D solve inspection (issue #500 phase 4, ADR-120)", () => {
       id: "solve",
       keyframes: { ik3d: { requires: CHAIN }, transform3d: { values: { inspect: "yes" } } },
     });
-    expect(buildGraphIR(misgrouped).diagnostics.map((d) => [d.ruleId, d.path])).toEqual([
-      ["ik-solver-key-misgrouped", "rig/solve.keyframes.transform3d.values.inspect"],
-    ]);
+    expect(
+      buildGraphIR(misgrouped, builtinRegistry()).diagnostics.map((d) => [d.ruleId, d.path]),
+    ).toEqual([["ik-solver-key-misgrouped", "rig/solve.keyframes.transform3d.values.inspect"]]);
     // Both static booleans load through the engine in the grouped form; ungrouped input is refused.
     const accepted = [solverWith(true), solverWith(false)];
     for (const solve of accepted) {
-      expect(buildGraphIR(rig(solve)).diagnostics).toEqual([]);
+      expect(buildGraphIR(rig(solve), builtinRegistry()).diagnostics).toEqual([]);
       expect(() => load(rig(solve))).not.toThrow();
     }
     expect(ruleIds(rig(solverWith(true, false)))).toEqual([]);

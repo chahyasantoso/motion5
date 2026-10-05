@@ -1,3 +1,4 @@
+import { builtinRegistry } from "../../support/builtin-registry";
 import { describe, expect, it } from "vitest";
 import { createDomPatchAdapter, type DomTarget, type StageLike } from "../../../src/adapters/dom";
 import type {
@@ -81,7 +82,7 @@ function projectWith(
 }
 
 function ruleIds(project: ProjectDefinition): readonly string[] {
-  return buildGraphIR(project).diagnostics.map((d) => d.ruleId);
+  return buildGraphIR(project, builtinRegistry()).diagnostics.map((d) => d.ruleId);
 }
 
 function corePlugins(): PluginRegistry {
@@ -264,13 +265,17 @@ describe("opt-in IK solve inspection", () => {
   });
 
   it("IN-4 rejects malformed grouped inspection and refuses ungrouped inspection", () => {
-    expect(buildGraphIR(projectWithInspect("yes")).diagnostics.map((d) => d.ruleId)).toContain(
-      "ik-inspect-malformed",
-    );
     expect(
-      buildGraphIR(projectWithInspect([{ p: 0, v: true }])).diagnostics.map((d) => d.ruleId),
+      buildGraphIR(projectWithInspect("yes"), builtinRegistry()).diagnostics.map((d) => d.ruleId),
     ).toContain("ik-inspect-malformed");
-    expect(buildGraphIR(projectWithInspect("yes", false)).diagnostics).toEqual([]);
+    expect(
+      buildGraphIR(projectWithInspect([{ p: 0, v: true }]), builtinRegistry()).diagnostics.map(
+        (d) => d.ruleId,
+      ),
+    ).toContain("ik-inspect-malformed");
+    expect(buildGraphIR(projectWithInspect("yes", false), builtinRegistry()).diagnostics).toEqual(
+      [],
+    );
     expect(() => loadWith(projectWithInspect("yes", false), corePlugins())).toThrow(
       /keyframes-ungrouped-key/,
     );
@@ -284,11 +289,11 @@ describe("opt-in IK solve inspection", () => {
     // layers, and the load half is what fails without the claim.
     const groupedSpellings = [projectWithInspect(true), projectWithInspect(false)];
     for (const project of groupedSpellings) {
-      expect(buildGraphIR(project).diagnostics).toEqual([]);
+      expect(buildGraphIR(project, builtinRegistry()).diagnostics).toEqual([]);
       expect(() => loadWith(project, corePlugins())).not.toThrow();
     }
     const ungrouped = projectWithInspect(true, false);
-    expect(buildGraphIR(ungrouped).diagnostics).toEqual([]);
+    expect(buildGraphIR(ungrouped, builtinRegistry()).diagnostics).toEqual([]);
     expect(() => loadWith(ungrouped, corePlugins())).toThrow(/keyframes-ungrouped-key/);
     const unclaimed = new PluginRegistry();
     unclaimed.register(transformPlugin);
@@ -349,7 +354,7 @@ describe("opt-in IK solve inspection", () => {
       id: "solve",
       keyframes: { ik: { values: {}, requires }, spring: { values: { inspect: true } } },
     });
-    const found = buildGraphIR(project).diagnostics;
+    const found = buildGraphIR(project, builtinRegistry()).diagnostics;
     const misgrouped = found.filter((d) => d.ruleId === "ik-solver-key-misgrouped");
     expect(misgrouped.map((d) => d.path)).toEqual(["walker/solve.keyframes.spring.values.inspect"]);
     // Misgrouped is the answer, so the value is not also classified as a malformed switch.
@@ -384,7 +389,9 @@ describe("opt-in IK solve inspection", () => {
       },
       [bystander],
     );
-    const refused = buildGraphIR(onSolver).diagnostics.filter((d) => d.ruleId.startsWith("ik-"));
+    const refused = buildGraphIR(onSolver, builtinRegistry()).diagnostics.filter((d) =>
+      d.ruleId.startsWith("ik-"),
+    );
     expect(refused.map((d) => d.ruleId)).toEqual(["ik-inspect-malformed"]);
     expect(refused.map((d) => d.path)).toEqual(["walker/solve.keyframes.ik.values.inspect"]);
   });

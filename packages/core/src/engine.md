@@ -30,6 +30,12 @@ A lone failure is rethrown verbatim rather than wrapped. `report.ts`'s `afterCle
 
 ## registry
 
+The Engine also holds the registry as `PluginCapabilities`, a narrow port rather than a second
+declaration index. It supplies that same reference to project validation and each project's
+incremental graph builder. Later atomic loader additions therefore reach subsequent loads and live
+edit recompiles. Without a registry it supplies `UNJUDGED_CAPABILITIES`; schema and general topology
+still run while declaration-dependent checks are unjudged. See ADR-136 and ADR-044.
+
 Named once, because two things ask it now: the load-time compile below, and the seam that hands `ProjectRuntime` the registry's answer about a candidate. One reference, so the compile and the predicate cannot end up asking different registries. See ADR-062.
 
 ## compileTrack

@@ -1,3 +1,4 @@
+import { builtinRegistry } from "../../support/builtin-registry";
 import { describe, expect, it } from "vitest";
 import { IncrementalGraphBuilder } from "../../../src/graph/builders/incremental";
 import { buildGraphIR } from "../../../src/graph/ir";
@@ -36,7 +37,7 @@ describe("IncrementalGraphBuilder cache correctness (W1)", () => {
       observes: [{ source: "~/root", projection: { pick: ["x"] } }],
     } as unknown as TrackDefinition;
     const project = freeProject([root, child]);
-    const builder = new IncrementalGraphBuilder();
+    const builder = new IncrementalGraphBuilder(builtinRegistry());
 
     const first = builder.build(project);
     expect(first.graph).toBeUndefined();
@@ -55,7 +56,7 @@ describe("IncrementalGraphBuilder cache correctness (W1)", () => {
       keyframes: { transform: { values: { x: ramp(0, 1) } } },
     };
     const project = freeProject([bad]);
-    const builder = new IncrementalGraphBuilder();
+    const builder = new IncrementalGraphBuilder(builtinRegistry());
 
     const first = builder.build(project);
     expect(first.graph).toBeUndefined();
@@ -88,7 +89,7 @@ describe("IncrementalGraphBuilder cache correctness (W1)", () => {
 
     expect(validateSchemaV5(project).kind).toBe("accepted");
 
-    const incremental = new IncrementalGraphBuilder().build(project);
+    const incremental = new IncrementalGraphBuilder(builtinRegistry()).build(project);
     expect(ruleIds(incremental.diagnostics)).not.toContain("node-duplicate");
     expect(Object.keys(incremental.graph?.nodeById ?? {}).sort()).toEqual(["m1/t", "m2/t"]);
   });
@@ -114,8 +115,8 @@ describe("IncrementalGraphBuilder cache correctness (W1)", () => {
     ];
 
     for (const project of projects) {
-      const builder = new IncrementalGraphBuilder();
-      const reference = buildGraphIR(project);
+      const builder = new IncrementalGraphBuilder(builtinRegistry());
+      const reference = buildGraphIR(project, builtinRegistry());
       // Twice, because the first build is the only one the cache cannot affect.
       for (const pass of [1, 2]) {
         const candidate = builder.build(project);
@@ -136,7 +137,7 @@ describe("IncrementalGraphBuilder cache correctness (W1)", () => {
       keyframes: { transform: { values: { x: ramp(0, 100) } } },
     };
     const project = freeProject([root]);
-    const builder = new IncrementalGraphBuilder();
+    const builder = new IncrementalGraphBuilder(builtinRegistry());
 
     const first = builder.build(project);
     const second = builder.build(project);
@@ -155,7 +156,7 @@ describe("IncrementalGraphBuilder cache correctness (W1)", () => {
       id: "t",
       keyframes: { transform: { values: { x: ramp(0, 999) } } },
     };
-    const builder = new IncrementalGraphBuilder();
+    const builder = new IncrementalGraphBuilder(builtinRegistry());
 
     const first = builder.build(freeProject([before]));
     const second = builder.build(freeProject([after]));

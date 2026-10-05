@@ -1,3 +1,4 @@
+import { builtinRegistry } from "../../support/builtin-registry";
 import { describe, expect, it } from "vitest";
 import { IncrementalGraphBuilder } from "../../../src/graph/builders/incremental";
 import type {
@@ -95,7 +96,7 @@ interface Rig {
  */
 function rig(project: ProjectDefinition): Rig {
   const seen: ProjectDefinition[] = [];
-  const inner = new IncrementalGraphBuilder();
+  const inner = new IncrementalGraphBuilder(builtinRegistry());
   const runtime = new ProjectRuntime(project, {
     clock: createManualClock(),
     compose,

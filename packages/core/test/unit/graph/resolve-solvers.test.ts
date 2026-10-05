@@ -1,3 +1,4 @@
+import { builtinRegistry } from "../../support/builtin-registry";
 import { describe, expect, it } from "vitest";
 import { IncrementalGraphBuilder } from "../../../src/graph/builders/incremental";
 import type { Diagnostic, ProjectDefinition, TrackDefinition } from "../../../src/contract/v5";
@@ -26,7 +27,10 @@ function project(tracks: readonly TrackDefinition[]): ProjectDefinition {
 }
 
 function buildPair(p: ProjectDefinition): [GraphBuildResult, GraphBuildResult] {
-  return [buildGraphIR(p), new IncrementalGraphBuilder().build(p)];
+  return [
+    buildGraphIR(p, builtinRegistry()),
+    new IncrementalGraphBuilder(builtinRegistry()).build(p),
+  ];
 }
 
 const HAPPY_RIG: readonly TrackDefinition[] = [
@@ -212,7 +216,7 @@ const UNKNOWN_BASE = rig([
 describe("resolveSolvers (Slice C2)", () => {
   it("RS-1 derives solves on solver node root-most first and nowhere else", () => {
     const p = project(HAPPY_RIG);
-    const result = buildGraphIR(p);
+    const result = buildGraphIR(p, builtinRegistry());
     expect(result.diagnostics).toEqual([]);
     expect(result.graph).toBeDefined();
 
@@ -255,7 +259,7 @@ describe("resolveSolvers (Slice C2)", () => {
         },
       },
     ]);
-    const res1 = buildGraphIR(unreachableRootRig);
+    const res1 = buildGraphIR(unreachableRootRig, builtinRegistry());
     const diag1 = res1.diagnostics.find((d) => d.ruleId === "ik-solver-unreachable-root");
     expect(diag1).toBeDefined();
     expect(diag1?.path).toBe("walker/upper-arm");
@@ -270,7 +274,7 @@ describe("resolveSolvers (Slice C2)", () => {
         keyframes: { ik: { requires: { root: "shoulder", target: "hand-target" } } },
       },
     ]);
-    const res2 = buildGraphIR(noMembersRig);
+    const res2 = buildGraphIR(noMembersRig, builtinRegistry());
     const diag2 = res2.diagnostics.find((d) => d.ruleId === "ik-solver-no-members");
     expect(diag2).toBeDefined();
     expect(diag2?.path).toBe("walker/arm-solve");
@@ -287,7 +291,7 @@ describe("resolveSolvers (Slice C2)", () => {
         },
       },
     ]);
-    const res3 = buildGraphIR(modeAmbiguousRig);
+    const res3 = buildGraphIR(modeAmbiguousRig, builtinRegistry());
     const diag3 = res3.diagnostics.find((d) => d.ruleId === "ik-mode-ambiguous");
     expect(diag3).toBeDefined();
     expect(diag3?.path).toBe("walker/arm-solve");
@@ -317,7 +321,7 @@ describe("resolveSolvers (Slice C2)", () => {
         },
       },
     ]);
-    const res4 = buildGraphIR(solvedRotationDeadRig);
+    const res4 = buildGraphIR(solvedRotationDeadRig, builtinRegistry());
     const diag4 = res4.diagnostics.find((d) => d.ruleId === "ik-solved-rotation-dead");
     expect(diag4).toBeDefined();
     expect(diag4?.path).toBe("walker/upper-arm");
@@ -347,7 +351,7 @@ describe("resolveSolvers (Slice C2)", () => {
       },
     ]);
 
-    const result = buildGraphIR(noRootRig);
+    const result = buildGraphIR(noRootRig, builtinRegistry());
     const noRoot = result.diagnostics.find((d) => d.ruleId === "ik-solver-no-root");
     expect(noRoot).toBeDefined();
     expect(noRoot?.path).toBe("walker/arm-solve");
@@ -361,11 +365,11 @@ describe("resolveSolvers (Slice C2)", () => {
     expect(incremental.diagnostics).toEqual(reference.diagnostics);
 
     // A solver that does bind a root is untouched by the rule.
-    expect(buildGraphIR(project(HAPPY_RIG)).diagnostics).toEqual([]);
+    expect(buildGraphIR(project(HAPPY_RIG), builtinRegistry()).diagnostics).toEqual([]);
   });
 
   it("RS-3 solves derivation is deterministic under real track permutation", () => {
-    const reference = buildGraphIR(project(HAPPY_RIG));
+    const reference = buildGraphIR(project(HAPPY_RIG), builtinRegistry());
     expect(reference.diagnostics).toEqual([]);
     const expectedSolves = (reference.graph?.nodeById["walker/arm-solve"] as GraphNode)?.solves;
     const expectedOrder = reference.graph?.order;
@@ -375,7 +379,7 @@ describe("resolveSolvers (Slice C2)", () => {
     for (let seed = 1; seed <= 20; seed += 1) {
       const tracks = shuffle(HAPPY_RIG, seed);
       permutations.add(tracks.map((track) => track.id).join(","));
-      const permuted = buildGraphIR(project(tracks));
+      const permuted = buildGraphIR(project(tracks), builtinRegistry());
       expect(permuted.diagnostics).toEqual([]);
       expect(permuted.graph?.order).toEqual(expectedOrder);
       const solver = permuted.graph?.nodeById["walker/arm-solve"] as GraphNode;
@@ -391,7 +395,7 @@ describe("resolveSolvers (Slice C2)", () => {
   });
 
   it("RS-4 solves reconstructed from live state alone match the built graph", () => {
-    const built = buildGraphIR(project(HAPPY_RIG));
+    const built = buildGraphIR(project(HAPPY_RIG), builtinRegistry());
     expect(built.diagnostics).toEqual([]);
     const graph = built.graph!;
 
@@ -425,7 +429,7 @@ describe("resolveSolvers (Slice C2)", () => {
     });
 
     const diagnostics: Diagnostic[] = [];
-    const resolved = resolveSolvers(reconstructed, diagnostics);
+    const resolved = resolveSolvers(reconstructed, diagnostics, builtinRegistry());
     expect(diagnostics).toEqual([]);
 
     const fromLive = resolved.find((node) => node.id === "walker/arm-solve");
@@ -438,7 +442,7 @@ describe("resolveSolvers (Slice C2)", () => {
   });
 
   it("RS-5 rebuild after removing a solver binding updates solves without stale cache mutation", () => {
-    const builder = new IncrementalGraphBuilder();
+    const builder = new IncrementalGraphBuilder(builtinRegistry());
     const p1 = project(HAPPY_RIG);
     const res1 = builder.build(p1);
     expect(res1.diagnostics).toEqual([]);
@@ -478,29 +482,29 @@ describe("resolveSolvers (Slice C2)", () => {
     // two traversals of one chain, and they are one walk now. A refactor's subject is the answer
     // rather than the shape, so this pins the derived chain and the diagnostic each broken chain
     // reports, over the shapes where attribution or depth could differ between the two.
-    const clean = buildGraphIR(project(HAPPY_RIG));
+    const clean = buildGraphIR(project(HAPPY_RIG), builtinRegistry());
     expect(reported(clean)).toEqual([]);
     expect(solvesOf(clean)).toEqual(EXPECTED_SOLVES);
 
     // Depth decides the order rather than authored position, with the tip authored first.
-    const tipFirst = buildGraphIR(TIP_FIRST);
+    const tipFirst = buildGraphIR(TIP_FIRST, builtinRegistry());
     expect(reported(tipFirst)).toEqual([]);
     expect(solvesOf(tipFirst)).toEqual(EXPECTED_SOLVES);
 
     // A member holding no `base` edge stops its own walk on the first step. Its descendant reports
     // nothing of its own, because the break belongs to the member whose chain broke.
-    expect(reported(buildGraphIR(NO_BASE))).toEqual([
+    expect(reported(buildGraphIR(NO_BASE, builtinRegistry()))).toEqual([
       "ik-solver-unreachable-root at walker/upper-arm",
     ]);
 
     // A member whose `base` leaves the member set without arriving at the root reports once, on
     // the member that left it, not once per descendant that inherited the broken chain.
-    expect(reported(buildGraphIR(BASE_OUTSIDE))).toEqual([
+    expect(reported(buildGraphIR(BASE_OUTSIDE, builtinRegistry()))).toEqual([
       "ik-solver-unreachable-root at walker/upper-arm",
     ]);
 
     // Both members leave it, so both are answerable and both report.
-    expect(reported(buildGraphIR(BOTH_OUTSIDE))).toEqual([
+    expect(reported(buildGraphIR(BOTH_OUTSIDE, builtinRegistry()))).toEqual([
       "ik-solver-unreachable-root at walker/forearm",
       "ik-solver-unreachable-root at walker/upper-arm",
     ]);
@@ -508,14 +512,14 @@ describe("resolveSolvers (Slice C2)", () => {
 
   it("RS-9 ik-solved-rotation-dead reads the group that binds solver and no other", () => {
     // Refused: the group binding `solver` is the group whose `rotation` the solved one replaces.
-    expect(reported(buildGraphIR(ROTATION_IN_BINDER))).toEqual([
+    expect(reported(buildGraphIR(ROTATION_IN_BINDER, builtinRegistry()))).toEqual([
       "ik-solved-rotation-dead at walker/upper-arm",
     ]);
 
     // Accepted: `spring` binds the solver here, so `fk.values.rotation` is `fk`'s own live input
     // and no solved rotation replaces it. Reading every group reported this identically to the
     // case above, which is what made the wider read invisible on every current fixture.
-    expect(reported(buildGraphIR(ROTATION_IN_OTHER_GROUP))).toEqual([]);
+    expect(reported(buildGraphIR(ROTATION_IN_OTHER_GROUP, builtinRegistry()))).toEqual([]);
 
     // Ungrouped: the schema owns the refusal, so the graph layer never classifies the key. Both
     // halves are pinned, so this cannot stay green by bypassing the validator it relies on.
@@ -530,14 +534,14 @@ describe("resolveSolvers (Slice C2)", () => {
         ]),
       }),
     );
-    expect(reported(buildGraphIR(FLAT_ROTATION))).toEqual([]);
+    expect(reported(buildGraphIR(FLAT_ROTATION, builtinRegistry()))).toEqual([]);
   });
 
   it("RS-10 a reference error is reported without a derived chain diagnostic beside it", () => {
     // `resolveSolvers` walks `base` edges and reads the nodes they name, so over a graph whose
     // sources do not resolve it answers about a chain that was never valid, naming a member for a
     // typo one node up. `finalizeGraph` bails on reference errors before the derivation runs.
-    const unknownBase = buildGraphIR(UNKNOWN_BASE);
+    const unknownBase = buildGraphIR(UNKNOWN_BASE, builtinRegistry());
     expect(reported(unknownBase)).toEqual(["observation-unknown-source at walker/upper-arm"]);
     expect(unknownBase.graph).toBeUndefined();
 
@@ -547,7 +551,7 @@ describe("resolveSolvers (Slice C2)", () => {
 
     // The derivation still runs for a rig whose references all resolve, so this is an ordering
     // change rather than a pass that stopped reporting.
-    expect(reported(buildGraphIR(BASE_OUTSIDE))).toEqual([
+    expect(reported(buildGraphIR(BASE_OUTSIDE, builtinRegistry()))).toEqual([
       "ik-solver-unreachable-root at walker/upper-arm",
     ]);
   });

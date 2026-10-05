@@ -1,6 +1,7 @@
+import { builtinRegistry } from "../../support/builtin-registry";
 import { describe, expect, it } from "vitest";
 import type { ProjectDefinition, TrackDefinition } from "../../../src/contract/v5";
-import { declaresPole, POLE_SLOT } from "../../../src/contract/solver-shape";
+import { POLE_SLOT } from "../../../src/contract/solver-shape";
 import {
   PluginRegistry,
   type PluginDefinition,
@@ -468,7 +469,7 @@ function rigWith(solve: TrackDefinition, upperExtra: Keyframes = {}) {
 }
 
 function ruleIds(project: ProjectDefinition): readonly string[] {
-  return buildGraphIR(project).diagnostics.map((d) => d.ruleId);
+  return buildGraphIR(project, builtinRegistry()).diagnostics.map((d) => d.ruleId);
 }
 
 describe("3D pole load rule", () => {
@@ -482,6 +483,7 @@ describe("3D pole load rule", () => {
     // The mistake the rule names: an `ik3d` group on the elbow member holding only the pole.
     const elbow = buildGraphIR(
       rigWith(solver({}), { ik3d: { requires: { pole: "knee" } } }),
+      builtinRegistry(),
     ).diagnostics;
     expect(elbow.map((d) => [d.ruleId, d.path])).toEqual([
       ["ik-pole-without-chain", "rig/upper.keyframes.ik3d.requires.pole"],
@@ -541,7 +543,7 @@ describe("3D pole load rule", () => {
     for (const plugin of all)
       expect([plugin.name, Object.hasOwn(plugin.requirements ?? {}, POLE_SLOT)]).toEqual([
         plugin.name,
-        declaresPole(plugin.name),
+        builtinRegistry().capabilityOf(plugin.name)?.pole,
       ]);
   });
 });

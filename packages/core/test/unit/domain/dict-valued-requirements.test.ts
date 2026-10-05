@@ -1,3 +1,4 @@
+import { builtinRegistry } from "../../support/builtin-registry";
 import { describe, expect, it } from "vitest";
 import { readPluginBindings } from "../../../src/contract/keyframe-shape";
 import * as solverSlots from "../../../src/contract/solver-slots";
@@ -260,7 +261,7 @@ describe("dict-valued requirement slots (issue #220)", () => {
     // `requirementIdentity`, and the identity was length-prefixed plugin and slot only. Two goals
     // naming the same source were distinguished purely by the encoded slot, so the member key has to
     // be length-prefixed into the identity for this rig to keep loading at all.
-    const built = buildGraphIR(project(TWO_GOALS_ONE_SOURCE));
+    const built = buildGraphIR(project(TWO_GOALS_ONE_SOURCE), builtinRegistry());
     expect(built.diagnostics).toEqual([]);
     const solver = built.graph?.nodeById["walker/arm-solve"];
     const goals = (solver?.edges ?? []).filter(
@@ -322,7 +323,7 @@ describe("dict-valued requirement slots (issue #220)", () => {
   it("DV-7 the goal-addressed chain derives exactly what it derived before", () => {
     // The observable-behavior claim. No authored spelling moves and no derived chain moves; the only
     // thing that changed is where the group key lives.
-    const built = buildGraphIR(project(GOAL_DICT));
+    const built = buildGraphIR(project(GOAL_DICT), builtinRegistry());
     expect(built.diagnostics).toEqual([]);
     const expected: readonly SolveMember[] = [
       { id: "walker/upper-arm", base: "walker/shoulder" },
@@ -335,7 +336,7 @@ describe("dict-valued requirement slots (issue #220)", () => {
     // `goalBindingsOf` classifies with no registry in reach, so it gates on the base slot as well as
     // on the field. On `memberKey` alone this rig reports `ik-mode-ambiguous` against the member and
     // runs six IK rules over a spring's tensions.
-    const built = buildGraphIR(project(MEMBER_WITH_FOREIGN_DICT));
+    const built = buildGraphIR(project(MEMBER_WITH_FOREIGN_DICT), builtinRegistry());
     expect(built.diagnostics.filter(({ ruleId }) => ruleId.startsWith("ik-"))).toEqual([]);
     expect(built.diagnostics).toEqual([]);
   });

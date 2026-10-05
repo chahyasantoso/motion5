@@ -1,6 +1,6 @@
+import { builtinRegistry } from "../../support/builtin-registry";
 import { describe, expect, it } from "vitest";
 import {
-  declaresJoint,
   JOINT_KEY,
   JOINT_ONLY_KEYS,
   JOINT_VOCABULARY_KEYS,
@@ -81,16 +81,16 @@ describe("3D plugin ownership", () => {
     ];
     for (const { name, keys: claimed } of definitions) {
       const keys: readonly string[] = claimed ?? [];
-      expect(declaresJoint(name)).toBe(keys.includes(JOINT_KEY));
+      expect(builtinRegistry().capabilityOf(name)?.joint).toBe(keys.includes(JOINT_KEY));
       // A joint plugin claims the whole vocabulary: a kind with a bound it cannot author is a load
       // rule speaking for a key nobody accepts. Any other plugin claims no joint-only key; the 2D
       // range keys are shared with `fk`, where they keep ADR-108's meaning.
-      if (declaresJoint(name))
+      if (builtinRegistry().capabilityOf(name)?.joint)
         expect(JOINT_VOCABULARY_KEYS.every((key) => keys.includes(key))).toBe(true);
       else expect(JOINT_ONLY_KEYS.filter((key) => keys.includes(key))).toEqual([]);
     }
-    expect(declaresJoint("fk3d")).toBe(true);
-    expect(declaresJoint("fk")).toBe(false);
+    expect(builtinRegistry().capabilityOf("fk3d")?.joint).toBe(true);
+    expect(builtinRegistry().capabilityOf("fk")?.joint).toBe(false);
   });
 
   it("TH-12 refuses a 3D chain with a member that is not fk3d at load, and only that", () => {
@@ -115,7 +115,7 @@ describe("3D plugin ownership", () => {
       keyframes: { fk3d: { values: { length: 10 }, requires: { base, solver: "solve" } } },
     });
     const refusals = (members: readonly TrackDefinition[]) =>
-      buildGraphIR(project(members))
+      buildGraphIR(project(members), builtinRegistry())
         .diagnostics.filter(({ ruleId }) => ruleId === "ik-chain-unsupported")
         .map(({ path, message }) => ({ path, message }));
     // Since ADR-122 the 3D shape is a tree of `fk3d` members: every count and every branching the
@@ -130,7 +130,7 @@ describe("3D plugin ownership", () => {
     // them is still refused by the graph's own addressing rule, not by the shape.
     expect(refusals([member("one", "root"), member("two", "root")])).toEqual([]);
     expect(
-      buildGraphIR(project([member("one", "root"), member("two", "root")]))
+      buildGraphIR(project([member("one", "root"), member("two", "root")]), builtinRegistry())
         .diagnostics.map(({ ruleId }) => ruleId)
         .filter((ruleId) => ruleId.startsWith("ik-")),
     ).toEqual(["ik-target-not-single-leaf"]);
@@ -168,7 +168,7 @@ describe("3D plugin ownership", () => {
       ],
     });
     const planarRefusals = (members: readonly TrackDefinition[]) =>
-      buildGraphIR(planar(members))
+      buildGraphIR(planar(members), builtinRegistry())
         .diagnostics.filter(({ ruleId }) => ruleId === "ik-chain-unsupported")
         .map(({ path, message }) => ({ path, message }));
     const spatial = (id: string, base: string): TrackDefinition => ({

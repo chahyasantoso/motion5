@@ -1,3 +1,4 @@
+import { builtinRegistry } from "../../support/builtin-registry";
 import { describe, expect, it } from "vitest";
 import { IncrementalGraphBuilder } from "../../../src/graph/builders/incremental";
 import type { ProjectDefinition, TrackDefinition } from "../../../src/contract/v5";
@@ -111,17 +112,17 @@ describe("solved rotation weight (issue #211)", () => {
   it("WT-12 an authored rotation with no weight beside it is still dead", () => {
     // Byte-identically the pre-#211 rule, which is what makes the narrowing zero-migration: with no
     // weight in reach there is no runtime state in which the authored rotation influences output.
-    expect(reported(buildGraphIR(rig([member({ length: 80, rotation: 45 })])))).toEqual([
-      "ik-solved-rotation-dead at walker/upper-arm",
-    ]);
+    expect(
+      reported(buildGraphIR(rig([member({ length: 80, rotation: 45 })]), builtinRegistry())),
+    ).toEqual(["ik-solved-rotation-dead at walker/upper-arm"]);
 
     // A ramped rotation is the same shape and the same refusal.
-    expect(reported(buildGraphIR(rig([member({ length: 80, rotation: RAMP })])))).toEqual([
-      "ik-solved-rotation-dead at walker/upper-arm",
-    ]);
+    expect(
+      reported(buildGraphIR(rig([member({ length: 80, rotation: RAMP })]), builtinRegistry())),
+    ).toEqual(["ik-solved-rotation-dead at walker/upper-arm"]);
 
     // And the happy rig, which authors neither key, still loads clean.
-    expect(reported(buildGraphIR(project(HAPPY_RIG)))).toEqual([]);
+    expect(reported(buildGraphIR(project(HAPPY_RIG), builtinRegistry()))).toEqual([]);
   });
 
   it("WT-13 an authored rotation with a weight is accepted, whatever the weight is", () => {
@@ -131,7 +132,7 @@ describe("solved rotation weight (issue #211)", () => {
     // this layer a second owner of leaf shape, which is the break #192 closed once.
     for (const weight of [1, 0, 0.5, RAMP]) {
       const authored = { length: 80, rotation: 45, weight };
-      expect(reported(buildGraphIR(rig([member(authored)])))).toEqual([]);
+      expect(reported(buildGraphIR(rig([member(authored)]), builtinRegistry()))).toEqual([]);
     }
   });
 
@@ -148,7 +149,7 @@ describe("solved rotation weight (issue #211)", () => {
         fk: { values: { length: 20, weight: 0.5 }, requires: { base: "forearm" } },
       },
     };
-    expect(reported(buildGraphIR(rig([unbound])))).toEqual([]);
+    expect(reported(buildGraphIR(rig([unbound]), builtinRegistry()))).toEqual([]);
 
     // A bone that binds nothing at all is the same case, so the rule is about the solver binding
     // rather than about being inside a chain.
@@ -156,21 +157,23 @@ describe("solved rotation weight (issue #211)", () => {
       id: "hand",
       keyframes: { fk: { values: { length: 20, weight: 1 } } },
     };
-    expect(reported(buildGraphIR(rig([orphan])))).toEqual([]);
+    expect(reported(buildGraphIR(rig([orphan]), builtinRegistry()))).toEqual([]);
 
     // The cost is stated rather than hidden: an `fk` weight on a bone with no solver is inert, and
     // no load-time rule names it. `WT-10` is what pins the composition that makes it harmless, an
     // unbound slot short-circuiting to the authored rotation without reading the weight at all.
 
     // And the member that does bind a solver in the group that authored its weight is untouched.
-    expect(reported(buildGraphIR(rig([member({ length: 80, weight: 0.5 })])))).toEqual([]);
+    expect(
+      reported(buildGraphIR(rig([member({ length: 80, weight: 0.5 })]), builtinRegistry())),
+    ).toEqual([]);
   });
 
   it("WT-15 both rules read the group that bound the solver and no other", () => {
     // `spring` binds the solver, so `fk`'s weight blends nothing: refused, because this node does
     // hold a solve and authored the weight where that solve cannot reach it. "Does this node have a
     // solver anywhere" is the guard the rule needs, and it is not the whole rule.
-    expect(reported(buildGraphIR(rig([WEIGHT_IN_OTHER_GROUP])))).toEqual([
+    expect(reported(buildGraphIR(rig([WEIGHT_IN_OTHER_GROUP]), builtinRegistry()))).toEqual([
       "ik-weight-without-solver at walker/upper-arm",
     ]);
 
@@ -184,7 +187,7 @@ describe("solved rotation weight (issue #211)", () => {
         spring: { values: { weight: 0.5 }, requires: { solver: "arm-solve" } },
       },
     };
-    expect(reported(buildGraphIR(rig([splitAcrossGroups])))).toEqual([]);
+    expect(reported(buildGraphIR(rig([splitAcrossGroups]), builtinRegistry()))).toEqual([]);
 
     // Ungrouped: the schema owns the refusal, so the graph layer never classifies the key. Both
     // halves are pinned, so this cannot stay green by bypassing the validator it relies on.
@@ -206,7 +209,7 @@ describe("solved rotation weight (issue #211)", () => {
         ]),
       }),
     );
-    expect(reported(buildGraphIR(rig([flatWeight])))).toEqual([]);
+    expect(reported(buildGraphIR(rig([flatWeight]), builtinRegistry()))).toEqual([]);
   });
 
   it("WT-16 both builders report the two rules identically", () => {
@@ -219,8 +222,8 @@ describe("solved rotation weight (issue #211)", () => {
       rig([member({ length: 80, rotation: 45, weight: RAMP })]),
       rig([WEIGHT_IN_OTHER_GROUP]),
     ]) {
-      const reference = buildGraphIR(candidate);
-      const incremental = new IncrementalGraphBuilder().build(candidate);
+      const reference = buildGraphIR(candidate, builtinRegistry());
+      const incremental = new IncrementalGraphBuilder(builtinRegistry()).build(candidate);
       expect(incremental.diagnostics).toEqual(reference.diagnostics);
     }
   });

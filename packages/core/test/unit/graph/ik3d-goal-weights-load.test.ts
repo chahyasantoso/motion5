@@ -1,3 +1,4 @@
+import { builtinRegistry } from "../../support/builtin-registry";
 import { describe, expect, it } from "vitest";
 import type {
   AuthoredPluginRequires,
@@ -69,7 +70,14 @@ function rig(options: Options = {}): ProjectDefinition {
 }
 
 function diagnostics(project: ProjectDefinition) {
-  return buildGraphIR(project).diagnostics;
+  return buildGraphIR(
+    project,
+    builtinRegistry({
+      name: "spring",
+      keys: ["orient"],
+      compose: () => ({}),
+    }),
+  ).diagnostics;
 }
 
 function rules(project: ProjectDefinition): readonly string[] {

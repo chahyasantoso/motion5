@@ -15,6 +15,7 @@ import type { TrackHandle } from "./contract/track-handle";
 import { describeDiagnostics } from "./contract/diagnostics";
 import { resolveTriggerDefinition } from "./contract/validate-v5";
 import { validateV5 } from "./validate-v5";
+import { UNJUDGED_CAPABILITIES, type PluginCapabilities } from "./ports/plugin-capabilities";
 import { readOutcome } from "./lang/outcome";
 import { IncrementalGraphBuilder } from "./graph/builders/incremental";
 import { createDefaultTriggerFactory } from "./adapters/trigger-factory/default";
@@ -173,9 +174,9 @@ function createHandle(
   });
   return handle;
 }
-function assertValidProject(project: unknown): ProjectDefinition {
+function assertValidProject(project: unknown, capabilities: PluginCapabilities): ProjectDefinition {
   return readOutcome(
-    validateV5(project),
+    validateV5(project, capabilities),
     (value) => value,
     (diagnostics) => {
       throw new TypeError(
@@ -197,15 +198,17 @@ function runAllAndReportOnce(steps: readonly (() => void)[], context: string): v
 export class Engine {
   readonly #options: EngineOptions;
   readonly #plugins: PluginRegistry | undefined;
+  readonly #capabilities: PluginCapabilities;
   constructor(options: EngineOptions) {
     assertClock(options.clock);
     assertInterpolator(options.interpolator);
     assertScheduler(options.scheduler);
     this.#options = options;
     this.#plugins = options.plugins;
+    this.#capabilities = options.plugins ?? UNJUDGED_CAPABILITIES;
   }
   load(project: ProjectDefinition): ProjectHandle {
-    const acceptedProject = assertValidProject(project);
+    const acceptedProject = assertValidProject(project, this.#capabilities);
     const registry = this.#plugins;
     const tracks = new Map<string, Track>();
     const nodes = new Map<string, CompilableTrack>();
@@ -538,7 +541,7 @@ export class Engine {
           if (!track) throw new TypeError(`Unknown graph node "${node.id}".`);
           return { id: node.id, values: track.interpolated(), progress: track.progress };
         },
-        graphBuilder: new IncrementalGraphBuilder(),
+        graphBuilder: new IncrementalGraphBuilder(this.#capabilities),
         setProgress: (nodeId, progress) => tracks.get(nodeId)?.setProgress(progress),
         // One hook for one mechanism, and the compiled Track is the one owner of the split inside
         // it. Whether the retained definition moved with the write is `ProjectRuntime`'s question,

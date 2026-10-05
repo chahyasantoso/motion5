@@ -1,3 +1,4 @@
+import { builtinRegistry } from "../../support/builtin-registry";
 import { describe, expect, it } from "vitest";
 import { IncrementalGraphBuilder } from "../../../src/graph/builders/incremental";
 import { createManualClock } from "../../../src/ports/clock";
@@ -43,7 +44,7 @@ function runtimeOn(project: ProjectDefinition, builder: IncrementalGraphBuilder)
 
 describe("IncrementalGraphBuilder evicts what the last build did not walk", () => {
   it("EV-1 holds an entry for exactly the tracks the last build walked", () => {
-    const builder = new IncrementalGraphBuilder();
+    const builder = new IncrementalGraphBuilder(builtinRegistry());
 
     expect(builder.build(HERO_AND_DUST).graph).toBeDefined();
     expect(builder.cachedNodeCount).toBe(3);
@@ -62,7 +63,7 @@ describe("IncrementalGraphBuilder evicts what the last build did not walk", () =
   });
 
   it("EV-2 evicts through the removal path the runtime already has", () => {
-    const builder = new IncrementalGraphBuilder();
+    const builder = new IncrementalGraphBuilder(builtinRegistry());
     const project = runtimeOn(HERO, builder);
     expect(builder.cachedNodeCount).toBe(2);
 
@@ -76,7 +77,7 @@ describe("IncrementalGraphBuilder evicts what the last build did not walk", () =
   });
 
   it("EV-3 leaves nothing cached for a motion once its track and the motion are gone", () => {
-    const builder = new IncrementalGraphBuilder();
+    const builder = new IncrementalGraphBuilder(builtinRegistry());
     const project = runtimeOn(HERO, builder);
 
     project.addMotion({ id: "cameo", trigger: { type: "manual" }, tracks: [] });
@@ -95,7 +96,7 @@ describe("IncrementalGraphBuilder evicts what the last build did not walk", () =
   });
 
   it("EV-4 still hits, so the sweep cannot pass by never caching", () => {
-    const builder = new IncrementalGraphBuilder();
+    const builder = new IncrementalGraphBuilder(builtinRegistry());
 
     const first = builder.build(HERO).graph;
     const second = builder.build(HERO).graph;
@@ -108,7 +109,7 @@ describe("IncrementalGraphBuilder evicts what the last build did not walk", () =
   });
 
   it("EV-5 rebuilds a re-authored node rather than answering from an evicted entry", () => {
-    const builder = new IncrementalGraphBuilder();
+    const builder = new IncrementalGraphBuilder(builtinRegistry());
     const original: TrackDefinition = { id: "dust", duration: 100 };
     expect(builder.build(freeProject([original])).graph?.nodeById["~/dust"]?.track).toBe(original);
 
@@ -125,7 +126,7 @@ describe("IncrementalGraphBuilder evicts what the last build did not walk", () =
   });
 
   it("EV-6 leaves the cache untouched when a build throws part way through", () => {
-    const builder = new IncrementalGraphBuilder();
+    const builder = new IncrementalGraphBuilder(builtinRegistry());
     expect(builder.build(HERO_AND_DUST).graph).toBeDefined();
     expect(builder.cachedNodeCount).toBe(3);
 
@@ -153,7 +154,7 @@ describe("IncrementalGraphBuilder evicts what the last build did not walk", () =
   });
 
   it("EV-7 makes one builder shared by two projects thrash to a permanent miss", () => {
-    const builder = new IncrementalGraphBuilder();
+    const builder = new IncrementalGraphBuilder(builtinRegistry());
     const left = freeProject([{ id: "dust" }]);
     const right = freeProject([{ id: "smoke" }]);
 

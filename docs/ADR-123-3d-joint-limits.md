@@ -73,6 +73,9 @@ agree on which chains are constrained. No 2D byte moves.
   bounds are common words and remain the registry's question (`plugin-unknown-key`).
   `declaresJoint` (today `fk3d` alone) owns which plugins' values are a joint, and `TH-88` holds it
   equal to the plugin definitions that claim `joint`.
+  **Superseded in part by [ADR-136](./ADR-136-registry-owned-solver-capabilities.md), 2026-10-05.**
+  The name table and `declaresJoint` are deleted. Admission derives the joint capability from each
+  definition's key claim and graph reads the narrow port; the placement and classifier remain.
 - **Primitive arithmetic has one owner.** `frame3d.ts` gains `rotationAboutAxis3d` (Rodrigues),
   `swingTwist3d` (split about +x whose swing is `swingFrame3d`'s, so a pure-swing orientation reads
   no twist) and `twistAbout3d` (the split conjugated onto any axis), plus `LOCAL_X3`,

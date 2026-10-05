@@ -1,3 +1,4 @@
+import { builtinRegistry } from "../../support/builtin-registry";
 import { describe, expect, it } from "vitest";
 import { IncrementalGraphBuilder } from "../../../src/graph/builders/incremental";
 import type { ProjectDefinition, TrackDefinition } from "../../../src/contract/v5";
@@ -92,7 +93,7 @@ describe("the solver arity cap is lifted (Slice D3)", () => {
   it("FB-10 a chain past arity two loads, and so does a chain short of it", () => {
     // Three, five, and one. Every one of these was `ik-solver-unsupported-arity` on the parent, and
     // the one-member case is the shape `solveTwoBone`'s deleted fallback used to answer with zeros.
-    const three = buildGraphIR(chain(["a", "b", "c"]));
+    const three = buildGraphIR(chain(["a", "b", "c"]), builtinRegistry());
     expect(reported(three)).toEqual([]);
     expect(solvesOf(three)).toEqual([
       { id: "rig/a", base: "rig/hip" },
@@ -100,7 +101,7 @@ describe("the solver arity cap is lifted (Slice D3)", () => {
       { id: "rig/c", base: "rig/b", goal: "rig/goal" },
     ]);
 
-    const five = buildGraphIR(chain(["m1", "m2", "m3", "m4", "m5"]));
+    const five = buildGraphIR(chain(["m1", "m2", "m3", "m4", "m5"]), builtinRegistry());
     expect(reported(five)).toEqual([]);
     expect(solvesOf(five)?.map((member) => member.id)).toEqual([
       "rig/m1",
@@ -110,17 +111,19 @@ describe("the solver arity cap is lifted (Slice D3)", () => {
       "rig/m5",
     ]);
 
-    const one = buildGraphIR(chain(["only"]));
+    const one = buildGraphIR(chain(["only"]), builtinRegistry());
     expect(reported(one)).toEqual([]);
     expect(solvesOf(one)).toEqual([{ id: "rig/only", base: "rig/hip", goal: "rig/goal" }]);
 
     // A tree loads too, so the lift is about derived shape rather than about chain length.
-    const branched = buildGraphIR(BRANCHED_DICT);
+    const branched = buildGraphIR(BRANCHED_DICT, builtinRegistry());
     expect(reported(branched)).toEqual([]);
     expect(solvesOf(branched)?.map((member) => member.goal)).toEqual(["rig/goal-l", "rig/goal-r"]);
 
     // Both builders answer identically, because both finalize through `finalizeGraph`.
-    const incremental = new IncrementalGraphBuilder().build(chain(["a", "b", "c"]));
+    const incremental = new IncrementalGraphBuilder(builtinRegistry()).build(
+      chain(["a", "b", "c"]),
+    );
     expect(incremental.diagnostics).toEqual(three.diagnostics);
     expect(incremental.graph?.nodeById["rig/solve"]?.solves).toEqual(solvesOf(three));
   });
@@ -130,7 +133,7 @@ describe("the solver arity cap is lifted (Slice D3)", () => {
     // member and a two-leaf chain gives it two candidates, so the rig is refused rather than solved
     // with the goal applied to whichever leaf the derivation happened to order first. The diagnostic
     // names both leaves, which is the choice the author has to make.
-    const result = buildGraphIR(BRANCHED_BARE_TARGET);
+    const result = buildGraphIR(BRANCHED_BARE_TARGET, builtinRegistry());
     expect(reported(result)).toEqual(["ik-target-not-single-leaf at rig/solve"]);
     expect(result.graph).toBeUndefined();
 
@@ -139,7 +142,7 @@ describe("the solver arity cap is lifted (Slice D3)", () => {
     expect(refused.ids).toEqual(["rig/solve", "rig/left", "rig/right"]);
 
     // The dict is the spelling that answers it, and it is accepted over the same topology.
-    expect(reported(buildGraphIR(BRANCHED_DICT))).toEqual([]);
+    expect(reported(buildGraphIR(BRANCHED_DICT, builtinRegistry()))).toEqual([]);
 
     // A linear chain has one leaf however long it is, so the bare slot keeps working past arity two
     // and no existing rig is re-authored to buy the rule.
@@ -149,11 +152,9 @@ describe("the solver arity cap is lifted (Slice D3)", () => {
       { id: "solve", keyframes: { ik: { requires: { root: "hip", target: "goal" } } } },
       ...bones(["a", "b", "c"]),
     ]);
-    expect(reported(buildGraphIR(linear))).toEqual([]);
-    expect(solvesOf(buildGraphIR(linear))?.map((member) => member.goal)).toEqual([
-      undefined,
-      undefined,
-      undefined,
-    ]);
+    expect(reported(buildGraphIR(linear, builtinRegistry()))).toEqual([]);
+    expect(solvesOf(buildGraphIR(linear, builtinRegistry()))?.map((member) => member.goal)).toEqual(
+      [undefined, undefined, undefined],
+    );
   });
 });
