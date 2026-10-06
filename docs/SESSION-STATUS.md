@@ -5,18 +5,20 @@ are the complete shape. **Now** and **Next in line** carry exactly one bullet ea
 states a phase; `packages/core/test/unit/scripts/session-status-shape.test.ts` enforces the shape and
 byte ceiling.
 
-- **Captured:** 2026-10-05, Asia/Jakarta.
-- **Read against:** supplied main archive `84a8e2366d3737147e474cdd4896e793c4982146`.
+- **Captured:** 2026-10-06, Asia/Jakarta.
+- **Read against:** supplied main archive `6d6cad7f1725198c4b8248bee3dcfd1fbf4cefcf`.
 
 ## Now
 
-- **The supplied main snapshot contains skeleton capture, FK tracks, the parent-space driver and
-  GLB avatar loading**, alongside rig aggregation and geodesic pose classification.
+- **Runners, skeleton capture, the parent-space driver and GLB avatars are on main**; the #559
+  review fixes (aliases, aim children, basis hips, joint framing, driver refusal) are prepared on
+  `fix/559-avatar-review`. Browser smoke: 0.040 ms per presented frame (apply plus framing),
+  0.016 ms framing alone (headless SwiftShader).
 
 ## Next in line
 
-- **#534 application-attached runners:** Implementation and tests are prepared on
-  `feat/534-runners`; publication and required Node 24 CI remain.
+- **#559 publication:** open the pull request, cite the Node 24 Actions run, and check one real
+  CC0 avatar visually for the basis hips drive.
 
 ## Open, and not scheduled
 

@@ -23,6 +23,12 @@ position. Swing pre-multiplies rest rotation, preserving rest twist rather than 
 Missing and degenerate sources hold. Parents precede children independently of input order.
 Written bones update world matrices immediately; bind matrices and inverse binds are untouched.
 
+Amended 2026-10-06 (#559). A bone aims only at an unambiguous child: its one child bone, or the
+child the caller names in `aimChildren`; otherwise restAim is undefined and an aim drive holds
+with `no-rest-aim`, because skeleton child order is not a choice. A `basis` drive reads a body
+basis whose identity means the bone's rest orientation as placed under source space, so a rig's
+own hips axes never leak into the pose; `frame` stays absolute for bone world frames.
+
 Drive and outcome unions are exhaustively consumed, including held reasons. File loading belongs
 to the application, not the adapter. Synthetic rigs provide controlled tests without licensed assets.
 
@@ -43,3 +49,11 @@ The application retains stale presentation independently of observations and sol
 Supplemental Node 22/light-shim tests cover capture, FK matrix agreement, calibrated aiming,
 non-identity rest rotation, holds, antipodal input, ordering, reset and inverse binds.
 Exact logs are in the handover; required Node 24 CI is not replaced.
+
+## Amendments from #559 review
+
+**Disambiguation of branching restAim (aimChildren option).** When a bone has multiple children, `captureSkeleton` option `aimChildren: Record<boneName, childName>` names which child's direction defines `restAim`. Binding uses the first child in skeleton order by default; for ambiguous cases (e.g., torso with spine and arms), app supplies `{ "Chest": "Neck" }` to use the neck direction. Tests S6-S8 verify all paths.
+
+**Basis-relative frame drive (BoneDrive.basis).** New arm: `{ kind: "basis", from: string }` reads a world frame and treats its orientation as the "rest" basis. Bone is then driven by `local = inverse(parentMatrix) * (sourceBasis * frameMatrix * inverse(restBasis))`, preserving the bone's rest twist and scaling while absorbing the source rotation. Keeps hips level (rest-rotated) when source rotates. Tests D15-D17.
+
+**Dynamic GLTFLoader import.** `gltf-avatar.ts` imports `three/addons/loaders/GLTFLoader.js` dynamically inside the load path to defer the JS chunk. Load never rejects; failures return `{ kind: "refused", refusal }`. Boundary rule: one dynamic import in gltf-avatar.ts only.
