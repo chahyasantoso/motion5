@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { extractExportNames } from "../../../scripts/boundary-scan.mjs";
-import { pluginSourceAliases } from "../../../scripts/plugin-source-aliases.mjs";
+import { workspaceSourceAliases } from "../../../scripts/workspace-source-aliases.mjs";
 import { code } from "../../core/test/helpers/source-region";
 
 // Issue #534 and ADR-133: the public plugin surface is the explicit subpaths that
@@ -17,13 +17,14 @@ const PLUGIN_SUBPATH = /^\.\/([a-z0-9]+(?:-[a-z0-9]+)*)$/;
 const PUBLIC_3D = ["transform3d", "fk3d", "ik3d"];
 export const DEFINITION_SUBPATHS = ["transform", "fk", "ik", ...PUBLIC_3D, "rig"];
 /** Public modules that are not one zero-config definition; R3 keeps them out of the catalog. */
-const SUPPORT_SUBPATHS = ["frame3d", "catalog", "loader", "labels", "pose-classify"];
+const SUPPORT_SUBPATHS = ["frame3d", "catalog", "loader", "labels", "pose-classify", "runner"];
 /** R2: support modules other than `frame3d` publish exactly these runtime names. */
 const SUPPORT_EXPORTS: Readonly<Record<string, readonly string[]>> = {
   catalog: ["builtinCatalog"],
   loader: ["createPluginLoader", "describeLoadFailure", "ensuredOrThrow"],
   labels: ["onLabelChange", "readLabel"],
   "pose-classify": ["createPoseClassifyPlugin"],
+  runner: ["attachRunners", "createLatestSlot", "describeRunnerFailure"],
 };
 export const PUBLIC_SUBPATHS = [...DEFINITION_SUBPATHS, ...SUPPORT_SUBPATHS];
 
@@ -96,7 +97,7 @@ describe("public plugin subpaths", () => {
       [],
     );
     // Development aliases consume the same manifest and match declared subpaths exactly.
-    const aliases = pluginSourceAliases();
+    const aliases = workspaceSourceAliases("plugins");
     expect(aliases).toHaveLength(PUBLIC_SUBPATHS.length);
     for (const name of PUBLIC_SUBPATHS) {
       const specifier = `@motion5/plugins/${name}`;

@@ -1,36 +1,9 @@
 import { defineConfig } from "vitest/config";
-import path from "node:path";
-import { pluginSourceAliases } from "./scripts/plugin-source-aliases.mjs";
+import { workspaceSourceAliases } from "./scripts/workspace-source-aliases.mjs";
 
 export default defineConfig({
   resolve: {
-    alias: [
-      ...pluginSourceAliases(),
-      {
-        find: "@motion5/core/testing",
-        replacement: path.resolve(import.meta.dirname, "packages/core/src/testing/fakes.ts"),
-      },
-      {
-        find: "@motion5/core/adapters",
-        replacement: path.resolve(import.meta.dirname, "packages/core/src/adapters/index.ts"),
-      },
-      {
-        find: "@motion5/core/internal",
-        replacement: path.resolve(import.meta.dirname, "packages/core/src/internal.ts"),
-      },
-      {
-        find: "@motion5/core/plugin-api",
-        replacement: path.resolve(import.meta.dirname, "packages/core/src/plugin-api.ts"),
-      },
-      {
-        find: "@motion5/core",
-        replacement: path.resolve(import.meta.dirname, "packages/core/src/index.ts"),
-      },
-      {
-        find: "@motion5/react",
-        replacement: path.resolve(import.meta.dirname, "packages/react/src/index.ts"),
-      },
-    ],
+    alias: [...workspaceSourceAliases("plugins", "core", "react")],
   },
   optimizeDeps: {
     exclude: ["@motion5/core", "@motion5/react", "@motion5/plugins"],

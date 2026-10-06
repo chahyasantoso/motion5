@@ -349,6 +349,67 @@ which cannot be enumerated). It never removes anything from the scene graph.
 1. Neither package is published; both remain private at `0.0.0`.
 2. [Issue #176](https://github.com/chahyasantoso/motion5/issues/176) tracks transactional `replaceTrack` ordering after a failed recompile.
 
+## Runners
+
+`@motion5/plugins/runner` exports `attachRunners`, `createLatestSlot` and `describeRunnerFailure`,
+with the nameable types `Runner`, `RunnerStep`, `RunnerFailure`, `AttachRunnersOptions` and
+`LatestSlot<T>`. Stateful simulations, temporal filters and large inference belong here, not
+inside plugin composition. See ADR-139.
+
+Attach after engine creation using the same clock. A missing options object, a clock without
+`subscribe` or a missing `onFailure` is refused by name. Attachment snapshots the runner array and node
+ids, rejects duplicate or missing owners before subscribing, and subscribes once. A runner
+exclusively owns one node's overlay; different attachments must not own the same node.
+Synchronous `step(tick, read)` returns `hold` (no write), `write` (replace the overlay wholesale)
+or `release` (restore authored values without detaching).
+
+All steps read published state before runner writes. One value batch applies queued commands after
+engine composition. Steps must not synchronously write to the project. Keys must already be
+authored with the same static leaf kind; a label runner therefore authors a string key.
+A runner returning `write` with identical values every tick still republishes and recomputes
+downstream each frame; choosing `hold` is the runner's responsibility.
+
+```ts
+import { attachRunners, createLatestSlot } from "@motion5/plugins/runner";
+
+const results = createLatestSlot<number>();
+// An asynchronous producer calls results.offer(completedX).
+const disposeRunners = attachRunners(
+  project,
+  [
+    {
+      nodeId: "scene/target",
+      step() {
+        const x = results.take();
+        return x === undefined ? { kind: "hold" } : { kind: "write", values: { x } };
+      },
+    },
+  ],
+  { clock, onFailure: reportRunnerFailure },
+);
+// Shutdown order: disposeRunners(), then project.dispose().
+```
+
+`LatestSlot` retains the newest offered result; `take` consumes it once. Async work stays outside
+`step`; the next tick that consumes a completed result applies it. `take` answers `undefined` when
+empty, so `T` excludes `undefined` by type; wrap an optional result in a record.
+
+Throwing steps, missing nodes and refused writes detach only their runner, attempt release when
+possible and dispose it once. `onFailure` runs after the batch and cleanup; every report is
+attempted even if a callback throws, then the first thrown value escapes.
+`describeRunnerFailure` covers all variants including `dispose-threw` and `project-unavailable`.
+
+Disposal is idempotent: unsubscribe, release remaining nodes still present in one batch and attempt
+every disposer. Dispose before the project. Reversed cleanup still attempts every runner disposer,
+then rethrows the batch error once; the next call is silent. After a `project-unavailable` stop,
+later disposal is a no-op. Any failure of the batch call itself stops the attachment, transient
+or not: the runner cannot tell a disposed project from a passing refusal, so it never retries.
+
+Do not recursively tick the clock or dispose the attachment from `step`, runner cleanup or
+`onFailure`. Active-dispatch reentrancy is refused before changing attachment state, preserving
+the one-batch-per-tick boundary. Dispose after the tick has returned; disposal after a terminal
+stop remains a silent no-op.
+
 ## Labels
 
 `@motion5/plugins/labels` exposes `readLabel` and `onLabelChange`. Labels are `ImmutableLeaf` values (string, boolean, or finite number), read by the same `isImmutableLeaf` rule the freezer and publisher use. The listener skips its initial state, ignores blocked and error publications by retaining the last ready label, and sends one undefined edge when the node is destroyed. Listeners run during publication and must not synchronously write to the project. See [ADR-137](../ADR-137-no-null-in-renderer-neutral-values.md).

@@ -58,6 +58,10 @@
     "./pose-classify": {
       "types": "./dist/pose-classify.d.ts",
       "default": "./dist/pose-classify.js"
+    },
+    "./runner": {
+      "types": "./dist/runner.d.ts",
+      "default": "./dist/runner.js"
     }
   }
 }
