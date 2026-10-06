@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { extractExportNames } from "../../../scripts/boundary-scan.mjs";
-import { pluginSourceAliases } from "../../../scripts/plugin-source-aliases.mjs";
+import { workspaceSourceAliases } from "../../../scripts/workspace-source-aliases.mjs";
 import { code } from "../../core/test/helpers/source-region";
 
 // Issue #534 and ADR-133: the public plugin surface is the explicit subpaths that
@@ -97,7 +97,7 @@ describe("public plugin subpaths", () => {
       [],
     );
     // Development aliases consume the same manifest and match declared subpaths exactly.
-    const aliases = pluginSourceAliases();
+    const aliases = workspaceSourceAliases("plugins");
     expect(aliases).toHaveLength(PUBLIC_SUBPATHS.length);
     for (const name of PUBLIC_SUBPATHS) {
       const specifier = `@motion5/plugins/${name}`;
