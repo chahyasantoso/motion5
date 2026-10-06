@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { BoxGeometry, Group, Mesh, MeshBasicMaterial, PerspectiveCamera, Vector3 } from "three";
-import { createAvatarFraming } from "../src/view/avatar-framing";
+import { syntheticHumanoid } from "../../../packages/three/test/support/synthetic-skeleton";
+import { createAvatarFraming, SKIN_MARGIN } from "../src/view/avatar-framing";
 
 describe("responsive avatar framing", () => {
   it("GF-205 translated visible anatomy fits every orbit without hidden stale geometry affecting it", () => {
@@ -40,6 +41,24 @@ describe("responsive avatar framing", () => {
     } finally {
       geometry.dispose();
       material.dispose();
+    }
+  });
+
+  it("GF-206 a skinned avatar is framed from its joints with a margin and no vertex pass", () => {
+    const rig = syntheticHumanoid();
+    rig.scene.position.set(4, -2, 9);
+    rig.bones[2]!.rotation.z = 1.2;
+    let vertexPasses = 0;
+    rig.mesh.computeBoundingBox = () => {
+      vertexPasses += 1;
+    };
+    const camera = new PerspectiveCamera(38, 4 / 3);
+    createAvatarFraming()(camera, rig.scene, 30, 10);
+    expect(vertexPasses).toBe(0);
+    const joints = rig.bones.map((bone) => bone.getWorldPosition(new Vector3()));
+    for (const joint of joints) {
+      const ndc = joint.clone().project(camera);
+      expect(Math.max(Math.abs(ndc.x), Math.abs(ndc.y))).toBeLessThan(1 / (1 + SKIN_MARGIN));
     }
   });
 });
