@@ -3,7 +3,7 @@ import { LoadingManager, SkinnedMesh, Texture, type Object3D, type Material } fr
 import { unreachable } from "../filler/unreachable";
 import { limbTracks, poseNodeId } from "../rig/tracks";
 import { AVATAR_SOURCES } from "./avatar-frame-source";
-import { resolveHumanoid, torsoAimChildren, type HumanoidKey } from "./humanoid-map";
+import { resolveHumanoid, humanoidAimChildren, type HumanoidKey } from "./humanoid-map";
 
 export type GltfParse = (data: ArrayBuffer) => Promise<{ readonly scene: Object3D }>;
 export interface GltfAvatar {
@@ -136,7 +136,7 @@ export async function loadGltfAvatar(data: ArrayBuffer, parse: GltfParse): Promi
   try {
     binding = captureSkeleton(skeleton, {
       boneKeys,
-      aimChildren: torsoAimChildren(skeleton, boneKeys),
+      aimChildren: humanoidAimChildren(skeleton, boneKeys),
     });
   } catch (cause) {
     return refuse(invalidSkeleton(cause));

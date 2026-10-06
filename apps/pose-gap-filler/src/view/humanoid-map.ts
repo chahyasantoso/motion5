@@ -1,4 +1,4 @@
-import type { Bone, Skeleton } from "three";
+import type { Bone, Object3D, Skeleton } from "three";
 
 const HUMANOID_ALIASES = {
   hips: ["hips", "pelvis", "jbipchips"],
@@ -79,26 +79,41 @@ export function resolveHumanoid(skeleton: Skeleton): {
 }
 
 /**
- * Torso bones aim along the spine, so a branching spine or chest names the child on the path to
- * the neck (or head). Never inferred from child order. Bones off that path get no entry.
+ * Each aim-driven key aims along its chain, at the first present target: the torso at the neck (or
+ * head), an upper limb at its lower limb, a lower limb at its hand or foot. One owner of which child
+ * a bone aims at, so twist or shoulder siblings never make a bone branch-ambiguous.
  */
-export function torsoAimChildren(
+const AIM_TARGETS: Readonly<Partial<Record<HumanoidKey, readonly HumanoidKey[]>>> = Object.freeze({
+  spine: ["neck", "head"],
+  chest: ["neck", "head"],
+  "left-upper-arm": ["left-lower-arm"],
+  "left-lower-arm": ["left-hand"],
+  "right-upper-arm": ["right-lower-arm"],
+  "right-lower-arm": ["right-hand"],
+  "left-upper-leg": ["left-lower-leg"],
+  "left-lower-leg": ["left-foot"],
+  "right-upper-leg": ["right-lower-leg"],
+  "right-lower-leg": ["right-foot"],
+});
+
+/**
+ * Authored bone name to the direct child on the path to its aim target, never inferred from child
+ * order. A bone whose target is absent or not a descendant gets no entry.
+ */
+export function humanoidAimChildren(
   skeleton: Skeleton,
   boneKeys: Readonly<Record<string, HumanoidKey>>,
 ): Readonly<Record<string, string>> {
   const byKey = new Map<HumanoidKey, Bone>();
-  for (const bone of skeleton.bones) {
-    const key = Object.hasOwn(boneKeys, bone.name) ? boneKeys[bone.name] : undefined;
-    if (key !== undefined) byKey.set(key, bone);
-  }
-  const target = byKey.get("neck") ?? byKey.get("head");
+  for (const bone of skeleton.bones)
+    if (Object.hasOwn(boneKeys, bone.name)) byKey.set(boneKeys[bone.name]!, bone);
   const children: Record<string, string> = {};
-  if (target === undefined) return Object.freeze(children);
-  for (const key of ["spine", "chest"] as const) {
+  for (const [key, targets] of Object.entries(AIM_TARGETS) as [HumanoidKey, HumanoidKey[]][]) {
     const bone = byKey.get(key);
-    if (bone === undefined) continue;
-    let child = target;
-    while (child.parent !== null && child.parent !== bone) child = child.parent as Bone;
+    const target = targets.map((name) => byKey.get(name)).find((found) => found !== undefined);
+    if (bone === undefined || target === undefined) continue;
+    let child: Object3D = target;
+    while (child.parent !== null && child.parent !== bone) child = child.parent;
     if (child.parent === bone) children[bone.name] = child.name;
   }
   return Object.freeze(children);

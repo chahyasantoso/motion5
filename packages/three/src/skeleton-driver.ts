@@ -40,6 +40,19 @@ export interface SkeletonDriver {
   reset(): void;
 }
 
+/** Allocation-free finiteness check on the per-bone, per-frame path. */
+function isFiniteRigid(position: Vector3, quaternion: Quaternion): boolean {
+  return (
+    Number.isFinite(position.x) &&
+    Number.isFinite(position.y) &&
+    Number.isFinite(position.z) &&
+    Number.isFinite(quaternion.x) &&
+    Number.isFinite(quaternion.y) &&
+    Number.isFinite(quaternion.z) &&
+    Number.isFinite(quaternion.w)
+  );
+}
+
 const UNIT = Object.freeze(new Vector3(1, 1, 1));
 const IDENTITY = Object.freeze(new Matrix4());
 const APPLIED: BoneOutcome = Object.freeze({ kind: "applied" });
@@ -128,14 +141,16 @@ export function createSkeletonDriver(
   const aim = new Vector3();
   const restRotation = new Matrix4();
 
-  /** The rotation a source frame is composed with: none for `frame`, current rest for `basis`. */
-  const sourceRestRotation = (
+  /** A source frame as a matrix: absolute for `frame`, composed with current rest for `basis`. */
+  const sourceMatrix = (
     index: number,
     drive: Extract<BoneDrive, { kind: "frame" | "basis" }>,
+    values: Readonly<Record<string, unknown>>,
   ): Matrix4 => {
+    frameToMatrix(values, matrix);
     switch (drive.kind) {
       case "frame":
-        return IDENTITY;
+        return matrix;
       case "basis":
         // Rest orientation as currently placed under source space; ancestor scale is uniform.
         restRotation
@@ -144,7 +159,7 @@ export function createSkeletonDriver(
           .multiply(binding.rootParent.matrixWorld)
           .multiply(restFromRoot.get(index)!)
           .decompose(position, quaternion, scale);
-        return restRotation.makeRotationFromQuaternion(quaternion);
+        return matrix.multiply(restRotation.makeRotationFromQuaternion(quaternion));
       default:
         return unreachable(drive);
     }
@@ -152,7 +167,7 @@ export function createSkeletonDriver(
 
   const writeRigid = (bone: Object3D, local: Matrix4): void => {
     local.decompose(position, quaternion, scale);
-    if (!position.toArray().every(Number.isFinite) || !quaternion.toArray().every(Number.isFinite))
+    if (!isFiniteRigid(position, quaternion))
       throw new TypeError("Bone frame cannot be represented by a finite rigid transform.");
     bone.position.copy(position);
     bone.quaternion.copy(quaternion);
@@ -181,9 +196,8 @@ export function createSkeletonDriver(
               outcomes.set(captured.key, MISSING);
               continue;
             }
-            frameToMatrix(values, matrix);
-            matrix.multiply(sourceRestRotation(captured.index, drive));
-            writeRigid(bone, matrix.premultiply(toParent(bone, parentFromSource)));
+            const source = sourceMatrix(captured.index, drive, values);
+            writeRigid(bone, source.premultiply(toParent(bone, parentFromSource)));
             outcomes.set(captured.key, APPLIED);
             break;
           }

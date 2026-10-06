@@ -100,3 +100,20 @@ describe("humanoid torso mapping (#559 items 1 and 2)", () => {
     result.avatar.dispose();
   });
 });
+
+describe("humanoid limb aim children (#559 item 2)", () => {
+  it("A16 a twist bone beside the forearm keeps the upper arm aimed at the forearm", async () => {
+    const restAimOf = async (extra: readonly Extra[]) => {
+      const rig = humanoidWith(extra);
+      const result = await loadGltfAvatar(new ArrayBuffer(0), async () => rig);
+      if (result.kind !== "loaded") throw new Error(describeGltfAvatarRefusal(result.refusal));
+      const upper = result.avatar.binding.bones.find((bone) => bone.key === "left-upper-arm")!;
+      const aim = upper.restAim?.toArray();
+      result.avatar.dispose();
+      return aim;
+    };
+    const plain = await restAimOf([]);
+    expect(plain).toBeDefined();
+    expect(await restAimOf([["LeftArmTwist", "mixamorig:LeftArm", [0, 0, 0.05]]])).toEqual(plain);
+  });
+});
