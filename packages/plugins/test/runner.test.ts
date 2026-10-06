@@ -401,6 +401,38 @@ describe("application-attached runners", () => {
     f.project.dispose();
   });
 
+  it("R17b an eager tick whose failure report throws still releases, disposes and unsubscribes", () => {
+    const f = fixture();
+    let released = 0;
+    let disposed = 0;
+    const tick: ClockTick = { tick: 1, time: 0, delta: 0 };
+    const clock = {
+      ...f.clock,
+      subscribe: (listener: (tick: ClockTick) => void) => {
+        listener(tick);
+        return () => {
+          released += 1;
+        };
+      },
+    };
+    const reportError = new Error("report");
+    const runners: Runner[] = [
+      {
+        nodeId: "scene/a",
+        step: () => {
+          throw new Error("boom");
+        },
+      },
+      { ...write("scene/b", 5), dispose: () => (disposed += 1) },
+    ];
+    const onFailure = () => {
+      throw reportError;
+    };
+    expect(() => attachRunners(f.port, runners, { clock, onFailure })).toThrow(reportError);
+    expect([released, disposed, xOf(f.project, "b")]).toEqual([1, 1, 0]);
+    f.project.dispose();
+  });
+
   it("R18 malformed options are refused by name before subscribing", () => {
     const f = fixture();
     const runners = [write("scene/a", 1)];

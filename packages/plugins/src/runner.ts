@@ -210,20 +210,28 @@ export function attachRunners(
     if (errors.length > 0) throw errors[0];
   }
 
+  // A tick that throws before subscribe returns has no disposer to reach the caller yet. Keep the
+  // first such error, finish subscribing, clean up completely, then let it escape attachment.
+  let attaching = true;
+  let attachFailure: { readonly error: unknown } | undefined;
   const subscription = clock.subscribe((tick) => {
     if (stopped) return;
     if (dispatching) throw new Error("Runner clock dispatch is already in flight.");
     dispatching = true;
     try {
       dispatch(tick);
+    } catch (error) {
+      if (!attaching) throw error;
+      attachFailure ??= { error };
     } finally {
       dispatching = false;
     }
   });
+  attaching = false;
   if (stopped) subscription();
   else unsubscribe = subscription;
 
-  return () => {
+  const dispose = () => {
     if (stopped) return;
     // Cleanup would otherwise open a second batch from step, disposal or a failure callback.
     // Refuse before any state transition; the caller can retry after dispatch has returned.
@@ -246,6 +254,15 @@ export function attachRunners(
     errors.push(...report(failures));
     if (errors.length > 0) throw errors[0];
   };
+  if (attachFailure !== undefined) {
+    try {
+      dispose();
+    } catch {
+      // The attachment error is the first error; cleanup errors after it are secondary.
+    }
+    throw attachFailure.error;
+  }
+  return dispose;
 }
 
 function readOptions(options: AttachRunnersOptions): AttachRunnersOptions {
