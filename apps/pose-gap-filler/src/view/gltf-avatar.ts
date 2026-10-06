@@ -71,7 +71,9 @@ function humanoidDrives(
 ): Readonly<Record<string, BoneDrive>> {
   const drives: Record<string, BoneDrive> = {};
   for (const key of Object.values(boneKeys)) drives[key] = { kind: "rest" };
-  drives.hips = { kind: "frame", source: AVATAR_SOURCES.torso };
+  // The torso basis is identity for an upright subject facing the camera, which is the avatar's
+  // rest pose as placed by the app, so the hips follow it relative to their rest orientation.
+  drives.hips = { kind: "basis", source: AVATAR_SOURCES.torso };
   for (const [limb, upper, lower] of [
     ["left-arm", "left-upper-arm", "left-lower-arm"],
     ["right-arm", "right-upper-arm", "right-lower-arm"],

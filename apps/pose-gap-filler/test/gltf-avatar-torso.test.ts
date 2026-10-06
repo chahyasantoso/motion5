@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { Bone, Skeleton } from "three";
+import { Bone, Quaternion, Skeleton, Vector3 } from "three";
 import { createSkeletonDriver } from "@motion5/three/skeleton";
 import { syntheticHumanoid } from "../../../packages/three/test/support/synthetic-skeleton";
 import { describeGltfAvatarRefusal, loadGltfAvatar } from "../src/view/gltf-avatar";
@@ -80,5 +80,23 @@ describe("humanoid torso mapping (#559 items 1 and 2)", () => {
     expect(describeGltfAvatarRefusal(result.refusal)).toBe(
       "Avatar maps several bones to required keys: left-upper-arm.",
     );
+  });
+
+  it("A13 an upright torso basis keeps rest-rotated hips at their rest orientation", async () => {
+    const rig = humanoidWith([]);
+    const hips = rig.byName.get("mixamorig:Hips")!;
+    const rest = new Quaternion().setFromAxisAngle(new Vector3(1, 0, 0), Math.PI / 2);
+    hips.quaternion.copy(rest);
+    rig.scene.updateMatrixWorld(true);
+    const result = await loadGltfAvatar(new ArrayBuffer(0), async () => rig);
+    if (result.kind !== "loaded") throw new Error(describeGltfAvatarRefusal(result.refusal));
+    const driver = createSkeletonDriver(result.avatar.binding, {
+      sourceSpace: rig.scene,
+      drives: result.avatar.drives,
+    });
+    const torso = { x: 0, y: 0.9, z: 0 };
+    driver.apply((id) => (id === AVATAR_SOURCES.torso ? torso : undefined));
+    expect(hips.quaternion.angleTo(rest)).toBeLessThan(1e-9);
+    result.avatar.dispose();
   });
 });
