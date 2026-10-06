@@ -23,6 +23,15 @@ position. Swing pre-multiplies rest rotation, preserving rest twist rather than 
 Missing and degenerate sources hold. Parents precede children independently of input order.
 Written bones update world matrices immediately; bind matrices and inverse binds are untouched.
 
+Amended 2026-10-06 (#559). A bone aims only at an unambiguous child: its one child bone, or the
+child the caller names in `aimChildren`; otherwise restAim is undefined and an aim drive holds
+with `no-rest-aim`, because skeleton child order is not a choice. A `basis` drive reads a body
+basis whose identity means the bone's rest orientation as placed under source space, so a rig's
+own hips axes never leak into the pose; `frame` stays absolute for bone world frames. The
+application names every aim child from one chain table (torso to neck or head, upper to lower limb,
+lower limb to hand or foot), so twist or shoulder siblings never make a bone ambiguous. GLTFLoader
+is reached only through one dynamic import in `gltf-avatar.ts` (test A15).
+
 Drive and outcome unions are exhaustively consumed, including held reasons. File loading belongs
 to the application, not the adapter. Synthetic rigs provide controlled tests without licensed assets.
 

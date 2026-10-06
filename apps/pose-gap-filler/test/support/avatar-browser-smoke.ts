@@ -19,6 +19,7 @@ declare global {
       ok: boolean;
       bytes?: number;
       msPerApply?: number;
+      msPerFraming?: number;
       drawCalls?: number;
       error?: string;
     };
@@ -53,18 +54,27 @@ async function run() {
     if (body.kind !== "gltf" || !body.avatar.scene.visible)
       throw new Error("Imported body not visible");
     const read = avatarFrameSource(step, residuals, solver.readPatch);
-    for (let i = 0; i < 100; i += 1) body.driver.apply(read);
+    const frame = createAvatarFraming();
+    // One presented frame drives the skeleton and frames it; time both, as the viewport pays both.
+    const present = () => {
+      body.driver.apply(read);
+      frame(camera, avatar.parent, 20, -5);
+    };
+    for (let i = 0; i < 100; i += 1) present();
     const iterations = 3000;
     const start = performance.now();
-    for (let i = 0; i < iterations; i += 1) body.driver.apply(read);
+    for (let i = 0; i < iterations; i += 1) present();
     const msPerApply = (performance.now() - start) / iterations;
-    createAvatarFraming()(camera, avatar.parent, 20, -5);
+    const framingStart = performance.now();
+    for (let i = 0; i < iterations; i += 1) frame(camera, avatar.parent, 20, -5);
+    const msPerFraming = (performance.now() - framingStart) / iterations;
     renderer.render(scene, camera);
     if (renderer.info.render.calls < 1) throw new Error("No WebGL draw calls");
     window.phase10Smoke = {
       ok: true,
       bytes: bytes.byteLength,
       msPerApply,
+      msPerFraming,
       drawCalls: renderer.info.render.calls,
     };
   } finally {

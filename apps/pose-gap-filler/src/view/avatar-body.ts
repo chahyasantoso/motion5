@@ -5,6 +5,7 @@ import {
 } from "@motion5/three/skeleton";
 import { Mesh, type Material, type Object3D } from "three";
 import {
+  invalidSkeleton,
   loadGltfAvatar,
   parseGltf,
   type GltfAvatar,
@@ -63,6 +64,7 @@ export function createAvatarBodyController(
     get body(): AvatarBody {
       return body;
     },
+    /** Never rejects: every failure is a refusal and leaves the current body untouched. */
     async load(
       data: ArrayBuffer | Promise<ArrayBuffer>,
       parse: GltfParse = parseGltf,
@@ -95,12 +97,19 @@ export function createAvatarBodyController(
           // Imported metres/y-up live under the one calibrated mm/camera-space parent.
           avatar.scene.rotation.x = Math.PI;
           avatar.scene.scale.setScalar(1000);
-          parent.add(avatar.scene);
           avatar.scene.visible = false;
-          const driver = createSkeletonDriver(avatar.binding, {
-            sourceSpace: parent,
-            drives: avatar.drives,
-          });
+          // Attach first so the driver validates the real ancestor chain; a refusal detaches.
+          parent.add(avatar.scene);
+          let driver: SkeletonDriver;
+          try {
+            driver = createSkeletonDriver(avatar.binding, {
+              sourceSpace: parent,
+              drives: avatar.drives,
+            });
+          } catch (cause) {
+            avatar.dispose();
+            return { kind: "refused", refusal: invalidSkeleton(cause) };
+          }
           const objects = new Map<string, Object3D>();
           for (const captured of avatar.binding.bones)
             if (captured.key !== undefined)

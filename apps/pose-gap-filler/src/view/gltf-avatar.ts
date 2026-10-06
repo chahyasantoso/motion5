@@ -3,7 +3,7 @@ import { LoadingManager, SkinnedMesh, Texture, type Object3D, type Material } fr
 import { unreachable } from "../filler/unreachable";
 import { limbTracks, poseNodeId } from "../rig/tracks";
 import { AVATAR_SOURCES } from "./avatar-frame-source";
-import { resolveHumanoid, type HumanoidKey } from "./humanoid-map";
+import { resolveHumanoid, humanoidAimChildren, type HumanoidKey } from "./humanoid-map";
 
 export type GltfParse = (data: ArrayBuffer) => Promise<{ readonly scene: Object3D }>;
 export interface GltfAvatar {
@@ -17,6 +17,7 @@ export type GltfAvatarRefusal =
   | { readonly kind: "no-skinned-mesh" }
   | { readonly kind: "multiple-skeletons"; readonly count: number }
   | { readonly kind: "missing-bones"; readonly keys: readonly HumanoidKey[] }
+  | { readonly kind: "ambiguous-bones"; readonly keys: readonly HumanoidKey[] }
   | { readonly kind: "invalid-skeleton"; readonly message: string };
 export type GltfAvatarLoad =
   | { readonly kind: "loaded"; readonly avatar: GltfAvatar }
@@ -32,11 +33,21 @@ export function describeGltfAvatarRefusal(refusal: GltfAvatarRefusal): string {
       return `Avatar has ${refusal.count} distinct skeletons; exactly one is required.`;
     case "missing-bones":
       return `Avatar is missing required bones: ${refusal.keys.join(", ")}.`;
+    case "ambiguous-bones":
+      return `Avatar maps several bones to required keys: ${refusal.keys.join(", ")}.`;
     case "invalid-skeleton":
       return `Invalid avatar skeleton: ${refusal.message}`;
     default:
       return unreachable(refusal, "avatar refusal");
   }
+}
+
+/** The one spelling of a skeleton the capture or driver refused. */
+export function invalidSkeleton(cause: unknown): GltfAvatarRefusal {
+  return {
+    kind: "invalid-skeleton",
+    message: cause instanceof Error ? cause.message : String(cause),
+  };
 }
 
 /** Dispose each owned GPU resource once, even when several meshes share a skeleton or material. */
@@ -68,7 +79,9 @@ function humanoidDrives(
 ): Readonly<Record<string, BoneDrive>> {
   const drives: Record<string, BoneDrive> = {};
   for (const key of Object.values(boneKeys)) drives[key] = { kind: "rest" };
-  drives.hips = { kind: "frame", source: AVATAR_SOURCES.torso };
+  // The torso basis is identity for an upright subject facing the camera, which is the avatar's
+  // rest pose as placed by the app, so the hips follow it relative to their rest orientation.
+  drives.hips = { kind: "basis", source: AVATAR_SOURCES.torso };
   for (const [limb, upper, lower] of [
     ["left-arm", "left-upper-arm", "left-lower-arm"],
     ["right-arm", "right-upper-arm", "right-lower-arm"],
@@ -116,16 +129,17 @@ export async function loadGltfAvatar(data: ArrayBuffer, parse: GltfParse): Promi
   const skeletons = new Set(meshes.map((mesh) => mesh.skeleton));
   if (skeletons.size !== 1) return refuse({ kind: "multiple-skeletons", count: skeletons.size });
   const skeleton = meshes[0]!.skeleton;
-  const { boneKeys, missing } = resolveHumanoid(skeleton);
+  const { boneKeys, missing, ambiguous } = resolveHumanoid(skeleton);
   if (missing.length > 0) return refuse({ kind: "missing-bones", keys: missing });
+  if (ambiguous.length > 0) return refuse({ kind: "ambiguous-bones", keys: ambiguous });
   let binding: SkeletonBinding;
   try {
-    binding = captureSkeleton(skeleton, { boneKeys });
-  } catch (cause) {
-    return refuse({
-      kind: "invalid-skeleton",
-      message: cause instanceof Error ? cause.message : String(cause),
+    binding = captureSkeleton(skeleton, {
+      boneKeys,
+      aimChildren: humanoidAimChildren(skeleton, boneKeys),
     });
+  } catch (cause) {
+    return refuse(invalidSkeleton(cause));
   }
   for (const mesh of meshes) mesh.frustumCulled = false;
   let disposed = false;

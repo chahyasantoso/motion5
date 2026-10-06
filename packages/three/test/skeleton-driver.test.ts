@@ -245,12 +245,14 @@ describe("parent-space skeleton driver", () => {
       { kind: "rest" },
       { kind: "held", reason: "source-missing" },
       { kind: "held", reason: "degenerate-direction" },
+      { kind: "held", reason: "no-rest-aim" },
     ];
     expect(outcomes.map(describeBoneOutcome)).toEqual([
       "Bone transform applied.",
       "Bone restored to rest.",
       "Bone held: source missing.",
       "Bone held: degenerate direction.",
+      "Bone held: no unambiguous rest aim child.",
     ]);
   });
 });

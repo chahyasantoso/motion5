@@ -7,16 +7,27 @@ import { normalizeDirection } from "./skeleton-direction";
 import {
   assertCapturedHierarchy,
   assertSkeletonScale,
+  type CapturedBone,
   type SkeletonBinding,
 } from "./skeleton-capture";
 
+/**
+ * `frame`: the source is the bone's own world frame in source space (absolute).
+ * `basis`: the source is a body basis in source space whose identity rotation means the bone's
+ * rest orientation as placed under source space; its translation places the bone origin.
+ * `aim`: swing the rest aim onto the source direction, keeping rest twist and position.
+ */
 export type BoneDrive =
   | { readonly kind: "frame"; readonly source: string }
+  | { readonly kind: "basis"; readonly source: string }
   | { readonly kind: "aim"; readonly from: string; readonly to: string }
   | { readonly kind: "rest" };
 export type BoneOutcome =
   | { readonly kind: "applied" }
-  | { readonly kind: "held"; readonly reason: "source-missing" | "degenerate-direction" }
+  | {
+      readonly kind: "held";
+      readonly reason: "source-missing" | "degenerate-direction" | "no-rest-aim";
+    }
   | { readonly kind: "rest" };
 export type FrameSource = (source: string) => Readonly<Record<string, unknown>> | undefined;
 export interface SkeletonDriverOptions {
@@ -29,10 +40,26 @@ export interface SkeletonDriver {
   reset(): void;
 }
 
+/** Allocation-free finiteness check on the per-bone, per-frame path. */
+function isFiniteRigid(position: Vector3, quaternion: Quaternion): boolean {
+  return (
+    Number.isFinite(position.x) &&
+    Number.isFinite(position.y) &&
+    Number.isFinite(position.z) &&
+    Number.isFinite(quaternion.x) &&
+    Number.isFinite(quaternion.y) &&
+    Number.isFinite(quaternion.z) &&
+    Number.isFinite(quaternion.w)
+  );
+}
+
+const UNIT = Object.freeze(new Vector3(1, 1, 1));
+const IDENTITY = Object.freeze(new Matrix4());
 const APPLIED: BoneOutcome = Object.freeze({ kind: "applied" });
 const REST: BoneOutcome = Object.freeze({ kind: "rest" });
 const MISSING: BoneOutcome = Object.freeze({ kind: "held", reason: "source-missing" });
 const DEGENERATE: BoneOutcome = Object.freeze({ kind: "held", reason: "degenerate-direction" });
+const NO_REST_AIM: BoneOutcome = Object.freeze({ kind: "held", reason: "no-rest-aim" });
 
 export function describeBoneOutcome(outcome: BoneOutcome): string {
   switch (outcome.kind) {
@@ -46,6 +73,8 @@ export function describeBoneOutcome(outcome: BoneOutcome): string {
           return "Bone held: source missing.";
         case "degenerate-direction":
           return "Bone held: degenerate direction.";
+        case "no-rest-aim":
+          return "Bone held: no unambiguous rest aim child.";
         default:
           return unreachable(outcome.reason);
       }
@@ -68,6 +97,7 @@ export function createSkeletonDriver(
     binding.boneOf(key);
     switch (drive.kind) {
       case "frame":
+      case "basis":
         sourceName(drive.source);
         break;
       case "aim":
@@ -88,6 +118,19 @@ export function createSkeletonDriver(
     binding.rootParent,
   );
   const ordered = [...binding.bones].sort((a, b) => a.depth - b.depth || a.index - b.index);
+  // Rest transform of each basis-driven bone relative to rootParent, from captured data only.
+  const restFromRoot = new Map<number, Matrix4>();
+  for (const captured of binding.bones) {
+    if (captured.key === undefined || drives.get(captured.key)?.kind !== "basis") continue;
+    const rest = new Matrix4();
+    const local = new Matrix4();
+    for (let at: number | undefined = captured.index; at !== undefined; ) {
+      const link: CapturedBone = binding.bones[at]!;
+      rest.premultiply(local.compose(link.restPosition, link.restQuaternion, UNIT));
+      at = link.parent;
+    }
+    restFromRoot.set(captured.index, rest);
+  }
   const matrix = new Matrix4();
   const parentFromSource = new Matrix4();
   const position = new Vector3();
@@ -96,6 +139,39 @@ export function createSkeletonDriver(
   const from = new Vector3();
   const to = new Vector3();
   const aim = new Vector3();
+  const restRotation = new Matrix4();
+
+  /** A source frame as a matrix: absolute for `frame`, composed with current rest for `basis`. */
+  const sourceMatrix = (
+    index: number,
+    drive: Extract<BoneDrive, { kind: "frame" | "basis" }>,
+    values: Readonly<Record<string, unknown>>,
+  ): Matrix4 => {
+    frameToMatrix(values, matrix);
+    switch (drive.kind) {
+      case "frame":
+        return matrix;
+      case "basis":
+        // Rest orientation as currently placed under source space; ancestor scale is uniform.
+        restRotation
+          .copy(sourceSpace.matrixWorld)
+          .invert()
+          .multiply(binding.rootParent.matrixWorld)
+          .multiply(restFromRoot.get(index)!)
+          .decompose(position, quaternion, scale);
+        return matrix.multiply(restRotation.makeRotationFromQuaternion(quaternion));
+      default:
+        return unreachable(drive);
+    }
+  };
+
+  const writeRigid = (bone: Object3D, local: Matrix4): void => {
+    local.decompose(position, quaternion, scale);
+    if (!isFiniteRigid(position, quaternion))
+      throw new TypeError("Bone frame cannot be represented by a finite rigid transform.");
+    bone.position.copy(position);
+    bone.quaternion.copy(quaternion);
+  };
 
   // Only frame and aim drives read source space; rest drives never pay for the inversion.
   const toParent = (bone: Object3D, target: Matrix4): Matrix4 =>
@@ -113,26 +189,23 @@ export function createSkeletonDriver(
         if (drive === undefined) continue;
         const bone = captured.bone;
         switch (drive.kind) {
-          case "frame": {
+          case "frame":
+          case "basis": {
             const values = read(drive.source);
             if (values === undefined) {
               outcomes.set(captured.key, MISSING);
               continue;
             }
-            toParent(bone, parentFromSource);
-            matrix.multiplyMatrices(parentFromSource, frameToMatrix(values, matrix));
-            matrix.decompose(position, quaternion, scale);
-            if (
-              !position.toArray().every(Number.isFinite) ||
-              !quaternion.toArray().every(Number.isFinite)
-            )
-              throw new TypeError("Bone frame cannot be represented by a finite rigid transform.");
-            bone.position.copy(position);
-            bone.quaternion.copy(quaternion);
+            const source = sourceMatrix(captured.index, drive, values);
+            writeRigid(bone, source.premultiply(toParent(bone, parentFromSource)));
             outcomes.set(captured.key, APPLIED);
             break;
           }
           case "aim": {
+            if (captured.restAim === undefined) {
+              outcomes.set(captured.key, NO_REST_AIM);
+              continue;
+            }
             const a = read(drive.from);
             const b = read(drive.to);
             if (a === undefined || b === undefined) {
@@ -144,7 +217,7 @@ export function createSkeletonDriver(
               q = readFrame3d(b);
             from.set(p.x, p.y, p.z).applyMatrix4(parentFromSource);
             to.set(q.x, q.y, q.z).applyMatrix4(parentFromSource).sub(from);
-            if (!normalizeDirection(to) || captured.restAim === undefined) {
+            if (!normalizeDirection(to)) {
               outcomes.set(captured.key, DEGENERATE);
               continue;
             }
