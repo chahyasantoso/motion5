@@ -365,4 +365,72 @@ describe("application-attached runners", () => {
     expect(stop).not.toThrow();
     f.project.dispose();
   });
+
+  it("R17 a clock firing inside subscribe neither hits an uninitialized handle nor leaks", () => {
+    const f = fixture();
+    const onFailure = (failure: RunnerFailure) => {
+      f.failures.push(failure);
+    };
+    let released = 0;
+    const eager = (tick: ClockTick) => ({
+      ...f.clock,
+      subscribe: (listener: (tick: ClockTick) => void) => {
+        listener(tick);
+        return () => {
+          released += 1;
+        };
+      },
+    });
+    const thrower: Runner = {
+      nodeId: "scene/a",
+      step: () => {
+        throw new Error("boom");
+      },
+    };
+    const tick: ClockTick = { tick: 1, time: 0, delta: 0 };
+    const stopped = attachRunners(f.port, [thrower], { clock: eager(tick), onFailure });
+    expect(f.failures.map((failure) => failure.kind)).toEqual(["step-threw"]);
+    expect(released).toBe(1);
+    stopped();
+    expect(released).toBe(1);
+    const stop = attachRunners(f.port, [write("scene/a", 4)], { clock: eager(tick), onFailure });
+    expect(xOf(f.project)).toBe(4);
+    expect(released).toBe(1);
+    stop();
+    expect(released).toBe(2);
+    f.project.dispose();
+  });
+
+  it("R18 malformed options are refused by name before subscribing", () => {
+    const f = fixture();
+    const runners = [write("scene/a", 1)];
+    const onFailure = () => {};
+    const refusals: [unknown, string][] = [
+      [undefined, "Runners require an options object."],
+      [{ onFailure }, "Runners require a clock with a subscribe function."],
+      [{ clock: {}, onFailure }, "Runners require a clock with a subscribe function."],
+      [{ clock: f.clock }, "Runners require an onFailure function."],
+    ];
+    for (const [options, message] of refusals) {
+      expect(() =>
+        attachRunners(f.port, runners, options as Parameters<typeof attachRunners>[2]),
+      ).toThrow(new TypeError(message));
+    }
+    f.clock.tick();
+    expect(xOf(f.project)).toBe(0);
+    f.project.dispose();
+  });
+
+  it("R19 a latest slot cannot be typed to carry undefined, which means empty", () => {
+    // @ts-expect-error undefined is the empty answer of take(), never an offered value.
+    createLatestSlot<undefined>();
+    // @ts-expect-error an optional payload must be wrapped in a record instead.
+    createLatestSlot<number | undefined>();
+    const slot = createLatestSlot<{ readonly value: number | undefined } | null>();
+    slot.offer({ value: undefined });
+    expect(slot.take()).toEqual({ value: undefined });
+    slot.offer(null);
+    expect(slot.take()).toBeNull();
+    expect(slot.take()).toBeUndefined();
+  });
 });

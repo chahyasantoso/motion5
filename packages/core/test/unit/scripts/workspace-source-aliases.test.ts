@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { workspaceSourceAliases } from "../../../../../scripts/workspace-source-aliases.mjs";
+import { code } from "../../helpers/source-region";
 
 // PR #558: core aliases were a hand-written prefix list, so the declared
 // `@motion5/core/adapters/browser-clock` subpath resolved through the `adapters` alias to a missing
@@ -49,7 +50,7 @@ describe("workspace source aliases", () => {
   it("is the only alias source of the root and every app Vite config", () => {
     const configs = ["vite.config.ts", "apps/ik-playground/vite.config.ts"]
       .concat(["apps/pose-gap-filler/vite.config.ts", "apps/react-demo/vite.config.ts"])
-      .map((path) => [path, read(path)] as const);
+      .map((path) => [path, code(new URL(path, root))] as const);
     for (const [path, source] of configs) {
       expect([path, /alias: \[\.\.\.workspaceSourceAliases\(/.test(source)]).toEqual([path, true]);
       expect([path, source.includes("find:")]).toEqual([path, false]);

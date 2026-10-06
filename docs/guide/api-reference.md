@@ -356,7 +356,8 @@ with the nameable types `Runner`, `RunnerStep`, `RunnerFailure`, `AttachRunnersO
 `LatestSlot<T>`. Stateful simulations, temporal filters and large inference belong here, not
 inside plugin composition. See ADR-139.
 
-Attach after engine creation using the same clock. Attachment snapshots the runner array and node
+Attach after engine creation using the same clock. A missing options object, a clock without
+`subscribe` or a missing `onFailure` is refused by name. Attachment snapshots the runner array and node
 ids, rejects duplicate or missing owners before subscribing, and subscribes once. A runner
 exclusively owns one node's overlay; different attachments must not own the same node.
 Synchronous `step(tick, read)` returns `hold` (no write), `write` (replace the overlay wholesale)
@@ -390,7 +391,8 @@ const disposeRunners = attachRunners(
 ```
 
 `LatestSlot` retains the newest offered result; `take` consumes it once. Async work stays outside
-`step`; the next tick that consumes a completed result applies it.
+`step`; the next tick that consumes a completed result applies it. `take` answers `undefined` when
+empty, so `T` excludes `undefined` by type; wrap an optional result in a record.
 
 Throwing steps, missing nodes and refused writes detach only their runner, attempt release when
 possible and dispose it once. `onFailure` runs after the batch and cleanup; every report is
@@ -400,7 +402,8 @@ attempted even if a callback throws, then the first thrown value escapes.
 Disposal is idempotent: unsubscribe, release remaining nodes still present in one batch and attempt
 every disposer. Dispose before the project. Reversed cleanup still attempts every runner disposer,
 then rethrows the batch error once; the next call is silent. After a `project-unavailable` stop,
-later disposal is a no-op.
+later disposal is a no-op. Any failure of the batch call itself stops the attachment, transient
+or not: the runner cannot tell a disposed project from a passing refusal, so it never retries.
 
 Do not recursively tick the clock or dispose the attachment from `step`, runner cleanup or
 `onFailure`. Active-dispatch reentrancy is refused before changing attachment state, preserving

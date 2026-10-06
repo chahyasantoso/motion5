@@ -32,7 +32,8 @@ other commands continue. A refused write attempts empty release in the same reci
 failure is reported too, without retrying a failed empty release.
 
 Anything escaping `values()` is `project-unavailable`: stop, unsubscribe, retire every live runner,
-attempt every disposer and report once. Its later disposer is a no-op. Ordinary disposal
+attempt every disposer and report once. Any failure of the batch call stops the attachment, transient
+or not; no safe signal separates a disposed project from a passing refusal, so it never retries. Its later disposer is a no-op. Ordinary disposal
 unsubscribes, releases every remaining node still present in one batch and attempts every disposer
 even if the releasing batch throws. Reversed project cleanup therefore rethrows that error once
 at the call site after consistent cleanup; the next disposer call is silent.
@@ -48,7 +49,8 @@ second batch during the tick or resurrect writes after stopping. Invoke lifecycl
 dispatch returns; an already stopped attachment still has a silent disposer. This follows the
 core's synchronous reentrancy discipline rather than silently deferring cleanup to another frame.
 
-`LatestSlot<T>` retains only the latest offered result; `take` consumes it once. Async producers
+`LatestSlot<T>` retains only the latest offered result; `take` consumes it once. `undefined` is
+the empty answer, so `T extends {} | null` keeps it out of the offerable values. Async producers
 offer completed work, then synchronous steps consume it on a later tick. Small frame-local models
 can remain pure plugin factories; large or temporal models use this application-owned boundary.
 

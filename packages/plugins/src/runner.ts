@@ -26,6 +26,7 @@ export type RunnerFailure =
   | { readonly kind: "write-refused"; readonly nodeId: string; readonly cause: unknown }
   | { readonly kind: "node-missing"; readonly nodeId: string }
   | { readonly kind: "dispose-threw"; readonly nodeId: string; readonly cause: unknown }
+  /** Any failure of the batch call itself; transient or not, it stops the whole attachment. */
   | { readonly kind: "project-unavailable"; readonly cause: unknown };
 
 export interface AttachRunnersOptions {
@@ -81,7 +82,8 @@ function snapshotRunners(project: RunnerProject, runners: readonly Runner[]): En
  * attachments must not own the same node. Steps must not write to the project synchronously.
  *
  * Dispose before project.dispose(). Reversed cleanup still disposes every runner, then rethrows
- * the batch error once. A project-unavailable stop has already cleaned up, so disposal is silent.
+ * the batch error once. Any failure of the batch call itself stops the attachment, transient or
+ * not (project-unavailable); that stop has already cleaned up, so disposal is silent.
  * Recursive clock dispatch and disposal during a running tick are refused before changing state.
  * Dispose outside step, runner cleanup and onFailure; after a terminal stop disposal is a no-op.
  * Native async work stays outside step: offer its completed result to a LatestSlot.
@@ -92,14 +94,20 @@ export function attachRunners(
   options: AttachRunnersOptions,
 ): () => void {
   const live = new Set(snapshotRunners(project, runners));
-  if (typeof options.onFailure !== "function") {
-    throw new TypeError("Runners require an onFailure function.");
-  }
-  const onFailure = options.onFailure;
+  const { clock, onFailure } = readOptions(options);
   const read = (nodeId: string) => project.get(nodeId);
   const pendingDisposal = new Set<Entry>();
   let stopped = false;
   let dispatching = false;
+  // Assigned once subscribe returns. A clock that fires inside subscribe can stop the attachment
+  // before then; stop() records it and the subscription is released as soon as it exists.
+  let unsubscribe: (() => void) | undefined;
+
+  // The only transition to stopped; idempotent with respect to the clock subscription.
+  function stop(): void {
+    stopped = true;
+    unsubscribe?.();
+  }
 
   // This is the only transition out of live; deletion before disposal makes cleanup reentrant.
   function retire(entry: Entry): void {
@@ -191,22 +199,18 @@ export function attachRunners(
           for (const write of writes) applyWrite(tx, write, failures);
         });
       } catch (cause) {
-        stopped = true;
-        unsubscribe();
+        stop();
         for (const entry of live) retire(entry);
         failures.push({ kind: "project-unavailable", cause });
       }
     }
     disposeRetired(failures);
-    if (live.size === 0 && !stopped) {
-      stopped = true;
-      unsubscribe();
-    }
+    if (live.size === 0 && !stopped) stop();
     const errors = report(failures);
     if (errors.length > 0) throw errors[0];
   }
 
-  const unsubscribe = options.clock.subscribe((tick) => {
+  const subscription = clock.subscribe((tick) => {
     if (stopped) return;
     if (dispatching) throw new Error("Runner clock dispatch is already in flight.");
     dispatching = true;
@@ -216,14 +220,15 @@ export function attachRunners(
       dispatching = false;
     }
   });
+  if (stopped) subscription();
+  else unsubscribe = subscription;
 
   return () => {
     if (stopped) return;
     // Cleanup would otherwise open a second batch from step, disposal or a failure callback.
     // Refuse before any state transition; the caller can retry after dispatch has returned.
     if (dispatching) throw new Error("Runner disposal cannot run during clock dispatch.");
-    stopped = true;
-    unsubscribe();
+    stop();
     const entries = [...live];
     for (const entry of entries) retire(entry);
     const failures: RunnerFailure[] = [];
@@ -241,6 +246,20 @@ export function attachRunners(
     errors.push(...report(failures));
     if (errors.length > 0) throw errors[0];
   };
+}
+
+function readOptions(options: AttachRunnersOptions): AttachRunnersOptions {
+  if (typeof options !== "object" || options === null) {
+    throw new TypeError("Runners require an options object.");
+  }
+  const { clock, onFailure } = options;
+  if (typeof clock !== "object" || clock === null || typeof clock.subscribe !== "function") {
+    throw new TypeError("Runners require a clock with a subscribe function.");
+  }
+  if (typeof onFailure !== "function") {
+    throw new TypeError("Runners require an onFailure function.");
+  }
+  return { clock, onFailure };
 }
 
 /** The only owner of runner failure wording. Causes remain available without coercing caller data. */
@@ -261,13 +280,14 @@ export function describeRunnerFailure(failure: RunnerFailure): string {
   }
 }
 
-export interface LatestSlot<T> {
+/** `undefined` means empty, so it is not an offerable value; wrap optional results in a record. */
+export interface LatestSlot<T extends {} | null> {
   offer(value: T): void;
   take(): T | undefined;
 }
 
 /** Bounded storage for an asynchronous producer: latest offered value wins, take consumes once. */
-export function createLatestSlot<T>(): LatestSlot<T> {
+export function createLatestSlot<T extends {} | null>(): LatestSlot<T> {
   let latest: T | undefined;
   return {
     offer(value) {
