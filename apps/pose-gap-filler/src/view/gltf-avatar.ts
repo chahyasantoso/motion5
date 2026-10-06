@@ -42,6 +42,14 @@ export function describeGltfAvatarRefusal(refusal: GltfAvatarRefusal): string {
   }
 }
 
+/** The one spelling of a skeleton the capture or driver refused. */
+export function invalidSkeleton(cause: unknown): GltfAvatarRefusal {
+  return {
+    kind: "invalid-skeleton",
+    message: cause instanceof Error ? cause.message : String(cause),
+  };
+}
+
 /** Dispose each owned GPU resource once, even when several meshes share a skeleton or material. */
 export function disposeAvatarScene(scene: Object3D): void {
   const resources = new Set<{ dispose(): void }>();
@@ -131,10 +139,7 @@ export async function loadGltfAvatar(data: ArrayBuffer, parse: GltfParse): Promi
       aimChildren: torsoAimChildren(skeleton, boneKeys),
     });
   } catch (cause) {
-    return refuse({
-      kind: "invalid-skeleton",
-      message: cause instanceof Error ? cause.message : String(cause),
-    });
+    return refuse(invalidSkeleton(cause));
   }
   for (const mesh of meshes) mesh.frustumCulled = false;
   let disposed = false;
