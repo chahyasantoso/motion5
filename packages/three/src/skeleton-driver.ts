@@ -7,6 +7,7 @@ import { normalizeDirection } from "./skeleton-direction";
 import {
   assertCapturedHierarchy,
   assertSkeletonScale,
+  type CapturedBone,
   type SkeletonBinding,
 } from "./skeleton-capture";
 
@@ -111,7 +112,7 @@ export function createSkeletonDriver(
     const rest = new Matrix4();
     const local = new Matrix4();
     for (let at: number | undefined = captured.index; at !== undefined; ) {
-      const link = binding.bones[at]!;
+      const link: CapturedBone = binding.bones[at]!;
       rest.premultiply(local.compose(link.restPosition, link.restQuaternion, UNIT));
       at = link.parent;
     }
