@@ -16,7 +16,10 @@ export type BoneDrive =
   | { readonly kind: "rest" };
 export type BoneOutcome =
   | { readonly kind: "applied" }
-  | { readonly kind: "held"; readonly reason: "source-missing" | "degenerate-direction" }
+  | {
+      readonly kind: "held";
+      readonly reason: "source-missing" | "degenerate-direction" | "no-rest-aim";
+    }
   | { readonly kind: "rest" };
 export type FrameSource = (source: string) => Readonly<Record<string, unknown>> | undefined;
 export interface SkeletonDriverOptions {
@@ -33,6 +36,7 @@ const APPLIED: BoneOutcome = Object.freeze({ kind: "applied" });
 const REST: BoneOutcome = Object.freeze({ kind: "rest" });
 const MISSING: BoneOutcome = Object.freeze({ kind: "held", reason: "source-missing" });
 const DEGENERATE: BoneOutcome = Object.freeze({ kind: "held", reason: "degenerate-direction" });
+const NO_REST_AIM: BoneOutcome = Object.freeze({ kind: "held", reason: "no-rest-aim" });
 
 export function describeBoneOutcome(outcome: BoneOutcome): string {
   switch (outcome.kind) {
@@ -46,6 +50,8 @@ export function describeBoneOutcome(outcome: BoneOutcome): string {
           return "Bone held: source missing.";
         case "degenerate-direction":
           return "Bone held: degenerate direction.";
+        case "no-rest-aim":
+          return "Bone held: no unambiguous rest aim child.";
         default:
           return unreachable(outcome.reason);
       }
@@ -133,6 +139,10 @@ export function createSkeletonDriver(
             break;
           }
           case "aim": {
+            if (captured.restAim === undefined) {
+              outcomes.set(captured.key, NO_REST_AIM);
+              continue;
+            }
             const a = read(drive.from);
             const b = read(drive.to);
             if (a === undefined || b === undefined) {
@@ -144,7 +154,7 @@ export function createSkeletonDriver(
               q = readFrame3d(b);
             from.set(p.x, p.y, p.z).applyMatrix4(parentFromSource);
             to.set(q.x, q.y, q.z).applyMatrix4(parentFromSource).sub(from);
-            if (!normalizeDirection(to) || captured.restAim === undefined) {
+            if (!normalizeDirection(to)) {
               outcomes.set(captured.key, DEGENERATE);
               continue;
             }

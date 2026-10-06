@@ -4,6 +4,12 @@ import { normalizeDirection } from "./skeleton-direction";
 export interface SkeletonBindingOptions {
   /** Authored bone.name to rig key. Unmapped bones still participate in the hierarchy. */
   readonly boneKeys: Readonly<Record<string, string>>;
+  /**
+   * Authored bone.name to the authored name of the direct child bone it aims at. A bone with
+   * exactly one child bone aims at it by default; a branching bone has a rest aim only when named
+   * here, because skeleton child order is not a stable choice.
+   */
+  readonly aimChildren?: Readonly<Record<string, string>>;
 }
 
 export interface CapturedBone {
@@ -15,7 +21,10 @@ export interface CapturedBone {
   readonly depth: number;
   readonly restPosition: Readonly<Vector3>;
   readonly restQuaternion: Readonly<Quaternion>;
-  /** restQuaternion applied to normalize(child restPosition), in the bone's parent space. */
+  /**
+   * restQuaternion applied to normalize(aim child restPosition), in the bone's parent space.
+   * Undefined for a bone with no unambiguous, non-degenerate aim child: an aim drive then holds.
+   */
   readonly restAim: Readonly<Vector3> | undefined;
 }
 
@@ -91,17 +100,35 @@ export function captureSkeleton(
   for (let ancestor: Object3D | null = rootParent; ancestor !== null; ancestor = ancestor.parent)
     assertRestTransform(ancestor);
 
-  const keys = new Map<Bone, string>();
-  const mapped = new Map<string, Bone>();
-  for (const [name, key] of Object.entries(options.boneKeys)) {
+  const uniqueBone = (name: string): Bone => {
     const matches = bones.filter((bone) => bone.name === name);
     if (matches.length !== 1)
       throw new TypeError(`Bone name "${name}" must match exactly one bone.`);
+    return matches[0]!;
+  };
+  const keys = new Map<Bone, string>();
+  const mapped = new Map<string, Bone>();
+  for (const [name, key] of Object.entries(options.boneKeys)) {
+    const bone = uniqueBone(name);
     if (typeof key !== "string" || key.length === 0 || key.includes(":") || mapped.has(key))
       throw new TypeError(`Bone key "${key}" must be unique, non-empty and contain no ':'.`);
-    keys.set(matches[0]!, key);
-    mapped.set(key, matches[0]!);
+    keys.set(bone, key);
+    mapped.set(key, bone);
   }
+  const aimChildren = new Map<Bone, Bone>();
+  for (const [name, childName] of Object.entries(options.aimChildren ?? {})) {
+    const bone = uniqueBone(name);
+    const child = uniqueBone(childName);
+    if (child.parent !== bone)
+      throw new TypeError(`Aim child "${childName}" must be a direct child of "${name}".`);
+    aimChildren.set(bone, child);
+  }
+  const aimChildOf = (bone: Bone): Bone | undefined => {
+    const named = aimChildren.get(bone);
+    if (named !== undefined) return named;
+    const children = bones.filter((child) => child.parent === bone);
+    return children.length === 1 ? children[0] : undefined;
+  };
   const depthOf = (index: number): number => {
     const seen = new Set<number>([index]);
     let depth = 0;
@@ -115,14 +142,12 @@ export function captureSkeleton(
     return depth;
   };
   const captured = bones.map((bone, index): CapturedBone => {
-    let restAim: Vector3 | undefined;
-    for (const child of bones) {
-      if (child.parent !== bone) continue;
-      const direction = child.position.clone();
-      if (!normalizeDirection(direction)) continue;
-      restAim = direction.applyQuaternion(bone.quaternion);
-      break;
-    }
+    const child = aimChildOf(bone);
+    const direction = child?.position.clone();
+    const restAim =
+      direction !== undefined && normalizeDirection(direction)
+        ? direction.applyQuaternion(bone.quaternion)
+        : undefined;
     return Object.freeze({
       bone,
       key: keys.get(bone),

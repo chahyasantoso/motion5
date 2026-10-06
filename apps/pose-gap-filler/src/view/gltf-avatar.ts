@@ -3,7 +3,7 @@ import { LoadingManager, SkinnedMesh, Texture, type Object3D, type Material } fr
 import { unreachable } from "../filler/unreachable";
 import { limbTracks, poseNodeId } from "../rig/tracks";
 import { AVATAR_SOURCES } from "./avatar-frame-source";
-import { resolveHumanoid, type HumanoidKey } from "./humanoid-map";
+import { resolveHumanoid, torsoAimChildren, type HumanoidKey } from "./humanoid-map";
 
 export type GltfParse = (data: ArrayBuffer) => Promise<{ readonly scene: Object3D }>;
 export interface GltfAvatar {
@@ -17,6 +17,7 @@ export type GltfAvatarRefusal =
   | { readonly kind: "no-skinned-mesh" }
   | { readonly kind: "multiple-skeletons"; readonly count: number }
   | { readonly kind: "missing-bones"; readonly keys: readonly HumanoidKey[] }
+  | { readonly kind: "ambiguous-bones"; readonly keys: readonly HumanoidKey[] }
   | { readonly kind: "invalid-skeleton"; readonly message: string };
 export type GltfAvatarLoad =
   | { readonly kind: "loaded"; readonly avatar: GltfAvatar }
@@ -32,6 +33,8 @@ export function describeGltfAvatarRefusal(refusal: GltfAvatarRefusal): string {
       return `Avatar has ${refusal.count} distinct skeletons; exactly one is required.`;
     case "missing-bones":
       return `Avatar is missing required bones: ${refusal.keys.join(", ")}.`;
+    case "ambiguous-bones":
+      return `Avatar maps several bones to required keys: ${refusal.keys.join(", ")}.`;
     case "invalid-skeleton":
       return `Invalid avatar skeleton: ${refusal.message}`;
     default:
@@ -116,11 +119,15 @@ export async function loadGltfAvatar(data: ArrayBuffer, parse: GltfParse): Promi
   const skeletons = new Set(meshes.map((mesh) => mesh.skeleton));
   if (skeletons.size !== 1) return refuse({ kind: "multiple-skeletons", count: skeletons.size });
   const skeleton = meshes[0]!.skeleton;
-  const { boneKeys, missing } = resolveHumanoid(skeleton);
+  const { boneKeys, missing, ambiguous } = resolveHumanoid(skeleton);
   if (missing.length > 0) return refuse({ kind: "missing-bones", keys: missing });
+  if (ambiguous.length > 0) return refuse({ kind: "ambiguous-bones", keys: ambiguous });
   let binding: SkeletonBinding;
   try {
-    binding = captureSkeleton(skeleton, { boneKeys });
+    binding = captureSkeleton(skeleton, {
+      boneKeys,
+      aimChildren: torsoAimChildren(skeleton, boneKeys),
+    });
   } catch (cause) {
     return refuse({
       kind: "invalid-skeleton",
