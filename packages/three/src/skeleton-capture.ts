@@ -36,31 +36,59 @@ export interface SkeletonBinding {
   boneOf(key: string): Bone;
 }
 
-/** Rigid FK cannot represent bone scale or non-uniform ancestor scale. */
+/**
+ * Export noise, not authored scale: a Mixamo FBX converted through float32 matrices lands near
+ * 2e-5 off unit, which is 0.002% of a bone's length. Above this a bone is really scaled.
+ */
+export const SCALE_NOISE_TOLERANCE = 1e-3;
+
+/**
+ * Rigid FK cannot represent bone scale or non-uniform ancestor scale.
+ *
+ * The one owner of the scale rule, shared by capture, tracks and the driver. Bone scale is judged
+ * absolutely against 1. Ancestor uniformity is judged relative to the ancestor's own scale, because
+ * a metre-to-centimetre armature sits near 0.01, where an absolute tolerance would be 100 times
+ * tighter than the same noise on a unit scale.
+ */
 export function assertSkeletonScale(bones: readonly Bone[], rootParent: Object3D): void {
   for (const bone of bones) {
+    const scale = bone.scale.toArray();
     if (
-      !bone.scale.toArray().every((value) => Number.isFinite(value) && Math.abs(value - 1) <= 1e-6)
+      !scale.every(
+        (value) => Number.isFinite(value) && Math.abs(value - 1) <= SCALE_NOISE_TOLERANCE,
+      )
     )
-      throw new TypeError(`Bone "${bone.name}" must have unit scale.`);
+      throw new TypeError(
+        `Bone "${bone.name}" has scale [${scale.join(", ")}] but must be unit scale within ` +
+          `${SCALE_NOISE_TOLERANCE}. Apply transforms and clear bone scale when exporting.`,
+      );
   }
   for (let ancestor: Object3D | null = rootParent; ancestor !== null; ancestor = ancestor.parent) {
     const { x, y, z } = ancestor.scale;
     if (
       ![x, y, z].every(Number.isFinite) ||
       Math.abs(x) <= 1e-9 ||
-      Math.abs(x - y) > 1e-6 ||
-      Math.abs(x - z) > 1e-6
+      Math.abs(x - y) > SCALE_NOISE_TOLERANCE * Math.abs(x) ||
+      Math.abs(x - z) > SCALE_NOISE_TOLERANCE * Math.abs(x)
     )
-      throw new TypeError("Skeleton ancestors must have non-zero uniform scale.");
+      throw new TypeError(
+        `Skeleton ancestor "${ancestor.name}" has scale [${x}, ${y}, ${z}] but must be ` +
+          `non-zero and uniform within ${SCALE_NOISE_TOLERANCE}.`,
+      );
   }
 }
+
+/**
+ * glTF stores rotations as float32, so a valid unit quaternion is off by up to ~1e-7 in lengthSq.
+ * 1e-6 keeps a 10x margin and still refuses a genuinely unnormalized rotation.
+ */
+export const ROTATION_NOISE_TOLERANCE = 1e-6;
 
 function assertRestTransform(object: Object3D): void {
   if (
     !object.position.toArray().every(Number.isFinite) ||
     !object.quaternion.toArray().every(Number.isFinite) ||
-    Math.abs(object.quaternion.lengthSq() - 1) > 1e-9
+    Math.abs(object.quaternion.lengthSq() - 1) > ROTATION_NOISE_TOLERANCE
   )
     throw new TypeError(`Object "${object.name}" must have a finite rigid rest transform.`);
 }
@@ -142,11 +170,13 @@ export function captureSkeleton(
     return depth;
   };
   const captured = bones.map((bone, index): CapturedBone => {
+    // Accepted within tolerance above; store it exactly unit so the driver never re-applies noise.
+    const restQuaternion = bone.quaternion.clone().normalize();
     const child = aimChildOf(bone);
     const direction = child?.position.clone();
     const restAim =
       direction !== undefined && normalizeDirection(direction)
-        ? direction.applyQuaternion(bone.quaternion)
+        ? direction.applyQuaternion(restQuaternion)
         : undefined;
     return Object.freeze({
       bone,
@@ -155,7 +185,7 @@ export function captureSkeleton(
       parent: parents[index],
       depth: depthOf(index),
       restPosition: Object.freeze(bone.position.clone()),
-      restQuaternion: Object.freeze(bone.quaternion.clone()),
+      restQuaternion: Object.freeze(restQuaternion),
       restAim: restAim === undefined ? undefined : Object.freeze(restAim),
     });
   });

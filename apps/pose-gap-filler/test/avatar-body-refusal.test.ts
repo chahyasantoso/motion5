@@ -17,7 +17,7 @@ describe("avatar body refusal (#559 item 6)", () => {
     const outcome = await controller.load(new ArrayBuffer(0), async () => rig);
     if (outcome.kind !== "refused") throw new Error(`Expected refusal, got ${outcome.kind}`);
     expect(outcome.refusal.kind).toBe("invalid-skeleton");
-    expect(describeGltfAvatarRefusal(outcome.refusal)).toContain("uniform scale");
+    expect(describeGltfAvatarRefusal(outcome.refusal)).toContain("uniform within");
     expect(parent.children).toEqual([]);
     expect(disposed).toBe(1);
     expect(controller.body.kind).toBe("primitives");

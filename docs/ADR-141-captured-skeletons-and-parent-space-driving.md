@@ -43,7 +43,7 @@ Per-frame topological sorting spends work on an immutable hierarchy.
 
 ## Consequences
 
-Non-unit bone and non-uniform ancestor scales are refused. Uniform ancestor units stay scene-owned.
+Non-unit bone and non-uniform ancestor scales are refused, within `SCALE_NOISE_TOLERANCE` (1e-3). Real Mixamo exports carry float32 noise near 2e-5 on bones, and a centimetre armature near 100 carries it on ancestors, so bone scale is judged absolutely and ancestor uniformity relative to the ancestor's own scale. The refusal names the actual scale. Uniform ancestor units stay scene-owned. Rest rotations are accepted within `ROTATION_NOISE_TOLERANCE` (1e-6 on `lengthSq`, since glTF stores float32) and captured normalized, so the driver never re-applies the noise.
 Per-written-bone world update cost is measured before optimization.
 The application retains stale presentation independently of observations and solver inputs.
 
