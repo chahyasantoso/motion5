@@ -10,14 +10,14 @@ byte ceiling.
 
 ## Now
 
-- **Skeldata total numerics and exact equality landed** in `packages/core/src/contract/numerics.ts`;
-  degree units, pivot-then-extension, signed zero preservation, deterministic half-turn tie-breaking,
-  and magnitude overflow checks pinned in slice A3 on `feat/skeldata-v5-base`.
+- **Canonical fixtures, invalid cases, and FK oracle landed** in
+  `packages/core/test/fixtures/skeldata-fixtures.ts`; final-schema test fixtures, 10 single-defect
+  invalid variants, and deterministic tree generator pinned in slice A4 on `feat/skeldata-v5-base`.
 
 ## Next in line
 
-- **Slice A4 execution:** establish normative authoring, layout, solver, and caching fixture sets
-  under `04-A4-fixtures.md`.
+- **Slice A5 execution:** inventory removals, consumer impacts, and maintained behaviors under
+  `05-A5-deletions.md`.
 
 ## Open, and not scheduled
 
