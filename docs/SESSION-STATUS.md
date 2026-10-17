@@ -10,14 +10,14 @@ byte ceiling.
 
 ## Now
 
-- **Skeldata deletions and consumer inventory landed** in `docs/skeldata/INVENTORY.md`;
-  exact tracking of retired machinery, test classification, app/export consumer tracing, and
-  concrete F1/F2 worklists pinned in slice A5 on `feat/skeldata-v5-base`.
+- **Skeldata lifecycle, atomicity, and failure boundaries landed** in `docs/skeldata/LIFECYCLE.md`;
+  7-phase candidate evaluation protocol, private state, no-fail swap, and 11-scenario failure ledger
+  pinned in slice A6 on `feat/skeldata-v5-base`.
 
 ## Next in line
 
-- **Slice A6 execution:** define atomicity, generic private state, and failure boundaries under
-  `06-A6-lifecycle.md`.
+- **Slice B1 execution:** authoring schema replacement and operation admission under
+  `07-B1-authoring.md`.
 
 ## Open, and not scheduled
 

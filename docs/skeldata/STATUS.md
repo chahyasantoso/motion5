@@ -1,18 +1,18 @@
 # Skeldata status index
 
 Status: proposed implementation track.
-Current slice: A5 (inventory removals and maintained consumers).
+Current slice: A6 (define atomicity, generic private state and failure boundaries).
 
 ## Active slice
 
-- **Slice:** A5 ([05-A5-deletions.md](../../motion5-implementation-plans/slices/05-A5-deletions.md)).
-- **State:** Full inventory of retired machinery (group parser, stage/priority, cross-entry contribute, old group edits, flat writes, solverChain/solves injection, slot names, 3D generators), test classifications, consumer trace, and actionable F1/F2 worklists authored in `docs/skeldata/INVENTORY.md`.
-- **Next:** A6 ([06-A6-lifecycle.md](../../motion5-implementation-plans/slices/06-A6-lifecycle.md)).
+- **Slice:** A6 ([06-A6-lifecycle.md](../../motion5-implementation-plans/slices/06-A6-lifecycle.md)).
+- **State:** Normative candidate evaluation protocol, 7-phase execution lifecycle, private evaluator state, transaction baselines, no-fail swap invariants, and 11-scenario failure ledger authored in `docs/skeldata/LIFECYCLE.md`.
+- **Next:** B1 ([07-B1-authoring.md](../../motion5-implementation-plans/slices/07-B1-authoring.md)).
 
 ## Phase progress
 
-- Phase A (Foundation & Invariants: A1-A6): in progress (A1-A5 complete).
-- Phase B (Authoring, Operations & Cache Seam: B1-B8): pending.
+- Phase A (Foundation & Invariants: A1-A6): complete.
+- Phase B (Authoring, Operations & Cache Seam: B1-B8): in progress (B1 next).
 - Phase C (Derivation & Candidate Acceptance: C1-C7): pending.
 - Phase D (Kinematics & Dual Caches: D1-D7): pending.
 - Phase E (Editing & Render Lifecycle: E1-E7): pending.
@@ -22,6 +22,7 @@ Current slice: A5 (inventory removals and maintained consumers).
 
 - Contract: [docs/skeldata/CONTRACT.md](./CONTRACT.md).
 - Deletions and consumer inventory: [docs/skeldata/INVENTORY.md](./INVENTORY.md).
+- Lifecycle and failure ledger: [docs/skeldata/LIFECYCLE.md](./LIFECYCLE.md).
 - Canonical address module: [packages/core/src/contract/address.ts](../../packages/core/src/contract/address.ts).
 - Total numerics module: [packages/core/src/contract/numerics.ts](../../packages/core/src/contract/numerics.ts).
 - Numerics test suite: [packages/core/test/contract/numerics.test.ts](../../packages/core/test/contract/numerics.test.ts).
