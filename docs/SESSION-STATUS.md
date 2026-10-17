@@ -6,7 +6,7 @@ states a phase; `packages/core/test/unit/scripts/session-status-shape.test.ts` e
 byte ceiling.
 
 - **Captured:** 2026-10-17, Asia/Jakarta.
-- **Read against:** branch `feat/skeldata-v5-phase-b`.
+- **Read against:** branch `feat/skeldata-v5-base`.
 
 ## Now
 
