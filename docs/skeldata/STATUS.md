@@ -1,19 +1,19 @@
 # Skeldata status index
 
 Status: proposed implementation track.
-Current slice: B8 (uniform entry-addressed value transactions).
+Current slice: C2 (chain layout and root policy derivation).
 
 ## Active slice
 
-- **Slice:** B8 ([14-B8-value-writes.md](../../motion5-implementation-plans/slices/14-B8-value-writes.md)).
-- **State:** Uniform entry-addressed value transaction domain, validation, leaf schema enforcement, structural rejection, atomic batching, Track plan-aware value writing, and EntryLiveHandle reference contract implemented.
-- **Next:** C1 ([15-C1-derivation.md](../../motion5-implementation-plans/slices/15-C1-derivation.md)).
+- **Slice:** C2 ([16-C2-chain-layout.md](../../motion5-implementation-plans/slices/16-C2-chain-layout.md)).
+- **State:** Plugin-owned chain layout derivation (`deriveChainLayout`), sequential point parenting, child adjacency, prototype-safe ID index, point locators, `ChainRootPolicy` (`origin`, `unbound`, `bound` with provenance), numeric-invariant `layoutIdentity`, and duplicate root/root-only track diagnostics implemented.
+- **Next:** C3 ([17-C3-joined-layout.md](../../motion5-implementation-plans/slices/17-C3-joined-layout.md)).
 
 ## Phase progress
 
 - Phase A (Foundation & Invariants: A1-A6): complete.
 - Phase B (Authoring, Operations & Cache Seam: B1-B8): complete.
-- Phase C (Derivation & Candidate Acceptance: C1-C7): pending.
+- Phase C (Derivation & Candidate Acceptance: C1-C7): in progress (C1, C2 complete).
 - Phase D (Kinematics & Dual Caches: D1-D7): pending.
 - Phase E (Editing & Render Lifecycle: E1-E7): pending.
 - Phase F (Callers, Verification & Release Gate: F1-F6): pending.
@@ -45,5 +45,12 @@ Current slice: B8 (uniform entry-addressed value transactions).
 - Staged state test suite: [packages/core/test/contract/staged-state-b7.test.ts](../../packages/core/test/contract/staged-state-b7.test.ts).
 - Value transaction module: [packages/core/src/domain/value-transaction.ts](../../packages/core/src/domain/value-transaction.ts).
 - Value writes test suite: [packages/core/test/contract/value-writes-b8.test.ts](../../packages/core/test/contract/value-writes-b8.test.ts).
+- Generic structural derivation contract: [packages/core/src/contract/derivation.ts](../../packages/core/src/contract/derivation.ts).
+- Generic structural derivation domain: [packages/core/src/domain/structural-derivation.ts](../../packages/core/src/domain/structural-derivation.ts).
+- Structural derivation test suite (C1): [packages/core/test/contract/structural-derivation-c1.test.ts](../../packages/core/test/contract/structural-derivation-c1.test.ts).
+- Chain layout derivation module: [packages/plugins/src/chain-layout.ts](../../packages/plugins/src/chain-layout.ts).
+- Point plugin module: [packages/plugins/src/point.ts](../../packages/plugins/src/point.ts).
+- Root plugin module: [packages/plugins/src/root.ts](../../packages/plugins/src/root.ts).
+- Chain layout test suite (C2): [packages/plugins/test/unit/chain-layout-c2.test.ts](../../packages/plugins/test/unit/chain-layout-c2.test.ts).
 - Overview reference: [00-overview.md](../../motion5-implementation-plans/00-overview.md).
 - Cache contract reference: [42-cache-contract.md](../../motion5-implementation-plans/42-cache-contract.md).
