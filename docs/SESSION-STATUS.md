@@ -5,20 +5,19 @@ are the complete shape. **Now** and **Next in line** carry exactly one bullet ea
 states a phase; `packages/core/test/unit/scripts/session-status-shape.test.ts` enforces the shape and
 byte ceiling.
 
-- **Captured:** 2026-10-06, Asia/Jakarta.
-- **Read against:** supplied main archive `6d6cad7f1725198c4b8248bee3dcfd1fbf4cefcf`.
+- **Captured:** 2026-10-17, Asia/Jakarta.
+- **Read against:** base branch `feat/skeldata-v5-base`.
 
 ## Now
 
-- **Runners, skeleton capture, the parent-space driver and GLB avatars are on main**; the #559
-  review fixes (aliases, aim children, basis hips, joint framing, driver refusal) are prepared on
-  `fix/559-avatar-review`. Browser smoke: 0.040 ms per presented frame (apply plus framing),
-  0.016 ms framing alone (headless SwiftShader).
+- **Skeldata normative contract and invariant owners landed** in `docs/skeldata/CONTRACT.md`;
+  single owners, validation stages, generic injected cache port and execution model established in
+  slice A1 on `feat/skeldata-v5-base`.
 
 ## Next in line
 
-- **#559 publication:** open the pull request, cite the Node 24 Actions run, and check one real
-  CC0 avatar visually for the basis hips drive.
+- **Slice A2 execution:** pin disjoint identifier spaces, generation handles, reserved delimiters,
+  and private collision-free tuple codecs under `02-A2-identity.md`.
 
 ## Open, and not scheduled
 
