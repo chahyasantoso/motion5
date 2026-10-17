@@ -13,3 +13,4 @@ coverage
 # Pose recordings are landmarks of a real person: never committed (#530).
 apps/pose-gap-filler/recordings/
 pose-recording-*.json
+graphify-out/

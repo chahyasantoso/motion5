@@ -10,14 +10,14 @@ byte ceiling.
 
 ## Now
 
-- **Skeldata normative contract and invariant owners landed** in `docs/skeldata/CONTRACT.md`;
-  single owners, validation stages, generic injected cache port and execution model established in
-  slice A1 on `feat/skeldata-v5-base`.
+- **Skeldata address, identity, and lifecycle types landed** in `packages/core/src/contract/address.ts`;
+  disjoint namespaces, collision-free tuple encoding, prototype safety and generation-backed handles
+  pinned in slice A2 on `feat/skeldata-v5-base`.
 
 ## Next in line
 
-- **Slice A2 execution:** pin disjoint identifier spaces, generation handles, reserved delimiters,
-  and private collision-free tuple codecs under `02-A2-identity.md`.
+- **Slice A3 execution:** pin coordinate systems, 2D units, exact `Object.is` numeric comparisons,
+  and solver finite-domain guarantees under `03-A3-numerics.md`.
 
 ## Open, and not scheduled
 
