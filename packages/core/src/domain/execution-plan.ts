@@ -31,6 +31,7 @@ import type {
   PluginDefinition,
   PreparedContribution,
   ResolvedRequirement,
+  StructuralDescriptor,
   TrackConfigView,
 } from "./plugins";
 
@@ -167,6 +168,7 @@ export interface TrackExecutionPlan {
   readonly collectOutputs: readonly string[];
   readonly foldOutputs: readonly string[];
   readonly publishedOutputs: readonly string[];
+  readonly descriptors?: readonly StructuralDescriptor[];
   readonly diagnostics: readonly Diagnostic[];
 }
 

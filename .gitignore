@@ -14,3 +14,8 @@ coverage
 apps/pose-gap-filler/recordings/
 pose-recording-*.json
 graphify-out/
+data/
+.claude/
+.vscode/
+.mcp.json
+.agents/

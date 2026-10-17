@@ -110,11 +110,7 @@ export interface ProjectHandle {
   renderMetadata(nodeId: string): RenderMetadata | undefined;
   dispose(): void;
 }
-interface CompilableTrack {
-  readonly id: string;
-  readonly duration?: number;
-  readonly keyframes?: Readonly<Record<string, unknown>>;
-}
+type CompilableTrack = TrackDefinition;
 interface Composition {
   readonly tracks: Map<string, Track>;
   readonly nodes: Map<string, CompilableTrack>;
@@ -503,20 +499,15 @@ export class Engine {
     };
     try {
       for (const nodeId of nodes.keys()) compile(nodeId);
-      const compose =
-        (node: {
-          id: string;
-          track: { duration?: number; keyframes?: Readonly<Record<string, unknown>> };
-        }) =>
-        (requirementInputs: RequirementInputs) => {
-          const track = tracks.get(node.id)!;
-          const snapshot = track.compose(requirementInputs);
-          return {
-            values: snapshot.values,
-            sourceProgress: snapshot.progress,
-            sourceRevisions: {},
-          };
+      const compose = (node: { id: string }) => (requirementInputs: RequirementInputs) => {
+        const track = tracks.get(node.id)!;
+        const snapshot = track.compose(requirementInputs);
+        return {
+          values: snapshot.values,
+          sourceProgress: snapshot.progress,
+          sourceRevisions: {},
         };
+      };
       const created = new ProjectRuntime(acceptedProject, {
         clock: this.#options.clock,
         scheduler: this.#options.scheduler,
@@ -562,7 +553,10 @@ export class Engine {
         // takes above, and every replacement builds exactly as it did before. See ADR-062.
         ...(registry === undefined
           ? {}
-          : { resolveKeyframes: registry.resolveForKeyframes.bind(registry) }),
+          : {
+              resolveKeyframes: registry.resolveForKeyframes.bind(registry),
+              plugins: registry,
+            }),
         addMotionTrack: (motionId, trackId, duration) => {
           const motion = motions.get(motionId);
           if (!motion) throw new TypeError(`Unknown motion "${motionId}".`);

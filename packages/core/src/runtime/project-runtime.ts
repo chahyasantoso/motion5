@@ -1,6 +1,7 @@
 // Docs: ./project-runtime.md
 import type {
   AuthoredProperty,
+  Diagnostic,
   PatchBatch,
   ProjectDefinition,
   TrackDefinition,
@@ -24,6 +25,15 @@ import {
 import { sameCompiledTrackInput } from "../domain/authoring/recompile";
 import { qualifyFreeTrack, qualifyMotionTrack } from "../graph/ids";
 import { describeError } from "./schema-refusals";
+import {
+  deriveStructuralDescriptors,
+  type StructuralDerivationOutcome,
+} from "../domain/structural-derivation";
+import type { StructuralDescriptor } from "../contract/derivation";
+import type { PluginRegistry } from "../domain/plugins";
+import type { TrackExecutionPlan } from "../domain/execution-plan";
+import { createDefaultGraphBuilder } from "../graph/builders/default";
+import { UNJUDGED_CAPABILITIES } from "../ports/plugin-capabilities";
 import {
   COMMIT,
   OPEN_RECIPE,
@@ -230,15 +240,21 @@ export interface ProjectRuntimeOptions {
   readonly disposeComposition?: () => void;
   readonly diagnosticsCapacity?: number;
   readonly graphBuilder?: GraphBuilder;
+  readonly plugins?: PluginRegistry;
 }
 export class ProjectRuntime {
   readonly #project: ProjectDefinition;
   readonly #graph: GraphRuntime;
+  readonly #plugins: PluginRegistry | undefined;
+  readonly #graphBuilder: GraphBuilder;
   readonly #instances = new Map<string, object>();
 
   #tracks = new Map<string, TrackEntry>();
   #motions = new Map<string, MotionEntry>();
   #nextToken = 1;
+  #descriptors = new Map<string, readonly StructuralDescriptor[]>();
+  #structuralVersion = 0;
+  readonly #derivationCounts = new Map<string, number>();
 
   #phase: ProjectPhase<OpenTransaction> = idle();
   readonly #diagnostics: Diagnostics;
@@ -313,6 +329,7 @@ export class ProjectRuntime {
         removeKeyframe: (id, token, plugin, key) => this.#removeKeyframe(id, token, plugin, key),
         write: (id, token, values, rebase) =>
           this.#writeValues(id, () => this.#writableEntry(id, token), values, rebase),
+        descriptors: (id, token) => this.#descriptorsOf(id, token),
       }),
       motion: Object.freeze<MotionHost>({
         live: (id, token) => isLive(this.#motionIfLive(id, token)),
@@ -344,6 +361,21 @@ export class ProjectRuntime {
       // both leave together rather than the second replacing the first. `report.ts` owns that
       // precedence for every caller of it, and `afterCleanup` is where the rule is written down.
       throw afterCleanup(error, "cleanup", () => this.#ports.host.disposeComposition());
+    }
+    this.#plugins = options.plugins;
+    this.#graphBuilder =
+      options.graphBuilder ?? createDefaultGraphBuilder(this.#plugins ?? UNJUDGED_CAPABILITIES);
+    if (this.#plugins) {
+      const initialDerivation = this.#runDerivation(
+        this.#tracks,
+        this.#graph.graph.order ?? [],
+        this.#graph.graph.diagnostics,
+      );
+      if (initialDerivation.diagnostics.some((d) => d.severity === "error")) {
+        refuse({ kind: "invalid-definition", diagnostics: initialDerivation.diagnostics });
+      }
+      this.#descriptors = new Map(initialDerivation.descriptors);
+      this.#structuralVersion = 1;
     }
   }
   get project(): ProjectDefinition {
@@ -758,6 +790,16 @@ export class ProjectRuntime {
     this.#boundary(() => {
       this.#assertSameLifetimes(this.#motions, motions);
       this.#assertSameLifetimes(this.#tracks, tracks);
+      let stagedDerivation: StructuralDerivationOutcome | undefined;
+      if (this.#plugins) {
+        const candidateSnapshot = this.#snapshot(tracks, motions);
+        const buildResult = this.#graphBuilder.build(candidateSnapshot);
+        const candidateOrder = buildResult.graph?.order ?? [];
+        stagedDerivation = this.#runDerivation(tracks, candidateOrder, buildResult.diagnostics);
+        if (stagedDerivation.diagnostics.some((d) => d.severity === "error")) {
+          refuse({ kind: "invalid-definition", diagnostics: stagedDerivation.diagnostics });
+        }
+      }
       const readers = new Map<string, readonly string[]>(),
         needsBuild = new Set<string>();
       for (const id of this.#tracks.keys())
@@ -800,6 +842,10 @@ export class ProjectRuntime {
         adopt: () => {
           this.#tracks = tracks;
           this.#motions = motions;
+          if (stagedDerivation) {
+            this.#descriptors = new Map(stagedDerivation.descriptors);
+            this.#structuralVersion++;
+          }
         },
         publish: (ids) => this.#flush(ids),
       });
@@ -1150,6 +1196,53 @@ export class ProjectRuntime {
     }
     if (!deferred) report(failures, "Project release failed.");
   }
+
+  #runDerivation(
+    tracks: ReadonlyMap<string, TrackEntry>,
+    order: readonly string[],
+    cycleDiagnostics?: readonly Diagnostic[],
+  ): StructuralDerivationOutcome {
+    if (!this.#plugins) {
+      return {
+        descriptors: new Map(),
+        diagnostics: Object.freeze([]),
+        kind: "accepted",
+      };
+    }
+    const plans = new Map<string, TrackExecutionPlan>();
+    for (const [id, entry] of tracks) {
+      const plan = this.#plugins.compileExecutionPlan(entry.track.keyframes, {
+        trackId: id,
+        track: trackConfigView(entry.track.id, entry.track.duration),
+      });
+      plans.set(id, plan);
+    }
+    return deriveStructuralDescriptors({
+      order,
+      plans,
+      ...(cycleDiagnostics !== undefined ? { cycleDiagnostics } : {}),
+      callCounter: this.#derivationCounts,
+    });
+  }
+
+  #descriptorsOf(id: string, token: number): readonly StructuralDescriptor[] {
+    this.#liveEntry(id, token);
+    return this.#descriptors.get(id) ?? Object.freeze([]);
+  }
+
+  descriptorsOf(nodeId: string): readonly StructuralDescriptor[] {
+    this.#assertLive();
+    return this.#descriptors.get(nodeId) ?? Object.freeze([]);
+  }
+
+  get structuralVersion(): number {
+    return this.#structuralVersion;
+  }
+
+  derivationCount(key: string): number {
+    return this.#derivationCounts.get(key) ?? 0;
+  }
+
   #assertLive(): void {
     if (isRetiring(this.#phase)) refuse({ kind: "disposed" });
   }

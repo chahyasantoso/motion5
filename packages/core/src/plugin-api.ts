@@ -15,6 +15,16 @@ export type {
   TrackConfigView,
 } from "./domain/plugins";
 export type {
+  DerivationBinding,
+  DerivationContext,
+  DerivationEntryInventoryItem,
+  DerivationHookResult,
+  DerivationTrackInventory,
+  PluginDerivationHook,
+  StructuralDescriptor,
+} from "./contract/derivation";
+export { DerivationUndeclaredSourceError } from "./contract/derivation";
+export type {
   CacheLookup,
   CacheProvider,
   CacheSnapshot,

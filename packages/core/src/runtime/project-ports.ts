@@ -1,4 +1,9 @@
-import type { MotionDefinition, TrackDefinition, TriggerSignal } from "../contract/v5";
+import type {
+  AuthoredEntryRecord,
+  MotionDefinition,
+  TrackDefinition,
+  TriggerSignal,
+} from "../contract/v5";
 import type { LiveValues } from "../contract/track-handle";
 import type { ResolvedPlugins, TrackConfigView } from "../domain/plugins";
 import type { LiveWriteResult } from "../domain/track";
@@ -61,7 +66,7 @@ export type LiveValueWriter = (
  * than on a registry it has no other reason to hold. See ADR-062.
  */
 export type KeyframeResolver = (
-  keyframes: Readonly<Record<string, unknown>>,
+  keyframes: Readonly<Record<string, unknown>> | readonly AuthoredEntryRecord[],
   path: string,
   track: TrackConfigView,
 ) => ResolvedPlugins;

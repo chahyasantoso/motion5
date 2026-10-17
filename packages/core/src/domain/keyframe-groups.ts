@@ -1,9 +1,10 @@
 import {
   PLUGIN_VALUES_SECTION,
+  readKeyframeEntries,
   readPluginBindings,
   readPluginValues,
 } from "../contract/keyframe-shape";
-import type { PluginRequiresBinding } from "../contract/v5";
+import type { AuthoredEntryRecord, PluginRequiresBinding } from "../contract/v5";
 
 export interface FlattenedKeyframe {
   /** The compiled key: the group leaf's name, with no prefix. */
@@ -57,8 +58,12 @@ export interface FlattenedKeyframes {
  * Sorted, so which spelling wins is never a property of authoring order. A collision is already
  * rejected at validation by `keyframes-duplicate-key`, so nothing here reports it a second time.
  */
+function isReadonlyArray(value: unknown): value is readonly unknown[] {
+  return Array.isArray(value);
+}
+
 export function flattenAuthoredKeyframes(
-  authored: Readonly<Record<string, unknown>>,
+  authored: Readonly<Record<string, unknown>> | readonly AuthoredEntryRecord[],
 ): FlattenedKeyframes {
   const keyframes: Record<string, unknown> = {};
   const entries: FlattenedKeyframe[] = [];
@@ -69,11 +74,21 @@ export function flattenAuthoredKeyframes(
     entries.push(entry);
     authoredPaths.set(entry.key, entry.authoredPath);
   };
-  for (const group of Object.keys(authored).sort()) {
-    const values = readPluginValues(authored[group]);
-    for (const leaf of Object.keys(values).sort()) {
-      const authoredPath = `${group}.${PLUGIN_VALUES_SECTION}.${leaf}`;
-      claim({ key: leaf, group, authoredPath }, values[leaf]);
+  if (isReadonlyArray(authored)) {
+    const trusted = readKeyframeEntries(authored);
+    for (const entry of trusted) {
+      for (const leaf of Object.keys(entry.values).sort()) {
+        const authoredPath = `${entry.authoredPath}.${PLUGIN_VALUES_SECTION}.${leaf}`;
+        claim({ key: leaf, group: entry.plugin, authoredPath }, entry.values[leaf]);
+      }
+    }
+  } else {
+    for (const group of Object.keys(authored).sort()) {
+      const values = readPluginValues(authored[group]);
+      for (const leaf of Object.keys(values).sort()) {
+        const authoredPath = `${group}.${PLUGIN_VALUES_SECTION}.${leaf}`;
+        claim({ key: leaf, group, authoredPath }, values[leaf]);
+      }
     }
   }
   return Object.freeze({

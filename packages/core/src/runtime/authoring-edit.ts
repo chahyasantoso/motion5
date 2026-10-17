@@ -146,10 +146,17 @@ const NO_MOTION_OWNER = "~";
  * transiently invalid, and one verb whose cost and refusal set depend on whether the group already
  * existed is the shape this project has declined three times. See ADR-062, ADR-063 and ADR-065.
  */
+function isReadonlyArray(value: unknown): value is readonly unknown[] {
+  return Array.isArray(value);
+}
+
 export function boundGroup(nodeId: string, track: TrackDefinition, plugin: string): GroupTarget {
   const keyframes = track.keyframes;
-  const bound = keyframes === undefined ? undefined : readBoundGroup(keyframes, plugin);
-  if (keyframes === undefined || bound === undefined) unboundGroup(nodeId, plugin);
+  if (keyframes === undefined || isReadonlyArray(keyframes)) {
+    unboundGroup(nodeId, plugin);
+  }
+  const bound = readBoundGroup(keyframes, plugin);
+  if (bound === undefined) unboundGroup(nodeId, plugin);
   return { keyframes, bound };
 }
 
@@ -178,7 +185,11 @@ function slotGroup(target: EditTarget, plugin: string, slot: string): GroupTarge
  * property a group verb could write over. See ADR-063 and ADR-121.
  */
 function groupRecord(target: EditTarget): AuthoredKeyframes {
-  return target.track.keyframes ?? EMPTY_KEYFRAMES;
+  const keyframes = target.track.keyframes;
+  if (keyframes === undefined || isReadonlyArray(keyframes)) {
+    return EMPTY_KEYFRAMES;
+  }
+  return keyframes;
 }
 
 /**

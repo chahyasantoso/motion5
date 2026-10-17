@@ -8,6 +8,7 @@ import { unreachable } from "../lang/exhaustive";
 import { diagnostic } from "../contract/diagnostics";
 import { validateKeyframes } from "../contract/validate-v5";
 import type {
+  AuthoredEntryRecord,
   AuthoredProperty,
   AuthoredStop,
   Diagnostic,
@@ -32,6 +33,22 @@ import type {
   TrackExecutionPlan,
 } from "./execution-plan";
 import { compileTrackExecutionPlan } from "./execution-plan";
+import type {
+  DerivationContext,
+  DerivationEntryInventoryItem,
+  DerivationHookResult,
+  DerivationTrackInventory,
+  PluginDerivationHook,
+  StructuralDescriptor,
+} from "../contract/derivation";
+export type {
+  DerivationContext,
+  DerivationEntryInventoryItem,
+  DerivationHookResult,
+  DerivationTrackInventory,
+  PluginDerivationHook,
+  StructuralDescriptor,
+};
 
 /**
  * The values one plugin's declared requirement slots resolved to, keyed by slot name.
@@ -128,6 +145,7 @@ export interface PluginRequirement {
    * is the shape `TimeTriggerDefinition.autoplay` reserves for the same reason.
    */
   readonly dict?: true;
+  readonly capability?: string;
 }
 /** One authored binding that resolved against a declared slot of a registered plugin. */
 export interface ResolvedRequirement {
@@ -208,6 +226,8 @@ export interface PluginDefinition {
   readonly collect?: PluginCollectOperation;
   readonly fold?: PluginFoldOperation;
   readonly createEvaluator?: EvaluatorFactory;
+  readonly capabilities?: readonly string[];
+  readonly derive?: PluginDerivationHook;
 }
 
 const RESERVED_TWEEN_VARS = new Set(["keyframes", "duration", "paused", "id", "observes"]);
@@ -661,7 +681,7 @@ export class PluginRegistry implements PluginCapabilities {
    * that skipped validation is told about it by the validator, never twice. See ADR-121.
    */
   resolveForKeyframes(
-    authored: Readonly<Record<string, unknown>>,
+    authored: Readonly<Record<string, unknown>> | readonly AuthoredEntryRecord[],
     path = "keyframes",
     track: TrackConfigView = {},
   ): ResolvedPlugins {

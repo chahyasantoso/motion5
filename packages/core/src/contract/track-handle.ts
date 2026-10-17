@@ -7,6 +7,7 @@ import type {
   PatchBatch,
   TrackDefinition,
 } from "./v5";
+import type { StructuralDescriptor } from "./derivation";
 
 /**
  * The one failure a stale `TrackHandle` reports, from every member it has.
@@ -105,6 +106,7 @@ export interface TrackHandle extends Handle<TrackDefinition> {
    * `?? []` and never makes the shape depend on the input.
    */
   readonly requires: readonly RequireView[];
+  readonly descriptors: readonly StructuralDescriptor[];
   remove(): void;
   replace(next: TrackDefinition): void;
   addObserve(observation: ObservationDefinition): void;

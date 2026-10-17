@@ -42,3 +42,10 @@ This file is for an AI implementor working on motion5. A human contributor wants
 **Transport choice (with local checkout).** Use git directly: `npm run format` before pushing, run the suite, cite the Actions run id. Do not claim local checks when using the GitHub API only.
 
 **Transport choice (no local checkout).** Use a reviewed transport rather than single-file writes. One slice uses AI edit (`.ai/edits/<name>.json`); a dependent stack uses AI checkpoint (`.ai/checkpoints/`). Pick with [docs/AUTOMATION-TRANSPORT-CHOICE.md](docs/AUTOMATION-TRANSPORT-CHOICE.md). Full protocol details: [docs/AI-EDIT-WORKFLOW.md](docs/AI-EDIT-WORKFLOW.md) and [docs/AI-CHECKPOINT-WORKFLOW.md](docs/AI-CHECKPOINT-WORKFLOW.md). Read the published commit and verify CI on that exact SHA.
+
+## XERJ (code search)
+
+This project uses XERJ for reference coding. Before writing code that touches
+unfamiliar territory: `xerj def "<symbol>"` for go-to-definition, or
+`xerj search "<plain words>"` for ranked, definition-first passages.
+Index a repo with `xerj autoindex <folder>`. Cite file:line for anything you rely on.

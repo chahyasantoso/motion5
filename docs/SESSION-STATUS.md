@@ -10,13 +10,14 @@ byte ceiling.
 
 ## Now
 
-- **Uniform entry-addressed value transactions landed** in `packages/core/src/domain/value-transaction.ts`,
-  enforcing multi-entry isolation, leaf schema validation, structural rejection, and atomic batching in B8.
+- **Narrow generic structural derivation landed** in `packages/core/src/domain/structural-derivation.ts`
+  and `packages/core/src/contract/derivation.ts`, producing immutable descriptors and diagnostics from
+  validated structural declarations without runtime state access under C1.
 
 ## Next in line
 
-- **Narrow generic structural derivation:** produce immutable descriptors and diagnostics from
-  validated structural declarations without runtime state access under `15-C1-derivation.md`.
+- **Chain layout and root policy derivation:** produce ordered point IDs, parent indices, and root
+  provenance from chain sources under `16-C2-chain-layout.md`.
 
 ## Open, and not scheduled
 

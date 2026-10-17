@@ -170,6 +170,18 @@ export function admitPlugin(plugin: PluginDefinition, context: AdmissionContext)
     (!Number.isFinite(source.priority) || !Number.isInteger(source.priority))
   )
     throw new TypeError("Plugin priority must be a finite integer when provided.");
+  if (source.derive !== undefined && typeof source.derive !== "function")
+    throw new TypeError(`Plugin "${source.name}" derive must be a function when provided.`);
+  if (source.capabilities !== undefined) {
+    if (!Array.isArray(source.capabilities))
+      throw new TypeError(`Plugin "${source.name}" capabilities must be an array when provided.`);
+    for (const cap of source.capabilities) {
+      if (typeof cap !== "string" || !cap.trim() || cap.includes(":"))
+        throw new TypeError(
+          `Plugin "${source.name}" capability "${cap}" must be a non-empty string without ':'.`,
+        );
+    }
+  }
   if (context.isRegistered(source.name))
     throw new Error(`Plugin "${source.name}" is already registered.`);
   const keys = Object.freeze([...(source.keys ?? [])]);
@@ -181,9 +193,21 @@ export function admitPlugin(plugin: PluginDefinition, context: AdmissionContext)
       ? undefined
       : (frozenCopy(source.requirements) as NonNullable<PluginDefinition["requirements"]>);
   const slots = Object.keys(requirements ?? {});
-  for (const slot of slots)
+  for (const slot of slots) {
     if (!slot.trim())
       throw new TypeError(`Plugin "${source.name}" requirement slot must be non-empty.`);
+    const req = (requirements as Record<string, { capability?: unknown }>)[slot];
+    if (req?.capability !== undefined) {
+      if (
+        typeof req.capability !== "string" ||
+        !req.capability.trim() ||
+        req.capability.includes(":")
+      )
+        throw new TypeError(
+          `Plugin "${source.name}" requirement "${slot}" capability must be a non-empty string without ':'.`,
+        );
+    }
+  }
   for (const [field, names] of [
     ["keys", keys],
     ["inputs", inputs],
@@ -213,12 +237,14 @@ export function admitPlugin(plugin: PluginDefinition, context: AdmissionContext)
     pole: Object.hasOwn(requirements ?? {}, POLE_SLOT),
     joint: claims(source, JOINT_KEY),
   });
+  const capabilities = source.capabilities ? Object.freeze([...source.capabilities]) : undefined;
   const definition = Object.freeze({
     ...source,
     ...(source.solverChain === undefined ? {} : { solverChain: chain }),
     ...(source.keys ? { keys } : {}),
     ...(source.inputs ? { inputs } : {}),
     ...(source.outputs ? { outputs } : {}),
+    ...(capabilities ? { capabilities } : {}),
     ...(requirements ? { requirements } : {}),
   });
   return { definition, keys, inputs, capability };

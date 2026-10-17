@@ -10,6 +10,7 @@ import type {
 } from "../contract/v5";
 import { requireViews } from "./authored-values";
 import type { AuthoringEdit } from "./authoring-edit";
+import type { StructuralDescriptor } from "../contract/derivation";
 
 /**
  * The two capability handles a project issues, as classes over one host and the pair each captured.
@@ -83,6 +84,7 @@ export interface TrackHost {
     values: AuthoredValues,
     rebase: boolean,
   ) => PatchBatch;
+  readonly descriptors?: (id: string, token: number) => readonly StructuralDescriptor[];
 }
 
 /**
@@ -144,6 +146,10 @@ export class RuntimeTrackHandle implements TrackHandle {
 
   get requires(): readonly RequireView[] {
     return requireViews(this.#host.definition(this.#id, this.#token));
+  }
+
+  get descriptors(): readonly StructuralDescriptor[] {
+    return this.#host.descriptors?.(this.#id, this.#token) ?? [];
   }
 
   remove(): void {
