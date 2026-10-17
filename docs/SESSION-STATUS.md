@@ -10,14 +10,14 @@ byte ceiling.
 
 ## Now
 
-- **Narrow generic structural derivation landed** in `packages/core/src/domain/structural-derivation.ts`
-  and `packages/core/src/contract/derivation.ts`, producing immutable descriptors and diagnostics from
-  validated structural declarations without runtime state access under C1.
+- **Chain layout and root policy derivation landed** in `packages/plugins/src/chain-layout.ts`,
+  `packages/plugins/src/point.ts`, and `packages/plugins/src/root.ts`, deriving ordered points, parent
+  indices, safe index, child adjacency, layout identity, and frame policy under C2.
 
 ## Next in line
 
-- **Chain layout and root policy derivation:** produce ordered point IDs, parent indices, and root
-  provenance from chain sources under `16-C2-chain-layout.md`.
+- **Joined topology derivation:** derive multi-chain tree layout and root policy across joined
+  sources under `17-C3-joined-layout.md`.
 
 ## Open, and not scheduled
 

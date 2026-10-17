@@ -62,6 +62,18 @@
     "./runner": {
       "types": "./dist/runner.d.ts",
       "default": "./dist/runner.js"
+    },
+    "./point": {
+      "types": "./dist/point.d.ts",
+      "default": "./dist/point.js"
+    },
+    "./root": {
+      "types": "./dist/root.d.ts",
+      "default": "./dist/root.js"
+    },
+    "./chain-layout": {
+      "types": "./dist/chain-layout.d.ts",
+      "default": "./dist/chain-layout.js"
     }
   }
 }

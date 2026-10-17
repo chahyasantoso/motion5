@@ -24,6 +24,25 @@ export type {
   StructuralDescriptor,
 } from "./contract/derivation";
 export { DerivationUndeclaredSourceError } from "./contract/derivation";
+export { diagnostic } from "./contract/diagnostics";
+export type { Diagnostic } from "./contract/v5";
+export type {
+  AuthoredEntryId,
+  LayoutIdentity,
+  PluginName,
+  PointMemberId,
+  RootBindingProvenance,
+} from "./contract/address";
+export {
+  asAuthoredEntryId,
+  asLayoutIdentity,
+  asPluginName,
+  asPointMemberId,
+  asRootBindingProvenance,
+  createSafeRecord,
+  encodeBindingTuple,
+  hasSafeProperty,
+} from "./contract/address";
 export type {
   CacheLookup,
   CacheProvider,

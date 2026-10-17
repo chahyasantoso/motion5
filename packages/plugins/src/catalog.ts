@@ -12,4 +12,6 @@ export const builtinCatalog: PluginCatalog = new Map([
   ["fk3d", { load: () => import("./fk3d").then((module) => module.fk3dPlugin) }],
   ["ik3d", { load: () => import("./ik3d").then((module) => module.ik3dPlugin) }],
   ["rig", { load: () => import("./rig").then((module) => module.rigPlugin) }],
+  ["point", { load: () => import("./point").then((module) => module.pointPlugin) }],
+  ["root", { load: () => import("./root").then((module) => module.rootPlugin) }],
 ]);

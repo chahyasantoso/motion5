@@ -94,6 +94,20 @@ export function asGenerationToken(value: number): GenerationToken {
   return value as GenerationToken;
 }
 
+export function asLayoutIdentity(value: string): LayoutIdentity {
+  if (typeof value !== "string" || value.length === 0) {
+    throw new TypeError("Layout identity must be a non-empty string.");
+  }
+  return value as LayoutIdentity;
+}
+
+export function asRootBindingProvenance(value: string): RootBindingProvenance {
+  if (typeof value !== "string" || value.length === 0) {
+    throw new TypeError("Root binding provenance must be a non-empty string.");
+  }
+  return value as RootBindingProvenance;
+}
+
 let nextCompilerKeyCounter = 0;
 export function createCompilerEntryKey(
   entryId: string,
