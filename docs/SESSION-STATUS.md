@@ -10,14 +10,14 @@ byte ceiling.
 
 ## Now
 
-- **Canonical fixtures, invalid cases, and FK oracle landed** in
-  `packages/core/test/fixtures/skeldata-fixtures.ts`; final-schema test fixtures, 10 single-defect
-  invalid variants, and deterministic tree generator pinned in slice A4 on `feat/skeldata-v5-base`.
+- **Skeldata deletions and consumer inventory landed** in `docs/skeldata/INVENTORY.md`;
+  exact tracking of retired machinery, test classification, app/export consumer tracing, and
+  concrete F1/F2 worklists pinned in slice A5 on `feat/skeldata-v5-base`.
 
 ## Next in line
 
-- **Slice A5 execution:** inventory removals, consumer impacts, and maintained behaviors under
-  `05-A5-deletions.md`.
+- **Slice A6 execution:** define atomicity, generic private state, and failure boundaries under
+  `06-A6-lifecycle.md`.
 
 ## Open, and not scheduled
 
