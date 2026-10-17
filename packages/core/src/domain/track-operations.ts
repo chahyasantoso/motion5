@@ -266,7 +266,7 @@ export function executeTrackOperations(
   const stagedPublished: Record<string, unknown> = {};
 
   for (const output of plan.collectOutputs) {
-    stagedPublished[output] = collections.get(output) ?? [];
+    stagedPublished[output] = Object.freeze(collections.get(output) ?? []);
   }
 
   for (const output of plan.foldOutputs) {

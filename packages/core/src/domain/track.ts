@@ -312,7 +312,7 @@ export class Track {
           }
           entryAccepted[leaf] = value;
         }
-        accepted[entryId] = entryAccepted;
+        accepted[entryId] = Object.freeze(entryAccepted);
       }
       if (Object.keys(accepted).length === 0) return NO_VALUES;
       return freezeValue(accepted as ImmutableRecord);
@@ -371,9 +371,9 @@ export class Track {
           }
           entryAccepted[leaf] = value;
         }
-        accepted[entryId] = entryAccepted;
+        accepted[entryId] = Object.freeze(entryAccepted);
       }
-      return accepted;
+      return Object.freeze(accepted);
     }
     const authored = this.#plugins.authoredKeyframes;
     const prepared = this.#plugins.preparation.keyframes;
@@ -432,7 +432,7 @@ export class Track {
           const base = isRecord(merged[entryId])
             ? (merged[entryId] as Record<string, unknown>)
             : {};
-          merged[entryId] = { ...base, ...entryWrites };
+          merged[entryId] = Object.freeze({ ...base, ...entryWrites });
         } else {
           merged[entryId] = entryWrites;
         }
