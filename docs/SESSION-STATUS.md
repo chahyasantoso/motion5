@@ -10,14 +10,14 @@ byte ceiling.
 
 ## Now
 
-- **Skeldata address, identity, and lifecycle types landed** in `packages/core/src/contract/address.ts`;
-  disjoint namespaces, collision-free tuple encoding, prototype safety and generation-backed handles
-  pinned in slice A2 on `feat/skeldata-v5-base`.
+- **Skeldata total numerics and exact equality landed** in `packages/core/src/contract/numerics.ts`;
+  degree units, pivot-then-extension, signed zero preservation, deterministic half-turn tie-breaking,
+  and magnitude overflow checks pinned in slice A3 on `feat/skeldata-v5-base`.
 
 ## Next in line
 
-- **Slice A3 execution:** pin coordinate systems, 2D units, exact `Object.is` numeric comparisons,
-  and solver finite-domain guarantees under `03-A3-numerics.md`.
+- **Slice A4 execution:** establish normative authoring, layout, solver, and caching fixture sets
+  under `04-A4-fixtures.md`.
 
 ## Open, and not scheduled
 
