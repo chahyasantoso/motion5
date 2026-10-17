@@ -36,6 +36,7 @@ operations, topology, numerics, evaluator state, memoization, editing, and rende
 
 Each invariant defines exactly one owner and its earliest validation stage. Validation stages occur
 in strict sequence:
+
 1. Shape: syntactic validation of raw document tree.
 2. Registry: validation against admitted plugin definitions and slot claims.
 3. Derivation: precommit validation of track references, layouts, and topology.
@@ -348,6 +349,7 @@ A plugin definition declares either stateless callbacks or a factory, never both
   4. Core validates candidate and atomically commits opaque state with outputs upon transaction success.
 
 Execution owner assignments:
+
 - `B7`: generic evaluator factory seams, provider implementation, and conformance suite.
 - `D4`: IK whole-solve memoization consumer.
 - `D5`: FK per-point memoization consumer.
@@ -356,37 +358,44 @@ Execution owner assignments:
 ## 5. Invariant review matrix: valid vs minimal invalid
 
 ### Case 1: One-point FK vs Root-only IK
+
 - Valid one-point FK: Track with one `point` entry and optional `root`. FK composes root frame plus
   authored point coordinates to produce single tip frame pose.
 - Minimal invalid root-only IK: Track with only `root` and `ik` entry. Refused at derivation because IK
   requires non-root solve points and leaf goals (`ik-solver-no-solve-members`).
 
 ### Case 2: Omitted root vs Rooted chain import
+
 - Valid omitted root: Skeleton chain with `point` entries and no `root`. Frame defaults to origin
   `{ x: 0, y: 0, rotation: 0 }`.
 - Minimal invalid rooted import: Joined source imports a chain that authors a `root` plugin entry.
   Refused at derivation because imported chains must be rootless (`skeleton-imported-chain-has-root`).
 
 ### Case 3: Non-kinematic slots named targets or root
+
 - Valid non-kinematic slot: Non-kinematic plugin declares requirement slot `targets` with `{ dict: true }`
   or `root` with scalar binding. Registry binds inputs purely as declared data.
 - Core and graph do not restrict slot names to kinematic plugins.
 
 ### Case 4: Both-operation input isolation
+
 - Valid isolation: Plugin declaring both collect and fold receives prepared data in collect, and
   preceding fold state in fold.
 - Invalid coupling: Plugin attempting to read fold state during collect, or accessing collection
   buffers during fold. Prevented by typed context parameter isolation.
 
 ### Case 5: Two injected provider instances
+
 - Valid isolation: Two separate evaluator instances receive different `CacheProvider` instances or
   separate tables. No key or slot collision occurs between parallel runtimes or tracks.
 
 ### Case 6: Late evaluation failure after domain computation
+
 - Valid precommit rollback: FK and IK compute and propose new cache snapshots. Downstream track throws
   during evaluation or freezing. Entire candidate transaction aborts. Prior committed cache snapshots
   remain active; retry starts cold from committed state.
 
 ### Case 7: No-cache and eviction semantics
+
 - Valid equivalence: Workload executed with bounded cache, no-cache provider, and aggressive eviction
   provider yields identical pose coordinates and inspection results down to `Object.is` precision.
