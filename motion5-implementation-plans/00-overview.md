@@ -43,7 +43,7 @@ The array is a list of instances, not chronological samples. Animation stops liv
 
 Keep plugin name, authored entry ID, compiler entry key, runtime generation, member ID, leaf path, output port, source node and render target distinct. Point member ID equals its outer entry ID; a join ID identifies a link, not a point/source. Point IDs are unique across a resolved skeleton; link IDs use a separate namespace. Separate rigs may reuse point IDs; no chain instancing/automatic qualification.
 
-Reserve slash and colon in entry/plugin/leaf codec components and retain stricter existing identifier rules. Use safe Maps/null-prototype records/own-data-property writes for permitted IDs such as __proto__. Centralize collision-free private tuple encoding. Handles capture runtime/entry generation, never position or ID alone. Cache slots are local to generation-owned private tables, not another public/global identifier space.
+Reserve slash and colon in entry/plugin/leaf codec components and retain stricter existing identifier rules. Use safe Maps/null-prototype records/own-data-property writes for permitted IDs such as **proto**. Centralize collision-free private tuple encoding. Handles capture runtime/entry generation, never position or ID alone. Cache slots are local to generation-owned private tables, not another public/global identifier space.
 
 ## 4. Generic collect/fold and evaluator contract
 

@@ -10,14 +10,13 @@ byte ceiling.
 
 ## Now
 
-- **Skeldata lifecycle, atomicity, and failure boundaries landed** in `docs/skeldata/LIFECYCLE.md`;
-  7-phase candidate evaluation protocol, private state, no-fail swap, and 11-scenario failure ledger
-  pinned in slice A6 on `feat/skeldata-v5-base`.
+- **Uniform entry-addressed value transactions landed** in `packages/core/src/domain/value-transaction.ts`,
+  enforcing multi-entry isolation, leaf schema validation, structural rejection, and atomic batching in B8.
 
 ## Next in line
 
-- **Slice B1 execution:** authoring schema replacement and operation admission under
-  `07-B1-authoring.md`.
+- **Narrow generic structural derivation:** produce immutable descriptors and diagnostics from
+  validated structural declarations without runtime state access under `15-C1-derivation.md`.
 
 ## Open, and not scheduled
 

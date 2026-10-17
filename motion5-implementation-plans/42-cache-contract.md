@@ -14,14 +14,14 @@ Do not add authored `cache` leaves, a plugin-name switch, global maps, a service
 
 ## 2. Ownership and dependency direction
 
-| Concern | Owner | Must not know |
-| --- | --- | --- |
-| Generic cache interfaces and conformance contract | Core plugin-facing API | Skeletons, FK/IK names, graph registry |
-| Entry/generation lifecycle and acceptance | Existing core evaluator/transaction owner | Cache keys, member topology, solver strategy |
-| Default bounded provider and no-cache provider | Generic cache implementation module | Plugin semantics or engine state |
-| Runtime provider selection | Application composition root | Per-frame cache contents |
-| Effective key/value construction | Each plugin adapter | Runtime internals or arbitrary source lookup |
-| Frame composition and solve algorithms | Existing pure math modules | Cache provider, graph, publication |
+| Concern                                           | Owner                                     | Must not know                                |
+| ------------------------------------------------- | ----------------------------------------- | -------------------------------------------- |
+| Generic cache interfaces and conformance contract | Core plugin-facing API                    | Skeletons, FK/IK names, graph registry       |
+| Entry/generation lifecycle and acceptance         | Existing core evaluator/transaction owner | Cache keys, member topology, solver strategy |
+| Default bounded provider and no-cache provider    | Generic cache implementation module       | Plugin semantics or engine state             |
+| Runtime provider selection                        | Application composition root              | Per-frame cache contents                     |
+| Effective key/value construction                  | Each plugin adapter                       | Runtime internals or arbitrary source lookup |
+| Frame composition and solve algorithms            | Existing pure math modules                | Cache provider, graph, publication           |
 
 Core contracts are defined independently of the default implementation. Runtime construction wires the default provider and passes the selected provider as an explicit evaluator service. A custom provider does not require editing the registry, compiler, or built-in plugins. Keep the port small; a new backend is an implementation of an open interface, not another member of a closed backend enum.
 
@@ -151,19 +151,19 @@ Use a tiny non-kinematic plugin, such as memoized text measurement over normaliz
 
 D4/D5/D6/D7 add domain tests:
 
-| Case | Required observation |
-| --- | --- |
-| Identical effective FK inputs, new source records | Default provider zero extra frame compositions when evaluator runs |
-| Leaf-only FK edit | One composition in uncoupled FK-only fixture; exact D3 poses |
-| Changed parent inputs with equal resulting frame | Old frame retained; unaffected descendants hit |
-| Identical IK request with new records | Zero extra solve calls; same rotations/quality |
-| Change each consumed IK field independently | Miss; result matches cache-disabled solve |
-| Inspection off/on with full-result cache | Projection changes correctly without another solve |
-| Goal/constraint change in a branched rig | Whole solve miss; no false per-point invalidation claim |
-| Late failure after FK or IK cache work | Neither proposal accepted; retry from last accepted state |
-| Rebind to same numeric data / remove then reuse ID | Cold new generation; no stale provenance reuse |
-| Interleaved rigs/runtimes/providers | No state or value alias contamination |
-| Capacity eviction / disabled provider / seek histories | Same accepted meaning; only cost/reference differences allowed |
+| Case                                                   | Required observation                                               |
+| ------------------------------------------------------ | ------------------------------------------------------------------ |
+| Identical effective FK inputs, new source records      | Default provider zero extra frame compositions when evaluator runs |
+| Leaf-only FK edit                                      | One composition in uncoupled FK-only fixture; exact D3 poses       |
+| Changed parent inputs with equal resulting frame       | Old frame retained; unaffected descendants hit                     |
+| Identical IK request with new records                  | Zero extra solve calls; same rotations/quality                     |
+| Change each consumed IK field independently            | Miss; result matches cache-disabled solve                          |
+| Inspection off/on with full-result cache               | Projection changes correctly without another solve                 |
+| Goal/constraint change in a branched rig               | Whole solve miss; no false per-point invalidation claim            |
+| Late failure after FK or IK cache work                 | Neither proposal accepted; retry from last accepted state          |
+| Rebind to same numeric data / remove then reuse ID     | Cold new generation; no stale provenance reuse                     |
+| Interleaved rigs/runtimes/providers                    | No state or value alias contamination                              |
+| Capacity eviction / disabled provider / seek histories | Same accepted meaning; only cost/reference differences allowed     |
 
 F4 measures provider-disabled versus default and a test alternative on the same new-contract workload. Report lookup comparisons, request building, snapshot writes/copies, slots/retention, FK math, IK calls/time/iterations, validation/publication and end-to-end time separately. F5 generates failure/history sequences; F6 requires all provider and both-domain evidence on the exact release candidate. Plan validation is not runtime or performance verification.
 

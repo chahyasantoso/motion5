@@ -1,6 +1,6 @@
 # B8 — Implement uniform entry-addressed value transactions
 
-Status: not implemented. Depends on: B2, B3, B4, A2, A6.
+Status: implemented. Depends on: B2, B3, B4, A2, A6.
 
 ## Start here
 

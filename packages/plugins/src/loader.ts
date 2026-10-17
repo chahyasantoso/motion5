@@ -82,7 +82,28 @@ function snapshotCatalog(catalog: PluginCatalog): ReadonlyMap<string, SnapshotDe
 }
 
 function addGroups(groups: Map<string, string>, track: TrackDefinition, path: string): void {
-  for (const name of Object.keys(track.keyframes ?? {})) {
+  const keyframes = track.keyframes;
+  if (!keyframes) return;
+  if (Array.isArray(keyframes)) {
+    for (let index = 0; index < keyframes.length; index++) {
+      const entryRecord = keyframes[index];
+      if (!entryRecord || typeof entryRecord !== "object") continue;
+      for (const entryId of Object.keys(entryRecord)) {
+        const def = (entryRecord as Record<string, unknown>)[entryId];
+        if (
+          def &&
+          typeof def === "object" &&
+          typeof (def as Record<string, unknown>).plugin === "string"
+        ) {
+          const pluginName = (def as Record<string, unknown>).plugin as string;
+          const entryPath = `${path}.keyframes[${index}].${entryId}`;
+          if (!groups.has(pluginName)) groups.set(pluginName, entryPath);
+        }
+      }
+    }
+    return;
+  }
+  for (const name of Object.keys(keyframes)) {
     const groupPath = `${path}.keyframes.${name}`;
     if (!groups.has(name)) groups.set(name, groupPath);
   }

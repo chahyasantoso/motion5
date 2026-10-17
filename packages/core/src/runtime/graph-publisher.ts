@@ -373,6 +373,11 @@ export class GraphPublisher {
         );
       }
       (collected[solvingPlugin] ??= {}).members = Object.freeze(membersList);
+      const rootEdge = edgesByRole(node, "input").find((edge) => edge.requirement?.slot === "root");
+      const rootEntryId = rootEdge?.requirement?.entryId;
+      if (rootEntryId !== undefined && rootEntryId !== solvingPlugin) {
+        (collected[rootEntryId] ??= {}).members = Object.freeze(membersList);
+      }
     }
     for (const edge of edgesByRole(node, "input")) {
       const sourcePatch = this.#registry.get(edge.sourceId);
@@ -388,14 +393,11 @@ export class GraphPublisher {
       // silent skip would drop a dependency graph construction accepted. Same shape as the
       // two guards above. See ADR-047.
       if (requirement === undefined) failPublication({ kind: "input-requirement", edge });
-      // A dict entry is delivered under its authored key inside the slot rather than at the
-      // slot itself. Assigning at the slot gave N entries one destination, so the last edge
-      // in canonical order was the only one that arrived and the rest were dropped with no
-      // diagnostic: survivable only while nothing read the channel, which is exactly how the
-      // next consumer of it inherits a last-write-wins bug. See ADR-057.
+      // Input scope is entry -> slot -> optional dict member, never plugin name -> slot.
+      const targetScope = requirement.entryId ?? requirement.plugin;
       if (requirement.memberKey !== undefined) {
-        const slots = memberSlots.get(requirement.plugin) ?? new Map();
-        memberSlots.set(requirement.plugin, slots);
+        const slots = memberSlots.get(targetScope) ?? new Map();
+        memberSlots.set(targetScope, slots);
         const members = slots.get(requirement.slot) ?? {};
         slots.set(requirement.slot, members);
         // Every authored member stays an own data property, including "__proto__".
@@ -405,13 +407,13 @@ export class GraphPublisher {
       // The slot is the scope, so the source's values arrive whole and under their own names.
       // Nothing is projected and nothing is flat-merged, so there is no key left to collide
       // with and no collision guard left to reach. See ADR-044.
-      (collected[requirement.plugin] ??= {})[requirement.slot] = sourceRecord;
+      (collected[targetScope] ??= {})[requirement.slot] = sourceRecord;
     }
     // Frozen at assembly, in canonical key order: the entries were collected over
     // `edgesByRole`, which sorts by `compareEdges`, and the member key is its last tiebreak.
-    for (const [plugin, slots] of memberSlots)
+    for (const [targetScope, slots] of memberSlots)
       for (const [slot, members] of slots)
-        (collected[plugin] ??= {})[slot] = Object.freeze(members);
+        (collected[targetScope] ??= {})[slot] = Object.freeze(members);
     // One memo, and it is `Track`'s. Its key is the seed as well as the requirement inputs,
     // and the members travel inside those inputs, so member lengths are covered by the same
     // comparison that covers the root and the target, together with the solver's own

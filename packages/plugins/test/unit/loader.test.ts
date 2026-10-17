@@ -13,12 +13,31 @@ import {
   type PluginLoadFailure,
 } from "../../src/loader";
 
+import type {
+  AuthoredEntry,
+  AuthoredPluginRequires,
+  AuthoredProperty,
+} from "@motion5/core/contract/v5";
+
 function definition(name: string): PluginDefinition {
   return { name, keys: [name], compose: (values) => values };
 }
-type PluginGroup = NonNullable<TrackDefinition["keyframes"]>[string];
-function track(name: string, group: PluginGroup = { values: { value: 1 } }): TrackDefinition {
-  return { id: `track-${name}`, keyframes: { [name]: group } };
+function track(
+  name: string,
+  entry?: {
+    values?: Readonly<Record<string, AuthoredProperty>>;
+    requires?: AuthoredPluginRequires;
+  },
+): TrackDefinition {
+  const entryRecord: AuthoredEntry = {
+    plugin: name,
+    ...(entry?.values !== undefined ? { values: entry.values } : { values: { value: 1 } }),
+    ...(entry?.requires !== undefined ? { requires: entry.requires } : {}),
+  };
+  return {
+    id: `track-${name}`,
+    keyframes: [{ [name]: entryRecord }],
+  };
 }
 function project(
   tracks: readonly TrackDefinition[],
@@ -86,8 +105,18 @@ describe("approved lazy plugin loader", () => {
       ]),
     );
     const demand = project(
-      [{ id: "transform", keyframes: { transform: { values: { x: 1 } } } }],
-      [{ id: "fk", keyframes: { fk: { requires: { base: "m/transform" } } } }],
+      [
+        {
+          id: "transform",
+          keyframes: [{ transform: { plugin: "transform", values: { x: 1 } } }],
+        },
+      ],
+      [
+        {
+          id: "fk",
+          keyframes: [{ fk: { plugin: "fk", requires: { base: "m/transform" } } }],
+        },
+      ],
     );
     const result = await loader.ensure(registry, { kind: "project", project: demand });
     expect(result).toEqual({ kind: "ensured", added: ["transform", "fk"] });
@@ -144,13 +173,23 @@ describe("approved lazy plugin loader", () => {
     const result = await loader.ensure(new PluginRegistry(), {
       kind: "project",
       project: project([
-        { id: "one", keyframes: { transform: { values: { x: 1 } } } },
-        { id: "two", keyframes: { foo: { values: { x: 1 } } } },
+        {
+          id: "one",
+          keyframes: [{ transform: { plugin: "transform", values: { x: 1 } } }],
+        },
+        {
+          id: "two",
+          keyframes: [{ foo: { plugin: "foo", values: { x: 1 } } }],
+        },
       ]),
     });
     expect(result).toMatchObject({
       kind: "refused",
-      failure: { kind: "unknown-plugin", name: "foo", path: "motions[0].tracks[1].keyframes.foo" },
+      failure: {
+        kind: "unknown-plugin",
+        name: "foo",
+        path: "motions[0].tracks[1].keyframes[0].foo",
+      },
     });
     expect(calls).toBe(0);
   });
@@ -540,5 +579,44 @@ describe("approved lazy plugin loader", () => {
         new Map([["x", { load: async () => definition("x"), dependencies: [""] }]]),
       ),
     ).toThrow(/dependencies/);
+  });
+
+  it("loads one definition for three entries referencing the same plugin", async () => {
+    let loadCount = 0;
+    const catalog: PluginCatalog = new Map([
+      [
+        "point",
+        {
+          load: async () => {
+            loadCount++;
+            return {
+              name: "point",
+              collect: { output: "points" },
+            };
+          },
+        },
+      ],
+    ]);
+
+    const loader = createPluginLoader(catalog);
+    const registry = new PluginRegistry();
+
+    const tracks = [
+      {
+        id: "track1",
+        keyframes: [
+          { p1: { plugin: "point", values: { length: 10 } } },
+          { p2: { plugin: "point", values: { length: 20 } } },
+          { p3: { plugin: "point", values: { length: 30 } } },
+        ],
+      },
+    ];
+
+    const result = await loader.ensure(registry, { kind: "tracks", tracks });
+    expect(result.kind).toBe("ensured");
+    if (result.kind === "ensured") {
+      expect(result.added).toEqual(["point"]);
+    }
+    expect(loadCount).toBe(1);
   });
 });

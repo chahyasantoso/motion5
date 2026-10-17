@@ -81,8 +81,76 @@ export function admitPlugin(plugin: PluginDefinition, context: AdmissionContext)
   const source: PluginDefinition = { ...plugin };
   if (typeof source.name !== "string" || !source.name.trim())
     throw new TypeError("Plugin name must be a non-empty string.");
-  if (typeof source.compose !== "function")
+
+  const hasCompose = typeof source.compose === "function";
+  const hasCollect = isRecord(source.collect);
+  const hasFold = isRecord(source.fold);
+
+  if (!hasCompose && !hasCollect && !hasFold)
+    throw new TypeError(`Plugin "${source.name}" must declare collect, fold, or both operations.`);
+
+  if (source.compose !== undefined && typeof source.compose !== "function")
     throw new TypeError("Plugin compose must be a function.");
+
+  let collectOutput: string | undefined;
+  if (source.collect !== undefined) {
+    if (!isRecord(source.collect))
+      throw new TypeError(`Plugin "${source.name}" collect must be an object.`);
+    if (typeof source.collect.output !== "string" || !source.collect.output.trim())
+      throw new TypeError(`Plugin "${source.name}" collect output must be a non-empty string.`);
+    if (source.collect.output === "id")
+      throw new TypeError(`Plugin "${source.name}" collect output cannot use reserved name "id".`);
+    if (source.collect.output.includes(":"))
+      throw new TypeError(
+        `Plugin "${source.name}" collect output "${source.collect.output}" must not contain ':'.`,
+      );
+    if (source.collect.run !== undefined && typeof source.collect.run !== "function")
+      throw new TypeError(`Plugin "${source.name}" collect run must be a function when provided.`);
+    collectOutput = source.collect.output;
+  }
+
+  const foldOutputs: string[] = [];
+  if (source.fold !== undefined) {
+    if (!isRecord(source.fold))
+      throw new TypeError(`Plugin "${source.name}" fold must be an object.`);
+    if (!Array.isArray(source.fold.outputs) || source.fold.outputs.length === 0)
+      throw new TypeError(
+        `Plugin "${source.name}" fold outputs must be a non-empty array of strings.`,
+      );
+    const seenFold = new Set<string>();
+    for (const out of source.fold.outputs) {
+      if (typeof out !== "string" || !out.trim())
+        throw new TypeError(`Plugin "${source.name}" fold outputs must contain non-empty strings.`);
+      if (out.includes(":"))
+        throw new TypeError(`Plugin "${source.name}" fold output "${out}" must not contain ':'.`);
+      if (seenFold.has(out))
+        throw new TypeError(
+          `Plugin "${source.name}" fold outputs contains duplicate output "${out}".`,
+        );
+      seenFold.add(out);
+      foldOutputs.push(out);
+    }
+    if (source.fold.run !== undefined && typeof source.fold.run !== "function")
+      throw new TypeError(`Plugin "${source.name}" fold run must be a function when provided.`);
+  }
+
+  if (collectOutput !== undefined && foldOutputs.includes(collectOutput)) {
+    throw new TypeError(
+      `Plugin "${source.name}" collect output "${collectOutput}" cannot overlap with fold outputs.`,
+    );
+  }
+
+  if (source.createEvaluator !== undefined) {
+    if (typeof source.createEvaluator !== "function")
+      throw new TypeError(
+        `Plugin "${source.name}" createEvaluator must be a function when provided.`,
+      );
+    if (source.collect?.run !== undefined || source.fold?.run !== undefined)
+      throw new TypeError(
+        `Plugin "${source.name}" cannot declare both createEvaluator and operation run callbacks.`,
+      );
+  }
+
   if (source.keys !== undefined && !Array.isArray(source.keys))
     throw new TypeError("Plugin keys must be an array when provided.");
   if (source.claimsKey !== undefined && typeof source.claimsKey !== "function")

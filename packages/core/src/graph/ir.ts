@@ -37,12 +37,16 @@ import {
 } from "./solver-constraints";
 
 interface ScalarEdgeRequirement {
+  readonly entryId?: string;
+  readonly compilerKey?: string;
   readonly plugin: string;
   readonly slot: string;
   readonly memberKey?: never;
 }
 
 interface DictEdgeRequirement {
+  readonly entryId?: string;
+  readonly compilerKey?: string;
   readonly plugin: string;
   readonly slot: string;
   /** The key this binding was authored under inside this dict-valued slot. */
@@ -162,13 +166,14 @@ export function edgeRequirement(edge: GraphEdge): EdgeRequirement | undefined {
 function requirementIdentity(edge: GraphEdge): string {
   const requirement = edgeRequirement(edge);
   if (requirement === undefined) return "-";
+  const entry = field(requirement.entryId ?? "");
   const member = field(requirement.memberKey ?? "");
-  return `${field(requirement.plugin)}${field(requirement.slot)}${member}`;
+  return `${entry}${field(requirement.plugin)}${field(requirement.slot)}${member}`;
 }
 
 function requirementOrder(edge: GraphEdge): string {
   const requirement = edgeRequirement(edge);
-  return requirement === undefined ? "-" : `:${requirement.plugin}`;
+  return requirement === undefined ? "-" : `:${requirement.entryId ?? ""}:${requirement.plugin}`;
 }
 
 /**
@@ -199,6 +204,7 @@ export function compareEdges(a: GraphEdge, b: GraphEdge): number {
     compareCodeUnits(a.observerId, b.observerId) ||
     compareCodeUnits(a.sourceId, b.sourceId) ||
     compareCodeUnits(edgeRole(a), edgeRole(b)) ||
+    compareCodeUnits(edgeRequirement(a)?.entryId ?? "", edgeRequirement(b)?.entryId ?? "") ||
     compareCodeUnits(requirementOrder(a), requirementOrder(b)) ||
     compareCodeUnits(edgeRequirement(a)?.slot ?? "", edgeRequirement(b)?.slot ?? "") ||
     compareCodeUnits(edgeRequirement(a)?.memberKey ?? "", edgeRequirement(b)?.memberKey ?? "")
@@ -208,8 +214,8 @@ export function compareEdges(a: GraphEdge, b: GraphEdge): number {
 export function describeEdge(edge: GraphEdge): string {
   const requirement = edgeRequirement(edge);
   const member = requirement?.memberKey === undefined ? "" : `.${requirement.memberKey}`;
-  const scope =
-    requirement === undefined ? "" : ` [${requirement.plugin}.${requirement.slot}${member}]`;
+  const scopePrefix = requirement?.entryId ?? requirement?.plugin;
+  const scope = requirement === undefined ? "" : ` [${scopePrefix}.${requirement.slot}${member}]`;
   return `${edge.observerId} <- ${edge.sourceId} (${edgeRole(edge)})${scope}`;
 }
 
@@ -327,6 +333,8 @@ export function resolveRequirementEdge(
   // written as an explicit `undefined`. An absent field and a field holding `undefined` encode the
   // same identity, but only the first says "this slot takes one source" to a reader of the IR.
   const requirement: EdgeRequirement = Object.freeze({
+    ...(binding.entryId === undefined ? {} : { entryId: binding.entryId }),
+    ...(binding.compilerKey === undefined ? {} : { compilerKey: binding.compilerKey }),
     plugin: binding.plugin,
     slot: binding.slot,
     ...(binding.memberKey === undefined ? {} : { memberKey: binding.memberKey }),

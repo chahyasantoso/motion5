@@ -10,15 +10,15 @@ Read `00-overview.md` first, then `42-cache-contract.md` with A1/A3/A6 and B2/B7
 
 ## Implementation owners
 
-| Slice | Added responsibility |
-| --- | --- |
-| A1 / A3 / A6 | Cache ownership, exact equality/signed zero, shared acceptance/failure contract |
-| B2 / B6 / B7 | Per-generation evaluator services; one executor; typed state proposals; provider port, defaults and conformance |
-| C7 | Candidate cache isolation, no provider calls during acceptance, cold replacement |
-| D4 | Canonical complete SolveRequest; whole-result IK memo; deterministic seeds and inspection projection |
-| D5 | FK per-point effective keys using the same injected port |
-| D6 / D7 | Both-domain failure/lifecycle tests and real pipeline/provider equivalence |
-| F3 / F4 / F5 / F6 | Public API docs, performance matrix, generated faults/histories, final evidence gates |
+| Slice             | Added responsibility                                                                                            |
+| ----------------- | --------------------------------------------------------------------------------------------------------------- |
+| A1 / A3 / A6      | Cache ownership, exact equality/signed zero, shared acceptance/failure contract                                 |
+| B2 / B6 / B7      | Per-generation evaluator services; one executor; typed state proposals; provider port, defaults and conformance |
+| C7                | Candidate cache isolation, no provider calls during acceptance, cold replacement                                |
+| D4                | Canonical complete SolveRequest; whole-result IK memo; deterministic seeds and inspection projection            |
+| D5                | FK per-point effective keys using the same injected port                                                        |
+| D6 / D7           | Both-domain failure/lifecycle tests and real pipeline/provider equivalence                                      |
+| F3 / F4 / F5 / F6 | Public API docs, performance matrix, generated faults/histories, final evidence gates                           |
 
 ## Key decisions
 

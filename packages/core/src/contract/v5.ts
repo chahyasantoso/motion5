@@ -298,6 +298,20 @@ export interface AuthoredPluginGroup {
   readonly requires?: AuthoredPluginRequires;
 }
 /**
+ * One authored entry definition inside an entry-record map: `{ [entryId]: { plugin, values?, requires? } }`.
+ */
+export interface AuthoredEntry {
+  readonly plugin: string;
+  readonly values?: Readonly<Record<string, AuthoredProperty>>;
+  readonly requires?: AuthoredPluginRequires;
+}
+
+/**
+ * Singleton-map record representing one authored keyframe entry: `{ [entryId]: AuthoredEntry }`.
+ */
+export type AuthoredEntryRecord = Readonly<Record<string, AuthoredEntry>>;
+
+/**
  * One authored keyframe entry, which is always a plugin-named group.
  *
  * The group names the plugin that owns its leaves, so `{ fk: { values: { length } } }` scopes the
@@ -316,6 +330,10 @@ export interface PluginRequiresBinding {
   readonly plugin: string;
   readonly slot: string;
   readonly source: string;
+  /** Authored entry identity when read from an entry record, absent for legacy object form. */
+  readonly entryId?: string;
+  /** Compiler entry key when resolved through execution plan. */
+  readonly compilerKey?: string;
   /**
    * The key this binding was authored under inside a dict-valued slot, absent for a scalar slot.
    *
@@ -334,7 +352,7 @@ export interface PluginRequiresBinding {
 export interface TrackDefinition {
   readonly id: string;
   readonly duration?: number;
-  readonly keyframes?: Readonly<Record<string, AuthoredKeyframe>>;
+  readonly keyframes?: readonly AuthoredEntryRecord[] | Readonly<Record<string, AuthoredKeyframe>>;
   readonly observes?: readonly ObservationDefinition[];
 }
 /**

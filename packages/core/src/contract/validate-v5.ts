@@ -18,6 +18,7 @@ import {
   PLUGIN_REQUIRES_SECTION,
   PLUGIN_VALUES_SECTION,
   readPluginValues,
+  ENTRY_SECTIONS,
 } from "./keyframe-shape";
 import { PLUGIN_GOALS_SLOT } from "./solver-slots";
 import { defineOwnValue } from "../lang/own-property";
@@ -77,32 +78,7 @@ export function validateKeyframes(
   const add = (ruleId: KeyframeRuleId, rulePath: string, message: string) =>
     diagnostics.push(diagnostic(scopedRuleId(scope, ruleId), rulePath, message));
   if (keyframes === undefined) return;
-  if (!isObject(keyframes)) {
-    add("keyframes-shape", path, "Track keyframes must be an object.");
-    return;
-  }
-  // The colon is reserved rather than conventional. `Track` treats a colon key as a plugin's
-  // private namespace and never publishes it, so an authored key spelled with one would be
-  // animated and then hidden, and `{ "fk:length": ... }` would become a second spelling of the
-  // flattened `{ fk: { values: { length: ... } } }`. That is the dual namespace grouping removes.
-  const checkName = (name: string, namePath: string): void => {
-    if (!name.includes(":")) return;
-    const detail = "must not contain ':', which is reserved for internal keys";
-    add("keyframes-reserved-separator", namePath, `Keyframe name '${name}' ${detail}.`);
-  };
-  // Every authored spelling of one compiled key. A group leaf that collides with another group's
-  // leaf is rejected here, which is why `flattenAuthoredKeyframes` may resolve
-  // ties by sorted order instead of reporting the same rule a second time from the domain layer.
-  const owners = new Map<string, string>();
-  const claim = (key: string, keyPath: string): void => {
-    const owner = owners.get(key);
-    if (owner === undefined) {
-      owners.set(key, keyPath);
-      return;
-    }
-    const detail = `is already authored at '${owner}'`;
-    add("keyframes-duplicate-key", keyPath, `Keyframe key '${key}' ${detail}.`);
-  };
+
   const validateStops = (stops: readonly unknown[], propertyPath: string): void => {
     let previous: number | undefined;
     const positions = new Set<number>();
@@ -127,6 +103,7 @@ export function validateKeyframes(
     if (positions.size > 0 && !positions.has(1))
       add("stop-missing-end", propertyPath, "Stop sequence does not define p=1.");
   };
+
   const validateProperty = (property: unknown, propertyPath: string): void => {
     const leaf = readAuthoredLeaf(property);
     switch (leaf.kind) {
@@ -146,6 +123,46 @@ export function validateKeyframes(
         return unreachable(leaf);
     }
   };
+
+  // Authorship scope expects an array of singleton-map entry records [{ [entryId]: { plugin, values?, requires? } }].
+  // Contribution scope expects a flat property map { [property]: stops }.
+  if (form === "property") {
+    if (!isObject(keyframes)) {
+      add("keyframes-shape", path, "Contributed keyframes must be an object.");
+      return;
+    }
+    const checkPropName = (name: string, namePath: string): void => {
+      if (!name.includes(":")) return;
+      const detail = "must not contain ':', which is reserved for internal keys";
+      add("keyframes-reserved-separator", namePath, `Keyframe name '${name}' ${detail}.`);
+    };
+    for (const [key, rawEntry] of Object.entries(keyframes)) {
+      const entryPath = `${path}.${key}`;
+      checkPropName(key, entryPath);
+      validateProperty(rawEntry, entryPath);
+    }
+    return;
+  }
+
+  // Authored scope: Array of singleton-map entry records
+  if (!Array.isArray(keyframes)) {
+    add(
+      "keyframes-shape",
+      path,
+      "Track keyframes must be an array of entry records; object-form groups are retired.",
+    );
+    return;
+  }
+
+  // Track-unique entry IDs
+  const entryIdOwners = new Map<string, string>();
+  const checkDelimiters = (value: string, valuePath: string, label: string): void => {
+    if (value.includes(":") || value.includes("/")) {
+      const detail = "must not contain ':' or '/', which are reserved delimiters";
+      add("keyframes-reserved-separator", valuePath, `${label} '${value}' ${detail}.`);
+    }
+  };
+
   const validateRequirementDict = (dict: RawObject, dictPath: string): void => {
     const entries = Object.entries(dict);
     if (entries.length === 0) {
@@ -156,8 +173,8 @@ export function validateKeyframes(
     for (const [key, source] of entries) {
       const keyPath = `${dictPath}.${key}`;
       const forged = key.includes("[") || key.includes("]");
-      if (key.length === 0 || key.includes(":") || forged) {
-        const detail = "must be non-empty and must not contain ':', '[' or ']'";
+      if (key.length === 0 || key.includes(":") || key.includes("/") || forged) {
+        const detail = "must be non-empty and must not contain ':', '/', '[' or ']'";
         add("keyframes-requires-dict-key", keyPath, `Requirement dict key '${key}' ${detail}.`);
       }
       if (typeof source !== "string" || source.length === 0) {
@@ -166,6 +183,7 @@ export function validateKeyframes(
       }
     }
   };
+
   const validateRequires = (requires: unknown, requiresPath: string): void => {
     if (!isObject(requires)) {
       const detail = "must be an object mapping requirement slots to source ids";
@@ -180,18 +198,9 @@ export function validateKeyframes(
     }
     for (const [slot, source] of slots) {
       const slotPath = `${requiresPath}.${slot}`;
-      if (slot.length === 0 || slot.includes(":")) {
-        const detail = "must be non-empty and must not contain ':'";
+      if (slot.length === 0 || slot.includes(":") || slot.includes("/")) {
+        const detail = "must be non-empty and must not contain ':' or '/'";
         add("keyframes-requires-slot", slotPath, `Requirement slot '${slot}' ${detail}.`);
-      }
-      // The one rule still keyed on a slot name, because only the name can answer it: this slot
-      // carries a solver's goal dict, so a scalar at it is malformed rather than the ordinary scalar
-      // binding it would be anywhere else. Every rule below is about the dict rather than about
-      // which slot is allowed to hold one, which is the registry's question. See ADR-057.
-      if (slot === PLUGIN_GOALS_SLOT && !isObject(source)) {
-        const detail = "must be an object mapping member ids to source ids";
-        add("keyframes-targets-shape", slotPath, `Plugin '${PLUGIN_GOALS_SLOT}' ${detail}.`);
-        continue;
       }
       if (isObject(source)) {
         validateRequirementDict(source, slotPath);
@@ -203,6 +212,7 @@ export function validateKeyframes(
       }
     }
   };
+
   const validateValues = (values: unknown, valuesPath: string): void => {
     if (!isObject(values)) {
       const detail = "must be an object mapping keyframe names to authored properties";
@@ -211,78 +221,144 @@ export function validateKeyframes(
     }
     const leaves = Object.entries(values);
     if (leaves.length === 0) {
-      const detail = "must declare at least one property, or be omitted entirely";
-      add("keyframes-values-empty", valuesPath, `Plugin values ${detail}.`);
+      // Empty values is permitted for dependency-only entries (A-INV-05)
       return;
     }
     for (const [leaf, leafProperty] of leaves) {
       const leafPath = `${valuesPath}.${leaf}`;
-      checkName(leaf, leafPath);
-      claim(leaf, leafPath);
+      if (leaf.includes(":")) {
+        add(
+          "keyframes-reserved-separator",
+          leafPath,
+          `Keyframe name '${leaf}' must not contain ':', which is reserved for internal keys.`,
+        );
+      }
       validateProperty(leafProperty, leafPath);
     }
   };
-  const validateGroup = (key: string, rawGroup: unknown, groupPath: string): void => {
-    // A top-level section name addresses no plugin, so neither a property nor a binding written
-    // there could ever have an owner. Accepting one would be a second authored spelling with no
-    // destination, which is the dual namespace the group form exists to remove.
-    if (PLUGIN_GROUP_SECTIONS.includes(key)) {
-      const detail = "is reserved for a section of a plugin-named group";
-      add("keyframes-reserved-section", groupPath, `Keyframe name '${key}' ${detail}.`);
-      return;
+
+  for (let index = 0; index < keyframes.length; index++) {
+    const itemPath = `${path}[${index}]`;
+    // Sparse array check
+    if (!Object.prototype.hasOwnProperty.call(keyframes, index)) {
+      add("keyframes-shape", itemPath, `Keyframe entry at index ${index} must not be sparse.`);
+      continue;
     }
-    checkName(key, groupPath);
-    // Which of the three an entry is, and which refusal wins, is `readKeyframeEntry`'s answer. The
-    // pre-ADR-049 form is refused by name and never normalized. Every other entry naming no section
-    // is refused as ungrouped rather than read as a property: a flat key named no owner, so the
-    // moment two plugins claimed one name it needed a second rule to refuse the spelling this one
-    // now refuses for every name. See ADR-049 and ADR-121.
-    const entry = readKeyframeEntry(rawGroup);
-    switch (entry.kind) {
-      case "legacy-group": {
-        const detail = "must author its properties under a 'values' section";
-        add("keyframes-missing-values-section", groupPath, `Plugin group '${key}' ${detail}.`);
-        return;
-      }
-      case "ungrouped":
-        add("keyframes-ungrouped-key", groupPath, `Keyframe '${key}' ${UNGROUPED}.`);
-        return;
-      case "group":
-        break;
-      default:
-        return unreachable(entry);
+    const rawRecord = keyframes[index];
+    if (!isObject(rawRecord)) {
+      add(
+        "keyframes-shape",
+        itemPath,
+        `Keyframe entry at index ${index} must be a singleton map object.`,
+      );
+      continue;
     }
-    // Two members, one level. A group holds a `values` section of properties and a `requires`
-    // section of bindings; a property holds stops, so there is no third level for an author to
-    // reach for. `requires` compiles to nothing, so it claims no key and names nothing. A group of
-    // only unknown sections is reachable and is rejected below, so it needs no rule of its own.
-    for (const [section, member] of Object.entries(entry.group)) {
-      const sectionPath = `${groupPath}.${section}`;
-      if (section === PLUGIN_VALUES_SECTION) {
-        validateValues(member, sectionPath);
-        continue;
-      }
-      if (section === PLUGIN_REQUIRES_SECTION) {
-        validateRequires(member, sectionPath);
-        continue;
-      }
-      const detail = `must be ${SECTION_NAMES}`;
-      add("keyframes-unknown-section", sectionPath, `Keyframe section '${section}' ${detail}.`);
+
+    // Flat entry refusal: { plugin, id }
+    if (
+      Object.prototype.hasOwnProperty.call(rawRecord, "plugin") &&
+      (Object.prototype.hasOwnProperty.call(rawRecord, "id") ||
+        Object.prototype.hasOwnProperty.call(rawRecord, "entryId"))
+    ) {
+      add(
+        "keyframes-shape",
+        itemPath,
+        `Keyframe entry at index ${index} must be a singleton map { [entryId]: { plugin, ... } }, not a flat object.`,
+      );
+      continue;
     }
-  };
-  for (const [key, rawEntry] of Object.entries(keyframes)) {
-    const entryPath = `${path}.${key}`;
-    switch (form) {
-      case "group":
-        validateGroup(key, rawEntry, entryPath);
+
+    const ownKeys = Object.keys(rawRecord);
+    if (ownKeys.length !== 1) {
+      add(
+        "keyframes-shape",
+        itemPath,
+        `Keyframe entry at index ${index} must declare exactly one entry ID key, found ${ownKeys.length}.`,
+      );
+      continue;
+    }
+
+    const entryId = ownKeys[0];
+    if (entryId === undefined) continue;
+    const entryPath = `${itemPath}.${entryId}`;
+
+    // Validate entry ID delimiters
+    checkDelimiters(entryId, entryPath, "Entry ID");
+
+    // Track uniqueness
+    const priorOwner = entryIdOwners.get(entryId);
+    if (priorOwner !== undefined) {
+      add(
+        "keyframes-duplicate-key",
+        entryPath,
+        `Entry ID '${entryId}' is already authored at '${priorOwner}'.`,
+      );
+    } else {
+      entryIdOwners.set(entryId, entryPath);
+    }
+
+    const rawDef = rawRecord[entryId];
+    if (!isObject(rawDef)) {
+      add(
+        "keyframes-shape",
+        entryPath,
+        `Keyframe definition for '${entryId}' must be an object with a 'plugin' string.`,
+      );
+      continue;
+    }
+
+    // Check inner sections
+    const defKeys = Object.keys(rawDef);
+    for (const key of defKeys) {
+      const sectionPath = `${entryPath}.${key}`;
+      if (key === "id" || key === "entryId") {
+        add(
+          "keyframes-unknown-section",
+          sectionPath,
+          `Keyframe section '${key}' is invalid; entry ID must be the outer singleton map key.`,
+        );
         continue;
-      case "property":
-        checkName(key, entryPath);
-        claim(key, entryPath);
-        validateProperty(rawEntry, entryPath);
-        continue;
-      default:
-        return unreachable(form);
+      }
+      if (!ENTRY_SECTIONS.includes(key)) {
+        add(
+          "keyframes-unknown-section",
+          sectionPath,
+          `Keyframe section '${key}' is unknown; expected 'plugin', 'values', or 'requires'.`,
+        );
+      }
+    }
+
+    // Plugin field validation
+    if (!Object.prototype.hasOwnProperty.call(rawDef, "plugin")) {
+      add(
+        "keyframes-shape",
+        `${entryPath}.plugin`,
+        `Keyframe entry '${entryId}' must declare a 'plugin' string.`,
+      );
+    } else if (typeof rawDef.plugin !== "string" || rawDef.plugin.length === 0) {
+      add(
+        "keyframes-shape",
+        `${entryPath}.plugin`,
+        `Plugin name in entry '${entryId}' must be a non-empty string.`,
+      );
+    } else {
+      checkDelimiters(rawDef.plugin, `${entryPath}.plugin`, "Plugin name");
+    }
+
+    // Values section validation (empty/omitted is legal)
+    if (Object.prototype.hasOwnProperty.call(rawDef, PLUGIN_VALUES_SECTION)) {
+      const values = rawDef[PLUGIN_VALUES_SECTION];
+      if (values !== undefined) {
+        validateValues(values, `${entryPath}.${PLUGIN_VALUES_SECTION}`);
+      }
+    }
+
+    // Requires section validation
+    if (Object.prototype.hasOwnProperty.call(rawDef, PLUGIN_REQUIRES_SECTION)) {
+      const requires = rawDef[PLUGIN_REQUIRES_SECTION];
+      if (requires !== undefined) {
+        validateRequires(requires, `${entryPath}.${PLUGIN_REQUIRES_SECTION}`);
+      }
     }
   }
 }
@@ -423,11 +499,25 @@ function isThreeDProperty(key: string, property: unknown): boolean {
   return key === "path" && isObject(property) && hasThreeDPath(property);
 }
 function usesThreeD(track: RawObject): boolean {
-  const keyframes = isObject(track.keyframes) ? track.keyframes : null;
+  const keyframes = track.keyframes;
   if (!keyframes) return false;
-  for (const group of Object.values(keyframes)) {
-    for (const [leaf, leafProperty] of Object.entries(readPluginValues(group))) {
-      if (isThreeDProperty(leaf, leafProperty)) return true;
+  if (Array.isArray(keyframes)) {
+    for (const entryRecord of keyframes) {
+      if (!isObject(entryRecord)) continue;
+      for (const def of Object.values(entryRecord)) {
+        if (!isObject(def)) continue;
+        for (const [leaf, leafProperty] of Object.entries(readPluginValues(def))) {
+          if (isThreeDProperty(leaf, leafProperty)) return true;
+        }
+      }
+    }
+    return false;
+  }
+  if (isObject(keyframes)) {
+    for (const group of Object.values(keyframes)) {
+      for (const [leaf, leafProperty] of Object.entries(readPluginValues(group))) {
+        if (isThreeDProperty(leaf, leafProperty)) return true;
+      }
     }
   }
   return false;

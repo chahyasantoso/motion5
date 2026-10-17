@@ -15,6 +15,21 @@ export type {
   TrackConfigView,
 } from "./domain/plugins";
 export type {
+  CacheLookup,
+  CacheProvider,
+  CacheSnapshot,
+  CacheSpec,
+  CacheWrite,
+  EvaluatorServices,
+  StatefulEvaluatorSpec,
+} from "./domain/cache";
+export { defineStatefulEvaluator } from "./domain/cache";
+export {
+  createBoundedCacheProvider,
+  DEFAULT_CACHE_PROVIDER,
+  NO_CACHE_PROVIDER,
+} from "./domain/cache-providers";
+export type {
   ImmutableArray,
   ImmutableLeaf,
   ImmutableRecord,

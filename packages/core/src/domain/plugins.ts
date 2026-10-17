@@ -26,6 +26,12 @@ import {
   type AdmissionContext,
   type AdmittedPlugin,
 } from "./plugin-admission";
+import type {
+  CompileTrackExecutionPlanOptions,
+  EvaluatorFactory,
+  TrackExecutionPlan,
+} from "./execution-plan";
+import { compileTrackExecutionPlan } from "./execution-plan";
 
 /**
  * The values one plugin's declared requirement slots resolved to, keyed by slot name.
@@ -125,6 +131,8 @@ export interface PluginRequirement {
 }
 /** One authored binding that resolved against a declared slot of a registered plugin. */
 export interface ResolvedRequirement {
+  readonly entryId?: string;
+  readonly compilerKey?: string;
   readonly plugin: string;
   readonly slot: string;
   readonly source: string;
@@ -172,6 +180,16 @@ export interface ResolvedPlugins extends RenderMetadata {
 // prose a caller hands in. Exported because `PluginDefinition` is, and a caller cannot name the
 // field's type otherwise. See ADR-092 and ADR-097.
 export type PluginStage = "prepare" | "compose";
+export interface PluginCollectOperation {
+  readonly output: string;
+  readonly run?: (entry: unknown, context?: unknown) => Record<string, unknown>;
+}
+
+export interface PluginFoldOperation {
+  readonly outputs: readonly string[];
+  readonly run?: (entry: unknown, state?: unknown, context?: unknown) => Record<string, unknown>;
+}
+
 export interface PluginDefinition {
   readonly name: string;
   /** Absent means any chain; a tree dedicates its member plugin registry-wide (ADR-136). */
@@ -186,7 +204,10 @@ export interface PluginDefinition {
   readonly internalKeys?: readonly string[];
   readonly outputSerializers?: Readonly<Record<string, OutputSerializer>>;
   readonly contribute?: PluginContributor;
-  readonly compose: PluginComposer;
+  readonly compose?: PluginComposer;
+  readonly collect?: PluginCollectOperation;
+  readonly fold?: PluginFoldOperation;
+  readonly createEvaluator?: EvaluatorFactory;
 }
 
 const RESERVED_TWEEN_VARS = new Set(["keyframes", "duration", "paused", "id", "observes"]);
@@ -624,6 +645,7 @@ export class PluginRegistry implements PluginCapabilities {
       if (!plugins.includes(named)) plugins.push(named);
       resolved.push(
         Object.freeze({
+          ...(binding.entryId !== undefined ? { entryId: binding.entryId } : {}),
           plugin: binding.plugin,
           slot: binding.slot,
           source: binding.source,
@@ -701,6 +723,22 @@ export class PluginRegistry implements PluginCapabilities {
   }
   has(name: string): boolean {
     return this.#plugins.has(name);
+  }
+  claimantsOf(key: string): readonly PluginDefinition[] {
+    return this.#claimantsOf(key);
+  }
+  get(name: string): PluginDefinition | undefined {
+    return this.#plugins.get(name);
+  }
+  compileExecutionPlan(
+    keyframes: unknown,
+    options?: Omit<CompileTrackExecutionPlanOptions, "keyframes" | "registry">,
+  ): TrackExecutionPlan {
+    return compileTrackExecutionPlan({
+      ...options,
+      keyframes,
+      registry: this,
+    });
   }
   get size(): number {
     return this.#plugins.size;

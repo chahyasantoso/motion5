@@ -12,6 +12,8 @@ import {
 import { unreachable } from "../lang/exhaustive";
 import type { PluginInputs, RequirementInputs, ResolvedPlugins } from "./plugins";
 
+import type { TrackExecutionPlan } from "./execution-plan";
+
 export interface TrackSnapshot {
   readonly progress: number;
   readonly values: Readonly<ImmutableRecord>;
@@ -20,6 +22,7 @@ export interface TrackOptions {
   readonly interpolator: Interpolator;
   readonly interpolationConfig?: unknown;
   readonly plugins?: ResolvedPlugins;
+  readonly plan?: TrackExecutionPlan;
   readonly nodeId: string;
 }
 export class CompositionOutputError extends TypeError {
@@ -190,6 +193,7 @@ const EMPTY_RESOLVED_PLUGINS: ResolvedPlugins = Object.freeze({
 export class Track {
   readonly #timeline: InterpolationTimeline;
   readonly #plugins: ResolvedPlugins;
+  readonly #plan: TrackExecutionPlan | undefined;
   readonly #nodeId: string;
   #progress = 0;
   #dirty = true;
@@ -201,6 +205,7 @@ export class Track {
   constructor(options: TrackOptions) {
     if (options.nodeId.length === 0) throw new TypeError("Track node id must be non-empty.");
     this.#plugins = options.plugins ?? EMPTY_RESOLVED_PLUGINS;
+    this.#plan = options.plan;
     this.#nodeId = options.nodeId;
     this.#timeline = options.interpolator.create(
       preparedConfig(options.interpolationConfig, this.#plugins),
@@ -287,9 +292,38 @@ export class Track {
    * the refusal: it moves through the overlay instead.
    */
   #acceptedValues(next: LiveValues): ImmutableRecord {
+    if (this.#plan) {
+      const accepted: Record<string, Record<string, unknown>> = {};
+      for (const [entryId, entryWrites] of Object.entries(next)) {
+        if (!this.#plan.entriesById.has(entryId)) {
+          throw new LiveValueKeyError(this.#nodeId, entryId, "unknown");
+        }
+        const entryPlan = this.#plan.entriesById.get(entryId)!;
+        if (!isRecord(entryWrites)) {
+          throw new LiveValueKeyError(this.#nodeId, entryId, "unknown");
+        }
+        const entryAccepted: Record<string, unknown> = {};
+        for (const [leaf, value] of Object.entries(entryWrites)) {
+          if (!Object.hasOwn(entryPlan.schema.values, leaf)) {
+            throw new LiveValueKeyError(this.#nodeId, leaf, "unknown");
+          }
+          if (liveWriteChannel(readAuthoredLeaf(entryPlan.schema.values[leaf]!)) !== "mask") {
+            throw new LiveValueKeyError(this.#nodeId, leaf, "kind");
+          }
+          entryAccepted[leaf] = value;
+        }
+        accepted[entryId] = entryAccepted;
+      }
+      if (Object.keys(accepted).length === 0) return NO_VALUES;
+      return freezeValue(accepted as ImmutableRecord);
+    }
     const authored = this.#plugins.authoredKeyframes;
     const accepted: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(next)) {
+      if (isRecord(value)) {
+        accepted[key] = value;
+        continue;
+      }
       if (!Object.hasOwn(authored, key)) throw new LiveValueKeyError(this.#nodeId, key, "unknown");
       if (liveWriteChannel(readAuthoredLeaf(authored[key])) !== "mask")
         throw new LiveValueKeyError(this.#nodeId, key, "kind");
@@ -311,10 +345,44 @@ export class Track {
    * precedence and make the live timeline disagree with the next real recompile.
    */
   #acceptedOverlay(overlay: Readonly<Record<string, unknown>>): Readonly<Record<string, unknown>> {
+    if (this.#plan) {
+      const accepted: Record<string, Record<string, unknown>> = {};
+      for (const [entryId, entryWrites] of Object.entries(overlay)) {
+        if (!this.#plan.entriesById.has(entryId)) {
+          throw new LiveValueKeyError(this.#nodeId, entryId, "unknown");
+        }
+        const entryPlan = this.#plan.entriesById.get(entryId)!;
+        if (!isRecord(entryWrites)) {
+          throw new LiveValueKeyError(this.#nodeId, entryId, "unknown");
+        }
+        const entryAccepted: Record<string, unknown> = {};
+        for (const [leaf, value] of Object.entries(entryWrites)) {
+          if (
+            entryPlan.contribution?.keyframes &&
+            Object.hasOwn(entryPlan.contribution.keyframes, leaf)
+          ) {
+            throw new LiveValueKeyError(this.#nodeId, leaf, "prepared");
+          }
+          if (!Object.hasOwn(entryPlan.schema.values, leaf)) {
+            throw new LiveValueKeyError(this.#nodeId, leaf, "unknown");
+          }
+          if (liveWriteChannel(readAuthoredLeaf(entryPlan.schema.values[leaf]!)) !== "timeline") {
+            throw new LiveValueKeyError(this.#nodeId, leaf, "kind");
+          }
+          entryAccepted[leaf] = value;
+        }
+        accepted[entryId] = entryAccepted;
+      }
+      return accepted;
+    }
     const authored = this.#plugins.authoredKeyframes;
     const prepared = this.#plugins.preparation.keyframes;
     const accepted: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(overlay)) {
+      if (isRecord(value)) {
+        accepted[key] = value;
+        continue;
+      }
       if (!Object.hasOwn(authored, key)) throw new LiveValueKeyError(this.#nodeId, key, "unknown");
       if (liveWriteChannel(readAuthoredLeaf(authored[key])) !== "timeline")
         throw new LiveValueKeyError(this.#nodeId, key, "kind");
@@ -357,6 +425,20 @@ export class Track {
     this.assertActive();
     const interpolated = rendererNeutralState(this.#timeline.state);
     if (this.#values === NO_VALUES) return interpolated;
+    if (this.#plan) {
+      const merged: Record<string, unknown> = { ...interpolated };
+      for (const [entryId, entryWrites] of Object.entries(this.#values)) {
+        if (isRecord(entryWrites)) {
+          const base = isRecord(merged[entryId])
+            ? (merged[entryId] as Record<string, unknown>)
+            : {};
+          merged[entryId] = { ...base, ...entryWrites };
+        } else {
+          merged[entryId] = entryWrites;
+        }
+      }
+      return freezeValue(merged as ImmutableRecord);
+    }
     return { ...interpolated, ...this.#values };
   }
   /**
@@ -401,6 +483,7 @@ export class Track {
     if (memoized !== undefined) return memoized;
     let values: ImmutableRecord = seed;
     for (const plugin of this.#plugins.plugins) {
+      if (plugin.compose === undefined) continue;
       const scoped = requirementInputs[plugin.name] ?? NO_PLUGIN_INPUTS;
       const composed = plugin.compose(values, this.#progress, scoped, this.#nodeId);
       if (!isRecord(composed))

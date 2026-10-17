@@ -65,20 +65,23 @@ export interface RequireView {
  * name this type instead of respelling the record, for the same reason `TrackHandle` itself is
  * declared once here. See ADR-059 and ADR-060.
  */
-export type LiveValues = Readonly<Record<string, AuthoredStaticValue>>;
+export type EntryLiveValues = Readonly<Record<string, AuthoredStaticValue>>;
+export type LiveValues = Readonly<Record<string, EntryLiveValues | AuthoredStaticValue>>;
+
+export type EntryAuthoredValues = Readonly<Record<string, AuthoredProperty>>;
+export type AuthoredValues = Readonly<Record<string, EntryAuthoredValues | AuthoredProperty>>;
 
 /**
- * The values a live write may carry: one authored leaf per key, static or animated.
+ * Reserved capability contract for one generation-backed entry live handle.
  *
- * `LiveValues` widened per key to the animated form, and only the boundary widens. `AuthoredProperty`
- * is named rather than respelled, because what an authored leaf may be is the authored schema's
- * question and it already has exactly one answer.
- *
- * Both entry points take this, because both lift the same refusal. Which of them a key is legal on
- * is not a property of the type: an animated key is legal on both, and a key whose incoming leaf is
- * a different kind from the authored one is legal on neither. See ADR-060.
+ * Forwarded to the uniform entry-addressed transaction owner with the captured entry ID.
  */
-export type AuthoredValues = Readonly<Record<string, AuthoredProperty>>;
+export interface EntryLiveHandle {
+  readonly entryId: string;
+  readonly generation: string;
+  setValues(values: EntryAuthoredValues): PatchBatch;
+  overrideValues(values: EntryAuthoredValues): PatchBatch;
+}
 
 /**
  * A capability handle for one graph node, valid while the token it captured is current.

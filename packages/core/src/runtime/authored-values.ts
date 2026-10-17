@@ -1,16 +1,22 @@
 import type {
+  AuthoredEntryRecord,
   AuthoredKeyframe,
   AuthoredPluginGroup,
+  AuthoredProperty,
   AuthoredStaticValue,
   MotionDefinition,
   TrackDefinition,
 } from "../contract/v5";
 import { authoredLeafPartition, readAuthoredLeaf } from "../contract/authored-leaf";
-import { readPluginBindings } from "../contract/keyframe-shape";
+import { readKeyframeEntries, readPluginBindings } from "../contract/keyframe-shape";
 import type { AuthoredValues, LiveValues, RequireView } from "../contract/track-handle";
 import { flattenAuthoredKeyframes } from "../domain/keyframe-groups";
 import type { AuthoredKeyframes } from "../domain/authoring/keyframes";
 import { unreachable } from "../lang/exhaustive";
+
+function isReadonlyArray(value: unknown): value is readonly unknown[] {
+  return Array.isArray(value);
+}
 /**
  * Pure functions over one retained definition, and the two frozen constants that stand in for none.
  *
@@ -96,7 +102,29 @@ export function requireViews(track: TrackDefinition): readonly RequireView[] {
  * payload, so nothing here re-derives what a group is or what shape a leaf has. See ADR-049,
  * ADR-050, ADR-059, and ADR-060.
  */
-export function authoredValues(track: TrackDefinition): Record<string, AuthoredStaticValue> {
+export function authoredValues(track: TrackDefinition): LiveValues {
+  if (isReadonlyArray(track.keyframes)) {
+    const entries = readKeyframeEntries(track.keyframes);
+    const values: Record<string, Record<string, AuthoredStaticValue>> = {};
+    for (const entry of entries) {
+      const entryStatics: Record<string, AuthoredStaticValue> = {};
+      for (const [key, property] of Object.entries(entry.values)) {
+        const partition = authoredLeafPartition(readAuthoredLeaf(property));
+        switch (partition.kind) {
+          case "value":
+            entryStatics[key] = partition.value;
+            break;
+          case "stops":
+          case "none":
+            break;
+          default:
+            return unreachable(partition);
+        }
+      }
+      values[entry.entryId] = Object.freeze(entryStatics);
+    }
+    return Object.freeze(values);
+  }
   const flattened = flattenAuthoredKeyframes(track.keyframes ?? {});
   const values: Record<string, AuthoredStaticValue> = {};
   for (const [key, property] of Object.entries(flattened.keyframes)) {
@@ -128,23 +156,64 @@ export interface LiveWriteHalves {
   readonly animated: Readonly<Record<string, unknown>>;
 }
 export function splitAuthoredValues(values: AuthoredValues): LiveWriteHalves {
-  const statics: Record<string, AuthoredStaticValue> = {};
+  const statics: Record<string, unknown> = {};
   const animated: Record<string, unknown> = {};
+  const isPlainRecord = (v: unknown): v is Record<string, unknown> =>
+    v !== null && typeof v === "object" && !Array.isArray(v);
+
   for (const [key, value] of Object.entries(values)) {
-    const partition = authoredLeafPartition(readAuthoredLeaf(value));
-    switch (partition.kind) {
-      case "value":
-        statics[key] = partition.value;
-        break;
-      case "stops":
-      case "none":
-        animated[key] = value;
-        break;
-      default:
-        return unreachable(partition);
+    if (isPlainRecord(value) && !("at" in value) && !("p" in value)) {
+      const entryStatics: Record<string, AuthoredStaticValue> = {};
+      const entryAnimated: Record<string, unknown> = {};
+      for (const [leaf, property] of Object.entries(value)) {
+        const partition = authoredLeafPartition(readAuthoredLeaf(property as AuthoredProperty));
+        switch (partition.kind) {
+          case "value":
+            entryStatics[leaf] = partition.value;
+            break;
+          case "stops":
+          case "none":
+            entryAnimated[leaf] = property;
+            break;
+          default:
+            return unreachable(partition);
+        }
+      }
+      if (Object.keys(entryStatics).length > 0) statics[key] = Object.freeze(entryStatics);
+      if (Object.keys(entryAnimated).length > 0) animated[key] = Object.freeze(entryAnimated);
+    } else {
+      const partition = authoredLeafPartition(readAuthoredLeaf(value as AuthoredProperty));
+      switch (partition.kind) {
+        case "value":
+          statics[key] = partition.value;
+          break;
+        case "stops":
+        case "none":
+          animated[key] = value;
+          break;
+        default:
+          return unreachable(partition);
+      }
     }
   }
-  return { statics, animated };
+  return { statics: Object.freeze(statics as LiveValues), animated: Object.freeze(animated) };
+}
+/** Merges static baseline with static live writes, per-entry when nested. */
+export function mergeLiveValues(base: LiveValues, statics: LiveValues): LiveValues {
+  const merged: Record<string, unknown> = { ...base };
+  for (const [key, val] of Object.entries(statics)) {
+    if (val !== null && typeof val === "object" && !Array.isArray(val)) {
+      const existing = merged[key];
+      if (existing !== null && typeof existing === "object" && !Array.isArray(existing)) {
+        merged[key] = Object.freeze({ ...(existing as object), ...(val as object) });
+      } else {
+        merged[key] = val;
+      }
+    } else {
+      merged[key] = val;
+    }
+  }
+  return Object.freeze(merged as LiveValues);
 }
 /**
  * `track` with `values` written back into the authored record each key came from.
@@ -158,35 +227,69 @@ export function splitAuthoredValues(values: AuthoredValues): LiveWriteHalves {
  * because `Track` refuses a key that is absent from the resolved authored record before this runs,
  * and inventing a leaf here would make this layer the author.
  */
-export function withAuthoredValues(
-  track: TrackDefinition,
-  values: AuthoredValues,
-): TrackDefinition {
-  const flattened = flattenAuthoredKeyframes(track.keyframes ?? {});
-  // Indexed once rather than searched once per written key. The flatten answers with a list because
-  // order is what makes a collision decidable one layer down, and this searched that list per key,
-  // so a three-key write over a thirty-leaf group walked ninety entries to place three. Which record
-  // a key came from is still the flatten's answer: this indexes it rather than re-deriving it. See
-  // `RA-94`.
-  const sources = new Map(
-    flattened.entries.map((candidate) => [candidate.key, candidate] as const),
-  );
-  const keyframes: Record<string, AuthoredKeyframe> = { ...track.keyframes };
-  for (const [key, value] of Object.entries(values)) {
-    const entry = sources.get(key);
-    if (entry === undefined) continue;
-    const group = keyframes[entry.group] as AuthoredPluginGroup;
-    keyframes[entry.group] = Object.freeze({
-      ...group,
-      values: Object.freeze({ ...group.values, [key]: value }),
-    });
-  }
-  return Object.freeze({ ...track, keyframes: Object.freeze(keyframes) });
-}
 /** One retained Motion definition, writable, for the two fields a tier 0 edit moves. */
 type MutableMotion = { -readonly [K in keyof MotionDefinition]: MotionDefinition[K] };
 /** One retained track definition, writable, for the one field an authored edit moves. */
 type MutableTrack = { -readonly [K in keyof TrackDefinition]: TrackDefinition[K] };
+
+export function withAuthoredValues(
+  track: TrackDefinition,
+  values: AuthoredValues,
+): TrackDefinition {
+  if (isReadonlyArray(track.keyframes)) {
+    const nextKeyframes: readonly AuthoredEntryRecord[] = track.keyframes.map((rawEntry) => {
+      if (rawEntry === null || typeof rawEntry !== "object" || Array.isArray(rawEntry)) {
+        return rawEntry;
+      }
+      const keys = Object.keys(rawEntry);
+      if (keys.length !== 1) return rawEntry;
+      const entryId = keys[0]!;
+      const entryWrites = (values as Record<string, unknown>)[entryId];
+      if (
+        entryWrites === undefined ||
+        entryWrites === null ||
+        typeof entryWrites !== "object" ||
+        Array.isArray(entryWrites)
+      ) {
+        return rawEntry;
+      }
+      const entryDef = (rawEntry as Record<string, unknown>)[entryId];
+      if (entryDef === null || typeof entryDef !== "object" || Array.isArray(entryDef)) {
+        return rawEntry;
+      }
+      const currentValues = (entryDef as Record<string, unknown>).values ?? {};
+      const nextValues = { ...(currentValues as object), ...(entryWrites as object) };
+      return Object.freeze({
+        [entryId]: Object.freeze({
+          ...(entryDef as object),
+          values: Object.freeze(nextValues),
+        }),
+      }) as AuthoredEntryRecord;
+    });
+    const next: MutableTrack = { ...track };
+    next.keyframes = Object.freeze(nextKeyframes);
+    return Object.freeze(next);
+  }
+  const flattened = flattenAuthoredKeyframes(track.keyframes ?? {});
+  const sources = new Map(
+    flattened.entries.map((candidate) => [candidate.key, candidate] as const),
+  );
+  const keyframes: Record<string, AuthoredPluginGroup> = { ...track.keyframes };
+  for (const [key, value] of Object.entries(values)) {
+    const entry = sources.get(key);
+    if (entry === undefined) continue;
+    const group = keyframes[entry.group];
+    if (group !== undefined) {
+      keyframes[entry.group] = Object.freeze({
+        ...group,
+        values: Object.freeze({ ...group.values, [key]: value as AuthoredProperty }),
+      });
+    }
+  }
+  const next: MutableTrack = { ...track };
+  next.keyframes = Object.freeze(keyframes);
+  return Object.freeze(next);
+}
 /** Builds a track with an edited authored keyframe record, omitting an empty record. */
 export function withKeyframes(
   track: TrackDefinition,

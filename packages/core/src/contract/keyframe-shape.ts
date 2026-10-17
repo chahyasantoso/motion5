@@ -1,6 +1,11 @@
 import { readAuthoredLeaf } from "./authored-leaf";
 import { unreachable } from "../lang/exhaustive";
-import type { AuthoredPluginGroup, AuthoredProperty, PluginRequiresBinding } from "./v5";
+import type {
+  AuthoredPluginGroup,
+  AuthoredPluginRequires,
+  AuthoredProperty,
+  PluginRequiresBinding,
+} from "./v5";
 
 /**
  * The reserved bindings section of a plugin-named keyframe group.
@@ -204,6 +209,16 @@ export function readPluginValues(group: unknown): Readonly<Record<string, unknow
  * order.
  */
 export function readPluginBindings(keyframes: unknown): readonly PluginRequiresBinding[] {
+  if (Array.isArray(keyframes)) {
+    const entries = readKeyframeEntries(keyframes);
+    const bindings: PluginRequiresBinding[] = [];
+    for (const entry of entries) {
+      for (const b of entry.bindings) {
+        bindings.push(b);
+      }
+    }
+    return Object.freeze(bindings);
+  }
   if (!isObject(keyframes)) return Object.freeze([]);
   const bindings: PluginRequiresBinding[] = [];
   for (const plugin of Object.keys(keyframes).sort()) {
@@ -235,4 +250,95 @@ export function readPluginBindings(keyframes: unknown): readonly PluginRequiresB
     }
   }
   return Object.freeze(bindings);
+}
+
+/** Allowed inner sections for an authored entry. */
+export const ENTRY_SECTIONS: readonly string[] = Object.freeze([
+  "plugin",
+  PLUGIN_REQUIRES_SECTION,
+  PLUGIN_VALUES_SECTION,
+]);
+
+/**
+ * A parsed and validated keyframe entry representation with its preserved authored order.
+ */
+export interface TrustedKeyframeEntry {
+  readonly index: number;
+  readonly entryId: string;
+  readonly plugin: string;
+  readonly values: Readonly<Record<string, AuthoredProperty>>;
+  readonly requires?: AuthoredPluginRequires;
+  readonly bindings: readonly PluginRequiresBinding[];
+  readonly authoredPath: string;
+}
+
+/**
+ * Read trusted keyframe entries from an array of singleton-map entry records.
+ * Tolerant reader for post-validation consumption.
+ */
+export function readKeyframeEntries(
+  keyframes: unknown,
+  basePath = "keyframes",
+): readonly TrustedKeyframeEntry[] {
+  if (!Array.isArray(keyframes)) return Object.freeze([]);
+  const entries: TrustedKeyframeEntry[] = [];
+  for (let index = 0; index < keyframes.length; index++) {
+    const raw = keyframes[index];
+    if (!isObject(raw)) continue;
+    const keys = Object.keys(raw);
+    if (keys.length !== 1) continue;
+    const entryId = keys[0];
+    if (entryId === undefined) continue;
+    const def = raw[entryId];
+    if (!isObject(def) || typeof def.plugin !== "string") continue;
+    const entryPath = `${basePath}[${index}].${entryId}`;
+    const values = readPluginValues(def) as Readonly<Record<string, AuthoredProperty>>;
+    const bindings: PluginRequiresBinding[] = [];
+    const requires = def[PLUGIN_REQUIRES_SECTION];
+    if (isObject(requires)) {
+      for (const slot of Object.keys(requires).sort()) {
+        const source = requires[slot];
+        const slotPath = `${entryPath}.${PLUGIN_REQUIRES_SECTION}.${slot}`;
+        if (isObject(source)) {
+          for (const memberKey of Object.keys(source).sort()) {
+            const memberSource = source[memberKey];
+            if (typeof memberSource !== "string" || memberSource.length === 0) continue;
+            bindings.push(
+              Object.freeze({
+                entryId,
+                plugin: def.plugin,
+                slot,
+                source: memberSource,
+                memberKey,
+                authoredPath: `${slotPath}.${memberKey}`,
+              }),
+            );
+          }
+          continue;
+        }
+        if (typeof source === "string" && source.length > 0) {
+          bindings.push(
+            Object.freeze({
+              entryId,
+              plugin: def.plugin,
+              slot,
+              source,
+              authoredPath: slotPath,
+            }),
+          );
+        }
+      }
+    }
+    const entry: TrustedKeyframeEntry = {
+      index,
+      entryId,
+      plugin: def.plugin,
+      values,
+      ...(isObject(requires) ? { requires: requires as AuthoredPluginRequires } : {}),
+      bindings: Object.freeze(bindings),
+      authoredPath: entryPath,
+    };
+    entries.push(Object.freeze(entry));
+  }
+  return Object.freeze(entries);
 }

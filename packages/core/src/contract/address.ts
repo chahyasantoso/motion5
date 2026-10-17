@@ -77,6 +77,33 @@ export function asLinkId(value: string): LinkId {
   return value as LinkId;
 }
 
+export function asPluginName(value: string): PluginName {
+  assertValidIdentifier(value, "Plugin name");
+  return value as PluginName;
+}
+
+export function asCompilerEntryKey(value: string): CompilerEntryKey {
+  assertValidIdentifier(value, "Compiler entry key");
+  return value as CompilerEntryKey;
+}
+
+export function asGenerationToken(value: number): GenerationToken {
+  if (!Number.isInteger(value) || value <= 0) {
+    throw new TypeError("Generation token must be a positive integer.");
+  }
+  return value as GenerationToken;
+}
+
+let nextCompilerKeyCounter = 0;
+export function createCompilerEntryKey(
+  entryId: string,
+  instanceToken?: string | number,
+): CompilerEntryKey {
+  assertValidIdentifier(entryId, "Entry ID");
+  const token = instanceToken !== undefined ? instanceToken : ++nextCompilerKeyCounter;
+  return `${entryId}#${token}` as CompilerEntryKey;
+}
+
 /**
  * Length-prefixed tuple encoding: `<len>:<entryId>:<leaf>`
  * Collision-free across all unicode strings, including empty or adversarial inputs.
@@ -131,4 +158,33 @@ export function isHandleUsable(state: EntryLifecycleState, handleGen: Generation
     default:
       return unreachable(state);
   }
+}
+
+/**
+ * Qualify a source reference according to motion5 address semantics:
+ * - Free track: `~/trackId` remains `~/trackId`
+ * - Motion track: `motionId/trackId` remains `motionId/trackId`
+ * - Local track: `trackId` becomes `${ownerMotionId}/${trackId}` if ownerMotionId provided
+ */
+export function qualifySourceAddress(source: string, ownerMotionId?: string): string {
+  if (source.startsWith("~/")) return source;
+  if (source.includes("/")) return source;
+  if (ownerMotionId !== undefined && ownerMotionId.length > 0) {
+    return `${ownerMotionId}/${source}`;
+  }
+  return source;
+}
+
+/**
+ * Centralized collision-free length-prefixed tuple encoding for binding identities:
+ * `<sourceLen>:<qualifiedSource>:<entryLen>:<entryId>:<slotLen>:<slot>[:<memberLen>:<memberKey>]`
+ */
+export function encodeBindingTuple(
+  qualifiedSource: string,
+  entryId: string,
+  slot: string,
+  memberKey?: string,
+): string {
+  const base = `${qualifiedSource.length}:${qualifiedSource}:${entryId.length}:${entryId}:${slot.length}:${slot}`;
+  return memberKey !== undefined ? `${base}:${memberKey.length}:${memberKey}` : base;
 }

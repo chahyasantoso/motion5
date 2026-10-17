@@ -85,6 +85,7 @@ import { applyEdit, boundGroup, type AuthoringEdit } from "./authoring-edit";
 import {
   NO_OVERLAY,
   authoredValues,
+  mergeLiveValues,
   sameTrigger,
   splitAuthoredValues,
   withAuthoredValues,
@@ -710,7 +711,9 @@ export class ProjectRuntime {
 
   #resolve(nodeId: string, track: TrackDefinition): ResolvedPlugins | undefined {
     return this.#ports.host.resolveKeyframes(
-      track.keyframes ?? {},
+      (Array.isArray(track.keyframes) ? {} : (track.keyframes ?? {})) as Readonly<
+        Record<string, unknown>
+      >,
       `${nodeId}.keyframes`,
       trackConfigView(nodeId, track.duration),
     );
@@ -860,7 +863,7 @@ export class ProjectRuntime {
       // Validated and then discarded: this write stages no definition, so the refusal is the
       // whole of what validating the candidate is for here.
       if (involved) expectValid(validateTrackDefinition(rewritten, `writeValues(${nodeId})`));
-      const mask = { ...authoredValues(entry.track), ...statics };
+      const mask = mergeLiveValues(authoredValues(entry.track), statics);
       const answer = this.#ports.value.write(nodeId, mask, involved ? animated : undefined, rebase);
       // The seam has taken the write and carries no inverse, so the state it left is recorded on
       // the way out, whichever of the fallible reads below is the last one reached. Decoding the
