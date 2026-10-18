@@ -354,7 +354,7 @@ describe("Slice B2: Compile one immutable ordered entry plan", () => {
     for (const ep of planOrder1.entries) {
       if (ep.execution.kind === "stateless" && ep.execution.fold) {
         const context = {
-          trackId: ep.lifecycle.trackId,
+          trackId: ep.lifecycle.trackId ?? "track",
           entryId: ep.lifecycle.entryId,
           compilerKey: ep.lifecycle.compilerKey,
           generation: ep.lifecycle.generation,
@@ -380,7 +380,7 @@ describe("Slice B2: Compile one immutable ordered entry plan", () => {
     for (const ep of planOrder2.entries) {
       if (ep.execution.kind === "stateless" && ep.execution.fold) {
         const context = {
-          trackId: ep.lifecycle.trackId,
+          trackId: ep.lifecycle.trackId ?? "track",
           entryId: ep.lifecycle.entryId,
           compilerKey: ep.lifecycle.compilerKey,
           generation: ep.lifecycle.generation,
