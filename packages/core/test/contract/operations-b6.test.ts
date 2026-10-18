@@ -325,11 +325,11 @@ describe("Slice B6: Execute collect/fold and publish owned outputs", () => {
   });
 
   it("B6-7: foreign writes and own id spoofing are rejected", () => {
-    const idSpoofPlugin: PluginDefinition = {
+    const idSpoofPlugin = {
       name: "idSpoof",
       keys: ["x"],
-      collect: () => ({ id: "forged_id", x: 1 }),
-    };
+      collect: (() => ({ id: "forged_id", x: 1 })) as unknown as PluginDefinition["collect"],
+    } as unknown as PluginDefinition;
 
     const foreignFoldPlugin: PluginDefinition = {
       name: "foreignFold",

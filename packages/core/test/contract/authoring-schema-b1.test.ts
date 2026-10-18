@@ -320,7 +320,7 @@ describe("Slice B1: authoring schema & operation admission", () => {
     it("rejects duplicate fold outputs within same plugin", () => {
       const dupFold: PluginDefinition = {
         name: "dupFoldPlugin",
-        fold: { outputs: ["outA", "outA"] },
+        fold: { outputs: ["outA", "outA"], run: () => ({}) },
       };
       expect(() => admitPlugin(dupFold, dummyContext())).toThrow(/duplicate output "outA"/);
     });

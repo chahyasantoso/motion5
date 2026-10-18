@@ -260,7 +260,7 @@ describe("Slice C1: Generic structural derivation", () => {
   });
 
   it("refuses when a validate-only plugin returns an error diagnostic", () => {
-    const errorDiag = diagnostic("derivation-failure", "valTrack", "Validation failed");
+    const errorDiag = diagnostic("derivation-failure", "valTrack", "Validation failed", []);
     const validateOnlyPlugin: PluginDefinition = {
       name: "validate-only",
       collect: () => ({}),
@@ -283,7 +283,7 @@ describe("Slice C1: Generic structural derivation", () => {
   it("skips derive and does not increment derivation count if validate returns an error", () => {
     let deriveCalled = false;
     const callCounter = new Map<string, number>();
-    const errorDiag = diagnostic("derivation-failure", "skipTrack", "Error");
+    const errorDiag = diagnostic("derivation-failure", "skipTrack", "Error", []);
     const valAndDerivePlugin: PluginDefinition = {
       name: "val-and-derive",
       collect: () => ({}),
@@ -309,7 +309,7 @@ describe("Slice C1: Generic structural derivation", () => {
   });
 
   it("refuses when derive returns status refused with diagnostic", () => {
-    const d = diagnostic("derivation-failure", "refuseTrack", "Refused by plugin");
+    const d = diagnostic("derivation-failure", "refuseTrack", "Refused by plugin", []);
     const refusingPlugin: PluginDefinition = {
       name: "refuser",
       collect: () => ({}),

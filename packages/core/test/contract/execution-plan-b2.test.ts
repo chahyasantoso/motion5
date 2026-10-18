@@ -11,6 +11,7 @@ import {
 } from "../../src/domain/execution-plan";
 import type { PluginDefinition } from "../../src/domain/plugins";
 import type { OutputSerializer } from "../../src/ports/render-metadata";
+import { createBoundedCacheProvider } from "../../src/domain/cache-providers";
 
 describe("Slice B2: Compile one immutable ordered entry plan", () => {
   it("compiles repeated same-definition entries with separate compiler identities and preserves reorder", () => {
@@ -251,7 +252,7 @@ describe("Slice B2: Compile one immutable ordered entry plan", () => {
 
     // Propagation of services to factory without provider-name branches
     const customServices: EvaluatorServices = {
-      cache: { provider: "generic-in-memory" },
+      cache: createBoundedCacheProvider(),
       customClock: "mockClock",
     };
 
@@ -276,7 +277,7 @@ describe("Slice B2: Compile one immutable ordered entry plan", () => {
         name: "mixedPlugin",
         collect: () => ({}),
         createEvaluator: () => ({
-          prepare: (_l, s) => ({ prepared: {}, proposedState: s }),
+          prepare: (_l: unknown, s: unknown) => ({ prepared: {}, proposedState: s }),
         }),
       } as unknown as PluginDefinition),
     ).toThrow(/must claim collect as true/);
@@ -349,10 +350,11 @@ describe("Slice B2: Compile one immutable ordered entry plan", () => {
     expect(planOrder1.entries[1]?.entryId).toBe("second");
 
     // Simulating fold execution in plan order for B6
+    const dummyCtx = { trackId: "track", entryId: "first", generation: 1, plugin: "appendFold" };
     let state1: Record<string, unknown> = {};
     for (const ep of planOrder1.entries) {
       if (ep.execution.kind === "stateless" && ep.execution.fold) {
-        state1 = { ...state1, ...ep.execution.fold(ep.schema.values, state1) };
+        state1 = { ...state1, ...ep.execution.fold(ep.schema.values, state1, dummyCtx) };
       }
     }
     expect(state1.log).toBe("AB");
@@ -369,7 +371,7 @@ describe("Slice B2: Compile one immutable ordered entry plan", () => {
     let state2: Record<string, unknown> = {};
     for (const ep of planOrder2.entries) {
       if (ep.execution.kind === "stateless" && ep.execution.fold) {
-        state2 = { ...state2, ...ep.execution.fold(ep.schema.values, state2) };
+        state2 = { ...state2, ...ep.execution.fold(ep.schema.values, state2, dummyCtx) };
       }
     }
     expect(state2.log).toBe("BA");
