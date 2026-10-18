@@ -329,7 +329,7 @@ describe("Slice B2: Compile one immutable ordered entry plan", () => {
         outputs: ["log"],
         run: (entry, state) => {
           const prev = (state as Record<string, string>)?.log ?? "";
-          const added = (entry as Record<string, string>)?.word ?? "";
+          const added = ((entry.values?.word ?? entry.word) as string) ?? "";
           return { log: prev + added };
         },
       },
@@ -350,11 +350,19 @@ describe("Slice B2: Compile one immutable ordered entry plan", () => {
     expect(planOrder1.entries[1]?.entryId).toBe("second");
 
     // Simulating fold execution in plan order for B6
-    const dummyCtx = { trackId: "track", entryId: "first", generation: 1, plugin: "appendFold" };
+    const dummyCtx = {
+      trackId: "track",
+      entryId: "first",
+      compilerKey: 1,
+      generation: 1,
+      plugin: "appendFold",
+      progress: 0,
+    };
     let state1: Record<string, unknown> = {};
     for (const ep of planOrder1.entries) {
       if (ep.execution.kind === "stateless" && ep.execution.fold) {
-        state1 = { ...state1, ...ep.execution.fold(ep.schema.values, state1, dummyCtx) };
+        const local = { values: ep.schema.values, inputs: {}, context: dummyCtx };
+        state1 = { ...state1, ...ep.execution.fold(local, state1, dummyCtx) };
       }
     }
     expect(state1.log).toBe("AB");
@@ -371,7 +379,8 @@ describe("Slice B2: Compile one immutable ordered entry plan", () => {
     let state2: Record<string, unknown> = {};
     for (const ep of planOrder2.entries) {
       if (ep.execution.kind === "stateless" && ep.execution.fold) {
-        state2 = { ...state2, ...ep.execution.fold(ep.schema.values, state2, dummyCtx) };
+        const local = { values: ep.schema.values, inputs: {}, context: dummyCtx };
+        state2 = { ...state2, ...ep.execution.fold(local, state2, dummyCtx) };
       }
     }
     expect(state2.log).toBe("BA");
