@@ -47,10 +47,7 @@ describe("Slice B6: Execute collect/fold and publish owned outputs", () => {
     const collectPlugin: PluginDefinition = {
       name: "collectPlugin",
       keys: ["point"],
-      collect: {
-        output: "points",
-        run: (local: any) => ({ p: local.values.point }),
-      },
+      collect: (local: any) => ({ p: local.values.point }),
     };
 
     const foldPlugin: PluginDefinition = {
@@ -68,10 +65,7 @@ describe("Slice B6: Execute collect/fold and publish owned outputs", () => {
     const bothPlugin: PluginDefinition = {
       name: "bothPlugin",
       keys: ["tag"],
-      collect: {
-        output: "tags",
-        run: (local: any) => ({ name: local.values.tag }),
-      },
+      collect: (local: any) => ({ name: local.values.tag }),
       fold: {
         outputs: ["summary"],
         run: (local: any, state: any) => {
@@ -106,9 +100,11 @@ describe("Slice B6: Execute collect/fold and publish owned outputs", () => {
       sampleValues,
     });
 
-    expect(result.publishedValues.points).toEqual([{ p: 10, id: "c1" }]);
+    expect(result.publishedValues.collect).toEqual([
+      { p: 10, id: "c1" },
+      { name: "Z", id: "b1" },
+    ]);
     expect(result.publishedValues.counter).toBe(5);
-    expect(result.publishedValues.tags).toEqual([{ name: "Z", id: "b1" }]);
     expect(result.publishedValues.summary).toBe("Z");
   });
 
@@ -120,13 +116,10 @@ describe("Slice B6: Execute collect/fold and publish owned outputs", () => {
     const dualPlugin: PluginDefinition = {
       name: "dual",
       keys: ["val"],
-      collect: {
-        output: "items",
-        run: (local: any) => {
-          events.push("collect");
-          collectSawFoldState = local.accumulated;
-          return { v: local.values.val };
-        },
+      collect: (local: any) => {
+        events.push("collect");
+        collectSawFoldState = local.accumulated;
+        return { v: local.values.val };
       },
       fold: {
         outputs: ["accumulated"],
@@ -153,7 +146,7 @@ describe("Slice B6: Execute collect/fold and publish owned outputs", () => {
     expect(events).toEqual(["collect", "fold"]);
     expect(collectSawFoldState).toBeUndefined();
     expect(foldSawCollectResult).toBeUndefined();
-    expect(result.publishedValues.items).toEqual([{ v: 42, id: "e1" }]);
+    expect(result.publishedValues.collect).toEqual([{ v: 42, id: "e1" }]);
     expect(result.publishedValues.accumulated).toBe(42);
   });
 
@@ -164,13 +157,10 @@ describe("Slice B6: Execute collect/fold and publish owned outputs", () => {
       requirements: {
         weight: {},
       },
-      collect: {
-        output: "out",
-        run: (local: any) => ({
-          authoredWeight: local.values.weight,
-          requiredWeight: local.inputs.weight.weight,
-        }),
-      },
+      collect: (local: any) => ({
+        authoredWeight: local.values.weight,
+        requiredWeight: local.inputs.weight.weight,
+      }),
     };
 
     const registry = new PluginRegistry();
@@ -202,7 +192,7 @@ describe("Slice B6: Execute collect/fold and publish owned outputs", () => {
       requirementInputs,
     });
 
-    expect(result.publishedValues.out).toEqual([
+    expect(result.publishedValues.collect).toEqual([
       {
         authoredWeight: 100,
         requiredWeight: 200,
@@ -266,10 +256,7 @@ describe("Slice B6: Execute collect/fold and publish owned outputs", () => {
     const meshPlugin: PluginDefinition = {
       name: "mesh",
       keys: ["v"],
-      collect: {
-        output: "vertices",
-        run: (local: any) => ({ coord: local.values.v }),
-      },
+      collect: (local: any) => ({ coord: local.values.v }),
     };
 
     const registry = new PluginRegistry();
@@ -293,7 +280,7 @@ describe("Slice B6: Execute collect/fold and publish owned outputs", () => {
       ]),
     });
 
-    expect(result.publishedValues.vertices).toEqual([
+    expect(result.publishedValues.collect).toEqual([
       { coord: 1, id: "p1" },
       { coord: 2, id: "p2" },
       { coord: 3, id: "p3" },
@@ -341,10 +328,7 @@ describe("Slice B6: Execute collect/fold and publish owned outputs", () => {
     const idSpoofPlugin: PluginDefinition = {
       name: "idSpoof",
       keys: ["x"],
-      collect: {
-        output: "items",
-        run: () => ({ id: "forged_id", x: 1 }),
-      },
+      collect: () => ({ id: "forged_id", x: 1 }),
     };
 
     const foreignFoldPlugin: PluginDefinition = {
@@ -385,40 +369,17 @@ describe("Slice B6: Execute collect/fold and publish owned outputs", () => {
     ).toThrow(CompositionOutputError);
   });
 
-  it("B6-8: cross-op output collision is rejected at admission and plan compilation", () => {
-    const selfCollider: PluginDefinition = {
-      name: "selfCollider",
+  it("B6-8: reserved fold output name is rejected at admission", () => {
+    const badFoldPlugin: PluginDefinition = {
+      name: "badFold",
       keys: ["x"],
-      collect: { output: "sharedName", run: () => ({}) },
-      fold: { outputs: ["sharedName"], run: () => ({}) },
+      fold: { outputs: ["collect"], run: () => ({}) },
     };
 
     const registry = new PluginRegistry();
-    expect(() => registry.register(selfCollider)).toThrow(TypeError);
-
-    const collectPlugin: PluginDefinition = {
-      name: "collectCol",
-      keys: ["x"],
-      collect: { output: "colShared", run: () => ({}) },
-    };
-    const foldPlugin: PluginDefinition = {
-      name: "foldCol",
-      keys: ["x"],
-      fold: { outputs: ["colShared"], run: () => ({}) },
-    };
-
-    registry.register(collectPlugin);
-    registry.register(foldPlugin);
-
-    expect(() =>
-      compileTrackExecutionPlan({
-        keyframes: [
-          { e1: { plugin: "collectCol", values: { x: 1 } } },
-          { e2: { plugin: "foldCol", values: { x: 2 } } },
-        ],
-        registry,
-      }),
-    ).toThrow(TypeError);
+    expect(() => registry.register(badFoldPlugin)).toThrow(
+      /fold output cannot use reserved name "collect"/i,
+    );
   });
 
   it("B6-9: malformed, undefined, and non-finite outputs are rejected", () => {
@@ -443,10 +404,7 @@ describe("Slice B6: Execute collect/fold and publish owned outputs", () => {
     const badCollectNonRecord: PluginDefinition = {
       name: "badCollectNonRecord",
       keys: ["x"],
-      collect: {
-        output: "items",
-        run: () => "not a record" as any,
-      },
+      collect: () => "not a record" as any,
     };
 
     const registry = new PluginRegistry();
@@ -492,10 +450,7 @@ describe("Slice B6: Execute collect/fold and publish owned outputs", () => {
     const depOnlyPlugin: PluginDefinition = {
       name: "depOnly",
       requirements: { base: {} },
-      collect: {
-        output: "deps",
-        run: (local: any) => ({ src: local.inputs.base?.val ?? "none" }),
-      },
+      collect: (local: any) => ({ src: local.inputs.base?.val ?? "none" }),
     };
 
     const registry = new PluginRegistry();
@@ -512,7 +467,7 @@ describe("Slice B6: Execute collect/fold and publish owned outputs", () => {
       requirementInputs: { d1: { base: { val: "ready" } } },
     });
 
-    expect(result.publishedValues.deps).toEqual([{ src: "ready", id: "d1" }]);
+    expect(result.publishedValues.collect).toEqual([{ src: "ready", id: "d1" }]);
   });
 
   it("B6-11: late serializer and freeze failure abandons staged outputs", () => {
@@ -520,15 +475,12 @@ describe("Slice B6: Execute collect/fold and publish owned outputs", () => {
       name: "serPlugin",
       keys: ["num"],
       outputSerializers: {
-        points: (val) => {
+        collect: (val) => {
           // Serializer returns invalid non-finite value
           return { bad: NaN, raw: val };
         },
       },
-      collect: {
-        output: "points",
-        run: (local: any) => ({ n: local.values.num }),
-      },
+      collect: (local: any) => ({ n: local.values.num }),
     };
 
     const registry = new PluginRegistry();
@@ -622,9 +574,7 @@ describe("Slice B6: Execute collect/fold and publish owned outputs", () => {
     const factoryPlugin: PluginDefinition = {
       name: "factoryPlugin",
       keys: ["baseNum"],
-      collect: {
-        output: "collectedItems",
-      },
+      collect: true,
       fold: {
         outputs: ["total"],
       },
@@ -671,7 +621,7 @@ describe("Slice B6: Execute collect/fold and publish owned outputs", () => {
     expect(prepareCalls).toBe(1);
     expect(collectCalls).toBe(1);
     expect(foldCalls).toBe(1);
-    expect(result.publishedValues.collectedItems).toEqual([{ itemVal: 10, id: "entry1" }]);
+    expect(result.publishedValues.collect).toEqual([{ itemVal: 10, id: "entry1" }]);
     expect(result.publishedValues.total).toBe(10);
     // Proposed state is proposed and carried out of the evaluator
     const compilerKey = plan.entries[0]?.compilerKey;
@@ -682,10 +632,7 @@ describe("Slice B6: Execute collect/fold and publish owned outputs", () => {
     const pointPlugin: PluginDefinition = {
       name: "pointPlugin",
       keys: ["x", "y"],
-      collect: {
-        output: "points",
-        run: (local: any) => ({ x: local.values.x, y: local.values.y }),
-      },
+      collect: (local: any) => ({ x: local.values.x, y: local.values.y }),
     };
 
     const registry = new PluginRegistry();
@@ -702,6 +649,6 @@ describe("Slice B6: Execute collect/fold and publish owned outputs", () => {
     });
 
     const result = evaluatePreparedTrack(prepared);
-    expect(result.publishedValues.points).toEqual([{ x: 12, y: 34, id: "pt" }]);
+    expect(result.publishedValues.collect).toEqual([{ x: 12, y: 34, id: "pt" }]);
   });
 });

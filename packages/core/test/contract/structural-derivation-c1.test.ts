@@ -1,35 +1,32 @@
 import { describe, expect, it } from "vitest";
 import { PluginRegistry, type PluginDefinition } from "../../src/domain/plugins";
 import { deriveStructuralDescriptors } from "../../src/domain/structural-derivation";
-import {
-  DerivationUndeclaredSourceError,
-  type DerivationContext,
-  type StructuralDescriptor,
-} from "../../src/contract/derivation";
+import type { DeriveResult } from "../../src/contract/derivation";
 import { ProjectRuntime } from "../../src/runtime/project-runtime";
 import { createManualClock } from "../../src/ports/clock";
 import { IncrementalGraphBuilder } from "../../src/graph/builders/incremental";
 import type { ProjectDefinition } from "../../src/contract/v5";
 import { diagnostic } from "../../src/contract/diagnostics";
 
+declare module "../../src/contract/capability" {
+  interface CapabilityMap {
+    box: { readonly width: number; readonly height: number; readonly count?: number };
+    "consumer-view": { readonly consumedFrom: string; readonly sourcePayload: unknown };
+  }
+}
+
 describe("Slice C1: Generic structural derivation", () => {
   const toySourcePlugin: PluginDefinition = {
     name: "box-emitter",
     keys: ["w", "x", "size"],
-    capabilities: ["box"],
-    collect: {
-      output: "boxes",
-      run: (entry) => ({ ...(entry as Record<string, unknown>) }),
-    },
-    derive: (context: DerivationContext): readonly StructuralDescriptor[] => {
-      const width = context.participatingEntries.length * 100;
-      return [
-        {
-          capability: "box",
-          source: context.trackId ?? "unknown",
-          payload: { width, height: 50 },
-        },
-      ];
+    collect: (entry) => ({ ...(entry as Record<string, unknown>) }),
+    derive: (context): DeriveResult => {
+      const width = context.entries.length * 100;
+      return {
+        status: "derived",
+        capability: "box",
+        payload: { width, height: 50 },
+      };
     },
   };
 
@@ -38,22 +35,16 @@ describe("Slice C1: Generic structural derivation", () => {
     requirements: {
       source: { capability: "box" },
     },
-    collect: {
-      output: "consumptions",
-      run: (entry) => ({ ...(entry as Record<string, unknown>) }),
-    },
-    derive: (context: DerivationContext): readonly StructuralDescriptor[] => {
-      const boundSources = Array.from(context.inventory.declaredSources);
-      const results: StructuralDescriptor[] = [];
-      for (const src of boundSources) {
-        const desc = context.readDescriptor(src, "box");
-        results.push({
-          capability: "consumer-view",
-          source: context.trackId ?? "unknown",
-          payload: { consumedFrom: src, sourcePayload: desc.payload },
-        });
-      }
-      return results;
+    collect: (entry) => ({ ...(entry as Record<string, unknown>) }),
+    derive: (context): DeriveResult => {
+      const binding = context.entries.flatMap((e) => e.bindings).find((b) => b.slot === "source");
+      if (binding === undefined) return { status: "none" };
+      const desc = context.read("box", binding.qualifiedSource);
+      return {
+        status: "derived",
+        capability: "consumer-view",
+        payload: { consumedFrom: binding.qualifiedSource, sourcePayload: desc },
+      };
     },
   };
 
@@ -133,16 +124,13 @@ describe("Slice C1: Generic structural derivation", () => {
     const inventoryPlugin: PluginDefinition = {
       name: "inventory-inspector",
       keys: ["alpha", "beta"],
-      collect: {
-        output: "out",
-        run: () => ({}),
-      },
+      collect: () => ({}),
       derive: (context) => {
         capturedInventoryEntries = context.inventory.entries;
         expect(context.inventory.entriesById.has("item1")).toBe(true);
-        expect(context.participatingEntries).toHaveLength(1);
-        expect(context.participatingEntries[0]!.valueKeys).toEqual(["alpha", "beta"]);
-        return [];
+        expect(context.entries).toHaveLength(1);
+        expect(context.entries[0]!.valueKeys).toEqual(["alpha", "beta"]);
+        return { status: "none" };
       },
     };
 
@@ -172,8 +160,8 @@ describe("Slice C1: Generic structural derivation", () => {
   it("refuses when bound source is missing required capability", () => {
     const noCapPlugin: PluginDefinition = {
       name: "empty-source",
-      collect: { output: "empty", run: () => ({}) },
-      derive: () => [],
+      collect: () => ({}),
+      derive: () => ({ status: "none" }),
     };
 
     const registry = new PluginRegistry();
@@ -202,32 +190,36 @@ describe("Slice C1: Generic structural derivation", () => {
     );
   });
 
-  it("refuses when bound source provides ambiguous capability", () => {
-    const ambiguousPlugin: PluginDefinition = {
-      name: "multi-box",
-      collect: { output: "multi", run: () => ({}) },
-      derive: () => [
-        { capability: "box", source: "src", payload: { id: 1 } },
-        { capability: "box", source: "src", payload: { id: 2 } },
-      ],
+  it("refuses when two plugins on one track both derive the same capability", () => {
+    const boxPlugin1: PluginDefinition = {
+      name: "box-1",
+      collect: () => ({}),
+      derive: () => ({
+        status: "derived",
+        capability: "box",
+        payload: { width: 10, height: 20 },
+      }),
+    };
+    const boxPlugin2: PluginDefinition = {
+      name: "box-2",
+      collect: () => ({}),
+      derive: () => ({
+        status: "derived",
+        capability: "box",
+        payload: { width: 30, height: 40 },
+      }),
     };
 
     const registry = new PluginRegistry();
-    registry.registerAll([ambiguousPlugin, toyConsumerPlugin]);
-    const sourcePlan = registry.compileExecutionPlan([{ s1: { plugin: "multi-box" } }], {
-      trackId: "src",
-    });
-    const consumerPlan = registry.compileExecutionPlan(
-      [{ c1: { plugin: "box-consumer", requires: { source: "src" } } }],
-      { trackId: "dst" },
+    registry.registerAll([boxPlugin1, boxPlugin2]);
+    const plan = registry.compileExecutionPlan(
+      [{ b1: { plugin: "box-1" } }, { b2: { plugin: "box-2" } }],
+      { trackId: "ambiguousTrack" },
     );
 
     const outcome = deriveStructuralDescriptors({
-      order: ["src", "dst"],
-      plans: new Map([
-        ["src", sourcePlan],
-        ["dst", consumerPlan],
-      ]),
+      order: ["ambiguousTrack"],
+      plans: new Map([["ambiguousTrack", plan]]),
     });
 
     expect(outcome.kind).toBe("refused");
@@ -238,13 +230,13 @@ describe("Slice C1: Generic structural derivation", () => {
     );
   });
 
-  it("refuses and throws when plugin attempts to read undeclared source", () => {
+  it("refuses when plugin attempts to read undeclared source", () => {
     const sneakPlugin: PluginDefinition = {
       name: "sneak",
-      collect: { output: "sneakOut", run: () => ({}) },
+      collect: () => ({}),
       derive: (context) => {
-        context.readDescriptor("secretTrack", "box");
-        return [];
+        context.read("box", "secretTrack");
+        return { status: "none" };
       },
     };
 
@@ -267,14 +259,150 @@ describe("Slice C1: Generic structural derivation", () => {
     );
   });
 
+  it("refuses when a validate-only plugin returns an error diagnostic", () => {
+    const errorDiag = diagnostic("derivation-failure", "valTrack", "Validation failed");
+    const validateOnlyPlugin: PluginDefinition = {
+      name: "validate-only",
+      collect: () => ({}),
+      validate: () => [errorDiag],
+    };
+    const registry = new PluginRegistry();
+    registry.register(validateOnlyPlugin);
+    const plan = registry.compileExecutionPlan([{ v1: { plugin: "validate-only" } }], {
+      trackId: "valTrack",
+    });
+    const outcome = deriveStructuralDescriptors({
+      order: ["valTrack"],
+      plans: new Map([["valTrack", plan]]),
+    });
+    expect(outcome.kind).toBe("refused");
+    expect(outcome.descriptors.get("valTrack")).toEqual([]);
+    expect(outcome.diagnostics).toContain(errorDiag);
+  });
+
+  it("skips derive and does not increment derivation count if validate returns an error", () => {
+    let deriveCalled = false;
+    const callCounter = new Map<string, number>();
+    const errorDiag = diagnostic("derivation-failure", "skipTrack", "Error");
+    const valAndDerivePlugin: PluginDefinition = {
+      name: "val-and-derive",
+      collect: () => ({}),
+      validate: () => [errorDiag],
+      derive: () => {
+        deriveCalled = true;
+        return { status: "none" };
+      },
+    };
+    const registry = new PluginRegistry();
+    registry.register(valAndDerivePlugin);
+    const plan = registry.compileExecutionPlan([{ e1: { plugin: "val-and-derive" } }], {
+      trackId: "skipTrack",
+    });
+    const outcome = deriveStructuralDescriptors({
+      order: ["skipTrack"],
+      plans: new Map([["skipTrack", plan]]),
+      callCounter,
+    });
+    expect(outcome.kind).toBe("refused");
+    expect(deriveCalled).toBe(false);
+    expect(callCounter.get("skipTrack:val-and-derive")).toBeUndefined();
+  });
+
+  it("refuses when derive returns status refused with diagnostic", () => {
+    const d = diagnostic("derivation-failure", "refuseTrack", "Refused by plugin");
+    const refusingPlugin: PluginDefinition = {
+      name: "refuser",
+      collect: () => ({}),
+      derive: () => ({ status: "refused", diagnostics: [d] }),
+    };
+    const registry = new PluginRegistry();
+    registry.register(refusingPlugin);
+    const plan = registry.compileExecutionPlan([{ r1: { plugin: "refuser" } }], {
+      trackId: "refuseTrack",
+    });
+    const outcome = deriveStructuralDescriptors({
+      order: ["refuseTrack"],
+      plans: new Map([["refuseTrack", plan]]),
+    });
+    expect(outcome.kind).toBe("refused");
+    expect(outcome.diagnostics).toContain(d);
+  });
+
+  it("accepts when derive returns status none and produces no descriptor", () => {
+    const nonePlugin: PluginDefinition = {
+      name: "nonePlugin",
+      collect: () => ({}),
+      derive: () => ({ status: "none" }),
+    };
+    const registry = new PluginRegistry();
+    registry.register(nonePlugin);
+    const plan = registry.compileExecutionPlan([{ n1: { plugin: "nonePlugin" } }], {
+      trackId: "noneTrack",
+    });
+    const outcome = deriveStructuralDescriptors({
+      order: ["noneTrack"],
+      plans: new Map([["noneTrack", plan]]),
+    });
+    expect(outcome.kind).toBe("accepted");
+    expect(outcome.descriptors.get("noneTrack")).toEqual([]);
+  });
+
+  it("emits derivation-failure when derive returns a malformed result", () => {
+    const malformedPlugin: PluginDefinition = {
+      name: "malformed",
+      collect: () => ({}),
+      derive: () => ({ status: "weird" }) as unknown as DeriveResult,
+    };
+    const registry = new PluginRegistry();
+    registry.register(malformedPlugin);
+    const plan = registry.compileExecutionPlan([{ m1: { plugin: "malformed" } }], {
+      trackId: "badTrack",
+    });
+    const outcome = deriveStructuralDescriptors({
+      order: ["badTrack"],
+      plans: new Map([["badTrack", plan]]),
+    });
+    expect(outcome.kind).toBe("refused");
+    expect(outcome.diagnostics).toContainEqual(
+      expect.objectContaining({
+        ruleId: "derivation-failure",
+      }),
+    );
+  });
+
+  it("emits derivation-failure when derive throws an error", () => {
+    const throwingPlugin: PluginDefinition = {
+      name: "thrower",
+      collect: () => ({}),
+      derive: () => {
+        throw new Error("Boom");
+      },
+    };
+    const registry = new PluginRegistry();
+    registry.register(throwingPlugin);
+    const plan = registry.compileExecutionPlan([{ t1: { plugin: "thrower" } }], {
+      trackId: "throwTrack",
+    });
+    const outcome = deriveStructuralDescriptors({
+      order: ["throwTrack"],
+      plans: new Map([["throwTrack", plan]]),
+    });
+    expect(outcome.kind).toBe("refused");
+    expect(outcome.diagnostics).toContainEqual(
+      expect.objectContaining({
+        ruleId: "derivation-failure",
+      }),
+    );
+  });
+
   it("propagates cycle diagnostics without evaluating derivation hooks", () => {
     let hookExecuted = false;
     const cycledPlugin: PluginDefinition = {
       name: "cycled",
-      collect: { output: "cycleOut", run: () => ({}) },
+      collect: () => ({}),
       derive: () => {
         hookExecuted = true;
-        return [];
+        return { status: "none" };
       },
     };
 
@@ -295,17 +423,14 @@ describe("Slice C1: Generic structural derivation", () => {
     const countedPlugin: PluginDefinition = {
       name: "counted-box",
       keys: ["size"],
-      capabilities: ["box"],
-      collect: { output: "counted", run: (e) => ({ ...(e as Record<string, unknown>) }) },
-      derive: (context) => {
+      collect: (e) => ({ ...(e as Record<string, unknown>) }),
+      derive: () => {
         derivationRuns++;
-        return [
-          {
-            capability: "box",
-            source: context.trackId ?? "unknown",
-            payload: { count: derivationRuns },
-          },
-        ];
+        return {
+          status: "derived",
+          capability: "box",
+          payload: { width: 100, height: 50, count: derivationRuns },
+        };
       },
     };
 
@@ -349,7 +474,7 @@ describe("Slice C1: Generic structural derivation", () => {
     const track1 = runtime.track("m1/t1");
     const initialT1Descs = track1.descriptors;
     expect(initialT1Descs).toHaveLength(1);
-    expect(initialT1Descs[0]!.payload).toEqual({ count: 1 });
+    expect(initialT1Descs[0]!.payload).toEqual({ width: 100, height: 50, count: 1 });
     expect(runtime.structuralVersion).toBe(1);
     expect(runtime.derivationCount("m1/t1:counted-box")).toBe(1);
     expect(runtime.derivationCount("m1/t2:box-consumer")).toBe(1);
@@ -358,7 +483,11 @@ describe("Slice C1: Generic structural derivation", () => {
     track1.overrideValues({ e1: { size: 20 } });
     expect(runtime.structuralVersion).toBe(1);
     expect(runtime.derivationCount("m1/t1:counted-box")).toBe(1);
-    expect(runtime.descriptorsOf("m1/t1")[0]!.payload).toEqual({ count: 1 });
+    expect(runtime.descriptorsOf("m1/t1")[0]!.payload).toEqual({
+      width: 100,
+      height: 50,
+      count: 1,
+    });
 
     // 3. Structural edit (adding entry) triggers rederivation
     runtime.edit((tx) => {
@@ -373,7 +502,11 @@ describe("Slice C1: Generic structural derivation", () => {
 
     expect(runtime.structuralVersion).toBe(2);
     expect(runtime.derivationCount("m1/t1:counted-box")).toBe(2);
-    expect(runtime.descriptorsOf("m1/t1")[0]!.payload).toEqual({ count: 2 });
+    expect(runtime.descriptorsOf("m1/t1")[0]!.payload).toEqual({
+      width: 100,
+      height: 50,
+      count: 2,
+    });
 
     // 4. Failed structural commit reverts and leaves active descriptors untouched
     expect(() => {
@@ -394,7 +527,11 @@ describe("Slice C1: Generic structural derivation", () => {
 
     // Still at version 2, active descriptors preserved
     expect(runtime.structuralVersion).toBe(2);
-    expect(runtime.descriptorsOf("m1/t1")[0]!.payload).toEqual({ count: 2 });
+    expect(runtime.descriptorsOf("m1/t1")[0]!.payload).toEqual({
+      width: 100,
+      height: 50,
+      count: 2,
+    });
     expect(runtime.descriptorsOf("m1/t2")[0]!.capability).toBe("consumer-view");
   });
 });

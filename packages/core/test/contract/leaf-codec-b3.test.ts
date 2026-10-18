@@ -72,14 +72,14 @@ describe("Slice B3: Private entry/leaf codec and reverse index", () => {
     const pointPlugin: PluginDefinition = {
       name: "point",
       keys: ["rotation", "x", "y"],
-      collect: { output: "points", run: () => ({}) },
+      collect: () => ({}),
     };
 
     const contribPlugin: PluginDefinition = {
       name: "contribPlugin",
       stage: "prepare",
       keys: ["base", "derivedOffset"],
-      collect: { output: "pts", run: () => ({}) },
+      collect: () => ({}),
       contribute: (key, stops) => {
         if (key === "base" && stops.length > 0) {
           return {

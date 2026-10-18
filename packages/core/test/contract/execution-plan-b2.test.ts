@@ -17,10 +17,7 @@ describe("Slice B2: Compile one immutable ordered entry plan", () => {
     const pointPlugin: PluginDefinition = {
       name: "point",
       keys: ["length", "angle"],
-      collect: {
-        output: "points",
-        run: (entry) => ({ ...(entry as Record<string, unknown>) }),
-      },
+      collect: (entry) => ({ ...(entry as Record<string, unknown>) }),
     };
 
     const registry = new PluginRegistry();
@@ -75,19 +72,13 @@ describe("Slice B2: Compile one immutable ordered entry plan", () => {
     const pointPlugin: PluginDefinition = {
       name: "point",
       keys: ["x", "y"],
-      collect: {
-        output: "points",
-        run: () => ({ x: 0, y: 0 }),
-      },
+      collect: () => ({ x: 0, y: 0 }),
     };
 
     const markerPlugin: PluginDefinition = {
       name: "marker",
       keys: ["weight"],
-      collect: {
-        output: "points",
-        run: () => ({ weight: 1 }),
-      },
+      collect: () => ({ weight: 1 }),
     };
 
     const rootPlugin: PluginDefinition = {
@@ -123,56 +114,21 @@ describe("Slice B2: Compile one immutable ordered entry plan", () => {
       registry,
     });
 
-    expect(plan.collectOutputs).toEqual(["points"]);
+    expect(plan.collects).toBe(true);
     expect(plan.foldOutputs).toEqual(["world"]);
-    expect(plan.publishedOutputs).toEqual(["points", "world"]);
+    expect(plan.publishedOutputs).toEqual(["collect", "world"]);
   });
 
-  it("refuses cross-operation conflicts before any execution callback", () => {
-    const collectWorld: PluginDefinition = {
-      name: "collectWorld",
-      keys: ["val"],
-      collect: {
-        output: "sharedChannel",
-        run: () => ({ val: 1 }),
-      },
-    };
-
-    const foldWorld: PluginDefinition = {
-      name: "foldWorld",
-      keys: ["val"],
-      fold: {
-        outputs: ["sharedChannel"],
-        run: () => ({ val: 2 }),
-      },
-    };
-
-    const registry = new PluginRegistry();
-    registry.registerAll([collectWorld, foldWorld]);
-
-    const keyframes = [
-      { c: { plugin: "collectWorld", values: { val: 1 } } },
-      { f: { plugin: "foldWorld", values: { val: 2 } } },
-    ];
-
-    expect(() =>
-      compileTrackExecutionPlan({
-        keyframes,
-        registry,
-      }),
-    ).toThrow(/Cross-operation conflict: output "sharedChannel" claimed by both collect and fold/);
-  });
-
-  it("refuses collect output named reserved 'id' and producer claiming 'id'", () => {
+  it("refuses fold output named reserved 'collect' at admission", () => {
     expect(() =>
       new PluginRegistry().register({
-        name: "badCollectId",
-        collect: {
-          output: "id",
+        name: "badFold",
+        fold: {
+          outputs: ["collect"],
           run: () => ({}),
         },
       }),
-    ).toThrow(/collect output cannot use reserved name "id"/);
+    ).toThrow(/fold output cannot use reserved name "collect"/i);
   });
 
   it("reserves fields for optional operation claims", () => {
@@ -204,14 +160,14 @@ describe("Slice B2: Compile one immutable ordered entry plan", () => {
 
     const pluginA: PluginDefinition = {
       name: "pluginA",
-      collect: { output: "mesh", run: () => ({}) },
-      outputSerializers: { mesh: serializerA },
+      collect: () => ({}),
+      outputSerializers: { collect: serializerA },
     };
 
     const pluginBValid: PluginDefinition = {
       name: "pluginBValid",
-      collect: { output: "mesh", run: () => ({}) },
-      outputSerializers: { mesh: serializerA },
+      collect: () => ({}),
+      outputSerializers: { collect: serializerA },
     };
 
     const registryValid = new PluginRegistry();
@@ -224,12 +180,12 @@ describe("Slice B2: Compile one immutable ordered entry plan", () => {
       ],
       registry: registryValid,
     });
-    expect(planValid.outputSerializers.mesh).toBe(serializerA);
+    expect(planValid.outputSerializers.collect).toBe(serializerA);
 
     const pluginCConflict: PluginDefinition = {
       name: "pluginCConflict",
-      collect: { output: "mesh", run: () => ({}) },
-      outputSerializers: { mesh: serializerB },
+      collect: () => ({}),
+      outputSerializers: { collect: serializerB },
     };
 
     const registryConflict = new PluginRegistry();
@@ -243,13 +199,13 @@ describe("Slice B2: Compile one immutable ordered entry plan", () => {
         ],
         registry: registryConflict,
       }),
-    ).toThrow(/Conflicting serializers for shared output "mesh"/);
+    ).toThrow(/Conflicting serializers for shared output "collect"/);
   });
 
   it("normalizes exactly one execution strategy and tests exhaustiveness", () => {
     const statelessPlugin: PluginDefinition = {
       name: "statelessPlugin",
-      collect: { output: "points", run: () => ({}) },
+      collect: () => ({}),
     };
 
     let factoryCallCount = 0;
@@ -259,12 +215,11 @@ describe("Slice B2: Compile one immutable ordered entry plan", () => {
     const fakeEvaluator: StatefulEvaluator = {
       prepare: (local, state) => ({ prepared: local, proposedState: state }),
       collect: () => ({ x: 1 }),
-      fold: (_prep, prior) => ({ delta: { ...prior }, proposedState: {} }),
     };
 
     const factoryPlugin: PluginDefinition = {
       name: "factoryPlugin",
-      collect: { output: "evalPoints" },
+      collect: true,
       createEvaluator: (ctx, services) => {
         factoryCallCount++;
         receivedContext = ctx;
@@ -319,39 +274,28 @@ describe("Slice B2: Compile one immutable ordered entry plan", () => {
     expect(() =>
       new PluginRegistry().register({
         name: "mixedPlugin",
-        collect: {
-          output: "points",
-          run: () => ({}),
-        },
+        collect: () => ({}),
         createEvaluator: () => ({
           prepare: (_l, s) => ({ prepared: {}, proposedState: s }),
         }),
-      }),
-    ).toThrow(/cannot declare both createEvaluator and operation run callbacks/);
-
-    const incompletePlugin: PluginDefinition = {
-      name: "incompletePlugin",
-      collect: { output: "points" },
-    };
-
-    const registry = new PluginRegistry();
-    // Admitted as shape, but compilation rejects incomplete execution strategy
-    registry.register(incompletePlugin);
+      } as unknown as PluginDefinition),
+    ).toThrow(/must claim collect as true/);
 
     expect(() =>
-      compileTrackExecutionPlan({
-        keyframes: [{ e: { plugin: "incompletePlugin", values: {} } }],
-        registry,
-      }),
-    ).toThrow(/declares collect operation without run callback or evaluator factory/);
+      new PluginRegistry().register({
+        name: "incompletePlugin",
+        collect: true,
+      } as unknown as PluginDefinition),
+    ).toThrow(/collect must be a function/);
   });
 
   it("supports distinct generation context for two separate entries", () => {
     const factoryPlugin: PluginDefinition = {
       name: "factoryPlugin",
-      collect: { output: "out" },
+      collect: true,
       createEvaluator: (ctx) => ({
         prepare: () => ({ prepared: ctx, proposedState: ctx.compilerKey }),
+        collect: () => ({}),
       }),
     };
 
@@ -435,7 +379,7 @@ describe("Slice B2: Compile one immutable ordered entry plan", () => {
   it("produces an immutable frozen execution plan", () => {
     const plugin: PluginDefinition = {
       name: "simple",
-      collect: { output: "pts", run: () => ({}) },
+      collect: () => ({}),
     };
 
     const registry = new PluginRegistry();
@@ -449,7 +393,7 @@ describe("Slice B2: Compile one immutable ordered entry plan", () => {
     expect(Object.isFrozen(plan)).toBe(true);
     expect(Object.isFrozen(plan.entries)).toBe(true);
     expect(Object.isFrozen(plan.entries[0])).toBe(true);
-    expect(Object.isFrozen(plan.collectOutputs)).toBe(true);
+    expect(plan.collects).toBe(true);
     expect(Object.isFrozen(plan.foldOutputs)).toBe(true);
     expect(Object.isFrozen(plan.publishedOutputs)).toBe(true);
     expect(Object.isFrozen(plan.diagnostics)).toBe(true);
@@ -463,7 +407,7 @@ describe("Slice B2: Compile one immutable ordered entry plan", () => {
     });
 
     expect(plan.entries).toEqual([]);
-    expect(plan.collectOutputs).toEqual([]);
+    expect(plan.collects).toBe(false);
     expect(plan.foldOutputs).toEqual([]);
     expect(plan.publishedOutputs).toEqual([]);
     expect(plan.diagnostics).toEqual([]);

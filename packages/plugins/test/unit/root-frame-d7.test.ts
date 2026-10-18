@@ -17,10 +17,9 @@ describe("D7: root bound to frame source", () => {
     const registry = new PluginRegistry();
     registry.registerAll([frameSrcPlugin, pointPlugin, rootPlugin]);
 
-    const bodyPlan = registry.compileExecutionPlan(
-      [{ b0: { plugin: "frame-src" } }],
-      { trackId: "body" },
-    );
+    const bodyPlan = registry.compileExecutionPlan([{ b0: { plugin: "frame-src" } }], {
+      trackId: "body",
+    });
     const armPlan = registry.compileExecutionPlan(
       [
         { p0: { plugin: "point", values: { length: 10, x: 0, y: 0 } } },

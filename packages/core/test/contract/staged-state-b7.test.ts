@@ -165,7 +165,7 @@ describe("Slice B7: Proposed evaluator state and injectable caches", () => {
     const collectPlugin: PluginDefinition = {
       name: "collectStateful",
       keys: ["tag"],
-      collect: { output: "items" },
+      collect: true,
       createEvaluator: () =>
         defineStatefulEvaluator<{ tag: string }, { runs: number }>({
           initialState: { runs: 0 },
@@ -184,7 +184,7 @@ describe("Slice B7: Proposed evaluator state and injectable caches", () => {
     const bothPlugin: PluginDefinition = {
       name: "bothStateful",
       keys: ["factor"],
-      collect: { output: "factors" },
+      collect: true,
       fold: { outputs: ["accum"] },
       createEvaluator: () =>
         defineStatefulEvaluator<
@@ -232,8 +232,10 @@ describe("Slice B7: Proposed evaluator state and injectable caches", () => {
       ]),
     });
 
-    expect(result.publishedValues.items).toEqual([{ id: "e1", tag: "first" }]);
-    expect(result.publishedValues.factors).toEqual([{ id: "e2", factor: 3 }]);
+    expect(result.publishedValues.collect).toEqual([
+      { id: "e1", tag: "first" },
+      { id: "e2", factor: 3 },
+    ]);
     expect(result.publishedValues.accum).toBe(3);
 
     const e1Key = plan.entries[0]!.compilerKey;
@@ -332,7 +334,7 @@ describe("Slice B7: Proposed evaluator state and injectable caches", () => {
     const tagPlugin: PluginDefinition = {
       name: "tagPlugin",
       keys: ["val"],
-      collect: { output: "tags" },
+      collect: true,
       createEvaluator: (context, services) => {
         const table = services.cache.create({ equals: (a, b) => a === b, maxSlots: 3 });
         return defineStatefulEvaluator<{ val: number }, { id: string; table: any }>({
@@ -532,7 +534,7 @@ describe("Slice B7: Proposed evaluator state and injectable caches", () => {
     const disposablePlugin: PluginDefinition = {
       name: "disposablePlugin",
       keys: ["x"],
-      collect: { output: "pts" },
+      collect: true,
       createEvaluator: () =>
         defineStatefulEvaluator<{ x: number }, {}>({
           initialState: {},

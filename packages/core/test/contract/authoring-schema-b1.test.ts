@@ -254,14 +254,11 @@ describe("Slice B1: authoring schema & operation admission", () => {
     it("admits valid collect-only plugin definition", () => {
       const plugin: PluginDefinition = {
         name: "collectPlugin",
-        collect: {
-          output: "points",
-          run: () => ({ count: 1 }),
-        },
+        collect: () => ({ count: 1 }),
       };
       const admitted = admitPlugin(plugin, dummyContext());
       expect(admitted.definition.name).toBe("collectPlugin");
-      expect(admitted.definition.collect?.output).toBe("points");
+      expect(typeof admitted.definition.collect).toBe("function");
     });
 
     it("admits valid fold-only plugin definition", () => {
@@ -280,11 +277,10 @@ describe("Slice B1: authoring schema & operation admission", () => {
     it("admits plugin definition declaring both collect and fold operations", () => {
       const plugin: PluginDefinition = {
         name: "bothPlugin",
-        collect: {
-          output: "points",
-        },
+        collect: () => ({}),
         fold: {
           outputs: ["poses"],
+          run: () => ({}),
         },
       };
       const admitted = admitPlugin(plugin, dummyContext());
@@ -300,29 +296,25 @@ describe("Slice B1: authoring schema & operation admission", () => {
       );
     });
 
-    it("rejects collect output collision with fold outputs in the same plugin", () => {
+    it("rejects fold output using reserved name 'collect'", () => {
       const colliding: PluginDefinition = {
         name: "collidingPlugin",
-        collect: { output: "sharedOutput" },
-        fold: { outputs: ["sharedOutput"] },
+        fold: {
+          outputs: ["collect"],
+          run: () => ({}),
+        },
       };
       expect(() => admitPlugin(colliding, dummyContext())).toThrow(
-        /Plugin "collidingPlugin" collect output "sharedOutput" cannot overlap with fold outputs/,
+        /Plugin "collidingPlugin" fold output cannot use reserved name "collect"/,
       );
     });
 
-    it("rejects invalid collect output with colon or empty string", () => {
-      const badColon: PluginDefinition = {
+    it("rejects collect that is not a function in stateless plugin", () => {
+      const badCollect = {
         name: "badPlugin",
-        collect: { output: "bad:output" },
-      };
-      expect(() => admitPlugin(badColon, dummyContext())).toThrow(/must not contain ':'/);
-
-      const emptyOutput: PluginDefinition = {
-        name: "badPlugin2",
-        collect: { output: "" },
-      };
-      expect(() => admitPlugin(emptyOutput, dummyContext())).toThrow(/must be a non-empty string/);
+        collect: "not-a-function",
+      } as unknown as PluginDefinition;
+      expect(() => admitPlugin(badCollect, dummyContext())).toThrow(/collect must be a function/);
     });
 
     it("rejects duplicate fold outputs within same plugin", () => {

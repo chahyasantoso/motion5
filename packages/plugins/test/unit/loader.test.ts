@@ -591,7 +591,7 @@ describe("approved lazy plugin loader", () => {
             loadCount++;
             return {
               name: "point",
-              collect: { output: "points" },
+              collect: () => ({}),
             };
           },
         },

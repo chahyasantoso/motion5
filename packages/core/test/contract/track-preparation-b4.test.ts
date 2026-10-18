@@ -27,10 +27,7 @@ describe("B4 — Isolate preparation, static data, and timing", () => {
         }
         return undefined;
       },
-      collect: {
-        output: "bone",
-        run: () => ({}),
-      },
+      collect: () => ({}),
     });
 
     const keyframes = [
@@ -68,10 +65,7 @@ describe("B4 — Isolate preparation, static data, and timing", () => {
     registry.register({
       name: "transform",
       keys: ["x", "y"],
-      collect: {
-        output: "transform",
-        run: () => ({}),
-      },
+      collect: () => ({}),
     });
 
     const keyframes = [
@@ -109,10 +103,7 @@ describe("B4 — Isolate preparation, static data, and timing", () => {
     registry.register({
       name: "mover",
       keys: ["val"],
-      collect: {
-        output: "pos",
-        run: () => ({}),
-      },
+      collect: () => ({}),
     });
 
     const keyframes = [
@@ -152,10 +143,7 @@ describe("B4 — Isolate preparation, static data, and timing", () => {
       name: "solver",
       keys: ["weight"],
       requirements: { base: {} },
-      collect: {
-        output: "solved",
-        run: () => ({}),
-      },
+      collect: () => ({}),
     });
 
     const keyframes = [
@@ -189,10 +177,7 @@ describe("B4 — Isolate preparation, static data, and timing", () => {
           unclaimed: stops(1, 2),
         },
       }),
-      collect: {
-        output: "out",
-        run: () => ({}),
-      },
+      collect: () => ({}),
     });
 
     // 1. Unclaimed key contribution
@@ -210,10 +195,7 @@ describe("B4 — Isolate preparation, static data, and timing", () => {
       contribute: () => ({
         tweenVars: { duration: 99 },
       }),
-      collect: {
-        output: "out",
-        run: () => ({}),
-      },
+      collect: () => ({}),
     });
     const planReserved = registry2.compileExecutionPlan([
       { e1: { plugin: "reservedTweenContributor", values: { source: stops(0, 1) } } },
@@ -231,10 +213,7 @@ describe("B4 — Isolate preparation, static data, and timing", () => {
       contribute: () => ({
         keyframes: {},
       }),
-      collect: {
-        output: "out",
-        run: () => ({}),
-      },
+      collect: () => ({}),
     });
     const planStatic = registry3.compileExecutionPlan([
       { e1: { plugin: "staticSourcePlugin", values: { staticKey: 42 } } },
@@ -252,10 +231,7 @@ describe("B4 — Isolate preparation, static data, and timing", () => {
       contribute: () => ({
         keyframes: { x: stops(10, 20) },
       }),
-      collect: {
-        output: "out",
-        run: () => ({}),
-      },
+      collect: () => ({}),
     });
     const planCollide = registry4.compileExecutionPlan([
       { e1: { plugin: "collider", values: { x: stops(0, 1) } } },
@@ -273,10 +249,7 @@ describe("B4 — Isolate preparation, static data, and timing", () => {
       contribute: () => {
         throw new Error("hook crashed");
       },
-      collect: {
-        output: "out",
-        run: () => ({}),
-      },
+      collect: () => ({}),
     });
     const planFail = registry5.compileExecutionPlan([
       { e1: { plugin: "failer", values: { err: stops(0, 1) } } },
@@ -293,10 +266,7 @@ describe("B4 — Isolate preparation, static data, and timing", () => {
       contribute: () => ({
         keyframes: { unclaimed: stops(1, 2) },
       }),
-      collect: {
-        output: "out",
-        run: () => ({}),
-      },
+      collect: () => ({}),
     });
 
     const plan = registry.compileExecutionPlan([
@@ -316,10 +286,7 @@ describe("B4 — Isolate preparation, static data, and timing", () => {
     registry.register({
       name: "valid",
       keys: ["val"],
-      collect: {
-        output: "out",
-        run: () => ({}),
-      },
+      collect: () => ({}),
     });
 
     const plan = registry.compileExecutionPlan([

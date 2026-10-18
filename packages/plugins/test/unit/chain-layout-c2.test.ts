@@ -8,14 +8,18 @@ import {
   type DerivationEntryInventoryItem,
   type DerivationTrackInventory,
   type DerivationBinding,
+  type DeriveResult,
 } from "@motion5/core/plugin-api";
-import {
-  deriveChainLayout,
-  type ChainDescriptor,
-  type ChainDescriptorPayload,
-} from "../../src/chain-layout";
+import { deriveChainLayout, type ChainPayload } from "../../src/chain-layout";
 import { pointPlugin } from "../../src/point";
 import { rootPlugin } from "../../src/root";
+
+function chainOf(result: DeriveResult): ChainPayload {
+  if (result.status !== "derived" || result.capability !== "chain") {
+    throw new Error(`expected a derived chain, got ${result.status}`);
+  }
+  return result.payload;
+}
 
 function makeInventory(
   trackId: string,
@@ -71,15 +75,8 @@ describe("Slice C2: Chain Layout and Root Policy Derivation", () => {
   it("derives a valid 1-point chain (FK data) with origin root policy", () => {
     const inventory = makeInventory("arm", [{ entryId: "p0", plugin: "point" }]);
     const result = deriveChainLayout(inventory);
+    const payload = chainOf(result);
 
-    expect(result).toBeDefined();
-    expect("capability" in (result as ChainDescriptor)).toBe(true);
-
-    const desc = result as ChainDescriptor;
-    expect(desc.capability).toBe("chain");
-    expect(desc.source).toBe("arm");
-
-    const payload = desc.payload;
     expect(payload.orderedPointIds).toEqual(["p0"]);
     expect(payload.parentIndices).toEqual([-1]);
     expect(payload.childAdjacency).toEqual([[]]);
@@ -107,16 +104,16 @@ describe("Slice C2: Chain Layout and Root Policy Derivation", () => {
       { entryId: "knee", plugin: "point" },
       { entryId: "ankle", plugin: "point" },
     ]);
-    const desc = deriveChainLayout(inventory) as ChainDescriptor;
+    const payload = chainOf(deriveChainLayout(inventory));
 
-    expect(desc.payload.orderedPointIds).toEqual(["hip", "knee", "ankle"]);
-    expect(desc.payload.parentIndices).toEqual([-1, 0, 1]);
-    expect(desc.payload.childAdjacency).toEqual([[1], [2], []]);
-    expect(desc.payload.rootId).toBe("hip");
-    expect(desc.payload.leafIds).toEqual(["ankle"]);
-    expect(desc.payload.pointIndexById["hip"]).toBe(0);
-    expect(desc.payload.pointIndexById["knee"]).toBe(1);
-    expect(desc.payload.pointIndexById["ankle"]).toBe(2);
+    expect(payload.orderedPointIds).toEqual(["hip", "knee", "ankle"]);
+    expect(payload.parentIndices).toEqual([-1, 0, 1]);
+    expect(payload.childAdjacency).toEqual([[1], [2], []]);
+    expect(payload.rootId).toBe("hip");
+    expect(payload.leafIds).toEqual(["ankle"]);
+    expect(payload.pointIndexById["hip"]).toBe(0);
+    expect(payload.pointIndexById["knee"]).toBe(1);
+    expect(payload.pointIndexById["ankle"]).toBe(2);
   });
 
   it("produces identical point order and parents regardless of root entry position", () => {
@@ -139,20 +136,20 @@ describe("Slice C2: Chain Layout and Root Policy Derivation", () => {
       { entryId: "r", plugin: "root" },
     ]);
 
-    const descFirst = deriveChainLayout(invRootFirst) as ChainDescriptor;
-    const descMiddle = deriveChainLayout(invRootMiddle) as ChainDescriptor;
-    const descLast = deriveChainLayout(invRootLast) as ChainDescriptor;
+    const payloadFirst = chainOf(deriveChainLayout(invRootFirst));
+    const payloadMiddle = chainOf(deriveChainLayout(invRootMiddle));
+    const payloadLast = chainOf(deriveChainLayout(invRootLast));
 
-    expect(descFirst.payload.orderedPointIds).toEqual(["p0", "p1", "p2"]);
-    expect(descMiddle.payload.orderedPointIds).toEqual(["p0", "p1", "p2"]);
-    expect(descLast.payload.orderedPointIds).toEqual(["p0", "p1", "p2"]);
+    expect(payloadFirst.orderedPointIds).toEqual(["p0", "p1", "p2"]);
+    expect(payloadMiddle.orderedPointIds).toEqual(["p0", "p1", "p2"]);
+    expect(payloadLast.orderedPointIds).toEqual(["p0", "p1", "p2"]);
 
-    expect(descFirst.payload.parentIndices).toEqual([-1, 0, 1]);
-    expect(descMiddle.payload.parentIndices).toEqual([-1, 0, 1]);
-    expect(descLast.payload.parentIndices).toEqual([-1, 0, 1]);
+    expect(payloadFirst.parentIndices).toEqual([-1, 0, 1]);
+    expect(payloadMiddle.parentIndices).toEqual([-1, 0, 1]);
+    expect(payloadLast.parentIndices).toEqual([-1, 0, 1]);
 
-    expect(descFirst.payload.layoutIdentity).toBe(descMiddle.payload.layoutIdentity);
-    expect(descMiddle.payload.layoutIdentity).toBe(descLast.payload.layoutIdentity);
+    expect(payloadFirst.layoutIdentity).toBe(payloadMiddle.layoutIdentity);
+    expect(payloadMiddle.layoutIdentity).toBe(payloadLast.layoutIdentity);
   });
 
   it("fails derivation when duplicate root entries are present", () => {
@@ -163,33 +160,33 @@ describe("Slice C2: Chain Layout and Root Policy Derivation", () => {
     ]);
     const result = deriveChainLayout(inventory);
 
-    expect(result).toBeDefined();
-    expect("diagnostics" in (result as object)).toBe(true);
-    const diagResult = result as { diagnostics: readonly { ruleId: string; message: string }[] };
-    expect(diagResult.diagnostics[0]?.ruleId).toBe("derivation-failure");
-    expect(diagResult.diagnostics[0]?.message).toMatch(/Duplicate root entries/);
+    expect(result.status).toBe("refused");
+    if (result.status === "refused") {
+      expect(result.diagnostics[0]?.ruleId).toBe("derivation-failure");
+      expect(result.diagnostics[0]?.message).toMatch(/Duplicate root entries/);
+    }
   });
 
   it("fails derivation for root-only tracks without points", () => {
     const inventory = makeInventory("track", [{ entryId: "r0", plugin: "root" }]);
     const result = deriveChainLayout(inventory);
 
-    expect(result).toBeDefined();
-    expect("diagnostics" in (result as object)).toBe(true);
-    const diagResult = result as { diagnostics: readonly { ruleId: string; message: string }[] };
-    expect(diagResult.diagnostics[0]?.ruleId).toBe("derivation-failure");
-    expect(diagResult.diagnostics[0]?.message).toMatch(/Root-only track/);
+    expect(result.status).toBe("refused");
+    if (result.status === "refused") {
+      expect(result.diagnostics[0]?.ruleId).toBe("derivation-failure");
+      expect(result.diagnostics[0]?.message).toMatch(/Root-only track/);
+    }
   });
 
-  it("returns undefined for empty inventory or generic mixed tracks", () => {
+  it("returns none for empty inventory or generic mixed tracks", () => {
     const emptyInv = makeInventory("empty", []);
-    expect(deriveChainLayout(emptyInv)).toBeUndefined();
+    expect(deriveChainLayout(emptyInv)).toEqual({ status: "none" });
 
     const mixedInv = makeInventory("mixed", [
       { entryId: "p0", plugin: "point" },
       { entryId: "t0", plugin: "transform" },
     ]);
-    expect(deriveChainLayout(mixedInv)).toBeUndefined();
+    expect(deriveChainLayout(mixedInv)).toEqual({ status: "none" });
   });
 
   it("safely handles permitted special IDs without prototype collisions", () => {
@@ -198,13 +195,13 @@ describe("Slice C2: Chain Layout and Root Policy Derivation", () => {
       { entryId: "constructor", plugin: "point" },
       { entryId: "toString", plugin: "point" },
     ]);
-    const desc = deriveChainLayout(inventory) as ChainDescriptor;
+    const payload = chainOf(deriveChainLayout(inventory));
 
-    expect(desc.payload.orderedPointIds).toEqual(["__proto__", "constructor", "toString"]);
-    expect(desc.payload.pointIndexById["__proto__"]).toBe(0);
-    expect(desc.payload.pointIndexById["constructor"]).toBe(1);
-    expect(desc.payload.pointIndexById["toString"]).toBe(2);
-    expect(Object.getPrototypeOf(desc.payload.pointIndexById)).toBeNull();
+    expect(payload.orderedPointIds).toEqual(["__proto__", "constructor", "toString"]);
+    expect(payload.pointIndexById["__proto__"]).toBe(0);
+    expect(payload.pointIndexById["constructor"]).toBe(1);
+    expect(payload.pointIndexById["toString"]).toBe(2);
+    expect(Object.getPrototypeOf(payload.pointIndexById)).toBeNull();
   });
 
   it("distinguishes unbound root from origin and bound root provenance in layoutIdentity", () => {
@@ -230,19 +227,19 @@ describe("Slice C2: Chain Layout and Root Policy Derivation", () => {
       },
     ]);
 
-    const descOrigin = deriveChainLayout(originInv) as ChainDescriptor;
-    const descUnbound = deriveChainLayout(unboundInv) as ChainDescriptor;
-    const descBound1 = deriveChainLayout(boundInv1) as ChainDescriptor;
-    const descBound2 = deriveChainLayout(boundInv2) as ChainDescriptor;
+    const payloadOrigin = chainOf(deriveChainLayout(originInv));
+    const payloadUnbound = chainOf(deriveChainLayout(unboundInv));
+    const payloadBound1 = chainOf(deriveChainLayout(boundInv1));
+    const payloadBound2 = chainOf(deriveChainLayout(boundInv2));
 
-    expect(descOrigin.payload.rootPolicy.kind).toBe("origin");
-    expect(descUnbound.payload.rootPolicy.kind).toBe("unbound");
-    expect(descBound1.payload.rootPolicy.kind).toBe("bound");
-    expect(descBound2.payload.rootPolicy.kind).toBe("bound");
+    expect(payloadOrigin.rootPolicy.kind).toBe("origin");
+    expect(payloadUnbound.rootPolicy.kind).toBe("unbound");
+    expect(payloadBound1.rootPolicy.kind).toBe("bound");
+    expect(payloadBound2.rootPolicy.kind).toBe("bound");
 
-    expect(descOrigin.payload.layoutIdentity).not.toBe(descUnbound.payload.layoutIdentity);
-    expect(descUnbound.payload.layoutIdentity).not.toBe(descBound1.payload.layoutIdentity);
-    expect(descBound1.payload.layoutIdentity).not.toBe(descBound2.payload.layoutIdentity);
+    expect(payloadOrigin.layoutIdentity).not.toBe(payloadUnbound.layoutIdentity);
+    expect(payloadUnbound.layoutIdentity).not.toBe(payloadBound1.layoutIdentity);
+    expect(payloadBound1.layoutIdentity).not.toBe(payloadBound2.layoutIdentity);
   });
 
   it("point reorder alters parent indices and layoutIdentity", () => {
@@ -257,19 +254,19 @@ describe("Slice C2: Chain Layout and Root Policy Derivation", () => {
       { entryId: "p2", plugin: "point" },
     ]);
 
-    const descA = deriveChainLayout(invA) as ChainDescriptor;
-    const descB = deriveChainLayout(invB) as ChainDescriptor;
+    const payloadA = chainOf(deriveChainLayout(invA));
+    const payloadB = chainOf(deriveChainLayout(invB));
 
-    expect(descA.payload.orderedPointIds).toEqual(["p0", "p1", "p2"]);
-    expect(descB.payload.orderedPointIds).toEqual(["p1", "p0", "p2"]);
+    expect(payloadA.orderedPointIds).toEqual(["p0", "p1", "p2"]);
+    expect(payloadB.orderedPointIds).toEqual(["p1", "p0", "p2"]);
 
-    expect(descA.payload.parentIndices).toEqual([-1, 0, 1]);
-    expect(descB.payload.parentIndices).toEqual([-1, 0, 1]);
+    expect(payloadA.parentIndices).toEqual([-1, 0, 1]);
+    expect(payloadB.parentIndices).toEqual([-1, 0, 1]);
 
-    expect(descA.payload.pointIndexById["p0"]).toBe(0);
-    expect(descB.payload.pointIndexById["p0"]).toBe(1);
+    expect(payloadA.pointIndexById["p0"]).toBe(0);
+    expect(payloadB.pointIndexById["p0"]).toBe(1);
 
-    expect(descA.payload.layoutIdentity).not.toBe(descB.payload.layoutIdentity);
+    expect(payloadA.layoutIdentity).not.toBe(payloadB.layoutIdentity);
   });
 
   it("integrates end-to-end with Engine and track.descriptors()", () => {
@@ -304,11 +301,12 @@ describe("Slice C2: Chain Layout and Root Policy Derivation", () => {
     const descriptors = armTrack.descriptors;
 
     expect(descriptors).toHaveLength(1);
-    const chainDesc = descriptors[0] as ChainDescriptor;
+    const chainDesc = descriptors[0]!;
     expect(chainDesc.capability).toBe("chain");
     expect(chainDesc.source).toBe("m0/arm");
-    expect(chainDesc.payload.orderedPointIds).toEqual(["p0", "p1"]);
-    expect(chainDesc.payload.parentIndices).toEqual([-1, 0]);
-    expect(chainDesc.payload.rootPolicy).toEqual({ kind: "origin", hasRootEntry: false });
+    const payload = chainDesc.payload as ChainPayload;
+    expect(payload.orderedPointIds).toEqual(["p0", "p1"]);
+    expect(payload.parentIndices).toEqual([-1, 0]);
+    expect(payload.rootPolicy).toEqual({ kind: "origin", hasRootEntry: false });
   });
 });

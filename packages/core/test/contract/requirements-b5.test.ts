@@ -65,10 +65,7 @@ describe("Slice B5: Scope requirements and graph destinations by entry", () => {
       base: {},
       targets: { dict: true },
     },
-    collect: {
-      output: "joints",
-      run: (entry) => ({ ...(entry as Record<string, unknown>) }),
-    },
+    collect: (entry) => ({ ...(entry as Record<string, unknown>) }),
   };
 
   const customDictPlugin: PluginDefinition = {
@@ -78,10 +75,7 @@ describe("Slice B5: Scope requirements and graph destinations by entry", () => {
       custom_controllers: { dict: true },
       single_root: {},
     },
-    collect: {
-      output: "custom_out",
-      run: (e) => ({ ...(e as any) }),
-    },
+    collect: (e) => ({ ...(e as Record<string, unknown>) }),
   };
 
   function createTestRegistry(): PluginRegistry {
