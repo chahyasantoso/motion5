@@ -21,7 +21,7 @@ operations, topology, numerics, evaluator state, memoization, editing, and rende
 
 - Core contract and compiler: own document syntax, identity validation, structural scheduling, and
   atomic candidate acceptance. Core never imports kinematic algorithms or provider types.
-- Plugin registry and admission: validate declared plugin capabilities, operation claims, and
+- Plugin registry and admission: validate declared operation claims and
   requirement slots.
 - Skeleton derivation: derives static parent-first layouts, bone order, and ID locators from
   authored records.
@@ -119,8 +119,9 @@ in strict sequence:
     registration.
 
 - **O-INV-02: Stateless collect output**
-  - Invariant: Stateless collect declares an output name and a pure callback returning exactly one
-    renderer-neutral record. Core stamps `id = entryId` and appends to the collection in entry order.
+  - Invariant: Stateless collect is a pure callback returning exactly one renderer-neutral record
+    published under the reserved `collect` output. Core stamps `id = entryId` and appends to the
+    collection in entry order.
   - Earliest stage: Preparation/Evaluation.
   - Owner: Evaluator dispatch.
 
@@ -130,12 +131,12 @@ in strict sequence:
   - Earliest stage: Preparation/Evaluation.
   - Owner: Evaluator dispatch.
 
-- **O-INV-04: Collect and fold collision refusal**
-  - Invariant: Two plugins cannot share an output name if one collects and the other folds. Collect +
-    collect appends. Fold + fold merges per-field in authored order.
+- **O-INV-04: Fold collect reserved name refusal**
+  - Invariant: Fold outputs cannot use the reserved output name `collect`. Collect appends to the
+    single `collect` output in entry order. Fold + fold merges per-field in authored order.
   - Earliest stage: Registry / Derivation.
   - Owner: Plugin registry and track compiler.
-  - Refusal rule: Any collect/fold output collision refuses before evaluation.
+  - Refusal rule: Any fold output named `collect` refuses at admission before evaluation.
 
 - **O-INV-05: Both-operation input isolation**
   - Invariant: An entry declaring both collect and fold executes in strict order: prepare, collect,

@@ -54,3 +54,4 @@ Current slice: C2 (chain layout and root policy derivation).
 - Chain layout test suite (C2): [packages/plugins/test/unit/chain-layout-c2.test.ts](../../packages/plugins/test/unit/chain-layout-c2.test.ts).
 - Overview reference: [00-overview.md](../../motion5-implementation-plans/00-overview.md).
 - Cache contract reference: [42-cache-contract.md](../../motion5-implementation-plans/42-cache-contract.md).
+- Plugin structural API ADR: [ADR-142-plugin-structural-api.md](../ADR-142-plugin-structural-api.md).

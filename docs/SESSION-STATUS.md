@@ -5,14 +5,14 @@ are the complete shape. **Now** and **Next in line** carry exactly one bullet ea
 states a phase; `packages/core/test/unit/scripts/session-status-shape.test.ts` enforces the shape and
 byte ceiling.
 
-- **Captured:** 2026-10-17, Asia/Jakarta.
-- **Read against:** branch `feat/skeldata-v5-phase-c`.
+- **Captured:** 2026-10-18, Asia/Jakarta.
+- **Read against:** branch `feat/plugin-structural-api`.
 
 ## Now
 
-- **Chain layout and root policy derivation landed** in `packages/plugins/src/chain-layout.ts`,
-  `packages/plugins/src/point.ts`, and `packages/plugins/src/root.ts`, deriving ordered points, parent
-  indices, safe index, child adjacency, layout identity, and frame policy under C2.
+- **Plugin structural API landed** across `packages/core` and `packages/plugins`, implementing
+  unified collect array output, tagged `DeriveResult`, `validate` hook, typed `CapabilityMap`
+  augmentation, root policy helper, and ADR-142.
 
 ## Next in line
 
