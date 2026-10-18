@@ -350,19 +350,19 @@ describe("Slice B2: Compile one immutable ordered entry plan", () => {
     expect(planOrder1.entries[1]?.entryId).toBe("second");
 
     // Simulating fold execution in plan order for B6
-    const dummyCtx = {
-      trackId: "track",
-      entryId: "first",
-      compilerKey: 1,
-      generation: 1,
-      plugin: "appendFold",
-      progress: 0,
-    };
     let state1: Record<string, unknown> = {};
     for (const ep of planOrder1.entries) {
       if (ep.execution.kind === "stateless" && ep.execution.fold) {
-        const local = { values: ep.schema.values, inputs: {}, context: dummyCtx };
-        state1 = { ...state1, ...ep.execution.fold(local, state1, dummyCtx) };
+        const context = {
+          trackId: ep.lifecycle.trackId,
+          entryId: ep.lifecycle.entryId,
+          compilerKey: ep.lifecycle.compilerKey,
+          generation: ep.lifecycle.generation,
+          plugin: ep.lifecycle.pluginName,
+          progress: 0,
+        };
+        const local = { values: ep.schema.values, inputs: {}, context };
+        state1 = { ...state1, ...ep.execution.fold(local, state1, context) };
       }
     }
     expect(state1.log).toBe("AB");
@@ -379,8 +379,16 @@ describe("Slice B2: Compile one immutable ordered entry plan", () => {
     let state2: Record<string, unknown> = {};
     for (const ep of planOrder2.entries) {
       if (ep.execution.kind === "stateless" && ep.execution.fold) {
-        const local = { values: ep.schema.values, inputs: {}, context: dummyCtx };
-        state2 = { ...state2, ...ep.execution.fold(local, state2, dummyCtx) };
+        const context = {
+          trackId: ep.lifecycle.trackId,
+          entryId: ep.lifecycle.entryId,
+          compilerKey: ep.lifecycle.compilerKey,
+          generation: ep.lifecycle.generation,
+          plugin: ep.lifecycle.pluginName,
+          progress: 0,
+        };
+        const local = { values: ep.schema.values, inputs: {}, context };
+        state2 = { ...state2, ...ep.execution.fold(local, state2, context) };
       }
     }
     expect(state2.log).toBe("BA");
