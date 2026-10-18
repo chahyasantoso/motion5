@@ -20,6 +20,7 @@ import type { PreparedTrack } from "./track-preparation";
 import type { RequirementInputs } from "./plugins";
 import { CompositionOutputError } from "./track";
 import { freezeValue, type ImmutableRecord } from "./values";
+import { COLLECT_OUTPUT } from "../contract/collect";
 
 export type { LocalEvaluation, LocalEvaluationContext };
 
@@ -87,9 +88,8 @@ function buildLocalEvaluation(
 
 function executeCollectOperation(
   entryId: AuthoredEntryId,
-  outputName: string,
   rawRecord: unknown,
-  collections: Map<string, Array<Record<string, unknown>>>,
+  collected: Array<Readonly<Record<string, unknown>>>,
 ): void {
   if (!isPlainRecord(rawRecord)) {
     throw new CompositionOutputError(
@@ -101,16 +101,12 @@ function executeCollectOperation(
       `Collect operation for entry "${entryId}" cannot supply its own id.`,
     );
   }
-  const stamped = Object.freeze({
-    ...rawRecord,
-    id: entryId,
-  });
-  const buffer = collections.get(outputName);
-  if (buffer === undefined) {
-    collections.set(outputName, [stamped]);
-  } else {
-    buffer.push(stamped);
-  }
+  collected.push(
+    Object.freeze({
+      ...rawRecord,
+      id: entryId,
+    }),
+  );
 }
 
 function executeFoldOperation(
@@ -162,10 +158,7 @@ export function executeTrackOperations(
     evaluators,
   } = options;
 
-  const collections = new Map<string, Array<Record<string, unknown>>>();
-  for (const output of plan.collectOutputs) {
-    collections.set(output, []);
-  }
+  const collected: Array<Readonly<Record<string, unknown>>> = [];
 
   let currentFold: Readonly<Record<string, unknown>> = Object.freeze({});
   const proposedStates = new Map<string, unknown>();
@@ -177,17 +170,12 @@ export function executeTrackOperations(
 
     switch (strategy.kind) {
       case "stateless": {
-        if (entry.operations.collect) {
+        if (entry.operations.collect === true) {
           if (!strategy.collect) {
             throw new TypeError(`Entry "${entry.entryId}" missing collect runner.`);
           }
           const collectRecord = strategy.collect(local, local.context);
-          executeCollectOperation(
-            entry.entryId,
-            entry.operations.collect.output,
-            collectRecord,
-            collections,
-          );
+          executeCollectOperation(entry.entryId, collectRecord, collected);
         }
         if (entry.operations.fold) {
           if (!strategy.fold) {
@@ -223,17 +211,12 @@ export function executeTrackOperations(
         }
         let finalProposedState = prepResult.proposedState;
 
-        if (entry.operations.collect) {
+        if (entry.operations.collect === true) {
           if (typeof evaluator.collect !== "function") {
             throw new TypeError(`Evaluator for entry "${entry.entryId}" missing collect method.`);
           }
           const collectRecord = evaluator.collect(prepResult.prepared);
-          executeCollectOperation(
-            entry.entryId,
-            entry.operations.collect.output,
-            collectRecord,
-            collections,
-          );
+          executeCollectOperation(entry.entryId, collectRecord, collected);
         }
 
         if (entry.operations.fold) {
@@ -265,8 +248,8 @@ export function executeTrackOperations(
 
   const stagedPublished: Record<string, unknown> = {};
 
-  for (const output of plan.collectOutputs) {
-    stagedPublished[output] = Object.freeze(collections.get(output) ?? []);
+  if (plan.collects) {
+    stagedPublished[COLLECT_OUTPUT] = Object.freeze(collected);
   }
 
   for (const output of plan.foldOutputs) {

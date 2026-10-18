@@ -26,14 +26,17 @@ import { unreachable } from "../lang/exhaustive";
 import type { PluginCapability } from "../ports/plugin-capabilities";
 import type { EvaluatorServices } from "./cache";
 import { claims } from "./plugin-admission";
+import { COLLECT_OUTPUT } from "../contract/collect";
 import type {
+  CollectRun,
   Contribution,
   PluginDefinition,
   PreparedContribution,
   ResolvedRequirement,
-  StructuralDescriptor,
+  StatelessFold,
   TrackConfigView,
 } from "./plugins";
+import type { StructuralDescriptor } from "../contract/derivation";
 
 export interface EvaluatorContext {
   readonly trackId?: string;
@@ -74,28 +77,20 @@ export type EvaluatorFactory<P = unknown, S = unknown> = (
 export type ExecutionStrategy =
   | {
       readonly kind: "stateless";
-      readonly collect?: (entry: unknown, context?: unknown) => Record<string, unknown>;
-      readonly fold?: (
-        entry: unknown,
-        state?: unknown,
-        context?: unknown,
-      ) => Record<string, unknown>;
+      readonly collect?: CollectRun;
+      readonly fold?: StatelessFold["run"];
     }
   | {
       readonly kind: "factory";
       readonly createEvaluator: EvaluatorFactory;
     };
 
-export interface CompiledCollectOperation {
-  readonly output: string;
-}
-
 export interface CompiledFoldOperation {
   readonly outputs: readonly string[];
 }
 
 export interface CompiledEntryOperations {
-  readonly collect?: CompiledCollectOperation;
+  readonly collect?: true;
   readonly fold?: CompiledFoldOperation;
 }
 
@@ -165,7 +160,7 @@ export interface TrackExecutionPlan {
   readonly entriesByKey: ReadonlyMap<string, CompiledEntryPlan>;
   readonly bindings: readonly NormalizedRequirementBinding[];
   readonly outputSerializers: Readonly<Record<string, OutputSerializer>>;
-  readonly collectOutputs: readonly string[];
+  readonly collects: boolean;
   readonly foldOutputs: readonly string[];
   readonly publishedOutputs: readonly string[];
   readonly descriptors?: readonly StructuralDescriptor[];
@@ -487,43 +482,16 @@ function resolveEntryRequirements(
   };
 }
 
-function validateAndDetermineExecutionStrategy(plugin: PluginDefinition): ExecutionStrategy {
-  const hasFactory = plugin.createEvaluator !== undefined;
-  const hasCollectRun = typeof plugin.collect?.run === "function";
-  const hasFoldRun = typeof plugin.fold?.run === "function";
-
-  if (hasFactory) {
-    if (typeof plugin.createEvaluator !== "function") {
-      throw new TypeError(
-        `Plugin "${plugin.name}" createEvaluator must be a function when provided.`,
-      );
-    }
-    if (plugin.collect?.run !== undefined || plugin.fold?.run !== undefined) {
-      throw new TypeError(
-        `Plugin "${plugin.name}" declares both an evaluator factory and stateless run callbacks.`,
-      );
-    }
-    return Object.freeze({
-      kind: "factory",
-      createEvaluator: plugin.createEvaluator,
-    });
+function executionStrategyOf(plugin: PluginDefinition): ExecutionStrategy {
+  if (plugin.createEvaluator !== undefined) {
+    return Object.freeze({ kind: "factory", createEvaluator: plugin.createEvaluator });
   }
-
-  if (plugin.collect !== undefined && !hasCollectRun) {
-    throw new TypeError(
-      `Plugin "${plugin.name}" declares collect operation without run callback or evaluator factory.`,
-    );
-  }
-  if (plugin.fold !== undefined && !hasFoldRun) {
-    throw new TypeError(
-      `Plugin "${plugin.name}" declares fold operation without run callback or evaluator factory.`,
-    );
-  }
-
+  const fold = plugin.fold && "run" in plugin.fold ? plugin.fold.run : undefined;
+  const collect = typeof plugin.collect === "function" ? plugin.collect : undefined;
   return Object.freeze({
     kind: "stateless",
-    ...(hasCollectRun ? { collect: plugin.collect?.run } : {}),
-    ...(hasFoldRun ? { fold: plugin.fold?.run } : {}),
+    ...(collect !== undefined ? { collect } : {}),
+    ...(fold !== undefined ? { fold } : {}),
   });
 }
 
@@ -546,7 +514,6 @@ export function compileTrackExecutionPlan(
   const entriesById = new Map<string, CompiledEntryPlan>();
   const entriesByKey = new Map<string, CompiledEntryPlan>();
 
-  const collectOutputs: string[] = [];
   const foldOutputs: string[] = [];
   const outputSerializers: Record<string, OutputSerializer> = {};
   const serializerOwners = new Map<string, { plugin: string; serializer: OutputSerializer }>();
@@ -576,16 +543,13 @@ export function compileTrackExecutionPlan(
       );
     }
 
-    if (plugin.collect?.output === "id") {
-      throw new TypeError(`Plugin "${plugin.name}" collect output cannot use reserved name "id".`);
-    }
     if (plugin.keys?.includes("id") || claims(plugin, "id")) {
       throw new TypeError(
         `Plugin "${plugin.name}" cannot declare or claim reserved property "id".`,
       );
     }
 
-    const execution = validateAndDetermineExecutionStrategy(plugin);
+    const execution = executionStrategyOf(plugin);
 
     const leafPaths = new Map<string, string>();
     for (const leaf of Object.keys(entry.values)) {
@@ -623,7 +587,7 @@ export function compileTrackExecutionPlan(
     const capabilities = registry.capabilityOf?.(plugin.name) ?? DEFAULT_CAPABILITY;
 
     const operations: CompiledEntryOperations = Object.freeze({
-      ...(plugin.collect ? { collect: Object.freeze({ output: plugin.collect.output }) } : {}),
+      ...(plugin.collect !== undefined ? { collect: true as const } : {}),
       ...(plugin.fold
         ? { fold: Object.freeze({ outputs: Object.freeze([...plugin.fold.outputs]) }) }
         : {}),
@@ -658,18 +622,10 @@ export function compileTrackExecutionPlan(
     entriesByKey.set(compilerKey, entryPlan);
   }
 
-  // Cross-entry validations: collect/fold overlap and output serializer consensus
-  const collectSet = new Set<string>();
+  // Cross-entry validations: collect presence, fold outputs, and output serializer consensus
   const foldSet = new Set<string>();
 
   for (const entryPlan of entries) {
-    if (entryPlan.operations.collect !== undefined) {
-      const out = entryPlan.operations.collect.output;
-      if (!collectSet.has(out)) {
-        collectSet.add(out);
-        collectOutputs.push(out);
-      }
-    }
     if (entryPlan.operations.fold !== undefined) {
       for (const out of entryPlan.operations.fold.outputs) {
         if (!foldSet.has(out)) {
@@ -680,17 +636,11 @@ export function compileTrackExecutionPlan(
     }
   }
 
-  for (const collectOut of collectOutputs) {
-    if (foldSet.has(collectOut)) {
-      throw new TypeError(
-        `Cross-operation conflict: output "${collectOut}" claimed by both collect and fold operations.`,
-      );
-    }
-  }
+  const collects = entries.some((entry) => entry.operations.collect === true);
 
   for (const entryPlan of entries) {
     const declaredOutputs = [
-      ...(entryPlan.operations.collect ? [entryPlan.operations.collect.output] : []),
+      ...(entryPlan.operations.collect === true ? [COLLECT_OUTPUT] : []),
       ...(entryPlan.operations.fold ? entryPlan.operations.fold.outputs : []),
     ];
     for (const out of declaredOutputs) {
@@ -708,7 +658,9 @@ export function compileTrackExecutionPlan(
     }
   }
 
-  const publishedOutputs = Object.freeze([...new Set([...collectOutputs, ...foldOutputs])].sort());
+  const publishedOutputs = Object.freeze(
+    [...new Set([...(collects ? [COLLECT_OUTPUT] : []), ...foldOutputs])].sort(),
+  );
   const trackBindings: NormalizedRequirementBinding[] = [];
   for (const entryPlan of entries) {
     trackBindings.push(...entryPlan.bindings);
@@ -722,7 +674,7 @@ export function compileTrackExecutionPlan(
     entriesByKey,
     bindings: Object.freeze(trackBindings),
     outputSerializers: Object.freeze(outputSerializers),
-    collectOutputs: Object.freeze(collectOutputs),
+    collects,
     foldOutputs: Object.freeze(foldOutputs),
     publishedOutputs,
     diagnostics: Object.freeze(diagnostics),
@@ -743,7 +695,20 @@ export function createEntryEvaluator(
     generation: plan.lifecycle.generation,
     plugin: plan.lifecycle.pluginName,
   });
-  return plan.execution.createEvaluator(context, services);
+  const evaluator = plan.execution.createEvaluator(context, services);
+  const claimsCollect = plan.operations.collect === true;
+  if (claimsCollect !== (typeof evaluator.collect === "function")) {
+    throw new TypeError(
+      `Evaluator for entry "${plan.entryId}" collect method does not match its collect claim.`,
+    );
+  }
+  const claimsFold = plan.operations.fold !== undefined;
+  if (claimsFold !== (typeof evaluator.fold === "function")) {
+    throw new TypeError(
+      `Evaluator for entry "${plan.entryId}" fold method does not match its fold claim.`,
+    );
+  }
+  return evaluator;
 }
 
 export function assertExecutionStrategy(strategy: ExecutionStrategy): "stateless" | "factory" {

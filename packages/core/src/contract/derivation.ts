@@ -1,17 +1,11 @@
 import type { Diagnostic } from "./v5";
 import type { AuthoredEntryId, PluginName } from "./address";
+import type { CapabilityMap } from "./capability";
 
-/**
- * An immutable descriptor emitted by generic structural derivation.
- *
- * Core transports its payload opaquely without interpreting domain concepts like
- * skeletons, joints, or constraints.
- */
 export interface StructuralDescriptor<T = unknown> {
   readonly capability: string;
   readonly source: string;
   readonly payload: T;
-  readonly diagnostics?: readonly Diagnostic[];
 }
 
 /** Normalized binding visible to structural derivation inventory. */
@@ -33,7 +27,7 @@ export interface DerivationEntryInventoryItem {
   readonly order: number;
   readonly valueKeys: readonly string[];
   readonly bindings: readonly DerivationBinding[];
-  readonly collect?: { readonly output: string };
+  readonly collect?: true;
   readonly fold?: { readonly outputs: readonly string[] };
 }
 
@@ -45,36 +39,43 @@ export interface DerivationTrackInventory {
   readonly declaredSources: ReadonlySet<string>;
 }
 
-/** Read-only context handed to a plugin's derivation hook. */
-export interface DerivationContext {
-  readonly trackId?: string;
-  readonly participatingEntries: readonly DerivationEntryInventoryItem[];
-  readonly inventory: DerivationTrackInventory;
-  readDescriptor(sourceId: string, capability?: string): StructuralDescriptor;
-  tryReadDescriptor(sourceId: string, capability?: string): StructuralDescriptor | undefined;
+export type DeriveResultOf<M> =
+  | {
+      readonly [K in keyof M]: {
+        readonly status: "derived";
+        readonly capability: K;
+        readonly payload: M[K];
+      };
+    }[keyof M]
+  | { readonly status: "refused"; readonly diagnostics: readonly [Diagnostic, ...Diagnostic[]] }
+  | { readonly status: "none" };
+
+export interface RequirementContextOf<M> {
+  readonly trackId: string;
+  readonly entries: readonly DerivationEntryInventoryItem[];
+  read<K extends keyof M>(capability: K, source: string): M[K];
 }
 
-export type DerivationHookResult =
-  | readonly StructuralDescriptor[]
-  | StructuralDescriptor
-  | {
-      readonly descriptors?: readonly StructuralDescriptor[];
-      readonly diagnostics?: readonly Diagnostic[];
-    }
-  | undefined;
+export interface DeriveContextOf<M> extends RequirementContextOf<M> {
+  readonly inventory: DerivationTrackInventory;
+}
 
-/** A structural collection hook called once per candidate structural revision. */
-export type PluginDerivationHook = (context: DerivationContext) => DerivationHookResult;
+export type DeriveResult = DeriveResultOf<CapabilityMap>;
+export type RequirementContext = RequirementContextOf<CapabilityMap>;
+export type DeriveContext = DeriveContextOf<CapabilityMap>;
+export type ErasedDeriveResult = DeriveResultOf<Record<string, unknown>>;
 
-export class DerivationUndeclaredSourceError extends Error {
+export class CapabilityReadError extends Error {
   readonly ruleId = "derivation-undeclared-source";
+
   constructor(
-    readonly sourceId: string,
-    readonly trackId?: string,
+    readonly trackId: string,
+    readonly source: string,
+    readonly capability: string,
   ) {
     super(
-      `Plugin on track "${trackId ?? "unknown"}" attempted to read undeclared source "${sourceId}".`,
+      `Track "${trackId}" read capability "${capability}" from "${source}" without a slot declaring it.`,
     );
-    this.name = "DerivationUndeclaredSourceError";
+    this.name = "CapabilityReadError";
   }
 }

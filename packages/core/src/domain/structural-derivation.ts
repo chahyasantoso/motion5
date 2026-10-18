@@ -2,15 +2,18 @@ import { diagnostic } from "../contract/diagnostics";
 import type { Diagnostic } from "../contract/v5";
 import { asPluginName } from "../contract/address";
 import { deepFreeze } from "./plugin-admission";
-import type { TrackExecutionPlan } from "./execution-plan";
+import type { CompiledEntryPlan, TrackExecutionPlan } from "./execution-plan";
 import {
-  DerivationUndeclaredSourceError,
-  type DerivationContext,
+  CapabilityReadError,
   type DerivationEntryInventoryItem,
-  type DerivationHookResult,
   type DerivationTrackInventory,
+  type DeriveResult,
+  type ErasedDeriveResult,
+  type RequirementContext,
   type StructuralDescriptor,
 } from "../contract/derivation";
+import { isCapabilityToken } from "../contract/capability";
+import { unreachable } from "../lang/exhaustive";
 import type { PluginDefinition } from "./plugins";
 
 export interface StructuralDerivationOptions {
@@ -26,6 +29,12 @@ export interface StructuralDerivationOutcome {
   readonly kind: "accepted" | "refused";
 }
 
+type Settlement = "settled" | "refused";
+
+const toErased = (result: DeriveResult): ErasedDeriveResult => result;
+const readKey = (source: string, capability: string): string => `${source}\u0000${capability}`;
+const isError = (d: Diagnostic): boolean => d.severity === "error";
+
 export function buildDerivationInventory(plan: TrackExecutionPlan): DerivationTrackInventory {
   const entries: DerivationEntryInventoryItem[] = [];
   const entriesById = new Map<string, DerivationEntryInventoryItem>();
@@ -38,9 +47,7 @@ export function buildDerivationInventory(plan: TrackExecutionPlan): DerivationTr
       order: entry.order,
       valueKeys: Object.freeze(Object.keys(entry.schema.values)),
       bindings: entry.bindings,
-      ...(entry.operations.collect !== undefined
-        ? { collect: { output: entry.operations.collect.output } }
-        : {}),
+      ...(entry.operations.collect === true ? { collect: true as const } : {}),
       ...(entry.operations.fold !== undefined
         ? { fold: { outputs: entry.operations.fold.outputs } }
         : {}),
@@ -61,253 +68,254 @@ export function buildDerivationInventory(plan: TrackExecutionPlan): DerivationTr
   });
 }
 
-function normalizeHookResult(
-  result: DerivationHookResult,
-  trackId: string,
-  diagnostics: Diagnostic[],
-): readonly StructuralDescriptor[] {
-  if (result === undefined) return Object.freeze([]);
-  const output: StructuralDescriptor[] = [];
-
-  const addDescriptor = (desc: StructuralDescriptor): void => {
-    if (
-      typeof desc.capability !== "string" ||
-      !desc.capability.trim() ||
-      desc.capability.includes(":")
-    ) {
-      diagnostics.push(
-        diagnostic(
-          "composition-failure",
-          trackId,
-          `Structural descriptor on "${trackId}" must declare a non-empty capability token without ':'.`,
-          [trackId],
-        ),
-      );
-      return;
-    }
-    const normalized: StructuralDescriptor = {
-      capability: desc.capability,
-      source: desc.source || trackId,
-      payload: deepFreeze(desc.payload),
-      ...(desc.diagnostics !== undefined ? { diagnostics: deepFreeze(desc.diagnostics) } : {}),
-    };
-    output.push(Object.freeze(normalized));
-    if (desc.diagnostics !== undefined) {
-      diagnostics.push(...desc.diagnostics);
-    }
-  };
-
-  if (Array.isArray(result)) {
-    for (const item of result) addDescriptor(item);
-  } else if ("capability" in result) {
-    addDescriptor(result);
-  } else if ("descriptors" in result || "diagnostics" in result) {
-    if (result.diagnostics !== undefined) {
-      diagnostics.push(...result.diagnostics);
-    }
-    if (result.descriptors !== undefined) {
-      for (const item of result.descriptors) addDescriptor(item);
-    }
-  }
-
-  return Object.freeze(output);
-}
-
-export function deriveStructuralDescriptors(
-  options: StructuralDerivationOptions,
-): StructuralDerivationOutcome {
-  const diagnostics: Diagnostic[] = [];
-
-  if (options.cycleDiagnostics !== undefined && options.cycleDiagnostics.length > 0) {
-    diagnostics.push(...options.cycleDiagnostics);
-    return {
-      descriptors: new Map(),
-      diagnostics: Object.freeze(diagnostics),
-      kind: "refused",
-    };
-  }
-
+function derivationOrder(options: StructuralDerivationOptions): readonly string[] {
   const order = [...options.order];
   for (const trackId of options.plans.keys()) {
     if (!order.includes(trackId)) {
       order.push(trackId);
     }
   }
+  return order;
+}
 
-  const descriptorsByTrack = new Map<string, readonly StructuralDescriptor[]>();
-
-  for (const trackId of order) {
-    const plan = options.plans.get(trackId);
-    if (plan === undefined) continue;
-
-    const inventory = buildDerivationInventory(plan);
-    const trackDescriptors: StructuralDescriptor[] = [];
-
-    // Validate capability requirements on slots for all entries on this track
-    for (const entry of plan.entries) {
-      if (entry.plugin.requirements !== undefined) {
-        for (const binding of entry.bindings) {
-          const reqDef = entry.plugin.requirements[binding.slot];
-          if (reqDef?.capability !== undefined) {
-            const cap = reqDef.capability;
-            const sourceDescs = descriptorsByTrack.get(binding.qualifiedSource) ?? [];
-            const matches = sourceDescs.filter((d) => d.capability === cap);
-            if (matches.length === 0) {
-              diagnostics.push(
-                diagnostic(
-                  "derivation-missing-capability",
-                  `${trackId}.${entry.entryId}.${binding.slot}`,
-                  `Bound source "${binding.qualifiedSource}" lacks required capability "${cap}".`,
-                  [binding.qualifiedSource, cap],
-                ),
-              );
-            } else if (matches.length > 1) {
-              diagnostics.push(
-                diagnostic(
-                  "derivation-ambiguous-capability",
-                  `${trackId}.${entry.entryId}.${binding.slot}`,
-                  `Bound source "${binding.qualifiedSource}" has ambiguous capability "${cap}".`,
-                  [binding.qualifiedSource, cap],
-                ),
-              );
-            }
-          }
-        }
-      }
+function groupEntriesByPlugin(plan: TrackExecutionPlan): ReadonlyMap<string, CompiledEntryPlan[]> {
+  const groups = new Map<string, CompiledEntryPlan[]>();
+  for (const entry of plan.entries) {
+    const list = groups.get(entry.plugin.name);
+    if (list === undefined) {
+      groups.set(entry.plugin.name, [entry]);
+    } else {
+      list.push(entry);
     }
+  }
+  return groups;
+}
 
-    // Find plugins that own entries on this track and provide a derivation hook
-    const pluginsWithDerive = new Map<string, PluginDefinition>();
-    for (const entry of plan.entries) {
-      if (entry.plugin.derive !== undefined) {
-        pluginsWithDerive.set(entry.plugin.name, entry.plugin);
-      }
-    }
-
-    for (const plugin of pluginsWithDerive.values()) {
-      const participatingEntries = inventory.entries.filter((e) => e.plugin === plugin.name);
-
-      const readDescriptor = (sourceId: string, capability?: string): StructuralDescriptor => {
-        if (!inventory.declaredSources.has(sourceId)) {
-          const diag = diagnostic(
-            "derivation-undeclared-source",
-            `${trackId}.${plugin.name}`,
-            `Plugin "${plugin.name}" on track "${trackId}" attempted to read undeclared source "${sourceId}".`,
-            [sourceId, trackId],
-          );
-          diagnostics.push(diag);
-          throw new DerivationUndeclaredSourceError(sourceId, trackId);
-        }
-
-        const sourceDescriptors = descriptorsByTrack.get(sourceId) ?? [];
-
-        if (capability !== undefined) {
-          const matching = sourceDescriptors.filter((d) => d.capability === capability);
-          if (matching.length === 0) {
-            const diag = diagnostic(
-              "derivation-missing-capability",
-              `${trackId}.${plugin.name}`,
-              `Source "${sourceId}" does not provide required capability "${capability}".`,
-              [sourceId, capability],
-            );
-            diagnostics.push(diag);
-            throw new Error(`Missing capability "${capability}" from "${sourceId}".`);
-          }
-          if (matching.length > 1) {
-            const diag = diagnostic(
-              "derivation-ambiguous-capability",
-              `${trackId}.${plugin.name}`,
-              `Source "${sourceId}" provides ambiguous capability "${capability}".`,
-              [sourceId, capability],
-            );
-            diagnostics.push(diag);
-            throw new Error(`Ambiguous capability "${capability}" from "${sourceId}".`);
-          }
-          return matching[0]!;
-        }
-
-        if (sourceDescriptors.length === 0) {
-          const diag = diagnostic(
-            "derivation-missing-capability",
-            `${trackId}.${plugin.name}`,
-            `Source "${sourceId}" provides no structural capabilities.`,
-            [sourceId],
-          );
-          diagnostics.push(diag);
-          throw new Error(`No capabilities provided by "${sourceId}".`);
-        }
-        if (sourceDescriptors.length > 1) {
-          const diag = diagnostic(
-            "derivation-ambiguous-capability",
-            `${trackId}.${plugin.name}`,
-            `Source "${sourceId}" provides multiple descriptors and no capability was specified.`,
-            [sourceId],
-          );
-          diagnostics.push(diag);
-          throw new Error(`Ambiguous descriptors from "${sourceId}".`);
-        }
-        return sourceDescriptors[0]!;
-      };
-
-      const tryReadDescriptor = (
-        sourceId: string,
-        capability?: string,
-      ): StructuralDescriptor | undefined => {
-        try {
-          return readDescriptor(sourceId, capability);
-        } catch {
-          return undefined;
-        }
-      };
-
-      const context: DerivationContext = Object.freeze({
-        trackId,
-        participatingEntries: Object.freeze(participatingEntries),
-        inventory,
-        readDescriptor,
-        tryReadDescriptor,
-      });
-
-      // Record derivation invocation count
-      if (options.callCounter !== undefined) {
-        const key = `${trackId}:${plugin.name}`;
-        options.callCounter.set(key, (options.callCounter.get(key) ?? 0) + 1);
-      }
-
-      try {
-        const result = plugin.derive!(context);
-        const normalized = normalizeHookResult(result, trackId, diagnostics);
-        trackDescriptors.push(...normalized);
-      } catch (error) {
-        if (error instanceof DerivationUndeclaredSourceError) {
-          // Already recorded diagnostic
-        } else if (
-          error instanceof Error &&
-          (error.message.includes("Missing capability") ||
-            error.message.includes("Ambiguous capability"))
-        ) {
-          // Already recorded diagnostic
-        } else {
-          diagnostics.push(
+function findMissingCapabilities(
+  trackId: string,
+  plugin: PluginDefinition,
+  entries: readonly CompiledEntryPlan[],
+  store: ReadonlyMap<string, readonly StructuralDescriptor[]>,
+): readonly Diagnostic[] {
+  const diags: Diagnostic[] = [];
+  if (plugin.requirements === undefined) return diags;
+  for (const entry of entries) {
+    for (const binding of entry.bindings) {
+      const reqDef = plugin.requirements[binding.slot];
+      if (reqDef?.capability !== undefined) {
+        const cap = reqDef.capability;
+        const sourceDescs = store.get(binding.qualifiedSource) ?? [];
+        const matches = sourceDescs.filter((d) => d.capability === cap);
+        if (matches.length === 0) {
+          diags.push(
             diagnostic(
-              "derivation-failure",
-              `${trackId}.${plugin.name}`,
-              error instanceof Error ? error.message : "Derivation failed.",
-              [trackId, plugin.name],
+              "derivation-missing-capability",
+              `${trackId}.${entry.entryId}.${binding.slot}`,
+              `Bound source "${binding.qualifiedSource}" lacks required capability "${cap}".`,
+              [binding.qualifiedSource, cap],
             ),
           );
         }
       }
     }
+  }
+  return diags;
+}
 
-    descriptorsByTrack.set(trackId, Object.freeze(trackDescriptors));
+function readableCapabilities(
+  plugin: PluginDefinition,
+  entries: readonly CompiledEntryPlan[],
+): ReadonlySet<string> {
+  const readable = new Set<string>();
+  if (plugin.requirements === undefined) return readable;
+  for (const entry of entries) {
+    for (const binding of entry.bindings) {
+      const reqDef = plugin.requirements[binding.slot];
+      if (reqDef?.capability !== undefined) {
+        readable.add(readKey(binding.qualifiedSource, reqDef.capability));
+      }
+    }
+  }
+  return readable;
+}
+
+function createRequirementContext(
+  trackId: string,
+  entries: readonly DerivationEntryInventoryItem[],
+  readable: ReadonlySet<string>,
+  store: ReadonlyMap<string, readonly StructuralDescriptor[]>,
+): RequirementContext {
+  const read = (capability: string, source: string): unknown => {
+    if (!readable.has(readKey(source, capability))) {
+      throw new CapabilityReadError(trackId, source, capability);
+    }
+    const found = store.get(source)?.find((d) => d.capability === capability);
+    if (found === undefined) throw new CapabilityReadError(trackId, source, capability);
+    return found.payload;
+  };
+  return Object.freeze({ trackId, entries, read }) as unknown as RequirementContext;
+}
+
+function runHook<T>(
+  trackId: string,
+  pluginName: string,
+  diagnostics: Diagnostic[],
+  fn: () => T,
+): T | undefined {
+  try {
+    return fn();
+  } catch (error) {
+    if (error instanceof CapabilityReadError) {
+      diagnostics.push(
+        diagnostic(
+          "derivation-undeclared-source",
+          `${trackId}.${pluginName}`,
+          `Plugin "${pluginName}" on track "${trackId}" attempted to read undeclared source "${error.source}".`,
+          [error.source, trackId],
+        ),
+      );
+    } else {
+      diagnostics.push(
+        diagnostic(
+          "derivation-failure",
+          `${trackId}.${pluginName}`,
+          error instanceof Error ? error.message : "Derivation failed.",
+          [trackId, pluginName],
+        ),
+      );
+    }
+    return undefined;
+  }
+}
+
+function runValidate(
+  validate: (ctx: RequirementContext) => readonly Diagnostic[],
+  context: RequirementContext,
+  pluginName: string,
+  diagnostics: Diagnostic[],
+): boolean {
+  const found = runHook(context.trackId, pluginName, diagnostics, () => validate(context));
+  if (found === undefined) return false;
+  diagnostics.push(...found);
+  return !found.some(isError);
+}
+
+function settleDeriveResult(
+  result: ErasedDeriveResult,
+  trackId: string,
+  pluginName: string,
+  produced: StructuralDescriptor[],
+  diagnostics: Diagnostic[],
+): Settlement {
+  switch (result.status) {
+    case "none":
+      return "settled";
+    case "refused":
+      if (result.diagnostics.length === 0) {
+        diagnostics.push(
+          diagnostic(
+            "derivation-failure",
+            `${trackId}.${pluginName}`,
+            `Plugin "${pluginName}" refused without a diagnostic.`,
+            [trackId, pluginName],
+          ),
+        );
+      }
+      diagnostics.push(...result.diagnostics);
+      return "refused";
+    case "derived": {
+      if (!isCapabilityToken(result.capability)) {
+        throw new TypeError(`Plugin "${pluginName}" derived an invalid capability token.`);
+      }
+      if (produced.some((d) => d.capability === result.capability)) {
+        diagnostics.push(
+          diagnostic(
+            "derivation-ambiguous-capability",
+            `${trackId}`,
+            `Track "${trackId}" has ambiguous capability "${result.capability}".`,
+            [trackId, result.capability],
+          ),
+        );
+        return "refused";
+      }
+      produced.push(
+        Object.freeze({
+          capability: result.capability,
+          source: trackId,
+          payload: deepFreeze(result.payload),
+        }),
+      );
+      return "settled";
+    }
+    default:
+      return unreachable(result);
+  }
+}
+
+function countDerivation(
+  counter: Map<string, number> | undefined,
+  trackId: string,
+  pluginName: string,
+): void {
+  if (counter === undefined) return;
+  const key = `${trackId}:${pluginName}`;
+  counter.set(key, (counter.get(key) ?? 0) + 1);
+}
+
+export function deriveStructuralDescriptors(
+  options: StructuralDerivationOptions,
+): StructuralDerivationOutcome {
+  if (options.cycleDiagnostics !== undefined && options.cycleDiagnostics.length > 0) {
+    return {
+      descriptors: new Map(),
+      diagnostics: Object.freeze([...options.cycleDiagnostics]),
+      kind: "refused",
+    };
+  }
+  const store = new Map<string, readonly StructuralDescriptor[]>();
+  const diagnostics: Diagnostic[] = [];
+  let pluginRefused = false;
+
+  for (const trackId of derivationOrder(options)) {
+    const plan = options.plans.get(trackId);
+    if (plan === undefined) continue;
+    const inventory = buildDerivationInventory(plan);
+    const produced: StructuralDescriptor[] = [];
+    for (const [pluginName, entries] of groupEntriesByPlugin(plan)) {
+      const plugin = entries[0]!.plugin;
+      const missing = findMissingCapabilities(trackId, plugin, entries, store);
+      diagnostics.push(...missing);
+      if (missing.length > 0) continue;
+      if (plugin.validate === undefined && plugin.derive === undefined) continue;
+      const context = createRequirementContext(
+        trackId,
+        inventory.entries.filter((item) => item.plugin === pluginName),
+        readableCapabilities(plugin, entries),
+        store,
+      );
+      if (plugin.validate !== undefined) {
+        if (!runValidate(plugin.validate, context, pluginName, diagnostics)) continue;
+      }
+      if (plugin.derive === undefined) continue;
+      countDerivation(options.callCounter, trackId, pluginName);
+      const derive = plugin.derive;
+      const settlement = runHook(trackId, pluginName, diagnostics, () =>
+        settleDeriveResult(
+          toErased(derive(Object.freeze({ ...context, inventory }))),
+          trackId,
+          pluginName,
+          produced,
+          diagnostics,
+        ),
+      );
+      if (settlement !== "settled") pluginRefused = true;
+    }
+    store.set(trackId, Object.freeze(produced));
   }
 
-  const hasErrors = diagnostics.some((d) => d.severity === "error");
-
   return {
-    descriptors: descriptorsByTrack,
+    descriptors: store,
     diagnostics: Object.freeze(diagnostics),
-    kind: hasErrors ? "refused" : "accepted",
+    kind: pluginRefused || diagnostics.some(isError) ? "refused" : "accepted",
   };
 }

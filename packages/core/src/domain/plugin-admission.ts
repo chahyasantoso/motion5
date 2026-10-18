@@ -2,6 +2,8 @@ import type { PluginDefinition, PluginStage } from "./plugins";
 import { ANY_CHAIN, POLE_SLOT, type SolverChainShape } from "../contract/solver-shape";
 import { JOINT_KEY } from "../contract/solver-constraints";
 import type { PluginCapability } from "../ports/plugin-capabilities";
+import { COLLECT_OUTPUT } from "../contract/collect";
+import { isCapabilityToken } from "../contract/capability";
 
 export interface AdmittedPlugin {
   readonly definition: PluginDefinition;
@@ -83,8 +85,8 @@ export function admitPlugin(plugin: PluginDefinition, context: AdmissionContext)
     throw new TypeError("Plugin name must be a non-empty string.");
 
   const hasCompose = typeof source.compose === "function";
-  const hasCollect = isRecord(source.collect);
-  const hasFold = isRecord(source.fold);
+  const hasCollect = source.collect !== undefined;
+  const hasFold = source.fold !== undefined;
 
   if (!hasCompose && !hasCollect && !hasFold)
     throw new TypeError(`Plugin "${source.name}" must declare collect, fold, or both operations.`);
@@ -92,24 +94,6 @@ export function admitPlugin(plugin: PluginDefinition, context: AdmissionContext)
   if (source.compose !== undefined && typeof source.compose !== "function")
     throw new TypeError("Plugin compose must be a function.");
 
-  let collectOutput: string | undefined;
-  if (source.collect !== undefined) {
-    if (!isRecord(source.collect))
-      throw new TypeError(`Plugin "${source.name}" collect must be an object.`);
-    if (typeof source.collect.output !== "string" || !source.collect.output.trim())
-      throw new TypeError(`Plugin "${source.name}" collect output must be a non-empty string.`);
-    if (source.collect.output === "id")
-      throw new TypeError(`Plugin "${source.name}" collect output cannot use reserved name "id".`);
-    if (source.collect.output.includes(":"))
-      throw new TypeError(
-        `Plugin "${source.name}" collect output "${source.collect.output}" must not contain ':'.`,
-      );
-    if (source.collect.run !== undefined && typeof source.collect.run !== "function")
-      throw new TypeError(`Plugin "${source.name}" collect run must be a function when provided.`);
-    collectOutput = source.collect.output;
-  }
-
-  const foldOutputs: string[] = [];
   if (source.fold !== undefined) {
     if (!isRecord(source.fold))
       throw new TypeError(`Plugin "${source.name}" fold must be an object.`);
@@ -128,27 +112,44 @@ export function admitPlugin(plugin: PluginDefinition, context: AdmissionContext)
           `Plugin "${source.name}" fold outputs contains duplicate output "${out}".`,
         );
       seenFold.add(out);
-      foldOutputs.push(out);
     }
-    if (source.fold.run !== undefined && typeof source.fold.run !== "function")
-      throw new TypeError(`Plugin "${source.name}" fold run must be a function when provided.`);
-  }
-
-  if (collectOutput !== undefined && foldOutputs.includes(collectOutput)) {
-    throw new TypeError(
-      `Plugin "${source.name}" collect output "${collectOutput}" cannot overlap with fold outputs.`,
-    );
+    if (source.fold.outputs.includes(COLLECT_OUTPUT)) {
+      throw new TypeError(
+        `Plugin "${source.name}" fold output cannot use reserved name "${COLLECT_OUTPUT}".`,
+      );
+    }
   }
 
   if (source.createEvaluator !== undefined) {
-    if (typeof source.createEvaluator !== "function")
+    if (typeof (source.createEvaluator as unknown) !== "function") {
       throw new TypeError(
         `Plugin "${source.name}" createEvaluator must be a function when provided.`,
       );
-    if (source.collect?.run !== undefined || source.fold?.run !== undefined)
+    }
+    if (source.collect !== undefined && source.collect !== true) {
       throw new TypeError(
-        `Plugin "${source.name}" cannot declare both createEvaluator and operation run callbacks.`,
+        `Plugin "${source.name}" with createEvaluator must claim collect as true.`,
       );
+    }
+    if (source.fold !== undefined && "run" in source.fold) {
+      throw new TypeError(
+        `Plugin "${source.name}" declares both an evaluator factory and stateless run callbacks.`,
+      );
+    }
+  } else {
+    if (source.collect !== undefined && typeof source.collect !== "function") {
+      throw new TypeError(`Plugin "${source.name}" collect must be a function.`);
+    }
+    if (
+      source.fold !== undefined &&
+      (!("run" in source.fold) || typeof source.fold.run !== "function")
+    ) {
+      throw new TypeError(`Plugin "${source.name}" fold run must be a function.`);
+    }
+  }
+
+  if (source.validate !== undefined && typeof source.validate !== "function") {
+    throw new TypeError(`Plugin "${source.name}" validate must be a function when provided.`);
   }
 
   if (source.keys !== undefined && !Array.isArray(source.keys))
@@ -172,16 +173,7 @@ export function admitPlugin(plugin: PluginDefinition, context: AdmissionContext)
     throw new TypeError("Plugin priority must be a finite integer when provided.");
   if (source.derive !== undefined && typeof source.derive !== "function")
     throw new TypeError(`Plugin "${source.name}" derive must be a function when provided.`);
-  if (source.capabilities !== undefined) {
-    if (!Array.isArray(source.capabilities))
-      throw new TypeError(`Plugin "${source.name}" capabilities must be an array when provided.`);
-    for (const cap of source.capabilities) {
-      if (typeof cap !== "string" || !cap.trim() || cap.includes(":"))
-        throw new TypeError(
-          `Plugin "${source.name}" capability "${cap}" must be a non-empty string without ':'.`,
-        );
-    }
-  }
+
   if (context.isRegistered(source.name))
     throw new Error(`Plugin "${source.name}" is already registered.`);
   const keys = Object.freeze([...(source.keys ?? [])]);
@@ -197,15 +189,10 @@ export function admitPlugin(plugin: PluginDefinition, context: AdmissionContext)
     if (!slot.trim())
       throw new TypeError(`Plugin "${source.name}" requirement slot must be non-empty.`);
     const req = (requirements as Record<string, { capability?: unknown }>)[slot];
-    if (req?.capability !== undefined) {
-      if (
-        typeof req.capability !== "string" ||
-        !req.capability.trim() ||
-        req.capability.includes(":")
-      )
-        throw new TypeError(
-          `Plugin "${source.name}" requirement "${slot}" capability must be a non-empty string without ':'.`,
-        );
+    if (req?.capability !== undefined && !isCapabilityToken(req.capability)) {
+      throw new TypeError(
+        `Plugin "${source.name}" requirement "${slot}" capability must be a non-empty string without ':'.`,
+      );
     }
   }
   for (const [field, names] of [
@@ -237,14 +224,12 @@ export function admitPlugin(plugin: PluginDefinition, context: AdmissionContext)
     pole: Object.hasOwn(requirements ?? {}, POLE_SLOT),
     joint: claims(source, JOINT_KEY),
   });
-  const capabilities = source.capabilities ? Object.freeze([...source.capabilities]) : undefined;
   const definition = Object.freeze({
     ...source,
     ...(source.solverChain === undefined ? {} : { solverChain: chain }),
     ...(source.keys ? { keys } : {}),
     ...(source.inputs ? { inputs } : {}),
     ...(source.outputs ? { outputs } : {}),
-    ...(capabilities ? { capabilities } : {}),
     ...(requirements ? { requirements } : {}),
   });
   return { definition, keys, inputs, capability };

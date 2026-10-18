@@ -3,7 +3,9 @@
  * keep their owners in core, while implementations depend on this entry. See ADR-133.
  */
 export type {
+  CollectRun,
   Contribution,
+  FoldClaim,
   PluginComposer,
   PluginContributor,
   PluginDefinition,
@@ -12,18 +14,22 @@ export type {
   PluginRequirement,
   PluginStage,
   RequirementInputs,
+  StatelessFold,
+  StatelessPluginDefinition,
+  StatefulPluginDefinition,
   TrackConfigView,
 } from "./domain/plugins";
+export type { CapabilityMap, CapabilityName } from "./contract/capability";
+export { COLLECT_OUTPUT } from "./contract/collect";
+export type { CollectRecord } from "./contract/collect";
 export type {
   DerivationBinding,
-  DerivationContext,
   DerivationEntryInventoryItem,
-  DerivationHookResult,
   DerivationTrackInventory,
-  PluginDerivationHook,
-  StructuralDescriptor,
+  DeriveContext,
+  DeriveResult,
+  RequirementContext,
 } from "./contract/derivation";
-export { DerivationUndeclaredSourceError } from "./contract/derivation";
 export { diagnostic } from "./contract/diagnostics";
 export type { Diagnostic } from "./contract/v5";
 export type {
@@ -70,7 +76,6 @@ export { unreachable } from "./lang/exhaustive";
 export { patchRender, type PatchRender } from "./contract/patch-render";
 export { POLE_SLOT } from "./contract/solver-shape";
 export type { SolverChainShape } from "./contract/solver-shape";
-export type { PluginCapability, PluginCapabilities } from "./ports/plugin-capabilities";
 export type {
   AxisKey,
   Bend,

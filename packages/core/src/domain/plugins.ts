@@ -27,28 +27,24 @@ import {
   type AdmissionContext,
   type AdmittedPlugin,
 } from "./plugin-admission";
+import type { CollectRecord } from "../contract/collect";
+import type { CapabilityName } from "../contract/capability";
+import type {
+  DerivationEntryInventoryItem,
+  DerivationTrackInventory,
+  DeriveContext,
+  DeriveResult,
+  RequirementContext,
+} from "../contract/derivation";
 import type {
   CompileTrackExecutionPlanOptions,
   EvaluatorFactory,
+  LocalEvaluation,
+  LocalEvaluationContext,
   TrackExecutionPlan,
 } from "./execution-plan";
 import { compileTrackExecutionPlan } from "./execution-plan";
-import type {
-  DerivationContext,
-  DerivationEntryInventoryItem,
-  DerivationHookResult,
-  DerivationTrackInventory,
-  PluginDerivationHook,
-  StructuralDescriptor,
-} from "../contract/derivation";
-export type {
-  DerivationContext,
-  DerivationEntryInventoryItem,
-  DerivationHookResult,
-  DerivationTrackInventory,
-  PluginDerivationHook,
-  StructuralDescriptor,
-};
+export type { DerivationEntryInventoryItem, DerivationTrackInventory };
 
 /**
  * The values one plugin's declared requirement slots resolved to, keyed by slot name.
@@ -145,7 +141,7 @@ export interface PluginRequirement {
    * is the shape `TimeTriggerDefinition.autoplay` reserves for the same reason.
    */
   readonly dict?: true;
-  readonly capability?: string;
+  readonly capability?: CapabilityName;
 }
 /** One authored binding that resolved against a declared slot of a registered plugin. */
 export interface ResolvedRequirement {
@@ -198,17 +194,21 @@ export interface ResolvedPlugins extends RenderMetadata {
 // prose a caller hands in. Exported because `PluginDefinition` is, and a caller cannot name the
 // field's type otherwise. See ADR-092 and ADR-097.
 export type PluginStage = "prepare" | "compose";
-export interface PluginCollectOperation {
-  readonly output: string;
-  readonly run?: (entry: unknown, context?: unknown) => Record<string, unknown>;
-}
+export type CollectRun = (entry: LocalEvaluation, ctx: LocalEvaluationContext) => CollectRecord;
 
-export interface PluginFoldOperation {
+export interface FoldClaim {
   readonly outputs: readonly string[];
-  readonly run?: (entry: unknown, state?: unknown, context?: unknown) => Record<string, unknown>;
 }
 
-export interface PluginDefinition {
+export interface StatelessFold extends FoldClaim {
+  readonly run: (
+    entry: LocalEvaluation,
+    prior: Readonly<Record<string, unknown>>,
+    ctx: LocalEvaluationContext,
+  ) => Readonly<Record<string, unknown>>;
+}
+
+interface PluginDefinitionBase {
   readonly name: string;
   /** Absent means any chain; a tree dedicates its member plugin registry-wide (ADR-136). */
   readonly solverChain?: SolverChainShape;
@@ -223,12 +223,23 @@ export interface PluginDefinition {
   readonly outputSerializers?: Readonly<Record<string, OutputSerializer>>;
   readonly contribute?: PluginContributor;
   readonly compose?: PluginComposer;
-  readonly collect?: PluginCollectOperation;
-  readonly fold?: PluginFoldOperation;
-  readonly createEvaluator?: EvaluatorFactory;
-  readonly capabilities?: readonly string[];
-  readonly derive?: PluginDerivationHook;
+  readonly validate?: (ctx: RequirementContext) => readonly Diagnostic[];
+  readonly derive?: (ctx: DeriveContext) => DeriveResult;
 }
+
+export interface StatelessPluginDefinition extends PluginDefinitionBase {
+  readonly createEvaluator?: never;
+  readonly collect?: CollectRun;
+  readonly fold?: StatelessFold;
+}
+
+export interface StatefulPluginDefinition extends PluginDefinitionBase {
+  readonly createEvaluator: EvaluatorFactory;
+  readonly collect?: true;
+  readonly fold?: FoldClaim;
+}
+
+export type PluginDefinition = StatelessPluginDefinition | StatefulPluginDefinition;
 
 const RESERVED_TWEEN_VARS = new Set(["keyframes", "duration", "paused", "id", "observes"]);
 function sortedNames(plugins: readonly PluginDefinition[]): readonly string[] {
