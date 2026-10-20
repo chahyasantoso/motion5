@@ -7,14 +7,12 @@ import {
 import { unreachable } from "../lang/exhaustive";
 import type {
   CompiledEntryPlan,
-  EvaluatorContext,
   EvaluatorServices,
   LocalEvaluation,
   LocalEvaluationContext,
-  StatefulEvaluator,
   TrackExecutionPlan,
 } from "./execution-plan";
-import { createEntryEvaluator } from "./execution-plan";
+import { entryEvaluatorContext } from "./execution-plan";
 import { DEFAULT_CACHE_PROVIDER } from "./cache-providers";
 import type { PreparedTrack } from "./track-preparation";
 import type { RequirementInputs } from "./plugins";
@@ -31,13 +29,11 @@ export interface ExecuteTrackOperationsOptions {
   readonly progress?: number | undefined;
   readonly services?: EvaluatorServices | undefined;
   readonly committedStates?: ReadonlyMap<string, unknown> | undefined;
-  readonly evaluators?: ReadonlyMap<string, StatefulEvaluator> | undefined;
 }
 
 export interface TrackOperationsResult {
   readonly publishedValues: Readonly<Record<string, unknown>>;
   readonly proposedStates: ReadonlyMap<string, unknown>;
-  readonly evaluators: ReadonlyMap<string, StatefulEvaluator>;
 }
 
 export interface TrackEvaluationBatchItem extends ExecuteTrackOperationsOptions {
@@ -47,7 +43,6 @@ export interface TrackEvaluationBatchItem extends ExecuteTrackOperationsOptions 
 export interface TrackEvaluationBatchResult {
   readonly publishedByTrack: ReadonlyMap<string, Readonly<Record<string, unknown>>>;
   readonly proposedStates: ReadonlyMap<string, unknown>;
-  readonly evaluators: ReadonlyMap<string, StatefulEvaluator>;
 }
 
 function isPlainRecord(value: unknown): value is Record<string, unknown> {
@@ -155,14 +150,17 @@ export function executeTrackOperations(
     progress = 0,
     services,
     committedStates,
-    evaluators,
   } = options;
+
+  const effectiveServices: EvaluatorServices = {
+    cache: services?.cache ?? DEFAULT_CACHE_PROVIDER,
+    ...(services ?? {}),
+  };
 
   const collected: Array<Readonly<Record<string, unknown>>> = [];
 
   let currentFold: Readonly<Record<string, unknown>> = Object.freeze({});
   const proposedStates = new Map<string, unknown>();
-  const activeEvaluators = new Map<string, StatefulEvaluator>(evaluators);
 
   for (const entry of plan.entries) {
     const local = buildLocalEvaluation(plan, entry, sampleValues, requirementInputs, progress);
@@ -191,45 +189,41 @@ export function executeTrackOperations(
         }
         break;
       }
-      case "factory": {
-        let evaluator = activeEvaluators.get(entry.compilerKey);
-        if (evaluator === undefined) {
-          const effectiveServices: EvaluatorServices = {
-            cache: services?.cache ?? DEFAULT_CACHE_PROVIDER,
-            ...(services ?? {}),
-          };
-          evaluator = createEntryEvaluator(entry, effectiveServices);
-          activeEvaluators.set(entry.compilerKey, evaluator);
+      case "stateful": {
+        let state = committedStates?.get(entry.compilerKey) ?? committedStates?.get(entry.entryId);
+        if (state === undefined) {
+          state = strategy.init(entryEvaluatorContext(entry), effectiveServices);
+          if (state === undefined) {
+            throw new TypeError(`Plugin "${entry.plugin.name}" init must return a defined state.`);
+          }
         }
-        const committedState =
-          committedStates?.get(entry.compilerKey) ?? committedStates?.get(entry.entryId);
-        const prepResult = evaluator.prepare(local, committedState);
+        const prepResult = strategy.prepare(local, state, effectiveServices);
         if (!isPlainRecord(prepResult) || !Object.hasOwn(prepResult, "prepared")) {
           throw new CompositionOutputError(
-            `Evaluator prepare for entry "${entry.entryId}" must return { prepared, proposedState }.`,
+            `Prepare for entry "${entry.entryId}" must return { prepared, state }.`,
           );
         }
-        let finalProposedState = prepResult.proposedState;
+        let finalState = prepResult.state;
 
         if (entry.operations.collect === true) {
-          if (typeof evaluator.collect !== "function") {
-            throw new TypeError(`Evaluator for entry "${entry.entryId}" missing collect method.`);
+          if (!strategy.collect) {
+            throw new TypeError(`Entry "${entry.entryId}" missing collect runner.`);
           }
-          const collectRecord = evaluator.collect(prepResult.prepared);
+          const collectRecord = strategy.collect(prepResult.prepared, local.context);
           executeCollectOperation(entry.entryId, collectRecord, collected);
         }
 
         if (entry.operations.fold) {
-          if (typeof evaluator.fold !== "function") {
-            throw new TypeError(`Evaluator for entry "${entry.entryId}" missing fold method.`);
+          if (!strategy.fold) {
+            throw new TypeError(`Entry "${entry.entryId}" missing fold runner.`);
           }
-          const foldResult = evaluator.fold(prepResult.prepared, currentFold);
+          const foldResult = strategy.fold(prepResult.prepared, currentFold, local.context);
           if (!isPlainRecord(foldResult) || !Object.hasOwn(foldResult, "delta")) {
             throw new CompositionOutputError(
-              `Evaluator fold for entry "${entry.entryId}" must return { delta, proposedState }.`,
+              `Fold for entry "${entry.entryId}" must return { delta, state? }.`,
             );
           }
-          finalProposedState = foldResult.proposedState;
+          if (foldResult.state !== undefined) finalState = foldResult.state;
           currentFold = executeFoldOperation(
             entry.entryId,
             entry.operations.fold.outputs,
@@ -238,7 +232,7 @@ export function executeTrackOperations(
           );
         }
 
-        proposedStates.set(entry.compilerKey, finalProposedState);
+        proposedStates.set(entry.compilerKey, finalState);
         break;
       }
       default:
@@ -282,7 +276,6 @@ export function executeTrackOperations(
   return Object.freeze({
     publishedValues,
     proposedStates: Object.freeze(proposedStates),
-    evaluators: Object.freeze(activeEvaluators),
   });
 }
 
@@ -293,7 +286,6 @@ export function evaluatePreparedTrack(
     readonly progress?: number | undefined;
     readonly services?: EvaluatorServices | undefined;
     readonly committedStates?: ReadonlyMap<string, unknown> | undefined;
-    readonly evaluators?: ReadonlyMap<string, StatefulEvaluator> | undefined;
   },
 ): TrackOperationsResult {
   const progress = options?.progress ?? prepared.progress;
@@ -305,7 +297,6 @@ export function evaluatePreparedTrack(
     progress,
     services: options?.services,
     committedStates: options?.committedStates,
-    evaluators: options?.evaluators,
   });
 }
 
@@ -314,7 +305,6 @@ export function executeTrackOperationsBatch(
 ): TrackEvaluationBatchResult {
   const stagedOutputs = new Map<string, Readonly<Record<string, unknown>>>();
   const stagedStates = new Map<string, unknown>();
-  const allEvaluators = new Map<string, StatefulEvaluator>();
 
   for (const item of items) {
     const result = executeTrackOperations(item);
@@ -322,14 +312,10 @@ export function executeTrackOperationsBatch(
     for (const [key, state] of result.proposedStates) {
       stagedStates.set(key, state);
     }
-    for (const [key, ev] of result.evaluators) {
-      allEvaluators.set(key, ev);
-    }
   }
 
   return Object.freeze({
     publishedByTrack: Object.freeze(stagedOutputs),
     proposedStates: Object.freeze(stagedStates),
-    evaluators: Object.freeze(allEvaluators),
   });
 }

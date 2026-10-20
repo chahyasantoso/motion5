@@ -2,14 +2,14 @@ import { describe, expect, it } from "vitest";
 import { PluginRegistry } from "../../src/domain/plugins";
 import {
   compileTrackExecutionPlan,
-  createEntryEvaluator,
   assertExecutionStrategy,
   type CompiledEntryPlan,
   type EvaluatorContext,
   type EvaluatorServices,
-  type StatefulEvaluator,
 } from "../../src/domain/execution-plan";
+import { executeTrackOperations } from "../../src/domain/track-operations";
 import type { PluginDefinition } from "../../src/domain/plugins";
+import { defineStatefulPlugin } from "../../src/domain/stateful-plugin";
 import type { OutputSerializer } from "../../src/ports/render-metadata";
 import { createBoundedCacheProvider } from "../../src/domain/cache-providers";
 
@@ -209,35 +209,31 @@ describe("Slice B2: Compile one immutable ordered entry plan", () => {
       collect: () => ({}),
     };
 
-    let factoryCallCount = 0;
+    let initCallCount = 0;
     let receivedServices: EvaluatorServices | undefined;
     let receivedContext: EvaluatorContext | undefined;
 
-    const fakeEvaluator: StatefulEvaluator = {
-      prepare: (local, state) => ({ prepared: local, proposedState: state }),
-      collect: () => ({ x: 1 }),
-    };
-
-    const factoryPlugin: PluginDefinition = {
-      name: "factoryPlugin",
-      collect: true,
-      createEvaluator: (ctx, services) => {
-        factoryCallCount++;
+    const statefulPlugin = defineStatefulPlugin<{ entryId: string }, { entryId: string }>({
+      name: "statefulPlugin",
+      collect: (prepared) => ({ entry: prepared.entryId }),
+      init: (ctx, services) => {
+        initCallCount++;
         receivedContext = ctx;
         receivedServices = services;
-        return fakeEvaluator;
+        return { entryId: ctx.entryId };
       },
-    };
+      prepare: (_local, state) => ({ prepared: state, state }),
+    });
 
     const registry = new PluginRegistry();
-    registry.registerAll([statelessPlugin, factoryPlugin]);
+    registry.registerAll([statelessPlugin, statefulPlugin]);
 
     const plan = compileTrackExecutionPlan({
       trackId: "trackX",
       generation: 2,
       keyframes: [
         { s: { plugin: "statelessPlugin", values: {} } },
-        { f: { plugin: "factoryPlugin", values: {} } },
+        { f: { plugin: "statefulPlugin", values: {} } },
       ],
       registry,
     });
@@ -246,32 +242,26 @@ describe("Slice B2: Compile one immutable ordered entry plan", () => {
     const fEntry = plan.entries[1]!;
 
     expect(sEntry.execution.kind).toBe("stateless");
-    expect(fEntry.execution.kind).toBe("factory");
+    expect(fEntry.execution.kind).toBe("stateful");
     expect(assertExecutionStrategy(sEntry.execution)).toBe("stateless");
-    expect(assertExecutionStrategy(fEntry.execution)).toBe("factory");
+    expect(assertExecutionStrategy(fEntry.execution)).toBe("stateful");
 
-    // Propagation of services to factory without provider-name branches
     const customServices: EvaluatorServices = {
       cache: createBoundedCacheProvider(),
       customClock: "mockClock",
     };
 
-    const evaluator = createEntryEvaluator(fEntry, customServices);
-    expect(evaluator).toBe(fakeEvaluator);
-    expect(factoryCallCount).toBe(1);
-    expect(receivedServices).toBe(customServices);
+    executeTrackOperations({ plan, sampleValues: new Map(), services: customServices });
+
+    expect(initCallCount).toBe(1);
+    expect(receivedServices).toEqual(customServices);
     expect(receivedContext?.trackId).toBe("trackX");
     expect(receivedContext?.entryId).toBe("f");
     expect(receivedContext?.generation).toBe(2);
-    expect(receivedContext?.plugin).toBe("factoryPlugin");
-
-    // Calling createEntryEvaluator on stateless entry throws
-    expect(() => createEntryEvaluator(sEntry, customServices)).toThrow(
-      /Entry "s" does not declare a factory execution strategy/,
-    );
+    expect(receivedContext?.plugin).toBe("statefulPlugin");
   });
 
-  it("refuses mixed execution definitions (factory + run callback) and incomplete definitions", () => {
+  it("refuses removed factory and incomplete stateful definitions", () => {
     expect(() =>
       new PluginRegistry().register({
         name: "mixedPlugin",
@@ -280,34 +270,77 @@ describe("Slice B2: Compile one immutable ordered entry plan", () => {
           prepare: (_l: unknown, s: unknown) => ({ prepared: {}, proposedState: s }),
         }),
       } as unknown as PluginDefinition),
-    ).toThrow(/must claim collect as true/);
+    ).toThrow(/createEvaluator was removed/);
 
     expect(() =>
       new PluginRegistry().register({
-        name: "incompletePlugin",
-        collect: true,
+        name: "initWithoutPrepare",
+        collect: () => ({}),
+        init: () => ({}),
       } as unknown as PluginDefinition),
-    ).toThrow(/collect must be a function/);
+    ).toThrow(/with init must declare prepare/);
+
+    expect(() =>
+      new PluginRegistry().register({
+        name: "prepareWithoutInit",
+        collect: () => ({}),
+        prepare: () => ({}),
+      } as unknown as PluginDefinition),
+    ).toThrow(/declares prepare or dispose without init/);
+
+    expect(() =>
+      new PluginRegistry().register({
+        name: "disposeWithoutInit",
+        collect: () => ({}),
+        dispose: () => undefined,
+      } as unknown as PluginDefinition),
+    ).toThrow(/declares prepare or dispose without init/);
+  });
+
+  it("calls init once for each of two entries of one stateful plugin", () => {
+    const initCalls: string[] = [];
+    const counterPlugin = defineStatefulPlugin<{ entryId: string }, { entryId: string }>({
+      name: "counter",
+      collect: (prepared) => ({ entry: prepared.entryId }),
+      init: (ctx) => {
+        initCalls.push(ctx.entryId);
+        return { entryId: ctx.entryId };
+      },
+      prepare: (_local, state) => ({ prepared: state, state }),
+    });
+
+    const registry = new PluginRegistry();
+    registry.register(counterPlugin);
+
+    const plan = compileTrackExecutionPlan({
+      keyframes: [
+        { e1: { plugin: "counter", values: {} } },
+        { e2: { plugin: "counter", values: {} } },
+      ],
+      registry,
+    });
+
+    executeTrackOperations({ plan, sampleValues: new Map() });
+
+    expect(initCalls).toEqual(["e1", "e2"]);
   });
 
   it("supports distinct generation context for two separate entries", () => {
-    const factoryPlugin: PluginDefinition = {
-      name: "factoryPlugin",
-      collect: true,
-      createEvaluator: (ctx) => ({
-        prepare: () => ({ prepared: ctx, proposedState: ctx.compilerKey }),
-        collect: () => ({}),
-      }),
-    };
+    const statefulPlugin = defineStatefulPlugin<{ key: string }, { key: string }>({
+      name: "statefulPlugin",
+      collect: (prepared) => ({ key: prepared.key }),
+      init: (ctx) => ({ key: ctx.compilerKey }),
+      prepare: (_local, state) => ({ prepared: state, state }),
+    });
 
     const registry = new PluginRegistry();
-    registry.register(factoryPlugin);
+    registry.register(statefulPlugin);
 
     const plan = compileTrackExecutionPlan({
       generation: 5,
       keyframes: [
-        { e1: { plugin: "factoryPlugin", values: {} } },
-        { e2: { plugin: "factoryPlugin", values: {} } },
+        { e1: { plugin: "statefulPlugin", values: {} } },
+        { e2: { plugin: "statefulPlugin", values: {} } },
       ],
       registry,
     });

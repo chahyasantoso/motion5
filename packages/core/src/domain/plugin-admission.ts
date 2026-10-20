@@ -120,33 +120,36 @@ export function admitPlugin(plugin: PluginDefinition, context: AdmissionContext)
     }
   }
 
-  if (source.createEvaluator !== undefined) {
-    if (typeof (source.createEvaluator as unknown) !== "function") {
-      throw new TypeError(
-        `Plugin "${source.name}" createEvaluator must be a function when provided.`,
-      );
-    }
-    if (source.collect !== undefined && source.collect !== true) {
-      throw new TypeError(
-        `Plugin "${source.name}" with createEvaluator must claim collect as true.`,
-      );
-    }
-    if (source.fold !== undefined && "run" in source.fold) {
-      throw new TypeError(
-        `Plugin "${source.name}" declares both an evaluator factory and stateless run callbacks.`,
-      );
-    }
-  } else {
-    if (source.collect !== undefined && typeof source.collect !== "function") {
-      throw new TypeError(`Plugin "${source.name}" collect must be a function.`);
-    }
-    if (
-      source.fold !== undefined &&
-      (!("run" in source.fold) || typeof source.fold.run !== "function")
-    ) {
-      throw new TypeError(`Plugin "${source.name}" fold run must be a function.`);
-    }
+  if (Object.hasOwn(source, "createEvaluator")) {
+    throw new TypeError(
+      `Plugin "${source.name}" createEvaluator was removed; declare init and prepare instead.`,
+    );
   }
+  // Admission reads untrusted runtime shapes, so the typed view cannot narrow these guards.
+  const unchecked: {
+    readonly init?: unknown;
+    readonly prepare?: unknown;
+    readonly dispose?: unknown;
+    readonly collect?: unknown;
+    readonly fold?: unknown;
+  } = source;
+  if (unchecked.init !== undefined) {
+    if (typeof unchecked.init !== "function")
+      throw new TypeError(`Plugin "${source.name}" init must be a function when provided.`);
+    if (typeof unchecked.prepare !== "function")
+      throw new TypeError(`Plugin "${source.name}" with init must declare prepare as a function.`);
+    if (unchecked.dispose !== undefined && typeof unchecked.dispose !== "function")
+      throw new TypeError(`Plugin "${source.name}" dispose must be a function when provided.`);
+  } else if (unchecked.prepare !== undefined || unchecked.dispose !== undefined) {
+    throw new TypeError(`Plugin "${source.name}" declares prepare or dispose without init.`);
+  }
+  if (unchecked.collect !== undefined && typeof unchecked.collect !== "function")
+    throw new TypeError(`Plugin "${source.name}" collect must be a function.`);
+  if (
+    unchecked.fold !== undefined &&
+    (!isRecord(unchecked.fold) || typeof unchecked.fold.run !== "function")
+  )
+    throw new TypeError(`Plugin "${source.name}" fold run must be a function.`);
 
   if (source.validate !== undefined && typeof source.validate !== "function") {
     throw new TypeError(`Plugin "${source.name}" validate must be a function when provided.`);

@@ -5,7 +5,6 @@
 export type {
   CollectRun,
   Contribution,
-  FoldClaim,
   PluginComposer,
   PluginContributor,
   PluginDefinition,
@@ -14,11 +13,18 @@ export type {
   PluginRequirement,
   PluginStage,
   RequirementInputs,
+  StatefulFold,
   StatelessFold,
   StatelessPluginDefinition,
   StatefulPluginDefinition,
   TrackConfigView,
 } from "./domain/plugins";
+export { defineStatefulPlugin } from "./domain/stateful-plugin";
+export type {
+  EvaluatorContext,
+  LocalEvaluation,
+  LocalEvaluationContext,
+} from "./domain/execution-plan";
 export type { CapabilityMap, CapabilityName } from "./contract/capability";
 export { COLLECT_OUTPUT } from "./contract/collect";
 export type { CollectRecord } from "./contract/collect";
@@ -57,9 +63,7 @@ export type {
   CacheSpec,
   CacheWrite,
   EvaluatorServices,
-  StatefulEvaluatorSpec,
 } from "./domain/cache";
-export { defineStatefulEvaluator } from "./domain/cache";
 export {
   createBoundedCacheProvider,
   DEFAULT_CACHE_PROVIDER,

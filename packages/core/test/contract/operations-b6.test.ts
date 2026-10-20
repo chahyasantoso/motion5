@@ -1,10 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { PluginRegistry, type PluginDefinition } from "../../src/domain/plugins";
-import {
-  compileTrackExecutionPlan,
-  type EvaluatorFactory,
-  type StatefulEvaluator,
-} from "../../src/domain/execution-plan";
+import { compileTrackExecutionPlan } from "../../src/domain/execution-plan";
+import { defineStatefulPlugin } from "../../src/domain/stateful-plugin";
 import {
   executeTrackOperations,
   executeTrackOperationsBatch,
@@ -566,49 +563,45 @@ describe("Slice B6: Execute collect/fold and publish owned outputs", () => {
     ).toThrow("Deliberate failure in entry 2");
   });
 
-  it("B6-13: factory-backed evaluator execution strategy with shared prepared data", () => {
+  it("B6-13: stateful execution strategy with shared prepared data", () => {
     let prepareCalls = 0;
     let collectCalls = 0;
     let foldCalls = 0;
 
-    const factoryPlugin: PluginDefinition = {
-      name: "factoryPlugin",
+    const statefulPlugin = defineStatefulPlugin<{ acc: number }, { normalizedBase: number }>({
+      name: "statefulPlugin",
       keys: ["baseNum"],
-      collect: true,
+      collect: (prepared) => {
+        collectCalls++;
+        return { itemVal: prepared.normalizedBase };
+      },
       fold: {
         outputs: ["total"],
+        run: (prepared, priorFold) => {
+          foldCalls++;
+          const prev = typeof priorFold.total === "number" ? priorFold.total : 0;
+          return {
+            delta: { total: prev + prepared.normalizedBase },
+            state: { acc: 999 },
+          };
+        },
       },
-      createEvaluator: (context, services) => {
+      init: () => ({ acc: 0 }),
+      prepare: (local, state) => {
+        prepareCalls++;
+        const base = Number(local.values.baseNum ?? 0);
         return {
-          prepare(local, committedState: { acc: number } | undefined) {
-            prepareCalls++;
-            const base = Number((local as any).values.baseNum ?? 0);
-            return {
-              prepared: { normalizedBase: base * 2 },
-              proposedState: { acc: (committedState?.acc ?? 0) + 1 },
-            };
-          },
-          collect(prepared: { normalizedBase: number }) {
-            collectCalls++;
-            return { itemVal: prepared.normalizedBase };
-          },
-          fold(prepared: { normalizedBase: number }, priorFold) {
-            foldCalls++;
-            const prev = (priorFold as Record<string, number>).total ?? 0;
-            return {
-              delta: { total: prev + prepared.normalizedBase },
-              proposedState: { acc: 999 },
-            };
-          },
+          prepared: { normalizedBase: base * 2 },
+          state: { acc: state.acc + 1 },
         };
       },
-    };
+    });
 
     const registry = new PluginRegistry();
-    registry.register(factoryPlugin);
+    registry.register(statefulPlugin);
 
     const plan = compileTrackExecutionPlan({
-      keyframes: [{ entry1: { plugin: "factoryPlugin", values: { baseNum: 5 } } }],
+      keyframes: [{ entry1: { plugin: "statefulPlugin", values: { baseNum: 5 } } }],
       registry,
     });
 

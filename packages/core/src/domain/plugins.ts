@@ -36,9 +36,10 @@ import type {
   DeriveResult,
   RequirementContext,
 } from "../contract/derivation";
+import type { EvaluatorServices } from "./cache";
 import type {
   CompileTrackExecutionPlanOptions,
-  EvaluatorFactory,
+  EvaluatorContext,
   LocalEvaluation,
   LocalEvaluationContext,
   TrackExecutionPlan,
@@ -196,11 +197,17 @@ export interface ResolvedPlugins extends RenderMetadata {
 export type PluginStage = "prepare" | "compose";
 export type CollectRun = (entry: LocalEvaluation, ctx: LocalEvaluationContext) => CollectRecord;
 
-export interface FoldClaim {
+export interface StatefulFold<P = unknown, S = unknown> {
   readonly outputs: readonly string[];
+  readonly run: (
+    prepared: P,
+    prior: Readonly<Record<string, unknown>>,
+    ctx: LocalEvaluationContext,
+  ) => { readonly delta: Readonly<Record<string, unknown>>; readonly state?: S };
 }
 
-export interface StatelessFold extends FoldClaim {
+export interface StatelessFold {
+  readonly outputs: readonly string[];
   readonly run: (
     entry: LocalEvaluation,
     prior: Readonly<Record<string, unknown>>,
@@ -228,15 +235,23 @@ interface PluginDefinitionBase {
 }
 
 export interface StatelessPluginDefinition extends PluginDefinitionBase {
-  readonly createEvaluator?: never;
+  readonly init?: never;
+  readonly prepare?: never;
+  readonly dispose?: never;
   readonly collect?: CollectRun;
   readonly fold?: StatelessFold;
 }
 
-export interface StatefulPluginDefinition extends PluginDefinitionBase {
-  readonly createEvaluator: EvaluatorFactory;
-  readonly collect?: true;
-  readonly fold?: FoldClaim;
+export interface StatefulPluginDefinition<S = unknown, P = unknown> extends PluginDefinitionBase {
+  readonly init: (ctx: EvaluatorContext, services: EvaluatorServices) => S;
+  readonly prepare: (
+    entry: LocalEvaluation,
+    state: S,
+    services: EvaluatorServices,
+  ) => { readonly prepared: P; readonly state: S };
+  readonly dispose?: (state: S) => void;
+  readonly collect?: (prepared: P, ctx: LocalEvaluationContext) => CollectRecord;
+  readonly fold?: StatefulFold<P, S>;
 }
 
 export type PluginDefinition = StatelessPluginDefinition | StatefulPluginDefinition;

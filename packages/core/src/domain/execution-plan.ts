@@ -33,6 +33,8 @@ import type {
   PluginDefinition,
   PreparedContribution,
   ResolvedRequirement,
+  StatefulFold,
+  StatefulPluginDefinition,
   StatelessFold,
   TrackConfigView,
 } from "./plugins";
@@ -59,21 +61,6 @@ export interface LocalEvaluation {
   readonly [key: string]: unknown;
 }
 
-export interface StatefulEvaluator<P = unknown, S = unknown> {
-  prepare(local: unknown, committedState: S): { readonly prepared: P; readonly proposedState: S };
-  collect?(prepared: P): Record<string, unknown>;
-  fold?(
-    prepared: P,
-    priorFold: Record<string, unknown>,
-  ): { readonly delta: Record<string, unknown>; readonly proposedState: S };
-  dispose?(): void;
-}
-
-export type EvaluatorFactory<P = unknown, S = unknown> = (
-  context: EvaluatorContext,
-  services: EvaluatorServices,
-) => StatefulEvaluator<P, S>;
-
 export type ExecutionStrategy =
   | {
       readonly kind: "stateless";
@@ -81,8 +68,12 @@ export type ExecutionStrategy =
       readonly fold?: StatelessFold["run"];
     }
   | {
-      readonly kind: "factory";
-      readonly createEvaluator: EvaluatorFactory;
+      readonly kind: "stateful";
+      readonly init: StatefulPluginDefinition["init"];
+      readonly prepare: StatefulPluginDefinition["prepare"];
+      readonly dispose?: StatefulPluginDefinition["dispose"];
+      readonly collect?: StatefulPluginDefinition["collect"];
+      readonly fold?: StatefulFold["run"];
     };
 
 export interface CompiledFoldOperation {
@@ -483,11 +474,18 @@ function resolveEntryRequirements(
 }
 
 function executionStrategyOf(plugin: PluginDefinition): ExecutionStrategy {
-  if (plugin.createEvaluator !== undefined) {
-    return Object.freeze({ kind: "factory", createEvaluator: plugin.createEvaluator });
+  if (plugin.init !== undefined) {
+    return Object.freeze({
+      kind: "stateful",
+      init: plugin.init,
+      prepare: plugin.prepare,
+      ...(plugin.dispose !== undefined ? { dispose: plugin.dispose } : {}),
+      ...(plugin.collect !== undefined ? { collect: plugin.collect } : {}),
+      ...(plugin.fold !== undefined ? { fold: plugin.fold.run } : {}),
+    });
   }
-  const fold = plugin.fold && "run" in plugin.fold ? plugin.fold.run : undefined;
-  const collect = typeof plugin.collect === "function" ? plugin.collect : undefined;
+  const fold = plugin.fold ? plugin.fold.run : undefined;
+  const collect = plugin.collect;
   return Object.freeze({
     kind: "stateless",
     ...(collect !== undefined ? { collect } : {}),
@@ -587,7 +585,7 @@ export function compileTrackExecutionPlan(
     const capabilities = registry.capabilityOf?.(plugin.name) ?? DEFAULT_CAPABILITY;
 
     const operations: CompiledEntryOperations = Object.freeze({
-      ...(plugin.collect !== undefined ? { collect: true as const } : {}),
+      ...(typeof plugin.collect === "function" ? { collect: true as const } : {}),
       ...(plugin.fold
         ? { fold: Object.freeze({ outputs: Object.freeze([...plugin.fold.outputs]) }) }
         : {}),
@@ -681,42 +679,22 @@ export function compileTrackExecutionPlan(
   });
 }
 
-export function createEntryEvaluator(
-  plan: CompiledEntryPlan,
-  services: EvaluatorServices,
-): StatefulEvaluator {
-  if (plan.execution.kind !== "factory") {
-    throw new TypeError(`Entry "${plan.entryId}" does not declare a factory execution strategy.`);
-  }
-  const context: EvaluatorContext = Object.freeze({
+export function entryEvaluatorContext(plan: CompiledEntryPlan): EvaluatorContext {
+  return Object.freeze({
     ...(plan.lifecycle.trackId !== undefined ? { trackId: plan.lifecycle.trackId } : {}),
     entryId: plan.lifecycle.entryId,
     compilerKey: plan.lifecycle.compilerKey,
     generation: plan.lifecycle.generation,
     plugin: plan.lifecycle.pluginName,
   });
-  const evaluator = plan.execution.createEvaluator(context, services);
-  const claimsCollect = plan.operations.collect === true;
-  if (claimsCollect !== (typeof evaluator.collect === "function")) {
-    throw new TypeError(
-      `Evaluator for entry "${plan.entryId}" collect method does not match its collect claim.`,
-    );
-  }
-  const claimsFold = plan.operations.fold !== undefined;
-  if (claimsFold !== (typeof evaluator.fold === "function")) {
-    throw new TypeError(
-      `Evaluator for entry "${plan.entryId}" fold method does not match its fold claim.`,
-    );
-  }
-  return evaluator;
 }
 
-export function assertExecutionStrategy(strategy: ExecutionStrategy): "stateless" | "factory" {
+export function assertExecutionStrategy(strategy: ExecutionStrategy): "stateless" | "stateful" {
   switch (strategy.kind) {
     case "stateless":
       return "stateless";
-    case "factory":
-      return "factory";
+    case "stateful":
+      return "stateful";
     default:
       return unreachable(strategy);
   }

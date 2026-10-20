@@ -1,22 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { PluginRegistry, type PluginDefinition } from "../../src/domain/plugins";
-import { compileTrackExecutionPlan, type EvaluatorServices } from "../../src/domain/execution-plan";
-import {
-  executeTrackOperations,
-  executeTrackOperationsBatch,
-  type LocalEvaluation,
-} from "../../src/domain/track-operations";
-import {
-  defineStatefulEvaluator,
-  type CacheSnapshot,
-  type CacheSpec,
-} from "../../src/domain/cache";
+import { compileTrackExecutionPlan } from "../../src/domain/execution-plan";
+import { executeTrackOperations } from "../../src/domain/track-operations";
+import { type CacheSnapshot, type CacheSpec } from "../../src/domain/cache";
 import {
   createAggressiveEvictingCacheProvider,
-  createBoundedCacheProvider,
   DEFAULT_CACHE_PROVIDER,
   NO_CACHE_PROVIDER,
 } from "../../src/domain/cache-providers";
+import { defineStatefulPlugin } from "../../src/domain/stateful-plugin";
 import { CompositionOutputError } from "../../src/domain/track";
 
 describe("Slice B7: Proposed evaluator state and injectable caches", () => {
@@ -33,59 +25,55 @@ describe("Slice B7: Proposed evaluator state and injectable caches", () => {
       readonly table: CacheSnapshot<TextMeasureKey, number>;
     }
 
+    interface Prepared {
+      readonly key: TextMeasureKey;
+      readonly width: number;
+      readonly state: PluginState;
+    }
+
     const keyEquals = (a: TextMeasureKey, b: TextMeasureKey): boolean =>
       a.text === b.text && Object.is(a.fontSize, b.fontSize);
 
-    const textMeasurePlugin: PluginDefinition = {
+    const textMeasurePlugin = defineStatefulPlugin<PluginState, Prepared>({
       name: "textMeasure",
       keys: ["text", "fontSize"],
       fold: {
         outputs: ["totalWidth"],
+        run: (prepared) => ({
+          delta: { totalWidth: prepared.width },
+          state: prepared.state,
+        }),
       },
-      createEvaluator: (context, services: EvaluatorServices) => {
+      init: (_ctx, services) => {
         const spec: CacheSpec<TextMeasureKey> = { equals: keyEquals, maxSlots: 10 };
-        const initialTable = services.cache.create<TextMeasureKey, number>(spec);
-
-        return defineStatefulEvaluator<
-          { key: TextMeasureKey; width: number; proposedState: PluginState },
-          PluginState
-        >({
-          initialState: { table: initialTable },
-          prepare(local, committedState) {
-            prepareCalls++;
-            const text = String(local.values.text ?? "");
-            const fontSize = Number(local.values.fontSize ?? 12);
-            const key: TextMeasureKey = { text, fontSize };
-
-            const lookup = committedState.table.lookup("measure", key);
-            if (lookup.kind === "hit") {
-              return {
-                prepared: { key, width: lookup.value, proposedState: committedState },
-                proposedState: committedState,
-              };
-            }
-
-            mathComputations++;
-            const width = text.length * fontSize * 0.6;
-            const nextTable = committedState.table.remember([
-              { slot: "measure", key, value: width },
-            ]);
-            const proposedState: PluginState = { table: nextTable };
-
-            return {
-              prepared: { key, width, proposedState },
-              proposedState,
-            };
-          },
-          fold(prepared) {
-            return {
-              delta: { totalWidth: prepared.width },
-              proposedState: prepared.proposedState,
-            };
-          },
-        });
+        return { table: services.cache.create<TextMeasureKey, number>(spec) };
       },
-    };
+      prepare: (local, state) => {
+        prepareCalls++;
+        const text = String(local.values.text ?? "");
+        const fontSize = Number(local.values.fontSize ?? 12);
+        const key: TextMeasureKey = { text, fontSize };
+
+        const lookup = state.table.lookup("measure", key);
+        if (lookup.kind === "hit") {
+          return {
+            prepared: { key, width: lookup.value, state },
+            state,
+          };
+        }
+
+        mathComputations++;
+        const width = text.length * fontSize * 0.6;
+        const nextState: PluginState = {
+          table: state.table.remember([{ slot: "measure", key, value: width }]),
+        };
+
+        return {
+          prepared: { key, width, state: nextState },
+          state: nextState,
+        };
+      },
+    });
 
     const registry = new PluginRegistry();
     registry.register(textMeasurePlugin);
@@ -120,7 +108,6 @@ describe("Slice B7: Proposed evaluator state and injectable caches", () => {
       plan,
       sampleValues: new Map([["m1", { text: "hello", fontSize: 10 }]]),
       committedStates: new Map([[compilerKey, committedState]]),
-      evaluators: pass1.evaluators,
     });
 
     expect(pass2.publishedValues).toEqual({ totalWidth: 30 });
@@ -162,55 +149,43 @@ describe("Slice B7: Proposed evaluator state and injectable caches", () => {
   });
 
   it("B7-16: Collect-only, fold-only, and both operations with stateful evaluators", () => {
-    const collectPlugin: PluginDefinition = {
+    const collectPlugin = defineStatefulPlugin<{ runs: number }, { tag: string }>({
       name: "collectStateful",
       keys: ["tag"],
-      collect: true,
-      createEvaluator: () =>
-        defineStatefulEvaluator<{ tag: string }, { runs: number }>({
-          initialState: { runs: 0 },
-          prepare(local, committedState) {
-            return {
-              prepared: { tag: String(local.values.tag ?? "") },
-              proposedState: { runs: committedState.runs + 1 },
-            };
-          },
-          collect(prepared) {
-            return { tag: prepared.tag };
-          },
-        }),
-    };
+      collect: (prepared) => ({ tag: prepared.tag }),
+      init: () => ({ runs: 0 }),
+      prepare: (local, state) => ({
+        prepared: { tag: String(local.values.tag ?? "") },
+        state: { runs: state.runs + 1 },
+      }),
+    });
 
-    const bothPlugin: PluginDefinition = {
+    const bothPlugin = defineStatefulPlugin<
+      { count: number },
+      { factor: number; state: { count: number } }
+    >({
       name: "bothStateful",
       keys: ["factor"],
-      collect: true,
-      fold: { outputs: ["accum"] },
-      createEvaluator: () =>
-        defineStatefulEvaluator<
-          { factor: number; proposedState: { count: number } },
-          { count: number }
-        >({
-          initialState: { count: 0 },
-          prepare(local, committedState) {
-            const nextState = { count: committedState.count + 1 };
-            return {
-              prepared: { factor: Number(local.values.factor ?? 1), proposedState: nextState },
-              proposedState: nextState,
-            };
-          },
-          collect(prepared) {
-            return { factor: prepared.factor };
-          },
-          fold(prepared, priorFold) {
-            const prev = (priorFold.accum as number | undefined) ?? 1;
-            return {
-              delta: { accum: prev * prepared.factor },
-              proposedState: prepared.proposedState,
-            };
-          },
-        }),
-    };
+      collect: (prepared) => ({ factor: prepared.factor }),
+      fold: {
+        outputs: ["accum"],
+        run: (prepared, priorFold) => {
+          const prev = typeof priorFold.accum === "number" ? priorFold.accum : 1;
+          return {
+            delta: { accum: prev * prepared.factor },
+            state: prepared.state,
+          };
+        },
+      },
+      init: () => ({ count: 0 }),
+      prepare: (local, state) => {
+        const nextState = { count: state.count + 1 };
+        return {
+          prepared: { factor: Number(local.values.factor ?? 1), state: nextState },
+          state: nextState,
+        };
+      },
+    });
 
     const registry = new PluginRegistry();
     registry.register(collectPlugin);
@@ -254,54 +229,52 @@ describe("Slice B7: Proposed evaluator state and injectable caches", () => {
       readonly table: CacheSnapshot<FoldKey, number>;
     }
 
+    interface Prepared {
+      readonly offset: number;
+      readonly state: FoldState;
+    }
+
     let memoizedFoldMath = 0;
-    const memoizedFoldPlugin: PluginDefinition = {
+    const memoizedFoldPlugin = defineStatefulPlugin<FoldState, Prepared>({
       name: "memoizedFold",
       keys: ["deltaVal"],
-      fold: { outputs: ["running"] },
-      createEvaluator: (context, services) => {
-        const table = services.cache.create<FoldKey, number>({
+      fold: {
+        outputs: ["running"],
+        run: (prepared, priorFold) => {
+          const precedingAccum = Number(priorFold.running ?? 0);
+          const key: FoldKey = { localOffset: prepared.offset, precedingAccum };
+
+          const lookup = prepared.state.table.lookup("foldSlot", key);
+          if (lookup.kind === "hit") {
+            return {
+              delta: { running: lookup.value },
+              state: prepared.state,
+            };
+          }
+
+          memoizedFoldMath++;
+          const computed = precedingAccum + prepared.offset;
+          return {
+            delta: { running: computed },
+            state: {
+              table: prepared.state.table.remember([{ slot: "foldSlot", key, value: computed }]),
+            },
+          };
+        },
+      },
+      init: (_ctx, services) => ({
+        table: services.cache.create<FoldKey, number>({
           equals: (a, b) =>
             Object.is(a.localOffset, b.localOffset) &&
             Object.is(a.precedingAccum, b.precedingAccum),
           maxSlots: 5,
-        });
-
-        let currentCommitted: FoldState = { table };
-
-        return {
-          prepare(local: any, committedState: FoldState) {
-            currentCommitted = committedState ?? { table };
-            return {
-              prepared: { offset: Number(local.values.deltaVal ?? 0) },
-              proposedState: currentCommitted,
-            };
-          },
-          fold(prepared: any, priorFold: any) {
-            const precedingAccum = Number(priorFold.running ?? 0);
-            const key: FoldKey = { localOffset: prepared.offset, precedingAccum };
-
-            const lookup = currentCommitted.table.lookup("foldSlot", key);
-            if (lookup.kind === "hit") {
-              return {
-                delta: { running: lookup.value },
-                proposedState: currentCommitted,
-              };
-            }
-
-            memoizedFoldMath++;
-            const computed = precedingAccum + prepared.offset;
-            const nextTable = currentCommitted.table.remember([
-              { slot: "foldSlot", key, value: computed },
-            ]);
-            return {
-              delta: { running: computed },
-              proposedState: { table: nextTable },
-            };
-          },
-        };
-      },
-    };
+        }),
+      }),
+      prepare: (local, state) => ({
+        prepared: { offset: Number(local.values.deltaVal ?? 0), state },
+        state,
+      }),
+    });
 
     const registry = new PluginRegistry();
     registry.register(memoizedFoldPlugin);
@@ -324,33 +297,31 @@ describe("Slice B7: Proposed evaluator state and injectable caches", () => {
       plan,
       sampleValues: new Map([["f1", { deltaVal: 5 }]]),
       committedStates: res1.proposedStates,
-      evaluators: res1.evaluators,
     });
     expect(res2.publishedValues.running).toBe(5);
     expect(memoizedFoldMath).toBe(1);
   });
 
   it("B7-18: Cache and table isolation across repeated entries and matching IDs", () => {
-    const tagPlugin: PluginDefinition = {
+    const tagPlugin = defineStatefulPlugin<
+      { id: string; table: CacheSnapshot<number, unknown> },
+      { val: number }
+    >({
       name: "tagPlugin",
       keys: ["val"],
-      collect: true,
-      createEvaluator: (context, services) => {
-        const table = services.cache.create({ equals: (a, b) => a === b, maxSlots: 3 });
-        return defineStatefulEvaluator<{ val: number }, { id: string; table: any }>({
-          initialState: { id: context.entryId, table },
-          prepare(local, committedState) {
-            return {
-              prepared: { val: Number(local.values.val ?? 0) },
-              proposedState: committedState,
-            };
-          },
-          collect(prepared) {
-            return { val: prepared.val };
-          },
-        });
-      },
-    };
+      collect: (prepared) => ({ val: prepared.val }),
+      init: (ctx, services) => ({
+        id: ctx.entryId,
+        table: services.cache.create<number, unknown>({
+          equals: (a, b) => a === b,
+          maxSlots: 3,
+        }),
+      }),
+      prepare: (local, state) => ({
+        prepared: { val: Number(local.values.val ?? 0) },
+        state,
+      }),
+    });
 
     const registry = new PluginRegistry();
     registry.register(tagPlugin);
@@ -381,33 +352,38 @@ describe("Slice B7: Proposed evaluator state and injectable caches", () => {
 
   it("B7-19: Transaction abort on late failure preserves committed state without accepting partial outputs", () => {
     let entry1Math = 0;
-    const statefulEntry1: PluginDefinition = {
+    const statefulEntry1 = defineStatefulPlugin<
+      { table: CacheSnapshot<unknown, number> },
+      { val: number; state: { table: CacheSnapshot<unknown, number> } }
+    >({
       name: "entry1Plugin",
       keys: ["v"],
-      fold: { outputs: ["out1"] },
-      createEvaluator: (context, services) => {
-        const table = services.cache.create({ equals: (a, b) => a === b, maxSlots: 2 });
+      fold: {
+        outputs: ["out1"],
+        run: (prepared) => ({
+          delta: { out1: prepared.val },
+          state: prepared.state,
+        }),
+      },
+      init: (_ctx, services) => ({
+        table: services.cache.create<unknown, number>({
+          equals: (a, b) => a === b,
+          maxSlots: 2,
+        }),
+      }),
+      prepare: (local, state) => {
+        entry1Math++;
+        const raw = local.values.v;
+        const doubled = Number(raw ?? 0) * 2;
+        const proposedState = {
+          table: state.table.remember([{ slot: "s", key: raw, value: doubled }]),
+        };
         return {
-          prepare(local: any, committedState: any) {
-            entry1Math++;
-            const nextTable = (committedState?.table ?? table).remember([
-              { slot: "s", key: local.values.v, value: local.values.v * 2 },
-            ]);
-            const proposedState = { table: nextTable };
-            return {
-              prepared: { val: local.values.v * 2, proposedState },
-              proposedState,
-            };
-          },
-          fold(prepared: any) {
-            return {
-              delta: { out1: prepared.val },
-              proposedState: prepared.proposedState,
-            };
-          },
+          prepared: { val: doubled, state: proposedState },
+          state: proposedState,
         };
       },
-    };
+    });
 
     const failingEntry2: PluginDefinition = {
       name: "entry2Plugin",
@@ -474,30 +450,27 @@ describe("Slice B7: Proposed evaluator state and injectable caches", () => {
   });
 
   it("B7-20: Retry from last accepted state matches cold semantics", () => {
-    const plugin: PluginDefinition = {
+    const plugin = defineStatefulPlugin<{ count: number }, { val: number }>({
       name: "retryPlugin",
       keys: ["val"],
-      fold: { outputs: ["res"] },
-      createEvaluator: () =>
-        defineStatefulEvaluator<{ val: number }, { count: number }>({
-          initialState: { count: 0 },
-          prepare(local, committedState) {
-            return {
-              prepared: { val: Number(local.values.val ?? 0) },
-              proposedState: { count: committedState.count + 1 },
-            };
-          },
-          fold(prepared, priorFold) {
-            if (prepared.val < 0) {
-              throw new CompositionOutputError("Negative val rejected.");
-            }
-            return {
-              delta: { res: prepared.val * 10 },
-              proposedState: { count: 1 },
-            };
-          },
-        }),
-    };
+      fold: {
+        outputs: ["res"],
+        run: (prepared) => {
+          if (prepared.val < 0) {
+            throw new CompositionOutputError("Negative val rejected.");
+          }
+          return {
+            delta: { res: prepared.val * 10 },
+            state: { count: 1 },
+          };
+        },
+      },
+      init: () => ({ count: 0 }),
+      prepare: (local, state) => ({
+        prepared: { val: Number(local.values.val ?? 0) },
+        state: { count: state.count + 1 },
+      }),
+    });
 
     const registry = new PluginRegistry();
     registry.register(plugin);
@@ -529,26 +502,21 @@ describe("Slice B7: Proposed evaluator state and injectable caches", () => {
     expect(success.publishedValues.res).toBe(50);
   });
 
-  it("B7-21: Disposal of active evaluators on retirement", () => {
-    let disposed = false;
-    const disposablePlugin: PluginDefinition = {
+  it("B7-21: dispose receives the entry state", () => {
+    let disposedState: unknown;
+    const disposablePlugin = defineStatefulPlugin<{ tag: string }, { x: number }>({
       name: "disposablePlugin",
       keys: ["x"],
-      collect: true,
-      createEvaluator: () =>
-        defineStatefulEvaluator<{ x: number }, {}>({
-          initialState: {},
-          prepare(local) {
-            return { prepared: { x: Number(local.values.x ?? 0) }, proposedState: {} };
-          },
-          collect(prepared) {
-            return { x: prepared.x };
-          },
-          dispose() {
-            disposed = true;
-          },
-        }),
-    };
+      collect: (prepared) => ({ x: prepared.x }),
+      init: () => ({ tag: "entry" }),
+      prepare: (local, state) => ({
+        prepared: { x: Number(local.values.x ?? 0) },
+        state,
+      }),
+      dispose: (state) => {
+        disposedState = state;
+      },
+    });
 
     const registry = new PluginRegistry();
     registry.register(disposablePlugin);
@@ -564,55 +532,54 @@ describe("Slice B7: Proposed evaluator state and injectable caches", () => {
     });
 
     const compilerKey = plan.entries[0]!.compilerKey;
-    const evaluator = res.evaluators.get(compilerKey);
-    expect(evaluator).toBeDefined();
-
-    evaluator?.dispose?.();
-    expect(disposed).toBe(true);
+    const state = res.proposedStates.get(compilerKey);
+    disposablePlugin.dispose!(state);
+    expect(disposedState).toBe(state);
   });
 
   it("B7-22: LSP - default, no-cache, and evicting providers produce identical output semantics", () => {
     let computeCount = 0;
-    const plugin: PluginDefinition = {
+
+    interface LspState {
+      readonly table: CacheSnapshot<string, number>;
+    }
+
+    interface LspPrepared {
+      readonly sum: number;
+      readonly state: LspState;
+    }
+
+    const plugin = defineStatefulPlugin<LspState, LspPrepared>({
       name: "lspPlugin",
       keys: ["x", "y"],
-      fold: { outputs: ["sum"] },
-      createEvaluator: (context, services) => {
+      fold: {
+        outputs: ["sum"],
+        run: (prepared) => ({ delta: { sum: prepared.sum } }),
+      },
+      init: (_ctx, services) => {
         const spec: CacheSpec<string> = { equals: (a, b) => a === b, maxSlots: 5 };
-        const table = services.cache.create<string, number>(spec);
+        return { table: services.cache.create<string, number>(spec) };
+      },
+      prepare: (local, state) => {
+        const x = Number(local.values.x ?? 0);
+        const y = Number(local.values.y ?? 0);
+        const key = `${x}:${y}`;
 
+        const lookup = state.table.lookup("sumSlot", key);
+        if (lookup.kind === "hit") {
+          return { prepared: { sum: lookup.value, state }, state };
+        }
+
+        computeCount++;
+        const sum = x + y;
         return {
-          prepare(local: any, committedState: any) {
-            const currentTable = committedState?.table ?? table;
-            const x = Number(local.values.x ?? 0);
-            const y = Number(local.values.y ?? 0);
-            const key = `${x}:${y}`;
-
-            const lookup = currentTable.lookup("sumSlot", key);
-            if (lookup.kind === "hit") {
-              return {
-                prepared: lookup.value,
-                proposedState: { table: currentTable },
-              };
-            }
-
-            computeCount++;
-            const sum = x + y;
-            const nextTable = currentTable.remember([{ slot: "sumSlot", key, value: sum }]);
-            return {
-              prepared: sum,
-              proposedState: { table: nextTable },
-            };
-          },
-          fold(prepared: any) {
-            return {
-              delta: { sum: prepared },
-              proposedState: { table: null },
-            };
+          prepared: { sum, state },
+          state: {
+            table: state.table.remember([{ slot: "sumSlot", key, value: sum }]),
           },
         };
       },
-    };
+    });
 
     const registry = new PluginRegistry();
     registry.register(plugin);
@@ -655,20 +622,140 @@ describe("Slice B7: Proposed evaluator state and injectable caches", () => {
     expect(computeCount).toBe(1);
   });
 
-  it("B7-23: defineStatefulEvaluator validates spec at creation", () => {
-    expect(() => defineStatefulEvaluator(null as any)).toThrow(TypeError);
-    expect(() => defineStatefulEvaluator({} as any)).toThrow(TypeError);
+  it("B7-23: admission validates init, prepare, dispose, collect and fold.run shapes", () => {
+    const register = (plugin: unknown) =>
+      new PluginRegistry().register(plugin as unknown as PluginDefinition);
+
+    expect(() => register({ name: "badInit", collect: () => ({}), init: 123 })).toThrow(
+      /init must be a function/,
+    );
     expect(() =>
-      defineStatefulEvaluator({
-        prepare: () => ({ prepared: null, proposedState: null }),
-        collect: 123 as any,
-      }),
-    ).toThrow(TypeError);
+      register({ name: "initWithoutPrepare", collect: () => ({}), init: () => ({}) }),
+    ).toThrow(/with init must declare prepare/);
     expect(() =>
-      defineStatefulEvaluator({
-        prepare: () => ({ prepared: null, proposedState: null }),
-        fold: "invalid" as any,
+      register({ name: "badPrepare", collect: () => ({}), init: () => ({}), prepare: 123 }),
+    ).toThrow(/with init must declare prepare/);
+    expect(() =>
+      register({ name: "prepareOnly", collect: () => ({}), prepare: () => ({}) }),
+    ).toThrow(/declares prepare or dispose without init/);
+    expect(() =>
+      register({ name: "disposeOnly", collect: () => ({}), dispose: () => undefined }),
+    ).toThrow(/declares prepare or dispose without init/);
+    expect(() => register({ name: "badCollect", collect: 123 })).toThrow(
+      /collect must be a function/,
+    );
+    expect(() => register({ name: "badFoldRun", fold: { outputs: ["x"], run: 123 } })).toThrow(
+      /fold run must be a function/,
+    );
+  });
+
+  it("B7-24: init returning undefined throws TypeError", () => {
+    const plugin = defineStatefulPlugin<undefined, unknown>({
+      name: "undefinedInit",
+      collect: () => ({}),
+      init: () => undefined,
+      prepare: () => ({ prepared: null, state: undefined }),
+    });
+
+    const registry = new PluginRegistry();
+    registry.register(plugin);
+
+    const plan = compileTrackExecutionPlan({
+      keyframes: [{ u1: { plugin: "undefinedInit", values: {} } }],
+      registry,
+    });
+
+    expect(() => executeTrackOperations({ plan, sampleValues: new Map() })).toThrow(
+      'Plugin "undefinedInit" init must return a defined state.',
+    );
+  });
+
+  it("B7-25: fold result with no state keeps prepare's state, with state overrides it", () => {
+    const keepPlugin = defineStatefulPlugin<{ tag: string }, { value: number }>({
+      name: "keepState",
+      keys: ["v"],
+      fold: {
+        outputs: ["keepOut"],
+        run: (prepared) => ({ delta: { keepOut: prepared.value } }),
+      },
+      init: () => ({ tag: "init" }),
+      prepare: (_local, _state) => ({
+        prepared: { value: 1 },
+        state: { tag: "prepared" },
       }),
-    ).toThrow(TypeError);
+    });
+
+    const overridePlugin = defineStatefulPlugin<{ tag: string }, { value: number }>({
+      name: "overrideState",
+      keys: ["v"],
+      fold: {
+        outputs: ["overrideOut"],
+        run: (prepared) => ({
+          delta: { overrideOut: prepared.value },
+          state: { tag: "fold" },
+        }),
+      },
+      init: () => ({ tag: "init" }),
+      prepare: (_local, _state) => ({
+        prepared: { value: 2 },
+        state: { tag: "prepared" },
+      }),
+    });
+
+    const registry = new PluginRegistry();
+    registry.registerAll([keepPlugin, overridePlugin]);
+
+    const plan = compileTrackExecutionPlan({
+      keyframes: [
+        { k: { plugin: "keepState", values: {} } },
+        { o: { plugin: "overrideState", values: {} } },
+      ],
+      registry,
+    });
+
+    const result = executeTrackOperations({ plan, sampleValues: new Map() });
+
+    const keepKey = plan.entries[0]!.compilerKey;
+    const overrideKey = plan.entries[1]!.compilerKey;
+    expect(result.proposedStates.get(keepKey)).toEqual({ tag: "prepared" });
+    expect(result.proposedStates.get(overrideKey)).toEqual({ tag: "fold" });
+  });
+
+  it("B7-26: committed state avoids a second init call", () => {
+    let initCalls = 0;
+    const plugin = defineStatefulPlugin<{ count: number }, { value: number }>({
+      name: "initCounter",
+      keys: ["v"],
+      collect: (prepared) => ({ value: prepared.value }),
+      init: () => {
+        initCalls++;
+        return { count: 0 };
+      },
+      prepare: (local, state) => ({
+        prepared: { value: Number(local.values.v ?? 0) },
+        state: { count: state.count + 1 },
+      }),
+    });
+
+    const registry = new PluginRegistry();
+    registry.register(plugin);
+
+    const plan = compileTrackExecutionPlan({
+      keyframes: [{ c1: { plugin: "initCounter", values: { v: 1 } } }],
+      registry,
+    });
+
+    const first = executeTrackOperations({
+      plan,
+      sampleValues: new Map([["c1", { v: 1 }]]),
+    });
+    expect(initCalls).toBe(1);
+
+    executeTrackOperations({
+      plan,
+      sampleValues: new Map([["c1", { v: 1 }]]),
+      committedStates: first.proposedStates,
+    });
+    expect(initCalls).toBe(1);
   });
 });
