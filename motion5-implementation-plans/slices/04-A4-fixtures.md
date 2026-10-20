@@ -1,6 +1,8 @@
 # A4 — Author canonical fixtures and oracle strategy
 
-Status: not implemented. Depends on: A1, A2, A3.
+Status: implemented on branch `feat/plugin-structural-api`. Depends on: A1, A2, A3.
+
+Evidence: `packages/core/test/fixtures/skeldata-fixtures.ts`, `packages/core/test/contract/fixtures-oracle.test.ts`.
 
 ## Start here
 

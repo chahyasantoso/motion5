@@ -43,7 +43,7 @@ produced layouts, and a `root` requirement for a `frame` capability no plugin pr
 
 - One collect array per track; C5 reads it through the source capability.
 - Join (C3) reuses `readRootPolicy` and adds `joined` to `CapabilityMap`.
-- `42-cache-contract.md` section 4 is updated by the architect; `dispose` is not yet wired.
+- `cache-contract.md` section 4 is updated by the architect; `dispose` is not yet wired.
 
 ## Evidence
 

@@ -1,6 +1,8 @@
 # B1 — Replace the authoring schema and admit operations
 
-Status: not implemented. Depends on: A1, A2, A6.
+Status: implemented on branch `feat/plugin-structural-api`. Depends on: A1, A2, A6.
+
+Evidence: `packages/core/src/domain/plugin-admission.ts`, `packages/core/test/contract/authoring-schema-b1.test.ts`.
 
 ## Start here
 

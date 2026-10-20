@@ -42,7 +42,7 @@ this brief and the decisions doc disagree, this brief wins for items F1–F5 onl
 - Do not touch `ports/plugin-capabilities.ts`, `CompiledEntryPlan.capabilities`,
   `registry.capabilityOf`.
 - Do not edit plan-pack files other than `motion5-plugin-api-decisions.md` (Section 6). In particular
-  do NOT edit `42-cache-contract.md`; the architect updates it. Record it as a follow-up.
+  do NOT edit `cache-contract.md`; the architect updates it. Record it as a follow-up.
 - Keep every existing diagnostic rule id and message, unless this brief gives a new one.
 - Comments only when a name cannot carry the meaning, max 250 characters each.
 - Prettier: printWidth 100, double quotes, trailing commas. Run `npm run format`, but if it changes
@@ -584,7 +584,7 @@ produced layouts, and a `root` requirement for a `frame` capability no plugin pr
 
 - One collect array per track; C5 reads it through the source capability.
 - Join (C3) reuses `readRootPolicy` and adds `joined` to `CapabilityMap`.
-- `42-cache-contract.md` section 4 is updated by the architect; `dispose` is not yet wired.
+- `cache-contract.md` section 4 is updated by the architect; `dispose` is not yet wired.
 
 ## Evidence
 
@@ -621,7 +621,7 @@ Commit (together with Section 6): `docs: ADR-142 numbering matches decisions doc
      capability". The architect edits the plan pack; you only record this bullet.
    - `join` capability `joined` and chain-or-joined slot union: C3/C4.
    - `plugin-capabilities.test.ts` ADR-136 parts stay until C6.
-   - `42-cache-contract.md` section 4 and any D4/D5 plan text still describe the evaluator factory and
+   - `cache-contract.md` section 4 and any D4/D5 plan text still describe the evaluator factory and
      claims; the architect updates them to `init`/`prepare`.
    - `dispose(state)` and `committedStates` are exercised only by tests; wire them into the runtime
      transaction when that slice lands.
