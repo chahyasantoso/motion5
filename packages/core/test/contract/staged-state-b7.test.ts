@@ -115,7 +115,7 @@ describe("Slice B7: Proposed evaluator state and injectable caches", () => {
     expect(mathComputations).toBe(1);
   });
 
-  it("B7-15: Stateless definitions remain pure and simple alongside stateful evaluators", () => {
+  it("B7-15: Stateless definitions remain pure and simple alongside stateful plugins", () => {
     let statelessCalls = 0;
     const statelessPlugin: PluginDefinition = {
       name: "statelessCounter",
@@ -148,7 +148,7 @@ describe("Slice B7: Proposed evaluator state and injectable caches", () => {
     expect(result.proposedStates.size).toBe(0);
   });
 
-  it("B7-16: Collect-only, fold-only, and both operations with stateful evaluators", () => {
+  it("B7-16: Collect-only, fold-only, and both operations with stateful plugins", () => {
     const collectPlugin = defineStatefulPlugin<{ runs: number }, { tag: string }>({
       name: "collectStateful",
       keys: ["tag"],
