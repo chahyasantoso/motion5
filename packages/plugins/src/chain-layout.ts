@@ -11,9 +11,7 @@ import {
   asPointMemberId,
   createSafeRecord,
   derived,
-  diagnostic,
   none,
-  refused,
 } from "@motion5/core/plugin-api";
 import { readRootPolicy, rootPolicyToken, type RootPolicy } from "./root-policy";
 
@@ -46,29 +44,13 @@ declare module "@motion5/core/plugin-api" {
 export function deriveChainLayout(inventory: DerivationTrackInventory): DeriveResult {
   const trackId = inventory.trackId ?? "track";
   if (inventory.entries.length === 0) return none;
-
   for (const entry of inventory.entries) {
-    if (entry.plugin !== "point" && entry.plugin !== "root") {
-      return none;
-    }
+    if (entry.plugin !== "point" && entry.plugin !== "root") return none;
   }
-
   const root = readRootPolicy(inventory);
-  if (root.status === "refused") return refused(root.diagnostics);
-
+  if (root.status === "refused") return none; // root reports duplicate roots, so chain layout stays silent here.
   const pointEntries = inventory.entries.filter((e) => e.plugin === "point");
-  if (pointEntries.length === 0) {
-    const rootEntry = inventory.entries.find((e) => e.plugin === "root");
-    const entryId = rootEntry?.entryId ?? "root";
-    return refused([
-      diagnostic(
-        "derivation-failure",
-        `${trackId}.${entryId}`,
-        `Root-only track "${trackId}" is invalid: chain source requires at least one point entry.`,
-        [trackId, entryId],
-      ),
-    ]);
-  }
+  if (pointEntries.length === 0) return none;
 
   const orderedPointIds: PointMemberId[] = [];
   const pointIndexById = createSafeRecord<number>();

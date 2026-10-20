@@ -9,6 +9,7 @@ import {
   type DerivationEntryInventoryItem,
   type DerivationTrackInventory,
   type DerivationBinding,
+  type DeriveContext,
   type DeriveResult,
 } from "@motion5/core/plugin-api";
 import { deriveChainLayout, type ChainPayload } from "../../src/chain-layout";
@@ -159,7 +160,15 @@ describe("Slice C2: Chain Layout and Root Policy Derivation", () => {
       { entryId: "p0", plugin: "point" },
       { entryId: "r2", plugin: "root" },
     ]);
-    const result = deriveChainLayout(inventory);
+    const context: DeriveContext = {
+      trackId: inventory.trackId ?? "track",
+      entries: inventory.entries,
+      inventory,
+      read: () => {
+        throw new Error("unexpected read");
+      },
+    };
+    const result = rootPlugin.derive!(context);
 
     expect(result.status).toBe("refused");
     if (result.status === "refused") {
@@ -168,15 +177,18 @@ describe("Slice C2: Chain Layout and Root Policy Derivation", () => {
     }
   });
 
-  it("fails derivation for root-only tracks without points", () => {
+  it("returns none for root-only tracks without points", () => {
     const inventory = makeInventory("track", [{ entryId: "r0", plugin: "root" }]);
-    const result = deriveChainLayout(inventory);
+    expect(deriveChainLayout(inventory)).toEqual(none);
+  });
 
-    expect(result.status).toBe("refused");
-    if (result.status === "refused") {
-      expect(result.diagnostics[0]?.ruleId).toBe("derivation-failure");
-      expect(result.diagnostics[0]?.message).toMatch(/Root-only track/);
-    }
+  it("returns none when two roots plus one point are present", () => {
+    const inventory = makeInventory("track", [
+      { entryId: "r1", plugin: "root" },
+      { entryId: "p0", plugin: "point" },
+      { entryId: "r2", plugin: "root" },
+    ]);
+    expect(deriveChainLayout(inventory)).toEqual(none);
   });
 
   it("returns none for empty inventory or generic mixed tracks", () => {
