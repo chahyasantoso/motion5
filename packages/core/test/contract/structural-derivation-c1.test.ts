@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { PluginRegistry, type PluginDefinition } from "../../src/domain/plugins";
 import { deriveStructuralDescriptors } from "../../src/domain/structural-derivation";
-import type { DeriveResult } from "../../src/contract/derivation";
+import { derived, none, refused, type DeriveResult } from "../../src/contract/derivation";
 import { ProjectRuntime } from "../../src/runtime/project-runtime";
 import { createManualClock } from "../../src/ports/clock";
 import { IncrementalGraphBuilder } from "../../src/graph/builders/incremental";
@@ -22,11 +22,7 @@ describe("Slice C1: Generic structural derivation", () => {
     collect: (entry) => ({ ...(entry as Record<string, unknown>) }),
     derive: (context): DeriveResult => {
       const width = context.entries.length * 100;
-      return {
-        status: "derived",
-        capability: "box",
-        payload: { width, height: 50 },
-      };
+      return derived("box", { width, height: 50 });
     },
   };
 
@@ -38,13 +34,12 @@ describe("Slice C1: Generic structural derivation", () => {
     collect: (entry) => ({ ...(entry as Record<string, unknown>) }),
     derive: (context): DeriveResult => {
       const binding = context.entries.flatMap((e) => e.bindings).find((b) => b.slot === "source");
-      if (binding === undefined) return { status: "none" };
+      if (binding === undefined) return none;
       const desc = context.read("box", binding.qualifiedSource);
-      return {
-        status: "derived",
-        capability: "consumer-view",
-        payload: { consumedFrom: binding.qualifiedSource, sourcePayload: desc },
-      };
+      return derived("consumer-view", {
+        consumedFrom: binding.qualifiedSource,
+        sourcePayload: desc,
+      });
     },
   };
 
@@ -130,7 +125,7 @@ describe("Slice C1: Generic structural derivation", () => {
         expect(context.inventory.entriesById.has("item1")).toBe(true);
         expect(context.entries).toHaveLength(1);
         expect(context.entries[0]!.valueKeys).toEqual(["alpha", "beta"]);
-        return { status: "none" };
+        return none;
       },
     };
 
@@ -161,7 +156,7 @@ describe("Slice C1: Generic structural derivation", () => {
     const noCapPlugin: PluginDefinition = {
       name: "empty-source",
       collect: () => ({}),
-      derive: () => ({ status: "none" }),
+      derive: () => none,
     };
 
     const registry = new PluginRegistry();
@@ -194,20 +189,12 @@ describe("Slice C1: Generic structural derivation", () => {
     const boxPlugin1: PluginDefinition = {
       name: "box-1",
       collect: () => ({}),
-      derive: () => ({
-        status: "derived",
-        capability: "box",
-        payload: { width: 10, height: 20 },
-      }),
+      derive: () => derived("box", { width: 10, height: 20 }),
     };
     const boxPlugin2: PluginDefinition = {
       name: "box-2",
       collect: () => ({}),
-      derive: () => ({
-        status: "derived",
-        capability: "box",
-        payload: { width: 30, height: 40 },
-      }),
+      derive: () => derived("box", { width: 30, height: 40 }),
     };
 
     const registry = new PluginRegistry();
@@ -236,7 +223,7 @@ describe("Slice C1: Generic structural derivation", () => {
       collect: () => ({}),
       derive: (context) => {
         context.read("box", "secretTrack");
-        return { status: "none" };
+        return none;
       },
     };
 
@@ -290,7 +277,7 @@ describe("Slice C1: Generic structural derivation", () => {
       validate: () => [errorDiag],
       derive: () => {
         deriveCalled = true;
-        return { status: "none" };
+        return none;
       },
     };
     const registry = new PluginRegistry();
@@ -313,7 +300,7 @@ describe("Slice C1: Generic structural derivation", () => {
     const refusingPlugin: PluginDefinition = {
       name: "refuser",
       collect: () => ({}),
-      derive: () => ({ status: "refused", diagnostics: [d] }),
+      derive: () => refused([d]),
     };
     const registry = new PluginRegistry();
     registry.register(refusingPlugin);
@@ -332,7 +319,7 @@ describe("Slice C1: Generic structural derivation", () => {
     const nonePlugin: PluginDefinition = {
       name: "nonePlugin",
       collect: () => ({}),
-      derive: () => ({ status: "none" }),
+      derive: () => none,
     };
     const registry = new PluginRegistry();
     registry.register(nonePlugin);
@@ -402,7 +389,7 @@ describe("Slice C1: Generic structural derivation", () => {
       collect: () => ({}),
       derive: () => {
         hookExecuted = true;
-        return { status: "none" };
+        return none;
       },
     };
 
@@ -426,11 +413,7 @@ describe("Slice C1: Generic structural derivation", () => {
       collect: (e) => ({ ...(e as Record<string, unknown>) }),
       derive: () => {
         derivationRuns++;
-        return {
-          status: "derived",
-          capability: "box",
-          payload: { width: 100, height: 50, count: derivationRuns },
-        };
+        return derived("box", { width: 100, height: 50, count: derivationRuns });
       },
     };
 

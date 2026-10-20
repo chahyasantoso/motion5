@@ -61,6 +61,20 @@ export interface DeriveContextOf<M> extends RequirementContextOf<M> {
 }
 
 export type DeriveResult = DeriveResultOf<CapabilityMap>;
+
+export function derived<K extends keyof CapabilityMap>(
+  capability: K,
+  payload: CapabilityMap[K],
+): DeriveResult {
+  // Generic key to mapped union cannot distribute without cast.
+  return Object.freeze({ status: "derived", capability, payload }) as DeriveResult;
+}
+
+export function refused(diagnostics: readonly [Diagnostic, ...Diagnostic[]]): DeriveResult {
+  return Object.freeze({ status: "refused", diagnostics });
+}
+
+export const none: DeriveResult = Object.freeze({ status: "none" });
 export type RequirementContext = RequirementContextOf<CapabilityMap>;
 export type DeriveContext = DeriveContextOf<CapabilityMap>;
 export type ErasedDeriveResult = DeriveResultOf<Record<string, unknown>>;

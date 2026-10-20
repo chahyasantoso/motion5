@@ -5,6 +5,7 @@ import {
   asAuthoredEntryId,
   asPluginName,
   encodeBindingTuple,
+  none,
   type DerivationEntryInventoryItem,
   type DerivationTrackInventory,
   type DerivationBinding,
@@ -180,13 +181,13 @@ describe("Slice C2: Chain Layout and Root Policy Derivation", () => {
 
   it("returns none for empty inventory or generic mixed tracks", () => {
     const emptyInv = makeInventory("empty", []);
-    expect(deriveChainLayout(emptyInv)).toEqual({ status: "none" });
+    expect(deriveChainLayout(emptyInv)).toEqual(none);
 
     const mixedInv = makeInventory("mixed", [
       { entryId: "p0", plugin: "point" },
       { entryId: "t0", plugin: "transform" },
     ]);
-    expect(deriveChainLayout(mixedInv)).toEqual({ status: "none" });
+    expect(deriveChainLayout(mixedInv)).toEqual(none);
   });
 
   it("safely handles permitted special IDs without prototype collisions", () => {

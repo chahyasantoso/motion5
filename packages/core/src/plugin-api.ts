@@ -30,6 +30,7 @@ export type {
   DeriveResult,
   RequirementContext,
 } from "./contract/derivation";
+export { derived, none, refused } from "./contract/derivation";
 export { diagnostic } from "./contract/diagnostics";
 export type { Diagnostic } from "./contract/v5";
 export type {
