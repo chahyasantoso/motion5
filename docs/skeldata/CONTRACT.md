@@ -197,7 +197,7 @@ in strict sequence:
 
 - **T-INV-07: Leaf goal requirement for IK**
   - Invariant: IK requires at least one non-root solve point, and exactly one goal per non-root leaf.
-    Root-only IK refuses. Root-only FK is valid (composes root tip).
+    A root-only track has no skeleton capability, so IK and FK bound to it refuse.
   - Earliest stage: Derivation.
   - Owner: IK solver adapter validator.
   - Refusal rule: IK with no non-root points, missing goals, or goals on non-leaves refuses at derivation.
@@ -338,20 +338,19 @@ export interface EvaluatorServices {
 
 ## 4. Evaluator protocol and execution owners
 
-A plugin definition declares either stateless callbacks or a factory, never both:
+A plugin definition declares either stateless callbacks or a stateful definition, never both:
 
 - **Stateless definition**: declares `collect` run callback and/or `fold` run callback. Pure,
   immutable, stateless.
-- **Factory-backed definition**: declares `createEvaluator(context, services)` returning an evaluator
-  instance with lifecycle hooks:
-  1. `prepare(localEvaluation, committedState)`: produces immutable prepared data and state proposal.
-  2. `collect(preparedData)` (if declared): returns single collection item.
-  3. `fold(preparedData, foldState)` (if declared): returns top-level delta and final state proposal.
-  4. Core validates candidate and atomically commits opaque state with outputs upon transaction success.
+- **Stateful definition**: declares `init(context, services)` for initial state and
+  `prepare(localEvaluation, state, services)`, which returns immutable prepared data and a state
+  proposal. Optional `collect(prepared)` returns the single item. Optional
+  `fold.run(prepared, priorFold)` returns `{ delta, state? }`; an absent state keeps `prepare`'s
+  proposal. Core validates the candidate and commits opaque state with outputs atomically.
 
 Execution owner assignments:
 
-- `B7`: generic evaluator factory seams, provider implementation, and conformance suite.
+- `B7`: stateful definition seams (`init`/`prepare`), provider implementation, and conformance suite.
 - `D4`: IK whole-solve memoization consumer.
 - `D5`: FK per-point memoization consumer.
 - `D6`: shared dual-cache lifecycle and failure injection proof.
@@ -362,8 +361,8 @@ Execution owner assignments:
 
 - Valid one-point FK: Track with one `point` entry and optional `root`. FK composes root frame plus
   authored point coordinates to produce single tip frame pose.
-- Minimal invalid root-only IK: Track with only `root` and `ik` entry. Refused at derivation because IK
-  requires non-root solve points and leaf goals (`ik-solver-no-solve-members`).
+- Minimal invalid root-only IK: Track with only `root` and `ik` entry. Refused at derivation because
+  the root-only track has no `chain` capability (`ik-solver-no-solve-members`).
 
 ### Case 2: Omitted root vs Rooted chain import
 

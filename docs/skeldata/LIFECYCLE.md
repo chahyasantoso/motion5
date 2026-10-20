@@ -21,8 +21,8 @@ Every mutation—whether a structural recipe via `SchemaTransaction` or a live v
    and layout provenance tokens. Lookalike arrays lacking required capabilities are refused.
 
 4. **Preparation and Evaluation:**
-   Execute plugin evaluators via immutable `EvaluatorServices`:
-   - `prepare(localEvaluation, committedState)` runs once, returning immutable prepared data and a proposed state.
+   Execute plugin operations; stateful plugins receive immutable `EvaluatorServices` in `init` and `prepare`:
+   - `prepare(localEvaluation, state)` runs once, returning immutable prepared data and a proposed state.
    - If declared, `collect` runs once from prepared data and returns its single item.
    - If declared, `fold` runs once from the same prepared data plus preceding fold state, returning a delta and final state proposal.
    - Evaluator cache writes return newly branched `CacheSnapshot` instances passed through proposed state.

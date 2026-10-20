@@ -10,9 +10,8 @@ byte ceiling.
 
 ## Now
 
-- **Plugin structural API landed** across `packages/core` and `packages/plugins`, implementing
-  unified collect array output, tagged `DeriveResult`, `validate` hook, typed `CapabilityMap`
-  augmentation, root policy helper, and ADR-142.
+- **Plugin structural API follow-up landed:** root rules restored to `root`, derive result
+  constructors, ADR-142 corrected.
 
 ## Next in line
 

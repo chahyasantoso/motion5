@@ -25,89 +25,26 @@
 
 ### Decision
 
+`collect` has no label. Records go to the reserved output `COLLECT_OUTPUT = "collect"`, and a fold output may not use that name. `collect` and `fold` are always functions on the definition. A plugin is stateful when it declares `init` (initial state) and `prepare` (shared work, returns the next state). State is staged and committed atomically exactly as before.
+
 ```ts
-// core/src/contract/collect.ts
-export const COLLECT_OUTPUT = "collect";
-
-/** One renderer-neutral record. Core stamps `id`; a producer may not. */
-export type CollectRecord = Readonly<Record<string, unknown>> & { readonly id?: never };
-export type CollectRun = (entry: LocalEvaluation, ctx: LocalEvaluationContext) => CollectRecord;
-
-// core/src/domain/plugins.ts
-export interface FoldClaim {
-  readonly outputs: readonly string[];
-}
-export interface StatelessFold extends FoldClaim {
-  readonly run: (
+export interface StatefulPluginDefinition<S = unknown, P = unknown> extends PluginDefinitionBase {
+  readonly init: (ctx: EvaluatorContext, services: EvaluatorServices) => S;
+  readonly prepare: (
     entry: LocalEvaluation,
-    state: Readonly<Record<string, unknown>>,
-    ctx: LocalEvaluationContext,
-  ) => Record<string, unknown>;
+    state: S,
+    services: EvaluatorServices,
+  ) => { readonly prepared: P; readonly state: S };
+  readonly dispose?: (state: S) => void;
+  readonly collect?: (prepared: P, ctx: LocalEvaluationContext) => CollectRecord;
+  readonly fold?: StatefulFold<P, S>;
 }
-
-interface PluginDefinitionBase {
-  readonly name: string;
-  readonly keys?: readonly string[];
-  readonly claimsKey?: PluginKeyClaim;
-  readonly requirements?: Readonly<Record<string, PluginRequirement>>;
-  readonly internalKeys?: readonly string[];
-  readonly outputSerializers?: Readonly<Record<string, OutputSerializer>>;
-  readonly contribute?: PluginContributor;
-  readonly derive?: (ctx: DeriveContext) => DeriveResult; // D2
-  readonly validate?: (ctx: RequirementContext) => readonly Diagnostic[]; // D3
-  // …other retained fields unchanged
-}
-
-/** Callbacks run the operations. */
-export interface StatelessPluginDefinition extends PluginDefinitionBase {
-  readonly createEvaluator?: never;
-  readonly collect?: CollectRun;
-  readonly fold?: StatelessFold;
-}
-
-/** The factory is the only execution owner; operations are claims. */
-export interface StatefulPluginDefinition extends PluginDefinitionBase {
-  readonly createEvaluator: EvaluatorFactory;
-  readonly collect?: true;
-  readonly fold?: FoldClaim;
-}
-
-export type PluginDefinition = StatelessPluginDefinition | StatefulPluginDefinition;
 ```
 
-Compiled shapes follow the same rule:
-
-```ts
-export interface CompiledEntryOperations {
-  readonly collect?: true; // was { output: string }
-  readonly fold?: CompiledFoldOperation;
-}
-// TrackExecutionPlan: `collectOutputs: string[]` → `collects: boolean`
-// DerivationEntryInventoryItem: `collect?: { output }` → `collect?: true`
-```
-
-### Rules
-
-1. Admission checks:
-
-- A definition declares `collect`, `fold`, or both, never neither (unchanged).
-- A stateless `collect` must be a function. A stateful `collect` must be `true`.
-- A fold output named `COLLECT_OUTPUT` is refused. This replaces the old "collect/fold overlap" check, because only one collect name can exist.
-
-2. `compileTrackExecutionPlan` publishes `COLLECT_OUTPUT` if any entry collects. Every collector on the track appends to that one buffer in participating-entry order. Core stamps `id = entryId` and refuses any producer `id` (type-level `id?: never` plus the existing runtime check).
-3. Factory path: when an evaluator is created, `typeof evaluator.collect === "function"` must equal `plan.operations.collect === true`. A mismatch refuses before acceptance, at the same place fold presence is already checked.
-4. The execution strategy stays the existing `ExecutionStrategy` union (`stateless | factory`). Everything downstream already switches on `kind`.
-
-### Reasons
-
-- **Simple:** one name, so collect has no output configuration, no per-name buffers, and no collect/fold name-collision matrix. `track-operations.ts` loses its `for (const output of plan.collectOutputs)` loops.
-- **Correct:** the old factory path claimed collect with `{ output }` and no `run`. A bare function cannot express "collects, but the evaluator runs it". The definition union keeps that claim and makes the invalid combinations unrepresentable **\[verified\]**:
-  - a function `collect` alongside `createEvaluator`;
-  - `collect: true` without `createEvaluator`;
-  - a record that returns `id`.
-- **Narrowing:** `if (plugin.createEvaluator !== undefined)` narrows the union **\[verified\]**, so no extra mode tag is needed. The plan forbids a collect/fold/both mode tag; this is an execution-owner variant, which the plan allows.
-- **Convention:** `collect?: true` rather than `boolean` follows the repo's existing convention (`PluginRequirement.dict?: true`, ADR-057), where `false` would be a second spelling of absent.
-- **Consequence (accepted):** a mixed point+join track publishes one heterogeneous `collect` array. That is safe: its `derive` returns `none`, so nothing reads it as a skeleton. C5 stops guessing from container names (`points` vs `links`) and interprets `collect` through the source's capability descriptor, which is how it should work.
+- Admission owns the shape checks: `init` requires `prepare`; `prepare` or `dispose` without `init` is refused; `collect` and `fold.run` must be functions; `createEvaluator` is refused.
+- Core derives one `ExecutionStrategy` union with kinds `stateless` and `stateful`, read exhaustively with `unreachable`.
+- `init` runs once per entry instance when no committed state exists; `prepare`, `collect` and `fold.run` run at most once per evaluation.
+- The earlier factory-claims text (`createEvaluator`, `collect: true`) is superseded.
 
 ---
 
@@ -167,6 +104,7 @@ function settle(result: ErasedDeriveResult, track: TrackSettlement): void {
 3. **`refused` always refuses the candidate.** The status decides, not diagnostic severity. Downstream plugins then report `derivation-missing-capability` for their bindings to that source.
 4. **No warnings on success** (`derived` has no diagnostics). Nothing needs it today, and it can be added later as an optional field without breaking anything.
 5. The internal store becomes `Map<source, ReadonlyMap<CapabilityName, unknown>>`. `StructuralDescriptor` either stays core-internal (if `TrackExecutionPlan.descriptors` still needs it) or is removed. It is not exported from `plugin-api.ts`.
+6. Plugins build results with the constructors `derived`, `refused` and `none`; a refused track makes downstream bindings report `derivation-missing-capability` (accepted).
 
 ### Reasons
 
@@ -319,23 +257,23 @@ export interface PluginRequirement {
 - **Decision:** `root.requirements = { frame: {} }`. The frame is validated at runtime by `readFrame` and the C5 reader.
 - **Reason:** `frame` is a value, not structure, and nothing derives it. The current declaration should make every `root → transform` binding refuse during load-time derivation (found by reading the code, not by running it). With `capability: CapabilityName`, this can no longer type-check, which is the correct outcome.
 
-## D8 — Root composition belongs to the layout owner
+## D8 — Root rules stay with `root`
 
 ```ts
 // packages/plugins/src/root-policy.ts
 export type RootPolicyResult =
-  | { readonly status: "ok"; readonly policy: ChainRootPolicy }
+  | { readonly status: "ok"; readonly policy: RootPolicy }
   | { readonly status: "refused"; readonly diagnostics: readonly [Diagnostic, ...Diagnostic[]] };
 
 export function readRootPolicy(inventory: DerivationTrackInventory): RootPolicyResult;
 ```
 
 - **Decisions:**
-  - `deriveChainLayout` (via `point.derive`) and later `deriveJoinedLayout` (via `join.derive`) call `readRootPolicy` and handle it with an exhaustive switch.
-  - `root.derive` is deleted, so `root` becomes fold-only.
-  - A root-only track simply has no `chain` capability. Any consumer that requires one gets `derivation-missing-capability`, which matches C2: "invalid composition when a skeleton capability is required".
+  - `root.derive` is kept. It owns only the duplicate-root refusal and returns `refused` when the policy is refused, otherwise `none`.
+  - `deriveChainLayout` (via `point.derive`) and later `deriveJoinedLayout` (via `join.derive`) read the policy through `readRootPolicy`; chain layout returns `none` when the policy is refused, so the duplicate-root error appears once.
+  - A root-only track is a legal generic track with no `chain` capability. FK and IK bound to it get `derivation-missing-capability`.
 - **Reasons:**
-  - Removes the duplicate-root diagnostic currently emitted by both `point.derive` and `root.derive`.
+  - One owner for the duplicate-root rule, and no eager root-only error.
   - One helper serves chain and joined layouts (DRY).
   - A generic mixed track (root + transform) stays legal, as the plan requires.
 

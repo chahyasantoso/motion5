@@ -6,7 +6,7 @@ Current slice: C2 (chain layout and root policy derivation).
 ## Active slice
 
 - **Slice:** C2 ([16-C2-chain-layout.md](../../motion5-implementation-plans/slices/16-C2-chain-layout.md)).
-- **State:** Plugin-owned chain layout derivation (`deriveChainLayout`), sequential point parenting, child adjacency, prototype-safe ID index, point locators, `ChainRootPolicy` (`origin`, `unbound`, `bound` with provenance), numeric-invariant `layoutIdentity`, and duplicate root/root-only track diagnostics implemented.
+- **State:** Plugin-owned chain layout derivation (`deriveChainLayout`), sequential point parenting, child adjacency, prototype-safe ID index, point locators, `RootPolicy` (`origin`, `unbound`, `bound` with provenance), numeric-invariant `layoutIdentity`, and duplicate root diagnostics implemented.
 - **Next:** C3 ([17-C3-joined-layout.md](../../motion5-implementation-plans/slices/17-C3-joined-layout.md)).
 
 ## Phase progress
@@ -55,3 +55,11 @@ Current slice: C2 (chain layout and root policy derivation).
 - Overview reference: [00-overview.md](../../motion5-implementation-plans/00-overview.md).
 - Cache contract reference: [42-cache-contract.md](../../motion5-implementation-plans/42-cache-contract.md).
 - Plugin structural API ADR: [ADR-142-plugin-structural-api.md](../ADR-142-plugin-structural-api.md).
+
+## Follow-ups
+
+- N1: `00-overview.md` line 105 still says "Root-only FK is valid, root-only IK is not". Correct it to "FK and IK both need a skeleton source with points; a root-only track has no skeleton capability". The architect edits the plan pack; this bullet only records it.
+- `join` capability `joined` and the chain-or-joined slot union: C3/C4.
+- `plugin-capabilities.test.ts` ADR-136 parts stay until C6.
+- `42-cache-contract.md` section 4 and any D4/D5 plan text still describe the evaluator factory and claims; the architect updates them to `init`/`prepare`.
+- `dispose(state)` and `committedStates` are exercised only by tests; wire them into the runtime transaction when that slice lands.
