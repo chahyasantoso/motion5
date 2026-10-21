@@ -307,6 +307,11 @@ export function deriveStructuralDescriptors(
   for (const trackId of derivationOrder(options)) {
     const plan = options.plans.get(trackId);
     if (plan === undefined) continue;
+    // Plan-level refusals (the temporary mixed legacy/new rule among them) are candidate validity,
+    // so a track that compiled to one never activates its topology or runs further plugin hooks.
+    const planErrors = plan.diagnostics.filter(({ severity }) => severity === "error");
+    diagnostics.push(...planErrors);
+    if (planErrors.length > 0) continue;
     const inventory = buildDerivationInventory(plan);
     const produced: StructuralDescriptor[] = [];
     for (const [pluginName, entries] of groupEntriesByPlugin(plan)) {

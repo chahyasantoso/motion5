@@ -127,14 +127,14 @@ A defective or corrupted cache provider cannot bypass contract validation or inj
 
 - Default cache providers store immutable data in encapsulated memory structures; they require no
   custom snapshot-level finalizers.
-- Candidate abandonment drops uncommitted references, permitting garbage collection without explicit
-  cleanup hooks.
+- Candidate abandonment disposes its freshly initialized states and drops uncommitted references;
+  states derived from committed snapshots are never freed.
 - Storage still shared with committed snapshots must never be freed or modified when discarding a candidate.
-- A stateful plugin may declare `dispose(state)`. Core does not call it yet; C7 wires it and D6
-  proves it. It runs once per entry generation, not once per state value: `prepare` and `fold.run`
-  usually return a state derived from the committed one, and both may share resources.
-- Committed and proposed state maps are `ReadonlyMap<CompilerEntryKey, unknown>`; there is no
-  entry-ID fallback.
+- A stateful plugin may declare `dispose(state)`. C7 wires it in the operation runner and D6 proves
+  the broader cache lifecycle. It runs once per entry generation, not once per state value: `prepare`
+  and `fold.run` usually return a state derived from the committed one, and both may share resources.
+- Committed states are `ReadonlyMap<CompilerEntryKey, unknown>` and proposals are
+  `ReadonlyMap<CompilerEntryKey, ProposedEntryState>`; there is no entry-ID fallback.
 - The runner marks each proposal as a discriminated union, `{ origin: "continued", state }` when it
   started from a committed state and `{ origin: "initialized", state }` when `init` created it in
   this candidate, and reads `origin` exhaustively.
@@ -180,7 +180,7 @@ owning test suites across Phase A–F slices.
   generation; existing outputs, handles, and subscriptions remain intact.
 - **Owning Test Suite / Slice:** Slice B7 at the executor seam: `init` failure propagation
   (`packages/core/test/contract/staged-state-b7.test.ts`, B7-24). Runtime candidate preservation:
-  C7, D6 (planned).
+  C7 (`C7-7`, `C7-8`), D6 (planned).
 
 ### Scenario 2: Source Descriptor or Topology Derivation Failure
 
@@ -188,9 +188,9 @@ owning test suites across Phase A–F slices.
 - **Failure Phase:** Phase 3 (Descriptor Derivation).
 - **Preserved Observations:** Candidate rejected with diagnostic. Active graph topology and execution
   plan unchanged.
-- **Owning Test Suite / Slice:** Derivation refusal: Slice C1
-  (`packages/core/test/contract/structural-derivation-c1.test.ts`). Candidate preservation: Slice C7
-  (planned).
+- **Owning Test Suite / Slice:** Slice C7: mixed-track refusal `C7-1` in
+  `packages/core/test/contract/candidate-acceptance-c7.test.ts`; plan-error diagnostics surface
+  before derivation in `packages/core/src/domain/structural-derivation.ts`.
 
 ### Scenario 3: Early Operation Failure (Prepare Hook Throws)
 
@@ -198,8 +198,8 @@ owning test suites across Phase A–F slices.
 - **Failure Phase:** Phase 4 (Preparation).
 - **Preserved Observations:** Evaluation halts immediately. Downstream entries do not run. Committed
   plugin state and previous outputs preserved.
-- **Owning Test Suite / Slice:** Slice C7, D6 (planned; B7 has no dedicated `prepare`-throws
-  case).
+- **Owning Test Suite / Slice:** Slice C7 (`C7-4`, `C7-9` in
+  `packages/core/test/contract/candidate-acceptance-c7.test.ts`); runtime preservation D6.
 
 ### Scenario 4: Partial Operation Sequence (Collect Succeeds, Fold Throws)
 
@@ -217,7 +217,7 @@ owning test suites across Phase A–F slices.
 - **Preserved Observations:** Evaluation aborts with contextual error naming entry and plugin. Table
   recency and committed snapshot unchanged. Not treated as a cache miss.
 - **Owning Test Suite / Slice:** Slice B7 (`packages/core/test/contract/cache-provider-b7.test.ts`,
-  B7-10); D6 (planned).
+  B7-10) and C7 at the executor seam (`C7-13`); D6 (planned).
 
 ### Scenario 6: Cache Remember Failure
 
@@ -226,7 +226,7 @@ owning test suites across Phase A–F slices.
 - **Preserved Observations:** Proposed snapshot dropped. Active snapshot retains committed entries
   and original eviction order.
 - **Owning Test Suite / Slice:** Slice B7 (`packages/core/test/contract/cache-provider-b7.test.ts`,
-  B7-7 batch atomicity); D6 (planned).
+  B7-7 batch atomicity) and C7 at the executor seam (`C7-13`); D6 (planned).
 
 ### Scenario 7: Upstream Kinematic Success, Downstream Consumer Failure
 
@@ -254,7 +254,8 @@ owning test suites across Phase A–F slices.
 - **Failure Phase:** Phase 5 (Validation & Freezing).
 - **Preserved Observations:** Rejection occurs prior to Phase 6. No corrupted outputs reach runtime
   references. Last-ready outputs preserved.
-- **Owning Test Suite / Slice:** Slice C7, D1 (planned). Numeric primitives are proven by
+- **Owning Test Suite / Slice:** Slice C7 (`C7-12` for a stateful candidate; `B6-11` covers the
+  stateless serializer/freeze path), D1 (planned). Numeric primitives are proven by
   `packages/core/test/contract/numerics.test.ts` (A3).
 
 ### Scenario 10: Candidate Abandonment
@@ -263,7 +264,8 @@ owning test suites across Phase A–F slices.
 - **Failure Phase:** Precommit Abandonment.
 - **Preserved Observations:** Uncommitted candidate references released; `dispose` runs only for
   `initialized` proposals (section 4.3). Committed state, handles, and cache tables unaffected.
-- **Owning Test Suite / Slice:** Slice E2 (planned
+- **Owning Test Suite / Slice:** C7 at the executor seam (`C7-4` initialized-only abandonment,
+  `C7-5` disposer failure reported alongside the original); Slice E2 (planned
   `packages/core/test/unit/runtime/atomic-batches.test.ts`).
 
 ### Scenario 11: Postcommit Delivery Exception
@@ -272,7 +274,9 @@ owning test suites across Phase A–F slices.
 - **Failure Phase:** Phase 7 (Delivery).
 - **Preserved Observations:** Transaction remains committed. Outputs and cache snapshots are accepted
   and current. No rollback occurs. Exception dispatched to runtime error handler.
-- **Owning Test Suite / Slice:** Slice E7 (planned
+- **Owning Test Suite / Slice:** Existing delivery proof
+  (`packages/core/test/unit/runtime/patch-registry-subscriber-errors.test.ts`: a throwing subscriber
+  does not stop the others, and the registry still resets); Slice E7 (planned
   `packages/core/test/unit/runtime/subscriber-delivery.test.ts`).
 
 ---

@@ -25,6 +25,7 @@ import { Motion, type MotionTrackEntry } from "./domain/motion";
 import { unreachable } from "./lang/exhaustive";
 import { collect, report } from "./domain/completion";
 import { PluginRegistry, trackConfigView, type RequirementInputs } from "./domain/plugins";
+import type { EvaluatorServices } from "./domain/cache";
 import type { RenderMetadata } from "./ports/render-metadata";
 import { Track } from "./domain/track";
 import { qualifyFreeTrack, qualifyMotionTrack } from "./graph/ids";
@@ -41,6 +42,14 @@ export interface EngineOptions {
   readonly interpolator: Interpolator;
   readonly scheduler: Scheduler;
   readonly plugins?: PluginRegistry;
+  /**
+   * Services every stateful entry generation receives, `cache` included.
+   *
+   * The augmented `EvaluatorServices` is the declaration surface: a plugin package adds its own
+   * service by interface augmentation, so a missing one is a type error. Omitted, the execution plan
+   * runner supplies `DEFAULT_CACHE_PROVIDER`.
+   */
+  readonly evaluatorServices?: EvaluatorServices;
   readonly triggerFactory?: TriggerFactory;
 }
 export interface ProjectHandle {
@@ -240,10 +249,27 @@ export class Engine {
       const diagnostics = [...(resolved?.diagnostics ?? []), ...keyframeCompilation.diagnostics];
       if (diagnostics.some(({ severity }) => severity === "error"))
         throw new TypeError(describeDiagnostics(diagnostics));
+      // The plan is the one description the runtime evaluates from. Compiled here, where the
+      // resolved chain and the track's node id are already known, so evaluation never re-derives
+      // ownership; mixed legacy/new tracks are refused by the plan's own diagnostic before a Track
+      // exists. See ADR-143.
+      const plan =
+        registry === undefined
+          ? undefined
+          : registry.compileExecutionPlan(trackDef.keyframes ?? {}, {
+              trackId: nodeId,
+              track: trackConfigView(trackDef.id, trackDef.duration),
+            });
+      const planErrors = plan?.diagnostics.filter(({ severity }) => severity === "error") ?? [];
+      if (planErrors.length > 0) throw new TypeError(describeDiagnostics(planErrors));
       const track = new Track({
         interpolator: this.#options.interpolator,
         interpolationConfig: { ...trackDef, keyframes: authoredKeyframes },
         ...(resolved ? { plugins: resolved } : {}),
+        ...(plan === undefined ? {} : { plan }),
+        ...(this.#options.evaluatorServices === undefined
+          ? {}
+          : { services: this.#options.evaluatorServices }),
         nodeId,
       });
       tracks.set(nodeId, track);

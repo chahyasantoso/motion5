@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { PluginRegistry, type PluginDefinition } from "../../src/domain/plugins";
 import { compileTrackExecutionPlan } from "../../src/domain/execution-plan";
-import { executeTrackOperations } from "../../src/domain/track-operations";
+import { executeTrackOperations, type ProposedEntryState } from "../../src/domain/track-operations";
+import type { CompilerEntryKey } from "../../src/contract/address";
 import { type CacheSnapshot, type CacheSpec } from "../../src/domain/cache";
 import {
   createAggressiveEvictingCacheProvider,
@@ -10,6 +11,12 @@ import {
 } from "../../src/domain/cache-providers";
 import { defineStatefulPlugin } from "../../src/domain/stateful-plugin";
 import { CompositionOutputError } from "../../src/domain/track";
+
+function committedFrom(
+  proposals: ReadonlyMap<CompilerEntryKey, ProposedEntryState>,
+): ReadonlyMap<CompilerEntryKey, unknown> {
+  return new Map([...proposals].map(([key, proposal]) => [key, proposal.state]));
+}
 
 describe("Slice B7: Proposed evaluator state and injectable caches", () => {
   it("B7-14: DI and generic cache with stateful non-skeleton plugin", () => {
@@ -103,11 +110,12 @@ describe("Slice B7: Proposed evaluator state and injectable caches", () => {
     // Pass 2: identical request with committed state -> hit -> no extra math
     const compilerKey = plan.entries[0]!.compilerKey;
     const committedState = pass1.proposedStates.get(compilerKey);
+    expect(committedState?.origin).toBe("initialized");
 
     const pass2 = executeTrackOperations({
       plan,
       sampleValues: new Map([["m1", { text: "hello", fontSize: 10 }]]),
-      committedStates: new Map([[compilerKey, committedState]]),
+      committedStates: new Map([[compilerKey, committedState!.state]]),
     });
 
     expect(pass2.publishedValues).toEqual({ totalWidth: 30 });
@@ -215,8 +223,14 @@ describe("Slice B7: Proposed evaluator state and injectable caches", () => {
 
     const e1Key = plan.entries[0]!.compilerKey;
     const e2Key = plan.entries[1]!.compilerKey;
-    expect(result.proposedStates.get(e1Key)).toEqual({ runs: 1 });
-    expect(result.proposedStates.get(e2Key)).toEqual({ count: 1 });
+    expect(result.proposedStates.get(e1Key)).toEqual({
+      origin: "initialized",
+      state: { runs: 1 },
+    });
+    expect(result.proposedStates.get(e2Key)).toEqual({
+      origin: "initialized",
+      state: { count: 1 },
+    });
   });
 
   it("B7-17: Fold-dependent cache keys miss when prior fold changes", () => {
@@ -296,7 +310,7 @@ describe("Slice B7: Proposed evaluator state and injectable caches", () => {
     const res2 = executeTrackOperations({
       plan,
       sampleValues: new Map([["f1", { deltaVal: 5 }]]),
-      committedStates: res1.proposedStates,
+      committedStates: committedFrom(res1.proposedStates),
     });
     expect(res2.publishedValues.running).toBe(5);
     expect(memoizedFoldMath).toBe(1);
@@ -346,8 +360,8 @@ describe("Slice B7: Proposed evaluator state and injectable caches", () => {
     const k1 = plan1.entries[0]!.compilerKey;
     const k2 = plan1.entries[1]!.compilerKey;
     expect(k1).not.toBe(k2);
-    expect((res1.proposedStates.get(k1) as any).id).toBe("e1");
-    expect((res1.proposedStates.get(k2) as any).id).toBe("e2");
+    expect(((res1.proposedStates.get(k1) as ProposedEntryState).state as any).id).toBe("e1");
+    expect(((res1.proposedStates.get(k2) as ProposedEntryState).state as any).id).toBe("e2");
   });
 
   it("B7-19: Transaction abort on late failure preserves committed state without accepting partial outputs", () => {
@@ -420,7 +434,7 @@ describe("Slice B7: Proposed evaluator state and injectable caches", () => {
       ]),
     });
     expect(pass1.publishedValues).toEqual({ out1: 20, out2: 100 });
-    const committedState = pass1.proposedStates;
+    const committedState = committedFrom(pass1.proposedStates);
 
     // Second transaction: entry 2 fails!
     const failingPlan = compileTrackExecutionPlan({
@@ -532,9 +546,10 @@ describe("Slice B7: Proposed evaluator state and injectable caches", () => {
     });
 
     const compilerKey = plan.entries[0]!.compilerKey;
-    const state = res.proposedStates.get(compilerKey);
-    disposablePlugin.dispose!(state);
-    expect(disposedState).toBe(state);
+    const proposal = res.proposedStates.get(compilerKey);
+    expect(proposal?.origin).toBe("initialized");
+    disposablePlugin.dispose!(proposal!.state);
+    expect(disposedState).toBe(proposal!.state);
   });
 
   it("B7-22: LSP - default, no-cache, and evicting providers produce identical output semantics", () => {
@@ -717,8 +732,14 @@ describe("Slice B7: Proposed evaluator state and injectable caches", () => {
 
     const keepKey = plan.entries[0]!.compilerKey;
     const overrideKey = plan.entries[1]!.compilerKey;
-    expect(result.proposedStates.get(keepKey)).toEqual({ tag: "prepared" });
-    expect(result.proposedStates.get(overrideKey)).toEqual({ tag: "fold" });
+    expect(result.proposedStates.get(keepKey)).toEqual({
+      origin: "initialized",
+      state: { tag: "prepared" },
+    });
+    expect(result.proposedStates.get(overrideKey)).toEqual({
+      origin: "initialized",
+      state: { tag: "fold" },
+    });
   });
 
   it("B7-26: committed state avoids a second init call", () => {
@@ -754,7 +775,7 @@ describe("Slice B7: Proposed evaluator state and injectable caches", () => {
     executeTrackOperations({
       plan,
       sampleValues: new Map([["c1", { v: 1 }]]),
-      committedStates: first.proposedStates,
+      committedStates: committedFrom(first.proposedStates),
     });
     expect(initCalls).toBe(1);
   });

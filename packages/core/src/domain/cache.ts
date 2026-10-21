@@ -22,7 +22,14 @@ export interface CacheProvider {
   create<K, V>(spec: CacheSpec<K>): CacheSnapshot<K, V>;
 }
 
+/**
+ * The services one evaluator generation receives.
+ *
+ * `cache` is the generic provider core guarantees. Any further service is declared by the plugin
+ * package that consumes it through `declare module "@motion5/core/plugin-api"` (interface
+ * augmentation), exactly as `CapabilityMap` is, so a missing declaration is a type error rather
+ * than an `unknown` lookup. See ADR-142 and the cache contract §4.
+ */
 export interface EvaluatorServices {
   readonly cache: CacheProvider;
-  readonly [service: string]: unknown;
 }

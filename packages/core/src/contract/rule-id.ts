@@ -140,6 +140,8 @@ export const BASE_RULE_IDS = [
   "ik-solver-unreachable-root",
   "ik-target-not-single-leaf",
   "ik-weight-without-solver",
+  // F2 deletes this temporary rule with the legacy compose channel.
+  "legacy-compose-mixed-track",
   "live-value-key",
   "motion-duplicate",
   "motion-duplicate-id",

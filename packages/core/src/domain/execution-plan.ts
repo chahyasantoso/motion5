@@ -28,6 +28,7 @@ import { COLLECT_OUTPUT } from "../contract/collect";
 import type {
   CollectRun,
   Contribution,
+  PluginComposer,
   PluginDefinition,
   PreparedContribution,
   ResolvedRequirement,
@@ -36,6 +37,7 @@ import type {
   StatelessFold,
   TrackConfigView,
 } from "./plugins";
+import { isLegacyComposeDefinition } from "./legacy-compose";
 import type { StructuralDescriptor } from "../contract/derivation";
 
 export interface EvaluatorContext {
@@ -72,6 +74,11 @@ export type ExecutionStrategy =
       readonly dispose?: StatefulPluginDefinition["dispose"];
       readonly collect?: StatefulPluginDefinition["collect"];
       readonly fold?: StatefulFold["run"];
+    }
+  | {
+      // F2 deletes this strategy with the legacy compose channel.
+      readonly kind: "legacy-compose";
+      readonly compose: PluginComposer;
     };
 
 export interface CompiledFoldOperation {
@@ -470,6 +477,11 @@ function resolveEntryRequirements(
 }
 
 function executionStrategyOf(plugin: PluginDefinition): ExecutionStrategy {
+  // F2 deletes this arm with the legacy compose channel. The one shared predicate decides, so a
+  // definition cannot be legacy for admission and new-path for execution.
+  if (isLegacyComposeDefinition(plugin)) {
+    return Object.freeze({ kind: "legacy-compose", compose: plugin.compose });
+  }
   if (plugin.init !== undefined) {
     return Object.freeze({
       kind: "stateful",
@@ -525,7 +537,7 @@ export function compileTrackExecutionPlan(
       continue;
     }
 
-    if (!plugin.collect && !plugin.fold) {
+    if (!plugin.collect && !plugin.fold && !isLegacyComposeDefinition(plugin)) {
       throw new TypeError(
         `Plugin "${plugin.name}" must declare collect, fold, or both operations.`,
       );
@@ -608,6 +620,26 @@ export function compileTrackExecutionPlan(
     entriesByKey.set(compilerKey, entryPlan);
   }
 
+  // F2 deletes this mixed-track refusal with the legacy-compose strategy.
+  const legacyEntries = entries.filter((entry) => entry.execution.kind === "legacy-compose");
+  const legacyHasOperations = legacyEntries.some(
+    (entry) => entry.operations.collect === true || entry.operations.fold !== undefined,
+  );
+  if (
+    legacyEntries.length > 0 &&
+    (legacyEntries.length !== entries.length || legacyHasOperations)
+  ) {
+    const legacyNames = legacyEntries.map((entry) => entry.plugin.name).sort();
+    diagnostics.push(
+      diagnostic(
+        "legacy-compose-mixed-track",
+        basePath,
+        "A track cannot combine legacy compose entries with collect/fold entries; replacement chaining and delta folds have no defined order.",
+        [...new Set(legacyNames)],
+      ),
+    );
+  }
+
   // Cross-entry validations: collect presence, fold outputs, and output serializer consensus
   const foldSet = new Set<string>();
 
@@ -677,12 +709,16 @@ export function entryEvaluatorContext(plan: CompiledEntryPlan): EvaluatorContext
   });
 }
 
-export function assertExecutionStrategy(strategy: ExecutionStrategy): "stateless" | "stateful" {
+export function assertExecutionStrategy(
+  strategy: ExecutionStrategy,
+): "stateless" | "stateful" | "legacy-compose" {
   switch (strategy.kind) {
     case "stateless":
       return "stateless";
     case "stateful":
       return "stateful";
+    case "legacy-compose":
+      return "legacy-compose";
     default:
       return unreachable(strategy);
   }

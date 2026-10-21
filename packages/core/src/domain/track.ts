@@ -12,8 +12,19 @@ import {
 import { unreachable } from "../lang/exhaustive";
 import type { PluginInputs, RequirementInputs, ResolvedPlugins } from "./plugins";
 import { isLegacyComposeDefinition } from "./legacy-compose";
+import { CompositionOutputError } from "./composition-error";
+import { publishableValues } from "./publication";
+import {
+  executeTrackOperations,
+  disposeRetiredStates,
+  type LegacyComposeChain,
+} from "./track-operations";
+
+export { CompositionOutputError };
 
 import type { TrackExecutionPlan } from "./execution-plan";
+import type { EvaluatorServices } from "./cache";
+import type { CompilerEntryKey } from "../contract/address";
 
 export interface TrackSnapshot {
   readonly progress: number;
@@ -24,14 +35,8 @@ export interface TrackOptions {
   readonly interpolationConfig?: unknown;
   readonly plugins?: ResolvedPlugins;
   readonly plan?: TrackExecutionPlan;
+  readonly services?: EvaluatorServices;
   readonly nodeId: string;
-}
-export class CompositionOutputError extends TypeError {
-  readonly ruleId = "composition-output-shape" as const;
-  constructor(message: string) {
-    super(message);
-    this.name = this.ruleId;
-  }
 }
 /** Why one key of a live value write was refused. One reason per key, never a list. */
 export type LiveValueRefusal = "unknown" | "kind" | "prepared";
@@ -112,40 +117,6 @@ function preparedConfig(config: unknown, plugins: ResolvedPlugins): unknown {
     tweenVars: preparation.tweenVars,
   });
 }
-/**
- * A key under a plugin's namespace is that plugin's private domain, by rule rather than by
- * declaration. The colon is reserved in every authored keyframe name and in plugin `keys`,
- * `inputs`, `outputs`, and requirement slots, so a namespaced key can only be something a plugin
- * derived for itself. See ADR-041 and ADR-042.
- */
-function isNamespacedInternal(key: string): boolean {
-  return key.includes(":");
-}
-/**
- * The one enforcement point for internal keys.
- *
- * It is here, and not in a renderer, because `adapters/dom.ts` is not the only renderer:
- * `packages/react` hands consumers the whole patch. A denylist applied per renderer has to be
- * reimplemented by each of them, and a regression test written against one would pass while the
- * other leaked. Filtering before the snapshot is frozen gives the publisher, `handle.get`,
- * `subscribeNode`, and every adapter the same surface.
- *
- * `internalKeys` stays for unprefixed derived keys, which no rule can recognize. It is the
- * declaration of last resort rather than the mechanism.
- *
- * It runs once per composition, after the chain and before the freeze, whichever entry point the
- * composition arrived through. A seed is filtered by the same call that filters a derived key, so
- * the split adds no second surface to keep in agreement with this one.
- */
-function publishableValues(values: ImmutableRecord, plugins: ResolvedPlugins): ImmutableRecord {
-  const result: Record<string, unknown> = {};
-  const declared = plugins.internalKeys;
-  for (const [key, value] of Object.entries(values)) {
-    if (isNamespacedInternal(key) || declared.includes(key)) continue;
-    result[key] = value;
-  }
-  return result as ImmutableRecord;
-}
 // Underscore keys are interpolator scratch and are dropped before the plugin chain runs. This is
 // deliberately not the same rule as `publishableValues`: a namespaced key must survive the chain so
 // plugins can read each other's, and an underscore key invented by a plugin must still fail
@@ -178,6 +149,12 @@ function freezeComposition(values: unknown): ImmutableRecord {
 function unchanged(left: unknown, right: unknown): boolean {
   return left === right || equalValues(left, right);
 }
+/** Every disposal failure in one message; naming only the first hides the rest. */
+function describeFailures(failures: readonly unknown[]): string {
+  return failures
+    .map((failure) => (failure instanceof Error ? failure.message : String(failure)))
+    .join("; ");
+}
 const NO_PLUGIN_INPUTS: PluginInputs = Object.freeze({});
 const NO_REQUIREMENT_INPUTS: RequirementInputs = Object.freeze({});
 /** No mask. One frozen value, so "no live values" allocates nothing and compares by identity. */
@@ -195,7 +172,9 @@ export class Track {
   readonly #timeline: InterpolationTimeline;
   readonly #plugins: ResolvedPlugins;
   readonly #plan: TrackExecutionPlan | undefined;
+  readonly #services: EvaluatorServices | undefined;
   readonly #nodeId: string;
+  #committedStates: ReadonlyMap<CompilerEntryKey, unknown> = new Map();
   #progress = 0;
   #dirty = true;
   #disposed = false;
@@ -207,6 +186,7 @@ export class Track {
     if (options.nodeId.length === 0) throw new TypeError("Track node id must be non-empty.");
     this.#plugins = options.plugins ?? EMPTY_RESOLVED_PLUGINS;
     this.#plan = options.plan;
+    this.#services = options.services;
     this.#nodeId = options.nodeId;
     this.#timeline = options.interpolator.create(
       preparedConfig(options.interpolationConfig, this.#plugins),
@@ -482,6 +462,9 @@ export class Track {
     this.assertActive();
     const memoized = this.#memoized(seed, requirementInputs);
     if (memoized !== undefined) return memoized;
+    if (this.#plan !== undefined) {
+      return this.#composeWithOperations(seed, requirementInputs, this.#plan);
+    }
     let values: ImmutableRecord = seed;
     for (const plugin of this.#plugins.plugins) {
       // F2 deletes this compose gate with the legacy compose channel.
@@ -496,13 +479,86 @@ export class Track {
     }
     const snapshot = Object.freeze({
       progress: this.#progress,
-      values: freezeComposition(publishableValues(values, this.#plugins)),
+      values: freezeComposition(publishableValues(values, this.#plugins.internalKeys)),
     });
     this.#lastSeed = Object.freeze({ ...seed });
     this.#lastRequirementInputs = Object.freeze({ ...requirementInputs });
     this.#lastSnapshot = snapshot;
     this.#dirty = false;
     return snapshot;
+  }
+  /**
+   * Evaluates this track's complete entry set through the one operation runner, then swaps.
+   *
+   * The runner receives committed states by compiler key, so a replaced definition starts cold and
+   * a structurally matching one continues. Output and proposals are swapped together before any
+   * retirement runs; a failure above the swap leaves both the committed states and the last
+   * snapshot in place. A retirement failure happens after the swap and is a delivery error.
+   */
+  #composeWithOperations(
+    seed: ImmutableRecord,
+    requirementInputs: RequirementInputs,
+    plan: TrackExecutionPlan,
+  ): TrackSnapshot {
+    const legacyCompose = this.#legacyChain();
+    const result = executeTrackOperations({
+      plan,
+      seed,
+      sampleValues: this.#sampleValues(seed, plan),
+      requirementInputs,
+      progress: this.#progress,
+      ...(this.#services === undefined ? {} : { services: this.#services }),
+      committedStates: this.#committedStates,
+      ...(legacyCompose === undefined ? {} : { legacyCompose }),
+    });
+    const retired = this.#committedStates;
+    const nextStates = new Map<CompilerEntryKey, unknown>();
+    for (const [key, proposal] of result.proposedStates) nextStates.set(key, proposal.state);
+    this.#committedStates = nextStates;
+    const snapshot = Object.freeze({
+      progress: this.#progress,
+      values: result.publishedValues as ImmutableRecord,
+    });
+    this.#lastSeed = Object.freeze({ ...seed });
+    this.#lastRequirementInputs = Object.freeze({ ...requirementInputs });
+    this.#lastSnapshot = snapshot;
+    this.#dirty = false;
+    const failures = disposeRetiredStates(plan, retired, result.proposedStates);
+    if (failures.length > 0) {
+      throw new Error(
+        `Track "${this.#nodeId}" committed but disposing a retired state failed: ${describeFailures(failures)}`,
+      );
+    }
+    return snapshot;
+  }
+  /** This track's pre-plugin values sliced per entry, which is what one entry may read as `values`. */
+  #sampleValues(
+    seed: ImmutableRecord,
+    plan: TrackExecutionPlan,
+  ): ReadonlyMap<string, Readonly<Record<string, unknown>>> {
+    const samples = new Map<string, Readonly<Record<string, unknown>>>();
+    for (const entry of plan.entries) {
+      const values: Record<string, unknown> = {};
+      for (const leaf of Object.keys(entry.schema.values)) {
+        if (Object.hasOwn(seed, leaf)) values[leaf] = seed[leaf];
+      }
+      const indexed = seed[entry.entryId];
+      if (isRecord(indexed)) Object.assign(values, indexed);
+      samples.set(entry.entryId, Object.freeze(values));
+    }
+    return samples;
+  }
+  /** F2 deletes this legacy chain with the compose channel. */
+  #legacyChain(): LegacyComposeChain | undefined {
+    const legacy = this.#plugins.plugins.filter(isLegacyComposeDefinition);
+    if (legacy.length === 0) return undefined;
+    return Object.freeze({
+      nodeId: this.#nodeId,
+      plugins: Object.freeze(
+        legacy.map((plugin) => Object.freeze({ name: plugin.name, compose: plugin.compose })),
+      ),
+      internalKeys: this.#plugins.internalKeys,
+    });
   }
   /**
    * The retained snapshot, when it is the answer for exactly this seed and these inputs.
@@ -524,9 +580,19 @@ export class Track {
     if (this.#disposed) return;
     this.#disposed = true;
     this.#timeline.kill();
+    const failures =
+      this.#plan === undefined
+        ? []
+        : disposeRetiredStates(this.#plan, this.#committedStates, new Map());
+    this.#committedStates = new Map();
     this.#lastSnapshot = undefined;
     this.#lastSeed = undefined;
     this.#lastRequirementInputs = undefined;
+    if (failures.length > 0) {
+      throw new Error(
+        `Track "${this.#nodeId}" was disposed but releasing a plugin state failed: ${describeFailures(failures)}`,
+      );
+    }
   }
   private assertActive(): void {
     if (this.#disposed) throw new Error("Track is disposed.");

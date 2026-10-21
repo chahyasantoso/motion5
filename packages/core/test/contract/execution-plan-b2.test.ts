@@ -248,8 +248,10 @@ describe("Slice B2: Compile one immutable ordered entry plan", () => {
 
     const customServices: EvaluatorServices = {
       cache: createBoundedCacheProvider(),
-      customClock: "mockClock",
     };
+
+    // @ts-expect-error EvaluatorServices carries only cache until a plugin package augments it.
+    customServices.customClock;
 
     executeTrackOperations({ plan, sampleValues: new Map(), services: customServices });
 

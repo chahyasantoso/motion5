@@ -10,14 +10,14 @@ byte ceiling.
 
 ## Now
 
-- **Legacy quarantine:** kinematic readers in the graph and publisher now sit behind one shared
-  `isLegacyComposeDefinition` predicate, and the new execution path carries no solver capability or
-  chain shape, under `20-C6-generic-core.md`; implemented locally with CI pending.
+- **Candidate acceptance:** every planned track evaluates through the one operation runner; Track
+  swaps output and per-entry evaluator state together, keys requirement inputs by entry, and carries
+  the temporary `legacy-compose` strategy (with mixed tracks refused) under
+  `21-C7-candidate-acceptance.md`; implemented locally with CI pending.
 
 ## Next in line
 
-- **Candidate acceptance:** add the temporary `legacy-compose` execution strategy, key inputs by
-  entry, and remove the committed-state fallback under `21-C7-candidate-acceptance.md`.
+- **Frame math:** begin `22-D1-frame-math.md`.
 
 ## Open, and not scheduled
 

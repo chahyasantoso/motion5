@@ -605,10 +605,11 @@ describe("Slice B6: Execute collect/fold and publish owned outputs", () => {
       registry,
     });
 
+    const compilerKey = plan.entries[0]!.compilerKey;
     const result = executeTrackOperations({
       plan,
       sampleValues: new Map([["entry1", { baseNum: 5 }]]),
-      committedStates: new Map([["entry1", { acc: 10 }]]),
+      committedStates: new Map([[compilerKey, { acc: 10 }]]),
     });
 
     expect(prepareCalls).toBe(1);
@@ -616,9 +617,44 @@ describe("Slice B6: Execute collect/fold and publish owned outputs", () => {
     expect(foldCalls).toBe(1);
     expect(result.publishedValues.collect).toEqual([{ itemVal: 10, id: "entry1" }]);
     expect(result.publishedValues.total).toBe(10);
-    // Proposed state is proposed and carried out of the evaluator
-    const compilerKey = plan.entries[0]?.compilerKey;
-    expect(result.proposedStates.get(compilerKey!)).toEqual({ acc: 999 });
+    expect(result.proposedStates.get(compilerKey)).toEqual({
+      origin: "continued",
+      state: { acc: 999 },
+    });
+  });
+
+  it("B6-13b: committed states are keyed by compiler key, not by authored entry id", () => {
+    const statefulPlugin = defineStatefulPlugin<{ acc: number }, { base: number }>({
+      name: "statefulPlugin",
+      keys: ["baseNum"],
+      collect: (prepared) => ({ base: prepared.base }),
+      init: () => ({ acc: 0 }),
+      prepare: (local, state) => ({
+        prepared: { base: Number(local.values.baseNum ?? 0) },
+        state: { acc: state.acc + 1 },
+      }),
+    });
+
+    const registry = new PluginRegistry();
+    registry.register(statefulPlugin);
+
+    const plan = compileTrackExecutionPlan({
+      keyframes: [{ e1: { plugin: "statefulPlugin", values: { baseNum: 5 } } }],
+      registry,
+    });
+
+    const byEntryId = new Map<string, unknown>([["e1", { acc: 10 }]]);
+    const result = executeTrackOperations({
+      plan,
+      sampleValues: new Map([["e1", { baseNum: 5 }]]),
+      // @ts-expect-error committed states are keyed by CompilerEntryKey, never by authored entry id.
+      committedStates: byEntryId,
+    });
+
+    expect(result.proposedStates.get(plan.entries[0]!.compilerKey)).toEqual({
+      origin: "initialized",
+      state: { acc: 1 },
+    });
   });
 
   it("B6-14: evaluatePreparedTrack bridges PreparedTrack sampling and operations", () => {
