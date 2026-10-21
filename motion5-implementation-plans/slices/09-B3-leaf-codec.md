@@ -1,6 +1,8 @@
 # B3 — Implement the private entry/leaf codec
 
-Status: not implemented. Depends on: B2, A2.
+Status: implemented on branch `feat/plugin-structural-api`. Depends on: B2, A2.
+
+Evidence: `packages/core/src/contract/leaf-codec.ts`, `packages/core/test/contract/leaf-codec-b3.test.ts`.
 
 ## Start here
 

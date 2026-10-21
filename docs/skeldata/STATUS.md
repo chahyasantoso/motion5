@@ -1,12 +1,12 @@
 # Skeldata status index
 
-Status: proposed implementation track.
-Current slice: C2 (chain layout and root policy derivation).
+Status: implementation track on branch `feat/plugin-structural-api`.
+Current slice: C2 complete, including the plugin structural API follow-up (ADR-142); next C3.
 
-## Active slice
+## Last completed slice
 
 - **Slice:** C2 ([16-C2-chain-layout.md](../../motion5-implementation-plans/slices/16-C2-chain-layout.md)).
-- **State:** Plugin-owned chain layout derivation (`deriveChainLayout`), sequential point parenting, child adjacency, prototype-safe ID index, point locators, `RootPolicy` (`origin`, `unbound`, `bound` with provenance), numeric-invariant `layoutIdentity`, and duplicate root diagnostics implemented.
+- **State:** Plugin-owned chain layout derivation (`deriveChainLayout`), sequential point parenting, child adjacency, prototype-safe ID index, point locators, `RootPolicy` (`origin`, `unbound`, `bound` with provenance), numeric-invariant `layoutIdentity`, and duplicate root diagnostics implemented. The follow-up moved root rules back to `root.derive` (`readRootPolicy`, one `derivation-failure` per duplicate), made a root-only track a legal track with no `chain`, kept the frame a runtime value (no frame capability), added the `derived`/`refused`/`none` constructors, and replaced the evaluator factory with stateful plugin `init`/`prepare`.
 - **Next:** C3 ([17-C3-joined-layout.md](../../motion5-implementation-plans/slices/17-C3-joined-layout.md)).
 
 ## Phase progress
@@ -16,6 +16,7 @@ Current slice: C2 (chain layout and root policy derivation).
 - Phase C (Derivation & Candidate Acceptance: C1-C7): in progress (C1, C2 complete).
 - Phase D (Kinematics & Dual Caches: D1-D7): pending.
 - Phase E (Editing & Render Lifecycle: E1-E7): pending.
+- Phase G (3D & Integration Migration: G1-G8, runs before F): pending.
 - Phase F (Callers, Verification & Release Gate: F1-F6): pending.
 
 ## Evidence index
@@ -52,14 +53,24 @@ Current slice: C2 (chain layout and root policy derivation).
 - Point plugin module: [packages/plugins/src/point.ts](../../packages/plugins/src/point.ts).
 - Root plugin module: [packages/plugins/src/root.ts](../../packages/plugins/src/root.ts).
 - Chain layout test suite (C2): [packages/plugins/test/unit/chain-layout-c2.test.ts](../../packages/plugins/test/unit/chain-layout-c2.test.ts).
+- Capability registry: [packages/core/src/contract/capability.ts](../../packages/core/src/contract/capability.ts).
+- Derive result constructors test suite: [packages/core/test/contract/derive-constructors.test.ts](../../packages/core/test/contract/derive-constructors.test.ts).
+- Stateful plugin helper: [packages/core/src/domain/stateful-plugin.ts](../../packages/core/src/domain/stateful-plugin.ts).
+- Plugin admission (execution strategy refusals): [packages/core/src/domain/plugin-admission.ts](../../packages/core/src/domain/plugin-admission.ts).
+- Root policy module: [packages/plugins/src/root-policy.ts](../../packages/plugins/src/root-policy.ts).
+- Root rules test suite (F1): [packages/plugins/test/unit/root-rules-f1.test.ts](../../packages/plugins/test/unit/root-rules-f1.test.ts).
+- Duplicate root test suite (D8): [packages/plugins/test/unit/root-duplicate-d8.test.ts](../../packages/plugins/test/unit/root-duplicate-d8.test.ts).
+- Root frame test suite (D7): [packages/plugins/test/unit/root-frame-d7.test.ts](../../packages/plugins/test/unit/root-frame-d7.test.ts).
 - Overview reference: [00-overview.md](../../motion5-implementation-plans/00-overview.md).
-- Cache contract reference: [42-cache-contract.md](../../motion5-implementation-plans/42-cache-contract.md).
+- Cache contract reference: [cache-contract.md](../../motion5-implementation-plans/cache-contract.md).
 - Plugin structural API ADR: [ADR-142-plugin-structural-api.md](../ADR-142-plugin-structural-api.md).
+- Plugin API decisions: [motion5-plugin-api-decisions.md](../../motion5-implementation-plans/motion5-plugin-api-decisions.md).
 
 ## Follow-ups
 
-- N1: `00-overview.md` line 105 still says "Root-only FK is valid, root-only IK is not". Correct it to "FK and IK both need a skeleton source with points; a root-only track has no skeleton capability". The architect edits the plan pack; this bullet only records it.
 - `join` capability `joined` and the chain-or-joined slot union: C3/C4.
-- `plugin-capabilities.test.ts` ADR-136 parts stay until C6.
-- `42-cache-contract.md` section 4 and any D4/D5 plan text still describe the evaluator factory and claims; the architect updates them to `init`/`prepare`.
-- `dispose(state)` and `committedStates` are exercised only by tests; wire them into the runtime transaction when that slice lands.
+- Rule ids `skeleton-imported-chain-has-root` (C3) and `ik-solver-no-solve-members` (C4) are not yet in `rule-id.ts`; C3 and C4 add them to `rule-id.ts`, the registry in `rule.ts` and `rule-registry.test.ts`.
+- `PluginCapability`/`PluginCapabilities` (`ports/plugin-capabilities.ts`) is still type-exported from `packages/core/src/index.ts` and used across the graph; `plugin-capabilities.test.ts` ADR-136 parts stay until F2 deletes the port. C6 removes the type export and quarantines the port, `solverChain`, `solves`, the `members` injection, kinematic slot-name rules and the kinematic constants re-exported by `@motion5/core/plugin-api` behind `isLegacyComposeDefinition`, because legacy compose `ik`/`ik3d` still read `inputs.members`.
+- The runtime does not call `executeTrackOperations` yet; evaluation still runs legacy `compose`. Runtime provider override, `committedStates` and `dispose(state)` are exercised only by tests; C7 and D6 wire them into the runtime transaction. C7 also adds the temporary `legacy-compose` strategy (per-plugin parity tests, `legacy-compose-mixed-track` refusal), drops the `committedStates.get(compilerKey) ?? committedStates.get(entryId)` fallback, keys inputs by entry instead of plugin name, and makes `EvaluatorServices` an augmentable interface. F2 deletes `legacy-compose`.
+- FK and IK are still legacy `compose` plugins with `base`/`root`/`target` slots; C4, D3, D4 and D5 migrate them.
+- `transform3d`, `fk3d`, `ik3d`, `rig`, `pose-classify`, the Three adapter, `skeletonTracks` and the apps are still on the old contract; phase G (G1–G8, slices 36–43) migrates them before F. F1–F6 are now slices 44–49 (plan revision 2026-10-20, ADR-143; no code changed).

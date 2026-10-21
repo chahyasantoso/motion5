@@ -1,6 +1,8 @@
 # B8 — Implement uniform entry-addressed value transactions
 
-Status: implemented. Depends on: B2, B3, B4, A2, A6.
+Status: implemented on branch `feat/plugin-structural-api`. Depends on: B2, B3, B4, A2, A6.
+
+Evidence: `packages/core/src/domain/value-transaction.ts`, `packages/core/test/contract/value-writes-b8.test.ts`.
 
 ## Start here
 
@@ -14,7 +16,7 @@ Apply the same address validation to scalar/static replacements, authored stops,
 
 Reject attempts to write entry ID, array order, plugin, requires bindings, or dictionary member keys as value content. They are structural fields, not structuralKeys leaves. Preserve legitimate zeros/false/empty strings where the declared leaf schema permits them; point numeric leaves still require their own schema.
 
-Atomic invalid multi-entry writes leave overlays, effective values, outputs, and committed evaluator state unchanged. A value edit cannot silently recreate topology or retarget a removed/reinserted entry.
+Atomic invalid multi-entry writes leave overlays, effective values, outputs, and committed plugin state unchanged. A value edit cannot silently recreate topology or retarget a removed/reinserted entry.
 
 ## Evidence and finish
 

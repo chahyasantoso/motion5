@@ -1,6 +1,8 @@
 # B5 — Scope requirements and graph destinations by entry
 
-Status: not implemented. Depends on: B2.
+Status: implemented on branch `feat/plugin-structural-api`. Depends on: B2.
+
+Evidence: `packages/core/test/contract/requirements-b5.test.ts`.
 
 ## Start here
 
