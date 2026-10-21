@@ -5,18 +5,19 @@ are the complete shape. **Now** and **Next in line** carry exactly one bullet ea
 states a phase; `packages/core/test/unit/scripts/session-status-shape.test.ts` enforces the shape and
 byte ceiling.
 
-- **Captured:** 2026-10-18, Asia/Jakarta.
-- **Read against:** branch `feat/plugin-structural-api`.
+- **Captured:** 2026-10-21, Asia/Jakarta.
+- **Read against:** branch `feat/skeldata-v5-phase-c`.
 
 ## Now
 
-- **Plugin structural API follow-up landed:** root rules restored to `root`, derive result
-  constructors, ADR-142 corrected.
+- **Joined topology derivation:** multi-chain tree layout, point locators, root policy, and the
+  `skeleton-imported-chain-has-root` rule under `17-C3-joined-layout.md`; implemented locally with CI
+  pending.
 
 ## Next in line
 
-- **Joined topology derivation:** derive multi-chain tree layout and root policy across joined
-  sources under `17-C3-joined-layout.md`.
+- **IK solver derivation:** derive solver goals and member bindings under
+  `18-C4-solver-derivation.md`.
 
 ## Open, and not scheduled
 

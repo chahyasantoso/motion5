@@ -204,3 +204,21 @@ describe("OwnedIds answers an exact argument list per ownership answer", () => {
     expect([idless, named, open]).toEqual([true, true, true]);
   });
 });
+
+describe("skeleton-imported-chain-has-root rule ownership", () => {
+  it("owns error severity and always requires ids payload", () => {
+    expect(RULES["skeleton-imported-chain-has-root"].severity).toBe("error");
+    expect(RULES["skeleton-imported-chain-has-root"].ids).toBe("always");
+
+    const built = diagnostic(
+      "skeleton-imported-chain-has-root",
+      "spine.j0.chain",
+      "Imported chain has root.",
+      ["spine", "j0", "torso"],
+    );
+
+    expect(built.ruleId).toBe("skeleton-imported-chain-has-root");
+    expect(built.severity).toBe("error");
+    expect(built.ids).toEqual(["spine", "j0", "torso"]);
+  });
+});

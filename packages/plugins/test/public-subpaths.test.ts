@@ -15,9 +15,28 @@ const PLUGINS = new URL("../", import.meta.url);
 const CORE = new URL("../../core/", import.meta.url);
 const PLUGIN_SUBPATH = /^\.\/([a-z0-9]+(?:-[a-z0-9]+)*)$/;
 const PUBLIC_3D = ["transform3d", "fk3d", "ik3d"];
-export const DEFINITION_SUBPATHS = ["transform", "fk", "ik", ...PUBLIC_3D, "rig"];
+export const DEFINITION_SUBPATHS = [
+  "transform",
+  "fk",
+  "ik",
+  ...PUBLIC_3D,
+  "rig",
+  "point",
+  "root",
+  "join",
+];
 /** Public modules that are not one zero-config definition; R3 keeps them out of the catalog. */
-const SUPPORT_SUBPATHS = ["frame3d", "catalog", "loader", "labels", "pose-classify", "runner"];
+const SUPPORT_SUBPATHS = [
+  "frame3d",
+  "catalog",
+  "loader",
+  "labels",
+  "pose-classify",
+  "runner",
+  "chain-layout",
+  "joined-layout",
+  "skeleton-space",
+];
 /** R2: support modules other than `frame3d` publish exactly these runtime names. */
 const SUPPORT_EXPORTS: Readonly<Record<string, readonly string[]>> = {
   catalog: ["builtinCatalog"],
@@ -25,6 +44,9 @@ const SUPPORT_EXPORTS: Readonly<Record<string, readonly string[]>> = {
   labels: ["onLabelChange", "readLabel"],
   "pose-classify": ["createPoseClassifyPlugin"],
   runner: ["attachRunners", "createLatestSlot", "describeRunnerFailure"],
+  "chain-layout": ["deriveChainLayout"],
+  "joined-layout": ["deriveJoinedLayout", "validateJoinedRequirements"],
+  "skeleton-space": ["SKELETON_2D"],
 };
 export const PUBLIC_SUBPATHS = [...DEFINITION_SUBPATHS, ...SUPPORT_SUBPATHS];
 
@@ -44,13 +66,18 @@ function declaredPlugins(manifest: Manifest): readonly string[] {
 }
 
 function isPluginDefinition(value: unknown): value is { readonly name: string } {
-  return (
-    value !== null &&
-    typeof value === "object" &&
-    typeof (value as { name?: unknown }).name === "string" &&
-    Array.isArray((value as { keys?: unknown }).keys) &&
-    typeof (value as { compose?: unknown }).compose === "function"
-  );
+  if (value === null || typeof value !== "object") return false;
+  const candidate = value as {
+    readonly name?: unknown;
+    readonly keys?: unknown;
+    readonly compose?: unknown;
+    readonly collect?: unknown;
+    readonly fold?: unknown;
+  };
+  const hasCompose = Array.isArray(candidate.keys) && typeof candidate.compose === "function";
+  const hasCollect = typeof candidate.collect === "function";
+  const hasFold = candidate.fold !== null && typeof candidate.fold === "object";
+  return typeof candidate.name === "string" && (hasCompose || hasCollect || hasFold);
 }
 
 describe("public plugin subpaths", () => {

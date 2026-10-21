@@ -184,7 +184,7 @@ derive: (context) => {
 Import only `none` and `refused` from `plugin-api` here (drop `diagnostic` if unused).
 
 The duplicate-root message text must stay identical to what `readRootPolicy` emits today
-(`Duplicate root entries on chain track "<id>". At most one root entry permitted.`). Do not add a
+(`Duplicate root entries on track "<id>". At most one root entry permitted.`). Do not add a
 root-only rule. The base branch's "Root-only track ... is invalid" refusal is intentionally REMOVED:
 a root-only track is legal and simply has no `chain` capability (see F1 in Section 0).
 

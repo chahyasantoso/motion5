@@ -176,8 +176,9 @@ in strict sequence:
 - **T-INV-01: Built-in skeleton roles**
   - `point`: collects local numeric coordinates and lengths under `collect`. Declares no
     requirements or frame math. Its `derive` produces `chain`.
-  - `join`: connects chains into trees and collects link records under `collect`. Requires a chain
-    source; optional parent chain source. Its `derive` produces `joined` (C3).
+  - `join`: connects chains into trees. Requires a chain source; optional parent chain source. Its
+    `derive` produces `joined` (C3). Its `collect` declares the link-record seam; D2 populates
+    dynamic link records once evaluation exposes bindings.
   - `root`: folds external 2D frame. Optional `frame` slot with no capability; the frame is a
     runtime value read by `readFrame`. Delta is `{ root: frame }`. Its `derive` owns the
     duplicate-root rule.

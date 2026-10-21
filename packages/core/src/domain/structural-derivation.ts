@@ -142,6 +142,7 @@ function readableCapabilities(
 function createRequirementContext(
   trackId: string,
   entries: readonly DerivationEntryInventoryItem[],
+  inventory: DerivationTrackInventory,
   readable: ReadonlySet<string>,
   store: ReadonlyMap<string, readonly StructuralDescriptor[]>,
 ): RequirementContext {
@@ -153,7 +154,7 @@ function createRequirementContext(
     if (found === undefined) throw new CapabilityReadError(trackId, source, capability);
     return found.payload;
   };
-  return Object.freeze({ trackId, entries, read }) as unknown as RequirementContext;
+  return Object.freeze({ trackId, entries, inventory, read }) as unknown as RequirementContext;
 }
 
 function runHook<T>(
@@ -290,6 +291,7 @@ export function deriveStructuralDescriptors(
       const context = createRequirementContext(
         trackId,
         inventory.entries.filter((item) => item.plugin === pluginName),
+        inventory,
         readableCapabilities(plugin, entries),
         store,
       );

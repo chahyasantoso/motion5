@@ -14,4 +14,5 @@ export const builtinCatalog: PluginCatalog = new Map([
   ["rig", { load: () => import("./rig").then((module) => module.rigPlugin) }],
   ["point", { load: () => import("./point").then((module) => module.pointPlugin) }],
   ["root", { load: () => import("./root").then((module) => module.rootPlugin) }],
+  ["join", { load: () => import("./join").then((module) => module.joinPlugin) }],
 ]);

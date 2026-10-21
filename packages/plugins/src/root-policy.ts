@@ -41,9 +41,12 @@ const ORIGIN_POLICY: RootPolicy = Object.freeze({
   hasRootEntry: false,
 } as const);
 
-export function readRootPolicy(inventory: DerivationTrackInventory): RootPolicyResult {
+export function readRootPolicy(
+  inventory: DerivationTrackInventory,
+  rootPlugin: string,
+): RootPolicyResult {
   const trackId = inventory.trackId ?? "track";
-  const rootEntries = inventory.entries.filter((entry) => entry.plugin === "root");
+  const rootEntries = inventory.entries.filter((entry) => entry.plugin === rootPlugin);
   if (rootEntries.length > 1) {
     const secondRoot = rootEntries[1]!;
     return {
@@ -52,7 +55,7 @@ export function readRootPolicy(inventory: DerivationTrackInventory): RootPolicyR
         diagnostic(
           "derivation-failure",
           `${trackId}.${secondRoot.entryId}`,
-          `Duplicate root entries on chain track "${trackId}". At most one root entry permitted.`,
+          `Duplicate root entries on track "${trackId}". At most one root entry permitted.`,
           [trackId, secondRoot.entryId],
         ),
       ],

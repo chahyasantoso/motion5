@@ -153,6 +153,7 @@ const BASE_RULES = {
   "scheduler-failure": ERROR_WITH_IDS,
   "schema-v4-migration": ERROR_NO_IDS,
   "schema-version": ERROR_NO_IDS,
+  "skeleton-imported-chain-has-root": ERROR_WITH_IDS,
   "stale-motion-handle": ERROR_NO_IDS,
   "stale-track-handle": ERROR_NO_IDS,
   "track-duplicate-id": ERROR_WITH_IDS,

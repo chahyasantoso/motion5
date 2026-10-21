@@ -22,7 +22,9 @@ Ownership under the plugin structural API (ADR-142 D3, D5, D6, D8):
 - `join.derive` owns joined topology and reads the joined track's own root through `readRootPolicy`, returning `none` for a refused policy so the duplicate-root diagnostic from `root.derive` appears once.
 - A track that mixes join entries with point entries, or with any entry that is neither join nor root, is not a joined source: `join.derive` returns `none`, exactly as `chain-layout.ts` already does for a mixed chain track. Consumers bound to it then report `derivation-missing-capability`. This is a tested rule, not an accident of iteration order.
 - Keep the space-specific names (point and root plugin names, the `chain`/`joined` capability names and the record reader) in one spec object, for example `SKELETON_2D`, passed to the topology helpers, and fold C2's hard-coded names into it. G2 then adds a 3D spec without forking topology code. Numeric reading stays outside the spec.
-- The plugins package augments `CapabilityMap` with `joined`; `join` collects link records under the reserved `collect` output.
+- The plugins package augments `CapabilityMap` with `joined`; `join` declares the link-record
+  `collect` seam. C3's `LocalEvaluation` exposes no bindings or source IDs, so D2 populates dynamic
+  link records.
 
 Carry only the joined source's external-root binding/provenance. Root may occur anywhere, but duplicate root entries refuse through `root.derive`. Re-derive on structural bindings/order changes; never rebuild during join collect or readSkeleton ticks. No nested tree imports, qualified member manufacture, mid-chain attachment, or instancing.
 

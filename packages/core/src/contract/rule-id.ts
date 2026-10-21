@@ -189,6 +189,7 @@ export const BASE_RULE_IDS = [
   "scheduler-failure",
   "schema-v4-migration",
   "schema-version",
+  "skeleton-imported-chain-has-root",
   "stale-motion-handle",
   "stale-track-handle",
   "track-duplicate-id",

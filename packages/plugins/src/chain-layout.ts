@@ -7,13 +7,14 @@ import type {
 } from "@motion5/core/plugin-api";
 import {
   asAuthoredEntryId,
-  asLayoutIdentity,
   asPointMemberId,
   createSafeRecord,
   derived,
   none,
 } from "@motion5/core/plugin-api";
+import { chainLayoutIdentity } from "./layout-identity";
 import { readRootPolicy, rootPolicyToken, type RootPolicy } from "./root-policy";
+import { SKELETON_2D, type SkeletonSpaceSpec } from "./skeleton-space";
 
 export interface PointLocator {
   readonly pointId: PointMemberId;
@@ -41,15 +42,18 @@ declare module "@motion5/core/plugin-api" {
   }
 }
 
-export function deriveChainLayout(inventory: DerivationTrackInventory): DeriveResult {
+export function deriveChainLayout(
+  inventory: DerivationTrackInventory,
+  spec: SkeletonSpaceSpec = SKELETON_2D,
+): DeriveResult {
   const trackId = inventory.trackId ?? "track";
   if (inventory.entries.length === 0) return none;
   for (const entry of inventory.entries) {
-    if (entry.plugin !== "point" && entry.plugin !== "root") return none;
+    if (entry.plugin !== spec.pointPlugin && entry.plugin !== spec.rootPlugin) return none;
   }
-  const root = readRootPolicy(inventory);
+  const root = readRootPolicy(inventory, spec.rootPlugin);
   if (root.status === "refused") return none; // root reports duplicate roots, so chain layout stays silent here.
-  const pointEntries = inventory.entries.filter((e) => e.plugin === "point");
+  const pointEntries = inventory.entries.filter((e) => e.plugin === spec.pointPlugin);
   if (pointEntries.length === 0) return none;
 
   const orderedPointIds: PointMemberId[] = [];
@@ -76,9 +80,8 @@ export function deriveChainLayout(inventory: DerivationTrackInventory): DeriveRe
     );
   }
 
-  const pointTopologyToken = orderedPointIds.join(">");
   const rootToken = rootPolicyToken(root.policy);
-  const layoutIdentity = asLayoutIdentity(`chain(${trackId}:[${pointTopologyToken}]:${rootToken})`);
+  const layoutIdentity = chainLayoutIdentity(trackId, orderedPointIds, rootToken);
 
   const payload: ChainPayload = Object.freeze({
     orderedPointIds: Object.freeze(orderedPointIds),
@@ -92,5 +95,5 @@ export function deriveChainLayout(inventory: DerivationTrackInventory): DeriveRe
     rootPolicy: root.policy,
   });
 
-  return derived("chain", payload);
+  return derived(spec.chainCapability, payload);
 }

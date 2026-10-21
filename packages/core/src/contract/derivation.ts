@@ -53,12 +53,11 @@ export type DeriveResultOf<M> =
 export interface RequirementContextOf<M> {
   readonly trackId: string;
   readonly entries: readonly DerivationEntryInventoryItem[];
+  readonly inventory: DerivationTrackInventory;
   read<K extends keyof M>(capability: K, source: string): M[K];
 }
 
-export interface DeriveContextOf<M> extends RequirementContextOf<M> {
-  readonly inventory: DerivationTrackInventory;
-}
+export interface DeriveContextOf<M> extends RequirementContextOf<M> {}
 
 export type DeriveResult = DeriveResultOf<CapabilityMap>;
 

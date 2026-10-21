@@ -39,6 +39,18 @@
       "types": "./dist/rig.d.ts",
       "default": "./dist/rig.js"
     },
+    "./point": {
+      "types": "./dist/point.d.ts",
+      "default": "./dist/point.js"
+    },
+    "./root": {
+      "types": "./dist/root.d.ts",
+      "default": "./dist/root.js"
+    },
+    "./join": {
+      "types": "./dist/join.d.ts",
+      "default": "./dist/join.js"
+    },
     "./frame3d": {
       "types": "./dist/frame3d.d.ts",
       "default": "./dist/frame3d.js"
@@ -63,17 +75,17 @@
       "types": "./dist/runner.d.ts",
       "default": "./dist/runner.js"
     },
-    "./point": {
-      "types": "./dist/point.d.ts",
-      "default": "./dist/point.js"
-    },
-    "./root": {
-      "types": "./dist/root.d.ts",
-      "default": "./dist/root.js"
-    },
     "./chain-layout": {
       "types": "./dist/chain-layout.d.ts",
       "default": "./dist/chain-layout.js"
+    },
+    "./joined-layout": {
+      "types": "./dist/joined-layout.d.ts",
+      "default": "./dist/joined-layout.js"
+    },
+    "./skeleton-space": {
+      "types": "./dist/skeleton-space.d.ts",
+      "default": "./dist/skeleton-space.js"
     }
   }
 }

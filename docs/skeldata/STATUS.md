@@ -1,19 +1,25 @@
 # Skeldata status index
 
-Status: implementation track on branch `feat/plugin-structural-api`.
-Current slice: C2 complete, including the plugin structural API follow-up (ADR-142); next C3.
+Status: implementation track on branch `feat/skeldata-v5-phase-c`.
+Current slice: C3 complete locally with CI pending; next C4.
 
 ## Last completed slice
 
-- **Slice:** C2 ([16-C2-chain-layout.md](../../motion5-implementation-plans/slices/16-C2-chain-layout.md)).
-- **State:** Plugin-owned chain layout derivation (`deriveChainLayout`), sequential point parenting, child adjacency, prototype-safe ID index, point locators, `RootPolicy` (`origin`, `unbound`, `bound` with provenance), numeric-invariant `layoutIdentity`, and duplicate root diagnostics implemented. The follow-up moved root rules back to `root.derive` (`readRootPolicy`, one `derivation-failure` per duplicate), made a root-only track a legal track with no `chain`, kept the frame a runtime value (no frame capability), added the `derived`/`refused`/`none` constructors, and replaced the evaluator factory with stateful plugin `init`/`prepare`.
-- **Next:** C3 ([17-C3-joined-layout.md](../../motion5-implementation-plans/slices/17-C3-joined-layout.md)).
+- **Slice:** C3 ([17-C3-joined-layout.md](../../motion5-implementation-plans/slices/17-C3-joined-layout.md)).
+- **State:** Plugin-owned joined layout derivation (`deriveJoinedLayout`) and requirement validation
+  (`validateJoinedRequirements`) from one or more `join` entries plus an optional single `root`
+  entry; authored parent-first ordering validated across the whole track, child adjacency,
+  prototype-safe ID index, point locators with a parity refusal, `RootPolicy` propagation and
+  imported-root refusal (`skeleton-imported-chain-has-root`), length-prefixed numeric-invariant
+  `layoutIdentity` that includes link identity, a shared mixed-track guard between validate and
+  derive, and capability map augmentation (`joined`). Implemented locally; CI pending.
+- **Next:** C4 ([18-C4-solver-derivation.md](../../motion5-implementation-plans/slices/18-C4-solver-derivation.md)).
 
 ## Phase progress
 
 - Phase A (Foundation & Invariants: A1-A6): complete.
 - Phase B (Authoring, Operations & Cache Seam: B1-B8): complete.
-- Phase C (Derivation & Candidate Acceptance: C1-C7): in progress (C1, C2 complete).
+- Phase C (Derivation & Candidate Acceptance: C1-C7): in progress (C1-C3 complete).
 - Phase D (Kinematics & Dual Caches: D1-D7): pending.
 - Phase E (Editing & Render Lifecycle: E1-E7): pending.
 - Phase G (3D & Integration Migration: G1-G8, runs before F): pending.
@@ -53,6 +59,12 @@ Current slice: C2 complete, including the plugin structural API follow-up (ADR-1
 - Point plugin module: [packages/plugins/src/point.ts](../../packages/plugins/src/point.ts).
 - Root plugin module: [packages/plugins/src/root.ts](../../packages/plugins/src/root.ts).
 - Chain layout test suite (C2): [packages/plugins/test/unit/chain-layout-c2.test.ts](../../packages/plugins/test/unit/chain-layout-c2.test.ts).
+- Joined layout derivation module: [packages/plugins/src/joined-layout.ts](../../packages/plugins/src/joined-layout.ts).
+- Join plugin module: [packages/plugins/src/join.ts](../../packages/plugins/src/join.ts).
+- Skeleton space spec module: [packages/plugins/src/skeleton-space.ts](../../packages/plugins/src/skeleton-space.ts).
+- Layout identity module: [packages/plugins/src/layout-identity.ts](../../packages/plugins/src/layout-identity.ts).
+- Joined layout test suite (C3): [packages/plugins/test/unit/joined-layout-c3.test.ts](../../packages/plugins/test/unit/joined-layout-c3.test.ts).
+- Public plugin subpaths test suite: [packages/plugins/test/public-subpaths.test.ts](../../packages/plugins/test/public-subpaths.test.ts).
 - Capability registry: [packages/core/src/contract/capability.ts](../../packages/core/src/contract/capability.ts).
 - Derive result constructors test suite: [packages/core/test/contract/derive-constructors.test.ts](../../packages/core/test/contract/derive-constructors.test.ts).
 - Stateful plugin helper: [packages/core/src/domain/stateful-plugin.ts](../../packages/core/src/domain/stateful-plugin.ts).
@@ -68,8 +80,13 @@ Current slice: C2 complete, including the plugin structural API follow-up (ADR-1
 
 ## Follow-ups
 
-- `join` capability `joined` and the chain-or-joined slot union: C3/C4.
-- Rule ids `skeleton-imported-chain-has-root` (C3) and `ik-solver-no-solve-members` (C4) are not yet in `rule-id.ts`; C3 and C4 add them to `rule-id.ts`, the registry in `rule.ts` and `rule-registry.test.ts`.
+- `join` capability `joined` landed in C3; C4 owns the chain-or-joined slot union.
+- `skeleton-imported-chain-has-root` is registered in `rule-id.ts`, `rule.ts` and
+  `rule-registry.test.ts`; `ik-solver-no-solve-members` remains C4.
+- `LocalEvaluation` exposes no bindings or source IDs, so C3's `join.collect` declares the collect
+  seam but cannot emit link records. D2 owns the dynamic link record and C5 reads it.
+- `SkeletonSpaceSpec` owns plugin and capability names plus point keys; numeric frame reading is the
+  explicit `defineRootPlugin` parameter. C5 adds the record reader when records exist.
 - `PluginCapability`/`PluginCapabilities` (`ports/plugin-capabilities.ts`) is still type-exported from `packages/core/src/index.ts` and used across the graph; `plugin-capabilities.test.ts` ADR-136 parts stay until F2 deletes the port. C6 removes the type export and quarantines the port, `solverChain`, `solves`, the `members` injection, kinematic slot-name rules and the kinematic constants re-exported by `@motion5/core/plugin-api` behind `isLegacyComposeDefinition`, because legacy compose `ik`/`ik3d` still read `inputs.members`.
 - The runtime does not call `executeTrackOperations` yet; evaluation still runs legacy `compose`. Runtime provider override, `committedStates` and `dispose(state)` are exercised only by tests; C7 and D6 wire them into the runtime transaction. C7 also adds the temporary `legacy-compose` strategy (per-plugin parity tests, `legacy-compose-mixed-track` refusal), drops the `committedStates.get(compilerKey) ?? committedStates.get(entryId)` fallback, keys inputs by entry instead of plugin name, and makes `EvaluatorServices` an augmentable interface. F2 deletes `legacy-compose`.
 - FK and IK are still legacy `compose` plugins with `base`/`root`/`target` slots; C4, D3, D4 and D5 migrate them.
