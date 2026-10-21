@@ -10,10 +10,11 @@ byte ceiling.
 
 ## Now
 
-- **Candidate acceptance:** every planned track evaluates through the one operation runner; Track
-  swaps output and per-entry evaluator state together, keys requirement inputs by entry, and carries
-  the temporary `legacy-compose` strategy (with mixed tracks refused) under
-  `21-C7-candidate-acceptance.md`; implemented locally with CI pending.
+- **Two-phase candidate swap (C7b):** `Track.evaluate()` is read-only on committed state;
+  `Track.commit()` is the sole writer of `#committedStates`; the old `#composeWithOperations` is
+  deleted; `composeFrom()` is a shim (evaluate+commit) pending F2 deletion; four new C7b contract
+  tests pass (21/21 in that file); F2 (legacy-compose channel removal) and the publisher-path wiring
+  remain deferred.
 
 ## Next in line
 

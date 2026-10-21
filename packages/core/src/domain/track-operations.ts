@@ -68,10 +68,34 @@ export interface ExecuteTrackOperationsOptions {
   readonly committedStates?: ReadonlyMap<CompilerEntryKey, unknown> | undefined;
 }
 
+/**
+ * This track's interpolated, plugin-composed output at a given progress.
+ *
+ * Defined here because it is the element type of TrackCandidate. track.ts re-exports it so
+ * existing callers see no import change. Neither type depends on the Track class itself.
+ */
+export interface TrackSnapshot {
+  readonly progress: number;
+  readonly values: Readonly<Record<string, unknown>>;
+}
+
 export interface TrackOperationsResult {
   readonly publishedValues: Readonly<Record<string, unknown>>;
   readonly proposedStates: ReadonlyMap<CompilerEntryKey, ProposedEntryState>;
 }
+
+/**
+ * The result of a Track.evaluate call: a proposed snapshot and state map, not yet committed.
+ *
+ * `kind: "candidate"` distinguishes this from a bare TrackSnapshot at call sites. The caller
+ * passes the whole value to Track.commit unchanged; the two halves must not be separated.
+ * See the C7b slice plan and track.ts §evaluate/commit.
+ */
+export type TrackCandidate = {
+  readonly kind: "candidate";
+  readonly snapshot: TrackSnapshot;
+  readonly proposedStates: ReadonlyMap<CompilerEntryKey, ProposedEntryState>;
+};
 
 export interface TrackEvaluationBatchItem extends ExecuteTrackOperationsOptions {
   readonly trackId: string;
@@ -384,6 +408,13 @@ export function executeTrackOperations(
             );
           }
           let finalState = prepResult.state;
+          // Prepare succeeded and returned a new state for an initialized entry; update the
+          // proposal so abandonment from collect or fold disposes prepare's generation rather than
+          // leaking it. The pre-prepare record above covered a throwing prepare; a successful
+          // prepare that changed state moves ownership forward.
+          if (origin === "initialized" && finalState !== undefined) {
+            proposedStates.set(entry.compilerKey, Object.freeze({ origin, state: finalState }));
+          }
 
           if (entry.operations.collect === true) {
             if (!strategy.collect) {
@@ -403,7 +434,14 @@ export function executeTrackOperations(
                 `Fold for entry "${entry.entryId}" must return { delta, state? }.`,
               );
             }
-            if (foldResult.state !== undefined) finalState = foldResult.state;
+            if (foldResult.state !== undefined) {
+              finalState = foldResult.state;
+              // Fold returned a new state for an initialized entry; update the proposal before
+              // delta validation so abandonment disposes fold's generation rather than the prior.
+              if (origin === "initialized") {
+                proposedStates.set(entry.compilerKey, Object.freeze({ origin, state: finalState }));
+              }
+            }
             currentFold = executeFoldOperation(
               entry.entryId,
               entry.operations.fold.outputs,
@@ -412,7 +450,12 @@ export function executeTrackOperations(
             );
           }
 
-          proposedStates.set(entry.compilerKey, Object.freeze({ origin, state: finalState }));
+          // Use `state` (init's or the committed generation's) when neither prepare nor fold
+          // changed it so the proposal never records undefined as the committed state.
+          proposedStates.set(
+            entry.compilerKey,
+            Object.freeze({ origin, state: finalState ?? state }),
+          );
           break;
         }
         case "legacy-compose": {

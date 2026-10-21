@@ -959,7 +959,7 @@ describe("Slice C3: Joined Topology Derivation", () => {
     expect(before).toHaveLength(1);
     const beforePayload = before[0]!.payload as JoinedPayload;
 
-    project.track("m0/torso").setValues({ length: 999 });
+    project.track("m0/torso").setValues({ t0: { length: 999 } });
 
     const after = project.track("m0/skeleton").descriptors;
     expect(after).toHaveLength(1);

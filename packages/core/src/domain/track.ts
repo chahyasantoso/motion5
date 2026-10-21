@@ -18,18 +18,17 @@ import {
   executeTrackOperations,
   disposeRetiredStates,
   type LegacyComposeChain,
+  type TrackCandidate,
+  type TrackSnapshot,
 } from "./track-operations";
 
 export { CompositionOutputError };
+export type { TrackSnapshot };
 
 import type { TrackExecutionPlan } from "./execution-plan";
 import type { EvaluatorServices } from "./cache";
 import type { CompilerEntryKey } from "../contract/address";
 
-export interface TrackSnapshot {
-  readonly progress: number;
-  readonly values: Readonly<ImmutableRecord>;
-}
 export interface TrackOptions {
   readonly interpolator: Interpolator;
   readonly interpolationConfig?: unknown;
@@ -423,6 +422,90 @@ export class Track {
     return { ...interpolated, ...this.#values };
   }
   /**
+   * Evaluates this track's entry set and returns a candidate — proposed snapshot and state map.
+   *
+   * Read-only on committed state: `#committedStates` is not written. The caller decides whether
+   * to accept the candidate and call `commit`, or to discard it and leave the track's committed
+   * state unchanged. Two callers in the same candidate group may each call `evaluate` without
+   * risk of partial commit: a group member that throws during its own `evaluate` does not affect
+   * any track that already completed `evaluate` without yet calling `commit`.
+   *
+   * The memo is consulted: if `seed` and `requirementInputs` match the last committed snapshot,
+   * the cached result is returned as a candidate without re-running the executor.
+   */
+  evaluate(
+    seed: ImmutableRecord,
+    requirementInputs: RequirementInputs = NO_REQUIREMENT_INPUTS,
+  ): TrackCandidate {
+    this.assertActive();
+    const memoized = this.#memoized(seed, requirementInputs);
+    if (memoized !== undefined) {
+      return {
+        kind: "candidate",
+        snapshot: memoized,
+        proposedStates: this.#committedStates as ReadonlyMap<CompilerEntryKey, never>,
+      } as TrackCandidate;
+    }
+    if (this.#plan !== undefined) {
+      return this.#evaluateWithOperations(seed, requirementInputs, this.#plan);
+    }
+    // Legacy-compose path (F2 removes this branch).
+    let values: ImmutableRecord = seed;
+    for (const plugin of this.#plugins.plugins) {
+      if (!isLegacyComposeDefinition(plugin)) continue;
+      const scoped = requirementInputs[plugin.name] ?? NO_PLUGIN_INPUTS;
+      const composed = plugin.compose(values, this.#progress, scoped, this.#nodeId);
+      if (!isRecord(composed))
+        throw new CompositionOutputError(
+          `Plugin "${plugin.name}" must return a renderer-neutral record.`,
+        );
+      values = composed as ImmutableRecord;
+    }
+    const snapshot = Object.freeze({
+      progress: this.#progress,
+      values: freezeComposition(publishableValues(values, this.#plugins.internalKeys)),
+    });
+    return { kind: "candidate", snapshot, proposedStates: new Map() };
+  }
+
+  /**
+   * Commits an accepted candidate produced by `evaluate`.
+   *
+   * Writes `#committedStates`, updates the memo, clears `#dirty`, then calls
+   * `disposeRetiredStates` for entries that were replaced. A disposal failure throws after the
+   * swap (postcommit delivery error) — the state was committed and the error is surfaced, but
+   * the commit itself is not undone. See docs/skeldata/LIFECYCLE.md §4.4.
+   *
+   * Only `Track.commit` writes `#committedStates`; `evaluate` is read-only on state. That
+   * single-owner invariant is what makes the two-phase caller safe.
+   */
+  commit(
+    candidate: TrackCandidate,
+    seed?: ImmutableRecord,
+    requirementInputs?: RequirementInputs,
+  ): TrackSnapshot {
+    this.assertActive();
+    const retired = this.#committedStates;
+    const nextStates = new Map<CompilerEntryKey, unknown>();
+    for (const [key, proposal] of candidate.proposedStates) nextStates.set(key, proposal.state);
+    this.#committedStates = nextStates;
+    this.#lastSnapshot = candidate.snapshot;
+    if (seed !== undefined) this.#lastSeed = Object.freeze({ ...seed });
+    if (requirementInputs !== undefined)
+      this.#lastRequirementInputs = Object.freeze({ ...requirementInputs });
+    this.#dirty = false;
+    if (this.#plan !== undefined) {
+      const failures = disposeRetiredStates(this.#plan, retired, candidate.proposedStates);
+      if (failures.length > 0) {
+        throw new Error(
+          `Track "${this.#nodeId}" committed but disposing a retired state failed: ${describeFailures(failures)}`,
+        );
+      }
+    }
+    return candidate.snapshot;
+  }
+
+  /**
    * Composes this track's values, then runs the plugin chain over them.
    *
    * One parameter, and it is the plugin-owned scope: each plugin receives only the slots it
@@ -441,65 +524,35 @@ export class Track {
     return this.composeFrom(this.interpolated(), requirementInputs);
   }
   /**
-   * Runs the plugin chain from `seed` rather than from this track's own interpolated state.
+   * Shim: evaluate + immediate commit.
    *
-   * `seed` is this track's pre-plugin value domain, not a second input channel. No authored form
-   * populates it, nothing outside this class holds a value to put in it that did not come from
-   * `interpolated()`, and a value bound from another node still reaches a plugin only through its
-   * declared slot. ADR-047's invariant is about where an upstream value may land, and it holds
-   * unchanged: `requirementInputs` is still the only parameter one can arrive by.
-   *
-   * The seed is part of the memo key, for the same reason the requirement inputs are. `#dirty`
-   * reports whether the timeline moved, which says nothing about whether this is the seed the last
-   * snapshot was composed from, and answering one seed's question with another seed's snapshot is
-   * the one way this seam can be silently wrong. It is also why a changed mask needs no flag of its
-   * own to be seen: a different mask is a different seed.
+   * Preserved for all existing test callers and for the legacy-compose path while F2 is pending.
+   * The Engine publisher path calls `evaluate` then `commit` separately so it can batch the
+   * accept/reject decision across a candidate group before any commit fires. Once the publisher
+   * path is wired and the legacy-compose channel is removed (F2), this method is deleted.
+   * Until then, treat it as test-only backwards-compat.
    */
   composeFrom(
     seed: ImmutableRecord,
     requirementInputs: RequirementInputs = NO_REQUIREMENT_INPUTS,
   ): TrackSnapshot {
     this.assertActive();
-    const memoized = this.#memoized(seed, requirementInputs);
-    if (memoized !== undefined) return memoized;
-    if (this.#plan !== undefined) {
-      return this.#composeWithOperations(seed, requirementInputs, this.#plan);
+    const candidate = this.evaluate(seed, requirementInputs);
+    // Memo hit: nothing to commit, snapshot is already current.
+    if (
+      this.#memoized(seed, requirementInputs) !== undefined &&
+      candidate.proposedStates === (this.#committedStates as ReadonlyMap<CompilerEntryKey, never>)
+    ) {
+      return candidate.snapshot;
     }
-    let values: ImmutableRecord = seed;
-    for (const plugin of this.#plugins.plugins) {
-      // F2 deletes this compose gate with the legacy compose channel.
-      if (!isLegacyComposeDefinition(plugin)) continue;
-      const scoped = requirementInputs[plugin.name] ?? NO_PLUGIN_INPUTS;
-      const composed = plugin.compose(values, this.#progress, scoped, this.#nodeId);
-      if (!isRecord(composed))
-        throw new CompositionOutputError(
-          `Plugin "${plugin.name}" must return a renderer-neutral record.`,
-        );
-      values = composed as ImmutableRecord;
-    }
-    const snapshot = Object.freeze({
-      progress: this.#progress,
-      values: freezeComposition(publishableValues(values, this.#plugins.internalKeys)),
-    });
-    this.#lastSeed = Object.freeze({ ...seed });
-    this.#lastRequirementInputs = Object.freeze({ ...requirementInputs });
-    this.#lastSnapshot = snapshot;
-    this.#dirty = false;
-    return snapshot;
+    return this.commit(candidate, seed, requirementInputs);
   }
-  /**
-   * Evaluates this track's complete entry set through the one operation runner, then swaps.
-   *
-   * The runner receives committed states by compiler key, so a replaced definition starts cold and
-   * a structurally matching one continues. Output and proposals are swapped together before any
-   * retirement runs; a failure above the swap leaves both the committed states and the last
-   * snapshot in place. A retirement failure happens after the swap and is a delivery error.
-   */
-  #composeWithOperations(
+  /** The operations-path implementation of evaluate: runs the executor and returns a candidate. */
+  #evaluateWithOperations(
     seed: ImmutableRecord,
     requirementInputs: RequirementInputs,
     plan: TrackExecutionPlan,
-  ): TrackSnapshot {
+  ): TrackCandidate {
     const legacyCompose = this.#legacyChain();
     const result = executeTrackOperations({
       plan,
@@ -511,27 +564,12 @@ export class Track {
       committedStates: this.#committedStates,
       ...(legacyCompose === undefined ? {} : { legacyCompose }),
     });
-    const retired = this.#committedStates;
-    const nextStates = new Map<CompilerEntryKey, unknown>();
-    for (const [key, proposal] of result.proposedStates) nextStates.set(key, proposal.state);
-    this.#committedStates = nextStates;
     const snapshot = Object.freeze({
       progress: this.#progress,
       values: result.publishedValues as ImmutableRecord,
     });
-    this.#lastSeed = Object.freeze({ ...seed });
-    this.#lastRequirementInputs = Object.freeze({ ...requirementInputs });
-    this.#lastSnapshot = snapshot;
-    this.#dirty = false;
-    const failures = disposeRetiredStates(plan, retired, result.proposedStates);
-    if (failures.length > 0) {
-      throw new Error(
-        `Track "${this.#nodeId}" committed but disposing a retired state failed: ${describeFailures(failures)}`,
-      );
-    }
-    return snapshot;
+    return { kind: "candidate", snapshot, proposedStates: result.proposedStates };
   }
-  /** This track's pre-plugin values sliced per entry, which is what one entry may read as `values`. */
   #sampleValues(
     seed: ImmutableRecord,
     plan: TrackExecutionPlan,

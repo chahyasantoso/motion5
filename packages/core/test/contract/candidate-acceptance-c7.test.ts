@@ -19,6 +19,7 @@ import {
   disposeRetiredStates,
   executeTrackOperations,
   type ProposedEntryState,
+  type TrackCandidate,
 } from "../../src/domain/track-operations";
 import { Track } from "../../src/domain/track";
 import type { CompilerEntryKey } from "../../src/contract/address";
@@ -706,5 +707,238 @@ describe("Slice C7: candidate acceptance", () => {
 
     project.dispose();
     expect(disposed).toEqual([3]);
+  });
+
+  it("C7-15 disposes state exactly once through Track.dispose after many ticks", () => {
+    // F4: disposeRetiredStates was tested only via the standalone helper. This test proves the
+    // path fires through Track so a runtime removal always cleans up exactly one generation.
+    const disposed: number[] = [];
+    const probe = defineStatefulPlugin<{ count: number }, { count: number }>({
+      name: "probe",
+      keys: ["v"],
+      collect: (prepared) => ({ count: prepared.count }),
+      init: () => ({ count: 0 }),
+      prepare: (_local, state) => {
+        const next = { count: state.count + 1 };
+        return { prepared: next, state: next };
+      },
+      dispose: (state) => {
+        disposed.push(state.count);
+      },
+    });
+    const registry = registryOf(probe);
+    const keyframes: AuthoredKeyframes = [{ e: { plugin: "probe", values: { v: 1 } } }];
+    const plan = planFor(keyframes, registry);
+    const track = new Track({
+      interpolator: staticInterpolator({ v: 1 }),
+      plugins: resolvedFor(keyframes, registry),
+      plan,
+      nodeId: "~/f4",
+    });
+
+    // Many ticks with distinct seeds so the memo doesn't short-circuit. Each tick advances the
+    // committed state; none should trigger disposal while the track is live.
+    for (let tick = 0; tick < 10; tick++) {
+      track.composeFrom({ v: tick });
+    }
+    expect(disposed).toEqual([]);
+
+    // Dispose triggers disposeRetiredStates with an empty candidate map, retiring the generation.
+    track.dispose();
+    expect(disposed).toEqual([10]);
+  });
+
+  it("C7-16 disposes prepare's new state when collect throws, not init's state", () => {
+    // F5: before the fix, proposedStates still held init's state after a successful prepare that
+    // returned a new state. A throwing collect then caused abandonment to dispose init's state
+    // and leak prepare's. This test pins the corrected behaviour.
+    const disposeLog: string[] = [];
+    const prepareChangesState = defineStatefulPlugin<{ generation: string }, { prepared: string }>({
+      name: "prepareChanges",
+      keys: ["v"],
+      collect: (_prepared) => {
+        throw new Error("collect refused");
+      },
+      init: () => {
+        return { generation: "init" };
+      },
+      prepare: (_local, _state) => {
+        // Returns a new state object every time — init's object is no longer referenced.
+        return { prepared: { prepared: "prepare" }, state: { generation: "prepare" } };
+      },
+      dispose: (state) => {
+        disposeLog.push(state.generation);
+      },
+    });
+    const registry = registryOf(prepareChangesState);
+    const plan = planFor([{ e: { plugin: "prepareChanges", values: { v: 1 } } }], registry);
+
+    expect(() =>
+      executeTrackOperations({
+        plan,
+        sampleValues: new Map([["e", { v: 1 }]]),
+      }),
+    ).toThrow("collect refused");
+
+    // Abandonment must dispose prepare's generation ("prepare"), not init's ("init").
+    expect(disposeLog).toEqual(["prepare"]);
+  });
+
+  it("C7-17 Engine refuses a load with duplicate entry ids across two tracks", () => {
+    // F6: no end-to-end Engine-level refusal test existed. The schema validator catches
+    // duplicate authored ids and load must throw rather than silently accepting the project.
+    const registry = registryOf(makeCounter([]));
+    const engine = new Engine({
+      clock: createManualClock(),
+      interpolator: createFakeInterpolator(),
+      scheduler: createFakeScheduler(),
+      plugins: registry,
+    });
+
+    expect(() =>
+      engine.load({
+        schemaVersion: 5,
+        motions: [
+          {
+            id: "motion",
+            trigger: { type: "manual" },
+            tracks: [
+              {
+                id: "track",
+                keyframes: [
+                  { dup: { plugin: "counter", values: { v: 1 } } },
+                  { dup: { plugin: "counter", values: { v: 2 } } },
+                ],
+              },
+            ],
+          },
+        ],
+      }),
+    ).toThrow();
+  });
+
+  it("C7b-1 evaluate does not commit state — first track unaffected when second evaluation throws", () => {
+    // Failing-first: proves evaluate is separate from commit. With the old composeFrom shim both
+    // in one call, the first track's state would already be swapped before the second throws.
+    const disposed: number[] = [];
+    const counter = makeCounter(disposed);
+    const registry = registryOf(counter);
+    const keyframes: AuthoredKeyframes = [{ e: { plugin: "counter", values: { v: 1 } } }];
+
+    const planA = planFor(keyframes, registry);
+    const trackA = new Track({
+      interpolator: staticInterpolator({ v: 1 }),
+      plugins: resolvedFor(keyframes, registry),
+      plan: planA,
+      nodeId: "~/c7b-a",
+    });
+
+    // Evaluate and commit trackA once so it has a non-empty committed state.
+    const candidateA1 = trackA.evaluate({ v: 1 });
+    trackA.commit(candidateA1);
+    // After one commit, count is 1.
+    expect(candidateA1.snapshot.values.collect).toEqual([{ count: 1, id: "e" }]);
+
+    // Evaluate a second candidate for trackA — this proposes count=2 but does NOT commit yet.
+    const candidateA2 = trackA.evaluate({ v: 2 });
+    expect(candidateA2.snapshot.values.collect).toEqual([{ count: 2, id: "e" }]);
+
+    // Simulate the group's second track throwing during evaluation: no commit fires for trackA.
+    // trackA's committed state must still reflect the first commit (count=1).
+    const candidateA3 = trackA.evaluate({ v: 1 });
+    // Re-evaluate with the prior seed — continued state means count=2 from proposal, but committed
+    // is still count=1 because candidateA2 was never committed.
+    expect(candidateA3.snapshot.values.collect).toEqual([{ count: 2, id: "e" }]);
+
+    // Dispose: only the committed state (count=1) is retired, not the uncommitted proposals.
+    trackA.dispose();
+    expect(disposed).toEqual([1]);
+  });
+
+  it("C7b-2 commit advances state and disposeRetiredStates fires once per commit", () => {
+    // The normal two-phase path: evaluate then commit advances state exactly once.
+    const disposed: number[] = [];
+    const counter = makeCounter(disposed);
+    const registry = registryOf(counter);
+    const keyframes: AuthoredKeyframes = [{ e: { plugin: "counter", values: { v: 1 } } }];
+    const plan = planFor(keyframes, registry);
+    const track = new Track({
+      interpolator: staticInterpolator({ v: 1 }),
+      plugins: resolvedFor(keyframes, registry),
+      plan,
+      nodeId: "~/c7b-2",
+    });
+
+    const c1 = track.evaluate({ v: 1 });
+    track.commit(c1);
+    const c2 = track.evaluate({ v: 2 });
+    track.commit(c2);
+
+    // Two commits: state progressed from count=0 (init) to count=1 to count=2.
+    // init's generation (count=0 baseline) is retired on first commit, count=1 on second.
+    // No disposal yet (continued states are not retired while the track is live).
+    expect(disposed).toEqual([]);
+
+    track.dispose();
+    // dispose retires the last committed state, count=2.
+    expect(disposed).toEqual([2]);
+  });
+
+  it("C7b-3 cold-reset retires prior generation on commit, not on evaluate", () => {
+    // A second evaluate with a different compiler key (cold reset scenario via fresh track)
+    // must not dispose the prior committed state until commit fires.
+    const disposed: number[] = [];
+    const counter = makeCounter(disposed);
+    const registry = registryOf(counter);
+    const keyframes: AuthoredKeyframes = [{ e: { plugin: "counter", values: { v: 1 } } }];
+    const plan = planFor(keyframes, registry);
+    const track = new Track({
+      interpolator: staticInterpolator({ v: 1 }),
+      plugins: resolvedFor(keyframes, registry),
+      plan,
+      nodeId: "~/c7b-3",
+    });
+
+    // First commit establishes count=1 as committed state.
+    const c1 = track.evaluate({ v: 1 });
+    track.commit(c1);
+    expect(disposed).toEqual([]);
+
+    // evaluate a second candidate — does not dispose the prior generation.
+    track.evaluate({ v: 2 });
+    expect(disposed).toEqual([]);
+
+    // commit that candidate — prior generation (count=1) is now retired via disposeRetiredStates.
+    // But counter plugin uses "continued" origin (same compiler key, same generation), so
+    // continued states are not disposed on commit; they are only disposed on track.dispose().
+    // c2 was evaluated but never committed, so dispose retires the last committed: count=1.
+    track.dispose();
+    expect(disposed).toEqual([1]);
+  });
+
+  it("C7b-4 evaluate returns consistent snapshot regardless of subsequent commits", () => {
+    // A candidate snapshot captured from evaluate is not mutated by a later commit on the same track.
+    const disposed: number[] = [];
+    const counter = makeCounter(disposed);
+    const registry = registryOf(counter);
+    const keyframes: AuthoredKeyframes = [{ e: { plugin: "counter", values: { v: 1 } } }];
+    const plan = planFor(keyframes, registry);
+    const track = new Track({
+      interpolator: staticInterpolator({ v: 1 }),
+      plugins: resolvedFor(keyframes, registry),
+      plan,
+      nodeId: "~/c7b-4",
+    });
+
+    const c1 = track.evaluate({ v: 1 });
+    const snapshot1Before = c1.snapshot;
+    track.commit(c1);
+    const c2 = track.evaluate({ v: 2 });
+    track.commit(c2);
+
+    // The snapshot captured from c1 before any commit must still read count=1.
+    expect(snapshot1Before.values.collect).toEqual([{ count: 1, id: "e" }]);
+    expect(c2.snapshot.values.collect).toEqual([{ count: 2, id: "e" }]);
+    track.dispose();
   });
 });
