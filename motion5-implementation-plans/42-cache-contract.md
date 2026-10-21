@@ -1,12 +1,12 @@
 # Cache contract — generic injected memoization
 
-Status: shared reference. The generic seam (sections 2–5 and the B7 part of section 9) is implemented on branch `feat/plugin-structural-api` and proven by `packages/core/test/contract/cache-provider-b7.test.ts` and `packages/core/test/contract/staged-state-b7.test.ts`; runtime wiring (C7, D6) and the FK/IK consumers (D4, D5) remain pending. Section 4 was reconciled with the plugin structural API (ADR-142) on 2026-10-20.
+Status: design specification only; runtime implementation and verification remain pending.
 
-This is a shared reference, **not a new slice to execute after F6**. Read it during A1/A3/A6 and before B2/B7. B7 implements the generic seam; C7 wires it into the runtime; D4 and D5 consume it, and G3/G4 reuse their helpers for `fk3d` and `ik3d`; D6 proves lifecycle integration. The numbered implementation order remains 01–41. This contract extends `00-overview.md`; it does not revive the legacy snapshot's `compose` API or change the authored dialect.
+This is a shared reference, **not a new slice to execute after F6**. Read it during A1/A3/A6 and before B2/B7. B7 implements the generic seam; D4 and D5 consume it; D6 proves lifecycle integration. The numbered implementation order remains 01–41. This contract extends `00-overview.md`; it does not revive the legacy snapshot's `compose` API or change the authored dialect.
 
 ## 1. Decision and boundaries
 
-Use **plugin-owned memoization over a generic, injected, immutable cache port**, with cache snapshots held in proposed per-entry plugin state. Core owns evaluation scheduling and atomic acceptance; plugins own semantic keys, validation, and mathematics; the injected provider owns bounded storage and eviction policy. No separate cache transaction manager is needed.
+Use **plugin-owned memoization over a generic, injected, immutable cache port**, with cache snapshots held in proposed evaluator state. Core owns evaluation scheduling and atomic acceptance; plugins own semantic keys, validation, and mathematics; the injected provider owns bounded storage and eviction policy. No separate cache transaction manager is needed.
 
 The primary implementation is a synchronous, bounded, in-memory provider. Supply an interchangeable no-cache provider and prove a third, test-only provider works without core or FK/IK branches. Future non-kinematic plugins must use the same port. A cache miss, disabled cache, or eviction may change cost and references, never accepted numeric/data meaning.
 
@@ -14,20 +14,22 @@ Do not add authored `cache` leaves, a plugin-name switch, global maps, a service
 
 ## 2. Ownership and dependency direction
 
-- **Generic cache interfaces and conformance contract:** owned by core plugin-facing API; must not know skeletons, FK/IK names, graph registry.
-- **Entry/generation lifecycle and acceptance:** owned by the core operation executor and existing transaction owner; must not know cache keys, member topology, solver strategy.
-- **Default bounded provider and no-cache provider:** owned by generic cache implementation module; must not know plugin semantics or engine state.
-- **Runtime provider selection:** owned by application composition root; must not know per-frame cache contents.
-- **Effective key/value construction:** owned by each plugin adapter; must not know runtime internals or arbitrary source lookup.
-- **Frame composition and solve algorithms:** owned by existing pure math modules; must not know cache provider, graph, publication.
+| Concern                                           | Owner                                     | Must not know                                |
+| ------------------------------------------------- | ----------------------------------------- | -------------------------------------------- |
+| Generic cache interfaces and conformance contract | Core plugin-facing API                    | Skeletons, FK/IK names, graph registry       |
+| Entry/generation lifecycle and acceptance         | Existing core evaluator/transaction owner | Cache keys, member topology, solver strategy |
+| Default bounded provider and no-cache provider    | Generic cache implementation module       | Plugin semantics or engine state             |
+| Runtime provider selection                        | Application composition root              | Per-frame cache contents                     |
+| Effective key/value construction                  | Each plugin adapter                       | Runtime internals or arbitrary source lookup |
+| Frame composition and solve algorithms            | Existing pure math modules                | Cache provider, graph, publication           |
 
-Core contracts are defined independently of the default implementation. Runtime construction wires the default provider and passes the selected provider as an explicit evaluator service (`EvaluatorServices.cache`). A custom provider does not require editing the registry, compiler, or built-in plugins. Keep the port small; a new backend is an implementation of an open interface, not another member of a closed backend enum.
+Core contracts are defined independently of the default implementation. Runtime construction wires the default provider and passes the selected provider as an explicit evaluator service. A custom provider does not require editing the registry, compiler, or built-in plugins. Keep the port small; a new backend is an implementation of an open interface, not another member of a closed backend enum.
 
-Contracts live in `packages/core/src/domain/cache.ts` and providers (`createBoundedCacheProvider`, `DEFAULT_CACHE_PROVIDER`, `NO_CACHE_PROVIDER`) in `packages/core/src/domain/cache-providers.ts`. `@motion5/core/plugin-api` re-exports only the plugin-facing port, providers, and the `defineStatefulPlugin` helper. Never put provider dependencies into pure frame/solver files.
+Use proposed module locations such as `packages/core/src/domain/cache.ts` for contracts and a separate generic implementation module for providers; confirm boundary conventions in the actual checkout before choosing final paths. Re-export only the plugin-facing port, providers, and evaluator helper needed by supported consumers. Never put provider dependencies into pure frame/solver files.
 
 ## 3. Minimal typed cache port
 
-The implemented API shape (`packages/core/src/domain/cache.ts`):
+The following is the intended API shape, not a claim these names already exist in the snapshot:
 
 ```ts
 export type CacheLookup<V> =
@@ -56,7 +58,6 @@ export interface CacheProvider {
 
 export interface EvaluatorServices {
   readonly cache: CacheProvider;
-  readonly [service: string]: unknown;
 }
 ```
 
@@ -64,7 +65,7 @@ A slot identifies one logical memo cell **inside one private table**. The defaul
 
 The default copies its encapsulated map **once per write batch**, not once per point. FK gathers miss writes during its parent-first walk and calls remember once after producing all tentative tips; each point is visited once, so no read of an uncommitted same-pass table entry is needed. IK uses a singleton write batch. Do not add a second single-write API or copy a whole table N times per FK pass: that would add O(NK), worst-case O(N²), storage work for K misses. Count the O(N) map copy and O(K) writes honestly; a tested persistent map is another permitted implementation. A generic consumer needing sequential same-slot updates may apply multiple batches explicitly and owns that cost. Never retain caller-owned mutable write arrays.
 
-`create` returns a fresh empty table. A shared provider object is allowed only as an immutable/stateless factory; each returned table belongs to one entry generation's plugin state. It cannot expose another table's contents even when slot names and numeric keys match. `equals` is pure and supplied by the plugin; providers cannot replace it with reference identity, rounding, or a lossy serialization. A hashing optimization must verify full equality after bucket selection.
+`create` returns a fresh empty table. A shared provider object is allowed only as an immutable/stateless factory; each returned table belongs to its evaluator generation. It cannot expose another table's contents even when slot names and numeric keys match. `equals` is pure and supplied by the plugin; providers cannot replace it with reference identity, rounding, or a lossy serialization. A hashing optimization must verify full equality after bucket selection.
 
 `lookup` and `remember` are synchronous and observationally pure. `remember` returns a new snapshot, structurally sharing only immutable internals. Old snapshots, keys, values, and lookup recency remain unchanged. `Object.freeze(new Map())` is not sufficient: the map can still be mutated. Use encapsulated maps copied before writes, immutable entries, or another demonstrated persistent representation; expose no mutable backing store.
 
@@ -72,58 +73,37 @@ Keys and values must be immutable before insertion. TypeScript `readonly` alone 
 
 The no-cache provider returns `miss` for every lookup and retains no key/value on remember. It implements the **same port**, not a second plugin path. Use an exhaustive `switch` on `CacheLookup.kind`, ending in the repository's `unreachable(never)` helper. This represents cached `undefined` unambiguously for generic users; whether a plugin may publish undefined is a separate publication rule. A ready/error/blocked result remains governed by existing result unions. Do not add a collect/fold/both tag or encode open-ended providers as a discriminated union.
 
-## 4. Injection and stateful plugin protocol
+## 4. Injection and evaluator protocol
 
-The executor (`executeTrackOperations` in `packages/core/src/domain/track-operations.ts`) accepts an optional `services` override containing `cache`; if omitted it wires `DEFAULT_CACHE_PROVIDER`. Runtime construction does not pass an override yet: wiring the executor into the runtime transaction belongs to C7, with D6 proving the lifecycle. A stateful plugin receives an immutable `EvaluatorContext` (track, entry ID, compiler entry key, generation token and plugin name, built by `entryEvaluatorContext`) plus `EvaluatorServices`, never engine or registry access.
+At runtime construction, accept an optional typed evaluator-services override containing `cache`. If omitted, wire the default bounded provider. Give a per-instance `createEvaluator` factory an immutable instance context plus `EvaluatorServices`. The context contains existing runtime/track/compiler-entry/generation identity and relevant compiled descriptors, not engine or registry access.
 
-Stateless collect/fold definitions remain usable without state parameters or cache imports. A definition is stateful when it declares `init` and `prepare`; there is no evaluator factory and there are no operation claims. `collect` and `fold.run` are always functions on the definition, and a stateful plugin's versions take the prepared value instead of the local evaluation. `PluginDefinition` is the `StatelessPluginDefinition | StatefulPluginDefinition` union (the stateless side types `init`, `prepare` and `dispose` as `never`), and the compiled `ExecutionStrategy` is the `stateless | stateful` union consumed by an exhaustive switch ending in `unreachable`. Never run both paths or infer statefulness from the plugin name.
+Stateless collect/fold definitions remain usable without factories, state parameters, or cache imports. A stateful definition keeps the same finite collect/fold **claims**; its factory owns execution of every operation it declares, without duplicate stateless run callbacks. Core compiles one stateless/factory execution discriminated union and consumes it exhaustively: the factory evaluator when declared, otherwise the stateless callbacks. Reject ambiguous or incomplete runners. Never run both paths, duplicate output declarations, or infer statefulness from the plugin name.
 
-Admission refuses a definition that declares `createEvaluator` (`createEvaluator was removed; declare init and prepare instead`), `init` without a function `prepare`, `prepare` or `dispose` without `init`, a non-function `init`, `dispose`, `collect` or `fold.run`, and a fold output named `collect`.
+B2/B7 must pin a typed helper binding plugin-local state `S` and prepared local data `P`, without leaking `any` through the public API. A suitable protocol is:
 
-The typed helper is `defineStatefulPlugin<S, P>` in `packages/core/src/domain/stateful-plugin.ts`, exported from `@motion5/core/plugin-api`. It binds plugin-local state `S` and prepared local data `P` without leaking `any`, and erases them in one place at the registry boundary:
-
-```text
-defineStatefulPlugin<S, P>({
-  name,
-  init(ctx: EvaluatorContext, services: EvaluatorServices): S,
-  prepare(entry: LocalEvaluation, state: S, services: EvaluatorServices): { prepared: P; state: S },
-  dispose?(state: S): void,
-  collect?(prepared: P, ctx: LocalEvaluationContext): CollectRecord,
-  fold?: {
-    outputs: readonly string[],
-    run(prepared: P, prior: Readonly<Record<string, unknown>>, ctx: LocalEvaluationContext): {
-      delta: Readonly<Record<string, unknown>>;
-      state?: S;
-    },
-  },
-});
-```
-
-Per entry, in authored order:
-
-1. Read committed state by compiler entry key, then by entry ID. If none exists, call `init` once; an `undefined` initial state is a `TypeError`.
-2. `prepare(entry, state, services)` runs once and returns immutable prepared data plus a state. It sees local values, scoped inputs and context, but no fold accumulator or collections.
-3. If declared, `collect` runs once on the prepared data and returns its one record. It cannot read fold state or collections and cannot write hidden state.
-4. If declared, `fold.run` runs once on the **same** prepared data plus preceding fold state and returns `{ delta, state? }`. It cannot receive its collect result or collection buffers. A returned `state` wins; otherwise, including for a collect-only entry, prepare's state is the proposal.
-5. Core sets the final state in `proposedStates` under the compiler entry key. Validate/freeze outputs and state-owned immutable material before acceptance; the transaction owner stores only the final opaque state proposals after the complete transaction succeeds.
+1. The factory creates initial committed state once per candidate entry generation.
+2. `prepare(localEvaluation, committedState)` runs once and returns immutable prepared data plus a proposed state. It sees local values, scoped inputs and context, but no fold accumulator or collections.
+3. If declared, collect runs once from that prepared data and returns its one item. It cannot read fold state or collections and cannot write hidden evaluator state.
+4. If declared, fold runs once from the **same** prepared data plus preceding fold state. It returns a delta plus the final state proposal. It cannot receive its collect result or collection buffers. A collect-only entry uses prepare's state proposal.
+5. Validate/freeze outputs and state-owned immutable material before acceptance. Core stores only the final opaque state proposal after the complete transaction succeeds.
 
 This separates preparation from ordered operation dispatch, permits fold-dependent caching inside fold, and avoids a mutable closure remembering what collect did. For both-operation entries, prepare must not emulate collect and feed its output to fold. Shared normalized local data is allowed; an implicit current-output channel is not. Cache writes return new snapshots passed explicitly through prepared data/proposals. No finalizer/commit hook is called at acceptance.
 
-`packages/core/test/contract/staged-state-b7.test.ts` locks these semantics with a non-skeleton plugin and exercises collect-only, fold-only, both and stateless definitions (B7-14..B7-26). Individual plugins must not cast opaque state or downcast the provider. Do not store mutable current state in a shared plugin-definition object or a closure.
+Use an explicit example in B7 to lock these semantics and type-test collect-only, fold-only, both, and stateless definitions. The helper may encapsulate the core's heterogeneous state erasure internally; individual plugins must not cast opaque state or downcast the provider. Do not store mutable current state in a shared plugin-definition object or factory closure.
 
 ## 5. Acceptance, identity, and failures
 
-One table lives inside one runtime/track/entry generation; one plugin state can own more than one named private table if needed. FK member IDs and IK's private `solve` cell are local slot names, not global cache namespaces. Repeated same-definition entries, different tracks, identical-ID rigs, and separate runtimes get fresh tables.
+One table lives inside one runtime/track/entry generation; an evaluator can own more than one named private table if needed. FK member IDs and IK's private `solve` cell are local slot names, not global cache namespaces. Repeated same-definition entries, different tracks, identical-ID rigs, and separate runtimes get fresh tables.
 
 Use the existing A6/B7/C7 transaction boundary, not a cache-specific transaction. Evaluate from committed snapshots and accumulate new snapshots privately. Staged downstream reads may consume staged upstream outputs through ordinary graph delivery. After all tracks/operations, validation and freezing succeed, the existing owner accepts output and opaque state together in its no-fail swap. No provider method or arbitrary plugin code runs inside that swap.
 
 On precommit failure, abandon proposals and preserve committed cache contents, published ready output, and existing last-ready/error/blocked semantics. Read hits must not mutate committed recency. Failed proposals must not evict active entries. A successful speculative solve followed by a later fold/freeze failure is not a committed cache hit on retry. Retry starts from the last accepted state and must match cold semantics.
 
-Cold-reset on structural replacement, entry/plugin replacement, relevant source/root/solver/target rebinding, layout or member-generation changes, remove/reinsert, and dispose/recreate. Conservatively resetting a broader affected candidate is allowed. An authored move preserves handle identity, but the rebuilt entry state starts cold when its execution/layout assumptions are replaced; identity preservation does not imply state migration. Numeric edits use exact effective keys, not structural derivation or unconditional reset. Provider changes are structural runtime reconfiguration: recreate affected entry generations (a fresh `init`); never switch policies inside an active table.
+Cold-reset on structural replacement, entry/plugin replacement, relevant source/root/solver/target rebinding, layout or member-generation changes, remove/reinsert, and dispose/recreate. Conservatively resetting a broader affected candidate is allowed. An authored move preserves handle identity, but the rebuilt evaluator starts cold when its execution/layout assumptions are replaced; identity preservation does not imply state migration. Numeric edits use exact effective keys, not structural derivation or unconditional reset. Provider changes are structural runtime reconfiguration: recreate affected evaluator generations; never switch policies inside an active table.
 
 Provider creation, lookup, equality, or remember exceptions are evaluation/preparation failures with entry context, not implicit misses. Validate the actual value returned by a hit at the ordinary plugin/publication boundary; bad providers cannot bypass validation. No silent catch-and-disable path is introduced. Failures, missing/blocked dependencies and invalid/non-finite solver results are not memo values for built-ins.
 
-Default snapshots need no individual disposal: release state-owned references and allow shared immutable storage to be collected. Retire old plugin state only after successful replacement; dispose rejected candidates and keep public disposal idempotent. A stateful plugin's optional `dispose(state)` is the single resource protocol for custom state-owned resources. Nothing in core calls it yet; C7 wires it into the transaction owner and D6 proves it. It runs once per entry generation, not once per state value, because `prepare` and `fold.run` usually return a new state derived from the committed one and that state may share its resources. The runner marks each proposal `{ origin: "continued" | "initialized", state }`, read exhaustively. After a successful commit, dispose the last committed state of every key the accepted candidate did not continue: the key is absent, or its proposal is `initialized` (a cold reset of the same key). On abandonment, dispose only `initialized` proposals; never a state derived from a committed one. Disposal runs outside the no-fail swap: a throwing dispose after commit is a postcommit delivery error, and during abandonment it is reported alongside, never instead of, the original failure. Never add snapshot finalizers or dispose storage still reachable from committed snapshots. Postcommit subscriber/adapter errors are delivery errors and do not roll back accepted cache/output.
+Default snapshots need no individual disposal: release evaluator-owned references and allow shared immutable storage to be collected. Retire old evaluators only after successful replacement; dispose rejected candidates and keep public disposal idempotent. Follow the existing single resource protocol for any custom evaluator-owned resources; never add snapshot finalizers or dispose storage still reachable from committed snapshots. Postcommit subscriber/adapter errors are delivery errors and do not roll back accepted cache/output.
 
 ## 6. Exact equality and numerical policy
 
@@ -139,7 +119,7 @@ D5 uses the injected port; there is no second FK-specific map policy. A private 
 
 On hit, reuse the stored immutable tip. On miss, use D1's unchanged pivot-then-extension arithmetic. Compare the result to that point's previous accepted pose; when all fields are exactly equal, retain that old frame object. Append a write for the retained frame under its new key to the local miss batch. After the walk, propose one remember batch and the completed poses together; on an all-hit pass reuse the old table. Previous poses support exact result interning, not a separate storage-policy implementation. Descendants compare against the newly computed/retained parent tip and can hit the committed table when that effective frame is unchanged. Reuse the entire poses record if layout/order/members/tips match and publication allows it.
 
-The default provider requests `maxSlots = pointCount`, so the latest effective input per point is retained. A smaller/evicting/no-cache provider can increase compositions without changing poses. No-cache still computes every visited frame when FK actually runs; retaining exactly equal published frames is allowed. The engine may independently skip an unchanged evaluation, so count evaluator calls separately from cache hits and math calls.
+The default provider requests `maxSlots = pointCount`, so the latest effective input per point is retained. A smaller/evicting/no-cache provider can increase compositions without changing poses. No-cache still computes every visited frame when the evaluator actually runs; retaining exactly equal published frames is allowed. The engine may independently skip an unchanged evaluation, so count evaluator calls separately from cache hits and math calls.
 
 Changing limits, influence, inspection or solver record identity alone does not invalidate FK if final effective inputs are equal. Parent/root/goal changes may propagate broadly; only actual effective inputs determine numerical reuse. Initial implementation may retain O(N) comparisons/container allocation; benchmark it honestly.
 
@@ -149,7 +129,7 @@ D4 owns one private `solve` slot with capacity one in the default provider. A co
 
 Create one immutable canonical `SolveRequest` after C5 dynamic validation. The same request drives equality and the solver adapter; do not separately rebuild two lists of inputs. Its equality must cover:
 
-- Canonical source/layout/root provenance and plugin/solver implementation/configuration identity, protected by the table generation and immutable tokens.
+- Canonical source/layout/root provenance and evaluator/solver implementation/configuration identity, protected by the table generation and immutable tokens.
 - The effective anchored first-point tip passed as solver root. Construct it once from the source root and first point; never solve that point again.
 - Every ordered non-root solve member's ID, parent link/order, effective pivot, extent, normalized constraint/range variant and endpoints, and effective influence.
 - Every mandatory goal association and all frame components actually consumed by the algorithm. Distinguish meaningful optional/variant states; compare the normalized representation used by math.
@@ -169,19 +149,21 @@ B7 must supply reusable conformance tests for all providers: fresh empty state, 
 
 Use a tiny non-kinematic plugin, such as memoized text measurement over normalized text/style, to prove the feature is not a skeleton facility. Exercise stateless/collect-only/fold-only/both entries, preceding-fold dependencies included in fold cache keys, two same-definition entries, identical-ID tracks/runtimes, collect success then fold failure, late downstream failure, freeze rejection, retry, replacement and disposal. Changing prior fold data must not hit an incomplete key.
 
-D4/D5/D6/D7 add domain tests (case, then required observation):
+D4/D5/D6/D7 add domain tests:
 
-- **Identical effective FK inputs, new source records:** Default provider zero extra frame compositions when FK runs.
-- **Leaf-only FK edit:** One composition in uncoupled FK-only fixture; exact D3 poses.
-- **Changed parent inputs with equal resulting frame:** Old frame retained; unaffected descendants hit.
-- **Identical IK request with new records:** Zero extra solve calls; same rotations/quality.
-- **Change each consumed IK field independently:** Miss; result matches cache-disabled solve.
-- **Inspection off/on with full-result cache:** Projection changes correctly without another solve.
-- **Goal/constraint change in a branched rig:** Whole solve miss; no false per-point invalidation claim.
-- **Late failure after FK or IK cache work:** Neither proposal accepted; retry from last accepted state.
-- **Rebind to same numeric data / remove then reuse ID:** Cold new generation; no stale provenance reuse.
-- **Interleaved rigs/runtimes/providers:** No state or value alias contamination.
-- **Capacity eviction / disabled provider / seek histories:** Same accepted meaning; only cost/reference differences allowed.
+| Case                                                   | Required observation                                               |
+| ------------------------------------------------------ | ------------------------------------------------------------------ |
+| Identical effective FK inputs, new source records      | Default provider zero extra frame compositions when evaluator runs |
+| Leaf-only FK edit                                      | One composition in uncoupled FK-only fixture; exact D3 poses       |
+| Changed parent inputs with equal resulting frame       | Old frame retained; unaffected descendants hit                     |
+| Identical IK request with new records                  | Zero extra solve calls; same rotations/quality                     |
+| Change each consumed IK field independently            | Miss; result matches cache-disabled solve                          |
+| Inspection off/on with full-result cache               | Projection changes correctly without another solve                 |
+| Goal/constraint change in a branched rig               | Whole solve miss; no false per-point invalidation claim            |
+| Late failure after FK or IK cache work                 | Neither proposal accepted; retry from last accepted state          |
+| Rebind to same numeric data / remove then reuse ID     | Cold new generation; no stale provenance reuse                     |
+| Interleaved rigs/runtimes/providers                    | No state or value alias contamination                              |
+| Capacity eviction / disabled provider / seek histories | Same accepted meaning; only cost/reference differences allowed     |
 
 F4 measures provider-disabled versus default and a test alternative on the same new-contract workload. Report lookup comparisons, request building, snapshot writes/copies, slots/retention, FK math, IK calls/time/iterations, validation/publication and end-to-end time separately. F5 generates failure/history sequences; F6 requires all provider and both-domain evidence on the exact release candidate. Plan validation is not runtime or performance verification.
 
