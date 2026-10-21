@@ -1,8 +1,6 @@
 # A5 — Inventory removals and maintained consumers
 
-Status: implemented (inventory reviewed) on branch `feat/plugin-structural-api`. Depends on: A1.
-
-Evidence: `docs/skeldata/INVENTORY.md`. Removal itself belongs to F1/F2.
+Status: not implemented. Depends on: A1.
 
 ## Start here
 
@@ -14,9 +12,9 @@ Create a concise deletion/consumer inventory under `docs/skeldata` or the reposi
 
 Classify tests: retain generic transactions/subscriptions/interpolation and solver/math guarantees; rewrite maintained behavior into the hybrid; remove assertions solely enforcing retired contracts. Do not classify arbitrary uses of the word members as obsolete.
 
-Trace app/demo/public export consumers, especially avatar/pose tooling and Three skeleton capture/driving. The old per-bone `fk3d`/`ik3d` contracts and the per-bone generator are replaced, not retired: phase G migrates `transform3d`, the 3D skeleton family, `fk3d`, `ik3d`, `rig`, the Three adapter, `skeletonTracks` and the apps onto the new contract (revised 2026-10-20, ADR-143). `rig` is not a skeleton source; G5 migrates it explicitly to a fold publishing `poses`, never by silent redefinition.
+Trace app/demo/public export consumers, especially avatar/pose tooling and Three skeleton capture/driving. First release retires/defer old fk3d/ik3d skeleton entrypoints and generators; keep independent transform3d, generic frames/drivers, and pose aggregator only if they no longer depend on retired machinery. Existing `rig` aggregation is NOT this skeleton model and must not be silently redefined.
 
-Document no PlanX converter, tree plugin, or 3D bridge. Every inventoried consumer, 3D included, gets an owning migration slice; do not leave a broken exported generator or delete unrelated capabilities silently.
+Document no PlanX converter, tree plugin, or temporary 3D bridge. If an app fundamentally requires retired 3D skeleton APIs, explicitly mark the affected feature removed/deferred and update its imports/docs/tests later; do not leave a broken exported generator or delete unrelated capabilities silently.
 
 ## Evidence and finish
 

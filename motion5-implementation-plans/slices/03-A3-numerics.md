@@ -1,12 +1,10 @@
 # A3 — Specify total numeric, solver and exact cache behavior
 
-Status: implemented on branch `feat/plugin-structural-api`. Depends on: A1.
-
-Evidence: `packages/core/src/contract/numerics.ts`, `packages/core/test/contract/numerics.test.ts`.
+Status: not implemented. Depends on: A1.
 
 ## Start here
 
-Read `00-overview.md`, `cache-contract.md`, A1's contract, `packages/plugins/src/frame.ts`, `packages/plugins/src/fk.ts`, `packages/plugins/src/ik-member.ts`, `packages/plugins/src/ik-goal.ts`, `packages/plugins/src/ik-solve.ts`, and their numerical policy helpers. Inspect focused plugin tests, not legacy graph behavior as authority.
+Read `00-overview.md`, `42-cache-contract.md`, A1's contract, `packages/plugins/src/frame.ts`, `packages/plugins/src/fk.ts`, `packages/plugins/src/ik-member.ts`, `packages/plugins/src/ik-goal.ts`, `packages/plugins/src/ik-solve.ts`, and their numerical policy helpers. Inspect focused plugin tests, not legacy graph behavior as authority.
 
 ## Outcome and work
 

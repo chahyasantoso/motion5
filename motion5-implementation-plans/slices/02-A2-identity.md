@@ -1,8 +1,6 @@
 # A2 — Freeze entry identity, addresses, and ownership
 
-Status: implemented on branch `feat/plugin-structural-api`. Depends on: A1.
-
-Evidence: `packages/core/src/contract/address.ts`, `packages/core/test/contract/address-identity.test.ts`.
+Status: not implemented. Depends on: A1.
 
 ## Start here
 
@@ -14,7 +12,7 @@ Specify canonical reference types and one address-module owner. Distinguish qual
 
 Define `(entryId, leaf)` public addressing and collision-free internal encoding/reverse lookup. Reserve `/` and `:` in encoded authored components and retain existing stricter name rules. Safe handling of permitted prototype-looking names is mandatory, not a separate namespace workaround. With all value writes entry-nested, do NOT reserve singleton leaf names against entry IDs; there is no flat singleton namespace.
 
-Array position affects execution/topology but is never retained identity. Moving preserves generation/overlays; removal invalidates handles and overlays; reusing an ID creates a fresh generation. Replacement semantics must be explicit: preserve logical handle generation for same-entry content replacement, invalidate plugin state/cache resources, revalidate plugin/content; remove+insert is new identity.
+Array position affects execution/topology but is never retained identity. Moving preserves generation/overlays; removal invalidates handles and overlays; reusing an ID creates a fresh generation. Replacement semantics must be explicit: preserve logical handle generation for same-entry content replacement, invalidate evaluator/cache resources, revalidate plugin/content; remove+insert is new identity.
 
 Define source/layout identity and root-binding provenance separately from numeric frame equality. Rebinding the same-looking root remains structural. Internal identity never leaks to authored values, public poses, or render writes.
 

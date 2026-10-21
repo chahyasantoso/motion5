@@ -12,7 +12,7 @@ Extend the existing closed edit union/interpreter for entry insert/remove/move/r
 
 Track-level structural insert/move/remove targets authored entry IDs and array placement. `track.entry(entryId)` captures a generation-backed EntryHandle; content edits (leaf, requires, replace, live value) use that handle only. Avoid parallel current-ID and retained-handle content APIs. Public batch value writes remain uniformly entry-nested and share B8's owner.
 
-Moving preserves logical entry generation and overlays but changes execution/chain order. Removal invalidates retained handles/overlays. Reinsertion of the same ID creates a new generation; old handles never revive. Same-entry replace preserves handle identity but revalidates plugin/values/requires and creates cold plugin state/resources on acceptance. Ambiguous remove/recreate within one transaction follows the existing model's refusal unless explicit new-generation operation is specified consistently.
+Moving preserves logical entry generation and overlays but changes execution/chain order. Removal invalidates retained handles/overlays. Reinsertion of the same ID creates a new generation; old handles never revive. Same-entry replace preserves handle identity but revalidates plugin/values/requires and creates cold evaluator resources on acceptance. Ambiguous remove/recreate within one transaction follows the existing model's refusal unless explicit new-generation operation is specified consistently.
 
 Structural identity/plugin/binding changes are not scalar writes. An entry handle identifies one entry generation, not whichever entry now has the same index/plugin/ID. Candidate refusal preserves live handle validity.
 

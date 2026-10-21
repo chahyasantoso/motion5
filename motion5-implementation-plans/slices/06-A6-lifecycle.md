@@ -1,22 +1,20 @@
 # A6 — Define atomicity, generic private state and failure boundaries
 
-Status: implemented (protocol defined) on branch `feat/plugin-structural-api`. Depends on: A1, A2.
-
-Evidence: `docs/skeldata/LIFECYCLE.md`. Runtime proof is owned by B7 (seam), C7 (candidate acceptance), D6 (cache lifecycle) and E2 (atomic batches).
+Status: not implemented. Depends on: A1, A2.
 
 ## Start here
 
-Read `00-overview.md`, `cache-contract.md`, contract/identity artifacts, `packages/core/src/contract/schema-transaction.ts`, `packages/core/src/contract/value-transaction.ts`, `packages/core/src/runtime/project-runtime.ts` and `packages/core/src/runtime/graph-publisher.ts`. Follow existing stage/accept/notify/dispose owners only.
+Read `00-overview.md`, `42-cache-contract.md`, contract/identity artifacts, `packages/core/src/contract/schema-transaction.ts`, `packages/core/src/contract/value-transaction.ts`, `packages/core/src/runtime/project-runtime.ts` and `packages/core/src/runtime/graph-publisher.ts`. Follow existing stage/accept/notify/dispose owners only.
 
 ## Outcome and work
 
-Define one candidate/evaluation protocol: privately build, validate authoring and plugin admission, derive descriptors, prepare/evaluate, validate/freeze outputs and immutable state-owned material, accept ready output and proposed per-entry state together, swap, then notify/deliver. Integrate with existing transactions, not another edit or cache manager.
+Define one candidate/evaluation protocol: privately build, validate authoring/operation claims, derive descriptors, prepare/evaluate, validate/freeze outputs and immutable state-owned material, accept ready output and proposed per-entry state together, swap, then notify/deliver. Integrate with existing transactions, not another edit or cache manager.
 
 Document actual evaluation transaction scope. Downstream reads may see staged upstream output, but externally observable ready outputs/private states cannot accept piecemeal. Preserve error/blocked/last-ready distinctions; a failed transaction is not partial ready success. Document how multiple staged evaluations within one operation obtain private baselines and are accepted/discarded together; never mutate active state while establishing those baselines.
 
-Rejected structural/value candidates preserve active authoring, overlays, bindings, subscriptions, outputs, handle generations and **all plugin cache snapshots**, including FK and IK. Pure lookup cannot mutate committed eviction/recency; proposed remember cannot evict active entries. Cold-reset relevant structural/rebound generations; no migration by member ID. Moves may preserve public identity while rebuilding plugin state cold.
+Rejected structural/value candidates preserve active authoring, overlays, bindings, subscriptions, outputs, handle generations and **all plugin cache snapshots**, including FK and IK. Pure lookup cannot mutate committed eviction/recency; proposed remember cannot evict active entries. Cold-reset relevant structural/rebound generations; no migration by member ID. Moves may preserve public identity while rebuilding evaluator state cold.
 
-Provider create/lookup/equality/remember exceptions are fallible preparation/evaluation work with contextual diagnostics, not implicit misses. Validate cached hit values at normal plugin/publication boundaries. Default providers retain only immutable data and need no snapshot-level finalizers. Candidate abandonment/retirement releases plugin state through one lifecycle protocol (the stateful plugin's optional `dispose(state)`), with idempotent public disposal and no disposal of storage still shared with committed state.
+Provider create/lookup/equality/remember exceptions are fallible preparation/evaluation work with contextual diagnostics, not implicit misses. Validate cached hit values at normal plugin/publication boundaries. Default providers retain only immutable data and need no snapshot-level finalizers. Candidate abandonment/retirement releases evaluator references through one lifecycle protocol, with idempotent public disposal and no disposal of storage still shared with committed state.
 
 No provider calls or arbitrary plugin commit callbacks in the no-fail swap. Shared definitions remain immutable. Subscriber/adapter exceptions after acceptance are delivery failures, not rollback of accepted state or external effects. Record the runtime's actual distinction and cleanup error policy.
 

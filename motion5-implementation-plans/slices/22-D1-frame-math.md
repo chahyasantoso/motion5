@@ -14,7 +14,7 @@ Use the A3 defaults, extent/weight clamps, limit/influence readers, degree conve
 
 External root is source-owned. Compose the first point from that frame exactly once for IK's anchored tip, and use the identical operation sequence in FK. Do not reintroduce independent base slots or solve the first point. Root orientation must rotate pivot offsets as well as extension.
 
-Keep a small pure helper surface and a single owner per numeric policy. Do not introduce epsilon-based cache equality or redundant FK/IK clamps. Numeric math stays per dimension: 2D in `frame.ts`, 3D in `frame3d.ts`, with no dimension-general vector or frame algebra. Traversal, cache and topology helpers (D4's solve memo, D5's cached walk, C3's space spec) are generic over an injected frame type and composer instead, so G3/G4 reuse them; that is not a math abstraction.
+Keep a small pure helper surface and a single owner per numeric policy. Do not introduce epsilon-based cache equality, redundant FK/IK clamps, or dimension-general framework abstractions for this 2D release.
 
 ## Evidence and finish
 

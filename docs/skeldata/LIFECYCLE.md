@@ -1,14 +1,7 @@
 # Skeldata v5 Lifecycle, Atomicity, and Failure Boundaries
 
-Normative specification of candidate evaluation, private plugin state, cache integration,
+Normative specification of candidate evaluation, private evaluator state, cache integration,
 and failure boundaries for skeldata v5. Governs slices B7, C7, D6, E2, and both kinematics caches.
-
-Implementation status (2026-10-20): phase 4 is implemented at the operation executor seam
-(`packages/core/src/domain/track-operations.ts`, slice B7). The runtime still evaluates through
-legacy `compose`; wiring the executor, committed states, phase 6 acceptance and `dispose` into the
-runtime transaction is owned by C7 and D6. From C7, not-yet-migrated compose plugins run through a
-temporary `legacy-compose` execution strategy in the same runner until F2. Ledger suites marked
-_planned_ do not exist yet.
 
 ## 1. Candidate and Evaluation Protocol
 
@@ -20,8 +13,7 @@ Every mutation—whether a structural recipe via `SchemaTransaction` or a live v
    bindings, and committed cache snapshots remain completely untouched.
 
 2. **Authoring and Operation Validation:**
-   Validate candidate syntactic schema, entry declarations, declared operations (`collect`, `fold`)
-   and the execution strategy before any execution.
+   Validate candidate syntactic schema, entry declarations, and operation claims before any execution.
    Reject invalid shapes immediately with descriptive diagnostics.
 
 3. **Descriptor and Topology Derivation:**
@@ -30,12 +22,10 @@ Every mutation—whether a structural recipe via `SchemaTransaction` or a live v
 
 4. **Preparation and Evaluation:**
    Execute plugin operations; stateful plugins receive immutable `EvaluatorServices` in `init` and `prepare`:
-   - The state is the committed state for the entry, or a fresh `init(ctx, services)` result.
-   - `prepare(entry, state, services)` runs once, returning immutable prepared data and a proposed
-     state.
+   - `prepare(localEvaluation, state)` runs once, returning immutable prepared data and a proposed state.
    - If declared, `collect` runs once from prepared data and returns its single item.
    - If declared, `fold` runs once from the same prepared data plus preceding fold state, returning a delta and final state proposal.
-   - Cache writes return newly branched `CacheSnapshot` instances passed through proposed state.
+   - Evaluator cache writes return newly branched `CacheSnapshot` instances passed through proposed state.
 
 5. **Output Validation and Freezing:**
    Validate output values against plugin schemas and ensure all state-owned material and published
@@ -61,7 +51,7 @@ However, these staged outputs remain strictly internal to the candidate evaluati
 
 ### 2.2 Rejection of Piecemeal Acceptance
 
-Externally observable outputs and private plugin states are never accepted incrementally or
+Externally observable outputs and private evaluator states are never accepted incrementally or
 partially. Either every track, entry, output, and private state proposal in the candidate pass succeeds,
 or the entire transaction is rejected. The runtime strictly preserves the three distinct result states:
 
@@ -102,10 +92,10 @@ When a structural or value transaction is rejected at any phase prior to Phase 6
 ### 3.3 Cold Reset versus State Migration
 
 - Structural changes, entry or plugin replacements, parent/solver rebinding, and topology changes
-  require a cold reset of the affected entry generation (a fresh `init`).
+  require a cold reset of the affected evaluator generation.
 - The runtime explicitly forbids migrating private cache state or solver accumulators by member ID
   across structural boundaries.
-- Re-ordering or moving entries preserves public handle identity, but the underlying plugin state
+- Re-ordering or moving entries preserves public handle identity, but the underlying evaluator
   starts cold. Numeric updates compare exact effective keys, whereas structural rebuilds reset cold.
 
 ## 4. Provider and Plugin Error Boundaries
@@ -123,27 +113,13 @@ When a structural or value transaction is rejected at any phase prior to Phase 6
 Values retrieved from a cache hit must pass standard publication and plugin boundary validations.
 A defective or corrupted cache provider cannot bypass contract validation or inject non-finite numbers.
 
-### 4.3 Plugin State Resource Lifecycle
+### 4.3 Evaluator Resource Lifecycle
 
 - Default cache providers store immutable data in encapsulated memory structures; they require no
   custom snapshot-level finalizers.
 - Candidate abandonment drops uncommitted references, permitting garbage collection without explicit
   cleanup hooks.
 - Storage still shared with committed snapshots must never be freed or modified when discarding a candidate.
-- A stateful plugin may declare `dispose(state)`. Core does not call it yet; C7 wires it and D6
-  proves it. It runs once per entry generation, not once per state value: `prepare` and `fold.run`
-  usually return a state derived from the committed one, and both may share resources.
-- Committed and proposed state maps are `ReadonlyMap<CompilerEntryKey, unknown>`; there is no
-  entry-ID fallback.
-- The runner marks each proposal as a discriminated union, `{ origin: "continued", state }` when it
-  started from a committed state and `{ origin: "initialized", state }` when `init` created it in
-  this candidate, and reads `origin` exhaustively.
-- After a successful commit, dispose the last committed state of every key the accepted candidate
-  did not continue: the key is absent, or its proposal is `initialized` (a cold reset of the same
-  key). Never dispose a state that is still committed.
-- On abandonment, dispose only `initialized` proposals, never a state derived from a committed one.
-- Disposal runs outside the no-fail swap. A throwing `dispose` after commit is a postcommit delivery
-  error; during abandonment it is reported alongside, never instead of, the original failure.
 - Public disposal of engines, runtimes, and handles is strictly idempotent.
 
 ## 5. No-Fail Swap and Postcommit Delivery
@@ -174,13 +150,11 @@ owning test suites across Phase A–F slices.
 
 ### Scenario 1: Cache Provider Creation Failure
 
-- **Trigger:** `CacheProvider.create` throws during stateful plugin `init`.
-- **Failure Phase:** Phase 4 (State Initialization).
-- **Preserved Observations:** The candidate fails to build. Project remains on previous runtime
+- **Trigger:** `CacheProvider.create` throws during evaluator factory initialization.
+- **Failure Phase:** Phase 4 (Evaluator Initialization).
+- **Preserved Observations:** Evaluator candidate fails to build. Project remains on previous runtime
   generation; existing outputs, handles, and subscriptions remain intact.
-- **Owning Test Suite / Slice:** Slice B7 at the executor seam: `init` failure propagation
-  (`packages/core/test/contract/staged-state-b7.test.ts`, B7-24). Runtime candidate preservation:
-  C7, D6 (planned).
+- **Owning Test Suite / Slice:** Slice B7 (`packages/core/test/unit/runtime/evaluator-lifecycle.test.ts`).
 
 ### Scenario 2: Source Descriptor or Topology Derivation Failure
 
@@ -188,18 +162,15 @@ owning test suites across Phase A–F slices.
 - **Failure Phase:** Phase 3 (Descriptor Derivation).
 - **Preserved Observations:** Candidate rejected with diagnostic. Active graph topology and execution
   plan unchanged.
-- **Owning Test Suite / Slice:** Derivation refusal: Slice C1
-  (`packages/core/test/contract/structural-derivation-c1.test.ts`). Candidate preservation: Slice C7
-  (planned).
+- **Owning Test Suite / Slice:** Slice C7 (`packages/core/test/unit/graph/candidate-acceptance.test.ts`).
 
 ### Scenario 3: Early Operation Failure (Prepare Hook Throws)
 
 - **Trigger:** Plugin `prepare` hook throws during local normalization.
 - **Failure Phase:** Phase 4 (Preparation).
 - **Preserved Observations:** Evaluation halts immediately. Downstream entries do not run. Committed
-  plugin state and previous outputs preserved.
-- **Owning Test Suite / Slice:** Slice C7, D6 (planned; B7 has no dedicated `prepare`-throws
-  case).
+  evaluator state and previous outputs preserved.
+- **Owning Test Suite / Slice:** Slice B7, D6 (`packages/core/test/unit/runtime/staged-state.test.ts`).
 
 ### Scenario 4: Partial Operation Sequence (Collect Succeeds, Fold Throws)
 
@@ -207,17 +178,15 @@ owning test suites across Phase A–F slices.
 - **Failure Phase:** Phase 4 (Fold Execution).
 - **Preserved Observations:** Collected item is discarded. Proposed state from fold is abandoned.
   Neither collect nor fold outputs enter active state.
-- **Owning Test Suite / Slice:** Slice B7 (`packages/core/test/contract/staged-state-b7.test.ts`,
-  B7-19 late fold failure abort).
+- **Owning Test Suite / Slice:** Slice B7 (`packages/core/test/unit/runtime/evaluator-operations.test.ts`).
 
 ### Scenario 5: Key Comparison Exception
 
 - **Trigger:** Custom plugin `CacheSpec.equals` throws during cache lookup or collision check.
 - **Failure Phase:** Phase 4 (Cache Lookup).
-- **Preserved Observations:** Evaluation aborts with contextual error naming entry and plugin. Table
+- **Preserved Observations:** Evaluator aborts with contextual error naming entry and plugin. Table
   recency and committed snapshot unchanged. Not treated as a cache miss.
-- **Owning Test Suite / Slice:** Slice B7 (`packages/core/test/contract/cache-provider-b7.test.ts`,
-  B7-10); D6 (planned).
+- **Owning Test Suite / Slice:** Slice B7, D6 (`packages/core/test/unit/domain/cache-provider.test.ts`).
 
 ### Scenario 6: Cache Remember Failure
 
@@ -225,8 +194,7 @@ owning test suites across Phase A–F slices.
 - **Failure Phase:** Phase 4 (State Proposal).
 - **Preserved Observations:** Proposed snapshot dropped. Active snapshot retains committed entries
   and original eviction order.
-- **Owning Test Suite / Slice:** Slice B7 (`packages/core/test/contract/cache-provider-b7.test.ts`,
-  B7-7 batch atomicity); D6 (planned).
+- **Owning Test Suite / Slice:** Slice B7, D6 (`packages/core/test/unit/domain/cache-provider.test.ts`).
 
 ### Scenario 7: Upstream Kinematic Success, Downstream Consumer Failure
 
@@ -235,8 +203,7 @@ owning test suites across Phase A–F slices.
 - **Failure Phase:** Phase 4 or 5 (Downstream Evaluation / Validation).
 - **Preserved Observations:** Entire candidate rejected. Upstream FK cache proposals are discarded;
   retry must execute from previously committed state without false cache hits.
-- **Owning Test Suite / Slice:** Slice D6 (planned
-  `packages/core/test/unit/kinematics/cache-lifecycle.test.ts`).
+- **Owning Test Suite / Slice:** Slice D6 (`packages/core/test/unit/kinematics/cache-lifecycle.test.ts`).
 
 ### Scenario 8: IK Solve Success, Late Candidate Failure
 
@@ -245,8 +212,7 @@ owning test suites across Phase A–F slices.
 - **Failure Phase:** Phase 5 (Output Freezing / Commit Validation).
 - **Preserved Observations:** Speculative IK solve memo is dropped. Active IK cache retains previous
   solve result. A retry starting after the failure computes identically to an uncached solve.
-- **Owning Test Suite / Slice:** Slice D6 (planned
-  `packages/core/test/unit/kinematics/cache-lifecycle.test.ts`).
+- **Owning Test Suite / Slice:** Slice D6 (`packages/core/test/unit/kinematics/cache-lifecycle.test.ts`).
 
 ### Scenario 9: Output Validation and Freezing Failure
 
@@ -254,17 +220,15 @@ owning test suites across Phase A–F slices.
 - **Failure Phase:** Phase 5 (Validation & Freezing).
 - **Preserved Observations:** Rejection occurs prior to Phase 6. No corrupted outputs reach runtime
   references. Last-ready outputs preserved.
-- **Owning Test Suite / Slice:** Slice C7, D1 (planned). Numeric primitives are proven by
-  `packages/core/test/contract/numerics.test.ts` (A3).
+- **Owning Test Suite / Slice:** Slice C7, D1 (`packages/core/test/unit/contract/numerics.test.ts`).
 
 ### Scenario 10: Candidate Abandonment
 
 - **Trigger:** Caller aborts recipe or unmounts project before commit.
 - **Failure Phase:** Precommit Abandonment.
-- **Preserved Observations:** Uncommitted candidate references released; `dispose` runs only for
-  `initialized` proposals (section 4.3). Committed state, handles, and cache tables unaffected.
-- **Owning Test Suite / Slice:** Slice E2 (planned
-  `packages/core/test/unit/runtime/atomic-batches.test.ts`).
+- **Preserved Observations:** Uncommitted candidate references released. Committed state, handles,
+  and cache tables unaffected.
+- **Owning Test Suite / Slice:** Slice E2 (`packages/core/test/unit/runtime/atomic-batches.test.ts`).
 
 ### Scenario 11: Postcommit Delivery Exception
 
@@ -272,8 +236,7 @@ owning test suites across Phase A–F slices.
 - **Failure Phase:** Phase 7 (Delivery).
 - **Preserved Observations:** Transaction remains committed. Outputs and cache snapshots are accepted
   and current. No rollback occurs. Exception dispatched to runtime error handler.
-- **Owning Test Suite / Slice:** Slice E7 (planned
-  `packages/core/test/unit/runtime/subscriber-delivery.test.ts`).
+- **Owning Test Suite / Slice:** Slice E7 (`packages/core/test/unit/runtime/subscriber-delivery.test.ts`).
 
 ---
 
@@ -281,6 +244,5 @@ owning test suites across Phase A–F slices.
 
 Any retry following a rejected candidate transaction must start strictly from the last accepted
 committed state. Because speculative cache snapshots are abandoned upon failure, a retried evaluation
-executes with exact parity to an uncached fresh evaluation from the committed baseline. The executor
-seam proves this in `packages/core/test/contract/staged-state-b7.test.ts` (B7-20).
+executes with exact parity to an uncached fresh evaluation from the committed baseline.
 No phantom cache hits, partially evicted slots, or stale intermediate frames may survive a rejected pass.

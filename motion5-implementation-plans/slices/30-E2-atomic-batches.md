@@ -12,7 +12,7 @@ Apply an entire structural recipe to private authoring state. Compile, derive cr
 
 Support coordinated leaf/goal updates, chain replacement/link rewiring, and root ownership changes in one recipe. Root source rebinding is structural; numeric root values remain B8/E3 edits. A batch making a rooted chain local and importing it may succeed only if its final complete candidate satisfies all affected consumers.
 
-Stage timelines, descriptors, plugin state, handle changes, overlays, subscriptions, and binding transitions. Retire old resources only after accepted replacement. No arbitrary user/plugin callback in the no-fail pointer swap. Preserve existing one-flush observation behavior; notify after acceptance.
+Stage timelines, descriptors, evaluators, handle changes, overlays, subscriptions, and binding transitions. Retire old resources only after accepted replacement. No arbitrary user/plugin callback in the no-fail pointer swap. Preserve existing one-flush observation behavior; notify after acceptance.
 
 Recipe exception or compile/derive/evaluate/freeze failure discards staged work without changing active authoring, values, graph, outputs, handles, bindings, subscriptions, or committed FK state. Postcommit adapter/subscriber errors are reported delivery failures, not rejected edits or rollback claims.
 

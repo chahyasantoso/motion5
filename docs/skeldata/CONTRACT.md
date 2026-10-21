@@ -2,42 +2,30 @@
 
 Status: normative specification for breaking v5 2D skeleton and cache architecture.
 Scope: Phase A through Phase F implementation baseline.
-Shared references:
-
-- [00-overview.md](../../motion5-implementation-plans/00-overview.md)
-- [cache-contract.md](../../motion5-implementation-plans/cache-contract.md)
-- [motion5-plugin-api-decisions.md](../../motion5-implementation-plans/motion5-plugin-api-decisions.md)
-- [ADR-142](../ADR-142-plugin-structural-api.md)
-
-Rule ids marked _proposed_ are not yet in `packages/core/src/contract/rule-id.ts`; the named
-slice adds them.
+Shared references: [00-overview.md](../../motion5-implementation-plans/00-overview.md), [42-cache-contract.md](../../motion5-implementation-plans/42-cache-contract.md).
 
 ## 1. Scope, precedence and architecture boundaries
 
 This document records the single normative answer for every invariant across authoring, identity,
-operations, topology, numerics, plugin state, memoization, editing, and rendering.
+operations, topology, numerics, evaluator state, memoization, editing, and rendering.
 
 ### Precedence
 
 1. This contract and its referenced shared cache contract supersede historical skeldata and PlanX
    proposals.
 2. Dialect is schemaVersion 5 clean break. No v4 or legacy migration shims, no alias decoders, no
-   tree plugin, and no 3D compatibility bridge: phase G migrates the 3D plugins, generators and
-   consumers directly, with a per-space plugin family (`point`/`root`/`join` and
-   `point3d`/`root3d`/`join3d`) whose distinct capability names refuse cross-space wiring. One
-   temporary exception: from C7 not-yet-migrated compose plugins run through the `legacy-compose`
-   execution strategy, and C6 quarantines the legacy kinematic channel; F2 deletes both (ADR-143).
+   tree plugin, and no 3D compatibility bridge.
 3. Source control is rollback. Rejected syntax fails early and explicitly.
 
 ### Architecture boundaries
 
 - Core contract and compiler: own document syntax, identity validation, structural scheduling, and
   atomic candidate acceptance. Core never imports kinematic algorithms or provider types.
-- Plugin registry and admission: validate declared operations (`collect`, `fold`), the execution
-  strategy (stateless, or stateful `init`/`prepare`) and requirement slots.
+- Plugin registry and admission: validate declared operation claims and
+  requirement slots.
 - Skeleton derivation: derives static parent-first layouts, bone order, and ID locators from
   authored records.
-- Operation executor and runtime: manages per-generation execution, state proposals, and service
+- Evaluator and runtime: manages per-generation execution, transaction proposals, and service
   injection.
 - Pure mathematics: stateless kinematic formulas (FK trigonometry, IK solvers). Mathematics never
   imports caches, registries, or publication state.
@@ -50,7 +38,7 @@ Each invariant defines exactly one owner and its earliest validation stage. Vali
 in strict sequence:
 
 1. Shape: syntactic validation of raw document tree.
-2. Registry: validation against admitted plugin definitions and declared requirement slots.
+2. Registry: validation against admitted plugin definitions and slot claims.
 3. Derivation: precommit validation of track references, layouts, and topology.
 4. Preparation/Evaluation: runtime evaluation, local input normalization, and operation execution.
 5. Publication: output payload verification, type freezing, and diagnostics checks.
@@ -122,12 +110,9 @@ in strict sequence:
 
 ### Operation invariants
 
-- **O-INV-01: Collect, fold, or both**
+- **O-INV-01: Finite operation claims**
   - Invariant: A plugin definition declares `collect`, `fold`, or both; it never declares neither.
-    Top-level `compose`, `stage`, and `priority` are retired. Until F2, admission still accepts a
-    legacy `compose` definition for plugins not yet migrated; from C7 it compiles to the temporary
-    `legacy-compose` strategy, and a track mixing it with collect/fold entries refuses
-    (`legacy-compose-mixed-track`).
+    Top-level `compose`, `stage`, and `priority` are retired.
   - Earliest stage: Registry.
   - Owner: Plugin registry admission.
   - Refusal rule: A definition lacking both collect and fold, or declaring retired fields, refuses
@@ -138,14 +123,13 @@ in strict sequence:
     published under the reserved `collect` output. Core stamps `id = entryId` and appends to the
     collection in entry order.
   - Earliest stage: Preparation/Evaluation.
-  - Owner: Operation executor (`track-operations.ts`).
+  - Owner: Evaluator dispatch.
 
 - **O-INV-03: Stateless fold delta**
   - Invariant: Stateless fold declares output names and a pure callback returning a top-level delta
-    record. The executor safe-merges declared delta fields into preceding fold state
-    (last-write-wins).
+    record. Evaluator safe-merges declared delta fields into preceding fold state (last-write-wins).
   - Earliest stage: Preparation/Evaluation.
-  - Owner: Operation executor (`track-operations.ts`).
+  - Owner: Evaluator dispatch.
 
 - **O-INV-04: Fold collect reserved name refusal**
   - Invariant: Fold outputs cannot use the reserved output name `collect`. Collect appends to the
@@ -159,28 +143,20 @@ in strict sequence:
     then fold. Collect sees prepared data only; fold sees prepared data plus preceding fold state.
     Collect cannot see fold state; fold cannot see collection buffers or its own collect output.
   - Earliest stage: Preparation/Evaluation.
-  - Owner: Operation executor (`track-operations.ts`).
+  - Owner: Evaluator instance executor.
 
-- **O-INV-06: Execution strategy**
-  - Invariant: Exactly one strategy exists per definition: `stateless` (pure `collect`/`fold.run`)
-    or `stateful` (`init` and `prepare`, optional `dispose`). There is no evaluator factory, no
-    operation claim list, and no duplicate runner or runtime fallback path. The compiled
-    `ExecutionStrategy` union is consumed by an exhaustive switch.
+- **O-INV-06: Evaluator execution strategy**
+  - Invariant: Exactly one execution owner exists per definition: either pure stateless callbacks OR
+    a stateful per-instance factory. No duplicate runners or runtime fallback paths exist.
   - Earliest stage: Registry.
-  - Owner: Plugin admission (`plugin-admission.ts`) and execution plan compiler.
-  - Refusal rule: `createEvaluator`, `init` without `prepare`, `prepare` or `dispose` without
-    `init`, and non-function `collect` or `fold.run` refuse registration.
+  - Owner: Plugin admission compiler.
 
 ### Topology and kinematic invariants
 
 - **T-INV-01: Built-in skeleton roles**
-  - `point`: collects local numeric coordinates and lengths under `collect`. Declares no
-    requirements or frame math. Its `derive` produces `chain`.
-  - `join`: connects chains into trees and collects link records under `collect`. Requires a chain
-    source; optional parent chain source. Its `derive` produces `joined` (C3).
-  - `root`: folds external 2D frame. Optional `frame` slot with no capability; the frame is a
-    runtime value read by `readFrame`. Delta is `{ root: frame }`. Its `derive` owns the
-    duplicate-root rule.
+  - `point`: collects local numeric coordinates and lengths. Declares no requirements or frame math.
+  - `join`: connects chains into trees. Requires chain source; optional parent chain source.
+  - `root`: folds external 2D frame. Requires frame source. Delta is `{ root: frame }`.
   - `ik`: folds rotations and optional inspection. Requires skeleton and targets dict.
   - `fk`: folds poses mapping point ID to tip frame `{ x, y, rotation }`. Requires skeleton; optional solver.
   - Earliest stage: Registry.
@@ -190,9 +166,8 @@ in strict sequence:
   - Invariant: A source track may contain at most one root entry. The root entry may appear at any
     array position. If omitted, root frame defaults to origin `{ x: 0, y: 0, rotation: 0 }`.
   - Earliest stage: Derivation.
-  - Owner: `root` plugin `derive` through `readRootPolicy` (`packages/plugins/src/root-policy.ts`).
-  - Refusal rule: More than one root entry refuses during derivation with exactly one
-    `derivation-failure` diagnostic. A root-only track is legal and derives no `chain`.
+  - Owner: Skeleton layout validator.
+  - Refusal rule: More than one root entry on a source refuses during derivation.
 
 - **T-INV-03: Topology root is first join**
   - Invariant: In a joined skeleton source, the first join entry defines the topology root. Exactly one
@@ -211,9 +186,8 @@ in strict sequence:
   - Invariant: A chain imported by a join entry must NOT have a root entry, even if set to origin.
     The joined source's root is the sole external frame.
   - Earliest stage: Derivation.
-  - Owner: `join` plugin `validate` (C3), reading `ctx.read("chain", source).rootPolicy`.
-  - Refusal rule: Importing a chain containing a root entry refuses structurally at derivation
-    (rule id `skeleton-imported-chain-has-root`, registered in `rule-id.ts` and `rule.ts` by C3).
+  - Owner: Skeleton joined layout validator.
+  - Refusal rule: Importing a chain containing a root entry refuses structurally at derivation.
 
 - **T-INV-06: Anchored first point**
   - Invariant: The first point's tip frame is anchored directly from the external root and authored
@@ -227,8 +201,6 @@ in strict sequence:
   - Earliest stage: Derivation.
   - Owner: IK solver adapter validator.
   - Refusal rule: IK with no non-root points, missing goals, or goals on non-leaves refuses at derivation.
-    No solve member uses rule id `ik-solver-no-solve-members`, registered by C4. `ik3d` (G4) applies
-    the same rules through the same ids.
 
 ### Numeric invariants
 
@@ -257,12 +229,12 @@ in strict sequence:
   - Invariant: Memoization uses a generic `CacheProvider` port injected via `EvaluatorServices`. Core
     evaluator, scheduling, and transaction dispatch have no knowledge of FK, IK, or kinematics.
   - Earliest stage: Runtime composition.
-  - Owner: Composition root and core `EvaluatorServices`.
+  - Owner: Composition root and core evaluator services.
 
 - **C-INV-02: Cache snapshot isolation**
-  - Invariant: Tables belong to specific entry generations' plugin state. `lookup` and `remember` are pure.
+  - Invariant: Tables belong to specific evaluator generations. `lookup` and `remember` are pure.
     `remember` returns a new immutable `CacheSnapshot`. No mutable maps or shared state across
-    entries.
+    evaluators.
   - Earliest stage: Preparation/Evaluation.
   - Owner: Generic cache provider implementation.
 
@@ -276,25 +248,25 @@ in strict sequence:
   - Invariant: FK memoizes parent tip frame, pivot, extent, and blended angle per point slot in a
     single batch. Unchanged tips are reused; identical recompositions retain prior frame references.
   - Earliest stage: Preparation/Evaluation.
-  - Owner: FK stateful plugin (`defineStatefulPlugin`, `D5`).
+  - Owner: FK plugin evaluator factory (`D5`).
 
 - **C-INV-05: IK whole-solve memoization**
   - Invariant: IK builds a canonical immutable `SolveRequest` and memoizes the complete validated
     `SolveResult` (rotations and inspection diagnostics) in one slot. No per-member warm starts.
   - Earliest stage: Preparation/Evaluation.
-  - Owner: IK stateful plugin (`defineStatefulPlugin`, `D4`).
+  - Owner: IK plugin evaluator factory (`D4`).
 
 - **C-INV-06: Precommit proposal abandonment**
   - Invariant: On evaluation failure or invalid candidate state, proposed cache snapshots and outputs
     are discarded. Committed cache snapshots and ready outputs remain untouched.
   - Earliest stage: Preparation/Evaluation.
-  - Owner: Existing transaction owner (executor proposes; C7 wires acceptance).
+  - Owner: Evaluator transaction manager.
 
 - **C-INV-07: Cold generation resets**
-  - Invariant: Structural changes, rebinding, entry removal, or re-insertion cold-reset entry
+  - Invariant: Structural changes, rebinding, entry removal, or re-insertion cold-reset evaluator
     generations. Caches are not migrated across generations.
   - Earliest stage: Derivation / Acceptance.
-  - Owner: Entry generation lifecycle owner (C7, D6).
+  - Owner: Evaluator generation lifecycle manager.
 
 ### Editing and rendering invariants
 
@@ -324,8 +296,7 @@ in strict sequence:
 
 ## 3. Generic cache port specification
 
-The generic cache contract adheres strictly to the minimal typed port in
-`packages/core/src/domain/cache.ts`:
+The generic cache contract adheres strictly to the minimal typed port:
 
 ```ts
 export type CacheLookup<V> =
@@ -354,72 +325,51 @@ export interface CacheProvider {
 
 export interface EvaluatorServices {
   readonly cache: CacheProvider;
-  readonly [service: string]: unknown;
 }
 ```
 
 ### Cache responsibilities and ownership
 
-- Core API: declares cache port interfaces and the `EvaluatorServices` type.
+- Core API: declares cache port interfaces and evaluator services type.
 - Generic provider: implements bounded snapshot with single-copy batch writes, and no-cache provider.
 - Runtime composition root: selects provider and injects `EvaluatorServices`.
-- Stateful plugin: constructs semantic immutable keys, requests slot capacity, and proposes writes.
+- Plugin evaluator: constructs semantic immutable keys, requests slot capacity, and proposes writes.
 - Math solvers: compute results purely without referencing cache tables.
 
-## 4. Stateful plugin protocol and execution owners
+## 4. Evaluator protocol and execution owners
 
-A plugin definition compiles to exactly one `ExecutionStrategy` variant, `stateless` or `stateful`,
-consumed by an exhaustive switch in the operation executor. From C7 until F2 the union has a
-temporary third variant, `legacy-compose`, that reproduces `Track.compose` → `plugin.compose`
-(replacement chaining, plugin-name input scoping and published keys) for not-yet-migrated plugins,
-proven by one parity test per catalog compose plugin:
+A plugin definition declares either stateless callbacks or a stateful definition, never both:
 
-- **Stateless definition**: declares `collect(entry, ctx)` and/or `fold.run(entry, prior, ctx)`,
-  where `entry` is the prepared local evaluation. Pure, immutable, stateless.
-- **Stateful definition** (`defineStatefulPlugin<S, P>` in
-  `packages/core/src/domain/stateful-plugin.ts`): declares `init(ctx, services)` for initial state,
-  `prepare(entry, state, services)` returning `{ prepared, state }`, optional `dispose(state)`,
-  optional `collect(prepared, ctx)` returning the single record, and optional
-  `fold.run(prepared, prior, ctx)` returning `{ delta, state? }`.
-
-Per entry the executor reads the committed state (by compiler key, then entry id) or calls `init`;
-calls `prepare` once; runs `collect`, then `fold.run`; and proposes fold's state when returned, else
-`prepare`'s state, under the compiler key. C7 removes the entry-id fallback: committed and proposed
-maps become `ReadonlyMap<CompilerEntryKey, unknown>`, and each proposal carries
-`origin: "continued" | "initialized"`. `dispose` runs once per entry generation (LIFECYCLE §4.3). Core treats state as opaque. The executor and this
-protocol are proven at the seam by `packages/core/test/contract/staged-state-b7.test.ts`; wiring committed
-states, acceptance and `dispose` into the runtime transaction is owned by C7 and D6.
+- **Stateless definition**: declares `collect` run callback and/or `fold` run callback. Pure,
+  immutable, stateless.
+- **Stateful definition**: declares `init(context, services)` for initial state and
+  `prepare(localEvaluation, state, services)`, which returns immutable prepared data and a state
+  proposal. Optional `collect(prepared)` returns the single item. Optional
+  `fold.run(prepared, priorFold)` returns `{ delta, state? }`; an absent state keeps `prepare`'s
+  proposal. Core validates the candidate and commits opaque state with outputs atomically.
 
 Execution owner assignments:
 
 - `B7`: stateful definition seams (`init`/`prepare`), provider implementation, and conformance suite.
-- `C6`: quarantine of the legacy kinematic channel behind `isLegacyComposeDefinition`.
-- `C7`: runtime wiring of committed/proposed states, atomic acceptance, `dispose`, the temporary
-  `legacy-compose` strategy and the augmentable `EvaluatorServices` interface.
-- `D4`: IK whole-solve memoization consumer and reusable memo helper.
-- `D5`: FK per-point memoization consumer and reusable cached walk helper.
-- `G3`, `G4`: `fk3d` and `ik3d` consumers of the same helpers.
-- `F2`: deletion of `legacy-compose` and the quarantined channel.
+- `D4`: IK whole-solve memoization consumer.
+- `D5`: FK per-point memoization consumer.
 - `D6`: shared dual-cache lifecycle and failure injection proof.
 
 ## 5. Invariant review matrix: valid vs minimal invalid
 
-### Case 1: One-point FK vs one-point IK
+### Case 1: One-point FK vs Root-only IK
 
 - Valid one-point FK: Track with one `point` entry and optional `root`. FK composes root frame plus
   authored point coordinates to produce single tip frame pose.
-- Minimal invalid one-point IK: IK bound to a one-point chain has no non-root solve member. Refused
-  at derivation by C4's `ik.validate` (rule id `ik-solver-no-solve-members`, registered by C4).
-- Minimal invalid root-only binding: FK or IK whose skeleton slot binds a root-only track. The track
-  is legal but derives no `chain`, so core refuses with `derivation-missing-capability`.
+- Minimal invalid root-only IK: Track with only `root` and `ik` entry. Refused at derivation because
+  the root-only track has no `chain` capability (`ik-solver-no-solve-members`).
 
 ### Case 2: Omitted root vs Rooted chain import
 
 - Valid omitted root: Skeleton chain with `point` entries and no `root`. Frame defaults to origin
   `{ x: 0, y: 0, rotation: 0 }`.
 - Minimal invalid rooted import: Joined source imports a chain that authors a `root` plugin entry.
-  Refused at derivation by C3's `join.validate` because imported chains must be rootless (rule id
-  `skeleton-imported-chain-has-root`, registered by C3).
+  Refused at derivation because imported chains must be rootless (`skeleton-imported-chain-has-root`).
 
 ### Case 3: Non-kinematic slots named targets or root
 
@@ -432,13 +382,12 @@ Execution owner assignments:
 - Valid isolation: Plugin declaring both collect and fold receives prepared data in collect, and
   preceding fold state in fold.
 - Invalid coupling: Plugin attempting to read fold state during collect, or accessing collection
-  buffers during fold. Prevented by the typed signatures: `collect(prepared, ctx)` and
-  `fold.run(prepared, prior, ctx)` receive no other operation's buffers.
+  buffers during fold. Prevented by typed context parameter isolation.
 
 ### Case 5: Two injected provider instances
 
-- Valid isolation: Two entries or runtimes receive different `CacheProvider` instances or separate
-  tables in their own plugin state. No key or slot collision occurs between parallel runtimes or tracks.
+- Valid isolation: Two separate evaluator instances receive different `CacheProvider` instances or
+  separate tables. No key or slot collision occurs between parallel runtimes or tracks.
 
 ### Case 6: Late evaluation failure after domain computation
 

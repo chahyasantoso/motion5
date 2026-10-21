@@ -8,7 +8,7 @@ Read `00-overview.md`, C2–C4 descriptor APIs, B6 publication validators, `pack
 
 ## Outcome and work
 
-Bind current point/link data to compiled source locators and layout identity. Read the source's reserved `collect` output and interpret its records through the bound source capability: `chain` means point records, `joined` means link records. Model that as a genuine chain-versus-joined union consumed by an exhaustive switch: the switch consumes C4's `readAny` result type directly (`switch (found.capability)`), so the reader never re-checks a capability name string and a new capability is a compile error here. Reject records that do not match the capability and stale/wrong source metadata. Parameterize the reader by C3's space spec (`SKELETON_2D`) so G2 reuses it for 3D records unchanged. Read the completed source's optional root frame, defaulting only absent root policy to origin. A bound unavailable/error root source propagates ordinary blocked/error, not origin success.
+Bind current point/link data to compiled source locators and layout identity. Use a genuine chain-versus-joined source union after validation. Accept exactly one supported points or links container; reject both/neither and stale/wrong source metadata. Read the completed source's optional root frame, defaulting only absent root policy to origin. A bound unavailable/error root source propagates ordinary blocked/error, not origin success.
 
 Check member identity/cardinality/order as required by descriptor/publication contract: missing, extra, duplicate, wrong IDs and malformed link data refuse. Numeric values are dynamic; no sorting, parent discovery, adjacency reconstruction, or layout rebuilding happens here. Validate third-party capability producer publications at the same trust boundary; name matching is not structural proof.
 
@@ -18,6 +18,6 @@ Use one numeric reading boundary consistent with A3; malformed external data can
 
 ## Evidence and finish
 
-Run reader tests with chain/join fixtures: changed lengths/root numbers bind to unchanged descriptor; records that do not match the bound capability, missing/extra/reordered/duplicate IDs, invalid root frame, corrupted link points/attachment, stale layout from another source, and non-finite published values refuse. Instrument topology construction to prove the normal dynamic read does not call it.
+Run reader tests with chain/join fixtures: changed lengths/root numbers bind to unchanged descriptor; both/neither containers, missing/extra/reordered/duplicate IDs, invalid root frame, corrupted link points/attachment, stale layout from another source, and non-finite published values refuse. Instrument topology construction to prove the normal dynamic read does not call it.
 
 Done when IK and FK share one dynamic view and all topology remains derived before runtime. Record actual helper paths, focused test commands/results, accepted reference reuse, and boundary-failure behavior. Next: C6.

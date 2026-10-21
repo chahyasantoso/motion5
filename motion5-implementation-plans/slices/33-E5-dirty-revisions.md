@@ -14,7 +14,7 @@ Filter a resolved poses member to its renderable scalar fields, compare with tha
 
 Separate aggregate patch receipt from per-binding initialization. Adding/rebinding a target must replay the current committed pose even if the track revision/numbers are unchanged or lower than another track's last seen revision. Record initialized state only after the documented successful delivery step; specify writer-exception baseline behavior consistently with the adapter's error contract.
 
-Use nested maps/structured keys, not unchecked `track/member` strings. Revision baselines and initialization state live in E4's renderer-neutral binding module, keyed by binding identity; only the dirty-field comparison over serialized DOM fields stays in the DOM adapter. G6 reuses the module for Three. Scope retained references and generation changes so removed binding baselines cannot suppress a replacement's first write. Adapter caching is not FK topology caching.
+Use nested maps/structured keys, not unchecked `track/member` strings. Scope retained references and generation changes so removed binding baselines cannot suppress a replacement's first write. Adapter caching is not FK topology caching.
 
 ## Evidence and finish
 

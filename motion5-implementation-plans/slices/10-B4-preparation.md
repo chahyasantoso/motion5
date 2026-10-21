@@ -1,8 +1,6 @@
 # B4 — Isolate preparation, static data, and timing
 
-Status: implemented on branch `feat/plugin-structural-api`. Depends on: B2, B3.
-
-Evidence: `packages/core/src/domain/track-preparation.ts`, `packages/core/test/contract/track-preparation-b4.test.ts`.
+Status: not implemented. Depends on: B2, B3.
 
 ## Start here
 
@@ -12,7 +10,7 @@ Read `00-overview.md`, the B2/B3 interfaces, `packages/core/src/domain/plugins.t
 
 Run contribution/preparation per owning entry and property with that entry's schema/context/address namespace. Contributions may create only validated internal leaves owned by that entry. A contribute-only plugin is invalid after B1; preprocessing belongs to an entry with collect and/or fold. Cross-plugin shared seed contributions are retired.
 
-Reassemble each entry's static and animated leaves without sibling merges, dropped zeros, or accidental public internal keys. Validate contribution ownership/reserved tween names and refuse writes outside the owner's permitted leaves. Keep one track progress/timeline and correct reverse seek/endpoints. All preparation completes before authored-order operation execution; stage/priority cannot reorder entries.
+Reassemble each entry's static and animated leaves without sibling merges, dropped zeros, or accidental public internal keys. Validate contribution claims/reserved tween names and refuse writes outside the owner's permitted leaves. Keep one track progress/timeline and correct reverse seek/endpoints. All preparation completes before authored-order operation execution; stage/priority cannot reorder entries.
 
 Dependency-only entries must still be scheduled for evaluation without dummy numeric leaves. Preparation failures must abandon candidate resources/timelines without changing live values or committed state. Avoid a shared mutable seed bag used as an undeclared communication channel.
 
