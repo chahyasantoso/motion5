@@ -136,24 +136,6 @@ function edgesByRole<Role extends GraphEdge["role"]>(
     .filter((edge): edge is EdgeWithRole<Role> => edgeRole(edge) === role)
     .sort(compareEdges);
 }
-/**
- * The plugin whose slots a solver's members belong under, read off the edge that made it a solver.
- *
- * The publisher holds no plugin knowledge, and this is where that stays true. A hardcoded `ik` here
- * would deliver a spring integrator's or a spline sampler's members under the name of the plugin
- * that happened to be IK's, which would make the first non-kinematic solver an edit to this file
- * rather than a plugin. `resolveSolvers` classifies a solver by its `root` edge, so the same edge
- * names the scope. See ADR-051.
- */
-function solvingPluginOf(node: PublisherNode): string | undefined {
-  // Read optionally even though `InputGraphEdge.requirement` is required, because the publisher
-  // composes snapshots it did not build and the malformed-input diagnostic has exactly one owner:
-  // the `input-requirement` guard in the requirement-inputs loop below. Dereferencing here moves
-  // that report ahead of its owner, so a solver whose root edge arrived without a requirement
-  // names a reading-'slot' `TypeError` instead of its own scope. `IK-20` is the case. See ADR-096.
-  const rootEdge = edgesByRole(node, "input").find((edge) => edge.requirement?.slot === "root");
-  return rootEdge?.requirement?.plugin;
-}
 function isRendererNeutral(value: unknown, seen = new WeakSet<object>()): boolean {
   if (typeof value !== "object" || value === null) return isImmutableLeaf(value);
   if (seen.has(value)) return false;
@@ -334,11 +316,13 @@ export class GraphPublisher {
     // frozen once, at a point where it is known to be complete.
     const memberSlots = new Map<string, Map<string, Record<string, unknown>>>();
     const sourceRevisions: Record<string, number> = {};
+    // F2 deletes this members injection with the legacy compose channel.
     if (node.solves && node.solves.length > 0) {
-      const solvingPlugin = solvingPluginOf(node);
-      // Unreachable through `resolveSolvers`, which derives `solves` only for a node holding
-      // a `root` edge. Failed rather than defaulted to a plugin name, because a publisher
-      // that guesses one is the thing this lookup exists to delete.
+      // `solveScope` is derived by `resolveSolvers` from the one legacy root requirement that
+      // classified the solver, so the publisher no longer reads the `root` slot name. Failed rather
+      // than defaulted to a plugin name, because a publisher that guesses one is the thing this
+      // lookup exists to delete.
+      const solvingPlugin = node.solveScope;
       if (solvingPlugin === undefined) failPublication({ kind: "solver-scope", nodeId: node.id });
       const membersList: SolverMember[] = [];
       for (const memberRef of node.solves) {
@@ -373,8 +357,7 @@ export class GraphPublisher {
         );
       }
       (collected[solvingPlugin] ??= {}).members = Object.freeze(membersList);
-      const rootEdge = edgesByRole(node, "input").find((edge) => edge.requirement?.slot === "root");
-      const rootEntryId = rootEdge?.requirement?.entryId;
+      const rootEntryId = node.solveRootEntry;
       if (rootEntryId !== undefined && rootEntryId !== solvingPlugin) {
         (collected[rootEntryId] ??= {}).members = Object.freeze(membersList);
       }

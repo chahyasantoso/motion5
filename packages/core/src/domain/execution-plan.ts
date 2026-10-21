@@ -18,12 +18,10 @@ import {
 } from "../contract/authored-leaf";
 import { diagnostic } from "../contract/diagnostics";
 import { readKeyframeEntries, type TrustedKeyframeEntry } from "../contract/keyframe-shape";
-import { ANY_CHAIN } from "../contract/solver-shape";
 import type { AuthoredProperty, AuthoredStop, Diagnostic } from "../contract/v5";
 import { validateKeyframes } from "../contract/validate-v5";
 import type { OutputSerializer } from "../ports/render-metadata";
 import { unreachable } from "../lang/exhaustive";
-import type { PluginCapability } from "../ports/plugin-capabilities";
 import type { EvaluatorServices } from "./cache";
 import { claims } from "./plugin-admission";
 import { COLLECT_OUTPUT } from "../contract/collect";
@@ -138,7 +136,6 @@ export interface CompiledEntryPlan {
   readonly bindings: readonly NormalizedRequirementBinding[];
   readonly contribution?: PreparedContribution;
   readonly operations: CompiledEntryOperations;
-  readonly capabilities: PluginCapability;
   readonly execution: ExecutionStrategy;
   readonly lifecycle: EvaluatorLifecycleDescriptor;
 }
@@ -160,7 +157,6 @@ export interface TrackExecutionPlan {
 
 export interface PluginLookup {
   get(name: string): PluginDefinition | undefined;
-  capabilityOf?(name: string): PluginCapability | undefined;
   claimantsOf?(key: string): readonly PluginDefinition[];
 }
 
@@ -493,12 +489,6 @@ function executionStrategyOf(plugin: PluginDefinition): ExecutionStrategy {
   });
 }
 
-const DEFAULT_CAPABILITY: PluginCapability = Object.freeze({
-  chain: ANY_CHAIN,
-  pole: false,
-  joint: false,
-});
-
 export function compileTrackExecutionPlan(
   options: CompileTrackExecutionPlanOptions,
 ): TrackExecutionPlan {
@@ -582,7 +572,6 @@ export function compileTrackExecutionPlan(
       diagnostics,
     );
     const contribution = deriveEntryContribution(entry, plugin, trackConfig, diagnostics, registry);
-    const capabilities = registry.capabilityOf?.(plugin.name) ?? DEFAULT_CAPABILITY;
 
     const operations: CompiledEntryOperations = Object.freeze({
       ...(typeof plugin.collect === "function" ? { collect: true as const } : {}),
@@ -610,7 +599,6 @@ export function compileTrackExecutionPlan(
       bindings: entryBindings,
       ...(contribution !== undefined ? { contribution } : {}),
       operations,
-      capabilities,
       execution,
       lifecycle,
     });

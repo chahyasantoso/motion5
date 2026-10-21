@@ -20,7 +20,6 @@ import {
   readPluginValues,
   ENTRY_SECTIONS,
 } from "./keyframe-shape";
-import { PLUGIN_GOALS_SLOT } from "./solver-slots";
 import { defineOwnValue } from "../lang/own-property";
 
 export interface KeyframeValidationOptions {

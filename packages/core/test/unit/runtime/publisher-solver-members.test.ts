@@ -104,7 +104,7 @@ describe("Publisher solver member inputs (Slice C3)", () => {
           sourceRevisions: {},
         };
       },
-      { solves: Object.freeze(solves) },
+      { solves: Object.freeze(solves), solveScope: "ik" },
     );
     const upperArm = node(
       "walker/upper-arm",
@@ -151,7 +151,10 @@ describe("Publisher solver member inputs (Slice C3)", () => {
         ikScope = inputs.ik;
         return { values: { offsets: {} }, sourceProgress: 0, sourceRevisions: {} };
       },
-      { solves: Object.freeze([{ id: "walker/bead", base: "walker/anchor" }]) },
+      {
+        solves: Object.freeze([{ id: "walker/bead", base: "walker/anchor" }]),
+        solveScope: "spring",
+      },
     );
     const bead = node(
       "walker/bead",
@@ -179,7 +182,10 @@ describe("Publisher solver member inputs (Slice C3)", () => {
       "walker/arm-solve",
       [rootEdgeFor("walker/arm-solve", "walker/shoulder")],
       readyCompose({ rotations: {} }),
-      { solves: Object.freeze([{ id: "walker/upper-arm", base: "walker/shoulder" }]) },
+      {
+        solves: Object.freeze([{ id: "walker/upper-arm", base: "walker/shoulder" }]),
+        solveScope: "ik",
+      },
     );
     // No `interpolated` at all, which is the invariant violation this pins.
     const upperArm = node(
@@ -194,16 +200,10 @@ describe("Publisher solver member inputs (Slice C3)", () => {
     expect(batch.patches.find((p) => p.nodeId === "walker/upper-arm")?.status).toBe("blocked");
   });
 
-  it("IK-20 names its own scope failure when a solver's input edge carries no requirement", () => {
-    // `solvingPluginOf` reads `requirement` optionally, and this is the case that says why. The
-    // publisher composes snapshots it did not build, so a requirement-less input edge is a shape it
-    // survives rather than one it may assume away: the `input-requirement` guard in the
-    // requirement-inputs loop is the single owner of that diagnostic. Planted on a solver, the
-    // scope lookup runs first, so dereferencing there reports a reading-'slot' `TypeError` under
-    // this node instead of the named `solver-scope` refusal, moving the report ahead of its owner.
-    // `publisher-requirement-inputs.test.ts` plants the same edge on a non-solver node, which is
-    // why nothing before this case reached `solvingPluginOf` with one. Red without the optional
-    // read, where the message is `Cannot read properties of undefined (reading 'slot')`.
+  it("IK-20 names its own scope failure when a solver carries no derived scope", () => {
+    // The publisher composes snapshots it did not build, so it cannot assume `solveScope` was
+    // derived. A `solves` list without one refuses as `solver-scope` before the requirement-inputs
+    // loop, where the `input-requirement` guard is the single owner of a malformed edge.
     const registry = new PatchRegistry();
     const publisher = new GraphPublisher(registry);
 
@@ -218,7 +218,9 @@ describe("Publisher solver member inputs (Slice C3)", () => {
         } as unknown as GraphEdge,
       ],
       readyCompose({ rotations: {} }),
-      { solves: Object.freeze([{ id: "walker/upper-arm", base: "walker/shoulder" }]) },
+      {
+        solves: Object.freeze([{ id: "walker/upper-arm", base: "walker/shoulder" }]),
+      },
     );
     const upperArm = node(
       "walker/upper-arm",
@@ -254,7 +256,7 @@ describe("Publisher solver member inputs (Slice C3)", () => {
       () => {
         throw new Error("solve diverged");
       },
-      { solves: Object.freeze(solves) },
+      { solves: Object.freeze(solves), solveScope: "ik" },
     );
     const upperArm = node(
       "walker/upper-arm",
@@ -352,7 +354,10 @@ describe("Publisher solver member inputs (Slice C3)", () => {
         const composed = track.compose(inputs);
         return { values: composed.values, sourceProgress: composed.progress, sourceRevisions: {} };
       },
-      { solves: Object.freeze([{ id: "walker/upper-arm", base: "walker/shoulder" }]) },
+      {
+        solves: Object.freeze([{ id: "walker/upper-arm", base: "walker/shoulder" }]),
+        solveScope: "ik",
+      },
     );
     const upperArm = node(
       "walker/upper-arm",
@@ -402,7 +407,10 @@ describe("Publisher solver member inputs (Slice C3)", () => {
         solverComposed = true;
         return { values: { rotations: {} }, sourceProgress: 0, sourceRevisions: {} };
       },
-      { solves: Object.freeze([{ id: "walker/upper-arm", base: "walker/shoulder" }]) },
+      {
+        solves: Object.freeze([{ id: "walker/upper-arm", base: "walker/shoulder" }]),
+        solveScope: "ik",
+      },
     );
     const upperArm = node(
       "walker/upper-arm",

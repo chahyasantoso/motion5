@@ -1,23 +1,19 @@
 # Skeldata status index
 
 Status: implementation track on branch `feat/skeldata-v5-phase-c`.
-Current slice: C5 complete locally with CI pending; next C6.
+Current slice: C6 complete locally with CI pending; next C7.
 
 ## Last completed slice
 
-- **Slice:** C5 ([19-C5-dynamic-reader.md](../../motion5-implementation-plans/slices/19-C5-dynamic-reader.md)).
-- **State:** Shared dynamic skeleton reader (`readDynamicSkeleton`) consuming C4's `readAny` union
-  directly, parameterised by `SkeletonSpaceSpec` (`SKELETON_2D`), validating point and link
-  records, preserving immutable point arrays by reference, enforcing total finite numerics without
-  plausibility defaulting, and propagating blocked/error root dependencies. Implemented locally; CI
-  pending.
-- **Next:** C6 ([20-C6-generic-core.md](../../motion5-implementation-plans/slices/20-C6-generic-core.md)).
+- **Slice:** C6 ([20-C6-generic-core.md](../../motion5-implementation-plans/slices/20-C6-generic-core.md)).
+- **State:** One shared `isLegacyComposeDefinition` predicate plus one graph-side gate (`graph/legacy.ts`); `PluginRegistry` answers `isNewPath`, and unknown or unjudged plugins keep the pre-C6 legacy classification. The new execution path carries no kinematic knowledge: `CompiledEntryPlan.capabilities`, `PluginLookup.capabilityOf`, `DEFAULT_CAPABILITY` and the public `PluginCapability`/`PluginCapabilities` type export are gone, and `solverChain` without `compose` is refused at admission. Legacy `ik`/`ik3d` graphs still derive `solves` through the quarantined channel and solve end to end through `GraphPublisher` with the real plugin composes; loading them through `Engine` is deferred to C7 because the execution-plan compiler requires every plugin to declare `collect` or `fold`, so a compose-only legacy plugin cannot load yet. That derivation now records `solveScope` and `solveRootEntry` on the solver node, so the publisher reads neither the `root` slot name nor an entry id that names a registered non-compose plugin; a non-compose plugin with slots spelled `root`/`base`/`solver`/`targets` is never classified, receives no `members`, and still gets cycle refusal. Quarantined behind F2 markers: `ports/plugin-capabilities.ts`, `contract/solver-shape.ts`, `contract/solver-constraints.ts`, `contract/solver-slots.ts` (`PLUGIN_GOALS_SLOT`), the solver derivation in `graph/ir.ts`, the constraint passes in `graph/solver-constraints.ts`, the members injection and solver-scope lookup in `runtime/graph-publisher.ts`, capability derivation in `domain/plugin-admission.ts`, and legacy re-exports in `plugin-api.ts`. Implemented locally; CI pending.
+- **Next:** C7 ([21-C7-candidate-acceptance.md](../../motion5-implementation-plans/slices/21-C7-candidate-acceptance.md)).
 
 ## Phase progress
 
 - Phase A (Foundation & Invariants: A1-A6): complete.
 - Phase B (Authoring, Operations & Cache Seam: B1-B8): complete.
-- Phase C (Derivation & Candidate Acceptance: C1-C7): in progress (C1-C5 complete).
+- Phase C (Derivation & Candidate Acceptance: C1-C7): in progress (C1-C6 complete).
 - Phase D (Kinematics & Dual Caches: D1-D7): pending.
 - Phase E (Editing & Render Lifecycle: E1-E7): pending.
 - Phase G (3D & Integration Migration: G1-G8, runs before F): pending.
@@ -66,6 +62,9 @@ Current slice: C5 complete locally with CI pending; next C6.
 - Solve bindings test suite (C4): [packages/plugins/test/unit/solve-bindings-c4.test.ts](../../packages/plugins/test/unit/solve-bindings-c4.test.ts).
 - Dynamic skeleton reader module (C5): [packages/plugins/src/dynamic-skeleton.ts](../../packages/plugins/src/dynamic-skeleton.ts).
 - Dynamic skeleton reader test suite (C5): [packages/plugins/test/unit/dynamic-reader-c5.test.ts](../../packages/plugins/test/unit/dynamic-reader-c5.test.ts).
+- Legacy compose predicate (C6): [packages/core/src/domain/legacy-compose.ts](../../packages/core/src/domain/legacy-compose.ts).
+- Graph legacy gate (C6): [packages/core/src/graph/legacy.ts](../../packages/core/src/graph/legacy.ts).
+- Quarantine evidence suite (C6): [packages/core/test/unit/graph/legacy-quarantine.test.ts](../../packages/core/test/unit/graph/legacy-quarantine.test.ts).
 - Public plugin subpaths test suite: [packages/plugins/test/public-subpaths.test.ts](../../packages/plugins/test/public-subpaths.test.ts).
 - Capability registry: [packages/core/src/contract/capability.ts](../../packages/core/src/contract/capability.ts).
 - Derive result constructors test suite: [packages/core/test/contract/derive-constructors.test.ts](../../packages/core/test/contract/derive-constructors.test.ts).
@@ -92,7 +91,7 @@ Current slice: C5 complete locally with CI pending; next C6.
   seam but cannot emit link records. D2 owns the dynamic link record and C5 reads it.
 - `SkeletonSpaceSpec` owns plugin and capability names plus point keys; numeric frame reading is the
   explicit `defineRootPlugin` parameter. C5 added the record reader and frame keys to the spec.
-- `PluginCapability`/`PluginCapabilities` (`ports/plugin-capabilities.ts`) is still type-exported from `packages/core/src/index.ts` and used across the graph; `plugin-capabilities.test.ts` ADR-136 parts stay until F2 deletes the port. C6 removes the type export and quarantines the port, `solverChain`, `solves`, the `members` injection, kinematic slot-name rules and the kinematic constants re-exported by `@motion5/core/plugin-api` behind `isLegacyComposeDefinition`, because legacy compose `ik`/`ik3d` still read `inputs.members`.
+- C6 removed the `PluginCapability`/`PluginCapabilities` type export and quarantined the port, `solverChain`, `solves`, the `members` injection, kinematic slot-name rules and the kinematic constants re-exported by `@motion5/core/plugin-api` behind `isLegacyComposeDefinition`; legacy compose `ik`/`ik3d` still read `inputs.members`. `plugin-capabilities.test.ts` ADR-136 parts and every F2 marker stay until F2 deletes the channel. `runtime/authoring-edit.ts` still routes a `targets` slot edit to the reserved-goal verb and `runtime/graph-publisher.ts` still injects `members` for a node whose `solves` was derived; both are marked F2. The reserved-goal route is the legacy verb's own contract rather than plugin classification: `applyEdit` is registry-free by design, so C6 leaves that route whole for F2 instead of teaching it a second question. The plugin loader runs `validateV5` before definitions load, so that pre-validation remains unjudged and classifies unknown plugins as legacy exactly as before C6; graph builds that hold the registry apply the predicate. C6-8 joins solves to the publisher on object-form legacy groups, the form the current publisher/Track pair can solve; entry-record input keying is C7's change, so array-form legacy solve parity is not claimed here.
 - The runtime does not call `executeTrackOperations` yet; evaluation still runs legacy `compose`. Runtime provider override, `committedStates` and `dispose(state)` are exercised only by tests; C7 and D6 wire them into the runtime transaction. C7 also adds the temporary `legacy-compose` strategy (per-plugin parity tests, `legacy-compose-mixed-track` refusal), drops the `committedStates.get(compilerKey) ?? committedStates.get(entryId)` fallback, keys inputs by entry instead of plugin name, and makes `EvaluatorServices` an augmentable interface. F2 deletes `legacy-compose`.
 - FK and IK built-ins are still legacy `compose` plugins with `base`/`root`/`target` slots. C4 added
   the final descriptor contract in `packages/plugins/src/solve-contract.ts`; D3/D4/D5 migrate the

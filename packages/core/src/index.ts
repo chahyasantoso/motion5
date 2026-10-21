@@ -33,8 +33,8 @@ export type {
 } from "./contract/v5";
 export { migrateV4ToV5 } from "./contract/migrate-v4-to-v5";
 export type { MigrationResult } from "./contract/migrate-v4-to-v5";
+// F2 deletes this legacy solver-chain shape export with the compose channel.
 export type { SolverChainShape } from "./contract/solver-shape";
-export type { PluginCapability, PluginCapabilities } from "./ports/plugin-capabilities";
 export {
   resolveTriggerDefinition,
   validateTrackDefinition,

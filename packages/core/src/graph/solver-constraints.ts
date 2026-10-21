@@ -41,6 +41,9 @@ import type { RuleId } from "../contract/rule-id";
 import type { Diagnostic } from "../contract/v5";
 import { compareCodeUnits } from "./compare";
 import type { GraphNode } from "./ir";
+import { isLegacyComposeGroup, isLegacyComposeNode, isLegacyComposeRequirement } from "./legacy";
+
+// F2 deletes these legacy solver-constraint rules with the compose channel.
 
 /**
  * The load rules of the solver's authored constraints: the six of constrained 2D solving (ADR-108),
@@ -97,11 +100,14 @@ import type { GraphNode } from "./ir";
 function slotBinders(
   node: GraphNode,
   slot: "root" | "solver" | typeof POLE_SLOT,
+  capabilities: PluginCapabilities,
 ): ReadonlySet<string> {
   return new Set(
     node.edges.flatMap((edge) => {
       const requirement = edge.role === "input" ? edge.requirement : undefined;
-      return requirement?.slot === slot ? [requirement.plugin] : [];
+      return requirement?.slot === slot && isLegacyComposeRequirement(capabilities, requirement)
+        ? [requirement.plugin]
+        : [];
     }),
   );
 }
@@ -124,9 +130,12 @@ function solverSpellings(
   key: SolverKey,
   roots: ReadonlySet<string>,
   diagnostics: Diagnostic[],
+  capabilities: PluginCapabilities,
 ): readonly AuthoredSpelling[] {
   if (roots.size === 0) return [];
-  const spellings = authoredSpellings(node.track.keyframes, key);
+  const spellings = authoredSpellings(node.track.keyframes, key).filter((spelling) =>
+    isLegacyComposeGroup(capabilities, spelling.group),
+  );
   for (const spelling of spellings) {
     if (reachesSolve(spelling, roots)) continue;
     diagnostics.push(
@@ -155,7 +164,7 @@ function validateMemberLimits(
   diagnostics: Diagnostic[],
   capabilities: PluginCapabilities,
 ): void {
-  const binders = slotBinders(node, "solver");
+  const binders = slotBinders(node, "solver", capabilities);
   const values: Partial<Record<LimitKey, unknown>> = {};
   const paths: Partial<Record<LimitKey, string>> = {};
   for (const key of LIMIT_KEYS) {
@@ -250,7 +259,7 @@ function validateMemberJoint(
   diagnostics: Diagnostic[],
   capabilities: PluginCapabilities,
 ): void {
-  const binders = slotBinders(node, "solver");
+  const binders = slotBinders(node, "solver", capabilities);
   const member3d = [...binders].some((group) => capabilities.capabilityOf(group)?.joint === true);
   const bySolverGroup = new Map<string, Partial<Record<JointVocabularyKey, AuthoredSpelling>>>();
   for (const key of JOINT_VOCABULARY_KEYS) {
@@ -353,8 +362,9 @@ function validateSolverInspect(
   node: GraphNode,
   roots: ReadonlySet<string>,
   diagnostics: Diagnostic[],
+  capabilities: PluginCapabilities,
 ): void {
-  for (const spelling of solverSpellings(node, INSPECT_KEY, roots, diagnostics)) {
+  for (const spelling of solverSpellings(node, INSPECT_KEY, roots, diagnostics, capabilities)) {
     const inspect = classifyInspect(spelling.value);
     switch (inspect.kind) {
       case "valid":
@@ -379,9 +389,10 @@ function validateSolverBend(
   node: GraphNode,
   roots: ReadonlySet<string>,
   diagnostics: Diagnostic[],
+  capabilities: PluginCapabilities,
 ): void {
-  const bends = solverSpellings(node, BEND_KEY, roots, diagnostics);
-  const flips = solverSpellings(node, FLIP_KEY, roots, diagnostics);
+  const bends = solverSpellings(node, BEND_KEY, roots, diagnostics, capabilities);
+  const flips = solverSpellings(node, FLIP_KEY, roots, diagnostics, capabilities);
   for (const spelling of bends) {
     const bend = classifyBend(spelling.value);
     switch (bend.kind) {
@@ -421,7 +432,7 @@ function validateSolverPole(
   diagnostics: Diagnostic[],
   capabilities: PluginCapabilities,
 ): void {
-  for (const group of [...slotBinders(node, POLE_SLOT)].sort()) {
+  for (const group of [...slotBinders(node, POLE_SLOT, capabilities)].sort()) {
     // An undeclared pole is the registry's `plugin-unknown-requirement`, one rule for one mistake.
     if (capabilities.capabilityOf(group)?.pole !== true || roots.has(group)) continue;
     diagnostics.push(
@@ -440,12 +451,14 @@ export function validateSolverConstraints(
   diagnostics: Diagnostic[],
   capabilities: PluginCapabilities,
 ): void {
+  // F2 deletes this legacy constraint pass with the compose channel.
   for (const node of nodes) {
+    if (!isLegacyComposeNode(node, capabilities)) continue;
     validateMemberLimits(node, diagnostics, capabilities);
     validateMemberJoint(node, diagnostics, capabilities);
-    const roots = slotBinders(node, "root");
-    validateSolverBend(node, roots, diagnostics);
-    validateSolverInspect(node, roots, diagnostics);
+    const roots = slotBinders(node, "root", capabilities);
+    validateSolverBend(node, roots, diagnostics, capabilities);
+    validateSolverInspect(node, roots, diagnostics, capabilities);
     validateSolverPole(node, roots, diagnostics, capabilities);
   }
 }
@@ -620,8 +633,10 @@ export function validateGoalWeights(
   diagnostics: Diagnostic[],
   capabilities: PluginCapabilities,
 ): void {
+  // F2 deletes these legacy goal-weight rules with the compose channel.
   for (const node of nodes) {
-    const binders = slotBinders(node, "solver");
+    if (!isLegacyComposeNode(node, capabilities)) continue;
+    const binders = slotBinders(node, "solver", capabilities);
     for (const rule of GOAL_WEIGHT_RULES)
       validateMemberGoalWeight(node, rule, binders, scope, diagnostics, capabilities);
   }

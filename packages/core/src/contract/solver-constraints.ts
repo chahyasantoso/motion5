@@ -2,6 +2,8 @@ import { unreachable } from "../lang/exhaustive";
 import { readAuthoredLeaf } from "./authored-leaf";
 import { PLUGIN_VALUES_SECTION, readPluginValues } from "./keyframe-shape";
 
+// F2 deletes this legacy solver vocabulary with the compose channel.
+
 /**
  * The authored vocabulary of a constrained 2D solve, and the one owner of what a well-formed value
  * of it is. See ADR-108, ADR-109 and ADR-110.

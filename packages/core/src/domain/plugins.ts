@@ -27,6 +27,7 @@ import {
   type AdmissionContext,
   type AdmittedPlugin,
 } from "./plugin-admission";
+import { isLegacyComposeDefinition } from "./legacy-compose";
 import type { CollectRecord } from "../contract/collect";
 import type { CapabilityName } from "../contract/capability";
 import type {
@@ -225,7 +226,7 @@ export interface StatelessFold {
 
 interface PluginDefinitionBase {
   readonly name: string;
-  /** Absent means any chain; a tree dedicates its member plugin registry-wide (ADR-136). */
+  /** Legacy compose only, absent means any chain; a tree dedicates its member plugin. F2. */
   readonly solverChain?: SolverChainShape;
   readonly keys?: readonly string[];
   readonly claimsKey?: PluginKeyClaim;
@@ -537,6 +538,7 @@ function result(
 }
 
 export class PluginRegistry implements PluginCapabilities {
+  // F2 deletes the legacy solver-capability and tree-dedication indexes with the compose channel.
   readonly #capabilities = new Map<string, PluginCapability>();
   readonly #dedicated = new Set<string>();
   #dedicatedMembers: readonly string[] = Object.freeze([]);
@@ -576,26 +578,39 @@ export class PluginRegistry implements PluginCapabilities {
   register(plugin: PluginDefinition): void {
     this.registerAll([plugin]);
   }
+  // F2 deletes this legacy solver-capability lookup with the compose channel.
   capabilityOf(plugin: string): PluginCapability | undefined {
     return this.#capabilities.get(plugin);
   }
+  // F2 deletes this legacy tree dedication list with the compose channel.
   dedicatedMembers(): readonly string[] {
     return this.#dedicatedMembers;
   }
+  /**
+   * True only for a registered definition admitted on the new path; unknown or unjudged plugins are
+   * not exempt, so the graph keeps classifying them exactly as before. F2 deletes it.
+   */
+  isNewPath(plugin: string): boolean {
+    const definition = this.#plugins.get(plugin);
+    return definition !== undefined && !isLegacyComposeDefinition(definition);
+  }
   #store({ definition, keys, inputs, capability }: AdmittedPlugin): void {
     this.#plugins.set(definition.name, definition);
-    this.#capabilities.set(definition.name, capability);
-    switch (capability.chain.kind) {
-      case "any":
-        break;
-      case "tree":
-        if (!this.#dedicated.has(capability.chain.memberPlugin)) {
-          this.#dedicated.add(capability.chain.memberPlugin);
-          this.#dedicatedMembers = Object.freeze([...this.#dedicated].sort());
-        }
-        break;
-      default:
-        unreachable(capability.chain);
+    // F2 deletes the capability store and tree dedication with the compose channel.
+    if (capability !== undefined) {
+      this.#capabilities.set(definition.name, capability);
+      switch (capability.chain.kind) {
+        case "any":
+          break;
+        case "tree":
+          if (!this.#dedicated.has(capability.chain.memberPlugin)) {
+            this.#dedicated.add(capability.chain.memberPlugin);
+            this.#dedicatedMembers = Object.freeze([...this.#dedicated].sort());
+          }
+          break;
+        default:
+          unreachable(capability.chain);
+      }
     }
     this.#orders.set(definition.name, this.#registrationOrder++);
     for (const key of keys) this.#claimantsFor(key).push(definition);
@@ -709,11 +724,7 @@ export class PluginRegistry implements PluginCapabilities {
     }
     return Object.freeze(resolved);
   }
-  /**
-   * Resolves an authored keyframes record that `validateKeyframes` has already judged. An ungrouped
-   * entry is that validator's `keyframes-ungrouped-key` and flattens to nothing here, so a caller
-   * that skipped validation is told about it by the validator, never twice. See ADR-121.
-   */
+  /** F2 deletes this legacy compose resolution with the compose channel. */
   resolveForKeyframes(
     authored: Readonly<Record<string, unknown>> | readonly AuthoredEntryRecord[],
     path = "keyframes",

@@ -69,8 +69,6 @@ const allowedPublicExports = new Set([
   "PluginRegistry",
   "PluginDefinition",
   "SolverChainShape",
-  "PluginCapability",
-  "PluginCapabilities",
   "PluginStage",
   "ResolvedPlugins",
   "assertClock",

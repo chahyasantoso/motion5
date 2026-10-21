@@ -342,3 +342,19 @@ export function readKeyframeEntries(
   }
   return Object.freeze(entries);
 }
+
+/**
+ * Every plugin named by a keyframes record, in both authored forms.
+ *
+ * The legacy gate asks whether a node authored a plugin definition with `compose`; this is the
+ * tolerant reader that names those plugins, sorted so the answer never depends on authoring order.
+ * F2 deletes it with that gate.
+ */
+export function readAuthoredPlugins(keyframes: unknown): readonly string[] {
+  if (Array.isArray(keyframes)) {
+    const plugins = readKeyframeEntries(keyframes).map((entry) => entry.plugin);
+    return Object.freeze([...new Set(plugins)].sort());
+  }
+  if (!isObject(keyframes)) return Object.freeze([]);
+  return Object.freeze(Object.keys(keyframes).sort());
+}

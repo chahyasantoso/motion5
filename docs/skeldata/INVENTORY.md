@@ -187,18 +187,18 @@ them. Source: [motion5-plugin-api-decisions.md](../../motion5-implementation-pla
   [packages/core/src/ports/plugin-capabilities.ts](../../packages/core/src/ports/plugin-capabilities.ts)
   (`PluginCapability`, `PluginCapabilities`, `UNJUDGED_CAPABILITIES`).
 - **Consumers:**
-  `execution-plan.ts` (`CompiledEntryPlan.capabilities`), `plugin-admission.ts`, `plugins.ts`,
-  `engine.ts`, the default and incremental graph builders, `graph/ir.ts`,
-  `graph/solver-constraints.ts`, `graph-runtime`, `project-runtime` and `validate-v5`.
+  `plugin-admission.ts`, `plugins.ts`, `engine.ts`, the default and incremental graph builders,
+  `graph/ir.ts`, `graph/solver-constraints.ts`, `graph-runtime`, `project-runtime` and
+  `validate-v5`. C6 removed `execution-plan.ts`'s `CompiledEntryPlan.capabilities`.
 - **Public Export:**
-  Type-exported from `packages/core/src/index.ts`; absent from `plugin-api.ts`.
+  Removed from `packages/core/src/index.ts` by C6; the port is internal to core now and absent from
+  `plugin-api.ts`.
 - **Replacement / Removal:**
   Unrelated to the structural `CapabilityMap`. Replaced by derived capabilities and C4 bindings.
 - **Owning Later Slices:**
-  C6 (remove the type export from `index.ts` and quarantine the port behind
-  `isLegacyComposeDefinition`, because legacy compose `ik`/`ik3d` still need it); F2 (delete the
-  port, its consumers and the ADR-136 parts of
-  `packages/core/test/unit/domain/plugin-capabilities.test.ts`).
+  C6 (done: type export removed and the port quarantined behind `isLegacyComposeDefinition`,
+  because legacy compose `ik`/`ik3d` still need it); F2 (delete the port, its consumers and the
+  ADR-136 parts of `packages/core/test/unit/domain/plugin-capabilities.test.ts`).
 
 ---
 

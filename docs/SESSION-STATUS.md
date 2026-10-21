@@ -10,14 +10,14 @@ byte ceiling.
 
 ## Now
 
-- **Dynamic skeleton reader:** bind current point and link records to compiled layouts, validating
-  topology, reference preservation, and root propagation under `19-C5-dynamic-reader.md`;
-  implemented locally with CI pending.
+- **Legacy quarantine:** kinematic readers in the graph and publisher now sit behind one shared
+  `isLegacyComposeDefinition` predicate, and the new execution path carries no solver capability or
+  chain shape, under `20-C6-generic-core.md`; implemented locally with CI pending.
 
 ## Next in line
 
-- **Quarantine legacy channel:** remove kinematic knowledge from the new core path and gate legacy
-  composition behind one shared predicate under `20-C6-generic-core.md`.
+- **Candidate acceptance:** add the temporary `legacy-compose` execution strategy, key inputs by
+  entry, and remove the committed-state fallback under `21-C7-candidate-acceptance.md`.
 
 ## Open, and not scheduled
 

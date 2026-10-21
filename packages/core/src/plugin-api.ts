@@ -84,6 +84,7 @@ export { isImmutableLeaf } from "./domain/values";
 export type { OutputSerializer } from "./ports/render-metadata";
 export { unreachable } from "./lang/exhaustive";
 export { patchRender, type PatchRender } from "./contract/patch-render";
+// F2 deletes these legacy kinematic re-exports with the compose channel.
 export { POLE_SLOT } from "./contract/solver-shape";
 export type { SolverChainShape } from "./contract/solver-shape";
 export type {
@@ -102,6 +103,7 @@ export type {
   OrientAuthored,
   TwistKey,
 } from "./contract/solver-constraints";
+// F2 deletes these legacy solver-key re-exports with the compose channel.
 export {
   AXIS_X_KEY,
   AXIS_Y_KEY,

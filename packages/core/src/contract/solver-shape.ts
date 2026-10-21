@@ -1,5 +1,7 @@
 import { unreachable } from "../lang/exhaustive";
 
+// F2 deletes this module with the legacy compose channel and its solver-chain declarations.
+
 /**
  * A solver plugin's declared chain capability, and the one owner of which derived chains a solver
  * can answer. The graph derives membership and depth for every solver alike (ADR-051), then asks

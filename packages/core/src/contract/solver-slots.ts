@@ -14,21 +14,20 @@
  * know this constant exists at all. `goalSlot`, `readGoalSlot` and the slot regex are deleted with
  * the string encoding they built and parsed. See ADR-057.
  *
- * What survives is one literal with two readers, both of which already depend on this layer and
- * neither of which gains a dependency on the other.
+ * What survives is one literal with two readers, neither of which needs the literal to be a parsing
+ * rule.
  *
- * `graph/ir.ts` reads it to classify. `goalBindingsOf` answers which goals a node authored with no
- * plugin registry in reach, so it gates on the base slot as well as on the field: on `memberKey`
- * alone it would read a future spring or spline plugin's dict as IK goals and run six IK rules over
- * it. That puts `targets` in the same set as the `root`, `solver`, `base` and `target` literals that
- * layer already hardcodes for exactly this reason, which is a weaker and more accurate claim than
- * "private to `ik`".
+ * `graph/ir.ts` reads it to classify goals on the compose channel. `goalBindingsOf` answers which
+ * goals a node authored with no plugin registry in reach, so it gates on the base slot as well as
+ * on the field: on `memberKey` alone it would read a future spring or spline plugin's dict as IK
+ * goals and run six IK rules over it. `graph/legacy.ts` gates that whole classification, so a node
+ * authored without a legacy definition never reaches it.
  *
- * `contract/validate-v5.ts` reads it for the one shape rule that is keyed on the name rather than on
- * the value: this slot specifically carries a dict, so a scalar at it is malformed rather than an
- * ordinary scalar binding. That rule runs with no registry, which is why it stays keyed on the
- * literal while the parser beside it generalizes. Every other rule about a dict is about the dict.
+ * `runtime/authoring-edit.ts` reads it to route a slot edit to the reserved-goal verb rather than
+ * the generic group edit. The schema keeps no rule keyed on the name: a dict is recognised by its
+ * value under any name.
  */
 
 /** The `requires` slot whose authored value is a solver's goal dict rather than a source id. */
+// F2 deletes this legacy goal slot with the compose channel.
 export const PLUGIN_GOALS_SLOT = "targets";

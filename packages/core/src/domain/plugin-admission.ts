@@ -4,14 +4,17 @@ import { JOINT_KEY } from "../contract/solver-constraints";
 import type { PluginCapability } from "../ports/plugin-capabilities";
 import { COLLECT_OUTPUT } from "../contract/collect";
 import { isCapabilityToken } from "../contract/capability";
+import { isLegacyComposeDefinition } from "./legacy-compose";
 
 export interface AdmittedPlugin {
   readonly definition: PluginDefinition;
   readonly keys: readonly string[];
   readonly inputs: readonly string[];
-  readonly capability: PluginCapability;
+  /** Present only for a legacy compose definition. F2 deletes it with that channel. */
+  readonly capability?: PluginCapability;
 }
 
+// F2 deletes this legacy solver-chain admission with the compose channel.
 /** Runtime declarations are untrusted; unknown kinds are admission errors, not unreachable. */
 function admitChain(value: unknown, name: string): SolverChainShape {
   if (value === undefined) return ANY_CHAIN;
@@ -239,19 +242,35 @@ export function admitPlugin(plugin: PluginDefinition, context: AdmissionContext)
         `plugin-input-collision: Plugin "${owner}" already owns input "${input}".`,
       );
   }
-  const chain = admitChain(source.solverChain, source.name);
-  const capability: PluginCapability = Object.freeze({
-    chain,
-    pole: Object.hasOwn(requirements ?? {}, POLE_SLOT),
-    joint: claims(source, JOINT_KEY),
-  });
+  const legacy = isLegacyComposeDefinition(source);
+  // A declaration accepted and then ignored is the shape ADR-033 rule 6 forbids, so the legacy
+  // solver-chain field is refused on the new path instead of silently dropped there.
+  if (source.solverChain !== undefined && !legacy)
+    throw new TypeError(
+      `Plugin "${source.name}" declares solverChain without compose; it belongs to the legacy compose channel.`,
+    );
+  // F2 deletes capability derivation with the legacy compose channel.
+  const capability: PluginCapability | undefined = legacy
+    ? Object.freeze({
+        chain: admitChain(source.solverChain, source.name),
+        pole: Object.hasOwn(requirements ?? {}, POLE_SLOT),
+        joint: claims(source, JOINT_KEY),
+      })
+    : undefined;
   const definition = Object.freeze({
     ...source,
-    ...(source.solverChain === undefined ? {} : { solverChain: chain }),
+    ...(capability === undefined || source.solverChain === undefined
+      ? {}
+      : { solverChain: capability.chain }),
     ...(source.keys ? { keys } : {}),
     ...(source.inputs ? { inputs } : {}),
     ...(source.outputs ? { outputs } : {}),
     ...(requirements ? { requirements } : {}),
   });
-  return { definition, keys, inputs, capability };
+  return {
+    definition,
+    keys,
+    inputs,
+    ...(capability !== undefined ? { capability } : {}),
+  };
 }

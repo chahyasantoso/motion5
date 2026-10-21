@@ -169,6 +169,7 @@ export function boundGroup(nodeId: string, track: TrackDefinition, plugin: strin
  * arms that name a slot rather than at the four that reach `boundGroup`, so the reservation cannot
  * reach the two verbs that own the reserved slot. See ADR-057, ADR-063 and issue #309.
  */
+// F2 deletes this legacy reserved-goal routing with the compose channel.
 function slotGroup(target: EditTarget, plugin: string, slot: string): GroupTarget {
   const resolved = boundGroup(target.nodeId, target.track, plugin);
   if (slot === PLUGIN_GOALS_SLOT) reservedGoalSlot(resolved.bound.plugin, slot);
@@ -263,6 +264,7 @@ export function applyEdit(target: EditTarget, edit: AuthoringEdit): TrackDefinit
       const next = removeRequire(keyframes, bound, edit.slot, edit.memberKey);
       return candidate(track, keyframes, next);
     }
+    // F2 deletes these legacy reserved-goal arms with the compose channel.
     case "bind-goal": {
       const { keyframes, bound } = boundGroup(target.nodeId, track, edit.plugin);
       const next = setRequire(keyframes, bound, PLUGIN_GOALS_SLOT, edit.source, edit.memberId);

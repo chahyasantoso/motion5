@@ -11,6 +11,7 @@ import {
 } from "../ports/interpolator";
 import { unreachable } from "../lang/exhaustive";
 import type { PluginInputs, RequirementInputs, ResolvedPlugins } from "./plugins";
+import { isLegacyComposeDefinition } from "./legacy-compose";
 
 import type { TrackExecutionPlan } from "./execution-plan";
 
@@ -483,7 +484,8 @@ export class Track {
     if (memoized !== undefined) return memoized;
     let values: ImmutableRecord = seed;
     for (const plugin of this.#plugins.plugins) {
-      if (plugin.compose === undefined) continue;
+      // F2 deletes this compose gate with the legacy compose channel.
+      if (!isLegacyComposeDefinition(plugin)) continue;
       const scoped = requirementInputs[plugin.name] ?? NO_PLUGIN_INPUTS;
       const composed = plugin.compose(values, this.#progress, scoped, this.#nodeId);
       if (!isRecord(composed))

@@ -22,6 +22,7 @@ import { PLUGIN_GOALS_SLOT } from "../contract/solver-slots";
 import { authorsConstrainingJoint } from "../contract/solver-constraints";
 import { compareCodeUnits } from "./compare";
 import type { PluginCapabilities } from "../ports/plugin-capabilities";
+import { isLegacyComposeGroup, isLegacyComposeNode, isLegacyComposeRequirement } from "./legacy";
 import {
   assertAuthoredMotionId,
   assertAuthoredTrackId,
@@ -88,6 +89,7 @@ interface OutputGraphEdge {
  * whole built graph, so the two cannot disagree. See ADR-047.
  */
 export type GraphEdge = InputGraphEdge | OutputGraphEdge;
+/** F2 deletes this legacy solve-member shape with the compose channel. */
 export interface SolveMember {
   readonly id: string;
   readonly base: string;
@@ -109,7 +111,12 @@ export interface GraphNode {
   readonly authoredIndex: number;
   readonly track: TrackDefinition;
   readonly edges: readonly GraphEdge[];
+  /** F2 deletes this legacy solver-to-members fan-in with the compose channel. */
   readonly solves?: readonly SolveMember[];
+  /** The legacy plugin that scoped `solves`, derived where the root requirement was judged. F2. */
+  readonly solveScope?: string;
+  /** The authored entry the scoping root requirement was bound under. F2 deletes it. */
+  readonly solveRootEntry?: string;
 }
 export interface GraphIR {
   readonly nodes: readonly GraphNode[];
@@ -501,8 +508,11 @@ function groupsAuthoring(keyframes: unknown, keys: readonly string[]): readonly 
     .sort(compareCodeUnits);
 }
 
-function baseOf(node: GraphNode): string | undefined {
-  const edge = node.edges.find((candidate) => edgeRequirement(candidate)?.slot === "base");
+function baseOf(node: GraphNode, capabilities: PluginCapabilities): string | undefined {
+  const edge = node.edges.find((candidate) => {
+    const requirement = edgeRequirement(candidate);
+    return requirement?.slot === "base" && isLegacyComposeRequirement(capabilities, requirement);
+  });
   return edge?.sourceId;
 }
 
@@ -516,11 +526,19 @@ interface MemberChain {
   readonly depth: number;
 }
 
-function solverPluginsOf(member: GraphNode, solverId: string): readonly string[] {
+function solverPluginsOf(
+  member: GraphNode,
+  solverId: string,
+  capabilities: PluginCapabilities,
+): readonly string[] {
   const plugins = new Set<string>();
   for (const edge of member.edges) {
     const requirement = edgeRequirement(edge);
-    if (requirement?.slot === "solver" && edge.sourceId === solverId)
+    if (
+      requirement?.slot === "solver" &&
+      edge.sourceId === solverId &&
+      isLegacyComposeRequirement(capabilities, requirement)
+    )
       plugins.add(requirement.plugin);
   }
   return [...plugins].sort(compareCodeUnits);
@@ -536,12 +554,12 @@ interface GoalBindings {
   readonly dict: readonly AuthoredGoal[];
 }
 
-function goalBindingsOf(node: GraphNode): GoalBindings {
+function goalBindingsOf(node: GraphNode, capabilities: PluginCapabilities): GoalBindings {
   const dict: AuthoredGoal[] = [];
   let bare = false;
   for (const edge of node.edges) {
     const requirement = edgeRequirement(edge);
-    if (requirement === undefined) continue;
+    if (!isLegacyComposeRequirement(capabilities, requirement)) continue;
     const { slot, memberKey } = requirement;
     if (slot === "target") {
       bare = true;
@@ -572,6 +590,7 @@ function goalReachOf(
   return "unaddressed";
 }
 
+/** F2 deletes this legacy solver derivation with the compose channel. */
 export function resolveSolvers(
   nodes: readonly GraphNode[],
   diagnostics: Diagnostic[],
@@ -590,7 +609,9 @@ export function resolveSolvers(
   // module, so reporting later moves no order.
   const deadRotationBinders = new Map<string, readonly string[]>();
   const restReadBy = new Set<string>();
+  // F2 deletes this legacy pre-pass with the compose channel.
   for (const node of nodes) {
+    if (!isLegacyComposeNode(node, capabilities)) continue;
     let rootCount = 0;
     // The plugins under which this node bound a `solver` slot, which is what scopes the read of its
     // authored rotation: the solve replaces the rotation of the plugin that asked for it, so a
@@ -598,16 +619,20 @@ export function resolveSolvers(
     const solverBinders: string[] = [];
     for (const edge of node.edges) {
       const requirement = edgeRequirement(edge);
-      if (requirement !== undefined) {
+      if (isLegacyComposeRequirement(capabilities, requirement)) {
         const slot = requirement.slot;
         if (slot === "root") rootCount++;
         if (slot === "solver") solverBinders.push(requirement.plugin);
       }
     }
     const keyframes = node.track.keyframes;
-    const rotationGroups = groupsAuthoring(keyframes, ORIENTATION_KEYS);
-    const weightGroups = groupsAuthoring(keyframes, ["weight"]);
-    const authoredGoals = goalBindingsOf(node);
+    const rotationGroups = groupsAuthoring(keyframes, ORIENTATION_KEYS).filter((group) =>
+      isLegacyComposeGroup(capabilities, group),
+    );
+    const weightGroups = groupsAuthoring(keyframes, ["weight"]).filter((group) =>
+      isLegacyComposeGroup(capabilities, group),
+    );
+    const authoredGoals = goalBindingsOf(node, capabilities);
     const hasSolver = solverBinders.length > 0;
     // Read through the goal classification rather than off the literal `"target"`. A member binding
     // `solver` beside a goal dict would otherwise load clean, with one real input edge per goal, and
@@ -693,7 +718,10 @@ export function resolveSolvers(
     // diagnostic. `RS-11` and `RS-12` pin the acceptance. See ADR-053 and ADR-054.
   }
 
-  const solvesMap = new Map<string, readonly SolveMember[]>();
+  const solvesMap = new Map<
+    string,
+    { readonly solves: readonly SolveMember[]; readonly scope: string; readonly rootEntry?: string }
+  >();
   const goalScope = new Map<string, GoalReach>();
 
   // Every node that at least one member points its `solver` slot at.
@@ -709,15 +737,19 @@ export function resolveSolvers(
   const boundSolverIds = new Set<string>();
   for (const node of nodes) {
     for (const edge of node.edges) {
-      if (edgeRequirement(edge)?.slot === "solver") {
+      const requirement = edgeRequirement(edge);
+      if (requirement?.slot === "solver" && isLegacyComposeRequirement(capabilities, requirement)) {
         boundSolverIds.add(edge.sourceId);
       }
     }
   }
 
-  // Resolve solvers
+  // Resolve solvers. F2 deletes this legacy derivation with the compose channel.
   for (const solver of nodes) {
-    const rootEdge = solver.edges.find((edge) => edgeRequirement(edge)?.slot === "root");
+    const rootEdge = solver.edges.find((edge) => {
+      const requirement = edgeRequirement(edge);
+      return requirement?.slot === "root" && isLegacyComposeRequirement(capabilities, requirement);
+    });
     // Diagnostic 1: ik-solver-no-root
     if (!rootEdge) {
       if (boundSolverIds.has(solver.id)) {
@@ -735,9 +767,14 @@ export function resolveSolvers(
     const rootId = rootEdge.sourceId;
 
     const members = nodes.filter((n) =>
-      n.edges.some(
-        (edge) => edgeRequirement(edge)?.slot === "solver" && edge.sourceId === solver.id,
-      ),
+      n.edges.some((edge) => {
+        const requirement = edgeRequirement(edge);
+        return (
+          requirement?.slot === "solver" &&
+          edge.sourceId === solver.id &&
+          isLegacyComposeRequirement(capabilities, requirement)
+        );
+      }),
     );
 
     // Diagnostic 2: ik-solver-no-members
@@ -765,7 +802,7 @@ export function resolveSolvers(
     //
     // Reported without a `continue`, unlike the two refusals above: the chain is still derivable
     // here, and a broken one is worth naming in the same pass rather than one run later.
-    const authoredGoals = goalBindingsOf(solver);
+    const authoredGoals = goalBindingsOf(solver, capabilities);
     if (!authoredGoals.bare && authoredGoals.dict.length === 0) {
       diagnostics.push(
         diagnostic(
@@ -806,7 +843,7 @@ export function resolveSolvers(
       let cursor: GraphNode | undefined = member;
       const walked = new Set<string>([member.id]);
       while (cursor !== undefined) {
-        const next = baseOf(cursor);
+        const next = baseOf(cursor, capabilities);
         if (next === undefined || (next !== rootId && !memberById.has(next))) {
           unreachable.set(
             cursor.id,
@@ -851,10 +888,11 @@ export function resolveSolvers(
     // An unknown capability is unjudged. A known declaration is judged only over a
     // chain every member reached, because a member that could not reach the root was named above
     // and has no depth to judge. See ADR-114.
-    const rootPlugin = edgeRequirement(rootEdge)?.plugin ?? "";
+    const rootRequirement = edgeRequirement(rootEdge);
+    const rootPlugin = rootRequirement?.plugin ?? "";
     const capability = capabilities.capabilityOf(rootPlugin);
     const derived = chains.map(({ node, depth }) => {
-      const plugins = solverPluginsOf(node, solver.id);
+      const plugins = solverPluginsOf(node, solver.id, capabilities);
       return {
         depth,
         plugins,
@@ -877,7 +915,7 @@ export function resolveSolvers(
     }
     if (accepted && capability !== undefined && readsMemberRest(capability.chain, derived)) {
       for (const { node } of chains) {
-        for (const plugin of solverPluginsOf(node, solver.id))
+        for (const plugin of solverPluginsOf(node, solver.id, capabilities))
           restReadBy.add(`${node.id}\n${plugin}`);
       }
     }
@@ -1027,9 +1065,8 @@ export function resolveSolvers(
       }
     }
 
-    solvesMap.set(
-      solver.id,
-      freeze(
+    solvesMap.set(solver.id, {
+      solves: freeze(
         chains.map((entry) => {
           const goal = goalByMember.get(entry.node.id);
           return freeze(
@@ -1039,7 +1076,13 @@ export function resolveSolvers(
           );
         }),
       ),
-    );
+      scope: rootPlugin,
+      // The entry-id alias is legacy delivery. A registered non-compose plugin is never a legacy
+      // recipient, so an entry id that names one is withheld here rather than leaking `members`.
+      ...(rootRequirement?.entryId === undefined || capabilities.isNewPath(rootRequirement.entryId)
+        ? {}
+        : { rootEntry: rootRequirement.entryId }),
+    });
   }
 
   for (const [nodeId, binders] of deadRotationBinders) {
@@ -1058,8 +1101,15 @@ export function resolveSolvers(
 
   return freeze(
     nodes.map((node) => {
-      const solves = solvesMap.get(node.id);
-      return solves ? freeze({ ...node, solves }) : node;
+      const solved = solvesMap.get(node.id);
+      return solved
+        ? freeze({
+            ...node,
+            solves: solved.solves,
+            solveScope: solved.scope,
+            ...(solved.rootEntry === undefined ? {} : { solveRootEntry: solved.rootEntry }),
+          })
+        : node;
     }),
   );
 }
@@ -1085,6 +1135,7 @@ export function deriveDependants(
   for (const node of nodes) collected.set(node.id, []);
   for (const node of nodes) {
     for (const edge of node.edges) collected.get(edge.sourceId)?.push(node.id);
+    // F2 deletes the legacy solver fan-in with the compose channel.
     if (node.solves) {
       for (const member of node.solves) collected.get(member.id)?.push(node.id);
     }
