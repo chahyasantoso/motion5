@@ -35,6 +35,11 @@ const toErased = (result: DeriveResult): ErasedDeriveResult => result;
 const readKey = (source: string, capability: string): string => `${source}\u0000${capability}`;
 const isError = (d: Diagnostic): boolean => d.severity === "error";
 
+/** The one spelling of a slot's accepted capabilities, used by presence, permissions, and reads. */
+function requirementCapabilities(capability: string | readonly string[]): readonly string[] {
+  return typeof capability === "string" ? [capability] : capability;
+}
+
 export function buildDerivationInventory(plan: TrackExecutionPlan): DerivationTrackInventory {
   const entries: DerivationEntryInventoryItem[] = [];
   const entriesById = new Map<string, DerivationEntryInventoryItem>();
@@ -103,16 +108,16 @@ function findMissingCapabilities(
     for (const binding of entry.bindings) {
       const reqDef = plugin.requirements[binding.slot];
       if (reqDef?.capability !== undefined) {
-        const cap = reqDef.capability;
+        const capabilities = requirementCapabilities(reqDef.capability);
         const sourceDescs = store.get(binding.qualifiedSource) ?? [];
-        const matches = sourceDescs.filter((d) => d.capability === cap);
-        if (matches.length === 0) {
+        const found = capabilities.some((cap) => sourceDescs.some((d) => d.capability === cap));
+        if (!found) {
           diags.push(
             diagnostic(
               "derivation-missing-capability",
               `${trackId}.${entry.entryId}.${binding.slot}`,
-              `Bound source "${binding.qualifiedSource}" lacks required capability "${cap}".`,
-              [binding.qualifiedSource, cap],
+              `Bound source "${binding.qualifiedSource}" lacks required capability "${capabilities.join('" or "')}".`,
+              [binding.qualifiedSource, ...capabilities],
             ),
           );
         }
@@ -132,7 +137,9 @@ function readableCapabilities(
     for (const binding of entry.bindings) {
       const reqDef = plugin.requirements[binding.slot];
       if (reqDef?.capability !== undefined) {
-        readable.add(readKey(binding.qualifiedSource, reqDef.capability));
+        for (const capability of requirementCapabilities(reqDef.capability)) {
+          readable.add(readKey(binding.qualifiedSource, capability));
+        }
       }
     }
   }
@@ -154,7 +161,27 @@ function createRequirementContext(
     if (found === undefined) throw new CapabilityReadError(trackId, source, capability);
     return found.payload;
   };
-  return Object.freeze({ trackId, entries, inventory, read }) as unknown as RequirementContext;
+  const readAny = (capabilities: readonly string[], source: string): unknown => {
+    for (const capability of capabilities) {
+      if (!readable.has(readKey(source, capability))) {
+        throw new CapabilityReadError(trackId, source, capability);
+      }
+    }
+    for (const capability of capabilities) {
+      const found = store.get(source)?.find((d) => d.capability === capability);
+      if (found !== undefined) {
+        return Object.freeze({ capability, payload: found.payload });
+      }
+    }
+    throw new CapabilityReadError(trackId, source, capabilities.join(" or "));
+  };
+  return Object.freeze({
+    trackId,
+    entries,
+    inventory,
+    read,
+    readAny,
+  }) as unknown as RequirementContext;
 }
 
 function runHook<T>(

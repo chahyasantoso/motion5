@@ -100,6 +100,7 @@ const BASE_RULES = {
   "ik-solver-no-goal": ERROR_WITH_IDS,
   "ik-solver-no-members": ERROR_WITH_IDS,
   "ik-solver-no-root": ERROR_WITH_IDS,
+  "ik-solver-no-solve-members": ERROR_WITH_IDS,
   "ik-solver-unreachable-root": ERROR_WITH_IDS,
   "ik-target-not-single-leaf": ERROR_WITH_IDS,
   "ik-weight-without-solver": ERROR_WITH_IDS,

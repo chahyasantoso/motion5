@@ -25,7 +25,12 @@ export type {
   LocalEvaluation,
   LocalEvaluationContext,
 } from "./domain/execution-plan";
-export type { CapabilityMap, CapabilityName } from "./contract/capability";
+export type {
+  CapabilityMap,
+  CapabilityName,
+  CapabilityRead,
+  CapabilityReadOf,
+} from "./contract/capability";
 export { COLLECT_OUTPUT } from "./contract/collect";
 export type { CollectRecord } from "./contract/collect";
 export type {

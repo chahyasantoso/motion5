@@ -517,4 +517,198 @@ describe("Slice C1: Generic structural derivation", () => {
     });
     expect(runtime.descriptorsOf("m1/t2")[0]!.capability).toBe("consumer-view");
   });
+
+  it("accepts a slot whose capability tuple matches either published capability", () => {
+    const viewEmitter: PluginDefinition = {
+      name: "view-emitter",
+      collect: () => ({}),
+      derive: () => derived("consumer-view", { consumedFrom: "itself", sourcePayload: null }),
+    };
+    const tupleConsumer: PluginDefinition = {
+      name: "tuple-consumer",
+      requirements: { source: { capability: ["box", "consumer-view"] } },
+      collect: () => ({}),
+      derive: (context) => {
+        const binding = context.entries.flatMap((e) => e.bindings).find((b) => b.slot === "source");
+        if (binding === undefined) return none;
+        const found = context.readAny(["box", "consumer-view"], binding.qualifiedSource);
+        return derived("consumer-view", {
+          consumedFrom: found.capability,
+          sourcePayload: found.payload,
+        });
+      },
+    };
+
+    const registry = new PluginRegistry();
+    registry.registerAll([toySourcePlugin, viewEmitter, tupleConsumer]);
+    const boxTrack = registry.compileExecutionPlan([{ b1: { plugin: "box-emitter" } }], {
+      trackId: "boxTrack",
+    });
+    const viewTrack = registry.compileExecutionPlan([{ v1: { plugin: "view-emitter" } }], {
+      trackId: "viewTrack",
+    });
+    const fromBox = registry.compileExecutionPlan(
+      [{ c1: { plugin: "tuple-consumer", requires: { source: "boxTrack" } } }],
+      { trackId: "fromBox" },
+    );
+    const fromView = registry.compileExecutionPlan(
+      [{ c1: { plugin: "tuple-consumer", requires: { source: "viewTrack" } } }],
+      { trackId: "fromView" },
+    );
+
+    const outcome = deriveStructuralDescriptors({
+      order: ["boxTrack", "viewTrack", "fromBox", "fromView"],
+      plans: new Map([
+        ["boxTrack", boxTrack],
+        ["viewTrack", viewTrack],
+        ["fromBox", fromBox],
+        ["fromView", fromView],
+      ]),
+    });
+
+    expect(outcome.kind).toBe("accepted");
+    expect(outcome.descriptors.get("fromBox")![0]!.payload).toEqual({
+      consumedFrom: "box",
+      sourcePayload: { width: 100, height: 50 },
+    });
+    expect(outcome.descriptors.get("fromView")![0]!.payload).toEqual({
+      consumedFrom: "consumer-view",
+      sourcePayload: { consumedFrom: "itself", sourcePayload: null },
+    });
+  });
+
+  it("refuses when no capability in a tuple is published", () => {
+    const emptySource: PluginDefinition = {
+      name: "empty-tuple-source",
+      collect: () => ({}),
+      derive: () => none,
+    };
+    const tupleConsumer: PluginDefinition = {
+      name: "tuple-consumer-missing",
+      requirements: { source: { capability: ["box", "consumer-view"] } },
+      collect: () => ({}),
+      derive: () => none,
+    };
+
+    const registry = new PluginRegistry();
+    registry.registerAll([emptySource, tupleConsumer]);
+    const sourcePlan = registry.compileExecutionPlan([{ s1: { plugin: "empty-tuple-source" } }], {
+      trackId: "emptyTrack",
+    });
+    const consumerPlan = registry.compileExecutionPlan(
+      [{ c1: { plugin: "tuple-consumer-missing", requires: { source: "emptyTrack" } } }],
+      { trackId: "tupleTrack" },
+    );
+
+    const outcome = deriveStructuralDescriptors({
+      order: ["emptyTrack", "tupleTrack"],
+      plans: new Map([
+        ["emptyTrack", sourcePlan],
+        ["tupleTrack", consumerPlan],
+      ]),
+    });
+
+    expect(outcome.kind).toBe("refused");
+    expect(outcome.diagnostics).toContainEqual(
+      expect.objectContaining({
+        ruleId: "derivation-missing-capability",
+        ids: ["emptyTrack", "box", "consumer-view"],
+      }),
+    );
+  });
+
+  it("returns the first capability in the tuple the source publishes", () => {
+    const bothSource: PluginDefinition = {
+      name: "both-source",
+      collect: () => ({}),
+      derive: () => derived("box", { width: 1, height: 2 }),
+    };
+    const viewSource: PluginDefinition = {
+      name: "both-view-source",
+      collect: () => ({}),
+      derive: () => derived("consumer-view", { consumedFrom: "both", sourcePayload: null }),
+    };
+    const orderedConsumer: PluginDefinition = {
+      name: "ordered-consumer",
+      requirements: { source: { capability: ["consumer-view", "box"] } },
+      collect: () => ({}),
+      derive: (context) => {
+        const binding = context.entries.flatMap((e) => e.bindings).find((b) => b.slot === "source");
+        if (binding === undefined) return none;
+        const found = context.readAny(["consumer-view", "box"], binding.qualifiedSource);
+        return derived("consumer-view", {
+          consumedFrom: found.capability,
+          sourcePayload: found.payload,
+        });
+      },
+    };
+
+    const registry = new PluginRegistry();
+    registry.registerAll([bothSource, viewSource, orderedConsumer]);
+    const sourcePlan = registry.compileExecutionPlan(
+      [{ b1: { plugin: "both-source" } }, { v1: { plugin: "both-view-source" } }],
+      { trackId: "bothTrack" },
+    );
+    const consumerPlan = registry.compileExecutionPlan(
+      [{ c1: { plugin: "ordered-consumer", requires: { source: "bothTrack" } } }],
+      { trackId: "orderedTrack" },
+    );
+
+    const outcome = deriveStructuralDescriptors({
+      order: ["bothTrack", "orderedTrack"],
+      plans: new Map([
+        ["bothTrack", sourcePlan],
+        ["orderedTrack", consumerPlan],
+      ]),
+    });
+
+    expect(outcome.kind).toBe("accepted");
+    expect(outcome.descriptors.get("orderedTrack")![0]!.payload).toMatchObject({
+      consumedFrom: "consumer-view",
+    });
+  });
+
+  it("refuses an empty or duplicate capability tuple at admission", () => {
+    const registry = new PluginRegistry();
+    const emptyTuple = {
+      name: "empty-tuple",
+      collect: () => ({}),
+      requirements: { source: { capability: [] } },
+    } as unknown as PluginDefinition;
+    const duplicateTuple = {
+      name: "duplicate-tuple",
+      collect: () => ({}),
+      requirements: { source: { capability: ["box", "box"] } },
+    } as unknown as PluginDefinition;
+
+    expect(() => registry.register(emptyTuple)).toThrow(/must not be empty/);
+    expect(() => registry.register(duplicateTuple)).toThrow(/declared twice/);
+  });
+
+  it("refuses a readAny whose capabilities were not declared by a slot", () => {
+    const sneakAny: PluginDefinition = {
+      name: "sneak-any",
+      collect: () => ({}),
+      derive: (context) => {
+        context.readAny(["box", "consumer-view"], "secretTrack");
+        return none;
+      },
+    };
+
+    const registry = new PluginRegistry();
+    registry.register(sneakAny);
+    const plan = registry.compileExecutionPlan([{ s1: { plugin: "sneak-any" } }], {
+      trackId: "sneakAnyTrack",
+    });
+
+    const outcome = deriveStructuralDescriptors({
+      order: ["sneakAnyTrack"],
+      plans: new Map([["sneakAnyTrack", plan]]),
+    });
+
+    expect(outcome.kind).toBe("refused");
+    expect(outcome.diagnostics).toContainEqual(
+      expect.objectContaining({ ruleId: "derivation-undeclared-source" }),
+    );
+  });
 });

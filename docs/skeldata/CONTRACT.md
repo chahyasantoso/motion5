@@ -182,8 +182,10 @@ in strict sequence:
   - `root`: folds external 2D frame. Optional `frame` slot with no capability; the frame is a
     runtime value read by `readFrame`. Delta is `{ root: frame }`. Its `derive` owns the
     duplicate-root rule.
-  - `ik`: folds rotations and optional inspection. Requires skeleton and targets dict.
-  - `fk`: folds poses mapping point ID to tip frame `{ x, y, rotation }`. Requires skeleton; optional solver.
+  - `ik`: folds rotations and optional inspection. Final descriptor (`IK_REQUIREMENTS`, C4) requires
+    a scalar skeleton and a targets dict.
+  - `fk`: folds poses mapping point ID to tip frame `{ x, y, rotation }`. Final descriptor
+    (`FK_REQUIREMENTS`, C4) requires a scalar skeleton and an optional scalar solver.
   - Earliest stage: Registry.
   - Owner: Built-in plugins package.
 
@@ -230,6 +232,23 @@ in strict sequence:
   - Refusal rule: IK with no non-root points, missing goals, or goals on non-leaves refuses at derivation.
     No solve member uses rule id `ik-solver-no-solve-members`, registered by C4. `ik3d` (G4) applies
     the same rules through the same ids.
+
+- **T-INV-08: Capability tuples and solve provenance**
+  - Invariant: A requirement capability is one name or a non-empty duplicate-free tuple of names.
+    The `skeleton` slot accepts `chain` or `joined` through such a tuple, and `readAny` answers with
+    the capability-keyed payload union so callers narrow on `capability` rather than inspect a name
+    string. A solve publishes the skeleton source, skeleton capability, layout identity, root
+    binding, member IDs and goal member IDs it answers; FK accepts a bound solver only when that
+    provenance matches the skeleton it composes.
+  - Earliest stage: Derivation.
+  - Owner: Core capability admission and structural derivation for tuples;
+    `packages/plugins/src/solve-contract.ts` (`deriveIkSolve`, `validateFkRequirements`) for solve
+    provenance.
+  - Refusal rule: An empty or duplicate capability tuple refuses at registry admission. A bound
+    source without a required capability refuses with `derivation-missing-capability`. A malformed
+    solve payload or mismatched provenance refuses with `derivation-failure`; a compatible custom
+    producer may solve a subset of non-root members but may not name a root, non-member or non-leaf
+    goal. Unknown or non-finite runtime angles remain boundary failures, not structural ones.
 
 ### Numeric invariants
 

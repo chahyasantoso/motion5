@@ -75,6 +75,27 @@ export function claims(plugin: PluginDefinition, key: string): boolean {
   return Boolean(plugin.keys?.includes(key) || plugin.claimsKey?.(key));
 }
 
+/** Admission for one slot's capability: one token, or a non-empty duplicate-free tuple of them. */
+function admitRequirementCapabilities(plugin: string, slot: string, value: unknown): void {
+  const names = Array.isArray(value) ? value : [value];
+  if (names.length === 0)
+    throw new TypeError(
+      `Plugin "${plugin}" requirement "${slot}" capability array must not be empty.`,
+    );
+  const seen = new Set<string>();
+  for (const name of names) {
+    if (!isCapabilityToken(name))
+      throw new TypeError(
+        `Plugin "${plugin}" requirement "${slot}" capability must be a non-empty string without ':'.`,
+      );
+    if (seen.has(name))
+      throw new TypeError(
+        `Plugin "${plugin}" requirement "${slot}" capability "${name}" is declared twice.`,
+      );
+    seen.add(name);
+  }
+}
+
 /** Validates one own-property snapshot before any registry write. See ADR-134. */
 export function admitPlugin(plugin: PluginDefinition, context: AdmissionContext): AdmittedPlugin {
   if (typeof plugin !== "object" || plugin === null)
@@ -192,11 +213,8 @@ export function admitPlugin(plugin: PluginDefinition, context: AdmissionContext)
     if (!slot.trim())
       throw new TypeError(`Plugin "${source.name}" requirement slot must be non-empty.`);
     const req = (requirements as Record<string, { capability?: unknown }>)[slot];
-    if (req?.capability !== undefined && !isCapabilityToken(req.capability)) {
-      throw new TypeError(
-        `Plugin "${source.name}" requirement "${slot}" capability must be a non-empty string without ':'.`,
-      );
-    }
+    if (req?.capability !== undefined)
+      admitRequirementCapabilities(source.name, slot, req.capability);
   }
   for (const [field, names] of [
     ["keys", keys],

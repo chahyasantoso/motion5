@@ -205,6 +205,24 @@ describe("OwnedIds answers an exact argument list per ownership answer", () => {
   });
 });
 
+describe("ik-solver-no-solve-members rule ownership", () => {
+  it("owns error severity and always requires ids payload", () => {
+    expect(RULES["ik-solver-no-solve-members"].severity).toBe("error");
+    expect(RULES["ik-solver-no-solve-members"].ids).toBe("always");
+
+    const built = diagnostic(
+      "ik-solver-no-solve-members",
+      "solve.ik1",
+      "First point is anchored.",
+      ["solve", "ik1", "p0"],
+    );
+
+    expect(built.ruleId).toBe("ik-solver-no-solve-members");
+    expect(built.severity).toBe("error");
+    expect(built.ids).toEqual(["solve", "ik1", "p0"]);
+  });
+});
+
 describe("skeleton-imported-chain-has-root rule ownership", () => {
   it("owns error severity and always requires ids payload", () => {
     expect(RULES["skeleton-imported-chain-has-root"].severity).toBe("error");

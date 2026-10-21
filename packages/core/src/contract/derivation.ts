@@ -1,6 +1,6 @@
 import type { Diagnostic } from "./v5";
 import type { AuthoredEntryId, PluginName } from "./address";
-import type { CapabilityMap } from "./capability";
+import type { CapabilityMap, CapabilityReadOf } from "./capability";
 
 export interface StructuralDescriptor<T = unknown> {
   readonly capability: string;
@@ -55,6 +55,18 @@ export interface RequirementContextOf<M> {
   readonly entries: readonly DerivationEntryInventoryItem[];
   readonly inventory: DerivationTrackInventory;
   read<K extends keyof M>(capability: K, source: string): M[K];
+  /**
+   * The first capability in `capabilities` the bound source publishes, keyed by the one found.
+   *
+   * A slot that accepts more than one capability needs one read that says which one answered, so a
+   * caller narrows on `capability` instead of reading a name string back out of the payload. The
+   * union is generated from the tuple, so a new capability in the tuple is a compile error at every
+   * switch that reads it.
+   */
+  readAny<K extends keyof M>(
+    capabilities: readonly [K, ...K[]],
+    source: string,
+  ): CapabilityReadOf<M, K>;
 }
 
 export interface DeriveContextOf<M> extends RequirementContextOf<M> {}

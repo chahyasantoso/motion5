@@ -136,6 +136,7 @@ export const BASE_RULE_IDS = [
   "ik-solver-no-goal",
   "ik-solver-no-members",
   "ik-solver-no-root",
+  "ik-solver-no-solve-members",
   "ik-solver-unreachable-root",
   "ik-target-not-single-leaf",
   "ik-weight-without-solver",

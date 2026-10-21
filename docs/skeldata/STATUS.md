@@ -1,25 +1,24 @@
 # Skeldata status index
 
 Status: implementation track on branch `feat/skeldata-v5-phase-c`.
-Current slice: C3 complete locally with CI pending; next C4.
+Current slice: C4 complete locally with CI pending; next C5.
 
 ## Last completed slice
 
-- **Slice:** C3 ([17-C3-joined-layout.md](../../motion5-implementation-plans/slices/17-C3-joined-layout.md)).
-- **State:** Plugin-owned joined layout derivation (`deriveJoinedLayout`) and requirement validation
-  (`validateJoinedRequirements`) from one or more `join` entries plus an optional single `root`
-  entry; authored parent-first ordering validated across the whole track, child adjacency,
-  prototype-safe ID index, point locators with a parity refusal, `RootPolicy` propagation and
-  imported-root refusal (`skeleton-imported-chain-has-root`), length-prefixed numeric-invariant
-  `layoutIdentity` that includes link identity, a shared mixed-track guard between validate and
-  derive, and capability map augmentation (`joined`). Implemented locally; CI pending.
-- **Next:** C4 ([18-C4-solver-derivation.md](../../motion5-implementation-plans/slices/18-C4-solver-derivation.md)).
+- **Slice:** C4 ([18-C4-solve-bindings.md](../../motion5-implementation-plans/slices/18-C4-solve-bindings.md)).
+- **State:** Final IK/FK slot descriptors (`IK_REQUIREMENTS`, `FK_REQUIREMENTS`), the chain-or-joined
+  capability tuple and `readAny` union, target coverage (`ik-solver-no-solve-members`,
+  `ik-solver-no-goal`, `ik-goal-*`, `ik-leaf-without-goal`), and canonical `solve` provenance
+  (`deriveIkSolve`, `validateFkRequirements`) in `packages/plugins/src/solve-contract.ts`. Core
+  admits non-empty duplicate-free capability tuples and returns the capability-keyed union. Built-in
+  `ik`/`fk` remain legacy `compose` definitions until D4/D5. Implemented locally; CI pending.
+- **Next:** C5 ([19-C5-dynamic-reader.md](../../motion5-implementation-plans/slices/19-C5-dynamic-reader.md)).
 
 ## Phase progress
 
 - Phase A (Foundation & Invariants: A1-A6): complete.
 - Phase B (Authoring, Operations & Cache Seam: B1-B8): complete.
-- Phase C (Derivation & Candidate Acceptance: C1-C7): in progress (C1-C3 complete).
+- Phase C (Derivation & Candidate Acceptance: C1-C7): in progress (C1-C4 complete).
 - Phase D (Kinematics & Dual Caches: D1-D7): pending.
 - Phase E (Editing & Render Lifecycle: E1-E7): pending.
 - Phase G (3D & Integration Migration: G1-G8, runs before F): pending.
@@ -64,6 +63,8 @@ Current slice: C3 complete locally with CI pending; next C4.
 - Skeleton space spec module: [packages/plugins/src/skeleton-space.ts](../../packages/plugins/src/skeleton-space.ts).
 - Layout identity module: [packages/plugins/src/layout-identity.ts](../../packages/plugins/src/layout-identity.ts).
 - Joined layout test suite (C3): [packages/plugins/test/unit/joined-layout-c3.test.ts](../../packages/plugins/test/unit/joined-layout-c3.test.ts).
+- Solve contract module (C4): [packages/plugins/src/solve-contract.ts](../../packages/plugins/src/solve-contract.ts).
+- Solve bindings test suite (C4): [packages/plugins/test/unit/solve-bindings-c4.test.ts](../../packages/plugins/test/unit/solve-bindings-c4.test.ts).
 - Public plugin subpaths test suite: [packages/plugins/test/public-subpaths.test.ts](../../packages/plugins/test/public-subpaths.test.ts).
 - Capability registry: [packages/core/src/contract/capability.ts](../../packages/core/src/contract/capability.ts).
 - Derive result constructors test suite: [packages/core/test/contract/derive-constructors.test.ts](../../packages/core/test/contract/derive-constructors.test.ts).
@@ -80,14 +81,20 @@ Current slice: C3 complete locally with CI pending; next C4.
 
 ## Follow-ups
 
-- `join` capability `joined` landed in C3; C4 owns the chain-or-joined slot union.
-- `skeleton-imported-chain-has-root` is registered in `rule-id.ts`, `rule.ts` and
-  `rule-registry.test.ts`; `ik-solver-no-solve-members` remains C4.
+- The chain-or-joined slot union and `readAny` landed in C4; C5 consumes the union directly and
+  must not re-check a capability name string.
+- C4 reuses the existing `ik-goal-*` target rules; `ik-target-not-single-leaf` stays unused because
+  the singular target shorthand is removed. `SolvePayload.memberIds` bounds the runtime angle keys,
+  and D4/D5 own refusal of unknown or non-finite angles.
+- `skeleton-imported-chain-has-root` and `ik-solver-no-solve-members` are registered in `rule-id.ts`,
+  `rule.ts` and `rule-registry.test.ts`. D4/G4 wire the solver validators to the built-in solvers.
 - `LocalEvaluation` exposes no bindings or source IDs, so C3's `join.collect` declares the collect
   seam but cannot emit link records. D2 owns the dynamic link record and C5 reads it.
 - `SkeletonSpaceSpec` owns plugin and capability names plus point keys; numeric frame reading is the
   explicit `defineRootPlugin` parameter. C5 adds the record reader when records exist.
 - `PluginCapability`/`PluginCapabilities` (`ports/plugin-capabilities.ts`) is still type-exported from `packages/core/src/index.ts` and used across the graph; `plugin-capabilities.test.ts` ADR-136 parts stay until F2 deletes the port. C6 removes the type export and quarantines the port, `solverChain`, `solves`, the `members` injection, kinematic slot-name rules and the kinematic constants re-exported by `@motion5/core/plugin-api` behind `isLegacyComposeDefinition`, because legacy compose `ik`/`ik3d` still read `inputs.members`.
 - The runtime does not call `executeTrackOperations` yet; evaluation still runs legacy `compose`. Runtime provider override, `committedStates` and `dispose(state)` are exercised only by tests; C7 and D6 wire them into the runtime transaction. C7 also adds the temporary `legacy-compose` strategy (per-plugin parity tests, `legacy-compose-mixed-track` refusal), drops the `committedStates.get(compilerKey) ?? committedStates.get(entryId)` fallback, keys inputs by entry instead of plugin name, and makes `EvaluatorServices` an augmentable interface. F2 deletes `legacy-compose`.
-- FK and IK are still legacy `compose` plugins with `base`/`root`/`target` slots; C4, D3, D4 and D5 migrate them.
+- FK and IK built-ins are still legacy `compose` plugins with `base`/`root`/`target` slots. C4 added
+  the final descriptor contract in `packages/plugins/src/solve-contract.ts`; D3/D4/D5 migrate the
+  built-ins to it.
 - `transform3d`, `fk3d`, `ik3d`, `rig`, `pose-classify`, the Three adapter, `skeletonTracks` and the apps are still on the old contract; phase G (G1–G8, slices 36–43) migrates them before F. F1–F6 are now slices 44–49 (plan revision 2026-10-20, ADR-143; no code changed).

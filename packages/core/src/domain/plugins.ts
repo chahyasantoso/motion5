@@ -142,7 +142,15 @@ export interface PluginRequirement {
    * is the shape `TimeTriggerDefinition.autoplay` reserves for the same reason.
    */
   readonly dict?: true;
-  readonly capability?: CapabilityName;
+  /**
+   * The structural capability a bound source must publish.
+   *
+   * A tuple accepts any one of its capabilities. It is the shape a slot uses when more than one
+   * topology answers the same question, and `RequirementContext.readAny` says which one answered
+   * rather than leaving the caller to inspect a payload's shape. One capability stays a string so
+   * every existing declaration reads unchanged. See C4 and ADR-142 D6.
+   */
+  readonly capability?: CapabilityName | readonly [CapabilityName, ...CapabilityName[]];
 }
 /** One authored binding that resolved against a declared slot of a registered plugin. */
 export interface ResolvedRequirement {

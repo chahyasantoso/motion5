@@ -167,6 +167,9 @@ describe("Slice C2: Chain Layout and Root Policy Derivation", () => {
       read: () => {
         throw new Error("unexpected read");
       },
+      readAny: () => {
+        throw new Error("unexpected read");
+      },
     };
     const result = rootPlugin.derive!(context);
 

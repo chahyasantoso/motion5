@@ -10,11 +10,11 @@ export interface SkeletonSpaceSpec {
   readonly pointKeys: readonly string[];
 }
 
-export const SKELETON_2D: SkeletonSpaceSpec = Object.freeze({
+export const SKELETON_2D = Object.freeze({
   pointPlugin: "point",
   rootPlugin: "root",
   joinPlugin: "join",
   chainCapability: "chain",
   joinedCapability: "joined",
-  pointKeys: Object.freeze(["length", "x", "y"]),
-});
+  pointKeys: Object.freeze(["length", "x", "y"] as const),
+} as const) satisfies SkeletonSpaceSpec;

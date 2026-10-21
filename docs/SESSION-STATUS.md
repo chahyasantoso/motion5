@@ -10,14 +10,14 @@ byte ceiling.
 
 ## Now
 
-- **Joined topology derivation:** multi-chain tree layout, point locators, root policy, and the
-  `skeleton-imported-chain-has-root` rule under `17-C3-joined-layout.md`; implemented locally with CI
-  pending.
+- **Solve bindings:** final IK/FK `skeleton`, `targets`, and optional `solver` descriptors, the
+  chain-or-joined `readAny` union, target coverage rules, and solve provenance checks under
+  `18-C4-solve-bindings.md`; implemented locally with CI pending.
 
 ## Next in line
 
-- **IK solver derivation:** derive solver goals and member bindings under
-  `18-C4-solver-derivation.md`.
+- **Dynamic skeleton reader:** bind current point and link records to compiled layouts under
+  `19-C5-dynamic-reader.md`.
 
 ## Open, and not scheduled
 
