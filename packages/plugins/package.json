@@ -86,6 +86,10 @@
     "./skeleton-space": {
       "types": "./dist/skeleton-space.d.ts",
       "default": "./dist/skeleton-space.js"
+    },
+    "./dynamic-skeleton": {
+      "types": "./dist/dynamic-skeleton.d.ts",
+      "default": "./dist/dynamic-skeleton.js"
     }
   }
 }

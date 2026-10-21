@@ -8,6 +8,7 @@ export interface SkeletonSpaceSpec {
   readonly chainCapability: CapabilityName;
   readonly joinedCapability: CapabilityName;
   readonly pointKeys: readonly string[];
+  readonly frameKeys: readonly string[];
 }
 
 export const SKELETON_2D = Object.freeze({
@@ -17,4 +18,5 @@ export const SKELETON_2D = Object.freeze({
   chainCapability: "chain",
   joinedCapability: "joined",
   pointKeys: Object.freeze(["length", "x", "y"] as const),
+  frameKeys: Object.freeze(["x", "y", "rotation"] as const),
 } as const) satisfies SkeletonSpaceSpec;

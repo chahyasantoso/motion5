@@ -36,6 +36,7 @@ const SUPPORT_SUBPATHS = [
   "chain-layout",
   "joined-layout",
   "skeleton-space",
+  "dynamic-skeleton",
 ];
 /** R2: support modules other than `frame3d` publish exactly these runtime names. */
 const SUPPORT_EXPORTS: Readonly<Record<string, readonly string[]>> = {
@@ -47,6 +48,7 @@ const SUPPORT_EXPORTS: Readonly<Record<string, readonly string[]>> = {
   "chain-layout": ["deriveChainLayout"],
   "joined-layout": ["deriveJoinedLayout", "validateJoinedRequirements"],
   "skeleton-space": ["SKELETON_2D"],
+  "dynamic-skeleton": ["readDynamicSkeleton"],
 };
 export const PUBLIC_SUBPATHS = [...DEFINITION_SUBPATHS, ...SUPPORT_SUBPATHS];
 

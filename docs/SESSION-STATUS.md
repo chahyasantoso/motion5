@@ -10,14 +10,14 @@ byte ceiling.
 
 ## Now
 
-- **Solve bindings:** final IK/FK `skeleton`, `targets`, and optional `solver` descriptors, the
-  chain-or-joined `readAny` union, target coverage rules, and solve provenance checks under
-  `18-C4-solve-bindings.md`; implemented locally with CI pending.
+- **Dynamic skeleton reader:** bind current point and link records to compiled layouts, validating
+  topology, reference preservation, and root propagation under `19-C5-dynamic-reader.md`;
+  implemented locally with CI pending.
 
 ## Next in line
 
-- **Dynamic skeleton reader:** bind current point and link records to compiled layouts under
-  `19-C5-dynamic-reader.md`.
+- **Quarantine legacy channel:** remove kinematic knowledge from the new core path and gate legacy
+  composition behind one shared predicate under `20-C6-generic-core.md`.
 
 ## Open, and not scheduled
 

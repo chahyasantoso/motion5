@@ -151,9 +151,21 @@ describe("Slice C3: Joined Topology Derivation", () => {
 
     expect(payload.rootPolicy).toEqual({ kind: "origin", hasRootEntry: false });
     expect(payload.links).toEqual([
-      { entryId: "j_torso", chainSource: "torso" },
-      { entryId: "j_arm_l", chainSource: "arm_l", parentSource: "torso" },
-      { entryId: "j_arm_r", chainSource: "arm_r", parentSource: "torso" },
+      { entryId: "j_torso", chainSource: "torso", pointIds: ["t0", "t1"] },
+      {
+        entryId: "j_arm_l",
+        chainSource: "arm_l",
+        parentSource: "torso",
+        pointIds: ["l0", "l1"],
+        attachTo: "t1",
+      },
+      {
+        entryId: "j_arm_r",
+        chainSource: "arm_r",
+        parentSource: "torso",
+        pointIds: ["r0", "r1"],
+        attachTo: "t1",
+      },
     ]);
     expect(typeof payload.layoutIdentity).toBe("string");
   });

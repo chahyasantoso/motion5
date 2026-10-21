@@ -73,6 +73,11 @@ const ORIGIN: WorldFrame = Object.freeze({ x: 0, y: 0, rotation: 0 });
 /** The offset a member that authored no pivot carries, shared rather than allocated per read. */
 export const ZERO_PIVOT_OFFSET: PivotOffset = Object.freeze({ x: 0, y: 0 });
 
+/** Whether `value` is a finite number: the one test every numeric reader in the package applies. */
+export function isFiniteNumber(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value);
+}
+
 /**
  * A finite number, or `fallback`.
  *
@@ -81,7 +86,7 @@ export const ZERO_PIVOT_OFFSET: PivotOffset = Object.freeze({ x: 0, y: 0 });
  * authored typo takes out a limb. Defaulting keeps the damage inside the value that was wrong.
  */
 export function readNumber(value: unknown, fallback = 0): number {
-  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
+  return isFiniteNumber(value) ? value : fallback;
 }
 
 /**

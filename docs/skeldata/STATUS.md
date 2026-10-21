@@ -1,24 +1,23 @@
 # Skeldata status index
 
 Status: implementation track on branch `feat/skeldata-v5-phase-c`.
-Current slice: C4 complete locally with CI pending; next C5.
+Current slice: C5 complete locally with CI pending; next C6.
 
 ## Last completed slice
 
-- **Slice:** C4 ([18-C4-solve-bindings.md](../../motion5-implementation-plans/slices/18-C4-solve-bindings.md)).
-- **State:** Final IK/FK slot descriptors (`IK_REQUIREMENTS`, `FK_REQUIREMENTS`), the chain-or-joined
-  capability tuple and `readAny` union, target coverage (`ik-solver-no-solve-members`,
-  `ik-solver-no-goal`, `ik-goal-*`, `ik-leaf-without-goal`), and canonical `solve` provenance
-  (`deriveIkSolve`, `validateFkRequirements`) in `packages/plugins/src/solve-contract.ts`. Core
-  admits non-empty duplicate-free capability tuples and returns the capability-keyed union. Built-in
-  `ik`/`fk` remain legacy `compose` definitions until D4/D5. Implemented locally; CI pending.
-- **Next:** C5 ([19-C5-dynamic-reader.md](../../motion5-implementation-plans/slices/19-C5-dynamic-reader.md)).
+- **Slice:** C5 ([19-C5-dynamic-reader.md](../../motion5-implementation-plans/slices/19-C5-dynamic-reader.md)).
+- **State:** Shared dynamic skeleton reader (`readDynamicSkeleton`) consuming C4's `readAny` union
+  directly, parameterised by `SkeletonSpaceSpec` (`SKELETON_2D`), validating point and link
+  records, preserving immutable point arrays by reference, enforcing total finite numerics without
+  plausibility defaulting, and propagating blocked/error root dependencies. Implemented locally; CI
+  pending.
+- **Next:** C6 ([20-C6-generic-core.md](../../motion5-implementation-plans/slices/20-C6-generic-core.md)).
 
 ## Phase progress
 
 - Phase A (Foundation & Invariants: A1-A6): complete.
 - Phase B (Authoring, Operations & Cache Seam: B1-B8): complete.
-- Phase C (Derivation & Candidate Acceptance: C1-C7): in progress (C1-C4 complete).
+- Phase C (Derivation & Candidate Acceptance: C1-C7): in progress (C1-C5 complete).
 - Phase D (Kinematics & Dual Caches: D1-D7): pending.
 - Phase E (Editing & Render Lifecycle: E1-E7): pending.
 - Phase G (3D & Integration Migration: G1-G8, runs before F): pending.
@@ -65,6 +64,8 @@ Current slice: C4 complete locally with CI pending; next C5.
 - Joined layout test suite (C3): [packages/plugins/test/unit/joined-layout-c3.test.ts](../../packages/plugins/test/unit/joined-layout-c3.test.ts).
 - Solve contract module (C4): [packages/plugins/src/solve-contract.ts](../../packages/plugins/src/solve-contract.ts).
 - Solve bindings test suite (C4): [packages/plugins/test/unit/solve-bindings-c4.test.ts](../../packages/plugins/test/unit/solve-bindings-c4.test.ts).
+- Dynamic skeleton reader module (C5): [packages/plugins/src/dynamic-skeleton.ts](../../packages/plugins/src/dynamic-skeleton.ts).
+- Dynamic skeleton reader test suite (C5): [packages/plugins/test/unit/dynamic-reader-c5.test.ts](../../packages/plugins/test/unit/dynamic-reader-c5.test.ts).
 - Public plugin subpaths test suite: [packages/plugins/test/public-subpaths.test.ts](../../packages/plugins/test/public-subpaths.test.ts).
 - Capability registry: [packages/core/src/contract/capability.ts](../../packages/core/src/contract/capability.ts).
 - Derive result constructors test suite: [packages/core/test/contract/derive-constructors.test.ts](../../packages/core/test/contract/derive-constructors.test.ts).
@@ -81,8 +82,7 @@ Current slice: C4 complete locally with CI pending; next C5.
 
 ## Follow-ups
 
-- The chain-or-joined slot union and `readAny` landed in C4; C5 consumes the union directly and
-  must not re-check a capability name string.
+- The dynamic skeleton reader landed in C5; D3/D4/D5 consume `readDynamicSkeleton` during execution.
 - C4 reuses the existing `ik-goal-*` target rules; `ik-target-not-single-leaf` stays unused because
   the singular target shorthand is removed. `SolvePayload.memberIds` bounds the runtime angle keys,
   and D4/D5 own refusal of unknown or non-finite angles.
@@ -91,7 +91,7 @@ Current slice: C4 complete locally with CI pending; next C5.
 - `LocalEvaluation` exposes no bindings or source IDs, so C3's `join.collect` declares the collect
   seam but cannot emit link records. D2 owns the dynamic link record and C5 reads it.
 - `SkeletonSpaceSpec` owns plugin and capability names plus point keys; numeric frame reading is the
-  explicit `defineRootPlugin` parameter. C5 adds the record reader when records exist.
+  explicit `defineRootPlugin` parameter. C5 added the record reader and frame keys to the spec.
 - `PluginCapability`/`PluginCapabilities` (`ports/plugin-capabilities.ts`) is still type-exported from `packages/core/src/index.ts` and used across the graph; `plugin-capabilities.test.ts` ADR-136 parts stay until F2 deletes the port. C6 removes the type export and quarantines the port, `solverChain`, `solves`, the `members` injection, kinematic slot-name rules and the kinematic constants re-exported by `@motion5/core/plugin-api` behind `isLegacyComposeDefinition`, because legacy compose `ik`/`ik3d` still read `inputs.members`.
 - The runtime does not call `executeTrackOperations` yet; evaluation still runs legacy `compose`. Runtime provider override, `committedStates` and `dispose(state)` are exercised only by tests; C7 and D6 wire them into the runtime transaction. C7 also adds the temporary `legacy-compose` strategy (per-plugin parity tests, `legacy-compose-mixed-track` refusal), drops the `committedStates.get(compilerKey) ?? committedStates.get(entryId)` fallback, keys inputs by entry instead of plugin name, and makes `EvaluatorServices` an augmentable interface. F2 deletes `legacy-compose`.
 - FK and IK built-ins are still legacy `compose` plugins with `base`/`root`/`target` slots. C4 added

@@ -18,6 +18,10 @@ export interface JoinedLink {
   readonly entryId: AuthoredEntryId;
   readonly chainSource: string;
   readonly parentSource?: string;
+  /** The imported chain's points, in that chain's order: this link's segment of `orderedPointIds`. */
+  readonly pointIds: readonly PointMemberId[];
+  /** The parent chain's final point this link's first point attaches to; absent on the root link. */
+  readonly attachTo?: PointMemberId;
 }
 
 export interface JoinedPayload {
@@ -203,6 +207,7 @@ export function deriveJoinedLayout(
         entryId: entry.entryId,
         chainSource,
         ...(parentSource !== undefined ? { parentSource } : {}),
+        pointIds: Object.freeze([...payload.orderedPointIds]),
       }),
     );
   }
@@ -313,12 +318,19 @@ export function deriveJoinedLayout(
   }
 
   const rootId = orderedPointIds[0]!;
+  const resolvedLinks: readonly JoinedLink[] = Object.freeze(
+    links.map((link) => {
+      if (link.parentSource === undefined) return link;
+      const parentFinalIndex = chainEndIndices.get(link.parentSource)!;
+      return Object.freeze({ ...link, attachTo: orderedPointIds[parentFinalIndex]! });
+    }),
+  );
   const rootToken = rootPolicyToken(root.policy);
   const layoutIdentity = joinedLayoutIdentity(
     trackId,
     orderedPointIds,
     parentIndices,
-    links,
+    resolvedLinks,
     rootToken,
   );
 
@@ -332,7 +344,7 @@ export function deriveJoinedLayout(
     locators: Object.freeze(locators),
     layoutIdentity,
     rootPolicy: root.policy,
-    links: Object.freeze(links),
+    links: resolvedLinks,
   });
 
   return derived(spec.joinedCapability, payload);
