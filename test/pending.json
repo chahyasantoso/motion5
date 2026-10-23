@@ -110,9 +110,9 @@
     "reason": "Authors grouped plugin keyframes; plugin admission, slots and named outputs replace them in Phase 3."
   },
   {
-    "path": "packages/core/test/integration/contract-baseline.test.ts",
+    "path": "packages/core/test/integration/contract-baseline.pending.test.ts",
     "phase": 3,
-    "reason": "Authors grouped plugin keyframes; plugin admission, slots and named outputs replace them in Phase 3."
+    "reason": "The perspective-usage warning has no producer on the identified-table parser, and graph cycles need declared dependencies; both arrive with Phase 3 plugin slots."
   },
   {
     "path": "packages/core/test/integration/cross-motion.test.ts",
@@ -122,7 +122,7 @@
   {
     "path": "packages/core/test/integration/demo-runtime-authoring.test.ts",
     "phase": 3,
-    "reason": "Authors grouped plugin keyframes; plugin admission, slots and named outputs replace them in Phase 3."
+    "reason": "Loads the IK playground and react-demo projects through transform, fk and ik plugin tracks, which Phase 3 compiles; later cases also need Phase 4 live edits and Phase 5 solver output."
   },
   {
     "path": "packages/core/test/integration/engine-headless.test.ts",
@@ -242,7 +242,7 @@
   {
     "path": "packages/core/test/integration/react-demo-rig.test.ts",
     "phase": 3,
-    "reason": "Authors grouped plugin keyframes; plugin admission, slots and named outputs replace them in Phase 3."
+    "reason": "Loads `full-body-project` through fk and transform plugin tracks, which Phase 3 compiles; its arm edits then need Phase 4 live writes."
   },
   {
     "path": "packages/core/test/integration/remount.test.ts",
@@ -630,14 +630,14 @@
     "reason": "Exercises solver, IK, FK or rig behavior; Phase 5 expresses it with tables and declared dependencies."
   },
   {
-    "path": "packages/plugins/test/runner-lifecycle.test.ts",
+    "path": "packages/plugins/test/runner-lifecycle.pending.test.ts",
     "phase": 4,
-    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
+    "reason": "Live writes and replacement overlays target identified-table tracks; Phase 4 owns shape-matched live writes, and the Phase 2 ValueTrack exposes no write seam."
   },
   {
-    "path": "packages/plugins/test/runner.test.ts",
+    "path": "packages/plugins/test/runner.pending.test.ts",
     "phase": 4,
-    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
+    "reason": "Live writes target identified-table tracks; Phase 4 owns shape-matched live writes, and the Phase 2 ValueTrack exposes no write seam."
   },
   {
     "path": "packages/plugins/test/unit/loader.test.ts",
