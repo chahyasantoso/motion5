@@ -29,6 +29,7 @@ import {
   qualifyMotionTrack,
 } from "./ids";
 import { orderGraph } from "./order";
+import { checkDependencyBindings } from "./dependency-check";
 import {
   recordGoalReach,
   validateGoalWeights,
@@ -405,7 +406,127 @@ export function collectTrack(
       (resolvedDiagnostics) => diagnostics.push(...resolvedDiagnostics),
     );
   }
+  // The identified-table path: `input.requires` names the slot and the source, and the plugin id
+  // comes from the track rather than from a grouped key. One edge per bound source; a map slot
+  // expands one edge per member key, with the key carried as data rather than folded into the slot.
+  collectDependencyEdges(track, id, ownerId, edges, diagnostics);
   return Object.freeze({ id, owner, authoredIndex, track, edges: Object.freeze(edges) });
+}
+
+/**
+ * Add the edges an identified-table plugin track authors under `input.requires`.
+ *
+ * The parser has already proved the authored binding shape when this is reached from
+ * `validateV5`; the guards remain because graph construction is also callable directly and a
+ * malformed binding must be refused rather than silently producing no dependency. A no-plugin
+ * track contributes no demand and therefore no edges here.
+ */
+function collectDependencyEdges(
+  track: GroupedTrackDefinition,
+  observerId: string,
+  ownerId: string,
+  edges: GraphEdge[],
+  diagnostics: Diagnostic[],
+): void {
+  const plugin = track.plugin;
+  const requires = track.input?.requires;
+  if (plugin === undefined || requires === undefined) return;
+  if (!isRecord(requires)) {
+    diagnostics.push(
+      diagnostic(
+        "requirement-source",
+        `${observerId}.input.requires`,
+        "Track requires must be an object of slot bindings.",
+        [observerId],
+      ),
+    );
+    return;
+  }
+  for (const [slot, binding] of Object.entries(requires)) {
+    const slotPath = `${observerId}.input.requires.${slot}`;
+    if (slot.length === 0 || slot.includes(":") || /[[\]]/.test(slot)) {
+      diagnostics.push(
+        diagnostic(
+          "requirement-source",
+          slotPath,
+          "A dependency slot must be non-empty and must not contain ':', '[' or ']'.",
+          [slot],
+        ),
+      );
+      continue;
+    }
+    if (typeof binding === "string") {
+      addDependencyEdge(
+        { plugin, slot, source: binding, authoredPath: slot },
+        observerId,
+        ownerId,
+        slotPath,
+        edges,
+        diagnostics,
+      );
+      continue;
+    }
+    if (!isRecord(binding)) {
+      diagnostics.push(
+        diagnostic(
+          "requirement-source",
+          slotPath,
+          "A slot binding must name one source or a map of member keys to sources.",
+          [slot],
+        ),
+      );
+      continue;
+    }
+    for (const [memberKey, source] of Object.entries(binding)) {
+      const memberPath = `${slotPath}.${memberKey}`;
+      if (memberKey.length === 0 || memberKey.includes(":") || /[[\]]/.test(memberKey)) {
+        diagnostics.push(
+          diagnostic(
+            "requirement-source",
+            memberPath,
+            "A map member key must be non-empty and must not contain ':', '[' or ']'.",
+            [memberKey],
+          ),
+        );
+        continue;
+      }
+      if (typeof source !== "string" || source.length === 0) {
+        diagnostics.push(
+          diagnostic(
+            "requirement-source",
+            memberPath,
+            "A map binding must name a non-empty source id for each member.",
+            [memberKey],
+          ),
+        );
+        continue;
+      }
+      addDependencyEdge(
+        { plugin, slot, source, memberKey, authoredPath: `${slot}.${memberKey}` },
+        observerId,
+        ownerId,
+        memberPath,
+        edges,
+        diagnostics,
+      );
+    }
+  }
+}
+
+function addDependencyEdge(
+  binding: PluginRequiresBinding,
+  observerId: string,
+  ownerId: string,
+  path: string,
+  edges: GraphEdge[],
+  diagnostics: Diagnostic[],
+): void {
+  const resolved = resolveRequirementEdge(binding, observerId, ownerId, path);
+  readOutcome(
+    resolved,
+    (edge) => edges.push(edge),
+    (resolvedDiagnostics) => diagnostics.push(...resolvedDiagnostics),
+  );
 }
 
 export function buildGraphIR(
@@ -1138,6 +1259,7 @@ export function finalizeGraph(
   // chain that was never valid: an unknown `base` source yields `ik-solver-unreachable-root` beside
   // `observation-unknown-source`, naming a member for a typo one node up. One cause, one
   // diagnostic, and a derivation that only ever runs over resolved references. `RS-10` pins it.
+  diagnostics.push(...checkDependencyBindings(nodes, capabilities));
   diagnostics.sort(compareDiagnostics);
   if (diagnostics.some(({ severity }) => severity === "error"))
     return { diagnostics: Object.freeze(diagnostics) };
