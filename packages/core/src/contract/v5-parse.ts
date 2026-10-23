@@ -479,7 +479,7 @@ function readRecordSpec(
   });
 }
 
-function readValueSpec(
+export function readValueSpec(
   value: unknown,
   path: string,
   diagnostics: Diagnostic[],

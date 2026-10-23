@@ -1,7 +1,20 @@
 /**
  * The declared plugin-authoring surface. Re-exports only: the protocol and its exhaustive reader
  * keep their owners in core, while implementations depend on this entry. See ADR-133.
+ *
+ * `PluginDefinition` is still the grouped definition until Phase 7 deletes that machinery. A plugin
+ * authored against the identified-table contract names `IdentifiedPluginDefinition`, and registers
+ * through `PluginCatalog` rather than the legacy `PluginRegistry`.
  */
+export { PluginAdmissionError, PluginCatalog } from "./domain/plugin-catalog";
+export type {
+  DependencySpec,
+  EvaluationContext,
+  Outputs,
+  PluginDefinition as IdentifiedPluginDefinition,
+  ResolvedInput,
+  ValueSpec,
+} from "./contract/v5";
 export type {
   Contribution,
   PluginComposer,

@@ -518,7 +518,7 @@ export interface PluginDefinition<Input extends ResolvedInput = ResolvedInput> {
   };
   readonly outputs: Readonly<Record<string, ValueSpec>>;
   readonly validate?: (input: Input, context: EvaluationContext) => readonly Diagnostic[];
-  readonly transform: (input: Input, context: EvaluationContext) => Outputs;
+  transform(input: Input, context: EvaluationContext): Outputs;
 }
 /** What publication carries, discriminated by status. Only a ready patch owns outputs. */
 export type PatchPayload =

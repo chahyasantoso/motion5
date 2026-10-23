@@ -29,7 +29,9 @@ export function validateV5(
   capabilities: PluginCapabilities = UNJUDGED_CAPABILITIES,
 ): ValidationResult {
   const context: ParseContext = {
-    isPluginRegistered: (pluginId) => capabilities.capabilityOf(pluginId) !== undefined,
+    isPluginRegistered: (pluginId) =>
+      capabilities.isPluginAdmitted?.(pluginId) ??
+      capabilities.capabilityOf(pluginId) !== undefined,
   };
   const schema = validateSchemaV5(input, context);
   switch (schema.kind) {

@@ -24,6 +24,7 @@ import { Motion, type MotionTrackEntry } from "./domain/motion";
 import { unreachable } from "./lang/exhaustive";
 import { collect, report } from "./domain/completion";
 import { PluginRegistry } from "./domain/plugins";
+import type { PluginCatalog } from "./domain/plugin-catalog";
 import type { RenderMetadata } from "./ports/render-metadata";
 import { qualifyFreeTrack, qualifyMotionTrack } from "./graph/ids";
 import type { ComposeResolver } from "./runtime/graph-runtime";
@@ -40,7 +41,7 @@ export interface EngineOptions {
   readonly clock: Clock;
   readonly interpolator: Interpolator;
   readonly scheduler: Scheduler;
-  readonly plugins?: PluginRegistry;
+  readonly plugins?: PluginRegistry | PluginCatalog;
   readonly triggerFactory?: TriggerFactory;
 }
 export interface ProjectHandle {
@@ -192,14 +193,12 @@ function runAllAndReportOnce(steps: readonly (() => void)[], context: string): v
 }
 export class Engine {
   readonly #options: EngineOptions;
-  readonly #plugins: PluginRegistry | undefined;
   readonly #capabilities: PluginCapabilities;
   constructor(options: EngineOptions) {
     assertClock(options.clock);
     assertInterpolator(options.interpolator);
     assertScheduler(options.scheduler);
     this.#options = options;
-    this.#plugins = options.plugins;
     this.#capabilities = options.plugins ?? UNJUDGED_CAPABILITIES;
   }
   load(project: ProjectDefinition): ProjectHandle {
@@ -220,7 +219,9 @@ export class Engine {
       if (existing) return existing;
       const parsed = readOutcome(
         parseTrackDefinition(trackDef, nodeId, {
-          isPluginRegistered: (pluginId) => this.#capabilities.capabilityOf(pluginId) !== undefined,
+          isPluginRegistered: (pluginId) =>
+            this.#capabilities.isPluginAdmitted?.(pluginId) ??
+            this.#capabilities.capabilityOf(pluginId) !== undefined,
         }),
         (value) => value,
         (diagnostics) => {

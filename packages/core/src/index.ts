@@ -119,6 +119,22 @@ export type { ValueTransaction } from "./contract/value-transaction";
 export { LiveValueKeyError } from "./domain/track";
 export { PluginRegistry } from "./domain/plugins";
 export type { PluginDefinition, PluginStage, ResolvedPlugins } from "./domain/plugins";
+/**
+ * The identified-table plugin registry and its admission refusal.
+ *
+ * The grouped `PluginRegistry` above keeps its name until Phase 7 deletes it. A host opts into the
+ * new path by passing `PluginCatalog` as `EngineOptions.plugins`; the two registries share the
+ * `PluginCapabilities` port and nothing else.
+ */
+export { PluginAdmissionError, PluginCatalog } from "./domain/plugin-catalog";
+export type {
+  DependencySpec,
+  EvaluationContext,
+  Outputs,
+  PluginDefinition as IdentifiedPluginDefinition,
+  ResolvedInput,
+  ValueSpec,
+} from "./contract/v5";
 export { assertClock, createManualClock } from "./ports/clock";
 /**
  * The port contracts a reusable adapter has to name in order to be written at all. Types only, so
