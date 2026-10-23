@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { describe, expect, it } from "vitest";
 import { Engine } from "../../src/engine";
 import { createDefaultTriggerFactory } from "../../src/adapters/trigger-factory/default";

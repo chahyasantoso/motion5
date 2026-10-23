@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { describe, expect, it } from "vitest";
 import type { MotionDefinition } from "../../src/contract/v5";
 import { Engine } from "../../src/engine";

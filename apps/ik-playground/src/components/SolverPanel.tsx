@@ -9,6 +9,12 @@ function numberValue(values: Readonly<Record<string, unknown>>, key: string): nu
   return Number(values[key] ?? 0);
 }
 
+function isFlatRecord(value: unknown): value is Readonly<Record<string, unknown>> {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
+  const prototype = Object.getPrototypeOf(value);
+  return prototype === Object.prototype || prototype === null;
+}
+
 function inspectionLine(values: Readonly<Record<string, unknown>>): string {
   const inspection = values.inspection;
   if (typeof inspection !== "object" || inspection === null) return "no inspection published";
@@ -40,10 +46,12 @@ const PlanarCard: React.FC<{ readonly handle: ProjectHandle; readonly goals: Goa
   )
     return <div className="solver-card">Waiting for the 2D FABRIK solve…</div>;
 
-  const root = rootDecision.patch.values;
-  const goal = goalDecision.patch.values;
-  const tip = tipDecision.patch.values;
-  const solver = solverDecision.patch.values;
+  const root = rootDecision.patch.outputs.values;
+  const goal = goalDecision.patch.outputs.values;
+  const tip = tipDecision.patch.outputs.values;
+  const solver = solverDecision.patch.outputs.values;
+  if (!isFlatRecord(root) || !isFlatRecord(goal) || !isFlatRecord(tip) || !isFlatRecord(solver))
+    return <div className="solver-card">Waiting for the 2D FABRIK solve…</div>;
   const distance = Math.hypot(
     numberValue(goal, "x") - numberValue(root, "x"),
     numberValue(goal, "y") - numberValue(root, "y"),
@@ -98,8 +106,10 @@ const SpatialCard: React.FC<{ readonly handle: ProjectHandle; readonly goals: Go
   if (goalDecision.kind !== "render" || solveDecision.kind !== "render")
     return <div className="solver-card">Waiting for the 3D FABRIK solve…</div>;
 
-  const goal = goalDecision.patch.values;
-  const solve = solveDecision.patch.values;
+  const goal = goalDecision.patch.outputs.values;
+  const solve = solveDecision.patch.outputs.values;
+  if (!isFlatRecord(goal) || !isFlatRecord(solve))
+    return <div className="solver-card">Waiting for the 3D FABRIK solve…</div>;
   const x = numberValue(goal, "x");
   const y = numberValue(goal, "y");
   const z = numberValue(goal, "z");

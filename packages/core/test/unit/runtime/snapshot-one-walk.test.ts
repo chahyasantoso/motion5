@@ -38,7 +38,7 @@ import { ProjectRuntime } from "../../../src/runtime/project-runtime";
 
 const MANUAL: MotionDefinition["trigger"] = { type: "manual" };
 const compose = (node: { id: string }) => () => ({
-  values: { node: node.id },
+  outputs: { values: { node: node.id } },
   sourceProgress: 0,
   sourceRevisions: {},
 });

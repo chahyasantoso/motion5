@@ -7,7 +7,7 @@ import type {
   ResolvedInput,
   Table,
   ValueSpec,
-} from "../../src/contract/v5-values";
+} from "../../src/contract/v5";
 
 type TranslateValues = Readonly<Record<"dx" | "dy", number>>;
 

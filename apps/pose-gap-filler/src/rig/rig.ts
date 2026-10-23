@@ -25,24 +25,23 @@ function imageLimbTracks(limb: LimbId): readonly TrackDefinition[] {
   const ids = limbTracks(limb);
   const member = (id: string, base: string): TrackDefinition => ({
     id,
-    keyframes: {
-      fk: {
-        values: { length: INITIAL_LENGTH, rotation: 0, weight: 1 },
-        requires: { base, solver: ids.solve },
-      },
+    plugin: "fk",
+    input: {
+      values: { length: INITIAL_LENGTH, rotation: 0, weight: 1 },
+      requires: { base, solver: ids.solve },
     },
   });
   return [
-    { id: ids.root, keyframes: { transform: { values: { x: 0, y: 0, rotation: 0 } } } },
+    { id: ids.root, plugin: "transform", input: { values: { x: 0, y: 0, rotation: 0 } } },
     {
       id: ids.goal,
-      keyframes: { transform: { values: { x: 0, y: INITIAL_LENGTH * 1.5, rotation: 0 } } },
+      plugin: "transform",
+      input: { values: { x: 0, y: INITIAL_LENGTH * 1.5, rotation: 0 } },
     },
     {
       id: ids.solve,
-      keyframes: {
-        ik: { values: { flip: false }, requires: { root: ids.root, target: ids.goal } },
-      },
+      plugin: "ik",
+      input: { values: { flip: false }, requires: { root: ids.root, target: ids.goal } },
     },
     member(ids.upper, ids.root),
     member(ids.lower, ids.upper),
@@ -77,15 +76,15 @@ export function worldRigProject(): ProjectDefinition {
     const ids = limbTracks(limb.id);
     const point = (id: string, x: number, y: number, z: number): TrackDefinition => ({
       id,
-      keyframes: { transform3d: { values: { x, y, z, rotation: 0, rotationX: 0, rotationY: 0 } } },
+      plugin: "transform3d",
+      input: { values: { x, y, z, rotation: 0, rotationX: 0, rotationY: 0 } },
     });
     const member = (id: string, base: string): TrackDefinition => ({
       id,
-      keyframes: {
-        fk3d: {
-          values: { length: INITIAL_LENGTH, weight: 1 },
-          requires: { base, solver: ids.solve },
-        },
+      plugin: "fk3d",
+      input: {
+        values: { length: INITIAL_LENGTH, weight: 1 },
+        requires: { base, solver: ids.solve },
       },
     });
     return [
@@ -94,7 +93,8 @@ export function worldRigProject(): ProjectDefinition {
       point(ids.pole, 0, 0, INITIAL_LENGTH),
       {
         id: ids.solve,
-        keyframes: { ik3d: { requires: { root: ids.root, target: ids.goal, pole: ids.pole } } },
+        plugin: "ik3d",
+        input: { requires: { root: ids.root, target: ids.goal, pole: ids.pole } },
       },
       member(ids.upper, ids.root),
       member(ids.lower, ids.upper),
@@ -152,10 +152,18 @@ export interface SolvedLimb {
   readonly tip: Vec;
 }
 
+function isFlatRecord(value: unknown): value is Readonly<Record<string, unknown>> {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
+  const prototype = Object.getPrototypeOf(value);
+  return prototype === Object.prototype || prototype === null;
+}
+
 function publishedTip(project: ProjectHandle, trackId: string, keys: readonly string[]) {
   const patch = project.get(poseNodeId(trackId));
   if (patch?.status !== "ready") return undefined;
-  const position = keys.map((key) => patch.values[key]);
+  const values = patch.outputs.values;
+  if (!isFlatRecord(values)) return undefined;
+  const position = keys.map((key) => values[key]);
   return position.every((value): value is number => typeof value === "number")
     ? (position as Vec)
     : undefined;

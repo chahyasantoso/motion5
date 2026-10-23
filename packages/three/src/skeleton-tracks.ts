@@ -18,7 +18,7 @@ export function skeletonTracks(
   binding: SkeletonBinding,
   { idPrefix }: SkeletonTracksOptions,
 ): readonly TrackDefinition[] {
-  const validation = validateTrackDefinition({ id: idPrefix, keyframes: {} }, "track");
+  const validation = validateTrackDefinition({ id: idPrefix, input: {} }, "track");
   if (validation.diagnostics.some((diagnostic) => diagnostic.path.endsWith(".id")))
     throw new TypeError("Skeleton track idPrefix must be a non-empty unqualified track id.");
   assertCapturedHierarchy(binding);
@@ -29,7 +29,7 @@ export function skeletonTracks(
   const rootId = `${idPrefix}-root`;
   const boneId = (index: number) => `${idPrefix}-bone-${index}`;
   const tracks: TrackDefinition[] = [
-    { id: rootId, keyframes: { transform3d: { values: { x: 0, y: 0, z: 0 } } } },
+    { id: rootId, plugin: "transform3d", input: { values: { x: 0, y: 0, z: 0 } } },
   ];
   const bones: Record<string, string> = {};
   const rest = new Matrix4();
@@ -37,11 +37,10 @@ export function skeletonTracks(
     const local = frameFromMatrix(rest.compose(bone.restPosition, bone.restQuaternion, UNIT));
     tracks.push({
       id: boneId(bone.index),
-      keyframes: {
-        fk3d: {
-          values: { length: 0, ...local },
-          requires: { base: bone.parent === undefined ? rootId : boneId(bone.parent) },
-        },
+      plugin: "fk3d",
+      input: {
+        values: { length: 0, ...local },
+        requires: { base: bone.parent === undefined ? rootId : boneId(bone.parent) },
       },
     });
     if (bone.key !== undefined)
@@ -52,6 +51,6 @@ export function skeletonTracks(
         writable: true,
       });
   }
-  tracks.push({ id: `${idPrefix}-rig`, keyframes: { rig: { requires: { bones } } } });
+  tracks.push({ id: `${idPrefix}-rig`, plugin: "rig", input: { requires: { bones } } });
   return tracks;
 }

@@ -1,6 +1,6 @@
 import { builtinRegistry } from "../../support/builtin-registry";
 import { describe, expect, it } from "vitest";
-import type { ProjectDefinition } from "../../../src/contract/v5";
+import type { GroupedProject } from "../../support/v5-builders";
 import type { GraphNode } from "../../../src/graph/ir";
 import { buildGraphIR } from "../../../src/graph/ir";
 import { orderGraph } from "../../../src/graph/order";
@@ -84,7 +84,7 @@ describe("canonical order and cycle detection", () => {
   });
 
   it("carries canonical order on the immutable IR", () => {
-    const project: ProjectDefinition = {
+    const project: GroupedProject = {
       schemaVersion: 5,
       motions: [
         {
@@ -102,7 +102,7 @@ describe("canonical order and cycle detection", () => {
   });
 
   it("rejects a cyclic project before mount", () => {
-    const project: ProjectDefinition = {
+    const project: GroupedProject = {
       schemaVersion: 5,
       motions: [
         {

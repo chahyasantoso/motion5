@@ -41,7 +41,7 @@ describe("GraphPublisher", () => {
     const calls = new Map<string, number>();
     const count = (id: string) => {
       calls.set(id, (calls.get(id) ?? 0) + 1);
-      return { values: { id }, sourceProgress: 0.5, sourceRevisions: {} };
+      return { outputs: { values: { id } }, sourceProgress: 0.5, sourceRevisions: {} };
     };
     const nodes = [
       makeNode("root", 0, [], () => count("root")),
@@ -70,9 +70,13 @@ describe("GraphPublisher", () => {
       makeNode("bad", 0, [], () => {
         throw new Error("boom");
       }),
-      makeNode("child", 1, ["bad"], () => ({ values: {}, sourceProgress: 0, sourceRevisions: {} })),
+      makeNode("child", 1, ["bad"], () => ({
+        outputs: { values: {} },
+        sourceProgress: 0,
+        sourceRevisions: {},
+      })),
       makeNode("sibling", 2, [], () => ({
-        values: { ok: true },
+        outputs: { values: { ok: true } },
         sourceProgress: 0,
         sourceRevisions: {},
       })),

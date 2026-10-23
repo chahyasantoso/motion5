@@ -1,6 +1,7 @@
 // Docs: ./project-runtime.md
 import type {
   AuthoredProperty,
+  GroupedTrackDefinition,
   PatchBatch,
   ProjectDefinition,
   TrackDefinition,
@@ -100,14 +101,14 @@ import { unreachable } from "../lang/exhaustive";
 
 interface FreeTrackEntry {
   readonly kind: "free";
-  readonly track: TrackDefinition;
+  readonly track: GroupedTrackDefinition;
   readonly token: number;
   readonly valueState: ValueState;
 }
 
 interface OwnedTrackEntry {
   readonly kind: "owned";
-  readonly track: TrackDefinition;
+  readonly track: GroupedTrackDefinition;
   readonly motionId: string;
   readonly token: number;
   readonly valueState: ValueState;
@@ -708,7 +709,7 @@ export class ProjectRuntime {
     this.#commit({ kind: "tracks", tracks });
   }
 
-  #resolve(nodeId: string, track: TrackDefinition): ResolvedPlugins | undefined {
+  #resolve(nodeId: string, track: GroupedTrackDefinition): ResolvedPlugins | undefined {
     return this.#ports.host.resolveKeyframes(
       track.keyframes ?? {},
       `${nodeId}.keyframes`,
@@ -718,8 +719,8 @@ export class ProjectRuntime {
 
   #needsTimelineBuild(
     nodeId: string,
-    current: TrackDefinition,
-    candidate: TrackDefinition,
+    current: GroupedTrackDefinition,
+    candidate: GroupedTrackDefinition,
   ): boolean {
     const resolved = this.#resolve(nodeId, candidate);
     if (resolved === undefined) return true;
@@ -731,7 +732,7 @@ export class ProjectRuntime {
     );
   }
 
-  #replaceTrack(id: string, token: number, next: TrackDefinition): void {
+  #replaceTrack(id: string, token: number, next: GroupedTrackDefinition): void {
     const entry = this.#writableEntry(id, token);
     const owner = trackMotionId(entry);
     const expected =

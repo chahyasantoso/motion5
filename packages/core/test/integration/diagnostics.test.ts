@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { TrackDefinition } from "../../src/contract/v5";
+import type { GroupedTrackDefinition } from "../../src/contract/v5";
 import { createManualClock } from "../../src/ports/clock";
 import { ProjectRuntime } from "../../src/runtime/project-runtime";
 
@@ -18,7 +18,7 @@ function pendingProject(): {
     trigger: { type: "manual" };
     tracks: readonly never[];
   }[];
-  readonly freeTracks: readonly TrackDefinition[];
+  readonly freeTracks: readonly GroupedTrackDefinition[];
 } {
   return {
     schemaVersion: 5 as const,
@@ -34,7 +34,7 @@ function pendingProject(): {
   };
 }
 const compose = (node: { id: string }) => () => ({
-  values: { node: node.id },
+  outputs: { values: { node: node.id } },
   sourceProgress: 0,
   sourceRevisions: {},
 });

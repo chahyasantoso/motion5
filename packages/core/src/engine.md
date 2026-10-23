@@ -28,7 +28,7 @@ Teardown has no partial success worth keeping. A step that throws leaves the ste
 
 A lone failure is rethrown verbatim rather than wrapped. `report.ts`'s `afterCleanup` attaches whatever a release hook threw to its own `AggregateError`, and callers assert on that value's identity and message, so renaming a single host failure here would break the precedence contract this is meant to support. That precedence used to be spelled twice, once here as a local `afterCleanup` beside a local `describeError` and once in the runtime as `rejectAfterRollback`, differing in one word of prose. It is one owner now, read with a closed `CleanupPhase`, and this file imports it rather than restating it. See ADR-035 and ADR-096.
 
-## registry
+## #capabilities
 
 The Engine also holds the registry as `PluginCapabilities`, a narrow port rather than a second
 declaration index. It supplies that same reference to project validation and each project's

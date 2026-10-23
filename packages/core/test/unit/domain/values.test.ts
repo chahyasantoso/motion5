@@ -35,9 +35,9 @@ describe("immutable value snapshots", () => {
       for (const compose of [
         () => {
           const result = track.compose();
-          return { values: result.values, sourceProgress: 0, sourceRevisions: {} };
+          return { outputs: { values: result.values }, sourceProgress: 0, sourceRevisions: {} };
         },
-        () => ({ values: { label: null }, sourceProgress: 0, sourceRevisions: {} }),
+        () => ({ outputs: { values: { label: null } }, sourceProgress: 0, sourceRevisions: {} }),
       ]) {
         const node: PublisherNode = {
           id: "~/tag",
@@ -45,6 +45,7 @@ describe("immutable value snapshots", () => {
           authoredIndex: 0,
           track: { id: "tag" },
           edges: [],
+          // @ts-expect-error null is not a scalar, which is the composition the publisher must refuse.
           compose,
         };
         const batch = publisher.flush(

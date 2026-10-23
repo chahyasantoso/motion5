@@ -8,10 +8,18 @@ import { goalNudge, useGoalDrag } from "./goal-drag";
 import { FRAME_COLOR } from "./ik3d-palette";
 
 /** The goal the runtime last published, which is where a drag or a nudge starts from. */
+function isFlatRecord(value: unknown): value is Readonly<Record<string, unknown>> {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
+  const prototype = Object.getPrototypeOf(value);
+  return prototype === Object.prototype || prototype === null;
+}
+
 function publishedGoal(handle: ProjectHandle): Point3 | undefined {
   const decision = patchRender(handle.get(IK3D_NODE_ID(IK3D.goalTrack)));
   if (decision.kind !== "render") return undefined;
-  const { x, y, z } = decision.patch.values;
+  const values = decision.patch.outputs.values;
+  if (!isFlatRecord(values)) return undefined;
+  const { x, y, z } = values;
   return { x: Number(x ?? 0), y: Number(y ?? 0), z: Number(z ?? 0) };
 }
 

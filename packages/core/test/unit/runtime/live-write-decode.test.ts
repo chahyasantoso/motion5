@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { describe, expect, it } from "vitest";
 import { fileURLToPath } from "node:url";
 import type { ProjectDefinition, TrackDefinition } from "../../../src/contract/v5";

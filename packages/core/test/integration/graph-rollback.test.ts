@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
 import type { ProjectDefinition } from "../../src/contract/v5";
+import type { GroupedProject } from "../support/v5-builders";
 import { GraphBinding, type GraphBindingHooks } from "../../src/graph/binding";
 import { createDefaultGraphBuilder } from "../../src/graph/builders/default";
 import { builtinRegistry } from "../support/builtin-registry";
 
-const project = (tracks: ProjectDefinition["motions"][number]["tracks"]): ProjectDefinition => ({
+const project = (tracks: GroupedProject["motions"][number]["tracks"]): ProjectDefinition => ({
   schemaVersion: 5,
   motions: [{ id: "hero", trigger: { type: "manual" }, tracks }],
   freeTracks: [{ id: "cursor" }],

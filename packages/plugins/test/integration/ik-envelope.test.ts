@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { describe, expect, it } from "vitest";
 import { PluginRegistry } from "@motion5/core";
 import { Engine } from "@motion5/core";

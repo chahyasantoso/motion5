@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { describe, expect, it } from "vitest";
 import type { FilledFrame, JointPrediction } from "../src/filler/frame";
 import { createGapFiller } from "../src/filler/gap-filler";

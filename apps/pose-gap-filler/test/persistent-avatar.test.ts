@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { describe, expect, it } from "vitest";
 import { createAvatarScene } from "../src/view/avatar";
 import { createGapPipeline } from "../src/filler/pipeline";

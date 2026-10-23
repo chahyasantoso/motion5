@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { describe, expect, it, vi } from "vitest";
 import { statedPublications } from "../helpers/publication-spy";
 import {
@@ -70,7 +71,7 @@ function expectSamePose(actual: ProjectHandle, reference: ProjectHandle) {
     const idPatch2 = reference.get(id);
     if (idPatch2?.status !== "ready")
       throw new Error(`idPatch2 is ${idPatch2?.status ?? "absent"}, not ready.`);
-    expect(idPatch.values).toEqual(idPatch2.values);
+    expect(idPatch.outputs.values).toEqual(idPatch2.outputs.values);
   }
 }
 

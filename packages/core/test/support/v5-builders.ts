@@ -1,14 +1,35 @@
-import type { TriggerDefinition } from "../../src/contract/v5";
 import type {
   AuthoredCell,
   AuthoredRecord,
   AuthoredValues,
+  FlatRecord,
+  GroupedTrackDefinition,
+  MotionDefinition,
   PatchPayload,
   SourceBinding,
+  Table,
   TrackDefinition,
+  TriggerDefinition,
   Value,
   ValueSpec,
-} from "../../src/contract/v5-values";
+} from "../../src/contract/v5";
+
+/**
+ * A project fixture that still authors `observes` or `keyframes`.
+ *
+ * The identified-table contract refuses both members by name, so this is a fixture type for the
+ * graph-level cases that read output edges directly and never reach a parser. It is assignable to
+ * `ProjectDefinition` without a cast, and it leaves with the grouped bridge in Phase 3.
+ */
+export interface GroupedProject {
+  readonly schemaVersion: 5;
+  readonly projectId?: string;
+  readonly perspective?: number;
+  readonly motions: readonly (Omit<MotionDefinition, "tracks"> & {
+    readonly tracks: readonly GroupedTrackDefinition[];
+  })[];
+  readonly freeTracks?: readonly GroupedTrackDefinition[];
+}
 
 /**
  * Shape-neutral authored fixtures for the v5 value contract.
@@ -91,4 +112,29 @@ export function project(tracks: readonly TrackDefinition[]): BuilderProject {
 export function outputOf(patch: PatchPayload | undefined, name: string): Value | undefined {
   if (patch?.status !== "ready") return undefined;
   return patch.outputs[name];
+}
+
+export function isTableOutput(value: Value | undefined): value is Table {
+  return Array.isArray(value);
+}
+
+/**
+ * The ready patch's `values` output, narrowed to the flat record most fixtures publish.
+ *
+ * `Outputs` is open by contract, so a reader has to say which shape it expects before indexing one.
+ * A thrown error rather than `undefined` because every caller has already asserted the patch is
+ * ready: an absent or tabular output is the test's fixture being wrong, not a case to branch on.
+ */
+export function recordValues(patch: PatchPayload | undefined): FlatRecord {
+  const value = outputOf(patch, "values");
+  if (value === undefined || isTableOutput(value))
+    throw new Error("Expected a ready patch whose values output is a flat record.");
+  return value;
+}
+
+export function tableValues(patch: PatchPayload | undefined): Table {
+  const value = outputOf(patch, "values");
+  if (!isTableOutput(value))
+    throw new Error("Expected a ready patch whose values output is a table.");
+  return value;
 }

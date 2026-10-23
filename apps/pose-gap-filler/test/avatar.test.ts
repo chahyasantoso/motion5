@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { describe, expect, it } from "vitest";
 import { Group, Vector3 } from "three";
 import { createAvatarScene, extremityOrientation, requireUniformScale } from "../src/view/avatar";

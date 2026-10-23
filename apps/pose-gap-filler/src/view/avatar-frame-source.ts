@@ -17,6 +17,12 @@ export const AVATAR_SOURCES = Object.freeze({
   shoulderMid: "app/shoulder-mid",
 } as const);
 
+function isFlatRecord(value: unknown): value is Readonly<Record<string, unknown>> {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
+  const prototype = Object.getPrototypeOf(value);
+  return prototype === Object.prototype || prototype === null;
+}
+
 /** BodyState basis to published frame values, through the adapter's one convention owner. */
 export function basisToFrame3d(position: Vec, basis: Basis): Readonly<Record<string, number>> {
   const vector = (value: Vec) => new Vector3().fromArray(value);
@@ -38,7 +44,8 @@ export function avatarFrameSource(
     for (const id of [ids.root, ids.upper, ids.lower]) {
       const nodeId = poseNodeId(id);
       const patch = readPatch?.(nodeId);
-      if (patch?.status === "ready") sources.set(nodeId, patch.values);
+      const values = patch?.status === "ready" ? patch.outputs.values : undefined;
+      if (isFlatRecord(values)) sources.set(nodeId, values);
     }
   }
   const body = step.filled.body;

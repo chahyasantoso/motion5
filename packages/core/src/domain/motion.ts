@@ -4,7 +4,18 @@ import type { TriggerPort } from "../ports/trigger";
 import type { TriggerSignal } from "../contract/v5";
 import { Lifecycle } from "./lifecycle";
 import { collect, report } from "./completion";
-import type { Track } from "./track";
+
+/**
+ * The compiled track as a Motion drives it.
+ *
+ * Two members, because a Motion only ever advances a playhead and releases what it was handed. The
+ * legacy keyframe track and the identified-table value track both satisfy this, and a Motion that
+ * named either class would be a second place a new track kind has to be added.
+ */
+export interface MotionTrack {
+  setProgress(value: number): boolean;
+  dispose(): void;
+}
 
 interface TriggerBinding {
   activate(): void;
@@ -23,7 +34,7 @@ export interface MotionOptions {
    * Resolves a node id to its compiled Track. Required, and called at every point of use: a Motion
    * never stores a Track, so it can never drive a disposed or superseded one. See ADR-031.
    */
-  readonly resolveTrack: (id: string) => Track | undefined;
+  readonly resolveTrack: (id: string) => MotionTrack | undefined;
   readonly trigger?: TriggerPort;
   readonly invalidate?: (progress: number) => void;
   readonly stagger?: number;
@@ -55,7 +66,7 @@ export class Motion {
   readonly #scheduler: Scheduler;
   readonly #tracks: MotionTrackEntry[];
   readonly #trackMap = new Map<string, MotionTrackEntry>();
-  readonly #resolveTrack: (id: string) => Track | undefined;
+  readonly #resolveTrack: (id: string) => MotionTrack | undefined;
   #trigger: TriggerPort | undefined;
   readonly #invalidate: (progress: number) => void;
   #stagger: number;
@@ -348,7 +359,7 @@ export class Motion {
         this.#setProgress(latest);
     });
   }
-  #track(id: string): Track {
+  #track(id: string): MotionTrack {
     const track = this.#resolveTrack(id);
     if (track === undefined) throw new TypeError(`Motion track "${id}" has no compiled Track.`);
     return track;

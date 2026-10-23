@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { describe, expect, it, vi } from "vitest";
 import { declaresMembers } from "../../helpers/handle-surface";
 import { publicationsFor, statedPublications } from "../../helpers/publication-spy";

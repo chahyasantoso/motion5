@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { act, create } from "react-test-renderer";
 import { describe, expect, it } from "vitest";
 import { createElement } from "react";

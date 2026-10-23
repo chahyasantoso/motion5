@@ -37,17 +37,17 @@ describe("GraphPublisher: memo/registry consistency (recovery A1)", () => {
   it("a same-flush requirement consumer sees the source's merged value", () => {
     const nodes = [
       node("overlaySource", [], () => ({
-        values: { overlay: 99 },
+        outputs: { values: { overlay: 99 } },
         sourceProgress: 0,
         sourceRevisions: {},
       })),
       node(
         "sourceA",
         [{ observerId: "sourceA", sourceId: "overlaySource", role: "output" }],
-        () => ({ values: { base: 1 }, sourceProgress: 0, sourceRevisions: {} }),
+        () => ({ outputs: { values: { base: 1 } }, sourceProgress: 0, sourceRevisions: {} }),
       ),
       node("downstream", [REQUIREMENT_EDGE], (inputs) => ({
-        values: slotOf(inputs, "p", "s"),
+        outputs: { values: slotOf(inputs, "p", "s") },
         sourceProgress: 0,
         sourceRevisions: {},
       })),
@@ -60,27 +60,27 @@ describe("GraphPublisher: memo/registry consistency (recovery A1)", () => {
 
     if (sourceAPatch?.status !== "ready")
       throw new Error(`sourceAPatch is ${sourceAPatch?.status ?? "absent"}, not ready.`);
-    expect(sourceAPatch.values).toEqual({ base: 1, overlay: 99 });
+    expect(sourceAPatch.outputs.values).toEqual({ base: 1, overlay: 99 });
     if (downstreamPatch?.status !== "ready")
       throw new Error(`downstreamPatch is ${downstreamPatch?.status ?? "absent"}, not ready.`);
-    expect(downstreamPatch.values).toEqual({ base: 1, overlay: 99 });
+    expect(downstreamPatch.outputs.values).toEqual({ base: 1, overlay: 99 });
   });
 
   it("a later flush resolves the source's merged value via registry fallback", () => {
     let downstreamCalls = 0;
     const nodes = [
       node("overlaySource", [], () => ({
-        values: { overlay: 99 },
+        outputs: { values: { overlay: 99 } },
         sourceProgress: 0,
         sourceRevisions: {},
       })),
       node(
         "sourceA",
         [{ observerId: "sourceA", sourceId: "overlaySource", role: "output" }],
-        () => ({ values: { base: 1 }, sourceProgress: 0, sourceRevisions: {} }),
+        () => ({ outputs: { values: { base: 1 } }, sourceProgress: 0, sourceRevisions: {} }),
       ),
       node("downstream", [REQUIREMENT_EDGE], (inputs) => ({
-        values: { ...slotOf(inputs, "p", "s"), callCount: (downstreamCalls += 1) },
+        outputs: { values: { ...slotOf(inputs, "p", "s"), callCount: (downstreamCalls += 1) } },
         sourceProgress: 0,
         sourceRevisions: {},
       })),
@@ -91,12 +91,12 @@ describe("GraphPublisher: memo/registry consistency (recovery A1)", () => {
     const sourceAPatch2 = registry.get("sourceA");
     if (sourceAPatch2?.status !== "ready")
       throw new Error(`sourceA is ${sourceAPatch2?.status ?? "absent"}, not ready.`);
-    expect(sourceAPatch2.values).toEqual({ base: 1, overlay: 99 });
+    expect(sourceAPatch2.outputs.values).toEqual({ base: 1, overlay: 99 });
 
     const batch2 = publisher.flush(snapshot(nodes), ["downstream"], 2);
     const downstreamPatch2 = batch2.patches.find((p) => p.nodeId === "downstream");
     if (downstreamPatch2?.status !== "ready")
       throw new Error(`downstreamPatch2 is ${downstreamPatch2?.status ?? "absent"}, not ready.`);
-    expect(downstreamPatch2.values).toMatchObject({ base: 1, overlay: 99 });
+    expect(downstreamPatch2.outputs.values).toMatchObject({ base: 1, overlay: 99 });
   });
 });

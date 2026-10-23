@@ -1,24 +1,25 @@
 import { describe, expect, it } from "vitest";
-import type { Diagnostic } from "../../../src/contract/v5";
+import type { Diagnostic, Value } from "../../../src/contract/v5";
 import { PatchRegistry, type Patch } from "../../../src/runtime/patch-registry";
+import { row, table } from "../../support/v5-builders";
 
 const NODE_ID = "hero/arm";
 
 /**
- * A composed value record is freshly allocated on every flush, so identity compare can never
- * match a nested value. Change detection has to be structural or the registry republishes,
- * bumps the revision, and wakes every listener on every frame.
+ * A table is freshly allocated on every flush, so identity compare can never match it. Change
+ * detection has to be structural or the registry republishes, bumps the revision, and wakes every
+ * listener on every frame.
  */
 function publishComposed(
   registry: PatchRegistry,
   tick: number,
-  values: Readonly<Record<string, unknown>>,
+  values: Value,
   sourceRevisions: Readonly<Record<string, number>> = { "hero/root": 3 },
 ): Patch | undefined {
   registry.beginBatch(tick, [NODE_ID]);
   const patch = registry.publish({
     nodeId: NODE_ID,
-    values,
+    outputs: { values },
     sourceProgress: 0.25,
     sourceRevisions,
     status: "ready",
@@ -45,23 +46,23 @@ function publishBlocked(
 }
 
 describe("PatchRegistry: structural change detection (recovery P1-5)", () => {
-  it("suppresses the republish when a freshly allocated nested record is structurally equal", () => {
+  it("suppresses the republish when a freshly allocated table is structurally equal", () => {
     const registry = new PatchRegistry();
     let notifications = 0;
     registry.subscribeNode(NODE_ID, () => {
       notifications += 1;
     });
 
-    const first = publishComposed(registry, 1, {
-      transform: { x: 1, y: 2 },
-      tags: ["a", "b"],
-      opacity: 1,
-    });
-    const second = publishComposed(registry, 2, {
-      transform: { x: 1, y: 2 },
-      tags: ["a", "b"],
-      opacity: 1,
-    });
+    const first = publishComposed(
+      registry,
+      1,
+      table(row("a", { x: 1, y: 2, label: "a" }), row("b", { x: 3, y: 4, label: "b" })),
+    );
+    const second = publishComposed(
+      registry,
+      2,
+      table(row("a", { x: 1, y: 2, label: "a" }), row("b", { x: 3, y: 4, label: "b" })),
+    );
 
     expect(first?.revision).toBe(1);
     expect(second).toBeUndefined();
@@ -69,25 +70,25 @@ describe("PatchRegistry: structural change detection (recovery P1-5)", () => {
     expect(notifications).toBe(1);
   });
 
-  it("key insertion order inside a nested record is not a change", () => {
+  it("key insertion order inside a table row is not a change", () => {
     const registry = new PatchRegistry();
-    publishComposed(registry, 1, { transform: { x: 1, y: 2 } });
-    const second = publishComposed(registry, 2, { transform: { y: 2, x: 1 } });
+    publishComposed(registry, 1, table(row("a", { x: 1, y: 2 })));
+    const second = publishComposed(registry, 2, table(row("a", { y: 2, x: 1 })));
     expect(second).toBeUndefined();
     expect(registry.get(NODE_ID)?.revision).toBe(1);
   });
 
-  it("republishes when a nested value actually changes", () => {
+  it("republishes when a cell actually changes", () => {
     const registry = new PatchRegistry();
-    publishComposed(registry, 1, { transform: { x: 1, y: 2 } });
-    const second = publishComposed(registry, 2, { transform: { x: 1, y: 3 } });
+    publishComposed(registry, 1, table(row("a", { x: 1, y: 2 })));
+    const second = publishComposed(registry, 2, table(row("a", { x: 1, y: 3 })));
     expect(second?.revision).toBe(2);
   });
 
-  it("republishes when only the order of a nested array changes", () => {
+  it("republishes when only the order of the rows changes", () => {
     const registry = new PatchRegistry();
-    publishComposed(registry, 1, { tags: ["a", "b"] });
-    const second = publishComposed(registry, 2, { tags: ["b", "a"] });
+    publishComposed(registry, 1, table(row("a", {}), row("b", {})));
+    const second = publishComposed(registry, 2, table(row("b", {}), row("a", {})));
     expect(second?.revision).toBe(2);
   });
 

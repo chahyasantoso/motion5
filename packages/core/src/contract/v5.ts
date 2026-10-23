@@ -124,17 +124,41 @@ interface PatchIdentity {
   readonly revision: number;
 }
 
+/** A cell or record field value. The boundary rejects non-finite numbers. */
+export type Scalar = number | string | boolean;
+
+/** One evaluated table row. `id` identifies the row; `cells.id` is ordinary application data. */
+export interface Row {
+  readonly id: string;
+  readonly cells: Readonly<Record<string, Scalar>>;
+}
+
+/** Evaluated rows. Cell evaluation preserves authored order; a plugin may reorder deliberately. */
+export type Table = readonly Row[];
+
+/** One evaluated flat record. A record has no row id. */
+export type FlatRecord = Readonly<Record<string, Scalar>>;
+
+/** A table when it is an array, a record when it is a plain object. */
+export type Value = Table | FlatRecord;
+
+/** A node's published named outputs. The main output is `values`. */
+export type Outputs = Readonly<Record<string, Value>>;
+
 /**
  * A node that composed, and the one variant that owns a pose.
  *
- * The three payload members are measurements of one successful composition: the values it produced,
- * the progress it was evaluated at, and the revision of every source it read. A status that did not
- * compose owns none of them, which is what the three variants below say by declaring none. See
- * ADR-098.
+ * The three payload members are measurements of one successful composition: the named outputs it
+ * produced, the progress it was evaluated at, and the revision of every source it read. A status
+ * that did not compose owns none of them, which is what the three variants below say by declaring
+ * none. See ADR-098.
+ *
+ * `outputs` rather than `values`, because the field holds the named-outputs map and
+ * `patch.values.values` would name the same thing twice. The main output is `outputs.values`.
  */
 export interface ReadyPatch extends PatchIdentity {
   readonly status: "ready";
-  readonly values: Readonly<Record<string, unknown>>;
+  readonly outputs: Outputs;
   readonly sourceProgress: number;
   readonly sourceRevisions: Readonly<Record<string, number>>;
   readonly diagnostics: readonly Diagnostic[];
@@ -225,6 +249,74 @@ export interface AuthoredStop {
  * See ADR-050.
  */
 export type AuthoredStaticValue = number | string | boolean;
+/**
+ * One authored cell stop: a scalar `v` at a position `p`, with an optional per-interval ease.
+ *
+ * The target replacement for `AuthoredStop`, whose `v: unknown` was the shape everything else then
+ * had to re-validate. A cell is scalar by contract, so the stop says so and `v5-parse.ts` refuses a
+ * non-scalar before any evaluator sees one.
+ */
+export interface Stop {
+  readonly p: number;
+  readonly v: Scalar;
+  readonly ease?: string;
+}
+/** One authored cell or record field: a scalar, or a stop sequence. A bare array is always stops. */
+export type AuthoredCell = Scalar | readonly Stop[];
+/** One authored table row. `id` identifies the row; `cells` holds its columns. */
+export interface AuthoredRow {
+  readonly id: string;
+  readonly cells: Readonly<Record<string, AuthoredCell>>;
+}
+/** One authored flat record. */
+export type AuthoredRecord = Readonly<Record<string, AuthoredCell>>;
+/** Authored `values`, whose top-level shape selects a table or a record. */
+export type AuthoredValues = readonly AuthoredRow[] | AuthoredRecord;
+/** One source id, or one source id per member key for a map slot. */
+export type SourceBinding = string | Readonly<Record<string, string>>;
+/** How a plugin slot receives a bound node's outputs. */
+export type BindingMode = "single" | "map";
+/** The declared contract of one scalar field. */
+export interface FieldSpec {
+  readonly kind: "number" | "string" | "boolean";
+  readonly optional?: true;
+  readonly enum?: readonly string[];
+  readonly min?: number;
+  readonly max?: number;
+  /** Local authored input only: forbids a stop sequence, including a single stop. */
+  readonly static?: true;
+}
+/** The row half of a table spec. Columns describe `row.cells`, never the envelope. */
+export interface TableSchema {
+  readonly row: {
+    readonly fields: Readonly<Record<string, FieldSpec>>;
+    readonly additionalProperties?: boolean;
+  };
+  readonly minRows?: number;
+  readonly maxRows?: number;
+}
+/** One flat vocabulary for local input, slot-declared outputs and plugin outputs. */
+export type ValueSpec =
+  | { readonly kind: "table"; readonly schema: TableSchema; readonly optional?: true }
+  | {
+      readonly kind: "record";
+      readonly fields: Readonly<Record<string, FieldSpec>>;
+      readonly additionalProperties?: boolean;
+      readonly optional?: true;
+    };
+/** What a plugin slot reads from the bound node and the shape it needs for each output. */
+export interface DependencySpec {
+  readonly outputs: Readonly<Record<string, ValueSpec>>;
+  readonly optional?: true;
+  readonly binding?: BindingMode;
+}
+/** What a track authors: local values, dependency slots and, for a source, a declared schema. */
+export interface TrackInput {
+  readonly values?: AuthoredValues;
+  readonly requires?: Readonly<Record<string, SourceBinding>>;
+  /** No-plugin sources only. A plugin track already owns its input contract. */
+  readonly schema?: ValueSpec;
+}
 /**
  * One authored leaf: the stops themselves, or a static value.
  *
@@ -331,11 +423,20 @@ export interface PluginRequiresBinding {
    */
   readonly authoredPath: string;
 }
+/**
+ * One authored dataflow node: an optional plugin, its authored input, and a duration.
+ *
+ * There is no `keyframes` and no `observes`. Identified tables and records under `input.values`
+ * replace grouped keyframes as the authored value form, and a dependency enters composition as a
+ * declared `input.requires` slot rather than as a hand-written edge. Both retired spellings are
+ * refused by name as `track-legacy-field`, so a document that still carries one fails to load
+ * rather than loading with the member accepted and ignored. See ADR-046, ADR-047 and ADR-121.
+ */
 export interface TrackDefinition {
   readonly id: string;
+  readonly plugin?: string;
+  readonly input?: TrackInput;
   readonly duration?: number;
-  readonly keyframes?: Readonly<Record<string, AuthoredKeyframe>>;
-  readonly observes?: readonly ObservationDefinition[];
 }
 /**
  * One generic `observes` entry: a graph edge the author writes by hand, declaring an output edge
@@ -361,6 +462,19 @@ export interface TrackDefinition {
 export interface ObservationDefinition {
   readonly source: string;
 }
+/**
+ * The authored `TrackDefinition` plus the two retired members the engine still compiles.
+ *
+ * A compile bridge, not an accepted authored form: `parseTrackDefinition` refuses both members by
+ * name, so nothing reaches a parser through this type. It exists so the grouped-keyframe engine and
+ * its solver machinery keep compiling while Phase 3 replaces them, and it is deleted with them.
+ * Because both members are optional, every target `TrackDefinition` is assignable to this without a
+ * cast, which is what lets one contract entry point hand a definition to both readers. See ADR-046.
+ */
+export interface GroupedTrackDefinition extends TrackDefinition {
+  readonly keyframes?: Readonly<Record<string, AuthoredKeyframe>>;
+  readonly observes?: readonly ObservationDefinition[];
+}
 export interface MotionDefinition {
   readonly id: string;
   readonly trigger:
@@ -369,6 +483,49 @@ export interface MotionDefinition {
   readonly tracks: readonly TrackDefinition[];
   readonly stagger?: number;
 }
+/** One evaluation's identity and progress, handed to a plugin with its resolved input. */
+export interface EvaluationContext {
+  readonly nodeId: string;
+  readonly progress: number;
+}
+/**
+ * A single slot's bound outputs, or a map slot's member key to that member's outputs.
+ *
+ * This is the resolved shape, not a declaration: a slot's `DependencySpec` says which outputs it
+ * reads and what each must satisfy.
+ */
+export type ResolvedRequires = Readonly<
+  Record<string, Outputs | Readonly<Record<string, Outputs>>>
+>;
+/** The evaluated input one plugin receives: local values plus every bound slot. */
+export interface ResolvedInput<Values extends Value = Value> {
+  readonly values: Values;
+  readonly requires: ResolvedRequires;
+}
+/**
+ * One admitted plugin.
+ *
+ * `Input` is the evaluated input shape the plugin authors against, so a record input reads
+ * `values.dx` with its declared type and a table input reads rows. Types are authored, not derived
+ * from the runtime specs; runtime-spec-to-type derivation is deferred to Phase 3.
+ */
+export interface PluginDefinition<Input extends ResolvedInput = ResolvedInput> {
+  readonly id: string;
+  readonly inputs: {
+    // Type-legal here; admission refuses `optional` on local values in Phase 3.
+    readonly values: ValueSpec;
+    readonly requires?: Readonly<Record<string, DependencySpec>>;
+  };
+  readonly outputs: Readonly<Record<string, ValueSpec>>;
+  readonly validate?: (input: Input, context: EvaluationContext) => readonly Diagnostic[];
+  readonly transform: (input: Input, context: EvaluationContext) => Outputs;
+}
+/** What publication carries, discriminated by status. Only a ready patch owns outputs. */
+export type PatchPayload =
+  | { readonly status: "ready"; readonly outputs: Outputs }
+  | { readonly status: "blocked"; readonly diagnostics: readonly Diagnostic[] }
+  | { readonly status: "error"; readonly diagnostics: readonly Diagnostic[] }
+  | { readonly status: "destroyed" };
 /**
  * The authored project.
  *

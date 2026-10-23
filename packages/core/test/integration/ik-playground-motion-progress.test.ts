@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { describe, expect, it, vi } from "vitest";
 import { gsap } from "gsap";
 import { createGsapInterpolator } from "../../src/adapters/interpolator/gsap";

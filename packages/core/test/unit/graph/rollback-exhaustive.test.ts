@@ -2,7 +2,7 @@ import { builtinRegistry } from "../../support/builtin-registry";
 import { describe, expect, it } from "vitest";
 import { fileURLToPath } from "node:url";
 import { code, member } from "../../helpers/source-region";
-import type { ProjectDefinition } from "../../../src/contract/v5";
+import type { GroupedProject } from "../../support/v5-builders";
 import { buildGraphIR } from "../../../src/graph/ir";
 import { ObservationState } from "../../../src/graph/observation-state";
 
@@ -27,7 +27,7 @@ const SOURCE = code(
 const ROLLBACK = member(SOURCE, "rollback(): void {");
 const UNDO_VERBS = ["add-node", "remove-node", "add-edge", "remove-edge"] as const;
 
-const project: ProjectDefinition = {
+const project: GroupedProject = {
   schemaVersion: 5,
   motions: [
     {

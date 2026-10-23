@@ -25,7 +25,7 @@ const HERO: ProjectDefinition = {
 const HERO_AND_DUST: ProjectDefinition = { ...HERO, freeTracks: [{ id: "dust" }] };
 
 const compose = (node: { id: string }) => () => ({
-  values: { node: node.id },
+  outputs: { values: { node: node.id } },
   sourceProgress: 0,
   sourceRevisions: {},
 });

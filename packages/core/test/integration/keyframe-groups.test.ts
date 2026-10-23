@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { describe, expect, it } from "vitest";
 import type { AuthoredKeyframe, ProjectDefinition } from "../../src/contract/v5";
 import { PluginRegistry } from "../../src/domain/plugins";

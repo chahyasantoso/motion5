@@ -5,8 +5,7 @@ import {
   type ParsedTrack,
   type ParsedValues,
 } from "../../src/contract/v5-parse";
-import type { Diagnostic } from "../../src/contract/v5";
-import type { ValueSpec } from "../../src/contract/v5-values";
+import type { Diagnostic, ValueSpec } from "../../src/contract/v5";
 
 const PATH = "motions[0].tracks[0]";
 const VALUES_PATH = `${PATH}.input.values`;

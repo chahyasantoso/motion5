@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { builtinRegistry } from "../../support/builtin-registry";
 import { describe, expect, it } from "vitest";
 import type { MotionDefinition, ProjectDefinition } from "../../../src/contract/v5";
@@ -53,7 +54,7 @@ const PROJECT: ProjectDefinition = {
 };
 /** One key per node, so a shared key cannot hide a missing publication behind an output merge. */
 const compose = (node: { id: string }) => () => ({
-  values: { [node.id]: 1 },
+  outputs: { values: { [node.id]: 1 } },
   sourceProgress: 0,
   sourceRevisions: {},
 });

@@ -74,11 +74,11 @@ A leaf is held to exactly the rules a contributed property is held to, through t
 
 An empty section is refused rather than ignored. Omitting `values` is already the way to author no properties, so an empty one is a field accepted and then ignored, which rule 6 of ADR-033 forbids. Identical reasoning to `keyframes-requires-empty` above. See ADR-049.
 
-## usesThreeD
+## readTrack
 
-Compares leaf names, not top-level record keys. Every authored property sits in a group's `values` section since ADR-121, so this asks `readPluginValues` for the leaves of each entry rather than iterating the entry's own members, which would only ever see the section names and silently stop firing `perspective-usage`: a lost warning rather than a rejected project. An ungrouped entry reads as empty there and is refused as `keyframes-ungrouped-key` by `validateKeyframes`, so no second arm reads it. See ADR-049 and ADR-121.
+One track, read by the identified-table parser rather than by the grouped-keyframe validator.
 
-Both leaf forms ADR-050 introduces are non-null, so a 3D key authored as a bare array or as a bare static value inside a group still fires `perspective-usage`. `Y-9` and `LF-13` cover the section case.
+The parser owns the authored track shape, so this composes it rather than repeating its member checks. Two questions stay here because they are questions about a set of tracks rather than about one: a duplicated id, and a source contract inferred beside a declared one. The inference pass is skipped for a plugin track, whose input contract belongs to the plugin. See ADR-121.
 
 ## validateSchemaV5
 

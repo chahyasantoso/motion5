@@ -189,6 +189,7 @@ export function isRecord(value: unknown): value is Readonly<Record<string, unkno
 }
 
 function valuesOf(value: unknown): SourceValues {
+  if (value === undefined) return ABSENT;
   if (isRecord(value)) return mint<RecordValuesShape>({ kind: "record", values: value });
   return mint<NotARecordShape>({ kind: "not-a-record", value });
 }
@@ -220,7 +221,7 @@ function valuesOf(value: unknown): SourceValues {
 export function sourceValues(outcome: NodeOutcome, patch: ReadyPatch | undefined): SourceValues {
   switch (outcome.kind) {
     case "composed":
-      return valuesOf(outcome.composition.values);
+      return valuesOf(outcome.composition.outputs.values);
     // Every other outcome falls back to what the node last published as ready, which is what the
     // deleted carry-forward was answering with. A failed node keeps its last good pose, and that is
     // deliberate: the precedence above stops its readers before they can read it.
@@ -228,7 +229,7 @@ export function sourceValues(outcome: NodeOutcome, patch: ReadyPatch | undefined
     case "pending-upstream":
     case "failed":
     case "not-affected":
-      return patch === undefined ? ABSENT : valuesOf(patch.values);
+      return patch === undefined ? ABSENT : valuesOf(patch.outputs.values);
     default:
       return unreachable(outcome);
   }

@@ -13,7 +13,7 @@ const project: ProjectDefinition = {
 };
 
 const compose = (node: { id: string }) => () => ({
-  values: { node: node.id },
+  outputs: { values: { node: node.id } },
   sourceProgress: 0,
   sourceRevisions: {},
 });
@@ -41,7 +41,7 @@ describe("scheduler-driven reentrancy (P1-7/P1-8)", () => {
     const captionLabelPatch = runtime.registry.get("caption/label");
     if (captionLabelPatch?.status !== "ready")
       throw new Error(`caption/label is ${captionLabelPatch?.status ?? "absent"}, not ready.`);
-    expect(captionLabelPatch.values).toEqual({ node: "caption/label" });
+    expect(captionLabelPatch.outputs.values).toEqual({ node: "caption/label" });
     expect(runtime.tick).toBe(1);
     runtime.dispose();
   });

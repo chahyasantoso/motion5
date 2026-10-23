@@ -6,6 +6,12 @@ interface InspectorPanelProps {
   readonly handle: ProjectHandle;
 }
 
+function isFlatRecord(value: unknown): value is Readonly<Record<string, unknown>> {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
+  const prototype = Object.getPrototypeOf(value);
+  return prototype === Object.prototype || prototype === null;
+}
+
 const NodeCard: React.FC<{ handle: ProjectHandle; nodeId: string; title: string }> = ({
   handle,
   nodeId,
@@ -23,10 +29,12 @@ const NodeCard: React.FC<{ handle: ProjectHandle; nodeId: string; title: string 
   const decision = patchRender(patch);
   if (decision.kind !== "render") return null;
   const ready = decision.patch;
+  const values = ready.outputs.values;
+  if (!isFlatRecord(values)) return null;
 
-  const x = Number(ready.values.x ?? 0);
-  const y = Number(ready.values.y ?? 0);
-  const rot = ready.values.rotation !== undefined ? Number(ready.values.rotation) : undefined;
+  const x = Number(values.x ?? 0);
+  const y = Number(values.y ?? 0);
+  const rot = values.rotation !== undefined ? Number(values.rotation) : undefined;
 
   return (
     <div className="node-card">

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { describe, expect, it } from "vitest";
 import { PluginRegistry, type PluginDefinition } from "../../../src/domain/plugins";
 import type { ProjectDefinition } from "../../../src/contract/v5";

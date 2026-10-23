@@ -1,6 +1,7 @@
 import { builtinRegistry } from "../support/builtin-registry";
 import { describe, expect, it } from "vitest";
 import type { ProjectDefinition } from "../../src/contract/v5";
+import type { GroupedProject } from "../support/v5-builders";
 import { createManualClock } from "../../src/ports/clock";
 import { ProjectRuntime } from "../../src/runtime/project-runtime";
 import { buildGraphIR } from "../../src/graph/ir";
@@ -11,7 +12,7 @@ const project: ProjectDefinition = {
   freeTracks: [{ id: "cursor" }],
 };
 const compose = (node: { id: string }) => () => ({
-  values: { node: node.id },
+  outputs: { values: { node: node.id } },
   sourceProgress: 0,
   sourceRevisions: {},
 });
@@ -33,7 +34,7 @@ describe("ProjectRuntime", () => {
 
   it("rejects invalid candidates before constructing a replacement runtime", () => {
     const clock = createManualClock();
-    const invalid: ProjectDefinition = {
+    const invalid: GroupedProject = {
       schemaVersion: 5,
       motions: [
         {

@@ -3,7 +3,7 @@ import { acceptedOutcome, refusedOutcomeFrom, type Outcome } from "../lang/outco
 import { readAuthoredLeaf } from "./authored-leaf";
 import { diagnostic } from "./diagnostics";
 import type { Diagnostic } from "./v5";
-import type { FieldSpec, Scalar, SourceBinding, ValueSpec } from "./v5-values";
+import type { FieldSpec, Scalar, SourceBinding, ValueSpec } from "./v5";
 
 /**
  * The authored boundary for an identified-table track.

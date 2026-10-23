@@ -10,10 +10,10 @@ import {
   validateTrackDefinition,
   validateV5,
   type Diagnostic,
+  type GroupedTrackDefinition,
   type PluginDefinition,
   type PluginRegistry,
   type ProjectDefinition,
-  type TrackDefinition,
 } from "@motion5/core";
 import { unreachable } from "@motion5/core/plugin-api";
 
@@ -25,7 +25,7 @@ export interface PluginDescriptor {
 export type PluginCatalog = ReadonlyMap<string, PluginDescriptor>;
 export type PluginDemand =
   | { readonly kind: "project"; readonly project: ProjectDefinition }
-  | { readonly kind: "tracks"; readonly tracks: readonly TrackDefinition[] };
+  | { readonly kind: "tracks"; readonly tracks: readonly GroupedTrackDefinition[] };
 export type PluginLoadFailure =
   | { readonly kind: "invalid-demand"; readonly diagnostics: readonly Diagnostic[] }
   | { readonly kind: "unknown-plugin"; readonly name: string; readonly path: string }
@@ -81,7 +81,7 @@ function snapshotCatalog(catalog: PluginCatalog): ReadonlyMap<string, SnapshotDe
   return snapshot;
 }
 
-function addGroups(groups: Map<string, string>, track: TrackDefinition, path: string): void {
+function addGroups(groups: Map<string, string>, track: GroupedTrackDefinition, path: string): void {
   for (const name of Object.keys(track.keyframes ?? {})) {
     const groupPath = `${path}.keyframes.${name}`;
     if (!groups.has(name)) groups.set(name, groupPath);
@@ -109,7 +109,7 @@ function demandGroups(demand: PluginDemand): GroupResult {
     case "tracks": {
       // The core validator owns refusal; a refused track is never planned around or dropped.
       const diagnostics: Diagnostic[] = [];
-      const tracks: TrackDefinition[] = [];
+      const tracks: GroupedTrackDefinition[] = [];
       demand.tracks.forEach((track, index) => {
         const validation = validateTrackDefinition(track, `tracks[${index}]`);
         if (validation.kind === "accepted") tracks.push(validation.value);

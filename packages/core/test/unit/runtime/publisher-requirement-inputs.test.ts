@@ -56,7 +56,7 @@ describe("requirement-scoped input observations", () => {
     let observed: unknown;
 
     const source = node("hero/source", [], () => ({
-      values: { base: 1, overlay: 99 },
+      outputs: { values: { base: 1, overlay: 99 } },
       sourceProgress: 0.5,
       sourceRevisions: {},
     }));
@@ -74,7 +74,9 @@ describe("requirement-scoped input observations", () => {
         observed = requirementInputs.fk;
         const scoped = slotOf(requirementInputs, "fk", "base");
         return {
-          values: { seenBase: scoped.base ?? null, seenOverlay: scoped.overlay ?? null },
+          outputs: {
+            values: { seenBase: scoped.base ?? "absent", seenOverlay: scoped.overlay ?? "absent" },
+          },
           sourceProgress: 0,
           sourceRevisions: {},
         };
@@ -87,7 +89,7 @@ describe("requirement-scoped input observations", () => {
     const heroObserverPatch = registry.get("hero/observer");
     if (heroObserverPatch?.status !== "ready")
       throw new Error(`hero/observer is ${heroObserverPatch?.status ?? "absent"}, not ready.`);
-    expect(heroObserverPatch.values).toEqual({ seenBase: 1, seenOverlay: 99 });
+    expect(heroObserverPatch.outputs.values).toEqual({ seenBase: 1, seenOverlay: 99 });
   });
 
   it("refuses an input edge that carries no requirement", () => {
@@ -96,7 +98,7 @@ describe("requirement-scoped input observations", () => {
     const registry = new PatchRegistry();
     const publisher = new GraphPublisher(registry);
     const source = node("hero/source", [], () => ({
-      values: { base: 1 },
+      outputs: { values: { base: 1 } },
       sourceProgress: 0,
       sourceRevisions: {},
     }));
@@ -109,7 +111,7 @@ describe("requirement-scoped input observations", () => {
           role: "input",
         } as unknown as GraphEdge,
       ],
-      () => ({ values: {}, sourceProgress: 0, sourceRevisions: {} }),
+      () => ({ outputs: { values: {} }, sourceProgress: 0, sourceRevisions: {} }),
     );
 
     const batch = publisher.flush(pair(source, observer), ["hero/source"], 1);
@@ -127,7 +129,7 @@ describe("requirement-scoped input observations", () => {
     const publisher = new GraphPublisher(registry);
     let observed: Readonly<Record<string, unknown>> | undefined;
     const source = node("hero/source", [], () => ({
-      values: { x: 7 },
+      outputs: { values: { x: 7 } },
       sourceProgress: 0,
       sourceRevisions: {},
     }));
@@ -145,7 +147,7 @@ describe("requirement-scoped input observations", () => {
         observed = slotOf(inputs, "collector", "bones");
         const source = Object.hasOwn(observed, "__proto__") ? observed.__proto__ : undefined;
         return {
-          values: { seen: (source as { x?: number } | undefined)?.x ?? -1 },
+          outputs: { values: { seen: (source as { x?: number } | undefined)?.x ?? -1 } },
           sourceProgress: 0,
           sourceRevisions: {},
         };
@@ -157,6 +159,6 @@ describe("requirement-scoped input observations", () => {
     expect(Object.isFrozen(observed)).toBe(true);
     const patch = registry.get("hero/observer");
     if (patch?.status !== "ready") throw new Error("Observer must publish a ready scalar.");
-    expect(patch.values).toEqual({ seen: 7 });
+    expect(patch.outputs.values).toEqual({ seen: 7 });
   });
 });

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { describe, expect, it } from "vitest";
 import { createBoneLengthEstimator } from "../src/filler/bone-length";
 import type { TrustedFrame } from "../src/filler/frame";

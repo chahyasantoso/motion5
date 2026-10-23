@@ -27,6 +27,7 @@ const allowedPublicExports = new Set([
   "ObservationDefinition",
   "ProjectDefinition",
   "TrackDefinition",
+  "GroupedTrackDefinition",
   "TriggerType",
   "TriggerSignal",
   "TriggerDefinition",

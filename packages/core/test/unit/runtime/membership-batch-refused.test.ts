@@ -39,7 +39,7 @@ const PROJECT: ProjectDefinition = {
 };
 
 const compose = (node: { id: string }) => () => ({
-  values: { node: node.id },
+  outputs: { values: { node: node.id } },
   sourceProgress: 0,
   sourceRevisions: {},
 });

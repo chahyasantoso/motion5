@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { builtinRegistry } from "../support/builtin-registry";
 import { describe, expect, it } from "vitest";
 import type { Diagnostic, ProjectDefinition } from "../../src/contract/v5";

@@ -75,7 +75,7 @@ export const IK3D = {
 type AuthoredScalars = Readonly<Record<string, number | boolean>>;
 
 function frameTrack(id: string, values: AuthoredScalars): TrackDefinition {
-  return { id, keyframes: { transform3d: { values } } };
+  return { id, plugin: "transform3d", input: { values } };
 }
 
 /** Rest orientation and weight share the solver-bound `fk3d` group, as ADR-116 requires. */
@@ -87,20 +87,19 @@ function memberTrack(
 ): TrackDefinition {
   return {
     id,
-    keyframes: {
-      fk3d: {
-        values: {
-          length,
-          rotation,
-          rotationX,
-          rotationY,
-          weight: [
-            { p: 0, v: 0 },
-            { p: 1, v: 1 },
-          ],
-        },
-        requires: { base, solver: IK3D.solverTrack },
+    plugin: "fk3d",
+    input: {
+      values: {
+        length,
+        rotation,
+        rotationX,
+        rotationY,
+        weight: [
+          { p: 0, v: 0 },
+          { p: 1, v: 1 },
+        ],
       },
+      requires: { base, solver: IK3D.solverTrack },
     },
   };
 }
@@ -111,14 +110,13 @@ export const ik3dPlaygroundTracks: readonly TrackDefinition[] = [
   frameTrack(IK3D.poleTrack, IK3D.pole),
   {
     id: IK3D.solverTrack,
-    keyframes: {
-      ik3d: {
-        values: { inspect: true },
-        requires: {
-          root: IK3D.rootTrack,
-          target: IK3D.goalTrack,
-          pole: IK3D.poleTrack,
-        },
+    plugin: "ik3d",
+    input: {
+      values: { inspect: true },
+      requires: {
+        root: IK3D.rootTrack,
+        target: IK3D.goalTrack,
+        pole: IK3D.poleTrack,
       },
     },
   },

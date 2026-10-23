@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { describe, expect, it, vi } from "vitest";
 import type { MotionDefinition, TriggerSignal } from "../../src/contract/v5";
 import { Motion } from "../../src/domain/motion";

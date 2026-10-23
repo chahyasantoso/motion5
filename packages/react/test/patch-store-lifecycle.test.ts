@@ -10,7 +10,7 @@ function publish(registry: PatchRegistry, tick: number, opacity: number): void {
   registry.beginBatch(tick, [NODE_ID]);
   registry.publish({
     nodeId: NODE_ID,
-    values: { opacity },
+    outputs: { values: { opacity } },
     sourceProgress: 0,
     status: "ready",
   });
@@ -55,7 +55,7 @@ describe("React patch store lifecycle (C1)", () => {
     const getSnapshotPatch = store.getSnapshot();
     if (getSnapshotPatch?.status !== "ready")
       throw new Error(`getSnapshotPatch is ${getSnapshotPatch?.status ?? "absent"}, not ready.`);
-    expect(getSnapshotPatch.values).toEqual({ opacity: 0.5 });
+    expect(getSnapshotPatch.outputs.values).toEqual({ opacity: 0.5 });
 
     publish(registry, 3, 0);
     expect(remounted).toEqual([3]);

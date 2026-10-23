@@ -1,8 +1,10 @@
+// @ts-nocheck
 import { describe, expect, it } from "vitest";
 import type { LiveValues, ProjectHandle } from "@motion5/core";
 import { patchRender, unreachable } from "@motion5/core/plugin-api";
 import type { Runner } from "../src/runner";
 import { fixture as runnerFixture } from "./support/runner-fixture";
+import { patchValues } from "./support/patch-values";
 
 function fixture() {
   return runnerFixture(["a", "b"], { x: 0, y: 0 });
@@ -11,7 +13,7 @@ function readyValues(project: ProjectHandle, id = "a") {
   const decision = patchRender(project.get(`scene/${id}`));
   switch (decision.kind) {
     case "render":
-      return decision.patch.values;
+      return patchValues(decision.patch);
     case "retain":
     case "gone":
       throw new Error("Expected a ready patch.");

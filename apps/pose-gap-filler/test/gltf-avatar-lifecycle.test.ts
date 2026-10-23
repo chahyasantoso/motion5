@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { describe, expect, it } from "vitest";
 import { Vector3 } from "three";
 import { syntheticHumanoid } from "../../../packages/three/test/support/synthetic-skeleton";

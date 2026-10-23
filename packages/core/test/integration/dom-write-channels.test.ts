@@ -1,18 +1,15 @@
 import { describe, expect, it } from "vitest";
 import { createDomPatchAdapter, type DomTarget } from "../../src/adapters/dom";
+import type { FlatRecord } from "../../src/contract/v5";
 import type { Patch } from "../../src/runtime/patch-registry";
 
 const NODE_ID = "walk/legL_thigh";
 
-function patch(
-  revision: number,
-  values: Readonly<Record<string, unknown>>,
-  status: Patch["status"] = "ready",
-): Patch {
+function patch(revision: number, values: FlatRecord, status: Patch["status"] = "ready"): Patch {
   return {
     nodeId: NODE_ID,
     revision,
-    values,
+    outputs: { values },
     sourceProgress: 0,
     sourceRevisions: {},
     status,

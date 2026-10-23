@@ -17,10 +17,11 @@ import {
   PLUGIN_GROUP_SECTIONS,
   PLUGIN_REQUIRES_SECTION,
   PLUGIN_VALUES_SECTION,
-  readPluginValues,
 } from "./keyframe-shape";
 import { PLUGIN_GOALS_SLOT } from "./solver-slots";
 import { defineOwnValue } from "../lang/own-property";
+import { deriveSourceContract } from "./v5-infer";
+import { parseTrackDefinition, type ParseContext } from "./v5-parse";
 
 export interface KeyframeValidationOptions {
   /**
@@ -47,7 +48,6 @@ const WRAPPER_RETIRED =
 const TEMPLATES_UNSUPPORTED =
   "Project templates are not supported; author keyframes on the tracks that use them.";
 const SECTION_NAMES = PLUGIN_GROUP_SECTIONS.map((name) => `'${name}'`).join(" or ");
-const THREE_D_KEYS = ["z", "rotationX", "rotationY"];
 // What a top-level keyframe entry is in each scope, keyed by the scope union so a third scope has to
 // answer here rather than inheriting the answer written first. The reasoning is in validate-v5.md.
 type KeyframeEntryForm = "group" | "property";
@@ -412,61 +412,39 @@ export function resolveTriggerDefinition(trigger: unknown, path: string): Trigge
   if (diagnostics.length > 0) throw new TypeError(describeDiagnostics(diagnostics));
   return trigger as TriggerDefinition;
 }
-function hasThreeDPath(property: RawObject): boolean {
-  if (!Array.isArray(property.points)) return false;
-  return property.points.some(
-    (point) => isObject(point) && typeof point.z === "number" && point.z !== 0,
-  );
-}
-function isThreeDProperty(key: string, property: unknown): boolean {
-  if (THREE_D_KEYS.includes(key)) return property !== undefined && property !== null;
-  return key === "path" && isObject(property) && hasThreeDPath(property);
-}
-function usesThreeD(track: RawObject): boolean {
-  const keyframes = isObject(track.keyframes) ? track.keyframes : null;
-  if (!keyframes) return false;
-  for (const group of Object.values(keyframes)) {
-    for (const [leaf, leafProperty] of Object.entries(readPluginValues(group))) {
-      if (isThreeDProperty(leaf, leafProperty)) return true;
-    }
-  }
-  return false;
-}
-function validateTrackShape(
+// One track, read by the identified-table parser. See validate-v5.md.
+function readTrack(
   track: unknown,
   path: string,
+  context: ParseContext,
   seenIds: Set<string>,
   diagnostics: Diagnostic[],
-): track is TrackDefinition {
-  if (!isObject(track)) {
-    diagnostics.push(diagnostic("track-shape", path, "Track must be an object."));
-    return false;
+): void {
+  const parsed = parseTrackDefinition(track, path, context);
+  diagnostics.push(...parsed.diagnostics);
+  switch (parsed.kind) {
+    case "refused":
+      return;
+    case "accepted": {
+      if (parsed.value.plugin === undefined) {
+        const inferred = deriveSourceContract(
+          parsed.value.input.values,
+          parsed.value.input.schema,
+          `${path}.input.values`,
+        );
+        diagnostics.push(...inferred.diagnostics);
+      }
+      const { id } = parsed.value;
+      if (seenIds.has(id))
+        diagnostics.push(
+          diagnostic("track-duplicate-id", `${path}.id`, `Track id '${id}' is duplicated.`, [id]),
+        );
+      seenIds.add(id);
+      return;
+    }
+    default:
+      return unreachable(parsed);
   }
-  diagnostics.push(...validateId(track.id, `${path}.id`, "Track"));
-  if ("use" in track)
-    diagnostics.push(
-      diagnostic(
-        "plugin-contribution-unsupported-entry",
-        `${path}.use`,
-        "Track use is not supported; resolve plugins from authored keyframes.",
-        [String(track.use)],
-      ),
-    );
-  validateKeyframes(track.keyframes, `${path}.keyframes`, diagnostics);
-  if (typeof track.id === "string" && track.id.length) {
-    if (seenIds.has(track.id))
-      diagnostics.push(
-        diagnostic("track-duplicate-id", `${path}.id`, `Track id '${track.id}' is duplicated.`, [
-          track.id,
-        ]),
-      );
-    seenIds.add(track.id);
-  }
-  if (track.observes !== undefined && !Array.isArray(track.observes))
-    diagnostics.push(
-      diagnostic("observes-shape", `${path}.observes`, "Track observes must be an array."),
-    );
-  return true;
 }
 function clone(value: unknown, seen = new WeakMap<object, unknown>()): unknown {
   if (value === null || typeof value !== "object") return value;
@@ -491,15 +469,43 @@ function deepFreeze<T>(value: T, seen = new WeakSet<object>()): T {
   return Object.freeze(value);
 }
 export type TrackValidationResult = Outcome<TrackDefinition, Diagnostic>;
-export function validateTrackDefinition(track: unknown, path: string): TrackValidationResult {
-  const diagnostics: Diagnostic[] = [];
-  const validShape = validateTrackShape(track, path, new Set<string>(), diagnostics);
-  const frozenDiagnostics = Object.freeze(diagnostics);
-  if (!validShape || diagnostics.some(({ severity }) => severity === "error"))
-    return refusedOutcomeFrom(frozenDiagnostics);
-  return acceptedOutcome(deepFreeze(clone(track) as TrackDefinition), frozenDiagnostics);
+/**
+ * One authored track, refused or accepted frozen.
+ *
+ * The accepted value is the authored document rather than the parser's normalized cells: the
+ * runtime retains what the author wrote, and evaluation reads the parsed form from the compiler.
+ */
+export function validateTrackDefinition(
+  track: unknown,
+  path: string,
+  context: ParseContext = {},
+): TrackValidationResult {
+  const parsed = parseTrackDefinition(track, path, context);
+  switch (parsed.kind) {
+    case "refused":
+      return refusedOutcomeFrom(parsed.diagnostics);
+    case "accepted": {
+      const diagnostics: Diagnostic[] = [...parsed.diagnostics];
+      if (parsed.value.plugin === undefined) {
+        const inferred = deriveSourceContract(
+          parsed.value.input.values,
+          parsed.value.input.schema,
+          `${path}.input.values`,
+        );
+        diagnostics.push(...inferred.diagnostics);
+      }
+      const frozen = Object.freeze(diagnostics);
+      if (frozen.some(({ severity }) => severity === "error")) return refusedOutcomeFrom(frozen);
+      return acceptedOutcome(deepFreeze(clone(track) as TrackDefinition), frozen);
+    }
+    default:
+      return unreachable(parsed);
+  }
 }
-export function validateSchemaV5(input: unknown): Outcome<ProjectDefinition, Diagnostic> {
+export function validateSchemaV5(
+  input: unknown,
+  context: ParseContext = {},
+): Outcome<ProjectDefinition, Diagnostic> {
   const diagnostics: Diagnostic[] = [];
   if (!isObject(input))
     return refusedOutcome([diagnostic("project-shape", "$", "Project must be an object.")]);
@@ -534,7 +540,6 @@ export function validateSchemaV5(input: unknown): Outcome<ProjectDefinition, Dia
   const freeTracks = Array.isArray(input.freeTracks) ? input.freeTracks : [];
   const motionIds = new Set<string>();
   const freeIds = new Set<string>();
-  const allTracks: RawObject[] = [];
   for (const [index, rawMotion] of motions.entries()) {
     const path = `motions[${index}]`;
     if (!isObject(rawMotion)) {
@@ -558,17 +563,11 @@ export function validateSchemaV5(input: unknown): Outcome<ProjectDefinition, Dia
       continue;
     }
     const localIds = new Set<string>();
-    for (const [trackIndex, rawTrack] of rawMotion.tracks.entries()) {
-      const trackPath = `${path}.tracks[${trackIndex}]`;
-      if (validateTrackShape(rawTrack, trackPath, localIds, diagnostics))
-        allTracks.push(rawTrack as unknown as RawObject);
-    }
+    for (const [trackIndex, rawTrack] of rawMotion.tracks.entries())
+      readTrack(rawTrack, `${path}.tracks[${trackIndex}]`, context, localIds, diagnostics);
   }
-  for (const [index, rawTrack] of freeTracks.entries()) {
-    const path = `freeTracks[${index}]`;
-    if (validateTrackShape(rawTrack, path, freeIds, diagnostics))
-      allTracks.push(rawTrack as unknown as RawObject);
-  }
+  for (const [index, rawTrack] of freeTracks.entries())
+    readTrack(rawTrack, `freeTracks[${index}]`, context, freeIds, diagnostics);
   const perspective = input.perspective;
   if (
     perspective !== undefined &&
@@ -581,17 +580,6 @@ export function validateSchemaV5(input: unknown): Outcome<ProjectDefinition, Dia
         "Perspective must be a finite number greater than zero.",
       ),
     );
-  if (perspective === undefined)
-    for (const track of allTracks)
-      if (usesThreeD(track))
-        diagnostics.push(
-          diagnostic(
-            "perspective-usage",
-            "perspective",
-            "3D keyframes require a project perspective.",
-            [String(track.id ?? "")],
-          ),
-        );
   if (diagnostics.some(({ severity }) => severity === "error"))
     return refusedOutcomeFrom<ProjectDefinition, Diagnostic>(Object.freeze(diagnostics));
   return acceptedOutcome(deepFreeze(clone(input) as ProjectDefinition), Object.freeze(diagnostics));

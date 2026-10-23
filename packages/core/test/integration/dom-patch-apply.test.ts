@@ -1,17 +1,18 @@
 import { describe, expect, it } from "vitest";
 import { createDomPatchAdapter, type DomTarget } from "../../src/adapters/dom";
+import type { FlatRecord } from "../../src/contract/v5";
 import type { Patch } from "../../src/runtime/patch-registry";
 
 function patch(
   revision: number,
   nodeId: string,
-  values: Readonly<Record<string, unknown>>,
+  values: FlatRecord,
   status: Patch["status"] = "ready",
 ): Patch {
   return {
     nodeId,
     revision,
-    values,
+    outputs: { values },
     sourceProgress: 0,
     sourceRevisions: {},
     status,
@@ -41,7 +42,7 @@ describe("DOM patch adapter contract (C3)", () => {
     adapter.apply(first);
     expect(writes).toEqual([{ target: arm, values: { opacity: 1, "--accent": "red" } }]);
     if (first.status !== "ready") throw new Error(`first is ${first.status}, not ready.`);
-    expect(first.values).toEqual({
+    expect(first.outputs.values).toEqual({
       opacity: 1,
       "--accent": "red",
       _internal: "hidden",

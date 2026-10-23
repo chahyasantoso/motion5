@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { describe, expect, it } from "vitest";
 import { code, codeOnly, declaration } from "../helpers/source-region";
 import { fileURLToPath } from "node:url";

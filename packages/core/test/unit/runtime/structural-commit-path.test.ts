@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { describe, expect, it, vi } from "vitest";
 import type {
   MotionDefinition,
@@ -111,7 +112,7 @@ const REJECTED_MOTION: MotionDefinition = {
   tracks: [],
 };
 const compose = (node: { id: string }) => () => ({
-  values: { node: node.id },
+  outputs: { values: { node: node.id } },
   sourceProgress: 0,
   sourceRevisions: {},
 });

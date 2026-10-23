@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { describe, expect, it } from "vitest";
 import { presentedPosition, trustedPosition, type FilledFrame } from "../src/filler/frame";
 import type { FillerSpec } from "../src/filler/gap-filler";

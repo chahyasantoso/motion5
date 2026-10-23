@@ -4,6 +4,7 @@ import { createManualClock } from "../../../src/ports/clock";
 import { createFakeScheduler } from "../../../src/testing/fakes";
 import { GraphRuntime } from "../../../src/runtime/graph-runtime";
 import type { PatchBatch } from "../../../src/runtime/patch-registry";
+import { recordValues } from "../../support/v5-builders";
 
 /**
  * Issues #380, #388 and #389, found by the quality passes over #375 and #386.
@@ -38,7 +39,7 @@ const project: ProjectDefinition = {
 
 let stamp = 0;
 const compose = (node: { id: string }) => () => ({
-  values: { node: node.id, stamp: (stamp += 1) },
+  outputs: { values: { node: node.id, stamp: (stamp += 1) } },
   sourceProgress: 0,
   sourceRevisions: {},
 });
@@ -86,7 +87,7 @@ describe("a deferred publication carries the frame it arrived with", () => {
     const captionLabelPatch = runtime.registry.get("caption/label");
     if (captionLabelPatch?.status !== "ready")
       throw new Error(`caption/label is ${captionLabelPatch?.status ?? "absent"}, not ready.`);
-    expect(captionLabelPatch.values.node).toBe("caption/label");
+    expect(recordValues(captionLabelPatch).node).toBe("caption/label");
     expect(runtime.pendingSeeds).toEqual([]);
     expect(batches).toEqual([1, 2]);
     expect(runtime.lastFlushError).toBeUndefined();
@@ -140,7 +141,7 @@ describe("a deferred publication carries the frame it arrived with", () => {
     const captionLabelPatch2 = runtime.registry.get("caption/label");
     if (captionLabelPatch2?.status !== "ready")
       throw new Error(`caption/label is ${captionLabelPatch2?.status ?? "absent"}, not ready.`);
-    expect(captionLabelPatch2.values.node).toBe("caption/label");
+    expect(recordValues(captionLabelPatch2).node).toBe("caption/label");
     runtime.dispose();
   });
 });

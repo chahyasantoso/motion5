@@ -1,4 +1,4 @@
-import type { TrackDefinition } from "../../contract/v5";
+import type { GroupedTrackDefinition } from "../../contract/v5";
 import type { PluginDefinition, ResolvedPlugins } from "../plugins";
 import { equalValues } from "../values";
 
@@ -16,7 +16,7 @@ import { equalValues } from "../values";
  * below says so once rather than at each caller.
  */
 export interface CompiledTrackInput {
-  readonly definition: TrackDefinition;
+  readonly definition: GroupedTrackDefinition;
   readonly resolved: ResolvedPlugins | undefined;
 }
 
@@ -28,7 +28,7 @@ export interface CompiledTrackInput {
  * are compared as a group rather than named one by one, because a field named here would be a field
  * this module has to learn about again the next time the authored schema grows one.
  */
-function outsideKeyframes(definition: TrackDefinition): Record<string, unknown> {
+function outsideKeyframes(definition: GroupedTrackDefinition): Record<string, unknown> {
   const rest: Record<string, unknown> = { ...definition };
   delete rest.keyframes;
   return rest;

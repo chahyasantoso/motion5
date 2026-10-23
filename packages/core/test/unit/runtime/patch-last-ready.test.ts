@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { diagnostic } from "../../../src/contract/diagnostics";
 import { PatchRegistry, type Patch, type PublishInput } from "../../../src/runtime/patch-registry";
+import { recordValues } from "../../support/v5-builders";
 
 /**
  * Slice 1 of #450 decides where the last good pose lives once a patch carries only the payload its
@@ -39,7 +40,7 @@ describe("the registry owns the last ready patch", () => {
     const registry = open();
     const ready = publish(registry, 1, {
       nodeId: "hero/arm",
-      values: { x: 1 },
+      outputs: { values: { x: 1 } },
       sourceProgress: 0.5,
       status: "ready",
     });
@@ -54,7 +55,7 @@ describe("the registry owns the last ready patch", () => {
     // The pose survives the block as the registry's own retained answer rather than as a payload on
     // a patch whose status says the node is not ready.
     expect(registry.lastReady("hero/arm")).toBe(ready);
-    expect(registry.lastReady("hero/arm")?.values).toEqual({ x: 1 });
+    expect(recordValues(registry.lastReady("hero/arm"))).toEqual({ x: 1 });
     expect(registry.lastReady("hero/arm")?.sourceProgress).toBe(0.5);
   });
 
@@ -74,20 +75,20 @@ describe("the registry owns the last ready patch", () => {
     const registry = open();
     publish(registry, 1, {
       nodeId: "hero/arm",
-      values: { x: 1 },
+      outputs: { values: { x: 1 } },
       sourceProgress: 0,
       status: "ready",
     });
     const second = publish(registry, 2, {
       nodeId: "hero/arm",
-      values: { x: 2 },
+      outputs: { values: { x: 2 } },
       sourceProgress: 0,
       status: "ready",
     });
     // A suppressed republication is not a publication, so it cannot move what is retained.
     const suppressed = publish(registry, 3, {
       nodeId: "hero/arm",
-      values: { x: 2 },
+      outputs: { values: { x: 2 } },
       sourceProgress: 0,
       status: "ready",
     });
@@ -100,7 +101,7 @@ describe("the registry owns the last ready patch", () => {
     const registry = open();
     publish(registry, 1, {
       nodeId: "hero/arm",
-      values: { x: 1 },
+      outputs: { values: { x: 1 } },
       sourceProgress: 0,
       status: "ready",
     });
@@ -115,7 +116,7 @@ describe("the registry owns the last ready patch", () => {
     const registry = open();
     publish(registry, 1, {
       nodeId: "hero/arm",
-      values: { x: 1 },
+      outputs: { values: { x: 1 } },
       sourceProgress: 0,
       status: "ready",
     });
@@ -129,7 +130,7 @@ describe("the registry owns the last ready patch", () => {
     const registry = open();
     publish(registry, 1, {
       nodeId: "hero/arm",
-      values: { x: 1 },
+      outputs: { values: { x: 1 } },
       sourceProgress: 0,
       status: "ready",
     });
@@ -143,7 +144,7 @@ describe("the registry owns the last ready patch", () => {
     const registry = open();
     const ready = publish(registry, 1, {
       nodeId: "hero/arm",
-      values: { x: 1 },
+      outputs: { values: { x: 1 } },
       sourceProgress: 0,
       status: "ready",
     });
@@ -167,7 +168,7 @@ describe("the registry owns the last ready patch", () => {
     const registry = open();
     const ready = publish(registry, 1, {
       nodeId: "hero/arm",
-      values: { x: 1 },
+      outputs: { values: { x: 1 } },
       sourceProgress: 0.5,
       status: "ready",
     });
@@ -185,7 +186,7 @@ describe("the registry owns the last ready patch", () => {
     // The pose is not lost, and this says so rather than leaving it to the refusals above: all
     // three members one composition measured together are answered together, off one identity.
     expect(registry.lastReady("hero/arm")).toBe(ready);
-    expect(registry.lastReady("hero/arm")?.values).toEqual({ x: 1 });
+    expect(recordValues(registry.lastReady("hero/arm"))).toEqual({ x: 1 });
     expect(registry.lastReady("hero/arm")?.sourceProgress).toBe(0.5);
   });
 });

@@ -48,13 +48,13 @@ function createFakeSource(...initial: readonly LivePatch[]): FakeSource {
 function patch(
   nodeId: string,
   revision: number,
-  values: Readonly<Record<string, unknown>>,
+  values: Readonly<Record<string, number | string | boolean>>,
   status: LivePatch["status"] = "ready",
 ): LivePatch {
   return {
     nodeId,
     revision,
-    values,
+    outputs: { values },
     sourceProgress: 0,
     sourceRevisions: {},
     status,

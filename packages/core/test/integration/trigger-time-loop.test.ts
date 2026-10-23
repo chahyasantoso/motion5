@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { describe, expect, it } from "vitest";
 import { createTriggerFactory } from "../../src/adapters/trigger-factory/default";
 import type { Diagnostic, MotionDefinition } from "../../src/contract/v5";

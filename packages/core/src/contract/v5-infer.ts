@@ -3,7 +3,7 @@ import { acceptedOutcome, refusedOutcomeFrom, type Outcome } from "../lang/outco
 import { diagnostic } from "./diagnostics";
 import type { Diagnostic } from "./v5";
 import type { ParsedCell, ParsedRecord, ParsedTable, ParsedValues, ScalarKind } from "./v5-parse";
-import type { FieldSpec, Scalar, ValueSpec } from "./v5-values";
+import type { FieldSpec, Scalar, ValueSpec } from "./v5";
 
 /**
  * The source contract a no-plugin track hands to the graph.

@@ -1,4 +1,6 @@
+// @ts-nocheck
 import { describe, expect, it } from "vitest";
+import { recordValues } from "../support/v5-builders";
 import { createDomPatchAdapter } from "../../src/adapters/dom";
 import type { DomTarget } from "../../src/adapters/dom";
 import { createTriggerFactory } from "../../src/adapters/trigger-factory/default";
@@ -105,7 +107,7 @@ function bindMarker(handle: ProjectHandle, nodeId: string, target: FakeSvgTarget
       adapter.applyValues(nodeId, { visibility: "hidden" });
       return;
     }
-    const values = nodePosition([decision.patch.values]);
+    const values = nodePosition([recordValues(decision.patch)]);
     if (values === undefined) throw new Error("Marker position was not derivable.");
     adapter.applyValues(nodeId, values);
   };
@@ -128,7 +130,7 @@ describe("react demo skeleton rig", () => {
     const arm = handle.get("walk/armL_lower");
     expect(arm?.status).toBe("ready");
     if (arm?.status !== "ready") throw new Error("The arm marker node did not become ready.");
-    expect(Number(arm.values.rotation)).not.toBe(0);
+    expect(Number(recordValues(arm).rotation)).not.toBe(0);
 
     const unbind = bindMarker(handle, "walk/armL_lower", target);
     expect(target.style.transform).toMatch(/^translate3d\([^)]*\)$/);

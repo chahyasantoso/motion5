@@ -1,9 +1,9 @@
 import { builtinRegistry } from "../../support/builtin-registry";
 import { describe, expect, it } from "vitest";
 import { buildGraphIR } from "../../../src/graph/ir";
-import type { ProjectDefinition } from "../../../src/contract/v5";
+import type { GroupedProject } from "../../support/v5-builders";
 
-const project = (overrides: Partial<ProjectDefinition> = {}): ProjectDefinition => ({
+const project = (overrides: Partial<GroupedProject> = {}): GroupedProject => ({
   schemaVersion: 5,
   motions: [{ id: "hero", trigger: { type: "manual" }, tracks: [{ id: "arm" }] }],
   freeTracks: [{ id: "cursor" }],

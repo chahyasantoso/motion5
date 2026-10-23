@@ -12,7 +12,7 @@ import type {
   TrackDefinition,
   TrackInput,
   ValueSpec,
-} from "../../src/contract/v5-values";
+} from "../../src/contract/v5";
 import { Engine } from "../../src/engine";
 import { createManualClock } from "../../src/ports/clock";
 import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
@@ -29,10 +29,9 @@ import {
 /**
  * Phase 1 acceptance suite for the identified-table contract.
  *
- * The type cases below are green now: they encode the settled direction. Every runtime case is
- * staged with `it.fails`, because the live engine still reads grouped `keyframes`; each starts
- * passing in Phase 2 or 3, at which point the `it.fails` marker must be removed. Test names state
- * the phase that owns the behavior instead of reporting staged coverage as done.
+ * The type cases below encode the settled direction. Runtime cases state the phase that owns the
+ * behavior: Phase 2 cases run now, and a Phase 3 case stays staged with `it.fails` until the plugin
+ * slice lands. Test names state ownership instead of reporting staged coverage as done.
  */
 
 type TranslateValues = Readonly<Record<"dx" | "dy", number>>;
@@ -101,20 +100,6 @@ function loadAndDispose(definition: unknown): void {
 }
 
 /**
- * Bridges today's live patch to the staged target payload.
- *
- * The live engine still publishes one grouped `values` record, so a ready patch carries no named
- * outputs. The target contract publishes `outputs`; Phase 2 moves the engine and this bridge
- * collapses into the status narrowing below. An empty output set is what a live patch genuinely
- * answers today, and it keeps a staged failure an assertion rather than a crash.
- */
-function staged(patch: Patch | undefined): PatchPayload | undefined {
-  if (patch === undefined) return undefined;
-  if (patch.status !== "ready") return patch;
-  return { status: "ready", outputs: {} };
-}
-
-/**
  * The payload one node publishes at one progress.
  *
  * Every track is mounted and sought at the same progress: a bound dependency contributes its own
@@ -134,7 +119,7 @@ function patchAt(
       const batch = handle.seek(id, progress);
       patch ??= batch.patches.find((candidate) => candidate.nodeId === nodeId);
     }
-    return staged(patch);
+    return patch;
   } finally {
     handle.dispose();
   }
@@ -181,33 +166,30 @@ describe("v5 contract direction", () => {
 });
 
 describe("v5 source evaluation", () => {
-  it.fails(
-    "[staged Phase 2] publishes an inferred table source row-per-point at progress 0.5",
-    () => {
-      const points = track({
-        id: "points",
-        values: table(
-          row("point-a", {
-            x: [
-              { p: 0, v: 0 },
-              { p: 1, v: 100 },
-            ],
-            y: 20,
-          }),
-          row("point-b", { x: 200, y: 40 }),
-        ),
-      });
+  it("[staged Phase 2] publishes an inferred table source row-per-point at progress 0.5", () => {
+    const points = track({
+      id: "points",
+      values: table(
+        row("point-a", {
+          x: [
+            { p: 0, v: 0 },
+            { p: 1, v: 100 },
+          ],
+          y: 20,
+        }),
+        row("point-b", { x: 200, y: 40 }),
+      ),
+    });
 
-      const patch = patchAt(project([points]), "demo/points", 0.5);
+    const patch = patchAt(project([points]), "demo/points", 0.5);
 
-      expect(patch?.status).toBe("ready");
-      expect(outputOf(patch, "values")).toEqual(
-        table(row("point-a", { x: 50, y: 20 }), row("point-b", { x: 200, y: 40 })),
-      );
-    },
-  );
+    expect(patch?.status).toBe("ready");
+    expect(outputOf(patch, "values")).toEqual(
+      table(row("point-a", { x: 50, y: 20 }), row("point-b", { x: 200, y: 40 })),
+    );
+  });
 
-  it.fails("[staged Phase 2] publishes a record source as a flat record", () => {
+  it("[staged Phase 2] publishes a record source as a flat record", () => {
     const parameters = track({
       id: "parameters",
       values: record({
@@ -264,19 +246,16 @@ describe("v5 explicit plugin slice", () => {
 });
 
 describe("v5 authored refusals", () => {
-  it.fails(
-    "[staged Phase 2] refuses grouped keyframes and observes under track-legacy-field",
-    () => {
-      expect(() =>
-        loadAndDispose(malformed({ id: "legacy", keyframes: { transform: { values: { x: 0 } } } })),
-      ).toThrow(rule("track-legacy-field"));
-      expect(() =>
-        loadAndDispose(malformed({ id: "legacy", observes: [{ source: "points" }] })),
-      ).toThrow(rule("track-legacy-field"));
-    },
-  );
+  it("[staged Phase 2] refuses grouped keyframes and observes under track-legacy-field", () => {
+    expect(() =>
+      loadAndDispose(malformed({ id: "legacy", keyframes: { transform: { values: { x: 0 } } } })),
+    ).toThrow(rule("track-legacy-field"));
+    expect(() =>
+      loadAndDispose(malformed({ id: "legacy", observes: [{ source: "points" }] })),
+    ).toThrow(rule("track-legacy-field"));
+  });
 
-  it.fails("[staged Phase 2] refuses a flat row without the id/cells envelope", () => {
+  it("[staged Phase 2] refuses a flat row without the id/cells envelope", () => {
     expect(() =>
       loadAndDispose(
         malformed({ id: "points", input: { values: [{ point: "point-a", x: 0, y: 0 }] } }),
@@ -284,7 +263,7 @@ describe("v5 authored refusals", () => {
     ).toThrow(rule("row-id-invalid"));
   });
 
-  it.fails("[staged Phase 2] refuses a structured cell", () => {
+  it("[staged Phase 2] refuses a structured cell", () => {
     expect(() =>
       loadAndDispose(
         malformed({
@@ -295,7 +274,7 @@ describe("v5 authored refusals", () => {
     ).toThrow(rule("cell-form-invalid"));
   });
 
-  it.fails("[staged Phase 2] refuses a type descriptor in place of kind", () => {
+  it("[staged Phase 2] refuses a type descriptor in place of kind", () => {
     expect(() =>
       loadAndDispose(
         malformed({
@@ -309,27 +288,24 @@ describe("v5 authored refusals", () => {
     ).toThrow(rule("spec-field-unknown"));
   });
 
-  it.fails(
-    "[staged Phase 2] refuses a table authored where the declared schema is a record",
-    () => {
-      expect(() =>
-        loadAndDispose(
-          malformed(
-            track({
-              id: "parameters",
-              values: table(row("point-a", { dx: 10, dy: 5 })),
-              schema: {
-                kind: "record",
-                fields: { dx: { kind: "number" }, dy: { kind: "number" } },
-              },
-            }),
-          ),
+  it("[staged Phase 2] refuses a table authored where the declared schema is a record", () => {
+    expect(() =>
+      loadAndDispose(
+        malformed(
+          track({
+            id: "parameters",
+            values: table(row("point-a", { dx: 10, dy: 5 })),
+            schema: {
+              kind: "record",
+              fields: { dx: { kind: "number" }, dy: { kind: "number" } },
+            },
+          }),
         ),
-      ).toThrow(rule("values-shape-invalid"));
-    },
-  );
+      ),
+    ).toThrow(rule("values-shape-invalid"));
+  });
 
-  it.fails("[staged Phase 2] refuses stops in a static declared field", () => {
+  it("[staged Phase 2] refuses stops in a static declared field", () => {
     expect(() =>
       loadAndDispose(
         malformed({
@@ -348,7 +324,7 @@ describe("v5 authored refusals", () => {
     ).toThrow(rule("static-field-stops"));
   });
 
-  it.fails("[staged Phase 2] refuses an unregistered plugin as plugin-unknown", () => {
+  it("[staged Phase 2] refuses an unregistered plugin as plugin-unknown", () => {
     expect(() =>
       loadAndDispose(
         malformed(track({ id: "shifted", plugin: "missing", values: record({ dx: 10 }) })),
@@ -356,42 +332,36 @@ describe("v5 authored refusals", () => {
     ).toThrow(rule("plugin-unknown"));
   });
 
-  it.fails(
-    "[staged Phase 2] refuses requires without a plugin as plugin-requires-without-plugin",
-    () => {
-      expect(() =>
-        loadAndDispose(
-          malformed(
-            track({
-              id: "points",
-              values: record({ x: 0 }),
-              requires: { data: "points" },
-            }),
-          ),
+  it("[staged Phase 2] refuses requires without a plugin as plugin-requires-without-plugin", () => {
+    expect(() =>
+      loadAndDispose(
+        malformed(
+          track({
+            id: "points",
+            values: record({ x: 0 }),
+            requires: { data: "points" },
+          }),
         ),
-      ).toThrow(rule("plugin-requires-without-plugin"));
-    },
-  );
+      ),
+    ).toThrow(rule("plugin-requires-without-plugin"));
+  });
 
-  it.fails(
-    "[staged Phase 2] refuses a source schema on a plugin track as input-schema-on-plugin-track",
-    () => {
-      expect(() =>
-        loadAndDispose(
-          malformed(
-            track({
-              id: "shifted",
-              plugin: "translate",
-              values: record({ dx: 10 }),
-              schema: { kind: "record", fields: { dx: { kind: "number" } } },
-            }),
-          ),
+  it("[staged Phase 2] refuses a source schema on a plugin track as input-schema-on-plugin-track", () => {
+    expect(() =>
+      loadAndDispose(
+        malformed(
+          track({
+            id: "shifted",
+            plugin: "translate",
+            values: record({ dx: 10 }),
+            schema: { kind: "record", fields: { dx: { kind: "number" } } },
+          }),
         ),
-      ).toThrow(rule("input-schema-on-plugin-track"));
-    },
-  );
+      ),
+    ).toThrow(rule("input-schema-on-plugin-track"));
+  });
 
-  it.fails("[staged Phase 2] refuses duplicate row ids as row-id-duplicate", () => {
+  it("[staged Phase 2] refuses duplicate row ids as row-id-duplicate", () => {
     expect(() =>
       loadAndDispose(
         malformed(
@@ -404,19 +374,19 @@ describe("v5 authored refusals", () => {
     ).toThrow(rule("row-id-duplicate"));
   });
 
-  it.fails("[staged Phase 2] refuses a reserved row id as name-reserved", () => {
+  it("[staged Phase 2] refuses a reserved row id as name-reserved", () => {
     expect(() =>
       loadAndDispose(malformed(track({ id: "points", values: table(row("__proto__", { x: 0 })) }))),
     ).toThrow(rule("name-reserved"));
   });
 
-  it.fails("[staged Phase 2] refuses an empty bare stop array as cell-stops-invalid", () => {
+  it("[staged Phase 2] refuses an empty bare stop array as cell-stops-invalid", () => {
     expect(() =>
       loadAndDispose(malformed(track({ id: "parameters", values: record({ dx: [] }) }))),
     ).toThrow(rule("cell-stops-invalid"));
   });
 
-  it.fails("[staged Phase 2] refuses a stop position outside [0, 1] as cell-stops-invalid", () => {
+  it("[staged Phase 2] refuses a stop position outside [0, 1] as cell-stops-invalid", () => {
     expect(() =>
       loadAndDispose(
         malformed(track({ id: "parameters", values: record({ dx: [{ p: 1.5, v: 0 }] }) })),
@@ -424,26 +394,23 @@ describe("v5 authored refusals", () => {
     ).toThrow(rule("cell-stops-invalid"));
   });
 
-  it.fails(
-    "[staged Phase 2] refuses mixed scalar kinds in one stop sequence as cell-kind-conflict",
-    () => {
-      expect(() =>
-        loadAndDispose(
-          malformed(
-            track({
-              id: "parameters",
-              values: record({
-                dx: [
-                  { p: 0, v: 0 },
-                  { p: 1, v: "one" },
-                ],
-              }),
+  it("[staged Phase 2] refuses mixed scalar kinds in one stop sequence as cell-kind-conflict", () => {
+    expect(() =>
+      loadAndDispose(
+        malformed(
+          track({
+            id: "parameters",
+            values: record({
+              dx: [
+                { p: 0, v: 0 },
+                { p: 1, v: "one" },
+              ],
             }),
-          ),
+          }),
         ),
-      ).toThrow(rule("cell-kind-conflict"));
-    },
-  );
+      ),
+    ).toThrow(rule("cell-kind-conflict"));
+  });
 });
 
 describe("v5 registration-dependent refusals", () => {

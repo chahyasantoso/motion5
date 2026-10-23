@@ -1,5 +1,5 @@
 import { diagnostic } from "../contract/diagnostics";
-import type { Diagnostic } from "../contract/v5";
+import type { Diagnostic, FlatRecord, Outputs } from "../contract/v5";
 import { compareEdges, edgeRole, type GraphEdge, type GraphIR, type GraphNode } from "../graph/ir";
 import { firstPendingEdge } from "../graph/references";
 import { CompositionOutputError } from "../domain/track";
@@ -55,7 +55,7 @@ export interface SolverMember extends MemberState {
 }
 
 export interface PublisherComposition {
-  readonly values: Readonly<Record<string, unknown>>;
+  readonly outputs: Outputs;
   readonly sourceProgress: number;
   readonly sourceRevisions: Readonly<Record<string, number>>;
 }
@@ -164,17 +164,41 @@ function isRendererNeutral(value: unknown, seen = new WeakSet<object>()): boolea
     ([key, item]) => !key.startsWith("_") && isRendererNeutral(item, seen),
   );
 }
-function validateComposition(values: unknown): asserts values is Readonly<Record<string, unknown>> {
-  if (!isRecord(values) || !isRendererNeutral(values))
+function validateComposition(outputs: unknown): asserts outputs is Outputs {
+  if (!isRecord(outputs) || !isRendererNeutral(outputs))
     throw new CompositionOutputError(
       "Composition output must contain only renderer-neutral values.",
     );
 }
+/**
+ * The `values` output as a flat record, which is the only shape an output observation can merge.
+ *
+ * The named-output map may hold a table at `values`, and merging a record onto one has no meaning;
+ * a grouped track's `observes` edits belong to the machinery Phase 7 removes, so failing loudly is
+ * what keeps a table-valued node from silently receiving a record merge it never asked for.
+ */
+function valuesRecord(outputs: Outputs): FlatRecord {
+  const value = outputs.values;
+  if (!isFlatRecordValue(value))
+    throw new CompositionOutputError(
+      "An output observation requires the values output to be a record.",
+    );
+  return value;
+}
+function isFlatRecordValue(value: unknown): value is FlatRecord {
+  return isRecord(value) && Object.values(value).every((item) => isImmutableLeaf(item));
+}
 function mergeValues(
-  base: Readonly<Record<string, unknown>>,
+  base: FlatRecord,
   overlay: Readonly<Record<string, unknown>> | undefined,
-): Readonly<Record<string, unknown>> {
-  return overlay === undefined ? base : Object.freeze({ ...base, ...overlay });
+): FlatRecord {
+  if (overlay === undefined) return base;
+  const merged = { ...base, ...overlay };
+  if (!isFlatRecordValue(merged))
+    throw new CompositionOutputError(
+      "An output observation merge must leave the values output a flat record.",
+    );
+  return Object.freeze(merged);
 }
 /**
  * Freezes the collected scoped inputs one level down, so a composer cannot reach back into the
@@ -291,11 +315,11 @@ export class GraphPublisher {
     try {
       const collected = this.#collectInputs(node, byId, valuesFor);
       const composed = node.compose(collected.inputs);
-      validateComposition(composed.values);
+      validateComposition(composed.outputs);
       const merged = this.#mergeOutputs(node, composed, collected.sourceRevisions, valuesFor);
       this.#registry.publish({
         nodeId: id,
-        values: merged.values,
+        outputs: merged.outputs,
         sourceProgress: merged.sourceProgress,
         sourceRevisions: merged.sourceRevisions,
         status: "ready",
@@ -435,21 +459,26 @@ export class GraphPublisher {
     sourceRevisions: Record<string, number>,
     valuesFor: (sourceId: string) => SourceValues,
   ): PublisherComposition {
-    let values = composed.values;
-    for (const edge of edgesByRole(node, "output")) {
+    const revisions = { ...composed.sourceRevisions, ...sourceRevisions };
+    const outputEdges = edgesByRole(node, "output");
+    // A table is a legitimate `values` output of a no-plugin source, and it has no record to merge
+    // an observation onto. Only a node that declares an output edge owes the record shape.
+    if (outputEdges.length === 0) return { ...composed, sourceRevisions: revisions };
+    let values = valuesRecord(composed.outputs);
+    for (const edge of outputEdges) {
       const sourcePatch = this.#registry.get(edge.sourceId);
       // Unreachable in normal flow, same reasoning as the input-side guard. Renderer neutrality is
       // asked after the shape, and both answer under the one rule id this side has.
       const sourceRecord = expectOutputRecord(valuesFor(edge.sourceId), edge.sourceId);
       if (!isRendererNeutral(sourceRecord))
         failPublication({ kind: "output-shape", sourceId: edge.sourceId });
-      if (sourcePatch) sourceRevisions[edge.sourceId] = sourcePatch.revision;
+      if (sourcePatch) revisions[edge.sourceId] = sourcePatch.revision;
       values = mergeValues(values, sourceRecord);
     }
     return {
       ...composed,
-      values,
-      sourceRevisions: { ...composed.sourceRevisions, ...sourceRevisions },
+      outputs: { ...composed.outputs, values },
+      sourceRevisions: revisions,
     };
   }
 }

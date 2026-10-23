@@ -50,7 +50,7 @@ const PROJECT: ProjectDefinition = {
   motions: [{ id: MOTION, trigger: MANUAL, tracks: [{ id: "arm" }, { id: "leg" }] }],
 };
 const compose = (node: { id: string }) => () => ({
-  values: { node: node.id },
+  outputs: { values: { node: node.id } },
   sourceProgress: 0,
   sourceRevisions: {},
 });

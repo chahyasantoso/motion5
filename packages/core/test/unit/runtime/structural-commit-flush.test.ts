@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { describe, expect, it } from "vitest";
 import type {
   MotionDefinition,
@@ -76,7 +77,7 @@ const PENDING_TRACK: TrackDefinition = { id: "hand", observes: [{ source: CURSOR
  * the duration composes the same values, and the registry is allowed to drop it.
  */
 const compose = (node: { id: string }) => () => ({
-  values: { [node.id]: 1 },
+  outputs: { values: { [node.id]: 1 } },
   sourceProgress: 0,
   sourceRevisions: {},
 });

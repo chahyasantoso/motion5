@@ -1,5 +1,5 @@
 import type { ParsedCell, ParsedStop, ParsedValues } from "../contract/v5-parse";
-import type { FlatRecord, Scalar, Table, Value } from "../contract/v5-values";
+import type { FlatRecord, Scalar, Table, Value } from "../contract/v5";
 import { freezeValue } from "../domain/values";
 import { unreachable } from "../lang/exhaustive";
 import type { Interpolator } from "../ports/interpolator";

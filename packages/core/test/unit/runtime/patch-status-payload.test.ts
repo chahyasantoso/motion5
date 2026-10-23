@@ -56,7 +56,12 @@ function required(patch: Patch | undefined): Patch {
 describe("a patch carries only the payload its status owns", () => {
   it("gives a blocked patch no payload, rather than the last good pose", () => {
     const registry = open();
-    publish(registry, 1, { nodeId: NODE, values: { x: 1 }, sourceProgress: 0.5, status: "ready" });
+    publish(registry, 1, {
+      nodeId: NODE,
+      outputs: { values: { x: 1 } },
+      sourceProgress: 0.5,
+      status: "ready",
+    });
     const blocked = required(
       publish(registry, 2, {
         nodeId: NODE,
@@ -82,7 +87,12 @@ describe("a patch carries only the payload its status owns", () => {
 
   it("gives an errored patch no payload either", () => {
     const registry = open();
-    publish(registry, 1, { nodeId: NODE, values: { x: 1 }, sourceProgress: 0.5, status: "ready" });
+    publish(registry, 1, {
+      nodeId: NODE,
+      outputs: { values: { x: 1 } },
+      sourceProgress: 0.5,
+      status: "ready",
+    });
     const errored = required(
       publish(registry, 2, {
         nodeId: NODE,
@@ -121,7 +131,12 @@ describe("a patch carries only the payload its status owns", () => {
 
   it("gives a destroyed patch nothing beyond its identity and its status", () => {
     const registry = open();
-    publish(registry, 1, { nodeId: NODE, values: { x: 1 }, sourceProgress: 0.5, status: "ready" });
+    publish(registry, 1, {
+      nodeId: NODE,
+      outputs: { values: { x: 1 } },
+      sourceProgress: 0.5,
+      status: "ready",
+    });
     const seen: Patch[] = [];
     registry.subscribeNode(NODE, (patch) => seen.push(patch));
 
@@ -144,7 +159,7 @@ describe("a patch carries only the payload its status owns", () => {
     const ready = required(
       publish(registry, 1, {
         nodeId: NODE,
-        values: { x: 1 },
+        outputs: { values: { x: 1 } },
         sourceProgress: 0.5,
         sourceRevisions: { "hero/shoulder": 3 },
         status: "ready",
@@ -152,12 +167,12 @@ describe("a patch carries only the payload its status owns", () => {
     );
 
     expect(ready.status).toBe("ready");
-    expect("values" in ready).toBe(true);
+    expect("outputs" in ready).toBe(true);
     expect("sourceProgress" in ready).toBe(true);
     expect("sourceRevisions" in ready).toBe(true);
     expect("diagnostics" in ready).toBe(true);
     if (ready.status !== "ready") throw new Error(`${NODE} is ${ready.status}, not ready.`);
-    expect(ready.values).toEqual({ x: 1 });
+    expect(ready.outputs.values).toEqual({ x: 1 });
     expect(ready.sourceProgress).toBe(0.5);
     expect(ready.sourceRevisions).toEqual({ "hero/shoulder": 3 });
   });

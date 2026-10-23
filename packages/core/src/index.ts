@@ -2,6 +2,11 @@
  * `@motion5/core` public entrypoint.
  *
  * Graph internals remain private to the package.
+ *
+ * `GroupedTrackDefinition` is exported beside `TrackDefinition` only because the plugin loader
+ * still reads authored group names off it, and that loader is untouched until Phase 3 retires the
+ * grouped machinery. It is the same declaration widened with the fields `parseTrackDefinition`
+ * refuses, so it adds no second track owner and leaves with its last reader.
  */
 
 export {
@@ -19,6 +24,7 @@ export type {
   ObservationDefinition,
   ProjectDefinition,
   TrackDefinition,
+  GroupedTrackDefinition,
   TriggerType,
   TriggerSignal,
   TriggerDefinition,

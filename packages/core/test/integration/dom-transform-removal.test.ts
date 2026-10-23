@@ -1,12 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { createDomPatchAdapter } from "../../src/adapters/dom";
+import type { FlatRecord } from "../../src/contract/v5";
 import type { Patch } from "../../src/runtime/patch-registry";
 
-function patch(revision: number, values: Readonly<Record<string, unknown>>): Patch {
+function patch(revision: number, values: FlatRecord): Patch {
   return {
     nodeId: "hero/arm",
     revision,
-    values,
+    outputs: { values },
     sourceProgress: 0,
     sourceRevisions: {},
     status: "ready",

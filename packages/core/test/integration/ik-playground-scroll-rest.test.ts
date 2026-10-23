@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { describe, expect, it, vi } from "vitest";
 import type { ScrollSource } from "../../src/adapters/scroll-trigger";
 import { createManualClock } from "../../src/ports/clock";

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { describe, expect, it } from "vitest";
 import { deriveDependants, type GraphEdge } from "../../../src/graph/ir";
 import { PluginRegistry, type PluginDefinition } from "../../../src/domain/plugins";

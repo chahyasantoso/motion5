@@ -22,7 +22,7 @@ const READY: Patch = {
   nodeId: NODE_ID,
   revision: 1,
   status: "ready",
-  values: { x: 1 },
+  outputs: { values: { x: 1 } },
   sourceProgress: 0.5,
   sourceRevisions: {},
   diagnostics: [],

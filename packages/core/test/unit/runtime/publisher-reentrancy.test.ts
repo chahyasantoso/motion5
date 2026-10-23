@@ -19,7 +19,7 @@ const project: ProjectDefinition = {
 };
 
 const compose = (node: { id: string }) => () => ({
-  values: { node: node.id },
+  outputs: { values: { node: node.id } },
   sourceProgress: 0,
   sourceRevisions: {},
 });
@@ -31,7 +31,7 @@ const soleNode = (id: string): PublisherNode =>
     authoredIndex: 0,
     track: { id },
     edges: Object.freeze([]),
-    compose: () => ({ values: { x: 1 }, sourceProgress: 0, sourceRevisions: {} }),
+    compose: () => ({ outputs: { values: { x: 1 } }, sourceProgress: 0, sourceRevisions: {} }),
   });
 
 const soleSnapshot = (id: string): PublisherSnapshot => {
@@ -104,7 +104,7 @@ describe("subscriber-triggered reentrancy (recovery A3)", () => {
     const captionLabelPatch = runtime.registry.get("caption/label");
     if (captionLabelPatch?.status !== "ready")
       throw new Error(`caption/label is ${captionLabelPatch?.status ?? "absent"}, not ready.`);
-    expect(captionLabelPatch.values).toEqual({ node: "caption/label" });
+    expect(captionLabelPatch.outputs.values).toEqual({ node: "caption/label" });
     expect(runtime.registry.get("caption/label")?.revision).toBe(1);
     expect(runtime.pendingSeeds).toEqual([]);
 
@@ -156,7 +156,12 @@ describe("subscriber-triggered reentrancy (recovery A3)", () => {
     });
 
     registry.beginBatch(1, ["hero/arm"]);
-    registry.publish({ nodeId: "hero/arm", values: { x: 1 }, sourceProgress: 0, status: "ready" });
+    registry.publish({
+      nodeId: "hero/arm",
+      outputs: { values: { x: 1 } },
+      sourceProgress: 0,
+      status: "ready",
+    });
 
     expect(() => registry.closeBatch()).not.toThrow();
     expect((nested as Error)?.message).toMatch(/while subscribers are being notified/);

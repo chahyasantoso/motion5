@@ -3,6 +3,7 @@ import type { ProjectDefinition } from "../../../src/contract/v5";
 import { createManualClock } from "../../../src/ports/clock";
 import { createFakeScheduler } from "../../../src/testing/fakes";
 import { GraphRuntime } from "../../../src/runtime/graph-runtime";
+import { recordValues } from "../../support/v5-builders";
 
 /**
  * Issue #378, found by the quality pass over #375.
@@ -37,7 +38,11 @@ describe("the publication boundary covers everything after the drain", () => {
     let refusing = false;
     const compose = (node: { id: string }) => {
       if (refusing) throw failure;
-      return () => ({ values: { node: node.id }, sourceProgress: 0, sourceRevisions: {} });
+      return () => ({
+        outputs: { values: { node: node.id } },
+        sourceProgress: 0,
+        sourceRevisions: {},
+      });
     };
     const runtime = new GraphRuntime(project, clock, compose, { scheduler });
     runtime.attach("hero/arm");
@@ -70,11 +75,11 @@ describe("the publication boundary covers everything after the drain", () => {
     const heroArmPatch = runtime.registry.get("hero/arm");
     if (heroArmPatch?.status !== "ready")
       throw new Error(`hero/arm is ${heroArmPatch?.status ?? "absent"}, not ready.`);
-    expect(heroArmPatch.values.node).toBe("hero/arm");
+    expect(recordValues(heroArmPatch).node).toBe("hero/arm");
     const captionLabelPatch = runtime.registry.get("caption/label");
     if (captionLabelPatch?.status !== "ready")
       throw new Error(`caption/label is ${captionLabelPatch?.status ?? "absent"}, not ready.`);
-    expect(captionLabelPatch.values.node).toBe("caption/label");
+    expect(recordValues(captionLabelPatch).node).toBe("caption/label");
     runtime.dispose();
   });
 });

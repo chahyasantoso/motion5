@@ -39,12 +39,12 @@ describe("GraphPublisher partial-seed requirement inputs", () => {
     const registry = new PatchRegistry();
     let a = 2;
     const sourceA = node("source-a", 0, [], () => ({
-      values: { a },
+      outputs: { values: { a } },
       sourceProgress: 0,
       sourceRevisions: {},
     }));
     const sourceB = node("source-b", 1, [], () => ({
-      values: { b: 3 },
+      outputs: { values: { b: 3 } },
       sourceProgress: 0,
       sourceRevisions: {},
     }));
@@ -68,7 +68,11 @@ describe("GraphPublisher partial-seed requirement inputs", () => {
       (requirementInputs) => {
         const left = Number(slotOf(requirementInputs, "sum", "left").a ?? 0);
         const right = Number(slotOf(requirementInputs, "sum", "right").b ?? 0);
-        return { values: { total: left + right }, sourceProgress: 0, sourceRevisions: {} };
+        return {
+          outputs: { values: { total: left + right } },
+          sourceProgress: 0,
+          sourceRevisions: {},
+        };
       },
     );
     const graph = snapshot([sourceA, sourceB, sink]);
@@ -81,6 +85,6 @@ describe("GraphPublisher partial-seed requirement inputs", () => {
     const sinkPatch = batch.patches.find(({ nodeId }) => nodeId === "sink");
     if (sinkPatch?.status !== "ready")
       throw new Error(`sink is ${sinkPatch?.status ?? "absent"}, not ready.`);
-    expect(sinkPatch.values).toEqual({ total: 7 });
+    expect(sinkPatch.outputs.values).toEqual({ total: 7 });
   });
 });

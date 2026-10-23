@@ -10,11 +10,10 @@ import {
 export type Label = ImmutableLeaf;
 
 /** The one reader of a label leaf from published values. */
-export function readLabel(
-  values: Readonly<Record<string, unknown>>,
-  key: string,
-): Label | undefined {
-  const value = values[key];
+export function readLabel(values: unknown, key: string): Label | undefined {
+  // A table is not a flat record and names no label; nothing to read rather than a shape failure.
+  if (values === null || typeof values !== "object" || Array.isArray(values)) return undefined;
+  const value = Reflect.get(values, key);
   return isImmutableLeaf(value) ? value : undefined;
 }
 
@@ -27,8 +26,9 @@ type LabelRead =
 function labelOf(patch: Patch | LivePatch | undefined, key: string): LabelRead {
   const decision = patchRender(patch);
   switch (decision.kind) {
-    case "render":
-      return { kind: "label", label: readLabel(decision.patch.values, key) };
+    case "render": {
+      return { kind: "label", label: readLabel(decision.patch.outputs.values, key) };
+    }
     case "retain":
       return { kind: "retained" };
     case "gone":

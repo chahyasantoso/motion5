@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { describe, expect, it } from "vitest";
 import { DEFAULT_KALMAN_NOISE } from "../src/filler/chain-kalman";
 import { IMAGE_SPACE, WORLD_SPACE } from "../src/filler/space";

@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { diagnostic } from "../../src/contract/diagnostics";
 import { RULES, type OwnedIds } from "../../src/contract/rule";
 import type { RuleId } from "../../src/contract/rule-id";
-import type { ProjectDefinition } from "../../src/contract/v5";
+import type { GroupedProject } from "../support/v5-builders";
 import { buildGraphIR } from "../../src/graph/ir";
 import { batchFor } from "../../src/runtime/report";
 
@@ -29,7 +29,7 @@ import { batchFor } from "../../src/runtime/report";
  * payload, so this is green on both sides on purpose and is reported as such rather than counted.
  */
 
-const observing = (source: string): ProjectDefinition => ({
+const observing = (source: string): GroupedProject => ({
   schemaVersion: 5,
   motions: [
     {

@@ -2,7 +2,7 @@ import { builtinRegistry } from "../../support/builtin-registry";
 import { describe, expect, it } from "vitest";
 import { IncrementalGraphBuilder } from "../../../src/graph/builders/incremental";
 import { buildGraphIR, type GraphBuildResult } from "../../../src/graph/ir";
-import type { ProjectDefinition, TrackDefinition } from "../../../src/contract/v5";
+import type { GroupedTrackDefinition, ProjectDefinition } from "../../../src/contract/v5";
 
 // Slice C0 of issue #195. Two graph builders share a post-collect tail and duplicate it almost
 // verbatim: `buildGraphIR` (used by load-time validation) and `IncrementalGraphBuilder.build` (used
@@ -14,7 +14,7 @@ import type { ProjectDefinition, TrackDefinition } from "../../../src/contract/v
 // corpus equality below is red on the parent because of that message difference, and it is the
 // invariant the extraction exists to make cheap.
 
-function freeProject(tracks: readonly TrackDefinition[]): ProjectDefinition {
+function freeProject(tracks: readonly GroupedTrackDefinition[]): ProjectDefinition {
   return { schemaVersion: 5, projectId: "c0", motions: [], freeTracks: tracks };
 }
 

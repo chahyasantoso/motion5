@@ -31,7 +31,7 @@ const project: ProjectDefinition = {
 function countingCompose(): ComposeResolver {
   let calls = 0;
   return (node: GraphNode) => () => ({
-    values: { node: node.id, call: (calls += 1) },
+    outputs: { values: { node: node.id, call: (calls += 1) } },
     sourceProgress: 0,
     sourceRevisions: {},
   });

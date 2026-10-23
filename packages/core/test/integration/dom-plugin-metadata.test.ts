@@ -15,17 +15,14 @@ describe("DOM plugin metadata (X-2)", () => {
       outputs: ["transform"],
       internalKeys: ["path"],
       outputSerializers: {
-        transform: (value) => {
-          const transform = value as { x: number; y: number };
-          return `translate(${transform.x}px, ${transform.y}px)`;
-        },
+        transform: (value) => `translate(${String(value)}px)`,
       },
       compose: (values) => values,
     });
     const resolved = registry.resolveForKeyframes({ path: { values: { path: {} } } });
     expect(resolved.diagnostics).toEqual([]);
     expect(resolved.internalKeys).toEqual(["path"]);
-    expect(resolved.outputSerializers?.transform?.({ x: 1, y: 2 })).toBe("translate(1px, 2px)");
+    expect(resolved.outputSerializers?.transform?.(10)).toBe("translate(10px)");
     const writes: Record<string, unknown>[] = [];
     const stage = { style: {} as Record<string, unknown> };
     const adapter = createDomPatchAdapter(
@@ -40,12 +37,12 @@ describe("DOM plugin metadata (X-2)", () => {
     adapter.apply({
       nodeId: "hero/path",
       revision: 1,
-      values: { transform: { x: 10, y: 20 } },
+      outputs: { values: { transform: 10 } },
       sourceProgress: 0,
       sourceRevisions: {},
       status: "ready",
       diagnostics: [],
     });
-    expect(writes).toEqual([{ transform: "translate(10px, 20px)" }]);
+    expect(writes).toEqual([{ transform: "translate(10px)" }]);
   });
 });

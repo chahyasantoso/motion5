@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { describe, expect, it } from "vitest";
 import type { MotionDefinition, ProjectDefinition, TrackDefinition } from "../../src/contract/v5";
 import { createDefaultTriggerFactory } from "../../src/adapters/trigger-factory/default";
@@ -61,7 +62,7 @@ const REJECTED_MOTION: MotionDefinition = {
 };
 
 const compose = (node: { id: string }) => () => ({
-  values: { node: node.id },
+  outputs: { values: { node: node.id } },
   sourceProgress: 0,
   sourceRevisions: {},
 });

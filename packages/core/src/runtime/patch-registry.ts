@@ -4,6 +4,7 @@ import type {
   Diagnostic,
   ErrorPatch,
   LivePatch,
+  Outputs,
   Patch,
   PatchBatch,
   PatchListener,
@@ -82,7 +83,7 @@ export function liveOrAbsent(patch: Patch): LivePatch | undefined {
 export interface ReadyPublishInput {
   readonly nodeId: string;
   readonly status: "ready";
-  readonly values: Readonly<Record<string, unknown>>;
+  readonly outputs: Outputs;
   readonly sourceProgress: number;
   readonly sourceRevisions?: Readonly<Record<string, number>>;
   readonly diagnostics?: readonly Diagnostic[];
@@ -174,7 +175,7 @@ function sameDiagnostics(a: readonly Diagnostic[], b: readonly Diagnostic[]): bo
 /** The pose two ready patches carry, and the only payload comparison left in this module. */
 function samePayload(a: ReadyPatch, b: ReadyPatch): boolean {
   return (
-    equalValues(a.values, b.values) &&
+    equalValues(a.outputs, b.outputs) &&
     Object.is(a.sourceProgress, b.sourceProgress) &&
     equalValues(a.sourceRevisions, b.sourceRevisions)
   );
@@ -230,7 +231,7 @@ function candidateOf(input: PublishInput, revision: number): LivePatch {
         nodeId: input.nodeId,
         revision,
         status: "ready",
-        values: input.values,
+        outputs: input.outputs,
         sourceProgress: input.sourceProgress,
         sourceRevisions: input.sourceRevisions ?? {},
         diagnostics: input.diagnostics ?? [],

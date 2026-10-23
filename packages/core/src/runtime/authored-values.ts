@@ -2,8 +2,8 @@ import type {
   AuthoredKeyframe,
   AuthoredPluginGroup,
   AuthoredStaticValue,
+  GroupedTrackDefinition,
   MotionDefinition,
-  TrackDefinition,
 } from "../contract/v5";
 import { authoredLeafPartition, readAuthoredLeaf } from "../contract/authored-leaf";
 import { readPluginBindings } from "../contract/keyframe-shape";
@@ -59,7 +59,7 @@ export const EMPTY_KEYFRAMES: AuthoredKeyframes = Object.freeze({});
  * Weak, so it retains nothing this runtime has dropped: a cache's residency belongs to the layer
  * that holds it rather than to callers staying in step. See `RA-96` and ADR-058.
  */
-const REQUIRE_VIEWS = new WeakMap<TrackDefinition, readonly RequireView[]>();
+const REQUIRE_VIEWS = new WeakMap<GroupedTrackDefinition, readonly RequireView[]>();
 /**
  * The bindings `track` authored, as a handle reports them.
  *
@@ -68,7 +68,7 @@ const REQUIRE_VIEWS = new WeakMap<TrackDefinition, readonly RequireView[]>();
  * keeps everything that identifies the binding, `memberKey` included. Total by construction, because
  * that reader answers with an empty list for a record that authors no group. See ADR-044 and ADR-057.
  */
-export function requireViews(track: TrackDefinition): readonly RequireView[] {
+export function requireViews(track: GroupedTrackDefinition): readonly RequireView[] {
   const memo = REQUIRE_VIEWS.get(track);
   if (memo !== undefined) return memo;
   const views = Object.freeze(
@@ -96,7 +96,7 @@ export function requireViews(track: TrackDefinition): readonly RequireView[] {
  * payload, so nothing here re-derives what a group is or what shape a leaf has. See ADR-049,
  * ADR-050, ADR-059, and ADR-060.
  */
-export function authoredValues(track: TrackDefinition): Record<string, AuthoredStaticValue> {
+export function authoredValues(track: GroupedTrackDefinition): Record<string, AuthoredStaticValue> {
   const flattened = flattenAuthoredKeyframes(track.keyframes ?? {});
   const values: Record<string, AuthoredStaticValue> = {};
   for (const [key, property] of Object.entries(flattened.keyframes)) {
@@ -159,9 +159,9 @@ export function splitAuthoredValues(values: AuthoredValues): LiveWriteHalves {
  * and inventing a leaf here would make this layer the author.
  */
 export function withAuthoredValues(
-  track: TrackDefinition,
+  track: GroupedTrackDefinition,
   values: AuthoredValues,
-): TrackDefinition {
+): GroupedTrackDefinition {
   const flattened = flattenAuthoredKeyframes(track.keyframes ?? {});
   // Indexed once rather than searched once per written key. The flatten answers with a list because
   // order is what makes a collision decidable one layer down, and this searched that list per key,
@@ -186,12 +186,12 @@ export function withAuthoredValues(
 /** One retained Motion definition, writable, for the two fields a tier 0 edit moves. */
 type MutableMotion = { -readonly [K in keyof MotionDefinition]: MotionDefinition[K] };
 /** One retained track definition, writable, for the one field an authored edit moves. */
-type MutableTrack = { -readonly [K in keyof TrackDefinition]: TrackDefinition[K] };
+type MutableTrack = { -readonly [K in keyof GroupedTrackDefinition]: GroupedTrackDefinition[K] };
 /** Builds a track with an edited authored keyframe record, omitting an empty record. */
 export function withKeyframes(
-  track: TrackDefinition,
+  track: GroupedTrackDefinition,
   keyframes: AuthoredKeyframes,
-): TrackDefinition {
+): GroupedTrackDefinition {
   const next: MutableTrack = { ...track };
   if (Object.keys(keyframes).length === 0) delete next.keyframes;
   else next.keyframes = keyframes;

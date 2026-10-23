@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { PatchPayload } from "../../src/contract/v5-values";
+import type { PatchPayload } from "../../src/contract/v5";
 import { outputOf, project, record, row, table, track } from "../support/v5-builders";
 
 describe("v5 fixture builders", () => {

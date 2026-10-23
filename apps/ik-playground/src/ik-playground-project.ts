@@ -58,7 +58,8 @@ export const TENTACLE: RigGeometry = {
 export function frameTrack(id: string, x: number, y: number): TrackDefinition {
   return {
     id,
-    keyframes: { transform: { values: { x, y, rotation: 0 } } },
+    plugin: "transform",
+    input: { values: { x, y, rotation: 0 } },
   };
 }
 
@@ -66,13 +67,12 @@ export function frameTrack(id: string, x: number, y: number): TrackDefinition {
 export function tentacleSolverTrack(flip: boolean): TrackDefinition {
   return {
     id: TENTACLE.solverTrack,
-    keyframes: {
-      ik: {
-        values: { flip },
-        requires: {
-          root: TENTACLE.rootTrack,
-          targets: { [TENTACLE.tipTrack]: TENTACLE.goalTrack },
-        },
+    plugin: "ik",
+    input: {
+      values: { flip },
+      requires: {
+        root: TENTACLE.rootTrack,
+        targets: { [TENTACLE.tipTrack]: TENTACLE.goalTrack },
       },
     },
   };
@@ -88,18 +88,17 @@ function memberTrack(
 ): TrackDefinition {
   return {
     id,
-    keyframes: {
-      fk: {
-        values: {
-          length,
-          rotation,
-          weight: [
-            { p: 0, v: 0 },
-            { p: 1, v: 1 },
-          ],
-        },
-        requires: { base, solver },
+    plugin: "fk",
+    input: {
+      values: {
+        length,
+        rotation,
+        weight: [
+          { p: 0, v: 0 },
+          { p: 1, v: 1 },
+        ],
       },
+      requires: { base, solver },
     },
   };
 }
@@ -108,7 +107,8 @@ function memberTrack(
 function fkTailTrack(id: string, base: string, length: number): TrackDefinition {
   return {
     id,
-    keyframes: { fk: { values: { length }, requires: { base } } },
+    plugin: "fk",
+    input: { values: { length }, requires: { base } },
   };
 }
 

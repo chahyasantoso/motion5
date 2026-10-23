@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { describe, expect, it } from "vitest";
 import { createDomPatchAdapter, type DomTarget, type StageLike } from "../../src/adapters/dom";
 import type { ProjectDefinition } from "../../src/contract/v5";

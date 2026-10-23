@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { Diagnostic, ReadyPatch } from "../../../src/contract/v5";
+import type { Diagnostic, FlatRecord, ReadyPatch } from "../../../src/contract/v5";
 import { compareEdges, type GraphEdge } from "../../../src/graph/ir";
 import {
   ABSENT,
@@ -55,7 +55,7 @@ function patchFor(values: unknown): ReadyPatch {
   const patch = {
     nodeId: ARM,
     revision: 1,
-    values,
+    outputs: { values },
     sourceProgress: 0,
     sourceRevisions: {},
     status: "ready",
@@ -67,8 +67,8 @@ function patchFor(values: unknown): ReadyPatch {
   return Object.freeze(patch) as unknown as ReadyPatch;
 }
 
-function composition(values: Readonly<Record<string, unknown>>) {
-  return { values, sourceProgress: 0, sourceRevisions: {} };
+function composition(values: FlatRecord) {
+  return { outputs: { values }, sourceProgress: 0, sourceRevisions: {} };
 }
 
 function edge(sourceId: string, observerId: string): GraphEdge {

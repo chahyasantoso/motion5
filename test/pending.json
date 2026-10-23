@@ -1,0 +1,667 @@
+[
+  {
+    "path": "apps/pose-gap-filler/test/avatar-viewport.test.ts",
+    "phase": 5,
+    "reason": "Exercises solver, IK, FK or rig behavior; Phase 5 expresses it with tables and declared dependencies."
+  },
+  {
+    "path": "apps/pose-gap-filler/test/avatar.test.ts",
+    "phase": 5,
+    "reason": "Exercises solver, IK, FK or rig behavior; Phase 5 expresses it with tables and declared dependencies."
+  },
+  {
+    "path": "apps/pose-gap-filler/test/bend-boundaries.test.ts",
+    "phase": 5,
+    "reason": "Exercises solver, IK, FK or rig behavior; Phase 5 expresses it with tables and declared dependencies."
+  },
+  {
+    "path": "apps/pose-gap-filler/test/bend-fallback.test.ts",
+    "phase": 5,
+    "reason": "Exercises solver, IK, FK or rig behavior; Phase 5 expresses it with tables and declared dependencies."
+  },
+  {
+    "path": "apps/pose-gap-filler/test/chain-replay.test.ts",
+    "phase": 5,
+    "reason": "Exercises solver, IK, FK or rig behavior; Phase 5 expresses it with tables and declared dependencies."
+  },
+  {
+    "path": "apps/pose-gap-filler/test/gltf-avatar-lifecycle.test.ts",
+    "phase": 5,
+    "reason": "Exercises solver, IK, FK or rig behavior; Phase 5 expresses it with tables and declared dependencies."
+  },
+  {
+    "path": "apps/pose-gap-filler/test/inferred-bends.test.ts",
+    "phase": 5,
+    "reason": "Exercises solver, IK, FK or rig behavior; Phase 5 expresses it with tables and declared dependencies."
+  },
+  {
+    "path": "apps/pose-gap-filler/test/persistent-avatar.test.ts",
+    "phase": 5,
+    "reason": "Exercises solver, IK, FK or rig behavior; Phase 5 expresses it with tables and declared dependencies."
+  },
+  {
+    "path": "apps/pose-gap-filler/test/phone-persistence.test.ts",
+    "phase": 5,
+    "reason": "Exercises solver, IK, FK or rig behavior; Phase 5 expresses it with tables and declared dependencies."
+  },
+  {
+    "path": "apps/pose-gap-filler/test/record.test.ts",
+    "phase": 5,
+    "reason": "Exercises solver, IK, FK or rig behavior; Phase 5 expresses it with tables and declared dependencies."
+  },
+  {
+    "path": "apps/pose-gap-filler/test/replay.test.ts",
+    "phase": 5,
+    "reason": "Exercises solver, IK, FK or rig behavior; Phase 5 expresses it with tables and declared dependencies."
+  },
+  {
+    "path": "apps/pose-gap-filler/test/rig.test.ts",
+    "phase": 5,
+    "reason": "Exercises solver, IK, FK or rig behavior; Phase 5 expresses it with tables and declared dependencies."
+  },
+  {
+    "path": "apps/pose-gap-filler/test/stabilizer.test.ts",
+    "phase": 5,
+    "reason": "Exercises solver, IK, FK or rig behavior; Phase 5 expresses it with tables and declared dependencies."
+  },
+  {
+    "path": "apps/pose-gap-filler/test/world.test.ts",
+    "phase": 5,
+    "reason": "Exercises solver, IK, FK or rig behavior; Phase 5 expresses it with tables and declared dependencies."
+  },
+  {
+    "path": "packages/core/test/contract/graph-builder-incremental.test.ts",
+    "phase": 3,
+    "reason": "Authors grouped plugin keyframes; plugin admission, slots and named outputs replace them in Phase 3."
+  },
+  {
+    "path": "packages/core/test/contract/track-validation-result.test.ts",
+    "phase": 3,
+    "reason": "Authors grouped plugin keyframes; plugin admission, slots and named outputs replace them in Phase 3."
+  },
+  {
+    "path": "packages/core/test/contract/v5-validator.test.ts",
+    "phase": 3,
+    "reason": "Authors grouped plugin keyframes; plugin admission, slots and named outputs replace them in Phase 3."
+  },
+  {
+    "path": "packages/core/test/contract/validation-owner.test.ts",
+    "phase": 3,
+    "reason": "Authors grouped plugin keyframes; plugin admission, slots and named outputs replace them in Phase 3."
+  },
+  {
+    "path": "packages/core/test/integration/adopt-destroy-readopt.test.ts",
+    "phase": 4,
+    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
+  },
+  {
+    "path": "packages/core/test/integration/adopted-track-immutability.test.ts",
+    "phase": 4,
+    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
+  },
+  {
+    "path": "packages/core/test/integration/adoption.test.ts",
+    "phase": 4,
+    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
+  },
+  {
+    "path": "packages/core/test/integration/bare-authored-leaf.test.ts",
+    "phase": 3,
+    "reason": "Authors grouped plugin keyframes; plugin admission, slots and named outputs replace them in Phase 3."
+  },
+  {
+    "path": "packages/core/test/integration/contract-baseline.test.ts",
+    "phase": 3,
+    "reason": "Authors grouped plugin keyframes; plugin admission, slots and named outputs replace them in Phase 3."
+  },
+  {
+    "path": "packages/core/test/integration/cross-motion.test.ts",
+    "phase": 4,
+    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
+  },
+  {
+    "path": "packages/core/test/integration/demo-runtime-authoring.test.ts",
+    "phase": 3,
+    "reason": "Authors grouped plugin keyframes; plugin admission, slots and named outputs replace them in Phase 3."
+  },
+  {
+    "path": "packages/core/test/integration/engine-headless.test.ts",
+    "phase": 4,
+    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
+  },
+  {
+    "path": "packages/core/test/integration/engine-load-validation.test.ts",
+    "phase": 4,
+    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
+  },
+  {
+    "path": "packages/core/test/integration/engine-teardown-ownership.test.ts",
+    "phase": 4,
+    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
+  },
+  {
+    "path": "packages/core/test/integration/engine-x3-contribution.test.ts",
+    "phase": 3,
+    "reason": "Authors grouped plugin keyframes; plugin admission, slots and named outputs replace them in Phase 3."
+  },
+  {
+    "path": "packages/core/test/integration/handle-adoption.test.ts",
+    "phase": 4,
+    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
+  },
+  {
+    "path": "packages/core/test/integration/ik-fabrik-chain.test.ts",
+    "phase": 5,
+    "reason": "Exercises solver, IK, FK or rig behavior; Phase 5 expresses it with tables and declared dependencies."
+  },
+  {
+    "path": "packages/core/test/integration/ik-multi-goal.test.ts",
+    "phase": 5,
+    "reason": "Exercises solver, IK, FK or rig behavior; Phase 5 expresses it with tables and declared dependencies."
+  },
+  {
+    "path": "packages/core/test/integration/ik-playground-motion-progress.test.ts",
+    "phase": 5,
+    "reason": "Exercises solver, IK, FK or rig behavior; Phase 5 expresses it with tables and declared dependencies."
+  },
+  {
+    "path": "packages/core/test/integration/ik-playground-scroll-rest.test.ts",
+    "phase": 5,
+    "reason": "Exercises solver, IK, FK or rig behavior; Phase 5 expresses it with tables and declared dependencies."
+  },
+  {
+    "path": "packages/core/test/integration/ik-two-bone.test.ts",
+    "phase": 5,
+    "reason": "Exercises solver, IK, FK or rig behavior; Phase 5 expresses it with tables and declared dependencies."
+  },
+  {
+    "path": "packages/core/test/integration/ik3d-playground.test.ts",
+    "phase": 5,
+    "reason": "Exercises solver, IK, FK or rig behavior; Phase 5 expresses it with tables and declared dependencies."
+  },
+  {
+    "path": "packages/core/test/integration/ik3d-two-bone.test.ts",
+    "phase": 5,
+    "reason": "Exercises solver, IK, FK or rig behavior; Phase 5 expresses it with tables and declared dependencies."
+  },
+  {
+    "path": "packages/core/test/integration/internal-key-strip.test.ts",
+    "phase": 3,
+    "reason": "Authors grouped plugin keyframes; plugin admission, slots and named outputs replace them in Phase 3."
+  },
+  {
+    "path": "packages/core/test/integration/issue-114-motion-track-regressions.test.ts",
+    "phase": 3,
+    "reason": "Authors grouped plugin keyframes; plugin admission, slots and named outputs replace them in Phase 3."
+  },
+  {
+    "path": "packages/core/test/integration/keyframe-groups.test.ts",
+    "phase": 3,
+    "reason": "Authors grouped plugin keyframes; plugin admission, slots and named outputs replace them in Phase 3."
+  },
+  {
+    "path": "packages/core/test/integration/motion-trigger-types.test.ts",
+    "phase": 4,
+    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
+  },
+  {
+    "path": "packages/core/test/integration/observation-identity.test.ts",
+    "phase": 4,
+    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
+  },
+  {
+    "path": "packages/core/test/integration/one-mechanism-per-question.test.ts",
+    "phase": 3,
+    "reason": "Authors grouped plugin keyframes; plugin admission, slots and named outputs replace them in Phase 3."
+  },
+  {
+    "path": "packages/core/test/integration/option-c-track-resolution.test.ts",
+    "phase": 3,
+    "reason": "Authors grouped plugin keyframes; plugin admission, slots and named outputs replace them in Phase 3."
+  },
+  {
+    "path": "packages/core/test/integration/phase2-motion-scheduling.test.ts",
+    "phase": 4,
+    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
+  },
+  {
+    "path": "packages/core/test/integration/phase3-trigger-port.test.ts",
+    "phase": 4,
+    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
+  },
+  {
+    "path": "packages/core/test/integration/phase4-dynamic-lifecycle.test.ts",
+    "phase": 4,
+    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
+  },
+  {
+    "path": "packages/core/test/integration/phase7-walker-demo.test.ts",
+    "phase": 3,
+    "reason": "Authors grouped plugin keyframes; plugin admission, slots and named outputs replace them in Phase 3."
+  },
+  {
+    "path": "packages/core/test/integration/plugin-group-values-section.test.ts",
+    "phase": 3,
+    "reason": "Authors grouped plugin keyframes; plugin admission, slots and named outputs replace them in Phase 3."
+  },
+  {
+    "path": "packages/core/test/integration/react-demo-rig.test.ts",
+    "phase": 3,
+    "reason": "Authors grouped plugin keyframes; plugin admission, slots and named outputs replace them in Phase 3."
+  },
+  {
+    "path": "packages/core/test/integration/remount.test.ts",
+    "phase": 4,
+    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
+  },
+  {
+    "path": "packages/core/test/integration/replace-motion-track.test.ts",
+    "phase": 4,
+    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
+  },
+  {
+    "path": "packages/core/test/integration/rollback-error-precedence.test.ts",
+    "phase": 4,
+    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
+  },
+  {
+    "path": "packages/core/test/integration/runtime-motion-lifecycle.test.ts",
+    "phase": 4,
+    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
+  },
+  {
+    "path": "packages/core/test/integration/solver-member-cache.test.ts",
+    "phase": 5,
+    "reason": "Exercises solver, IK, FK or rig behavior; Phase 5 expresses it with tables and declared dependencies."
+  },
+  {
+    "path": "packages/core/test/integration/t4-runtime-motion-parity.test.ts",
+    "phase": 3,
+    "reason": "Authors grouped plugin keyframes; plugin admission, slots and named outputs replace them in Phase 3."
+  },
+  {
+    "path": "packages/core/test/integration/trigger-scroll.test.ts",
+    "phase": 4,
+    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
+  },
+  {
+    "path": "packages/core/test/integration/trigger-time-loop.test.ts",
+    "phase": 4,
+    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
+  },
+  {
+    "path": "packages/core/test/integration/trigger-time.test.ts",
+    "phase": 4,
+    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
+  },
+  {
+    "path": "packages/core/test/integration/unified-mutation-surface.test.ts",
+    "phase": 4,
+    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
+  },
+  {
+    "path": "packages/core/test/unit/domain/dict-valued-requirements.test.ts",
+    "phase": 3,
+    "reason": "Authors grouped plugin keyframes; plugin admission, slots and named outputs replace them in Phase 3."
+  },
+  {
+    "path": "packages/core/test/unit/domain/plugin-3d-ownership.test.ts",
+    "phase": 5,
+    "reason": "Exercises solver, IK, FK or rig behavior; Phase 5 expresses it with tables and declared dependencies."
+  },
+  {
+    "path": "packages/core/test/unit/domain/plugin-capabilities.test.ts",
+    "phase": 5,
+    "reason": "Exercises solver, IK, FK or rig behavior; Phase 5 expresses it with tables and declared dependencies."
+  },
+  {
+    "path": "packages/core/test/unit/graph/arity-lift.test.ts",
+    "phase": 5,
+    "reason": "Exercises solver, IK, FK or rig behavior; Phase 5 expresses it with tables and declared dependencies."
+  },
+  {
+    "path": "packages/core/test/unit/graph/edge-key-separator.test.ts",
+    "phase": 3,
+    "reason": "Authors grouped plugin keyframes; plugin admission, slots and named outputs replace them in Phase 3."
+  },
+  {
+    "path": "packages/core/test/unit/graph/graph-dependants.test.ts",
+    "phase": 3,
+    "reason": "Authors grouped plugin keyframes; plugin admission, slots and named outputs replace them in Phase 3."
+  },
+  {
+    "path": "packages/core/test/unit/graph/ik3d-goal-weights-load.test.ts",
+    "phase": 5,
+    "reason": "Exercises solver, IK, FK or rig behavior; Phase 5 expresses it with tables and declared dependencies."
+  },
+  {
+    "path": "packages/core/test/unit/graph/ik3d-joint-load.test.ts",
+    "phase": 5,
+    "reason": "Exercises solver, IK, FK or rig behavior; Phase 5 expresses it with tables and declared dependencies."
+  },
+  {
+    "path": "packages/core/test/unit/graph/ik3d-tree-load.test.ts",
+    "phase": 5,
+    "reason": "Exercises solver, IK, FK or rig behavior; Phase 5 expresses it with tables and declared dependencies."
+  },
+  {
+    "path": "packages/core/test/unit/graph/incremental-cache.test.ts",
+    "phase": 3,
+    "reason": "Authors grouped plugin keyframes; plugin admission, slots and named outputs replace them in Phase 3."
+  },
+  {
+    "path": "packages/core/test/unit/graph/observation-state.test.ts",
+    "phase": 4,
+    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
+  },
+  {
+    "path": "packages/core/test/unit/graph/observation-target-removal.test.ts",
+    "phase": 4,
+    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
+  },
+  {
+    "path": "packages/core/test/unit/graph/resolve-solvers.test.ts",
+    "phase": 5,
+    "reason": "Exercises solver, IK, FK or rig behavior; Phase 5 expresses it with tables and declared dependencies."
+  },
+  {
+    "path": "packages/core/test/unit/graph/single-input-channel.test.ts",
+    "phase": 3,
+    "reason": "Authors grouped plugin keyframes; plugin admission, slots and named outputs replace them in Phase 3."
+  },
+  {
+    "path": "packages/core/test/unit/graph/solved-pivot-offset.test.ts",
+    "phase": 5,
+    "reason": "Exercises solver, IK, FK or rig behavior; Phase 5 expresses it with tables and declared dependencies."
+  },
+  {
+    "path": "packages/core/test/unit/graph/solved-rotation-weight.test.ts",
+    "phase": 5,
+    "reason": "Exercises solver, IK, FK or rig behavior; Phase 5 expresses it with tables and declared dependencies."
+  },
+  {
+    "path": "packages/core/test/unit/graph/solver-constraints.test.ts",
+    "phase": 5,
+    "reason": "Exercises solver, IK, FK or rig behavior; Phase 5 expresses it with tables and declared dependencies."
+  },
+  {
+    "path": "packages/core/test/unit/graph/solver-goal-required.test.ts",
+    "phase": 5,
+    "reason": "Exercises solver, IK, FK or rig behavior; Phase 5 expresses it with tables and declared dependencies."
+  },
+  {
+    "path": "packages/core/test/unit/graph/solver-goals.test.ts",
+    "phase": 5,
+    "reason": "Exercises solver, IK, FK or rig behavior; Phase 5 expresses it with tables and declared dependencies."
+  },
+  {
+    "path": "packages/core/test/unit/plugins/fk3d-rest-weight.test.ts",
+    "phase": 5,
+    "reason": "Exercises solver, IK, FK or rig behavior; Phase 5 expresses it with tables and declared dependencies."
+  },
+  {
+    "path": "packages/core/test/unit/plugins/ik-goal-influence.test.ts",
+    "phase": 5,
+    "reason": "Exercises solver, IK, FK or rig behavior; Phase 5 expresses it with tables and declared dependencies."
+  },
+  {
+    "path": "packages/core/test/unit/plugins/ik-inspection.test.ts",
+    "phase": 5,
+    "reason": "Exercises solver, IK, FK or rig behavior; Phase 5 expresses it with tables and declared dependencies."
+  },
+  {
+    "path": "packages/core/test/unit/plugins/ik3d-inspection.test.ts",
+    "phase": 5,
+    "reason": "Exercises solver, IK, FK or rig behavior; Phase 5 expresses it with tables and declared dependencies."
+  },
+  {
+    "path": "packages/core/test/unit/plugins/ik3d-pole.test.ts",
+    "phase": 5,
+    "reason": "Exercises solver, IK, FK or rig behavior; Phase 5 expresses it with tables and declared dependencies."
+  },
+  {
+    "path": "packages/core/test/unit/runtime/authoring-edit.test.ts",
+    "phase": 4,
+    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
+  },
+  {
+    "path": "packages/core/test/unit/runtime/commit-write-cost.test.ts",
+    "phase": 4,
+    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
+  },
+  {
+    "path": "packages/core/test/unit/runtime/composition-output-shape.test.ts",
+    "phase": 4,
+    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
+  },
+  {
+    "path": "packages/core/test/unit/runtime/declined-build-write-drop.test.ts",
+    "phase": 4,
+    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
+  },
+  {
+    "path": "packages/core/test/unit/runtime/dependants-of-reverse-topology.test.ts",
+    "phase": 4,
+    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
+  },
+  {
+    "path": "packages/core/test/unit/runtime/handle-base.test.ts",
+    "phase": 4,
+    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
+  },
+  {
+    "path": "packages/core/test/unit/runtime/keyframe-property-edit.test.ts",
+    "phase": 4,
+    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
+  },
+  {
+    "path": "packages/core/test/unit/runtime/live-value-animated.test.ts",
+    "phase": 4,
+    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
+  },
+  {
+    "path": "packages/core/test/unit/runtime/live-value-updates.test.ts",
+    "phase": 4,
+    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
+  },
+  {
+    "path": "packages/core/test/unit/runtime/live-write-decode.test.ts",
+    "phase": 4,
+    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
+  },
+  {
+    "path": "packages/core/test/unit/runtime/motion-consistency.test.ts",
+    "phase": 4,
+    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
+  },
+  {
+    "path": "packages/core/test/unit/runtime/mount-flush-seed.test.ts",
+    "phase": 4,
+    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
+  },
+  {
+    "path": "packages/core/test/unit/runtime/plugin-group-edit.test.ts",
+    "phase": 3,
+    "reason": "Authors grouped plugin keyframes; plugin admission, slots and named outputs replace them in Phase 3."
+  },
+  {
+    "path": "packages/core/test/unit/runtime/plugin-require-edit.test.ts",
+    "phase": 3,
+    "reason": "Authors grouped plugin keyframes; plugin admission, slots and named outputs replace them in Phase 3."
+  },
+  {
+    "path": "packages/core/test/unit/runtime/project-enumeration.test.ts",
+    "phase": 4,
+    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
+  },
+  {
+    "path": "packages/core/test/unit/runtime/publisher-solver-members.test.ts",
+    "phase": 5,
+    "reason": "Exercises solver, IK, FK or rig behavior; Phase 5 expresses it with tables and declared dependencies."
+  },
+  {
+    "path": "packages/core/test/unit/runtime/recompile-predicate.test.ts",
+    "phase": 4,
+    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
+  },
+  {
+    "path": "packages/core/test/unit/runtime/refusal-wiring.test.ts",
+    "phase": 4,
+    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
+  },
+  {
+    "path": "packages/core/test/unit/runtime/removal-flush-seed.test.ts",
+    "phase": 4,
+    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
+  },
+  {
+    "path": "packages/core/test/unit/runtime/schema-transaction.test.ts",
+    "phase": 4,
+    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
+  },
+  {
+    "path": "packages/core/test/unit/runtime/stale-track-handle.test.ts",
+    "phase": 4,
+    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
+  },
+  {
+    "path": "packages/core/test/unit/runtime/structural-commit-flush.test.ts",
+    "phase": 4,
+    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
+  },
+  {
+    "path": "packages/core/test/unit/runtime/structural-commit-path.test.ts",
+    "phase": 4,
+    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
+  },
+  {
+    "path": "packages/core/test/unit/runtime/track-staging.test.ts",
+    "phase": 4,
+    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
+  },
+  {
+    "path": "packages/core/test/unit/runtime/value-batch.test.ts",
+    "phase": 4,
+    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
+  },
+  {
+    "path": "packages/core/test/unit/runtime/value-state.test.ts",
+    "phase": 4,
+    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
+  },
+  {
+    "path": "packages/plugins/test/integration/ik-envelope.test.ts",
+    "phase": 5,
+    "reason": "Exercises solver, IK, FK or rig behavior; Phase 5 expresses it with tables and declared dependencies."
+  },
+  {
+    "path": "packages/plugins/test/integration/ik-guide-examples.test.ts",
+    "phase": 5,
+    "reason": "Exercises solver, IK, FK or rig behavior; Phase 5 expresses it with tables and declared dependencies."
+  },
+  {
+    "path": "packages/plugins/test/integration/ik-stability.test.ts",
+    "phase": 5,
+    "reason": "Exercises solver, IK, FK or rig behavior; Phase 5 expresses it with tables and declared dependencies."
+  },
+  {
+    "path": "packages/plugins/test/integration/ik3d-guide-examples.test.ts",
+    "phase": 5,
+    "reason": "Exercises solver, IK, FK or rig behavior; Phase 5 expresses it with tables and declared dependencies."
+  },
+  {
+    "path": "packages/plugins/test/integration/ik3d-joint.test.ts",
+    "phase": 5,
+    "reason": "Exercises solver, IK, FK or rig behavior; Phase 5 expresses it with tables and declared dependencies."
+  },
+  {
+    "path": "packages/plugins/test/integration/ik3d-orient.test.ts",
+    "phase": 5,
+    "reason": "Exercises solver, IK, FK or rig behavior; Phase 5 expresses it with tables and declared dependencies."
+  },
+  {
+    "path": "packages/plugins/test/integration/ik3d-tree.test.ts",
+    "phase": 5,
+    "reason": "Exercises solver, IK, FK or rig behavior; Phase 5 expresses it with tables and declared dependencies."
+  },
+  {
+    "path": "packages/plugins/test/integration/live-edit-ensure.test.ts",
+    "phase": 3,
+    "reason": "Authors grouped plugin keyframes; plugin admission, slots and named outputs replace them in Phase 3."
+  },
+  {
+    "path": "packages/plugins/test/integration/live-value-composition.test.ts",
+    "phase": 4,
+    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
+  },
+  {
+    "path": "packages/plugins/test/integration/mutation-transactionality.test.ts",
+    "phase": 4,
+    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
+  },
+  {
+    "path": "packages/plugins/test/integration/per-plugin-key-ownership.test.ts",
+    "phase": 3,
+    "reason": "Authors grouped plugin keyframes; plugin admission, slots and named outputs replace them in Phase 3."
+  },
+  {
+    "path": "packages/plugins/test/integration/plugin-owned-requirements.test.ts",
+    "phase": 3,
+    "reason": "Authors grouped plugin keyframes; plugin admission, slots and named outputs replace them in Phase 3."
+  },
+  {
+    "path": "packages/plugins/test/integration/replace-track-transactionality.test.ts",
+    "phase": 4,
+    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
+  },
+  {
+    "path": "packages/plugins/test/integration/single-input-channel.test.ts",
+    "phase": 3,
+    "reason": "Authors grouped plugin keyframes; plugin admission, slots and named outputs replace them in Phase 3."
+  },
+  {
+    "path": "packages/plugins/test/labels.test.ts",
+    "phase": 5,
+    "reason": "Exercises solver, IK, FK or rig behavior; Phase 5 expresses it with tables and declared dependencies."
+  },
+  {
+    "path": "packages/plugins/test/pose-classify.test.ts",
+    "phase": 5,
+    "reason": "Exercises solver, IK, FK or rig behavior; Phase 5 expresses it with tables and declared dependencies."
+  },
+  {
+    "path": "packages/plugins/test/rig.test.ts",
+    "phase": 5,
+    "reason": "Exercises solver, IK, FK or rig behavior; Phase 5 expresses it with tables and declared dependencies."
+  },
+  {
+    "path": "packages/plugins/test/runner-lifecycle.test.ts",
+    "phase": 4,
+    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
+  },
+  {
+    "path": "packages/plugins/test/runner.test.ts",
+    "phase": 4,
+    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
+  },
+  {
+    "path": "packages/plugins/test/unit/loader.test.ts",
+    "phase": 3,
+    "reason": "Authors grouped plugin keyframes; plugin admission, slots and named outputs replace them in Phase 3."
+  },
+  {
+    "path": "packages/react/test/public-hook-render.test.ts",
+    "phase": 6,
+    "reason": "Exercises a Three or React render boundary; Phase 6 moves consumers to generated tracks and named outputs."
+  },
+  {
+    "path": "packages/three/test/object3d-adapter.test.ts",
+    "phase": 6,
+    "reason": "Exercises a Three or React render boundary; Phase 6 moves consumers to generated tracks and named outputs."
+  },
+  {
+    "path": "packages/three/test/skeleton-driver.test.ts",
+    "phase": 6,
+    "reason": "Exercises a Three or React render boundary; Phase 6 moves consumers to generated tracks and named outputs."
+  }
+]

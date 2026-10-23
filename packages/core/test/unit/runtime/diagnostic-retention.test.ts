@@ -32,7 +32,7 @@ const project: ProjectDefinition = {
 };
 
 const compose = (node: { id: string }) => () => ({
-  values: { node: node.id },
+  outputs: { values: { node: node.id } },
   sourceProgress: 0,
   sourceRevisions: {},
 });
@@ -52,7 +52,11 @@ describe("a reentrant sink cannot win the race backwards", () => {
     let reentered = false;
     const refusingCompose = (node: { id: string }) => {
       if (refusing) throw new Error("compose refused");
-      return () => ({ values: { node: node.id }, sourceProgress: 0, sourceRevisions: {} });
+      return () => ({
+        outputs: { values: { node: node.id } },
+        sourceProgress: 0,
+        sourceRevisions: {},
+      });
     };
     const runtime = new GraphRuntime(project, clock, refusingCompose, {
       scheduler,

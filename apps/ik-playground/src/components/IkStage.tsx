@@ -14,6 +14,12 @@ function point(values: PatchValues): { readonly x: number; readonly y: number } 
   return { x: Number(values.x ?? 0), y: Number(values.y ?? 0) };
 }
 
+function isFlatRecord(value: unknown): value is PatchValues {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
+  const prototype = Object.getPrototypeOf(value);
+  return prototype === Object.prototype || prototype === null;
+}
+
 const endpoints: PatchDerivation = ([parent = {}, child = {}]) => {
   const from = point(parent);
   const to = point(child);
@@ -127,7 +133,9 @@ const GoalHandle: React.FC<{
     if (amount === undefined || amount.dz !== 0) return;
     const decision = patchRender(handle.get(id));
     if (decision.kind !== "render") return;
-    const current = point(decision.patch.values);
+    const values = decision.patch.outputs.values;
+    if (!isFlatRecord(values)) return;
+    const current = point(values);
     event.preventDefault();
     move(current.x + amount.dx, current.y + amount.dy);
   };

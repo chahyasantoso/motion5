@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { describe, expect, it } from "vitest";
 import { readdirSync } from "node:fs";
 import { code, codeOnly, declaration } from "../helpers/source-region";

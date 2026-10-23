@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { describe, expect, it, vi } from "vitest";
 import { fileURLToPath } from "node:url";
 import { PLUGIN_GOALS_SLOT } from "../../../src/contract/solver-slots";

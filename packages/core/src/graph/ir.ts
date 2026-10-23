@@ -2,10 +2,10 @@
 import { unreachable } from "../lang/exhaustive";
 import type {
   Diagnostic,
+  GroupedTrackDefinition,
   ObservationDefinition,
   PluginRequiresBinding,
   ProjectDefinition,
-  TrackDefinition,
 } from "../contract/v5";
 import { diagnostic } from "../contract/diagnostics";
 import {
@@ -103,7 +103,7 @@ export interface GraphNode {
   readonly id: string;
   readonly owner: "motion" | "free";
   readonly authoredIndex: number;
-  readonly track: TrackDefinition;
+  readonly track: GroupedTrackDefinition;
   readonly edges: readonly GraphEdge[];
   readonly solves?: readonly SolveMember[];
 }
@@ -360,7 +360,7 @@ export function observationEdgeKey(
 }
 
 export function collectTrack(
-  track: TrackDefinition,
+  track: GroupedTrackDefinition,
   owner: "motion" | "free",
   ownerId: string,
   authoredIndex: number,

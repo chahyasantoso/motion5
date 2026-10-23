@@ -8,6 +8,7 @@ import type {
   TrackDefinition,
   TriggerSignal,
 } from "./contract/v5";
+import { parseTrackDefinition } from "./contract/v5-parse";
 import type { MotionHandle } from "./contract/motion-handle";
 import type { SchemaTransaction } from "./contract/schema-transaction";
 import type { ValueTransaction } from "./contract/value-transaction";
@@ -19,15 +20,14 @@ import { UNJUDGED_CAPABILITIES, type PluginCapabilities } from "./ports/plugin-c
 import { readOutcome } from "./lang/outcome";
 import { IncrementalGraphBuilder } from "./graph/builders/incremental";
 import { createDefaultTriggerFactory } from "./adapters/trigger-factory/default";
-import { compilePercentKeyframes } from "./contract/keyframe-compiler";
-import { flattenAuthoredKeyframes } from "./domain/keyframe-groups";
 import { Motion, type MotionTrackEntry } from "./domain/motion";
 import { unreachable } from "./lang/exhaustive";
 import { collect, report } from "./domain/completion";
-import { PluginRegistry, trackConfigView, type RequirementInputs } from "./domain/plugins";
+import { PluginRegistry } from "./domain/plugins";
 import type { RenderMetadata } from "./ports/render-metadata";
-import { Track } from "./domain/track";
 import { qualifyFreeTrack, qualifyMotionTrack } from "./graph/ids";
+import type { ComposeResolver } from "./runtime/graph-runtime";
+import { ValueTrack } from "./runtime/value-track";
 import { assertClock, type Clock } from "./ports/clock";
 import { assertInterpolator, type Interpolator } from "./ports/interpolator";
 import { assertScheduler, type Scheduler } from "./ports/scheduler";
@@ -110,14 +110,9 @@ export interface ProjectHandle {
   renderMetadata(nodeId: string): RenderMetadata | undefined;
   dispose(): void;
 }
-interface CompilableTrack {
-  readonly id: string;
-  readonly duration?: number;
-  readonly keyframes?: Readonly<Record<string, unknown>>;
-}
 interface Composition {
-  readonly tracks: Map<string, Track>;
-  readonly nodes: Map<string, CompilableTrack>;
+  readonly tracks: Map<string, ValueTrack>;
+  readonly nodes: Map<string, TrackDefinition>;
   readonly motionTrackIds: Map<string, readonly string[]>;
   readonly motions: Map<string, Motion>;
   readonly createdTriggers: Map<string, CreatedTrigger>;
@@ -209,67 +204,58 @@ export class Engine {
   }
   load(project: ProjectDefinition): ProjectHandle {
     const acceptedProject = assertValidProject(project, this.#capabilities);
-    const registry = this.#plugins;
-    const tracks = new Map<string, Track>();
-    const nodes = new Map<string, CompilableTrack>();
+    const tracks = new Map<string, ValueTrack>();
+    const nodes = new Map<string, TrackDefinition>();
     const motionTrackIds = new Map<string, readonly string[]>();
     for (const motion of acceptedProject.motions) {
       const ids = motion.tracks.map((track) => qualifyMotionTrack(motion.id, track.id).value);
       motionTrackIds.set(motion.id, ids);
       for (const track of motion.tracks)
-        nodes.set(qualifyMotionTrack(motion.id, track.id).value, { ...track, id: track.id });
+        nodes.set(qualifyMotionTrack(motion.id, track.id).value, track);
     }
     for (const track of acceptedProject.freeTracks ?? [])
-      nodes.set(qualifyFreeTrack(track.id).value, { ...track, id: track.id });
-    const compileTrack = (trackDef: CompilableTrack, nodeId: string): Track => {
+      nodes.set(qualifyFreeTrack(track.id).value, track);
+    const compileTrack = (trackDef: TrackDefinition, nodeId: string): ValueTrack => {
       const existing = tracks.get(nodeId);
       if (existing) return existing;
-      const path = `${nodeId}.keyframes`;
-      const resolved = registry?.resolveForKeyframes(
-        trackDef.keyframes ?? {},
-        path,
-        trackConfigView(nodeId, trackDef.duration),
+      const parsed = readOutcome(
+        parseTrackDefinition(trackDef, nodeId, {
+          isPluginRegistered: (pluginId) => this.#capabilities.capabilityOf(pluginId) !== undefined,
+        }),
+        (value) => value,
+        (diagnostics) => {
+          throw new TypeError(describeDiagnostics(diagnostics));
+        },
       );
-      // Flattened with or without a registry. The resolver already did it when one exists; when
-      // none does there is no resolver to fall back on, and an authored group would reach the
-      // percent map and the interpolator as a nested object neither reads any stops from, so the
-      // track would compile with no diagnostics and then hold still.
-      const authoredKeyframes =
-        resolved?.authoredKeyframes ?? flattenAuthoredKeyframes(trackDef.keyframes ?? {}).keyframes;
-      const preparedKeyframes = {
-        ...authoredKeyframes,
-        ...(resolved?.preparation.keyframes ?? {}),
-      };
-      const keyframeCompilation = compilePercentKeyframes(preparedKeyframes, path);
-      const diagnostics = [...(resolved?.diagnostics ?? []), ...keyframeCompilation.diagnostics];
-      if (diagnostics.some(({ severity }) => severity === "error"))
-        throw new TypeError(describeDiagnostics(diagnostics));
-      const track = new Track({
-        interpolator: this.#options.interpolator,
-        interpolationConfig: { ...trackDef, keyframes: authoredKeyframes },
-        ...(resolved ? { plugins: resolved } : {}),
+      // Plugin compilation is Phase 3's. Refused by name here rather than compiled through the
+      // retired grouped-keyframe path, which no longer has authored keyframes to read.
+      if (parsed.plugin !== undefined)
+        throw new TypeError(`Plugin track "${trackDef.id}" is not compiled until Phase 3.`);
+      const track = new ValueTrack({
         nodeId,
+        values: parsed.input.values,
+        interpolator: this.#options.interpolator,
       });
       tracks.set(nodeId, track);
       return track;
     };
-    const compile = (nodeId: string): Track => {
+    const compile = (nodeId: string): ValueTrack => {
       const definition = nodes.get(nodeId);
       if (!definition) throw new TypeError(`Unknown graph node "${nodeId}".`);
       return compileTrack(definition, nodeId);
     };
-    const compileTrackDefinition = (trackDef: CompilableTrack, targetNodeId?: string): void => {
+    const compileTrackDefinition = (trackDef: TrackDefinition, targetNodeId?: string): void => {
       const nodeId =
         targetNodeId ??
         (trackDef.id.includes("/") ? trackDef.id : qualifyFreeTrack(trackDef.id).value);
       compileTrack(trackDef, nodeId);
     };
-    const stageTrackDefinition = (trackDef: CompilableTrack, nodeId: string): StagedTrack => {
+    const stageTrackDefinition = (trackDef: TrackDefinition, nodeId: string): StagedTrack => {
       const displaced = tracks.get(nodeId);
       // `compileTrack` intentionally reuses a live entry. Remove it only for the synchronous build,
       // then restore it if preparation rejects. Nothing outside this owner can observe the gap.
       tracks.delete(nodeId);
-      let replacement: Track;
+      let replacement: ValueTrack;
       try {
         replacement = compileTrack(trackDef, nodeId);
       } catch (error) {
@@ -503,66 +489,26 @@ export class Engine {
     };
     try {
       for (const nodeId of nodes.keys()) compile(nodeId);
-      const compose =
-        (node: {
-          id: string;
-          track: { duration?: number; keyframes?: Readonly<Record<string, unknown>> };
-        }) =>
-        (requirementInputs: RequirementInputs) => {
-          const track = tracks.get(node.id)!;
-          const snapshot = track.compose(requirementInputs);
-          return {
-            values: snapshot.values,
-            sourceProgress: snapshot.progress,
-            sourceRevisions: {},
-          };
+      const compose: ComposeResolver = (node) => () => {
+        const track = tracks.get(node.id);
+        if (!track) throw new TypeError(`Unknown graph node "${node.id}".`);
+        // A value track has no plugin chain and no requirement slots: its parse refuses both, so
+        // the scoped inputs the publisher collected are empty by construction.
+        return {
+          outputs: track.outputs(),
+          sourceProgress: track.progress,
+          sourceRevisions: {},
         };
+      };
       const created = new ProjectRuntime(acceptedProject, {
         clock: this.#options.clock,
         scheduler: this.#options.scheduler,
         compose,
-        // What the track interpolated, and nothing about the graph. Where the member sits in its
-        // chain is `SolveMember.base`, derived once by `resolveSolvers` and joined in by the
-        // publisher, so this closure needs no opinion about a requirement slot named `base` and
-        // there is no second answer for it to disagree with. See ADR-051.
-        //
-        // The map is resolved when the publisher calls, exactly as `compose` above resolves it,
-        // because the compiled map is the single owner and this closure outlives the entry it
-        // reads: the publisher caches one node per graph node, and a live write the interpolator
-        // declined replaces a compiled Track without touching the graph. A captured instance was
-        // the disposed one from that commit on, and a solver was the one reader of it.
-        // See ADR-031 and ADR-060.
-        interpolated: (node) => () => {
-          const track = tracks.get(node.id);
-          // Unreachable through a solver member, whose node exists because its Track compiled.
-          // Refused by name rather than omitted, because omitting `interpolated` makes the
-          // publisher report that a member exposes no interpolated function, which names this seam
-          // instead of the node that is missing.
-          if (!track) throw new TypeError(`Unknown graph node "${node.id}".`);
-          return { id: node.id, values: track.interpolated(), progress: track.progress };
-        },
         graphBuilder: new IncrementalGraphBuilder(this.#capabilities),
         setProgress: (nodeId, progress) => tracks.get(nodeId)?.setProgress(progress),
-        // One hook for one mechanism, and the compiled Track is the one owner of the split inside
-        // it. Whether the retained definition moved with the write is `ProjectRuntime`'s question,
-        // so there is nothing here for a second hook to do. An absent Track answers `undefined`,
-        // which is the one thing that is not a decline: there is no timeline to escalate for.
-        // See ADR-059 and ADR-060.
-        writeValues: (nodeId, values, overlay, rebase) =>
-          tracks.get(nodeId)?.writeValues(values, overlay, rebase),
         compileTrack: compileTrackDefinition,
         disposeTrack,
         stageTrack: stageTrackDefinition,
-        // The registry's answer about a candidate, handed over as data rather than as a refusal, so
-        // a structural edit that provably cannot move what a Track is built from pays the resolve
-        // and not the timeline build. Nothing else changes hands: it is the same call `compileTrack`
-        // makes, on the same registry, so `PluginRegistry` stays the only implementation of it and
-        // no layer gains a registry it has no other reason to hold. With none injected there is
-        // nothing to resolve and nothing to compare, which is the posture `compileTrack` already
-        // takes above, and every replacement builds exactly as it did before. See ADR-062.
-        ...(registry === undefined
-          ? {}
-          : { resolveKeyframes: registry.resolveForKeyframes.bind(registry) }),
         addMotionTrack: (motionId, trackId, duration) => {
           const motion = motions.get(motionId);
           if (!motion) throw new TypeError(`Unknown motion "${motionId}".`);

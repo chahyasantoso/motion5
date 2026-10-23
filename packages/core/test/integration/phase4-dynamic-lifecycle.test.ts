@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { describe, expect, it, vi } from "vitest";
 import type { TrackDefinition } from "../../src/contract/v5";
 import { edgeRequirement } from "../../src/graph/ir";

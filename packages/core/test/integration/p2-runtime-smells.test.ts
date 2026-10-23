@@ -9,6 +9,7 @@ import { PatchRegistry } from "../../src/runtime/patch-registry";
 import { Track } from "../../src/domain/track";
 import type { Interpolator } from "../../src/ports/interpolator";
 import { slotOf } from "../helpers/requirement-inputs";
+import { recordValues } from "../support/v5-builders";
 
 const node = (id: string, edges: GraphEdge[], compose: PublisherNode["compose"]): PublisherNode =>
   Object.freeze({
@@ -47,7 +48,12 @@ describe("P2 runtime smell hardening", () => {
   it("preserves the last known good values when a node publishes error", () => {
     const registry = new PatchRegistry();
     registry.beginBatch(1, ["source"]);
-    registry.publish({ nodeId: "source", values: { x: 1 }, sourceProgress: 0, status: "ready" });
+    registry.publish({
+      nodeId: "source",
+      outputs: { values: { x: 1 } },
+      sourceProgress: 0,
+      status: "ready",
+    });
     registry.closeBatch();
     registry.beginBatch(2, ["source"]);
     registry.publish({
@@ -71,18 +77,18 @@ describe("P2 runtime smell hardening", () => {
     if (errored?.status !== "error")
       throw new Error(`source is ${errored?.status ?? "absent"}, not error.`);
     expect("values" in errored).toBe(false);
-    expect(registry.lastReady("source")?.values).toEqual({ x: 1 });
+    expect(recordValues(registry.lastReady("source"))).toEqual({ x: 1 });
   });
   it("derives source revisions from the upstream patches consumed in the flush", () => {
     const registry = new PatchRegistry();
     const publisher = new GraphPublisher(registry);
     const source = node("source", [], () => ({
-      values: { x: 1 },
+      outputs: { values: { x: 1 } },
       sourceProgress: 0,
       sourceRevisions: {},
     }));
     const consumer = node("consumer", [requires("consumer", "source", "s")], (inputs) => ({
-      values: slotOf(inputs, "p", "s"),
+      outputs: { values: slotOf(inputs, "p", "s") },
       sourceProgress: 0,
       sourceRevisions: {},
     }));
@@ -91,13 +97,13 @@ describe("P2 runtime smell hardening", () => {
     if (consumerPatch?.status !== "ready")
       throw new Error(`consumer is ${consumerPatch?.status ?? "absent"}, not ready.`);
     expect(consumerPatch.sourceRevisions).toEqual({ source: 1 });
-    expect(consumerPatch.values).toEqual({ x: 1 });
+    expect(recordValues(consumerPatch)).toEqual({ x: 1 });
   });
   it("reports a pending reference instead of silently composing with an input hole", () => {
     const registry = new PatchRegistry();
     const publisher = new GraphPublisher(registry);
     const consumer = node("consumer", [requires("consumer", "missing", "s")], (inputs) => ({
-      values: slotOf(inputs, "p", "s"),
+      outputs: { values: slotOf(inputs, "p", "s") },
       sourceProgress: 0,
       sourceRevisions: {},
     }));
@@ -123,7 +129,7 @@ describe("P2 runtime smell hardening", () => {
     const consumer = node(
       "consumer",
       [requires("consumer", "b", "right"), requires("consumer", "a", "left")],
-      () => ({ values: {}, sourceProgress: 0, sourceRevisions: {} }),
+      () => ({ outputs: { values: {} }, sourceProgress: 0, sourceRevisions: {} }),
     );
     publisher.flush(snapshot([failedA, failedB, consumer]), ["a", "b", "consumer"], 1);
     const consumerPatch = registry.get("consumer");

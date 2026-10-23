@@ -1,18 +1,23 @@
 import { useCallback, useEffect, useMemo, type RefCallback } from "react";
 import type { DomPatchAdapter } from "@motion5/core/adapters";
 import { patchRender } from "@motion5/core/internal";
-import type { Patch, PatchSource } from "@motion5/core/internal";
+import type { PatchSource } from "@motion5/core/internal";
 import { useDomBinding } from "./dom-binding";
 
 /**
- * The composed values of one source node, positioned by where its id was named.
+ * The composed values of one source node, as a derivation receives them.
  *
- * Read off the ready member rather than off `Patch`, because a status that did not compose owns no
- * values at all since ADR-098. Extracted from the union rather than imported: `ReadyPatch` is not on
- * the `@motion5/core/internal` entry, and adding it there is a surface decision this change does not
- * make. The narrowing in `pose` below is what a consumer needs, not a name for the variant.
+ * A derivation reads a flat record. A published `values` output may also be a table, which has no
+ * key space to derive geometry from, and the binding treats that like any other unusable status:
+ * the target is hidden. Table-aware rendering is Phase 6's.
  */
-export type PatchValues = Extract<Patch, { status: "ready" }>["values"];
+export type PatchValues = Readonly<Record<string, unknown>>;
+
+function isFlatRecord(value: unknown): value is PatchValues {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
+  const prototype = Object.getPrototypeOf(value);
+  return prototype === Object.prototype || prototype === null;
+}
 
 /**
  * A consumer's geometry, as a pure function of its source nodes' values.
@@ -75,7 +80,12 @@ export function useDerivedDomPatch<T extends Element>(
           adapter.applyValues(key, NOT_DERIVABLE);
           return;
         }
-        values.push(decision.patch.values);
+        const output = decision.patch.outputs.values;
+        if (!isFlatRecord(output)) {
+          adapter.applyValues(key, NOT_DERIVABLE);
+          return;
+        }
+        values.push(output);
       }
       adapter.applyValues(key, derive(values) ?? NOT_DERIVABLE);
     },

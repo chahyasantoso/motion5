@@ -6,18 +6,20 @@ states a phase; `packages/core/test/unit/scripts/session-status-shape.test.ts` e
 byte ceiling.
 
 - **Captured:** 2026-10-23, Asia/Jakarta.
-- **Read against:** supplied main archive `c14ec42`.
+- **Read against:** `refactor/v5-identified-tables` after the identified-table engine slice.
 
 ## Now
 
-- **The v5 identified-table contract is staged;** target value types, the failure vocabulary and
-  shape-neutral test builders sit beside the live engine, and nine target behaviors are expected
-  failures until parsing and the explicit plugin path are replaced.
+- **The identified-table contract is live for tracks that name no plugin:** an authored table or
+  record is parsed, its source contract inferred, and its cells evaluated through one flat slot plan,
+  so a ready patch publishes `outputs.values`; tests that still author grouped plugin keyframes are
+  held in `test/pending.json` under the slice that replaces them, and the only staged red is the one
+  plugin acceptance case.
 
 ## Next in line
 
-- **Replace authored parsing and evaluation with identified tables,** then port the built-in plugin
-  path; the staged acceptance suite is the exit gate for both.
+- **Admit plugins on the identified-table path:** a registered plugin id, declared input slots and
+  named outputs replace grouped keyframes as the only way a track observes another.
 
 ## Open, and not scheduled
 
@@ -26,6 +28,8 @@ byte ceiling.
 ## Where the rest of it lives
 
 - Exact commits, runs, decisions and equivalence evidence: the owning pull request.
-- Standing rules: [GUARDRAILS.md](./GUARDRAILS.md). Caller cost: [LIVE-EDIT-COST.md](./LIVE-EDIT-COST.md).
-- Contributor discipline: [PR-WORKFLOW.md](./PR-WORKFLOW.md). API navigation: [API-CAPABILITIES.md](./API-CAPABILITIES.md).
+- Standing rules: [GUARDRAILS.md](./GUARDRAILS.md). Caller cost:
+  [LIVE-EDIT-COST.md](./LIVE-EDIT-COST.md).
+- Contributor discipline: [PR-WORKFLOW.md](./PR-WORKFLOW.md). API navigation:
+  [API-CAPABILITIES.md](./API-CAPABILITIES.md).
 - Earlier long-form history remains in Git, not in this status file.

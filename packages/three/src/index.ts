@@ -13,6 +13,12 @@ import { Euler, Matrix4, Quaternion, Vector3, type EulerOrder, type Object3D } f
  */
 export const EULER_ORDER_3D: EulerOrder = "ZXY";
 
+function isFlatRecord(value: unknown): value is Readonly<Record<string, unknown>> {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
+  const prototype = Object.getPrototypeOf(value);
+  return prototype === Object.prototype || prototype === null;
+}
+
 /**
  * Writes a published 3D world frame onto an Object3D.
  *
@@ -111,7 +117,10 @@ export function createObject3dPatchAdapter(
           if (accepted !== undefined && ready.revision <= accepted) return;
           revisions.set(ready.nodeId, ready.revision);
           appliedRevisions.set(object, revisions);
-          writeFrame3d(object, ready.values);
+          const values = ready.outputs.values;
+          // A table has no flat frame keys; table-aware 3D rendering is Phase 6's.
+          if (!isFlatRecord(values)) return;
+          writeFrame3d(object, values);
           return;
         }
         case "retain":

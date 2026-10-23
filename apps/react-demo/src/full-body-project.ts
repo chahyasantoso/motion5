@@ -32,96 +32,92 @@ export const armTracks: readonly TrackDefinition[] = [
   // 10. Left Arm Upper (Foreground - Observes Chest which is -90deg UP, so 180deg hangs DOWN)
   {
     id: "armL_upper",
-    keyframes: {
-      fk: {
-        values: {
-          length: 62,
-          rotation: [
-            { p: 0, v: 210 }, // Back swing
-            { p: 0.125, v: 190 },
-            { p: 0.25, v: 150 }, // Forward swing
-            { p: 0.375, v: 170 },
-            { p: 0.5, v: 210 },
-            { p: 0.625, v: 190 },
-            { p: 0.75, v: 150 },
-            { p: 0.875, v: 170 },
-            { p: 1, v: 210 },
-          ],
-        },
-        requires: { base: "walk/chest" },
+    plugin: "fk",
+    input: {
+      values: {
+        length: 62,
+        rotation: [
+          { p: 0, v: 210 }, // Back swing
+          { p: 0.125, v: 190 },
+          { p: 0.25, v: 150 }, // Forward swing
+          { p: 0.375, v: 170 },
+          { p: 0.5, v: 210 },
+          { p: 0.625, v: 190 },
+          { p: 0.75, v: 150 },
+          { p: 0.875, v: 170 },
+          { p: 1, v: 210 },
+        ],
       },
+      requires: { base: "walk/chest" },
     },
   },
 
   // 11. Left Arm Lower
   {
     id: "armL_lower",
-    keyframes: {
-      fk: {
-        values: {
-          length: 58,
-          rotation: [
-            { p: 0, v: 20 },
-            { p: 0.125, v: 35 },
-            { p: 0.25, v: 45 },
-            { p: 0.375, v: 25 },
-            { p: 0.5, v: 20 },
-            { p: 0.625, v: 35 },
-            { p: 0.75, v: 45 },
-            { p: 0.875, v: 25 },
-            { p: 1, v: 20 },
-          ],
-        },
-        requires: { base: "walk/armL_upper" },
+    plugin: "fk",
+    input: {
+      values: {
+        length: 58,
+        rotation: [
+          { p: 0, v: 20 },
+          { p: 0.125, v: 35 },
+          { p: 0.25, v: 45 },
+          { p: 0.375, v: 25 },
+          { p: 0.5, v: 20 },
+          { p: 0.625, v: 35 },
+          { p: 0.75, v: 45 },
+          { p: 0.875, v: 25 },
+          { p: 1, v: 20 },
+        ],
       },
+      requires: { base: "walk/armL_upper" },
     },
   },
 
   // 12. Right Arm Upper (Background - In phase with Left Leg)
   {
     id: "armR_upper",
-    keyframes: {
-      fk: {
-        values: {
-          length: 62,
-          rotation: [
-            { p: 0, v: 150 }, // Forward swing
-            { p: 0.125, v: 170 },
-            { p: 0.25, v: 210 }, // Back swing
-            { p: 0.375, v: 190 },
-            { p: 0.5, v: 150 },
-            { p: 0.625, v: 170 },
-            { p: 0.75, v: 210 },
-            { p: 0.875, v: 190 },
-            { p: 1, v: 150 },
-          ],
-        },
-        requires: { base: "walk/chest" },
+    plugin: "fk",
+    input: {
+      values: {
+        length: 62,
+        rotation: [
+          { p: 0, v: 150 }, // Forward swing
+          { p: 0.125, v: 170 },
+          { p: 0.25, v: 210 }, // Back swing
+          { p: 0.375, v: 190 },
+          { p: 0.5, v: 150 },
+          { p: 0.625, v: 170 },
+          { p: 0.75, v: 210 },
+          { p: 0.875, v: 190 },
+          { p: 1, v: 150 },
+        ],
       },
+      requires: { base: "walk/chest" },
     },
   },
 
   // 13. Right Arm Lower
   {
     id: "armR_lower",
-    keyframes: {
-      fk: {
-        values: {
-          length: 58,
-          rotation: [
-            { p: 0, v: 45 },
-            { p: 0.125, v: 25 },
-            { p: 0.25, v: 20 },
-            { p: 0.375, v: 35 },
-            { p: 0.5, v: 45 },
-            { p: 0.625, v: 25 },
-            { p: 0.75, v: 20 },
-            { p: 0.875, v: 35 },
-            { p: 1, v: 45 },
-          ],
-        },
-        requires: { base: "walk/armR_upper" },
+    plugin: "fk",
+    input: {
+      values: {
+        length: 58,
+        rotation: [
+          { p: 0, v: 45 },
+          { p: 0.125, v: 25 },
+          { p: 0.25, v: 20 },
+          { p: 0.375, v: 35 },
+          { p: 0.5, v: 45 },
+          { p: 0.625, v: 25 },
+          { p: 0.75, v: 20 },
+          { p: 0.875, v: 35 },
+          { p: 1, v: 45 },
+        ],
       },
+      requires: { base: "walk/armR_upper" },
     },
   },
 ];
@@ -130,33 +126,32 @@ export const coreWalkerTracks: readonly TrackDefinition[] = [
   // 1. Pelvis (Root)
   {
     id: "pelvis",
-    keyframes: {
-      transform: {
-        values: {
-          x: [
-            { p: 0, v: 120 },
-            { p: 0.5, v: 550 },
-            { p: 1, v: 980 },
-          ],
-          y: [
-            { p: 0, v: 230 },
-            { p: 0.125, v: 220 },
-            { p: 0.25, v: 230 },
-            { p: 0.375, v: 220 },
-            { p: 0.5, v: 230 },
-            { p: 0.625, v: 220 },
-            { p: 0.75, v: 230 },
-            { p: 0.875, v: 220 },
-            { p: 1, v: 230 },
-          ],
-          rotation: [
-            { p: 0, v: -3 },
-            { p: 0.25, v: 3 },
-            { p: 0.5, v: -3 },
-            { p: 0.75, v: 3 },
-            { p: 1, v: -3 },
-          ],
-        },
+    plugin: "transform",
+    input: {
+      values: {
+        x: [
+          { p: 0, v: 120 },
+          { p: 0.5, v: 550 },
+          { p: 1, v: 980 },
+        ],
+        y: [
+          { p: 0, v: 230 },
+          { p: 0.125, v: 220 },
+          { p: 0.25, v: 230 },
+          { p: 0.375, v: 220 },
+          { p: 0.5, v: 230 },
+          { p: 0.625, v: 220 },
+          { p: 0.75, v: 230 },
+          { p: 0.875, v: 220 },
+          { p: 1, v: 230 },
+        ],
+        rotation: [
+          { p: 0, v: -3 },
+          { p: 0.25, v: 3 },
+          { p: 0.5, v: -3 },
+          { p: 0.75, v: 3 },
+          { p: 1, v: -3 },
+        ],
       },
     },
   },
@@ -164,184 +159,176 @@ export const coreWalkerTracks: readonly TrackDefinition[] = [
   // 2. Chest (Spine - Points UP -90deg from Pelvis)
   {
     id: "chest",
-    keyframes: {
-      fk: {
-        values: {
-          length: 80,
-          rotation: [
-            { p: 0, v: -87 },
-            { p: 0.25, v: -93 },
-            { p: 0.5, v: -87 },
-            { p: 0.75, v: -93 },
-            { p: 1, v: -87 },
-          ],
-        },
-        requires: { base: "walk/pelvis" },
+    plugin: "fk",
+    input: {
+      values: {
+        length: 80,
+        rotation: [
+          { p: 0, v: -87 },
+          { p: 0.25, v: -93 },
+          { p: 0.5, v: -87 },
+          { p: 0.75, v: -93 },
+          { p: 1, v: -87 },
+        ],
       },
+      requires: { base: "walk/pelvis" },
     },
   },
 
   // 3. Head (Continues UP 0deg from Chest)
   {
     id: "head",
-    keyframes: {
-      fk: {
-        values: {
-          length: 45,
-          rotation: [
-            { p: 0, v: -3 },
-            { p: 0.25, v: 3 },
-            { p: 0.5, v: -3 },
-            { p: 0.75, v: 3 },
-            { p: 1, v: -3 },
-          ],
-        },
-        requires: { base: "walk/chest" },
+    plugin: "fk",
+    input: {
+      values: {
+        length: 45,
+        rotation: [
+          { p: 0, v: -3 },
+          { p: 0.25, v: 3 },
+          { p: 0.5, v: -3 },
+          { p: 0.75, v: 3 },
+          { p: 1, v: -3 },
+        ],
       },
+      requires: { base: "walk/chest" },
     },
   },
 
   // 4. Left Leg Thigh (Foreground - Points DOWN ~90deg from Pelvis)
   {
     id: "legL_thigh",
-    keyframes: {
-      fk: {
-        values: {
-          length: 85,
-          rotation: [
-            { p: 0, v: 65 }, // Forward contact
-            { p: 0.125, v: 85 }, // Mid-stance
-            { p: 0.25, v: 115 }, // Push-off back
-            { p: 0.375, v: 95 }, // Swing forward
-            { p: 0.5, v: 65 },
-            { p: 0.625, v: 85 },
-            { p: 0.75, v: 115 },
-            { p: 0.875, v: 95 },
-            { p: 1, v: 65 },
-          ],
-        },
-        requires: { base: "walk/pelvis" },
+    plugin: "fk",
+    input: {
+      values: {
+        length: 85,
+        rotation: [
+          { p: 0, v: 65 }, // Forward contact
+          { p: 0.125, v: 85 }, // Mid-stance
+          { p: 0.25, v: 115 }, // Push-off back
+          { p: 0.375, v: 95 }, // Swing forward
+          { p: 0.5, v: 65 },
+          { p: 0.625, v: 85 },
+          { p: 0.75, v: 115 },
+          { p: 0.875, v: 95 },
+          { p: 1, v: 65 },
+        ],
       },
+      requires: { base: "walk/pelvis" },
     },
   },
 
   // 5. Left Leg Shin (Extends from Thigh)
   {
     id: "legL_shin",
-    keyframes: {
-      fk: {
-        values: {
-          length: 80,
-          rotation: [
-            { p: 0, v: 5 },
-            { p: 0.125, v: 8 },
-            { p: 0.25, v: 25 },
-            { p: 0.375, v: 45 },
-            { p: 0.5, v: 5 },
-            { p: 0.625, v: 8 },
-            { p: 0.75, v: 25 },
-            { p: 0.875, v: 45 },
-            { p: 1, v: 5 },
-          ],
-        },
-        requires: { base: "walk/legL_thigh" },
+    plugin: "fk",
+    input: {
+      values: {
+        length: 80,
+        rotation: [
+          { p: 0, v: 5 },
+          { p: 0.125, v: 8 },
+          { p: 0.25, v: 25 },
+          { p: 0.375, v: 45 },
+          { p: 0.5, v: 5 },
+          { p: 0.625, v: 8 },
+          { p: 0.75, v: 25 },
+          { p: 0.875, v: 45 },
+          { p: 1, v: 5 },
+        ],
       },
+      requires: { base: "walk/legL_thigh" },
     },
   },
 
   // 6. Left Leg Foot (Points FORWARD +X ~-90deg from Shin)
   {
     id: "legL_foot",
-    keyframes: {
-      fk: {
-        values: {
-          length: 38,
-          rotation: [
-            { p: 0, v: -75 },
-            { p: 0.125, v: -90 },
-            { p: 0.25, v: -105 },
-            { p: 0.375, v: -70 },
-            { p: 0.5, v: -75 },
-            { p: 0.625, v: -90 },
-            { p: 0.75, v: -105 },
-            { p: 0.875, v: -70 },
-            { p: 1, v: -75 },
-          ],
-        },
-        requires: { base: "walk/legL_shin" },
+    plugin: "fk",
+    input: {
+      values: {
+        length: 38,
+        rotation: [
+          { p: 0, v: -75 },
+          { p: 0.125, v: -90 },
+          { p: 0.25, v: -105 },
+          { p: 0.375, v: -70 },
+          { p: 0.5, v: -75 },
+          { p: 0.625, v: -90 },
+          { p: 0.75, v: -105 },
+          { p: 0.875, v: -70 },
+          { p: 1, v: -75 },
+        ],
       },
+      requires: { base: "walk/legL_shin" },
     },
   },
 
   // 7. Right Leg Thigh (Background - 180deg / 0.5 phase offset)
   {
     id: "legR_thigh",
-    keyframes: {
-      fk: {
-        values: {
-          length: 85,
-          rotation: [
-            { p: 0, v: 115 },
-            { p: 0.125, v: 95 },
-            { p: 0.25, v: 65 },
-            { p: 0.375, v: 85 },
-            { p: 0.5, v: 115 },
-            { p: 0.625, v: 95 },
-            { p: 0.75, v: 65 },
-            { p: 0.875, v: 85 },
-            { p: 1, v: 115 },
-          ],
-        },
-        requires: { base: "walk/pelvis" },
+    plugin: "fk",
+    input: {
+      values: {
+        length: 85,
+        rotation: [
+          { p: 0, v: 115 },
+          { p: 0.125, v: 95 },
+          { p: 0.25, v: 65 },
+          { p: 0.375, v: 85 },
+          { p: 0.5, v: 115 },
+          { p: 0.625, v: 95 },
+          { p: 0.75, v: 65 },
+          { p: 0.875, v: 85 },
+          { p: 1, v: 115 },
+        ],
       },
+      requires: { base: "walk/pelvis" },
     },
   },
 
   // 8. Right Leg Shin
   {
     id: "legR_shin",
-    keyframes: {
-      fk: {
-        values: {
-          length: 80,
-          rotation: [
-            { p: 0, v: 25 },
-            { p: 0.125, v: 45 },
-            { p: 0.25, v: 5 },
-            { p: 0.375, v: 8 },
-            { p: 0.5, v: 25 },
-            { p: 0.625, v: 45 },
-            { p: 0.75, v: 5 },
-            { p: 0.875, v: 8 },
-            { p: 1, v: 25 },
-          ],
-        },
-        requires: { base: "walk/legR_thigh" },
+    plugin: "fk",
+    input: {
+      values: {
+        length: 80,
+        rotation: [
+          { p: 0, v: 25 },
+          { p: 0.125, v: 45 },
+          { p: 0.25, v: 5 },
+          { p: 0.375, v: 8 },
+          { p: 0.5, v: 25 },
+          { p: 0.625, v: 45 },
+          { p: 0.75, v: 5 },
+          { p: 0.875, v: 8 },
+          { p: 1, v: 25 },
+        ],
       },
+      requires: { base: "walk/legR_thigh" },
     },
   },
 
   // 9. Right Leg Foot
   {
     id: "legR_foot",
-    keyframes: {
-      fk: {
-        values: {
-          length: 38,
-          rotation: [
-            { p: 0, v: -105 },
-            { p: 0.125, v: -70 },
-            { p: 0.25, v: -75 },
-            { p: 0.375, v: -90 },
-            { p: 0.5, v: -105 },
-            { p: 0.625, v: -70 },
-            { p: 0.75, v: -75 },
-            { p: 0.875, v: -90 },
-            { p: 1, v: -105 },
-          ],
-        },
-        requires: { base: "walk/legR_shin" },
+    plugin: "fk",
+    input: {
+      values: {
+        length: 38,
+        rotation: [
+          { p: 0, v: -105 },
+          { p: 0.125, v: -70 },
+          { p: 0.25, v: -75 },
+          { p: 0.375, v: -90 },
+          { p: 0.5, v: -105 },
+          { p: 0.625, v: -70 },
+          { p: 0.75, v: -75 },
+          { p: 0.875, v: -90 },
+          { p: 1, v: -105 },
+        ],
       },
+      requires: { base: "walk/legR_shin" },
     },
   },
 ];

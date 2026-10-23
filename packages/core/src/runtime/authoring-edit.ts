@@ -1,5 +1,9 @@
 import { PLUGIN_GOALS_SLOT } from "../contract/solver-slots";
-import type { AuthoredPluginGroup, ObservationDefinition, TrackDefinition } from "../contract/v5";
+import type {
+  AuthoredPluginGroup,
+  GroupedTrackDefinition,
+  ObservationDefinition,
+} from "../contract/v5";
 import {
   readBoundGroup,
   removeGroup,
@@ -115,7 +119,7 @@ export type AuthoringEdit =
 export interface EditTarget {
   readonly nodeId: string;
   readonly motionId: string | undefined;
-  readonly track: TrackDefinition;
+  readonly track: GroupedTrackDefinition;
 }
 
 /** One authored record and the group inside it an edit was proved to be able to address. */
@@ -146,7 +150,11 @@ const NO_MOTION_OWNER = "~";
  * transiently invalid, and one verb whose cost and refusal set depend on whether the group already
  * existed is the shape this project has declined three times. See ADR-062, ADR-063 and ADR-065.
  */
-export function boundGroup(nodeId: string, track: TrackDefinition, plugin: string): GroupTarget {
+export function boundGroup(
+  nodeId: string,
+  track: GroupedTrackDefinition,
+  plugin: string,
+): GroupTarget {
   const keyframes = track.keyframes;
   const bound = keyframes === undefined ? undefined : readBoundGroup(keyframes, plugin);
   if (keyframes === undefined || bound === undefined) unboundGroup(nodeId, plugin);
@@ -190,16 +198,16 @@ function groupRecord(target: EditTarget): AuthoredKeyframes {
  * a recipe of nothing but no-ops end without a candidate build. See ADR-063 and `RA-66`.
  */
 function candidate(
-  track: TrackDefinition,
+  track: GroupedTrackDefinition,
   keyframes: AuthoredKeyframes,
   next: AuthoredKeyframes,
-): TrackDefinition {
+): GroupedTrackDefinition {
   if (next === keyframes) return track;
   return withKeyframes(track, next);
 }
 
 /** The list an observation edit works from, as a copy, since both arms move one entry of it. */
-function observationsOf(track: TrackDefinition): ObservationDefinition[] {
+function observationsOf(track: GroupedTrackDefinition): ObservationDefinition[] {
   return [...(track.observes ?? [])];
 }
 
@@ -224,9 +232,9 @@ function observedAt(
 
 /** `track` with the observation list an edit produced, which is never the retained one. */
 function withObserves(
-  track: TrackDefinition,
+  track: GroupedTrackDefinition,
   observes: readonly ObservationDefinition[],
-): TrackDefinition {
+): GroupedTrackDefinition {
   return Object.freeze({ ...track, observes });
 }
 
@@ -239,7 +247,7 @@ function withObserves(
  * record or the list, and answer what came back. No arm reaches a hook, a graph, a registry or a
  * token, which is why this is a function beside the runtime rather than nine members inside it.
  */
-export function applyEdit(target: EditTarget, edit: AuthoringEdit): TrackDefinition {
+export function applyEdit(target: EditTarget, edit: AuthoringEdit): GroupedTrackDefinition {
   const track = target.track;
   switch (edit.kind) {
     case "bind-slot": {

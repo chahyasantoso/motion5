@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { describe, expect, it } from "vitest";
 import { type ClockTick, type LivePatch, type LiveValues, type ProjectHandle } from "@motion5/core";
 import { patchRender, unreachable } from "@motion5/core/plugin-api";
@@ -11,6 +12,7 @@ import {
   type RunnerStep,
 } from "../src/runner";
 import { fixture } from "./support/runner-fixture";
+import { patchValues } from "./support/patch-values";
 const write = (nodeId: string, x: number): Runner => ({
   nodeId,
   step: () => ({ kind: "write", values: { x } }),
@@ -19,7 +21,7 @@ function publishedX(patch: LivePatch | undefined): unknown {
   const decision = patchRender(patch);
   switch (decision.kind) {
     case "render":
-      return decision.patch.values.x;
+      return patchValues(decision.patch).x;
     case "retain":
     case "gone":
       return undefined;

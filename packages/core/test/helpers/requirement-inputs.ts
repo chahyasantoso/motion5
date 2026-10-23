@@ -1,7 +1,8 @@
+import type { FlatRecord } from "../../src/contract/v5";
 import type { RequirementInputs } from "../../src/domain/plugins";
 
 /** The values one requirement slot resolved to, as a plain record. */
-export type SlotValues = Readonly<Record<string, unknown>>;
+export type SlotValues = FlatRecord;
 
 /**
  * Reads one plugin's requirement slot out of a composition's scoped inputs, or `{}` when the slot

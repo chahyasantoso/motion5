@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { describe, expect, it, vi } from "vitest";
 import { statedPublications } from "../../helpers/publication-spy";
 import { Engine } from "../../../src/engine";

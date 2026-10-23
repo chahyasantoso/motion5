@@ -51,7 +51,7 @@ const PROJECT: ProjectDefinition = {
 };
 /** One key per node, so a shared key cannot hide a missing publication behind an output merge. */
 const compose = (node: { id: string }) => () => ({
-  values: { [node.id]: 1 },
+  outputs: { values: { [node.id]: 1 } },
   sourceProgress: 0,
   sourceRevisions: {},
 });

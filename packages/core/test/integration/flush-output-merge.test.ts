@@ -35,7 +35,7 @@ describe("GraphPublisher output edges", () => {
   it("merges output source values over the composed patch", () => {
     const registry = new PatchRegistry();
     const source = node("source", 0, [], () => ({
-      values: { opacity: 0.5 },
+      outputs: { values: { opacity: 0.5 } },
       sourceProgress: 0,
       sourceRevisions: {},
     }));
@@ -43,13 +43,13 @@ describe("GraphPublisher output edges", () => {
       "observer",
       1,
       [{ observerId: "observer", sourceId: "source", role: "output" }],
-      () => ({ values: { x: 10 }, sourceProgress: 0, sourceRevisions: {} }),
+      () => ({ outputs: { values: { x: 10 } }, sourceProgress: 0, sourceRevisions: {} }),
     );
     const batch = new GraphPublisher(registry).flush(snapshot([source, observer]), ["source"], 1);
     const observerPatch = batch.patches.find(({ nodeId }) => nodeId === "observer");
     if (observerPatch?.status !== "ready")
       throw new Error(`observer is ${observerPatch?.status ?? "absent"}, not ready.`);
-    expect(observerPatch.values).toEqual({
+    expect(observerPatch.outputs.values).toEqual({
       opacity: 0.5,
       x: 10,
     });
@@ -58,12 +58,12 @@ describe("GraphPublisher output edges", () => {
   it("uses canonical edge order when output sources collide", () => {
     const registry = new PatchRegistry();
     const sourceA = node("a", 0, [], () => ({
-      values: { color: "a" },
+      outputs: { values: { color: "a" } },
       sourceProgress: 0,
       sourceRevisions: {},
     }));
     const sourceB = node("b", 1, [], () => ({
-      values: { color: "b" },
+      outputs: { values: { color: "b" } },
       sourceProgress: 0,
       sourceRevisions: {},
     }));
@@ -72,7 +72,7 @@ describe("GraphPublisher output edges", () => {
       { observerId: "observer", sourceId: "a", role: "output" as const },
     ];
     const observer = node("observer", 2, edges, () => ({
-      values: {},
+      outputs: { values: {} },
       sourceProgress: 0,
       sourceRevisions: {},
     }));
@@ -87,7 +87,7 @@ describe("GraphPublisher output edges", () => {
     const observerPatch2 = batch.patches.find(({ nodeId }) => nodeId === "observer");
     if (observerPatch2?.status !== "ready")
       throw new Error(`observer is ${observerPatch2?.status ?? "absent"}, not ready.`);
-    expect(observerPatch2.values).toEqual({
+    expect(observerPatch2.outputs.values).toEqual({
       color: expectedWinner,
     });
   });

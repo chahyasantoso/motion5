@@ -50,13 +50,13 @@ function createFakeSource(initial?: LivePatch, metadata?: RenderMetadata): FakeS
 
 function patch(
   revision: number,
-  values: Readonly<Record<string, unknown>>,
+  values: Readonly<Record<string, number | string | boolean>>,
   status: LivePatch["status"] = "ready",
 ): LivePatch {
   return {
     nodeId: NODE_ID,
     revision,
-    values,
+    outputs: { values },
     sourceProgress: 0,
     sourceRevisions: {},
     status,
@@ -139,15 +139,15 @@ describe("useDomPatch", () => {
   it("serializes plugin output, pins the SVG reference box, and holds the last pose when not ready", () => {
     const metadata: RenderMetadata = {
       outputSerializers: {
-        pose: (value) => `${String((value as { w: number }).w)}px`,
+        pose: (value) => `${String(value)}px`,
       },
     };
-    const source = createFakeSource(patch(1, { x: 1, y: 2, pose: { w: 3 } }), metadata);
+    const source = createFakeSource(patch(1, { x: 1, y: 2, pose: 3 }), metadata);
     const target = createSvgTarget();
     const renderer = mount(source, target);
 
-    // Without the metadata channel this composite is suppressed unrendered, which is the divergence
-    // a React-only DOM configuration used to ship.
+    // Without the metadata channel this scalar reaches the element unserialized, which is the
+    // divergence a React-only DOM configuration used to ship.
     expect(target.pose).toBe("3px");
     expect(target.style.transformBox).toBe("view-box");
     expect(target.style.transformOrigin).toBe("0px 0px");

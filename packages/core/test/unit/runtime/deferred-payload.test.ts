@@ -4,6 +4,7 @@ import { createManualClock } from "../../../src/ports/clock";
 import type { Cancel } from "../../../src/ports/scheduler";
 import { createFakeScheduler } from "../../../src/testing/fakes";
 import { GraphRuntime } from "../../../src/runtime/graph-runtime";
+import { recordValues } from "../../support/v5-builders";
 
 /**
  * Issues #392, #393, #400 and #401, found by the quality passes over #390 and #398.
@@ -51,7 +52,7 @@ const project: ProjectDefinition = {
 };
 
 const compose = (node: { id: string }) => () => ({
-  values: { node: node.id },
+  outputs: { values: { node: node.id } },
   sourceProgress: 0,
   sourceRevisions: {},
 });
@@ -332,11 +333,11 @@ describe("a host that cannot receive a diagnostic cannot reroute the runtime", (
     const captionLabelPatch = runtime.registry.get("caption/label");
     if (captionLabelPatch?.status !== "ready")
       throw new Error(`caption/label is ${captionLabelPatch?.status ?? "absent"}, not ready.`);
-    expect(captionLabelPatch.values.node).toBe("caption/label");
+    expect(recordValues(captionLabelPatch).node).toBe("caption/label");
     const heroArmPatch = runtime.registry.get("hero/arm");
     if (heroArmPatch?.status !== "ready")
       throw new Error(`hero/arm is ${heroArmPatch?.status ?? "absent"}, not ready.`);
-    expect(heroArmPatch.values.node).toBe("hero/arm");
+    expect(recordValues(heroArmPatch).node).toBe("hero/arm");
     expect(runtime.pendingSeeds).toEqual([]);
     runtime.dispose();
   });
@@ -354,7 +355,11 @@ describe("a retired runtime carries no work, and withholds rather than loses a d
         holder.runtime?.dispose();
         throw failure;
       }
-      return () => ({ values: { node: node.id }, sourceProgress: 0, sourceRevisions: {} });
+      return () => ({
+        outputs: { values: { node: node.id } },
+        sourceProgress: 0,
+        sourceRevisions: {},
+      });
     };
     const runtime = new GraphRuntime(project, clock, refusingCompose, { scheduler });
     holder.runtime = runtime;
@@ -397,7 +402,11 @@ describe("a retired runtime carries no work, and withholds rather than loses a d
         holder.runtime?.dispose();
         throw failure;
       }
-      return () => ({ values: { node: node.id }, sourceProgress: 0, sourceRevisions: {} });
+      return () => ({
+        outputs: { values: { node: node.id } },
+        sourceProgress: 0,
+        sourceRevisions: {},
+      });
     };
     const received: Diagnostic[] = [];
     const runtime = new GraphRuntime(project, clock, refusingCompose, {

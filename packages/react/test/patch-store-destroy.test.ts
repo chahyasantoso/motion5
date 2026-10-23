@@ -6,7 +6,12 @@ const NODE_ID = "walk/armL_upper";
 
 function publish(registry: PatchRegistry, tick: number, x: number): void {
   registry.beginBatch(tick, [NODE_ID]);
-  registry.publish({ nodeId: NODE_ID, values: { x }, sourceProgress: 0, status: "ready" });
+  registry.publish({
+    nodeId: NODE_ID,
+    outputs: { values: { x } },
+    sourceProgress: 0,
+    status: "ready",
+  });
   registry.closeBatch();
 }
 
@@ -21,7 +26,7 @@ describe("React patch store under node destruction (D1)", () => {
     const getSnapshotPatch = store.getSnapshot();
     if (getSnapshotPatch?.status !== "ready")
       throw new Error(`getSnapshotPatch is ${getSnapshotPatch?.status ?? "absent"}, not ready.`);
-    expect(getSnapshotPatch.values).toEqual({ x: 45 });
+    expect(getSnapshotPatch.outputs.values).toEqual({ x: 45 });
 
     registry.evict(NODE_ID);
 
@@ -47,7 +52,7 @@ describe("React patch store under node destruction (D1)", () => {
     const getSnapshotPatch2 = store.getSnapshot();
     if (getSnapshotPatch2?.status !== "ready")
       throw new Error(`getSnapshotPatch2 is ${getSnapshotPatch2?.status ?? "absent"}, not ready.`);
-    expect(getSnapshotPatch2.values).toEqual({ x: 60 });
+    expect(getSnapshotPatch2.outputs.values).toEqual({ x: 60 });
 
     unmount();
   });
