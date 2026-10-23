@@ -23,8 +23,8 @@ describe("recovery governance gates (G-1/G-3/G-4/G-5/G-7)", () => {
       ts.sys,
     );
     // Vitest aliases do not affect tsc. Require source even when dist happens to exist.
-    expect(resolution.resolvedModule?.resolvedFileName).toBe(
-      join(root, "packages/core/src/testing/fakes.ts"),
+    expect(resolution.resolvedModule?.resolvedFileName?.replace(/\\/g, "/")).toBe(
+      join(root, "packages/core/src/testing/fakes.ts").replace(/\\/g, "/"),
     );
   });
 
