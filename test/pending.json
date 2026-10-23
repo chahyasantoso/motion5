@@ -135,11 +135,6 @@
     "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
   },
   {
-    "path": "packages/core/test/integration/engine-teardown-ownership.test.ts",
-    "phase": 4,
-    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
-  },
-  {
     "path": "packages/core/test/integration/engine-x3-contribution.test.ts",
     "phase": 3,
     "reason": "Authors grouped plugin keyframes; plugin admission, slots and named outputs replace them in Phase 3."
@@ -260,9 +255,9 @@
     "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
   },
   {
-    "path": "packages/core/test/integration/rollback-error-precedence.test.ts",
-    "phase": 4,
-    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
+    "path": "packages/core/test/integration/rollback-error-precedence.pending.test.ts",
+    "phase": 3,
+    "reason": "P-2 and P-3 reach a candidate-graph refusal through a removed `observes` edge on `addTrack`; Phase 3 supplies the dependency-slot refusal that replaces it."
   },
   {
     "path": "packages/core/test/integration/runtime-motion-lifecycle.test.ts",
@@ -515,24 +510,24 @@
     "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
   },
   {
-    "path": "packages/core/test/unit/runtime/schema-transaction.test.ts",
+    "path": "packages/core/test/unit/runtime/schema-transaction.pending.test.ts",
     "phase": 4,
-    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
+    "reason": "RA-66 measures the no-op idempotence of a redundant `addObserve` and an absent `removeObserve`; Phase 4 supplies the shape-matched edit whose unchanged case replaces it."
   },
   {
-    "path": "packages/core/test/unit/runtime/stale-track-handle.test.ts",
+    "path": "packages/core/test/unit/runtime/stale-track-handle.pending.test.ts",
     "phase": 4,
-    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
+    "reason": "SH-6 drives the live handle's `addObserve` and `removeObserve`, which author the removed `observes` edge; Phase 4 replaces that live edit on identified tables."
   },
   {
-    "path": "packages/core/test/unit/runtime/structural-commit-flush.test.ts",
-    "phase": 4,
-    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
+    "path": "packages/core/test/unit/runtime/structural-commit-flush.pending.test.ts",
+    "phase": 3,
+    "reason": "RA-8, RA-9, RA-11 and RA-12 seed or refuse an observation edge authored with removed `observes`; Phase 3 supplies dependency slots and their unknown-source rule."
   },
   {
-    "path": "packages/core/test/unit/runtime/structural-commit-path.test.ts",
-    "phase": 4,
-    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
+    "path": "packages/core/test/unit/runtime/structural-commit-path.pending.test.ts",
+    "phase": 3,
+    "reason": "RA-4 refuses the candidate graph through an unknown source declared with removed `observes`; Phase 3 replaces it with a dependency-slot refusal."
   },
   {
     "path": "packages/core/test/unit/runtime/track-staging.test.ts",

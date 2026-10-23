@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { builtinRegistry } from "../../support/builtin-registry";
 import { describe, expect, it } from "vitest";
 import type { MotionDefinition, ProjectDefinition } from "../../../src/contract/v5";
@@ -190,7 +189,7 @@ describe("one recipe is one transaction", () => {
       const villain = tx.addMotion(VILLAIN);
       villain.addTrack({ id: "cape" });
       tx.addTrack({ id: "hand" }, { motionId: MOTION_ID });
-      tx.track(LEG_ID).addObserve({ source: ARM_ID });
+      tx.track(LEG_ID).replace({ id: "leg", duration: 50 });
       tx.track(ARM_ID).replace({ id: "arm", duration: 250 });
     });
 
@@ -204,7 +203,7 @@ describe("one recipe is one transaction", () => {
     expect(test.runtime.motion("villain").trackIds).toEqual([CAPE_ID]);
     expect(test.runtime.track(CAPE_ID).live).toBe(true);
     expect(test.runtime.track(HAND_ID).live).toBe(true);
-    expect(test.runtime.track(LEG_ID).definition.observes).toEqual([{ source: ARM_ID }]);
+    expect(test.runtime.track(LEG_ID).definition.duration).toBe(50);
     expect(test.runtime.track(ARM_ID).definition.duration).toBe(250);
 
     test.runtime.dispose();
@@ -222,7 +221,7 @@ describe("one recipe is one transaction", () => {
     const thrown = thrownBy(() =>
       editing(test.runtime).edit((tx) => {
         escaped = tx.addTrack({ id: "hand" }, { motionId: MOTION_ID });
-        tx.track(LEG_ID).addObserve({ source: ARM_ID });
+        tx.track(LEG_ID).replace({ id: "leg", duration: 75 });
         tx.addMotion(VILLAIN);
         throw refusal;
       }),
@@ -261,19 +260,15 @@ describe("one recipe is one transaction", () => {
       expect(tx.track(HAND_ID).definition).toBe(hand.definition);
       expect(tx.motion(MOTION_ID).trackIds).toEqual([ARM_ID, LEG_ID, HAND_ID]);
 
-      tx.track(HAND_ID).addObserve({ source: ARM_ID });
-      expect(tx.track(HAND_ID).definition.observes).toEqual([{ source: ARM_ID }]);
-
-      tx.track(HAND_ID).replace({ id: "hand", duration: 250, observes: [{ source: ARM_ID }] });
+      tx.track(HAND_ID).replace({ id: "hand", duration: 250 });
       expect(tx.track(HAND_ID).definition.duration).toBe(250);
+
+      tx.track(HAND_ID).replace({ id: "hand", duration: 400 });
+      expect(tx.track(HAND_ID).definition.duration).toBe(400);
     });
 
     // And the committed graph is what the last step staged rather than what the first one did.
-    expect(test.runtime.track(HAND_ID).definition).toEqual({
-      id: "hand",
-      duration: 250,
-      observes: [{ source: ARM_ID }],
-    });
+    expect(test.runtime.track(HAND_ID).definition).toEqual({ id: "hand", duration: 400 });
     expect(test.runtime.graph.graph.nodes.map((node) => node.id)).toContain(HAND_ID);
 
     test.runtime.dispose();
@@ -285,7 +280,7 @@ describe("one recipe is one transaction", () => {
     editing(test.runtime).edit((tx) => {
       tx.addTrack({ id: "hand", duration: 100 }, { motionId: MOTION_ID });
       tx.track(HAND_ID).replace({ id: "hand", duration: 250 });
-      tx.track(HAND_ID).addObserve({ source: ARM_ID });
+      tx.track(HAND_ID).replace({ id: "hand", duration: 400 });
     });
 
     // Three ops on one node, and the hooks are what one add costs rather than what three ops
@@ -293,46 +288,14 @@ describe("one recipe is one transaction", () => {
     // addMotionTrack in the settle steps, and effects run first, so the Motion would be asked to
     // replace a track it has not been told about yet. The order is also the one `RA-3` pins: the
     // compile before the registration, because Motion resolves by id against the live compiled map.
-    expect(test.journal).toEqual(["compile hero/hand 250", "motion-add hero/hand 250"]);
+    expect(test.journal).toEqual(["compile hero/hand 400", "motion-add hero/hand 400"]);
     // Named rather than implied by the list above, because these two are what would appear if the
     // hooks were accumulated, and a reader has to be able to see which fact is on trial.
     expect(test.journal.filter((line) => line.startsWith("motion-replace"))).toEqual([]);
     expect(test.journal.filter((line) => line.startsWith("stage "))).toEqual([]);
     // The compile was handed the definition the recipe ends on, not the one it opened with.
-    expect(test.runtime.track(HAND_ID).definition).toEqual({
-      id: "hand",
-      duration: 250,
-      observes: [{ source: ARM_ID }],
-    });
+    expect(test.runtime.track(HAND_ID).definition).toEqual({ id: "hand", duration: 400 });
     expect(test.runtime.instanceCount).toBe(1);
-
-    test.runtime.dispose();
-  });
-
-  it("RA-66 returns the recipe's answer and commits nothing when nothing changed", () => {
-    const test = rig();
-    test.runtime.track(LEG_ID).addObserve({ source: ARM_ID });
-    const graph = test.graph;
-    const builds = test.builds;
-    const sequence = test.sequence;
-    const journal = test.journal;
-
-    const answer = editing(test.runtime).edit((tx) => {
-      // Both no-ops on this tier's idempotence rule: a redundant add and an absent remove.
-      tx.track(LEG_ID).addObserve({ source: ARM_ID });
-      tx.track(LEG_ID).removeObserve({ source: FOOT_ID });
-      return tx.tryTrack(HAND_ID);
-    });
-
-    // The recipe's value is the caller's, which is what makes `edit` usable for a lookup that
-    // happens to make no change.
-    expect(answer).toBeUndefined();
-    // A recipe that staged nothing must not spend a candidate build or a frame's worth of flush
-    // machinery saying so, on exactly the rule `RA-10` states for a commit that derives no node.
-    expect(test.builds).toBe(builds);
-    expect(test.sequence).toBe(sequence);
-    expect(test.graph).toBe(graph);
-    expect(test.journal).toEqual(journal);
 
     test.runtime.dispose();
   });

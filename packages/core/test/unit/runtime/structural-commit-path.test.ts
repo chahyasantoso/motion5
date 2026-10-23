@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { describe, expect, it, vi } from "vitest";
 import type {
   MotionDefinition,
@@ -98,8 +97,6 @@ const BASE_PROJECT: ProjectDefinition = {
   schemaVersion: 5,
   motions: [{ id: MOTION_ID, trigger: { type: "manual" }, tracks: [{ id: "arm" }] }],
 };
-/** Refused by the candidate graph rather than by authored validation, so the rollback runs. */
-const REJECTED_TRACK: TrackDefinition = { id: "hand", observes: [{ source: "~/missing" }] };
 /**
  * Refused by `assertAuthoredMotionId` inside the candidate build, after every entry check passed.
  *
@@ -623,21 +620,6 @@ describe("a structural change runs one transaction, in one order", () => {
     runtime.dispose();
   });
 
-  it("RA-4 disposes the compiled Track and registers nothing when the graph refuses", () => {
-    const journal = recorder();
-    const runtime = new ProjectRuntime(BASE_PROJECT, journal.options);
-
-    const thrown = thrownBy(() => runtime.addTrack(REJECTED_TRACK, { motionId: MOTION_ID }));
-
-    expect(thrown).toBeInstanceOf(TypeError);
-    expect((thrown as Error).message).toMatch(/^observation-unknown-source at /);
-    expect(journal.entries).toEqual(["compile hero/hand", "dispose hero/hand"]);
-    expect(runtime.instanceCount).toBe(0);
-    expect(() => runtime.track(ADDED_ID)).toThrow(/Unknown graph node "hero\/hand"/);
-
-    runtime.dispose();
-  });
-
   it("RA-5 drops the entry before the removal hooks run, and runs them in order", () => {
     const journal = recorder();
     const runtime = new ProjectRuntime(BASE_PROJECT, journal.options);
@@ -690,9 +672,9 @@ describe("a structural change runs one transaction, in one order", () => {
     runtime.track(ADDED_ID).replace({ id: "hand", duration: 250 });
     expect(disagreeing(runtime)).toEqual([]);
 
-    // A refused candidate has to leave the pair agreeing too, which is the half a commit path that
-    // writes its maps before the graph accepted would get wrong.
-    thrownBy(() => runtime.track(ADDED_ID).replace(REJECTED_TRACK));
+    // A refused replacement has to leave the pair agreeing too, which is the half a commit path
+    // that writes its maps before the candidate is accepted would get wrong.
+    thrownBy(() => runtime.track(ADDED_ID).replace({ id: "hand", duration: -1 }));
     expect(disagreeing(runtime)).toEqual([]);
     expect(runtime.track(ADDED_ID).definition).toEqual({ id: "hand", duration: 250 });
 

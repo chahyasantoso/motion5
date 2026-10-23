@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { describe, expect, it } from "vitest";
 import { fileURLToPath } from "node:url";
 import type {
@@ -244,26 +243,6 @@ describe("a stale TrackHandle refuses uniformly, and `live` asks without throwin
     }).not.toThrow();
     expect(removals).toBe(1);
     expect(handle.live).toBe(false);
-
-    project.dispose();
-  });
-
-  it("SH-6 leaves the live path exactly as it was", () => {
-    const project = runtime();
-    const handle = handleFor(project);
-    expect(handle.definition).toEqual({ id: "arm" });
-
-    handle.replace({ id: "arm", duration: 250 });
-    expect(handle.definition).toEqual({ id: "arm", duration: 250 });
-
-    const observation: ObservationDefinition = { source: OTHER_ID };
-    handle.addObserve(observation);
-    expect(project.dependantsOf(OTHER_ID)).toEqual([NODE_ID]);
-    handle.removeObserve(observation);
-    expect(project.dependantsOf(OTHER_ID)).toEqual([]);
-
-    handle.remove();
-    expect(project.dependantsOf(OTHER_ID)).toEqual([]);
 
     project.dispose();
   });

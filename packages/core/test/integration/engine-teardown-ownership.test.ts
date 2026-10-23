@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import type { MotionDefinition, ProjectDefinition } from "../../src/contract/v5";
@@ -45,29 +44,6 @@ const REJECTED_MOTION: MotionDefinition = {
 function manual(id: string): MotionDefinition {
   return { id, trigger: { type: "manual" }, tracks: [] };
 }
-
-/**
- * A Motion whose only Track observes a free track nobody authored.
- *
- * Refused by `validateV5` inside `assertValidProject`, the first statement of `Engine.load`, so
- * the refusal is raised before the `try` the load owner cleans up from ever opens and this load
- * compiles no Track, constructs no `ProjectRuntime` and has nothing whatever to release. An earlier
- * revision of this comment claimed the refusal landed after the Tracks compiled and before any
- * Motion existed, so that a compiled Track was the whole of what the composition still held. It
- * does not, and the case built on that premise asserted a release with nothing to release. `P-4` in
- * `rollback-error-precedence.test.ts` is where that invariant is measured instead, at the layer
- * that owns it.
- */
-const MISSING_SOURCE_PROJECT: ProjectDefinition = {
-  schemaVersion: 5,
-  motions: [
-    {
-      id: "hero",
-      trigger: { type: "manual" },
-      tracks: [{ id: "arm", observes: [{ source: "~/missing" }] }],
-    },
-  ],
-};
 
 interface CountingClock extends Clock {
   tick(delta?: number): number;
@@ -396,19 +372,23 @@ describe("Engine owns the teardown of everything a failed operation created", ()
     expect(ADOPT_MOTION).toContain("unreachable(state)");
   });
 
-  it("D-6 reports the graph rejection unwrapped when the runtime never existed", () => {
+  it("D-6 reports the authored refusal unwrapped when the runtime never existed", () => {
     // The other branch of the failed-load teardown, and the reason it is a branch: authored
     // validation refuses this project before the load owner's `try` opens, so there is no
     // composition, no runtime and no cleanup owner to ask. Not claimed red; it pins that a load
-    // with nothing to undo does not bury the ordinary diagnosis in an AggregateError anyway.
+    // with nothing to undo does not bury the ordinary diagnosis in an AggregateError anyway. A
+    // slashed id is the same early refusal the removed `observes` fixture reached, written with
+    // `id-qualified-separator` rather than `observation-unknown-source`.
     const clock = countingClock();
     const triggers = triggerProbe();
 
-    const thrown = thrownBy(() => load(clock, triggers.factory, MISSING_SOURCE_PROJECT));
+    const thrown = thrownBy(() =>
+      load(clock, triggers.factory, { schemaVersion: 5, motions: [REJECTED_MOTION] }),
+    );
 
     expect(thrown).toBeInstanceOf(TypeError);
     expect(thrown).not.toBeInstanceOf(AggregateError);
-    expect((thrown as Error).message).toMatch(/^observation-unknown-source at /);
+    expect((thrown as Error).message).toMatch(/^id-qualified-separator at /);
     // The refusal lands before anything is compiled, built or subscribed at all.
     expect(triggers.created).toBe(0);
     expect(clock.liveSubscriptions).toBe(0);
