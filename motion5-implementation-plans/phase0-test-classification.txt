@@ -144,7 +144,7 @@ packages/react/test/patch-store.test.ts
 packages/react/test/public-hook.test.ts
 packages/react/test/public-package-surface.test.ts
 
-## Group 2: old shape carrying a needed rule (82)
+## Group 2: old shape carrying a needed rule (81)
 packages/core/test/contract/adapters.test.ts
 packages/core/test/contract/graph-builder-incremental.test.ts
 packages/core/test/contract/gsap-absolute-stops.test.ts
@@ -173,7 +173,11 @@ packages/core/test/integration/motion-trigger-types.test.ts
 packages/core/test/integration/observation-identity.test.ts
 packages/core/test/integration/one-mechanism-per-question.test.ts
 packages/core/test/integration/option-c-track-resolution.test.ts
-packages/core/test/integration/phase0-red-baseline.test.ts
+# redundant, deleted: packages/core/test/integration/phase0-red-baseline.test.ts
+#   covered by trigger-time.test.ts (time tick, burst coalescing), graph-publisher.test.ts I-5,
+#   phase7-walker-demo.test.ts 5, option-c-track-resolution.test.ts C-13,
+#   t4-runtime-motion-parity.test.ts, unified-mutation-surface.test.ts,
+#   phase2-motion-scheduling.test.ts 1, 2 and 5
 packages/core/test/integration/phase2-motion-scheduling.test.ts
 packages/core/test/integration/phase3-trigger-port.test.ts
 packages/core/test/integration/phase4-dynamic-lifecycle.test.ts
