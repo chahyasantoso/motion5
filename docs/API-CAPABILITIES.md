@@ -1,40 +1,18 @@
 # API-only capability map
 
-This is navigation and an activation contract, not a second status file. [SESSION-STATUS.md](./SESSION-STATUS.md) owns shipped state. The implementation PR owns exact-SHA results and outstanding live exercises. Read the actual immutable runner revision before using an operation.
+This is navigation and an activation contract, not a second status file. [SESSION-STATUS.md](./SESSION-STATUS.md) owns shipped state. The implementation PR owns exact-SHA results and outstanding live exercises.
 
 ## Supported through repository APIs
 
-- Read complete files at an immutable SHA, create a branch, submit one request-only commit for an AI edit, assemble and submit a checkpoint range with the manifest last, open a PR, and read checks and comments. Availability is connection-specific; a missing Actions dispatch method is not a GitHub limitation.
-- Apply a bounded edit through `.ai/edits/`: [request contract](./AI-EDIT-WORKFLOW.md), [low-level edit validator](../scripts/apply-ai-edit.mjs), [publication owner](../scripts/automation-publish.mjs), [adapter tests](../packages/core/test/unit/scripts/automation-adapters.test.ts). Requires the trusted runner pin, default-branch reporter, and publication credential.
-- Transport a stack through `.ai/checkpoints/cpNNN/`: [request contract](./AI-CHECKPOINT-WORKFLOW.md), [pure policy owner](../scripts/checkpoint-policy.mjs), [preparation and publication owner](../scripts/automation-checkpoint.mjs), [policy tests](../packages/core/test/unit/scripts/checkpoint-policy.test.ts), [transport tests](../packages/core/test/unit/scripts/automation-checkpoint.test.ts). Push one or more patch-set-only assembly commits, then the manifest last; the manifest seals the request, while patch-only commits are never a request. The bounded range has at most 24 linear one-parent commits, every own diff is confined to the checkpoint folder, and the aggregate base-to-head tree diff is exactly the manifest plus declared patches. Every checkpoint file, including the manifest, is at most 32,000 bytes. Publication produces one commit per patch, at most one formatting commit, then one consumption commit. Requires the same trusted runner pin, default-branch reporter, and publication credential. There is no preview or validate operation on this route.
-- Choose between the two transports with [AUTOMATION-TRANSPORT-CHOICE.md](./AUTOMATION-TRANSPORT-CHOICE.md). Neither is preferred; one slice is an edit and a stack is a checkpoint. The 32,000-byte checkpoint-file bound is a conservative policy, not a measured MCP payload ceiling: on 2026-09-22 a `push_files` call carrying `manifest.json` alone succeeded, while a nine-file `cp008` call totaling 96,181 bytes failed and did not land atomically. The actual per-call ceiling is somewhere between those observations and remains unmeasured. Measuring the actual ceiling with padded files on a throwaway branch and a binary search is a follow-up.
-- Inspect durable receipts and chunked diagnostics on `ci-logs`, keyed by run and attempt. [Reporter](../scripts/automation-report.mjs) owns verified destinations; [recovery tests](../packages/core/test/unit/scripts/automation-recovery.test.ts) cover interrupted reporting without replaying an edit.
-
-## Operations requiring the slice 4 runner to be reviewed and activated
-
-- `operation: "preview"`: same edits and blob preconditions as apply; format in the uncredentialed candidate job, retain a bounded final diff, byte measurements, planned creates/deletes, and applicable checks. Publish only request cleanup, never the proposed target files. `dry_run: true` maps to this operation after activation. An older pin still has the older dry-run contract.
-- `operation: "validate"`: name 1 through 50 existing paths and `checks` from `format` and `read-budget`. No edits or caller-provided command strings. The result names the exact source SHA. These are targeted checks, not the full suite, full repository scans, or merge authorization.
-- [Operation owner](../scripts/automation-operation.mjs), [preview regression](../packages/core/test/unit/scripts/automation-operation.test.ts), and [operation safety tests](../packages/core/test/unit/scripts/automation-operation-policy.test.ts) own this behavior. The publisher revalidates the schema, identities, complete measurements, and allowed output paths.
-
-A passed implementation PR does not change `MOTION5_AUTOMATION_SHA`. After review and rollout, a maintainer must pin the reviewed immutable revision and exercise preview, validation, request cleanup, retained evidence, and follow-on CI. Never move the pin to unreviewed candidate code merely to demonstrate activation.
+- Read complete files at an immutable SHA, create a branch, open a PR, and read checks and comments. Availability is connection-specific; a missing Actions dispatch method is not a GitHub limitation.
+- Standard contribution workflow: plain git branches and pull requests targeting `main`. The AI edit, checkpoint and handover automation was retired in [ADR-142](./ADR-142-the-ai-edit-checkpoint-and-handover-automation-is-removed.md).
 
 ## Human-dispatch-only through the current connection
 
 - **Format manually**, [format.yml](../.github/workflows/format.yml), is the deliberate mechanical repair escape hatch. [FORMATTING.md](./FORMATTING.md) owns its use.
 - **Recovery audit**, [recovery-audit.yml](../.github/workflows/recovery-audit.yml), owns its additional mutation and acceptance evidence.
 - Historical lockfile bootstrap, GSAP dependency maintenance, and authored-leaf migration remain maintainer-dispatch routes. [MAINTENANCE-WORKFLOWS.md](./MAINTENANCE-WORKFLOWS.md) owns their distinct inputs/outputs, replacement requirements, trust limits, and separately confirmed retirement gates.
-- Reporter recovery dispatch requires an exact run and attempt. Repository variables, token scope, branch protection, and dispatch are maintainer actions when the connection does not expose them. Never paste the PAT into a request or comment.
 
 ## Maintenance not activated
 
 Dependency and general maintenance operations are refused, including when a PAT is configured. There is no arbitrary shell, npm argument, plugin, workflow-generation, or package-install request. [MAINTENANCE-WORKFLOWS.md](./MAINTENANCE-WORKFLOWS.md) documents the distinct bootstrap-lockfile, GSAP maintenance, and authored-leaf migration capabilities and the evidence required before any retirement. Keep those human-dispatch routes while usage or a working replacement cannot be verified; an inventory is not replacement validation.
-
-A future dependency operation needs a reviewed schema with bounded allowlisted package names and exact versions, lifecycle scripts disabled, immutable manifest inputs, an exact manifest-plus-lockfile output allow-list, isolated preparation, independent publication validation, and confirmed CI on the generated commit. The trusted-runner activation gate and live evidence must both be satisfied before that operation can be enabled. A secret existing is not that evidence.
-
-## Short round trip
-
-1. Read a complete snapshot and source blob SHAs. Check this map against the pinned runner.
-2. For an AI edit, on an open same-repository PR submit one request-only commit and do not advance the branch while publication is pending. For a checkpoint, push patch-set-only assembly commits first and the manifest in a final commit; patch-only commits do not start a run, and the manifest commit is the sealed request.
-3. For an AI edit, read `operation.json` and all listed diff chunks for a preview, or per-path check results for validation. For a checkpoint, read the preparation receipt and diagnostics for the sealed assembly. Redacted diff bytes are explicitly labeled; do not apply retained redacted text as a patch.
-4. Read the cleanup receipt. Refresh the head and blob preconditions, then submit a separate apply request if the preview is acceptable.
-5. Read the exact published commit receipt and all required PR CI on that commit. Keep implementation, CI verification, merge, and activation as four separate facts.

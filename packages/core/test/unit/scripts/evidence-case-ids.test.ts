@@ -331,14 +331,6 @@ import { fileURLToPath } from "node:url";
 // the progress state commit series inside `Track`; `SD-` owns properties every solve holds rather
 // than what any one strategy computes, which `IK-`, `FB-` and `IR-` own.
 //
-// `HO-` belongs to the handover format and its application, issue #487 and ADR-112: the archive
-// listing, the manifest and its patch chain, derived checkpoint and bundle components, the
-// `.handover/` inbox, and the whole-or-nothing application `npm run patches` performs. It owns
-// local tooling rather than runtime behaviour, so it extends no runtime series, and `H-` stays the
-// internal-key series it already is. A two-letter prefix beside its own initial is the policy the
-// `P-` paragraph sets, and the ordering note on the alternation below covers `HO` as it covers
-// `CF`.
-//
 // `EN-` belongs to the 2D solve's performance envelope, phase 7 of issue #349 and ADR-113: which
 // strategy each envelope rig dispatches to, that every rig publishes finite rotations, that the
 // iterative solve stops at its cap rather than running on, and that independent rigs in one
@@ -433,7 +425,6 @@ import { fileURLToPath } from "node:url";
 // matches something narrower than it reads all arrive as the same report.
 const REPO_ROOT = fileURLToPath(new URL("../../../../../", import.meta.url));
 const SELF = "packages/core/test/unit/scripts/evidence-case-ids.test.ts";
-const AI_EDIT = "packages/core/test/unit/scripts/apply-ai-edit.test.ts";
 const UNWALKED = new Set(["node_modules", "dist", "coverage"]);
 const TEST_FILE = /\.test\.tsx?$/;
 // Two-letter prefixes are listed before the single letters, and that order is a reading
@@ -452,7 +443,7 @@ const TEST_FILE = /\.test\.tsx?$/;
 // this pattern belongs beside the pattern rather than once per series, so those paragraphs now
 // say what a series owns and this one says where it sorts. Issue #294.
 const CASE_TITLE =
-  /it\(\s*"((?:AE|CF|CL|CN|CS|DV|EN|EV|FB|FO|GE|GF|GI|HO|IK|IN|IR|LF|LV|MG|PK|PV|RA|RB|RS|SD|SH|TH|WT|B|C|D|E|F|G|H|J|K|L|M|N|P|Q|R|S|T|U|V|W|Y|Z)-\d+)/g;
+  /it\(\s*"((?:AE|CF|CL|CN|CS|DV|EN|EV|FB|FO|GE|GF|GI|IK|IN|IR|LF|LV|MG|PK|PV|RA|RB|RS|SD|SH|TH|WT|B|C|D|E|F|G|H|J|K|L|M|N|P|Q|R|S|T|U|V|W|Y|Z)-\d+)/g;
 const REACT_RENDER = "packages/react/test/public-hook-render.test.ts";
 const SERIES_SHAPED_TITLE = /it\(\s*"([A-Z]{1,2}\d*)-(\d+)(?![\w-])/g;
 const SERIES_PREFIX = /^[A-Z]{1,2}$/;
@@ -509,12 +500,6 @@ describe("evidence case ids", () => {
     const total = files.reduce((count, file) => count + declaredCaseIds(file).length, 0);
     expect(files.length).toBeGreaterThanOrEqual(3);
     expect(total).toBeGreaterThan(15);
-  });
-
-  it("reaches the AE- series, which was declared and cited and never scanned", () => {
-    const ids = declaredCaseIds(AI_EDIT);
-    expect(ids.length).toBeGreaterThan(0);
-    expect(ids.filter((id) => !/^AE-\d+$/.test(id))).toEqual([]);
   });
 
   it("names every series the tree declares, or refuses the id it cannot match", () => {

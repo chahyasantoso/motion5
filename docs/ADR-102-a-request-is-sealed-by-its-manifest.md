@@ -1,6 +1,6 @@
 # ADR-102: A request is sealed by its manifest
 
-**Status:** Accepted, 2026-09-23
+**Status:** Accepted, 2026-09-23. **Superseded by [ADR-142](./ADR-142-the-ai-edit-checkpoint-and-handover-automation-is-removed.md), 2026-10-23.**
 
 ## Context
 

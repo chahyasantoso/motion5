@@ -12,10 +12,7 @@
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
-const SCANNED = [
-  "packages/core/test/unit/scripts/checkpoint-policy.test.ts",
-  "packages/core/test/unit/scripts/automation-checkpoint.test.ts",
-];
+const SCANNED = [];
 const TAG = "String.raw";
 // What may legally follow a scenario body's closing backtick, ignoring whitespace.
 const TERMINATOR = /^[\s]*[),;.]/;

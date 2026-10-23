@@ -3,6 +3,7 @@
 **Status:** Proposed in [#488](https://github.com/chahyasantoso/motion5/pull/488), 2026-09-24,
 stacked on #349 phase 6 (ADR-111) in the same pull request. Closes
 [#487](https://github.com/chahyasantoso/motion5/issues/487) when merged; no merge is claimed here.
+**Superseded by [ADR-142](./ADR-142-the-ai-edit-checkpoint-and-handover-automation-is-removed.md), 2026-10-23.**
 
 ## Context
 

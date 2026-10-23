@@ -1,6 +1,6 @@
 # ADR-100: A patch declares the bytes it produces
 
-**Status:** Accepted, 2026-09-21
+**Status:** Accepted, 2026-09-21. **Superseded by [ADR-142](./ADR-142-the-ai-edit-checkpoint-and-handover-automation-is-removed.md), 2026-10-23.**
 
 ## Context
 

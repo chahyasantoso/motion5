@@ -6,9 +6,9 @@ The definitions below were inspected at main snapshot `d60892834fd8cfaab0974babb
 
 ## Route and trust boundaries
 
-[API-CAPABILITIES.md](./API-CAPABILITIES.md) is the entry map. The [bounded request protocol](./AI-EDIT-WORKFLOW.md) supports apply, formatted preview, and targeted validation under its reviewed-runner gate. It does not execute npm installation, dependency maintenance, a codemod, or caller-supplied commands. An authored text patch is not a validated replacement for a generated lockfile or a migration workflow.
+[API-CAPABILITIES.md](./API-CAPABILITIES.md) is the entry map. Standard contributions use plain pull requests. An authored text patch is not a validated replacement for a generated lockfile or a migration workflow.
 
-The historical workflows below are maintainer-dispatch routes. Inspect and select the intended same-repository branch explicitly; do not accept a main or historical branch default without review. Their presence is not a claim of current token scope, branch-protection permissions, safe dispatch on arbitrary code, or successful recent runs. They execute on the checked-out branch and do not inherit the isolated candidate/publisher guarantees merely because the newer AI-edit workflow exists.
+The historical workflows below are maintainer-dispatch routes. Inspect and select the intended same-repository branch explicitly; do not accept a main or historical branch default without review. Their presence is not a claim of current token scope, branch-protection permissions, safe dispatch on arbitrary code, or successful recent runs. They execute on the checked-out branch.
 
 A replacement must isolate uncredentialed computation from credentialed publication, use reviewed tools/configuration, validate inputs as data, bound outputs, preserve failure evidence, and prove CI on the exact generated head. Existing secrets do not authorize new operations. No temporary privileged automation is an acceptable workaround for a missing dispatch method.
 

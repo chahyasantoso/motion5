@@ -31,13 +31,11 @@ Semantic files are distinct paths in the PR diff, excluding lockfiles, generated
 
 Squash merge into protected `main` only after required checks are green. Never weaken a test or bypass branch protection. Revert quickly when ownership or evidence breaks; after a second revert, redesign the slice. An implementation request is not authorization for an autonomous merge.
 
-## API-only contributions and privileged work
+## Plain git contributions and privileged work
 
-[API-CAPABILITIES.md](./API-CAPABILITIES.md) distinguishes repository API operations, human-dispatch-only routes, and capabilities that require activation. [AI-EDIT-WORKFLOW.md](./AI-EDIT-WORKFLOW.md) owns request schema, immutable inputs, bounded edits, isolated preparation, and publication recovery.
+[API-CAPABILITIES.md](./API-CAPABILITIES.md) distinguishes repository API operations and human-dispatch-only routes. Standard contributions use plain git branches and pull requests targeting `main`.
 
-Use one request-only commit with refreshed head and original blob preconditions. Do not advance the branch while publication is pending. Read the durable receipt, then inspect all required CI on the exact published commit. A preview consumes only its request and reports the proposed transformation separately. Targeted validation cannot authorize merging.
-
-Do not create temporary privileged workflows to work around a missing dispatch method. A PAT is not permission to execute candidate-owned scripts with write credentials. Workflow changes must be authored directly for review because request operations prohibit `.github/workflows/`. Reviewed runner changes need a reviewed immutable pin and live activation evidence; never point the pin at unreviewed code to bootstrap a demonstration.
+Do not create temporary privileged workflows to work around a missing dispatch method. A PAT is not permission to execute candidate-owned scripts with write credentials.
 
 **Format manually** remains the deliberate human-dispatch escape hatch for mechanical repair, not a behavior-change runner. Keep historical maintenance workflows until usage review and a validated replacement justify a separately confirmed retirement.
 
