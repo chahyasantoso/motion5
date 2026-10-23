@@ -4,9 +4,10 @@ import type { Diagnostic } from "./v5";
  * The target v5 value contract: authored and evaluated tables, records, specs and outputs.
  *
  * Staged beside `contract/v5.ts` so the Phase 1 acceptance suite can name the target without
- * changing the live engine, which still reads grouped `keyframes`. Runtime slices replace the
- * definitions in `contract/v5.ts` with these and this module then folds back into it. Nothing here
- * is exported from a package entry yet, so the current public surface is unchanged.
+ * changing the live engine, which still reads grouped `keyframes`. Phase 2 folds this module back
+ * into `contract/v5.ts` when parsing and evaluation adopt identified tables; until then the live
+ * `TrackDefinition` and this target one coexist. Nothing here is exported from a package entry yet,
+ * so the current public surface is unchanged.
  */
 
 /** A cell or record field value. The boundary rejects non-finite numbers. */
@@ -111,6 +112,47 @@ export interface TrackDefinition {
 
 /** A node's published named outputs. The main output is `values`. */
 export type Outputs = Readonly<Record<string, Value>>;
+
+/** One evaluation's identity and progress, handed to a plugin with its resolved input. */
+export interface EvaluationContext {
+  readonly nodeId: string;
+  readonly progress: number;
+}
+
+/**
+ * A single slot's bound outputs, or a map slot's member key to that member's outputs.
+ *
+ * This is the resolved shape, not a declaration: a slot's `DependencySpec` says which outputs it
+ * reads and what each must satisfy.
+ */
+export type ResolvedRequires = Readonly<
+  Record<string, Outputs | Readonly<Record<string, Outputs>>>
+>;
+
+/** The evaluated input one plugin receives: local values plus every bound slot. */
+export interface ResolvedInput<Values extends Value = Value> {
+  readonly values: Values;
+  readonly requires: ResolvedRequires;
+}
+
+/**
+ * One admitted plugin.
+ *
+ * `Input` is the evaluated input shape the plugin authors against, so a record input reads
+ * `values.dx` with its declared type and a table input reads rows. Types are authored, not derived
+ * from the runtime specs; runtime-spec-to-type derivation is deferred to Phase 3.
+ */
+export interface PluginDefinition<Input extends ResolvedInput = ResolvedInput> {
+  readonly id: string;
+  readonly inputs: {
+    // Type-legal here; admission refuses `optional` on local values in Phase 3.
+    readonly values: ValueSpec;
+    readonly requires?: Readonly<Record<string, DependencySpec>>;
+  };
+  readonly outputs: Readonly<Record<string, ValueSpec>>;
+  readonly validate?: (input: Input, context: EvaluationContext) => readonly Diagnostic[];
+  readonly transform: (input: Input, context: EvaluationContext) => Outputs;
+}
 
 /** What publication carries, discriminated by status. Only a ready patch owns outputs. */
 export type PatchPayload =

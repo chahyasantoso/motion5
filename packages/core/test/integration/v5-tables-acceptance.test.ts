@@ -4,9 +4,11 @@ import type { RuleId } from "../../src/contract/rule-id";
 import type {
   AuthoredCell,
   AuthoredRow,
-  Outputs,
   PatchPayload,
+  PluginDefinition,
+  ResolvedInput,
   Scalar,
+  Table,
   TrackDefinition,
   TrackInput,
   ValueSpec,
@@ -33,6 +35,53 @@ import {
  * the phase that owns the behavior instead of reporting staged coverage as done.
  */
 
+type TranslateValues = Readonly<Record<"dx" | "dy", number>>;
+
+/** The slice's translate plugin, typed but not registered; runtime registration is Phase 3. */
+const translatePlugin: PluginDefinition<
+  ResolvedInput<TranslateValues> & {
+    readonly requires: { readonly data: { readonly values: Table } };
+  }
+> = {
+  id: "translate",
+  inputs: {
+    values: {
+      kind: "record",
+      fields: { dx: { kind: "number" }, dy: { kind: "number" } },
+    },
+    requires: {
+      data: {
+        outputs: {
+          values: {
+            kind: "table",
+            schema: {
+              row: { fields: { x: { kind: "number" }, y: { kind: "number" } } },
+            },
+          },
+        },
+      },
+    },
+  },
+  outputs: {
+    values: {
+      kind: "table",
+      schema: {
+        row: { fields: { x: { kind: "number" }, y: { kind: "number" } } },
+      },
+    },
+  },
+  transform(input) {
+    return {
+      values: input.requires.data.values.map((row) => ({
+        id: row.id,
+        cells: { x: input.values.dx, y: input.values.dy },
+      })),
+    };
+  },
+};
+
+void translatePlugin;
+
 function engine() {
   return new Engine({
     clock: createManualClock(),
@@ -54,16 +103,15 @@ function loadAndDispose(definition: unknown): void {
 /**
  * Bridges today's live patch to the staged target payload.
  *
- * The live engine still publishes one `values` record, so a ready patch has no named outputs. The
- * target contract publishes `outputs`; Phase 2 moves the engine and this bridge collapses into the
- * status narrowing below. Reading a missing output as absent keeps a staged failure an assertion
- * rather than a crash.
+ * The live engine still publishes one grouped `values` record, so a ready patch carries no named
+ * outputs. The target contract publishes `outputs`; Phase 2 moves the engine and this bridge
+ * collapses into the status narrowing below. An empty output set is what a live patch genuinely
+ * answers today, and it keeps a staged failure an assertion rather than a crash.
  */
 function staged(patch: Patch | undefined): PatchPayload | undefined {
   if (patch === undefined) return undefined;
   if (patch.status !== "ready") return patch;
-  const outputs = (patch as unknown as { readonly outputs?: Outputs }).outputs ?? {};
-  return { status: "ready", outputs };
+  return { status: "ready", outputs: {} };
 }
 
 /**
@@ -299,4 +347,112 @@ describe("v5 authored refusals", () => {
       ),
     ).toThrow(rule("static-field-stops"));
   });
+
+  it.fails("[staged Phase 2] refuses an unregistered plugin as plugin-unknown", () => {
+    expect(() =>
+      loadAndDispose(
+        malformed(track({ id: "shifted", plugin: "missing", values: record({ dx: 10 }) })),
+      ),
+    ).toThrow(rule("plugin-unknown"));
+  });
+
+  it.fails(
+    "[staged Phase 2] refuses requires without a plugin as plugin-requires-without-plugin",
+    () => {
+      expect(() =>
+        loadAndDispose(
+          malformed(
+            track({
+              id: "points",
+              values: record({ x: 0 }),
+              requires: { data: "points" },
+            }),
+          ),
+        ),
+      ).toThrow(rule("plugin-requires-without-plugin"));
+    },
+  );
+
+  it.fails(
+    "[staged Phase 2] refuses a source schema on a plugin track as input-schema-on-plugin-track",
+    () => {
+      expect(() =>
+        loadAndDispose(
+          malformed(
+            track({
+              id: "shifted",
+              plugin: "translate",
+              values: record({ dx: 10 }),
+              schema: { kind: "record", fields: { dx: { kind: "number" } } },
+            }),
+          ),
+        ),
+      ).toThrow(rule("input-schema-on-plugin-track"));
+    },
+  );
+
+  it.fails("[staged Phase 2] refuses duplicate row ids as row-id-duplicate", () => {
+    expect(() =>
+      loadAndDispose(
+        malformed(
+          track({
+            id: "points",
+            values: table(row("point-a", { x: 0 }), row("point-a", { x: 1 })),
+          }),
+        ),
+      ),
+    ).toThrow(rule("row-id-duplicate"));
+  });
+
+  it.fails("[staged Phase 2] refuses a reserved row id as name-reserved", () => {
+    expect(() =>
+      loadAndDispose(malformed(track({ id: "points", values: table(row("__proto__", { x: 0 })) }))),
+    ).toThrow(rule("name-reserved"));
+  });
+
+  it.fails("[staged Phase 2] refuses an empty bare stop array as cell-stops-invalid", () => {
+    expect(() =>
+      loadAndDispose(malformed(track({ id: "parameters", values: record({ dx: [] }) }))),
+    ).toThrow(rule("cell-stops-invalid"));
+  });
+
+  it.fails("[staged Phase 2] refuses a stop position outside [0, 1] as cell-stops-invalid", () => {
+    expect(() =>
+      loadAndDispose(
+        malformed(track({ id: "parameters", values: record({ dx: [{ p: 1.5, v: 0 }] }) })),
+      ),
+    ).toThrow(rule("cell-stops-invalid"));
+  });
+
+  it.fails(
+    "[staged Phase 2] refuses mixed scalar kinds in one stop sequence as cell-kind-conflict",
+    () => {
+      expect(() =>
+        loadAndDispose(
+          malformed(
+            track({
+              id: "parameters",
+              values: record({
+                dx: [
+                  { p: 0, v: 0 },
+                  { p: 1, v: "one" },
+                ],
+              }),
+            }),
+          ),
+        ),
+      ).toThrow(rule("cell-kind-conflict"));
+    },
+  );
+});
+
+describe("v5 registration-dependent refusals", () => {
+  it.todo("[staged Phase 3] slot-unknown refuses a binding to an undeclared slot");
+  it.todo("[staged Phase 3] slot-incompatible refuses a mismatched slot output");
+  it.todo("[staged Phase 3] output-undeclared refuses an output the plugin did not declare");
+  it.todo("[staged Phase 3] output-missing refuses a required declared output that is absent");
+  it.todo("[staged Phase 3] output-invalid refuses an output that fails its spec");
+  it.todo("[staged Phase 3] output-row-id-duplicate refuses duplicate output row ids");
+  it.todo("[staged Phase 3] plugin-input-invalid refuses input that fails the plugin input spec");
+  it.todo("[staged Phase 4] live-values-invalid refuses a live write that breaks the shape");
 });
