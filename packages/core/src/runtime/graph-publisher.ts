@@ -1,10 +1,11 @@
 import { diagnostic } from "../contract/diagnostics";
-import type { Diagnostic, FlatRecord, Outputs } from "../contract/v5";
+import type { Diagnostic, FlatRecord, Outputs, ResolvedRequires } from "../contract/v5";
 import { compareEdges, edgeRole, type GraphEdge, type GraphIR, type GraphNode } from "../graph/ir";
 import { firstPendingEdge } from "../graph/references";
 import { CompositionOutputError } from "../domain/track";
 import { isImmutableLeaf } from "../domain/values";
 import type { RequirementInputs } from "../domain/plugins";
+import { PluginNodeError } from "./plugin-output";
 import { PatchRegistry, REENTRANT_BATCH_MESSAGE, type PatchBatch } from "./patch-registry";
 import {
   PublishFailureError,
@@ -58,7 +59,19 @@ export interface PublisherComposition {
   readonly outputs: Outputs;
   readonly sourceProgress: number;
   readonly sourceRevisions: Readonly<Record<string, number>>;
+  /** Warnings a plugin's optional `validate` returned, carried on the ready patch. */
+  readonly diagnostics?: readonly Diagnostic[];
 }
+
+interface IdentifiedInputs {
+  readonly requires: ResolvedRequires;
+  readonly sourceRevisions: Record<string, number>;
+}
+
+const EMPTY_IDENTIFIED_INPUTS: IdentifiedInputs = Object.freeze({
+  requires: Object.freeze({}),
+  sourceRevisions: Object.freeze({}),
+});
 export interface PublisherNode extends GraphNode {
   /**
    * Composes the node against its scoped requirement inputs: one record per plugin, one entry per
@@ -70,6 +83,14 @@ export interface PublisherNode extends GraphNode {
    * See ADR-044 and ADR-047.
    */
   readonly compose: (requirementInputs: RequirementInputs) => PublisherComposition;
+  /**
+   * The identified-table composition path, when the node selects a plugin.
+   *
+   * The publisher collects full named outputs for this path rather than the grouped path's
+   * `values` record; one optional member keeps the retired publisher contract intact for the
+   * grouped machinery Phase 7 removes.
+   */
+  readonly composeIdentified?: (requires: ResolvedRequires) => PublisherComposition;
   readonly interpolated?: () => MemberState;
 }
 /**
@@ -106,16 +127,17 @@ export interface PublisherFailure {
  * one of the four raw literals that spelled `severity: "error"` for itself; the rename and the
  * collapse are the same correction rather than two. See ADR-097 and issue #449.
  */
-function nodeFailure(nodeId: string, error: unknown): Diagnostic {
+function nodeFailure(nodeId: string, error: unknown): readonly Diagnostic[] {
+  if (error instanceof PluginNodeError) return error.diagnostics;
   const ruleId =
     error instanceof PublishFailureError
       ? publishFailureRule(error.failure)
       : error instanceof CompositionOutputError
         ? error.ruleId
         : "composition-failure";
-  return diagnostic(ruleId, nodeId, error instanceof Error ? error.message : String(error), [
-    nodeId,
-  ]);
+  return [
+    diagnostic(ruleId, nodeId, error instanceof Error ? error.message : String(error), [nodeId]),
+  ];
 }
 /**
  * A node's edges of one role in canonical order. `compareEdges` in `graph/ir.ts` is the only
@@ -301,8 +323,15 @@ export class GraphPublisher {
     // value yet (typically because it is not currently a member) is pending, not failed.
     // Classified up front, before composition is attempted, so this is never decided by
     // catching an exception. graph/references.ts is the single owner of this decision.
+    const outputsFor = (sourceId: string): Outputs | undefined => {
+      const outcome = outcomeFor(sourceId);
+      if (outcome.kind === "composed") return outcome.composition.outputs;
+      return this.#registry.lastReady(sourceId)?.outputs;
+    };
     const pendingMatch = firstPendingEdge(node.edges, compareEdges, (sourceId) =>
-      hasValue(valuesFor(sourceId)),
+      node.composeIdentified === undefined
+        ? hasValue(valuesFor(sourceId))
+        : outputsFor(sourceId) !== undefined,
     );
     if (pendingMatch !== undefined) {
       this.#registry.publish({
@@ -313,8 +342,10 @@ export class GraphPublisher {
       return pendingOutcome(pendingMatch.diagnostic);
     }
     try {
-      const collected = this.#collectInputs(node, byId, valuesFor);
-      const composed = node.compose(collected.inputs);
+      const collected = this.#collectInputs(node, byId, valuesFor, outputsFor);
+      const composed = node.composeIdentified
+        ? node.composeIdentified(collected.identified)
+        : node.compose(collected.inputs);
       validateComposition(composed.outputs);
       const merged = this.#mergeOutputs(node, composed, collected.sourceRevisions, valuesFor);
       this.#registry.publish({
@@ -323,17 +354,20 @@ export class GraphPublisher {
         sourceProgress: merged.sourceProgress,
         sourceRevisions: merged.sourceRevisions,
         status: "ready",
-        diagnostics: [],
+        diagnostics: merged.diagnostics ?? [],
       });
       return composedOutcome(merged);
     } catch (error) {
-      const failure = nodeFailure(id, error);
+      const failures = nodeFailure(id, error);
+      const first =
+        failures[0] ??
+        diagnostic("composition-failure", id, "Composition failed without a diagnostic.", [id]);
       this.#registry.publish({
         nodeId: id,
         status: "error",
-        diagnostics: [failure],
+        diagnostics: failures.length === 0 ? [first] : failures,
       });
-      return failedOutcome(failure);
+      return failedOutcome(first);
     }
   }
 
@@ -348,10 +382,22 @@ export class GraphPublisher {
     node: PublisherNode,
     byId: PublisherSnapshot["nodeById"],
     valuesFor: (sourceId: string) => SourceValues,
+    outputsFor: (sourceId: string) => Outputs | undefined,
   ): {
     readonly inputs: RequirementInputs;
+    readonly identified: ResolvedRequires;
     readonly sourceRevisions: Record<string, number>;
   } {
+    const identified =
+      node.composeIdentified === undefined
+        ? EMPTY_IDENTIFIED_INPUTS
+        : this.#collectIdentifiedInputs(node, outputsFor);
+    if (node.composeIdentified !== undefined)
+      return {
+        inputs: Object.freeze({}),
+        identified: identified.requires,
+        sourceRevisions: identified.sourceRevisions,
+      };
     const collected: Record<string, Record<string, unknown>> = {};
     // One accumulator per dict-valued slot, kept beside `collected` until the input loop is
     // done. Assembled separately rather than merged in place so the slot's own record is
@@ -443,7 +489,52 @@ export class GraphPublisher {
     // looked like an optimisation and was strictly weaker: an animated value on a solver
     // track changed nothing in that key, so the solver held still after tick one with no
     // error and no diagnostic. See ADR-051.
-    return { inputs: freezeRequirementInputs(collected), sourceRevisions };
+    return {
+      inputs: freezeRequirementInputs(collected),
+      identified: identified.requires,
+      sourceRevisions: { ...sourceRevisions, ...identified.sourceRevisions },
+    };
+  }
+
+  /**
+   * Full named outputs for one identified-table node, grouped by slot and member key.
+   *
+   * A map slot's empty authored map is present as an empty member record even though it derives
+   * no edge, because `{}` is a binding the plugin can decide about and an absent slot is a
+   * different answer. The source's full output set is delivered here; `PluginTrack` narrows it to
+   * the outputs the slot declares, which is where the "only declared outputs" rule is enforced.
+   */
+  #collectIdentifiedInputs(
+    node: PublisherNode,
+    outputsFor: (sourceId: string) => Outputs | undefined,
+  ): IdentifiedInputs {
+    interface SlotBinding {
+      single?: Outputs;
+      members?: Record<string, Outputs>;
+    }
+    const slots = new Map<string, SlotBinding>();
+    for (const [slot, binding] of Object.entries(node.track.input?.requires ?? {}))
+      if (isRecord(binding)) slots.set(slot, { members: {} });
+    const sourceRevisions: Record<string, number> = {};
+    for (const edge of edgesByRole(node, "input")) {
+      const requirement = edge.requirement;
+      if (requirement === undefined) failPublication({ kind: "input-requirement", edge });
+      const outputs = outputsFor(edge.sourceId);
+      if (outputs === undefined)
+        failPublication({ kind: "missing-upstream", role: "input", sourceId: edge.sourceId });
+      const sourcePatch = this.#registry.get(edge.sourceId);
+      if (sourcePatch) sourceRevisions[edge.sourceId] = sourcePatch.revision;
+      const entry = slots.get(requirement.slot) ?? {};
+      if (requirement.memberKey === undefined) entry.single = outputs;
+      else (entry.members ??= {})[requirement.memberKey] = outputs;
+      slots.set(requirement.slot, entry);
+    }
+    const requires: Record<string, Outputs | Record<string, Outputs>> = {};
+    for (const [slot, entry] of slots) {
+      if (entry.single !== undefined) requires[slot] = entry.single;
+      else if (entry.members !== undefined) requires[slot] = Object.freeze(entry.members);
+    }
+    return { requires: Object.freeze(requires), sourceRevisions };
   }
 
   /**

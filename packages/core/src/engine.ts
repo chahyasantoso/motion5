@@ -27,8 +27,10 @@ import { PluginRegistry } from "./domain/plugins";
 import type { PluginCatalog } from "./domain/plugin-catalog";
 import type { RenderMetadata } from "./ports/render-metadata";
 import { qualifyFreeTrack, qualifyMotionTrack } from "./graph/ids";
-import type { ComposeResolver } from "./runtime/graph-runtime";
+import type { ComposeIdentifiedResolver, ComposeResolver } from "./runtime/graph-runtime";
 import { ValueTrack } from "./runtime/value-track";
+import { PluginTrack } from "./runtime/plugin-track";
+import { deriveSourceContract } from "./contract/v5-infer";
 import { assertClock, type Clock } from "./ports/clock";
 import { assertInterpolator, type Interpolator } from "./ports/interpolator";
 import { assertScheduler, type Scheduler } from "./ports/scheduler";
@@ -112,7 +114,7 @@ export interface ProjectHandle {
   dispose(): void;
 }
 interface Composition {
-  readonly tracks: Map<string, ValueTrack>;
+  readonly tracks: Map<string, ValueTrack | PluginTrack>;
   readonly nodes: Map<string, TrackDefinition>;
   readonly motionTrackIds: Map<string, readonly string[]>;
   readonly motions: Map<string, Motion>;
@@ -203,7 +205,7 @@ export class Engine {
   }
   load(project: ProjectDefinition): ProjectHandle {
     const acceptedProject = assertValidProject(project, this.#capabilities);
-    const tracks = new Map<string, ValueTrack>();
+    const tracks = new Map<string, ValueTrack | PluginTrack>();
     const nodes = new Map<string, TrackDefinition>();
     const motionTrackIds = new Map<string, readonly string[]>();
     for (const motion of acceptedProject.motions) {
@@ -214,7 +216,7 @@ export class Engine {
     }
     for (const track of acceptedProject.freeTracks ?? [])
       nodes.set(qualifyFreeTrack(track.id).value, track);
-    const compileTrack = (trackDef: TrackDefinition, nodeId: string): ValueTrack => {
+    const compileTrack = (trackDef: TrackDefinition, nodeId: string): ValueTrack | PluginTrack => {
       const existing = tracks.get(nodeId);
       if (existing) return existing;
       const parsed = readOutcome(
@@ -228,10 +230,31 @@ export class Engine {
           throw new TypeError(describeDiagnostics(diagnostics));
         },
       );
-      // Plugin compilation is Phase 3's. Refused by name here rather than compiled through the
-      // retired grouped-keyframe path, which no longer has authored keyframes to read.
-      if (parsed.plugin !== undefined)
-        throw new TypeError(`Plugin track "${trackDef.id}" is not compiled until Phase 3.`);
+      if (parsed.plugin !== undefined) {
+        const plugin = this.#capabilities.pluginDefinition?.(parsed.plugin);
+        if (plugin === undefined)
+          throw new TypeError(
+            `plugin-unknown at ${nodeId}.plugin: '${parsed.plugin}' is not admitted.`,
+          );
+        // The authored values are checked against the plugin's declared local contract before the
+        // track is compiled. The same contract is rechecked at runtime because easing can leave a
+        // declared range even when the authored stops did not.
+        readOutcome(
+          deriveSourceContract(parsed.input.values, plugin.inputs.values, `${nodeId}.input.values`),
+          () => undefined,
+          (diagnostics) => {
+            throw new TypeError(describeDiagnostics(diagnostics));
+          },
+        );
+        const track = new PluginTrack({
+          nodeId,
+          plugin,
+          values: parsed.input.values,
+          interpolator: this.#options.interpolator,
+        });
+        tracks.set(nodeId, track);
+        return track;
+      }
       const track = new ValueTrack({
         nodeId,
         values: parsed.input.values,
@@ -240,7 +263,7 @@ export class Engine {
       tracks.set(nodeId, track);
       return track;
     };
-    const compile = (nodeId: string): ValueTrack => {
+    const compile = (nodeId: string): ValueTrack | PluginTrack => {
       const definition = nodes.get(nodeId);
       if (!definition) throw new TypeError(`Unknown graph node "${nodeId}".`);
       return compileTrack(definition, nodeId);
@@ -256,7 +279,7 @@ export class Engine {
       // `compileTrack` intentionally reuses a live entry. Remove it only for the synchronous build,
       // then restore it if preparation rejects. Nothing outside this owner can observe the gap.
       tracks.delete(nodeId);
-      let replacement: ValueTrack;
+      let replacement: ValueTrack | PluginTrack;
       try {
         replacement = compileTrack(trackDef, nodeId);
       } catch (error) {
@@ -493,18 +516,27 @@ export class Engine {
       const compose: ComposeResolver = (node) => () => {
         const track = tracks.get(node.id);
         if (!track) throw new TypeError(`Unknown graph node "${node.id}".`);
-        // A value track has no plugin chain and no requirement slots: its parse refuses both, so
-        // the scoped inputs the publisher collected are empty by construction.
+        if (track instanceof PluginTrack) {
+          throw new TypeError(
+            `Plugin track "${node.id}" composes through its identified input path.`,
+          );
+        }
         return {
           outputs: track.outputs(),
           sourceProgress: track.progress,
           sourceRevisions: {},
         };
       };
+      const composeIdentified: ComposeIdentifiedResolver = (node) => {
+        const track = tracks.get(node.id);
+        if (!(track instanceof PluginTrack)) return undefined;
+        return (requires) => track.compose(requires);
+      };
       const created = new ProjectRuntime(acceptedProject, {
         clock: this.#options.clock,
         scheduler: this.#options.scheduler,
         compose,
+        composeIdentified,
         graphBuilder: new IncrementalGraphBuilder(this.#capabilities),
         setProgress: (nodeId, progress) => tracks.get(nodeId)?.setProgress(progress),
         compileTrack: compileTrackDefinition,

@@ -93,7 +93,11 @@ import {
   withStagger,
 } from "./authored-values";
 import { Diagnostics, type DiagnosticsSnapshot } from "./diagnostics";
-import { GraphRuntime, type ComposeResolver } from "./graph-runtime";
+import {
+  GraphRuntime,
+  type ComposeIdentifiedResolver,
+  type ComposeResolver,
+} from "./graph-runtime";
 import type { GraphNode } from "../graph/ir";
 import type { MemberState } from "./graph-publisher";
 import type { GraphBuilder } from "../ports/graph-builder";
@@ -176,6 +180,8 @@ export interface ProjectRuntimeOptions {
   readonly clock: Clock;
   readonly scheduler?: Scheduler;
   readonly compose: ComposeResolver;
+  /** The identified-table composition seam, forwarded to `GraphRuntime` untouched. */
+  readonly composeIdentified?: ComposeIdentifiedResolver;
   /**
    * How one node's interpolated state is read, forwarded to `GraphRuntime` untouched.
    *
@@ -336,6 +342,9 @@ export class ProjectRuntime {
         ...(options.scheduler === undefined ? {} : { scheduler: options.scheduler }),
         ...(options.onClockTick === undefined ? {} : { onClockTick: options.onClockTick }),
         ...(options.graphBuilder === undefined ? {} : { graphBuilder: options.graphBuilder }),
+        ...(options.composeIdentified === undefined
+          ? {}
+          : { composeIdentified: options.composeIdentified }),
         ...(options.interpolated === undefined ? {} : { interpolated: options.interpolated }),
         onFlushError: (diagnostic) => this.#diagnostics.record(diagnostic),
       });
