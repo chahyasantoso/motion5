@@ -70,24 +70,14 @@
     "reason": "Exercises solver, IK, FK or rig behavior; Phase 5 expresses it with tables and declared dependencies."
   },
   {
-    "path": "packages/core/test/contract/graph-builder-incremental.test.ts",
-    "phase": 3,
-    "reason": "Authors grouped plugin keyframes; plugin admission, slots and named outputs replace them in Phase 3."
-  },
-  {
-    "path": "packages/core/test/contract/track-validation-result.test.ts",
-    "phase": 3,
-    "reason": "Authors grouped plugin keyframes; plugin admission, slots and named outputs replace them in Phase 3."
-  },
-  {
     "path": "packages/core/test/contract/v5-validator.test.ts",
-    "phase": 3,
-    "reason": "Authors grouped plugin keyframes; plugin admission, slots and named outputs replace them in Phase 3."
+    "phase": 5,
+    "reason": "Authors grouped plugin keyframes; Phase 5 expresses transform, fk and 3d plugins with tables and declared dependencies."
   },
   {
     "path": "packages/core/test/contract/validation-owner.test.ts",
-    "phase": 3,
-    "reason": "Authors grouped plugin keyframes; plugin admission, slots and named outputs replace them in Phase 3."
+    "phase": 5,
+    "reason": "Authors grouped plugin keyframes and retired observes edges; Phase 5 expresses plugins with tables and declared dependencies."
   },
   {
     "path": "packages/core/test/integration/adopt-destroy-readopt.test.ts",
@@ -106,13 +96,13 @@
   },
   {
     "path": "packages/core/test/integration/bare-authored-leaf.test.ts",
-    "phase": 3,
-    "reason": "Authors grouped plugin keyframes; plugin admission, slots and named outputs replace them in Phase 3."
+    "phase": 5,
+    "reason": "Exercises FK plugin grouped keyframes; Phase 5 expresses FK with tables and declared dependencies."
   },
   {
     "path": "packages/core/test/integration/contract-baseline.pending.test.ts",
-    "phase": 3,
-    "reason": "The perspective-usage warning has no producer on the identified-table parser, and graph cycles need declared dependencies; both arrive with Phase 3 plugin slots."
+    "phase": 5,
+    "reason": "The perspective-usage warning and 3d plugin arrive with Phase 5."
   },
   {
     "path": "packages/core/test/integration/cross-motion.test.ts",
@@ -121,8 +111,8 @@
   },
   {
     "path": "packages/core/test/integration/demo-runtime-authoring.test.ts",
-    "phase": 3,
-    "reason": "Loads the IK playground and react-demo projects through transform, fk and ik plugin tracks, which Phase 3 compiles; later cases also need Phase 4 live edits and Phase 5 solver output."
+    "phase": 5,
+    "reason": "Loads the IK playground and react-demo projects through transform, fk and ik plugin tracks; Phase 5 expresses them with tables and declared dependencies."
   },
   {
     "path": "packages/core/test/integration/engine-headless.test.ts",
@@ -136,8 +126,8 @@
   },
   {
     "path": "packages/core/test/integration/engine-x3-contribution.test.ts",
-    "phase": 3,
-    "reason": "Authors grouped plugin keyframes; plugin admission, slots and named outputs replace them in Phase 3."
+    "phase": 7,
+    "reason": "Exercises old grouped plugin machinery (stage, contribute); stays untouched as dead code until Phase 7."
   },
   {
     "path": "packages/core/test/integration/handle-adoption.test.ts",
@@ -181,18 +171,18 @@
   },
   {
     "path": "packages/core/test/integration/internal-key-strip.test.ts",
-    "phase": 3,
-    "reason": "Authors grouped plugin keyframes; plugin admission, slots and named outputs replace them in Phase 3."
+    "phase": 5,
+    "reason": "Exercises old PluginRegistry and grouped plugin keyframes; Phase 5 expresses plugins with tables and declared dependencies."
   },
   {
     "path": "packages/core/test/integration/issue-114-motion-track-regressions.test.ts",
-    "phase": 3,
-    "reason": "Authors grouped plugin keyframes; plugin admission, slots and named outputs replace them in Phase 3."
+    "phase": 4,
+    "reason": "Exercises live track replacement via handle; Phase 4 rebuilds that path on identified tables."
   },
   {
     "path": "packages/core/test/integration/keyframe-groups.test.ts",
-    "phase": 3,
-    "reason": "Authors grouped plugin keyframes; plugin admission, slots and named outputs replace them in Phase 3."
+    "phase": 5,
+    "reason": "Exercises old plugin-named grouped keyframes; Phase 5 expresses plugins with tables and declared dependencies."
   },
   {
     "path": "packages/core/test/integration/motion-trigger-types.test.ts",
@@ -206,13 +196,13 @@
   },
   {
     "path": "packages/core/test/integration/one-mechanism-per-question.test.ts",
-    "phase": 3,
-    "reason": "Authors grouped plugin keyframes; plugin admission, slots and named outputs replace them in Phase 3."
+    "phase": 4,
+    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
   },
   {
     "path": "packages/core/test/integration/option-c-track-resolution.test.ts",
-    "phase": 3,
-    "reason": "Authors grouped plugin keyframes; plugin admission, slots and named outputs replace them in Phase 3."
+    "phase": 4,
+    "reason": "Exercises live track replacement via handle; Phase 4 rebuilds that path on identified tables."
   },
   {
     "path": "packages/core/test/integration/phase2-motion-scheduling.test.ts",
@@ -231,18 +221,18 @@
   },
   {
     "path": "packages/core/test/integration/phase7-walker-demo.test.ts",
-    "phase": 3,
-    "reason": "Authors grouped plugin keyframes; plugin admission, slots and named outputs replace them in Phase 3."
+    "phase": 7,
+    "reason": "Exercises walker demo rig; Phase 7 expresses it with tables and declared dependencies."
   },
   {
     "path": "packages/core/test/integration/plugin-group-values-section.test.ts",
-    "phase": 3,
-    "reason": "Authors grouped plugin keyframes; plugin admission, slots and named outputs replace them in Phase 3."
+    "phase": 5,
+    "reason": "Exercises old grouped keyframe sections; Phase 5 expresses plugins with tables and declared dependencies."
   },
   {
     "path": "packages/core/test/integration/react-demo-rig.test.ts",
-    "phase": 3,
-    "reason": "Loads `full-body-project` through fk and transform plugin tracks, which Phase 3 compiles; its arm edits then need Phase 4 live writes."
+    "phase": 5,
+    "reason": "Loads full-body-project through fk and transform plugin tracks; Phase 5 expresses them with tables and declared dependencies."
   },
   {
     "path": "packages/core/test/integration/remount.test.ts",
@@ -253,11 +243,6 @@
     "path": "packages/core/test/integration/replace-motion-track.test.ts",
     "phase": 4,
     "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
-  },
-  {
-    "path": "packages/core/test/integration/rollback-error-precedence.pending.test.ts",
-    "phase": 3,
-    "reason": "P-2 and P-3 reach a candidate-graph refusal through a removed `observes` edge on `addTrack`; Phase 3 supplies the dependency-slot refusal that replaces it."
   },
   {
     "path": "packages/core/test/integration/runtime-motion-lifecycle.test.ts",
@@ -271,8 +256,8 @@
   },
   {
     "path": "packages/core/test/integration/t4-runtime-motion-parity.test.ts",
-    "phase": 3,
-    "reason": "Authors grouped plugin keyframes; plugin admission, slots and named outputs replace them in Phase 3."
+    "phase": 4,
+    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
   },
   {
     "path": "packages/core/test/integration/trigger-scroll.test.ts",
@@ -296,8 +281,8 @@
   },
   {
     "path": "packages/core/test/unit/domain/dict-valued-requirements.test.ts",
-    "phase": 3,
-    "reason": "Authors grouped plugin keyframes; plugin admission, slots and named outputs replace them in Phase 3."
+    "phase": 5,
+    "reason": "Exercises old IK plugin requirement slots; Phase 5 expresses IK with tables and declared dependencies."
   },
   {
     "path": "packages/core/test/unit/domain/plugin-3d-ownership.test.ts",
@@ -316,13 +301,13 @@
   },
   {
     "path": "packages/core/test/unit/graph/edge-key-separator.test.ts",
-    "phase": 3,
-    "reason": "Authors grouped plugin keyframes; plugin admission, slots and named outputs replace them in Phase 3."
+    "phase": 5,
+    "reason": "Exercises retired observes edge separator collisions; Phase 5 expresses plugins with tables and declared dependencies."
   },
   {
     "path": "packages/core/test/unit/graph/graph-dependants.test.ts",
-    "phase": 3,
-    "reason": "Authors grouped plugin keyframes; plugin admission, slots and named outputs replace them in Phase 3."
+    "phase": 5,
+    "reason": "Exercises walker demo reverse topology with IK and FK; Phase 5 expresses it with tables and declared dependencies."
   },
   {
     "path": "packages/core/test/unit/graph/ik3d-goal-weights-load.test.ts",
@@ -341,8 +326,8 @@
   },
   {
     "path": "packages/core/test/unit/graph/incremental-cache.test.ts",
-    "phase": 3,
-    "reason": "Authors grouped plugin keyframes; plugin admission, slots and named outputs replace them in Phase 3."
+    "phase": 5,
+    "reason": "Exercises retired observes edge caching; Phase 5 expresses plugins with tables and declared dependencies."
   },
   {
     "path": "packages/core/test/unit/graph/observation-state.test.ts",
@@ -361,8 +346,8 @@
   },
   {
     "path": "packages/core/test/unit/graph/single-input-channel.test.ts",
-    "phase": 3,
-    "reason": "Authors grouped plugin keyframes; plugin admission, slots and named outputs replace them in Phase 3."
+    "phase": 5,
+    "reason": "Exercises retired observes edge channel rules; Phase 5 expresses plugins with tables and declared dependencies."
   },
   {
     "path": "packages/core/test/unit/graph/solved-pivot-offset.test.ts",
@@ -476,13 +461,13 @@
   },
   {
     "path": "packages/core/test/unit/runtime/plugin-group-edit.test.ts",
-    "phase": 3,
-    "reason": "Authors grouped plugin keyframes; plugin admission, slots and named outputs replace them in Phase 3."
+    "phase": 4,
+    "reason": "Exercises live editing of keyframe groups on handles; Phase 4 rebuilds that path on identified tables."
   },
   {
     "path": "packages/core/test/unit/runtime/plugin-require-edit.test.ts",
-    "phase": 3,
-    "reason": "Authors grouped plugin keyframes; plugin admission, slots and named outputs replace them in Phase 3."
+    "phase": 4,
+    "reason": "Exercises live editing of plugin require slots on handles; Phase 4 rebuilds that path on identified tables."
   },
   {
     "path": "packages/core/test/unit/runtime/project-enumeration.test.ts",
@@ -521,13 +506,8 @@
   },
   {
     "path": "packages/core/test/unit/runtime/structural-commit-flush.pending.test.ts",
-    "phase": 3,
-    "reason": "RA-8, RA-9, RA-11 and RA-12 seed or refuse an observation edge authored with removed `observes`; Phase 3 supplies dependency slots and their unknown-source rule."
-  },
-  {
-    "path": "packages/core/test/unit/runtime/structural-commit-path.pending.test.ts",
-    "phase": 3,
-    "reason": "RA-4 refuses the candidate graph through an unknown source declared with removed `observes`; Phase 3 replaces it with a dependency-slot refusal."
+    "phase": 4,
+    "reason": "RA-8, RA-9 and RA-11 author live observation edges with addObserve or test handle observation flush wiring; Phase 4 replaces that live edit on identified tables."
   },
   {
     "path": "packages/core/test/unit/runtime/track-staging.test.ts",
@@ -581,8 +561,8 @@
   },
   {
     "path": "packages/plugins/test/integration/live-edit-ensure.test.ts",
-    "phase": 3,
-    "reason": "Authors grouped plugin keyframes; plugin admission, slots and named outputs replace them in Phase 3."
+    "phase": 5,
+    "reason": "Exercises live edit ensure on built-in FK plugin; Phase 5 expresses built-in plugins with tables and declared dependencies."
   },
   {
     "path": "packages/plugins/test/integration/live-value-composition.test.ts",
@@ -596,13 +576,13 @@
   },
   {
     "path": "packages/plugins/test/integration/per-plugin-key-ownership.test.ts",
-    "phase": 3,
-    "reason": "Authors grouped plugin keyframes; plugin admission, slots and named outputs replace them in Phase 3."
+    "phase": 5,
+    "reason": "Exercises built-in plugin key claims; Phase 5 expresses built-in plugins with tables and declared dependencies."
   },
   {
     "path": "packages/plugins/test/integration/plugin-owned-requirements.test.ts",
-    "phase": 3,
-    "reason": "Authors grouped plugin keyframes; plugin admission, slots and named outputs replace them in Phase 3."
+    "phase": 5,
+    "reason": "Exercises built-in plugin requirement slots; Phase 5 expresses built-in plugins with tables and declared dependencies."
   },
   {
     "path": "packages/plugins/test/integration/replace-track-transactionality.test.ts",
@@ -611,8 +591,8 @@
   },
   {
     "path": "packages/plugins/test/integration/single-input-channel.test.ts",
-    "phase": 3,
-    "reason": "Authors grouped plugin keyframes; plugin admission, slots and named outputs replace them in Phase 3."
+    "phase": 5,
+    "reason": "Exercises built-in plugin upstream composition; Phase 5 expresses built-in plugins with tables and declared dependencies."
   },
   {
     "path": "packages/plugins/test/labels.test.ts",
@@ -641,8 +621,8 @@
   },
   {
     "path": "packages/plugins/test/unit/loader.test.ts",
-    "phase": 3,
-    "reason": "Authors grouped plugin keyframes; plugin admission, slots and named outputs replace them in Phase 3."
+    "phase": 5,
+    "reason": "Exercises old lazy plugin loader with built-in plugins; Phase 5 expresses built-in plugins with tables and declared dependencies."
   },
   {
     "path": "packages/react/test/public-hook-render.test.ts",

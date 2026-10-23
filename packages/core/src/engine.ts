@@ -537,6 +537,9 @@ export class Engine {
         scheduler: this.#options.scheduler,
         compose,
         composeIdentified,
+        isPluginRegistered: (pluginId) =>
+          this.#capabilities.isPluginAdmitted?.(pluginId) ??
+          this.#capabilities.capabilityOf(pluginId) !== undefined,
         graphBuilder: new IncrementalGraphBuilder(this.#capabilities),
         setProgress: (nodeId, progress) => tracks.get(nodeId)?.setProgress(progress),
         compileTrack: compileTrackDefinition,

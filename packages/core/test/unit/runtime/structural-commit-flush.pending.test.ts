@@ -98,19 +98,4 @@ describe("a structural commit ends at one flush", () => {
 
     runtime.dispose();
   });
-
-  it("RA-12 seeds no flush when the graph refuses the candidate", () => {
-    const runtime = create();
-    const before = runtime.graph.sequence;
-
-    expect(() => runtime.addTrack(REJECTED_TRACK, { motionId: MOTION_ID })).toThrow(
-      /^observation-unknown-source at /,
-    );
-
-    expect(runtime.graph.sequence).toBe(before);
-    expect(runtime.graph.registry.get(HAND_ID)).toBeUndefined();
-    expect(runtime.diagnostics.entries).toHaveLength(0);
-
-    runtime.dispose();
-  });
 });

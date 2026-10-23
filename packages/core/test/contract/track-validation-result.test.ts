@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { describe, expect, it } from "vitest";
 import { unreachable } from "../../src/lang/exhaustive";
 import {
@@ -9,14 +8,12 @@ import type { TrackDefinition } from "../../src/contract/v5";
 
 const VALID_TRACK: TrackDefinition = {
   id: "arm",
-  keyframes: {
-    style: {
-      values: {
-        opacity: [
-          { p: 0, v: 0 },
-          { p: 1, v: 1 },
-        ],
-      },
+  input: {
+    values: {
+      x: [
+        { p: 0, v: 0 },
+        { p: 1, v: 1 },
+      ],
     },
   },
 };

@@ -75,8 +75,19 @@ const compose = (node: { id: string }) => () => ({
   sourceRevisions: {},
 });
 
+/** Refused by the candidate graph rather than by authored validation, so a commit is attempted. */
+const REJECTED_TRACK: TrackDefinition = {
+  id: "hand",
+  plugin: "translate",
+  input: { requires: { data: "~/missing" } },
+};
+
 function create(): ProjectRuntime {
-  return new ProjectRuntime(PROJECT, { clock: createManualClock(), compose });
+  return new ProjectRuntime(PROJECT, {
+    clock: createManualClock(),
+    compose,
+    isPluginRegistered: () => true,
+  });
 }
 /**
  * The refusal a publishing verb asked for from inside a commit answers with, whole.
@@ -285,6 +296,21 @@ describe("a structural commit ends at one flush", () => {
     // The half the refusal may not cost. `RA-9`'s publication of a newly added node is the commit's
     // own, seeded by `#derive`, and it is still there.
     expect(registry.get(HAND_ID)?.revision).toBe(1);
+
+    runtime.dispose();
+  });
+
+  it("RA-12 seeds no flush when the graph refuses the candidate", () => {
+    const runtime = create();
+    const before = runtime.graph.sequence;
+
+    expect(() => runtime.addTrack(REJECTED_TRACK, { motionId: MOTION_ID })).toThrow(
+      /^observation-unknown-source at /,
+    );
+
+    expect(runtime.graph.sequence).toBe(before);
+    expect(runtime.graph.registry.get(HAND_ID)).toBeUndefined();
+    expect(runtime.diagnostics.entries).toHaveLength(0);
 
     runtime.dispose();
   });

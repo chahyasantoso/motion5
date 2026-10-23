@@ -97,6 +97,12 @@ const BASE_PROJECT: ProjectDefinition = {
   schemaVersion: 5,
   motions: [{ id: MOTION_ID, trigger: { type: "manual" }, tracks: [{ id: "arm" }] }],
 };
+/** Refused by the candidate graph rather than by authored validation, so the rollback runs. */
+const REJECTED_TRACK: TrackDefinition = {
+  id: "hand",
+  plugin: "translate",
+  input: { requires: { data: "~/missing" } },
+};
 /**
  * Refused by `assertAuthoredMotionId` inside the candidate build, after every entry check passed.
  *
@@ -660,9 +666,12 @@ describe("a structural change runs one transaction, in one order", () => {
     runtime.dispose();
   });
 
-  it("leaves the retained definitions and the committed graph agreeing when authored validation refuses a duration", () => {
+  it("RA-7 leaves the retained definitions and the committed graph agreeing", () => {
     const journal = recorder();
-    const runtime = new ProjectRuntime(BASE_PROJECT, journal.options);
+    const runtime = new ProjectRuntime(BASE_PROJECT, {
+      ...journal.options,
+      isPluginRegistered: () => true,
+    });
 
     expect(disagreeing(runtime)).toEqual([]);
 
@@ -674,12 +683,30 @@ describe("a structural change runs one transaction, in one order", () => {
 
     // A refused replacement has to leave the pair agreeing too, which is the half a commit path
     // that writes its maps before the candidate is accepted would get wrong.
-    thrownBy(() => runtime.track(ADDED_ID).replace({ id: "hand", duration: -1 }));
+    thrownBy(() => runtime.track(ADDED_ID).replace(REJECTED_TRACK));
     expect(disagreeing(runtime)).toEqual([]);
     expect(runtime.track(ADDED_ID).definition).toEqual({ id: "hand", duration: 250 });
 
     runtime.track(ADDED_ID).remove();
     expect(disagreeing(runtime)).toEqual([]);
+
+    runtime.dispose();
+  });
+
+  it("RA-4 disposes the compiled Track and registers nothing when the graph refuses", () => {
+    const journal = recorder();
+    const runtime = new ProjectRuntime(BASE_PROJECT, {
+      ...journal.options,
+      isPluginRegistered: () => true,
+    });
+
+    const thrown = thrownBy(() => runtime.addTrack(REJECTED_TRACK, { motionId: MOTION_ID }));
+
+    expect(thrown).toBeInstanceOf(TypeError);
+    expect((thrown as Error).message).toMatch(/^observation-unknown-source at /);
+    expect(journal.entries).toEqual(["compile hero/hand", "dispose hero/hand"]);
+    expect(runtime.instanceCount).toBe(0);
+    expect(() => runtime.track(ADDED_ID)).toThrow(/Unknown graph node "hero\/hand"/);
 
     runtime.dispose();
   });

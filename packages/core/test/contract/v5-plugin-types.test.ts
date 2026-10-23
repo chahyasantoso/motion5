@@ -104,4 +104,31 @@ describe("v5 plugin types", () => {
     // rather than silently accepting an optional local input contract.
     expect(spec.optional).toBe(true);
   });
+
+  it("proves the declared spec and authored type agree for the translate plugin", () => {
+    const valuesSpec = translate.inputs.values;
+    if (valuesSpec.kind !== "record") throw new Error("Expected record spec.");
+    expect(Object.keys(valuesSpec.fields).sort()).toEqual(["dx", "dy"]);
+    expect(valuesSpec.fields.dx?.kind).toBe("number");
+    expect(valuesSpec.fields.dy?.kind).toBe("number");
+    expectTypeOf<TranslateInput["values"]>().toEqualTypeOf<TranslateValues>();
+    expectTypeOf<TranslateInput["values"]["dx"]>().toEqualTypeOf<number>();
+    expectTypeOf<TranslateInput["values"]["dy"]>().toEqualTypeOf<number>();
+
+    // Type drift note: PluginDefinition<Input> takes its input type from the author, not the spec.
+    // The type checker checks the author's input type in transform, but runtime validation validates
+    // against the declared spec (plugin-input-invalid).
+    type DriftingInput = {
+      readonly values: { readonly dx: string; readonly dy: number };
+      readonly requires: { readonly data: { readonly values: Table } };
+    };
+    const drifted: PluginDefinition<DriftingInput> = {
+      id: "drifted",
+      inputs: translate.inputs,
+      outputs: translate.outputs,
+      transform: (input, context) =>
+        translate.transform(input as unknown as TranslateInput, context),
+    };
+    expectTypeOf(drifted.transform).parameter(0).toEqualTypeOf<DriftingInput>();
+  });
 });

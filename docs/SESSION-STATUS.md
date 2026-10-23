@@ -6,20 +6,18 @@ states a phase; `packages/core/test/unit/scripts/session-status-shape.test.ts` e
 byte ceiling.
 
 - **Captured:** 2026-10-23, Asia/Jakarta.
-- **Read against:** `refactor/v5-identified-tables` after the identified-table engine slice.
+- **Read against:** `refactor/v5-identified-tables` after the identified-table plugin slice.
 
 ## Now
 
-- **The identified-table contract is live for tracks that name no plugin:** an authored table or
-  record is parsed, its source contract inferred, and its cells evaluated through one flat slot plan,
-  so a ready patch publishes `outputs.values`; tests that still author grouped plugin keyframes are
-  held in `test/pending.json` under the slice that replaces them, and the only staged red is the one
-  plugin acceptance case.
+- **Plugins and dependency slots are live on the identified-table path:** a registered plugin id,
+  record/table parameter inputs, dependency slots and named outputs run through the engine and
+  publisher, with slot compatibility checked at load and input/output contracts validated at runtime.
 
 ## Next in line
 
-- **Admit plugins on the identified-table path:** a registered plugin id, declared input slots and
-  named outputs replace grouped keyframes as the only way a track observes another.
+- **Rebuild live edits, handles and observation wiring on identified tables:** authoring and live
+  handle operations, dirty propagation and patch publication adapt to identified tables and slots.
 
 ## Open, and not scheduled
 

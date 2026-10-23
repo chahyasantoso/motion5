@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { MotionDefinition, ProjectDefinition } from "../../src/contract/v5";
+import type { MotionDefinition, ProjectDefinition, TrackDefinition } from "../../src/contract/v5";
 import { createDefaultTriggerFactory } from "../../src/adapters/trigger-factory/default";
 import { Engine, type ProjectHandle } from "../../src/engine";
 import { createManualClock } from "../../src/ports/clock";
@@ -33,6 +33,13 @@ import { ProjectRuntime } from "../../src/runtime/project-runtime";
 const BASE_PROJECT: ProjectDefinition = {
   schemaVersion: 5,
   motions: [{ id: "hero", trigger: { type: "manual" }, tracks: [{ id: "arm" }] }],
+};
+
+/** Rejected by the candidate graph rather than by authored validation, so the rollback runs. */
+const REJECTED_TRACK: TrackDefinition = {
+  id: "child",
+  plugin: "translate",
+  input: { requires: { data: "~/missing" } },
 };
 
 /** A slashed id reaches assertAuthoredMotionId, the same graph rejection `T-6` uses. */
@@ -146,6 +153,64 @@ describe("a rollback failure never outranks the rejection that triggered it", ()
     expect(() => handle.destroyMotion("bad/id")).toThrow('Unknown motion "bad/id".');
 
     handle.dispose();
+  });
+
+  it("P-2 reports the graph rejection first when the addTrack rollback throws", () => {
+    const failure = new Error("compiled Track dispose failed");
+    let disposals = 0;
+    const runtime = new ProjectRuntime(BASE_PROJECT, {
+      clock: createManualClock(),
+      compose,
+      isPluginRegistered: () => true,
+      compileTrack: () => undefined,
+      disposeTrack: () => {
+        disposals += 1;
+        throw failure;
+      },
+    });
+
+    const thrown = thrownBy(() => runtime.addTrack(REJECTED_TRACK));
+
+    expect((thrown as Error).message).toMatch(/^observation-unknown-source at /);
+    expect(thrown).toBeInstanceOf(AggregateError);
+    const errors = (thrown as AggregateError).errors as readonly unknown[];
+    expect(errors[0]).toBeInstanceOf(TypeError);
+    expect(errors[1]).toBe(failure);
+    expect(disposals).toBe(1);
+    expect(() => runtime.track("~/child")).toThrow('Unknown graph node "~/child".');
+
+    runtime.dispose();
+  });
+
+  it("P-3 rethrows the rejection itself, unwrapped, when the rollback succeeds", () => {
+    const handle = load([]);
+
+    const fromMotion = thrownBy(() => handle.addMotion(REJECTED_MOTION));
+
+    expect(fromMotion).toBeInstanceOf(TypeError);
+    expect(fromMotion).not.toBeInstanceOf(AggregateError);
+    expect((fromMotion as Error).message).toMatch(/^motion-id at motions\[0\]\.id:/);
+    handle.dispose();
+
+    let disposals = 0;
+    const runtime = new ProjectRuntime(BASE_PROJECT, {
+      clock: createManualClock(),
+      compose,
+      isPluginRegistered: () => true,
+      compileTrack: () => undefined,
+      disposeTrack: () => {
+        disposals += 1;
+      },
+    });
+
+    const fromTrack = thrownBy(() => runtime.addTrack(REJECTED_TRACK));
+
+    expect(fromTrack).toBeInstanceOf(TypeError);
+    expect(fromTrack).not.toBeInstanceOf(AggregateError);
+    expect((fromTrack as Error).message).toMatch(/^observation-unknown-source at /);
+    expect(disposals).toBe(1);
+
+    runtime.dispose();
   });
 });
 

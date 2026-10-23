@@ -183,6 +183,14 @@ export interface ProjectRuntimeOptions {
   /** The identified-table composition seam, forwarded to `GraphRuntime` untouched. */
   readonly composeIdentified?: ComposeIdentifiedResolver;
   /**
+   * Whether an authored `track.plugin` id names an admitted plugin.
+   *
+   * The structural tier validates a candidate track before it builds a graph, and a plugin track
+   * cannot pass that parse without an answer. `Engine` supplies the catalog it was constructed
+   * with; a registry-free runtime leaves it absent, which keeps every no-plugin path unchanged.
+   */
+  readonly isPluginRegistered?: (pluginId: string) => boolean;
+  /**
    * How one node's interpolated state is read, forwarded to `GraphRuntime` untouched.
    *
    * Total, for the reason the option it forwards to gives. The function it returns resolves the
@@ -250,8 +258,10 @@ export class ProjectRuntime {
   readonly #diagnostics: Diagnostics;
   readonly #ports: ProjectPorts;
   readonly #handleHost: HandleHost;
+  readonly #isPluginRegistered: ((pluginId: string) => boolean) | undefined;
   constructor(project: ProjectDefinition, options: ProjectRuntimeOptions) {
     this.#project = project;
+    this.#isPluginRegistered = options.isPluginRegistered;
     for (const motion of project.motions) {
       this.#motions.set(motion.id, { definition: motion, token: this.#nextToken++ });
       for (const track of motion.tracks)
@@ -558,6 +568,18 @@ export class ProjectRuntime {
     this.#admit(READ);
     return Object.freeze([...this.#instances.keys()]);
   }
+  #acceptTrack(track: TrackDefinition, path: string): TrackDefinition {
+    return expectValid(
+      validateTrackDefinition(
+        track,
+        path,
+        this.#isPluginRegistered === undefined
+          ? {}
+          : { isPluginRegistered: this.#isPluginRegistered },
+      ),
+    );
+  }
+
   #addTrack(track: TrackDefinition, options?: { motionId?: string }): TrackHandle {
     this.#assertLive();
     const motionId = options?.motionId;
@@ -568,7 +590,7 @@ export class ProjectRuntime {
         ? qualifyMotionTrack(motionId, track.id).value
         : qualifyFreeTrack(track.id).value;
     if (this.#readTracks().has(id)) throw new TypeError(`Track "${id}" already exists.`);
-    const accepted = expectValid(validateTrackDefinition(track, `addTrack(${track.id})`));
+    const accepted = this.#acceptTrack(track, `addTrack(${track.id})`);
     const token = this.#nextToken++;
     const tracks = this.#stageTracks();
     tracks.set(
@@ -749,7 +771,7 @@ export class ProjectRuntime {
         ? qualifyMotionTrack(owner, next.id).value
         : qualifyFreeTrack(next.id).value;
     if (expected !== id) throw new TypeError(`Replacement must preserve node id "${id}".`);
-    const accepted = expectValid(validateTrackDefinition(next, `replaceTrack(${id})`));
+    const accepted = this.#acceptTrack(next, `replaceTrack(${id})`);
     const tracks = this.#stageTracks();
     tracks.set(id, {
       ...entry,
@@ -869,7 +891,7 @@ export class ProjectRuntime {
       const rewritten = rebase || involved ? withAuthoredValues(entry.track, values) : entry.track;
       // Validated and then discarded: this write stages no definition, so the refusal is the
       // whole of what validating the candidate is for here.
-      if (involved) expectValid(validateTrackDefinition(rewritten, `writeValues(${nodeId})`));
+      if (involved) this.#acceptTrack(rewritten, `writeValues(${nodeId})`);
       const mask = { ...authoredValues(entry.track), ...statics };
       const answer = this.#ports.value.write(nodeId, mask, involved ? animated : undefined, rebase);
       // The seam has taken the write and carries no inverse, so the state it left is recorded on
@@ -942,7 +964,7 @@ export class ProjectRuntime {
   ) {
     return this.#boundary(() => {
       const next = withKeyframes(entry.track, keyframes);
-      const accepted = expectValid(validateTrackDefinition(next, `${verb}(${nodeId})`));
+      const accepted = this.#acceptTrack(next, `${verb}(${nodeId})`);
       const resolved = this.#resolve(nodeId, accepted);
       if (resolved?.diagnostics.some(({ severity }) => severity === "error"))
         refuse({ kind: "invalid-definition", diagnostics: resolved.diagnostics });
