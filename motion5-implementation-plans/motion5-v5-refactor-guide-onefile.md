@@ -1149,6 +1149,7 @@ Proposed, for the closed `RuleId` union. Names are suggestions. Reuse an existin
 
 - `track-legacy-field`: old `keyframes` or `observes` present.
 - `track-field-unknown`: unknown authored structural field.
+- `spec-field-unknown`: unknown structural field inside a `ValueSpec`, such as the retired `type` alias.
 - `values-shape-invalid`: authored `values` is a table where a record is declared, or the reverse.
 - `row-id-invalid`, `row-id-duplicate`, `name-reserved`: bad row id, duplicate id, or a reserved row, column, field or output name.
 - `cell-form-invalid`, `cell-stops-invalid`, `cell-kind-conflict`: bad cell, malformed stops, conflicting scalar kinds.
@@ -1156,6 +1157,6 @@ Proposed, for the closed `RuleId` union. Names are suggestions. Reuse an existin
 - `plugin-unknown`, `plugin-requires-without-plugin`, `input-schema-on-plugin-track`.
 - `slot-unknown`, `slot-required-missing`, `slot-binding-mode`, `slot-incompatible`, `slot-unproven`.
 - `plugin-input-invalid`: runtime input fails the plugin's input spec.
-- `plugin-validation-failed`: the one wrapper for issues returned by a plugin's `validate`.
+- `plugin-validation-failed`, `plugin-validation-warning`: wrappers for error- and warning-severity issues returned by a plugin's `validate`. Two ids because a rule fixes its severity once.
 - `output-undeclared`, `output-missing`, `output-invalid`, `output-row-id-duplicate`: the returned set disagrees with the plugin's `outputs`, including a wrong kind.
 - `live-values-invalid`: a live write violates the committed contract or shape.

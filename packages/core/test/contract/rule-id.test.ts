@@ -236,6 +236,7 @@ describe("rule id ids ownership", () => {
     const expected = [
       "observation-pending-reference",
       "perspective-usage",
+      "plugin-validation-warning",
       "reentrant-flush-deferred",
       "reentrant-flush-deferred-frame",
       "value-batch-deferred",

@@ -10,13 +10,14 @@ byte ceiling.
 
 ## Now
 
-- **Automation tooling removed and Windows suite made green;** the AI edit, checkpoint and
-  handover automation scripts, tests and workflows are deleted, ADR-142 records the removal,
-  and tests pass cross-platform.
+- **The v5 identified-table contract is staged;** target value types, the failure vocabulary and
+  shape-neutral test builders sit beside the live engine, and nine target behaviors are expected
+  failures until parsing and the explicit plugin path are replaced.
 
 ## Next in line
 
-- **Begin the Motion5 v5 engine refactor** per `motion5-v5-refactor-guide-onefile.md`.
+- **Replace authored parsing and evaluation with identified tables,** then port the built-in plugin
+  path; the staged acceptance suite is the exit gate for both.
 
 ## Open, and not scheduled
 
