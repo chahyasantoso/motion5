@@ -13,6 +13,10 @@ const POINT: ValueSpec = {
   kind: "table",
   schema: { row: { fields: { x: { kind: "number" }, y: { kind: "number" } } } },
 };
+const RECORD: ValueSpec = {
+  kind: "record",
+  fields: { x: { kind: "number" }, y: { kind: "number" } },
+};
 const VALUES: ValueSpec = {
   kind: "table",
   schema: { row: { fields: { x: { kind: "number" } } } },
@@ -215,6 +219,26 @@ describe("load-time slot compatibility", () => {
     expect(rules(refused)).toContain("slot-incompatible");
   });
 
+  it("rechecks when a plugin output contract changes", () => {
+    const accepted = buildGraphIR(
+      project(
+        source("points", table(row("a", { x: 0 }))),
+        consumer("shifted", "translate", "points"),
+      ),
+      catalog(plugin("translate", { values: VALUES })),
+    );
+    expect(accepted.diagnostics).toEqual([]);
+
+    const replaced = buildGraphIR(
+      project(
+        source("points", table(row("a", { x: 0 }))),
+        consumer("shifted", "translate", "points"),
+      ),
+      catalog(plugin("translate", { values: RECORD })),
+    );
+    expect(rules(replaced)).toContain("slot-incompatible");
+  });
+
   it("treats an optional producer output as unproven for a required slot output", () => {
     const plugins = catalog(
       {
@@ -239,4 +263,3 @@ describe("load-time slot compatibility", () => {
     expect(rules(built)).toContain("slot-unproven");
   });
 });
-
