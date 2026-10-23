@@ -30,7 +30,7 @@ import {
 } from "./ids";
 import { orderGraph } from "./order";
 import { checkDependencyBindings } from "./dependency-check";
-import { checkSlotCompatibility } from "./slot-check";
+import { checkSlotFit } from "./slot-check";
 import {
   recordGoalReach,
   validateGoalWeights,
@@ -414,14 +414,6 @@ export function collectTrack(
   return Object.freeze({ id, owner, authoredIndex, track, edges: Object.freeze(edges) });
 }
 
-/**
- * Add the edges an identified-table plugin track authors under `input.requires`.
- *
- * The parser has already proved the authored binding shape when this is reached from
- * `validateV5`; the guards remain because graph construction is also callable directly and a
- * malformed binding must be refused rather than silently producing no dependency. A no-plugin
- * track contributes no demand and therefore no edges here.
- */
 function collectDependencyEdges(
   track: GroupedTrackDefinition,
   observerId: string,
@@ -1261,7 +1253,7 @@ export function finalizeGraph(
   // `observation-unknown-source`, naming a member for a typo one node up. One cause, one
   // diagnostic, and a derivation that only ever runs over resolved references. `RS-10` pins it.
   diagnostics.push(...checkDependencyBindings(nodes, capabilities));
-  diagnostics.push(...checkSlotCompatibility(nodes, capabilities));
+  diagnostics.push(...checkSlotFit(nodes, capabilities));
   diagnostics.sort(compareDiagnostics);
   if (diagnostics.some(({ severity }) => severity === "error"))
     return { diagnostics: Object.freeze(diagnostics) };
@@ -1295,3 +1287,5 @@ export function finalizeGraph(
     }),
   );
 }
+
+

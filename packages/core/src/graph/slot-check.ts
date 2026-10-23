@@ -17,10 +17,10 @@ import type { PluginCapabilities } from "../ports/plugin-capabilities";
  * Ranges, row counts and semantic relationships stay out. They are runtime validation's question,
  * and passing this check is not a proof of them.
  */
-export type SlotCompatibility = "compatible" | "incompatible" | "unproven";
+export type SlotOutcome = "compatible" | "incompatible" | "unproven";
 
 export interface SlotCheck {
-  readonly outcome: SlotCompatibility;
+  readonly outcome: SlotOutcome;
   readonly message?: string;
 }
 
@@ -133,7 +133,7 @@ function pathFor(edge: GraphEdge, output: string): string {
  * `graph/dependency-check.ts` owns required-slot presence, and an omitted optional slot has nothing
  * to compare. Map members are separate edges and therefore separate checks.
  */
-export function checkSlotCompatibility(
+export function checkSlotFit(
   nodes: readonly GraphNode[],
   capabilities: PluginCapabilities,
 ): readonly Diagnostic[] {

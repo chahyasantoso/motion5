@@ -660,7 +660,7 @@ describe("a structural change runs one transaction, in one order", () => {
     runtime.dispose();
   });
 
-  it("RA-7 leaves the retained definitions and the committed graph agreeing", () => {
+  it("leaves the retained definitions and the committed graph agreeing when authored validation refuses a duration", () => {
     const journal = recorder();
     const runtime = new ProjectRuntime(BASE_PROJECT, journal.options);
 

@@ -12,6 +12,10 @@ An explicit `undefined` survives the whole path, which is what makes the bypass 
 
 The field set is closed, ordered, and read once. `REMOVED_OBSERVATION_FIELDS` is the refusal order and target is first so ADR-046's `V-2` through `V-4` keep reporting a target for a fixture that also carries a role; `removedObservationDiagnostic` maps a member to its own rule id and message through a total `switch` ending at `unreachable`. Three copied guards were three places a fourth removed field had to be remembered at the same time, and one of them silently inheriting another's rule id is the drift that shape invites. A fourth member now costs a tuple entry and a compiler error at the mapper. See ADR-092 and ADR-096.
 
+## collectDependencyEdges
+
+Adds the edges one identified-table plugin track authors under `input.requires`. The parser has already proved the binding shape when this runs from `validateV5`; the guards stay because graph construction is callable directly and a malformed binding must be refused rather than silently producing no dependency. A no-plugin track contributes no demand and therefore no edges here.
+
 ## ORIENTATION_KEYS
 
 The authored orientation keys a solve replaces: 2D `fk`'s `rotation`, and `fk3d`'s `rotation`, `rotationX` and `rotationY`.
