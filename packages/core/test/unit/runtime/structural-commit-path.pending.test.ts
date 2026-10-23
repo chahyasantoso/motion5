@@ -43,7 +43,37 @@ function thrownBy(operation: () => unknown): unknown {
   throw new Error("Expected the operation to throw.");
 }
 
+function disagreeing(runtime: ProjectRuntime): readonly string[] {
+  return runtime.graph.graph.nodes
+    .filter((node) => runtime.track(node.id).definition !== node.track)
+    .map((node) => node.id);
+}
+
 describe("a structural change runs one transaction, in one order", () => {
+  it("RA-7 leaves the retained definitions and the committed graph agreeing", () => {
+    const journal = recorder();
+    const runtime = new ProjectRuntime(BASE_PROJECT, journal.options);
+
+    expect(disagreeing(runtime)).toEqual([]);
+
+    runtime.addTrack({ id: "hand" }, { motionId: MOTION_ID });
+    expect(disagreeing(runtime)).toEqual([]);
+
+    runtime.track(ADDED_ID).replace({ id: "hand", duration: 250 });
+    expect(disagreeing(runtime)).toEqual([]);
+
+    // A refused candidate has to leave the pair agreeing too, which is the half a commit path that
+    // writes its maps before the graph accepted would get wrong.
+    thrownBy(() => runtime.track(ADDED_ID).replace(REJECTED_TRACK));
+    expect(disagreeing(runtime)).toEqual([]);
+    expect(runtime.track(ADDED_ID).definition).toEqual({ id: "hand", duration: 250 });
+
+    runtime.track(ADDED_ID).remove();
+    expect(disagreeing(runtime)).toEqual([]);
+
+    runtime.dispose();
+  });
+
   it("RA-4 disposes the compiled Track and registers nothing when the graph refuses", () => {
     const journal = recorder();
     const runtime = new ProjectRuntime(BASE_PROJECT, journal.options);

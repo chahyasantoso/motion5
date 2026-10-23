@@ -20,7 +20,11 @@ import type { PluginCapabilities } from "../../ports/plugin-capabilities";
  * permanent miss. `Engine.load` constructs one builder per loaded project, which is that shape.
  */
 export class IncrementalGraphBuilder {
-  constructor(private readonly capabilities: PluginCapabilities) {}
+  readonly #capabilities: PluginCapabilities;
+
+  constructor(capabilities: PluginCapabilities) {
+    this.#capabilities = capabilities;
+  }
   /**
    * Built nodes, keyed by the inputs their id is derived from.
    *
@@ -184,6 +188,6 @@ export class IncrementalGraphBuilder {
     // Both loops are done, so `visited` is the residency set for this project. Here rather than in
     // a `finally`, and before `finalizeGraph`, which owns the result and not the cache.
     this.#sweep(visited);
-    return finalizeGraph(nodes, diagnostics, this.capabilities);
+    return finalizeGraph(nodes, diagnostics, this.#capabilities);
   }
 }
