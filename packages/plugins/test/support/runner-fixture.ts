@@ -1,21 +1,12 @@
-import {
-  createManualClock,
-  Engine,
-  PluginRegistry,
-  type LiveValues,
-  type ProjectHandle,
-} from "@motion5/core";
+import { createManualClock, Engine, type LiveValues, type ProjectHandle } from "@motion5/core";
 import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/testing";
-import { transformPlugin } from "../../src/transform";
+import { record, track } from "../../../core/test/support/v5-builders";
 import { attachRunners, type Runner, type RunnerFailure } from "../../src/runner";
 
 /** One Engine-backed fixture for ordinary and adversarial runner contracts. */
 export function fixture(ids = ["a", "b"], values: LiveValues = { x: 0 }) {
   const clock = createManualClock();
-  const registry = new PluginRegistry();
-  registry.register(transformPlugin);
   const project = new Engine({
-    plugins: registry,
     clock,
     interpolator: createFakeInterpolator(),
     scheduler: createFakeScheduler(),
@@ -25,7 +16,7 @@ export function fixture(ids = ["a", "b"], values: LiveValues = { x: 0 }) {
       {
         id: "scene",
         trigger: { type: "manual" },
-        tracks: ids.map((id) => ({ id, keyframes: { transform: { values } } })),
+        tracks: ids.map((id) => track({ id, values: record(values) })),
       },
     ],
   });
