@@ -9,6 +9,8 @@ export default defineConfig({
     exclude: ["@motion5/core", "@motion5/react", "@motion5/plugins"],
   },
   test: {
+    // CPU-heavy seeded tests exceed 5s on Windows.
+    testTimeout: 30000,
     setupFiles: ["./test/setup.ts"],
     // React 19 only exports `act` from its development build. `react-test-renderer` re-exports
     // `React.act`, so an ambient `NODE_ENV=production` resolves it to `undefined` and every React
