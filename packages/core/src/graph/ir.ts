@@ -30,6 +30,7 @@ import {
 } from "./ids";
 import { orderGraph } from "./order";
 import { checkDependencyBindings } from "./dependency-check";
+import { checkSlotCompatibility } from "./slot-check";
 import {
   recordGoalReach,
   validateGoalWeights,
@@ -1260,6 +1261,7 @@ export function finalizeGraph(
   // `observation-unknown-source`, naming a member for a typo one node up. One cause, one
   // diagnostic, and a derivation that only ever runs over resolved references. `RS-10` pins it.
   diagnostics.push(...checkDependencyBindings(nodes, capabilities));
+  diagnostics.push(...checkSlotCompatibility(nodes, capabilities));
   diagnostics.sort(compareDiagnostics);
   if (diagnostics.some(({ severity }) => severity === "error"))
     return { diagnostics: Object.freeze(diagnostics) };
