@@ -1,6 +1,10 @@
 import type { AuthoredStop, Diagnostic } from "../../contract/v5";
 import { describeDiagnostics } from "../../contract/diagnostics";
-import { compilePercentKeyframes, type CompiledKeyframes } from "../../contract/keyframe-compiler";
+import {
+  compilePercentKeyframes,
+  type CompiledKeyframes,
+  type KeyframeCompileOptions,
+} from "../../contract/keyframe-compiler";
 import {
   PATCHED,
   RECOMPILE,
@@ -56,6 +60,16 @@ function readKeyframes(config: unknown): Readonly<Record<string, unknown>> {
 }
 function readTweenVars(config: unknown): Readonly<Record<string, unknown>> {
   return !isRecord(config) || !isRecord(config.tweenVars) ? {} : config.tweenVars;
+}
+/**
+ * Whether this record's eases belong to their own keys rather than to a shared percent.
+ *
+ * A flattened cell plan gives every cell its own key and its own ease, which the per-key tween this
+ * adapter builds can express. The default reading stays the grouped one, where an ease at a percent
+ * is a property of the frame. See `KeyframeCompileOptions`.
+ */
+function readCompileOptions(config: unknown): KeyframeCompileOptions {
+  return isRecord(config) && config.perKeyEase === true ? { ease: "per-key" } : {};
 }
 function hasError(diagnostics: readonly Diagnostic[]): boolean {
   return diagnostics.some(({ severity }) => severity === "error");
@@ -130,8 +144,9 @@ export function createGsapInterpolator(gsap: GsapLike): Interpolator {
       // The base record and the compile that is currently on the timeline. The overlay is not
       // retained beside them, because it is the live record minus the base and retaining it as well
       // would be two answers to one question. A rebase is therefore one assignment rather than two.
+      const compileOptions = readCompileOptions(config);
       let base = readKeyframes(config);
-      let compiled = compilePercentKeyframes(base);
+      let compiled = compilePercentKeyframes(base, "keyframes", compileOptions);
       if (hasError(compiled.diagnostics)) throw new KeyframeCompilationError(compiled.diagnostics);
 
       const proxy: Record<string, unknown> = { ...compiled.initial };
@@ -182,7 +197,7 @@ export function createGsapInterpolator(gsap: GsapLike): Interpolator {
       }
       function patchKeys(overlay: Readonly<Record<string, unknown>>, rebase = false) {
         const effective = { ...base, ...overlay };
-        const next = compilePercentKeyframes(effective);
+        const next = compilePercentKeyframes(effective, "keyframes", compileOptions);
         // Declined, not refused. The caller recompiles, and the recompile raises the diagnostic
         // exactly as a fresh `create()` of the same record would, from the one place that owns it.
         if (hasError(next.diagnostics)) return RECOMPILE;

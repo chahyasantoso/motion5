@@ -68,4 +68,30 @@ describe("S2 sparse percent-keyframe compilation", () => {
       },
     ]);
   });
+
+  it("keeps per-key eases independent when the record declares per-key scope", () => {
+    const compiled = compilePercentKeyframes(
+      {
+        x: [
+          { p: 0, v: 0 },
+          { p: 0.5, v: 50, ease: "power1.out" },
+          { p: 1, v: 100 },
+        ],
+        y: [
+          { p: 0, v: 0 },
+          { p: 0.5, v: 50, ease: "power2.out" },
+          { p: 1, v: 100 },
+        ],
+      },
+      "flat",
+      { ease: "per-key" },
+    );
+
+    expect(compiled.diagnostics).toEqual([]);
+    expect(compiled.initial).toEqual({ x: 0, y: 0 });
+    expect(compiled.properties.map(({ key }) => key)).toEqual(["x", "y"]);
+    // The percent map is the shared-ease form and is not used by the per-key backend, so it
+    // carries no ease rather than an arbitrary winner.
+    expect(compiled.map["50%"]?.ease).toBeUndefined();
+  });
 });
