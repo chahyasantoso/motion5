@@ -375,11 +375,6 @@
     "reason": "Exercises solver, IK, FK or rig behavior; Phase 5 expresses it with tables and declared dependencies."
   },
   {
-    "path": "packages/core/test/unit/runtime/authoring-edit.test.ts",
-    "phase": 4,
-    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
-  },
-  {
     "path": "packages/core/test/unit/runtime/commit-write-cost.test.ts",
     "phase": 4,
     "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
@@ -433,16 +428,6 @@
     "path": "packages/core/test/unit/runtime/mount-flush-seed.test.ts",
     "phase": 4,
     "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
-  },
-  {
-    "path": "packages/core/test/unit/runtime/plugin-group-edit.test.ts",
-    "phase": 4,
-    "reason": "Exercises live editing of keyframe groups on handles; Phase 4 rebuilds that path on identified tables."
-  },
-  {
-    "path": "packages/core/test/unit/runtime/plugin-require-edit.test.ts",
-    "phase": 4,
-    "reason": "Exercises live editing of plugin require slots on handles; Phase 4 rebuilds that path on identified tables."
   },
   {
     "path": "packages/core/test/unit/runtime/project-enumeration.test.ts",

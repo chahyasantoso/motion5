@@ -38,6 +38,21 @@ function freeze<T>(value: T): T {
   return Object.freeze(value);
 }
 
+/**
+ * The same contract with its authored bindings replaced.
+ *
+ * A binding edit moves `input.requires` and nothing else, so the local input, the published outputs
+ * and the declared slots are carried by identity. Re-deriving the whole contract here would read the
+ * authored values a cheap edit may have emptied and would turn a binding edit into the one operation
+ * this contract exists to prevent. See ADR-062.
+ */
+export function withRequires(
+  contract: CommittedContract,
+  requires: Readonly<Record<string, SourceBinding>>,
+): CommittedContract {
+  return freeze({ ...contract, requires: freeze({ ...requires }) });
+}
+
 function pluginContract(
   track: GroupedTrackDefinition,
   plugin: string,

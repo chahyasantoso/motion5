@@ -117,7 +117,7 @@ function addingPlan(): CommitPlan {
       ],
       [["hero", { definition: HERO }]],
     ),
-    { needsBuild: new Set(), readers: new Map() },
+    { needsBuild: new Set(), readers: new Map(), noBuild: new Set() },
   );
 }
 
@@ -126,7 +126,7 @@ function replacingPlan(): CommitPlan {
   return planCommit(
     doc([[ARM_NODE, entry(ARM, "hero")]], [["hero", { definition: HERO }]]),
     doc([[ARM_NODE, entry(ARM_LONGER, "hero")]], [["hero", { definition: HERO }]]),
-    { needsBuild: new Set([ARM_NODE]), readers: new Map() },
+    { needsBuild: new Set([ARM_NODE]), readers: new Map(), noBuild: new Set() },
   );
 }
 

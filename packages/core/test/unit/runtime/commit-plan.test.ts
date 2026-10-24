@@ -27,7 +27,7 @@ describe("commit plan", () => {
         ],
         [["hero", { definition: M }]],
       ),
-      p = planCommit(b, a, { needsBuild: new Set(), readers: new Map() });
+      p = planCommit(b, a, { needsBuild: new Set(), readers: new Map(), noBuild: new Set() });
     expect(p.effects).toEqual([{ kind: "compile-track", nodeId: "hero/hand", track: H }]);
     expect(p.settle).toEqual([
       { kind: "add-motion-track", motionId: "hero", nodeId: "hero/hand", duration: 250 },
@@ -50,6 +50,7 @@ describe("commit plan", () => {
           ["hero/arm", ["hero/r"]],
           ["~/old", ["hero/r"]],
         ]),
+        noBuild: new Set(),
       });
     expect(p.settle).toEqual([
       { kind: "evict-node", nodeId: "hero/arm" },
@@ -62,7 +63,7 @@ describe("commit plan", () => {
     const q = planCommit(
       doc([["hero/arm", ent(A, "hero")]], [["hero", { definition: M }]]),
       doc([["hero/arm", ent({ id: "arm", duration: 500 }, "hero")]], [["hero", { definition: M }]]),
-      { needsBuild: new Set(["hero/arm"]), readers: new Map() },
+      { needsBuild: new Set(["hero/arm"]), readers: new Map(), noBuild: new Set() },
     );
     expect(invert(q.effects[0]!)).toEqual({ kind: "rollback-stage", nodeId: "hero/arm" });
     const inverse = invert(q.effects[1]!);

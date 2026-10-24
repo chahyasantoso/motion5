@@ -82,7 +82,10 @@ import {
   type Resolved,
 } from "./results";
 import { AUTHORED, isOverlaid, liveWritten, type ValueState } from "./value-state";
-import { applyEdit, boundGroup, type AuthoringEdit } from "./authoring-edit";
+import { boundGroup } from "./bound-group";
+import { applyEdits } from "./edit-apply";
+import type { PlanEnvironment, PlanState, PlannedChange, PlannedTrack } from "./edit-plan";
+import type { StructuralEdit } from "./edit-types";
 import {
   NO_OVERLAY,
   authoredValues,
@@ -102,6 +105,7 @@ import type { GraphNode } from "../graph/ir";
 import type { CommittedContract } from "../graph/committed-contract";
 import type { MemberState } from "./graph-publisher";
 import type { GraphBuilder } from "../ports/graph-builder";
+import { UNJUDGED_CAPABILITIES, type PluginCapabilities } from "../ports/plugin-capabilities";
 import { unreachable } from "../lang/exhaustive";
 
 interface FreeTrackEntry {
@@ -149,7 +153,21 @@ type MotionEntry = {
 interface OpenTransaction {
   tracks: Map<string, TrackEntry>;
   motions: Map<string, MotionEntry>;
+  /**
+   * Nodes whose final track must not be compared for a timeline build.
+   *
+   * A binding edit changes the authored input the compiled comparison reads, but the timeline does
+   * not consume bindings, so a diff would report a build the overlay carve-out forbids. A later
+   * replacement in the same recipe clears the mark through `fullBuild`, because a fresh
+   * compilation is exactly what its overlay lifetime owes.
+   */
+  readonly noBuild: Set<string>;
+  /** Nodes a full replacement or removal touched, which a later binding may not mark `noBuild`. */
+  readonly fullBuild: Set<string>;
 }
+
+// The empty answer a commit outside a recipe reads, so the skip set is total rather than optional.
+const NO_BUILD: ReadonlySet<string> = Object.freeze(new Set<string>());
 
 interface TracksStaged {
   readonly kind: "tracks";
@@ -255,6 +273,13 @@ export interface ProjectRuntimeOptions {
   readonly disposeComposition?: () => void;
   readonly diagnosticsCapacity?: number;
   readonly graphBuilder?: GraphBuilder;
+  /**
+   * What a structural plan may ask about plugins, as data rather than as a registry.
+   *
+   * `Engine` forwards the catalogue it admitted the project with. A registry-free runtime leaves it
+   * absent and plans against `UNJUDGED_CAPABILITIES`, which asks nothing and refuses nothing.
+   */
+  readonly capabilities?: PluginCapabilities;
 }
 export class ProjectRuntime {
   readonly #project: ProjectDefinition;
@@ -270,9 +295,11 @@ export class ProjectRuntime {
   readonly #ports: ProjectPorts;
   readonly #handleHost: HandleHost;
   readonly #isPluginRegistered: ((pluginId: string) => boolean) | undefined;
+  readonly #capabilities: PluginCapabilities;
   constructor(project: ProjectDefinition, options: ProjectRuntimeOptions) {
     this.#project = project;
     this.#isPluginRegistered = options.isPluginRegistered;
+    this.#capabilities = options.capabilities ?? UNJUDGED_CAPABILITIES;
     for (const motion of project.motions) {
       this.#motions.set(motion.id, { definition: motion, token: this.#nextToken++ });
       for (const track of motion.tracks)
@@ -334,9 +361,7 @@ export class ProjectRuntime {
       track: Object.freeze<TrackHost>({
         live: (id, token) => isLive(this.#entryIfLive(id, token)),
         definition: (id, token) => this.#liveEntry(id, token).track,
-        remove: (id, token) => this.#removeTrack(id, token),
-        replace: (id, token, next) => this.#replaceTrack(id, token, next),
-        author: (id, token, edit) => this.#authorEdit(id, token, edit),
+        apply: (id, token, edit) => this.#applyStructural(id, token, edit),
         setKeyframe: (id, token, plugin, key, value) =>
           this.#setKeyframe(id, token, plugin, key, value),
         removeKeyframe: (id, token, plugin, key) => this.#removeKeyframe(id, token, plugin, key),
@@ -449,7 +474,12 @@ export class ProjectRuntime {
    */
   edit<T>(recipe: (transaction: SchemaTransaction) => T): T {
     this.#admit(OPEN_RECIPE);
-    const open: OpenTransaction = { tracks: this.#tracks, motions: this.#motions };
+    const open: OpenTransaction = {
+      tracks: this.#tracks,
+      motions: this.#motions,
+      noBuild: new Set<string>(),
+      fullBuild: new Set<string>(),
+    };
     this.#phase = opening(this.#phase, open);
     let answer: T;
     try {
@@ -459,7 +489,7 @@ export class ProjectRuntime {
     }
     if (isRetiring(this.#phase)) return answer;
     if (open.tracks !== this.#tracks || open.motions !== this.#motions)
-      this.#commit({ kind: "both", tracks: open.tracks, motions: open.motions });
+      this.#commit({ kind: "both", tracks: open.tracks, motions: open.motions }, open.noBuild);
     return answer;
   }
 
@@ -759,13 +789,6 @@ export class ProjectRuntime {
     return new RuntimeTrackHandle(this.#handleHost.track, id, token);
   }
 
-  #removeTrack(id: string, token: number): void {
-    this.#writableEntry(id, token);
-    const tracks = this.#stageTracks();
-    tracks.delete(id);
-    this.#commit({ kind: "tracks", tracks });
-  }
-
   #resolve(nodeId: string, track: GroupedTrackDefinition): ResolvedPlugins | undefined {
     return this.#ports.host.resolveKeyframes(
       track.keyframes ?? {},
@@ -789,26 +812,98 @@ export class ProjectRuntime {
     );
   }
 
-  #replaceTrack(id: string, token: number, next: GroupedTrackDefinition): void {
-    const entry = this.#writableEntry(id, token);
-    const owner = trackMotionId(entry);
-    const expected =
-      owner !== undefined
-        ? qualifyMotionTrack(owner, next.id).value
-        : qualifyFreeTrack(next.id).value;
-    if (expected !== id) throw new TypeError(`Replacement must preserve node id "${id}".`);
-    const accepted = this.#acceptTrack(next, `replaceTrack(${id})`);
-    const tracks = this.#stageTracks();
-    tracks.set(id, {
-      ...entry,
-      track: accepted,
-      valueState: AUTHORED,
-      contract: undefined,
-    });
-    this.#commit({ kind: "tracks", tracks });
+  // The committed or staged view a structural plan reads, projected as plain data. `authoredIndex`
+  // is recomputed from insertion order rather than stored, because it is a position in a motion's
+  // authored track list and an edit that removes or replaces may move the ones after it.
+  #planState(tracks: ReadonlyMap<string, TrackEntry>): PlanState {
+    const nextIndex = new Map<string, number>();
+    const planned = new Map<string, PlannedTrack>();
+    for (const [nodeId, entry] of tracks) {
+      const ownerId = trackMotionId(entry) ?? "~";
+      const authoredIndex = nextIndex.get(ownerId) ?? 0;
+      nextIndex.set(ownerId, authoredIndex + 1);
+      planned.set(
+        nodeId,
+        Object.freeze({
+          nodeId,
+          track: entry.track,
+          owner: entry.kind === "free" ? "free" : "motion",
+          ownerId,
+          authoredIndex,
+          valueState: entry.valueState,
+          contract: entry.contract,
+        }),
+      );
+    }
+    return { tracks: planned };
   }
 
-  #commit(plan: StagedPair): void {
+  #planEnvironment(): PlanEnvironment {
+    return Object.freeze({
+      capabilities: this.#capabilities,
+      ...(this.#isPluginRegistered === undefined
+        ? {}
+        : { isPluginRegistered: this.#isPluginRegistered }),
+    });
+  }
+
+  // Plans one structural edit against the staged view and stages what it changed. The plan is the
+  // only place a candidate graph or contract is built; this member carries its change into the
+  // transaction's map and marks the node for the commit's build decision. A no-op answers before
+  // `#stageTracks` copies, so a recipe that changed nothing still commits nothing.
+  #applyStructural(id: string, token: number, edit: StructuralEdit): void {
+    this.#writableEntry(id, token);
+    const planned = applyEdits(
+      this.#planState(this.#readTracks()),
+      [edit],
+      this.#planEnvironment(),
+    );
+    if (planned.changes.length === 0) return;
+    const tracks = this.#stageTracks();
+    const open = stagedIn(this.#phase);
+    const noBuild = open?.noBuild ?? new Set<string>();
+    const fullBuild = open?.fullBuild ?? new Set<string>();
+    for (const change of planned.changes) this.#stageChange(change, tracks, noBuild, fullBuild);
+    this.#commit({ kind: "tracks", tracks }, noBuild);
+  }
+
+  // Carries one planned change into the staged map and records what its commit owes.
+  #stageChange(
+    change: PlannedChange,
+    tracks: Map<string, TrackEntry>,
+    noBuild: Set<string>,
+    fullBuild: Set<string>,
+  ): void {
+    switch (change.kind) {
+      case "update-track": {
+        const nodeId = change.track.nodeId;
+        const entry = tracks.get(nodeId);
+        if (entry === undefined) throw new TypeError(`Unknown graph node "${nodeId}".`);
+        tracks.set(nodeId, {
+          ...entry,
+          track: change.track.track,
+          valueState: change.track.valueState,
+          contract: change.track.contract,
+        });
+        if (!change.bindingOnly) {
+          fullBuild.add(nodeId);
+          noBuild.delete(nodeId);
+        } else if (!fullBuild.has(nodeId)) {
+          noBuild.add(nodeId);
+        }
+        return;
+      }
+      case "remove-track":
+        tracks.delete(change.nodeId);
+        noBuild.delete(change.nodeId);
+        fullBuild.add(change.nodeId);
+        return;
+      default:
+        return unreachable(change);
+    }
+  }
+
+  #commit(plan: StagedPair, noBuild: ReadonlySet<string> = NO_BUILD): void {
     if (this.#admit(COMMIT) === "join") return;
     const { tracks, motions } = resolveStagedPair(plan, this.#tracks, this.#motions);
     this.#boundary(() => {
@@ -823,6 +918,7 @@ export class ProjectRuntime {
         if (
           old !== undefined &&
           old.track !== entry.track &&
+          !noBuild.has(id) &&
           this.#needsTimelineBuild(id, old.track, entry.track)
         )
           needsBuild.add(id);
@@ -830,7 +926,7 @@ export class ProjectRuntime {
       const commit = planCommit(
         { tracks: this.#tracks, motions: this.#motions },
         { tracks, motions },
-        { needsBuild, readers },
+        { needsBuild, readers, noBuild },
       );
       this.#assertLive();
       runPlan(commit, {
@@ -1047,12 +1143,6 @@ export class ProjectRuntime {
     const edited = removeAuthoredKeyframe(keyframes, bound, key);
     if (edited === keyframes) return this.#publishValue(nodeId);
     return this.#recompileKeyframes(nodeId, entry, edited, "removeKeyframe");
-  }
-  #authorEdit(id: string, token: number, edit: AuthoringEdit): void {
-    const entry = this.#writableEntry(id, token);
-    const next = applyEdit({ nodeId: id, track: entry.track }, edit);
-    if (next === entry.track) return;
-    this.#replaceTrack(id, token, next);
   }
 
   #carriedContracts(

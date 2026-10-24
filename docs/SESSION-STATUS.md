@@ -6,18 +6,20 @@ states a phase; `packages/core/test/unit/scripts/session-status-shape.test.ts` e
 byte ceiling.
 
 - **Captured:** 2026-10-24, Asia/Jakarta.
-- **Read against:** `refactor/v5-identified-tables` after the observes-deletion slice.
+- **Read against:** `refactor/v5-identified-tables` after the structural-edit slice.
 
 ## Now
 
-- **Dependency bindings are the only edge source:** the retired `observes` surface, its two live
-  verbs and its twelve rule ids are gone, edges come only from `input.requires` and the grouped
-  keyframes bridge, and slot binding derivation lives in `graph/dependency-edges.ts`.
+- **Structural edits go through one plan and one commit:** `TrackHandle.remove`, `replace`,
+  `input.replace` and `input.requires.set`/`remove` mint plain edits, a pure `plan()` answers the
+  candidate graph and committed contract, and the runtime stages them into the existing commit
+  path. Bind and unbind keep a live overlay; replacement and removal clear it.
 
 ## Next in line
 
-- **Rebuild live edits, handles and observation wiring on identified tables:** authoring and live
-  handle operations, dirty propagation and patch publication adapt to identified tables and slots.
+- **Cheap authored edits on the same path:** add `set-values` and `set-field`, remove `setValues`,
+  `setKeyframe`, `removeKeyframe` and the rule ids only they raise, and validate against the
+  committed value spec rather than a fresh inference.
 
 ## Open, and not scheduled
 

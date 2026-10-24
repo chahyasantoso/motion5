@@ -333,7 +333,10 @@ describe("the runtime holds one phase and none of the fields it replaces", () =>
       ["#setKeyframe(", 'valueVerb("setKeyframe", "resolved")'],
       ["track(nodeId: string): TrackHandle {", "this.#admit(READ)"],
       ["edit<T>(recipe: (transaction: SchemaTransaction) => T): T {", "this.#admit(OPEN_RECIPE)"],
-      ["#commit(plan: StagedPair): void {", 'this.#admit(COMMIT) === "join"'],
+      [
+        "#commit(plan: StagedPair, noBuild: ReadonlySet<string> = NO_BUILD): void {",
+        'this.#admit(COMMIT) === "join"',
+      ],
     ];
 
     expect(asked.filter(([signature, call]) => !member(source, signature).includes(call))).toEqual(

@@ -1,10 +1,10 @@
 import { StaleHandleError, type Handle } from "./handle";
 import type {
-  AuthoredPluginGroup,
   AuthoredProperty,
   AuthoredStaticValue,
   PatchBatch,
   TrackDefinition,
+  TrackInput,
 } from "./v5";
 
 /**
@@ -32,22 +32,23 @@ export class StaleTrackHandleError extends StaleHandleError {
 }
 
 /**
- * One plugin binding a track authored, as a handle reports it.
+ * One requirement binding a track authored, as a handle reports it.
  *
- * A projection of `readPluginBindings`, which stays the one reader of the authored group shape, so
- * nothing derives a second opinion about what an author wrote or about the order two bindings come
- * in. `memberKey` travels with it because a dict-valued slot binds one source per key, and a view
- * that dropped it would report two entries of one slot as one indistinguishable pair. See ADR-057.
+ * Projected from `input.requires`, which is the one authored binding record on an identified-table
+ * track, so nothing derives a second opinion about what an author wrote or about the order two
+ * bindings come in. The slot belongs to the track's one plugin now, so a `plugin` field here would
+ * name the same fact twice and is deliberately absent. `memberKey` travels with it because a
+ * map-valued slot binds one source per key, and a view that dropped it would report two entries of
+ * one slot as one indistinguishable pair. See ADR-057 and ADR-062.
  *
  * The authored diagnostics path is deliberately absent. It exists so a refusal can cite the path the
  * author actually wrote, and that belongs to the layer doing the refusing; carried here it would be
  * a second owner of where something was written.
  */
 export interface RequireView {
-  readonly plugin: string;
   readonly slot: string;
   readonly source: string;
-  /** The key this binding was authored under inside a dict-valued slot, absent for a scalar one. */
+  /** The key this binding was authored under inside a map-valued slot, absent for a scalar one. */
   readonly memberKey?: string;
 }
 
@@ -93,117 +94,24 @@ export type AuthoredValues = Readonly<Record<string, AuthoredProperty>>;
  */
 export interface TrackHandle extends Handle<TrackDefinition> {
   /**
-   * Every plugin binding this track authored, ordered by plugin, then slot, then member key.
+   * The track's authored input, as a frozen view over this same handle and token.
    *
-   * A read, not an edit. Binding a slot is a topology change and belongs to the structural verbs;
-   * this is what an editor or a devtool asks before it decides to make one. Total: a track that
-   * authors no group answers with an empty list rather than with nothing, so a caller never spells
-   * `?? []` and never makes the shape depend on the input.
+   * A view rather than a record: reading it allocates nothing that can go stale on its own, and
+   * every verb it exposes resolves the token this handle captured. The view itself never refuses;
+   * its verbs refuse exactly as the track handle's own structural verbs do.
+   */
+  readonly input: TrackInputHandle;
+  /**
+   * Every requirement binding this track authored, ordered by slot and then member key.
+   *
+   * A read, not an edit. Binding a slot is a structural change and belongs to
+   * `input.requires`; this is what an editor or a devtool asks before it decides to make one. Total:
+   * a track that binds nothing answers with an empty list rather than with nothing, so a caller never
+   * spells `?? []` and never makes the shape depend on the input.
    */
   readonly requires: readonly RequireView[];
   remove(): void;
   replace(next: TrackDefinition): void;
-  /**
-   * Binds one requirement slot of an already-bound plugin to `source`, without naming that plugin's
-   * other slots or any of its values.
-   *
-   * Structural, and the return type says so: `void`, because the graph was replaced, where the value
-   * tier returns the `PatchBatch` of its one invalidate. There is no fast lane and none is missing:
-   * a binding adds, removes or redirects a `GraphEdge`, which is the boundary `overrideValues` and
-   * `setValues` are forbidden to cross, so this costs one candidate build, one edge delta and one
-   * recompile. The recompile is also where the plugin registry sees the candidate, so it is the
-   * validation rather than an expense. See ADR-062.
-   *
-   * `memberKey` names the key inside a dict-valued slot, and is omitted for a slot that takes one
-   * source. Two entries of one slot are two edges, so an entry is addressed by the key it was
-   * authored under rather than by a formatted slot name. See ADR-057.
-   *
-   * Refusals, all of them before anything is written, and none of them leaving a partial edit
-   * behind. `keyframe-group-unbound` when this node authors no group for `plugin` at all, which is
-   * `setKeyframeGroup`'s job: a group holding only half its data may be transiently invalid, so
-   * originating one is a different primitive with a different refusal set rather than a branch
-   * inside this one. `keyframe-goal-slot-reserved` when the slot named is a solver's goals slot,
-   * which `setGoal` owns: without a member key this verb can only write a scalar there, which the
-   * loader refuses, and with one it writes the right shape through the wrong verb, so the weaker
-   * spelling is deleted rather than documented as discouraged. `keyframe-require-shape` when the
-   * edit would cross a bound slot's authored shape, in either direction, because both directions
-   * silently drop an edge the caller never named. Whatever the registry answers about the candidate,
-   * cited at the path the author wrote. Whatever the graph answers about the candidate, rolled back
-   * transactionally.
-   *
-   * Binding a slot to the source it already reads is a no-op: no rebuild, no recompile, no flush.
-   */
-  setRequire(plugin: string, slot: string, source: string, memberKey?: string): void;
-  /**
-   * Unbinds one requirement slot of an already-bound plugin, or one entry of a dict-valued slot.
-   *
-   * The inverse of `setRequire` and the same tier, the same order, and the same refusal set. A slot
-   * that is not bound and an entry that is not there are both no-ops, on the idempotence rule every
-   * primitive in this tier follows. Removing the last binding leaves the section absent rather than
-   * empty, because omitting it is already how a group binds nothing.
-   */
-  removeRequire(plugin: string, slot: string, memberKey?: string): void;
-  /**
-   * Writes `group` as this node's whole plugin binding for `plugin`, whether or not one was there.
-   *
-   * The primitive `setRequire` refuses to be. A plugin binding holding only half its data may be
-   * transiently invalid, so values and `requires` arrive together, which is what makes this a
-   * separate verb rather than a branch inside the binding one.
-   *
-   * An upsert, and the one honest `set` verb on this surface. `setMotion` and `setTrack` were cut
-   * because each was a single name over two operations with two refusal sets: `addTrack` assigns a
-   * node id and mounts while `replace` refuses a definition whose id would move the node. A group
-   * carries no id, no token and no mount, so originating one and replacing one are the same edit at
-   * the same price with the same refusals, and nothing about the result depends on what was there
-   * before. Wholesale rather than merged, for exactly that reason. See ADR-063.
-   *
-   * Structural, so `void`: every edge the group's `requires` section names is derived in one commit,
-   * at the price the tier costs.
-   *
-   * Refusals, before anything is written. `keyframe-group-shape` when `group` names neither reserved
-   * section, because such an object is not a group and the loader would refuse it as
-   * `keyframes-ungrouped-key`; authoring nothing for a plugin is spelled by removing the entry.
-   * Whatever the registry answers about the candidate's keys and slots, and whatever the graph
-   * answers about its edges, rolled back transactionally. There is no entry-shape refusal: every
-   * authored entry is a plugin group, so no property can sit under a plugin name (ADR-121).
-   *
-   * Handing back the group this node already authors, by identity, is a no-op.
-   */
-  setKeyframeGroup(plugin: string, group: AuthoredPluginGroup): void;
-  /**
-   * Drops this node's whole plugin binding for `plugin`, and every edge its `requires` derived.
-   *
-   * Not the inverse of `removeRequire`: the values go with the bindings, because what is removed is
-   * the group rather than a section of it. One commit however many edges that section named.
-   *
-   * An absent group is a no-op, on this tier's idempotence rule. A record that ends up holding
-   * nothing loses its `keyframes` key entirely, on the same rule that leaves an emptied `requires`
-   * section absent.
-   */
-  removeKeyframeGroup(plugin: string): void;
-  /**
-   * Binds one entry of a solver's goals slot, addressed by the member id it is authored under.
-   *
-   * `setRequire` with the slot fixed rather than named, and that is the whole of what it buys: the
-   * caller cannot reach the scalar spelling of that slot, which the loader refuses as
-   * `keyframes-targets-shape`, and one slot has one verb instead of two that would have to stay in
-   * agreement. Same tier, same order, same refusal set otherwise, and two entries of one slot stay
-   * two edges. See ADR-057 and ADR-063.
-   *
-   * Whether the member id names a leaf of this solver's chain is `resolveSolvers`' question, and it
-   * arrives from the candidate graph rather than from a check here: a goal naming no member, a goal
-   * on a non-leaf, and both goal spellings on one solver are all refused by the owner that knows the
-   * member set, and the commit rolls back.
-   */
-  setGoal(plugin: string, memberId: string, source: string): void;
-  /**
-   * Drops one entry of a solver's goals slot.
-   *
-   * The inverse of `setGoal`, the same tier and the same refusal set. A member that carries no goal
-   * is a no-op. The slot goes when its last entry does, the section goes with its last slot, and the
-   * group goes when it names no section at all, which is one rule at three levels rather than three.
-   */
-  removeGoal(plugin: string, memberId: string): void;
   /**
    * Writes one property of a plugin group this node already authors, whether or not that group
    * authors the key yet.
@@ -221,7 +129,7 @@ export interface TrackHandle extends Handle<TrackDefinition> {
    * See ADR-059, ADR-060 and ADR-062.
    *
    * Refusals, all of them before anything is written. `keyframe-group-unbound` when this node authors
-   * no group for `plugin`, which is `setKeyframeGroup`'s job and is also what buys the cheap tier: a
+   * no group for `plugin`, which is a whole-definition edit and is also what buys the cheap tier: a
    * bound group's plugin is already resolved, so adding a leaf to it cannot change the chain.
    * `live-value-key` with reason `kind` when the incoming leaf is a different kind from the authored
    * one, which stays refused even though this verb rewrites the authored record: which kind of leaf a
@@ -276,4 +184,31 @@ export interface TrackHandle extends Handle<TrackDefinition> {
    * `replaceGraph`. See ADR-059 and ADR-060.
    */
   setValues(next: AuthoredValues): PatchBatch;
+}
+
+/**
+ * The authored input of one track, reached through `TrackHandle.input`.
+ *
+ * Frozen and stateless: it carries the same host, node id and token the track handle captured, and
+ * every verb builds one `Edit` and lets the runtime plan it. `replace` takes the whole input rather
+ * than merging, because a caller that wants to move one slot uses `requires` and a caller that wants
+ * to move one value uses the value tier.
+ */
+export interface TrackInputHandle {
+  /** Replaces the whole `input` member, or removes it when called with no argument. */
+  replace(input?: TrackInput): void;
+  /** The dependency bindings this track authors, as an edit view rather than a record. */
+  readonly requires: TrackRequiresHandle;
+}
+
+/**
+ * The bindings half of one track's input.
+ *
+ * `set` redirects one slot to one source and `remove` drops it. `memberKey` addresses one entry of a
+ * map-valued slot; omitting it addresses the slot itself. Both are structural: a binding is an edge,
+ * and an edge is what the graph and every affected consumer are rebuilt from.
+ */
+export interface TrackRequiresHandle {
+  set(slot: string, source: string, memberKey?: string): void;
+  remove(slot: string, memberKey?: string): void;
 }

@@ -1,10 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { fileURLToPath } from "node:url";
-import type {
-  AuthoredPluginGroup,
-  ProjectDefinition,
-  TrackDefinition,
-} from "../../../src/contract/v5";
+import type { ProjectDefinition, TrackDefinition } from "../../../src/contract/v5";
 import { StaleTrackHandleError, type TrackHandle } from "../../../src/contract/track-handle";
 import { createManualClock } from "../../../src/ports/clock";
 import { ProjectRuntime } from "../../../src/runtime/project-runtime";
@@ -24,7 +20,6 @@ import { code, member } from "../../helpers/source-region";
  * directly. See ADR-056.
  */
 const NODE_ID = "hero/arm";
-const OTHER_ID = "hero/leg";
 const RUNTIME_SOURCE = fileURLToPath(
   new URL("../../../src/runtime/project-runtime.ts", import.meta.url),
 );
@@ -52,15 +47,8 @@ const compose = (node: { id: string }) => () => ({
  *
  * `overrideValues` and `setValues` are that mechanism working as intended: both arrived with
  * ADR-059 and both are covered here rather than through a private copy of the stale contract.
- * `definition` and `requires` are the same mechanism again: the first is `track` renamed by the
- * slice that introduced the handle base, and the second is a member that slice added.
- *
- * `setRequire` and `removeRequire` were declared here by C1's evidence commit, before the source
- * that added them, exactly as `RA-32`'s record named tier 0's two verbs first. C2's four verbs
- * arrive the same way, and so do E's two property verbs. That is this gate working rather than
- * being weakened: the surface below is derived from the handle's own keys, so a member declared
- * here and missing from the handle fails `SH-1`, and a member added to the handle with no entry
- * here fails it too.
+ * `definition`, `requires` and `input` are the same mechanism again, and `remove` and `replace`
+ * are now the two structural verbs whose siblings moved under `input` and became the view's verbs.
  */
 const MEMBER_ARGUMENTS: Readonly<Record<string, readonly unknown[]>> = {
   definition: [],
@@ -69,17 +57,11 @@ const MEMBER_ARGUMENTS: Readonly<Record<string, readonly unknown[]>> = {
   replace: [{ id: "arm" } satisfies TrackDefinition],
   overrideValues: [{ x: 1 }],
   setValues: [{ x: 1 }],
-  setRequire: ["fk", "base", OTHER_ID],
-  removeRequire: ["fk", "base"],
-  setKeyframeGroup: ["fk", { values: { length: 1 } } satisfies AuthoredPluginGroup],
-  removeKeyframeGroup: ["fk"],
-  setGoal: ["ik", "wrist", OTHER_ID],
-  removeGoal: ["ik", "wrist"],
   setKeyframe: ["fk", "length", 1],
   removeKeyframe: ["fk", "length"],
 };
-/** The two members that answer on a stale handle rather than refusing. */
-const NON_REFUSING = ["id", "live"] as const;
+/** The members that answer on a stale handle rather than refusing. */
+const NON_REFUSING = ["id", "live", "input"] as const;
 /**
  * The members that write, which are the ones a disposed runtime outranks.
  *
@@ -99,12 +81,6 @@ const WRITERS = [
   "replace",
   "overrideValues",
   "setValues",
-  "setRequire",
-  "removeRequire",
-  "setKeyframeGroup",
-  "removeKeyframeGroup",
-  "setGoal",
-  "removeGoal",
   "setKeyframe",
   "removeKeyframe",
 ] as const;
@@ -271,8 +247,8 @@ describe("a stale TrackHandle refuses uniformly, and `live` asks without throwin
 
     // Re-addressed at the class those members moved to, on the rule this phase already followed for
     // `RA-113` and for `SH-7` itself: a claim keeps its subject rather than its coordinates. The
-    // factory is one statement now, so asking only it would leave the eighteen delegations this case
-    // has always been about unmeasured, and a guard growing back would grow in the class instead.
+    // factory is one statement now, so asking only it would leave the delegations this case has
+    // always been about unmeasured, and a guard growing back would grow in the class instead.
     const handle = member(
       code(HANDLES_SOURCE),
       "export class RuntimeTrackHandle implements TrackHandle {",
@@ -310,8 +286,8 @@ describe("a stale TrackHandle refuses uniformly, and `live` asks without throwin
     project.dispose();
 
     // Collected rather than asserted one by one, so a red run names every member that misreports.
-    // Thirteen of the fourteen do today: `dispose` empties the retained map, so the token lookup
-    // misses and the resolver answers staleness before anything asks about the runtime at all.
+    // Every writer now goes through `#writableEntry`, which asks the runtime's lifecycle before it
+    // resolves a token, so disposal outranks staleness on all of them rather than on `remove` alone.
     const misreported = WRITERS.filter((member) => {
       const thrown = thrownBy(touch(handle, member));
       return (
@@ -321,9 +297,9 @@ describe("a stale TrackHandle refuses uniformly, and `live` asks without throwin
     });
     expect(misreported).toEqual([]);
 
-    // `remove` is the one that was already right, because `#removeTrack` asked `#assertLive` before
-    // it resolved. ADR-056's Consequences named it as the member showing that the runtime's own
-    // lifecycle outranks one handle's, and this slice is the other thirteen agreeing with it.
+    // `remove` showed this first: it asked `#assertLive` before resolving, and ADR-056's
+    // Consequences named it as the member showing that the runtime's own lifecycle outranks one
+    // handle's. The other writers agree with it now, because each reaches `#writableEntry`.
     expect((thrownBy(() => handle.remove()) as Error).message).toBe("ProjectRuntime is disposed.");
 
     // The read half is unchanged, stated rather than implied, so a later slice that widens the

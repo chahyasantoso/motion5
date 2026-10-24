@@ -21,7 +21,6 @@ import {
   commitInFlight,
   immediateInTransaction,
   nestedTransaction,
-  reservedGoalSlot,
   unboundGroup,
   valueBatchImmediate,
   valueBatchStructural,
@@ -74,10 +73,7 @@ describe("the named refusals still say exactly what they said", () => {
       "value-batch-structural: A value batch is open. Ask for it once values() has returned.",
     );
     expect(message(() => unboundGroup("free:a", "opacity"))).toBe(
-      'keyframe-group-unbound: "free:a" authors no "opacity" group. Use setKeyframeGroup to originate one.',
-    );
-    expect(message(() => reservedGoalSlot("ik", "goals"))).toBe(
-      'keyframe-goal-slot-reserved: Slot "goals" of "ik" holds a solver\'s goals. Use setGoal to bind one entry of it, or removeGoal to drop one.',
+      'keyframe-group-unbound: "free:a" authors no "opacity" group. Use track.replace(...) or track.input.replace(...) to author one.',
     );
   });
 

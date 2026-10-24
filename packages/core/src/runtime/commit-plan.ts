@@ -288,6 +288,15 @@ export interface CommitDocument {
 export interface CommitPreflight {
   readonly needsBuild: ReadonlySet<string>;
   readonly readers: ReadonlyMap<string, readonly string[]>;
+  /**
+   * Nodes a binding edit touched, whose compiled inputs differ but whose timeline must not rebuild.
+   *
+   * A requirement is graph data, not interpolation data, but the compiled comparison reads the whole
+   * definition and therefore reports a change. The overlay carve-out forbids rebuilding on a bind, so
+   * the runtime marks the node here and the planner stages nothing for it. A later replacement in
+   * the same recipe deletes the mark before the commit runs, so a full build is never skipped.
+   */
+  readonly noBuild: ReadonlySet<string>;
 }
 
 /** What one commit does, what it settles afterwards, and the nodes its publication seeds. */
@@ -373,7 +382,10 @@ export function planCommit(
       continue;
     }
     if (previous.track === entry.track) continue;
-    if (preflight.needsBuild.has(nodeId) || buildOwed(previous.valueState))
+    if (
+      (preflight.needsBuild.has(nodeId) || buildOwed(previous.valueState)) &&
+      !preflight.noBuild.has(nodeId)
+    )
       effects.push(
         mintEffect<StageTrackShape>({ kind: "stage-track", nodeId, track: entry.track }),
       );

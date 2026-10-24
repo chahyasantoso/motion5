@@ -107,12 +107,11 @@ export function valueBatchStructural(): never {
   return refuse({ kind: "structural-in-batch" });
 }
 /**
- * Refuses a binding edit addressed at a plugin this node authors no group for.
+ * Refuses a property edit addressed at a plugin this node authors no group for.
  *
- * The boundary between this tier's two levels, and it is a refusal rather than a creation on
- * purpose. Originating a binding is `setKeyframeGroup`'s job, because a plugin group holding only
- * half its data may be transiently invalid, and one verb whose cost and refusal set depend on
- * whether the group already existed is the shape this project has declined to build three times.
+ * The boundary between this tier's levels, and it is a refusal rather than a creation on purpose:
+ * originating a whole group is a definition edit, so the remedy names `track.replace` and
+ * `track.input.replace` rather than a verb this layer no longer owns.
  *
  * Answered from the retained record on this node, so it stays a different question from anything
  * `PluginRegistry` answers about a candidate: whether the plugin exists at all, and whether it
@@ -120,21 +119,4 @@ export function valueBatchStructural(): never {
  */
 export function unboundGroup(nodeId: string, plugin: string): never {
   return refuse({ kind: "unbound-group", nodeId, plugin });
-}
-/**
- * Refuses a binding edit addressed at a solver's goals slot by name.
- *
- * That slot holds one source per chain leaf, and both spellings a caller could reach it with through
- * `setRequire` are wrong in a way this layer can see. Without a member key the verb can only write a
- * scalar there, which `keyframes-targets-shape` refuses at load, so the candidate would be a record
- * the loader rejects. With one it writes the right shape through the wrong verb, and then one
- * question has two mechanisms: `setGoal` is the owner, so the weaker spelling is deleted rather than
- * documented as discouraged.
- *
- * Scoped to the slot rather than to the plugin that happens to own it, because the reservation is
- * about what the slot holds. Every other slot of that same group stays reachable through
- * `setRequire`. See ADR-057 and ADR-063.
- */
-export function reservedGoalSlot(plugin: string, slot: string): never {
-  return refuse({ kind: "reserved-goal-slot", plugin, slot });
 }

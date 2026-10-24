@@ -93,12 +93,6 @@ interface UnboundGroupShape {
   readonly plugin: string;
 }
 
-interface ReservedGoalSlotShape {
-  readonly kind: "reserved-goal-slot";
-  readonly plugin: string;
-  readonly slot: string;
-}
-
 interface InvalidDefinitionShape {
   readonly kind: "invalid-definition";
   readonly diagnostics: readonly Diagnostic[];
@@ -116,7 +110,6 @@ export type RefusalShape =
   | UnknownNodeShape
   | StaleHandleShape
   | UnboundGroupShape
-  | ReservedGoalSlotShape
   | InvalidDefinitionShape;
 
 /**
@@ -136,7 +129,6 @@ export type Refusal =
   | Minted<UnknownNodeShape>
   | Minted<StaleHandleShape>
   | Minted<UnboundGroupShape>
-  | Minted<ReservedGoalSlotShape>
   | Minted<InvalidDefinitionShape>;
 
 /** Mints one refusal, and is the only expression in the program that produces a `Refusal`. */
@@ -201,9 +193,7 @@ export function describeRefusal(refusal: Refusal): string {
     case "stale-handle":
       return staleHandleError(refusal.target).message;
     case "unbound-group":
-      return `keyframe-group-unbound: "${refusal.nodeId}" authors no "${refusal.plugin}" group. Use setKeyframeGroup to originate one.`;
-    case "reserved-goal-slot":
-      return `keyframe-goal-slot-reserved: Slot "${refusal.slot}" of "${refusal.plugin}" holds a solver's goals. Use setGoal to bind one entry of it, or removeGoal to drop one.`;
+      return `keyframe-group-unbound: "${refusal.nodeId}" authors no "${refusal.plugin}" group. Use track.replace(...) or track.input.replace(...) to author one.`;
     case "invalid-definition":
       return describeDiagnostics(refusal.diagnostics);
     default:
@@ -221,9 +211,12 @@ export function describeRefusal(refusal: Refusal): string {
  */
 export class RefusalError extends TypeError {
   readonly refusal: Refusal;
-  constructor(refusal: Refusal) {
+  /** Which edit of a batch was refused, absent when the refusal came from a single verb. */
+  readonly editIndex: number | undefined;
+  constructor(refusal: Refusal, editIndex?: number) {
     super(describeRefusal(refusal));
     this.refusal = refusal;
+    this.editIndex = editIndex;
   }
 }
 
@@ -242,7 +235,7 @@ export class DisposedProjectError extends Error {
 }
 
 /** The error one refusal is thrown as. Total, so a new variant owes a decision here too. */
-export function refusalError(refusal: Refusal): Error {
+export function refusalError(refusal: Refusal, editIndex?: number): Error {
   switch (refusal.kind) {
     case "stale-handle":
       return staleHandleError(refusal.target);
@@ -256,12 +249,21 @@ export function refusalError(refusal: Refusal): Error {
     case "unknown-motion":
     case "unknown-node":
     case "unbound-group":
-    case "reserved-goal-slot":
     case "invalid-definition":
-      return new RefusalError(refusal);
+      return new RefusalError(refusal, editIndex);
     default:
       return unreachable(refusal);
   }
+}
+
+/**
+ * Refuses at one index of an edit batch, so the caller is told which edit was refused.
+ *
+ * The index rides the error rather than the message: the message is the refusal, byte for byte, and
+ * a caller that wants to know which entry failed reads a number rather than parsing prose.
+ */
+export function refuseAt(shape: RefusalShape, editIndex: number): never {
+  throw refusalError(mintRefusal(shape), editIndex);
 }
 
 /** Refuses, and is the only expression that throws one of these. Mints on the way through. */

@@ -26,6 +26,8 @@ A retained definition and a lifetime token, allocated by the same counter as tra
 
 The pending pair while one recipe executes, carried by the phase's editing variants rather than by a field beside them. Both halves start by identity as the retained pair and are copied on their first staged write, after the entry point's last refusal. There is no operation log or dirty flag. A recipe that throws adopts nothing, and handles it created become stale. Reads within it see the pending pair. See ADR-064.
 
+Two build-mark sets ride beside the pair. noBuild names nodes a binding edit touched: their compiled inputs differ because a requirement lives outside the interpolation record, but the overlay carve-out forbids rebuilding their timeline. fullBuild names nodes a replacement or removal touched; a later binding in the same recipe may not mark one noBuild, because the fresh compilation that clears an overlay is exactly what the replacement owes. A commit outside a recipe reads the frozen empty set, so the skip answer is total rather than optional.
+
 ## StagedPair
 
 What one structural verb hands #commit: a tagged tracks-only or motions-only candidate, or a both
@@ -170,10 +172,6 @@ Accepted tier 0 completion through the shared settlement collector: finalization
 
 One statement: mint a RuntimeMotionHandle over the motion half of #handleHost and the pair this call captured. It owns no sequencing and no validation, and it no longer owns the member list either, because project-handles.ts states every member of both handles and #handle is the same statement for a track. Nothing else moved: reads still use the live-motion ladder, child resolution still uses #liveChildNode, writes still use the writable resolvers, and every getter still resolves current readable state rather than capturing a definition. What a caller holds is now one instance over three fields instead of a ten-member frozen literal allocated per call. See ADR-056 and ADR-061.
 
-## #removeTrack
-
-Validates writability, removes the entry from the staged map, and delegates commit. Residency eviction, compiled disposal and Motion deregistration are independent ordered settlement steps derived from the final pair. There is no duplicate assertLive beside #writableEntry. See ADR-064 and ADR-071.
-
 ## #resolve
 
 Forwards the candidate authored keyframes to the injected registry resolver, or answers absent when no registry exists. Diagnostic paths match compilation: nodeId.keyframes. This layer gains no registry ownership or cache. See ADR-062.
@@ -182,9 +180,21 @@ Forwards the candidate authored keyframes to the injected registry resolver, or 
 
 Always resolves and validates the candidate before deciding whether compilation is skippable. Compares complete compiled inputs through sameCompiledTrackInput, resolving the retained definition rather than caching registry-dependent data. The candidate resolve cannot be skipped even when the retained value state already forces a build: doing so would remove a validator. Asked once per final replacement, not once per recipe operation. This injected callback runs within the boundary and before effects. Spelling the condition with the retained marker first would short-circuit the resolve, which deletes a validator rather than a cost. See RA-103, RA-105, ADR-062, ADR-064 and ADR-066.
 
-## #replaceTrack
+## #planState
 
-Validates the complete replacement and requires the same qualified id. Preserves the entry token, resets the value state to authored, and stages the definition. Derivation still observes the state the entry arrived with and pays the build necessary to remove its compiled effects. Hooks and inverse order are not authored here. See ADR-064 and ADR-066.
+Projects the committed or staged entries as the plain data a pure plan reads. The owner and owner id come from the entry's kind, so a free track answers the same tilde the graph builder uses and an owned one answers its Motion id. authoredIndex is recomputed from map insertion order rather than stored, because it is a position in a Motion's authored track list and a removal or replacement moves the entries after it. Contract and value state are copied, not derived; derivation remains the plan's job. See ADR-064 and ADR-066.
+
+## #planEnvironment
+
+The two questions a plan may ask of its host: the plugin capabilities the runtime was constructed with, and the admission predicate when one exists. Both are values rather than a registry, which is what lets the plan module stay free of runtime imports. A registry-free runtime answers UNJUDGED_CAPABILITIES, which asks nothing and refuses nothing.
+
+## #applyStructural
+
+The one structural application point. It validates writability, plans the edit against the staged view, and returns without staging when the plan changed nothing, so a recipe of no-ops still copies nothing. Otherwise it copies the pending tracks once, carries each planned change through #stageChange, and delegates the one commit path. Planning happens before the copy for that no-op reason, and against the staged view rather than the retained one, so step two of a recipe sees step one. See ADR-064 and ADR-066.
+
+## #stageChange
+
+Carries one planned change into the staged map and records what its commit owes. An update preserves the entry's token and kind, replacing only the definition, value state and contract the plan answered. A binding-only update joins noBuild unless the node is already in fullBuild; a replacement or removal joins fullBuild and leaves noBuild, so a later binding in the same recipe cannot suppress a build the replacement owes. A removal deletes the entry; disposal and deregistration remain planCommit's derived settlements. See ADR-064 and ADR-066.
 
 ## #commit
 
@@ -253,10 +263,6 @@ For authored leaves that cannot be expressed as a live mask: edit the pure recor
 ## #setKeyframe
 
 An existing property uses the live-write path; a new property uses the authored editor and recompilation path. The group must already exist. Determine existence through readPluginValues, not a private copy of group layout. Reentrancy is checked before resolving the entry. removeKeyframe uses the same ordering; its no-op retains the established direct-flush behavior. See RA-106, ADR-065, ADR-070 and issue #255.
-
-## #authorEdit
-
-The one ordering every authored edit follows: writable entry, then the candidate authoring-edit.ts answers, then one structural replacement, and nothing at all when that candidate is the retained definition by identity. It replaces ten members: two shared orderings that each took a closure, six wrappers whose whole body was naming one pure primitive inside one of those closures, the retained-record write both orderings ended at, and a ninth ordering whose add boolean decided which of two opposite observation edits it was performing. Which edit was asked is now a value rather than a member name and a flag, so the eight verbs a handle projects reach one member and the switch answering them is total. Nothing about who judges what moved: the registry and the candidate graph still judge the whole candidate at derivation, and no primitive authorizes its own binding. Inside a recipe these stage rather than publish, and a no-op stages nothing, which is what lets a recipe of nothing but no-ops end without a candidate build. Edge identity is still observationEdgeKey against the entry's own motion owner rather than object identity. See RA-66, ADR-045, ADR-057, ADR-062, ADR-063, ADR-064 and ADR-065.
 
 ## #carriedContracts
 

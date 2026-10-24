@@ -6,7 +6,6 @@ import type {
   MotionDefinition,
 } from "../contract/v5";
 import { authoredLeafPartition, readAuthoredLeaf } from "../contract/authored-leaf";
-import { readPluginBindings } from "../contract/keyframe-shape";
 import type { AuthoredValues, LiveValues, RequireView } from "../contract/track-handle";
 import { flattenAuthoredKeyframes } from "../domain/keyframe-groups";
 import type { AuthoredKeyframes } from "../domain/authoring/keyframes";
@@ -34,15 +33,6 @@ import { unreachable } from "../lang/exhaustive";
  */
 export const NO_OVERLAY: Readonly<Record<string, unknown>> = Object.freeze({});
 /**
- * No authored record. One frozen value, so a track that authors nothing allocates nothing.
- *
- * Stands in for an absent `keyframes` at the one place a group edit reads it, which is what lets
- * `setKeyframeGroup` originate on a track that authors nothing without a branch, and lets
- * `removeKeyframeGroup` answer by identity on one instead of committing an empty record on the way
- * to removing nothing from it.
- */
-export const EMPTY_KEYFRAMES: AuthoredKeyframes = Object.freeze({});
-/**
  * One derived require list per retained definition, and the residency rule that makes it safe.
  *
  * `handle.requires` derived and froze the whole list on every access, on a getter a devtool polls:
@@ -63,21 +53,27 @@ const REQUIRE_VIEWS = new WeakMap<GroupedTrackDefinition, readonly RequireView[]
 /**
  * The bindings `track` authored, as a handle reports them.
  *
- * `readPluginBindings` is the one reader of the authored group shape and stays the one reader, so
- * this derives nothing: it drops the diagnostics path, which belongs to the layer that cites it, and
- * keeps everything that identifies the binding, `memberKey` included. Total by construction, because
- * that reader answers with an empty list for a record that authors no group. See ADR-044 and ADR-057.
+ * Projected from `input.requires`, which is the one authored binding record on an identified-table
+ * track. A scalar slot answers one view and a map slot answers one per member key, in authored
+ * order, because two entries of one slot are two edges and a view that merged them would report
+ * them as one. Total by construction: a track that binds nothing answers an empty list.
+ * See ADR-044, ADR-057 and ADR-062.
  */
 export function requireViews(track: GroupedTrackDefinition): readonly RequireView[] {
   const memo = REQUIRE_VIEWS.get(track);
   if (memo !== undefined) return memo;
-  const views = Object.freeze(
-    readPluginBindings(track.keyframes ?? {}).map(({ plugin, slot, source, memberKey }) =>
-      Object.freeze({ plugin, slot, source, ...(memberKey === undefined ? {} : { memberKey }) }),
-    ),
-  );
-  REQUIRE_VIEWS.set(track, views);
-  return views;
+  const views: RequireView[] = [];
+  for (const [slot, binding] of Object.entries(track.input?.requires ?? {})) {
+    if (typeof binding === "string") {
+      views.push(Object.freeze({ slot, source: binding }));
+      continue;
+    }
+    for (const [memberKey, source] of Object.entries(binding))
+      views.push(Object.freeze({ slot, source, memberKey }));
+  }
+  const frozen = Object.freeze(views);
+  REQUIRE_VIEWS.set(track, frozen);
+  return frozen;
 }
 /**
  * The authored static values of `track`, flattened, and nothing else.

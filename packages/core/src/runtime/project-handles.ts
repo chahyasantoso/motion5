@@ -1,14 +1,20 @@
 import type { MotionHandle } from "../contract/motion-handle";
-import type { AuthoredValues, RequireView, TrackHandle } from "../contract/track-handle";
 import type {
-  AuthoredPluginGroup,
+  AuthoredValues,
+  RequireView,
+  TrackHandle,
+  TrackInputHandle,
+  TrackRequiresHandle,
+} from "../contract/track-handle";
+import type {
   AuthoredProperty,
   MotionDefinition,
   PatchBatch,
   TrackDefinition,
+  TrackInput,
 } from "../contract/v5";
 import { requireViews } from "./authored-values";
-import type { AuthoringEdit } from "./authoring-edit";
+import type { StructuralEdit } from "./edit-types";
 
 /**
  * The two capability handles a project issues, as classes over one host and the pair each captured.
@@ -45,11 +51,11 @@ import type { AuthoringEdit } from "./authoring-edit";
  * Both are total, both are frozen, and no member of either is optional.
  *
  * What stays with a handle is what belongs to one: which id and token it captured, which
- * `AuthoringEdit` each authored verb means, and the `RequireView` projection of a definition it can
- * already read. What stays with the runtime is every liveness ladder, every refusal and every commit,
- * so a handle decides nothing, which is the property `SH-7` measures. Instances are frozen for the
- * reason the literals were: a handle is a capability a caller holds, and nothing may hang state on
- * one. See ADR-026, ADR-056, ADR-061 and ADR-063.
+ * `StructuralEdit` each structural verb means, and the `RequireView` projection of a definition it
+ * can already read. What stays with the runtime is every liveness ladder, every refusal and every
+ * commit, so a handle decides nothing, which is the property `SH-7` measures. Instances are frozen
+ * for the reason the literals were: a handle is a capability a caller holds, and nothing may hang
+ * state on one. See ADR-026, ADR-056, ADR-061 and ADR-063.
  */
 
 /**
@@ -65,9 +71,7 @@ import type { AuthoringEdit } from "./authoring-edit";
 export interface TrackHost {
   readonly live: (id: string, token: number) => boolean;
   readonly definition: (id: string, token: number) => TrackDefinition;
-  readonly remove: (id: string, token: number) => void;
-  readonly replace: (id: string, token: number, next: TrackDefinition) => void;
-  readonly author: (id: string, token: number, edit: AuthoringEdit) => void;
+  readonly apply: (id: string, token: number, edit: StructuralEdit) => void;
   readonly setKeyframe: (
     id: string,
     token: number,
@@ -111,11 +115,12 @@ export interface HandleHost {
 }
 
 /**
- * One graph node's capability handle: three fields, and eighteen members on one prototype.
+ * One graph node's capability handle: three fields and eleven members on one prototype.
  *
- * Every member delegates, so there is no branch and no sequencing here, and the eight authored verbs
- * mint the eight variants of one closed union rather than naming eight members of the host. See
- * ADR-056, ADR-063 and ADR-065.
+ * Every member delegates, so there is no branch and no sequencing here. The three structural verbs
+ * and the two under `input` mint one `StructuralEdit` each rather than naming five host members, so
+ * the host stays one application point however the edit surface grows. See ADR-056, ADR-063 and
+ * ADR-065.
  */
 export class RuntimeTrackHandle implements TrackHandle {
   readonly #host: TrackHost;
@@ -145,36 +150,20 @@ export class RuntimeTrackHandle implements TrackHandle {
     return requireViews(this.#host.definition(this.#id, this.#token));
   }
 
+  get input(): TrackInputHandle {
+    return new RuntimeTrackInputHandle(this.#host, this.#id, this.#token);
+  }
+
   remove(): void {
-    this.#host.remove(this.#id, this.#token);
+    this.#host.apply(this.#id, this.#token, { kind: "remove-track", nodeId: this.#id });
   }
 
   replace(next: TrackDefinition): void {
-    this.#host.replace(this.#id, this.#token, next);
-  }
-
-  setRequire(plugin: string, slot: string, source: string, memberKey?: string): void {
-    this.#author({ kind: "bind-slot", plugin, slot, source, memberKey });
-  }
-
-  removeRequire(plugin: string, slot: string, memberKey?: string): void {
-    this.#author({ kind: "unbind-slot", plugin, slot, memberKey });
-  }
-
-  setKeyframeGroup(plugin: string, group: AuthoredPluginGroup): void {
-    this.#author({ kind: "set-group", plugin, group });
-  }
-
-  removeKeyframeGroup(plugin: string): void {
-    this.#author({ kind: "remove-group", plugin });
-  }
-
-  setGoal(plugin: string, memberId: string, source: string): void {
-    this.#author({ kind: "bind-goal", plugin, memberId, source });
-  }
-
-  removeGoal(plugin: string, memberId: string): void {
-    this.#author({ kind: "unbind-goal", plugin, memberId });
+    this.#host.apply(this.#id, this.#token, {
+      kind: "replace-track",
+      nodeId: this.#id,
+      track: next,
+    });
   }
 
   setKeyframe(plugin: string, key: string, value: AuthoredProperty): PatchBatch {
@@ -192,9 +181,76 @@ export class RuntimeTrackHandle implements TrackHandle {
   setValues(next: AuthoredValues): PatchBatch {
     return this.#host.write(this.#id, this.#token, next, true);
   }
+}
 
-  #author(edit: AuthoringEdit): void {
-    this.#host.author(this.#id, this.#token, edit);
+/**
+ * The `input` member of one track handle: one replacement verb and one binding view.
+ *
+ * The view is allocated per read and holds nothing of its own, so no stale copy of an input can
+ * outlive the definition it came from; each verb resolves the token its track handle captured, and
+ * the runtime decides both liveness and the edit. See ADR-056 and ADR-063.
+ */
+export class RuntimeTrackInputHandle implements TrackInputHandle {
+  readonly #host: TrackHost;
+  readonly #id: string;
+  readonly #token: number;
+
+  constructor(host: TrackHost, id: string, token: number) {
+    this.#host = host;
+    this.#id = id;
+    this.#token = token;
+    Object.freeze(this);
+  }
+
+  replace(input?: TrackInput): void {
+    this.#host.apply(this.#id, this.#token, {
+      kind: "replace-input",
+      nodeId: this.#id,
+      ...(input === undefined ? {} : { input }),
+    });
+  }
+
+  get requires(): TrackRequiresHandle {
+    return new RuntimeTrackRequiresHandle(this.#host, this.#id, this.#token);
+  }
+}
+
+/**
+ * The bindings half of one track's input: two verbs over the same host, id and token.
+ *
+ * A structural edit is built here rather than in the runtime so the runtime keeps one application
+ * point for all five shapes. An absent member key is omitted rather than written as `undefined`, so
+ * an edit replayed from a fixture addresses the same slot it did in memory.
+ */
+export class RuntimeTrackRequiresHandle implements TrackRequiresHandle {
+  readonly #host: TrackHost;
+  readonly #id: string;
+  readonly #token: number;
+
+  constructor(host: TrackHost, id: string, token: number) {
+    this.#host = host;
+    this.#id = id;
+    this.#token = token;
+    Object.freeze(this);
+  }
+
+  set(slot: string, source: string, memberKey?: string): void {
+    this.#host.apply(this.#id, this.#token, {
+      kind: "bind",
+      nodeId: this.#id,
+      slot,
+      source,
+      ...(memberKey === undefined ? {} : { memberKey }),
+    });
+  }
+
+  remove(slot: string, memberKey?: string): void {
+    this.#host.apply(this.#id, this.#token, {
+      kind: "unbind",
+      nodeId: this.#id,
+      slot,
+      ...(memberKey === undefined ? {} : { memberKey }),
+    });
   }
 }
 
@@ -260,4 +316,6 @@ export class RuntimeMotionHandle implements MotionHandle {
 // The capability half of what freezing a literal used to cover. An instance freeze stops a caller
 // hanging state on one handle; these stop one assignment rewriting a member of all of them.
 Object.freeze(RuntimeTrackHandle.prototype);
+Object.freeze(RuntimeTrackInputHandle.prototype);
+Object.freeze(RuntimeTrackRequiresHandle.prototype);
 Object.freeze(RuntimeMotionHandle.prototype);
