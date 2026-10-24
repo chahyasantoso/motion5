@@ -75,11 +75,6 @@
     "reason": "Authors grouped plugin keyframes; Phase 5 expresses transform, fk and 3d plugins with tables and declared dependencies."
   },
   {
-    "path": "packages/core/test/integration/adopt-destroy-readopt.test.ts",
-    "phase": 4,
-    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
-  },
-  {
     "path": "packages/core/test/integration/adopted-track-immutability.test.ts",
     "phase": 4,
     "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
@@ -98,11 +93,6 @@
     "path": "packages/core/test/integration/contract-baseline.pending.test.ts",
     "phase": 5,
     "reason": "The perspective-usage warning and 3d plugin arrive with Phase 5."
-  },
-  {
-    "path": "packages/core/test/integration/cross-motion.test.ts",
-    "phase": 4,
-    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
   },
   {
     "path": "packages/core/test/integration/demo-runtime-authoring.test.ts",
@@ -180,11 +170,6 @@
     "reason": "Exercises old plugin-named grouped keyframes; Phase 5 expresses plugins with tables and declared dependencies."
   },
   {
-    "path": "packages/core/test/integration/motion-trigger-types.test.ts",
-    "phase": 4,
-    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
-  },
-  {
     "path": "packages/core/test/integration/one-mechanism-per-question.test.ts",
     "phase": 4,
     "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
@@ -193,21 +178,6 @@
     "path": "packages/core/test/integration/option-c-track-resolution.test.ts",
     "phase": 4,
     "reason": "Exercises live track replacement via handle; Phase 4 rebuilds that path on identified tables."
-  },
-  {
-    "path": "packages/core/test/integration/phase2-motion-scheduling.test.ts",
-    "phase": 4,
-    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
-  },
-  {
-    "path": "packages/core/test/integration/phase3-trigger-port.test.ts",
-    "phase": 4,
-    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
-  },
-  {
-    "path": "packages/core/test/integration/phase4-dynamic-lifecycle.test.ts",
-    "phase": 4,
-    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
   },
   {
     "path": "packages/core/test/integration/phase7-walker-demo.test.ts",
@@ -225,42 +195,12 @@
     "reason": "Loads full-body-project through fk and transform plugin tracks; Phase 5 expresses them with tables and declared dependencies."
   },
   {
-    "path": "packages/core/test/integration/remount.test.ts",
-    "phase": 4,
-    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
-  },
-  {
-    "path": "packages/core/test/integration/replace-motion-track.test.ts",
-    "phase": 4,
-    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
-  },
-  {
-    "path": "packages/core/test/integration/runtime-motion-lifecycle.test.ts",
-    "phase": 4,
-    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
-  },
-  {
     "path": "packages/core/test/integration/solver-member-cache.test.ts",
     "phase": 5,
     "reason": "Exercises solver, IK, FK or rig behavior; Phase 5 expresses it with tables and declared dependencies."
   },
   {
     "path": "packages/core/test/integration/t4-runtime-motion-parity.test.ts",
-    "phase": 4,
-    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
-  },
-  {
-    "path": "packages/core/test/integration/trigger-scroll.test.ts",
-    "phase": 4,
-    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
-  },
-  {
-    "path": "packages/core/test/integration/trigger-time-loop.test.ts",
-    "phase": 4,
-    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
-  },
-  {
-    "path": "packages/core/test/integration/trigger-time.test.ts",
     "phase": 4,
     "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
   },
@@ -421,11 +361,6 @@
   },
   {
     "path": "packages/core/test/unit/runtime/motion-consistency.test.ts",
-    "phase": 4,
-    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
-  },
-  {
-    "path": "packages/core/test/unit/runtime/mount-flush-seed.test.ts",
     "phase": 4,
     "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
   },

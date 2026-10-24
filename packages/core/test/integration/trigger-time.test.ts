@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { describe, expect, it } from "vitest";
 import { Engine } from "../../src/engine";
 import { createDefaultTriggerFactory } from "../../src/adapters/trigger-factory/default";
@@ -9,19 +8,18 @@ import {
   createFakeTriggerPort,
 } from "../../src/testing/fakes";
 import type { TriggerFactory } from "../../src/ports/trigger-factory";
+import { record } from "../support/v5-builders";
 
 function track(id: string) {
   return {
     id,
-    keyframes: {
-      transform: {
-        values: {
-          x: [
-            { p: 0, v: 0 },
-            { p: 1, v: 100 },
-          ],
-        },
-      },
+    input: {
+      values: record({
+        x: [
+          { p: 0, v: 0 },
+          { p: 1, v: 100 },
+        ],
+      }),
     },
   };
 }
@@ -45,7 +43,7 @@ describe("time trigger integration T2", () => {
       // Only a ready patch has a pose to record, so a publication owning none records nothing.
       // The sequence this case asserts on is what still holds the line. See ADR-098.
       if (patch.status !== "ready") return;
-      seen.push(patch.values);
+      seen.push(patch.outputs.values);
     });
     seen.length = 0;
     clock.tick(250);
@@ -53,13 +51,13 @@ describe("time trigger integration T2", () => {
     const timeMotionArmPatch = handle.get("timeMotion/arm");
     if (timeMotionArmPatch?.status !== "ready")
       throw new Error(`timeMotion/arm is ${timeMotionArmPatch?.status ?? "absent"}, not ready.`);
-    expect(timeMotionArmPatch.values).toEqual({ x: 25 });
+    expect(timeMotionArmPatch.outputs.values).toEqual({ x: 25 });
     clock.tick(750);
     scheduler.flush();
     const timeMotionArmPatch2 = handle.get("timeMotion/arm");
     if (timeMotionArmPatch2?.status !== "ready")
       throw new Error(`timeMotion/arm is ${timeMotionArmPatch2?.status ?? "absent"}, not ready.`);
-    expect(timeMotionArmPatch2.values).toEqual({ x: 100 });
+    expect(timeMotionArmPatch2.outputs.values).toEqual({ x: 100 });
     // GraphRuntime flushes once before the scheduler applies the driver's progress,
     // so the initial x=0 publication is expected. The meaningful assertion is that
     // each driver tick produces exactly one non-zero progress application.
@@ -101,7 +99,7 @@ describe("time trigger integration T2", () => {
     const timeMotionArmPatch6 = handle.get("timeMotion/arm");
     if (timeMotionArmPatch6?.status !== "ready")
       throw new Error(`timeMotion/arm is ${timeMotionArmPatch6?.status ?? "absent"}, not ready.`);
-    expect(timeMotionArmPatch6.values).toEqual({ x: 10 });
+    expect(timeMotionArmPatch6.outputs.values).toEqual({ x: 10 });
     handle.dispose();
   });
   it("keeps exactly one project clock subscription for multiple Motions", () => {
@@ -147,7 +145,7 @@ describe("time trigger integration T2", () => {
       throw new Error(
         `manualMotion/arm is ${manualMotionArmPatch?.status ?? "absent"}, not ready.`,
       );
-    expect(manualMotionArmPatch.values).toEqual({ x: 50 });
+    expect(manualMotionArmPatch.outputs.values).toEqual({ x: 50 });
     handle.dispose();
   });
   it("isolates a throwing clock consumer while preserving other Motion progress", () => {
@@ -188,7 +186,7 @@ describe("time trigger integration T2", () => {
     const goodArmPatch = handle.get("good/arm");
     if (goodArmPatch?.status !== "ready")
       throw new Error(`good/arm is ${goodArmPatch?.status ?? "absent"}, not ready.`);
-    expect(goodArmPatch.values).toEqual({ x: 25 });
+    expect(goodArmPatch.outputs.values).toEqual({ x: 25 });
     handle.dispose();
   });
 });

@@ -1,6 +1,5 @@
-// @ts-nocheck
 import { describe, expect, it, vi } from "vitest";
-import type { ProjectDefinition } from "../../src/contract/v5";
+import type { ProjectDefinition, Table } from "../../src/contract/v5";
 import { Engine } from "../../src/engine";
 import { Motion } from "../../src/domain/motion";
 import { Track } from "../../src/domain/track";
@@ -12,6 +11,11 @@ import {
   createFakeTriggerPort,
 } from "../../src/testing/fakes";
 import { createManualTriggerPort, assertTriggerPort } from "../../src/ports/trigger";
+import { record } from "../support/v5-builders";
+
+function isTable(value: unknown): value is Table {
+  return Array.isArray(value);
+}
 
 describe("Phase 3: TriggerPort Migration & Boundary Neutrality", () => {
   const project: ProjectDefinition = {
@@ -23,15 +27,13 @@ describe("Phase 3: TriggerPort Migration & Boundary Neutrality", () => {
         tracks: [
           {
             id: "t1",
-            keyframes: {
-              transform: {
-                values: {
-                  x: [
-                    { p: 0, v: 0 },
-                    { p: 1, v: 100 },
-                  ],
-                },
-              },
+            input: {
+              values: record({
+                x: [
+                  { p: 0, v: 0 },
+                  { p: 1, v: 100 },
+                ],
+              }),
             },
           },
         ],
@@ -117,7 +119,9 @@ describe("Phase 3: TriggerPort Migration & Boundary Neutrality", () => {
     handle.subscribeNode("hero/t1", (patch) => {
       // A subscriber records what was published, and a patch owning no pose has nothing to record.
       if (patch.status !== "ready") return;
-      patchValue = patch.values.x as number;
+      const values = patch.outputs.values;
+      if (values === undefined || isTable(values)) throw new Error("Expected a record pose.");
+      patchValue = Number(values.x);
     });
 
     // Custom driver pushes progress into port

@@ -10,10 +10,11 @@ import { PENDING_LEDGER, pendingPaths } from "../../../../../test/pending.mjs";
  * It started at 134 files on 2026-10-23, when Phase 2 landed the identified-table track and every
  * later-phase suite could no longer typecheck or run. The end-to-end product path needed no plugin,
  * so it was ported rather than filed. The Phase 2 fix-up un-pended `engine-teardown-ownership` and
- * split nine mixed files into running originals plus pended siblings, so the ledger stands at 132.
+ * split nine mixed files into running originals plus pended siblings. S7 un-pended thirteen
+ * lifecycle and scheduling suites and leaves the ledger at 107.
  * Lower this number in the slice that resolves entries; raising it re-opens the gate this closes.
  */
-const PENDING_CEILING = 123;
+const PENDING_CEILING = 107;
 
 const ROOT = fileURLToPath(new URL("../../../../../", import.meta.url));
 const MARKER = "// @ts-nocheck";

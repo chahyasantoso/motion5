@@ -1,6 +1,5 @@
-// @ts-nocheck
-import { describe, expect, it, vi } from "vitest";
-import type { ProjectDefinition } from "../../src/contract/v5";
+import { describe, expect, it } from "vitest";
+import type { ProjectDefinition, Table } from "../../src/contract/v5";
 import { Engine } from "../../src/engine";
 import { createManualClock } from "../../src/ports/clock";
 import {
@@ -10,6 +9,11 @@ import {
 } from "../../src/testing/fakes";
 import { Motion } from "../../src/domain/motion";
 import { Track } from "../../src/domain/track";
+import { record } from "../support/v5-builders";
+
+function isTable(value: unknown): value is Table {
+  return Array.isArray(value);
+}
 
 describe("Phase 2: Motion Scheduling & Coalescing", () => {
   const project: ProjectDefinition = {
@@ -21,15 +25,13 @@ describe("Phase 2: Motion Scheduling & Coalescing", () => {
         tracks: [
           {
             id: "t1",
-            keyframes: {
-              transform: {
-                values: {
-                  x: [
-                    { p: 0, v: 0 },
-                    { p: 1, v: 100 },
-                  ],
-                },
-              },
+            input: {
+              values: record({
+                x: [
+                  { p: 0, v: 0 },
+                  { p: 1, v: 100 },
+                ],
+              }),
             },
           },
         ],
@@ -53,7 +55,9 @@ describe("Phase 2: Motion Scheduling & Coalescing", () => {
     handle.subscribeNode("hero/t1", (patch) => {
       // A subscriber records what was published, and a patch owning no pose has nothing to record.
       if (patch.status !== "ready") return;
-      trackValues.push(patch.values.x as number);
+      const values = patch.outputs.values;
+      if (values === undefined || isTable(values)) throw new Error("Expected a record pose.");
+      trackValues.push(Number(values.x));
     });
 
     // Fire 10 rapid progress signals

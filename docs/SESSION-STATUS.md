@@ -6,20 +6,20 @@ states a phase; `packages/core/test/unit/scripts/session-status-shape.test.ts` e
 byte ceiling.
 
 - **Captured:** 2026-10-24, Asia/Jakarta.
-- **Read against:** `refactor/v5-identified-tables` after the consumer-routing slice.
+- **Read against:** `refactor/v5-identified-tables` after the lifecycle-and-scheduling slice.
 
 ## Now
 
-- **Runners and recipes use the live verbs:** a runner write step carries one whole table or record
-  and a release is its own step; `ValueTransaction` exposes `writeValues`/`releaseValues` beside
-  `seek`, and the per-write refusal isolation inside `values(recipe)` is unchanged. The rig writer
-  and goal control address single fields with `setField`.
+- **Lifecycle and scheduling hold on the v5 engine:** thirteen previously pended suites run against
+  identified tables, covering unmount/remount closure and retention, cross-motion pending references,
+  terminal destroy patches, add/remove and replacement cycles, mount flush ownership, and the
+  manual, time, looping and scroll trigger paths. The pending ledger is at 107.
 
 ## Next in line
 
-- **Lifecycle and scheduling:** with the un-pended tests, mount and unmount gating, terminal
-  destroy patches, subscription and timeline disposal, repeated replacement leaks, reentrant
-  subscribers, and the manual, time and scroll trigger paths.
+- **Port the remaining Phase 4 pended suites:** move every edit and value test that can run now onto
+  the builders, keep anything that needs built-in plugins pended with a Phase 5 reason, and lower the
+  ledger ceiling to the new count.
 
 ## Open, and not scheduled
 

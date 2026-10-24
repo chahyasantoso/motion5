@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { describe, expect, it } from "vitest";
 import { Engine } from "../../src/engine";
 import { createManualClock } from "../../src/ports/clock";
@@ -30,7 +29,7 @@ function track(id: string, from: number, to: number, duration?: number): TrackDe
   return {
     id,
     ...(duration === undefined ? {} : { duration }),
-    keyframes: { transform: { values: { x: ramp(from, to) } } },
+    input: { values: { x: ramp(from, to) } },
   };
 }
 
@@ -49,7 +48,7 @@ describe("runtime Motion lifecycle (W4)", () => {
     const idPatch = handle.get(added.id);
     if (idPatch?.status !== "ready")
       throw new Error(`idPatch is ${idPatch?.status ?? "absent"}, not ready.`);
-    expect(idPatch.values).toEqual({ x: 50 });
+    expect(idPatch.outputs.values).toEqual({ x: 50 });
 
     added.remove();
     handle.destroyMotion("scene");
@@ -85,11 +84,11 @@ describe("runtime Motion lifecycle (W4)", () => {
     const idPatch2 = handle.get(left.id);
     if (idPatch2?.status !== "ready")
       throw new Error(`idPatch2 is ${idPatch2?.status ?? "absent"}, not ready.`);
-    expect(idPatch2.values).toEqual({ x: 50 });
+    expect(idPatch2.outputs.values).toEqual({ x: 50 });
     const idPatch3 = handle.get(right.id);
     if (idPatch3?.status !== "ready")
       throw new Error(`idPatch3 is ${idPatch3?.status ?? "absent"}, not ready.`);
-    expect(idPatch3.values).toEqual({ x: 50 });
+    expect(idPatch3.outputs.values).toEqual({ x: 50 });
 
     left.remove();
     right.remove();

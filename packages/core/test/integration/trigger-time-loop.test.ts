@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { describe, expect, it } from "vitest";
 import { createTriggerFactory } from "../../src/adapters/trigger-factory/default";
 import type { Diagnostic, MotionDefinition } from "../../src/contract/v5";
@@ -11,6 +10,7 @@ import { Motion } from "../../src/domain/motion";
 import { Engine, type ProjectHandle } from "../../src/engine";
 import { createManualClock } from "../../src/ports/clock";
 import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
+import { record } from "../support/v5-builders";
 
 const LOOPING: MotionDefinition["trigger"] = { type: "time", duration: 100, repeat: 1, yoyo: true };
 const TWICE: MotionDefinition["trigger"] = { type: "time", duration: 100, repeat: 1 };
@@ -20,15 +20,13 @@ const ONCE: MotionDefinition["trigger"] = { type: "time", duration: 100 };
 function ramp(id: string) {
   return {
     id,
-    keyframes: {
-      transform: {
-        values: {
-          x: [
-            { p: 0, v: 0 },
-            { p: 1, v: 100 },
-          ],
-        },
-      },
+    input: {
+      values: record({
+        x: [
+          { p: 0, v: 0 },
+          { p: 1, v: 100 },
+        ],
+      }),
     },
   };
 }
@@ -62,7 +60,7 @@ function load(motions: readonly MotionDefinition[]): Loaded {
     handle,
     values: (nodeId) => {
       const patch = handle.get(nodeId);
-      return patch?.status === "ready" ? patch.values : undefined;
+      return patch?.status === "ready" ? patch.outputs.values : undefined;
     },
     advance(delta) {
       clock.tick(delta);
@@ -196,7 +194,7 @@ describe("time loop semantics", () => {
     const aArmPatch = handle.get("a/arm");
     if (aArmPatch?.status !== "ready")
       throw new Error(`a/arm is ${aArmPatch?.status ?? "absent"}, not ready.`);
-    expect(aArmPatch.values).toEqual({ x: 50 });
+    expect(aArmPatch.outputs.values).toEqual({ x: 50 });
     handle.dispose();
     base.dispose();
   });

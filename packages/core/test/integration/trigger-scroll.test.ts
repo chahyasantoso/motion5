@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { describe, expect, it } from "vitest";
 import type { MotionDefinition } from "../../src/contract/v5";
 import { Engine } from "../../src/engine";
@@ -10,6 +9,7 @@ import {
   createTriggerFactory,
   type ScrollSourceResolver,
 } from "../../src/adapters/trigger-factory/default";
+import { record } from "../support/v5-builders";
 
 interface FakeScrollSource extends ScrollSource {
   emit(progress: number): void;
@@ -20,15 +20,13 @@ interface FakeScrollSource extends ScrollSource {
 function track(id = "arm") {
   return {
     id,
-    keyframes: {
-      transform: {
-        values: {
-          x: [
-            { p: 0, v: 0 },
-            { p: 1, v: 100 },
-          ],
-        },
-      },
+    input: {
+      values: record({
+        x: [
+          { p: 0, v: 0 },
+          { p: 1, v: 100 },
+        ],
+      }),
     },
   };
 }
@@ -89,7 +87,7 @@ describe("T3 scroll driver", () => {
     const sceneArmPatch = handle.get("scene/arm");
     if (sceneArmPatch?.status !== "ready")
       throw new Error(`scene/arm is ${sceneArmPatch?.status ?? "absent"}, not ready.`);
-    expect(sceneArmPatch.values).toEqual({ x: 60 });
+    expect(sceneArmPatch.outputs.values).toEqual({ x: 60 });
     handle.dispose();
   });
 
@@ -128,11 +126,11 @@ describe("T3 scroll driver", () => {
     const firstArmPatch = handle.get("first/arm");
     if (firstArmPatch?.status !== "ready")
       throw new Error(`first/arm is ${firstArmPatch?.status ?? "absent"}, not ready.`);
-    expect(firstArmPatch.values).toEqual({ x: 100 });
+    expect(firstArmPatch.outputs.values).toEqual({ x: 100 });
     const secondArmPatch = handle.get("second/arm");
     if (secondArmPatch?.status !== "ready")
       throw new Error(`second/arm is ${secondArmPatch?.status ?? "absent"}, not ready.`);
-    expect(secondArmPatch.values).toEqual({ x: 100 });
+    expect(secondArmPatch.outputs.values).toEqual({ x: 100 });
     emit("onRefreshInit");
     producer.progress = 0.25;
     emit("onUpdate");
@@ -141,7 +139,7 @@ describe("T3 scroll driver", () => {
     const firstArmPatch2 = handle.get("first/arm");
     if (firstArmPatch2?.status !== "ready")
       throw new Error(`first/arm is ${firstArmPatch2?.status ?? "absent"}, not ready.`);
-    expect(firstArmPatch2.values).toEqual({ x: 100 });
+    expect(firstArmPatch2.outputs.values).toEqual({ x: 100 });
     producer.progress = -0.2;
     position = 100;
     emit("onUpdate");
@@ -149,11 +147,11 @@ describe("T3 scroll driver", () => {
     const firstArmPatch3 = handle.get("first/arm");
     if (firstArmPatch3?.status !== "ready")
       throw new Error(`first/arm is ${firstArmPatch3?.status ?? "absent"}, not ready.`);
-    expect(firstArmPatch3.values).toEqual({ x: 0 });
+    expect(firstArmPatch3.outputs.values).toEqual({ x: 0 });
     const secondArmPatch2 = handle.get("second/arm");
     if (secondArmPatch2?.status !== "ready")
       throw new Error(`second/arm is ${secondArmPatch2?.status ?? "absent"}, not ready.`);
-    expect(secondArmPatch2.values).toEqual({ x: 0 });
+    expect(secondArmPatch2.outputs.values).toEqual({ x: 0 });
     producer.progress = Number.NaN;
     position = 200;
     expect(() => emit("onUpdate")).toThrow(AggregateError);
@@ -164,7 +162,7 @@ describe("T3 scroll driver", () => {
     const secondArmPatch3 = handle.get("second/arm");
     if (secondArmPatch3?.status !== "ready")
       throw new Error(`second/arm is ${secondArmPatch3?.status ?? "absent"}, not ready.`);
-    expect(secondArmPatch3.values).toEqual({ x: 30 });
+    expect(secondArmPatch3.outputs.values).toEqual({ x: 30 });
     handle.dispose();
     expect(kills).toBe(1);
     expect(() => emit("onUpdate")).not.toThrow();
@@ -207,21 +205,21 @@ describe("T3 scroll driver", () => {
     const sceneArmPatch2 = handle.get("scene/arm");
     if (sceneArmPatch2?.status !== "ready")
       throw new Error(`scene/arm is ${sceneArmPatch2?.status ?? "absent"}, not ready.`);
-    expect(sceneArmPatch2.values).toEqual({ x: 40 });
+    expect(sceneArmPatch2.outputs.values).toEqual({ x: 40 });
 
     scroll.emit(2);
     scheduler.flush();
     const sceneArmPatch3 = handle.get("scene/arm");
     if (sceneArmPatch3?.status !== "ready")
       throw new Error(`scene/arm is ${sceneArmPatch3?.status ?? "absent"}, not ready.`);
-    expect(sceneArmPatch3.values).toEqual({ x: 100 });
+    expect(sceneArmPatch3.outputs.values).toEqual({ x: 100 });
 
     scroll.emit(-1);
     scheduler.flush();
     const sceneArmPatch4 = handle.get("scene/arm");
     if (sceneArmPatch4?.status !== "ready")
       throw new Error(`scene/arm is ${sceneArmPatch4?.status ?? "absent"}, not ready.`);
-    expect(sceneArmPatch4.values).toEqual({ x: 0 });
+    expect(sceneArmPatch4.outputs.values).toEqual({ x: 0 });
 
     handle.dispose();
   });
@@ -282,7 +280,7 @@ describe("T3 scroll driver", () => {
     const sceneArmPatch5 = handle.get("scene/arm");
     if (sceneArmPatch5?.status !== "ready")
       throw new Error(`scene/arm is ${sceneArmPatch5?.status ?? "absent"}, not ready.`);
-    const afterTick = sceneArmPatch5.values ?? { x: 0 };
+    const afterTick = sceneArmPatch5.outputs.values ?? { x: 0 };
     expect(afterTick).toEqual({ x: 0 });
 
     // Only the injected source moves this Motion.
@@ -291,7 +289,7 @@ describe("T3 scroll driver", () => {
     const sceneArmPatch6 = handle.get("scene/arm");
     if (sceneArmPatch6?.status !== "ready")
       throw new Error(`scene/arm is ${sceneArmPatch6?.status ?? "absent"}, not ready.`);
-    expect(sceneArmPatch6.values).toEqual({ x: 25 });
+    expect(sceneArmPatch6.outputs.values).toEqual({ x: 25 });
 
     handle.dispose();
   });
