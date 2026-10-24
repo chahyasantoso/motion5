@@ -249,3 +249,20 @@ whole-value rule expressed one field at a time; no row-patching helper was neede
 patches rows of a live value. `frame.ts` and `labels.ts` carried only prose about the retired verbs
 and are corrected. The react demo has no value writes to move. The pre-v5 guide set is untouched
 until its own documentation slice.
+
+## Pending ledger after Phase 4
+
+The ledger started at 134 files. S7 ported thirteen lifecycle and scheduling suites. S8 resolved
+every remaining Phase 4 entry: fifteen suites were ported directly, four more were ported after a
+rewrite of their removed-API cases, five removed-API suites were deleted with the APIs they tested
+and replaced by the new edit and live-value suites, and five built-in-plugin suites moved to Phase 5
+with exact reasons. The ledger stands at 79: 73 Phase 5, 4 Phase 6, 2 Phase 7, and no Phase 4 entry.
+
+Two semantic differences are deliberate and recorded here rather than hidden in a port. A recipe
+that removes a chain parent before its dependant is now refused at the parent's step, because each
+structural verb plans against the staged view rather than accumulating an operation log; the old
+`project-enumeration` case asserting order independence now asserts the leaf-first success and the
+parent-first refusal. The v5 evaluator writes its timeline when it next evaluates rather than on
+every seek, so the two `motion-consistency` cases that injected a failure through a re-seed's
+`progress` call have no call left to fail; the surrounding settlement ordering stays covered by the
+trigger cases.

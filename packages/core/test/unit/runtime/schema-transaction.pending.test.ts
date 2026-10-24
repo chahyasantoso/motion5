@@ -1,5 +1,4 @@
-// @ts-nocheck
-import { builtinRegistry } from "../../support/builtin-registry";
+import { UNJUDGED_CAPABILITIES } from "../../../src/ports/plugin-capabilities";
 import { describe, expect, it } from "vitest";
 import type { MotionDefinition, ProjectDefinition } from "../../../src/contract/v5";
 import { IncrementalGraphBuilder } from "../../../src/graph/builders/incremental";
@@ -17,7 +16,20 @@ const HAND_ID = "hero/hand";
 const FOOT_ID = "hero/foot";
 const PROJECT: ProjectDefinition = {
   schemaVersion: 5,
-  motions: [{ id: MOTION_ID, trigger: { type: "manual" }, tracks: [{ id: "arm" }, { id: "leg" }] }],
+  motions: [
+    {
+      id: MOTION_ID,
+      trigger: { type: "manual" },
+      tracks: [
+        { id: "arm" },
+        {
+          id: "leg",
+          plugin: "demo",
+          input: { values: {}, requires: { base: ARM_ID } },
+        },
+      ],
+    },
+  ],
 };
 const compose = (node: { id: string }) => () => ({
   outputs: { values: { [node.id]: 1 } },
@@ -43,7 +55,7 @@ function rig(): Rig {
   const record = (line: string): void => {
     entries.push(line);
   };
-  const inner = new IncrementalGraphBuilder(builtinRegistry());
+  const inner = new IncrementalGraphBuilder(UNJUDGED_CAPABILITIES);
   let builds = 0;
   const staged = (nodeId: string): StagedTrack => ({
     commit: () => record(`stage-commit ${nodeId}`),
@@ -95,7 +107,7 @@ function rig(): Rig {
 describe("one recipe is one transaction", () => {
   it("RA-66 returns the recipe's answer and commits nothing when nothing changed", () => {
     const test = rig();
-    test.runtime.track(LEG_ID).addObserve({ source: ARM_ID });
+    test.runtime.track(LEG_ID).input.requires.set("base", ARM_ID);
     const graph = test.graph;
     const builds = test.builds;
     const sequence = test.sequence;
@@ -103,8 +115,8 @@ describe("one recipe is one transaction", () => {
 
     const answer = editing(test.runtime).edit((tx) => {
       // Both no-ops on this tier's idempotence rule: a redundant add and an absent remove.
-      tx.track(LEG_ID).addObserve({ source: ARM_ID });
-      tx.track(LEG_ID).removeObserve({ source: FOOT_ID });
+      tx.track(LEG_ID).input.requires.set("base", ARM_ID);
+      tx.track(LEG_ID).input.requires.remove("foot");
       return tx.tryTrack(HAND_ID);
     });
 

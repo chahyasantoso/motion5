@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { describe, expect, it } from "vitest";
 import type { Patch, ProjectDefinition } from "../../src/contract/v5";
 import { Engine, type ProjectHandle } from "../../src/engine";
@@ -35,14 +34,12 @@ const PROJECT: ProjectDefinition = {
       tracks: [
         {
           id: "arm",
-          keyframes: {
-            transform: {
-              values: {
-                x: [
-                  { p: 0, v: 0 },
-                  { p: 1, v: 100 },
-                ],
-              },
+          input: {
+            values: {
+              x: [
+                { p: 0, v: 0 },
+                { p: 1, v: 100 },
+              ],
             },
           },
         },
@@ -81,7 +78,7 @@ describe("one question, one mechanism on the runtime surface", () => {
       const seenPatch = seen.at(-1);
       if (seenPatch?.status !== "ready")
         throw new Error(`seenPatch is ${seenPatch?.status ?? "absent"}, not ready.`);
-      expect(seenPatch.values).toEqual({ x: 50 });
+      expect(seenPatch.outputs.values).toEqual({ x: 50 });
 
       // The node keeps publishing after the unsubscribe, which is what makes the count below a
       // claim about this listener rather than about a deduplicated patch: the values move.
@@ -91,7 +88,7 @@ describe("one question, one mechanism on the runtime surface", () => {
       const heroArmPatch = handle.get("hero/arm");
       if (heroArmPatch?.status !== "ready")
         throw new Error(`hero/arm is ${heroArmPatch?.status ?? "absent"}, not ready.`);
-      expect(heroArmPatch.values).toEqual({ x: 75 });
+      expect(heroArmPatch.outputs.values).toEqual({ x: 75 });
       expect(seen).toHaveLength(1);
     } finally {
       handle.dispose();

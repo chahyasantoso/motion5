@@ -1151,7 +1151,7 @@ export class ProjectRuntime {
    *
    * The node-addressed spelling of `TrackHandle.writeValues`, for callers that resolved an id rather
    * than captured a handle. It asserts liveness, takes the value tier's admission, and only then
-   * resolves the entry, which is the order the retired `overrideValues` used and the one that makes
+   * resolves the entry, which is the order the retired by-id write used and the one that makes
    * an in-flight commit outrank an id a commit is still adding.
    */
   writeValues(nodeId: string, value: Value): PatchBatch {

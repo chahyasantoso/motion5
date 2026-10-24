@@ -1,10 +1,16 @@
-// @ts-nocheck
 import { describe, expect, it, vi } from "vitest";
-import type { ProjectDefinition } from "../../src/contract/v5";
-import { PluginRegistry } from "../../src/domain/plugins";
+import type { FlatRecord, ProjectDefinition, Table, Value } from "../../src/contract/v5";
 import { Engine } from "../../src/engine";
 import { createManualClock } from "../../src/ports/clock";
 import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
+
+function isTable(value: Value): value is Table {
+  return Array.isArray(value);
+}
+function recordOf(value: Value | undefined): FlatRecord {
+  if (value === undefined || isTable(value)) throw new Error("Expected a record pose.");
+  return value;
+}
 
 const project: ProjectDefinition = {
   schemaVersion: 5,
@@ -15,14 +21,12 @@ const project: ProjectDefinition = {
       tracks: [
         {
           id: "arm",
-          keyframes: {
-            opacity: {
-              values: {
-                opacity: [
-                  { p: 0, v: 0.2 },
-                  { p: 1, v: 1 },
-                ],
-              },
+          input: {
+            values: {
+              opacity: [
+                { p: 0, v: 0.2 },
+                { p: 1, v: 1 },
+              ],
             },
           },
         },
@@ -40,19 +44,19 @@ describe("Engine", () => {
       scheduler: createFakeScheduler(),
     }).load(project);
     runtime.mount("hero/arm");
-    let published: { values: Readonly<Record<string, unknown>> } | undefined;
+    let published: FlatRecord | undefined;
     runtime.subscribeNode("hero/arm", (patch) => {
       // Only a ready patch carries the pose this case reads, and the structural type it is held in
       // says so, so the narrowing happens where the patch arrives. See ADR-098.
       if (patch.status !== "ready") return;
-      published = patch;
+      published = recordOf(patch.outputs.values);
     });
     const batch = runtime.seek("hero/arm", 0.5);
     const heroArmPatch = batch.patches.find(({ nodeId }) => nodeId === "hero/arm");
     if (heroArmPatch?.status !== "ready")
       throw new Error(`hero/arm is ${heroArmPatch?.status ?? "absent"}, not ready.`);
-    expect(heroArmPatch.values.opacity).toBeCloseTo(0.6, 12);
-    expect(published?.values.opacity).toBeCloseTo(0.6, 12);
+    expect(recordOf(heroArmPatch.outputs.values).opacity).toBeCloseTo(0.6, 12);
+    expect(published?.opacity).toBeCloseTo(0.6, 12);
     runtime.dispose();
   });
 
@@ -70,29 +74,6 @@ describe("Engine", () => {
     runtime.dispose();
   });
 
-  it("still resolves authored-key plugins during progress updates", () => {
-    const plugins = new PluginRegistry();
-    plugins.register({
-      name: "opacity",
-      keys: ["opacity"],
-      compose: (values) => ({ ...values, rendered: true }),
-    });
-    const runtime = new Engine({
-      clock: createManualClock(),
-      interpolator: createFakeInterpolator(),
-      scheduler: createFakeScheduler(),
-      plugins,
-    }).load(project);
-    runtime.mount("hero/arm");
-    runtime.subscribeNode("hero/arm", (patch) => {
-      // A subscriber records what was published, and a patch owning no pose has nothing to record.
-      if (patch.status !== "ready") return;
-      expect(patch.values).toEqual({ opacity: 1, rendered: true });
-    });
-    runtime.seek("hero/arm", 1);
-    runtime.dispose();
-  });
-
   it("routes a manual trigger through the public handle into a published patch", () => {
     const scheduler = createFakeScheduler();
     const runtime = new Engine({
@@ -105,7 +86,7 @@ describe("Engine", () => {
     runtime.subscribeNode("hero/arm", (patch) => {
       // A subscriber records what was published, and a patch owning no pose has nothing to record.
       if (patch.status !== "ready") return;
-      opacity = Number(patch.values.opacity);
+      opacity = Number(recordOf(patch.outputs.values).opacity);
     });
 
     runtime.signal("hero", { type: "manual", progress: 0.75 });

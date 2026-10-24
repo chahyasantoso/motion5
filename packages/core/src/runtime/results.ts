@@ -1,5 +1,4 @@
 import type { Diagnostic } from "../contract/v5";
-import type { LiveWriteResult } from "../domain/track";
 import { readOutcome, type Outcome } from "../lang/outcome";
 import { unreachable } from "../lang/exhaustive";
 import { refuse, type HandleTarget } from "./refusal";
@@ -8,13 +7,10 @@ import { refuse, type HandleTarget } from "./refusal";
  * Closed runtime results owned at the boundary where their producers answer them.
  *
  * Track validation is an `Outcome`, so its accepted value and refusal diagnostics are mutually
- * exclusive before this runtime reads it. Live writes carry their patch decision and progress as
- * one union, while handle resolution carries liveness and its entry as one union. Each reader
- * below decides one question once, without reconstructing a boolean from nullable fields.
- *
- * The live-write union retains progress on both patch outcomes because the recompilation path seeks
- * the playhead after it stages a fresh track. Only the patch decision differs between those arms.
- * Issue #443, phase A step 2.
+ * exclusive before this runtime reads it. Handle resolution carries liveness and its entry as one
+ * union, and this module's reader decides that question once rather than reconstructing a boolean
+ * from nullable fields. The live-write union retired with the mask seam it decoded; a v5 live edit
+ * plans its overlay rather than decoding a backend's patch answer.
  */
 declare const RESULT_BRAND: unique symbol;
 
@@ -41,59 +37,6 @@ export function expectValid<T>(result: Outcome<T, Diagnostic>): T {
     (value) => value,
     (diagnostics) => refuse({ kind: "invalid-definition", diagnostics }),
   );
-}
-
-interface NoHookShape {
-  readonly kind: "no-hook";
-}
-
-interface PatchedShape {
-  readonly kind: "patched";
-  readonly progress: number;
-}
-
-interface NeedsRebuildShape {
-  readonly kind: "needs-rebuild";
-  readonly progress: number;
-}
-
-/** What the live-write seam answered: no hook at all, a patched timeline, or a rebuild owed. */
-export type LiveWrite = Minted<NoHookShape> | Minted<PatchedShape> | Minted<NeedsRebuildShape>;
-
-const NO_HOOK: LiveWrite = mint<NoHookShape>({ kind: "no-hook" });
-
-/** Reads the seam's answer as a union. `undefined` was never a fourth outcome, only an absent one. */
-export function liveWrite(result: LiveWriteResult | undefined): LiveWrite {
-  if (result === undefined) return NO_HOOK;
-  switch (result.patch.kind) {
-    case "patched":
-      return mint<PatchedShape>({ kind: "patched", progress: result.progress });
-    case "recompile":
-      return mint<NeedsRebuildShape>({ kind: "needs-rebuild", progress: result.progress });
-    default:
-      return unreachable(result.patch);
-  }
-}
-
-/**
- * The playhead the seam reported, or nothing when no seam answered at all.
- *
- * The second reader, and the reason there are two of them rather than one flag: no hook and a
- * patched timeline are the same answer to whether a stage is owed, and different answers to this.
- * It is also why `patched` carries a progress the shape issue #443 sketches gave it none of. The
- * recompilation path rebuilds whatever the seam did, so the only thing it asks of the answer is
- * where the playhead was.
- */
-export function writtenProgress(write: LiveWrite): number | undefined {
-  switch (write.kind) {
-    case "no-hook":
-      return undefined;
-    case "patched":
-    case "needs-rebuild":
-      return write.progress;
-    default:
-      return unreachable(write);
-  }
 }
 
 interface LiveEntryShape<E> {

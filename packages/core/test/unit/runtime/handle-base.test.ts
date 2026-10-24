@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { describe, expect, it } from "vitest";
 import { fileURLToPath } from "node:url";
 import type {
@@ -6,7 +5,6 @@ import type {
   ProjectDefinition,
   TrackDefinition,
 } from "../../../src/contract/v5";
-import { readPluginBindings } from "../../../src/contract/keyframe-shape";
 import { StaleHandleError } from "../../../src/contract/handle";
 import { StaleMotionHandleError, type MotionHandle } from "../../../src/contract/motion-handle";
 import { StaleTrackHandleError } from "../../../src/contract/track-handle";
@@ -52,18 +50,14 @@ const RUNTIME_SOURCE = fileURLToPath(
 /**
  * The one track that authors bindings, and it authors both shapes of one.
  *
- * A scalar slot and a dict-valued slot together, because `requires` is a projection of what
- * `readPluginBindings` already answers and a projection that dropped `memberKey` would report two
- * entries of one slot as one pair with no way to tell them apart. See ADR-057.
+ * A scalar slot and a dict-valued slot together, because `requires` is a projection of
+ * `input.requires` and a projection that dropped `memberKey` would report two entries of one slot
+ * as one pair with no way to tell them apart. See ADR-057.
  */
 const LEG_TRACK: TrackDefinition = {
   id: "leg",
-  keyframes: {
-    fk: {
-      values: { length: 10 },
-      requires: { base: ARM, members: { left: HAND } },
-    },
-  },
+  plugin: "fk",
+  input: { values: {}, requires: { base: ARM, members: { left: HAND } } },
 };
 const PROJECT: ProjectDefinition = {
   schemaVersion: 5,
@@ -76,7 +70,7 @@ const PROJECT: ProjectDefinition = {
   ],
 };
 const compose = (node: { id: string }) => () => ({
-  values: { node: node.id },
+  outputs: { values: { node: node.id } },
   sourceProgress: 0,
   sourceRevisions: {},
 });
@@ -271,22 +265,18 @@ describe("one handle base, one definition spelling, and one stale error family",
     declaresMembers(handle, "requires");
 
     expect(handle.requires).toEqual([
-      { plugin: "fk", slot: "base", source: ARM },
-      { plugin: "fk", slot: "members", source: HAND, memberKey: "left" },
+      { slot: "base", source: ARM },
+      { slot: "members", source: HAND, memberKey: "left" },
     ]);
 
-    // Not a shape any producer can make: it is the projection of `readPluginBindings`, which owns
-    // reading the authored bindings, so a second derivation here would have to agree with it on
-    // ordering and on the dict expansion as well as on the fields.
-    const authored = readPluginBindings(LEG_TRACK.keyframes).map(
-      ({ plugin, slot, source, memberKey }) => ({ plugin, slot, source, memberKey }),
-    );
-    expect(handle.requires.map((view) => ({ ...view }))).toEqual(authored);
+    // The view is a projection of `input.requires`, the one authored binding record on an
+    // identified-table track, so a second derivation here would have to agree with it on ordering
+    // and on the dict expansion as well as on the fields.
 
     // The diagnostics path stays with the layer that cites it. A view carrying one would be a second
     // owner of where an author wrote something.
     const fields = [...new Set(handle.requires.flatMap((view) => Object.keys(view)).sort())];
-    expect(fields).toEqual(["memberKey", "plugin", "slot", "source"]);
+    expect(fields).toEqual(["memberKey", "slot", "source"]);
 
     // A track that authors no group answers with an empty list rather than with nothing, for the
     // reason 7a's reverse topology is total: a caller spelling `?? []` makes the shape depend on

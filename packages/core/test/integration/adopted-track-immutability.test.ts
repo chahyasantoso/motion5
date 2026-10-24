@@ -1,9 +1,24 @@
-// @ts-nocheck
 import { describe, expect, it } from "vitest";
 import { Engine } from "../../src/engine";
 import { createManualClock } from "../../src/ports/clock";
 import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
-import type { AuthoredStop, TrackDefinition } from "../../src/contract/v5";
+import type {
+  AuthoredCell,
+  AuthoredRow,
+  AuthoredStop,
+  AuthoredValues,
+  TrackDefinition,
+} from "../../src/contract/v5";
+
+function isTableValues(value: AuthoredValues): value is readonly AuthoredRow[] {
+  return Array.isArray(value);
+}
+
+function recordOf(track: TrackDefinition): Readonly<Record<string, AuthoredCell>> {
+  const values = track.input?.values;
+  if (values === undefined || isTableValues(values)) throw new Error("Expected record values.");
+  return values;
+}
 
 function makeHandle() {
   return new Engine({
@@ -25,19 +40,17 @@ describe("runtime track validation and immutability (W3)", () => {
     const handle = makeHandle();
     const source: TrackDefinition = {
       id: "arm",
-      keyframes: { transform: { values: { x: ramp(0, 100) } } },
+      input: { values: { x: ramp(0, 100) } },
     };
 
     const added = handle.addTrack(source);
 
-    // Authored keyframes are plugin-named groups. Read the leaf through the group's values so the
-    // freeze assertion reaches the stops array and each stop in it.
-    const stops = added.definition.keyframes?.transform?.values?.x as
-      | readonly AuthoredStop[]
-      | undefined;
+    // Authored values are a record of stops. Read the leaf so the freeze assertion reaches the
+    // stops array and each stop in it.
+    const stops = recordOf(added.definition).x as readonly AuthoredStop[] | undefined;
     expect(added.definition).not.toBe(source);
     expect(Object.isFrozen(added.definition)).toBe(true);
-    expect(Object.isFrozen(added.definition.keyframes)).toBe(true);
+    expect(Object.isFrozen(added.definition.input?.values)).toBe(true);
     expect(Object.isFrozen(stops)).toBe(true);
     expect(Object.isFrozen(stops?.[0])).toBe(true);
 
@@ -49,19 +62,19 @@ describe("runtime track validation and immutability (W3)", () => {
     const handle = makeHandle();
     const source: TrackDefinition = {
       id: "arm",
-      keyframes: { transform: { values: { x: ramp(0, 100) } } },
+      input: { values: { x: ramp(0, 100) } },
     };
     const added = handle.addTrack(source);
 
     // The caller-owned source remains mutable. The runtime-owned clone must not change with it.
-    const stops = source.keyframes?.transform?.values?.x as readonly AuthoredStop[];
+    const stops = recordOf(source).x as readonly AuthoredStop[];
     (stops[1] as { p: number; v: unknown }).v = 999;
 
     handle.seek(added.id, 1);
     const idPatch = handle.get(added.id);
     if (idPatch?.status !== "ready")
       throw new Error(`idPatch is ${idPatch?.status ?? "absent"}, not ready.`);
-    expect(idPatch.values).toEqual({ x: 100 });
+    expect(idPatch.outputs.values).toEqual({ x: 100 });
 
     added.remove();
     handle.dispose();
@@ -71,13 +84,13 @@ describe("runtime track validation and immutability (W3)", () => {
     const handle = makeHandle();
     const malformed = {
       id: "broken",
-      keyframes: { transform: { values: { x: ramp(0, 1) } } },
+      input: { values: { x: ramp(0, 1) } },
       observes: "not-an-array",
     } as unknown as TrackDefinition;
 
-    expect(() => handle.addTrack(malformed)).toThrow(/observes-shape/);
+    expect(() => handle.addTrack(malformed)).toThrow(/track-legacy-field/);
     expect(() =>
-      handle.addTrack({ id: "broken", keyframes: { transform: { values: { x: ramp(0, 1) } } } }),
+      handle.addTrack({ id: "broken", input: { values: { x: ramp(0, 1) } } }),
     ).not.toThrow();
 
     handle.dispose();
@@ -87,7 +100,7 @@ describe("runtime track validation and immutability (W3)", () => {
     const handle = makeHandle();
     const source: TrackDefinition = {
       id: "arm",
-      keyframes: { transform: { values: { x: ramp(0, 100) } } },
+      input: { values: { x: ramp(0, 100) } },
     };
 
     const first = handle.addTrack(source);

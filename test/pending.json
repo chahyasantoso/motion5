@@ -75,16 +75,6 @@
     "reason": "Authors grouped plugin keyframes; Phase 5 expresses transform, fk and 3d plugins with tables and declared dependencies."
   },
   {
-    "path": "packages/core/test/integration/adopted-track-immutability.test.ts",
-    "phase": 4,
-    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
-  },
-  {
-    "path": "packages/core/test/integration/adoption.test.ts",
-    "phase": 4,
-    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
-  },
-  {
     "path": "packages/core/test/integration/bare-authored-leaf.test.ts",
     "phase": 5,
     "reason": "Exercises FK plugin grouped keyframes; Phase 5 expresses FK with tables and declared dependencies."
@@ -100,24 +90,9 @@
     "reason": "Loads the IK playground and react-demo projects through transform, fk and ik plugin tracks; Phase 5 expresses them with tables and declared dependencies."
   },
   {
-    "path": "packages/core/test/integration/engine-headless.test.ts",
-    "phase": 4,
-    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
-  },
-  {
-    "path": "packages/core/test/integration/engine-load-validation.test.ts",
-    "phase": 4,
-    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
-  },
-  {
     "path": "packages/core/test/integration/engine-x3-contribution.test.ts",
     "phase": 7,
     "reason": "Exercises the retired grouped stage/contribute machinery and dies with it in Phase 7; no identified-table replacement exists because the capability is removed rather than migrated."
-  },
-  {
-    "path": "packages/core/test/integration/handle-adoption.test.ts",
-    "phase": 4,
-    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
   },
   {
     "path": "packages/core/test/integration/ik-fabrik-chain.test.ts",
@@ -160,24 +135,9 @@
     "reason": "Exercises old PluginRegistry and grouped plugin keyframes; Phase 5 expresses plugins with tables and declared dependencies."
   },
   {
-    "path": "packages/core/test/integration/issue-114-motion-track-regressions.test.ts",
-    "phase": 4,
-    "reason": "Exercises live track replacement via handle; Phase 4 rebuilds that path on identified tables."
-  },
-  {
     "path": "packages/core/test/integration/keyframe-groups.test.ts",
     "phase": 5,
     "reason": "Exercises old plugin-named grouped keyframes; Phase 5 expresses plugins with tables and declared dependencies."
-  },
-  {
-    "path": "packages/core/test/integration/one-mechanism-per-question.test.ts",
-    "phase": 4,
-    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
-  },
-  {
-    "path": "packages/core/test/integration/option-c-track-resolution.test.ts",
-    "phase": 4,
-    "reason": "Exercises live track replacement via handle; Phase 4 rebuilds that path on identified tables."
   },
   {
     "path": "packages/core/test/integration/phase7-walker-demo.test.ts",
@@ -198,16 +158,6 @@
     "path": "packages/core/test/integration/solver-member-cache.test.ts",
     "phase": 5,
     "reason": "Exercises solver, IK, FK or rig behavior; Phase 5 expresses it with tables and declared dependencies."
-  },
-  {
-    "path": "packages/core/test/integration/t4-runtime-motion-parity.test.ts",
-    "phase": 4,
-    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
-  },
-  {
-    "path": "packages/core/test/integration/unified-mutation-surface.test.ts",
-    "phase": 4,
-    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
   },
   {
     "path": "packages/core/test/unit/domain/dict-valued-requirements.test.ts",
@@ -316,58 +266,18 @@
   },
   {
     "path": "packages/core/test/unit/runtime/commit-write-cost.test.ts",
-    "phase": 4,
-    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
-  },
-  {
-    "path": "packages/core/test/unit/runtime/composition-output-shape.test.ts",
-    "phase": 4,
-    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
+    "phase": 5,
+    "reason": "Compiled-cost accounting uses the built-in transform and fk plugins; Phase 5 expresses them with tables and declared dependencies."
   },
   {
     "path": "packages/core/test/unit/runtime/declined-build-write-drop.test.ts",
-    "phase": 4,
-    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
+    "phase": 5,
+    "reason": "The declined-build path uses the built-in fk plugin; Phase 5 expresses it with tables and declared dependencies."
   },
   {
     "path": "packages/core/test/unit/runtime/dependants-of-reverse-topology.test.ts",
-    "phase": 4,
-    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
-  },
-  {
-    "path": "packages/core/test/unit/runtime/handle-base.test.ts",
-    "phase": 4,
-    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
-  },
-  {
-    "path": "packages/core/test/unit/runtime/keyframe-property-edit.test.ts",
-    "phase": 4,
-    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
-  },
-  {
-    "path": "packages/core/test/unit/runtime/live-value-animated.test.ts",
-    "phase": 4,
-    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
-  },
-  {
-    "path": "packages/core/test/unit/runtime/live-value-updates.test.ts",
-    "phase": 4,
-    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
-  },
-  {
-    "path": "packages/core/test/unit/runtime/live-write-decode.test.ts",
-    "phase": 4,
-    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
-  },
-  {
-    "path": "packages/core/test/unit/runtime/motion-consistency.test.ts",
-    "phase": 4,
-    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
-  },
-  {
-    "path": "packages/core/test/unit/runtime/project-enumeration.test.ts",
-    "phase": 4,
-    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
+    "phase": 5,
+    "reason": "Reverse topology of a solver chain needs the built-in solver plugins that derive solves; Phase 5 expresses chains with tables and declared dependencies."
   },
   {
     "path": "packages/core/test/unit/runtime/publisher-solver-members.test.ts",
@@ -376,48 +286,13 @@
   },
   {
     "path": "packages/core/test/unit/runtime/recompile-predicate.test.ts",
-    "phase": 4,
-    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
+    "phase": 5,
+    "reason": "The recompile predicate uses the built-in transform and fk plugins; Phase 5 expresses them with tables and declared dependencies."
   },
   {
-    "path": "packages/core/test/unit/runtime/refusal-wiring.test.ts",
-    "phase": 4,
-    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
-  },
-  {
-    "path": "packages/core/test/unit/runtime/removal-flush-seed.test.ts",
-    "phase": 4,
-    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
-  },
-  {
-    "path": "packages/core/test/unit/runtime/schema-transaction.pending.test.ts",
-    "phase": 4,
-    "reason": "RA-66 measures the no-op idempotence of a redundant `addObserve` and an absent `removeObserve`; Phase 4 supplies the shape-matched edit whose unchanged case replaces it."
-  },
-  {
-    "path": "packages/core/test/unit/runtime/stale-track-handle.pending.test.ts",
-    "phase": 4,
-    "reason": "SH-6 drives the live handle's `addObserve` and `removeObserve`, which author the removed `observes` edge; Phase 4 replaces that live edit on identified tables."
-  },
-  {
-    "path": "packages/core/test/unit/runtime/structural-commit-flush.pending.test.ts",
-    "phase": 4,
-    "reason": "RA-8, RA-9 and RA-11 author live observation edges with addObserve or test handle observation flush wiring; Phase 4 replaces that live edit on identified tables."
-  },
-  {
-    "path": "packages/core/test/unit/runtime/track-staging.test.ts",
-    "phase": 4,
-    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
-  },
-  {
-    "path": "packages/core/test/unit/runtime/value-batch.test.ts",
-    "phase": 4,
-    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
-  },
-  {
-    "path": "packages/core/test/unit/runtime/value-state.test.ts",
-    "phase": 4,
-    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
+    "path": "packages/core/test/unit/runtime/removal-flush-seed.pending.test.ts",
+    "phase": 5,
+    "reason": "Solver chain membership and the removed-member re-seed need the built-in chain plugins; Phase 5 expresses them with tables and declared dependencies."
   },
   {
     "path": "packages/plugins/test/integration/ik-envelope.test.ts",
@@ -461,13 +336,13 @@
   },
   {
     "path": "packages/plugins/test/integration/live-value-composition.test.ts",
-    "phase": 4,
-    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
+    "phase": 5,
+    "reason": "Live composition of the built-in fk, ik and transform plugins; Phase 5 expresses them with tables and declared dependencies."
   },
   {
     "path": "packages/plugins/test/integration/mutation-transactionality.test.ts",
-    "phase": 4,
-    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
+    "phase": 5,
+    "reason": "Transactionality of the built-in fk and transform plugins; Phase 5 expresses them with tables and declared dependencies."
   },
   {
     "path": "packages/plugins/test/integration/per-plugin-key-ownership.test.ts",
@@ -478,11 +353,6 @@
     "path": "packages/plugins/test/integration/plugin-owned-requirements.test.ts",
     "phase": 5,
     "reason": "Exercises built-in plugin requirement slots; Phase 5 expresses built-in plugins with tables and declared dependencies."
-  },
-  {
-    "path": "packages/plugins/test/integration/replace-track-transactionality.test.ts",
-    "phase": 4,
-    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
   },
   {
     "path": "packages/plugins/test/integration/single-input-channel.test.ts",
@@ -503,16 +373,6 @@
     "path": "packages/plugins/test/rig.test.ts",
     "phase": 5,
     "reason": "Exercises solver, IK, FK or rig behavior; Phase 5 expresses it with tables and declared dependencies."
-  },
-  {
-    "path": "packages/plugins/test/runner-lifecycle.pending.test.ts",
-    "phase": 4,
-    "reason": "Live writes and replacement overlays target identified-table tracks; Phase 4 owns shape-matched live writes, and the Phase 2 ValueTrack exposes no write seam."
-  },
-  {
-    "path": "packages/plugins/test/runner.pending.test.ts",
-    "phase": 4,
-    "reason": "Live writes target identified-table tracks; Phase 4 owns shape-matched live writes, and the Phase 2 ValueTrack exposes no write seam."
   },
   {
     "path": "packages/plugins/test/unit/loader.test.ts",

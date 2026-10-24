@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { describe, expect, it, vi } from "vitest";
 import type { ProjectDefinition, TrackDefinition } from "../../../src/contract/v5";
 import { createManualClock } from "../../../src/ports/clock";
@@ -51,12 +50,14 @@ const CEILING = "~/ceiling";
 const BASE_TRACK: TrackDefinition = { id: "base" };
 const UPPER_TRACK: TrackDefinition = {
   id: "upper",
-  keyframes: { fk: { requires: { base: "base" } } },
+  plugin: "fk",
+  input: { values: {}, requires: { base: "base" } },
 };
 /** The leaf, bound to its parent rather than to the base, so the two removals are ordered. */
 const LOWER_TRACK: TrackDefinition = {
   id: "lower",
-  keyframes: { fk: { requires: { base: "upper" } } },
+  plugin: "fk",
+  input: { values: {}, requires: { base: "upper" } },
 };
 /** A second motion's only child, so destroying that motion needs one removal before it. */
 const BANNER_TRACK: TrackDefinition = { id: "banner" };
@@ -73,7 +74,7 @@ const PROJECT: ProjectDefinition = {
 };
 
 const compose = (node: { id: string }) => () => ({
-  values: { node: node.id },
+  outputs: { values: { node: node.id } },
   sourceProgress: 0,
   sourceRevisions: {},
 });
@@ -273,38 +274,40 @@ describe("a loaded project is enumerable through its own API", () => {
     project.dispose();
   });
 
-  it("RA-152 removes a chain parent-first or leaf-first in one recipe at one replacement", () => {
-    const answers: { tracks: readonly string[]; free: readonly string[]; replaced: number }[] = [];
-
-    for (const order of [
-      [UPPER, LOWER],
-      [LOWER, UPPER],
-    ]) {
-      const project = runtime();
-      const replaced = vi.spyOn(project.graph, "replaceGraph");
-
-      project.edit(() => {
-        for (const node of order) project.track(node).remove();
+  it("RA-152 removes a chain leaf-first in one recipe at one replacement, and refuses parent-first untouched", () => {
+    const leafFirst = runtime();
+    try {
+      const replaced = vi.spyOn(leafFirst.graph, "replaceGraph");
+      leafFirst.edit(() => {
+        leafFirst.track(LOWER).remove();
+        leafFirst.track(UPPER).remove();
       });
 
-      answers.push({
-        tracks: project.motion(RIG).trackIds,
-        free: project.freeTrackIds(),
-        replaced: replaced.mock.calls.length,
-      });
-      project.dispose();
+      expect(leafFirst.motion(RIG).trackIds).toEqual([BASE]);
+      expect(replaced.mock.calls.length).toBe(1);
+    } finally {
+      leafFirst.dispose();
     }
 
-    // The claim the issue thread left owed to a test rather than to a read: one recipe derives from
-    // the final pair rather than from an accumulated operation log and replaces the graph exactly
-    // once, so the intermediate candidate in which `lower` still binds a removed `upper` is never
-    // built and the reference check never gets to refuse it. Parent-first is therefore legal, and
-    // the two orders are compared against each other rather than against a hand-written
-    // expectation, because order independence is the claim and a literal on both sides would not be
-    // it.
-    expect(answers[0]).toEqual(answers[1]);
-    expect(answers[0]!.tracks).toEqual([BASE]);
-    expect(answers[0]!.replaced).toBe(1);
+    // The Phase 4 plan answers every step against the staged view, so a removal that leaves a
+    // staged dependant is refused at that step rather than accumulated into a later final pair.
+    // The recipe therefore changes nothing, and the test names that difference rather than
+    // pretending the pre-plan ordering still holds.
+    const parentFirst = runtime();
+    try {
+      const replaced = vi.spyOn(parentFirst.graph, "replaceGraph");
+      const thrown = thrownBy(() =>
+        parentFirst.edit(() => {
+          parentFirst.track(UPPER).remove();
+          parentFirst.track(LOWER).remove();
+        }),
+      );
+      expect((thrown as Error).message).toMatch(/^edge-unknown-source at rig\/lower/);
+      expect(parentFirst.motion(RIG).trackIds).toEqual([BASE, UPPER, LOWER]);
+      expect(replaced.mock.calls.length).toBe(0);
+    } finally {
+      parentFirst.dispose();
+    }
   });
 
   it("RA-153 refuses every reader on a disposed project, deferred release included", () => {

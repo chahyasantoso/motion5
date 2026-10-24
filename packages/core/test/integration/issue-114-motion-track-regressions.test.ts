@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { describe, expect, it } from "vitest";
 import { Engine } from "../../src/engine";
 import { createManualClock } from "../../src/ports/clock";
@@ -15,7 +14,7 @@ function track(id: string, from: number, to: number, duration?: number): TrackDe
   return {
     id,
     ...(duration === undefined ? {} : { duration }),
-    keyframes: { transform: { values: { x: ramp(from, to) } } },
+    input: { values: { x: ramp(from, to) } },
   };
 }
 function load(project: ProjectDefinition) {
@@ -54,7 +53,7 @@ describe("issue 114: Motion-owned Track replacement", () => {
     const sceneArmPatch = handle.get("scene/arm");
     if (sceneArmPatch?.status !== "ready")
       throw new Error(`scene/arm is ${sceneArmPatch?.status ?? "absent"}, not ready.`);
-    expect(sceneArmPatch.values).toEqual({ x: 250 });
+    expect(sceneArmPatch.outputs.values).toEqual({ x: 250 });
     handle.dispose();
   });
 
@@ -69,7 +68,7 @@ describe("issue 114: Motion-owned Track replacement", () => {
     const sceneArmPatch2 = handle.get("scene/arm");
     if (sceneArmPatch2?.status !== "ready")
       throw new Error(`scene/arm is ${sceneArmPatch2?.status ?? "absent"}, not ready.`);
-    expect(sceneArmPatch2.values).toEqual({ x: 100 });
+    expect(sceneArmPatch2.outputs.values).toEqual({ x: 100 });
     handle.dispose();
   });
 
@@ -88,15 +87,15 @@ describe("issue 114: Motion-owned Track replacement", () => {
     const sceneFirstPatch = handle.get("scene/first");
     if (sceneFirstPatch?.status !== "ready")
       throw new Error(`scene/first is ${sceneFirstPatch?.status ?? "absent"}, not ready.`);
-    expect(sceneFirstPatch.values).toEqual({ x: 200 });
+    expect(sceneFirstPatch.outputs.values).toEqual({ x: 200 });
     const sceneSecondPatch = handle.get("scene/second");
     if (sceneSecondPatch?.status !== "ready")
       throw new Error(`scene/second is ${sceneSecondPatch?.status ?? "absent"}, not ready.`);
-    expect(sceneSecondPatch.values).toEqual({ x: 0 });
+    expect(sceneSecondPatch.outputs.values).toEqual({ x: 0 });
     const sceneThirdPatch = handle.get("scene/third");
     if (sceneThirdPatch?.status !== "ready")
       throw new Error(`scene/third is ${sceneThirdPatch?.status ?? "absent"}, not ready.`);
-    expect(sceneThirdPatch.values).toEqual({ x: 0 });
+    expect(sceneThirdPatch.outputs.values).toEqual({ x: 0 });
     handle.dispose();
   });
 
@@ -115,26 +114,11 @@ describe("issue 114: Motion-owned Track replacement", () => {
     const sceneFirstPatch2 = handle.get("scene/first");
     if (sceneFirstPatch2?.status !== "ready")
       throw new Error(`scene/first is ${sceneFirstPatch2?.status ?? "absent"}, not ready.`);
-    expect(sceneFirstPatch2.values).toEqual({ x: 200 });
+    expect(sceneFirstPatch2.outputs.values).toEqual({ x: 200 });
     const sceneSecondPatch2 = handle.get("scene/second");
     if (sceneSecondPatch2?.status !== "ready")
       throw new Error(`scene/second is ${sceneSecondPatch2?.status ?? "absent"}, not ready.`);
-    expect(sceneSecondPatch2.values).toEqual({ x: 100 });
-    handle.dispose();
-  });
-
-  it("keeps the observation replacement path live", () => {
-    const { scheduler, handle } = load(baseProject([track("arm", 0, 100), track("label", 0, 50)]));
-    handle.mount("scene/arm");
-    handle.mount("scene/label");
-    const label = handle.track("scene/label");
-    label.addObserve({ source: "scene/arm" });
-    label.removeObserve({ source: "scene/arm" });
-
-    expect(() => {
-      handle.signal("scene", { type: "manual", progress: 0.5 });
-      scheduler.flush();
-    }).not.toThrow(/Track is disposed/);
+    expect(sceneSecondPatch2.outputs.values).toEqual({ x: 100 });
     handle.dispose();
   });
 });

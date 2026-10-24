@@ -1,32 +1,55 @@
-// @ts-nocheck
 import { describe, expect, it } from "vitest";
 import type {
   MotionDefinition,
+  PluginDefinition,
   ProjectDefinition,
   TrackDefinition,
 } from "../../../src/contract/v5";
+import { PluginCatalog } from "../../../src/domain/plugin-catalog";
 import { createManualClock } from "../../../src/ports/clock";
 import { ProjectRuntime } from "../../../src/runtime/project-runtime";
+import { record, track } from "../../support/v5-builders";
 
 const MOTION_ID = "hero";
 const ARM_ID = "hero/arm";
 const LEG_ID = "hero/leg";
 const HAND_ID = "hero/hand";
 const CURSOR_ID = "~/cursor";
+const DEMO: PluginDefinition = {
+  id: "demo",
+  inputs: {
+    values: { kind: "record", fields: {} },
+    requires: {
+      chain: {
+        outputs: { values: { kind: "table", schema: { row: { fields: {} } } } },
+        optional: true,
+      },
+    },
+  },
+  outputs: { values: { kind: "table", schema: { row: { fields: {} } } } },
+  transform() {
+    return { values: [] };
+  },
+};
+const CATALOG = new PluginCatalog();
+CATALOG.register(DEMO);
 const MOTION: MotionDefinition = {
   id: MOTION_ID,
   trigger: { type: "manual" },
-  tracks: [{ id: "arm" }, { id: "leg" }],
+  tracks: [track({ id: "arm" }), track({ id: "leg" })],
 };
 const PROJECT: ProjectDefinition = {
   schemaVersion: 5,
   motions: [MOTION],
-  freeTracks: [{ id: "cursor" }],
+  freeTracks: [track({ id: "cursor" })],
 };
-/** Refused by the candidate graph rather than by authored validation, so a commit is attempted. */
-const REJECTED_TRACK: TrackDefinition = { id: "hand", observes: [{ source: "~/missing" }] };
-/** Observes a node the graph accepted and nothing mounted, so its source publishes nothing. */
-const PENDING_TRACK: TrackDefinition = { id: "hand", observes: [{ source: CURSOR_ID }] };
+/** Reads a node the graph accepted and nothing mounted, so its source publishes nothing. */
+const PENDING_TRACK: TrackDefinition = track({
+  id: "hand",
+  plugin: "demo",
+  values: record({}),
+  requires: { chain: CURSOR_ID },
+});
 const compose = (node: { id: string }) => () => ({
   outputs: { values: { [node.id]: 1 } },
   sourceProgress: 0,
@@ -34,68 +57,63 @@ const compose = (node: { id: string }) => () => ({
 });
 
 function create(): ProjectRuntime {
-  return new ProjectRuntime(PROJECT, { clock: createManualClock(), compose });
+  return new ProjectRuntime(PROJECT, {
+    clock: createManualClock(),
+    compose,
+    capabilities: CATALOG,
+    isPluginRegistered: (pluginId) => CATALOG.isPluginAdmitted(pluginId),
+  });
 }
 
 describe("a structural commit ends at one flush", () => {
-  it("RA-8 publishes the observing node when addObserve commits, with no tick", () => {
-    const runtime = create();
-    runtime.mount(ARM_ID);
-    runtime.mount(LEG_ID);
-    const registry = runtime.graph.registry;
-
-    expect(registry.get(LEG_ID)).toBeUndefined();
-
-    runtime.track(LEG_ID).addObserve({ source: ARM_ID });
-
-    // The seed is the edited node; the source is pulled in because it is a member with no value
-    // yet, which is what lets the observer land on ready rather than on blocked.
-    expect(registry.get(LEG_ID)?.status).toBe("ready");
-    expect(registry.get(ARM_ID)?.status).toBe("ready");
-
-    runtime.dispose();
-  });
-
   it("RA-9 lands a new node on blocked when its source has published nothing", () => {
     const runtime = create();
-    const registry = runtime.graph.registry;
+    try {
+      const registry = runtime.graph.registry;
 
-    runtime.addTrack(PENDING_TRACK, { motionId: MOTION_ID });
+      runtime.addTrack(PENDING_TRACK, { motionId: MOTION_ID });
 
-    // The blast radius, stated as evidence rather than as a footnote: this node previously
-    // published nothing at all, and a pending upstream is what it publishes instead.
-    const patch = registry.get(HAND_ID);
-    expect(patch?.status).toBe("blocked");
-    if (patch?.status !== "blocked")
-      throw new Error(`${HAND_ID} is ${patch?.status ?? "absent"}, not blocked.`);
-    // And the diagnostic reaches the one inspection surface, by identity, so a structural commit
-    // cannot flush a diagnosis into nowhere.
-    expect(runtime.diagnostics.entries).toHaveLength(1);
-    expect(runtime.diagnostics.entries[0]).toBe(patch.diagnostics[0]);
-
-    runtime.dispose();
+      // The blast radius, stated as evidence rather than as a footnote: this node previously
+      // published nothing at all, and a pending upstream is what it publishes instead.
+      const patch = registry.get(HAND_ID);
+      expect(patch?.status).toBe("blocked");
+      if (patch?.status !== "blocked")
+        throw new Error(`${HAND_ID} is ${patch?.status ?? "absent"}, not blocked.`);
+      expect(patch.diagnostics[0]?.ruleId).toBe("source-pending");
+      // And the diagnostic reaches the one inspection surface, by identity, so a structural commit
+      // cannot flush a diagnosis into nowhere.
+      expect(runtime.diagnostics.entries).toHaveLength(1);
+      expect(runtime.diagnostics.entries[0]).toBe(patch.diagnostics[0]);
+    } finally {
+      runtime.dispose();
+    }
   });
 
   it("RA-11 seeds exactly one flush per structural commit, and none for a no-op", () => {
     const runtime = create();
-    runtime.mount(ARM_ID);
-    const before = runtime.graph.sequence;
+    try {
+      runtime.mount(ARM_ID);
+      const before = runtime.graph.sequence;
 
-    runtime.addTrack({ id: "hand" }, { motionId: MOTION_ID });
-    expect(runtime.graph.sequence).toBe(before + 1);
+      runtime.addTrack(track({ id: "hand", plugin: "demo", values: record({}) }), {
+        motionId: MOTION_ID,
+      });
+      expect(runtime.graph.sequence).toBe(before + 1);
 
-    runtime.track(HAND_ID).replace({ id: "hand", duration: 250 });
-    expect(runtime.graph.sequence).toBe(before + 2);
+      runtime
+        .track(HAND_ID)
+        .replace(track({ id: "hand", plugin: "demo", values: record({}), duration: 250 }));
+      expect(runtime.graph.sequence).toBe(before + 2);
 
-    // addObserve is one replacement, so it is one flush rather than two.
-    runtime.track(HAND_ID).addObserve({ source: ARM_ID });
-    expect(runtime.graph.sequence).toBe(before + 3);
+      // A binding edit is one replacement, so it is one flush rather than two.
+      runtime.track(HAND_ID).input.requires.set("chain", CURSOR_ID);
+      expect(runtime.graph.sequence).toBe(before + 3);
 
-    // A redundant add commits nothing, so it seeds nothing. Idempotence is answered before the
-    // commit path is reached, and the flush must not outlive that answer.
-    runtime.track(HAND_ID).addObserve({ source: ARM_ID });
-    expect(runtime.graph.sequence).toBe(before + 3);
-
-    runtime.dispose();
+      // Binding the source it already reads is a no-op, so it seeds nothing.
+      runtime.track(HAND_ID).input.requires.set("chain", CURSOR_ID);
+      expect(runtime.graph.sequence).toBe(before + 3);
+    } finally {
+      runtime.dispose();
+    }
   });
 });

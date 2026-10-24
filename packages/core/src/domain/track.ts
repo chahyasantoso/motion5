@@ -1,10 +1,6 @@
 import type { ImmutableRecord } from "./values";
 import { equalValues, freezeValue } from "./values";
-import {
-  type InterpolationTimeline,
-  type Interpolator,
-  type PatchKeysResult,
-} from "../ports/interpolator";
+import { type InterpolationTimeline, type Interpolator } from "../ports/interpolator";
 import { unreachable } from "../lang/exhaustive";
 import type { PluginInputs, RequirementInputs, ResolvedPlugins } from "./plugins";
 
@@ -24,20 +20,6 @@ export class CompositionOutputError extends TypeError {
     super(message);
     this.name = this.ruleId;
   }
-}
-/**
- * What one live value write reports back to the owner of the retained definition.
- *
- * The interpolation seam's closed result and the playhead this track is holding. The result travels
- * unchanged to the runtime owner that decides whether a replacement is owed; Track owns validation
- * and forwarding, not a second boolean interpretation of the port answer. See ADR-060.
- *
- * The class that consumed it is retired with `overrideValues`; the type stays because the runtime's
- * result decoder and its tests still name the seam's answer.
- */
-export interface LiveWriteResult {
-  readonly patch: PatchKeysResult;
-  readonly progress: number;
 }
 function isRecord(value: unknown): value is Record<string, unknown> {
   if (value === null || typeof value !== "object" || Array.isArray(value)) return false;

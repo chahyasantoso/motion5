@@ -6,20 +6,20 @@ states a phase; `packages/core/test/unit/scripts/session-status-shape.test.ts` e
 byte ceiling.
 
 - **Captured:** 2026-10-24, Asia/Jakarta.
-- **Read against:** `refactor/v5-identified-tables` after the lifecycle-and-scheduling slice.
+- **Read against:** `refactor/v5-identified-tables` at the end of Phase 4.
 
 ## Now
 
-- **Lifecycle and scheduling hold on the v5 engine:** thirteen previously pended suites run against
-  identified tables, covering unmount/remount closure and retention, cross-motion pending references,
-  terminal destroy patches, add/remove and replacement cycles, mount flush ownership, and the
-  manual, time, looping and scroll trigger paths. The pending ledger is at 107.
+- **Phase 4 is complete:** structural, cheap authored and live value edits share one pure plan and
+  one commit path, runners and recipes use the live verbs, and the lifecycle, scheduling and
+  trigger suites run against identified tables. The pending ledger is 79 files: 73 Phase 5,
+  4 Phase 6 and 2 Phase 7, with no Phase 4 entry left.
 
 ## Next in line
 
-- **Port the remaining Phase 4 pended suites:** move every edit and value test that can run now onto
-  the builders, keep anything that needs built-in plugins pended with a Phase 5 reason, and lower the
-  ledger ceiling to the new count.
+- **Phase 5 replaces the grouped solver machinery:** express IK, FK, rig and transform plugins with
+  identified tables and declared dependencies, register the built-in plugins, and port the 73
+  Phase 5 suites onto them.
 
 ## Open, and not scheduled
 

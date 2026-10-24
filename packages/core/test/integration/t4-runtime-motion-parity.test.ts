@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { describe, expect, it } from "vitest";
 import type { MotionDefinition, TrackDefinition } from "../../src/contract/v5";
 import { Engine, type ProjectHandle } from "../../src/engine";
@@ -121,14 +120,12 @@ function countingFactory(scroll?: ScrollSourceResolver): CountingFactory {
 function ramp(id: string): TrackDefinition {
   return {
     id,
-    keyframes: {
-      transform: {
-        values: {
-          x: [
-            { p: 0, v: 0 },
-            { p: 1, v: 100 },
-          ],
-        },
+    input: {
+      values: {
+        x: [
+          { p: 0, v: 0 },
+          { p: 1, v: 100 },
+        ],
       },
     },
   };
@@ -163,7 +160,7 @@ function record(handle: ProjectHandle, nodeId: string): readonly unknown[] {
     // Only a ready patch has a pose to record, so a publication owning none records nothing.
     // The sequence this case asserts on is what still holds the line. See ADR-098.
     if (patch.status !== "ready") return;
-    seen.push(patch.values);
+    seen.push(patch.outputs.values);
   });
   seen.length = 0;
   return seen;
@@ -202,7 +199,7 @@ describe("T4 runtime Motion parity and creation ordering", () => {
     const sceneArmPatch = runtime.handle.get("scene/arm");
     if (sceneArmPatch?.status !== "ready")
       throw new Error(`scene/arm is ${sceneArmPatch?.status ?? "absent"}, not ready.`);
-    expect(sceneArmPatch.values).toEqual({ x: 0 });
+    expect(sceneArmPatch.outputs.values).toEqual({ x: 0 });
     expect(authored.handle.get("scene/arm")).toBeUndefined();
 
     const authoredSeen = record(authored.handle, "scene/arm");
@@ -393,13 +390,13 @@ describe("T4 runtime Motion parity and creation ordering", () => {
     const goodArmPatch = handle.get("good/arm");
     if (goodArmPatch?.status !== "ready")
       throw new Error(`good/arm is ${goodArmPatch?.status ?? "absent"}, not ready.`);
-    expect(goodArmPatch.values).toEqual({ x: 25 });
+    expect(goodArmPatch.outputs.values).toEqual({ x: 25 });
     clock.tick(250);
     scheduler.flush();
     const goodArmPatch2 = handle.get("good/arm");
     if (goodArmPatch2?.status !== "ready")
       throw new Error(`good/arm is ${goodArmPatch2?.status ?? "absent"}, not ready.`);
-    expect(goodArmPatch2.values).toEqual({ x: 50 });
+    expect(goodArmPatch2.outputs.values).toEqual({ x: 50 });
 
     handle.dispose();
   });
@@ -441,7 +438,7 @@ describe("T4 runtime Motion parity and creation ordering", () => {
     const timedArmPatch = handle.get("timed/arm");
     if (timedArmPatch?.status !== "ready")
       throw new Error(`timed/arm is ${timedArmPatch?.status ?? "absent"}, not ready.`);
-    expect(timedArmPatch.values).toEqual({ x: 25 });
+    expect(timedArmPatch.outputs.values).toEqual({ x: 25 });
 
     handle.dispose();
     base.dispose();

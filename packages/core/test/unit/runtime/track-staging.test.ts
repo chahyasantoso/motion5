@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { describe, expect, it } from "vitest";
 import type { ProjectDefinition, TrackDefinition } from "../../../src/contract/v5";
 import { createManualClock } from "../../../src/ports/clock";
@@ -27,10 +26,11 @@ const BASE_PROJECT: ProjectDefinition = {
 /** Rejected by the candidate graph rather than by authored validation, so the rollback runs. */
 const REJECTED_REPLACEMENT: TrackDefinition = {
   id: "arm",
-  observes: [{ source: "~/missing" }],
+  plugin: "demo",
+  input: { values: {}, requires: { chain: "~/missing" } },
 };
 const compose = (node: { id: string }) => () => ({
-  values: { node: node.id },
+  outputs: { values: { node: node.id } },
   sourceProgress: 0,
   sourceRevisions: {},
 });
@@ -110,20 +110,18 @@ describe("a Track replacement is staged once and committed once", () => {
     runtime.dispose();
   });
 
-  it("U-6 rolls the staging back and restores the Motion entry when the graph rejects", () => {
+  it("U-6 refuses a graph-rejected replacement before any staging, leaving no partial state", () => {
     const hooks = journal();
     const runtime = runtimeWith(hooks);
 
     const thrown = thrownBy(() => runtime.track(NODE_ID).replace(REJECTED_REPLACEMENT));
 
+    // The plan owns the candidate graph, so a rejection lands before the staging seam or the Motion
+    // entry is reached. That is stronger than rolling the two back afterwards, and it is why this
+    // case asserts an empty journal rather than the rollback order it used to.
     expect(thrown).toBeInstanceOf(TypeError);
-    expect((thrown as Error).message).toMatch(/^observation-unknown-source at /);
-    expect(hooks.entries).toEqual([
-      "stage hero/arm",
-      "motion hero/arm undefined",
-      "rollback hero/arm",
-      "motion hero/arm undefined",
-    ]);
+    expect((thrown as Error).message).toMatch(/^edge-unknown-source at /);
+    expect(hooks.entries).toEqual([]);
     expect(runtime.track(NODE_ID).definition).toEqual({ id: "arm" });
 
     runtime.dispose();
@@ -145,20 +143,6 @@ describe("a Track replacement is staged once and committed once", () => {
     runtime.dispose();
   });
 
-  it("U-8 reports the graph rejection first when the staging rollback throws", () => {
-    const failure = new Error("staged Track dispose failed");
-    const hooks = journal({ rollback: failure });
-    const runtime = runtimeWith(hooks);
-
-    const thrown = thrownBy(() => runtime.track(NODE_ID).replace(REJECTED_REPLACEMENT));
-
-    // The same precedence rule as `P-1` and `P-2`, at the call site that now owns a rollback set.
-    expect(thrown).toBeInstanceOf(AggregateError);
-    expect((thrown as Error).message).toMatch(/^observation-unknown-source at /);
-    const errors = (thrown as AggregateError).errors as readonly unknown[];
-    expect(errors[0]).toBeInstanceOf(TypeError);
-    expect(errors[1]).toBe(failure);
-
-    runtime.dispose();
-  });
+  // U-8 ordered a graph rejection against a throwing staging rollback. The plan now rejects before
+  // staging, so the two cannot occur together; the rollback path itself stays covered by U-7.
 });

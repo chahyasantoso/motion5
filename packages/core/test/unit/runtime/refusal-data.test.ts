@@ -9,14 +9,7 @@ import {
   describeRefusal,
   refuse,
 } from "../../../src/runtime/refusal";
-import {
-  expectLive,
-  expectValid,
-  isLive,
-  liveWrite,
-  resolveToken,
-  stale,
-} from "../../../src/runtime/results";
+import { expectLive, expectValid, isLive, resolveToken, stale } from "../../../src/runtime/results";
 import {
   commitInFlight,
   immediateInTransaction,
@@ -115,23 +108,13 @@ describe("the refusals the runtime spells inline", () => {
   });
 });
 
-describe("the three decoded results", () => {
+describe("the two decoded results", () => {
   it("states validity as one discriminant", () => {
     const accepted = { kind: "accepted", value: 7, diagnostics: [] } as const;
     expect(accepted.kind).toBe("accepted");
     expect(expectValid(accepted)).toBe(7);
     const rejected = { kind: "refused", diagnostics: [diagnostic] } as const;
     expect(() => expectValid(rejected)).toThrow(describeDiagnostics([diagnostic]));
-  });
-
-  it("states the three live-write outcomes, and keeps the progress a patch answered", () => {
-    expect(liveWrite(undefined).kind).toBe("no-hook");
-    const patched = liveWrite({ patch: { kind: "patched" }, progress: 0.25 });
-    expect(patched.kind).toBe("patched");
-    expect(patched.kind === "patched" ? patched.progress : undefined).toBe(0.25);
-    const rebuild = liveWrite({ patch: { kind: "recompile" }, progress: 0.5 });
-    expect(rebuild.kind).toBe("needs-rebuild");
-    expect(rebuild.kind === "needs-rebuild" ? rebuild.progress : undefined).toBe(0.5);
   });
 
   it("resolves a token once, and refuses a stale one with the handle's own error", () => {

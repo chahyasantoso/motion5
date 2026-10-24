@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { describe, expect, it } from "vitest";
 import type { LiveValues, ProjectHandle } from "@motion5/core";
 import { patchRender, unreachable } from "@motion5/core/plugin-api";
@@ -43,7 +42,7 @@ describe("runner lifecycle adversarial contracts", () => {
         },
       },
       {
-        ...writer("b", { x: 3 }),
+        ...writer("b", { x: 3, y: 0 }),
         dispose: () => {
           disposed.push("b");
         },
@@ -73,7 +72,7 @@ describe("runner lifecycle adversarial contracts", () => {
           stop();
         },
       },
-      writer("b", { x: 5 }),
+      writer("b", { x: 5, y: 0 }),
     ]);
     f.clock.tick();
     expect(f.batches()).toBe(1);
@@ -94,7 +93,7 @@ describe("runner lifecycle adversarial contracts", () => {
             throw 1;
           },
         },
-        writer("b", { x: 8 }),
+        writer("b", { x: 8, y: 0 }),
       ],
       (failure) => {
         f.failures.push(failure);
@@ -109,15 +108,19 @@ describe("runner lifecycle adversarial contracts", () => {
     f.project.dispose();
   });
 
-  it("replacement overlays restore omitted keys instead of merging with a previous override", () => {
+  it("refuses a write that omits a required field instead of merging it", () => {
     const f = fixture();
     let values: LiveValues = { x: 3, y: 4 };
     const stop = f.attach([{ nodeId: "scene/a", step: () => ({ kind: "write", values }) }]);
     f.clock.tick();
     expect(readyValues(f.project).y).toBe(4);
+
+    // A write carries the whole value, so omitting an authored field is refused and releases the
+    // overlay rather than leaving a half-merged pose.
     values = { x: 5 };
     f.clock.tick();
-    expect([readyValues(f.project).x, readyValues(f.project).y]).toEqual([5, 0]);
+    expect(f.failures.map((failure) => failure.kind)).toEqual(["write-refused"]);
+    expect([readyValues(f.project).x, readyValues(f.project).y]).toEqual([0, 0]);
     stop();
     f.project.dispose();
   });

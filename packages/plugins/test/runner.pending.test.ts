@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { describe, expect, it } from "vitest";
 import { type ClockTick, type LivePatch, type LiveValues, type ProjectHandle } from "@motion5/core";
 import { patchRender, unreachable } from "@motion5/core/plugin-api";

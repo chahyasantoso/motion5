@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { describe, expect, it } from "vitest";
 import type { TrackDefinition } from "../../src/contract/v5";
 import { createManualClock } from "../../src/ports/clock";
@@ -9,7 +8,7 @@ const project = {
   motions: [{ id: "hero", trigger: { type: "manual" as const }, tracks: [] }],
 };
 const compose = (node: { id: string }) => () => ({
-  values: { node: node.id },
+  outputs: { values: { node: node.id } },
   sourceProgress: 0,
   sourceRevisions: {},
 });
@@ -25,7 +24,9 @@ describe("P5-02 runtime free tracks", () => {
     // its own flush now (issue #223, `RA-9`). The seek is a no-op by construction, because the
     // value it would publish is the one already retained, and that half is asserted rather than
     // dropped: without it, published-early and published-twice look the same from here.
-    expect(runtime.graph.registry.lastReady("~/cursor")?.values).toEqual({ node: "~/cursor" });
+    expect(runtime.graph.registry.lastReady("~/cursor")?.outputs.values).toEqual({
+      node: "~/cursor",
+    });
     expect(runtime.seek("~/cursor", 0).patches).toEqual([]);
     runtime.dispose();
   });
@@ -62,8 +63,10 @@ describe("P5-02 runtime free tracks", () => {
     // following seek, and read per id, because addressability is the claim: a commit that seeded
     // the whole member set instead of the node it touched would pass a two-node assertion here and
     // fail this one on the second add, which would republish the first.
-    expect(runtime.graph.registry.lastReady(cursor.id)?.values).toEqual({ node: "~/cursor" });
-    expect(runtime.graph.registry.lastReady(drag.id)?.values).toEqual({ node: "~/drag" });
+    expect(runtime.graph.registry.lastReady(cursor.id)?.outputs.values).toEqual({
+      node: "~/cursor",
+    });
+    expect(runtime.graph.registry.lastReady(drag.id)?.outputs.values).toEqual({ node: "~/drag" });
     expect(runtime.graph.registry.get(cursor.id)?.revision).toBe(1);
     cursor.remove();
     expect(runtime.graph.state.snapshot().nodes).not.toContain("~/cursor");
@@ -71,7 +74,7 @@ describe("P5-02 runtime free tracks", () => {
     // Eviction drops the retained patch, so the destroyed node is addressable as absent rather
     // than as its final pose.
     expect(runtime.graph.registry.get(cursor.id)).toBeUndefined();
-    expect(runtime.graph.registry.lastReady(drag.id)?.values).toEqual({ node: "~/drag" });
+    expect(runtime.graph.registry.lastReady(drag.id)?.outputs.values).toEqual({ node: "~/drag" });
     runtime.dispose();
   });
 
@@ -80,9 +83,9 @@ describe("P5-02 runtime free tracks", () => {
     expect(() =>
       runtime.addTrack({
         id: "bad",
-        keyframes: { transform: { values: { x: [{ p: Number.NaN, v: 0 }] } } },
+        input: { values: { x: [{ p: Number.NaN, v: 0 }] } },
       }),
-    ).toThrow(/stop-position/);
+    ).toThrow(/cell-stops-invalid/);
     runtime.dispose();
   });
 
@@ -91,18 +94,16 @@ describe("P5-02 runtime free tracks", () => {
     expect(() =>
       runtime.addTrack({
         id: "bad",
-        keyframes: {
-          transform: {
-            values: {
-              x: [
-                { p: 0.5, v: 0 },
-                { p: 0.2, v: 1 },
-              ],
-            },
+        input: {
+          values: {
+            x: [
+              { p: 0.5, v: 0 },
+              { p: 0.2, v: 1 },
+            ],
           },
         },
       }),
-    ).toThrow(/stop-position/);
+    ).toThrow(/cell-stops-invalid/);
     runtime.dispose();
   });
 
@@ -111,18 +112,16 @@ describe("P5-02 runtime free tracks", () => {
     expect(() =>
       runtime.addTrack({
         id: "bad",
-        keyframes: {
-          transform: {
-            values: {
-              x: [
-                { p: 0, v: 0 },
-                { p: 0, v: 1 },
-              ],
-            },
+        input: {
+          values: {
+            x: [
+              { p: 0, v: 0 },
+              { p: 0, v: 1 },
+            ],
           },
         },
       }),
-    ).toThrow(/stop-position/);
+    ).toThrow(/cell-stops-invalid/);
     runtime.dispose();
   });
 
@@ -145,7 +144,7 @@ describe("P5-02 runtime free tracks", () => {
 
     // Published by the commit, and after the Motion entry was written: the flush is seeded once the
     // settle steps ran, so a node that publishes here is one its Motion can already resolve.
-    expect(runtime.graph.registry.lastReady("hero/opacity")?.values).toEqual({
+    expect(runtime.graph.registry.lastReady("hero/opacity")?.outputs.values).toEqual({
       node: "hero/opacity",
     });
     expect(runtime.seek("hero/opacity", 0).patches).toEqual([]);

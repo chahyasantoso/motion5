@@ -1,10 +1,11 @@
-// @ts-nocheck
 import { describe, expect, it } from "vitest";
 import { Engine } from "../../src/engine";
 import { StaleTrackHandleError } from "../../src/contract/track-handle";
+import type { PluginDefinition, ProjectDefinition, TrackDefinition } from "../../src/contract/v5";
+import { PluginCatalog } from "../../src/domain/plugin-catalog";
 import { createManualClock } from "../../src/ports/clock";
 import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
-import type { ProjectDefinition, TrackDefinition } from "../../src/contract/v5";
+import { record } from "../support/v5-builders";
 
 function ramp(from: number, to: number) {
   return [
@@ -12,16 +13,32 @@ function ramp(from: number, to: number) {
     { p: 1, v: to },
   ];
 }
-function track(
-  id: string,
-  from: number,
-  to: number,
-  observes?: TrackDefinition["observes"],
-): TrackDefinition {
+const LINK: PluginDefinition = {
+  id: "link",
+  inputs: {
+    values: { kind: "record", fields: {} },
+    requires: {
+      parent: {
+        outputs: { values: { kind: "record", fields: { x: { kind: "number" } } } },
+      },
+    },
+  },
+  outputs: { values: { kind: "record", fields: { x: { kind: "number" } } } },
+  transform() {
+    return { values: [] };
+  },
+};
+function catalog(): PluginCatalog {
+  const plugins = new PluginCatalog();
+  plugins.register(LINK);
+  return plugins;
+}
+function track(id: string, from: number, to: number, parent?: string): TrackDefinition {
+  if (parent === undefined) return { id, input: { values: record({ x: ramp(from, to) }) } };
   return {
     id,
-    keyframes: { transform: { values: { x: ramp(from, to) } } },
-    ...(observes ? { observes } : {}),
+    plugin: LINK.id,
+    input: { values: record({}), requires: { parent } },
   };
 }
 function makeHandle(project: ProjectDefinition = { schemaVersion: 5, motions: [] }) {
@@ -29,6 +46,7 @@ function makeHandle(project: ProjectDefinition = { schemaVersion: 5, motions: []
     clock: createManualClock(),
     interpolator: createFakeInterpolator(),
     scheduler: createFakeScheduler(),
+    plugins: catalog(),
   }).load(project);
 }
 
@@ -58,9 +76,7 @@ describe("unified runtime mutation surface (W5)", () => {
     first.remove();
     const second = handle.addTrack(track("arm", 0, 200));
     // Migrated with ADR-056. This case used to call `first.remove()` a second time and rely on the
-    // silent no-op, which is the one caller in the repository that did: the audit in issue #217
-    // looked for callers of the getter's throw and found none, and this is what it missed. The
-    // guarantee it was really about is unchanged and still asserted -- a stale handle cannot reach
+    // silent no-op; the guarantee it was really about is unchanged -- a stale handle cannot reach
     // the node that reused its id -- but the handle now says so instead of pretending it worked.
     expect(first.live).toBe(false);
     expect(() => first.remove()).toThrow(StaleTrackHandleError);
@@ -68,7 +84,7 @@ describe("unified runtime mutation surface (W5)", () => {
     const idPatch = handle.get(second.id);
     if (idPatch?.status !== "ready")
       throw new Error(`idPatch is ${idPatch?.status ?? "absent"}, not ready.`);
-    expect(idPatch.values).toEqual({ x: 200 });
+    expect(idPatch.outputs.values).toEqual({ x: 200 });
     expect(second.live).toBe(true);
     second.remove();
     handle.dispose();
@@ -85,7 +101,7 @@ describe("unified runtime mutation surface (W5)", () => {
     const idPatch2 = handle.get(handleForTrack.id);
     if (idPatch2?.status !== "ready")
       throw new Error(`idPatch2 is ${idPatch2?.status ?? "absent"}, not ready.`);
-    expect(idPatch2.values).toEqual({ x: 250 });
+    expect(idPatch2.outputs.values).toEqual({ x: 250 });
     expect(handle.get(handleForTrack.id)?.revision).toBeGreaterThan(beforeRevision);
     expect(seen).not.toContain("destroyed");
     handleForTrack.remove();
@@ -94,23 +110,10 @@ describe("unified runtime mutation surface (W5)", () => {
   it("reads dependants from the committed graph and rejects source removal", () => {
     const handle = makeHandle();
     const root = handle.addTrack(track("root", 0, 100));
-    const child = handle.addTrack(track("child", 0, 50, [{ source: "~/root" }]));
+    const child = handle.addTrack(track("child", 0, 50, root.id));
     expect(handle.dependantsOf(root.id)).toEqual([child.id]);
-    expect(() => root.remove()).toThrow(/depend|unknown-source/);
+    expect(() => root.remove()).toThrow(/edge-unknown-source|depend/);
     expect(handle.dependantsOf(root.id)).toEqual([child.id]);
-    child.remove();
-    root.remove();
-    handle.dispose();
-  });
-  it("treats observation changes as replacement of the observer track", () => {
-    const handle = makeHandle();
-    const root = handle.addTrack(track("root", 0, 100));
-    const child = handle.addTrack(track("child", 0, 50));
-    const observation = { source: root.id };
-    child.addObserve(observation);
-    expect(handle.dependantsOf(root.id)).toEqual([child.id]);
-    child.removeObserve(observation);
-    expect(handle.dependantsOf(root.id)).toEqual([]);
     child.remove();
     root.remove();
     handle.dispose();

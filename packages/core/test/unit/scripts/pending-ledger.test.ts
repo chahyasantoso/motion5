@@ -11,10 +11,12 @@ import { PENDING_LEDGER, pendingPaths } from "../../../../../test/pending.mjs";
  * later-phase suite could no longer typecheck or run. The end-to-end product path needed no plugin,
  * so it was ported rather than filed. The Phase 2 fix-up un-pended `engine-teardown-ownership` and
  * split nine mixed files into running originals plus pended siblings. S7 un-pended thirteen
- * lifecycle and scheduling suites and leaves the ledger at 107.
+ * lifecycle and scheduling suites. S8 resolves every remaining Phase 4 entry: 21 files are ported
+ * or merged, tests of removed APIs are deleted with them, and plugin-blocked suites are moved to
+ * Phase 5 with exact reasons, leaving 79 files: 73 Phase 5, 4 Phase 6 and 2 Phase 7.
  * Lower this number in the slice that resolves entries; raising it re-opens the gate this closes.
  */
-const PENDING_CEILING = 107;
+const PENDING_CEILING = 79;
 
 const ROOT = fileURLToPath(new URL("../../../../../", import.meta.url));
 const MARKER = "// @ts-nocheck";

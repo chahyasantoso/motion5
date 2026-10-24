@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { describe, expect, it, vi } from "vitest";
 import { statedPublications } from "../../helpers/publication-spy";
 import { Engine } from "../../../src/engine";
@@ -16,14 +15,12 @@ import type { ProjectRuntime } from "../../../src/runtime/project-runtime";
 const animated = (id: string) => ({
   id,
   duration: 1000,
-  keyframes: {
-    transform: {
-      values: {
-        x: [
-          { p: 0, v: 0 },
-          { p: 1, v: 100 },
-        ],
-      },
+  input: {
+    values: {
+      x: [
+        { p: 0, v: 0 },
+        { p: 1, v: 100 },
+      ],
     },
   },
 });
@@ -219,65 +216,11 @@ describe("Engine motion edits preserve accepted state and entity lifetimes", () 
     },
   );
 
-  it("retains an accepted stagger and attempts publication when re-seeding throws", () => {
-    let intercept: () => void = () => undefined;
-    const test = rig(project(), undefined, () => intercept());
-    test.handle.mount("hero/arm");
-    test.handle.mount("hero/leg");
-    test.handle.signal("hero", { type: "manual", progress: 0.75 });
-    test.flush();
-    const motion = test.handle.motion("hero");
-    const failure = new Error("Host re-seed failed.");
-    const seen: (number | undefined)[] = [];
-    intercept = () => {
-      seen.push(motion.definition.stagger);
-      throw failure;
-    };
-    const publication = vi.spyOn(test.runtime.graph, "flush");
-    expect(caught(() => motion.setStagger(250))).toBe(failure);
-    expect(seen).toEqual([250]);
-    expect(motion.definition.stagger).toBe(250);
-    // Caller-stated publications only, so a scheduled drain cannot supply this count. Issue #381.
-    expect(statedPublications(publication)).toHaveLength(1);
-    const heroArmPatch3 = test.handle.get("hero/arm");
-    if (heroArmPatch3?.status !== "ready")
-      throw new Error(`hero/arm is ${heroArmPatch3?.status ?? "absent"}, not ready.`);
-    expect(heroArmPatch3.sourceProgress).toBeCloseTo(0.75);
-    intercept = () => undefined;
-    motion.setStagger();
-    test.flush();
-    const heroLegPatch = test.handle.get("hero/leg");
-    if (heroLegPatch?.status !== "ready")
-      throw new Error(`hero/leg is ${heroLegPatch?.status ?? "absent"}, not ready.`);
-    expect(heroLegPatch.sourceProgress).toBeCloseTo(0.75);
-    test.handle.dispose();
-    for (const kill of test.kills) expect(kill).toHaveBeenCalledTimes(1);
-  });
-
-  it("defers disposal through failed stagger completion and preserves ordered failures", () => {
-    let intercept: () => void = () => undefined;
-    const test = rig(project(), undefined, () => intercept());
-    test.handle.mount("hero/arm");
-    // Track skips unchanged progress. Advance first so the new stagger reaches the host.
-    test.handle.signal("hero", { type: "manual", progress: 0.75 });
-    test.flush();
-    const motion = test.handle.motion("hero");
-    const failure = new Error("Disposing host re-seed failed.");
-    const disposeDuringProgress = vi.fn(() => {
-      test.handle.dispose();
-      throw failure;
-    });
-    intercept = disposeDuringProgress;
-    const publication = vi.spyOn(test.runtime.graph, "flush");
-    const result = caught(() => motion.setStagger(250));
-    expect(disposeDuringProgress).toHaveBeenCalledTimes(1);
-    expect(result).toBeInstanceOf(AggregateError);
-    expect((result as AggregateError).errors[0]).toBe(failure);
-    expect((result as AggregateError).errors[1].message).toBe("ProjectRuntime is disposed.");
-    expect(motion.live).toBe(false);
-    expect(publication).not.toHaveBeenCalled();
-    for (const kill of test.kills) expect(kill).toHaveBeenCalledTimes(1);
-  });
+  // Two cases used to inject a failure through the interpolator's `progress` during a stagger
+  // re-seed. The identified-table evaluator stores progress and writes the timeline when it next
+  // evaluates, so a re-seed no longer calls a fallible host hook and there is no failure to order
+  // here. The settlement ordering they guarded is still exercised by the trigger cases above; the
+  // legacy Track that called `progress` on every seek leaves with Phase 5.
 
   it("adopts before a trigger finalizer disposes and releases the replacement once", () => {
     let cleanup: () => void = () => undefined;

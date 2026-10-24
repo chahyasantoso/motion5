@@ -652,7 +652,7 @@ function planSetValues(
   const track = withInputValues(current.track, edit.values);
   const validated = validateAuthoredValues(
     track,
-    `setValues(${edit.nodeId})`,
+    `values.set(${edit.nodeId})`,
     edit.nodeId,
     current.contract,
     environment,

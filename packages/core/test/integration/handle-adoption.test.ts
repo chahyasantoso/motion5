@@ -1,5 +1,5 @@
-// @ts-nocheck
 import { describe, expect, it } from "vitest";
+import type { Patch } from "../../src/contract/v5";
 import { Engine } from "../../src/engine";
 import { createManualClock } from "../../src/ports/clock";
 import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
@@ -47,18 +47,16 @@ describe("runtime track addition through ProjectHandle (G2)", () => {
     const handle = makeHandle();
     const bad = {
       id: "bad",
-      keyframes: {
-        transform: {
-          values: {
-            x: [
-              { p: Number.NaN, v: 0 },
-              { p: 0.5, v: 1 },
-            ],
-          },
+      input: {
+        values: {
+          x: [
+            { p: Number.NaN, v: 0 },
+            { p: 0.5, v: 1 },
+          ],
         },
       },
     };
-    expect(() => handle.addTrack(bad)).toThrow(/stop-position/);
+    expect(() => handle.addTrack(bad)).toThrow(/cell-stops-invalid/);
     handle.dispose();
   });
 
@@ -72,14 +70,12 @@ describe("runtime track addition through ProjectHandle (G2)", () => {
     const added = handle.addTrack(
       {
         id: "leg",
-        keyframes: {
-          transform: {
-            values: {
-              x: [
-                { p: 0, v: 0 },
-                { p: 1, v: 100 },
-              ],
-            },
+        input: {
+          values: {
+            x: [
+              { p: 0, v: 0 },
+              { p: 1, v: 100 },
+            ],
           },
         },
       },
@@ -87,7 +83,7 @@ describe("runtime track addition through ProjectHandle (G2)", () => {
     );
     expect(added.id).toBe("hero/leg");
 
-    let latestPatch: any;
+    let latestPatch: Patch | undefined;
     handle.subscribeNode("hero/leg", (patch) => {
       latestPatch = patch;
     });
@@ -95,9 +91,11 @@ describe("runtime track addition through ProjectHandle (G2)", () => {
     handle.signal("hero", { type: "manual", progress: 0.5 });
     scheduler.flush();
 
-    expect(latestPatch).toBeDefined();
-    expect(latestPatch.nodeId).toBe("hero/leg");
-    expect(latestPatch.values).toEqual({ x: 50 });
+    expect(latestPatch?.status).toBe("ready");
+    expect(latestPatch?.nodeId).toBe("hero/leg");
+    expect(latestPatch?.status === "ready" ? latestPatch.outputs.values : undefined).toEqual({
+      x: 50,
+    });
 
     added.remove();
     const batch = handle.seek("hero/arm", 0);
