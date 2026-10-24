@@ -95,23 +95,36 @@ export type Edit = StructuralEdit | CheapEdit | LiveEdit;
 /** Which path one edit takes through a commit. */
 export type EditTier = "structural" | "cheap";
 
-/** The tier one edit belongs to, total over the union so a new kind owes a decision here. */
-export function tierOf(edit: Edit): EditTier {
+/**
+ * Whether one edit is structural. The one total decision over the union, so a new kind owes an
+ * answer here; `isValueEdit`, `tierOf` and the batch classifier all read it.
+ */
+export function isStructuralEdit(edit: Edit): edit is StructuralEdit {
   switch (edit.kind) {
     case "replace-track":
     case "replace-input":
     case "remove-track":
     case "bind":
     case "unbind":
-      return "structural";
+      return true;
     case "set-values":
     case "set-field":
     case "write-live":
     case "release-live":
-      return "cheap";
+      return false;
     default:
       return unreachable(edit);
   }
+}
+
+/** Whether one edit is a cheap or live value edit: exactly the edits that are not structural. */
+export function isValueEdit(edit: Edit): edit is CheapEdit | LiveEdit {
+  return !isStructuralEdit(edit);
+}
+
+/** The tier one edit belongs to. */
+export function tierOf(edit: Edit): EditTier {
+  return isStructuralEdit(edit) ? "structural" : "cheap";
 }
 
 /**

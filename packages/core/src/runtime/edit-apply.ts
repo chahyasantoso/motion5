@@ -1,6 +1,12 @@
 import { refuseAt } from "./refusal";
 import { plan, type PlanEnvironment, type PlanState, type PlannedChange } from "./edit-plan";
-import type { Edit } from "./edit-types";
+import {
+  planValueEdit,
+  type CheapTrack,
+  type TrackLookup,
+  type ValueChange,
+} from "./edit-plan-values";
+import type { CheapEdit, Edit, LiveEdit } from "./edit-types";
 
 /** What one apply answered: the view after every edit, and the changes that reach it. */
 export interface AppliedEdits {
@@ -31,4 +37,31 @@ export function applyEdits(
     if (planned.value.change !== undefined) changes.push(planned.value.change);
   }
   return { state: current, changes: Object.freeze(changes) };
+}
+
+/**
+ * Plans a list of value edits against one lookup, each seeing what its predecessors changed.
+ *
+ * The staged view holds only the nodes the list has already changed, so the work is proportional to
+ * the list, never to the project. A refusal throws at the index that produced it before anything
+ * has been handed to a caller, which is what makes the list all-or-nothing here as well.
+ */
+export function applyValueEdits(
+  base: TrackLookup,
+  edits: readonly (CheapEdit | LiveEdit)[],
+  environment: PlanEnvironment,
+): readonly ValueChange[] {
+  const staged = new Map<string, CheapTrack>();
+  const view: TrackLookup = { get: (nodeId) => staged.get(nodeId) ?? base.get(nodeId) };
+  const changes: ValueChange[] = [];
+  for (const [index, edit] of edits.entries()) {
+    const planned = planValueEdit(view, edit, environment);
+    if (planned.kind === "refused")
+      refuseAt({ kind: "invalid-definition", diagnostics: planned.diagnostics }, index);
+    const { change } = planned.value;
+    if (change === undefined) continue;
+    staged.set(change.track.nodeId, change.track);
+    changes.push(change);
+  }
+  return Object.freeze(changes);
 }

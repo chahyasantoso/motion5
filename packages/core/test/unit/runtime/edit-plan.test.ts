@@ -337,4 +337,15 @@ describe("the plan module imports no runtime machinery", () => {
       /(^|\/)(engine|project-runtime|project-handles|commit-plan|run-plan|graph-runtime|timeline|ports\/clock|ports\/scheduler)(\.ts)?$/;
     expect(targets.filter((target) => forbidden.test(target))).toEqual([]);
   });
+
+  it.each(["edit-plan-values.ts", "edit-batch.ts", "edit-apply.ts"])(
+    "keeps %s free of the same machinery",
+    (file) => {
+      const source = code(new URL(`../../../src/runtime/${file}`, import.meta.url));
+      const targets = [...source.matchAll(/from\s+"([^"]+)"/g)].map((match) => match[1] ?? "");
+      const forbidden =
+        /(^|\/)(engine|project-runtime|project-handles|commit-plan|run-plan|graph-runtime|timeline|ports\/clock|ports\/scheduler)(\.ts)?$/;
+      expect(targets.filter((target) => forbidden.test(target))).toEqual([]);
+    },
+  );
 });

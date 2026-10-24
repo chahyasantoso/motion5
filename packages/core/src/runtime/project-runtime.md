@@ -188,21 +188,37 @@ Projects the committed or staged entries as the plain data a pure plan reads. Th
 
 The two questions a plan may ask of its host: the plugin capabilities the runtime was constructed with, and the admission predicate when one exists. Both are values rather than a registry, which is what lets the plan module stay free of runtime imports. A registry-free runtime answers UNJUDGED_CAPABILITIES, which asks nothing and refuses nothing.
 
+## #apply
+
+The one internal entry for a list of edits. It classifies the list once and takes the single path that answer owns: a value list goes to #applyValues, a structural list goes to #applyStructuralList, an empty list answers the empty batch, and a list that mixes the two is refused by name with a TypeError rather than guessed, because a value edit's effect on the compiled Track depends on whether a later structural edit in the same list rebuilds it. Admission is the caller's. Each typed wrapper admits as its verb always did, and the public `apply` seam admits value edits for a caller that holds a list. A refusal anywhere throws before anything is adopted, published or committed.
+
+## #applyStructuralList
+
+Plans structural edits against the staged view, and returns without staging when the plan changed nothing, so a recipe of no-ops still copies nothing. Otherwise it copies the pending tracks once, carries each planned change through #stageChange, and delegates the one commit. The commit publishes inside itself and its batch is not carried out, so the list answers the empty batch and the structural verbs discard it.
+
 ## #applyStructural
 
-The one structural application point. It validates writability, plans the edit against the staged view, and returns without staging when the plan changed nothing, so a recipe of no-ops still copies nothing. Otherwise it copies the pending tracks once, carries each planned change through #stageChange, and delegates the one commit path. Planning happens before the copy for that no-op reason, and against the staged view rather than the retained one, so step two of a recipe sees step one. See ADR-064 and ADR-066.
+The structural verbs' application point: it validates writability for the handle's node and hands the one edit to #apply.
+
+## #valueLookup
+
+The one-node view a value edit plans against. It reads the entry the id names and nothing else, and has no way to enumerate, so planning a value edit costs the same in a project of ten tracks and of ten thousand.
+
+## #applyValues
+
+Plans a list of value edits against #valueLookup, each edit seeing what the earlier ones changed, and answers the empty batch without publishing when nothing changed. Otherwise it adopts every change through #adoptValueChange and publishes once through #publishValues. The committed track map is updated in place, which is safe because a value edit is refused during a commit and inside an edit recipe, so no staged copy of it is open, and an existing key keeps its insertion order. The graph is never replaced and the contract is never re-derived. See ADR-064 and ADR-066.
+
+## #adoptValueChange
+
+Carries one planned value change into the committed map and the compiled Track. An authored change writes the definition, value state and contract the plan answered and rewrites the evaluator through the value port. A live change writes only the value state and stands or drops the overlay through the value port, so the authored definition never moves. The plan carries the committed contract unchanged, so this member never chooses one.
 
 ## #applyCheap
 
-The cheap tier's application point. It takes the value tier's admission first, so a cheap edit is refused during a commit and inside an edit recipe exactly as the old value verbs were, while a value batch still collects its publication seed. It then validates writability, plans the edit against the retained view, and answers the empty batch without publishing when the plan changed nothing. Otherwise it copies the retained track map, adopts the new definition with its contract and value state unchanged, rewrites the compiled evaluator through the value port, and publishes through #publishValue. The graph is never replaced and the contract is never re-derived. See ADR-064 and ADR-066.
-
-## #adoptAuthoredEntry
-
-Carries one planned authored change into a track map. The entry's token and kind are preserved; only the definition, value state and contract the plan answered are written. The plan carries the committed contract and value state unchanged, so this member never chooses either.
+The cheap tier's application point. It takes the value tier's admission first, so a cheap edit is refused during a commit and inside an edit recipe exactly as the old value verbs were, while a value batch still collects its publication seed. It then validates writability and hands the edit to #apply.
 
 ## #applyLive
 
-The live tier's application point. It takes the value tier's admission first, so a live edit is refused during a commit and inside an edit recipe, collected by a value batch, and never refused for the target's published status. It validates writability, plans the edit against the committed view, and answers the empty batch without publishing when the plan changed nothing (a release with no overlay). Otherwise it copies the retained track map, adopts the value state the plan answered, stands or drops the overlay through the value port, and publishes through #publishValue. The authored definition never moves, so a write cannot rename a row or change an authored field. See ADR-059 and ADR-060.
+The live tier's application point. It takes the value tier's admission first, so a live edit is refused during a commit and inside an edit recipe, collected by a value batch, and never refused for the target's published status. It validates writability and hands the edit to #apply. A release with no overlay answers the empty batch without publishing. See ADR-059 and ADR-060.
 
 ## #stageChange
 
@@ -255,6 +271,10 @@ Still the only place a single-node value publication happens, still not the only
 The one owner of whether a value write publishes now or joins an open batch. With no batch open it delegates to #invalidateOne and nothing about the single-node path moves. With one open it asserts runtime liveness, records the node as a seed, and answers the deferred batch: the node named, no patches, and one value-batch-deferred warning saying the publication was queued.
 
 Its callers are #applyCheap, #applyLive and seek, which stops copying invalidate plus recordAll inline and routes through this owner instead, so adding the tier deleted a copy rather than adding one. Liveness is asserted on the staging path too, because a recipe may dispose the project and a seed pushed onto a dead runtime would be published by a batch that must not publish at all. See ADR-078.
+
+## #publishValues
+
+One publication for the nodes a value edit list changed. A list that changed one node is the single-node case and goes to #publishValue unchanged. A longer list collects every seed into an open batch, or invalidates them together once when no batch is open.
 
 ## #carriedContracts
 

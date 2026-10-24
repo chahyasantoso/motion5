@@ -19,6 +19,8 @@ import {
   type PlanState,
   type PlannedTrack,
 } from "../../../src/runtime/edit-plan";
+import { planValueEdit, type TrackLookup } from "../../../src/runtime/edit-plan-values";
+import type { CheapEdit, LiveEdit } from "../../../src/runtime/edit-types";
 import { AUTHORED } from "../../../src/runtime/value-state";
 import { record, row, table, track } from "../../support/v5-builders";
 
@@ -457,5 +459,33 @@ describe("set-field writes one addressed cell and refuses an address it cannot r
 
     expect(rules(outcome)[0]?.split(" at ")[0]).toBe("cell-kind-conflict");
     expect(message(outcome)).toContain("track.input.replace(...)");
+  });
+});
+
+describe("a value edit reads exactly one node", () => {
+  const edits: readonly (readonly [string, CheapEdit | LiveEdit])[] = [
+    ["set-values", { kind: "set-values", nodeId: "demo/points", values: [] }],
+    [
+      "set-field",
+      { kind: "set-field", nodeId: "demo/points", address: { row: "r1", field: "x" }, cell: 9 },
+    ],
+    [
+      "write-live",
+      { kind: "write-live", nodeId: "demo/points", value: table(row("r1", { x: 1, y: 2 })) },
+    ],
+    ["release-live", { kind: "release-live", nodeId: "demo/points" }],
+  ];
+
+  it.each(edits)("%s asks the lookup for its target once and for nothing else", (_name, edit) => {
+    const committed = state([POINTS, RECORD]);
+    const asked: string[] = [];
+    const view: TrackLookup = {
+      get: (nodeId) => {
+        asked.push(nodeId);
+        return committed.tracks.get(nodeId);
+      },
+    };
+    planValueEdit(view, edit, environment());
+    expect(asked).toEqual(["demo/points"]);
   });
 });

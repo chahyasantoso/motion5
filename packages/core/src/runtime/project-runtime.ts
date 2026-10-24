@@ -67,9 +67,17 @@ import { runPlan } from "./run-plan";
 import { refuse } from "./refusal";
 import { expectLive, expectValid, isLive, resolveToken, stale, type Resolved } from "./results";
 import { AUTHORED, type ValueState } from "./value-state";
-import { applyEdits } from "./edit-apply";
+import { applyEdits, applyValueEdits } from "./edit-apply";
+import { classifyBatch } from "./edit-batch";
+import type { TrackLookup, ValueChange } from "./edit-plan-values";
 import type { PlanEnvironment, PlanState, PlannedChange, PlannedTrack } from "./edit-plan";
-import type { CheapEdit, LiveEdit, StructuralEdit } from "./edit-types";
+import {
+  isValueEdit,
+  type CheapEdit,
+  type Edit,
+  type LiveEdit,
+  type StructuralEdit,
+} from "./edit-types";
 import { sameTrigger, withStagger } from "./authored-values";
 import { Diagnostics, type DiagnosticsSnapshot } from "./diagnostics";
 import {
@@ -835,81 +843,126 @@ export class ProjectRuntime {
     });
   }
 
-  // Plans one structural edit against the staged view and stages what it changed. The plan is the
-  // only place a candidate graph or contract is built; this member carries its change into the
-  // transaction's map and marks the node for the commit's build decision. A no-op answers before
+  // The one internal entry for a list of edits. It classifies the list once and takes the single
+  // path that answer owns: a value list plans against one node lookup and publishes once, a
+  // structural list plans against the candidate graph and commits once, and an empty list does
+  // nothing. A refusal anywhere throws before anything is adopted, published or committed.
+  // Admission is the caller's: each typed wrapper below admits as its verb always did, and the
+  // `apply` seam admits for a caller that holds a list.
+  #apply(edits: readonly Edit[]): PatchBatch {
+    const batch = classifyBatch(edits);
+    switch (batch.kind) {
+      case "empty":
+        return batchFor(this.#graph.sequence, { kind: "empty" });
+      case "values":
+        return this.#applyValues(batch.edits);
+      case "structural":
+        return this.#applyStructuralList(batch.edits);
+      case "mixed":
+        throw new TypeError("An edit list cannot mix structural and value edits.");
+      default:
+        return unreachable(batch);
+    }
+  }
+
+  /**
+   * Applies a list of edits as one atomic batch and answers its one publication.
+   *
+   * Internal: no handle and no package entry point reaches it. It exists so the batch contract is
+   * one runtime path rather than a property of the pure planner alone.
+   */
+  apply(edits: readonly Edit[]): PatchBatch {
+    this.#assertLive();
+    for (const edit of edits) if (isValueEdit(edit)) this.#admit(valueVerb(edit.kind, "resolved"));
+    return this.#apply(edits);
+  }
+
+  // Plans structural edits against the staged view and stages what they changed. The plan is the
+  // only place a candidate graph or contract is built; this member carries its changes into the
+  // transaction's map and marks the nodes for the commit's build decision. A no-op answers before
   // `#stageTracks` copies, so a recipe that changed nothing still commits nothing.
-  #applyStructural(id: string, token: number, edit: StructuralEdit): void {
-    this.#writableEntry(id, token);
-    const planned = applyEdits(
-      this.#planState(this.#readTracks()),
-      [edit],
-      this.#planEnvironment(),
-    );
-    if (planned.changes.length === 0) return;
+  #applyStructuralList(edits: readonly StructuralEdit[]): PatchBatch {
+    const planned = applyEdits(this.#planState(this.#readTracks()), edits, this.#planEnvironment());
+    if (planned.changes.length === 0) return batchFor(this.#graph.sequence, { kind: "empty" });
     const tracks = this.#stageTracks();
     const open = stagedIn(this.#phase);
     const noBuild = open?.noBuild ?? new Set<string>();
     const fullBuild = open?.fullBuild ?? new Set<string>();
     for (const change of planned.changes) this.#stageChange(change, tracks, noBuild, fullBuild);
     this.#commit({ kind: "tracks", tracks }, noBuild);
+    // A structural commit publishes inside the commit and its batch is not carried out of it, so
+    // the list answers the empty batch. The structural verbs discard the answer.
+    return batchFor(this.#graph.sequence, { kind: "empty" });
   }
 
-  // Plans one cheap edit against the retained or batched view and applies only its authored delta.
-  // The value tier's admission runs first, so a cheap edit is refused during a commit and inside an
-  // edit recipe exactly as the value verbs were, while a value batch still collects its seed. The
-  // definition moves, the compiled evaluator is rewritten, and the one publication routes through
-  // #publishValue so a batch defers it rather than publishing per edit.
-  #applyCheap(id: string, token: number, edit: CheapEdit): PatchBatch {
-    this.#admit(valueVerb(edit.kind, "resolved"));
+  #applyStructural(id: string, token: number, edit: StructuralEdit): void {
     this.#writableEntry(id, token);
-    const planned = applyEdits(
-      this.#planState(this.#readTracks()),
-      [edit],
-      this.#planEnvironment(),
-    );
-    const change = planned.changes[0];
-    if (change === undefined) return batchFor(this.#graph.sequence, { kind: "empty" });
+    this.#apply([edit]);
+  }
+
+  // One node's retained view, built on demand. It reads the entry the id names and nothing else, so
+  // planning a value edit costs the same in a project of ten tracks and of ten thousand.
+  #valueLookup(): TrackLookup {
+    return {
+      get: (nodeId) => {
+        const entry = this.#readTracks().get(nodeId);
+        return entry === undefined
+          ? undefined
+          : { nodeId, track: entry.track, valueState: entry.valueState, contract: entry.contract };
+      },
+    };
+  }
+
+  // Plans value edits against the lookup and applies only their deltas to the entries they name.
+  // The committed map is updated in place, which is safe because a value edit is refused during a
+  // commit and inside an edit recipe, so no staged copy of it is open, and an existing key keeps
+  // its insertion order. The one publication routes through #publishValues so a batch defers it.
+  #applyValues(edits: readonly (CheapEdit | LiveEdit)[]): PatchBatch {
+    const changes = applyValueEdits(this.#valueLookup(), edits, this.#planEnvironment());
+    if (changes.length === 0) return batchFor(this.#graph.sequence, { kind: "empty" });
+    for (const change of changes) this.#adoptValueChange(change);
+    return this.#publishValues(changes.map((change) => change.track.nodeId));
+  }
+
+  #adoptValueChange(change: ValueChange): void {
+    const id = change.track.nodeId;
+    const entry = this.#tracks.get(id);
+    if (entry === undefined) throw new TypeError(`Unknown graph node "${id}".`);
     switch (change.kind) {
-      case "authored-values": {
-        const tracks = new Map(this.#tracks);
-        this.#adoptAuthoredEntry(tracks, id, change);
-        this.#tracks = tracks;
+      case "authored-values":
+        this.#tracks.set(id, {
+          ...entry,
+          track: change.track.track,
+          valueState: change.track.valueState,
+          contract: change.track.contract,
+        });
         this.#ports.value.rewrite(id, change.values);
-        return this.#publishValue(id);
-      }
-      case "update-track":
-      case "remove-track":
+        return;
       case "live-values":
-        throw new TypeError(`Cheap edit "${edit.kind}" planned a non-authored change.`);
+        this.#tracks.set(id, { ...entry, valueState: change.track.valueState });
+        this.#ports.value.overlay(id, change.overlay);
+        return;
       default:
         return unreachable(change);
     }
   }
 
-  #adoptAuthoredEntry(
-    tracks: Map<string, TrackEntry>,
-    id: string,
-    change: Extract<PlannedChange, { kind: "authored-values" }>,
-  ): void {
-    const entry = tracks.get(id);
-    if (entry === undefined) throw new TypeError(`Unknown graph node "${id}".`);
-    tracks.set(id, {
-      ...entry,
-      track: change.track.track,
-      valueState: change.track.valueState,
-      contract: change.track.contract,
-    });
+  // Plans one cheap edit. The value tier's admission runs first, so a cheap edit is refused during
+  // a commit and inside an edit recipe exactly as the value verbs were, while a value batch still
+  // collects its seed.
+  #applyCheap(id: string, token: number, edit: CheapEdit): PatchBatch {
+    this.#admit(valueVerb(edit.kind, "resolved"));
+    this.#writableEntry(id, token);
+    return this.#apply([edit]);
   }
 
-  // Plans one live edit against the committed view and stands its overlay on the compiled Track.
-  // The value-tier admission makes it legal on an errored node and inside a value batch, while a
-  // commit and an edit recipe still refuse it. The authored definition never moves: only the value
-  // state and the compiled overlay do, and #publishValue is the one publication, deferred in a batch.
+  // Plans one live edit. The value-tier admission makes it legal on an errored node and inside a
+  // value batch, while a commit and an edit recipe still refuse it. The authored definition never
+  // moves: only the value state and the compiled overlay do.
   #applyLive(id: string, token: number, edit: LiveEdit): PatchBatch {
     this.#admit(valueVerb(edit.kind, "resolved"));
     this.#writableEntry(id, token);
-    return this.#planLive(id, edit);
+    return this.#apply([edit]);
   }
 
   // The node-addressed half, for a caller that resolved by id rather than by handle. Admission runs
@@ -919,34 +972,7 @@ export class ProjectRuntime {
     this.#assertLive();
     this.#admit(valueVerb(edit.kind, "resolved"));
     this.#entryOf(id);
-    return this.#planLive(id, edit);
-  }
-
-  #planLive(id: string, edit: LiveEdit): PatchBatch {
-    const planned = applyEdits(
-      this.#planState(this.#readTracks()),
-      [edit],
-      this.#planEnvironment(),
-    );
-    const change = planned.changes[0];
-    if (change === undefined) return batchFor(this.#graph.sequence, { kind: "empty" });
-    switch (change.kind) {
-      case "live-values": {
-        const tracks = new Map(this.#tracks);
-        const entry = tracks.get(id);
-        if (entry === undefined) throw new TypeError(`Unknown graph node "${id}".`);
-        tracks.set(id, { ...entry, valueState: change.track.valueState });
-        this.#tracks = tracks;
-        this.#ports.value.overlay(id, change.overlay);
-        return this.#publishValue(id);
-      }
-      case "update-track":
-      case "remove-track":
-      case "authored-values":
-        throw new TypeError(`Live edit "${edit.kind}" planned a non-live change.`);
-      default:
-        return unreachable(change);
-    }
+    return this.#apply([edit]);
   }
 
   // Carries one planned change into the staged map and records what its commit owes.
@@ -1105,6 +1131,31 @@ export class ProjectRuntime {
     this.#assertLive();
     this.#phase = seeded;
     return batchFor(this.#graph.sequence, { kind: "deferred-in-batch", seeds: [nodeId] });
+  }
+
+  // One publication for the nodes a value edit list changed. A list that changed one node is the
+  // single-node case and goes to #publishValue unchanged. A longer list collects every seed into an
+  // open batch, or invalidates them together once when no batch is open.
+  #publishValues(nodeIds: readonly string[]): PatchBatch {
+    const seeds = [...new Set(nodeIds)];
+    const [only, ...others] = seeds;
+    if (only === undefined) throw new TypeError("A value publication needs at least one node.");
+    if (others.length === 0) return this.#publishValue(only);
+    let phase = this.#phase;
+    for (const nodeId of seeds) {
+      const seeded = seeding(phase, nodeId);
+      if (seeded === undefined) {
+        this.#assertLive();
+        return this.#invalidateSeeds(seeds);
+      }
+      phase = seeded;
+    }
+    this.#assertLive();
+    this.#phase = phase;
+    return batchFor(this.#graph.sequence, {
+      kind: "deferred-in-batch",
+      seeds: [only, ...others],
+    });
   }
 
   #carriedContracts(
