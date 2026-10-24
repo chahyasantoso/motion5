@@ -233,3 +233,19 @@ benchmark (1)'s 25 percent bound holds. The same run measured `input.values.set`
 the table and 7,237 ns for the record, which replaces the S4 record figure as the current one; both
 answers live over a publisher flush that dominates the small fixture, so their spread across runs is
 machine noise rather than a code path moving.
+
+## S6 consumers
+
+A runner's write step now carries one `Value`, a table or a flat record matching the target track,
+and `release` is its own step rather than an empty write. The runner maps those to
+`writeValues`/`releaseValues`, keeps one `values` batch per tick and its per-write refusal
+isolation, and reads committed patches by narrowing status before reading outputs. `hold` still
+makes no call.
+
+`ValueTransaction` projects `writeValues(nodeId, value)` and `releaseValues(nodeId)` beside `seek`
+and the ordinary handle, so a recipe can stay node-addressed without losing the batch. The rig
+writer and goal control use `input.values.setField` for the fields they change, which is the
+whole-value rule expressed one field at a time; no row-patching helper was needed because no caller
+patches rows of a live value. `frame.ts` and `labels.ts` carried only prose about the retired verbs
+and are corrected. The react demo has no value writes to move. The pre-v5 guide set is untouched
+until its own documentation slice.

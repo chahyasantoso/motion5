@@ -6,21 +6,20 @@ states a phase; `packages/core/test/unit/scripts/session-status-shape.test.ts` e
 byte ceiling.
 
 - **Captured:** 2026-10-24, Asia/Jakarta.
-- **Read against:** `refactor/v5-identified-tables` after the live-values slice.
+- **Read against:** `refactor/v5-identified-tables` after the consumer-routing slice.
 
 ## Now
 
-- **Live values share the one edit path:** `TrackHandle.writeValues` and `releaseValues` mint
-  `write-live`/`release-live`, a pure plan validates the whole evaluated value against the committed
-  contract, and the compiled table or record track stands the overlay over its authored evaluation.
-  A write never moves the authored definition, an overlay survives authored and binding edits and
-  seeks, and replacement, removal, release and destroy clear it.
+- **Runners and recipes use the live verbs:** a runner write step carries one whole table or record
+  and a release is its own step; `ValueTransaction` exposes `writeValues`/`releaseValues` beside
+  `seek`, and the per-write refusal isolation inside `values(recipe)` is unchanged. The rig writer
+  and goal control address single fields with `setField`.
 
 ## Next in line
 
-- **Runners, recipes and consumers on the new verbs:** route the runner and value transaction through
-  `writeValues`/`releaseValues`, send full records through `values.set` or use `setField` in the rig
-  writer and goal control, and keep per-write failure isolation.
+- **Lifecycle and scheduling:** with the un-pended tests, mount and unmount gating, terminal
+  destroy patches, subscription and timeline disposal, repeated replacement leaks, reentrant
+  subscribers, and the manual, time and scroll trigger paths.
 
 ## Open, and not scheduled
 

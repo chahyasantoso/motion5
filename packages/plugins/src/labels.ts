@@ -58,8 +58,9 @@ function baselineOf(read: LabelRead): Label | undefined {
  * present, then unsubscribes. Detach and unmount send nothing. The disposer is idempotent. Events
  * are edges over published state (D11).
  *
- * Listeners run inside publication. They must not synchronously write through `project.edit` or
- * `track(...).setValues`; those writes are refused as `schema-commit-reentrant`.
+ * Listeners run inside publication. They must not synchronously write through `project.edit` or a
+ * track's value verbs; those writes are refused as `schema-commit-reentrant`, and inside a recipe as
+ * `schema-transaction-immediate`.
  */
 export function onLabelChange(
   project: Pick<ProjectHandle, "get" | "subscribeNode">,

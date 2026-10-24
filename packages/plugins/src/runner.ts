@@ -2,15 +2,15 @@ import type {
   Clock,
   ClockTick,
   LivePatch,
-  LiveValues,
   ProjectHandle,
+  Value,
   ValueTransaction,
 } from "@motion5/core";
 import { unreachable } from "@motion5/core/plugin-api";
 
 export type RunnerStep =
   | { readonly kind: "hold" }
-  | { readonly kind: "write"; readonly values: LiveValues }
+  | { readonly kind: "write"; readonly values: Value }
   | { readonly kind: "release" };
 
 export interface Runner {
@@ -41,11 +41,9 @@ interface Entry {
   readonly runner: Runner;
   readonly nodeId: string;
 }
-interface Write {
-  readonly entry: Entry;
-  readonly values: LiveValues;
-}
-const RELEASE: LiveValues = Object.freeze({});
+type Write =
+  | { readonly entry: Entry; readonly kind: "write"; readonly values: Value }
+  | { readonly entry: Entry; readonly kind: "release" };
 
 function snapshotRunners(project: RunnerProject, runners: readonly Runner[]): Entry[] {
   if (!Array.isArray(runners)) throw new TypeError("Runners must be an array.");
@@ -77,9 +75,10 @@ function snapshotRunners(project: RunnerProject, runners: readonly Runner[]): En
  * value batch is opened per tick. A refusal detaches only its runner, releases its overlay when
  * possible, and disposes it once. The array and ownership ids are snapshotted at attachment.
  *
- * Overlays accept authored static keys of the same leaf kind (ADR-060). Identical writes still
- * republish and recompute downstream; returning hold is the runner's decision. Separate
- * attachments must not own the same node. Steps must not write to the project synchronously.
+ * A write step carries one whole evaluated value whose shape matches the target track, and `release`
+ * drops the overlay it stood. A `hold` makes no call at all. Identical writes still republish and
+ * recompute downstream; returning hold is the runner's decision. Separate attachments must not own
+ * the same node. Steps must not write to the project synchronously.
  *
  * Dispose before project.dispose(). Reversed cleanup still disposes every runner, then rethrows
  * the batch error once. Any failure of the batch call itself stops the attachment, transient or
@@ -144,7 +143,7 @@ export function attachRunners(
     failures: RunnerFailure[],
     reportMissing = true,
   ): void {
-    const { entry, values } = write;
+    const { entry } = write;
     const track = tx.tryTrack(entry.nodeId);
     if (track === undefined) {
       if (reportMissing) failures.push({ kind: "node-missing", nodeId: entry.nodeId });
@@ -152,14 +151,22 @@ export function attachRunners(
       return;
     }
     try {
-      if (values === RELEASE) track.releaseValues();
-      else track.writeValues(values);
+      switch (write.kind) {
+        case "write":
+          track.writeValues(write.values);
+          break;
+        case "release":
+          track.releaseValues();
+          break;
+        default:
+          unreachable(write);
+      }
     } catch (cause) {
       failures.push({ kind: "write-refused", nodeId: entry.nodeId, cause });
       retire(entry);
       // A batch is not atomic. Clear an earlier successful overlay even when this write refused.
       // Do not retry a failed release, but do report a second failure if recovery itself refuses.
-      if (values !== RELEASE) {
+      if (write.kind === "write") {
         try {
           track.releaseValues();
         } catch (releaseCause) {
@@ -180,10 +187,10 @@ export function attachRunners(
           case "hold":
             break;
           case "write":
-            writes.push({ entry, values: step.values });
+            writes.push({ entry, kind: "write", values: step.values });
             break;
           case "release":
-            writes.push({ entry, values: RELEASE });
+            writes.push({ entry, kind: "release" });
             break;
           default:
             unreachable(step);
@@ -191,7 +198,7 @@ export function attachRunners(
       } catch (cause) {
         failures.push({ kind: "step-threw", nodeId: entry.nodeId, cause });
         retire(entry);
-        writes.push({ entry, values: RELEASE });
+        writes.push({ entry, kind: "release" });
       }
     }
     if (writes.length > 0) {
@@ -245,7 +252,7 @@ export function attachRunners(
     if (entries.length > 0) {
       try {
         project.values((tx) => {
-          for (const entry of entries) applyWrite(tx, { entry, values: RELEASE }, failures, false);
+          for (const entry of entries) applyWrite(tx, { entry, kind: "release" }, failures, false);
         });
       } catch (error) {
         errors.push(error);

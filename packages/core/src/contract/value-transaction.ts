@@ -1,5 +1,5 @@
 import type { TrackHandle } from "./track-handle";
-import type { PatchBatch } from "./v5";
+import type { PatchBatch, Value } from "./v5";
 
 /**
  * The value authoring surface one batch is handed, and the whole of what a batch is for.
@@ -44,11 +44,15 @@ export interface ValueTransaction {
    * seeked value on its next emission.
    */
   seek(nodeId: string, progress: number): PatchBatch;
+  /** The node-addressed live write, with this batch's publication deferred. */
+  writeValues(nodeId: string, value: Value): PatchBatch;
+  /** The node-addressed release, with this batch's publication deferred. */
+  releaseValues(nodeId: string): PatchBatch;
   /**
    * Resolves one track by qualified node id, refusing an id this project does not have.
    *
-   * The ordinary handle, so its authored `input.values` verbs and `writeValues`/`releaseValues`
-   * join this batch while its structural members refuse.
+   * The ordinary handle, so its authored `input.values` verbs join this batch as well, and its two
+   * node-addressed siblings above are the same two verbs without the lifetime token.
    */
   track(nodeId: string): TrackHandle;
   /** The same lookup without the refusal, for a caller whose miss is expected. */

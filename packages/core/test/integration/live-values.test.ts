@@ -370,13 +370,33 @@ describe("a value batch owns one publication for live writes too", () => {
 
       const flush = vi.spyOn(runtimeOf(handle).graph, "flush");
       const batch = handle.values((transaction) => {
-        transaction.track("demo/record").writeValues({ a: 4, b: 5 });
-        transaction.track("demo/points").writeValues([{ id: "r2", cells: { x: 8, y: 9 } }]);
+        transaction.writeValues("demo/record", { a: 4, b: 5 });
+        transaction.writeValues("demo/points", [{ id: "r2", cells: { x: 8, y: 9 } }]);
       });
 
       expect(flush).toHaveBeenCalledTimes(1);
       expect(readyValues(batch, "demo/record")).toEqual({ a: 4, b: 5 });
       expect(handle.track("demo/record").definition.input?.values).toEqual({ a: 1, b: 2 });
+    } finally {
+      handle.dispose();
+    }
+  });
+
+  it("projects the node-addressed live verbs into the batch", () => {
+    const handle = engine().load(project([POINTS, RECORD]));
+    try {
+      handle.mount("demo/points");
+      handle.mount("demo/record");
+      const flush = vi.spyOn(runtimeOf(handle).graph, "flush");
+      handle.values((transaction) => {
+        transaction.writeValues("demo/record", { a: 4, b: 5 });
+      });
+
+      const released = handle.values((transaction) => {
+        transaction.releaseValues("demo/record");
+      });
+      expect(flush).toHaveBeenCalledTimes(2);
+      expect(readyValues(released, "demo/record")).toEqual({ a: 1, b: 2 });
     } finally {
       handle.dispose();
     }

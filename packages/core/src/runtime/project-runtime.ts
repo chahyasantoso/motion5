@@ -1197,6 +1197,8 @@ export class ProjectRuntime {
     const runtime = this;
     return Object.freeze({
       seek: (nodeId: string, progress: number) => runtime.seek(nodeId, progress),
+      writeValues: (nodeId: string, value: Value) => runtime.writeValues(nodeId, value),
+      releaseValues: (nodeId: string) => runtime.releaseValues(nodeId),
       track: (nodeId: string) => runtime.track(nodeId),
       tryTrack: (nodeId: string) => runtime.tryTrack(nodeId),
     });

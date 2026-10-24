@@ -256,8 +256,8 @@ export function baseTipFromPivot(
  * is part of that convention rather than of any one solve. See ADR-106 and issue #482.
  *
  * It is a runtime meaning rather than a load rule, because `length` is not a load-time constant: a
- * live `overrideValues` or `setValues` write, an animated stop and an interpolator's overshooting
- * ease can all put a negative number here after the document loaded.
+ * live `writeValues`, an authored `set-values`/`set-field` edit, an animated stop and an
+ * interpolator's overshooting ease can all put a negative number here after the document loaded.
  *
  * A comparison rather than `Math.max(0, length)`, and that is a byte guarantee: `Math.max(0, -0)` is
  * `+0`, so the `max` spelling would move the sign of a published zero for every bone authoring `-0`,
