@@ -51,6 +51,15 @@ export const AUTHORED: ValueState = mint<AuthoredShape>({ kind: "authored" });
 /** A live write landed and no animated key was involved in it. */
 const WRITTEN: ValueState = mint<WrittenShape>({ kind: "written" });
 
+/**
+ * A whole-value live overlay stands on an identified-table Track.
+ *
+ * The v5 live tier replaces the evaluated table or record wholesale, so it has no animated half to
+ * distinguish and the `written` state already says the two facts its readers need: a live write
+ * stands, and a fresh compilation is what clears it.
+ */
+export const LIVE: ValueState = WRITTEN;
+
 /** A live write landed carrying animated keys, whose tweens the interpolator now holds. */
 const OVERLAID: ValueState = mint<OverlaidShape>({ kind: "overlaid" });
 

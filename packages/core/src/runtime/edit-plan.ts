@@ -9,6 +9,7 @@ import type {
   SourceBinding,
   TrackDefinition,
   TrackInput,
+  Value,
   ValueSpec,
 } from "../contract/v5";
 import { diagnostic, hintDiagnostic, hintDiagnostics } from "../contract/diagnostics";
@@ -22,7 +23,8 @@ import { qualifyFreeTrack, qualifyMotionTrack } from "../graph/ids";
 import { acceptedOutcome, refusedOutcomeFrom, type Outcome } from "../lang/outcome";
 import { unreachable } from "../lang/exhaustive";
 import type { PluginCapabilities } from "../ports/plugin-capabilities";
-import { AUTHORED, type ValueState } from "./value-state";
+import { validateRuntimeValue } from "./value-validation";
+import { AUTHORED, buildOwed, LIVE, type ValueState } from "./value-state";
 import type { Edit } from "./edit-types";
 
 /**
@@ -84,8 +86,25 @@ interface AuthoredValuesChange {
   readonly values: ParsedValues;
 }
 
+/**
+ * One live value edit, with the whole evaluated value the compiled Track must stand over.
+ *
+ * `overlay` is absent for a release, which is the only live edit that carries no value. The track's
+ * authored definition is carried unchanged: a live write moves what is published, never what is
+ * authored.
+ */
+interface LiveValuesChange {
+  readonly kind: "live-values";
+  readonly track: PlannedTrack;
+  readonly overlay: Value | undefined;
+}
+
 /** What one edit changes, or nothing when it changed nothing. */
-export type PlannedChange = UpdateTrackChange | RemoveTrackChange | AuthoredValuesChange;
+export type PlannedChange =
+  | UpdateTrackChange
+  | RemoveTrackChange
+  | AuthoredValuesChange
+  | LiveValuesChange;
 
 export interface PlanAccepted {
   readonly state: PlanState;
@@ -697,6 +716,67 @@ function planSetField(
   );
 }
 
+function liveExtraFields(spec: ValueSpec): "allow" | "reject" {
+  if (spec.kind === "table")
+    return spec.schema.row.additionalProperties === true ? "allow" : "reject";
+  return spec.additionalProperties === true ? "allow" : "reject";
+}
+
+/**
+ * One whole-value live write, validated against the committed contract and never inferred.
+ *
+ * The authored definition is carried by identity: the overlay is what the compiled Track publishes,
+ * and a write must not rename an authored row or change an authored field. Shape, required and
+ * unknown fields, scalar kinds, row ids, finiteness and reserved names are all
+ * `live-values-invalid`, with the path the value would occupy in an authored document.
+ */
+function planWriteLive(
+  state: PlanState,
+  edit: Extract<Edit, { kind: "write-live" }>,
+  environment: PlanEnvironment,
+): PlanOutcome {
+  const current = requiredTrack(state, edit.nodeId);
+  const spec = committedInputSpec(current.track, current.contract, environment);
+  if (spec !== undefined) {
+    const issues = validateRuntimeValue(edit.value, spec, `${edit.nodeId}.input.values`, {
+      extraFields: liveExtraFields(spec),
+    });
+    if (issues.length > 0)
+      return refused(
+        issues.map((issue) => diagnostic("live-values-invalid", issue.path, issue.message)),
+      );
+  }
+  const planned: PlannedTrack = { ...current, valueState: LIVE };
+  const next = new Map(state.tracks);
+  next.set(edit.nodeId, planned);
+  return acceptedOutcome(
+    {
+      state: { tracks: next },
+      change: { kind: "live-values", track: planned, overlay: freezeAuthored(edit.value) },
+    },
+    Object.freeze([]),
+  );
+}
+
+/** One release: drop the overlay and resume authored evaluation at the current progress. */
+function planReleaseLive(
+  state: PlanState,
+  edit: Extract<Edit, { kind: "release-live" }>,
+): PlanOutcome {
+  const current = requiredTrack(state, edit.nodeId);
+  if (!buildOwed(current.valueState)) return accepted(state, undefined);
+  const planned: PlannedTrack = { ...current, valueState: AUTHORED };
+  const next = new Map(state.tracks);
+  next.set(edit.nodeId, planned);
+  return acceptedOutcome(
+    {
+      state: { tracks: next },
+      change: { kind: "live-values", track: planned, overlay: undefined },
+    },
+    Object.freeze([]),
+  );
+}
+
 /**
  * Plans one edit against one committed view.
  *
@@ -719,6 +799,10 @@ export function plan(state: PlanState, edit: Edit, environment: PlanEnvironment)
       return planSetValues(state, edit, environment);
     case "set-field":
       return planSetField(state, edit, environment);
+    case "write-live":
+      return planWriteLive(state, edit, environment);
+    case "release-live":
+      return planReleaseLive(state, edit);
     default:
       return unreachable(edit);
   }

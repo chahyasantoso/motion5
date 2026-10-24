@@ -563,7 +563,18 @@ describe("v5 registration-dependent refusals", () => {
       expect(patch.diagnostics.map(({ ruleId }) => ruleId)).toContain("plugin-input-invalid");
   });
 
-  it.todo("[staged Phase 4] live-values-invalid refuses a live write that breaks the shape");
+  it("[Phase 4] live-values-invalid refuses a live write that breaks the shape", () => {
+    const definition = project([track({ id: "rows", values: table(row("r1", { x: 1, y: 2 })) })]);
+    const handle = load(definition);
+    try {
+      handle.mount("demo/rows");
+      expect(() => handle.track("demo/rows").writeValues(record({ x: 1 }))).toThrow(
+        rule("live-values-invalid"),
+      );
+    } finally {
+      handle.dispose();
+    }
+  });
 });
 
 describe("v5 plugin type direction", () => {

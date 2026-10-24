@@ -1,6 +1,5 @@
 import type { MotionHandle } from "../contract/motion-handle";
 import type {
-  AuthoredValues,
   RequireView,
   TrackHandle,
   TrackInputHandle,
@@ -15,9 +14,10 @@ import type {
   PatchBatch,
   TrackDefinition,
   TrackInput,
+  Value,
 } from "../contract/v5";
 import { requireViews } from "./authored-values";
-import type { CheapEdit, StructuralEdit } from "./edit-types";
+import type { CheapEdit, LiveEdit, StructuralEdit } from "./edit-types";
 
 /**
  * The two capability handles a project issues, as classes over one host and the pair each captured.
@@ -76,12 +76,7 @@ export interface TrackHost {
   readonly definition: (id: string, token: number) => TrackDefinition;
   readonly applyStructural: (id: string, token: number, edit: StructuralEdit) => void;
   readonly applyCheap: (id: string, token: number, edit: CheapEdit) => PatchBatch;
-  readonly write: (
-    id: string,
-    token: number,
-    values: AuthoredValues,
-    rebase: boolean,
-  ) => PatchBatch;
+  readonly applyLive: (id: string, token: number, edit: LiveEdit) => PatchBatch;
 }
 
 /**
@@ -111,7 +106,7 @@ export interface HandleHost {
 }
 
 /**
- * One graph node's capability handle: three fields and eight members on one prototype.
+ * One graph node's capability handle: three fields and nine members on one prototype.
  *
  * Every member delegates, so there is no branch and no sequencing here. The three structural verbs
  * and the two under `input` mint one `StructuralEdit` each, and the two under `input.values` mint one
@@ -165,13 +160,25 @@ export class RuntimeTrackHandle implements TrackHandle {
     });
   }
 
-  overrideValues(next: AuthoredValues): PatchBatch {
-    return this.#host.write(this.#id, this.#token, next, false);
+  writeValues(value: Value): PatchBatch {
+    return this.#host.applyLive(this.#id, this.#token, {
+      kind: "write-live",
+      nodeId: this.#id,
+      value,
+    });
+  }
+
+  releaseValues(): PatchBatch {
+    return this.#host.applyLive(this.#id, this.#token, {
+      kind: "release-live",
+      nodeId: this.#id,
+    });
   }
 }
 
 /**
- * The `input` member of one track handle: one replacement verb and one binding view.
+ * The `input` member of one track handle: one replacement verb, one binding view and one values
+ * view.
  *
  * The view is allocated per read and holds nothing of its own, so no stale copy of an input can
  * outlive the definition it came from; each verb resolves the token its track handle captured, and

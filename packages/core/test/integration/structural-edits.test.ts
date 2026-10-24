@@ -211,7 +211,6 @@ describe("a binding edit keeps the live write and a replacement drops it", () =>
             built.push(nodeId);
             return { commit: () => undefined, rollback: () => undefined };
           },
-          writeValues: () => undefined,
         },
       ),
     };
@@ -221,7 +220,7 @@ describe("a binding edit keeps the live write and a replacement drops it", () =>
     const { built, runtime } = journal();
     try {
       const follower = runtime.track("demo/follower");
-      follower.overrideValues({ dx: 2 });
+      follower.writeValues({ dx: 2 });
       expect(built).toEqual([]);
 
       follower.input.requires.remove("data");
@@ -248,7 +247,7 @@ describe("a binding edit keeps the live write and a replacement drops it", () =>
     const { built, runtime } = journal();
     try {
       const follower = runtime.track("demo/follower");
-      follower.overrideValues({ dx: 2 });
+      follower.writeValues({ dx: 2 });
       follower.input.replace({ values: record({ dx: 3 }), requires: { data: "points" } });
       expect(built).toEqual(["demo/follower"]);
       expect(follower.definition.input?.values).toEqual({ dx: 3 });

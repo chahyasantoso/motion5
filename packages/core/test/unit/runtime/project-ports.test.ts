@@ -97,7 +97,7 @@ const SEAMS: readonly (readonly [option: string, absent: string])[] = [
   ["replaceMotionTrack", "NO_PORTS.motion.replaceTrack"],
   ["removeMotionTrack", "NO_PORTS.motion.removeTrack"],
   ["signalMotion", "NO_PORTS.motion.signal"],
-  ["writeValues", "NO_PORTS.value.write"],
+  ["overlayValues", "NO_PORTS.value.overlay"],
   ["rewriteValues", "NO_PORTS.value.rewrite"],
   ["setProgress", "NO_PORTS.value.seek"],
   ["resolveKeyframes", "NO_PORTS.host.resolveKeyframes"],

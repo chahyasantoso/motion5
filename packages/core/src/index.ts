@@ -109,13 +109,6 @@ export type { SchemaTransaction } from "./contract/schema-transaction";
  * ADR-078.
  */
 export type { ValueTransaction } from "./contract/value-transaction";
-/**
- * The refusal a live value write reports, exported on exactly the rule above: a caller cannot
- * `instanceof` a type it cannot name, and `ruleId` is what it branches on. `Track` is not exported
- * beside it and never has been, so the only thing crossing the entry from the domain layer is the
- * error a caller has to catch. See ADR-059.
- */
-export { LiveValueKeyError } from "./domain/track";
 export { PluginRegistry } from "./domain/plugins";
 export type { PluginDefinition, PluginStage, ResolvedPlugins } from "./domain/plugins";
 /**

@@ -85,12 +85,12 @@ export const CONTRIBUTION_RULE_ID_ALIASES = {
  * `contract/keyframe-compiler.ts` and `contract/validate-v5.ts`. They are not outputs of the prefix
  * site and share only a spelling with the family derived below.
  *
- * Four members are minted on a thrown error class rather than at a diagnostic construction site.
- * `composition-output-shape`, `live-value-key`, `stale-motion-handle` and `stale-track-handle` are
+ * Three members are minted on a thrown error class rather than at a diagnostic construction site.
+ * `composition-output-shape`, `stale-motion-handle` and `stale-track-handle` are
  * each declared as a `ruleId` field on an error, and `graph-publisher.ts` already forwards one of
  * them into a diagnostic. A field spelled `ruleId` names a rule wherever it sits, so these are
  * members rather than a second population, which is what the message prefixes in
- * `runtime/refusal.ts` genuinely are. All four are found by the scan's declaration form rather than
+ * `runtime/refusal.ts` genuinely are. All three are found by the scan's declaration form rather than
  * by its argument form, which is the reason that form exists; neither audit named them.
  */
 export const BASE_RULE_IDS = [
@@ -144,7 +144,6 @@ export const BASE_RULE_IDS = [
   "ik-weight-without-solver",
   "input-schema-on-plugin-track",
   "input-source-shape",
-  "live-value-key",
   "live-values-invalid",
   "motion-duplicate",
   "motion-duplicate-id",

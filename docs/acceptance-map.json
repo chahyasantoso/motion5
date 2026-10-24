@@ -317,11 +317,7 @@
     },
     {
       "id": "live-value-overlay",
-      "test": "packages/core/test/unit/domain/track-live-values.test.ts"
-    },
-    {
-      "id": "live-value-key",
-      "test": "packages/core/test/unit/runtime/live-value-updates.test.ts"
+      "test": "packages/core/test/integration/live-values.test.ts"
     },
     {
       "id": "live-value-composition",

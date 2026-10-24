@@ -67,43 +67,6 @@ export function readAuthoredLeaf(value: unknown): AuthoredLeaf {
 }
 
 /**
- * Which of a live write's two channels a key authored as this leaf travels on.
- *
- * `Track` refuses a live write that arrives on the wrong channel at two members, and before this
- * the two asked one question in opposite directions: `#acceptedValues` refused `kind ===
- * "animated"` and `#acceptedOverlay` refused `kind !== "animated"`. Each was total over the five
- * kinds that exist by accident rather than by construction, and they were total in ways that could
- * disagree: a sixth kind would have been maskable at one member and patchable at the other at the
- * same time, and no gate in this repository names either site. One classification, read
- * exhaustively, is what makes those two answers one answer.
- *
- * The three shapeless kinds travel on the mask, which is what both members already did rather
- * than a decision taken here. `empty` is the deliberately accepted no-op `Y-6` pins, and `wrapper`
- * and `invalid` are refused by the validator before a live write can reach a loaded project, so
- * classifying those two decides nothing a caller can observe. The result is a closed two-member
- * union, so a reader that asks for the one channel it wants has decided about both.
- *
- * This answers the channel and nothing else. Which authored payload a consumer needs is a different
- * partition, because it carries either a static value or the stops that may be compiled. See
- * ADR-059, ADR-060, and ADR-092.
- */
-export type LiveWriteChannel = "mask" | "timeline";
-
-export function liveWriteChannel(leaf: AuthoredLeaf): LiveWriteChannel {
-  switch (leaf.kind) {
-    case "animated":
-      return "timeline";
-    case "static":
-    case "empty":
-    case "wrapper":
-    case "invalid":
-      return "mask";
-    default:
-      return unreachable(leaf);
-  }
-}
-
-/**
  * The payload role an authored leaf presents to a consumer of the compiled definition.
  *
  * The compiler, fake interpolator, and live-value mask each asked this same three-way question in

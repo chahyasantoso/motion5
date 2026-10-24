@@ -3,8 +3,8 @@ import type {
   PluginDefinition,
   ProjectDefinition,
   ResolvedInput,
-  Scalar,
   Table,
+  Value,
   ValueSpec,
 } from "../../src/contract/v5";
 import { PluginCatalog } from "../../src/domain/plugin-catalog";
@@ -205,7 +205,7 @@ describe("cheap authored edits move values without a rebuild", () => {
 
 describe("an authored edit under an overlay keeps the overlay", () => {
   it("moves the authored definition and still publishes the overlaid value", () => {
-    const overlay = new Map<string, Readonly<Record<string, Scalar>>>();
+    const overlay = new Map<string, Value>();
     const fallback = { a: 1, b: 2 } as const;
     const runtime = new ProjectRuntime(project([RECORD]), {
       clock: createManualClock(),
@@ -214,16 +214,16 @@ describe("an authored edit under an overlay keeps the overlay", () => {
         sourceProgress: 0,
         sourceRevisions: {},
       }),
-      writeValues: (nodeId, values) => {
-        overlay.set(nodeId, { ...(overlay.get(nodeId) ?? fallback), ...values });
-        return undefined;
+      overlayValues: (nodeId, value) => {
+        if (value === undefined) overlay.delete(nodeId);
+        else overlay.set(nodeId, value);
       },
     });
     try {
       runtime.mount("demo/record");
       expect(runtime.seek("demo/record", 0).patches[0]?.status).toBe("ready");
       const handle = runtime.track("demo/record");
-      handle.overrideValues({ a: 9 });
+      handle.writeValues({ a: 9, b: 2 });
 
       const flush = vi.spyOn(runtime.graph, "flush");
       const batch = handle.input.values.setField({ field: "b" }, 5);

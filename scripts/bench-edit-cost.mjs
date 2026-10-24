@@ -1,10 +1,10 @@
-// Baseline for the Phase 4 edit APIs: the cost one track-scoped write already pays, measured
-// through the public handle at the commit Phase 4 starts from.
+// The Phase 4 edit APIs: the cost one track-scoped write pays, measured through the public handle.
 //
-// Four cells, each 100 calls per sample after a warm-up, median of seven samples. The table track
-// authors twenty rows and two numeric fields; the record track authors two fields. `overrideValues`
-// becomes `writeValues` and `setValues` becomes `input.values.set`, so the same fixture is measured
-// again against the new verbs and a move larger than a quarter is investigated rather than assumed.
+// Six cells, each 100 calls per sample after a warm-up, median of seven samples. The table track
+// authors twenty rows and two numeric fields; the record track authors two fields. The two
+// `values.set` cells measure the authored tier and the two `values.setField` cells one addressed
+// cell; the two `writeValues` cells measure the live overlay. `overrideValues` and `setValues` from
+// the pre-Phase-4 baseline are gone with their APIs.
 //
 // This does not gate CI, for the reason `bench-values.mjs` gives: a timing is a property of the
 // machine as much as of the code, and the report carries the machine.
@@ -108,8 +108,10 @@ const report = {
   samplesPerCell: SAMPLES,
   rows: ROWS,
   cells: [
-    measure("overrideValues/table", (index) => rows.overrideValues({ x: index % 10 })),
-    measure("overrideValues/record", (index) => record.overrideValues({ a: index % 10 })),
+    measure("writeValues/table", (index) =>
+      rows.writeValues(TABLE_FIXTURES[index % TABLE_FIXTURES.length]),
+    ),
+    measure("writeValues/record", (index) => record.writeValues({ a: index % 10, b: 2 })),
     measure("values.set/table", (index) =>
       rows.input.values.set(TABLE_FIXTURES[index % TABLE_FIXTURES.length]),
     ),

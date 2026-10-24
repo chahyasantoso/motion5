@@ -223,3 +223,13 @@ Decision, 2026-10-24: keep the measured real path and treat the S4 medians as th
 baseline. The 25 percent gate against a no-op reference is recorded as inapplicable rather than
 silently passed, and the absolute cost stays under 0.1 ms for the largest fixture. A later slice
 that adds incremental slot updates can compare against these numbers.
+
+## S5 benchmark
+
+The live tier measured on the same fixture and machine, same run shape: `writeValues` 44,926 ns per
+20-row table write and 6,793 ns per record write, against the S1 `overrideValues` medians of 49,335
+and 5,837 ns. The table path is 8.9 percent faster and the record path 16.4 percent slower, so
+benchmark (1)'s 25 percent bound holds. The same run measured `input.values.set` at 31,937 ns for
+the table and 7,237 ns for the record, which replaces the S4 record figure as the current one; both
+answers live over a publisher flush that dominates the small fixture, so their spread across runs is
+machine noise rather than a code path moving.

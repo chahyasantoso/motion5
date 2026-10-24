@@ -218,11 +218,11 @@ describe("rule id ids ownership", () => {
 
   // A rule minted only on an error class has no diagnostic naming it, so nothing measures the ids it
   // would carry. The old answer was the optional group, on the argument that absence of a measurement
-  // cannot justify requiring a payload. It cannot justify permitting one either, and these three have
+  // cannot justify requiring a payload. It cannot justify permitting one either, and these two have
   // no construction site at all, so they own none: the first site that forwards one into a diagnostic
   // with a payload fails at the point the decision is owed rather than compiling and carrying it.
   it("owns no ids for a rule with no construction site", () => {
-    for (const id of ["live-value-key", "stale-motion-handle", "stale-track-handle"] as const)
+    for (const id of ["stale-motion-handle", "stale-track-handle"] as const)
       expect(RULES[id].ids).toBe("none");
   });
 

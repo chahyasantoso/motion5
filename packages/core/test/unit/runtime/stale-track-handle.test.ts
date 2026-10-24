@@ -45,17 +45,18 @@ const compose = (node: { id: string }) => () => ({
  * do: this record is the declared half of `SH-1`'s coverage check, and a member added to the
  * handle later with no entry here fails that check rather than escaping the stale contract.
  *
- * `overrideValues` is that mechanism working as intended: it arrived with ADR-059 and is covered
- * here rather than through a private copy of the stale contract. `definition`, `requires` and
- * `input` are the same mechanism again, and `remove` and `replace` are now the two structural verbs
- * whose siblings moved under `input` and became the view's verbs.
+ * `writeValues` and `releaseValues` are that mechanism working as intended: they arrived with the
+ * live tier and are covered here rather than through a private copy of the stale contract.
+ * `definition`, `requires` and `input` are the same mechanism again, and `remove` and `replace` are
+ * now the two structural verbs whose siblings moved under `input` and became the view's verbs.
  */
 const MEMBER_ARGUMENTS: Readonly<Record<string, readonly unknown[]>> = {
   definition: [],
   requires: [],
   remove: [],
   replace: [{ id: "arm" } satisfies TrackDefinition],
-  overrideValues: [{ x: 1 }],
+  writeValues: [[]],
+  releaseValues: [],
 };
 /** The members that answer on a stale handle rather than refusing. */
 const NON_REFUSING = ["id", "live", "input"] as const;
@@ -73,7 +74,7 @@ const NON_REFUSING = ["id", "live", "input"] as const;
  * gone; a read reported as staleness is true, and it is the family that record asked callers to
  * catch.
  */
-const WRITERS = ["remove", "replace", "overrideValues"] as const;
+const WRITERS = ["remove", "replace", "writeValues", "releaseValues"] as const;
 /** The two members that refuse on a stale handle and keep refusing on a disposed one. */
 const READERS = ["definition", "requires"] as const;
 

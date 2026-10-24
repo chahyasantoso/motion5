@@ -1,4 +1,4 @@
-import type { Outputs } from "../contract/v5";
+import type { Outputs, Value } from "../contract/v5";
 import type { ParsedValues } from "../contract/v5-parse";
 import type { Interpolator } from "../ports/interpolator";
 import { createValueEvaluator, type ValueEvaluator } from "./evaluate-values";
@@ -22,6 +22,7 @@ export class ValueTrack {
   readonly nodeId: string;
   readonly #interpolator: Interpolator;
   #evaluator: ValueEvaluator;
+  #overlay: Value | undefined;
   #progress = 0;
   #disposed = false;
 
@@ -54,6 +55,17 @@ export class ValueTrack {
     this.#evaluator = createValueEvaluator(values, this.#interpolator);
   }
 
+  /**
+   * The whole value this track publishes, or `undefined` to resume authored evaluation.
+   *
+   * A live overlay sits above the evaluator at every progress and is replaced wholesale, so a write
+   * never merges and a release is the removal of the one record rather than an inverse write.
+   */
+  replaceOverlay(value: Value | undefined): void {
+    this.assertActive();
+    this.#overlay = value;
+  }
+
   /** A no-plugin track declares no plugin chain, which is what `renderMetadata` answers. */
   get plugins(): undefined {
     return undefined;
@@ -68,10 +80,11 @@ export class ValueTrack {
     return true;
   }
 
-  /** The authored shape evaluated at this track's progress, under the output named `values`. */
+  /** The live value when one stands, otherwise the authored shape evaluated at this progress. */
   outputs(): Outputs {
     this.assertActive();
-    return Object.freeze({ values: this.#evaluator.evaluate(this.#progress) });
+    const value = this.#overlay ?? this.#evaluator.evaluate(this.#progress);
+    return Object.freeze({ values: value });
   }
 
   dispose(): void {

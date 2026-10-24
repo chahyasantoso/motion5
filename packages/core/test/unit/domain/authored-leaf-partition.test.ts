@@ -87,7 +87,6 @@ describe("the authored leaf payload partition answers every leaf kind", () => {
     const validator = code(`${SOURCE_ROOT}contract/validate-v5.ts`);
     const compiler = code(`${SOURCE_ROOT}contract/keyframe-compiler.ts`);
     const plugins = code(`${SOURCE_ROOT}domain/plugins.ts`);
-    const authoredValues = code(`${SOURCE_ROOT}runtime/authored-values.ts`);
     const fakes = code(`${SOURCE_ROOT}testing/fakes.ts`);
     const readers = [
       AUTHORED_LEAF,
@@ -96,7 +95,6 @@ describe("the authored leaf payload partition answers every leaf kind", () => {
       validator,
       compiler,
       plugins,
-      authoredValues,
       fakes,
     ];
     const oneSided = /\.kind\s*(?:===|!==)\s*"/;
@@ -105,7 +103,6 @@ describe("the authored leaf payload partition answers every leaf kind", () => {
 
     expect(compiler).toContain("authoredLeafPartition");
     expect(plugins).toContain("authoredLeafPartition");
-    expect(authoredValues).toContain("authoredLeafPartition");
     expect(fakes).toContain("authoredLeafPartition");
     expect(READ_COMPILABLE_STOPS).toContain("default:");
     expect(READ_COMPILABLE_STOPS).toContain("unreachable(leaf)");

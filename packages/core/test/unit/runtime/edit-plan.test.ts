@@ -101,6 +101,8 @@ describe("the edit union answers its tier and its overlay verdict", () => {
       { kind: "unbind", nodeId: "demo/a", slot: "data" },
       { kind: "set-values", nodeId: "demo/a", values: record({ x: 1 }) },
       { kind: "set-field", nodeId: "demo/a", address: { field: "x" }, cell: 2 },
+      { kind: "write-live", nodeId: "demo/a", value: record({ x: 3 }) },
+      { kind: "release-live", nodeId: "demo/a" },
     ];
     expect(edits.map(tierOf)).toEqual([
       "structural",
@@ -110,8 +112,20 @@ describe("the edit union answers its tier and its overlay verdict", () => {
       "structural",
       "cheap",
       "cheap",
+      "cheap",
+      "cheap",
     ]);
-    expect(edits.map(clearsOverlay)).toEqual([true, true, true, false, false, false, false]);
+    expect(edits.map(clearsOverlay)).toEqual([
+      true,
+      true,
+      true,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+    ]);
   });
 });
 
@@ -126,6 +140,8 @@ describe("an edit is plain data", () => {
       { kind: "unbind", nodeId: "demo/a", slot: "data", memberKey: "left" },
       { kind: "set-values", nodeId: "demo/a", values: table(row("a", { x: 1 })) },
       { kind: "set-field", nodeId: "demo/a", address: { row: "a", field: "x" }, cell: 2 },
+      { kind: "write-live", nodeId: "demo/a", value: table(row("a", { x: 3 })) },
+      { kind: "release-live", nodeId: "demo/a" },
     ];
     for (const edit of edits) {
       expect(structuredClone(edit)).toEqual(edit);

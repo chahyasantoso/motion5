@@ -544,6 +544,7 @@ export class Engine {
         graphBuilder: new IncrementalGraphBuilder(this.#capabilities),
         setProgress: (nodeId, progress) => tracks.get(nodeId)?.setProgress(progress),
         rewriteValues: (nodeId, values) => tracks.get(nodeId)?.replaceValues(values),
+        overlayValues: (nodeId, value) => tracks.get(nodeId)?.replaceOverlay(value),
         compileTrack: compileTrackDefinition,
         disposeTrack,
         stageTrack: stageTrackDefinition,

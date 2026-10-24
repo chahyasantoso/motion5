@@ -4,6 +4,7 @@ import type {
   CellAddress,
   TrackDefinition,
   TrackInput,
+  Value,
 } from "../contract/v5";
 import { unreachable } from "../lang/exhaustive";
 
@@ -12,7 +13,8 @@ import { unreachable } from "../lang/exhaustive";
  *
  * An edit names its target node and nothing else that is not authored data, so a caller can clone
  * one, log one, or write one to a fixture and replay it. Structural edits carry whole definitions or
- * one binding; cheap edits carry authored values or one addressed cell.
+ * one binding, cheap edits carry authored values or one addressed cell, and live edits carry one
+ * whole evaluated value or the instruction to drop it.
  *
  * `replace-input` omits `input` rather than holding `undefined` when the caller removes the input
  * wholly, so an edit survives a JSON round-trip as the same shape it was built with.
@@ -73,8 +75,22 @@ interface SetFieldShape {
 /** The two authored edits that move values without a rebuild and without re-inferring a contract. */
 export type CheapEdit = SetValuesShape | SetFieldShape;
 
+interface WriteLiveShape {
+  readonly kind: "write-live";
+  readonly nodeId: string;
+  readonly value: Value;
+}
+
+interface ReleaseLiveShape {
+  readonly kind: "release-live";
+  readonly nodeId: string;
+}
+
+/** The two live edits: a whole evaluated value stands over the authored one, or is dropped. */
+export type LiveEdit = WriteLiveShape | ReleaseLiveShape;
+
 /** Every edit the runtime applies through one plan. */
-export type Edit = StructuralEdit | CheapEdit;
+export type Edit = StructuralEdit | CheapEdit | LiveEdit;
 
 /** Which path one edit takes through a commit. */
 export type EditTier = "structural" | "cheap";
@@ -90,6 +106,8 @@ export function tierOf(edit: Edit): EditTier {
       return "structural";
     case "set-values":
     case "set-field":
+    case "write-live":
+    case "release-live":
       return "cheap";
     default:
       return unreachable(edit);
@@ -102,7 +120,8 @@ export function tierOf(edit: Edit): EditTier {
  * A replacement or a removal compiles a fresh Track, and the live writer has no inverse, so the
  * overlay cannot survive either. A binding edit rebuilds the graph but not the timeline, which is
  * what keeps the overlay standing across it, and an authored edit moves only the values beneath an
- * overlay that remains in force.
+ * overlay that remains in force. `release-live` drops one too, but by its own explicit verb rather
+ * than as a side effect of a structural change, so it answers false here.
  */
 export function clearsOverlay(edit: Edit): boolean {
   switch (edit.kind) {
@@ -114,6 +133,8 @@ export function clearsOverlay(edit: Edit): boolean {
     case "unbind":
     case "set-values":
     case "set-field":
+    case "write-live":
+    case "release-live":
       return false;
     default:
       return unreachable(edit);

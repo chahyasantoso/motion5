@@ -6,11 +6,12 @@ import type {
   TrackDefinition,
   MotionDefinition,
   TriggerSignal,
+  Value,
 } from "../contract/v5";
 import type { MotionHandle } from "../contract/motion-handle";
 import type { SchemaTransaction } from "../contract/schema-transaction";
 import type { ValueTransaction } from "../contract/value-transaction";
-import type { AuthoredValues, TrackHandle } from "../contract/track-handle";
+import type { TrackHandle } from "../contract/track-handle";
 import { validateMotionTrigger, validateTrackDefinition } from "../contract/validate-v5";
 import type { ParsedValues } from "../contract/v5-parse";
 import type { Clock, ClockTick } from "../ports/clock";
@@ -48,7 +49,6 @@ import {
   completing,
   installed,
   type KeyframeResolver,
-  type LiveValueWriter,
   type ProjectPorts,
   type StagedTrack,
 } from "./project-ports";
@@ -65,27 +65,12 @@ import { afterCleanup, batchFor, runSteps } from "./report";
 import { planCommit } from "./commit-plan";
 import { runPlan } from "./run-plan";
 import { refuse } from "./refusal";
-import {
-  expectLive,
-  expectValid,
-  isLive,
-  liveWrite,
-  resolveToken,
-  stale,
-  writtenProgress,
-  type Resolved,
-} from "./results";
-import { AUTHORED, isOverlaid, liveWritten, type ValueState } from "./value-state";
+import { expectLive, expectValid, isLive, resolveToken, stale, type Resolved } from "./results";
+import { AUTHORED, type ValueState } from "./value-state";
 import { applyEdits } from "./edit-apply";
 import type { PlanEnvironment, PlanState, PlannedChange, PlannedTrack } from "./edit-plan";
-import type { CheapEdit, StructuralEdit } from "./edit-types";
-import {
-  authoredValues,
-  sameTrigger,
-  splitAuthoredValues,
-  withAuthoredValues,
-  withStagger,
-} from "./authored-values";
+import type { CheapEdit, LiveEdit, StructuralEdit } from "./edit-types";
+import { sameTrigger, withStagger } from "./authored-values";
 import { Diagnostics, type DiagnosticsSnapshot } from "./diagnostics";
 import {
   GraphRuntime,
@@ -195,7 +180,7 @@ function resolveStagedPair(
   }
 }
 
-export type { KeyframeResolver, LiveValueWriter, StagedTrack };
+export type { KeyframeResolver, StagedTrack };
 export interface ProjectRuntimeOptions {
   readonly clock: Clock;
   readonly scheduler?: Scheduler;
@@ -218,7 +203,6 @@ export interface ProjectRuntimeOptions {
    */
   readonly interpolated?: (node: GraphNode) => () => MemberState;
   readonly setProgress?: (nodeId: string, progress: number) => void;
-  readonly writeValues?: LiveValueWriter;
   /**
    * Replaces the authored values one compiled Track evaluates, for the cheap authored tier.
    *
@@ -226,6 +210,14 @@ export interface ProjectRuntimeOptions {
    * host only owns the evaluator. A node with no compiled Track is a no-op.
    */
   readonly rewriteValues?: (nodeId: string, values: ParsedValues) => void;
+  /**
+   * Stands one whole evaluated value over a compiled Track, or drops it for `undefined`.
+   *
+   * The runtime validated the value against the committed contract; the host owns only where an
+   * overlay lives. A node with no compiled Track is a no-op, and mounting it later compiles the
+   * authored definition the overlay never moved.
+   */
+  readonly overlayValues?: (nodeId: string, value: Value | undefined) => void;
   readonly compileTrack?: (track: TrackDefinition, nodeId?: string) => void;
   readonly disposeTrack?: (nodeId: string) => void;
   readonly stageTrack?: (track: TrackDefinition, nodeId: string) => StagedTrack;
@@ -339,8 +331,8 @@ export class ProjectRuntime {
         signal: installed(this, options.signalMotion, NO_PORTS.motion.signal),
       }),
       value: Object.freeze({
-        write: installed(this, options.writeValues, NO_PORTS.value.write),
         rewrite: installed(this, options.rewriteValues, NO_PORTS.value.rewrite),
+        overlay: installed(this, options.overlayValues, NO_PORTS.value.overlay),
         seek: installed(this, options.setProgress, NO_PORTS.value.seek),
       }),
       host: Object.freeze({
@@ -362,8 +354,7 @@ export class ProjectRuntime {
         definition: (id, token) => this.#liveEntry(id, token).track,
         applyStructural: (id, token, edit) => this.#applyStructural(id, token, edit),
         applyCheap: (id, token, edit) => this.#applyCheap(id, token, edit),
-        write: (id, token, values, rebase) =>
-          this.#writeValues(id, () => this.#writableEntry(id, token), values, rebase),
+        applyLive: (id, token, edit) => this.#applyLive(id, token, edit),
       }),
       motion: Object.freeze<MotionHost>({
         live: (id, token) => isLive(this.#motionIfLive(id, token)),
@@ -889,7 +880,8 @@ export class ProjectRuntime {
       }
       case "update-track":
       case "remove-track":
-        throw new TypeError(`Cheap edit "${edit.kind}" planned a structural change.`);
+      case "live-values":
+        throw new TypeError(`Cheap edit "${edit.kind}" planned a non-authored change.`);
       default:
         return unreachable(change);
     }
@@ -908,6 +900,53 @@ export class ProjectRuntime {
       valueState: change.track.valueState,
       contract: change.track.contract,
     });
+  }
+
+  // Plans one live edit against the committed view and stands its overlay on the compiled Track.
+  // The value-tier admission makes it legal on an errored node and inside a value batch, while a
+  // commit and an edit recipe still refuse it. The authored definition never moves: only the value
+  // state and the compiled overlay do, and #publishValue is the one publication, deferred in a batch.
+  #applyLive(id: string, token: number, edit: LiveEdit): PatchBatch {
+    this.#admit(valueVerb(edit.kind, "resolved"));
+    this.#writableEntry(id, token);
+    return this.#planLive(id, edit);
+  }
+
+  // The node-addressed half, for a caller that resolved by id rather than by handle. Admission runs
+  // before the entry is resolved, so a write aimed at a node a commit is still compiling answers the
+  // in-flight refusal rather than an absence the caller cannot act on.
+  #applyLiveById(id: string, edit: LiveEdit): PatchBatch {
+    this.#assertLive();
+    this.#admit(valueVerb(edit.kind, "resolved"));
+    this.#entryOf(id);
+    return this.#planLive(id, edit);
+  }
+
+  #planLive(id: string, edit: LiveEdit): PatchBatch {
+    const planned = applyEdits(
+      this.#planState(this.#readTracks()),
+      [edit],
+      this.#planEnvironment(),
+    );
+    const change = planned.changes[0];
+    if (change === undefined) return batchFor(this.#graph.sequence, { kind: "empty" });
+    switch (change.kind) {
+      case "live-values": {
+        const tracks = new Map(this.#tracks);
+        const entry = tracks.get(id);
+        if (entry === undefined) throw new TypeError(`Unknown graph node "${id}".`);
+        tracks.set(id, { ...entry, valueState: change.track.valueState });
+        this.#tracks = tracks;
+        this.#ports.value.overlay(id, change.overlay);
+        return this.#publishValue(id);
+      }
+      case "update-track":
+      case "remove-track":
+      case "authored-values":
+        throw new TypeError(`Live edit "${edit.kind}" planned a non-live change.`);
+      default:
+        return unreachable(change);
+    }
   }
 
   // Carries one planned change into the staged map and records what its commit owes.
@@ -943,6 +982,8 @@ export class ProjectRuntime {
         return;
       case "authored-values":
         throw new TypeError("Structural edit planned an authored value change.");
+      case "live-values":
+        throw new TypeError("Structural edit planned a live value change.");
       default:
         return unreachable(change);
     }
@@ -1053,73 +1094,6 @@ export class ProjectRuntime {
     }
   }
 
-  #writeValues(
-    nodeId: string,
-    resolveEntry: () => TrackEntry,
-    values: AuthoredValues,
-    rebase: boolean,
-  ) {
-    this.#admit(valueVerb("overrideValues", "resolved"));
-    return this.#boundary(() => {
-      const entry = resolveEntry();
-      const { statics, animated } = splitAuthoredValues(values);
-      const writing = liveWritten(animated);
-      const involved = isOverlaid(writing) || isOverlaid(entry.valueState);
-      const rewritten = rebase || involved ? withAuthoredValues(entry.track, values) : entry.track;
-      // Validated and then discarded: this write stages no definition, so the refusal is the
-      // whole of what validating the candidate is for here.
-      if (involved) this.#acceptTrack(rewritten, `writeValues(${nodeId})`);
-      const mask = { ...authoredValues(entry.track), ...statics };
-      const answer = this.#ports.value.write(nodeId, mask, involved ? animated : undefined, rebase);
-      // The seam has taken the write and carries no inverse, so the state it left is recorded on
-      // the way out, whichever of the fallible reads below is the last one reached. Decoding the
-      // answer is one of them, and it is inside the try for exactly that reason: the write has
-      // already landed by the time the record describing it can refuse to be read. The definition
-      // is adopted inside the try too, because a replacement that never staged is one this entry
-      // may not claim.
-      let adopted: TrackEntry = { ...entry, valueState: writing };
-      let staged: StagedTrack | undefined;
-      let progress: number | undefined;
-      try {
-        const written = liveWrite(answer);
-        switch (written.kind) {
-          case "no-hook":
-          case "patched":
-            break;
-          case "needs-rebuild":
-            progress = writtenProgress(written);
-            staged = this.#ports.track.stage(rewritten, nodeId);
-            break;
-          default:
-            return unreachable(written);
-        }
-        if (rebase) adopted = { ...adopted, track: rewritten };
-      } finally {
-        this.#tracks.set(nodeId, adopted);
-      }
-      return this.#completeWrite(nodeId, staged, progress);
-    });
-  }
-
-  #completeWrite(
-    nodeId: string,
-    staged: StagedTrack | undefined,
-    progress: number | undefined,
-  ): PatchBatch {
-    if (staged === undefined && progress === undefined) return this.#publishValue(nodeId);
-    let batch!: PatchBatch;
-    runSteps("settle", [
-      () => staged?.commit(),
-      () => {
-        if (progress !== undefined) this.#ports.value.seek(nodeId, progress);
-      },
-      () => {
-        batch = this.#publishValue(nodeId);
-      },
-    ]);
-    return batch;
-  }
-
   #invalidateOne(nodeId: string) {
     this.#assertLive();
     return this.#invalidateSeeds([nodeId]);
@@ -1173,16 +1147,22 @@ export class ProjectRuntime {
     return this.#publishValue(nodeId);
   }
   /**
-   * Writes `nodeId`'s values, leaving the authored definition exactly as it was.
+   * Writes one node's whole evaluated local value by id, without a handle.
    *
-   * The revertible half of the pair: a static key is masked at read time, an animated key has its
-   * tweens replaced against a retained base, and both are sticky until the next live write or a real
-   * `replace()`. See ADR-059 and ADR-060.
+   * The node-addressed spelling of `TrackHandle.writeValues`, for callers that resolved an id rather
+   * than captured a handle. It asserts liveness, takes the value tier's admission, and only then
+   * resolves the entry, which is the order the retired `overrideValues` used and the one that makes
+   * an in-flight commit outrank an id a commit is still adding.
    */
-  overrideValues(nodeId: string, values: AuthoredValues) {
-    this.#assertLive();
-    return this.#writeValues(nodeId, () => this.#entryOf(nodeId), values, false);
+  writeValues(nodeId: string, value: Value): PatchBatch {
+    return this.#applyLiveById(nodeId, { kind: "write-live", nodeId, value });
   }
+
+  /** The node-addressed spelling of `TrackHandle.releaseValues`. */
+  releaseValues(nodeId: string): PatchBatch {
+    return this.#applyLiveById(nodeId, { kind: "release-live", nodeId });
+  }
+
   /**
    * Runs `recipe` as one value batch and publishes what it staged exactly once.
    *
@@ -1217,8 +1197,6 @@ export class ProjectRuntime {
     const runtime = this;
     return Object.freeze({
       seek: (nodeId: string, progress: number) => runtime.seek(nodeId, progress),
-      overrideValues: (nodeId: string, values: AuthoredValues) =>
-        runtime.overrideValues(nodeId, values),
       track: (nodeId: string) => runtime.track(nodeId),
       tryTrack: (nodeId: string) => runtime.tryTrack(nodeId),
     });

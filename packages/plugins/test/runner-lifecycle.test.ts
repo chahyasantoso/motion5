@@ -4,7 +4,7 @@ import type { Runner } from "../src/runner";
 import { fixture as runnerFixture } from "./support/runner-fixture";
 
 function fixture() {
-  return runnerFixture(["a", "b"], { x: 0, y: 0 });
+  return runnerFixture(["a", "b"], { x: 0 });
 }
 const writer = (id: string, values: LiveValues): Runner => ({
   nodeId: `scene/${id}`,
@@ -65,7 +65,10 @@ describe("runner lifecycle adversarial contracts", () => {
               ? undefined
               : {
                   ...track,
-                  overrideValues: () => {
+                  writeValues: () => {
+                    throw refused;
+                  },
+                  releaseValues: () => {
                     throw refused;
                   },
                 };

@@ -334,6 +334,10 @@ describe("the runtime holds one phase and none of the fields it replaces", () =>
         "#applyCheap(id: string, token: number, edit: CheapEdit): PatchBatch {",
         'valueVerb(edit.kind, "resolved")',
       ],
+      [
+        "#applyLive(id: string, token: number, edit: LiveEdit): PatchBatch {",
+        'valueVerb(edit.kind, "resolved")',
+      ],
       ["track(nodeId: string): TrackHandle {", "this.#admit(READ)"],
       ["edit<T>(recipe: (transaction: SchemaTransaction) => T): T {", "this.#admit(OPEN_RECIPE)"],
       [

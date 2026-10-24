@@ -86,6 +86,7 @@ export class PluginTrack {
   readonly plugin: PluginDefinition;
   readonly #interpolator: Interpolator;
   #evaluator: ValueEvaluator;
+  #overlay: Value | undefined;
   #progress = 0;
   #disposed = false;
 
@@ -119,6 +120,18 @@ export class PluginTrack {
     this.#evaluator = createValueEvaluator(this.#withDefault(values), this.#interpolator);
   }
 
+  /**
+   * The whole local value this track publishes, or `undefined` to resume authored evaluation.
+   *
+   * The plugin still runs on every composition: a live overlay replaces the local table or record
+   * the transform reads, not the transform or its dependency validation. That is what lets a write
+   * that is valid alone still turn the node into an error when a bound source changes.
+   */
+  replaceOverlay(value: Value | undefined): void {
+    this.assertActive();
+    this.#overlay = value;
+  }
+
   /** A plugin track has no grouped chain; the identified-table output set is the plugin's. */
   get plugins(): undefined {
     return undefined;
@@ -142,7 +155,7 @@ export class PluginTrack {
   compose(requires: ResolvedRequires): PublisherComposition {
     this.assertActive();
     const spec = this.plugin.inputs.values;
-    const local = this.#evaluator.evaluate(this.#progress);
+    const local = this.#overlay ?? this.#evaluator.evaluate(this.#progress);
     if (spec.kind === "table" ? !Array.isArray(local) : Array.isArray(local))
       throw new PluginNodeError([
         diagnostic(

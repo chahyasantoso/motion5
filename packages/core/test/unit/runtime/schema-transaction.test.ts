@@ -349,11 +349,11 @@ describe("one recipe is one transaction", () => {
     // The value tier is refused through the same guard and for the same reason: it ends at its own
     // invalidate, so it publishes inside the recipe and survives an abort.
     const tierTwo = thrownBy(() =>
-      editing(test.runtime).edit(() => test.runtime.overrideValues(ARM_ID, {})),
+      editing(test.runtime).edit(() => test.runtime.writeValues(ARM_ID, [])),
     );
 
     expect((tierTwo as Error).message).toMatch(/^schema-transaction-immediate: /);
-    expect((tierTwo as Error).message).toContain("overrideValues");
+    expect((tierTwo as Error).message).toContain("write-live");
 
     // The accepting direction, in the same rig. Both verbs are unchanged outside a recipe, which is
     // the half that stops this case from being green against a guard that refuses everywhere.
@@ -361,7 +361,7 @@ describe("one recipe is one transaction", () => {
 
     expect(test.journal).toEqual(["motion-stagger hero 0.25"]);
     expect(test.runtime.motion(MOTION_ID).definition.stagger).toBe(0.25);
-    expect(test.runtime.overrideValues(ARM_ID, {}).diagnostics).toEqual([]);
+    expect(test.runtime.writeValues(ARM_ID, []).diagnostics).toEqual([]);
 
     test.runtime.dispose();
   });

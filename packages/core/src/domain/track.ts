@@ -1,10 +1,6 @@
 import type { ImmutableRecord } from "./values";
 import { equalValues, freezeValue } from "./values";
-import { liveWriteChannel, readAuthoredLeaf } from "../contract/authored-leaf";
-import type { LiveValues } from "../contract/track-handle";
 import {
-  PATCHED,
-  RECOMPILE,
   type InterpolationTimeline,
   type Interpolator,
   type PatchKeysResult,
@@ -29,68 +25,19 @@ export class CompositionOutputError extends TypeError {
     this.name = this.ruleId;
   }
 }
-/** Why one key of a live value write was refused. One reason per key, never a list. */
-export type LiveValueRefusal = "unknown" | "kind" | "prepared";
 /**
  * What one live value write reports back to the owner of the retained definition.
  *
  * The interpolation seam's closed result and the playhead this track is holding. The result travels
  * unchanged to the runtime owner that decides whether a replacement is owed; Track owns validation
  * and forwarding, not a second boolean interpretation of the port answer. See ADR-060.
+ *
+ * The class that consumed it is retired with `overrideValues`; the type stays because the runtime's
+ * result decoder and its tests still name the seam's answer.
  */
 export interface LiveWriteResult {
   readonly patch: PatchKeysResult;
   readonly progress: number;
-}
-/**
- * The message for one refusal, so the error itself holds no branch.
- *
- * Three reasons and they are the whole set. `"animated"` is gone: with both entry points lifted and
- * a declining backend escalating rather than refusing, no code path can produce it, and a union
- * member is removed and then refused rather than left declared. See ADR-060.
- */
-function describeRefusal(nodeId: string, key: string, reason: LiveValueRefusal): string {
-  switch (reason) {
-    case "kind":
-      return `Key "${key}" of track "${nodeId}" cannot change which kind of leaf it is.`;
-    case "prepared":
-      return `Key "${key}" of track "${nodeId}" is prepared by a plugin and cannot be written live.`;
-    case "unknown":
-      return `Key "${key}" is not an authored value of track "${nodeId}".`;
-    default:
-      return unreachable(reason);
-  }
-}
-/**
- * The one refusal a live value write reports.
- *
- * `TypeError` is the parent for the reason `StaleTrackHandleError` gives: every existing narrowing
- * of a bad argument keeps matching, and the named type is a narrowing rather than a break. `ruleId`
- * is what a caller branches on, carried on the instance as well as the constructor so a caught
- * value answers without the class in scope.
- *
- * `unknown` is a key the authored record does not have, which is one answer for an unknown name, a
- * key another plugin owns, a namespaced `:` key, and an interpolator scratch `_` key: ownership was
- * settled at resolve time and neither reserved spelling can be authored, so a key that reached
- * `authoredKeyframes` has an owner by construction. `kind` is a leaf shape change, which is a
- * recompile of a different shape rather than a write. `prepared` is a key a plugin already decided
- * the value of, refused rather than silently inverting that precedence. See ADR-059 and ADR-060.
- */
-export class LiveValueKeyError extends TypeError {
-  static readonly ruleId = "live-value-key";
-  readonly ruleId: string = LiveValueKeyError.ruleId;
-  /** The qualified node id whose values were being written. */
-  readonly nodeId: string;
-  /** The one key that was refused. */
-  readonly key: string;
-  readonly reason: LiveValueRefusal;
-  constructor(nodeId: string, key: string, reason: LiveValueRefusal) {
-    super(describeRefusal(nodeId, key, reason));
-    this.name = "LiveValueKeyError";
-    this.nodeId = nodeId;
-    this.key = key;
-    this.reason = reason;
-  }
 }
 function isRecord(value: unknown): value is Record<string, unknown> {
   if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
@@ -234,106 +181,6 @@ export class Track {
     this.#progress = next;
     this.#dirty = true;
     return true;
-  }
-  /**
-   * Writes `values` as this track's mask and `overlay` as the animated keys the interpolator is to
-   * rebuild, and reports whether the rebuild happened.
-   *
-   * One method and one semantics. It does not know whether it is applying a caller's override or a
-   * rewritten authored value, because at this layer there is no difference: the difference is
-   * whether the retained `TrackDefinition` moved, and `ProjectRuntime` is the only owner of that.
-   * `rebase` is therefore forwarded untouched rather than interpreted here.
-   *
-   * Every key of both halves is classified before anything is assigned, so a refused key in a call
-   * that also named a legal one leaves the mask, the timeline, and this track's progress exactly as
-   * they were.
-   *
-   * `overlay` is `undefined` for a write in which no animated key is involved and none was involved
-   * in the last one, and that is what keeps a static-only write on exactly the path it was on: no
-   * whole-record recompile and no capability lookup. An empty overlay is not the same as an absent
-   * one. It is the revert, and it is honored by the same call that honors a changed key.
-   *
-   * The mask is replaced wholesale rather than accumulated, so an empty record is no mask at all,
-   * and frozen rather than retained by reference, so a caller that keeps mutating its own object
-   * cannot move this track's values behind the memo's back. See ADR-059 and ADR-060.
-   */
-  writeValues(
-    values: LiveValues,
-    overlay: Readonly<Record<string, unknown>> | undefined,
-    rebase: boolean,
-  ): LiveWriteResult {
-    this.assertActive();
-    const accepted = this.#acceptedValues(values);
-    const animated = overlay === undefined ? undefined : this.#acceptedOverlay(overlay);
-    this.#values = accepted;
-    this.#dirty = true;
-    const patch = animated === undefined ? PATCHED : this.#patch(animated, rebase);
-    return { patch, progress: this.#progress };
-  }
-  /**
-   * Every static key of a live write, answered by the two owners that already exist.
-   *
-   * `authoredKeyframes` is the flattened authored record the resolver produced, so presence in it is
-   * the whole of the unknown-key question: a key another plugin owns, a namespaced key, and an
-   * interpolator scratch key are all absent from it, and ownership was settled at resolve time.
-   * `liveWriteChannel` is the one function allowed to say which channel a leaf's key travels on,
-   * which is the whole of the kind question and is the same answer `#acceptedOverlay` reads below.
-   * This class therefore holds no registry, reimplements no ownership predicate, and no longer
-   * spells the channel rule twice in opposite directions.
-   *
-   * A scalar for an animated key is refused rather than masked, and that is the invariant this class
-   * still enforces: the mask shadows the timeline at every progress, so accepting one would be the
-   * permanently frozen animation ADR-059 refuses. What changed is the answer for such a key, not
-   * the refusal: it moves through the overlay instead.
-   */
-  #acceptedValues(next: LiveValues): ImmutableRecord {
-    const authored = this.#plugins.authoredKeyframes;
-    const accepted: Record<string, unknown> = {};
-    for (const [key, value] of Object.entries(next)) {
-      if (!Object.hasOwn(authored, key)) throw new LiveValueKeyError(this.#nodeId, key, "unknown");
-      if (liveWriteChannel(readAuthoredLeaf(authored[key])) !== "mask")
-        throw new LiveValueKeyError(this.#nodeId, key, "kind");
-      accepted[key] = value;
-    }
-    if (Object.keys(accepted).length === 0) return NO_VALUES;
-    return freezeValue(accepted as ImmutableRecord);
-  }
-  /**
-   * Every animated key of a live write, answered by the three owners that already exist.
-   *
-   * `authoredKeyframes` answers presence, `liveWriteChannel` answers which channel the key was
-   * authored onto, and `preparation.keyframes` answers whether a plugin already decided this key's
-   * value. `Track` gains no knowledge of which keys are compiled: those three already answer it,
-   * and a second answer would be one that can disagree.
-   *
-   * A prepared key is refused because `preparedConfig` merges the plugin's keyframes over the
-   * authored ones, while an overlay sits over the base, so patching one would invert that
-   * precedence and make the live timeline disagree with the next real recompile.
-   */
-  #acceptedOverlay(overlay: Readonly<Record<string, unknown>>): Readonly<Record<string, unknown>> {
-    const authored = this.#plugins.authoredKeyframes;
-    const prepared = this.#plugins.preparation.keyframes;
-    const accepted: Record<string, unknown> = {};
-    for (const [key, value] of Object.entries(overlay)) {
-      if (!Object.hasOwn(authored, key)) throw new LiveValueKeyError(this.#nodeId, key, "unknown");
-      if (liveWriteChannel(readAuthoredLeaf(authored[key])) !== "timeline")
-        throw new LiveValueKeyError(this.#nodeId, key, "kind");
-      if (Object.hasOwn(prepared, key)) throw new LiveValueKeyError(this.#nodeId, key, "prepared");
-      accepted[key] = value;
-    }
-    return accepted;
-  }
-  /**
-   * Hands the animated half to the interpolator, if it declared the capability.
-   *
-   * The whole of the optional member at this layer, and no branch on which backend it is. A
-   * declining backend's `recompile` result is forwarded unchanged to the runtime owner that
-   * owns escalation, so Track learns that a capability exists and never that it is GSAP.
-   */
-  #patch(overlay: Readonly<Record<string, unknown>>, rebase: boolean): PatchKeysResult {
-    const timeline = this.#timeline;
-    if (timeline.patchKeys === undefined) return RECOMPILE;
-    return timeline.patchKeys(overlay, rebase) ?? RECOMPILE;
   }
   /**
    * This track's interpolated, renderer-neutral state, before any plugin runs.

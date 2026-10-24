@@ -108,7 +108,6 @@ const BASE_RULES = {
   "ik-weight-without-solver": ERROR_WITH_IDS,
   "input-schema-on-plugin-track": ERROR_NO_IDS,
   "input-source-shape": ERROR_WITH_IDS,
-  "live-value-key": ERROR_NO_IDS,
   "live-values-invalid": ERROR_NO_IDS,
   "motion-duplicate": ERROR_WITH_IDS,
   "motion-duplicate-id": ERROR_WITH_IDS,

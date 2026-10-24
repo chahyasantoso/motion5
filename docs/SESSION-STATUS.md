@@ -6,20 +6,21 @@ states a phase; `packages/core/test/unit/scripts/session-status-shape.test.ts` e
 byte ceiling.
 
 - **Captured:** 2026-10-24, Asia/Jakarta.
-- **Read against:** `refactor/v5-identified-tables` after the cheap-authored-edit slice.
+- **Read against:** `refactor/v5-identified-tables` after the live-values slice.
 
 ## Now
 
-- **Cheap authored edits share the one edit path:** `TrackHandle.input.values.set` and `setField`
-  mint `set-values`/`set-field`, a pure plan validates them against the committed value spec without
-  re-inferring, and the runtime moves the definition, rewrites the compiled evaluator and publishes
-  once. Binding edits and authored edits keep a live overlay; replacement and removal clear it.
+- **Live values share the one edit path:** `TrackHandle.writeValues` and `releaseValues` mint
+  `write-live`/`release-live`, a pure plan validates the whole evaluated value against the committed
+  contract, and the compiled table or record track stands the overlay over its authored evaluation.
+  A write never moves the authored definition, an overlay survives authored and binding edits and
+  seeks, and replacement, removal, release and destroy clear it.
 
 ## Next in line
 
-- **Live values on the same path:** add `write-live` and `release-live`, remove `overrideValues`,
-  `LiveValueKeyError` and the live-value-key rule id, and make a valid write or release clear an
-  errored node on the next flush.
+- **Runners, recipes and consumers on the new verbs:** route the runner and value transaction through
+  `writeValues`/`releaseValues`, send full records through `values.set` or use `setField` in the rig
+  writer and goal control, and keep per-write failure isolation.
 
 ## Open, and not scheduled
 

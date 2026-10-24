@@ -1,13 +1,13 @@
 import { StaleHandleError, type Handle } from "./handle";
 import type {
   AuthoredCell,
-  AuthoredProperty,
   AuthoredStaticValue,
   AuthoredValues as InputValues,
   CellAddress,
   PatchBatch,
   TrackDefinition,
   TrackInput,
+  Value,
 } from "./v5";
 
 /**
@@ -71,19 +71,6 @@ export interface RequireView {
 export type LiveValues = Readonly<Record<string, AuthoredStaticValue>>;
 
 /**
- * The values a live write may carry: one authored leaf per key, static or animated.
- *
- * `LiveValues` widened per key to the animated form, and only the boundary widens. `AuthoredProperty`
- * is named rather than respelled, because what an authored leaf may be is the authored schema's
- * question and it already has exactly one answer.
- *
- * Both entry points take this, because both lift the same refusal. Which of them a key is legal on
- * is not a property of the type: an animated key is legal on both, and a key whose incoming leaf is
- * a different kind from the authored one is legal on neither. See ADR-060.
- */
-export type AuthoredValues = Readonly<Record<string, AuthoredProperty>>;
-
-/**
  * A capability handle for one graph node, valid while the token it captured is current.
  *
  * Declared once, here, and named by both `ProjectRuntime` and `engine.ts` rather than declared in
@@ -116,23 +103,27 @@ export interface TrackHandle extends Handle<TrackDefinition> {
   remove(): void;
   replace(next: TrackDefinition): void;
   /**
-   * Writes this node's values until the next live write or a real `replace()`, without moving the
-   * retained definition.
+   * Writes this node's whole evaluated local value until `releaseValues` or a structural edit.
    *
-   * Cheap by construction: no Track is staged and the graph is not rebuilt. A static key is masked
-   * over the interpolated state; an animated key has its tweens replaced on the still-live
-   * timeline, against a base the interpolator retained, so the write is revertible wholesale. The
-   * write is replaced wholesale rather than accumulated, so an empty record is the clear for both
-   * kinds, and `replace()` drops it by construction because that compiles a fresh Track. Returns
-   * the `PatchBatch` of the one invalidate it causes, exactly as `seek()` does.
+   * The value is a table or a record and must satisfy the contract the track committed to: scalar
+   * kinds, required fields, no extras, unique row ids and finite values. A shape that does not match
+   * is `live-values-invalid`, and the previous overlay stands when a write is refused. The authored
+   * definition never moves, so a write never renames a row or changes an authored field. The overlay
+   * survives authored value edits, binding edits and seeks, and is cleared only by a structural
+   * replacement or removal, `releaseValues`, and destroy.
    *
-   * Refuses an unknown key, a key another plugin owns, a namespaced key, an interpolator scratch
-   * key, a key whose incoming leaf is a different kind from the authored one, and a key a plugin
-   * prepared, with `LiveValueKeyError` and no mutation. An animated key is no longer refused: an
-   * interpolator with no per-key write escalates to a recompile that publishes the same values at
-   * the same progress. See ADR-060.
+   * Returns the `PatchBatch` of the one publication it causes, and is allowed on a node whose status
+   * is `"error"`: a valid write recomposes the node and clears the error on the next flush.
    */
-  overrideValues(next: AuthoredValues): PatchBatch;
+  writeValues(value: Value): PatchBatch;
+  /**
+   * Drops the live overlay and resumes authored evaluation at the current progress.
+   *
+   * With no overlay standing this is a no-op answered with the empty batch and no publication. It is
+   * allowed on an errored node, and a release that composes cleanly clears the error on the next
+   * flush.
+   */
+  releaseValues(): PatchBatch;
 }
 
 /**

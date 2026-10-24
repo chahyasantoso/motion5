@@ -1,28 +1,19 @@
-import type {
-  AuthoredKeyframe,
-  AuthoredPluginGroup,
-  AuthoredStaticValue,
-  GroupedTrackDefinition,
-  MotionDefinition,
-} from "../contract/v5";
-import { authoredLeafPartition, readAuthoredLeaf } from "../contract/authored-leaf";
-import type { AuthoredValues, LiveValues, RequireView } from "../contract/track-handle";
-import { flattenAuthoredKeyframes } from "../domain/keyframe-groups";
-import { unreachable } from "../lang/exhaustive";
+import type { GroupedTrackDefinition, MotionDefinition } from "../contract/v5";
+import type { RequireView } from "../contract/track-handle";
+
 /**
- * Pure functions over one retained definition, and the two frozen constants that stand in for none.
+ * Pure functions over one retained definition.
  *
  * Moved out of `project-runtime.ts` whole by slice 2 of issue #267, with each docblock travelling
  * with the function it constrains. Nothing here reads `this` or reaches a hook: every one of them
  * takes a definition, or a write, and answers with another one, which is why the file that owns the
  * transaction was never the file that owned them.
  *
- * They are not a second opinion about anything either. `readAuthoredLeaf` stays the one owner of
- * what shape a leaf has, `authoredLeafPartition` stays the one owner of which payload that shape
- * carries, `flattenAuthoredKeyframes` stays the one owner of which record an authored key came
- * from, and `readPluginBindings` stays the one reader of the authored group shape. Every function
- * below reads one of those answers rather than deriving its own.
+ * The live-write helpers that used to live here were retired with the grouped-keyframe mask they
+ * served: an identified-table write is one whole evaluated value, validated and placed by the edit
+ * plan and the compiled evaluator rather than assembled from per-key static and animated halves.
  */
+
 /**
  * One derived require list per retained definition, and the residency rule that makes it safe.
  *
@@ -41,6 +32,7 @@ import { unreachable } from "../lang/exhaustive";
  * that holds it rather than to callers staying in step. See `RA-96` and ADR-058.
  */
 const REQUIRE_VIEWS = new WeakMap<GroupedTrackDefinition, readonly RequireView[]>();
+
 /**
  * The bindings `track` authored, as a handle reports them.
  *
@@ -66,112 +58,10 @@ export function requireViews(track: GroupedTrackDefinition): readonly RequireVie
   REQUIRE_VIEWS.set(track, frozen);
   return frozen;
 }
-/**
- * The authored static values of `track`, flattened, and nothing else.
- *
- * The mask a live write applies is derived from the retained definition rather than accumulated
- * across calls, and that is what makes `handle.definition` and the composition unable to disagree:
- * every static leaf is masked with exactly what the definition says it is, so the key a caller named
- * is the only one that differs, an override cannot outlive the authored value it masked, and an empty
- * record is a clear back to authored truth rather than a hole.
- *
- * An animated leaf is absent by construction, and that is unchanged by the animated key being
- * writable: the mask is still closed to static values, and an animated write travels as an overlay
- * to the interpolator instead.
- *
- * `flattenAuthoredKeyframes` answers the record location and `authoredLeafPartition` answers the
- * payload, so nothing here re-derives what a group is or what shape a leaf has. See ADR-049,
- * ADR-050, ADR-059, and ADR-060.
- */
-export function authoredValues(track: GroupedTrackDefinition): Record<string, AuthoredStaticValue> {
-  const flattened = flattenAuthoredKeyframes(track.keyframes ?? {});
-  const values: Record<string, AuthoredStaticValue> = {};
-  for (const [key, property] of Object.entries(flattened.keyframes)) {
-    const partition = authoredLeafPartition(readAuthoredLeaf(property));
-    switch (partition.kind) {
-      case "value":
-        values[key] = partition.value;
-        break;
-      case "stops":
-      case "none":
-        break;
-      default:
-        return unreachable(partition);
-    }
-  }
-  return values;
-}
-/**
- * One live write, split into the half a mask can carry and the half only the timeline can.
- *
- * Split by leaf shape, through the one function allowed to answer what shape a leaf has, so this
- * layer holds no second opinion about it. The static half is typed as `LiveValues` because that is
- * what a mask may hold; the animated half travels exactly as authored, because filtering it here
- * would make this a second owner of leaf shape and `contract/authored-leaf` is the only one.
- * See ADR-060.
- */
-export interface LiveWriteHalves {
-  readonly statics: LiveValues;
-  readonly animated: Readonly<Record<string, unknown>>;
-}
-export function splitAuthoredValues(values: AuthoredValues): LiveWriteHalves {
-  const statics: Record<string, AuthoredStaticValue> = {};
-  const animated: Record<string, unknown> = {};
-  for (const [key, value] of Object.entries(values)) {
-    const partition = authoredLeafPartition(readAuthoredLeaf(value));
-    switch (partition.kind) {
-      case "value":
-        statics[key] = partition.value;
-        break;
-      case "stops":
-      case "none":
-        animated[key] = value;
-        break;
-      default:
-        return unreachable(partition);
-    }
-  }
-  return { statics, animated };
-}
-/**
- * `track` with `values` written back into the authored record each key came from.
- *
- * The flattened entry carries the group that claimed a leaf, so the value is rewritten inside that
- * group's `values` section. Every authored key has one, since an ungrouped entry is refused as
- * `keyframes-ungrouped-key` (ADR-121). There is no second answer about where an authored key lives:
- * the function that flattened it says so.
- *
- * A key with no flattened entry is skipped rather than invented. It cannot be reached in practice,
- * because `Track` refuses a key that is absent from the resolved authored record before this runs,
- * and inventing a leaf here would make this layer the author.
- */
-export function withAuthoredValues(
-  track: GroupedTrackDefinition,
-  values: AuthoredValues,
-): GroupedTrackDefinition {
-  const flattened = flattenAuthoredKeyframes(track.keyframes ?? {});
-  // Indexed once rather than searched once per written key. The flatten answers with a list because
-  // order is what makes a collision decidable one layer down, and this searched that list per key,
-  // so a three-key write over a thirty-leaf group walked ninety entries to place three. Which record
-  // a key came from is still the flatten's answer: this indexes it rather than re-deriving it. See
-  // `RA-94`.
-  const sources = new Map(
-    flattened.entries.map((candidate) => [candidate.key, candidate] as const),
-  );
-  const keyframes: Record<string, AuthoredKeyframe> = { ...track.keyframes };
-  for (const [key, value] of Object.entries(values)) {
-    const entry = sources.get(key);
-    if (entry === undefined) continue;
-    const group = keyframes[entry.group] as AuthoredPluginGroup;
-    keyframes[entry.group] = Object.freeze({
-      ...group,
-      values: Object.freeze({ ...group.values, [key]: value }),
-    });
-  }
-  return Object.freeze({ ...track, keyframes: Object.freeze(keyframes) });
-}
+
 /** One retained Motion definition, writable, for the two fields a tier 0 edit moves. */
 type MutableMotion = { -readonly [K in keyof MotionDefinition]: MotionDefinition[K] };
+
 /**
  * Whether two authored triggers are the same trigger.
  *
@@ -191,6 +81,7 @@ export function sameTrigger(
   if (entries.length !== fields.size) return false;
   return entries.every(([key, value]) => fields.has(key) && Object.is(fields.get(key), value));
 }
+
 /**
  * `definition` with its stagger at `stagger`, and with the field absent when that is undefined.
  *

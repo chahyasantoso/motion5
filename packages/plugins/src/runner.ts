@@ -152,7 +152,8 @@ export function attachRunners(
       return;
     }
     try {
-      track.overrideValues(values);
+      if (values === RELEASE) track.releaseValues();
+      else track.writeValues(values);
     } catch (cause) {
       failures.push({ kind: "write-refused", nodeId: entry.nodeId, cause });
       retire(entry);
@@ -160,7 +161,7 @@ export function attachRunners(
       // Do not retry a failed release, but do report a second failure if recovery itself refuses.
       if (values !== RELEASE) {
         try {
-          track.overrideValues(RELEASE);
+          track.releaseValues();
         } catch (releaseCause) {
           failures.push({ kind: "write-refused", nodeId: entry.nodeId, cause: releaseCause });
         }

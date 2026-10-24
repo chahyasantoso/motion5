@@ -1,8 +1,6 @@
-import type { MotionDefinition, TrackDefinition, TriggerSignal } from "../contract/v5";
+import type { MotionDefinition, TrackDefinition, TriggerSignal, Value } from "../contract/v5";
 import type { ParsedValues } from "../contract/v5-parse";
-import type { LiveValues } from "../contract/track-handle";
 import type { ResolvedPlugins, TrackConfigView } from "../domain/plugins";
-import type { LiveWriteResult } from "../domain/track";
 
 /**
  * Every seam a loaded project reaches, as four total records rather than fifteen maybe-functions.
@@ -40,18 +38,16 @@ export interface StagedTrack {
 }
 
 /**
- * The one seam by which a live value reaches the compiled Track this runtime does not own.
+ * The three seams a value edit reaches, none of which touches the graph.
  *
- * One hook, because there is one mechanism: a live overlay for the compiled Track. The authored half
- * of a value change reaches the `rewrite` seam instead, because it moves a definition rather than a
- * mask. See ADR-059 and ADR-060.
+ * `rewrite` moves a compiled evaluator to new authored values. `overlay` stands one whole evaluated
+ * value over that evaluator, or drops it. `seek` moves the playhead. See ADR-059 and ADR-060.
  */
-export type LiveValueWriter = (
-  nodeId: string,
-  values: LiveValues,
-  overlay: Readonly<Record<string, unknown>> | undefined,
-  rebase: boolean,
-) => LiveWriteResult | undefined;
+export interface ValuePort {
+  readonly rewrite: (nodeId: string, values: ParsedValues) => void;
+  readonly overlay: (nodeId: string, value: Value | undefined) => void;
+  readonly seek: (nodeId: string, progress: number) => void;
+}
 
 /**
  * How this layer asks what an authored record resolves to.
@@ -108,7 +104,6 @@ export interface MotionPort {
 
 /** The three seams a value edit reaches, none of which touches the graph. */
 export interface ValuePort {
-  readonly write: LiveValueWriter;
   /**
    * Replaces the authored values one compiled Track evaluates, without rebuilding that Track.
    *
@@ -117,6 +112,8 @@ export interface ValuePort {
    * answers nothing, and mounting it later compiles the definition the cheap edit already moved.
    */
   readonly rewrite: (nodeId: string, values: ParsedValues) => void;
+  /** Stands one whole evaluated value over the compiled Track, or drops it for `undefined`. */
+  readonly overlay: (nodeId: string, value: Value | undefined) => void;
   readonly seek: (nodeId: string, progress: number) => void;
 }
 
@@ -157,7 +154,7 @@ export const NO_PORTS: ProjectPorts = Object.freeze({
     setStagger: NOTHING,
     signal: NOTHING,
   }),
-  value: Object.freeze<ValuePort>({ write: NOTHING, rewrite: NOTHING, seek: NOTHING }),
+  value: Object.freeze<ValuePort>({ rewrite: NOTHING, overlay: NOTHING, seek: NOTHING }),
   host: Object.freeze<HostPort>({ resolveKeyframes: NOTHING, disposeComposition: NOTHING }),
 });
 
