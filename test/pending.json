@@ -127,7 +127,7 @@
   {
     "path": "packages/core/test/integration/engine-x3-contribution.test.ts",
     "phase": 7,
-    "reason": "Exercises old grouped plugin machinery (stage, contribute); stays untouched as dead code until Phase 7."
+    "reason": "Exercises the retired grouped stage/contribute machinery and dies with it in Phase 7; no identified-table replacement exists because the capability is removed rather than migrated."
   },
   {
     "path": "packages/core/test/integration/handle-adoption.test.ts",
@@ -221,8 +221,8 @@
   },
   {
     "path": "packages/core/test/integration/phase7-walker-demo.test.ts",
-    "phase": 7,
-    "reason": "Exercises walker demo rig; Phase 7 expresses it with tables and declared dependencies."
+    "phase": 6,
+    "reason": "Exercises the walker demo through the retired grouped rig, fk and ik plugins; Phase 5 re-expresses the plugins and Phase 6 rewrites the demo, after which this suite is replaced by the demo's own checks."
   },
   {
     "path": "packages/core/test/integration/plugin-group-values-section.test.ts",
