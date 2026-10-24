@@ -12,19 +12,19 @@ import type { PatchBatch } from "./v5";
  * write at a time costs `n` of each.
  *
  * Every member here is a projection of a verb this runtime already has, deliberately: a second
- * implementation of `setValues` would be a second owner of what a live write costs, and the whole
- * point of the tier is that there is one. What the interface buys is the narrowing, and only that.
- * It is not a fence, for the reason `SchemaTransaction`'s own record gives: a recipe closes over the
- * `ProjectHandle` it was called on, so what it may not do while a batch is open is answered by the
- * verbs themselves. Everything that publishes or mounts refuses by name with
- * `value-batch-immediate`, and every structural verb refuses with `value-batch-structural` at the
- * one member all of them reach.
+ * implementation of `overrideValues` would be a second owner of what a live write costs, and the
+ * whole point of the tier is that there is one. What the interface buys is the narrowing, and only
+ * that. It is not a fence, for the reason `SchemaTransaction`'s own record gives: a recipe closes
+ * over the `ProjectHandle` it was called on, so what it may not do while a batch is open is answered
+ * by the verbs themselves. Everything that publishes or mounts refuses by name with
+ * `immediate-in-batch`, and every structural verb refuses with `structural-in-batch` at the one
+ * member all of them reach.
  *
- * `track` and `tryTrack` answer the ordinary `TrackHandle`, whose value members join this batch
- * exactly as the three node-addressed verbs above do. That is why no node-addressed `setKeyframe` is
- * projected here: a `(nodeId, plugin, key, value)` spelling would lose the lifetime token the handle
- * captured, which is the staleness gate ADR-056 made total, and it would be a second owner of a verb
- * `TrackHandle` already owns.
+ * `track` and `tryTrack` answer the ordinary `TrackHandle`, whose cheap `input.values` verbs and
+ * `overrideValues` join this batch exactly as the node-addressed verbs above do. A node-addressed
+ * spelling of an authored value edit is deliberately absent: it would lose the lifetime token the
+ * handle captured, which is the staleness gate ADR-056 made total, and it would be a second owner
+ * of a verb `TrackHandle` already owns.
  *
  * What a staged verb answers in the meantime is the deferred batch: its own node as the seed, no
  * patches, and one `value-batch-deferred` warning saying the publication was queued. Answering
@@ -45,21 +45,13 @@ export interface ValueTransaction {
    * seeked value on its next emission.
    */
   seek(nodeId: string, progress: number): PatchBatch;
-  /**
-   * Rewrites one node's authored values, so its retained definition moves with them.
-   *
-   * `ProjectHandle.setValues` with its publication deferred, and nothing else about it moves: the
-   * refusals, the mask, the animated escalation and the retained definition are all where ADR-059
-   * and ADR-060 put them.
-   */
-  setValues(nodeId: string, values: AuthoredValues): PatchBatch;
   /** The revertible half, leaving the authored definition exactly as it was. See ADR-060. */
   overrideValues(nodeId: string, values: AuthoredValues): PatchBatch;
   /**
    * Resolves one track by qualified node id, refusing an id this project does not have.
    *
-   * The ordinary handle, so `setValues`, `overrideValues`, `setKeyframe` and `removeKeyframe` on it
-   * join this batch while its structural members refuse.
+   * The ordinary handle, so its cheap `input.values` verbs and `overrideValues` join this batch
+   * while its structural members refuse.
    */
   track(nodeId: string): TrackHandle;
   /** The same lookup without the refusal, for a caller whose miss is expected. */

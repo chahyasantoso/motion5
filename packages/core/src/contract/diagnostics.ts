@@ -76,6 +76,25 @@ export function diagnostic<Rule extends RuleId>(
 }
 
 /**
+ * The same diagnostics with one sentence appended to every message.
+ *
+ * The cheap edit tier validates against a committed contract, and a refusal there owes the caller
+ * the remedy that can actually change that contract. Appending at the rendering boundary keeps the
+ * rule's own message as the validator wrote it and keeps the suffix out of every other producer; it
+ * lives here because this module owns what a diagnostic says, not because it mints a new one.
+ */
+export function hintDiagnostic(entry: Diagnostic, hint: string): Diagnostic {
+  return Object.freeze({ ...entry, message: `${entry.message}${hint}` });
+}
+
+export function hintDiagnostics(
+  diagnostics: readonly Diagnostic[],
+  hint: string,
+): readonly Diagnostic[] {
+  return Object.freeze(diagnostics.map((entry) => hintDiagnostic(entry, hint)));
+}
+
+/**
  * The single renderer for diagnostics inside a thrown message.
  *
  * Never hand-write `${ruleId} at ${path}: ${message}` anywhere else. Editors consume rule ids, so

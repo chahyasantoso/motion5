@@ -87,12 +87,6 @@ interface StaleHandleShape {
   readonly target: HandleTarget;
 }
 
-interface UnboundGroupShape {
-  readonly kind: "unbound-group";
-  readonly nodeId: string;
-  readonly plugin: string;
-}
-
 interface InvalidDefinitionShape {
   readonly kind: "invalid-definition";
   readonly diagnostics: readonly Diagnostic[];
@@ -109,7 +103,6 @@ export type RefusalShape =
   | UnknownMotionShape
   | UnknownNodeShape
   | StaleHandleShape
-  | UnboundGroupShape
   | InvalidDefinitionShape;
 
 /**
@@ -128,7 +121,6 @@ export type Refusal =
   | Minted<UnknownMotionShape>
   | Minted<UnknownNodeShape>
   | Minted<StaleHandleShape>
-  | Minted<UnboundGroupShape>
   | Minted<InvalidDefinitionShape>;
 
 /** Mints one refusal, and is the only expression in the program that produces a `Refusal`. */
@@ -192,8 +184,6 @@ export function describeRefusal(refusal: Refusal): string {
       return `Unknown graph node "${refusal.nodeId}".`;
     case "stale-handle":
       return staleHandleError(refusal.target).message;
-    case "unbound-group":
-      return `keyframe-group-unbound: "${refusal.nodeId}" authors no "${refusal.plugin}" group. Use track.replace(...) or track.input.replace(...) to author one.`;
     case "invalid-definition":
       return describeDiagnostics(refusal.diagnostics);
     default:
@@ -248,7 +238,6 @@ export function refusalError(refusal: Refusal, editIndex?: number): Error {
     case "structural-in-batch":
     case "unknown-motion":
     case "unknown-node":
-    case "unbound-group":
     case "invalid-definition":
       return new RefusalError(refusal, editIndex);
     default:

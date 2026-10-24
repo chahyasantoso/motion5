@@ -1,6 +1,5 @@
 // Docs: ./project-runtime.md
 import type {
-  AuthoredProperty,
   GroupedTrackDefinition,
   PatchBatch,
   ProjectDefinition,
@@ -8,20 +7,15 @@ import type {
   MotionDefinition,
   TriggerSignal,
 } from "../contract/v5";
-import { readPluginValues } from "../contract/keyframe-shape";
 import type { MotionHandle } from "../contract/motion-handle";
 import type { SchemaTransaction } from "../contract/schema-transaction";
 import type { ValueTransaction } from "../contract/value-transaction";
 import type { AuthoredValues, TrackHandle } from "../contract/track-handle";
 import { validateMotionTrigger, validateTrackDefinition } from "../contract/validate-v5";
+import type { ParsedValues } from "../contract/v5-parse";
 import type { Clock, ClockTick } from "../ports/clock";
 import type { Scheduler } from "../ports/scheduler";
 import { trackConfigView, type ResolvedPlugins } from "../domain/plugins";
-import {
-  removeKeyframe as removeAuthoredKeyframe,
-  setKeyframe as setAuthoredKeyframe,
-  type AuthoredKeyframes,
-} from "../domain/authoring/keyframes";
 import { sameCompiledTrackInput } from "../domain/authoring/recompile";
 import { qualifyFreeTrack, qualifyMotionTrack } from "../graph/ids";
 import { describeError } from "./schema-refusals";
@@ -82,17 +76,14 @@ import {
   type Resolved,
 } from "./results";
 import { AUTHORED, isOverlaid, liveWritten, type ValueState } from "./value-state";
-import { boundGroup } from "./bound-group";
 import { applyEdits } from "./edit-apply";
 import type { PlanEnvironment, PlanState, PlannedChange, PlannedTrack } from "./edit-plan";
-import type { StructuralEdit } from "./edit-types";
+import type { CheapEdit, StructuralEdit } from "./edit-types";
 import {
-  NO_OVERLAY,
   authoredValues,
   sameTrigger,
   splitAuthoredValues,
   withAuthoredValues,
-  withKeyframes,
   withStagger,
 } from "./authored-values";
 import { Diagnostics, type DiagnosticsSnapshot } from "./diagnostics";
@@ -228,6 +219,13 @@ export interface ProjectRuntimeOptions {
   readonly interpolated?: (node: GraphNode) => () => MemberState;
   readonly setProgress?: (nodeId: string, progress: number) => void;
   readonly writeValues?: LiveValueWriter;
+  /**
+   * Replaces the authored values one compiled Track evaluates, for the cheap authored tier.
+   *
+   * The runtime has already parsed and validated the candidate by the time this is called, so the
+   * host only owns the evaluator. A node with no compiled Track is a no-op.
+   */
+  readonly rewriteValues?: (nodeId: string, values: ParsedValues) => void;
   readonly compileTrack?: (track: TrackDefinition, nodeId?: string) => void;
   readonly disposeTrack?: (nodeId: string) => void;
   readonly stageTrack?: (track: TrackDefinition, nodeId: string) => StagedTrack;
@@ -342,6 +340,7 @@ export class ProjectRuntime {
       }),
       value: Object.freeze({
         write: installed(this, options.writeValues, NO_PORTS.value.write),
+        rewrite: installed(this, options.rewriteValues, NO_PORTS.value.rewrite),
         seek: installed(this, options.setProgress, NO_PORTS.value.seek),
       }),
       host: Object.freeze({
@@ -361,10 +360,8 @@ export class ProjectRuntime {
       track: Object.freeze<TrackHost>({
         live: (id, token) => isLive(this.#entryIfLive(id, token)),
         definition: (id, token) => this.#liveEntry(id, token).track,
-        apply: (id, token, edit) => this.#applyStructural(id, token, edit),
-        setKeyframe: (id, token, plugin, key, value) =>
-          this.#setKeyframe(id, token, plugin, key, value),
-        removeKeyframe: (id, token, plugin, key) => this.#removeKeyframe(id, token, plugin, key),
+        applyStructural: (id, token, edit) => this.#applyStructural(id, token, edit),
+        applyCheap: (id, token, edit) => this.#applyCheap(id, token, edit),
         write: (id, token, values, rebase) =>
           this.#writeValues(id, () => this.#writableEntry(id, token), values, rebase),
       }),
@@ -867,6 +864,52 @@ export class ProjectRuntime {
     this.#commit({ kind: "tracks", tracks }, noBuild);
   }
 
+  // Plans one cheap edit against the retained or batched view and applies only its authored delta.
+  // The value tier's admission runs first, so a cheap edit is refused during a commit and inside an
+  // edit recipe exactly as the value verbs were, while a value batch still collects its seed. The
+  // definition moves, the compiled evaluator is rewritten, and the one publication routes through
+  // #publishValue so a batch defers it rather than publishing per edit.
+  #applyCheap(id: string, token: number, edit: CheapEdit): PatchBatch {
+    this.#admit(valueVerb(edit.kind, "resolved"));
+    this.#writableEntry(id, token);
+    const planned = applyEdits(
+      this.#planState(this.#readTracks()),
+      [edit],
+      this.#planEnvironment(),
+    );
+    const change = planned.changes[0];
+    if (change === undefined) return batchFor(this.#graph.sequence, { kind: "empty" });
+    switch (change.kind) {
+      case "authored-values": {
+        const tracks = new Map(this.#tracks);
+        this.#adoptAuthoredEntry(tracks, id, change);
+        this.#tracks = tracks;
+        this.#ports.value.rewrite(id, change.values);
+        return this.#publishValue(id);
+      }
+      case "update-track":
+      case "remove-track":
+        throw new TypeError(`Cheap edit "${edit.kind}" planned a structural change.`);
+      default:
+        return unreachable(change);
+    }
+  }
+
+  #adoptAuthoredEntry(
+    tracks: Map<string, TrackEntry>,
+    id: string,
+    change: Extract<PlannedChange, { kind: "authored-values" }>,
+  ): void {
+    const entry = tracks.get(id);
+    if (entry === undefined) throw new TypeError(`Unknown graph node "${id}".`);
+    tracks.set(id, {
+      ...entry,
+      track: change.track.track,
+      valueState: change.track.valueState,
+      contract: change.track.contract,
+    });
+  }
+
   // Carries one planned change into the staged map and records what its commit owes.
   #stageChange(
     change: PlannedChange,
@@ -898,6 +941,8 @@ export class ProjectRuntime {
         noBuild.delete(change.nodeId);
         fullBuild.add(change.nodeId);
         return;
+      case "authored-values":
+        throw new TypeError("Structural edit planned an authored value change.");
       default:
         return unreachable(change);
     }
@@ -1014,7 +1059,7 @@ export class ProjectRuntime {
     values: AuthoredValues,
     rebase: boolean,
   ) {
-    this.#admit(valueVerb(rebase ? "setValues" : "overrideValues", "resolved"));
+    this.#admit(valueVerb("overrideValues", "resolved"));
     return this.#boundary(() => {
       const entry = resolveEntry();
       const { statics, animated } = splitAuthoredValues(values);
@@ -1088,63 +1133,6 @@ export class ProjectRuntime {
     return batchFor(this.#graph.sequence, { kind: "deferred-in-batch", seeds: [nodeId] });
   }
 
-  #recompileKeyframes(
-    nodeId: string,
-    entry: TrackEntry,
-    keyframes: AuthoredKeyframes,
-    verb: string,
-  ) {
-    return this.#boundary(() => {
-      const next = withKeyframes(entry.track, keyframes);
-      const accepted = this.#acceptTrack(next, `${verb}(${nodeId})`);
-      const resolved = this.#resolve(nodeId, accepted);
-      if (resolved?.diagnostics.some(({ severity }) => severity === "error"))
-        refuse({ kind: "invalid-definition", diagnostics: resolved.diagnostics });
-      const clear = isOverlaid(entry.valueState) ? NO_OVERLAY : undefined;
-      const answer = this.#ports.value.write(nodeId, authoredValues(entry.track), clear, true);
-      // The recording the mask path makes, for the same reason and on the same way out. A stage
-      // that survives is what earns the accepted definition and the state saying the build removed
-      // every live write standing on this node. This path asks the decoded answer for the playhead
-      // alone: it rebuilds either way, so whether the seam patched what was already compiled
-      // decides nothing here.
-      let adopted: TrackEntry = { ...entry, valueState: liveWritten(clear) };
-      let staged: StagedTrack | undefined;
-      let progress: number | undefined;
-      try {
-        progress = writtenProgress(liveWrite(answer));
-        staged = this.#ports.track.stage(accepted, nodeId);
-        adopted = { ...entry, track: accepted, valueState: AUTHORED };
-      } finally {
-        this.#tracks.set(nodeId, adopted);
-      }
-      return this.#completeWrite(nodeId, staged, progress);
-    });
-  }
-
-  #setKeyframe(
-    nodeId: string,
-    token: number,
-    plugin: string,
-    key: string,
-    value: AuthoredProperty,
-  ) {
-    this.#admit(valueVerb("setKeyframe", "resolved"));
-    const entry = this.#writableEntry(nodeId, token);
-    const { keyframes, bound } = boundGroup(nodeId, entry.track, plugin);
-    if (Object.hasOwn(readPluginValues(bound.group), key))
-      return this.#writeValues(nodeId, () => entry, { [key]: value }, true);
-    const edited = setAuthoredKeyframe(keyframes, bound, key, value);
-    return this.#recompileKeyframes(nodeId, entry, edited, "setKeyframe");
-  }
-  #removeKeyframe(nodeId: string, token: number, plugin: string, key: string) {
-    this.#admit(valueVerb("removeKeyframe", "resolved"));
-    const entry = this.#writableEntry(nodeId, token);
-    const { keyframes, bound } = boundGroup(nodeId, entry.track, plugin);
-    const edited = removeAuthoredKeyframe(keyframes, bound, key);
-    if (edited === keyframes) return this.#publishValue(nodeId);
-    return this.#recompileKeyframes(nodeId, entry, edited, "removeKeyframe");
-  }
-
   #carriedContracts(
     tracks: ReadonlyMap<string, TrackEntry>,
   ): ReadonlyMap<string, CommittedContract> {
@@ -1196,17 +1184,6 @@ export class ProjectRuntime {
     return this.#writeValues(nodeId, () => this.#entryOf(nodeId), values, false);
   }
   /**
-   * Rewrites `nodeId`'s authored values, topology untouched.
-   *
-   * The authored half: the retained `TrackDefinition` moves with the live values, so
-   * `handle.definition` and the composition cannot disagree, and it still costs one invalidate
-   * rather than a staged Track and a graph rebuild. See ADR-059 and ADR-060.
-   */
-  setValues(nodeId: string, values: AuthoredValues) {
-    this.#assertLive();
-    return this.#writeValues(nodeId, () => this.#entryOf(nodeId), values, true);
-  }
-  /**
    * Runs `recipe` as one value batch and publishes what it staged exactly once.
    *
    * The second tier, and what `edit(recipe)` is for the structural one. Every verb reached inside
@@ -1240,7 +1217,6 @@ export class ProjectRuntime {
     const runtime = this;
     return Object.freeze({
       seek: (nodeId: string, progress: number) => runtime.seek(nodeId, progress),
-      setValues: (nodeId: string, values: AuthoredValues) => runtime.setValues(nodeId, values),
       overrideValues: (nodeId: string, values: AuthoredValues) =>
         runtime.overrideValues(nodeId, values),
       track: (nodeId: string) => runtime.track(nodeId),

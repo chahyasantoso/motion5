@@ -41,6 +41,17 @@ function tableValues() {
   return rows;
 }
 
+function tableValuesAt(offset) {
+  const rows = [];
+  for (let index = 0; index < ROWS; index += 1)
+    rows.push({ id: `row-${index}`, cells: { x: index + offset, y: index * 2 } });
+  return rows;
+}
+
+// Every table a measured call may write, built once. The fixture is part of the caller's frame in
+// the real writer; the API cost this cell measures is everything the runtime does with it.
+const TABLE_FIXTURES = Array.from({ length: 1000 }, (_, offset) => tableValuesAt(offset));
+
 const definition = {
   schemaVersion: 5,
   projectId: "edit-cost",
@@ -99,8 +110,16 @@ const report = {
   cells: [
     measure("overrideValues/table", (index) => rows.overrideValues({ x: index % 10 })),
     measure("overrideValues/record", (index) => record.overrideValues({ a: index % 10 })),
-    measure("setValues/table", (index) => rows.setValues({ x: index % 10 })),
-    measure("setValues/record", (index) => record.setValues({ a: index % 10 })),
+    measure("values.set/table", (index) =>
+      rows.input.values.set(TABLE_FIXTURES[index % TABLE_FIXTURES.length]),
+    ),
+    measure("values.set/record", (index) => record.input.values.set({ a: index % 10, b: 2 })),
+    measure("values.setField/table", (index) =>
+      rows.input.values.setField({ row: "row-0", field: "x" }, index % 10),
+    ),
+    measure("values.setField/record", (index) =>
+      record.input.values.setField({ field: "a" }, index % 10),
+    ),
   ],
 };
 

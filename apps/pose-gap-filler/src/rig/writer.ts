@@ -176,14 +176,18 @@ function planLimb(
       state.published = { upper, lower, flip };
     },
     stage: (transaction) => {
-      transaction.setValues(poseNodeId(ids.root), { x: root[0]!, y: root[1]! });
-      transaction.setValues(poseNodeId(ids.goal), { x: goal[0]!, y: goal[1]! });
+      const rootValues = transaction.track(poseNodeId(ids.root)).input.values;
+      rootValues.setField({ field: "x" }, root[0]!);
+      rootValues.setField({ field: "y" }, root[1]!);
+      const goalValues = transaction.track(poseNodeId(ids.goal)).input.values;
+      goalValues.setField({ field: "x" }, goal[0]!);
+      goalValues.setField({ field: "y" }, goal[1]!);
       if (upper !== published.upper)
-        transaction.setValues(poseNodeId(ids.upper), { length: upper });
+        transaction.track(poseNodeId(ids.upper)).input.values.setField({ field: "length" }, upper);
       if (lower !== published.lower)
-        transaction.setValues(poseNodeId(ids.lower), { length: lower });
+        transaction.track(poseNodeId(ids.lower)).input.values.setField({ field: "length" }, lower);
       if (flip !== published.flip)
-        transaction.track(poseNodeId(ids.solve)).setKeyframe("ik", "flip", flip);
+        transaction.track(poseNodeId(ids.solve)).input.values.setField({ field: "flip" }, flip);
     },
   };
 }
@@ -261,7 +265,6 @@ export function createWorldWriter(
     }
     const pole = add(root, direction ?? [0, 0, 1]);
     const ids = limbTracks(limb.id);
-    const point = (position: Vec) => ({ x: position[0]!, y: position[1]!, z: position[2]! });
     return {
       kind: "write",
       ...(bend === undefined ? {} : { write: { kind: "written" as const, bend } }),
@@ -273,12 +276,28 @@ export function createWorldWriter(
         state.pole = pole;
       },
       stage: (transaction) => {
-        transaction.setValues(poseNodeId(ids.root), point(root));
-        transaction.setValues(poseNodeId(ids.goal), point(goal));
-        if (state.pole === undefined || pole.some((value, axis) => value !== state.pole![axis]))
-          transaction.setValues(poseNodeId(ids.pole), point(pole));
-        if (upper !== state.upper) transaction.setValues(poseNodeId(ids.upper), { length: upper });
-        if (lower !== state.lower) transaction.setValues(poseNodeId(ids.lower), { length: lower });
+        const rootValues = transaction.track(poseNodeId(ids.root)).input.values;
+        rootValues.setField({ field: "x" }, root[0]!);
+        rootValues.setField({ field: "y" }, root[1]!);
+        rootValues.setField({ field: "z" }, root[2]!);
+        const goalValues = transaction.track(poseNodeId(ids.goal)).input.values;
+        goalValues.setField({ field: "x" }, goal[0]!);
+        goalValues.setField({ field: "y" }, goal[1]!);
+        goalValues.setField({ field: "z" }, goal[2]!);
+        if (state.pole === undefined || pole.some((value, axis) => value !== state.pole![axis])) {
+          const poleValues = transaction.track(poseNodeId(ids.pole)).input.values;
+          poleValues.setField({ field: "x" }, pole[0]!);
+          poleValues.setField({ field: "y" }, pole[1]!);
+          poleValues.setField({ field: "z" }, pole[2]!);
+        }
+        if (upper !== state.upper)
+          transaction
+            .track(poseNodeId(ids.upper))
+            .input.values.setField({ field: "length" }, upper);
+        if (lower !== state.lower)
+          transaction
+            .track(poseNodeId(ids.lower))
+            .input.values.setField({ field: "length" }, lower);
       },
     };
   });

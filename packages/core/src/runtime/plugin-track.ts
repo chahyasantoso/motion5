@@ -84,7 +84,8 @@ export class PluginTrack {
   readonly kind = "plugin";
   readonly nodeId: string;
   readonly plugin: PluginDefinition;
-  readonly #evaluator: ValueEvaluator;
+  readonly #interpolator: Interpolator;
+  #evaluator: ValueEvaluator;
   #progress = 0;
   #disposed = false;
 
@@ -97,18 +98,35 @@ export class PluginTrack {
     if (options.nodeId.length === 0) throw new TypeError("Track node id must be non-empty.");
     this.nodeId = options.nodeId;
     this.plugin = options.plugin;
-    const local =
-      options.values ?? (options.plugin.inputs.values.kind === "record" ? EMPTY_RECORD : undefined);
-    this.#evaluator = createValueEvaluator(local, options.interpolator);
+    this.#interpolator = options.interpolator;
+    this.#evaluator = createValueEvaluator(this.#withDefault(options.values), options.interpolator);
   }
 
   get progress(): number {
     return this.#progress;
   }
 
+  /**
+   * Evaluates the local values this track was last given, at the current progress.
+   *
+   * The plugin, its declared slots and the surrounding graph are untouched: a cheap authored edit
+   * changes only the local table or record the transform reads. The evaluator is replaced whole,
+   * because a plan is built once over a complete authored snapshot and carries no incremental form.
+   */
+  replaceValues(values: ParsedValues | undefined): void {
+    this.assertActive();
+    this.#evaluator.dispose();
+    this.#evaluator = createValueEvaluator(this.#withDefault(values), this.#interpolator);
+  }
+
   /** A plugin track has no grouped chain; the identified-table output set is the plugin's. */
   get plugins(): undefined {
     return undefined;
+  }
+
+  #withDefault(values: ParsedValues | undefined): ParsedValues | undefined {
+    if (values !== undefined) return values;
+    return this.plugin.inputs.values.kind === "record" ? EMPTY_RECORD : undefined;
   }
 
   setProgress(value: number): boolean {

@@ -330,7 +330,10 @@ describe("the runtime holds one phase and none of the fields it replaces", () =>
         '#setTrigger(id: string, token: number, trigger: MotionDefinition["trigger"]): void {',
         'immediateVerb("setTrigger", "resolved")',
       ],
-      ["#setKeyframe(", 'valueVerb("setKeyframe", "resolved")'],
+      [
+        "#applyCheap(id: string, token: number, edit: CheapEdit): PatchBatch {",
+        'valueVerb(edit.kind, "resolved")',
+      ],
       ["track(nodeId: string): TrackHandle {", "this.#admit(READ)"],
       ["edit<T>(recipe: (transaction: SchemaTransaction) => T): T {", "this.#admit(OPEN_RECIPE)"],
       [

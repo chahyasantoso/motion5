@@ -2,39 +2,29 @@ import { describe, expect, it } from "vitest";
 import { code, codeOnly } from "../../helpers/source-region";
 import { fileURLToPath } from "node:url";
 import { readPluginValues } from "../../../src/contract/keyframe-shape";
-import type { AuthoredPluginGroup, AuthoredProperty } from "../../../src/contract/v5";
-import {
-  readBoundGroup,
-  removeKeyframe,
-  setKeyframe,
-  type AuthoredKeyframes,
-} from "../../../src/domain/authoring/keyframes";
+import type { AuthoredPluginGroup } from "../../../src/contract/v5";
 
 // Issue #255, follow-up debt from slice E of issue #223. One owner for the question of what a
 // plugin group authors.
 //
-// `contract/keyframe-shape.ts` already declared `readPluginValues` the single reader of the
-// `values` section, and every validation-side consumer asked it. Two did not.
-// `ProjectRuntime.#setKeyframe` read the field off the group and the pure editors read it through
-// the reserved constant, so one authored layout had three readers. All three were typed and all
-// three agreed, which is exactly why no behavioural case in the suite could fail on it: a fourth
-// reader would pass every one of them on the day it was added. The gate is therefore on the source
-// as well, in the `LF-2` idiom.
+// `contract/keyframe-shape.ts` declared `readPluginValues` the single reader of the `values`
+// section. The runtime's `#setKeyframe` and the pure editors used to read the field themselves, so
+// one authored layout had three readers; the editors and the verb are gone now, and what remains is
+// the gate that keeps every surviving reader on the one owner.
 //
-// `RA-108` is the one place the three did not already agree, and it is a defect rather than a
-// tidiness argument. Membership was `Object.hasOwn` on the runtime path and `in` in the editor, and
-// an inherited name answers differently to those two.
+// `RA-108` pinned the old editors' inherited-name behaviour. It is deleted with those editors: the
+// identified-table edit surface has no authored-key membership test left to protect.
 
 const SOURCE_ROOT = fileURLToPath(new URL("../../../src/", import.meta.url));
 
 /** Every file that reads a group's authored values rather than writing the section back. */
-const READ_SITES = ["domain/authoring/keyframes.ts", "runtime/project-runtime.ts"];
+const READ_SITES = ["contract/solver-constraints.ts", "domain/keyframe-groups.ts", "graph/ir.ts"];
 
 /**
  * The spellings the duplication used.
  *
- * Written to catch a read off the group rather than any mention of the constant: `withValues` still
- * writes the section through `PLUGIN_VALUES_SECTION`, which is that constant doing its job.
+ * Written to catch a read off the group rather than any mention of the constant: a writer of the
+ * section still reaches `PLUGIN_VALUES_SECTION`, which is that constant doing its job.
  */
 const DUPLICATE_VALUE_READS = [
   { what: "a direct read of the values field", pattern: /\.group\.values/ },
@@ -42,11 +32,8 @@ const DUPLICATE_VALUE_READS = [
   { what: "a local empty-values fallback", pattern: /values\s*\?\?\s*\{\}/ },
 ];
 
-/** A static leaf, so the identity assertions below compare a value rather than a reference. */
-const LEAF: AuthoredProperty = 3;
-
 const AUTHORED: AuthoredPluginGroup = Object.freeze({
-  values: Object.freeze({ length: LEAF }),
+  values: Object.freeze({ length: 3 }),
   requires: Object.freeze({ base: "root" }),
 });
 
@@ -54,15 +41,6 @@ const AUTHORED: AuthoredPluginGroup = Object.freeze({
 const NO_SECTION: AuthoredPluginGroup = Object.freeze({
   requires: Object.freeze({ base: "root" }),
 });
-
-const WITH_LEAF: AuthoredKeyframes = Object.freeze({ fk: AUTHORED });
-const WITHOUT_SECTION: AuthoredKeyframes = Object.freeze({ fk: NO_SECTION });
-
-function boundOf(keyframes: AuthoredKeyframes) {
-  const bound = readBoundGroup(keyframes, "fk");
-  if (bound === undefined) throw new Error("fixture authors no fk group");
-  return bound;
-}
 
 function sourceOf(site: string): string {
   return codeOnly(code(`${SOURCE_ROOT}${site}`), site);
@@ -97,26 +75,5 @@ describe("one owner for authored group values", () => {
         offenders.push(`${site} never reaches the shared reader`);
     }
     expect(offenders.sort()).toEqual([]);
-  });
-
-  it("RA-108 reads no inherited name as an authored leaf, on either path", () => {
-    const bound = boundOf(WITH_LEAF);
-
-    // Red on the parent. An inherited name answers true to `in` for every object, so the editor
-    // rewrote the section for a leaf no author wrote and answered with a new record.
-    expect(removeKeyframe(WITH_LEAF, bound, "toString")).toBe(WITH_LEAF);
-    expect(Object.hasOwn(readPluginValues(bound.group), "toString")).toBe(false);
-
-    // A narrowing rather than a refusal: the leaf the group does author still goes.
-    expect(removeKeyframe(WITH_LEAF, bound, "length")).not.toBe(WITH_LEAF);
-
-    // A group with no section is the same no-op, through the same read and with no fallback.
-    const bare = boundOf(WITHOUT_SECTION);
-    expect(removeKeyframe(WITHOUT_SECTION, bare, "length")).toBe(WITHOUT_SECTION);
-
-    // The set direction reaches the reader for the other half of the question: a key the group
-    // does not author yet is written, and rewriting the value it already holds is identity.
-    expect(setKeyframe(WITHOUT_SECTION, bare, "length", LEAF)).not.toBe(WITHOUT_SECTION);
-    expect(setKeyframe(WITH_LEAF, bound, "length", LEAF)).toBe(WITH_LEAF);
   });
 });

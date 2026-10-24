@@ -48,7 +48,7 @@ function finite(goal: GoalMove): boolean {
 /**
  * The one writer of playground intent. Every gesture on every stage lands here.
  *
- * A move or a flip is a value-tier write (`TrackHandle.setValues` / `setKeyframe`): one invalidate,
+ * A move or a flip is a value-tier write (`TrackHandle.input.values`): one invalidate, one
  * one publication, no graph replacement, and no progress change, so the chain moves immediately at
  * the member weights the scroll set. Scroll owns weight and nothing else; this owns the goal and the
  * flip and nothing else. A non-finite point is ignored rather than written, and every point is
@@ -60,12 +60,14 @@ export function createGoalControl(project: Pick<ProjectHandle, "track">): GoalCo
     move(goal) {
       if (!finite(goal)) return;
       switch (goal.rig) {
-        case "planar":
-          project.track(nodeId(TENTACLE.goalTrack)).setValues({
-            x: clamp(goal.x, STAGE_2D.margin, STAGE_2D.width - STAGE_2D.margin),
-            y: clamp(goal.y, STAGE_2D.margin, STAGE_2D.height - STAGE_2D.margin),
-          });
+        case "planar": {
+          const planar = project.track(nodeId(TENTACLE.goalTrack)).input.values;
+          const x = clamp(goal.x, STAGE_2D.margin, STAGE_2D.width - STAGE_2D.margin);
+          const y = clamp(goal.y, STAGE_2D.margin, STAGE_2D.height - STAGE_2D.margin);
+          planar.setField({ field: "x" }, x);
+          planar.setField({ field: "y" }, y);
           return;
+        }
         case "spatial": {
           const { x, y, z } = clampToFrame(
             IK3D_VIEW,
@@ -74,7 +76,10 @@ export function createGoalControl(project: Pick<ProjectHandle, "track">): GoalCo
             IK3D_DEPTH,
             goal,
           );
-          project.track(IK3D_NODE_ID(IK3D.goalTrack)).setValues({ x, y, z });
+          const spatial = project.track(IK3D_NODE_ID(IK3D.goalTrack)).input.values;
+          spatial.setField({ field: "x" }, x);
+          spatial.setField({ field: "y" }, y);
+          spatial.setField({ field: "z" }, z);
           return;
         }
         default:
@@ -82,7 +87,7 @@ export function createGoalControl(project: Pick<ProjectHandle, "track">): GoalCo
       }
     },
     flip(value) {
-      project.track(nodeId(TENTACLE.solverTrack)).setKeyframe("ik", "flip", value);
+      project.track(nodeId(TENTACLE.solverTrack)).input.values.setField({ field: "flip" }, value);
     },
   };
 }

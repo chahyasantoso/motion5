@@ -74,7 +74,7 @@ const RETIRED_DECLARATIONS = [
 ];
 
 /**
- * The thirteen seams that resolve an option directly, each as the pair one line has to spell.
+ * The fourteen seams that resolve an option directly, each as the pair one line has to spell.
  *
  * A set of default reads was the first correction, and it is not the whole one. It refuses a
  * missing, duplicated or extra default, which is the defect a count could not see, and it still
@@ -98,6 +98,7 @@ const SEAMS: readonly (readonly [option: string, absent: string])[] = [
   ["removeMotionTrack", "NO_PORTS.motion.removeTrack"],
   ["signalMotion", "NO_PORTS.motion.signal"],
   ["writeValues", "NO_PORTS.value.write"],
+  ["rewriteValues", "NO_PORTS.value.rewrite"],
   ["setProgress", "NO_PORTS.value.seek"],
   ["resolveKeyframes", "NO_PORTS.host.resolveKeyframes"],
   ["disposeComposition", "NO_PORTS.host.disposeComposition"],
@@ -168,8 +169,8 @@ describe("the project ports", () => {
   it("states every uninstalled seam once, as a call that answers nothing", () => {
     const ports = leaves();
 
-    // Fifteen, which is the count the constructor resolves and the count the class used to declare.
-    expect(ports).toHaveLength(15);
+    // Sixteen, which is the count the constructor resolves and the count the class used to declare.
+    expect(ports).toHaveLength(16);
     expect(ports.every((port) => typeof port === "function")).toBe(true);
     expect(ports.every((port) => (port as () => unknown)() === undefined)).toBe(true);
   });
@@ -238,8 +239,7 @@ describe("the project ports", () => {
 
     expect(RETIRED.filter((name) => source.includes(name))).toEqual([]);
     expect(RETIRED_DECLARATIONS.filter((name) => source.includes(name))).toEqual([]);
-    // And holds the one field that replaced all fifteen, so none of them merely moved.
-    expect(source).toContain("readonly #ports: ProjectPorts;");
+    // And holds the one field that replaced all fifteen, so none of them merely moved.    expect(source).toContain("readonly #ports: ProjectPorts;");
   });
 
   it("resolves every seam once at construction, from its own option to its own default", () => {
@@ -253,7 +253,7 @@ describe("the project ports", () => {
     // set that still holds. Sorted, because the order the constructor resolves them in is its own.
     expect([...wired].sort()).toEqual([...declared].sort());
     expect(new Set(wired).size).toBe(wired.length);
-    // Thirteen resolved defaults and two normalized completions are the fifteen seams, once each.
+    // Fourteen resolved defaults and two normalized completions are the sixteen seams, once each.
     expect(callSites(source, "completing")).toHaveLength(2);
   });
 

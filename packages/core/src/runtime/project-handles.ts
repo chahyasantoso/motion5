@@ -5,16 +5,19 @@ import type {
   TrackHandle,
   TrackInputHandle,
   TrackRequiresHandle,
+  TrackValuesHandle,
 } from "../contract/track-handle";
 import type {
-  AuthoredProperty,
+  AuthoredCell,
+  AuthoredValues as InputValues,
+  CellAddress,
   MotionDefinition,
   PatchBatch,
   TrackDefinition,
   TrackInput,
 } from "../contract/v5";
 import { requireViews } from "./authored-values";
-import type { StructuralEdit } from "./edit-types";
+import type { CheapEdit, StructuralEdit } from "./edit-types";
 
 /**
  * The two capability handles a project issues, as classes over one host and the pair each captured.
@@ -71,15 +74,8 @@ import type { StructuralEdit } from "./edit-types";
 export interface TrackHost {
   readonly live: (id: string, token: number) => boolean;
   readonly definition: (id: string, token: number) => TrackDefinition;
-  readonly apply: (id: string, token: number, edit: StructuralEdit) => void;
-  readonly setKeyframe: (
-    id: string,
-    token: number,
-    plugin: string,
-    key: string,
-    value: AuthoredProperty,
-  ) => PatchBatch;
-  readonly removeKeyframe: (id: string, token: number, plugin: string, key: string) => PatchBatch;
+  readonly applyStructural: (id: string, token: number, edit: StructuralEdit) => void;
+  readonly applyCheap: (id: string, token: number, edit: CheapEdit) => PatchBatch;
   readonly write: (
     id: string,
     token: number,
@@ -115,12 +111,12 @@ export interface HandleHost {
 }
 
 /**
- * One graph node's capability handle: three fields and eleven members on one prototype.
+ * One graph node's capability handle: three fields and eight members on one prototype.
  *
  * Every member delegates, so there is no branch and no sequencing here. The three structural verbs
- * and the two under `input` mint one `StructuralEdit` each rather than naming five host members, so
- * the host stays one application point however the edit surface grows. See ADR-056, ADR-063 and
- * ADR-065.
+ * and the two under `input` mint one `StructuralEdit` each, and the two under `input.values` mint one
+ * `CheapEdit` each, so the host keeps one application point per tier however the edit surface grows.
+ * See ADR-056, ADR-063 and ADR-065.
  */
 export class RuntimeTrackHandle implements TrackHandle {
   readonly #host: TrackHost;
@@ -155,31 +151,22 @@ export class RuntimeTrackHandle implements TrackHandle {
   }
 
   remove(): void {
-    this.#host.apply(this.#id, this.#token, { kind: "remove-track", nodeId: this.#id });
+    this.#host.applyStructural(this.#id, this.#token, {
+      kind: "remove-track",
+      nodeId: this.#id,
+    });
   }
 
   replace(next: TrackDefinition): void {
-    this.#host.apply(this.#id, this.#token, {
+    this.#host.applyStructural(this.#id, this.#token, {
       kind: "replace-track",
       nodeId: this.#id,
       track: next,
     });
   }
 
-  setKeyframe(plugin: string, key: string, value: AuthoredProperty): PatchBatch {
-    return this.#host.setKeyframe(this.#id, this.#token, plugin, key, value);
-  }
-
-  removeKeyframe(plugin: string, key: string): PatchBatch {
-    return this.#host.removeKeyframe(this.#id, this.#token, plugin, key);
-  }
-
   overrideValues(next: AuthoredValues): PatchBatch {
     return this.#host.write(this.#id, this.#token, next, false);
-  }
-
-  setValues(next: AuthoredValues): PatchBatch {
-    return this.#host.write(this.#id, this.#token, next, true);
   }
 }
 
@@ -203,7 +190,7 @@ export class RuntimeTrackInputHandle implements TrackInputHandle {
   }
 
   replace(input?: TrackInput): void {
-    this.#host.apply(this.#id, this.#token, {
+    this.#host.applyStructural(this.#id, this.#token, {
       kind: "replace-input",
       nodeId: this.#id,
       ...(input === undefined ? {} : { input }),
@@ -212,6 +199,10 @@ export class RuntimeTrackInputHandle implements TrackInputHandle {
 
   get requires(): TrackRequiresHandle {
     return new RuntimeTrackRequiresHandle(this.#host, this.#id, this.#token);
+  }
+
+  get values(): TrackValuesHandle {
+    return new RuntimeTrackValuesHandle(this.#host, this.#id, this.#token);
   }
 }
 
@@ -235,7 +226,7 @@ export class RuntimeTrackRequiresHandle implements TrackRequiresHandle {
   }
 
   set(slot: string, source: string, memberKey?: string): void {
-    this.#host.apply(this.#id, this.#token, {
+    this.#host.applyStructural(this.#id, this.#token, {
       kind: "bind",
       nodeId: this.#id,
       slot,
@@ -245,11 +236,48 @@ export class RuntimeTrackRequiresHandle implements TrackRequiresHandle {
   }
 
   remove(slot: string, memberKey?: string): void {
-    this.#host.apply(this.#id, this.#token, {
+    this.#host.applyStructural(this.#id, this.#token, {
       kind: "unbind",
       nodeId: this.#id,
       slot,
       ...(memberKey === undefined ? {} : { memberKey }),
+    });
+  }
+}
+
+/**
+ * The authored values of one track, reached through `TrackHandle.input.values`.
+ *
+ * Both verbs build one cheap edit and hand it to the runtime, which plans it against the committed
+ * contract and returns the batch of its one publication. The view allocates nothing that can go
+ * stale on its own and resolves the token its track handle captured on every call.
+ */
+export class RuntimeTrackValuesHandle implements TrackValuesHandle {
+  readonly #host: TrackHost;
+  readonly #id: string;
+  readonly #token: number;
+
+  constructor(host: TrackHost, id: string, token: number) {
+    this.#host = host;
+    this.#id = id;
+    this.#token = token;
+    Object.freeze(this);
+  }
+
+  set(values: InputValues): PatchBatch {
+    return this.#host.applyCheap(this.#id, this.#token, {
+      kind: "set-values",
+      nodeId: this.#id,
+      values,
+    });
+  }
+
+  setField(address: CellAddress, cell: AuthoredCell): PatchBatch {
+    return this.#host.applyCheap(this.#id, this.#token, {
+      kind: "set-field",
+      nodeId: this.#id,
+      address,
+      cell,
     });
   }
 }
@@ -318,4 +346,5 @@ export class RuntimeMotionHandle implements MotionHandle {
 Object.freeze(RuntimeTrackHandle.prototype);
 Object.freeze(RuntimeTrackInputHandle.prototype);
 Object.freeze(RuntimeTrackRequiresHandle.prototype);
+Object.freeze(RuntimeTrackValuesHandle.prototype);
 Object.freeze(RuntimeMotionHandle.prototype);

@@ -92,13 +92,15 @@ function rules(outcome: PlanOutcome): readonly string[] {
 }
 
 describe("the edit union answers its tier and its overlay verdict", () => {
-  it("names every structural kind and only replacement or removal clears an overlay", () => {
+  it("names every kind, and only replacement or removal clears an overlay", () => {
     const edits: readonly Edit[] = [
       { kind: "replace-track", nodeId: "demo/a", track: { id: "a" } },
       { kind: "replace-input", nodeId: "demo/a" },
       { kind: "remove-track", nodeId: "demo/a" },
       { kind: "bind", nodeId: "demo/a", slot: "data", source: "demo/b" },
       { kind: "unbind", nodeId: "demo/a", slot: "data" },
+      { kind: "set-values", nodeId: "demo/a", values: record({ x: 1 }) },
+      { kind: "set-field", nodeId: "demo/a", address: { field: "x" }, cell: 2 },
     ];
     expect(edits.map(tierOf)).toEqual([
       "structural",
@@ -106,12 +108,14 @@ describe("the edit union answers its tier and its overlay verdict", () => {
       "structural",
       "structural",
       "structural",
+      "cheap",
+      "cheap",
     ]);
-    expect(edits.map(clearsOverlay)).toEqual([true, true, true, false, false]);
+    expect(edits.map(clearsOverlay)).toEqual([true, true, true, false, false, false, false]);
   });
 });
 
-describe("a structural edit is plain data", () => {
+describe("an edit is plain data", () => {
   it("survives structuredClone and a JSON round-trip as itself", () => {
     const edits: readonly Edit[] = [
       { kind: "replace-track", nodeId: "demo/a", track: { id: "a", duration: 120 } },
@@ -120,6 +124,8 @@ describe("a structural edit is plain data", () => {
       { kind: "remove-track", nodeId: "demo/a" },
       { kind: "bind", nodeId: "demo/a", slot: "data", source: "demo/b", memberKey: "left" },
       { kind: "unbind", nodeId: "demo/a", slot: "data", memberKey: "left" },
+      { kind: "set-values", nodeId: "demo/a", values: table(row("a", { x: 1 })) },
+      { kind: "set-field", nodeId: "demo/a", address: { row: "a", field: "x" }, cell: 2 },
     ];
     for (const edit of edits) {
       expect(structuredClone(edit)).toEqual(edit);

@@ -20,15 +20,15 @@ function recordingPort() {
     values(recipe) {
       const writes: Write[] = [];
       const transaction = {
-        setValues(node: string, values: object) {
-          writes.push([node, "values", values]);
-          return EMPTY;
-        },
         track(node: string) {
           return {
-            setKeyframe(plugin: string, key: string, value: unknown) {
-              writes.push([node, `${plugin}.${key}`, value]);
-              return EMPTY;
+            input: {
+              values: {
+                setField(address: { field: string }, cell: unknown) {
+                  writes.push([node, address.field, cell]);
+                  return EMPTY;
+                },
+              },
             },
           } as unknown as TrackHandle;
         },
@@ -63,7 +63,7 @@ describe("pose writer", () => {
     const next = trustedOf(frameOf(STANDING, 100), ["left-elbow"]);
     writer.write(createGapFiller({ kind: "raw" }).fill(next), next, lengths);
     const solve = poseNodeId(limbTracks("left-arm").solve);
-    expect(batches[1]!.filter(([node, what]) => node === solve && what === "ik.flip")).toEqual([]);
+    expect(batches[1]!.filter(([node, what]) => node === solve && what === "flip")).toEqual([]);
   });
 
   it("GF-58 retries every failed world write and commits held pole observations only on success", () => {
@@ -89,11 +89,12 @@ describe("pose writer", () => {
     fail(false);
     const gap = trustedOf(frameOf(points, 100, WORLD_SPACE), ["left-elbow"]);
     writer2.write(createGapFiller({ kind: "raw" }).fill(gap), gap, lengths);
-    expect(batches[3]!.find(([node]) => node === poleNode)).toEqual([
-      poleNode,
-      "values",
-      { x: points["left-shoulder"][0], y: points["left-shoulder"][1], z: 31 },
-    ]);
+    const poleWrites = batches[3]!.filter(([node]) => node === poleNode);
+    expect(Object.fromEntries(poleWrites.map(([, what, value]) => [what, value]))).toEqual({
+      x: points["left-shoulder"][0],
+      y: points["left-shoulder"][1],
+      z: 31,
+    });
   });
   it("GF-10 advances what it believes is published only once a batch returns", () => {
     const { port, batches, fail } = recordingPort();
@@ -102,9 +103,9 @@ describe("pose writer", () => {
     const filler = createGapFiller({ kind: "raw" });
     const ids = limbTracks("left-arm");
     const lengthWrites = (writes: readonly Write[]) =>
-      writes.filter(([node, what]) => what === "values" && node === poseNodeId(ids.upper));
+      writes.filter(([node, what]) => what === "length" && node === poseNodeId(ids.upper));
     const flipWrites = (writes: readonly Write[]) =>
-      writes.filter(([node, what]) => what === "ik.flip" && node === poseNodeId(ids.solve));
+      writes.filter(([node, what]) => what === "flip" && node === poseNodeId(ids.solve));
     // The standing left elbow bends to the flip-true side, away from the authored flip false.
     const crossed = trustedOf(frameOf(STANDING, 0));
     lengths.observe(crossed);
@@ -116,7 +117,7 @@ describe("pose writer", () => {
     expect(batches).toHaveLength(2);
     expect(lengthWrites(batches[1]!)).toEqual(lengthWrites(batches[0]!));
     expect(lengthWrites(batches[1]!)).toHaveLength(1);
-    expect(flipWrites(batches[1]!)).toEqual([[poseNodeId(ids.solve), "ik.flip", true]]);
+    expect(flipWrites(batches[1]!)).toEqual([[poseNodeId(ids.solve), "flip", true]]);
     // Once published, an unchanged length and bend side are not written again.
     writer.write(filler.fill(crossed), crossed, lengths);
     expect(lengthWrites(batches[2]!)).toEqual([]);

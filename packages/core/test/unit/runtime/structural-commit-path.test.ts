@@ -1463,7 +1463,10 @@ describe("a structural change runs one transaction, in one order", () => {
   it("RA-136 refuses a live write from inside a commit before its seam is reached", () => {
     const host: Host = {};
     const journal = recorder({
-      reenter: { from: "compileTrack", call: (runtime) => runtime.setValues(NODE_ID, { x: 1 }) },
+      reenter: {
+        from: "compileTrack",
+        call: (runtime) => runtime.overrideValues(NODE_ID, { x: 1 }),
+      },
       host,
     });
     const runtime = new ProjectRuntime(BASE_PROJECT, journal.options);
@@ -1540,14 +1543,16 @@ describe("a structural change runs one transaction, in one order", () => {
           // The node this hook is compiling. It is absent from the retained pair, so the false
           // answer is the one available first, while the composition has already compiled it.
           observed.push(
-            `adding ${describeError(thrownBy(() => runtime.setValues(ADDED_ID, { x: 1 })))}`,
+            `adding ${describeError(thrownBy(() => runtime.overrideValues(ADDED_ID, { x: 1 })))}`,
           );
           // A handle the removal below retired, through the two entry points that resolved before
-          // they refused: the factory nests two expressions and `#setKeyframe` resolves one line
+          // they refused: the factory nests two expressions and the cheap path resolves one line
           // early, so neither order was owned by anything.
-          observed.push(`stale ${describeError(thrownBy(() => stale?.setValues({ x: 1 })))}`);
+          observed.push(`stale ${describeError(thrownBy(() => stale?.overrideValues({ x: 1 })))}`);
           observed.push(
-            `keyframe ${describeError(thrownBy(() => stale?.setKeyframe("fk", "x", 1)))}`,
+            `keyframe ${describeError(
+              thrownBy(() => stale?.input.values.setField({ field: "x" }, 1)),
+            )}`,
           );
         },
       },
@@ -1632,12 +1637,12 @@ describe("a structural change runs one transaction, in one order", () => {
     // refuses a verb. Outside any commit all four paths still reach their seam: tier 2 twice, once
     // through the public verb that resolves by id and once through a live handle that resolves by id
     // and token, so both thunks are shown to resolve rather than merely to defer, and tier 0 once.
-    runtime.setValues(NODE_ID, { x: 1 });
+    runtime.overrideValues(NODE_ID, { x: 1 });
     handle.overrideValues({ x: 2 });
     runtime.motion(MOTION_ID).setStagger(0.25);
 
     expect(journal.entries.slice(3)).toEqual([
-      "write hero/arm true no-overlay",
+      "write hero/arm false no-overlay",
       "write hero/hand false no-overlay",
       "stagger-set hero 0.25",
     ]);

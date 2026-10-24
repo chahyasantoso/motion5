@@ -203,3 +203,23 @@ cell is 100 calls per sample after a warm-up, median of 7 samples, same machine.
 `setValues` against `values.set`, and S5 re-measures `overrideValues` against
 `writeValues`/`releaseValues`; a median more than 25 percent slower stops the slice and is reported
 with options rather than accepted.
+
+## S4 benchmark re-baseline
+
+`values.set` measured on the same fixture, with the table fixtures built once so the cell measures
+the runtime rather than the caller's row allocation: 62,117 ns per 20-row table write, 10,711 ns per
+record write, 57,469 ns per addressed table cell, and 9,026 ns per addressed record field (median of
+seven samples, 100 calls each).
+
+Those are 85 to 100 percent above the S1 cells for `setValues` (33,516 ns table, 5,187 ns record),
+and the comparison is the finding rather than the slice's cost. The S1 cell did not change any
+compiled value on an identified-table track: `Engine` installs no `writeValues` port, so the old
+path called the port's no-op default, and `withAuthoredValues` had no grouped-keyframes record to
+move. It measured the booking overhead of a write that could not affect a published value. The S4
+path parses and validates the authored snapshot, rebuilds the compiled evaluator and publishes, all
+of which the old number excluded.
+
+Decision, 2026-10-24: keep the measured real path and treat the S4 medians as the effective v5
+baseline. The 25 percent gate against a no-op reference is recorded as inapplicable rather than
+silently passed, and the absolute cost stays under 0.1 ms for the largest fixture. A later slice
+that adds incremental slot updates can compare against these numbers.

@@ -272,6 +272,17 @@ export interface AuthoredRow {
 export type AuthoredRecord = Readonly<Record<string, AuthoredCell>>;
 /** Authored `values`, whose top-level shape selects a table or a record. */
 export type AuthoredValues = readonly AuthoredRow[] | AuthoredRecord;
+/**
+ * One cell or field an authored edit addresses.
+ *
+ * `row` present addresses one table cell and absent addresses one record field, so the address
+ * carries no mode flag a caller could disagree with the track about. The planner compares that
+ * distinction against the track's committed shape and refuses a mismatch by name.
+ */
+export interface CellAddress {
+  readonly row?: string;
+  readonly field: string;
+}
 /** One source id, or one source id per member key for a map slot. */
 export type SourceBinding = string | Readonly<Record<string, string>>;
 /** How a plugin slot receives a bound node's outputs. */

@@ -1,7 +1,10 @@
 import { StaleHandleError, type Handle } from "./handle";
 import type {
+  AuthoredCell,
   AuthoredProperty,
   AuthoredStaticValue,
+  AuthoredValues as InputValues,
+  CellAddress,
   PatchBatch,
   TrackDefinition,
   TrackInput,
@@ -113,50 +116,6 @@ export interface TrackHandle extends Handle<TrackDefinition> {
   remove(): void;
   replace(next: TrackDefinition): void;
   /**
-   * Writes one property of a plugin group this node already authors, whether or not that group
-   * authors the key yet.
-   *
-   * The value tier, so it returns the `PatchBatch` of its one invalidate and never replaces the
-   * graph. A leaf carries no edge, and the plugin it belongs to is in the chain already by the
-   * precondition below, so this can neither add a composer nor move one.
-   *
-   * Two paths, and which one a call takes is visible at the call site rather than hidden in the name.
-   * A key the group already authors is `setValues({ [key]: value })` with the group named: the key is
-   * in the compiled record, so the write is a mask or, for an animated key, a per-key rebuild of the
-   * still-live timeline, and the retained definition moves with it. A key the group does not author
-   * yet cannot be masked at all, because nothing compiled it, so the authored record is edited, the
-   * candidate is validated and resolved, and this node is recompiled in place at the same progress.
-   * See ADR-059, ADR-060 and ADR-062.
-   *
-   * Refusals, all of them before anything is written. `keyframe-group-unbound` when this node authors
-   * no group for `plugin`, which is a whole-definition edit and is also what buys the cheap tier: a
-   * bound group's plugin is already resolved, so adding a leaf to it cannot change the chain.
-   * `live-value-key` with reason `kind` when the incoming leaf is a different kind from the authored
-   * one, which stays refused even though this verb rewrites the authored record: which kind of leaf a
-   * key is authored as is a whole-definition question, and `replace()` is where a whole definition is
-   * validated. Whatever `validateKeyframes` answers about a stop list, and whatever the registry
-   * answers about a leaf the named group claims nothing about, cited at the path the author wrote.
-   *
-   * There is no refusal for an animated key. Issue #231 deleted that one: an interpolator with no
-   * per-key write escalates to a recompile that publishes the same values at the same progress.
-   */
-  setKeyframe(plugin: string, key: string, value: AuthoredProperty): PatchBatch;
-  /**
-   * Drops one property of a plugin group this node authors.
-   *
-   * The inverse of `setKeyframe` and the same tier, so it also answers with the batch of one
-   * invalidate and never replaces the graph. Always a recompile rather than a mask, because a key the
-   * compiled record no longer holds is not something a mask can express.
-   *
-   * A key the group does not author is a no-op. The values section goes when its last leaf does, the
-   * group goes when it names no section at all, and the record loses its `keyframes` key when it
-   * holds nothing, which is the same rule at the same levels every authored edit follows. So removing
-   * the only leaf of a group that binds nothing removes the group, and the plugin leaves the chain
-   * with it: what the record says afterwards is what an author writing the same document would have
-   * written. See ADR-063.
-   */
-  removeKeyframe(plugin: string, key: string): PatchBatch;
-  /**
    * Writes this node's values until the next live write or a real `replace()`, without moving the
    * retained definition.
    *
@@ -174,16 +133,6 @@ export interface TrackHandle extends Handle<TrackDefinition> {
    * the same progress. See ADR-060.
    */
   overrideValues(next: AuthoredValues): PatchBatch;
-  /**
-   * Rewrites authored values, leaving topology, progress, and observations alone.
-   *
-   * `definition` above answers from the retained definition, and this is the member that moves it,
-   * so the definition and the live composition cannot disagree. It is the sticky half: a following
-   * `overrideValues({})` reverts to what this wrote rather than to what was authored. Omitted keys
-   * keep their values. Same refusal set as `overrideValues`, same single invalidate, and no
-   * `replaceGraph`. See ADR-059 and ADR-060.
-   */
-  setValues(next: AuthoredValues): PatchBatch;
 }
 
 /**
@@ -199,6 +148,30 @@ export interface TrackInputHandle {
   replace(input?: TrackInput): void;
   /** The dependency bindings this track authors, as an edit view rather than a record. */
   readonly requires: TrackRequiresHandle;
+  /** The authored values this track evaluates, as an edit view rather than a record. */
+  readonly values: TrackValuesHandle;
+}
+
+/**
+ * The authored values half of one track's input.
+ *
+ * `set` writes the whole authored table or record with no merge, and `setField` writes one addressed
+ * cell or field. Both validate against the contract the track committed to at its last structural
+ * commit, never against an inference of the values being written, and both return the batch of the
+ * one publication they cause. A cheap edit moves no graph shape, so it never stages a Track and
+ * never re-infers.
+ */
+export interface TrackValuesHandle {
+  /** Replaces `input.values` whole. Any row count is allowed within the committed contract. */
+  set(values: InputValues): PatchBatch;
+  /**
+   * Writes one authored cell or field.
+   *
+   * `address.row` selects a table cell and must be absent for a record field. The address must name
+   * an authored row and a declared field; a mismatch between the address form and the track's shape
+   * is `values-shape-invalid`, and an address that does not exist is `cell-address-unknown`.
+   */
+  setField(address: CellAddress, cell: AuthoredCell): PatchBatch;
 }
 
 /**

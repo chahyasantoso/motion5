@@ -1,4 +1,10 @@
-import type { TrackDefinition, TrackInput } from "../contract/v5";
+import type {
+  AuthoredCell,
+  AuthoredValues,
+  CellAddress,
+  TrackDefinition,
+  TrackInput,
+} from "../contract/v5";
 import { unreachable } from "../lang/exhaustive";
 
 /**
@@ -6,7 +12,7 @@ import { unreachable } from "../lang/exhaustive";
  *
  * An edit names its target node and nothing else that is not authored data, so a caller can clone
  * one, log one, or write one to a fixture and replay it. Structural edits carry whole definitions or
- * one binding; the cheap tier added in the next slice carries authored cells and live values.
+ * one binding; cheap edits carry authored values or one addressed cell.
  *
  * `replace-input` omits `input` rather than holding `undefined` when the caller removes the input
  * wholly, so an edit survives a JSON round-trip as the same shape it was built with.
@@ -51,11 +57,27 @@ export type StructuralEdit =
   | BindShape
   | UnbindShape;
 
-/** Every edit the runtime applies through one plan, structural today and widened by the next slice. */
-export type Edit = StructuralEdit;
+interface SetValuesShape {
+  readonly kind: "set-values";
+  readonly nodeId: string;
+  readonly values: AuthoredValues;
+}
+
+interface SetFieldShape {
+  readonly kind: "set-field";
+  readonly nodeId: string;
+  readonly address: CellAddress;
+  readonly cell: AuthoredCell;
+}
+
+/** The two authored edits that move values without a rebuild and without re-inferring a contract. */
+export type CheapEdit = SetValuesShape | SetFieldShape;
+
+/** Every edit the runtime applies through one plan. */
+export type Edit = StructuralEdit | CheapEdit;
 
 /** Which path one edit takes through a commit. */
-export type EditTier = "structural";
+export type EditTier = "structural" | "cheap";
 
 /** The tier one edit belongs to, total over the union so a new kind owes a decision here. */
 export function tierOf(edit: Edit): EditTier {
@@ -66,6 +88,9 @@ export function tierOf(edit: Edit): EditTier {
     case "bind":
     case "unbind":
       return "structural";
+    case "set-values":
+    case "set-field":
+      return "cheap";
     default:
       return unreachable(edit);
   }
@@ -76,7 +101,8 @@ export function tierOf(edit: Edit): EditTier {
  *
  * A replacement or a removal compiles a fresh Track, and the live writer has no inverse, so the
  * overlay cannot survive either. A binding edit rebuilds the graph but not the timeline, which is
- * what keeps the overlay standing across it.
+ * what keeps the overlay standing across it, and an authored edit moves only the values beneath an
+ * overlay that remains in force.
  */
 export function clearsOverlay(edit: Edit): boolean {
   switch (edit.kind) {
@@ -86,6 +112,8 @@ export function clearsOverlay(edit: Edit): boolean {
       return true;
     case "bind":
     case "unbind":
+    case "set-values":
+    case "set-field":
       return false;
     default:
       return unreachable(edit);

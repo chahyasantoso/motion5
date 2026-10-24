@@ -1,4 +1,5 @@
 import type { MotionDefinition, TrackDefinition, TriggerSignal } from "../contract/v5";
+import type { ParsedValues } from "../contract/v5-parse";
 import type { LiveValues } from "../contract/track-handle";
 import type { ResolvedPlugins, TrackConfigView } from "../domain/plugins";
 import type { LiveWriteResult } from "../domain/track";
@@ -41,10 +42,9 @@ export interface StagedTrack {
 /**
  * The one seam by which a live value reaches the compiled Track this runtime does not own.
  *
- * One hook, because there is one mechanism, and what separates `setValues` from `overrideValues` is
- * the retained definition, which is ADR-060's. `undefined` for the overlay is a write no animated
- * key is involved in, which keeps a static-only write on the path it was already on. See ADR-059
- * and ADR-060.
+ * One hook, because there is one mechanism: a live overlay for the compiled Track. The authored half
+ * of a value change reaches the `rewrite` seam instead, because it moves a definition rather than a
+ * mask. See ADR-059 and ADR-060.
  */
 export type LiveValueWriter = (
   nodeId: string,
@@ -106,9 +106,17 @@ export interface MotionPort {
   readonly signal: (motionId: string, signal: TriggerSignal) => void;
 }
 
-/** The two seams a value write reaches, neither of which touches the graph. */
+/** The three seams a value edit reaches, none of which touches the graph. */
 export interface ValuePort {
   readonly write: LiveValueWriter;
+  /**
+   * Replaces the authored values one compiled Track evaluates, without rebuilding that Track.
+   *
+   * The cheap authored tier's only host seam: the runtime owns the authored definition and the
+   * validation, and the host owns what a compiled evaluator costs. A node with no compiled Track
+   * answers nothing, and mounting it later compiles the definition the cheap edit already moved.
+   */
+  readonly rewrite: (nodeId: string, values: ParsedValues) => void;
   readonly seek: (nodeId: string, progress: number) => void;
 }
 
@@ -129,7 +137,7 @@ export interface ProjectPorts {
 /**
  * What an uninstalled seam does, stated once.
  *
- * One function for all fifteen, because doing nothing and answering nothing are the same statement
+ * One function for all sixteen, because doing nothing and answering nothing are the same statement
  * in every one of these positions: a port that returns `void` ignores it, a port that answers a
  * stage or a completion or a resolution reads it as absent, and the readers of that absence already
  * own what it means. Frozen at both levels, and the source the runtime reads its own defaults from,
@@ -149,14 +157,14 @@ export const NO_PORTS: ProjectPorts = Object.freeze({
     setStagger: NOTHING,
     signal: NOTHING,
   }),
-  value: Object.freeze<ValuePort>({ write: NOTHING, seek: NOTHING }),
+  value: Object.freeze<ValuePort>({ write: NOTHING, rewrite: NOTHING, seek: NOTHING }),
   host: Object.freeze<HostPort>({ resolveKeyframes: NOTHING, disposeComposition: NOTHING }),
 });
 
 /**
  * One seam a host installed, applied to the host that was handed the option, or the absent answer.
  *
- * Two questions with one owner, because every one of the fifteen seams asks them together: whether
+ * Two questions with one owner, because every one of the sixteen seams asks them together: whether
  * an option was installed at all, and what an installed one is called on. The first is why this
  * module exists. The second is what a port record would otherwise have changed by existing. A hook
  * used to be held as a field and reached as `this.#hook?.(...)`, so an ordinary method-style host
@@ -171,7 +179,7 @@ export const NO_PORTS: ProjectPorts = Object.freeze({
  * constrained to `readonly unknown[]`; widening the constraint to reach it would let a caller past a
  * seam signature this module is the whole owner of. Binding needs neither.
  *
- * `absent` is the seam's own entry in `NO_PORTS` at each of the thirteen sites that resolves an
+ * `absent` is the seam's own entry in `NO_PORTS` at each of the fourteen sites that resolves an
  * option directly, so a member wired to the wrong default is a mismatched pair on one line rather
  * than a silent agreement between two, and the evidence for it can be a set rather than a count. The
  * two normalized completions reach the same no-op one indirection out, through `completing`.

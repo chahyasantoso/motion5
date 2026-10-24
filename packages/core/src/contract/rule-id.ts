@@ -95,6 +95,7 @@ export const CONTRIBUTION_RULE_ID_ALIASES = {
  */
 export const BASE_RULE_IDS = [
   "blocked-upstream",
+  "cell-address-unknown",
   "cell-form-invalid",
   "cell-kind-conflict",
   "cell-stops-invalid",

@@ -36,7 +36,7 @@ export function describeError(error: unknown): string {
  * Joining the open one silently would mean the inner `edit` returns before anything it asked for has
  * committed, so a helper's cost and its guarantees would depend on whether something above it had
  * opened a transaction. That is the invisible-context shape that cut `setMotion`, cut `setTrack` and
- * kept `setKeyframe` separate from `setKeyframeGroup`. See ADR-064.
+ * kept property edits separate from whole-group edits. See ADR-064.
  */
 export function nestedTransaction(): never {
   return refuse({ kind: "nested-recipe" });
@@ -105,18 +105,4 @@ export function valueBatchImmediate(verb: string): never {
  */
 export function valueBatchStructural(): never {
   return refuse({ kind: "structural-in-batch" });
-}
-/**
- * Refuses a property edit addressed at a plugin this node authors no group for.
- *
- * The boundary between this tier's levels, and it is a refusal rather than a creation on purpose:
- * originating a whole group is a definition edit, so the remedy names `track.replace` and
- * `track.input.replace` rather than a verb this layer no longer owns.
- *
- * Answered from the retained record on this node, so it stays a different question from anything
- * `PluginRegistry` answers about a candidate: whether the plugin exists at all, and whether it
- * declares the slot, belong to the registry and arrive from it at the recompile. See ADR-062.
- */
-export function unboundGroup(nodeId: string, plugin: string): never {
-  return refuse({ kind: "unbound-group", nodeId, plugin });
 }

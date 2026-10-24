@@ -21,7 +21,6 @@ import {
   commitInFlight,
   immediateInTransaction,
   nestedTransaction,
-  unboundGroup,
   valueBatchImmediate,
   valueBatchStructural,
 } from "../../../src/runtime/schema-refusals";
@@ -71,9 +70,6 @@ describe("the named refusals still say exactly what they said", () => {
     );
     expect(message(() => valueBatchStructural())).toBe(
       "value-batch-structural: A value batch is open. Ask for it once values() has returned.",
-    );
-    expect(message(() => unboundGroup("free:a", "opacity"))).toBe(
-      'keyframe-group-unbound: "free:a" authors no "opacity" group. Use track.replace(...) or track.input.replace(...) to author one.',
     );
   });
 

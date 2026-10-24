@@ -6,20 +6,20 @@ states a phase; `packages/core/test/unit/scripts/session-status-shape.test.ts` e
 byte ceiling.
 
 - **Captured:** 2026-10-24, Asia/Jakarta.
-- **Read against:** `refactor/v5-identified-tables` after the structural-edit slice.
+- **Read against:** `refactor/v5-identified-tables` after the cheap-authored-edit slice.
 
 ## Now
 
-- **Structural edits go through one plan and one commit:** `TrackHandle.remove`, `replace`,
-  `input.replace` and `input.requires.set`/`remove` mint plain edits, a pure `plan()` answers the
-  candidate graph and committed contract, and the runtime stages them into the existing commit
-  path. Bind and unbind keep a live overlay; replacement and removal clear it.
+- **Cheap authored edits share the one edit path:** `TrackHandle.input.values.set` and `setField`
+  mint `set-values`/`set-field`, a pure plan validates them against the committed value spec without
+  re-inferring, and the runtime moves the definition, rewrites the compiled evaluator and publishes
+  once. Binding edits and authored edits keep a live overlay; replacement and removal clear it.
 
 ## Next in line
 
-- **Cheap authored edits on the same path:** add `set-values` and `set-field`, remove `setValues`,
-  `setKeyframe`, `removeKeyframe` and the rule ids only they raise, and validate against the
-  committed value spec rather than a fresh inference.
+- **Live values on the same path:** add `write-live` and `release-live`, remove `overrideValues`,
+  `LiveValueKeyError` and the live-value-key rule id, and make a valid write or release clear an
+  errored node on the next flush.
 
 ## Open, and not scheduled
 

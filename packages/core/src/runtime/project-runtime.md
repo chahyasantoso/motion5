@@ -192,6 +192,14 @@ The two questions a plan may ask of its host: the plugin capabilities the runtim
 
 The one structural application point. It validates writability, plans the edit against the staged view, and returns without staging when the plan changed nothing, so a recipe of no-ops still copies nothing. Otherwise it copies the pending tracks once, carries each planned change through #stageChange, and delegates the one commit path. Planning happens before the copy for that no-op reason, and against the staged view rather than the retained one, so step two of a recipe sees step one. See ADR-064 and ADR-066.
 
+## #applyCheap
+
+The cheap tier's application point. It takes the value tier's admission first, so a cheap edit is refused during a commit and inside an edit recipe exactly as the old value verbs were, while a value batch still collects its publication seed. It then validates writability, plans the edit against the retained view, and answers the empty batch without publishing when the plan changed nothing. Otherwise it copies the retained track map, adopts the new definition with its contract and value state unchanged, rewrites the compiled evaluator through the value port, and publishes through #publishValue. The graph is never replaced and the contract is never re-derived. See ADR-064 and ADR-066.
+
+## #adoptAuthoredEntry
+
+Carries one planned authored change into a track map. The entry's token and kind are preserved; only the definition, value state and contract the plan answered are written. The plan carries the committed contract and value state unchanged, so this member never chooses either.
+
 ## #stageChange
 
 Carries one planned change into the staged map and records what its commit owes. An update preserves the entry's token and kind, replacing only the definition, value state and contract the plan answered. A binding-only update joins noBuild unless the node is already in fullBuild; a replacement or removal joins fullBuild and leaves noBuild, so a later binding in the same recipe cannot suppress a build the replacement owes. A removal deletes the entry; disposal and deregistration remain planCommit's derived settlements. See ADR-064 and ADR-066.
@@ -234,7 +242,7 @@ Full reversible motion recreation would require staged ownership and defined tra
 
 ## #writeValues
 
-One mechanism for setValues and overrideValues; rebase decides whether the authored definition moves. Resolve the entry lazily after reentrancy refusal, preserving the correct diagnosis for a node an owning commit is still adding. Split static and animated values, validate animated candidates, call the writer, stage a replacement if it declines patching, adopt retained state, then #completeWrite. No graph replacement on either path. See ADR-059, ADR-060 and ADR-070.
+The overrideValues path, and the only caller left of the live value writer. Resolve the entry lazily after reentrancy refusal, preserving the correct diagnosis for a node an owning commit is still adding. Split static and animated values, validate animated candidates, call the writer, stage a replacement if it declines patching, adopt retained state, then #completeWrite. No graph replacement and no authored definition move. See ADR-059, ADR-060 and ADR-070.
 
 A static-only write needs neither validation nor staging. Whether an animated key is involved is one question asked of two states, the one this write mints and the one the entry holds, rather than two emptiness tests spelled here. The seam's answer is decoded once, by results.ts, and the decode sits inside the try that performs the escalation rather than beside the call, because the write has already landed by the time the record describing it can refuse to be read. Whether a staged replacement is owed and what playhead to resume at are two readers of that one union rather than an optional wrapping a boolean decoded here, so this member names patched nowhere and a declined write still reads its progress before the stage it pays for. Reading one record whole widens two reads, and both are declared rather than discovered: a patched answer's progress is read where this member skipped it, and #recompileKeyframes reads a patched flag it never read, so the two readers of one encoding stop disagreeing about which half of it is safe to look at. Every writer in this repository answers both halves as ordinary data properties, the production one included, so the widening reaches no shipped case and is pinned by two cases of its own. See ADR-060. Once a writer succeeds it has no inverse, so the state it left is recorded exactly once, on the way out of the try that performs the escalation, and the second map write that insured a boolean across a throwing getter is gone with the boolean. A refused stage therefore preserves the old definition and records the overlay the seam had already applied, which is what keeps an animated override revertible: recording the previous overlay instead leaves a cleared record over a still-patched timeline, and that is the freeze ADR-066 and issue #313 name. Accepted finalization failure never restores stale definitions over an installed replacement. See ADR-066 and issue #313.
 
@@ -254,15 +262,7 @@ Still the only place a single-node value publication happens, still not the only
 
 The one owner of whether a value write publishes now or joins an open batch. With no batch open it delegates to #invalidateOne and nothing about the single-node path moves. With one open it asserts runtime liveness, records the node as a seed, and answers the deferred batch: the node named, no patches, and one value-batch-deferred warning saying the publication was queued.
 
-Its callers are both endings of #completeWrite, #removeKeyframe's no-op, and seek, which stops copying invalidate plus recordAll inline and routes through this owner instead, so adding the tier deleted a copy rather than adding one. Liveness is asserted on the staging path too, because a recipe may dispose the project and a seed pushed onto a dead runtime would be published by a batch that must not publish at all. See ADR-078.
-
-## #recompileKeyframes
-
-For authored leaves that cannot be expressed as a live mask: edit the pure record, validate it and resolve plugins, ask the writer, stage a replacement, adopt the accepted definition with its value state back to authored, then #completeWrite. Capture prior progress so the new compiled Track resumes at that playhead, through the same decoder the mask path reads and for the one question this path has of it: it rebuilds either way, so whether the seam patched what was already compiled decides nothing here, and the playhead is what both live outcomes carry. That is why the patched variant carries a progress the sketch in issue #443 gave it none of, and why this member now reads a flag it never read. The boundary includes resolution and all injected work. A successful writer is conservatively recorded on the way out of a refused stage; an accepted stage is never rolled back because finalization cleanup threw. No topology operation is involved. See ADR-065, ADR-066, ADR-069 and issue #313.
-
-## #setKeyframe
-
-An existing property uses the live-write path; a new property uses the authored editor and recompilation path. The group must already exist. Determine existence through readPluginValues, not a private copy of group layout. Reentrancy is checked before resolving the entry. removeKeyframe uses the same ordering; its no-op retains the established direct-flush behavior. See RA-106, ADR-065, ADR-070 and issue #255.
+Its callers are both endings of #completeWrite, #applyCheap and seek, which stops copying invalidate plus recordAll inline and routes through this owner instead, so adding the tier deleted a copy rather than adding one. Liveness is asserted on the staging path too, because a recipe may dispose the project and a seed pushed onto a dead runtime would be published by a batch that must not publish at all. See ADR-078.
 
 ## #carriedContracts
 

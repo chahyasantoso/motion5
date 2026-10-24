@@ -45,10 +45,10 @@ const compose = (node: { id: string }) => () => ({
  * do: this record is the declared half of `SH-1`'s coverage check, and a member added to the
  * handle later with no entry here fails that check rather than escaping the stale contract.
  *
- * `overrideValues` and `setValues` are that mechanism working as intended: both arrived with
- * ADR-059 and both are covered here rather than through a private copy of the stale contract.
- * `definition`, `requires` and `input` are the same mechanism again, and `remove` and `replace`
- * are now the two structural verbs whose siblings moved under `input` and became the view's verbs.
+ * `overrideValues` is that mechanism working as intended: it arrived with ADR-059 and is covered
+ * here rather than through a private copy of the stale contract. `definition`, `requires` and
+ * `input` are the same mechanism again, and `remove` and `replace` are now the two structural verbs
+ * whose siblings moved under `input` and became the view's verbs.
  */
 const MEMBER_ARGUMENTS: Readonly<Record<string, readonly unknown[]>> = {
   definition: [],
@@ -56,9 +56,6 @@ const MEMBER_ARGUMENTS: Readonly<Record<string, readonly unknown[]>> = {
   remove: [],
   replace: [{ id: "arm" } satisfies TrackDefinition],
   overrideValues: [{ x: 1 }],
-  setValues: [{ x: 1 }],
-  setKeyframe: ["fk", "length", 1],
-  removeKeyframe: ["fk", "length"],
 };
 /** The members that answer on a stale handle rather than refusing. */
 const NON_REFUSING = ["id", "live", "input"] as const;
@@ -76,14 +73,7 @@ const NON_REFUSING = ["id", "live", "input"] as const;
  * gone; a read reported as staleness is true, and it is the family that record asked callers to
  * catch.
  */
-const WRITERS = [
-  "remove",
-  "replace",
-  "overrideValues",
-  "setValues",
-  "setKeyframe",
-  "removeKeyframe",
-] as const;
+const WRITERS = ["remove", "replace", "overrideValues"] as const;
 /** The two members that refuse on a stale handle and keep refusing on a disposed one. */
 const READERS = ["definition", "requires"] as const;
 
@@ -142,6 +132,22 @@ describe("a stale TrackHandle refuses uniformly, and `live` asks without throwin
       }
     });
     expect(escaped).toEqual([]);
+
+    project.dispose();
+  });
+
+  it("SH-9 refuses every verb on the frozen input views after the same staleness", () => {
+    const project = runtime();
+    const handle = staleHandle(project);
+
+    const calls: readonly (() => unknown)[] = [
+      () => handle.input.replace(),
+      () => handle.input.requires.set("data", "hero/leg"),
+      () => handle.input.requires.remove("data"),
+      () => handle.input.values.set([]),
+      () => handle.input.values.setField({ field: "x" }, 1),
+    ];
+    for (const call of calls) expect(thrownBy(call)).toBeInstanceOf(StaleTrackHandleError);
 
     project.dispose();
   });

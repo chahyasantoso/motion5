@@ -20,7 +20,8 @@ import { createValueEvaluator, type ValueEvaluator } from "./evaluate-values";
 export class ValueTrack {
   readonly kind = "values";
   readonly nodeId: string;
-  readonly #evaluator: ValueEvaluator;
+  readonly #interpolator: Interpolator;
+  #evaluator: ValueEvaluator;
   #progress = 0;
   #disposed = false;
 
@@ -31,11 +32,26 @@ export class ValueTrack {
   }) {
     if (options.nodeId.length === 0) throw new TypeError("Track node id must be non-empty.");
     this.nodeId = options.nodeId;
+    this.#interpolator = options.interpolator;
     this.#evaluator = createValueEvaluator(options.values, options.interpolator);
   }
 
   get progress(): number {
     return this.#progress;
+  }
+
+  /**
+   * Evaluates the authored values this track was last given, at the current progress.
+   *
+   * A cheap authored edit reaches this rather than the graph: the evaluator is the whole compiled
+   * cost of a value change, so replacing it leaves identity, progress and the surrounding graph
+   * untouched. The previous evaluator owns a timeline and is disposed before the replacement is
+   * built, so a refused rebuild cannot leak the one it displaced.
+   */
+  replaceValues(values: ParsedValues | undefined): void {
+    this.assertActive();
+    this.#evaluator.dispose();
+    this.#evaluator = createValueEvaluator(values, this.#interpolator);
   }
 
   /** A no-plugin track declares no plugin chain, which is what `renderMetadata` answers. */

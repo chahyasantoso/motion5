@@ -59,6 +59,7 @@ const WARNING_WITH_IDS = { severity: "warning", ids: "always" } as const;
  */
 const BASE_RULES = {
   "blocked-upstream": ERROR_WITH_IDS,
+  "cell-address-unknown": ERROR_NO_IDS,
   "cell-form-invalid": ERROR_NO_IDS,
   "cell-kind-conflict": ERROR_NO_IDS,
   "cell-stops-invalid": ERROR_NO_IDS,

@@ -543,6 +543,7 @@ export class Engine {
         capabilities: this.#capabilities,
         graphBuilder: new IncrementalGraphBuilder(this.#capabilities),
         setProgress: (nodeId, progress) => tracks.get(nodeId)?.setProgress(progress),
+        rewriteValues: (nodeId, values) => tracks.get(nodeId)?.replaceValues(values),
         compileTrack: compileTrackDefinition,
         disposeTrack,
         stageTrack: stageTrackDefinition,

@@ -8,7 +8,6 @@ import type {
 import { authoredLeafPartition, readAuthoredLeaf } from "../contract/authored-leaf";
 import type { AuthoredValues, LiveValues, RequireView } from "../contract/track-handle";
 import { flattenAuthoredKeyframes } from "../domain/keyframe-groups";
-import type { AuthoredKeyframes } from "../domain/authoring/keyframes";
 import { unreachable } from "../lang/exhaustive";
 /**
  * Pure functions over one retained definition, and the two frozen constants that stand in for none.
@@ -24,14 +23,6 @@ import { unreachable } from "../lang/exhaustive";
  * from, and `readPluginBindings` stays the one reader of the authored group shape. Every function
  * below reads one of those answers rather than deriving its own.
  */
-/**
- * The empty overlay: a live write that clears every animated key, rather than one involving none.
- *
- * One frozen value, so a clear allocates nothing. It no longer stands in for a retained entry's
- * animated half, because `value-state.ts` answers whether one is standing and the interpolator owns
- * the keys, so the recompile that hands this to the writer is the one caller left. See ADR-060.
- */
-export const NO_OVERLAY: Readonly<Record<string, unknown>> = Object.freeze({});
 /**
  * One derived require list per retained definition, and the residency rule that makes it safe.
  *
@@ -181,18 +172,6 @@ export function withAuthoredValues(
 }
 /** One retained Motion definition, writable, for the two fields a tier 0 edit moves. */
 type MutableMotion = { -readonly [K in keyof MotionDefinition]: MotionDefinition[K] };
-/** One retained track definition, writable, for the one field an authored edit moves. */
-type MutableTrack = { -readonly [K in keyof GroupedTrackDefinition]: GroupedTrackDefinition[K] };
-/** Builds a track with an edited authored keyframe record, omitting an empty record. */
-export function withKeyframes(
-  track: GroupedTrackDefinition,
-  keyframes: AuthoredKeyframes,
-): GroupedTrackDefinition {
-  const next: MutableTrack = { ...track };
-  if (Object.keys(keyframes).length === 0) delete next.keyframes;
-  else next.keyframes = keyframes;
-  return Object.freeze(next);
-}
 /**
  * Whether two authored triggers are the same trigger.
  *

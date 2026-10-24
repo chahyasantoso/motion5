@@ -480,13 +480,14 @@ export function seeding<Staged>(
 /**
  * Where a verb's liveness is asked, which is the one thing the three guard helpers disagreed about.
  *
- * `seek`, `setValues`, `mount` and every other entry point call `#assertLive` before the reentrancy
- * guard, so a retired project refuses them for the disposal. A verb reached through a handle does
- * not: `#setKeyframe` and `#setTrigger` run the reentrancy guard first and reach liveness only when
- * `#writableEntry` resolves the handle, so a retired project mid-commit refuses them for the commit
- * instead. Both orders are today's, and neither is safe to normalise in a slice whose claim is
- * that no message moved, so which one a verb wants is a field rather than a comment. `resolved`
- * means the answer belongs to `expectLive`, which already owns it.
+ * `seek`, `overrideValues`, `mount` and every other entry point call `#assertLive` before the
+ * reentrancy guard, so a retired project refuses them for the disposal. A verb reached through a
+ * handle does not: the handle's structural and cheap verbs and `#setTrigger` run the reentrancy
+ * guard first and reach liveness only when `#writableEntry` resolves the handle, so a retired
+ * project mid-commit refuses them for the commit instead. Both orders are today's, and neither is
+ * safe to normalise in a slice whose claim is that no message moved, so which one a verb wants is a
+ * field rather than a comment. `resolved` means the answer belongs to `expectLive`, which already
+ * owns it.
  */
 export type Liveness = "asserted" | "resolved";
 
@@ -538,7 +539,7 @@ export const OPEN_RECIPE: VerbClass = Object.freeze<OpenRecipeVerb>({ kind: "ope
 /** A structural commit, which is the one verb an open recipe absorbs instead of refusing. */
 export const COMMIT: VerbClass = Object.freeze<CommitVerb>({ kind: "commit" });
 
-/** A value-tier verb: `seek`, `setValues`, `overrideValues`, `setKeyframe`, `removeKeyframe`. */
+/** A value-tier verb: `seek` and `overrideValues`. */
 export function valueVerb(verb: string, liveness: Liveness): VerbClass {
   return Object.freeze<ValueVerb>({ kind: "value", verb, liveness });
 }
