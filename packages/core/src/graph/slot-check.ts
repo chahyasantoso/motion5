@@ -1,10 +1,7 @@
 import type { Diagnostic, FieldSpec, ValueSpec } from "../contract/v5";
 import type { SourceContract } from "../contract/v5-infer";
-import { deriveSourceContract } from "../contract/v5-infer";
 import { diagnostic } from "../contract/diagnostics";
-import { parseTrackDefinition } from "../contract/v5-parse";
 import { compareEdges, edgeRequirement, type GraphEdge, type GraphNode } from "./ir";
-import type { PluginCapabilities } from "../ports/plugin-capabilities";
 
 /**
  * The load-time structural check between one producer's output contract and one consumer slot.
@@ -91,30 +88,6 @@ export function checkSlotOutput(
   return checkFields(producer, required);
 }
 
-function outputsOf(
-  node: GraphNode,
-  capabilities: PluginCapabilities,
-): Readonly<Record<string, SourceContract>> | undefined {
-  const pluginId = node.track.plugin;
-  if (pluginId === undefined) {
-    const parsed = parseTrackDefinition(node.track, node.id);
-    if (parsed.kind === "refused") return undefined;
-    const inferred = deriveSourceContract(
-      parsed.value.input.values,
-      parsed.value.input.schema,
-      `${node.id}.input.values`,
-    );
-    if (inferred.kind === "refused") return undefined;
-    return Object.freeze({ values: inferred.value });
-  }
-  const definition = capabilities.pluginDefinition?.(pluginId);
-  if (definition === undefined) return undefined;
-  const outputs: Record<string, SourceContract> = {};
-  for (const [name, spec] of Object.entries(definition.outputs))
-    outputs[name] = Object.freeze({ spec, proven: true });
-  return Object.freeze(outputs);
-}
-
 function describeOutputSpec(spec: ValueSpec): string {
   return spec.kind;
 }
@@ -129,37 +102,32 @@ function pathFor(edge: GraphEdge, output: string): string {
 /**
  * Every slot check the graph can answer, in canonical order.
  *
- * A producer's contract is derived once per node. A slot with no bound edge is not checked here:
- * `graph/dependency-check.ts` owns required-slot presence, and an omitted optional slot has nothing
- * to compare. Map members are separate edges and therefore separate checks.
+ * Both halves read committed contracts and nothing derives one from current authored values. The
+ * consumer's slot declarations come from its contract, and the producer's outputs come from the
+ * contract that build carried or derived at its last structural commit. A node without a contract
+ * is one dependency admission already names, so it contributes no comparison here. A slot with no
+ * bound edge is not checked either: `graph/dependency-check.ts` owns required-slot presence, and an
+ * omitted optional slot has nothing to compare. Map members are separate edges and therefore
+ * separate checks.
  */
-export function checkSlotFit(
-  nodes: readonly GraphNode[],
-  capabilities: PluginCapabilities,
-): readonly Diagnostic[] {
-  if (capabilities.pluginDefinition === undefined) return Object.freeze([]);
-  const contracts = new Map<string, Readonly<Record<string, SourceContract>> | undefined>();
-  for (const node of nodes) contracts.set(node.id, outputsOf(node, capabilities));
-
+export function checkSlotFit(nodes: readonly GraphNode[]): readonly Diagnostic[] {
+  const nodeById = new Map(nodes.map((node) => [node.id, node] as const));
   const diagnostics: Diagnostic[] = [];
   for (const node of nodes) {
-    const pluginId = node.track.plugin;
-    if (pluginId === undefined) continue;
-    const definition = capabilities.pluginDefinition(pluginId);
-    if (definition === undefined) continue;
-    const slots = definition.inputs.requires ?? {};
+    const contract = node.contract;
+    if (contract?.plugin === undefined) continue;
     const edgeBySlot = new Map<string, GraphNode["edges"]>();
     for (const edge of node.edges) {
       const requirement = edgeRequirement(edge);
-      if (requirement === undefined || requirement.plugin !== pluginId) continue;
+      if (requirement === undefined || requirement.plugin !== contract.plugin) continue;
       const found = edgeBySlot.get(requirement.slot) ?? [];
       edgeBySlot.set(requirement.slot, [...found, edge]);
     }
     for (const [slot, edges] of edgeBySlot) {
-      const spec = slots[slot];
+      const spec = contract.slots[slot];
       if (spec === undefined) continue;
       for (const edge of [...edges].sort(compareEdges)) {
-        const producer = contracts.get(edge.sourceId);
+        const producer = nodeById.get(edge.sourceId)?.contract?.outputs;
         if (producer === undefined) continue;
         for (const [output, required] of Object.entries(spec.outputs)) {
           const result = checkSlotOutput(producer[output], required);

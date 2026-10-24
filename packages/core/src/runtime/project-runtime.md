@@ -258,6 +258,12 @@ An existing property uses the live-write path; a new property uses the authored 
 
 The one ordering every authored edit follows: writable entry, then the candidate authoring-edit.ts answers, then one structural replacement, and nothing at all when that candidate is the retained definition by identity. It replaces ten members: two shared orderings that each took a closure, six wrappers whose whole body was naming one pure primitive inside one of those closures, the retained-record write both orderings ended at, and a ninth ordering whose add boolean decided which of two opposite observation edits it was performing. Which edit was asked is now a value rather than a member name and a flag, so the eight verbs a handle projects reach one member and the switch answering them is total. Nothing about who judges what moved: the registry and the candidate graph still judge the whole candidate at derivation, and no primitive authorizes its own binding. Inside a recipe these stage rather than publish, and a no-op stages nothing, which is what lets a recipe of nothing but no-ops end without a candidate build. Edge identity is still observationEdgeKey against the entry's own motion owner rather than object identity. See RA-66, ADR-045, ADR-057, ADR-062, ADR-063, ADR-064 and ADR-065.
 
+## #carriedContracts
+
+The contracts a rebuild may keep, one per entry that still owns one.
+
+Only a structural edit clears an entry's contract, so presence is exactly the answer to "may this rebuild re-derive it?". A contract is absent for a brand-new track and for one whose definition a structural edit replaced; both have to derive from the track they now hold. Every other entry carries its contract across the rebuild, which is what keeps a cheap edit that emptied an inferred table source from turning that source unproven for its typed consumers. The accepted graph's contracts are read back into the entries at the same point, so the runtime never derives a contract a second time.
+
 ## #snapshot
 
 One pass over tracks builds free tracks and buckets motion-owned tracks, then one pass projects motions. Avoids repeated per-motion filtering without creating another persistent ownership cache. Entries preserve committed order and untouched definition identity, and the snapshot comes from the same pair adoption will retain. See ADR-058 and ADR-064.

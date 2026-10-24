@@ -74,3 +74,14 @@ because that is the one place that owns both member leafhood and goal addressing
 validates the placement of every goal weight, `influence` and the 3D `orient` (ADR-124), without
 re-deriving either question. Keeping the scope here prevents a second graph interpretation in the
 rule module and lets several solves combine their answers with one precedence order. See ADR-110.
+
+## withContract
+
+The contract a node enters this build with, carried or derived.
+
+The carried entry wins whenever it names the same plugin, because only a structural edit is allowed
+to compute a new one: a rebuild after a cheap edit must keep the contract the node committed to even
+though the authored values beside it moved. A carried contract naming another plugin belongs to an
+earlier incarnation of the id, so it is ignored and the track answers. A node that already carries a
+contract keeps its own object, which is what lets the incremental builder's cached nodes survive a
+rebuild by identity. Anything else is derived once here, before any check reads it.

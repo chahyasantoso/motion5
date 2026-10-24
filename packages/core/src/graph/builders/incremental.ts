@@ -1,5 +1,7 @@
 import type { Diagnostic, ProjectDefinition, TrackDefinition } from "../../contract/v5";
 import { collectTrack, finalizeGraph, type GraphBuildResult, type GraphNode } from "../ir";
+import type { CommittedContract } from "../committed-contract";
+import { deriveCommittedContract } from "../committed-contract";
 import { diagnostic } from "../../contract/diagnostics";
 import { assertAuthoredMotionId } from "../ids";
 import type { PluginCapabilities } from "../../ports/plugin-capabilities";
@@ -91,8 +93,15 @@ export class IncrementalGraphBuilder {
       return node;
     }
 
-    this.#trackCache.set(key, node);
-    return node;
+    // The contract is part of the cached node, so a later build with the same track object returns
+    // the same node object and `finalizeGraph` has nothing to attach. Deriving it outside the
+    // cache would freeze a fresh node on every rebuild and break that identity.
+    const contract = deriveCommittedContract(track, node.id, this.#capabilities);
+    const committed =
+      contract === undefined ? node : Object.freeze({ ...node, contract } satisfies GraphNode);
+
+    this.#trackCache.set(key, committed);
+    return committed;
   }
 
   /**
@@ -112,7 +121,10 @@ export class IncrementalGraphBuilder {
       if (!visited.has(key)) this.#trackCache.delete(key);
   }
 
-  build(project: ProjectDefinition): GraphBuildResult {
+  build(
+    project: ProjectDefinition,
+    carried?: ReadonlyMap<string, CommittedContract>,
+  ): GraphBuildResult {
     const diagnostics: Diagnostic[] = [];
     const nodes: GraphNode[] = [];
     const seen = new Set<string>();
@@ -188,6 +200,6 @@ export class IncrementalGraphBuilder {
     // Both loops are done, so `visited` is the residency set for this project. Here rather than in
     // a `finally`, and before `finalizeGraph`, which owns the result and not the cache.
     this.#sweep(visited);
-    return finalizeGraph(nodes, diagnostics, this.#capabilities);
+    return finalizeGraph(nodes, diagnostics, this.#capabilities, carried);
   }
 }

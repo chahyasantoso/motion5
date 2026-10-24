@@ -1,5 +1,6 @@
 import type { ProjectDefinition } from "../contract/v5";
 import { edgeKey, type GraphBuildResult, type GraphIR } from "./ir";
+import type { CommittedContract } from "./committed-contract";
 import { ObservationState } from "./observation-state";
 import type { GraphBuilder } from "../ports/graph-builder";
 
@@ -66,8 +67,8 @@ export class GraphBinding {
   }
 
   /** Build, validate, apply, and atomically commit a candidate project. */
-  replace(project: ProjectDefinition): void {
-    const candidate = validateGraphResult(this.#builder.build(project));
+  replace(project: ProjectDefinition, carried?: ReadonlyMap<string, CommittedContract>): void {
+    const candidate = validateGraphResult(this.#builder.build(project, carried));
     try {
       this.#applyDelta(this.#graph, candidate);
       this.#hooks.afterStateApply?.();

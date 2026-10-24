@@ -23,6 +23,7 @@ import {
   qualifyMotionTrack,
 } from "./ids";
 import { collectDependencyEdges, qualifySource, resolveRequirementEdge } from "./dependency-edges";
+import { deriveCommittedContract, type CommittedContract } from "./committed-contract";
 import { orderGraph } from "./order";
 import { checkDependencyBindings } from "./dependency-check";
 import { checkSlotFit } from "./slot-check";
@@ -103,6 +104,14 @@ export interface GraphNode {
   readonly track: GroupedTrackDefinition;
   readonly edges: readonly GraphEdge[];
   readonly solves?: readonly SolveMember[];
+  /**
+   * What this node committed to, absent only when nothing can answer for it.
+   *
+   * Attached by `finalizeGraph` from the carried map of the rebuild or derived from the track, so a
+   * reader never has to decide when a contract is fresh. A plugin id the catalog does not admit and
+   * a track the parser refuses have no contract, and dependency admission names both.
+   */
+  readonly contract?: CommittedContract;
 }
 export interface GraphIR {
   readonly nodes: readonly GraphNode[];
@@ -269,6 +278,7 @@ export function collectTrack(
 export function buildGraphIR(
   project: ProjectDefinition,
   capabilities: PluginCapabilities,
+  carried?: ReadonlyMap<string, CommittedContract>,
 ): GraphBuildResult {
   const diagnostics: Diagnostic[] = [];
   const nodes: GraphNode[] = [];
@@ -336,7 +346,7 @@ export function buildGraphIR(
       }
     }
   }
-  return finalizeGraph(nodes, diagnostics, capabilities);
+  return finalizeGraph(nodes, diagnostics, capabilities, carried);
 }
 
 const ORIENTATION_KEYS = ["rotation", "rotationX", "rotationY"] as const;
@@ -944,6 +954,19 @@ export function deriveDependants(
   return freeze(dependants);
 }
 
+function withContract(
+  node: GraphNode,
+  capabilities: PluginCapabilities,
+  carried: ReadonlyMap<string, CommittedContract> | undefined,
+): GraphNode {
+  const stored = carried?.get(node.id);
+  if (stored !== undefined && stored.plugin === node.track.plugin)
+    return node.contract === stored ? node : freeze({ ...node, contract: stored });
+  if (node.contract !== undefined) return node;
+  const derived = deriveCommittedContract(node.track, node.id, capabilities);
+  return derived === undefined ? node : freeze({ ...node, contract: derived });
+}
+
 /**
  * Validates collected nodes and diagnostics, linearizes them, and freezes the result.
  *
@@ -951,15 +974,20 @@ export function deriveDependants(
  * drift about duplicate/unknown/self-reference edges, diagnostic ordering, cycle rejection, or the
  * frozen result shape. Any solver derivation (issue #195, slice C2) lands here and is therefore
  * reached by both load-time validation and the runtime through one call site.
+ *
+ * The committed contract is attached here, before any check reads one, so slot and dependency
+ * admission never derive a producer's contract from its current authored values.
  */
 export function finalizeGraph(
   nodes: readonly GraphNode[],
   diagnostics: Diagnostic[],
   capabilities: PluginCapabilities,
+  carried?: ReadonlyMap<string, CommittedContract>,
 ): GraphBuildResult {
-  const known = new Set(nodes.map((node) => node.id));
+  const committed = nodes.map((node) => withContract(node, capabilities, carried));
+  const known = new Set(committed.map((node) => node.id));
   const edgeKeys = new Set<string>();
-  for (const node of nodes)
+  for (const node of committed)
     for (const edge of node.edges) {
       const key = edgeKey(edge);
       if (edgeKeys.has(key))
@@ -996,12 +1024,12 @@ export function finalizeGraph(
   // chain that was never valid: an unknown `base` source yields `ik-solver-unreachable-root` beside
   // `edge-unknown-source`, naming a member for a typo one node up. One cause, one
   // diagnostic, and a derivation that only ever runs over resolved references. `RS-10` pins it.
-  diagnostics.push(...checkDependencyBindings(nodes, capabilities));
-  diagnostics.push(...checkSlotFit(nodes, capabilities));
+  diagnostics.push(...checkDependencyBindings(committed, capabilities));
+  diagnostics.push(...checkSlotFit(committed));
   diagnostics.sort(compareDiagnostics);
   if (diagnostics.some(({ severity }) => severity === "error"))
     return { diagnostics: Object.freeze(diagnostics) };
-  const resolvedNodes = resolveSolvers(nodes, diagnostics, capabilities);
+  const resolvedNodes = resolveSolvers(committed, diagnostics, capabilities);
   diagnostics.sort(compareDiagnostics);
   if (diagnostics.some(({ severity }) => severity === "error"))
     return { diagnostics: Object.freeze(diagnostics) };

@@ -21,8 +21,9 @@ function checkNode(
   capabilities: PluginCapabilities,
   diagnostics: Diagnostic[],
 ): void {
-  const pluginId = node.track.plugin;
-  const authored = node.track.input?.requires;
+  const contract = node.contract;
+  const pluginId = contract?.plugin ?? node.track.plugin;
+  const authored = contract?.requires ?? node.track.input?.requires;
   const path = `${node.id}.input.requires`;
   if (pluginId === undefined) {
     if (authored !== undefined && isRecord(authored) && Object.keys(authored).length > 0)
@@ -35,8 +36,8 @@ function checkNode(
       );
     return;
   }
-  const definition = capabilities.pluginDefinition?.(pluginId);
-  if (definition === undefined) {
+  const declared = contract?.slots ?? capabilities.pluginDefinition?.(pluginId)?.inputs.requires;
+  if (declared === undefined) {
     // A registry that answers the identified-table question but does not know this id is the
     // authoritative unknown. A registry with no answer at all is the grouped one, and the parser
     // above already refused the id where it could.
@@ -46,7 +47,6 @@ function checkNode(
       );
     return;
   }
-  const declared = definition.inputs.requires ?? {};
   const bindings = isRecord(authored) ? authored : {};
   for (const [slot, spec] of Object.entries(declared)) {
     if (spec.optional === true) continue;

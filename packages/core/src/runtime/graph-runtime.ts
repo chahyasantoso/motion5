@@ -5,6 +5,7 @@ import { GraphBinding } from "../graph/binding";
 import { createDefaultGraphBuilder } from "../graph/builders/default";
 import { UNJUDGED_CAPABILITIES } from "../ports/plugin-capabilities";
 import type { GraphNode, GraphIR } from "../graph/ir";
+import type { CommittedContract } from "../graph/committed-contract";
 import { GraphPublisher, type PublisherNode, type PublisherSnapshot } from "./graph-publisher";
 import { PatchRegistry, type PatchBatch } from "./patch-registry";
 import { deferredScheduler, type Cancel, type Scheduler } from "../ports/scheduler";
@@ -178,9 +179,9 @@ export class GraphRuntime {
     this.#dropMember(nodeId);
     this.#registry.evict(nodeId);
   }
-  replaceGraph(project: ProjectDefinition): void {
+  replaceGraph(project: ProjectDefinition, carried?: ReadonlyMap<string, CommittedContract>): void {
     this.#assertLive();
-    this.#binding.replace(project);
+    this.#binding.replace(project, carried);
     for (const id of this.#members)
       if (!this.#binding.graph.nodeById[id]) {
         this.#dropMember(id);

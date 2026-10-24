@@ -99,6 +99,7 @@ import {
   type ComposeResolver,
 } from "./graph-runtime";
 import type { GraphNode } from "../graph/ir";
+import type { CommittedContract } from "../graph/committed-contract";
 import type { MemberState } from "./graph-publisher";
 import type { GraphBuilder } from "../ports/graph-builder";
 import { unreachable } from "../lang/exhaustive";
@@ -108,6 +109,15 @@ interface FreeTrackEntry {
   readonly track: GroupedTrackDefinition;
   readonly token: number;
   readonly valueState: ValueState;
+  /**
+   * The contract this node committed to at its last structural commit.
+   *
+   * `undefined` until a graph build has derived one, and again after `replace-track` or
+   * `replace-input` because those are the edits allowed to move it. Every other edit spreads the
+   * entry and keeps it, which is what lets a rebuild carry it rather than re-infer from values that
+   * a cheap edit made emptier.
+   */
+  readonly contract: CommittedContract | undefined;
 }
 
 interface OwnedTrackEntry {
@@ -116,6 +126,7 @@ interface OwnedTrackEntry {
   readonly motionId: string;
   readonly token: number;
   readonly valueState: ValueState;
+  readonly contract: CommittedContract | undefined;
 }
 
 type TrackEntry = FreeTrackEntry | OwnedTrackEntry;
@@ -271,6 +282,7 @@ export class ProjectRuntime {
           motionId: motion.id,
           token: this.#nextToken++,
           valueState: AUTHORED,
+          contract: undefined,
         });
     }
     for (const track of project.freeTracks ?? [])
@@ -279,6 +291,7 @@ export class ProjectRuntime {
         track,
         token: this.#nextToken++,
         valueState: AUTHORED,
+        contract: undefined,
       });
     // The one place optionality is answered, and the one place an installed seam's receiver is.
     // Every seam a host did not install reads its own no-op out of NO_PORTS, and every seam a host
@@ -363,6 +376,12 @@ export class ProjectRuntime {
       // both leave together rather than the second replacing the first. `report.ts` owns that
       // precedence for every caller of it, and `afterCleanup` is where the rule is written down.
       throw afterCleanup(error, "cleanup", () => this.#ports.host.disposeComposition());
+    }
+    // The load's own graph is the first structural commit, so its contracts are what every later
+    // rebuild carries. Reading them back rather than deriving again keeps one owner of derivation.
+    for (const [id, entry] of this.#tracks) {
+      const contract = this.#graph.graph.nodeById[id]?.contract;
+      if (contract !== undefined) this.#tracks.set(id, { ...entry, contract });
     }
   }
   get project(): ProjectDefinition {
@@ -596,8 +615,15 @@ export class ProjectRuntime {
     tracks.set(
       id,
       motionId === undefined
-        ? { kind: "free", track: accepted, token, valueState: AUTHORED }
-        : { kind: "owned", track: accepted, motionId, token, valueState: AUTHORED },
+        ? { kind: "free", track: accepted, token, valueState: AUTHORED, contract: undefined }
+        : {
+            kind: "owned",
+            track: accepted,
+            motionId,
+            token,
+            valueState: AUTHORED,
+            contract: undefined,
+          },
     );
     this.#commit({ kind: "tracks", tracks });
     return this.#handle(id, token);
@@ -777,6 +803,7 @@ export class ProjectRuntime {
       ...entry,
       track: accepted,
       valueState: AUTHORED,
+      contract: undefined,
     });
     this.#commit({ kind: "tracks", tracks });
   }
@@ -825,7 +852,16 @@ export class ProjectRuntime {
           this.#ports.motion.addTrack(motionId, nodeId, duration),
         removeMotionTrack: (motionId, nodeId) => this.#ports.motion.removeTrack(motionId, nodeId),
         assertLive: () => this.#assertLive(),
-        accept: () => this.#graph.replaceGraph(this.#snapshot(tracks, motions)),
+        accept: () => {
+          this.#graph.replaceGraph(this.#snapshot(tracks, motions), this.#carriedContracts(tracks));
+          // The accepted graph is the structural commit, so its contracts become the ones every
+          // later rebuild carries. Read back rather than derived a second time here.
+          for (const [id, entry] of tracks) {
+            const contract = this.#graph.graph.nodeById[id]?.contract;
+            if (contract !== undefined && contract !== entry.contract)
+              tracks.set(id, { ...entry, contract });
+          }
+        },
         adopt: () => {
           this.#tracks = tracks;
           this.#motions = motions;
@@ -1017,6 +1053,15 @@ export class ProjectRuntime {
     const next = applyEdit({ nodeId: id, track: entry.track }, edit);
     if (next === entry.track) return;
     this.#replaceTrack(id, token, next);
+  }
+
+  #carriedContracts(
+    tracks: ReadonlyMap<string, TrackEntry>,
+  ): ReadonlyMap<string, CommittedContract> {
+    const carried = new Map<string, CommittedContract>();
+    for (const [id, entry] of tracks)
+      if (entry.contract !== undefined) carried.set(id, entry.contract);
+    return carried;
   }
 
   #snapshot(
