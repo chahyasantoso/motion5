@@ -5,7 +5,7 @@ import { flattenAuthoredKeyframes } from "../../../src/domain/keyframe-groups";
 import { PluginRegistry, type PluginDefinition } from "../../../src/domain/plugins";
 
 // Issue #173 and ADR-044. A plugin owns the input slots it understands, and the author binds them
-// inside the plugin's own authored group rather than in a track-level `observes` entry with a
+// inside the plugin's own authored group rather than in a track-level entry with a
 // projection map the author had to keep synchronized with the plugin by hand.
 //
 // The three validation owners are separated here on purpose: `validateKeyframes` owns the

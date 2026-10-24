@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import { fileURLToPath } from "node:url";
 import type {
   AuthoredPluginGroup,
-  ObservationDefinition,
   ProjectDefinition,
   TrackDefinition,
 } from "../../../src/contract/v5";
@@ -68,8 +67,6 @@ const MEMBER_ARGUMENTS: Readonly<Record<string, readonly unknown[]>> = {
   requires: [],
   remove: [],
   replace: [{ id: "arm" } satisfies TrackDefinition],
-  addObserve: [{ source: OTHER_ID } satisfies ObservationDefinition],
-  removeObserve: [{ source: OTHER_ID } satisfies ObservationDefinition],
   overrideValues: [{ x: 1 }],
   setValues: [{ x: 1 }],
   setRequire: ["fk", "base", OTHER_ID],
@@ -100,8 +97,6 @@ const NON_REFUSING = ["id", "live"] as const;
 const WRITERS = [
   "remove",
   "replace",
-  "addObserve",
-  "removeObserve",
   "overrideValues",
   "setValues",
   "setRequire",

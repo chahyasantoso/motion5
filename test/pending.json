@@ -75,11 +75,6 @@
     "reason": "Authors grouped plugin keyframes; Phase 5 expresses transform, fk and 3d plugins with tables and declared dependencies."
   },
   {
-    "path": "packages/core/test/contract/validation-owner.test.ts",
-    "phase": 5,
-    "reason": "Authors grouped plugin keyframes and retired observes edges; Phase 5 expresses plugins with tables and declared dependencies."
-  },
-  {
     "path": "packages/core/test/integration/adopt-destroy-readopt.test.ts",
     "phase": 4,
     "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
@@ -190,11 +185,6 @@
     "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
   },
   {
-    "path": "packages/core/test/integration/observation-identity.test.ts",
-    "phase": 4,
-    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
-  },
-  {
     "path": "packages/core/test/integration/one-mechanism-per-question.test.ts",
     "phase": 4,
     "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
@@ -300,11 +290,6 @@
     "reason": "Exercises solver, IK, FK or rig behavior; Phase 5 expresses it with tables and declared dependencies."
   },
   {
-    "path": "packages/core/test/unit/graph/edge-key-separator.test.ts",
-    "phase": 5,
-    "reason": "Exercises retired observes edge separator collisions; Phase 5 expresses plugins with tables and declared dependencies."
-  },
-  {
     "path": "packages/core/test/unit/graph/graph-dependants.test.ts",
     "phase": 5,
     "reason": "Exercises walker demo reverse topology with IK and FK; Phase 5 expresses it with tables and declared dependencies."
@@ -331,23 +316,13 @@
   },
   {
     "path": "packages/core/test/unit/graph/observation-state.test.ts",
-    "phase": 4,
-    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
-  },
-  {
-    "path": "packages/core/test/unit/graph/observation-target-removal.test.ts",
-    "phase": 4,
-    "reason": "Exercises authored or live edits, handles or observation wiring; Phase 4 rebuilds that path on identified tables."
+    "phase": 7,
+    "reason": "Exercises the retained output-role journal and snapshot machinery; Phase 7 either wires it to a real producer or retires it."
   },
   {
     "path": "packages/core/test/unit/graph/resolve-solvers.test.ts",
     "phase": 5,
     "reason": "Exercises solver, IK, FK or rig behavior; Phase 5 expresses it with tables and declared dependencies."
-  },
-  {
-    "path": "packages/core/test/unit/graph/single-input-channel.test.ts",
-    "phase": 5,
-    "reason": "Exercises retired observes edge channel rules; Phase 5 expresses plugins with tables and declared dependencies."
   },
   {
     "path": "packages/core/test/unit/graph/solved-pivot-offset.test.ts",

@@ -4,12 +4,13 @@ import { createManualClock } from "../../src/ports/clock";
 import { ProjectRuntime } from "../../src/runtime/project-runtime";
 
 /**
- * Three independent consumer/source pairs. Each consumer observes a free track that is never
- * seeded, so the observation source never publishes a value and every seek of a consumer
- * produces exactly one fresh `observation-pending-reference` diagnostic (never the same
- * diagnostic twice, since the observer id differs each time). This lets a handful of
- * sequential `seek` calls exercise the ring buffer's eviction without any node ever
- * resolving.
+ * Three independent consumer/source pairs. Each consumer binds a requirement slot to a free track
+ * that is never seeded, so the source never publishes a value and every seek of a consumer
+ * produces exactly one fresh `source-pending` diagnostic (never the same diagnostic twice, since
+ * the observer id differs each time). This lets a handful of sequential `seek` calls exercise the
+ * ring buffer's eviction without any node ever resolving. The bindings are the grouped-keyframe
+ * form because this runtime is registry-free and that form derives an input edge without asking a
+ * plugin catalog.
  */
 function pendingProject(): {
   readonly schemaVersion: 5;
@@ -27,9 +28,18 @@ function pendingProject(): {
       { id: "source1" },
       { id: "source2" },
       { id: "source3" },
-      { id: "consumer1", observes: [{ source: "~/source1" }] },
-      { id: "consumer2", observes: [{ source: "~/source2" }] },
-      { id: "consumer3", observes: [{ source: "~/source3" }] },
+      {
+        id: "consumer1",
+        keyframes: { fk: { requires: { base: "~/source1" } } },
+      },
+      {
+        id: "consumer2",
+        keyframes: { fk: { requires: { base: "~/source2" } } },
+      },
+      {
+        id: "consumer3",
+        keyframes: { fk: { requires: { base: "~/source3" } } },
+      },
     ],
   };
 }
@@ -65,7 +75,7 @@ describe("P5-03 unified inline diagnostics", () => {
     if (patch?.status !== "blocked")
       throw new Error(`~/consumer1 is ${patch?.status ?? "absent"}, not blocked.`);
     expect(patch.diagnostics).toHaveLength(1);
-    expect(patch.diagnostics[0]?.ruleId).toBe("observation-pending-reference");
+    expect(patch.diagnostics[0]?.ruleId).toBe("source-pending");
     expect(batch.diagnostics).toHaveLength(1);
     expect(runtime.diagnostics.entries).toHaveLength(1);
     expect(runtime.diagnostics.entries[0]).toEqual(patch.diagnostics[0]);

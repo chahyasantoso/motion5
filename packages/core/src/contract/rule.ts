@@ -22,9 +22,9 @@ export type RuleSeverity = "error" | "warning";
  * Whether a rule names ids in its payload.
  *
  * Two answers rather than three. `"sometimes"` had exactly two causes and neither survives
- * measurement: `observation-source` reported two different refusals under one id and is split, and
- * the three handle rules are minted on thrown error classes with no construction site at all.
- * Absence of a measurement is not a third answer.
+ * measurement: the rule that reported two different refusals under one id was split and then retired
+ * with the authored form it named, and the three handle rules are minted on thrown error classes
+ * with no construction site at all. Absence of a measurement is not a third answer.
  */
 export type IdsOwnership = "none" | "always";
 
@@ -67,6 +67,9 @@ const BASE_RULES = {
   "composition-failure": ERROR_WITH_IDS,
   "composition-output-shape": ERROR_WITH_IDS,
   "diagnostic-sink-failure": ERROR_WITH_IDS,
+  "edge-duplicate": ERROR_WITH_IDS,
+  "edge-self-reference": ERROR_WITH_IDS,
+  "edge-unknown-source": ERROR_WITH_IDS,
   "flush-failure": ERROR_WITH_IDS,
   "free-tracks-shape": ERROR_NO_IDS,
   "graph-cycle": ERROR_WITH_IDS,
@@ -103,6 +106,7 @@ const BASE_RULES = {
   "ik-target-not-single-leaf": ERROR_WITH_IDS,
   "ik-weight-without-solver": ERROR_WITH_IDS,
   "input-schema-on-plugin-track": ERROR_NO_IDS,
+  "input-source-shape": ERROR_WITH_IDS,
   "live-value-key": ERROR_NO_IDS,
   "live-values-invalid": ERROR_NO_IDS,
   "motion-duplicate": ERROR_WITH_IDS,
@@ -113,22 +117,10 @@ const BASE_RULES = {
   "motions-shape": ERROR_NO_IDS,
   "name-reserved": ERROR_NO_IDS,
   "node-duplicate": ERROR_WITH_IDS,
-  "observation-duplicate": ERROR_WITH_IDS,
-  "observation-input-shape": ERROR_WITH_IDS,
-  "observation-missing-upstream": ERROR_WITH_IDS,
-  "observation-output-shape": ERROR_WITH_IDS,
-  "observation-pending-reference": WARNING_WITH_IDS,
-  "observation-projection-unsupported": ERROR_NO_IDS,
-  "observation-role-unsupported": ERROR_NO_IDS,
-  "observation-self-reference": ERROR_WITH_IDS,
-  "observation-source": ERROR_WITH_IDS,
-  "observation-source-shape": ERROR_NO_IDS,
-  "observation-target-unsupported": ERROR_NO_IDS,
-  "observation-unknown-source": ERROR_WITH_IDS,
-  "observes-shape": ERROR_NO_IDS,
   "output-invalid": ERROR_NO_IDS,
   "output-missing": ERROR_NO_IDS,
   "output-row-id-duplicate": ERROR_NO_IDS,
+  "output-source-shape": ERROR_WITH_IDS,
   "output-undeclared": ERROR_NO_IDS,
   "perspective-shape": ERROR_NO_IDS,
   "perspective-usage": WARNING_WITH_IDS,
@@ -173,6 +165,7 @@ const BASE_RULES = {
   "slot-required-missing": ERROR_NO_IDS,
   "slot-unknown": ERROR_NO_IDS,
   "slot-unproven": ERROR_NO_IDS,
+  "source-pending": WARNING_WITH_IDS,
   "spec-field-unknown": ERROR_NO_IDS,
   "stale-motion-handle": ERROR_NO_IDS,
   "stale-track-handle": ERROR_NO_IDS,
@@ -190,6 +183,7 @@ const BASE_RULES = {
   "trigger-time-repeat-shape": ERROR_NO_IDS,
   "trigger-time-yoyo-requires-repeat": ERROR_NO_IDS,
   "trigger-time-yoyo-shape": ERROR_NO_IDS,
+  "upstream-missing": ERROR_WITH_IDS,
   "value-batch-deferred": WARNING_WITH_IDS,
   "values-shape-invalid": ERROR_NO_IDS,
 } as const satisfies Record<BaseRuleId, RuleFacts>;

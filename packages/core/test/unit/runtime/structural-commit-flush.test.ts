@@ -21,9 +21,9 @@ import { describeError } from "../../../src/runtime/schema-refusals";
  * A structural commit ends at one flush. Every one of the five paths reached `replaceGraph` and
  * stopped there, and `replaceGraph` commits a snapshot without seeding anything, so a project
  * whose structure was built after load published nothing until something unrelated ticked, and
- * `addObserve` on a manual clock with no tick was invisible forever. That is exactly what "build a
- * project's structure up incrementally from nothing, driven by runtime code" needs and did not
- * have.
+ * a structural edit on a manual clock with no tick was invisible forever. That is exactly what
+ * "build a project's structure up incrementally from nothing, driven by runtime code" needs and did
+ * not have.
  *
  * `RA-1` through `RA-7` in `structural-commit-path.test.ts` own the order a commit applies its
  * effects and reverts them, and they are equivalence evidence by construction: they assert no
@@ -305,7 +305,7 @@ describe("a structural commit ends at one flush", () => {
     const before = runtime.graph.sequence;
 
     expect(() => runtime.addTrack(REJECTED_TRACK, { motionId: MOTION_ID })).toThrow(
-      /^observation-unknown-source at /,
+      /^edge-unknown-source at /,
     );
 
     expect(runtime.graph.sequence).toBe(before);

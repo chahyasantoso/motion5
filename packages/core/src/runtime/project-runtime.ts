@@ -1014,10 +1014,7 @@ export class ProjectRuntime {
   }
   #authorEdit(id: string, token: number, edit: AuthoringEdit): void {
     const entry = this.#writableEntry(id, token);
-    const next = applyEdit(
-      { nodeId: id, motionId: trackMotionId(entry), track: entry.track },
-      edit,
-    );
+    const next = applyEdit({ nodeId: id, track: entry.track }, edit);
     if (next === entry.track) return;
     this.#replaceTrack(id, token, next);
   }

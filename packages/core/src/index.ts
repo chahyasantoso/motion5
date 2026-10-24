@@ -4,8 +4,8 @@
  * Graph internals remain private to the package.
  *
  * `GroupedTrackDefinition` is exported beside `TrackDefinition` only because the plugin loader
- * still reads authored group names off it, and that loader is untouched until Phase 3 retires the
- * grouped machinery. It is the same declaration widened with the fields `parseTrackDefinition`
+ * still reads authored group names off it, and that loader is untouched until Phase 5 retires the
+ * grouped machinery. It is the same declaration widened with the field `parseTrackDefinition`
  * refuses, so it adds no second track owner and leaves with its last reader.
  */
 
@@ -21,7 +21,6 @@ export type {
   DiagnosticSeverity,
   MigrationDiagnostic,
   MotionDefinition,
-  ObservationDefinition,
   ProjectDefinition,
   TrackDefinition,
   GroupedTrackDefinition,

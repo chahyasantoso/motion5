@@ -703,7 +703,7 @@ describe("a structural change runs one transaction, in one order", () => {
     const thrown = thrownBy(() => runtime.addTrack(REJECTED_TRACK, { motionId: MOTION_ID }));
 
     expect(thrown).toBeInstanceOf(TypeError);
-    expect((thrown as Error).message).toMatch(/^observation-unknown-source at /);
+    expect((thrown as Error).message).toMatch(/^edge-unknown-source at /);
     expect(journal.entries).toEqual(["compile hero/hand", "dispose hero/hand"]);
     expect(runtime.instanceCount).toBe(0);
     expect(() => runtime.track(ADDED_ID)).toThrow(/Unknown graph node "hero\/hand"/);

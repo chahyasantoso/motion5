@@ -40,7 +40,7 @@ describe("ProjectRuntime", () => {
         {
           id: "hero",
           trigger: { type: "manual" },
-          tracks: [{ id: "arm", observes: [{ source: "missing" }] }],
+          tracks: [{ id: "arm", keyframes: { fk: { requires: { base: "missing" } } } }],
         },
       ],
       freeTracks: [{ id: "cursor" }],

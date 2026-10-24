@@ -171,7 +171,7 @@ describe("a rollback failure never outranks the rejection that triggered it", ()
 
     const thrown = thrownBy(() => runtime.addTrack(REJECTED_TRACK));
 
-    expect((thrown as Error).message).toMatch(/^observation-unknown-source at /);
+    expect((thrown as Error).message).toMatch(/^edge-unknown-source at /);
     expect(thrown).toBeInstanceOf(AggregateError);
     const errors = (thrown as AggregateError).errors as readonly unknown[];
     expect(errors[0]).toBeInstanceOf(TypeError);
@@ -207,7 +207,7 @@ describe("a rollback failure never outranks the rejection that triggered it", ()
 
     expect(fromTrack).toBeInstanceOf(TypeError);
     expect(fromTrack).not.toBeInstanceOf(AggregateError);
-    expect((fromTrack as Error).message).toMatch(/^observation-unknown-source at /);
+    expect((fromTrack as Error).message).toMatch(/^edge-unknown-source at /);
     expect(disposals).toBe(1);
 
     runtime.dispose();

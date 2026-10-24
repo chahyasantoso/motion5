@@ -439,41 +439,16 @@ export interface TrackDefinition {
   readonly duration?: number;
 }
 /**
- * One generic `observes` entry: a graph edge the author writes by hand, declaring an output edge
- * and nothing else.
+ * The authored `TrackDefinition` plus the one retired member the engine still compiles.
  *
- * One authored field, and deliberately only one.
- *
- * There is no `target`. It named a destination key that no consumer ever read, on either role.
- * See ADR-046.
- *
- * There is no `role`. Every edge this form derives is `role: "output"`, so writing the only legal
- * value would be a field accepted and then ignored.
- *
- * There is no `projection`. Renaming an upstream key existed to keep it from colliding inside a
- * flat input bag, and an output edge merges the source's patch whole rather than renaming anything.
- *
- * A dependency that feeds composition is bound under `keyframes.<plugin>.requires` and arrives
- * scoped to that plugin, which is now the only way a value enters composition. All three removed
- * fields are refused rather than accepted and ignored: `graph/ir.ts` reports
- * `observation-target-unsupported`, `observation-role-unsupported`, and
- * `observation-projection-unsupported`. See ADR-047.
- */
-export interface ObservationDefinition {
-  readonly source: string;
-}
-/**
- * The authored `TrackDefinition` plus the two retired members the engine still compiles.
- *
- * A compile bridge, not an accepted authored form: `parseTrackDefinition` refuses both members by
+ * A compile bridge, not an accepted authored form: `parseTrackDefinition` refuses the member by
  * name, so nothing reaches a parser through this type. It exists so the grouped-keyframe engine and
- * its solver machinery keep compiling while Phase 3 replaces them, and it is deleted with them.
- * Because both members are optional, every target `TrackDefinition` is assignable to this without a
+ * its solver machinery keep compiling while Phase 5 replaces them, and it is deleted with them.
+ * Because the member is optional, every target `TrackDefinition` is assignable to this without a
  * cast, which is what lets one contract entry point hand a definition to both readers. See ADR-046.
  */
 export interface GroupedTrackDefinition extends TrackDefinition {
   readonly keyframes?: Readonly<Record<string, AuthoredKeyframe>>;
-  readonly observes?: readonly ObservationDefinition[];
 }
 export interface MotionDefinition {
   readonly id: string;

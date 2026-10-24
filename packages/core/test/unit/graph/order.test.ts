@@ -90,7 +90,7 @@ describe("canonical order and cycle detection", () => {
         {
           id: "hero",
           trigger: { type: "manual" },
-          tracks: [{ id: "arm", observes: [{ source: "~/cursor" }] }],
+          tracks: [{ id: "arm", keyframes: { fk: { requires: { base: "~/cursor" } } } }],
         },
       ],
       freeTracks: [{ id: "cursor" }],
@@ -109,8 +109,8 @@ describe("canonical order and cycle detection", () => {
           id: "rig",
           trigger: { type: "manual" },
           tracks: [
-            { id: "a", observes: [{ source: "b" }] },
-            { id: "b", observes: [{ source: "a" }] },
+            { id: "a", keyframes: { fk: { requires: { base: "b" } } } },
+            { id: "b", keyframes: { fk: { requires: { base: "a" } } } },
           ],
         },
       ],

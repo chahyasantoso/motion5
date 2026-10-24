@@ -15,7 +15,7 @@ import type {
 } from "../../src/contract/v5";
 
 /**
- * A project fixture that still authors `observes` or `keyframes`.
+ * A project fixture that still authors grouped `keyframes`.
  *
  * The identified-table contract refuses both members by name, so this is a fixture type for the
  * graph-level cases that read output edges directly and never reach a parser. It is assignable to

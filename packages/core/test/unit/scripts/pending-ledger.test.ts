@@ -13,7 +13,7 @@ import { PENDING_LEDGER, pendingPaths } from "../../../../../test/pending.mjs";
  * split nine mixed files into running originals plus pended siblings, so the ledger stands at 132.
  * Lower this number in the slice that resolves entries; raising it re-opens the gate this closes.
  */
-const PENDING_CEILING = 128;
+const PENDING_CEILING = 123;
 
 const ROOT = fileURLToPath(new URL("../../../../../", import.meta.url));
 const MARKER = "// @ts-nocheck";

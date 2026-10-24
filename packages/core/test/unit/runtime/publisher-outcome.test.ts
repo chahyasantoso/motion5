@@ -168,16 +168,14 @@ describe("one flush answers one outcome per node", () => {
     }
 
     expect(messages.get("missing-upstream:input")).toBe(
-      'Input observation source "hero/arm" has no published value.',
+      'Input source "hero/arm" has no published value.',
     );
     expect(messages.get("missing-upstream:output")).toBe(
-      'Output observation source "hero/arm" has no published value.',
+      'Output source "hero/arm" has no published value.',
     );
-    expect(messages.get("input-shape:")).toBe(
-      'Input observation source "hero/arm" must be a record.',
-    );
+    expect(messages.get("input-shape:")).toBe('Input source "hero/arm" must be a record.');
     expect(messages.get("output-shape:")).toBe(
-      'Output observation source "hero/arm" must publish a renderer-neutral record.',
+      'Output source "hero/arm" must publish a renderer-neutral record.',
     );
     expect(messages.get("solver-scope:")).toBe(
       'Solver "hero/arm" has no root requirement to scope its members.',
@@ -189,9 +187,9 @@ describe("one flush answers one outcome per node", () => {
       'Solver "hero/arm" member "hero/hand" goal "hero/leg" published no record.',
     );
 
-    expect(rules.get("missing-upstream:input")).toBe("observation-missing-upstream");
-    expect(rules.get("input-shape:")).toBe("observation-input-shape");
-    expect(rules.get("output-shape:")).toBe("observation-output-shape");
+    expect(rules.get("missing-upstream:input")).toBe("upstream-missing");
+    expect(rules.get("input-shape:")).toBe("input-source-shape");
+    expect(rules.get("output-shape:")).toBe("output-source-shape");
     // The three that had no name of their own keep the one they published under, so this slice
     // changes no diagnostic a consumer can branch on.
     expect(rules.get("solver-scope:")).toBe("composition-failure");
@@ -204,19 +202,19 @@ describe("one flush answers one outcome per node", () => {
       x: 1,
     });
     expect((thrownBy(() => expectInputRecord(ABSENT, ARM)) as Error).message).toBe(
-      'Input observation source "hero/arm" has no published value.',
+      'Input source "hero/arm" has no published value.',
     );
     expect(
       (thrownBy(() => expectInputRecord(sourceValues(NOT_AFFECTED, patchFor(5)), ARM)) as Error)
         .message,
-    ).toBe('Input observation source "hero/arm" must be a record.');
+    ).toBe('Input source "hero/arm" must be a record.');
     expect((thrownBy(() => expectOutputRecord(ABSENT, ARM)) as Error).message).toBe(
-      'Output observation source "hero/arm" has no published value.',
+      'Output source "hero/arm" has no published value.',
     );
     expect(
       (thrownBy(() => expectOutputRecord(sourceValues(NOT_AFFECTED, patchFor(5)), ARM)) as Error)
         .message,
-    ).toBe('Output observation source "hero/arm" must publish a renderer-neutral record.');
+    ).toBe('Output source "hero/arm" must publish a renderer-neutral record.');
     // The goal answers one message either way, because a plugin holding no graph cannot act on the
     // difference between an absent source and one that published something else.
     const goal = { kind: "goal-shape", nodeId: ARM, memberId: HAND, goalId: LEG } as const;

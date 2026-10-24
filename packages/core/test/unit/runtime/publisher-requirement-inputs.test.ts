@@ -93,8 +93,8 @@ describe("requirement-scoped input observations", () => {
   });
 
   it("refuses an input edge that carries no requirement", () => {
-    // Unreachable by construction once `observes` is output-only, so it is thrown rather than
-    // skipped: an edge in the input phase with nothing to scope it has no destination at all.
+    // Unreachable by construction while every authored input edge carries a requirement, so it is
+    // thrown rather than skipped: an input edge with nothing to scope it has no destination.
     const registry = new PatchRegistry();
     const publisher = new GraphPublisher(registry);
     const source = node("hero/source", [], () => ({
@@ -117,11 +117,11 @@ describe("requirement-scoped input observations", () => {
     const batch = publisher.flush(pair(source, observer), ["hero/source"], 1);
 
     const observerPatch = batch.patches.find((patch) => patch.nodeId === "hero/observer");
-    // `observation-input-shape` is raised from the publisher's catch, so the node publishes
-    // `error`. See `publishFailureRule` and ADR-098.
+    // `input-source-shape` is raised from the publisher's catch, so the node publishes `error`.
+    // See `publishFailureRule` and ADR-098.
     if (observerPatch?.status !== "error")
       throw new Error(`hero/observer is ${observerPatch?.status ?? "absent"}, not error.`);
-    expect(observerPatch.diagnostics[0]?.ruleId).toBe("observation-input-shape");
+    expect(observerPatch.diagnostics[0]?.ruleId).toBe("input-source-shape");
   });
 
   it("delivers a __proto__ dict member as an own data property, without changing prototypes", () => {

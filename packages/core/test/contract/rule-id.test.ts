@@ -146,7 +146,7 @@ describe("rule id enumeration", () => {
     // match set answers covered for every spelling.
     for (const id of [
       "graph-cycle",
-      "observation-pending-reference",
+      "source-pending",
       "clock-tick-regression",
       "diagnostic-sink-failure",
       "schema-v4-migration",
@@ -234,7 +234,7 @@ describe("rule id ids ownership", () => {
   it("names exactly the rules that refuse as warnings", () => {
     const keyframeWarnings = ["stop-missing-start", "stop-missing-end"] as const;
     const expected = [
-      "observation-pending-reference",
+      "source-pending",
       "perspective-usage",
       "plugin-validation-warning",
       "reentrant-flush-deferred",

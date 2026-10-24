@@ -145,8 +145,8 @@ function nodeFailure(nodeId: string, error: unknown): readonly Diagnostic[] {
  * never a property of how an id encodes.
  *
  * `role` names the composition phase: inputs are collected before `node.compose`, outputs are
- * merged after it. Every input edge now carries a requirement, so this split is also the split
- * between derived dependencies and authored `observes` entries. See ADR-047.
+ * merged after it. Every authored edge carries a requirement and is an input, so the output phase
+ * is reachable only from a hand-built graph until Phase 7 retires it. See ADR-047.
  */
 type EdgeWithRole<Role extends GraphEdge["role"]> = Extract<GraphEdge, { role: Role }>;
 
@@ -193,11 +193,11 @@ function validateComposition(outputs: unknown): asserts outputs is Outputs {
     );
 }
 /**
- * The `values` output as a flat record, which is the only shape an output observation can merge.
+ * The `values` output as a flat record, which is the only shape an output edge can merge.
  *
  * The named-output map may hold a table at `values`, and merging a record onto one has no meaning;
- * a grouped track's `observes` edits belong to the machinery Phase 7 removes, so failing loudly is
- * what keeps a table-valued node from silently receiving a record merge it never asked for.
+ * the output phase belongs to the machinery Phase 7 removes, so failing loudly is what keeps a
+ * table-valued node from silently receiving a record merge it never asked for.
  */
 function valuesRecord(outputs: Outputs): FlatRecord {
   const value = outputs.values;
@@ -452,8 +452,8 @@ export class GraphPublisher {
       const sourceRecord = expectInputRecord(valuesFor(edge.sourceId), edge.sourceId);
       if (sourcePatch) sourceRevisions[edge.sourceId] = sourcePatch.revision;
       const requirement = edge.requirement;
-      // Unreachable by construction now that `observes` is output-only: every input edge is
-      // derived from a binding and carries its scope. Thrown rather than skipped, because an
+      // Unreachable by construction: every authored input edge is derived from a binding and
+      // carries its scope. Thrown rather than skipped, because an
       // edge in the input phase with nothing to scope it has no destination at all, and a
       // silent skip would drop a dependency graph construction accepted. Same shape as the
       // two guards above. See ADR-047.

@@ -179,7 +179,7 @@ describe("identified-table dependencies build one node-level edge per bound sour
     );
 
     expect(built.graph).toBeUndefined();
-    expect(built.diagnostics.map(({ ruleId }) => ruleId)).toContain("observation-unknown-source");
+    expect(built.diagnostics.map(({ ruleId }) => ruleId)).toContain("edge-unknown-source");
   });
 
   it("refuses a binding to a slot the plugin does not declare", () => {
@@ -236,7 +236,7 @@ describe("identified-table dependencies build one node-level edge per bound sour
     );
 
     expect(built.graph).toBeUndefined();
-    expect(built.diagnostics.map(({ ruleId }) => ruleId)).toContain("observation-unknown-source");
+    expect(built.diagnostics.map(({ ruleId }) => ruleId)).toContain("edge-unknown-source");
   });
 
   it("qualifies a dependency source under the owner, including free tracks", () => {

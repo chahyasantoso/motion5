@@ -4,7 +4,6 @@ import type {
   AuthoredPluginGroup,
   AuthoredProperty,
   MotionDefinition,
-  ObservationDefinition,
   PatchBatch,
   TrackDefinition,
 } from "../contract/v5";
@@ -152,14 +151,6 @@ export class RuntimeTrackHandle implements TrackHandle {
 
   replace(next: TrackDefinition): void {
     this.#host.replace(this.#id, this.#token, next);
-  }
-
-  addObserve(observation: ObservationDefinition): void {
-    this.#author({ kind: "add-observe", observation });
-  }
-
-  removeObserve(observation: ObservationDefinition): void {
-    this.#author({ kind: "remove-observe", observation });
   }
 
   setRequire(plugin: string, slot: string, source: string, memberKey?: string): void {

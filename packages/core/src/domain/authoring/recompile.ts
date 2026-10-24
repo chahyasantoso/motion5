@@ -64,9 +64,9 @@ function sameChain(
  * this pair, so both are measured here instead of being argued at the call site.
  *
  * The chain alone is not the predicate, and that is the correction this slice makes to its own plan.
- * `replace()` and `addObserve` reach the same transaction with a changed value, a changed duration
- * or a changed observation and an untouched chain, so a chain comparison alone would decline a
- * build all three require and leave a node composing a value nobody authored.
+ * `replace()` reaches the same transaction with a changed value or a changed duration and an
+ * untouched chain, so a chain comparison alone would decline a build it requires and leave a node
+ * composing a value nobody authored.
  *
  * Conservative in one direction only. Anything this cannot prove unchanged reads as changed, so a
  * `tweenVars` entry holding something structural equality cannot walk costs a build rather than

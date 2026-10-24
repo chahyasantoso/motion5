@@ -178,8 +178,8 @@ export const DEFERRED_FLUSH_RULE = "reentrant-flush-deferred" satisfies RuleId;
 /**
  * The rule id that same deferral answers under when it named no seed and carried only a frame.
  *
- * A second id rather than an empty payload under the one above, and it is the `observation-source`
- * split a second time for the same cause: one id was carrying two refusals, one of which has
+ * A second id rather than an empty payload under the one above, and it is the source-shape split a
+ * second time for the same cause: one id was carrying two refusals, one of which has
  * nothing to name. `reentrant-flush-deferred` owns its ids always, so a deferral stating no seed
  * cannot report under it without handing an always-naming rule an empty list, which is the hole
  * `DeferredSeeds` closed at the type and this closes at the rule. The frame is the fact that

@@ -543,7 +543,7 @@ describe("resolveSolvers (Slice C2)", () => {
     // sources do not resolve it answers about a chain that was never valid, naming a member for a
     // typo one node up. `finalizeGraph` bails on reference errors before the derivation runs.
     const unknownBase = buildGraphIR(UNKNOWN_BASE, builtinRegistry());
-    expect(reported(unknownBase)).toEqual(["observation-unknown-source at walker/upper-arm"]);
+    expect(reported(unknownBase)).toEqual(["edge-unknown-source at walker/upper-arm"]);
     expect(unknownBase.graph).toBeUndefined();
 
     // Both builders bail at the same point, because both finalize through `finalizeGraph`.

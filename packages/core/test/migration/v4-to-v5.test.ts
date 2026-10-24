@@ -29,7 +29,7 @@ describe("fresh v4-to-v5 migration contract", () => {
   it("does not mutate the input or nested arrays", () => {
     const input = {
       schemaVersion: 4,
-      tracks: [{ id: "cursor", observes: [{ source: "root" }] }],
+      tracks: [{ id: "cursor", keyframes: { x: 1 } }],
       motions: [],
     };
     const before = JSON.parse(JSON.stringify(input));

@@ -3,7 +3,6 @@ import type {
   AuthoredPluginGroup,
   AuthoredProperty,
   AuthoredStaticValue,
-  ObservationDefinition,
   PatchBatch,
   TrackDefinition,
 } from "./v5";
@@ -104,8 +103,6 @@ export interface TrackHandle extends Handle<TrackDefinition> {
   readonly requires: readonly RequireView[];
   remove(): void;
   replace(next: TrackDefinition): void;
-  addObserve(observation: ObservationDefinition): void;
-  removeObserve(observation: ObservationDefinition): void;
   /**
    * Binds one requirement slot of an already-bound plugin to `source`, without naming that plugin's
    * other slots or any of its values.

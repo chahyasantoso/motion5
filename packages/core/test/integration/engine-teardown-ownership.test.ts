@@ -377,8 +377,8 @@ describe("Engine owns the teardown of everything a failed operation created", ()
     // validation refuses this project before the load owner's `try` opens, so there is no
     // composition, no runtime and no cleanup owner to ask. Not claimed red; it pins that a load
     // with nothing to undo does not bury the ordinary diagnosis in an AggregateError anyway. A
-    // slashed id is the same early refusal the removed `observes` fixture reached, written with
-    // `id-qualified-separator` rather than `observation-unknown-source`.
+    // slashed id is the same early refusal a dependency fixture reaches, written with
+    // `id-qualified-separator` rather than `edge-unknown-source`.
     const clock = countingClock();
     const triggers = triggerProbe();
 

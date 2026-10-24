@@ -5,14 +5,14 @@ are the complete shape. **Now** and **Next in line** carry exactly one bullet ea
 states a phase; `packages/core/test/unit/scripts/session-status-shape.test.ts` enforces the shape and
 byte ceiling.
 
-- **Captured:** 2026-10-23, Asia/Jakarta.
-- **Read against:** `refactor/v5-identified-tables` after the identified-table plugin slice.
+- **Captured:** 2026-10-24, Asia/Jakarta.
+- **Read against:** `refactor/v5-identified-tables` after the observes-deletion slice.
 
 ## Now
 
-- **Plugins and dependency slots are live on the identified-table path:** a registered plugin id,
-  record/table parameter inputs, dependency slots and named outputs run through the engine and
-  publisher, with slot compatibility checked at load and input/output contracts validated at runtime.
+- **Dependency bindings are the only edge source:** the retired `observes` surface, its two live
+  verbs and its twelve rule ids are gone, edges come only from `input.requires` and the grouped
+  keyframes bridge, and slot binding derivation lives in `graph/dependency-edges.ts`.
 
 ## Next in line
 

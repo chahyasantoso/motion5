@@ -35,7 +35,7 @@ describe("cross-motion reference classification", () => {
     expect(diagnostic).toEqual({
       ruleId: PENDING_REFERENCE_RULE_ID,
       path: "arm/child",
-      message: 'Observation source "base/root" is a known node with no published value yet.',
+      message: 'Source "base/root" is a known node with no published value yet.',
       severity: "warning",
       ids: ["base/root", "arm/child"],
     });

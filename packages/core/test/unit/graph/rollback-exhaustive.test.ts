@@ -34,8 +34,8 @@ const project: GroupedProject = {
       id: "hero",
       trigger: { type: "manual" },
       tracks: [
-        { id: "arm", observes: [{ source: "~/cursor" }] },
-        { id: "halo", observes: [{ source: "arm" }] },
+        { id: "arm", keyframes: { fk: { requires: { base: "~/cursor" } } } },
+        { id: "halo", keyframes: { fk: { requires: { base: "arm" } } } },
       ],
     },
   ],

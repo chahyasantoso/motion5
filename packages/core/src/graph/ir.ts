@@ -1,12 +1,6 @@
 // Docs: ./ir.md
 import { unreachable } from "../lang/exhaustive";
-import type {
-  Diagnostic,
-  GroupedTrackDefinition,
-  ObservationDefinition,
-  PluginRequiresBinding,
-  ProjectDefinition,
-} from "../contract/v5";
+import type { Diagnostic, GroupedTrackDefinition, ProjectDefinition } from "../contract/v5";
 import { diagnostic } from "../contract/diagnostics";
 import {
   acceptsChain,
@@ -16,7 +10,7 @@ import {
   POLE_SLOT,
   readsMemberRest,
 } from "../contract/solver-shape";
-import { acceptedOutcome, readOutcome, refusedOutcome, type Outcome } from "../lang/outcome";
+import { readOutcome } from "../lang/outcome";
 import { readPluginBindings, readPluginValues } from "../contract/keyframe-shape";
 import { PLUGIN_GOALS_SLOT } from "../contract/solver-slots";
 import { authorsConstrainingJoint } from "../contract/solver-constraints";
@@ -28,6 +22,7 @@ import {
   qualifyFreeTrack,
   qualifyMotionTrack,
 } from "./ids";
+import { collectDependencyEdges, qualifySource, resolveRequirementEdge } from "./dependency-edges";
 import { orderGraph } from "./order";
 import { checkDependencyBindings } from "./dependency-check";
 import { checkSlotFit } from "./slot-check";
@@ -184,7 +179,7 @@ function requirementOrder(edge: GraphEdge): string {
  * keeps two entries of one dict-valued slot distinct. They were distinguished by the encoded slot
  * while a goal's identity was `targets[<memberId>]`; with the slot carrying the authored name, two
  * goals reaching for one node encode identically without this field and `finalizeGraph` reports
- * `observation-duplicate` on a rig that loads clean. `DV-4` pins it. See ADR-034, ADR-046, ADR-047,
+ * `edge-duplicate` on a rig that loads clean. `DV-4` pins it. See ADR-034, ADR-046, ADR-047,
  * and ADR-057.
  */
 export function edgeKey(edge: GraphEdge): string {
@@ -223,142 +218,8 @@ export function compareDiagnostics(a: Diagnostic, b: Diagnostic): number {
   return compareCodeUnits(a.ruleId, b.ruleId) || compareCodeUnits(a.path, b.path);
 }
 
-export function qualifySource(source: string, motionId: string): string {
-  if (source.startsWith("~/")) return qualifyFreeTrack(source.slice(2)).value;
-  if (source.includes("/"))
-    return qualifyMotionTrack(
-      source.slice(0, source.indexOf("/")),
-      source.slice(source.indexOf("/") + 1),
-    ).value;
-  return qualifyMotionTrack(motionId, source).value;
-}
-
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
-}
-
-export type ResolvedEdge = Outcome<GraphEdge, Diagnostic>;
-
-const BIND_INSTEAD = "Bind the dependency under keyframes.<plugin>.requires instead.";
-const TARGET_UNSUPPORTED = `Observation target is not supported; an observes entry declares an output edge and names no destination key. ${BIND_INSTEAD}`;
-const ROLE_UNSUPPORTED = `Observation role is not supported; an observes entry declares an output edge only. ${BIND_INSTEAD}`;
-const PROJECTION_UNSUPPORTED = `Observation projection is not supported; an output edge merges the source patch whole and renames nothing. ${BIND_INSTEAD}`;
-
-// The three fields ADR-046 and ADR-047 removed, in refusal order, and the order is load-bearing:
-// target stays first so `V-2` through `V-4` still report a target for a fixture with a role too.
-// One closed set with one reader, because three copied guards are three places a fourth removed
-// field has to be remembered, and the mapper below fails `typecheck` instead of being forgotten.
-// ir.md owns why the read asks whether the key was authored rather than what sits at it. See #469.
-const REMOVED_OBSERVATION_FIELDS = ["target", "role", "projection"] as const;
-type RemovedObservationField = (typeof REMOVED_OBSERVATION_FIELDS)[number];
-function authoredRemoved(
-  observation: ObservationDefinition,
-  name: RemovedObservationField,
-): boolean {
-  return isRecord(observation) && name in observation;
-}
-function removedObservationDiagnostic(field: RemovedObservationField, path: string): Diagnostic {
-  switch (field) {
-    case "target":
-      return diagnostic("observation-target-unsupported", path, TARGET_UNSUPPORTED);
-    case "role":
-      return diagnostic("observation-role-unsupported", path, ROLE_UNSUPPORTED);
-    case "projection":
-      return diagnostic("observation-projection-unsupported", path, PROJECTION_UNSUPPORTED);
-    default:
-      return unreachable(field);
-  }
-}
-
-export function resolveObservationEdge(
-  observation: ObservationDefinition,
-  observerNodeId: string,
-  ownerId: string,
-  path: string,
-): ResolvedEdge {
-  if (typeof observation.source !== "string" || observation.source.length === 0) {
-    return refusedOutcome<GraphEdge, Diagnostic>([
-      diagnostic("observation-source-shape", path, "Observation source must be non-empty."),
-    ]);
-  }
-  // One rule id each, because a diagnostic has to name what the author actually wrote rather than
-  // the removal they share, and one loop over the closed set rather than a guard per member.
-  for (const field of REMOVED_OBSERVATION_FIELDS) {
-    if (!authoredRemoved(observation, field)) continue;
-    return refusedOutcome<GraphEdge, Diagnostic>([removedObservationDiagnostic(field, path)]);
-  }
-  let sourceId: string;
-  try {
-    sourceId = qualifySource(observation.source, ownerId);
-  } catch (error) {
-    return refusedOutcome<GraphEdge, Diagnostic>([
-      diagnostic(
-        "observation-source",
-        path,
-        String(error instanceof Error ? error.message : error),
-        [observation.source],
-      ),
-    ]);
-  }
-  // One literal, in one place. `role` is not read from authored input any more, so this resolver
-  // and `resolveRequirementEdge` are the only two things that can set it, one value each.
-  const edge: GraphEdge = Object.freeze({
-    observerId: observerNodeId,
-    sourceId,
-    role: "output",
-  });
-  return acceptedOutcome<GraphEdge, Diagnostic>(edge, Object.freeze([]));
-}
-
-export function resolveRequirementEdge(
-  binding: PluginRequiresBinding,
-  observerNodeId: string,
-  ownerId: string,
-  path: string,
-): ResolvedEdge {
-  let sourceId: string;
-  try {
-    sourceId = qualifySource(binding.source, ownerId);
-  } catch (error) {
-    const message = String(error instanceof Error ? error.message : error);
-    return refusedOutcome<GraphEdge, Diagnostic>([
-      diagnostic("requirement-source", path, message, [binding.source]),
-    ]);
-  }
-  // The member key is copied when the binding carries one and omitted when it does not, rather than
-  // written as an explicit `undefined`. An absent field and a field holding `undefined` encode the
-  // same identity, but only the first says "this slot takes one source" to a reader of the IR.
-  const requirement: EdgeRequirement = Object.freeze({
-    plugin: binding.plugin,
-    slot: binding.slot,
-    ...(binding.memberKey === undefined ? {} : { memberKey: binding.memberKey }),
-  });
-  const edge: GraphEdge = Object.freeze({
-    observerId: observerNodeId,
-    sourceId,
-    role: "input",
-    requirement,
-  });
-  return acceptedOutcome<GraphEdge, Diagnostic>(edge, Object.freeze([]));
-}
-
-export function observationEdgeKey(
-  observation: ObservationDefinition,
-  observerId: string,
-  ownerId: string,
-): string {
-  const resolved = resolveObservationEdge(observation, observerId, ownerId, "observation");
-  return readOutcome(
-    resolved,
-    (edge) => edgeKey(edge),
-    (diagnostics) => {
-      throw new TypeError(
-        diagnostics
-          .map(({ ruleId, path, message }) => `${ruleId} at ${path}: ${message}`)
-          .join(" "),
-      );
-    },
-  );
 }
 
 export function collectTrack(
@@ -385,15 +246,6 @@ export function collectTrack(
       ? qualifyFreeTrack(track.id).value
       : qualifyMotionTrack(ownerId, track.id).value;
   const edges: GraphEdge[] = [];
-  for (const [index, observation] of (track.observes ?? []).entries()) {
-    const path = `${owner === "free" ? `freeTracks[${authoredIndex}]` : `motions[${authoredIndex}].tracks[${index}].observes`}`;
-    const resolved = resolveObservationEdge(observation, id, ownerId, path);
-    readOutcome(
-      resolved,
-      (edge) => edges.push(edge),
-      (resolvedDiagnostics) => diagnostics.push(...resolvedDiagnostics),
-    );
-  }
   // Derived from the authored form, with no plugin registry in reach. Whether `fk` is registered
   // and declares `base` is `PluginRegistry.resolveForKeyframes`' question; whether the source is a
   // node, is not this node, and introduces no cycle is this layer's. That split is what lets
@@ -412,114 +264,6 @@ export function collectTrack(
   // expands one edge per member key, with the key carried as data rather than folded into the slot.
   collectDependencyEdges(track, id, ownerId, edges, diagnostics);
   return Object.freeze({ id, owner, authoredIndex, track, edges: Object.freeze(edges) });
-}
-
-function collectDependencyEdges(
-  track: GroupedTrackDefinition,
-  observerId: string,
-  ownerId: string,
-  edges: GraphEdge[],
-  diagnostics: Diagnostic[],
-): void {
-  const plugin = track.plugin;
-  const requires = track.input?.requires;
-  if (plugin === undefined || requires === undefined) return;
-  if (!isRecord(requires)) {
-    diagnostics.push(
-      diagnostic(
-        "requirement-source",
-        `${observerId}.input.requires`,
-        "Track requires must be an object of slot bindings.",
-        [observerId],
-      ),
-    );
-    return;
-  }
-  for (const [slot, binding] of Object.entries(requires)) {
-    const slotPath = `${observerId}.input.requires.${slot}`;
-    if (slot.length === 0 || slot.includes(":") || /[[\]]/.test(slot)) {
-      diagnostics.push(
-        diagnostic(
-          "requirement-source",
-          slotPath,
-          "A dependency slot must be non-empty and must not contain ':', '[' or ']'.",
-          [slot],
-        ),
-      );
-      continue;
-    }
-    if (typeof binding === "string") {
-      addDependencyEdge(
-        { plugin, slot, source: binding, authoredPath: slot },
-        observerId,
-        ownerId,
-        slotPath,
-        edges,
-        diagnostics,
-      );
-      continue;
-    }
-    if (!isRecord(binding)) {
-      diagnostics.push(
-        diagnostic(
-          "requirement-source",
-          slotPath,
-          "A slot binding must name one source or a map of member keys to sources.",
-          [slot],
-        ),
-      );
-      continue;
-    }
-    for (const [memberKey, source] of Object.entries(binding)) {
-      const memberPath = `${slotPath}.${memberKey}`;
-      if (memberKey.length === 0 || memberKey.includes(":") || /[[\]]/.test(memberKey)) {
-        diagnostics.push(
-          diagnostic(
-            "requirement-source",
-            memberPath,
-            "A map member key must be non-empty and must not contain ':', '[' or ']'.",
-            [memberKey],
-          ),
-        );
-        continue;
-      }
-      if (typeof source !== "string" || source.length === 0) {
-        diagnostics.push(
-          diagnostic(
-            "requirement-source",
-            memberPath,
-            "A map binding must name a non-empty source id for each member.",
-            [memberKey],
-          ),
-        );
-        continue;
-      }
-      addDependencyEdge(
-        { plugin, slot, source, memberKey, authoredPath: `${slot}.${memberKey}` },
-        observerId,
-        ownerId,
-        memberPath,
-        edges,
-        diagnostics,
-      );
-    }
-  }
-}
-
-function addDependencyEdge(
-  binding: PluginRequiresBinding,
-  observerId: string,
-  ownerId: string,
-  path: string,
-  edges: GraphEdge[],
-  diagnostics: Diagnostic[],
-): void {
-  const resolved = resolveRequirementEdge(binding, observerId, ownerId, path);
-  readOutcome(
-    resolved,
-    (edge) => edges.push(edge),
-    (resolvedDiagnostics) => diagnostics.push(...resolvedDiagnostics),
-  );
 }
 
 export function buildGraphIR(
@@ -1221,9 +965,9 @@ export function finalizeGraph(
       if (edgeKeys.has(key))
         diagnostics.push(
           diagnostic(
-            "observation-duplicate",
+            "edge-duplicate",
             edge.observerId,
-            `Duplicate observation edge ${describeEdge(edge)}.`,
+            `Duplicate dependency edge ${describeEdge(edge)}.`,
             [edge.observerId, edge.sourceId],
           ),
         );
@@ -1231,18 +975,18 @@ export function finalizeGraph(
       if (!known.has(edge.sourceId))
         diagnostics.push(
           diagnostic(
-            "observation-unknown-source",
+            "edge-unknown-source",
             edge.observerId,
-            `Unknown observation source "${edge.sourceId}".`,
+            `Unknown edge source "${edge.sourceId}".`,
             [edge.sourceId],
           ),
         );
       if (edge.sourceId === edge.observerId)
         diagnostics.push(
           diagnostic(
-            "observation-self-reference",
+            "edge-self-reference",
             edge.observerId,
-            "Observation cannot reference itself.",
+            "An edge cannot reference its own node.",
             [edge.observerId],
           ),
         );
@@ -1250,7 +994,7 @@ export function finalizeGraph(
   // The bail happens here rather than after the derivation. `resolveSolvers` walks `base` edges and
   // reads the nodes they name, so over a graph whose sources may not resolve it answers about a
   // chain that was never valid: an unknown `base` source yields `ik-solver-unreachable-root` beside
-  // `observation-unknown-source`, naming a member for a typo one node up. One cause, one
+  // `edge-unknown-source`, naming a member for a typo one node up. One cause, one
   // diagnostic, and a derivation that only ever runs over resolved references. `RS-10` pins it.
   diagnostics.push(...checkDependencyBindings(nodes, capabilities));
   diagnostics.push(...checkSlotFit(nodes, capabilities));

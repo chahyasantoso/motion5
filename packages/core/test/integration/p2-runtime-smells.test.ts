@@ -112,7 +112,7 @@ describe("P2 runtime smell hardening", () => {
     expect(blocked?.status).toBe("blocked");
     if (blocked?.status !== "blocked")
       throw new Error(`consumer is ${blocked?.status ?? "absent"}, not blocked.`);
-    expect(blocked.diagnostics[0]?.ruleId).toBe("observation-pending-reference");
+    expect(blocked.diagnostics[0]?.ruleId).toBe("source-pending");
     // The hole is still not composed with, and it is not reported as an empty pose either: a
     // blocked patch owns no values at all now, which is that refusal stated in the type.
     expect("values" in blocked).toBe(false);

@@ -321,13 +321,13 @@ export type PublishFailure =
 export function describePublishFailure(failure: PublishFailure): string {
   switch (failure.kind) {
     case "missing-upstream":
-      return `${OBSERVATION_ROLE[failure.role]} observation source "${failure.sourceId}" has no published value.`;
+      return `${OBSERVATION_ROLE[failure.role]} source "${failure.sourceId}" has no published value.`;
     case "input-shape":
-      return `Input observation source "${failure.sourceId}" must be a record.`;
+      return `Input source "${failure.sourceId}" must be a record.`;
     case "input-requirement":
-      return `Input observation edge ${describeEdge(failure.edge)} carries no requirement.`;
+      return `Input edge ${describeEdge(failure.edge)} carries no requirement.`;
     case "output-shape":
-      return `Output observation source "${failure.sourceId}" must publish a renderer-neutral record.`;
+      return `Output source "${failure.sourceId}" must publish a renderer-neutral record.`;
     case "solver-scope":
       return `Solver "${failure.nodeId}" has no root requirement to scope its members.`;
     case "member-interpolation":
@@ -363,12 +363,12 @@ export function describePublishFailure(failure: PublishFailure): string {
 export function publishFailureRule(failure: PublishFailure): IdentifiedRuleId {
   switch (failure.kind) {
     case "missing-upstream":
-      return "observation-missing-upstream";
+      return "upstream-missing";
     case "input-shape":
     case "input-requirement":
-      return "observation-input-shape";
+      return "input-source-shape";
     case "output-shape":
-      return "observation-output-shape";
+      return "output-source-shape";
     case "solver-scope":
     case "member-interpolation":
     case "goal-shape":

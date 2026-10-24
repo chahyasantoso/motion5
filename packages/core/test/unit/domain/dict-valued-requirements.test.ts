@@ -17,9 +17,9 @@ import {
   compareEdges,
   describeEdge,
   edgeKey,
-  resolveRequirementEdge,
   type SolveMember,
 } from "../../../src/graph/ir";
+import { resolveRequirementEdge } from "../../../src/graph/dependency-edges";
 import { PluginRegistry, type PluginDefinition } from "../../../src/domain/plugins";
 
 // Issue #220. One invariant: a dict-valued `requires` slot is a declared capability of any plugin,
@@ -42,7 +42,7 @@ import { PluginRegistry, type PluginDefinition } from "../../../src/domain/plugi
 // refactor for that reason. DV-4 is the most likely red: two goals naming the same source node are
 // distinguished today purely by the encoded slot, so collapsing the slot without prefixing the
 // member key into `requirementIdentity` makes both edges byte-identical and reports
-// `observation-duplicate` on a rig that loads clean. DV-8 is the mirror: gating `goalBindingsOf` on
+// `edge-duplicate` on a rig that loads clean. DV-8 is the mirror: gating `goalBindingsOf` on
 // `memberKey` alone would read a future spring or spline plugin's dict as IK goals.
 //
 // The mutation guards this file is held to, which are not cases of their own: drop `memberKey` from

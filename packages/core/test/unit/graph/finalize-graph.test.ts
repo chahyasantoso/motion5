@@ -1,18 +1,18 @@
 import { builtinRegistry } from "../../support/builtin-registry";
 import { describe, expect, it } from "vitest";
 import { IncrementalGraphBuilder } from "../../../src/graph/builders/incremental";
-import { buildGraphIR, type GraphBuildResult } from "../../../src/graph/ir";
+import {
+  buildGraphIR,
+  finalizeGraph,
+  type GraphBuildResult,
+  type GraphNode,
+} from "../../../src/graph/ir";
 import type { GroupedTrackDefinition, ProjectDefinition } from "../../../src/contract/v5";
 
 // Slice C0 of issue #195. Two graph builders share a post-collect tail and duplicate it almost
 // verbatim: `buildGraphIR` (used by load-time validation) and `IncrementalGraphBuilder.build` (used
 // by the runtime). Extracting `finalizeGraph` gives that tail one owner, so a solver pass can be
 // added in one place and the validator and runtime cannot drift.
-//
-// The one observable divergence the duplication already produced is the `observation-duplicate`
-// message: one builder words it through `describeEdge`, the other through the raw `edgeKey`. The
-// corpus equality below is red on the parent because of that message difference, and it is the
-// invariant the extraction exists to make cheap.
 
 function freeProject(tracks: readonly GroupedTrackDefinition[]): ProjectDefinition {
   return { schemaVersion: 5, projectId: "c0", motions: [], freeTracks: tracks };
@@ -35,39 +35,33 @@ const CORPUS: ReadonlyArray<{
 }> = [
   {
     label: "clean",
-    project: freeProject([{ id: "root" }, { id: "leaf", observes: [{ source: "~/root" }] }]),
+    project: freeProject([
+      { id: "root" },
+      { id: "leaf", keyframes: { fk: { requires: { base: "~/root" } } } },
+    ]),
     expectOrder: ["~/root", "~/leaf"],
     expectRuleIds: [],
   },
   {
     label: "cycle",
     project: freeProject([
-      { id: "a", observes: [{ source: "~/b" }] },
-      { id: "b", observes: [{ source: "~/a" }] },
+      { id: "a", keyframes: { fk: { requires: { base: "~/b" } } } },
+      { id: "b", keyframes: { fk: { requires: { base: "~/a" } } } },
     ]),
     expectOrder: null,
     expectRuleIds: ["graph-cycle"],
   },
   {
     label: "unknown-source",
-    project: freeProject([{ id: "arm", observes: [{ source: "~/missing" }] }]),
+    project: freeProject([{ id: "arm", keyframes: { fk: { requires: { base: "~/missing" } } } }]),
     expectOrder: null,
-    expectRuleIds: ["observation-unknown-source"],
+    expectRuleIds: ["edge-unknown-source"],
   },
   {
     label: "self-reference",
-    project: freeProject([{ id: "arm", observes: [{ source: "~/arm" }] }]),
+    project: freeProject([{ id: "arm", keyframes: { fk: { requires: { base: "~/arm" } } } }]),
     expectOrder: null,
-    expectRuleIds: ["observation-self-reference"],
-  },
-  {
-    label: "duplicate-edge",
-    project: freeProject([
-      { id: "arm", observes: [{ source: "~/root" }, { source: "~/root" }] },
-      { id: "root" },
-    ]),
-    expectOrder: null,
-    expectRuleIds: ["observation-duplicate"],
+    expectRuleIds: ["edge-self-reference"],
   },
 ];
 
@@ -130,24 +124,40 @@ describe("finalizeGraph", () => {
     }
   });
 
-  it("T-C0.3 observation-duplicate message uses describeEdge format in both builders", () => {
-    // Focused pin for the specific pre-C0 divergence: one builder used `describeEdge`
-    // ("~/arm <- ~/root (output)"), the other used the raw `edgeKey` (a length-prefixed blob).
-    // Drive both builders explicitly so reverting the unification in incremental.ts breaks here.
-    const { project } = CORPUS.find((c) => c.label === "duplicate-edge")!;
-    const [reference, incremental] = buildPair(project);
-    for (const [tag, result] of [
-      ["buildGraphIR", reference],
-      ["IncrementalGraphBuilder", incremental],
-    ] as const) {
-      const [dup] = result.diagnostics.filter((d) => d.ruleId === "observation-duplicate");
-      expect(dup, `${tag}: duplicate diagnostic present`).toBeDefined();
-      // describeEdge produces: "<observerId> <- <sourceId> (<role>)[<scope>]"
-      expect(dup?.message, `${tag}: arrow format`).toMatch(/ <- /);
-      expect(dup?.message, `${tag}: role format`).toMatch(/\(output\)/);
-      // raw edgeKey has no spaces or arrow — a length-prefixed blob like "5:~/arm5:..."
-      expect(dup?.message, `${tag}: not edgeKey format`).not.toMatch(/^\d+:/);
-    }
+  it("T-C0.3 reports a duplicate edge through describeEdge in a hand-built node set", () => {
+    // An authored project cannot produce two identical edges any more: the only authored edge form
+    // is a requirement binding, and one track addresses one slot once. The duplicate rule is still a
+    // graph invariant, so it is asked of `finalizeGraph` directly, and this is also what keeps the
+    // diagnostic wording on `describeEdge` rather than on the raw `edgeKey`.
+    const edge = {
+      observerId: "~/arm",
+      sourceId: "~/root",
+      role: "input",
+      requirement: { plugin: "fk", slot: "base" },
+    } as const;
+    const node = (
+      id: string,
+      authoredIndex: number,
+      edges: GraphNode["edges"] = [],
+    ): GraphNode => ({
+      id,
+      owner: "free",
+      authoredIndex,
+      track: { id: id.slice(2) },
+      edges,
+    });
+    const result = finalizeGraph(
+      [node("~/root", 0), node("~/arm", 1, [edge, edge])],
+      [],
+      builtinRegistry(),
+    );
+
+    expect(result.graph).toBeUndefined();
+    expect(result.diagnostics.map(({ ruleId }) => ruleId)).toEqual(["edge-duplicate"]);
+    // describeEdge produces: "<observerId> <- <sourceId> (<role>)[<scope>]"
+    expect(result.diagnostics[0]?.message).toMatch(/ <- /);
+    expect(result.diagnostics[0]?.message).toMatch(/\(input\)/);
+    expect(result.diagnostics[0]?.message).not.toMatch(/^\d+:/);
   });
 
   // T-C0.2: finalizeGraph owns the freeze. Every object it returns must be frozen so that

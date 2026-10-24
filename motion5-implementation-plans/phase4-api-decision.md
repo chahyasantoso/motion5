@@ -135,6 +135,23 @@ records that also author `rotation` and `weight`. Since `values.set` does not me
 full record by reading `track.definition` and keeping the fields that did not change, or uses
 `setField` for the one field that did. No caller needs a read the public surface does not have.
 
+## S2 rule-id reconciliation
+
+Deleting the authored `observes` surface removed every rule id whose only producer was that field:
+`observation-source`, `observation-source-shape`, `observation-pending-reference`,
+`observation-duplicate`, `observation-self-reference`, `observation-unknown-source`,
+`observation-target-unsupported`, `observation-role-unsupported`,
+`observation-projection-unsupported`, `observation-input-shape`, `observation-output-shape`,
+`observation-missing-upstream` and `observes-shape`. The diagnostics that survived because a
+dependency edge can still raise them were renamed to role-neutral ids: `edge-duplicate`,
+`edge-self-reference`, `edge-unknown-source`, `input-source-shape`, `output-source-shape`,
+`upstream-missing`, and the reference warning `source-pending`. `requirement-source` keeps its name
+and now covers only the identified-table binding walk.
+
+Slot binding derivation moved from `graph/ir.ts` to `graph/dependency-edges.ts` in the same slice,
+because `ir.ts` was 48,136 bytes at that point and the phase threshold was 45,000; it is 43,627 bytes
+after the move, with behaviour unchanged.
+
 Removed refusal kinds are `unbound-group`, `reserved-goal-slot` and the `live-value-key` rule, each
 with the verb that raised it. The kinds kept are `stale-handle`, `unknown-node`, `commit-in-flight`,
 `structural-in-batch`, `disposed`, `invalid-definition`, `nested-recipe`, `immediate-in-recipe` and

@@ -12,13 +12,13 @@ const project = (tracks: GroupedProject["motions"][number]["tracks"]): ProjectDe
 });
 
 const base = project([
-  { id: "arm", observes: [{ source: "~/cursor" }] },
-  { id: "halo", observes: [{ source: "arm" }] },
+  { id: "arm", keyframes: { fk: { requires: { base: "~/cursor" } } } },
+  { id: "halo", keyframes: { fk: { requires: { base: "arm" } } } },
 ]);
 
 const changed = project([
-  { id: "arm", observes: [{ source: "~/cursor" }] },
-  { id: "badge", observes: [{ source: "arm" }] },
+  { id: "arm", keyframes: { fk: { requires: { base: "~/cursor" } } } },
+  { id: "badge", keyframes: { fk: { requires: { base: "arm" } } } },
 ]);
 
 describe("GraphBinding transactions", () => {
@@ -34,9 +34,14 @@ describe("GraphBinding transactions", () => {
     expect(binding.graph.order).toEqual(["~/cursor", "hero/arm", "hero/badge"]);
     expect(held.snapshot().nodes).toEqual(["hero/arm", "hero/badge", "~/cursor"]);
     expect(held.hasNode("hero/halo")).toBe(false);
-    expect(held.hasEdge({ observerId: "hero/badge", sourceId: "hero/arm", role: "output" })).toBe(
-      true,
-    );
+    expect(
+      held.hasEdge({
+        observerId: "hero/badge",
+        sourceId: "hero/arm",
+        role: "input",
+        requirement: { plugin: "fk", slot: "base" },
+      }),
+    ).toBe(true);
   });
 
   it("I-2 rejects an invalid candidate before touching the active graph", () => {
@@ -45,7 +50,7 @@ describe("GraphBinding transactions", () => {
     });
     const beforeGraph = binding.graph;
     const beforeState = binding.state.snapshot();
-    const invalid = project([{ id: "arm", observes: [{ source: "missing" }] }]);
+    const invalid = project([{ id: "arm", keyframes: { fk: { requires: { base: "missing" } } } }]);
 
     expect(() => binding.replace(invalid)).toThrow(TypeError);
     expect(binding.graph).toBe(beforeGraph);
