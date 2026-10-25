@@ -21,7 +21,7 @@ import {
   type WorldFrame3d,
 } from "../../../plugins/src/frame3d";
 import { ik3dPlugin } from "../../../plugins/src/ik3d";
-import { transform3dPlugin } from "../../../plugins/src/transform3d";
+import { legacyTransform3dPlugin as transform3dPlugin } from "@motion5/plugins/internal/legacy/transform3d";
 import type { Patch } from "../../src/runtime/patch-registry";
 
 function member(id: string, base: string, length: number): TrackDefinition {

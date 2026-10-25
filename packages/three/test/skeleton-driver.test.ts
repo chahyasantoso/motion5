@@ -4,7 +4,7 @@ import { Engine, PluginRegistry, createManualClock, type TrackDefinition } from 
 import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/testing";
 import { fk3dPlugin } from "@motion5/plugins/fk3d";
 import { rigPlugin } from "@motion5/plugins/rig";
-import { transform3dPlugin } from "@motion5/plugins/transform3d";
+import { legacyTransform3dPlugin as transform3dPlugin } from "@motion5/plugins/internal/legacy/transform3d";
 import { Matrix4, Object3D, Vector3 } from "three";
 import { frameToMatrix } from "../src/index";
 import {

@@ -16,8 +16,8 @@ const MINIMAL_PLUGIN: IdentifiedPluginDefinition = {
 };
 
 describe("identified plugin boundary", () => {
-  it("contains only the migrated identified transform definition", async () => {
-    expect([...identifiedCatalog.keys()]).toEqual(["transform"]);
+  it("contains the migrated identified transform definitions", async () => {
+    expect([...identifiedCatalog.keys()]).toEqual(["transform", "transform3d"]);
     const descriptor = identifiedCatalog.get("transform");
     expect(descriptor).toBeDefined();
     const definition = await descriptor?.load();

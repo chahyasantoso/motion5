@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import { Engine, PluginRegistry, createManualClock, type ProjectDefinition } from "@motion5/core";
 import { fk3dPlugin } from "@motion5/plugins/fk3d";
 import { ik3dPlugin } from "@motion5/plugins/ik3d";
-import { transform3dPlugin } from "@motion5/plugins/transform3d";
+import { legacyTransform3dPlugin as transform3dPlugin } from "@motion5/plugins/internal/legacy/transform3d";
 import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/testing";
 
 // Issue #500 phase 8 and ADR-095: the examples in `docs/guide/inverse-kinematics-3d.md` are executed.

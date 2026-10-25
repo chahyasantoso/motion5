@@ -19,4 +19,10 @@ export const identifiedCatalog: ReadonlyMap<string, IdentifiedPluginDescriptor> 
       load: async () => (await import("./transform")).transformPlugin,
     },
   ],
+  [
+    "transform3d",
+    {
+      load: async () => (await import("./transform3d")).transform3dPlugin,
+    },
+  ],
 ]);

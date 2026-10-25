@@ -20,7 +20,7 @@ import {
   type Vec3,
 } from "../../src/frame3d";
 import { ik3dPlugin } from "../../src/ik3d";
-import { transform3dPlugin } from "../../src/transform3d";
+import { legacyTransform3dPlugin as transform3dPlugin } from "@motion5/plugins/internal/legacy/transform3d";
 
 // 3D joint limits through `Engine` (issue #500 phase 6, ADR-123): a two-bone arm whose shoulder is
 // a cone and whose elbow is a one-way hinge loads, is solved by 3D FABRIK rather than the closed

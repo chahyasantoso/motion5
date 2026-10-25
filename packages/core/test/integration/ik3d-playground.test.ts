@@ -7,7 +7,7 @@ import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/f
 import { FABRIK_TOLERANCE } from "../../../plugins/src/fabrik";
 import { fk3dPlugin } from "@motion5/plugins/fk3d";
 import { ik3dPlugin } from "@motion5/plugins/ik3d";
-import { transform3dPlugin } from "@motion5/plugins/transform3d";
+import { legacyTransform3dPlugin as transform3dPlugin } from "@motion5/plugins/internal/legacy/transform3d";
 import {
   IK3D,
   IK3D_NODE_ID,

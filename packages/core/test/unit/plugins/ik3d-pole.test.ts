@@ -32,7 +32,7 @@ import {
   type SolveMember3d,
 } from "../../../../plugins/src/ik3d-analytic";
 import { legacyTransformPlugin as transformPlugin } from "@motion5/plugins/internal/legacy/transform";
-import { transform3dPlugin } from "../../../../plugins/src/transform3d";
+import { legacyTransform3dPlugin as transform3dPlugin } from "@motion5/plugins/internal/legacy/transform3d";
 
 type Vec = readonly [number, number, number];
 

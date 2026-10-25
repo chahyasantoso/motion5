@@ -10,7 +10,9 @@ export const builtinCatalog: PluginCatalog = new Map([
   ["ik", { load: () => import("./ik").then((module) => module.ikPlugin) }],
   [
     "transform3d",
-    { load: () => import("./transform3d").then((module) => module.transform3dPlugin) },
+    {
+      load: () => import("./legacy/transform3d").then((module) => module.legacyTransform3dPlugin),
+    },
   ],
   ["fk3d", { load: () => import("./fk3d").then((module) => module.fk3dPlugin) }],
   ["ik3d", { load: () => import("./ik3d").then((module) => module.ik3dPlugin) }],

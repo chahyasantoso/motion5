@@ -32,7 +32,7 @@ import {
 import { ik3dPlugin } from "../../../../plugins/src/ik3d";
 import { solveTwoBone3d, type SolveMember3d } from "../../../../plugins/src/ik3d-analytic";
 import type { SolveResult3d } from "../../../../plugins/src/ik3d-result";
-import { transform3dPlugin } from "../../../../plugins/src/transform3d";
+import { legacyTransform3dPlugin as transform3dPlugin } from "@motion5/plugins/internal/legacy/transform3d";
 
 /** A 3D solve's delivered inputs, as the publisher hands them to `ik3d`. */
 function inputsOf(

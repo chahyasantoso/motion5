@@ -92,10 +92,11 @@ describe("public plugin subpaths", () => {
         expect(Object.keys(module).sort(), name).toEqual(supportExports);
         continue;
       }
-      if (name === "transform") {
-        expect(Object.keys(module), name).toEqual(["transformPlugin"]);
-        expect(isIdentifiedPlugin(module.transformPlugin), name).toBe(true);
-        expect((module.transformPlugin as { readonly id: string }).id).toBe(name);
+      if (name === "transform" || name === "transform3d") {
+        const exportName = `${name}Plugin`;
+        expect(Object.keys(module), name).toEqual([exportName]);
+        expect(isIdentifiedPlugin(module[exportName]), name).toBe(true);
+        expect((module[exportName] as { readonly id: string }).id).toBe(name);
         continue;
       }
       const plugins = Object.entries(module).filter(([, value]) => isPluginDefinition(value));

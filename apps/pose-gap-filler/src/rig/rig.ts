@@ -11,7 +11,7 @@ import { ikPlugin } from "@motion5/plugins/ik";
 import { legacyTransformPlugin as transformPlugin } from "@motion5/plugins/internal/legacy/transform";
 import { fk3dPlugin } from "@motion5/plugins/fk3d";
 import { ik3dPlugin } from "@motion5/plugins/ik3d";
-import { transform3dPlugin } from "@motion5/plugins/transform3d";
+import { legacyTransform3dPlugin as transform3dPlugin } from "@motion5/plugins/internal/legacy/transform3d";
 import { LIMBS, type LimbId } from "../filler/landmarks";
 import type { Vec } from "../filler/vec";
 import { unreachable } from "../filler/unreachable";

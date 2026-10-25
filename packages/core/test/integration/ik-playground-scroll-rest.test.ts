@@ -9,7 +9,7 @@ import { ikPlugin } from "../../../plugins/src/ik";
 import { legacyTransformPlugin as transformPlugin } from "@motion5/plugins/internal/legacy/transform";
 import { fk3dPlugin } from "../../../plugins/src/fk3d";
 import { ik3dPlugin } from "../../../plugins/src/ik3d";
-import { transform3dPlugin } from "../../../plugins/src/transform3d";
+import { legacyTransform3dPlugin as transform3dPlugin } from "@motion5/plugins/internal/legacy/transform3d";
 import { createTriggerFactory } from "../../src/adapters/trigger-factory/default";
 import type { ProjectRuntime } from "../../src/runtime/project-runtime";
 import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
