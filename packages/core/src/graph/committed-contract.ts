@@ -94,6 +94,7 @@ export function deriveCommittedContract(
     parsed.value.input.values,
     parsed.value.input.schema,
     `${nodeId}.input.values`,
+    "declared",
   );
   if (input.kind === "refused") return undefined;
   return freeze({

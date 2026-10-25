@@ -84,6 +84,11 @@ function contractFor(
     parsed.value.input.values,
     spec,
     `${definition.id}.input.values`,
+    plugin === undefined
+      ? parsed.value.input.schema !== undefined
+        ? "declared"
+        : "inferred"
+      : "plugin",
   );
   if (derived.kind === "refused")
     throw new Error(
@@ -280,6 +285,18 @@ describe("set-values validates against the committed contract, never an inferenc
 
     expect(rules(outcome)[0]?.split(" at ")[0]).toBe("values-shape-invalid");
     expect(message(outcome)).toContain("input.schema declares a record");
+  });
+
+  it("refuses a shape change with plugin declaration wording when plugin declared", () => {
+    const plugins = [TRANSLATE];
+    const outcome = plan(
+      state([POINTS, SHIFTED], plugins),
+      { kind: "set-values", nodeId: "demo/shifted", values: table(row("r1", { dx: 1 })) },
+      environment(plugins),
+    );
+
+    expect(rules(outcome)[0]?.split(" at ")[0]).toBe("values-shape-invalid");
+    expect(message(outcome)).toContain("the plugin declares a record input");
   });
 
   it("refuses stops on a field the declared schema marks static", () => {

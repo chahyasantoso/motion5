@@ -365,7 +365,6 @@ function planBinding(
   next.set(edit.nodeId, {
     ...current,
     track: validated.value,
-    valueState: valueStateAfter(edit, current.valueState),
     contract,
   });
   const built = finalize(next, environment);

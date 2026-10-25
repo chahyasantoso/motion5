@@ -64,6 +64,13 @@ interface FieldsOptions {
   readonly extraFields: "allow" | "reject" | "allow-scalar";
 }
 
+function undeclaredKeys(
+  source: Readonly<Record<string, unknown>>,
+  fields: Readonly<Record<string, FieldSpec>>,
+): readonly string[] {
+  return Object.keys(source).filter((name) => !Object.hasOwn(fields, name));
+}
+
 function checkFields(
   source: Readonly<Record<string, unknown>>,
   fields: Readonly<Record<string, FieldSpec>>,
@@ -85,17 +92,16 @@ function checkFields(
   }
   switch (options.extraFields) {
     case "reject":
-      for (const name of Object.keys(source))
-        if (!Object.hasOwn(fields, name))
-          issues.push({
-            path: `${path}.${name}`,
-            code: "field",
-            message: "field is not declared and the contract is closed.",
-          });
+      for (const name of undeclaredKeys(source, fields))
+        issues.push({
+          path: `${path}.${name}`,
+          code: "field",
+          message: "field is not declared and the contract is closed.",
+        });
       break;
     case "allow-scalar":
-      for (const name of Object.keys(source))
-        if (!Object.hasOwn(fields, name) && !scalarOf(source[name]))
+      for (const name of undeclaredKeys(source, fields))
+        if (!scalarOf(source[name]))
           issues.push({
             path: `${path}.${name}`,
             code: "field",

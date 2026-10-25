@@ -68,6 +68,11 @@ function contractFor(
     parsed.value.input.values,
     spec,
     `${definition.id}.input.values`,
+    plugin === undefined
+      ? parsed.value.input.schema !== undefined
+        ? "declared"
+        : "inferred"
+      : "plugin",
   );
   if (derived.kind === "refused") throw new Error("Fixture track does not derive a contract.");
   const input =

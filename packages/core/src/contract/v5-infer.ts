@@ -340,30 +340,41 @@ function validateRecord(
       );
 }
 
+/** Where a contract spec originated, deciding how a shape mismatch is described. */
+export type SpecOrigin = "declared" | "plugin" | "inferred";
+
+const SHAPE_SOURCE: Readonly<Record<SpecOrigin, (kind: ValueSpec["kind"]) => string>> = {
+  declared: (kind) => `input.schema declares a ${kind}`,
+  plugin: (kind) => `the plugin declares a ${kind} input`,
+  inferred: (kind) => `the track's input is a ${kind} (inferred from its authored values)`,
+};
+
+function shapeMismatch(found: ParsedValues["kind"], spec: ValueSpec, origin: SpecOrigin): string {
+  return `Authored values are a ${found} but ${SHAPE_SOURCE[origin](spec.kind)}.`;
+}
+
 function validateDeclared(
   values: ParsedValues,
   schema: ValueSpec,
   path: string,
   diagnostics: Diagnostic[],
-  declared = true,
+  origin: SpecOrigin,
 ): void {
   switch (schema.kind) {
     case "table":
       if (values.kind !== "table") {
-        const message = declared
-          ? `Authored values are a ${values.kind} but input.schema declares a table.`
-          : `Authored values are a ${values.kind} but the track's input is a table (inferred from its authored values).`;
-        diagnostics.push(diagnostic("values-shape-invalid", path, message));
+        diagnostics.push(
+          diagnostic("values-shape-invalid", path, shapeMismatch(values.kind, schema, origin)),
+        );
         return;
       }
       validateTable(values, schema, path, diagnostics);
       return;
     case "record":
       if (values.kind !== "record") {
-        const message = declared
-          ? `Authored values are a ${values.kind} but input.schema declares a record.`
-          : `Authored values are a ${values.kind} but the track's input is a record (inferred from its authored values).`;
-        diagnostics.push(diagnostic("values-shape-invalid", path, message));
+        diagnostics.push(
+          diagnostic("values-shape-invalid", path, shapeMismatch(values.kind, schema, origin)),
+        );
         return;
       }
       validateRecord(values, schema, path, diagnostics);
@@ -385,11 +396,11 @@ export function deriveSourceContract(
   values: ParsedValues | undefined,
   schema: ValueSpec | undefined,
   path: string,
-  declared = true,
+  origin: SpecOrigin,
 ): Outcome<SourceContract, Diagnostic> {
   const diagnostics: Diagnostic[] = [];
   if (schema !== undefined) {
-    if (values !== undefined) validateDeclared(values, schema, path, diagnostics, declared);
+    if (values !== undefined) validateDeclared(values, schema, path, diagnostics, origin);
     if (diagnostics.length > 0) return refusedOutcomeFrom(diagnostics);
     return acceptedOutcome(
       Object.freeze({ spec: withoutStatic(schema), proven: true }),

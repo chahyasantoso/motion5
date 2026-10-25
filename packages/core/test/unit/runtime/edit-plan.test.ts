@@ -15,7 +15,7 @@ import {
   type PlanState,
   type PlannedTrack,
 } from "../../../src/runtime/edit-plan";
-import { clearsOverlay, tierOf, type Edit } from "../../../src/runtime/edit-types";
+import { clearsOverlay, publicVerbOf, tierOf, type Edit } from "../../../src/runtime/edit-types";
 import { AUTHORED, LIVE } from "../../../src/runtime/value-state";
 import { code } from "../../helpers/source-region";
 import { record, row, table, track } from "../../support/v5-builders";
@@ -436,4 +436,13 @@ describe("the plan module imports no runtime machinery", () => {
       expect(targets.filter((target) => forbidden.test(target))).toEqual([]);
     },
   );
+});
+
+describe("publicVerbOf maps value edit kinds to public handle verbs", () => {
+  it("maps cheap and live kinds to their public method names", () => {
+    expect(publicVerbOf("set-values")).toBe("input.values.set");
+    expect(publicVerbOf("set-field")).toBe("input.values.setField");
+    expect(publicVerbOf("write-live")).toBe("writeValues");
+    expect(publicVerbOf("release-live")).toBe("releaseValues");
+  });
 });

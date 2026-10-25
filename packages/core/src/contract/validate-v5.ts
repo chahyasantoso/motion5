@@ -431,6 +431,7 @@ function readTrack(
           parsed.value.input.values,
           parsed.value.input.schema,
           `${path}.input.values`,
+          "declared",
         );
         diagnostics.push(...inferred.diagnostics);
       }
@@ -491,6 +492,7 @@ export function validateTrackDefinition(
           parsed.value.input.values,
           parsed.value.input.schema,
           `${path}.input.values`,
+          "declared",
         );
         diagnostics.push(...inferred.diagnostics);
       }

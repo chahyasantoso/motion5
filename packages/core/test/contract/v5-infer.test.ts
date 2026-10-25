@@ -22,7 +22,12 @@ function valuesOf(track: unknown): ParsedValues | undefined {
 }
 
 function contract(values: ParsedValues | undefined, schema: ValueSpec | undefined): SourceContract {
-  const outcome = deriveSourceContract(values, schema, VALUES_PATH);
+  const outcome = deriveSourceContract(
+    values,
+    schema,
+    VALUES_PATH,
+    schema === undefined ? "inferred" : "declared",
+  );
   if (outcome.kind !== "accepted")
     throw new Error(`Expected acceptance, received ${JSON.stringify(outcome.diagnostics)}.`);
   return outcome.value;
@@ -32,7 +37,12 @@ function refusal(
   values: ParsedValues | undefined,
   schema: ValueSpec | undefined,
 ): readonly Diagnostic[] {
-  const outcome = deriveSourceContract(values, schema, VALUES_PATH);
+  const outcome = deriveSourceContract(
+    values,
+    schema,
+    VALUES_PATH,
+    schema === undefined ? "inferred" : "declared",
+  );
   if (outcome.kind !== "refused") throw new Error("Expected refusal.");
   return outcome.diagnostics;
 }

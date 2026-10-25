@@ -12,7 +12,7 @@ import type {
   ValueSpec,
 } from "../contract/v5";
 import { diagnostic, hintDiagnostic, hintDiagnostics } from "../contract/diagnostics";
-import { deriveSourceContract } from "../contract/v5-infer";
+import { deriveSourceContract, type SpecOrigin } from "../contract/v5-infer";
 import { parseTrackDefinition, type ParsedValues } from "../contract/v5-parse";
 import type { CommittedContract } from "../graph/committed-contract";
 import { acceptedOutcome, refusedOutcomeFrom, type Outcome } from "../lang/outcome";
@@ -132,18 +132,29 @@ function withInputValues(
  * stored. The fallback to the committed spec covers a plugin definition the capabilities cannot
  * answer, which is still the contract that commit resolved.
  */
+interface CommittedInputSpec {
+  readonly spec: ValueSpec;
+  readonly origin: SpecOrigin;
+}
+
 function committedInputSpec(
   track: TrackDefinition,
   contract: CommittedContract | undefined,
   environment: ValueEnvironment,
-): ValueSpec {
-  const spec =
-    track.plugin !== undefined
-      ? (environment.capabilities.pluginDefinition?.(track.plugin)?.inputs.values ??
-        contract?.input.spec)
-      : (track.input?.schema ?? contract?.input.spec);
+): CommittedInputSpec {
+  if (track.plugin !== undefined) {
+    const spec =
+      environment.capabilities.pluginDefinition?.(track.plugin)?.inputs.values ??
+      contract?.input.spec;
+    if (spec === undefined) throw new TypeError(`Track "${track.id}" has no committed input spec.`);
+    return { spec, origin: "plugin" };
+  }
+  if (track.input?.schema !== undefined) {
+    return { spec: track.input.schema, origin: "declared" };
+  }
+  const spec = contract?.input.spec;
   if (spec === undefined) throw new TypeError(`Track "${track.id}" has no committed input spec.`);
-  return spec;
+  return { spec, origin: "inferred" };
 }
 
 type AuthoredShape = "table" | "record";
@@ -224,13 +235,17 @@ function validateAuthoredValues(
   }
   const values = parsed.value.input.values;
   if (values === undefined) throw new TypeError(`Authored edit at "${nodeId}" carries no values.`);
-  const spec = committedInputSpec(track, contract, environment);
-  const declared = track.input?.schema !== undefined;
-  const checked = deriveSourceContract(values, spec, `${nodeId}.input.values`, declared);
+  const committed = committedInputSpec(track, contract, environment);
+  const checked = deriveSourceContract(
+    values,
+    committed.spec,
+    `${nodeId}.input.values`,
+    committed.origin,
+  );
   if (checked.kind === "refused")
     return refusedOutcomeFrom(hintDiagnostics(checked.diagnostics, REPLACE_HINT));
   if (track.plugin !== undefined) {
-    const staticStops = staticStopDiagnostics(values, spec, `${nodeId}.input.values`);
+    const staticStops = staticStopDiagnostics(values, committed.spec, `${nodeId}.input.values`);
     if (staticStops.length > 0)
       return refusedOutcomeFrom(hintDiagnostics(staticStops, REPLACE_HINT));
   }
@@ -363,8 +378,8 @@ function planSetField(
   environment: ValueEnvironment,
 ): ValueOutcome {
   const current = requiredTrack(view, edit.nodeId);
-  const spec = committedInputSpec(current.track, current.contract, environment);
-  const shape = authoredShape(current.track, spec);
+  const committed = committedInputSpec(current.track, current.contract, environment);
+  const shape = authoredShape(current.track, committed.spec);
   if (shape === undefined)
     return refused([
       diagnostic(
@@ -377,7 +392,7 @@ function planSetField(
     current.track,
     edit.address,
     shape,
-    spec,
+    committed.spec,
     edit.cell,
     edit.nodeId,
   );
@@ -418,9 +433,9 @@ function planWriteLive(
   environment: ValueEnvironment,
 ): ValueOutcome {
   const current = requiredTrack(view, edit.nodeId);
-  const spec = committedInputSpec(current.track, current.contract, environment);
-  const issues = validateRuntimeValue(edit.value, spec, `${edit.nodeId}.input.values`, {
-    extraFields: liveExtraFields(spec),
+  const committed = committedInputSpec(current.track, current.contract, environment);
+  const issues = validateRuntimeValue(edit.value, committed.spec, `${edit.nodeId}.input.values`, {
+    extraFields: liveExtraFields(committed.spec),
   });
   if (issues.length > 0)
     return refused(

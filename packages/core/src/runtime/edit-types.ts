@@ -154,18 +154,21 @@ export function clearsOverlay(edit: Edit): boolean {
   }
 }
 
+/** The public API verb corresponding to a value edit. */
+export type PublicValueVerb =
+  | "input.values.set"
+  | "input.values.setField"
+  | "writeValues"
+  | "releaseValues";
+
+const PUBLIC_VERB: Readonly<Record<(CheapEdit | LiveEdit)["kind"], PublicValueVerb>> = {
+  "set-values": "input.values.set",
+  "set-field": "input.values.setField",
+  "write-live": "writeValues",
+  "release-live": "releaseValues",
+};
+
 /** The public API verb corresponding to a cheap or live value edit kind. */
-export function publicVerbOf(kind: CheapEdit["kind"] | LiveEdit["kind"]): string {
-  switch (kind) {
-    case "set-values":
-      return "input.values.set";
-    case "set-field":
-      return "input.values.setField";
-    case "write-live":
-      return "writeValues";
-    case "release-live":
-      return "releaseValues";
-    default:
-      return unreachable(kind);
-  }
+export function publicVerbOf(kind: (CheapEdit | LiveEdit)["kind"]): PublicValueVerb {
+  return PUBLIC_VERB[kind];
 }

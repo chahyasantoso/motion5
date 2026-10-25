@@ -240,7 +240,12 @@ export class Engine {
         // track is compiled. The same contract is rechecked at runtime because easing can leave a
         // declared range even when the authored stops did not.
         readOutcome(
-          deriveSourceContract(parsed.input.values, plugin.inputs.values, `${nodeId}.input.values`),
+          deriveSourceContract(
+            parsed.input.values,
+            plugin.inputs.values,
+            `${nodeId}.input.values`,
+            "plugin",
+          ),
           () => undefined,
           (diagnostics) => {
             throw new TypeError(describeDiagnostics(diagnostics));
