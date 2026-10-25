@@ -4,12 +4,12 @@ import { extractExportNames } from "../../../scripts/boundary-scan.mjs";
 import { workspaceSourceAliases } from "../../../scripts/workspace-source-aliases.mjs";
 import { code } from "../../core/test/helpers/source-region";
 
-// Issue #534 and ADR-133: the public plugin surface is the explicit subpaths that
-// `packages/plugins/package.json` declares, and nothing else. The manifest is the one owner of that
-// list, so this case reads it rather than restating it: each declared subpath names one source
-// module and its emitted pair, and the module's public value is the one plugin the path is named
-// for. The root entry re-exports no plugin, so promoting the 3D plugins widened no root symbol and
-// the boundary allow list is unchanged by decision rather than by omission.
+// Issue #534 and ADR-133: the public plugin surface is the explicit public subpaths that
+// `packages/plugins/package.json` declares. The manifest is the one owner of that public list, so
+// this case reads it rather than restating its targets: each public definition path names one source
+// module and its emitted pair, and the module's public value is the one plugin the path is named for.
+// Repository-only legacy paths are declared separately while Phase 5 cuts definitions over one at a
+// time; they are not public definitions and are never loaded by this test.
 
 const PLUGINS = new URL("../", import.meta.url);
 const CORE = new URL("../../core/", import.meta.url);
@@ -27,6 +27,16 @@ const SUPPORT_EXPORTS: Readonly<Record<string, readonly string[]>> = {
   runner: ["attachRunners", "createLatestSlot", "describeRunnerFailure"],
 };
 export const PUBLIC_SUBPATHS = [...DEFINITION_SUBPATHS, ...SUPPORT_SUBPATHS];
+const INTERNAL_LEGACY_EXPORTS: Readonly<Record<string, string>> = {
+  "internal/legacy/transform": "legacyTransformPlugin",
+  "internal/legacy/transform3d": "legacyTransform3dPlugin",
+  "internal/legacy/fk": "legacyFkPlugin",
+  "internal/legacy/fk3d": "legacyFk3dPlugin",
+  "internal/legacy/ik": "legacyIkPlugin",
+  "internal/legacy/ik3d": "legacyIk3dPlugin",
+  "internal/legacy/rig": "legacyRigPlugin",
+};
+export const INTERNAL_LEGACY_SUBPATHS = Object.keys(INTERNAL_LEGACY_EXPORTS);
 
 interface Manifest {
   readonly exports: Readonly<Record<string, unknown>>;
@@ -98,7 +108,7 @@ describe("public plugin subpaths", () => {
     );
     // Development aliases consume the same manifest and match declared subpaths exactly.
     const aliases = workspaceSourceAliases("plugins");
-    expect(aliases).toHaveLength(PUBLIC_SUBPATHS.length);
+    expect(aliases).toHaveLength(PUBLIC_SUBPATHS.length + INTERNAL_LEGACY_SUBPATHS.length);
     for (const name of PUBLIC_SUBPATHS) {
       const specifier = `@motion5/plugins/${name}`;
       expect(aliases.filter(({ find }) => find.test(specifier))).toHaveLength(1);
@@ -106,6 +116,39 @@ describe("public plugin subpaths", () => {
     }
     expect(aliases.some(({ find }) => find.test("@motion5/plugins/fabrik"))).toBe(false);
     expect(aliases.some(({ find }) => find.test("@motion5/plugins"))).toBe(false);
+  });
+
+  it("A1 reserves explicit internal legacy paths without advertising them as public definitions", async () => {
+    const manifest = readManifest();
+    const entries = INTERNAL_LEGACY_SUBPATHS.map(
+      (name) => [`./${name}`, manifest.exports[`./${name}`]] as const,
+    );
+
+    expect(entries.map(([name]) => name)).toEqual(
+      INTERNAL_LEGACY_SUBPATHS.map((name) => `./${name}`),
+    );
+    for (const [name, entry] of entries) {
+      const target = name.slice("./internal/".length);
+      expect(entry, name).toEqual({
+        types: `./dist/${target}.d.ts`,
+        default: `./dist/${target}.js`,
+      });
+      expect(PUBLIC_SUBPATHS).not.toContain(name.slice(2));
+
+      const module = (await import(new URL(`src/${target}.ts`, PLUGINS).href)) as Record<
+        string,
+        unknown
+      >;
+      expect(Object.keys(module), name).toEqual([INTERNAL_LEGACY_EXPORTS[name.slice(2)]]);
+    }
+
+    const aliases = workspaceSourceAliases("plugins");
+    expect(aliases).toHaveLength(PUBLIC_SUBPATHS.length + INTERNAL_LEGACY_SUBPATHS.length);
+    for (const name of INTERNAL_LEGACY_SUBPATHS) {
+      const specifier = `@motion5/plugins/${name}`;
+      expect(aliases.filter(({ find }) => find.test(specifier))).toHaveLength(1);
+      expect(aliases.some(({ find }) => find.test(`${specifier}/private`))).toBe(false);
+    }
   });
 
   it("L15 every built-in catalog entry lazily loads its matching definition subpath", async () => {
