@@ -5,7 +5,7 @@ import { PluginRegistry } from "../../src/domain/plugins";
 import { Engine } from "../../src/engine";
 import { fkPlugin } from "../../../plugins/src/fk";
 import { ikPlugin } from "../../../plugins/src/ik";
-import { transformPlugin } from "../../../plugins/src/transform";
+import { legacyTransformPlugin as transformPlugin } from "@motion5/plugins/internal/legacy/transform";
 import { createManualClock } from "../../src/ports/clock";
 import type { Patch } from "../../src/runtime/patch-registry";
 import { createFakeScheduler } from "../../src/testing/fakes";

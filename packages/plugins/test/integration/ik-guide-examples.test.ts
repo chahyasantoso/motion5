@@ -9,7 +9,7 @@ import { createManualClock } from "@motion5/core";
 import { FABRIK_TOLERANCE } from "../../src/fabrik";
 import { fkPlugin } from "../../src/fk";
 import { ikPlugin } from "../../src/ik";
-import { transformPlugin } from "../../src/transform";
+import { legacyTransformPlugin as transformPlugin } from "@motion5/plugins/internal/legacy/transform";
 import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/testing";
 
 // Issue #349 phase 7 and ADR-113: the examples in `docs/guide/inverse-kinematics.md` are executed.

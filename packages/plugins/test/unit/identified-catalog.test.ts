@@ -16,8 +16,13 @@ const MINIMAL_PLUGIN: IdentifiedPluginDefinition = {
 };
 
 describe("identified plugin boundary", () => {
-  it("starts with no grouped definitions", () => {
-    expect([...identifiedCatalog]).toEqual([]);
+  it("contains only the migrated identified transform definition", async () => {
+    expect([...identifiedCatalog.keys()]).toEqual(["transform"]);
+    const descriptor = identifiedCatalog.get("transform");
+    expect(descriptor).toBeDefined();
+    const definition = await descriptor?.load();
+    expect(definition?.id).toBe("transform");
+    expect(definition).not.toHaveProperty("name");
   });
 
   it("admits one identified definition through the v5 catalog atomically", () => {

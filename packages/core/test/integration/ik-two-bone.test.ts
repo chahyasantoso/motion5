@@ -78,7 +78,7 @@ const SIX_NODE_IK_PROJECT: ProjectDefinition = {
 };
 
 import { PluginRegistry } from "../../src/domain/plugins";
-import { transformPlugin } from "../../../plugins/src/transform";
+import { legacyTransformPlugin as transformPlugin } from "@motion5/plugins/internal/legacy/transform";
 import { fkPlugin } from "../../../plugins/src/fk";
 import { ikPlugin } from "../../../plugins/src/ik";
 

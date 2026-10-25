@@ -22,6 +22,7 @@
       "@motion5/core/testing": ["packages/core/src/testing/fakes.ts"],
       "@motion5/core/*": ["packages/core/src/*"],
       "@motion5/react": ["packages/react/src/index.ts"],
+      "@motion5/plugins/internal/legacy/*": ["packages/plugins/src/legacy/*"],
       "@motion5/plugins/*": ["packages/plugins/src/*"]
     },
     "jsx": "react-jsx"

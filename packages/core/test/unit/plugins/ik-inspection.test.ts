@@ -20,7 +20,7 @@ import { fkPlugin } from "../../../../plugins/src/fk";
 import { ikPlugin } from "../../../../plugins/src/ik";
 import { readGoals, readMembers, readSolveMembers } from "../../../../plugins/src/ik-chain";
 import { solveChain } from "../../../../plugins/src/ik-solve";
-import { transformPlugin } from "../../../../plugins/src/transform";
+import { legacyTransformPlugin as transformPlugin } from "@motion5/plugins/internal/legacy/transform";
 import type { SolveInspection, SolveQuality } from "../../../../plugins/src/ik-result";
 import { inspectSolve } from "../../../../plugins/src/ik-result";
 

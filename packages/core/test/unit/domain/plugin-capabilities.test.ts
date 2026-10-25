@@ -10,7 +10,7 @@ import { fkPlugin } from "../../../../plugins/src/fk";
 import { fk3dPlugin } from "../../../../plugins/src/fk3d";
 import { ikPlugin } from "../../../../plugins/src/ik";
 import { ik3dPlugin } from "../../../../plugins/src/ik3d";
-import { transformPlugin } from "../../../../plugins/src/transform";
+import { legacyTransformPlugin as transformPlugin } from "@motion5/plugins/internal/legacy/transform";
 import { transform3dPlugin } from "../../../../plugins/src/transform3d";
 import type { PluginCapabilities } from "../../../src/ports/plugin-capabilities";
 const definitions = [

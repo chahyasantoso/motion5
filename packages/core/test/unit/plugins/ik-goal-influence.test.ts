@@ -28,7 +28,7 @@ import type { SolveMember } from "../../../../plugins/src/ik-member";
 import { inspectSolve } from "../../../../plugins/src/ik-result";
 import type { WorldFrame } from "../../../../plugins/src/frame";
 import { recordGoalReach, type GoalReach } from "../../../src/graph/solver-constraints";
-import { transformPlugin } from "../../../../plugins/src/transform";
+import { legacyTransformPlugin as transformPlugin } from "@motion5/plugins/internal/legacy/transform";
 
 const ROOT: WorldFrame = { x: 0, y: 0, rotation: 0 };
 const property = (value: unknown): AuthoredProperty => value as AuthoredProperty;

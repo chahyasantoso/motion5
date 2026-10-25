@@ -31,7 +31,7 @@ import {
   type Pole3d,
   type SolveMember3d,
 } from "../../../../plugins/src/ik3d-analytic";
-import { transformPlugin } from "../../../../plugins/src/transform";
+import { legacyTransformPlugin as transformPlugin } from "@motion5/plugins/internal/legacy/transform";
 import { transform3dPlugin } from "../../../../plugins/src/transform3d";
 
 type Vec = readonly [number, number, number];

@@ -63,6 +63,15 @@ function isPluginDefinition(value: unknown): value is { readonly name: string } 
   );
 }
 
+function isIdentifiedPlugin(value: unknown): value is { readonly id: string } {
+  return (
+    value !== null &&
+    typeof value === "object" &&
+    typeof (value as { id?: unknown }).id === "string" &&
+    typeof (value as { transform?: unknown }).transform === "function"
+  );
+}
+
 describe("public plugin subpaths", () => {
   it("TH-111 every declared plugin subpath is one module exporting exactly its plugin", async () => {
     const manifest = readManifest();
@@ -81,6 +90,12 @@ describe("public plugin subpaths", () => {
       const supportExports = SUPPORT_EXPORTS[name];
       if (supportExports !== undefined) {
         expect(Object.keys(module).sort(), name).toEqual(supportExports);
+        continue;
+      }
+      if (name === "transform") {
+        expect(Object.keys(module), name).toEqual(["transformPlugin"]);
+        expect(isIdentifiedPlugin(module.transformPlugin), name).toBe(true);
+        expect((module.transformPlugin as { readonly id: string }).id).toBe(name);
         continue;
       }
       const plugins = Object.entries(module).filter(([, value]) => isPluginDefinition(value));

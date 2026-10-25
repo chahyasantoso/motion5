@@ -2,7 +2,10 @@ import type { PluginCatalog } from "./loader";
 
 /** First-party zero-configuration plugins in historical registration order. */
 export const builtinCatalog: PluginCatalog = new Map([
-  ["transform", { load: () => import("./transform").then((module) => module.transformPlugin) }],
+  [
+    "transform",
+    { load: () => import("./legacy/transform").then((module) => module.legacyTransformPlugin) },
+  ],
   ["fk", { load: () => import("./fk").then((module) => module.fkPlugin) }],
   ["ik", { load: () => import("./ik").then((module) => module.ikPlugin) }],
   [
