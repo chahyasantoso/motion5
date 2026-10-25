@@ -252,7 +252,34 @@ describe("set-values validates against the committed contract, never an inferenc
     );
 
     expect(rules(outcome)[0]?.split(" at ")[0]).toBe("values-shape-invalid");
+    expect(message(outcome)).toContain(
+      "the track's input is a table (inferred from its authored values)",
+    );
     expect(message(outcome)).toContain("track.input.replace(...) or track.replace(...)");
+  });
+
+  it("refuses a record-to-table change with inferred shape wording when no schema declared", () => {
+    const outcome = plan(
+      state([RECORD]),
+      { kind: "set-values", nodeId: "demo/record", values: table(row("r1", { label: "b" })) },
+      environment(),
+    );
+
+    expect(rules(outcome)[0]?.split(" at ")[0]).toBe("values-shape-invalid");
+    expect(message(outcome)).toContain(
+      "the track's input is a record (inferred from its authored values)",
+    );
+  });
+
+  it("refuses a shape change with declared schema wording when schema declared", () => {
+    const outcome = plan(
+      state([FLAGS]),
+      { kind: "set-values", nodeId: "demo/flags", values: table(row("r1", { flip: true })) },
+      environment(),
+    );
+
+    expect(rules(outcome)[0]?.split(" at ")[0]).toBe("values-shape-invalid");
+    expect(message(outcome)).toContain("input.schema declares a record");
   });
 
   it("refuses stops on a field the declared schema marks static", () => {

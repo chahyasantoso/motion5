@@ -153,3 +153,19 @@ export function clearsOverlay(edit: Edit): boolean {
       return unreachable(edit);
   }
 }
+
+/** The public API verb corresponding to a cheap or live value edit kind. */
+export function publicVerbOf(kind: CheapEdit["kind"] | LiveEdit["kind"]): string {
+  switch (kind) {
+    case "set-values":
+      return "input.values.set";
+    case "set-field":
+      return "input.values.setField";
+    case "write-live":
+      return "writeValues";
+    case "release-live":
+      return "releaseValues";
+    default:
+      return unreachable(kind);
+  }
+}

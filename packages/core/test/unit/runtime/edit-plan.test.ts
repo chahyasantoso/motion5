@@ -16,7 +16,7 @@ import {
   type PlannedTrack,
 } from "../../../src/runtime/edit-plan";
 import { clearsOverlay, tierOf, type Edit } from "../../../src/runtime/edit-types";
-import { AUTHORED } from "../../../src/runtime/value-state";
+import { AUTHORED, LIVE } from "../../../src/runtime/value-state";
 import { code } from "../../helpers/source-region";
 import { record, row, table, track } from "../../support/v5-builders";
 
@@ -126,6 +126,94 @@ describe("the edit union answers its tier and its overlay verdict", () => {
       false,
       false,
     ]);
+  });
+
+  it("determines valueState for each structural edit kind from a LIVE initial state", () => {
+    const OPTIONAL_TRANSLATE: PluginDefinition = {
+      id: "optional-translate",
+      inputs: {
+        values: { kind: "record", fields: { dx: { kind: "number" } } },
+        requires: { data: { outputs: { values: POINT }, optional: true } },
+      },
+      outputs: { values: POINT },
+      transform() {
+        return { values: [] };
+      },
+    };
+    const OPT_SHIFTED = track({
+      id: "opt-shifted",
+      plugin: "optional-translate",
+      values: record({ dx: 1 }),
+      requires: { data: "points" },
+    });
+    const UNBOUND = track({
+      id: "unbound",
+      plugin: "optional-translate",
+      values: record({ dx: 1 }),
+    });
+
+    const plugins = [OPTIONAL_TRANSLATE];
+    const base = state(POINTS, OPT_SHIFTED, UNBOUND);
+    const livePoints = { ...base.tracks.get("demo/points")!, valueState: LIVE };
+    const liveOptShifted = { ...base.tracks.get("demo/opt-shifted")!, valueState: LIVE };
+    const liveUnbound = { ...base.tracks.get("demo/unbound")!, valueState: LIVE };
+    const liveState: PlanState = {
+      tracks: new Map([
+        ["demo/points", livePoints],
+        ["demo/opt-shifted", liveOptShifted],
+        ["demo/unbound", liveUnbound],
+      ]),
+    };
+
+    // 1. replace-track clears overlay -> AUTHORED
+    const replacedTrack = accepted(
+      plan(
+        liveState,
+        { kind: "replace-track", nodeId: "demo/points", track: POINTS },
+        environment(plugins),
+      ),
+    );
+    expect(replacedTrack.state.tracks.get("demo/points")?.valueState).toBe(AUTHORED);
+
+    // 2. replace-input clears overlay -> AUTHORED
+    const replacedInput = accepted(
+      plan(
+        liveState,
+        {
+          kind: "replace-input",
+          nodeId: "demo/points",
+          input: { values: table(row("b", { x: 2, y: 2 })) },
+        },
+        environment(plugins),
+      ),
+    );
+    expect(replacedInput.state.tracks.get("demo/points")?.valueState).toBe(AUTHORED);
+
+    // 3. remove-track removes the node
+    const removed = accepted(
+      plan(liveState, { kind: "remove-track", nodeId: "demo/unbound" }, environment(plugins)),
+    );
+    expect(removed.state.tracks.has("demo/unbound")).toBe(false);
+
+    // 4. unbind does not clear overlay -> LIVE
+    const unbound = accepted(
+      plan(
+        liveState,
+        { kind: "unbind", nodeId: "demo/opt-shifted", slot: "data" },
+        environment(plugins),
+      ),
+    );
+    expect(unbound.state.tracks.get("demo/opt-shifted")?.valueState).toBe(LIVE);
+
+    // 5. bind does not clear overlay -> LIVE
+    const bound = accepted(
+      plan(
+        liveState,
+        { kind: "bind", nodeId: "demo/unbound", slot: "data", source: "demo/points" },
+        environment(plugins),
+      ),
+    );
+    expect(bound.state.tracks.get("demo/unbound")?.valueState).toBe(LIVE);
   });
 });
 

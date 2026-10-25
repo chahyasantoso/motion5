@@ -73,6 +73,7 @@ import type { TrackLookup, ValueChange } from "./edit-plan-values";
 import type { PlanEnvironment, PlanState, PlannedChange, PlannedTrack } from "./edit-plan";
 import {
   isValueEdit,
+  publicVerbOf,
   type CheapEdit,
   type Edit,
   type LiveEdit,
@@ -873,7 +874,9 @@ export class ProjectRuntime {
    */
   apply(edits: readonly Edit[]): PatchBatch {
     this.#assertLive();
-    for (const edit of edits) if (isValueEdit(edit)) this.#admit(valueVerb(edit.kind, "resolved"));
+    for (const edit of edits) {
+      if (isValueEdit(edit)) this.#admit(valueVerb(publicVerbOf(edit.kind), "resolved"));
+    }
     return this.#apply(edits);
   }
 
@@ -951,7 +954,7 @@ export class ProjectRuntime {
   // a commit and inside an edit recipe exactly as the value verbs were, while a value batch still
   // collects its seed.
   #applyCheap(id: string, token: number, edit: CheapEdit): PatchBatch {
-    this.#admit(valueVerb(edit.kind, "resolved"));
+    this.#admit(valueVerb(publicVerbOf(edit.kind), "resolved"));
     this.#writableEntry(id, token);
     return this.#apply([edit]);
   }
@@ -960,7 +963,7 @@ export class ProjectRuntime {
   // value batch, while a commit and an edit recipe still refuse it. The authored definition never
   // moves: only the value state and the compiled overlay do.
   #applyLive(id: string, token: number, edit: LiveEdit): PatchBatch {
-    this.#admit(valueVerb(edit.kind, "resolved"));
+    this.#admit(valueVerb(publicVerbOf(edit.kind), "resolved"));
     this.#writableEntry(id, token);
     return this.#apply([edit]);
   }
@@ -970,7 +973,7 @@ export class ProjectRuntime {
   // in-flight refusal rather than an absence the caller cannot act on.
   #applyLiveById(id: string, edit: LiveEdit): PatchBatch {
     this.#assertLive();
-    this.#admit(valueVerb(edit.kind, "resolved"));
+    this.#admit(valueVerb(publicVerbOf(edit.kind), "resolved"));
     this.#entryOf(id);
     return this.#apply([edit]);
   }

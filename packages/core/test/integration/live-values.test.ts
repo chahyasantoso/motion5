@@ -12,6 +12,7 @@ import { PluginCatalog } from "../../src/domain/plugin-catalog";
 import { Engine, type ProjectHandle } from "../../src/engine";
 import { createManualClock } from "../../src/ports/clock";
 import { ProjectRuntime } from "../../src/runtime/project-runtime";
+import { isValue } from "../../src/runtime/value-validation";
 import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
 import { project, record, row, table, track } from "../support/v5-builders";
 
@@ -288,6 +289,29 @@ describe("a live overlay replaces the whole value and releases back to authored"
       handle.dispose();
     }
   });
+
+  it("clears the overlay on same-object replace-input, and is a no-op without an overlay", () => {
+    const handle = engine().load(project([RECORD]));
+    try {
+      handle.mount("demo/record");
+      const target = handle.track("demo/record");
+      const sameInput = target.definition.input;
+      if (sameInput === undefined) throw new Error("Fixture has no input.");
+
+      target.writeValues({ a: 99, b: 99 });
+      expect(publishedValues(runtimeOf(handle), "demo/record")).toEqual({ a: 99, b: 99 });
+
+      target.input.replace(sameInput);
+      expect(publishedValues(runtimeOf(handle), "demo/record")).toEqual({ a: 1, b: 2 });
+
+      const currentInput = target.definition.input;
+      const flush = vi.spyOn(runtimeOf(handle).graph, "flush");
+      target.input.replace(currentInput);
+      expect(flush).toHaveBeenCalledTimes(0);
+    } finally {
+      handle.dispose();
+    }
+  });
 });
 
 describe("a live overlay on an errored node", () => {
@@ -348,6 +372,36 @@ describe("a live overlay on an errored node", () => {
         { id: "r1", cells: { x: 6, y: 2 } },
       ]);
       expect(shifted.definition.input?.values).toEqual({ dx: 10 });
+    } finally {
+      handle.dispose();
+    }
+  });
+
+  it("retains the first valid overlay when a subsequent live write with an invalid extra throws", () => {
+    const openRecordSpec: ValueSpec = {
+      kind: "record",
+      fields: { a: { kind: "number" } },
+      additionalProperties: true,
+    };
+    const openTrack = track({
+      id: "open-record",
+      schema: openRecordSpec,
+      values: record({ a: 1 }),
+    });
+    const handle = engine().load(project([openTrack]));
+    try {
+      handle.mount("demo/open-record");
+      const target = handle.track("demo/open-record");
+
+      const valid = target.writeValues({ a: 2, extra: 42 });
+      expect(patchFor(valid, "demo/open-record").status).toBe("ready");
+      expect(readyValues(valid, "demo/open-record")).toEqual({ a: 2, extra: 42 });
+
+      const invalidExtra: unknown = { a: 3, extra: { nested: 1 } };
+      if (!isValue(invalidExtra)) throw new Error("Expected candidate to be a Value.");
+      expect(() => target.writeValues(invalidExtra)).toThrow();
+
+      expect(publishedValues(runtimeOf(handle), "demo/open-record")).toEqual({ a: 2, extra: 42 });
     } finally {
       handle.dispose();
     }

@@ -14,14 +14,24 @@ import { qualifyFreeTrack, qualifyMotionTrack } from "../graph/ids";
 import { acceptedOutcome, refusedOutcomeFrom, type Outcome } from "../lang/outcome";
 import { unreachable } from "../lang/exhaustive";
 import type { PluginCapabilities } from "../ports/plugin-capabilities";
-import { AUTHORED } from "./value-state";
-import type { CheapEdit, Edit, LiveEdit } from "./edit-types";
+import { AUTHORED, type ValueState } from "./value-state";
+import {
+  clearsOverlay,
+  type CheapEdit,
+  type Edit,
+  type LiveEdit,
+  type StructuralEdit,
+} from "./edit-types";
 import {
   planValueEdit,
   type CheapTrack,
   type ValueChange,
   type ValueEnvironment,
 } from "./edit-plan-values";
+
+function valueStateAfter(edit: StructuralEdit, current: ValueState): ValueState {
+  return clearsOverlay(edit) ? AUTHORED : current;
+}
 
 /**
  * The pure half of the structural edit tier: one committed view, one edit, one answer.
@@ -233,7 +243,7 @@ function planReplaceTrack(
   next.set(edit.nodeId, {
     ...current,
     track: validated.value,
-    valueState: AUTHORED,
+    valueState: valueStateAfter(edit, current.valueState),
     contract: undefined,
   });
   const built = finalize(next, environment);
@@ -253,7 +263,8 @@ function planReplaceInput(
   environment: PlanEnvironment,
 ): PlanOutcome {
   const current = requiredTrack(state, edit.nodeId);
-  if (current.track.input === edit.input) return accepted(state, undefined);
+  if (current.track.input === edit.input && current.valueState === AUTHORED)
+    return accepted(state, undefined);
   const track = withInput(current.track, edit.input);
   const validated = validateTrack(track, `replaceInput(${edit.nodeId})`, edit.nodeId, environment);
   if (validated.kind === "refused") return refused(validated.diagnostics);
@@ -261,7 +272,7 @@ function planReplaceInput(
   next.set(edit.nodeId, {
     ...current,
     track: validated.value,
-    valueState: AUTHORED,
+    valueState: valueStateAfter(edit, current.valueState),
     contract: undefined,
   });
   const built = finalize(next, environment);
@@ -351,7 +362,12 @@ function planBinding(
   const contract =
     current.contract === undefined ? undefined : withRequires(current.contract, requires);
   const next = new Map(state.tracks);
-  next.set(edit.nodeId, { ...current, track: validated.value, contract });
+  next.set(edit.nodeId, {
+    ...current,
+    track: validated.value,
+    valueState: valueStateAfter(edit, current.valueState),
+    contract,
+  });
   const built = finalize(next, environment);
   if (built.kind === "refused") return built;
   return acceptedOutcome(

@@ -353,7 +353,24 @@ describe("one recipe is one transaction", () => {
     );
 
     expect((tierTwo as Error).message).toMatch(/^schema-transaction-immediate: /);
-    expect((tierTwo as Error).message).toContain("write-live");
+    expect((tierTwo as Error).message).toContain("writeValues");
+
+    const releaseLiveErr = thrownBy(() =>
+      editing(test.runtime).edit(() => test.runtime.releaseValues(ARM_ID)),
+    );
+    expect((releaseLiveErr as Error).message).toContain("releaseValues");
+
+    const setValuesErr = thrownBy(() =>
+      editing(test.runtime).edit(() => test.runtime.track(ARM_ID).input.values.set([])),
+    );
+    expect((setValuesErr as Error).message).toContain("input.values.set");
+
+    const setFieldErr = thrownBy(() =>
+      editing(test.runtime).edit(() =>
+        test.runtime.track(ARM_ID).input.values.setField({ field: "x" }, 1),
+      ),
+    );
+    expect((setFieldErr as Error).message).toContain("input.values.setField");
 
     // The accepting direction, in the same rig. Both verbs are unchanged outside a recipe, which is
     // the half that stops this case from being green against a guard that refuses everywhere.

@@ -345,30 +345,25 @@ function validateDeclared(
   schema: ValueSpec,
   path: string,
   diagnostics: Diagnostic[],
+  declared = true,
 ): void {
   switch (schema.kind) {
     case "table":
       if (values.kind !== "table") {
-        diagnostics.push(
-          diagnostic(
-            "values-shape-invalid",
-            path,
-            `Authored values are a ${values.kind} but input.schema declares a table.`,
-          ),
-        );
+        const message = declared
+          ? `Authored values are a ${values.kind} but input.schema declares a table.`
+          : `Authored values are a ${values.kind} but the track's input is a table (inferred from its authored values).`;
+        diagnostics.push(diagnostic("values-shape-invalid", path, message));
         return;
       }
       validateTable(values, schema, path, diagnostics);
       return;
     case "record":
       if (values.kind !== "record") {
-        diagnostics.push(
-          diagnostic(
-            "values-shape-invalid",
-            path,
-            `Authored values are a ${values.kind} but input.schema declares a record.`,
-          ),
-        );
+        const message = declared
+          ? `Authored values are a ${values.kind} but input.schema declares a record.`
+          : `Authored values are a ${values.kind} but the track's input is a record (inferred from its authored values).`;
+        diagnostics.push(diagnostic("values-shape-invalid", path, message));
         return;
       }
       validateRecord(values, schema, path, diagnostics);
@@ -390,10 +385,11 @@ export function deriveSourceContract(
   values: ParsedValues | undefined,
   schema: ValueSpec | undefined,
   path: string,
+  declared = true,
 ): Outcome<SourceContract, Diagnostic> {
   const diagnostics: Diagnostic[] = [];
   if (schema !== undefined) {
-    if (values !== undefined) validateDeclared(values, schema, path, diagnostics);
+    if (values !== undefined) validateDeclared(values, schema, path, diagnostics, declared);
     if (diagnostics.length > 0) return refusedOutcomeFrom(diagnostics);
     return acceptedOutcome(
       Object.freeze({ spec: withoutStatic(schema), proven: true }),

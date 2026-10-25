@@ -17,6 +17,7 @@ import {
   type PlanState,
   type PlannedTrack,
 } from "../../../src/runtime/edit-plan";
+import { isValue } from "../../../src/runtime/value-validation";
 import { AUTHORED, LIVE } from "../../../src/runtime/value-state";
 import { record, row, table, track } from "../../support/v5-builders";
 
@@ -258,6 +259,144 @@ describe("write-live validates the whole evaluated value and moves nothing autho
       ),
     );
     expect(acceptedValue.state.tracks.get("demo/shifted")?.valueState).toBe(LIVE);
+  });
+
+  it("validates extra fields for open and closed record and table specs", () => {
+    const openRecordSpec: ValueSpec = {
+      kind: "record",
+      fields: { a: { kind: "number" } },
+      additionalProperties: true,
+    };
+    const openTableSpec: ValueSpec = {
+      kind: "table",
+      schema: { row: { fields: { x: { kind: "number" } }, additionalProperties: true } },
+    };
+    const openRecordTrack = track({
+      id: "open-record",
+      schema: openRecordSpec,
+      values: record({ a: 1 }),
+    });
+    const openTableTrack = track({
+      id: "open-table",
+      schema: openTableSpec,
+      values: table(row("r1", { x: 1 })),
+    });
+
+    const openRecordState = state([openRecordTrack]);
+    const openTableState = state([openTableTrack]);
+
+    const validRecord = plan(
+      openRecordState,
+      { kind: "write-live", nodeId: "demo/open-record", value: record({ a: 1, extra: 42 }) },
+      environment(),
+    );
+    expect(validRecord.kind).toBe("accepted");
+
+    const validTable = plan(
+      openTableState,
+      {
+        kind: "write-live",
+        nodeId: "demo/open-table",
+        value: table(row("r1", { x: 1, extra: "hello" })),
+      },
+      environment(),
+    );
+    expect(validTable.kind).toBe("accepted");
+
+    const invalidRecordExtras: readonly unknown[] = [
+      Number.NaN,
+      Number.POSITIVE_INFINITY,
+      { a: 1 },
+      [1],
+    ];
+    for (const invalid of invalidRecordExtras) {
+      const candidate: unknown = { a: 1, extra: invalid };
+      if (!isValue(candidate)) throw new Error("Expected candidate to be a Value.");
+      const outcome = plan(
+        openRecordState,
+        {
+          kind: "write-live",
+          nodeId: "demo/open-record",
+          value: candidate,
+        },
+        environment(),
+      );
+      expect(rules(outcome)).toEqual([
+        "live-values-invalid at demo/open-record.input.values.extra",
+      ]);
+    }
+
+    const invalidTableExtras: readonly unknown[] = [
+      Number.NaN,
+      Number.POSITIVE_INFINITY,
+      { a: 1 },
+      [1],
+    ];
+    for (const invalid of invalidTableExtras) {
+      const candidate: unknown = [{ id: "r1", cells: { x: 1, extra: invalid } }];
+      if (!isValue(candidate)) throw new Error("Expected candidate to be a Value.");
+      const outcome = plan(
+        openTableState,
+        {
+          kind: "write-live",
+          nodeId: "demo/open-table",
+          value: candidate,
+        },
+        environment(),
+      );
+      expect(rules(outcome)).toEqual([
+        "live-values-invalid at demo/open-table.input.values[0].cells.extra",
+      ]);
+    }
+
+    const closedRecordOutcome = plan(
+      state([RECORD]),
+      { kind: "write-live", nodeId: "demo/record", value: { a: 1, b: 2, extra: 42 } },
+      environment(),
+    );
+    expect(rules(closedRecordOutcome)).toEqual([
+      "live-values-invalid at demo/record.input.values.extra",
+    ]);
+
+    const closedTableOutcome = plan(
+      state([POINTS]),
+      {
+        kind: "write-live",
+        nodeId: "demo/points",
+        value: table(row("r1", { x: 1, y: 2, extra: 42 })),
+      },
+      environment(),
+    );
+    expect(rules(closedTableOutcome)).toEqual([
+      "live-values-invalid at demo/points.input.values[0].cells.extra",
+    ]);
+  });
+
+  it("fails closed and throws TypeError when a track has no committed input spec", () => {
+    const noSpecTrack: TrackDefinition = { id: "no-spec" };
+    const noSpecState: PlanState = {
+      tracks: new Map([
+        [
+          "demo/no-spec",
+          {
+            nodeId: "demo/no-spec",
+            track: noSpecTrack,
+            owner: "motion",
+            ownerId: "demo",
+            authoredIndex: 0,
+            valueState: AUTHORED,
+            contract: undefined,
+          },
+        ],
+      ]),
+    };
+    expect(() =>
+      plan(
+        noSpecState,
+        { kind: "write-live", nodeId: "demo/no-spec", value: record({ a: 1 }) },
+        environment(),
+      ),
+    ).toThrow('Track "no-spec" has no committed input spec.');
   });
 });
 

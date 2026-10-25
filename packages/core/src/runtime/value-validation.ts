@@ -1,5 +1,6 @@
 import type { FieldSpec, Scalar, Value, ValueSpec } from "../contract/v5";
 import { isImmutableLeaf } from "../domain/values";
+import { unreachable } from "../lang/exhaustive";
 
 /** One structural complaint about a runtime value, before a caller maps it to its own rule id. */
 export interface ValueIssue {
@@ -60,7 +61,7 @@ function checkField(value: unknown, field: FieldSpec, path: string, issues: Valu
 }
 
 interface FieldsOptions {
-  readonly extraFields: "allow" | "reject";
+  readonly extraFields: "allow" | "reject" | "allow-scalar";
 }
 
 function checkFields(
@@ -82,14 +83,29 @@ function checkFields(
     }
     checkField(source[name], field, `${path}.${name}`, issues);
   }
-  if (options.extraFields === "reject") {
-    for (const name of Object.keys(source))
-      if (!Object.hasOwn(fields, name))
-        issues.push({
-          path: `${path}.${name}`,
-          code: "field",
-          message: "field is not declared and the contract is closed.",
-        });
+  switch (options.extraFields) {
+    case "reject":
+      for (const name of Object.keys(source))
+        if (!Object.hasOwn(fields, name))
+          issues.push({
+            path: `${path}.${name}`,
+            code: "field",
+            message: "field is not declared and the contract is closed.",
+          });
+      break;
+    case "allow-scalar":
+      for (const name of Object.keys(source))
+        if (!Object.hasOwn(fields, name) && !scalarOf(source[name]))
+          issues.push({
+            path: `${path}.${name}`,
+            code: "field",
+            message: "extra value must be a finite number, string or boolean.",
+          });
+      break;
+    case "allow":
+      break;
+    default:
+      return unreachable(options.extraFields);
   }
 }
 

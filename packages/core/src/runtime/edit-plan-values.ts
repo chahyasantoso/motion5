@@ -136,13 +136,14 @@ function committedInputSpec(
   track: TrackDefinition,
   contract: CommittedContract | undefined,
   environment: ValueEnvironment,
-): ValueSpec | undefined {
-  if (track.plugin !== undefined)
-    return (
-      environment.capabilities.pluginDefinition?.(track.plugin)?.inputs.values ??
-      contract?.input.spec
-    );
-  return track.input?.schema ?? contract?.input.spec;
+): ValueSpec {
+  const spec =
+    track.plugin !== undefined
+      ? (environment.capabilities.pluginDefinition?.(track.plugin)?.inputs.values ??
+        contract?.input.spec)
+      : (track.input?.schema ?? contract?.input.spec);
+  if (spec === undefined) throw new TypeError(`Track "${track.id}" has no committed input spec.`);
+  return spec;
 }
 
 type AuthoredShape = "table" | "record";
@@ -151,14 +152,11 @@ function isAuthoredTable(values: AuthoredValues | undefined): values is readonly
   return Array.isArray(values);
 }
 
-function authoredShape(
-  track: TrackDefinition,
-  spec: ValueSpec | undefined,
-): AuthoredShape | undefined {
+function authoredShape(track: TrackDefinition, spec: ValueSpec): AuthoredShape {
   const values = track.input?.values;
   if (isAuthoredTable(values)) return "table";
   if (values !== undefined) return "record";
-  return spec?.kind;
+  return spec.kind;
 }
 
 /**
@@ -227,8 +225,8 @@ function validateAuthoredValues(
   const values = parsed.value.input.values;
   if (values === undefined) throw new TypeError(`Authored edit at "${nodeId}" carries no values.`);
   const spec = committedInputSpec(track, contract, environment);
-  if (spec === undefined) return acceptedOutcome({ track, values }, parsed.diagnostics);
-  const checked = deriveSourceContract(values, spec, `${nodeId}.input.values`);
+  const declared = track.input?.schema !== undefined;
+  const checked = deriveSourceContract(values, spec, `${nodeId}.input.values`, declared);
   if (checked.kind === "refused")
     return refusedOutcomeFrom(hintDiagnostics(checked.diagnostics, REPLACE_HINT));
   if (track.plugin !== undefined) {
@@ -400,10 +398,10 @@ function planSetField(
   );
 }
 
-function liveExtraFields(spec: ValueSpec): "allow" | "reject" {
+function liveExtraFields(spec: ValueSpec): "reject" | "allow-scalar" {
   if (spec.kind === "table")
-    return spec.schema.row.additionalProperties === true ? "allow" : "reject";
-  return spec.additionalProperties === true ? "allow" : "reject";
+    return spec.schema.row.additionalProperties === true ? "allow-scalar" : "reject";
+  return spec.additionalProperties === true ? "allow-scalar" : "reject";
 }
 
 /**
@@ -421,15 +419,13 @@ function planWriteLive(
 ): ValueOutcome {
   const current = requiredTrack(view, edit.nodeId);
   const spec = committedInputSpec(current.track, current.contract, environment);
-  if (spec !== undefined) {
-    const issues = validateRuntimeValue(edit.value, spec, `${edit.nodeId}.input.values`, {
-      extraFields: liveExtraFields(spec),
-    });
-    if (issues.length > 0)
-      return refused(
-        issues.map((issue) => diagnostic("live-values-invalid", issue.path, issue.message)),
-      );
-  }
+  const issues = validateRuntimeValue(edit.value, spec, `${edit.nodeId}.input.values`, {
+    extraFields: liveExtraFields(spec),
+  });
+  if (issues.length > 0)
+    return refused(
+      issues.map((issue) => diagnostic("live-values-invalid", issue.path, issue.message)),
+    );
   const planned: CheapTrack = { ...current, valueState: LIVE };
   return acceptedOutcome(
     { change: { kind: "live-values", track: planned, overlay: freezeAuthored(edit.value) } },
