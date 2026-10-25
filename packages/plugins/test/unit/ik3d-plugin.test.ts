@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { fk3dPlugin } from "../../src/fk3d";
-import { ik3dPlugin } from "../../src/ik3d";
+import { legacyIk3dPlugin as ik3dPlugin } from "@motion5/plugins/internal/legacy/ik3d";
 import { readFrame3d } from "../../src/frame3d";
 
 const upperMember = { id: "upper", base: "root", values: { length: 80 }, progress: 1 };

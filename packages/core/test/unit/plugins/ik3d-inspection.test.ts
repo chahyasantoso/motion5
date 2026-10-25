@@ -29,7 +29,7 @@ import {
   type ClosedFormQuality,
   type SolveInspection,
 } from "../../../../plugins/src/ik-result";
-import { ik3dPlugin } from "../../../../plugins/src/ik3d";
+import { legacyIk3dPlugin as ik3dPlugin } from "@motion5/plugins/internal/legacy/ik3d";
 import { solveTwoBone3d, type SolveMember3d } from "../../../../plugins/src/ik3d-analytic";
 import type { SolveResult3d } from "../../../../plugins/src/ik3d-result";
 import { legacyTransform3dPlugin as transform3dPlugin } from "@motion5/plugins/internal/legacy/transform3d";

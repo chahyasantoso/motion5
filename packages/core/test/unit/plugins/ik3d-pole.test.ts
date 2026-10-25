@@ -23,7 +23,7 @@ import {
 } from "../../../../plugins/src/frame3d";
 import { legacyIkPlugin as ikPlugin } from "@motion5/plugins/internal/legacy/ik";
 import { solveTwoBone } from "../../../../plugins/src/ik-analytic";
-import { ik3dPlugin } from "../../../../plugins/src/ik3d";
+import { legacyIk3dPlugin as ik3dPlugin } from "@motion5/plugins/internal/legacy/ik3d";
 import {
   readPole3d,
   solveTwoBone3d,

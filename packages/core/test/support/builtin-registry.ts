@@ -4,7 +4,7 @@ import { fkPlugin } from "../../../plugins/src/fk";
 import { legacyIkPlugin as ikPlugin } from "@motion5/plugins/internal/legacy/ik";
 import { legacyTransform3dPlugin as transform3dPlugin } from "@motion5/plugins/internal/legacy/transform3d";
 import { fk3dPlugin } from "../../../plugins/src/fk3d";
-import { ik3dPlugin } from "../../../plugins/src/ik3d";
+import { legacyIk3dPlugin as ik3dPlugin } from "@motion5/plugins/internal/legacy/ik3d";
 
 /** Explicit declarations for graph tests; never a production default. */
 export function builtinRegistry(...additional: readonly PluginDefinition[]): PluginRegistry {

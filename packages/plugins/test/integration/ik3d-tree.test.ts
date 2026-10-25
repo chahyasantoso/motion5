@@ -9,7 +9,7 @@ import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/testi
 import { FABRIK_TOLERANCE } from "../../src/fabrik";
 import { fk3dPlugin } from "../../src/fk3d";
 import { readFrame3d } from "../../src/frame3d";
-import { ik3dPlugin } from "../../src/ik3d";
+import { legacyIk3dPlugin as ik3dPlugin } from "@motion5/plugins/internal/legacy/ik3d";
 import { legacyTransform3dPlugin as transform3dPlugin } from "@motion5/plugins/internal/legacy/transform3d";
 
 type Values = Readonly<Record<string, unknown>>;

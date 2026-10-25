@@ -92,7 +92,7 @@ describe("public plugin subpaths", () => {
         expect(Object.keys(module).sort(), name).toEqual(supportExports);
         continue;
       }
-      if (name === "transform" || name === "transform3d" || name === "ik") {
+      if (name === "transform" || name === "transform3d" || name === "ik" || name === "ik3d") {
         const exportName = `${name}Plugin`;
         expect(Object.keys(module), name).toEqual([exportName]);
         expect(isIdentifiedPlugin(module[exportName]), name).toBe(true);

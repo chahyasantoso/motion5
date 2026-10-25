@@ -5,21 +5,21 @@ are the complete shape. **Now** and **Next in line** carry exactly one bullet ea
 states a phase; `packages/core/test/unit/scripts/session-status-shape.test.ts` enforces the shape and
 byte ceiling.
 
-- **Captured:** 2026-10-24, Asia/Jakarta.
-- **Read against:** `refactor/v5-identified-tables` after the identified 2D solver proof.
+- **Captured:** 2026-10-25, Asia/Jakarta.
+- **Read against:** `refactor/v5-identified-tables` after the identified 3D solver proof.
 
 ## Now
 
-- **Phase 5 has three cutovers and its 2D solver proof:** public `transform`, `transform3d` and `ik`
-  now use identified tables, while grouped consumers stay behind explicit internal legacy paths.
-  The 2D solver reads named member, root and goal outputs, preserves canonical member row ids, and
-  publishes optional inspection only when requested. No pending ledger entries were removed; 73 Phase
-  5, 4 Phase 6 and 2 Phase 7 entries remain.
+- **Phase 5 has four cutovers and both solver proofs:** public `transform`, `transform3d`, `ik` and
+  `ik3d` now use identified tables, while grouped consumers stay behind explicit internal legacy paths.
+  Both solvers read named member, root and goal outputs, preserve canonical member row ids, and
+  publish optional inspection only when requested. No pending ledger entries were removed; 73 Phase 5,
+  4 Phase 6 and 2 Phase 7 entries remain.
 
 ## Next in line
 
-- **Phase 5 continues with the explicit 3D solver graph:** migrate `ik3d` with named member, root,
-  goal, pole and joint inputs, then keep FK and rig migration blocked until the 3D proof is green.
+- **Phase 5 continues with identified 2D FK:** migrate FK to consume one solver `values` row by
+  canonical `memberId`, preserve the existing frame math, and keep FK3D and rig migration after it.
 
 ## Open, and not scheduled
 

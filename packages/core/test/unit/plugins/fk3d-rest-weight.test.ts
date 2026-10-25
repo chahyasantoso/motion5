@@ -23,7 +23,7 @@ import {
   type Quaternion,
 } from "../../../../plugins/src/frame3d";
 import { fk3dPlugin } from "../../../../plugins/src/fk3d";
-import { ik3dPlugin } from "../../../../plugins/src/ik3d";
+import { legacyIk3dPlugin as ik3dPlugin } from "@motion5/plugins/internal/legacy/ik3d";
 import { legacyTransform3dPlugin as transform3dPlugin } from "@motion5/plugins/internal/legacy/transform3d";
 
 // Issue #500 phase 1 (ADR-116): an `fk3d` bone has an authored local rest orientation and a

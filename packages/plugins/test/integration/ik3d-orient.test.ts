@@ -13,7 +13,7 @@ import {
   type Matrix3,
 } from "../../src/frame3d";
 import { fk3dPlugin } from "../../src/fk3d";
-import { ik3dPlugin } from "../../src/ik3d";
+import { legacyIk3dPlugin as ik3dPlugin } from "@motion5/plugins/internal/legacy/ik3d";
 import { legacyTransform3dPlugin as transform3dPlugin } from "@motion5/plugins/internal/legacy/transform3d";
 import type { Patch } from "@motion5/core";
 import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/testing";

@@ -8,7 +8,7 @@ import {
   type ProjectDefinition,
 } from "@motion5/core";
 import { fk3dPlugin } from "@motion5/plugins/fk3d";
-import { ik3dPlugin } from "@motion5/plugins/ik3d";
+import { legacyIk3dPlugin as ik3dPlugin } from "@motion5/plugins/internal/legacy/ik3d";
 import { legacyTransform3dPlugin as transform3dPlugin } from "@motion5/plugins/internal/legacy/transform3d";
 // The public entry exposes the manual clock, but deterministic interpolator/scheduler fakes remain
 // test support, so this test-only import follows the existing renderer test pattern.

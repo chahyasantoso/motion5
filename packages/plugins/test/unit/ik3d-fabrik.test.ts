@@ -20,7 +20,7 @@ import {
 } from "../../src/frame3d";
 import { solveChain } from "../../src/ik-solve";
 import { solveTwoBone3d, UNBOUND_POLE3D, type Pole3d } from "../../src/ik3d-analytic";
-import { ik3dPlugin } from "../../src/ik3d";
+import { legacyIk3dPlugin as ik3dPlugin } from "@motion5/plugins/internal/legacy/ik3d";
 import {
   legalRetryReach3d,
   legalStarts3d,
