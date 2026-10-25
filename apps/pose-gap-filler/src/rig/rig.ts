@@ -7,7 +7,7 @@ import {
   type TrackDefinition,
 } from "@motion5/core";
 import { fkPlugin } from "@motion5/plugins/fk";
-import { ikPlugin } from "@motion5/plugins/ik";
+import { legacyIkPlugin as ikPlugin } from "@motion5/plugins/internal/legacy/ik";
 import { legacyTransformPlugin as transformPlugin } from "@motion5/plugins/internal/legacy/transform";
 import { fk3dPlugin } from "@motion5/plugins/fk3d";
 import { ik3dPlugin } from "@motion5/plugins/ik3d";

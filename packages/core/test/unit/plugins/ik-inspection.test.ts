@@ -17,7 +17,7 @@ import { createManualClock } from "../../../src/ports/clock";
 import type { Patch } from "../../../src/runtime/patch-registry";
 import { createFakeInterpolator, createFakeScheduler } from "../../../src/testing/fakes";
 import { fkPlugin } from "../../../../plugins/src/fk";
-import { ikPlugin } from "../../../../plugins/src/ik";
+import { legacyIkPlugin as ikPlugin } from "@motion5/plugins/internal/legacy/ik";
 import { readGoals, readMembers, readSolveMembers } from "../../../../plugins/src/ik-chain";
 import { solveChain } from "../../../../plugins/src/ik-solve";
 import { legacyTransformPlugin as transformPlugin } from "@motion5/plugins/internal/legacy/transform";

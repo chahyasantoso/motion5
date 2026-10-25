@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { readGoals, readSolveMembers } from "../../src/ik-chain";
 import { solveTwoBone } from "../../src/ik-analytic";
-import { ikPlugin } from "../../src/ik";
+import { legacyIkPlugin as ikPlugin } from "@motion5/plugins/internal/legacy/ik";
 import { solveChain } from "../../src/ik-solve";
 
 // Slice D3 of issue #195: the dispatcher, and what it is not allowed to change.

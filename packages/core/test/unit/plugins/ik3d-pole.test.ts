@@ -21,7 +21,7 @@ import {
   type PivotOffset3d,
   type WorldFrame3d,
 } from "../../../../plugins/src/frame3d";
-import { ikPlugin } from "../../../../plugins/src/ik";
+import { legacyIkPlugin as ikPlugin } from "@motion5/plugins/internal/legacy/ik";
 import { solveTwoBone } from "../../../../plugins/src/ik-analytic";
 import { ik3dPlugin } from "../../../../plugins/src/ik3d";
 import {

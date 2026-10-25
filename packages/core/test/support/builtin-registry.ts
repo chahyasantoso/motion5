@@ -1,7 +1,7 @@
 import { PluginRegistry, type PluginDefinition } from "../../src/domain/plugins";
 import { legacyTransformPlugin as transformPlugin } from "@motion5/plugins/internal/legacy/transform";
 import { fkPlugin } from "../../../plugins/src/fk";
-import { ikPlugin } from "../../../plugins/src/ik";
+import { legacyIkPlugin as ikPlugin } from "@motion5/plugins/internal/legacy/ik";
 import { legacyTransform3dPlugin as transform3dPlugin } from "@motion5/plugins/internal/legacy/transform3d";
 import { fk3dPlugin } from "../../../plugins/src/fk3d";
 import { ik3dPlugin } from "../../../plugins/src/ik3d";

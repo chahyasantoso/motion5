@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ikPlugin } from "../../src/ik";
+import { legacyIkPlugin as ikPlugin } from "@motion5/plugins/internal/legacy/ik";
 import { readMembers } from "../../src/ik-chain";
 import { solveTwoBone } from "../../src/ik-analytic";
 import type { WorldFrame } from "../../src/frame";

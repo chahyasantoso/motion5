@@ -4,7 +4,7 @@ import type { ProjectDefinition } from "@motion5/core";
 import { PluginRegistry } from "@motion5/core";
 import { Engine, type ProjectHandle } from "@motion5/core";
 import { fkPlugin } from "../../src/fk";
-import { ikPlugin } from "../../src/ik";
+import { legacyIkPlugin as ikPlugin } from "@motion5/plugins/internal/legacy/ik";
 import { legacyTransformPlugin as transformPlugin } from "@motion5/plugins/internal/legacy/transform";
 import { createManualClock } from "@motion5/core";
 import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/testing";

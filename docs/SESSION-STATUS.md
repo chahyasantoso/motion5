@@ -6,20 +6,20 @@ states a phase; `packages/core/test/unit/scripts/session-status-shape.test.ts` e
 byte ceiling.
 
 - **Captured:** 2026-10-24, Asia/Jakarta.
-- **Read against:** `refactor/v5-identified-tables` after the identified 2D transform cutover.
+- **Read against:** `refactor/v5-identified-tables` after the identified 2D solver proof.
 
 ## Now
 
-- **Phase 5 has begun:** the existing plugin entrypoints now have an explicit internal legacy boundary,
-  and the public 2D `transform` path is an identified-table plugin with declared input/output schemas
-  and preserved source-row ids. Grouped consumers remain on the internal legacy path. No pending
-  ledger entries were removed; 73 Phase 5, 4 Phase 6 and 2 Phase 7 entries remain.
+- **Phase 5 has three cutovers and its 2D solver proof:** public `transform`, `transform3d` and `ik`
+  now use identified tables, while grouped consumers stay behind explicit internal legacy paths.
+  The 2D solver reads named member, root and goal outputs, preserves canonical member row ids, and
+  publishes optional inspection only when requested. No pending ledger entries were removed; 73 Phase
+  5, 4 Phase 6 and 2 Phase 7 entries remain.
 
 ## Next in line
 
-- **Phase 5 continues with the 3D transform cutover:** migrate `transform3d` at its existing public
-  entrypoint, keep grouped consumers explicitly legacy-only, and then prove the explicit 2D solver
-  graph before FK or rig migration.
+- **Phase 5 continues with the explicit 3D solver graph:** migrate `ik3d` with named member, root,
+  goal, pole and joint inputs, then keep FK and rig migration blocked until the 3D proof is green.
 
 ## Open, and not scheduled
 

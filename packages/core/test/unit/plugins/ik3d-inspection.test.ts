@@ -22,7 +22,7 @@ import {
   ZERO_PIVOT_OFFSET3D,
   type WorldFrame3d,
 } from "../../../../plugins/src/frame3d";
-import { ikPlugin } from "../../../../plugins/src/ik";
+import { legacyIkPlugin as ikPlugin } from "@motion5/plugins/internal/legacy/ik";
 import {
   inspectSolve,
   inspectionOutput,

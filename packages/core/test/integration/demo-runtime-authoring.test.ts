@@ -20,7 +20,7 @@ import { Engine, type ProjectHandle } from "../../src/engine";
 import { createTriggerFactory } from "../../src/adapters/trigger-factory/default";
 import { PluginRegistry } from "../../src/domain/plugins";
 import { fkPlugin } from "../../../plugins/src/fk";
-import { ikPlugin } from "../../../plugins/src/ik";
+import { legacyIkPlugin as ikPlugin } from "@motion5/plugins/internal/legacy/ik";
 import { legacyTransformPlugin as transformPlugin } from "@motion5/plugins/internal/legacy/transform";
 import { createManualClock } from "../../src/ports/clock";
 import type { ProjectRuntime } from "../../src/runtime/project-runtime";

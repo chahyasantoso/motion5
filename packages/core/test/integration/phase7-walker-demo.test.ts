@@ -4,7 +4,7 @@ import type { ProjectDefinition } from "../../src/contract/v5";
 import { Engine } from "../../src/engine";
 import { PluginRegistry, type PluginDefinition } from "../../src/domain/plugins";
 import { fkPlugin } from "../../../plugins/src/fk";
-import { ikPlugin } from "../../../plugins/src/ik";
+import { legacyIkPlugin as ikPlugin } from "@motion5/plugins/internal/legacy/ik";
 import { createBrowserClock, type FrameSource } from "../../src/adapters/browser-clock";
 import { createDomPatchAdapter } from "../../src/adapters/dom";
 import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";

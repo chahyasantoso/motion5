@@ -1,64 +1,208 @@
-import { BEND_KEY, FLIP_KEY, INSPECTION_KEY, INSPECT_KEY } from "@motion5/core/plugin-api";
-import type { ImmutableRecord, PluginDefinition } from "@motion5/core/plugin-api";
-import { readFrame } from "./frame";
-import { readGoals, readMembers, readSolveMembers } from "./ik-chain";
+import type { IdentifiedPluginDefinition, Outputs, ValueSpec } from "@motion5/core/plugin-api";
+import { readFrame, readNumber, readPivotOffset } from "./frame";
+import type { SolveMember } from "./ik-member";
+import { readJointLimit } from "./ik-constraint";
+import { readInfluence } from "./ik-goal";
+import { inspectSolve } from "./ik-result";
 import { solveChain } from "./ik-solve";
-import { readBend } from "./ik-constraint";
-import { inspectionOutput } from "./ik-result";
 
-/**
- * The `ik` plugin: its declaration and the wiring from its slots to a solve, and nothing else.
- *
- * Four questions used to share this file: slot adaptation, chain topology, strategy selection, and
- * one strategy's arithmetic. Each now has one owner, and this module only composes them in order.
- * `ik-chain.ts` reads the publisher's member states and goals into the one `SolveMember` model that
- * `ik-member.ts` declares; `ik-solve.ts` decides which strategy answers the chain and runs it;
- * `ik-analytic.ts` and `fabrik.ts` are the two strategies. A new capability lands in the owner of
- * the question it answers rather than beside the arithmetic that consumes it. See ADR-106 and
- * issue #349.
- */
-
-/**
- * The solver node.
- *
- * `compose` returns the values it was given with `rotations` added, rather than `rotations` alone.
- * `Track.composeFrom` chains by replacement, so a bare return wipes this track's own authored keys:
- * the solver's `flip` disappears from its published patch, and so does anything co-authored beside
- * `ik` on the same node. The spread is a correctness requirement of the chaining rule, not a style
- * choice, and `IK-18` pins it.
- *
- * `inspection` is published only when the solver's own static `inspect` is exactly `true`. Both
- * output names are declared in `outputs` for every registration, because ownership of a name is a
- * property of the plugin, not of one rig. Whether to publish it and what it holds are both
- * `inspectionOutput`'s answer in `ik-result.ts`, the one owner the 3D solver reads too (ADR-109,
- * ADR-120); this module only spreads that answer after `rotations`.
- *
- * `targets` is an ordinary declared slot carrying `dict: true`, which is how the goal family reaches
- * this plugin now. The slot set is enumerable again: the member ids belong to the rig, but they are
- * keys inside one declared slot rather than slot names of their own, so `requirements` answers for
- * every slot and there is no predicate and no grammar. `claimsSlot` is deleted with the derived
- * `targets[<memberId>]` identity it read. See ADR-052 and ADR-057.
- */
-export const ikPlugin: PluginDefinition = {
-  name: "ik",
-  keys: [FLIP_KEY, BEND_KEY, INSPECT_KEY],
-  requirements: {
-    root: { description: "base frame of the solver chain" },
-    target: { description: "target position to reach" },
-    targets: { description: "one goal per chain leaf, keyed by member id", dict: true },
+const MEMBER: ValueSpec = {
+  kind: "record",
+  fields: {
+    memberId: { kind: "string" },
+    parentId: { kind: "string", optional: true },
+    length: { kind: "number" },
+    x: { kind: "number", optional: true },
+    y: { kind: "number", optional: true },
+    minRotation: { kind: "number", optional: true },
+    maxRotation: { kind: "number", optional: true },
+    influence: { kind: "number", optional: true },
   },
-  stage: "compose",
-  outputs: ["rotations", INSPECTION_KEY],
-  compose: (values, _progress, inputs) => {
-    const root = readFrame(inputs.root);
-    const members = readMembers(inputs.members);
-    const goals = readGoals(inputs.target, members);
-    const flip = readBend(values);
-    const result = solveChain(root, readSolveMembers(members, goals), flip);
-    return Object.freeze({
-      ...values,
-      rotations: Object.freeze(result.rotations as unknown as ImmutableRecord),
-      ...inspectionOutput(values, result),
-    });
+};
+
+const ROOT: ValueSpec = {
+  kind: "record",
+  fields: {
+    memberId: { kind: "string" },
+    x: { kind: "number" },
+    y: { kind: "number" },
+    rotation: { kind: "number" },
+  },
+};
+
+const GOAL: ValueSpec = {
+  kind: "record",
+  fields: {
+    goalId: { kind: "string" },
+    memberId: { kind: "string" },
+    x: { kind: "number" },
+    y: { kind: "number" },
+    influence: { kind: "number", optional: true },
+  },
+};
+
+const SOLVED_ROW: ValueSpec = {
+  kind: "table",
+  schema: {
+    row: {
+      fields: {
+        rotation: { kind: "number" },
+        residual: { kind: "number", optional: true },
+        atBound: { kind: "boolean", optional: true },
+      },
+    },
+  },
+};
+
+const INSPECT: ValueSpec = {
+  kind: "record",
+  fields: {
+    kind: { kind: "string" },
+    residual: { kind: "number" },
+    iterations: { kind: "number" },
+    atBound: { kind: "boolean" },
+  },
+};
+
+type RecordOutput = { readonly values: FlatRecord };
+type MapOutput = Readonly<Record<string, RecordOutput>>;
+type FlatRecord = Readonly<Record<string, number | string | boolean>>;
+type ResolvedRequires = Readonly<Record<string, Outputs | Readonly<Record<string, Outputs>>>>;
+
+function flatRecord(value: unknown, path: string): FlatRecord {
+  if (value === null || typeof value !== "object" || Array.isArray(value))
+    throw new TypeError(`IK requires a record at ${path}.`);
+  return value as FlatRecord;
+}
+
+function recordOutput(outputs: Outputs, path: string): FlatRecord {
+  const values = outputs.values;
+  if (
+    values === undefined ||
+    Array.isArray(values) ||
+    values === null ||
+    typeof values !== "object"
+  )
+    throw new TypeError(`IK requires a record output at ${path}.`);
+  return flatRecord(values, `${path}.values`);
+}
+
+function recordsOutput(value: unknown, path: string): MapOutput {
+  if (value === null || typeof value !== "object" || Array.isArray(value))
+    throw new TypeError(`IK requires a map output at ${path}.`);
+  return value as MapOutput;
+}
+
+function stringField(record: FlatRecord, field: string, path: string): string {
+  const value = record[field];
+  if (typeof value !== "string" || value.length === 0)
+    throw new TypeError(`IK requires ${path}.${field} to be a non-empty string.`);
+  return value;
+}
+
+function optionalStringField(record: FlatRecord, field: string): string | undefined {
+  const value = record[field];
+  if (value === undefined) return undefined;
+  if (typeof value !== "string" || value.length === 0)
+    throw new TypeError(`IK requires ${field} to be a non-empty string when present.`);
+  return value;
+}
+
+function memberRows(requires: ResolvedRequires): readonly SolveMember[] {
+  const root = recordOutput(requires.root as Outputs, "root");
+  const rootId = stringField(root, "memberId", "root.values");
+  const members = recordsOutput(requires.members, "members");
+  const goals = recordsOutput(requires.goals, "goals");
+  const memberIds = new Set<string>();
+  const goalByMember = new Map<string, FlatRecord>();
+  for (const [label, output] of Object.entries(goals)) {
+    const goal = recordOutput(output as Outputs, `goals.${label}`);
+    const memberId = stringField(goal, "memberId", `goals.${label}.values`);
+    if (goalByMember.has(memberId))
+      throw new TypeError(`IK received duplicate goal for ${memberId}.`);
+    goalByMember.set(memberId, goal);
+  }
+  const rows = Object.entries(members).map(([label, output]) => {
+    const values = recordOutput(output as Outputs, `members.${label}`);
+    const id = stringField(values, "memberId", `members.${label}.values`);
+    if (!memberIds.add(id)) throw new TypeError(`IK received duplicate member id ${id}.`);
+    const parentId = optionalStringField(values, "parentId") ?? rootId;
+    const goal = goalByMember.get(id);
+    const merged = flatRecord(
+      goal === undefined
+        ? values
+        : { ...values, ...(goal.influence === undefined ? {} : { influence: goal.influence }) },
+      `members.${label}.values`,
+    );
+    const limit = readJointLimit(merged);
+    const influence = readInfluence(merged);
+    return {
+      id,
+      base: parentId,
+      length: readNumber(merged.length),
+      pivot: readPivotOffset(merged),
+      ...(goal === undefined ? {} : { goal: readFrame(goal) }),
+      ...(limit.kind === "range" ? { limit } : {}),
+      ...(influence === undefined ? {} : { influence }),
+    };
+  });
+  for (const id of goalByMember.keys())
+    if (!memberIds.has(id)) throw new TypeError(`IK goal targets unknown member ${id}.`);
+  return rows;
+}
+
+function rootFrame(requires: ResolvedRequires) {
+  return readFrame(recordOutput(requires.root as Outputs, "root"));
+}
+
+function outputRows(result: ReturnType<typeof solveChain>, members: readonly SolveMember[]) {
+  const atBound = result.quality.kind === "limited" ? new Set(result.quality.atBound) : undefined;
+  return members.map((member) => ({
+    id: member.id,
+    cells: {
+      rotation: result.rotations[member.id] ?? 0,
+      ...(result.residuals[member.id] === undefined
+        ? {}
+        : { residual: result.residuals[member.id] }),
+      ...(atBound?.has(member.id) === true ? { atBound: true } : {}),
+    },
+  }));
+}
+
+export const ikPlugin: IdentifiedPluginDefinition = {
+  id: "ik",
+  inputs: {
+    values: {
+      kind: "record",
+      fields: {
+        flip: { kind: "boolean", optional: true },
+        inspect: { kind: "boolean", optional: true, static: true },
+      },
+    },
+    requires: {
+      members: { binding: "map", outputs: { values: MEMBER } },
+      root: { outputs: { values: ROOT } },
+      goals: { binding: "map", outputs: { values: GOAL } },
+    },
+  },
+  outputs: { values: SOLVED_ROW, inspect: { ...INSPECT, optional: true } },
+  transform({ values, requires }) {
+    const local = flatRecord(values, "input.values");
+    const members = memberRows(requires);
+    const result = solveChain(rootFrame(requires), members, local.flip === true);
+    const inspection = inspectSolve(result);
+    return {
+      values: outputRows(result, members),
+      ...(local.inspect === true
+        ? {
+            inspect: {
+              kind: inspection.kind,
+              residual: inspection.residual,
+              iterations: inspection.iterations,
+              atBound: inspection.atBound.length > 0,
+            },
+          }
+        : {}),
+    };
   },
 };

@@ -25,4 +25,10 @@ export const identifiedCatalog: ReadonlyMap<string, IdentifiedPluginDescriptor> 
       load: async () => (await import("./transform3d")).transform3dPlugin,
     },
   ],
+  [
+    "ik",
+    {
+      load: async () => (await import("./ik")).ikPlugin,
+    },
+  ],
 ]);
