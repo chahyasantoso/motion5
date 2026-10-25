@@ -70,7 +70,7 @@ An empty section is refused rather than ignored. Omitting `requires` is already 
 
 The values section: every property the named plugin claims, and the only compiled value domain.
 
-A leaf is held to exactly the rules a contributed property is held to, through the same `validateProperty`, and claims its compiled key through the same `claim`, so a leaf colliding with another group's leaf is one `keyframes-duplicate-key` reported by one owner. That is also what keeps a compiled key naming exactly one authored path, which `setValues` relies on.
+A leaf is held to exactly the rules a contributed property is held to, through the same `validateProperty`, and claims its compiled key through the same `claim`, so a leaf colliding with another group's leaf is one `keyframes-duplicate-key` reported by one owner. That is also what keeps a compiled key naming exactly one authored path, which `input.values.set` relies on.
 
 An empty section is refused rather than ignored. Omitting `values` is already the way to author no properties, so an empty one is a field accepted and then ignored, which rule 6 of ADR-033 forbids. Identical reasoning to `keyframes-requires-empty` above. See ADR-049.
 

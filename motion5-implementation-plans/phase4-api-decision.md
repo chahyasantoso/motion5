@@ -106,9 +106,11 @@ schema never changes under `values.set`.
 ## Scope and consumers
 
 Scope is track-scoped edits plus `remove-track` only. Motion and project edits, membership,
-triggers, seek and invalidate keep their current path. Hold stays a runner step. A partial write is
-a refused write: the whole list rolls back and nothing publishes, so a caller cannot leave half a
-frame applied through this API.
+triggers, seek and invalidate keep their current path. Hold stays a runner step. An internal batch
+(`apply`) is atomic and publishes once; `values(recipe)` is not a transaction, each cheap edit
+applies immediately with publication deferred, so edits before a refused one stay applied. A caller
+cannot leave half a frame applied through the internal batch, while `values(recipe)` reports the
+refusal after the writes it already accepted.
 
 Consumer inventory, from the tree at the decision commit:
 
@@ -204,35 +206,47 @@ cell is 100 calls per sample after a warm-up, median of 7 samples, same machine.
 `writeValues`/`releaseValues`; a median more than 25 percent slower stops the slice and is reported
 with options rather than accepted.
 
-## S4 benchmark re-baseline
+## S4/S5 benchmark re-baseline
 
-`values.set` measured on the same fixture, with the table fixtures built once so the cell measures
-the runtime rather than the caller's row allocation: 62,117 ns per 20-row table write, 10,711 ns per
-record write, 57,469 ns per addressed table cell, and 9,026 ns per addressed record field (median of
-seven samples, 100 calls each).
+Measured 2026-10-25 on the same machine and fixture shape as the S1 run: one manual motion with a
+20-row, 2-field inferred table track and a 2-field record track, both mounted, 100 calls per sample
+after a warm-up and median of seven samples per run. Five runs were taken because the machine
+spread is larger than the differences being compared; the figures below are the median across the
+five run medians. `scripts/bench-edit-cost.mjs` also measures `writeValues` on a target record with
+1, 100 and 1000 idle tracks loaded beside it.
 
-Those are 85 to 100 percent above the S1 cells for `setValues` (33,516 ns table, 5,187 ns record),
-and the comparison is the finding rather than the slice's cost. The S1 cell did not change any
-compiled value on an identified-table track: `Engine` installs no `writeValues` port, so the old
-path called the port's no-op default, and `withAuthoredValues` had no grouped-keyframes record to
-move. It measured the booking overhead of a write that could not affect a published value. The S4
-path parses and validates the authored snapshot, rebuilds the compiled evaluator and publishes, all
-of which the old number excluded.
+- `writeValues/table`: 46,493 ns
+- `writeValues/record`: 7,282 ns
+- `values.set/table`: 34,739 ns
+- `values.set/record`: 7,718 ns
+- `values.setField/table`: 33,571 ns
+- `values.setField/record`: 6,927 ns
+- `writeValues/idle-1`: 6,684 ns
+- `writeValues/idle-100`: 7,253 ns
+- `writeValues/idle-1000`: 18,982 ns
 
-Decision, 2026-10-24: keep the measured real path and treat the S4 medians as the effective v5
-baseline. The 25 percent gate against a no-op reference is recorded as inapplicable rather than
-silently passed, and the absolute cost stays under 0.1 ms for the largest fixture. A later slice
-that adds incremental slot updates can compare against these numbers.
+The S1 `setValues` cell measured a no-op port on identified tables, because `Engine` installed no
+`writeValues` port and the old path could not change a published value. The 25 percent gate for
+`values.set` therefore could not be applied against it. The S4 and S5 table figures for that verb
+(62,117 and 31,937 ns) differ by about 2x on identical code, and this run measured 34,739 ns;
+wall-clock is not a reliable gate at this fixture size. The regression guard is now the allocation
+test in `packages/core/test/integration/value-edit-path.test.ts`, which measures allocation rather
+than time.
 
-## S5 benchmark
+The `overrideValues` to `writeValues` comparison is valid and keeps the 25 percent gate. Table:
+46,493 ns against the S1 49,335 ns, 5.8 percent faster. Record: 7,282 ns against the S1 5,837 ns,
+24.8 percent slower, inside the bound but close to it; individual runs ranged from 17.6 to 44.2
+percent slower, which is why the five-run median is the figure reported. `values.setField` has no
+S1 counterpart and is recorded for the next baseline.
 
-The live tier measured on the same fixture and machine, same run shape: `writeValues` 44,926 ns per
-20-row table write and 6,793 ns per record write, against the S1 `overrideValues` medians of 49,335
-and 5,837 ns. The table path is 8.9 percent faster and the record path 16.4 percent slower, so
-benchmark (1)'s 25 percent bound holds. The same run measured `input.values.set` at 31,937 ns for
-the table and 7,237 ns for the record, which replaces the S4 record figure as the current one; both
-answers live over a publisher flush that dominates the small fixture, so their spread across runs is
-machine noise rather than a code path moving.
+The idle-track cells grow from 6,684 ns with one idle track to 18,982 ns with 1000, about 2.8x
+rather than the pre-Slice-A growth with project size. The remaining growth is publication and
+invalidation outside the value planner; Slice A deliberately did not chase it.
+
+The `values.set` gate is not decided here. Options for the owner: (A) accept the new medians as the
+v5 baseline; (B) add a comparable baseline by benchmarking a pure recompile of the same table at
+`d8fea5f`; (C) optimise `values.set` further, for example by skipping the parse for an unchanged
+shape. No pass is claimed or waived until the owner chooses.
 
 ## S6 consumers
 
@@ -247,8 +261,8 @@ and the ordinary handle, so a recipe can stay node-addressed without losing the 
 writer and goal control use `input.values.setField` for the fields they change, which is the
 whole-value rule expressed one field at a time; no row-patching helper was needed because no caller
 patches rows of a live value. `frame.ts` and `labels.ts` carried only prose about the retired verbs
-and are corrected. The react demo has no value writes to move. The pre-v5 guide set is untouched
-until its own documentation slice.
+and are corrected. The react demo has no value writes to move. The pre-v5 guide set is updated for
+the removed verbs only; its wider v5 migration is still pending.
 
 ## Pending ledger after Phase 4
 
@@ -262,7 +276,11 @@ Two semantic differences are deliberate and recorded here rather than hidden in 
 that removes a chain parent before its dependant is now refused at the parent's step, because each
 structural verb plans against the staged view rather than accumulating an operation log; the old
 `project-enumeration` case asserting order independence now asserts the leaf-first success and the
-parent-first refusal. The v5 evaluator writes its timeline when it next evaluates rather than on
-every seek, so the two `motion-consistency` cases that injected a failure through a re-seed's
-`progress` call have no call left to fail; the surrounding settlement ordering stays covered by the
-trigger cases.
+parent-first refusal. Staged recipes are therefore leaf-first for track removal: parent-first inside
+one recipe is refused with `edge-unknown-source` and changes nothing. This differs from `d8fea5f`,
+where both orders were accepted, by decision. Supporting parent-first needs a lenient intermediate
+state that the next staged edit's finalize would refuse anyway, making the rule order-dependent in
+a new way. The v5 evaluator writes its timeline when it next evaluates rather than on every seek,
+so the two `motion-consistency` cases that injected a failure through a re-seed's `progress` call
+have no call left to fail; the surrounding settlement ordering stays covered by the trigger and
+publication cases.

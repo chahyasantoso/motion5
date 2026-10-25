@@ -301,6 +301,26 @@ describe("the value tier publishes once for a batch, and refuses every tier that
     expect(() => runtime.values(() => undefined)).toThrow("ProjectRuntime is disposed.");
   });
 
+  it("RA-172 keeps earlier writes applied when a later write in a values recipe is refused", () => {
+    const { runtime } = rig();
+    try {
+      // `values(recipe)` is not a transaction: each cheap edit applies immediately and only the
+      // publication is deferred, so an edit before the refused one stays applied.
+      expect(() =>
+        runtime.values((edit) => {
+          edit.track("rig/a").input.values.set({ x: 1 });
+          edit.track("rig/b").input.values.set([{ id: "r1", cells: { x: 1 } }]);
+        }),
+      ).toThrow("values-shape-invalid");
+
+      expect(runtime.track("rig/a").definition.input?.values).toEqual({ x: 1 });
+      expect(runtime.track("rig/b").definition.input?.values).toEqual({ x: 0 });
+      expect(flushed).not.toHaveBeenCalled();
+    } finally {
+      runtime.dispose();
+    }
+  });
+
   it("RA-171 answers an empty invalidate the empty batch, and publishes only for a named node", () => {
     const { runtime } = rig();
     expect(typeof runtime.invalidate).toBe("function");

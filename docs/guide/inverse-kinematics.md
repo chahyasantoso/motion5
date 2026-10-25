@@ -51,7 +51,7 @@ The measured numbers, the machine they were measured on, and the command that re
 
 Loading and mounting a rig publish nothing. The first seek, tick or value write publishes the solve and every bone below it together.
 
-A value edit on a member, such as `overrideValues({ length: 100 })` or a new `weight`, does not rebuild the graph: the solver recomposes from the new value in the same call. Adding or removing a goal with `setGoal` and `removeGoal` is a graph edit, and removing a member re-solves the chain it left, because membership is derived from the members rather than listed on the solver. Remove children before parents, as with any bone.
+A value edit on a member, such as `input.values.setField({ field: "length" }, 100)` or a new `weight`, does not rebuild the graph: the solver recomposes from the new value in the same call. Binding or unbinding a solver goal through `input.requires.set` and `input.requires.remove` is a graph edit, and removing a member re-solves the chain it left, because membership is derived from the members rather than listed on the solver. Remove children before parents, as with any bone.
 
 Nothing carries from one solve to the next. Seeking backward, seeking at random, and replaying the same position publish exactly the bytes the forward pass did, so a scrubber never drifts and a paused frame is the same frame every time.
 

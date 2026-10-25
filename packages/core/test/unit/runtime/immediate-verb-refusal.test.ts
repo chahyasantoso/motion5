@@ -263,7 +263,7 @@ describe("a verb that applies immediately refuses inside a recipe", () => {
     });
 
     // The public invalidate is the value tier's ending with none of its own bookkeeping, so it is
-    // refused for exactly the reason `setValues` is. What is not refused is the same call reached
+    // refused for exactly the reason `seek` is. What is not refused is the same call reached
     // from a hook while a commit is applying: `#open` is cleared before the settle steps run, which
     // is what keeps a Motion's own invalidate on the path it has always been on.
     expectImmediate(thrown, "invalidate");

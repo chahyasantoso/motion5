@@ -4,7 +4,7 @@ import { AUTHORED, LIVE, buildOwed } from "../../../src/runtime/value-state";
 /**
  * Issue #443, phase A step 4: the state one live write leaves, as a closed union.
  *
- * The legacy mask/animated pair retired with `overrideValues`. What survives is the question every
+ * The legacy mask/animated pair retired with the whole-value overlay. What survives is the question every
  * commit derivation asks: does a replacement owe a build even when its compiled inputs compare
  * equal? An authored Track does not; a whole-value live overlay does, because nothing else clears
  * it.

@@ -8,7 +8,7 @@ import type { AuthoredPluginGroup } from "../../../src/contract/v5";
 // plugin group authors.
 //
 // `contract/keyframe-shape.ts` declared `readPluginValues` the single reader of the `values`
-// section. The runtime's `#setKeyframe` and the pure editors used to read the field themselves, so
+// section. The runtime's authored value edit and the pure editors used to read the field themselves, so
 // one authored layout had three readers; the editors and the verb are gone now, and what remains is
 // the gate that keeps every surviving reader on the one owner.
 //

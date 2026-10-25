@@ -86,7 +86,7 @@ const compose = (node: { id: string }) => () => ({
  * adds them. That is this gate working rather than being weakened: the surface below is derived from
  * the handle's own keys, so a member declared here and missing from the handle fails the case, and a
  * member added to the handle with no entry here fails it too. `SH-1` went red exactly this way when
- * `MEMBER_ARGUMENTS` named `overrideValues` and `setValues` ahead of ADR-059's source.
+ * `MEMBER_ARGUMENTS` named `writeValues` and `input.values.set` ahead of ADR-059's source.
  */
 const MOTION_MEMBER_ARGUMENTS: Readonly<Record<string, readonly unknown[]>> = {
   definition: [],

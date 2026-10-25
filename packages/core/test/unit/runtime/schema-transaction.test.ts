@@ -360,10 +360,10 @@ describe("one recipe is one transaction", () => {
     );
     expect((releaseLiveErr as Error).message).toContain("releaseValues");
 
-    const setValuesErr = thrownBy(() =>
+    const inputValuesSetErr = thrownBy(() =>
       editing(test.runtime).edit(() => test.runtime.track(ARM_ID).input.values.set([])),
     );
-    expect((setValuesErr as Error).message).toContain("input.values.set");
+    expect((inputValuesSetErr as Error).message).toContain("input.values.set");
 
     const setFieldErr = thrownBy(() =>
       editing(test.runtime).edit(() =>

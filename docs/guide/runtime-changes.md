@@ -8,9 +8,7 @@ A loaded project is not frozen. Motions and tracks can be added and removed whil
 const { id } = handle.addMotion({
   id: "outro",
   trigger: { type: "time", duration: 400 },
-  tracks: [
-    { id: "fade", duration: 1, keyframes: { transform: { values: { x: [{ p: 0, v: 0 }] } } } },
-  ],
+  tracks: [{ id: "fade", duration: 1000, input: { values: { opacity: 0 } } }],
 });
 
 handle.destroyMotion(id);
@@ -28,27 +26,19 @@ A `MotionHandle` edits a live Motion without tearing down its tracks. Resolve on
 const track = handle.addTrack(armTrack, { motionId: "walk" });
 
 track.replace(nextDefinition);
-track.addObserve({ source: "walk/chest" });
-track.setRequire("fk", "base", "walk/chest");
-track.removeRequire("fk", "base");
-track.setKeyframeGroup("fk", { values: { length: 10 }, requires: { base: "walk/chest" } });
-track.removeKeyframeGroup("fk");
-track.setGoal("ik", "wrist", "walk/hand");
-track.removeGoal("ik", "wrist");
-track.setKeyframe("fk", "length", 12);
-track.removeKeyframe("fk", "length");
+track.input.requires.set("base", "walk/chest");
+track.input.requires.remove("base");
+track.input.replace({ values: { length: 10 }, requires: { base: "walk/chest" } });
+track.input.values.set({ length: 12 });
+track.input.values.setField({ field: "length" }, 14);
 track.remove();
 ```
 
-`setRequire` and `removeRequire` edit one edge on an already-bound plugin group. They preserve the group values, redirect rather than append, support `memberKey` for dict-valued slots, and leave the `requires` section absent when its last binding is removed. They rebuild the graph because an authored requirement is topology, and refused candidates leave the handle unchanged. To originate a plugin group, use `setKeyframeGroup` rather than silently creating a partial group: `keyframe-group-unbound` is what you get for naming a plugin this node authors no group for.
+`input.requires.set` and `input.requires.remove` edit one dependency binding. They redirect rather than append, support `memberKey` for map-valued slots, and leave the section absent when its last binding is removed. They rebuild the graph because an authored requirement is topology, and a refused candidate leaves the handle unchanged: an unknown source is `edge-unknown-source`.
 
-`setKeyframeGroup` and `removeKeyframeGroup` are the whole-group pair. The first writes a plugin binding, values and `requires` together, whether or not the node had one, because a group holding only half its data may be transiently invalid; that also makes it the one honest `set` verb here, since a group carries no id, no token and no mount, so originating one and replacing one are the same edit at the same price. It is wholesale rather than merged: the group you hand over is the group the node authors afterwards. The second drops the group and every edge its `requires` derived, in one commit, values included, because what is removed is the group rather than a section of it.
+`input.replace` replaces the whole authored input, values and `requires` together. Crossing the authored input contract belongs to it or to `replace()`, rather than to a value edit. `input.values.set` and `input.values.setField` edit authored values without re-inferring, and `writeValues`/`releaseValues` own the live overlay. All four value verbs validate against the committed contract; a table/record change is `values-shape-invalid`, an undeclared or absent field is `cell-form-invalid`, and an unknown row address is `cell-address-unknown`.
 
-`setGoal` and `removeGoal` edit one entry of a solver's goals slot, addressed by the member id it is authored under, so two entries of one slot stay two edges. `setRequire` and `removeRequire` refuse that slot by name, as `keyframe-goal-slot-reserved`, and point at these two: without a member key they could only write the scalar spelling the loader refuses, and with one they would write the right shape through the wrong verb.
-
-All four are no-ops when nothing changes, and each refuses before writing anything: `keyframe-group-shape` for a group naming neither reserved section, because a group must name `values` or `requires`, and `keyframe-group-unbound` when an edit addresses a plugin group the node does not author. Crossing the authored definition boundary belongs to `replace()`, rather than silently changing a group into another shape. Everything else about the candidate is answered where it already is, by the plugin registry and by graph validation, and a refused candidate is rolled back with the handle unchanged. See ADR-062 and ADR-063.
-
-An observation carries `source` and nothing else, and the edge it declares is always an output edge: the source's contribution merges over this track's composed patch. `addObserve` throws for each of the three removed fields, `observation-target-unsupported`, `observation-role-unsupported`, and `observation-projection-unsupported`. There is no way to declare an input edge by hand: bind the dependency under the plugin group's `requires` section, which is the only way a value enters composition. See ADR-046 and ADR-047.
+A live write replaces the whole evaluated value rather than a key at a time, and a dependency that feeds composition is bound under `input.requires`. See ADR-046 and ADR-047.
 
 Omit `motionId` to add a free track, which lands at `~/trackId` with no motion scheduling it.
 
@@ -60,7 +50,7 @@ Every member above commits on its own. `handle.edit(recipe)` runs a batch of the
 handle.edit((tx) => {
   const rig = tx.addMotion({ id: "rig", trigger: { type: "manual" }, tracks: [] });
   for (const bone of bones) rig.addTrack(bone);
-  tx.track("rig/forearm").setRequire("fk", "base", "rig/upperarm");
+  tx.track("rig/forearm").input.requires.set("base", "rig/upperarm");
 });
 ```
 
@@ -68,7 +58,7 @@ handle.edit((tx) => {
 
 The recipe is handed a `SchemaTransaction`, which carries `addMotion`, `motion`, `tryMotion`, `addTrack`, `track` and `tryTrack` and nothing else: `mount`, `seek`, `subscribeNode` and `dispose` are not reachable through it. Reads inside it resolve against what it has staged, so a two-step edit sees its own first step, and the recipe's own return value is yours. A throw commits nothing, reaches no hook, and leaves every handle the recipe issued permanently not live.
 
-Two refusals name where a call was made rather than what it does. A recipe opened inside a recipe is `schema-transaction-nested`. A verb that applies immediately is `schema-transaction-immediate`, named at the verb, which covers `setTrigger` and `setStagger` on a `MotionHandle` and `overrideValues`, `setValues`, `setKeyframe` and `removeKeyframe` on a `TrackHandle`: a settle step cannot refuse, so deferring one of those into the transaction would move its failure to after the graph had committed. See ADR-064.
+Two refusals name where a call was made rather than what it does. A recipe opened inside a recipe is `schema-transaction-nested`. A verb that applies immediately is `schema-transaction-immediate`, named at the verb, which covers `setTrigger` and `setStagger` on a `MotionHandle` and `seek`, `writeValues`, `releaseValues`, `input.values.set` and `input.values.setField` on a `TrackHandle`: a settle step cannot refuse, so deferring one of those into the transaction would move its failure to after the graph had committed. See ADR-064.
 
 ## Many value writes, one publication
 
@@ -77,40 +67,41 @@ Two refusals name where a call was made rather than what it does. A recipe opene
 ```ts
 handle.values((batch) => {
   for (const rig of rigs) {
-    batch.track(rig.goal).setValues({ x: rig.x, y: rig.y });
-    batch.track(rig.solver).setKeyframe("ik", "flip", rig.flip);
+    batch.track(rig.goal).input.values.setField({ field: "x" }, rig.x);
+    batch.track(rig.goal).input.values.setField({ field: "y" }, rig.y);
+    batch.track(rig.solver).input.values.setField({ field: "flip" }, rig.flip);
   }
 });
 ```
 
-Outside a batch each of those writes publishes on its own, so `n` rigs cost `n` invalidations, `n` rounds of subscriber notification and `n` sequence moves. Inside one they cost one of each, and the call answers the `PatchBatch` that single publication produced. That is the whole saving, stated as narrowly as it deserves: a batch does not make a write cheaper. Each verb still validates on entry, still applies its write when you call it, and still escalates to a staged Track and a re-seek per node when the interpolator declines a per-key write, because what a backend can patch has nothing to do with how many nodes you are writing.
+Outside a batch each of those writes publishes on its own, so `n` rigs cost `n` invalidations, `n` rounds of subscriber notification and `n` sequence moves. Inside one they cost one of each, and the call answers the `PatchBatch` that single publication produced. That is the whole saving, stated as narrowly as it deserves: a batch does not make a write cheaper. Each verb still validates on entry, still applies its write when you call it, and still rebuilds the affected node's compiled evaluator in place, because what one edit costs has nothing to do with how many nodes you are writing.
 
-The recipe is handed a `ValueTransaction` carrying `seek`, `setValues` and `overrideValues` addressed by node id, plus `track` and `tryTrack`. Those two answer the ordinary `TrackHandle`, so `setValues`, `overrideValues`, `setKeyframe` and `removeKeyframe` on it join the batch as well, and there is deliberately no node-addressed `setKeyframe` here: that spelling would throw away the lifetime token the handle captured, which is the whole mechanism behind `StaleTrackHandleError`.
+The recipe is handed a `ValueTransaction` carrying `seek`, `writeValues` and `releaseValues` addressed by node id, plus `track` and `tryTrack`. Those two answer the ordinary `TrackHandle`, so `writeValues`, `releaseValues`, `input.values.set` and `input.values.setField` on it join the batch as well, and there is deliberately no node-addressed authored value verb here: that spelling would throw away the lifetime token the handle captured, which is the whole mechanism behind `StaleTrackHandleError`.
 
-A verb reached inside a batch answers a deferred batch rather than nothing: your own node as the only seed, no patches, and one warning whose `ruleId` is `value-batch-deferred`, saying the publication was queued. A `TrackHandle` is one interface whether or not a batch is open, so a member that answered `undefined` in one case would be a value nobody checks. A recipe that staged nothing publishes nothing at all and answers an empty batch, for the same reason a commit with no seeds does not call `invalidate`: an empty batch still opens one, notifies every batch subscriber and moves the sequence.
+A verb reached inside a batch answers a deferred batch rather than nothing: your own node as the only seed, no patches, and one warning whose `ruleId` is `value-batch-deferred`, saying the publication was queued. A `TrackHandle` is one interface whether or not a batch is open, so a member that answered `undefined` in one case would be a value nobody checks. A recipe is not a transaction: each cheap edit applies immediately, so edits before a refused one stay applied and nothing publishes. A recipe that staged nothing publishes nothing at all and answers an empty batch, for the same reason a commit with no seeds does not call `invalidate`: an empty batch still opens one, notifies every batch subscriber and moves the sequence.
 
 Two refusals, and they name where the call was made rather than what it does. Everything that publishes or mounts is `value-batch-immediate` inside a batch, named at the verb, which covers `invalidate`, `mount`, `unmount`, `signal`, and `setTrigger` and `setStagger` reached on the handle itself, and a second `values`. `seek` is deliberately not one of them: it is a value verb, so inside a batch it stages its own node and joins the one publication exactly as the other four do. Every structural verb is `value-batch-structural`, at the one member all of them reach, and it stages nothing, so a refused `addTrack` or `remove()` leaves the project exactly as it was. Going the other way, a value verb inside `edit(recipe)` is still `schema-transaction-immediate`: the two tiers do not nest, in either direction. A recipe that disposes the project is answered with `ProjectRuntime is disposed.` in place of the batch, because the batch is the answer to the call and there is no batch. See ADR-078.
 
 ## Changing values without rebuilding the graph
 
-`replace()` is for topology. To move a value, use the two cheap members, which stage no Track and rebuild no graph:
+`replace()` is for topology. To move a value, use the value tier, which stages no Track and rebuilds no graph:
 
 ```ts
-// Revertible. The authored definition is untouched.
-track.overrideValues({ length: 100 });
+// Revertible overlay. The authored definition is untouched.
+track.writeValues({ x: 100, y: 0 });
 
-// Sticky. `track.definition` moves with it.
-track.setValues({ length: 100 });
+// Sticky authored values. `track.definition` moves with it.
+track.input.values.set({ x: 100, y: 0 });
 ```
 
-Both return the `PatchBatch` of the one invalidation they cause, exactly as `seek()` does, so a dependent recomputes in the same call: masking a bone's `length` moves what an IK solver publishes for it, because a member's values reach a solve through the same read.
+Both return the `PatchBatch` of the one publication they cause, exactly as `seek()` does, so a dependent recomputes in the same call: moving a bone's `length` moves what an IK solver publishes for it, because a member's values reach a solve through the same read.
 
-The difference is the retained definition. `track.definition` answers from it, so `setValues` is the one that keeps `handle.definition` and the live composition in agreement, and `overrideValues` deliberately does not: it is a write you expect to take back.
+The difference is the retained definition. `track.definition` answers from it, so `input.values.set` is the one that keeps `handle.definition` and the live composition in agreement, and `writeValues` deliberately does not: it installs an overlay you expect to take back. `releaseValues()` drops that overlay and resumes authored evaluation at the current progress. The overlay survives authored value edits, binding edits and seeks, and is cleared only by a structural replacement or removal, `releaseValues`, and destroy.
 
-Either member takes an animated key as well as a static one, and the two are the same sentence to a reader:
+Authored values accept a static cell or a stop sequence. A live write is an evaluated value: a table or record of scalars that matches the committed contract, never a stop sequence. A write is replaced wholesale by the next one rather than accumulated:
 
 ```ts
-track.overrideValues({
+track.input.values.set({
   rotation: [
     { p: 0, v: 0 },
     { p: 1, v: 180 },
@@ -118,50 +109,24 @@ track.overrideValues({
 });
 ```
 
-A static key is masked over the interpolated state. An animated key has its tweens replaced on the still-live timeline, against a base record the interpolator kept when it compiled, so progress is preserved and no graph is rebuilt. An interpolator with no per-key write is not a second behavior: the runtime escalates to a recompile of the same definition and re-seeks to the same progress, so the published values and `handle.definition` are identical either way.
+That is the whole authored record, not a merge, so a field this call omits is absent and may be refused if the contract requires it.
 
-A write is replaced wholesale by the next one rather than accumulated, so an empty record is the clear for both kinds:
+The refusal set is contract, not a limitation. A live write that does not match the committed contract throws `live-values-invalid` with the diagnostics that name every offending path, and the previous overlay stands. An authored write that changes the table/record shape is `values-shape-invalid`, an undeclared or absent field is `cell-form-invalid`, and an unknown row address is `cell-address-unknown`. Use `replace()` or `input.replace()` when the contract itself has to change. See ADR-059 and ADR-060.
 
-```ts
-track.overrideValues({});
-```
+## One field, without replacing the rest
 
-That restores the authored values, or whatever the last `setValues` wrote, and nothing else. A real `replace()` also drops it, because it compiles a fresh Track. A structural edit drops it too, for the same reason. Omitted keys always keep their values, and topology, progress, and observations are untouched by either member.
-
-The refusal set is contract, not a limitation. Each of these throws `LiveValueKeyError`, whose `ruleId` is `live-value-key`, with no mutation and no publish:
-
-- a key the track does not author;
-- a key another plugin owns, which is the same thing: the group form is how you name the owner;
-- a namespaced `key:like:this` or an interpolator scratch `_key`, neither of which is authorable;
-- a key whose incoming leaf is a different kind from the authored one, which is `reason: "kind"`;
-- a key a plugin prepared, which is `reason: "prepared"`.
-
-The last two are the interesting ones. A live write moves a value; it does not change what a leaf is, so a scalar for an animated key and a stop list for a static key are both recompiles of a different shape rather than writes. Use `replace()` for those. A prepared key is compiled from the plugin's value, and a write over it would invert that precedence and disagree with the next real recompile. A malformed stop list is refused too, by the same validator a whole definition goes through, because an authored stop list is definition-shaped input. See ADR-059 and ADR-060.
-
-## One property of a group, without naming the rest
-
-`overrideValues` and `setValues` take a record and answer for the whole node. To move one leaf of one plugin group, name the group:
+`input.values.setField(address, cell)` writes one authored cell or field:
 
 ```ts
-track.setKeyframe("fk", "length", 12);
-track.setKeyframe("fk", "rotation", [
-  { p: 0, v: 0 },
-  { p: 1, v: 45 },
-]);
-track.removeKeyframe("fk", "length");
+track.input.values.setField({ field: "length" }, 12);
+track.input.values.setField({ row: "tip", field: "x" }, 40);
 ```
 
-Both are the value tier, so both return the `PatchBatch` of their one invalidation and neither rebuilds the graph, on any path. That holds because a leaf carries no edge and the plugin it belongs to is already in the chain: this pair only edits a group the node already authors, and `keyframe-group-unbound` is what you get for naming a plugin it does not. Originating a group is still `setKeyframeGroup`'s job, because a group holding only half its data may be transiently invalid.
-
-A key the group already authors takes the path `setValues` takes, with the same per-key refusals in the same order. A key it does not author yet cannot be masked, because nothing compiled it, so the authored record is edited and the node is recompiled in place and re-seeked to the progress it had. That new leaf is the one thing this pair can do that the record-shaped members cannot.
-
-The leaf-kind crossing is still refused, and that is a decision rather than an unfinished edge. This verb rewrites the authored record, so it could have compiled a scalar over an animated key, and it does not: which kind of leaf a key is authored as is a whole-definition question that `replace()` owns. An animated key itself is fine, exactly as it is through `setValues`.
-
-`removeKeyframe` takes the empty shapes with it. The values section goes when its last leaf does, the group goes when it names no section, and the definition loses its `keyframes` key when it holds nothing, so dropping the only leaf of a group that binds nothing removes the group and the plugin leaves the chain with it. That is what an author writing the same document would have written. A key the group does not author is a no-op. See ADR-065.
+`address.row` selects a table cell and must be absent for a record field. A mismatch between the address form and the track's shape is `values-shape-invalid`, and an address that does not exist is `cell-address-unknown`. The verb returns the `PatchBatch` of its one publication and stages no Track.
 
 ## A stale handle refuses, and `live` asks without throwing
 
-A handle carries a private token, so it can never affect a later track that reuses the same id. Once that token is no longer current the handle is stale, and every member of it fails the same way: `definition`, `requires`, `remove()`, `replace()`, `addObserve()`, `removeObserve()`, `setRequire()`, `removeRequire()`, `setKeyframeGroup()`, `removeKeyframeGroup()`, `setGoal()`, `removeGoal()`, `setKeyframe()`, `removeKeyframe()`, `overrideValues()`, and `setValues()` all throw `StaleTrackHandleError`. Four of them used to return silently, which reported success for doing nothing. See ADR-056.
+A handle carries a private token, so it can never affect a later track that reuses the same id. Once that token is no longer current the handle is stale, and every member of it fails the same way: `definition`, `requires`, `input`, `remove()`, `replace()`, `writeValues()`, and `releaseValues()` all throw `StaleTrackHandleError`. Four of them used to return silently, which reported success for doing nothing. See ADR-056.
 
 The error extends `TypeError` and keeps the message `Track "<id>" is no longer live.` verbatim, so an existing `instanceof TypeError` narrowing keeps matching. Branch on `ruleId`, which is `stale-track-handle`, rather than on the message; `nodeId` carries the node the refused handle was captured against.
 
@@ -185,7 +150,7 @@ for (const track of [...handles].reverse()) track.remove();
 
 `handle.dependantsOf(nodeId)` is a read-only query for editor preflight: it tells you who reads a node before you try to delete it, which is every observer of an edge plus any solver that reads it as a chain member. It is not the enforcement. Graph validation rejects a deletion that would orphan a live dependant, and there is no cascade delete.
 
-Inside one `edit(recipe)` the order does not matter, and that is a property of the commit rather than a courtesy. A recipe derives from the final pair rather than from an accumulated operation log and replaces the graph once, so the intermediate state in which a child still binds a removed parent is never built and never validated. Two constraints survive it and both are one line each: a Motion must own no tracks when `destroy()` runs, so children still leave before their Motion, and removing an id and recreating it in one recipe is refused as `schema-transaction-recreated`. Reversing a list is therefore only necessary when each removal is its own commit.
+Inside one `edit(recipe)`, remove children before parents too. A recipe plans each structural verb against the staged view rather than accumulating an operation log, so a parent-first removal is refused with `edge-unknown-source` and changes nothing, while the leaf-first order succeeds. Two further constraints are one line each: a Motion must own no tracks when `destroy()` runs, so children still leave before their Motion, and removing an id and recreating it in one recipe is refused as `schema-transaction-recreated`. Reversing a list is therefore necessary inside a recipe as well as when each removal is its own commit.
 
 Enumeration is a read too. `handle.motionIds()`, `handle.freeTrackIds()` and `handle.mountedNodeIds()` answer every Motion id, every track node no Motion owns, and every node currently mounted, each frozen and in committed order, so nothing has to keep a copy of the document's ids beside it:
 
@@ -199,7 +164,7 @@ A Motion's own children stay `MotionHandle.trackIds`, so the two track answers p
 
 ## What atomicity guarantees you get
 
-A refused single-track mutation costs nothing. `addTrack` and `replaceTrack` resolve the compiled track and seed its progress against the entry list they are about to commit, then commit, so a rejection leaves no partial state and the seeded values are identical to what a successful commit would have produced. A refused live value write is the same: every key is classified before anything is written, so the retained definition, the mask, the timeline, and the published patch are all exactly as they were.
+A refused single-track mutation costs nothing. `addTrack` and `replaceTrack` resolve the compiled track and seed its progress against the entry list they are about to commit, then commit, so a rejection leaves no partial state and the seeded values are identical to what a successful commit would have produced. A refused live value write is the same: the whole value is validated against the committed contract before anything is published, so the retained definition, overlay, compiled track, and published patch are all exactly as they were.
 
 A rejected motion mutation reports the rejection that caused it. If the rollback itself also fails, for example because your own scroll-source unsubscribe throws, you get one `AggregateError` whose message opens with the original rejection verbatim and whose `errors` are `[rejection, rollbackFailure]`. The reason the operation was refused always outranks the noise from cleaning up.
 

@@ -41,15 +41,19 @@ export function recordingValues(delegate?: ValueBatchPort) {
       values(recipe) {
         const writes: StagedWrite[] = [];
         recipe({
-          setValues(node: string, values: object) {
-            writes.push([node, values]);
-            return EMPTY;
-          },
           track(node: string) {
             return {
-              setKeyframe(plugin: string, key: string, value: unknown) {
-                writes.push([`${node}:${plugin}.${key}`, value]);
-                return EMPTY;
+              input: {
+                values: {
+                  setField(address: { readonly field: string }, value: unknown) {
+                    writes.push([`${node}.${address.field}`, value]);
+                    return EMPTY;
+                  },
+                  set(values: unknown) {
+                    writes.push([node, values]);
+                    return EMPTY;
+                  },
+                },
               },
             } as unknown as TrackHandle;
           },

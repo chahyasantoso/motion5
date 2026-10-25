@@ -1,10 +1,12 @@
 // The Phase 4 edit APIs: the cost one track-scoped write pays, measured through the public handle.
 //
-// Six cells, each 100 calls per sample after a warm-up, median of seven samples. The table track
+// Nine cells, each 100 calls per sample after a warm-up, median of seven samples. The table track
 // authors twenty rows and two numeric fields; the record track authors two fields. The two
 // `values.set` cells measure the authored tier and the two `values.setField` cells one addressed
-// cell; the two `writeValues` cells measure the live overlay. `overrideValues` and `setValues` from
-// the pre-Phase-4 baseline are gone with their APIs.
+// cell; the two `writeValues` cells measure the live overlay. The three `writeValues/idle-*` cells
+// measure the same record write with 1, 100 and 1000 idle tracks loaded beside it, which is the
+// project-size guard the live path was fixed against. The value verbs from the pre-Phase-4 baseline
+// are gone with their APIs.
 //
 // This does not gate CI, for the reason `bench-values.mjs` gives: a timing is a property of the
 // machine as much as of the code, and the report carries the machine.
@@ -77,6 +79,32 @@ for (const id of ids) project.mount(id);
 const rows = project.track(ids[0]);
 const record = project.track(ids[1]);
 
+function idleDefinition(idleTracks) {
+  const tracks = [{ id: "target", input: { values: { a: 1, b: 2 } } }];
+  for (let index = 0; index < idleTracks; index += 1)
+    tracks.push({ id: `idle-${index}`, input: { values: { a: index } } });
+  return {
+    schemaVersion: 5,
+    projectId: "edit-cost-idle",
+    motions: [{ id: "bench", trigger: { type: "manual" }, tracks }],
+  };
+}
+
+function measureIdleTracks(idleTracks) {
+  const idle = new Engine({
+    clock: createManualClock(),
+    interpolator: createFakeInterpolator(),
+    scheduler: createFakeScheduler(),
+  }).load(idleDefinition(idleTracks));
+  const target = idle.track("bench/target");
+  for (const id of idle.motion("bench").trackIds) idle.mount(id);
+  const cell = measure(`writeValues/idle-${idleTracks}`, (index) =>
+    target.writeValues({ a: index % 10, b: 2 }),
+  );
+  idle.dispose();
+  return cell;
+}
+
 function median(values) {
   const sorted = [...values].sort((left, right) => left - right);
   return sorted[Math.floor(sorted.length / 2)];
@@ -122,6 +150,9 @@ const report = {
     measure("values.setField/record", (index) =>
       record.input.values.setField({ field: "a" }, index % 10),
     ),
+    measureIdleTracks(1),
+    measureIdleTracks(100),
+    measureIdleTracks(1000),
   ],
 };
 

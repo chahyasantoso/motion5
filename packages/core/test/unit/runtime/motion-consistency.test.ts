@@ -218,9 +218,55 @@ describe("Engine motion edits preserve accepted state and entity lifetimes", () 
 
   // Two cases used to inject a failure through the interpolator's `progress` during a stagger
   // re-seed. The identified-table evaluator stores progress and writes the timeline when it next
-  // evaluates, so a re-seed no longer calls a fallible host hook and there is no failure to order
-  // here. The settlement ordering they guarded is still exercised by the trigger cases above; the
-  // legacy Track that called `progress` on every seek leaves with Phase 5.
+  // evaluates, so a re-seed no longer calls a fallible host hook. The accepted-state guard now fails
+  // the publication that still follows acceptance, and the disposal guard fails a trigger finalizer,
+  // so settlement ordering stays pinned without the legacy Track that called `progress` on every
+  // seek until Phase 5.
+  it("retains an accepted stagger and attempts publication when publication fails", () => {
+    const test = rig();
+    test.handle.mount("hero/arm");
+    test.handle.mount("hero/leg");
+    test.handle.signal("hero", { type: "manual", progress: 0.75 });
+    test.flush();
+    const motion = test.handle.motion("hero");
+    const failure = new Error("Publication failed.");
+    const publication = vi.spyOn(test.runtime.graph, "flush");
+    publication.mockImplementation(() => {
+      throw failure;
+    });
+
+    expect(caught(() => motion.setStagger(250))).toBe(failure);
+    expect(motion.definition.stagger).toBe(250);
+    // Caller-stated publications only, so the accepted schedule still owed one after the failure.
+    expect(statedPublications(publication)).toHaveLength(1);
+    const heroArmPatch = test.handle.get("hero/arm");
+    if (heroArmPatch?.status !== "ready")
+      throw new Error(`hero/arm is ${heroArmPatch?.status ?? "absent"}, not ready.`);
+    expect(heroArmPatch.sourceProgress).toBeCloseTo(0.75);
+    publication.mockRestore();
+    test.handle.dispose();
+  });
+
+  it("defers disposal through a failed trigger completion and preserves ordered failures", () => {
+    const failure = new Error("Disposing trigger finalizer failed.");
+    let dispose: (() => void) | undefined;
+    const host = drivers({ cleanup: failure, onCleanup: () => dispose?.() });
+    const test = rig(project(), host.factory);
+    dispose = () => test.handle.dispose();
+    test.handle.mount("hero/arm");
+    const motion = test.handle.motion("hero");
+    const publication = vi.spyOn(test.runtime.graph, "flush");
+
+    const result = caught(() => motion.setTrigger({ type: "time", duration: 1000 }));
+    expect(result).toBeInstanceOf(AggregateError);
+    const errors = result instanceof AggregateError ? result.errors : [];
+    expect(errors[0]).toBe(failure);
+    expect(errors[1]).toMatchObject({ message: "ProjectRuntime is disposed." });
+    expect(motion.live).toBe(false);
+    expect(publication).not.toHaveBeenCalled();
+    for (const entry of host.created) expect(entry.dispose).toHaveBeenCalledTimes(1);
+    for (const kill of test.kills) expect(kill).toHaveBeenCalledTimes(1);
+  });
 
   it("adopts before a trigger finalizer disposes and releases the replacement once", () => {
     let cleanup: () => void = () => undefined;
