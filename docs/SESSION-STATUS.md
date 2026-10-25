@@ -6,20 +6,20 @@ states a phase; `packages/core/test/unit/scripts/session-status-shape.test.ts` e
 byte ceiling.
 
 - **Captured:** 2026-10-24, Asia/Jakarta.
-- **Read against:** `refactor/v5-identified-tables` at the end of Phase 4.
+- **Read against:** `refactor/v5-identified-tables` after the identified 2D transform cutover.
 
 ## Now
 
-- **Phase 4 is complete:** structural, cheap authored and live value edits share one pure plan and
-  one commit path, runners and recipes use the live verbs, and the lifecycle, scheduling and
-  trigger suites run against identified tables. The pending ledger is 79 files: 73 Phase 5,
-  4 Phase 6 and 2 Phase 7, with no Phase 4 entry left.
+- **Phase 5 has begun:** the existing plugin entrypoints now have an explicit internal legacy boundary,
+  and the public 2D `transform` path is an identified-table plugin with declared input/output schemas
+  and preserved source-row ids. Grouped consumers remain on the internal legacy path. No pending
+  ledger entries were removed; 73 Phase 5, 4 Phase 6 and 2 Phase 7 entries remain.
 
 ## Next in line
 
-- **Phase 5 replaces the grouped solver machinery:** express IK, FK, rig and transform plugins with
-  identified tables and declared dependencies, register the built-in plugins, and port the 73
-  Phase 5 suites onto them.
+- **Phase 5 continues with the 3D transform cutover:** migrate `transform3d` at its existing public
+  entrypoint, keep grouped consumers explicitly legacy-only, and then prove the explicit 2D solver
+  graph before FK or rig migration.
 
 ## Open, and not scheduled
 
