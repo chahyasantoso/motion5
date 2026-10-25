@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fkPlugin } from "../../src/fk";
+import { legacyFkPlugin as fkPlugin } from "@motion5/plugins/internal/legacy/fk";
 
 // Issue #211: the per-member blend between a bone's authored rest pose and its solver's output.
 //

@@ -10,7 +10,7 @@ import { PluginRegistry, type PluginDefinition } from "../../../src/domain/plugi
 import { validateKeyframes } from "../../../src/contract/validate-v5";
 import { buildGraphIR } from "../../../src/graph/ir";
 import type { Diagnostic, ProjectDefinition, TrackDefinition } from "../../../src/contract/v5";
-import { fkPlugin } from "../../../../plugins/src/fk";
+import { legacyFkPlugin as fkPlugin } from "@motion5/plugins/internal/legacy/fk";
 import { fk3dPlugin } from "../../../../plugins/src/fk3d";
 import { legacyIkPlugin as ikPlugin } from "@motion5/plugins/internal/legacy/ik";
 import { legacyIk3dPlugin as ik3dPlugin } from "@motion5/plugins/internal/legacy/ik3d";

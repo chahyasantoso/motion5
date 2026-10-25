@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ImmutableRecord } from "@motion5/core/plugin-api";
-import { fkPlugin } from "../../src/fk";
+import { legacyFkPlugin as fkPlugin } from "@motion5/plugins/internal/legacy/fk";
 import { FABRIK_TOLERANCE, solveFabrik } from "../../src/fabrik";
 import type { SolveMember } from "../../src/ik-member";
 import type { WorldFrame } from "../../src/frame";

@@ -10,7 +10,7 @@ import {
 } from "../../../src/domain/plugins";
 import type { ImmutableRecord } from "../../../src/domain/values";
 import { buildGraphIR } from "../../../src/graph/ir";
-import { fkPlugin } from "../../../../plugins/src/fk";
+import { legacyFkPlugin as fkPlugin } from "@motion5/plugins/internal/legacy/fk";
 import { fk3dPlugin } from "../../../../plugins/src/fk3d";
 import {
   composeWorld3d,

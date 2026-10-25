@@ -6,7 +6,7 @@ import {
   type ProjectHandle,
   type TrackDefinition,
 } from "@motion5/core";
-import { fkPlugin } from "@motion5/plugins/fk";
+import { legacyFkPlugin as fkPlugin } from "@motion5/plugins/internal/legacy/fk";
 import { legacyIkPlugin as ikPlugin } from "@motion5/plugins/internal/legacy/ik";
 import { legacyTransformPlugin as transformPlugin } from "@motion5/plugins/internal/legacy/transform";
 import { fk3dPlugin } from "@motion5/plugins/fk3d";

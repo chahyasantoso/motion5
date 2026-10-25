@@ -4,7 +4,7 @@ import type { ScrollSource } from "../../src/adapters/scroll-trigger";
 import { createManualClock } from "../../src/ports/clock";
 import { Engine, type ProjectHandle } from "../../src/engine";
 import { PluginRegistry } from "../../src/domain/plugins";
-import { fkPlugin } from "../../../plugins/src/fk";
+import { legacyFkPlugin as fkPlugin } from "@motion5/plugins/internal/legacy/fk";
 import { legacyIkPlugin as ikPlugin } from "@motion5/plugins/internal/legacy/ik";
 import { legacyTransformPlugin as transformPlugin } from "@motion5/plugins/internal/legacy/transform";
 import { fk3dPlugin } from "../../../plugins/src/fk3d";

@@ -37,4 +37,10 @@ export const identifiedCatalog: ReadonlyMap<string, IdentifiedPluginDescriptor> 
       load: async () => (await import("./ik3d")).ik3dPlugin,
     },
   ],
+  [
+    "fk",
+    {
+      load: async () => (await import("./fk")).fkPlugin,
+    },
+  ],
 ]);

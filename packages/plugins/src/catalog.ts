@@ -6,7 +6,7 @@ export const builtinCatalog: PluginCatalog = new Map([
     "transform",
     { load: () => import("./legacy/transform").then((module) => module.legacyTransformPlugin) },
   ],
-  ["fk", { load: () => import("./fk").then((module) => module.fkPlugin) }],
+  ["fk", { load: () => import("./legacy/fk").then((module) => module.legacyFkPlugin) }],
   ["ik", { load: () => import("./legacy/ik").then((module) => module.legacyIkPlugin) }],
   [
     "transform3d",

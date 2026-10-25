@@ -4,7 +4,7 @@ import { PluginRegistry } from "@motion5/core";
 import { Engine } from "@motion5/core";
 import { createManualClock } from "@motion5/core";
 import { fabrikIterationCap } from "../../src/fabrik-cap";
-import { fkPlugin } from "../../src/fk";
+import { legacyFkPlugin as fkPlugin } from "@motion5/plugins/internal/legacy/fk";
 import { legacyIkPlugin as ikPlugin } from "@motion5/plugins/internal/legacy/ik";
 import type { SolveMember } from "../../src/ik-member";
 import type { SolveResult } from "../../src/ik-result";

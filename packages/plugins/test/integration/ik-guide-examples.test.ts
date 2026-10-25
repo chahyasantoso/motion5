@@ -7,7 +7,7 @@ import { PluginRegistry } from "@motion5/core";
 import { Engine } from "@motion5/core";
 import { createManualClock } from "@motion5/core";
 import { FABRIK_TOLERANCE } from "../../src/fabrik";
-import { fkPlugin } from "../../src/fk";
+import { legacyFkPlugin as fkPlugin } from "@motion5/plugins/internal/legacy/fk";
 import { legacyIkPlugin as ikPlugin } from "@motion5/plugins/internal/legacy/ik";
 import { legacyTransformPlugin as transformPlugin } from "@motion5/plugins/internal/legacy/transform";
 import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/testing";

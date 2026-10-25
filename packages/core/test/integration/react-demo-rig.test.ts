@@ -10,7 +10,7 @@ import { Engine } from "../../src/engine";
 import { patchRender } from "../../src/contract/patch-render";
 import { PluginRegistry } from "../../src/domain/plugins";
 import type { TrackHandle } from "../../src/contract/track-handle";
-import { fkPlugin } from "../../../plugins/src/fk";
+import { legacyFkPlugin as fkPlugin } from "@motion5/plugins/internal/legacy/fk";
 import { legacyTransformPlugin as transformPlugin } from "@motion5/plugins/internal/legacy/transform";
 import { createManualClock } from "../../src/ports/clock";
 import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";

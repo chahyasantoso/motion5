@@ -7,7 +7,7 @@ import { validateKeyframes, validateSchemaV5 } from "../../src/contract/validate
 import { flattenAuthoredKeyframes } from "../../src/domain/keyframe-groups";
 import { PluginRegistry, type PluginDefinition } from "../../src/domain/plugins";
 import { Engine } from "../../src/engine";
-import { fkPlugin } from "../../../plugins/src/fk";
+import { legacyFkPlugin as fkPlugin } from "@motion5/plugins/internal/legacy/fk";
 import { legacyTransformPlugin as transformPlugin } from "@motion5/plugins/internal/legacy/transform";
 import { createManualClock } from "../../src/ports/clock";
 import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";

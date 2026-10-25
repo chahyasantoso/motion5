@@ -3,7 +3,8 @@ import { PluginRegistry } from "../../../src/domain/plugins";
 import type { Diagnostic } from "../../../src/contract/v5";
 import { validateKeyframes } from "../../../src/contract/validate-v5";
 import type { ImmutableRecord } from "../../../src/domain/values";
-import { composeWorld, fkPlugin } from "../../../../plugins/src/fk";
+import { composeWorld } from "../../../../plugins/src/frame";
+import { legacyFkPlugin as fkPlugin } from "@motion5/plugins/internal/legacy/fk";
 import { legacyTransformPlugin as transformPlugin } from "@motion5/plugins/internal/legacy/transform";
 
 // Slice A of issue #195. A bone's pivot is not always exactly at its parent's tip, so `fk` claims

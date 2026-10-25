@@ -12,7 +12,7 @@ import { buildGraphIR } from "../../../src/graph/ir";
 import { Engine } from "../../../src/engine";
 import { createManualClock } from "../../../src/ports/clock";
 import { createFakeInterpolator, createFakeScheduler } from "../../../src/testing/fakes";
-import { fkPlugin } from "../../../../plugins/src/fk";
+import { legacyFkPlugin as fkPlugin } from "@motion5/plugins/internal/legacy/fk";
 import { legacyIkPlugin as ikPlugin } from "@motion5/plugins/internal/legacy/ik";
 import {
   branchPulls,

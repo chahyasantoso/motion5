@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fkPlugin } from "../../src/fk";
+import { legacyFkPlugin as fkPlugin } from "@motion5/plugins/internal/legacy/fk";
 
 // Slice C3 of issue #195: FK plugin solver slot override.
 //

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { unreachable } from "@motion5/core/plugin-api";
 import { solveFabrik } from "../../src/fabrik";
-import { fkPlugin } from "../../src/fk";
+import { legacyFkPlugin as fkPlugin } from "@motion5/plugins/internal/legacy/fk";
 import { composeWorld, segmentExtent, type PivotOffset, type WorldFrame } from "../../src/frame";
 import { solveTwoBone } from "../../src/ik-analytic";
 import type { SolveMember } from "../../src/ik-member";

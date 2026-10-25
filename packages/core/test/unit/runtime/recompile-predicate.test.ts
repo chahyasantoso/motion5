@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { ProjectDefinition, TrackDefinition } from "../../../src/contract/v5";
 import { PluginRegistry, type PluginDefinition } from "../../../src/domain/plugins";
 import { Engine, type ProjectHandle } from "../../../src/engine";
-import { fkPlugin } from "../../../../plugins/src/fk";
+import { legacyFkPlugin as fkPlugin } from "@motion5/plugins/internal/legacy/fk";
 import { legacyTransformPlugin as transformPlugin } from "@motion5/plugins/internal/legacy/transform";
 import { createManualClock } from "../../../src/ports/clock";
 import {
