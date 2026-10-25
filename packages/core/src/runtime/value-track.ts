@@ -2,6 +2,7 @@ import type { Outputs, Value } from "../contract/v5";
 import type { ParsedValues } from "../contract/v5-parse";
 import type { Interpolator } from "../ports/interpolator";
 import { createValueEvaluator, type ValueEvaluator } from "./evaluate-values";
+import { replaceEvaluator } from "./evaluator-replacement";
 
 /**
  * The compiled form of one identified-table track that selects no plugin.
@@ -46,13 +47,18 @@ export class ValueTrack {
    *
    * A cheap authored edit reaches this rather than the graph: the evaluator is the whole compiled
    * cost of a value change, so replacing it leaves identity, progress and the surrounding graph
-   * untouched. The previous evaluator owns a timeline and is disposed before the replacement is
-   * built, so a refused rebuild cannot leak the one it displaced.
+   * untouched. The candidate evaluator is built before the previous evaluator is disposed, so a
+   * throwing rebuild leaves the prior evaluator active and undisposed.
    */
   replaceValues(values: ParsedValues | undefined): void {
     this.assertActive();
-    this.#evaluator.dispose();
-    this.#evaluator = createValueEvaluator(values, this.#interpolator);
+    replaceEvaluator(
+      this.#evaluator,
+      () => createValueEvaluator(values, this.#interpolator),
+      (next) => {
+        this.#evaluator = next;
+      },
+    );
   }
 
   /**

@@ -11,6 +11,7 @@ import type { ParsedRecord, ParsedValues } from "../contract/v5-parse";
 import { diagnostic } from "../contract/diagnostics";
 import type { Interpolator } from "../ports/interpolator";
 import { createValueEvaluator, type ValueEvaluator } from "./evaluate-values";
+import { replaceEvaluator } from "./evaluator-replacement";
 import { PluginNodeError, validatePluginOutputs } from "./plugin-output";
 import { isValue, validateRuntimeValue } from "./value-validation";
 import type { PublisherComposition } from "./graph-publisher";
@@ -111,13 +112,19 @@ export class PluginTrack {
    * Evaluates the local values this track was last given, at the current progress.
    *
    * The plugin, its declared slots and the surrounding graph are untouched: a cheap authored edit
-   * changes only the local table or record the transform reads. The evaluator is replaced whole,
-   * because a plan is built once over a complete authored snapshot and carries no incremental form.
+   * changes only the local table or record the transform reads. The candidate evaluator is built
+   * before the previous evaluator is disposed, so a throwing rebuild leaves the prior evaluator
+   * active and undisposed.
    */
   replaceValues(values: ParsedValues | undefined): void {
     this.assertActive();
-    this.#evaluator.dispose();
-    this.#evaluator = createValueEvaluator(this.#withDefault(values), this.#interpolator);
+    replaceEvaluator(
+      this.#evaluator,
+      () => createValueEvaluator(this.#withDefault(values), this.#interpolator),
+      (next) => {
+        this.#evaluator = next;
+      },
+    );
   }
 
   /**
