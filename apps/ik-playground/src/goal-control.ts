@@ -1,4 +1,4 @@
-import type { ProjectHandle } from "@motion5/core";
+import type { ProjectHandle, TrackDefinition } from "@motion5/core";
 import { STAGE_2D, TENTACLE, nodeId } from "./ik-playground-project";
 import {
   IK3D,
@@ -34,6 +34,26 @@ function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
+type GoalValues = NonNullable<NonNullable<TrackDefinition["input"]>["values"]>;
+type GoalRecord = Exclude<GoalValues, readonly unknown[]>;
+
+function isGoalRecord(values: GoalValues): values is GoalRecord {
+  return typeof values === "object" && values !== null && !Array.isArray(values);
+}
+
+/**
+ * The authored goal record, narrowed here because a goal is a record and a table has no `x`.
+ *
+ * Not a fallback: the two rigs author a record, so a table or an absent value is a programming
+ * error in the project and is refused rather than guessed at.
+ */
+function goalRecord(track: TrackDefinition): GoalRecord {
+  const values = track.input?.values;
+  if (values === undefined || !isGoalRecord(values))
+    throw new TypeError(`Track "${track.id}" must author its goal as one record.`);
+  return values;
+}
+
 function finite(goal: GoalMove): boolean {
   switch (goal.rig) {
     case "planar":
@@ -49,7 +69,7 @@ function finite(goal: GoalMove): boolean {
  * The one writer of playground intent. Every gesture on every stage lands here.
  *
  * A move or a flip is a value-tier write (`TrackHandle.input.values`): one invalidate, one
- * one publication, no graph replacement, and no progress change, so the chain moves immediately at
+ * publication, no graph replacement, and no progress change, so the chain moves immediately at
  * the member weights the scroll set. Scroll owns weight and nothing else; this owns the goal and the
  * flip and nothing else. A non-finite point is ignored rather than written, and every point is
  * clamped to what its stage draws (the planar margin box; the spatial depth range and the frame
@@ -61,11 +81,13 @@ export function createGoalControl(project: Pick<ProjectHandle, "track">): GoalCo
       if (!finite(goal)) return;
       switch (goal.rig) {
         case "planar": {
-          const planar = project.track(nodeId(TENTACLE.goalTrack)).input.values;
-          const x = clamp(goal.x, STAGE_2D.margin, STAGE_2D.width - STAGE_2D.margin);
-          const y = clamp(goal.y, STAGE_2D.margin, STAGE_2D.height - STAGE_2D.margin);
-          planar.setField({ field: "x" }, x);
-          planar.setField({ field: "y" }, y);
+          const { x, y } = goal;
+          const handle = project.track(nodeId(TENTACLE.goalTrack));
+          handle.input.values.set({
+            ...goalRecord(handle.definition),
+            x: clamp(x, STAGE_2D.margin, STAGE_2D.width - STAGE_2D.margin),
+            y: clamp(y, STAGE_2D.margin, STAGE_2D.height - STAGE_2D.margin),
+          });
           return;
         }
         case "spatial": {
@@ -76,10 +98,8 @@ export function createGoalControl(project: Pick<ProjectHandle, "track">): GoalCo
             IK3D_DEPTH,
             goal,
           );
-          const spatial = project.track(IK3D_NODE_ID(IK3D.goalTrack)).input.values;
-          spatial.setField({ field: "x" }, x);
-          spatial.setField({ field: "y" }, y);
-          spatial.setField({ field: "z" }, z);
+          const handle = project.track(IK3D_NODE_ID(IK3D.goalTrack));
+          handle.input.values.set({ ...goalRecord(handle.definition), x, y, z });
           return;
         }
         default:
