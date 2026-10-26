@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { Engine, PluginRegistry, type ProjectDefinition } from "@motion5/core";
 import { legacyTransform3dPlugin as transform3dPlugin } from "@motion5/plugins/internal/legacy/transform3d";
-import { fk3dPlugin } from "@motion5/plugins/fk3d";
+import { legacyFk3dPlugin as fk3dPlugin } from "@motion5/plugins/internal/legacy/fk3d";
 import { legacyIk3dPlugin as ik3dPlugin } from "@motion5/plugins/internal/legacy/ik3d";
 import type { FilledFrame, FilledJoint } from "../src/filler/frame";
 import { createGapFiller } from "../src/filler/gap-filler";

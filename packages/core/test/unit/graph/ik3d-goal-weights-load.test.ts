@@ -8,7 +8,7 @@ import type {
 } from "../../../src/contract/v5";
 import { PluginRegistry, type PluginDefinition } from "../../../src/domain/plugins";
 import { buildGraphIR } from "../../../src/graph/ir";
-import { fk3dPlugin } from "../../../../plugins/src/fk3d";
+import { legacyFk3dPlugin as fk3dPlugin } from "@motion5/plugins/internal/legacy/fk3d";
 import { legacyFkPlugin as fkPlugin } from "@motion5/plugins/internal/legacy/fk";
 import { legacyIk3dPlugin as ik3dPlugin } from "@motion5/plugins/internal/legacy/ik3d";
 import { legacyTransform3dPlugin as transform3dPlugin } from "@motion5/plugins/internal/legacy/transform3d";

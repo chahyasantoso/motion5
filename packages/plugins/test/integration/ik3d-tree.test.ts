@@ -7,7 +7,7 @@ import { createManualClock } from "@motion5/core";
 import type { Patch } from "@motion5/core";
 import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/testing";
 import { FABRIK_TOLERANCE } from "../../src/fabrik";
-import { fk3dPlugin } from "../../src/fk3d";
+import { legacyFk3dPlugin as fk3dPlugin } from "@motion5/plugins/internal/legacy/fk3d";
 import { readFrame3d } from "../../src/frame3d";
 import { legacyIk3dPlugin as ik3dPlugin } from "@motion5/plugins/internal/legacy/ik3d";
 import { legacyTransform3dPlugin as transform3dPlugin } from "@motion5/plugins/internal/legacy/transform3d";

@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { Engine, PluginRegistry, createManualClock, type ProjectDefinition } from "@motion5/core";
-import { fk3dPlugin } from "@motion5/plugins/fk3d";
+import { legacyFk3dPlugin as fk3dPlugin } from "@motion5/plugins/internal/legacy/fk3d";
 import { legacyIk3dPlugin as ik3dPlugin } from "@motion5/plugins/internal/legacy/ik3d";
 import { legacyTransform3dPlugin as transform3dPlugin } from "@motion5/plugins/internal/legacy/transform3d";
 import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/testing";

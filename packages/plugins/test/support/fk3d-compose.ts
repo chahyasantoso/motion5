@@ -1,5 +1,5 @@
 import type { PluginInputs } from "@motion5/core/plugin-api";
-import { fk3dPlugin } from "../../src/fk3d";
+import { legacyFk3dPlugin as fk3dPlugin } from "@motion5/plugins/internal/legacy/fk3d";
 import { readFrame3d, type WorldFrame3d } from "../../src/frame3d";
 import { canonicalChain } from "../../src/ik-topology";
 import type { ChainMember3d } from "../../src/ik3d-chain";

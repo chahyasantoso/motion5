@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { PluginInputs } from "@motion5/core/plugin-api";
 import type { ImmutableRecord } from "@motion5/core/plugin-api";
-import { fk3dPlugin } from "../../src/fk3d";
+import { legacyFk3dPlugin as fk3dPlugin } from "@motion5/plugins/internal/legacy/fk3d";
 import {
   composeWorld3d,
   effectiveLink3d,

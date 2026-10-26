@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fk3dPlugin } from "../../src/fk3d";
+import { legacyFk3dPlugin as fk3dPlugin } from "@motion5/plugins/internal/legacy/fk3d";
 import { legacyIk3dPlugin as ik3dPlugin } from "@motion5/plugins/internal/legacy/ik3d";
 import { readFrame3d } from "../../src/frame3d";
 

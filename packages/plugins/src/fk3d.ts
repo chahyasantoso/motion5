@@ -1,115 +1,176 @@
-import { INFLUENCE_KEY, JOINT_VOCABULARY_KEYS, ORIENT_KEY } from "@motion5/core/plugin-api";
-import type { PluginDefinition } from "@motion5/core/plugin-api";
+import { unreachable } from "@motion5/core/plugin-api";
+import type { IdentifiedPluginDefinition, Outputs, ValueSpec } from "@motion5/core/plugin-api";
 import {
   blendOrientation3d,
   composeWorld3d,
-  readEuler3d,
   readFrame3d,
   readPivotOffset3d,
   ZERO_EULER,
   type Euler3d,
 } from "./frame3d";
-import { ROTATIONS3D_KEY } from "./ik3d-result";
 import { clamp, readNumber, segmentExtent } from "./frame";
 
-function isRecord(input: unknown): input is Readonly<Record<string, unknown>> {
-  return input !== null && typeof input === "object" && !Array.isArray(input);
-}
-
-/**
- * The local triple the bound solver solved for `nodeId`, or `undefined` when there is none.
- *
- * One answer covers an unbound slot, a source that publishes no `rotations3d`, a `rotations3d`
- * that is not a record, a record that does not name this node, and an entry that is not a record,
- * so the caller owns the rest-pose fallback in exactly one place. The last case used to read as a
- * zero triple, a solve to identity; it is "no solve" now, which is what 2D's `readSolvedRotation`
- * answers for a non-number entry (ADR-051). `ik3d` publishes a triple for every member it solves,
- * so no correctly wired rig reaches it. A record's non-finite angles read as zero through
- * `readEuler3d`, exactly as they do in the matrix.
- *
- * The weight is deliberately not folded in: an unbound slot and a weight of `0` stay two different
- * things, and with no solve the weight is never read (ADR-055, ADR-116).
- */
-function readSolved(solver: unknown, nodeId: string): Euler3d | undefined {
-  if (!isRecord(solver)) return undefined;
-  const rotations = solver[ROTATIONS3D_KEY];
-  if (!isRecord(rotations)) return undefined;
-  const solved = rotations[nodeId];
-  return isRecord(solved) ? readEuler3d(solved) : undefined;
-}
-
-/**
- * 3D forward kinematics. `base` owns the parent world frame and `solver` owns the solved local
- * orientation; this plugin owns the member's length, its authored local rest orientation, and the
- * per-member weight that blends one toward the other, and publishes the six scalar world keys.
- *
- * `rotation`, `rotationX` and `rotationY` are claimed and produced, as 2D `fk` claims and produces
- * `rotation`: authored, they are this bone's rest orientation relative to its parent in the CSS
- * `Rz * Rx * Ry` convention `frame3d.ts` owns, each defaulting to zero; composed, they are its world
- * orientation, which is what a child observes and a renderer writes.
- *
- * With no solve the rest orientation composes and `weight` is never read. With one, the local
- * orientation is `blendOrientation3d(rest, solved, weight)`, the one short-arc rotation blend, so
- * a weight of `1` is the solved triple itself and every rig authored before either key existed
- * composes the ADR-114 prototype's bytes (`TH-29`). `weight` is per member so a chain can stagger
- * its reach, defaults to `1`, is clamped into `[0, 1]` because a blend past its two anchors is
- * undefined rather than designed, and reads a non-finite value as `1` through `readNumber`, the
- * same as omitting it: the 2D semantics of ADR-055 key for key. The clamp stays here although the
- * blend short-circuits outside `(0, 1)`, because the reader owns what an authored weight means.
- *
- * `x`, `y` and `z` are the member pivot offset in the parent's rotated frame. They are claimed and
- * composed before the member's local orientation, so the member's own rotation cannot move its pivot.
- * The zero offset uses the same object shape as the phase-1 call for byte identity (ADR-117).
- *
- * `joint` and its bounds (`axisX`, `axisY`, `axisZ`, `minRotation`, `maxRotation`, `maxSwing`,
- * `minTwist`, `maxTwist`) are the member's 3D joint limit, authored metadata for the `ik3d` solve
- * exactly as 2D `fk`'s `minRotation` and `maxRotation` are for `ik`, and not read here: a limit
- * bounds what the solve publishes, never the rest orientation or the weighted blend (ADR-123).
- * `contract/solver-constraints.ts` owns the vocabulary, so the claim is its list rather than a copy.
- *
- * `influence` and `orient` are an addressed leaf's weights on its goal, read by the `ik3d` solve and
- * not here, exactly as 2D `fk` claims `influence` for `ik` (ADR-110): `influence` is the goal's pull
- * when branches disagree about a shared member, through the 2D goal owner, and `orient` how far the
- * leaf turns toward its goal's orientation after its position is solved (ADR-124). Neither moves the
- * rest orientation or the weighted blend; the load rules refuse both anywhere no goal addresses.
- */
-export const fk3dPlugin: PluginDefinition = {
-  name: "fk3d",
-  keys: [
-    "length",
-    "rotation",
-    "rotationX",
-    "rotationY",
-    "weight",
-    "x",
-    "y",
-    "z",
-    ...JOINT_VOCABULARY_KEYS,
-    INFLUENCE_KEY,
-    ORIENT_KEY,
-  ],
-  requirements: {
-    base: { description: "the parent 3D frame" },
-    solver: { description: "the 3D solver pose" },
+const MEMBER: ValueSpec = {
+  kind: "record",
+  fields: {
+    memberId: { kind: "string" },
+    x: { kind: "number", optional: true },
+    y: { kind: "number", optional: true },
+    z: { kind: "number", optional: true },
+    length: { kind: "number" },
+    rotation: { kind: "number", optional: true },
+    rotationX: { kind: "number", optional: true },
+    rotationY: { kind: "number", optional: true },
+    weight: { kind: "number", optional: true },
   },
-  stage: "compose",
-  outputs: ["x", "y", "z", "rotation", "rotationX", "rotationY"],
-  compose: (values, _progress, inputs, nodeId) => {
-    const rest = readEuler3d(values);
-    const solved = readSolved(inputs.solver, nodeId);
-    const local =
-      solved === undefined
-        ? rest
-        : blendOrientation3d(rest, solved, clamp(readNumber(values.weight, 1), 0, 1));
-    const world = composeWorld3d(readFrame3d(inputs.base), {
-      ...readPivotOffset3d(values),
+};
+
+const FRAME: ValueSpec = {
+  kind: "record",
+  fields: {
+    x: { kind: "number" },
+    y: { kind: "number" },
+    z: { kind: "number" },
+    rotation: { kind: "number" },
+    rotationX: { kind: "number" },
+    rotationY: { kind: "number" },
+  },
+};
+
+const SOLVER: ValueSpec = {
+  kind: "table",
+  schema: {
+    row: {
+      fields: {
+        rotation: { kind: "number" },
+        rotationX: { kind: "number" },
+        rotationY: { kind: "number" },
+      },
+    },
+  },
+};
+
+const OUTPUT: ValueSpec = {
+  kind: "table",
+  schema: {
+    row: {
+      fields: {
+        x: { kind: "number" },
+        y: { kind: "number" },
+        z: { kind: "number" },
+        rotation: { kind: "number" },
+        rotationX: { kind: "number" },
+        rotationY: { kind: "number" },
+      },
+    },
+  },
+};
+
+type FlatRecord = Readonly<Record<string, number | string | boolean>>;
+type TableRows = readonly { readonly id: string; readonly cells: FlatRecord }[];
+type MemberRowLookup =
+  | { readonly kind: "found"; readonly row: TableRows[number] }
+  | { readonly kind: "missing"; readonly memberId: string };
+
+function flatRecord(value: unknown, path: string): FlatRecord {
+  if (value === null || typeof value !== "object" || Array.isArray(value))
+    throw new TypeError(`FK3d requires a record at ${path}.`);
+  return value as FlatRecord;
+}
+
+function recordOutput(outputs: Outputs, path: string): FlatRecord {
+  const values = outputs.values;
+  if (
+    values === undefined ||
+    Array.isArray(values) ||
+    values === null ||
+    typeof values !== "object"
+  )
+    throw new TypeError(`FK3d requires a record output at ${path}.`);
+  return flatRecord(values, `${path}.values`);
+}
+
+function tableOutput(outputs: Outputs, path: string): TableRows {
+  const values = outputs.values;
+  if (!Array.isArray(values)) throw new TypeError(`FK3d requires a table output at ${path}.`);
+  return values as TableRows;
+}
+
+function stringField(record: FlatRecord, field: string, path: string): string {
+  const value = record[field];
+  if (typeof value !== "string" || value.length === 0)
+    throw new TypeError(`FK3d requires ${path}.${field} to be a non-empty string.`);
+  return value;
+}
+
+function lookupRow(rows: TableRows, memberId: string): MemberRowLookup {
+  const row = rows.find((candidate) => candidate.id === memberId);
+  return row === undefined ? { kind: "missing", memberId } : { kind: "found", row };
+}
+
+function solvedOrientation(lookup: MemberRowLookup): Euler3d {
+  switch (lookup.kind) {
+    case "found": {
+      const rotation = lookup.row.cells.rotation;
+      const rotationX = lookup.row.cells.rotationX;
+      const rotationY = lookup.row.cells.rotationY;
+      if (
+        typeof rotation !== "number" ||
+        !Number.isFinite(rotation) ||
+        typeof rotationX !== "number" ||
+        !Number.isFinite(rotationX) ||
+        typeof rotationY !== "number" ||
+        !Number.isFinite(rotationY)
+      )
+        throw new TypeError(
+          `FK3d solver row for member "${lookup.row.id}" has no finite orientation.`,
+        );
+      return { rotation, rotationX, rotationY };
+    }
+    case "missing":
+      throw new TypeError(`FK3d solver row missing for member "${lookup.memberId}".`);
+    default:
+      return unreachable(lookup);
+  }
+}
+
+/** The identified 3D FK boundary; frame math stays owned by `frame3d.ts`. */
+export const fk3dPlugin: IdentifiedPluginDefinition = {
+  id: "fk3d",
+  inputs: {
+    values: { kind: "record", fields: {} },
+    requires: {
+      member: { outputs: { values: MEMBER } },
+      base: { outputs: { values: FRAME } },
+      solver: { outputs: { values: SOLVER } },
+    },
+  },
+  outputs: { values: OUTPUT },
+  transform({ requires }) {
+    const member = recordOutput(requires.member as Outputs, "member");
+    const base = recordOutput(requires.base as Outputs, "base");
+    const solverRows = tableOutput(requires.solver as Outputs, "solver");
+    const memberId = stringField(member, "memberId", "member.values");
+    const solved = solvedOrientation(lookupRow(solverRows, memberId));
+    const local = blendOrientation3d(
+      {
+        rotation: readNumber(member.rotation),
+        rotationX: readNumber(member.rotationX),
+        rotationY: readNumber(member.rotationY),
+      },
+      solved,
+      clamp(readNumber(member.weight, 1), 0, 1),
+    );
+    const pivot = composeWorld3d(readFrame3d(base), {
+      ...readPivotOffset3d(member),
       ...local,
     });
-    return composeWorld3d(world, {
+    const world = composeWorld3d(pivot, {
       ...ZERO_EULER,
-      x: segmentExtent(readNumber(values.length)),
+      x: segmentExtent(readNumber(member.length)),
       y: 0,
       z: 0,
     });
+    return { values: [{ id: memberId, cells: world }] };
   },
 };

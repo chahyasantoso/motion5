@@ -10,7 +10,7 @@ import { PluginRegistry } from "../../src/domain/plugins";
 import { Engine } from "../../src/engine";
 import { createManualClock } from "../../src/ports/clock";
 import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
-import { fk3dPlugin } from "../../../plugins/src/fk3d";
+import { legacyFk3dPlugin as fk3dPlugin } from "@motion5/plugins/internal/legacy/fk3d";
 import {
   blendOrientation3d,
   composeWorld3d,

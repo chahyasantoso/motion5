@@ -7,7 +7,7 @@ import { PluginRegistry } from "../../src/domain/plugins";
 import { legacyFkPlugin as fkPlugin } from "@motion5/plugins/internal/legacy/fk";
 import { legacyIkPlugin as ikPlugin } from "@motion5/plugins/internal/legacy/ik";
 import { legacyTransformPlugin as transformPlugin } from "@motion5/plugins/internal/legacy/transform";
-import { fk3dPlugin } from "../../../plugins/src/fk3d";
+import { legacyFk3dPlugin as fk3dPlugin } from "@motion5/plugins/internal/legacy/fk3d";
 import { legacyIk3dPlugin as ik3dPlugin } from "@motion5/plugins/internal/legacy/ik3d";
 import { legacyTransform3dPlugin as transform3dPlugin } from "@motion5/plugins/internal/legacy/transform3d";
 import { createTriggerFactory } from "../../src/adapters/trigger-factory/default";

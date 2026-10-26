@@ -11,7 +11,7 @@ import {
 import type { ImmutableRecord } from "../../../src/domain/values";
 import { buildGraphIR } from "../../../src/graph/ir";
 import { legacyFkPlugin as fkPlugin } from "@motion5/plugins/internal/legacy/fk";
-import { fk3dPlugin } from "../../../../plugins/src/fk3d";
+import { legacyFk3dPlugin as fk3dPlugin } from "@motion5/plugins/internal/legacy/fk3d";
 import {
   composeWorld3d,
   effectiveLink3d,

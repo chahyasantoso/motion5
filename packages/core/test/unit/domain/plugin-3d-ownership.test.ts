@@ -11,7 +11,7 @@ import { validateKeyframes } from "../../../src/contract/validate-v5";
 import { buildGraphIR } from "../../../src/graph/ir";
 import type { Diagnostic, ProjectDefinition, TrackDefinition } from "../../../src/contract/v5";
 import { legacyFkPlugin as fkPlugin } from "@motion5/plugins/internal/legacy/fk";
-import { fk3dPlugin } from "../../../../plugins/src/fk3d";
+import { legacyFk3dPlugin as fk3dPlugin } from "@motion5/plugins/internal/legacy/fk3d";
 import { legacyIkPlugin as ikPlugin } from "@motion5/plugins/internal/legacy/ik";
 import { legacyIk3dPlugin as ik3dPlugin } from "@motion5/plugins/internal/legacy/ik3d";
 import { legacyTransform3dPlugin as transform3dPlugin } from "@motion5/plugins/internal/legacy/transform3d";
