@@ -6,20 +6,20 @@ states a phase; `packages/core/test/unit/scripts/session-status-shape.test.ts` e
 byte ceiling.
 
 - **Captured:** 2026-10-25, Asia/Jakarta.
-- **Read against:** `refactor/v5-identified-tables` after the identified 3D FK cutover.
+- **Read against:** `refactor/v5-identified-tables` after the identified rig cutover.
 
 ## Now
 
-- **Phase 5 has six cutovers and both solver proofs:** public `transform`, `transform3d`, `ik`, `ik3d`,
-  `fk` and `fk3d` now use identified tables, while grouped consumers stay behind explicit internal
-  legacy paths. Both FK plugins select one solver row by canonical `memberId` before publishing one
-  same-ID frame row, and the 3D boundary preserves orientation, pivot and weight math. No pending
-  ledger entries were removed; 73 Phase 5, 4 Phase 6 and 2 Phase 7 entries remain.
+- **Phase 5 has seven cutovers and both solver proofs:** all public built-in plugin paths now use
+  identified tables, while grouped consumers stay behind explicit internal legacy paths. FK and FK3D
+  select solver rows by canonical `memberId`, and rig aggregates named bone and control tables by
+  source row identity with duplicate output ids left to output validation. No pending ledger entries
+  were removed; 73 Phase 5, 4 Phase 6 and 2 Phase 7 entries remain.
 
 ## Next in line
 
-- **Phase 5 continues with identified rig aggregation:** migrate rig to consume named bone and control
-  tables by source row identity, preserve duplicate-row refusal and keep classifier migration after it.
+- **Phase 5 continues with identified classifier and label consumers:** read declared rig outputs by row
+  identity, publish the classifier flat record, and keep the app writer after those keyed consumers.
 
 ## Open, and not scheduled
 

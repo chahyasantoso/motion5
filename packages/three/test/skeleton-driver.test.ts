@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { Engine, PluginRegistry, createManualClock, type TrackDefinition } from "@motion5/core";
 import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/testing";
 import { legacyFk3dPlugin as fk3dPlugin } from "@motion5/plugins/internal/legacy/fk3d";
-import { rigPlugin } from "@motion5/plugins/rig";
+import { legacyRigPlugin as rigPlugin } from "@motion5/plugins/internal/legacy/rig";
 import { legacyTransform3dPlugin as transform3dPlugin } from "@motion5/plugins/internal/legacy/transform3d";
 import { Matrix4, Object3D, Vector3 } from "three";
 import { frameToMatrix } from "../src/index";

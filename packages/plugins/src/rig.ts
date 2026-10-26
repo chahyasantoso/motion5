@@ -1,53 +1,71 @@
-import type { PluginDefinition } from "@motion5/core/plugin-api";
-import { isRecord, readFrame3d, type WorldFrame3d } from "./frame3d";
+import type { IdentifiedPluginDefinition, Outputs, ValueSpec } from "@motion5/core/plugin-api";
 
-export type RigPose = Readonly<Record<string, WorldFrame3d>>;
-export type RigControls = Readonly<Record<string, Readonly<{ x: number; y: number; z: number }>>>;
-export type RigValues = Readonly<{ pose: RigPose; controls: RigControls }>;
+const FRAME: ValueSpec = {
+  kind: "table",
+  schema: {
+    row: {
+      fields: {
+        x: { kind: "number" },
+        y: { kind: "number" },
+        z: { kind: "number" },
+        rotation: { kind: "number" },
+        rotationX: { kind: "number" },
+        rotationY: { kind: "number" },
+      },
+    },
+  },
+};
 
-function readMembers<T>(input: unknown, read: (member: unknown) => T): Readonly<Record<string, T>> {
-  if (!isRecord(input)) return {};
-  // fromEntries preserves even "__proto__" as an own data property, not a prototype setter.
-  return Object.fromEntries(
-    Object.keys(input)
-      .sort()
-      .map((key) => [key, read(input[key])]),
+const POINT: ValueSpec = {
+  kind: "table",
+  schema: {
+    row: {
+      fields: {
+        x: { kind: "number" },
+        y: { kind: "number" },
+        z: { kind: "number" },
+      },
+    },
+  },
+};
+
+const OUTPUTS = {
+  pose: FRAME,
+  controls: POINT,
+} satisfies Readonly<Record<string, ValueSpec>>;
+
+type FlatRecord = Readonly<Record<string, number | string | boolean>>;
+type TableRows = readonly { readonly id: string; readonly cells: FlatRecord }[];
+
+function tableOutput(outputs: Outputs, path: string): TableRows {
+  const values = outputs.values;
+  if (!Array.isArray(values)) throw new TypeError(`Rig requires a table output at ${path}.`);
+  return values as TableRows;
+}
+
+function rowsOf(requires: unknown, path: string): TableRows {
+  if (requires === null || typeof requires !== "object" || Array.isArray(requires))
+    throw new TypeError(`Rig requires a map at ${path}.`);
+  return Object.values(requires as Readonly<Record<string, Outputs>>).flatMap((outputs) =>
+    tableOutput(outputs, path),
   );
 }
 
-function readPoint(member: unknown): Readonly<{ x: number; y: number; z: number }> {
-  const { x, y, z } = readFrame3d(member);
-  return { x, y, z };
-}
-
-/**
- * The one decoder of a rig's published values. Absent dictionaries decode to empty records;
- * present bones with absent frame keys use readFrame3d's zero defaults.
- */
-export function readRigValues(values: unknown): RigValues {
-  const record = isRecord(values) ? values : {};
-  return {
-    pose: readMembers(record.pose, readFrame3d),
-    controls: readMembers(record.controls, readPoint),
-  };
-}
-
-/**
- * Aggregates only bound world frames and points. No solver, limits or rendering serializer:
- * consumers observe this data track through their declared `requires.rig` graph edge (ADR-138).
- * An entirely unbound group is not selected by the registry and publishes no pose key.
- */
-export const rigPlugin: PluginDefinition = {
-  name: "rig",
-  keys: [],
-  stage: "compose",
-  outputs: ["pose", "controls"],
-  requirements: {
-    bones: { description: "rig bone key to a track publishing its world frame", dict: true },
-    controls: { description: "rig control key to a track publishing a 3D point", dict: true },
+/** The identified rig boundary; source row ids, not map labels, own pose and control identity. */
+export const rigPlugin: IdentifiedPluginDefinition = {
+  id: "rig",
+  inputs: {
+    values: { kind: "record", fields: {} },
+    requires: {
+      bones: { binding: "map", outputs: { values: FRAME } },
+      controls: { binding: "map", outputs: { values: POINT } },
+    },
   },
-  compose: (_values, _progress, inputs) => ({
-    pose: readMembers(inputs.bones, readFrame3d),
-    controls: readMembers(inputs.controls, readPoint),
-  }),
+  outputs: OUTPUTS,
+  transform({ requires }) {
+    return {
+      pose: rowsOf(requires.bones, "bones"),
+      controls: rowsOf(requires.controls, "controls"),
+    };
+  },
 };

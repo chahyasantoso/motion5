@@ -1,6 +1,6 @@
 import { unreachable } from "@motion5/core/plugin-api";
 import { readFrame3d } from "@motion5/plugins/frame3d";
-import { readRigValues } from "@motion5/plugins/rig";
+import { readRigValues } from "../../plugins/src/legacy/rig-values";
 import { Matrix4, Quaternion, Vector3, type Object3D } from "three";
 import { frameToMatrix } from "./index";
 import { normalizeDirection } from "./skeleton-direction";

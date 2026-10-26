@@ -24,6 +24,7 @@ describe("identified plugin boundary", () => {
       "ik3d",
       "fk",
       "fk3d",
+      "rig",
     ]);
     const descriptor = identifiedCatalog.get("transform");
     expect(descriptor).toBeDefined();

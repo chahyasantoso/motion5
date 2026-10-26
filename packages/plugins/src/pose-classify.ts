@@ -7,7 +7,7 @@ import {
   type Euler3d,
   type Matrix3,
 } from "./frame3d";
-import { readRigValues } from "./rig";
+import { readRigValues } from "./legacy/rig-values";
 
 export interface PoseTemplate {
   readonly label: string;

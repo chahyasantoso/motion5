@@ -92,7 +92,7 @@ describe("public plugin subpaths", () => {
         expect(Object.keys(module).sort(), name).toEqual(supportExports);
         continue;
       }
-      if (["transform", "transform3d", "ik", "ik3d", "fk", "fk3d"].includes(name)) {
+      if (["transform", "transform3d", "ik", "ik3d", "fk", "fk3d", "rig"].includes(name)) {
         const exportName = `${name}Plugin`;
         expect(Object.keys(module), name).toEqual([exportName]);
         expect(isIdentifiedPlugin(module[exportName]), name).toBe(true);

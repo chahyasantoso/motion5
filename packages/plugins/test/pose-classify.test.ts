@@ -18,7 +18,7 @@ import {
   type PoseClassifyOptions,
   type PoseTemplate,
 } from "../src/pose-classify";
-import { rigPlugin } from "../src/rig";
+import { legacyRigPlugin as rigPlugin } from "@motion5/plugins/internal/legacy/rig";
 import { legacyTransform3dPlugin as transform3dPlugin } from "@motion5/plugins/internal/legacy/transform3d";
 
 const ZERO: Euler3d = { rotation: 0, rotationX: 0, rotationY: 0 };
