@@ -1,382 +1,621 @@
-# Phase 5 Completion Plan: Identified Plugins and Explicit Solver Graph
+# Phase 5 Plan: Aggregate Tables for Kinematics
 
-**Status:** Superseding implementation plan. This file is the execution authority for the remainder
-of Phase 5.
+**Status:** Accepted redesign; execution authority for the remainder of Phase 5.
 
-**Prepared:** 2026-10-25, Asia/Jakarta.
+**Prepared:** 2026-10-26, Asia/Jakarta.
 
 **Branch:** `refactor/v5-identified-tables`.
 
-**Supersedes for execution:**
+This document supersedes the previous contents of `phase5-completion-plan.md` and the earlier
+identified-plugin plans that it superseded. The earlier plans remain available in Git history and
+are not execution authority. This document describes the accepted target and the implementation
+work required to reach it. It does not claim that any slice has landed. Current state remains in
+`docs/SESSION-STATUS.md` and in verified commits.
 
-- `phase5-domain-plugins-solver-graph-plan.md`;
-- `phase5-domain-plugins-solver-graph-plan-addendum-1.md`;
-- `phase5-domain-plugins-solver-graph-plan-summary.md`;
-- `phase5-implementer-prompt.md`.
+## 1. Decision
 
-The superseded documents remain historical planning records. Do not edit them, delete them, or use
-their legacy-freeze stop rule after this document is accepted. This document does not claim that any
-slice has landed. Reality remains in `docs/SESSION-STATUS.md` and in verified commits.
+Phase 5 will use aggregate identified tables for the kinematic pipeline. A body is one table, goals
+are one table, a solver is one plugin node, and FK is one plugin node that publishes one complete
+pose table. The graph carries dependencies between aggregate tracks. It does not manufacture one
+graph node per body member and it does not deliver hidden member state to a solver.
 
-## 1. Executive decision
+The final dataflow is:
 
-Phase 5 will keep the existing public plugin names and cut those names over to the identified-table
-contract one plugin at a time. The current package surface is not an accidental implementation
-detail: `packages/plugins/package.json`, `public-subpaths.test.ts`, the apps, and the Three package
-already treat `@motion5/plugins/transform`, `fk`, `ik`, `transform3d`, `fk3d`, `ik3d`, and `rig` as
-declared package entrypoints. Removing or repurposing those paths as a temporary step would create a
-false package contract and is the blocker that stopped the earlier plan.
+```text
+root record ───────────────┐
+body/rest/config table ────┼──> ik or ik3d ──> solved rotation table
+goals table ───────────────┘                         │
+                                                    v
+root record ───────────────────┐             fk or fk3d
+body/rest/config table ────────┼────────────────> pose table
+solved rotation table ─────────┘                         │
+                                                        v
+                                             classifier and renderers
+```
 
-The corrected migration is:
+The `rig` aggregation plugin is not part of the target architecture. FK already owns pose
+composition, and the goals table already owns control data. The v5 rig plugin, its catalog entry,
+its record-map output contract, and its consumers will be removed. A legacy grouped rig path may
+remain only while an explicitly classified legacy test still needs it; it is not a v5 fallback.
 
-- `@motion5/plugins/<name>` is the stable public path and contains the v5 definition after that
-  plugin's cutover slice;
-- the grouped implementation is moved to `packages/plugins/src/legacy/<name>.ts` in the same slice
-  that installs the v5 implementation at the public path;
-- repository-only grouped consumers use explicitly declared internal paths
-  `@motion5/plugins/internal/legacy/<name>` until Phase 7 removes them;
-- `PluginRegistry` and its grouped loader remain legacy-only during Phase 5;
-- `PluginCatalog` and the identified catalog are v5-only during Phase 5;
-- no Engine instance, test, app, catalog or loader mixes the two contracts;
-- Phase 7 deletes the internal legacy paths and the grouped registry only after a zero-consumer scan.
+The redesign keeps schema version 5, the table-or-record value model, named plugin dependencies,
+frozen named outputs, and the existing numerical solver algorithms. It changes the ownership and
+transport boundary around those algorithms.
 
-This preserves the package contract, keeps every intermediate commit buildable, avoids a public
-compatibility alias, and gives each plugin one source implementation per contract. It also makes the
-earlier stop condition useful: a public grouped plugin is allowed only until its own cutover slice,
-never after that slice and never at Phase 5 completion.
+## 2. Why the redesign is necessary
 
-## 2. Why the previous plan stopped
+The previous Phase 5 plan migrated individual member tracks first and then used explicit maps to
+assemble solver inputs. That preserves identified rows, but it leaves the graph and publisher
+responsible for a solver-specific fan-in:
 
-The earlier Addendum A3 required all grouped definitions to move under `legacy/` before any v5 file
-was created. That would have left the seven declared public subpaths either missing or pointing at a
-temporary re-export. Both outcomes are wrong:
+- `GraphNode.solves` derives members that are not authored dependencies of the solver node;
+- the publisher reads member interpolation state through a hidden path;
+- FK composes one graph node per member;
+- a rig node aggregates those FK outputs again;
+- consumers need a second selection layer to recover pose identity.
 
-- a missing declared entry breaks installed-package behavior and the package-surface test;
-- a re-export or fallback creates a compatibility bridge and gives one public name two possible
-  contracts;
-- changing every app and test before a v5 replacement exists widens a mechanical migration across
-  unrelated behavior and leaves no useful per-plugin boundary.
+That is two representations of the same body. It also makes a table authored by the caller less
+useful than the graph shape that happens to have been built from it.
 
-The corrected rule is per-plugin cutover. The move of the grouped file, the internal legacy entry,
-the v5 replacement at the public path, the identified catalog entry, and the affected import/test
-classification are one vertical slice. There is never a gap at the public path and never a public
-alias to a legacy implementation after the slice.
+The aggregate design gives every owner one question:
 
-## 3. Invariants and ownership
+- the authored table owns body rows and their topology;
+- the graph owns only explicit track dependencies;
+- IK owns topology validation and solving over one table;
+- FK owns world-frame composition over one table;
+- a pose table owns the output identity consumed by applications;
+- adapters select rows by row id and never rebuild the pose.
 
-### 3.1 Contract invariant
+## 3. Authored contract
 
-A v5 track has `input.values` as either an identified table or a flat record, optional
-`input.requires`, and at most one explicit plugin. A v5 plugin declares `id`, `inputs`, `outputs`,
-optional `validate`, and `transform`. It returns complete named outputs. A no-plugin source publishes
-its evaluated local values as output `values`.
+### 3.1 Project shape
 
-The ready patch owns `outputs`, never the old flat `values` payload. A plugin output is either a
-table of `{ id, cells }` rows or a flat scalar record. There is no implicit merge, grouped keyframe
-reader, output alias, or hidden publisher-member read.
+The project remains a schema-version-5 project with motions and tracks. The accepted example is:
 
-### 3.2 Ownership invariant
+```text
+{
+  schemaVersion: 5,
+  motions: [{
+    id: "demo",
+    trigger: { type: "manual" },
+    tracks: [
+      { id: "root", input: { values: { x: 0, y: 0, rotation: 0 } } },
+      {
+        id: "body",
+        input: {
+          schema: {
+            kind: "table",
+            schema: {
+              row: {
+                fields: {
+                  parentId: { kind: "string", optional: true, static: true },
+                  length: { kind: "number" },
+                  rotation: { kind: "number" },
+                  weight: { kind: "number", optional: true },
+                  x: { kind: "number", optional: true },
+                  y: { kind: "number", optional: true },
+                  minRotation: { kind: "number", optional: true },
+                  maxRotation: { kind: "number", optional: true }
+                }
+              }
+            }
+          },
+          values: [
+            { id: "trunk", cells: { length: 20, rotation: 0, weight: 1 } },
+            { id: "left-upper", cells: { parentId: "trunk", length: 10, rotation: 0, weight: 1 } },
+            { id: "left-lower", cells: { parentId: "left-upper", length: 10, rotation: 0, weight: 1 } }
+          ]
+        }
+      },
+      {
+        id: "goals",
+        input: {
+          schema: {
+            kind: "table",
+            schema: {
+              row: {
+                fields: {
+                  memberId: { kind: "string", static: true },
+                  x: { kind: "number" },
+                  y: { kind: "number" },
+                  influence: { kind: "number", optional: true }
+                }
+              }
+            }
+          },
+          values: [
+            { id: "left-hand", cells: { memberId: "left-lower", x: 12, y: 8 } }
+          ]
+        }
+      },
+      {
+        id: "solve",
+        plugin: "ik",
+        input: {
+          values: { flip: false },
+          requires: { chain: "body", goals: "goals", base: "root" }
+        }
+      },
+      {
+        id: "pose",
+        plugin: "fk",
+        input: {
+          requires: { chain: "body", solved: "solve", base: "root" }
+        }
+      },
+      {
+        id: "classify",
+        plugin: "pose-classify",
+        input: { requires: { pose: "pose" } }
+      }
+    ]
+  }]
+}
+```
 
-- `packages/core/src/contract` owns authored grammar, `ValueSpec`, diagnostics and closed rule ids.
-- `packages/core/src/domain/plugin-catalog.ts` owns v5 admission and the stored immutable plugin
-  definition.
-- `packages/plugins/src/<name>.ts` owns one migrated plugin boundary and its declared schemas.
-- Existing pure solver helpers own numerical algorithms; Phase 5 must not rewrite their math.
-- `packages/core/src/graph` owns named dependency resolution, map binding edges, compatibility and
-  cycle checks. A plugin never resolves ids or reads graph state.
-- `packages/core/src/runtime` owns same-batch evaluation, publication and lifecycle.
-- `packages/plugins/src/legacy/<name>.ts` owns the frozen grouped implementation until Phase 7. It
-  is not imported by a v5 plugin and is not a second v5 path.
-- `packages/plugins/src/identified-catalog.ts` owns the v5 built-in catalog. The legacy
-  `catalog.ts` owns only grouped demand until Phase 7.
-- Adapters and apps select rows and named outputs. They never collapse a table to its first row.
+The example is illustrative. The implementation must preserve the existing parser's refusal rules,
+static-cell rules, stop evaluation, and whole-value editing semantics.
 
-One owner is preferred over a generic framework. Add a shared helper only when a second real consumer
-needs the exact contract or when it is the only owner of a boundary. Closed outcomes use a
-discriminated union and an exhaustive `switch` ending in `unreachable`; predicate chains and
-unwritten ternary fallbacks are not acceptable for `SolveQuality`, row lookup, plugin load failure,
-value kind, binding mode or publication status.
+### 3.2 Identity rules
 
-## 4. Public and internal package surface
+Row identity is the only domain identity:
 
-### 4.1 Public paths
+- `body` row `id` is the member id;
+- `goals` row `id` is the goal id;
+- solver output row `id` is the body member id;
+- FK pose output row `id` is the body member id;
+- a binding label is never promoted to a member, goal, control, or pose id.
 
-Keep these exact declared paths and names:
+The `memberId` field is removed from body rows because it duplicates `row.id`. The `goalId` field is
+removed from goal rows because it duplicates `row.id`. A goal retains `memberId` because it is a
+relationship to a body row rather than identity for the goal itself.
 
-- `@motion5/plugins/transform`;
-- `@motion5/plugins/transform3d`;
-- `@motion5/plugins/fk`;
-- `@motion5/plugins/fk3d`;
-- `@motion5/plugins/ik`;
-- `@motion5/plugins/ik3d`;
-- `@motion5/plugins/rig`.
+An implementation must not silently accept conflicting duplicate identity fields during migration.
+The old fields are either removed from the schema and refused by the appropriate legacy-field rule,
+or, if a focused compatibility refusal is needed, receive a named diagnostic before any plugin
+executes. No normalization copies one identity spelling into another.
 
-Each path exports exactly one v5 plugin after its cutover. Its public value is named
-`<path>Plugin`, with `id: <path>`. No public path exports both grouped and identified definitions.
+### 3.3 Body topology
 
-### 4.2 Transitional internal paths
+The body table contains rest and solver configuration. `parentId` is absent for a member attached
+directly to the external base frame. When present, it must name another row in the same body table.
+The literal id of the base track is not a body parent and is not written into `parentId`.
 
-Because the repository is private and legacy-mode apps/tests still need the grouped implementation,
-declare these explicit, non-public repository paths in `packages/plugins/package.json`:
+The topology reader owns these semantic checks:
 
-- `@motion5/plugins/internal/legacy/transform`;
-- `@motion5/plugins/internal/legacy/transform3d`;
-- `@motion5/plugins/internal/legacy/fk`;
-- `@motion5/plugins/internal/legacy/fk3d`;
-- `@motion5/plugins/internal/legacy/ik`;
-- `@motion5/plugins/internal/legacy/ik3d`;
-- `@motion5/plugins/internal/legacy/rig`.
+- duplicate row ids are refused by the table value contract;
+- a parent that names no body row is refused;
+- a self-parent is refused;
+- a parent cycle is refused;
+- every body row is reachable from the external base through parent links;
+- the canonical root-first order is deterministic and independent of authored array order;
+- body rows retain their ids and cells when transformed into solver or FK inputs.
 
-They export only `legacy<Name>Plugin`. They are implementation support for the unreleased repository,
-not documented consumer API. The public-subpaths test must maintain two explicit lists: supported
-public subpaths and temporary internal legacy subpaths. It must assert that internal paths are not in
-the public list and that Phase 7 removes every internal path.
+The canonical order is root depth followed by code-unit row-id order. Authored row order is not
+domain identity and must not affect numerical results. Output tables use this canonical order.
 
-Do not add a wildcard export. Do not add a root barrel that eagerly loads the v5 plugins. Do not add
-an alias from a public path to a legacy path. The internal entry is a declared package boundary, so
-type resolution, Vite resolution and the boundary scanner all agree while it exists.
+### 3.4 Goals
 
-### 4.3 Catalogs and loaders
+Each goal row names one body member through `memberId`. The existing solver mathematics supports one
+goal per target member, so the aggregate contract preserves that rule:
 
-Keep the current grouped `catalog.ts` and `loader.ts` for legacy consumers during Phase 5, changing
-only their imports as individual grouped files move under `legacy/`. They must never load a v5
-definition.
+- a goal for an unknown member is refused;
+- a goal for a non-leaf member is refused;
+- two goal rows targeting one member are refused;
+- every body leaf must have one goal when the solver is used;
+- a solver with no goals is refused;
+- goal row ids remain distinct even when two goals target different members.
 
-Add `identified-catalog.ts` with literal v5 descriptors or definitions in the existing historical
-order. It may use literal dynamic imports, but every import target is source-controlled and listed
-explicitly. It must register only `PluginDefinition` values accepted by core's `PluginCatalog`.
+2D goals carry `x`, `y`, and optional `influence`. 3D goals additionally carry `z`, optional Euler
+orientation, and the existing orientation/influence fields. Existing constraint semantics are
+preserved; they are not moved into a generic untyped goal bag.
 
-Add a small identified loader only if the current loader cannot consume v5 demand without weakening
-its types. Its demand union must be distinct from the grouped loader's demand union. The identified
-loader discovers `track.plugin`, never keyframe group names, plans approved names before importing,
-loads missing definitions, and calls `PluginCatalog.registerAll` once. Its failure union is closed and
-read exhaustively. Do not broaden the legacy loader into a union of two incompatible contracts.
+### 3.5 Root and base
 
-## 5. Work order
+The root is a single record dependency, not a table containing a synthetic root row. A 2D root
+contains `x`, `y`, and `rotation`. A 3D root contains `x`, `y`, `z`, `rotation`, `rotationX`, and
+`rotationY`.
 
-The work is one vertical slice per commit. A slice may touch its named tests, `test/pending.json`,
-the package-surface fixtures required by the boundary change, and the focused documentation record.
-It may not edit the superseded plans. Before each slice, run the preceding slice's exit gates and the
-repository's formatting, typecheck and boundary gates. If the slice changes `packages/core/src`, run
-the read-budget gate too.
+The root record is the known base frame from which the body topology starts. No FK output is bound
+back as the base, and IK never consumes FK output. This keeps the dependency graph acyclic and makes
+the distinction between rest/configuration, solved rotations, and world pose explicit.
 
-### Slice A — establish the contract boundary
+## 4. Plugin contracts
 
-**Goal:** Make the public/internal split possible without changing runtime behavior.
+The named dependency slot is part of the plugin contract. The source track id is an authoring
+reference; the source's main output remains named `values`.
 
-**Owner:** package surface and catalog boundary.
+### 4.1 `ik`
 
-**Changes:**
+```text
+inputs.values:
+  record { flip?: boolean, inspect?: boolean static }
 
-- add explicit internal legacy exports to `packages/plugins/package.json`;
-- add source aliases automatically through the manifest reader; do not hard-code aliases;
-- add or update the public-subpaths test to distinguish public definition paths from internal legacy
-  paths and to verify exact export names;
-- add `identified-catalog.ts` with no unmigrated grouped definitions;
-- add the identified catalog's focused admission/registration test using only `PluginCatalog`;
-- add the new ADR required by the guide, recording the per-plugin public cutover and internal legacy
-  boundary;
-- do not move a plugin or alter the Engine in this slice;
-- do not un-pend behavior tests in this slice.
+inputs.requires:
+  chain: single source, values = 2D body table
+  goals: single source, values = 2D goal table
+  base: single source, values = 2D root record
 
-**Exit:** baseline remains green, public subpaths remain declared, internal paths are explicit and
-not advertised as public, and a v5 catalog can register a minimal identified definition atomically.
+outputs:
+  values: 2D solved-member table
+  inspect?: flat inspection record
+```
 
-### Slice B — migrate the 2D transform plugin
+The transform reads the complete evaluated body table and goal table once, validates topology, builds
+the existing `SolveMember` values, calls the existing `solveChain`, and emits one identified row for
+each body member. The output row contains `rotation` and the existing optional `residual` and
+`atBound` fields.
 
-**Owner:** `packages/plugins/src/transform.ts`.
+The solver does not read the graph, publisher, track registry, FK output, or hidden member state.
+The `inspect` output remains absent unless the local static opt-in is true.
 
-**Cutover:**
+### 4.2 `ik3d`
 
-1. Move the grouped implementation to `packages/plugins/src/legacy/transform.ts`, rename its export
-   to `legacyTransformPlugin`, and update only grouped consumers to the internal path.
-2. Replace the public `transform.ts` with the v5 definition.
-3. Register `transform` in `identified-catalog.ts`.
-4. Add a v5-only unit test that registers only this plugin and verifies declared slots, source-row
-   identity preservation, complete `values` output and rejection of undeclared output keys.
+`ik3d` has the same aggregate dependency shape:
 
-The v5 transform receives a numeric record and a `data` table dependency and returns exactly one
-`values` table. It copies each source row id and computes only the declared frame cells. It does not
-spread local values into output and does not return `positions`.
+```text
+inputs.requires:
+  chain: single source, values = 3D body table
+  goals: single source, values = 3D goal table
+  base: single source, values = 3D root record
+  pole?: single source, values = 3D point/frame record
+```
 
-**Exit:** the public transform path is v5, legacy consumers use the internal path, and no test mixes
-the two registries.
+It preserves the existing 3D joint, pole, orientation, influence, pivot, serial-recovery, and
+inspection behavior. It emits one identified row per body member with the existing Euler and
+diagnostic fields.
 
-### Slice C — migrate the 3D transform plugin
+### 4.3 `fk`
 
-Repeat Slice B for `transform3d`. Preserve row ids and the existing 3D frame math. The output is a
-declared `values` table with only the declared 3D frame cells. Add a v5-only test; do not change FK3D,
-IK3D or frame math here.
+```text
+inputs.values:
+  record with no required local fields
 
-### Slice D — prove the explicit 2D solver graph
+inputs.requires:
+  chain: single source, values = 2D body table
+  solved: single source, values = 2D solved-member table
+  base: single source, values = 2D root record
 
-**Owner:** `ik.ts` plus the narrow projection adapters it directly owns.
+outputs:
+  values: 2D pose table
+```
 
-Before editing, run the frozen grouped solver on the new proof inputs and record literal golden
-values for rotations, residuals, `atBound`, quality kind and iteration count. Never derive those
-constants from the new implementation.
+`fk` reads the complete body table and solved table once. It builds an id-indexed solved-row lookup,
+walks the canonical body topology, blends authored rest rotation with solved rotation using each
+member's weight, applies the shared pivot convention, and emits one world-frame row per member.
 
-**Graph contract:**
+The main output remains `values`. `pose` is the semantic track id and the classifier's dependency
+slot name, not a second output alias. This follows the v5 rule that a plugin with one main result
+publishes that result as `values`.
 
-- `members` is a required map slot of rest/config records;
-- `root` is a required single record slot;
-- `goals` is a required map slot of goal records;
-- rest records carry `memberId`, optional `parentId`, length, rest rotation, weight and constraints;
-- goals carry explicit `goalId`, target `memberId`, target coordinates, influence/weight and
-  existing constraint fields;
-- binding labels are not row ids;
-- `values` is a table whose row id is canonical unqualified `memberId`;
-- the row carries `rotation`, with optional leaf `residual` and `atBound`;
-- `inspect` is an optional flat record emitted only when local static `inspect === true`.
+A missing solved row is an error. FK must not select by source binding label, row position, first
+row, or graph track id.
 
-Use a local `MemberRowLookup` union with `found` and `missing` arms. Preserve the existing closed
-`SolveQuality` union and read it with an exhaustive switch. Remove all reads of publisher members,
-private graph state, `rotations` maps and grouped `compose` inputs from the migrated boundary.
+### 4.4 `fk3d`
 
-**Exit:** the proof graph is acyclic, rest changes reach the solver, labels do not change row ids,
-multiple goals remain distinct, the golden values match within `1e-6`, and the N=14/N=200 solver
-call-count test proves one solver evaluation, N row lookups and zero rest recomputes after warm-up.
+`fk3d` has the same `chain`, `solved`, and `base` single-source slots with 3D schemas. It preserves
+the existing orientation blending, pivot offset, segment extent, and world-frame conventions. It
+emits one 3D pose row per body member, keyed by the same member id as the body and solved rows.
 
-Un-pend only the 2D graph test that now passes. Do not un-pend FK-dependent suites yet.
+### 4.5 `pose-classify`
 
-### Slice E — prove the explicit 3D solver graph
+The classifier changes its dependency from a rig output to the FK track's main output:
 
-Repeat Slice D for `ik3d`, adding explicit pole, orientation and joint slots. Preserve existing 3D
-solver algorithms, pivot offsets, rest orientation, solved weights and constraint behavior. Publish
-member rows with the 3D rotation columns and optional residual/bound cells, plus opt-in `inspect`.
+```text
+requires:
+  pose: single source, values = pose table
 
-The solver must not consume FK output. Use exhaustive quality and lookup switches. Extend deterministic
-call-count coverage to 3D. The 2D and 3D proof suites are hard gates before FK or rig migration.
+outputs:
+  values: { label: string, confidence: number }
+```
 
-### Slice F — migrate 2D FK
+It selects rows by `row.id`, converts only template-referenced rows, and keeps its current flat
+result and tie behavior. It does not know whether the pose table came from 2D FK, 3D FK, or a
+different declared producer with the same frame contract.
+
+## 5. Core graph and runtime changes
+
+### 5.1 Explicit graph only
+
+The graph's dependency edges are sufficient for the new pipeline:
+
+- `solve` reads `body`, `goals`, and `root`;
+- `pose` reads `body`, `solve`, and `root`;
+- `classify` reads `pose`.
+
+The graph must not derive a solver's members from other nodes. After all aggregate plugin consumers
+are migrated and the old tests have moved, remove:
+
+- `GraphNode.solves`;
+- `resolveSolvers` and its member-node fan-in;
+- publisher `MemberState` and `SolverMember` collection;
+- publisher solver-scope and hidden member interpolation paths;
+- reverse-topology additions that exist only for hidden solver reads;
+- grouped solver graph constraints that inspect member plugin bindings.
+
+The remaining graph still owns explicit source qualification, slot admission, output compatibility,
+cycle detection, canonical track ordering, and reverse dependants for authored edges.
+
+### 5.2 Contracts and table compatibility
+
+`CommittedContract` remains the source of structural truth for a track. Its output contracts now
+describe aggregate table outputs directly. Slot checking continues to verify table kind and row
+field compatibility without trying to prove parent relationships or goal leafhood.
+
+The table validator owns envelope shape and row-id uniqueness. The plugin-side topology reader owns
+relationships. Neither layer may duplicate the other's checks.
+
+### 5.3 Publisher behavior
+
+No new publisher special case is allowed. The identified path already collects full named outputs
+for explicit edges. Aggregate plugins use that path without a solver branch. A body-table edit marks
+both `ik` and `fk` dirty through ordinary explicit edges, and a solved-table edit marks FK dirty.
+
+The publisher must continue to:
+
+- compose each aggregate node at most once per flush;
+- publish frozen table rows and records;
+- retain output names without merging tables;
+- report blocked and error states through the existing patch union;
+- carry source revisions for every explicit source read;
+- avoid reading graph state from a plugin.
+
+## 6. Shared plugin-side helpers
+
+The first redesign slice creates one small topology module only if both IK and FK need the exact
+same contract. It owns no graph references and imports no core graph module.
+
+The helper should expose a narrow result containing:
+
+- canonical body rows;
+- an id-to-row lookup;
+- parent/child relationships;
+- leaf ids;
+- the external-base members;
+- a deterministic topological order.
+
+It should use a closed lookup result for row selection:
+
+```text
+found(row)
+missing(id)
+```
+
+Readers must exhaustively handle both arms. Do not create a generic table framework or a broad schema
+conversion layer. 2D and 3D readers may share topology traversal while retaining separate field
+decoders when their semantic contracts differ.
+
+The numerical helpers remain the owners of numerical behavior:
+
+- `frame.ts` owns 2D frame and pivot conventions;
+- `frame3d.ts` owns 3D frame and orientation conventions;
+- `ik-*` solver modules own solve strategies and quality;
+- FK boundaries own table transport and world-frame composition.
+
+## 7. Consumer migration
+
+### 7.1 Pose-gap-filler
+
+Replace separate member-source, FK-member, rig, and classifier assumptions with aggregate tracks:
+
+- one root record track per space;
+- one body table track per space;
+- one goals table track per space;
+- one IK or IK3D track;
+- one FK or FK3D pose track;
+- optional classifier track bound directly to pose.
+
+The writer updates the root, goals, body table, and solver configuration through the existing value
+batch. Each changed aggregate table is written once with `input.values.set(...)`. It must not issue
+one edit per cell or rebuild a map of member tracks.
+
+The writer's state machine and frozen bend policy remain application-owned. Only the transport shape
+changes. Existing lifecycle, persistence, replay, failure, and whole-value batching assertions must
+remain meaningful.
+
+### 7.2 Three.js
+
+`skeletonTracks` emits aggregate 3D tracks and no rig track. The body table contains one row per
+captured bone with the captured parent relationship and rest data. The pose track is FK3D output.
+
+The skeleton driver reads pose rows by bone key or explicit row id. It must not import
+`readRigValues`, consume a record-map pose, or infer identity from array position. The row selector
+returns a missing-source outcome when the requested pose row is absent.
+
+The existing parent-space, basis, aim, reset, finiteness, and inverse-bind behavior is unchanged.
+
+### 7.3 React, DOM, and other consumers
+
+Consumers that need a single frame select a named row from a ready pose table. Consumers that need the
+whole pose retain the table. No adapter may collapse a table by choosing row zero.
+
+The generic DOM and Three patch adapters must remain neutral to table output. A table-aware consumer
+belongs at the application or adapter boundary that owns the target-to-row mapping, not in core's
+publisher.
+
+### 7.4 Labels and classification
+
+The label reader continues to read the classifier's flat `outputs.values` record. It must not know
+about pose rows. Classifier tests must prove that renaming binding labels does not change row lookup,
+and that missing template rows produce the existing unknown classification rather than a guessed row.
+
+## 8. Surface and deletion policy
+
+The public v5 plugin set after this redesign is:
+
+- `transform`;
+- `transform3d`;
+- `ik`;
+- `ik3d`;
+- `fk`;
+- `fk3d`;
+- `pose-classify` as an application-created definition, not a zero-configuration built-in.
+
+`rig` is removed from the identified catalog and from the public plugin subpath list. There is no
+public alias to an old rig implementation.
+
+Once all repository consumers are aggregate-table consumers, delete the v5 and legacy rig modules,
+`rig-values`, the rig package-surface fixtures, and record-map reader tests. Delete old graph solver
+fan-in only after the explicit aggregate graph and all its tests are green.
+
+Do not delete historical ADRs or plans. Add supersession markers to ADR-138 and any grouped solver
+decision whose current claim is contradicted by the landed aggregate architecture. The new ADR owns
+the reasoning; historical records retain their original text.
+
+## 9. Implementation slices
+
+Each slice is one vertical change with one owner, failing-first evidence, focused tests, and a clean
+commit. A slice may touch its named tests, `test/pending.json` only after those tests pass, and the
+documentation record required by that slice. It must not rewrite unrelated formatting.
+
+### Slice 0 — freeze and reconcile the accepted redesign
+
+**Owner:** Phase 5 migration boundary.
+
+Before editing behavior, record the current head, current uncommitted paths, pending counts, and
+baseline gates. Preserve the four historical untracked planning files and all user work. Do not reset
+or discard the current Slice I/J changes.
+
+Classify each current change as one of:
+
+- reusable aggregate preparation;
+- member-graph implementation that must be replaced;
+- consumer migration that can be retained after its source shape changes;
+- test evidence that must be rewritten for aggregate rows.
+
+No pending entry is removed in this slice. The exit artifact is an inventory in the implementation
+commit or pull request, not a new status ledger.
+
+### Slice 1 — topology and aggregate contract proof
+
+**Owner:** plugin-side topology reader and focused contract tests.
+
+Add the smallest shared topology reader required by both dimensions. Add tests for duplicate ids,
+unknown parents, cycles, unreachable rows, multiple base children, canonical ordering, leaves, and
+row-id preservation. Add 2D and 3D table schemas for body, goals, root, solved rows, and pose rows.
+
+The red tests must fail against a reader that uses array order or silently accepts a broken parent.
+The reader must remain independent of the graph and runtime packages.
+
+### Slice 2 — aggregate 2D IK
+
+**Owner:** `packages/plugins/src/ik.ts` and the aggregate IK tests.
+
+Change IK from map dependencies to `chain`, `goals`, and `base` single dependencies. Remove
+`memberId` reads from body rows and `goalId` reads from goal cells. Adapt the complete table into the
+existing `SolveMember` model and preserve literal solver golden values within the established
+absolute `1e-6` transport tolerance.
+
+Prove body-row reorder invariance, renamed source track ids, multiple branch goals, goal validation,
+rest edits, animated values, optional inspection, and one solver invocation per composition.
+
+### Slice 3 — aggregate 3D IK
+
+**Owner:** `packages/plugins/src/ik3d.ts` and the aggregate 3D IK tests.
+
+Repeat Slice 2 for 3D. Preserve pole, joint, orientation, influence, pivot, serial recovery, quality,
+inspection, and Euler output behavior. Prove that FK output is not required by the solver and that
+body row identity survives every strategy.
+
+### Slice 4 — aggregate 2D FK
 
 **Owner:** `packages/plugins/src/fk.ts`.
 
-Move grouped FK to its internal legacy path and replace the public module with v5 FK. Declare single
-slots for the member rest record, parent world-frame row, and solver values table. Select exactly one
-solver row by its `memberId` using `found | missing`; never use a binding label, `Object.values()[0]`,
-track id, or array position.
+Change FK to consume one body table, one solved table, and one root record. Compose the whole pose in
+canonical topology order and emit one `values` table. Prove missing solved-row refusal, parent lookup,
+weight blending, pivot offsets, body reorder invariance, and exact row identity.
 
-Emit one `values` table row with `id: memberId` and the existing world-frame scalar cells. A missing
-solver row is a node error. Preserve rest-weight, parent-frame and pivot behavior.
+This slice removes the need for one FK node per body member in new projects but does not yet delete
+the old graph solver fan-in if legacy tests still exercise it.
 
-Run the existing 2D solver fixtures now that the real FK boundary exists. Compare numeric values to
-the pre-migration fixtures within `1e-6`; keep IDs, booleans, quality and iteration fields exact.
+### Slice 5 — aggregate 3D FK
 
-### Slice G — migrate 3D FK
+**Owner:** `packages/plugins/src/fk3d.ts`.
 
-Repeat Slice F for `fk3d`. Declare rest, parent and solver slots, select the solver row by canonical
-`memberId`, and emit one same-ID `values` row containing the existing 3D world-frame fields. Do not
-change 3D orientation math or invent an ID conversion. Add the 3D FK call-count assertion: N FK
-compositions after one warm-up change.
+Repeat Slice 4 for 3D. Preserve orientation blending, frame composition, pivot offsets, segment
+extent, and finite output behavior. Add deterministic whole-table call-count coverage.
 
-### Slice H — migrate rig aggregation
+### Slice 6 — explicit aggregate graph and publisher cleanup
 
-**Owner:** `packages/plugins/src/rig.ts`.
+**Owner:** `packages/core/src/graph` and `packages/core/src/runtime`.
 
-Move grouped rig to the internal legacy path and replace the public module with v5 rig. Declare
-`bones` and `controls` as map slots. Consume dependency rows, not map labels, as identity:
+Port the graph fixtures to explicit aggregate dependencies and prove the graph shown in this plan is
+acyclic. Once no migrated test requires hidden solver members, remove `GraphNode.solves`,
+`resolveSolvers`, publisher member fan-in, and the associated reverse-topology special case.
 
-- `pose` is a frame table keyed by source row id, which must be the canonical member id;
-- `controls` is a point table keyed by source row id, which must be the control id;
-- duplicate output ids fail output validation;
-- no nested record maps escape the plugin;
-- no graph scan, FK import, solver read or implicit first-row selection is added.
+The publisher must compose aggregate plugins only through explicit `ResolvedRequires`. Existing
+blocked, pending, error, revision, source-revision, and one-composition-per-flush behavior must stay
+green.
 
-Add the rig aggregation call-count assertion: one aggregation call after a warm-up change. Port rig
-tests and the dependent React/demo fixtures only after the solver and FK gates pass.
+### Slice 7 — pose-gap-filler aggregate migration
 
-### Slice I — keyed consumers and classifier
+**Owner:** `apps/pose-gap-filler/src/rig`.
 
-**Owners:** `pose-classify.ts`, `labels.ts`, and the graph slot tests that prove map semantics.
+Replace member-source and rig aggregation tracks with root, body, goals, solver, and pose tracks.
+Update image and world writers to perform whole-table writes in one value batch. Port pose, avatar,
+GLTF, replay, inferred-bends, lifecycle, and cleanup tests to row selection by member id.
 
-Use declared map bindings for keyed members. Binding labels are lookup labels only; row identity
-comes from `row.id`. The classifier consumes the declared rig output and publishes one flat
-`values` record `{ label, confidence }`. The label reader narrows the named output before reading
-the record field.
+No record-map shim, rig plugin, guessed row order, or per-field write remains.
 
-Use exhaustive switches for closed classifier outcomes where they already exist. Do not introduce a
-generic retargeter. Reconfirm the absence of a concrete retarget plugin or caller only under
-`packages/plugins/src` and `apps/pose-gap-filler/src`. The existing `retarget-motion-track` effect
-and skeleton-capture comment are not domain retarget consumers. ADR-140 remains the authority that
-retargeting is deferred.
+### Slice 8 — Three.js aggregate migration
 
-### Slice J — migrate the pose-gap-filler writer
+**Owner:** `packages/three`.
 
-**Owner:** `apps/pose-gap-filler/src/rig/writer.ts`.
+Update skeleton track generation, skeleton loading, frame-source selection, and tests to consume one
+FK3D pose table. Remove `readRigValues` and all rig-track assumptions. Preserve parent-space and
+bone-drive behavior through row-id selection.
 
-Read named outputs, select pose rows by `memberId`, assemble the complete local record/table for each
-target track, and call `track.input.values.set(value)` once per changed track inside the existing
-value batch. Remove per-field `setField` calls from this writer. Do not add a record-map shim, guessed
-row order, or renderer logic to core.
+### Slice 9 — classifier and remaining consumers
 
-Run the app fixtures for seeks, persistence, replay, lifecycle and cleanup. If a test still imports a
-legacy plugin, move that import to the internal legacy path only when the test is explicitly testing
-the legacy registry; otherwise port its authored project and registry to the v5 path.
+**Owner:** `packages/plugins/src/pose-classify.ts`, labels, React, and remaining app readers.
 
-### Slice K — Phase 5 closeout
+Bind classification directly to the FK pose track's `values` output. Prove named-output narrowing,
+row-id selection, unknown-pose behavior, flat `{ label, confidence }` publication, and label-change
+lifecycle behavior.
 
-This is a verification and deletion slice, not a new feature slice.
+### Slice 10 — rig retirement and Phase 5 closeout
 
-- port every remaining Phase 5 pending test to the v5 builders and identified catalog;
-- remove old grouped expectations only where the test's behavior now has an identified-table owner;
-- keep tests that specifically prove old-shape refusal and name them as refusal behavior;
-- ensure all seven public plugin paths expose v5 definitions and no public module exposes `name`,
-  `keys`, `stage` or `compose`;
-- ensure `identified-catalog.ts` contains every Phase 5 built-in and no legacy definition;
-- ensure legacy grouped files are reachable only through the internal legacy paths and the legacy
-  catalog/loader;
-- leave Phase 6 and Phase 7 pending entries untouched;
-- update the authored-schema, architecture, README, plugin authoring guide and relevant examples in
-  their own documentation commit or in this closeout only if the behavior change requires it;
-- rewrite `docs/SESSION-STATUS.md` to state the verified landed state, not the plan history;
-- add the final supersession markers to grouped-only ADRs named by the guide. Do not rewrite their
-  historical reasoning.
+**Owner:** package surface, catalogs, deletion tests, and documentation.
 
-## 6. Test allocation and pending ledger
+Remove the identified rig plugin, public rig subpath, legacy rig path when its last consumer is gone,
+record-map helpers, hidden solver machinery, and obsolete grouped expectations. Port or classify all
+remaining Phase 5 pending suites. Preserve Phase 6 and Phase 7 pending entries exactly.
 
-The pending ledger remains the source of truth. Do not hand-edit it before the exact test passes.
-Every Phase 5 path is removed exactly once, in the first slice where all of its registered plugin
-dependencies have migrated. The dependency floors are:
+Update the authored schema, architecture, plugin guide, README examples, relevant ADR supersession
+markers, and `docs/SESSION-STATUS.md`. The status rewrite happens only after the landed code and
+verification satisfy the closeout gate.
 
-- transform: Slice B;
-- transform3d: Slice C;
-- IK: Slice D;
-- IK3D: Slice E;
-- FK: Slice F;
-- FK3D: Slice G;
-- rig: Slice H;
-- classifier and labels: Slice I;
-- app writer: Slice J.
+## 10. Test and evidence allocation
 
-A test that registers multiple plugins is un-pended no earlier than the latest dependency floor. A
-test that still exercises grouped behavior is not ported merely to reduce the ledger; it remains
-pending until its behavior has a v5 owner or is explicitly classified as Phase 7 retirement.
+Every behavior slice starts with assertion-level failing-first evidence. A typecheck or formatter
+failure is not failing-first behavior evidence.
 
-The pending audit must prove all of the following after each slice:
+Required focused evidence includes:
 
-- every Phase 5 path is present until its assigned slice;
-- no Phase 5 path appears twice;
-- no Phase 6 or Phase 7 path changes;
-- no test file was deleted, skipped or weakened;
-- the total passing test count never decreases.
+- topology reader refusal and canonical-order tests;
+- aggregate 2D IK golden and reorder-invariance tests;
+- aggregate 3D IK golden, constraints, pole, and orientation tests;
+- aggregate 2D and 3D FK row lookup and whole-pose tests;
+- explicit graph acyclicity and no-hidden-member-read tests;
+- publisher call-count and source-revision tests;
+- pose-gap-filler whole-table batch tests;
+- Three.js pose-row selection and lifecycle tests;
+- classifier and label flat-record tests;
+- deletion and public-surface tests proving no v5 rig path remains.
 
-New focused tests are required for the proof boundaries, but they do not replace existing suites:
+Numerical equivalence uses literal values captured from the frozen pre-redesign solver or existing
+fixtures. The migrated code must not generate its own expected values. Numerical transport may differ
+only within the existing absolute `1e-6` tolerance; quality kind, iteration count, bound flags, row
+ids, and output names remain exact unless a focused design decision explicitly changes them.
 
-- identified catalog registration and public/internal surface;
-- v5 transform and transform3d contracts;
-- explicit 2D and 3D solver graphs with literal pre-migration golden values;
-- deterministic solver row lookup and call counts;
-- FK missing-row refusal and one-row output;
-- rig duplicate-row refusal and named table outputs;
-- classifier flat record output and declared label read;
-- writer whole-value batching.
+The pending ledger remains authoritative. Remove an entry only after its exact test passes under the
+aggregate architecture. Do not remove entries merely because a similarly named test passes through
+the old grouped or member-graph path. Do not delete, skip, weaken, or rename a test to reduce the
+ledger.
 
-## 7. Verification protocol
+## 11. Verification protocol
 
-### Before every slice
-
-Run these commands one at a time and stop on the first failure:
+Before each slice, run the previous slice's exit checks, then run these commands one at a time:
 
 ```text
 npm run format:check
@@ -384,18 +623,13 @@ npm run typecheck
 npm run test:boundaries
 ```
 
-If a core source file changed, also run:
+If a core source file changes, also run:
 
 ```text
 npm run test:read-budget
 ```
 
-For solver slices, run the legacy oracle or the existing pre-migration fixture before editing and
-save literal expected values in the new test. The oracle is never regenerated from migrated code.
-
-### After every slice
-
-Run the exact focused Vitest paths for that slice, then:
+After the focused tests pass, run:
 
 ```text
 npm run typecheck
@@ -405,69 +639,57 @@ npm run test:read-budget
 npm test
 ```
 
-Run the relevant app build only after its slice changes an app or package boundary. Do not run
-`npm run bench:ik` during Phase 5; its known v4 grouped-fixture failure is a baseline issue, not
-evidence for or against the identified plugin migration. Use deterministic solver call counts and
-the committed baseline JSON as the Phase 5 performance evidence. Wall-clock measurements are
-report-only.
+Run the affected app builds after app or package-boundary slices. Do not use wall-clock performance
+as a pass condition. Use deterministic solver and aggregate call counts. Do not run a benchmark
+whose fixtures still author the retired grouped shape; record that limitation rather than converting
+it into an exemption.
 
-### Phase 5 completion gate
+Every implementation commit and pull request records:
 
-Phase 5 is complete only when:
+- the exact head tested;
+- the invariant and failing-first case;
+- the single owner;
+- changed public paths and deleted paths;
+- pending entries removed and entries deliberately retained;
+- every command and result;
+- numerical and call-count evidence;
+- any allocation correction and why it was necessary.
 
-- all 73 Phase 5 pending entries are removed exactly once;
-- the four Phase 6 and two Phase 7 entries are unchanged;
-- all public plugin paths expose only identified definitions;
-- all legacy grouped definitions are behind internal paths and are not loaded by v5 catalogs;
-- no v5 plugin reads publisher state, graph internals, stop syntax or another plugin's private data;
-- 2D and 3D solver graphs are acyclic and explicit;
-- solver, FK and rig numerical fixtures pass the absolute `1e-6` gate;
-- row identity, output names, optional inspection and duplicate handling are exact;
-- the writer performs whole-value updates rather than per-field updates;
-- format, typecheck, boundaries, read-budget, full suite and required app builds pass;
-- documentation and status describe the code that landed, not an intended future state.
+An independent quality pass reads the whole diff without relying on the implementer's inventory. It
+must report remaining bugs, fixed findings, and deliberate follow-ups in the pull request record.
 
-## 8. Explicit non-goals
+## 12. Completion gate
 
-- No schema version 6, package rename, v5 compatibility converter or old/new shape autodetection.
-- No generic plugin base, schema conversion framework, branded string layer, second runtime or
-  hidden compatibility flag.
-- No rewrite of the IK, IK3D, FABRIK, frame, interpolation or numerical algorithms unless a focused
-  transport defect is proved by a failing equivalence test.
-- No automatic row joins, broadcasts, first-row adaptation, output merging or map-label identity.
-- No general retarget algorithm. ADR-140 remains proposed and separate.
-- No Phase 8 plugin cache hooks. Existing incremental cache behavior is preserved and tested.
-- No adapter or renderer migration beyond what is required for the Phase 5 writer and named-output
-  contract; renderer consumers remain Phase 6 unless an existing Phase 5 test directly owns them.
-- No changes to the superseded plan files.
+Phase 5 is complete only when all of the following are true:
 
-## 9. Required documentation after implementation
+- body, goals, root, solved, and pose data use identified table or record contracts as defined here;
+- 2D and 3D IK consume complete aggregate tables and no hidden member state;
+- 2D and 3D FK consume complete aggregate tables and publish one complete pose table;
+- the graph contains only explicit aggregate dependencies;
+- `GraphNode.solves` and hidden solver fan-in are deleted;
+- no v5 rig plugin, rig catalog entry, public rig subpath, or record-map pose consumer remains;
+- every renderer and application consumer selects rows by id and never by first row or array position;
+- classifier output is the flat `{ label, confidence }` record;
+- pose-gap-filler performs whole-value aggregate writes inside its existing value batch;
+- all Phase 5 pending entries are removed exactly once after passing;
+- Phase 6 and Phase 7 pending entries remain unchanged;
+- numerical equivalence, quality, identity, constraints, lifecycle, and call-count evidence passes;
+- public declarations, package exports, catalogs, tests, and docs describe the same surface;
+- formatting, typechecking, boundaries, read-budget, full tests, and affected builds pass;
+- `docs/SESSION-STATUS.md` states only the verified landed state.
 
-The implementation PR or a directly associated documentation commit must contain:
+## 13. Explicit non-goals
 
-- the new ADR for the public cutover and internal legacy boundary;
-- supersession markers on grouped-only decisions whose current claim is no longer true;
-- updated `docs/AUTHORED-SCHEMA.md`, `docs/ARCHITECTURE.md`, plugin authoring guidance and examples;
-- a rewritten `docs/SESSION-STATUS.md` with exactly one current Now entry and one Next in line entry;
-- exact commit and test evidence in the PR body, including the known skipped `bench:ik` baseline;
-- a deletion list naming the grouped readers, old output aliases, hidden solver-member path and any
-  other machinery that Phase 5 actually retires.
+- No schema version 6 or package rename.
+- No v5 compatibility converter, shape autodetection, alias, fallback, bridge, or second engine.
+- No generic plugin base, table conversion framework, or all-purpose row abstraction.
+- No rewrite of solver mathematics without a failing equivalence case proving a transport defect.
+- No implicit joins, broadcasts, first-row adaptation, map-label identity, or output merging.
+- No general retargeting algorithm.
+- No renderer import into core.
+- No change to unrelated Phase 6 or Phase 7 behavior.
+- No reset, discard, or broad formatting pass over existing user work.
 
-## 10. Final decision record
-
-The public path decision is the correction that makes this plan implementable:
-
-- public plugin subpaths are retained and become v5 one at a time;
-- grouped implementations move to explicit internal legacy subpaths in the same cutover commit;
-- the legacy and identified catalogs are separate and never mixed;
-- public package tests measure the declared package surface, while migration tests measure contract
-  ownership and the absence of grouped fields after cutover;
-- canonical solver and rig row identity is unqualified `memberId`, with `controlId` for controls;
-- FK emits one identified `values` row; rig emits `pose` and `controls` tables;
-- solver inspection is an opt-in `inspect` record;
-- closed unions are read exhaustively and unknown states fail closed;
-- retargeting is not invented without a concrete consumer and fixture.
-
-This is the smallest architecture that preserves the already-declared package contract while
-allowing the unreleased v5 redesign to finish without a bridge, alias, second public engine or
-temporary missing entrypoint.
+The central acceptance criterion is simple: an author can change the body table, goals table, root
+record, or solver values and the explicit aggregate graph publishes the corresponding solved or posed
+table without a hidden graph-owned representation of the same body.
