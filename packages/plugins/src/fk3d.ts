@@ -14,6 +14,7 @@ const MEMBER: ValueSpec = {
   kind: "record",
   fields: {
     memberId: { kind: "string" },
+    parentId: { kind: "string" },
     x: { kind: "number", optional: true },
     y: { kind: "number", optional: true },
     z: { kind: "number", optional: true },
@@ -26,14 +27,18 @@ const MEMBER: ValueSpec = {
 };
 
 const FRAME: ValueSpec = {
-  kind: "record",
-  fields: {
-    x: { kind: "number" },
-    y: { kind: "number" },
-    z: { kind: "number" },
-    rotation: { kind: "number" },
-    rotationX: { kind: "number" },
-    rotationY: { kind: "number" },
+  kind: "table",
+  schema: {
+    row: {
+      fields: {
+        x: { kind: "number" },
+        y: { kind: "number" },
+        z: { kind: "number" },
+        rotation: { kind: "number" },
+        rotationX: { kind: "number" },
+        rotationY: { kind: "number" },
+      },
+    },
   },
 };
 
@@ -96,6 +101,12 @@ function tableOutput(outputs: Outputs, path: string): TableRows {
   return values as TableRows;
 }
 
+function baseRow(rows: TableRows, parentId: string): FlatRecord {
+  const row = rows.find((candidate) => candidate.id === parentId);
+  if (row === undefined) throw new TypeError(`FK3d base row missing for parent "${parentId}".`);
+  return row.cells;
+}
+
 function stringField(record: FlatRecord, field: string, path: string): string {
   const value = record[field];
   if (typeof value !== "string" || value.length === 0)
@@ -148,9 +159,10 @@ export const fk3dPlugin: IdentifiedPluginDefinition = {
   outputs: { values: OUTPUT },
   transform({ requires }) {
     const member = recordOutput(requires.member as Outputs, "member");
-    const base = recordOutput(requires.base as Outputs, "base");
+    const baseRows = tableOutput(requires.base as Outputs, "base");
     const solverRows = tableOutput(requires.solver as Outputs, "solver");
     const memberId = stringField(member, "memberId", "member.values");
+    const parentId = stringField(member, "parentId", "member.values");
     const solved = solvedOrientation(lookupRow(solverRows, memberId));
     const local = blendOrientation3d(
       {
@@ -161,7 +173,7 @@ export const fk3dPlugin: IdentifiedPluginDefinition = {
       solved,
       clamp(readNumber(member.weight, 1), 0, 1),
     );
-    const pivot = composeWorld3d(readFrame3d(base), {
+    const pivot = composeWorld3d(readFrame3d(baseRow(baseRows, parentId)), {
       ...readPivotOffset3d(member),
       ...local,
     });

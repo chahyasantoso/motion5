@@ -9,6 +9,9 @@ export const POSE_MOTION_ID = "pose";
 
 export const poseNodeId = (trackId: string): string => `${POSE_MOTION_ID}/${trackId}`;
 
+/** The no-plugin record source consumed by one identified FK member track. */
+export const memberSourceId = (trackId: string): string => `${trackId}-member`;
+
 /** The track ids one limb's chain is authored under. */
 export interface LimbTracks {
   readonly root: string;

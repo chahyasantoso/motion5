@@ -37,15 +37,19 @@ const MEMBER: ValueSpec = {
 };
 
 const ROOT: ValueSpec = {
-  kind: "record",
-  fields: {
-    memberId: { kind: "string" },
-    x: { kind: "number" },
-    y: { kind: "number" },
-    z: { kind: "number" },
-    rotation: { kind: "number" },
-    rotationX: { kind: "number" },
-    rotationY: { kind: "number" },
+  kind: "table",
+  schema: {
+    row: {
+      fields: {
+        memberId: { kind: "string" },
+        x: { kind: "number" },
+        y: { kind: "number" },
+        z: { kind: "number" },
+        rotation: { kind: "number" },
+        rotationX: { kind: "number" },
+        rotationY: { kind: "number" },
+      },
+    },
   },
 };
 
@@ -124,6 +128,19 @@ function recordOutput(outputs: Outputs, path: string): FlatRecord {
   return flatRecord(values, `${path}.values`);
 }
 
+function rootOutput(outputs: Outputs, path: string): FlatRecord {
+  const values = outputs.values;
+  if (!Array.isArray(values)) throw new TypeError(`IK3d requires a root table at ${path}.`);
+  const row = values.find(
+    (candidate) =>
+      candidate.cells !== null &&
+      typeof candidate.cells === "object" &&
+      candidate.cells.memberId === candidate.id,
+  );
+  if (row === undefined) throw new TypeError(`IK3d requires a root row at ${path}.`);
+  return flatRecord(row.cells, `${path}.values[${row.id}]`);
+}
+
 function recordsOutput(value: unknown, path: string): MapOutput {
   if (value === null || typeof value !== "object" || Array.isArray(value))
     throw new TypeError(`IK3d requires a map output at ${path}.`);
@@ -146,7 +163,7 @@ function optionalStringField(record: FlatRecord, field: string): string | undefi
 }
 
 function memberRows(requires: ResolvedRequires): readonly ChainMember3d[] {
-  const root = recordOutput(requires.root as Outputs, "root");
+  const root = rootOutput(requires.root as Outputs, "root");
   const rootId = stringField(root, "memberId", "root.values");
   const members = recordsOutput(requires.members, "members");
   const goals = recordsOutput(requires.goals, "goals");
@@ -191,7 +208,7 @@ function memberRows(requires: ResolvedRequires): readonly ChainMember3d[] {
 }
 
 function rootFrame(requires: ResolvedRequires) {
-  return readFrame3d(recordOutput(requires.root as Outputs, "root"));
+  return readFrame3d(rootOutput(requires.root as Outputs, "root"));
 }
 
 function outputRows(result: ReturnType<typeof solveChain3d>, members: readonly ChainMember3d[]) {

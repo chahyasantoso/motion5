@@ -95,6 +95,13 @@ const PALETTE: Readonly<Record<AvatarProvenance, number>> = {
 const midpoint = (a: Vec, b: Vec) => scale(add(a, b), 0.5);
 const vector = (point: Vec) => new Vector3(point[0]!, point[1]!, point[2]!);
 
+function framePatch(patch: Patch): Patch {
+  if (patch.status !== "ready" || !Array.isArray(patch.outputs.values)) return patch;
+  const rowId = patch.nodeId.slice(patch.nodeId.lastIndexOf("/") + 1);
+  const row = patch.outputs.values.find((candidate) => candidate.id === rowId);
+  return row === undefined ? patch : { ...patch, outputs: { ...patch.outputs, values: row.cells } };
+}
+
 /**
  * Persistent flat primitives. FK group origins are distal tips; boxes point backward on local -x.
  * No graph, filter, clock, topology rebuild or independent pose solve lives here.
@@ -247,7 +254,7 @@ export function createAvatarScene(parent = new Group()) {
           ? "measured"
           : "inferred";
         for (const { id, patch, length } of publications) {
-          adapter.apply(patch!);
+          adapter.apply(framePatch(patch!));
           const mesh = meshes.get(id)!;
           mesh.scale.set(length!, limb.id.endsWith("arm") ? 45 : 65, 45);
           mesh.position.set(-length! / 2, 0, 0);

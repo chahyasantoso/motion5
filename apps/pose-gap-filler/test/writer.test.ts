@@ -2,13 +2,13 @@ import type { PatchBatch, TrackHandle, ValueTransaction } from "@motion5/core";
 import { describe, expect, it } from "vitest";
 import { createBoneLengthEstimator } from "../src/filler/bone-length";
 import { createGapFiller } from "../src/filler/gap-filler";
-import { limbTracks, poseNodeId } from "../src/rig/tracks";
+import { limbTracks, memberSourceId, poseNodeId } from "../src/rig/tracks";
 import { createImageWriter, createWorldWriter, type ValueBatchPort } from "../src/rig/writer";
 import { WORLD_SPACE } from "../src/filler/space";
 import { jointRecord } from "../src/filler/landmarks";
 import { STANDING, frameOf, trustedOf } from "./frames";
 
-type Write = readonly [node: string, what: string, value: unknown];
+type Write = readonly [node: string, value: unknown];
 
 const EMPTY: PatchBatch = { tick: 0, seeds: [], patches: [], diagnostics: [] };
 
@@ -24,8 +24,8 @@ function recordingPort() {
           return {
             input: {
               values: {
-                setField(address: { field: string }, cell: unknown) {
-                  writes.push([node, address.field, cell]);
+                set(value: unknown) {
+                  writes.push([node, value]);
                   return EMPTY;
                 },
               },
@@ -63,7 +63,7 @@ describe("pose writer", () => {
     const next = trustedOf(frameOf(STANDING, 100), ["left-elbow"]);
     writer.write(createGapFiller({ kind: "raw" }).fill(next), next, lengths);
     const solve = poseNodeId(limbTracks("left-arm").solve);
-    expect(batches[1]!.filter(([node, what]) => node === solve && what === "flip")).toEqual([]);
+    expect(batches[1]!.filter(([node]) => node === solve)).toEqual([]);
   });
 
   it("GF-58 retries every failed world write and commits held pole observations only on success", () => {
@@ -90,10 +90,13 @@ describe("pose writer", () => {
     const gap = trustedOf(frameOf(points, 100, WORLD_SPACE), ["left-elbow"]);
     writer2.write(createGapFiller({ kind: "raw" }).fill(gap), gap, lengths);
     const poleWrites = batches[3]!.filter(([node]) => node === poleNode);
-    expect(Object.fromEntries(poleWrites.map(([, what, value]) => [what, value]))).toEqual({
+    expect(poleWrites[0]?.[1]).toEqual({
       x: points["left-shoulder"][0],
       y: points["left-shoulder"][1],
       z: 31,
+      rotation: 0,
+      rotationX: 0,
+      rotationY: 0,
     });
   });
   it("GF-10 advances what it believes is published only once a batch returns", () => {
@@ -103,9 +106,21 @@ describe("pose writer", () => {
     const filler = createGapFiller({ kind: "raw" });
     const ids = limbTracks("left-arm");
     const lengthWrites = (writes: readonly Write[]) =>
-      writes.filter(([node, what]) => what === "length" && node === poseNodeId(ids.upper));
+      writes.filter(
+        ([node, value]) =>
+          node === poseNodeId(memberSourceId(ids.upper)) &&
+          typeof value === "object" &&
+          value !== null &&
+          "length" in value,
+      );
     const flipWrites = (writes: readonly Write[]) =>
-      writes.filter(([node, what]) => what === "flip" && node === poseNodeId(ids.solve));
+      writes.filter(
+        ([node, value]) =>
+          node === poseNodeId(ids.solve) &&
+          typeof value === "object" &&
+          value !== null &&
+          "flip" in value,
+      );
     // The standing left elbow bends to the flip-true side, away from the authored flip false.
     const crossed = trustedOf(frameOf(STANDING, 0));
     lengths.observe(crossed);
@@ -117,7 +132,7 @@ describe("pose writer", () => {
     expect(batches).toHaveLength(2);
     expect(lengthWrites(batches[1]!)).toEqual(lengthWrites(batches[0]!));
     expect(lengthWrites(batches[1]!)).toHaveLength(1);
-    expect(flipWrites(batches[1]!)).toEqual([[poseNodeId(ids.solve), "flip", true]]);
+    expect(flipWrites(batches[1]!)).toEqual([[poseNodeId(ids.solve), { flip: true }]]);
     // Once published, an unchanged length and bend side are not written again.
     writer.write(filler.fill(crossed), crossed, lengths);
     expect(lengthWrites(batches[2]!)).toEqual([]);

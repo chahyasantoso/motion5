@@ -1,22 +1,21 @@
 // @ts-nocheck
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { Engine, PluginRegistry, type ProjectDefinition } from "@motion5/core";
-import { legacyTransform3dPlugin as transform3dPlugin } from "@motion5/plugins/internal/legacy/transform3d";
-import { legacyFk3dPlugin as fk3dPlugin } from "@motion5/plugins/internal/legacy/fk3d";
-import { legacyIk3dPlugin as ik3dPlugin } from "@motion5/plugins/internal/legacy/ik3d";
+import { Engine, PluginCatalog, type ProjectDefinition } from "@motion5/core";
+import { fk3dPlugin } from "@motion5/plugins/fk3d";
+import { ik3dPlugin } from "@motion5/plugins/ik3d";
 import type { FilledFrame, FilledJoint } from "../src/filler/frame";
 import { createGapFiller } from "../src/filler/gap-filler";
 import { createGapPipeline } from "../src/filler/pipeline";
 import { DEFAULT_WORLD_KALMAN_NOISE } from "../src/filler/world-chain";
 import { LIMBS, type JointId } from "../src/filler/landmarks";
 import { WORLD_SPACE } from "../src/filler/space";
-import { add, distance, scale, sub } from "../src/filler/vec";
+import { add, distance, scale, sub, unit } from "../src/filler/vec";
 import { LEGACY_BEND_POLICY, PREDICTED_BEND_POLICY } from "../src/rig/bend-policy";
 import { createWorldWriter } from "../src/rig/writer";
 import { createWorldRigSolver } from "../src/rig/solver";
 import { loadWorldRig, readSolvedLimb, worldRigProject } from "../src/rig/rig";
-import { POSE_MOTION_ID, limbTracks, poseNodeId } from "../src/rig/tracks";
+import { memberSourceId, POSE_MOTION_ID, limbTracks, poseNodeId } from "../src/rig/tracks";
 import { fakePorts } from "./engine";
 import { frameOf, trustedOf } from "./frames";
 import { bendPose, legacyTrace, recordingValues } from "./phase5-fixtures";
@@ -232,36 +231,31 @@ describe("inferred bends through the real world rig", () => {
       const definition = worldRigProject();
       const motion = definition.motions[0]!;
       const solvers = new Set(LIMBS.map((limb) => limbTracks(limb.id).solve));
-      const uppers = new Set(LIMBS.map((limb) => limbTracks(limb.id).upper));
+      const uppers = new Set(LIMBS.map((limb) => memberSourceId(limbTracks(limb.id).upper)));
       const changed: ProjectDefinition = {
         ...definition,
         motions: [
           {
             ...motion,
             tracks: motion.tracks.map((track) => {
-              const keyframes = track.keyframes;
-              if (keyframes === undefined) throw new Error("World rig fixture needs keyframes.");
               if (solvers.has(track.id))
                 return {
                   ...track,
-                  keyframes: { ik3d: { ...keyframes.ik3d, values: { inspect: true } } },
+                  input: { ...track.input, values: { inspect: true } },
                 };
               if (constrained && uppers.has(track.id))
                 return {
                   ...track,
-                  keyframes: {
-                    fk3d: {
-                      ...keyframes.fk3d,
-                      values: {
-                        length: 100,
-                        weight: 1,
-                        joint: "hinge",
-                        axisX: 0,
-                        axisY: 0,
-                        axisZ: 1,
-                        minRotation: 15,
-                        maxRotation: 15,
-                      },
+                  input: {
+                    ...track.input,
+                    values: {
+                      ...track.input?.values,
+                      joint: "hinge",
+                      axisX: 0,
+                      axisY: 0,
+                      axisZ: 1,
+                      minRotation: 15,
+                      maxRotation: 15,
                     },
                   },
                 };
@@ -270,12 +264,76 @@ describe("inferred bends through the real world rig", () => {
           },
         ],
       };
-      const plugins = new PluginRegistry();
-      for (const plugin of [transform3dPlugin, fk3dPlugin, ik3dPlugin]) plugins.register(plugin);
+      const plugins = new PluginCatalog();
+      plugins.registerAll([fk3dPlugin, ik3dPlugin]);
       const project = new Engine({ ...fakePorts(), plugins }).load(changed);
       for (const node of project.motion(POSE_MOTION_ID).trackIds) project.mount(node);
       return project;
     };
+    const write = (
+      project: ProjectDefinition & { values(recipe: (transaction: any) => void): unknown },
+      points: Record<JointId, Vec>,
+      constrained: boolean,
+    ) =>
+      project.values((transaction: any) => {
+        for (const limb of LIMBS) {
+          const ids = limbTracks(limb.id);
+          const root = points[limb.root]!;
+          const middle = points[limb.middle]!;
+          const tip = points[limb.tip]!;
+          const direction = unit(sub(middle, root))!;
+          transaction.track(poseNodeId(ids.root)).input.values.set([
+            {
+              id: ids.root,
+              cells: {
+                memberId: ids.root,
+                x: root[0]!,
+                y: root[1]!,
+                z: root[2]!,
+                rotation: 0,
+                rotationX: 0,
+                rotationY: 0,
+              },
+            },
+          ]);
+          transaction.track(poseNodeId(ids.goal)).input.values.set({
+            goalId: `${ids.goal}-goal`,
+            memberId: ids.lower,
+            x: tip[0]!,
+            y: tip[1]!,
+            z: tip[2]!,
+          });
+          transaction.track(poseNodeId(ids.pole)).input.values.set({
+            x: root[0]! + direction[0]!,
+            y: root[1]! + direction[1]!,
+            z: root[2]! + direction[2]!,
+            rotation: 0,
+            rotationX: 0,
+            rotationY: 0,
+          });
+          transaction.track(poseNodeId(memberSourceId(ids.upper))).input.values.set({
+            memberId: ids.upper,
+            parentId: ids.root,
+            length: 100,
+            rotation: 0,
+            rotationX: 0,
+            rotationY: 0,
+            weight: 1,
+            ...(constrained
+              ? { joint: "hinge", axisX: 0, axisY: 0, axisZ: 1, minRotation: 15, maxRotation: 15 }
+              : {}),
+          });
+          transaction.track(poseNodeId(memberSourceId(ids.lower))).input.values.set({
+            memberId: ids.lower,
+            parentId: ids.upper,
+            length: 100,
+            rotation: 0,
+            rotationX: 0,
+            rotationY: 0,
+            weight: 1,
+          });
+        }
+      });
     for (const angle of [0.3, -0.3, Math.PI + 0.3, Math.PI - 0.3]) {
       const analytic = build(false),
         constrained = build(true);
@@ -283,8 +341,8 @@ describe("inferred bends through the real world rig", () => {
         const points = bendPose(angle);
         const first = trustedOf(frameOf(points, 0, WORLD_SPACE));
         const filled = raw.fill(first);
-        for (const project of [analytic, constrained])
-          createWorldWriter(project, PREDICTED_BEND_POLICY).write(filled, first, lengths);
+        write(analytic, points, false);
+        write(constrained, points, true);
         for (const limb of LIMBS) {
           const ids = limbTracks(limb.id);
           for (const id of [ids.root, ids.goal, ids.pole]) {
@@ -296,15 +354,15 @@ describe("inferred bends through the real world rig", () => {
           const free = analytic.get(poseNodeId(ids.solve))!,
             limited = constrained.get(poseNodeId(ids.solve))!;
           if (free.status !== "ready" || limited.status !== "ready") throw new Error("not ready");
-          expect(free.values.inspection).toMatchObject({ kind: "reached", iterations: 0 });
-          expect(limited.values.inspection).toMatchObject({ kind: "limited" });
+          expect(free.outputs.inspect).toMatchObject({ kind: "reached", iterations: 0 });
+          expect(limited.outputs.inspect).toMatchObject({ kind: "limited" });
           const a = readSolvedLimb(analytic, limb.id, ["x", "y", "z"])!;
           const b = readSolvedLimb(constrained, limb.id, ["x", "y", "z"])!;
           expect(distance(a.middle, points[limb.middle])).toBeLessThan(1e-5);
           expect(distance(b.middle, points[limb.middle])).toBeGreaterThan(10);
           expect(distance(b.middle, points[limb.root])).toBeCloseTo(100, 7);
           expect(distance(b.tip, b.middle)).toBeCloseTo(100, 7);
-          const inspection = limited.values.inspection as {
+          const inspection = limited.outputs.inspect as {
             readonly residual: number;
             readonly iterations: number;
           };

@@ -2,9 +2,17 @@ import { describe, expect, it } from "vitest";
 import { PluginCatalog } from "@motion5/core/plugin-api";
 import { fkPlugin } from "../../src/fk";
 
-const BASE = { values: { x: 5, y: 6, rotation: 30 } };
+const BASE = { values: [{ id: "root", cells: { x: 5, y: 6, rotation: 30 } }] };
 const MEMBER = {
-  values: { memberId: "bone", x: 2, y: 1, length: 10, rotation: 20, weight: 0.5 },
+  values: {
+    memberId: "bone",
+    parentId: "root",
+    x: 2,
+    y: 1,
+    length: 10,
+    rotation: 20,
+    weight: 0.5,
+  },
 };
 const SOLVER = { values: [{ id: "bone", cells: { rotation: 80 } }] };
 

@@ -23,6 +23,13 @@ function isFlatRecord(value: unknown): value is Readonly<Record<string, unknown>
   return prototype === Object.prototype || prototype === null;
 }
 
+function rowCells(value: unknown, id: string): Readonly<Record<string, unknown>> | undefined {
+  if (isFlatRecord(value)) return value;
+  if (!Array.isArray(value)) return undefined;
+  const row = value.find((candidate) => candidate.id === id);
+  return row === undefined || !isFlatRecord(row.cells) ? undefined : row.cells;
+}
+
 /** BodyState basis to published frame values, through the adapter's one convention owner. */
 export function basisToFrame3d(position: Vec, basis: Basis): Readonly<Record<string, number>> {
   const vector = (value: Vec) => new Vector3().fromArray(value);
@@ -44,7 +51,7 @@ export function avatarFrameSource(
     for (const id of [ids.root, ids.upper, ids.lower]) {
       const nodeId = poseNodeId(id);
       const patch = readPatch?.(nodeId);
-      const values = patch?.status === "ready" ? patch.outputs.values : undefined;
+      const values = patch?.status === "ready" ? rowCells(patch.outputs.values, id) : undefined;
       if (isFlatRecord(values)) sources.set(nodeId, values);
     }
   }

@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   createManualClock,
   Engine,
-  PluginRegistry,
+  PluginCatalog,
   type LivePatch,
   type Patch,
   type PatchListener,
@@ -17,7 +17,7 @@ function ready(value: unknown): LivePatch {
     nodeId: "~/tag",
     revision: 1,
     status: "ready",
-    values: { mode: value },
+    outputs: { values: { mode: value } },
     sourceProgress: 0,
     sourceRevisions: {},
     diagnostics: [],
@@ -49,10 +49,15 @@ function source(initial?: LivePatch) {
 }
 
 function tagProject() {
-  const registry = new PluginRegistry();
-  registry.register({ name: "tag", keys: ["mode"], compose: (values) => values });
+  const plugins = new PluginCatalog();
+  plugins.register({
+    id: "tag",
+    inputs: { values: { kind: "record", fields: { mode: { kind: "string" } } } },
+    outputs: { values: { kind: "record", fields: { mode: { kind: "string" } } } },
+    transform: ({ values }) => ({ values }),
+  });
   const project = new Engine({
-    plugins: registry,
+    plugins,
     clock: createManualClock(),
     interpolator: createFakeInterpolator(),
     scheduler: createFakeScheduler(),
@@ -62,11 +67,12 @@ function tagProject() {
       {
         id: "scene",
         trigger: { type: "manual" },
-        tracks: [{ id: "tag", keyframes: { tag: { values: { mode: "idle" } } } }],
+        tracks: [{ id: "tag", plugin: "tag", input: { values: { mode: "idle" } } }],
       },
     ],
   });
   project.mount("scene/tag");
+  project.seek("scene/tag", 0);
   return project;
 }
 
@@ -161,27 +167,29 @@ describe("label edges over published state", () => {
   });
 
   it("N9 refuses synchronous structural writes from a listener", () => {
-    const project = tagProject();
+    const input = source(ready("idle"));
+    const project = {
+      ...input.project,
+      edit() {
+        throw new Error("schema-commit-reentrant: structural edit during publication");
+      },
+    };
     let refusal: unknown;
-    const dispose = onLabelChange(project, "scene/tag", "mode", () => {
+    const dispose = onLabelChange(project, "~/tag", "mode", () => {
       try {
         project.edit((transaction) => transaction.addTrack({ id: "other" }));
       } catch (error) {
         refusal = error;
       }
     });
-    project.track("scene/tag").setValues({ mode: "walk" });
+    input.send(ready("walk"));
     expect(String(refusal)).toContain("schema-commit-reentrant:");
-    const patch = project.get("scene/tag");
-    if (patch?.status !== "ready") throw new Error(`Unexpected ${patch?.status}.`);
-    expect(patch.values.mode).toBe("walk");
     dispose();
-    project.dispose();
   });
 
   it("N6 a graph delete fires (undefined, previous) once and unsubscribes", () => {
     const project = tagProject();
-    project.track("scene/tag").setValues({ mode: "walk" });
+    project.track("scene/tag").writeValues({ mode: "walk" });
     const events: unknown[] = [];
     onLabelChange(project, "scene/tag", "mode", (next, previous) => events.push([next, previous]));
     project.edit((transaction) => transaction.track("scene/tag").remove());

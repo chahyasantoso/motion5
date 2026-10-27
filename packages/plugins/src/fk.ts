@@ -14,6 +14,7 @@ const MEMBER: ValueSpec = {
   kind: "record",
   fields: {
     memberId: { kind: "string" },
+    parentId: { kind: "string" },
     x: { kind: "number", optional: true },
     y: { kind: "number", optional: true },
     length: { kind: "number" },
@@ -23,11 +24,15 @@ const MEMBER: ValueSpec = {
 };
 
 const FRAME: ValueSpec = {
-  kind: "record",
-  fields: {
-    x: { kind: "number" },
-    y: { kind: "number" },
-    rotation: { kind: "number" },
+  kind: "table",
+  schema: {
+    row: {
+      fields: {
+        x: { kind: "number" },
+        y: { kind: "number" },
+        rotation: { kind: "number" },
+      },
+    },
   },
 };
 
@@ -50,7 +55,6 @@ const OUTPUT: ValueSpec = {
 };
 
 type FlatRecord = Readonly<Record<string, number | string | boolean>>;
-type RecordOutput = { readonly values: FlatRecord };
 type TableOutput = {
   readonly values: readonly { readonly id: string; readonly cells: FlatRecord }[];
 };
@@ -81,6 +85,12 @@ function tableOutput(outputs: Outputs, path: string): TableOutput["values"] {
   const values = outputs.values;
   if (!Array.isArray(values)) throw new TypeError(`FK requires a table output at ${path}.`);
   return values as TableOutput["values"];
+}
+
+function baseRow(rows: TableOutput["values"], parentId: string): FlatRecord {
+  const row = rows.find((candidate) => candidate.id === parentId);
+  if (row === undefined) throw new TypeError(`FK base row missing for parent "${parentId}".`);
+  return row.cells;
 }
 
 function stringField(record: FlatRecord, field: string, path: string): string {
@@ -123,14 +133,18 @@ export const fkPlugin: IdentifiedPluginDefinition = {
   outputs: { values: OUTPUT },
   transform({ requires }) {
     const member = recordOutput(requires.member as Outputs, "member");
-    const base = recordOutput(requires.base as Outputs, "base");
+    const baseRows = tableOutput(requires.base as Outputs, "base");
     const solverRows = tableOutput(requires.solver as Outputs, "solver");
     const memberId = stringField(member, "memberId", "member.values");
+    const parentId = stringField(member, "parentId", "member.values");
     const solved = solveRotation(lookupRow(solverRows, memberId));
     const authored = readNumber(member.rotation);
     const weight = clamp(readNumber(member.weight, 1), 0, 1);
     const rotation = lerpAngle(authored, solved, weight);
-    const pivot = composeWorld(readFrame(base), { ...readPivotOffset(member), rotation });
+    const pivot = composeWorld(readFrame(baseRow(baseRows, parentId)), {
+      ...readPivotOffset(member),
+      rotation,
+    });
     const world = composeWorld(pivot, {
       x: segmentExtent(readNumber(member.length)),
       y: 0,

@@ -407,7 +407,7 @@ function goalBindingsOf(node: GraphNode): GoalBindings {
       bare = true;
       continue;
     }
-    if (slot === PLUGIN_GOALS_SLOT && memberKey !== undefined)
+    if ((slot === PLUGIN_GOALS_SLOT || slot === "goals") && memberKey !== undefined)
       dict.push({ authored: memberKey, sourceId: edge.sourceId });
   }
   dict.sort((a, b) => compareCodeUnits(a.authored, b.authored));

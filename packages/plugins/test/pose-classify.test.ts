@@ -1,25 +1,16 @@
 // @ts-nocheck
 import { describe, expect, it } from "vitest";
-import {
-  createManualClock,
-  Engine,
-  PluginRegistry,
-  type PluginDefinition,
-  type ProjectHandle,
-} from "@motion5/core";
+import { createManualClock, Engine, PluginCatalog, type ProjectHandle } from "@motion5/core";
 import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/testing";
 import type { ImmutableRecord } from "@motion5/core/plugin-api";
-import { builtinCatalog } from "../src/catalog";
 import { type Euler3d } from "../src/frame3d";
 import { onLabelChange } from "../src/labels";
-import { createPluginLoader } from "../src/loader";
 import {
   createPoseClassifyPlugin,
   type PoseClassifyOptions,
   type PoseTemplate,
 } from "../src/pose-classify";
-import { legacyRigPlugin as rigPlugin } from "@motion5/plugins/internal/legacy/rig";
-import { legacyTransform3dPlugin as transform3dPlugin } from "@motion5/plugins/internal/legacy/transform3d";
+import { rigPlugin } from "@motion5/plugins/rig";
 
 const ZERO: Euler3d = { rotation: 0, rotationX: 0, rotationY: 0 };
 const template = (label = "idle", angles: Euler3d = ZERO): PoseTemplate => ({
@@ -32,18 +23,27 @@ function classify(
   templates: readonly PoseTemplate[] = [template()],
   maxDistance = 10,
 ): Readonly<Record<string, unknown>> {
-  return createPoseClassifyPlugin({ templates, maxDistance }).compose(
-    {},
-    0,
-    { rig: { pose: actual } },
-    "scene/classifier",
-  );
+  const pose = Object.entries(actual).map(([id, frame]) => ({
+    id,
+    cells: {
+      x: 0,
+      y: 0,
+      z: 0,
+      rotation: frame.rotation ?? 0,
+      rotationX: frame.rotationX ?? 0,
+      rotationY: frame.rotationY ?? 0,
+    },
+  }));
+  return createPoseClassifyPlugin({ templates, maxDistance }).transform(
+    { values: {}, requires: { rig: { pose } } },
+    { nodeId: "scene/classifier", progress: 0 },
+  ).values;
 }
 
 function values(project: ProjectHandle): Readonly<Record<string, unknown>> {
   const patch = project.get("scene/classifier");
   if (patch?.status !== "ready") throw new Error(`Classifier status ${patch?.status}.`);
-  return patch.values;
+  return patch.outputs.values as Readonly<Record<string, unknown>>;
 }
 
 describe("pose classifier geodesic distance", () => {
@@ -133,12 +133,25 @@ describe("pose classifier geodesic distance", () => {
     templates.length = 0;
     options.maxDistance = 180;
     options.unknownLabel = "changed";
-    expect(plugin.name).toBe("tag-pose");
-    expect(plugin.compose({}, 0, { rig: { pose: { wrist: ZERO } } }, "tag")).toEqual({
-      label: "idle",
-      confidence: 1,
+    expect(plugin.id).toBe("tag-pose");
+    expect(
+      plugin.transform(
+        {
+          values: {},
+          requires: { rig: { pose: [{ id: "wrist", cells: { ...ZERO, x: 0, y: 0, z: 0 } }] } },
+        },
+        { nodeId: "tag", progress: 0 },
+      ).values,
+    ).toEqual({ label: "idle", confidence: 1 });
+    expect(
+      plugin.transform(
+        { values: {}, requires: { rig: { pose: [] } } },
+        { nodeId: "tag", progress: 0 },
+      ).values,
+    ).toEqual({
+      label: "other",
+      confidence: 0,
     });
-    expect(plugin.compose({}, 0, {}, "tag")).toEqual({ label: "other", confidence: 0 });
   });
 
   it("G6 eagerly refuses each invalid factory input", () => {
@@ -183,9 +196,8 @@ describe("pose classifier geodesic distance", () => {
 
 describe("pose classifier graph integration", () => {
   it("G7 downstream label changes follow the rig edge and notify only when the label changes", () => {
-    const plugins = new PluginRegistry();
+    const plugins = new PluginCatalog();
     plugins.registerAll([
-      transform3dPlugin,
       rigPlugin,
       createPoseClassifyPlugin({ templates: [template()], maxDistance: 10 }),
     ]);
@@ -203,66 +215,71 @@ describe("pose classifier graph integration", () => {
           tracks: [
             {
               id: "bone",
-              keyframes: {
-                transform3d: {
-                  values: {
-                    rotation: [
-                      { p: 0, v: 0 },
-                      { p: 1, v: 120 },
-                    ],
+              input: {
+                values: [
+                  {
+                    id: "wrist",
+                    cells: { x: 0, y: 0, z: 0, rotation: 0, rotationX: 0, rotationY: 0 },
                   },
-                },
+                ],
               },
             },
-            { id: "rig", keyframes: { rig: { requires: { bones: { wrist: "bone" } } } } },
-            { id: "classifier", keyframes: { "pose-classify": { requires: { rig: "rig" } } } },
+            {
+              id: "rig",
+              plugin: "rig",
+              input: { values: {}, requires: { bones: { wrist: "bone" }, controls: {} } },
+            },
+            {
+              id: "classifier",
+              plugin: "pose-classify",
+              input: { values: {}, requires: { rig: "rig" } },
+            },
           ],
         },
       ],
     });
     try {
       project.mount("scene/classifier");
-      project.seek("scene/bone", 0);
+      project
+        .track("scene/bone")
+        .input.values.set([
+          { id: "wrist", cells: { x: 0, y: 0, z: 0, rotation: 0, rotationX: 0, rotationY: 0 } },
+        ]);
       expect(values(project).label).toBe("idle");
       const changes: unknown[] = [];
       const dispose = onLabelChange(project, "scene/classifier", "label", (next, previous) =>
         changes.push([next, previous]),
       );
-      project.seek("scene/bone", 1);
+      project
+        .track("scene/bone")
+        .input.values.set([
+          { id: "wrist", cells: { x: 0, y: 0, z: 0, rotation: 120, rotationX: 0, rotationY: 0 } },
+        ]);
       expect(values(project)).toEqual({ label: "unknown", confidence: 0 });
-      project.seek("scene/bone", 0.9);
-      project.seek("scene/bone", 0);
+      project
+        .track("scene/bone")
+        .input.values.set([
+          { id: "wrist", cells: { x: 0, y: 0, z: 0, rotation: 0, rotationX: 0, rotationY: 0 } },
+        ]);
       expect(changes).toEqual([
         ["unknown", "idle"],
         ["idle", "unknown"],
       ]);
       dispose();
-      expect(plugins.capabilityOf("rig")?.chain).toEqual({ kind: "any" });
-      expect(plugins.capabilityOf("pose-classify")?.joint).toBe(false);
     } finally {
       project.dispose();
     }
   });
 
-  it("an app-owned descriptor loads the configured classifier and rig without implicit dependencies", async () => {
+  it("an app-owned catalog admits the configured classifier and rig without implicit dependencies", () => {
     const definition = createPoseClassifyPlugin({
       name: "tag-pose",
       templates: [template()],
       maxDistance: 10,
     });
-    expect(builtinCatalog.has("pose-classify")).toBe(false);
-    const descriptor = { load: async (): Promise<PluginDefinition> => definition };
-    const loader = createPluginLoader(new Map([...builtinCatalog, ["tag-pose", descriptor]]));
-    const registry = new PluginRegistry();
-    const result = await loader.ensure(registry, {
-      kind: "tracks",
-      tracks: [
-        { id: "bone", keyframes: { transform3d: { values: { x: 0 } } } },
-        { id: "rig", keyframes: { rig: { requires: { bones: { wrist: "bone" } } } } },
-        { id: "classifier", keyframes: { "tag-pose": { requires: { rig: "rig" } } } },
-      ],
-    });
-    expect(result).toEqual({ kind: "ensured", added: ["transform3d", "rig", "tag-pose"] });
-    expect("dependencies" in descriptor).toBe(false);
+    const catalog = new PluginCatalog();
+    catalog.registerAll([rigPlugin, definition]);
+    expect(catalog.get("tag-pose")?.id).toBe("tag-pose");
+    expect(catalog.get("rig")?.id).toBe("rig");
   });
 });

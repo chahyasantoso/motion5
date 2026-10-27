@@ -83,15 +83,20 @@ function input(
     requires: {
       members: memberBindings,
       root: {
-        values: {
-          memberId: "root",
-          x: 0,
-          y: 0,
-          z: 0,
-          rotation: 0,
-          rotationX: 0,
-          rotationY: 0,
-        },
+        values: [
+          {
+            id: "root",
+            cells: {
+              memberId: "root",
+              x: 0,
+              y: 0,
+              z: 0,
+              rotation: 0,
+              rotationX: 0,
+              rotationY: 0,
+            },
+          },
+        ],
       },
       goals: goalBindings,
       pole,

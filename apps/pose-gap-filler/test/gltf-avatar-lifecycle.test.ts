@@ -50,10 +50,18 @@ describe("GLB presentation isolation and ownership", () => {
             b = solver.readPatch!(poseNodeId(to));
           if (a?.status !== "ready" || b?.status !== "ready")
             throw new Error("Expected source frames");
+          const frame = (patch: NonNullable<typeof a>) => {
+            const values = patch.outputs.values;
+            if (!Array.isArray(values)) throw new Error("Expected a frame table");
+            const rowId = patch.nodeId.slice(patch.nodeId.lastIndexOf("/") + 1);
+            const row = values.find((candidate) => candidate.id === rowId);
+            if (row === undefined) throw new Error("Expected a frame row");
+            return row.cells;
+          };
           const point = (values: Readonly<Record<string, unknown>>) =>
             new Vector3(Number(values.x), Number(values.y), Number(values.z));
-          const expected = point(b.values)
-            .sub(point(a.values))
+          const expected = point(frame(b))
+            .sub(point(frame(a)))
             .transformDirection(avatar.parent.matrixWorld);
           const actual = child
             .getWorldPosition(new Vector3())

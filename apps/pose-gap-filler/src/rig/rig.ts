@@ -1,21 +1,19 @@
 import {
   Engine,
-  PluginRegistry,
+  PluginCatalog,
   type EngineOptions,
   type ProjectDefinition,
   type ProjectHandle,
   type TrackDefinition,
 } from "@motion5/core";
-import { legacyFkPlugin as fkPlugin } from "@motion5/plugins/internal/legacy/fk";
-import { legacyIkPlugin as ikPlugin } from "@motion5/plugins/internal/legacy/ik";
-import { legacyTransformPlugin as transformPlugin } from "@motion5/plugins/internal/legacy/transform";
-import { legacyFk3dPlugin as fk3dPlugin } from "@motion5/plugins/internal/legacy/fk3d";
-import { legacyIk3dPlugin as ik3dPlugin } from "@motion5/plugins/internal/legacy/ik3d";
-import { legacyTransform3dPlugin as transform3dPlugin } from "@motion5/plugins/internal/legacy/transform3d";
+import { fkPlugin } from "@motion5/plugins/fk";
+import { ikPlugin } from "@motion5/plugins/ik";
+import { fk3dPlugin } from "@motion5/plugins/fk3d";
+import { ik3dPlugin } from "@motion5/plugins/ik3d";
 import { LIMBS, type LimbId } from "../filler/landmarks";
 import type { Vec } from "../filler/vec";
 import { unreachable } from "../filler/unreachable";
-import { POSE_MOTION_ID, limbTracks, poseNodeId } from "./tracks";
+import { POSE_MOTION_ID, limbTracks, memberSourceId, poseNodeId } from "./tracks";
 import type { LimbWrite } from "./writer";
 
 /** Placeholder geometry until the estimator knows the person: any reachable pose loads. */
@@ -23,28 +21,49 @@ const INITIAL_LENGTH = 100;
 
 function imageLimbTracks(limb: LimbId): readonly TrackDefinition[] {
   const ids = limbTracks(limb);
-  const member = (id: string, base: string): TrackDefinition => ({
-    id,
-    plugin: "fk",
-    input: {
-      values: { length: INITIAL_LENGTH, rotation: 0, weight: 1 },
-      requires: { base, solver: ids.solve },
+  const member = (id: string, parentId: string, base: string): readonly TrackDefinition[] => [
+    {
+      id: memberSourceId(id),
+      input: { values: { memberId: id, parentId, length: INITIAL_LENGTH, rotation: 0, weight: 1 } },
     },
-  });
+    {
+      id,
+      plugin: "fk",
+      input: {
+        values: {},
+        requires: {
+          member: memberSourceId(id),
+          base,
+          solver: ids.solve,
+        },
+      },
+    },
+  ];
   return [
-    { id: ids.root, plugin: "transform", input: { values: { x: 0, y: 0, rotation: 0 } } },
+    {
+      id: ids.root,
+      input: { values: [{ id: ids.root, cells: { memberId: ids.root, x: 0, y: 0, rotation: 0 } }] },
+    },
     {
       id: ids.goal,
-      plugin: "transform",
-      input: { values: { x: 0, y: INITIAL_LENGTH * 1.5, rotation: 0 } },
+      input: {
+        values: { goalId: `${ids.goal}-goal`, memberId: ids.lower, x: 0, y: INITIAL_LENGTH * 1.5 },
+      },
     },
     {
       id: ids.solve,
       plugin: "ik",
-      input: { values: { flip: false }, requires: { root: ids.root, target: ids.goal } },
+      input: {
+        values: { flip: false },
+        requires: {
+          members: { upper: memberSourceId(ids.upper), lower: memberSourceId(ids.lower) },
+          root: ids.root,
+          goals: { [ids.lower]: ids.goal },
+        },
+      },
     },
-    member(ids.upper, ids.root),
-    member(ids.lower, ids.upper),
+    ...member(ids.upper, ids.root, ids.root),
+    ...member(ids.lower, ids.upper, ids.upper),
   ];
 }
 
@@ -74,30 +93,81 @@ export function imageRigProject(): ProjectDefinition {
 export function worldRigProject(): ProjectDefinition {
   const tracks = LIMBS.flatMap((limb): readonly TrackDefinition[] => {
     const ids = limbTracks(limb.id);
-    const point = (id: string, x: number, y: number, z: number): TrackDefinition => ({
+    const point = (id: string, values: Record<string, number | string>): TrackDefinition => ({
       id,
-      plugin: "transform3d",
-      input: { values: { x, y, z, rotation: 0, rotationX: 0, rotationY: 0 } },
+      input: { values },
     });
-    const member = (id: string, base: string): TrackDefinition => ({
-      id,
-      plugin: "fk3d",
-      input: {
-        values: { length: INITIAL_LENGTH, weight: 1 },
-        requires: { base, solver: ids.solve },
+    const member = (id: string, parentId: string, base: string): readonly TrackDefinition[] => [
+      {
+        id: memberSourceId(id),
+        input: {
+          values: {
+            memberId: id,
+            parentId,
+            length: INITIAL_LENGTH,
+            rotation: 0,
+            rotationX: 0,
+            rotationY: 0,
+            weight: 1,
+          },
+        },
       },
-    });
+      {
+        id,
+        plugin: "fk3d",
+        input: {
+          values: {},
+          requires: {
+            member: memberSourceId(id),
+            base,
+            solver: ids.solve,
+          },
+        },
+      },
+    ];
     return [
-      point(ids.root, 0, 0, 0),
-      point(ids.goal, 0, INITIAL_LENGTH * 1.5, 0),
-      point(ids.pole, 0, 0, INITIAL_LENGTH),
+      {
+        id: ids.root,
+        input: {
+          values: [
+            {
+              id: ids.root,
+              cells: {
+                memberId: ids.root,
+                x: 0,
+                y: 0,
+                z: 0,
+                rotation: 0,
+                rotationX: 0,
+                rotationY: 0,
+              },
+            },
+          ],
+        },
+      },
+      point(ids.goal, {
+        goalId: `${ids.goal}-goal`,
+        memberId: ids.lower,
+        x: 0,
+        y: INITIAL_LENGTH * 1.5,
+        z: 0,
+      }),
+      point(ids.pole, { x: 0, y: 0, z: INITIAL_LENGTH, rotation: 0, rotationX: 0, rotationY: 0 }),
       {
         id: ids.solve,
         plugin: "ik3d",
-        input: { requires: { root: ids.root, target: ids.goal, pole: ids.pole } },
+        input: {
+          values: {},
+          requires: {
+            members: { upper: memberSourceId(ids.upper), lower: memberSourceId(ids.lower) },
+            root: ids.root,
+            goals: { [ids.lower]: ids.goal },
+            pole: ids.pole,
+          },
+        },
       },
-      member(ids.upper, ids.root),
-      member(ids.lower, ids.upper),
+      ...member(ids.upper, ids.root, ids.root),
+      ...member(ids.lower, ids.upper, ids.upper),
     ];
   });
   return {
@@ -122,15 +192,15 @@ export function loadWorldRig(ports: RigPorts): ProjectHandle {
 }
 
 function loadRig(ports: RigPorts, space: "image" | "world"): ProjectHandle {
-  const plugins = new PluginRegistry();
+  const plugins = new PluginCatalog();
   let definition: ProjectDefinition;
   switch (space) {
     case "image":
-      plugins.registerAll([transformPlugin, fkPlugin, ikPlugin]);
+      plugins.registerAll([fkPlugin, ikPlugin]);
       definition = imageRigProject();
       break;
     case "world":
-      plugins.registerAll([transform3dPlugin, fk3dPlugin, ik3dPlugin]);
+      plugins.registerAll([fk3dPlugin, ik3dPlugin]);
       definition = worldRigProject();
       break;
     default:
@@ -158,12 +228,19 @@ function isFlatRecord(value: unknown): value is Readonly<Record<string, unknown>
   return prototype === Object.prototype || prototype === null;
 }
 
-function publishedTip(project: ProjectHandle, trackId: string, keys: readonly string[]) {
+function publishedTip(
+  project: ProjectHandle,
+  trackId: string,
+  rowId: string,
+  keys: readonly string[],
+) {
   const patch = project.get(poseNodeId(trackId));
   if (patch?.status !== "ready") return undefined;
   const values = patch.outputs.values;
-  if (!isFlatRecord(values)) return undefined;
-  const position = keys.map((key) => values[key]);
+  if (!Array.isArray(values)) return undefined;
+  const row = values.find((candidate) => candidate.id === rowId);
+  if (row === undefined || !isFlatRecord(row.cells)) return undefined;
+  const position = keys.map((key) => row.cells[key]);
   return position.every((value): value is number => typeof value === "number")
     ? (position as Vec)
     : undefined;
@@ -175,8 +252,8 @@ export function readSolvedLimb(
   keys: readonly string[] = ["x", "y"],
 ): SolvedLimb | undefined {
   const ids = limbTracks(limb);
-  const middle = publishedTip(project, ids.upper, keys);
-  const tip = publishedTip(project, ids.lower, keys);
+  const middle = publishedTip(project, ids.upper, ids.upper, keys);
+  const tip = publishedTip(project, ids.lower, ids.lower, keys);
   return middle === undefined || tip === undefined ? undefined : { middle, tip };
 }
 

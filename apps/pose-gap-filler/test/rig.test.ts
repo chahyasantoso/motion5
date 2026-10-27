@@ -7,7 +7,7 @@ import { LIMBS } from "../src/filler/landmarks";
 import { createGapPipeline } from "../src/filler/pipeline";
 import { distance } from "../src/filler/vec";
 import { loadImageRig, readSolvedLimb, readWrittenLimbs } from "../src/rig/rig";
-import { limbTracks, poseNodeId } from "../src/rig/tracks";
+import { limbTracks, memberSourceId, poseNodeId } from "../src/rig/tracks";
 import { createImageWriter, imageBendFlip } from "../src/rig/writer";
 import { countingProject, fakePorts } from "./engine";
 import { STANDING, frameOf, trustedOf, without } from "./frames";
@@ -18,11 +18,32 @@ describe("image rig and writer", () => {
     const ids = limbTracks("left-arm");
     for (const flip of [false, true]) {
       project.values((transaction) => {
-        transaction.setValues(poseNodeId(ids.root), { x: 100, y: 100 });
-        transaction.setValues(poseNodeId(ids.goal), { x: 130, y: 250 });
-        transaction.setValues(poseNodeId(ids.upper), { length: 90 });
-        transaction.setValues(poseNodeId(ids.lower), { length: 80 });
-        transaction.track(poseNodeId(ids.solve)).setKeyframe("ik", "flip", flip);
+        transaction
+          .track(poseNodeId(ids.root))
+          .input.values.set([
+            { id: ids.root, cells: { memberId: ids.root, x: 100, y: 100, rotation: 0 } },
+          ]);
+        transaction.track(poseNodeId(ids.goal)).input.values.set({
+          goalId: `${ids.goal}-goal`,
+          memberId: ids.lower,
+          x: 130,
+          y: 250,
+        });
+        transaction.track(poseNodeId(memberSourceId(ids.upper))).input.values.set({
+          memberId: ids.upper,
+          parentId: ids.root,
+          length: 90,
+          rotation: 0,
+          weight: 1,
+        });
+        transaction.track(poseNodeId(memberSourceId(ids.lower))).input.values.set({
+          memberId: ids.lower,
+          parentId: ids.upper,
+          length: 80,
+          rotation: 0,
+          weight: 1,
+        });
+        transaction.track(poseNodeId(ids.solve)).input.values.set({ flip });
       });
       const solved = readSolvedLimb(project, "left-arm")!;
       expect(imageBendFlip([100, 100], [130, 250], solved.middle)).toBe(flip);

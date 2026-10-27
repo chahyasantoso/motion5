@@ -3,11 +3,17 @@ import { PluginCatalog } from "@motion5/core/plugin-api";
 import { fk3dPlugin } from "../../src/fk3d";
 
 const BASE = {
-  values: { x: 5, y: 6, z: 7, rotation: 30, rotationX: 5, rotationY: -20 },
+  values: [
+    {
+      id: "root",
+      cells: { x: 5, y: 6, z: 7, rotation: 30, rotationX: 5, rotationY: -20 },
+    },
+  ],
 };
 const MEMBER = {
   values: {
     memberId: "bone",
+    parentId: "root",
     x: 2,
     y: 1,
     z: -3,

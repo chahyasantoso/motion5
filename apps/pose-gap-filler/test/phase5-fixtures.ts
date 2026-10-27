@@ -66,6 +66,86 @@ export function recordingValues(delegate?: ValueBatchPort) {
   };
 }
 
+function legacyFrame(values: Record<string, unknown>, nodeId: string): Record<string, unknown> {
+  const result = { ...values };
+  delete result.memberId;
+  delete result.goalId;
+  if (nodeId.endsWith("-goal")) delete result.memberId;
+  if (nodeId.endsWith("-goal")) delete result.goalId;
+  if (nodeId.endsWith("-goal")) {
+    result.rotation ??= 0;
+    result.rotationX ??= 0;
+    result.rotationY ??= 0;
+  }
+  return result;
+}
+
+function legacyPatch(patch: unknown): unknown {
+  if (patch === undefined || patch === null || typeof patch !== "object") return patch;
+  const current = patch as Record<string, unknown>;
+  const nodeId = String(current.nodeId);
+  const outputs = current.outputs;
+  if (outputs === null || typeof outputs !== "object") return patch;
+  const rawValues = (outputs as Record<string, unknown>).values;
+  let values: unknown = rawValues;
+  if (Array.isArray(rawValues)) {
+    const rows = rawValues.filter(
+      (row): row is { id: string; cells: Record<string, unknown> } =>
+        row !== null &&
+        typeof row === "object" &&
+        typeof (row as { id?: unknown }).id === "string" &&
+        (row as { cells?: unknown }).cells !== null &&
+        typeof (row as { cells?: unknown }).cells === "object",
+    );
+    if (nodeId.endsWith("-solve")) {
+      const rotations: Record<string, unknown> = {};
+      for (const row of rows)
+        rotations[`pose/${row.id}`] = {
+          rotation: row.cells.rotation,
+          rotationX: row.cells.rotationX,
+          rotationY: row.cells.rotationY,
+        };
+      values = { rotations3d: rotations };
+    } else {
+      const row = rows[0];
+      values = row === undefined ? {} : legacyFrame(row.cells, nodeId);
+    }
+  } else if (rawValues !== null && typeof rawValues === "object") {
+    values = legacyFrame(rawValues as Record<string, unknown>, nodeId);
+  }
+  const sourceRevisions = current.sourceRevisions;
+  const normalizedSources =
+    sourceRevisions === null || typeof sourceRevisions !== "object"
+      ? sourceRevisions
+      : Object.fromEntries(
+          Object.entries(sourceRevisions as Record<string, unknown>)
+            .filter(([id]) => !id.endsWith("-member"))
+            .map(([id, revision]) => [id, revision]),
+        );
+  return { ...current, values, sourceRevisions: normalizedSources, outputs: undefined };
+}
+
+function legacyWrite(write: StagedWrite): StagedWrite {
+  const [node, value] = write;
+  const values = value as Record<string, unknown>;
+  if (Array.isArray(value)) {
+    const row = value[0] as { cells?: Record<string, unknown> } | undefined;
+    const cells = row?.cells ?? {};
+    return [
+      node,
+      Object.fromEntries(Object.entries(cells).filter(([key]) => ["x", "y", "z"].includes(key))),
+    ];
+  }
+  if (node.endsWith("-goal") || node.endsWith("-pole"))
+    return [
+      node,
+      Object.fromEntries(Object.entries(values).filter(([key]) => ["x", "y", "z"].includes(key))),
+    ];
+  if (node.endsWith("-member"))
+    return [node.slice(0, -"-member".length), { length: values.length }];
+  return write;
+}
+
 /** Full legacy evidence: write order/values, outcomes, failure/retry and all publication bytes. */
 export function legacyTrace(factory: typeof createWorldWriter = createWorldWriter) {
   const project = loadWorldRig(fakePorts());
@@ -103,10 +183,10 @@ export function legacyTrace(factory: typeof createWorldWriter = createWorldWrite
       }
       trace.push({
         tMs: fixture.t,
-        writes: recorded.batches.at(-1),
+        writes: recorded.batches.at(-1)?.map(legacyWrite),
         outcome,
         patches: LIMBS.flatMap((limb) =>
-          Object.values(limbTracks(limb.id)).map((id) => project.get(poseNodeId(id))),
+          Object.values(limbTracks(limb.id)).map((id) => legacyPatch(project.get(poseNodeId(id)))),
         ),
       });
     }

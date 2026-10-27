@@ -9,7 +9,7 @@ import {
 import { LIMBS, type Limb, type LimbId } from "../filler/landmarks";
 import { unreachable } from "../filler/unreachable";
 import { add, sub, unit, type Vec } from "../filler/vec";
-import { limbTracks, poseNodeId } from "./tracks";
+import { limbTracks, memberSourceId, poseNodeId } from "./tracks";
 import {
   decidingMiddle,
   decideBend,
@@ -176,18 +176,36 @@ function planLimb(
       state.published = { upper, lower, flip };
     },
     stage: (transaction) => {
-      const rootValues = transaction.track(poseNodeId(ids.root)).input.values;
-      rootValues.setField({ field: "x" }, root[0]!);
-      rootValues.setField({ field: "y" }, root[1]!);
+      transaction
+        .track(poseNodeId(ids.root))
+        .input.values.set([
+          { id: ids.root, cells: { memberId: ids.root, x: root[0]!, y: root[1]!, rotation: 0 } },
+        ]);
       const goalValues = transaction.track(poseNodeId(ids.goal)).input.values;
-      goalValues.setField({ field: "x" }, goal[0]!);
-      goalValues.setField({ field: "y" }, goal[1]!);
+      goalValues.set({
+        goalId: `${ids.goal}-goal`,
+        memberId: ids.lower,
+        x: goal[0]!,
+        y: goal[1]!,
+      });
       if (upper !== published.upper)
-        transaction.track(poseNodeId(ids.upper)).input.values.setField({ field: "length" }, upper);
+        transaction.track(poseNodeId(memberSourceId(ids.upper))).input.values.set({
+          memberId: ids.upper,
+          parentId: ids.root,
+          length: upper,
+          rotation: 0,
+          weight: 1,
+        });
       if (lower !== published.lower)
-        transaction.track(poseNodeId(ids.lower)).input.values.setField({ field: "length" }, lower);
+        transaction.track(poseNodeId(memberSourceId(ids.lower))).input.values.set({
+          memberId: ids.lower,
+          parentId: ids.upper,
+          length: lower,
+          rotation: 0,
+          weight: 1,
+        });
       if (flip !== published.flip)
-        transaction.track(poseNodeId(ids.solve)).input.values.setField({ field: "flip" }, flip);
+        transaction.track(poseNodeId(ids.solve)).input.values.set({ flip });
     },
   };
 }
@@ -276,28 +294,59 @@ export function createWorldWriter(
         state.pole = pole;
       },
       stage: (transaction) => {
-        const rootValues = transaction.track(poseNodeId(ids.root)).input.values;
-        rootValues.setField({ field: "x" }, root[0]!);
-        rootValues.setField({ field: "y" }, root[1]!);
-        rootValues.setField({ field: "z" }, root[2]!);
+        transaction.track(poseNodeId(ids.root)).input.values.set([
+          {
+            id: ids.root,
+            cells: {
+              memberId: ids.root,
+              x: root[0]!,
+              y: root[1]!,
+              z: root[2]!,
+              rotation: 0,
+              rotationX: 0,
+              rotationY: 0,
+            },
+          },
+        ]);
         const goalValues = transaction.track(poseNodeId(ids.goal)).input.values;
-        goalValues.setField({ field: "x" }, goal[0]!);
-        goalValues.setField({ field: "y" }, goal[1]!);
-        goalValues.setField({ field: "z" }, goal[2]!);
+        goalValues.set({
+          goalId: `${ids.goal}-goal`,
+          memberId: ids.lower,
+          x: goal[0]!,
+          y: goal[1]!,
+          z: goal[2]!,
+        });
         if (state.pole === undefined || pole.some((value, axis) => value !== state.pole![axis])) {
           const poleValues = transaction.track(poseNodeId(ids.pole)).input.values;
-          poleValues.setField({ field: "x" }, pole[0]!);
-          poleValues.setField({ field: "y" }, pole[1]!);
-          poleValues.setField({ field: "z" }, pole[2]!);
+          poleValues.set({
+            x: pole[0]!,
+            y: pole[1]!,
+            z: pole[2]!,
+            rotation: 0,
+            rotationX: 0,
+            rotationY: 0,
+          });
         }
         if (upper !== state.upper)
-          transaction
-            .track(poseNodeId(ids.upper))
-            .input.values.setField({ field: "length" }, upper);
+          transaction.track(poseNodeId(memberSourceId(ids.upper))).input.values.set({
+            memberId: ids.upper,
+            parentId: ids.root,
+            length: upper,
+            rotation: 0,
+            rotationX: 0,
+            rotationY: 0,
+            weight: 1,
+          });
         if (lower !== state.lower)
-          transaction
-            .track(poseNodeId(ids.lower))
-            .input.values.setField({ field: "length" }, lower);
+          transaction.track(poseNodeId(memberSourceId(ids.lower))).input.values.set({
+            memberId: ids.lower,
+            parentId: ids.upper,
+            length: lower,
+            rotation: 0,
+            rotationX: 0,
+            rotationY: 0,
+            weight: 1,
+          });
       },
     };
   });

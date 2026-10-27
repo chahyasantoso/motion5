@@ -35,7 +35,7 @@ function input(
     values,
     requires: {
       members: memberBindings,
-      root: { values: { memberId: "root", x: 0, y: 0, rotation: 0 } },
+      root: { values: [{ id: "root", cells: { memberId: "root", x: 0, y: 0, rotation: 0 } }] },
       goals: goalBindings,
     },
   };

@@ -242,7 +242,9 @@ describe("flat reconstructed avatar", () => {
         readPole = () => {
           const patch = loaded.get(poseNodeId(ids.pole))!;
           return patch.status === "ready"
-            ? ["x", "y", "z"].map((key) => patch.values[key] as number)
+            ? ["x", "y", "z"].map(
+                (key) => (patch.outputs.values as Record<string, unknown>)[key] as number,
+              )
             : [];
         };
       const held = sub(readPole(), points["left-shoulder"]);

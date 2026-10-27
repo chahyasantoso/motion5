@@ -1,4 +1,4 @@
-import type { PluginDefinition } from "@motion5/core/plugin-api";
+import type { IdentifiedPluginDefinition, Outputs, ValueSpec } from "@motion5/core/plugin-api";
 import {
   isRecord,
   matrixFromEuler3d,
@@ -7,7 +7,30 @@ import {
   type Euler3d,
   type Matrix3,
 } from "./frame3d";
-import { readRigValues } from "./legacy/rig-values";
+
+const POSE: ValueSpec = {
+  kind: "table",
+  schema: {
+    row: {
+      fields: {
+        x: { kind: "number" },
+        y: { kind: "number" },
+        z: { kind: "number" },
+        rotation: { kind: "number" },
+        rotationX: { kind: "number" },
+        rotationY: { kind: "number" },
+      },
+    },
+  },
+};
+
+const VALUES: ValueSpec = {
+  kind: "record",
+  fields: {
+    label: { kind: "string" },
+    confidence: { kind: "number" },
+  },
+};
 
 export interface PoseTemplate {
   readonly label: string;
@@ -95,16 +118,27 @@ function distance(template: PreparedTemplate, actual: ReadonlyMap<string, Matrix
   return total / template.bones.length;
 }
 
+type FrameRow = Readonly<{
+  readonly id: string;
+  readonly cells: Readonly<Record<string, number | string | boolean>>;
+}>;
+
+function poseRows(outputs: Outputs): readonly FrameRow[] {
+  const pose = outputs.pose;
+  if (!Array.isArray(pose)) throw new TypeError("Pose classifier requires a pose table.");
+  return pose as readonly FrameRow[];
+}
+
 /**
- * Pure frame-local classification over a required rig, never a stateful estimator or a renderer.
- * Admission copies and freezes template matrices, and precomputes their inverses once. Compose
- * reuses each actual bone matrix across templates; absent bones score Infinity, ties keep the
- * first template. Coordinate conventions and decoding remain with frame3d and readRigValues.
+ * Pure frame-local classification over a required identified rig table, never a stateful estimator
+ * or a renderer. Admission copies and freezes template matrices, and transform reuses each actual
+ * bone matrix across templates; absent bones score Infinity, ties keep the first template. Row ids
+ * are the only bone identity; binding labels never enter classification.
  *
  * This factory is deliberately absent from builtinCatalog: an app's descriptor may fetch weights
  * or templates inside its async load before returning this definition (ADR-138).
  */
-export function createPoseClassifyPlugin(options: PoseClassifyOptions): PluginDefinition {
+export function createPoseClassifyPlugin(options: PoseClassifyOptions): IdentifiedPluginDefinition {
   if (!isRecord(options)) throw new TypeError("Pose classifier options must be a record.");
   const name = nonEmptyString(options.name === undefined ? "pose-classify" : options.name, "name");
   if (!name.trim()) throw new TypeError("Pose classifier name must be a non-empty string.");
@@ -127,18 +161,27 @@ export function createPoseClassifyPlugin(options: PoseClassifyOptions): PluginDe
     ...new Set(templates.flatMap((template) => template.bones.map((bone) => bone.key))),
   ]);
   return {
-    name,
-    keys: [],
-    stage: "compose",
-    requirements: { rig: { description: "rig data track publishing the world-frame pose" } },
-    outputs: ["label", "confidence"],
-    compose: (_values, _progress, inputs) => {
-      const pose = readRigValues(inputs.rig).pose;
+    id: name,
+    inputs: {
+      values: { kind: "record", fields: {} },
+      requires: { rig: { outputs: { pose: POSE } } },
+    },
+    outputs: { values: VALUES },
+    transform({ requires }) {
+      const rows = poseRows(requires.rig as Outputs);
+      const pose = new Map<string, FrameRow>(rows.map((row) => [row.id, row]));
       // Only template-referenced bones are converted; a full humanoid pose stays cheap.
       const actual = new Map<string, Matrix3>();
       for (const key of referenced) {
-        const frame = Object.hasOwn(pose, key) ? pose[key] : undefined;
-        if (frame !== undefined) actual.set(key, matrixFromEuler3d(frame));
+        const row = pose.get(key);
+        if (row === undefined) continue;
+        const { rotation, rotationX, rotationY } = row.cells;
+        if (
+          typeof rotation === "number" &&
+          typeof rotationX === "number" &&
+          typeof rotationY === "number"
+        )
+          actual.set(key, matrixFromEuler3d({ rotation, rotationX, rotationY }));
       }
       let best = Infinity;
       let label = unknownLabel;
@@ -150,8 +193,10 @@ export function createPoseClassifyPlugin(options: PoseClassifyOptions): PluginDe
         }
       }
       return {
-        label: best <= maxDistance ? label : unknownLabel,
-        confidence: Number.isFinite(best) ? Math.max(0, 1 - best / maxDistance) : 0,
+        values: {
+          label: best <= maxDistance ? label : unknownLabel,
+          confidence: Number.isFinite(best) ? Math.max(0, 1 - best / maxDistance) : 0,
+        },
       };
     },
   };
