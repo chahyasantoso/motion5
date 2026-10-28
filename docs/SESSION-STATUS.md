@@ -6,20 +6,20 @@ states a phase; `packages/core/test/unit/scripts/session-status-shape.test.ts` e
 byte ceiling.
 
 - **Captured:** 2026-10-28, Asia/Jakarta.
-- **Read against:** `refactor/v5-identified-tables` after the aggregate 2D IK slice.
+- **Read against:** `refactor/v5-identified-tables` after the aggregate IK slices.
 
 ## Now
 
-- **2D IK reads aggregate tables:** `ik` takes one body table, one goals table and one base
-  record through single-source slots, validates goals through the shared aggregate join, and
-  publishes the same solved rows byte for byte. Grouped authoring is refused by name at load, so
+- **2D and 3D IK read aggregate tables:** `ik` and `ik3d` take one body table, one goals table
+  and one base record through single-source slots, share the topology reader and goal join, and
+  publish the same solved rows byte for byte. Grouped authoring is refused by name at load, so
   the app's grouped rig no longer loads until its slice migrates it. No pending ledger entries
   were removed; 73 Phase 5, 4 Phase 6 and 2 Phase 7 entries remain.
 
 ## Next in line
 
-- **Aggregate 3D IK:** the same chain, goals and base contract for `ik3d`, preserving pole,
-  joint, orientation, influence and inspection behavior.
+- **Aggregate 2D FK:** compose one whole pose table from the body and solved tables and the base
+  record.
 
 ## Open, and not scheduled
 
