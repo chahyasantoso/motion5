@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import type { ValueSpec } from "@motion5/core/plugin-api";
 import {
   AggregateTopologyError,
   BODY_2D_SPEC,
@@ -215,5 +216,54 @@ describe("aggregate goal targets", () => {
     expect(slotSpec(ROOT_2D_SPEC)).toEqual(ROOT_2D_SPEC);
     expect(EXTERNAL_BASE).toBe("");
     expect(() => readAggregateTopology([{ id: EXTERNAL_BASE, cells: { length: 1 } }])).toThrow();
+  });
+});
+
+describe("aggregate spec vocabulary", () => {
+  it("GT-10 pins the exact field names every aggregate table accepts", () => {
+    const keys = (spec: ValueSpec) =>
+      spec.kind === "table" ? Object.keys(spec.schema.row.fields) : Object.keys(spec.fields);
+    expect(keys(BODY_2D_SPEC)).toEqual([
+      "parentId",
+      "length",
+      "rotation",
+      "weight",
+      "x",
+      "y",
+      "minRotation",
+      "maxRotation",
+    ]);
+    expect(keys(BODY_3D_SPEC)).toEqual([
+      "parentId",
+      "length",
+      "rotation",
+      "rotationX",
+      "rotationY",
+      "weight",
+      "x",
+      "y",
+      "z",
+      "orient",
+      "joint",
+      "axisX",
+      "axisY",
+      "axisZ",
+      "minRotation",
+      "maxRotation",
+      "minTwist",
+      "maxTwist",
+      "maxSwing",
+    ]);
+    expect(keys(GOALS_2D_SPEC)).toEqual(["memberId", "x", "y", "influence"]);
+    expect(keys(GOALS_3D_SPEC)).toEqual([
+      "memberId",
+      "x",
+      "y",
+      "z",
+      "rotation",
+      "rotationX",
+      "rotationY",
+      "influence",
+    ]);
   });
 });

@@ -116,6 +116,7 @@ describe("aggregate 3D IK", () => {
       iterations: 23,
       atBound: false,
     });
+    expect(run({ inspect: false })).not.toHaveProperty("inspect");
   });
 
   it("AJ-3 is independent of authored body order", () => {
@@ -301,6 +302,32 @@ describe("aggregate 3D IK through the engine", () => {
       goals: { g: "goals" },
     };
     expect(() => open(old as ProjectDefinition)).toThrow(/slot-unknown at demo\/solve/);
+
+    const invalid = (edit: (tracks: any[]) => void) => {
+      const definition = structuredClone(project()) as any;
+      edit(definition.motions[0].tracks);
+      return () => open(definition as ProjectDefinition);
+    };
+    expect(
+      invalid((t) => {
+        t[2].input.values[0].cells.joint = "banana";
+      }),
+    ).toThrow(/cell-form-invalid .*joint/);
+    expect(
+      invalid((t) => {
+        t[2].input.values[0].cells.maxSwing = 500;
+      }),
+    ).toThrow(/cell-form-invalid .*maxSwing/);
+    expect(
+      invalid((t) => {
+        t[2].input.values[0].cells.orient = 2;
+      }),
+    ).toThrow(/cell-form-invalid .*orient/);
+    expect(
+      invalid((t) => {
+        t[3].input.values[0].cells.influence = 0;
+      }),
+    ).toThrow(/cell-form-invalid .*influence/);
   });
 });
 

@@ -302,5 +302,10 @@ describe("aggregate 2D IK", () => {
         t[2].input.values[0].cells.goalId = "g";
       }),
     ).toThrow(/cell-form-invalid .*goalId/);
+    expect(
+      load((t) => {
+        t[1].input.values[0].cells.minRotation = 500;
+      }),
+    ).toThrow(/cell-form-invalid .*minRotation/);
   });
 });

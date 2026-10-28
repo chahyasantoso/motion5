@@ -64,9 +64,12 @@ const BODY_2D_FIELDS = {
   weight: { kind: "number", optional: true },
   x: { kind: "number", optional: true },
   y: { kind: "number", optional: true },
-  minRotation: { kind: "number", optional: true },
-  maxRotation: { kind: "number", optional: true },
+  minRotation: { kind: "number", optional: true, min: -180, max: 180 },
+  maxRotation: { kind: "number", optional: true, min: -180, max: 180 },
 } as const;
+
+/** Core's `JOINT_KINDS`, mirrored because `@motion5/core/plugin-api` does not export the list. */
+const JOINT_VOCABULARY = ["free", "hinge", "cone", "swing-twist"] as const;
 
 const BODY_3D_FIELDS = {
   parentId: { kind: "string", optional: true, static: true },
@@ -78,23 +81,29 @@ const BODY_3D_FIELDS = {
   x: { kind: "number", optional: true },
   y: { kind: "number", optional: true },
   z: { kind: "number", optional: true },
-  orient: { kind: "number", optional: true },
-  joint: { kind: "string", optional: true, static: true },
+  orient: { kind: "number", optional: true, min: 0, max: 1 },
+  joint: { kind: "string", optional: true, static: true, enum: JOINT_VOCABULARY },
   axisX: { kind: "number", optional: true, static: true },
   axisY: { kind: "number", optional: true, static: true },
   axisZ: { kind: "number", optional: true, static: true },
-  minRotation: { kind: "number", optional: true, static: true },
-  maxRotation: { kind: "number", optional: true, static: true },
-  minTwist: { kind: "number", optional: true, static: true },
-  maxTwist: { kind: "number", optional: true, static: true },
-  maxSwing: { kind: "number", optional: true, static: true },
+  minRotation: { kind: "number", optional: true, static: true, min: -180, max: 180 },
+  maxRotation: { kind: "number", optional: true, static: true, min: -180, max: 180 },
+  minTwist: { kind: "number", optional: true, static: true, min: -180, max: 180 },
+  maxTwist: { kind: "number", optional: true, static: true, min: -180, max: 180 },
+  maxSwing: { kind: "number", optional: true, static: true, min: 0, max: 180 },
 } as const;
+
+/**
+ * `Number.MIN_VALUE` is the least positive double, so the `min` below states the documented
+ * domain "greater than 0" exactly: every representable positive influence passes, zero is refused.
+ */
+const INFLUENCE = { kind: "number", optional: true, static: true, min: Number.MIN_VALUE } as const;
 
 const GOALS_2D_FIELDS = {
   memberId: { kind: "string", static: true },
   x: { kind: "number" },
   y: { kind: "number" },
-  influence: { kind: "number", optional: true, static: true },
+  influence: INFLUENCE,
 } as const;
 
 const GOALS_3D_FIELDS = {
@@ -105,7 +114,7 @@ const GOALS_3D_FIELDS = {
   rotation: { kind: "number", optional: true },
   rotationX: { kind: "number", optional: true },
   rotationY: { kind: "number", optional: true },
-  influence: { kind: "number", optional: true, static: true },
+  influence: INFLUENCE,
 } as const;
 
 const ROOT_2D_FIELDS = {
