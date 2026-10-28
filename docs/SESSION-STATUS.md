@@ -5,21 +5,21 @@ are the complete shape. **Now** and **Next in line** carry exactly one bullet ea
 states a phase; `packages/core/test/unit/scripts/session-status-shape.test.ts` enforces the shape and
 byte ceiling.
 
-- **Captured:** 2026-10-25, Asia/Jakarta.
-- **Read against:** `refactor/v5-identified-tables` after the identified rig cutover.
+- **Captured:** 2026-10-28, Asia/Jakarta.
+- **Read against:** `refactor/v5-identified-tables` after the aggregate 2D IK slice.
 
 ## Now
 
-- **Phase 5 has seven cutovers and both solver proofs:** all public built-in plugin paths now use
-  identified tables, while grouped consumers stay behind explicit internal legacy paths. FK and FK3D
-  select solver rows by canonical `memberId`, and rig aggregates named bone and control tables by
-  source row identity with duplicate output ids left to output validation. No pending ledger entries
+- **2D IK reads aggregate tables:** `ik` takes one body table, one goals table and one base
+  record through single-source slots, validates goals through the shared aggregate join, and
+  publishes the same solved rows byte for byte. Grouped authoring is refused by name at load, so
+  the app's grouped rig no longer loads until its slice migrates it. No pending ledger entries
   were removed; 73 Phase 5, 4 Phase 6 and 2 Phase 7 entries remain.
 
 ## Next in line
 
-- **Phase 5 continues with identified classifier and label consumers:** read declared rig outputs by row
-  identity, publish the classifier flat record, and keep the app writer after those keyed consumers.
+- **Aggregate 3D IK:** the same chain, goals and base contract for `ik3d`, preserving pole,
+  joint, orientation, influence and inspection behavior.
 
 ## Open, and not scheduled
 

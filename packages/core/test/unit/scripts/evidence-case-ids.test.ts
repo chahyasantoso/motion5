@@ -443,7 +443,7 @@ const TEST_FILE = /\.test\.tsx?$/;
 // this pattern belongs beside the pattern rather than once per series, so those paragraphs now
 // say what a series owns and this one says where it sorts. Issue #294.
 const CASE_TITLE =
-  /it\(\s*"((?:AE|CF|CL|CN|CS|DV|EN|EV|FB|FO|GE|GF|GI|IK|IN|IR|LF|LV|MG|PK|PV|RA|RB|RS|SD|SH|TH|WT|B|C|D|E|F|G|H|J|K|L|M|N|P|Q|R|S|T|U|V|W|Y|Z)-\d+)/g;
+  /it\(\s*"((?:AE|AI|CF|CL|CN|CS|DV|EN|EV|FB|FO|GE|GF|GI|GT|IK|IN|IR|LF|LV|MG|PK|PV|RA|RB|RS|SD|SH|TH|WT|B|C|D|E|F|G|H|J|K|L|M|N|P|Q|R|S|T|U|V|W|Y|Z)-\d+)/g;
 const REACT_RENDER = "packages/react/test/public-hook-render.test.ts";
 const SERIES_SHAPED_TITLE = /it\(\s*"([A-Z]{1,2}\d*)-(\d+)(?![\w-])/g;
 const SERIES_PREFIX = /^[A-Z]{1,2}$/;

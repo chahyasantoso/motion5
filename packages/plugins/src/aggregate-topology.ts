@@ -18,7 +18,15 @@ export type AggregateTopologyErrorKind =
   | "parent-self"
   | "parent-cycle"
   | "root-shape"
-  | "row-unreachable";
+  | "row-unreachable"
+  | "goal-table-shape"
+  | "goal-row-shape"
+  | "goal-row-id"
+  | "goal-empty"
+  | "goal-member-unknown"
+  | "goal-member-not-leaf"
+  | "goal-member-duplicate"
+  | "goal-leaf-unaddressed";
 
 export class AggregateTopologyError extends TypeError {
   readonly kind: AggregateTopologyErrorKind;
@@ -178,6 +186,51 @@ export const POSE_3D_SPEC: ValueSpec = {
   kind: "table",
   schema: { row: { fields: POSE_3D_FIELDS } },
 };
+
+type FieldMap = Extract<ValueSpec, { readonly kind: "record" }>["fields"];
+
+function withoutStatic(fields: FieldMap): FieldMap {
+  return Object.fromEntries(
+    Object.entries(fields).map(([name, field]) => {
+      const { static: _local, ...slotField } = field;
+      return [name, slotField];
+    }),
+  );
+}
+
+/**
+ * The slot-side reading of an authored spec: the same fields with the local-input-only `static`
+ * flag removed. Core refuses `static` inside a dependency slot's output spec, and the slot check
+ * compares kinds and field presence, never staticness, so one field list serves both sides.
+ */
+export function slotSpec(spec: ValueSpec): ValueSpec {
+  switch (spec.kind) {
+    case "table":
+      return {
+        ...spec,
+        schema: {
+          ...spec.schema,
+          row: { ...spec.schema.row, fields: withoutStatic(spec.schema.row.fields) },
+        },
+      };
+    case "record":
+      return { ...spec, fields: withoutStatic(spec.fields) };
+  }
+}
+
+export const BODY_2D_SLOT = slotSpec(BODY_2D_SPEC);
+export const BODY_3D_SLOT = slotSpec(BODY_3D_SPEC);
+export const GOALS_2D_SLOT = slotSpec(GOALS_2D_SPEC);
+export const GOALS_3D_SLOT = slotSpec(GOALS_3D_SPEC);
+
+/**
+ * The node a member hangs from when its `parentId` is absent: the external base frame.
+ *
+ * The empty string is the one id this module refuses as a body row id, so no authored row can
+ * collide with it, and every solver walk already treats a base naming no member as the external
+ * root, exactly as the pre-aggregate authored `parentId: "root"` spelling did.
+ */
+export const EXTERNAL_BASE = "";
 
 function compareCodeUnits(left: string, right: string): number {
   return left < right ? -1 : left > right ? 1 : 0;
@@ -354,4 +407,78 @@ export function readAggregateTopology(
     leaves: Object.freeze(leaves),
     ids: Object.freeze(ids),
   });
+}
+
+function readGoalRow(value: unknown, index: number): AggregateRow {
+  if (!isRecord(value) || typeof value.id !== "string" || !isRecord(value.cells))
+    throw new AggregateTopologyError(
+      "goal-row-shape",
+      `Goal row at index ${index} must have id and cells.`,
+    );
+  if (value.id.length === 0)
+    throw new AggregateTopologyError("goal-row-id", `Goal row at index ${index} has an empty id.`);
+  const cells: Record<string, AggregateScalar> = {};
+  for (const [name, cell] of Object.entries(value.cells)) {
+    if (!isScalar(cell))
+      throw new AggregateTopologyError(
+        "goal-row-shape",
+        `Goal row '${value.id}' has a non-scalar cell '${name}'.`,
+        [value.id],
+      );
+    cells[name] = cell;
+  }
+  return { id: value.id, cells: Object.freeze(cells) };
+}
+
+export function readGoalTargets(
+  topology: AggregateTopology,
+  value: unknown,
+): ReadonlyMap<string, AggregateRow> {
+  if (!Array.isArray(value))
+    throw new AggregateTopologyError("goal-table-shape", "Aggregate goal values must be a table.");
+  const rows = value.map(readGoalRow);
+  if (rows.length === 0)
+    throw new AggregateTopologyError(
+      "goal-empty",
+      "Aggregate goal table has no rows; a solver with no goals is refused.",
+      topology.leaves,
+    );
+  const leafSet = new Set(topology.leaves);
+  const byMember = new Map<string, AggregateRow>();
+  for (const row of rows) {
+    const member = row.cells.memberId;
+    if (typeof member !== "string" || member.length === 0)
+      throw new AggregateTopologyError(
+        "goal-row-shape",
+        `Goal row '${row.id}' must name a non-empty memberId.`,
+        [row.id],
+      );
+    if (!topology.byId.has(member))
+      throw new AggregateTopologyError(
+        "goal-member-unknown",
+        `Goal row '${row.id}' targets unknown member '${member}'.`,
+        [row.id, member],
+      );
+    if (!leafSet.has(member))
+      throw new AggregateTopologyError(
+        "goal-member-not-leaf",
+        `Goal row '${row.id}' targets member '${member}', which is not a leaf.`,
+        [row.id, member],
+      );
+    if (byMember.has(member))
+      throw new AggregateTopologyError(
+        "goal-member-duplicate",
+        `Two goal rows target member '${member}'.`,
+        [member],
+      );
+    byMember.set(member, row);
+  }
+  for (const leaf of topology.leaves)
+    if (!byMember.has(leaf))
+      throw new AggregateTopologyError(
+        "goal-leaf-unaddressed",
+        `Body leaf '${leaf}' has no goal.`,
+        [leaf],
+      );
+  return byMember;
 }

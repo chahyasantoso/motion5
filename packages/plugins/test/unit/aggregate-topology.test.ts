@@ -12,6 +12,11 @@ import {
   SOLVED_2D_SPEC,
   SOLVED_3D_SPEC,
   readAggregateTopology,
+  readGoalTargets,
+  slotSpec,
+  BODY_2D_SLOT,
+  GOALS_2D_SLOT,
+  EXTERNAL_BASE,
 } from "../../src/aggregate-topology";
 
 function body(...rows: readonly { readonly id: string; readonly parentId?: string }[]) {
@@ -146,5 +151,69 @@ describe("aggregate kinematics contracts", () => {
     );
     expect(error.kind).toBe("row-unreachable");
     expect(error.ids).toEqual(["orphan"]);
+  });
+});
+
+describe("aggregate goal targets", () => {
+  const topology = () =>
+    readAggregateTopology(
+      body({ id: "a" }, { id: "b", parentId: "a" }, { id: "c", parentId: "a" }),
+    );
+  const goal = (id: string, memberId: string) => ({ id, cells: { memberId, x: 1, y: 2 } });
+
+  it("GT-1 returns a member-id to row map preserving ids and cells", () => {
+    const rows = readGoalTargets(topology(), [goal("g1", "b"), goal("g2", "c")]);
+    expect([...rows.keys()]).toEqual(["b", "c"]);
+    expect(rows.get("b")).toEqual({ id: "g1", cells: { memberId: "b", x: 1, y: 2 } });
+  });
+  it("GT-2 refuses a non-array", () => {
+    expect(errorOf(() => readGoalTargets(topology(), {})).kind).toBe("goal-table-shape");
+  });
+  it("GT-3 refuses an empty table with the leaf ids", () => {
+    const error = errorOf(() => readGoalTargets(topology(), []));
+    expect(error.kind).toBe("goal-empty");
+    expect(error.ids).toEqual(["b", "c"]);
+  });
+  it("GT-4 refuses a row without id/cells and an empty id", () => {
+    expect(errorOf(() => readGoalTargets(topology(), [{ id: "g" }])).kind).toBe("goal-row-shape");
+    expect(errorOf(() => readGoalTargets(topology(), [goal("", "b")])).kind).toBe("goal-row-id");
+  });
+  it("GT-5 refuses an unknown member", () => {
+    const error = errorOf(() => readGoalTargets(topology(), [goal("g", "zzz")]));
+    expect(error.kind).toBe("goal-member-unknown");
+    expect(error.ids).toEqual(["g", "zzz"]);
+  });
+  it("GT-6 refuses a non-leaf member", () => {
+    expect(errorOf(() => readGoalTargets(topology(), [goal("g", "a")])).kind).toBe(
+      "goal-member-not-leaf",
+    );
+  });
+  it("GT-7 refuses two goals on one member", () => {
+    expect(
+      errorOf(() => readGoalTargets(topology(), [goal("g1", "b"), goal("g2", "b")])).kind,
+    ).toBe("goal-member-duplicate");
+  });
+  it("GT-8 refuses an unaddressed leaf, naming the first in canonical order", () => {
+    const error = errorOf(() => readGoalTargets(topology(), [goal("g1", "c")]));
+    expect(error.kind).toBe("goal-leaf-unaddressed");
+    expect(error.ids).toEqual(["b"]);
+  });
+  it("GT-9 slotSpec removes only static and keeps every other field fact", () => {
+    for (const [authored, slot] of [
+      [BODY_2D_SPEC, BODY_2D_SLOT],
+      [GOALS_2D_SPEC, GOALS_2D_SLOT],
+    ] as const) {
+      const a = authored.kind === "table" ? authored.schema.row.fields : authored.fields;
+      const b = slot.kind === "table" ? slot.schema.row.fields : slot.fields;
+      expect(Object.keys(b)).toEqual(Object.keys(a));
+      for (const name of Object.keys(a)) {
+        expect(b[name]).not.toHaveProperty("static");
+        const { static: _s, ...rest } = a[name]!;
+        expect(b[name]).toEqual(rest);
+      }
+    }
+    expect(slotSpec(ROOT_2D_SPEC)).toEqual(ROOT_2D_SPEC);
+    expect(EXTERNAL_BASE).toBe("");
+    expect(() => readAggregateTopology([{ id: EXTERNAL_BASE, cells: { length: 1 } }])).toThrow();
   });
 });
