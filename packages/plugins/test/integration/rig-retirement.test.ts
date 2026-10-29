@@ -3,7 +3,7 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { Engine, PluginCatalog, createManualClock, type ProjectDefinition } from "@motion5/core";
 import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/testing";
-import { identifiedCatalog } from "../../src/identified-catalog";
+import { builtinCatalog } from "../../src/builtin-catalog";
 import { fkPlugin } from "../../src/fk";
 import { ikPlugin } from "../../src/ik";
 
@@ -24,8 +24,8 @@ describe("Phase 5 closeout and rig retirement (AQ)", () => {
   });
 
   it("AQ-2 identified catalog deletion: rig is absent and surviving keys match", () => {
-    expect(identifiedCatalog.has("rig")).toBe(false);
-    expect([...identifiedCatalog.keys()]).toEqual([
+    expect(builtinCatalog.has("rig")).toBe(false);
+    expect([...builtinCatalog.keys()]).toEqual([
       "transform",
       "transform3d",
       "ik",
@@ -174,14 +174,14 @@ describe("Phase 5 closeout and rig retirement (AQ)", () => {
     expect(pkg.exports["./rig"]).toBeUndefined();
   });
 
-  it("AQ-11 pending ledger Phase 6 and 7 preservation: exactly 1 entry remains", () => {
+  it("AQ-11 pending ledger is empty and every entry is retired", () => {
     const pending = JSON.parse(readFileSync(PENDING_PATH, "utf8")) as readonly {
       readonly path: string;
       readonly phase: number;
     }[];
-    expect(pending.length).toBe(1);
+    expect(pending.length).toBe(0);
     expect(pending.filter((e) => e.phase === 6).length).toBe(0);
-    expect(pending.filter((e) => e.phase === 7).length).toBe(1);
+    expect(pending.filter((e) => e.phase === 7).length).toBe(0);
     expect(pending.every((e) => e.phase === 6 || e.phase === 7)).toBe(true);
   });
 

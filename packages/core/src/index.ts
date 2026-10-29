@@ -116,7 +116,7 @@ export type {
   DependencySpec,
   EvaluationContext,
   Outputs,
-  PluginDefinition as IdentifiedPluginDefinition,
+  PluginDefinition as PluginDefinition,
   ResolvedInput,
   ValueSpec,
 } from "./contract/v5";

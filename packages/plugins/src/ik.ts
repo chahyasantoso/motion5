@@ -1,4 +1,4 @@
-import type { IdentifiedPluginDefinition, Outputs, ValueSpec } from "@motion5/core/plugin-api";
+import type { PluginDefinition, Outputs, ValueSpec } from "@motion5/core/plugin-api";
 import {
   BODY_2D_SLOT,
   EXTERNAL_BASE,
@@ -81,7 +81,7 @@ function outputRows(result: ReturnType<typeof solveChain>, members: readonly Sol
   }));
 }
 
-export const ikPlugin: IdentifiedPluginDefinition = {
+export const ikPlugin: PluginDefinition = {
   id: "ik",
   inputs: {
     values: {

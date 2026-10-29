@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { ProjectDefinition, TrackDefinition } from "@motion5/core";
 import { Engine, PluginCatalog } from "@motion5/core";
-import type { IdentifiedPluginDefinition } from "@motion5/core/plugin-api";
+import type { PluginDefinition } from "@motion5/core/plugin-api";
 import { fkPlugin } from "../../src/fk";
 import { transformPlugin } from "../../src/transform";
 import { BODY_2D_SPEC, ROOT_2D_SPEC, SOLVED_2D_SPEC } from "../../src/aggregate-topology";
@@ -31,7 +31,7 @@ function readX(value: unknown): number {
   return typeof x === "number" ? x : 0;
 }
 
-const reachPlugin: IdentifiedPluginDefinition = {
+const reachPlugin: PluginDefinition = {
   id: "reach",
   inputs: {
     values: { kind: "record", fields: { weight: { kind: "number" } } },
@@ -138,7 +138,7 @@ describe("plugin-owned requirements end to end", () => {
   });
 
   it("Q-8 leaves an omitted optional binding with no edge", () => {
-    const optionalPlugin: IdentifiedPluginDefinition = {
+    const optionalPlugin: PluginDefinition = {
       id: "opt-reach",
       inputs: {
         values: { kind: "record", fields: { length: { kind: "number" } } },

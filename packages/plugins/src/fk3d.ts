@@ -1,5 +1,5 @@
 import { unreachable } from "@motion5/core/plugin-api";
-import type { IdentifiedPluginDefinition, Outputs } from "@motion5/core/plugin-api";
+import type { PluginDefinition, Outputs } from "@motion5/core/plugin-api";
 import {
   BODY_3D_SLOT,
   POSE_3D_SPEC,
@@ -87,7 +87,7 @@ function solvedOrientation(lookup: SolvedRowLookup3d): Euler3d {
   }
 }
 
-export const fk3dPlugin: IdentifiedPluginDefinition = {
+export const fk3dPlugin: PluginDefinition = {
   id: "fk3d",
   inputs: {
     values: { kind: "record", fields: {} },

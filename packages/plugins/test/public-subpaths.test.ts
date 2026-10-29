@@ -102,9 +102,9 @@ describe("public plugin subpaths", () => {
   });
 
   it("L15 every approved catalog entry lazily loads its matching definition subpath", async () => {
-    const { identifiedCatalog } = await import("../src/identified-catalog");
-    expect([...identifiedCatalog.keys()].sort()).toEqual([...DEFINITION_SUBPATHS].sort());
-    for (const [name, descriptor] of identifiedCatalog) {
+    const { builtinCatalog } = await import("../src/builtin-catalog");
+    expect([...builtinCatalog.keys()].sort()).toEqual([...DEFINITION_SUBPATHS].sort());
+    for (const [name, descriptor] of builtinCatalog) {
       const definition = await descriptor.load();
       expect(definition.id).toBe(name);
     }

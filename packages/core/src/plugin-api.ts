@@ -2,7 +2,7 @@
  * The declared plugin-authoring surface. Re-exports only: the protocol and its exhaustive reader
  * keep their owners in core, while implementations depend on this entry. See ADR-133.
  *
- * A plugin authored against the identified-table contract names `IdentifiedPluginDefinition` until
+ * A plugin authored against the identified-table contract names `PluginDefinition` until
  * the mechanical rename lands, and registers through `PluginCatalog`.
  */
 export { PluginAdmissionError, PluginCatalog } from "./domain/plugin-catalog";
@@ -10,7 +10,7 @@ export type {
   DependencySpec,
   EvaluationContext,
   Outputs,
-  PluginDefinition as IdentifiedPluginDefinition,
+  PluginDefinition as PluginDefinition,
   ResolvedInput,
   ValueSpec,
 } from "./contract/v5";

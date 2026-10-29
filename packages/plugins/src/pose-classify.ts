@@ -1,6 +1,6 @@
 import {
   unreachable,
-  type IdentifiedPluginDefinition,
+  type PluginDefinition,
   type Outputs,
   type ValueSpec,
 } from "@motion5/core/plugin-api";
@@ -170,7 +170,7 @@ function lookupPoseRow(rows: readonly FrameRow[], id: string): PoseRowLookup {
  * This factory is deliberately absent from builtinCatalog: an app's descriptor may fetch weights
  * or templates inside its async load before returning this definition (ADR-138).
  */
-export function createPoseClassifyPlugin(options: PoseClassifyOptions): IdentifiedPluginDefinition {
+export function createPoseClassifyPlugin(options: PoseClassifyOptions): PluginDefinition {
   if (!isRecord(options)) throw new TypeError("Pose classifier options must be a record.");
   const name = nonEmptyString(options.name === undefined ? "pose-classify" : options.name, "name");
   if (!name.trim()) throw new TypeError("Pose classifier name must be a non-empty string.");

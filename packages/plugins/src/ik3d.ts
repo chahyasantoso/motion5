@@ -1,4 +1,4 @@
-import type { IdentifiedPluginDefinition, Outputs, ValueSpec } from "@motion5/core/plugin-api";
+import type { PluginDefinition, Outputs, ValueSpec } from "@motion5/core/plugin-api";
 import {
   BODY_3D_SLOT,
   EXTERNAL_BASE,
@@ -107,7 +107,7 @@ function outputRows(result: ReturnType<typeof solveChain3d>, members: readonly C
   });
 }
 
-export const ik3dPlugin: IdentifiedPluginDefinition = {
+export const ik3dPlugin: PluginDefinition = {
   id: "ik3d",
   inputs: {
     values: {

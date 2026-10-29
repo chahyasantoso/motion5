@@ -71,7 +71,7 @@ const allowedPublicExports = new Set([
   "PluginDefinition",
   "PluginCatalog",
   "PluginAdmissionError",
-  "IdentifiedPluginDefinition",
+  "PluginDefinition",
   "DependencySpec",
   "EvaluationContext",
   "Outputs",

@@ -1,15 +1,11 @@
-import {
-  isFlatRecord,
-  type IdentifiedPluginDefinition,
-  type ValueSpec,
-} from "@motion5/core/plugin-api";
+import { isFlatRecord, type PluginDefinition, type ValueSpec } from "@motion5/core/plugin-api";
 
 const POINT: ValueSpec = {
   kind: "table",
   schema: { row: { fields: { x: { kind: "number" }, y: { kind: "number" } } } },
 };
 
-export const transformPlugin: IdentifiedPluginDefinition = {
+export const transformPlugin: PluginDefinition = {
   id: "transform",
   inputs: {
     values: {

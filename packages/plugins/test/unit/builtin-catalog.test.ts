@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { PluginCatalog, type IdentifiedPluginDefinition } from "@motion5/core/plugin-api";
-import { identifiedCatalog } from "../../src/identified-catalog";
+import { PluginCatalog, type PluginDefinition } from "@motion5/core/plugin-api";
+import { builtinCatalog } from "../../src/builtin-catalog";
 
-const MINIMAL_PLUGIN: IdentifiedPluginDefinition = {
+const MINIMAL_PLUGIN: PluginDefinition = {
   id: "slice-a-test",
   inputs: {
     values: { kind: "record", fields: { value: { kind: "number" } } },
@@ -17,7 +17,7 @@ const MINIMAL_PLUGIN: IdentifiedPluginDefinition = {
 
 describe("identified plugin boundary", () => {
   it("contains the migrated identified transform definitions", async () => {
-    expect([...identifiedCatalog.keys()]).toEqual([
+    expect([...builtinCatalog.keys()]).toEqual([
       "transform",
       "transform3d",
       "ik",
@@ -25,7 +25,7 @@ describe("identified plugin boundary", () => {
       "fk",
       "fk3d",
     ]);
-    const descriptor = identifiedCatalog.get("transform");
+    const descriptor = builtinCatalog.get("transform");
     expect(descriptor).toBeDefined();
     const definition = await descriptor?.load();
     expect(definition?.id).toBe("transform");

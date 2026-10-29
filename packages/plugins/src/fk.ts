@@ -1,5 +1,5 @@
 import { unreachable } from "@motion5/core/plugin-api";
-import type { IdentifiedPluginDefinition, Outputs } from "@motion5/core/plugin-api";
+import type { PluginDefinition, Outputs } from "@motion5/core/plugin-api";
 import {
   BODY_2D_SLOT,
   POSE_2D_SPEC,
@@ -75,7 +75,7 @@ function solveRotation(lookup: SolvedRowLookup): number {
   }
 }
 
-export const fkPlugin: IdentifiedPluginDefinition = {
+export const fkPlugin: PluginDefinition = {
   id: "fk",
   inputs: {
     values: { kind: "record", fields: {} },
