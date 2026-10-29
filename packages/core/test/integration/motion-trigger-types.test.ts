@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { MotionDefinition, TriggerSignal } from "../../src/contract/v5";
 import { Motion } from "../../src/domain/motion";
-import { Track } from "../../src/domain/track";
+import { Track } from "../support/track";
 import { Engine } from "../../src/engine";
 import type { ScrollSource } from "../../src/adapters/scroll-trigger";
 import { createTriggerFactory } from "../../src/adapters/trigger-factory/default";

@@ -110,14 +110,11 @@ export type { SchemaTransaction } from "./contract/schema-transaction";
  * ADR-078.
  */
 export type { ValueTransaction } from "./contract/value-transaction";
-export { PluginRegistry } from "./domain/plugins";
-export type { PluginDefinition, PluginStage, ResolvedPlugins } from "./domain/plugins";
 /**
  * The identified-table plugin registry and its admission refusal.
  *
- * The grouped `PluginRegistry` above keeps its name until Phase 7 deletes it. A host opts into the
- * new path by passing `PluginCatalog` as `EngineOptions.plugins`; the two registries share the
- * `PluginCapabilities` port and nothing else.
+ * `EngineOptions.plugins` takes one of these. The definition type is still exported as the
+ * identified alias until the mechanical rename lands.
  */
 export { PluginAdmissionError, PluginCatalog } from "./domain/plugin-catalog";
 export type {

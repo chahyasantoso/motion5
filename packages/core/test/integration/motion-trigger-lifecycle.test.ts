@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { Motion } from "../../src/domain/motion";
-import { Track } from "../../src/domain/track";
+import { Track } from "../support/track";
 import { createManualClock } from "../../src/ports/clock";
 import {
   createFakeInterpolator,

@@ -4,7 +4,6 @@ import { describe, expect, it } from "vitest";
 import { Engine, PluginCatalog, createManualClock, type ProjectDefinition } from "@motion5/core";
 import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/testing";
 import { identifiedCatalog } from "../../src/identified-catalog";
-import { builtinCatalog } from "../../src/catalog";
 import { fkPlugin } from "../../src/fk";
 import { ikPlugin } from "../../src/ik";
 
@@ -12,10 +11,10 @@ const PLUGINS_PKG = resolve(import.meta.dirname, "../../package.json");
 const PENDING_PATH = resolve(import.meta.dirname, "../../../../test/pending.json");
 
 describe("Phase 5 closeout and rig retirement (AQ)", () => {
-  it("AQ-1 public manifest package.json contains neither ./rig nor ./internal/legacy/rig", () => {
+  it("AQ-1 public manifest package.json contains no rig and no legacy layer", () => {
     const pkg = JSON.parse(readFileSync(PLUGINS_PKG, "utf8"));
     expect(pkg.exports["./rig"]).toBeUndefined();
-    expect(pkg.exports["./internal/legacy/rig"]).toBeUndefined();
+    expect(Object.keys(pkg.exports).filter((key) => key.includes("legacy"))).toEqual([]);
     expect(pkg.exports["./fk"]).toBeDefined();
     expect(pkg.exports["./ik"]).toBeDefined();
     expect(pkg.exports["./transform"]).toBeDefined();
@@ -33,18 +32,6 @@ describe("Phase 5 closeout and rig retirement (AQ)", () => {
       "ik3d",
       "fk",
       "fk3d",
-    ]);
-  });
-
-  it("AQ-3 builtin catalog deletion: rig is absent and surviving keys match", () => {
-    expect(builtinCatalog.has("rig")).toBe(false);
-    expect([...builtinCatalog.keys()]).toEqual([
-      "transform",
-      "fk",
-      "ik",
-      "transform3d",
-      "fk3d",
-      "ik3d",
     ]);
   });
 
@@ -187,14 +174,14 @@ describe("Phase 5 closeout and rig retirement (AQ)", () => {
     expect(pkg.exports["./rig"]).toBeUndefined();
   });
 
-  it("AQ-11 pending ledger Phase 6 and 7 preservation: exactly 2 entries remain", () => {
+  it("AQ-11 pending ledger Phase 6 and 7 preservation: exactly 1 entry remains", () => {
     const pending = JSON.parse(readFileSync(PENDING_PATH, "utf8")) as readonly {
       readonly path: string;
       readonly phase: number;
     }[];
-    expect(pending.length).toBe(2);
+    expect(pending.length).toBe(1);
     expect(pending.filter((e) => e.phase === 6).length).toBe(0);
-    expect(pending.filter((e) => e.phase === 7).length).toBe(2);
+    expect(pending.filter((e) => e.phase === 7).length).toBe(1);
     expect(pending.every((e) => e.phase === 6 || e.phase === 7)).toBe(true);
   });
 

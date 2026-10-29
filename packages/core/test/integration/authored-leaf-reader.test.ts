@@ -31,7 +31,6 @@ const READ_SITES = [
   "contract/validate-v5.ts",
   "contract/keyframe-shape.ts",
   "contract/keyframe-compiler.ts",
-  "domain/plugins.ts",
   "testing/fakes.ts",
 ];
 

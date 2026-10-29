@@ -21,7 +21,7 @@ const RUNTIME_SOURCE = fileURLToPath(
 );
 
 /**
- * The fifteen fields the four ports replace, spelled as the class actually read them.
+ * The fourteen fields the four ports replace, spelled as the class actually read them.
  *
  * Every entry is a read rather than a bare name, and that is not decoration. `#stageTrack` is a
  * prefix of `#stageTracks`, which survives and always did: it copies the retained track map on a
@@ -34,7 +34,6 @@ const RETIRED = [
   "this.#compileTrack?.",
   "this.#disposeTrack?.",
   "this.#stageTrack?.",
-  "this.#resolveKeyframes?.",
   "this.#addMotionTrack?.",
   "this.#replaceMotionTrack?.",
   "this.#removeMotionTrack?.",
@@ -47,7 +46,7 @@ const RETIRED = [
 ];
 
 /**
- * The same fifteen as declarations, which the reads above cannot see once nothing reads them.
+ * The same fourteen as declarations, which the reads above cannot see once nothing reads them.
  *
  * A retired field whose every call site moved is invisible to a call-site check and is still a dead
  * declaration holding a hook alive, so the two questions are asked separately rather than one being
@@ -61,7 +60,6 @@ const RETIRED_DECLARATIONS = [
   "#compileTrack:",
   "#disposeTrack:",
   "#stageTrack:",
-  "#resolveKeyframes:",
   "#addMotionTrack:",
   "#replaceMotionTrack:",
   "#removeMotionTrack:",
@@ -74,7 +72,7 @@ const RETIRED_DECLARATIONS = [
 ];
 
 /**
- * The fourteen seams that resolve an option directly, each as the pair one line has to spell.
+ * The thirteen seams that resolve an option directly, each as the pair one line has to spell.
  *
  * A set of default reads was the first correction, and it is not the whole one. It refuses a
  * missing, duplicated or extra default, which is the defect a count could not see, and it still
@@ -100,7 +98,6 @@ const SEAMS: readonly (readonly [option: string, absent: string])[] = [
   ["overlayValues", "NO_PORTS.value.overlay"],
   ["rewriteValues", "NO_PORTS.value.rewrite"],
   ["setProgress", "NO_PORTS.value.seek"],
-  ["resolveKeyframes", "NO_PORTS.host.resolveKeyframes"],
   ["disposeComposition", "NO_PORTS.host.disposeComposition"],
 ];
 
@@ -169,8 +166,8 @@ describe("the project ports", () => {
   it("states every uninstalled seam once, as a call that answers nothing", () => {
     const ports = leaves();
 
-    // Sixteen, which is the count the constructor resolves and the count the class used to declare.
-    expect(ports).toHaveLength(16);
+    // Fifteen, which is the count the constructor resolves and the count the class used to declare.
+    expect(ports).toHaveLength(15);
     expect(ports.every((port) => typeof port === "function")).toBe(true);
     expect(ports.every((port) => (port as () => unknown)() === undefined)).toBe(true);
   });
@@ -239,7 +236,8 @@ describe("the project ports", () => {
 
     expect(RETIRED.filter((name) => source.includes(name))).toEqual([]);
     expect(RETIRED_DECLARATIONS.filter((name) => source.includes(name))).toEqual([]);
-    // And holds the one field that replaced all fifteen, so none of them merely moved.    expect(source).toContain("readonly #ports: ProjectPorts;");
+    // And holds the one field that replaced all fourteen, so none of them merely moved.
+    expect(source).toContain("readonly #ports: ProjectPorts;");
   });
 
   it("resolves every seam once at construction, from its own option to its own default", () => {
@@ -253,7 +251,7 @@ describe("the project ports", () => {
     // set that still holds. Sorted, because the order the constructor resolves them in is its own.
     expect([...wired].sort()).toEqual([...declared].sort());
     expect(new Set(wired).size).toBe(wired.length);
-    // Fourteen resolved defaults and two normalized completions are the sixteen seams, once each.
+    // Thirteen resolved defaults and two normalized completions are the fifteen seams, once each.
     expect(callSites(source, "completing")).toHaveLength(2);
   });
 

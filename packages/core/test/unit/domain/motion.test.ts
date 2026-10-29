@@ -7,7 +7,7 @@ import {
 } from "../../../src/testing/fakes";
 import { createManualClock } from "../../../src/ports/clock";
 import { Motion } from "../../../src/domain/motion";
-import { Track } from "../../../src/domain/track";
+import { Track } from "../../support/track";
 
 function createMotion(stagger = 0, duration?: number, disposeTracks = false) {
   const clock = createManualClock();

@@ -6,7 +6,7 @@ import {
   type PublisherSnapshot,
 } from "../../src/runtime/graph-publisher";
 import { PatchRegistry } from "../../src/runtime/patch-registry";
-import { Track } from "../../src/domain/track";
+import { Track } from "../support/track";
 import type { Interpolator } from "../../src/ports/interpolator";
 import { slotOf } from "../helpers/requirement-inputs";
 import { recordValues } from "../support/v5-builders";
@@ -138,17 +138,12 @@ describe("P2 runtime smell hardening", () => {
       throw new Error(`consumer is ${consumerPatch?.status ?? "absent"}, not blocked.`);
     expect(consumerPatch.diagnostics[0]?.ids).toEqual(["a", "consumer"]);
   });
-  it("rejects host objects from interpolator state at the renderer edge", () => {
-    const { interpolator } = fakeInterpolator({ host: new Date(0) });
-    const track = new Track({ interpolator, nodeId: "~/smell-test" });
-    expect(() => track.compose()).toThrow(/renderer-neutral/);
-  });
   it("kills a timeline exactly once when a Track is disposed repeatedly", () => {
     const { interpolator, kill } = fakeInterpolator();
     const track = new Track({ interpolator, nodeId: "~/smell-test" });
     track.dispose();
     track.dispose();
     expect(kill).toHaveBeenCalledOnce();
-    expect(() => track.compose()).toThrow(/disposed/);
+    expect(() => track.interpolated()).toThrow(/disposed/);
   });
 });

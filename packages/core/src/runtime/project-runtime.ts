@@ -1,6 +1,5 @@
 // Docs: ./project-runtime.md
 import type {
-  GroupedTrackDefinition,
   PatchBatch,
   ProjectDefinition,
   TrackDefinition,
@@ -16,8 +15,6 @@ import { validateMotionTrigger, validateTrackDefinition } from "../contract/vali
 import type { ParsedValues } from "../contract/v5-parse";
 import type { Clock, ClockTick } from "../ports/clock";
 import type { Scheduler } from "../ports/scheduler";
-import { trackConfigView, type ResolvedPlugins } from "../domain/plugins";
-import { sameCompiledTrackInput } from "../domain/authoring/recompile";
 import { qualifyFreeTrack, qualifyMotionTrack } from "../graph/ids";
 import { describeError } from "./schema-refusals";
 import {
@@ -48,7 +45,6 @@ import {
   NO_PORTS,
   completing,
   installed,
-  type KeyframeResolver,
   type ProjectPorts,
   type StagedTrack,
 } from "./project-ports";
@@ -95,7 +91,7 @@ import { unreachable } from "../lang/exhaustive";
 
 interface FreeTrackEntry {
   readonly kind: "free";
-  readonly track: GroupedTrackDefinition;
+  readonly track: TrackDefinition;
   readonly token: number;
   readonly valueState: ValueState;
   /**
@@ -111,7 +107,7 @@ interface FreeTrackEntry {
 
 interface OwnedTrackEntry {
   readonly kind: "owned";
-  readonly track: GroupedTrackDefinition;
+  readonly track: TrackDefinition;
   readonly motionId: string;
   readonly token: number;
   readonly valueState: ValueState;
@@ -189,7 +185,7 @@ function resolveStagedPair(
   }
 }
 
-export type { KeyframeResolver, StagedTrack };
+export type { StagedTrack };
 export interface ProjectRuntimeOptions {
   readonly clock: Clock;
   readonly scheduler?: Scheduler;
@@ -224,15 +220,6 @@ export interface ProjectRuntimeOptions {
   readonly compileTrack?: (track: TrackDefinition, nodeId?: string) => void;
   readonly disposeTrack?: (nodeId: string) => void;
   readonly stageTrack?: (track: TrackDefinition, nodeId: string) => StagedTrack;
-  /**
-   * The registry's own answer about one authored record, as data rather than as a refusal.
-   *
-   * Optional, because a project may be loaded with no `PluginRegistry` at all, and total when it is
-   * present. With no seam every replacement builds, which keeps every prior registry-free rig
-   * byte-identical. The second parameter is a diagnostics path rather than a node id, spelled exactly
-   * as `compileTrack` spells it, which is the signature ADR-062 named. See ADR-062.
-   */
-  readonly resolveKeyframes?: KeyframeResolver;
   readonly addMotionTrack?: (motionId: string, trackId: string, duration?: number) => void;
   readonly replaceMotionTrack?: (motionId: string, trackId: string, duration?: number) => void;
   readonly removeMotionTrack?: (motionId: string, trackId: string) => void;
@@ -339,7 +326,6 @@ export class ProjectRuntime {
         seek: installed(this, options.setProgress, NO_PORTS.value.seek),
       }),
       host: Object.freeze({
-        resolveKeyframes: installed(this, options.resolveKeyframes, NO_PORTS.host.resolveKeyframes),
         disposeComposition: installed(
           this,
           options.disposeComposition,
@@ -779,29 +765,6 @@ export class ProjectRuntime {
     return new RuntimeTrackHandle(this.#handleHost.track, id, token);
   }
 
-  #resolve(nodeId: string, track: GroupedTrackDefinition): ResolvedPlugins | undefined {
-    return this.#ports.host.resolveKeyframes(
-      track.keyframes ?? {},
-      `${nodeId}.keyframes`,
-      trackConfigView(nodeId, track.duration),
-    );
-  }
-
-  #needsTimelineBuild(
-    nodeId: string,
-    current: GroupedTrackDefinition,
-    candidate: GroupedTrackDefinition,
-  ): boolean {
-    const resolved = this.#resolve(nodeId, candidate);
-    if (resolved === undefined) return true;
-    if (resolved.diagnostics.some(({ severity }) => severity === "error"))
-      refuse({ kind: "invalid-definition", diagnostics: resolved.diagnostics });
-    return !sameCompiledTrackInput(
-      { definition: current, resolved: this.#resolve(nodeId, current) },
-      { definition: candidate, resolved },
-    );
-  }
-
   // The committed or staged view a structural plan reads, projected as plain data. `authoredIndex`
   // is recomputed from insertion order rather than stored, because it is a position in a motion's
   // authored track list and an edit that removes or replaces may move the ones after it.
@@ -1023,13 +986,7 @@ export class ProjectRuntime {
         if (!tracks.has(id)) readers.set(id, this.#readersOf(id));
       for (const [id, entry] of tracks) {
         const old = this.#tracks.get(id);
-        if (
-          old !== undefined &&
-          old.track !== entry.track &&
-          !noBuild.has(id) &&
-          this.#needsTimelineBuild(id, old.track, entry.track)
-        )
-          needsBuild.add(id);
+        if (old !== undefined && old.track !== entry.track && !noBuild.has(id)) needsBuild.add(id);
       }
       const commit = planCommit(
         { tracks: this.#tracks, motions: this.#motions },

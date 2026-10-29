@@ -164,40 +164,12 @@
       "test": "packages/core/test/unit/runtime/patch-registry-listener-snapshot.test.ts"
     },
     {
-      "id": "s5-contribution-completeness",
-      "test": "packages/core/test/unit/domain/plugin-contribution-completeness.test.ts"
-    },
-    {
-      "id": "s5-product-path",
-      "test": "packages/core/test/integration/engine-x3-contribution.test.ts"
-    },
-    {
-      "id": "s6-unsupported-use",
-      "test": "packages/core/test/integration/plugin-use-contract.test.ts"
-    },
-    {
-      "id": "x3-key-ownership",
-      "test": "packages/core/test/unit/domain/plugins.test.ts"
-    },
-    {
-      "id": "x3-contribution-cascade",
-      "test": "packages/core/test/unit/domain/plugin-contribution-completeness.test.ts"
-    },
-    {
-      "id": "x3-order-independence",
-      "test": "packages/core/test/unit/domain/s7-plugin-evidence.test.ts"
-    },
-    {
       "id": "p0-3-sparse-percent-map",
       "test": "packages/core/test/contract/gsap-sparse-percent-map.test.ts"
     },
     {
       "id": "p0-3-ease-collision",
       "test": "packages/core/test/contract/gsap-sparse-percent-map.test.ts"
-    },
-    {
-      "id": "s7-plugin-evidence",
-      "test": "packages/core/test/unit/domain/s7-plugin-evidence.test.ts"
     },
     {
       "id": "s7-audit-workflow",
@@ -228,10 +200,6 @@
       "test": "packages/core/test/integration/trigger-time-loop.test.ts"
     },
     {
-      "id": "track-node-id",
-      "test": "packages/core/test/unit/domain/track-node-id.test.ts"
-    },
-    {
       "id": "resolve-solvers",
       "test": "packages/plugins/test/integration/ik-aggregate.test.ts"
     },
@@ -245,11 +213,11 @@
     },
     {
       "id": "ik-result",
-      "test": "packages/plugins/test/unit/ik-result.test.ts"
+      "test": "packages/plugins/test/integration/ik-aggregate.test.ts"
     },
     {
       "id": "fk-solver-override",
-      "test": "packages/plugins/test/unit/fk-solver-override.test.ts"
+      "test": "packages/plugins/test/integration/fk-aggregate.test.ts"
     },
     {
       "id": "publisher-solver-members",
@@ -297,7 +265,7 @@
     },
     {
       "id": "fk-solved-weight",
-      "test": "packages/plugins/test/unit/fk-solved-weight.test.ts"
+      "test": "packages/plugins/test/integration/fk-aggregate.test.ts"
     },
     {
       "id": "solved-rotation-weight",

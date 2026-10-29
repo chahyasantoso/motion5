@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { readGoals, readSolveMembers } from "../../src/ik-chain";
+import { readSolveMembers } from "../../src/ik-chain";
 import { solveTwoBone } from "../../src/ik-analytic";
-import { legacyIkPlugin as ikPlugin } from "@motion5/plugins/internal/legacy/ik";
 import { solveChain } from "../../src/ik-solve";
 
 // Slice D3 of issue #195: the dispatcher, and what it is not allowed to change.
@@ -73,7 +72,7 @@ describe("the solve dispatches on derived shape (Slice D3)", () => {
     // FABRIK would be caught by the convention rather than only by the byte comparison above.
     const solved = solveChain(
       ROOT,
-      readSolveMembers(AUTHORED_ARM, readGoals(HAND, AUTHORED_ARM)),
+      readSolveMembers(AUTHORED_ARM, new Map([[FOREARM, HAND]])),
       false,
     ).rotations;
     expect(solved[UPPER]).toBeCloseTo(40.168, 3);
@@ -92,75 +91,5 @@ describe("the solve dispatches on derived shape (Slice D3)", () => {
     expect(JSON.stringify(addressed)).toEqual(
       JSON.stringify(solveTwoBone(ROOT, HAND, ARM[0]!, ARM[1]!, false).rotations),
     );
-  });
-
-  it("FB-13 an unopted solve that does not converge publishes rotations and nothing else", () => {
-    // The decision this slice owns, and it fails by producing something rather than by erroring.
-    //
-    // `solveFabrik` reports a quality kind and residual because absorbing them would tell a caller to
-    // raise a cap that is not the problem, and since issue #349's second phase the closed form states
-    // one too. Publishing either is a different question: `FB-9`'s byte identity would not survive
-    // the extra key, and roughly four percent of ordinary reachable rigs miss tolerance before the
-    // cap, so a per-tick report would fire on rigs nobody would call broken. `pivots` and `tips` stay
-    // FABRIK's own, so publishing them would also make a patch shape a function of arity. A bare
-    // quality flag is also the C review's Blocker 1 waiting to happen again:
-    // `renderableValues` skips a plain record and a scalar falls through to `target[key] = value`.
-    // ADR-109's opt-in `inspection` is a record for exactly that reason, and it appears only when
-    // authored, so this unopted case still publishes rotations and nothing else.
-    const tail = [
-      authoredBone("rig/t1", "rig/hip", 30),
-      authoredBone("rig/t2", "rig/t1", 30),
-      authoredTip("rig/t3", "rig/t2", 30, { x: 900, y: 300, rotation: 0 }),
-    ];
-
-    const composed = ikPlugin.compose(
-      { flip: false },
-      0,
-      { root: ROOT, members: tail },
-      "rig/tail-solve",
-    );
-
-    expect(Object.keys(composed).sort()).toEqual(["flip", "rotations"]);
-    const rotations = composed.rotations as unknown as Readonly<Record<string, number>>;
-    expect(Object.keys(rotations).sort()).toEqual(["rig/t1", "rig/t2", "rig/t3"]);
-    for (const value of Object.values(rotations)) expect(Number.isFinite(value)).toBe(true);
-
-    // And the unopted shape is the one the analytic path publishes, so arity is invisible to a
-    // consumer.
-    const analytic = ikPlugin.compose(
-      { flip: false },
-      0,
-      { root: ROOT, target: HAND, members: AUTHORED_ARM },
-      "walker/arm-solve",
-    );
-    expect(Object.keys(analytic).sort()).toEqual(Object.keys(composed).sort());
-  });
-
-  it("FB-15 the bare target slot is joined onto the chain's one leaf, and refused past one", () => {
-    // `target` names no member, so something has to say which member it is a goal for. The leaf is
-    // the only answer, and it is derived from the `base` fields the publisher already joined on
-    // rather than from a second walk of the graph.
-    const goals = readGoals(HAND, AUTHORED_ARM);
-    expect([...goals.keys()]).toEqual([FOREARM]);
-    expect(goals.get(FOREARM)).toEqual(HAND);
-
-    // A goal dict needs no target to read, and a member with no goal contributes none.
-    expect([...readGoals(undefined, AUTHORED_ADDRESSED_ARM).keys()]).toEqual([FOREARM]);
-    expect(readGoals(undefined, AUTHORED_ARM).size).toBe(0);
-
-    // Two leaves and one bare target has no answer, and `ik-target-not-single-leaf` refuses the rig
-    // at load, so this is the invariant guard behind that rule rather than a validation step. It
-    // throws instead of picking a leaf, because a binding applied to an arbitrary member is the
-    // shape ADR-033 rule 6 forbids.
-    expect(() =>
-      readGoals(HAND, [
-        authoredBone("rig/left", "rig/hip", 40),
-        authoredBone("rig/right", "rig/hip", 40),
-      ]),
-    ).toThrow(/2 leaves/);
-
-    // A solve with no goal at all is thrown rather than answered with the seed pose, which would
-    // publish a rig reaching for nothing with status `ready`.
-    expect(() => solveChain(ROOT, ARM, false)).toThrow(/at least one goal/);
   });
 });

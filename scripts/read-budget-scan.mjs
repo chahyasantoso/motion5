@@ -113,7 +113,6 @@ export const SISTER_DOC_PENDING = [];
  */
 export const CITATION_PENDING = [
   { path: "packages/core/src/contract/validate-v5.ts", issue: 362 },
-  { path: "packages/core/src/domain/plugins.ts", issue: 362 },
   { path: "packages/core/src/engine.ts", issue: 362 },
   { path: "packages/core/src/graph/ir.ts", issue: 362 },
 ];

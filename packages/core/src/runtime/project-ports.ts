@@ -1,6 +1,5 @@
 import type { MotionDefinition, TrackDefinition, TriggerSignal, Value } from "../contract/v5";
 import type { ParsedValues } from "../contract/v5-parse";
-import type { ResolvedPlugins, TrackConfigView } from "../domain/plugins";
 
 /**
  * Every seam a loaded project reaches, as four total records rather than fifteen maybe-functions.
@@ -49,30 +48,6 @@ export interface ValuePort {
   readonly seek: (nodeId: string, progress: number) => void;
 }
 
-/**
- * How this layer asks what an authored record resolves to.
- *
- * One hook, one implementation: `PluginRegistry.resolveForKeyframes` stays the only owner of key
- * ownership, slot declaration and the plugin chain, and this runtime depends on a function rather
- * than on a registry it has no other reason to hold. See ADR-062.
- */
-export type KeyframeResolver = (
-  keyframes: Readonly<Record<string, unknown>>,
-  path: string,
-  track: TrackConfigView,
-) => ResolvedPlugins;
-
-/**
- * The resolver as a port: the same question, with the answer a project holding no registry gives.
- *
- * `undefined` is not an error and not an empty resolution. It means nothing here can judge the
- * record, so every replacement builds, which is what keeps a registry-free rig byte-identical.
- * Spelled through `Parameters` so the argument list still has exactly one owner above. See ADR-062.
- */
-export type OptionalKeyframeResolver = (
-  ...args: Parameters<KeyframeResolver>
-) => ResolvedPlugins | undefined;
-
 /** What one node's compiled Track costs: building it, replacing it, and releasing it. */
 export interface TrackPort {
   readonly compile: (track: TrackDefinition, nodeId?: string) => void;
@@ -117,9 +92,8 @@ export interface ValuePort {
   readonly seek: (nodeId: string, progress: number) => void;
 }
 
-/** The two seams that belong to the host rather than to any node or Motion. */
+/** The seams that belong to the host rather than to any node or Motion. */
 export interface HostPort {
-  readonly resolveKeyframes: OptionalKeyframeResolver;
   readonly disposeComposition: () => void;
 }
 
@@ -155,7 +129,7 @@ export const NO_PORTS: ProjectPorts = Object.freeze({
     signal: NOTHING,
   }),
   value: Object.freeze<ValuePort>({ rewrite: NOTHING, overlay: NOTHING, seek: NOTHING }),
-  host: Object.freeze<HostPort>({ resolveKeyframes: NOTHING, disposeComposition: NOTHING }),
+  host: Object.freeze<HostPort>({ disposeComposition: NOTHING }),
 });
 
 /**

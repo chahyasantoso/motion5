@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { ProjectDefinition, Table } from "../../src/contract/v5";
 import { Engine } from "../../src/engine";
 import { Motion } from "../../src/domain/motion";
-import { Track } from "../../src/domain/track";
+import { Track } from "../support/track";
 import { createManualClock } from "../../src/ports/clock";
 import {
   createFakeInterpolator,

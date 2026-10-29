@@ -1,18 +1,8 @@
-import type { FlatRecord } from "../../src/contract/v5";
-import type { RequirementInputs } from "../../src/domain/plugins";
+/** One plugin's scoped slots in a publisher composition, as the grouped input channel delivers them. */
+export type ScopedInputs = Readonly<Record<string, Readonly<Record<string, unknown>>>>;
+type ScalarRecord = Readonly<Record<string, number | string | boolean>>;
 
-/** The values one requirement slot resolved to, as a plain record. */
-export type SlotValues = FlatRecord;
-
-/**
- * Reads one plugin's requirement slot out of a composition's scoped inputs, or `{}` when the slot
- * is unbound.
- *
- * One owner, because every publisher case in this suite asks the same question and a per-file copy
- * would let two of them disagree about what an unbound slot looks like.
- */
-export function slotOf(inputs: RequirementInputs, plugin: string, slot: string): SlotValues {
-  const scoped: unknown = inputs[plugin]?.[slot];
-  if (scoped === null || typeof scoped !== "object" || Array.isArray(scoped)) return {};
-  return scoped as SlotValues;
+/** The values one plugin's slot received, or an empty scope when the slot did not arrive. */
+export function slotOf(inputs: ScopedInputs, plugin: string, slot: string): ScalarRecord {
+  return (inputs[plugin]?.[slot] ?? {}) as ScalarRecord;
 }

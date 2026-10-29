@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { legacyIkPlugin as ikPlugin } from "@motion5/plugins/internal/legacy/ik";
 import { readMembers } from "../../src/ik-chain";
 import { solveTwoBone } from "../../src/ik-analytic";
 import type { WorldFrame } from "../../src/frame";
@@ -150,33 +149,5 @@ describe("ikPlugin and solveTwoBone (Slice C3)", () => {
   it("IK-5 readMembers throws when inputs.members is absent", () => {
     expect(() => readMembers(undefined)).toThrow();
     expect(() => readMembers({})).toThrow();
-  });
-
-  it("IK-18 compose returns the solver's own values beside rotations", () => {
-    const composed = ikPlugin.compose(
-      { flip: true },
-      0,
-      {
-        root: { x: 200, y: 300, rotation: 0 },
-        target: { x: 320, y: 340, rotation: 0 },
-        members: [
-          { id: UPPER_ARM, base: "walker/shoulder", values: { length: 80 }, progress: 0 },
-          { id: FOREARM, base: UPPER_ARM, values: { length: 60 }, progress: 0 },
-        ],
-      },
-      "walker/arm-solve",
-    );
-
-    // `Track.composeFrom` chains by replacement, so a bare `{ rotations }` return deletes every key
-    // this track authored. `flip` is the one `ik` reads itself, so the solver's own configuration
-    // vanishes from its published patch with no error and no diagnostic, and so does anything a
-    // co-authored plugin contributed beside it on the same node. See ADR-051.
-    expect(composed.flip).toBe(true);
-    expect(composed.rotations).toBeDefined();
-
-    // And the record is the solve rather than an echo of the inputs: it is keyed by member id and
-    // answers for both members.
-    const rotations = composed.rotations as unknown as Readonly<Record<string, number>>;
-    expect(Object.keys(rotations).sort()).toEqual([FOREARM, UPPER_ARM]);
   });
 });

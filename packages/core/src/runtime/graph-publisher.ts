@@ -2,9 +2,17 @@ import { diagnostic } from "../contract/diagnostics";
 import type { Diagnostic, FlatRecord, Outputs, ResolvedRequires } from "../contract/v5";
 import { compareEdges, edgeRole, type GraphEdge, type GraphIR, type GraphNode } from "../graph/ir";
 import { firstPendingEdge } from "../graph/references";
-import { CompositionOutputError } from "../domain/track";
+/** One refusal of a composed value, named by the rule the publication owns. */
+class CompositionOutputError extends TypeError {
+  readonly ruleId = "composition-output-shape" as const;
+  constructor(message: string) {
+    super(message);
+    this.name = this.ruleId;
+  }
+}
+type PluginInputs = Readonly<Record<string, unknown>>;
+type RequirementInputs = Readonly<Record<string, PluginInputs>>;
 import { isImmutableLeaf } from "../domain/values";
-import type { RequirementInputs } from "../domain/plugins";
 import { PluginNodeError } from "./plugin-output";
 import { PatchRegistry, REENTRANT_BATCH_MESSAGE, type PatchBatch } from "./patch-registry";
 import {

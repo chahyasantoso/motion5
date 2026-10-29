@@ -1,14 +1,13 @@
-import type { PluginInputs } from "@motion5/core/plugin-api";
-import { legacyFk3dPlugin as fk3dPlugin } from "@motion5/plugins/internal/legacy/fk3d";
-import { readFrame3d, type WorldFrame3d } from "../../src/frame3d";
+import { composeWorld3d, type WorldFrame3d } from "../../src/frame3d";
+import { segmentExtent } from "../../src/frame";
 import { canonicalChain } from "../../src/ik-topology";
 import type { ChainMember3d } from "../../src/ik3d-chain";
 import type { SolveResult3d } from "../../src/ik3d-result";
 
 /**
- * Every member's published world frame, composed by `fk3d` itself from a 3D solve's local triples:
- * the independent witness a closure test reads, so no test measures a solve by the solve's own
- * arithmetic (issue #500 phase 5, ADR-122).
+ * Every member's published world frame, composed from a 3D solve's local triples by the same frame
+ * primitives `fk3d` composes with: the independent witness a closure test reads, so no test measures
+ * a solve by the solve's own arithmetic (issue #500 phase 5, ADR-122).
  *
  * Members are composed in canonical order, so a member always reads its base's frame whatever order
  * the caller listed them in; a base that names no member is the root. Each member composes at full
@@ -23,9 +22,16 @@ export function composeChain3d(
   const frames: Record<string, WorldFrame3d> = {};
   for (const id of ids) {
     const member = byId.get(id)!;
-    const inputs = { base: frames[member.base] ?? root, solver: result };
-    const values = { length: member.length, ...member.offset, ...member.rest };
-    frames[id] = readFrame3d(fk3dPlugin.compose(values, 1, inputs as PluginInputs, id));
+    const solved = result.rotations3d[id]!;
+    const pivot = composeWorld3d(frames[member.base] ?? root, { ...member.offset, ...solved });
+    frames[id] = composeWorld3d(pivot, {
+      x: segmentExtent(member.length),
+      y: 0,
+      z: 0,
+      rotation: 0,
+      rotationX: 0,
+      rotationY: 0,
+    });
   }
   return frames;
 }

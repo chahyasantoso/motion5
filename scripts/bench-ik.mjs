@@ -54,7 +54,7 @@ const { envelopeScenarios, independentRigsProject, rigTrackIds } = await import(
 const { envelope3dScenarios } = await import(support3d);
 const { solveChain } = await import(`${plugins}/ik-solve.ts`);
 const { solveChain3d } = await import(`${plugins}/ik3d-solve.ts`);
-const { PluginRegistry } = await import(`${src}/domain/plugins.ts`);
+const { PluginCatalog } = await import(`${src}/domain/plugin-catalog.ts`);
 const { Engine } = await import(`${src}/engine.ts`);
 const { createManualClock } = await import(`${src}/ports/clock.ts`);
 const { createFakeInterpolator, createFakeScheduler } = await import(`${src}/testing/fakes.ts`);
@@ -148,7 +148,7 @@ const solves3d = envelope3dScenarios(RIGS).map((scenario) => {
 
 /** One runtime with `count` independent two-bone rigs; a frame seeks every rig's goal once. */
 function engineScenario(count) {
-  const plugins = new PluginRegistry();
+  const plugins = new PluginCatalog();
   plugins.registerAll([transformPlugin, fkPlugin, ikPlugin]);
   const loadStart = performance.now();
   const runtime = new Engine({

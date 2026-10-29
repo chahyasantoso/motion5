@@ -119,21 +119,6 @@ describe("rule id enumeration", () => {
     expect([...new Set(uncovered)]).toEqual([]);
   });
 
-  it("finds the contribution scope site, so a passing scan is never an empty one", () => {
-    const withScope = sourceFiles().filter((file) => CONTRIBUTION_SCOPE.test(sourceOf(file)));
-    expect(withScope).toEqual([CONTRIBUTION_SCOPE_FILE]);
-  });
-
-  // The presence of the site was all this gate used to assert about the family the prefix mints, so
-  // a changed alias, a new alias or a newly reachable keyframe rule could emit an uncovered id while
-  // the gate stayed green. It asserts the derivation itself now: every id the reporter can produce
-  // for every rule it can report, through the one function the run time actually calls.
-  it("covers every id the contribution scope can report, rule by rule", () => {
-    const reported = KEYFRAME_RULE_IDS.map((name) => scopedRuleId("contribution", name));
-    expect(reported.filter((id) => !isRuleId(id))).toEqual([]);
-    expect([...reported]).toEqual([...CONTRIBUTION_RULE_IDS]);
-  });
-
   it("leaves an authored rule spelled as authored", () => {
     const reported = KEYFRAME_RULE_IDS.map((name) => scopedRuleId("authored", name));
     expect(reported).toEqual([...KEYFRAME_RULE_IDS]);

@@ -23,7 +23,6 @@ import { createDefaultTriggerFactory } from "./adapters/trigger-factory/default"
 import { Motion, type MotionTrackEntry } from "./domain/motion";
 import { unreachable } from "./lang/exhaustive";
 import { collect, report } from "./domain/completion";
-import { PluginRegistry } from "./domain/plugins";
 import type { PluginCatalog } from "./domain/plugin-catalog";
 import type { RenderMetadata } from "./ports/render-metadata";
 import { qualifyFreeTrack, qualifyMotionTrack } from "./graph/ids";
@@ -43,7 +42,7 @@ export interface EngineOptions {
   readonly clock: Clock;
   readonly interpolator: Interpolator;
   readonly scheduler: Scheduler;
-  readonly plugins?: PluginRegistry | PluginCatalog;
+  readonly plugins?: PluginCatalog;
   readonly triggerFactory?: TriggerFactory;
 }
 export interface ProjectHandle {

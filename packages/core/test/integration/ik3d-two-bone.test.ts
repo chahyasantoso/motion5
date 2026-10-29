@@ -529,11 +529,7 @@ describe("3D seam through engine and DOM", () => {
         },
       ],
     };
-    console.log(
-      "DIAG:",
-      buildGraphIR(misplacedPoseProject as ProjectDefinition, builtinRegistry()).diagnostics,
-    );
-    expect(refusedRuleIds(misplacedPoseProject as ProjectDefinition)).toEqual([]);
+    expect(refusedRuleIds(misplacedPoseProject as ProjectDefinition)).toEqual(["slot-unknown"]);
 
     const singleBoneBody = [
       { id: "upper", cells: { length: 80, rotation: 0, rotationX: 0, rotationY: 0 } },

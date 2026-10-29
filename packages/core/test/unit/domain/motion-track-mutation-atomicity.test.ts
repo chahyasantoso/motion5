@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { Motion, type MotionTrackEntry } from "../../../src/domain/motion";
-import { Track } from "../../../src/domain/track";
+import { Track } from "../../support/track";
 import { createManualClock } from "../../../src/ports/clock";
 import type { InterpolationTimeline, Interpolator } from "../../../src/ports/interpolator";
 import {

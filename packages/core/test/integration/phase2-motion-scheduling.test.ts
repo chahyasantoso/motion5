@@ -8,7 +8,7 @@ import {
   createFakeTrackRegistry,
 } from "../../src/testing/fakes";
 import { Motion } from "../../src/domain/motion";
-import { Track } from "../../src/domain/track";
+import { Track } from "../support/track";
 import { record } from "../support/v5-builders";
 
 function isTable(value: unknown): value is Table {

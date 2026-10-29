@@ -35,37 +35,9 @@
       "types": "./dist/ik3d.d.ts",
       "default": "./dist/ik3d.js"
     },
-    "./internal/legacy/transform": {
-      "types": "./dist/legacy/transform.d.ts",
-      "default": "./dist/legacy/transform.js"
-    },
-    "./internal/legacy/transform3d": {
-      "types": "./dist/legacy/transform3d.d.ts",
-      "default": "./dist/legacy/transform3d.js"
-    },
-    "./internal/legacy/fk": {
-      "types": "./dist/legacy/fk.d.ts",
-      "default": "./dist/legacy/fk.js"
-    },
-    "./internal/legacy/fk3d": {
-      "types": "./dist/legacy/fk3d.d.ts",
-      "default": "./dist/legacy/fk3d.js"
-    },
-    "./internal/legacy/ik": {
-      "types": "./dist/legacy/ik.d.ts",
-      "default": "./dist/legacy/ik.js"
-    },
-    "./internal/legacy/ik3d": {
-      "types": "./dist/legacy/ik3d.d.ts",
-      "default": "./dist/legacy/ik3d.js"
-    },
     "./frame3d": {
       "types": "./dist/frame3d.d.ts",
       "default": "./dist/frame3d.js"
-    },
-    "./catalog": {
-      "types": "./dist/catalog.d.ts",
-      "default": "./dist/catalog.js"
     },
     "./loader": {
       "types": "./dist/loader.d.ts",

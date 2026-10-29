@@ -1,31 +1,30 @@
 /**
- * Demand-driven loading for approved plugin definitions.
+ * Demand-driven loading for approved identified plugin definitions.
  *
- * Native imports cannot be aborted. A caller that no longer needs the result may ignore it; a late
- * ensure is harmless because definitions are immutable, each registry is rechecked immediately
- * before commit, and registerAll admits the final batch atomically. The catalog is copied once so
- * later host-map edits cannot alter approved names or dependency edges. See ADR-135.
+ * A project names plugins by `track.plugin`; the loader resolves only those ids from the approved
+ * catalog, loads each one once, and admits the batch into a `PluginCatalog` atomically. Native
+ * imports cannot be aborted, so a late ensure is harmless: definitions are immutable and the
+ * registry rechecks every id immediately before commit. See ADR-135.
  */
 import {
+  PluginCatalog,
   validateTrackDefinition,
   validateV5,
   type Diagnostic,
-  type GroupedTrackDefinition,
-  type PluginDefinition,
-  type PluginRegistry,
   type ProjectDefinition,
+  type TrackDefinition,
 } from "@motion5/core";
-import { unreachable } from "@motion5/core/plugin-api";
+import { unreachable, type IdentifiedPluginDefinition } from "@motion5/core/plugin-api";
 
 export interface PluginDescriptor {
-  readonly load: () => Promise<PluginDefinition>;
-  /** Register this with the plugin although no authored group names it (for example, prepare-stage). */
+  readonly load: () => Promise<IdentifiedPluginDefinition>;
+  /** Register this with the plugin although no authored track names it. */
   readonly dependencies?: readonly string[];
 }
-export type PluginCatalog = ReadonlyMap<string, PluginDescriptor>;
+export type PluginCatalogSource = ReadonlyMap<string, PluginDescriptor>;
 export type PluginDemand =
   | { readonly kind: "project"; readonly project: ProjectDefinition }
-  | { readonly kind: "tracks"; readonly tracks: readonly GroupedTrackDefinition[] };
+  | { readonly kind: "tracks"; readonly tracks: readonly TrackDefinition[] };
 export type PluginLoadFailure =
   | { readonly kind: "invalid-demand"; readonly diagnostics: readonly Diagnostic[] }
   | { readonly kind: "unknown-plugin"; readonly name: string; readonly path: string }
@@ -38,24 +37,21 @@ export type EnsuredDemand =
   | { readonly kind: "refused"; readonly failure: PluginLoadFailure };
 export interface PluginLoader {
   /** Never rejects for a PluginLoadFailure; those are returned as a typed refusal. */
-  ensure(registry: PluginRegistry, demand: PluginDemand): Promise<EnsuredDemand>;
+  ensure(registry: PluginCatalog, demand: PluginDemand): Promise<EnsuredDemand>;
 }
 interface SnapshotDescriptor {
-  readonly load: () => Promise<PluginDefinition>;
+  readonly load: () => Promise<IdentifiedPluginDefinition>;
   readonly dependencies: readonly string[];
 }
-type GroupResult =
-  | { readonly kind: "groups"; readonly groups: ReadonlyMap<string, string> }
-  | { readonly kind: "invalid"; readonly diagnostics: readonly Diagnostic[] };
 type PlannedPlugin = readonly [name: string, descriptor: SnapshotDescriptor];
 type PlanResult =
   | { readonly kind: "planned"; readonly plugins: readonly PlannedPlugin[] }
   | { readonly kind: "refused"; readonly failure: PluginLoadFailure };
 type LoadResult =
-  | { readonly kind: "loaded"; readonly definition: PluginDefinition }
+  | { readonly kind: "loaded"; readonly definition: IdentifiedPluginDefinition }
   | { readonly kind: "failed"; readonly failure: PluginLoadFailure };
 
-function snapshotCatalog(catalog: PluginCatalog): ReadonlyMap<string, SnapshotDescriptor> {
+function snapshotCatalog(catalog: PluginCatalogSource): ReadonlyMap<string, SnapshotDescriptor> {
   if (!(catalog instanceof Map)) throw new TypeError("Plugin catalog must be a Map.");
   const snapshot = new Map<string, SnapshotDescriptor>();
   for (const [name, descriptor] of catalog) {
@@ -81,57 +77,46 @@ function snapshotCatalog(catalog: PluginCatalog): ReadonlyMap<string, SnapshotDe
   return snapshot;
 }
 
-function addGroups(groups: Map<string, string>, track: GroupedTrackDefinition, path: string): void {
-  for (const name of Object.keys(track.keyframes ?? {})) {
-    const groupPath = `${path}.keyframes.${name}`;
-    if (!groups.has(name)) groups.set(name, groupPath);
-  }
-}
+type DemandResult =
+  | { readonly kind: "ids"; readonly ids: readonly string[] }
+  | { readonly kind: "invalid"; readonly diagnostics: readonly Diagnostic[] };
 
-function demandGroups(demand: PluginDemand): GroupResult {
-  const groups = new Map<string, string>();
+/** The plugin ids one demand names, in authored order and without repeats. */
+function demandPlugins(demand: PluginDemand): DemandResult {
+  const ids: string[] = [];
+  const add = (track: TrackDefinition): void => {
+    if (track.plugin !== undefined && !ids.includes(track.plugin)) ids.push(track.plugin);
+  };
   switch (demand.kind) {
     case "project": {
       const validation = validateV5(demand.project);
       if (validation.kind === "refused")
         return { kind: "invalid", diagnostics: validation.diagnostics };
       const project = validation.value;
-      project.motions.forEach((motion, motionIndex) =>
-        motion.tracks.forEach((track, trackIndex) =>
-          addGroups(groups, track, `motions[${motionIndex}].tracks[${trackIndex}]`),
-        ),
-      );
-      project.freeTracks?.forEach((track, trackIndex) =>
-        addGroups(groups, track, `freeTracks[${trackIndex}]`),
-      );
-      return { kind: "groups", groups };
+      project.motions.forEach((motion) => motion.tracks.forEach(add));
+      project.freeTracks?.forEach(add);
+      return { kind: "ids", ids };
     }
     case "tracks": {
       // The core validator owns refusal; a refused track is never planned around or dropped.
       const diagnostics: Diagnostic[] = [];
-      const tracks: GroupedTrackDefinition[] = [];
-      demand.tracks.forEach((track, index) => {
+      for (const [index, track] of demand.tracks.entries()) {
         const validation = validateTrackDefinition(track, `tracks[${index}]`);
-        if (validation.kind === "accepted") tracks.push(validation.value);
+        if (validation.kind === "accepted") add(validation.value);
         else diagnostics.push(...validation.diagnostics);
-      });
-      if (tracks.length !== demand.tracks.length)
-        return { kind: "invalid", diagnostics: Object.freeze(diagnostics) };
-      tracks.forEach((track, index) => addGroups(groups, track, `tracks[${index}]`));
-      return { kind: "groups", groups };
+      }
+      if (diagnostics.some(({ severity }) => severity === "error"))
+        return { kind: "invalid", diagnostics };
+      return { kind: "ids", ids };
     }
     default:
       return unreachable(demand);
   }
 }
 
-/**
- * The approved closure of the demanded groups, in catalog insertion order. A root the catalog does
- * not approve is still satisfied when the target registry already holds it (a plugin the host
- * registered directly); a dependency edge is catalog data, so an unknown dependency always refuses.
- */
+/** The approved closure of the demanded ids. A dependency edge is catalog data. */
 function planClosure(
-  groups: ReadonlyMap<string, string>,
+  demanded: readonly string[],
   catalog: ReadonlyMap<string, SnapshotDescriptor>,
   isRegistered: (name: string) => boolean,
 ): PlanResult {
@@ -161,9 +146,9 @@ function planClosure(
     done.add(name);
   };
 
-  for (const [name, path] of [...groups].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))) {
+  for (const name of demanded) {
     if (!catalog.has(name) && isRegistered(name)) continue;
-    visit(name, path);
+    visit(name, `plugin.${name}`);
     if (failure) return { kind: "refused", failure };
   }
   return {
@@ -231,20 +216,20 @@ export function ensuredOrThrow(result: EnsuredDemand): readonly string[] {
 async function loadDefinition(name: string, descriptor: SnapshotDescriptor): Promise<LoadResult> {
   try {
     const received: unknown = await descriptor.load();
-    // One read of `name`: a throwing getter is a failed module boundary like a rejected import.
-    const receivedName =
+    // One read of `id`: a throwing getter is a failed module boundary like a rejected import.
+    const receivedId =
       typeof received === "object" && received !== null
-        ? (received as { readonly name?: unknown }).name
+        ? (received as { readonly id?: unknown }).id
         : undefined;
-    if (receivedName !== name)
+    if (receivedId !== name)
       return { kind: "failed", failure: { kind: "identity-mismatch", name, received } };
-    return { kind: "loaded", definition: received as PluginDefinition };
+    return { kind: "loaded", definition: received as IdentifiedPluginDefinition };
   } catch (cause) {
     return { kind: "failed", failure: { kind: "import-failed", name, cause } };
   }
 }
 
-export function createPluginLoader(catalog: PluginCatalog): PluginLoader {
+export function createPluginLoader(catalog: PluginCatalogSource): PluginLoader {
   const approved = snapshotCatalog(catalog);
   // In-flight and loaded definitions, shared across registries; a failed load is evicted (retry).
   const cache = new Map<string, Promise<LoadResult>>();
@@ -263,14 +248,14 @@ export function createPluginLoader(catalog: PluginCatalog): PluginLoader {
   };
 
   return Object.freeze({
-    async ensure(registry: PluginRegistry, demand: PluginDemand): Promise<EnsuredDemand> {
-      const demanded = demandGroups(demand);
+    async ensure(registry: PluginCatalog, demand: PluginDemand): Promise<EnsuredDemand> {
+      const demanded = demandPlugins(demand);
       if (demanded.kind === "invalid")
         return {
           kind: "refused",
           failure: { kind: "invalid-demand", diagnostics: demanded.diagnostics },
         };
-      const plan = planClosure(demanded.groups, approved, (name) => registry.has(name));
+      const plan = planClosure(demanded.ids, approved, (name) => registry.has(name));
       if (plan.kind === "refused") return plan;
 
       const missing = plan.plugins.filter(([name]) => !registry.has(name));
@@ -280,7 +265,7 @@ export function createPluginLoader(catalog: PluginCatalog): PluginLoader {
           loadOne(name, descriptor).then((result) => [name, result] as const),
         ),
       );
-      const loaded: (readonly [name: string, definition: PluginDefinition])[] = [];
+      const loaded: (readonly [name: string, definition: IdentifiedPluginDefinition])[] = [];
       for (const [name, result] of results) {
         if (result.kind === "failed") return { kind: "refused", failure: result.failure };
         loaded.push([name, result.definition]);

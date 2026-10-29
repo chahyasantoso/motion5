@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import type { PluginInputs } from "@motion5/core/plugin-api";
 import {
   add3,
   dot3,
@@ -20,7 +19,6 @@ import {
 } from "../../src/frame3d";
 import { solveChain } from "../../src/ik-solve";
 import { solveTwoBone3d, UNBOUND_POLE3D, type Pole3d } from "../../src/ik3d-analytic";
-import { legacyIk3dPlugin as ik3dPlugin } from "@motion5/plugins/internal/legacy/ik3d";
 import {
   legalRetryReach3d,
   legalStarts3d,
@@ -70,25 +68,6 @@ function allFinite(result: SolveResult3d): boolean {
 function turnDistance(a: number, b: number): number {
   const delta = a - b;
   return Math.abs(delta - 360 * Math.round(delta / 360));
-}
-
-function composedInputs(
-  root: WorldFrame3d,
-  target: WorldFrame3d,
-  members: readonly ChainMember3d[],
-  inspect = false,
-) {
-  return {
-    root,
-    target,
-    members: members.map((item) => ({
-      id: item.id,
-      base: item.base,
-      values: { length: item.length, ...item.offset, ...item.rest },
-      progress: 1,
-    })),
-    ...(inspect ? { inspect: true } : {}),
-  };
 }
 
 function columns(matrix: Matrix3): readonly [Vec3, Vec3, Vec3] {
@@ -948,39 +927,6 @@ describe("3D FABRIK evidence", () => {
     expect(result.quality.kind).toBe("conflicted");
     expect(allFinite(result)).toBe(true);
     expect(JSON.stringify(result.rotations3d)).toBe(JSON.stringify(permutation.rotations3d));
-  });
-
-  it("TH-65 publishes iterative quality kinds through ik3d inspection", () => {
-    const inspect = (inputs: unknown) =>
-      ik3dPlugin.compose({ inspect: true }, 1, inputs as PluginInputs, "solve").inspection as {
-        readonly kind: string;
-        readonly residual: number;
-        readonly residuals: Readonly<Record<string, number>>;
-      };
-    const serial = [member("a", "root", 20), member("b", "a", 20), member("c", "b", 20)];
-    const stalled = inspect(composedInputs(ROOT, readFrame3d({ x: 100 }), serial));
-    expect(stalled.kind).toBe("stalled");
-    expect(stalled.residuals).toEqual({ c: stalled.residual });
-
-    const converged = inspect(composedInputs(ROOT, readFrame3d({ x: 15, y: 4 }), serial));
-    expect(converged.kind).toBe("converged");
-
-    const branch = [
-      member("a", "root", 20),
-      member("b1", "a", 20, { goal: readFrame3d({ x: 40 }) }),
-      member("b2", "a", 20, { goal: readFrame3d({ x: -40 }) }),
-    ];
-    const conflicted = inspect({
-      root: ROOT,
-      members: branch.map((item) => ({
-        id: item.id,
-        base: item.base,
-        values: { length: item.length, ...item.offset, ...item.rest },
-        progress: 1,
-        ...(item.goal === undefined ? {} : { goal: item.goal }),
-      })),
-    });
-    expect(conflicted.kind).toBe("conflicted");
   });
 
   it("TH-66 dispatches two-bone, single, long, and branched chain shapes", () => {
