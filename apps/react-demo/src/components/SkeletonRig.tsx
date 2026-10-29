@@ -6,7 +6,7 @@ import {
   type PatchSource,
   type PatchValues,
 } from "@motion5/react";
-import { nodePosition, point, createRowPatchSource } from "./marker-position";
+import { nodePosition, point, createWalkerRowSource } from "./marker-position";
 
 /**
  * Nothing in this rig re-renders on a tick.
@@ -246,10 +246,7 @@ const TorsoContour: React.FC<TorsoContourProps> = ({ handle, pelvisId, chestId }
 const shadowPose: PatchDerivation = ([pelvis = {}]) => ({ x: point(pelvis).x, y: 398 });
 
 export const SkeletonRig: React.FC<SkeletonRigProps> = ({ handle }) => {
-  const source = React.useMemo(
-    () => createRowPatchSource(handle, "walk/pose", "walk/arms-pose"),
-    [handle],
-  );
+  const source = React.useMemo(() => createWalkerRowSource(handle), [handle]);
   const bindShadow = useDerivedDomPatch<SVGEllipseElement>(source, ["walk/pelvis"], shadowPose);
 
   return (

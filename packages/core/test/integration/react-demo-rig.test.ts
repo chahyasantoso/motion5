@@ -19,7 +19,7 @@ import {
 } from "../../../../apps/react-demo/src/full-body-project";
 import {
   nodePosition,
-  createRowPatchSource,
+  createWalkerRowSource,
 } from "../../../../apps/react-demo/src/components/marker-position";
 
 interface FakeStyle extends Record<string, unknown> {
@@ -91,7 +91,7 @@ function removeArms(handles: readonly TrackHandle[]): void {
 }
 
 function bindMarker(handle: ProjectHandle, nodeId: string, target: FakeSvgTarget): () => void {
-  const source = createRowPatchSource(handle, "walk/pose", "walk/arms-pose");
+  const source = createWalkerRowSource(handle);
   const adapter = createDomPatchAdapter({ style: {} }, undefined, (id): DomTarget | undefined =>
     id === nodeId ? (target as unknown as DomTarget) : undefined,
   );
@@ -121,7 +121,7 @@ describe("react demo skeleton rig", () => {
     handle.signal("walk", { type: "manual", progress: 0.6 });
     test.flush();
     const arms = addArms(handle);
-    const source = createRowPatchSource(handle, "walk/pose", "walk/arms-pose");
+    const source = createWalkerRowSource(handle);
     const arm = source.get("walk/armL_lower");
     expect(arm?.status).toBe("ready");
     if (arm?.status !== "ready") throw new Error("The arm marker node did not become ready.");
@@ -143,7 +143,7 @@ describe("react demo skeleton rig", () => {
     handle.signal("walk", { type: "manual", progress: 0.6 });
     test.flush();
     const arms = addArms(handle);
-    const source = createRowPatchSource(handle, "walk/pose", "walk/arms-pose");
+    const source = createWalkerRowSource(handle);
     const unbind = bindMarker(handle, "walk/armL_lower", target);
     expect(source.get("walk/armL_lower")?.status).toBe("ready");
     expect(target.style.visibility).toBeUndefined();

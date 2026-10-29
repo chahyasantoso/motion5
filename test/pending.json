@@ -15,11 +15,6 @@
     "reason": "Exercises the retained output-role journal and snapshot machinery; Phase 7 either wires it to a real producer or retires it."
   },
   {
-    "path": "packages/react/test/public-hook-render.test.ts",
-    "phase": 6,
-    "reason": "Exercises a Three or React render boundary; Phase 6 moves consumers to generated tracks and named outputs."
-  },
-  {
     "path": "packages/three/test/object3d-adapter.test.ts",
     "phase": 6,
     "reason": "Exercises a Three or React render boundary; Phase 6 moves consumers to generated tracks and named outputs."

@@ -1,5 +1,5 @@
-import { selectRow, unreachable } from "@motion5/core/plugin-api";
-import type { LivePatch, PatchDerivation, PatchSource, PatchValues } from "@motion5/react";
+import { rowPatchSource } from "@motion5/react";
+import type { PatchDerivation, PatchSource, PatchValues } from "@motion5/react";
 
 /** A published frame's position, with an absent key read as `0` as every frame reader does. */
 export function point(values: PatchValues): { x: number; y: number } {
@@ -9,74 +9,47 @@ export function point(values: PatchValues): { x: number; y: number } {
 /** The position-only projection keeps marker children, including labels, in their own frame. */
 export const nodePosition: PatchDerivation = ([node = {}]) => point(node);
 
-export function selectRowValues(output: unknown, rowId: string): PatchValues | undefined {
-  const picked = selectRow(output, rowId);
-  switch (picked.kind) {
-    case "row":
-      return picked.cells;
-    case "missing-row":
-    case "missing-output":
-    case "wrong-kind":
-      return undefined;
-    default:
-      return unreachable(picked);
-  }
-}
+/**
+ * The walker's bone aliases, mapped onto the two tables that publish them.
+ *
+ * This mapping is the demo's, not a shared contract: the rig splits its pose across `walk/pose` and
+ * `walk/arms-pose`, while the scene names each bone as its own marker target. Every alias is one
+ * generic row projection, and anything this mapping does not name — `walk/pelvis` included, because
+ * it is a published node of its own — reaches the underlying source unchanged.
+ */
+const POSE_BONES = [
+  "chest",
+  "head",
+  "legL_thigh",
+  "legL_shin",
+  "legL_foot",
+  "legR_thigh",
+  "legR_shin",
+  "legR_foot",
+] as const;
+const ARM_BONES = ["armL_upper", "armL_lower", "armR_upper", "armR_lower"] as const;
 
-export function createRowPatchSource(
-  source: PatchSource,
-  poseNodeId: string,
-  armsPoseNodeId?: string,
-): PatchSource {
-  const resolvePoseId = (boneId: string): string => {
-    if (["armL_upper", "armL_lower", "armR_upper", "armR_lower"].includes(boneId)) {
-      return armsPoseNodeId ?? "walk/arms-pose";
-    }
-    return poseNodeId;
+export function createWalkerRowSource(source: PatchSource): PatchSource {
+  const aliases = new Map<string, PatchSource>();
+  const bind = (bone: string, nodeId: string): void => {
+    aliases.set(
+      `walk/${bone}`,
+      rowPatchSource(source, { nodeId, output: "values", rowId: bone, as: `walk/${bone}` }),
+    );
   };
-
-  const transformPatch = (patch: LivePatch | undefined, boneId: string): LivePatch | undefined => {
-    if (!patch) return undefined;
-    if (patch.status !== "ready") {
-      return patch as LivePatch;
-    }
-    const rowCells = selectRowValues(patch.outputs.values, boneId);
-    if (!rowCells) {
-      return { ...patch, status: "blocked" };
-    }
-    return {
-      ...patch,
-      nodeId: `walk/${boneId}`,
-      outputs: { values: rowCells as Readonly<Record<string, number | string | boolean>> },
-    };
-  };
+  for (const bone of POSE_BONES) bind(bone, "walk/pose");
+  for (const bone of ARM_BONES) bind(bone, "walk/arms-pose");
 
   return {
-    get(nodeId: string) {
-      if (nodeId === "walk/pelvis" || source.get(nodeId) !== undefined) {
-        return source.get(nodeId);
-      }
-      if (nodeId.startsWith("walk/")) {
-        const boneId = nodeId.slice(5);
-        const poseId = resolvePoseId(boneId);
-        const posePatch = source.get(poseId);
-        return transformPatch(posePatch, boneId);
-      }
-      return source.get(nodeId);
+    get(nodeId) {
+      const alias = aliases.get(nodeId);
+      return alias === undefined ? source.get(nodeId) : alias.get(nodeId);
     },
-    subscribeNode(nodeId: string, listener) {
-      if (nodeId === "walk/pelvis" || source.get(nodeId) !== undefined) {
-        return source.subscribeNode(nodeId, listener);
-      }
-      if (nodeId.startsWith("walk/")) {
-        const boneId = nodeId.slice(5);
-        const poseId = resolvePoseId(boneId);
-        return source.subscribeNode(poseId, (patch) => {
-          const next = transformPatch(patch as LivePatch, boneId);
-          if (next) listener(next);
-        });
-      }
-      return source.subscribeNode(nodeId, listener);
+    subscribeNode(nodeId, listener) {
+      const alias = aliases.get(nodeId);
+      return alias === undefined
+        ? source.subscribeNode(nodeId, listener)
+        : alias.subscribeNode(nodeId, listener);
     },
   };
 }

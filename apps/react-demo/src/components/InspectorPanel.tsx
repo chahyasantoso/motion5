@@ -2,7 +2,7 @@ import React from "react";
 import type { ProjectHandle } from "@motion5/core";
 import { selectRecord, unreachable } from "@motion5/core/plugin-api";
 import { patchRender, usePatch } from "@motion5/react";
-import { createRowPatchSource } from "./marker-position";
+import { createWalkerRowSource } from "./marker-position";
 
 interface InspectorPanelProps {
   readonly handle: ProjectHandle;
@@ -61,10 +61,7 @@ const NodeCard: React.FC<{ handle: any; nodeId: string; title: string }> = ({
 };
 
 export const InspectorPanel: React.FC<InspectorPanelProps> = ({ handle }) => {
-  const source = React.useMemo(
-    () => createRowPatchSource(handle, "walk/pose", "walk/arms-pose"),
-    [handle],
-  );
+  const source = React.useMemo(() => createWalkerRowSource(handle), [handle]);
 
   return (
     <div>
