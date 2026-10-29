@@ -1,6 +1,5 @@
 import { unreachable } from "@motion5/core/plugin-api";
 import { readFrame3d } from "@motion5/plugins/frame3d";
-import { readRigValues } from "../../plugins/src/legacy/rig-values";
 import { Matrix4, Quaternion, Vector3, type Object3D } from "three";
 import { frameToMatrix } from "./index";
 import { normalizeDirection } from "./skeleton-direction";
@@ -255,8 +254,42 @@ export function createSkeletonDriver(
   };
 }
 
-/** Decode once; inherited names are never pose sources. */
-export function rigFrameSource(rigValues: unknown): FrameSource {
-  const { pose } = readRigValues(rigValues);
-  return (source) => (Object.hasOwn(pose, source) ? pose[source] : undefined);
+type TableRowCandidate =
+  | {
+      readonly kind: "valid";
+      readonly id: string;
+      readonly cells: Readonly<Record<string, unknown>>;
+    }
+  | { readonly kind: "invalid" };
+
+/** Decode identified table frame source. */
+export function tableFrameSource(poseTable: unknown): FrameSource {
+  if (!Array.isArray(poseTable)) return () => undefined;
+  const rowsById = new Map<string, Readonly<Record<string, unknown>>>();
+  for (const row of poseTable) {
+    const candidate: TableRowCandidate =
+      row &&
+      typeof row === "object" &&
+      typeof (row as { id?: unknown }).id === "string" &&
+      (row as { id: string }).id.length > 0 &&
+      (row as { cells?: unknown }).cells &&
+      typeof (row as { cells?: unknown }).cells === "object" &&
+      (row as { cells: unknown }).cells !== null
+        ? {
+            kind: "valid",
+            id: (row as { id: string }).id,
+            cells: (row as { cells: Readonly<Record<string, unknown>> }).cells,
+          }
+        : { kind: "invalid" };
+    switch (candidate.kind) {
+      case "valid":
+        rowsById.set(candidate.id, candidate.cells);
+        break;
+      case "invalid":
+        break;
+      default:
+        unreachable(candidate);
+    }
+  }
+  return (source: string) => rowsById.get(source);
 }

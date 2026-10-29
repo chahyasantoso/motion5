@@ -9,7 +9,7 @@ export { skeletonTracks, type SkeletonTracksOptions } from "./skeleton-tracks";
 export {
   createSkeletonDriver,
   describeBoneOutcome,
-  rigFrameSource,
+  tableFrameSource,
   type BoneDrive,
   type BoneOutcome,
   type FrameSource,
