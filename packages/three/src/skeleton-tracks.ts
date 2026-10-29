@@ -35,8 +35,21 @@ export function skeletonTracks(
   const rowId = (bone: CapturedBone): string => bone.key ?? `${idPrefix}-bone-${bone.index}`;
 
   const rest = new Matrix4();
+  const restOrientation = new Map<
+    number,
+    { rotation: number; rotationX: number; rotationY: number }
+  >();
   const bodyValues = binding.bones.map((bone) => {
-    const local = frameFromMatrix(rest.compose(bone.restPosition, bone.restQuaternion, UNIT));
+    const frame = frameFromMatrix(rest.compose(bone.restPosition, bone.restQuaternion, UNIT));
+    const local = {
+      x: frame.x ?? 0,
+      y: frame.y ?? 0,
+      z: frame.z ?? 0,
+      rotation: frame.rotation ?? 0,
+      rotationX: frame.rotationX ?? 0,
+      rotationY: frame.rotationY ?? 0,
+    };
+    restOrientation.set(bone.index, local);
     const parentBone = bone.parent !== undefined ? binding.bones[bone.parent] : undefined;
     return {
       id: rowId(bone),
@@ -49,14 +62,20 @@ export function skeletonTracks(
     };
   });
 
-  const solvedValues = binding.bones.map((bone) => ({
-    id: rowId(bone),
-    cells: {
-      rotation: 0,
-      rotationX: 0,
-      rotationY: 0,
-    },
-  }));
+  // No solver runs on a captured skeleton, so the solved table carries the rest orientation. A
+  // zero solved orientation with weight 1 would discard the captured rest rotation and publish a
+  // pose the skeleton never had.
+  const solvedValues = binding.bones.map((bone) => {
+    const local = restOrientation.get(bone.index)!;
+    return {
+      id: rowId(bone),
+      cells: {
+        rotation: local.rotation,
+        rotationX: local.rotationX,
+        rotationY: local.rotationY,
+      },
+    };
+  });
 
   return [
     {

@@ -1,4 +1,4 @@
-import { unreachable } from "@motion5/core/plugin-api";
+import { selectRow, unreachable } from "@motion5/core/plugin-api";
 import { readFrame3d } from "@motion5/plugins/frame3d";
 import { Matrix4, Quaternion, Vector3, type Object3D } from "three";
 import { frameToMatrix } from "./index";
@@ -254,42 +254,26 @@ export function createSkeletonDriver(
   };
 }
 
-type TableRowCandidate =
-  | {
-      readonly kind: "valid";
-      readonly id: string;
-      readonly cells: Readonly<Record<string, unknown>>;
-    }
-  | { readonly kind: "invalid" };
-
-/** Decode identified table frame source. */
+/**
+ * A frame reader over one immutable pose table, with selection owned by the core selector.
+ *
+ * No row index is retained: the table is the caller's and may be replaced between calls, so a map
+ * built here would answer for a table nobody asked about. Resolution is therefore one `selectRow`
+ * per request, which also means a duplicate or malformed row anywhere in the table refuses every id
+ * consistently, as the selector contract requires.
+ */
 export function tableFrameSource(poseTable: unknown): FrameSource {
-  if (!Array.isArray(poseTable)) return () => undefined;
-  const rowsById = new Map<string, Readonly<Record<string, unknown>>>();
-  for (const row of poseTable) {
-    const candidate: TableRowCandidate =
-      row &&
-      typeof row === "object" &&
-      typeof (row as { id?: unknown }).id === "string" &&
-      (row as { id: string }).id.length > 0 &&
-      (row as { cells?: unknown }).cells &&
-      typeof (row as { cells?: unknown }).cells === "object" &&
-      (row as { cells: unknown }).cells !== null
-        ? {
-            kind: "valid",
-            id: (row as { id: string }).id,
-            cells: (row as { cells: Readonly<Record<string, unknown>> }).cells,
-          }
-        : { kind: "invalid" };
-    switch (candidate.kind) {
-      case "valid":
-        rowsById.set(candidate.id, candidate.cells);
-        break;
-      case "invalid":
-        break;
+  return (source) => {
+    const picked = selectRow(poseTable, source);
+    switch (picked.kind) {
+      case "row":
+        return picked.cells;
+      case "missing-row":
+      case "missing-output":
+      case "wrong-kind":
+        return undefined;
       default:
-        unreachable(candidate);
+        return unreachable(picked);
     }
-  }
-  return (source: string) => rowsById.get(source);
+  };
 }

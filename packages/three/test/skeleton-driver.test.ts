@@ -1,26 +1,23 @@
-// @ts-nocheck
 import { describe, expect, it } from "vitest";
-import { Engine, PluginRegistry, createManualClock, type TrackDefinition } from "@motion5/core";
+import { Engine, PluginCatalog, createManualClock, type TrackDefinition } from "@motion5/core";
 import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/testing";
-import { legacyFk3dPlugin as fk3dPlugin } from "@motion5/plugins/internal/legacy/fk3d";
-import { legacyRigPlugin as rigPlugin } from "@motion5/plugins/internal/legacy/rig";
-import { legacyTransform3dPlugin as transform3dPlugin } from "@motion5/plugins/internal/legacy/transform3d";
-import { Matrix4, Object3D, Vector3 } from "three";
+import { fk3dPlugin } from "@motion5/plugins/fk3d";
+import { Matrix4, Object3D, Quaternion, Vector3 } from "three";
 import { frameToMatrix } from "../src/index";
 import {
   captureSkeleton,
   createSkeletonDriver,
   describeBoneOutcome,
-  rigFrameSource,
   skeletonTracks,
+  tableFrameSource,
   type BoneDrive,
   type BoneOutcome,
 } from "../src/skeleton";
 import { syntheticSkeleton } from "./support/synthetic-skeleton";
 
 function load(tracks: readonly TrackDefinition[]) {
-  const plugins = new PluginRegistry();
-  plugins.registerAll([transform3dPlugin, fk3dPlugin, rigPlugin]);
+  const plugins = new PluginCatalog();
+  plugins.register(fk3dPlugin);
   const project = new Engine({
     plugins,
     clock: createManualClock(),
@@ -32,40 +29,78 @@ function load(tracks: readonly TrackDefinition[]) {
   return project;
 }
 
-function expectMatrix(a: Matrix4, b: Matrix4) {
-  for (let i = 0; i < 16; i += 1)
-    expect(Math.abs(a.elements[i]! - b.elements[i]!)).toBeLessThan(1e-6);
+/**
+ * Rigid equality: the frame contract carries position and rotation, and uniform ancestor scale is
+ * applied by the scene rather than by the published frame, so comparing the full matrices would
+ * compare a scale the driver never writes.
+ */
+function expectRigid(actual: Matrix4, expected: Matrix4) {
+  const actualPosition = new Vector3(),
+    actualQuaternion = new Quaternion(),
+    actualScale = new Vector3();
+  const expectedPosition = new Vector3(),
+    expectedQuaternion = new Quaternion(),
+    expectedScale = new Vector3();
+  actual.decompose(actualPosition, actualQuaternion, actualScale);
+  expected.decompose(expectedPosition, expectedQuaternion, expectedScale);
+  expect(actualPosition.distanceTo(expectedPosition)).toBeLessThan(1e-6);
+  expect(Math.abs(actualQuaternion.dot(expectedQuaternion))).toBeGreaterThan(1 - 1e-9);
+}
+
+function poseTable(tracks: readonly TrackDefinition[], idPrefix: string): unknown {
+  const project = load(tracks);
+  try {
+    const patch = project.get(`scene/${idPrefix}-pose`);
+    if (patch?.status !== "ready") throw new Error("Missing pose publication");
+    return patch.outputs.values;
+  } finally {
+    project.dispose();
+  }
 }
 
 describe("captured skeleton tracks", () => {
   it("K1 publishes each pivot in root-parent space without changing FK", () => {
     const rig = syntheticSkeleton();
     const binding = captureSkeleton(rig.skeleton, rig);
-    const project = load(skeletonTracks(binding, { idPrefix: "imported" }));
+    const tracks = skeletonTracks(binding, { idPrefix: "imported" });
+    const project = load(tracks);
     try {
+      const patch = project.get("scene/imported-pose");
+      if (patch?.status !== "ready") throw new Error("Missing pose publication");
+      const read = tableFrameSource(patch.outputs.values);
       for (const bone of binding.bones) {
-        const patch = project.get(`scene/imported-bone-${bone.index}`);
-        expect(patch?.status).toBe("ready");
-        if (patch?.status !== "ready") throw new Error("Missing bone publication");
+        const rowId = bone.key ?? `imported-bone-${bone.index}`;
+        const cells = read(rowId);
+        if (cells === undefined) throw new Error(`Missing pose row ${rowId}`);
         const expected = new Matrix4()
           .copy(rig.rootParent.matrixWorld)
           .invert()
           .multiply(rig.skeleton.bones[bone.index]!.matrixWorld);
-        expectMatrix(frameToMatrix(patch.values, new Matrix4()), expected);
+        expectRigid(frameToMatrix(cells, new Matrix4()), expected);
       }
     } finally {
       project.dispose();
     }
   });
 
-  it("K2 includes an unmapped intermediate bone, binding only mapped keys", () => {
+  it("K2 keeps one row per captured bone, including an unmapped intermediate bone", () => {
     const rig = syntheticSkeleton();
     const tracks = skeletonTracks(captureSkeleton(rig.skeleton, rig), { idPrefix: "a" });
-    expect(tracks.length).toBe(5);
-    expect(tracks[3]!.id).toBe("a-bone-2");
-    expect(tracks[4]!.keyframes).toEqual({
-      rig: { requires: { bones: { hand: "a-bone-0", hips: "a-bone-1" } } },
+    expect(tracks.map((track) => track.id)).toEqual(["a-root", "a-body", "a-solved", "a-pose"]);
+    const pose = tracks.find((track) => track.id === "a-pose");
+    expect(pose?.plugin).toBe("fk3d");
+    expect(pose?.input?.requires).toEqual({
+      chain: "a-body",
+      solved: "a-solved",
+      base: "a-root",
     });
+    const body = tracks.find((track) => track.id === "a-body");
+    const rows = body?.input?.values as readonly {
+      readonly id: string;
+      readonly cells: Readonly<Record<string, unknown>>;
+    }[];
+    expect(rows.map((row) => row.id)).toEqual(["hand", "hips", "a-bone-2"]);
+    expect(rows[2]?.cells.parentId).toBe("hips");
   });
 
   it("K3 refuses bad prefixes and newly scaled bones", () => {
@@ -91,33 +126,28 @@ describe("parent-space skeleton driver", () => {
     const rig = syntheticSkeleton();
     const boneKeys = { hips: "hips", middle: "middle", tip: "hand" };
     const binding = captureSkeleton(rig.skeleton, { boneKeys });
-    const project = load(skeletonTracks(binding, { idPrefix: "a" }));
-    try {
-      const patch = project.get("scene/a-rig");
-      if (patch?.status !== "ready") throw new Error("Missing rig publication");
-      const matrices = rig.skeleton.bones.map((bone) => bone.matrixWorld.clone());
-      for (const bone of rig.skeleton.bones) {
-        bone.position.set(9, 8, 7);
-        bone.quaternion.identity();
-      }
-      const driver = createSkeletonDriver(binding, {
-        sourceSpace: rig.rootParent,
-        drives: {
-          hand: { kind: "frame", source: "hand" },
-          middle: { kind: "frame", source: "middle" },
-          hips: { kind: "frame", source: "hips" },
-        },
-      });
-      const result = driver.apply(rigFrameSource(patch.values));
-      expect([...result.bones.values()].map((outcome) => outcome.kind)).toEqual([
-        "applied",
-        "applied",
-        "applied",
-      ]);
-      rig.skeleton.bones.forEach((bone, i) => expectMatrix(bone.matrixWorld, matrices[i]!));
-    } finally {
-      project.dispose();
+    const tracks = skeletonTracks(binding, { idPrefix: "a" });
+    const table = poseTable(tracks, "a");
+    const matrices = rig.skeleton.bones.map((bone) => bone.matrixWorld.clone());
+    for (const bone of rig.skeleton.bones) {
+      bone.position.set(9, 8, 7);
+      bone.quaternion.identity();
     }
+    const driver = createSkeletonDriver(binding, {
+      sourceSpace: rig.rootParent,
+      drives: {
+        hand: { kind: "frame", source: "hand" },
+        middle: { kind: "frame", source: "middle" },
+        hips: { kind: "frame", source: "hips" },
+      },
+    });
+    const result = driver.apply(tableFrameSource(table));
+    expect([...result.bones.values()].map((outcome) => outcome.kind)).toEqual([
+      "applied",
+      "applied",
+      "applied",
+    ]);
+    rig.skeleton.bones.forEach((bone, i) => expectRigid(bone.matrixWorld, matrices[i]!));
   });
 
   it("D2 maps a calibrated source and differently scaled armature into one parent space", () => {
@@ -204,7 +234,7 @@ describe("parent-space skeleton driver", () => {
     first.apply(read);
     second.apply(read);
     a.skeleton.bones.forEach((bone, i) =>
-      expectMatrix(bone.matrixWorld, b.skeleton.bones[i]!.matrixWorld),
+      expectRigid(bone.matrixWorld, b.skeleton.bones[i]!.matrixWorld),
     );
     a.middle.position.set(9, 9, 9);
     first.reset();
@@ -233,11 +263,39 @@ describe("parent-space skeleton driver", () => {
     ).toThrow(TypeError);
   });
 
-  it("D8 decodes rig sources and excludes inherited keys", () => {
-    const read = rigFrameSource({ pose: { hand: { x: 2, rotation: 30 } } });
-    expect(read("hand")).toEqual({ x: 2, y: 0, z: 0, rotation: 30, rotationX: 0, rotationY: 0 });
-    expect(read("toString")).toBe(undefined);
-    expect(read("absent")).toBe(undefined);
+  it("D8 selects pose rows only from a wholly valid table", () => {
+    const hips = { x: 10, y: 20, z: 30, rotation: 15, rotationX: 0, rotationY: 0 };
+    const hand = { x: 40, y: 50, z: 60, rotation: 45, rotationX: 10, rotationY: 5 };
+    const read = tableFrameSource([
+      { id: "hips", cells: hips },
+      { id: "hand", cells: hand },
+    ]);
+    expect(read("hips")).toBe(hips);
+    expect(read("hand")).toBe(hand);
+    expect(read("absent")).toBeUndefined();
+
+    const duplicateAfter = tableFrameSource([
+      { id: "hips", cells: hips },
+      { id: "hand", cells: hand },
+      { id: "hips", cells: { ...hips, x: 99 } },
+    ]);
+    expect(duplicateAfter("hips")).toBeUndefined();
+
+    const duplicateOutside = tableFrameSource([
+      { id: "hips", cells: hips },
+      { id: "hand", cells: hand },
+      { id: "hand", cells: { ...hand, x: 99 } },
+    ]);
+    expect(duplicateOutside("hips")).toBeUndefined();
+
+    const malformedCells = tableFrameSource([
+      { id: "hips", cells: hips },
+      { id: "hand", cells: { x: Number.NaN } },
+    ]);
+    expect(malformedCells("hips")).toBeUndefined();
+
+    for (const bad of [null, undefined, {}, "string", 123, [{ id: 123, cells: hips }]])
+      expect(tableFrameSource(bad)("hips")).toBeUndefined();
   });
 
   it("D9 describes every kind and held reason", () => {

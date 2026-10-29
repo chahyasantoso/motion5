@@ -1,20 +1,18 @@
-// @ts-nocheck
 import { describe, expect, it } from "vitest";
 import {
   Engine,
-  PluginRegistry,
+  PluginCatalog,
   createManualClock,
   type Patch,
-  type ProjectDefinition,
+  type TrackDefinition,
 } from "@motion5/core";
-import { legacyFk3dPlugin as fk3dPlugin } from "@motion5/plugins/internal/legacy/fk3d";
-import { legacyIk3dPlugin as ik3dPlugin } from "@motion5/plugins/internal/legacy/ik3d";
-import { legacyTransform3dPlugin as transform3dPlugin } from "@motion5/plugins/internal/legacy/transform3d";
-// The public entry exposes the manual clock, but deterministic interpolator/scheduler fakes remain
-// test support, so this test-only import follows the existing renderer test pattern.
+import { fk3dPlugin } from "@motion5/plugins/fk3d";
+import { Matrix4, Object3D, Quaternion, Vector3 } from "three";
+// Deterministic interpolator/scheduler fakes remain test support, as in the sibling Three tests.
 import { createFakeInterpolator, createFakeScheduler } from "../../core/src/testing/fakes";
-import { Matrix4, Object3D, Vector3 } from "three";
+import { captureSkeleton, skeletonTracks, tableFrameSource } from "../src/skeleton";
 import { EULER_ORDER_3D, createObject3dPatchAdapter, writeFrame3d } from "../src/index";
+import { syntheticSkeleton } from "./support/synthetic-skeleton";
 
 const DEGREES = 180 / Math.PI;
 
@@ -35,14 +33,14 @@ function seededEulerTriples(
 
 function readyPatch(
   nodeId: string,
-  values: Readonly<Record<string, unknown>>,
+  values: Readonly<Record<string, number | string | boolean>>,
   revision = 1,
 ): Patch {
   return {
     nodeId,
     revision,
     status: "ready",
-    values,
+    outputs: { values },
     sourceProgress: 1,
     sourceRevisions: {},
     diagnostics: [],
@@ -65,6 +63,20 @@ function distance(a: Vector3, b: Vector3): number {
   return a.distanceTo(b);
 }
 
+function load(tracks: readonly TrackDefinition[]) {
+  const plugins = new PluginCatalog();
+  plugins.register(fk3dPlugin);
+  const project = new Engine({
+    plugins,
+    clock: createManualClock(),
+    interpolator: createFakeInterpolator(),
+    scheduler: createFakeScheduler(),
+  }).load({ schemaVersion: 5, motions: [{ id: "scene", trigger: { type: "manual" }, tracks }] });
+  for (const track of tracks) project.mount(`scene/${track.id}`);
+  for (const track of tracks) project.seek(`scene/${track.id}`, 0);
+  return project;
+}
+
 describe("Three.js Object3D renderer adapter", () => {
   it("TH-123 writes the core ZXY convention as Rz·Rx·Ry", () => {
     const seeds = seededEulerTriples(0x5003, 32);
@@ -85,96 +97,49 @@ describe("Three.js Object3D renderer adapter", () => {
     }
   });
 
-  it("TH-124 publishes a public-plugin three-member pole rig into world Object3D frames", () => {
-    const project: ProjectDefinition = {
-      schemaVersion: 5,
-      projectId: "three-adapter-rig",
-      motions: [
-        {
-          id: "rig",
-          trigger: { type: "manual" },
-          tracks: [
-            { id: "root", keyframes: { transform3d: { values: { x: 0, y: 0, z: 0 } } } },
-            {
-              id: "goal",
-              keyframes: { transform3d: { values: { x: 62, y: 37, z: 29 } } },
-            },
-            {
-              id: "pole",
-              keyframes: { transform3d: { values: { x: 12, y: 40, z: 18 } } },
-            },
-            {
-              id: "solve",
-              keyframes: {
-                ik3d: {
-                  requires: { root: "root", target: "goal", pole: "pole" },
-                },
-              },
-            },
-            {
-              id: "upper",
-              keyframes: {
-                fk3d: {
-                  values: { length: 50 },
-                  requires: { base: "root", solver: "solve" },
-                },
-              },
-            },
-            {
-              id: "fore",
-              keyframes: {
-                fk3d: {
-                  values: { length: 40 },
-                  requires: { base: "upper", solver: "solve" },
-                },
-              },
-            },
-            {
-              id: "hand",
-              keyframes: {
-                fk3d: {
-                  values: { length: 30 },
-                  requires: { base: "fore", solver: "solve" },
-                },
-              },
-            },
-          ],
-        },
-      ],
-    };
-    const plugins = new PluginRegistry();
-    plugins.register(transform3dPlugin);
-    plugins.register(fk3dPlugin);
-    plugins.register(ik3dPlugin);
-    const runtime = new Engine({
-      clock: createManualClock(),
-      interpolator: createFakeInterpolator(),
-      scheduler: createFakeScheduler(),
-      plugins,
-    }).load(project);
+  it("TH-124 poses captured skeleton rows through caller selection, not a table overload", () => {
+    const rig = syntheticSkeleton();
+    const binding = captureSkeleton(rig.skeleton, rig);
+    const tracks = skeletonTracks(binding, { idPrefix: "avatar" });
+    const project = load(tracks);
+    const patch = project.get("scene/avatar-pose");
+    if (patch?.status !== "ready") throw new Error("Missing pose publication");
+    const table = patch.outputs.values;
     const objects = new Map(
-      ["root", "goal", "pole", "upper", "fore", "hand"].map((id) => [`rig/${id}`, new Object3D()]),
+      binding.bones.map((bone) => [bone.key ?? `avatar-bone-${bone.index}`, new Object3D()]),
     );
+    for (const object of objects.values()) rig.rootParent.add(object);
     const adapter = createObject3dPatchAdapter((nodeId) => objects.get(nodeId));
-    for (const id of objects.keys()) {
-      runtime.mount(id);
-      runtime.subscribeNode(id, (patch) => adapter.apply(patch));
-    }
-    runtime.seek("rig/goal", 1);
-    for (const object of objects.values()) object.updateMatrixWorld(true);
 
-    const pivot = (id: string, length: number): Vector3 =>
-      objects.get(id)!.localToWorld(new Vector3(-length, 0, 0));
-    const rootTip = objects.get("rig/root")!.position;
-    const upperTip = objects.get("rig/upper")!.position;
-    const foreTip = objects.get("rig/fore")!.position;
-    expect(distance(pivot("rig/upper", 50), rootTip)).toBeLessThan(1e-6);
-    expect(distance(pivot("rig/fore", 40), upperTip)).toBeLessThan(1e-6);
-    expect(distance(pivot("rig/hand", 30), foreTip)).toBeLessThan(1e-6);
-    expect(
-      distance(objects.get("rig/hand")!.position, objects.get("rig/goal")!.position),
-    ).toBeLessThan(1e-3);
-    runtime.dispose();
+    // A table-valued ready patch has no flat frame keys, so `apply` writes nothing and leaves the
+    // caller's objects untouched. The row selection below is the whole supported table path.
+    adapter.apply(patch);
+    for (const object of objects.values()) object.updateMatrixWorld(true);
+    expect([...objects.values()].every((object) => object.position.length() === 0)).toBe(true);
+
+    const read = tableFrameSource(table);
+    for (const [rowId, object] of objects) {
+      const cells = read(rowId);
+      if (cells === undefined) throw new Error(`Missing pose row ${rowId}`);
+      adapter.applyValues(rowId, cells);
+      object.updateMatrixWorld(true);
+    }
+    rig.rootParent.updateMatrixWorld(true);
+    for (const bone of binding.bones) {
+      const rowId = bone.key ?? `avatar-bone-${bone.index}`;
+      const object = objects.get(rowId)!;
+      const objectPosition = new Vector3(),
+        objectQuaternion = new Quaternion(),
+        objectScale = new Vector3();
+      const bonePosition = new Vector3(),
+        boneQuaternion = new Quaternion(),
+        boneScale = new Vector3();
+      object.matrixWorld.decompose(objectPosition, objectQuaternion, objectScale);
+      bone.bone.matrixWorld.decompose(bonePosition, boneQuaternion, boneScale);
+      expect(objectPosition.distanceTo(bonePosition)).toBeLessThan(1e-6);
+      expect(Math.abs(objectQuaternion.dot(boneQuaternion))).toBeGreaterThan(1 - 1e-9);
+    }
+    project.dispose();
   });
 
   it("TH-125 retains the last pose for blocked patches", () => {
@@ -258,5 +223,19 @@ describe("Three.js Object3D renderer adapter", () => {
     objects.set("rig/arm", first);
     adapter.apply(readyPatch("rig/arm", { x: 31 }, 3));
     expect(first.position.x).toBe(31);
+  });
+
+  it("TH-134 writes a selected row's cells onto the resolved target without a table overload", () => {
+    const object = new Object3D();
+    const adapter = createObject3dPatchAdapter((nodeId) =>
+      nodeId === "rig/hand" ? object : undefined,
+    );
+    const read = tableFrameSource([{ id: "rig/hand", cells: { x: 4, y: 5, z: 6, rotation: 90 } }]);
+    const cells = read("rig/hand");
+    if (cells === undefined) throw new Error("Missing row");
+    adapter.applyValues("rig/hand", cells);
+    expect(object.position.toArray()).toEqual([4, 5, 6]);
+    expect(object.rotation.z).toBeCloseTo(Math.PI / 2, 12);
+    expect(distance(object.position, new Vector3(4, 5, 6))).toBeLessThan(1e-12);
   });
 });
