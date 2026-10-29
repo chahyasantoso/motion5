@@ -1,6 +1,5 @@
 import { unreachable } from "../lang/exhaustive";
 import { readAuthoredLeaf } from "./authored-leaf";
-import { PLUGIN_VALUES_SECTION, readPluginValues } from "./keyframe-shape";
 
 /**
  * The authored vocabulary of a constrained 2D solve, and the one owner of what a well-formed value
@@ -320,21 +319,6 @@ export function classifyJoint(
 }
 
 /**
- * Whether a member whose solver groups are `groups` authored a joint that constrains its solve: a
- * static `joint` naming a kind other than `free` under one of them. The graph reads it to derive the
- * strategy at load, restating what `ik3d-constraint.ts`'s `constrains` answers at runtime; a test
- * holds the two equal. A malformed `joint` constrains nothing here, because `ik-joint-malformed`
- * already refuses the load.
- */
-export function authorsConstrainingJoint(keyframes: unknown, groups: readonly string[]): boolean {
-  return authoredSpellings(keyframes, JOINT_KEY).some((spelling) => {
-    if (!groups.includes(spelling.group)) return false;
-    const kind = readStatic(spelling.value, readJointKind);
-    return kind !== undefined && jointConstrains(kind);
-  });
-}
-
-/**
  * One authored `inspect` spelling, classified. There is no `absent` arm, unlike `BendAuthored`,
  * because the rule reads only spellings `authoredSpellings` found, so every value here was written.
  */
@@ -350,34 +334,6 @@ export function classifyInspect(value: unknown): InspectAuthored {
   return leaf.kind === "static" && typeof leaf.value === "boolean"
     ? { kind: "valid", enabled: leaf.value }
     : { kind: "malformed" };
-}
-
-/** One authored spelling of a key on a track: the leaf of that name under one plugin's group. */
-export interface AuthoredSpelling {
-  readonly group: string;
-  readonly path: string;
-  readonly value: unknown;
-}
-
-/**
- * Every spelling of `key` a track's keyframes author, one per group whose values name it, in
- * canonical order.
- *
- * Every group's leaves reach the same flattened value bag a composer reads (ADR-043), so a rule that
- * inspects only one group lets another group's spelling past load unvalidated. There is no flat
- * spelling to read: an ungrouped entry is `keyframes-ungrouped-key` (ADR-121). Reads groups through
- * `readPluginValues`, which owns the layout, rather than restating it.
- */
-export function authoredSpellings(keyframes: unknown, key: string): readonly AuthoredSpelling[] {
-  if (keyframes === null || typeof keyframes !== "object" || Array.isArray(keyframes)) return [];
-  const record = keyframes as Readonly<Record<string, unknown>>;
-  const spellings: AuthoredSpelling[] = [];
-  for (const group of Object.keys(record).sort()) {
-    const values = readPluginValues(record[group]);
-    if (!Object.hasOwn(values, key)) continue;
-    spellings.push({ group, path: `${group}.${PLUGIN_VALUES_SECTION}.${key}`, value: values[key] });
-  }
-  return spellings;
 }
 
 /**

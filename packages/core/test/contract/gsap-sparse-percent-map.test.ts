@@ -60,7 +60,7 @@ describe("S2 sparse percent-keyframe compilation", () => {
 
     expect(compiled.diagnostics).toEqual([
       {
-        ruleId: "plugin-contribution-ease-collision",
+        ruleId: "ease-collision",
         path: 'hero/arm.keyframes["50%"].ease',
         message: "Conflicting ease values were authored at 50%.",
         severity: "error",

@@ -2,8 +2,6 @@ import { describe, expect, it } from "vitest";
 import { code } from "../helpers/source-region";
 import { fileURLToPath } from "node:url";
 import { readAuthoredLeaf, readCompilableStops } from "../../src/contract/authored-leaf";
-import type { Diagnostic } from "../../src/contract/v5";
-import { validateKeyframes } from "../../src/contract/validate-v5";
 import { compilePercentKeyframes } from "../../src/contract/keyframe-compiler";
 import { createFakeInterpolator } from "../../src/testing/fakes";
 
@@ -27,12 +25,7 @@ import { createFakeInterpolator } from "../../src/testing/fakes";
 const SOURCE_ROOT = fileURLToPath(new URL("../../src/", import.meta.url));
 
 /** Every file that used to carry its own copy of the leaf-shape check. */
-const READ_SITES = [
-  "contract/validate-v5.ts",
-  "contract/keyframe-shape.ts",
-  "contract/keyframe-compiler.ts",
-  "testing/fakes.ts",
-];
+const READ_SITES = ["contract/keyframe-compiler.ts", "testing/fakes.ts"];
 
 /**
  * The three spellings the duplication actually used.
@@ -133,43 +126,6 @@ interface ParityCase {
  * Pinned by rule id and path together rather than by rule id alone, because a refactor that keeps
  * the ids and moves the paths is exactly the kind of drift a rule-id-only assertion misses.
  */
-const PARITY: readonly ParityCase[] = [
-  {
-    what: "a position outside the unit range",
-    authored: { transform: { values: { x: OUT_OF_RANGE } } },
-    expected: [
-      "stop-position-range at keyframes.transform.values.x[0].p",
-      "stop-missing-start at keyframes.transform.values.x",
-      "stop-missing-end at keyframes.transform.values.x",
-    ],
-  },
-  {
-    what: "the pre-ADR-049 group form, the one object refused by name rather than as ungrouped",
-    authored: { fk: { length: RAMP } },
-    expected: ["keyframes-missing-values-section at keyframes.fk"],
-  },
-  {
-    what: "a reserved section at the top level",
-    authored: { values: { x: RAMP } },
-    expected: ["keyframes-reserved-section at keyframes.values"],
-  },
-  {
-    what: "an empty object at the top level, which names no plugin group",
-    authored: { fk: {} },
-    expected: ["keyframes-ungrouped-key at keyframes.fk"],
-  },
-  {
-    what: "a top-level object whose members are not all leaves, which is ungrouped",
-    authored: { fk: { length: { hold: 1 } } },
-    expected: ["keyframes-ungrouped-key at keyframes.fk"],
-  },
-  {
-    what: "a reserved separator in a grouped leaf",
-    authored: { transform: { values: { "a:b": RAMP } } },
-    expected: ["keyframes-reserved-separator at keyframes.transform.values.a:b"],
-  },
-];
-
 function sourceOf(site: string): string {
   return code(`${SOURCE_ROOT}${site}`);
 }
@@ -183,12 +139,6 @@ function fakeKeys(authored: Readonly<Record<string, unknown>>): readonly string[
   const keys = Object.keys(timeline.state).sort();
   timeline.kill();
   return keys;
-}
-
-function ruleIdsAndPaths(keyframes: unknown): readonly string[] {
-  const diagnostics: Diagnostic[] = [];
-  validateKeyframes(keyframes, "keyframes", diagnostics);
-  return diagnostics.map(({ ruleId, path }) => `${ruleId} at ${path}`);
 }
 
 describe("one owner for the authored leaf shape", () => {
@@ -237,10 +187,5 @@ describe("one owner for the authored leaf shape", () => {
       // key the real pipeline never produces.
       expect(fakeKeys(authored), `fake interpolator, ${what}`).toEqual(published);
     }
-  });
-
-  it("LF-4 moves no diagnostic that the authored form did not move", () => {
-    for (const { what, authored, expected } of PARITY)
-      expect(ruleIdsAndPaths(authored), what).toEqual(expected);
   });
 });

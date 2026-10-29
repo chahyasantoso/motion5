@@ -7,14 +7,14 @@ import {
   type GraphBuildResult,
   type GraphNode,
 } from "../../../src/graph/ir";
-import type { GroupedTrackDefinition, ProjectDefinition } from "../../../src/contract/v5";
+import type { TrackDefinition, ProjectDefinition } from "../../../src/contract/v5";
 
 // Slice C0 of issue #195. Two graph builders share a post-collect tail and duplicate it almost
 // verbatim: `buildGraphIR` (used by load-time validation) and `IncrementalGraphBuilder.build` (used
 // by the runtime). Extracting `finalizeGraph` gives that tail one owner, so a solver pass can be
 // added in one place and the validator and runtime cannot drift.
 
-function freeProject(tracks: readonly GroupedTrackDefinition[]): ProjectDefinition {
+function freeProject(tracks: readonly TrackDefinition[]): ProjectDefinition {
   return { schemaVersion: 5, projectId: "c0", motions: [], freeTracks: tracks };
 }
 
@@ -37,7 +37,7 @@ const CORPUS: ReadonlyArray<{
     label: "clean",
     project: freeProject([
       { id: "root" },
-      { id: "leaf", keyframes: { fk: { requires: { base: "~/root" } } } },
+      { id: "leaf", plugin: "graph-edge", input: { requires: { chain: "~/root" } } },
     ]),
     expectOrder: ["~/root", "~/leaf"],
     expectRuleIds: [],
@@ -45,21 +45,25 @@ const CORPUS: ReadonlyArray<{
   {
     label: "cycle",
     project: freeProject([
-      { id: "a", keyframes: { fk: { requires: { base: "~/b" } } } },
-      { id: "b", keyframes: { fk: { requires: { base: "~/a" } } } },
+      { id: "a", plugin: "graph-edge", input: { requires: { chain: "~/b" } } },
+      { id: "b", plugin: "graph-edge", input: { requires: { chain: "~/a" } } },
     ]),
     expectOrder: null,
     expectRuleIds: ["graph-cycle"],
   },
   {
     label: "unknown-source",
-    project: freeProject([{ id: "arm", keyframes: { fk: { requires: { base: "~/missing" } } } }]),
+    project: freeProject([
+      { id: "arm", plugin: "graph-edge", input: { requires: { chain: "~/missing" } } },
+    ]),
     expectOrder: null,
     expectRuleIds: ["edge-unknown-source"],
   },
   {
     label: "self-reference",
-    project: freeProject([{ id: "arm", keyframes: { fk: { requires: { base: "~/arm" } } } }]),
+    project: freeProject([
+      { id: "arm", plugin: "graph-edge", input: { requires: { chain: "~/arm" } } },
+    ]),
     expectOrder: null,
     expectRuleIds: ["edge-self-reference"],
   },

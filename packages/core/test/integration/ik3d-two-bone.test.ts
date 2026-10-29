@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createDomPatchAdapter, type DomTarget } from "../../src/adapters/dom";
-import type { AuthoredPluginRequires, ProjectDefinition } from "../../src/contract/v5";
+import type { ProjectDefinition, TrackDefinition } from "../../src/contract/v5";
 import { PluginCatalog } from "../../src/domain/plugin-catalog";
 import { Engine } from "../../src/engine";
 import { buildGraphIR } from "../../src/graph/ir";
@@ -91,7 +91,7 @@ function goalMiss(fore: Readonly<Record<string, unknown>>): number {
 }
 
 function staticPoleRig(
-  requires: AuthoredPluginRequires,
+  requires: NonNullable<NonNullable<TrackDefinition["input"]>["requires"]>,
   poleY: number,
   bodyCells: readonly any[] = [
     { id: "upper", cells: { length: 80, rotation: 0, rotationX: 0, rotationY: 0 } },

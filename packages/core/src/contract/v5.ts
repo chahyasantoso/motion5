@@ -342,99 +342,6 @@ export interface TrackInput {
  */
 export type AuthoredProperty = readonly AuthoredStop[] | AuthoredStaticValue;
 /**
- * The authored value of a dict-valued requirement slot: one source id per key the author names.
- *
- * A solver's goals are the case that forced it. A solver reaches for one goal per chain leaf, keyed
- * by that leaf's own member id rather than by position, because an index can never be wrong: it
- * silently means whatever the rig currently makes it mean, so inserting a bone or reordering two
- * tracks would keep loading and pull the wrong limb. A member id can be wrong, so it can be checked.
- * That is the argument that retired `reach` in favour of a named `root`, and object keys being unique
- * makes two entries for one key unrepresentable rather than merely diagnosed. See issue #195.
- *
- * Named for the shape rather than for goals, because the shape is not the goals section's own any
- * more. Any plugin may declare a slot that accepts one, through `PluginRequirement.dict`, and the
- * parser detects one by shape under any name. Keeping `AuthoredPluginGoals` would have made the one
- * plugin that reached the capability first the name of the capability. See ADR-057.
- *
- * One authored section, but one binding per entry. `readPluginBindings` expands each into its own
- * binding carrying the authored key as `memberKey`, because an entry deriving no edge would be
- * invisible to ordering and to pending classification, and because the publisher has to deliver each
- * entry separately.
- *
- * Not re-exported from the package entry, so this adds no entry to the export map or to the
- * boundary allow-list. Same finding ADR-049 recorded for `AuthoredPluginRequires`.
- */
-export type AuthoredRequirementDict = Readonly<Record<string, string>>;
-/**
- * The optional bindings section of a plugin-named group: one graph source id per requirement slot
- * the named plugin declares, or a dict of source ids for a slot that declares it accepts one.
- *
- * The slot name is the destination, so there is no author-facing projection map and no naming
- * convention such as `parentX` for the author to keep synchronized with the plugin. Omitting the
- * section, or a slot within it, derives no edge and leaves the unbound case to the plugin.
- * See ADR-044.
- *
- * The index signature stays open across both value shapes rather than pinning the dict to particular
- * slot names, on the precedent `MotionDefinition.trigger` sets below: the type is deliberately
- * structurally permissive and validation is the exact owner. A dict derives one binding per key at
- * whatever slot it was authored under, and whether that slot was allowed to carry one is
- * `PluginRequirement.dict`, read by `PluginRegistry` and refused by name as
- * `plugin-requirement-dict-unsupported`. So the looseness costs no silence: nothing is accepted and
- * then ignored, which is what rule 6 of ADR-033 forbids. Pinning it in the type instead would need a
- * per-plugin slot map inside the contract layer, which is the registry this layer must not hold.
- * See issue #195 and ADR-057.
- */
-export type AuthoredPluginRequires = Readonly<Record<string, string | AuthoredRequirementDict>>;
-/**
- * A plugin-named group: the properties that plugin claims, under `values`, plus its optional
- * `requires` section.
- *
- * Two named members, not an open record of a union. Both section names are reserved in
- * `contract/keyframe-shape`, so the contract layer can tell a section from a property without a
- * plugin registry, and the type can say what a group is instead of what it might contain. An entry
- * that names neither section is not a group, and since ADR-121 it is not a property either: it is
- * refused as `keyframes-ungrouped-key`. Anything else inside one is `keyframes-unknown-section`.
- * See ADR-049 and ADR-121.
- */
-export interface AuthoredPluginGroup {
-  readonly values?: Readonly<Record<string, AuthoredProperty>>;
-  readonly requires?: AuthoredPluginRequires;
-}
-/**
- * One authored keyframe entry, which is always a plugin-named group.
- *
- * The group names the plugin that owns its leaves, so `{ fk: { values: { length } } }` scopes the
- * leaf to one owner without the author inventing a disambiguated name. The group is flattened back
- * to its unprefixed leaves before compilation, so no interpolator, adapter, or renderer ever
- * receives a nested value.
- *
- * There is no ungrouped form: a top-level entry that is not a group is refused as
- * `keyframes-ungrouped-key`, so whether a document loads never depends on which plugins the host
- * registered. The group name is the one spelling that names the owner. See ADR-041, ADR-043,
- * ADR-049 and ADR-121.
- */
-export type AuthoredKeyframe = AuthoredPluginGroup;
-/** One `keyframes.<plugin>.requires.<slot>` entry, as read from authored input. See ADR-044. */
-export interface PluginRequiresBinding {
-  readonly plugin: string;
-  readonly slot: string;
-  readonly source: string;
-  /**
-   * The key this binding was authored under inside a dict-valued slot, absent for a scalar slot.
-   *
-   * Data rather than a formatted slot name. The slot stays exactly as the author spelled it, so the
-   * one thing that distinguishes two entries of one slot is a field, with one owner and no parser.
-   * It reaches `EdgeRequirement`, participates in edge identity and ordering, and is what a solver's
-   * goal is recovered from. See ADR-057.
-   */
-  readonly memberKey?: string;
-  /**
-   * `plugin.requires.slot`, or `plugin.requires.slot.memberKey` for a dict entry, relative to the
-   * keyframes record. Diagnostics cite this, so a refusal names the path the author actually wrote.
-   */
-  readonly authoredPath: string;
-}
-/**
  * One authored dataflow node: an optional plugin, its authored input, and a duration.
  *
  * There is no `keyframes` and no `observes`. Identified tables and records under `input.values`
@@ -448,18 +355,6 @@ export interface TrackDefinition {
   readonly plugin?: string;
   readonly input?: TrackInput;
   readonly duration?: number;
-}
-/**
- * The authored `TrackDefinition` plus the one retired member the engine still compiles.
- *
- * A compile bridge, not an accepted authored form: `parseTrackDefinition` refuses the member by
- * name, so nothing reaches a parser through this type. It exists so the grouped-keyframe engine and
- * its solver machinery keep compiling while Phase 5 replaces them, and it is deleted with them.
- * Because the member is optional, every target `TrackDefinition` is assignable to this without a
- * cast, which is what lets one contract entry point hand a definition to both readers. See ADR-046.
- */
-export interface GroupedTrackDefinition extends TrackDefinition {
-  readonly keyframes?: Readonly<Record<string, AuthoredKeyframe>>;
 }
 export interface MotionDefinition {
   readonly id: string;

@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import type { PluginRequiresBinding } from "../../../src/contract/v5";
 import type { GraphEdge } from "../../../src/graph/ir";
 import { edgeKey } from "../../../src/graph/ir";
 import { resolveRequirementEdge } from "../../../src/graph/dependency-edges";
@@ -10,7 +9,13 @@ import { resolveRequirementEdge } from "../../../src/graph/dependency-edges";
 const OBSERVER = "hero/child";
 const SOURCE = "hero/root";
 
-const binding = (slot: string): PluginRequiresBinding =>
+type Binding = {
+  readonly plugin: string;
+  readonly slot: string;
+  readonly source: string;
+  readonly authoredPath: string;
+};
+const binding = (slot: string): Binding =>
   Object.freeze({ plugin: "fk", slot, source: "root", authoredPath: `fk.requires.${slot}` });
 
 describe("canonical edge identity", () => {

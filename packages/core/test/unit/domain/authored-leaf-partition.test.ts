@@ -25,11 +25,7 @@ const READ_COMPILABLE_STOPS = member(
   "export function readCompilableStops(value: unknown): readonly AuthoredStop[] {",
   "",
 );
-const LEGACY_GROUP = member(
-  code(`${SOURCE_ROOT}contract/keyframe-shape.ts`),
-  "function looksLikeLegacyGroup(value: unknown): boolean {",
-  "",
-);
+
 const PARTITION_DECLARATION = declaration(
   AUTHORED_LEAF,
   "export type AuthoredLeafPartition =",
@@ -87,14 +83,7 @@ describe("the authored leaf payload partition answers every leaf kind", () => {
     const validator = code(`${SOURCE_ROOT}contract/validate-v5.ts`);
     const compiler = code(`${SOURCE_ROOT}contract/keyframe-compiler.ts`);
     const fakes = code(`${SOURCE_ROOT}testing/fakes.ts`);
-    const readers = [
-      AUTHORED_LEAF,
-      READ_COMPILABLE_STOPS,
-      LEGACY_GROUP,
-      validator,
-      compiler,
-      fakes,
-    ];
+    const readers = [AUTHORED_LEAF, READ_COMPILABLE_STOPS, validator, compiler, fakes];
     const oneSided = /\.kind\s*(?:===|!==)\s*"/;
 
     for (const source of readers) expect(source).not.toMatch(oneSided);
@@ -103,11 +92,7 @@ describe("the authored leaf payload partition answers every leaf kind", () => {
     expect(fakes).toContain("authoredLeafPartition");
     expect(READ_COMPILABLE_STOPS).toContain("default:");
     expect(READ_COMPILABLE_STOPS).toContain("unreachable(leaf)");
-    expect(LEGACY_GROUP).toContain("unreachable(leaf)");
-    expect(validator).toContain("unreachable(leaf)");
     // The top-level entry is a closed union too, so the two refusals have one precedence owner.
-    expect(validator).toContain("readKeyframeEntry(rawGroup)");
-    expect(validator).toContain("unreachable(entry)");
     expect(PARTITION_DECLARATION).toContain('readonly kind: "value"');
     expect(PARTITION_DECLARATION).toContain('readonly kind: "stops"');
     expect(PARTITION_DECLARATION).toContain('readonly kind: "none"');

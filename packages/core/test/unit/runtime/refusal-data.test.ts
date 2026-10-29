@@ -38,10 +38,10 @@ const thrown = (body: () => never): unknown => {
 
 // Hand-built on purpose: this suite pins what a refusal renders, so it must not
 // borrow the constructor whose output it would otherwise be echoing. The payload
-// is empty because keyframes-shape is a rule that owns no ids.
+// is empty because track-shape is a rule that owns no ids.
 const diagnostic: Diagnostic = {
-  ruleId: "keyframes-shape",
-  path: "addTrack(a).keyframes",
+  ruleId: "track-shape",
+  path: "addTrack(a)",
   message: "Not a record.",
   severity: "error",
   ids: [],

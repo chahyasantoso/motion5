@@ -1,5 +1,13 @@
 // Docs: ./dependency-edges.md
-import type { Diagnostic, GroupedTrackDefinition, PluginRequiresBinding } from "../contract/v5";
+import type { Diagnostic, TrackDefinition } from "../contract/v5";
+
+interface RequiresBinding {
+  readonly plugin: string;
+  readonly slot: string;
+  readonly source: string;
+  readonly memberKey?: string;
+  readonly authoredPath: string;
+}
 import { diagnostic } from "../contract/diagnostics";
 import { acceptedOutcome, readOutcome, refusedOutcome, type Outcome } from "../lang/outcome";
 import { qualifyFreeTrack, qualifyMotionTrack } from "./ids";
@@ -22,7 +30,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 export function resolveRequirementEdge(
-  binding: PluginRequiresBinding,
+  binding: RequiresBinding,
   observerNodeId: string,
   ownerId: string,
   path: string,
@@ -62,7 +70,7 @@ export function resolveRequirementEdge(
  * edges here.
  */
 export function collectDependencyEdges(
-  track: GroupedTrackDefinition,
+  track: TrackDefinition,
   observerId: string,
   ownerId: string,
   edges: GraphEdge[],
@@ -154,7 +162,7 @@ export function collectDependencyEdges(
 }
 
 function addDependencyEdge(
-  binding: PluginRequiresBinding,
+  binding: RequiresBinding,
   observerId: string,
   ownerId: string,
   path: string,

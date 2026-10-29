@@ -1,10 +1,4 @@
-import type {
-  Diagnostic,
-  GroupedTrackDefinition,
-  SourceBinding,
-  TrackDefinition,
-  TrackInput,
-} from "../contract/v5";
+import type { Diagnostic, SourceBinding, TrackDefinition, TrackInput } from "../contract/v5";
 import { diagnostic } from "../contract/diagnostics";
 import { validateTrackDefinition } from "../contract/validate-v5";
 import type { CommittedContract } from "../graph/committed-contract";
@@ -83,7 +77,7 @@ export interface PlanAccepted {
 export type PlanOutcome = Outcome<PlanAccepted, Diagnostic>;
 
 type MutableInput = { -readonly [K in keyof TrackInput]: TrackInput[K] };
-type MutableTrack = { -readonly [K in keyof GroupedTrackDefinition]: GroupedTrackDefinition[K] };
+type MutableTrack = { -readonly [K in keyof TrackDefinition]: TrackDefinition[K] };
 
 function refused(diagnostics: readonly Diagnostic[]): PlanOutcome {
   return refusedOutcomeFrom<PlanAccepted, Diagnostic>(diagnostics);
@@ -105,10 +99,7 @@ function expectedNodeId(track: PlannedTrack, trackId: string): string {
     : qualifyMotionTrack(track.ownerId, trackId).value;
 }
 
-function withInput(
-  track: GroupedTrackDefinition,
-  input: TrackInput | undefined,
-): GroupedTrackDefinition {
+function withInput(track: TrackDefinition, input: TrackInput | undefined): TrackDefinition {
   const next: MutableTrack = { ...track };
   if (input === undefined) delete next.input;
   else next.input = input;
@@ -116,9 +107,9 @@ function withInput(
 }
 
 function withRequiresInput(
-  track: GroupedTrackDefinition,
+  track: TrackDefinition,
   requires: Readonly<Record<string, SourceBinding>>,
-): GroupedTrackDefinition {
+): TrackDefinition {
   const input: MutableInput = { ...track.input, requires };
   return { ...track, input };
 }
@@ -303,11 +294,11 @@ function planRemoveTrack(
 }
 
 function boundSource(
-  track: GroupedTrackDefinition,
+  track: TrackDefinition,
   slot: string,
   source: string,
   memberKey: string | undefined,
-): GroupedTrackDefinition | undefined {
+): TrackDefinition | undefined {
   const requires = track.input?.requires ?? {};
   const current = requires[slot];
   if (memberKey === undefined) {
@@ -324,10 +315,10 @@ function boundSource(
 }
 
 function unboundSource(
-  track: GroupedTrackDefinition,
+  track: TrackDefinition,
   slot: string,
   memberKey: string | undefined,
-): GroupedTrackDefinition | undefined {
+): TrackDefinition | undefined {
   const requires = track.input?.requires;
   if (requires === undefined) return undefined;
   const current = requires[slot];

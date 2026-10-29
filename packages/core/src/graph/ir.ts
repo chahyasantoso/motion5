@@ -1,6 +1,6 @@
 // Docs: ./ir.md
 import { unreachable } from "../lang/exhaustive";
-import type { Diagnostic, GroupedTrackDefinition, ProjectDefinition } from "../contract/v5";
+import type { Diagnostic, TrackDefinition, ProjectDefinition } from "../contract/v5";
 import { diagnostic } from "../contract/diagnostics";
 import {
   acceptsChain,
@@ -11,8 +11,6 @@ import {
   readsMemberRest,
 } from "../contract/solver-shape";
 import { readOutcome } from "../lang/outcome";
-import { readPluginBindings, readPluginValues } from "../contract/keyframe-shape";
-import { PLUGIN_GOALS_SLOT } from "../contract/solver-slots";
 
 import { compareCodeUnits } from "./compare";
 import type { PluginCapabilities } from "../ports/plugin-capabilities";
@@ -22,7 +20,7 @@ import {
   qualifyFreeTrack,
   qualifyMotionTrack,
 } from "./ids";
-import { collectDependencyEdges, qualifySource, resolveRequirementEdge } from "./dependency-edges";
+import { collectDependencyEdges, qualifySource } from "./dependency-edges";
 import { deriveCommittedContract, type CommittedContract } from "./committed-contract";
 import { orderGraph } from "./order";
 import { checkDependencyBindings } from "./dependency-check";
@@ -80,7 +78,7 @@ export interface GraphNode {
   readonly id: string;
   readonly owner: "motion" | "free";
   readonly authoredIndex: number;
-  readonly track: GroupedTrackDefinition;
+  readonly track: TrackDefinition;
   readonly edges: readonly GraphEdge[];
   /**
    * What this node committed to, absent only when nothing can answer for it.
@@ -210,7 +208,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 export function collectTrack(
-  track: GroupedTrackDefinition,
+  track: TrackDefinition,
   owner: "motion" | "free",
   ownerId: string,
   authoredIndex: number,
@@ -233,22 +231,11 @@ export function collectTrack(
       ? qualifyFreeTrack(track.id).value
       : qualifyMotionTrack(ownerId, track.id).value;
   const edges: GraphEdge[] = [];
-  // Derived from the authored form, with no plugin registry in reach. Whether `fk` is registered
-  // and declares `base` is `PluginRegistry.resolveForKeyframes`' question; whether the source is a
-  // node, is not this node, and introduces no cycle is this layer's. That split is what lets
-  // `validateSchemaV5` build the graph without holding a registry it must not have. See ADR-044.
-  for (const binding of readPluginBindings(track.keyframes)) {
-    const bindingPath = `${id}.keyframes.${binding.authoredPath}`;
-    const resolved = resolveRequirementEdge(binding, id, ownerId, bindingPath);
-    readOutcome(
-      resolved,
-      (edge) => edges.push(edge),
-      (resolvedDiagnostics) => diagnostics.push(...resolvedDiagnostics),
-    );
-  }
-  // The identified-table path: `input.requires` names the slot and the source, and the plugin id
-  // comes from the track rather than from a grouped key. One edge per bound source; a map slot
-  // expands one edge per member key, with the key carried as data rather than folded into the slot.
+  // Derived from the authored form, with no plugin registry in reach. `input.requires` names the
+  // slot and the source, and the plugin id comes from the track. One edge per bound source; a map
+  // slot expands one edge per member key, with the key carried as data rather than folded into the
+  // slot. Whether the source is a node, is not this node, and introduces no cycle is this layer's.
+  // See ADR-044.
   collectDependencyEdges(track, id, ownerId, edges, diagnostics);
   return Object.freeze({ id, owner, authoredIndex, track, edges: Object.freeze(edges) });
 }

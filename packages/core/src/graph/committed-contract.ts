@@ -1,6 +1,6 @@
 import type {
   DependencySpec,
-  GroupedTrackDefinition,
+  TrackDefinition,
   PluginDefinition,
   SourceBinding,
 } from "../contract/v5";
@@ -54,7 +54,7 @@ export function withRequires(
 }
 
 function pluginContract(
-  track: GroupedTrackDefinition,
+  track: TrackDefinition,
   plugin: string,
   definition: PluginDefinition,
 ): CommittedContract {
@@ -79,7 +79,7 @@ function pluginContract(
  * has already reported why.
  */
 export function deriveCommittedContract(
-  track: GroupedTrackDefinition,
+  track: TrackDefinition,
   nodeId: string,
   capabilities: PluginCapabilities,
 ): CommittedContract | undefined {

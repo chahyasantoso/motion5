@@ -5,7 +5,6 @@ import type {
   AuthoredValues,
   CellAddress,
   Diagnostic,
-  GroupedTrackDefinition,
   TrackDefinition,
   TrackInput,
   Value,
@@ -34,7 +33,7 @@ import type { CheapEdit, LiveEdit } from "./edit-types";
 /** What a value edit reads about its one target. `PlannedTrack` extends it with graph placement. */
 export interface CheapTrack {
   readonly nodeId: string;
-  readonly track: GroupedTrackDefinition;
+  readonly track: TrackDefinition;
   readonly valueState: ValueState;
   readonly contract: CommittedContract | undefined;
 }
@@ -113,10 +112,7 @@ function freezeAuthored<T>(value: T): T {
   return Object.freeze(value);
 }
 
-function withInputValues(
-  track: GroupedTrackDefinition,
-  values: AuthoredValues,
-): GroupedTrackDefinition {
+function withInputValues(track: TrackDefinition, values: AuthoredValues): TrackDefinition {
   const input: TrackInput = Object.freeze({
     ...(track.input ?? {}),
     values: freezeAuthored(values),
@@ -209,12 +205,12 @@ function staticStopDiagnostics(
 }
 
 interface ValidatedAuthored {
-  readonly track: GroupedTrackDefinition;
+  readonly track: TrackDefinition;
   readonly values: ParsedValues;
 }
 
 function validateAuthoredValues(
-  track: GroupedTrackDefinition,
+  track: TrackDefinition,
   path: string,
   nodeId: string,
   contract: CommittedContract | undefined,
@@ -268,7 +264,7 @@ function refusedAddress(diagnostic: Diagnostic): AddressedValues {
  * its own: a table row is found by id and a record field must be declared or authored.
  */
 function addressedValues(
-  track: GroupedTrackDefinition,
+  track: TrackDefinition,
   address: CellAddress,
   shape: AuthoredShape,
   spec: ValueSpec | undefined,

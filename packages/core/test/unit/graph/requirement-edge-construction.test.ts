@@ -1,9 +1,15 @@
 import { describe, expect, it } from "vitest";
-import type { Diagnostic, PluginRequiresBinding } from "../../../src/contract/v5";
+import type { Diagnostic, TrackDefinition } from "../../../src/contract/v5";
 import { collectTrack, edgeRequirement } from "../../../src/graph/ir";
 import { resolveRequirementEdge } from "../../../src/graph/dependency-edges";
 
-const binding = (source: string): PluginRequiresBinding =>
+type Binding = {
+  readonly plugin: string;
+  readonly slot: string;
+  readonly source: string;
+  readonly authoredPath: string;
+};
+const binding = (source: string): Binding =>
   Object.freeze({ plugin: "fk", slot: "base", source, authoredPath: "fk.requires.base" });
 
 describe("requirement edge construction", () => {
@@ -52,10 +58,12 @@ describe("requirement edge construction", () => {
     const node = collectTrack(
       {
         id: "chest",
-        keyframes: {
-          fk: { values: { length: [{ p: 0, v: 1 }] }, requires: { base: "pelvis" } },
+        plugin: "fk",
+        input: {
+          values: { length: [{ p: 0, v: 1 }], rotation: 0 },
+          requires: { chain: "pelvis" },
         },
-      },
+      } satisfies TrackDefinition,
       "motion",
       "walk",
       0,
@@ -68,7 +76,7 @@ describe("requirement edge construction", () => {
         observerId: "walk/chest",
         sourceId: "walk/pelvis",
         role: "input",
-        requirement: { plugin: "fk", slot: "base" },
+        requirement: { plugin: "fk", slot: "chain" },
       },
     ]);
   });

@@ -33,7 +33,6 @@ export type {
   AxisKey,
   Bend,
   BendAuthored,
-  AuthoredSpelling,
   InfluenceAuthored,
   InspectAuthored,
   JointBoundKey,

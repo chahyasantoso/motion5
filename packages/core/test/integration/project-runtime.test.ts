@@ -1,7 +1,6 @@
 import { builtinRegistry } from "../support/builtin-registry";
 import { describe, expect, it } from "vitest";
 import type { ProjectDefinition } from "../../src/contract/v5";
-import type { GroupedProject } from "../support/v5-builders";
 import { createManualClock } from "../../src/ports/clock";
 import { ProjectRuntime } from "../../src/runtime/project-runtime";
 import { buildGraphIR } from "../../src/graph/ir";
@@ -34,13 +33,13 @@ describe("ProjectRuntime", () => {
 
   it("rejects invalid candidates before constructing a replacement runtime", () => {
     const clock = createManualClock();
-    const invalid: GroupedProject = {
+    const invalid: ProjectDefinition = {
       schemaVersion: 5,
       motions: [
         {
           id: "hero",
           trigger: { type: "manual" },
-          tracks: [{ id: "arm", keyframes: { fk: { requires: { base: "missing" } } } }],
+          tracks: [{ id: "arm", plugin: "graph-edge", input: { requires: { chain: "missing" } } }],
         },
       ],
       freeTracks: [{ id: "cursor" }],

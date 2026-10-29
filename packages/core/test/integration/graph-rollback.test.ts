@@ -1,24 +1,23 @@
 import { describe, expect, it } from "vitest";
-import type { ProjectDefinition } from "../../src/contract/v5";
-import type { GroupedProject } from "../support/v5-builders";
+import type { ProjectDefinition, TrackDefinition } from "../../src/contract/v5";
 import { GraphBinding, type GraphBindingHooks } from "../../src/graph/binding";
 import { createDefaultGraphBuilder } from "../../src/graph/builders/default";
 import { builtinRegistry } from "../support/builtin-registry";
 
-const project = (tracks: GroupedProject["motions"][number]["tracks"]): ProjectDefinition => ({
+const project = (tracks: readonly TrackDefinition[]): ProjectDefinition => ({
   schemaVersion: 5,
   motions: [{ id: "hero", trigger: { type: "manual" }, tracks }],
   freeTracks: [{ id: "cursor" }],
 });
 
 const base = project([
-  { id: "arm", keyframes: { fk: { requires: { base: "~/cursor" } } } },
-  { id: "halo", keyframes: { fk: { requires: { base: "arm" } } } },
+  { id: "arm", plugin: "graph-edge", input: { requires: { chain: "~/cursor" } } },
+  { id: "halo", plugin: "graph-edge", input: { requires: { chain: "arm" } } },
 ]);
 
 const changed = project([
-  { id: "arm", keyframes: { fk: { requires: { base: "~/cursor" } } } },
-  { id: "badge", keyframes: { fk: { requires: { base: "arm" } } } },
+  { id: "arm", plugin: "graph-edge", input: { requires: { chain: "~/cursor" } } },
+  { id: "badge", plugin: "graph-edge", input: { requires: { chain: "arm" } } },
 ]);
 
 describe("GraphBinding transactions", () => {
@@ -39,7 +38,7 @@ describe("GraphBinding transactions", () => {
         observerId: "hero/badge",
         sourceId: "hero/arm",
         role: "input",
-        requirement: { plugin: "fk", slot: "base" },
+        requirement: { plugin: "graph-edge", slot: "chain" },
       }),
     ).toBe(true);
   });
@@ -50,7 +49,9 @@ describe("GraphBinding transactions", () => {
     });
     const beforeGraph = binding.graph;
     const beforeState = binding.state.snapshot();
-    const invalid = project([{ id: "arm", keyframes: { fk: { requires: { base: "missing" } } } }]);
+    const invalid = project([
+      { id: "arm", plugin: "graph-edge", input: { requires: { chain: "missing" } } },
+    ]);
 
     expect(() => binding.replace(invalid)).toThrow(TypeError);
     expect(binding.graph).toBe(beforeGraph);

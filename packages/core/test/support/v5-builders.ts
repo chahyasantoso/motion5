@@ -3,7 +3,6 @@ import type {
   AuthoredRecord,
   AuthoredValues,
   FlatRecord,
-  GroupedTrackDefinition,
   MotionDefinition,
   PatchPayload,
   SourceBinding,
@@ -13,23 +12,6 @@ import type {
   Value,
   ValueSpec,
 } from "../../src/contract/v5";
-
-/**
- * A project fixture that still authors grouped `keyframes`.
- *
- * The identified-table contract refuses both members by name, so this is a fixture type for the
- * graph-level cases that read output edges directly and never reach a parser. It is assignable to
- * `ProjectDefinition` without a cast, and it leaves with the grouped bridge in Phase 3.
- */
-export interface GroupedProject {
-  readonly schemaVersion: 5;
-  readonly projectId?: string;
-  readonly perspective?: number;
-  readonly motions: readonly (Omit<MotionDefinition, "tracks"> & {
-    readonly tracks: readonly GroupedTrackDefinition[];
-  })[];
-  readonly freeTracks?: readonly GroupedTrackDefinition[];
-}
 
 /**
  * Shape-neutral authored fixtures for the v5 value contract.

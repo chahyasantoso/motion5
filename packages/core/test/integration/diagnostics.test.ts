@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { GroupedTrackDefinition } from "../../src/contract/v5";
+import type { ProjectDefinition } from "../../src/contract/v5";
 import { createManualClock } from "../../src/ports/clock";
 import { ProjectRuntime } from "../../src/runtime/project-runtime";
 
@@ -8,38 +8,26 @@ import { ProjectRuntime } from "../../src/runtime/project-runtime";
  * that is never seeded, so the source never publishes a value and every seek of a consumer
  * produces exactly one fresh `source-pending` diagnostic (never the same diagnostic twice, since
  * the observer id differs each time). This lets a handful of sequential `seek` calls exercise the
- * ring buffer's eviction without any node ever resolving. The bindings are the grouped-keyframe
- * form because this runtime is registry-free and that form derives an input edge without asking a
- * plugin catalog.
+ * ring buffer's eviction without any node ever resolving. The bindings use `input.requires`, the
+ * identified form, because this runtime is registry-free and that form derives an input edge
+ * without asking a plugin catalog.
  */
-function pendingProject(): {
-  readonly schemaVersion: 5;
-  readonly motions: readonly {
-    id: string;
-    trigger: { type: "manual" };
-    tracks: readonly never[];
-  }[];
-  readonly freeTracks: readonly GroupedTrackDefinition[];
-} {
+function pendingProject(): ProjectDefinition {
+  const consumer = (id: string, source: string) => ({
+    id,
+    plugin: "fk",
+    input: { values: { length: 1, rotation: 0 }, requires: { chain: source } },
+  });
   return {
-    schemaVersion: 5 as const,
-    motions: [{ id: "hero", trigger: { type: "manual" as const }, tracks: [] }],
+    schemaVersion: 5,
+    motions: [{ id: "hero", trigger: { type: "manual" }, tracks: [] }],
     freeTracks: [
       { id: "source1" },
       { id: "source2" },
       { id: "source3" },
-      {
-        id: "consumer1",
-        keyframes: { fk: { requires: { base: "~/source1" } } },
-      },
-      {
-        id: "consumer2",
-        keyframes: { fk: { requires: { base: "~/source2" } } },
-      },
-      {
-        id: "consumer3",
-        keyframes: { fk: { requires: { base: "~/source3" } } },
-      },
+      consumer("consumer1", "~/source1"),
+      consumer("consumer2", "~/source2"),
+      consumer("consumer3", "~/source3"),
     ],
   };
 }

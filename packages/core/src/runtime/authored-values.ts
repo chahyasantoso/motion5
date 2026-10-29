@@ -1,4 +1,4 @@
-import type { GroupedTrackDefinition, MotionDefinition } from "../contract/v5";
+import type { TrackDefinition, MotionDefinition } from "../contract/v5";
 import type { RequireView } from "../contract/track-handle";
 
 /**
@@ -31,7 +31,7 @@ import type { RequireView } from "../contract/track-handle";
  * Weak, so it retains nothing this runtime has dropped: a cache's residency belongs to the layer
  * that holds it rather than to callers staying in step. See `RA-96` and ADR-058.
  */
-const REQUIRE_VIEWS = new WeakMap<GroupedTrackDefinition, readonly RequireView[]>();
+const REQUIRE_VIEWS = new WeakMap<TrackDefinition, readonly RequireView[]>();
 
 /**
  * The bindings `track` authored, as a handle reports them.
@@ -42,7 +42,7 @@ const REQUIRE_VIEWS = new WeakMap<GroupedTrackDefinition, readonly RequireView[]
  * them as one. Total by construction: a track that binds nothing answers an empty list.
  * See ADR-044, ADR-057 and ADR-062.
  */
-export function requireViews(track: GroupedTrackDefinition): readonly RequireView[] {
+export function requireViews(track: TrackDefinition): readonly RequireView[] {
   const memo = REQUIRE_VIEWS.get(track);
   if (memo !== undefined) return memo;
   const views: RequireView[] = [];

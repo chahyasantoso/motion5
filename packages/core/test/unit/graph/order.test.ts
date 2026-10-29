@@ -1,6 +1,6 @@
 import { builtinRegistry } from "../../support/builtin-registry";
 import { describe, expect, it } from "vitest";
-import type { GroupedProject } from "../../support/v5-builders";
+import type { ProjectDefinition } from "../../../src/contract/v5";
 import type { GraphNode } from "../../../src/graph/ir";
 import { buildGraphIR } from "../../../src/graph/ir";
 import { orderGraph } from "../../../src/graph/order";
@@ -84,13 +84,13 @@ describe("canonical order and cycle detection", () => {
   });
 
   it("carries canonical order on the immutable IR", () => {
-    const project: GroupedProject = {
+    const project: ProjectDefinition = {
       schemaVersion: 5,
       motions: [
         {
           id: "hero",
           trigger: { type: "manual" },
-          tracks: [{ id: "arm", keyframes: { fk: { requires: { base: "~/cursor" } } } }],
+          tracks: [{ id: "arm", plugin: "graph-edge", input: { requires: { chain: "~/cursor" } } }],
         },
       ],
       freeTracks: [{ id: "cursor" }],
@@ -102,15 +102,15 @@ describe("canonical order and cycle detection", () => {
   });
 
   it("rejects a cyclic project before mount", () => {
-    const project: GroupedProject = {
+    const project: ProjectDefinition = {
       schemaVersion: 5,
       motions: [
         {
           id: "rig",
           trigger: { type: "manual" },
           tracks: [
-            { id: "a", keyframes: { fk: { requires: { base: "b" } } } },
-            { id: "b", keyframes: { fk: { requires: { base: "a" } } } },
+            { id: "a", plugin: "graph-edge", input: { requires: { chain: "b" } } },
+            { id: "b", plugin: "graph-edge", input: { requires: { chain: "a" } } },
           ],
         },
       ],

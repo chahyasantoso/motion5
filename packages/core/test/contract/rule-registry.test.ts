@@ -20,9 +20,9 @@ import { batchFor } from "../../src/runtime/report";
 
 describe("a rule owns its severity", () => {
   it("reads the severity of a warning rule from the rule rather than from the caller", () => {
-    const built = diagnostic("stop-missing-start", "motions[0].tracks[0].keyframes.x", "no p=0");
+    const built = diagnostic("value-batch-deferred", "motions[0].tracks[0]", "deferred", ["id"]);
 
-    expect(built.ruleId).toBe("stop-missing-start");
+    expect(built.ruleId).toBe("value-batch-deferred");
     expect(built.severity).toBe("warning");
   });
 

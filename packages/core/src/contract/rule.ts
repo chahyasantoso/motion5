@@ -1,12 +1,4 @@
-import {
-  CONTRIBUTION_RULE_ID_PREFIX,
-  KEYFRAME_RULE_IDS,
-  contributionRuleId,
-  type BaseRuleId,
-  type ContributionRuleName,
-  type KeyframeRuleId,
-  type RuleId,
-} from "./rule-id";
+import { type BaseRuleId, type RuleId } from "./rule-id";
 
 /**
  * How loudly a rule refuses.
@@ -68,6 +60,7 @@ const BASE_RULES = {
   "composition-failure": ERROR_WITH_IDS,
   "composition-output-shape": ERROR_WITH_IDS,
   "diagnostic-sink-failure": ERROR_WITH_IDS,
+  "ease-collision": ERROR_WITH_IDS,
   "edge-duplicate": ERROR_WITH_IDS,
   "edge-self-reference": ERROR_WITH_IDS,
   "edge-unknown-source": ERROR_WITH_IDS,
@@ -124,16 +117,6 @@ const BASE_RULES = {
   "output-undeclared": ERROR_NO_IDS,
   "perspective-shape": ERROR_NO_IDS,
   "perspective-usage": WARNING_WITH_IDS,
-  "plugin-contribution-cascade": ERROR_WITH_IDS,
-  "plugin-contribution-ease-collision": ERROR_WITH_IDS,
-  "plugin-contribution-failure": ERROR_WITH_IDS,
-  "plugin-contribution-key-collision": ERROR_WITH_IDS,
-  "plugin-contribution-output-collision": ERROR_WITH_IDS,
-  "plugin-contribution-reserved-tween-var": ERROR_WITH_IDS,
-  "plugin-contribution-shape": ERROR_WITH_IDS,
-  "plugin-contribution-static-unsupported": ERROR_WITH_IDS,
-  "plugin-contribution-tween-vars-conflict": ERROR_WITH_IDS,
-  "plugin-contribution-unsupported-entry": ERROR_WITH_IDS,
   "plugin-duplicate-id": ERROR_WITH_IDS,
   "plugin-duplicate-output": ERROR_WITH_IDS,
   "plugin-duplicate-serializer": ERROR_WITH_IDS,
@@ -188,66 +171,8 @@ const BASE_RULES = {
   "values-shape-invalid": ERROR_NO_IDS,
 } as const satisfies Record<BaseRuleId, RuleFacts>;
 
-/**
- * What each authored keyframe rule fixes about itself.
- *
- * Declaration order follows `KEYFRAME_RULE_IDS`, which follows the construction order in
- * `contract/validate-v5.ts`. Every member owns no ids, and the two `stop-missing-` rules are the
- * keyframe family's warnings.
- */
-const KEYFRAME_RULES = {
-  "keyframes-shape": ERROR_NO_IDS,
-  "keyframes-reserved-separator": ERROR_NO_IDS,
-  "keyframes-duplicate-key": ERROR_NO_IDS,
-  "stop-position": ERROR_NO_IDS,
-  "stop-position-range": ERROR_NO_IDS,
-  "stop-position-order": ERROR_NO_IDS,
-  "stop-position-duplicate": ERROR_NO_IDS,
-  "stop-missing-start": WARNING_NO_IDS,
-  "stop-missing-end": WARNING_NO_IDS,
-  "property-stops-wrapper": ERROR_NO_IDS,
-  "stops-shape": ERROR_NO_IDS,
-  "keyframes-requires-dict-empty": ERROR_NO_IDS,
-  "keyframes-requires-dict-key": ERROR_NO_IDS,
-  "keyframes-requires-dict-source": ERROR_NO_IDS,
-  "keyframes-requires-shape": ERROR_NO_IDS,
-  "keyframes-requires-empty": ERROR_NO_IDS,
-  "keyframes-requires-slot": ERROR_NO_IDS,
-  "keyframes-targets-shape": ERROR_NO_IDS,
-  "keyframes-requires-source": ERROR_NO_IDS,
-  "keyframes-values-shape": ERROR_NO_IDS,
-  "keyframes-values-empty": ERROR_NO_IDS,
-  "keyframes-unknown-section": ERROR_NO_IDS,
-  "keyframes-reserved-section": ERROR_NO_IDS,
-  "keyframes-missing-values-section": ERROR_NO_IDS,
-  "keyframes-ungrouped-key": ERROR_NO_IDS,
-} as const satisfies Record<KeyframeRuleId, RuleFacts>;
-
 type BaseRules = typeof BASE_RULES;
-type KeyframeRules = typeof KEYFRAME_RULES;
-
-/**
- * The contributed family's facts, derived from the keyframe record by key remapping.
- *
- * A contributed id is a spelling of a keyframe rule, so it inherits that rule's answers rather than
- * repeating them as 24 more entries. This is the same refusal `ContributionRuleId` already makes in
- * `./rule-id`, and it applies the one alias map that module owns.
- */
-type ContributionRules = {
-  readonly [Name in KeyframeRuleId as `${typeof CONTRIBUTION_RULE_ID_PREFIX}${ContributionRuleName<Name>}`]: KeyframeRules[Name];
-};
-
-// The cast is confined here for the reason `CONTRIBUTION_RULE_IDS` in `./rule-id` confines its own:
-// `Object.fromEntries` answers an index signature, and a derived family needs exactly one expression
-// that mints its members. The keys come from `contributionRuleId`, which is the expression the type
-// above derives through, so the two cannot disagree about a spelling.
-const CONTRIBUTION_RULES = Object.freeze(
-  Object.fromEntries(
-    KEYFRAME_RULE_IDS.map((name) => [contributionRuleId(name), KEYFRAME_RULES[name]]),
-  ),
-) as ContributionRules;
-
-type AllRules = BaseRules & KeyframeRules & ContributionRules;
+type AllRules = BaseRules;
 
 /**
  * Every rule's facts, as one record.
@@ -257,8 +182,6 @@ type AllRules = BaseRules & KeyframeRules & ContributionRules;
  */
 export const RULES: Readonly<Record<RuleId, RuleFacts>> = Object.freeze({
   ...BASE_RULES,
-  ...KEYFRAME_RULES,
-  ...CONTRIBUTION_RULES,
 });
 
 /**

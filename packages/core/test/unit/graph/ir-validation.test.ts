@@ -1,9 +1,9 @@
 import { builtinRegistry } from "../../support/builtin-registry";
 import { describe, expect, it } from "vitest";
 import { buildGraphIR } from "../../../src/graph/ir";
-import type { GroupedProject } from "../../support/v5-builders";
+import type { ProjectDefinition } from "../../../src/contract/v5";
 
-const project = (overrides: Partial<GroupedProject> = {}): GroupedProject => ({
+const project = (overrides: Partial<ProjectDefinition> = {}): ProjectDefinition => ({
   schemaVersion: 5,
   motions: [{ id: "hero", trigger: { type: "manual" }, tracks: [{ id: "arm" }] }],
   freeTracks: [{ id: "cursor" }],
@@ -29,12 +29,16 @@ describe("graph IR and candidate validation", () => {
           {
             id: "hero",
             trigger: { type: "manual" },
-            tracks: [{ id: "arm", keyframes: { fk: { requires: { base: "~/cursor" } } } }],
+            tracks: [
+              { id: "arm", plugin: "graph-edge", input: { requires: { chain: "~/cursor" } } },
+            ],
           },
           {
             id: "caption",
             trigger: { type: "manual" },
-            tracks: [{ id: "label", keyframes: { fk: { requires: { base: "hero/arm" } } } }],
+            tracks: [
+              { id: "label", plugin: "graph-edge", input: { requires: { chain: "hero/arm" } } },
+            ],
           },
         ],
       }),
@@ -54,8 +58,8 @@ describe("graph IR and candidate validation", () => {
             id: "hero",
             trigger: { type: "manual" },
             tracks: [
-              { id: "arm", keyframes: { fk: { requires: { base: "missing" } } } },
-              { id: "leg", keyframes: { fk: { requires: { base: "leg" } } } },
+              { id: "arm", plugin: "graph-edge", input: { requires: { chain: "missing" } } },
+              { id: "leg", plugin: "graph-edge", input: { requires: { chain: "leg" } } },
             ],
           },
         ],
@@ -89,7 +93,9 @@ describe("graph IR and candidate validation", () => {
           {
             id: "hero",
             trigger: { type: "manual" },
-            tracks: [{ id: "arm", keyframes: { fk: { requires: { base: "missing" } } } }],
+            tracks: [
+              { id: "arm", plugin: "graph-edge", input: { requires: { chain: "missing" } } },
+            ],
           },
         ],
       }),
@@ -101,7 +107,9 @@ describe("graph IR and candidate validation", () => {
           {
             id: "hero",
             trigger: { type: "manual" },
-            tracks: [{ id: "arm", keyframes: { fk: { requires: { base: "missing" } } } }],
+            tracks: [
+              { id: "arm", plugin: "graph-edge", input: { requires: { chain: "missing" } } },
+            ],
           },
         ],
       }),
@@ -117,12 +125,12 @@ describe("graph IR and candidate validation", () => {
           {
             id: "a",
             trigger: { type: "manual" },
-            tracks: [{ id: "bx", keyframes: { fk: { requires: { base: "~/nope" } } } }],
+            tracks: [{ id: "bx", plugin: "graph-edge", input: { requires: { chain: "~/nope" } } }],
           },
           {
             id: "a-b",
             trigger: { type: "manual" },
-            tracks: [{ id: "x", keyframes: { fk: { requires: { base: "~/nope" } } } }],
+            tracks: [{ id: "x", plugin: "graph-edge", input: { requires: { chain: "~/nope" } } }],
           },
         ],
       }),

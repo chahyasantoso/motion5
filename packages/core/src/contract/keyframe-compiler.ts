@@ -69,7 +69,7 @@ export function compilePercentKeyframes(
       const ids = [...new Set([...owner.keys, key])].sort();
       diagnostics.push(
         diagnostic(
-          "plugin-contribution-ease-collision",
+          "ease-collision",
           `${path}["${percent}"].ease`,
           `Conflicting ease values were authored at ${percent}.`,
           ids,
