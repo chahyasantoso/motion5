@@ -1,7 +1,7 @@
 import React, { useLayoutEffect, useRef, useState } from "react";
-import type { ProjectHandle } from "@motion5/core";
 import { selectRecord } from "@motion5/core/plugin-api";
 import { patchRender, useDomPatch } from "@motion5/react";
+import type { RigSource } from "../rig-sources";
 import { IK3D, IK3D_FRAME, IK3D_NODE_ID, IK3D_VIEW } from "../ik3d-playground-project";
 import type { GoalControl } from "../goal-control";
 import { unprojectPoint, type Point2, type Point3 } from "../projection";
@@ -9,8 +9,8 @@ import { goalNudge, useGoalDrag } from "./goal-drag";
 import { FRAME_COLOR } from "./ik3d-palette";
 
 /** The goal the runtime last published, which is where a drag or a nudge starts from. */
-function publishedGoal(handle: ProjectHandle): Point3 | undefined {
-  const decision = patchRender(handle.get(IK3D_NODE_ID(IK3D.goalTrack)));
+function publishedGoal(source: RigSource): Point3 | undefined {
+  const decision = patchRender(source.get(IK3D_NODE_ID(IK3D.goalTrack)));
   if (decision.kind !== "render") return undefined;
   const picked = selectRecord(decision.patch.outputs.values);
   if (picked.kind !== "record") return undefined;
@@ -104,20 +104,20 @@ export const Ik3dWorld: React.FC<{
  * keyboard behave the same in both tabs.
  */
 export const GoalHandle: React.FC<{
-  readonly handle: ProjectHandle;
+  readonly source: RigSource;
   readonly goals: GoalControl;
   readonly scale: number;
   readonly toBox: ToBox;
-}> = ({ handle, goals, scale, toBox }) => {
-  const bind = useDomPatch<HTMLDivElement>(handle, IK3D_NODE_ID(IK3D.goalTrack));
+}> = ({ source, goals, scale, toBox }) => {
+  const bind = useDomPatch<HTMLDivElement>(source, IK3D_NODE_ID(IK3D.goalTrack));
   const drag = useGoalDrag<{ readonly z: number; readonly clientY: number }>({
     begin(event) {
-      const goal = publishedGoal(handle);
+      const goal = publishedGoal(source);
       return goal === undefined ? undefined : { z: goal.z, clientY: event.clientY };
     },
     move(session, event) {
       if (event.shiftKey) {
-        const goal = publishedGoal(handle);
+        const goal = publishedGoal(source);
         if (goal === undefined) return;
         goals.move({
           rig: "spatial",
@@ -133,7 +133,7 @@ export const GoalHandle: React.FC<{
   });
   const onKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
     const nudge = goalNudge(event);
-    const goal = publishedGoal(handle);
+    const goal = publishedGoal(source);
     if (nudge === undefined || goal === undefined) return;
     event.preventDefault();
     goals.move({
