@@ -15,7 +15,7 @@ const PLUGINS = new URL("../", import.meta.url);
 const CORE = new URL("../../core/", import.meta.url);
 const PLUGIN_SUBPATH = /^\.\/([a-z0-9]+(?:-[a-z0-9]+)*)$/;
 const PUBLIC_3D = ["transform3d", "fk3d", "ik3d"];
-export const DEFINITION_SUBPATHS = ["transform", "fk", "ik", ...PUBLIC_3D, "rig"];
+export const DEFINITION_SUBPATHS = ["transform", "fk", "ik", ...PUBLIC_3D];
 /** Public modules that are not one zero-config definition; R3 keeps them out of the catalog. */
 const SUPPORT_SUBPATHS = ["frame3d", "catalog", "loader", "labels", "pose-classify", "runner"];
 /** R2: support modules other than `frame3d` publish exactly these runtime names. */
@@ -34,7 +34,6 @@ const INTERNAL_LEGACY_EXPORTS: Readonly<Record<string, string>> = {
   "internal/legacy/fk3d": "legacyFk3dPlugin",
   "internal/legacy/ik": "legacyIkPlugin",
   "internal/legacy/ik3d": "legacyIk3dPlugin",
-  "internal/legacy/rig": "legacyRigPlugin",
 };
 export const INTERNAL_LEGACY_SUBPATHS = Object.keys(INTERNAL_LEGACY_EXPORTS);
 
@@ -92,7 +91,7 @@ describe("public plugin subpaths", () => {
         expect(Object.keys(module).sort(), name).toEqual(supportExports);
         continue;
       }
-      if (["transform", "transform3d", "ik", "ik3d", "fk", "fk3d", "rig"].includes(name)) {
+      if (["transform", "transform3d", "ik", "ik3d", "fk", "fk3d"].includes(name)) {
         const exportName = `${name}Plugin`;
         expect(Object.keys(module), name).toEqual([exportName]);
         expect(isIdentifiedPlugin(module[exportName]), name).toBe(true);

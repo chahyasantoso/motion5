@@ -18,7 +18,7 @@ ADR-036 and ADR-048.
   production consumers may import them.
 - `@motion5/plugins/catalog` and `/loader` — public asynchronous composition-root helpers;
   production consumers may import them. Engine loading and live edits stay synchronous.
-- `@motion5/plugins/rig` and `/pose-classify` are public data plugins and readers;
+- `@motion5/plugins/pose-classify` is a public data plugin;
   `/labels` provides label readers and change listeners.
 - `@motion5/core/testing` — test support; production consumers may not import it, as enforced by
   the boundary scan.
@@ -264,28 +264,15 @@ current releases once and becomes the App's `failed` view (`TH-215` to `TH-224`)
 measures committed DOM in `useLayoutEffect`; pose gap filler's synchronous rig loaders also remain
 first-class.
 
-## @motion5/plugins/rig
-
-`rigPlugin` aggregates dict-valued `requires.bones` world frames and `requires.controls` positions.
-It claims no authored keys, solves nothing, declares no limits and provides no renderer serializer.
-Its `pose` and `controls` outputs are nested records. Always decode through `readRigValues(values)`,
-which returns `RigValues` with nameable `RigPose` and `RigControls` types. Absent dictionaries are
-empty records; present bones with absent frame fields use `readFrame3d`'s zero defaults. Keys are
-sorted, and controls retain only `x`, `y` and `z`.
-
-An unbound data track has no rig group and publishes no `pose` key. Empty groups, values and
-requirement dictionaries are schema refusals, not a spelling for an unbound rig. Downstream
-consumers bind `requires: { rig: "rig-track-id" }` in their own plugin group. Rig is the last
-zero-configuration entry in `builtinCatalog`.
-
 ## @motion5/plugins/pose-classify
 
-`createPoseClassifyPlugin(options)` returns a pure definition requiring a rig and publishing
-`label` and `confidence`. `PoseClassifyOptions` names `templates`, positive finite `maxDistance`
-in degrees, optional `name` (default `pose-classify`) and `unknownLabel` (default `unknown`).
-Each `PoseTemplate` contains a distinct non-empty label and a non-empty bone record of finite
-`rotation`, `rotationX` and `rotationY` angles. A template label cannot equal the unknown label.
-Invalid configuration throws TypeError eagerly; template copies are deeply frozen.
+`createPoseClassifyPlugin(options)` returns a pure plugin definition binding directly to an FK pose
+table track (`requires: { pose: "..." }`) and publishing `{ label, confidence }` records.
+`PoseClassifyOptions` names `templates`, positive finite `maxDistance` in degrees, optional `name`
+(default `pose-classify`) and `unknownLabel` (default `unknown`). Each `PoseTemplate` contains a
+distinct non-empty label and a non-empty bone record of finite `rotation`, `rotationX` and
+`rotationY` angles. A template label cannot equal the unknown label. Invalid configuration throws
+TypeError eagerly; template copies are deeply frozen.
 
 Distance is the mean per-bone geodesic rotation angle, not a per-axis Euler difference. Position is
 ignored. A missing bone scores Infinity, a present zero-default bone remains a candidate, ties keep

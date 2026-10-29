@@ -233,7 +233,7 @@
     },
     {
       "id": "resolve-solvers",
-      "test": "packages/core/test/unit/graph/resolve-solvers.test.ts"
+      "test": "packages/plugins/test/integration/ik-aggregate.test.ts"
     },
     {
       "id": "ik-solve",
@@ -253,7 +253,7 @@
     },
     {
       "id": "publisher-solver-members",
-      "test": "packages/core/test/unit/runtime/publisher-solver-members.test.ts"
+      "test": "packages/plugins/test/integration/fk-aggregate.test.ts"
     },
     {
       "id": "ik-two-bone-integration",
@@ -261,7 +261,7 @@
     },
     {
       "id": "solver-goals",
-      "test": "packages/core/test/unit/graph/solver-goals.test.ts"
+      "test": "packages/plugins/test/integration/ik-aggregate.test.ts"
     },
     {
       "id": "ik-multi-goal-integration",
@@ -281,15 +281,15 @@
     },
     {
       "id": "solver-arity-lift",
-      "test": "packages/core/test/unit/graph/arity-lift.test.ts"
+      "test": "packages/plugins/test/integration/ik-aggregate.test.ts"
     },
     {
       "id": "solver-goal-required",
-      "test": "packages/core/test/unit/graph/solver-goal-required.test.ts"
+      "test": "packages/plugins/test/integration/ik-aggregate.test.ts"
     },
     {
       "id": "solved-pivot-offset",
-      "test": "packages/core/test/unit/graph/solved-pivot-offset.test.ts"
+      "test": "packages/plugins/test/integration/ik-aggregate.test.ts"
     },
     {
       "id": "angle-blend",
@@ -301,11 +301,11 @@
     },
     {
       "id": "solved-rotation-weight",
-      "test": "packages/core/test/unit/graph/solved-rotation-weight.test.ts"
+      "test": "packages/plugins/test/integration/ik-aggregate.test.ts"
     },
     {
       "id": "ik-fabrik-chain-integration",
-      "test": "packages/core/test/integration/ik-fabrik-chain.test.ts"
+      "test": "packages/plugins/test/integration/ik-aggregate.test.ts"
     },
     {
       "id": "walker-demo",
@@ -329,15 +329,15 @@
     },
     {
       "id": "solver-constraints",
-      "test": "packages/core/test/unit/graph/solver-constraints.test.ts"
+      "test": "packages/plugins/test/unit/ik-constraint.test.ts"
     },
     {
       "id": "ik-inspection",
-      "test": "packages/core/test/unit/plugins/ik-inspection.test.ts"
+      "test": "packages/plugins/test/integration/ik-aggregate.test.ts"
     },
     {
       "id": "ik-goal-influence",
-      "test": "packages/core/test/unit/plugins/ik-goal-influence.test.ts"
+      "test": "packages/plugins/test/integration/ik-aggregate.test.ts"
     }
   ]
 }

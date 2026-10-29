@@ -49,10 +49,4 @@ export const identifiedCatalog: ReadonlyMap<string, IdentifiedPluginDescriptor> 
       load: async () => (await import("./fk3d")).fk3dPlugin,
     },
   ],
-  [
-    "rig",
-    {
-      load: async () => (await import("./rig")).rigPlugin,
-    },
-  ],
 ]);

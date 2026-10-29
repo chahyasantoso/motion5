@@ -6,18 +6,19 @@ states a phase; `packages/core/test/unit/scripts/session-status-shape.test.ts` e
 byte ceiling.
 
 - **Captured:** 2026-10-29, Asia/Jakarta.
-- **Read against:** `refactor/v5-identified-tables` after Slice 9 classifier and consumer migration.
+- **Read against:** `refactor/v5-identified-tables` after Slice 10 rig retirement and Phase 5 closeout.
 
 ## Now
 
-- **Classifier reads aggregate pose tables:** `packages/plugins/src/pose-classify.ts` binds directly
-  to FK pose tables, publishing flat label records. 24 pending suites retired; 35 Phase 5, 4 Phase 6
-  and 2 Phase 7 pending entries remain.
+- **Aggregate kinematics pipeline complete:** 2D/3D IK and FK consume identified tables and records
+  through single-source slots; FK publishes complete pose tables; Three.js and pose-gap-filler select
+  rows by id; rig plugins, `readRigValues` and hidden solver fan-in are deleted. All 73 Phase 5
+  pending suites retired; 4 Phase 6 and 2 Phase 7 pending entries remain.
 
 ## Next in line
 
-- **Rig retirement and Phase 5 closeout:** delete v5 and legacy rig plugins, remove rig subpaths and
-  catalogs, add deletion tests, and retire final Phase 5 pending suites.
+- **Phase 6 consumer migration:** migrate Three.js and React consumers to generated tracks and named
+  outputs.
 
 ## Open, and not scheduled
 

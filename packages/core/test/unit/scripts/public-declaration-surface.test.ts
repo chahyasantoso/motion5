@@ -169,7 +169,7 @@ describe("public declaration surface (P1-9)", () => {
       return name === undefined ? [] : [name];
     });
     expect(plugins).toEqual(
-      expect.arrayContaining(["transform3d", "fk3d", "ik3d", "rig", "pose-classify"]),
+      expect.arrayContaining(["transform3d", "fk3d", "ik3d", "pose-classify"]),
     );
     await withEmitted(
       plugins.map((name) => `packages/plugins/src/${name}.ts`),
