@@ -1,4 +1,8 @@
-import type { IdentifiedPluginDefinition, ValueSpec } from "@motion5/core/plugin-api";
+import {
+  isFlatRecord,
+  type IdentifiedPluginDefinition,
+  type ValueSpec,
+} from "@motion5/core/plugin-api";
 
 const POINT3D: ValueSpec = {
   kind: "table",
@@ -12,10 +16,6 @@ const POINT3D: ValueSpec = {
     },
   },
 };
-
-function isFlatRecord(value: unknown): value is Readonly<Record<string, number>> {
-  return value !== null && typeof value === "object" && !Array.isArray(value);
-}
 
 /** The identified 3D translation boundary; frame math remains owned by the 3D frame helpers. */
 export const transform3dPlugin: IdentifiedPluginDefinition = {

@@ -1,10 +1,8 @@
-import type { IdentifiedPluginDefinition, ValueSpec } from "@motion5/core/plugin-api";
-
-function isFlatRecord(
-  value: unknown,
-): value is Readonly<Record<string, number | string | boolean>> {
-  return value !== null && typeof value === "object" && !Array.isArray(value);
-}
+import {
+  isFlatRecord,
+  type IdentifiedPluginDefinition,
+  type ValueSpec,
+} from "@motion5/core/plugin-api";
 
 const POINT: ValueSpec = {
   kind: "table",

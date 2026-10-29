@@ -6,6 +6,7 @@ import {
   type ProjectHandle,
   type TrackDefinition,
 } from "@motion5/core";
+import { selectRow } from "@motion5/core/plugin-api";
 import { fkPlugin } from "@motion5/plugins/fk";
 import { ikPlugin } from "@motion5/plugins/ik";
 import { fk3dPlugin } from "@motion5/plugins/fk3d";
@@ -232,24 +233,6 @@ export interface SolvedLimb {
   readonly tip: Vec;
 }
 
-export type PoseRowLookup<T> =
-  | { readonly kind: "found"; readonly row: T }
-  | { readonly kind: "missing"; readonly id: string };
-
-function lookupPoseRow<T extends { readonly id: string }>(
-  rowsById: ReadonlyMap<string, T>,
-  id: string,
-): PoseRowLookup<T> {
-  const row = rowsById.get(id);
-  return row === undefined ? { kind: "missing", id } : { kind: "found", row };
-}
-
-function isFlatRecord(value: unknown): value is Readonly<Record<string, unknown>> {
-  if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
-  const prototype = Object.getPrototypeOf(value);
-  return prototype === Object.prototype || prototype === null;
-}
-
 function rowCells(
   project: ProjectHandle,
   poseTrackId: string,
@@ -257,21 +240,17 @@ function rowCells(
 ): Readonly<Record<string, unknown>> | undefined {
   const patch = project.get(poseNodeId(poseTrackId));
   if (patch?.status !== "ready") return undefined;
-  const values = patch.outputs.values;
-  if (!Array.isArray(values)) return undefined;
-  const rowsById = new Map(values.map((row) => [row.id, row]));
-  const lookup = lookupPoseRow(rowsById, rowId);
-  let cells: unknown;
-  switch (lookup.kind) {
-    case "found":
-      cells = lookup.row.cells;
-      break;
-    case "missing":
+  const picked = selectRow(patch.outputs.values, rowId);
+  switch (picked.kind) {
+    case "row":
+      return picked.cells;
+    case "missing-row":
+    case "missing-output":
+    case "wrong-kind":
       return undefined;
     default:
-      return unreachable(lookup, "pose row lookup");
+      return unreachable(picked, "pose row selection");
   }
-  return isFlatRecord(cells) ? cells : undefined;
 }
 
 function rowVector(

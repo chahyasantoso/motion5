@@ -1,5 +1,6 @@
 import React from "react";
 import type { ProjectHandle } from "@motion5/core";
+import { selectRecord } from "@motion5/core/plugin-api";
 import {
   patchRender,
   useDerivedDomPatch,
@@ -12,12 +13,6 @@ import { goalNudge, useGoalDrag } from "./goal-drag";
 
 function point(values: PatchValues): { readonly x: number; readonly y: number } {
   return { x: Number(values.x ?? 0), y: Number(values.y ?? 0) };
-}
-
-function isFlatRecord(value: unknown): value is PatchValues {
-  if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
-  const prototype = Object.getPrototypeOf(value);
-  return prototype === Object.prototype || prototype === null;
 }
 
 const endpoints: PatchDerivation = ([parent = {}, child = {}]) => {
@@ -133,9 +128,9 @@ const GoalHandle: React.FC<{
     if (amount === undefined || amount.dz !== 0) return;
     const decision = patchRender(handle.get(id));
     if (decision.kind !== "render") return;
-    const values = decision.patch.outputs.values;
-    if (!isFlatRecord(values)) return;
-    const current = point(values);
+    const picked = selectRecord(decision.patch.outputs.values);
+    if (picked.kind !== "record") return;
+    const current = point(picked.values);
     event.preventDefault();
     move(current.x + amount.dx, current.y + amount.dy);
   };

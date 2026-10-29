@@ -4,6 +4,8 @@ import type { RenderMetadata } from "./ports/render-metadata";
 export type { LivePatch, Patch, PatchListener } from "./runtime/patch-registry";
 export { patchRender } from "./contract/patch-render";
 export type { PatchRender } from "./contract/patch-render";
+export { isFlatRecord, selectRecord, selectRow, selectSingleRow } from "./contract/output-select";
+export type { RecordSelection, RowSelection } from "./contract/output-select";
 export type { RenderMetadata } from "./ports/render-metadata";
 /**
  * The collapse an implementor of `PatchSource` owes, exported beside the interface that owes it.

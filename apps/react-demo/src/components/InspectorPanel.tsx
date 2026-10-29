@@ -1,16 +1,11 @@
 import React from "react";
 import type { ProjectHandle } from "@motion5/core";
+import { selectRecord, unreachable } from "@motion5/core/plugin-api";
 import { patchRender, usePatch } from "@motion5/react";
 import { createRowPatchSource } from "./marker-position";
 
 interface InspectorPanelProps {
   readonly handle: ProjectHandle;
-}
-
-function isFlatRecord(value: unknown): value is Readonly<Record<string, unknown>> {
-  if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
-  const prototype = Object.getPrototypeOf(value);
-  return prototype === Object.prototype || prototype === null;
 }
 
 const NodeCard: React.FC<{ handle: any; nodeId: string; title: string }> = ({
@@ -30,8 +25,18 @@ const NodeCard: React.FC<{ handle: any; nodeId: string; title: string }> = ({
   const decision = patchRender(patch);
   if (decision.kind !== "render") return null;
   const ready = decision.patch;
-  const values = ready.outputs.values;
-  if (!isFlatRecord(values)) return null;
+  const picked = selectRecord(ready.outputs.values);
+  let values: Readonly<Record<string, number | string | boolean>>;
+  switch (picked.kind) {
+    case "record":
+      values = picked.values;
+      break;
+    case "missing-output":
+    case "wrong-kind":
+      return null;
+    default:
+      return unreachable(picked);
+  }
 
   const x = Number(values.x ?? 0);
   const y = Number(values.y ?? 0);

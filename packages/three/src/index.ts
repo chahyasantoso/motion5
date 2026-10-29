@@ -2,7 +2,7 @@ import type { Patch } from "@motion5/core";
 // The render decision and the never sink have one owner each in core, reached through the same
 // first-party channel `@motion5/react` reads them from, rather than restated here (ADR-094,
 // ADR-099).
-import { patchRender, unreachable } from "@motion5/core/internal";
+import { patchRender, selectRecord, unreachable } from "@motion5/core/internal";
 import { readFrame3d } from "@motion5/plugins/frame3d";
 import { Euler, Matrix4, Quaternion, Vector3, type EulerOrder, type Object3D } from "three";
 
@@ -12,12 +12,6 @@ import { Euler, Matrix4, Quaternion, Vector3, type EulerOrder, type Object3D } f
  * Core angles are degrees; three.js angles are radians.
  */
 export const EULER_ORDER_3D: EulerOrder = "ZXY";
-
-function isFlatRecord(value: unknown): value is Readonly<Record<string, unknown>> {
-  if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
-  const prototype = Object.getPrototypeOf(value);
-  return prototype === Object.prototype || prototype === null;
-}
 
 /**
  * Writes a published 3D world frame onto an Object3D.
@@ -117,11 +111,17 @@ export function createObject3dPatchAdapter(
           if (accepted !== undefined && ready.revision <= accepted) return;
           revisions.set(ready.nodeId, ready.revision);
           appliedRevisions.set(object, revisions);
-          const values = ready.outputs.values;
-          // A table has no flat frame keys; table-aware 3D rendering is Phase 6's.
-          if (!isFlatRecord(values)) return;
-          writeFrame3d(object, values);
-          return;
+          const picked = selectRecord(ready.outputs.values);
+          switch (picked.kind) {
+            case "record":
+              writeFrame3d(object, picked.values);
+              return;
+            case "missing-output":
+            case "wrong-kind":
+              return;
+            default:
+              return unreachable(picked);
+          }
         }
         case "retain":
         case "gone":

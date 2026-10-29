@@ -1,20 +1,8 @@
-import type { FlatRecord, Patch, Value } from "../contract/v5";
+import type { Patch } from "../contract/v5";
 import { patchRender } from "../contract/patch-render";
+import { selectRecord } from "../contract/output-select";
+import { unreachable } from "../lang/exhaustive";
 import type { RenderMetadata } from "../ports/render-metadata";
-
-/**
- * The `values` output as a flat record, or `undefined` for a table.
- *
- * A table has no flat key space for this adapter to write, and table-aware rendering is Phase 6's.
- * Narrowed here rather than cast, because `Value` names both shapes and a cast would let a table
- * reach `writeValues` as a record with numeric keys.
- */
-function isFlatRecord(value: Value): value is FlatRecord {
-  return !Array.isArray(value);
-}
-function flatRecord(value: Value | undefined): FlatRecord | undefined {
-  return value !== undefined && isFlatRecord(value) ? value : undefined;
-}
 
 export interface StageLike {
   style: { perspective?: string; [key: string]: unknown };
@@ -256,9 +244,17 @@ export function createDomPatchAdapter(
       if (accepted !== undefined && ready.revision <= accepted) return;
       revisions.set(ready.nodeId, ready.revision);
       appliedRevisions.set(target, revisions);
-      const values = flatRecord(ready.outputs.values);
-      if (values === undefined) return;
-      writeValues(target, values);
+      const picked = selectRecord(ready.outputs.values);
+      switch (picked.kind) {
+        case "record":
+          writeValues(target, picked.values);
+          return;
+        case "missing-output":
+        case "wrong-kind":
+          return;
+        default:
+          return unreachable(picked);
+      }
     },
     applyValues(nodeId, values) {
       const target = resolveTarget(nodeId);

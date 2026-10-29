@@ -1,3 +1,4 @@
+import { selectRow, unreachable } from "@motion5/core/plugin-api";
 import type { LivePatch, PatchDerivation, PatchSource, PatchValues } from "@motion5/react";
 
 /** A published frame's position, with an absent key read as `0` as every frame reader does. */
@@ -8,17 +9,18 @@ export function point(values: PatchValues): { x: number; y: number } {
 /** The position-only projection keeps marker children, including labels, in their own frame. */
 export const nodePosition: PatchDerivation = ([node = {}]) => point(node);
 
-function isFlatRecord(value: unknown): value is PatchValues {
-  if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
-  const prototype = Object.getPrototypeOf(value);
-  return prototype === Object.prototype || prototype === null;
-}
-
 export function selectRowValues(output: unknown, rowId: string): PatchValues | undefined {
-  if (isFlatRecord(output)) return output;
-  if (!Array.isArray(output)) return undefined;
-  const row = output.find((candidate) => candidate.id === rowId);
-  return row === undefined || !isFlatRecord(row.cells) ? undefined : row.cells;
+  const picked = selectRow(output, rowId);
+  switch (picked.kind) {
+    case "row":
+      return picked.cells;
+    case "missing-row":
+    case "missing-output":
+    case "wrong-kind":
+      return undefined;
+    default:
+      return unreachable(picked);
+  }
 }
 
 export function createRowPatchSource(

@@ -1,5 +1,6 @@
 import React from "react";
 import type { ProjectHandle } from "@motion5/core";
+import { selectRecord } from "@motion5/core/plugin-api";
 import { patchRender, usePatch } from "@motion5/react";
 import { IK3D, IK3D_GOAL_BOUNDS, IK3D_NODE_ID } from "../ik3d-playground-project";
 import { TENTACLE, nodeId } from "../ik-playground-project";
@@ -7,12 +8,6 @@ import type { GoalControl } from "../goal-control";
 
 function numberValue(values: Readonly<Record<string, unknown>>, key: string): number {
   return Number(values[key] ?? 0);
-}
-
-function isFlatRecord(value: unknown): value is Readonly<Record<string, unknown>> {
-  if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
-  const prototype = Object.getPrototypeOf(value);
-  return prototype === Object.prototype || prototype === null;
 }
 
 function inspectionLine(values: Readonly<Record<string, unknown>>): string {
@@ -46,12 +41,21 @@ const PlanarCard: React.FC<{ readonly handle: ProjectHandle; readonly goals: Goa
   )
     return <div className="solver-card">Waiting for the 2D FABRIK solve…</div>;
 
-  const root = rootDecision.patch.outputs.values;
-  const goal = goalDecision.patch.outputs.values;
-  const tip = tipDecision.patch.outputs.values;
-  const solver = solverDecision.patch.outputs.values;
-  if (!isFlatRecord(root) || !isFlatRecord(goal) || !isFlatRecord(tip) || !isFlatRecord(solver))
+  const rootPicked = selectRecord(rootDecision.patch.outputs.values);
+  const goalPicked = selectRecord(goalDecision.patch.outputs.values);
+  const tipPicked = selectRecord(tipDecision.patch.outputs.values);
+  const solverPicked = selectRecord(solverDecision.patch.outputs.values);
+  if (
+    rootPicked.kind !== "record" ||
+    goalPicked.kind !== "record" ||
+    tipPicked.kind !== "record" ||
+    solverPicked.kind !== "record"
+  )
     return <div className="solver-card">Waiting for the 2D FABRIK solve…</div>;
+  const root = rootPicked.values;
+  const goal = goalPicked.values;
+  const tip = tipPicked.values;
+  const solver = solverPicked.values;
   const distance = Math.hypot(
     numberValue(goal, "x") - numberValue(root, "x"),
     numberValue(goal, "y") - numberValue(root, "y"),
@@ -106,10 +110,12 @@ const SpatialCard: React.FC<{ readonly handle: ProjectHandle; readonly goals: Go
   if (goalDecision.kind !== "render" || solveDecision.kind !== "render")
     return <div className="solver-card">Waiting for the 3D FABRIK solve…</div>;
 
-  const goal = goalDecision.patch.outputs.values;
-  const solve = solveDecision.patch.outputs.values;
-  if (!isFlatRecord(goal) || !isFlatRecord(solve))
+  const goalPicked = selectRecord(goalDecision.patch.outputs.values);
+  const solvePicked = selectRecord(solveDecision.patch.outputs.values);
+  if (goalPicked.kind !== "record" || solvePicked.kind !== "record")
     return <div className="solver-card">Waiting for the 3D FABRIK solve…</div>;
+  const goal = goalPicked.values;
+  const solve = solvePicked.values;
   const x = numberValue(goal, "x");
   const y = numberValue(goal, "y");
   const z = numberValue(goal, "z");

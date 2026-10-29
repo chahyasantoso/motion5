@@ -1,4 +1,5 @@
 import type { Patch } from "@motion5/core";
+import { selectRecord, selectRow, unreachable } from "@motion5/core/plugin-api";
 import type { FrameSource } from "@motion5/three/skeleton";
 import { frameFromMatrix } from "@motion5/three";
 import { Matrix4, Vector3 } from "three";
@@ -17,17 +18,18 @@ export const AVATAR_SOURCES = Object.freeze({
   shoulderMid: "app/shoulder-mid",
 } as const);
 
-function isFlatRecord(value: unknown): value is Readonly<Record<string, unknown>> {
-  if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
-  const prototype = Object.getPrototypeOf(value);
-  return prototype === Object.prototype || prototype === null;
-}
-
 function rowCells(value: unknown, id: string): Readonly<Record<string, unknown>> | undefined {
-  if (isFlatRecord(value)) return value;
-  if (!Array.isArray(value)) return undefined;
-  const row = value.find((candidate) => candidate.id === id);
-  return row === undefined || !isFlatRecord(row.cells) ? undefined : row.cells;
+  const picked = selectRow(value, id);
+  switch (picked.kind) {
+    case "row":
+      return picked.cells;
+    case "missing-row":
+    case "missing-output":
+    case "wrong-kind":
+      return undefined;
+    default:
+      return unreachable(picked);
+  }
 }
 
 /** BodyState basis to published frame values, through the adapter's one convention owner. */
@@ -49,13 +51,22 @@ export function avatarFrameSource(
     if (residuals.get(limb.id)?.freshness.kind !== "current") continue;
     const ids = limbTracks(limb.id);
     const rootPatch = readPatch?.(poseNodeId(ids.root));
-    const rootValues = rootPatch?.status === "ready" ? rootPatch.outputs.values : undefined;
-    if (isFlatRecord(rootValues)) sources.set(poseNodeId(ids.root), rootValues);
+    const root = selectRecord(rootPatch?.status === "ready" ? rootPatch.outputs.values : undefined);
+    switch (root.kind) {
+      case "record":
+        sources.set(poseNodeId(ids.root), root.values);
+        break;
+      case "missing-output":
+      case "wrong-kind":
+        break;
+      default:
+        return unreachable(root);
+    }
     const posePatch = readPatch?.(poseNodeId(ids.pose));
     for (const id of [ids.upper, ids.lower]) {
       const values =
         posePatch?.status === "ready" ? rowCells(posePatch.outputs.values, id) : undefined;
-      if (isFlatRecord(values)) sources.set(poseNodeId(id), values);
+      if (values !== undefined) sources.set(poseNodeId(id), values);
     }
   }
   const body = step.filled.body;
