@@ -30,11 +30,6 @@
     "reason": "Exercises solver, IK, FK or rig behavior; Phase 5 expresses it with tables and declared dependencies."
   },
   {
-    "path": "packages/core/test/integration/ik-multi-goal.test.ts",
-    "phase": 5,
-    "reason": "Exercises solver, IK, FK or rig behavior; Phase 5 expresses it with tables and declared dependencies."
-  },
-  {
     "path": "packages/core/test/integration/ik-playground-motion-progress.test.ts",
     "phase": 5,
     "reason": "Exercises solver, IK, FK or rig behavior; Phase 5 expresses it with tables and declared dependencies."
@@ -45,17 +40,7 @@
     "reason": "Exercises solver, IK, FK or rig behavior; Phase 5 expresses it with tables and declared dependencies."
   },
   {
-    "path": "packages/core/test/integration/ik-two-bone.test.ts",
-    "phase": 5,
-    "reason": "Exercises solver, IK, FK or rig behavior; Phase 5 expresses it with tables and declared dependencies."
-  },
-  {
     "path": "packages/core/test/integration/ik3d-playground.test.ts",
-    "phase": 5,
-    "reason": "Exercises solver, IK, FK or rig behavior; Phase 5 expresses it with tables and declared dependencies."
-  },
-  {
-    "path": "packages/core/test/integration/ik3d-two-bone.test.ts",
     "phase": 5,
     "reason": "Exercises solver, IK, FK or rig behavior; Phase 5 expresses it with tables and declared dependencies."
   },
@@ -79,11 +64,7 @@
     "phase": 5,
     "reason": "Exercises old grouped keyframe sections; Phase 5 expresses plugins with tables and declared dependencies."
   },
-  {
-    "path": "packages/core/test/integration/react-demo-rig.test.ts",
-    "phase": 5,
-    "reason": "Loads full-body-project through fk and transform plugin tracks; Phase 5 expresses them with tables and declared dependencies."
-  },
+
   {
     "path": "packages/core/test/integration/solver-member-cache.test.ts",
     "phase": 5,
@@ -224,18 +205,9 @@
     "phase": 5,
     "reason": "Solver chain membership and the removed-member re-seed need the built-in chain plugins; Phase 5 expresses them with tables and declared dependencies."
   },
-  {
-    "path": "packages/plugins/test/integration/ik-envelope.test.ts",
-    "phase": 5,
-    "reason": "Exercises solver, IK, FK or rig behavior; Phase 5 expresses it with tables and declared dependencies."
-  },
+
   {
     "path": "packages/plugins/test/integration/ik-guide-examples.test.ts",
-    "phase": 5,
-    "reason": "Exercises solver, IK, FK or rig behavior; Phase 5 expresses it with tables and declared dependencies."
-  },
-  {
-    "path": "packages/plugins/test/integration/ik-stability.test.ts",
     "phase": 5,
     "reason": "Exercises solver, IK, FK or rig behavior; Phase 5 expresses it with tables and declared dependencies."
   },
@@ -245,59 +217,9 @@
     "reason": "Exercises solver, IK, FK or rig behavior; Phase 5 expresses it with tables and declared dependencies."
   },
   {
-    "path": "packages/plugins/test/integration/ik3d-joint.test.ts",
-    "phase": 5,
-    "reason": "Exercises solver, IK, FK or rig behavior; Phase 5 expresses it with tables and declared dependencies."
-  },
-  {
-    "path": "packages/plugins/test/integration/ik3d-orient.test.ts",
-    "phase": 5,
-    "reason": "Exercises solver, IK, FK or rig behavior; Phase 5 expresses it with tables and declared dependencies."
-  },
-  {
-    "path": "packages/plugins/test/integration/ik3d-tree.test.ts",
-    "phase": 5,
-    "reason": "Exercises solver, IK, FK or rig behavior; Phase 5 expresses it with tables and declared dependencies."
-  },
-  {
     "path": "packages/plugins/test/integration/live-edit-ensure.test.ts",
     "phase": 5,
     "reason": "Exercises live edit ensure on built-in FK plugin; Phase 5 expresses built-in plugins with tables and declared dependencies."
-  },
-  {
-    "path": "packages/plugins/test/integration/live-value-composition.test.ts",
-    "phase": 5,
-    "reason": "Live composition of the built-in fk, ik and transform plugins; Phase 5 expresses them with tables and declared dependencies."
-  },
-  {
-    "path": "packages/plugins/test/integration/mutation-transactionality.test.ts",
-    "phase": 5,
-    "reason": "Transactionality of the built-in fk and transform plugins; Phase 5 expresses them with tables and declared dependencies."
-  },
-  {
-    "path": "packages/plugins/test/integration/per-plugin-key-ownership.test.ts",
-    "phase": 5,
-    "reason": "Exercises built-in plugin key claims; Phase 5 expresses built-in plugins with tables and declared dependencies."
-  },
-  {
-    "path": "packages/plugins/test/integration/plugin-owned-requirements.test.ts",
-    "phase": 5,
-    "reason": "Exercises built-in plugin requirement slots; Phase 5 expresses built-in plugins with tables and declared dependencies."
-  },
-  {
-    "path": "packages/plugins/test/integration/single-input-channel.test.ts",
-    "phase": 5,
-    "reason": "Exercises built-in plugin upstream composition; Phase 5 expresses built-in plugins with tables and declared dependencies."
-  },
-  {
-    "path": "packages/plugins/test/labels.test.ts",
-    "phase": 5,
-    "reason": "Exercises solver, IK, FK or rig behavior; Phase 5 expresses it with tables and declared dependencies."
-  },
-  {
-    "path": "packages/plugins/test/pose-classify.test.ts",
-    "phase": 5,
-    "reason": "Exercises solver, IK, FK or rig behavior; Phase 5 expresses it with tables and declared dependencies."
   },
   {
     "path": "packages/plugins/test/rig.test.ts",

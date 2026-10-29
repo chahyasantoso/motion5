@@ -2,7 +2,7 @@ import React, { useLayoutEffect, useRef, useState } from "react";
 import { gsap } from "gsap";
 import {
   Engine,
-  PluginRegistry,
+  PluginCatalog,
   createMicrotaskScheduler,
   createTriggerFactory,
   type ProjectHandle,
@@ -10,8 +10,7 @@ import {
 } from "@motion5/core";
 import { createBrowserClock } from "@motion5/core/adapters/browser-clock";
 import { createGsapInterpolator } from "@motion5/core/adapters";
-import { legacyFkPlugin as fkPlugin } from "@motion5/plugins/internal/legacy/fk";
-import { legacyTransformPlugin as transformPlugin } from "@motion5/plugins/internal/legacy/transform";
+import { fkPlugin } from "@motion5/plugins/fk";
 import { armTracks, initialWalkerProject, WALK_SCROLL_SOURCE } from "./full-body-project";
 import { createWalkScrollSource } from "./scroll-source-gsap";
 import { SkeletonRig } from "./components/SkeletonRig";
@@ -27,8 +26,8 @@ export const App: React.FC = () => {
     // GSAP measures committed DOM in the layout phase, not during render or after paint.
     // Together with the initial root commit, its pin spacer exists before native scroll
     // restoration. The source still defers its snapshot; core load/mount do not publish.
-    const plugins = new PluginRegistry();
-    plugins.registerAll([transformPlugin, fkPlugin]);
+    const plugins = new PluginCatalog();
+    plugins.register(fkPlugin);
 
     const clock = createBrowserClock({
       requestFrame: (cb: FrameRequestCallback) => requestAnimationFrame(cb),

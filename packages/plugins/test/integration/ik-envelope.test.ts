@@ -1,15 +1,13 @@
-// @ts-nocheck
 import { describe, expect, it } from "vitest";
-import { PluginRegistry } from "@motion5/core";
+import { PluginCatalog } from "@motion5/core";
 import { Engine } from "@motion5/core";
 import { createManualClock } from "@motion5/core";
 import { fabrikIterationCap } from "../../src/fabrik-cap";
-import { legacyFkPlugin as fkPlugin } from "@motion5/plugins/internal/legacy/fk";
-import { legacyIkPlugin as ikPlugin } from "@motion5/plugins/internal/legacy/ik";
+import { fkPlugin } from "@motion5/plugins/fk";
+import { ikPlugin } from "@motion5/plugins/ik";
 import type { SolveMember } from "../../src/ik-member";
 import type { SolveResult } from "../../src/ik-result";
 import { chainShape, solveChain } from "../../src/ik-solve";
-import { legacyTransformPlugin as transformPlugin } from "@motion5/plugins/internal/legacy/transform";
 import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/testing";
 import {
   envelopeScenarios,
@@ -121,10 +119,8 @@ describe("IK envelope (#349 phase 7, ADR-113)", () => {
 
   it("EN-4 independent rigs in one runtime republish alone: a seek on one rig reaches no other", () => {
     const count = 24;
-    const plugins = new PluginRegistry();
-    plugins.register(transformPlugin);
-    plugins.register(fkPlugin);
-    plugins.register(ikPlugin);
+    const plugins = new PluginCatalog();
+    plugins.registerAll([fkPlugin, ikPlugin]);
     const runtime = new Engine({
       clock: createManualClock(),
       interpolator: createFakeInterpolator(),
@@ -138,17 +134,18 @@ describe("IK envelope (#349 phase 7, ADR-113)", () => {
         runtime.mount(id);
         runtime.subscribeNode(id, (patch) => {
           published.set(id, (published.get(id) ?? 0) + 1);
-          if (patch.status === "ready") latest.set(id, patch.values);
+          if (patch.status === "ready") latest.set(id, patch.outputs.values);
         });
       }
     }
     for (let index = 0; index < count; index += 1) runtime.seek(`rig-${index}/goal`, 0.25);
     // Every rig solved, and solved finitely.
     for (let index = 0; index < count; index += 1) {
-      const values = latest.get(`rig-${index}/solve`) as
-        | { readonly rotations?: Readonly<Record<string, number>> }
+      const rows = latest.get(`rig-${index}/solve`) as
+        | readonly { readonly id: string; readonly cells: { readonly rotation: number } }[]
         | undefined;
-      const rotations = Object.values(values?.rotations ?? {});
+      expect(rows).toHaveLength(2);
+      const rotations = rows!.map((row) => row.cells.rotation);
       expect(rotations).toHaveLength(2);
       expect(rotations.every(Number.isFinite)).toBe(true);
     }
@@ -165,8 +162,8 @@ describe("IK envelope (#349 phase 7, ADR-113)", () => {
         }
       }
     }
-    // Not vacuous: the moved rig's solver and both members did republish, with a new answer.
-    for (const track of ["goal", "solve", "upper", "fore"]) {
+    // Not vacuous: the moved rig's goal, solver and pose did republish, with a new answer.
+    for (const track of ["goal", "solve", "pose"]) {
       const id = `rig-${moved}/${track}`;
       expect((published.get(id) ?? 0) - (before.get(id) ?? 0), id).toBeGreaterThan(0);
     }

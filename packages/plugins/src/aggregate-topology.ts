@@ -293,7 +293,7 @@ function isScalar(value: unknown): value is AggregateScalar {
   return (
     typeof value === "string" ||
     typeof value === "boolean" ||
-    (typeof value === "number" && Number.isFinite(value))
+    (typeof value === "number" && !Number.isNaN(value))
   );
 }
 

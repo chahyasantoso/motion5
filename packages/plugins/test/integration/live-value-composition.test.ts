@@ -1,29 +1,20 @@
-// @ts-nocheck
 import { describe, expect, it } from "vitest";
-import type { ProjectDefinition } from "@motion5/core";
-import { PluginRegistry } from "@motion5/core";
-import { Engine, type ProjectHandle } from "@motion5/core";
-import { legacyFkPlugin as fkPlugin } from "@motion5/plugins/internal/legacy/fk";
-import { legacyIkPlugin as ikPlugin } from "@motion5/plugins/internal/legacy/ik";
-import { legacyTransformPlugin as transformPlugin } from "@motion5/plugins/internal/legacy/transform";
-import { createManualClock } from "@motion5/core";
+import type { ProjectDefinition, ProjectHandle } from "@motion5/core";
+import { PluginCatalog, Engine, createManualClock } from "@motion5/core";
+import { fkPlugin } from "@motion5/plugins/fk";
+import { ikPlugin } from "@motion5/plugins/ik";
 import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/testing";
 
-/**
- * Issue #218, part B of #212. The two surfaces one call has to reach.
- *
- * ADR-051's worked rig, so the numbers are the ones `IK-1` and `IK-13` already pin: root at
- * `200,300`, goal at `320,340`, lengths `80` and `60`, which solves to `40.168` and `-51.318`. A
- * member's `length` reaches the solve only through the publisher's `MemberState`, and that is read
- * from `Track.interpolated()`, so a mask that did not land in that one read cannot move a rotation
- * here at all.
- */
-const SHOULDER = "walker/shoulder";
-const TARGET = "walker/hand-target";
-const SOLVER = "walker/arm-solve";
-const UPPER = "walker/upper-arm";
-const FOREARM = "walker/forearm";
-const NODES = [SHOULDER, TARGET, SOLVER, UPPER, FOREARM] as const;
+const UPPER = "upper-arm";
+const FOREARM = "forearm";
+const TRACKS = [
+  "walker/shoulder",
+  "walker/body",
+  "walker/goals",
+  "walker/arm-solve",
+  "walker/pose",
+];
+
 const PROJECT: ProjectDefinition = {
   schemaVersion: 5,
   motions: [
@@ -31,25 +22,33 @@ const PROJECT: ProjectDefinition = {
       id: "walker",
       trigger: { type: "manual" },
       tracks: [
-        { id: "shoulder", keyframes: { transform: { values: { x: 200, y: 300, rotation: 0 } } } },
+        { id: "shoulder", input: { values: { x: 200, y: 300, rotation: 0 } } },
         {
-          id: "hand-target",
-          keyframes: { transform: { values: { x: 320, y: 340, rotation: 0 } } },
-        },
-        {
-          id: "arm-solve",
-          keyframes: { ik: { requires: { root: "shoulder", target: "hand-target" } } },
-        },
-        {
-          id: "upper-arm",
-          keyframes: {
-            fk: { values: { length: 80 }, requires: { base: "shoulder", solver: "arm-solve" } },
+          id: "body",
+          input: {
+            values: [
+              { id: "upper-arm", cells: { length: 80, rotation: 0 } },
+              { id: "forearm", cells: { parentId: "upper-arm", length: 60, rotation: 0 } },
+            ],
           },
         },
         {
-          id: "forearm",
-          keyframes: {
-            fk: { values: { length: 60 }, requires: { base: "upper-arm", solver: "arm-solve" } },
+          id: "goals",
+          input: {
+            values: [{ id: "hand-target", cells: { memberId: "forearm", x: 320, y: 340 } }],
+          },
+        },
+        {
+          id: "arm-solve",
+          plugin: "ik",
+          input: { values: {}, requires: { chain: "body", goals: "goals", base: "shoulder" } },
+        },
+        {
+          id: "pose",
+          plugin: "fk",
+          input: {
+            values: {},
+            requires: { chain: "body", solved: "arm-solve", base: "shoulder" },
           },
         },
       ],
@@ -57,51 +56,66 @@ const PROJECT: ProjectDefinition = {
   ],
 };
 
+function seekAll(handle: ProjectHandle): void {
+  for (const id of TRACKS) handle.seek(id, 0);
+}
+
 function load(): ProjectHandle {
-  const plugins = new PluginRegistry();
-  plugins.register(transformPlugin);
-  plugins.register(fkPlugin);
-  plugins.register(ikPlugin);
+  const plugins = new PluginCatalog();
+  plugins.registerAll([fkPlugin, ikPlugin]);
   const handle = new Engine({
     clock: createManualClock(),
     interpolator: createFakeInterpolator(),
     scheduler: createFakeScheduler(),
     plugins,
   }).load(PROJECT);
-  for (const id of NODES) handle.mount(id);
-  handle.seek(SHOULDER, 0);
+  for (const id of TRACKS) handle.mount(id);
+  seekAll(handle);
   return handle;
 }
-function values(handle: ProjectHandle, id: string): Readonly<Record<string, unknown>> {
-  const patch = handle.get(id);
-  expect(patch).toBeDefined();
-  // `{}` used to stand in for a patch that owns no pose, and every caller then read it as one. An
-  // empty record is not a pose, so this refuses by name instead. See ADR-098.
-  if (patch?.status !== "ready")
-    throw new Error(`${id} is ${patch?.status ?? "absent"}, not ready.`);
-  return patch.values;
+
+function boneValues(handle: ProjectHandle, boneId: string): Readonly<Record<string, number>> {
+  const patch = handle.get("walker/pose");
+  expect(patch?.status).toBe("ready");
+  const values = (patch as any).outputs.values as readonly {
+    readonly id: string;
+    readonly cells: Record<string, number>;
+  }[];
+  const row = values.find((r) => r.id === boneId);
+  expect(row).toBeDefined();
+  return row!.cells;
 }
+
 function solved(handle: ProjectHandle): Readonly<Record<string, number>> {
-  return values(handle, SOLVER).rotations as Readonly<Record<string, number>>;
+  const patch = handle.get("walker/arm-solve");
+  expect(patch?.status).toBe("ready");
+  const values = (patch as any).outputs.values as readonly {
+    readonly id: string;
+    readonly cells: { readonly rotation: number };
+  }[];
+  const map: Record<string, number> = {};
+  for (const row of values) {
+    map[row.id] = row.cells.rotation;
+  }
+  return map;
 }
 
 describe("a masked value reaches composition and the publisher's MemberState", () => {
   it("LV-2 reaches both surfaces from one call", () => {
     const handle = load();
-    const before = values(handle, UPPER);
+    const before = boneValues(handle, UPPER);
     expect(solved(handle)[UPPER]).toBeCloseTo(40.168, 3);
 
-    handle.track(UPPER).overrideValues({ length: 100 });
-    // The solver's own flush. One seam is the whole claim, and `LV-5` owns invalidate-once.
-    handle.seek(SHOULDER, 0);
+    handle.track("walker/body").input.values.set([
+      { id: UPPER, cells: { length: 100, rotation: 0 } },
+      { id: FOREARM, cells: { parentId: UPPER, length: 60, rotation: 0 } },
+    ]);
+    seekAll(handle);
 
-    // Ordinary composition: the bone this mask belongs to composes a different frame.
-    expect(values(handle, UPPER)).not.toEqual(before);
-    // The publisher-delivered MemberState: the solve read the same 100 and moved.
+    expect(boneValues(handle, UPPER)).not.toEqual(before);
     expect(solved(handle)[UPPER]).not.toBeCloseTo(40.168, 3);
-    // And both agree about it, because the tip still lands on the goal with the longer bone.
-    expect(values(handle, FOREARM).x).toBeCloseTo(320, 1);
-    expect(values(handle, FOREARM).y).toBeCloseTo(340, 1);
+    expect(boneValues(handle, FOREARM).x).toBeCloseTo(320, 1);
+    expect(boneValues(handle, FOREARM).y).toBeCloseTo(340, 1);
     handle.dispose();
   });
 
@@ -111,36 +125,40 @@ describe("a masked value reaches composition and the publisher's MemberState", (
     expect(rotations[UPPER]).toBeCloseTo(40.168, 3);
     expect(rotations[FOREARM]).toBeCloseTo(-51.318, 3);
 
-    handle.track(FOREARM).overrideValues({ length: 100 });
-    handle.seek(SHOULDER, 0);
+    handle.track("walker/body").input.values.set([
+      { id: UPPER, cells: { length: 80, rotation: 0 } },
+      { id: FOREARM, cells: { parentId: UPPER, length: 100, rotation: 0 } },
+    ]);
+    seekAll(handle);
 
-    // A member's length is an input to the solve, so both published rotations move.
     expect(solved(handle)[UPPER]).not.toBeCloseTo(40.168, 3);
     expect(solved(handle)[FOREARM]).not.toBeCloseTo(-51.318, 3);
-    // Recomputed rather than merely different: the tip is on the goal with the new geometry.
-    expect(values(handle, FOREARM).x).toBeCloseTo(320, 1);
-    expect(values(handle, FOREARM).y).toBeCloseTo(340, 1);
+    expect(boneValues(handle, FOREARM).x).toBeCloseTo(320, 1);
+    expect(boneValues(handle, FOREARM).y).toBeCloseTo(340, 1);
     handle.dispose();
   });
-  it("LV-22 a live negative length composes zero extent, where the solve placed the bone", () => {
-    // Loaded with a positive length, so no load-time rule could have seen the value this writes.
-    // That is why issue #482 made `segmentExtent` the runtime meaning instead of a load refusal.
-    const negative = load();
-    negative.track(UPPER).overrideValues({ length: -20 });
-    negative.seek(SHOULDER, 0);
-    const zero = load();
-    zero.track(UPPER).overrideValues({ length: 0 });
-    zero.seek(SHOULDER, 0);
 
-    // Red while `fk.compose` read the length raw: the upper arm's tip sat 20 units behind its
-    // pivot, and the forearm hung from that point instead of from the one the solve used.
-    expect(values(negative, UPPER).x).toBe(200);
-    expect(values(negative, UPPER).y).toBe(300);
-    for (const id of [SOLVER, UPPER, FOREARM]) {
-      expect(values(negative, id)).toEqual(values(zero, id));
-    }
-    // A zero upper arm leaves the forearm alone against a goal 126 units away: fully extended at it.
-    const forearm = values(negative, FOREARM);
+  it("LV-22 a live negative length composes zero extent, where the solve placed the bone", () => {
+    const negative = load();
+    negative.track("walker/body").input.values.set([
+      { id: UPPER, cells: { length: -20, rotation: 0 } },
+      { id: FOREARM, cells: { parentId: UPPER, length: 60, rotation: 0 } },
+    ]);
+    seekAll(negative);
+
+    const zero = load();
+    zero.track("walker/body").input.values.set([
+      { id: UPPER, cells: { length: 0, rotation: 0 } },
+      { id: FOREARM, cells: { parentId: UPPER, length: 60, rotation: 0 } },
+    ]);
+    seekAll(zero);
+
+    expect(boneValues(negative, UPPER).x).toBe(200);
+    expect(boneValues(negative, UPPER).y).toBe(300);
+    expect(boneValues(negative, UPPER)).toEqual(boneValues(zero, UPPER));
+    expect(boneValues(negative, FOREARM)).toEqual(boneValues(zero, FOREARM));
+
+    const forearm = boneValues(negative, FOREARM);
     const direction = Math.atan2(340 - 300, 320 - 200);
     expect(forearm.x).toBeCloseTo(200 + 60 * Math.cos(direction), 9);
     expect(forearm.y).toBeCloseTo(300 + 60 * Math.sin(direction), 9);

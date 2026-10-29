@@ -1,7 +1,12 @@
 import React from "react";
 import type { ProjectHandle } from "@motion5/core";
-import { useDerivedDomPatch, type PatchDerivation, type PatchValues } from "@motion5/react";
-import { nodePosition, point } from "./marker-position";
+import {
+  useDerivedDomPatch,
+  type PatchDerivation,
+  type PatchSource,
+  type PatchValues,
+} from "@motion5/react";
+import { nodePosition, point, createRowPatchSource } from "./marker-position";
 
 /**
  * Nothing in this rig re-renders on a tick.
@@ -25,7 +30,7 @@ interface SkeletonRigProps {
 }
 
 interface BoneSegmentProps {
-  readonly handle: ProjectHandle;
+  readonly handle: ProjectHandle | PatchSource;
   readonly parentId: string;
   readonly childId: string;
   readonly color: string;
@@ -35,7 +40,7 @@ interface BoneSegmentProps {
 
 /** One line between two published frames; each line owns its binding, so an absent one costs nothing. */
 const SegmentLine: React.FC<{
-  readonly handle: ProjectHandle;
+  readonly handle: ProjectHandle | PatchSource;
   readonly parentId: string;
   readonly childId: string;
   readonly stroke: string;
@@ -79,7 +84,7 @@ const BoneSegment: React.FC<BoneSegmentProps> = ({
 );
 
 interface JointMarkerProps {
-  readonly handle: ProjectHandle;
+  readonly handle: ProjectHandle | PatchSource;
   readonly nodeId: string;
   readonly color: string;
   readonly radius: number;
@@ -118,7 +123,7 @@ const JointMarker: React.FC<JointMarkerProps> = ({
 };
 
 interface FootWedgeProps {
-  readonly handle: ProjectHandle;
+  readonly handle: ProjectHandle | PatchSource;
   readonly shinId: string;
   readonly footId: string;
   readonly color: string;
@@ -150,7 +155,7 @@ const FootWedge: React.FC<FootWedgeProps> = ({ handle, shinId, footId, color }) 
 };
 
 interface HeadSkullProps {
-  readonly handle: ProjectHandle;
+  readonly handle: ProjectHandle | PatchSource;
   readonly chestId: string;
   readonly headId: string;
 }
@@ -190,7 +195,7 @@ const HeadSkull: React.FC<HeadSkullProps> = ({ handle, chestId, headId }) => {
 };
 
 interface TorsoContourProps {
-  readonly handle: ProjectHandle;
+  readonly handle: ProjectHandle | PatchSource;
   readonly pelvisId: string;
   readonly chestId: string;
 }
@@ -241,7 +246,11 @@ const TorsoContour: React.FC<TorsoContourProps> = ({ handle, pelvisId, chestId }
 const shadowPose: PatchDerivation = ([pelvis = {}]) => ({ x: point(pelvis).x, y: 398 });
 
 export const SkeletonRig: React.FC<SkeletonRigProps> = ({ handle }) => {
-  const bindShadow = useDerivedDomPatch<SVGEllipseElement>(handle, ["walk/pelvis"], shadowPose);
+  const source = React.useMemo(
+    () => createRowPatchSource(handle, "walk/pose", "walk/arms-pose"),
+    [handle],
+  );
+  const bindShadow = useDerivedDomPatch<SVGEllipseElement>(source, ["walk/pelvis"], shadowPose);
 
   return (
     <div className="stage-container">
@@ -274,62 +283,62 @@ export const SkeletonRig: React.FC<SkeletonRigProps> = ({ handle }) => {
         <g opacity={0.65}>
           {/* Right Arm */}
           <BoneSegment
-            handle={handle}
+            handle={source}
             parentId="walk/chest"
             childId="walk/armR_upper"
             color="#475569"
             width={6}
           />
           <BoneSegment
-            handle={handle}
+            handle={source}
             parentId="walk/armR_upper"
             childId="walk/armR_lower"
             color="#334155"
             width={5}
           />
-          <JointMarker handle={handle} nodeId="walk/armR_lower" color="#475569" radius={3.5} />
+          <JointMarker handle={source} nodeId="walk/armR_lower" color="#475569" radius={3.5} />
 
           {/* Right Leg */}
           <BoneSegment
-            handle={handle}
+            handle={source}
             parentId="walk/pelvis"
             childId="walk/legR_thigh"
             color="#475569"
             width={8}
           />
           <BoneSegment
-            handle={handle}
+            handle={source}
             parentId="walk/legR_thigh"
             childId="walk/legR_shin"
             color="#334155"
             width={7}
           />
           <FootWedge
-            handle={handle}
+            handle={source}
             shinId="walk/legR_shin"
             footId="walk/legR_foot"
             color="#334155"
           />
-          <JointMarker handle={handle} nodeId="walk/legR_thigh" color="#475569" radius={5} />
-          <JointMarker handle={handle} nodeId="walk/legR_shin" color="#475569" radius={4} />
+          <JointMarker handle={source} nodeId="walk/legR_thigh" color="#475569" radius={5} />
+          <JointMarker handle={source} nodeId="walk/legR_shin" color="#475569" radius={4} />
         </g>
 
         {/* 2. CORE TORSO & HEAD */}
-        <TorsoContour handle={handle} pelvisId="walk/pelvis" chestId="walk/chest" />
+        <TorsoContour handle={source} pelvisId="walk/pelvis" chestId="walk/chest" />
         <BoneSegment
-          handle={handle}
+          handle={source}
           parentId="walk/pelvis"
           childId="walk/chest"
           color="#f8fafc"
           width={8}
           innerColor="#38bdf8"
         />
-        <HeadSkull handle={handle} chestId="walk/chest" headId="walk/head" />
+        <HeadSkull handle={source} chestId="walk/chest" headId="walk/head" />
 
         {/* 3. FOREGROUND LIMBS (Left Arm & Left Leg - Vibrant Neon) */}
         {/* Left Leg */}
         <BoneSegment
-          handle={handle}
+          handle={source}
           parentId="walk/pelvis"
           childId="walk/legL_thigh"
           color="#38bdf8"
@@ -337,7 +346,7 @@ export const SkeletonRig: React.FC<SkeletonRigProps> = ({ handle }) => {
           innerColor="#bae6fd"
         />
         <BoneSegment
-          handle={handle}
+          handle={source}
           parentId="walk/legL_thigh"
           childId="walk/legL_shin"
           color="#818cf8"
@@ -345,7 +354,7 @@ export const SkeletonRig: React.FC<SkeletonRigProps> = ({ handle }) => {
           innerColor="#c7d2fe"
         />
         <FootWedge
-          handle={handle}
+          handle={source}
           shinId="walk/legL_shin"
           footId="walk/legL_foot"
           color="#a7f3d0"
@@ -353,7 +362,7 @@ export const SkeletonRig: React.FC<SkeletonRigProps> = ({ handle }) => {
 
         {/* Left Arm */}
         <BoneSegment
-          handle={handle}
+          handle={source}
           parentId="walk/chest"
           childId="walk/armL_upper"
           color="#38bdf8"
@@ -361,7 +370,7 @@ export const SkeletonRig: React.FC<SkeletonRigProps> = ({ handle }) => {
           innerColor="#bae6fd"
         />
         <BoneSegment
-          handle={handle}
+          handle={source}
           parentId="walk/armL_upper"
           childId="walk/armL_lower"
           color="#818cf8"
@@ -371,16 +380,16 @@ export const SkeletonRig: React.FC<SkeletonRigProps> = ({ handle }) => {
 
         {/* 4. FOREGROUND JOINTS & GLOW MARKERS */}
         <JointMarker
-          handle={handle}
+          handle={source}
           nodeId="walk/pelvis"
           color="#f43f5e"
           radius={9}
           label="Pelvis"
           glow
         />
-        <JointMarker handle={handle} nodeId="walk/chest" color="#f8fafc" radius={7} />
+        <JointMarker handle={source} nodeId="walk/chest" color="#f8fafc" radius={7} />
         <JointMarker
-          handle={handle}
+          handle={source}
           nodeId="walk/head"
           color="#38bdf8"
           radius={6}
@@ -389,7 +398,7 @@ export const SkeletonRig: React.FC<SkeletonRigProps> = ({ handle }) => {
         />
 
         <JointMarker
-          handle={handle}
+          handle={source}
           nodeId="walk/legL_thigh"
           color="#38bdf8"
           radius={6}
@@ -397,22 +406,22 @@ export const SkeletonRig: React.FC<SkeletonRigProps> = ({ handle }) => {
           glow
         />
         <JointMarker
-          handle={handle}
+          handle={source}
           nodeId="walk/legL_shin"
           color="#818cf8"
           radius={5}
           label="Ankle L"
         />
-        <JointMarker handle={handle} nodeId="walk/legL_foot" color="#a7f3d0" radius={3} />
+        <JointMarker handle={source} nodeId="walk/legL_foot" color="#a7f3d0" radius={3} />
 
         <JointMarker
-          handle={handle}
+          handle={source}
           nodeId="walk/armL_upper"
           color="#38bdf8"
           radius={5}
           label="Elbow L"
         />
-        <JointMarker handle={handle} nodeId="walk/armL_lower" color="#818cf8" radius={4} />
+        <JointMarker handle={source} nodeId="walk/armL_lower" color="#818cf8" radius={4} />
       </svg>
     </div>
   );

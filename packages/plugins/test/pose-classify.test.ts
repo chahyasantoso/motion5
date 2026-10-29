@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { describe, expect, it } from "vitest";
 import { createManualClock, Engine, PluginCatalog, type ProjectHandle } from "@motion5/core";
 import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/testing";
@@ -10,7 +9,8 @@ import {
   type PoseClassifyOptions,
   type PoseTemplate,
 } from "../src/pose-classify";
-import { rigPlugin } from "@motion5/plugins/rig";
+import { fk3dPlugin } from "../src/fk3d";
+import { BODY_3D_SPEC, ROOT_3D_SPEC, SOLVED_3D_SPEC } from "../src/aggregate-topology";
 
 const ZERO: Euler3d = { rotation: 0, rotationX: 0, rotationY: 0 };
 const template = (label = "idle", angles: Euler3d = ZERO): PoseTemplate => ({
@@ -23,21 +23,26 @@ function classify(
   templates: readonly PoseTemplate[] = [template()],
   maxDistance = 10,
 ): Readonly<Record<string, unknown>> {
-  const pose = Object.entries(actual).map(([id, frame]) => ({
-    id,
-    cells: {
-      x: 0,
-      y: 0,
-      z: 0,
-      rotation: frame.rotation ?? 0,
-      rotationX: frame.rotationX ?? 0,
-      rotationY: frame.rotationY ?? 0,
-    },
-  }));
-  return createPoseClassifyPlugin({ templates, maxDistance }).transform(
-    { values: {}, requires: { rig: { pose } } },
-    { nodeId: "scene/classifier", progress: 0 },
-  ).values;
+  const pose = Object.entries(actual).map(([id, frame]) => {
+    const f = frame as Readonly<Record<string, number | undefined>>;
+    return {
+      id,
+      cells: {
+        x: 0,
+        y: 0,
+        z: 0,
+        rotation: f.rotation ?? 0,
+        rotationX: f.rotationX ?? 0,
+        rotationY: f.rotationY ?? 0,
+      },
+    };
+  });
+  return (
+    (createPoseClassifyPlugin({ templates, maxDistance }).transform(
+      { values: {}, requires: { pose: { values: pose } } },
+      { nodeId: "scene/classifier", progress: 0 },
+    ).values as Readonly<Record<string, unknown>>) ?? {}
+  );
 }
 
 function values(project: ProjectHandle): Readonly<Record<string, unknown>> {
@@ -138,14 +143,14 @@ describe("pose classifier geodesic distance", () => {
       plugin.transform(
         {
           values: {},
-          requires: { rig: { pose: [{ id: "wrist", cells: { ...ZERO, x: 0, y: 0, z: 0 } }] } },
+          requires: { pose: { values: [{ id: "wrist", cells: { ...ZERO, x: 0, y: 0, z: 0 } }] } },
         },
         { nodeId: "tag", progress: 0 },
       ).values,
     ).toEqual({ label: "idle", confidence: 1 });
     expect(
       plugin.transform(
-        { values: {}, requires: { rig: { pose: [] } } },
+        { values: {}, requires: { pose: { values: [] } } },
         { nodeId: "tag", progress: 0 },
       ).values,
     ).toEqual({
@@ -195,10 +200,10 @@ describe("pose classifier geodesic distance", () => {
 });
 
 describe("pose classifier graph integration", () => {
-  it("G7 downstream label changes follow the rig edge and notify only when the label changes", () => {
+  it("G7 downstream label changes follow the pose edge and notify only when the label changes", () => {
     const plugins = new PluginCatalog();
     plugins.registerAll([
-      rigPlugin,
+      fk3dPlugin,
       createPoseClassifyPlugin({ templates: [template()], maxDistance: 10 }),
     ]);
     const project = new Engine({
@@ -214,53 +219,78 @@ describe("pose classifier graph integration", () => {
           trigger: { type: "manual" },
           tracks: [
             {
-              id: "bone",
+              id: "root",
               input: {
+                schema: ROOT_3D_SPEC,
+                values: { x: 0, y: 0, z: 0, rotation: 0, rotationX: 0, rotationY: 0 },
+              },
+            },
+            {
+              id: "body",
+              input: {
+                schema: BODY_3D_SPEC,
                 values: [
                   {
                     id: "wrist",
-                    cells: { x: 0, y: 0, z: 0, rotation: 0, rotationX: 0, rotationY: 0 },
+                    cells: {
+                      x: 0,
+                      y: 0,
+                      z: 0,
+                      rotation: 0,
+                      rotationX: 0,
+                      rotationY: 0,
+                      length: 10,
+                      weight: 1,
+                    },
                   },
                 ],
               },
             },
             {
-              id: "rig",
-              plugin: "rig",
-              input: { values: {}, requires: { bones: { wrist: "bone" }, controls: {} } },
+              id: "solved",
+              input: {
+                schema: SOLVED_3D_SPEC,
+                values: [
+                  {
+                    id: "wrist",
+                    cells: { rotation: 0, rotationX: 0, rotationY: 0 },
+                  },
+                ],
+              },
+            },
+            {
+              id: "pose",
+              plugin: "fk3d",
+              input: { values: {}, requires: { chain: "body", solved: "solved", base: "root" } },
             },
             {
               id: "classifier",
               plugin: "pose-classify",
-              input: { values: {}, requires: { rig: "rig" } },
+              input: { values: {}, requires: { pose: "pose" } },
             },
           ],
         },
       ],
     });
     try {
+      project.mount("scene/root");
+      project.mount("scene/body");
+      project.mount("scene/solved");
+      project.mount("scene/pose");
       project.mount("scene/classifier");
-      project
-        .track("scene/bone")
-        .input.values.set([
-          { id: "wrist", cells: { x: 0, y: 0, z: 0, rotation: 0, rotationX: 0, rotationY: 0 } },
-        ]);
+      project.seek("scene/classifier", 0);
       expect(values(project).label).toBe("idle");
       const changes: unknown[] = [];
       const dispose = onLabelChange(project, "scene/classifier", "label", (next, previous) =>
         changes.push([next, previous]),
       );
       project
-        .track("scene/bone")
-        .input.values.set([
-          { id: "wrist", cells: { x: 0, y: 0, z: 0, rotation: 120, rotationX: 0, rotationY: 0 } },
-        ]);
+        .track("scene/solved")
+        .input.values.set([{ id: "wrist", cells: { rotation: 120, rotationX: 0, rotationY: 0 } }]);
       expect(values(project)).toEqual({ label: "unknown", confidence: 0 });
       project
-        .track("scene/bone")
-        .input.values.set([
-          { id: "wrist", cells: { x: 0, y: 0, z: 0, rotation: 0, rotationX: 0, rotationY: 0 } },
-        ]);
+        .track("scene/solved")
+        .input.values.set([{ id: "wrist", cells: { rotation: 0, rotationX: 0, rotationY: 0 } }]);
       expect(changes).toEqual([
         ["unknown", "idle"],
         ["idle", "unknown"],
@@ -271,15 +301,15 @@ describe("pose classifier graph integration", () => {
     }
   });
 
-  it("an app-owned catalog admits the configured classifier and rig without implicit dependencies", () => {
+  it("an app-owned catalog admits the configured classifier and fk3d without implicit dependencies", () => {
     const definition = createPoseClassifyPlugin({
       name: "tag-pose",
       templates: [template()],
       maxDistance: 10,
     });
     const catalog = new PluginCatalog();
-    catalog.registerAll([rigPlugin, definition]);
+    catalog.registerAll([fk3dPlugin, definition]);
     expect(catalog.get("tag-pose")?.id).toBe("tag-pose");
-    expect(catalog.get("rig")?.id).toBe("rig");
+    expect(catalog.get("fk3d")?.id).toBe("fk3d");
   });
 });

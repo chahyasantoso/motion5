@@ -2,7 +2,12 @@ import { describe, expect, it } from "vitest";
 import { Engine, PluginCatalog, createManualClock } from "@motion5/core";
 import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/testing";
 import { fk3dPlugin } from "@motion5/plugins/fk3d";
-import { captureSkeleton, skeletonTracks, createSkeletonDriver, tableFrameSource } from "../src/skeleton";
+import {
+  captureSkeleton,
+  skeletonTracks,
+  createSkeletonDriver,
+  tableFrameSource,
+} from "../src/skeleton";
 import { syntheticSkeleton } from "./support/synthetic-skeleton";
 
 describe("three aggregate skeleton migration (AO)", () => {
@@ -34,7 +39,10 @@ describe("three aggregate skeleton migration (AO)", () => {
     const binding = captureSkeleton(rig.skeleton, rig);
     const tracks = skeletonTracks(binding, { idPrefix: "avatar" });
     const bodyTrack = tracks.find((t) => t.id === "avatar-body")!;
-    const values = bodyTrack.input?.values as readonly { id: string; cells: Record<string, unknown> }[];
+    const values = bodyTrack.input?.values as readonly {
+      id: string;
+      cells: Record<string, unknown>;
+    }[];
     expect(values.length).toBe(binding.bones.length);
     for (const bone of binding.bones) {
       const row = values.find((r) => r.id === (bone.key ?? `avatar-bone-${bone.index}`))!;

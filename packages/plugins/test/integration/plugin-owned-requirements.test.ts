@@ -1,22 +1,12 @@
-// @ts-nocheck
 import { describe, expect, it } from "vitest";
 import type { ProjectDefinition, TrackDefinition } from "@motion5/core";
-import { Engine } from "@motion5/core";
-import { PluginRegistry, type PluginDefinition } from "@motion5/core";
-import { legacyFkPlugin as fkPlugin } from "@motion5/plugins/internal/legacy/fk";
-import { legacyTransformPlugin as transformPlugin } from "@motion5/plugins/internal/legacy/transform";
+import { Engine, PluginCatalog } from "@motion5/core";
+import type { IdentifiedPluginDefinition } from "@motion5/core/plugin-api";
+import { fkPlugin } from "../../src/fk";
+import { transformPlugin } from "../../src/transform";
+import { BODY_2D_SPEC, ROOT_2D_SPEC, SOLVED_2D_SPEC } from "../../src/aggregate-topology";
 import { createManualClock } from "@motion5/core";
 import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/testing";
-
-// Issue #173 and ADR-044. The authored form under test is the plugin-owned one:
-//
-//   keyframes: { fk: { values: { length, rotation }, requires: { base: "walk/pelvis" } } }
-//
-// The projection map it replaces made the author repeat the plugin's own input contract, and the
-// projected keys landed in the same flat bag as the track's authored values, where an upstream
-// `rotation` could silently replace a bone's local one.
-//
-// The bindings section sits beside the `values` section rather than beside the leaves, per ADR-049.
 
 function hold(value: number) {
   return value;
@@ -31,27 +21,59 @@ function ramp(from: number, to: number) {
 
 function readX(value: unknown): number {
   if (value === null || typeof value !== "object" || Array.isArray(value)) return 0;
-  const x = (value as Record<string, unknown>).x;
+  const record =
+    "values" in (value as Record<string, unknown>) &&
+    typeof (value as Record<string, unknown>).values === "object" &&
+    (value as Record<string, unknown>).values !== null
+      ? ((value as Record<string, unknown>).values as Record<string, unknown>)
+      : (value as Record<string, unknown>);
+  const x = record.x;
   return typeof x === "number" ? x : 0;
 }
 
-// Two slots, one plugin. This is the shape the issue names for IK, and it is the reason a
-// requirement is part of edge identity: both slots may intentionally observe one source.
-const reachPlugin: PluginDefinition = {
-  name: "reach",
-  keys: ["weight"],
-  requirements: { base: {}, destination: {} },
-  stage: "compose",
-  outputs: ["span"],
-  compose: (values, progress, inputs) => ({
-    span: readX(inputs.base) + readX(inputs.destination),
-  }),
+const reachPlugin: IdentifiedPluginDefinition = {
+  id: "reach",
+  inputs: {
+    values: { kind: "record", fields: { weight: { kind: "number" } } },
+    requires: {
+      base: { outputs: { values: ROOT_2D_SPEC } },
+      destination: { outputs: { values: ROOT_2D_SPEC } },
+    },
+  },
+  outputs: {
+    values: { kind: "record", fields: { span: { kind: "number" } } },
+  },
+  transform({ values, requires }) {
+    return {
+      values: {
+        span: readX(requires.base) + readX(requires.destination),
+      },
+    };
+  },
 };
 
 const bone: TrackDefinition = {
   id: "thigh",
-  keyframes: {
-    fk: { values: { length: hold(50), rotation: hold(45) }, requires: { base: "walk/pelvis" } },
+  plugin: "fk",
+  input: {
+    values: {},
+    requires: { chain: "walk/body", solved: "walk/solved", base: "walk/pelvis" },
+  },
+};
+
+const bodyTrack: TrackDefinition = {
+  id: "body",
+  input: {
+    schema: BODY_2D_SPEC,
+    values: [{ id: "thigh", cells: { length: 50, rotation: 45, weight: 1 } }],
+  },
+};
+
+const solvedTrack: TrackDefinition = {
+  id: "solved",
+  input: {
+    schema: SOLVED_2D_SPEC,
+    values: [{ id: "thigh", cells: { rotation: 45 } }],
   },
 };
 
@@ -65,10 +87,13 @@ function rig(child: TrackDefinition): ProjectDefinition {
         tracks: [
           {
             id: "pelvis",
-            keyframes: {
-              transform: { values: { x: ramp(0, 200), y: hold(100), rotation: hold(0) } },
+            input: {
+              schema: ROOT_2D_SPEC,
+              values: { x: ramp(0, 200), y: hold(100), rotation: hold(0) },
             },
           },
+          bodyTrack,
+          solvedTrack,
           child,
         ],
       },
@@ -76,14 +101,13 @@ function rig(child: TrackDefinition): ProjectDefinition {
   };
 }
 
-function rigRegistry(): PluginRegistry {
-  const plugins = new PluginRegistry();
-  plugins.register(transformPlugin);
-  plugins.register(fkPlugin);
+function rigRegistry(): PluginCatalog {
+  const plugins = new PluginCatalog();
+  plugins.registerAll([transformPlugin, fkPlugin]);
   return plugins;
 }
 
-function load(project: ProjectDefinition, plugins: PluginRegistry) {
+function load(project: ProjectDefinition, plugins: PluginCatalog) {
   return new Engine({
     clock: createManualClock(),
     interpolator: createFakeInterpolator(),
@@ -96,63 +120,80 @@ describe("plugin-owned requirements end to end", () => {
   it("Q-7 derives the input edge from the binding and composes world space from it", () => {
     const handle = load(rig(bone), rigRegistry());
     handle.mount("walk/pelvis");
+    handle.mount("walk/body");
+    handle.mount("walk/solved");
     handle.mount("walk/thigh");
 
-    // The same numbers the projection form produced: a pelvis at (0, 100) with rotation 0 and a
-    // bone of length 50 at 45 degrees. A mid-rig value, not a clean load, so a binding that
-    // derived an edge and delivered nothing would read as a held bone rather than as green.
     const batch = handle.seek("walk/pelvis", 0);
-    const thigh = batch.patches.find(({ nodeId }) => nodeId === "walk/thigh");
-    if (thigh?.status !== "ready")
-      throw new Error(`thigh is ${thigh?.status ?? "absent"}, not ready.`);
-    expect(thigh.values.x).toBeCloseTo(35.355, 3);
-    expect(thigh.values.y).toBeCloseTo(135.355, 3);
-    expect(thigh.values.rotation).toBeCloseTo(45, 12);
+    const thighPatch = batch.patches.find(({ nodeId }) => nodeId === "walk/thigh");
+    if (thighPatch?.status !== "ready")
+      throw new Error(`thigh is ${thighPatch?.status ?? "absent"}, not ready.`);
+    const row = (thighPatch.outputs.values as any)[0];
+    expect(row.cells.x).toBeCloseTo(35.355, 3);
+    expect(row.cells.y).toBeCloseTo(135.355, 3);
+    expect(row.cells.rotation).toBeCloseTo(45, 12);
 
     expect(handle.dependantsOf("walk/pelvis")).toEqual(["walk/thigh"]);
     handle.dispose();
   });
 
-  it("Q-8 leaves an omitted binding with no edge and lets the plugin own the unbound case", () => {
+  it("Q-8 leaves an omitted optional binding with no edge", () => {
+    const optionalPlugin: IdentifiedPluginDefinition = {
+      id: "opt-reach",
+      inputs: {
+        values: { kind: "record", fields: { length: { kind: "number" } } },
+        requires: {
+          base: { outputs: { values: ROOT_2D_SPEC }, optional: true },
+        },
+      },
+      outputs: {
+        values: { kind: "record", fields: { x: { kind: "number" }, y: { kind: "number" } } },
+      },
+      transform({ values, requires }) {
+        const len = typeof (values as any)?.length === "number" ? (values as any).length : 0;
+        return { values: { x: readX(requires.base) + len, y: 0 } };
+      },
+    };
     const unbound: TrackDefinition = {
       id: "thigh",
-      keyframes: { fk: { values: { length: hold(50), rotation: hold(0) } } },
+      plugin: "opt-reach",
+      input: { values: { length: 50 } },
     };
-    const handle = load(rig(unbound), rigRegistry());
+    const plugins = rigRegistry();
+    plugins.register(optionalPlugin);
+    const handle = load(rig(unbound), plugins);
     handle.mount("walk/thigh");
     handle.seek("walk/thigh", 0);
 
     const walkThighPatch = handle.get("walk/thigh");
     if (walkThighPatch?.status !== "ready")
       throw new Error(`walk/thigh is ${walkThighPatch?.status ?? "absent"}, not ready.`);
-    const values = walkThighPatch.values ?? {};
-    expect(values.x).toBeCloseTo(50, 12);
-    expect(values.y).toBeCloseTo(0, 12);
+    const vals = walkThighPatch.outputs.values as any;
+    expect(vals.x).toBeCloseTo(50, 12);
+    expect(vals.y).toBeCloseTo(0, 12);
     expect(handle.dependantsOf("walk/pelvis")).toEqual([]);
     handle.dispose();
   });
 
-  it("Q-9 refuses a binding whose source is not a node in the graph", () => {
+  it("Q-9 refuses a binding whose source is not a node in the graph with edge-unknown-source", () => {
     const dangling: TrackDefinition = {
       id: "thigh",
-      keyframes: {
-        fk: {
-          values: { length: hold(50), rotation: hold(45) },
-          requires: { base: "walk/missing" },
-        },
+      plugin: "fk",
+      input: {
+        values: {},
+        requires: { chain: "walk/body", solved: "walk/solved", base: "walk/missing" },
       },
     };
-    expect(() => load(rig(dangling), rigRegistry())).toThrow(/observation-unknown-source/);
+    expect(() => load(rig(dangling), rigRegistry())).toThrow(/edge-unknown-source/);
   });
 
   it("Q-10 treats two slots bound to one source as two edges rather than a duplicate", () => {
     const span: TrackDefinition = {
       id: "span",
-      keyframes: {
-        reach: {
-          values: { weight: hold(1) },
-          requires: { base: "walk/pelvis", destination: "walk/pelvis" },
-        },
+      plugin: "reach",
+      input: {
+        values: { weight: hold(1) },
+        requires: { base: "walk/pelvis", destination: "walk/pelvis" },
       },
     };
     const plugins = rigRegistry();
@@ -167,7 +208,7 @@ describe("plugin-owned requirements end to end", () => {
     expect(patch?.status).toBe("ready");
     if (patch?.status !== "ready")
       throw new Error(`patch is ${patch?.status ?? "absent"}, not ready.`);
-    expect(patch.values.span).toBeCloseTo(400, 12);
+    expect((patch.outputs.values as any).span).toBeCloseTo(400, 12);
     handle.dispose();
   });
 
@@ -181,39 +222,54 @@ describe("plugin-owned requirements end to end", () => {
           tracks: [
             {
               id: "pelvis",
-              keyframes: {
-                transform: { values: { x: hold(0), y: hold(0), rotation: hold(30) } },
+              input: {
+                schema: ROOT_2D_SPEC,
+                values: { x: hold(0), y: hold(0), rotation: hold(30) },
               },
             },
-            bone,
+            bodyTrack,
+            solvedTrack,
+            {
+              id: "thigh",
+              plugin: "fk",
+              input: {
+                values: {},
+                requires: { chain: "walk/body", solved: "walk/solved", base: "walk/pelvis" },
+              },
+            },
           ],
         },
       ],
     };
     const handle = load(project, rigRegistry());
     handle.mount("walk/pelvis");
+    handle.mount("walk/body");
+    handle.mount("walk/solved");
     handle.mount("walk/thigh");
     handle.seek("walk/pelvis", 0);
 
-    // Parent 30 plus local 45. This number is the separation proof: a flat merge would have
-    // replaced the bone's authored 45 with the upstream 30 and composed 60 instead.
     const walkThighPatch2 = handle.get("walk/thigh");
     if (walkThighPatch2?.status !== "ready")
       throw new Error(`walk/thigh is ${walkThighPatch2?.status ?? "absent"}, not ready.`);
-    expect(walkThighPatch2.values.rotation).toBeCloseTo(75, 12);
+    const row = (walkThighPatch2.outputs.values as any)[0];
+    expect(row.cells.rotation).toBeCloseTo(75, 12);
     handle.dispose();
   });
 
-  it("Q-12 refuses a binding to a slot the plugin never declared, at load", () => {
+  it("Q-12 refuses a binding to a slot the plugin never declared with slot-unknown", () => {
     const bad: TrackDefinition = {
       id: "thigh",
-      keyframes: {
-        fk: {
-          values: { length: hold(50), rotation: hold(45) },
-          requires: { debug: "walk/pelvis" },
+      plugin: "fk",
+      input: {
+        values: {},
+        requires: {
+          chain: "walk/body",
+          solved: "walk/solved",
+          base: "walk/pelvis",
+          debug: "walk/pelvis",
         },
       },
     };
-    expect(() => load(rig(bad), rigRegistry())).toThrow(/plugin-unknown-requirement/);
+    expect(() => load(rig(bad), rigRegistry())).toThrow(/slot-unknown/);
   });
 });

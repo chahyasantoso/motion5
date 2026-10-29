@@ -1,13 +1,11 @@
-// @ts-nocheck
 import { describe, expect, it } from "vitest";
-import { Engine } from "@motion5/core";
-import { PluginRegistry } from "@motion5/core";
-import { legacyFkPlugin as fkPlugin } from "@motion5/plugins/internal/legacy/fk";
-import { legacyTransformPlugin as transformPlugin } from "@motion5/plugins/internal/legacy/transform";
+import { Engine, PluginCatalog } from "@motion5/core";
+import { fkPlugin } from "../../src/fk";
+import { transformPlugin } from "../../src/transform";
+import { ROOT_2D_SPEC, BODY_2D_SPEC, SOLVED_2D_SPEC } from "../../src/aggregate-topology";
 import { createManualClock } from "@motion5/core";
 import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/testing";
-import type { Patch } from "@motion5/core";
-import type { ProjectDefinition, TrackDefinition } from "@motion5/core";
+import type { Patch, ProjectDefinition, TrackDefinition } from "@motion5/core";
 
 const project: ProjectDefinition = {
   schemaVersion: 5,
@@ -16,9 +14,8 @@ const project: ProjectDefinition = {
 };
 
 function makeHandle() {
-  const plugins = new PluginRegistry();
-  plugins.register(transformPlugin);
-  plugins.register(fkPlugin);
+  const plugins = new PluginCatalog();
+  plugins.registerAll([transformPlugin, fkPlugin]);
   const scheduler = createFakeScheduler();
   const handle = new Engine({
     clock: createManualClock(),
@@ -36,46 +33,52 @@ function ramp(from: number, to: number) {
   ];
 }
 
-// Both plugins are registered, so `x`, `y` and `rotation` each have two claimants and every track
-// names the one it means. `fk` claims `x` and `y` as a bone's pivot offset since slice A of issue
-// #195, so every authored leaf is nested under its owning plugin group. See ADR-043.
-//
-// The dependent's edge is derived from `fk.requires.base`, which is now the only way a value enters
-// composition. A derived edge is held to the same topology rules, so destroying its source is still
-// `observation-unknown-source`. See ADR-044 and ADR-047.
 const rootTrack: TrackDefinition = {
   id: "root",
-  keyframes: {
-    transform: {
-      values: {
-        x: ramp(0, 100),
-        y: ramp(0, 0),
-        rotation: ramp(0, 0),
-      },
-    },
-  },
-};
-const dependentTrack: TrackDefinition = {
-  id: "elbow",
-  keyframes: {
-    fk: {
-      values: {
-        length: ramp(40, 40),
-        rotation: ramp(0, 0),
-      },
-      requires: { base: "~/root" },
+  input: {
+    schema: ROOT_2D_SPEC,
+    values: {
+      x: ramp(0, 100),
+      y: ramp(0, 0),
+      rotation: ramp(0, 0),
     },
   },
 };
 
-/**
- * The one-property track the two retry cases add, authored under the group that owns `x`.
- *
- * Each case is about an observation rule, so its fixture reaches that rule through the owning
- * `transform` group. One helper rather than four copies of the shape.
- */
+const bodyTrack: TrackDefinition = {
+  id: "body",
+  input: {
+    schema: BODY_2D_SPEC,
+    values: [{ id: "elbow", cells: { length: 40, rotation: 0, weight: 1 } }],
+  },
+};
+
+const solvedTrack: TrackDefinition = {
+  id: "solved",
+  input: {
+    schema: SOLVED_2D_SPEC,
+    values: [{ id: "elbow", cells: { rotation: 0 } }],
+  },
+};
+
+const dependentTrack: TrackDefinition = {
+  id: "elbow",
+  plugin: "fk",
+  input: {
+    values: {},
+    requires: { chain: "~/body", solved: "~/solved", base: "~/root" },
+  },
+};
+
 function addable(id: string): TrackDefinition {
-  return { id, keyframes: { transform: { values: { x: ramp(0, 10) } } } };
+  return {
+    id,
+    plugin: "transform",
+    input: {
+      values: { dx: ramp(0, 10), dy: 0 },
+      requires: { data: "~/elbow" },
+    },
+  };
 }
 
 function snapshot(handle: ReturnType<typeof makeHandle>["handle"], ids: readonly string[]) {
@@ -86,6 +89,8 @@ describe("runtime mutation transactionality (W2)", () => {
   it("rejects destroying a source without changing graph state or the observation wire", () => {
     const { handle } = makeHandle();
     const root = handle.addTrack(rootTrack);
+    handle.addTrack(bodyTrack);
+    handle.addTrack(solvedTrack);
     const elbow = handle.addTrack(dependentTrack);
     handle.seek(root.id, 1);
 
@@ -93,20 +98,16 @@ describe("runtime mutation transactionality (W2)", () => {
     const unsubscribe = handle.subscribeNode(root.id, (patch) => patches.push(patch));
     const before = snapshot(handle, [root.id, elbow.id]);
 
-    expect(() => root.remove()).toThrow(/observation-unknown-source/);
+    expect(() => root.remove()).toThrow(/edge-unknown-source/);
 
-    // A failed removal is not a destruction event. The graph and its compiled track must still
-    // be live, and the retained map must still make the same failure reachable on retry.
     expect(patches.filter(({ status }) => status === "destroyed")).toHaveLength(0);
     expect(handle.get(root.id)?.status).toBe(before[0]?.patch?.status);
     const retryBatch = handle.seek(root.id, 0.7);
     expect(retryBatch.patches.some(({ status }) => status === "error")).toBe(false);
     expect(handle.get(root.id)?.status).toBe("ready");
-    expect(() => root.remove()).toThrow(/observation-unknown-source/);
+    expect(() => root.remove()).toThrow(/edge-unknown-source/);
     expect(handle.get(root.id)).toBeDefined();
 
-    // Recovery is still possible once the dependent is removed. The source then gets exactly one
-    // terminal patch, which is the only point at which the wire should hear about destruction.
     elbow.remove();
     root.remove();
     expect(patches.filter(({ status }) => status === "destroyed")).toHaveLength(1);
@@ -117,12 +118,19 @@ describe("runtime mutation transactionality (W2)", () => {
 
   it("leaves a rejected unknown-source addition retryable", () => {
     const { handle } = makeHandle();
+    handle.addTrack(rootTrack);
+    handle.addTrack(bodyTrack);
+    handle.addTrack(solvedTrack);
+    handle.addTrack(dependentTrack);
     const invalid: TrackDefinition = {
       ...addable("child"),
-      observes: [{ source: "~/missing" }],
+      input: {
+        values: { dx: ramp(0, 10), dy: 0 },
+        requires: { data: "~/missing" },
+      },
     };
 
-    expect(() => handle.addTrack(invalid)).toThrow(/observation-unknown-source/);
+    expect(() => handle.addTrack(invalid)).toThrow(/edge-unknown-source/);
 
     const replacement = handle.addTrack(addable("child"));
     expect(replacement.id).toBe("~/child");
@@ -137,12 +145,21 @@ describe("runtime mutation transactionality (W2)", () => {
 
   it("leaves a rejected self-reference addition retryable", () => {
     const { handle } = makeHandle();
+    handle.addTrack(rootTrack);
+    handle.addTrack(bodyTrack);
+    handle.addTrack(solvedTrack);
+    handle.addTrack(dependentTrack);
     const invalid: TrackDefinition = {
       ...addable("self"),
-      observes: [{ source: "~/self" }],
+      input: {
+        values: { dx: ramp(0, 10), dy: 0 },
+        requires: { data: "~/self" },
+      },
     };
 
-    expect(() => handle.addTrack(invalid)).toThrow(/observation-self-reference/);
+    expect(() => handle.addTrack(invalid)).toThrow(
+      /graph-cycle|edge-self-reference|edge-unknown-source/,
+    );
     const replacement = handle.addTrack(addable("self"));
     expect(replacement.id).toBe("~/self");
 

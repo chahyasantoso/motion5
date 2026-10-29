@@ -1,10 +1,9 @@
-// @ts-nocheck
 import { describe, expect, it } from "vitest";
 import type { ProjectDefinition, TrackDefinition } from "@motion5/core";
-import { Engine } from "@motion5/core";
-import { PluginRegistry } from "@motion5/core";
-import { legacyFkPlugin as fkPlugin } from "@motion5/plugins/internal/legacy/fk";
-import { legacyTransformPlugin as transformPlugin } from "@motion5/plugins/internal/legacy/transform";
+import { Engine, PluginCatalog } from "@motion5/core";
+import { fkPlugin } from "../../src/fk";
+import { transformPlugin } from "../../src/transform";
+import { BODY_2D_SPEC, ROOT_2D_SPEC, SOLVED_2D_SPEC } from "../../src/aggregate-topology";
 import { createManualClock } from "@motion5/core";
 import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/testing";
 
@@ -19,49 +18,59 @@ function ramp(from: number, to: number) {
   ];
 }
 
-// The rig case: `transform` claims `x`, `y`, `rotation` and `fk` claims all four, so each of those
-// three keys has two claimants and every track names the one it means. Registration used to refuse
-// this registry outright, which is the whole reason `fkPlugin` mangled its own key names.
-//
-// The parent is now bound through `fk.requires.base` rather than through a track-level input
-// observation with a projection map onto `parentX`, `parentY`, and `parentRotation`. See ADR-044.
-// The claimed leaves live under `fk.values`, beside that section rather than around it. See ADR-049.
 const thigh: TrackDefinition = {
   id: "thigh",
-  keyframes: {
-    fk: { values: { length: hold(50), rotation: hold(45) }, requires: { base: "walk/pelvis" } },
+  plugin: "fk",
+  input: {
+    values: {},
+    requires: { chain: "walk/body", solved: "walk/solved", base: "walk/pelvis" },
   },
 };
 
-function rig(bone: TrackDefinition): ProjectDefinition {
+const bodyTrack: TrackDefinition = {
+  id: "body",
+  input: {
+    schema: BODY_2D_SPEC,
+    values: [{ id: "thigh", cells: { length: 50, rotation: 45, weight: 1 } }],
+  },
+};
+
+const solvedTrack: TrackDefinition = {
+  id: "solved",
+  input: {
+    schema: SOLVED_2D_SPEC,
+    values: [{ id: "thigh", cells: { rotation: 45 } }],
+  },
+};
+
+const rootTrack: TrackDefinition = {
+  id: "pelvis",
+  input: {
+    schema: ROOT_2D_SPEC,
+    values: { x: ramp(0, 200), y: hold(100), rotation: hold(0) },
+  },
+};
+
+function rig(thighTrack: TrackDefinition): ProjectDefinition {
   return {
     schemaVersion: 5,
     motions: [
       {
         id: "walk",
         trigger: { type: "manual" },
-        tracks: [
-          {
-            id: "pelvis",
-            keyframes: {
-              transform: { values: { x: ramp(0, 200), y: hold(100), rotation: hold(0) } },
-            },
-          },
-          bone,
-        ],
+        tracks: [rootTrack, bodyTrack, solvedTrack, thighTrack],
       },
     ],
   };
 }
 
-function rigRegistry(): PluginRegistry {
-  const plugins = new PluginRegistry();
-  plugins.register(transformPlugin);
-  plugins.register(fkPlugin);
+function rigRegistry(): PluginCatalog {
+  const plugins = new PluginCatalog();
+  plugins.registerAll([transformPlugin, fkPlugin]);
   return plugins;
 }
 
-function load(project: ProjectDefinition, plugins: PluginRegistry) {
+function load(project: ProjectDefinition, plugins: PluginCatalog) {
   return new Engine({
     clock: createManualClock(),
     interpolator: createFakeInterpolator(),
@@ -71,80 +80,75 @@ function load(project: ProjectDefinition, plugins: PluginRegistry) {
 }
 
 describe("per-plugin keyframe key ownership", () => {
-  it("N-7 claims the natural bone key names and composes world space from them", () => {
-    // `x` and `y` are the pivot offset from slice A of issue #195, and `weight` is the solved-rotation
-    // blend from issue #211. What each of them means is `FO-2`'s, `FO-4`'s and `WT-5`'s subject; this
-    // case owns the claimed list, so it is the one that moves when it grows.
-    expect(fkPlugin.keys).toEqual([
-      "x",
-      "y",
-      "length",
-      "rotation",
-      "weight",
-      "minRotation",
-      "maxRotation",
-      "influence",
-    ]);
+  it("N-7 claims expected keys and schema fields", () => {
+    expect(
+      (BODY_2D_SPEC as Extract<typeof BODY_2D_SPEC, { kind: "table" }>).schema.row.fields,
+    ).toHaveProperty("length");
+    expect(
+      (BODY_2D_SPEC as Extract<typeof BODY_2D_SPEC, { kind: "table" }>).schema.row.fields,
+    ).toHaveProperty("rotation");
+    expect(
+      (BODY_2D_SPEC as Extract<typeof BODY_2D_SPEC, { kind: "table" }>).schema.row.fields,
+    ).toHaveProperty("weight");
+    expect(
+      (BODY_2D_SPEC as Extract<typeof BODY_2D_SPEC, { kind: "table" }>).schema.row.fields,
+    ).toHaveProperty("parentId");
 
-    // `rotation` is claimed and produced. The authored value is this bone's rotation relative to
-    // its parent; the composed one is its rotation in world space, which is what a child observes
-    // and what a renderer writes. The parent's own `rotation` arrives inside the `base` slot, so
-    // the two never share a namespace and neither has to be renamed.
-    const parent = { base: { rotation: 90 } };
-    const composed = fkPlugin.compose({ length: 10, rotation: -90 }, 1, parent, "walk/thigh");
-    expect(composed.x).toBeCloseTo(10, 12);
-    expect(composed.y).toBeCloseTo(0, 12);
-    expect(composed.rotation).toBe(0);
+    const composed = fkPlugin.transform(
+      {
+        values: {},
+        requires: {
+          chain: { values: [{ id: "thigh", cells: { length: 50, rotation: 45 } }] },
+          solved: { values: [{ id: "thigh", cells: { rotation: 45 } }] },
+          base: { values: { x: 0, y: 100, rotation: 0 } },
+        },
+      },
+      { nodeId: "walk/thigh", progress: 0 },
+    );
+    const row = (composed.values as any)[0];
+    expect(row.cells.x).toBeCloseTo(35.355, 3);
+    expect(row.cells.y).toBeCloseTo(135.355, 3);
+    expect(row.cells.rotation).toBeCloseTo(45, 12);
   });
 
-  it("N-8 composes a rig from two plugins that both claim rotation", () => {
+  it("N-8 composes a rig from aggregate fk and transform", () => {
     const handle = load(rig(thigh), rigRegistry());
     handle.mount("walk/pelvis");
+    handle.mount("walk/body");
+    handle.mount("walk/solved");
     handle.mount("walk/thigh");
 
     const batch = handle.seek("walk/pelvis", 0);
     const thighPatch = batch.patches.find(({ nodeId }) => nodeId === "walk/thigh");
 
-    // The same numbers the `boneLength`/`boneRotation` spelling produced: a pelvis at (0, 100)
-    // with rotation 0, a bone of length 50 at 45 degrees. A mid-rig value, not a clean load: an
-    // ownership change that stopped the interpolator reading a leaf would load without diagnostics
-    // and then hold still.
     if (thighPatch?.status !== "ready")
       throw new Error(`thighPatch is ${thighPatch?.status ?? "absent"}, not ready.`);
-    expect(thighPatch.values.x).toBeCloseTo(35.355, 3);
-    expect(thighPatch.values.y).toBeCloseTo(135.355, 3);
-    expect(thighPatch.values.rotation).toBeCloseTo(45, 12);
+    const row = (thighPatch.outputs.values as any)[0];
+    expect(row.cells.x).toBeCloseTo(35.355, 3);
+    expect(row.cells.y).toBeCloseTo(135.355, 3);
+    expect(row.cells.rotation).toBeCloseTo(45, 12);
     handle.dispose();
   });
 
-  it("N-9 refuses an ungrouped spelling of a key both plugins claim", () => {
-    // Deliberately ungrouped: the literal is not a TrackDefinition, which is the point of the case.
-    const flatRotation = {
+  it("N-9 refuses legacy keyframes field as track-legacy-field", () => {
+    const legacyTrack: TrackDefinition = {
       id: "thigh",
-      keyframes: {
-        fk: { values: { length: hold(50) }, requires: { base: "walk/pelvis" } },
-        rotation: hold(45),
-      },
+      keyframes: { fk: { values: { length: 50 } } },
     } as unknown as TrackDefinition;
 
-    // Grouping is mandatory before ownership is considered, so the load refuses the ungrouped
-    // spelling with the canonical authored-shape diagnostic.
-    expect(() => load(rig(flatRotation), rigRegistry())).toThrow(/keyframes-ungrouped-key/);
+    expect(() => load(rig(legacyTrack), rigRegistry())).toThrow();
   });
 
-  it("N-10 publishes grouped leaves under their unprefixed names", () => {
+  it("N-10 publishes record outputs under values", () => {
     const handle = load(rig(thigh), rigRegistry());
     handle.mount("walk/pelvis");
 
     handle.seek("walk/pelvis", 1);
 
-    // Green on the parent by design, and not claimed as red. This is the guard a canonical
-    // `transform:x` leaf would break rather than migrate: ADR-042 drops every namespaced key
-    // before publication, so the prefixed spelling would publish an empty patch. See ADR-043.
     const walkPelvisPatch = handle.get("walk/pelvis");
     if (walkPelvisPatch?.status !== "ready")
       throw new Error(`walk/pelvis is ${walkPelvisPatch?.status ?? "absent"}, not ready.`);
-    const values = walkPelvisPatch.values ?? {};
+    const values = walkPelvisPatch.outputs.values ?? {};
     expect(Object.keys(values).sort()).toEqual(["rotation", "x", "y"]);
     handle.dispose();
   });

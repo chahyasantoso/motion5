@@ -3,23 +3,13 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import type { ProjectDefinition } from "@motion5/core";
-import { PluginRegistry } from "@motion5/core";
+import { PluginCatalog } from "@motion5/core";
 import { Engine } from "@motion5/core";
 import { createManualClock } from "@motion5/core";
 import { FABRIK_TOLERANCE } from "../../src/fabrik";
-import { legacyFkPlugin as fkPlugin } from "@motion5/plugins/internal/legacy/fk";
-import { legacyIkPlugin as ikPlugin } from "@motion5/plugins/internal/legacy/ik";
-import { legacyTransformPlugin as transformPlugin } from "@motion5/plugins/internal/legacy/transform";
+import { fkPlugin } from "@motion5/plugins/fk";
+import { ikPlugin } from "@motion5/plugins/ik";
 import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/testing";
-
-// Issue #349 phase 7 and ADR-113: the examples in `docs/guide/inverse-kinematics.md` are executed.
-//
-// The guide says every JSON project it prints is run by this file exactly as printed. So the cases
-// read the guide itself rather than a copy, which is ADR-095's rule that a gate reads the text a
-// reader sees: an example edited in the guide is the example tested, and one that stops doing what
-// its paragraph says fails here. Each case checks the one behaviour its paragraph claims, in the
-// terms the paragraph uses (rest pose at progress 0, tip on the goal, local versus world), rather
-// than a table of doubles that would only restate today's output.
 
 const GUIDE = fileURLToPath(
   new URL("../../../../docs/guide/inverse-kinematics.md", import.meta.url),
@@ -27,7 +17,6 @@ const GUIDE = fileURLToPath(
 const JSON_BLOCK = /^```json\n([\s\S]*?)^```$/gm;
 const CLOSE = 1e-9;
 
-/** Every `json` block in the guide, parsed, keyed by its `projectId`. */
 function guideExamples(): ReadonlyMap<string, ProjectDefinition> {
   const text = readFileSync(GUIDE, "utf8");
   const examples = new Map<string, ProjectDefinition>();
@@ -41,22 +30,18 @@ function guideExamples(): ReadonlyMap<string, ProjectDefinition> {
 }
 
 interface Frame {
-  readonly x: number;
-  readonly y: number;
+  readonly x?: number;
+  readonly y?: number;
   readonly rotation: number;
 }
 
 interface Played {
-  /** The newest ready values of `arm/<track>` after seeking every track to `progress`. */
-  readonly at: (progress: number) => (track: string) => Readonly<Record<string, unknown>>;
+  readonly at: (progress: number) => (track: string) => Record<string, unknown>;
 }
 
-/** Loads one example, mounts every track, and seeks all of them together, as the guide says. */
 function play(project: ProjectDefinition): Played {
-  const plugins = new PluginRegistry();
-  plugins.register(transformPlugin);
-  plugins.register(fkPlugin);
-  plugins.register(ikPlugin);
+  const plugins = new PluginCatalog();
+  plugins.registerAll([fkPlugin, ikPlugin]);
   const runtime = new Engine({
     clock: createManualClock(),
     interpolator: createFakeInterpolator(),
@@ -64,11 +49,17 @@ function play(project: ProjectDefinition): Played {
     plugins,
   }).load(project);
   const ids = project.motions[0]!.tracks.map((track) => `arm/${track.id}`);
-  const latest = new Map<string, Readonly<Record<string, unknown>>>();
+  const latest = new Map<string, unknown>();
   for (const id of ids) {
     runtime.mount(id);
     runtime.subscribeNode(id, (patch) => {
-      if (patch.status === "ready" && patch.values !== undefined) latest.set(id, patch.values);
+      if (patch.status === "ready") {
+        if (patch.outputs !== undefined) {
+          latest.set(id, patch.outputs);
+        } else if (patch.outputs !== undefined) {
+          latest.set(id, patch.outputs);
+        }
+      }
     });
   }
   return {
@@ -76,38 +67,59 @@ function play(project: ProjectDefinition): Played {
       for (const id of ids) runtime.seek(id, progress);
       const snapshot = new Map(latest);
       return (track) => {
-        const values = snapshot.get(`arm/${track}`);
-        expect(values, `arm/${track} published`).toBeDefined();
-        return values!;
+        const value = snapshot.get(`arm/${track}`);
+        expect(value, `arm/${track} published`).toBeDefined();
+        return value as Record<string, unknown>;
       };
     },
   };
 }
 
-function frame(values: Readonly<Record<string, unknown>>): Frame {
-  return values as unknown as Frame;
+function frame(outputs: Record<string, unknown>, boneId: string): Frame {
+  const values = (outputs.values as readonly { id: string; cells: Record<string, number> }[]) ?? [];
+  const row = values.find((r) => r.id === boneId);
+  expect(row, `bone ${boneId} found in pose`).toBeDefined();
+  return row!.cells as unknown as Frame;
 }
 
-function rotations(values: Readonly<Record<string, unknown>>): Readonly<Record<string, number>> {
-  return values.rotations as Readonly<Record<string, number>>;
+function rotations(outputs: Record<string, unknown>): Readonly<Record<string, number>> {
+  const values = (outputs.values as readonly { id: string; cells: { rotation: number } }[]) ?? [];
+  const map: Record<string, number> = {};
+  for (const row of values) {
+    map[`arm/${row.id}`] = row.cells.rotation;
+  }
+  return map;
 }
 
-/** The authored static `transform` values of one track of the example. */
 function authoredFrame(project: ProjectDefinition, track: string): Frame {
   const found = project.motions[0]!.tracks.find((candidate) => candidate.id === track);
-  const keyframes = found?.keyframes as { transform?: { values?: Frame } } | undefined;
-  return keyframes!.transform!.values!;
+  if (found?.input?.values) {
+    return found.input.values as unknown as Frame;
+  }
+  const goalsTrack = project.motions[0]!.tracks.find((candidate) => candidate.id === "goals");
+  const goalRow = (
+    goalsTrack?.input?.values as
+      | readonly { id: string; cells: Record<string, number> }[]
+      | undefined
+  )?.find((r) => r.id === track);
+  if (goalRow) {
+    return goalRow.cells as unknown as Frame;
+  }
+  return { x: 0, y: 0, rotation: 0 };
 }
 
-/** The authored static `fk.values.rotation` of one bone. */
 function restRotation(project: ProjectDefinition, track: string): number {
-  const found = project.motions[0]!.tracks.find((candidate) => candidate.id === track);
-  const keyframes = found?.keyframes as { fk?: { values?: { rotation?: number } } } | undefined;
-  return keyframes!.fk!.values!.rotation!;
+  const bodyTrack = project.motions[0]!.tracks.find((candidate) => candidate.id === "body");
+  const boneRow = (
+    bodyTrack?.input?.values as readonly { id: string; cells: { rotation?: number } }[] | undefined
+  )?.find((r) => r.id === track);
+  return boneRow?.cells.rotation ?? 0;
 }
 
 function expectOnGoal(tip: Frame, goal: Frame, tolerance: number): void {
-  expect(Math.hypot(tip.x - goal.x, tip.y - goal.y)).toBeLessThanOrEqual(tolerance);
+  expect(
+    Math.hypot((tip.x ?? 0) - (goal.x ?? 0 ?? 0), (tip.y ?? 0) - (goal.y ?? 0 ?? 0)),
+  ).toBeLessThanOrEqual(tolerance);
 }
 
 const examples = guideExamples();
@@ -130,11 +142,13 @@ describe("inverse kinematics guide examples (#349 phase 7, ADR-113)", () => {
     const upperRest = restRotation(project, "upper");
     const foreRest = restRotation(project, "fore");
     const shoulder = authoredFrame(project, "shoulder");
-    expect(frame(start("upper")).rotation).toBeCloseTo(shoulder.rotation + upperRest, 9);
-    expect(frame(start("fore")).rotation).toBeCloseTo(shoulder.rotation + upperRest + foreRest, 9);
+    expect(frame(start("pose"), "upper").rotation).toBeCloseTo(shoulder.rotation + upperRest, 9);
+    expect(frame(start("pose"), "fore").rotation).toBeCloseTo(
+      shoulder.rotation + upperRest + foreRest,
+      9,
+    );
     const end = played.at(1);
-    expectOnGoal(frame(end("fore")), authoredFrame(project, "hand-goal"), CLOSE);
-    // The solve is the same at every progress: weight is the bone's question, not the solver's.
+    expectOnGoal(frame(end("pose"), "fore"), authoredFrame(project, "hand-goal"), CLOSE);
     expect(rotations(played.at(0.5)("solve"))).toEqual(rotations(end("solve")));
   });
 
@@ -142,26 +156,42 @@ describe("inverse kinematics guide examples (#349 phase 7, ADR-113)", () => {
     const project = examples.get("staggered-weight")!;
     const middle = play(project).at(0.5);
     const solved = rotations(middle("solve"));
-    const upper = frame(middle("upper")).rotation;
+    const upper = frame(middle("pose"), "upper").rotation;
     expect(upper).toBeCloseTo(solved["arm/upper"]!, 9);
-    expect(frame(middle("fore")).rotation).toBeCloseTo(upper + restRotation(project, "fore"), 9);
-    // Not vacuous: the forearm's rest is not where the solve would put it.
+    expect(frame(middle("pose"), "fore").rotation).toBeCloseTo(
+      upper + restRotation(project, "fore"),
+      9,
+    );
     expect(Math.abs(solved["arm/fore"]! - restRotation(project, "fore"))).toBeGreaterThan(1);
   });
 
   it("GE-4 branches: reachable goals converge and both hands land within tolerance", () => {
     const project = examples.get("branches")!;
     const end = play(project).at(1);
-    const inspection = end("solve").inspection as {
+    const inspection = end("solve").inspect as {
       readonly kind: string;
-      readonly residuals: Readonly<Record<string, number>>;
+      readonly residual: number;
     };
     expect(inspection.kind).toBe("converged");
-    expect(Object.keys(inspection.residuals).sort()).toEqual(["arm/left-fore", "arm/right-fore"]);
-    for (const residual of Object.values(inspection.residuals))
+    const solvedRows =
+      (end("solve").values as readonly { id: string; cells: { residual?: number } }[]) ?? [];
+    const residuals: Record<string, number> = {};
+    for (const row of solvedRows) {
+      if (row.cells.residual !== undefined) residuals[`arm/${row.id}`] = row.cells.residual;
+    }
+    expect(Object.keys(residuals).sort()).toEqual(["arm/left-fore", "arm/right-fore"]);
+    for (const residual of Object.values(residuals))
       expect(residual).toBeLessThanOrEqual(FABRIK_TOLERANCE);
-    expectOnGoal(frame(end("left-fore")), authoredFrame(project, "left-goal"), FABRIK_TOLERANCE);
-    expectOnGoal(frame(end("right-fore")), authoredFrame(project, "right-goal"), FABRIK_TOLERANCE);
+    expectOnGoal(
+      frame(end("pose"), "left-fore"),
+      authoredFrame(project, "left-goal"),
+      FABRIK_TOLERANCE,
+    );
+    expectOnGoal(
+      frame(end("pose"), "right-fore"),
+      authoredFrame(project, "right-goal"),
+      FABRIK_TOLERANCE,
+    );
   });
 
   it("GE-5 transformed root: the hand lands, and world rotation is the root's plus the local", () => {
@@ -169,10 +199,12 @@ describe("inverse kinematics guide examples (#349 phase 7, ADR-113)", () => {
     const end = play(project).at(1);
     const shoulder = authoredFrame(project, "shoulder");
     expect(shoulder.rotation).not.toBe(0);
-    expectOnGoal(frame(end("fore")), authoredFrame(project, "hand-goal"), CLOSE);
+    expectOnGoal(frame(end("pose"), "fore"), authoredFrame(project, "hand-goal"), CLOSE);
     const solved = rotations(end("solve"));
-    expect(frame(end("upper")).rotation).toBeCloseTo(shoulder.rotation + solved["arm/upper"]!, 9);
-    // `bend: "positive"` turns the elbow toward increasing local rotation.
+    expect(frame(end("pose"), "upper").rotation).toBeCloseTo(
+      shoulder.rotation + solved["arm/upper"]!,
+      9,
+    );
     expect(solved["arm/fore"]!).toBeGreaterThan(0);
   });
 });

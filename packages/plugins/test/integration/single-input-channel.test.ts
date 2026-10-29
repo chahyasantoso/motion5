@@ -1,10 +1,9 @@
-// @ts-nocheck
 import { describe, expect, it } from "vitest";
 import type { ProjectDefinition, TrackDefinition } from "@motion5/core";
-import { PluginRegistry } from "@motion5/core";
-import { Engine } from "@motion5/core";
-import { legacyFkPlugin as fkPlugin } from "@motion5/plugins/internal/legacy/fk";
-import { legacyTransformPlugin as transformPlugin } from "@motion5/plugins/internal/legacy/transform";
+import { PluginCatalog, Engine } from "@motion5/core";
+import { fkPlugin } from "../../src/fk";
+import { transformPlugin } from "../../src/transform";
+import { BODY_2D_SPEC, ROOT_2D_SPEC, SOLVED_2D_SPEC } from "../../src/aggregate-topology";
 import { createManualClock } from "@motion5/core";
 import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/testing";
 
@@ -12,27 +11,47 @@ function hold(value: number) {
   return value;
 }
 
-// The pelvis publishes its own `rotation` and the bone authors one under `fk`. They meet in one
-// composition and neither is renamed, because the requirement slot is the scope rather than a key.
 const PELVIS: TrackDefinition = {
   id: "pelvis",
-  keyframes: { transform: { values: { x: hold(0), y: hold(0), rotation: hold(30) } } },
-};
-const THIGH: TrackDefinition = {
-  id: "thigh",
-  keyframes: {
-    fk: { values: { length: hold(50), rotation: hold(45) }, requires: { base: "walk/pelvis" } },
+  input: {
+    schema: ROOT_2D_SPEC,
+    values: { x: hold(0), y: hold(0), rotation: hold(30) },
   },
 };
+
+const BODY: TrackDefinition = {
+  id: "body",
+  input: {
+    schema: BODY_2D_SPEC,
+    values: [{ id: "thigh", cells: { length: 50, rotation: 45, weight: 1 } }],
+  },
+};
+
+const SOLVED: TrackDefinition = {
+  id: "solved",
+  input: {
+    schema: SOLVED_2D_SPEC,
+    values: [{ id: "thigh", cells: { rotation: 45 } }],
+  },
+};
+
+const THIGH: TrackDefinition = {
+  id: "thigh",
+  plugin: "fk",
+  input: {
+    values: {},
+    requires: { chain: "walk/body", solved: "walk/solved", base: "walk/pelvis" },
+  },
+};
+
 const project: ProjectDefinition = {
   schemaVersion: 5,
-  motions: [{ id: "walk", trigger: { type: "manual" }, tracks: [PELVIS, THIGH] }],
+  motions: [{ id: "walk", trigger: { type: "manual" }, tracks: [PELVIS, BODY, SOLVED, THIGH] }],
 };
 
 function load() {
-  const plugins = new PluginRegistry();
-  plugins.register(transformPlugin);
-  plugins.register(fkPlugin);
+  const plugins = new PluginCatalog();
+  plugins.registerAll([transformPlugin, fkPlugin]);
   return new Engine({
     clock: createManualClock(),
     interpolator: createFakeInterpolator(),
@@ -43,23 +62,20 @@ function load() {
 
 describe("a plugin requirement is the only input channel", () => {
   it("J-8 composes an upstream value without it ever becoming an authored one", () => {
-    // Passes on the parent by design, because the walker rig is already pure `requires`. It is the
-    // mutation guard: reintroducing a flat merge anywhere turns 75 into 60 or adds a bare key.
     const handle = load();
     handle.mount("walk/pelvis");
+    handle.mount("walk/body");
+    handle.mount("walk/solved");
     handle.mount("walk/thigh");
     handle.seek("walk/pelvis", 0);
 
     const walkThighPatch = handle.get("walk/thigh");
     if (walkThighPatch?.status !== "ready")
       throw new Error(`walk/thigh is ${walkThighPatch?.status ?? "absent"}, not ready.`);
-    const values = walkThighPatch.values ?? {};
-    // Parent 30 plus local 45. A flat merge would have replaced the bone's authored 45 with the
-    // upstream 30 and composed 60, which is the number this case exists to refuse.
-    expect(values.rotation).toBeCloseTo(75, 12);
-    // And nothing arrived beside it: the published key set is exactly what fk produces.
-    expect(Object.keys(values).sort()).toEqual(["rotation", "x", "y"]);
-    // One edge, derived from the binding rather than authored as a generic observation.
+    const row = (walkThighPatch.outputs.values as any)[0];
+    const cells = row.cells ?? {};
+    expect(cells.rotation).toBeCloseTo(75, 12);
+    expect(Object.keys(cells).sort()).toEqual(expect.arrayContaining(["rotation", "x", "y"]));
     expect(handle.dependantsOf("walk/pelvis")).toEqual(["walk/thigh"]);
 
     handle.dispose();

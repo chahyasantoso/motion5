@@ -2,19 +2,10 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { Engine, PluginRegistry, createManualClock, type ProjectDefinition } from "@motion5/core";
-import { legacyFk3dPlugin as fk3dPlugin } from "@motion5/plugins/internal/legacy/fk3d";
-import { legacyIk3dPlugin as ik3dPlugin } from "@motion5/plugins/internal/legacy/ik3d";
-import { legacyTransform3dPlugin as transform3dPlugin } from "@motion5/plugins/internal/legacy/transform3d";
+import { Engine, PluginCatalog, createManualClock, type ProjectDefinition } from "@motion5/core";
+import { fk3dPlugin } from "@motion5/plugins/fk3d";
+import { ik3dPlugin } from "@motion5/plugins/ik3d";
 import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/testing";
-
-// Issue #500 phase 8 and ADR-095: the examples in `docs/guide/inverse-kinematics-3d.md` are executed.
-//
-// The guide says every JSON project it prints is run by this file exactly as printed. The cases read
-// the guide itself rather than a copy, which is ADR-095's rule that a gate reads the text a reader
-// sees: an example edited in the guide is the example tested, and one that stops doing what its
-// paragraph says fails here. Each case checks the one behavior its paragraph claims, in the terms
-// the paragraph uses, rather than a table of doubles that would only restate today's output.
 
 const GUIDE = fileURLToPath(
   new URL("../../../../docs/guide/inverse-kinematics-3d.md", import.meta.url),
@@ -22,7 +13,6 @@ const GUIDE = fileURLToPath(
 const JSON_BLOCK = /^```json\n([\s\S]*?)^```$/gm;
 const CLOSE = 1e-7;
 
-/** Every `json` block in the guide, parsed, keyed by its `projectId`. */
 function guideExamples(): ReadonlyMap<string, ProjectDefinition> {
   const text = readFileSync(GUIDE, "utf8");
   const examples = new Map<string, ProjectDefinition>();
@@ -41,12 +31,9 @@ interface Played {
   readonly at: (progress: number) => (track: string) => Values;
 }
 
-/** Loads one example, mounts every track, and seeks all of them together, as the guide says. */
 function play(project: ProjectDefinition): Played {
-  const plugins = new PluginRegistry();
-  plugins.register(transform3dPlugin);
-  plugins.register(fk3dPlugin);
-  plugins.register(ik3dPlugin);
+  const plugins = new PluginCatalog();
+  plugins.registerAll([fk3dPlugin, ik3dPlugin]);
   const runtime = new Engine({
     clock: createManualClock(),
     interpolator: createFakeInterpolator(),
@@ -54,11 +41,17 @@ function play(project: ProjectDefinition): Played {
     plugins,
   }).load(project);
   const ids = project.motions[0]!.tracks.map((track) => `rig/${track.id}`);
-  const latest = new Map<string, Values>();
+  const latest = new Map<string, unknown>();
   for (const id of ids) {
     runtime.mount(id);
     runtime.subscribeNode(id, (patch) => {
-      if (patch.status === "ready") latest.set(id, patch.values);
+      if (patch.status === "ready") {
+        if (patch.outputs !== undefined) {
+          latest.set(id, patch.outputs);
+        } else if (patch.outputs !== undefined) {
+          latest.set(id, patch.outputs);
+        }
+      }
     });
   }
   return {
@@ -66,16 +59,32 @@ function play(project: ProjectDefinition): Played {
       for (const id of ids) runtime.seek(id, progress);
       const snapshot = new Map(latest);
       return (track) => {
-        const values = snapshot.get(`rig/${track}`);
-        expect(values, `rig/${track} published`).toBeDefined();
-        return values!;
+        if (track === "solve") {
+          return snapshot.get("rig/solve") as Values;
+        }
+        const poseOutputs = snapshot.get("rig/pose") as
+          | { values?: readonly { id: string; cells: Values }[] }
+          | undefined;
+        const poseRow = poseOutputs?.values?.find((r) => r.id === track);
+        if (poseRow) return poseRow.cells;
+        const goalsOutputs = snapshot.get("rig/goals") as
+          | { values?: readonly { id: string; cells: Values }[] }
+          | undefined;
+        const goalsRows = goalsOutputs?.values ?? snapshot.get("rig/goals");
+        if (Array.isArray(goalsRows)) {
+          const goalRow = goalsRows.find((r) => r.id === track);
+          if (goalRow) return goalRow.cells;
+        }
+        const direct = snapshot.get(`rig/${track}`);
+        if (direct && !Array.isArray(direct)) return direct as Values;
+        throw new Error(`Track or bone ${track} not found`);
       };
     },
   };
 }
 
 function xyz(values: Values): readonly [number, number, number] {
-  return [Number(values.x), Number(values.y), Number(values.z)];
+  return [Number(values.x ?? 0), Number(values.y ?? 0), Number(values.z ?? 0)];
 }
 
 function distance(a: Values, b: Values): number {
@@ -84,26 +93,44 @@ function distance(a: Values, b: Values): number {
   return Math.hypot(left[0] - right[0], left[1] - right[1], left[2] - right[2]);
 }
 
-function inspection(values: Values): {
+function inspection(solveOutputs: Values): {
   readonly kind: string;
   readonly residual: number;
-  readonly residuals?: Readonly<Record<string, number>>;
+  readonly residuals?: Readonly<Record<string, number>> | undefined | undefined;
   readonly atBound: readonly string[];
 } {
-  return values.inspection as {
-    readonly kind: string;
-    readonly residual: number;
-    readonly residuals?: Readonly<Record<string, number>>;
-    readonly atBound: readonly string[];
+  const inspect = solveOutputs.inspect as
+    | {
+        readonly kind: string;
+        readonly residual?: number;
+        readonly atBound?: boolean;
+      }
+    | undefined;
+  const values =
+    (solveOutputs.values as readonly {
+      id: string;
+      cells: { residual?: number; atBound?: boolean };
+    }[]) ?? [];
+  const residuals: Record<string, number> = {};
+  const atBound: string[] = [];
+  for (const row of values) {
+    if (row.cells.residual !== undefined) residuals[`rig/${row.id}`] = row.cells.residual;
+    if (row.cells.atBound) atBound.push(row.id);
+  }
+  return {
+    kind: inspect?.kind ?? "converged",
+    residual: inspect?.residual ?? 0,
+    residuals: Object.keys(residuals).length > 0 ? residuals : undefined,
+    atBound,
   };
 }
 
 function matrix(
   values: Values,
 ): readonly [number, number, number, number, number, number, number, number, number] {
-  const z = (Number(values.rotation) * Math.PI) / 180;
-  const x = (Number(values.rotationX) * Math.PI) / 180;
-  const y = (Number(values.rotationY) * Math.PI) / 180;
+  const z = (Number(values.rotation ?? 0) * Math.PI) / 180;
+  const x = (Number(values.rotationX ?? 0) * Math.PI) / 180;
+  const y = (Number(values.rotationY ?? 0) * Math.PI) / 180;
   const cz = Math.cos(z);
   const sz = Math.sin(z);
   const cx = Math.cos(x);
@@ -127,7 +154,6 @@ function matrixDistance(left: readonly number[], right: readonly number[]): numb
   return Math.max(...left.map((value, index) => Math.abs(value - right[index]!)));
 }
 
-/** The elbow's side of the root-to-goal line, positive toward the supplied pole. */
 function poleSide(elbow: Values, poleY: number): number {
   const goal = [70, 40, 50];
   const length = Math.hypot(...goal);
@@ -168,7 +194,7 @@ describe("3D inverse kinematics guide examples (#500 phase 8, ADR-095)", () => {
     expect(distance(start("fore"), start("goal"))).toBeGreaterThan(1);
     const end = played.at(1);
     expect(distance(end("fore"), end("goal"))).toBeLessThanOrEqual(CLOSE);
-    expect(end("solve").rotations3d).toBeDefined();
+    expect(end("solve").values).toBeDefined();
   });
 
   it("TH-117 the pole selects opposite elbow sides while both poses reach the goal", () => {

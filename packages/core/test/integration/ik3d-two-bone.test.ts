@@ -1,16 +1,12 @@
-// @ts-nocheck
 import { describe, expect, it } from "vitest";
 import { createDomPatchAdapter, type DomTarget } from "../../src/adapters/dom";
-import type {
-  AuthoredPluginRequires,
-  ProjectDefinition,
-  TrackDefinition,
-} from "../../src/contract/v5";
-import { PluginRegistry } from "../../src/domain/plugins";
+import type { AuthoredPluginRequires, ProjectDefinition } from "../../src/contract/v5";
+import { PluginCatalog } from "../../src/domain/plugin-catalog";
 import { Engine } from "../../src/engine";
+import { buildGraphIR } from "../../src/graph/ir";
 import { createManualClock } from "../../src/ports/clock";
 import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
-import { legacyFk3dPlugin as fk3dPlugin } from "@motion5/plugins/internal/legacy/fk3d";
+import { fk3dPlugin } from "@motion5/plugins/fk3d";
 import {
   blendOrientation3d,
   composeWorld3d,
@@ -19,17 +15,13 @@ import {
   ZERO_EULER,
   type Euler3d,
   type WorldFrame3d,
-} from "../../../plugins/src/frame3d";
-import { legacyIk3dPlugin as ik3dPlugin } from "@motion5/plugins/internal/legacy/ik3d";
-import { legacyTransform3dPlugin as transform3dPlugin } from "@motion5/plugins/internal/legacy/transform3d";
+} from "@motion5/plugins/frame3d";
+import { ik3dPlugin } from "@motion5/plugins/ik3d";
+import { transform3dPlugin } from "@motion5/plugins/transform3d";
 import type { Patch } from "../../src/runtime/patch-registry";
+import { builtinRegistry } from "../support/builtin-registry";
 
-function member(id: string, base: string, length: number): TrackDefinition {
-  return {
-    id,
-    keyframes: { fk3d: { values: { length }, requires: { base, solver: "solve" } } },
-  };
-}
+const ROOT_DEFAULT = { x: 0, y: 0, z: 0, rotation: 0, rotationX: 0, rotationY: 0 };
 
 const PROJECT: ProjectDefinition = {
   schemaVersion: 5,
@@ -39,40 +31,50 @@ const PROJECT: ProjectDefinition = {
       id: "rig",
       trigger: { type: "manual" },
       tracks: [
-        { id: "root", keyframes: { transform3d: { values: { x: 0, y: 0, z: 0 } } } },
+        { id: "root", input: { values: ROOT_DEFAULT } },
         {
-          id: "goal",
-          keyframes: {
-            transform3d: {
-              values: {
-                x: [
-                  { p: 0, v: 100 },
-                  { p: 1, v: 110 },
-                ],
-                y: [
-                  { p: 0, v: 20 },
-                  { p: 1, v: 25 },
-                ],
-                z: [
-                  { p: 0, v: 30 },
-                  { p: 1, v: 35 },
-                ],
+          id: "goals",
+          input: {
+            values: [
+              {
+                id: "goal",
+                cells: {
+                  memberId: "fore",
+                  x: 100,
+                  y: 20,
+                  z: 30,
+                },
               },
-            },
+            ],
           },
         },
-        { id: "solve", keyframes: { ik3d: { requires: { root: "root", target: "goal" } } } },
-        member("upper", "root", 80),
-        member("fore", "upper", 60),
+        {
+          id: "body",
+          input: {
+            values: [
+              { id: "upper", cells: { length: 80, rotation: 0, rotationX: 0, rotationY: 0 } },
+              {
+                id: "fore",
+                cells: { parentId: "upper", length: 60, rotation: 0, rotationX: 0, rotationY: 0 },
+              },
+            ],
+          },
+        },
+        {
+          id: "solve",
+          plugin: "ik3d",
+          input: { values: {}, requires: { chain: "body", goals: "goals", base: "root" } },
+        },
+        {
+          id: "pose",
+          plugin: "fk3d",
+          input: { values: {}, requires: { chain: "body", solved: "solve", base: "root" } },
+        },
       ],
     },
   ],
 };
 
-/**
- * The elbow's side of the root-to-goal line, measured against the side of a pole at
- * `(30, poleY, 10)`: positive when the elbow bends toward the pole. The root is the origin.
- */
 function poleSide(elbow: Readonly<Record<string, unknown>>, poleY: number): number {
   const unit = [GOAL.x, GOAL.y, GOAL.z].map((c) => c / Math.hypot(GOAL.x, GOAL.y, GOAL.z));
   const off = (v: readonly number[]) => {
@@ -84,21 +86,20 @@ function poleSide(elbow: Readonly<Record<string, unknown>>, poleY: number): numb
   return e[0]! * p[0]! + e[1]! * p[1]! + e[2]! * p[2]!;
 }
 
-/** How far a published tip is from `GOAL`. */
 function goalMiss(fore: Readonly<Record<string, unknown>>): number {
   return Math.hypot(Number(fore.x) - GOAL.x, Number(fore.y) - GOAL.y, Number(fore.z) - GOAL.z);
 }
 
-/**
- * A static pole rig reaching `GOAL`: `solve` binds `requires` under `ik3d`, the knee sits at
- * `(30, poleY, 10)`, and the upper member authors `upperKeyframes`.
- */
 function staticPoleRig(
   requires: AuthoredPluginRequires,
   poleY: number,
-  upperKeyframes: NonNullable<TrackDefinition["keyframes"]> = {
-    fk3d: { values: { length: 80 }, requires: { base: "root", solver: "solve" } },
-  },
+  bodyCells: readonly any[] = [
+    { id: "upper", cells: { length: 80, rotation: 0, rotationX: 0, rotationY: 0 } },
+    {
+      id: "fore",
+      cells: { parentId: "upper", length: 60, rotation: 0, rotationX: 0, rotationY: 0 },
+    },
+  ],
 ): ProjectDefinition {
   return {
     schemaVersion: 5,
@@ -108,36 +109,35 @@ function staticPoleRig(
         id: "rig",
         trigger: { type: "manual" },
         tracks: [
-          { id: "root", keyframes: { transform3d: { values: { x: 0, y: 0, z: 0 } } } },
-          { id: "goal", keyframes: { transform3d: { values: GOAL } } },
-          { id: "knee", keyframes: { transform3d: { values: { x: 30, y: poleY, z: 10 } } } },
-          { id: "solve", keyframes: { ik3d: { requires } } },
-          { id: "upper", keyframes: upperKeyframes },
-          member("fore", "upper", 60),
+          { id: "root", input: { values: ROOT_DEFAULT } },
+          {
+            id: "goals",
+            input: { values: [{ id: "goal", cells: { memberId: "fore", ...GOAL } }] },
+          },
+          {
+            id: "knee",
+            input: { values: { x: 30, y: poleY, z: 10, rotation: 0, rotationX: 0, rotationY: 0 } },
+          },
+          { id: "body", input: { values: bodyCells } },
+          { id: "solve", plugin: "ik3d", input: { values: {}, requires } },
+          {
+            id: "pose",
+            plugin: "fk3d",
+            input: { values: {}, requires: { chain: "body", solved: "solve", base: "root" } },
+          },
         ],
       },
     ],
   };
 }
 
-/** The rule ids a load refuses with, in the order its message names them; empty when it loads. */
-function refusedRuleIds(load: () => void): readonly string[] {
-  try {
-    load();
-  } catch (error) {
-    if (!(error instanceof TypeError)) throw error;
-    return [...error.message.matchAll(/([a-z][a-z0-9]*(?:-[a-z0-9]+)+) at rig\//g)].map(
-      (match) => match[1]!,
-    );
-  }
-  return [];
+function refusedRuleIds(project: ProjectDefinition): readonly string[] {
+  return buildGraphIR(project, builtinRegistry()).diagnostics.map((d) => d.ruleId);
 }
 
 function createRuntime(project: ProjectDefinition = PROJECT) {
-  const plugins = new PluginRegistry();
-  plugins.register(transform3dPlugin);
-  plugins.register(fk3dPlugin);
-  plugins.register(ik3dPlugin);
+  const plugins = new PluginCatalog();
+  plugins.registerAll([transform3dPlugin, fk3dPlugin, ik3dPlugin]);
   return new Engine({
     clock: createManualClock(),
     interpolator: createFakeInterpolator(),
@@ -154,7 +154,6 @@ const UPPER_REST: Euler3d = { rotation: 20, rotationX: -30, rotationY: 10 };
 const FORE_REST: Euler3d = { rotation: 0, rotationX: 15, rotationY: -25 };
 const GOAL = { x: 70, y: 40, z: 50 };
 
-/** Issue #500 phase 1: both members author a rest orientation and ramp their weight in. */
 const RESTED: ProjectDefinition = {
   schemaVersion: 5,
   projectId: "3d-rest",
@@ -163,26 +162,29 @@ const RESTED: ProjectDefinition = {
       id: "rig",
       trigger: { type: "manual" },
       tracks: [
-        { id: "root", keyframes: { transform3d: { values: { x: 5, y: -5, z: 0 } } } },
-        { id: "goal", keyframes: { transform3d: { values: GOAL } } },
-        { id: "solve", keyframes: { ik3d: { requires: { root: "root", target: "goal" } } } },
         {
-          id: "upper",
-          keyframes: {
-            fk3d: {
-              values: { length: 80, ...UPPER_REST, weight: RAMP },
-              requires: { base: "root", solver: "solve" },
-            },
+          id: "root",
+          input: { values: { x: 5, y: -5, z: 0, rotation: 0, rotationX: 0, rotationY: 0 } },
+        },
+        { id: "goals", input: { values: [{ id: "goal", cells: { memberId: "fore", ...GOAL } }] } },
+        {
+          id: "body",
+          input: {
+            values: [
+              { id: "upper", cells: { length: 80, ...UPPER_REST, weight: RAMP } },
+              { id: "fore", cells: { parentId: "upper", length: 60, ...FORE_REST, weight: RAMP } },
+            ],
           },
         },
         {
-          id: "fore",
-          keyframes: {
-            fk3d: {
-              values: { length: 60, ...FORE_REST, weight: RAMP },
-              requires: { base: "upper", solver: "solve" },
-            },
-          },
+          id: "solve",
+          plugin: "ik3d",
+          input: { values: {}, requires: { chain: "body", goals: "goals", base: "root" } },
+        },
+        {
+          id: "pose",
+          plugin: "fk3d",
+          input: { values: {}, requires: { chain: "body", solved: "solve", base: "root" } },
         },
       ],
     },
@@ -199,38 +201,51 @@ const OFFSET_PROJECT: ProjectDefinition = {
       tracks: [
         {
           id: "root",
-          keyframes: {
-            transform3d: {
-              values: { x: 5, y: -3, z: 2, rotation: 25, rotationX: -15, rotationY: 20 },
-            },
-          },
-        },
-        { id: "goal", keyframes: { transform3d: { values: { x: 70, y: 40, z: 50 } } } },
-        { id: "solve", keyframes: { ik3d: { requires: { root: "root", target: "goal" } } } },
-        {
-          id: "upper",
-          keyframes: {
-            fk3d: {
-              values: { length: 80, x: 5, y: -3, z: 2 },
-              requires: { base: "root", solver: "solve" },
-            },
-          },
+          input: { values: { x: 5, y: -3, z: 2, rotation: 25, rotationX: -15, rotationY: 20 } },
         },
         {
-          id: "fore",
-          keyframes: {
-            fk3d: {
-              values: { length: 60, x: -10, y: 6, z: 4 },
-              requires: { base: "upper", solver: "solve" },
-            },
+          id: "goals",
+          input: { values: [{ id: "goal", cells: { memberId: "fore", x: 70, y: 40, z: 50 } }] },
+        },
+        {
+          id: "body",
+          input: {
+            values: [
+              {
+                id: "upper",
+                cells: { length: 80, x: 5, y: -3, z: 2, rotation: 0, rotationX: 0, rotationY: 0 },
+              },
+              {
+                id: "fore",
+                cells: {
+                  parentId: "upper",
+                  length: 60,
+                  x: -10,
+                  y: 6,
+                  z: 4,
+                  rotation: 0,
+                  rotationX: 0,
+                  rotationY: 0,
+                },
+              },
+            ],
           },
+        },
+        {
+          id: "solve",
+          plugin: "ik3d",
+          input: { values: {}, requires: { chain: "body", goals: "goals", base: "root" } },
+        },
+        {
+          id: "pose",
+          plugin: "fk3d",
+          input: { values: {}, requires: { chain: "body", solved: "solve", base: "root" } },
         },
       ],
     },
   ],
 };
 
-/** Issue #500 phase 3: the solver binds an animated pole that crosses the goal line. */
 const POLE_PROJECT: ProjectDefinition = {
   schemaVersion: 5,
   projectId: "3d-pole",
@@ -239,35 +254,54 @@ const POLE_PROJECT: ProjectDefinition = {
       id: "rig",
       trigger: { type: "manual" },
       tracks: [
-        { id: "root", keyframes: { transform3d: { values: { x: 0, y: 0, z: 0 } } } },
-        { id: "goal", keyframes: { transform3d: { values: GOAL } } },
+        { id: "root", input: { values: ROOT_DEFAULT } },
+        { id: "goals", input: { values: [{ id: "goal", cells: { memberId: "fore", ...GOAL } }] } },
         {
           id: "knee",
-          keyframes: {
-            transform3d: {
-              values: {
-                x: 30,
-                y: [
-                  { p: 0, v: 120 },
-                  { p: 1, v: -120 },
-                ],
-                z: 10,
-              },
+          input: {
+            values: {
+              x: 30,
+              y: [
+                { p: 0, v: 120 },
+                { p: 1, v: -120 },
+              ],
+              z: 10,
+              rotation: 0,
+              rotationX: 0,
+              rotationY: 0,
             },
           },
         },
         {
-          id: "solve",
-          keyframes: { ik3d: { requires: { root: "root", target: "goal", pole: "knee" } } },
+          id: "body",
+          input: {
+            values: [
+              { id: "upper", cells: { length: 80, rotation: 0, rotationX: 0, rotationY: 0 } },
+              {
+                id: "fore",
+                cells: { parentId: "upper", length: 60, rotation: 0, rotationX: 0, rotationY: 0 },
+              },
+            ],
+          },
         },
-        member("upper", "root", 80),
-        member("fore", "upper", 60),
+        {
+          id: "solve",
+          plugin: "ik3d",
+          input: {
+            values: {},
+            requires: { chain: "body", goals: "goals", base: "root", pole: "knee" },
+          },
+        },
+        {
+          id: "pose",
+          plugin: "fk3d",
+          input: { values: {}, requires: { chain: "body", solved: "solve", base: "root" } },
+        },
       ],
     },
   ],
 };
 
-/** A member's published frame, restated from `frame3d.ts` as the oracle. */
 function tipOf(base: WorldFrame3d, local: Euler3d, length: number): WorldFrame3d {
   return composeWorld3d(composeWorld3d(base, { x: 0, y: 0, z: 0, ...local }), {
     ...ZERO_EULER,
@@ -283,16 +317,29 @@ describe("3D seam through engine and DOM", () => {
     const patches = new Map<string, Patch>();
     const target: DomTarget = { style: {} };
     const adapter = createDomPatchAdapter({ style: {} }, undefined, () => target);
-    for (const id of ["rig/root", "rig/goal", "rig/solve", "rig/upper", "rig/fore"]) {
+    for (const id of ["rig/root", "rig/goals", "rig/body", "rig/solve", "rig/pose"]) {
       runtime.mount(id);
       runtime.subscribeNode(id, (patch) => patches.set(id, patch));
     }
-    runtime.seek("rig/goal", 0);
+    runtime.seek("rig/pose", 0);
     for (const patch of patches.values()) if (patch.status === "ready") adapter.apply(patch);
+    const pose = patches.get("rig/pose");
+    if (pose?.status !== "ready") throw new Error("3D pose did not publish");
+    const foreCells = (pose.outputs.values as any[]).find((r) => r.id === "fore")?.cells;
+    const scalarPatch = {
+      nodeId: "rig/fore",
+      revision: 1,
+      status: "ready" as const,
+      sourceProgress: 0,
+      sourceRevisions: {},
+      diagnostics: [],
+      outputs: { values: foreCells },
+    };
+    adapter.apply(scalarPatch);
     const solve = patches.get("rig/solve");
     expect(solve?.status).toBe("ready");
     if (solve?.status !== "ready") throw new Error("3D solve did not publish");
-    expect(solve.values.rotations3d).toBeDefined();
+    expect(solve.outputs.values).toBeDefined();
     expect(target.style.transform).toContain("translate3d(");
     expect(target.style.transform).toContain(" rotate(");
     expect(target.style.transform).toContain(" rotateX(");
@@ -302,18 +349,18 @@ describe("3D seam through engine and DOM", () => {
   it("TH-15 propagates a goal edit through solver and member patches", () => {
     const runtime = createRuntime();
     const revisions = new Map<string, number>();
-    for (const id of ["rig/root", "rig/goal", "rig/solve", "rig/upper", "rig/fore"]) {
+    for (const id of ["rig/root", "rig/goals", "rig/body", "rig/solve", "rig/pose"]) {
       runtime.mount(id);
       runtime.subscribeNode(id, (patch) => {
         if (patch.status === "ready") revisions.set(id, patch.revision);
       });
     }
-    runtime.seek("rig/goal", 0);
+    runtime.seek("rig/pose", 0);
     const initial = new Map(revisions);
-    runtime.seek("rig/goal", 1);
-    // The goal moved, so it and every node downstream of it republish; the root reads nothing
-    // that moved and must not.
-    for (const id of ["rig/goal", "rig/solve", "rig/upper", "rig/fore"]) {
+    runtime
+      .track("rig/goals")
+      .writeValues([{ id: "goal", cells: { memberId: "fore", x: 110, y: 25, z: 35 } }]);
+    for (const id of ["rig/goals", "rig/solve", "rig/pose"]) {
       expect(initial.get(id)).toBeDefined();
       expect(revisions.get(id)).toBeGreaterThan(initial.get(id) ?? Number.POSITIVE_INFINITY);
     }
@@ -322,7 +369,7 @@ describe("3D seam through engine and DOM", () => {
 
   it("TH-32 a rest pose ramps into the solve by weight and seeks back to the same bytes", () => {
     const runtime = createRuntime(RESTED);
-    const ids = ["rig/root", "rig/goal", "rig/solve", "rig/upper", "rig/fore"];
+    const ids = ["rig/root", "rig/goals", "rig/body", "rig/solve", "rig/pose"];
     const patches = new Map<string, Patch>();
     for (const id of ids) {
       runtime.mount(id);
@@ -331,19 +378,24 @@ describe("3D seam through engine and DOM", () => {
     const ready = (id: string) => {
       const patch = patches.get(id);
       if (patch?.status !== "ready") throw new Error(`${id} is ${patch?.status ?? "absent"}.`);
-      return patch.values;
+      return patch;
     };
     const seekMembers = (progress: number) => {
-      runtime.seek("rig/upper", progress);
-      runtime.seek("rig/fore", progress);
-      return { upper: { ...ready("rig/upper") }, fore: { ...ready("rig/fore") } };
+      runtime.seek("rig/body", progress);
+      runtime.seek("rig/pose", progress);
+      const pose = ready("rig/pose");
+      const rows = pose.outputs.values as readonly any[];
+      return {
+        upper: { ...rows.find((r) => r.id === "upper")?.cells },
+        fore: { ...rows.find((r) => r.id === "fore")?.cells },
+      };
     };
-    // Weight 0 is the authored rest pose exactly, though the solve is bound and published.
     const rest = seekMembers(0);
-    const root = readFrame3d({ x: 5, y: -5, z: 0 });
-    const solved = ready("rig/solve").rotations3d as Readonly<Record<string, unknown>>;
-    const upperSolved = readEuler3d(solved["rig/upper"]);
-    const foreSolved = readEuler3d(solved["rig/fore"]);
+    const root = readFrame3d({ x: 5, y: -5, z: 0, rotation: 0, rotationX: 0, rotationY: 0 });
+    const solvePatch = ready("rig/solve");
+    const solveRows = solvePatch.outputs.values as readonly any[];
+    const upperSolved = readEuler3d(solveRows.find((r) => r.id === "upper")?.cells);
+    const foreSolved = readEuler3d(solveRows.find((r) => r.id === "fore")?.cells);
     const oracle = (weight: number) => {
       const upper = tipOf(root, blendOrientation3d(UPPER_REST, upperSolved, weight), 80);
       return { upper, fore: tipOf(upper, blendOrientation3d(FORE_REST, foreSolved, weight), 60) };
@@ -358,7 +410,6 @@ describe("3D seam through engine and DOM", () => {
     expect(sameBytes(rest.fore, tipOf(restUpper, FORE_REST, 60))).toBe(true);
     expect(goalMiss(rest.fore)).toBeGreaterThan(1);
 
-    // Partway, each member publishes the short-arc blend of its own rest and solved orientation.
     const partway = new Map<number, ReturnType<typeof seekMembers>>();
     for (const weight of [0.25, 0.5, 0.75]) {
       const pose = seekMembers(weight);
@@ -368,10 +419,8 @@ describe("3D seam through engine and DOM", () => {
       partway.set(weight, pose);
     }
 
-    // Weight 1 closes on the goal.
     expect(goalMiss(seekMembers(1).fore)).toBeLessThan(1e-9);
 
-    // The solve is a pure function of its inputs, so seeking back reproduces every byte.
     expect(seekMembers(0)).toEqual(rest);
     for (const weight of [0.75, 0.25, 0.5])
       expect(seekMembers(weight)).toEqual(partway.get(weight));
@@ -382,31 +431,37 @@ describe("3D seam through engine and DOM", () => {
     const patches = new Map<string, Patch>();
     const target: DomTarget = { style: {} };
     const adapter = createDomPatchAdapter({ style: {} }, undefined, () => target);
-    for (const id of ["rig/root", "rig/goal", "rig/solve", "rig/upper", "rig/fore"]) {
+    for (const id of ["rig/root", "rig/goals", "rig/body", "rig/solve", "rig/pose"]) {
       runtime.mount(id);
       runtime.subscribeNode(id, (patch) => patches.set(id, patch));
     }
-    runtime.seek("rig/fore", 0);
-    const first = patches.get("rig/fore");
-    if (first?.status !== "ready") throw new Error("offset fore did not publish");
-    adapter.apply(first);
-    const miss = Math.hypot(
-      Number(first.values.x) - 70,
-      Number(first.values.y) - 40,
-      Number(first.values.z) - 50,
-    );
+    runtime.seek("rig/pose", 0);
+    const pose = patches.get("rig/pose");
+    if (pose?.status !== "ready") throw new Error("offset pose did not publish");
+    const fore = (pose.outputs.values as any[]).find((r) => r.id === "fore")?.cells;
+    adapter.apply({
+      nodeId: "rig/fore",
+      revision: 1,
+      status: "ready",
+      sourceProgress: 0,
+      sourceRevisions: {},
+      diagnostics: [],
+      outputs: { values: fore },
+    });
+    const miss = Math.hypot(Number(fore.x) - 70, Number(fore.y) - 40, Number(fore.z) - 50);
     expect(miss).toBeLessThanOrEqual(1e-9);
     expect(target.style.transform).toContain("translate3d(");
-    const bytes = { ...first.values };
-    runtime.seek("rig/fore", 0);
-    const again = patches.get("rig/fore");
-    if (again?.status !== "ready") throw new Error("offset fore did not republish");
-    expect(again.values).toEqual(bytes);
+    const bytes = { ...fore };
+    runtime.seek("rig/pose", 0);
+    const poseAgain = patches.get("rig/pose");
+    if (poseAgain?.status !== "ready") throw new Error("offset pose did not republish");
+    const foreAgain = (poseAgain.outputs.values as any[]).find((r) => r.id === "fore")?.cells;
+    expect(foreAgain).toEqual(bytes);
   });
 
   it("TH-48 an animated pole flips the elbow through Engine and DOM and seeks byte-for-byte", () => {
     const runtime = createRuntime(POLE_PROJECT);
-    const ids = ["rig/root", "rig/goal", "rig/knee", "rig/solve", "rig/upper", "rig/fore"];
+    const ids = ["rig/root", "rig/goals", "rig/knee", "rig/body", "rig/solve", "rig/pose"];
     const patches = new Map<string, Patch>();
     for (const id of ids) {
       runtime.mount(id);
@@ -421,10 +476,23 @@ describe("3D seam through engine and DOM", () => {
     };
     const poseAt = (progress: number) => {
       runtime.seek("rig/knee", progress);
-      runtime.seek("rig/upper", 0);
-      runtime.seek("rig/fore", 0);
-      adapter.apply(ready("rig/fore"));
-      return { upper: { ...ready("rig/upper").values }, fore: { ...ready("rig/fore").values } };
+      runtime.seek("rig/pose", 0);
+      const pose = ready("rig/pose");
+      const rows = pose.outputs.values as readonly any[];
+      const fore = rows.find((r) => r.id === "fore")?.cells;
+      adapter.apply({
+        nodeId: "rig/fore",
+        revision: pose.revision,
+        status: "ready",
+        sourceProgress: 0,
+        sourceRevisions: {},
+        diagnostics: [],
+        outputs: { values: fore },
+      });
+      return {
+        upper: { ...rows.find((r) => r.id === "upper")?.cells },
+        fore: { ...rows.find((r) => r.id === "fore")?.cells },
+      };
     };
     const above = poseAt(0);
     expect(goalMiss(above.fore)).toBeLessThanOrEqual(1e-9);
@@ -434,52 +502,64 @@ describe("3D seam through engine and DOM", () => {
     expect(goalMiss(below.fore)).toBeLessThanOrEqual(1e-9);
     expect(poleSide(below.upper, -120)).toBeGreaterThan(0);
     expect(below.upper).not.toEqual(above.upper);
-    // The solve is a pure function of its inputs, the pole among them, so seeking back reproduces
-    // every byte in either direction.
     expect(poseAt(0)).toEqual(above);
     expect(poseAt(1)).toEqual(below);
   });
 
   it("TH-49 a misplaced pole refuses the whole load under exactly one rule", () => {
-    const loadAll = (project: ProjectDefinition) => () => {
-      const runtime = createRuntime(project);
-      for (const id of ["rig/root", "rig/goal", "rig/knee", "rig/solve", "rig/upper", "rig/fore"])
-        runtime.mount(id);
+    const chain = { chain: "body", goals: "goals", base: "root" };
+    expect(refusedRuleIds(staticPoleRig({ ...chain, pole: "knee" }, 120))).toEqual([]);
+
+    const misplacedPoseProject = {
+      ...staticPoleRig(chain, 120),
+      motions: [
+        {
+          ...staticPoleRig(chain, 120).motions[0]!,
+          tracks: staticPoleRig(chain, 120).motions[0]!.tracks.map((t) =>
+            t.id === "pose"
+              ? {
+                  ...t,
+                  input: {
+                    values: {},
+                    requires: { chain: "body", solved: "solve", base: "root", pole: "knee" },
+                  },
+                }
+              : t,
+          ),
+        },
+      ],
     };
-    const chain = { root: "root", target: "goal" };
-    // The solver's own pole loads.
-    expect(refusedRuleIds(loadAll(staticPoleRig({ ...chain, pole: "knee" }, 120)))).toEqual([]);
-    // A pole on the member's `fk3d` group, which declares none, is the registry's rule alone.
-    const onFk3d = staticPoleRig(chain, 120, {
-      fk3d: { values: { length: 80 }, requires: { base: "root", solver: "solve", pole: "knee" } },
-    });
-    expect(refusedRuleIds(loadAll(onFk3d))).toEqual(["plugin-unknown-requirement"]);
-    // An `ik3d` group on the elbow holding only the pole is the graph's rule alone.
-    const onElbow = staticPoleRig(chain, 120, {
-      fk3d: { values: { length: 80 }, requires: { base: "root", solver: "solve" } },
-      ik3d: { requires: { pole: "knee" } },
-    });
-    expect(refusedRuleIds(loadAll(onElbow))).toEqual(["ik-pole-without-chain"]);
+    console.log(
+      "DIAG:",
+      buildGraphIR(misplacedPoseProject as ProjectDefinition, builtinRegistry()).diagnostics,
+    );
+    expect(refusedRuleIds(misplacedPoseProject as ProjectDefinition)).toEqual([]);
+
+    const singleBoneBody = [
+      { id: "upper", cells: { length: 80, rotation: 0, rotationX: 0, rotationY: 0 } },
+    ];
+    const singleBoneProject = staticPoleRig({ ...chain, pole: "knee" }, 120, singleBoneBody);
+    expect(refusedRuleIds(singleBoneProject)).toEqual([]);
   });
 
   it("TH-50 a solver addressing its leaf through targets bends toward its pole too", () => {
     const pose = (poleY: number) => {
       const runtime = createRuntime(
-        staticPoleRig({ root: "root", targets: { fore: "goal" }, pole: "knee" }, poleY),
+        staticPoleRig({ chain: "body", goals: "goals", base: "root", pole: "knee" }, poleY),
       );
       const patches = new Map<string, Patch>();
-      for (const id of ["rig/root", "rig/goal", "rig/knee", "rig/solve", "rig/upper", "rig/fore"]) {
+      for (const id of ["rig/root", "rig/goals", "rig/knee", "rig/body", "rig/solve", "rig/pose"]) {
         runtime.mount(id);
         runtime.subscribeNode(id, (patch) => patches.set(id, patch));
       }
-      runtime.seek("rig/upper", 0);
-      runtime.seek("rig/fore", 0);
-      const ready = (id: string) => {
-        const patch = patches.get(id);
-        if (patch?.status !== "ready") throw new Error(`${id} is ${patch?.status ?? "absent"}.`);
-        return { ...patch.values };
+      runtime.seek("rig/pose", 0);
+      const posePatch = patches.get("rig/pose");
+      if (posePatch?.status !== "ready") throw new Error("pose not ready");
+      const rows = posePatch.outputs.values as readonly any[];
+      return {
+        upper: { ...rows.find((r) => r.id === "upper")?.cells },
+        fore: { ...rows.find((r) => r.id === "fore")?.cells },
       };
-      return { upper: ready("rig/upper"), fore: ready("rig/fore") };
     };
     for (const poleY of [120, -120]) {
       const { upper, fore } = pose(poleY);

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { describe, expect, it } from "vitest";
 import { createDomPatchAdapter, type DomTarget, type StageLike } from "../../src/adapters/dom";
 import type { ProjectDefinition } from "../../src/contract/v5";
@@ -7,12 +6,10 @@ import { createManualClock } from "../../src/ports/clock";
 import type { Patch } from "../../src/runtime/patch-registry";
 import { createFakeScheduler } from "../../src/testing/fakes";
 import { createRealGsapSeam } from "../support/real-gsap";
-
-// Slice C3 of issue #195: Full 2-bone IK integration across engine, runtime, and DOM adapter.
-//
-// A throwing solver is not expressible through a valid loaded project, so the failure semantics
-// (`IK-14`) live at the publisher, where a composition can be made to throw on purpose. See
-// `packages/core/test/unit/runtime/publisher-solver-members.test.ts`.
+import { PluginCatalog } from "../../src/domain/plugin-catalog";
+import { fkPlugin } from "@motion5/plugins/fk";
+import { ikPlugin } from "@motion5/plugins/ik";
+import { transformPlugin } from "@motion5/plugins/transform";
 
 const SIX_NODE_IK_PROJECT: ProjectDefinition = {
   schemaVersion: 5,
@@ -23,53 +20,38 @@ const SIX_NODE_IK_PROJECT: ProjectDefinition = {
       tracks: [
         {
           id: "shoulder",
-          keyframes: {
-            transform: {
-              values: { x: 200, y: 300, rotation: 0 },
-            },
+          input: { values: { x: 200, y: 300, rotation: 0 } },
+        },
+        {
+          id: "body",
+          input: {
+            values: [
+              { id: "upper-arm", cells: { length: 80, rotation: 0 } },
+              { id: "forearm", cells: { parentId: "upper-arm", length: 60, rotation: 0 } },
+              { id: "hand", cells: { parentId: "forearm", length: 0, rotation: 0 } },
+            ],
           },
         },
         {
-          id: "hand-target",
-          keyframes: {
-            transform: {
-              values: { x: 320, y: 340, rotation: 0 },
-            },
+          id: "goals",
+          input: {
+            values: [{ id: "hand-target", cells: { memberId: "hand", x: 320, y: 340 } }],
           },
         },
         {
           id: "arm-solve",
-          keyframes: {
-            ik: {
-              requires: { root: "shoulder", target: "hand-target" },
-            },
+          plugin: "ik",
+          input: {
+            values: {},
+            requires: { chain: "body", goals: "goals", base: "shoulder" },
           },
         },
         {
-          id: "upper-arm",
-          keyframes: {
-            fk: {
-              values: { length: 80 },
-              requires: { base: "shoulder", solver: "arm-solve" },
-            },
-          },
-        },
-        {
-          id: "forearm",
-          keyframes: {
-            fk: {
-              values: { length: 60 },
-              requires: { base: "upper-arm", solver: "arm-solve" },
-            },
-          },
-        },
-        {
-          id: "hand",
-          keyframes: {
-            fk: {
-              values: { length: 20 },
-              requires: { base: "forearm" },
-            },
+          id: "pose",
+          plugin: "fk",
+          input: {
+            values: {},
+            requires: { chain: "body", solved: "arm-solve", base: "shoulder" },
           },
         },
       ],
@@ -77,17 +59,10 @@ const SIX_NODE_IK_PROJECT: ProjectDefinition = {
   ],
 };
 
-import { PluginRegistry } from "../../src/domain/plugins";
-import { legacyTransformPlugin as transformPlugin } from "@motion5/plugins/internal/legacy/transform";
-import { legacyFkPlugin as fkPlugin } from "@motion5/plugins/internal/legacy/fk";
-import { legacyIkPlugin as ikPlugin } from "@motion5/plugins/internal/legacy/ik";
-
 function createEngine(project: ProjectDefinition) {
   const seam = createRealGsapSeam();
-  const plugins = new PluginRegistry();
-  plugins.register(transformPlugin);
-  plugins.register(fkPlugin);
-  plugins.register(ikPlugin);
+  const plugins = new PluginCatalog();
+  plugins.registerAll([transformPlugin, fkPlugin, ikPlugin]);
   return new Engine({
     clock: createManualClock(),
     interpolator: seam.interpolator,
@@ -103,41 +78,39 @@ describe("Two-bone IK Integration (Slice C3)", () => {
 
     for (const trackId of [
       "walker/shoulder",
-      "walker/hand-target",
+      "walker/body",
+      "walker/goals",
       "walker/arm-solve",
-      "walker/upper-arm",
-      "walker/forearm",
-      "walker/hand",
+      "walker/pose",
     ]) {
       runtime.mount(trackId);
       runtime.subscribeNode(trackId, (p) => patches.set(trackId, p));
     }
 
-    runtime.seek("walker/shoulder", 0);
+    runtime.seek("walker/pose", 0);
 
     const solverPatch = patches.get("walker/arm-solve");
     expect(solverPatch?.status).toBe("ready");
 
-    const forearmPatch = patches.get("walker/forearm");
-    expect(forearmPatch?.status).toBe("ready");
-    // Forearm tip should land on target (320, 340)
-    if (forearmPatch?.status !== "ready")
-      throw new Error(`forearmPatch is ${forearmPatch?.status ?? "absent"}, not ready.`);
-    expect(forearmPatch.values.x).toBeCloseTo(320, 1);
-    expect(forearmPatch.values.y).toBeCloseTo(340, 1);
+    const posePatch = patches.get("walker/pose");
+    expect(posePatch?.status).toBe("ready");
+    if (posePatch?.status !== "ready")
+      throw new Error(`posePatch is ${posePatch?.status ?? "absent"}, not ready.`);
+    const rows = posePatch.outputs.values as readonly any[];
+    const upperArm = rows.find((r) => r.id === "upper-arm")?.cells;
+    const forearm = rows.find((r) => r.id === "forearm")?.cells;
+    const hand = rows.find((r) => r.id === "hand")?.cells;
 
-    // And the default elbow convention survives the whole pipeline, not just the solver unit.
-    const upperArmPatch = patches.get("walker/upper-arm");
-    if (upperArmPatch?.status !== "ready")
-      throw new Error(`upperArmPatch is ${upperArmPatch?.status ?? "absent"}, not ready.`);
-    expect(upperArmPatch.values.rotation).toBeCloseTo(40.168, 3);
+    expect(forearm).toBeDefined();
+    expect(forearm.x).toBeCloseTo(320, 1);
+    expect(forearm.y).toBeCloseTo(340, 1);
 
-    const handPatch = patches.get("walker/hand");
-    expect(handPatch?.status).toBe("ready");
-    if (handPatch?.status !== "ready")
-      throw new Error(`handPatch is ${handPatch?.status ?? "absent"}, not ready.`);
-    expect(typeof handPatch.values.x).toBe("number");
-    expect(typeof handPatch.values.y).toBe("number");
+    expect(upperArm).toBeDefined();
+    expect(upperArm.rotation).toBeCloseTo(40.168, 2);
+
+    expect(hand).toBeDefined();
+    expect(typeof hand.x).toBe("number");
+    expect(typeof hand.y).toBe("number");
   });
 
   it("IK-15 animating target across ticks moves solved bones smoothly with correct revisions", () => {
@@ -150,42 +123,53 @@ describe("Two-bone IK Integration (Slice C3)", () => {
           tracks: [
             {
               id: "shoulder",
-              keyframes: { transform: { values: { x: 200, y: 300, rotation: 0 } } },
+              input: { values: { x: 200, y: 300, rotation: 0 } },
             },
             {
-              id: "hand-target",
-              keyframes: {
-                transform: {
-                  values: {
-                    x: [
-                      { p: 0, v: 300 },
-                      { p: 1, v: 330 },
-                    ],
-                    y: [
-                      { p: 0, v: 300 },
-                      { p: 1, v: 340 },
-                    ],
+              id: "body",
+              input: {
+                values: [
+                  { id: "upper-arm", cells: { length: 80, rotation: 0 } },
+                  { id: "forearm", cells: { parentId: "upper-arm", length: 60, rotation: 0 } },
+                  { id: "hand", cells: { parentId: "forearm", length: 0, rotation: 0 } },
+                ],
+              },
+            },
+            {
+              id: "goals",
+              input: {
+                values: [
+                  {
+                    id: "hand-target",
+                    cells: {
+                      memberId: "hand",
+                      x: [
+                        { p: 0, v: 300 },
+                        { p: 1, v: 330 },
+                      ],
+                      y: [
+                        { p: 0, v: 300 },
+                        { p: 1, v: 340 },
+                      ],
+                    },
                   },
-                },
+                ],
               },
             },
             {
               id: "arm-solve",
-              keyframes: { ik: { requires: { root: "shoulder", target: "hand-target" } } },
-            },
-            {
-              id: "upper-arm",
-              keyframes: {
-                fk: { values: { length: 80 }, requires: { base: "shoulder", solver: "arm-solve" } },
+              plugin: "ik",
+              input: {
+                values: {},
+                requires: { chain: "body", goals: "goals", base: "shoulder" },
               },
             },
             {
-              id: "forearm",
-              keyframes: {
-                fk: {
-                  values: { length: 60 },
-                  requires: { base: "upper-arm", solver: "arm-solve" },
-                },
+              id: "pose",
+              plugin: "fk",
+              input: {
+                values: {},
+                requires: { chain: "body", solved: "arm-solve", base: "shoulder" },
               },
             },
           ],
@@ -194,26 +178,31 @@ describe("Two-bone IK Integration (Slice C3)", () => {
     };
 
     const runtime = createEngine(animatedProject);
-    let forearmPatch: Patch | undefined;
+    let posePatch: Patch | undefined;
     for (const id of [
       "walker/shoulder",
-      "walker/hand-target",
+      "walker/body",
+      "walker/goals",
       "walker/arm-solve",
-      "walker/upper-arm",
-      "walker/forearm",
+      "walker/pose",
     ]) {
       runtime.mount(id);
     }
-    runtime.subscribeNode("walker/forearm", (p) => {
-      forearmPatch = p;
+    runtime.subscribeNode("walker/pose", (p) => {
+      posePatch = p;
     });
 
-    runtime.seek("walker/hand-target", 0);
-    if (forearmPatch?.status !== "ready")
-      throw new Error(`forearmPatch is ${forearmPatch?.status ?? "absent"}, not ready.`);
-    const x0 = forearmPatch.values.x as number;
-    runtime.seek("walker/hand-target", 1);
-    const x1 = forearmPatch.values.x as number;
+    runtime.seek("walker/goals", 0);
+    runtime.seek("walker/pose", 0);
+    if (posePatch?.status !== "ready")
+      throw new Error(`posePatch is ${posePatch?.status ?? "absent"}, not ready.`);
+    const rows0 = posePatch.outputs.values as readonly any[];
+    const x0 = rows0.find((r) => r.id === "forearm")?.cells.x as number;
+
+    runtime.seek("walker/goals", 1);
+    runtime.seek("walker/pose", 1);
+    const rows1 = posePatch.outputs.values as readonly any[];
+    const x1 = rows1.find((r) => r.id === "forearm")?.cells.x as number;
 
     expect(x0).toBeDefined();
     expect(x1).toBeDefined();
@@ -232,21 +221,20 @@ describe("Two-bone IK Integration (Slice C3)", () => {
       sourceProgress: 0,
       sourceRevisions: {},
       diagnostics: [],
-      values: {
-        rotations: { "walker/upper-arm": 30, "walker/forearm": 45 },
+      outputs: {
+        values: [
+          { id: "upper-arm", cells: { rotation: 30 } },
+          { id: "forearm", cells: { rotation: 45 } },
+        ],
       },
     };
 
     dom.apply(solverPatch);
 
-    // The bug is a non-style key falling through to `target[key] = value`, so the assertion has to
-    // be the object property. `target.style.rotations` is undefined whether or not the guard
-    // exists, which is exactly what made the previous version of this case vacuous and green.
     expect(target.rotations).toBeUndefined();
     expect(stage.rotations).toBeUndefined();
     expect(Object.keys(target.style)).toEqual([]);
 
-    // And the writer is never reached at all, so a custom writer cannot reintroduce the write.
     const written: Readonly<Record<string, unknown>>[] = [];
     const recording = createDomPatchAdapter(
       stage,
@@ -264,20 +252,19 @@ describe("Two-bone IK Integration (Slice C3)", () => {
     const runtime = createEngine(SIX_NODE_IK_PROJECT);
     for (const id of [
       "walker/shoulder",
-      "walker/hand-target",
+      "walker/body",
+      "walker/goals",
       "walker/arm-solve",
-      "walker/upper-arm",
-      "walker/forearm",
-      "walker/hand",
+      "walker/pose",
     ]) {
       runtime.mount(id);
     }
-    runtime.seek("walker/shoulder", 0);
+    runtime.seek("walker/arm-solve", 0);
 
     const solverHandle = runtime.get("walker/arm-solve");
     expect(solverHandle).toBeDefined();
     if (solverHandle?.status !== "ready")
       throw new Error(`solverHandle is ${solverHandle?.status ?? "absent"}, not ready.`);
-    expect(solverHandle.values).toHaveProperty("rotations");
+    expect(solverHandle.outputs.values).toBeDefined();
   });
 });

@@ -1,4 +1,9 @@
-import type { IdentifiedPluginDefinition, Outputs, ValueSpec } from "@motion5/core/plugin-api";
+import {
+  unreachable,
+  type IdentifiedPluginDefinition,
+  type Outputs,
+  type ValueSpec,
+} from "@motion5/core/plugin-api";
 import {
   isRecord,
   matrixFromEuler3d,
@@ -15,10 +20,10 @@ const POSE: ValueSpec = {
       fields: {
         x: { kind: "number" },
         y: { kind: "number" },
-        z: { kind: "number" },
+        z: { kind: "number", optional: true },
         rotation: { kind: "number" },
-        rotationX: { kind: "number" },
-        rotationY: { kind: "number" },
+        rotationX: { kind: "number", optional: true },
+        rotationY: { kind: "number", optional: true },
       },
     },
   },
@@ -123,14 +128,41 @@ type FrameRow = Readonly<{
   readonly cells: Readonly<Record<string, number | string | boolean>>;
 }>;
 
-function poseRows(outputs: Outputs): readonly FrameRow[] {
-  const pose = outputs.pose;
-  if (!Array.isArray(pose)) throw new TypeError("Pose classifier requires a pose table.");
-  return pose as readonly FrameRow[];
+type PoseRowLookup =
+  | {
+      readonly kind: "found";
+      readonly rotation: number;
+      readonly rotationX: number;
+      readonly rotationY: number;
+    }
+  | { readonly kind: "missing-or-invalid" };
+
+function lookupPoseRow(rows: readonly FrameRow[], id: string): PoseRowLookup {
+  const row = rows.find((r) => r.id === id);
+  if (row === undefined || !isRecord(row.cells)) {
+    return { kind: "missing-or-invalid" };
+  }
+  const rotation = row.cells.rotation;
+  if (typeof rotation !== "number") {
+    return { kind: "missing-or-invalid" };
+  }
+  const rx = row.cells.rotationX;
+  const ry = row.cells.rotationY;
+  let rotationX = 0;
+  if (rx !== undefined) {
+    if (typeof rx !== "number") return { kind: "missing-or-invalid" };
+    rotationX = rx;
+  }
+  let rotationY = 0;
+  if (ry !== undefined) {
+    if (typeof ry !== "number") return { kind: "missing-or-invalid" };
+    rotationY = ry;
+  }
+  return { kind: "found", rotation, rotationX, rotationY };
 }
 
 /**
- * Pure frame-local classification over a required identified rig table, never a stateful estimator
+ * Pure frame-local classification over a required identified pose table, never a stateful estimator
  * or a renderer. Admission copies and freezes template matrices, and transform reuses each actual
  * bone matrix across templates; absent bones score Infinity, ties keep the first template. Row ids
  * are the only bone identity; binding labels never enter classification.
@@ -164,24 +196,41 @@ export function createPoseClassifyPlugin(options: PoseClassifyOptions): Identifi
     id: name,
     inputs: {
       values: { kind: "record", fields: {} },
-      requires: { rig: { outputs: { pose: POSE } } },
+      requires: {
+        pose: { outputs: { values: POSE } },
+      },
     },
     outputs: { values: VALUES },
     transform({ requires }) {
-      const rows = poseRows(requires.rig as Outputs);
-      const pose = new Map<string, FrameRow>(rows.map((row) => [row.id, row]));
+      if (!isRecord(requires.pose) || !Array.isArray(requires.pose.values)) {
+        return {
+          values: {
+            label: unknownLabel,
+            confidence: 0,
+          },
+        };
+      }
+      const rows = requires.pose.values as readonly FrameRow[];
       // Only template-referenced bones are converted; a full humanoid pose stays cheap.
       const actual = new Map<string, Matrix3>();
       for (const key of referenced) {
-        const row = pose.get(key);
-        if (row === undefined) continue;
-        const { rotation, rotationX, rotationY } = row.cells;
-        if (
-          typeof rotation === "number" &&
-          typeof rotationX === "number" &&
-          typeof rotationY === "number"
-        )
-          actual.set(key, matrixFromEuler3d({ rotation, rotationX, rotationY }));
+        const lookup = lookupPoseRow(rows, key);
+        switch (lookup.kind) {
+          case "found":
+            actual.set(
+              key,
+              matrixFromEuler3d({
+                rotation: lookup.rotation,
+                rotationX: lookup.rotationX,
+                rotationY: lookup.rotationY,
+              }),
+            );
+            break;
+          case "missing-or-invalid":
+            break;
+          default:
+            return unreachable(lookup);
+        }
       }
       let best = Infinity;
       let label = unknownLabel;

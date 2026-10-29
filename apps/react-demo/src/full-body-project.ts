@@ -6,127 +6,10 @@ import type { ProjectDefinition, TrackDefinition } from "@motion5/core";
  */
 export const WALK_SCROLL_SOURCE = "walk";
 
-/*
- * This app registers `transformPlugin` and `fkPlugin`, and both claim `rotation`, so every track
- * names the plugin that owns its keys: a bone is authored under `fk` and the pelvis under
- * `transform`. Every authored top-level keyframe entry is a plugin-named group.
- * See ADR-043 and the keyframes section of docs/AUTHORED-SCHEMA.md.
- *
- * A group has exactly two members. Its animated properties live under `values` and the graph
- * bindings the named plugin owns live under `requires`, beside that section rather than around it.
- * Both names are reserved, so a group is recognised by the sections it names rather than by the
- * shape of its leaves. See ADR-049.
- *
- * A leaf is the stops themselves, or a static value. Every bone's `length` is static here, because
- * a bone does not change length: it is authored as `length: 62` rather than as two identical stops,
- * and it never enters the interpolator, so it costs no percent-map entry and no tween. Only
- * `rotation` is animated. See ADR-050.
- *
- * Each bone names its parent once, as `fk.requires.base`, beside the values that parent frame
- * composes against. That replaced a five-line `observes` block per bone whose projection map
- * restated the fk plugin's own input contract as `parentX`, `parentY`, and `parentRotation`. The
- * graph derives the same input edge from the binding, and the parent's values arrive scoped to the
- * `base` slot under their own names. See ADR-044.
- */
-export const armTracks: readonly TrackDefinition[] = [
-  // 10. Left Arm Upper (Foreground - Observes Chest which is -90deg UP, so 180deg hangs DOWN)
-  {
-    id: "armL_upper",
-    plugin: "fk",
-    input: {
-      values: {
-        length: 62,
-        rotation: [
-          { p: 0, v: 210 }, // Back swing
-          { p: 0.125, v: 190 },
-          { p: 0.25, v: 150 }, // Forward swing
-          { p: 0.375, v: 170 },
-          { p: 0.5, v: 210 },
-          { p: 0.625, v: 190 },
-          { p: 0.75, v: 150 },
-          { p: 0.875, v: 170 },
-          { p: 1, v: 210 },
-        ],
-      },
-      requires: { base: "walk/chest" },
-    },
-  },
-
-  // 11. Left Arm Lower
-  {
-    id: "armL_lower",
-    plugin: "fk",
-    input: {
-      values: {
-        length: 58,
-        rotation: [
-          { p: 0, v: 20 },
-          { p: 0.125, v: 35 },
-          { p: 0.25, v: 45 },
-          { p: 0.375, v: 25 },
-          { p: 0.5, v: 20 },
-          { p: 0.625, v: 35 },
-          { p: 0.75, v: 45 },
-          { p: 0.875, v: 25 },
-          { p: 1, v: 20 },
-        ],
-      },
-      requires: { base: "walk/armL_upper" },
-    },
-  },
-
-  // 12. Right Arm Upper (Background - In phase with Left Leg)
-  {
-    id: "armR_upper",
-    plugin: "fk",
-    input: {
-      values: {
-        length: 62,
-        rotation: [
-          { p: 0, v: 150 }, // Forward swing
-          { p: 0.125, v: 170 },
-          { p: 0.25, v: 210 }, // Back swing
-          { p: 0.375, v: 190 },
-          { p: 0.5, v: 150 },
-          { p: 0.625, v: 170 },
-          { p: 0.75, v: 210 },
-          { p: 0.875, v: 190 },
-          { p: 1, v: 150 },
-        ],
-      },
-      requires: { base: "walk/chest" },
-    },
-  },
-
-  // 13. Right Arm Lower
-  {
-    id: "armR_lower",
-    plugin: "fk",
-    input: {
-      values: {
-        length: 58,
-        rotation: [
-          { p: 0, v: 45 },
-          { p: 0.125, v: 25 },
-          { p: 0.25, v: 20 },
-          { p: 0.375, v: 35 },
-          { p: 0.5, v: 45 },
-          { p: 0.625, v: 25 },
-          { p: 0.75, v: 20 },
-          { p: 0.875, v: 35 },
-          { p: 1, v: 45 },
-        ],
-      },
-      requires: { base: "walk/armR_upper" },
-    },
-  },
-];
-
 export const coreWalkerTracks: readonly TrackDefinition[] = [
-  // 1. Pelvis (Root)
+  // 1. Pelvis (Root record track)
   {
     id: "pelvis",
-    plugin: "transform",
     input: {
       values: {
         x: [
@@ -156,179 +39,297 @@ export const coreWalkerTracks: readonly TrackDefinition[] = [
     },
   },
 
-  // 2. Chest (Spine - Points UP -90deg from Pelvis)
+  // 2. Body Aggregate Table (Chest, Head, Legs)
   {
-    id: "chest",
-    plugin: "fk",
+    id: "body",
     input: {
-      values: {
-        length: 80,
-        rotation: [
-          { p: 0, v: -87 },
-          { p: 0.25, v: -93 },
-          { p: 0.5, v: -87 },
-          { p: 0.75, v: -93 },
-          { p: 1, v: -87 },
-        ],
-      },
-      requires: { base: "walk/pelvis" },
+      values: [
+        {
+          id: "chest",
+          cells: {
+            length: 80,
+            rotation: [
+              { p: 0, v: -87 },
+              { p: 0.25, v: -93 },
+              { p: 0.5, v: -87 },
+              { p: 0.75, v: -93 },
+              { p: 1, v: -87 },
+            ],
+          },
+        },
+        {
+          id: "head",
+          cells: {
+            parentId: "chest",
+            length: 45,
+            rotation: [
+              { p: 0, v: -3 },
+              { p: 0.25, v: 3 },
+              { p: 0.5, v: -3 },
+              { p: 0.75, v: 3 },
+              { p: 1, v: -3 },
+            ],
+          },
+        },
+        {
+          id: "legL_thigh",
+          cells: {
+            length: 85,
+            rotation: [
+              { p: 0, v: 65 },
+              { p: 0.125, v: 85 },
+              { p: 0.25, v: 115 },
+              { p: 0.375, v: 95 },
+              { p: 0.5, v: 65 },
+              { p: 0.625, v: 85 },
+              { p: 0.75, v: 115 },
+              { p: 0.875, v: 95 },
+              { p: 1, v: 65 },
+            ],
+          },
+        },
+        {
+          id: "legL_shin",
+          cells: {
+            parentId: "legL_thigh",
+            length: 80,
+            rotation: [
+              { p: 0, v: 5 },
+              { p: 0.125, v: 8 },
+              { p: 0.25, v: 25 },
+              { p: 0.375, v: 45 },
+              { p: 0.5, v: 5 },
+              { p: 0.625, v: 8 },
+              { p: 0.75, v: 25 },
+              { p: 0.875, v: 45 },
+              { p: 1, v: 5 },
+            ],
+          },
+        },
+        {
+          id: "legL_foot",
+          cells: {
+            parentId: "legL_shin",
+            length: 38,
+            rotation: [
+              { p: 0, v: -75 },
+              { p: 0.125, v: -90 },
+              { p: 0.25, v: -105 },
+              { p: 0.375, v: -70 },
+              { p: 0.5, v: -75 },
+              { p: 0.625, v: -90 },
+              { p: 0.75, v: -105 },
+              { p: 0.875, v: -70 },
+              { p: 1, v: -75 },
+            ],
+          },
+        },
+        {
+          id: "legR_thigh",
+          cells: {
+            length: 85,
+            rotation: [
+              { p: 0, v: 115 },
+              { p: 0.125, v: 95 },
+              { p: 0.25, v: 65 },
+              { p: 0.375, v: 85 },
+              { p: 0.5, v: 115 },
+              { p: 0.625, v: 95 },
+              { p: 0.75, v: 65 },
+              { p: 0.875, v: 85 },
+              { p: 1, v: 115 },
+            ],
+          },
+        },
+        {
+          id: "legR_shin",
+          cells: {
+            parentId: "legR_thigh",
+            length: 80,
+            rotation: [
+              { p: 0, v: 25 },
+              { p: 0.125, v: 45 },
+              { p: 0.25, v: 5 },
+              { p: 0.375, v: 8 },
+              { p: 0.5, v: 25 },
+              { p: 0.625, v: 45 },
+              { p: 0.75, v: 5 },
+              { p: 0.875, v: 8 },
+              { p: 1, v: 25 },
+            ],
+          },
+        },
+        {
+          id: "legR_foot",
+          cells: {
+            parentId: "legR_shin",
+            length: 38,
+            rotation: [
+              { p: 0, v: -105 },
+              { p: 0.125, v: -70 },
+              { p: 0.25, v: -75 },
+              { p: 0.375, v: -90 },
+              { p: 0.5, v: -105 },
+              { p: 0.625, v: -70 },
+              { p: 0.75, v: -75 },
+              { p: 0.875, v: -90 },
+              { p: 1, v: -105 },
+            ],
+          },
+        },
+      ],
     },
   },
 
-  // 3. Head (Continues UP 0deg from Chest)
+  // 3. Solved Table
   {
-    id: "head",
-    plugin: "fk",
+    id: "solved",
     input: {
-      values: {
-        length: 45,
-        rotation: [
-          { p: 0, v: -3 },
-          { p: 0.25, v: 3 },
-          { p: 0.5, v: -3 },
-          { p: 0.75, v: 3 },
-          { p: 1, v: -3 },
-        ],
-      },
-      requires: { base: "walk/chest" },
+      values: [
+        "chest",
+        "head",
+        "legL_thigh",
+        "legL_shin",
+        "legL_foot",
+        "legR_thigh",
+        "legR_shin",
+        "legR_foot",
+      ].map((id) => ({ id, cells: { rotation: 0 } })),
     },
   },
 
-  // 4. Left Leg Thigh (Foreground - Points DOWN ~90deg from Pelvis)
+  // 4. Pose Track (fk plugin)
   {
-    id: "legL_thigh",
+    id: "pose",
     plugin: "fk",
     input: {
-      values: {
-        length: 85,
-        rotation: [
-          { p: 0, v: 65 }, // Forward contact
-          { p: 0.125, v: 85 }, // Mid-stance
-          { p: 0.25, v: 115 }, // Push-off back
-          { p: 0.375, v: 95 }, // Swing forward
-          { p: 0.5, v: 65 },
-          { p: 0.625, v: 85 },
-          { p: 0.75, v: 115 },
-          { p: 0.875, v: 95 },
-          { p: 1, v: 65 },
-        ],
+      values: {},
+      requires: {
+        chain: "walk/body",
+        solved: "walk/solved",
+        base: "walk/pelvis",
       },
-      requires: { base: "walk/pelvis" },
+    },
+  },
+];
+
+export const armTracks: readonly TrackDefinition[] = [
+  // 1. Arms Body Table
+  {
+    id: "arms-body",
+    input: {
+      values: [
+        {
+          id: "chest",
+          cells: {
+            length: 80,
+            rotation: [
+              { p: 0, v: -87 },
+              { p: 0.25, v: -93 },
+              { p: 0.5, v: -87 },
+              { p: 0.75, v: -93 },
+              { p: 1, v: -87 },
+            ],
+          },
+        },
+        {
+          id: "armL_upper",
+          cells: {
+            parentId: "chest",
+            length: 62,
+            rotation: [
+              { p: 0, v: 210 },
+              { p: 0.125, v: 190 },
+              { p: 0.25, v: 150 },
+              { p: 0.375, v: 170 },
+              { p: 0.5, v: 210 },
+              { p: 0.625, v: 190 },
+              { p: 0.75, v: 150 },
+              { p: 0.875, v: 170 },
+              { p: 1, v: 210 },
+            ],
+          },
+        },
+        {
+          id: "armL_lower",
+          cells: {
+            parentId: "armL_upper",
+            length: 58,
+            rotation: [
+              { p: 0, v: 20 },
+              { p: 0.125, v: 35 },
+              { p: 0.25, v: 45 },
+              { p: 0.375, v: 25 },
+              { p: 0.5, v: 20 },
+              { p: 0.625, v: 35 },
+              { p: 0.75, v: 45 },
+              { p: 0.875, v: 25 },
+              { p: 1, v: 20 },
+            ],
+          },
+        },
+        {
+          id: "armR_upper",
+          cells: {
+            parentId: "chest",
+            length: 62,
+            rotation: [
+              { p: 0, v: 150 },
+              { p: 0.125, v: 170 },
+              { p: 0.25, v: 210 },
+              { p: 0.375, v: 190 },
+              { p: 0.5, v: 150 },
+              { p: 0.625, v: 170 },
+              { p: 0.75, v: 210 },
+              { p: 0.875, v: 190 },
+              { p: 1, v: 150 },
+            ],
+          },
+        },
+        {
+          id: "armR_lower",
+          cells: {
+            parentId: "armR_upper",
+            length: 58,
+            rotation: [
+              { p: 0, v: 45 },
+              { p: 0.125, v: 25 },
+              { p: 0.25, v: 20 },
+              { p: 0.375, v: 35 },
+              { p: 0.5, v: 45 },
+              { p: 0.625, v: 25 },
+              { p: 0.75, v: 20 },
+              { p: 0.875, v: 35 },
+              { p: 1, v: 45 },
+            ],
+          },
+        },
+      ],
     },
   },
 
-  // 5. Left Leg Shin (Extends from Thigh)
+  // 2. Arms Solved Table
   {
-    id: "legL_shin",
-    plugin: "fk",
+    id: "arms-solved",
     input: {
-      values: {
-        length: 80,
-        rotation: [
-          { p: 0, v: 5 },
-          { p: 0.125, v: 8 },
-          { p: 0.25, v: 25 },
-          { p: 0.375, v: 45 },
-          { p: 0.5, v: 5 },
-          { p: 0.625, v: 8 },
-          { p: 0.75, v: 25 },
-          { p: 0.875, v: 45 },
-          { p: 1, v: 5 },
-        ],
-      },
-      requires: { base: "walk/legL_thigh" },
+      values: ["chest", "armL_upper", "armL_lower", "armR_upper", "armR_lower"].map((id) => ({
+        id,
+        cells: { rotation: 0 },
+      })),
     },
   },
 
-  // 6. Left Leg Foot (Points FORWARD +X ~-90deg from Shin)
+  // 3. Arms Pose Track (fk plugin)
   {
-    id: "legL_foot",
+    id: "arms-pose",
     plugin: "fk",
     input: {
-      values: {
-        length: 38,
-        rotation: [
-          { p: 0, v: -75 },
-          { p: 0.125, v: -90 },
-          { p: 0.25, v: -105 },
-          { p: 0.375, v: -70 },
-          { p: 0.5, v: -75 },
-          { p: 0.625, v: -90 },
-          { p: 0.75, v: -105 },
-          { p: 0.875, v: -70 },
-          { p: 1, v: -75 },
-        ],
+      values: {},
+      requires: {
+        chain: "walk/arms-body",
+        solved: "walk/arms-solved",
+        base: "walk/pelvis",
       },
-      requires: { base: "walk/legL_shin" },
-    },
-  },
-
-  // 7. Right Leg Thigh (Background - 180deg / 0.5 phase offset)
-  {
-    id: "legR_thigh",
-    plugin: "fk",
-    input: {
-      values: {
-        length: 85,
-        rotation: [
-          { p: 0, v: 115 },
-          { p: 0.125, v: 95 },
-          { p: 0.25, v: 65 },
-          { p: 0.375, v: 85 },
-          { p: 0.5, v: 115 },
-          { p: 0.625, v: 95 },
-          { p: 0.75, v: 65 },
-          { p: 0.875, v: 85 },
-          { p: 1, v: 115 },
-        ],
-      },
-      requires: { base: "walk/pelvis" },
-    },
-  },
-
-  // 8. Right Leg Shin
-  {
-    id: "legR_shin",
-    plugin: "fk",
-    input: {
-      values: {
-        length: 80,
-        rotation: [
-          { p: 0, v: 25 },
-          { p: 0.125, v: 45 },
-          { p: 0.25, v: 5 },
-          { p: 0.375, v: 8 },
-          { p: 0.5, v: 25 },
-          { p: 0.625, v: 45 },
-          { p: 0.75, v: 5 },
-          { p: 0.875, v: 8 },
-          { p: 1, v: 25 },
-        ],
-      },
-      requires: { base: "walk/legR_thigh" },
-    },
-  },
-
-  // 9. Right Leg Foot
-  {
-    id: "legR_foot",
-    plugin: "fk",
-    input: {
-      values: {
-        length: 38,
-        rotation: [
-          { p: 0, v: -105 },
-          { p: 0.125, v: -70 },
-          { p: 0.25, v: -75 },
-          { p: 0.375, v: -90 },
-          { p: 0.5, v: -105 },
-          { p: 0.625, v: -70 },
-          { p: 0.75, v: -75 },
-          { p: 0.875, v: -90 },
-          { p: 1, v: -105 },
-        ],
-      },
-      requires: { base: "walk/legR_shin" },
     },
   },
 ];

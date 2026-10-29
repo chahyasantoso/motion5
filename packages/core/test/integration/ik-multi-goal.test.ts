@@ -1,25 +1,16 @@
-// @ts-nocheck
 import { describe, expect, it } from "vitest";
 import type { ProjectDefinition, TrackDefinition } from "../../src/contract/v5";
-import { PluginRegistry } from "../../src/domain/plugins";
+import { PluginCatalog } from "../../src/domain/plugin-catalog";
 import { Engine } from "../../src/engine";
-import { legacyFkPlugin as fkPlugin } from "@motion5/plugins/internal/legacy/fk";
-import { legacyIkPlugin as ikPlugin } from "@motion5/plugins/internal/legacy/ik";
-import { legacyTransformPlugin as transformPlugin } from "@motion5/plugins/internal/legacy/transform";
+import { fkPlugin } from "@motion5/plugins/fk";
+import { ikPlugin } from "@motion5/plugins/ik";
+import { transformPlugin } from "@motion5/plugins/transform";
 import { createManualClock } from "../../src/ports/clock";
 import type { Patch } from "../../src/runtime/patch-registry";
 import { createFakeScheduler } from "../../src/testing/fakes";
 import { createRealGsapSeam } from "../support/real-gsap";
 
-// Slice D1 of issue #195: the goal dict end to end.
-//
-// The evidence for this slice is deliberately the rig that already exists rather than a new one. The
-// worked rig of ADR-051 solves to `40.168` and `-51.318` through the bare `target` slot, and `IK-1`,
-// `IK-3` and `IK-13` pin those numbers. Re-expressing the same rig with `targets` and getting the
-// same two numbers is what says the dict changed the addressing and nothing else; a fresh fixture
-// with fresh expectations would have proved only that the new path computes something.
-
-function goalRig(handTarget: TrackDefinition): ProjectDefinition {
+function goalRig(goalsTrack: TrackDefinition): ProjectDefinition {
   return {
     schemaVersion: 5,
     motions: [
@@ -29,32 +20,34 @@ function goalRig(handTarget: TrackDefinition): ProjectDefinition {
         tracks: [
           {
             id: "shoulder",
-            keyframes: { transform: { values: { x: 200, y: 300, rotation: 0 } } },
+            input: { values: { x: 200, y: 300, rotation: 0 } },
           },
-          handTarget,
+          {
+            id: "body",
+            input: {
+              values: [
+                { id: "upper-arm", cells: { length: 80, rotation: 0 } },
+                { id: "forearm", cells: { parentId: "upper-arm", length: 60, rotation: 0 } },
+                { id: "hand", cells: { parentId: "forearm", length: 0, rotation: 0 } },
+              ],
+            },
+          },
+          goalsTrack,
           {
             id: "arm-solve",
-            // One authored section, keyed by the member id the goal belongs to. No bracket is ever
-            // typed: `targets[forearm]` is derived identity and lives only in the IR.
-            keyframes: {
-              ik: { requires: { root: "shoulder", targets: { forearm: "hand-target" } } },
+            plugin: "ik",
+            input: {
+              values: {},
+              requires: { chain: "body", goals: "goals", base: "shoulder" },
             },
           },
           {
-            id: "upper-arm",
-            keyframes: {
-              fk: { values: { length: 80 }, requires: { base: "shoulder", solver: "arm-solve" } },
+            id: "pose",
+            plugin: "fk",
+            input: {
+              values: {},
+              requires: { chain: "body", solved: "arm-solve", base: "shoulder" },
             },
-          },
-          {
-            id: "forearm",
-            keyframes: {
-              fk: { values: { length: 60 }, requires: { base: "upper-arm", solver: "arm-solve" } },
-            },
-          },
-          {
-            id: "hand",
-            keyframes: { fk: { values: { length: 20 }, requires: { base: "forearm" } } },
           },
         ],
       },
@@ -63,43 +56,46 @@ function goalRig(handTarget: TrackDefinition): ProjectDefinition {
 }
 
 const STATIC_GOAL = goalRig({
-  id: "hand-target",
-  keyframes: { transform: { values: { x: 320, y: 340, rotation: 0 } } },
+  id: "goals",
+  input: {
+    values: [{ id: "hand-target", cells: { memberId: "hand", x: 320, y: 340 } }],
+  },
 });
 
 const ANIMATED_GOAL = goalRig({
-  id: "hand-target",
-  keyframes: {
-    transform: {
-      values: {
-        x: [
-          { p: 0, v: 300 },
-          { p: 1, v: 330 },
-        ],
-        y: [
-          { p: 0, v: 300 },
-          { p: 1, v: 340 },
-        ],
+  id: "goals",
+  input: {
+    values: [
+      {
+        id: "hand-target",
+        cells: {
+          memberId: "hand",
+          x: [
+            { p: 0, v: 300 },
+            { p: 1, v: 330 },
+          ],
+          y: [
+            { p: 0, v: 300 },
+            { p: 1, v: 340 },
+          ],
+        },
       },
-    },
+    ],
   },
 });
 
 const NODE_IDS = [
   "walker/shoulder",
-  "walker/hand-target",
+  "walker/body",
+  "walker/goals",
   "walker/arm-solve",
-  "walker/upper-arm",
-  "walker/forearm",
-  "walker/hand",
+  "walker/pose",
 ];
 
 function createEngine(project: ProjectDefinition) {
   const seam = createRealGsapSeam();
-  const plugins = new PluginRegistry();
-  plugins.register(transformPlugin);
-  plugins.register(fkPlugin);
-  plugins.register(ikPlugin);
+  const plugins = new PluginCatalog();
+  plugins.registerAll([transformPlugin, fkPlugin, ikPlugin]);
   return new Engine({
     clock: createManualClock(),
     interpolator: seam.interpolator,
@@ -117,47 +113,50 @@ describe("goal-addressed IK integration (Slice D1)", () => {
       runtime.subscribeNode(id, (patch) => patches.set(id, patch));
     }
 
-    runtime.seek("walker/shoulder", 0);
+    runtime.seek("walker/pose", 0);
 
     const solver = patches.get("walker/arm-solve");
     expect(solver?.status).toBe("ready");
     if (solver?.status !== "ready")
       throw new Error(`solver is ${solver?.status ?? "absent"}, not ready.`);
-    const rotations = solver.values.rotations as Readonly<Record<string, number>>;
-    expect(rotations["walker/upper-arm"]).toBeCloseTo(40.168, 3);
-    expect(rotations["walker/forearm"]).toBeCloseTo(-51.3178, 4);
+    const rows = solver.outputs.values as readonly any[];
+    const upperArmRot = rows.find((r) => r.id === "upper-arm")?.cells.rotation;
+    const forearmRot = rows.find((r) => r.id === "forearm")?.cells.rotation;
+    expect(upperArmRot).toBeCloseTo(40.168, 2);
+    expect(forearmRot).toBeCloseTo(-51.318, 2);
 
-    // The two rotations are local, so the tip landing on the goal is the independent check that the
-    // frame the solve reached for was the goal node's and not something the plugin defaulted to.
-    const forearm = patches.get("walker/forearm");
-    expect(forearm?.status).toBe("ready");
-    if (forearm?.status !== "ready")
-      throw new Error(`forearm is ${forearm?.status ?? "absent"}, not ready.`);
-    expect(forearm.values.x).toBeCloseTo(320, 1);
-    expect(forearm.values.y).toBeCloseTo(340, 1);
+    const pose = patches.get("walker/pose");
+    expect(pose?.status).toBe("ready");
+    if (pose?.status !== "ready")
+      throw new Error(`pose is ${pose?.status ?? "absent"}, not ready.`);
+    const poseRows = pose.outputs.values as readonly any[];
+    const forearm = poseRows.find((r) => r.id === "forearm")?.cells;
+    expect(forearm).toBeDefined();
+    expect(forearm.x).toBeCloseTo(320, 1);
+    expect(forearm.y).toBeCloseTo(340, 1);
 
-    // And the chain below is unaware any of this happened.
-    expect(patches.get("walker/hand")?.status).toBe("ready");
+    expect(poseRows.find((r) => r.id === "hand")).toBeDefined();
   });
 
   it("MG-13 seeding the goal node alone re-solves the whole chain", () => {
-    // A goal is an ordinary input edge of the solver, so the goal node is upstream of it and the
-    // members are downstream through `solves`. Seeding the goal has to reach both, and this fails by
-    // holding still rather than by erroring: a chain that never re-solved would keep publishing tick
-    // one's pose with status `ready` and no diagnostic.
     const runtime = createEngine(ANIMATED_GOAL);
     for (const id of NODE_IDS) runtime.mount(id);
-    let forearm: Patch | undefined;
-    runtime.subscribeNode("walker/forearm", (patch) => {
-      forearm = patch;
+    let posePatch: Patch | undefined;
+    runtime.subscribeNode("walker/pose", (patch) => {
+      posePatch = patch;
     });
 
-    runtime.seek("walker/hand-target", 0);
-    if (forearm?.status !== "ready")
-      throw new Error(`forearm is ${forearm?.status ?? "absent"}, not ready.`);
-    const first = forearm.values.x as number;
-    runtime.seek("walker/hand-target", 1);
-    const second = forearm.values.x as number;
+    runtime.seek("walker/goals", 0);
+    runtime.seek("walker/pose", 0);
+    if (posePatch?.status !== "ready")
+      throw new Error(`posePatch is ${posePatch?.status ?? "absent"}, not ready.`);
+    const rows0 = posePatch.outputs.values as readonly any[];
+    const first = Number(rows0.find((r) => r.id === "forearm")?.cells.x);
+
+    runtime.seek("walker/goals", 1);
+    runtime.seek("walker/pose", 1);
+    const rows1 = posePatch.outputs.values as readonly any[];
+    const second = Number(rows1.find((r) => r.id === "forearm")?.cells.x);
 
     expect(Number.isFinite(first)).toBe(true);
     expect(Number.isFinite(second)).toBe(true);

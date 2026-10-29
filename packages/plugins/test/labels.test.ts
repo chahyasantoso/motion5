@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { describe, expect, it } from "vitest";
 import {
   createManualClock,
@@ -17,7 +16,7 @@ function ready(value: unknown): LivePatch {
     nodeId: "~/tag",
     revision: 1,
     status: "ready",
-    outputs: { values: { mode: value } },
+    outputs: { values: { mode: value as any } },
     sourceProgress: 0,
     sourceRevisions: {},
     diagnostics: [],
@@ -170,14 +169,14 @@ describe("label edges over published state", () => {
     const input = source(ready("idle"));
     const project = {
       ...input.project,
-      edit() {
+      edit(_transaction?: any) {
         throw new Error("schema-commit-reentrant: structural edit during publication");
       },
     };
     let refusal: unknown;
     const dispose = onLabelChange(project, "~/tag", "mode", () => {
       try {
-        project.edit((transaction) => transaction.addTrack({ id: "other" }));
+        project.edit((transaction: any) => transaction.addTrack({ id: "other" }));
       } catch (error) {
         refusal = error;
       }
@@ -189,7 +188,7 @@ describe("label edges over published state", () => {
 
   it("N6 a graph delete fires (undefined, previous) once and unsubscribes", () => {
     const project = tagProject();
-    project.track("scene/tag").writeValues({ mode: "walk" });
+    project.track("scene/tag").input.values.set({ mode: "walk" });
     const events: unknown[] = [];
     onLabelChange(project, "scene/tag", "mode", (next, previous) => events.push([next, previous]));
     project.edit((transaction) => transaction.track("scene/tag").remove());

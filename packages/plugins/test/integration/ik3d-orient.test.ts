@@ -1,9 +1,6 @@
-// @ts-nocheck
 import { describe, expect, it } from "vitest";
-import type { ProjectDefinition, TrackDefinition } from "@motion5/core";
-import { PluginRegistry } from "@motion5/core";
-import { Engine } from "@motion5/core";
-import { createManualClock } from "@motion5/core";
+import type { Patch, ProjectDefinition } from "@motion5/core";
+import { Engine, PluginCatalog, createManualClock } from "@motion5/core";
 import {
   axisX3,
   matrixFromEuler3d,
@@ -12,18 +9,11 @@ import {
   transposeMatrix3,
   type Matrix3,
 } from "../../src/frame3d";
-import { legacyFk3dPlugin as fk3dPlugin } from "@motion5/plugins/internal/legacy/fk3d";
-import { legacyIk3dPlugin as ik3dPlugin } from "@motion5/plugins/internal/legacy/ik3d";
-import { legacyTransform3dPlugin as transform3dPlugin } from "@motion5/plugins/internal/legacy/transform3d";
-import type { Patch } from "@motion5/core";
+import { fk3dPlugin } from "@motion5/plugins/fk3d";
+import { ik3dPlugin } from "@motion5/plugins/ik3d";
 import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/testing";
 
-// 3D goal orientation through Engine (issue #500 phase 7, ADR-124): orientation is applied after
-// the position solve without moving a positive-length tip, a zero-length hand can take the whole
-// goal frame, and influence weighs a branched position compromise. Every solve is re-derived on a
-// seek, including reverse and random scrubs.
-
-type Values = Readonly<Record<string, unknown>>;
+type Values = Readonly<Record<string, any>>;
 type Published = Readonly<Record<string, Values>>;
 const PROGRESS = [0, 0.25, 0.5, 0.75, 1] as const;
 const TIP_TOLERANCE = 1e-9;
@@ -33,37 +23,20 @@ const ramp = (from: number, to: number) => [
   { p: 1, v: to },
 ];
 
-function member(
-  id: string,
-  base: string,
-  length: number,
-  values: Readonly<Record<string, unknown>> = {},
-): TrackDefinition {
-  return {
-    id,
-    keyframes: {
-      fk3d: { values: { length, ...values }, requires: { base, solver: "solve" } },
-    },
-  };
-}
-
-function registry(): PluginRegistry {
-  const plugins = new PluginRegistry();
-  plugins.register(transform3dPlugin);
-  plugins.register(fk3dPlugin);
-  plugins.register(ik3dPlugin);
+function registry(): PluginCatalog {
+  const plugins = new PluginCatalog();
+  plugins.registerAll([fk3dPlugin, ik3dPlugin]);
   return plugins;
 }
 
-function mounted(project: ProjectDefinition, nodes: readonly string[], goals: readonly string[]) {
-  return mountedHandle(project, nodes, goals).seek;
+const ARM_TRACKS = ["rig/root", "rig/body", "rig/goals", "rig/solve", "rig/pose"];
+const BRANCH_TRACKS = ["rig/root", "rig/body", "rig/goals", "rig/solve", "rig/pose"];
+
+function mounted(project: ProjectDefinition, tracks: readonly string[]) {
+  return mountedHandle(project, tracks).seek;
 }
 
-function mountedHandle(
-  project: ProjectDefinition,
-  nodes: readonly string[],
-  goals: readonly string[],
-) {
+function mountedHandle(project: ProjectDefinition, tracks: readonly string[]) {
   const runtime = new Engine({
     clock: createManualClock(),
     interpolator: createFakeInterpolator(),
@@ -71,19 +44,39 @@ function mountedHandle(
     plugins: registry(),
   }).load(project);
   const patches = new Map<string, Patch>();
-  for (const id of nodes) {
+  for (const id of tracks) {
     runtime.mount(id);
     runtime.subscribeNode(id, (patch) => patches.set(id, patch));
   }
   const seek = (progress: number): Published => {
-    for (const goal of goals) runtime.seek(goal, progress);
-    return Object.fromEntries(
-      nodes.map((id) => {
-        const patch = patches.get(id);
-        if (patch?.status !== "ready") throw new Error(`${id} did not publish a ready patch`);
-        return [id, { ...patch.values }];
-      }),
-    );
+    for (const id of tracks) runtime.seek(id, progress);
+    const published: Record<string, Values> = {};
+
+    const rootPatch = patches.get("rig/root");
+    if (rootPatch?.status === "ready") {
+      published["rig/root"] = (rootPatch as any).outputs?.values ?? (rootPatch as any).values;
+    }
+
+    const goalPatch = patches.get("rig/goals");
+    if (goalPatch?.status === "ready") {
+      const rows = (goalPatch as any).outputs?.values ?? (goalPatch as any).values;
+      if (Array.isArray(rows)) {
+        for (const row of rows) published[`rig/${row.id}`] = row.cells;
+      }
+    }
+
+    const posePatch = patches.get("rig/pose");
+    if (posePatch?.status === "ready") {
+      const rows = (posePatch as any).outputs?.values ?? [];
+      for (const row of rows) published[`rig/${row.id}`] = row.cells;
+    }
+
+    const solvePatch = patches.get("rig/solve");
+    if (solvePatch?.status === "ready") {
+      published["rig/solve"] = solvePatch.outputs as Values;
+    }
+
+    return published;
   };
   return { runtime, seek };
 }
@@ -125,36 +118,38 @@ function orientationGoal(
   };
 }
 
-function goalTrack(
-  id: string,
-  positionFrom: readonly [number, number, number],
-  positionTo: readonly [number, number, number],
-  rotationFrom: readonly [number, number, number],
-  rotationTo: readonly [number, number, number],
-): TrackDefinition {
-  return {
-    id,
-    keyframes: {
-      transform3d: {
-        values: {
-          x: ramp(positionFrom[0], positionTo[0]),
-          y: ramp(positionFrom[1], positionTo[1]),
-          z: ramp(positionFrom[2], positionTo[2]),
-          ...orientationGoal(rotationFrom, rotationTo),
-        },
-      },
-    },
-  };
-}
-
 /** `orient` is the leaf's authored weight, `true` for 1 and `false` for none authored. */
 function armProject(orient: boolean | number, zeroHand = false): ProjectDefinition {
-  const weight = orient === true ? { orient: 1 } : orient === false ? {} : { orient };
-  const members = [
-    member("upper", "root", 55),
-    member("fore", "upper", 45, zeroHand ? {} : weight),
-    ...(zeroHand ? [member("hand", "fore", 0, weight)] : []),
+  const weight = orient === true ? 1 : orient === false ? 0 : orient;
+  const upperCells: Record<string, any> = {
+    length: 55,
+    rotation: 0,
+    rotationX: 0,
+    rotationY: 0,
+  };
+  const foreCells: Record<string, unknown> = {
+    parentId: "upper",
+    length: 45,
+    rotation: 0,
+    rotationX: 0,
+    rotationY: 0,
+    ...(!zeroHand ? { orient: weight } : {}),
+  };
+  const handCells: Record<string, unknown> = {
+    parentId: "fore",
+    length: 0,
+    rotation: 0,
+    rotationX: 0,
+    rotationY: 0,
+    ...(zeroHand ? { orient: weight } : {}),
+  };
+
+  const bodyRows = [
+    { id: "upper", cells: upperCells },
+    { id: "fore", cells: foreCells },
+    ...(zeroHand ? [{ id: "hand", cells: handCells }] : []),
   ];
+
   return {
     schemaVersion: 5,
     projectId: zeroHand ? `3d-orient-hand-${orient}` : `3d-orient-${orient}`,
@@ -165,25 +160,56 @@ function armProject(orient: boolean | number, zeroHand = false): ProjectDefiniti
         tracks: [
           {
             id: "root",
-            keyframes: {
-              transform3d: {
-                values: { x: 5, y: -4, z: 7, rotation: 12, rotationX: -8, rotationY: 15 },
-              },
+            input: {
+              values: { x: 5, y: -4, z: 7, rotation: 12, rotationX: -8, rotationY: 15 },
             },
           },
-          goalTrack("goal", [72, 24, 18], [32, -48, 42], [10, -20, 15], [125, 35, -55]),
-          { id: "solve", keyframes: { ik3d: { requires: { root: "root", target: "goal" } } } },
-          ...members,
+          {
+            id: "goals",
+            input: {
+              values: [
+                {
+                  id: "goal",
+                  cells: {
+                    memberId: zeroHand ? "hand" : "fore",
+                    x: ramp(72, 32),
+                    y: ramp(24, -48),
+                    z: ramp(18, 42),
+                    ...orientationGoal([10, -20, 15], [125, 35, -55]),
+                  },
+                },
+              ],
+            },
+          },
+          {
+            id: "body",
+            input: { values: bodyRows },
+          },
+          {
+            id: "solve",
+            plugin: "ik3d",
+            input: {
+              values: {},
+              requires: { chain: "body", goals: "goals", base: "root" },
+            },
+          },
+          {
+            id: "pose",
+            plugin: "fk3d",
+            input: {
+              values: {},
+              requires: { chain: "body", solved: "solve", base: "root" },
+            },
+          },
         ],
       },
     ],
   };
 }
 
-const ARM_NODES = ["root", "goal", "solve", "upper", "fore"].map((id) => `rig/${id}`);
-const HAND_NODES = [...ARM_NODES, "rig/hand"];
-
 function branchProject(influences?: readonly [number, number]): ProjectDefinition {
+  const infA = influences?.[0];
+  const infB = influences?.[1];
   return {
     schemaVersion: 5,
     projectId: `3d-influence-${influences?.join("-") ?? "none"}`,
@@ -192,39 +218,96 @@ function branchProject(influences?: readonly [number, number]): ProjectDefinitio
         id: "rig",
         trigger: { type: "manual" },
         tracks: [
-          { id: "root", keyframes: { transform3d: { values: { x: 0, y: 0, z: 0 } } } },
-          { id: "goal-a", keyframes: { transform3d: { values: { x: 70, y: 60, z: 0 } } } },
-          { id: "goal-b", keyframes: { transform3d: { values: { x: 70, y: -60, z: 0 } } } },
           {
-            id: "solve",
-            keyframes: {
-              ik3d: { requires: { root: "root", targets: { a: "goal-a", b: "goal-b" } } },
+            id: "root",
+            input: { values: { x: 0, y: 0, z: 0, rotation: 0, rotationX: 0, rotationY: 0 } },
+          },
+          {
+            id: "goals",
+            input: {
+              values: [
+                {
+                  id: "goal-a",
+                  cells: {
+                    memberId: "a",
+                    x: 70,
+                    y: 60,
+                    z: 0,
+                    ...(infA !== undefined && infA !== 1 ? { influence: infA } : {}),
+                  },
+                },
+                {
+                  id: "goal-b",
+                  cells: {
+                    memberId: "b",
+                    x: 70,
+                    y: -60,
+                    z: 0,
+                    ...(infB !== undefined && infB !== 1 ? { influence: infB } : {}),
+                  },
+                },
+              ],
             },
           },
-          member("shared", "root", 50),
-          member("a", "shared", 50, influences ? { influence: influences[0] } : {}),
-          member("b", "shared", 50, influences ? { influence: influences[1] } : {}),
+          {
+            id: "body",
+            input: {
+              values: [
+                { id: "shared", cells: { length: 50, rotation: 0, rotationX: 0, rotationY: 0 } },
+                {
+                  id: "a",
+                  cells: {
+                    parentId: "shared",
+                    length: 50,
+                    rotation: 0,
+                    rotationX: 0,
+                    rotationY: 0,
+                  },
+                },
+                {
+                  id: "b",
+                  cells: {
+                    parentId: "shared",
+                    length: 50,
+                    rotation: 0,
+                    rotationX: 0,
+                    rotationY: 0,
+                  },
+                },
+              ],
+            },
+          },
+          {
+            id: "solve",
+            plugin: "ik3d",
+            input: {
+              values: {},
+              requires: { chain: "body", goals: "goals", base: "root" },
+            },
+          },
+          {
+            id: "pose",
+            plugin: "fk3d",
+            input: {
+              values: {},
+              requires: { chain: "body", solved: "solve", base: "root" },
+            },
+          },
         ],
       },
     ],
   };
 }
 
-const BRANCH_NODES = ["root", "goal-a", "goal-b", "solve", "shared", "a", "b"].map(
-  (id) => `rig/${id}`,
-);
-
 describe("3D orientation and goal influence through Engine", () => {
   it("TH-105 keeps a positive-length leaf's tip and direction to rounding and its parent byte for byte while orienting, reaches the goal frame for a zero-length hand, and scrubs", () => {
-    const plainSeek = mounted(armProject(false), ARM_NODES, ["rig/goal"]);
-    const orientedSeek = mounted(armProject(true), ARM_NODES, ["rig/goal"]);
+    const plainSeek = mounted(armProject(false), ARM_TRACKS);
+    const orientedSeek = mounted(armProject(true), ARM_TRACKS);
     const forward = PROGRESS.map((progress) => {
       const plain = plainSeek(progress);
       const oriented = orientedSeek(progress);
       const plainTip = tip(plain["rig/fore"]!);
       const orientedTip = tip(oriented["rig/fore"]!);
-      // The roll leaves the tip where the position solve put it; only the rounding of a different
-      // published triple through `fk3d`'s composition moves its last bits (ADR-124).
       expect(distance(orientedTip, plainTip)).toBeLessThanOrEqual(TIP_TOLERANCE);
       expect(oriented["rig/upper"]).toEqual(plain["rig/upper"]);
       const plainDirection = axisX3(orientation(plain["rig/fore"]!));
@@ -243,7 +326,7 @@ describe("3D orientation and goal influence through Engine", () => {
     for (const index of [4, 3, 2, 1, 0, 2, 4, 1, 3, 0])
       expect(orientedSeek(PROGRESS[index]!)).toEqual(forward[index]);
 
-    const handSeek = mounted(armProject(true, true), HAND_NODES, ["rig/goal"]);
+    const handSeek = mounted(armProject(true, true), ARM_TRACKS);
     const handForward = PROGRESS.map((progress) => {
       const published = handSeek(progress);
       expect(
@@ -256,9 +339,9 @@ describe("3D orientation and goal influence through Engine", () => {
   });
 
   it("TH-106 weighs a branched 3D compromise through Engine, and influence 1 is default-identical", () => {
-    const plainSeek = mounted(branchProject(), BRANCH_NODES, ["rig/goal-a", "rig/goal-b"]);
-    const equalSeek = mounted(branchProject([1, 1]), BRANCH_NODES, ["rig/goal-a", "rig/goal-b"]);
-    const weightedSeek = mounted(branchProject([4, 1]), BRANCH_NODES, ["rig/goal-a", "rig/goal-b"]);
+    const plainSeek = mounted(branchProject(), BRANCH_TRACKS);
+    const equalSeek = mounted(branchProject([1, 1]), BRANCH_TRACKS);
+    const weightedSeek = mounted(branchProject([4, 1]), BRANCH_TRACKS);
     const plain = plainSeek(0.5);
     const equal = equalSeek(0.5);
     const weighted = weightedSeek(0.5);
@@ -275,23 +358,66 @@ describe("3D orientation and goal influence through Engine", () => {
   });
 
   it("TH-109 a live orient write turns the leaf exactly as the authored one does, a write back to 0 restores the solve, and an out-of-domain write reads as no orientation", () => {
-    const authored = mounted(armProject(true), ARM_NODES, ["rig/goal"]);
-    const plain = mounted(armProject(false), ARM_NODES, ["rig/goal"]);
-    // A value-tier write reaches only a key the track authors, so the live rig authors orient 0,
-    // which publishes the position solve itself (TH-96).
-    const live = mountedHandle(armProject(0), ARM_NODES, ["rig/goal"]);
-    const fore = live.runtime.track("rig/fore");
+    const authored = mounted(armProject(true), ARM_TRACKS);
+    const plain = mounted(armProject(false), ARM_TRACKS);
+    const live = mountedHandle(armProject(0), ARM_TRACKS);
+    const bodyTrack = live.runtime.track("rig/body");
     for (const progress of PROGRESS) {
-      // `orient` is read from live values on every solve (ADR-124), so a value-tier write needs no
-      // reload and lands byte for byte where the authored weight does.
-      fore.overrideValues({ orient: 1 });
+      bodyTrack.writeValues([
+        { id: "upper", cells: { length: 55, rotation: 0, rotationX: 0, rotationY: 0 } },
+        {
+          id: "fore",
+          cells: {
+            parentId: "upper",
+            length: 45,
+            rotation: 0,
+            rotationX: 0,
+            rotationY: 0,
+            orient: 1,
+          },
+        },
+      ]);
+      for (const t of ARM_TRACKS) live.runtime.seek(t, progress);
       expect(live.seek(progress)).toEqual(authored(progress));
-      fore.overrideValues({ orient: 0 });
+
+      bodyTrack.writeValues([
+        { id: "upper", cells: { length: 55, rotation: 0, rotationX: 0, rotationY: 0 } },
+        {
+          id: "fore",
+          cells: {
+            parentId: "upper",
+            length: 45,
+            rotation: 0,
+            rotationX: 0,
+            rotationY: 0,
+            orient: 0,
+          },
+        },
+      ]);
+      for (const t of ARM_TRACKS) live.runtime.seek(t, progress);
       expect(live.seek(progress)).toEqual(plain(progress));
-      // Load refuses an authored orient outside [0, 1]; a live write that bypasses load and leaves
-      // the domain is read as absent, the same totality `readInfluence` has.
-      fore.overrideValues({ orient: 2 });
-      expect(live.seek(progress)).toEqual(plain(progress));
+
+      const batch = bodyTrack.writeValues([
+        { id: "upper", cells: { length: 55, rotation: 0, rotationX: 0, rotationY: 0 } },
+        {
+          id: "fore",
+          cells: {
+            parentId: "upper",
+            length: 45,
+            rotation: 0,
+            rotationX: 0,
+            rotationY: 0,
+            orient: 2,
+          },
+        },
+      ]);
+      expect(
+        batch.diagnostics.some(
+          (d) =>
+            d.ruleId === "plugin-input-invalid" &&
+            d.message.includes("expected at most 1, received 2"),
+        ),
+      ).toBe(true);
     }
     live.runtime.dispose();
   });
