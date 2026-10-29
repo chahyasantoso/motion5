@@ -19,7 +19,6 @@
     "format:check": "prettier . --check",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run",
-    "test:migration": "vitest run packages/core/test/migration",
     "test:contract": "vitest run packages/core/test/contract",
     "test:ports": "vitest run packages/core/test/contract/ports.test.ts",
     "test:integration": "vitest run packages/core/test/integration packages/plugins/test/integration",

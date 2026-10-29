@@ -42,7 +42,6 @@ const allowedPublicExports = new Set([
   "PatchRender",
   "patchRender",
   "Value",
-  "migrateV4ToV5",
   "MigrationResult",
   "resolveTriggerDefinition",
   "validateV5",

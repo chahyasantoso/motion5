@@ -38,7 +38,6 @@ import { BASE_RULE_IDS, RULE_IDS, isRuleId } from "../../src/contract/rule-id";
 const SOURCE_ROOT = fileURLToPath(new URL("../../src/", import.meta.url));
 const SOURCE_FILE = /\.tsx?$/;
 const VALIDATOR = "contract/validate-v5.ts";
-const PATH_FIRST_CONSTRUCTOR = "contract/migrate-v4-to-v5.ts";
 const TRIGGER_ADAPTER = "adapters/trigger-factory/default.ts";
 // The scope is passed by the contribution adapter in the plugin layer rather than by the validator
 // that reports the names. The inventory placed the prefix in `validate-v5.ts`; the scan found it
@@ -92,7 +91,7 @@ function idsIn(relativePath: string): readonly string[] {
     ...matches(source, DECLARED),
     ...matches(source, HELD),
   ];
-  if (relativePath !== PATH_FIRST_CONSTRUCTOR) found.push(...matches(source, CONSTRUCTED));
+  found.push(...matches(source, CONSTRUCTED));
   if (relativePath === VALIDATOR) found.push(...matches(source, REPORTED));
   return found.filter((id) => id.includes("-"));
 }
@@ -120,7 +119,6 @@ describe("rule id enumeration", () => {
       "source-pending",
       "clock-tick-regression",
       "diagnostic-sink-failure",
-      "schema-v4-migration",
     ])
       expect(held).toContain(id);
   });
@@ -130,7 +128,6 @@ describe("rule id enumeration", () => {
     const found = [...new Set(constructedIds().map(({ id }) => id))];
     expect(files).toContain(TRIGGER_ADAPTER);
     expect(found).toContain("trigger-driver-unavailable");
-    expect(found).toContain("schema-v4-migration");
     expect(files.length).toBeGreaterThan(40);
     expect(found.length).toBeGreaterThan(50);
   });

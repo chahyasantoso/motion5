@@ -97,7 +97,6 @@ export const BASE_RULE_IDS = [
   "row-id-duplicate",
   "row-id-invalid",
   "scheduler-failure",
-  "schema-v4-migration",
   "schema-version",
   "slot-binding-mode",
   "slot-incompatible",

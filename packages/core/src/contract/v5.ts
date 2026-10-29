@@ -423,16 +423,3 @@ export interface ProjectDefinition {
   readonly motions: readonly MotionDefinition[];
   readonly freeTracks?: readonly TrackDefinition[];
 }
-/**
- * A migration diagnostic, pinned to the one rule the v4 reader refuses under.
- *
- * The literal narrows `Diagnostic.ruleId` rather than sitting beside it, so `schema-v4-migration`
- * is provably a member of `RuleId`: were the enumeration to stop carrying it, this declaration is
- * the build failure rather than a string nobody checks.
- *
- * Each of the four refusals the v4 reader can report names a path and a message and no ids, which is
- * measured rather than chosen: its constructor used to accept an `ids` that nothing passed. That fact
- * is stated once now, where the rule is defined, as `schema-v4-migration`'s own entry in
- * `contract/rule.ts`, rather than by extending a variant named after a group. See ADR-097.
- */
-export type MigrationDiagnostic = DiagnosticOf<"schema-v4-migration">;

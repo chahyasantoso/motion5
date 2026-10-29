@@ -15,7 +15,6 @@ export type {
   AuthoredStop,
   Diagnostic,
   DiagnosticSeverity,
-  MigrationDiagnostic,
   MotionDefinition,
   ProjectDefinition,
   TrackDefinition,
@@ -32,8 +31,6 @@ export type {
   PatchListener,
   Value,
 } from "./contract/v5";
-export { migrateV4ToV5 } from "./contract/migrate-v4-to-v5";
-export type { MigrationResult } from "./contract/migrate-v4-to-v5";
 export type { SolverChainShape } from "./contract/solver-shape";
 export type { PluginCapability, PluginCapabilities } from "./ports/plugin-capabilities";
 export {

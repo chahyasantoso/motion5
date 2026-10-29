@@ -141,7 +141,6 @@ const BASE_RULES = {
   "row-id-duplicate": ERROR_NO_IDS,
   "row-id-invalid": ERROR_NO_IDS,
   "scheduler-failure": ERROR_WITH_IDS,
-  "schema-v4-migration": ERROR_NO_IDS,
   "schema-version": ERROR_NO_IDS,
   "slot-binding-mode": ERROR_NO_IDS,
   "slot-incompatible": ERROR_NO_IDS,
