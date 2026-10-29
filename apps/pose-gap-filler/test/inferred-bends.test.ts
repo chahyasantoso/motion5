@@ -1,7 +1,6 @@
-// @ts-nocheck
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { Engine, PluginCatalog, type ProjectDefinition } from "@motion5/core";
+import { Engine, PluginCatalog, type ProjectDefinition, type ProjectHandle } from "@motion5/core";
 import { fk3dPlugin } from "@motion5/plugins/fk3d";
 import { ik3dPlugin } from "@motion5/plugins/ik3d";
 import type { FilledFrame, FilledJoint } from "../src/filler/frame";
@@ -10,12 +9,12 @@ import { createGapPipeline } from "../src/filler/pipeline";
 import { DEFAULT_WORLD_KALMAN_NOISE } from "../src/filler/world-chain";
 import { LIMBS, type JointId } from "../src/filler/landmarks";
 import { WORLD_SPACE } from "../src/filler/space";
-import { add, distance, scale, sub, unit } from "../src/filler/vec";
+import { add, distance, scale, sub, unit, type Vec } from "../src/filler/vec";
 import { LEGACY_BEND_POLICY, PREDICTED_BEND_POLICY } from "../src/rig/bend-policy";
 import { createWorldWriter } from "../src/rig/writer";
 import { createWorldRigSolver } from "../src/rig/solver";
 import { loadWorldRig, readSolvedLimb, worldRigProject } from "../src/rig/rig";
-import { memberSourceId, POSE_MOTION_ID, limbTracks, poseNodeId } from "../src/rig/tracks";
+import { POSE_MOTION_ID, limbTracks, poseNodeId } from "../src/rig/tracks";
 import { fakePorts } from "./engine";
 import { frameOf, trustedOf } from "./frames";
 import { bendPose, legacyTrace, recordingValues } from "./phase5-fixtures";
@@ -215,9 +214,13 @@ describe("inferred bends through the real world rig", () => {
         const trusted = trustedOf(frameOf(bendPose(tMs / 1000), tMs, WORLD_SPACE));
         const step = { trusted, filled: raw.fill(trusted) };
         expect(reported.solve(step, lengths)).toEqual(plain.solve(step, lengths));
-        for (const limb of LIMBS)
-          for (const id of Object.values(limbTracks(limb.id)))
-            expect(reported.readPatch!(poseNodeId(id))).toEqual(plain.readPatch!(poseNodeId(id)));
+        for (const limb of LIMBS) {
+          const ids = limbTracks(limb.id);
+          for (const trackId of [ids.root, ids.body, ids.goal, ids.pole, ids.solve, ids.pose])
+            expect(reported.readPatch!(poseNodeId(trackId))).toEqual(
+              plain.readPatch!(poseNodeId(trackId)),
+            );
+        }
       }
       expect(reported.readDiagnostics!()!.tMs).toBe(200);
       expect(plain.readDiagnostics!()).toBeUndefined();
@@ -231,7 +234,7 @@ describe("inferred bends through the real world rig", () => {
       const definition = worldRigProject();
       const motion = definition.motions[0]!;
       const solvers = new Set(LIMBS.map((limb) => limbTracks(limb.id).solve));
-      const uppers = new Set(LIMBS.map((limb) => memberSourceId(limbTracks(limb.id).upper)));
+      const bodies = new Set(LIMBS.map((limb) => limbTracks(limb.id).body));
       const changed: ProjectDefinition = {
         ...definition,
         motions: [
@@ -243,20 +246,27 @@ describe("inferred bends through the real world rig", () => {
                   ...track,
                   input: { ...track.input, values: { inspect: true } },
                 };
-              if (constrained && uppers.has(track.id))
+              if (constrained && bodies.has(track.id))
                 return {
                   ...track,
                   input: {
                     ...track.input,
-                    values: {
-                      ...track.input?.values,
-                      joint: "hinge",
-                      axisX: 0,
-                      axisY: 0,
-                      axisZ: 1,
-                      minRotation: 15,
-                      maxRotation: 15,
-                    },
+                    values: (track.input!.values as Array<any>).map((row) =>
+                      row.id.endsWith("-upper")
+                        ? {
+                            ...row,
+                            cells: {
+                              ...row.cells,
+                              joint: "hinge",
+                              axisX: 0,
+                              axisY: 0,
+                              axisZ: 1,
+                              minRotation: 15,
+                              maxRotation: 15,
+                            },
+                          }
+                        : row,
+                    ),
                   },
                 };
               return track;
@@ -270,11 +280,7 @@ describe("inferred bends through the real world rig", () => {
       for (const node of project.motion(POSE_MOTION_ID).trackIds) project.mount(node);
       return project;
     };
-    const write = (
-      project: ProjectDefinition & { values(recipe: (transaction: any) => void): unknown },
-      points: Record<JointId, Vec>,
-      constrained: boolean,
-    ) =>
+    const write = (project: ProjectHandle, points: Record<JointId, Vec>, constrained: boolean) =>
       project.values((transaction: any) => {
         for (const limb of LIMBS) {
           const ids = limbTracks(limb.id);
@@ -282,27 +288,19 @@ describe("inferred bends through the real world rig", () => {
           const middle = points[limb.middle]!;
           const tip = points[limb.tip]!;
           const direction = unit(sub(middle, root))!;
-          transaction.track(poseNodeId(ids.root)).input.values.set([
-            {
-              id: ids.root,
-              cells: {
-                memberId: ids.root,
-                x: root[0]!,
-                y: root[1]!,
-                z: root[2]!,
-                rotation: 0,
-                rotationX: 0,
-                rotationY: 0,
-              },
-            },
-          ]);
-          transaction.track(poseNodeId(ids.goal)).input.values.set({
-            goalId: `${ids.goal}-goal`,
-            memberId: ids.lower,
-            x: tip[0]!,
-            y: tip[1]!,
-            z: tip[2]!,
+          transaction.track(poseNodeId(ids.root)).input.values.set({
+            x: root[0]!,
+            y: root[1]!,
+            z: root[2]!,
+            rotation: 0,
+            rotationX: 0,
+            rotationY: 0,
           });
+          transaction
+            .track(poseNodeId(ids.goal))
+            .input.values.set([
+              { id: ids.goal, cells: { memberId: ids.lower, x: tip[0]!, y: tip[1]!, z: tip[2]! } },
+            ]);
           transaction.track(poseNodeId(ids.pole)).input.values.set({
             x: root[0]! + direction[0]!,
             y: root[1]! + direction[1]!,
@@ -311,27 +309,39 @@ describe("inferred bends through the real world rig", () => {
             rotationX: 0,
             rotationY: 0,
           });
-          transaction.track(poseNodeId(memberSourceId(ids.upper))).input.values.set({
-            memberId: ids.upper,
-            parentId: ids.root,
-            length: 100,
-            rotation: 0,
-            rotationX: 0,
-            rotationY: 0,
-            weight: 1,
-            ...(constrained
-              ? { joint: "hinge", axisX: 0, axisY: 0, axisZ: 1, minRotation: 15, maxRotation: 15 }
-              : {}),
-          });
-          transaction.track(poseNodeId(memberSourceId(ids.lower))).input.values.set({
-            memberId: ids.lower,
-            parentId: ids.upper,
-            length: 100,
-            rotation: 0,
-            rotationX: 0,
-            rotationY: 0,
-            weight: 1,
-          });
+          transaction.track(poseNodeId(ids.body)).input.values.set([
+            {
+              id: ids.upper,
+              cells: {
+                length: 100,
+                rotation: 0,
+                rotationX: 0,
+                rotationY: 0,
+                weight: 1,
+                ...(constrained
+                  ? {
+                      joint: "hinge",
+                      axisX: 0,
+                      axisY: 0,
+                      axisZ: 1,
+                      minRotation: 15,
+                      maxRotation: 15,
+                    }
+                  : {}),
+              },
+            },
+            {
+              id: ids.lower,
+              cells: {
+                parentId: ids.upper,
+                length: 100,
+                rotation: 0,
+                rotationX: 0,
+                rotationY: 0,
+                weight: 1,
+              },
+            },
+          ]);
         }
       });
     for (const angle of [0.3, -0.3, Math.PI + 0.3, Math.PI - 0.3]) {
@@ -349,7 +359,7 @@ describe("inferred bends through the real world rig", () => {
             const a = analytic.get(poseNodeId(id))!,
               b = constrained.get(poseNodeId(id))!;
             if (a.status !== "ready" || b.status !== "ready") throw new Error("not ready");
-            expect(a.values).toEqual(b.values);
+            expect(a.outputs.values).toEqual(b.outputs.values);
           }
           const free = analytic.get(poseNodeId(ids.solve))!,
             limited = constrained.get(poseNodeId(ids.solve))!;

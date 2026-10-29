@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { describe, expect, it } from "vitest";
 import { JOINTS, jointRecord, type JointId } from "../src/filler/landmarks";
 import { IMAGE_SPACE, WORLD_SPACE } from "../src/filler/space";

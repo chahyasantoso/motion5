@@ -418,6 +418,10 @@ import { fileURLToPath } from "node:url";
 // member interpolation, solver-scope diagnostics, and grouped solver constraints, deriving reverse
 // topology and publisher inputs purely from explicit authored edges.
 //
+// `AN-` belongs to pose-gap-filler aggregate migration (Slice 7): 5-track aggregate architecture
+// (`root`, `body`, `goals`, `solve`, `pose`), whole-table batch writes, and ID-based solved limb
+// row selection with closed discriminated union and unreachable check.
+//
 // The scan root is the repository rather than `packages/core/test`, because an id names one test in
 // the suite and the suite is not one package. `H-4` is declared in
 // `packages/react/test/public-hook-render.test.ts`, which the old root could not see, so one id
@@ -480,7 +484,7 @@ const TEST_FILE = /\.test\.tsx?$/;
 // this pattern belongs beside the pattern rather than once per series, so those paragraphs now
 // say what a series owns and this one says where it sorts. Issue #294.
 const CASE_TITLE =
-  /it\(\s*"((?:AE|AI|AJ|AK|AL|AM|CF|CL|CN|CS|DV|EN|EV|FB|FO|GE|GF|GI|GT|IK|IN|IR|LF|LV|MG|PK|PV|RA|RB|RS|SD|SH|TH|WT|B|C|D|E|F|G|H|J|K|L|M|N|P|Q|R|S|T|U|V|W|Y|Z)-\d+)/g;
+  /it\(\s*"((?:AE|AI|AJ|AK|AL|AM|AN|CF|CL|CN|CS|DV|EN|EV|FB|FO|GE|GF|GI|GT|IK|IN|IR|LF|LV|MG|PK|PV|RA|RB|RS|SD|SH|TH|WT|B|C|D|E|F|G|H|J|K|L|M|N|P|Q|R|S|T|U|V|W|Y|Z)-\d+)/g;
 const REACT_RENDER = "packages/react/test/public-hook-render.test.ts";
 const SERIES_SHAPED_TITLE = /it\(\s*"([A-Z]{1,2}\d*)-(\d+)(?![\w-])/g;
 const SERIES_PREFIX = /^[A-Z]{1,2}$/;

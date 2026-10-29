@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { describe, expect, it } from "vitest";
 import { createGapFiller } from "../src/filler/gap-filler";
 import { createGapPipeline } from "../src/filler/pipeline";

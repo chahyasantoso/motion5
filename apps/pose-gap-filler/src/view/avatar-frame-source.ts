@@ -48,11 +48,14 @@ export function avatarFrameSource(
   for (const limb of LIMBS) {
     if (residuals.get(limb.id)?.freshness.kind !== "current") continue;
     const ids = limbTracks(limb.id);
-    for (const id of [ids.root, ids.upper, ids.lower]) {
-      const nodeId = poseNodeId(id);
-      const patch = readPatch?.(nodeId);
-      const values = patch?.status === "ready" ? rowCells(patch.outputs.values, id) : undefined;
-      if (isFlatRecord(values)) sources.set(nodeId, values);
+    const rootPatch = readPatch?.(poseNodeId(ids.root));
+    const rootValues = rootPatch?.status === "ready" ? rootPatch.outputs.values : undefined;
+    if (isFlatRecord(rootValues)) sources.set(poseNodeId(ids.root), rootValues);
+    const posePatch = readPatch?.(poseNodeId(ids.pose));
+    for (const id of [ids.upper, ids.lower]) {
+      const values =
+        posePatch?.status === "ready" ? rowCells(posePatch.outputs.values, id) : undefined;
+      if (isFlatRecord(values)) sources.set(poseNodeId(id), values);
     }
   }
   const body = step.filled.body;

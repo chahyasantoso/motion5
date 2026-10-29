@@ -10,44 +10,37 @@ import { fkPlugin } from "@motion5/plugins/fk";
 import { ikPlugin } from "@motion5/plugins/ik";
 import { fk3dPlugin } from "@motion5/plugins/fk3d";
 import { ik3dPlugin } from "@motion5/plugins/ik3d";
+import { unreachable } from "../filler/unreachable";
 import { LIMBS, type LimbId } from "../filler/landmarks";
 import type { Vec } from "../filler/vec";
-import { unreachable } from "../filler/unreachable";
-import { POSE_MOTION_ID, limbTracks, memberSourceId, poseNodeId } from "./tracks";
+import { POSE_MOTION_ID, limbTracks, poseNodeId } from "./tracks";
 import type { LimbWrite } from "./writer";
 
-/** Placeholder geometry until the estimator knows the person: any reachable pose loads. */
 const INITIAL_LENGTH = 100;
 
 function imageLimbTracks(limb: LimbId): readonly TrackDefinition[] {
   const ids = limbTracks(limb);
-  const member = (id: string, parentId: string, base: string): readonly TrackDefinition[] => [
-    {
-      id: memberSourceId(id),
-      input: { values: { memberId: id, parentId, length: INITIAL_LENGTH, rotation: 0, weight: 1 } },
-    },
-    {
-      id,
-      plugin: "fk",
-      input: {
-        values: {},
-        requires: {
-          member: memberSourceId(id),
-          base,
-          solver: ids.solve,
-        },
-      },
-    },
-  ];
   return [
     {
       id: ids.root,
-      input: { values: [{ id: ids.root, cells: { memberId: ids.root, x: 0, y: 0, rotation: 0 } }] },
+      input: { values: { x: 0, y: 0, rotation: 0 } },
+    },
+    {
+      id: ids.body,
+      input: {
+        values: [
+          { id: ids.upper, cells: { length: INITIAL_LENGTH, rotation: 0, weight: 1 } },
+          {
+            id: ids.lower,
+            cells: { parentId: ids.upper, length: INITIAL_LENGTH, rotation: 0, weight: 1 },
+          },
+        ],
+      },
     },
     {
       id: ids.goal,
       input: {
-        values: { goalId: `${ids.goal}-goal`, memberId: ids.lower, x: 0, y: INITIAL_LENGTH * 1.5 },
+        values: [{ id: ids.goal, cells: { memberId: ids.lower, x: 0, y: INITIAL_LENGTH * 1.5 } }],
       },
     },
     {
@@ -56,25 +49,27 @@ function imageLimbTracks(limb: LimbId): readonly TrackDefinition[] {
       input: {
         values: { flip: false },
         requires: {
-          members: { upper: memberSourceId(ids.upper), lower: memberSourceId(ids.lower) },
-          root: ids.root,
-          goals: { [ids.lower]: ids.goal },
+          chain: ids.body,
+          goals: ids.goal,
+          base: ids.root,
         },
       },
     },
-    ...member(ids.upper, ids.root, ids.root),
-    ...member(ids.lower, ids.upper, ids.upper),
+    {
+      id: ids.pose,
+      plugin: "fk",
+      input: {
+        values: {},
+        requires: {
+          chain: ids.body,
+          solved: ids.solve,
+          base: ids.root,
+        },
+      },
+    },
   ];
 }
 
-/**
- * Four two-bone chains on one `manual` Motion: nothing drives progress, so the only thing that
- * moves the rig is the writer's value batch (`writer.ts`). Each limb is its own chain with its own
- * root, goal and solver, never a shared-root tree.
- *
- * FK weight is authored as the constant 1: the solve is the pose, and there is no rest blend to
- * animate (the playground keyframes its weight 0..1 on scroll; this rig must not).
- */
 export function imageRigProject(): ProjectDefinition {
   return {
     schemaVersion: 5,
@@ -89,100 +84,116 @@ export function imageRigProject(): ProjectDefinition {
   };
 }
 
-/** A separate 3D project, with identical track names but no image/world state shared. */
-export function worldRigProject(): ProjectDefinition {
-  const tracks = LIMBS.flatMap((limb): readonly TrackDefinition[] => {
-    const ids = limbTracks(limb.id);
-    const point = (id: string, values: Record<string, number | string>): TrackDefinition => ({
-      id,
-      input: { values },
-    });
-    const member = (id: string, parentId: string, base: string): readonly TrackDefinition[] => [
-      {
-        id: memberSourceId(id),
-        input: {
-          values: {
-            memberId: id,
-            parentId,
-            length: INITIAL_LENGTH,
-            rotation: 0,
-            rotationX: 0,
-            rotationY: 0,
-            weight: 1,
-          },
+function worldLimbTracks(limb: LimbId): readonly TrackDefinition[] {
+  const ids = limbTracks(limb);
+  return [
+    {
+      id: ids.root,
+      input: {
+        values: {
+          x: 0,
+          y: 0,
+          z: 0,
+          rotation: 0,
+          rotationX: 0,
+          rotationY: 0,
         },
       },
-      {
-        id,
-        plugin: "fk3d",
-        input: {
-          values: {},
-          requires: {
-            member: memberSourceId(id),
-            base,
-            solver: ids.solve,
-          },
-        },
-      },
-    ];
-    return [
-      {
-        id: ids.root,
-        input: {
-          values: [
-            {
-              id: ids.root,
-              cells: {
-                memberId: ids.root,
-                x: 0,
-                y: 0,
-                z: 0,
-                rotation: 0,
-                rotationX: 0,
-                rotationY: 0,
-              },
+    },
+    {
+      id: ids.body,
+      input: {
+        values: [
+          {
+            id: ids.upper,
+            cells: {
+              length: INITIAL_LENGTH,
+              rotation: 0,
+              rotationX: 0,
+              rotationY: 0,
+              weight: 1,
             },
-          ],
-        },
-      },
-      point(ids.goal, {
-        goalId: `${ids.goal}-goal`,
-        memberId: ids.lower,
-        x: 0,
-        y: INITIAL_LENGTH * 1.5,
-        z: 0,
-      }),
-      point(ids.pole, { x: 0, y: 0, z: INITIAL_LENGTH, rotation: 0, rotationX: 0, rotationY: 0 }),
-      {
-        id: ids.solve,
-        plugin: "ik3d",
-        input: {
-          values: {},
-          requires: {
-            members: { upper: memberSourceId(ids.upper), lower: memberSourceId(ids.lower) },
-            root: ids.root,
-            goals: { [ids.lower]: ids.goal },
-            pole: ids.pole,
           },
+          {
+            id: ids.lower,
+            cells: {
+              parentId: ids.upper,
+              length: INITIAL_LENGTH,
+              rotation: 0,
+              rotationX: 0,
+              rotationY: 0,
+              weight: 1,
+            },
+          },
+        ],
+      },
+    },
+    {
+      id: ids.goal,
+      input: {
+        values: [
+          {
+            id: ids.goal,
+            cells: {
+              memberId: ids.lower,
+              x: 0,
+              y: INITIAL_LENGTH * 1.5,
+              z: 0,
+            },
+          },
+        ],
+      },
+    },
+    {
+      id: ids.pole,
+      input: {
+        values: { x: 0, y: 0, z: INITIAL_LENGTH, rotation: 0, rotationX: 0, rotationY: 0 },
+      },
+    },
+    {
+      id: ids.solve,
+      plugin: "ik3d",
+      input: {
+        values: {},
+        requires: {
+          chain: ids.body,
+          goals: ids.goal,
+          base: ids.root,
+          pole: ids.pole,
         },
       },
-      ...member(ids.upper, ids.root, ids.root),
-      ...member(ids.lower, ids.upper, ids.upper),
-    ];
-  });
+    },
+    {
+      id: ids.pose,
+      plugin: "fk3d",
+      input: {
+        values: {},
+        requires: {
+          chain: ids.body,
+          solved: ids.solve,
+          base: ids.root,
+        },
+      },
+    },
+  ];
+}
+
+export function worldRigProject(): ProjectDefinition {
   return {
     schemaVersion: 5,
     projectId: "pose-gap-filler-world",
-    motions: [{ id: POSE_MOTION_ID, trigger: { type: "manual" }, tracks }],
+    motions: [
+      {
+        id: POSE_MOTION_ID,
+        trigger: { type: "manual" },
+        tracks: LIMBS.flatMap((limb) => worldLimbTracks(limb.id)),
+      },
+    ],
   };
 }
 
 export type RigPorts = Pick<EngineOptions, "clock" | "interpolator" | "scheduler">;
 
-/**
- * Loads and mounts the image-space rig. A failure after load disposes the project it created, so
- * a caller owns a project only once this returns.
- */
 export function loadImageRig(ports: RigPorts): ProjectHandle {
   return loadRig(ports, "image");
 }
@@ -204,7 +215,7 @@ function loadRig(ports: RigPorts, space: "image" | "world"): ProjectHandle {
       definition = worldRigProject();
       break;
     default:
-      return unreachable(space, "rig space");
+      throw new Error(`Invalid rig space: ${space}`);
   }
   const project = new Engine({ ...ports, plugins }).load(definition);
   try {
@@ -216,10 +227,21 @@ function loadRig(ports: RigPorts, space: "image" | "world"): ProjectHandle {
   }
 }
 
-/** The solved middle and tip of one chain, read from what its members last published. */
 export interface SolvedLimb {
   readonly middle: Vec;
   readonly tip: Vec;
+}
+
+export type PoseRowLookup<T> =
+  | { readonly kind: "found"; readonly row: T }
+  | { readonly kind: "missing"; readonly id: string };
+
+function lookupPoseRow<T extends { readonly id: string }>(
+  rowsById: ReadonlyMap<string, T>,
+  id: string,
+): PoseRowLookup<T> {
+  const row = rowsById.get(id);
+  return row === undefined ? { kind: "missing", id } : { kind: "found", row };
 }
 
 function isFlatRecord(value: unknown): value is Readonly<Record<string, unknown>> {
@@ -228,19 +250,35 @@ function isFlatRecord(value: unknown): value is Readonly<Record<string, unknown>
   return prototype === Object.prototype || prototype === null;
 }
 
-function publishedTip(
+function rowCells(
   project: ProjectHandle,
-  trackId: string,
+  poseTrackId: string,
   rowId: string,
-  keys: readonly string[],
-) {
-  const patch = project.get(poseNodeId(trackId));
+): Readonly<Record<string, unknown>> | undefined {
+  const patch = project.get(poseNodeId(poseTrackId));
   if (patch?.status !== "ready") return undefined;
   const values = patch.outputs.values;
   if (!Array.isArray(values)) return undefined;
-  const row = values.find((candidate) => candidate.id === rowId);
-  if (row === undefined || !isFlatRecord(row.cells)) return undefined;
-  const position = keys.map((key) => row.cells[key]);
+  const rowsById = new Map(values.map((row) => [row.id, row]));
+  const lookup = lookupPoseRow(rowsById, rowId);
+  let cells: unknown;
+  switch (lookup.kind) {
+    case "found":
+      cells = lookup.row.cells;
+      break;
+    case "missing":
+      return undefined;
+    default:
+      return unreachable(lookup, "pose row lookup");
+  }
+  return isFlatRecord(cells) ? cells : undefined;
+}
+
+function rowVector(
+  cells: Readonly<Record<string, unknown>>,
+  keys: readonly string[],
+): Vec | undefined {
+  const position = keys.map((key) => cells[key]);
   return position.every((value): value is number => typeof value === "number")
     ? (position as Vec)
     : undefined;
@@ -252,15 +290,14 @@ export function readSolvedLimb(
   keys: readonly string[] = ["x", "y"],
 ): SolvedLimb | undefined {
   const ids = limbTracks(limb);
-  const middle = publishedTip(project, ids.upper, ids.upper, keys);
-  const tip = publishedTip(project, ids.lower, ids.lower, keys);
+  const upperCells = rowCells(project, ids.pose, ids.upper);
+  const lowerCells = rowCells(project, ids.pose, ids.lower);
+  if (upperCells === undefined || lowerCells === undefined) return undefined;
+  const middle = rowVector(upperCells, keys);
+  const tip = rowVector(lowerCells, keys);
   return middle === undefined || tip === undefined ? undefined : { middle, tip };
 }
 
-/**
- * The solved chains that show this frame's pose: only limbs the writer placed this frame. A skipped
- * limb keeps its last solve in the project, and drawing it would present an old pose as current.
- */
 export function readWrittenLimbs(
   project: ProjectHandle,
   writes: Readonly<Record<LimbId, LimbWrite>>,
@@ -278,7 +315,7 @@ export function readWrittenLimbs(
       case "skipped":
         break;
       default:
-        return unreachable(write, "limb write");
+        throw new Error(`Invalid limb write: ${(write as { kind: string }).kind}`);
     }
   }
   return solved;

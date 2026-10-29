@@ -9,7 +9,7 @@ import {
 import { LIMBS, type Limb, type LimbId } from "../filler/landmarks";
 import { unreachable } from "../filler/unreachable";
 import { add, sub, unit, type Vec } from "../filler/vec";
-import { limbTracks, memberSourceId, poseNodeId } from "./tracks";
+import { limbTracks, poseNodeId } from "./tracks";
 import {
   decidingMiddle,
   decideBend,
@@ -178,34 +178,21 @@ function planLimb(
     stage: (transaction) => {
       transaction
         .track(poseNodeId(ids.root))
+        .input.values.set({ x: root[0]!, y: root[1]!, rotation: 0 });
+      transaction
+        .track(poseNodeId(ids.goal))
         .input.values.set([
-          { id: ids.root, cells: { memberId: ids.root, x: root[0]!, y: root[1]!, rotation: 0 } },
+          { id: ids.goal, cells: { memberId: ids.lower, x: goal[0]!, y: goal[1]! } },
         ]);
-      const goalValues = transaction.track(poseNodeId(ids.goal)).input.values;
-      goalValues.set({
-        goalId: `${ids.goal}-goal`,
-        memberId: ids.lower,
-        x: goal[0]!,
-        y: goal[1]!,
-      });
-      if (upper !== published.upper)
-        transaction.track(poseNodeId(memberSourceId(ids.upper))).input.values.set({
-          memberId: ids.upper,
-          parentId: ids.root,
-          length: upper,
-          rotation: 0,
-          weight: 1,
-        });
-      if (lower !== published.lower)
-        transaction.track(poseNodeId(memberSourceId(ids.lower))).input.values.set({
-          memberId: ids.lower,
-          parentId: ids.upper,
-          length: lower,
-          rotation: 0,
-          weight: 1,
-        });
-      if (flip !== published.flip)
+      if (upper !== published.upper || lower !== published.lower) {
+        transaction.track(poseNodeId(ids.body)).input.values.set([
+          { id: ids.upper, cells: { length: upper, rotation: 0, weight: 1 } },
+          { id: ids.lower, cells: { parentId: ids.upper, length: lower, rotation: 0, weight: 1 } },
+        ]);
+      }
+      if (flip !== published.flip) {
         transaction.track(poseNodeId(ids.solve)).input.values.set({ flip });
+      }
     },
   };
 }
@@ -294,31 +281,21 @@ export function createWorldWriter(
         state.pole = pole;
       },
       stage: (transaction) => {
-        transaction.track(poseNodeId(ids.root)).input.values.set([
-          {
-            id: ids.root,
-            cells: {
-              memberId: ids.root,
-              x: root[0]!,
-              y: root[1]!,
-              z: root[2]!,
-              rotation: 0,
-              rotationX: 0,
-              rotationY: 0,
-            },
-          },
-        ]);
-        const goalValues = transaction.track(poseNodeId(ids.goal)).input.values;
-        goalValues.set({
-          goalId: `${ids.goal}-goal`,
-          memberId: ids.lower,
-          x: goal[0]!,
-          y: goal[1]!,
-          z: goal[2]!,
+        transaction.track(poseNodeId(ids.root)).input.values.set({
+          x: root[0]!,
+          y: root[1]!,
+          z: root[2]!,
+          rotation: 0,
+          rotationX: 0,
+          rotationY: 0,
         });
+        transaction
+          .track(poseNodeId(ids.goal))
+          .input.values.set([
+            { id: ids.goal, cells: { memberId: ids.lower, x: goal[0]!, y: goal[1]!, z: goal[2]! } },
+          ]);
         if (state.pole === undefined || pole.some((value, axis) => value !== state.pole![axis])) {
-          const poleValues = transaction.track(poseNodeId(ids.pole)).input.values;
-          poleValues.set({
+          transaction.track(poseNodeId(ids.pole)).input.values.set({
             x: pole[0]!,
             y: pole[1]!,
             z: pole[2]!,
@@ -327,26 +304,25 @@ export function createWorldWriter(
             rotationY: 0,
           });
         }
-        if (upper !== state.upper)
-          transaction.track(poseNodeId(memberSourceId(ids.upper))).input.values.set({
-            memberId: ids.upper,
-            parentId: ids.root,
-            length: upper,
-            rotation: 0,
-            rotationX: 0,
-            rotationY: 0,
-            weight: 1,
-          });
-        if (lower !== state.lower)
-          transaction.track(poseNodeId(memberSourceId(ids.lower))).input.values.set({
-            memberId: ids.lower,
-            parentId: ids.upper,
-            length: lower,
-            rotation: 0,
-            rotationX: 0,
-            rotationY: 0,
-            weight: 1,
-          });
+        if (upper !== state.upper || lower !== state.lower) {
+          transaction.track(poseNodeId(ids.body)).input.values.set([
+            {
+              id: ids.upper,
+              cells: { length: upper, rotation: 0, rotationX: 0, rotationY: 0, weight: 1 },
+            },
+            {
+              id: ids.lower,
+              cells: {
+                parentId: ids.upper,
+                length: lower,
+                rotation: 0,
+                rotationX: 0,
+                rotationY: 0,
+                weight: 1,
+              },
+            },
+          ]);
+        }
       },
     };
   });

@@ -119,31 +119,39 @@ function legacyPatch(patch: unknown): unknown {
       ? sourceRevisions
       : Object.fromEntries(
           Object.entries(sourceRevisions as Record<string, unknown>)
-            .filter(([id]) => !id.endsWith("-member"))
+            .filter(([id]) => !id.endsWith("-member") && !id.endsWith("-body"))
             .map(([id, revision]) => [id, revision]),
         );
   return { ...current, values, sourceRevisions: normalizedSources, outputs: undefined };
 }
 
-function legacyWrite(write: StagedWrite): StagedWrite {
+function legacyWrite(write: StagedWrite): readonly StagedWrite[] {
   const [node, value] = write;
-  const values = value as Record<string, unknown>;
-  if (Array.isArray(value)) {
+  if (node.endsWith("-body") && Array.isArray(value)) {
+    return value.map((row) => [
+      poseNodeId(row.id),
+      { length: (row.cells as { length: number }).length },
+    ]);
+  }
+  if (node.endsWith("-goal") && Array.isArray(value)) {
     const row = value[0] as { cells?: Record<string, unknown> } | undefined;
     const cells = row?.cells ?? {};
     return [
-      node,
-      Object.fromEntries(Object.entries(cells).filter(([key]) => ["x", "y", "z"].includes(key))),
+      [
+        node,
+        Object.fromEntries(Object.entries(cells).filter(([key]) => ["x", "y", "z"].includes(key))),
+      ],
     ];
   }
-  if (node.endsWith("-goal") || node.endsWith("-pole"))
+  const values = value as Record<string, unknown>;
+  if (node.endsWith("-root") || node.endsWith("-pole"))
     return [
-      node,
-      Object.fromEntries(Object.entries(values).filter(([key]) => ["x", "y", "z"].includes(key))),
+      [
+        node,
+        Object.fromEntries(Object.entries(values).filter(([key]) => ["x", "y", "z"].includes(key))),
+      ],
     ];
-  if (node.endsWith("-member"))
-    return [node.slice(0, -"-member".length), { length: values.length }];
-  return write;
+  return [write];
 }
 
 /** Full legacy evidence: write order/values, outcomes, failure/retry and all publication bytes. */
@@ -183,11 +191,78 @@ export function legacyTrace(factory: typeof createWorldWriter = createWorldWrite
       }
       trace.push({
         tMs: fixture.t,
-        writes: recorded.batches.at(-1)?.map(legacyWrite),
+        writes: recorded.batches.at(-1)?.flatMap(legacyWrite),
         outcome,
-        patches: LIMBS.flatMap((limb) =>
-          Object.values(limbTracks(limb.id)).map((id) => legacyPatch(project.get(poseNodeId(id)))),
-        ),
+        patches: LIMBS.flatMap((limb) => {
+          const ids = limbTracks(limb.id);
+          const rootPatch = project.get(poseNodeId(ids.root));
+          const goalPatch = project.get(poseNodeId(ids.goal));
+          const polePatch = project.get(poseNodeId(ids.pole));
+          const solvePatch = project.get(poseNodeId(ids.solve));
+          const posePatch = project.get(poseNodeId(ids.pose));
+
+          const solveRev = solvePatch?.revision;
+          const rootRev = rootPatch?.revision;
+
+          const solveClean = legacyPatch(solvePatch);
+          if (solveClean && typeof solveClean === "object" && "sourceRevisions" in solveClean) {
+            const sr = (solveClean as { sourceRevisions?: Record<string, unknown> })
+              .sourceRevisions;
+            if (sr) {
+              (solveClean as any).sourceRevisions = Object.fromEntries(
+                Object.entries(sr).filter(([k]) => !k.endsWith("-body")),
+              );
+            }
+          }
+
+          const poseValues =
+            posePatch?.status === "ready" && Array.isArray(posePatch.outputs.values)
+              ? posePatch.outputs.values
+              : [];
+          const upperRow = poseValues.find((r: any) => r.id === ids.upper);
+          const lowerRow = poseValues.find((r: any) => r.id === ids.lower);
+
+          const upperPatch = upperRow
+            ? {
+                nodeId: poseNodeId(ids.upper),
+                status: posePatch?.status,
+                revision: posePatch?.revision,
+                sourceProgress:
+                  posePatch?.status === "ready" ? posePatch.sourceProgress : undefined,
+                sourceRevisions: {
+                  [poseNodeId(ids.root)]: rootRev,
+                  [poseNodeId(ids.solve)]: solveRev,
+                },
+                diagnostics: posePatch?.diagnostics,
+                values: upperRow.cells,
+              }
+            : undefined;
+
+          const lowerPatch = lowerRow
+            ? {
+                nodeId: poseNodeId(ids.lower),
+                status: posePatch?.status,
+                revision: posePatch?.revision,
+                sourceProgress:
+                  posePatch?.status === "ready" ? posePatch.sourceProgress : undefined,
+                sourceRevisions: {
+                  [poseNodeId(ids.solve)]: solveRev,
+                  [poseNodeId(ids.upper)]: solveRev,
+                },
+                diagnostics: posePatch?.diagnostics,
+                values: lowerRow.cells,
+              }
+            : undefined;
+
+          return [
+            legacyPatch(rootPatch),
+            legacyPatch(goalPatch),
+            legacyPatch(polePatch),
+            solveClean,
+            legacyPatch(upperPatch),
+            legacyPatch(lowerPatch),
+          ];
+        }),
       });
     }
     const missing = trustedOf(frameOf({}, 800, WORLD_SPACE));

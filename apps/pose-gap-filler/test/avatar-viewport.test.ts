@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { describe, expect, it } from "vitest";
 import type { Scene, PerspectiveCamera } from "three";
 import { mountAvatarViewport, type AvatarRenderer } from "../src/view/avatar-viewport";

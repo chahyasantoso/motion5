@@ -6,18 +6,19 @@ states a phase; `packages/core/test/unit/scripts/session-status-shape.test.ts` e
 byte ceiling.
 
 - **Captured:** 2026-10-29, Asia/Jakarta.
-- **Read against:** `refactor/v5-identified-tables` after Slice 6 explicit aggregate graph and publisher cleanup.
+- **Read against:** `refactor/v5-identified-tables` after Slice 7 pose-gap-filler aggregate migration.
 
 ## Now
 
-- **Explicit aggregate graph and publisher:** `packages/core/src/graph` and `packages/core/src/runtime`
-  compose aggregate plugins purely through explicit declared requirement edges, with no hidden
-  solver fan-in or member interpolation. 73 Phase 5, 4 Phase 6 and 2 Phase 7 pending entries remain.
+- **Pose-gap-filler aggregate migration:** migrated `apps/pose-gap-filler/src/rig/` to 5-track aggregate
+  architecture (`root`, `body`, `goals`, `solve`, `pose`), whole-table batch writes (`input.values.set`),
+  and ID-based solved limb row selection with closed discriminated union. Retired 14 pending test suites
+  (79 -> 65 pending entries).
 
 ## Next in line
 
-- **Pose-gap-filler aggregate migration:** replace 28 member tracks with 5 aggregate tracks (`root`,
-  `body`, `goals`, `solve`, `pose`) and whole-table batch writes.
+- **Three.js aggregate skeleton migration:** migrate `packages/three` to aggregate 3D tracks and
+  `tableFrameSource`.
 
 ## Open, and not scheduled
 

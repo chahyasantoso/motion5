@@ -2,7 +2,7 @@ import type { PatchBatch, TrackHandle, ValueTransaction } from "@motion5/core";
 import { describe, expect, it } from "vitest";
 import { createBoneLengthEstimator } from "../src/filler/bone-length";
 import { createGapFiller } from "../src/filler/gap-filler";
-import { limbTracks, memberSourceId, poseNodeId } from "../src/rig/tracks";
+import { limbTracks, poseNodeId } from "../src/rig/tracks";
 import { createImageWriter, createWorldWriter, type ValueBatchPort } from "../src/rig/writer";
 import { WORLD_SPACE } from "../src/filler/space";
 import { jointRecord } from "../src/filler/landmarks";
@@ -106,13 +106,7 @@ describe("pose writer", () => {
     const filler = createGapFiller({ kind: "raw" });
     const ids = limbTracks("left-arm");
     const lengthWrites = (writes: readonly Write[]) =>
-      writes.filter(
-        ([node, value]) =>
-          node === poseNodeId(memberSourceId(ids.upper)) &&
-          typeof value === "object" &&
-          value !== null &&
-          "length" in value,
-      );
+      writes.filter(([node, value]) => node === poseNodeId(ids.body) && Array.isArray(value));
     const flipWrites = (writes: readonly Write[]) =>
       writes.filter(
         ([node, value]) =>
