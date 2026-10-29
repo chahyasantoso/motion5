@@ -24,7 +24,6 @@ describe("canonical edge identity", () => {
     const expected: GraphEdge = {
       observerId: OBSERVER,
       sourceId: SOURCE,
-      role: "input",
       requirement: { plugin: "fk", slot: "base" },
     };
     expect(resolved.kind).toBe("accepted");

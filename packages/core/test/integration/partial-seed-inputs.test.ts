@@ -55,13 +55,11 @@ describe("GraphPublisher partial-seed requirement inputs", () => {
         {
           observerId: "sink",
           sourceId: "source-a",
-          role: "input",
           requirement: { plugin: "sum", slot: "left" },
         },
         {
           observerId: "sink",
           sourceId: "source-b",
-          role: "input",
           requirement: { plugin: "sum", slot: "right" },
         },
       ],

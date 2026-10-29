@@ -6,13 +6,7 @@ import type {
   ValueSpec,
 } from "../../../src/contract/v5";
 import { PluginCatalog } from "../../../src/domain/plugin-catalog";
-import {
-  buildGraphIR,
-  compareEdges,
-  edgeKey,
-  edgeRequirement,
-  type GraphEdge,
-} from "../../../src/graph/ir";
+import { buildGraphIR, compareEdges, edgeKey, type GraphEdge } from "../../../src/graph/ir";
 import { record, row, table, track } from "../../support/v5-builders";
 
 const POINT: ValueSpec = {
@@ -87,7 +81,6 @@ describe("identified-table dependencies build one node-level edge per bound sour
       {
         observerId: "demo/shifted",
         sourceId: "demo/points",
-        role: "input",
         requirement: { plugin: "translate", slot: "data" },
       },
     ]);
@@ -112,12 +105,12 @@ describe("identified-table dependencies build one node-level edge per bound sour
     expect(built.diagnostics).toEqual([]);
     const edges = edgesOf(built, "demo/rig");
     expect(edges).toHaveLength(2);
-    expect(edges.map((edge) => edgeRequirement(edge))).toEqual([
+    expect(edges.map((edge) => edge.requirement)).toEqual([
       { plugin: "bones", slot: "data", memberKey: "upperArm" },
       { plugin: "bones", slot: "data", memberKey: "forearm" },
     ]);
     expect(new Set(edges.map(edgeKey)).size).toBe(2);
-    expect([...edges].sort(compareEdges).map((edge) => edgeRequirement(edge)?.memberKey)).toEqual([
+    expect([...edges].sort(compareEdges).map((edge) => edge.requirement?.memberKey)).toEqual([
       "forearm",
       "upperArm",
     ]);

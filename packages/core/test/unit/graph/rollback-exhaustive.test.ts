@@ -62,7 +62,11 @@ describe("the undo journal is read as the closed union it is", () => {
     const [edge] = state.sourcesOf("hero/halo");
     if (edge === undefined) throw new Error("fixture must have an observed edge");
     state.removeEdge(edge);
-    state.addEdge({ observerId: "hero/arm", sourceId: "hero/halo", role: "output" });
+    state.addEdge({
+      observerId: "hero/arm",
+      sourceId: "hero/halo",
+      requirement: { plugin: "test", slot: "in" },
+    });
     state.addNode("hero/shadow");
     const [cursorEdge] = state.observersOf("~/cursor");
     if (cursorEdge === undefined) throw new Error("fixture must have a free-track edge");

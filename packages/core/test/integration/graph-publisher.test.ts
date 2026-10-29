@@ -16,7 +16,7 @@ const makeNode = (
   const edges: readonly GraphEdge[] = sources.map((sourceId) => ({
     observerId: id,
     sourceId,
-    role: "output",
+    requirement: { plugin: "test", slot: "values" },
   }));
   return Object.freeze({
     id,

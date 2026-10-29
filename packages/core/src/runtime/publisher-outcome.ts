@@ -254,14 +254,8 @@ export function hasValue(values: SourceValues): boolean {
   }
 }
 
-/** Which side of a composition an observation edge is on, which is half of two messages. */
-export type ObservationRole = "input" | "output";
-
-const OBSERVATION_ROLE = { input: "Input", output: "Output" } as const;
-
 interface MissingUpstreamShape {
   readonly kind: "missing-upstream";
-  readonly role: ObservationRole;
   readonly sourceId: string;
 }
 
@@ -273,11 +267,6 @@ interface InputShapeFailure {
 interface InputRequirementShape {
   readonly kind: "input-requirement";
   readonly edge: GraphEdge;
-}
-
-interface OutputShapeFailure {
-  readonly kind: "output-shape";
-  readonly sourceId: string;
 }
 
 interface SolverScopeShape {
@@ -301,8 +290,6 @@ interface GoalShapeFailure {
 export type PublishFailureShape =
   | MissingUpstreamShape
   | InputShapeFailure
-  | InputRequirementShape
-  | OutputShapeFailure
   | SolverScopeShape
   | MemberStateShape
   | GoalShapeFailure;
@@ -311,8 +298,6 @@ export type PublishFailureShape =
 export type PublishFailure =
   | Minted<MissingUpstreamShape>
   | Minted<InputShapeFailure>
-  | Minted<InputRequirementShape>
-  | Minted<OutputShapeFailure>
   | Minted<SolverScopeShape>
   | Minted<MemberStateShape>
   | Minted<GoalShapeFailure>;
@@ -321,13 +306,9 @@ export type PublishFailure =
 export function describePublishFailure(failure: PublishFailure): string {
   switch (failure.kind) {
     case "missing-upstream":
-      return `${OBSERVATION_ROLE[failure.role]} source "${failure.sourceId}" has no published value.`;
+      return `Input source "${failure.sourceId}" has no published value.`;
     case "input-shape":
       return `Input source "${failure.sourceId}" must be a record.`;
-    case "input-requirement":
-      return `Input edge ${describeEdge(failure.edge)} carries no requirement.`;
-    case "output-shape":
-      return `Output source "${failure.sourceId}" must publish a renderer-neutral record.`;
     case "solver-scope":
       return `Solver "${failure.nodeId}" has no root requirement to scope its members.`;
     case "member-interpolation":
@@ -365,10 +346,7 @@ export function publishFailureRule(failure: PublishFailure): IdentifiedRuleId {
     case "missing-upstream":
       return "upstream-missing";
     case "input-shape":
-    case "input-requirement":
       return "input-source-shape";
-    case "output-shape":
-      return "output-source-shape";
     case "solver-scope":
     case "member-interpolation":
     case "goal-shape":
@@ -415,26 +393,9 @@ export function expectInputRecord(
     case "record":
       return values.values;
     case "absent":
-      return failPublication({ kind: "missing-upstream", role: "input", sourceId });
+      return failPublication({ kind: "missing-upstream", sourceId });
     case "not-a-record":
       return failPublication({ kind: "input-shape", sourceId });
-    default:
-      return unreachable(values);
-  }
-}
-
-/** The record an output observation must be, whose shape failure names renderer neutrality. */
-export function expectOutputRecord(
-  values: SourceValues,
-  sourceId: string,
-): Readonly<Record<string, unknown>> {
-  switch (values.kind) {
-    case "record":
-      return values.values;
-    case "absent":
-      return failPublication({ kind: "missing-upstream", role: "output", sourceId });
-    case "not-a-record":
-      return failPublication({ kind: "output-shape", sourceId });
     default:
       return unreachable(values);
   }

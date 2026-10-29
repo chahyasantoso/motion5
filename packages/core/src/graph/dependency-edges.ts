@@ -55,7 +55,6 @@ export function resolveRequirementEdge(
   const edge: GraphEdge = Object.freeze({
     observerId: observerNodeId,
     sourceId,
-    role: "input",
     requirement,
   });
   return acceptedOutcome<GraphEdge, Diagnostic>(edge, Object.freeze([]));

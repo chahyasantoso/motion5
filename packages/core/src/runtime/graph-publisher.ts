@@ -1,6 +1,7 @@
 import { diagnostic } from "../contract/diagnostics";
-import type { Diagnostic, FlatRecord, Outputs, ResolvedRequires } from "../contract/v5";
-import { compareEdges, edgeRole, type GraphEdge, type GraphIR, type GraphNode } from "../graph/ir";
+import type { Diagnostic, Outputs, ResolvedRequires } from "../contract/v5";
+import { isImmutableLeaf } from "../domain/values";
+import { compareEdges, type GraphIR, type GraphNode } from "../graph/ir";
 import { firstPendingEdge } from "../graph/references";
 /** One refusal of a composed value, named by the rule the publication owns. */
 class CompositionOutputError extends TypeError {
@@ -12,7 +13,6 @@ class CompositionOutputError extends TypeError {
 }
 type PluginInputs = Readonly<Record<string, unknown>>;
 type RequirementInputs = Readonly<Record<string, PluginInputs>>;
-import { isImmutableLeaf } from "../domain/values";
 import { PluginNodeError } from "./plugin-output";
 import { PatchRegistry, REENTRANT_BATCH_MESSAGE, type PatchBatch } from "./patch-registry";
 import {
@@ -20,7 +20,6 @@ import {
   blockedOutcome,
   composedOutcome,
   expectInputRecord,
-  expectOutputRecord,
   expectRecord,
   failPublication,
   failedOutcome,
@@ -103,18 +102,9 @@ export interface PublisherFailure {
 /**
  * The diagnostic one node's failure becomes, and the one place a thrown value is classified.
  *
- * Two `instanceof` checks where there were three, and the pair that is left is the pair that means
- * something. `PublishFailureError` carries this publisher's own failure as data, so its rule id is a
- * total function of that data rather than a field on one of two classes. `CompositionOutputError` is
- * the domain's, thrown by `validateComposition` here and reachable from inside `node.compose`, so its
- * class is the only thing that identifies it and `domain/track.ts` owns it. Anything else a composer
- * throws is a composition failure with no name of its own, which is what it was. Issue #443.
- *
- * Named `nodeFailure` rather than `diagnostic`, because it classifies a thrown value and holds no
- * shape of its own. The frozen object, the frozen payload and the severity all come from the one
- * constructor now. The old name said constructor while the body was a classifier, and the body was
- * one of the four raw literals that spelled `severity: "error"` for itself; the rename and the
- * collapse are the same correction rather than two. See ADR-097 and issue #449.
+ * `PluginNodeError` carries a plugin's own diagnostics, `PublishFailureError` carries this
+ * publisher's failure as data, and `CompositionOutputError` is the one this file raises for a value
+ * that is not renderer-neutral. Anything else is an unnamed composition failure.
  */
 function nodeFailure(nodeId: string, error: unknown): readonly Diagnostic[] {
   if (error instanceof PluginNodeError) return error.diagnostics;
@@ -128,35 +118,6 @@ function nodeFailure(nodeId: string, error: unknown): readonly Diagnostic[] {
     diagnostic(ruleId, nodeId, error instanceof Error ? error.message : String(error), [nodeId]),
   ];
 }
-/**
- * A node's edges of one role in canonical order. `compareEdges` in `graph/ir.ts` is the only
- * ordering owner, so which source wins an output merge is never authored-order dependent and
- * never a property of how an id encodes.
- *
- * `role` names the composition phase: inputs are collected before `node.compose`, outputs are
- * merged after it. Every authored edge carries a requirement and is an input, so the output phase
- * is reachable only from a hand-built graph until Phase 7 retires it. See ADR-047.
- */
-type EdgeWithRole<Role extends GraphEdge["role"]> = Extract<GraphEdge, { role: Role }>;
-
-function edgesByRole<Role extends GraphEdge["role"]>(
-  node: PublisherNode,
-  role: Role,
-): readonly EdgeWithRole<Role>[] {
-  return node.edges
-    .filter((edge): edge is EdgeWithRole<Role> => edgeRole(edge) === role)
-    .sort(compareEdges);
-}
-/**
- * The plugin whose slots a solver's members belong under, read off the edge that made it a solver.
- *
- * The publisher holds no plugin knowledge, and this is where that stays true. A hardcoded `ik` here
- * would deliver a spring integrator's or a spline sampler's members under the name of the plugin
- * that happened to be IK's, which would make the first non-kinematic solver an edit to this file
- * rather than a plugin. `resolveSolvers` classifies a solver by its `root` edge, so the same edge
- * names the scope. See ADR-051.
- */
-
 function isRendererNeutral(value: unknown, seen = new WeakSet<object>()): boolean {
   if (typeof value !== "object" || value === null) return isImmutableLeaf(value);
   if (seen.has(value)) return false;
@@ -172,36 +133,6 @@ function validateComposition(outputs: unknown): asserts outputs is Outputs {
     throw new CompositionOutputError(
       "Composition output must contain only renderer-neutral values.",
     );
-}
-/**
- * The `values` output as a flat record, which is the only shape an output edge can merge.
- *
- * The named-output map may hold a table at `values`, and merging a record onto one has no meaning;
- * the output phase belongs to the machinery Phase 7 removes, so failing loudly is what keeps a
- * table-valued node from silently receiving a record merge it never asked for.
- */
-function valuesRecord(outputs: Outputs): FlatRecord {
-  const value = outputs.values;
-  if (!isFlatRecordValue(value))
-    throw new CompositionOutputError(
-      "An output observation requires the values output to be a record.",
-    );
-  return value;
-}
-function isFlatRecordValue(value: unknown): value is FlatRecord {
-  return isRecord(value) && Object.values(value).every((item) => isImmutableLeaf(item));
-}
-function mergeValues(
-  base: FlatRecord,
-  overlay: Readonly<Record<string, unknown>> | undefined,
-): FlatRecord {
-  if (overlay === undefined) return base;
-  const merged = { ...base, ...overlay };
-  if (!isFlatRecordValue(merged))
-    throw new CompositionOutputError(
-      "An output observation merge must leave the values output a flat record.",
-    );
-  return Object.freeze(merged);
 }
 /**
  * Freezes the collected scoped inputs one level down, so a composer cannot reach back into the
@@ -328,7 +259,10 @@ export class GraphPublisher {
         ? node.composeIdentified(collected.identified)
         : node.compose(collected.inputs);
       validateComposition(composed.outputs);
-      const merged = this.#mergeOutputs(node, composed, collected.sourceRevisions, valuesFor);
+      const merged = {
+        ...composed,
+        sourceRevisions: { ...composed.sourceRevisions, ...collected.sourceRevisions },
+      };
       this.#registry.publish({
         nodeId: id,
         outputs: merged.outputs,
@@ -386,7 +320,7 @@ export class GraphPublisher {
     const memberSlots = new Map<string, Map<string, Record<string, unknown>>>();
     const sourceRevisions: Record<string, number> = {};
 
-    for (const edge of edgesByRole(node, "input")) {
+    for (const edge of [...node.edges].sort(compareEdges)) {
       const sourcePatch = this.#registry.get(edge.sourceId);
       // Unreachable in normal flow: the pending pre-check above already classified every
       // edge as resolved before this loop runs. Kept as a defensive invariant guard only,
@@ -394,12 +328,6 @@ export class GraphPublisher {
       const sourceRecord = expectInputRecord(valuesFor(edge.sourceId), edge.sourceId);
       if (sourcePatch) sourceRevisions[edge.sourceId] = sourcePatch.revision;
       const requirement = edge.requirement;
-      // Unreachable by construction: every authored input edge is derived from a binding and
-      // carries its scope. Thrown rather than skipped, because an
-      // edge in the input phase with nothing to scope it has no destination at all, and a
-      // silent skip would drop a dependency graph construction accepted. Same shape as the
-      // two guards above. See ADR-047.
-      if (requirement === undefined) failPublication({ kind: "input-requirement", edge });
       // A dict entry is delivered under its authored key inside the slot rather than at the
       // slot itself. Assigning at the slot gave N entries one destination, so the last edge
       // in canonical order was the only one that arrived and the rest were dropped with no
@@ -458,12 +386,11 @@ export class GraphPublisher {
     for (const [slot, binding] of Object.entries(node.track.input?.requires ?? {}))
       if (isRecord(binding)) slots.set(slot, { members: {} });
     const sourceRevisions: Record<string, number> = {};
-    for (const edge of edgesByRole(node, "input")) {
+    for (const edge of [...node.edges].sort(compareEdges)) {
       const requirement = edge.requirement;
-      if (requirement === undefined) failPublication({ kind: "input-requirement", edge });
       const outputs = outputsFor(edge.sourceId);
       if (outputs === undefined)
-        failPublication({ kind: "missing-upstream", role: "input", sourceId: edge.sourceId });
+        failPublication({ kind: "missing-upstream", sourceId: edge.sourceId });
       const sourcePatch = this.#registry.get(edge.sourceId);
       if (sourcePatch) sourceRevisions[edge.sourceId] = sourcePatch.revision;
       const entry = slots.get(requirement.slot) ?? {};
@@ -477,41 +404,5 @@ export class GraphPublisher {
       else if (entry.members !== undefined) requires[slot] = Object.freeze(entry.members);
     }
     return { requires: Object.freeze(requires), sourceRevisions };
-  }
-
-  /**
-   * Merges every output observation onto one composition, in canonical edge order.
-   *
-   * The output phase, named. Which source wins is `compareEdges`'s and never authored order, and the
-   * revisions this collects join the ones the input phase collected, because a patch records what it
-   * read on both sides of `compose`. See ADR-034 and ADR-047.
-   */
-  #mergeOutputs(
-    node: PublisherNode,
-    composed: PublisherComposition,
-    sourceRevisions: Record<string, number>,
-    valuesFor: (sourceId: string) => SourceValues,
-  ): PublisherComposition {
-    const revisions = { ...composed.sourceRevisions, ...sourceRevisions };
-    const outputEdges = edgesByRole(node, "output");
-    // A table is a legitimate `values` output of a no-plugin source, and it has no record to merge
-    // an observation onto. Only a node that declares an output edge owes the record shape.
-    if (outputEdges.length === 0) return { ...composed, sourceRevisions: revisions };
-    let values = valuesRecord(composed.outputs);
-    for (const edge of outputEdges) {
-      const sourcePatch = this.#registry.get(edge.sourceId);
-      // Unreachable in normal flow, same reasoning as the input-side guard. Renderer neutrality is
-      // asked after the shape, and both answer under the one rule id this side has.
-      const sourceRecord = expectOutputRecord(valuesFor(edge.sourceId), edge.sourceId);
-      if (!isRendererNeutral(sourceRecord))
-        failPublication({ kind: "output-shape", sourceId: edge.sourceId });
-      if (sourcePatch) revisions[edge.sourceId] = sourcePatch.revision;
-      values = mergeValues(values, sourceRecord);
-    }
-    return {
-      ...composed,
-      outputs: { ...composed.outputs, values },
-      sourceRevisions: revisions,
-    };
   }
 }

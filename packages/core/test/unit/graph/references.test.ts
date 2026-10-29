@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { edgeRole, type GraphEdge } from "../../../src/graph/ir";
+import type { GraphEdge } from "../../../src/graph/ir";
 import {
   classifyReference,
   firstPendingEdge,
@@ -58,8 +58,8 @@ describe("cross-motion reference classification", () => {
 
   it("finds the first pending edge in canonical edge-key order, not authored order", () => {
     const compareEdgeKeys = (a: GraphEdge, b: GraphEdge) => {
-      const left = `${a.observerId}|${a.sourceId}|${edgeRole(a)}`;
-      const right = `${b.observerId}|${b.sourceId}|${edgeRole(b)}`;
+      const left = `${a.observerId}|${a.sourceId}|${a.requirement.plugin}|${a.requirement.slot}`;
+      const right = `${b.observerId}|${b.sourceId}|${b.requirement.plugin}|${b.requirement.slot}`;
       return left < right ? -1 : left > right ? 1 : 0;
     };
     const edges = [edge("z-source"), edge("a-source")];

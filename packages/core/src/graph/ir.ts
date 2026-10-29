@@ -51,29 +51,12 @@ interface DictEdgeRequirement {
  */
 export type EdgeRequirement = ScalarEdgeRequirement | DictEdgeRequirement;
 
-interface InputGraphEdge {
+export interface GraphEdge {
   readonly observerId: string;
   readonly sourceId: string;
-  readonly role: "input";
   readonly requirement: EdgeRequirement;
 }
 
-interface OutputGraphEdge {
-  readonly observerId: string;
-  readonly sourceId: string;
-  readonly role: "output";
-}
-
-/**
- * One edge of the observation graph. Inputs always carry a requirement; outputs never carry one.
- *
- * `role` names the composition phase rather than an authored field: inputs are collected before
- * `node.compose`, outputs are merged after it. It is not derivable-and-redundant even though every
- * input edge now carries a `requirement`, because a conditional inside the single ordering owner is
- * worse than a field two resolvers set with one literal each. `J-5` pins the equivalence over a
- * whole built graph, so the two cannot disagree. See ADR-047.
- */
-export type GraphEdge = InputGraphEdge | OutputGraphEdge;
 export interface GraphNode {
   readonly id: string;
   readonly owner: "motion" | "free";
@@ -103,8 +86,6 @@ export interface GraphIR {
    * Total, so a node nothing reads carries an empty list rather than no entry: a missing key and an
    * empty one are the same answer to a consumer that spells `?? []`, and only one of them makes the
    * map's own shape depend on the rig. Not recoverable from `edges` alone either, which is the whole
-   * reason it lives beside them: a solver reads its members through `solves` and no edge points that
-   * way, so a reverse walk built from edges would miss every member of every chain.
    */
   readonly dependants: Readonly<Record<string, readonly string[]>>;
   readonly order: readonly string[];
@@ -119,38 +100,10 @@ function field(value: string): string {
   return `${value.length}:${value}`;
 }
 
-export function edgeRole(edge: GraphEdge): GraphEdge["role"] {
-  switch (edge.role) {
-    case "input":
-      return "input";
-    case "output":
-      return "output";
-    default:
-      return unreachable(edge);
-  }
-}
-
-export function edgeRequirement(edge: GraphEdge): EdgeRequirement | undefined {
-  switch (edge.role) {
-    case "input":
-      return edge.requirement;
-    case "output":
-      return undefined;
-    default:
-      return unreachable(edge);
-  }
-}
-
 function requirementIdentity(edge: GraphEdge): string {
-  const requirement = edgeRequirement(edge);
-  if (requirement === undefined) return "-";
+  const requirement = edge.requirement;
   const member = field(requirement.memberKey ?? "");
   return `${field(requirement.plugin)}${field(requirement.slot)}${member}`;
-}
-
-function requirementOrder(edge: GraphEdge): string {
-  const requirement = edgeRequirement(edge);
-  return requirement === undefined ? "-" : `:${requirement.plugin}`;
 }
 
 /**
@@ -168,31 +121,23 @@ function requirementOrder(edge: GraphEdge): string {
  * and ADR-057.
  */
 export function edgeKey(edge: GraphEdge): string {
-  return [
-    field(edge.observerId),
-    field(edge.sourceId),
-    field(edgeRole(edge)),
-    field(requirementIdentity(edge)),
-  ].join("");
+  return [field(edge.observerId), field(edge.sourceId), field(requirementIdentity(edge))].join("");
 }
 
 export function compareEdges(a: GraphEdge, b: GraphEdge): number {
   return (
     compareCodeUnits(a.observerId, b.observerId) ||
     compareCodeUnits(a.sourceId, b.sourceId) ||
-    compareCodeUnits(edgeRole(a), edgeRole(b)) ||
-    compareCodeUnits(requirementOrder(a), requirementOrder(b)) ||
-    compareCodeUnits(edgeRequirement(a)?.slot ?? "", edgeRequirement(b)?.slot ?? "") ||
-    compareCodeUnits(edgeRequirement(a)?.memberKey ?? "", edgeRequirement(b)?.memberKey ?? "")
+    compareCodeUnits(a.requirement.plugin, b.requirement.plugin) ||
+    compareCodeUnits(a.requirement.slot, b.requirement.slot) ||
+    compareCodeUnits(a.requirement.memberKey ?? "", b.requirement.memberKey ?? "")
   );
 }
 
 export function describeEdge(edge: GraphEdge): string {
-  const requirement = edgeRequirement(edge);
-  const member = requirement?.memberKey === undefined ? "" : `.${requirement.memberKey}`;
-  const scope =
-    requirement === undefined ? "" : ` [${requirement.plugin}.${requirement.slot}${member}]`;
-  return `${edge.observerId} <- ${edge.sourceId} (${edgeRole(edge)})${scope}`;
+  const requirement = edge.requirement;
+  const member = requirement.memberKey === undefined ? "" : `.${requirement.memberKey}`;
+  return `${edge.observerId} <- ${edge.sourceId} [${requirement.plugin}.${requirement.slot}${member}]`;
 }
 
 function freeze<T>(value: T): T {

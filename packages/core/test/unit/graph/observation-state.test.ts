@@ -1,18 +1,17 @@
-// @ts-nocheck
 import { describe, expect, it } from "vitest";
 import type { GraphEdge } from "../../../src/graph/ir";
 import { ObservationState } from "../../../src/graph/observation-state";
 
 const NODES = ["~/cursor", "hero/arm", "hero/halo"] as const;
 const EDGES: readonly GraphEdge[] = [
-  { observerId: "hero/arm", sourceId: "~/cursor", role: "output" },
-  { observerId: "hero/halo", sourceId: "hero/arm", role: "output" },
+  { observerId: "hero/arm", sourceId: "~/cursor", requirement: { plugin: "test", slot: "in" } },
+  { observerId: "hero/halo", sourceId: "hero/arm", requirement: { plugin: "test", slot: "in" } },
 ];
 
 const edge = (observerId: string, sourceId: string): GraphEdge => ({
   observerId,
   sourceId,
-  role: "output",
+  requirement: { plugin: "test", slot: "in" },
 });
 
 /**

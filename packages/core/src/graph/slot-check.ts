@@ -1,7 +1,7 @@
 import type { Diagnostic, FieldSpec, ValueSpec } from "../contract/v5";
 import type { SourceContract } from "../contract/v5-infer";
 import { diagnostic } from "../contract/diagnostics";
-import { compareEdges, edgeRequirement, type GraphEdge, type GraphNode } from "./ir";
+import { compareEdges, type GraphEdge, type GraphNode } from "./ir";
 
 /**
  * The load-time structural check between one producer's output contract and one consumer slot.
@@ -93,7 +93,7 @@ function describeOutputSpec(spec: ValueSpec): string {
 }
 
 function pathFor(edge: GraphEdge, output: string): string {
-  const requirement = edgeRequirement(edge);
+  const requirement = edge.requirement;
   if (requirement === undefined) return `${edge.observerId}.outputs.${output}`;
   const member = requirement.memberKey === undefined ? "" : `.${requirement.memberKey}`;
   return `${edge.observerId}.input.requires.${requirement.slot}${member}.outputs.${output}`;
@@ -118,7 +118,7 @@ export function checkSlotFit(nodes: readonly GraphNode[]): readonly Diagnostic[]
     if (contract?.plugin === undefined) continue;
     const edgeBySlot = new Map<string, GraphNode["edges"]>();
     for (const edge of node.edges) {
-      const requirement = edgeRequirement(edge);
+      const requirement = edge.requirement;
       if (requirement === undefined || requirement.plugin !== contract.plugin) continue;
       const found = edgeBySlot.get(requirement.slot) ?? [];
       edgeBySlot.set(requirement.slot, [...found, edge]);

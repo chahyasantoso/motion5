@@ -160,7 +160,7 @@ describe("finalizeGraph", () => {
     expect(result.diagnostics.map(({ ruleId }) => ruleId)).toEqual(["edge-duplicate"]);
     // describeEdge produces: "<observerId> <- <sourceId> (<role>)[<scope>]"
     expect(result.diagnostics[0]?.message).toMatch(/ <- /);
-    expect(result.diagnostics[0]?.message).toMatch(/\(input\)/);
+    expect(result.diagnostics[0]?.message).toMatch(/\[fk\.base\]/);
     expect(result.diagnostics[0]?.message).not.toMatch(/^\d+:/);
   });
 

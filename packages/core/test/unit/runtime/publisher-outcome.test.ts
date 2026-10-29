@@ -10,7 +10,6 @@ import {
   composedOutcome,
   describePublishFailure,
   expectInputRecord,
-  expectOutputRecord,
   expectRecord,
   failPublication,
   failedOutcome,
@@ -75,8 +74,7 @@ function edge(sourceId: string, observerId: string): GraphEdge {
   return Object.freeze({
     sourceId,
     observerId,
-    role: "input",
-    label: sourceId,
+    requirement: { plugin: "test", slot: "in" },
   }) as unknown as GraphEdge;
 }
 
@@ -146,10 +144,8 @@ describe("one flush answers one outcome per node", () => {
     const messages = new Map<string, string>();
     const rules = new Map<string, string>();
     for (const shape of [
-      { kind: "missing-upstream", role: "input", sourceId: ARM },
-      { kind: "missing-upstream", role: "output", sourceId: ARM },
+      { kind: "missing-upstream", sourceId: ARM },
       { kind: "input-shape", sourceId: ARM },
-      { kind: "output-shape", sourceId: ARM },
       { kind: "solver-scope", nodeId: ARM },
       { kind: "member-interpolation", memberId: HAND },
       { kind: "goal-shape", nodeId: ARM, memberId: HAND, goalId: LEG },
@@ -157,44 +153,34 @@ describe("one flush answers one outcome per node", () => {
       const failure = thrownBy(() => failPublication(shape));
       expect(failure).toBeInstanceOf(PublishFailureError);
       const error = failure as PublishFailureError;
-      messages.set(
-        `${shape.kind}:${String((shape as { role?: string }).role ?? "")}`,
-        error.message,
-      );
-      rules.set(`${shape.kind}:${String((shape as { role?: string }).role ?? "")}`, error.name);
+      messages.set(shape.kind, error.message);
+      rules.set(shape.kind, error.name);
       expect(describePublishFailure(error.failure)).toBe(error.message);
       expect(publishFailureRule(error.failure)).toBe(error.name);
       expect(Object.isFrozen(error.failure)).toBe(true);
     }
 
-    expect(messages.get("missing-upstream:input")).toBe(
+    expect(messages.get("missing-upstream")).toBe(
       'Input source "hero/arm" has no published value.',
     );
-    expect(messages.get("missing-upstream:output")).toBe(
-      'Output source "hero/arm" has no published value.',
-    );
-    expect(messages.get("input-shape:")).toBe('Input source "hero/arm" must be a record.');
-    expect(messages.get("output-shape:")).toBe(
-      'Output source "hero/arm" must publish a renderer-neutral record.',
-    );
-    expect(messages.get("solver-scope:")).toBe(
+    expect(messages.get("input-shape")).toBe('Input source "hero/arm" must be a record.');
+    expect(messages.get("solver-scope")).toBe(
       'Solver "hero/arm" has no root requirement to scope its members.',
     );
-    expect(messages.get("member-interpolation:")).toBe(
+    expect(messages.get("member-interpolation")).toBe(
       'Solver member "hero/hand" exposes no interpolated function.',
     );
-    expect(messages.get("goal-shape:")).toBe(
+    expect(messages.get("goal-shape")).toBe(
       'Solver "hero/arm" member "hero/hand" goal "hero/leg" published no record.',
     );
 
-    expect(rules.get("missing-upstream:input")).toBe("upstream-missing");
-    expect(rules.get("input-shape:")).toBe("input-source-shape");
-    expect(rules.get("output-shape:")).toBe("output-source-shape");
+    expect(rules.get("missing-upstream")).toBe("upstream-missing");
+    expect(rules.get("input-shape")).toBe("input-source-shape");
     // The three that had no name of their own keep the one they published under, so this slice
     // changes no diagnostic a consumer can branch on.
-    expect(rules.get("solver-scope:")).toBe("composition-failure");
-    expect(rules.get("member-interpolation:")).toBe("composition-failure");
-    expect(rules.get("goal-shape:")).toBe("composition-failure");
+    expect(rules.get("solver-scope")).toBe("composition-failure");
+    expect(rules.get("member-interpolation")).toBe("composition-failure");
+    expect(rules.get("goal-shape")).toBe("composition-failure");
   });
 
   it("asks each reader for the failure its own call site owes", () => {
@@ -208,13 +194,6 @@ describe("one flush answers one outcome per node", () => {
       (thrownBy(() => expectInputRecord(sourceValues(NOT_AFFECTED, patchFor(5)), ARM)) as Error)
         .message,
     ).toBe('Input source "hero/arm" must be a record.');
-    expect((thrownBy(() => expectOutputRecord(ABSENT, ARM)) as Error).message).toBe(
-      'Output source "hero/arm" has no published value.',
-    );
-    expect(
-      (thrownBy(() => expectOutputRecord(sourceValues(NOT_AFFECTED, patchFor(5)), ARM)) as Error)
-        .message,
-    ).toBe('Output source "hero/arm" must publish a renderer-neutral record.');
     // The goal answers one message either way, because a plugin holding no graph cannot act on the
     // difference between an absent source and one that published something else.
     const goal = { kind: "goal-shape", nodeId: ARM, memberId: HAND, goalId: LEG } as const;

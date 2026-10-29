@@ -35,7 +35,6 @@ const snapshot = (nodes: readonly PublisherNode[]): PublisherSnapshot => ({
 const requires = (observerId: string, sourceId: string, slot: string): GraphEdge => ({
   observerId,
   sourceId,
-  role: "input",
   requirement: { plugin: "p", slot },
 });
 function fakeInterpolator(state: Readonly<Record<string, unknown>> = { x: 1 }) {

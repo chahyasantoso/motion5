@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Diagnostic, TrackDefinition } from "../../../src/contract/v5";
-import { collectTrack, edgeRequirement } from "../../../src/graph/ir";
+import { collectTrack } from "../../../src/graph/ir";
 import { resolveRequirementEdge } from "../../../src/graph/dependency-edges";
 
 type Binding = {
@@ -27,11 +27,10 @@ describe("requirement edge construction", () => {
     expect(resolved.value).toEqual({
       observerId: "walk/chest",
       sourceId: "walk/pelvis",
-      role: "input",
       requirement: { plugin: "fk", slot: "base" },
     });
     expect(Object.isFrozen(resolved.value)).toBe(true);
-    expect(Object.isFrozen(edgeRequirement(resolved.value))).toBe(true);
+    expect(Object.isFrozen(resolved.value.requirement)).toBe(true);
   });
 
   it("Z-2 reports requirement-source at the authored path and produces no edge", () => {
@@ -75,7 +74,6 @@ describe("requirement edge construction", () => {
       {
         observerId: "walk/chest",
         sourceId: "walk/pelvis",
-        role: "input",
         requirement: { plugin: "fk", slot: "chain" },
       },
     ]);

@@ -6,7 +6,11 @@ import { buildGraphIR } from "../../../src/graph/ir";
 import { orderGraph } from "../../../src/graph/order";
 
 const node = (id: string, authoredIndex: number, sources: readonly string[] = []): GraphNode => {
-  const edges = sources.map((sourceId) => ({ observerId: id, sourceId, role: "output" as const }));
+  const edges = sources.map((sourceId) => ({
+    observerId: id,
+    sourceId,
+    requirement: { plugin: "test", slot: "in" },
+  }));
   const built: GraphNode = {
     id,
     owner: id.startsWith("~/") ? "free" : "motion",

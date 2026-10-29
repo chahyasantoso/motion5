@@ -1,7 +1,1 @@
-[
-  {
-    "path": "packages/core/test/unit/graph/observation-state.test.ts",
-    "phase": 7,
-    "reason": "Exercises the retained output-role journal and snapshot machinery; Phase 7 either wires it to a real producer or retires it."
-  }
-]
+[]

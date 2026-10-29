@@ -27,40 +27,6 @@ type JournalEntry =
   | { readonly undo: "remove-edge"; readonly edge: GraphEdge };
 
 /**
- * Drop an explicit `undefined` requirement so edge identity has exactly one representation.
- *
- * Every optional field of an edge has to be listed here: one left out would be dropped from live
- * state, so the live key would disagree with the candidate key and a removal would be reported as
- * an edge that is not live. There is exactly one such field, now that `projection` is gone with the
- * primitive it carried. See ADR-047.
- */
-function normalizeEdge(edge: GraphEdge): GraphEdge {
-  switch (edge.role) {
-    case "input":
-      return edge.requirement === undefined
-        ? (Object.freeze({
-            observerId: edge.observerId,
-            sourceId: edge.sourceId,
-            role: "input",
-          }) as GraphEdge)
-        : Object.freeze({
-            observerId: edge.observerId,
-            sourceId: edge.sourceId,
-            role: "input",
-            requirement: edge.requirement,
-          });
-    case "output":
-      return Object.freeze({
-        observerId: edge.observerId,
-        sourceId: edge.sourceId,
-        role: "output",
-      });
-    default:
-      return unreachable(edge);
-  }
-}
-
-/**
  * The one long-lived live-state object per loaded project.
  *
  * Live nodes and edges are mutated in place and never rebuilt, so a reference held by a
@@ -127,7 +93,7 @@ export class ObservationState {
   }
 
   addEdge(edge: GraphEdge): void {
-    const live = normalizeEdge(edge);
+    const live = Object.freeze({ ...edge });
     const key = edgeKey(live);
     if (this.#edges.has(key)) throw new TypeError(`Edge ${describeEdge(live)} is already live.`);
     if (!this.#nodes.has(live.observerId))

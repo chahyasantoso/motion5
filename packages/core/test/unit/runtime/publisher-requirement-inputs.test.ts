@@ -40,16 +40,6 @@ function pair(source: PublisherNode, observer: PublisherNode): PublisherSnapshot
 const PUBLISHER_SOURCE = new URL("../../../src/runtime/graph-publisher.ts", import.meta.url);
 
 describe("requirement-scoped input observations", () => {
-  it("narrows input edges through the exhaustive role classifier", () => {
-    const source = code(PUBLISHER_SOURCE);
-    const edgesByRole = member(source, "function edgesByRole<", "");
-
-    expect(edgesByRole).toContain(
-      ".filter((edge): edge is EdgeWithRole<Role> => edgeRole(edge) === role)",
-    );
-    expect(edgesByRole).not.toContain("as unknown as readonly EdgeWithRole<Role>[]");
-  });
-
   it("delivers the source record whole under its plugin and slot", () => {
     const registry = new PatchRegistry();
     const publisher = new GraphPublisher(registry);
@@ -66,7 +56,6 @@ describe("requirement-scoped input observations", () => {
         {
           observerId: "hero/observer",
           sourceId: "hero/source",
-          role: "input",
           requirement: { plugin: "fk", slot: "base" },
         },
       ],
@@ -92,38 +81,6 @@ describe("requirement-scoped input observations", () => {
     expect(heroObserverPatch.outputs.values).toEqual({ seenBase: 1, seenOverlay: 99 });
   });
 
-  it("refuses an input edge that carries no requirement", () => {
-    // Unreachable by construction while every authored input edge carries a requirement, so it is
-    // thrown rather than skipped: an input edge with nothing to scope it has no destination.
-    const registry = new PatchRegistry();
-    const publisher = new GraphPublisher(registry);
-    const source = node("hero/source", [], () => ({
-      outputs: { values: { base: 1 } },
-      sourceProgress: 0,
-      sourceRevisions: {},
-    }));
-    const observer = node(
-      "hero/observer",
-      [
-        {
-          observerId: "hero/observer",
-          sourceId: "hero/source",
-          role: "input",
-        } as unknown as GraphEdge,
-      ],
-      () => ({ outputs: { values: {} }, sourceProgress: 0, sourceRevisions: {} }),
-    );
-
-    const batch = publisher.flush(pair(source, observer), ["hero/source"], 1);
-
-    const observerPatch = batch.patches.find((patch) => patch.nodeId === "hero/observer");
-    // `input-source-shape` is raised from the publisher's catch, so the node publishes `error`.
-    // See `publishFailureRule` and ADR-098.
-    if (observerPatch?.status !== "error")
-      throw new Error(`hero/observer is ${observerPatch?.status ?? "absent"}, not error.`);
-    expect(observerPatch.diagnostics[0]?.ruleId).toBe("input-source-shape");
-  });
-
   it("delivers a __proto__ dict member as an own data property, without changing prototypes", () => {
     const registry = new PatchRegistry();
     const publisher = new GraphPublisher(registry);
@@ -139,7 +96,6 @@ describe("requirement-scoped input observations", () => {
         {
           observerId: "hero/observer",
           sourceId: "hero/source",
-          role: "input",
           requirement: { plugin: "collector", slot: "bones", memberKey: "__proto__" },
         },
       ],

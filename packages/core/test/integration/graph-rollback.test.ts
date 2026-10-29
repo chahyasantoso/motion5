@@ -37,7 +37,6 @@ describe("GraphBinding transactions", () => {
       held.hasEdge({
         observerId: "hero/badge",
         sourceId: "hero/arm",
-        role: "input",
         requirement: { plugin: "graph-edge", slot: "chain" },
       }),
     ).toBe(true);
@@ -50,13 +49,22 @@ describe("GraphBinding transactions", () => {
     const beforeGraph = binding.graph;
     const beforeState = binding.state.snapshot();
     const invalid = project([
-      { id: "arm", plugin: "graph-edge", input: { requires: { chain: "missing" } } },
+      { id: "arm", plugin: "graph-edge", input: { requires: { chain: "~/cursor" } } },
+      { id: "newcomer", plugin: "graph-edge", input: { requires: { chain: "arm" } } },
+      { id: "broken", plugin: "graph-edge", input: { requires: { chain: "missing" } } },
     ]);
 
+    // A valid node and an invalid edge arrive in one candidate: nothing of it may survive.
     expect(() => binding.replace(invalid)).toThrow(TypeError);
     expect(binding.graph).toBe(beforeGraph);
     expect(binding.state.snapshot()).toEqual(beforeState);
     expect(binding.state.journalLength).toBe(0);
+    expect(binding.state.hasNode("hero/newcomer")).toBe(false);
+
+    // And the rejected transaction leaves the binding able to accept valid work afterwards.
+    binding.replace(changed);
+    expect(binding.graph.order).toEqual(["~/cursor", "hero/arm", "hero/badge"]);
+    expect(binding.state.snapshot().nodes).toEqual(["hero/arm", "hero/badge", "~/cursor"]);
   });
 
   it.each<[string, GraphBindingHooks]>([

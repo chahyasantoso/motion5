@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { TrackDefinition } from "../../src/contract/v5";
-import { edgeRequirement } from "../../src/graph/ir";
+
 import { createManualClock } from "../../src/ports/clock";
 import { PatchRegistry } from "../../src/runtime/patch-registry";
 import { ProjectRuntime } from "../../src/runtime/project-runtime";
@@ -132,7 +132,7 @@ describe("Phase 4: Dynamic Graph Lifecycle Hardening", () => {
       const edge = snapshot.edges.find(
         (candidate) => candidate.observerId === "~/observer" && candidate.sourceId === "~/source",
       );
-      expect(edge === undefined ? undefined : edgeRequirement(edge)).toEqual({
+      expect(edge === undefined ? undefined : edge.requirement).toEqual({
         plugin: "rig",
         slot: "upstream",
       });
