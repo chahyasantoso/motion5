@@ -1,14 +1,20 @@
-import { PluginRegistry, type PluginDefinition } from "../../src/domain/plugins";
-import { legacyTransformPlugin as transformPlugin } from "@motion5/plugins/internal/legacy/transform";
-import { legacyFkPlugin as fkPlugin } from "@motion5/plugins/internal/legacy/fk";
-import { legacyIkPlugin as ikPlugin } from "@motion5/plugins/internal/legacy/ik";
-import { legacyTransform3dPlugin as transform3dPlugin } from "@motion5/plugins/internal/legacy/transform3d";
-import { legacyFk3dPlugin as fk3dPlugin } from "@motion5/plugins/internal/legacy/fk3d";
-import { legacyIk3dPlugin as ik3dPlugin } from "@motion5/plugins/internal/legacy/ik3d";
+import { PluginCatalog } from "../../src/domain/plugin-catalog";
+import type { PluginDefinition } from "../../src/contract/v5";
+import { transformPlugin } from "@motion5/plugins/transform";
+import { fkPlugin } from "@motion5/plugins/fk";
+import { ikPlugin } from "@motion5/plugins/ik";
+import { transform3dPlugin } from "@motion5/plugins/transform3d";
+import { fk3dPlugin } from "@motion5/plugins/fk3d";
+import { ik3dPlugin } from "@motion5/plugins/ik3d";
 
-/** Explicit declarations for graph tests; never a production default. */
-export function builtinRegistry(...additional: readonly PluginDefinition[]): PluginRegistry {
-  const registry = new PluginRegistry();
+/**
+ * The identified built-ins, admitted for graph tests that need capability answers.
+ *
+ * Explicit declarations rather than a production default: a graph test that silently depended on
+ * the host's catalogue would pass while the app's own admission was missing a plugin.
+ */
+export function builtinRegistry(...additional: readonly PluginDefinition[]): PluginCatalog {
+  const registry = new PluginCatalog();
   registry.registerAll([
     transformPlugin,
     fkPlugin,
