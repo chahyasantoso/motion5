@@ -1,81 +1,33 @@
 import { unreachable } from "@motion5/core/plugin-api";
-import type { IdentifiedPluginDefinition, Outputs, ValueSpec } from "@motion5/core/plugin-api";
+import type { IdentifiedPluginDefinition, Outputs } from "@motion5/core/plugin-api";
+import {
+  BODY_3D_SLOT,
+  POSE_3D_SPEC,
+  ROOT_3D_SPEC,
+  SOLVED_3D_SLOT,
+  readAggregateTopology,
+  type AggregateRow,
+} from "./aggregate-topology";
 import {
   blendOrientation3d,
   composeWorld3d,
+  readEuler3d,
   readFrame3d,
   readPivotOffset3d,
   ZERO_EULER,
   type Euler3d,
+  type WorldFrame3d,
 } from "./frame3d";
 import { clamp, readNumber, segmentExtent } from "./frame";
 
-const MEMBER: ValueSpec = {
-  kind: "record",
-  fields: {
-    memberId: { kind: "string" },
-    parentId: { kind: "string" },
-    x: { kind: "number", optional: true },
-    y: { kind: "number", optional: true },
-    z: { kind: "number", optional: true },
-    length: { kind: "number" },
-    rotation: { kind: "number", optional: true },
-    rotationX: { kind: "number", optional: true },
-    rotationY: { kind: "number", optional: true },
-    weight: { kind: "number", optional: true },
-  },
-};
-
-const FRAME: ValueSpec = {
-  kind: "table",
-  schema: {
-    row: {
-      fields: {
-        x: { kind: "number" },
-        y: { kind: "number" },
-        z: { kind: "number" },
-        rotation: { kind: "number" },
-        rotationX: { kind: "number" },
-        rotationY: { kind: "number" },
-      },
-    },
-  },
-};
-
-const SOLVER: ValueSpec = {
-  kind: "table",
-  schema: {
-    row: {
-      fields: {
-        rotation: { kind: "number" },
-        rotationX: { kind: "number" },
-        rotationY: { kind: "number" },
-      },
-    },
-  },
-};
-
-const OUTPUT: ValueSpec = {
-  kind: "table",
-  schema: {
-    row: {
-      fields: {
-        x: { kind: "number" },
-        y: { kind: "number" },
-        z: { kind: "number" },
-        rotation: { kind: "number" },
-        rotationX: { kind: "number" },
-        rotationY: { kind: "number" },
-      },
-    },
-  },
-};
-
 type FlatRecord = Readonly<Record<string, number | string | boolean>>;
-type TableRows = readonly { readonly id: string; readonly cells: FlatRecord }[];
-type MemberRowLookup =
-  | { readonly kind: "found"; readonly row: TableRows[number] }
-  | { readonly kind: "missing"; readonly memberId: string };
+type TableOutput = {
+  readonly values: readonly { readonly id: string; readonly cells: FlatRecord }[];
+};
+
+type SolvedRowLookup3d =
+  | { readonly kind: "found"; readonly row: AggregateRow }
+  | { readonly kind: "missing"; readonly id: string };
 
 function flatRecord(value: unknown, path: string): FlatRecord {
   if (value === null || typeof value !== "object" || Array.isArray(value))
@@ -95,31 +47,21 @@ function recordOutput(outputs: Outputs, path: string): FlatRecord {
   return flatRecord(values, `${path}.values`);
 }
 
-function tableOutput(outputs: Outputs, path: string): TableRows {
+function tableOutput(outputs: Outputs, path: string): TableOutput["values"] {
   const values = outputs.values;
   if (!Array.isArray(values)) throw new TypeError(`FK3d requires a table output at ${path}.`);
-  return values as TableRows;
+  return values as TableOutput["values"];
 }
 
-function baseRow(rows: TableRows, parentId: string): FlatRecord {
-  const row = rows.find((candidate) => candidate.id === parentId);
-  if (row === undefined) throw new TypeError(`FK3d base row missing for parent "${parentId}".`);
-  return row.cells;
+function lookupSolvedRow3d(
+  solvedById: ReadonlyMap<string, AggregateRow>,
+  id: string,
+): SolvedRowLookup3d {
+  const row = solvedById.get(id);
+  return row === undefined ? { kind: "missing", id } : { kind: "found", row };
 }
 
-function stringField(record: FlatRecord, field: string, path: string): string {
-  const value = record[field];
-  if (typeof value !== "string" || value.length === 0)
-    throw new TypeError(`FK3d requires ${path}.${field} to be a non-empty string.`);
-  return value;
-}
-
-function lookupRow(rows: TableRows, memberId: string): MemberRowLookup {
-  const row = rows.find((candidate) => candidate.id === memberId);
-  return row === undefined ? { kind: "missing", memberId } : { kind: "found", row };
-}
-
-function solvedOrientation(lookup: MemberRowLookup): Euler3d {
+function solvedOrientation(lookup: SolvedRowLookup3d): Euler3d {
   switch (lookup.kind) {
     case "found": {
       const rotation = lookup.row.cells.rotation;
@@ -139,50 +81,52 @@ function solvedOrientation(lookup: MemberRowLookup): Euler3d {
       return { rotation, rotationX, rotationY };
     }
     case "missing":
-      throw new TypeError(`FK3d solver row missing for member "${lookup.memberId}".`);
+      throw new TypeError(`FK3d solver row missing for member "${lookup.id}".`);
     default:
       return unreachable(lookup);
   }
 }
 
-/** The identified 3D FK boundary; frame math stays owned by `frame3d.ts`. */
 export const fk3dPlugin: IdentifiedPluginDefinition = {
   id: "fk3d",
   inputs: {
     values: { kind: "record", fields: {} },
     requires: {
-      member: { outputs: { values: MEMBER } },
-      base: { outputs: { values: FRAME } },
-      solver: { outputs: { values: SOLVER } },
+      chain: { outputs: { values: BODY_3D_SLOT } },
+      solved: { outputs: { values: SOLVED_3D_SLOT } },
+      base: { outputs: { values: ROOT_3D_SPEC } },
     },
   },
-  outputs: { values: OUTPUT },
+  outputs: { values: POSE_3D_SPEC },
   transform({ requires }) {
-    const member = recordOutput(requires.member as Outputs, "member");
-    const baseRows = tableOutput(requires.base as Outputs, "base");
-    const solverRows = tableOutput(requires.solver as Outputs, "solver");
-    const memberId = stringField(member, "memberId", "member.values");
-    const parentId = stringField(member, "parentId", "member.values");
-    const solved = solvedOrientation(lookupRow(solverRows, memberId));
-    const local = blendOrientation3d(
-      {
-        rotation: readNumber(member.rotation),
-        rotationX: readNumber(member.rotationX),
-        rotationY: readNumber(member.rotationY),
-      },
-      solved,
-      clamp(readNumber(member.weight, 1), 0, 1),
-    );
-    const pivot = composeWorld3d(readFrame3d(baseRow(baseRows, parentId)), {
-      ...readPivotOffset3d(member),
-      ...local,
+    const topology = readAggregateTopology((requires.chain as Outputs).values);
+    const baseFrame = readFrame3d(recordOutput(requires.base as Outputs, "base"));
+    const solvedRows = tableOutput(requires.solved as Outputs, "solved");
+    const solvedById = new Map<string, AggregateRow>();
+    for (const row of solvedRows) {
+      solvedById.set(row.id, row as AggregateRow);
+    }
+    const worldFrames = new Map<string, WorldFrame3d>();
+    const rows = topology.rows.map((row) => {
+      const solved = solvedOrientation(lookupSolvedRow3d(solvedById, row.id));
+      const rest = readEuler3d(row.cells);
+      const weight = clamp(readNumber(row.cells.weight, 1), 0, 1);
+      const local = blendOrientation3d(rest, solved, weight);
+      const parent = topology.parentById.get(row.id);
+      const parentFrame = parent === undefined ? baseFrame : worldFrames.get(parent)!;
+      const pivot = composeWorld3d(parentFrame, {
+        ...readPivotOffset3d(row.cells),
+        ...local,
+      });
+      const world = composeWorld3d(pivot, {
+        ...ZERO_EULER,
+        x: segmentExtent(readNumber(row.cells.length)),
+        y: 0,
+        z: 0,
+      });
+      worldFrames.set(row.id, world);
+      return { id: row.id, cells: world };
     });
-    const world = composeWorld3d(pivot, {
-      ...ZERO_EULER,
-      x: segmentExtent(readNumber(member.length)),
-      y: 0,
-      z: 0,
-    });
-    return { values: [{ id: memberId, cells: world }] };
+    return { values: rows };
   },
 };

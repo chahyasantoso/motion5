@@ -6,19 +6,19 @@ states a phase; `packages/core/test/unit/scripts/session-status-shape.test.ts` e
 byte ceiling.
 
 - **Captured:** 2026-10-29, Asia/Jakarta.
-- **Read against:** `refactor/v5-identified-tables` after aggregate 2D FK.
+- **Read against:** `refactor/v5-identified-tables` after aggregate 3D FK.
 
 ## Now
 
-- **2D FK reads aggregate tables:** `fk` takes one body table, one solved table and one base
-  record through single-source slots, walks canonical topology, and publishes the whole pose table
-  in one pass. Grouped authoring is refused by name at load. No pending ledger entries were removed;
-  73 Phase 5, 4 Phase 6 and 2 Phase 7 entries remain.
+- **2D and 3D FK read aggregate tables:** `fk` and `fk3d` take one body table, one solved table
+  and one base record through single-source slots, walk canonical topology, and publish complete
+  pose tables in one pass. Grouped authoring is refused by name at load. No pending ledger entries
+  were removed; 73 Phase 5, 4 Phase 6 and 2 Phase 7 entries remain.
 
 ## Next in line
 
-- **Aggregate 3D FK:** the same chain, solved and base contract for `fk3d`, preserving orientation
-  blending, 3D pivot offsets, segment extent and Euler world-frame pose publishing.
+- **Explicit aggregate graph and publisher cleanup:** port graph fixtures to explicit aggregate
+  dependencies and remove hidden solver member fan-in machinery.
 
 ## Open, and not scheduled
 
