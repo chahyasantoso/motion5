@@ -80,6 +80,8 @@ describe("rowPatchSource", () => {
     expect(projected.revision).toBe(2);
     expect(projected.sourceProgress).toBe(0.25);
     expect(projected.sourceRevisions).toEqual({ upstream: 2 });
+    // A source read must be referentially stable between publications for useSyncExternalStore.
+    expect(wrapper.get(ALIAS)).toBe(projected);
   });
 
   it("treats an absent, inherited or wrong-kind named output as a local refusal", () => {
@@ -200,7 +202,7 @@ describe("rowPatchSource", () => {
     const projected = wrapper.get(ALIAS);
     if (projected?.status !== "ready") throw new Error("expected recovery");
     expect(projected.outputs.values).toEqual({ x: 3 });
-    expect(delivered.at(-1)).toEqual(projected);
+    expect(delivered.at(-1)).toBe(projected);
 
     const failed: Patch = { nodeId: NODE, revision: 3, status: "error", diagnostics: [] };
     source.publish(failed);

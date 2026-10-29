@@ -147,7 +147,11 @@ function mountRow(
     },
     unmount: () => {
       act(() => {
-        renderer?.unmount();
+        act(() => {
+          act(() => {
+            renderer?.unmount();
+          });
+        });
       });
     },
   };
@@ -184,7 +188,9 @@ describe("React row rendering through the real engine", () => {
     expect(raw?.status).toBe("ready");
     if (raw?.status === "ready") expect(raw.outputs.inspect).toEqual({ residual: 2 });
 
-    renderer?.unmount();
+    act(() => {
+      renderer?.unmount();
+    });
     dispose();
   });
 
@@ -211,7 +217,9 @@ describe("React row rendering through the real engine", () => {
         expect(patch.nodeId).toBe(ALIAS);
         expect(Object.keys(patch).sort()).toEqual(["diagnostics", "nodeId", "revision", "status"]);
       }
-      renderer?.unmount();
+      act(() => {
+        renderer?.unmount();
+      });
     }
     dispose();
   });

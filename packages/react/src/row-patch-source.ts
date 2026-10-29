@@ -43,6 +43,11 @@ export interface RowPatchOptions {
  */
 export function rowPatchSource(source: PatchSource, options: RowPatchOptions): PatchSource {
   const { nodeId, output, rowId, as } = options;
+  // One projection per source publication, so `getSnapshot` is referentially stable between
+  // publications as `useSyncExternalStore` requires. This is identity memoization and not a
+  // last-good row: the source patch is the key, and a removed or replaced publication is never
+  // answered from the map because a new key is a new projection.
+  const projected = new WeakMap<LivePatch, LivePatch>();
 
   function project(patch: LivePatch): LivePatch;
   function project(patch: Patch): Patch;
@@ -87,15 +92,25 @@ export function rowPatchSource(source: PatchSource, options: RowPatchOptions): P
     }
   }
 
+  function projectLive(patch: LivePatch): LivePatch {
+    const cached = projected.get(patch);
+    if (cached !== undefined) return cached;
+    const next = project(patch);
+    projected.set(patch, next);
+    return next;
+  }
+
   return {
     get(requested) {
       if (requested !== as) return source.get(requested);
       const patch = source.get(nodeId);
-      return patch === undefined ? undefined : project(patch);
+      return patch === undefined ? undefined : projectLive(patch);
     },
     subscribeNode(requested, listener) {
       if (requested !== as) return source.subscribeNode(requested, listener);
-      return source.subscribeNode(nodeId, (patch) => listener(project(patch)));
+      return source.subscribeNode(nodeId, (patch) =>
+        listener(patch.status === "destroyed" ? project(patch) : projectLive(patch)),
+      );
     },
   };
 }
