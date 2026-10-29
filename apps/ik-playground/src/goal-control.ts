@@ -35,23 +35,74 @@ function clamp(value: number, min: number, max: number): number {
 }
 
 type GoalValues = NonNullable<NonNullable<TrackDefinition["input"]>["values"]>;
-type GoalRecord = Exclude<GoalValues, readonly unknown[]>;
-
-function isGoalRecord(values: GoalValues): values is GoalRecord {
-  return typeof values === "object" && values !== null && !Array.isArray(values);
-}
+type GoalTable = Extract<GoalValues, readonly unknown[]>;
 
 /**
- * The authored goal record, narrowed here because a goal is a record and a table has no `x`.
+ * The authored goal table, validated as one table before any row is rewritten.
  *
- * Not a fallback: the two rigs author a record, so a table or an absent value is a programming
- * error in the project and is refused rather than guessed at.
+ * A table is the only supported goal shape. Every row names a member id and no member is named
+ * twice, because a duplicate would make "the goal for this member" ambiguous and a rewrite would
+ * silently pick one. A record, a missing value or a malformed row is an invariant failure in the
+ * project the app was handed, so it is refused rather than repaired.
  */
-function goalRecord(track: TrackDefinition): GoalRecord {
+function goalTable(track: TrackDefinition): GoalTable {
   const values = track.input?.values;
-  if (values === undefined || !isGoalRecord(values))
-    throw new TypeError(`Track "${track.id}" must author its goal as one record.`);
+  if (values === undefined || !Array.isArray(values))
+    throw new TypeError(`Track "${track.id}" must author its goals as one table.`);
+  const seen = new Set<string>();
+  for (const row of values) {
+    const cells: unknown = row.cells;
+    if (
+      row === null ||
+      typeof row !== "object" ||
+      typeof row.id !== "string" ||
+      row.id.length === 0 ||
+      cells === null ||
+      typeof cells !== "object" ||
+      Array.isArray(cells)
+    )
+      throw new TypeError(`Track "${track.id}" has a malformed goal row.`);
+    const member = (cells as Readonly<Record<string, unknown>>).memberId;
+    if (typeof member !== "string" || member.length === 0)
+      throw new TypeError(`Track "${track.id}" has a goal row that names no member.`);
+    if (seen.has(member))
+      throw new TypeError(`Track "${track.id}" names goal member "${member}" more than once.`);
+    seen.add(member);
+  }
   return values;
+}
+
+/** The whole goal table with exactly the addressed row's coordinates replaced, order preserved. */
+type GoalCoordinates = {
+  readonly x: number;
+  readonly y: number;
+  readonly z?: number;
+};
+
+function rewriteGoal(
+  track: TrackDefinition,
+  member: string,
+  coordinates: GoalCoordinates,
+): GoalTable {
+  const table = goalTable(track);
+  const matches = table.filter((row) => row.cells.memberId === member);
+  if (matches.length !== 1)
+    throw new TypeError(
+      `Track "${track.id}" must author exactly one goal for member "${member}", found ${matches.length}.`,
+    );
+  return table.map((row) =>
+    row.cells.memberId === member
+      ? {
+          ...row,
+          cells: {
+            ...row.cells,
+            x: coordinates.x,
+            y: coordinates.y,
+            ...(coordinates.z === undefined ? {} : { z: coordinates.z }),
+          },
+        }
+      : row,
+  );
 }
 
 function finite(goal: GoalMove): boolean {
@@ -74,6 +125,10 @@ function finite(goal: GoalMove): boolean {
  * flip and nothing else. A non-finite point is ignored rather than written, and every point is
  * clamped to what its stage draws (the planar margin box; the spatial depth range and the frame
  * with the whole handle inside it), so a drag can never park a goal where nobody can grab it back.
+ *
+ * A goal edit rewrites the whole authored table in one write, changing only the addressed row's x,
+ * y (and z), so a second edit starts from the table the first one left rather than from a snapshot
+ * captured before it.
  */
 export function createGoalControl(project: Pick<ProjectHandle, "track">): GoalControl {
   return {
@@ -82,12 +137,13 @@ export function createGoalControl(project: Pick<ProjectHandle, "track">): GoalCo
       switch (goal.rig) {
         case "planar": {
           const { x, y } = goal;
-          const handle = project.track(nodeId(TENTACLE.goalTrack));
-          handle.input.values.set({
-            ...goalRecord(handle.definition),
-            x: clamp(x, STAGE_2D.margin, STAGE_2D.width - STAGE_2D.margin),
-            y: clamp(y, STAGE_2D.margin, STAGE_2D.height - STAGE_2D.margin),
-          });
+          const handle = project.track(nodeId(TENTACLE.goalsTrack));
+          handle.input.values.set(
+            rewriteGoal(handle.definition, TENTACLE.tipTrack, {
+              x: clamp(x, STAGE_2D.margin, STAGE_2D.width - STAGE_2D.margin),
+              y: clamp(y, STAGE_2D.margin, STAGE_2D.height - STAGE_2D.margin),
+            }),
+          );
           return;
         }
         case "spatial": {
@@ -98,8 +154,8 @@ export function createGoalControl(project: Pick<ProjectHandle, "track">): GoalCo
             IK3D_DEPTH,
             goal,
           );
-          const handle = project.track(IK3D_NODE_ID(IK3D.goalTrack));
-          handle.input.values.set({ ...goalRecord(handle.definition), x, y, z });
+          const handle = project.track(IK3D_NODE_ID(IK3D.goalsTrack));
+          handle.input.values.set(rewriteGoal(handle.definition, IK3D.tipTrack, { x, y, z }));
           return;
         }
         default:

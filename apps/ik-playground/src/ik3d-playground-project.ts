@@ -3,17 +3,19 @@ import { SCROLL_SOURCE } from "./ik-playground-project";
 import { frameAround } from "./projection";
 
 /**
- * The 3D half of the playground: a four-member chain, so the spatial solve is 3D FABRIK.
+ * The 3D half of the playground: a four-member chain solved as one aggregate table.
  *
  * Authored as one Motion of the playground project rather than as a project of its own, on the same
  * page-scroll source as the 2D chain, so the runtime drives both from one trigger key and there is
  * no second progress driver beside the Motion. What the scroll animates is only each member's
- * `fk3d.weight`, the rest-to-solved blend of ADR-116; the goal is a static `transform3d` frame a drag
- * rewrites through the value tier (`goal-control.ts`), and the pole is fixed. `playground-runtime.ts`
- * composes it into the one project the app loads, which is also the project the suite loads.
+ * `fk3d.weight`, the rest-to-solved blend of ADR-116; the goal is a row in the goals table a drag
+ * rewrites through the value tier (`goal-control.ts`), and the pole is fixed.
+ * `playground-runtime.ts` composes it into the one project the app loads, which is also the project
+ * the suite loads.
  *
  * Every renderer on the page draws this one rig: the CSS 3D stage and the three.js stage read the
- * same published frames, and both project them with `IK3D_VIEW` into `IK3D_FRAME` (`projection.ts`).
+ * same published pose rows, and both project them with `IK3D_VIEW` into `IK3D_FRAME`
+ * (`projection.ts`).
  */
 export const IK3D_MOTION_ID = "rig3d";
 export const IK3D_NODE_ID = (trackId: string): string => `${IK3D_MOTION_ID}/${trackId}`;
@@ -53,9 +55,14 @@ export const IK3D_FRAME = frameAround(IK3D_VIEW, IK3D_GOAL_BOUNDS, IK3D_GOAL_RAD
 export const IK3D = {
   label: "FABRIK 3D chain",
   rootTrack: "root",
+  bodyTrack: "body",
+  goalsTrack: "goals",
+  goalRowId: "goal",
+  /** The consumer alias the goal row is addressed by, never a graph node. */
   goalTrack: "goal",
   poleTrack: "pole",
   solverTrack: "solve",
+  poseTrack: "pose",
   memberTracks: ["upper", "fore", "wrist", "hand"],
   tipTrack: "hand",
   lengths: [50, 42, 34, 26],
@@ -72,67 +79,101 @@ export const IK3D = {
   pole: { x: 70, y: 200, z: 90 },
 } as const;
 
-type AuthoredScalars = Readonly<Record<string, number | boolean>>;
-
-function frameTrack(id: string, values: AuthoredScalars): TrackDefinition {
-  return { id, plugin: "transform3d", input: { values } };
+function bodyTrack(): TrackDefinition {
+  return {
+    id: IK3D.bodyTrack,
+    input: {
+      values: IK3D.memberTracks.map((id, index) => {
+        const [rotation, rotationX, rotationY] = IK3D.rest[index]!;
+        return {
+          id,
+          cells: {
+            ...(index === 0 ? {} : { parentId: IK3D.memberTracks[index - 1]! }),
+            length: IK3D.lengths[index]!,
+            rotation,
+            rotationX,
+            rotationY,
+            weight: [
+              { p: 0, v: 0 },
+              { p: 1, v: 1 },
+            ],
+          },
+        };
+      }),
+    },
+  };
 }
 
-/** Rest orientation and weight share the solver-bound `fk3d` group, as ADR-116 requires. */
-function memberTrack(
-  id: string,
-  base: string,
-  length: number,
-  [rotation, rotationX, rotationY]: readonly [number, number, number],
-): TrackDefinition {
+function goalsTrack(): TrackDefinition {
   return {
-    id,
-    plugin: "fk3d",
+    id: IK3D.goalsTrack,
     input: {
-      values: {
-        length,
-        rotation,
-        rotationX,
-        rotationY,
-        weight: [
-          { p: 0, v: 0 },
-          { p: 1, v: 1 },
-        ],
-      },
-      requires: { base, solver: IK3D.solverTrack },
+      values: [
+        {
+          id: IK3D.goalRowId,
+          cells: { memberId: IK3D.tipTrack, x: IK3D.goal.x, y: IK3D.goal.y, z: IK3D.goal.z },
+        },
+      ],
     },
   };
 }
 
 export const ik3dPlaygroundTracks: readonly TrackDefinition[] = [
-  frameTrack(IK3D.rootTrack, IK3D.root),
-  frameTrack(IK3D.goalTrack, IK3D.goal),
-  frameTrack(IK3D.poleTrack, IK3D.pole),
+  {
+    id: IK3D.rootTrack,
+    input: {
+      values: {
+        x: IK3D.root.x,
+        y: IK3D.root.y,
+        z: IK3D.root.z,
+        rotation: 0,
+        rotationX: 0,
+        rotationY: 0,
+      },
+    },
+  },
+  {
+    id: IK3D.poleTrack,
+    input: { values: { x: IK3D.pole.x, y: IK3D.pole.y, z: IK3D.pole.z } },
+  },
+  bodyTrack(),
+  goalsTrack(),
   {
     id: IK3D.solverTrack,
     plugin: "ik3d",
     input: {
       values: { inspect: true },
       requires: {
-        root: IK3D.rootTrack,
-        target: IK3D.goalTrack,
+        chain: IK3D.bodyTrack,
+        goals: IK3D.goalsTrack,
+        base: IK3D.rootTrack,
         pole: IK3D.poleTrack,
       },
     },
   },
-  ...IK3D.memberTracks.map((id, index) =>
-    memberTrack(
-      id,
-      index === 0 ? IK3D.rootTrack : IK3D.memberTracks[index - 1]!,
-      IK3D.lengths[index]!,
-      IK3D.rest[index]!,
-    ),
-  ),
+  {
+    id: IK3D.poseTrack,
+    plugin: "fk3d",
+    input: {
+      values: {},
+      requires: {
+        chain: IK3D.bodyTrack,
+        solved: IK3D.solverTrack,
+        base: IK3D.rootTrack,
+      },
+    },
+  },
 ];
 
-export const IK3D_NODE_IDS: readonly string[] = ik3dPlaygroundTracks.map(({ id }) =>
-  IK3D_NODE_ID(id),
-);
+/** The engine nodes this Motion authors; member ids are pose-row aliases, not nodes. */
+export const IK3D_NODE_IDS: readonly string[] = [
+  IK3D.rootTrack,
+  IK3D.poleTrack,
+  IK3D.bodyTrack,
+  IK3D.goalsTrack,
+  IK3D.solverTrack,
+  IK3D.poseTrack,
+].map(IK3D_NODE_ID);
 
 export const ik3dPlaygroundMotion: MotionDefinition = {
   id: IK3D_MOTION_ID,

@@ -1,22 +1,27 @@
 import React from "react";
 import type { ProjectHandle } from "@motion5/core";
-import { selectRecord } from "@motion5/core/plugin-api";
+import { selectRecord, selectRow } from "@motion5/core/plugin-api";
 import { patchRender, usePatch } from "@motion5/react";
-import { IK3D, IK3D_GOAL_BOUNDS, IK3D_NODE_ID } from "../ik3d-playground-project";
 import { TENTACLE, nodeId } from "../ik-playground-project";
+import { IK3D, IK3D_GOAL_BOUNDS, IK3D_NODE_ID } from "../ik3d-playground-project";
 import type { GoalControl } from "../goal-control";
 
-function numberValue(values: Readonly<Record<string, unknown>>, key: string): number {
+type Values = Readonly<Record<string, number | string | boolean>>;
+
+function numberValue(values: Values, key: string): number {
   return Number(values[key] ?? 0);
 }
 
-function inspectionLine(values: Readonly<Record<string, unknown>>): string {
-  const inspection = values.inspection;
-  if (typeof inspection !== "object" || inspection === null) return "no inspection published";
-  const record = inspection as Readonly<Record<string, unknown>>;
-  if (typeof record.kind !== "string" || typeof record.residual !== "number")
-    return "malformed inspection";
-  return `${record.kind} · residual ${record.residual.toFixed(3)}`;
+function inspectionLine(values: Values | undefined): string {
+  if (values === undefined) return "no inspection published";
+  const kind = values.kind;
+  const residual = values.residual;
+  if (typeof kind !== "string" || typeof residual !== "number") return "malformed inspection";
+  return `${kind} · residual ${residual.toFixed(3)}`;
+}
+
+function booleanValue(values: Values, key: string): boolean {
+  return values[key] === true;
 }
 
 const PlanarCard: React.FC<{ readonly handle: ProjectHandle; readonly goals: GoalControl }> = ({
@@ -24,38 +29,40 @@ const PlanarCard: React.FC<{ readonly handle: ProjectHandle; readonly goals: Goa
   goals,
 }) => {
   const rootPatch = usePatch(handle, nodeId(TENTACLE.rootTrack));
-  const goalPatch = usePatch(handle, nodeId(TENTACLE.goalTrack));
+  const goalPatch = usePatch(handle, nodeId(TENTACLE.goalsTrack));
   const solverPatch = usePatch(handle, nodeId(TENTACLE.solverTrack));
-  const tipPatch = usePatch(handle, nodeId(TENTACLE.tipTrack));
+  const posePatch = usePatch(handle, nodeId(TENTACLE.poseTrack));
   const rootDecision = patchRender(rootPatch);
   const goalDecision = patchRender(goalPatch);
   const solverDecision = patchRender(solverPatch);
-  const tipDecision = patchRender(tipPatch);
+  const poseDecision = patchRender(posePatch);
   const reach = TENTACLE.lengths.reduce((sum, length) => sum + length, 0);
 
   if (
     rootDecision.kind !== "render" ||
     goalDecision.kind !== "render" ||
     solverDecision.kind !== "render" ||
-    tipDecision.kind !== "render"
+    poseDecision.kind !== "render"
   )
     return <div className="solver-card">Waiting for the 2D FABRIK solve…</div>;
 
   const rootPicked = selectRecord(rootDecision.patch.outputs.values);
-  const goalPicked = selectRecord(goalDecision.patch.outputs.values);
-  const tipPicked = selectRecord(tipDecision.patch.outputs.values);
-  const solverPicked = selectRecord(solverDecision.patch.outputs.values);
+  const goalPicked = selectRow(goalDecision.patch.outputs.values, TENTACLE.goalRowId);
+  const solverPicked = selectRow(solverDecision.patch.outputs.values, TENTACLE.tipTrack);
+  const tipPicked = selectRow(poseDecision.patch.outputs.values, TENTACLE.tipTrack);
+  const inspectPicked = selectRecord(solverDecision.patch.outputs.inspect);
   if (
     rootPicked.kind !== "record" ||
-    goalPicked.kind !== "record" ||
-    tipPicked.kind !== "record" ||
-    solverPicked.kind !== "record"
+    goalPicked.kind !== "row" ||
+    solverPicked.kind !== "row" ||
+    tipPicked.kind !== "row"
   )
     return <div className="solver-card">Waiting for the 2D FABRIK solve…</div>;
+
   const root = rootPicked.values;
-  const goal = goalPicked.values;
-  const tip = tipPicked.values;
-  const solver = solverPicked.values;
+  const goal = goalPicked.cells;
+  const solved = solverPicked.cells;
+  const tip = tipPicked.cells;
   const distance = Math.hypot(
     numberValue(goal, "x") - numberValue(root, "x"),
     numberValue(goal, "y") - numberValue(root, "y"),
@@ -64,8 +71,9 @@ const PlanarCard: React.FC<{ readonly handle: ProjectHandle; readonly goals: Goa
     numberValue(goal, "x") - numberValue(tip, "x"),
     numberValue(goal, "y") - numberValue(tip, "y"),
   );
-  const rotations = solver.rotations;
-  const flip = solver.flip === true;
+  const authored = handle.track(nodeId(TENTACLE.solverTrack)).definition.input?.values;
+  const authoredPicked = selectRecord(authored);
+  const flip = authoredPicked.kind === "record" && authoredPicked.values.flip === true;
 
   return (
     <div className="solver-card" data-rig={TENTACLE.solverTrack}>
@@ -76,15 +84,19 @@ const PlanarCard: React.FC<{ readonly handle: ProjectHandle; readonly goals: Goa
       <div className="mono-line dim">reach: {reach} px</div>
       <div className={gap < 1 ? "chip ok" : "chip warn"}>blended tip gap: {gap.toFixed(1)} px</div>
       <div className="rot-block">
-        <div className="mono-line dim">solved local rotations</div>
-        {typeof rotations === "object" && rotations !== null
-          ? Object.entries(rotations as Readonly<Record<string, unknown>>).map(([id, value]) => (
-              <div className="rot-row" key={id}>
-                <span>{id.replace(/^rig\//, "")}</span>
-                <span>{Number(value).toFixed(1)}°</span>
-              </div>
-            ))
-          : null}
+        <div className="mono-line dim">tip member · solved row</div>
+        <div className="rot-row">
+          <span>{TENTACLE.tipTrack}</span>
+          <span>{numberValue(solved, "rotation").toFixed(1)}°</span>
+        </div>
+        <div className="mono-line dim">
+          residual {numberValue(solved, "residual").toFixed(3)} · atBound{" "}
+          {booleanValue(solved, "atBound") ? "true" : "false"}
+        </div>
+      </div>
+      <div className="mono-line dim">
+        inspect:{" "}
+        {inspectionLine(inspectPicked.kind === "record" ? inspectPicked.values : undefined)}
       </div>
       <label className="flip-toggle">
         <input
@@ -103,19 +115,20 @@ const SpatialCard: React.FC<{ readonly handle: ProjectHandle; readonly goals: Go
   handle,
   goals,
 }) => {
-  const goalPatch = usePatch(handle, IK3D_NODE_ID(IK3D.goalTrack));
+  const goalPatch = usePatch(handle, IK3D_NODE_ID(IK3D.goalsTrack));
   const solvePatch = usePatch(handle, IK3D_NODE_ID(IK3D.solverTrack));
   const goalDecision = patchRender(goalPatch);
   const solveDecision = patchRender(solvePatch);
   if (goalDecision.kind !== "render" || solveDecision.kind !== "render")
     return <div className="solver-card">Waiting for the 3D FABRIK solve…</div>;
 
-  const goalPicked = selectRecord(goalDecision.patch.outputs.values);
-  const solvePicked = selectRecord(solveDecision.patch.outputs.values);
-  if (goalPicked.kind !== "record" || solvePicked.kind !== "record")
+  const goalPicked = selectRow(goalDecision.patch.outputs.values, IK3D.goalRowId);
+  const solvedPicked = selectRow(solveDecision.patch.outputs.values, IK3D.tipTrack);
+  const inspectPicked = selectRecord(solveDecision.patch.outputs.inspect);
+  if (goalPicked.kind !== "row" || solvedPicked.kind !== "row")
     return <div className="solver-card">Waiting for the 3D FABRIK solve…</div>;
-  const goal = goalPicked.values;
-  const solve = solvePicked.values;
+  const goal = goalPicked.cells;
+  const solved = solvedPicked.cells;
   const x = numberValue(goal, "x");
   const y = numberValue(goal, "y");
   const z = numberValue(goal, "z");
@@ -125,9 +138,16 @@ const SpatialCard: React.FC<{ readonly handle: ProjectHandle; readonly goals: Go
       <div className="card-title" style={{ color: "#818cf8" }}>
         FABRIK 3D
       </div>
-      <div className="mono-line dim">inspection: {inspectionLine(solve)}</div>
+      <div className="mono-line dim">
+        inspect:{" "}
+        {inspectionLine(inspectPicked.kind === "record" ? inspectPicked.values : undefined)}
+      </div>
       <div className="mono-line">
         goal: x {x.toFixed(0)} · y {y.toFixed(0)} · z {z.toFixed(0)}
+      </div>
+      <div className="mono-line dim">
+        tip residual {numberValue(solved, "residual").toFixed(3)} · atBound{" "}
+        {booleanValue(solved, "atBound") ? "true" : "false"}
       </div>
       <label className="depth-control">
         <span className="mono-line dim">depth z</span>

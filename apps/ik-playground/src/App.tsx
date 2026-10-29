@@ -85,7 +85,7 @@ export const App: React.FC = () => {
         });
       },
       releaseHost: () => clock.dispose(),
-      weightNode: nodeId(TENTACLE.memberTracks[0]!),
+      weightNode: nodeId(TENTACLE.bodyTrack),
       onView: setView,
       onOrphanFailure: (error) => console.error("IK cleanup after cancellation failed.", error),
     });

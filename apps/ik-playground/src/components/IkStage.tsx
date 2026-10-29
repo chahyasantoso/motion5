@@ -5,10 +5,12 @@ import {
   patchRender,
   useDerivedDomPatch,
   type PatchDerivation,
+  type PatchSource,
   type PatchValues,
 } from "@motion5/react";
 import { STAGE_2D, TENTACLE, nodeId } from "../ik-playground-project";
 import type { GoalControl } from "../goal-control";
+import { planarRowSource } from "../rig-sources";
 import { goalNudge, useGoalDrag } from "./goal-drag";
 
 function point(values: PatchValues): { readonly x: number; readonly y: number } {
@@ -23,34 +25,46 @@ const endpoints: PatchDerivation = ([parent = {}, child = {}]) => {
 
 const position: PatchDerivation = ([values = {}]) => point(values);
 
+/** The decorative tail, drawn from the last member's frame without publishing a node for it. */
+const fin: PatchDerivation = ([tip = {}]) => {
+  const { x, y } = point(tip);
+  const angle = (Number(tip.rotation ?? 0) * Math.PI) / 180;
+  return {
+    x1: x,
+    y1: y,
+    x2: x + TENTACLE.finLength * Math.cos(angle),
+    y2: y + TENTACLE.finLength * Math.sin(angle),
+  };
+};
+
 /** One line between two published frames; each line owns its binding, so an absent one costs nothing. */
 const BoneLine: React.FC<{
-  readonly handle: ProjectHandle;
+  readonly source: PatchSource;
   readonly parentId: string;
   readonly childId: string;
   readonly stroke: string;
   readonly width: number;
   readonly opacity?: number;
-}> = ({ handle, parentId, childId, stroke, width, opacity }) => {
-  const bind = useDerivedDomPatch<SVGLineElement>(handle, [parentId, childId], endpoints);
+}> = ({ source, parentId, childId, stroke, width, opacity }) => {
+  const bind = useDerivedDomPatch<SVGLineElement>(source, [parentId, childId], endpoints);
   return (
     <line ref={bind} stroke={stroke} strokeWidth={width} strokeLinecap="round" opacity={opacity} />
   );
 };
 
 const Bone: React.FC<{
-  readonly handle: ProjectHandle;
+  readonly source: PatchSource;
   readonly parentId: string;
   readonly childId: string;
   readonly width: number;
   readonly color: string;
   readonly innerColor?: string;
-}> = ({ handle, parentId, childId, width, color, innerColor }) => (
+}> = ({ source, parentId, childId, width, color, innerColor }) => (
   <g>
-    <BoneLine handle={handle} parentId={parentId} childId={childId} stroke={color} width={width} />
+    <BoneLine source={source} parentId={parentId} childId={childId} stroke={color} width={width} />
     {innerColor ? (
       <BoneLine
-        handle={handle}
+        source={source}
         parentId={parentId}
         childId={childId}
         stroke={innerColor}
@@ -61,14 +75,19 @@ const Bone: React.FC<{
   </g>
 );
 
+const FinLine: React.FC<{ readonly source: PatchSource }> = ({ source }) => {
+  const bind = useDerivedDomPatch<SVGLineElement>(source, [nodeId(TENTACLE.tipTrack)], fin);
+  return <line ref={bind} stroke="#475569" strokeWidth={3} strokeLinecap="round" />;
+};
+
 const Joint: React.FC<{
-  readonly handle: ProjectHandle;
+  readonly source: PatchSource;
   readonly id: string;
   readonly color: string;
   readonly radius: number;
   readonly label?: string;
-}> = ({ handle, id, color, radius, label }) => {
-  const bind = useDerivedDomPatch<SVGGElement>(handle, [id], position);
+}> = ({ source, id, color, radius, label }) => {
+  const bind = useDerivedDomPatch<SVGGElement>(source, [id], position);
   return (
     <g ref={bind} pointerEvents="none">
       <circle r={radius} fill={color} stroke="#07111f" strokeWidth={1.5} />
@@ -81,11 +100,11 @@ const Joint: React.FC<{
   );
 };
 
-const RootPin: React.FC<{ readonly handle: ProjectHandle; readonly id: string }> = ({
-  handle,
+const RootPin: React.FC<{ readonly source: PatchSource; readonly id: string }> = ({
+  source,
   id,
 }) => {
-  const bind = useDerivedDomPatch<SVGGElement>(handle, [id], position);
+  const bind = useDerivedDomPatch<SVGGElement>(source, [id], position);
   return (
     <g ref={bind} pointerEvents="none">
       <circle r={16} fill="#c084fc" opacity={0.18} />
@@ -98,12 +117,12 @@ const RootPin: React.FC<{ readonly handle: ProjectHandle; readonly id: string }>
 };
 
 const GoalHandle: React.FC<{
-  readonly handle: ProjectHandle;
+  readonly source: PatchSource;
   readonly goals: GoalControl;
   readonly svgRef: React.RefObject<SVGSVGElement | null>;
-}> = ({ handle, goals, svgRef }) => {
+}> = ({ source, goals, svgRef }) => {
   const id = nodeId(TENTACLE.goalTrack);
-  const bind = useDerivedDomPatch<SVGGElement>(handle, [id], position);
+  const bind = useDerivedDomPatch<SVGGElement>(source, [id], position);
 
   const toStagePoint = (clientX: number, clientY: number) => {
     const ctm = svgRef.current?.getScreenCTM();
@@ -126,7 +145,7 @@ const GoalHandle: React.FC<{
   const nudge = (event: React.KeyboardEvent<SVGCircleElement>) => {
     const amount = goalNudge(event);
     if (amount === undefined || amount.dz !== 0) return;
-    const decision = patchRender(handle.get(id));
+    const decision = patchRender(source.get(id));
     if (decision.kind !== "render") return;
     const picked = selectRecord(decision.patch.outputs.values);
     if (picked.kind !== "record") return;
@@ -170,6 +189,7 @@ export const IkStage: React.FC<{
   readonly goals: GoalControl;
 }> = ({ handle, goals }) => {
   const svgRef = React.useRef<SVGSVGElement | null>(null);
+  const source = React.useMemo(() => planarRowSource(handle), [handle]);
   const reach = TENTACLE.lengths.reduce((sum, length) => sum + length, 0);
   const rootId = nodeId(TENTACLE.rootTrack);
 
@@ -194,7 +214,7 @@ export const IkStage: React.FC<{
             </radialGradient>
           </defs>
           <circle
-            ref={useDerivedDomPatch<SVGCircleElement>(handle, [rootId], position)}
+            ref={useDerivedDomPatch<SVGCircleElement>(source, [rootId], position)}
             r={reach}
             fill="url(#ik-reach)"
             stroke="#34d399"
@@ -208,7 +228,7 @@ export const IkStage: React.FC<{
             return (
               <Bone
                 key={member}
-                handle={handle}
+                source={source}
                 parentId={nodeId(parent)}
                 childId={nodeId(member)}
                 width={Math.max(3.5, 9 - index)}
@@ -217,24 +237,18 @@ export const IkStage: React.FC<{
               />
             );
           })}
-          <Bone
-            handle={handle}
-            parentId={nodeId(TENTACLE.tipTrack)}
-            childId={nodeId(TENTACLE.fkTailTrack)}
-            width={3}
-            color="#475569"
-          />
+          <FinLine source={source} />
           {TENTACLE.memberTracks.map((member, index) => (
             <Joint
               key={member}
-              handle={handle}
+              source={source}
               id={nodeId(member)}
               color="#34d399"
               radius={Math.max(2.5, 5.5 - index * 0.45)}
             />
           ))}
-          <RootPin handle={handle} id={rootId} />
-          <GoalHandle handle={handle} goals={goals} svgRef={svgRef} />
+          <RootPin source={source} id={rootId} />
+          <GoalHandle source={source} goals={goals} svgRef={svgRef} />
         </svg>
       </div>
     </section>

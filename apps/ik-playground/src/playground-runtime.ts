@@ -1,14 +1,16 @@
 import {
   Engine,
-  PluginRegistry,
+  PluginCatalog,
   createTriggerFactory,
   type EngineOptions,
   type ProjectDefinition,
   type ProjectHandle,
   type ScrollSource,
 } from "@motion5/core";
-import { builtinCatalog } from "@motion5/plugins/catalog";
-import { createPluginLoader, ensuredOrThrow } from "@motion5/plugins/loader";
+import { fkPlugin } from "@motion5/plugins/fk";
+import { fk3dPlugin } from "@motion5/plugins/fk3d";
+import { ikPlugin } from "@motion5/plugins/ik";
+import { ik3dPlugin } from "@motion5/plugins/ik3d";
 import { afterCleanup } from "./cleanup";
 import { createGoalControl, type GoalControl } from "./goal-control";
 import { SCROLL_SOURCE, ikPlaygroundProject } from "./ik-playground-project";
@@ -27,8 +29,6 @@ export const playgroundProject: ProjectDefinition = {
   motions: [...ikPlaygroundProject.motions, ik3dPlaygroundMotion],
 };
 
-const loader = createPluginLoader(builtinCatalog);
-
 export interface PlaygroundRuntimeOptions
   extends Pick<EngineOptions, "clock" | "interpolator" | "scheduler"> {
   /** The page scroll both Motions read as their only progress driver. */
@@ -46,15 +46,15 @@ export interface PlaygroundRuntime {
  * Both Motions read the page scroll as it is: scroll moves member weights and nothing else, and
  * gestures write through `GoalControl` without waiting for a scroll event. Nodes are mounted from the
  * runtime's own answer rather than from a list written beside the document. A failure after load
- * disposes the project it created, so a caller owns a runtime only once this resolves. The approved
- * loader ensures the authored demand before constructing an Engine; core loading stays synchronous.
+ * disposes the project it created, so a caller owns a runtime only once this resolves. The four
+ * identified definitions are registered before construction; core loading stays synchronous.
  */
 export async function loadPlayground(
   options: PlaygroundRuntimeOptions,
 ): Promise<PlaygroundRuntime> {
   const { scroll, ...ports } = options;
-  const plugins = new PluginRegistry();
-  ensuredOrThrow(await loader.ensure(plugins, { kind: "project", project: playgroundProject }));
+  const plugins = new PluginCatalog();
+  plugins.registerAll([fkPlugin, ikPlugin, fk3dPlugin, ik3dPlugin]);
   const project = new Engine({
     ...ports,
     plugins,
