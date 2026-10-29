@@ -381,6 +381,26 @@ import { fileURLToPath } from "node:url";
 // `TH-144` are the shared CSS-perspective and three.js-camera projection, and `TH-145` and `TH-146`
 // the drawn 3D frame and the spatial drag clamp to it.
 //
+// `GT-` belongs to aggregate goal target and slot contract helpers in
+// `packages/plugins/src/aggregate-topology.ts`: leaf-to-goal row mapping, refusal kinds for
+// non-array, empty, malformed, unknown, non-leaf, duplicate and unaddressed goal tables,
+// `slotSpec` stripping `static` while preserving field domains, `EXTERNAL_BASE`, and the pinned
+// field vocabulary of `BODY_2D_SPEC`, `BODY_3D_SPEC`, `GOALS_2D_SPEC` and `GOALS_3D_SPEC`.
+//
+// `AI-` belongs to the aggregate 2D inverse kinematics plugin (`ik` in `packages/plugins/src/ik.ts`),
+// replacing the grouped `members`/`goals` slot map with single `chain`, `goals` and `base` slots
+// and an identified solved table: contract declaration, golden parity, authored-order independence,
+// goal-table refusals, rest edits, `inspect` and `flip`, `Engine` evaluation, track/motion naming
+// independence, animated goals, single-pass live value batching, load refusals for retired grouped
+// shapes and out-of-domain or animated static cells, and ordinary `root`/`base` row ids.
+//
+// `AJ-` belongs to the aggregate 3D inverse kinematics plugin (`ik3d` in
+// `packages/plugins/src/ik3d.ts`), the 3D counterpart to `AI-`: single `chain`, `goals`, `base`
+// and optional `pole` slots, golden parity across tree, two-bone and constrained solves, goal
+// `influence` and body `orient`, `Engine` evaluation and live value batching, load refusals for
+// retired grouped shapes and out-of-domain or animated static cells, and ordinary `root`/`base`
+// row ids.
+//
 // The scan root is the repository rather than `packages/core/test`, because an id names one test in
 // the suite and the suite is not one package. `H-4` is declared in
 // `packages/react/test/public-hook-render.test.ts`, which the old root could not see, so one id

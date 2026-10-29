@@ -307,5 +307,21 @@ describe("aggregate 2D IK", () => {
         t[1].input.values[0].cells.minRotation = 500;
       }),
     ).toThrow(/cell-form-invalid .*minRotation/);
+    expect(
+      load((t) => {
+        t[1].input.values[0].cells.minRotation = [
+          { p: 0, v: -30 },
+          { p: 1, v: 0 },
+        ];
+      }),
+    ).toThrow(/static-field-stops .*minRotation/);
+    expect(
+      load((t) => {
+        t[1].input.values[0].cells.maxRotation = [
+          { p: 0, v: 0 },
+          { p: 1, v: 30 },
+        ];
+      }),
+    ).toThrow(/static-field-stops .*maxRotation/);
   });
 });

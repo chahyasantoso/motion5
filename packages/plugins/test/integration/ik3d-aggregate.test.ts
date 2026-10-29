@@ -135,6 +135,8 @@ describe("aggregate 3D IK", () => {
     };
     expect(kindOf({})).toBe("goal-table-shape");
     expect(kindOf([])).toBe("goal-empty");
+    expect(kindOf([{ id: "g" }])).toBe("goal-row-shape");
+    expect(kindOf([{ id: "", cells: { memberId: "left", x: 0, y: 0, z: 0 } }])).toBe("goal-row-id");
     expect(kindOf([{ id: "g", cells: { memberId: "zzz", x: 0, y: 0, z: 0 } }])).toBe(
       "goal-member-unknown",
     );
@@ -323,6 +325,14 @@ describe("aggregate 3D IK through the engine", () => {
         t[2].input.values[0].cells.orient = 2;
       }),
     ).toThrow(/cell-form-invalid .*orient/);
+    expect(
+      invalid((t) => {
+        t[2].input.values[0].cells.orient = [
+          { p: 0, v: 0 },
+          { p: 1, v: 1 },
+        ];
+      }),
+    ).toThrow(/static-field-stops .*orient/);
     expect(
       invalid((t) => {
         t[3].input.values[0].cells.influence = 0;

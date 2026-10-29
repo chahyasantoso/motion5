@@ -1,4 +1,4 @@
-import type { ValueSpec } from "@motion5/core/plugin-api";
+import { LIMIT_CEILING, LIMIT_FLOOR, unreachable, type ValueSpec } from "@motion5/core/plugin-api";
 
 export type AggregateScalar = number | string | boolean;
 export type AggregateCells = Readonly<Record<string, AggregateScalar>>;
@@ -64,8 +64,20 @@ const BODY_2D_FIELDS = {
   weight: { kind: "number", optional: true },
   x: { kind: "number", optional: true },
   y: { kind: "number", optional: true },
-  minRotation: { kind: "number", optional: true, min: -180, max: 180 },
-  maxRotation: { kind: "number", optional: true, min: -180, max: 180 },
+  minRotation: {
+    kind: "number",
+    optional: true,
+    static: true,
+    min: LIMIT_FLOOR,
+    max: LIMIT_CEILING,
+  },
+  maxRotation: {
+    kind: "number",
+    optional: true,
+    static: true,
+    min: LIMIT_FLOOR,
+    max: LIMIT_CEILING,
+  },
 } as const;
 
 /** Core's `JOINT_KINDS`, mirrored because `@motion5/core/plugin-api` does not export the list. */
@@ -81,16 +93,40 @@ const BODY_3D_FIELDS = {
   x: { kind: "number", optional: true },
   y: { kind: "number", optional: true },
   z: { kind: "number", optional: true },
-  orient: { kind: "number", optional: true, min: 0, max: 1 },
+  orient: { kind: "number", optional: true, static: true, min: 0, max: 1 },
   joint: { kind: "string", optional: true, static: true, enum: JOINT_VOCABULARY },
   axisX: { kind: "number", optional: true, static: true },
   axisY: { kind: "number", optional: true, static: true },
   axisZ: { kind: "number", optional: true, static: true },
-  minRotation: { kind: "number", optional: true, static: true, min: -180, max: 180 },
-  maxRotation: { kind: "number", optional: true, static: true, min: -180, max: 180 },
-  minTwist: { kind: "number", optional: true, static: true, min: -180, max: 180 },
-  maxTwist: { kind: "number", optional: true, static: true, min: -180, max: 180 },
-  maxSwing: { kind: "number", optional: true, static: true, min: 0, max: 180 },
+  minRotation: {
+    kind: "number",
+    optional: true,
+    static: true,
+    min: LIMIT_FLOOR,
+    max: LIMIT_CEILING,
+  },
+  maxRotation: {
+    kind: "number",
+    optional: true,
+    static: true,
+    min: LIMIT_FLOOR,
+    max: LIMIT_CEILING,
+  },
+  minTwist: {
+    kind: "number",
+    optional: true,
+    static: true,
+    min: LIMIT_FLOOR,
+    max: LIMIT_CEILING,
+  },
+  maxTwist: {
+    kind: "number",
+    optional: true,
+    static: true,
+    min: LIMIT_FLOOR,
+    max: LIMIT_CEILING,
+  },
+  maxSwing: { kind: "number", optional: true, static: true, min: 0, max: LIMIT_CEILING },
 } as const;
 
 /**
@@ -224,6 +260,8 @@ export function slotSpec(spec: ValueSpec): ValueSpec {
       };
     case "record":
       return { ...spec, fields: withoutStatic(spec.fields) };
+    default:
+      return unreachable(spec);
   }
 }
 
