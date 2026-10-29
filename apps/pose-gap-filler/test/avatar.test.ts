@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { selectRecord } from "@motion5/core/plugin-api";
 import { Group, Vector3 } from "three";
 import { createAvatarScene, extremityOrientation, requireUniformScale } from "../src/view/avatar";
 import { createGapPipeline } from "../src/filler/pipeline";
@@ -240,10 +241,10 @@ describe("flat reconstructed avatar", () => {
       const ids = limbTracks("left-arm"),
         readPole = () => {
           const patch = loaded.get(poseNodeId(ids.pole))!;
-          return patch.status === "ready"
-            ? ["x", "y", "z"].map(
-                (key) => (patch.outputs.values as Record<string, unknown>)[key] as number,
-              )
+          if (patch.status !== "ready") return [];
+          const picked = selectRecord(patch.outputs.values);
+          return picked.kind === "record"
+            ? ["x", "y", "z"].map((key) => Number(picked.values[key]))
             : [];
         };
       const held = sub(readPole(), points["left-shoulder"]);

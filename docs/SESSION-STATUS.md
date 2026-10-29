@@ -6,19 +6,21 @@ states a phase; `packages/core/test/unit/scripts/session-status-shape.test.ts` e
 byte ceiling.
 
 - **Captured:** 2026-10-29, Asia/Jakarta.
-- **Read against:** `refactor/v5-identified-tables` after Slice 10 rig retirement and Phase 5 closeout.
+- **Read against:** `refactor/v5-identified-tables` after the consumer-migration gate.
 
 ## Now
 
-- **Aggregate kinematics pipeline complete:** 2D/3D IK and FK consume identified tables and records
-  through single-source slots; FK publishes complete pose tables; Three.js and pose-gap-filler select
-  rows by id; rig plugins, `readRigValues` and hidden solver fan-in are deleted. All 73 Phase 5
-  pending suites retired; 4 Phase 6 and 2 Phase 7 pending entries remain.
+- **Aggregate consumer migration complete:** one core selector owns record and row selection; React
+  exposes `rowPatchSource` over that selector with one cached snapshot per publication; DOM and
+  Three adapters stay record-only while callers apply selected cells; both playground rigs author
+  body and goals tables and read solver rows plus `inspect`; the react-demo suite runs its real
+  walker project. Four consumer-migration ledger entries retired, the two removal entries remain.
 
 ## Next in line
 
-- **Phase 6 consumer migration:** migrate Three.js and React consumers to generated tracks and named
-  outputs.
+- **Remove superseded paths:** delete the grouped plugin registry and compose surface, the grouped
+  keyframe readers, the graph output-edge merge machinery and the legacy plugin layer, then
+  reconcile docs, rules, exports and this status.
 
 ## Open, and not scheduled
 

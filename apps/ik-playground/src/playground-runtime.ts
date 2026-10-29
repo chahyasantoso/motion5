@@ -21,7 +21,7 @@ import { IK3D_PERSPECTIVE, ik3dPlaygroundMotion } from "./ik3d-playground-projec
  *
  * Composed as a definition rather than grown at runtime, because `addMotion` accepts only a Motion
  * with empty tracks and the 3D chain is a whole authored rig. The perspective is the project's, as
- * `validate-v5.ts` requires of any project carrying 3D keyframes, and it moves no 2D byte.
+ * `validate-v5.ts` requires of any project carrying 3D tracks, and it moves no 2D byte.
  */
 export const playgroundProject: ProjectDefinition = {
   ...ikPlaygroundProject,

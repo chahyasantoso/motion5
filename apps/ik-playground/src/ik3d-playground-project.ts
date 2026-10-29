@@ -23,7 +23,7 @@ export const IK3D_NODE_ID = (trackId: string): string => `${IK3D_MOTION_ID}/${tr
 /**
  * The box the rig is authored into and the viewer distance it is seen from, in the pixels its
  * world frames publish. `perspective` is also the project perspective `validate-v5.ts` requires of
- * a project carrying 3D keyframes: one number for the document, the CSS stage and the three.js
+ * a project carrying 3D tracks: one number for the document, the CSS stage and the three.js
  * camera.
  */
 export const IK3D_VIEW = { width: 360, height: 300, perspective: 720 } as const;
