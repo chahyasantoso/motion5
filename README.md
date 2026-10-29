@@ -16,7 +16,7 @@ motion5 is a renderer-neutral, transactional dataflow animation runtime. It eval
 
 Timeline engines are good at answering "what is this value at progress 0.42?" They are much less good at answering "what is the value of this thing when it depends on three other animated things, one of which failed, one of which was unmounted, and all of which changed during the same tick?"
 
-motion5 treats those dependencies as a first-class graph. A project is loaded, validated, normalized into qualified node ids, evaluated in canonical topological order, and published as one immutable batch per clock tick. Consumers render the batch. They do not traverse the graph, call `Track.compose()`, or inspect runtime internals.
+motion5 treats those dependencies as a first-class graph. A project is loaded, validated, normalized into qualified node ids, evaluated in canonical topological order, and published as one immutable batch per clock tick. Consumers render the batch. They do not traverse the graph, compose a track themselves, or inspect runtime internals.
 
 ## What is shipped
 
@@ -25,7 +25,7 @@ motion5 treats those dependencies as a first-class graph. A project is loaded, v
 - immutable, revisioned, batched patch publication, with a terminal `destroyed` patch on eviction;
 - input and output observation publication with deterministic ordering, over a prefix-free edge identity;
 - explicit attach/detach membership gating;
-- authored keyframe compilation and plugin resolution from authored keys, with `Engine` as the single owner of compiled Tracks;
+- identified table and record compilation with an explicit `PluginCatalog`, with `Engine` as the single owner of compiled tracks;
 - real trigger drivers for `time`, `scroll`, and `manual`, with no fallback and one validator for trigger progress;
 - runtime motion and track mutation through capability handles, resolved and seeded before commit;
 - target-aware DOM patch application with diffing and key removal, plus a React `usePatch` hook;

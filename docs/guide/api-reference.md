@@ -65,53 +65,42 @@ A `TrackHandle` carries `id`, `live`, `definition`, `input`, `requires`, `writeV
 
 `live` is a boolean that never throws. Every other member throws `StaleTrackHandleError` once the token the handle captured is no longer current, so one condition has one failure contract across the whole surface. That error is a runtime export rather than a type, because a caller cannot `instanceof` a type it cannot name: it extends `TypeError`, keeps the message the `track` getter already threw, and carries a stable `ruleId` of `stale-track-handle` beside the `nodeId` it refused. Both it and `TrackHandle` are declared once, in the contract layer, and named from there by the runtime and by the package entry. See ADR-056.
 
-**Schema and validation.** `AUTHORED_SCHEMA_VERSION`, `SUPPORTED_TRIGGER_TYPES`, `DIAGNOSTIC_SEVERITIES`, `validateV5`, `validateTrackDefinition`, `validateMotionTrigger`, `resolveTriggerDefinition`, `migrateV4ToV5`, `parseGolden`, and `serializeGolden`.
+**Schema and validation.** `AUTHORED_SCHEMA_VERSION`, `SUPPORTED_TRIGGER_TYPES`, `DIAGNOSTIC_SEVERITIES`, `validateV5`, `validateTrackDefinition`, `validateMotionTrigger`, `resolveTriggerDefinition`, `parseGolden`, and `serializeGolden`.
 
 `validateV5` returns a discriminated `ValidationResult`: `kind: "accepted"` carries the frozen
 `ProjectDefinition`, while `kind: "refused"` carries at least one `Diagnostic` and no value. Graph
 reference and cycle diagnostics are owned by graph construction and are run by the engine load
 use-case after schema validation.
 
-`validateV5(input, capabilities?)` accepts `PluginCapabilities`, which `PluginRegistry` implements.
+`validateV5(input, capabilities?)` accepts `PluginCapabilities`, which `PluginCatalog` implements.
 Without the port it does not judge plugin-dependent chain, pole, joint, limit, goal-weight or
-dead-orientation rules. Pass the registry to obtain those checks; Engine does so automatically.
-General schema, references, duplicate edges, cycles and solver topology are always validated.
+dead-orientation rules. Pass the catalog to obtain those checks; Engine does so automatically.
 
-`migrateV4ToV5` returns the same shape with `MigrationDiagnostic`; narrow on `kind` before reading
-the migrated value.
+There is no migration entry point. A v4 or grouped document must be rewritten to this contract; a
+retained grouped member is refused by name as `track-legacy-field`.
 
-**Types.** `ProjectDefinition`, `MotionDefinition`, `TrackDefinition`, `ObservationDefinition`, `AuthoredProperty`, `AuthoredStop`, `TriggerDefinition` and its three members, `TriggerType`, `TriggerSignal`, `Patch`, `LivePatch`, `PatchBatch`, `PatchStatus`, `PatchListener`, `Diagnostic`, `DiagnosticSeverity`, `MigrationDiagnostic`, `MigrationResult`, `ValidationResult`, `TrackValidationResult`, `GoldenFixture`, and `GoldenValidationFixture`.
+**Types.** `ProjectDefinition`, `MotionDefinition`, `TrackDefinition`, `AuthoredProperty`,
+`AuthoredStop`, `TriggerDefinition` and its three members, `TriggerType`, `TriggerSignal`, `Patch`,
+`LivePatch`, `PatchBatch`, `PatchStatus`, `PatchListener`, `Diagnostic`, `DiagnosticSeverity`,
+`ValidationResult`, `TrackValidationResult`, `GoldenFixture`, and `GoldenValidationFixture`. Value
+types are named through `@motion5/core/plugin-api`.
 
-An `ObservationDefinition` carries `source` and nothing else. There is no `target`, no `role`, and no `projection`, and an authored one of each is rejected with `observation-target-unsupported`, `observation-role-unsupported`, or `observation-projection-unsupported`. `InputProjection` is gone with the primitive it described. See ADR-046 and ADR-047.
+**Plugins.** `PluginCatalog`, `PluginAdmissionError`, and the types `PluginDefinition`,
+`DependencySpec`, `EvaluationContext`, `Outputs`, `ResolvedInput` and `ValueSpec` from
+`@motion5/core/plugin-api`.
 
-**Plugins.** `PluginRegistry`, and the types `PluginDefinition`, `PluginStage` and `ResolvedPlugins`.
-
-`PluginRegistry.registerAll(definitions)` admits an array atomically in its authored order: a
-refusal stores none of the batch and preserves existing plugins. `register(definition)` uses the
-same admission path for one member. An empty array is a no-op; non-arrays throw
-`TypeError("Plugin definitions must be an array.")`. Definitions are validated and stored from one
-own-property snapshot, so an inherited-only `compose` is refused. Registration from a getter during
-admission is refused as `TypeError("Plugin registration is already in progress.")`.
-No imports or asynchronous work happen in either method. See
+`PluginCatalog.registerAll(definitions)` admits every definition or none: a refusal stores nothing
+and preserves existing plugins. `register(definition)` uses the same admission path for one member.
+Definitions are validated from one own-property snapshot and frozen before storage; a duplicate id,
+unknown member, reserved name or malformed value spec refuses under its named rule.
+`EngineOptions.plugins` accepts this catalog only. See
 [ADR-134](../ADR-134-atomic-plugin-registration.md).
 
-`PluginDefinition.solverChain?: SolverChainShape` declares `{ kind: "any" }` or
-`{ kind: "tree", memberPlugin }`; omission means `any` for an admitted plugin. A tree member name
-must be non-empty, contain no colon and differ from the solver name. Admission snapshots and
-freezes the shape, derives `pole` from `requirements.pole` and `joint` from the `"joint"` key claim.
-If the explicit keys do not claim it, `claimsKey("joint")` is asked once at admission. Compose and
-contribution hooks never run then.
-
-`PluginRegistry.capabilityOf(name)` returns a frozen `PluginCapability` or `undefined` for an
-unknown name. `dedicatedMembers()` returns a sorted frozen array derived from every admitted tree,
-even when that solver is unused in a project. These members cannot appear under an `any` solver.
-The Engine and its graph builders retain the registry by reference, so awaited loader additions
-are visible on the next compile. The three types are nameable from core and plugin-api. See
-[ADR-136](../ADR-136-registry-owned-solver-capabilities.md).
-
-A `PluginDefinition` may declare `requirements`, a record of optional input slots owned by that plugin. Its `compose` receives authored/interpolated values, the track's progress, and that plugin's scoped inputs. `ResolvedPlugins.requirements` reports the bindings resolved for a track.
-
-`PluginDefinition.stage` is optional and closed to `PluginStage`, which is `"prepare"` or `"compose"`. An omitted stage composes, and a plugin that declares `contribute` must name `"prepare"`. It is a union rather than a `string` so that a third stage fails `typecheck` at every reader that owes it a decision instead of silently taking the compose rank; registration still refuses an unknown stage at run time, because a caller arriving from JavaScript or from a separately built module is not held to the declaration. That refusal is by identity, so a value that merely coerces to a member, an array or a boxed string, is refused as well rather than admitted and read later. See ADR-092.
+A `PluginDefinition` declares `id`, `inputs.values`, optional `inputs.requires`, named `outputs`, an
+optional `validate` and one `transform`. A dependency slot's `DependencySpec` declares the output
+specs it consumes, whether the slot is optional, and whether it binds one source or a map of member
+keys. A plugin's `transform` receives the resolved input and an `EvaluationContext` carrying the node
+id and progress, and returns named outputs.
 
 **Ports.** `createManualClock`, `createMicrotaskScheduler`, `createManualTriggerPort`,
 `createDefaultTriggerFactory`, `createTriggerFactory`, and the helper `acceptsExternalSignal`,
@@ -147,41 +136,42 @@ Optional implementations for the composition root.
 
 ## @motion5/plugins/transform, /fk, and /ik
 
-`transformPlugin` claims `x`, `y`, and `rotation` and passes them through.
+Each public subpath exports exactly one identified definition named for the path.
 
-`fkPlugin` is a compose-stage forward-kinematics plugin. It claims `x`, `y`, `length`, `rotation`, `weight`, `minRotation`, `maxRotation`, and `influence`, declares the `base` and optional `solver` requirements, reads `inputs.base`, and produces `x`, `y`, and world-space `rotation`. `length` and `rotation` are the core geometry keys; the other claimed keys are the pivot, blend, constraint, and goal-influence vocabulary consumed by the rig. The authored `rotation` is relative to the parent and the composed one is world-space, so the local value is replaced rather than published beside it. `composeWorld(parent, local)` is exported alongside it.
+`transformPlugin` takes a record `{ dx, dy }` and a `data` table, and returns the same rows shifted.
 
-Registering both is the rig case: both claim `rotation`, so the author names the owner explicitly in
-the group. Author a bone as `fk: { values: { length, rotation }, requires: { base: "walk/pelvis" } }`
-and a root as `transform: { values: { x, y, rotation } }`. An ungrouped `rotation` is refused as
-`keyframes-ungrouped-key`; the parent's natural `x`, `y`, and `rotation` values arrive inside
-`inputs.base`, no `parentX`, `parentY`, or `parentRotation` is needed, and there is no projection
-primitive left with which to invent one. See ADR-043, ADR-044, and ADR-047.
+`fkPlugin` takes a record `values` (empty), and binds three required slots: a `chain` body table, a
+`solved` table and a `base` record. It publishes `values` as a pose table, one row per body member,
+with each row's world frame. Body rows carry `parentId?`, `length`, `rotation`, `weight?`, `x?`, `y?`
+and optional joint-limit static fields.
 
-`ikPlugin` is the compose-stage inverse-kinematics plugin. It claims `flip`, `bend`, and `inspect`, declares `root`, scalar `target`, and dict `targets` requirements, and produces `rotations` plus opt-in `inspection`. Register it from `@motion5/plugins/ik`; the package declares this subpath alongside `/fk` and `/transform`. `rotations` contains local member angles, while `inspection` appears only when the solver authors `inspect: true`. See the [inverse kinematics guide](./inverse-kinematics.md) for the DOM-compatible coordinate convention, scale policy, lifecycle, and executable examples.
+`ikPlugin` takes a record `values` with optional `flip` and `inspect`, and binds `chain`, `goals` and
+`base`. It publishes `values` as one solved row per member (`rotation`, optional `residual` and
+`atBound`) and, when `inspect` is authored, an `inspect` record.
 
-## @motion5/plugins/transform3d, /fk3d, and /ik3d
+Author a 2D chain as one body table and one goals table:
 
-The 3D plugins use world-frame keys `x`, `y`, `z`, `rotation`, `rotationX`, and `rotationY`.
-Angles are in degrees and use the CSS `Rz · Rx · Ry` convention. Author 3D keyframes inside the
-named plugin groups; the [3D inverse-kinematics guide](./inverse-kinematics-3d.md) has executable
-projects and the coordinate, lifecycle, and renderer details.
+```js
+{ id: "body", input: { values: [
+  { id: "upper", cells: { length: 40, rotation: 90, weight: 1 } },
+  { id: "fore", cells: { parentId: "upper", length: 36, rotation: 0 } },
+] } }
+{ id: "goals", input: { values: [
+  { id: "goal", cells: { memberId: "fore", x: 60, y: 20 } },
+] } }
+{ id: "solve", plugin: "ik", input: {
+  values: { inspect: true },
+  requires: { chain: "body", goals: "goals", base: "root" },
+} }
+{ id: "pose", plugin: "fk", input: {
+  values: {},
+  requires: { chain: "body", solved: "solve", base: "root" },
+} }
+```
 
-`transform3dPlugin` claims and passes through `x`, `y`, `z`, `rotation`, `rotationX`, and
-`rotationY`. It declares no requirements and no additional outputs, and is the root/goal/pole
-frame plugin.
-
-`fk3dPlugin` claims `length`, `rotation`, `rotationX`, `rotationY`, `weight`, `x`, `y`, `z`,
-`joint`, `axisX`, `axisY`, `axisZ`, `minRotation`, `maxRotation`, `maxSwing`, `minTwist`,
-`maxTwist`, `influence`, and `orient`. It declares `base` and `solver` requirements and outputs the
-world-frame keys `x`, `y`, `z`, `rotation`, `rotationX`, and `rotationY` at each member's tip.
-`rotation`, `rotationX`, and `rotationY` are local rest orientation when authored and world
-orientation when composed; `weight` blends a solved orientation toward that rest orientation.
-
-`ik3dPlugin` claims the static `inspect` key. It declares `root`, scalar `target`, dict-valued
-`targets`, and optional `pole` requirements, and outputs `rotations3d` plus opt-in `inspection`.
-It solves chains and trees of `fk3d` members; `root` and goals provide world frames, while `pole`
-selects the bend side when one is bound.
+`fk3dPlugin` and `ik3dPlugin` use the same aggregate shape in three dimensions: body rows carry
+`rotation`, `rotationX`, `rotationY`, and goals rows address a leaf by `memberId` with `x`, `y`, `z`.
+`transform3dPlugin` shifts a 3D point table.
 
 ## @motion5/core/testing
 
@@ -193,20 +183,18 @@ These are the implementations the core suite runs the port contract suite agains
 
 A private channel between core and React: the `Patch`, `LivePatch`, `PatchListener`, `PatchSource`, `RenderMetadata`, and `RenderMetadataSource` types, plus the `liveOrAbsent` function. The metadata half is declared separately and required only by the binding that renders, so a consumer that reads values keeps the two-member source contract. `PatchSource.get` answers `LivePatch | undefined` while `subscribeNode` delivers every variant, and `liveOrAbsent` is the one function that converts between them, so an implementor discharges that obligation with a call rather than re-deriving which variants are live.
 
-## @motion5/plugins/catalog and /loader
+## @motion5/plugins/loader
 
-`builtinCatalog` is an approved `PluginCatalog`: a `ReadonlyMap<string, PluginDescriptor>` of
-zero-configuration built-ins in historical registration order. Each descriptor declares
-`load(): Promise<PluginDefinition>` and optional `dependencies`. The catalog imports definitions
-only dynamically. Third-party definitions are approved explicitly with
-`new Map([...builtinCatalog, [name, descriptor]])`; authored strings never become import paths.
+`createPluginLoader(catalog)` takes a `ReadonlyMap<string, PluginDescriptor>` of approved
+descriptors and returns a `PluginLoader` with
+`ensure(registry, demand): Promise<EnsuredDemand>`. Each descriptor declares
+`load(): Promise<PluginDefinition>` and optional `dependencies`. A `PluginDemand` is either
+`{ kind: "project", project }` or `{ kind: "tracks", tracks }`; the loader reads the plugin ids those
+tracks name.
 
-`createPluginLoader(catalog)` snapshots that allowlist and returns a `PluginLoader` with
-`ensure(registry, demand): Promise<EnsuredDemand>`. A `PluginDemand` is either
-`{ kind: "project", project }` or `{ kind: "tracks", tracks }`. Ensure validates demand and plans
-its dependency closure before importing, then registers only missing definitions in catalog
-order with one synchronous atomic `registerAll`. The Engine retains that same registry by
-reference, so ensure also works after loading a project.
+Ensure validates demand and plans its dependency closure before importing, then registers only the
+missing definitions in one atomic `registerAll` on the caller's `PluginCatalog`. The Engine retains
+that same catalog by reference, so ensure also works after loading a project.
 
 `EnsuredDemand` is `{ kind: "ensured", added }` or `{ kind: "refused", failure }`.
 `PluginLoadFailure` has six variants: `invalid-demand` carries diagnostics, `unknown-plugin`
@@ -214,55 +202,43 @@ carries name and authored path, `dependency-cycle` carries its cycle, `import-fa
 name and cause, `identity-mismatch` carries name and received identity, and `registration-refused`
 carries cause. `describeLoadFailure(failure)` owns their wording;
 `ensuredOrThrow(result)` returns added names or throws an Error preserving the available cause.
-These types, `PluginDescriptor` and `PluginCatalog` are exported from `/loader`.
 See [ADR-135](../ADR-135-approved-plugin-loader.md).
 
-Imports are cached across registries by a loader, but admission always targets the caller's
-registry. Failed imports are evicted for retry; JavaScript's own failed-module cache is not bypassed.
-Ensure rechecks registered names after its final await, so overlapping calls are idempotent.
-An already-registered authored root needs no catalog entry, while declared catalog dependencies
-must still be approved. Native imports are not abortable: a departed caller ignores the result
-and disposes any runtime it receives late.
+Imports are cached across catalogs by a loader, but admission always targets the caller's catalog.
+Failed imports are evicted for retry. Ensure rechecks registered names after its final await, so
+overlapping calls are idempotent. A plugin already registered needs no catalog entry, while declared
+catalog dependencies must still be approved.
 
 ### Ensure before a synchronous live edit
 
-Keep one registry per Engine. Await ensure outside the transaction, then call the synchronous
-edit. Neither `addTrack` nor `edit` imports plugins; an unseen group is still refused without
-changing the graph. A refused ensure registers nothing and is not permission to apply the edit.
+Keep one catalog per Engine. Await ensure outside the transaction, then call the synchronous edit.
+Neither `addTrack` nor `edit` imports plugins; an unseen id is refused without changing the graph.
 
 ```ts
-import { Engine, PluginRegistry, type TrackDefinition } from "@motion5/core";
-import { builtinCatalog } from "@motion5/plugins/catalog";
+import { Engine, PluginCatalog, type TrackDefinition } from "@motion5/core";
+import { fkPlugin } from "@motion5/plugins/fk";
 import { createPluginLoader, ensuredOrThrow } from "@motion5/plugins/loader";
 
-const plugins = new PluginRegistry();
-const loader = createPluginLoader(builtinCatalog);
-ensuredOrThrow(await loader.ensure(plugins, { kind: "project", project: definition }));
+const approved = new Map([["fk", { load: async () => fkPlugin }]]);
+const plugins = new PluginCatalog();
+ensuredOrThrow(await createPluginLoader(approved).ensure(plugins, { kind: "project", project }));
 const project = new Engine({ clock, interpolator, scheduler, plugins }).load(definition);
 
 const tracks: readonly TrackDefinition[] = [
   {
     id: "bone",
-    keyframes: {
-      fk: { values: { length: 20, rotation: 0 }, requires: { base: "~/root" } },
+    plugin: "fk",
+    input: {
+      values: { length: 20, rotation: 0 },
+      requires: { chain: "body", solved: "solve", base: "~/root" },
     },
   },
 ];
-// The loaded definition already supplies the free transform track "~/root".
-ensuredOrThrow(await loader.ensure(plugins, { kind: "tracks", tracks }));
+ensuredOrThrow(await createPluginLoader(approved).ensure(plugins, { kind: "tracks", tracks }));
 project.edit((edit) => {
   for (const track of tracks) edit.addTrack(track);
 });
 ```
-
-For a single track the same preflight precedes `project.addTrack(track)`. A recipe is never async:
-it stages and commits synchronously. The IK playground uses this lazy composition-root policy;
-`loadPlayground` resolves only after load and mount. `startPlaygroundSession` is its one lifecycle
-owner, a `loading | active | ended` union: stop is idempotent and releases weight subscription,
-project, then clock; a runtime arriving after stop is disposed without publishing; a failure while
-current releases once and becomes the App's `failed` view (`TH-215` to `TH-224`). React demo stays synchronous so GSAP
-measures committed DOM in `useLayoutEffect`; pose gap filler's synchronous rig loaders also remain
-first-class.
 
 ## @motion5/plugins/pose-classify
 

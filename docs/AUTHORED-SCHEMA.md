@@ -1,6 +1,7 @@
 # Authored schema v5
 
-This document is the normative input contract. The runtime accepts v5 only. It does not accept v4 as an alias and does not silently migrate input.
+This document is the normative input contract. The runtime accepts v5 only. It does not accept v4,
+grouped `keyframes`, `observes`, or any silently migrated input.
 
 ## Minimal project
 
@@ -22,20 +23,17 @@ const project = {
   motions: [
     {
       id: "hero",
-      trigger: { type: "time", duration: 1000 },
-      stagger: 0.08,
+      trigger: { type: "time", duration: 1000, repeat: -1 },
       tracks: [
         {
-          id: "title",
-          duration: 1,
-          keyframes: {
-            style: {
-              values: {
-                opacity: [
-                  { p: 0, v: 0 },
-                  { p: 1, v: 1 },
-                ],
-              },
+          id: "card",
+          input: {
+            values: {
+              x: [
+                { p: 0, v: 0 },
+                { p: 1, v: 200 },
+              ],
+              opacity: 1,
             },
           },
         },
@@ -45,346 +43,145 @@ const project = {
   freeTracks: [
     {
       id: "cursor",
-      duration: 1,
-      keyframes: {
-        transform: {
-          values: {
-            x: [
-              { p: 0, v: 0 },
-              { p: 1, v: 100 },
-            ],
-          },
-        },
-      },
+      schema: { kind: "record", fields: { x: { kind: "number" } } },
+      input: { values: { x: 40 } },
     },
   ],
 };
 ```
 
-## Top-level fields
+## Project
 
-- **`schemaVersion`**: required number `5`.
-- **`projectId`**: optional non-empty informational string.
-- **`perspective`**: optional finite number greater than zero. Core preserves it but does not animate or publish it.
-- **`motions`**: required array, possibly empty.
-- **`freeTracks`**: optional array, defaulting to empty. Free tracks have no trigger or automatic schedule.
+- `schemaVersion` must be `5`.
+- `projectId` is optional and is not a runtime identity.
+- `perspective` is required when any track carries 3D data.
+- `motions` is the ordered list of Motions; `freeTracks` is the optional list of tracks no Motion
+  owns.
 
-There is no `templates`. It promised reusable keyframe bundles, nothing ever read one, and the runtime's project snapshot carried it through every graph rebuild untouched, so it is removed and an authored one is refused by name as `project-templates-unsupported`. A field with no consumer is removed and then refused rather than left declared, and a documented feature that does not exist is the one documentation failure ADR-053 calls worse than none.
+## Motion and triggers
 
-## Motion fields
+A Motion carries `id`, `trigger`, `tracks`, and an optional `stagger`. A stagger is a finite,
+non-negative number and applies to the Motion's tracks in order.
 
-A motion has a unique `id`, a `trigger`, and a `tracks` array. Motion owns schedule and playback. A motion track id is local in authored input and becomes `motionId/trackId` at load.
+A trigger is one of these closed shapes:
 
-## Trigger
-
-The trigger type is `scroll`, `time`, or `manual`, and the type is enforced. No type falls back to manual and no trigger field is accepted and then ignored. See ADR-033.
-
-- `{ type: "manual" }` accepts progress through `signal(motionId, { type, progress })` and also advances on the project clock.
-- `{ type: "time", duration }` requires a finite positive duration. `repeat` counts passes after the initial cycle, `-1` is infinite, and `yoyo` reverses odd cycles when a repeating `repeat` is present. See ADR-040.
-- `{ type: "scroll", source }` is push-driven. `source` is a serializable key resolved by an injected application-owned registry.
-
-Trigger errors include `trigger-shape`, `trigger-time-duration`, `trigger-time-autoplay-unsupported`, `trigger-time-repeat-shape`, `trigger-time-yoyo-shape`, `trigger-time-yoyo-requires-repeat`, `trigger-scroll-source`, and `trigger-driver-unavailable`.
-
-## Track fields
-
-A track has a unique local `id`, optional `duration`, optional keyframes, and optional generic `observes` output edges. Plugins are resolved from authored keyframe keys. The legacy `use` field is rejected with `plugin-contribution-unsupported-entry`. Track ids may not contain `/`; motion ids may not contain `/` or equal `~`.
-
-## Keyframes
-
-Every top-level keyframe entry is a plugin-named group; properties are authored only inside its `values` section.
-
-### A group contains the stops, or a static value
-
-There are exactly two ways to author a leaf, and no wrapper around either:
-
-```text
-style: {
-  values: {
-    opacity: [ { p: 0, v: 0 }, { p: 1, v: 1 } ], // animated: the array is the value
-    length: 62,                                   // static: never changes, never interpolated
-  },
-}
+```js
+{ type: "manual" }
+{ type: "scroll", source?: "scroll-key" }
+{ type: "time", duration: 1000, autoplay?: true, repeat?: -1, yoyo?: true }
 ```
 
-A stop is `{ p, v }` with an optional `ease`, where `p` is a finite position between 0 and 1. Positions must be monotonic and unique. A sequence that does not define `p=0` or `p=1` loads with a warning.
+`duration` is milliseconds and must be finite and greater than zero. `repeat` counts passes after the
+initial one: `0` is one pass, `-1` is infinite, and any other negative or non-integer value is
+refused. `yoyo` requires a repeat that actually repeats.
 
-A static value is a finite number, a string, or a boolean. It is not sugar for two identical stops: a static leaf never enters the interpolator, so it produces no percent-map entry, no tween, and no contribution to the merged timeline. It is published at every progress from the compiled initial values. That also means a static value has nowhere to put an `ease`, which is the point: a hold with a meaningless easing curve is unrepresentable rather than rejected.
+## Track
 
-The static domain stops at scalars deliberately. `null` and `undefined` are refused because omitting the key is already how you author nothing, a non-finite number is refused for the same reason a stop position must be finite, and an object is refused because that is what makes the retired wrapper diagnosable at all.
-
-The `{ stops: [...] }` wrapper is **retired**, and refused by name as `property-stops-wrapper`. It is not an accepted alias and it is never normalized: two authoring shapes would be two validation paths and two documentation paths. Drop the wrapper, keep the array inside the owning plugin group, and do not leave the leaf at the keyframes top level. See ADR-050 and ADR-121.
-
-### A group names the plugin that owns its leaves
-
-A group has exactly two members, both reserved by name: `values` holds the properties the named plugin claims, and `requires` holds the graph bindings that plugin owns. Grouping scopes ownership; it does not rename leaves:
-
-```text
-keyframes: {
-  style: {
-    values: {
-      opacity: [ ... ],
-    },
-  },
-  transform: {
-    values: {
-      x: [ ... ],
-      y: [ ... ],
-      rotation: [ ... ],
-    },
-  },
-  fk: {
-    values: {
-      length: 62,
-      rotation: [ ... ],
-    },
-    requires: { base: "walk/pelvis" },
-  },
-}
-```
-
-A leaf inside `values` is held to exactly the authored leaf rules, both forms included. There is no flat authored property form. A group name addresses a registered plugin and every leaf of its `values` section must be a key that plugin claims. The section is flattened to unprefixed leaves before interpolation and composition, and it is the only compiled value domain. Nesting is one level deep inside `values`. The `ik` group may author the static boolean `inspect` key to opt into the solver's `inspection` output (ADR-109); a malformed value is refused as `ik-inspect-malformed`, and a spelling under another group of a solver node as `ik-solver-key-misgrouped`.
-
-Because both section names are reserved, a group is recognised by the sections it names rather than by the shape of its leaves. That is what lets the registry-free contract layer tell a section from a property, report a typo'd section as `keyframes-unknown-section`, and refuse the pre-v5-final leaf form as `keyframes-missing-values-section` instead of as a property of an unknown shape. There is one authored group shape and no compatibility form. See ADR-049.
-
-Group detection is unaffected by the leaf forms. A bare array and a bare scalar both fail the group predicate before its section check runs, so neither can be misread as a group.
-
-Two shapes are deliberately legal and worth knowing. A group may author `requires` with no `values`, which is how a plugin joins composition to receive an upstream value without animating anything itself. And a leaf named `values` inside the section is an ordinary property, because the reservation is on section position rather than on the string everywhere.
-
-More than one plugin may claim the same key. `transformPlugin` claims `x`, `y`, and `rotation`, while `fkPlugin` claims `x`, `y`, `length`, `rotation`, `weight`, `minRotation`, `maxRotation`, and `influence`. Ownership is never inferred from an ungrouped spelling: a top-level `x`, `y`, or `rotation` is refused as `keyframes-ungrouped-key`, and the author names the intended owner by placing the leaf under `transform.values` or `fk.values`. The same explicit group spelling applies to keys with one claimant, so the authoring contract has one form.
-
-### Plugin-owned requirements
-
-A plugin may declare requirement slots in its definition:
-
-```ts
-const fkPlugin = {
-  name: "fk",
-  requirements: {
-    base: {},
-  },
-};
-```
-
-An author binds an optional slot in that plugin's group, beside its `values` section:
-
-```text
-keyframes: {
-  fk: {
-    values: {
-      length: 62,
-      rotation: [ ... ],
-    },
-    requires: {
-      base: "walk/pelvis",
-    },
-  },
-}
-```
-
-`requires` is metadata, not a keyframe. Flattening reads `values` and nothing else, so a binding creates no compiled property at all rather than being skipped on the way past. Omitting `requires`, or omitting one slot, creates no edge; the plugin owns its unbound behavior. Every configured slot must be declared by the named plugin, otherwise load fails with `plugin-unknown-requirement`.
-
-The graph derives one input edge per binding. Unknown sources, self-reference, duplicate edges, and cycles are rejected before mount. A requirement is part of edge identity, so two slots such as `base` and `destination` may intentionally bind the same source.
-
-A binding is the only way a value enters composition. A source bound to `fk.requires.base` arrives at the FK plugin as `inputs.base`, retaining the source's natural keys such as `x`, `y`, and `rotation`. It cannot overwrite the track's authored `values.rotation`: the two are separated by object scope rather than by renamed keys, and there is no flat input bag beside the scope for either of them to land in. See ADR-044 and ADR-047.
-
-A prepare-stage plugin's `contribute` hook derives a contribution from a property's stops, so a static leaf on a key such a plugin owns is refused with `plugin-contribution-static-unsupported`. There are no stops to contribute from, and an empty list would be a field accepted and then ignored.
-
-The contract layer owns section and binding shape, the plugin registry owns plugin and slot resolution, and graph construction owns topology. This keeps validation registry-independent and avoids duplicate normalization owners. See ADR-044 and ADR-049.
-
-#### A slot whose value is a dict of sources
-
-Most slots inside `requires` name one source id. A slot may take a dict instead: one source id per key you name. `ik`'s `targets` is the case that forced it, mapping a solver chain member's id to the node that member reaches toward, because a plugin cannot enumerate a slot family whose members the rig names rather than the plugin.
-
-The capability is declared rather than detected from the slot's name. A plugin marks the slot in its own definition:
-
-```ts
-const ikPlugin = {
-  name: "ik",
-  requirements: {
-    root: {},
-    target: {},
-    targets: { dict: true },
-  },
-};
-```
-
-So any plugin may declare one, and `targets` is an ordinary slot name with nothing reserved about it. A dict authored at a slot that declared none is `plugin-requirement-dict-unsupported`, and one source authored at a slot that declared one is `plugin-requirement-dict-required`. Both are refused, because a mismatch is silent in both directions: the first is a binding accepted and then ignored, and the second hands a plugin one node's values where it reads a keyed record. See ADR-052 and ADR-057.
-
-One authored dict, but one binding per entry. Each entry derives exactly one input edge, and the key it was authored under travels beside the slot as data rather than inside a formatted slot name, so every downstream owner sees an ordinary edge and two entries of one slot stay two distinct edges even when they name the same source. The values arrive at the plugin under the keys you wrote, as `inputs.<plugin>.<slot>.<key>`.
-
-### Inverse Kinematics (`ik` and `fk.requires.solver`)
-
-Inverse Kinematics computes joint rotations so a bone chain reaches toward one or more world goals:
-
-- **`ik` Plugin Group**: Declares configuration under `values` and topology under `requires`:
-  - `values.flip`: boolean (optional, default `false`) to mirror the joint bend angle (e.g. elbow/knee orientation). One `flip` serves the whole solve, including every limb of a branching chain. `values.bend` may instead be the static string `"positive"` or `"negative"`; positive is exactly `flip: true` and negative is `flip: false`, and authoring both is refused.
-  - `values.inspect`: static boolean (optional, default `false`) to opt into the solver's `inspection` output alongside `rotations`; it is not animated. Use `inspect: true` when residuals and quality are needed.
-  - `requires.root`: qualified ID of the world frame the chain hangs from. The root is never moved by the solve.
-  - `requires.target`: qualified ID of the world-space coordinate the chain's single leaf reaches toward.
-  - `requires.targets`: a dict of goals keyed by member id, for a chain with more than one leaf. Every leaf must be named once the dict is used at all.
-  - One of the two goal spellings is required. A solver with a root and members and no goal at all is `ik-solver-no-goal`, refused at load rather than left to a composition that has nothing to solve.
-- **`fk` Solver Binding**: A member bone binds `keyframes.fk.requires.solver` naming the solver
-  node. It authors `values.length`, a pivot offset `x` and `y` if the rig wants one, and optionally
-  `values.weight`, `values.minRotation`, `values.maxRotation`, and `values.influence`. The limits
-  are static finite degrees in `[-180, 180]`, default missing bounds to `-180` and `180`, and are
-  read by IK rather than FK. Both solves account for the pivot offset, so it is an ordinary authored
-  value on a member exactly as it is on any other bone. See ADR-054.
-- **`fk.values.influence`**: a static finite number greater than `0` that weights this member's
-  addressed goal when branches compromise over a shared member. It defaults to `1`; it is never
-  animated. The grouped spelling is in scope only under the group that bound the solver. `ik-influence-malformed` refuses
-  a non-static, non-finite, zero, negative, or otherwise malformed value;
-  `ik-influence-without-goal` refuses a spelling under a group that did not bind `solver` or a
-  member that no resolved goal addresses. A node with no solver is not narrowed by this rule because
-  load has no registry with which to distinguish a bystander plugin key. FK claims the key for
-  authoring but never reads it; IK reads it from the delivered member values. See ADR-110.
-- **`fk.values.length`**: a finite number; a non-finite one reads as `0`. A negative `length` is accepted rather than refused and means a segment with no extent, in `fk`'s composition and in both solves alike, because one owner (`segmentExtent`) answers for all of them. It is a runtime meaning rather than a load rule because a live write, an animated stop or an easing overshoot can make a length negative after load. See ADR-107 and issue #482.
-- **`fk.values.weight`**: how much of the solved rotation this bone composes with, per member rather than per solver, so a chain can stagger its reach: a shoulder that commits early while a wrist lags is two weights on two bones. It defaults to `1`, which is the unconditional override every rig had before the key existed, `0` is exactly the authored `rotation` with the solve discarded, and anything between blends along the shorter of the two arcs between them. Values outside `[0, 1]` are clamped rather than extrapolated, and a non-finite weight reads as `1`. Authoring `rotation` on a solver-bound member is legal exactly when a `weight` sits beside it in the same group, and refused as `ik-solved-rotation-dead` when it does not. A member that bound its solver under one plugin group and authored its `weight` under another is `ik-weight-without-solver`, because the solve cannot reach a key outside the group that asked for it. See ADR-055.
-- **`fk3d.values`**: `length` as for `fk`; `rotation`, `rotationX` and `rotationY`, the bone's local rest orientation relative to its parent in the CSS `Rz * Rx * Ry` convention, each defaulting to `0` with a non-finite angle reading as `0`; and `weight`, per member, with exactly `fk.values.weight`'s default, clamp and non-finite reading. With no solve the rest orientation composes and `weight` is never read; with one, `weight` blends the rest orientation toward the solved one along the shorter rotation arc, `0` and `1` being rest and solved exactly. Any orientation key on a solver-bound `fk3d` group with no `weight` beside it is `ik-solved-rotation-dead` when the chain takes the closed form, a parent and its one child; under every other `ik3d` chain the tree solve reconstructs each member's roll from its rest orientation, so the rest is live input at any weight and loads (ADR-122). `x`, `y` and `z` are the pivot offset in the parent's rotated frame, each defaulting to `0` with a non-finite read as `0`; they are claimed by `fk3d` and composed before the local orientation. See ADR-117. `joint` is the member's 3D joint limit, read by `ik3d` and never by composition: a static `"free"` (the default), `"hinge"`, `"cone"` or `"swing-twist"`. A hinge turns about `axisX`/`axisY`/`axisZ` in the parent's solved frame (default +z, any finite nonzero direction) through `minRotation`/`maxRotation` in `[-180, 180]`; a cone keeps the bone within `maxSwing` degrees in `[0, 180]` of its parent's +x and requires it; a swing-twist is a cone plus `minTwist`/`maxTwist` in `[-180, 180]` about the bone's own +x. Every limit bounds the local orientation relative to the parent, not a turn from rest. A bound the declared kind does not read is `ik-joint-key-unused`; a bad kind, axis or missing `maxSwing` is `ik-joint-malformed`; a bad or inverted angle bound is `ik-limit-malformed` or `ik-limit-empty`; a joint key anywhere else on a 3D member is `ik-limit-without-solver`. Any constraining joint sends the chain to 3D FABRIK, two members included. See ADR-123. `influence` is `fk.values.influence` on an addressed `fk3d` leaf: a static finite number greater than `0`, read by the tree solve through the same branch pulls, doing nothing to a chain with one goal. `orient` is a static finite number in `[0, 1]`, default absent, on an addressed `fk3d` leaf: after the position solve the leaf turns that fraction of the way toward its goal frame's world orientation (the goal's `rotation`, `rotationX` and `rotationY`), by its roll about its own +x when it has length and wholly when its length is `0`, so its tip never moves; the joint still limits the result, and residuals and quality describe the position solve. `0` publishes the position solve itself. A malformed or animated value is `ik-influence-malformed` or `ik-orient-malformed`; either key under a group that did not bind the member's solver, on a member no goal addresses, or under `fk3d` on a bone that bound no solver is `ik-influence-without-goal` or `ik-orient-without-goal`. See ADR-124.
-- **`ik3d.values.inspect`**: a static boolean, default `false`, exactly as `ik.values.inspect`. `true` adds the 2D `inspection` record `{ kind, residual, iterations, atBound, residuals }` beside `rotations3d`; a two-bone chain's closed form reports only `reached`, `too-far`, `too-near` or `coincident`, with zero iterations and an empty `atBound`, and every other chain's 3D FABRIK reports `converged`, `iteration-cap`, `stalled`, `conflicted` or, when a joint limit holds a goal off, `limited` with `atBound` naming the members resting on a bound (ADR-123). `ik-inspect-malformed` and `ik-solver-key-misgrouped` apply unchanged. See ADR-120.
-- **`ik3d.requires.pole`**: optional. The world-space point the chain's elbow bends toward, bound on the solver node in the same `ik3d` group that binds `root`; its `x`, `y` and `z` are read as a goal's are, a non-finite coordinate reading as `0`. The bend plane is the plane through the effective root pivot, the goal and the pole, with the elbow on the pole's side. Unbound, or collinear with the pivot and the goal within `1e-9` of the pole's distance from the pivot, the ADR-114 root-local +z rule applies byte for byte. On a chain longer than two members or with branches, the pole bends the plane each root-to-leaf path is seeded in, which the iterative solve then leaves wherever the goals pull it (ADR-122). A pole under a group that bound no `root` is `ik-pole-without-chain`; over a chain whose every member hangs from the root, which has no joint to bend, it is `ik-pole-without-bend`; under a plugin that declares no pole slot it is `plugin-unknown-requirement`. See ADR-118 and ADR-122.
-
-```text
-// Solver node, single goal:
+```js
 {
-  id: "arm-solve",
-  keyframes: {
-    ik: {
-      values: { flip: false },
-      requires: { root: "walk/shoulder", target: "walk/hand-target" },
-    },
+  id: "arm",
+  plugin: "fk",
+  input: {
+    values: { length: 40, rotation: 10 },
+    requires: { chain: "body", solved: "solver", base: "root" },
+    schema: undefined,
   },
+  duration: 600,
 }
+```
 
-// Member bones:
+- `id` is a non-empty unqualified id: no `/` and no `:`.
+- `plugin` is optional. It names one identified definition admitted in `PluginCatalog`.
+- `input.values` is optional and is the track's local authored value.
+- `input.requires` is optional and binds declared plugin slots to source node ids. One slot takes one
+  source id; a map-valued slot takes `{ memberKey: "sourceId" }`.
+- `input.schema` is source-only. A plugin track takes its input contract from the plugin.
+- `duration` is optional; absent means the source-derived duration.
+
+Grouped `keyframes` and `observes` are refused as `track-legacy-field`. There is no flat,
+ungrouped property form.
+
+## Values: a table or a record
+
+`input.values` has exactly two shapes, discriminated by its top-level form.
+
+A table is an array of identified rows. `id` is the row envelope and must be a non-empty string,
+unique in the table. `cells` is a flat record of scalar or authored cell values. `cells.id` is
+ordinary data, not identity.
+
+```js
+values: [
+  { id: "hip", cells: { length: 40, rotation: 10, weight: 1 } },
+  { id: "knee", cells: { parentId: "hip", length: 38, rotation: 0 } },
+];
+```
+
+A record is a flat map of fields.
+
+```js
+values: { x: 20, y: 40, opacity: 0.5 };
+```
+
+A field or cell is a scalar (`number`, `string`, `boolean`) or a non-empty stop sequence in authored
+input. Evaluated values are renderer-neutral scalars only: finite numbers, strings and booleans.
+An empty table and an empty record are valid. A hole, malformed row, duplicate envelope id or
+structured cell value refuses the whole document rather than part of it.
+
+## Authored cells and stops
+
+```js
+{ p: 0.25, v: 40, ease: "power2.out" }
+```
+
+`p` is a finite progress in `[0, 1]`; `v` is a scalar; `ease` is optional. Stops must be ordered and
+unique by position. A static scalar never enters the interpolator. The retired `{ stops: [...] }`
+wrapper is refused as `property-stops-wrapper`.
+
+## Sources
+
+A track without `plugin` may declare `input.schema`, a `ValueSpec` describing what it will publish.
+Without a schema its contract is inferred from `input.values`.
+
+```js
 {
-  id: "upper-arm",
-  keyframes: {
-    fk: {
-      values: { length: 30 },
-      requires: { base: "walk/shoulder", solver: "walk/arm-solve" },
-    },
+  id: "cursor",
+  schema: {
+    kind: "record",
+    fields: { x: { kind: "number" }, visible: { kind: "boolean", optional: true } },
   },
-}
-
-// A member that reaches gradually, holding its authored rest pose at progress 0:
-{
-  id: "forearm",
-  keyframes: {
-    fk: {
-      values: {
-        length: 25,
-        rotation: -15,
-        weight: [ { p: 0, v: 0 }, { p: 1, v: 1 } ],
-      },
-      requires: { base: "walk/upper-arm", solver: "walk/arm-solve" },
-    },
-  },
+  input: { values: { x: 10 } },
 }
 ```
 
-A chain may be any length and any shape. Its members are derived from the `solver` bindings they authored, its leaves are the members no member hangs from, and there is no authored member count and no cap. The solve dispatches on that derived shape: two members and one goal take the analytic closed form, and everything else takes the iterative one. Nothing about the choice is authorable, so no rig selects its own solver.
+Tables use `{ kind: "table", schema: { row: { fields }, minRows?, maxRows? } }`. Records use
+`{ kind: "record", fields, additionalProperties? }`. A field declares `kind`, optional `optional`,
+`enum`, `min`, `max`, or source-only `static`.
 
-A branching chain addresses its goals by member id:
+## Plugins
 
-```text
-{
-  id: "spine-solve",
-  keyframes: {
-    ik: {
-      requires: {
-        root: "walk/spine",
-        targets: { "walk/forearm-L": "walk/armL-target", "walk/forearm-R": "walk/armR-target" },
-      },
-    },
-  },
-}
-```
+A plugin definition has:
 
-Keyed by member id rather than by position, because an index cannot be wrong: it silently means whatever the rig currently makes it mean, so inserting a bone or reordering two tracks would keep loading and pull the wrong limb. A member id can be wrong, so it can be checked.
+- `id`: the public name, matching its `@motion5/plugins/<id>` path.
+- `inputs.values`: the local value spec.
+- `inputs.requires`: optional slot declarations, each a dependency spec with declared output specs.
+- `outputs`: the named outputs the plugin publishes.
+- `validate`: optional diagnostics.
+- `transform`: one transformation from resolved inputs to named outputs.
 
-Two leaves may reach for the same node. Each goal is its own binding carrying its own key, so two entries naming one target are two distinct edges rather than one, and neither is reported as a duplicate. See ADR-057.
+`PluginCatalog.registerAll` admits a batch atomically. `EngineOptions.plugins` accepts a
+`PluginCatalog`.
 
-Both spellings are supported and neither is deprecated. `target` is exactly the degenerate case of the dict, so a solver picks one and `ik-goal-conflict` refuses both together. Because `target` names no member, it addresses a leaf only while there is one leaf to address, and a solver that binds it over a branching chain is `ik-target-not-single-leaf`. A linear chain has one leaf however long it is, so the bare slot keeps working past two bones.
+The main output is `values`; a plugin may publish additional named outputs. A table output is a
+table of rows; a record output is a flat scalar record. Consumers select a row explicitly through the
+core selector; no consumer receives a first-row fallback.
 
-A solve always publishes `rotations`, a record of one local rotation per member id. By default it
-publishes nothing else. With static `ik.values.inspect: true`, it also publishes `inspection` with the fixed shape `{ kind, residual,
-iterations, atBound, residuals }`. `residuals` is a frozen record keyed by addressed leaf member id,
-with each leaf's world-unit goal miss; `quality.residual` remains the worst one. The nine quality
-kinds are `reached`, `too-far`, `too-near`, `coincident`, `converged`, `stalled`, `iteration-cap`,
-`conflicted`, and `limited`. A member's `weight` never reaches a patch either: `fk` publishes a
-composed frame, so the blend is applied and the key is dropped. See ADR-051, ADR-052, ADR-055, and
-ADR-110.
+## Validation and refusal
 
-### Keyframe namespace rules
+`validateV5(project)` answers either an accepted, frozen project or closed diagnostics. `Engine.load`
+runs the same validation path. Duplicate motion ids, duplicate track ids, cycles, an unknown source,
+an unbound required slot, an incompatible slot contract and a retired member all refuse the load
+rather than loading partially.
 
-- A keyframe name may not contain `:` in a top-level group name or leaf name. The colon marks private internal keys and is rejected with `keyframes-reserved-separator`.
-- Every top-level entry must be a plugin-named group, or it is `keyframes-ungrouped-key`. Inside `values`, a leaf is an array of stops or a static scalar. Anything else is `stops-shape`, and the retired object wrapper is `property-stops-wrapper`.
-- A group holds only `values` and `requires`. Anything else is `keyframes-unknown-section`, and a group authoring its leaves at the top level is `keyframes-missing-values-section`.
-- A present `values` must be a non-empty object: `keyframes-values-shape` and `keyframes-values-empty`. Omitting it is how you author no properties.
-- Requirement slots may not be empty or contain `:`. Malformed sections use `keyframes-requires-shape`, `keyframes-requires-empty`, `keyframes-requires-slot`, and `keyframes-requires-source`.
-- A dict-valued slot holds a non-empty record of key to source id. `targets` specifically must be a record at all, which is `keyframes-targets-shape`, because only the slot's name can say so. The dict itself uses `keyframes-requires-dict-empty`, `keyframes-requires-dict-key`, and `keyframes-requires-dict-source`. A key may not be empty or contain `:`, `[`, or `]`: the colon is reserved in every authored name, and the brackets go with it because they were refused before and no authored spelling gains legality here.
-- Whether a slot was allowed to carry a dict at all is the plugin's declaration, reported as `plugin-requirement-dict-unsupported` for a dict at a slot that takes one source and `plugin-requirement-dict-required` for one source at a slot that takes a dict.
-- A top-level `values` or `requires` is rejected with `keyframes-reserved-section` because it has no owning plugin.
-- An empty object at the top level is `keyframes-ungrouped-key`; an empty object inside `values` is an accepted no-op leaf.
-- One compiled key may be authored once. Collisions use `keyframes-duplicate-key`.
-- 3D content is detected by leaf name, including inside a `values` section and including a static leaf, and missing perspective is a warning.
-
-## Observation edges
-
-Generic edges remain available on the observing track, and carry exactly one authored field:
-
-```text
-{ source: "motionA/arm" }
-```
-
-`source` may be local, qualified motion, or free-track.
-
-Every edge an `observes` entry declares is an output edge: the source's contribution merges over the observer's composed patch. There is no way to declare an input edge by hand, and no need for one. A dependency that feeds a track's own composition is bound under a plugin group's `requires` section and arrives scoped to that plugin.
-
-Three authored fields were removed, and each is refused rather than accepted and ignored:
-
-- `target` is `observation-target-unsupported`. It named a destination key that no consumer read on either role. See ADR-046.
-- `role` is `observation-role-unsupported`, for `"input"` and for `"output"` alike. It is refused on both, because if the only legal value is the default then writing it is a field accepted and then ignored.
-- `projection` is `observation-projection-unsupported`. It renamed an upstream key to keep it from colliding inside a flat input bag, and an output edge merges the source's whole patch rather than renaming anything.
-
-See ADR-047.
-
-The graph rejects unknown, duplicate, self-referential, and cyclic edges before mount.
-
-## Free tracks
-
-A free track is authored under `freeTracks`, participates in the same graph, and has no Motion schedule. Its runtime id is `~/trackId`.
-
-## Perspective
-
-`perspective` describes the stage's 3D projection in CSS pixels. Missing perspective alongside 3D content is a warning; invalid present perspective is an error. The renderer owns applying it.
-
-## Diagnostics
-
-```ts
-interface Diagnostic {
-  ruleId: RuleId;
-  path: string;
-  message: string;
-  severity: "error" | "warning";
-  ids: readonly string[];
-}
-```
-
-`ruleId` is the closed union `contract/rule-id.ts` enumerates, not a `string`, so the set of rules this contract refuses by name is readable in one place and a new rule breaks the build where it is named. Whether a rule names ids is a fact about that rule rather than about the diagnostic, and so is the severity it refuses at: `contract/rule.ts` owns both, as one record keyed by that same enumeration. It was three variant interfaces discriminated by ids ownership, derived from a second record in `contract/diagnostic-ids.ts`; that file is deleted and the variants are gone, so a consumer that extended one extends `Diagnostic`. Ownership is enforced where a diagnostic is built, as the argument list the rule derives, rather than by the shape of the field: `ids` is required and always present, frozen and empty for a rule that names none, and every diagnostic in the tree is built through the one constructor. `severity` is derived from the record and from nothing else, because the constructor has no parameter for it, so a rule's answer is the answer rather than a default a caller may replace. See ADR-097.
-
-Errors reject a candidate project before it replaces the active project. Warnings load and remain readable.
-
-A diagnostic about a grouped leaf cites the authored path, including the section: `keyframes.fk.values.length`. A diagnostic about a stop cites its index on the property: `keyframes.transform.values.x[0].p`. A diagnostic about a dict entry cites the key you typed: `keyframes.ik.requires.targets.forearm`. There is no derived slot spelling for it to cite instead.
-
-Load-time solver diagnostics are complete in [Errors and diagnostics](./guide/errors-and-diagnostics.md#inverse-kinematics-and-solver-rules). That guide owns the full `ik-*` rule inventory and meanings; this schema document owns authored shape and field semantics rather than maintaining a second, stale list.
-
-The 2D `ik` solver has no diagnostic about its derived member count. `ik-solver-unsupported-arity` refused every count other than two and is deleted rather than widened, because a rule that refuses a shape the runtime solves is worse than no rule. See ADR-052. The public `ik3d` solver is the one solver that declares a narrower chain: `fk3d` members only, of any count and any branching, a parent and its one child taking the closed form unless a member declares a constraining joint, and every other chain 3D FABRIK (ADR-123). `ik-chain-unsupported` refuses a chain under it with any member bound through another plugin, and an `fk3d` member under the 2D `ik`, at load. See ADR-114 and ADR-122.
-
-There is no diagnostic about a solved member's pivot offset either, for the same reason. `ik-solved-pivot-unsupported` refused a non-zero authored `x` or `y` on a solved member while neither solve accounted for one, and it is deleted rather than widened now that both do. See ADR-054.
-
-And there is no diagnostic about a `weight` on a bone that bound no solver anywhere. Such a weight is inert, exactly as an unbound one inside a chain would be, but `weight` may have more than one claimant and the load-time rule holds no plugin registry, so on a node with no solve in reach it cannot tell a blend weight from another plugin's own live input and does not guess. It is the same boundary that keeps a member's `rotation` in an unrelated plugin group out of `ik-solved-rotation-dead`. See ADR-043 and ADR-055.
-
-## Rejected input
-
-Wrong schema version, malformed or duplicate ids, reserved namespace characters, invalid triggers, invalid perspective, the retired stops wrapper, a leaf that is neither an array nor a static scalar, malformed group sections, malformed bindings and edges, a malformed goal dict, a dict at a slot that takes one source or one source at a slot that takes a dict, unknown sources, duplicate edges, self-reference, cycles, invalid solver topologies, solvers with no goal, unaddressable or unaddressed solver goals, dead rotations and unreachable blend weights on solved bones, removed fields, and legacy `use` entries are errors. The removed fields are an observation `target`, `role`, and `projection`, reported as `observation-target-unsupported`, `observation-role-unsupported`, and `observation-projection-unsupported`, a project `templates`, reported as `project-templates-unsupported`, and a track `use`. A plugin group that names an unknown section, or that authors its properties outside `values`, is also an error. Ungrouped top-level entries are rejected as `keyframes-ungrouped-key`, before any plugin is consulted. Missing perspective for detected 3D content and unused free tracks are warnings.
+There is no migration entry point. An authored v4 document or an authored grouped document must be
+rewritten to this contract before it is loaded; retaining `migrateV4ToV5` was rejected because its
+output was already refused under `track-legacy-field`.

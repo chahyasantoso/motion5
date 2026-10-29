@@ -4,6 +4,8 @@
 phase 5, squash-merged from [#486](https://github.com/chahyasantoso/motion5/pull/486) as `7e6f4edc`.
 Phase 6 is [ADR-111](./ADR-111-stability-and-determinism.md).
 
+**Superseded by [ADR-144](./ADR-144-identified-tables-records-and-explicit-plugins.md), 2026-10-29.** Identified tables and records with an explicit `PluginCatalog` are the one supported contract; the grouped machinery this record describes is deleted.
+
 **Amended by [ADR-121](./ADR-121-grouped-only-keyframes.md), 2026-09-26.** The **Load rules and
 scope** passage saying a flat spelling is in scope when the node binds a solver no longer holds for
 authored input. Only grouped `values.influence` reaches `resolveSolvers`; an ungrouped spelling is

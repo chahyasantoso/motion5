@@ -2,6 +2,8 @@
 
 **Status:** Accepted for the prepared implementation, 2026-10-05; not a merge or CI claim.
 
+**Superseded by [ADR-144](./ADR-144-identified-tables-records-and-explicit-plugins.md), 2026-10-29.** Identified tables and records with an explicit `PluginCatalog` are the one supported contract; the grouped machinery this record describes is deleted.
+
 ## Context
 
 Core held three first-party name tables for chain shape, pole slots and joint vocabulary.

@@ -36,7 +36,7 @@ Every other rule in this document is a consequence of that one. When a change ma
            ObservationState
 
   Motion  owns topology, scheduling, triggers, playback, children
-  Track   owns playhead, interpolation, local plugin composition
+  Track   owns playhead, interpolation and identified plugin composition
 ```
 
 Dependencies point inward only, with the dependency-free `lang/` module as the shared sink every
@@ -63,7 +63,7 @@ One owner per responsibility. If two things can perform an operation, one of the
 - **GraphPublisher** owns traversal and publication of a validated snapshot. It cannot add or remove graph entities. It has no mutation methods at all.
 - **PatchRegistry** owns patch identity, revisions, immutability, batching, and subscriber notification.
 - **Motion** owns child membership and hierarchy, stagger, layout, reflow, timeline construction, playback, trigger delegates, and child teardown. Motion is the only composite.
-- **Track** owns playhead and progress state, interpolation inputs, resolved local plugin composition, local lifecycle, and renderer-neutral snapshots. Track is a leaf. It has no children, no parent, no group host, and no graph traversal.
+- **Track** owns playhead and progress state, interpolation inputs, identified local plugin composition, local lifecycle, and renderer-neutral named outputs. Track is a leaf. It has no children, no parent, no group host, and no graph traversal.
 
 Some authored data has no runtime owner at all, and that is deliberate. `perspective` is validated at load and handed to the renderer untouched. Nothing in the core reads it. See [AUTHORED-SCHEMA.md](./AUTHORED-SCHEMA.md).
 

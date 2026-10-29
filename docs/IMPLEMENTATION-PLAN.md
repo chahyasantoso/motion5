@@ -40,7 +40,7 @@ Phases are not calendar milestones. They are dependency tiers. Work inside a pha
 
 ## 4. Phase 0: baseline
 
-Goal: an honest toolchain, a typed authored contract, injectable ports with fakes, and deterministic migration evidence, all with no engine and no graph.
+Goal: an honest toolchain, a typed authored contract, injectable ports with fakes, and a validated authored contract, all with no engine and no graph.
 
 ### P0-01 Charter
 
@@ -66,7 +66,7 @@ Goal: an honest toolchain, a typed authored contract, injectable ports with fake
 **Owner:** `core/contract` as the single source of authored truth.
 **Changes:** `packages/core/src/contract/v5.ts`, `validate-v5.ts`, `packages/core/src/index.ts`, `internal.ts`.
 **API delta:** `AUTHORED_SCHEMA_VERSION`, `SUPPORTED_TRIGGER_TYPES`, `DIAGNOSTIC_SEVERITIES`, `validateV5`, and the v5 type set.
-**Behavior:** v5 validates; v4 is rejected with a migration diagnostic; the validator returns a result object and never throws for authored-input problems.
+**Behavior:** v5 validates; v4 is rejected with a named diagnostic; the validator returns a result object and never throws for authored-input problems.
 **Evidence:** `test/unit/contract/validate-v5.test.ts`.
 **Exit:** Allow-listed exports only; no deep wildcard import path resolves.
 **Satisfies:** FR-1, FR-2, TR-D-01 through TR-D-06, TR-S-01.
@@ -87,11 +87,11 @@ Goal: an honest toolchain, a typed authored contract, injectable ports with fake
 
 **Status:** In review on `feat/p0-05-golden-fixtures-and-integration`.
 **Intent:** Prove the v4-to-v5 transformation is pure, deterministic, and serializable before any runtime consumes it.
-**Owner:** `core/contract/migrate-v4-to-v5.ts` and `core/contract/golden.ts`.
-**Behavior:** migration is pure and idempotent; it refuses documents that carry both `tracks` and `freeTracks`; the golden serializer sorts object keys, preserves array order, and ends with exactly one newline.
-**Evidence:** `test/migration/*`, `test/integration/golden-serialization.test.ts`, fresh v5 fixtures for minimal projects, perspective warnings, free tracks, cycles, and migration.
-**Exit:** Integration job is required and green; migration output is byte-stable across runs and across key insertion order.
-**Satisfies:** FR-5, TR-D-07 through TR-D-10, TR-T-04.
+**Owner:** `core/contract/golden.ts`. The v4 converter described below was withdrawn in Phase 7; see ADR-144.
+**Behavior:** v4 is refused rather than migrated; the golden serializer sorts object keys, preserves array order, and ends with exactly one newline.
+**Evidence:** `test/integration/golden-serialization.test.ts`, fresh v5 fixtures for minimal projects, perspective warnings, free tracks, cycles, and legacy refusal.
+**Exit:** Integration job is required and green; golden output is byte-stable across runs and across key insertion order.
+**Satisfies:** FR-5, TR-D-07, TR-D-10, TR-T-04.
 
 ### P0-06 Requirements, plan detail, and closed decisions
 

@@ -2,39 +2,43 @@
 
 ## Requirements
 
-Node 24, ESM, and TypeScript 5.8 if you are using types. Both packages are currently `private` at version `0.0.0` and are not published to a registry, so today you consume them from a workspace checkout or a vendored build. `npm install motion5` does not resolve anything.
+Node 24, ESM, and TypeScript 5.8 if you are using types. The packages are `private` at version
+`0.0.0` and are not published, so you consume them from a workspace checkout or a vendored build.
 
-Build the declarations and entry files once before importing from the package name outside the workspace:
+Build the declarations and entry files once before importing from the package name outside the
+workspace:
 
 ```bash
 npm install
 npx tsc -p packages/core/tsconfig.build.json
 ```
 
-## The three ports you supply
+## The ports you supply
 
-`Engine` never reaches for a global. It takes a clock, an interpolator, and a scheduler, and it validates all three at construction:
+`Engine` takes a clock, an interpolator, and a scheduler, and validates all three at construction:
 
-- **Clock** advances time. `createManualClock()` for tests and deterministic examples, `createBrowserClock(frameSource)` for a real page.
-- **Interpolator** turns authored keyframes into values. `createGsapInterpolator(gsap)` is the supported v1 implementation.
-- **Scheduler** decides _when_ a pending progress change is applied. `createMicrotaskScheduler()` is the shipped implementation: it drains on a microtask, so applying a change is always a separate turn from producing it. Inject a `SchedulerHost` if you need a different queue.
+- **Clock** advances time. `createManualClock()` for tests and deterministic examples,
+  `createBrowserClock(frameSource)` for a real page.
+- **Interpolator** turns authored cells into values. `createGsapInterpolator(gsap)` is the supported
+  v1 implementation.
+- **Scheduler** decides when a pending progress change is applied. `createMicrotaskScheduler()` is
+  the shipped implementation.
 
-A `PluginRegistry` is optional but practically required: every authored plugin group must name a registered plugin that claims its leaves, so a project with a `transform` group and no plugins fails to load.
+Plugins are admitted by a `PluginCatalog`. A track that names `plugin: "fk"` loads only when the
+catalog admitted `fk`; a track without a plugin needs no catalog entry.
 
 ## A complete first project
 
 ```ts
-import { Engine, PluginRegistry, createManualClock } from "@motion5/core";
+import { Engine, PluginCatalog, createManualClock } from "@motion5/core";
 import type { ProjectDefinition } from "@motion5/core";
 import { createGsapInterpolator, createMicrotaskScheduler } from "@motion5/core/adapters";
 import { transformPlugin } from "@motion5/plugins/transform";
 import gsap from "gsap";
 
-// The scheduler drains on a microtask, so let the queue run before reading a value. Two passes can
-// chain: one applies progress, the next publishes the graph follow-up that applying it queued.
 const nextTurn = () => new Promise((resolve) => setTimeout(resolve, 0));
 
-const plugins = new PluginRegistry();
+const plugins = new PluginCatalog();
 plugins.register(transformPlugin);
 
 const clock = createManualClock();
@@ -55,15 +59,12 @@ const project: ProjectDefinition = {
       tracks: [
         {
           id: "title",
-          duration: 1,
-          keyframes: {
-            transform: {
-              values: {
-                x: [
-                  { p: 0, v: 0 },
-                  { p: 1, v: 240 },
-                ],
-              },
+          input: {
+            values: {
+              x: [
+                { p: 0, v: 0 },
+                { p: 1, v: 240 },
+              ],
             },
           },
         },
@@ -75,75 +76,71 @@ const project: ProjectDefinition = {
 const handle = engine.load(project);
 ```
 
+`input.values` is a table of identified rows or a flat record; the authored form above is a record
+with one animated field. See [the authored schema](../AUTHORED-SCHEMA.md).
+
 ## Loading plugins lazily
 
-For larger catalogs, let the authored groups select definitions from the approved catalog instead of
-registering every built-in plugin up front. The loader validates the demand, resolves declared
-catalog dependencies, and registers the complete missing set atomically before `Engine.load`:
+The loader takes an explicit catalog of approved descriptors and admits the demanded ids into a
+`PluginCatalog` before `Engine.load`:
 
 ```ts
-// clock, interpolator and scheduler as in the example above.
-import { Engine, PluginRegistry } from "@motion5/core";
+import { Engine, PluginCatalog } from "@motion5/core";
 import { createPluginLoader, ensuredOrThrow } from "@motion5/plugins/loader";
-import { builtinCatalog } from "@motion5/plugins/catalog";
+import { fkPlugin } from "@motion5/plugins/fk";
 
-const plugins = new PluginRegistry();
-const loader = createPluginLoader(builtinCatalog);
-
-// Keep this before `engine.load(project)`. Live edits remain synchronous; ensure their tracks first.
-ensuredOrThrow(await loader.ensure(plugins, { kind: "project", project }));
-const engine = new Engine({ clock, interpolator, scheduler, plugins });
-const handle = engine.load(project);
+const approved = new Map([["fk", { load: async () => fkPlugin }]]);
+const plugins = new PluginCatalog();
+ensuredOrThrow(await createPluginLoader(approved).ensure(plugins, { kind: "project", project }));
+const handle = new Engine({ clock, interpolator, scheduler, plugins }).load(project);
 ```
 
-The catalog is an allowlist, not a string-to-import bridge. App-owned factories can be added by
-copying the map and supplying an explicit descriptor; no plugin module path comes from project data.
-A group whose plugin the registry already holds is satisfied even when the catalog does not list it.
-A refusal is returned as a typed failure; `ensuredOrThrow` turns it into an `Error` that keeps the
-import or registry error as its `cause`.
+The catalog is an allowlist, not a string-to-import bridge: a plugin module path never comes from
+project data. A refusal is returned as a typed failure; `ensuredOrThrow` turns it into an `Error`
+that keeps the import or admission error as its `cause`.
 
 ## Node ids are qualified for you
 
-You author local ids. The runtime qualifies them exactly once, at load, and every call afterwards uses the qualified form:
+You author local ids. The runtime qualifies them exactly once, at load:
 
 - a motion track becomes `motionId/trackId`, so `title` inside `hero` is `hero/title`;
 - a free track becomes `~/trackId`, so a `cursor` free track is `~/cursor`.
 
-There is no API that accepts a local id. If a call reports an unknown node, check whether you passed the authored id instead of the qualified one.
-
 ## Membership, then motion
 
-A loaded node publishes nothing until it is mounted. Mounting is explicit because membership is what gates publication:
+A loaded node publishes nothing until it is mounted:
 
 ```ts
 handle.mount("hero/title");
-
 clock.tick(500);
 await nextTurn();
 
 const patch = handle.get("hero/title");
 if (patch?.status === "ready") {
-  // 500 of the trigger's 1000 units have elapsed, so sourceProgress is 0.5 and x sits halfway
-  // between the two authored stops.
-  console.log(patch.sourceProgress, patch.values.x);
+  // 500 of the trigger's 1000 units have elapsed, so x sits halfway between the stops.
+  console.log(patch.sourceProgress, patch.outputs.values);
 }
 ```
 
-Two separate things just happened, and keeping them separate is the whole design. `clock.tick(500)` advanced time, which let the `time` driver emit progress. The scheduler's microtask pass then ran the job that applied it and published the resulting patch. Nothing publishes mid-tick, and nothing publishes twice for the same value.
+`clock.tick(500)` advances time. The scheduler's microtask pass then applies progress and publishes
+the patch. Nothing publishes mid-tick, and nothing publishes twice for one value.
 
-In a browser you do not write `await nextTurn()`. The pass runs on its own at the end of the turn that produced the work, inside the same frame and before paint, so a patch is ready by the time anything renders. The helper exists for tests and scripts, where nothing else is driving the loop.
-
-If a scheduled job throws, the pass still runs every job behind it and then reports once. With the default host that report arrives as an unhandled rejection, so pass `onError` to `createMicrotaskScheduler` when you want to route failures yourself.
+In a browser the pass runs at the end of the turn that produced the work, inside the same frame and
+before paint. The helper exists for tests and scripts, where nothing else drives the loop.
 
 ## Reading values
 
-`handle.get(nodeId)` is a pull: the currently retained patch, or `undefined` if the node has never published or is unmounted. `handle.subscribeNode(nodeId, listener)` is a push: the listener runs for every new patch for that node and returns its own unsubscribe. Both are shown in [Rendering patches](./rendering-patches.md).
+`handle.get(nodeId)` is a pull: the retained live patch, or `undefined` if the node never published
+or is unmounted. `handle.subscribeNode(nodeId, listener)` is a push: the listener runs for every new
+patch for that node and returns its own unsubscribe.
 
-A patch is deeply frozen, in every environment, with no production opt-out. Do not try to mutate `patch.values`.
+A patch is deeply frozen in every environment. `outputs.values` may be a table or a record; a
+consumer that needs one row selects it through the core selector rather than indexing the first row.
 
 ## Tearing down
 
-Dispose in the order you built. The project handle owns everything the load created; the clock is yours because you created it:
+Dispose in the order you built. The project handle owns everything the load created; the clock is
+yours because you created it:
 
 ```ts
 handle.unmount("hero/title");
@@ -151,8 +148,10 @@ handle.dispose();
 clock.dispose();
 ```
 
-`unmount` is reversible and publishes no terminal patch: the node still exists and may become a member again. `dispose` is not reversible. A failed `load()` disposes everything it had already built before it throws, so you never have to clean up after a rejected project.
+`unmount` is reversible and publishes no terminal patch. `dispose` is not reversible. A failed
+`load()` disposes everything it had already built before it throws.
 
 ## Where to go next
 
-The `time` trigger above is the simplest of three. [Triggers](./triggers.md) covers scroll sources and manual control, including why `signal()` throws on a driver-backed motion and `seek()` does not.
+[Triggers](./triggers.md) covers scroll and manual control. [Rendering
+patches](./rendering-patches.md) covers DOM and Three adapters and the row selector.

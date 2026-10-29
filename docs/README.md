@@ -26,7 +26,6 @@ Two documents hold what a status file is not allowed to accumulate:
 - [TRD.md](./TRD.md): normative technical requirements, verification methods, and traceability to product requirements and architecture invariants.
 - [ARCHITECTURE.md](./ARCHITECTURE.md): owners, invariants, graph lifecycle, publication semantics, failure handling, boundaries, and deletion list.
 - [AUTHORED-SCHEMA.md](./AUTHORED-SCHEMA.md): schema v5 syntax, field semantics, id qualification, observation edges, diagnostics, and validation.
-- [MIGRATION-V4-TO-V5.md](./MIGRATION-V4-TO-V5.md): explicit migration procedure, pure migration behavior, and compatibility policy.
 
 ## Decisions
 

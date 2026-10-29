@@ -4,6 +4,8 @@
 for [#509](https://github.com/chahyasantoso/motion5/issues/509); accepted when the pull request
 carrying it merges.
 
+**Superseded by [ADR-144](./ADR-144-identified-tables-records-and-explicit-plugins.md), 2026-10-29.** Identified tables and records with an explicit `PluginCatalog` are the one supported contract; the grouped machinery this record describes is deleted.
+
 ## Invariant
 
 Every authored top-level `keyframes` entry is one plugin-named group:

@@ -23,7 +23,7 @@ This document is the acceptance contract for implementers and reviewers. A pull 
 - **Track:** a leaf. Owns playhead, interpolation inputs, local plugin composition, and renderer-neutral snapshots.
 - **Free track:** a project-level track that nothing schedules, qualified `~/trackId`.
 - **Qualified id:** the runtime identity of a node, either `motionId/trackId` or `~/trackId`.
-- **Observation edge:** a dependency from an observing track to a source. An output edge is authored with `observes`. An input edge is derived from a plugin requirement binding and is never authored as an edge.
+- **Observation edge:** one dependency from an observing track to a source, derived from an `input.requires` binding and never authored as an edge on its own. There is no output-edge kind and no `observes` member.
 - **IR:** the immutable graph intermediate representation produced by normalization.
 - **Live state:** the long-lived `ObservationState` object holding live edges and observers.
 - **Commit:** replacing the immutable IR snapshot after a successful transaction.
@@ -57,9 +57,9 @@ This document is the acceptance contract for implementers and reviewers. A pull 
 - **TR-D-02 Structural validation.** Loading must validate ids, triggers, tracks, perspective, observation edges, duplicates, and cycles before anything mounts. Implements FR-2.
 - **TR-D-03 Reserved namespace.** Track ids must not contain `/`. Motion ids must not contain `/` and must not equal `~`. Violations are errors.
 - **TR-D-04 Perspective.** `perspective` is optional. When present it must be a finite number greater than zero; anything else is an error. Missing perspective alongside detected 3D content is a warning.
-- **TR-D-05 Edge semantics.** An edge is identified by `(observer, source, role, requirement)`, where an absent requirement is a distinct value from any present one. `observes` declares output edges only and carries no authored `role`, `target`, or `projection`; an authored one is an error. An output edge merges the source's finished patch over the observer's composed patch after local composition. An input edge is never authored directly: the graph derives exactly one per `keyframes..requires.` binding, and its value is delivered to the named plugin scoped by slot, never merged into the observer's authored values. Two slots of one plugin may bind the same source and are two edges.
+- **TR-D-05 Edge semantics.** An edge is identified by `(observer, source, requirement)`. Every edge has one kind: an input edge derived from one `input.requires` slot binding, carrying the plugin and slot that scope its delivery. There is no output edge and no `observes` member; binding a dependency is the only way an upstream value enters composition, and it is delivered under its slot rather than merged into the observer's authored values. Two slots of one plugin may bind the same source and are two edges; a map slot derives one edge per member key with the key carried as data. See ADR-057 and ADR-144.
 - **TR-D-06 Rejected input.** Wrong version, malformed or duplicate ids, reserved characters, invalid trigger, invalid perspective, malformed edges, unknown sources, duplicate edges, self-reference, and cycles must all be errors. Missing perspective for 3D content and unused free tracks must be warnings.
-- **TR-D-07 Pure migration.** The v4-to-v5 migration must be a pure function outside the runtime. It must not mutate its input and must return the input unchanged for a non-v4 document. Implements FR-5.
+- **TR-D-07 No migration function.** v4 and grouped v5 documents are refused at the boundary; there is no converter, compatibility shim or deterministic migration output to verify. A caller rewrites the document to the identified-table contract. Implements FR-5 and ADR-144.
 - **TR-D-08 Migration idempotence.** Applying migration to an already-migrated document must produce a structurally equal document.
 - **TR-D-09 Ambiguity refusal.** A document carrying both top-level `tracks` and `freeTracks` must fail migration rather than resolve the conflict by preference.
 - **TR-D-10 Deterministic serialization.** The golden serializer must sort object keys lexicographically, preserve array order, emit JSON-safe values only, and end output with exactly one newline. Serializing the same logical document twice must be byte-identical regardless of key insertion order.
@@ -181,7 +181,7 @@ This document is the acceptance contract for implementers and reviewers. A pull 
 - **TR-T-07 Documentation truth.** No document may claim a live gate or an implemented behavior that does not exist. Reality is reported in one status file only.
 - **TR-T-08 Deletion discipline.** Code that exists only for a transition, and any document describing deleted code, must be removed in the same change that removes its reason to exist.
 - **TR-T-09 Failure hygiene.** A flaky test is fixed or deleted in the same working session. Skipping a test to reach green is treated as a revert.
-- **TR-T-10 Coverage is not a gate.** Coverage is reported but never the release gate. The release gate is the invariant matrix, the package consumer test, migration suite, contract suites, integration behavior, and deterministic benchmarks.
+- **TR-T-10 Coverage is not a gate.** Coverage is reported but never the release gate. The release gate is the invariant matrix, the package consumer test, contract suites, integration behavior, and deterministic benchmarks.
 
 ## 16. Traceability
 
@@ -191,7 +191,7 @@ This document is the acceptance contract for implementers and reviewers. A pull 
 - FR-2: TR-D-02, TR-D-06.
 - FR-3: TR-G-01, TR-G-02, TR-D-11.
 - FR-4: TR-A-05, TR-D-04.
-- FR-5: TR-D-07, TR-D-08, TR-D-09.
+- FR-5: TR-D-07.
 - FR-6: TR-G-03.
 - FR-7: TR-G-09, TR-G-10.
 - FR-8: TR-G-08.

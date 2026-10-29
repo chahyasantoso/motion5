@@ -1,5 +1,7 @@
 # ADR-062: key ownership is answered over the candidate, and the resolve is validation rather than cost
 
+**Superseded by [ADR-144](./ADR-144-identified-tables-records-and-explicit-plugins.md), 2026-10-29.** Identified tables and records with an explicit `PluginCatalog` are the one supported contract; the grouped machinery this record describes is deleted.
+
 - Status: accepted
 - Date: 2026-08-31
 - Slice: C1 of [issue #223](https://github.com/chahyasantoso/motion5/issues/223), the structural tier, amended by C3 with the predicate it deferred

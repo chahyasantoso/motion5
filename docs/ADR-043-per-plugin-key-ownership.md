@@ -2,6 +2,8 @@
 
 **Status:** Accepted, 2026-08-20
 
+**Superseded by [ADR-144](./ADR-144-identified-tables-records-and-explicit-plugins.md), 2026-10-29.** Identified tables and records with an explicit `PluginCatalog` are the one supported contract; the grouped machinery this record describes is deleted.
+
 **Amended by [ADR-121](./ADR-121-grouped-only-keyframes.md), 2026-09-26.** The group is now the
 only authored top-level spelling. Shared claims remain legal, but the author names the owner by
 choosing the plugin group; no flat entry reaches resolution.

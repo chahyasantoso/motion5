@@ -4,6 +4,8 @@
 **Date:** 2026-08-22  
 **Closes:** issue [#177](https://github.com/chahyasantoso/motion5/issues/177)
 
+**Superseded by [ADR-144](./ADR-144-identified-tables-records-and-explicit-plugins.md), 2026-10-29.** Identified tables and records with an explicit `PluginCatalog` are the one supported contract; the grouped machinery this record describes is deleted.
+
 This record amends ADR-041 and ADR-044 by replacing the group's authored shape. Neither is edited: each records the decision that was correct when it was made, and this record supersedes ADR-044's "a `values` wrapper beside `requires`" rejection.
 
 **Amended by [ADR-121](./ADR-121-grouped-only-keyframes.md), 2026-09-26.** The two reserved sections

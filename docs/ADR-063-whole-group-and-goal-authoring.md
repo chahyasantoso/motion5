@@ -1,5 +1,7 @@
 # ADR-063: a whole plugin group is one edit, and one solver goal has one verb
 
+**Superseded by [ADR-144](./ADR-144-identified-tables-records-and-explicit-plugins.md), 2026-10-29.** Identified tables and records with an explicit `PluginCatalog` are the one supported contract; the grouped machinery this record describes is deleted.
+
 - Status: accepted
 - Date: 2026-08-31
 - Slice: C2 of [issue #223](https://github.com/chahyasantoso/motion5/issues/223), the rest of the

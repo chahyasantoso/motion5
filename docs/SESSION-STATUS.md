@@ -6,24 +6,24 @@ states a phase; `packages/core/test/unit/scripts/session-status-shape.test.ts` e
 byte ceiling.
 
 - **Captured:** 2026-10-29, Asia/Jakarta.
-- **Read against:** `refactor/v5-identified-tables` after the consumer-migration gate.
+- **Read against:** `refactor/v5-identified-tables` after the removal gate.
 
 ## Now
 
-- **Aggregate consumer migration complete:** one core selector owns record and row selection; React
-  exposes `rowPatchSource` over that selector with one cached snapshot per publication; DOM and
-  Three adapters stay record-only while callers apply selected cells; both playground rigs author
-  body and goals tables and read solver rows plus `inspect`; the react-demo suite runs its real
-  walker project. Four consumer-migration ledger entries retired, the two removal entries remain.
+- **One v5 contract is live:** identified tables and records under `input.values`, one
+  `PluginCatalog`, one input-edge graph, one core selector and one React row projection. The grouped
+  registry, authored grouped readers, output-edge merge, legacy plugin layer and v4 converter are
+  deleted; the pending ledger is empty and all three apps build and pass their smoke evidence.
 
 ## Next in line
 
-- **Remove superseded paths:** delete the grouped plugin registry and compose surface, the grouped
-  keyframe readers, the graph output-edge merge machinery and the legacy plugin layer, then
-  reconcile docs, rules, exports and this status.
+- **Await the owner's decision before any v5.1 work:** Phase 6 and Phase 7 are complete, and the
+  validation-contract plan is not started until the owner says so.
 
 ## Open, and not scheduled
 
+- Cache and measurement work remains deferred by the owner; no threshold, cache hook or Phase 8
+  measurement is active.
 - Retargeting remains a proposed design only.
 
 ## Where the rest of it lives

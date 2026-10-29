@@ -1,5 +1,7 @@
 # ADR-143: Identified plugins cut over at their existing public paths
 
+**Completed 2026-10-29:** the temporary internal legacy paths and the grouped registry are deleted; the public paths carry only identified definitions. See [ADR-144](./ADR-144-identified-tables-records-and-explicit-plugins.md).
+
 **Status:** Accepted, 2026-10-25
 
 ## Context

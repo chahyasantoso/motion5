@@ -49,71 +49,43 @@ Warnings load and stay readable. Missing `perspective` alongside 3D content, and
 - `trigger-time-repeat-shape`, `trigger-time-yoyo-shape`, and `trigger-time-yoyo-requires-repeat`, for the loop fields: a `repeat` that is not an integer of `-1` or above, a `yoyo` that is not a boolean, and a `yoyo` with no repeat to reverse.
 - `trigger-scroll-source`, for a `source` that is present but not a non-empty string.
 - `trigger-driver-unavailable`, at `load()` or `addMotion`, when a declared `scroll` trigger resolves no source. This one is a construction failure, not a validation failure.
-- `plugin-unknown-key`, when no registered plugin claims an authored keyframe key. This is the error you hit first if you forget to register a plugin. For a plugin-named group it also covers a group that names no registered plugin, and a leaf the named plugin does not claim.
-- `keyframes-ungrouped-key`, when a top-level authored keyframe entry is not a plugin-named group. Bare stop arrays, static values, the retired wrapper, empty objects, and other objects that are not a named group are refused; put the leaf under the owning plugin group's `values` section.
-- `plugin-unknown-requirement`, when a group binds a slot the named plugin does not declare. The path is the binding you wrote, including the key when you bound a dict entry.
-- `plugin-contribution-unsupported-entry`, for the legacy `use` field, which is not part of schema v5.
-- `project-templates-unsupported`, for a top-level `templates` field. It promised reusable keyframe bundles and nothing ever read one, so it is removed and then refused rather than left declared and carried through every rebuild untouched. Author the keyframes on the tracks that use them. The rule reads the key rather than the value at it, so `templates: undefined` is refused too: spreading an older document does not smuggle the field back in.
-- `values-shape-invalid`, when an authored value edit changes the table or record shape the track committed to. The committed contract is the declared schema, the plugin's declared input spec, or the one inferred at the last structural commit; `input.values.set` never re-infers it. Use `replace()` or `input.replace()` to change the contract.
-- `cell-form-invalid`, when an authored value names a field the committed contract does not declare, or omits one it requires. `input.values.setField` addresses one cell or field and validates against that same contract.
-- `cell-address-unknown`, when an `input.values.setField` address names a row the track does not author.
-- `live-values-invalid`, when `writeValues` is given a value that does not satisfy the committed contract: scalar kinds, required fields, no extras, unique row ids and finite values. The previous overlay stands when a write is refused.
-- `observation-target-unsupported`, for a `target` on an `observes` entry. The field is removed rather than kept and ignored: it never decided which values arrived or under which keys. See ADR-046.
-- `observation-role-unsupported`, for a `role` on an `observes` entry, at either value. Every edge an `observes` entry declares is an output edge, so `"output"` is refused for the same reason `"input"` is: writing the only legal value would be a field accepted and then ignored. See ADR-047.
-- `observation-projection-unsupported`, for a `projection` on an `observes` entry. Renaming an upstream key existed to keep it from colliding inside a flat input bag, and an output edge merges the source's whole patch rather than renaming anything.
-
-  For all three: bind the dependency under the plugin group's `requires` section when it feeds your track's composition, which is the only way a value enters composition at all. An upstream value arrives scoped to the plugin and slot that asked for it, so it can never replace an authored value of yours.
-
-- `keyframes-reserved-separator`, when an authored keyframe name, group name, or leaf name contains `:`. The colon marks a plugin's private internal keys, so it is never legal in an authored name.
-- `keyframes-duplicate-key`, when one compiled key is authored twice by leaves in different plugin groups. The path names the second spelling and the message names the first.
-
-### The two forms of a leaf
-
-A leaf inside a plugin group's `values` section is an array of stops, or a static scalar. There is no wrapper around either, and these three rule ids are the whole surface of that rule. A top-level leaf is refused by `keyframes-ungrouped-key`. See ADR-050 and ADR-121.
-
-- `property-stops-wrapper`, for the retired `{ stops: [...] }` object. Refused by name rather than folded into a generic shape error, and never normalized: two authoring shapes would be two validation paths and two documentation paths. Drop the wrapper and keep the array; nothing else changes.
-- `stops-shape`, when a leaf inside `values` is neither an array of stops nor a static number, string, or boolean. `null`, `undefined`, a non-finite number, a function, and any object other than `{}` and the retired wrapper land here, so `fk.values.length: { hold: 1 }` is a `stops-shape` error: no object is ever a static value (ADR-050). The same object one level up is a different mistake. At the top level of `keyframes` an entry is never a leaf, so `{ fk: { length: 62 } }`, whose members all read as leaves, is the pre-ADR-049 form and is reported as `keyframes-missing-values-section`, and every other ungrouped entry is `keyframes-ungrouped-key` (ADR-121). The id itself predates the bare form and keeps its name, because the animated form still is stops.
-- `plugin-contribution-static-unsupported`, when a static leaf is authored on a key owned by a prepare-stage plugin with a `contribute` hook. Such a hook derives a contribution from stops, and a static leaf has none; calling it with an empty list would be a field accepted and then ignored.
-
-A static leaf is worth understanding rather than just spelling. It never enters the interpolator, so it takes no percent-map entry and no tween, and it cannot collide with a sibling's `ease` because it has nowhere to carry one. `fk.values.length: 62` is not shorthand for two identical stops; it is a different and cheaper thing.
-
-The stop rules themselves are unchanged: `stop-position` for a non-finite `p`, `stop-position-range` outside `[0, 1]`, `stop-position-order` for a non-monotonic sequence, `stop-position-duplicate` for a repeated position, and `stop-missing-start` and `stop-missing-end` as warnings.
-
-Those same stop rules answer for a live write that names an animated key, because an authored stop list is definition-shaped input wherever it arrives from. A malformed one is refused by the validator a whole definition goes through, before anything mutates, and the throw is the usual `TypeError` carrying the diagnostics. A static-only live write never reaches it. See ADR-060.
-
-### The two sections of a plugin group
-
-A plugin-named group has exactly two members, `values` and `requires`, and both names are reserved. These five rule ids are the whole surface of that rule. See ADR-049.
-
-- `keyframes-missing-values-section`, when a group authors its properties directly under the plugin name instead of under `values`, as in the pre-ADR-049 form `{ fk: { length: 62 } }`. It is refused by name rather than normalized: two authoring shapes would be two validation paths and two documentation paths. Put the leaves under `values`; nothing else changes. A top-level object whose members do not all read as leaves names neither a section nor a leaf set, and is `keyframes-ungrouped-key` instead.
-- `keyframes-unknown-section`, for any key inside a group that is neither `values` nor `requires`. The message names both legal sections. A typo'd section is reported as one rather than misread as a property with no stops.
-- `keyframes-values-shape`, when `values` is present but not an object.
-- `keyframes-values-empty`, when `values` is an empty object. Omitting the section is already how you author no properties, so an empty one would be a field accepted and then ignored.
-- `keyframes-reserved-section`, for a top-level `values` or a top-level `requires`. A section name at the top level addresses no plugin, so nothing written there could have an owner.
-
-Two shapes deliberately stay legal. A group may author `requires` with no `values`, which is how a plugin joins composition to receive an upstream value without animating anything of its own. And a leaf named `values` _inside_ the section is an ordinary property, because the reservation is on section position rather than on the string everywhere.
+- `track-legacy-field`, for `keyframes` or `observes` on a track. Both retired members are refused
+  by name so an old document fails to load rather than loading with the member ignored.
+- `plugin-unknown`, when a track names an id the catalog did not admit.
+- `slot-unknown`, `slot-required-missing`, `slot-incompatible` and `slot-unproven`, for a dependency
+  binding to an undeclared slot, a missing required slot, a producer whose output contract contradicts
+  the slot, and a producer contract that cannot prove the slot. A binding to a source no node carries
+  is `edge-unknown-source`.
+- `values-shape-invalid`, when authored values are neither an array of rows nor a plain record, when a
+  table row is malformed, or when an authored value edit changes the table or record shape the track
+  committed to.
+- `row-id-invalid` and `row-id-duplicate`, for an empty or repeated row envelope id. Duplicate
+  identity invalidates the table even when the row a caller selects appears first.
+- `cell-form-invalid`, `cell-kind-conflict`, `cell-stops-invalid` and `static-field-stops`, for a cell
+  or field that does not match its declared shape.
+- `cell-address-unknown`, when `input.values.setField` addresses a row the track does not author.
+- `live-values-invalid`, when `writeValues` is given a value that does not satisfy the committed
+  contract. The previous overlay stands when a write is refused.
+- `project-templates-unsupported`, for a top-level `templates` field. Author values on the tracks that
+  use them. The rule reads the key rather than the value, so `templates: undefined` is refused too.
+- `id-shape`, `id-qualified-separator` and `id-reserved-namespace`, for malformed motion and track
+  ids. Motion ids may not contain `/` or equal `~`; track ids may not contain `/`.
 
 Malformed or duplicate ids, reserved namespace characters, malformed edges, unknown sources, duplicate edges, self-reference, and cycles are all errors too. Track ids may not contain `/`, and motion ids may not contain `/` or equal `~`, because those characters carry the qualified namespace.
 
 ### Slots whose value is a dict of sources
 
-Most slots inside `requires` name one source id. A slot may take a dict instead: one source id per key you name, which is how a solver addresses one goal per chain leaf under `targets`, keyed by each leaf's own member id. Which of the two a slot takes is declared by the plugin that owns it, and is never derived from the slot's name, so any plugin may declare one. See ADR-052 and ADR-057.
+Most slots inside `requires` name one source id. A slot may take a map instead: one source id per
+key you name. Which of the two a slot takes is declared by the plugin's `DependencySpec.binding`, and
+the parser refuses a mismatch by name rather than deriving a mode from the slot.
 
-Shape first, with no plugin registry in reach:
+- `plugin-requirement-dict-unsupported` refuses a map at a single-source slot.
+- `plugin-requirement-dict-required` refuses one source at a map-valued slot.
+- `requirement-source` refuses a binding whose source cannot be qualified or whose shape is not a
+  source id or a map of source ids.
 
-- `keyframes-targets-shape`, when `targets` is present but is not an object mapping member ids to source ids. An array lands here too. This is the one rule still keyed on a slot name, because only the name can answer it: this slot carries a solver's goal dict, so a scalar at it is malformed rather than the ordinary scalar binding it would be anywhere else.
-- `keyframes-requires-dict-empty`, when a dict-valued slot is an empty object. Omitting the slot is already how you bind nothing through it.
-- `keyframes-requires-dict-key`, when a key is empty, or contains `:`, `[`, or `]`. A dict key is an authored name, and authored names reserve the colon for internal keys. The brackets go with it because they were refused before and no authored spelling gains legality in a change that moves none.
-- `keyframes-requires-dict-source`, when the source a key is mapped to is not a non-empty source id.
-
-Then the declaration, which only the plugin registry can answer, and which answers in both directions:
-
-- `plugin-requirement-dict-unsupported`, when you author a dict at a slot that takes one source. The parser expands a dict under any slot, because it holds no registry and a slot name proves nothing either way, so this is the rule that keeps a dict at `fk`'s `root` from being accepted and then ignored.
-- `plugin-requirement-dict-required`, when you author one source at a slot that takes a dict. Its mirror: a plugin reading that slot as a keyed record would otherwise be handed one node's values under the slot itself, with nothing to say you meant something else.
-
-`keyframes-targets-empty`, `keyframes-targets-member` and `keyframes-targets-source` were the earlier names of the three dict shape rules, from when a dict was one reserved slot's private shape. They are renamed rather than kept, because a diagnostic has to name what you wrote and `keyframes-targets-member` firing at `spring.requires.tensions.seg-a` names something else.
-
-The shape rules are shape only, and deliberately not membership. Whether a key names a real member of that solver's chain is derived from `solver` edges during graph construction, which is the only owner that knows the member set.
+Whether a member key names a real member of a solver chain is a graph question, not a binding-shape
+question; graph construction owns it.
 
 ### Inverse Kinematics and solver rules
 
@@ -124,7 +96,7 @@ Solvers (`ikPlugin`) and solved bones (`fkPlugin`) enforce topological and keyfr
 - `ik-solver-no-goal`, when a solver has a root and members and binds neither the bare `target` slot nor a goal through `targets`. A solve with nothing to reach for has no answer, and this is refused at load rather than left to the composition, which used to throw on it every tick and block every member of the chain behind an `error`.
 - `ik-solver-unreachable-root`, when tracing a member bone's `base` parent walk upward fails to terminate at the solver's bound `root`. The member chain must form a contiguous ancestor hierarchy rooted at `root`.
 - `ik-mode-ambiguous`, when a single node binds `solver` alongside `root` or a goal, or binds `root` under multiple plugins. A track is either a solver or a member, never both. It reads the goal classification rather than the literal slot name `target`, because a member binding `solver` beside a goal dict of its own would otherwise load clean with one real input edge per goal and have every one of them ignored.
-- `ik-solved-rotation-dead`, when a bone that binds `keyframes.fk.requires.solver` authors `values.rotation` and no `values.weight` beside it. With no weight there is no runtime state in which the authored rotation is read, so it is dead input and refused. Either drop it, or author the `weight` that gives it something to mean. The public 3D member is read the same way for each of its orientation keys: an `fk3d` group that binds `solver` and authors any of `rotation`, `rotationX` or `rotationY` with no `weight` beside it is refused by this rule when its chain takes the closed form (a parent and its one child), because that solve replaces each of them at the default weight. Under every other `ik3d` chain the 3D FABRIK tree solve reads the rest orientation as the frame each member's roll swings from, so there it is live input and loads. See ADR-116 and ADR-122.
+- `ik-solved-rotation-dead`, when a body row on a chain bound to a solver authors `rotation` and no `weight` beside it. With no weight there is no runtime state in which the authored rotation is read, so it is dead input and refused. Either drop it, or author the `weight` that gives it something to mean. The public 3D member is read the same way for each of its orientation keys: an `fk3d` body row on a solved chain that authors any of `rotation`, `rotationX` or `rotationY` with no `weight` beside it is refused by this rule when its chain takes the closed form (a parent and its one child), because that solve replaces each of them at the default weight. Under every other `ik3d` chain the 3D FABRIK tree solve reads the rest orientation as the frame each member's roll swings from, so there it is live input and loads. See ADR-116 and ADR-122.
 - `ik-weight-without-solver`, when a node that bound a `solver` slot under one plugin authors `values.weight` under another. It is the mirror of the rule above: the solve cannot reach a key outside the group that asked for it, so `fk` short-circuits to the authored rotation, never reads that weight, and the key is silently inert. Both rules read the group that bound the slot and no other, which is why binding `solver` under `spring` and authoring `weight` under `fk` is refused rather than passed.
 
 Both of those rules speak only about a node that bound a solver somewhere, and that is a boundary rather than a gap. A `weight` on a bone that bound no solver at all is inert too, and nothing refuses it: `weight` is claimed by `fkPlugin` and may be claimed by any other plugin under ADR-043, and the load-time rule holds no plugin registry, so on a node with no solve in reach it cannot tell a blend weight from another plugin's own live input and does not guess. It is the same boundary that keeps a member's `rotation` in an unrelated plugin group out of `ik-solved-rotation-dead`.
@@ -181,7 +153,7 @@ joint limits and the bend hint:
 - `ik-bend-conflicts-flip`, when one solver authors both `bend` and the legacy `flip` spelling under
   the group that bound its `root`. Use `bend` alone; `"positive"` is `flip: true` and bends the
   elbow toward increasing rotation, and `"negative"` is `flip: false`.
-- `ik-solver-key-misgrouped`, when a solver node authors `bend`, `flip` or `inspect` under a group
+- `slot-unknown`, when a solver track binds a slot its plugin does not declare, including `bend`, `flip` or `inspect` misgrouped as a requirement
   that did not bind its `root`. The solve reads the flattened values, so `spring.values.bend` beside
   `ik.requires.root` would steer the solve from a group that does not own it. Author the key under the
   group that bound `root`. On a node that bound no `root` these keys are not solver vocabulary, so
@@ -191,10 +163,10 @@ An out-of-range solved angle is not an error: the solve moves it to the bound ne
 so `[90, 170]` answers `-170` with `170`, and a miss caused by a bound is reported as `limited` quality.
 
 Opt-in solve inspection ([ADR-109](../ADR-109-opt-in-solve-inspection.md)) adds one load rule, and
-`ik-solver-key-misgrouped` above covers `inspect` exactly as it covers `bend` and `flip`:
+`slot-unknown` above covers `inspect` exactly as it covers `bend` and `flip`:
 
 - `ik-inspect-malformed`, when a solver's `inspect` under the group that bound its `root` is not a
-  static boolean. Use `ik.values.inspect: true` to request the solver's fixed-shape `inspection`
+  static boolean. Use `values: { inspect: true }` on the `ik` track to request the solver's fixed-shape `inspect`
   output, or `false` to opt out. A keyframed switch is refused because an output that appears
   mid-timeline would make the patch shape unstable. Inspection is data, not a warning.
   The public `ik3d` solver reads the same switch under the same two rules and publishes the
@@ -256,7 +228,11 @@ A goal a limit holds off is `limited` quality with `atBound`, not an error, exac
 
 The 2D `ik` solver has no rule about a solved bone's pivot offset either, for the same reason. A solved member may author `x` and `y` exactly as any other bone does, and `ik-solved-pivot-unsupported` is deleted. `fk` still owns applying the offset, in its parent's rotated space; `ik` accounts for it in the geometry it solves, so the rotations it publishes are the ones that put the composed tip on the goal. Both solves share one convention: the analytic path folds the two offsets into a fixed base point and a rigid link with a twist, and the iterative one solves pivot positions and averages a shared sub-base's tip rather than its children's twists. An offset that shortens a chain's reach past its goal is an unreachable target, which extends the chain toward it and has never been a diagnostic. See ADR-054.
 
-A diagnostic about a grouped keyframe cites the path you typed, `keyframes.fk.values.length`, not the flattened key the compiler works with. A diagnostic about a stop cites its index on the property, `keyframes.transform.values.x[0].p`. A diagnostic about a dict entry cites the key you typed, `keyframes.ik.requires.targets.forearm`, and there is no derived slot spelling for it to cite instead: the key is carried beside the slot as data rather than formatted into it. Every path a leaf diagnostic carries is a path you wrote. See ADR-041, ADR-049, ADR-050, ADR-051, ADR-052, and ADR-057.
+A diagnostic about an authored value cites the path you wrote, `motions[0].tracks[0].input.values`,
+rather than a compiled slot id. A diagnostic about a cell cites the row envelope and field,
+`...input.values[1].cells.rotation`. A dependency diagnostic cites the slot you bound,
+`...input.requires.chain`, and a map entry keeps its authored key rather than formatting it into the
+slot. See ADR-041, ADR-044 and ADR-057.
 
 ## A frame has two failure owners
 
@@ -277,8 +253,8 @@ A solve that does not reach its goal is not one of these. An iterative solve con
 tolerance, and an unreachable goal leaves the chain fully extended toward it, so an unopted solver
 publishes ordinary `ready` patches carrying only `rotations` in both cases. The solve result carries
 one `SolveQuality` record for every strategy (ADR-107); an author may opt into it with
-`ik.values.inspect: true`, which retains the authored `inspect` value and adds one `inspection` value
-without emitting a per-tick diagnostic or warning. The inspection shape includes frozen per-leaf
+`values: { inspect: true }` on an `ik` track, which adds one `inspect` output
+without emitting a per-tick diagnostic or warning. The `inspect` shape includes frozen per-leaf
 `residuals`, and a multi-goal miss whose branch witness remains outside tolerance is `conflicted`,
 not a claim that no pose exists. The visible tip gap caused by partial FK weight is composition-space
 data owned by `fk`, not this solver-space record. See ADR-109 and ADR-110.
