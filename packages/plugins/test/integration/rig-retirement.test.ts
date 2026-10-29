@@ -187,13 +187,13 @@ describe("Phase 5 closeout and rig retirement (AQ)", () => {
     expect(pkg.exports["./rig"]).toBeUndefined();
   });
 
-  it("AQ-11 pending ledger Phase 6 and 7 preservation: exactly 3 entries remain", () => {
+  it("AQ-11 pending ledger Phase 6 and 7 preservation: exactly 2 entries remain", () => {
     const pending = JSON.parse(readFileSync(PENDING_PATH, "utf8")) as readonly {
       readonly path: string;
       readonly phase: number;
     }[];
-    expect(pending.length).toBe(3);
-    expect(pending.filter((e) => e.phase === 6).length).toBe(1);
+    expect(pending.length).toBe(2);
+    expect(pending.filter((e) => e.phase === 6).length).toBe(0);
     expect(pending.filter((e) => e.phase === 7).length).toBe(2);
     expect(pending.every((e) => e.phase === 6 || e.phase === 7)).toBe(true);
   });

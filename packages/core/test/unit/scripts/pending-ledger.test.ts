@@ -16,7 +16,7 @@ import { PENDING_LEDGER, pendingPaths } from "../../../../../test/pending.mjs";
  * Phase 5 with exact reasons, leaving 79 files: 73 Phase 5, 4 Phase 6 and 2 Phase 7.
  * Lower this number in the slice that resolves entries; raising it re-opens the gate this closes.
  */
-const PENDING_CEILING = 3;
+const PENDING_CEILING = 2;
 
 const ROOT = fileURLToPath(new URL("../../../../../", import.meta.url));
 const MARKER = "// @ts-nocheck";
