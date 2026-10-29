@@ -1,87 +1,17 @@
 # packages/core/src/graph/ir.ts
 
-## ORIENTATION_KEYS
+## buildGraphIR
 
-The authored orientation keys a solve replaces: 2D `fk`'s `rotation`, and `fk3d`'s `rotation`, `rotationX` and `rotationY`.
+Builds the graph IR for a project definition.
 
-`ik-solved-rotation-dead` reads the union of the groups authoring any of them, because each one is dead for the same reason under a solve with no weight: at the default weight the solved orientation replaces the authored one outright. Reading `rotation` alone would refuse a 3D member authoring a dead Z angle and load one authoring a dead X angle, one rule answering two ways for one question. No 2D member plugin claims `rotationX` or `rotationY`, so no 2D rig and no 2D message moves, and nothing that loaded before is refused now: before `fk3d` claimed them, every one of these keys under `fk3d` was `plugin-unknown-key`. A closed tuple rather than a registry read, because this layer holds no registry by design (ADR-044). See ADR-116.
+## deriveDependants
 
-Dead depends on the strategy, so the refusal is decided per node and reported only after the chains are derived. The 3D tree solve reads every member's rest orientation as the frame its minimal swing starts from, so under it the rest is live at any weight; `contract/solver-shape.ts`'s `readsMemberRest` answers that from the derived depths, and a binder group whose solver reads the rest is struck from the candidates. The closed form and the 2D solve read no rest, so every rig either of them answers is refused exactly as before. The same pass asks `poleBends` beside `ik-chain-unsupported` and refuses a pole over a chain with no interior joint as `ik-pole-without-bend`. See ADR-122. Each derived member also carries whether it authored a constraining 3D joint under one of its solver plugins (`authorsConstrainingJoint`), because a constrained chain takes 3D FABRIK at two members too, which makes its rests live; the runtime's `chainShape3d` answers the same from the live joint. See ADR-123.
-
-## groupsAuthoring
-
-The plugin-named groups whose `values` section authors at least one of `keys`, sorted by name.
-
-One walker, and the two rules that read it are set operations against the groups that bound a `solver` slot. It used to answer a single question, "what did the binder groups author for this key", which is one of the two predicates that question splits into the moment a second rule needs its complement: the dead rotation asks whether a binder group authored an orientation key and no `weight`, and the inert weight asks whether a solver-bound node authored `weight` in a group that bound none. Two near-identical group walkers is how those two drift apart, and this read has drifted once already, when it was wider than the rule that used it. It takes a key list rather than one key since the dead rotation reads `ORIENTATION_KEYS`, so the union is one walk rather than three walks merged by the caller. See ADR-055 and ADR-116.
-
-Presence, never value. Whether an authored `weight` is provably always `1` is a leaf-shape and value-semantics question, `contract/authored-leaf` already owns leaf shape, and hand-walking a `stops` array here would make this layer a second owner of it: the same break issue #192 closed once. This layer answers which group authored a key, and nothing about what it authored.
-
-Two shapes it deliberately does not report, because each already has a more specific owner. A value directly under the plugin name is the pre-ADR-049 group form, refused as `keyframes-missing-values-section`. And an ungrouped entry names no plugin at all, so it is refused as `keyframes-ungrouped-key` by the schema validator before any rule here reads it (ADR-121).
-
-Sorted, so a diagnostic that lists the groups it fired on never depends on authoring order. `readPluginValues` stays the only answer to what a group's `values` section is. See ADR-043, ADR-044, ADR-049, ADR-051, ADR-053, ADR-054, and ADR-055.
-
-## baseOf
-
-The node this one hangs from through its `base` slot, or `undefined` when it binds none.
-
-## ownerOf
-
-The owner a node's authored sources were qualified against, recovered from its own qualified id.
-
-`collectTrack` qualifies against the motion id, or `~` for a free track, and both spellings put that owner before the first `/` of the node id. Recovering it here is what lets a goal key be qualified in the one layer that knows the member set, without adding a field to `GraphNode` that two owners would then have to keep in step with the id it is derived from. An authored goal key therefore qualifies exactly as an authored `base` source does, including a free-track solver having to spell its members out, which is a requirement its own bindings already carry.
-
-## solverPluginsOf
-
-Every plugin through which a member binds one solver's `solver` slot, sorted by code unit and each once.
-
-A member is derived under a solver by exactly these edges, so the list is never empty for a derived member, and it is normally one plugin. It is what `ik-chain-unsupported` reads beside each member's depth, so a solver whose declared shape names a member plugin refuses a member of another dimension at load: an `fk` member under `ik3d` reads `rotations`, which `ik3d` never publishes, and an `fk3d` member under the 2D `ik` reads `rotations3d`, which `ik` never publishes. The capabilities port supplies each shape and registry-wide dedication; the registry derives them at admission and the graph never imports the registry (ADR-044, ADR-136).
-
-## AuthoredGoal
-
-One authored goal of a solver: the member key as written, and the node it names as a source.
-
-## GoalBindings
-
-Every goal binding one node authored: the bare slot, and the dict entries in authored key order.
-
-One reader, because four rules and the derivation all ask the same question of the same edges. `ik-mode-ambiguous` needs to know whether a node bound a goal at all, `ik-goal-conflict` needs both spellings, `ik-solver-no-goal` needs neither of them, and the derivation needs every dict entry with its authored key. Two of those used to read the literal `"target"` in one loop while the grammar was read in another, which is how a member binding `solver` beside a goal dict loaded clean with every one of its goals ignored.
-
-Gated on the base slot as well as on the field, and both halves are load-bearing. The field alone would classify any dict-valued binding as a goal, so a spring's or a spline's tension dict would have six IK rules run over it by a layer that holds no registry and cannot know better; the slot alone is what `"target"` already was. That puts `targets` in the same set as the `root`, `solver`, `base` and `target` literals this layer already hardcodes. `DV-8` pins it. See ADR-057.
-
-The dict is sorted by the authored key rather than by `compareEdges`, whose first key is the source id: two goals pointing at one node would otherwise be ordered by nothing, and the authored key is what a duplicate diagnostic has to list. That is the ordering the derived slot produced, because the slot was this key under a fixed prefix. Order is a pure function of authored ids either way.
-
-## goalReachOf
-
-The goal reach of one member for one solve: `addressed`, `unaddressed`, or `undecided`, as
-declared by `goalReachOf` in `ir.ts`.
-
-A solver with both bare and dict goal spellings is `undecided`. A bare goal is `addressed` only
-when the chain has one leaf and this member is that leaf; otherwise it is `undecided` for a
-branching chain or `unaddressed` for another member. With no goal spelling it is `undecided`. For a
-goal dict,
-a resolved member is `addressed`, while a leaf or authored member that was not safely resolved is
-`undecided`; another member is `unaddressed`. A broken chain marks every member undecided before
-this function is reached.
-
-`undecided` exists so one cause is never reported twice. The existing goal diagnostics own
-malformed, ambiguous, duplicate, missing, and refused goal shapes; influence validation must not turn
-the same
-uncertain shape into a second `ik-influence-without-goal`.
-
-The scope is built in `resolveSolvers`, after the graph has derived chains and resolved goals,
-because that is the one place that owns both member leafhood and goal addressing.
-`graph/solver-constraints.ts` receives the resulting `GoalScope`, and `validateGoalWeights`
-validates the placement of every goal weight, `influence` and the 3D `orient` (ADR-124), without
-re-deriving either question. Keeping the scope here prevents a second graph interpretation in the
-rule module and lets several solves combine their answers with one precedence order. See ADR-110.
+Reverse topology for one node set: per node id, the ids that read it.
 
 ## withContract
 
 The contract a node enters this build with, carried or derived.
 
-The carried entry wins whenever it names the same plugin, because only a structural edit is allowed
-to compute a new one: a rebuild after a cheap edit must keep the contract the node committed to even
-though the authored values beside it moved. A carried contract naming another plugin belongs to an
-earlier incarnation of the id, so it is ignored and the track answers. A node that already carries a
-contract keeps its own object, which is what lets the incremental builder's cached nodes survive a
-rebuild by identity. Anything else is derived once here, before any check reads it.
+## finalizeGraph
+
+Validates collected nodes and diagnostics, linearizes them, and freezes the result.

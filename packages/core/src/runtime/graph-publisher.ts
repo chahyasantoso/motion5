@@ -37,24 +37,6 @@ import { defineOwnValue } from "../lang/own-property";
  * from the member's edges made one fact answerable in two places, and taught `engine.ts` a
  * requirement slot name it had no reason to know. See ADR-051.
  */
-export interface MemberState {
-  readonly id: string;
-  readonly values: Readonly<Record<string, unknown>>;
-  readonly progress: number;
-}
-/**
- * One chain member as its solver receives it: what the member reported, plus where the derivation
- * says it sits. The publisher joins the two, so neither side has to know the other's half.
- *
- * `goal` is the third part of that join and it is present only on a chain leaf the author addressed.
- * It carries the goal node's published values rather than its id, because a plugin holds no registry
- * and reading one would make the solver a graph consumer. See issue #195.
- */
-export interface SolverMember extends MemberState {
-  readonly base: string;
-  readonly goal?: Readonly<Record<string, unknown>>;
-}
-
 export interface PublisherComposition {
   readonly outputs: Outputs;
   readonly sourceProgress: number;
@@ -91,7 +73,6 @@ export interface PublisherNode extends GraphNode {
    * grouped machinery Phase 7 removes.
    */
   readonly composeIdentified?: (requires: ResolvedRequires) => PublisherComposition;
-  readonly interpolated?: () => MemberState;
 }
 /**
  * The graph a flush runs over, with a composer on every node.
@@ -167,15 +148,7 @@ function edgesByRole<Role extends GraphEdge["role"]>(
  * rather than a plugin. `resolveSolvers` classifies a solver by its `root` edge, so the same edge
  * names the scope. See ADR-051.
  */
-function solvingPluginOf(node: PublisherNode): string | undefined {
-  // Read optionally even though `InputGraphEdge.requirement` is required, because the publisher
-  // composes snapshots it did not build and the malformed-input diagnostic has exactly one owner:
-  // the `input-requirement` guard in the requirement-inputs loop below. Dereferencing here moves
-  // that report ahead of its owner, so a solver whose root edge arrived without a requirement
-  // names a reading-'slot' `TypeError` instead of its own scope. `IK-20` is the case. See ADR-096.
-  const rootEdge = edgesByRole(node, "input").find((edge) => edge.requirement?.slot === "root");
-  return rootEdge?.requirement?.plugin;
-}
+
 function isRendererNeutral(value: unknown, seen = new WeakSet<object>()): boolean {
   if (typeof value !== "object" || value === null) return isImmutableLeaf(value);
   if (seen.has(value)) return false;
@@ -404,46 +377,7 @@ export class GraphPublisher {
     // frozen once, at a point where it is known to be complete.
     const memberSlots = new Map<string, Map<string, Record<string, unknown>>>();
     const sourceRevisions: Record<string, number> = {};
-    if (node.solves && node.solves.length > 0) {
-      const solvingPlugin = solvingPluginOf(node);
-      // Unreachable through `resolveSolvers`, which derives `solves` only for a node holding
-      // a `root` edge. Failed rather than defaulted to a plugin name, because a publisher
-      // that guesses one is the thing this lookup exists to delete.
-      if (solvingPlugin === undefined) failPublication({ kind: "solver-scope", nodeId: node.id });
-      const membersList: SolverMember[] = [];
-      for (const memberRef of node.solves) {
-        const memberNode = byId[memberRef.id];
-        if (typeof memberNode?.interpolated !== "function")
-          failPublication({ kind: "member-interpolation", memberId: memberRef.id });
-        // `base` comes off `solves`, where `resolveSolvers` already derived it, rather than
-        // from a second walk over the member's edges by whoever supplies `interpolated`.
-        const state = memberNode.interpolated();
-        // And so does `goal`, for the same reason: a goal is one authored dict entry that
-        // `readPluginBindings` expanded into its own binding, so the node it names is an
-        // ordinary input edge of this solver and is already resolved by the pending check
-        // above. The slot delivers that same value under the author's own key through the
-        // loop below; this join is what carries the qualified member id, which is the one
-        // thing a plugin holding no graph cannot recover. The guard is the same defensive
-        // invariant the input loop carries.
-        let goal: Readonly<Record<string, unknown>> | undefined;
-        if (memberRef.goal !== undefined) {
-          goal = expectRecord(valuesFor(memberRef.goal), {
-            kind: "goal-shape",
-            nodeId: node.id,
-            memberId: memberRef.id,
-            goalId: memberRef.goal,
-          });
-        }
-        membersList.push(
-          Object.freeze(
-            goal === undefined
-              ? { ...state, base: memberRef.base }
-              : { ...state, base: memberRef.base, goal },
-          ),
-        );
-      }
-      (collected[solvingPlugin] ??= {}).members = Object.freeze(membersList);
-    }
+
     for (const edge of edgesByRole(node, "input")) {
       const sourcePatch = this.#registry.get(edge.sourceId);
       // Unreachable in normal flow: the pending pre-check above already classified every

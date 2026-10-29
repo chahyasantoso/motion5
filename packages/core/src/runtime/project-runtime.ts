@@ -88,7 +88,7 @@ import {
 } from "./graph-runtime";
 import type { GraphNode } from "../graph/ir";
 import type { CommittedContract } from "../graph/committed-contract";
-import type { MemberState } from "./graph-publisher";
+
 import type { GraphBuilder } from "../ports/graph-builder";
 import { UNJUDGED_CAPABILITIES, type PluginCapabilities } from "../ports/plugin-capabilities";
 import { unreachable } from "../lang/exhaustive";
@@ -204,13 +204,7 @@ export interface ProjectRuntimeOptions {
    * with; a registry-free runtime leaves it absent, which keeps every no-plugin path unchanged.
    */
   readonly isPluginRegistered?: (pluginId: string) => boolean;
-  /**
-   * How one node's interpolated state is read, forwarded to `GraphRuntime` untouched.
-   *
-   * Total, for the reason the option it forwards to gives. The function it returns resolves the
-   * compiled Track per call.
-   */
-  readonly interpolated?: (node: GraphNode) => () => MemberState;
+
   readonly setProgress?: (nodeId: string, progress: number) => void;
   /**
    * Replaces the authored values one compiled Track evaluates, for the cheap authored tier.
@@ -390,7 +384,6 @@ export class ProjectRuntime {
         ...(options.composeIdentified === undefined
           ? {}
           : { composeIdentified: options.composeIdentified }),
-        ...(options.interpolated === undefined ? {} : { interpolated: options.interpolated }),
         onFlushError: (diagnostic) => this.#diagnostics.record(diagnostic),
       });
     } catch (error) {

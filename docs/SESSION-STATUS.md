@@ -6,19 +6,18 @@ states a phase; `packages/core/test/unit/scripts/session-status-shape.test.ts` e
 byte ceiling.
 
 - **Captured:** 2026-10-29, Asia/Jakarta.
-- **Read against:** `refactor/v5-identified-tables` after aggregate 3D FK.
+- **Read against:** `refactor/v5-identified-tables` after Slice 6 explicit aggregate graph and publisher cleanup.
 
 ## Now
 
-- **2D and 3D FK read aggregate tables:** `fk` and `fk3d` take one body table, one solved table
-  and one base record through single-source slots, walk canonical topology, and publish complete
-  pose tables in one pass. Grouped authoring is refused by name at load. No pending ledger entries
-  were removed; 73 Phase 5, 4 Phase 6 and 2 Phase 7 entries remain.
+- **Explicit aggregate graph and publisher:** `packages/core/src/graph` and `packages/core/src/runtime`
+  compose aggregate plugins purely through explicit declared requirement edges, with no hidden
+  solver fan-in or member interpolation. 73 Phase 5, 4 Phase 6 and 2 Phase 7 pending entries remain.
 
 ## Next in line
 
-- **Explicit aggregate graph and publisher cleanup:** port graph fixtures to explicit aggregate
-  dependencies and remove hidden solver member fan-in machinery.
+- **Pose-gap-filler aggregate migration:** replace 28 member tracks with 5 aggregate tracks (`root`,
+  `body`, `goals`, `solve`, `pose`) and whole-table batch writes.
 
 ## Open, and not scheduled
 

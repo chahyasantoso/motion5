@@ -61,7 +61,7 @@ export const CLOCK_REGRESSION_RULE = "clock-tick-regression" satisfies RuleId;
 export const CLOCK_CONSUMER_FAILURE_RULE = "clock-consumer-failure" satisfies RuleId;
 export const FLUSH_FAILURE_RULE = "flush-failure" satisfies RuleId;
 export const SCHEDULER_FAILURE_RULE = "scheduler-failure" satisfies RuleId;
-import type { MemberState } from "./graph-publisher";
+
 import type { GraphBuilder } from "../ports/graph-builder";
 export interface GraphRuntimeOptions {
   readonly scheduler?: Scheduler;
@@ -70,16 +70,6 @@ export interface GraphRuntimeOptions {
   readonly graphBuilder?: GraphBuilder;
   /** The identified-table composition seam, absent for every grouped-only runtime. */
   readonly composeIdentified?: ComposeIdentifiedResolver;
-  /**
-   * Answers, for one node, how to read what it interpolated.
-   *
-   * Total on purpose. The provider is optional, because a runtime with no solver in it needs none,
-   * but its answer is not: a supplier that could return `undefined` for a node it has no compiled
-   * Track for made the publisher report that a member exposes no interpolated function, which names
-   * this seam instead of the missing node. The function it returns resolves that Track per call, so
-   * nothing here may capture one. See ADR-031 and ADR-051.
-   */
-  readonly interpolated?: (node: GraphNode) => () => MemberState;
 }
 export class GraphRuntime {
   readonly #binding: GraphBinding;
@@ -88,7 +78,7 @@ export class GraphRuntime {
   readonly #clock: Clock;
   readonly #compose: ComposeResolver;
   readonly #composeIdentified: ComposeIdentifiedResolver | undefined;
-  readonly #interpolated: ((node: GraphNode) => () => MemberState) | undefined;
+
   readonly #scheduler: Scheduler | undefined;
   readonly #onFlushError: ((diagnostic: Diagnostic) => void) | undefined;
   readonly #onClockTick: ((event: ClockTick) => void) | undefined;
@@ -120,7 +110,7 @@ export class GraphRuntime {
     this.#clock = clock;
     this.#compose = compose;
     this.#composeIdentified = options.composeIdentified;
-    this.#interpolated = options.interpolated;
+
     this.#scheduler =
       options.scheduler === undefined ? undefined : deferredScheduler(options.scheduler);
     this.#onFlushError = options.onFlushError;
@@ -362,13 +352,11 @@ export class GraphRuntime {
   #publisherNode(node: GraphNode): PublisherNode {
     const cached = this.#publisherNodes.get(node);
     if (cached) return cached;
-    const interpolatedFn = this.#interpolated?.(node);
     const composeIdentified = this.#composeIdentified?.(node);
     const publisherNode: PublisherNode = Object.freeze({
       ...node,
       compose: this.#compose(node),
       ...(composeIdentified === undefined ? {} : { composeIdentified }),
-      ...(interpolatedFn ? { interpolated: interpolatedFn } : {}),
     });
     this.#publisherNodes.set(node, publisherNode);
     return publisherNode;
