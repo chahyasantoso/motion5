@@ -269,6 +269,8 @@ export const BODY_2D_SLOT = slotSpec(BODY_2D_SPEC);
 export const BODY_3D_SLOT = slotSpec(BODY_3D_SPEC);
 export const GOALS_2D_SLOT = slotSpec(GOALS_2D_SPEC);
 export const GOALS_3D_SLOT = slotSpec(GOALS_3D_SPEC);
+export const SOLVED_2D_SLOT = slotSpec(SOLVED_2D_SPEC);
+export const SOLVED_3D_SLOT = slotSpec(SOLVED_3D_SPEC);
 
 /**
  * The node a member hangs from when its `parentId` is absent: the external base frame.

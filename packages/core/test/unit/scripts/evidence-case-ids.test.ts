@@ -401,6 +401,12 @@ import { fileURLToPath } from "node:url";
 // retired grouped shapes and out-of-domain or animated static cells, and ordinary `root`/`base`
 // row ids.
 //
+// `AK-` belongs to the aggregate 2D forward kinematics plugin (`fk` in
+// `packages/plugins/src/fk.ts`): single `chain`, `solved` and `base` slots, canonical root-first
+// topology walk, id-based solved-row lookup via closed discriminated union, angle blending via
+// `lerpAngle`, pivot offsets, segment extent, and publishing complete world-frame pose tables
+// conforming to `POSE_2D_SPEC`.
+//
 // The scan root is the repository rather than `packages/core/test`, because an id names one test in
 // the suite and the suite is not one package. `H-4` is declared in
 // `packages/react/test/public-hook-render.test.ts`, which the old root could not see, so one id
@@ -463,7 +469,7 @@ const TEST_FILE = /\.test\.tsx?$/;
 // this pattern belongs beside the pattern rather than once per series, so those paragraphs now
 // say what a series owns and this one says where it sorts. Issue #294.
 const CASE_TITLE =
-  /it\(\s*"((?:AE|AI|AJ|CF|CL|CN|CS|DV|EN|EV|FB|FO|GE|GF|GI|GT|IK|IN|IR|LF|LV|MG|PK|PV|RA|RB|RS|SD|SH|TH|WT|B|C|D|E|F|G|H|J|K|L|M|N|P|Q|R|S|T|U|V|W|Y|Z)-\d+)/g;
+  /it\(\s*"((?:AE|AI|AJ|AK|CF|CL|CN|CS|DV|EN|EV|FB|FO|GE|GF|GI|GT|IK|IN|IR|LF|LV|MG|PK|PV|RA|RB|RS|SD|SH|TH|WT|B|C|D|E|F|G|H|J|K|L|M|N|P|Q|R|S|T|U|V|W|Y|Z)-\d+)/g;
 const REACT_RENDER = "packages/react/test/public-hook-render.test.ts";
 const SERIES_SHAPED_TITLE = /it\(\s*"([A-Z]{1,2}\d*)-(\d+)(?![\w-])/g;
 const SERIES_PREFIX = /^[A-Z]{1,2}$/;

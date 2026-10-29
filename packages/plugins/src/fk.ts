@@ -1,5 +1,13 @@
 import { unreachable } from "@motion5/core/plugin-api";
-import type { IdentifiedPluginDefinition, Outputs, ValueSpec } from "@motion5/core/plugin-api";
+import type { IdentifiedPluginDefinition, Outputs } from "@motion5/core/plugin-api";
+import {
+  BODY_2D_SLOT,
+  POSE_2D_SPEC,
+  ROOT_2D_SPEC,
+  SOLVED_2D_SLOT,
+  readAggregateTopology,
+  type AggregateRow,
+} from "./aggregate-topology";
 import {
   clamp,
   composeWorld,
@@ -8,60 +16,17 @@ import {
   readNumber,
   readPivotOffset,
   segmentExtent,
+  type WorldFrame,
 } from "./frame";
-
-const MEMBER: ValueSpec = {
-  kind: "record",
-  fields: {
-    memberId: { kind: "string" },
-    parentId: { kind: "string" },
-    x: { kind: "number", optional: true },
-    y: { kind: "number", optional: true },
-    length: { kind: "number" },
-    rotation: { kind: "number", optional: true },
-    weight: { kind: "number", optional: true },
-  },
-};
-
-const FRAME: ValueSpec = {
-  kind: "table",
-  schema: {
-    row: {
-      fields: {
-        x: { kind: "number" },
-        y: { kind: "number" },
-        rotation: { kind: "number" },
-      },
-    },
-  },
-};
-
-const SOLVER: ValueSpec = {
-  kind: "table",
-  schema: { row: { fields: { rotation: { kind: "number" } } } },
-};
-
-const OUTPUT: ValueSpec = {
-  kind: "table",
-  schema: {
-    row: {
-      fields: {
-        x: { kind: "number" },
-        y: { kind: "number" },
-        rotation: { kind: "number" },
-      },
-    },
-  },
-};
 
 type FlatRecord = Readonly<Record<string, number | string | boolean>>;
 type TableOutput = {
   readonly values: readonly { readonly id: string; readonly cells: FlatRecord }[];
 };
-type ResolvedRequires = Readonly<Record<string, Outputs | Readonly<Record<string, Outputs>>>>;
-type MemberRowLookup =
-  | { readonly kind: "found"; readonly row: { readonly id: string; readonly cells: FlatRecord } }
-  | { readonly kind: "missing"; readonly memberId: string };
+
+type SolvedRowLookup =
+  | { readonly kind: "found"; readonly row: AggregateRow }
+  | { readonly kind: "missing"; readonly id: string };
 
 function flatRecord(value: unknown, path: string): FlatRecord {
   if (value === null || typeof value !== "object" || Array.isArray(value))
@@ -87,25 +52,15 @@ function tableOutput(outputs: Outputs, path: string): TableOutput["values"] {
   return values as TableOutput["values"];
 }
 
-function baseRow(rows: TableOutput["values"], parentId: string): FlatRecord {
-  const row = rows.find((candidate) => candidate.id === parentId);
-  if (row === undefined) throw new TypeError(`FK base row missing for parent "${parentId}".`);
-  return row.cells;
+function lookupSolvedRow(
+  solvedById: ReadonlyMap<string, AggregateRow>,
+  id: string,
+): SolvedRowLookup {
+  const row = solvedById.get(id);
+  return row === undefined ? { kind: "missing", id } : { kind: "found", row };
 }
 
-function stringField(record: FlatRecord, field: string, path: string): string {
-  const value = record[field];
-  if (typeof value !== "string" || value.length === 0)
-    throw new TypeError(`FK requires ${path}.${field} to be a non-empty string.`);
-  return value;
-}
-
-function lookupRow(rows: TableOutput["values"], memberId: string): MemberRowLookup {
-  const row = rows.find((candidate) => candidate.id === memberId);
-  return row === undefined ? { kind: "missing", memberId } : { kind: "found", row };
-}
-
-function solveRotation(lookup: MemberRowLookup): number {
+function solveRotation(lookup: SolvedRowLookup): number {
   switch (lookup.kind) {
     case "found": {
       const rotation = lookup.row.cells.rotation;
@@ -114,7 +69,7 @@ function solveRotation(lookup: MemberRowLookup): number {
       return rotation;
     }
     case "missing":
-      throw new TypeError(`Solver row missing for member "${lookup.memberId}".`);
+      throw new TypeError(`Solver row missing for member "${lookup.id}".`);
     default:
       return unreachable(lookup);
   }
@@ -125,31 +80,40 @@ export const fkPlugin: IdentifiedPluginDefinition = {
   inputs: {
     values: { kind: "record", fields: {} },
     requires: {
-      member: { outputs: { values: MEMBER } },
-      base: { outputs: { values: FRAME } },
-      solver: { outputs: { values: SOLVER } },
+      chain: { outputs: { values: BODY_2D_SLOT } },
+      solved: { outputs: { values: SOLVED_2D_SLOT } },
+      base: { outputs: { values: ROOT_2D_SPEC } },
     },
   },
-  outputs: { values: OUTPUT },
+  outputs: { values: POSE_2D_SPEC },
   transform({ requires }) {
-    const member = recordOutput(requires.member as Outputs, "member");
-    const baseRows = tableOutput(requires.base as Outputs, "base");
-    const solverRows = tableOutput(requires.solver as Outputs, "solver");
-    const memberId = stringField(member, "memberId", "member.values");
-    const parentId = stringField(member, "parentId", "member.values");
-    const solved = solveRotation(lookupRow(solverRows, memberId));
-    const authored = readNumber(member.rotation);
-    const weight = clamp(readNumber(member.weight, 1), 0, 1);
-    const rotation = lerpAngle(authored, solved, weight);
-    const pivot = composeWorld(readFrame(baseRow(baseRows, parentId)), {
-      ...readPivotOffset(member),
-      rotation,
+    const topology = readAggregateTopology((requires.chain as Outputs).values);
+    const baseFrame = readFrame(recordOutput(requires.base as Outputs, "base"));
+    const solvedRows = tableOutput(requires.solved as Outputs, "solved");
+    const solvedById = new Map<string, AggregateRow>();
+    for (const row of solvedRows) {
+      solvedById.set(row.id, row as AggregateRow);
+    }
+    const worldFrames = new Map<string, WorldFrame>();
+    const rows = topology.rows.map((row) => {
+      const solved = solveRotation(lookupSolvedRow(solvedById, row.id));
+      const authored = readNumber(row.cells.rotation);
+      const weight = clamp(readNumber(row.cells.weight, 1), 0, 1);
+      const rotation = lerpAngle(authored, solved, weight);
+      const parent = topology.parentById.get(row.id);
+      const parentFrame = parent === undefined ? baseFrame : worldFrames.get(parent)!;
+      const pivot = composeWorld(parentFrame, {
+        ...readPivotOffset(row.cells),
+        rotation,
+      });
+      const world = composeWorld(pivot, {
+        x: segmentExtent(readNumber(row.cells.length)),
+        y: 0,
+        rotation: 0,
+      });
+      worldFrames.set(row.id, world);
+      return { id: row.id, cells: world };
     });
-    const world = composeWorld(pivot, {
-      x: segmentExtent(readNumber(member.length)),
-      y: 0,
-      rotation: 0,
-    });
-    return { values: [{ id: memberId, cells: world }] };
+    return { values: rows };
   },
 };

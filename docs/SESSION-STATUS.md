@@ -5,21 +5,20 @@ are the complete shape. **Now** and **Next in line** carry exactly one bullet ea
 states a phase; `packages/core/test/unit/scripts/session-status-shape.test.ts` enforces the shape and
 byte ceiling.
 
-- **Captured:** 2026-10-28, Asia/Jakarta.
-- **Read against:** `refactor/v5-identified-tables` after the aggregate IK slices.
+- **Captured:** 2026-10-29, Asia/Jakarta.
+- **Read against:** `refactor/v5-identified-tables` after aggregate 2D FK.
 
 ## Now
 
-- **2D and 3D IK read aggregate tables:** `ik` and `ik3d` take one body table, one goals table
-  and one base record through single-source slots, share the topology reader and goal join, and
-  publish the same solved rows byte for byte. Grouped authoring is refused by name at load, so
-  the app's grouped rig no longer loads until its slice migrates it. No pending ledger entries
-  were removed; 73 Phase 5, 4 Phase 6 and 2 Phase 7 entries remain.
+- **2D FK reads aggregate tables:** `fk` takes one body table, one solved table and one base
+  record through single-source slots, walks canonical topology, and publishes the whole pose table
+  in one pass. Grouped authoring is refused by name at load. No pending ledger entries were removed;
+  73 Phase 5, 4 Phase 6 and 2 Phase 7 entries remain.
 
 ## Next in line
 
-- **Aggregate 2D FK:** compose one whole pose table from the body and solved tables and the base
-  record.
+- **Aggregate 3D FK:** the same chain, solved and base contract for `fk3d`, preserving orientation
+  blending, 3D pivot offsets, segment extent and Euler world-frame pose publishing.
 
 ## Open, and not scheduled
 
