@@ -7,8 +7,9 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 const execFileAsync = promisify(execFile);
 const root = fileURLToPath(new URL("../../../../..", import.meta.url));
-const npx = process.platform === "win32" ? "npx.cmd" : "npx";
-const useShell = process.platform === "win32";
+// The local compiler run by this Node binary: no shell, no batch file, and no `npx` resolution per
+// call, which is what a deprecation warned about when the spawn carried both arguments and a shell.
+const tsc = join(root, "node_modules", "typescript", "bin", "tsc");
 
 const EMIT_FLAGS = [
   "--declaration",
@@ -66,7 +67,6 @@ export declare const runtime: ProjectRuntime;
 
 function checkFlags(file: string): string[] {
   return [
-    "tsc",
     "--noEmit",
     "--target",
     "ES2023",
@@ -84,9 +84,9 @@ function checkFlags(file: string): string[] {
  * Resolves rather than rejects, so a compiler that refuses the consumer becomes an assertion with
  * the diagnostics attached instead of an unhandled rejection with none.
  */
-async function run(args: readonly string[]): Promise<{ code: number; output: string }> {
+async function run(flags: readonly string[]): Promise<{ code: number; output: string }> {
   try {
-    const done = await execFileAsync(npx, [...args], { cwd: root, shell: useShell });
+    const done = await execFileAsync(process.execPath, [tsc, ...flags], { cwd: root });
     return { code: 0, output: `${done.stdout}${done.stderr}` };
   } catch (error) {
     const failed = error as { code?: number; stdout?: string; stderr?: string };
@@ -100,7 +100,6 @@ describe("public port type surface (issue #158)", () => {
   beforeAll(async () => {
     out = await mkdtemp(join(root, ".tmp-port-types-"));
     const emitted = await run([
-      "tsc",
       ...EMIT_FLAGS,
       "--outDir",
       join(out, "entry"),

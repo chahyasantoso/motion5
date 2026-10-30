@@ -196,4 +196,21 @@ const linearity = report.sizes.map((size, index) => {
   };
 });
 
-console.log(JSON.stringify({ ...report, linearity }, null, 2));
+/** One line per size: the flat and per-cell costs the comparison is about. */
+function sizeLine(row) {
+  const shape = `${row.rows}x${row.columns} ${row.cells} cells`;
+  const flat = `flat ${row.flat.updateNs}ns ${row.flat.createNsPerCell}ns/cell build`;
+  const perCell = `per-cell ${row.perCell.updateNs}ns ${row.perCell.createNsPerCell}ns/cell build`;
+  return `${shape}: ${flat}; ${perCell}`;
+}
+
+function linearityLine(row) {
+  const growth = row.timeGrowth === undefined ? "" : ` time x${row.timeGrowth}`;
+  return `linearity ${row.cells} cells: ${row.nsPerCell}ns/cell${growth}`;
+}
+
+// A plain run prints one line per size and one per growth step; `--full` prints the report the
+// machine it ran on belongs to.
+const quiet = [...report.sizes.map(sizeLine), ...linearity.map(linearityLine)].join("\n");
+const fullTable = process.argv.includes("--full");
+console.log(fullTable ? JSON.stringify({ ...report, linearity }, null, 2) : quiet);

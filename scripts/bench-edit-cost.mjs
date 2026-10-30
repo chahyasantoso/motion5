@@ -156,5 +156,8 @@ const report = {
   ],
 };
 
-console.log(JSON.stringify(report, null, 2));
+// A plain run prints one line per measured cell; `--full` prints the samples and the machine.
+const cellLine = (cell) => `${cell.label} ${cell.nsPerCall}ns/call`;
+const fullTable = process.argv.includes("--full");
+console.log(fullTable ? JSON.stringify(report, null, 2) : report.cells.map(cellLine).join("\n"));
 project.dispose();

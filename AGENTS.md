@@ -26,12 +26,13 @@ is one line, and a rule this file does not carry is not a rule.
 
 ## Commands
 
-- `npm run check` — raw-template scan, then format, typecheck and the full suite. Green before any
-  pull request.
+- `npm run check` — the four gates in order, one `PASS` or `FAIL` line each, and the full log only
+  for the step that fails. Green before any pull request.
 - `npm run typecheck` — `tsc --noEmit` over packages and apps.
-- `npm test` — the full suite.
-- `npx vitest run <file>` — one test file.
-- `npx vitest related <file>` — every test that reaches the given source.
+- `npm test` — the full suite on the quiet reporter: a green run states its counts, a red one prints
+  every assertion diff.
+- `npm run test:verbose -- <file>` — the human reporter, with per-file and per-test lines.
+- `npm run test:related -- <file>` — every test that reaches the given source.
 - `npm run metrics` — the four costs of working in this repository, on one line.
 
 ## Rules

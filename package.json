@@ -13,12 +13,14 @@
     "apps/*"
   ],
   "scripts": {
-    "check": "npm run scan:raw-templates && npm run format:check && npm run typecheck && npm test",
+    "check": "node scripts/check.mjs",
     "scan:raw-templates": "node scripts/raw-template-scan.mjs",
     "format": "prettier . --write",
     "format:check": "prettier . --check",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run",
+    "test:verbose": "vitest run --reporter=default",
+    "test:related": "vitest related --run",
     "metrics": "node scripts/repo-metrics.mjs",
     "test:contract": "vitest run packages/core/test/contract",
     "test:ports": "vitest run packages/core/test/contract/ports.test.ts",

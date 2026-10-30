@@ -2,6 +2,10 @@ import { configDefaults, defineConfig } from "vitest/config";
 import { workspaceSourceAliases } from "./scripts/workspace-source-aliases.mjs";
 import { pendingPaths } from "./test/pending.mjs";
 
+// An agent, a pipe and a log viewer parse no escape sequences, and every one of them is a byte on
+// the output `npm run metrics` measures. A terminal keeps its colours.
+if (!process.stdout.isTTY) process.env.NO_COLOR ??= "1";
+
 export default defineConfig({
   resolve: {
     alias: [...workspaceSourceAliases("plugins", "core", "react")],
@@ -10,6 +14,9 @@ export default defineConfig({
     exclude: ["@motion5/core", "@motion5/react", "@motion5/plugins"],
   },
   test: {
+    // The quiet reporter: a green run states its counts, and a red one still prints every
+    // assertion diff. `--reporter=default` is the human view, and CI names its own reporters.
+    reporters: ["agent"],
     // CPU-heavy seeded tests exceed 5s on Windows.
     testTimeout: 30000,
     setupFiles: ["./test/setup.ts"],
