@@ -1,22 +1,12 @@
 import { type BaseRuleId, type RuleId } from "./rule-id";
 
 /**
- * How loudly a rule refuses.
- *
- * Fixed where the rule is defined and nowhere else. It was a constructor parameter with a default,
- * which made a rule's own answer a suggestion: a caller could overrule it by passing something else,
- * and overrode it silently by passing nothing, so every warning rule reported by such a caller
- * produced an error diagnostic that nothing noticed. See ADR-097 and issue #449.
+ * How loudly a rule refuses, fixed where it is defined; a caller cannot override it.
  */
 export type RuleSeverity = "error" | "warning";
 
 /**
- * Whether a rule names ids in its payload.
- *
- * Two answers rather than three. `"sometimes"` had exactly two causes and neither survives
- * measurement: the rule that reported two different refusals under one id was split and then retired
- * with the authored form it named, and the three handle rules are minted on thrown error classes
- * with no construction site at all. Absence of a measurement is not a third answer.
+ * Whether a rule names ids in its payload. Two answers, not three: no rule is conditional.
  */
 export type IdsOwnership = "none" | "always";
 
@@ -26,29 +16,16 @@ export interface RuleFacts {
   readonly ids: IdsOwnership;
 }
 
-// The four combinations, named once rather than spelled out at every member. Each is `as const`, so
-// a type-level lookup through the records below still reads a literal and `RuleIdOwning` can derive
-// from it.
+// The four combinations, named once. `as const` keeps literals, so `RuleIdOwning`
+// derives from these records.
 const ERROR_NO_IDS = { severity: "error", ids: "none" } as const;
 const ERROR_WITH_IDS = { severity: "error", ids: "always" } as const;
 const WARNING_NO_IDS = { severity: "warning", ids: "none" } as const;
 const WARNING_WITH_IDS = { severity: "warning", ids: "always" } as const;
 
 /**
- * What each rule of the base family fixes about itself.
- *
- * `satisfies Record<BaseRuleId, RuleFacts>` rather than an annotation, so the record keeps its
- * literal values and every derivation below reads them. The `satisfies` is the exhaustive read: a
- * rule added to `BASE_RULE_IDS` without an answer here fails `typecheck` at this record, which is the
- * argument `SCOPED_RULE_ID` in `./rule-id` already makes. `lang/exhaustive` is deliberately not
- * imported, because the contract layer does not read the domain layer for a totality it can state in
- * the type. See ADR-092 and ADR-099.
- *
- * Declaration order follows `BASE_RULE_IDS`, so a reader comparing the two reads them in the same
- * sequence. `RuleId` is not `keyof typeof` this record: `./rule-id` keeps owning which rules exist,
- * and deriving the union here would put the contributed family in a second hand-maintained list
- * beside the one it is derived from, which is what issue #283 refused.
- */
+ * What each base rule fixes about itself; `satisfies` makes a missing answer fail typecheck.
+ * Order follows `BASE_RULE_IDS`; `RuleId` stays owned by `./rule-id`, not derived here. */
 const BASE_RULES = {
   "blocked-upstream": ERROR_WITH_IDS,
   "cell-address-unknown": ERROR_NO_IDS,
@@ -174,30 +151,15 @@ type BaseRules = typeof BASE_RULES;
 type AllRules = BaseRules;
 
 /**
- * Every rule's facts, as one record.
- *
- * Annotated by `RuleId` rather than being the source of it, so `./rule-id` keeps owning which rules
- * exist and this owns what each one is. A rule missing here fails `typecheck` at this annotation.
- */
+ * Every rule's facts, one record. Annotated by `RuleId`, not the source of it: `./rule-id` owns
+ * which rules exist, and a rule missing here fails typecheck at this annotation. */
 export const RULES: Readonly<Record<RuleId, RuleFacts>> = Object.freeze({
   ...BASE_RULES,
 });
 
 /**
- * The severity a rule refuses at, and the only expression in the tree that answers the question.
- *
- * A diagnostic's `severity` is derived through this and through nothing else. The constructor in
- * `contract/diagnostics.ts` has no `severity` parameter, so there is no argument position in which a
- * call site could name one, and the claim this docblock used to withhold is true rather than
- * aspirational. Nineteen sites named one and are converted in the same request that deleted the
- * parameter; each named the severity its rule already fixes, so no diagnostic moved. That number is
- * what was converted rather than a total, and `typecheck` on the published commit is what closes the
- * difference. Nothing else spells a severity of its own any more: the four raw object literals in
- * `graph/order.ts`, `graph/references.ts` and `runtime/graph-publisher.ts` were the last of the
- * second ownership, and all four forward through the constructor now. So this is not merely the only
- * expression that answers the question, it is the only one that can.
- * See ADR-097 and issue #449.
- */
+ * The severity a rule refuses at, and the only expression that answers it. Diagnostics derive
+ * `severity` through this; the constructor takes none, so no call site can name one. */
 export function ruleSeverity(ruleId: RuleId): RuleSeverity {
   return RULES[ruleId].severity;
 }
@@ -211,19 +173,8 @@ export type RuleIdOwning<Ownership extends IdsOwnership> = {
 export type IdentifiedRuleId = RuleIdOwning<"always">;
 
 /**
- * The `ids` argument list a producer takes, derived from the rule id it was handed.
- *
- * A rule that owns no ids takes no argument, a rule that always names them requires one, and a rule
- * id known only as `RuleId` leaves it optional. Each `extends` is guarded by a one-element tuple, and
- * the guard is load-bearing rather than a spelling: a naked conditional distributes over a union, so
- * `OwnedIds<RuleId>` would answer once per member and collapse to the union of both lists, which is
- * every existing caller broken rather than one boundary left open. Guarded, the open case answers
- * once and answers optional, which is what a producer forwarding a `RuleId` needs.
- *
- * With `IdsOwnership` down to two answers there is no `"sometimes"` list left to fall through to, so
- * the optional case is reached only by a rule id the compiler knows nothing more specific about. See
- * ADR-097 and issue #449.
- */
+ * The `ids` list a producer takes for a given rule id: `[]`, `[ids]`, or `[ids?]` for a bare
+ * `RuleId`. One-element tuples stop the conditional distributing over the union. */
 export type OwnedIds<Rule extends RuleId> = [Rule] extends [RuleIdOwning<"none">]
   ? []
   : [Rule] extends [RuleIdOwning<"always">]

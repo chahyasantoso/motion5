@@ -364,10 +364,6 @@
     "count": 2
   },
   {
-    "path": "packages/core/src/contract/rule.ts",
-    "count": 25
-  },
-  {
     "path": "packages/core/src/contract/schema-transaction.ts",
     "count": 10
   },
@@ -446,10 +442,6 @@
   {
     "path": "packages/core/src/graph/slot-check.ts",
     "count": 6
-  },
-  {
-    "path": "packages/core/src/index.ts",
-    "count": 28
   },
   {
     "path": "packages/core/src/internal.ts",
@@ -546,10 +538,6 @@
   {
     "path": "packages/core/src/runtime/publisher-reach.ts",
     "count": 10
-  },
-  {
-    "path": "packages/core/src/runtime/refusal.ts",
-    "count": 23
   },
   {
     "path": "packages/core/src/runtime/report.ts",

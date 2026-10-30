@@ -55,13 +55,13 @@ export interface ProjectHandle {
   signal(motionId: string, signal: TriggerSignal): void;
   addMotion(definition: MotionDefinition): { readonly id: string };
   destroyMotion(motionId: string): void;
-  /** Runs `recipe` as one transaction, commits staged once. Not a fence: an immediate-apply verb refuses by name (`schema-transaction-immediate`) while a recipe is open. */
+  /** Runs `recipe` as one transaction; commits staged once. An immediate-apply verb refuses by name (`schema-transaction-immediate`) while open. */
   edit<T>(recipe: (transaction: SchemaTransaction) => T): T;
-  /** Runs `recipe` as one value batch, publishes staged once. Defers publication, not the write. Refusals: `value-batch-immediate`, `value-batch-structural`. */
+  /** Runs `recipe` as one value batch; publishes staged once. Defers publication, not the write. Refusals: `value-batch-immediate`, `value-batch-structural`. */
   values(recipe: (transaction: ValueTransaction) => void): PatchBatch;
   addTrack(track: TrackDefinition, options?: { motionId?: string }): TrackHandle;
   track(nodeId: string): TrackHandle;
-  /** Probe: no throw on unknown id, caller branches. `addTrack` assigns+mounts; `replace` refuses an id-moving definition; one name over both would split cost and refusals. */
+  /** Probe: no throw on unknown id; caller branches. `addTrack` assigns and mounts, `replace` refuses an id-moving definition. */
   tryTrack(nodeId: string): TrackHandle | undefined;
   motion(motionId: string): MotionHandle;
   tryMotion(motionId: string): MotionHandle | undefined;
@@ -69,10 +69,10 @@ export interface ProjectHandle {
   freeTrackIds(): readonly string[];
   mountedNodeIds(): readonly string[];
   dependantsOf(nodeId: string): readonly string[];
-  /** Node's last published patch, none if never published. `LivePatch` not `Patch`: terminal patches reach `subscribeNode` once, unreadable after eviction; `destroyed` impossible here. */
+  /** Last published patch, none if never published. `LivePatch`, not `Patch`: terminal patches reach `subscribeNode` once, unreadable after eviction; `destroyed` impossible. */
   get(nodeId: string): LivePatch | undefined;
   subscribeNode(nodeId: string, listener: PatchListener): () => void;
-  /** Render metadata for a node, `undefined` if this project holds no track for it. Answered by the compiled Track, not a second map; a read — reaches no plugin or graph. */
+  /** Render metadata for a node, `undefined` if the project holds no track for it. Read from the compiled Track, not a second map; reaches no plugin or graph. */
   renderMetadata(nodeId: string): RenderMetadata | undefined;
   dispose(): void;
 }
@@ -148,7 +148,7 @@ function assertValidProject(project: unknown, capabilities: PluginCapabilities):
     },
   );
 }
-// buildMotion progress states: one tag for what has been built, no definite-assignment assertion.
+// Build tag; no definite-assignment assertion.
 type MotionBuild =
   | { readonly kind: "trigger-created"; readonly trigger: CreatedTrigger }
   | { readonly kind: "motion-created"; readonly trigger: CreatedTrigger; readonly motion: Motion };
@@ -192,13 +192,12 @@ export class Engine {
       );
       if (parsed.plugin !== undefined) {
         const plugin = this.#capabilities.pluginDefinition?.(parsed.plugin);
-        // Refused before a PluginTrack exists: admitted id with no definition -> no slots, never publishes.
+        // Admitted id, no definition -> refuse before any PluginTrack: no slots, never publishes.
         if (plugin === undefined)
           throw new TypeError(
             `plugin-unknown at ${nodeId}.plugin: '${parsed.plugin}' is not admitted.`,
           );
-        // Authored values checked against the plugin's declared local contract before compile.
-        // Rechecked at runtime: easing can leave a declared range even when authored stops did not.
+        // Contract-checked pre-compile, rechecked at runtime: easing can leave a declared range.
         readOutcome(
           deriveSourceContract(
             parsed.input.values,
@@ -241,8 +240,7 @@ export class Engine {
     };
     const stageTrackDefinition = (trackDef: TrackDefinition, nodeId: string): StagedTrack => {
       const displaced = tracks.get(nodeId);
-      // `compileTrack` reuses a live entry on purpose. Remove only for the synchronous build,
-      // restore if preparation rejects. Nothing outside this owner observes the gap.
+      // `compileTrack` reuses live entries -> remove, restore on reject; gap unobservable outside this owner.
       tracks.delete(nodeId);
       let replacement: ValueTrack | PluginTrack;
       try {
@@ -307,15 +305,14 @@ export class Engine {
           const built = [...motions.values()];
           const triggers = [...createdTriggers.values()];
           const composed = [...tracks.values()];
-          // Cleared before any release, so a host re-entering during teardown sees nothing.
+          // `disposed` before snapshot, maps cleared before release: re-entrant host sees nothing.
           motions.clear();
           consumers.clear();
           createdTriggers.clear();
           tracks.clear();
           nodes.clear();
           motionTrackIds.clear();
-          // Triggers, Motions, Tracks: driver stops before the Motion it feeds goes.
-          // Covers every trigger, incl. one whose Motion never reached `motions`.
+          // Triggers, Motions, Tracks: driver disposed before its Motion; unadopted triggers covered.
           runAllAndReportOnce(
             [
               ...triggers.map((trigger) => () => trigger.dispose()),
@@ -351,8 +348,7 @@ export class Engine {
       definition: MotionDefinition,
       entries: readonly MotionTrackEntry[],
     ): Motion => {
-      // Narrow once at the boundary that already proved the trigger valid; hand the canonical form
-      // to the factory. Factories never re-derive the union.
+      // Narrow once; factory gets the canonical form, never re-derives.
       const trigger = resolveTriggerDefinition(
         definition.trigger,
         `motions.${definition.id}.trigger`,
@@ -371,8 +367,7 @@ export class Engine {
           clock: this.#options.clock,
           scheduler: this.#options.scheduler,
           tracks: entries,
-          // The compiled map is the single owner. Motion holds ids, resolves per use -> a
-          // recompiled node never leaves it driving a disposed Track.
+          // Compiled map sole owner; Motion resolves ids per use -> no disposed Track left driving.
           resolveTrack: (id) => tracks.get(id),
           trigger: built.trigger.port,
           disposeTracks: false,
@@ -381,13 +376,11 @@ export class Engine {
           invalidate: () => {
             switch (built.kind) {
               case "trigger-created":
-                // Closure handed to the Motion constructor, so pre-Motion it can only run in this
-                // state; nothing to invalidate.
+                // Pre-Motion closure runs only here; nothing to invalidate.
                 return;
               case "motion-created": {
                 const ids = built.motion.tracks.map((t) => t.id);
-                // A runtime exists once a Motion can invalidate: buildMotion runs from the
-                // load loop or the runtime's createMotion hook; state names the owner.
+                // Runtime exists once a Motion can invalidate; state names owner.
                 if (ids.length === 0) return;
                 switch (state.kind) {
                   case "building":
@@ -413,8 +406,7 @@ export class Engine {
         bindClock(definition.id, built.motion, built.trigger);
         return built.motion;
       } catch (error) {
-        // releaseMotion owns consumer + trigger. A Motion failing here never enters `motions`, so
-        // disposeComposition cannot reach it -> dispose it here. The tag names that owner.
+        // `releaseMotion` owns consumer + trigger; failing Motion never entered `motions` -> dispose here.
         const state = built;
         throw afterCleanup(error, "cleanup", () => {
           const steps: (() => void)[] = [() => releaseMotion(definition.id)];
@@ -433,8 +425,7 @@ export class Engine {
         });
       }
     };
-    // One admission owner; both adoption sites use it. State read after the build -- host
-    // callbacks re-enter there. `disposed` releases the Motion: cleared maps hide it from teardown.
+    // One admission owner, both sites; host re-entry -> state read after build; `disposed` releases Motion.
     const adoptMotion = (
       definition: MotionDefinition,
       entries: readonly MotionTrackEntry[],
@@ -514,8 +505,7 @@ export class Engine {
             definition.trigger,
             `motions.${motionId}.trigger`,
           );
-          // Built before any release: a trigger that fails creation (scroll trigger, no registered
-          // source) must leave the Motion driving its existing one, not none.
+          // Built before release: failed creation leaves the existing trigger, not none.
           const created = triggerFactory.create({
             motionId,
             definition,
@@ -524,8 +514,7 @@ export class Engine {
             scheduler: this.#options.scheduler,
           });
           const displaced = createdTriggers.get(motionId);
-          // Record the replacement before releasing the displaced one: a host `dispose` that throws
-          // never leaves the new driver unowned -- disposeComposition reaches it either way.
+          // Register replacement before releasing displaced: throwing host `dispose` leaves new driver owned.
           createdTriggers.set(motionId, created);
           consumers.delete(motionId);
           bindClock(motionId, motion, created);
@@ -536,8 +525,7 @@ export class Engine {
               acceptsExternalSignal(created.clockBinding),
             );
           } catch (error) {
-            // Swap never landed -> the replacement is unowned. Restore displaced registrations,
-            // release what this hook built; the refusing error outranks its cleanup report.
+            // Swap never landed -> replacement unowned: restore displaced, release built; refusal outranks cleanup report.
             consumers.delete(motionId);
             if (displaced === undefined) createdTriggers.delete(motionId);
             else {
@@ -546,8 +534,7 @@ export class Engine {
             }
             throw afterCleanup(error, "cleanup", () => created.dispose());
           }
-          // Return marks acceptance; runtime adopts before cleanup. Displaced + factory
-          // releases are independent: neither skips the other; accepted != refused edit.
+          // Return marks acceptance; runtime adopts before cleanup; both releases run.
           return () =>
             runAllAndReportOnce(
               [complete, () => displaced?.dispose()],
@@ -557,12 +544,10 @@ export class Engine {
         setMotionStagger: (motionId, stagger) => {
           const motion = motions.get(motionId);
           if (!motion) throw new TypeError(`Unknown motion "${motionId}".`);
-          // Motion alone validates the schedule; runtime owns the publication after.
-          // Only this operation's callback is replaced; driver callbacks keep the guarded invalidation path.
+          // Motion validates schedule, runtime publishes after; only this callback replaced; driver callbacks keep the invalidation guard.
           return motion.acceptStagger(stagger, () => undefined);
         },
-        // Recipe-refusal ownership: asked on the runtime before a signal reaches a live trigger port.
-        // Unknown motion id refused here, verbatim, by the layer owning the Motion.
+        // Unknown motion id refused here, verbatim, by the Motion owner, before any trigger port.
         signalMotion: (motionId, signal) => {
           const motion = motions.get(motionId);
           if (!motion) throw new TypeError(`Unknown motion "${motionId}".`);
@@ -572,8 +557,7 @@ export class Engine {
         destroyMotion: (motionId) => {
           const motion = motions.get(motionId);
           if (!motion) return;
-          // Map entry first: failure leaves no id-reachable, no double-disposed Motion.
-          // All steps run: a throwing `dispose` can't skip `motion.dispose()`. Also addMotion rollback.
+          // Entry deleted first: no id-reachable or double-disposed Motion; every step runs; addMotion rollback.
           motions.delete(motionId);
           runAllAndReportOnce(
             [() => releaseMotion(motionId), () => motion.dispose()],
@@ -581,8 +565,7 @@ export class Engine {
           );
         },
         onClockTick: (event) => {
-          // One fanout owner and one report, sharing the teardown paths' collect-then-report shape
-          // for the same reason: a throwing consumer must not stop the consumers behind it.
+          // One fanout owner; throwing consumer cannot stop the rest.
           runAllAndReportOnce(
             [...consumers.values()].map((consumer) => () => consumer.onTick(event)),
             "Clock consumer fanout failed.",
@@ -593,8 +576,7 @@ export class Engine {
       state = { kind: "ready", cleanupOwner: "runtime", composition, runtime: created };
       for (const motionDefinition of acceptedProject.motions) {
         const ids = motionTrackIds.get(motionDefinition.id) ?? [];
-        // Conditional spread, so a load-time entry never carries an explicitly undefined duration
-        // while the hook-built entries omit the key. One entry shape, both construction paths.
+        // Conditional spread: load-time and hook-built entries both omit undefined duration.
         const entries = ids.map((id) => {
           const duration = nodes.get(id)?.duration;
           return { id, ...(duration === undefined ? {} : { duration }) };
@@ -604,8 +586,7 @@ export class Engine {
       return createHandle(created, (nodeId) => tracks.get(nodeId)?.plugins);
     } catch (error) {
       throw afterCleanup(error, "cleanup", () => {
-        // The state names the sole cleanup owner. A constructor failure may have already invoked
-        // the composition hook, so the disposed arm is intentionally a no-op.
+        // State names sole cleanup owner; constructor failure may already have run the composition hook.
         switch (state.cleanupOwner) {
           case "composition":
             disposeComposition();
