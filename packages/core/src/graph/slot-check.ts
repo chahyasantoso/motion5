@@ -3,17 +3,7 @@ import type { SourceContract } from "../contract/v5-infer";
 import { diagnostic } from "../contract/diagnostics";
 import { compareEdges, type GraphEdge, type GraphNode } from "./ir";
 
-/**
- * The load-time structural check between one producer's output contract and one consumer slot.
- *
- * Three outcomes, and only two of them refuse. `compatible` means every structural requirement the
- * slot states was found. `incompatible` means a known contradiction exists. `unproven` means the
- * evidence is insufficient, which is not the same thing as compatible: an empty undeclared source
- * cannot satisfy a required typed field, and no reader may turn that silence into `any`.
- *
- * Ranges, row counts and semantic relationships stay out. They are runtime validation's question,
- * and passing this check is not a proof of them.
- */
+/** Load-time structural verdicts: `compatible` found every stated requirement, `incompatible` is a known contradiction, and `unproven` is missing evidence, not the same as compatible. */
 export type SlotOutcome = "compatible" | "incompatible" | "unproven";
 
 export interface SlotCheck {
@@ -37,6 +27,7 @@ function unproven(message: string): SlotCheck {
   return Object.freeze({ outcome: "unproven", message });
 }
 
+// The only admitting outcome; refusals name `slot-incompatible` or `slot-unproven`.
 const COMPATIBLE: SlotCheck = Object.freeze({ outcome: "compatible" });
 
 function checkFields(producer: SourceContract, required: ValueSpec): SlotCheck {
@@ -63,14 +54,7 @@ function checkFields(producer: SourceContract, required: ValueSpec): SlotCheck {
   return COMPATIBLE;
 }
 
-/**
- * Compare one producer output with the `ValueSpec` the consumer slot declares for it.
- *
- * `producer` is absent when the producer does not publish that output at all. A slot output may
- * declare `optional`; then absence is compatible. A producer output that is itself optional is
- * unproven for a required slot output, because the value may be absent at run time even though the
- * contract names it.
- */
+/** Compares one producer output with the slot's `ValueSpec`: an absent producer fits only an optional slot output; an optional producer output is unproven for a required slot output. */
 export function checkSlotOutput(
   producer: SourceContract | undefined,
   required: ValueSpec,
@@ -99,17 +83,7 @@ function pathFor(edge: GraphEdge, output: string): string {
   return `${edge.observerId}.input.requires.${requirement.slot}${member}.outputs.${output}`;
 }
 
-/**
- * Every slot check the graph can answer, in canonical order.
- *
- * Both halves read committed contracts and nothing derives one from current authored values. The
- * consumer's slot declarations come from its contract, and the producer's outputs come from the
- * contract that build carried or derived at its last structural commit. A node without a contract
- * is one dependency admission already names, so it contributes no comparison here. A slot with no
- * bound edge is not checked either: `graph/dependency-check.ts` owns required-slot presence, and an
- * omitted optional slot has nothing to compare. Map members are separate edges and therefore
- * separate checks.
- */
+/** Every slot check the graph can answer, in canonical order, from committed contracts only; contractless nodes and unbound slots are skipped; `graph/dependency-check.ts` owns admission. */
 export function checkSlotFit(nodes: readonly GraphNode[]): readonly Diagnostic[] {
   const nodeById = new Map(nodes.map((node) => [node.id, node] as const));
   const diagnostics: Diagnostic[] = [];

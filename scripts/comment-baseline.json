@@ -164,10 +164,6 @@
     "count": 3
   },
   {
-    "path": "apps/pose-gap-filler/src/synthetic/scenarios.ts",
-    "count": 8
-  },
-  {
     "path": "apps/pose-gap-filler/src/synthetic/seeded.ts",
     "count": 2
   },
@@ -200,10 +196,6 @@
     "count": 2
   },
   {
-    "path": "apps/react-demo/src/App.tsx",
-    "count": 6
-  },
-  {
     "path": "apps/react-demo/src/components/InspectorPanel.tsx",
     "count": 2
   },
@@ -225,10 +217,6 @@
   },
   {
     "path": "packages/core/src/adapters/browser-clock.ts",
-    "count": 2
-  },
-  {
-    "path": "packages/core/src/adapters/scroll-trigger-gsap.ts",
     "count": 2
   },
   {
@@ -286,10 +274,6 @@
   {
     "path": "packages/core/src/graph/order.ts",
     "count": 2
-  },
-  {
-    "path": "packages/core/src/graph/slot-check.ts",
-    "count": 6
   },
   {
     "path": "packages/core/src/lang/exhaustive.ts",
@@ -366,10 +350,6 @@
   {
     "path": "packages/core/src/validate-v5.ts",
     "count": 5
-  },
-  {
-    "path": "packages/plugins/src/aggregate-topology.ts",
-    "count": 7
   },
   {
     "path": "packages/plugins/src/builtin-catalog.ts",
