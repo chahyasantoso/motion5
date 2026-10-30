@@ -1,12 +1,12 @@
 import type { MotionDefinition, TrackDefinition } from "../contract/v5";
 import { unreachable } from "../lang/exhaustive";
 import { buildOwed, type ValueState } from "./value-state";
-/** Effects run before acceptance and owe an inverse; settlements run after and have none; no step is both. `planCommit` is pure; `run-plan.ts` owns the impure walk over both. */
+/** Effects precede acceptance, owe inverse; settlements follow, owe none; no step is both. `planCommit` pure; `run-plan.ts` owns impure walk. */
 declare const EFFECT_BRAND: unique symbol;
 
 declare const SETTLEMENT_BRAND: unique symbol;
 
-/** Brands close both unions: declared, never exported, never assigned, so only the mint helpers can name either key and no other module can build an `Effect` or `Settlement`. */
+/** Brands close both unions: declared, unexported, unassigned -> only mint helpers name either key; no other module builds an `Effect` or `Settlement`. */
 interface EffectBrand {
   readonly [EFFECT_BRAND]: true;
 }
@@ -51,7 +51,7 @@ interface RollbackStageShape {
   readonly nodeId: string;
 }
 
-/** Republishing one Motion's child at a new duration, carrying the duration it had: the one effect whose inverse needs a payload, since by rollback a lookup would answer the new duration. */
+/** Republishes a Motion's child at a new duration, carrying the old one: the only effect whose inverse needs a payload, since rollback lookup answers the new duration. */
 interface RetargetMotionTrackShape {
   readonly kind: "retarget-motion-track";
   readonly motionId: string;
@@ -60,7 +60,7 @@ interface RetargetMotionTrackShape {
   readonly previousDuration?: number;
 }
 
-/** The retarget's one constructor, shared by plan and `invert`, which swaps the durations. No-duration tracks omit the field, not `undefined` -> an inverse's inverse stays identical. */
+/** Retarget's only constructor, shared by plan and `invert`, which swaps the durations. No-duration tracks omit the field, not `undefined` -> inverse's inverse identical. */
 function retargetEffect(
   motionId: string,
   nodeId: string,
@@ -85,7 +85,7 @@ type EffectShape =
   | RollbackStageShape
   | RetargetMotionTrackShape;
 
-/** One thing a commit does before the candidate graph is accepted, and so one thing a rollback may owe an inverse for. */
+/** One step a commit runs before acceptance, which a rollback may owe an inverse for. */
 export type Effect =
   | MintedEffect<CreateMotionShape>
   | MintedEffect<DestroyMotionShape>
@@ -148,7 +148,7 @@ type SettlementShape =
   | DestroySettledMotionShape
   | PublishShape;
 
-/** One thing a commit does after the graph is accepted, which nothing can undo. Which list a step is in decides whether its failure rolls the commit back or is collected beside its siblings. */
+/** One step a commit runs after acceptance, which nothing undoes. Its list decides: failure rolls the commit back, or is collected beside siblings. */
 export type Settlement =
   | MintedSettlement<CommitStagedShape>
   | MintedSettlement<DisposeSettledTrackShape>
@@ -159,7 +159,7 @@ export type Settlement =
   | MintedSettlement<DestroySettledMotionShape>
   | MintedSettlement<PublishShape>;
 
-/** Mints one effect, the program's only `Effect` producer. Generic in the shape, so every push is checked against the variant it names; the cast covers only the brand, which no value can carry. */
+/** Mints one effect, the program's only `Effect` producer. Generic in shape -> every push checked against its variant; cast covers only the brand, which no value carries. */
 function mintEffect<Shape extends EffectShape>(shape: Shape): MintedEffect<Shape> {
   return Object.freeze(shape) as unknown as MintedEffect<Shape>;
 }
@@ -182,7 +182,7 @@ interface OwnedPlannedTrack {
   readonly valueState: ValueState;
 }
 
-/** One track's committed facts, which is every part of a `TrackEntry` a plan may read. */
+/** One track's committed facts: every part of a `TrackEntry` a plan may read. */
 type PlannedTrack = FreePlannedTrack | OwnedPlannedTrack;
 
 function plannedMotionId(entry: PlannedTrack): string | undefined {
@@ -196,33 +196,33 @@ function plannedMotionId(entry: PlannedTrack): string | undefined {
   }
 }
 
-/** One motion's committed facts, which is its retained definition and nothing beside it. */
+/** One motion's committed facts: its retained definition, nothing else. */
 interface PlannedMotion {
   readonly definition: MotionDefinition;
 }
 
-/** One side of a commit as the planner reads it: definition, owner and value state, never a lifetime token. `#assertSameLifetimes` judges tokens before planning and owns that question alone. */
+/** One commit side as the planner reads it: definition, owner, value state; never a lifetime token. `#assertSameLifetimes` judges tokens before planning, alone. */
 export interface CommitDocument {
   readonly tracks: ReadonlyMap<string, PlannedTrack>;
   readonly motions: ReadonlyMap<string, PlannedMotion>;
 }
 
-/** Answers `planCommit` cannot derive -> the caller filling them owns any refusal. `needsBuild` resolves via the plugin registry and can refuse the whole commit; `readers` walks the live graph. */
+/** Answers `planCommit` cannot derive: callers filling them own any refusal. `needsBuild` via the plugin registry can refuse the commit; `readers` walks the live graph. */
 export interface CommitPreflight {
   readonly needsBuild: ReadonlySet<string>;
   readonly readers: ReadonlyMap<string, readonly string[]>;
-  /** Binding-edited nodes: compiled inputs differ, timeline must not rebuild. A later replacement in the same recipe clears the mark, so a full build is never skipped. */
+  /** Binding-edited nodes: compiled inputs differ, timeline must not rebuild. A later replacement in the recipe clears the mark -> a full build is never skipped. */
   readonly noBuild: ReadonlySet<string>;
 }
 
-/** What one commit does, what it settles afterwards, and the nodes its publication seeds. */
+/** What one commit does, what it settles after, and the nodes its publication seeds. */
 export interface CommitPlan {
   readonly effects: readonly Effect[];
   readonly settle: readonly Settlement[];
   readonly touched: readonly string[];
 }
 
-/** The plan that moves `retained` to `candidate`, derived whole from the final pair and never from a log. Pure; the order of the steps below is the contract, not how the loops fell out. */
+/** The plan that moves `retained` to `candidate`, derived whole from the final pair, never a log. Pure; step order below is the contract, not loop accident. */
 export function planCommit(
   retained: CommitDocument,
   candidate: CommitDocument,
@@ -231,13 +231,13 @@ export function planCommit(
   const effects: Effect[] = [];
   const settle: Settlement[] = [];
   const touched: string[] = [];
-  // new Motions first, so a recipe adding a Motion and its track compiles the track against an owner that exists.
+  // new Motions first -> a recipe adding a Motion and its track compiles the track against an existing owner.
   for (const [motionId, motion] of candidate.motions)
     if (!retained.motions.has(motionId))
       effects.push(
         mintEffect<CreateMotionShape>({ kind: "create-motion", definition: motion.definition }),
       );
-  // removals settle next: evict, then compiled disposal, then deregistration from their Motion, since Motion resolves compiled Tracks by id and the other order leaves a dangling one.
+  // removals settle next: evict, then compiled disposal, then deregistration from its Motion; Motion resolves compiled Tracks by id, so the other order dangles.
   for (const [nodeId, entry] of retained.tracks) {
     if (candidate.tracks.has(nodeId)) continue;
     settle.push(
@@ -253,17 +253,17 @@ export function planCommit(
           nodeId,
         }),
       );
-    // a departed node's readers, taken from the old graph: they are what a removal invalidates, and the accepted graph drops the edge.
+    // departed node's readers, from the old graph: removal invalidates them and the accepted graph drops the edge.
     touched.push(...(preflight.readers.get(nodeId) ?? []));
   }
-  // removed Motions settle after the children they owned.
+  // removed Motions settle after their children.
   for (const motionId of retained.motions.keys())
     if (!candidate.motions.has(motionId))
       settle.push(mintSettlement<DestroySettledMotionShape>({ kind: "destroy-motion", motionId }));
   for (const [nodeId, entry] of candidate.tracks) {
     const previous = retained.tracks.get(nodeId);
     if (previous === undefined) {
-      // a new track compiles as an effect and mounts as a settlement: compilation is reversible, mounting is not.
+      // new track: compile as an effect, mount as a settlement; compilation is reversible, mounting is not.
       effects.push(
         mintEffect<CompileTrackShape>({ kind: "compile-track", nodeId, track: entry.track }),
       );
@@ -281,7 +281,7 @@ export function planCommit(
       touched.push(nodeId);
       continue;
     }
-    // a replacement carrying the retained definition by identity plans nothing, so an all-no-op recipe ends without a candidate build.
+    // replacement carrying the retained definition by identity plans nothing -> an all-no-op recipe ends without a candidate build.
     if (previous.track === entry.track) continue;
     if (
       (preflight.needsBuild.has(nodeId) || buildOwed(previous.valueState)) &&
@@ -296,7 +296,7 @@ export function planCommit(
     settle.push(mintSettlement<CommitStagedShape>({ kind: "commit-staged", nodeId }));
     touched.push(nodeId);
   }
-  // publication is the last settlement, seeded by every node that changed plus the readers of every node that left.
+  // publication is the last settlement, seeded by every changed node plus the readers of every departed one.
   settle.push(
     mintSettlement<PublishShape>({ kind: "publish", seeds: Object.freeze([...touched]) }),
   );
@@ -307,7 +307,7 @@ export function planCommit(
   });
 }
 
-/** The effect that undoes `effect`, or `undefined` when there is nothing to undo. Total, so an eighth effect breaks the build here rather than rolling back to nothing. */
+/** The effect that undoes `effect`, or `undefined` when there is none. Total -> an eighth effect breaks the build here, not roll back to nothing. */
 export function invert(effect: Effect): Effect | undefined {
   switch (effect.kind) {
     case "create-motion":
@@ -326,7 +326,7 @@ export function invert(effect: Effect): Effect | undefined {
         effect.previousDuration,
         effect.duration,
       );
-    // these three are their own inverses: nothing here un-destroys a Motion, un-disposes a compiled Track or un-rolls back a stage, and a fake inverse would run a host's teardown twice.
+    // these three are their own inverses: nothing un-destroys a Motion, un-disposes a compiled Track or un-rolls back a stage; a fake inverse runs host teardown twice.
     case "destroy-motion":
     case "dispose-track":
     case "rollback-stage":

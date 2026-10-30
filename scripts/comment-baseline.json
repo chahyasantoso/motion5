@@ -116,10 +116,6 @@
     "count": 3
   },
   {
-    "path": "apps/pose-gap-filler/src/filler/stabilizer.ts",
-    "count": 8
-  },
-  {
     "path": "apps/pose-gap-filler/src/filler/unreachable.ts",
     "count": 2
   },
@@ -545,10 +541,6 @@
   },
   {
     "path": "packages/plugins/src/ik-goal-reading.ts",
-    "count": 11
-  },
-  {
-    "path": "packages/plugins/src/ik-member.ts",
     "count": 11
   },
   {

@@ -12,7 +12,7 @@ import {
   type LegalSeedFraction,
 } from "./fabrik-seed";
 
-/** One FABRIK attempt from a seed side and a compromise rule. Injected, not imported: `fabrik.ts` calls this selector, so a value import back would cycle. Only `quality` is read. */
+/** One FABRIK attempt from seed side + compromise rule; injected, since a value import back from `fabrik.ts` would cycle. Reads only `quality`. */
 export type FabrikAttempt<
   R = WorldFrame,
   M = SolveMember,
@@ -25,63 +25,63 @@ export type FabrikAttempt<
   seed?: FabrikSeed,
 ) => S;
 
-/** What the selector reads of a solution: its iterative quality, and nothing else. */
+/** What the selector reads: iterative quality only. */
 export interface Selectable {
   readonly quality: IterativeQuality;
 }
 
-/** One alternative attempt a missed baseline pays for: the seed side relative to the authored `flip`, and the rule it runs under. */
+/** Alternative attempt a missed baseline pays for: seed side vs authored `flip`, plus rule. */
 export interface FabrikAlternative {
   readonly opposite: boolean;
   readonly rule: CompromiseRule;
 }
 
-/** The attempts a conflicted baseline pays, in recorded order: an exact tie keeps the earlier candidate, so order is part of the contract. */
+/** Conflicted baseline's attempts, in order; exact tie keeps earlier -> order is contract. */
 const CONFLICTED_ALTERNATIVES: readonly FabrikAlternative[] = Object.freeze([
   Object.freeze({ opposite: true, rule: "centroid" }),
   Object.freeze({ opposite: false, rule: "reach-circle" }),
   Object.freeze({ opposite: true, rule: "reach-circle" }),
 ]);
 
-/** Limited or capped: opposite seed side, rule kept -- neither is a branch disagreement. A forbidden-side seed is held on its bound, so the authored side can be a fixed point; a cap never settles. */
+/** Limited/capped: opposite side, rule kept -- not a branch disagreement. Forbidden-side seed held on bound, so authored side may be a fixed point; cap never settles. */
 const OPPOSITE_SIDE_ALTERNATIVES: readonly FabrikAlternative[] = Object.freeze([
   Object.freeze({ opposite: true, rule: "centroid" }),
 ]);
 
 const NO_ALTERNATIVES: readonly FabrikAlternative[] = Object.freeze([]);
 
-/** Near-miss band, as a fraction of the addressed reach: a miss beyond it cannot justify more full attempts. */
+/** Near-miss band as fraction of addressed reach; a wider miss cannot justify more attempts. */
 const LEGAL_RETRY_REACH_FRACTION = 0.02;
 
-/** Legal joint-space starts in stages: a stage runs only while no candidate has converged, so a rig the baseline meets pays none. */
+/** Legal starts in stages; a stage runs only while no candidate converged -> a met baseline pays none. */
 type LegalStages = readonly (readonly LegalSeed[])[];
 
 const legalRange = (fraction: LegalSeedFraction): LegalSeed =>
   Object.freeze({ kind: "legal-range", fraction });
 
-/** The centre walked toward the aims in joint space. */
+/** Centre, walked toward aims in joint space. */
 const DESCENT: LegalSeed = Object.freeze({ kind: "legal-descent" });
 
-/** The descent alone: a non-planar hinge path's distant miss. */
+/** Descent alone: a non-planar hinge path's distant miss. */
 const DESCENT_STAGES: LegalStages = Object.freeze([Object.freeze([DESCENT])]);
 
-/** Staged legal-range starts a gated near miss on a non-planar 3D hinge pays for: both quartiles, then q10, then q90. */
+/** Legal-range stages a gated near miss on a non-planar 3D hinge pays: quartiles, then q10, then q90. */
 const LEGAL_RANGE_STAGES: LegalStages = Object.freeze([
   Object.freeze([legalRange(0.25), legalRange(0.75)]),
   Object.freeze([legalRange(0.1)]),
   Object.freeze([legalRange(0.9)]),
 ]);
 
-/** The same stages, then the descent, for a rig whose goals lie within reach. */
+/** Same stages then descent, for a rig whose goals lie within reach. */
 const LEGAL_RANGE_THEN_DESCENT_STAGES: LegalStages = Object.freeze([
   ...LEGAL_RANGE_STAGES,
   ...DESCENT_STAGES,
 ]);
 
-/** The centre alone, for a constrained rig with no addressed extent: nothing a descent can turn. */
+/** Centre alone, constrained rig with no addressed extent: nothing descent can turn. */
 const CENTRE_STAGES: LegalStages = Object.freeze([Object.freeze([CENTRE_LEGAL_SEED])]);
 
-/** Centre then the descent, for an arc-seeded rig: no arc side is legal for both signs of a mixed-sign chain, while the centre is legal for every range. */
+/** Centre then descent, arc-seeded: no arc side legal for both signs of a mixed-sign chain; centre legal every range. */
 const CENTRE_THEN_DESCENT_STAGES: LegalStages = Object.freeze([
   ...CENTRE_STAGES,
   ...DESCENT_STAGES,
@@ -89,7 +89,7 @@ const CENTRE_THEN_DESCENT_STAGES: LegalStages = Object.freeze([
 
 const NO_STAGES: LegalStages = Object.freeze([]);
 
-/** Which legal joint-space starts a rig can use: decided by the dimension's solve from the rig, read here exhaustively; only this selector decides which of them a baseline pays for. */
+/** Legal joint-space starts a rig can use, per the dimension's solve, read exhaustively; this selector alone chooses which a baseline pays for. */
 export type LegalStarts =
   | { readonly kind: "none" }
   | { readonly kind: "centre" }
@@ -97,16 +97,16 @@ export type LegalStarts =
   | { readonly kind: "staged"; readonly reach: number }
   | { readonly kind: "staged-then-descent"; readonly reach: number };
 
-/** The `none` start: a rig with no limited member. */
+/** `none` start: rig with no limited member. */
 export const NO_LEGAL_STARTS: LegalStarts = Object.freeze({ kind: "none" });
 
-/** The `centre` start: a constrained rig no start can turn. */
+/** `centre` start: constrained rig no start can turn. */
 export const CENTRE_LEGAL_START: LegalStarts = Object.freeze({ kind: "centre" });
 
-/** The `centre-then-descent` start, for an arc-seeded rig whose goals lie within reach. */
+/** `centre-then-descent` start, for an arc-seeded rig whose goals lie within reach. */
 export const CENTRE_THEN_DESCENT: LegalStarts = Object.freeze({ kind: "centre-then-descent" });
 
-/** Members the reach helpers read; a `goal` marks an addressed leaf. */
+/** Members the reach helpers read; `goal` marks an addressed leaf. */
 interface ReachMember {
   readonly id: string;
   readonly base: string;
@@ -114,7 +114,7 @@ interface ReachMember {
   readonly goal?: unknown;
 }
 
-/** One leaf's root-path extent in world units: lengths plus offsets over `base`, stopping on a repeat. */
+/** One leaf's root-path extent in world units: lengths + offsets over `base`, stopping on repeat. */
 function pathExtent<M extends ReachMember>(
   leaf: M,
   byId: ReadonlyMap<string, M>,
@@ -131,7 +131,7 @@ function pathExtent<M extends ReachMember>(
   return extent;
 }
 
-/** Scale of addressed paths only: unrelated siblings cannot enlarge the near-miss retry band. */
+/** Reach over addressed paths only: unrelated siblings cannot enlarge the near-miss retry band. */
 export function addressedReach<M extends ReachMember>(
   members: readonly M[],
   offsetExtent: (member: M) => number,
@@ -143,7 +143,7 @@ export function addressedReach<M extends ReachMember>(
   return reach;
 }
 
-/** Each addressed goal within its own root path's extent: necessary for any pose to meet it. Beyond that, or a `NaN` or infinite distance, no start reaches and a walk buys nothing. */
+/** Whether each addressed goal lies within its own root-path extent -- necessary for any pose; beyond, or a `NaN`/infinite distance, no start reaches and a walk buys nothing. */
 export function goalsWithinReach<M extends ReachMember>(
   members: readonly M[],
   offsetExtent: (member: M) => number,
@@ -155,12 +155,12 @@ export function goalsWithinReach<M extends ReachMember>(
   );
 }
 
-/** Arc-seeded constrained rig: centre alone without an addressed extent or with a goal out of reach, else centre then descent. One owner, so 2D and planar 3D cannot state it twice. */
+/** Legal starts for an arc-seeded constrained rig: centre alone without addressed extent or goal out of reach, else centre then descent; one owner, so 2D and planar 3D cannot state it twice. */
 export function arcLegalStarts(reach: number, withinReach: boolean): LegalStarts {
   return reach > 0 && withinReach ? CENTRE_THEN_DESCENT : CENTRE_LEGAL_START;
 }
 
-/** Whether a baseline of this quality may pay for legal starts, read exhaustively. */
+/** Whether a baseline of this quality pays for legal starts; exhaustive. */
 function legalRangeRetries(quality: IterativeQuality): boolean {
   switch (quality.kind) {
     case "limited":
@@ -175,12 +175,12 @@ function legalRangeRetries(quality: IterativeQuality): boolean {
   }
 }
 
-/** Whether a baseline's miss is within the inclusive near-miss band of the addressed reach. */
+/** Whether the miss is inside the inclusive near-miss band of addressed reach. */
 function nearMiss(baseline: IterativeQuality, reach: number): boolean {
   return baseline.residual <= LEGAL_RETRY_REACH_FRACTION * reach;
 }
 
-/** The legal stages a baseline pays for: none unless it is limited or capped (`legalRangeRetries`). */
+/** Stages a baseline pays for: none unless limited/capped (`legalRangeRetries`). */
 function legalStages(starts: LegalStarts, baseline: IterativeQuality): LegalStages {
   if (!legalRangeRetries(baseline)) return NO_STAGES;
   switch (starts.kind) {
@@ -199,7 +199,7 @@ function legalStages(starts: LegalStarts, baseline: IterativeQuality): LegalStag
   }
 }
 
-/** Alternatives by quality: none for `converged`/`stalled` -- a settled fixed point gives no evidence another side escapes it; three for `conflicted`; opposite side for `limited`/`iteration-cap`. */
+/** Alternatives by quality: `converged`/`stalled` -> none (settled fixed point offers no escape evidence); `conflicted` -> three; `limited`/`iteration-cap` -> opposite side. */
 export function fabrikAlternatives(quality: IterativeQuality): readonly FabrikAlternative[] {
   switch (quality.kind) {
     case "conflicted":
@@ -216,7 +216,7 @@ export function fabrikAlternatives(quality: IterativeQuality): readonly FabrikAl
   }
 }
 
-/** Gate: authored seed first and incumbent throughout -- a candidate wins only by `outranks`, so the result never ranks below the baseline. Then `fabrikAlternatives`, then `legalStages`. */
+/** Selection gate: authored seed first, incumbent throughout; only `outranks` replaces it -> result never ranks below baseline. Then `fabrikAlternatives`, then `legalStages`. */
 export function selectFabrik<R, M, S extends Selectable>(
   root: R,
   members: readonly M[],
@@ -240,14 +240,14 @@ export function selectFabrik<R, M, S extends Selectable>(
   return selected;
 }
 
-/** Strict beat, two steps: tier first -- `converged` outranks any miss whatever its residual -- then lower `residual`. Exact tie keeps the earlier candidate; `NaN` ranks last within a tier. */
+/** Strict beat: tier first (`converged` outranks any miss, whatever residual), then lower `residual`; tie keeps earlier, `NaN` last in a tier. */
 export function outranks(candidate: IterativeQuality, selected: IterativeQuality): boolean {
   const tier = qualityTier(candidate) - qualityTier(selected);
   if (tier !== 0) return tier < 0;
   return fabrikResidualOutranks(candidate.residual, selected.residual);
 }
 
-/** Tier: `0` when the goal is met, `1` for every miss, read exhaustively. */
+/** `0` if goal met, `1` for every miss; exhaustive. */
 function qualityTier(quality: IterativeQuality): 0 | 1 {
   switch (quality.kind) {
     case "converged":
