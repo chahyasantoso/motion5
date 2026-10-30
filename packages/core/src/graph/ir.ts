@@ -1,4 +1,3 @@
-// Docs: ./ir.md
 import { unreachable } from "../lang/exhaustive";
 import type { Diagnostic, TrackDefinition, ProjectDefinition } from "../contract/v5";
 import { diagnostic } from "../contract/diagnostics";

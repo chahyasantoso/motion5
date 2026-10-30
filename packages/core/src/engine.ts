@@ -1,4 +1,3 @@
-// Docs: ./engine.md
 import type {
   LivePatch,
   MotionDefinition,
@@ -16,7 +15,11 @@ import type { TrackHandle } from "./contract/track-handle";
 import { describeDiagnostics } from "./contract/diagnostics";
 import { resolveTriggerDefinition } from "./contract/validate-v5";
 import { validateV5 } from "./validate-v5";
-import { UNJUDGED_CAPABILITIES, type PluginCapabilities } from "./ports/plugin-capabilities";
+import {
+  UNJUDGED_CAPABILITIES,
+  admitsPlugin,
+  type PluginCapabilities,
+} from "./ports/plugin-capabilities";
 import { readOutcome } from "./lang/outcome";
 import { IncrementalGraphBuilder } from "./graph/builders/incremental";
 import { createDefaultTriggerFactory } from "./adapters/trigger-factory/default";
@@ -185,7 +188,7 @@ function assertValidProject(project: unknown, capabilities: PluginCapabilities):
   );
 }
 // The two states buildMotion passes through, so what has been built is one tag rather than a
-// definite-assignment assertion a reader has to cross-check against a boolean. engine.md owns why.
+// definite-assignment assertion a reader has to cross-check against a boolean.
 type MotionBuild =
   | { readonly kind: "trigger-created"; readonly trigger: CreatedTrigger }
   | { readonly kind: "motion-created"; readonly trigger: CreatedTrigger; readonly motion: Motion };
@@ -220,9 +223,7 @@ export class Engine {
       if (existing) return existing;
       const parsed = readOutcome(
         parseTrackDefinition(trackDef, nodeId, {
-          isPluginRegistered: (pluginId) =>
-            this.#capabilities.isPluginAdmitted?.(pluginId) ??
-            this.#capabilities.capabilityOf(pluginId) !== undefined,
+          isPluginRegistered: (pluginId) => admitsPlugin(this.#capabilities, pluginId),
         }),
         (value) => value,
         (diagnostics) => {
@@ -231,6 +232,8 @@ export class Engine {
       );
       if (parsed.plugin !== undefined) {
         const plugin = this.#capabilities.pluginDefinition?.(parsed.plugin);
+        // Refused before a PluginTrack exists: an admitted id with no definition has no slots to
+        // compile, and building one anyway would produce a track that can never publish.
         if (plugin === undefined)
           throw new TypeError(
             `plugin-unknown at ${nodeId}.plugin: '${parsed.plugin}' is not admitted.`,
@@ -346,6 +349,7 @@ export class Engine {
           const built = [...motions.values()];
           const triggers = [...createdTriggers.values()];
           const composed = [...tracks.values()];
+          // Cleared before any release, so a host re-entering during teardown sees nothing.
           motions.clear();
           consumers.clear();
           createdTriggers.clear();
@@ -488,7 +492,7 @@ export class Engine {
     // already snapshotted and cleared, where it would be the one Motion a one-pass teardown cannot
     // reach. Read after the build rather than before, because construction is where a host callback
     // reenters. The refusal outranks what its release reports, on buildMotion's own cleanup shape.
-    // engine.md owns why the disposed arm has no behavioural case. Issue #469, and see ADR-092.
+    // The disposed arm has no behavioural case: a host holds no handle to dispose mid-build.
     const adoptMotion = (
       definition: MotionDefinition,
       entries: readonly MotionTrackEntry[],
@@ -541,9 +545,7 @@ export class Engine {
         scheduler: this.#options.scheduler,
         compose,
         composeIdentified,
-        isPluginRegistered: (pluginId) =>
-          this.#capabilities.isPluginAdmitted?.(pluginId) ??
-          this.#capabilities.capabilityOf(pluginId) !== undefined,
+        isPluginRegistered: (pluginId) => admitsPlugin(this.#capabilities, pluginId),
         capabilities: this.#capabilities,
         graphBuilder: new IncrementalGraphBuilder(this.#capabilities),
         setProgress: (nodeId, progress) => tracks.get(nodeId)?.setProgress(progress),

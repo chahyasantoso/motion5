@@ -26,7 +26,7 @@ These contexts intentionally depend on all quality evidence, including formattin
 
 ## Distinct assertions retained
 
-`boundaries (node 24.21.0)` runs `node scripts/boundary-scan.mjs` against the actual repository. `read-budget (node 24.21.0)` runs `node scripts/read-budget-scan.mjs` against the actual core source and sister documents. Their scanner unit tests remain in the single full suite instead of running twice. The existing convenience package scripts still run scans plus their self-tests for manual use.
+`boundaries (node 24.21.0)` runs `node scripts/boundary-scan.mjs` against the actual repository. Its scanner unit tests remain in the single full suite instead of running twice. The existing convenience package scripts still run scans plus their self-tests for manual use.
 
 `build (node 24.21.0)` compiles declaration output and checks both `packages/core/dist/index.js` and `packages/core/dist/index.d.ts`. These assertions are unchanged.
 

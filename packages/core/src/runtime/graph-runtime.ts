@@ -1,4 +1,3 @@
-// Docs: ./graph-runtime.md
 import type { Diagnostic, ProjectDefinition } from "../contract/v5";
 import type { Clock, ClockTick } from "../ports/clock";
 import { GraphBinding } from "../graph/binding";
@@ -285,6 +284,7 @@ export class GraphRuntime {
     this.#assertTick(tick);
     this.#lastTick = tick;
   }
+  // Asked twice: by flushAtTick before it may defer, and here before a frame is recorded.
   #assertTick(tick: number): void {
     if (!Number.isFinite(tick)) throw new TypeError("Runtime ticks must be finite.");
     if (tick < this.#lastTick) throw new RangeError("Runtime ticks must be monotonic.");
@@ -333,6 +333,7 @@ export class GraphRuntime {
     this.#memo = COLD_MEMO;
     this.#registry.dispose();
   }
+  // Composing a publisher node calls the injected compose, so derivation stays inside this boundary.
   #snapshotFor(): PublisherSnapshot {
     const graph = this.#binding.graph;
     const warm = memoHit(this.#memo, graph, this.#membersRevision);
@@ -361,6 +362,7 @@ export class GraphRuntime {
     this.#publisherNodes.set(node, publisherNode);
     return publisherNode;
   }
+  // The only way membership moves, so the snapshot revision cannot be left behind.
   #addMember(nodeId: string): void {
     if (this.#members.has(nodeId)) return;
     this.#members.add(nodeId);
@@ -388,6 +390,7 @@ export class GraphRuntime {
     return this.#drainHandle !== undefined;
   }
 
+  // The phase drops before the port is touched: a cancel that throws must not leave a booking owed.
   #releaseBooking(): void {
     const handle = this.#drainHandle;
     this.#drainHandle = undefined;
@@ -403,6 +406,7 @@ export class GraphRuntime {
     }
   }
 
+  // Released first, so a subscriber deferring again below can book its own follow-up drain.
   #drainScheduled(): void {
     this.#releaseBooking();
     if (isRetiring(this.#phase) || !isPending(this.#pending)) return;
@@ -414,6 +418,7 @@ export class GraphRuntime {
       this.#report(FLUSH_FAILURE_RULE, `Scheduled flush failed: ${describeWithCauses(error)}`);
     }
   }
+  // Two boundaries under one subscription: consumers and graph fail for unrelated reasons.
   #onTick(event: ClockTick): void {
     if (isRetiring(this.#phase)) return;
     if (event.tick <= this.#lastTick) {

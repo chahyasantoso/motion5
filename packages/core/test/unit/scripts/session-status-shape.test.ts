@@ -109,6 +109,12 @@ const PHASE_LABEL = /^(?:current\s+)?phase(?:\s*\d+)?\s*(?:[^\w\s]|$)/i;
  */
 const CEILING = 8000;
 
+// The only two files a reader opens on every task, and so the only two with a ceiling. AGENTS.md
+// held 8,013 bytes of narrative before it was cut to its rules, which is the headroom this number
+// refuses to give back.
+const AGENTS = fileURLToPath(new URL("../../../../../AGENTS.md", import.meta.url));
+const AGENTS_CEILING = 4000;
+
 const SECTIONS = [
   "## Now",
   "## Next in line",
@@ -302,6 +308,12 @@ describe("session status shape", () => {
     const { size } = await stat(STATUS);
     expect(size).toBeGreaterThan(0);
     expect(size).toBeLessThanOrEqual(CEILING);
+  });
+
+  it("keeps the rules file small enough to read on every task", async () => {
+    const { size } = await stat(AGENTS);
+    expect(size).toBeGreaterThan(0);
+    expect(size).toBeLessThanOrEqual(AGENTS_CEILING);
   });
 
   it("states one Now and one Next in line, so neither can become a log", async () => {

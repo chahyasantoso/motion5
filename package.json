@@ -26,7 +26,6 @@
     "test:ports": "vitest run packages/core/test/contract/ports.test.ts",
     "test:integration": "vitest run packages/core/test/integration packages/plugins/test/integration",
     "test:boundaries": "node scripts/boundary-scan.mjs && vitest run packages/core/test/unit/scripts/boundary-scan.test.ts",
-    "test:read-budget": "node scripts/read-budget-scan.mjs && vitest run packages/core/test/unit/scripts/read-budget-scan.test.ts",
     "benchmark": "node performance/graph-benchmark.mjs",
     "bench:ik": "node scripts/bench-ik.mjs",
     "bench:values": "node scripts/bench-values.mjs",

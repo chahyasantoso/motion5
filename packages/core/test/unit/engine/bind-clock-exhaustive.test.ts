@@ -12,7 +12,7 @@ import {
 } from "../../../src/testing/fakes";
 
 /**
- * `engine.md` calls `bindClock` "Total and exhaustive, with no `??` fallback" and ADR-032 calls it
+ * `bindClock` is total and exhaustive, with no `??` fallback, and ADR-032 calls it
  * "the same exhaustive `TriggerBinding` switch". Both were true of the arms and neither was
  * enforced: the switch was structurally exhaustive over today's three kinds and had no `default`, so
  * a fourth registered no consumer and the Motion that owned it advanced on nothing.
@@ -100,7 +100,7 @@ describe("clock registration decides about every binding kind", () => {
     for (const kind of BINDING_KINDS) expect(BIND_CLOCK).toContain(`case "${kind}"`);
     expect(BIND_CLOCK).toContain("default:");
     expect(BIND_CLOCK).toContain("unreachable(binding)");
-    // No fallback of its own, which is the claim `engine.md` makes about this registration.
+    // No fallback of its own: the switch answers every member and nothing else.
     expect(BIND_CLOCK).not.toContain("??");
   });
 });

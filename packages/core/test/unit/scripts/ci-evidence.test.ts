@@ -75,7 +75,6 @@ describe("single-suite CI evidence", () => {
     expect(workflow).not.toContain("run: npm run test:integration");
     expect(workflow).not.toContain("run: npx vitest run");
     expect(workflow).toContain("node scripts/boundary-scan.mjs");
-    expect(workflow).toContain("node scripts/read-budget-scan.mjs");
     expect(workflow).toContain("node scripts/ci-evidence.mjs verify integration");
     expect(workflow).toContain("node scripts/ci-evidence.mjs verify end-to-end");
     expect(workflow).toContain("needs.quality.result");

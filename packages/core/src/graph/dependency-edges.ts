@@ -1,4 +1,3 @@
-// Docs: ./dependency-edges.md
 import type { Diagnostic, TrackDefinition } from "../contract/v5";
 
 interface RequiresBinding {
@@ -15,6 +14,7 @@ import type { EdgeRequirement, GraphEdge } from "./ir";
 
 export type ResolvedEdge = Outcome<GraphEdge, Diagnostic>;
 
+// The one spelling of source qualification: ir.ts calls it for solver goals rather than copying it.
 export function qualifySource(source: string, motionId: string): string {
   if (source.startsWith("~/")) return qualifyFreeTrack(source.slice(2)).value;
   if (source.includes("/"))

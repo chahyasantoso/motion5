@@ -31,3 +31,10 @@ export const UNJUDGED_CAPABILITIES: PluginCapabilities = Object.freeze({
   capabilityOf: () => undefined,
   dedicatedMembers: () => NONE,
 });
+
+/** The one answer to whether a plugin is admitted, so load and live recompile cannot disagree. */
+export function admitsPlugin(capabilities: PluginCapabilities, pluginId: string): boolean {
+  return (
+    capabilities.isPluginAdmitted?.(pluginId) ?? capabilities.capabilityOf(pluginId) !== undefined
+  );
+}

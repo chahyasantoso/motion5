@@ -1,4 +1,3 @@
-// Docs: ./validate-v5.md
 /**
  * Compose the public authored-project validation contract.
  *
@@ -11,7 +10,11 @@ import { validateSchemaV5 } from "./contract/validate-v5";
 import { acceptedOutcome, refusedOutcomeFrom, type Outcome } from "./lang/outcome";
 import { unreachable } from "./lang/exhaustive";
 import { buildGraphIR } from "./graph/ir";
-import { UNJUDGED_CAPABILITIES, type PluginCapabilities } from "./ports/plugin-capabilities";
+import {
+  UNJUDGED_CAPABILITIES,
+  admitsPlugin,
+  type PluginCapabilities,
+} from "./ports/plugin-capabilities";
 import type { ParseContext } from "./contract/v5-parse";
 
 export type ValidationResult = Outcome<ProjectDefinition, Diagnostic>;
@@ -29,9 +32,7 @@ export function validateV5(
   capabilities: PluginCapabilities = UNJUDGED_CAPABILITIES,
 ): ValidationResult {
   const context: ParseContext = {
-    isPluginRegistered: (pluginId) =>
-      capabilities.isPluginAdmitted?.(pluginId) ??
-      capabilities.capabilityOf(pluginId) !== undefined,
+    isPluginRegistered: (pluginId) => admitsPlugin(capabilities, pluginId),
   };
   const schema = validateSchemaV5(input, context);
   switch (schema.kind) {

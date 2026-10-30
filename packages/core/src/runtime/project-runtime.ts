@@ -1,4 +1,3 @@
-// Docs: ./project-runtime.md
 import type {
   PatchBatch,
   ProjectDefinition,
@@ -555,6 +554,7 @@ export class ProjectRuntime {
     return this.#readersOf(nodeId);
   }
 
+  // Readers come from the graph's own dependants, never recomputed from the track maps beside it.
   #readersOf(nodeId: string): readonly string[] {
     const readers: readonly string[] | undefined = this.#graph.graph.dependants[nodeId];
     return Object.freeze(readers === undefined ? [] : [...new Set(readers)]);
@@ -694,6 +694,7 @@ export class ProjectRuntime {
     return this.#writableMotion(motionId, token).definition.id;
   }
 
+  // Children come from #ownedBy, because the entry's own definition can carry an empty child list.
   #motionDefinition(entry: MotionEntry): MotionDefinition {
     const id = entry.definition.id;
     return Object.freeze({

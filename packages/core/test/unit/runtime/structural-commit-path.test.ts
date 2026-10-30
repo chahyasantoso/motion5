@@ -1513,9 +1513,8 @@ describe("a structural change runs one transaction, in one order", () => {
 
     // The same shape one map over, from a commit whose plan carries a motions half, so the adoption
     // this issue names would have landed on `#motions`. `setStagger` rather than `setTrigger`
-    // because the two are one contract on this tier -- `project-runtime.md` says so under
-    // `## #setStagger` -- and a stagger is a bare number, so the case pins the order rather than a
-    // trigger shape it would also have to keep valid.
+    // because the two are one contract on this tier, and a stagger is a bare number, so the case
+    // pins the order rather than a trigger shape it would also have to keep valid.
     expect(describeError(outcome.thrown)).toBe(REENTRANT);
     expect(journal.entries).toEqual(["motion-create villain", `reentry ${REENTRANT}`]);
     expect(journal.entries.filter((entry) => entry.startsWith("stagger-set "))).toEqual([]);

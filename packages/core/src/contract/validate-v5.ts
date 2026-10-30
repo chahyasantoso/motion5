@@ -1,4 +1,3 @@
-// Docs: ./validate-v5.md
 import {
   AUTHORED_SCHEMA_VERSION,
   type Diagnostic,
@@ -145,7 +144,7 @@ export function resolveTriggerDefinition(trigger: unknown, path: string): Trigge
   if (diagnostics.length > 0) throw new TypeError(describeDiagnostics(diagnostics));
   return trigger as TriggerDefinition;
 }
-// One track, read by the identified-table parser. See validate-v5.md.
+// One track, read by the identified-table parser.
 function readTrack(
   track: unknown,
   path: string,
