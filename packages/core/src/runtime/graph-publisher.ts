@@ -3,7 +3,7 @@ import type { Diagnostic, Outputs, ResolvedRequires } from "../contract/v5";
 import { isImmutableLeaf } from "../domain/values";
 import { compareEdges, type GraphIR, type GraphNode } from "../graph/ir";
 import { firstPendingEdge } from "../graph/references";
-/** One refusal of a composed value, named by the rule the publication owns. */
+/** One refusal of a composed value, named by the publication's rule. */
 class CompositionOutputError extends TypeError {
   readonly ruleId = "composition-output-shape" as const;
   constructor(message: string) {
@@ -37,13 +37,13 @@ import { closeUpstream, reachable } from "./publisher-reach";
 import { defineOwnValue } from "../lang/own-property";
 
 /**
- * One node's timeline state before any plugin runs, as the node reports it. No `base`: base is
- * topology, `resolveSolvers` owns it on `SolveMember.base`; deriving it here = two owners. */
+ * Node state before any plugin runs, as the node reports it. No `base`: topology, owned by
+ * `resolveSolvers` on `SolveMember.base`; deriving it here = two owners. */
 export interface PublisherComposition {
   readonly outputs: Outputs;
   readonly sourceProgress: number;
   readonly sourceRevisions: Readonly<Record<string, number>>;
-  /** Warnings a plugin's optional `validate` returned, carried on the ready patch. */
+  /** Warnings a plugin's optional `validate` returned, on the ready patch. */
   readonly diagnostics?: readonly Diagnostic[];
 }
 
@@ -57,17 +57,16 @@ const EMPTY_IDENTIFIED_INPUTS: IdentifiedInputs = Object.freeze({
   sourceRevisions: Object.freeze({}),
 });
 export interface PublisherNode extends GraphNode {
-  /**
-   * Compose against scoped requirement inputs: one record per plugin, one entry per bound slot.
-   * One parameter, no flat bag beside it, so no upstream value enters the authored namespace. */
+  /** Compose against scoped requirement inputs: record per plugin, entry per slot. One parameter,
+   * no flat bag: no upstream value enters the authored namespace. */
   readonly compose: (requirementInputs: RequirementInputs) => PublisherComposition;
-  /** Identified-table path, present when the node selects a plugin. Collects full named
-   * outputs, not the grouped `values` record. */
+  /** Identified-table path, used when the node selects a plugin. Full named outputs, not grouped
+   * `values`. */
   readonly composeIdentified?: (requires: ResolvedRequires) => PublisherComposition;
 }
 /**
- * The graph a flush runs over, one composer per node. `nodeById` narrows here so the publisher
- * stops rebuilding it each tick; `dependants` comes from `GraphIR` unchanged. */
+ * Graph a flush runs over, one composer per node. `nodeById` narrowed so the publisher stops
+ * rebuilding each tick; `dependants` from `GraphIR` unchanged. */
 export interface PublisherSnapshot extends GraphIR {
   readonly nodes: readonly PublisherNode[];
   readonly nodeById: Readonly<Record<string, PublisherNode>>;
@@ -78,8 +77,8 @@ export interface PublisherFailure {
   readonly error: unknown;
 }
 
-// The one place a thrown value is classified: plugin diagnostics, publish failure as data,
-// `CompositionOutputError`'s own rule, else an unnamed composition failure.
+// Only place a thrown value is classified: plugin diagnostics, publish failure as data,
+// `CompositionOutputError`'s rule, else composition-failure.
 function nodeFailure(nodeId: string, error: unknown): readonly Diagnostic[] {
   if (error instanceof PluginNodeError) return error.diagnostics;
   const ruleId =
@@ -108,9 +107,8 @@ function validateComposition(outputs: unknown): asserts outputs is Outputs {
       "Composition output must contain only renderer-neutral values.",
     );
 }
-// Freeze inputs one level down: composer cannot reach the accumulator. No projection —
-// slot is the scope, values arrive whole under their own names. Dicts freeze where
-// assembled.
+// Freeze inputs one level down: composer cannot reach accumulator. No projection — slot is
+// scope, values arrive whole by name. Dicts freeze where assembled.
 function freezeRequirementInputs(
   collected: Readonly<Record<string, Record<string, unknown>>>,
 ): RequirementInputs {
@@ -129,8 +127,8 @@ export class GraphPublisher {
 
   flush(snapshot: PublisherSnapshot, seeds: readonly string[], tick: number): PatchBatch {
     if (this.#registry.notifying) throw new Error(REENTRANT_BATCH_MESSAGE);
-    // Graph shape read, never derived. Both were rebuilt here every tick; `finalizeGraph` owns them
-    // now, so these walks cost O(affected) not O(V+E) and a steady-state tick allocates nothing.
+    // Graph shape read, never derived: `finalizeGraph` owns it -> walks O(affected), not O(V+E);
+    // steady-state tick allocates nothing.
     const byId = snapshot.nodeById;
     const isMember = (nodeId: string) =>
       snapshot.members ? snapshot.members.has(nodeId) : Object.hasOwn(byId, nodeId);
@@ -140,12 +138,11 @@ export class GraphPublisher {
       (sourceId) => this.#registry.get(sourceId) !== undefined,
       isMember,
     );
-    // One map of one closed value, where three Sets and a Map answered the same question and the
-    // order to ask them in was written out by hand at the top of the loop.
+    // One map of one closed value: three Sets and a Map answered the same question, hand-ordered.
     const outcomes = new Map<string, NodeOutcome>();
     const outcomeFor = (nodeId: string) => outcomeOf(outcomes, nodeId);
-    // `lastReady` not `get`: a non-ready patch owns no values, and every fallback in `sourceValues`
-    // wants the last pose a composition produced.
+    // `lastReady` not `get`: non-ready patch owns no values; `sourceValues` fallback wants last
+    // composed pose.
     const valuesFor = (sourceId: string) =>
       sourceValues(outcomeFor(sourceId), this.#registry.lastReady(sourceId));
     this.#registry.beginBatch(tick, seeds);
@@ -161,14 +158,14 @@ export class GraphPublisher {
       try {
         this.#registry.closeBatch();
       } catch {
-        /* preserve original flush failure */
+        /* keep original failure */
       }
       throw error;
     }
   }
 
-  /** Publish one node, answer what it became — the one decision per node. Precedence as three
-   * steps: blocking state -> blocked, accepted-but-unpublished -> pending, throw -> failed. */
+  /** Publish one node, answer what it became: one decision per node. Precedence: blocking ->
+   * blocked, accepted-unpublished -> pending, throw -> failed. */
   #publishNode(
     node: PublisherNode,
     byId: PublisherSnapshot["nodeById"],
@@ -190,8 +187,8 @@ export class GraphPublisher {
       });
       return blockedOutcome(blocking);
     }
-    // A source graph construction accepted but nothing published yet (often not a current member)
-    // is pending, not failed — decided up front, never by catching. graph/references.ts owns it.
+    // Source accepted, nothing published (often not a member) -> pending, not failed: decided up
+    // front, never by catching. graph/references.ts owns it.
     const outputsFor = (sourceId: string): Outputs | undefined => {
       const outcome = outcomeFor(sourceId);
       if (outcome.kind === "composed") return outcome.composition.outputs;
@@ -243,8 +240,8 @@ export class GraphPublisher {
     }
   }
 
-  /** Scoped requirement inputs for one node, plus its sources' revisions. Solver join before
-   * input phase: a solver's members scope under the plugin its own root edge names. */
+  /** Scoped requirement inputs for one node, plus source revisions. Solver join first: solver
+   * members scope under the plugin its root edge names. */
   #collectInputs(
     node: PublisherNode,
     byId: PublisherSnapshot["nodeById"],
@@ -266,40 +263,40 @@ export class GraphPublisher {
         sourceRevisions: identified.sourceRevisions,
       };
     const collected: Record<string, Record<string, unknown>> = {};
-    // One accumulator per dict slot, beside `collected` until the input loop ends: assembled apart
-    // so the slot's own record freezes once, at a point where it is known to be complete.
+    // One accumulator per dict slot, beside `collected` until loop ends: assembled apart so each
+    // record freezes once, when complete.
     const memberSlots = new Map<string, Map<string, Record<string, unknown>>>();
     const sourceRevisions: Record<string, number> = {};
 
     for (const edge of [...node.edges].sort(compareEdges)) {
       const sourcePatch = this.#registry.get(edge.sourceId);
-      // Unreachable in normal flow — the pending pre-check classified every edge first. Kept as a
-      // guard; both failures are named by the reader that raises them.
+      // Unreachable in normal flow: pending pre-check classified every edge. Guard only; failures
+      // named by the reader raising them.
       const sourceRecord = expectInputRecord(valuesFor(edge.sourceId), edge.sourceId);
       if (sourcePatch) sourceRevisions[edge.sourceId] = sourcePatch.revision;
       const requirement = edge.requirement;
-      // A dict entry lands under its authored key inside the slot, not at the slot itself: N entries
-      // assigned at the slot = one destination, last edge won, rest dropped with no diagnostic.
+      // Dict entry lands under authored key inside slot, not at slot: N entries at slot = one
+      // destination, last edge wins, rest dropped silently.
       if (requirement.memberKey !== undefined) {
         const slots = memberSlots.get(requirement.plugin) ?? new Map();
         memberSlots.set(requirement.plugin, slots);
         const members = slots.get(requirement.slot) ?? {};
         slots.set(requirement.slot, members);
-        // Every authored member stays an own data property, including "__proto__".
+        // Every authored member stays own data property, including "__proto__".
         defineOwnValue(members, requirement.memberKey, sourceRecord);
         continue;
       }
-      // Slot is the scope: source values arrive whole under their own names. Nothing projected,
-      // nothing flat-merged, so no key can collide and no guard is needed.
+      // Slot is scope: values arrive whole by name. No projection, no flat merge: no key collides,
+      // no guard needed.
       (collected[requirement.plugin] ??= {})[requirement.slot] = sourceRecord;
     }
-    // Frozen at assembly, in canonical key order: the entries were collected over
-    // `edgesByRole`, which sorts by `compareEdges`, and the member key is its last tiebreak.
+    // Frozen at assembly, canonical key order: collected over `edgesByRole` (sorts `compareEdges`),
+    // member key last tiebreak.
     for (const [plugin, slots] of memberSlots)
       for (const [slot, members] of slots)
         (collected[plugin] ??= {})[slot] = Object.freeze(members);
-    // One memo, `Track`'s. Key = seed + scoped inputs; members ride inside, so lengths, root,
-    // target and solver state share one comparison. Inputs+members alone went stale on animation.
+    // One memo, `Track`'s: key = seed + scoped inputs; members ride inside, so lengths, root, target,
+    // solver state compare together. Inputs+members alone stale on animation.
     return {
       inputs: freezeRequirementInputs(collected),
       identified: identified.requires,
@@ -307,8 +304,8 @@ export class GraphPublisher {
     };
   }
 
-  // Named outputs for one identified node, by slot and member key. Empty authored map ->
-  // empty member record ({} is a binding the plugin decides on); PluginTrack narrows it.
+  // Named outputs for identified node, by slot and member key. Empty authored map -> empty member
+  // record ({} is a binding the plugin decides); PluginTrack narrows it.
   #collectIdentifiedInputs(
     node: PublisherNode,
     outputsFor: (sourceId: string) => Outputs | undefined,

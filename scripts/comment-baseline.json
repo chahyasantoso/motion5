@@ -336,10 +336,6 @@
     "count": 3
   },
   {
-    "path": "packages/core/src/contract/authored-leaf.ts",
-    "count": 12
-  },
-  {
     "path": "packages/core/src/contract/handle.ts",
     "count": 8
   },
@@ -406,10 +402,6 @@
   {
     "path": "packages/core/src/graph/binding.ts",
     "count": 2
-  },
-  {
-    "path": "packages/core/src/graph/builders/incremental.ts",
-    "count": 14
   },
   {
     "path": "packages/core/src/graph/committed-contract.ts",
@@ -504,10 +496,6 @@
     "count": 2
   },
   {
-    "path": "packages/core/src/runtime/edit-plan-values.ts",
-    "count": 19
-  },
-  {
     "path": "packages/core/src/runtime/edit-plan.ts",
     "count": 11
   },
@@ -582,10 +570,6 @@
   {
     "path": "packages/plugins/src/ik-member.ts",
     "count": 11
-  },
-  {
-    "path": "packages/plugins/src/ik-topology.ts",
-    "count": 19
   },
   {
     "path": "packages/plugins/src/ik3d-chain.ts",

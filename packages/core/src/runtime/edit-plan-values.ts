@@ -21,16 +21,10 @@ import { validateRuntimeValue } from "./value-validation";
 import { AUTHORED, buildOwed, LIVE, type ValueState } from "./value-state";
 import type { CheapEdit, LiveEdit } from "./edit-types";
 
-/**
- * The pure half of the value tier: one target node, one edit, one delta.
- *
- * A value edit reads exactly one node through a `TrackLookup` and answers the change that reaches
- * it. The lookup has no way to enumerate, so planning cannot walk or copy the project: that is the
- * claim of the cheap tier, and the type is what enforces it. Structural edits stay in
- * `edit-plan.ts`, which plans against a whole candidate graph.
- */
+/** Pure value tier: one node, one edit, one delta. `TrackLookup` cannot enumerate, so planning
+ * never walks the project; structural edits, needing the whole graph, stay in `edit-plan.ts`. */
 
-/** What a value edit reads about its one target. `PlannedTrack` extends it with graph placement. */
+/** What a value edit reads about its target; `PlannedTrack` adds graph placement. */
 export interface CheapTrack {
   readonly nodeId: string;
   readonly track: TrackDefinition;
@@ -38,37 +32,27 @@ export interface CheapTrack {
   readonly contract: CommittedContract | undefined;
 }
 
-/** One-node read access. Deliberately has no iteration. */
+/** One-node read access; no iteration by design. */
 export interface TrackLookup {
   get(nodeId: string): CheapTrack | undefined;
 }
 
-/** What a value plan may ask about plugins, total and without an engine. */
+/** What a value plan may ask about plugins: total, no engine. */
 export interface ValueEnvironment {
   readonly capabilities: PluginCapabilities;
   readonly isPluginRegistered?: (pluginId: string) => boolean;
 }
 
-/**
- * One authored value edit, with the parsed values the compiled Track will evaluate.
- *
- * The parsed form travels with the change so the runtime applies exactly what this plan validated
- * and the parser stays the only reader of an authored cell. The committed contract and value state
- * travel unchanged on `track`, which is the whole claim of the cheap tier.
- */
+/** One authored value edit, with the parsed values the compiled Track will evaluate. Parsed form
+ * travels so runtime applies what this plan validated; `track` carries contract and value state. */
 export interface AuthoredValuesChange {
   readonly kind: "authored-values";
   readonly track: CheapTrack;
   readonly values: ParsedValues;
 }
 
-/**
- * One live value edit, with the whole evaluated value the compiled Track must stand over.
- *
- * `overlay` is absent for a release, which is the only live edit that carries no value. The track's
- * authored definition is carried unchanged: a live write moves what is published, never what is
- * authored.
- */
+/** One live value edit, with the whole evaluated value the compiled Track must stand over.
+ * `overlay` absent on release; a live write moves what is published, never what is authored. */
 export interface LiveValuesChange {
   readonly kind: "live-values";
   readonly track: CheapTrack;
@@ -97,13 +81,8 @@ function requiredTrack(view: TrackLookup, nodeId: string): CheapTrack {
   return track;
 }
 
-/**
- * The sentence every cheap-tier contract refusal carries, beside the reason it already names.
- *
- * A cheap edit never re-infers, so the only way to move the contract is the structural replacement
- * that owns inference. The sentence is appended where the refusal is produced so the validator keeps
- * owning the reason and this tier owns the remedy.
- */
+/** Remedy appended to every cheap-tier contract refusal. A cheap edit never re-infers, so only
+ * the structural replacement that owns inference can move the contract. */
 const REPLACE_HINT = " Use track.input.replace(...) or track.replace(...) to change the contract.";
 
 function freezeAuthored<T>(value: T): T {
@@ -120,14 +99,8 @@ function withInputValues(track: TrackDefinition, values: AuthoredValues): TrackD
   return Object.freeze({ ...track, input });
 }
 
-/**
- * The authored spec cheap edits validate against, never inferred from the values being written.
- *
- * A declared schema is used as written so its `static` flags still apply; a plugin track uses the
- * plugin's declared local spec; an inferred source uses the contract its last structural commit
- * stored. The fallback to the committed spec covers a plugin definition the capabilities cannot
- * answer, which is still the contract that commit resolved.
- */
+/** Spec cheap edits validate against: declared schema as written (`static` flags apply), plugin's
+ * local spec, else stored contract, which covers a plugin the capabilities cannot answer. */
 interface CommittedInputSpec {
   readonly spec: ValueSpec;
   readonly origin: SpecOrigin;
@@ -166,13 +139,8 @@ function authoredShape(track: TrackDefinition, spec: ValueSpec): AuthoredShape {
   return spec.kind;
 }
 
-/**
- * Stops on a field the plugin declares static.
- *
- * The parser enforces this against `input.schema`, which a plugin track cannot carry, so a plugin
- * track's local spec is checked here instead. The rule is the parser's own; only the spec it is
- * asked against arrives from the plugin.
- */
+/** Stops on a field the plugin declares static. The parser checks `input.schema`, which a plugin
+ * track cannot carry, so its local spec is checked here against the parser's own rule. */
 function staticStopDiagnostics(
   values: ParsedValues,
   spec: ValueSpec,
@@ -216,9 +184,8 @@ function validateAuthoredValues(
   contract: CommittedContract | undefined,
   environment: ValueEnvironment,
 ): Outcome<ValidatedAuthored, Diagnostic> {
-  // A runtime with no admission predicate cannot judge a plugin id, and the graph it is editing
-  // already admitted this one. The parser treats absence as "nothing is registered", so the
-  // unjudged environment is expressed as a predicate that admits what is already loaded.
+  // Absent predicate admits every id: the graph already admitted this plugin, while the parser
+  // would read absence as "nothing is registered".
   const context = {
     isPluginRegistered: environment.isPluginRegistered ?? (() => true),
   };
@@ -256,13 +223,8 @@ function refusedAddress(diagnostic: Diagnostic): AddressedValues {
   return { kind: "refused", diagnostic };
 }
 
-/**
- * The whole authored values with the addressed cell written, or the address that does not exist.
- *
- * Row order and every untouched cell travel by identity, and a field the row omitted is added in
- * place when the committed spec declares it. The address never decides whether the edit is valid on
- * its own: a table row is found by id and a record field must be declared or authored.
- */
+/** Whole values with the addressed cell written, or the missing address; row order and untouched
+ * cells travel by identity. Table row found by id; record field must be declared or authored. */
 function addressedValues(
   track: TrackDefinition,
   address: CellAddress,
@@ -415,14 +377,8 @@ function liveExtraFields(spec: ValueSpec): "reject" | "allow-scalar" {
   return spec.additionalProperties === true ? "allow-scalar" : "reject";
 }
 
-/**
- * One whole-value live write, validated against the committed contract and never inferred.
- *
- * The authored definition is carried by identity: the overlay is what the compiled Track publishes,
- * and a write must not rename an authored row or change an authored field. Shape, required and
- * unknown fields, scalar kinds, row ids, finiteness and reserved names are all
- * `live-values-invalid`, with the path the value would occupy in an authored document.
- */
+/** One whole-value live write, validated against the committed contract, never inferred. Every
+ * fault — shape, fields, kinds, row ids, finiteness, reserved names — is `live-values-invalid`. */
 function planWriteLive(
   view: TrackLookup,
   edit: Extract<LiveEdit, { kind: "write-live" }>,
@@ -444,7 +400,7 @@ function planWriteLive(
   );
 }
 
-/** One release: drop the overlay and resume authored evaluation at the current progress. */
+/** One release: drop the overlay, resume authored evaluation at current progress. */
 function planReleaseLive(
   view: TrackLookup,
   edit: Extract<LiveEdit, { kind: "release-live" }>,
@@ -458,12 +414,8 @@ function planReleaseLive(
   );
 }
 
-/**
- * Plans one value edit against one target node. Never reads any other node.
- *
- * The edit either changes nothing, answered as `change: undefined`, or answers the change that
- * reaches the target. A refusal carries the diagnostics; the caller reports the edit index.
- */
+/** Plans one value edit against one target node; reads no other. Nothing changed answers
+ * `change: undefined`; else the change reaching the target; refusals carry diagnostics. */
 export function planValueEdit(
   view: TrackLookup,
   edit: CheapEdit | LiveEdit,
