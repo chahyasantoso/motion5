@@ -564,10 +564,6 @@
     "count": 2
   },
   {
-    "path": "packages/core/src/runtime/graph-publisher.ts",
-    "count": 38
-  },
-  {
     "path": "packages/core/src/runtime/graph-runtime.ts",
     "count": 24
   },
@@ -650,10 +646,6 @@
   {
     "path": "packages/plugins/src/fabrik-seed.ts",
     "count": 25
-  },
-  {
-    "path": "packages/plugins/src/fabrik-select.ts",
-    "count": 46
   },
   {
     "path": "packages/plugins/src/ik-chain.ts",
