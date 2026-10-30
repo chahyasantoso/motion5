@@ -38,6 +38,8 @@ jobs:
       # is a syntax error that stops all three from reporting a useful cause.
       - run: npm run scan:raw-templates
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+      - run: npm run scan:comments
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
       - run: npm run typecheck
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
       - run: npm run format:check

@@ -11,7 +11,7 @@ const SILENT = "npm run --silent";
  * stop reporting a useful cause once it exists, so they run after the scan and the scan stops the
  * run.
  */
-export const STEPS = ["scan:raw-templates", "format:check", "typecheck", "test"];
+export const STEPS = ["scan:raw-templates", "scan:comments", "format:check", "typecheck", "test"];
 
 function execute(step, cwd) {
   const run = spawnSync(`${SILENT} ${step}`, { cwd, encoding: "utf8", shell: true });

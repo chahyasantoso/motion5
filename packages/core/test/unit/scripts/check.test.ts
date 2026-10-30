@@ -30,6 +30,7 @@ describe("check gate runner (S2)", () => {
     expect(code).toBe(1);
     expect(lines).toEqual([
       "PASS scan:raw-templates",
+      "PASS scan:comments",
       "FAIL format:check",
       "Checking formatting...\ndrift.ts",
     ]);
@@ -38,7 +39,12 @@ describe("check gate runner (S2)", () => {
   it("names the step even when the step prints nothing", () => {
     const { lines, log } = collect();
     expect(run(steps({ typecheck: 7 }), STEPS, log)).toBe(7);
-    expect(lines).toEqual(["PASS scan:raw-templates", "PASS format:check", "FAIL typecheck"]);
+    expect(lines).toEqual([
+      "PASS scan:raw-templates",
+      "PASS scan:comments",
+      "PASS format:check",
+      "FAIL typecheck",
+    ]);
   });
 
   it("carries the failing step's own exit code out of the run", () => {

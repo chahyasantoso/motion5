@@ -26,8 +26,8 @@ is one line, and a rule this file does not carry is not a rule.
 
 ## Commands
 
-- `npm run check` — the four gates in order, one `PASS` or `FAIL` line each, and the full log only
-  for the step that fails. Green before any pull request.
+- `npm run check` — every gate in order, one `PASS` or `FAIL` line each, and the full log only for
+  the step that fails. Green before any pull request.
 - `npm run typecheck` — `tsc --noEmit` over packages and apps.
 - `npm test` — the full suite on the quiet reporter: a green run states its counts, a red one prints
   every assertion diff.
@@ -43,6 +43,9 @@ is one line, and a rule this file does not carry is not a rule.
   a ternary whose else arm nobody wrote down.
 - No `any` and no unchecked cast.
 - Never weaken a failing test, and delete a gate's test only in the commit that deletes the gate.
+- A comment states behavior, in at most 3 lines and 200 characters, and cites nothing: no issue
+  number, decision record, phase, slice or history reference. `npm run scan:comments` enforces it
+  against a baseline that may only shrink.
 - Author no markdown tables anywhere: Prettier realigns them, and the drift fails `format:check`.
 - Prettier is pinned at the `package.json` version, `printWidth` is 100, quotes are double, trailing
   commas are everywhere and `proseWrap` is `preserve`, so prose is never rewrapped: keep a paragraph

@@ -15,6 +15,7 @@
   "scripts": {
     "check": "node scripts/check.mjs",
     "scan:raw-templates": "node scripts/raw-template-scan.mjs",
+    "scan:comments": "node scripts/comment-scan.mjs",
     "format": "prettier . --write",
     "format:check": "prettier . --check",
     "typecheck": "tsc --noEmit -p tsconfig.json",
@@ -26,6 +27,7 @@
     "test:ports": "vitest run packages/core/test/contract/ports.test.ts",
     "test:integration": "vitest run packages/core/test/integration packages/plugins/test/integration",
     "test:boundaries": "node scripts/boundary-scan.mjs && vitest run packages/core/test/unit/scripts/boundary-scan.test.ts",
+    "test:comments": "node scripts/comment-scan.mjs && vitest run packages/core/test/unit/scripts/comment-scan.test.ts",
     "benchmark": "node performance/graph-benchmark.mjs",
     "bench:ik": "node scripts/bench-ik.mjs",
     "bench:values": "node scripts/bench-values.mjs",

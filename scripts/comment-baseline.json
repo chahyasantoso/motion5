@@ -1,0 +1,850 @@
+[
+  {
+    "path": "apps/ik-playground/src/cleanup.ts",
+    "count": 3
+  },
+  {
+    "path": "apps/ik-playground/src/components/goal-drag.ts",
+    "count": 4
+  },
+  {
+    "path": "apps/ik-playground/src/components/Ik3dFrame.tsx",
+    "count": 5
+  },
+  {
+    "path": "apps/ik-playground/src/components/StageBoundary.tsx",
+    "count": 1
+  },
+  {
+    "path": "apps/ik-playground/src/components/ThreeStage.tsx",
+    "count": 5
+  },
+  {
+    "path": "apps/ik-playground/src/goal-control.ts",
+    "count": 6
+  },
+  {
+    "path": "apps/ik-playground/src/ik-playground-project.ts",
+    "count": 6
+  },
+  {
+    "path": "apps/ik-playground/src/ik3d-playground-project.ts",
+    "count": 10
+  },
+  {
+    "path": "apps/ik-playground/src/playground-runtime.ts",
+    "count": 4
+  },
+  {
+    "path": "apps/ik-playground/src/playground-session.ts",
+    "count": 3
+  },
+  {
+    "path": "apps/ik-playground/src/projection.ts",
+    "count": 11
+  },
+  {
+    "path": "apps/ik-playground/src/rig-sources.ts",
+    "count": 2
+  },
+  {
+    "path": "apps/ik-playground/src/unreachable.ts",
+    "count": 2
+  },
+  {
+    "path": "apps/pose-gap-filler/src/body/attachments.ts",
+    "count": 4
+  },
+  {
+    "path": "apps/pose-gap-filler/src/body/skeleton.ts",
+    "count": 6
+  },
+  {
+    "path": "apps/pose-gap-filler/src/filler/adapter.ts",
+    "count": 8
+  },
+  {
+    "path": "apps/pose-gap-filler/src/filler/bone-length.ts",
+    "count": 4
+  },
+  {
+    "path": "apps/pose-gap-filler/src/filler/chain-kalman.ts",
+    "count": 3
+  },
+  {
+    "path": "apps/pose-gap-filler/src/filler/direction.ts",
+    "count": 4
+  },
+  {
+    "path": "apps/pose-gap-filler/src/filler/frame.ts",
+    "count": 11
+  },
+  {
+    "path": "apps/pose-gap-filler/src/filler/gap-detector.ts",
+    "count": 9
+  },
+  {
+    "path": "apps/pose-gap-filler/src/filler/gap-filler.ts",
+    "count": 3
+  },
+  {
+    "path": "apps/pose-gap-filler/src/filler/hold-filler.ts",
+    "count": 2
+  },
+  {
+    "path": "apps/pose-gap-filler/src/filler/innovation-gate.ts",
+    "count": 2
+  },
+  {
+    "path": "apps/pose-gap-filler/src/filler/kalman.ts",
+    "count": 2
+  },
+  {
+    "path": "apps/pose-gap-filler/src/filler/landmarks.ts",
+    "count": 3
+  },
+  {
+    "path": "apps/pose-gap-filler/src/filler/pipeline.ts",
+    "count": 3
+  },
+  {
+    "path": "apps/pose-gap-filler/src/filler/raw-filler.ts",
+    "count": 2
+  },
+  {
+    "path": "apps/pose-gap-filler/src/filler/space.ts",
+    "count": 3
+  },
+  {
+    "path": "apps/pose-gap-filler/src/filler/stabilizer.ts",
+    "count": 8
+  },
+  {
+    "path": "apps/pose-gap-filler/src/filler/unreachable.ts",
+    "count": 2
+  },
+  {
+    "path": "apps/pose-gap-filler/src/filler/vec.ts",
+    "count": 2
+  },
+  {
+    "path": "apps/pose-gap-filler/src/live/experiment.ts",
+    "count": 4
+  },
+  {
+    "path": "apps/pose-gap-filler/src/live/hotkeys.ts",
+    "count": 1
+  },
+  {
+    "path": "apps/pose-gap-filler/src/live/ingest.ts",
+    "count": 6
+  },
+  {
+    "path": "apps/pose-gap-filler/src/live/live-rig.ts",
+    "count": 2
+  },
+  {
+    "path": "apps/pose-gap-filler/src/live/main.ts",
+    "count": 2
+  },
+  {
+    "path": "apps/pose-gap-filler/src/live/overlay.ts",
+    "count": 2
+  },
+  {
+    "path": "apps/pose-gap-filler/src/live/playback.ts",
+    "count": 7
+  },
+  {
+    "path": "apps/pose-gap-filler/src/live/preview.ts",
+    "count": 2
+  },
+  {
+    "path": "apps/pose-gap-filler/src/live/projection.ts",
+    "count": 2
+  },
+  {
+    "path": "apps/pose-gap-filler/src/live/session.ts",
+    "count": 4
+  },
+  {
+    "path": "apps/pose-gap-filler/src/live/source.ts",
+    "count": 7
+  },
+  {
+    "path": "apps/pose-gap-filler/src/live/sources.ts",
+    "count": 6
+  },
+  {
+    "path": "apps/pose-gap-filler/src/live/timings.ts",
+    "count": 2
+  },
+  {
+    "path": "apps/pose-gap-filler/src/replay/compare.ts",
+    "count": 7
+  },
+  {
+    "path": "apps/pose-gap-filler/src/replay/mask.ts",
+    "count": 2
+  },
+  {
+    "path": "apps/pose-gap-filler/src/replay/metrics.ts",
+    "count": 4
+  },
+  {
+    "path": "apps/pose-gap-filler/src/replay/record.ts",
+    "count": 18
+  },
+  {
+    "path": "apps/pose-gap-filler/src/replay/recording.ts",
+    "count": 7
+  },
+  {
+    "path": "apps/pose-gap-filler/src/replay/replay.ts",
+    "count": 7
+  },
+  {
+    "path": "apps/pose-gap-filler/src/replay/synthetic.ts",
+    "count": 12
+  },
+  {
+    "path": "apps/pose-gap-filler/src/rig/bend-policy.ts",
+    "count": 1
+  },
+  {
+    "path": "apps/pose-gap-filler/src/rig/writer.ts",
+    "count": 9
+  },
+  {
+    "path": "apps/pose-gap-filler/src/synthetic/actor.ts",
+    "count": 4
+  },
+  {
+    "path": "apps/pose-gap-filler/src/synthetic/camera.ts",
+    "count": 6
+  },
+  {
+    "path": "apps/pose-gap-filler/src/synthetic/corruption.ts",
+    "count": 7
+  },
+  {
+    "path": "apps/pose-gap-filler/src/synthetic/handles.ts",
+    "count": 6
+  },
+  {
+    "path": "apps/pose-gap-filler/src/synthetic/inspect.ts",
+    "count": 3
+  },
+  {
+    "path": "apps/pose-gap-filler/src/synthetic/observation.ts",
+    "count": 10
+  },
+  {
+    "path": "apps/pose-gap-filler/src/synthetic/occlusion.ts",
+    "count": 10
+  },
+  {
+    "path": "apps/pose-gap-filler/src/synthetic/scenarios.ts",
+    "count": 8
+  },
+  {
+    "path": "apps/pose-gap-filler/src/synthetic/seeded.ts",
+    "count": 2
+  },
+  {
+    "path": "apps/pose-gap-filler/src/synthetic/simulator.ts",
+    "count": 7
+  },
+  {
+    "path": "apps/pose-gap-filler/src/view/avatar-framing.ts",
+    "count": 3
+  },
+  {
+    "path": "apps/pose-gap-filler/src/view/avatar.ts",
+    "count": 1
+  },
+  {
+    "path": "apps/pose-gap-filler/src/view/humanoid-map.ts",
+    "count": 4
+  },
+  {
+    "path": "apps/pose-gap-filler/src/view/pose-drag.ts",
+    "count": 1
+  },
+  {
+    "path": "apps/pose-gap-filler/src/view/presentation-history.ts",
+    "count": 2
+  },
+  {
+    "path": "apps/pose-gap-filler/src/view/scene-view.ts",
+    "count": 2
+  },
+  {
+    "path": "apps/pose-gap-filler/src/view/simulator-panel.ts",
+    "count": 2
+  },
+  {
+    "path": "apps/react-demo/src/App.tsx",
+    "count": 6
+  },
+  {
+    "path": "apps/react-demo/src/components/InspectorPanel.tsx",
+    "count": 2
+  },
+  {
+    "path": "apps/react-demo/src/components/marker-position.ts",
+    "count": 2
+  },
+  {
+    "path": "apps/react-demo/src/components/SkeletonRig.tsx",
+    "count": 3
+  },
+  {
+    "path": "apps/react-demo/src/full-body-project.ts",
+    "count": 2
+  },
+  {
+    "path": "apps/react-demo/src/main.tsx",
+    "count": 1
+  },
+  {
+    "path": "packages/core/src/adapters/browser-clock.ts",
+    "count": 2
+  },
+  {
+    "path": "packages/core/src/adapters/dom.ts",
+    "count": 26
+  },
+  {
+    "path": "packages/core/src/adapters/interpolator/gsap.ts",
+    "count": 21
+  },
+  {
+    "path": "packages/core/src/adapters/microtask-scheduler.ts",
+    "count": 12
+  },
+  {
+    "path": "packages/core/src/adapters/scroll-trigger-gsap.ts",
+    "count": 2
+  },
+  {
+    "path": "packages/core/src/adapters/scroll-trigger.ts",
+    "count": 6
+  },
+  {
+    "path": "packages/core/src/adapters/trigger-factory/default.ts",
+    "count": 3
+  },
+  {
+    "path": "packages/core/src/adapters/trigger-factory/loop-cycle.ts",
+    "count": 12
+  },
+  {
+    "path": "packages/core/src/adapters/trigger-factory/time-driver.ts",
+    "count": 3
+  },
+  {
+    "path": "packages/core/src/contract/authored-leaf.ts",
+    "count": 12
+  },
+  {
+    "path": "packages/core/src/contract/diagnostics.ts",
+    "count": 9
+  },
+  {
+    "path": "packages/core/src/contract/handle.ts",
+    "count": 8
+  },
+  {
+    "path": "packages/core/src/contract/keyframe-compiler.ts",
+    "count": 3
+  },
+  {
+    "path": "packages/core/src/contract/motion-handle.ts",
+    "count": 11
+  },
+  {
+    "path": "packages/core/src/contract/output-select.ts",
+    "count": 11
+  },
+  {
+    "path": "packages/core/src/contract/patch-render.ts",
+    "count": 7
+  },
+  {
+    "path": "packages/core/src/contract/rule-id.ts",
+    "count": 2
+  },
+  {
+    "path": "packages/core/src/contract/rule.ts",
+    "count": 25
+  },
+  {
+    "path": "packages/core/src/contract/schema-transaction.ts",
+    "count": 10
+  },
+  {
+    "path": "packages/core/src/contract/solver-constraints.ts",
+    "count": 24
+  },
+  {
+    "path": "packages/core/src/contract/solver-shape.ts",
+    "count": 20
+  },
+  {
+    "path": "packages/core/src/contract/solver-slots.ts",
+    "count": 6
+  },
+  {
+    "path": "packages/core/src/contract/track-handle.ts",
+    "count": 26
+  },
+  {
+    "path": "packages/core/src/contract/v5-infer.ts",
+    "count": 10
+  },
+  {
+    "path": "packages/core/src/contract/v5-parse.ts",
+    "count": 7
+  },
+  {
+    "path": "packages/core/src/contract/v5.ts",
+    "count": 59
+  },
+  {
+    "path": "packages/core/src/contract/validate-v5.ts",
+    "count": 11
+  },
+  {
+    "path": "packages/core/src/contract/value-transaction.ts",
+    "count": 7
+  },
+  {
+    "path": "packages/core/src/domain/completion.ts",
+    "count": 2
+  },
+  {
+    "path": "packages/core/src/domain/lifecycle.ts",
+    "count": 1
+  },
+  {
+    "path": "packages/core/src/domain/motion.ts",
+    "count": 34
+  },
+  {
+    "path": "packages/core/src/domain/plugin-catalog.ts",
+    "count": 10
+  },
+  {
+    "path": "packages/core/src/domain/values.ts",
+    "count": 3
+  },
+  {
+    "path": "packages/core/src/engine.ts",
+    "count": 41
+  },
+  {
+    "path": "packages/core/src/graph/binding.ts",
+    "count": 2
+  },
+  {
+    "path": "packages/core/src/graph/builders/incremental.ts",
+    "count": 14
+  },
+  {
+    "path": "packages/core/src/graph/committed-contract.ts",
+    "count": 7
+  },
+  {
+    "path": "packages/core/src/graph/compare.ts",
+    "count": 2
+  },
+  {
+    "path": "packages/core/src/graph/dependency-check.ts",
+    "count": 3
+  },
+  {
+    "path": "packages/core/src/graph/dependency-edges.ts",
+    "count": 3
+  },
+  {
+    "path": "packages/core/src/graph/ir.ts",
+    "count": 23
+  },
+  {
+    "path": "packages/core/src/graph/observation-state.ts",
+    "count": 6
+  },
+  {
+    "path": "packages/core/src/graph/order.ts",
+    "count": 2
+  },
+  {
+    "path": "packages/core/src/graph/references.ts",
+    "count": 10
+  },
+  {
+    "path": "packages/core/src/graph/slot-check.ts",
+    "count": 6
+  },
+  {
+    "path": "packages/core/src/index.ts",
+    "count": 28
+  },
+  {
+    "path": "packages/core/src/internal.ts",
+    "count": 11
+  },
+  {
+    "path": "packages/core/src/lang/exhaustive.ts",
+    "count": 3
+  },
+  {
+    "path": "packages/core/src/lang/outcome.ts",
+    "count": 7
+  },
+  {
+    "path": "packages/core/src/lang/own-property.ts",
+    "count": 1
+  },
+  {
+    "path": "packages/core/src/plugin-api.ts",
+    "count": 3
+  },
+  {
+    "path": "packages/core/src/ports/clock.ts",
+    "count": 1
+  },
+  {
+    "path": "packages/core/src/ports/graph-builder.ts",
+    "count": 2
+  },
+  {
+    "path": "packages/core/src/ports/interpolator.ts",
+    "count": 3
+  },
+  {
+    "path": "packages/core/src/ports/plugin-capabilities.ts",
+    "count": 3
+  },
+  {
+    "path": "packages/core/src/ports/scheduler.ts",
+    "count": 21
+  },
+  {
+    "path": "packages/core/src/ports/trigger-factory.ts",
+    "count": 2
+  },
+  {
+    "path": "packages/core/src/ports/trigger.ts",
+    "count": 3
+  },
+  {
+    "path": "packages/core/src/runtime/authored-values.ts",
+    "count": 15
+  },
+  {
+    "path": "packages/core/src/runtime/commit-plan.ts",
+    "count": 38
+  },
+  {
+    "path": "packages/core/src/runtime/diagnostics.ts",
+    "count": 5
+  },
+  {
+    "path": "packages/core/src/runtime/edit-apply.ts",
+    "count": 4
+  },
+  {
+    "path": "packages/core/src/runtime/edit-batch.ts",
+    "count": 2
+  },
+  {
+    "path": "packages/core/src/runtime/edit-plan-values.ts",
+    "count": 19
+  },
+  {
+    "path": "packages/core/src/runtime/edit-plan.ts",
+    "count": 11
+  },
+  {
+    "path": "packages/core/src/runtime/edit-types.ts",
+    "count": 5
+  },
+  {
+    "path": "packages/core/src/runtime/evaluate-values.ts",
+    "count": 4
+  },
+  {
+    "path": "packages/core/src/runtime/evaluator-replacement.ts",
+    "count": 2
+  },
+  {
+    "path": "packages/core/src/runtime/graph-publisher.ts",
+    "count": 38
+  },
+  {
+    "path": "packages/core/src/runtime/graph-runtime-state.ts",
+    "count": 96
+  },
+  {
+    "path": "packages/core/src/runtime/graph-runtime.ts",
+    "count": 24
+  },
+  {
+    "path": "packages/core/src/runtime/patch-registry.ts",
+    "count": 50
+  },
+  {
+    "path": "packages/core/src/runtime/plugin-output.ts",
+    "count": 4
+  },
+  {
+    "path": "packages/core/src/runtime/plugin-track.ts",
+    "count": 6
+  },
+  {
+    "path": "packages/core/src/runtime/project-handles.ts",
+    "count": 22
+  },
+  {
+    "path": "packages/core/src/runtime/project-phase.ts",
+    "count": 66
+  },
+  {
+    "path": "packages/core/src/runtime/project-ports.ts",
+    "count": 26
+  },
+  {
+    "path": "packages/core/src/runtime/project-runtime.ts",
+    "count": 70
+  },
+  {
+    "path": "packages/core/src/runtime/publish-request.ts",
+    "count": 7
+  },
+  {
+    "path": "packages/core/src/runtime/publisher-outcome.ts",
+    "count": 38
+  },
+  {
+    "path": "packages/core/src/runtime/publisher-reach.ts",
+    "count": 10
+  },
+  {
+    "path": "packages/core/src/runtime/refusal.ts",
+    "count": 23
+  },
+  {
+    "path": "packages/core/src/runtime/registry-phase.ts",
+    "count": 20
+  },
+  {
+    "path": "packages/core/src/runtime/report.ts",
+    "count": 86
+  },
+  {
+    "path": "packages/core/src/runtime/results.ts",
+    "count": 8
+  },
+  {
+    "path": "packages/core/src/runtime/run-plan.ts",
+    "count": 17
+  },
+  {
+    "path": "packages/core/src/runtime/schema-refusals.ts",
+    "count": 25
+  },
+  {
+    "path": "packages/core/src/runtime/value-state.ts",
+    "count": 11
+  },
+  {
+    "path": "packages/core/src/runtime/value-track.ts",
+    "count": 7
+  },
+  {
+    "path": "packages/core/src/runtime/value-validation.ts",
+    "count": 2
+  },
+  {
+    "path": "packages/core/src/testing/fakes.ts",
+    "count": 9
+  },
+  {
+    "path": "packages/core/src/validate-v5.ts",
+    "count": 5
+  },
+  {
+    "path": "packages/plugins/src/aggregate-topology.ts",
+    "count": 7
+  },
+  {
+    "path": "packages/plugins/src/builtin-catalog.ts",
+    "count": 2
+  },
+  {
+    "path": "packages/plugins/src/fabrik-cap.ts",
+    "count": 52
+  },
+  {
+    "path": "packages/plugins/src/fabrik-seed.ts",
+    "count": 25
+  },
+  {
+    "path": "packages/plugins/src/fabrik-select.ts",
+    "count": 46
+  },
+  {
+    "path": "packages/plugins/src/fabrik.ts",
+    "count": 63
+  },
+  {
+    "path": "packages/plugins/src/frame.ts",
+    "count": 38
+  },
+  {
+    "path": "packages/plugins/src/frame3d.ts",
+    "count": 41
+  },
+  {
+    "path": "packages/plugins/src/ik-analytic.ts",
+    "count": 14
+  },
+  {
+    "path": "packages/plugins/src/ik-chain.ts",
+    "count": 24
+  },
+  {
+    "path": "packages/plugins/src/ik-constraint.ts",
+    "count": 37
+  },
+  {
+    "path": "packages/plugins/src/ik-descent.ts",
+    "count": 13
+  },
+  {
+    "path": "packages/plugins/src/ik-goal-reading.ts",
+    "count": 11
+  },
+  {
+    "path": "packages/plugins/src/ik-goal.ts",
+    "count": 33
+  },
+  {
+    "path": "packages/plugins/src/ik-member.ts",
+    "count": 11
+  },
+  {
+    "path": "packages/plugins/src/ik-result.ts",
+    "count": 20
+  },
+  {
+    "path": "packages/plugins/src/ik-scale.ts",
+    "count": 17
+  },
+  {
+    "path": "packages/plugins/src/ik-solve.ts",
+    "count": 21
+  },
+  {
+    "path": "packages/plugins/src/ik-topology.ts",
+    "count": 19
+  },
+  {
+    "path": "packages/plugins/src/ik3d-analytic.ts",
+    "count": 25
+  },
+  {
+    "path": "packages/plugins/src/ik3d-chain.ts",
+    "count": 6
+  },
+  {
+    "path": "packages/plugins/src/ik3d-compromise.ts",
+    "count": 7
+  },
+  {
+    "path": "packages/plugins/src/ik3d-constraint.ts",
+    "count": 46
+  },
+  {
+    "path": "packages/plugins/src/ik3d-fabrik.ts",
+    "count": 41
+  },
+  {
+    "path": "packages/plugins/src/ik3d-orient.ts",
+    "count": 14
+  },
+  {
+    "path": "packages/plugins/src/ik3d-result.ts",
+    "count": 8
+  },
+  {
+    "path": "packages/plugins/src/ik3d-seed.ts",
+    "count": 21
+  },
+  {
+    "path": "packages/plugins/src/ik3d-serial-recovery.ts",
+    "count": 23
+  },
+  {
+    "path": "packages/plugins/src/ik3d-solve.ts",
+    "count": 12
+  },
+  {
+    "path": "packages/plugins/src/labels.ts",
+    "count": 4
+  },
+  {
+    "path": "packages/plugins/src/loader.ts",
+    "count": 3
+  },
+  {
+    "path": "packages/plugins/src/pose-classify.ts",
+    "count": 3
+  },
+  {
+    "path": "packages/plugins/src/runner.ts",
+    "count": 3
+  },
+  {
+    "path": "packages/react/src/derived-dom-patch.ts",
+    "count": 11
+  },
+  {
+    "path": "packages/react/src/dom-binding.ts",
+    "count": 7
+  },
+  {
+    "path": "packages/react/src/dom-patch.ts",
+    "count": 3
+  },
+  {
+    "path": "packages/react/src/index.ts",
+    "count": 6
+  },
+  {
+    "path": "packages/react/src/patch-store.ts",
+    "count": 8
+  },
+  {
+    "path": "packages/react/src/row-patch-source.ts",
+    "count": 6
+  },
+  {
+    "path": "packages/three/src/index.ts",
+    "count": 12
+  },
+  {
+    "path": "packages/three/src/skeleton-capture.ts",
+    "count": 8
+  },
+  {
+    "path": "packages/three/src/skeleton-driver.ts",
+    "count": 4
+  },
+  {
+    "path": "packages/three/src/skeleton-tracks.ts",
+    "count": 1
+  }
+]
