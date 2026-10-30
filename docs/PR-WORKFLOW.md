@@ -47,7 +47,7 @@ Cite the original Actions run as primary evidence and the readable retained diag
 
 ## Evidence case ids
 
-A cited case id names exactly one test in the suite. Use a flat series per plan, never restart it per file. `packages/core/test/unit/scripts/evidence-case-ids.test.ts` enforces uniqueness and refuses unregistered series-shaped titles. Plain descriptive test names need no new series.
+A cited case id names exactly one test in the suite. Use a flat series per plan, never restart it per file. `packages/core/test/unit/scripts/evidence-case-ids.test.ts` discovers the series itself from the test titles the tree declares and enforces uniqueness across them. Plain descriptive test names need no new series.
 
 A plan slice prefix containing a digit, such as `T4-3`, and architecture invariant `I-n` are not evidence-id series. An invariant may be cited by multiple tests. See issue #289.
 

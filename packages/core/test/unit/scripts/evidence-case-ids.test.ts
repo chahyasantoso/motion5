@@ -1,569 +1,86 @@
-import { describe, expect, it } from "vitest";
-import { readFileSync, readdirSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
+import { describe, expect, it } from "vitest";
 
-// The citation series are this project's evidence keys: implementation plans, ADRs, and every
-// pull request body name evidence by id rather than by test title. Two cases sharing one id makes
-// each of those citations ambiguous, so the gate is uniqueness across the whole suite, not within a
-// file, and the whole suite is the tree `vitest` walks rather than the package this file sits in.
-// Titles are matched instead of bare ids so a comment referring to another case cannot register as
-// a second declaration. Uniqueness is half of it. An id the alternation below does not match is
-// ungated rather than absent, so the other half is that the alternation names every series the tree
-// declares, and issue #289 owns both. The rules that needed deciding are stated beside the
-// constants they govern rather than here, because all of them are about what the scan may read.
-//
-// `C-` belongs to the option C plan (ADR-031). `T-` belongs to the T4/T5 trigger parity plan,
-// which needed its own prefix because that plan already uses `T4-n` and `T5-n` for its locked
-// decisions; reusing those for test cases would have made every citation two-valued. `E-` belongs
-// to edge identity, ordering, and labels (issue #137 and ADR-034). `R-` belongs to the trigger
-// progress range fix, issue #138 and ADR-037.
-//
-// `P-` belongs to the rollback error precedence fix (issue #133 and ADR-035). Reserving a spare
-// letter has now failed twice to prevent a widening, because both reservations above were claimed
-// by the issues they were reserved against. The pattern is therefore widened when a series is
-// actually opened, and nothing here is reserved for a series that does not exist yet.
-//
-// `D-` belongs to teardown ownership inside `Engine` (issues #143 and #145): disposing the
-// ProjectRuntime a failed `load()` created, and running every remaining cleanup step when one of
-// them throws. It is a separate series from `P-` on purpose. `P-` owns which error a caller sees
-// when a rollback fails, in `ProjectRuntime`; `D-` owns whether the cleanup ran at all, in
-// `Engine`. One citation, one owner, per the paragraph above.
-//
-// `M-` belongs to single-track mutation atomicity inside `Motion` (issue #147): what a refused
-// `addTrack` or `replaceTrack` leaves behind. It is separate from `C-` even though both live in
-// the domain and both were opened against `Motion`, because `C-` owns how a Track is reached and
-// `M-` owns what a refusal costs. A letter is chosen that no plan already uses unhyphenated, so
-// `A3` and `A5` from the runtime mutation model cannot be misread as cases in this series.
-//
-// `S-` belongs to progress state commits inside `Track` (issue #149). It answers what internal
-// bookkeeping a rejected interpolation timeline write may expose, not which Track a Motion owns
-// or what a refused Motion mutation commits, so it does not extend either `C-` or `M-`.
-//
-// `K-` belongs to the public port surface: the shipped Scheduler implementation (issue #155) and
-// the five port contracts the entry now names (issue #158). Every series above owns behavior
-// inside one object; `K-` owns what a consumer outside the package can construct and name at all,
-// which is why the scheduler cases and the declaration cases share one series rather than two.
-//
-// `B-` belongs to the tick error boundaries inside `GraphRuntime` (issue #154 and ADR-039): which
-// owner a tick failure is attributed to once the clock consumers and the graph flush can fail
-// independently. Every series above owns what an operation does or what it leaves behind; `B-`
-// owns what the diagnostic says happened, which is why it does not extend `D-` or `P-`.
-//
-// `L-` belongs to time loop semantics: repeat, yoyo, and ping-pong playback (issue #156 and
-// ADR-040). It owns how elapsed clock time becomes a cycle index, a direction, and a progress
-// value. `T-` owns which driver a declared trigger gets and `R-` owns what range may reach
-// `Motion` at all, so this extends neither: it is the arithmetic between those two questions.
-//
-// `G-` belongs to the GSAP-backed scroll source producer seam (issue #163): extracting the demo's
-// ScrollTrigger wiring into a core adapter that takes `ScrollTrigger` as an injected structural
-// dependency. It owns how a producer turns subscriber churn into exactly one lazily created
-// instance and its teardown.
-//
-// `F-` belongs to plugin-named authored keyframe groups (issue #165 and ADR-041): which authored
-// spellings of a keyframe are legal, which plugin owns a grouped leaf, and what the group is
-// flattened to before compilation. It owns the authored form rather than the published one.
-//
-// `H-` belongs to internal-key enforcement (issue #166 and ADR-042): which composed keys reach a
-// patch at all. It is the published counterpart of `F-` and stays a separate series because the
-// authored form and the published surface are separate contracts: a key can be legal to author,
-// legal to compose, and still never publishable.
-//
-// `N-` belongs to per-plugin key ownership (ADR-043): how many plugins may claim one key, which
-// one owns an authored entry, and that an ungrouped spelling is refused rather than resolved. It does not
-// extend `F-`, which owns the authored shapes a document may use; this owns who is allowed to
-// answer for a key at all, and it is the reason the group form stopped being pure sugar.
-//
-// `Q-` belongs to plugin-owned input requirements (issue #173 and ADR-044): which input slots a
-// plugin declares, how an author binds one inside that plugin's authored group, what edge the
-// binding derives, and how a bound upstream value reaches composition without entering the
-// track's authored value namespace. `F-` and `N-` both own authored keyframe *properties*; this
-// owns an authored section that is not a property at all, and the graph dependency it creates.
-//
-// `U-` belongs to transactional Track replacement (issue #176 and ADR-045): what a refused
-// recompile, a refused Motion entry rewrite, or a rejected candidate graph leaves behind when an
-// existing node is replaced. `P-` owns which error a caller sees once a rollback can fail, and
-// `M-` owns what a refused mutation inside one `Motion` commits; `U-` owns whether the graph, the
-// compiled map, and the Motion entry are allowed to disagree with each other at all.
-//
-// `V-` belongs to the removal of `ObservationDefinition.target` (issue #175 and ADR-046): whether
-// an authored field with no consumer is refused rather than quietly accepted, and what edge
-// identity, edge ordering, and live state carry once it is gone. `E-` owns how an edge is encoded,
-// ordered, and labelled, and it kept a case pinning an authored empty target as its own edge;
-// `V-` owns whether that field is authorable at all, which is why it retires that case instead of
-// extending the series.
-//
-// `Z-` belongs to edge-construction symmetry in `graph/ir.ts` (issue #181): both authored forms
-// which derive an edge are resolved by a named function of the same shape, and neither the edge
-// nor its diagnostics change when that becomes true. `E-` owns how an edge is encoded, ordered,
-// and labelled; `Z-` owns who is allowed to build one.
-//
-// `J-` belongs to the single input channel (issue #180 and ADR-047): that `observes` declares an
-// output edge only, that a plugin requirement is the only way a value enters composition, and that
-// no parameter exists by which an upstream value could reach a track's authored namespace. `Q-`
-// owns what a declared requirement does; `J-` owns that it is the only thing that does it.
-//
-// `W-` belongs to entrypoint tiers (issue #167 and ADR-048): which declared subpaths a production
-// consumer may import, and whether a mechanical gate can see the workspaces that would get it
-// wrong. `K-` owns what a consumer outside the package can construct and name; `W-` owns which of
-// those things it is allowed to name at all, and where the scan is looking when it decides.
-//
-// `Y-` belongs to the explicit `values` section (issue #177 and ADR-049): which authored spellings
-// of a plugin group are legal now that both of a group's members are reserved by name, what an
-// unknown or a missing section reports, and that the compiled value domain is the `values` section
-// and nothing else. `F-` owns the group form's introduction and `N-` owns who may claim a key;
-// `Y-` owns what a group is allowed to contain at all.
-//
-// `LF-` belongs to the authored leaf form (issue #192): what a single authored property may be
-// once the object wrapper is retired, whether a static value enters compilation at all, and who is
-// allowed to answer either question. It is the first two-letter series, and that is forced rather
-// than chosen. Every single letter is either already claimed above, or excluded by the `M-`
-// paragraph's own rule against a letter a plan uses unhyphenated (`A3` and `A5` in the runtime
-// mutation model, `X3` in the recovery audit), or unusable in a citation beside a digit (`I` and
-// `O`). The `P-` paragraph sets the policy this widening follows: the pattern is widened when a
-// series is actually opened. `Y-` owns what a plugin group may contain; `LF-` owns what a leaf may
-// be, which is the other half of the same authored record and a separate contract.
-//
-// `FO-` belongs to the `fk` pivot offset, slice A of issue #195: what an authored `x` and `y` on a
-// bone mean, in whose space they are read, and what a bone that authors neither composes. `N-` owns
-// how many plugins may claim a key and which one answers for an authored entry; `FO-` owns what the
-// two keys do once `fk` claims them, and that their ungrouped spelling is refused. It is the
-// second two-letter series, for the reason the `LF-` paragraph gives and under the policy the `P-`
-// paragraph sets: every single letter is claimed, excluded, or unusable beside a digit.
-//
-// `CF-` belongs to the composition split inside `Track`, slice B of issue #195: that the
-// interpolated state is readable before any plugin runs, that the plugin chain can be run from a
-// given seed rather than only from the timeline, and that both entry points answer from one memo.
-// `S-` owns what a rejected timeline write leaves behind in `Track`'s progress bookkeeping; `CF-`
-// owns where the values a composition starts from come from, which is a different question about
-// the same object. It is the third two-letter series, under the policy the `P-` paragraph sets,
-// and `C-` alone is the option C plan.
-//
-// `CN-` belongs to the composer node id contract, slice C1 of issue #195: that a Track carries its
-// qualified node id, hands it to every composed plugin as the fourth PluginComposer parameter,
-// refuses an empty node id at construction, and leaves a three-argument composer assignable. `CF-`
-// owns where the seed comes from; `CN-` owns how a plugin identifies which node it is composing.
-// It is the fourth two-letter series, under the policy the `P-` paragraph sets, and `C-` alone is
-// the option C plan.
-//
-// `RS-` belongs to solver resolution in `graph/ir.ts`, slice C2 of issue #195: that solver nodes
-// derive their member list root-most first, that load-time validation enforces the six IK
-// diagnostics ADR-051's table declares, that resolution is deterministic under permutation, that
-// one confined walk answers for every chain shape, that a dead-rotation refusal reads the group
-// which bound the solver, and that a reference error is reported without a derived chain
-// diagnostic beside it. `Z-` owns edge-construction symmetry; `RS-` owns solver derivation.
-// It is the fifth two-letter series, under the policy the `P-` paragraph sets, and `R-` alone is
-// the progress range fix.
-//
-// `IK-` belongs to the IK solver plugin and runtime wiring, slice C3 of issue #195: the analytic
-// two-bone inverse kinematics solve, FK solver override, upstream member delivery, dirty-check
-// memoization, seed propagation, and renderer shielding. It is the sixth two-letter series, under
-// the policy the `P-` paragraph sets.
-//
-// `SL-` is retired rather than reserved. It belonged to solver slot arity, slice D0 of issue #195:
-// that a plugin may claim a slot family it could not enumerate, and that the goal-addressing
-// grammar has one owner. ADR-057 deletes both the predicate and the grammar, so every case it
-// owned either moved into `DV-` against the field representation or describes something that no
-// longer exists, and the letters are removed from the pattern below rather than left matching
-// nothing. Citations of `SL-` in ADR-052 are historical. The `P-` paragraph's policy cuts both
-// ways: a series joins the pattern when it is opened, and leaves when it closes.
-//
-// `MG-` belongs to goal-addressed solving, slice D1 of issue #195: that an authored goal dict
-// resolves to a chain leaf, that the bare `target` slot keeps working beside it, and that the six
-// load-time rules naming an unknown member, a non-leaf, an unaddressed leaf, a duplicate spelling,
-// a conflicting pair of spellings and an ambiguous mode all report from the one owner that knows
-// the member set. `DV-` owns whether a slot may carry a dict at all; `MG-` owns whether the member
-// a key names exists and what the solve does with it. It is the eighth two-letter series, under the
-// policy the `P-` paragraph sets, and `M-` alone is the Motion mutation series.
-//
-// `FB-` belongs to the FABRIK solve, slice D2 of issue #195: that a chain past arity two reaches
-// its goal and keeps its segment lengths, that both elbow branches agree with the closed form at
-// arity two, that the derived seed bends except at full extension, that two goals sharing one
-// sub-base are averaged in a derived order rather than an authored one, and that a solve which does
-// not converge says whether it stalled or ran out of iterations. `IK-` owns the analytic two-bone
-// solve and its runtime wiring; `FB-` owns the iterative one, which nothing wires yet. It is the
-// ninth two-letter series, under the policy the `P-` paragraph sets, and `F-` alone is the authored
-// keyframe group series.
-//
-// `CL-` belongs to constrained 2D IK, issue #349 phase 3 and ADR-108: the authored limit and bend
-// contract, its five graph refusals, constrained FABRIK dispatch, bounded rotations, zero-extent
-// members, and the limited quality result. `FB-` owns unconstrained FABRIK; `CL-` owns what changes
-// when a member carries a range and how that range is refused or enforced.
-//
-// `PV-` belongs to offset-aware solving, issue #214 and ADR-054: that both solves account for the
-// pivot offset `fk` applies, that the closed form survives it as a fixed base point and a rigid
-// link with a twist, that the iterative one carries pivots beside tips, that a shared sub-base
-// averages tips and never twists, and that every zero-offset rig keeps the doubles it published.
-// `FO-` owns what an authored `x` and `y` mean on a bone and in whose space `fk` reads them, which
-// is unchanged; `IK-` owns the analytic solve and `FB-` owns the iterative one, and both keep every
-// number they pinned. This is the one contract that spans all three, which is why it extends none
-// of them. It is the tenth two-letter series, under the policy the `P-` paragraph sets, and `P-`
-// alone is the rollback error precedence series.
-//
-// `WT-` belongs to the per-member solved-rotation blend, issue #211 and ADR-055: that one `clamp`
-// and one wrap-aware `lerpAngle` answer for both halves of the kinematic composition, that both
-// ends of the blend are byte-exact rather than computed, that the tie at half a turn is pinned,
-// that an omitted weight composes the unconditional override it replaces, and which authored
-// shapes the narrowed dead-rotation rule and its new mirror refuse. `IK-` owns the solve and the
-// override it publishes, which is unchanged; `FO-` and `PV-` own the offset; `WT-` owns how much of
-// a solved angle a bone actually composes with, which is a question none of them ask. It is the
-// eleventh two-letter series, under the policy the `P-` paragraph sets, and `W-` alone is the
-// entrypoint tier series.
-//
-// `SH-` belongs to the stale `TrackHandle` contract, issue #217 and ADR-056: that every member of
-// a handle whose token is no longer current refuses with one named error rather than half of them
-// refusing and half returning silently, that the error keeps the message the getter already threw
-// and carries a stable rule id beside it, that `live` answers the same question without throwing,
-// and that one resolver owns the comparison all of them read. `U-` owns whether the graph, the
-// compiled map and the Motion entry may disagree during a replacement, and `P-` owns which error
-// a caller sees once a rollback can fail; `SH-` owns what a caller is told when the thing it holds
-// is no longer the live one. It is the twelfth two-letter series, under the policy the `P-`
-// paragraph sets, and `S-` alone is the progress state commit series.
-//
-// `DV-` belongs to dict-valued requirement slots, issue #220 and ADR-057: that a slot whose
-// authored value is a record expands to one binding per key under any name, that whether a slot may
-// carry one is a declaration the registry reads rather than a predicate a plugin answers, that the
-// key participates in edge identity and ordering so two entries of one slot stay two edges, and
-// that another plugin's dict is not read as a solver's goals. `Q-` owns what a declared requirement
-// does and `J-` owns that it is the only input channel; `SL-` owned how many slots a plugin may
-// accept, and this replaces that question rather than extending it, which is why that series
-// retires above. It is the thirteenth two-letter series, under the policy the `P-` paragraph sets,
-// and `D-` alone is the teardown ownership series.
-//
-// `EV-` belongs to cache residency in `IncrementalGraphBuilder`, issue #225 and ADR-058: that a
-// completed build leaves an entry for exactly the tracks it walked, that removal, `destroyMotion`
-// and project disposal need no eviction hook to make that true, that the hit path and the freshness
-// check survive the sweep, that a build which throws evicts nothing, and what one builder shared by
-// two projects costs. Every series above owns something an author writes or a caller is told; `EV-`
-// owns what an adapter retains after nobody is looking at it, which is why it extends none of them.
-// It is the fourteenth two-letter series, under the policy the `P-` paragraph sets, and `E-` alone
-// is the edge identity series.
-//
-// `LV-` belongs to live value updates, issue #218 and ADR-059: that one immutable overlay inside
-// `Track` reaches ordinary composition and the publisher-delivered `MemberState` through the same
-// read, that a mask is replaced wholesale so an empty record is the clear, that the two runtime
-// entry points differ only in whether the retained definition moved with the mask, that neither
-// validates a definition or rebuilds the graph, and that an animated key is refused by name until
-// the `Interpolator` port grows a per-key write. `CF-` owns where the values a composition starts
-// from come from and `SH-` owns what a caller is told when its handle is stale; `LV-` owns what may
-// mask those values at all, which is a question neither asks. It is the fifteenth two-letter
-// series, under the policy the `P-` paragraph sets, and `L-` alone is the time loop series.
-//
-// `PK-` belongs to the record-shaped per-key timeline write, issue #231 and ADR-060: that an
-// animated key's tweens are replaced on the still-live timeline against a retained base record,
-// that a key dropped from the overlay is restored by the same code that patched a changed one, that
-// a rebase is sticky, that the sibling tweens and the terminal padding tween are untouched, that a
-// decline is escalation rather than refusal so a patching and a declining backend are
-// indistinguishable on success and on failure, and which two leaf-kind refusals replace the one
-// this series deletes. `LV-` owns what may mask a track's values at all and retires `LV-11` and
-// `LV-12` to this series; `PK-` owns whether a value the interpolator drives can be written live,
-// which is the question `LV-` answered with a refusal. It is the sixteenth two-letter series, under
-// the policy the `P-` paragraph sets, and `P-` alone is the rollback error precedence series.
-//
-// `RA-` belongs to the runtime authoring surface, issue #223: that a structural change has one
-// transaction owner rather than one copy of the ordering per entry point, that the hooks a commit
-// reaches are applied in one sequence and reverted in apply order, that an effect counts as applied
-// only once its call returned, and that the retained definitions and the committed graph are never
-// allowed to disagree by identity. `U-` owns whether the graph, the compiled map and the Motion
-// entry may disagree during one Track replacement, and `SH-` owns what a caller is told when the
-// handle it holds is no longer live; `RA-` owns how many places are allowed to run a structural
-// transaction at all, which is a question neither asks. It is the seventeenth two-letter series,
-// under the policy the `P-` paragraph sets, and `R-` alone is the progress range fix.
-//
-// `RB-` belongs to the read budget on a source file, issue #267: that a file over the measured
-// budget is refused, that a file carrying a recorded waiver is held to its own ceiling instead,
-// that the refusal a waiver produces names the ceiling it crossed rather than the budget, and that
-// a scan which found nothing says so rather than answering clean. Every series above owns something the runtime does or
-// something a caller is told; `RB-` owns whether the file that states an invariant can be read at
-// all by the implementor about to edit it, which is a question none of them ask. It is the
-// eighteenth two-letter series, under the policy the `P-` paragraph sets, and `R-` alone is the
-// progress range fix.
-//
-// `AE-` belongs to the AI edit request validation pass, issue #281 and the contract in
-// `docs/AI-EDIT-WORKFLOW.md`: the anchor counts a dry run reports, the count each refusal names,
-// that a later edit is validated against what an earlier one staged, that a refusal leaves every
-// file it named untouched, which subject a dry run's commit carries and which a real run keeps,
-// and which of the touched and format lists a deleted path belongs on. `RB-` owns whether the file
-// stating an invariant can be read at all by the implementor about to edit it; `AE-` owns whether
-// the write that changes it lands as its own report describes. It is the nineteenth two-letter
-// series, under the policy the `P-` paragraph sets, and it is the first one to join the pattern
-// later than the slice that opened it. That lateness is issue #283 rather than a decision: the
-// series was declared, cited by the document owning the workflow and by the header of the script
-// it covers, and never gated for uniqueness, because a series the pattern cannot see contributes
-// no ids to the collision map and leaves the first case above green by construction. `A` alone is
-// not in the alternation and cannot be, by the `M-` paragraph's rule against a letter a plan uses
-// unhyphenated, so this is the one two-letter series with no single-letter neighbour, and it
-// sorts first rather than ahead of an initial the pattern does not carry.
-//
-// `CS-` belongs to the IK chain shape, issue #349 and ADR-106: which closed `ChainShape` variant a
-// delivered chain derives, the exact member objects and goal each variant carries, the unchanged
-// diagnostic for a chain with no goal, and that the one adapter from delivered members to
-// `SolveMember` joins goals and omits an absent one. `IK-` owns what the closed form computes and
-// `FB-` what the iterative one computes; `CS-` owns which of them a chain reaches, a question
-// neither asks. It is the twentieth two-letter series, under the policy the `P-` paragraph sets,
-// and `C-` alone is the option C plan. Like `AE-` it joined the pattern after the slice that
-// opened it had already declared cases, and CI refused that slice for exactly that reason.
-//
-// `IR-` belongs to the one IK solve result, issue #349's second phase and ADR-107: that both
-// strategies and both arms of the dispatch return one `SolveResult`, that the closed form's stated
-// residual equals the miss `fk`'s composition measures, that the collapsed and coincident exits
-// name the kind and residual they reach, and that the flat `SolveQuality` union reads
-// exhaustively into its strategy families. `CS-` owns which strategy a chain reaches; `IR-` owns
-// what that strategy reports back. It is the twenty-first two-letter series, under the policy the
-// `P-` paragraph sets. `I` alone is the architecture invariant space, which the alternation does
-// not name and the carve-out below passes over, so like `IK-` it has no single-letter neighbour.
-//
-// `IN-` belongs to opt-in IK solve inspection, issue #349 phase 4 and ADR-109: the authored static
-// `inspect` switch and the separate `inspection` output, the projection of every quality kind, byte
-// identity for unopted rigs, the load refusals for malformed and misgrouped spellings, and the
-// published patch end to end. It is a separate series from `IR-` because `IR-` owns the solve
-// result itself while `IN-` owns the authoring and publication opt-in around that result.
-//
-// `GI-` belongs to goal influence and conflict policy, issue #349 phase 5 and ADR-110: the authored
-// per-goal `influence`, its load refusals, the influence-weighted branch compromise, the
-// `conflicted` quality kind and the per-leaf `residuals`. It opened in the alternation without a
-// paragraph here, which the sixth phase's slice corrects. `G-` alone is the scroll source
-// producer seam, a different question entirely.
-//
-// `SD-` belongs to IK stability and determinism, issue #349 phase 6 and ADR-111: that a solve is
-// finite over every finite rig, scale-free under an exact power-of-two scale, independent of the
-// order its members are listed in, pure, length-preserving with a fixed root, continuous as its
-// goal moves, and republished byte for byte by a reverse scrub and a random seek. `S-` alone is
-// the progress state commit series inside `Track`; `SD-` owns properties every solve holds rather
-// than what any one strategy computes, which `IK-`, `FB-` and `IR-` own.
-//
-// `EN-` belongs to the 2D solve's performance envelope, phase 7 of issue #349 and ADR-113: which
-// strategy each envelope rig dispatches to, that every rig publishes finite rotations, that the
-// iterative solve stops at its cap rather than running on, and that independent rigs in one
-// runtime do not couple. It pins the shapes `scripts/bench-ik.mjs` times, and never a duration,
-// because a timing is a measurement with recorded conditions rather than a gate (ADR-008). The
-// rigs themselves have one owner, `test/support/ik-envelope.ts`, which both read.
-//
-// `GE-` belongs to the inverse kinematics guide, `docs/guide/inverse-kinematics.md`, in the same
-// phase: its cases read the guide file itself and execute every JSON example it carries, so an
-// example that stops loading or stops publishing what the prose says it publishes is a red case
-// rather than stale prose (ADR-095). `G-` stays the series it already is; a two-letter prefix
-// beside its own initial is the policy the `P-` paragraph sets.
-// `GF-` belongs to the pose gap filler experiment, issue #530 under #501: the MediaPipe adapter,
-// the gap detector, the bone-length estimator, the `raw`, `hold` and `chain-kalman` fillers, the
-// four-limb rig and its writer, and the replay harness and its metrics, all in
-// `apps/pose-gap-filler`. It owns an application experiment rather than runtime behaviour, so it
-// extends no runtime series; `G-` stays the GSAP scroll source series and `GE-` the inverse
-// kinematics guide. A two-letter prefix is the policy the `P-` paragraph sets.
-//
-// `TH-` belongs to the internal 3D seam prototype, phase 8 of issue #349 and ADR-114: CSS Z-X-Y
-// frame matrices, deterministic bend-plane and gimbal rules, the analytic two-bone result, plugin
-// ownership, and the renderer-facing FK channel. Its cases prove the seam without widening the
-// package exports or changing the existing 2D owners; `T-` remains the trigger series. Issue #500
-// continues the series rather than opening one per phase, because it completes the same seam:
-// `TH-24` onward is the 3D rest orientation and solved weight of ADR-116, followed by the pivot offsets of ADR-117.
-// `TH-40` through `TH-51` are the authored pole target of ADR-118, the same issue's phase 3;
-// `TH-51` pins the line tolerance of the ADR-114 default rule that an unbound pole keeps.
-// `TH-52` through `TH-57` are the opt-in 3D inspection of ADR-120, the same issue's phase 4.
-// `TH-58` through `TH-78` are the 3D FABRIK tree solve of ADR-122, the same issue's phase 5:
-// `TH-71` to `TH-74` are its envelope, `TH-76` to `TH-78` its load rules, and the rest its closure,
-// planar reduction, roll and dispatch.
-// `TH-79` through `TH-95` are the 3D joint limits of ADR-123, the same issue's phase 6: `TH-79` to
-// `TH-87` the runtime owner and its corpus, `TH-88` the joint plugin set, `TH-89` to `TH-94` the
-// load rules, and `TH-95` the `Engine` scrub. `TH-76` carries the constrained chains as well.
-// `TH-96` through `TH-110` are the 3D goal influence and end-effector orientation of ADR-124, the
-// same issue's phase 7: `TH-96` to `TH-101`, `TH-108` and `TH-110` the orientation step, its readers
-// and influence in the tree solve, `TH-102` to `TH-104` and `TH-107` the goal-weight load rules, and
-// `TH-105`, `TH-106` and `TH-109` `Engine`.
-// `TH-111` through `TH-146` are the public 3D API of ADR-125, the same issue's phase 8: `TH-111`,
-// `TH-122` and `TH-112` to `TH-114` the subpaths and boundary, `TH-115` to `TH-121` the 3D guide,
-// `TH-123` to `TH-128` the `@motion5/three` adapter, and `TH-129` to `TH-131` the first playground
-// rig. `TH-132` is the shared `loadPlayground` setup path; `TH-133` the per-object, per-node
-// `@motion5/three` revision order; `TH-134` scroll-only weight movement; and `TH-135` the boundary
-// scan's dynamic import and require refusal. `TH-136` and `TH-137` are immediate planar and spatial
-// drags at the current weight; `TH-138` is clamp, non-finite and flip handling; and `TH-139` is
-// coalescing and disposal. `TH-140` and `TH-141` are react-demo joint markers, deriving position
-// only so labels stay upright and removed arm markers hide instead of sticking. `TH-142` to
-// `TH-144` are the shared CSS-perspective and three.js-camera projection, and `TH-145` and `TH-146`
-// the drawn 3D frame and the spatial drag clamp to it.
-//
-// `GT-` belongs to aggregate goal target and slot contract helpers in
-// `packages/plugins/src/aggregate-topology.ts`: leaf-to-goal row mapping, refusal kinds for
-// non-array, empty, malformed, unknown, non-leaf, duplicate and unaddressed goal tables,
-// `slotSpec` stripping `static` while preserving field domains, `EXTERNAL_BASE`, and the pinned
-// field vocabulary of `BODY_2D_SPEC`, `BODY_3D_SPEC`, `GOALS_2D_SPEC` and `GOALS_3D_SPEC`.
-//
-// `AI-` belongs to the aggregate 2D inverse kinematics plugin (`ik` in `packages/plugins/src/ik.ts`),
-// replacing the grouped `members`/`goals` slot map with single `chain`, `goals` and `base` slots
-// and an identified solved table: contract declaration, golden parity, authored-order independence,
-// goal-table refusals, rest edits, `inspect` and `flip`, `Engine` evaluation, track/motion naming
-// independence, animated goals, single-pass live value batching, load refusals for retired grouped
-// shapes and out-of-domain or animated static cells, and ordinary `root`/`base` row ids.
-//
-// `AJ-` belongs to the aggregate 3D inverse kinematics plugin (`ik3d` in
-// `packages/plugins/src/ik3d.ts`), the 3D counterpart to `AI-`: single `chain`, `goals`, `base`
-// and optional `pole` slots, golden parity across tree, two-bone and constrained solves, goal
-// `influence` and body `orient`, `Engine` evaluation and live value batching, load refusals for
-// retired grouped shapes and out-of-domain or animated static cells, and ordinary `root`/`base`
-// row ids.
-//
-// `AK-` belongs to the aggregate 2D forward kinematics plugin (`fk` in
-// `packages/plugins/src/fk.ts`): single `chain`, `solved` and `base` slots, canonical root-first
-// topology walk, id-based solved-row lookup via closed discriminated union, angle blending via
-// `lerpAngle`, pivot offsets, segment extent, and publishing complete world-frame pose tables
-// conforming to `POSE_2D_SPEC`.
-//
-// `AL-` belongs to the aggregate 3D forward kinematics plugin (`fk3d` in
-// `packages/plugins/src/fk3d.ts`): single `chain`, `solved` and `base` slots, canonical root-first
-// topology walk, id-based solved-row lookup via closed discriminated union, 3D orientation
-// blending via `blendOrientation3d`, 3D pivot offsets, segment extent, and publishing complete
-// world-frame pose tables conforming to `POSE_3D_SPEC`.
-//
-// `AM-` belongs to explicit aggregate graph and publisher cleanup: purging hidden solver fan-in from
-// `packages/core/src/graph` and `packages/core/src/runtime`, deleting `GraphNode.solves`, `resolveSolvers`,
-// member interpolation, solver-scope diagnostics, and grouped solver constraints, deriving reverse
-// topology and publisher inputs purely from explicit authored edges.
-//
-// `AN-` belongs to pose-gap-filler aggregate migration (Slice 7): 5-track aggregate architecture
-// (`root`, `body`, `goals`, `solve`, `pose`), whole-table batch writes, and ID-based solved limb
-// row selection with closed discriminated union and unreachable check.
-//
-// The scan root is the repository rather than `packages/core/test`, because an id names one test in
-// the suite and the suite is not one package. `H-4` is declared in
-// `packages/react/test/public-hook-render.test.ts`, which the old root could not see, so one id
-// declared once in each package was two green files rather than one collision. What is walked is
-// what `vitest` walks: every directory except a dependency tree, a build output, and a dotted one.
-// A `.test.ts` under `oracle/` is in scope by that rule rather than by exception, because a
-// vendored snapshot that ships a case is a file this suite would run, whether or not anyone here
-// meant it to. The suffix is the one thing narrower than the walk, and it names the two spellings a
-// case can be written in rather than the one that exists today.
-//
-// A series prefix is one or two uppercase letters and nothing else. Two id spaces reach the head of
-// a title without declaring a case, and passing over them is a rule rather than an omission. A
-// prefix carrying a digit is a plan slice id: `T4-3` and `T5-5` are locked decisions of the T4/T5
-// trigger parity plan, and `A3`, `A5` and `X3` are named above as letters a series may not take,
-// for this reason. And `I-n` is an architecture invariant, declared in `docs/ARCHITECTURE.md` and
-// cited by `docs/TRD.md` and the implementation plan, so a title carrying one is evidence for an
-// invariant rather than a declaration of a case. `I-13` sits on two cases deliberately, which is
-// why uniqueness may not be asserted over that space at all.
-//
-// Nothing is hidden by either rule. `I` is already named above as a letter no series may use, and
-// the case below asserts that the alternation does not name it, so the carve-out cannot silence a
-// series that is gated. The other way to quieten both spaces was to add `I` and `T4` to the
-// alternation, which would gate two documents' id spaces as case series and make every citation of
-// them two-valued: the collision the `T-` paragraph exists to avoid. `FR-` and `TR-` are the same
-// kind of space and are not carved out, because no title cites one, and the `P-` paragraph's policy
-// is that nothing here is reserved for, or against, something that does not exist yet.
-//
-// The `I-` rule is measured rather than anticipated. The scan found those ids on its first red run,
-// eight of them across five files with three declared twice, at a point where this paragraph said
-// only that a plan id carries a digit. A letters-only prefix the alternation does not name was
-// going to be refused as an ungated series, and reading them is what turned a false refusal into
-// the second half of the rule.
-//
-// The scan reads a title and anchors at the start of one, for the reason the alternation already
-// does. `T5-5` sits in a comment inside a case body and the retired `SL-` sits in a comment in
-// `unit/graph/solver-goal-required.test.ts`, so a scan matching an id anywhere in a file would read
-// both as series the alternation cannot see, and refuse a tree that is correct.
-//
-// What is compared is the id rather than the prefix. The refusal then names the id and the file
-// that declares it, which is what an implementor acts on, and it needs no theory of why the
-// alternation missed it: a series nobody added, a letter an edit dropped, and a pattern that
-// matches something narrower than it reads all arrive as the same report.
+// Plans, ADRs and pull request bodies cite a case by id, so two cases sharing one id make every one
+// of those citations ambiguous. Uniqueness is therefore asked across the suite rather than within a
+// file, and titles are matched rather than bare ids so a comment naming another case cannot read as
+// a second declaration.
 const REPO_ROOT = fileURLToPath(new URL("../../../../../", import.meta.url));
 const SELF = "packages/core/test/unit/scripts/evidence-case-ids.test.ts";
 const UNWALKED = new Set(["node_modules", "dist", "coverage"]);
-const TEST_FILE = /\.test\.tsx?$/;
-// Two-letter prefixes are listed before the single letters, and that order is a reading
-// convention rather than a correctness requirement. Every alternative here is followed by the
-// same hyphen-and-digits suffix, so a `C` that matched the head of `CF-3` fails on the `F` and
-// the engine retries the next alternative at the same position. `C` before `CF` and `CF` before
-// `C` both match `CF-3`, and so does every two-letter-and-initial pair this pattern carries. It
-// used to give a count, seventeen, which was already four short before `EN` and `GE` arrived; the
-// pattern is the one owner of how many there are.
-//
-// Fourteen series paragraphs used to give the opposite reason, each claiming its own place in
-// the order was forced because an alternation offering the single letter first would match it
-// and then fail, and `AE-` inherited the claim by calling itself the one widening with no
-// ordering hazard to avoid. The reason was wrong in all fifteen places: it describes an engine
-// that gives up at the first alternative that fails, which this one does not. One fact about
-// this pattern belongs beside the pattern rather than once per series, so those paragraphs now
-// say what a series owns and this one says where it sorts. Issue #294.
-const CASE_TITLE =
-  /it\(\s*"((?:AE|AI|AJ|AK|AL|AM|AN|AO|AP|AQ|CF|CL|CN|CS|DV|EN|EV|FB|FO|GE|GF|GI|GT|IK|IN|IR|LF|LV|MG|PK|PV|RA|RB|RS|SD|SH|TH|WT|B|C|D|E|F|G|H|J|K|L|M|N|P|Q|R|S|T|U|V|W|Y|Z)-\d+)/g;
-const REACT_RENDER = "packages/react/test/public-hook-render.test.ts";
-const SERIES_SHAPED_TITLE = /it\(\s*"([A-Z]{1,2}\d*)-(\d+)(?![\w-])/g;
-const SERIES_PREFIX = /^[A-Z]{1,2}$/;
-const INVARIANT_PREFIX = "I";
+// A series is one to three capital letters, a hyphen and a number at the head of a test title. A
+// prefix carrying a digit is a plan slice (`T4-3`) and does not match, so nothing has to list which
+// series may join. An invariant is cited by every test covering it, so `I-` is not a series.
+const SERIES = /it\(\s*"([A-Z]{1,3})-(\d+)(?![\w-])/g;
+const INVARIANT = "I-";
 
-interface SeriesShapedId {
-  readonly id: string;
-  readonly prefix: string;
-}
-
-function testFilesUnder(directory: string): readonly string[] {
+function walk(directory: string): string[] {
   const found: string[] = [];
   for (const entry of readdirSync(`${REPO_ROOT}${directory}`, { withFileTypes: true })) {
     const path = `${directory}${entry.name}`;
-    if (entry.isDirectory()) {
-      if (entry.name.startsWith(".") || UNWALKED.has(entry.name)) continue;
-      found.push(...testFilesUnder(`${path}/`));
-    } else if (TEST_FILE.test(entry.name) && path !== SELF) found.push(path);
+    if (entry.isDirectory() && !entry.name.startsWith(".") && !UNWALKED.has(entry.name))
+      found.push(...walk(`${path}/`));
+    else if (/\.test\.tsx?$/.test(entry.name) && path !== SELF) found.push(path);
   }
-  return found;
+  return found.sort();
 }
 
-function testFiles(): readonly string[] {
-  return [...testFilesUnder("")].sort();
+function idsOf(source: string): string[] {
+  return [...source.matchAll(SERIES)]
+    .map((match) => `${match[1]}-${match[2]}`)
+    .filter((id) => !id.startsWith(INVARIANT));
 }
 
-function sourceOf(relativePath: string): string {
-  return readFileSync(`${REPO_ROOT}${relativePath}`, "utf8");
+function owners(sources: Record<string, string>): Map<string, string[]> {
+  const owners = new Map<string, string[]>();
+  for (const [file, source] of Object.entries(sources))
+    for (const id of idsOf(source)) owners.set(id, [...(owners.get(id) ?? []), file]);
+  return owners;
 }
 
-function declaredCaseIds(relativePath: string): readonly string[] {
-  return [...sourceOf(relativePath).matchAll(CASE_TITLE)].map((match) => match[1] as string);
+function suiteOwners(): Map<string, string[]> {
+  const sources: Record<string, string> = {};
+  for (const file of walk("")) sources[file] = readFileSync(`${REPO_ROOT}${file}`, "utf8");
+  return owners(sources);
 }
 
-function seriesShapedIds(relativePath: string): readonly SeriesShapedId[] {
-  const found = [...sourceOf(relativePath).matchAll(SERIES_SHAPED_TITLE)];
-  return found.map((match) => ({ id: `${match[1]}-${match[2]}`, prefix: match[1] as string }));
+function repeated(owners: Map<string, string[]>): string[] {
+  return [...owners.entries()]
+    .filter(([, files]) => files.length > 1)
+    .map(([id, files]) => `${id} declared in ${[...new Set(files)].sort().join(" and ")}`)
+    .sort();
 }
 
 describe("evidence case ids", () => {
-  it("declares every citation case id exactly once across the suite", () => {
-    const owners = new Map<string, string[]>();
-    for (const file of testFiles())
-      for (const id of declaredCaseIds(file)) owners.set(id, [...(owners.get(id) ?? []), file]);
-    const collisions = [...owners.entries()]
-      .filter(([, files]) => files.length > 1)
-      .map(([id, files]) => `${id} declared in ${files.join(" and ")}`)
-      .sort();
-    expect(collisions).toEqual([]);
+  it("holds every id the suite declares to exactly one test", () => {
+    expect(repeated(suiteOwners())).toEqual([]);
   });
 
-  it("finds the series at all, so a passing run is never an empty scan", () => {
-    const files = testFiles().filter((file) => declaredCaseIds(file).length > 0);
-    const total = files.reduce((count, file) => count + declaredCaseIds(file).length, 0);
-    expect(files.length).toBeGreaterThanOrEqual(3);
-    expect(total).toBeGreaterThan(15);
+  it("refuses a repeated id, which is the whole reason this gate exists", () => {
+    const planted = owners({
+      "packages/core/test/a.test.ts": 'it("GF-9 one", () => {}); it("GF-10 other", () => {});',
+      "packages/core/test/b.test.ts": 'it("GF-9 two", () => {});',
+    });
+    expect(repeated(planted)).toEqual([
+      "GF-9 declared in packages/core/test/a.test.ts and packages/core/test/b.test.ts",
+    ]);
   });
 
-  it("names every series the tree declares, or refuses the id it cannot match", () => {
-    const found: string[] = [];
-    const ungated: string[] = [];
-    for (const file of testFiles()) {
-      const gated = new Set(declaredCaseIds(file));
-      for (const { id, prefix } of seriesShapedIds(file)) {
-        if (!SERIES_PREFIX.test(prefix) || prefix === INVARIANT_PREFIX) continue;
-        found.push(id);
-        if (!gated.has(id)) ungated.push(`${id} declared in ${file}`);
-      }
-    }
-    // Passing over an invariant citation cannot hide a series: `I` is not in the alternation.
-    expect([...'it("I-1 covers an invariant")'.matchAll(CASE_TITLE)]).toEqual([]);
-    expect(found.length).toBeGreaterThan(15);
-    expect(ungated.sort()).toEqual([]);
+  it("passes an invariant citation, because one invariant has many tests", () => {
+    expect(idsOf('it("I-13 holds the order", () => {});')).toEqual([]);
   });
 
-  it("walks every package the suite runs, and no dependency tree", () => {
-    const files = testFiles();
-    expect(files).toContain(REACT_RENDER);
-    expect(declaredCaseIds(REACT_RENDER)).toContain("H-4");
+  it("scans every home the suite runs, so green is never an empty walk", () => {
+    const files = walk("");
+    const homes = ["packages/core", "packages/plugins", "packages/react", "packages/three", "apps"];
+    for (const home of homes)
+      expect(
+        files.some((file) => file.startsWith(`${home}/`)),
+        home,
+      ).toBe(true);
     expect(files.filter((file) => file.includes("node_modules"))).toEqual([]);
+    expect(files.length).toBeGreaterThan(200);
+    expect(suiteOwners().size).toBeGreaterThan(400);
   });
 });
