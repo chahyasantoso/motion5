@@ -44,10 +44,6 @@
     "count": 4
   },
   {
-    "path": "apps/pose-gap-filler/src/body/skeleton.ts",
-    "count": 6
-  },
-  {
     "path": "apps/pose-gap-filler/src/filler/bone-length.ts",
     "count": 4
   },
@@ -188,10 +184,6 @@
     "count": 2
   },
   {
-    "path": "apps/pose-gap-filler/src/synthetic/simulator.ts",
-    "count": 7
-  },
-  {
     "path": "apps/pose-gap-filler/src/view/avatar-framing.ts",
     "count": 3
   },
@@ -272,16 +264,8 @@
     "count": 2
   },
   {
-    "path": "packages/core/src/contract/v5-infer.ts",
-    "count": 10
-  },
-  {
     "path": "packages/core/src/contract/v5-parse.ts",
     "count": 7
-  },
-  {
-    "path": "packages/core/src/contract/validate-v5.ts",
-    "count": 11
   },
   {
     "path": "packages/core/src/domain/completion.ts",

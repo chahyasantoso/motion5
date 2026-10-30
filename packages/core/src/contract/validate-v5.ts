@@ -39,6 +39,7 @@ function validateId(
     );
   return diagnostics;
 }
+/** Reports shape and field diagnostics for one authored trigger. */
 export function validateMotionTrigger(trigger: unknown, path: string): Diagnostic[] {
   if (!isObject(trigger))
     return [
@@ -79,9 +80,7 @@ export function validateMotionTrigger(trigger: unknown, path: string): Diagnosti
           "Time trigger autoplay must be true when present; paused behavior is not supported.",
         ),
       );
-    // `repeat` counts the passes after the initial one, so 0 is a single pass and -1 is infinite.
-    // The blanket rejection this replaced existed only because loop semantics were undesigned;
-    // ADR-040 designs them, so the fields are now honored rather than refused.
+    // `repeat` counts passes after the initial one: 0 is a single pass, -1 infinite.
     const repeatValue = typeof trigger.repeat === "number" ? trigger.repeat : undefined;
     const repeatValid =
       repeatValue !== undefined && Number.isInteger(repeatValue) && repeatValue >= -1;
@@ -101,9 +100,7 @@ export function validateMotionTrigger(trigger: unknown, path: string): Diagnosti
           "Time trigger yoyo must be a boolean when present.",
         ),
       );
-    // A yoyo with nothing to reverse would be a field accepted and then ignored, which rule 6 of
-    // ADR-033 forbids. `false` is refused for the same reason `true` is: neither has any effect
-    // without a repeat, so the rule is about presence rather than value.
+    // yoyo needs repeat -1 or greater than zero; true and false are both refused otherwise.
     if (trigger.yoyo !== undefined && !(repeatValid && repeatValue !== 0))
       diagnostics.push(
         diagnostic(
@@ -127,24 +124,13 @@ export function validateMotionTrigger(trigger: unknown, path: string): Diagnosti
     );
   return diagnostics;
 }
-/**
- * The one narrowing boundary for authored triggers.
- *
- * `MotionDefinition.trigger` is deliberately structurally open (plan section 5.1) so authored
- * extension keys survive validation. The cost is that `trigger.source` and `trigger.duration` are
- * `unknown` to every consumer, which previously pushed each `TriggerFactory` into re-deriving the
- * discriminated union with its own `typeof` guards and sentinels.
- *
- * By the time any factory runs the trigger is already proven valid, so the narrowing belongs here.
- * This function holds the only cast from authored input to `TriggerDefinition`, and that cast is
- * justified by the `validateMotionTrigger` call immediately above it.
- */
+/** Validates an authored trigger, then narrows it to `TriggerDefinition`; throws a TypeError when invalid. */
 export function resolveTriggerDefinition(trigger: unknown, path: string): TriggerDefinition {
   const diagnostics = validateMotionTrigger(trigger, path);
   if (diagnostics.length > 0) throw new TypeError(describeDiagnostics(diagnostics));
   return trigger as TriggerDefinition;
 }
-// One track, read by the identified-table parser.
+// Duplicate ids scoped to the caller's set; source contract inferred only for plugin-free tracks.
 function readTrack(
   track: unknown,
   path: string,
@@ -201,13 +187,9 @@ function deepFreeze<T>(value: T, seen = new WeakSet<object>()): T {
   for (const child of Object.values(value)) deepFreeze(child, seen);
   return Object.freeze(value);
 }
+/** Outcome of validating one track: its definition, or its diagnostics. */
 export type TrackValidationResult = Outcome<TrackDefinition, Diagnostic>;
-/**
- * One authored track, refused or accepted frozen.
- *
- * The accepted value is the authored document rather than the parser's normalized cells: the
- * runtime retains what the author wrote, and evaluation reads the parsed form from the compiler.
- */
+/** Accepts one authored track frozen, or refuses it with diagnostics. */
 export function validateTrackDefinition(
   track: unknown,
   path: string,
@@ -236,6 +218,7 @@ export function validateTrackDefinition(
       return unreachable(parsed);
   }
 }
+/** Validates an authored project document and freezes it on success; graph construction owns topology. */
 export function validateSchemaV5(
   input: unknown,
   context: ParseContext = {},
@@ -258,10 +241,7 @@ export function validateSchemaV5(
     diagnostics.push(
       diagnostic("project-id", "projectId", "projectId must be a non-empty string when present."),
     );
-  // The removed field, read by the key rather than by the value at it. That is the same reading the
-  // retired track `use` field gets a few functions up, and for the same reason: authoring the key
-  // is the mistake, so `templates: undefined` is refused too rather than being a spelling that
-  // slips a removed field back in through a spread of an older document.
+  // Key presence, not value: templates: undefined still names the unsupported field.
   if ("templates" in input)
     diagnostics.push(
       diagnostic("project-templates-unsupported", "templates", TEMPLATES_UNSUPPORTED),

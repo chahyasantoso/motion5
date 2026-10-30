@@ -1,7 +1,7 @@
 import { unreachable } from "../lang/exhaustive";
 import { refuse, type RefusalShape } from "./refusal";
 
-// Never assigned, so nothing outside can mint or widen a phase.
+// Unassigned: only this module mints.
 declare const PHASE_BRAND: unique symbol;
 
 interface PhaseBrand {
@@ -14,17 +14,15 @@ function mintPhase<Shape extends { readonly kind: string }>(shape: Shape): Minte
   return Object.freeze(shape) as unknown as Minted<Shape>;
 }
 
-/** Whether teardown has begun, an axis of a live phase. */
+/** Teardown begun: live or retiring. */
 export type Retirement = "live" | "retiring";
 
-// Nothing open.
 interface IdleShape {
   readonly kind: "idle";
   readonly depth: number;
   readonly retirement: Retirement;
 }
 
-// A structural recipe is open.
 interface EditingShape<Staged> {
   readonly kind: "editing";
   readonly depth: number;
@@ -32,7 +30,6 @@ interface EditingShape<Staged> {
   readonly staged: Staged;
 }
 
-// A value batch is open.
 interface BatchingShape {
   readonly kind: "batching";
   readonly depth: number;
@@ -40,7 +37,6 @@ interface BatchingShape {
   readonly seeds: readonly string[];
 }
 
-// A recipe is open inside a batch.
 interface EditingInBatchShape<Staged> {
   readonly kind: "editing-in-batch";
   readonly depth: number;
@@ -49,12 +45,11 @@ interface EditingInBatchShape<Staged> {
   readonly seeds: readonly string[];
 }
 
-// Terminal, and carries nothing.
 interface DisposedShape {
   readonly kind: "disposed";
 }
 
-/** The phase one runtime is in: scope, depth, retirement. */
+/** One runtime's phase: idle, editing a recipe, batching values, editing in a batch, disposed. */
 export type ProjectPhase<Staged> =
   | Minted<IdleShape>
   | Minted<EditingShape<Staged>>
@@ -65,20 +60,19 @@ export type ProjectPhase<Staged> =
 const IDLE_LIVE = mintPhase<IdleShape>({ kind: "idle", depth: 0, retirement: "live" });
 const DISPOSED = mintPhase<DisposedShape>({ kind: "disposed" });
 
-// Frozen and shared: a batch grows by minting, not in place.
 const NO_SEEDS: readonly string[] = Object.freeze([]);
 
-/** The starting phase: nothing open, no commit in flight. */
+/** Starting phase: nothing open, depth zero. */
 export function idle<Staged>(): ProjectPhase<Staged> {
   return IDLE_LIVE;
 }
 
-/** The one terminal phase; no input, so idempotent. */
+/** Sole terminal phase; idempotent. */
 export function retired<Staged>(): ProjectPhase<Staged> {
   return DISPOSED;
 }
 
-/** The commit depth this phase is inside. */
+/** Commit depth of `phase`. */
 export function depthOf<Staged>(phase: ProjectPhase<Staged>): number {
   switch (phase.kind) {
     case "idle":
@@ -86,7 +80,7 @@ export function depthOf<Staged>(phase: ProjectPhase<Staged>): number {
     case "batching":
     case "editing-in-batch":
       return phase.depth;
-    // Teardown runs after the last commit unwound.
+    // Teardown follows last unwind: depth zero.
     case "disposed":
       return 0;
     default:
@@ -94,7 +88,7 @@ export function depthOf<Staged>(phase: ProjectPhase<Staged>): number {
   }
 }
 
-/** Whether teardown has begun: what refuses a verb. */
+/** Teardown begun: the refusal gate. */
 export function isRetiring<Staged>(phase: ProjectPhase<Staged>): boolean {
   switch (phase.kind) {
     case "idle":
@@ -109,7 +103,7 @@ export function isRetiring<Staged>(phase: ProjectPhase<Staged>): boolean {
   }
 }
 
-/** Whether teardown has finished; stops a second release. */
+/** Teardown finished; no second release. */
 export function isDisposed<Staged>(phase: ProjectPhase<Staged>): boolean {
   switch (phase.kind) {
     case "idle":
@@ -124,7 +118,7 @@ export function isDisposed<Staged>(phase: ProjectPhase<Staged>): boolean {
   }
 }
 
-/** Whether release is owed now: retiring at depth zero. */
+/** Release owed: retiring at depth zero. */
 export function teardownOwed<Staged>(phase: ProjectPhase<Staged>): boolean {
   switch (phase.kind) {
     case "idle":
@@ -139,7 +133,7 @@ export function teardownOwed<Staged>(phase: ProjectPhase<Staged>): boolean {
   }
 }
 
-/** The staged document, or `undefined` with no recipe. */
+/** Staged document, else `undefined`. */
 export function stagedIn<Staged>(phase: ProjectPhase<Staged>): Staged | undefined {
   switch (phase.kind) {
     case "editing":
@@ -154,7 +148,7 @@ export function stagedIn<Staged>(phase: ProjectPhase<Staged>): Staged | undefine
   }
 }
 
-/** The seeds in push order, or `undefined` with no batch. */
+/** Seeds in push order, else `undefined`. */
 export function seedsIn<Staged>(phase: ProjectPhase<Staged>): readonly string[] | undefined {
   switch (phase.kind) {
     case "batching":
@@ -215,22 +209,22 @@ function carrying<Staged>(
   }
 }
 
-/** A boundary opens: one deeper, the rest carried. */
+/** Boundary opens: one deeper. */
 export function entering<Staged>(phase: ProjectPhase<Staged>): ProjectPhase<Staged> {
   return carrying(phase, depthOf(phase) + 1, retirementOf(phase));
 }
 
-/** A boundary closes: one shallower, floored at zero. */
+/** Boundary closes: one shallower, floored at zero. */
 export function leaving<Staged>(phase: ProjectPhase<Staged>): ProjectPhase<Staged> {
   return carrying(phase, Math.max(0, depthOf(phase) - 1), retirementOf(phase));
 }
 
-/** What `dispose` moves to: refusing all, still unwinding. */
+/** `dispose` target: refuses all, unwinding. */
 export function retiring<Staged>(phase: ProjectPhase<Staged>): ProjectPhase<Staged> {
   return carrying(phase, depthOf(phase), "retiring");
 }
 
-/** An opening recipe's phase, carrying any batch. */
+/** Opening recipe: batch kept. */
 export function opening<Staged>(phase: ProjectPhase<Staged>, staged: Staged): ProjectPhase<Staged> {
   switch (phase.kind) {
     case "idle":
@@ -257,7 +251,7 @@ export function opening<Staged>(phase: ProjectPhase<Staged>, staged: Staged): Pr
   }
 }
 
-/** A closing recipe's phase, back in any batch. */
+/** Closing recipe: batch restored. */
 export function closing<Staged>(phase: ProjectPhase<Staged>): ProjectPhase<Staged> {
   switch (phase.kind) {
     case "editing":
@@ -282,7 +276,7 @@ export function closing<Staged>(phase: ProjectPhase<Staged>): ProjectPhase<Stage
   }
 }
 
-/** An opening value batch's phase, no seeds yet. */
+/** Opening batch: no seeds. */
 export function batchOpening<Staged>(phase: ProjectPhase<Staged>): ProjectPhase<Staged> {
   switch (phase.kind) {
     case "idle":
@@ -303,7 +297,7 @@ export function batchOpening<Staged>(phase: ProjectPhase<Staged>): ProjectPhase<
   }
 }
 
-/** A closing batch's phase, dropping its seeds. */
+/** Closing batch: seeds dropped. */
 export function batchClosing<Staged>(phase: ProjectPhase<Staged>): ProjectPhase<Staged> {
   switch (phase.kind) {
     case "batching":
@@ -328,7 +322,7 @@ export function batchClosing<Staged>(phase: ProjectPhase<Staged>): ProjectPhase<
   }
 }
 
-/** The open batch with one more seed, or `undefined`. */
+/** Batch plus one seed, else `undefined`. */
 export function seeding<Staged>(
   phase: ProjectPhase<Staged>,
   nodeId: string,
@@ -358,7 +352,7 @@ export function seeding<Staged>(
   }
 }
 
-/** Where a verb's liveness is asked: entry or resolution. */
+/** Asked at entry (`asserted`) or resolution (`resolved`). */
 export type Liveness = "asserted" | "resolved";
 
 interface ReadVerb {
@@ -385,24 +379,24 @@ interface CommitVerb {
   readonly kind: "commit";
 }
 
-/** Which admission rule a verb asks for. */
+/** Rule a verb asks for. */
 export type VerbClass = ReadVerb | OpenRecipeVerb | ValueVerb | ImmediateVerb | CommitVerb;
 
-/** A read: only disposal can refuse it. */
+/** Only disposal refuses it. */
 export const READ: VerbClass = Object.freeze<ReadVerb>({ kind: "read" });
 
-/** `edit`: the one verb that opens a recipe. */
+/** `edit`: sole recipe opener. */
 export const OPEN_RECIPE: VerbClass = Object.freeze<OpenRecipeVerb>({ kind: "open-recipe" });
 
-/** The commit an open recipe absorbs, not refuses. */
+/** An open recipe absorbs it. */
 export const COMMIT: VerbClass = Object.freeze<CommitVerb>({ kind: "commit" });
 
-/** A value verb: `seek`, `writeValues`, `releaseValues`. */
+/** Value verb: `seek`, `writeValues`, `releaseValues`. */
 export function valueVerb(verb: string, liveness: Liveness): VerbClass {
   return Object.freeze<ValueVerb>({ kind: "value", verb, liveness });
 }
 
-/** An immediate verb, which no open batch may hold. */
+/** Immediate verb: no batch holds it. */
 export function immediateVerb(verb: string, liveness: Liveness): VerbClass {
   return Object.freeze<ImmediateVerb>({ kind: "immediate", verb, liveness });
 }
@@ -420,7 +414,7 @@ interface RefuseShape {
   readonly refusal: RefusalShape;
 }
 
-/** One phase's answer to one verb: allow, join, refuse. */
+/** One phase's answer to a verb: allow, join, refuse. */
 export type Admission = AllowShape | JoinShape | RefuseShape;
 
 const ALLOW: Admission = Object.freeze<AllowShape>({ kind: "allow" });
@@ -436,7 +430,7 @@ function liveGate<Staged>(phase: ProjectPhase<Staged>, liveness: Liveness): Admi
   switch (liveness) {
     case "asserted":
       return isRetiring(phase) ? REFUSE_DISPOSED : undefined;
-    // The handle resolution asks, so this says nothing.
+    // Resolution asks; this gate says nothing.
     case "resolved":
       return undefined;
     default:
@@ -449,7 +443,7 @@ function admitRecipe<Staged>(phase: ProjectPhase<Staged>): Admission {
     case "editing":
     case "editing-in-batch":
       return refusing({ kind: "nested-recipe" });
-    // A recipe in an open batch is admitted, refused at commit.
+    // Batch holds recipe now; commit refuses it.
     case "idle":
     case "batching":
     case "disposed":
@@ -459,7 +453,7 @@ function admitRecipe<Staged>(phase: ProjectPhase<Staged>): Admission {
   }
 }
 
-// The recipe refuses before the depth, even once retiring.
+// Recipe refuses before depth does.
 function admitValue<Staged>(phase: ProjectPhase<Staged>, verb: string): Admission {
   switch (phase.kind) {
     case "editing":
@@ -468,7 +462,6 @@ function admitValue<Staged>(phase: ProjectPhase<Staged>, verb: string): Admissio
     case "idle":
     case "batching":
       return phase.depth > 0 ? refusing({ kind: "commit-in-flight" }) : ALLOW;
-    // Nothing is open after teardown, so resolution refuses.
     case "disposed":
       return ALLOW;
     default:
@@ -494,7 +487,7 @@ function admitImmediate<Staged>(phase: ProjectPhase<Staged>, verb: string): Admi
   }
 }
 
-// A commit never asks about disposal.
+// Commit ignores disposal.
 function admitCommit<Staged>(phase: ProjectPhase<Staged>): Admission {
   switch (phase.kind) {
     case "editing":
@@ -513,7 +506,7 @@ function admitCommit<Staged>(phase: ProjectPhase<Staged>): Admission {
   }
 }
 
-/** What `phase` answers `verb`, as data not a throw. */
+/** How `phase` answers `verb`: data, never a throw. */
 export function admit<Staged>(phase: ProjectPhase<Staged>, verb: VerbClass): Admission {
   switch (verb.kind) {
     case "read":
@@ -531,7 +524,7 @@ export function admit<Staged>(phase: ProjectPhase<Staged>, verb: VerbClass): Adm
   }
 }
 
-/** Admits `verb` in `phase`, throwing any refusal. */
+/** Admit `verb`, throwing any refusal. */
 export function admitOrRefuse<Staged>(
   phase: ProjectPhase<Staged>,
   verb: VerbClass,
