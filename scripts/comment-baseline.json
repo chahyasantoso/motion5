@@ -56,10 +56,6 @@
     "count": 6
   },
   {
-    "path": "apps/pose-gap-filler/src/filler/adapter.ts",
-    "count": 8
-  },
-  {
     "path": "apps/pose-gap-filler/src/filler/bone-length.ts",
     "count": 4
   },
@@ -316,16 +312,8 @@
     "count": 3
   },
   {
-    "path": "packages/core/src/contract/patch-render.ts",
-    "count": 7
-  },
-  {
     "path": "packages/core/src/contract/rule-id.ts",
     "count": 2
-  },
-  {
-    "path": "packages/core/src/contract/solver-slots.ts",
-    "count": 6
   },
   {
     "path": "packages/core/src/contract/v5-infer.ts",
@@ -506,10 +494,6 @@
   {
     "path": "packages/plugins/src/builtin-catalog.ts",
     "count": 2
-  },
-  {
-    "path": "packages/plugins/src/ik3d-chain.ts",
-    "count": 6
   },
   {
     "path": "packages/plugins/src/ik3d-compromise.ts",

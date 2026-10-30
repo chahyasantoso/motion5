@@ -4,21 +4,18 @@ import { LANDMARK_SPACES, type LandmarkSpace } from "./space";
 import { unreachable } from "./unreachable";
 import { isFiniteVec, type Vec } from "./vec";
 
-/** The stage an image-space frame is mapped onto, in the pixels the overlay and the rig use. */
+/** Pixel size the overlay and the rig use; image-space frames map here. */
 export interface StageSize {
   readonly width: number;
   readonly height: number;
 }
 
-/** Millimetres per MediaPipe world unit (metres): the world rig solves in millimetres. */
+/** Millimetres per MediaPipe world unit (metres); the rig solves in millimetres. */
 export const WORLD_UNITS_PER_METRE = 1000;
 
 /**
- * One landmark as MediaPipe reported it, `[x, y, z, visibility, presence]`: normalised image
- * coordinates for `image`, metres for `world`. A component MediaPipe did not report as a number is
- * `NaN`, so the one adapter that reads coordinates refuses it, live or replayed; a `NaN` presence
- * reads as `unreported`.
- */
+ * One landmark as MediaPipe reports it, `[x, y, z, visibility, presence]`: normalised for `image`,
+ * metres for `world`. Non-numeric component reads `NaN`; `NaN` presence reads `unreported`. */
 export type RawLandmark = readonly [
   x: number,
   y: number,
@@ -27,15 +24,12 @@ export type RawLandmark = readonly [
   presence: number,
 ];
 
-/** The first pose of one space, index-aligned with MediaPipe's 33 landmarks. */
+/** First pose of one space, index-aligned with MediaPipe's 33 landmarks. */
 export type RawPose = readonly RawLandmark[];
 
 /**
- * The one reader of MediaPipe's result shape. `result` is `unknown` because MediaPipe is loaded at
- * runtime behind the `LandmarkSource` port and has no declaration in this repository:
- * `landmarks[0][i]` for image space and `worldLandmarks[0][i]` for world space, each with `x`, `y`,
- * `z`, `visibility` and `presence`. A result with no first pose reads as `undefined`.
- */
+ * Sole reader of MediaPipe's result shape: `landmarks[0][i]` / `worldLandmarks[0][i]`, each `x`,
+ * `y`, `z`, `visibility`, `presence`. `result` is `unknown`: runtime-loaded, undeclared. */
 export function readRawPose(result: unknown, space: LandmarkSpace): RawPose | undefined {
   if (typeof result !== "object" || result === null) return undefined;
   const poses: unknown = (result as Record<string, unknown>)[poseKey(space)];
@@ -44,18 +38,14 @@ export function readRawPose(result: unknown, space: LandmarkSpace): RawPose | un
   return Array.isArray(pose) ? pose.map(readRawLandmark) : undefined;
 }
 
-/** Whether a result carries a pose in any space; a sample without one adapts to absent joints. */
+/** Whether a result carries a pose in any space. */
 export function hasPose(result: unknown): boolean {
   return LANDMARK_SPACES.some((space) => readRawPose(result, space) !== undefined);
 }
 
 /**
- * The one owner of coordinates: a raw pose becomes a `LandmarkFrame`. A joint whose coordinates are
- * missing or non-finite is `absent`, never a NaN. Visibility is clamped into [0, 1], and a
- * non-finite visibility reads as 0, so the landmark is kept but can never be trusted. No pose is a
- * frame of absent joints. Presence is clamped likewise when it is finite and `unreported` when it
- * is not, never invented. Live and replay both enter here, so they adapt identically.
- */
+ * Sole owner of coordinates: raw pose → `LandmarkFrame`. Missing or non-finite joint is `absent`,
+ * never `NaN`. Visibility clamps to [0, 1], non-finite → 0; presence clamps or `unreported`. */
 export function adaptPose(
   pose: RawPose | undefined,
   tMs: number,
@@ -69,7 +59,7 @@ export function adaptPose(
   };
 }
 
-/** A live MediaPipe result straight to a frame: `readRawPose` then `adaptPose`. */
+/** Live MediaPipe result straight to a frame: `readRawPose` then `adaptPose`. */
 export function parsePoseResult(
   result: unknown,
   tMs: number,
@@ -95,12 +85,8 @@ export interface PoseResult {
 }
 
 /**
- * The inverse of `readRawPose`, for a producer that is not MediaPipe (a playback, later the
- * simulator): the result shape the one reader reads, so every producer enters the pipeline through
- * `parsePoseResult` and none is adapted by a second path. A missing pose is an empty list, which is
- * how MediaPipe reports no detection. A `NaN` component is written as `NaN` and read back as `NaN`,
- * so `readRawPose(writePoseResult(image, world), space)` returns the pose that went in.
- */
+ * Inverse of `readRawPose` for non-MediaPipe producers: same shape, so all enter via
+ * `parsePoseResult`. Missing pose → empty list (MediaPipe's no-detection); `NaN` round-trips. */
 export function writePoseResult(image: RawPose | null, world: RawPose | null): PoseResult {
   const write = (pose: RawPose | null) =>
     pose === null
@@ -141,7 +127,7 @@ function adaptLandmark(
   if (landmark === undefined) return { kind: "absent" };
   const [x, y, z, visibility, presence] = landmark.map(finite);
   const position = toSpace(space, stage, x, y, z);
-  // Finite inputs can still overflow once scaled to pixels or millimetres.
+  // Finite input still overflows once scaled to pixels or millimetres.
   if (position === undefined || !isFiniteVec(position)) return { kind: "absent" };
   return {
     kind: "measured",
