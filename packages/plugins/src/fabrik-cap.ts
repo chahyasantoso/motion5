@@ -1,20 +1,20 @@
 import { unreachable } from "@motion5/core/plugin-api";
 
-/** The FABRIK iteration cap and its only owner; it scales with serial depth, not member count. */
+/** FABRIK iteration cap and its only owner; scales with serial depth, not member count. */
 
-/** The fewest passes any attempt may take: four per member at depth 16. */
+/** Fewest passes an attempt may take: four per member at depth 16. */
 export const FABRIK_MIN_ITERATIONS = 64;
 
-/** Passes per member on the longest root-to-leaf path, above the floor. */
+/** Passes per member on longest root-to-leaf path, above the floor. */
 export const FABRIK_ITERATIONS_PER_DEPTH = 4;
 
-/** The multiple of the free cap a limited chain may reach: a ceiling, not an allowance. */
+/** Multiple of free cap a limited chain may reach: a ceiling, not an allowance. */
 export const FABRIK_LIMITED_CAP_FACTOR = 4;
 
 /** Whether any member of a chain constrains the solve. */
 export type FabrikConstraint = "free" | "limited";
 
-/** The pass cap for a chain `depth` members deep under `constraint`. */
+/** Pass cap for a chain `depth` members deep under `constraint`. */
 export function fabrikIterationCap(depth: number, constraint: FabrikConstraint): number {
   const free = Math.max(FABRIK_MIN_ITERATIONS, FABRIK_ITERATIONS_PER_DEPTH * depth);
   switch (constraint) {
@@ -33,30 +33,30 @@ export const FABRIK_PROGRESS_WINDOW = 8;
 /** Relative movement, in units of `Number.EPSILON`, at or below which a pass moved only by rounding. */
 export const FABRIK_ROUNDING_ULPS = 1024;
 
-/** One tip's movement over `scale`, the largest coordinate magnitude along its own path; `Infinity` unless `scale` is finite positive, `NaN` kept. */
+/** One tip's movement over `scale`, the largest coordinate magnitude on its path; `Infinity` unless `scale` is finite positive, `NaN` kept. */
 export function fabrikRelativeMove(moved: number, scale: number): number {
   if (moved === 0) return 0;
   if (!(scale > 0 && scale < Infinity)) return Infinity;
   return Math.max(Number.MIN_VALUE, moved / scale);
 }
 
-/** Whether a candidate residual beats a held one: `NaN` ranks last, an exact tie keeps the held value. */
+/** Whether residual `candidate` outranks `held`: `NaN` ranks last, an exact tie keeps `held`. */
 export function fabrikResidualOutranks(candidate: number, held: number): boolean {
   if (Number.isNaN(candidate)) return false;
   if (Number.isNaN(held)) return true;
   return candidate < held;
 }
 
-/** An attempt's incumbent: nothing before its first pass, then the best residual held. */
+/** Attempt incumbent: nothing before its first pass, then the best residual held. */
 type FabrikIncumbentState =
   | { readonly kind: "empty" }
   | { readonly kind: "held"; readonly residual: number };
 
-/** Publishes the best completed pass, earliest on a tie, so 2D and 3D agree; the caller holds its pose by reference, never a seed. */
+/** Publishes the best completed pass, earliest on a tie so 2D and 3D agree; caller holds its pose by reference, never a seed. */
 export class FabrikIncumbent {
   #state: FabrikIncumbentState = { kind: "empty" };
 
-  /** Offers a just-completed pass; `true` means it is the incumbent and the caller holds it. */
+  /** Offers a completed pass; `true` means it is the incumbent and the caller holds it. */
   offer(residual: number): boolean {
     switch (this.#state.kind) {
       case "empty":
@@ -84,7 +84,7 @@ export class FabrikIncumbent {
   }
 }
 
-/** One pass's tip movement: `relative` (largest `fabrikRelativeMove`) and `moved` in world units; both zero exactly when no tip moved. */
+/** One pass's tip movement: `relative` (largest `fabrikRelativeMove`), `moved` in world units; both zero exactly when no tip moved. */
 export interface FabrikPassMotion {
   readonly relative: number;
   readonly moved: number;
@@ -93,7 +93,7 @@ export interface FabrikPassMotion {
 /** What one pass did: `still` moved no tip, `rounding` within the band and `bound`, `moving` more or non-finitely. */
 export type FabrikPassMovement = "still" | "rounding" | "moving";
 
-/** Names a pass that moved as `motion` says: rounding needs both the relative band and `bound`. */
+/** Names the pass `motion` describes: `rounding` needs both the relative band and `bound`. */
 export function fabrikPassMovement(motion: FabrikPassMotion, bound: number): FabrikPassMovement {
   if (motion.relative === 0) return "still";
   return motion.relative <= FABRIK_ROUNDING_ULPS * Number.EPSILON && motion.moved <= bound
@@ -101,7 +101,7 @@ export function fabrikPassMovement(motion: FabrikPassMotion, bound: number): Fab
     : "moving";
 }
 
-/** The most world units a rounding pass may move: `tolerance` shared over the `passes` an attempt may take. */
+/** Most world units a rounding pass may move: `tolerance` shared over the `passes` an attempt may take. */
 export function fabrikRoundingBound(tolerance: number, passes: number): number {
   return tolerance / passes;
 }
@@ -114,7 +114,7 @@ export interface FabrikPassBudget {
   settles(motion: FabrikPassMotion): boolean;
 }
 
-/** The pass budget of one attempt on a `depth`-deep chain under `constraint`; a limited chain passes the free cap only on projected convergence. */
+/** Pass budget of one attempt on a `depth`-deep chain under `constraint`; a limited chain passes the free cap only on projected convergence. */
 export function fabrikPassBudget(
   depth: number,
   constraint: FabrikConstraint,
@@ -134,7 +134,7 @@ export function fabrikPassBudget(
   }
 }
 
-/** Fixed-point test: no movement settles at once, a second consecutive `rounding` pass settles, `moving` restarts. */
+/** Fixed-point test: no movement settles at once; a second consecutive `rounding` pass settles; `moving` restarts. */
 function settlesAfter(bound: number): (motion: FabrikPassMotion) => boolean {
   let rounding = false;
   return (motion) => {
@@ -155,7 +155,7 @@ function settlesAfter(bound: number): (motion: FabrikPassMotion) => boolean {
 }
 
 function limitedPassBudget(free: number, ceiling: number, tolerance: number): FabrikPassBudget {
-  // The residual at each pass count, so a window reads its own start.
+  // Residual at each pass count; a window reads its own start.
   const trail: number[] = [];
   return {
     settles: settlesAfter(fabrikRoundingBound(tolerance, ceiling)),
@@ -170,7 +170,7 @@ function limitedPassBudget(free: number, ceiling: number, tolerance: number): Fa
   };
 }
 
-/** Whether a residual falling from `before` to `now` over one window reaches `tolerance` within `remaining` passes at that geometric rate. */
+/** Whether a residual falling from `before` to `now` in one window reaches `tolerance` within `remaining` passes at that geometric rate. */
 export function projectsConvergence(
   before: number,
   now: number,

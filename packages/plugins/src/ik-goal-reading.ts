@@ -1,20 +1,7 @@
 import { unreachable } from "@motion5/core/plugin-api";
 
 /**
- * What a solve reaches for when it reads one goal's world coordinates: a point, or a direction.
- *
- * One owner for the 2D closed form, FABRIK and the internal 3D closed form, so no two of them can
- * answer a non-finite goal differently. Finite coordinates are a point, byte for byte what was
- * delivered. Any infinite coordinate makes the goal a direction instead: the unit vector of the
- * signs of the infinite coordinates, to which a finite coordinate contributes zero, because it is
- * negligible beside an infinite one, and two infinities weigh alike, so `(Infinity, 5)` is `+x` and
- * `(Infinity, -Infinity)` is `-45` degrees. That is the direction `Math.atan2` already found for an
- * infinite goal on the closed form before this reader existed, stated once. A `NaN` coordinate names
- * neither, so it is refused by the member and the axis rather than read as a point that publishes
- * `NaN` or laundered into a plausible number. A goal's `rotation` is part of its frame and is not a
- * coordinate: no position reading reads it, and the one reader of a 3D goal's orientation is the
- * end-effector step in `ik3d-orient.ts`, after the position solve (ADR-124). See ADR-106, ADR-111
- * and issue #489.
+ * One goal's coordinates, read as a point when finite and as a direction when any axis is infinite.
  */
 export type GoalReading =
   | { readonly kind: "point"; readonly coordinates: readonly number[] }
@@ -24,12 +11,7 @@ export type GoalReading =
 export type GoalAxis = readonly [axis: string, value: number];
 
 /**
- * Reads one goal, refusing the first `NaN` coordinate in axis order by name.
- *
- * The refusal is a thrown `Error`, like every other solver refusal, so at runtime it would surface
- * through the publisher's composition failure. No delivered goal reaches it there today: a node's
- * published values must be finite, and `readFrame` reads a non-finite field as zero. The solve
- * functions are pure and callable with any frame, and this is what makes them total over one.
+ * Turns coordinates into a point or a unit direction; the first `NaN` is refused by axis name as a thrown `Error`.
  */
 export function readGoal(memberId: string, axes: readonly GoalAxis[]): GoalReading {
   const signs: number[] = [];
@@ -52,14 +34,7 @@ export function readGoal(memberId: string, axes: readonly GoalAxis[]): GoalReadi
 }
 
 /**
- * The finite point an iterative solve moves a tip toward for one reading.
- *
- * A point is itself. A direction cannot be iterated toward, so it stands in as the point on its
- * ray from `origin` at twice `reach`, the most the tip's path can extend: past every pose the path
- * can take, so the iteration straightens the path along the direction exactly as it does toward any
- * unreachable goal. A path with no extent aims one unit out, and a `reach` too large to double
- * saturates at a quarter of the largest double so the stand-in stays finite. `reach` is read only
- * for a direction, so a finite goal pays nothing for it.
+ * Where an iterative solve sends the tip: a point itself, a direction at twice `reach` along its ray.
  */
 export function aimPoint(
   reading: GoalReading,
@@ -82,11 +57,7 @@ export function aimPoint(
 }
 
 /**
- * The miss a tip leaves against one reading, which is what a solve publishes as that goal's residual.
- *
- * The Euclidean distance to a point, spelled `Math.hypot` over the coordinate differences so it is
- * byte for byte the miss every strategy measured before this owner existed. A direction is
- * infinitely far from every finite tip, so its miss is `Infinity` whatever pose the tip stands in.
+ * How far a tip stands from one reading: `Math.hypot` over coordinate differences, `Infinity` for a direction.
  */
 export function goalMiss(reading: GoalReading, tip: readonly number[]): number {
   switch (reading.kind) {

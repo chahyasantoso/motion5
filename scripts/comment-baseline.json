@@ -296,10 +296,6 @@
     "count": 2
   },
   {
-    "path": "packages/core/src/adapters/microtask-scheduler.ts",
-    "count": 12
-  },
-  {
     "path": "packages/core/src/adapters/scroll-trigger-gsap.ts",
     "count": 2
   },
@@ -512,10 +508,6 @@
     "count": 2
   },
   {
-    "path": "packages/plugins/src/ik-goal-reading.ts",
-    "count": 11
-  },
-  {
     "path": "packages/plugins/src/ik3d-chain.ts",
     "count": 6
   },
@@ -526,10 +518,6 @@
   {
     "path": "packages/plugins/src/ik3d-result.ts",
     "count": 8
-  },
-  {
-    "path": "packages/plugins/src/ik3d-solve.ts",
-    "count": 12
   },
   {
     "path": "packages/plugins/src/labels.ts",
@@ -562,10 +550,6 @@
   {
     "path": "packages/react/src/patch-store.ts",
     "count": 8
-  },
-  {
-    "path": "packages/react/src/row-patch-source.ts",
-    "count": 6
   },
   {
     "path": "packages/three/src/index.ts",

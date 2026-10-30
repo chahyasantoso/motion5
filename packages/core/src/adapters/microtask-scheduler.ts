@@ -1,11 +1,8 @@
 import type { Cancel, Scheduler } from "../ports/scheduler";
 
 /**
- * The host queue a scheduler drains on.
- *
- * One call hands over one drain and one drain runs one pass, so the host owns when a pass happens
- * and never how many jobs it contains.
- */
+ * The host queue a scheduler drains on: one enqueue gives one drain and one pass; the host owns
+ * when, not how many jobs. */
 export interface SchedulerHost {
   enqueue(drain: () => void): void;
 }
@@ -14,9 +11,8 @@ export interface MicrotaskSchedulerOptions {
   /** Defaults to a promise microtask. Inject one to bind the queue to a different host. */
   readonly host?: SchedulerHost;
   /**
-   * Receives the single failure a pass reports. Without it the failure is thrown from inside the
-   * host's callback, which for the default host means an unhandled rejection.
-   */
+   * Receives the single failure a pass reports; without it the failure throws from the host
+   * callback, an unhandled rejection on the default host. */
   readonly onError?: (failure: unknown) => void;
 }
 
@@ -26,23 +22,15 @@ interface QueuedJob {
 }
 
 /**
- * `Promise` is an ECMAScript intrinsic rather than a host primitive, so this default reaches for no
- * global: no `queueMicrotask`, no `requestAnimationFrame`, no `globalThis`. It therefore works in a
- * browser, in Node, and in a worker without an environment check. Anything that wants a different
- * queue injects a `SchedulerHost`, exactly as `createBrowserClock` takes a `FrameSource`.
- */
+ * `Promise` is an intrinsic, not a host global: browser, Node and worker all work unchanged.
+ * Inject a `SchedulerHost` to bind a different queue. */
 const promiseMicrotaskHost: SchedulerHost = {
   enqueue: (drain) => void Promise.resolve().then(drain),
 };
 
 /**
- * The production `Scheduler`.
- *
- * Microtask-paced on purpose. `Clock` already owns frame pacing, and a trigger can emit outside any
- * tick, so an animation-frame scheduler would give pacing two owners and publish a value one frame
- * after the tick that produced it. A microtask pass instead ends the turn that produced the work:
- * inside the same frame, before paint, and after the emission that queued it. See ADR-038.
- */
+ * The production `Scheduler`. Microtask-paced: `Clock` owns frame pacing, so a pass ends the turn
+ * that queued it — same frame, before paint, not a frame later. */
 export function createMicrotaskScheduler(
   options: MicrotaskSchedulerOptions = {},
 ): Scheduler<() => void> {
@@ -52,25 +40,19 @@ export function createMicrotaskScheduler(
   let scheduled = false;
 
   const report = (failure: unknown): void => {
-    // Rethrown verbatim when nothing is listening, never wrapped. Callers assert on the identity
-    // and message of what a job threw, so renaming a lone failure here would break them. Same rule
-    // as Engine.runAllAndReportOnce. See ADR-035.
+    // Rethrown verbatim when unhandled, never wrapped: callers assert on identity and message; same rule as Engine.runAllAndReportOnce.
     if (onError === undefined) throw failure;
     onError(failure);
   };
 
   const drain = (): void => {
-    // Cleared before the pass runs, so a job that schedules during the pass gets a fresh host
-    // enqueue for the next one instead of extending this one. GraphRuntime.#scheduleDrain assumes
-    // exactly that boundary, and createFakeScheduler.flush() already ends a pass the same way, so
-    // the deterministic double and this implementation agree on where a pass stops.
+    // Cleared before the pass, so a job scheduling during it gets a fresh enqueue; GraphRuntime.#scheduleDrain and createFakeScheduler.flush() assume that boundary.
     scheduled = false;
     const pass = queue;
     queue = [];
     const failures: unknown[] = [];
     for (const entry of pass) {
-      // Read when the job runs rather than when the pass was taken: a job may cancel a job behind
-      // it in the same pass, and honouring that is what makes cancellation a guarantee.
+      // Read when the job runs, so a job may cancel one behind it in the same pass.
       if (entry.cancelled) continue;
       try {
         entry.job();
@@ -78,8 +60,7 @@ export function createMicrotaskScheduler(
         failures.push(error);
       }
     }
-    // Every job in the pass runs, then one failure is reported. A throwing job does not get to
-    // decide whether the jobs behind it happen at all.
+    // Every job in the pass runs before one failure is reported; a throw never skips the jobs behind it.
     if (failures.length === 0) return;
     if (failures.length === 1) {
       report(failures[0]);
@@ -98,9 +79,7 @@ export function createMicrotaskScheduler(
         try {
           host.enqueue(drain);
         } catch (error) {
-          // Left unscheduled and rethrown, with the job still queued. GraphRuntime already reports
-          // a throwing schedule() as scheduler-failure and retries on the next invalidation, so
-          // that retry has to be able to carry the work this attempt could not hand over.
+          // Left unscheduled and rethrown, job still queued: GraphRuntime retries on the next invalidation.
           scheduled = false;
           throw error;
         }

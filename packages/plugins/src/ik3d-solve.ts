@@ -9,16 +9,8 @@ import { orientLeaves3d } from "./ik3d-orient";
 import type { SolveResult3d } from "./ik3d-result";
 import { solveSerialRecovery3d } from "./ik3d-serial-recovery";
 
-/**
- * Which 3D strategy answers a chain, decided once and read exhaustively (ADR-092, ADR-122).
- *
- * The 3D counterpart of `ik-solve.ts`'s `ChainShape`, and deliberately its own union rather than a
- * dimension flag on that one, because the members and poses each arm carries are dimensional.
- * `two-bone` carries the proven pair and its one goal as values, `tree` the whole member list, and
- * `constrained` the whole member list of a chain with any member whose joint constrains it, which
- * the 3D FABRIK solves with the limit enforced in every outward pass (issue #500 phase 6, ADR-123).
- * Derived, never authored: no rig chooses its own strategy (ADR-051).
- */
+/** Strategy answering one 3D chain; derived at solve time, never authored.
+ * `two-bone` carries pair + goal, `tree` members, `constrained` members with a limiting joint. */
 export type ChainShape3d =
   | {
       readonly kind: "two-bone";
@@ -29,22 +21,8 @@ export type ChainShape3d =
   | { readonly kind: "tree"; readonly members: readonly ChainMember3d[] }
   | { readonly kind: "constrained"; readonly members: readonly ChainMember3d[] };
 
-/**
- * The shape of one 3D chain, or a throw when it has no goal at all.
- *
- * A parent and its one addressed child take the closed form, proven from the `base` relation by
- * the same `twoBonePair` the 2D dispatcher reads, so every two-bone rig that loaded under ADR-114
- * keeps the closed form and its bytes. Everything else, a single member, a longer path, or any
- * branching, takes the tree solve. The goal refusal is the 2D one: load refuses every shape that
- * reaches it (`ik-solver-no-goal`, `ik-leaf-without-goal`), so it is an invariant guard.
- *
- * A chain with any constrained member is `constrained` first, after the goal guard, and takes 3D
- * FABRIK even at two members. Only when that solve misses may a short zero-offset serial chain of
- * free members and non-planar hinges take the legal serial recovery (`ik3d-serial-recovery.ts`),
- * which solves inside every authored hinge range rather than clamping an unconstrained answer
- * afterwards. `contract/solver-shape.ts` remains conservative at load: its `derivedStrategy` sees
- * the authored joint, not this live-value recovery, and both name the iterative strategy first.
- */
+/** Chain shape, or a throw when no member carries a goal.
+ * Order: goal guard → `constrained` → `two-bone` pair → `tree`. */
 export function chainShape3d(members: readonly ChainMember3d[]): ChainShape3d {
   if (!members.some((member) => member.goal !== undefined)) {
     throw new Error(`ik3d requires at least one goal; ${members.length} members received none.`);
@@ -56,19 +34,8 @@ export function chainShape3d(members: readonly ChainMember3d[]): ChainShape3d {
   return { kind: "tree", members };
 }
 
-/**
- * The 3D dispatcher: one local Euler triple per member from whichever strategy the chain's shape
- * names, and the evidence of how well it answered, in the one `SolveResult3d` shape.
- *
- * Each strategy owns its own magnitude decision through the shared `magnitudeOf`, because the
- * closed form's decision is part of the bytes a two-bone rig already publishes and must not move.
- * `bend` is the chain's pole, read by both strategies through the one pole rule (ADR-118).
- *
- * Every strategy answers position only. The end-effector orientation step then turns each addressed
- * leaf authoring `orient` toward its goal's orientation, through `ik3d-orient.ts` for both strategies
- * alike, by rotations that leave its tip where the strategy put it, so position keeps priority and
- * neither strategy owns a second copy of the step (ADR-124).
- */
+/** Solves one 3D chain: position by shape, then each oriented leaf toward its goal.
+ * Orientation turns leaves without moving the tip, so position keeps priority. */
 export function solveChain3d(
   root: WorldFrame3d,
   members: readonly ChainMember3d[],
@@ -77,7 +44,7 @@ export function solveChain3d(
   return orientLeaves3d(root, members, solvePosition3d(root, chainShape3d(members), bend));
 }
 
-/** The position solve alone: the strategy the chain's shape names, read exhaustively. */
+/** Position solve by shape; `constrained` retries as serial recovery when the tree solve misses. */
 function solvePosition3d(root: WorldFrame3d, shape: ChainShape3d, bend: Pole3d): SolveResult3d {
   switch (shape.kind) {
     case "two-bone":
@@ -87,8 +54,7 @@ function solvePosition3d(root: WorldFrame3d, shape: ChainShape3d, bend: Pole3d):
     case "constrained": {
       const result = solveTree3d(root, shape.members, bend);
       if (result.quality.kind === "converged") return result;
-      // A legal pose is published only when its rendered FK tip meets the goal; otherwise the tree
-      // result is kept with its quality and every published byte unchanged.
+      // Recovery only when the tree solve misses; otherwise its result and published bytes stand.
       return solveSerialRecovery3d(root, shape.members, bend) ?? result;
     }
     default:
