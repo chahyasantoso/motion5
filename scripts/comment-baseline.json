@@ -436,10 +436,6 @@
     "count": 3
   },
   {
-    "path": "packages/core/src/engine.ts",
-    "count": 41
-  },
-  {
     "path": "packages/core/src/graph/binding.ts",
     "count": 2
   },
@@ -600,16 +596,8 @@
     "count": 26
   },
   {
-    "path": "packages/core/src/runtime/project-runtime.ts",
-    "count": 70
-  },
-  {
     "path": "packages/core/src/runtime/publish-request.ts",
     "count": 7
-  },
-  {
-    "path": "packages/core/src/runtime/publisher-outcome.ts",
-    "count": 38
   },
   {
     "path": "packages/core/src/runtime/publisher-reach.ts",
@@ -726,14 +714,6 @@
   {
     "path": "packages/plugins/src/ik3d-compromise.ts",
     "count": 7
-  },
-  {
-    "path": "packages/plugins/src/ik3d-constraint.ts",
-    "count": 46
-  },
-  {
-    "path": "packages/plugins/src/ik3d-fabrik.ts",
-    "count": 41
   },
   {
     "path": "packages/plugins/src/ik3d-orient.ts",

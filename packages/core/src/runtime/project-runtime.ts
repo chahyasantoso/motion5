@@ -93,14 +93,8 @@ interface FreeTrackEntry {
   readonly track: TrackDefinition;
   readonly token: number;
   readonly valueState: ValueState;
-  /**
-   * The contract this node committed to at its last structural commit.
-   *
-   * `undefined` until a graph build has derived one, and again after `replace-track` or
-   * `replace-input` because those are the edits allowed to move it. Every other edit spreads the
-   * entry and keeps it, which is what lets a rebuild carry it rather than re-infer from values that
-   * a cheap edit made emptier.
-   */
+  // Contract at last structural commit. `undefined` until a graph build, then again after
+  // `replace-track`/`replace-input` (only movers); other edits keep it so rebuilds carry, never re-infer.
   readonly contract: CommittedContract | undefined;
 }
 
@@ -133,14 +127,8 @@ type MotionEntry = {
 interface OpenTransaction {
   tracks: Map<string, TrackEntry>;
   motions: Map<string, MotionEntry>;
-  /**
-   * Nodes whose final track must not be compared for a timeline build.
-   *
-   * A binding edit changes the authored input the compiled comparison reads, but the timeline does
-   * not consume bindings, so a diff would report a build the overlay carve-out forbids. A later
-   * replacement in the same recipe clears the mark through `fullBuild`, because a fresh
-   * compilation is exactly what its overlay lifetime owes.
-   */
+  // Nodes whose final track must not be diffed for a timeline build: binding edits move
+  // compiled-compare input the timeline never consumes. `fullBuild` clears the mark.
   readonly noBuild: Set<string>;
   /** Nodes a full replacement or removal touched, which a later binding may not mark `noBuild`. */
   readonly fullBuild: Set<string>;
@@ -191,30 +179,13 @@ export interface ProjectRuntimeOptions {
   readonly compose: ComposeResolver;
   /** The identified-table composition seam, forwarded to `GraphRuntime` untouched. */
   readonly composeIdentified?: ComposeIdentifiedResolver;
-  /**
-   * Whether an authored `track.plugin` id names an admitted plugin.
-   *
-   * The structural tier validates a candidate track before it builds a graph, and a plugin track
-   * cannot pass that parse without an answer. `Engine` supplies the catalog it was constructed
-   * with; a registry-free runtime leaves it absent, which keeps every no-plugin path unchanged.
-   */
+  /** Whether an authored `track.plugin` id names an admitted plugin; the structural tier needs it to validate plugin tracks. Absent keeps no-plugin paths. */
   readonly isPluginRegistered?: (pluginId: string) => boolean;
 
   readonly setProgress?: (nodeId: string, progress: number) => void;
-  /**
-   * Replaces the authored values one compiled Track evaluates, for the cheap authored tier.
-   *
-   * The runtime has already parsed and validated the candidate by the time this is called, so the
-   * host only owns the evaluator. A node with no compiled Track is a no-op.
-   */
+  /** Replaces the authored values a compiled Track evaluates, cheap tier; values arrive parsed and validated, a node with no compiled Track is a no-op. */
   readonly rewriteValues?: (nodeId: string, values: ParsedValues) => void;
-  /**
-   * Stands one whole evaluated value over a compiled Track, or drops it for `undefined`.
-   *
-   * The runtime validated the value against the committed contract; the host owns only where an
-   * overlay lives. A node with no compiled Track is a no-op, and mounting it later compiles the
-   * authored definition the overlay never moved.
-   */
+  /** Stands one whole evaluated value over a compiled Track, or `undefined` drops it; validated by the runtime; no compiled Track = no-op; the authored definition never moves. */
   readonly overlayValues?: (nodeId: string, value: Value | undefined) => void;
   readonly compileTrack?: (track: TrackDefinition, nodeId?: string) => void;
   readonly disposeTrack?: (nodeId: string) => void;
@@ -222,29 +193,13 @@ export interface ProjectRuntimeOptions {
   readonly addMotionTrack?: (motionId: string, trackId: string, duration?: number) => void;
   readonly replaceMotionTrack?: (motionId: string, trackId: string, duration?: number) => void;
   readonly removeMotionTrack?: (motionId: string, trackId: string) => void;
-  /**
-   * The two tier 0 seams: a Motion's trigger and its stagger, neither of which any node carries.
-   *
-   * Two hooks rather than one, because which one an edit asks is half of what the edit claims, and
-   * why is ADR-061's amendment. Named beside the `addMotionTrack` family, and named for what they do:
-   * a trigger carries a disposable resource behind it, a stagger is a bare field. See ADR-061.
-   *
-   * Returning means acceptance; an optional completion runs only after definition adoption.
-   * Throwing before return means refusal and the supplier owns cleanup. Post-acceptance cleanup
-   * or re-seeding failures are reported without restoring a stale definition. Issues #340/#341.
-   */
+  /** Trigger swap seam: return accepts, completion runs post-adoption; a throw before return refuses, supplier owns cleanup; post-accept failures report without restoring the stale definition. */
   readonly replaceMotionTrigger?: (
     motionId: string,
     definition: MotionDefinition,
   ) => void | (() => void);
   readonly setMotionStagger?: (motionId: string, stagger?: number) => void | (() => void);
-  /**
-   * The signal a live Motion's trigger takes, and the third seam this layer holds for one reason.
-   *
-   * A hook here rather than a closure over the engine's Motion map, so the one owner of the recipe
-   * refusal can be asked before a signal reaches a live port. An unknown motion id is still refused
-   * by the layer that owns the Motion. See ADR-064's amendment.
-   */
+  /** The signal a live Motion's trigger takes; the recipe refusal is asked here before a signal reaches a live port, unknown ids stay refused by the Motion's owner. */
   readonly signalMotion?: (motionId: string, signal: TriggerSignal) => void;
   readonly createMotion?: (definition: MotionDefinition) => void;
   readonly destroyMotion?: (motionId: string) => void;
@@ -252,12 +207,7 @@ export interface ProjectRuntimeOptions {
   readonly disposeComposition?: () => void;
   readonly diagnosticsCapacity?: number;
   readonly graphBuilder?: GraphBuilder;
-  /**
-   * What a structural plan may ask about plugins, as data rather than as a registry.
-   *
-   * `Engine` forwards the catalogue it admitted the project with. A registry-free runtime leaves it
-   * absent and plans against `UNJUDGED_CAPABILITIES`, which asks nothing and refuses nothing.
-   */
+  /** What a structural plan may ask about plugins, as data; absent = `UNJUDGED_CAPABILITIES`, which asks nothing and refuses nothing. */
   readonly capabilities?: PluginCapabilities;
 }
 export class ProjectRuntime {
@@ -299,10 +249,8 @@ export class ProjectRuntime {
         valueState: AUTHORED,
         contract: undefined,
       });
-    // The one place optionality is answered, and the one place an installed seam's receiver is.
-    // Every seam a host did not install reads its own no-op out of NO_PORTS, and every seam a host
-    // did install is applied to this runtime, which is the receiver it saw while each of these was
-    // a field. No member below is optional and no reader after this line asks either question.
+    // The one place seam optionality and receiver are answered: uninstalled seams read their
+    // NO_PORTS no-op, installed ones bind to this runtime. Nothing below is optional.
     this.#ports = Object.freeze({
       track: Object.freeze({
         compile: installed(this, options.compileTrack, NO_PORTS.track.compile),
@@ -332,10 +280,8 @@ export class ProjectRuntime {
         ),
       }),
     });
-    // What a handle this runtime issues may ask back of it, resolved once for the reason the ports
-    // above are: a handle is a class now, so it cannot reach a private member, and what one may ask
-    // is the same for every handle and every call that mints one. Each member below is one rung this
-    // class already owned, so which liveness order a verb gets is still decided here.
+    // What a handle may ask back, resolved once: a handle is a class, it cannot reach a
+    // private member. Which liveness order each verb gets is still decided here.
     this.#handleHost = Object.freeze<HandleHost>({
       track: Object.freeze<TrackHost>({
         live: (id, token) => isLive(this.#entryIfLive(id, token)),
@@ -372,9 +318,8 @@ export class ProjectRuntime {
         onFlushError: (diagnostic) => this.#diagnostics.record(diagnostic),
       });
     } catch (error) {
-      // The construction failure is the diagnosis and the host's release is a subordinate fact, so
-      // both leave together rather than the second replacing the first. `report.ts` owns that
-      // precedence for every caller of it, and `afterCleanup` is where the rule is written down.
+      // The construction failure is the diagnosis; the host's release is subordinate, so both
+      // leave together. `afterCleanup` owns that precedence.
       throw afterCleanup(error, "cleanup", () => this.#ports.host.disposeComposition());
     }
     // The load's own graph is the first structural commit, so its contracts are what every later
@@ -435,18 +380,7 @@ export class ProjectRuntime {
     this.#instances.delete(nodeId);
     this.#graph.detach(nodeId);
   }
-  /**
-   * Runs `recipe` as one transaction and commits what it staged exactly once.
-   *
-   * What one costs, why an abort needs no compensation path, and why a recipe that staged nothing
-   * commits nothing are ADR-064's. That the copy is taken after an entry point's last refusal
-   * rather than before it is `#stageTracks`'s own. See `RA-66`, `RA-95` and ADR-064.
-   *
-   * A recipe that disposed the runtime is answered with its own value and commits nothing. The
-   * liveness this member asserts on entry is stale by the time it decides to apply, because the
-   * recipe is allowed to invalidate it and ADR-064's amendment says so deliberately. See `RA-109`,
-   * `RA-110` and ADR-064's amendment of 2026-09-04.
-   */
+  /** Runs `recipe` as one transaction and commits what it staged exactly once; a recipe that disposed the runtime still gets its value and commits nothing. */
   edit<T>(recipe: (transaction: SchemaTransaction) => T): T {
     this.#admit(OPEN_RECIPE);
     const open: OpenTransaction = {
@@ -503,20 +437,12 @@ export class ProjectRuntime {
     if (!this.#readMotions().has(motionId)) refuse({ kind: "unknown-motion", motionId });
     this.#removeMotion(motionId);
   }
-  /**
-   * Hands one signal to the layer that owns this Motion's trigger.
-   *
-   * Tier 0's twin, refused inside a recipe on the rule every immediate verb shares, and the hook
-   * keeps its own refusal for an unknown motion id. See ADR-064's amendment.
-   */
+  /** Hands one signal to the layer owning this Motion's trigger; refused inside a recipe, and the hook keeps its own unknown-id refusal. */
   signal(motionId: string, signal: TriggerSignal): void {
     this.#admit(immediateVerb("signal", "asserted"));
     this.#ports.motion.signal(motionId, signal);
   }
-  /**
-   * The resolver for one Motion, refusing an id this project never had. Separate from `tryMotion`
-   * for the reason `#entryOf` is separate from `#entryIfLive`: this one refuses and that one answers.
-   */
+  /** The resolver for one Motion, refusing an id this project never had; `tryMotion` answers instead of refusing. */
   motion(motionId: string): MotionHandle {
     this.#admit(READ);
     const entry = this.#readMotions().get(motionId);
@@ -541,14 +467,7 @@ export class ProjectRuntime {
     const entry = this.#readTracks().get(nodeId);
     return entry === undefined ? undefined : this.#handle(nodeId, entry.token);
   }
-  /**
-   * Every node that reads this one, for an editor's preflight rather than for enforcement.
-   *
-   * Enforcement stays where ADR-050 put it, in the candidate graph. What this member owns is the
-   * public contract: the live gate, and an id this project never had answered rather than refused,
-   * because a preflight that refused an unknown id would make an editor ask twice. A projection of
-   * `#readersOf`, which owns the question. See ADR-050 and ADR-051.
-   */
+  /** Every node reading this one, for editor preflight not enforcement; enforcement stays in the candidate graph, and an unknown id answers empty rather than refusing. */
   dependantsOf(nodeId: string): readonly string[] {
     this.#admit(READ);
     return this.#readersOf(nodeId);
@@ -559,36 +478,17 @@ export class ProjectRuntime {
     const readers: readonly string[] | undefined = this.#graph.graph.dependants[nodeId];
     return Object.freeze(readers === undefined ? [] : [...new Set(readers)]);
   }
-  /**
-   * Every Motion id this project holds, in committed order.
-   *
-   * The first of three enumeration readers, and one contract covers all three. Total, frozen, and
-   * in the order the committed maps carry, answered through the same accessors every structural
-   * read uses: inside an open recipe a reader sees what that recipe staged, and inside a commit's
-   * own hook it sees the retained pair the rest of that hook sees. Live-gated exactly as
-   * `dependantsOf` is and refused on nothing else, because a read publishes nothing and mounts
-   * nothing, so it cannot be placed in front of an owning operation's publication.
-   *
-   * They exist so no consumer keeps a second copy of the document's ids beside it. Widening
-   * `SchemaTransaction` with them was declined: a recipe closes over this project already, so a
-   * second spelling of one read would be two owners for it. See ADR-064 and issue #362.
-   */
+  /** Every Motion id, in committed order; frozen, live-gated only, and inside a recipe it reads what that recipe staged. */
   motionIds(): readonly string[] {
     this.#admit(READ);
     return Object.freeze([...this.#readMotions().keys()]);
   }
-  /**
-   * Every track node id no Motion owns, which is the unowned half of the one ownership filter
-   * `MotionHandle.trackIds` already reads, so the two cannot disagree about committed order.
-   */
+  /** Track node ids no Motion owns; the unowned half of the same ownership filter `MotionHandle.trackIds` reads, so the two cannot disagree on order. */
   freeTrackIds(): readonly string[] {
     this.#admit(READ);
     return Object.freeze(this.#ownedBy(this.#readTracks(), undefined).map(([node]) => node));
   }
-  /**
-   * Every node mounted right now, which no staged pair carries: `mount`, `unmount` and a commit's
-   * own settlement are what move it.
-   */
+  /** Every node mounted right now; no staged pair carries it, only `mount`, `unmount` and commit settlement move it. */
   mountedNodeIds(): readonly string[] {
     this.#admit(READ);
     return Object.freeze([...this.#instances.keys()]);
@@ -766,9 +666,8 @@ export class ProjectRuntime {
     return new RuntimeTrackHandle(this.#handleHost.track, id, token);
   }
 
-  // The committed or staged view a structural plan reads, projected as plain data. `authoredIndex`
-  // is recomputed from insertion order rather than stored, because it is a position in a motion's
-  // authored track list and an edit that removes or replaces may move the ones after it.
+  // The committed or staged view a structural plan reads, as plain data. `authoredIndex` is
+  // recomputed from insertion order: removals and replacements move the positions after them.
   #planState(tracks: ReadonlyMap<string, TrackEntry>): PlanState {
     const nextIndex = new Map<string, number>();
     const planned = new Map<string, PlannedTrack>();
@@ -801,12 +700,8 @@ export class ProjectRuntime {
     });
   }
 
-  // The one internal entry for a list of edits. It classifies the list once and takes the single
-  // path that answer owns: a value list plans against one node lookup and publishes once, a
-  // structural list plans against the candidate graph and commits once, and an empty list does
-  // nothing. A refusal anywhere throws before anything is adopted, published or committed.
-  // Admission is the caller's: each typed wrapper below admits as its verb always did, and the
-  // `apply` seam admits for a caller that holds a list.
+  // Sole internal entry for an edit list: classify once, take that path. Refusal throws
+  // before adoption, publication or commit. Admission is the caller's.
   #apply(edits: readonly Edit[]): PatchBatch {
     const batch = classifyBatch(edits);
     switch (batch.kind) {
@@ -823,12 +718,7 @@ export class ProjectRuntime {
     }
   }
 
-  /**
-   * Applies a list of edits as one atomic batch and answers its one publication.
-   *
-   * Internal: no handle and no package entry point reaches it. It exists so the batch contract is
-   * one runtime path rather than a property of the pure planner alone.
-   */
+  /** Applies an edit list as one atomic batch and answers its one publication; no handle or package entry point reaches it. */
   apply(edits: readonly Edit[]): PatchBatch {
     this.#assertLive();
     for (const edit of edits) {
@@ -837,10 +727,8 @@ export class ProjectRuntime {
     return this.#apply(edits);
   }
 
-  // Plans structural edits against the staged view and stages what they changed. The plan is the
-  // only place a candidate graph or contract is built; this member carries its changes into the
-  // transaction's map and marks the nodes for the commit's build decision. A no-op answers before
-  // `#stageTracks` copies, so a recipe that changed nothing still commits nothing.
+  // Plans on the staged view and stages changes; only the plan builds a candidate graph or
+  // contract. A no-op answers before `#stageTracks` copies -> changed nothing = commits nothing.
   #applyStructuralList(edits: readonly StructuralEdit[]): PatchBatch {
     const planned = applyEdits(this.#planState(this.#readTracks()), edits, this.#planEnvironment());
     if (planned.changes.length === 0) return batchFor(this.#graph.sequence, { kind: "empty" });
@@ -873,10 +761,8 @@ export class ProjectRuntime {
     };
   }
 
-  // Plans value edits against the lookup and applies only their deltas to the entries they name.
-  // The committed map is updated in place, which is safe because a value edit is refused during a
-  // commit and inside an edit recipe, so no staged copy of it is open, and an existing key keeps
-  // its insertion order. The one publication routes through #publishValues so a batch defers it.
+  // Applies only planned deltas to named entries. In-place is safe: value edits are refused
+  // during a commit and inside a recipe, so no staged copy is open; keys keep insertion order.
   #applyValues(edits: readonly (CheapEdit | LiveEdit)[]): PatchBatch {
     const changes = applyValueEdits(this.#valueLookup(), edits, this.#planEnvironment());
     if (changes.length === 0) return batchFor(this.#graph.sequence, { kind: "empty" });
@@ -907,27 +793,24 @@ export class ProjectRuntime {
     }
   }
 
-  // Plans one cheap edit. The value tier's admission runs first, so a cheap edit is refused during
-  // a commit and inside an edit recipe exactly as the value verbs were, while a value batch still
-  // collects its seed.
+  // Plans one cheap edit; value-tier admission runs first, so a commit or edit recipe refuses it
+  // like the value verbs, while a value batch still collects its seed.
   #applyCheap(id: string, token: number, edit: CheapEdit): PatchBatch {
     this.#admit(valueVerb(publicVerbOf(edit.kind), "resolved"));
     this.#writableEntry(id, token);
     return this.#apply([edit]);
   }
 
-  // Plans one live edit. The value-tier admission makes it legal on an errored node and inside a
-  // value batch, while a commit and an edit recipe still refuse it. The authored definition never
-  // moves: only the value state and the compiled overlay do.
+  // Plans one live edit: legal on an errored node and in a value batch, refused by a commit
+  // or recipe. Authored definition never moves; only value state and the compiled overlay.
   #applyLive(id: string, token: number, edit: LiveEdit): PatchBatch {
     this.#admit(valueVerb(publicVerbOf(edit.kind), "resolved"));
     this.#writableEntry(id, token);
     return this.#apply([edit]);
   }
 
-  // The node-addressed half, for a caller that resolved by id rather than by handle. Admission runs
-  // before the entry is resolved, so a write aimed at a node a commit is still compiling answers the
-  // in-flight refusal rather than an absence the caller cannot act on.
+  // By-id half: admission runs before entry resolution, so a write aimed at a node a commit is
+  // still compiling answers the in-flight refusal, not an absence the caller cannot act on.
   #applyLiveById(id: string, edit: LiveEdit): PatchBatch {
     this.#assertLive();
     this.#admit(valueVerb(publicVerbOf(edit.kind), "resolved"));
@@ -1087,9 +970,8 @@ export class ProjectRuntime {
     return batchFor(this.#graph.sequence, { kind: "deferred-in-batch", seeds: [nodeId] });
   }
 
-  // One publication for the nodes a value edit list changed. A list that changed one node is the
-  // single-node case and goes to #publishValue unchanged. A longer list collects every seed into an
-  // open batch, or invalidates them together once when no batch is open.
+  // One publication for the nodes a value list changed; one node delegates to #publishValue.
+  // A longer list collects seeds into an open batch, else invalidates them together.
   #publishValues(nodeIds: readonly string[]): PatchBatch {
     const seeds = [...new Set(nodeIds)];
     const [only, ...others] = seeds;
@@ -1151,14 +1033,7 @@ export class ProjectRuntime {
     this.#ports.value.seek(nodeId, progress);
     return this.#publishValue(nodeId);
   }
-  /**
-   * Writes one node's whole evaluated local value by id, without a handle.
-   *
-   * The node-addressed spelling of `TrackHandle.writeValues`, for callers that resolved an id rather
-   * than captured a handle. It asserts liveness, takes the value tier's admission, and only then
-   * resolves the entry, which is the order the retired by-id write used and the one that makes
-   * an in-flight commit outrank an id a commit is still adding.
-   */
+  /** Writes one node's whole evaluated local value by id, without a handle. */
   writeValues(nodeId: string, value: Value): PatchBatch {
     return this.#applyLiveById(nodeId, { kind: "write-live", nodeId, value });
   }
@@ -1168,22 +1043,7 @@ export class ProjectRuntime {
     return this.#applyLiveById(nodeId, { kind: "release-live", nodeId });
   }
 
-  /**
-   * Runs `recipe` as one value batch and publishes what it staged exactly once.
-   *
-   * The second tier, and what `edit(recipe)` is for the structural one. Every verb reached inside
-   * still applies its own write immediately and still refuses on its own terms; what the batch owns
-   * is the publication. So `n` writes across `n` nodes cost one invalidate, one notification per
-   * affected node and one sequence move, where the same sequence spelled one write at a time costs
-   * `n` of each, and the answer is the batch that one publication produced. What a staged verb
-   * answers in the meantime is a deferred batch naming its own node.
-   *
-   * A recipe that staged nothing publishes nothing and answers an empty batch, because an empty seed
-   * list still opens a batch, notifies every batch subscriber and moves the sequence. A recipe that
-   * disposed the project is reported rather than answered, with `ProjectRuntime is disposed.` in
-   * place of the batch, because the batch is the answer to this call and there is no batch: that
-   * keeps the value tier's one failure contract. See ADR-078, ADR-064 and issue #288.
-   */
+  /** Runs `recipe` as one value batch: verbs write immediately, answer deferred batches; one publication at close; nothing staged = empty batch; disposed = `ProjectRuntime is disposed.` */
   values(recipe: (transaction: ValueTransaction) => void): PatchBatch {
     this.#admit(immediateVerb("values", "asserted"));
     this.#phase = batchOpening(this.#phase);
@@ -1208,28 +1068,12 @@ export class ProjectRuntime {
       tryTrack: (nodeId: string) => runtime.tryTrack(nodeId),
     });
   }
-  /**
-   * Publishes for `nodeIds` and answers the batch that publication produced.
-   *
-   * A list that names nothing is answered rather than published, through the one owner of what an
-   * empty seed list means, which is the member `values(recipe)` publishes through too. An empty
-   * list still opens a batch, notifies every batch subscriber and moves the sequence, and a caller
-   * that asked for nothing to be invalidated is owed none of that. What a caller can read is
-   * unchanged: this verb always answers a real `PatchBatch`, and for an empty list that batch
-   * carries the sequence the graph is already on. See ADR-080 and issue #371.
-   */
+  /** Publishes for `nodeIds` and answers that batch; an empty list answers a current-sequence batch rather than opening one, since invalidating nothing owes no notification. */
   invalidate(nodeIds: readonly string[]) {
     this.#admit(immediateVerb("invalidate", "asserted"));
     return this.#publishSeeds(nodeIds);
   }
-  /**
-   * Tears this project down, once, and refuses everything from the moment it is called.
-   *
-   * Reachable from caller code that this runtime is in the middle of calling, which is why the
-   * refusal and the release are two things rather than one. See ADR-067.
-   * Every release step is attempted. Direct release reports collected failures; a deferred release
-   * records diagnostics without replacing the outcome of the operation it follows.
-   */
+  /** Tears down once, refuses everything from the call; reachable mid-call, so refusal and release are separate. Every release step runs; direct = report failures, deferred = diagnostics. */
   dispose(): void {
     if (isRetiring(this.#phase)) return;
     this.#phase = retiring(this.#phase);

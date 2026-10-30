@@ -4,42 +4,10 @@ import { describeEdge, type GraphEdge } from "../graph/ir";
 import { unreachable } from "../lang/exhaustive";
 import type { PublisherComposition } from "./graph-publisher";
 
-/**
- * What one flush decided about one node, what one source contributes to it, and how one publication
- * failed.
- *
- * `GraphPublisher.flush` stored the first of those across three Sets and a Map, so "what happened to
- * node X" was answered by asking four collections in an order written out by hand at the top of the
- * loop, as `failed.has(id) || blocked.has(id) || pending.has(id)`. That precedence was a comment plus a
- * boolean expression: a fifth outcome would have been a fifth collection and a fourth term, and
- * nothing would have said where the term belonged. One map of one closed value answers it now, and the
- * precedence is a switch that names every variant.
- *
- * The second was `readSourceValues` answering `unknown`, guarded by `isRecord` at four call sites that
- * each threw a slightly different error. It is resolved once per source here, so the guard is a read
- * of a union rather than four copies of one type test, and which failure each caller owes is stated by
- * which reader it calls.
- *
- * The third was three error classes and a plain `Error`, where `ruleId` was a field on two of them and
- * absent on the third, so classification was an `instanceof` chain and three of the seven failures had
- * no name at all. Every failure this publisher raises is data now, and the rule id it publishes under
- * is a total function of that data. What a consumer reads is unchanged: every message and every rule
- * id is byte-identical to the one it replaces, including the three that publish as
- * `composition-failure`, because giving those their own ids is a change to published diagnostics and
- * therefore its own deliberate commit.
- *
- * Issue #443, phase B step 9. See ADR-016, ADR-044, ADR-047 and ADR-051.
- */
+/** Node outcome, source contribution, publication failure: three closed unions for one flush, read by exhaustive switch, not by collection order or an instanceof chain. */
 declare const OUTCOME_BRAND: unique symbol;
 
-/**
- * The mint mark that keeps the three unions below closed as well as discriminated, for the reason
- * issue #387 gave: a variant declaring only its discriminant is not closed, because TypeScript's
- * excess-property check reads a fresh object literal rather than a value arriving through a variable.
- *
- * One mark for three unions, on `results.ts`'s precedent: they are minted in one module and none of
- * them is assignable to another, since their discriminants are disjoint.
- */
+/** Keeps the three unions closed as well as discriminated: the excess-property check reads a fresh literal, not a value through a variable, so a discriminant-only variant is not closed. */
 interface OutcomeBrand {
   readonly [OUTCOME_BRAND]: true;
 }
@@ -82,13 +50,7 @@ export type NodeOutcome =
   | Minted<FailedShape>
   | Minted<NotAffectedShape>;
 
-/**
- * A node this flush never reached, which is the answer a lookup gives for a node it holds nothing for.
- *
- * A variant rather than absence, because absence is what made the precedence above a conjunction over
- * four collections: every reader had to know which collection to ask and what a miss in all four
- * meant. Interned, because it carries nothing to differ in.
- */
+/** A node this flush never reached: what a lookup answers for a node holding nothing. A variant, not absence, so no reader asks four collections. Interned; it carries nothing to differ in. */
 export const NOT_AFFECTED: NodeOutcome = mint<NotAffectedShape>({ kind: "not-affected" });
 
 /** The outcome of a node that composed, carrying the composition every downstream reader wants. */
@@ -116,12 +78,7 @@ export function outcomeOf(outcomes: ReadonlyMap<string, NodeOutcome>, nodeId: st
   return outcomes.get(nodeId) ?? NOT_AFFECTED;
 }
 
-/**
- * Whether a node in this state stops the nodes that read it from composing.
- *
- * The precedence, as one total switch. Three of the five stop a reader and two do not, and a sixth
- * outcome would fail `typecheck` here rather than being left out of a disjunction nobody re-read.
- */
+/** Whether a node in this state stops readers from composing: 3 of 5 do, 2 do not. One total switch, so a sixth outcome fails `typecheck` here rather than a disjunction nobody re-read. */
 export function blocksDownstream(outcome: NodeOutcome): boolean {
   switch (outcome.kind) {
     case "blocked-upstream":
@@ -136,13 +93,7 @@ export function blocksDownstream(outcome: NodeOutcome): boolean {
   }
 }
 
-/**
- * The first source, in canonical edge order, whose outcome stops this node, or `undefined`.
- *
- * The comparator is injected for the reason `firstPendingEdge` injects one: `compareEdges` in
- * `graph/ir.ts` is the only ordering owner, so which blocking source a node's diagnostic names never
- * depends on authored edge order or on how an id encodes. See ADR-034.
- */
+/** First source in canonical edge order that blocks this node, else undefined. Comparator injected: `compareEdges` owns ordering, so the source named never rides authored order or id encoding. */
 export function firstBlockingSource(
   edges: readonly GraphEdge[],
   compare: (a: GraphEdge, b: GraphEdge) => number,
@@ -172,16 +123,10 @@ export type SourceValues =
   | Minted<AbsentShape>
   | Minted<NotARecordShape>;
 
-/** Nothing published, which carries nothing, so nothing has to be built to say so. */
+/** Nothing published; carries nothing, so nothing has to be built to say so. `sourceValues` reads a never-ready source ABSENT, so its readers go pending, not composed against `{}`. */
 export const ABSENT: SourceValues = mint<AbsentShape>({ kind: "absent" });
 
-/**
- * Whether a value is a plain record, and the one owner of that test in this folder.
- *
- * Moved here because the union above is what every caller of it was building by hand. `null`, arrays
- * and class instances are all refused: a renderer-neutral record is what a composer may read, and a
- * prototype nobody in this process owns is not one.
- */
+/** The plain-record test, and its only owner here. Refuses `null`, arrays and class instances: a composer may read a renderer-neutral record, not a prototype this process does not own. */
 export function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
   if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
   const prototype = Object.getPrototypeOf(value);
@@ -194,37 +139,13 @@ function valuesOf(value: unknown): SourceValues {
   return mint<NotARecordShape>({ kind: "not-a-record", value });
 }
 
-/**
- * The values a source contributes: its composition when this flush already produced one, and its
- * retained patch otherwise.
- *
- * One function rather than three copies of one precedence rule. The input collection, the output merge
- * and the goal a solver joins onto a chain leaf all have to agree about which of the two wins, and a
- * solver reading the retained patch where the other two read the composition would solve against last
- * tick's goal with no error and no diagnostic. See issue #195.
- *
- * The fallback takes `ReadyPatch | undefined`, which is `PatchRegistry.lastReady`'s answer rather than
- * `get`'s, and it is the one edit in ADR-098's source half that would silently lose behaviour done any
- * other way. This function reads `values` on four non-ready outcomes deliberately, and those values
- * used to reach it because `publish` carried them onto whatever the node published next. With the
- * carry-forward deleted, `get` answers a blocked patch that owns no values at all, so the reader that
- * has always wanted the last good pose asks for it by name. That is what slice 1 built the retention
- * slot for.
- *
- * One consequence is stated here rather than left to be discovered. A source that published only
- * `blocked` or `error` and never once `ready` used to answer `{}` through the carry-forward, which
- * `hasValue` reads as published, so its readers composed against an empty input record. It answers
- * `ABSENT` now, so `firstPendingEdge` classifies those readers pending and they publish a blocked
- * patch naming the source instead. That is a behaviour change and it is the correct one: an empty
- * record is not a pose, and `graph/references.ts` owns what pending means.
- */
+/** Values a source contributes: the composition this flush made, else the last ready patch. Collection, merge and solver join must share it or a solver reads last tick's goal. */
 export function sourceValues(outcome: NodeOutcome, patch: ReadyPatch | undefined): SourceValues {
   switch (outcome.kind) {
     case "composed":
       return valuesOf(outcome.composition.outputs.values);
-    // Every other outcome falls back to what the node last published as ready, which is what the
-    // deleted carry-forward was answering with. A failed node keeps its last good pose, and that is
-    // deliberate: the precedence above stops its readers before they can read it.
+    // Fallback is `PatchRegistry.lastReady`, not `get`: a blocked patch owns no values, so a failed
+    // node keeps its last good pose. The precedence stops its readers before they read it.
     case "blocked-upstream":
     case "pending-upstream":
     case "failed":
@@ -235,13 +156,7 @@ export function sourceValues(outcome: NodeOutcome, patch: ReadyPatch | undefined
   }
 }
 
-/**
- * Whether a source has published anything at all, which is the pending question and nothing more.
- *
- * A record and a value that is not one are both published; only absence is not. That is what the
- * retired conjunction said, and stating it here keeps `graph/references.ts` the one owner of what
- * pending means while this module owns what published means.
- */
+/** Whether a source published anything at all, and nothing more: a record and a non-record both count, only absence does not. `graph/references.ts` owns pending; this owns published. */
 export function hasValue(values: SourceValues): boolean {
   switch (values.kind) {
     case "record":
@@ -320,33 +235,15 @@ export function describePublishFailure(failure: PublishFailure): string {
   }
 }
 
-/**
- * The rule id one failure publishes under, and the read that replaces an `instanceof` chain.
- *
- * Three of the seven answer `composition-failure`, which is what they answered as plain `Error`s, and
- * that is preserved rather than improved: a rule id is what a consumer branches on, so naming those
- * three is a change to published diagnostics and owes its own commit. What this buys today is that the
- * three are named in the type, so the commit that gives them ids has one place to edit and a compiler
- * that will not let it forget one. See ADR-016.
- *
- * The return type is `IdentifiedRuleId` rather than `string`, which is the other half of that. This
- * function is a producer of rule ids, so it is held to the closed set like every other producer, and
- * the three arms answering `composition-failure` are provably members rather than strings that
- * happen to match one. It was the last producer left open, and the publisher forwarding its answer
- * into a `Diagnostic` is where the build said so: a union closed at the field and open at the
- * function that computes the field is closed nowhere.
- *
- * It says more than `RuleId` would, and the extra is true of all seven: every failure a publication
- * reports names the node it happened at, so every one of these rules always carries ids. That is
- * what lets `graph-publisher.ts` construct its diagnostic directly rather than asserting the
- * correlation, because the group the rule id belongs to is already decided here. See ADR-097.
- */
+/** Rule id a failure publishes under. 3 of 7 answer `composition-failure` and keep it: consumers branch on ids, so naming those three is a diagnostics change owing its own commit. */
 export function publishFailureRule(failure: PublishFailure): IdentifiedRuleId {
   switch (failure.kind) {
     case "missing-upstream":
       return "upstream-missing";
     case "input-shape":
       return "input-source-shape";
+    // All 7 name their node, so the group is decided here and `IdentifiedRuleId` holds: a producer of
+    // the closed set, not a string that happens to match one.
     case "solver-scope":
     case "member-interpolation":
     case "goal-shape":
@@ -356,13 +253,7 @@ export function publishFailureRule(failure: PublishFailure): IdentifiedRuleId {
   }
 }
 
-/**
- * The error one publication failure is thrown as, carrying the failure it was built from.
- *
- * One class where there were two plus a bare `Error`, and `name` is the rule id for all seven rather
- * than for four of them. Nothing observes that: every one of these is thrown inside the per-node
- * boundary that turns it into a diagnostic, so the class never leaves this publisher.
- */
+/** Error one publication failure is thrown as, carrying it. `name` is the rule id for all 7. Thrown inside the per-node boundary that builds a diagnostic, so the class never leaves here. */
 export class PublishFailureError extends Error {
   readonly failure: PublishFailure;
   constructor(failure: PublishFailure) {
@@ -377,14 +268,7 @@ export function failPublication(shape: PublishFailureShape): never {
   throw new PublishFailureError(mint(shape) as PublishFailure);
 }
 
-/**
- * The record an input observation must be, or the failure that edge owes.
- *
- * Two outcomes, two failures, and which is which stated once: a source with nothing published is a
- * missing upstream, and a source that published something else is a shape failure. Both were
- * unreachable in normal flow before the pending pre-check, and both stay as defensive invariant
- * guards rather than as decisions.
- */
+/** The record an input observation must be, else the failure that edge owes: absent -> missing-upstream, non-record -> input-shape. Both stay guards; the pending pre-check answers first. */
 export function expectInputRecord(
   values: SourceValues,
   sourceId: string,
@@ -401,13 +285,7 @@ export function expectInputRecord(
   }
 }
 
-/**
- * The record a source must be, or one failure whichever way it is not one.
- *
- * The goal a solver joins onto a chain leaf is the caller: it answered one message for an absent
- * source and for a source that published something else, because a plugin holding no graph cannot act
- * on the difference. See issue #195.
- */
+/** The record a source must be, else one failure either way: an absent source and a non-record share a message, since a plugin holding no graph cannot act on the difference. */
 export function expectRecord(
   values: SourceValues,
   failure: PublishFailureShape,
