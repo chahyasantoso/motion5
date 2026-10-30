@@ -2,16 +2,12 @@ import { unreachable } from "../filler/unreachable";
 import type { LandmarkSource, SourceSample } from "./source";
 import type { SourceSpec } from "./sources";
 
-/** Why a running source ended, a closed union: the page reports a failure and nothing else. */
+/** Why a running source ended; only `failed` reaches the page. */
 export type SessionEnd =
   | { readonly kind: "stopped" }
   | { readonly kind: "failed"; readonly error: unknown };
 
-/**
- * A sample stamped by the session that delivered it: `session` counts started sources from 1 and
- * `sequence` counts that source's samples from 0, so a consumer can tell a new subject from a late
- * sample of an old one without trusting the source's clock to say so.
- */
+/** Sample stamped by its session: `session` counts started sources from 1, `sequence` counts that source's samples from 0, so a new subject is not an old subject's late sample. */
 export interface SessionSample extends SourceSample {
   readonly session: number;
   readonly sequence: number;
@@ -19,11 +15,11 @@ export interface SessionSample extends SourceSample {
 
 /** What the page does around one source; the session decides when, the hooks decide what. */
 export interface SessionHooks {
-  /** Builds the source for a spec; creating one must acquire nothing (`createLandmarkSource`). */
+  /** Builds the source for a spec; creation must acquire nothing (`createLandmarkSource`). */
   create(spec: SourceSpec): LandmarkSource;
-  /** Before the source starts. Resetting subject state is the ingest gate's, on the first sample. */
+  /** Before start. Subject reset is the ingest gate's, on the first sample. */
   begin(spec: SourceSpec): void;
-  /** One stamped sample of the running source. A throw ends the session as `failed`. */
+  /** One stamped sample of the running source; a throw ends the session as `failed`. */
   sample(sample: SessionSample): void;
   /** Exactly once per started source, after it is stopped, whichever way it ended. */
   end(spec: SourceSpec, ending: SessionEnd): void;
@@ -38,13 +34,7 @@ export interface SourceSession {
   stop(): void;
 }
 
-/**
- * The one owner of the live source's lifecycle: at most one source runs, every started source ends
- * exactly once, and an end is reported after the source is stopped. A consumer that throws, a start
- * that rejects and an explicit stop all end the same way, through `end`, so the page has one place
- * to finish a recording and reset its controls. A late rejection or sample from a source that was
- * already replaced is ignored: it belongs to a session that has ended.
- */
+/** Sole owner of the live source lifecycle: one source at most, each started source ends once through `end` after stopping; output from a replaced source is ignored. */
 export function createSourceSession(hooks: SessionHooks): SourceSession {
   let current: { readonly spec: SourceSpec; readonly source: LandmarkSource } | undefined;
   let sessions = 0;

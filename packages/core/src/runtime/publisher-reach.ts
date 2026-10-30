@@ -1,17 +1,8 @@
 import type { GraphEdge } from "../graph/ir";
 
 /**
- * Which nodes one publication runs over: the seeds and their readers, then the sources those need.
- *
- * Two named steps out of the top of `GraphPublisher.flush`, where they were two `for` loops over two
- * hand-managed queues inside a 200-line method. Neither reads the registry, the snapshot's composers
- * or `this`, so neither belongs to the class: both are questions about graph shape, answered from the
- * reverse topology `finalizeGraph` derives once per graph and from predicates the caller supplies.
- *
- * Structural in their parameters rather than naming `PublisherSnapshot`, so this module depends on
- * edges and ids and on nothing that can compose. That is also what keeps it free of the publisher it
- * was cut out of. Issue #443, phase B step 9, and see ADR-058.
- */
+ * Which nodes one publication runs over: seeds and readers, then the sources those need.
+ * Pure walks over the reverse topology `finalizeGraph` derives; ids and edges only, no publisher. */
 
 /** The least this walk needs of a node: which edges it reads. */
 export interface EdgeReader {
@@ -20,10 +11,7 @@ export interface EdgeReader {
 
 /**
  * Every node a publication reaches from `seeds`, following reverse topology.
- *
- * Read rather than derived: `dependants` is total per id, so a node nothing reads answers an empty
- * list rather than a missing key, and this walk costs O(affected) instead of O(V+E). See ADR-058.
- */
+ * `dependants` is total per id: a node nothing reads answers empty; cost stays O(affected). */
 export function reachable(
   dependants: Readonly<Record<string, readonly string[]>>,
   seeds: readonly string[],
@@ -40,16 +28,8 @@ export function reachable(
 }
 
 /**
- * Widens `affected` with every source a reached node reads that has published nothing yet.
- *
- * A member that has never published is composed in this flush rather than reported pending by every
- * node that reads it, which is what makes a first publication of a whole chain one flush. `published`
- * and `isMember` are the caller's, because where published values live and how membership is tracked
- * are the runtime's questions and not this walk's.
- *
- * Mutates and answers the same set, deliberately: the queue it walks is seeded from it, so a copy
- * would be a second collection answering one question.
- */
+ * Widens `affected` with every unpublished source a reached node reads.
+ * Mutates and returns that set; its queue seeds from it, so a copy answers nothing new. */
 export function closeUpstream(
   affected: Set<string>,
   nodeById: Readonly<Record<string, EdgeReader>>,

@@ -4,22 +4,11 @@ import { unreachable } from "../lang/exhaustive";
 import { refuse, type HandleTarget } from "./refusal";
 
 /**
- * Closed runtime results owned at the boundary where their producers answer them.
- *
- * Track validation is an `Outcome`, so its accepted value and refusal diagnostics are mutually
- * exclusive before this runtime reads it. Handle resolution carries liveness and its entry as one
- * union, and this module's reader decides that question once rather than reconstructing a boolean
- * from nullable fields. The live-write union retired with the mask seam it decoded; a v5 live edit
- * plans its overlay rather than decoding a backend's patch answer.
- */
+ * Closed runtime results, owned where produced: `Outcome` keeps value and refusals exclusive;
+ * resolution holds liveness and entry in one union, read once. */
 declare const RESULT_BRAND: unique symbol;
 
-/**
- * The mint mark shared by the three unions in this module, for the reason issue #387 gave.
- *
- * One mark rather than three, because these are minted in one place and none of them is assignable
- * to another: their discriminants are disjoint, so the mark has only closedness left to buy.
- */
+/** One mint mark for this module's unions: disjoint discriminants leave it only closedness to buy. */
 interface ResultBrand {
   readonly [RESULT_BRAND]: true;
 }
@@ -58,12 +47,7 @@ export function stale<E>(): Resolved<E> {
   return STALE;
 }
 
-/**
- * Resolves one captured token against the entries a reader is looking at.
- *
- * The token comparison, once. Liveness of the runtime itself is a separate question and stays with
- * the phase that owns it, so a disposed runtime answers `stale()` at the one call site that asks.
- */
+/** Resolves one captured token against a reader's entries: mismatch → `stale()`. Runtime liveness stays its owner's. */
 export function resolveToken<E extends { readonly token: number }>(
   entries: ReadonlyMap<string, E>,
   id: string,

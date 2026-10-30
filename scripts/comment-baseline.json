@@ -144,10 +144,6 @@
     "count": 2
   },
   {
-    "path": "apps/pose-gap-filler/src/live/session.ts",
-    "count": 4
-  },
-  {
     "path": "apps/pose-gap-filler/src/live/source.ts",
     "count": 7
   },
@@ -428,14 +424,6 @@
     "count": 6
   },
   {
-    "path": "packages/core/src/runtime/publisher-reach.ts",
-    "count": 10
-  },
-  {
-    "path": "packages/core/src/runtime/results.ts",
-    "count": 8
-  },
-  {
     "path": "packages/core/src/runtime/value-state.ts",
     "count": 11
   },
@@ -486,14 +474,6 @@
   {
     "path": "packages/react/src/dom-patch.ts",
     "count": 3
-  },
-  {
-    "path": "packages/react/src/index.ts",
-    "count": 6
-  },
-  {
-    "path": "packages/react/src/patch-store.ts",
-    "count": 8
   },
   {
     "path": "packages/three/src/skeleton-capture.ts",
