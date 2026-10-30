@@ -19,8 +19,7 @@ import { solveLength, solveOffset, type SolveMember } from "./ik-member";
  * does not answer: which way the chain bends before the first pass. The 2D solve seeds each path
  * with `seedArc`, and the 3D tree solve's `seedArc3d` is the same arithmetic with vector axes over
  * the same `arcHalfAngle`, so a planar rig seeds the same points in both dimensions from one
- * bisection. Moved here unchanged from `fabrik.ts` when issue #514 took that file past its read
- * budget (docs/AI-EDIT-WORKFLOW.md); every double it produces is the one it produced there.
+ * bisection.
  */
 
 const RADIANS = Math.PI / 180;

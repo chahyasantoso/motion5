@@ -15,7 +15,7 @@ import { describe, expect, it } from "vitest";
  * owner named in the file itself. The per-slice narrative belongs to the pull request that landed
  * the slice and the ADR that decided it. The red and green run ids belong to that same pull request
  * body, which the old file's last bullet already said out loud. The standing rules belong to
- * `docs/GUARDRAILS.md`, and what a caller may do to a loaded project belongs to
+ * `AGENTS.md`, and what a caller may do to a loaded project belongs to
  * `docs/LIVE-EDIT-COST.md`.
  *
  * So this gate is a shape and a ceiling rather than a ceiling alone. A ceiling by itself is
@@ -66,6 +66,7 @@ import { describe, expect, it } from "vitest";
 const DOCS = fileURLToPath(new URL("../../../../../docs/", import.meta.url));
 const STATUS = join(DOCS, "SESSION-STATUS.md");
 const LINK = /\]\((\.\/[^)]+\.md)\)/g;
+const LEADING_DIR = /^\.\//;
 const COMMENTS = /<!--[\s\S]*?-->/g;
 const HTML_TAG = /<\/?[a-zA-Z][^>]*>/g;
 const NUMERIC_REFERENCE = /&#(\d+|[xX][0-9a-fA-F]+);/g;
@@ -320,11 +321,14 @@ describe("session status shape", () => {
   });
 
   it("hands the reader a real file for each log it stopped keeping", async () => {
-    const targets = [...(await status()).matchAll(LINK)].map((match) => match[1]);
-    expect(targets).toContain("./GUARDRAILS.md");
+    const targets = [...(await status()).matchAll(LINK)]
+      .map((match) => match[1])
+      .filter((target): target is string => target !== undefined);
     expect(targets).toContain("./LIVE-EDIT-COST.md");
-    expect(existsSync(join(DOCS, "GUARDRAILS.md"))).toBe(true);
-    expect(existsSync(join(DOCS, "LIVE-EDIT-COST.md"))).toBe(true);
+    // Every local link, rather than a named pair: a pointer to a document this file deleted reads
+    // exactly like a pointer to one that still exists.
+    for (const target of targets)
+      expect(existsSync(join(DOCS, target.replace(LEADING_DIR, ""))), target).toBe(true);
   });
 });
 

@@ -55,7 +55,7 @@ A plan slice prefix containing a digit, such as `T4-3`, and architecture invaria
 
 [SESSION-STATUS.md](./SESSION-STATUS.md) is the sole project-status owner. Rewrite the entry your slice makes stale rather than appending a parallel history. Its four sections remain **Now**, **Next in line**, **Open, and not scheduled**, and **Where the rest of it lives**; `packages/core/test/unit/scripts/session-status-shape.test.ts` enforces the shape and byte ceiling.
 
-A standing rule belongs in [GUARDRAILS.md](./GUARDRAILS.md), caller cost in [LIVE-EDIT-COST.md](./LIVE-EDIT-COST.md), and slice narrative and run ids in the PR or ADR. Do not create another completion matrix or handoff status database.
+A standing rule belongs in [AGENTS.md](../AGENTS.md) as one line, caller cost in [LIVE-EDIT-COST.md](./LIVE-EDIT-COST.md), and slice narrative and run ids in the PR or ADR. Do not create another completion matrix or handoff status database.
 
 ## Superseding a decision
 

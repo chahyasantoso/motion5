@@ -17,7 +17,7 @@ Do not restate its claims here or anywhere else. A second copy of the state is a
 
 Two documents hold what a status file is not allowed to accumulate:
 
-- [GUARDRAILS.md](./GUARDRAILS.md): the standing rules a slice is held to, and the working constraints the pipeline enforces.
+- [../AGENTS.md](../AGENTS.md): the standing rules a slice is held to, one line each.
 - [LIVE-EDIT-COST.md](./LIVE-EDIT-COST.md): what a caller may do to a loaded project, and what each edit pays for.
 
 ## Product and contracts
@@ -55,7 +55,7 @@ motion5 is a clean-room successor to [motionpath](https://github.com/chahyasanto
 
 ## How the documents fit together
 
-PRD says why and what. TRD says what "correct" means, in testable terms. ARCHITECTURE says who owns what. IMPLEMENTATION-PLAN says in what order, and names the evidence for each slice. SESSION-STATUS says what is actually true today, and only today. GUARDRAILS says what not to get wrong again. LIVE-EDIT-COST says what the shipped runtime charges for an edit. The numbered ADRs say what not to re-litigate. The guide says how to use the result.
+PRD says why and what. TRD says what "correct" means, in testable terms. ARCHITECTURE says who owns what. IMPLEMENTATION-PLAN says in what order, and names the evidence for each slice. SESSION-STATUS says what is actually true today, and only today. AGENTS.md says what not to get wrong again. LIVE-EDIT-COST says what the shipped runtime charges for an edit. The numbered ADRs say what not to re-litigate. The guide says how to use the result.
 
 ## Locked scope decisions
 
@@ -63,7 +63,7 @@ Four scope questions are closed and should not be reopened in review: qualified 
 
 ## Documentation rules
 
-1. Reality belongs in one status file, and that file states current state only. Do not create parallel handoffs, review logs, or completion matrices, and do not append to the status file: a rule that outlives the slice which earned it belongs in GUARDRAILS.md, and a slice's run ids belong in its pull request.
+1. Reality belongs in one status file, and that file states current state only. Do not create parallel handoffs, review logs, or completion matrices, and do not append to the status file: a rule that outlives the slice which earned it belongs in AGENTS.md, and a slice's run ids belong in its pull request.
 2. Intent documents must label themselves as intent when code does not exist yet.
 3. Every new public behavior needs schema/type/API documentation and a test plan in the same pull request.
 4. A decision reversal updates the original record or clearly supersedes it; contradictory records are not left behind.

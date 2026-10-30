@@ -9,8 +9,8 @@ import { PatchRegistry, type Patch, type PublishInput } from "../../../src/runti
  * Every case below asks whether a member is present rather than what it holds, because that is the
  * one shape which typechecks on both sides of the deletion: `"values" in patch` compiles against
  * the flat interface and against the union replacing it, so these cases fail on an assertion rather
- * than on a compile. `docs/GUARDRAILS.md` names that shape and `RA-16` is its precedent, and it is
- * the reason this file declares no seam and casts nothing.
+ * than on a compile. `AGENTS.md` asks a failing-first case to take that shape, `RA-16` is its
+ * precedent, and that is the reason this file declares no seam and casts nothing.
  *
  * The accepting direction is asserted in the same rig, because a registry publishing nothing at all
  * would be green against the refusals alone. So the ready case pins every member a ready patch does

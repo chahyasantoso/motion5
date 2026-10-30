@@ -28,7 +28,7 @@ const READ_FIRST = [
   "## Read these first, in this order",
   "",
   "1. [Status](docs/SESSION-STATUS.md) and again [status](./docs/SESSION-STATUS.md).",
-  "2. [Rules](docs/GUARDRAILS.md) beside [cost](docs/LIVE-EDIT-COST.md).",
+  "2. [Rules](docs/RULES.md) beside [cost](docs/LIVE-EDIT-COST.md).",
   "",
   "## The rules that get broken most",
   "",
@@ -43,14 +43,14 @@ const ONE_MANDATORY = [
   "",
   "1. [Status](docs/SESSION-STATUS.md)",
 ];
-const TWO_MANDATORY = [...ONE_MANDATORY, "2. [Rules](docs/GUARDRAILS.md)"];
+const TWO_MANDATORY = [...ONE_MANDATORY, "2. [Rules](docs/RULES.md)"];
 
 describe("repo metrics (S0)", () => {
   it("reads only what the read-first section makes mandatory", () => {
     expect(alwaysReadPaths(READ_FIRST)).toEqual([
       "AGENTS.md",
       "docs/SESSION-STATUS.md",
-      "docs/GUARDRAILS.md",
+      "docs/RULES.md",
       "docs/LIVE-EDIT-COST.md",
     ]);
   });
@@ -67,7 +67,7 @@ describe("repo metrics (S0)", () => {
     const root = await fixture({
       "AGENTS.md": `${TWO_MANDATORY.join("\n")}\n`,
       "docs/SESSION-STATUS.md": "# Status\n",
-      "docs/GUARDRAILS.md": `${"#".repeat(64)}\n`,
+      "docs/RULES.md": `${"#".repeat(64)}\n`,
     });
     try {
       const both = measure(root).alwaysReadBytes;
@@ -82,7 +82,7 @@ describe("repo metrics (S0)", () => {
     const root = await fixture({ "AGENTS.md": READ_FIRST, "docs/SESSION-STATUS.md": "# Status\n" });
     try {
       expect(missingAlwaysRead(root)).toEqual([
-        "docs/GUARDRAILS.md: named by AGENTS.md and not in the tree",
+        "docs/RULES.md: named by AGENTS.md and not in the tree",
         "docs/LIVE-EDIT-COST.md: named by AGENTS.md and not in the tree",
       ]);
     } finally {
