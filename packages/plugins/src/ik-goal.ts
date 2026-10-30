@@ -2,63 +2,22 @@ import { INFLUENCE_KEY, readInfluenceValue, unreachable } from "@motion5/core/pl
 import type { WorldPoint } from "./frame";
 import type { SolveMember } from "./ik-member";
 
-/**
- * The one runtime owner of goal influence: how strongly each addressed goal pulls on the members
- * its branch shares with other branches, and the weighted compromise those pulls settle on. See
- * ADR-110.
- *
- * **Influence is the goal's, never the bone's.** A member's blend `weight` says how much of the
- * solved angle the bone composes with, after the solve (ADR-055). Influence says how much a goal's
- * branch counts when branches disagree about a shared member, inside the solve. The two questions
- * sit on opposite sides of the line ADR-055 draws, so neither reads the other.
- *
- * **A compromise, not a priority.** FABRIK settles a sub-base on one point from its branches'
- * proposals, and influence turns the equal mean into a weighted one. Strict priorities (goal A is
- * met exactly and goal B only in what is left) need a null-space projection that FABRIK does not
- * have, so they are withdrawn rather than approximated. See ADR-110.
- */
+/** Owns goal influence, how much a goal's branch counts when branches disagree about a shared member, and the compromise it settles on. */
 
 /** The influence a goal has when its leaf authored none. */
 export const DEFAULT_INFLUENCE = 1;
 
-/**
- * The influence a member's live values declare, or `undefined` for anything outside the domain.
- *
- * Total over any live value, as `readJointLimit` is, because a value-tier write bypasses load:
- * load refuses every malformed authored influence, and an out-of-domain live one reads as absent
- * and so as the default rather than as a weight the compromise cannot divide by.
- */
+/** The influence a member's live values declare, or `undefined` for anything outside the domain. */
 export function readInfluence(values: Readonly<Record<string, unknown>>): number | undefined {
   return readInfluenceValue(values[INFLUENCE_KEY]);
 }
 
-/** The influence a solve uses for one member's goal, absence read as the documented default. */
+/** The influence a solve uses for one member's goal, absence read as `DEFAULT_INFLUENCE`. */
 export function goalInfluence(member: Pick<SolveMember, "influence">): number {
   return member.influence ?? DEFAULT_INFLUENCE;
 }
 
-/**
- * Each member's pull: the mean influence of the addressed leaves in the subtree it roots.
- *
- * The mean rather than the sum, because a branch's say over a shared member is what its goals
- * want, not how many of them there are, and because with every influence at its default the mean
- * is exactly `1` for every member, which is what keeps an unweighted rig's compromise the equal
- * average it always was, bit for bit. A member no addressed leaf hangs under pulls with the
- * default, which is what an unaddressed branch contributed before influence existed.
- *
- * The mean is taken relative to the subtree's largest influence, `max · (Σ(v / max) / n)`, rather
- * than as `Σv / n`, because every admitted influence is finite but their sum need not be: two
- * leaves at `Number.MAX_VALUE` overflow `Σv` to `Infinity`, and the compromise would then divide
- * `Infinity` by `Infinity`. Each ratio is at most `1` and the largest is exactly `1`, so the scaled
- * sum is finite and at least `1`, and the pull is finite and positive. With every influence at `1`
- * the scale is `1`, every ratio is `1`, and the pull is `1 · (n / n)`, exactly `1`.
- *
- * `addressed` is the caller's own list of the leaves it seeds from goals, so this function answers
- * about exactly the leaves the solve reaches toward rather than re-deriving leafhood.
- *
- * Typed over what it reads, a member's `base` and `influence`, so the 3D solve's members answer
- * through it too: influence is a goal's weight whatever the dimension of the goal (ADR-122).
- */
+/** Each member's pull: the mean influence of the addressed leaves in the subtree it roots, or the default where it has none. */
 export function branchPulls(
   byId: ReadonlyMap<string, Pick<SolveMember, "base" | "influence">>,
   addressed: readonly string[],
@@ -83,7 +42,7 @@ export function branchPulls(
   return pulls;
 }
 
-/** The mean of positive finite influences without overflow, or the default for none. */
+/** The influence mean scaled by its largest value, so large influences cannot overflow the sum. */
 function scaledMean(influences: readonly number[]): number {
   if (influences.length === 0) return DEFAULT_INFLUENCE;
   let scale = 0;
@@ -93,47 +52,16 @@ function scaledMean(influences: readonly number[]): number {
   return scale * (ratios / influences.length);
 }
 
-/**
- * The closed compromise policy, read by one exhaustive `switch` in `compromise`.
- *
- * `centroid` is the historical rule and the one every authored-seed baseline uses. `reach-circle`
- * is the alternative FABRIK's conflict selector tries only after the centroid baseline reports
- * `conflicted` (issue #490, ADR-110); a `limited` baseline retries the opposite seed side with
- * `centroid` (ADR-126). No third rule is implied by the union being closed; a new one is a decision
- * recorded in ADR-110 and a compile error at every reader until it is handled.
- */
+/** The closed compromise policy: `centroid` is the default, `reach-circle` the alternative tried only after a centroid baseline reports `conflicted`. */
 export type CompromiseRule = "centroid" | "reach-circle";
 
-/**
- * A circle a shared member's tip should lie on for one proposal to be met exactly.
- *
- * `radius` is non-negative and `centre` is finite, because both come from a finite solve state.
- */
+/** A circle a shared member's tip should lie on for a proposal to be met exactly; finite centre, non-negative radius. */
 export interface ReachCircle<P = WorldPoint> {
   readonly centre: P;
   readonly radius: number;
 }
 
-/**
- * One proposal for a member's tip, and the pull it is weighed by: a closed union by `kind`.
- *
- * A `goal` pull is an addressed leaf's own aim. It is the only proposal a leaf ever receives,
- * because a goal is read only on a leaf, and its reach circle is the aim itself with radius `0`.
- *
- * A `branch` pull is a child member's proposal about its base's tip. `point` is the tip the child
- * proposes (its placed pivot, un-offset through the base's direction), and `reach` is where the
- * base's tip may lie for the child's length to hold while the child's tip stays where the inward
- * pass left it: the child's tip un-offset the same way, at radius the child's solve length. The
- * proposal `point` lies on that circle by construction, so the centroid rule and the reach-circle
- * rule read the same geometry, and the reach circle accounts for pivot offsets exactly because it
- * is taken through the same `baseTipFromPivot` conversion as `point`.
- *
- * Read with `reachCircleOf`, never by probing for a field.
- *
- * Generic over the point it carries, defaulting to the 2D `WorldPoint`: the union, its kinds and
- * what each kind means are the same for the 3D solve, whose reach "circle" is a sphere, so the 3D
- * solve reads this union rather than a copy of it (ADR-122).
- */
+/** One proposal for a member's tip, weighed by its pull: a closed `kind` union read by `reachCircleOf`; a `branch` `point` and `reach` are un-offset through the base's direction. */
 export type Pull<P = WorldPoint> =
   | { readonly kind: "goal"; readonly point: P; readonly weight: number }
   | {
@@ -155,39 +83,20 @@ export function reachCircleOf<P>(pull: Pull<P>): ReachCircle<P> {
   }
 }
 
-/**
- * Where a shared member settles, and how far its branches disagreed about it.
- *
- * `spread` is the largest distance from the settled point to any branch's proposal. It is zero
- * wherever one branch proposed, and it stays above tolerance after the last pass only when the
- * branches still pull the member to different places, which is the witness FABRIK's `conflicted`
- * kind reads rather than an inference from the goal count.
- */
+/** Where a shared member settles, and `spread`: the largest distance from it to any proposal, the `conflicted` witness. */
 export interface Compromise<P = WorldPoint> {
   readonly point: P;
   readonly spread: number;
 }
 
-/**
- * The vector arithmetic a compromise needs in one dimension: the weighted centroid, the proposal
- * spread around a point, and the reach fit seeded at the centroid.
- *
- * The rule dispatch and the policy that the spread is measured around the centroid whichever rule
- * places the member are stated once, in `compromiseIn`; only this arithmetic is dimensional, which
- * is the split issue #500 draws between shared contract and dimension-specific vector arithmetic.
- * The 2D geometry is this module's own functions below, and `ik3d-compromise.ts` states the 3D one.
- */
+/** The arithmetic a compromise needs in one dimension: weighted centroid, proposal spread, and the seeded reach fit. */
 export interface CompromiseGeometry<P> {
   readonly centroid: (pulls: readonly Pull<P>[]) => P;
   readonly spread: (pulls: readonly Pull<P>[], point: P) => number;
   readonly reachFit: (pulls: readonly Pull<P>[], centroid: P) => P;
 }
 
-/**
- * Where a shared member settles under `rule`, in whatever dimension `geometry` computes: the one
- * reading of the closed `CompromiseRule` union. Both rules report the same `spread`, measured around
- * the centroid, so `conflicted` keeps one witness whichever rule placed the member. See ADR-110.
- */
+/** The one reading of the closed `CompromiseRule` union: where a member settles under `rule` in `geometry`'s dimension, both rules reporting the centroid `spread`. */
 export function compromiseIn<P>(
   geometry: CompromiseGeometry<P>,
   pulls: readonly Pull<P>[],
@@ -205,36 +114,12 @@ export function compromiseIn<P>(
   }
 }
 
-/**
- * The influence-weighted mean of one member's proposals, `Σw·p / Σw`.
- *
- * A lone proposal is weighed by `1` whatever its pull, because a branch with nobody to compromise
- * with settles where it proposed, and `(w·x) / w` is not `x` in floating point. Several proposals
- * are weighed relative to the largest pull, `w / max`, which leaves the mean unchanged in exact
- * arithmetic and keeps it finite in floating point: every relative weight is at most `1`, the
- * largest is exactly `1`, so `Σw` is at least `1` and never overflows or vanishes, where raw pulls
- * near `Number.MAX_VALUE` would overflow `Σw` and settle the member on `NaN`. With every weight
- * exactly `1` the scale is `1` and the sums are the ones FABRIK always took (`0 + 1·x` is `0 + x`,
- * including the `-0` the zero-seeded sum normalises to `+0`) and the divisor is the proposal
- * count, so an unweighted rig settles on the equal mean bit for bit. Weights are positive and
- * finite by construction (`readInfluenceValue` admits nothing else and a pull is a scaled mean of
- * admitted values), and `pulls` is never empty because FABRIK asks only about a member that
- * received a proposal.
- *
- * That mean is the `centroid` rule's point and the seed of the `reach-circle` rule's fit. Both
- * rules report the same `spread`, measured around the mean, so `conflicted` keeps one witness
- * whichever rule placed the member. The default rule is the historical one, so a caller that never
- * names a rule settles exactly where it always did.
- */
+/** The influence-weighted mean `Σw·p / Σw` of one member's proposals: the `centroid` point and the `reach-circle` seed. */
 export function compromise(pulls: readonly Pull[], rule: CompromiseRule = "centroid"): Compromise {
   return compromiseIn(PLANAR_GEOMETRY, pulls, rule);
 }
 
-/**
- * The relative weight of one pull among `pulls`: `1` for a lone pull, whatever its weight, and
- * `w / max` otherwise. Shared by both dimensions' centroid and reach fit, so the normalisation that
- * keeps both finite near `Number.MAX_VALUE` has one statement.
- */
+/** One pull's weight relative to the largest in `pulls`, and `1` for a lone pull, so both rules' sums stay finite. */
 export function relativeWeights(pulls: readonly { readonly weight: number }[]): readonly number[] {
   if (pulls.length === 1) return [1];
   let scale = 0;
@@ -266,26 +151,10 @@ function proposalSpread(pulls: readonly Pull[], point: WorldPoint): number {
 
 /** Gauss-Newton steps the reach-circle fit takes, fixed so its cost and answer are fixed. */
 const REACH_CIRCLE_STEPS = 6;
-/** Levenberg damping on the normal equations, fixed; it only keeps a rank-one system solvable. */
+/** Levenberg damping on the normal equations; it only keeps a rank-one system solvable. */
 const REACH_CIRCLE_DAMPING = 1e-6;
 
-/**
- * Fit one tip to its pulls' reach circles by a fixed number of damped Gauss-Newton steps.
- *
- * The objective is `Σ (w_i / max w) · (|p − centre_i| − radius_i)²`. Weights are taken relative to
- * the largest pull exactly as `weightedCentroid` takes them, so the fit and the centroid share one
- * normalisation: every relative weight is in `(0, 1]` and the largest is `1`, which keeps the
- * normal equations finite for pulls near `Number.MAX_VALUE`, and scaling every influence by one
- * factor changes neither answer.
- *
- * Seeded at the centroid, because the centroid is the rule's baseline and the fit must never be
- * worse than it: a non-finite step, a singular system, or a final objective that does not strictly
- * improve the centroid's keeps the centroid. A lone pull settles on its own proposal exactly, as
- * the centroid does. A pull whose centre coincides with the current point takes the positive x axis
- * for its Jacobian row, which is arbitrary but total and identical on every call. The proposal
- * spread is measured by the caller around the centroid, not around this point, because the spread
- * is the `conflicted` witness and not a property of this alternative. See ADR-110.
- */
+/** Damped Gauss-Newton fit of one tip to its pulls' circles, `Σ(w/max)·(|p - centre| - radius)^2`, seeded at the centroid and returned to unless it strictly improves it. */
 function reachCircleFit(pulls: readonly Pull[], centroid: WorldPoint): WorldPoint {
   if (pulls.length === 1) return centroid;
   const weights = relativeWeights(pulls);

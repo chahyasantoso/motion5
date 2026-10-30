@@ -41,24 +41,7 @@ export type {
 } from "../contract/v5";
 export type BatchListener = (batch: PatchBatch) => void;
 
-/**
- * The live patch a delivered one still stands for, or nothing when it says the node is gone.
- *
- * The read-side complement to `LivePatch`, and the one owner of "a terminal patch means absent". The
- * asymmetry it converts between is deliberate and is stated on `get` below: `subscribeNode` delivers
- * every variant because a subscriber has to hear a node's last publication, and `get` answers three
- * because `evict` deletes the entry before `#notifyTerminal` delivers. Every reader that holds the
- * wide channel and has to answer the narrow one is making this one conversion, so it is written here
- * beside the producer whose ordering guarantees it rather than once per consumer. Before this, the
- * React store spelled it as its own expression, which is the second owner of one question this
- * project refuses.
- *
- * A `switch` rather than `patch.status === "destroyed" ? undefined : patch`. That ternary is the one
- * whose else arm nobody wrote down: it buckets every variant a later slice adds into "live" by
- * omission and reports it, if at all, at whichever assignment happens to narrow. This spelling fails
- * `typecheck` here, at the single place that owes the new variant a decision. See ADR-092 and
- * ADR-098.
- */
+/** The live patch a delivered one stands for, or nothing when it says the node is gone. */
 export function liveOrAbsent(patch: Patch): LivePatch | undefined {
   switch (patch.status) {
     case "ready":
@@ -72,14 +55,7 @@ export function liveOrAbsent(patch: Patch): LivePatch | undefined {
   }
 }
 
-/**
- * One publication of a node that composed: the pose, and what it was measured against.
- *
- * `values` is required, which is the input half of ADR-098. It was optional, and omitting it asked
- * the registry to carry the previous patch's values forward at every status, which is the asymmetry
- * issue #450's acceptance criterion missed. A caller with no values has not composed, so it publishes
- * a refusal below rather than a ready patch with a member left out.
- */
+/** One publication that composed: the pose and what it was measured against. */
 export interface ReadyPublishInput {
   readonly nodeId: string;
   readonly status: "ready";
@@ -89,50 +65,20 @@ export interface ReadyPublishInput {
   readonly diagnostics?: readonly Diagnostic[];
 }
 
-/**
- * One publication of a node that did not compose: which refusal it is, and what it refuses under.
- *
- * One input shape for the two statuses, where the read side keeps `BlockedPatch` and `ErrorPatch` as
- * two variants. That is not an inconsistency. A reader narrows on `status` to decide what it may
- * read, so each variant has to be nameable; a caller already knows which of the two it is publishing
- * and the status is the only thing that differs, so mirroring the read side here would be one
- * declaration per literal and no question answered.
- *
- * There is no `sourceProgress`, and its absence is the point: the publisher passed `0` at both
- * statuses, which is a placeholder rather than a measurement, and the registry then overwrote it with
- * the previous patch's progress anyway.
- *
- * `diagnostics` stays optional rather than becoming required. Requiring a reason on a refusal is a
- * real refinement and a different one: it is a refusal this slice would be introducing, it owes a
- * failing case of its own, and it is not what issue #450 asks for. Owed rather than taken in passing.
- */
+/** One publication that did not compose: the refusal and what it refuses under. */
 export interface RefusedPublishInput {
   readonly nodeId: string;
   readonly status: "blocked" | "error";
   readonly diagnostics?: readonly Diagnostic[];
 }
 
-/**
- * What a caller may ask this registry to publish, and the reason `destroyed` is not in it.
- *
- * The flat input declared `status: PatchStatus`, so `publish({ status: "destroyed" })` typechecked and
- * minted a terminal patch from the outside, past `#notifyTerminal`, which is the one owner of
- * destruction on the wire. Mirroring the read side stopped that being expressible: eviction is the
- * only producer of a `DestroyedPatch`, and the type says so now rather than a convention.
- */
+/** What a caller may publish; eviction alone produces a `destroyed` patch. */
 export type PublishInput = ReadyPublishInput | RefusedPublishInput;
 
 export const REENTRANT_BATCH_MESSAGE =
   "Cannot open a patch batch while subscribers are being notified. " +
   "Queue one follow-up invalidation instead of recursing.";
 
-/**
- * The error one refused opening throws, and the one place these two messages are spelled.
- *
- * Which of them a phase earns is `opening`'s decision, in `registry-phase.ts`, because it is a
- * question about the phase. What the refusal reads like is this class's, because these are its
- * messages and callers anchor on them.
- */
 function batchRefusal(reason: BatchRefusal): Error {
   switch (reason) {
     case "notifying":
@@ -172,7 +118,6 @@ function sameDiagnostics(a: readonly Diagnostic[], b: readonly Diagnostic[]): bo
     return other !== undefined && sameDiagnostic(item, other);
   });
 }
-/** The pose two ready patches carry, and the only payload comparison left in this module. */
 function samePayload(a: ReadyPatch, b: ReadyPatch): boolean {
   return (
     equalValues(a.outputs, b.outputs) &&
@@ -180,23 +125,7 @@ function samePayload(a: ReadyPatch, b: ReadyPatch): boolean {
     equalValues(a.sourceRevisions, b.sourceRevisions)
   );
 }
-/**
- * Whether a candidate says anything the retained patch does not, which is what suppresses a
- * republication.
- *
- * Restructured rather than narrowed in place. It compared all five payload members at every status,
- * which only typechecked while every status declared all five; with the payload on one variant it has
- * to read the discriminant, and TypeScript will not correlate two independently narrowed operands, so
- * the ready comparison is reached through one discriminant read and one equality against it rather
- * than through two narrowings the compiler treats as unrelated.
- *
- * Both operands are the live union, because `#patches` never holds a destroyed patch: `evict` deletes
- * a node's entry before it delivers the terminal one, and nothing else writes that map.
- *
- * The switch is exhaustive rather than a chain ending in a ternary, so a fifth live status fails
- * `typecheck` here instead of being answered by whichever arm happened to be written last. See
- * ADR-092.
- */
+/** Whether a candidate changes the retained patch; equal means publish suppresses it. */
 function samePatch(a: LivePatch | undefined, b: LivePatch): boolean {
   if (a === undefined) return false;
   if (!sameDiagnostics(a.diagnostics, b.diagnostics)) return false;
@@ -210,20 +139,7 @@ function samePatch(a: LivePatch | undefined, b: LivePatch): boolean {
       return unreachable(b);
   }
 }
-/**
- * The patch one publication becomes, and the one place a status decides what it carries.
- *
- * Three arms rather than three carry-forward expressions. The deleted ones read `previous?.values`,
- * `previous?.sourceProgress` and `previous?.sourceRevisions`, and they were asymmetric in a way
- * nothing stated and nothing tested: `values` carried forward whenever the caller omitted it, at every
- * status, while the other two carried forward only when values were omitted and the status was not
- * ready. So a blocked publication republished the last good pose, the last progress and the last
- * source revisions, and a subscriber reading `values` on a blocked patch was reading a real answer for
- * as long as the member existed. That pose is `lastReady`'s now.
- *
- * Nothing here reads `previous` except the revision, which is identity rather than payload, so a
- * publication no longer depends on what the last one happened to carry. See ADR-098.
- */
+/** The patch one publication becomes; the status alone decides what it carries. */
 function candidateOf(input: PublishInput, revision: number): LivePatch {
   switch (input.status) {
     case "ready":
@@ -236,8 +152,6 @@ function candidateOf(input: PublishInput, revision: number): LivePatch {
         sourceRevisions: input.sourceRevisions ?? {},
         diagnostics: input.diagnostics ?? [],
       } satisfies ReadyPatch;
-    // Both refusals written rather than one reaching its shape through the other's declaration, which
-    // is the shape slice 1's retention cases already ship.
     case "blocked":
       return {
         nodeId: input.nodeId,
@@ -258,55 +172,20 @@ function candidateOf(input: PublishInput, revision: number): LivePatch {
 }
 
 export class PatchRegistry {
-  // Both maps hold the live union rather than `Patch`: `evict` deletes a node's entry before it
-  // delivers the terminal patch, so a destroyed patch is never readable back out of either one.
+  // Both maps hold the live union: `evict` deletes before the terminal patch lands.
   readonly #patches = new Map<string, LivePatch>();
   readonly #lastReady = new Map<string, ReadyPatch>();
   readonly #nodeListeners = new Map<string, Set<PatchListener>>();
   readonly #batchListeners = new Set<BatchListener>();
   #phase: RegistryPhase = REGISTRY_IDLE;
 
-  /**
-   * The patch this node last published, or nothing if it has published none or is gone.
-   *
-   * `LivePatch` rather than `Patch`, which is the narrowing ADR-098 named as owed and deferred. The
-   * map behind it is already `Map<string, LivePatch>`, and `evict` deletes a node's entry before
-   * `#notifyTerminal` delivers its terminal patch, so a destroyed patch reaches a listener exactly
-   * once and is never readable back out of here. The type states that now instead of leaving every
-   * caller to narrow past a variant this member cannot answer.
-   *
-   * The asymmetry with `subscribeNode` is the point rather than an oversight: a listener sees every
-   * publication a node makes including its last, and this sees only the ones it can still be asked
-   * about. A reader that wants the terminal event subscribes; a reader that wants current state
-   * asks here. `D1` in `patch-registry.test.ts` is the case that pins both halves together.
-   */
+  /** The patch this node last published, or nothing if it published none or is gone. */
   get(nodeId: string): LivePatch | undefined {
     return this.#patches.get(nodeId);
   }
   /**
-   * The last patch this node published as `ready`, or nothing if it never published one.
-   *
-   * Retention is this registry's question rather than a field on a patch that is about something
-   * else, and that is the decision slice 1 of #450 owed. A blocked or errored node has no pose of
-   * its own; the pose a consumer still wants to render is the last good one, which belongs to an
-   * earlier `ready` publication together with the progress and the source revisions measured with
-   * it. Carrying those forward onto a blocked patch, which is what `publish` below did until the
-   * source half of this slice, made that patch say `blocked` while holding values no blocked
-   * evaluation produced. ADR-098 has now deleted all three from every non-ready variant, so this
-   * member is where the answer moved rather than where it was lost, and a consumer rendering the last
-   * good pose keeps reading a real one.
-   *
-   * It answers `ReadyPatch | undefined` rather than `Patch | undefined`, which is the narrowing slice
-   * 1 named as owed and could not take: the map is written only under `patch.status === "ready"`, and
-   * a consumer asking for the last pose should not need a second narrowing to read `values`.
-   *
-   * What it answers is the frozen patch that was published rather than a copy of it, so identity
-   * still tells a reader whether anything moved. A republication the registry suppressed is not a
-   * publication and cannot move it, and a status that owns no pose cannot replace one. Unmount,
-   * eviction and disposal all drop it, because a node with no retained patch has no last pose
-   * either: a remount reading a pose from before it was detached would be reading exactly the
-   * staleness `remove` exists to clear.
-   */
+   * The last `ready` patch this node published, or nothing if it published none.
+   * The published patch itself, not a copy, so identity shows whether anything moved. */
   lastReady(nodeId: string): ReadyPatch | undefined {
     return this.#lastReady.get(nodeId);
   }
@@ -316,32 +195,14 @@ export class PatchRegistry {
   get disposed(): boolean {
     return isDisposed(this.#phase);
   }
-  /**
-   * Remove the retained patch for a detached node without touching subscriber identity
-   * (remount-safe).
-   *
-   * Unmount is reversible and publishes no terminal patch: the node still exists in the graph
-   * and may become a member again. Consumers observe absence through `get()` returning
-   * `undefined` on their next read, which is exactly what a remount does.
-   */
+  /** Drops a detached node's retained patch without touching subscribers, so remount is safe. */
   remove(nodeId: string): void {
     this.#patches.delete(nodeId);
     this.#lastReady.delete(nodeId);
   }
   /**
-   * Permanently evict a node: publish one terminal patch, then drop its retained patch.
-   *
-   * Destruction MUST be visible on the observation wire. Deleting the patch silently left the
-   * node's last `"ready"` patch authoritative for every already-attached subscriber, because a
-   * subscriber has no reason to re-read a source that never told it anything changed. That is
-   * how a destroyed node keeps rendering its final pose forever.
-   *
-   * The listener Set is deliberately NOT dropped while it still holds subscribers. The
-   * unsubscribe closures handed out by `subscribeNode` resolve the Set from the map at call
-   * time, and discarding a live Set here would orphan every listener in it: a later
-   * `subscribeNode` for the same id creates a fresh Set, so re-adoption of that node id would
-   * be permanently undeliverable to anyone who subscribed before the eviction.
-   */
+   * Evict a node: drop what it retained, then deliver one terminal patch to its subscribers.
+   * A non-empty listener Set survives; its closures resolve it at call time. */
   evict(nodeId: string): void {
     if (isDisposed(this.#phase)) return;
     const previous = this.#patches.get(nodeId);
@@ -354,27 +215,13 @@ export class PatchRegistry {
     }
     if (previous !== undefined) this.#notifyTerminal(nodeId, previous, listeners);
   }
-  /**
-   * Deliver the single terminal patch for a node that is being destroyed.
-   *
-   * Out of band on purpose. Eviction happens during a graph mutation, not inside a flush, so
-   * this must not open a batch (it would collide with an in-flight one) and must not reach
-   * batch subscribers, whose contract is "one flush produced exactly these patches". Listener
-   * failures are swallowed because destruction cannot be allowed to fail halfway through and
-   * leave the graph and the wire disagreeing about whether the node still exists.
-   */
+  /** Delivers one terminal patch out of band: no batch opened, no batch listener reached. */
   #notifyTerminal(nodeId: string, previous: LivePatch, listeners: Set<PatchListener>): void {
-    // Identity and the status, and nothing else. The four members this built empty were a payload a
-    // reader narrows into to find `{}`, `0`, `{}` and `[]`: a node that will never publish again has
-    // no pose, and nothing to refuse under either. See ADR-098.
     const terminal = deepFreeze({
       nodeId,
       revision: previous.revision + 1,
       status: "destroyed",
     } satisfies DestroyedPatch);
-    // The notification this delivery interrupted is restored rather than assumed to have been none,
-    // which is why every phase carries one: an eviction reached from inside a notification leaves
-    // that notification running, and one reached while a batch is open leaves the batch open.
     const interrupted = notificationOf(this.#phase);
     this.#phase = withNotification(this.#phase, "notifying");
     try {
@@ -390,8 +237,6 @@ export class PatchRegistry {
   }
   dispose(): void {
     if (isDisposed(this.#phase)) return;
-    // One assignment, because the batch a retired registry may not answer left with the variant that
-    // owned it. Four fields were emptied here by hand and a fifth was the flag saying they had been.
     this.#phase = retired(this.#phase);
     this.#patches.clear();
     this.#lastReady.clear();
@@ -405,8 +250,6 @@ export class PatchRegistry {
         return;
       case "refuse":
         throw batchRefusal(opened.reason);
-      // One assignment opens the batch, because the tick, the seeds and both buffers arrive with the
-      // variant that owns them rather than as four fields beside a flag.
       case "collect":
         this.#phase = opened.phase;
         return;
@@ -422,8 +265,7 @@ export class PatchRegistry {
     if (samePatch(previous, candidate)) return undefined;
     const patch = deepFreeze(candidate);
     this.#patches.set(input.nodeId, patch);
-    // Read off the accepted publication rather than off the input, so a republication this member
-    // suppressed above cannot move what is retained, and a status owning no pose cannot replace one.
+    // Read off the accepted patch, so a suppressed republication cannot move retention.
     if (patch.status === "ready") this.#lastReady.set(input.nodeId, patch);
     retain(phase, patch);
     return patch;
@@ -432,9 +274,7 @@ export class PatchRegistry {
     const listeners = this.#nodeListeners.get(nodeId) ?? new Set<PatchListener>();
     listeners.add(listener);
     this.#nodeListeners.set(nodeId, listeners);
-    // The returned closure resolves the Set from the map at call time instead of capturing it.
-    // An eviction between subscribe and unsubscribe must never leave this closure mutating a
-    // Set that is no longer the one the registry publishes into.
+    // Resolves the Set from the map at call time, never a captured one.
     return () => {
       const current = this.#nodeListeners.get(nodeId);
       if (current === undefined) return;
@@ -446,16 +286,7 @@ export class PatchRegistry {
     this.#batchListeners.add(listener);
     return () => this.#batchListeners.delete(listener);
   }
-  /**
-   * Publishes one batch to every subscriber, then answers it.
-   *
-   * Delivery is the ordered-steps mechanism `domain/completion` owns rather than a fourth hand-rolled
-   * copy of it, and that changes the two-failure case and only that case. One subscriber failure is
-   * still rethrown by identity; two are now one `AggregateError` carrying both in the order they
-   * happened rather than the first with the second discarded. ADR-071 states that rule for every phase
-   * that has no inverse, and a notification is one: nothing here can be retried, and a failure no
-   * caller ever sees is a failure nobody fixes. Issue #443, phase B step 10.
-   */
+  /** Publishes one batch to every subscriber, then answers it. */
   closeBatch(): PatchBatch {
     const open = openBatch(this.#phase);
     if (open === undefined) throw new Error("No patch batch is open.");
@@ -472,15 +303,12 @@ export class PatchRegistry {
       ]),
     );
     const batchListeners: readonly BatchListener[] = [...this.#batchListeners];
-    // Node subscribers in patch order, then batch subscribers, which is the order this member has
-    // always delivered in and the order the collector preserves.
+    // Node subscribers in patch order, then batch subscribers.
     const steps: (() => void)[] = [];
     for (const patch of batch.patches)
       for (const listener of nodeListeners.get(patch.nodeId) ?? [])
         steps.push(() => listener(patch));
     for (const listener of batchListeners) steps.push(() => listener(batch));
-    // One assignment closes the batch and raises the notification, because the tick, the seeds and
-    // both buffers left with the variant that owned them.
     this.#phase = withNotification(closed(this.#phase), "notifying");
     let failures: readonly unknown[] = [];
     try {

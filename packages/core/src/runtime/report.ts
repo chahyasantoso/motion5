@@ -4,36 +4,11 @@ import type { RuleId } from "../contract/rule-id";
 import type { Diagnostic, PatchBatch } from "../contract/v5";
 import { collect, report } from "../domain/completion";
 import { unreachable } from "../lang/exhaustive";
-// Two questions about a thrown value, and each name states which one it answers. `describeError`
-// renders one value as its own message and is this folder's owner of that; `describeWithCauses` below
-// adds the causes an `AggregateError` collected and delegates its leaf case here, so one expression
-// renders a message and no message moves. Issue #446, and see ADR-096.
 import { describeError } from "./schema-refusals";
-
-/**
- * What a caller is told when a step fails, and what a caller is answered when a publication was asked
- * for and did not happen here.
- *
- * Three modules held one concern until issue #443. `rollback.ts` ran ordered steps under two names
- * that differed in a message string, re-exported `collect` and `report` from `domain/completion` so
- * that it read as their owner, and held the rejection shape a failed rollback earns.
- * `diagnostic-report.ts` rendered an error and owned the handover to a host's diagnostic sink, with the
- * two nullable slots a reporting runtime keeps beside it. `value-batch.ts` built two of the three
- * batches this runtime answers when a publication did not happen, and `graph-runtime.ts` built the
- * third, so one four-field shape had three builders differing in prose and in a rule id.
- *
- * So which phase a run of steps belongs to is a value, why a batch exists instead of a publication is a
- * value, and what a runtime retains about its own reporting is a value. Each of the three is read by
- * one total switch. `collect` and `report` are imported from their owner and not re-exported, so this
- * module reads that mechanism rather than becoming a second name for it.
- *
- * Issue #443, phase B step 11. See ADR-035, ADR-071, ADR-078, ADR-079, ADR-080, ADR-084 and ADR-091.
- */
 
 /** Which side of acceptance a run of steps is on. The two differ in what a caller is told. */
 export type StepPhase = "rollback" | "settle";
 
-/** The summary one phase reports under, which is the whole of what the two runs ever differed in. */
 function stepSummary(phase: StepPhase): string {
   switch (phase) {
     case "rollback":
@@ -45,33 +20,12 @@ function stepSummary(phase: StepPhase): string {
   }
 }
 
-/**
- * Attempts every ordered step, then reports the failures once under the summary its phase earns.
- *
- * `runRollbackSteps` and `runSettleSteps` were this call with a different string, so which of the two
- * a caller wanted was stated by which function it reached rather than by a value it passed, and the
- * two names made one mechanism look like two. ADR-035's precedence and ADR-071's collect-then-report
- * granularity are unchanged: every step is attempted, a single failure keeps its identity including a
- * thrown `undefined`, and two or more become one `AggregateError` in occurrence order.
- *
- * The phase is a parameter rather than a summary string, because a caller that passes prose can pass
- * prose no reader recognises, and the two summaries are a closed set that callers anchor on.
- */
+/** Attempts every ordered step, then reports failures once under the summary its phase earns. */
 export function runSteps(phase: StepPhase, steps: readonly (() => void)[]): void {
   report(collect(steps), stepSummary(phase));
 }
 
-/**
- * Which release a failed operation ran, and the only thing that varies between two callers of one
- * policy.
- *
- * A closed union rather than a summary string a caller hands in, for the reason `StepPhase` above
- * is one: the phrase a caller anchors on is part of the contract, four suites assert on it, and
- * prose passed through a parameter is prose a reader may not recognise. Two spellings of this
- * policy existed one import apart, `rejectAfterRollback` here and `afterCleanup` in `engine.ts`,
- * and they differed in this word and nothing else. A member added later fails `typecheck` at
- * `cleanupSummary` rather than inheriting whichever arm was written last. See ADR-035 and ADR-092.
- */
+/** Which release a failed operation ran, the only thing two callers of one policy differ in. */
 export type CleanupPhase = "cleanup" | "rollback";
 function cleanupSummary(phase: CleanupPhase): string {
   switch (phase) {
@@ -83,30 +37,8 @@ function cleanupSummary(phase: CleanupPhase): string {
       return unreachable(phase);
   }
 }
-/**
- * Returns the error to throw for `failure`, after running a `cleanup` that may fail on its own.
- *
- * Suppress and attach, never suppress and drop. Every structural commit and every failed load
- * releases through hooks that reach application code: the `destroyMotion` hook disposes a
- * `CreatedTrigger` whose `dispose` closes over a host-owned `ScrollSource` unsubscribe,
- * `disposeTrack` disposes a compiled `Track`, and `ProjectRuntime`'s constructor asks the host to
- * dispose the composition it was handed. A host whose teardown throws must not be able to replace
- * the diagnosis with its own unrelated failure, because the caller can act on the first and not on
- * the second.
- *
- * When the cleanup succeeds the failure is returned untouched, so every existing message and error
- * type contract holds, including the categories that have nothing to release at all. When it fails,
- * one `AggregateError` carries both: the failure's own message first and verbatim, so a caller that
- * anchored on it before a cleanup could fail still matches it, and both facts first-class in
- * `errors` in the order they happened. Neither value is mutated and `cause` is not assigned, which
- * ADR-035 rejected explicitly.
- *
- * Returns rather than throws, so control flow at each call site is a plain `throw` with no reliance
- * on never-returning call analysis, and so `rejectAfterRollback` can keep the `never` its own
- * callers already depend on. This is the one owner of the policy across the composition root and
- * the runtime; it was two, and the second of them also declared a second `describeError` one import
- * away from the one `schema-refusals.ts` owns, which is the duplication issue #446 closed once. See
- * ADR-035 and ADR-096.
+/** Returns the error to throw for `failure`, after a `cleanup` that may itself fail.
+ * A throwing cleanup never drops `failure`: one `AggregateError` carries both, `failure` first.
  */
 export function afterCleanup(failure: unknown, phase: CleanupPhase, cleanup: () => void): unknown {
   try {
@@ -120,35 +52,14 @@ export function afterCleanup(failure: unknown, phase: CleanupPhase, cleanup: () 
   }
   return failure;
 }
-/**
- * Rejects an operation whose rollback can fail on its own.
- *
- * The rollback spelling of `afterCleanup`, kept as its own name and signature because four suites
- * and every structural commit call site read it, and because a rollback is the one release whose
- * caller has nothing to do after it: the rejection always leaves. The message and the `errors`
- * order are byte-identical to what this function built when it owned the policy itself. See
- * ADR-035.
- */
+/** Rejects an operation whose rollback can fail on its own: `afterCleanup` under `rollback`. */
 export function rejectAfterRollback(rejection: unknown, rollback: () => void): never {
   throw afterCleanup(rejection, "rollback", rollback);
 }
 
 /**
- * Renders `error` for a diagnostic message, keeping every original cause.
- *
- * An `AggregateError` is flattened rather than printed by its own message. The clock consumer fanout
- * reports two or more failures as one aggregate whose message is only the boundary's context string,
- * so printing that alone would name the boundary and drop every cause it collected, which is the same
- * attribution loss this module exists to prevent one level up. Recursive, so a nested aggregate
- * flattens too. Issue #154.
- *
- * Named for the question it answers, which is issue #446: this and `describeError` were two functions
- * of one name sitting one import apart, and nothing said which caller wanted which. The leaf case
- * delegates, so this folder has one renderer of a thrown value's own message and every rendered
- * string is the string it was. Two decisions the rename made explicit rather than moved: the
- * boundary's own context stays in the output, dropped only when it is empty, because it names which
- * boundary collected the causes; and `error.cause` is deliberately not rendered, because that would
- * move every message whose error carries one. See ADR-096.
+ * Renders `error` with every cause an `AggregateError` collected, flattened recursively. A plain
+ * `error.cause` is not rendered, because every message that carries one would move.
  */
 export function describeWithCauses(error: unknown): string {
   if (error instanceof AggregateError) {
@@ -158,44 +69,21 @@ export function describeWithCauses(error: unknown): string {
   return describeError(error);
 }
 
-/**
- * The rule id a diagnostic carries when the host's own diagnostic sink threw. Issue #410.
- *
- * `satisfies` rather than an annotation, here and at the two below: the constant keeps its literal
- * type, which is what lets a reader compare it against one spelling, and membership of the closed
- * union is proved where the rule is named rather than at whichever call site happens to pass it. A
- * rule id held in a constant is the one shape a scan of construction arguments cannot see, so the
- * compiler answers for it instead. See ADR-097.
- */
+/** The rule id a diagnostic carries when the host's own diagnostic sink threw. */
 export const DIAGNOSTIC_SINK_FAILURE_RULE = "diagnostic-sink-failure" satisfies RuleId;
 
-/** The rule id a value write staged inside an open batch answers under. See ADR-078. */
+/** The rule id a value write staged inside an open batch answers under. */
 export const DEFERRED_VALUE_BATCH_RULE = "value-batch-deferred" satisfies RuleId;
 
 /** The rule id a flush asked for while subscribers are being notified answers under. */
 export const DEFERRED_FLUSH_RULE = "reentrant-flush-deferred" satisfies RuleId;
 
-/**
- * The rule id that same deferral answers under when it named no seed and carried only a frame.
- *
- * A second id rather than an empty payload under the one above, and it is the source-shape split a
- * second time for the same cause: one id was carrying two refusals, one of which has
- * nothing to name. `reentrant-flush-deferred` owns its ids always, so a deferral stating no seed
- * cannot report under it without handing an always-naming rule an empty list, which is the hole
- * `DeferredSeeds` closed at the type and this closes at the rule. The frame is the fact that
- * deferral has, so the message names it and the payload is empty because a frame is not a node.
- * Prefix-preserving on purpose, so a reader or a gate matching the deferral's spelling finds both.
- * See ADR-088, ADR-097 and issue #449.
- */
+/** The rule id a flush deferral with no seed to name answers under; the other always names ids. */
 export const DEFERRED_FLUSH_FRAME_RULE = "reentrant-flush-deferred-frame" satisfies RuleId;
 
 declare const REPORT_BRAND: unique symbol;
 
-/**
- * The mint mark that keeps the trace below closed as well as discriminated, for the reason issue #387
- * gave: a variant declaring only its discriminant is not closed, because TypeScript's excess-property
- * check reads a fresh object literal rather than a value arriving through a variable.
- */
+/** The brand, not the discriminant, is what closes this union to values `mint` made. */
 interface ReportBrand {
   readonly [REPORT_BRAND]: true;
 }
@@ -227,21 +115,8 @@ interface RecoveredShape {
   readonly sinkFailure: Diagnostic;
 }
 
-/**
- * What a reporting runtime knows about its own reporting, as one value.
- *
- * Two independent nullables held this: `#lastFlushError` and `#lastSinkError`, so reported and
- * delivered, reported and refused, and never reported at all were facts a reader reconstructed by
- * comparing two fields, and a sink failure with no report behind it was writable.
- *
- * One deliberate departure from the shape issue #443 sketches. Its union has three variants, which
- * makes the trace describe the last report alone, and a sink failure would then be erased by the next
- * report a host accepted. ADR-091 says the opposite in as many words: a host bug in the sink stops
- * being invisible, and it does not stop being invisible if the next successful report clears it. So
- * there is a fourth variant for the state that already existed, a delivery that failed earlier and a
- * report that has since been accepted, and `lastSinkError` answers from both of the variants that
- * carry one. That keeps every existing answer byte-identical while closing the combinations nothing
- * means.
+/** What a reporting runtime knows about its own reporting, as one value.
+ * A failed handover survives the next report the host accepts rather than being erased by it.
  */
 export type ReportTrace =
   | Minted<CleanShape>
@@ -252,10 +127,13 @@ export type ReportTrace =
 /** Nothing reported and nothing refused, which is what a runtime starts with. */
 export const CLEAN_TRACE: ReportTrace = mint<CleanShape>({ kind: "clean" });
 
-/** How a runtime's one trace slot is advanced, which is the whole of what this module asks of it. */
+/**
+ * How a runtime's one trace slot is advanced. The slot is handed over as a callback rather than
+ * assigned, so an older report unwinding cannot overwrite a newer one from a re-entrant sink.
+ */
 export type RetainTrace = (advance: (trace: ReportTrace) => ReportTrace) => void;
 
-/** The last runtime diagnostic this trace retained, which is what `lastFlushError` answers. */
+/** The last runtime diagnostic this trace retained. */
 export function retainedDiagnostic(trace: ReportTrace): Diagnostic | undefined {
   switch (trace.kind) {
     case "clean":
@@ -269,12 +147,7 @@ export function retainedDiagnostic(trace: ReportTrace): Diagnostic | undefined {
   }
 }
 
-/**
- * The diagnostic describing a failed handover, or `undefined` while none has failed.
- *
- * Answered from both variants that carry one, which is what keeps a host's own bug visible after the
- * next report it accepts. See ADR-091.
- */
+/** The failed handover's diagnostic, kept visible after the next report the host accepts. */
 export function sinkFailure(trace: ReportTrace): Diagnostic | undefined {
   switch (trace.kind) {
     case "clean":
@@ -294,8 +167,7 @@ export function reporting(trace: ReportTrace, diagnostic: Diagnostic): ReportTra
     case "clean":
     case "reported":
       return mint<ReportedShape>({ kind: "reported", diagnostic });
-    // A handover that failed earlier is still the last thing this runtime knows about its host, so a
-    // report the host accepts carries that failure rather than clearing it.
+    // A report the host accepts carries an earlier handover failure rather than clearing it.
     case "undelivered":
     case "recovered":
       return mint<RecoveredShape>({
@@ -308,29 +180,14 @@ export function reporting(trace: ReportTrace, diagnostic: Diagnostic): ReportTra
   }
 }
 
-/**
- * Answers the trace a failed handover leaves, keeping the newest report rather than the one it failed.
- *
- * The newest is what a reentrant sink leaves behind: it reported again from inside the delivery that
- * is now failing, and issue #415 is that the older of the two used to win. Retention precedes the
- * handover, so the trace already names a report by the time this is asked.
- *
- * And the failure it keeps is the newest one too, which is issue #436. This overwrote the slot, so a
- * sink that re-entered, caused a nested report whose own handover failed, and then threw itself
- * retained the nested failure first and the outer one second: `lastSinkError` then named an older
- * report's handover while `lastFlushError` named the newer report, and one pair described two
- * reports. The retained report is the ordering token rather than a counter beside it, because a
- * handover failure whose report is no longer the newest is older news about an older report. See
- * ADR-096.
- */
+/** Answers the trace a failed handover leaves, keeping the newest report and the newest failure. */
 export function undeliverable(
   trace: ReportTrace,
   reported: Diagnostic,
   failure: Diagnostic,
 ): ReportTrace {
   switch (trace.kind) {
-    // Unreachable through `reportDiagnostic`, which retains first. Answered with the report it was
-    // handed rather than left as a hole, because a delivery failure is a fact either way.
+    // Unreachable through `reportDiagnostic`, which retains first; answered with `reported` anyway.
     case "clean":
       return mint<UndeliveredShape>({
         kind: "undelivered",
@@ -344,8 +201,7 @@ export function undeliverable(
         diagnostic: trace.diagnostic,
         sinkFailure: failure,
       });
-    // One is, so whose report it belongs to decides. A failure retained under a newer report stays,
-    // and the trace is answered unchanged rather than half-rewritten.
+    // One is retained, so whose report it belongs to decides; an older trace is returned unchanged.
     case "undelivered":
     case "recovered":
       if (trace.diagnostic !== reported) return trace;
@@ -359,17 +215,6 @@ export function undeliverable(
   }
 }
 
-/**
- * One runtime diagnostic, whose `path` is the tick it was reported on.
- *
- * It kept a body of its own because it owns that `path`, and it kept everything else with it: its own
- * `severity: "error"` and a conditional `ids` spread that omitted the member whenever no payload
- * arrived, which made this the last producer in the runtime layer to own the shape. Both belong to
- * the rule and to the one constructor now, so what is left is the one fact this function exists for.
- * No severity is named here and none can be: the constructor has no such parameter. `ids` is
- * forwarded as the open optional list `OwnedIds<RuleId>` already is. Every rule reported through here
- * is an error rule, so nothing observable moves. See ADR-097.
- */
 function frozenDiagnostic(
   ruleId: RuleId,
   message: string,
@@ -379,25 +224,8 @@ function frozenDiagnostic(
   return buildDiagnostic(ruleId, String(tick), message, ids);
 }
 
-/**
- * Builds one runtime diagnostic, retains it, then hands it to `sink` inside the boundary that owns the
- * handover.
- *
- * The one owner of what a host may do to a runtime failure, which is issue #400. `onFlushError` is a
- * documented option, nothing says it may not throw, and a runtime reporting through it had no boundary
- * of its own: the throw left through whichever member was reporting, at a statement that member's own
- * `try` could not see. Five callers shared that hole and one `try` here closes it for all of them.
- *
- * Retention precedes the handover and does not depend on it, which is what makes ADR-088's own
- * sentence true. Issue #415. Nothing is returned, because an answer beside the retained trace is a
- * second owner of what the runtime knows. The trace is advanced through a function rather than
- * assigned, so a sink that re-enters and reports again cannot have its newer report overwritten by the
- * older one unwinding behind it.
- *
- * A host failure is still swallowed rather than aggregated or rethrown, and it is not lost: the
- * exception becomes its own diagnostic in the trace, named for the report it failed to carry, and that
- * diagnostic is handed to nothing, because the only sink available is the one that has just thrown.
- * Issue #410. ADR-039's clock boundaries are the precedent. See ADR-091.
+/** Retains a diagnostic, then hands it to `sink` inside the boundary that owns the handover.
+ * Retention precedes delivery; a sink throw becomes its own diagnostic, never a caller throw.
  */
 export function reportDiagnostic<Rule extends RuleId>(
   sink: ((diagnostic: Diagnostic) => void) | undefined,
@@ -407,11 +235,7 @@ export function reportDiagnostic<Rule extends RuleId>(
   tick: number,
   ...carried: OwnedIds<Rule>
 ): void {
-  // The derived list goes on the exported member a caller names, and `frozenDiagnostic` stays open
-  // and stays private. It is reached only from here and from the catch below, so deriving the list
-  // twice would put one fact in two signatures for no second caller. Every caller of this names its
-  // rule as a literal or as a `satisfies RuleId` constant; the one that forwards an open `RuleId` is
-  // `graph-runtime.ts` `#report`, which supplies the ids itself.
+  // The carried list is opened here, where the rule is named.
   const [ids] = carried as unknown as readonly [(readonly string[])?];
   const diagnostic = frozenDiagnostic(ruleId, message, tick, ids);
   retain((trace) => reporting(trace, diagnostic));
@@ -422,50 +246,23 @@ export function reportDiagnostic<Rule extends RuleId>(
       DIAGNOSTIC_SINK_FAILURE_RULE,
       `Diagnostic delivery for ${ruleId} failed: ${describeWithCauses(error)}`,
       tick,
-      // `diagnostic-sink-failure` always names ids, so a failed handover carries the report's payload
-      // or an empty one rather than inheriting its absence. An idless report is the only way this is
-      // reached with nothing, and a failure omitting the field would be the variant violation one
-      // layer down from the one it is describing.
+      // The rule always names ids, so a failed handover carries an empty list, not an absent field.
       ids ?? [],
     );
     retain((trace) => undeliverable(trace, diagnostic, failure));
   }
 }
 
-/**
- * The seed list a deferral names, proven non-empty where the deferral is stated.
- *
- * `value-batch-deferred` and `reentrant-flush-deferred` both answer `ids: "always"` in
- * `contract/rule.ts`, and `OwnedIds` proves that an argument was passed and never that it says
- * anything. With `seeds: readonly string[]` a deferral could therefore publish a warning whose
- * payload named nothing, for a rule claiming always to name one. A tuple with one required member
- * moves that from something every caller has to remember into something no caller can spell. See
- * ADR-097 and issue #449.
- */
+/** The seed list a deferral names, proven non-empty so a deferral cannot name nothing. */
 export type DeferredSeeds = readonly [string, ...string[]];
 
-/**
- * `seeds` as a list a deferral may name, or `undefined` when there is nothing to name.
- *
- * The one narrowing, so emptiness is asked once here rather than remembered at each caller.
- * Destructured rather than cast: a `length` check tells a reader something and tells the compiler
- * nothing, and a cast at this boundary would be the assertion this slice spent four commits
- * deleting.
- */
+/** `seeds` as a list a deferral may name, or `undefined` when there is nothing to name. */
 export function namedSeeds(seeds: readonly string[]): DeferredSeeds | undefined {
   const [first, ...rest] = seeds;
   return first === undefined ? undefined : [first, ...rest];
 }
 
-/**
- * Why a batch exists rather than a publication.
- *
- * Read at its one call site and stored nowhere, so it is unbranded, on the precedent `RefusalShape`
- * set: the closed thing is the answer, and the shape is what a caller hands the builder.
- *
- * `scheduled` is a question only the member that books a drain can answer, and it stays a field of
- * the flush reason because that is the only reason it means anything for. Issue #383.
- */
+/** Why a batch exists rather than a publication: read at its one call site and stored nowhere. */
 export type BatchReason =
   | { readonly kind: "empty" }
   | { readonly kind: "deferred-in-batch"; readonly seeds: DeferredSeeds }
@@ -485,8 +282,7 @@ function frozenBatch(
   seeds: readonly string[],
   diagnostics: readonly Diagnostic[],
 ): PatchBatch {
-  // Annotated rather than cast, on ADR-079's decision: the function whose entire job is producing a
-  // correctly shaped batch is the last one that should opt out of the check that it does.
+  // Annotated, not cast: this producer is the last place that should skip the shape check.
   const batch: PatchBatch = {
     tick: sequence,
     seeds: Object.freeze([...seeds]),
@@ -496,28 +292,8 @@ function frozenBatch(
   return Object.freeze(batch);
 }
 
-/**
- * The batch a caller is answered when a publication was asked for and did not happen here.
- *
- * Three builders of one four-field shape became one switch. What each of them answered is unchanged,
- * including both rule ids and every word of both deferral messages, because two conditions with one
- * rule id would be one diagnostic a consumer cannot branch on and a reworded one is a separate,
- * deliberate commit.
- *
- * An empty recipe carries no diagnostic at all: nothing was queued and nothing was skipped, so there
- * is nothing to report. That is what a reentrant call earns when its deferral left nothing pending,
- * and its caller decides it rather than this switch, by reading what the deferral owes rather than
- * what the request stated. Both seed-carrying variants take a `DeferredSeeds`, so a batch that
- * claims a payload and names nothing stays unrepresentable rather than merely
- * unreached. A staged value write
- * carries its own seed, because the seed is the one thing a caller can still act on. A deferred
- * flush carries the seeds it deferred and says which of two futures the work has. A deferral that
- * named no seed and carried only a frame is the fourth answer rather than the first: a publication
- * is genuinely owed, so an empty batch would tell its caller that nothing was queued, and it
- * reports under `reentrant-flush-deferred-frame` because the rule it would otherwise use always
- * names ids and a frame is not a node to name. `tick` is the sequence the graph is still on in all
- * four, so a consumer comparing it against the batch a later publication answers can see that
- * nothing published in between. See ADR-078, ADR-080, ADR-084 and ADR-097.
+/** The batch a caller is answered when a publication was asked for and did not happen here.
+ * Each rule id and message is what a consumer branches on, so none of them may be reworded.
  */
 export function batchFor(sequence: number, reason: BatchReason): PatchBatch {
   switch (reason.kind) {

@@ -408,10 +408,6 @@
     "count": 7
   },
   {
-    "path": "packages/core/src/contract/v5.ts",
-    "count": 59
-  },
-  {
     "path": "packages/core/src/contract/validate-v5.ts",
     "count": 11
   },
@@ -584,16 +580,8 @@
     "count": 38
   },
   {
-    "path": "packages/core/src/runtime/graph-runtime-state.ts",
-    "count": 96
-  },
-  {
     "path": "packages/core/src/runtime/graph-runtime.ts",
     "count": 24
-  },
-  {
-    "path": "packages/core/src/runtime/patch-registry.ts",
-    "count": 50
   },
   {
     "path": "packages/core/src/runtime/plugin-output.ts",
@@ -606,10 +594,6 @@
   {
     "path": "packages/core/src/runtime/project-handles.ts",
     "count": 22
-  },
-  {
-    "path": "packages/core/src/runtime/project-phase.ts",
-    "count": 66
   },
   {
     "path": "packages/core/src/runtime/project-ports.ts",
@@ -641,7 +625,7 @@
   },
   {
     "path": "packages/core/src/runtime/report.ts",
-    "count": 86
+    "count": 2
   },
   {
     "path": "packages/core/src/runtime/results.ts",
@@ -684,28 +668,12 @@
     "count": 2
   },
   {
-    "path": "packages/plugins/src/fabrik-cap.ts",
-    "count": 52
-  },
-  {
     "path": "packages/plugins/src/fabrik-seed.ts",
     "count": 25
   },
   {
     "path": "packages/plugins/src/fabrik-select.ts",
     "count": 46
-  },
-  {
-    "path": "packages/plugins/src/fabrik.ts",
-    "count": 63
-  },
-  {
-    "path": "packages/plugins/src/frame.ts",
-    "count": 38
-  },
-  {
-    "path": "packages/plugins/src/frame3d.ts",
-    "count": 41
   },
   {
     "path": "packages/plugins/src/ik-analytic.ts",
@@ -726,10 +694,6 @@
   {
     "path": "packages/plugins/src/ik-goal-reading.ts",
     "count": 11
-  },
-  {
-    "path": "packages/plugins/src/ik-goal.ts",
-    "count": 33
   },
   {
     "path": "packages/plugins/src/ik-member.ts",

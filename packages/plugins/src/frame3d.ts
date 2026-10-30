@@ -1,17 +1,6 @@
 import { readNumber } from "./frame";
 
-/**
- * The renderer-neutral three-dimensional frame owned by the 3D seam.
- *
- * `rotation` is CSS's Z rotation, followed by `rotationX` and `rotationY`; equivalently the
- * intrinsic Euler order is Z-X-Y. This module is the sole owner of that convention, including
- * matrix composition, the deterministic gimbal-lock representation, the one rotation blend
- * (`blendOrientation3d`, ADR-116), whose unit quaternions are arithmetic here and never a published
- * or authored shape, the minimal swing the tree solve reconstructs orientation with
- * (`swingFrame3d`, ADR-122), the axis-angle and swing-twist arithmetic 3D joint limits are enforced
- * with (`rotationAboutAxis3d`, `swingTwist3d`, `twistAbout3d`, ADR-123), and the vector helpers
- * every 3D solve shares.
- */
+/** The 3D orientation convention, owned here: CSS Euler order Z-X-Y, in degrees. */
 export type Euler3d = {
   readonly rotation: number;
   readonly rotationX: number;
@@ -39,17 +28,12 @@ export type PivotOffset3d = {
 /** The omitted offset, shared rather than allocated per read. */
 export const ZERO_PIVOT_OFFSET3D: PivotOffset3d = Object.freeze({ x: 0, y: 0, z: 0 });
 
-/** A rigid extension plus a child's offset, reduced to one link in member-local coordinates. */
+/** An extension plus a child offset, reduced to one member-local link. */
 export type EffectiveLink3d =
   | { readonly kind: "axis"; readonly length: number }
   | { readonly kind: "offset"; readonly length: number; readonly vector: Vec3 };
 
-/**
- * A quaternion `w + xi + yj + zk`, unit wherever this module produces one.
- *
- * Exported for the evidence cases and for nothing else: a member authors and publishes Euler
- * triples, so ADR-114's withdrawal of a published or authored quaternion stands (ADR-116).
- */
+/** `w + xi + yj + zk`, unit wherever this module produces one; never authored or published. */
 export type Quaternion = {
   readonly w: number;
   readonly x: number;
@@ -80,13 +64,7 @@ const ORIGIN: WorldFrame3d = Object.freeze({
   rotationY: 0,
 });
 
-/**
- * Degrees to radians, reduced by whole turns first and a non-finite angle read as zero.
- *
- * Whole turns are reduced before conversion, which leaves every angle inside a turn unchanged and
- * keeps a finite angle past about `5.7e307` degrees from overflowing to `Infinity` in the product
- * with `π`, where `sin` and `cos` would answer `NaN` for a rig that is finite (`TH-22`).
- */
+// Degrees to radians; non-finite reads zero, whole turns reduce so the product cannot overflow.
 function radiansOf(degrees: number): number {
   return Number.isFinite(degrees) ? ((degrees % 360) * Math.PI) / 180 : 0;
 }
@@ -154,23 +132,13 @@ export function transposeMatrix3(matrix: Matrix3): Matrix3 {
   ];
 }
 
-/** Radians to degrees, canonical in `(-180, 180]` with no negative zero. `atan2` never leaves
- * `[-π, π]`, so its `-180` is the only value to move. */
+/** Radians to degrees, canonical in `(-180, 180]` with no negative zero. */
 export function canonicalDegrees(radians: number): number {
   const degrees = (radians * 180) / Math.PI;
   return degrees === -180 ? 180 : degrees + 0;
 }
 
-/**
- * Decomposes a CSS Z-X-Y matrix into its canonical Euler triple, each angle in `(-180, 180]`.
- *
- * `rotationX` is read as `atan2(m21, hypot(m20, m22))` rather than `asin(m21)`: near either gimbal
- * lock `asin` rounds a representable cosine away and moved a round trip by about `1e-8`, while the
- * `atan2` form keeps it at rounding (`TH-16`). At the lock itself (`cos X` at or below `1e-12`) the
- * Y angle is not determined by the matrix, so it is pinned to zero and the whole Z-and-Y turn is
- * read from the first column, which makes the answer deterministic rather than inheriting a hidden
- * Y angle from whatever rounding produced the matrix.
- */
+/** Decomposes a CSS Z-X-Y matrix into angles canonical in `(-180, 180]`. */
 export function eulerFromMatrix3d(matrix: Matrix3): Euler3d {
   const cosX = Math.hypot(matrix[6], matrix[8]);
   const rotationX = canonicalDegrees(Math.atan2(matrix[7], cosX));
@@ -219,13 +187,7 @@ export function norm3(a: Vec3): number {
   return Math.hypot(a[0], a[1], a[2]);
 }
 
-/**
- * `a` divided by `amount`, component by component.
- *
- * A quotient rather than a product with `1 / amount`, because a reciprocal of a subnormal length is
- * `Infinity` and `0 * Infinity` is `NaN`: a goal `Number.MIN_VALUE` from its root must still point
- * somewhere. A quotient of a vector by its own norm stays inside `[-1, 1]` at every magnitude.
- */
+/** `a` / `amount` componentwise; a quotient, since `1 / amount` overflows a subnormal length. */
 export function divide3(a: Vec3, amount: number): Vec3 {
   return [a[0] / amount, a[1] / amount, a[2] / amount];
 }
@@ -241,35 +203,13 @@ export function axisX3(matrix: Matrix3): Vec3 {
   return [matrix[0], matrix[3], matrix[6]];
 }
 
-/**
- * The relative size of `1 + cos` at or below which a swing is read as a half turn: the two
- * directions are antiparallel to rounding and their cross product names no axis worth trusting.
- */
+// Below this `1 + cos` a swing is a half turn: `x × d` names no axis.
 const HALF_TURN_TOLERANCE = 1e-12;
 
-/**
- * The `1 + cos` below which a swing is built from `1 - cos` rather than divided by `1 + cos`: about
- * 2.6 degrees from a half turn, where the division's rounding reaches 1e-13 of the frame.
- */
+// Below this `1 + cos` the swing factor uses `1 - cos` over `|v|²`.
 const NEAR_HALF_TURN = 1e-3;
 
-/**
- * `frame` turned by the one minimal rotation that takes its local +x onto `direction`: the swing
- * of a swing-twist decomposition, with no twist about the new +x (ADR-122).
- *
- * This is how the 3D tree solve reconstructs an orientation positional FABRIK does not determine:
- * a solved direction fixes two of a member's three degrees of freedom, and the minimal swing from
- * its rest frame fixes the third by adding no roll the rest pose did not have. It is rotation
- * arithmetic, so it lives beside the matrix convention it composes in rather than in a solver.
- *
- * `direction` need not be unit; one with no finite nonzero length names nothing, so the frame is
- * returned unchanged, and so is a frame already pointing along it exactly, which keeps an aligned
- * member's bytes. A direction antiparallel to the frame's +x (to `HALF_TURN_TOLERANCE` of
- * `1 + cos`) has no minimal axis: every axis perpendicular to +x turns it by a half turn, so the
- * frame's own local +z is chosen, deterministically. Otherwise the swing is Rodrigues' rotation
- * about `x × d` by the angle between them, `I + [v]× + [v]×² / (1 + c)`, which needs no
- * trigonometry and stays exact at the aligned end.
- */
+/** `frame` turned by the minimal rotation taking its local +x onto `direction`: a swing, no twist. */
 export function swingFrame3d(frame: Matrix3, direction: Vec3): Matrix3 {
   const size = norm3(direction);
   if (!(size > 0 && Number.isFinite(size))) return frame;
@@ -293,10 +233,7 @@ export function swingFrame3d(frame: Matrix3, direction: Vec3): Matrix3 {
     return multiplyMatrix3(halfTurn, frame);
   }
   const [vx, vy, vz] = cross3(from, to);
-  // `1 / (1 + c)` equals `(1 - c) / |v|²`. Near a half turn the first form magnifies the rounding
-  // of `c` by `1 / (1 + c)` into a visibly non-orthonormal frame (issue #524: 1e-9 at
-  // `1 + c ≈ 1e-6`), while the second keeps the swing orthonormal to rounding because its error
-  // scales with `|v|²`. Only the band changes; every other swing keeps its bytes.
+  // Equal forms; only `(1 - c) / |v|²` keeps the swing orthonormal near a half turn.
   const f = 1 + c < NEAR_HALF_TURN ? (1 - c) / (vx * vx + vy * vy + vz * vz) : 1 / (1 + c);
   const swing: Matrix3 = [
     1 - f * (vy * vy + vz * vz),
@@ -315,24 +252,16 @@ export function swingFrame3d(frame: Matrix3, direction: Vec3): Matrix3 {
 /** The identity rotation: the frame a swing or a twist is measured from. */
 export const IDENTITY_MATRIX3: Matrix3 = Object.freeze([1, 0, 0, 0, 1, 0, 0, 0, 1] as const);
 
-// Preserve the frozen public identity, but pass an ordinary array through hot matrix arithmetic:
-// V8 deoptimizes when these products alternate between frozen and ordinary array maps (TH-84).
+// Ordinary, not the frozen public one: alternating array maps deoptimize hot products.
 const INTERNAL_IDENTITY_MATRIX3: Matrix3 = [1, 0, 0, 0, 1, 0, 0, 0, 1];
 
-/** A member's own long axis, local +x: the axis a twist turns about and a swing turns away from. */
+/** A member's long axis, local +x: what a twist turns about. */
 export const LOCAL_X3: Vec3 = Object.freeze([1, 0, 0] as const);
 
-/** Local +z: the axis a half-turn swing takes, where `x × d` names none (see `swingFrame3d`). */
+// Local +z: the axis a half-turn swing takes, where `x × d` names none.
 const LOCAL_Z3: Vec3 = Object.freeze([0, 0, 1] as const);
 
-/**
- * The right-handed rotation by `degrees` about the unit `axis`, as a row-major matrix (Rodrigues).
- *
- * The one axis-angle constructor the 3D joint limits build a legal orientation with (ADR-123): a
- * hinge's `R(axis, angle)`, a clamped swing and a limited twist are all this matrix. The angle is
- * read through `radiansOf`, so a non-finite angle is no turn and whole turns reduce first, as they do
- * for an Euler angle. `axis` must be unit; the callers normalise it once when they read it.
- */
+/** The right-handed rotation by `degrees` about the unit `axis`, as a row-major matrix. */
 export function rotationAboutAxis3d(axis: Vec3, degrees: number): Matrix3 {
   const angle = radiansOf(degrees);
   const c = Math.cos(angle);
@@ -352,20 +281,7 @@ export function rotationAboutAxis3d(axis: Vec3, degrees: number): Matrix3 {
   ];
 }
 
-/**
- * A local orientation split as `swing * twist` about the member's own +x (ADR-123).
- *
- * `twist` is the turn about local +x applied first, `swing` the minimal rotation that then carries
- * +x onto the member's direction, the same `swingFrame3d` swing the tree solve reconstructs roll
- * with, so a local orientation the solve built from a pure swing reads back with no twist. `swing`
- * is kept as a matrix beside its angle so a limit that leaves the swing alone can recompose without
- * rebuilding it. `swingAxis` is the unit axis the swing turns about, perpendicular to +x; at a half
- * turn, where `x × d` names nothing, it is local +z, the axis `swingFrame3d` turns an identity frame
- * about there, so the split and the swing agree on the one degenerate direction.
- *
- * Both angles are canonical degrees: `swingDegrees` in `[0, 180]`, the angle between +x and the
- * member's direction, and `twistDegrees` in `(-180, 180]`.
- */
+/** A local orientation as `swing * twist`, `twist` the turn about local +x applied first. */
 export type SwingTwist3d = {
   readonly swing: Matrix3;
   readonly swingAxis: Vec3;
@@ -373,19 +289,14 @@ export type SwingTwist3d = {
   readonly twistDegrees: number;
 };
 
-/**
- * Splits `local` into its swing and its twist about local +x, the one decomposition a cone and a
- * swing-twist limit read (ADR-123). Total: a direction with no length reads as +x, no swing.
- */
+/** Splits `local` into swing and twist about local +x; a pure swing reads back with no twist. */
 export function swingTwist3d(local: Matrix3): SwingTwist3d {
   const direction = normalize3(axisX3(local), LOCAL_X3);
   const swing = swingFrame3d(INTERNAL_IDENTITY_MATRIX3, direction);
-  // `swing` carries +x onto the direction, so what is left of `local` fixes +x: a turn about it.
   const twist = multiplyMatrix3(transposeMatrix3(swing), local);
   const across = cross3(LOCAL_X3, direction);
   return {
-    // The aligned swing returns its input by reference. Do not expose our mutable shared identity
-    // through this otherwise caller-owned result (even to a JS caller that ignores readonly).
+    // The aligned swing returns its input: copy it, so the shared identity never escapes.
     swing:
       swing === INTERNAL_IDENTITY_MATRIX3 ? ([...INTERNAL_IDENTITY_MATRIX3] as Matrix3) : swing,
     swingAxis: normalize3(across, LOCAL_Z3),
@@ -394,15 +305,7 @@ export function swingTwist3d(local: Matrix3): SwingTwist3d {
   };
 }
 
-/**
- * The turn of `local` about the unit `axis`: the twist of its swing-twist split about that axis
- * rather than about local +x (ADR-123).
- *
- * The split is conjugation-equivariant, so it is read by carrying `axis` onto +x with the minimal
- * swing `B`, splitting `Bᵀ · local · B` about +x, and reading that twist. A hinge reads it where
- * its member's direction cannot say which angle it wants: along the hinge axis itself, or on a
- * hinge whose axis is the member's own +x, where the bone turns about itself and only roll moves.
- */
+/** The twist of `local` about a unit `axis` instead of about local +x. */
 export function twistAbout3d(local: Matrix3, axis: Vec3): number {
   const basis = swingFrame3d(INTERNAL_IDENTITY_MATRIX3, axis);
   return swingTwist3d(multiplyMatrix3(transposeMatrix3(basis), multiplyMatrix3(local, basis)))
@@ -415,7 +318,7 @@ export function readPivotOffset3d(input: unknown): PivotOffset3d {
   return { x: readNumber(input.x), y: readNumber(input.y), z: readNumber(input.z) };
 }
 
-/** Reads an Euler triple, defaulting a missing record and absent or non-finite angles to zero. */
+/** Reads an Euler triple, defaulting absent and non-finite angles to zero. */
 export function readEuler3d(input: unknown): Euler3d {
   if (!isRecord(input)) return ZERO_EULER;
   return {
@@ -436,7 +339,7 @@ export function readFrame3d(input: unknown): WorldFrame3d {
   };
 }
 
-/** Composes a local frame in a parent frame using matrix multiplication, never Euler addition. */
+/** Composes a local frame into its parent by matrix multiplication, never Euler addition. */
 export function composeWorld3d(parent: WorldFrame3d, local: WorldFrame3d): WorldFrame3d {
   const parentMatrix = matrixFromEuler3d(parent);
   const localMatrix = matrixFromEuler3d(local);
@@ -465,13 +368,7 @@ export function effectiveLink3d(length: number, childOffset: PivotOffset3d): Eff
   return { kind: "offset", length: Math.hypot(vector[0], vector[1], vector[2]), vector };
 }
 
-/**
- * The unit quaternion of a CSS Z-X-Y triple: the product `qz * qx * qy` of the three axis
- * quaternions in the order `matrixFromEuler3d` multiplies their matrices, so
- * `matrixFromQuaternion(quaternionFromEuler3d(e))` is `matrixFromEuler3d(e)` to rounding (`TH-24`).
- * Angles are read through the same `radiansOf`, so a non-finite angle is zero here exactly as it is
- * in the matrix, and a whole turn reduces before the half angle is taken.
- */
+/** The unit quaternion of a CSS Z-X-Y triple, `qz * qx * qy` in `matrixFromEuler3d`'s order. */
 export function quaternionFromEuler3d(euler: Euler3d): Quaternion {
   const z = radiansOf(euler.rotation) / 2;
   const x = radiansOf(euler.rotationX) / 2;
@@ -482,7 +379,6 @@ export function quaternionFromEuler3d(euler: Euler3d): Quaternion {
   const sx = Math.sin(x);
   const cy = Math.cos(y);
   const sy = Math.sin(y);
-  // qz * qx, then that product times qy, expanded.
   const w = cz * cx;
   const i = cz * sx;
   const j = sz * sx;
@@ -490,12 +386,7 @@ export function quaternionFromEuler3d(euler: Euler3d): Quaternion {
   return { w: w * cy - j * sy, x: i * cy - k * sy, y: w * sy + j * cy, z: k * cy + i * sy };
 }
 
-/**
- * The row-major rotation matrix of a quaternion, for the column vectors `multiplyVector3` takes.
- *
- * Scaled by `2 / |q|^2` rather than by `2`, so a quaternion that rounding has moved off the unit
- * sphere still names a rotation instead of a rotation and a scale.
- */
+/** `q`'s row-major rotation matrix; the `2 / |q|²` scale keeps a non-unit `q` a rotation. */
 export function matrixFromQuaternion(q: Quaternion): Matrix3 {
   const s = 2 / (q.w * q.w + q.x * q.x + q.y * q.y + q.z * q.z);
   const { w, x, y, z } = q;
@@ -512,28 +403,12 @@ export function matrixFromQuaternion(q: Quaternion): Matrix3 {
   ];
 }
 
-/** `q` scaled onto the unit sphere. */
 function normalizeQuaternion(q: Quaternion): Quaternion {
   const length = Math.hypot(q.w, q.x, q.y, q.z);
   return { w: q.w / length, x: q.x / length, y: q.y / length, z: q.z / length };
 }
 
-/**
- * The short-arc spherical blend from one rotation toward another, `weight` of the way.
- *
- * `q` and `-q` are one rotation, so a negative dot product negates the target before blending:
- * that is what makes the arc short on rotations rather than on coordinates, and what makes the
- * answer blind to either input's sign (`TH-25`). After the flip the two quaternions are at most a
- * quarter turn apart on the 4-sphere (half a turn as rotations), so the sine below never vanishes
- * away from zero. The angle is read as `2 * atan2(|a - b|, |a + b|)`, which keeps its digits near
- * zero where `acos` of the dot product does not; below `1e-12` of `1 - cos` the spherical weights
- * would still divide by a sine with few digits left, so the blend is the normalized linear one
- * there, which agrees to far below rounding. At exactly half a turn as rotations both arcs are
- * equally short and the sign of the rounded dot product picks one, which the inputs determine.
- *
- * The weight is not clamped: `blendOrientation3d` owns the endpoints and the reader owns what an
- * authored weight means.
- */
+/** Short-arc blend `weight` of the way from `from` to `to`; a negative dot negates `to` first. */
 export function slerpQuaternion(from: Quaternion, to: Quaternion, weight: number): Quaternion {
   const dot = from.w * to.w + from.x * to.x + from.y * to.y + from.z * to.z;
   const b = dot < 0 ? { w: -to.w, x: -to.x, y: -to.y, z: -to.z } : to;
@@ -564,18 +439,8 @@ export function slerpQuaternion(from: Quaternion, to: Quaternion, weight: number
   });
 }
 
-/**
- * The orientation `weight` of the way along the one short arc from `rest` to `solved`: the 3D
- * counterpart of 2D's `lerpAngle`, and like it the only blend its dimension has (ADR-116).
- *
- * A weight at or below `0` returns `rest` itself and at or above `1` returns `solved` itself, not
- * a round trip through a quaternion that would move their last bits (`TH-27`). Between them the
- * blend is `slerpQuaternion` on both triples' quaternions, decomposed back through
- * `eulerFromMatrix3d`, so every angle it answers is canonical in `(-180, 180]` and the gimbal-lock
- * rule is the one that function already pins. Euler coordinates are never interpolated: three
- * linearly blended angles neither follow a great circle nor have a short arc, and two triples
- * naming one orientation would blend differently (`TH-25`, `TH-26`).
- */
+/** The orientation `weight` of the way from `rest` to `solved` along the short arc, blended as
+ * quaternions, never as the authored Euler coordinates; `weight` <= 0 or >= 1 returns that end. */
 export function blendOrientation3d(rest: Euler3d, solved: Euler3d, weight: number): Euler3d {
   if (weight <= 0) return rest;
   if (weight >= 1) return solved;
