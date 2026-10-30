@@ -5,13 +5,7 @@ import type { TriggerSignal } from "../contract/v5";
 import { Lifecycle } from "./lifecycle";
 import { collect, report } from "./completion";
 
-/**
- * The compiled track as a Motion drives it.
- *
- * Two members, because a Motion only ever advances a playhead and releases what it was handed. The
- * legacy keyframe track and the identified-table value track both satisfy this, and a Motion that
- * named either class would be a second place a new track kind has to be added.
- */
+/** The compiled track a Motion drives: set its progress, then dispose it. */
 export interface MotionTrack {
   setProgress(value: number): boolean;
   dispose(): void;
@@ -30,27 +24,17 @@ export interface MotionOptions {
   readonly clock: Clock;
   readonly scheduler: Scheduler;
   readonly tracks: readonly MotionTrackEntry[];
-  /**
-   * Resolves a node id to its compiled Track. Required, and called at every point of use: a Motion
-   * never stores a Track, so it can never drive a disposed or superseded one. See ADR-031.
-   */
+  /** Resolves a track id to its compiled Track; called at every use, never stored. */
   readonly resolveTrack: (id: string) => MotionTrack | undefined;
   readonly trigger?: TriggerPort;
   readonly invalidate?: (progress: number) => void;
   readonly stagger?: number;
-  /** Set true only when the resolver's caller delegates Track lifetime to this Motion. */
+  /** Set when the resolver's owner delegates Track lifetime here. */
   readonly disposeTracks?: boolean;
   readonly listenToClock?: boolean;
   readonly acceptsExternalSignal?: boolean;
 }
-/**
- * The one owner of what a legal stagger is, and of what an omitted one means.
- *
- * Construction and the in-place edit ask the same question, so they ask it in the same place: a
- * second copy of the rule is how one of them ends up accepting a value the other refuses. An
- * absent stagger is zero here rather than at each reader, because the schedule is arithmetic and
- * `undefined` is not.
- */
+/** The one owner of a legal stagger; absent reads as zero. */
 function acceptStagger(stagger: number | undefined): number {
   const value = stagger ?? 0;
   if (!Number.isFinite(value) || value < 0)
@@ -129,11 +113,7 @@ export class Motion {
     if (entry.duration !== undefined && (!Number.isFinite(entry.duration) || entry.duration <= 0))
       throw new TypeError(`Motion track duration must be a finite positive number: ${entry.id}.`);
     const track = this.#track(entry.id);
-    // Resolved, then seeded, then committed. Resolution alone was already atomic; the seeding call
-    // was not, and it can fail on its own: a resolvable Track can be disposed, and
-    // #timeline.progress is injected code. Seeding against the prospective list rather than the
-    // committed one is what keeps the value identical to the commit-first order, because
-    // #totalDuration reduces over the entries. Issue #147.
+    // Seed against prospective entries → value matches commit-first order.
     const entries = [...this.#tracks, entry];
     track.setProgress(this.#effectiveProgress(entries.length - 1, entry, entries));
     this.#tracks.push(entry);
@@ -146,8 +126,6 @@ export class Motion {
     if (entry.duration !== undefined && (!Number.isFinite(entry.duration) || entry.duration <= 0))
       throw new TypeError(`Motion track duration must be a finite positive number: ${entry.id}.`);
     const track = this.#track(entry.id);
-    // Same order as addTrack, and the same reason for the prospective list. The replacement keeps
-    // its original array index, so ADR-029's index and stagger guarantee is untouched. Issue #147.
     const entries = [...this.#tracks];
     entries[index] = entry;
     track.setProgress(this.#effectiveProgress(index, entry, entries));
@@ -161,33 +139,13 @@ export class Motion {
     this.#tracks.splice(index, 1);
     this.#trackMap.delete(trackId);
   }
-  /**
-   * Installs the trigger this Motion listens to, keeping its tracks, its playhead and its position.
-   *
-   * An in-place swap rather than a rebuilt instance. acceptTrigger owns subscription preparation,
-   * acceptance and the returned cleanup; this member completes both phases synchronously.
-   * TriggerPort declares no resource disposal, so the factory's resource stays with its creator.
-   * Only a mounted Motion subscribes. A refused subscription leaves the old binding intact.
-   *
-   * Both halves of the port move together, because they are one decision: acceptsExternalSignal is
-   * false exactly for a driver-backed trigger, so a swap that left it behind would let signal()
-   * scrub a Motion whose driver owns time.
-   *
-   * No guard for a redundant install, and that is deliberate: the runtime refuses an edit that
-   * changes nothing before this is reached, and a second owner of that rule is the shape ADR-056
-   * collapsed.
-   */
+  /** Swaps the trigger in place, keeping its tracks and playhead; a refused subscription
+   * keeps the old binding. Both port halves move together. */
   setTrigger(trigger: TriggerPort | undefined, acceptsExternalSignal: boolean): void {
     this.acceptTrigger(trigger, acceptsExternalSignal)();
   }
-  /**
-   * Installs a prepared subscription and returns its post-acceptance completion.
-   *
-   * Subscription refusal leaves the old binding and capability untouched. The caller must
-   * complete synchronously after retaining its accepted definition. Completion retires the old
-   * binding and activates buffered input even if retirement fails; no rollback is then legal.
-   * Standalone setTrigger performs both phases before returning.
-   */
+  /** Installs a prepared subscription and returns its completion. Completion retires the old
+   * binding, then activates buffered input. */
   acceptTrigger(trigger: TriggerPort | undefined, acceptsExternalSignal: boolean): () => void {
     this.assertActive();
     const replacement =
@@ -208,24 +166,11 @@ export class Motion {
       );
     };
   }
-  /**
-   * Moves the stagger every track's effective progress is derived from.
-   *
-   * Re-seeded synchronously, exactly as addTrack and replaceTrack re-seed: one answer to when a
-   * layout-affecting mutation becomes visible rather than two, and a deferred one would be a silent
-   * no-op from the caller's side until some unrelated later event fired. Only while mounted, because
-   * an unmounted Motion drives nothing that could read the new schedule.
-   */
+  /** Moves the stagger base; re-seeds synchronously, but only while mounted. */
   setStagger(stagger?: number): void {
     this.acceptStagger(stagger)();
   }
-  /**
-   * Accepts one validated schedule and returns its synchronous re-seeding completion.
-   *
-   * An owning runtime can retain the accepted definition before injected Track code runs and
-   * supply its own publication callback. Ordinary standalone edits keep the configured callback.
-   * A re-seeding failure does not roll the accepted schedule back.
-   */
+  /** Accepts a validated schedule; returned completion re-seeds synchronously. */
   acceptStagger(
     stagger?: number,
     invalidate: (progress: number) => void = this.#invalidate,
@@ -270,8 +215,7 @@ export class Motion {
       this.#progressJob = undefined;
     }
     this.#pendingProgress = undefined;
-    // seek stays a clamping scrub and is deliberately not routed through #scheduleProgress: it is
-    // leaf-level scrubbing rather than trigger input. See ADR-021 and ADR-037.
+    // Playhead scrub clamps; trigger input validates instead.
     this.#setProgress(Math.max(0, Math.min(1, progress)));
   }
   signal(signal: TriggerSignal): void {
@@ -280,8 +224,6 @@ export class Motion {
       throw new TypeError(
         "Motion has a configured trigger driver and does not accept external signals.",
       );
-    // Delegates rather than carrying its own copy of the range rule. The two error types and both
-    // message strings are unchanged, so signal()'s contract is identical. See ADR-037.
     if (typeof signal === "object" && signal !== null && typeof signal.progress === "number")
       this.#scheduleProgress(signal.progress);
   }
@@ -314,7 +256,7 @@ export class Motion {
     let pending: number | undefined;
     const unsubscribe = trigger.subscribe((progress) => {
       if (state === "waiting") {
-        // Validate every eager emission, not just the last one that survives coalescing.
+        // Validate every buffered emission, not just the latest at activation.
         assertProgress(progress);
         pending = progress;
       } else if (state === "active") this.#scheduleProgress(progress);
@@ -338,15 +280,11 @@ export class Motion {
   }
   #onTick(event: ClockTick): void {
     if (!this.#playing || this.#lifecycle.state !== "mounted") return;
-    // Clamps both bounds because this is internal arithmetic, not external input. It used to lean
-    // on #scheduleProgress for the lower bound, and that clamp is gone. See ADR-037.
     const next = Math.max(0, Math.min(1, this.#position + this.#progressDelta(event.delta)));
     this.#scheduleProgress(next);
   }
   #scheduleProgress(progress: number): void {
-    // Validate before liveness. Prepared subscriptions ask the same validator before buffering,
-    // so a later valid emission cannot conceal an earlier malformed one. Normalization belongs
-    // to the source adapter; neither preparation nor active input may clamp it. See ADR-037.
+    // Validate before liveness; trigger input never clamps — the source adapter normalizes.
     assertProgress(progress);
     if (!this.#playing || this.#lifecycle.state !== "mounted") return;
     this.#pendingProgress = progress;
@@ -370,8 +308,7 @@ export class Motion {
     for (let index = 0; index < this.#tracks.length; index += 1) {
       const entry = this.#tracks[index]!;
       const track = this.#resolveTrack(entry.id);
-      // An unresolved id must not abort the sweep. Siblings still advance and invalidation still
-      // fires, then the failure is reported once. Issue #114 symptoms 1 and 2.
+      // Unresolved id does not abort the sweep: siblings advance, then one report.
       if (track === undefined) {
         unresolved.push(entry.id);
         continue;
@@ -382,11 +319,6 @@ export class Motion {
     if (unresolved.length > 0)
       throw new TypeError(`Motion tracks have no compiled Track: ${unresolved.join(", ")}.`);
   }
-  /**
-   * Takes the entry list explicitly because the answer depends on which list is used: a mutation
-   * seeds against the entries it is about to commit, while a sweep uses the live ones. Reading
-   * #tracks here instead would make that difference invisible at the call site. Issue #147.
-   */
   #effectiveProgress(
     index: number,
     entry: MotionTrackEntry,

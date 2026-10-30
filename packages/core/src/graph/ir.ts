@@ -34,20 +34,11 @@ interface ScalarEdgeRequirement {
 interface DictEdgeRequirement {
   readonly plugin: string;
   readonly slot: string;
-  /** The key this binding was authored under inside this dict-valued slot. */
+  /** Authored key of this binding inside a dict-valued slot; edge identity, not a label. */
   readonly memberKey: string;
 }
 
-/**
- * The requirement shape identifies the slot's arity: scalar slots have no member key, while dict
- * slots carry one. The union changes no runtime field or diagnostic; it only prevents a scalar and
- * a dict requirement from being represented by one optional field at the type boundary.
- *
- * `memberKey` remains part of edge identity rather than a label. Two entries of one slot are two
- * dependencies, and the slot alone cannot tell them apart once the key stopped being formatted into
- * it, so an edge per entry survives only because this field is length-prefixed into
- * `requirementIdentity` alongside the plugin and the slot. See ADR-057.
- */
+/** Scalar slots carry no member key, dict slots carry one; the union stops one optional field from representing both. */
 export type EdgeRequirement = ScalarEdgeRequirement | DictEdgeRequirement;
 
 export interface GraphEdge {
@@ -62,30 +53,13 @@ export interface GraphNode {
   readonly authoredIndex: number;
   readonly track: TrackDefinition;
   readonly edges: readonly GraphEdge[];
-  /**
-   * What this node committed to, absent only when nothing can answer for it.
-   *
-   * Attached by `finalizeGraph` from the carried map of the rebuild or derived from the track, so a
-   * reader never has to decide when a contract is fresh. A plugin id the catalog does not admit and
-   * a track the parser refuses have no contract, and dependency admission names both.
-   */
+  /** Committed contract; absent when nothing answers for it (unknown plugin, refused track); attached before any check reads one. */
   readonly contract?: CommittedContract;
 }
 export interface GraphIR {
   readonly nodes: readonly GraphNode[];
   readonly nodeById: Readonly<Record<string, GraphNode>>;
-  /**
-   * Reverse topology: for every node id, the ids that read it.
-   *
-   * Derived here rather than by every consumer, because it is a pure function of the node set and
-   * this file already walks every edge of every node twice over. `GraphPublisher` recomputed it on
-   * every tick, over a graph that changes at most once between ticks, which made steady-state
-   * ticking O(V+E) in graph shape for a graph whose shape had not moved.
-   *
-   * Total, so a node nothing reads carries an empty list rather than no entry: a missing key and an
-   * empty one are the same answer to a consumer that spells `?? []`, and only one of them makes the
-   * map's own shape depend on the rig. Not recoverable from `edges` alone either, which is the whole
-   */
+  /** Reverse topology: per node id, ids reading it through edges; total, so an unread node carries `[]` rather than no key. */
   readonly dependants: Readonly<Record<string, readonly string[]>>;
   readonly order: readonly string[];
   readonly diagnostics: readonly Diagnostic[];
@@ -105,20 +79,7 @@ function requirementIdentity(edge: GraphEdge): string {
   return `${field(requirement.plugin)}${field(requirement.slot)}${member}`;
 }
 
-/**
- * The injective identity encoding for an edge.
- *
- * Every part is length-prefixed, so no authored string can forge a field boundary. The requirement
- * plugin, slot and member key are the only authored strings left inside it, now that the canonical
- * projection is gone with the primitive it encoded.
- *
- * The member key is prefixed like the others rather than joined into the slot, and that is what
- * keeps two entries of one dict-valued slot distinct. They were distinguished by the encoded slot
- * while a goal's identity was `targets[<memberId>]`; with the slot carrying the authored name, two
- * goals reaching for one node encode identically without this field and `finalizeGraph` reports
- * `edge-duplicate` on a rig that loads clean. `DV-4` pins it. See ADR-034, ADR-046, ADR-047,
- * and ADR-057.
- */
+/** Injective edge identity: every part length-prefixed, so no authored string forges a field boundary; prefixed `memberKey` keeps dict-slot entries from colliding as `edge-duplicate`. */
 export function edgeKey(edge: GraphEdge): string {
   return [field(edge.observerId), field(edge.sourceId), field(requirementIdentity(edge))].join("");
 }
@@ -175,11 +136,7 @@ export function collectTrack(
       ? qualifyFreeTrack(track.id).value
       : qualifyMotionTrack(ownerId, track.id).value;
   const edges: GraphEdge[] = [];
-  // Derived from the authored form, with no plugin registry in reach. `input.requires` names the
-  // slot and the source, and the plugin id comes from the track. One edge per bound source; a map
-  // slot expands one edge per member key, with the key carried as data rather than folded into the
-  // slot. Whether the source is a node, is not this node, and introduces no cycle is this layer's.
-  // See ADR-044.
+  // Source qualification and edge expansion belong to collectDependencyEdges; this layer owns node identity.
   collectDependencyEdges(track, id, ownerId, edges, diagnostics);
   return Object.freeze({ id, owner, authoredIndex, track, edges: Object.freeze(edges) });
 }
@@ -258,20 +215,7 @@ export function buildGraphIR(
   return finalizeGraph(nodes, diagnostics, capabilities, carried);
 }
 
-/**
- * Reverse topology for one node set: per node id, the ids that read it.
- *
- * Both kinds of reader, because both are real dependencies and only one of them is an edge. A node
- * reads every source it names an edge for, and a solver reads every member `resolveSolvers` derived
- * onto its `solves`, which no edge points at. A reverse walk over edges alone would therefore miss
- * every member of every chain, and a member's own value would stop marking its solver dirty.
- *
- * Nodes in the given order, each node's edges before its members, and an entry pushed only for a
- * source this node set contains: an edge naming an unknown source is `finalizeGraph`'s refusal, and
- * a direct publisher caller may hand over a partial node set. Duplicates are kept rather than
- * collapsed, because a consumer walking this guards on its own visited set, and collapsing them
- * would be a second decision inside a function whose only job is to state what the graph says.
- */
+/** Reverse topology for one node set: per node id, ids reading its edges; total over the set, outside sources skipped, duplicates kept. */
 export function deriveDependants(
   nodes: readonly GraphNode[],
 ): Readonly<Record<string, readonly string[]>> {
@@ -298,17 +242,7 @@ function withContract(
   return derived === undefined ? node : freeze({ ...node, contract: derived });
 }
 
-/**
- * Validates collected nodes and diagnostics, linearizes them, and freezes the result.
- *
- * The one owner of the graph-building tail, so `buildGraphIR` and the incremental builder cannot
- * drift about duplicate/unknown/self-reference edges, diagnostic ordering, cycle rejection, or the
- * frozen result shape. Any solver derivation (issue #195, slice C2) lands here and is therefore
- * reached by both load-time validation and the runtime through one call site.
- *
- * The committed contract is attached here, before any check reads one, so slot and dependency
- * admission never derive a producer's contract from its current authored values.
- */
+/** Sole tail owner: attach contracts before checks, refuse duplicate/unknown/self edges and cycles, sort diagnostics, linearize, freeze. */
 export function finalizeGraph(
   nodes: readonly GraphNode[],
   diagnostics: Diagnostic[],
@@ -350,11 +284,7 @@ export function finalizeGraph(
           ),
         );
     }
-  // The bail happens here rather than after the derivation. `resolveSolvers` walks `base` edges and
-  // reads the nodes they name, so over a graph whose sources may not resolve it answers about a
-  // chain that was never valid: an unknown `base` source yields `ik-solver-unreachable-root` beside
-  // `edge-unknown-source`, naming a member for a typo one node up. One cause, one
-  // diagnostic, and a derivation that only ever runs over resolved references. `RS-10` pins it.
+  // Linearize only after every reference was admitted: cycle diagnostics never mix with edge errors.
   diagnostics.push(...checkDependencyBindings(committed, capabilities));
   diagnostics.push(...checkSlotFit(committed));
   diagnostics.sort(compareDiagnostics);
@@ -370,10 +300,6 @@ export function finalizeGraph(
     (order) => {
       const nodeById: Record<string, GraphNode> = {};
       for (const node of resolvedNodes) nodeById[node.id] = node;
-      // Derived here, after `resolveSolvers` returned, because the solver fan-in is half the answer
-      // and it does not exist until then. One owner, in the file that already owns `compareEdges`
-      // and delegates to `orderGraph`, so every consumer reads reverse topology instead of walking
-      // for it.
       return {
         graph: freeze({
           nodes: freeze(resolvedNodes),

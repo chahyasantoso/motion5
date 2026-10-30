@@ -312,10 +312,6 @@
     "count": 2
   },
   {
-    "path": "packages/core/src/adapters/interpolator/gsap.ts",
-    "count": 21
-  },
-  {
     "path": "packages/core/src/adapters/microtask-scheduler.ts",
     "count": 12
   },
@@ -412,10 +408,6 @@
     "count": 1
   },
   {
-    "path": "packages/core/src/domain/motion.ts",
-    "count": 34
-  },
-  {
     "path": "packages/core/src/domain/plugin-catalog.ts",
     "count": 10
   },
@@ -446,10 +438,6 @@
   {
     "path": "packages/core/src/graph/dependency-edges.ts",
     "count": 3
-  },
-  {
-    "path": "packages/core/src/graph/ir.ts",
-    "count": 23
   },
   {
     "path": "packages/core/src/graph/observation-state.ts",
@@ -640,16 +628,8 @@
     "count": 7
   },
   {
-    "path": "packages/plugins/src/ik3d-orient.ts",
-    "count": 14
-  },
-  {
     "path": "packages/plugins/src/ik3d-result.ts",
     "count": 8
-  },
-  {
-    "path": "packages/plugins/src/ik3d-seed.ts",
-    "count": 21
   },
   {
     "path": "packages/plugins/src/ik3d-solve.ts",
