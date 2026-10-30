@@ -164,10 +164,6 @@
     "count": 7
   },
   {
-    "path": "apps/pose-gap-filler/src/replay/synthetic.ts",
-    "count": 12
-  },
-  {
     "path": "apps/pose-gap-filler/src/rig/bend-policy.ts",
     "count": 1
   },
@@ -182,10 +178,6 @@
   {
     "path": "apps/pose-gap-filler/src/synthetic/camera.ts",
     "count": 6
-  },
-  {
-    "path": "apps/pose-gap-filler/src/synthetic/corruption.ts",
-    "count": 7
   },
   {
     "path": "apps/pose-gap-filler/src/synthetic/handles.ts",
@@ -388,10 +380,6 @@
     "count": 2
   },
   {
-    "path": "packages/core/src/runtime/edit-plan.ts",
-    "count": 11
-  },
-  {
     "path": "packages/core/src/runtime/evaluate-values.ts",
     "count": 4
   },
@@ -445,10 +433,6 @@
   },
   {
     "path": "packages/plugins/src/pose-classify.ts",
-    "count": 3
-  },
-  {
-    "path": "packages/plugins/src/runner.ts",
     "count": 3
   },
   {

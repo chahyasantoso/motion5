@@ -9,11 +9,7 @@ import { unreachable } from "../filler/unreachable";
 import { add, dot, scale, sub, unit, type Vec } from "../filler/vec";
 import { RECORDING_FORMAT, RECORDING_VERSION, type PoseRecording } from "./recording";
 
-/**
- * The deterministic subject the harness is proven on before any recording exists. `still` is a
- * person standing with a slow sway, the calibration input for the gap detector; `exercise` is an
- * arm raise with a squat, fast enough that a gate tuned on noise alone would cut it.
- */
+/** Deterministic subject: `still` stands with a slow sway, calibrating the gap detector; `exercise` raises arms and squats fast enough to cut a noise-tuned gate. */
 export type SyntheticMotion = { readonly kind: "still" } | { readonly kind: "exercise" };
 
 export interface SyntheticOptions {
@@ -23,23 +19,16 @@ export interface SyntheticOptions {
   readonly fps: number;
   readonly stage?: StageSize;
   /**
-   * A factor on the position noise, 1 by default. 0 is the noiseless twin of the same seed (the
-   * draws still happen, so visibility and trust are identical), the truth a denoiser is judged
-   * against; above 1 stands in for a camera noisier than the default.
-   */
+   * Position-noise factor, 1 by default: 0 is the noiseless twin of the same seed, same draws, so
+   * visibility and trust match; above 1 a noisier camera. */
   readonly noiseScale?: number;
 }
 
 export const DEFAULT_STAGE: StageSize = Object.freeze({ width: 640, height: 480 });
 
 /**
- * The one synthetic take per motion: the input the committed comparison record measures
- * (`docs/POSE-GAP-FILLER-COMPARISON.md`) and the loop the live page's synthetic source plays, so what
- * a person watches is what the record judged. Each duration is a whole number of the motion's
- * periods (five 2.4 s repetitions, one 10 s sway), so a looped take has no seam in the pose. The
- * seeds differ, so the still take a detector is calibrated on is never the take it judges. A new
- * motion fails to compile here until it has a take.
- */
+ * One take per motion: the comparison record's input, the live page's loop. Whole periods per
+ * duration, so no loop seam; seeds differ, so calibration and judged takes differ. */
 export const SYNTHETIC_TAKES: Readonly<Record<SyntheticMotion["kind"], SyntheticOptions>> =
   Object.freeze({
     still: Object.freeze({
@@ -56,11 +45,7 @@ export const SYNTHETIC_TAKES: Readonly<Record<SyntheticMotion["kind"], Synthetic
     }),
   });
 
-/**
- * The figure is hip-centred and camera-facing, in metres: person-left is +x, down is +y and
- * negative z is toward the camera. Limbs are built by forward kinematics, so these lengths are
- * exact in world space.
- */
+/** Metres, hip-centred, camera-facing: +x person-left, +y down, -z toward camera; forward kinematics keep lengths exact. */
 export const SYNTHETIC_BONES = Object.freeze({
   hipToShoulder: 0.5,
   shoulderWidth: 0.38,
@@ -73,22 +58,22 @@ export const SYNTHETIC_BONES = Object.freeze({
 const PERIOD_MS = 2400;
 const SWAY_PERIOD_MS = 10000;
 const CAMERA_DISTANCE = 2.6;
-/** Pixels of image noise per axis, and metres of world noise per axis, one standard deviation. */
+/** One standard deviation, per axis. */
 const IMAGE_NOISE_PX = 1.5;
 const WORLD_NOISE_M = 0.008;
 const DEG = Math.PI / 180;
 
-/** Every angle the pose at one instant is built from, in radians. */
+/** All pose inputs at one instant, radians. */
 interface PoseAngles {
   readonly lean: number;
   readonly twist: number;
   readonly arm: (phase: number) => { raise: number; depth: number; elbow: number };
   readonly leg: (phase: number) => { flex: number; abduction: number; knee: number };
-  /** The right side's lag behind the left, so the two sides are never mirror-identical. */
+  /** Lag behind left, so sides never mirror exactly. */
   readonly rightLagMs: number;
 }
 
-/** The one switch over the motion: everything else builds the same figure from these angles. */
+/** Sole switch on motion; everything else builds the same figure. */
 function poseAngles(motion: SyntheticMotion, tMs: number): PoseAngles {
   switch (motion.kind) {
     case "still": {
@@ -120,18 +105,18 @@ function poseAngles(motion: SyntheticMotion, tMs: number): PoseAngles {
   }
 }
 
-/** 0 at rest, 1 at the top of the repetition. */
+/** 0 at rest, 1 at the top of the cycle. */
 function repetition(tMs: number): number {
   return 0.5 - 0.5 * Math.cos((2 * Math.PI * tMs) / PERIOD_MS);
 }
 
-/** Rotates the unit `u` by `angle` toward `preferred`, in the plane they span, keeping it unit. */
+/** Rotates unit `u` toward `preferred` by `angle`, staying unit. */
 function bend(u: Vec, preferred: Vec, angle: number): Vec {
   const across = unit(sub(preferred, scale(u, dot(preferred, u)))) ?? [1, 0, 0];
   return unit(add(scale(u, Math.cos(angle)), scale(across, Math.sin(angle))))!;
 }
 
-/** A unit vector `angle` from straight down, abducted to `side`, pitched `depth` toward camera. */
+/** Unit vector, `angle` from straight down, abducted to `side`, pitched `depth` toward camera. */
 function swing(side: number, angle: number, depth: number): Vec {
   return [
     side * Math.sin(angle) * Math.cos(depth),
@@ -145,7 +130,7 @@ const SIDES = [
   { side: -1, prefix: "right" },
 ] as const;
 
-/** The noiseless world pose in metres at `tMs`. */
+/** Noiseless world pose in metres at `tMs`. */
 export function syntheticWorldPose(motion: SyntheticMotion, tMs: number): Record<JointId, Vec> {
   const b = SYNTHETIC_BONES;
   const angles = poseAngles(motion, tMs);
@@ -176,7 +161,7 @@ export function syntheticWorldPose(motion: SyntheticMotion, tMs: number): Record
   return pose;
 }
 
-/** Seeded uniform [0, 1): mulberry32, so a seed names one recording on every platform. */
+/** Seeded uniform [0, 1); a seed names one recording on every platform. */
 function mulberry32(seed: number): () => number {
   let state = seed >>> 0;
   return () => {
@@ -210,10 +195,8 @@ function validate(options: SyntheticOptions): { stage: StageSize; noiseScale: nu
 }
 
 /**
- * The true image position of a world point, normalised as MediaPipe reports it: a pinhole camera
- * `CAMERA_DISTANCE` in front of the hip midpoint, with a focal length that makes a 1.7 m figure
- * span 70% of the stage height.
- */
+ * MediaPipe-normalised image position of a world point: pinhole camera `CAMERA_DISTANCE` ahead of
+ * the hip midpoint, focal sized so 1.7 m spans 70% of stage height. */
 export function projectToImage(point: Vec, stage: StageSize): Vec {
   const depth = CAMERA_DISTANCE + point[2]!;
   const focal = (0.7 * stage.height * CAMERA_DISTANCE) / 1.7;
@@ -227,10 +210,8 @@ export function projectToImage(point: Vec, stage: StageSize): Vec {
 const clampUnit = (value: number) => Math.min(0.999999, Math.max(0.000001, value));
 
 /**
- * A deterministic recording: `floor(durationMs * fps / 1000)` frames from t = 0, each with
- * independent seeded noise (world in metres, image in pixels before normalisation). The twelve
- * limb joints are filled; every other MediaPipe slot is a zero landmark of visibility 0.
- */
+ * Deterministic recording: `floor(durationMs * fps / 1000)` frames from t = 0 with seeded noise;
+ * twelve limb joints filled, other MediaPipe slots zero at visibility 0. */
 export function createSyntheticRecording(options: SyntheticOptions): PoseRecording {
   const { stage, noiseScale } = validate(options);
   const random = mulberry32(options.seed);
@@ -240,7 +221,7 @@ export function createSyntheticRecording(options: SyntheticOptions): PoseRecordi
   const frames = Array.from({ length: frameCount }, (_, index) => {
     const tMs = (index * 1000) / options.fps;
     const truth = syntheticWorldPose(options.motion, tMs);
-    // The legacy subject reports no presence: `NaN`, which reads as `unreported`, never a 1.
+    // Legacy subject reports no presence: `NaN` reads as `unreported`, never 1.
     const image: RawLandmark[] = Array.from({ length: MEDIAPIPE_LANDMARK_COUNT }, () => [
       0,
       0,

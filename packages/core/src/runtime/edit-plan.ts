@@ -27,32 +27,20 @@ function valueStateAfter(edit: StructuralEdit, current: ValueState): ValueState 
   return clearsOverlay(edit) ? AUTHORED : current;
 }
 
-/**
- * The pure half of the structural edit tier: one committed view, one edit, one answer.
- *
- * Nothing here reads a runtime, a clock, a scheduler, a timeline or a commit plan. It sees tracks as
- * data, asks the contract and graph layers the questions they already own, and answers either a new
- * view and the change that reaches it or the diagnostics that refused it. That boundary is what
- * makes a table of edit-by-state cases possible without an engine, and it is enforced by a test that
- * scans this file's imports.
- *
- * A structural edit is planned against the whole candidate graph rather than against the node it
- * names, because the questions the graph owns are global: a binding may complete a cycle, a plugin
- * change may make an unrelated consumer incompatible, and a removal may leave a source that no
- * longer exists. Planning one node in isolation would answer none of them.
- */
+/** One committed track in the graph: a `CheapTrack` plus owner and authored index. Structural edits
+ * plan the whole candidate graph; a bind may close a cycle, a removal strand a binding. */
 export interface PlannedTrack extends CheapTrack {
   readonly owner: "motion" | "free";
   readonly ownerId: string;
   readonly authoredIndex: number;
 }
 
-/** Every committed track one plan can see, keyed by node id. */
+/** Every committed track a plan can see, by node id. */
 export interface PlanState {
   readonly tracks: ReadonlyMap<string, PlannedTrack>;
 }
 
-/** What a plan may ask about plugins, total and without an engine. */
+/** What a plan may ask about plugins: total, no engine. */
 export type PlanEnvironment = ValueEnvironment;
 
 interface UpdateTrackChange {
@@ -66,7 +54,7 @@ interface RemoveTrackChange {
   readonly nodeId: string;
 }
 
-/** What one edit changes, or nothing when it changed nothing. */
+/** What one edit changes; absent when nothing changed. */
 export type PlannedChange = UpdateTrackChange | RemoveTrackChange | ValueChange;
 
 export interface PlanAccepted {
@@ -114,14 +102,8 @@ function withRequiresInput(
   return { ...track, input };
 }
 
-/**
- * The plugin's declared input kind against the authored values, when a plugin track names one.
- *
- * The parser cannot own this: it holds no plugin registry, so it reads a track's local values as an
- * authored shape and leaves the question of which shape the plugin accepts to the layer that admits
- * it. The full value check belongs to composition; this one answer is enough to refuse an edit that
- * could never compose.
- */
+/** Parser holds no registry, so only the declared input kind is compared here; composition owns
+ * the full value check. */
 function pluginShapeDiagnostics(
   track: TrackDefinition,
   nodeId: string,
@@ -150,9 +132,7 @@ function validateTrack(
   nodeId: string,
   environment: PlanEnvironment,
 ): Outcome<TrackDefinition, Diagnostic> {
-  // A runtime with no admission predicate cannot judge a plugin id, and the graph it is editing
-  // already admitted this one. The parser treats absence as "nothing is registered", so the
-  // unjudged environment is expressed as a predicate that admits what is already loaded.
+  // Absent predicate refuses every plugin; the graph admitted these already, so admit all.
   const context = {
     isPluginRegistered: environment.isPluginRegistered ?? (() => true),
   };
@@ -170,13 +150,7 @@ function validateTrack(
   }
 }
 
-/**
- * The whole candidate graph over `tracks`, with each node's committed contract carried.
- *
- * An omitted carried contract is the one instruction that a node's contract is stale: a replacement
- * derives a fresh one, and every other node keeps what its last structural commit answered. The
- * graph then reads those contracts rather than the authored values a cheap edit may have moved.
- */
+// A carried contract survives cheap value edits; absent means a replacement, which derives fresh.
 function finalize(
   tracks: ReadonlyMap<string, PlannedTrack>,
   environment: PlanEnvironment,
@@ -369,12 +343,7 @@ function planBinding(
   );
 }
 
-/**
- * A value edit answered in the structural plan's shape: the same change `planValueEdit` produced,
- * with the next view built from it. This is the reference answer for tests and for any caller that
- * holds a whole view; the runtime's cheap path calls `planValueEdit` directly and never builds the
- * view, which is why it does not scale with the project.
- */
+// The value tier's reference answer: `planValueEdit`'s change applied to a whole next view.
 function planValueAsState(
   state: PlanState,
   edit: CheapEdit | LiveEdit,
@@ -391,13 +360,8 @@ function planValueAsState(
   return acceptedOutcome({ state: { tracks: next }, change }, planned.diagnostics);
 }
 
-/**
- * Plans one edit against one committed view.
- *
- * The edit either changes nothing, in which case the original state is answered by identity, or it
- * produces a candidate view and the change that reaches it. A refusal carries the diagnostics and
- * leaves the state untouched; it is the caller's job to report the edit index that produced it.
- */
+/** Plans one edit against one committed view. Nothing to change answers the same state by identity;
+ * a refusal answers diagnostics and leaves that state untouched. */
 export function plan(state: PlanState, edit: Edit, environment: PlanEnvironment): PlanOutcome {
   switch (edit.kind) {
     case "replace-track":
