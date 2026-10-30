@@ -2,6 +2,7 @@ import { readFile, readdir } from "node:fs/promises";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
+import { checkIndex } from "../../../../../scripts/adr-index.mjs";
 
 /**
  * A number names exactly one record, and a link to one resolves.
@@ -22,6 +23,7 @@ const RECORD = /^ADR-(\d{3})-[a-z0-9-]+\.md$/;
 const RECORD_LINK = /\]\((\.\/ADR-[^)]*)\)/g;
 const MARKDOWN = /\.md$/;
 const RELATIVE = "./";
+const INDEX = "ADR-INDEX.md";
 
 /** The top-level files of `docs/`, which is where a record lives and the only place one may. */
 async function docNames(): Promise<readonly string[]> {
@@ -31,7 +33,7 @@ async function docNames(): Promise<readonly string[]> {
 
 describe("a decision record is one file, and a link to one resolves", () => {
   it("names every record by its number and title, with no second file for a number", async () => {
-    const names = (await docNames()).filter((name) => name.startsWith("ADR-"));
+    const names = (await docNames()).filter((name) => name.startsWith("ADR-") && name !== INDEX);
     const numbers: number[] = [];
     for (const name of names) {
       const match = RECORD.exec(name);
@@ -61,5 +63,19 @@ describe("a decision record is one file, and a link to one resolves", () => {
       }
     }
     expect(dangling).toEqual([]);
+  });
+
+  it("holds the generated index to what the records say right now", async () => {
+    expect(checkIndex()).toEqual([]);
+    const index = await readFile(join(DOCS, INDEX), "utf8");
+    const names = await docNames();
+    const rows = index.split("\n").filter((row) => row.startsWith("- ADR-"));
+    // One row per record, and a row whose file the directory does not hold is the drift the
+    // generator would have rewritten rather than reported.
+    expect(rows).toHaveLength(names.filter((name) => RECORD.test(name)).length);
+    const unresolved = [...index.matchAll(RECORD_LINK)]
+      .map((match) => (match[1] ?? "").slice(RELATIVE.length))
+      .filter((target) => !names.includes(target));
+    expect(unresolved).toEqual([]);
   });
 });
