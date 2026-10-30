@@ -40,10 +40,6 @@
     "count": 3
   },
   {
-    "path": "apps/ik-playground/src/projection.ts",
-    "count": 11
-  },
-  {
     "path": "apps/ik-playground/src/rig-sources.ts",
     "count": 2
   },
@@ -316,16 +312,8 @@
     "count": 3
   },
   {
-    "path": "packages/core/src/adapters/trigger-factory/loop-cycle.ts",
-    "count": 12
-  },
-  {
     "path": "packages/core/src/adapters/trigger-factory/time-driver.ts",
     "count": 3
-  },
-  {
-    "path": "packages/core/src/contract/handle.ts",
-    "count": 8
   },
   {
     "path": "packages/core/src/contract/keyframe-compiler.ts",
@@ -406,10 +394,6 @@
   {
     "path": "packages/core/src/graph/slot-check.ts",
     "count": 6
-  },
-  {
-    "path": "packages/core/src/internal.ts",
-    "count": 11
   },
   {
     "path": "packages/core/src/lang/exhaustive.ts",
@@ -562,10 +546,6 @@
   {
     "path": "packages/plugins/src/runner.ts",
     "count": 3
-  },
-  {
-    "path": "packages/react/src/derived-dom-patch.ts",
-    "count": 11
   },
   {
     "path": "packages/react/src/dom-binding.ts",
