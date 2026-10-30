@@ -28,10 +28,6 @@
     "count": 6
   },
   {
-    "path": "apps/ik-playground/src/ik3d-playground-project.ts",
-    "count": 10
-  },
-  {
     "path": "apps/ik-playground/src/playground-runtime.ts",
     "count": 4
   },
@@ -66,10 +62,6 @@
   {
     "path": "apps/pose-gap-filler/src/filler/direction.ts",
     "count": 4
-  },
-  {
-    "path": "apps/pose-gap-filler/src/filler/frame.ts",
-    "count": 11
   },
   {
     "path": "apps/pose-gap-filler/src/filler/gap-detector.ts",
@@ -420,10 +412,6 @@
     "count": 3
   },
   {
-    "path": "packages/core/src/runtime/diagnostics.ts",
-    "count": 5
-  },
-  {
     "path": "packages/core/src/runtime/edit-apply.ts",
     "count": 4
   },
@@ -534,10 +522,6 @@
   {
     "path": "packages/react/src/patch-store.ts",
     "count": 8
-  },
-  {
-    "path": "packages/three/src/index.ts",
-    "count": 12
   },
   {
     "path": "packages/three/src/skeleton-capture.ts",

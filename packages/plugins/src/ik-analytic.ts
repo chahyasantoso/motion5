@@ -5,7 +5,7 @@ import { readGoal } from "./ik-goal-reading";
 import type { ClosedFormQuality, SolveResult } from "./ik-result";
 
 /**
- * The analytic two-bone solve: local rotations in `fk`'s degrees; offsets fold into `reach`/`twist`; exact in `[|reach - l2|, reach + l2]`, clamped outside; `flip` mirrors the elbow.
+ * Analytic two-bone solve: local rotations in `fk`'s degrees; offsets fold into `reach`/`twist`; exact within `[|reach - l2|, reach + l2]`, clamped outside; `flip` mirrors elbow.
  */
 export function solveTwoBone(
   root: WorldFrame,
@@ -26,13 +26,13 @@ export function solveTwoBone(
   });
 }
 
-/** The two local angles `solveTwoBone` publishes, in member order, and how well they answer. */
+/** The two local angles `solveTwoBone` publishes, member order, plus answer quality. */
 interface TwoBoneAnswer {
   readonly angles: readonly [number, number];
   readonly quality: ClosedFormQuality;
 }
 
-/** The closed form itself. Every exit reads one reach band and one residual. */
+/** Closed form itself; every exit reads one reach band, one residual. */
 function twoBone(
   root: WorldFrame,
   target: WorldFrame,
@@ -42,7 +42,7 @@ function twoBone(
 ): TwoBoneAnswer {
   const l1 = solveLength(first);
   const l2 = solveLength(second);
-  // Base and link: pure functions of the root frame and the authored offsets, never of the angles.
+  // Base and link: pure functions of root frame and authored offsets, never angles.
   const base = pivotFromBaseTip(root, root.rotation, solveOffset(first));
   const link = effectiveLink(l1, solveOffset(second));
   const reach = link.length;
@@ -52,7 +52,7 @@ function twoBone(
     ["x", target.x],
     ["y", target.y],
   ]);
-  // One band serves every exit: `l2 === 0` collapses it to `[reach, reach]`, `reach === 0` to `[l2, l2]`.
+  // One band, every exit: `l2 === 0` collapses to `[reach, reach]`, `reach === 0` to `[l2, l2]`.
   const minReach = Math.abs(reach - l2);
   const maxReach = reach + l2;
   let targetAngle: number;
@@ -69,7 +69,7 @@ function twoBone(
       break;
     }
     case "direction":
-      // No distance to a direction goal: fully extended along it, hence `too-far` with an infinite residual.
+      // No distance to a direction goal: fully extended, so `too-far`, infinite residual.
       targetAngle = (Math.atan2(reading.direction[1]!, reading.direction[0]!) * 180) / Math.PI;
       clampedD = maxReach;
       band = { kind: "too-far", residual: Number.POSITIVE_INFINITY };
@@ -78,13 +78,13 @@ function twoBone(
       return unreachable(reading);
   }
 
-  // `l2 === 0`: the first angle aims the link, twist included; second angle 0.
-  // `reach === 0`: the second angle aims the segment, first 0; no link -> no twist, `effectiveLink`.
+  // `l2 === 0`: first angle aims link, twist included; second 0.
+  // `reach === 0`: second angle aims segment, first 0; no link, no twist (`effectiveLink`).
   if (l2 <= 0) return { angles: [targetAngle - twist - root.rotation, 0], quality: band };
   if (reach <= 0) return { angles: [0, targetAngle - root.rotation], quality: band };
 
-  // `clampedD === 0` only for a goal at the base with `reach === l2`; positive `d` clamps to itself.
-  // No direction there, so the rest pose answers: the band's only in-band miss.
+  // `clampedD === 0` only at base with `reach === l2`; positive `d` clamps to itself.
+  // No direction there, so rest pose answers: the band's only in-band miss.
   if (clampedD <= 0) {
     return {
       angles: [0, 0],
@@ -92,8 +92,8 @@ function twoBone(
     };
   }
 
-  // `flip` takes `-alpha`, the mirror across the base-goal line; both branches hit the goal exactly.
-  // Twist out of the first angle, into the second: that lands the composed tip on the goal.
+  // `flip` takes `-alpha`, mirror across base-goal line; both branches hit the goal exactly.
+  // Twist out of first angle, into second, lands the composed tip on the goal.
   const alpha = (Math.acos(cosineOpposite(reach, clampedD, l2)) * 180) / Math.PI;
   const beta = (Math.acos(cosineOpposite(reach, l2, clampedD)) * 180) / Math.PI;
 
@@ -104,24 +104,23 @@ function twoBone(
 }
 
 /**
- * The law of cosines for the angle between `a` and `b`, opposite `opposite`, clamped into `acos`'s domain; sides scaled by the nearest power of two so their squares stay in range.
+ * The law of cosines for the angle between `a` and `b`, opposite `opposite`, clamped into `acos`'s domain; sides scaled by nearest power of two so squares stay in range.
  */
 export function cosineOpposite(a: number, b: number, opposite: number): number {
-  // Capped so `2 ** -exponent` stays a normal power of two; a side past the cap lands within `2 ** 24` of unit.
+  // Cap keeps `2 ** -exponent` a normal power of two; a side past it lands within `2 ** 24` of unit.
   const exponent = clamp(Math.round(Math.log2(Math.max(a, b, opposite))), -1000, 1000);
-  // Exact, not approximated: a power-of-two scale, and every square, sum and quotient that stays
-  // normal, are bit-identical to the unscaled ones.
+  // Exact, not approximated: power-of-two scale keeps every normal square, sum and quotient bit-identical to unscaled.
   const scale = 2 ** -exponent;
   const x = a * scale;
   const y = b * scale;
   const z = opposite * scale;
   const cosine = (x * x + y * y - z * z) / (2 * x * y);
-  // `NaN` only from `0 / 0`: a side with no extent even at unit magnitude reads the aligned angle.
+  // `NaN` only from `0 / 0`: a side with no extent even at unit reads the aligned angle.
   return Number.isNaN(cosine) ? 1 : clamp(cosine, -1, 1);
 }
 
 /**
- * Which side of `[minReach, maxReach]` the goal at distance `d` sits on; `residual` is the caller's clamp miss, passed through, never laundered to zero.
+ * Which side of `[minReach, maxReach]` a goal at distance `d` sits on; `residual` passes the caller's clamp miss through, never zeroed.
  */
 export function bandQuality(
   d: number,
@@ -129,14 +128,14 @@ export function bandQuality(
   maxReach: number,
   residual: number,
 ): ClosedFormQuality {
-  // Tested far-first: a band collapsed to one point still names the side it was missed on.
-  // `NaN` in `d` or a bound fails both tests -> `reached`, so `residual <= tolerance` stays false.
+  // Tested far-first: a one-point band still names the side it was missed on.
+  // `NaN` in `d` or a bound fails both -> `reached`, keeping `residual <= tolerance` false.
   if (d > maxReach) return { kind: "too-far", residual };
   if (d < minReach) return { kind: "too-near", residual };
   return { kind: "reached", residual };
 }
 
-/** The distance a coincident goal's rest pose leaves the tip from the base: link at `root.rotation + twist` plus `l2` at `root.rotation`. */
+/** How far a coincident goal's rest pose leaves the tip from base: link at `root.rotation + twist` plus `l2` at `root.rotation`. */
 function restMiss(root: WorldFrame, reach: number, twist: number, l2: number): number {
   const link = toRadians(root.rotation + twist);
   const segment = toRadians(root.rotation);

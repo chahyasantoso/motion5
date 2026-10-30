@@ -1,32 +1,19 @@
 import type { Patch } from "@motion5/core";
-// The render decision and the never sink have one owner each in core, reached through the same
-// first-party channel `@motion5/react` reads them from, rather than restated here (ADR-094,
-// ADR-099).
+// Render decision and never sink belong to core; read through the same internal channel.
 import { patchRender, selectRecord, unreachable } from "@motion5/core/internal";
 import { readFrame3d } from "@motion5/plugins/frame3d";
 import { Euler, Matrix4, Quaternion, Vector3, type EulerOrder, type Object3D } from "three";
 
-/**
- * The three.js Euler order for exactly core's CSS convention (`frame3d.ts`): `ZXY` composes
- * Rz·Rx·Ry.
- * Core angles are degrees; three.js angles are radians.
- */
+/** Three.js Euler order for core's CSS convention (`ZXY`, Rz·Rx·Ry). Core angles are degrees. */
 export const EULER_ORDER_3D: EulerOrder = "ZXY";
 
-/**
- * Writes a published 3D world frame onto an Object3D.
- *
- * Core's frame reader treats an absent key or a non-finite number as `0`. The frame's angles
- * arrive in degrees, while three.js expects radians. fk3d publishes world frames, not
- * parent-relative ones, so a bound object must live in the space of the rig root, for example as a
- * direct child of an untransformed scene or group.
- */
+/** writeFrame3d: published world frame onto an Object3D; absent or non-finite values read as `0`; degrees in, radians out; object must live in rig-root space. */
 const DEGREES = 180 / Math.PI;
 const scratchEuler = new Euler();
 const scratchQuaternion = new Quaternion();
 const scratchScale = new Vector3();
 
-/** The one owner of degrees to radians for the `ZXY` frame convention; angles reduce mod 360. */
+/** Sole degrees-to-radians owner for `ZXY`; angles reduce mod 360. */
 function frameEuler(frame: ReturnType<typeof readFrame3d>, target: Euler): Euler {
   return target.set(
     ((frame.rotationX % 360) * Math.PI) / 180,
@@ -36,14 +23,14 @@ function frameEuler(frame: ReturnType<typeof readFrame3d>, target: Euler): Euler
   );
 }
 
-/** Published frame values to a rigid matrix in the frame's own space. */
+/** Frame values to a rigid matrix in the frame's own space. */
 export function frameToMatrix(values: Readonly<Record<string, unknown>>, target: Matrix4): Matrix4 {
   const frame = readFrame3d(values);
   target.makeRotationFromEuler(frameEuler(frame, scratchEuler));
   return target.setPosition(frame.x, frame.y, frame.z);
 }
 
-/** The inverse of `frameToMatrix`: a rigid matrix to published frame values (scale ignored). */
+/** Inverse of `frameToMatrix`: rigid matrix to published frame values; scale ignored. */
 export function frameFromMatrix(matrix: Matrix4): Readonly<Record<string, number>> {
   const position = new Vector3();
   matrix.decompose(position, scratchQuaternion, scratchScale);
@@ -64,28 +51,22 @@ export function writeFrame3d(object: Object3D, values: Readonly<Record<string, u
   frameEuler(frame, object.rotation);
 }
 
-/** An adapter that applies core patches and caller-derived values to resolved Three.js objects. */
+/** Applies core patches and caller values to resolved Three.js objects. */
 export type Object3dPatchAdapter = {
   apply(patch: Patch): void;
   /**
-   * Writes caller-derived values onto the object resolved for `nodeId`, without fabricating a
-   * patch status or revision. Freshness and derivation belong to the caller, as in core's DOM
-   * adapter.
+   * Writes caller values onto the object for `nodeId` with no patch status or revision; freshness is the caller's.
    */
   applyValues(nodeId: string, values: Readonly<Record<string, unknown>>): void;
   /**
-   * Clears this adapter's revision state for a resolved object so a retained patch can re-pose a
-   * rebound object, matching the DOM adapter's target lifecycle protocol.
+   * Clears revision state for a resolved object so a retained patch can re-pose it after rebinding.
    */
   clear(object?: Object3D): void;
 };
 
 /**
- * Creates a patch adapter for Three.js objects resolved by core node id.
- *
- * Retained and gone decisions deliberately write nothing: retained objects keep their last render,
- * while scene-graph ownership and removal remain with the caller.
- */
+ * Creates a patch adapter for Three.js objects resolved by core node id. Retained and gone write
+ * nothing; scene-graph ownership and removal stay with the caller. */
 export function createObject3dPatchAdapter(
   resolve: (nodeId: string) => Object3D | undefined,
 ): Object3dPatchAdapter {
@@ -93,9 +74,7 @@ export function createObject3dPatchAdapter(
     const object = resolve(nodeId);
     if (object !== undefined) writeFrame3d(object, values);
   };
-  // Keep this local: sharing it would require widening this slice into the already-tested DOM
-  // adapter, while a generic helper adds no semantic value for this tiny target/node protocol.
-  // Both adapters accept revisions per resolved target and node, and clear drops that target state.
+  // Local: revisions keyed by resolved target then node id; clear drops that target's map.
   const appliedRevisions = new WeakMap<Object3D, Map<string, number>>();
 
   return {

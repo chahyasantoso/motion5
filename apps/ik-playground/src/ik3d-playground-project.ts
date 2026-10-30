@@ -3,53 +3,27 @@ import { SCROLL_SOURCE } from "./ik-playground-project";
 import { frameAround } from "./projection";
 
 /**
- * The 3D half of the playground: a four-member chain solved as one aggregate table.
- *
- * Authored as one Motion of the playground project rather than as a project of its own, on the same
- * page-scroll source as the 2D chain, so the runtime drives both from one trigger key and there is
- * no second progress driver beside the Motion. What the scroll animates is only each member's
- * `fk3d.weight`, the rest-to-solved blend of ADR-116; the goal is a row in the goals table a drag
- * rewrites through the value tier (`goal-control.ts`), and the pole is fixed.
- * `playground-runtime.ts` composes it into the one project the app loads, which is also the project
- * the suite loads.
- *
- * Every renderer on the page draws this one rig: the CSS 3D stage and the three.js stage read the
- * same published pose rows, and both project them with `IK3D_VIEW` into `IK3D_FRAME`
- * (`projection.ts`).
- */
+ * 3D playground: four-member chain solved as one aggregate table on the 2D chain's scroll source.
+ * Scroll animates `fk3d.weight`; goal is a goals-table row a drag rewrites. */
 export const IK3D_MOTION_ID = "rig3d";
 export const IK3D_NODE_ID = (trackId: string): string => `${IK3D_MOTION_ID}/${trackId}`;
 
 /**
- * The box the rig is authored into and the viewer distance it is seen from, in the pixels its
- * world frames publish. `perspective` is also the project perspective `validate-v5.ts` requires of
- * a project carrying 3D tracks: one number for the document, the CSS stage and the three.js
- * camera.
- */
+ * Authored box and viewer distance in world pixels; `perspective` is the project perspective
+ * `validate-v5.ts` requires of every 3D project; document, CSS stage and three.js camera agree. */
 export const IK3D_VIEW = { width: 360, height: 300, perspective: 720 } as const;
 export const IK3D_PERSPECTIVE = IK3D_VIEW.perspective;
 
-/**
- * The authored box inset by a margin, at every depth a goal may take. It sizes `IK3D_FRAME`; a drag
- * is clamped to the frame itself (`goal-control.ts`), so the whole drawn stage is reachable.
- */
+/** Authored box inset by a margin; sizes `IK3D_FRAME`, which is what a drag clamps to. */
 export const IK3D_GOAL_BOUNDS = {
   min: { x: 12, y: 12, z: -160 },
   max: { x: IK3D_VIEW.width - 12, y: IK3D_VIEW.height - 12, z: 160 },
 } as const;
 
-/**
- * The goal handle's radius in world pixels at the box plane: its 54px hit ring, drawn around the
- * goal and scaled by perspective with it, so it spans more screen pixels toward the viewer.
- */
+/** Goal handle radius in world pixels at the box plane: half its 54px hit ring, scaled with perspective. */
 export const IK3D_GOAL_RADIUS = 27;
 
-/**
- * What every 3D stage draws, in box pixels: the box widened until the goal handle stays whole
- * wherever `IK3D_GOAL_BOUNDS` reaches. A goal toward the viewer is drawn outside the box it was
- * authored in, so a stage that showed only the box clipped the handle and stopped the drag at an
- * edge nobody could see.
- */
+/** Every 3D stage draws this, in box pixels: the view widened so the goal handle stays whole at every bound. */
 export const IK3D_FRAME = frameAround(IK3D_VIEW, IK3D_GOAL_BOUNDS, IK3D_GOAL_RADIUS);
 
 export const IK3D = {
@@ -58,7 +32,7 @@ export const IK3D = {
   bodyTrack: "body",
   goalsTrack: "goals",
   goalRowId: "goal",
-  /** The consumer alias the goal row is addressed by, never a graph node. */
+  /** Consumer alias addressing the goal row; never a graph node. */
   goalTrack: "goal",
   poleTrack: "pole",
   solverTrack: "solve",
@@ -66,7 +40,7 @@ export const IK3D = {
   memberTracks: ["upper", "fore", "wrist", "hand"],
   tipTrack: "hand",
   lengths: [50, 42, 34, 26],
-  /** Local rest orientation per member, `[rotation, rotationX, rotationY]` in degrees. */
+  /** Local rest orientation per member as `[rotation, rotationX, rotationY]`, degrees. */
   rest: [
     [70, -8, 8],
     [18, 6, -5],
@@ -75,7 +49,7 @@ export const IK3D = {
   ],
   root: { x: 110, y: 70, z: 0 },
   goal: { x: 205, y: 170, z: 30 },
-  /** Below and toward the viewer, off the root-to-goal line, so it bends every seed plane. */
+  /** Below and toward the viewer, off the root-to-goal line: bends every seed plane. */
   pole: { x: 70, y: 200, z: 90 },
 } as const;
 
@@ -165,7 +139,7 @@ export const ik3dPlaygroundTracks: readonly TrackDefinition[] = [
   },
 ];
 
-/** The engine nodes this Motion authors; member ids are pose-row aliases, not nodes. */
+/** Engine nodes this Motion authors; member ids are pose-row aliases, not nodes. */
 export const IK3D_NODE_IDS: readonly string[] = [
   IK3D.rootTrack,
   IK3D.poleTrack,
