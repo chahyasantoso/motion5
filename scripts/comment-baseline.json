@@ -192,10 +192,6 @@
     "count": 4
   },
   {
-    "path": "apps/pose-gap-filler/src/replay/record.ts",
-    "count": 18
-  },
-  {
     "path": "apps/pose-gap-filler/src/replay/recording.ts",
     "count": 7
   },
@@ -344,24 +340,12 @@
     "count": 3
   },
   {
-    "path": "packages/core/src/contract/motion-handle.ts",
-    "count": 11
-  },
-  {
-    "path": "packages/core/src/contract/output-select.ts",
-    "count": 11
-  },
-  {
     "path": "packages/core/src/contract/patch-render.ts",
     "count": 7
   },
   {
     "path": "packages/core/src/contract/rule-id.ts",
     "count": 2
-  },
-  {
-    "path": "packages/core/src/contract/schema-transaction.ts",
-    "count": 10
   },
   {
     "path": "packages/core/src/contract/solver-slots.ts",
@@ -378,10 +362,6 @@
   {
     "path": "packages/core/src/contract/validate-v5.ts",
     "count": 11
-  },
-  {
-    "path": "packages/core/src/contract/value-transaction.ts",
-    "count": 7
   },
   {
     "path": "packages/core/src/domain/completion.ts",

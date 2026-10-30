@@ -3,68 +3,25 @@ import type { TrackHandle } from "./track-handle";
 import type { MotionDefinition, TrackDefinition } from "./v5";
 
 /**
- * The structural authoring surface one recipe is handed, and the whole of what a recipe is for.
- *
- * `ProjectHandle.edit(recipe)` opens one transaction, hands this to the recipe, and commits once the
- * recipe returns. Each op validates on entry, so "each step individually correct" is unchanged; what
- * changes is that commit is a separate verb from edit. `n` ops across `m` tracks cost one candidate
- * build, one graph replacement, one `ObservationState` commit and one flush, where the same sequence
- * spelled one op at a time costs `n` of each.
- *
- * Every member here is a projection of the member `ProjectHandle` already has, deliberately: a second
- * implementation of `addTrack` is a second owner of what an add costs, and the whole point of this
- * slice is that there is one. What the interface buys is the narrowing, and only that: `mount`,
- * `seek`, `subscribeNode` and `dispose` are not members of it. A recipe still closes over the
- * `ProjectHandle` it was called on, so what it may not do while one is open is answered by the verbs
- * themselves: every verb that applies immediately refuses by name with
- * `schema-transaction-immediate`, while the structural verbs absent from here are
- * `ProjectHandle.addTrack` and `TrackHandle.remove`, which compose into the one commit exactly as
- * this surface's own `addTrack` does.
- *
- * The handles it returns are the ordinary ones, and their tier 0 and tier 2 members refuse while a
- * recipe is open with `schema-transaction-immediate`. That refusal is the mechanism rather than the
- * type, because `TrackHandle` is one interface across both tiers and splitting it is a change of its
- * own; what a caller may reach is stated here and what it may reach through a handle is refused by
- * name. See ADR-064.
- *
- * Removing and recreating a retained motion or track id in the final candidate is refused at
- * commit with `schema-transaction-recreated`, before any effects. Use an in-place edit or commit
- * removal separately. A previously absent entity added and removed in one recipe remains an
- * effect-free no-op. A refused commit leaves the original handles live and staged handles stale.
- *
- * Declared in `contract/` rather than in `runtime/`, on the rule the declaration-surface gate
- * enforces: the entry may not name a `runtime/` or a `graph/` module, and `ProjectHandle.edit` takes
- * a function of this type, so a caller that cannot import it cannot write the recipe at all.
- */
+ * Narrowed structural surface one recipe is handed: staged ops commit once, on return.
+ * Staged reads see staged writes; a refusal leaves retained handles live, staged ones stale. */
 export interface SchemaTransaction {
   /**
    * Creates a Motion inside this transaction and returns the handle to it.
-   *
-   * The same refusals `ProjectHandle.addMotion` has, all of them answered on entry: a trigger the
-   * contract rejects, a non-empty `tracks`, and an id this project already carries. The driver itself
-   * is built when the transaction commits, so a trigger that cannot be created refuses the whole
-   * recipe rather than half of it.
-   */
+   * Entry refusals match `ProjectHandle.addMotion`; the driver builds at commit. */
   addMotion(definition: MotionDefinition): MotionHandle;
   /** Resolves one Motion, refusing an id this project does not have. */
   motion(motionId: string): MotionHandle;
-  /** The same lookup without the refusal, for a caller whose miss is expected. */
+  /** Resolves one Motion, answering `undefined` for a miss instead of refusing. */
   tryMotion(motionId: string): MotionHandle | undefined;
   /**
    * Adds a track inside this transaction and returns the handle to it.
-   *
-   * The handle is live for the rest of the recipe, so the next op can read and edit what this one
-   * wrote, and it is never live if the recipe throws, because only the commit registers its token.
-   */
+   * The handle is live for the rest of the recipe; a throw leaves it stale. */
   addTrack(track: TrackDefinition, options?: { motionId?: string }): TrackHandle;
   /**
    * Resolves one track by qualified node id, including one this recipe added.
-   *
-   * Reads resolve against the staged plan rather than against the retained definitions, which is what
-   * makes a two-step edit possible at all: the second step of an edit has to be able to see the
-   * first.
-   */
+   * Reads resolve against the staged plan, so the second step sees the first. */
   track(nodeId: string): TrackHandle;
-  /** The same lookup without the refusal, for a caller whose miss is expected. */
+  /** Resolves one track, answering `undefined` for a miss instead of refusing. */
   tryTrack(nodeId: string): TrackHandle | undefined;
 }

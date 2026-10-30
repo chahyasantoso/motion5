@@ -15,29 +15,22 @@ import type { ReplayMetrics, Summary } from "./metrics";
 import type { PoseRecording } from "./recording";
 
 /**
- * A gap is measurable when the best filler's mean error over the masked frames exceeds this many
- * times the reference's own noise. A perfect predictor of the true pose still scores the
- * reference's noise against that noisy reference, so an error inside twice the noise establishes
- * no meaningful gap by this rule; it is a heuristic bar, not a proof that nothing could do better.
- */
+ * Measurable gap: best filler's mean masked error exceeds this many times reference noise.
+ * A perfect predictor still scores the reference's noise, so the bar is heuristic, not proof. */
 export const MEASURABLE_GAP_FACTOR = 2;
 
-/** The best filler under test in one space: what a later filler would have to beat there. */
+/** Best filler under test in one space: the bar a later filler must beat. */
 export interface BestFiller {
   readonly filler: FillerKind;
-  /** Mean distance from the reference over the masked frames the filler showed, space units. */
+  /** Mean distance from reference over masked frames shown, in space units. */
   readonly errorMean: number;
-  /** Masked frames the filler showed nothing for, which `errorMean` cannot count. */
+  /** Masked frames with no output, uncounted by `errorMean`. */
   readonly lostFrames: number;
 }
 
 /**
- * Whether the best filler in one space leaves a gap a better filler could close, a closed union.
- *
- * - `uncalibrated`: no still recording in this space, so no noise floor to judge against.
- * - `within-noise`: the best error is inside `MEASURABLE_GAP_FACTOR` times the reference's noise.
- * - `measurable`: it is above, by `gap` (the best error less the noise floor) in space units.
- */
+ * Whether the best filler leaves a closable gap: `uncalibrated` with no still recording, or
+ * `within-noise` inside `MEASURABLE_GAP_FACTOR` times noise, else `measurable` above it. */
 export type GapVerdict =
   | { readonly kind: "uncalibrated"; readonly best: BestFiller }
   | { readonly kind: "within-noise"; readonly best: BestFiller; readonly referenceNoise: number }
@@ -49,12 +42,8 @@ export type GapVerdict =
     };
 
 /**
- * What the comparison says about the INN issue (#530 phase 5), a closed union.
- *
- * - `open`: some space leaves a measurable gap; the INN must beat each target, never `raw`.
- * - `not-needed`: every space's best filler is within the reference's noise.
- * - `undecided`: no space is measurable, and some space had no still recording to judge it by.
- */
+ * What the comparison says about the INN: `open` on a measurable gap, `not-needed` when every
+ * space is within noise, else `undecided`: some space has no still recording. */
 export type InnDecision =
   | {
       readonly kind: "open";
@@ -65,25 +54,18 @@ export type InnDecision =
 
 export interface SpaceRecord {
   readonly space: LandmarkSpace;
-  /** The still calibration the detector and the noise floor came from, if this space had one. */
+  /** Still calibration the detector and noise floor came from, when this space had one. */
   readonly calibration: Calibration | undefined;
-  /**
-   * The fillers' own output, no rig: the answer to "where is an untrusted joint", which the filler
-   * alone owns and an INN would replace behind the same interface. The verdict reads these rows.
-   */
+  /** Filler output alone, no rig: where an untrusted joint is. The verdict reads these rows. */
   readonly filled: readonly ComparisonRow[];
-  /**
-   * What the live page draws: a limb's middle and tip where a fresh Engine rig solved them. The rig
-   * places a masked middle from the bone lengths and the held bend side, so these rows include the
-   * writer's bend-side hold, which no filler owns.
-   */
+  /** What the live page draws: rig-placed middles and tips, with the writer's bend-side hold. */
   readonly rig: readonly ComparisonRow[];
   readonly verdict: GapVerdict;
 }
 
-/** The one comparison record: every compared filler's metrics in both spaces, and the call. */
+/** Every compared filler's metrics in both spaces, and the INN call. */
 export interface ComparisonRecord {
-  /** What was replayed, in words, for the record's first line. */
+  /** Replayed input in words, for the record's first line. */
   readonly label: string;
   readonly frameCount: number;
   readonly stabilizer: StabilizerKind;
@@ -93,18 +75,18 @@ export interface ComparisonRecord {
 
 export interface ComparisonRecordInput {
   readonly label: string;
-  /** The movement recording every filler is replayed over. */
+  /** Recording every filler is replayed over. */
   readonly recording: PoseRecording;
   /** One stabilizer kind for every row, tuned per space by `stabilizerFor`. */
   readonly stabilizer: StabilizerKind;
-  /** The still calibration for a space, or `undefined` where there is none. */
+  /** Still calibration per space, `undefined` where there is none. */
   readonly calibrationFor: (space: LandmarkSpace) => Calibration | undefined;
-  /** A fresh rig per rig row, so those rows measure what the live page draws. */
+  /** Fresh rig per rig row, so those rows measure what the live page draws. */
   readonly createSolver: (space: LandmarkSpace) => RigSolver;
   readonly masks?: readonly Mask[] | undefined;
 }
 
-/** Whether a filler is under test. `raw` is the reference every metric is judged against. */
+/** Whether a filler is under test; `raw` is the reference every metric is judged against. */
 function underTest(filler: FillerKind): boolean {
   switch (filler) {
     case "raw":
@@ -117,7 +99,7 @@ function underTest(filler: FillerKind): boolean {
   }
 }
 
-/** The filler under test with the lowest mean masked error, fewer lost frames breaking a tie. */
+/** Filler under test with lowest mean masked error; fewer lost frames break a tie. */
 export function bestFiller(rows: readonly ComparisonRow[]): BestFiller {
   const ranked = rows
     .filter((row) => underTest(row.filler) && row.metrics.positionError.mean !== undefined)
@@ -167,11 +149,8 @@ export function decideInn(spaces: readonly SpaceRecord[]): InnDecision {
 }
 
 /**
- * Replays one movement recording through every compared filler in both spaces, filler-only and on
- * fresh rigs, with each space's still calibration where there is one, and judges the filler-only
- * rows. The live page's replay
- * and the committed record are both this function, so they cannot disagree on what was compared.
- */
+ * Replays one recording through every compared filler in both spaces, filler-only and on fresh
+ * rigs, then judges the filler-only rows. The live page and the record both call this. */
 export function buildComparisonRecord(input: ComparisonRecordInput): ComparisonRecord {
   const spaces = LANDMARK_SPACES.map((space): SpaceRecord => {
     const calibration = input.calibrationFor(space);
@@ -196,7 +175,7 @@ export function buildComparisonRecord(input: ComparisonRecordInput): ComparisonR
   };
 }
 
-/** The widest line the formatter writes, Prettier's `printWidth`, so the record is stable. */
+/** Widest line the formatter writes, Prettier's `printWidth`, keeping the record stable. */
 export const RECORD_WIDTH = 100;
 
 const number = (value: number | undefined, digits = 1) =>
@@ -204,14 +183,10 @@ const number = (value: number | undefined, digits = 1) =>
 const summary = (value: Summary) =>
   `${number(value.mean)} / ${number(value.p95)} / ${number(value.max)}`;
 
-/** The widest word a bullet line holds after its two-column `- ` or continuation indent. */
+/** Widest word after a bullet's two-column `- ` or continuation indent. */
 const WORD_WIDTH = RECORD_WIDTH - 2;
 
-/**
- * The words of one bullet. Any whitespace run, a newline in a file name included, is one break, so
- * a label cannot end the bullet early; a word wider than a line is split into line-wide pieces, so
- * no input can push a line past `RECORD_WIDTH`.
- */
+/** Words of one bullet: whitespace runs split, any word wider than `WORD_WIDTH` cut into pieces. */
 function words(text: string): string[] {
   return text
     .split(/\s+/)
@@ -223,7 +198,7 @@ function words(text: string): string[] {
     );
 }
 
-/** Greedy word wrap of one bullet: `- ` on the first line, two spaces on every continuation. */
+/** Greedy wrap: `- ` first line, two spaces on every continuation. */
 function bullet(text: string): string[] {
   const lines: string[] = [];
   let line = "-";
@@ -291,10 +266,7 @@ function innText(inn: InnDecision): string {
   }
 }
 
-/**
- * The record as markdown bullets, never a table, every line at most `RECORD_WIDTH` columns.
- * Summaries are mean / p95 / max.
- */
+/** Record as markdown bullets, never a table, every line within `RECORD_WIDTH`. */
 export function formatComparisonRecord(record: ComparisonRecord): string {
   const out = bullet(
     `Input: ${record.label}, ${record.frameCount} frames, stabilizer \`${record.stabilizer}\`. Summaries are mean / p95 / max.`,
