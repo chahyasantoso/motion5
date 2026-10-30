@@ -8,7 +8,7 @@
 
 **Record:** [ADR-040](./ADR-040-time-loop-semantics.md)
 
-This is a new plan, not an amendment. `docs/archived/IMPLEMENTATION-PLAN-trigger-drivers.md` and its T4/T5 successor closed with the driver question answered: which driver a declared trigger gets, and who feeds it. Loop behavior is a different question with a different owner, and folding it into a completed plan would make both citations two-valued.
+This is a new plan, not an amendment. The trigger-driver plan and its T4/T5 successor, both now in Git history rather than in this directory, closed with the driver question answered: which driver a declared trigger gets, and who feeds it. Loop behavior is a different question with a different owner, and folding it into a completed plan would make both citations two-valued.
 
 ## 0. Non-negotiables
 

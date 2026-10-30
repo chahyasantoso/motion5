@@ -16,6 +16,8 @@
     "check": "node scripts/check.mjs",
     "scan:raw-templates": "node scripts/raw-template-scan.mjs",
     "scan:comments": "node scripts/comment-scan.mjs",
+    "adr-index": "node scripts/adr-index.mjs",
+    "adr-index:write": "node scripts/adr-index.mjs --write",
     "format": "prettier . --write",
     "format:check": "prettier . --check",
     "typecheck": "tsc --noEmit -p tsconfig.json",
