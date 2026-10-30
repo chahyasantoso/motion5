@@ -11,8 +11,8 @@ This is navigation and an activation contract, not a second status file. [SESSIO
 
 - **Format manually**, [format.yml](../.github/workflows/format.yml), is the deliberate mechanical repair escape hatch. [FORMATTING.md](./FORMATTING.md) owns its use.
 - **Recovery audit**, [recovery-audit.yml](../.github/workflows/recovery-audit.yml), owns its additional mutation and acceptance evidence.
-- Historical lockfile bootstrap, GSAP dependency maintenance, and authored-leaf migration remain maintainer-dispatch routes. [MAINTENANCE-WORKFLOWS.md](./MAINTENANCE-WORKFLOWS.md) owns their distinct inputs/outputs, replacement requirements, trust limits, and separately confirmed retirement gates.
+- **Lockfile bootstrap**, [bootstrap-lockfile.yml](../.github/workflows/bootstrap-lockfile.yml), and **Prepare GSAP lockfile**, [prepare-gsap-lockfile.yml](../.github/workflows/prepare-gsap-lockfile.yml), remain maintainer-dispatch routes; each names its inputs and its one-time purpose in its own header. The authored-leaf migration route and its script are deleted, because no authored `stops` wrapper remains in the tree to migrate.
 
 ## Maintenance not activated
 
-Dependency and general maintenance operations are refused, including when a PAT is configured. There is no arbitrary shell, npm argument, plugin, workflow-generation, or package-install request. [MAINTENANCE-WORKFLOWS.md](./MAINTENANCE-WORKFLOWS.md) documents the distinct bootstrap-lockfile, GSAP maintenance, and authored-leaf migration capabilities and the evidence required before any retirement. Keep those human-dispatch routes while usage or a working replacement cannot be verified; an inventory is not replacement validation.
+Dependency and general maintenance operations are refused, including when a PAT is configured. There is no arbitrary shell, npm argument, plugin, workflow-generation, or package-install request. The only maintenance paths that exist are the human-dispatch workflows named above, and retiring one is its own confirmed change rather than a consequence of this map.
