@@ -13,7 +13,7 @@ docs(architecture): define blocked publication
 chore: apply prettier
 ```
 
-Touched-file normalization may accompany its requested change. Unrelated formatting stays in a separate mechanical commit. [FORMATTING.md](./FORMATTING.md) owns that distinction.
+Touched-file normalization may accompany its requested change. Unrelated formatting stays in a separate mechanical commit, and [../AGENTS.md](../AGENTS.md) owns that rule in one line.
 
 ## Pull request body
 

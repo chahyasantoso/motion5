@@ -292,8 +292,8 @@ function innText(inn: InnDecision): string {
 }
 
 /**
- * The record as markdown bullets, never a table (AGENTS.md: Prettier realigns tables
- * unpredictably), every line at most `RECORD_WIDTH` columns. Summaries are mean / p95 / max.
+ * The record as markdown bullets, never a table, every line at most `RECORD_WIDTH` columns.
+ * Summaries are mean / p95 / max.
  */
 export function formatComparisonRecord(record: ComparisonRecord): string {
   const out = bullet(

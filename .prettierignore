@@ -3,3 +3,10 @@ node_modules
 dist
 coverage
 package-lock.json
+
+# Prettier formats code, not prose.
+*.md
+
+# Generated and machine-written data nobody edits by hand.
+apps/pose-gap-filler/test/fixtures/phase5-legacy-trace.json
+packages/plugins/test/fixtures/ik-aggregate-goldens.json

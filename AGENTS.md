@@ -15,8 +15,7 @@ is one line, and a rule this file does not carry is not a rule.
 - What a caller may do to a loaded project and what each edit pays:
   [docs/LIVE-EDIT-COST.md](docs/LIVE-EDIT-COST.md).
 - What a complete change looks like: [docs/PR-WORKFLOW.md](docs/PR-WORKFLOW.md).
-- Which gate runs what: [docs/CI-WORKFLOW.md](docs/CI-WORKFLOW.md).
-- Prettier's reach and the manual repair: [docs/FORMATTING.md](docs/FORMATTING.md).
+- Which gate runs what, and the formatter's pinned settings: [docs/CI-WORKFLOW.md](docs/CI-WORKFLOW.md).
 - The authoring schema: [docs/AUTHORED-SCHEMA.md](docs/AUTHORED-SCHEMA.md).
 - Public API navigation: [docs/API-CAPABILITIES.md](docs/API-CAPABILITIES.md).
 - Why a decision went one way: `docs/ADR-nnn-title.md`. Search them before proposing a flag, alias,
@@ -46,7 +45,5 @@ is one line, and a rule this file does not carry is not a rule.
 - A comment states behavior, in at most 3 lines and 200 characters, and cites nothing: no issue
   number, decision record, phase, slice or history reference. `npm run scan:comments` enforces it
   against a baseline that may only shrink.
-- Author no markdown tables anywhere: Prettier realigns them, and the drift fails `format:check`.
-- Prettier is pinned at the `package.json` version, `printWidth` is 100, quotes are double, trailing
-  commas are everywhere and `proseWrap` is `preserve`, so prose is never rewrapped: keep a paragraph
-  on one line or break it yourself at or under 100 columns.
+- Prettier formats code, not markdown: run `npm run format` before committing.
+- Never mix a formatting pass with a behavior change.

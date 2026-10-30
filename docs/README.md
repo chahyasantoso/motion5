@@ -47,7 +47,6 @@ Before introducing a flag, alias, facade, second owner, compatibility path, new 
 - [SYNTHETIC-HUMAN.md](./SYNTHETIC-HUMAN.md): the #540 synthetic human rig, its scope, baseline, contracts and decisions.
 - [CI-WORKFLOW.md](./CI-WORKFLOW.md): workflow rules, job contracts, artifacts, required versus advisory gates, and rollout schedule.
 - [PR-WORKFLOW.md](./PR-WORKFLOW.md): branch naming, commit style, pull request contents, review order, merge policy, reverts, and the status discipline every slice owes.
-- [FORMATTING.md](./FORMATTING.md): Prettier configuration, the read-only gate, why nothing in CI repairs drift, and the manual repair.
 
 ## Lineage
 

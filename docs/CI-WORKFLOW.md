@@ -34,7 +34,7 @@ These contexts intentionally depend on all quality evidence, including formattin
 
 ## Formatting and contributions
 
-Formatting is read-only in CI. [FORMATTING.md](./FORMATTING.md) owns the pinned formatter and manual repair contract. Historical touched-file normalization in the retired AI automation routes was superseded by plain pull requests; `format:check` runs against the branch head.
+Formatting is read-only in CI: `format:check` runs against the branch head and writes nothing. Prettier is pinned at the `package.json` version, `printWidth` 100, double quotes, trailing commas everywhere and `proseWrap` preserve, and it formats code only -- markdown is outside its reach by decision, so prose is laid out by hand and never rewrapped by a toolchain. A repository-wide repair is the [format.yml](../.github/workflows/format.yml) dispatch route and never a step inside a behavior pull request. Historical touched-file normalization in the retired AI automation routes was superseded by plain pull requests.
 
 A contributor without the installed repository toolchain can submit pull requests and use exact-head CI as verification. Do not claim local checks. The manual formatter requires workflow dispatch, which is not exposed by every connection. No temporary privileged formatter is introduced here.
 

@@ -6,7 +6,7 @@ motion5 is a renderer-neutral, transactional dataflow animation runtime. It eval
 
 > **Status:** [SESSION-STATUS.md](docs/SESSION-STATUS.md) is the only document allowed to claim what has landed; check it before trusting anything here. On `feat/adopt-motion-track` the runtime mutation model (W1-W5), the trigger drivers (T0-T5), and compiled Track ownership have all landed, along with edge identity, trigger progress range ownership, failed-build disposal, rollback error precedence, and single-track mutation atomicity. Phase 5 membership work and Phase 6 packaging work remain.
 
-> **Contributing?** Read [the PR workflow](docs/PR-WORKFLOW.md), [the CI workflow](docs/CI-WORKFLOW.md), and [formatting](docs/FORMATTING.md) first. Failed CI and recovery-audit runs are archived on the separate `ci-logs` branch under `logs/<run-id>/`.
+> **Contributing?** Read [the PR workflow](docs/PR-WORKFLOW.md) and [the CI workflow](docs/CI-WORKFLOW.md) first. Failed CI and recovery-audit runs are archived on the separate `ci-logs` branch under `logs/<run-id>/`.
 
 > **An AI implementor?** [AGENTS.md](AGENTS.md) is your entry point.
 
@@ -59,7 +59,7 @@ npm test
 
 ## Documentation map
 
-Users read [the guide](docs/guide/README.md). Implementors read, in this order: [Session status](docs/SESSION-STATUS.md), [PRD](docs/PRD.md), [TRD](docs/TRD.md), [Architecture](docs/ARCHITECTURE.md), [Authored schema](docs/AUTHORED-SCHEMA.md), [Implementation plan](docs/IMPLEMENTATION-PLAN.md), [Phase 5 detailed plan](docs/PHASE5-DETAILED-PLAN.md), [Testing strategy](docs/TESTING-STRATEGY.md), [PR workflow](docs/PR-WORKFLOW.md), [CI workflow](docs/CI-WORKFLOW.md), [Formatting](docs/FORMATTING.md), and [Decision records](docs/README.md#decisions).
+Users read [the guide](docs/guide/README.md). Implementors read, in this order: [Session status](docs/SESSION-STATUS.md), [PRD](docs/PRD.md), [TRD](docs/TRD.md), [Architecture](docs/ARCHITECTURE.md), [Authored schema](docs/AUTHORED-SCHEMA.md), [Implementation plan](docs/IMPLEMENTATION-PLAN.md), [Phase 5 detailed plan](docs/PHASE5-DETAILED-PLAN.md), [Testing strategy](docs/TESTING-STRATEGY.md), [PR workflow](docs/PR-WORKFLOW.md), [CI workflow](docs/CI-WORKFLOW.md), and [Decision records](docs/README.md#decisions).
 
 ## Contributing rule of thumb
 
