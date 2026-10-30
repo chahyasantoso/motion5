@@ -2,52 +2,25 @@ import type { Diagnostic, LivePatch, Patch } from "../contract/v5";
 import { unreachable } from "../lang/exhaustive";
 
 /**
- * The lifecycle of one `PatchRegistry` as one value, with the batch buffers inside the variant that
- * owns them.
- *
- * Three booleans encoded this until issue #443: `#batchOpen`, `#notifying` and `#disposed`, eight
- * combinations of which about four meant anything. Beside them sat four fields that are only
- * meaningful while a batch is open, which `beginBatch` set one by one and `closeBatch` reset one by
- * one, and that is the half-cleared-key problem ADR-083 refuses one layer up: a tick, a seed list, a
- * patch buffer and a diagnostic buffer that can each be half a batch are four ways for one
- * publication to answer from the last one.
- *
- * So the buffers ride `collecting`, and closing a batch is one assignment rather than five. A retired
- * registry carries no batch at all, which is what the four clears in `dispose` were doing by hand,
- * and a disposed registry with a batch open stops being expressible.
- *
- * Notification is a field of every phase rather than a phase beside them, and that is the one
- * distinction this union does not close, deliberately. Delivering the terminal patch of an evicted
- * node raises it out of band, from a graph mutation rather than from a flush, and it restores whatever
- * it interrupted rather than assuming it interrupted nothing, so a notification running inside an open
- * batch is a state this registry already tolerates. A `notifying` variant beside the others would make
- * that pair unrepresentable and lose the batch it was carrying, which is `DrainBooking`'s argument in
- * `graph-runtime-state.ts` applied to the same question one module over. See ADR-083 and ADR-092.
- *
- * Issue #443, phase B step 10.
- */
+ * One `PatchRegistry` lifecycle as one value: batch buffers ride `collecting`; notification is a
+ * field every phase carries, so an open batch stays representable while notifying. */
 declare const REGISTRY_PHASE_BRAND: unique symbol;
 
 /**
- * The mint mark that keeps the union below closed as well as discriminated.
- *
- * The device `graph-runtime-state.ts` already uses, for the reason issue #387 gave: a variant
- * declaring only its discriminant is not closed, because TypeScript's excess-property check reads a
- * fresh object literal rather than a value arriving through a variable. Declared, never exported and
- * never assigned at run time, so no other module can name the key and no property exists to carry.
- */
+ * Mint mark closing the union: excess-property checks read fresh literals, so an unbranded variant
+ * stays open. Never exported or assigned. */
 interface RegistryPhaseBrand {
   readonly [REGISTRY_PHASE_BRAND]: true;
 }
 
 type Minted<Shape extends { readonly kind: string }> = Shape & RegistryPhaseBrand;
 
-/** Mints one phase, and is the only expression in the program that produces a `RegistryPhase`. */
+/** Mints one phase: the only expression in the program that produces a `RegistryPhase`. */
 function mint<Shape extends { readonly kind: string }>(shape: Shape): Minted<Shape> {
   return Object.freeze(shape) as unknown as Minted<Shape>;
 }
 
-/** Whether subscribers are being notified, which every phase answers because any of them can be. */
+/** Whether subscribers are being notified; every phase answers, since any of them can be. */
 export type Notification = "quiet" | "notifying";
 
 interface IdleShape {
@@ -69,11 +42,13 @@ interface DisposedShape {
   readonly notification: Notification;
 }
 
-/** Where one registry is in its own life, and the whole of what that state carries. */
+/**
+ * Where one registry is in its own life — `idle`, `collecting` with its batch buffers, `disposed` —
+ * plus the notification every variant carries. */
 export type RegistryPhase = Minted<IdleShape> | Minted<CollectingShape> | Minted<DisposedShape>;
 
-// Interned, so every transition that only carries a notification is a lookup rather than an
-// allocation. Only `collecting` is minted per batch, because only `collecting` has a payload.
+// Interned: transitions carrying only a notification are lookups. `collecting` mints per batch,
+// for its payload.
 const IDLE_PHASES = {
   quiet: mint<IdleShape>({ kind: "idle", notification: "quiet" }),
   notifying: mint<IdleShape>({ kind: "idle", notification: "notifying" }),
@@ -95,17 +70,12 @@ export interface OpenBatch {
   readonly diagnostics: readonly Diagnostic[];
 }
 
-/** Why a batch may not open now. The precedence between the two is stated once, in `opening`. */
+/** Why a batch may not open: `notifying` (reentrancy) or `open` (second batch). */
 export type BatchRefusal = "notifying" | "open";
 
 /**
- * What one attempt to open a batch is answered with.
- *
- * Three answers rather than a boolean, because the three are genuinely different: a retired registry
- * collects nothing and refuses nothing, a notifying one refuses reentrancy, and one already
- * collecting refuses a second batch. Unbranded, because it is read at its one call site and stored
- * nowhere.
- */
+ * One batch-opening attempt: `collect` mints the phase, `ignore` for a retired registry, `refuse`
+ * names the guard that held. Unbranded: read at one call site, stored nowhere. */
 export type BatchOpening =
   | { readonly kind: "collect"; readonly phase: RegistryPhase }
   | { readonly kind: "ignore" }
@@ -129,12 +99,8 @@ export function isDisposed(phase: RegistryPhase): boolean {
 }
 
 /**
- * Answers whether subscribers are being notified, for every reader that has to ask.
- *
- * `disposed` carries the field too, and that is deliberate: a subscriber may retire the registry from
- * inside a notification and the subscribers behind it are still notified, so a retired registry
- * answering quiet would answer the reentrancy question with a state it is not in.
- */
+ * Whether subscribers are being notified. `disposed` carries it too: a subscriber may retire the
+ * registry mid-notification, and those behind it are still notified. */
 export function isNotifying(phase: RegistryPhase): boolean {
   switch (phase.kind) {
     case "idle":
@@ -146,7 +112,7 @@ export function isNotifying(phase: RegistryPhase): boolean {
   }
 }
 
-/** The notification a phase carries, which is what an out-of-band delivery restores. */
+/** The notification a phase carries, which an out-of-band delivery restores. */
 export function notificationOf(phase: RegistryPhase): Notification {
   switch (phase.kind) {
     case "idle":
@@ -172,12 +138,8 @@ export function openBatch(phase: RegistryPhase): OpenBatch | undefined {
 }
 
 /**
- * Answers what opening a batch does to this phase, and is the one owner of that precedence.
- *
- * Reentrancy outranks a second batch, which is the order the two guards were written in and is now
- * the order one function states. A retired registry is ignored rather than refused, because
- * publication into one is already a no-op and a caller tearing its project down mid-flush is legal.
- */
+ * What opening a batch does, and the one owner of the precedence: reentrancy outranks a second
+ * batch; a retired registry is ignored, publication into one already a no-op. */
 export function opening(
   phase: RegistryPhase,
   tick: number,
@@ -208,19 +170,8 @@ export function opening(
 }
 
 /**
- * Retains one patch in the open batch, and is the only writer of a collecting phase's buffers.
- *
- * The arrays the variant carries are mutated rather than a phase minted per patch, because a busy
- * frame publishes one per member and those buffers are what the batch is made of. A publication with
- * no batch open is retained by the registry's own map and collected nowhere, which is what the retired
- * fields did with it too: they pushed it into a buffer the next `beginBatch` emptied.
- *
- * It takes the live union rather than narrowing inside, because `publish` is its only caller and
- * `publish` cannot mint a destroyed patch: the one producer of one is `PatchRegistry.#notifyTerminal`,
- * which delivers out of band and never reaches a batch. So `patch.diagnostics` is read here with no
- * predicate, which is the exhaustive-read rule satisfied by the declaration rather than by a switch in
- * a function whose subject is the phase. See ADR-092 and ADR-098.
- */
+ * Retains one patch in the open batch: sole writer of a collecting phase's buffers, mutated in
+ * place. Outside a batch it is a no-op. */
 export function retain(phase: RegistryPhase, patch: LivePatch): void {
   switch (phase.kind) {
     case "collecting":
@@ -255,8 +206,7 @@ export function withNotification(phase: RegistryPhase, notification: Notificatio
       return IDLE_PHASES[notification];
     case "disposed":
       return DISPOSED_PHASES[notification];
-    // Minted rather than looked up, because this variant carries a payload, and field by field rather
-    // than by spread, so a field added later fails here instead of travelling in silence.
+    // Minted, not looked up: payload variant. Field by field, so a field added later fails here.
     case "collecting":
       return mint<CollectingShape>({
         kind: "collecting",
@@ -272,11 +222,8 @@ export function withNotification(phase: RegistryPhase, notification: Notificatio
 }
 
 /**
- * Answers the phase a registry retires into, carrying whatever notification is still running.
- *
- * Idempotent, and it drops the batch: a retired registry answers no batch, which is what `dispose`
- * did by emptying four fields one at a time.
- */
+ * The phase a registry retires into, keeping whatever notification is running. Idempotent; drops
+ * the batch. */
 export function retired(phase: RegistryPhase): RegistryPhase {
   switch (phase.kind) {
     case "idle":

@@ -1,108 +1,28 @@
 import { refuse } from "./refusal";
 
 export { describeDiagnostics } from "./refusal";
-/**
- * The named refusals a schema edit throws, each one a spelling of the data `refusal.ts` owns.
- *
- * Moved out of `project-runtime.ts` whole by slice 2 of issue #267, with each docblock travelling
- * with the function it constrains. Not a new decision about any of them: none of these reads `this`,
- * so none of them was ever about the class it sat above, and each one is a contract about what a
- * caller is told rather than about how a commit is ordered. They are also the least-edited region of
- * that file, so their comment bulk was sitting inside its hot edit target for no reason at all.
- *
- * Every refusal below is now one call to `refuse`, which owns the payload, the message and the
- * error class each of them throws, so the kind of a refusal is a value a caller can branch on rather
- * than a prefix inside prose it has to parse. These functions keep their names and their signatures,
- * so no call site and no test moves, and `describeDiagnostics` is re-exported from here for the same
- * reason. No export of `packages/core` moves, and every refusal is still reached through the verb
- * that owns it. Issue #443, phase A step 1.
- */
-/**
- * Renders one thrown value as its own message, and answers nothing about a cause it collected.
- *
- * This folder's owner of that question, and saying so is issue #446: `report.ts` declared a second
- * `describeError` that flattens an `AggregateError` into its causes, so two functions of one name
- * answered two questions one import apart and nothing said which caller wanted which. The other one
- * is `describeWithCauses`, it delegates its leaf case here, and a caller that wants an aggregate's
- * causes reaches it by name. `project-runtime.ts` wants this one and reads an aggregate itself. See
- * ADR-096.
- */
+/** Named schema refusals; admission order: recipe, commit in flight, value batch. `refusal.ts` owns message and class. */
+/** Renders a thrown value as its own message; aggregate causes belong to `describeWithCauses`. */
 export function describeError(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
-/**
- * Refuses a recipe opened inside a recipe.
- *
- * Joining the open one silently would mean the inner `edit` returns before anything it asked for has
- * committed, so a helper's cost and its guarantees would depend on whether something above it had
- * opened a transaction. That is the invisible-context shape that cut `setMotion`, cut `setTrack` and
- * kept property edits separate from whole-group edits. See ADR-064.
- */
+/** Refuses a recipe opened inside a recipe: `schema-transaction-nested`. Joining the open recipe would return the inner `edit` uncommitted. */
 export function nestedTransaction(): never {
   return refuse({ kind: "nested-recipe" });
 }
-/**
- * Refuses an edit that applies immediately from inside a recipe.
- *
- * Neither tier this reaches is a structural commit: tier 0 reaches the layer that owns the created
- * trigger and the clock consumer, and tier 2 ends at its own `invalidate`. Both therefore apply
- * immediately and would survive an abort. Deferring them into the settle steps was read and refused,
- * because a settle step cannot refuse: it would move `setTrigger`'s failure to after the graph
- * committed and after the retained definition moved, which is the opposite of the contract `RA-35`
- * pins. One condition has one failure contract, so the verb is refused by name inside a recipe
- * rather than given a second, weaker one outside it. See ADR-064.
- */
+/** Refuses an immediate verb inside a recipe: `schema-transaction-immediate`. It applies at once, so an abort could not undo it. */
 export function immediateInTransaction(verb: string): never {
   return refuse({ kind: "immediate-in-recipe", verb });
 }
-/**
- * Refuses a structural commit asked for while one is already in flight.
- *
- * Its own family rather than the immediate-verb one above, because the condition differs and so does
- * the remedy. That one names the verb, because the caller wrote both the `edit()` and the call and has
- * to know which of the two to move. This one refuses every structural verb equally, at the one member
- * all of them reach, and the caller wrote no transaction at all: it wrote a hook, which a commit
- * called. So the message names the condition, and a per-verb spelling would cost a string literal at
- * six call sites to say what the stack already does.
- *
- * A refusal rather than a nested commit, because a commit in flight holds its pair in a local and has
- * already applied effects derived from it, so it cannot honour what an open transaction means. See
- * ADR-068.
- */
+/** Refuses a structural commit while one is in flight: `schema-commit-reentrant`, naming the condition, not the verb. */
 export function commitInFlight(): never {
   return refuse({ kind: "commit-in-flight" });
 }
-/**
- * Refuses an immediate verb asked for while a value batch is open.
- *
- * The third condition on the shared immediate rung, and a third rather than a widening of the first
- * because which callback the caller wrote is what differs. `schema-transaction-immediate` names a
- * verb that cannot travel with a structural recipe at all; this one names a verb that cannot travel
- * with a value batch, which the four value verbs and `seek` can, since staging their publication is
- * the whole point of opening one. So the message names the verb, exactly as the recipe refusal does:
- * the caller wrote both the `values()` and the call, and has to know which of the two to move.
- *
- * `invalidate` is refused here rather than joined to the batch, deliberately. It carries no
- * bookkeeping of its own, so inside a batch that publishes once it is either a no-op or a second
- * publication, and it is the verb a Motion driver reaches, which is the reentrancy this condition
- * exists to refuse. A batch asked for inside a batch reaches this same refusal, so nesting needs no
- * second spelling. See ADR-078.
- */
+/** Refuses an immediate verb inside a value batch: `value-batch-immediate`, named by verb; `invalidate` is refused too, not joined to the batch. */
 export function valueBatchImmediate(verb: string): never {
   return refuse({ kind: "immediate-in-batch", verb });
 }
-/**
- * Refuses a structural commit asked for while a value batch is open.
- *
- * `commitInFlight`'s twin, at the one member every structural verb reaches and for the same reason
- * it names the condition rather than the verb: the caller wrote no verb list, and a per-verb
- * spelling would cost a string literal at six call sites to say what the stack already says.
- *
- * A refusal rather than a deferral, because the two tiers do not nest in either direction. A
- * structural commit derives effects, replaces the graph and adopts a pair; a value batch holds a
- * seed list and nothing else, so there is no pair for one to stage inside the other and no inverse
- * for a settle step to run. See ADR-078.
- */
+/** Refuses a structural commit inside a value batch: `value-batch-structural`. Not deferred: a batch holds seeds, a commit holds a pair, so neither nests. */
 export function valueBatchStructural(): never {
   return refuse({ kind: "structural-in-batch" });
 }

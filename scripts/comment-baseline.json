@@ -312,10 +312,6 @@
     "count": 2
   },
   {
-    "path": "packages/core/src/adapters/dom.ts",
-    "count": 26
-  },
-  {
     "path": "packages/core/src/adapters/interpolator/gsap.ts",
     "count": 21
   },
@@ -556,10 +552,6 @@
     "count": 2
   },
   {
-    "path": "packages/core/src/runtime/graph-runtime.ts",
-    "count": 24
-  },
-  {
     "path": "packages/core/src/runtime/plugin-output.ts",
     "count": 4
   },
@@ -580,10 +572,6 @@
     "count": 23
   },
   {
-    "path": "packages/core/src/runtime/registry-phase.ts",
-    "count": 20
-  },
-  {
     "path": "packages/core/src/runtime/report.ts",
     "count": 2
   },
@@ -594,10 +582,6 @@
   {
     "path": "packages/core/src/runtime/run-plan.ts",
     "count": 17
-  },
-  {
-    "path": "packages/core/src/runtime/schema-refusals.ts",
-    "count": 25
   },
   {
     "path": "packages/core/src/runtime/value-state.ts",
@@ -626,10 +610,6 @@
   {
     "path": "packages/plugins/src/builtin-catalog.ts",
     "count": 2
-  },
-  {
-    "path": "packages/plugins/src/ik-chain.ts",
-    "count": 24
   },
   {
     "path": "packages/plugins/src/ik-descent.ts",

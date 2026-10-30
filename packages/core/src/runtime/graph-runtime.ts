@@ -67,7 +67,7 @@ export interface GraphRuntimeOptions {
   readonly onFlushError?: (diagnostic: Diagnostic) => void;
   readonly onClockTick?: (event: ClockTick) => void;
   readonly graphBuilder?: GraphBuilder;
-  /** The identified-table composition seam, absent for every grouped-only runtime. */
+  /** Identified-table composition seam; undefined for grouped-only runtimes. */
   readonly composeIdentified?: ComposeIdentifiedResolver;
 }
 export class GraphRuntime {
@@ -134,15 +134,8 @@ export class GraphRuntime {
   get lastFlushError(): Diagnostic | undefined {
     return retainedDiagnostic(this.#trace);
   }
-  /**
-   * The diagnostic describing a failed handover, or `undefined` until a handover has failed.
-   *
-   * A host whose `onFlushError` throws is contained rather than allowed to reroute a runtime
-   * failure, and this is where the containment leaves a trace instead of erasing one. The sink's
-   * own exception is retained here, is never delivered anywhere, and never replaces the runtime
-   * diagnostic it failed to carry. A distinct hook was refused because a hook is a second sink and
-   * therefore a second thing that can throw. Issue #410, and see ADR-091.
-   */
+  /** Failed-handover diagnostic, else `undefined`. A throwing `onFlushError` is contained: its
+   * exception lands here, undelivered, never replacing the runtime's own diagnostic. */
   get lastSinkError(): Diagnostic | undefined {
     return sinkFailure(this.#trace);
   }
@@ -179,54 +172,17 @@ export class GraphRuntime {
     this.#publisherNodes.clear();
     this.#memo = COLD_MEMO;
   }
-  /**
-   * Publishes for `seeds`, unioned with whatever a deferred drain left pending, and answers it.
-   *
-   * The seed-list entry, and the whole of it: this verb cannot reach the clock's frame number.
-   * `flush(seeds, tick?)` carried both operations behind one name until issue #374, so which of the
-   * two a caller meant was stated by whether a second argument was present, and the one that
-   * consumes a frame number the clock will reuse was the one reachable by accident. `flushAtTick`
-   * owns that transition now and states it as a required parameter. See ADR-082.
-   *
-   * `seeds` has no default either, since issue #371's follow-up: an omitted argument used to ask
-   * for a full graph recompute, the most expensive answer this class has, selected by saying
-   * nothing. Every caller states its list, and the one that wants every member says so.
-   *
-   * An empty list is not a cheap flush and is not treated as one. A call that publishes derives the
-   * snapshot, moves `#sequence` and notifies every batch subscriber for it, because
-   * `#drainScheduled` replays a deferral that carried no frame through `flush([])`, precisely so the
-   * drain publishes what the pending payload carried. A reentrant call is the exception rather than
-   * a qualification of that sentence: it publishes nothing now whatever its seeds, and when it also
-   * defers nothing it is answered the empty batch, which is the one path on which none of the three
-   * happen. A deferral that carried a frame replays through `flushAtTick` instead,
-   * so this verb is one of the two branches rather than the whole of the drain. Emptiness is a
-   * project-tier question and `ProjectRuntime.#publishSeeds` owns it. See ADR-080 and ADR-088.
-   */
+  /** Publishes `seeds` plus deferred pending, answers batch; never moves `#lastTick`, which
+   * belongs to `flushAtTick`. Reentrant publishes nothing; empty seeds still derive and notify. */
   flush(seeds: readonly string[]): PatchBatch {
     this.#assertLive();
     return this.#publish(seedRequest(seeds));
   }
-  /**
-   * Publishes for `seeds` at `tick`, advancing the clock's frame number, and answers that batch.
-   *
-   * The clock's entry, and the only member that may move `#lastTick`. `#flushTick` is its only
-   * caller in `src`, which is what keeps a live edit structurally unable to consume a frame number
-   * the clock will reuse on its next frame: the verb the project tier holds has no such parameter,
-   * and `clock-tick-identity` reads that separation from the other side. The transition is required
-   * rather than optional, so it can never be selected by omission. See ADR-082.
-   *
-   * A reentrant call is answered before the tick is consumed, deliberately and in that order. A
-   * flush requested while subscribers are being notified publishes nothing now, so moving the frame
-   * number for it would record a frame that did not run. `publisher-reentrancy` reads that.
-   *
-   * The frame is carried rather than dropped, which is the half issue #380 left undecided. It
-   * travels with the deferred seeds and is recorded by the publication that does run, so nothing
-   * claims a frame that did not happen and nothing loses one that was asked for. See ADR-084.
-   */
+  /** Publishes `seeds` at `tick`, answers batch; only member that moves `#lastTick`, and the tick
+   * is required. Reentrancy answered first, so a skipped publish records no frame. */
   flushAtTick(seeds: readonly string[], tick: number): PatchBatch {
     this.#assertLive();
-    // Validity before the reentrancy question, so a frame this runtime could never reach is refused
-    // rather than queued. Recording it stays the separate act it was.
+    // Tick validity before reentrancy: a frame this runtime could never reach is refused, not queued.
     this.#assertTick(tick);
     return this.#publish(frameRequest(seeds, tick));
   }
@@ -249,27 +205,20 @@ export class GraphRuntime {
   #deferIfFlushing(request: PublishRequest): PatchBatch | undefined {
     if (!isFlushing(this.#phase)) return undefined;
     this.#pending = deferring(this.#pending, requestSeeds(request), requestTick(request));
-    // Read from what the deferral owes rather than from what the request stated, so one switch
-    // decides both the batch and whether a drain is booked at all. A request that adds nothing to an
-    // empty payload owes nothing, and a booking for it would claim a drain has something to publish
-    // when its only act would be to release it. A request that adds only a frame owes a publication,
-    // so the empty batch would tell its caller that nothing was queued.
+    // Read what the deferral owes, not the request: a booking claims a drain with something to
+    // publish, and a frame-only request still owes a publication.
     const owed = deferredWork(this.#pending);
     switch (owed.kind) {
       case "nothing":
         return batchFor(this.#sequence, { kind: "empty" });
-      // The batch says which future the work has, and the member that books is the one that knows,
-      // so the booking is taken inside the answer and travels with it. Still taken whether or not
-      // this request contributed the work, because a drain replaying through here released the
-      // booking it consumed first.
+      // Booking travels inside the answer, taken even when a replaying drain contributed no work.
       case "seeds":
         return batchFor(this.#sequence, {
           kind: "deferred-in-flush",
           seeds: owed.seeds,
           scheduled: this.#scheduleDrain(),
         });
-      // The frame is the whole of what this deferral has to say, so it says that instead of naming
-      // a payload it does not have.
+      // A frame-only deferral names its tick, not a payload it lacks.
       case "frame":
         return batchFor(this.#sequence, {
           kind: "deferred-frame-in-flush",
@@ -284,7 +233,7 @@ export class GraphRuntime {
     this.#assertTick(tick);
     this.#lastTick = tick;
   }
-  // Asked twice: by flushAtTick before it may defer, and here before a frame is recorded.
+  // Asked twice: by flushAtTick before deferring, and by #advanceTick before recording.
   #assertTick(tick: number): void {
     if (!Number.isFinite(tick)) throw new TypeError("Runtime ticks must be finite.");
     if (tick < this.#lastTick) throw new RangeError("Runtime ticks must be monotonic.");
@@ -308,22 +257,12 @@ export class GraphRuntime {
       if (isPending(this.#pending)) this.#scheduleDrain();
     }
   }
-  /**
-   * Retires this runtime, once.
-   *
-   * `disposed` is terminal and carries nothing, so two of the states this used to clear by hand
-   * are gone rather than cleared: a retired runtime cannot be mid-flush and cannot hold a drain
-   * booking, because neither is representable beside that discriminant. A drain the scheduler
-   * already accepted is cancelled rather than left to run and be refused, since issue #389 made the
-   * booking a claim about the scheduler; `#drainScheduled` still refuses a job a port declined to
-   * cancel, and since issue #408 it refuses on `isRetiring` rather than on the one discriminant, so
-   * a job arriving while teardown is still running is refused too. See ADR-083, ADR-084 and ADR-090.
-   */
+  /** Retires this runtime once; `disposed` is terminal. An accepted drain is cancelled, not left
+   * to be refused, and a job the port declined to cancel is refused on `isRetiring`. */
   dispose(): void {
     if (isRetiring(this.#phase)) return;
     this.#phase = retiring(this.#phase);
-    // Before the phase goes terminal, because a retired runtime should not leave the scheduler
-    // holding a job it will only refuse.
+    // Release before the phase goes terminal: a retired runtime must not hold a job it only refuses.
     this.#releaseBooking();
     this.#phase = DISPOSED;
     this.#unsubscribe();
@@ -333,7 +272,7 @@ export class GraphRuntime {
     this.#memo = COLD_MEMO;
     this.#registry.dispose();
   }
-  // Composing a publisher node calls the injected compose, so derivation stays inside this boundary.
+  // Publisher composition calls the injected compose, keeping derivation inside this boundary.
   #snapshotFor(): PublisherSnapshot {
     const graph = this.#binding.graph;
     const warm = memoHit(this.#memo, graph, this.#membersRevision);
@@ -362,7 +301,7 @@ export class GraphRuntime {
     this.#publisherNodes.set(node, publisherNode);
     return publisherNode;
   }
-  // The only way membership moves, so the snapshot revision cannot be left behind.
+  // Sole add path, so the snapshot revision cannot lag it.
   #addMember(nodeId: string): void {
     if (this.#members.has(nodeId)) return;
     this.#members.add(nodeId);
@@ -390,7 +329,7 @@ export class GraphRuntime {
     return this.#drainHandle !== undefined;
   }
 
-  // The phase drops before the port is touched: a cancel that throws must not leave a booking owed.
+  // Phase drops before the port: a throwing cancel must not leave a booking owed.
   #releaseBooking(): void {
     const handle = this.#drainHandle;
     this.#drainHandle = undefined;
@@ -406,7 +345,7 @@ export class GraphRuntime {
     }
   }
 
-  // Released first, so a subscriber deferring again below can book its own follow-up drain.
+  // Release before flushing, so a subscriber deferring again books its own follow-up drain.
   #drainScheduled(): void {
     this.#releaseBooking();
     if (isRetiring(this.#phase) || !isPending(this.#pending)) return;
@@ -418,7 +357,7 @@ export class GraphRuntime {
       this.#report(FLUSH_FAILURE_RULE, `Scheduled flush failed: ${describeWithCauses(error)}`);
     }
   }
-  // Two boundaries under one subscription: consumers and graph fail for unrelated reasons.
+  // Two error boundaries under one subscription: consumers and graph fail independently.
   #onTick(event: ClockTick): void {
     if (isRetiring(this.#phase)) return;
     if (event.tick <= this.#lastTick) {
@@ -455,8 +394,7 @@ export class GraphRuntime {
     }
   }
   #report(ruleId: RuleId, message: string, tick: number = this.#lastTick): void {
-    // The phase selects the sink and nothing else: retention below is total, so a retired runtime
-    // withholds rather than discards.
+    // Phase selects the sink only; retention is total, so a retired runtime withholds, not discards.
     const sink = reportSink(this.#phase, this.#onFlushError);
     reportDiagnostic(sink, this.#retain, ruleId, message, tick, [...this.#members]);
   }
