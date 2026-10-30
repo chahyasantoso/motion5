@@ -168,10 +168,6 @@
     "count": 1
   },
   {
-    "path": "apps/pose-gap-filler/src/rig/writer.ts",
-    "count": 9
-  },
-  {
     "path": "apps/pose-gap-filler/src/synthetic/actor.ts",
     "count": 4
   },
@@ -180,16 +176,8 @@
     "count": 6
   },
   {
-    "path": "apps/pose-gap-filler/src/synthetic/handles.ts",
-    "count": 6
-  },
-  {
     "path": "apps/pose-gap-filler/src/synthetic/inspect.ts",
     "count": 3
-  },
-  {
-    "path": "apps/pose-gap-filler/src/synthetic/occlusion.ts",
-    "count": 10
   },
   {
     "path": "apps/pose-gap-filler/src/synthetic/scenarios.ts",

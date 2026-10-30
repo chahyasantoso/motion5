@@ -2,22 +2,22 @@ import { INFLUENCE_KEY, readInfluenceValue, unreachable } from "@motion5/core/pl
 import type { WorldPoint } from "./frame";
 import type { SolveMember } from "./ik-member";
 
-/** Owns goal influence, how much a goal's branch counts when branches disagree about a shared member, and the compromise it settles on. */
+/** Goals keyed by leaf member id; owns influence, branch pulls, compromise. */
 
-/** The influence a goal has when its leaf authored none. */
+/** The influence a goal has when its leaf authors none. */
 export const DEFAULT_INFLUENCE = 1;
 
-/** The influence a member's live values declare, or `undefined` for anything outside the domain. */
+/** The influence a member's live values declare, or `undefined` outside the domain. */
 export function readInfluence(values: Readonly<Record<string, unknown>>): number | undefined {
   return readInfluenceValue(values[INFLUENCE_KEY]);
 }
 
-/** The influence a solve uses for one member's goal, absence read as `DEFAULT_INFLUENCE`. */
+/** The influence a solve uses for one member's goal; absence reads as `DEFAULT_INFLUENCE`. */
 export function goalInfluence(member: Pick<SolveMember, "influence">): number {
   return member.influence ?? DEFAULT_INFLUENCE;
 }
 
-/** Each member's pull: the mean influence of the addressed leaves in the subtree it roots, or the default where it has none. */
+/** Each member's pull: mean influence of addressed leaves in the subtree it roots, default where none. */
 export function branchPulls(
   byId: ReadonlyMap<string, Pick<SolveMember, "base" | "influence">>,
   addressed: readonly string[],
@@ -42,7 +42,7 @@ export function branchPulls(
   return pulls;
 }
 
-/** The influence mean scaled by its largest value, so large influences cannot overflow the sum. */
+// Divide by the largest first, so sums stay finite.
 function scaledMean(influences: readonly number[]): number {
   if (influences.length === 0) return DEFAULT_INFLUENCE;
   let scale = 0;
@@ -52,16 +52,16 @@ function scaledMean(influences: readonly number[]): number {
   return scale * (ratios / influences.length);
 }
 
-/** The closed compromise policy: `centroid` is the default, `reach-circle` the alternative tried only after a centroid baseline reports `conflicted`. */
+/** Closed policy: `centroid` by default; `reach-circle` only after a `conflicted` centroid baseline. */
 export type CompromiseRule = "centroid" | "reach-circle";
 
-/** A circle a shared member's tip should lie on for a proposal to be met exactly; finite centre, non-negative radius. */
+/** A circle a shared member's tip must lie on for a proposal to be met exactly; finite centre, non-negative radius. */
 export interface ReachCircle<P = WorldPoint> {
   readonly centre: P;
   readonly radius: number;
 }
 
-/** One proposal for a member's tip, weighed by its pull: a closed `kind` union read by `reachCircleOf`; a `branch` `point` and `reach` are un-offset through the base's direction. */
+/** One weighted proposal for a member's tip: `goal` meets at `point`; `branch` also carries a `reach` circle. */
 export type Pull<P = WorldPoint> =
   | { readonly kind: "goal"; readonly point: P; readonly weight: number }
   | {
@@ -71,7 +71,7 @@ export type Pull<P = WorldPoint> =
       readonly reach: ReachCircle<P>;
     };
 
-/** The circle one pull is met on, read exhaustively over the closed `Pull` union. */
+/** The circle a pull is met on; exhaustive over `Pull.kind`. */
 export function reachCircleOf<P>(pull: Pull<P>): ReachCircle<P> {
   switch (pull.kind) {
     case "goal":
@@ -83,20 +83,20 @@ export function reachCircleOf<P>(pull: Pull<P>): ReachCircle<P> {
   }
 }
 
-/** Where a shared member settles, and `spread`: the largest distance from it to any proposal, the `conflicted` witness. */
+/** Where a shared member settles; `spread` is the largest distance to any proposal, the `conflicted` witness. */
 export interface Compromise<P = WorldPoint> {
   readonly point: P;
   readonly spread: number;
 }
 
-/** The arithmetic a compromise needs in one dimension: weighted centroid, proposal spread, and the seeded reach fit. */
+/** Per-dimension arithmetic for a compromise: centroid, spread, seeded reach fit. */
 export interface CompromiseGeometry<P> {
   readonly centroid: (pulls: readonly Pull<P>[]) => P;
   readonly spread: (pulls: readonly Pull<P>[], point: P) => number;
   readonly reachFit: (pulls: readonly Pull<P>[], centroid: P) => P;
 }
 
-/** The one reading of the closed `CompromiseRule` union: where a member settles under `rule` in `geometry`'s dimension, both rules reporting the centroid `spread`. */
+/** Settles a member under `rule`; both rules report the centroid `spread`. */
 export function compromiseIn<P>(
   geometry: CompromiseGeometry<P>,
   pulls: readonly Pull<P>[],
@@ -114,12 +114,12 @@ export function compromiseIn<P>(
   }
 }
 
-/** The influence-weighted mean `Σw·p / Σw` of one member's proposals: the `centroid` point and the `reach-circle` seed. */
+/** The influence-weighted mean `Σw·p / Σw` of proposals: the `centroid` point and `reach-circle` seed. */
 export function compromise(pulls: readonly Pull[], rule: CompromiseRule = "centroid"): Compromise {
   return compromiseIn(PLANAR_GEOMETRY, pulls, rule);
 }
 
-/** One pull's weight relative to the largest in `pulls`, and `1` for a lone pull, so both rules' sums stay finite. */
+/** Each pull's weight relative to the largest, or `1` for a lone pull, so both rules' sums stay finite. */
 export function relativeWeights(pulls: readonly { readonly weight: number }[]): readonly number[] {
   if (pulls.length === 1) return [1];
   let scale = 0;
@@ -149,12 +149,12 @@ function proposalSpread(pulls: readonly Pull[], point: WorldPoint): number {
   return spread;
 }
 
-/** Gauss-Newton steps the reach-circle fit takes, fixed so its cost and answer are fixed. */
+/** Pinned step count: cost and answer stay fixed. */
 const REACH_CIRCLE_STEPS = 6;
-/** Levenberg damping on the normal equations; it only keeps a rank-one system solvable. */
+/** Levenberg damping; keeps a rank-one system solvable. */
 const REACH_CIRCLE_DAMPING = 1e-6;
 
-/** Damped Gauss-Newton fit of one tip to its pulls' circles, `Σ(w/max)·(|p - centre| - radius)^2`, seeded at the centroid and returned to unless it strictly improves it. */
+// Damped Gauss-Newton on Σ(w/max)(|p-centre|-radius)^2; centroid unless strictly improved.
 function reachCircleFit(pulls: readonly Pull[], centroid: WorldPoint): WorldPoint {
   if (pulls.length === 1) return centroid;
   const weights = relativeWeights(pulls);
@@ -201,7 +201,7 @@ function reachCircleFit(pulls: readonly Pull[], centroid: WorldPoint): WorldPoin
   return Number.isFinite(fitted) && fitted < seeded ? Object.freeze(point) : centroid;
 }
 
-/** The 2D arithmetic `compromise` hands to `compromiseIn`. */
+// 2D arithmetic behind compromise.
 const PLANAR_GEOMETRY: CompromiseGeometry<WorldPoint> = Object.freeze({
   centroid: weightedCentroid,
   spread: proposalSpread,

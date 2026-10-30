@@ -22,10 +22,10 @@ import {
 
 export { decidingMiddle, MIN_BEND_SINE } from "./bend-policy";
 
-/** The one part of a project the writer drives, so the writer is tested without an Engine. */
+/** The only part of a project the writer drives, so tests need no Engine. */
 export type ValueBatchPort = Pick<ProjectHandle, "values">;
 
-/** What the writer did for one limb this frame, a closed union. */
+/** What the writer did for one limb this frame. */
 export type LimbWrite =
   | { readonly kind: "written"; readonly bend?: BendReference }
   | {
@@ -34,11 +34,7 @@ export type LimbWrite =
     };
 
 export interface PoseWriter {
-  /**
-   * Writes one frame as one `project.values` batch: every limb's root and goal, its two lengths
-   * when they changed, and its bend side when it changed. A limb whose root or goal is lost, or
-   * whose lengths the estimator does not know yet, is skipped and keeps its last pose.
-   */
+  /** Writes one frame as one `project.values` batch; a skipped limb keeps its last pose. */
   write(
     filled: FilledFrame,
     trusted: TrustedFrame,
@@ -46,11 +42,7 @@ export interface PoseWriter {
   ): Record<LimbId, LimbWrite>;
 }
 
-/**
- * The 2D bend side: `flip` is false when the middle joint lies on the positive side of the
- * root-to-goal line, measured as the z of `(goal - root) x (middle - root)` in stage pixels (y
- * down). Pinned by GF-6 against the solver itself, so a convention change in the solve fails there.
- */
+/** Returns `false` when the middle joint lies on the positive side of the root-to-goal line: z of `(goal - root) x (middle - root)`, y down. */
 export function imageBendFlip(root: Vec, goal: Vec, middle: Vec): boolean | undefined {
   const reach = sub(goal, root);
   const bend = sub(middle, root);
@@ -58,7 +50,7 @@ export function imageBendFlip(root: Vec, goal: Vec, middle: Vec): boolean | unde
   return side === 0 ? undefined : side < 0;
 }
 
-/** The values one limb's chain holds in the project, as far as the writer has published them. */
+/** The values the project holds for one limb, as far as the writer knows. */
 interface Published {
   readonly upper: number | undefined;
   readonly lower: number | undefined;
@@ -66,16 +58,13 @@ interface Published {
 }
 
 interface LimbState {
-  /**
-   * The last deciding bend side: an observation, held while the middle joint is untrusted or not
-   * decisive; `undefined` until the first one, when the authored side is written.
-   */
+  /** Last deciding bend side; held while the middle is untrusted or not decisive; undefined until first observed. */
   bend: boolean | undefined;
-  /** What the project holds, advanced only once a batch carrying it has returned. */
+  /** Advances only after a batch carrying it returns. */
   published: Published;
 }
 
-/** The authored rig: lengths are placeholders the writer has never published, flip is false. */
+/** Authored rig: unpublished lengths, flip false. */
 const AUTHORED: Published = { upper: undefined, lower: undefined, flip: false };
 
 type LimbPlan =
@@ -87,14 +76,7 @@ type LimbPlan =
       readonly stage: (transaction: ValueTransaction) => void;
     };
 
-/**
- * The only caller of `project.values`. The bend side is read from the measured middle joint when it
- * is trusted and deciding (`decidingMiddle`) and held otherwise, so neither an inferred elbow nor a
- * straight limb's noise decides which way the solve bends.
- *
- * Published state advances only after the batch returns: a batch that throws leaves the writer
- * believing what the project still holds, so the next frame writes the same changes again.
- */
+/** Writes 2D frames: bend side held unless a trusted deciding middle yields one; state advances only after the batch returns. */
 export function createImageWriter(project: ValueBatchPort): PoseWriter {
   const states = new Map<LimbId, LimbState>(
     LIMBS.map((limb) => [limb.id, { bend: undefined, published: AUTHORED }]),
@@ -104,7 +86,7 @@ export function createImageWriter(project: ValueBatchPort): PoseWriter {
   );
 }
 
-/** One batch owner for both dimensions; publication bookkeeping commits only after success. */
+/** One batch owner for both dimensions; commits only after the batch succeeds. */
 function createBatchWriter(
   project: ValueBatchPort,
   planLimb: (
@@ -197,17 +179,13 @@ function planLimb(
   };
 }
 
-/**
- * Legacy world bend holds only deciding measured root-to-middle directions. The opt-in policy
- * separately proposes bounded prediction state; neither path commits before the batch succeeds.
- * Core consumes a pole POINT: translate that direction by this frame's root. No stale point.
- */
+/** Legacy holds deciding measured root-to-middle directions, `predict` proposes bounded prediction state; neither commits before the batch succeeds; pole = root + direction (default +z). */
 export function createWorldWriter(
   project: ValueBatchPort,
   policy: BendPolicy = LEGACY_BEND_POLICY,
 ): PoseWriter {
   validateBendPolicy(policy);
-  // Snapshot caller settings: mutations must not change a writer mid-session.
+  // Freeze a copy: caller mutation must not alter a live writer.
   policy = Object.freeze({ ...policy });
   const states = new Map(
     LIMBS.map((limb) => [
@@ -244,7 +222,7 @@ export function createWorldWriter(
           trustedPosition(trusted.trust[limb.middle]),
           state.direction !== undefined,
         );
-        // Keep the disabled-path arithmetic and held transitions exactly as PR545.
+        // Held direction changes only from a trusted deciding middle and a measured root; a zero delta keeps it.
         if (middle !== undefined && measuredRoot !== undefined)
           direction = unit(sub(middle, measuredRoot)) ?? state.direction;
         break;

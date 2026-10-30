@@ -36,14 +36,13 @@ import {
 } from "./ik-constraint";
 import type { IterativeQuality, SolveResult } from "./ik-result";
 
-/** The residual in world units at or below which a solve is converged. Never authored: a tolerance
- * a timeline could vary makes the pass count a function of the frame. */
+/** Residual, world units, at or below which a solve is converged; fixed so pass count is frame-independent. */
 export const FABRIK_TOLERANCE = 1e-3;
 
 /** A point in the solve's working state. */
 export type FabrikPoint = WorldPoint;
 
-/** Local rotations plus the pivots and tips they describe; length is a member's own pivot-to-tip distance. */
+/** Local rotations plus pivots and tips; length is a member's pivot-to-tip distance. */
 export interface FabrikSolution extends SolveResult<IterativeQuality> {
   readonly pivots: Readonly<Record<string, FabrikPoint>>;
   readonly tips: Readonly<Record<string, FabrikPoint>>;
@@ -52,7 +51,7 @@ export interface FabrikSolution extends SolveResult<IterativeQuality> {
 const DEGREES = 180 / Math.PI;
 const RADIANS = Math.PI / 180;
 
-/** FABRIK over one solver chain, pure: local rotations in `fk`'s degrees, in canonical depth order derived here. */
+/** Pure FABRIK over one solver chain: local rotations in `fk`'s degrees, canonical depth order. */
 export function solveFabrikAttempt(
   root: WorldFrame,
   members: readonly SolveMember[],
@@ -84,14 +83,12 @@ export function solveFabrikAttempt(
   const pulls = branchPulls(byId, addressed);
   const tips = new Map<string, FabrikPoint>();
   const pivots = new Map<string, FabrikPoint>();
-  // Each member's path magnitude scale, re-measured every pass, bases before children.
   const pathScales = new Map<string, number>();
   const rootScale = Math.max(Math.abs(rootPoint.x), Math.abs(rootPoint.y));
   const originOf = (id: string): FabrikPoint => {
     const base = baseOf(id);
     return isMember(base) ? tips.get(base)! : rootPoint;
   };
-  /** A member's world direction from its own pivot; with no extent, its rest direction off its base's. */
   const worldDirection = (id: string): number => {
     const pivot = pivots.get(id)!;
     const tip = tips.get(id)!;
@@ -104,7 +101,7 @@ export function solveFabrikAttempt(
     return isMember(base) ? worldDirection(base) : root.rotation;
   };
 
-  // Goals are read in canonical order, so the first `NaN` leaf is the one refused.
+  // Goals read canonical order → first `NaN` leaf refused.
   const readings = new Map<string, GoalReading>();
   const aims = new Map<string, FabrikPoint>();
   const pathReach = (leaf: string): number => {
@@ -123,7 +120,6 @@ export function solveFabrikAttempt(
     readings.set(leaf, reading);
     aims.set(leaf, Object.freeze({ x: x!, y: y! }));
   }
-  // The default seed walks one root-to-leaf path per leaf.
   switch (seed.kind) {
     case "default":
       for (const leaf of addressed) {
@@ -155,7 +151,7 @@ export function solveFabrikAttempt(
     );
   }
 
-  // Degenerate answers stay defined so no `NaN` reaches a frame; a non-finite ratio normalises by the larger component.
+  // Degenerate answers stay finite; non-finite ratio normalises by larger component.
   const place = (from: FabrikPoint, to: FabrikPoint, length: number): FabrikPoint => {
     if (length <= 0) return Object.freeze({ x: from.x, y: from.y });
     const dx = to.x - from.x;
@@ -169,7 +165,7 @@ export function solveFabrikAttempt(
     const extent = length / Math.hypot(dx / axis, dy / axis);
     return Object.freeze({ x: from.x + (dx / axis) * extent, y: from.y + (dy / axis) * extent });
   };
-  // The inward pivot: `length` back from the settled tip, turned for each limited child settled earlier in this deepest-first pass.
+  // Inward pivot: `length` back from settled tip, turned per limited child settled earlier this pass.
   const inwardDirections = new Map<string, number>();
   const inwardPivot = (id: string): FabrikPoint => {
     const tip = tips.get(id)!;
@@ -190,9 +186,9 @@ export function solveFabrikAttempt(
       y: tip.y - length * Math.sin(bounded * RADIANS),
     });
   };
-  /** The outward pass composes pivots in canonical depth order and is the only place lengths are enforced. */
-  /** A free joint keeps its placed tip; a limited one turns onto the nearest legal local angle. */
-  /** The bound flag comes from the enforced angle, not from rounded positions. */
+  /** Outward pass: pivots in canonical depth order; published lengths enforced only here. */
+  /** Free joint keeps its placed tip; limited turns onto nearest legal local angle. */
+  /** Bound flag from enforced angle, not rounded positions. */
   const onBound = new Map<string, boolean>();
   const limitTip = (
     id: string,
@@ -238,7 +234,6 @@ export function solveFabrikAttempt(
     const tip = tips.get(leaf)!;
     return Math.hypot(tip.x - goal.x, tip.y - goal.y);
   };
-  /** The worst addressed-leaf shortfall, so no branch hides behind a mean. */
   const residualNow = (): number => {
     let worst = 0;
     for (const leaf of addressed) worst = Math.max(worst, shortfall(leaf));
@@ -272,7 +267,7 @@ export function solveFabrikAttempt(
     spread = 0;
     inwardDirections.clear();
     const before = new Map(tips);
-    // Inward: each leaf starts at its aim; a sub-base settles on the weighted compromise of its branches' base-tip proposals.
+    // Inward: leaf starts at aim; sub-base settles on weighted compromise of branch proposals.
     const proposals = new Map<string, Pull[]>();
     for (const leaf of addressed)
       proposals.set(leaf, [{ kind: "goal", point: aims.get(leaf)!, weight: 1 }]);
@@ -285,7 +280,7 @@ export function solveFabrikAttempt(
         tips.set(id, settled.point);
       }
       const base = baseOf(id);
-      // A proposal for the root is dropped: the root never moves.
+      // Root never moves → proposal dropped.
       if (!isMember(base)) continue;
       const pivot = inwardPivot(id);
       if (isLimited(id) && lengthOf(id) > 0) {
@@ -295,7 +290,7 @@ export function solveFabrikAttempt(
       const list = proposals.get(base) ?? [];
       const direction = baseDirection(id);
       const point = Object.freeze(baseTipFromPivot(pivot, direction, offsetOf(id)));
-      // The child's tip un-offset: the base tips that keep both its tip and its length.
+      // Child tip un-offset: base tip preserving the child's tip and length.
       const centre = Object.freeze(baseTipFromPivot(tips.get(id)!, direction, offsetOf(id)));
       const reach = { centre, radius: lengthOf(id) };
       list.push({ kind: "branch", point, weight: pulls.get(id)!, reach });
@@ -304,7 +299,7 @@ export function solveFabrikAttempt(
     outward();
     residual = residualNow();
     if (incumbent.offer(residual)) saveIncumbent();
-    // Nothing moved, so nothing can: exiting here makes `iterations` mean work and `stalled` say a bigger cap would not help.
+    // Nothing moved → nothing can; `iterations` counts work, `stalled` warns no bigger cap helps.
     let relative = 0;
     let farthest = 0;
     for (const id of ids) {
@@ -330,7 +325,7 @@ export function solveFabrikAttempt(
     }
   }
 
-  // The incumbent pass is published, not the last; nothing is held when no pass ran.
+  // Publish best pass, not last; empty incumbent holds nothing.
   const held = incumbent.residual;
   if (held !== undefined) {
     for (let index = 0; index < ids.length; index += 1) {
@@ -359,7 +354,7 @@ export function solveFabrikAttempt(
     solvedPivots[id] = pivots.get(id)!;
     solvedTips[id] = tips.get(id)!;
   }
-  // The iteration measured aims while the quality reports goals, differing only for a direction's miss.
+  // Iteration measures aims, quality reports goals; differ on a direction miss.
   let worst = residual;
   for (const leaf of addressed) worst = Math.max(worst, residuals[leaf]!);
   const quality = iterativeQuality({
@@ -380,18 +375,18 @@ export function solveFabrikAttempt(
 
 /** What an iterative solve observed when it stopped. */
 export interface IterativeOutcome {
-  /** The worst addressed-leaf shortfall of the published pass. */
+  /** Worst addressed-leaf shortfall of the published pass. */
   readonly residual: number;
   readonly iterations: number;
-  /** Members whose published angle sits exactly on a bound, canonical order. */
+  /** Members whose published angle sits on a bound, canonical order. */
   readonly atBound: readonly string[];
-  /** Branch disagreement still open in the published pass. */
+  /** Branch disagreement open in the published pass. */
   readonly spread: number;
-  /** A fixed point: nothing moved, or a pass moved only by rounding. */
+  /** Fixed point: nothing moved, or only by rounding. */
   readonly stalled: boolean;
 }
 
-/** Names an outcome, most specific first: bound, tolerance, disagreement, stall, cap; disagreement needs spread above tolerance. */
+/** Names an outcome, most specific first: bound, tolerance, disagreement, stall, cap. */
 export function iterativeQuality(outcome: IterativeOutcome): IterativeQuality {
   const { residual, iterations, atBound, spread, stalled } = outcome;
   if (residual > FABRIK_TOLERANCE && atBound.length > 0)
@@ -402,7 +397,7 @@ export function iterativeQuality(outcome: IterativeOutcome): IterativeQuality {
   return { kind: "iteration-cap", iterations, residual };
 }
 
-/** Solve once with the authored seed; a conflicted, limited or capped baseline pays extra attempts. */
+/** Solve once with the authored seed; conflicted, limited or capped baseline pays extra attempts. */
 export function solveFabrik(
   root: WorldFrame,
   members: readonly SolveMember[],
