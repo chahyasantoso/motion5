@@ -392,10 +392,6 @@
     "count": 6
   },
   {
-    "path": "packages/core/src/contract/track-handle.ts",
-    "count": 26
-  },
-  {
     "path": "packages/core/src/contract/v5-infer.ts",
     "count": 10
   },
@@ -516,10 +512,6 @@
     "count": 3
   },
   {
-    "path": "packages/core/src/ports/scheduler.ts",
-    "count": 21
-  },
-  {
     "path": "packages/core/src/ports/trigger-factory.ts",
     "count": 2
   },
@@ -578,10 +570,6 @@
   {
     "path": "packages/core/src/runtime/project-handles.ts",
     "count": 22
-  },
-  {
-    "path": "packages/core/src/runtime/project-ports.ts",
-    "count": 26
   },
   {
     "path": "packages/core/src/runtime/publish-request.ts",
@@ -644,10 +632,6 @@
     "count": 2
   },
   {
-    "path": "packages/plugins/src/fabrik-seed.ts",
-    "count": 25
-  },
-  {
     "path": "packages/plugins/src/ik-chain.ts",
     "count": 24
   },
@@ -666,10 +650,6 @@
   {
     "path": "packages/plugins/src/ik-member.ts",
     "count": 11
-  },
-  {
-    "path": "packages/plugins/src/ik-result.ts",
-    "count": 20
   },
   {
     "path": "packages/plugins/src/ik-scale.ts",
