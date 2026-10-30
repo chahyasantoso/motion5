@@ -14,11 +14,8 @@ import { unreachable } from "./unreachable";
 const IK3D_DEPTH = { min: IK3D_GOAL_BOUNDS.min.z, max: IK3D_GOAL_BOUNDS.max.z } as const;
 
 /**
- * A drag's answer: where one rig's goal should be, in the units that rig's frames publish.
- *
- * Closed over the two rigs the page carries, read by one exhaustive switch, so a third rig cannot be
- * dragged until this file says where its goal lives and how far it may go.
- */
+ * A drag's answer: where one rig's goal goes, in that rig's frame units. One exhaustive switch,
+ * so a third rig cannot be dragged until this file says where its goal lives and its bound. */
 export type GoalMove =
   | { readonly rig: "planar"; readonly x: number; readonly y: number }
   | { readonly rig: "spatial"; readonly x: number; readonly y: number; readonly z: number };
@@ -37,14 +34,7 @@ function clamp(value: number, min: number, max: number): number {
 type GoalValues = NonNullable<NonNullable<TrackDefinition["input"]>["values"]>;
 type GoalTable = Extract<GoalValues, readonly unknown[]>;
 
-/**
- * The authored goal table, validated as one table before any row is rewritten.
- *
- * A table is the only supported goal shape. Every row names a member id and no member is named
- * twice, because a duplicate would make "the goal for this member" ambiguous and a rewrite would
- * silently pick one. A record, a missing value or a malformed row is an invariant failure in the
- * project the app was handed, so it is refused rather than repaired.
- */
+/** Goals are one row per member id, checked whole; a bad shape is refused, not repaired. */
 function goalTable(track: TrackDefinition): GoalTable {
   const values = track.input?.values;
   if (values === undefined || !Array.isArray(values))
@@ -72,7 +62,6 @@ function goalTable(track: TrackDefinition): GoalTable {
   return values;
 }
 
-/** The whole goal table with exactly the addressed row's coordinates replaced, order preserved. */
 type GoalCoordinates = {
   readonly x: number;
   readonly y: number;
@@ -117,19 +106,8 @@ function finite(goal: GoalMove): boolean {
 }
 
 /**
- * The one writer of playground intent. Every gesture on every stage lands here.
- *
- * A move or a flip is a value-tier write (`TrackHandle.input.values`): one invalidate, one
- * publication, no graph replacement, and no progress change, so the chain moves immediately at
- * the member weights the scroll set. Scroll owns weight and nothing else; this owns the goal and the
- * flip and nothing else. A non-finite point is ignored rather than written, and every point is
- * clamped to what its stage draws (the planar margin box; the spatial depth range and the frame
- * with the whole handle inside it), so a drag can never park a goal where nobody can grab it back.
- *
- * A goal edit rewrites the whole authored table in one write, changing only the addressed row's x,
- * y (and z), so a second edit starts from the table the first one left rather than from a snapshot
- * captured before it.
- */
+ * The one writer of playground intent: every gesture lands here. Writes are value-tier; non-finite
+ * points drop, the rest clamp to the drawn bounds; each edit rewrites the whole goal table. */
 export function createGoalControl(project: Pick<ProjectHandle, "track">): GoalControl {
   return {
     move(goal) {

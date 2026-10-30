@@ -4,10 +4,10 @@ import { describeEdge, type GraphEdge } from "../graph/ir";
 import { unreachable } from "../lang/exhaustive";
 import type { PublisherComposition } from "./graph-publisher";
 
-/** Node outcome, source contribution, publication failure: three closed unions for one flush, read by exhaustive switch, not by collection order or an instanceof chain. */
+/** Three closed unions per flush: node outcome, source contribution, publication failure. Exhaustive switch, not collection order or instanceof. */
 declare const OUTCOME_BRAND: unique symbol;
 
-/** Keeps the three unions closed as well as discriminated: the excess-property check reads a fresh literal, not a value through a variable, so a discriminant-only variant is not closed. */
+/** Keeps the unions closed, not only discriminated: the excess-property check reads a fresh literal, never a variable. */
 interface OutcomeBrand {
   readonly [OUTCOME_BRAND]: true;
 }
@@ -42,7 +42,7 @@ interface NotAffectedShape {
   readonly kind: "not-affected";
 }
 
-/** What one flush decided about one node, and the whole set of those decisions. */
+/** What one flush decided about one node: the closed set of outcomes. */
 export type NodeOutcome =
   | Minted<ComposedShape>
   | Minted<BlockedUpstreamShape>
@@ -50,35 +50,35 @@ export type NodeOutcome =
   | Minted<FailedShape>
   | Minted<NotAffectedShape>;
 
-/** A node this flush never reached: what a lookup answers for a node holding nothing. A variant, not absence, so no reader asks four collections. Interned; it carries nothing to differ in. */
+/** A node this flush never reached: the answer for a node holding nothing. A variant, not absence, so no reader asks four collections. */
 export const NOT_AFFECTED: NodeOutcome = mint<NotAffectedShape>({ kind: "not-affected" });
 
-/** The outcome of a node that composed, carrying the composition every downstream reader wants. */
+/** Outcome of a node that composed, carrying the composition downstream readers want. */
 export function composedOutcome(composition: PublisherComposition): NodeOutcome {
   return mint<ComposedShape>({ kind: "composed", composition });
 }
 
-/** The outcome of a node whose upstream is failed, blocked or pending, naming the source. */
+/** Outcome of a node whose upstream is failed, blocked or pending, naming the source. */
 export function blockedOutcome(source: string): NodeOutcome {
   return mint<BlockedUpstreamShape>({ kind: "blocked-upstream", source });
 }
 
-/** The outcome of a node reading a source graph construction accepted and nothing has published. */
+/** Outcome of a node reading a source graph construction accepted, with nothing published. */
 export function pendingOutcome(diagnostic: Diagnostic): NodeOutcome {
   return mint<PendingUpstreamShape>({ kind: "pending-upstream", diagnostic });
 }
 
-/** The outcome of a node whose own composition threw. */
+/** Outcome of a node whose own composition threw. */
 export function failedOutcome(diagnostic: Diagnostic): NodeOutcome {
   return mint<FailedShape>({ kind: "failed", diagnostic });
 }
 
-/** The outcome recorded for `nodeId`, and the one place a miss becomes an answer. */
+/** Outcome recorded for `nodeId`; the one place a miss becomes an answer. */
 export function outcomeOf(outcomes: ReadonlyMap<string, NodeOutcome>, nodeId: string): NodeOutcome {
   return outcomes.get(nodeId) ?? NOT_AFFECTED;
 }
 
-/** Whether a node in this state stops readers from composing: 3 of 5 do, 2 do not. One total switch, so a sixth outcome fails `typecheck` here rather than a disjunction nobody re-read. */
+/** Whether this state stops readers composing: 3 of 5 do. One total switch, so a sixth outcome fails `typecheck` here. */
 export function blocksDownstream(outcome: NodeOutcome): boolean {
   switch (outcome.kind) {
     case "blocked-upstream":
@@ -93,7 +93,7 @@ export function blocksDownstream(outcome: NodeOutcome): boolean {
   }
 }
 
-/** First source in canonical edge order that blocks this node, else undefined. Comparator injected: `compareEdges` owns ordering, so the source named never rides authored order or id encoding. */
+/** First source in canonical edge order that blocks this node, else undefined. `compareEdges` owns ordering, not authored order or id encoding. */
 export function firstBlockingSource(
   edges: readonly GraphEdge[],
   compare: (a: GraphEdge, b: GraphEdge) => number,
@@ -117,16 +117,16 @@ interface NotARecordShape {
   readonly value: unknown;
 }
 
-/** What one source contributes to this flush, resolved once rather than guarded at four sites. */
+/** One source's contribution to this flush, resolved once, not guarded at four sites. */
 export type SourceValues =
   | Minted<RecordValuesShape>
   | Minted<AbsentShape>
   | Minted<NotARecordShape>;
 
-/** Nothing published; carries nothing, so nothing has to be built to say so. `sourceValues` reads a never-ready source ABSENT, so its readers go pending, not composed against `{}`. */
+/** Nothing published; carries nothing, so nothing must be built to say so. `sourceValues` reads a never-ready source ABSENT, so readers go pending, not composed. */
 export const ABSENT: SourceValues = mint<AbsentShape>({ kind: "absent" });
 
-/** The plain-record test, and its only owner here. Refuses `null`, arrays and class instances: a composer may read a renderer-neutral record, not a prototype this process does not own. */
+/** Plain-record test, and its only owner here. Refuses `null`, arrays and class instances: a composer may read a renderer-neutral record, not a foreign prototype. */
 export function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
   if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
   const prototype = Object.getPrototypeOf(value);
@@ -139,13 +139,12 @@ function valuesOf(value: unknown): SourceValues {
   return mint<NotARecordShape>({ kind: "not-a-record", value });
 }
 
-/** Values a source contributes: the composition this flush made, else the last ready patch. Collection, merge and solver join must share it or a solver reads last tick's goal. */
+/** Values a source contributes: this flush's composition, else the last ready patch. Collection, merge and solver join must share it, or a solver reads last tick's goal. */
 export function sourceValues(outcome: NodeOutcome, patch: ReadyPatch | undefined): SourceValues {
   switch (outcome.kind) {
     case "composed":
       return valuesOf(outcome.composition.outputs.values);
-    // Fallback is `PatchRegistry.lastReady`, not `get`: a blocked patch owns no values, so a failed
-    // node keeps its last good pose. The precedence stops its readers before they read it.
+    // Fallback is `PatchRegistry.lastReady`, not `get`: a blocked patch owns no values, so a failed node keeps its last good pose; precedence stops readers first.
     case "blocked-upstream":
     case "pending-upstream":
     case "failed":
@@ -156,7 +155,7 @@ export function sourceValues(outcome: NodeOutcome, patch: ReadyPatch | undefined
   }
 }
 
-/** Whether a source published anything at all, and nothing more: a record and a non-record both count, only absence does not. `graph/references.ts` owns pending; this owns published. */
+/** Whether a source published anything: a record and a non-record count, only absence does not. `graph/references.ts` owns pending; this owns published. */
 export function hasValue(values: SourceValues): boolean {
   switch (values.kind) {
     case "record":
@@ -201,7 +200,7 @@ interface GoalShapeFailure {
   readonly goalId: string;
 }
 
-/** What a caller hands `failPublication`: one failure, before it is minted. */
+/** What a caller hands `failPublication`: one failure, before minting. */
 export type PublishFailureShape =
   | MissingUpstreamShape
   | InputShapeFailure
@@ -209,7 +208,7 @@ export type PublishFailureShape =
   | MemberStateShape
   | GoalShapeFailure;
 
-/** One publication failure, minted, and the whole set of them. */
+/** One publication failure, minted; the whole set. */
 export type PublishFailure =
   | Minted<MissingUpstreamShape>
   | Minted<InputShapeFailure>
@@ -217,7 +216,7 @@ export type PublishFailure =
   | Minted<MemberStateShape>
   | Minted<GoalShapeFailure>;
 
-/** The message one failure renders to. Every arm is byte-identical to what it replaces. */
+/** The message one failure renders to; each arm's current text must not change. */
 export function describePublishFailure(failure: PublishFailure): string {
   switch (failure.kind) {
     case "missing-upstream":
@@ -235,15 +234,14 @@ export function describePublishFailure(failure: PublishFailure): string {
   }
 }
 
-/** Rule id a failure publishes under. 3 of 7 answer `composition-failure` and keep it: consumers branch on ids, so naming those three is a diagnostics change owing its own commit. */
+/** Rule id a failure publishes under. 3 of 7 answer `composition-failure`: consumers branch on ids, so renaming them is a diagnostics change. */
 export function publishFailureRule(failure: PublishFailure): IdentifiedRuleId {
   switch (failure.kind) {
     case "missing-upstream":
       return "upstream-missing";
     case "input-shape":
       return "input-source-shape";
-    // All 7 name their node, so the group is decided here and `IdentifiedRuleId` holds: a producer of
-    // the closed set, not a string that happens to match one.
+    // All 7 name their node, so the group is decided here and `IdentifiedRuleId` holds: a producer of the closed set, not a string that matches one.
     case "solver-scope":
     case "member-interpolation":
     case "goal-shape":
@@ -253,7 +251,7 @@ export function publishFailureRule(failure: PublishFailure): IdentifiedRuleId {
   }
 }
 
-/** Error one publication failure is thrown as, carrying it. `name` is the rule id for all 7. Thrown inside the per-node boundary that builds a diagnostic, so the class never leaves here. */
+/** Error one publication failure is thrown as, carrying it; `name` is its rule id for all 7. Thrown inside the per-node diagnostic boundary, so the class never leaves here. */
 export class PublishFailureError extends Error {
   readonly failure: PublishFailure;
   constructor(failure: PublishFailure) {
@@ -263,12 +261,12 @@ export class PublishFailureError extends Error {
   }
 }
 
-/** Fails one node's publication, and is the only expression that throws one of these. */
+/** Fails one node's publication; the only throw site for these. */
 export function failPublication(shape: PublishFailureShape): never {
   throw new PublishFailureError(mint(shape) as PublishFailure);
 }
 
-/** The record an input observation must be, else the failure that edge owes: absent -> missing-upstream, non-record -> input-shape. Both stay guards; the pending pre-check answers first. */
+/** Record an input observation must be, else the failure that edge owes: absent -> missing-upstream, non-record -> input-shape. Both stay guards; the pending pre-check answers first. */
 export function expectInputRecord(
   values: SourceValues,
   sourceId: string,
@@ -285,7 +283,7 @@ export function expectInputRecord(
   }
 }
 
-/** The record a source must be, else one failure either way: an absent source and a non-record share a message, since a plugin holding no graph cannot act on the difference. */
+/** Record a source must be, else one failure either way: absent and non-record share a message, since a plugin holding no graph cannot act on the difference. */
 export function expectRecord(
   values: SourceValues,
   failure: PublishFailureShape,

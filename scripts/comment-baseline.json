@@ -20,10 +20,6 @@
     "count": 5
   },
   {
-    "path": "apps/ik-playground/src/goal-control.ts",
-    "count": 6
-  },
-  {
     "path": "apps/ik-playground/src/ik-playground-project.ts",
     "count": 6
   },
@@ -132,10 +128,6 @@
     "count": 2
   },
   {
-    "path": "apps/pose-gap-filler/src/live/playback.ts",
-    "count": 7
-  },
-  {
     "path": "apps/pose-gap-filler/src/live/preview.ts",
     "count": 2
   },
@@ -154,10 +146,6 @@
   {
     "path": "apps/pose-gap-filler/src/live/timings.ts",
     "count": 2
-  },
-  {
-    "path": "apps/pose-gap-filler/src/replay/compare.ts",
-    "count": 7
   },
   {
     "path": "apps/pose-gap-filler/src/replay/mask.ts",
@@ -346,10 +334,6 @@
   {
     "path": "packages/core/src/graph/dependency-edges.ts",
     "count": 3
-  },
-  {
-    "path": "packages/core/src/graph/observation-state.ts",
-    "count": 6
   },
   {
     "path": "packages/core/src/graph/order.ts",
