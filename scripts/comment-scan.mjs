@@ -104,8 +104,9 @@ export function readBaseline(scanRoot = root) {
 /**
  * Whether the tree is inside its baseline, which may only ever be lower.
  *
- * A file over its count is a new violation. A file under it is a stale entry, because a baseline
- * not corrected when its violations were fixed reports a tree it no longer describes.
+ * A file over its count is a new violation. A file under it is a stale entry: a baseline nobody
+ * corrects when the violations leave stops describing the tree and becomes the thing people route
+ * around rather than the debt being paid down.
  */
 export function checkBaseline(counts, baseline) {
   const violations = [];
@@ -117,6 +118,8 @@ export function checkBaseline(counts, baseline) {
     }
     if (count > allowed)
       violations.push(`${path}: ${count} violations is over its baseline of ${allowed}`);
+    if (count < allowed)
+      violations.push(`${path}: ${count} violations is under its baseline of ${allowed}, lower it`);
   }
   for (const [path, allowed] of baseline)
     if (!counts.has(path)) violations.push(`${path}: baseline entry of ${allowed} names no source`);

@@ -64,6 +64,10 @@ describe("comment scan (S5)", () => {
     expect(checkBaseline(new Map(), new Map([["a/src/gone.ts", 9]]))).toEqual([
       "a/src/gone.ts: baseline entry of 9 names no source",
     ]);
+    // The other direction is what makes it a ratchet: debt that left the tree has to leave the file.
+    expect(checkBaseline(counts, new Map([["a/src/x.ts", 9]]))).toEqual([
+      "a/src/x.ts: 4 violations is under its baseline of 9, lower it",
+    ]);
     expect(checkBaseline(counts, new Map([["a/src/x.ts", 4]]))).toEqual([]);
   });
 
