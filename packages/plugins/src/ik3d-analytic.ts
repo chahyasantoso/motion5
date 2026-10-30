@@ -32,51 +32,32 @@ import { magnitudeOf } from "./ik-scale";
 import { restoreResult3d, type SolveResult3d } from "./ik3d-result";
 import { readGoal } from "./ik-goal-reading";
 
-/** One member of the 3D two-bone chain, read by the plugin from its delivered values. */
+/** One member of the 3D two-bone chain, read from delivered values. */
 export type SolveMember3d = {
   readonly id: string;
   readonly length: number;
-  /**
-   * The member's pivot offset in its parent's rotated frame, required so the solver has one member
-   * shape. It is re-read through `readPivotOffset3d` as `length` is through `readNumber`, so a
-   * direct caller's non-finite component is zero here exactly as an authored one is (ADR-117).
-   */
+  /** Pivot offset in the parent's rotated frame; `readPivotOffset3d` zeroes a non-finite component. */
   readonly offset: PivotOffset3d;
 };
 
 /**
- * The solve's authored bend control, a closed union read with exhaustive switches (ADR-092).
- *
- * `unbound` is a solver that bound no `pole` slot, and it keeps ADR-114's root-local +z rule byte
- * for byte. `point` is the world-space position the elbow bends toward, the convention of every DCC
- * tool: the bend plane is the plane through the effective root pivot, the goal and the pole, and
- * the elbow lies on the pole's side of the line from the pivot to the goal. The two are different
- * kinds of reference on purpose. The default rule names the plane's normal, which is what a
- * root-local axis can name without knowing the goal; an authored pole names a side, which is what
- * an author places in a scene. See ADR-118.
- */
+ * Authored bend control: `unbound` keeps the root-local +z rule; `point` is the world position the
+ * elbow bends toward, with the bend plane through pivot, goal and pole. */
 export type Pole3d =
   | { readonly kind: "unbound" }
   | { readonly kind: "point"; readonly point: Vec3 };
 
-/** The solve with no pole bound, shared rather than allocated per solve. */
+/** Solve with no pole bound; shared, not allocated per solve. */
 export const UNBOUND_POLE3D: Pole3d = Object.freeze({ kind: "unbound" });
 
-/**
- * Reads a delivered `pole` slot: absent is `unbound`, and anything else is the point its frame
- * names, through `readFrame3d`, so a non-finite coordinate reads as zero exactly as a goal's does.
- */
+/** Delivered `pole` slot: absent is `unbound`, else the point its frame names; non-finite reads as zero. */
 export function readPole3d(input: unknown): Pole3d {
   if (input === undefined) return UNBOUND_POLE3D;
   const frame = readFrame3d(input);
   return { kind: "point", point: [frame.x, frame.y, frame.z] };
 }
 
-/**
- * The pole again, component by component through `readNumber`, as `solveTwoBone3d` re-reads a
- * length and an offset: a direct caller's non-finite coordinate is zero here exactly as a
- * delivered one is, and the unbound pole is returned as itself.
- */
+/** Pole re-read componentwise through `readNumber`: non-finite reads as zero; `unbound` returns itself. */
 export function rereadPole3d(pole: Pole3d): Pole3d {
   switch (pole.kind) {
     case "unbound":
@@ -91,7 +72,7 @@ export function rereadPole3d(pole: Pole3d): Pole3d {
   }
 }
 
-/** The world-unit magnitudes a pole adds to the solve's magnitude policy: none when unbound. */
+/** World-unit magnitudes a pole adds to the solve's magnitude policy: none when unbound. */
 export function poleMagnitudes(pole: Pole3d): readonly number[] {
   switch (pole.kind) {
     case "unbound":
@@ -103,7 +84,7 @@ export function poleMagnitudes(pole: Pole3d): readonly number[] {
   }
 }
 
-/** A pole scaled with its rig, because it is a position; the unbound pole is itself. */
+/** Pole scaled with its rig because it is a position; `unbound` is itself. */
 export function scalePole(pole: Pole3d, factor: number): Pole3d {
   switch (pole.kind) {
     case "unbound":
@@ -115,22 +96,12 @@ export function scalePole(pole: Pole3d, factor: number): Pole3d {
   }
 }
 
-/**
- * The relative size below which a bend reference is read as lying on the line toward the goal: of
- * the unit default pole for the root-local rule, and of the pivot-to-pole distance for an authored
- * pole. One number for both, because both ask the same question of the same line.
- */
+/** Relative size below which a bend reference reads as on the line toward the goal. */
 const BEND_LINE_TOLERANCE = 1e-9;
 
 /**
- * Which rule chose the bend plane's normal, a closed union read with an exhaustive switch.
- *
- * `authored-pole` carries the unit normal of the plane through the pivot, the goal and the pole.
- * `default-pole` is a solve with no pole bound. `pole-on-line` is an authored pole collinear with
- * the pivot and the goal, including one on the pivot itself, which names no plane: it takes the
- * default rule deterministically rather than a normal rounding would choose. The two default arms
- * compose identically and stay distinct so the reason is a value rather than a lost fact.
- */
+ * Bend-normal choice: `authored-pole` carries the unit normal; both other arms take the default,
+ * `pole-on-line` because a collinear pole names no plane. */
 type BendNormal3d =
   | { readonly kind: "authored-pole"; readonly normal: Vec3 }
   | { readonly kind: "default-pole" }
@@ -140,11 +111,7 @@ const DEFAULT_POLE: BendNormal3d = Object.freeze({ kind: "default-pole" });
 const POLE_ON_LINE: BendNormal3d = Object.freeze({ kind: "pole-on-line" });
 
 /**
- * The one owner of which rule bends the elbow. `e1 × (pole - base)` is normal to the plane through
- * the pivot, the goal and the pole, and `normal × e1` is then the pole's own side of the line, so
- * the elbow the triangle arm builds from `e2` bends toward the pole. Its size is the pole's distance
- * from the line, so the collinear test is relative to the pole's distance from the pivot.
- */
+ * Bend normal from the pole: `e1 × (pole - base)` normalized; default when the pole lies on the line. */
 function bendNormalOf(pole: Pole3d, base: Vec3, e1: Vec3): BendNormal3d {
   switch (pole.kind) {
     case "unbound":
@@ -163,20 +130,7 @@ function bendNormalOf(pole: Pole3d, base: Vec3, e1: Vec3): BendNormal3d {
 }
 
 /**
- * The ADR-114 rule, unchanged: **the root's local +z is the pole.** The normal is root-local +z with
- * its component along `e1` removed. In the planar subset (root rotated about z only, goal in the
- * root's plane) that is +z exactly, so `e2` is the 2D solver's positive branch at every goal
- * azimuth, and it turns continuously with the goal everywhere off the root's local z axis.
- *
- * **One singular line, and why it cannot be removed.** A goal on the root's local ±z axis leaves
- * no component of the pole to keep. Choosing a unit perpendicular continuously for every goal
- * direction is impossible (there is no nowhere-vanishing tangent field on the sphere), so some
- * direction must switch, and without an authored pole the least surprising place is the pole axis
- * itself. There the normal falls back to `e1 × y` with root-local `y`, which puts the elbow on the
- * root's +y side. The threshold is `BEND_LINE_TOLERANCE` of the unit pole rather than a
- * floating-point absolute. An authored pole is the fix for a rig that needs to cross that line
- * smoothly, and ADR-118 adds it.
- */
+ * Root-local +z projected off `e1`; on the singular ±z line, where that vanishes, falls back to `e1 × y`. */
 function defaultNormal(rootMatrix: Matrix3, e1: Vec3): Vec3 {
   const y = multiplyVector3(rootMatrix, [0, 1, 0]);
   const z = multiplyVector3(rootMatrix, [0, 0, 1]);
@@ -185,11 +139,8 @@ function defaultNormal(rootMatrix: Matrix3, e1: Vec3): Vec3 {
 }
 
 /**
- * The bend plane: `e1` points at the goal, `e2` is the side the elbow bends toward, and `normal`
- * is the plane's normal, a right-handed orthonormal triple with `e2 = normal × e1`. The normal is
- * `bendNormalOf`'s answer, read exhaustively; both default arms take `defaultNormal`. The tree
- * solve reads the same basis to bend its seed arc, so the pole rule has this one owner (ADR-122).
- */
+ * Bend basis: `e1` at the goal, `normal` from the pole rule, `e2 = normal × e1` the side the elbow
+ * bends toward; the tree solve shares it, so the pole rule keeps one owner. */
 export function bendBasis3d(
   rootMatrix: Matrix3,
   offset: Vec3,
@@ -215,7 +166,7 @@ export function bendBasis3d(
   return { e1, e2: cross3(normal, e1), normal } as const;
 }
 
-/** A world orientation whose local +x is `direction`, rolled so its local +z leans on `normal`. */
+/** World orientation with local +x at `direction` and local +z leaning on `normal`. */
 function orientation(direction: Vec3, normal: Vec3): Matrix3 {
   const localY = normalize3(cross3(normal, direction), [0, 1, 0]);
   const localZ = cross3(direction, localY);
@@ -232,7 +183,7 @@ function orientation(direction: Vec3, normal: Vec3): Matrix3 {
   ];
 }
 
-/** The Euler triple of `world` read in `parent`'s frame: `transpose(parent) · world`. */
+/** `world` Euler in `parent`'s frame: `transpose(parent) · world`. */
 function localEuler(parent: Matrix3, world: Matrix3): Euler3d {
   return eulerFromMatrix3d(multiplyMatrix3(transposeMatrix3(parent), world));
 }
@@ -251,22 +202,8 @@ function armOf(l1: number, l2: number, clampedDistance: number): TwoBoneArm3d {
 }
 
 /**
- * Solves one two-bone chain in its bend plane with the closed form's positive branch.
- *
- * **The bend plane is the pole's when one is bound.** `bend` defaults to `UNBOUND_POLE3D`, the
- * ADR-114 root-local +z rule every caller before ADR-118 relied on, so a solve with no pole runs
- * exactly the arithmetic it always did and adds nothing to the magnitude list. A bound pole is
- * re-read, counted as a world-unit magnitude and scaled with the rig, because it is a position.
- *
- * **Total over finite rigs, at the 2D solve's magnitude policy.** `ik-scale.ts` decides whether the
- * rig solves natively or as its exact power-of-two image, from the same world-unit magnitudes the
- * 2D closed form would read plus `z`. A native rig runs the arithmetic below exactly as it always
- * did; a rig past the ceiling solves as its image, whose angles are the rig's because the solve is
- * scale-free, and its residuals are restored and saturate at `Number.MAX_VALUE` exactly as 2D's do.
- * One owner for the policy is what keeps the planar reduction (`TH-6`) true across the whole finite
- * range rather than only inside it (`TH-22`). A closed union, read with a `switch` that ends in
- * `unreachable` (ADR-092).
- */
+ * Solves one two-bone chain in its bend plane, positive branch; `bend` is re-read and scaled, and a
+ * rig past the ceiling solves as its exact power-of-two image. */
 export function solveTwoBone3d(
   root: WorldFrame3d,
   target: WorldFrame3d,
@@ -329,17 +266,17 @@ export function solveTwoBone3d(
   }
 }
 
-/** A frame's position scaled by `factor`, its orientation untouched. */
+/** Frame position scaled by `factor`, orientation untouched. */
 export function scaleFrame3d(frame: WorldFrame3d, factor: number): WorldFrame3d {
   return { ...frame, x: frame.x * factor, y: frame.y * factor, z: frame.z * factor };
 }
 
-/** A pivot offset scaled by `factor`. */
+/** Pivot offset scaled by `factor`. */
 export function scaleOffset3d(offset: PivotOffset3d, factor: number): PivotOffset3d {
   return { x: offset.x * factor, y: offset.y * factor, z: offset.z * factor };
 }
 
-/** Maps the effective link's local direction into the solved first-member world direction. */
+/** Maps effective link's local direction to the solved first-member world direction. */
 function firstWorldOf(link: EffectiveLink3d, direction: Vec3, normal: Vec3): Matrix3 {
   switch (link.kind) {
     case "axis":
@@ -364,7 +301,7 @@ function restMiss3d(link: EffectiveLink3d, secondLength: number): number {
   }
 }
 
-/** One solve at a magnitude the arithmetic can hold: the bend plane, the arm, then the pose. */
+/** One solve at a magnitude the arithmetic can hold: bend plane, arm, then pose. */
 function solveAtMagnitude(
   root: WorldFrame3d,
   target: WorldFrame3d,
@@ -424,7 +361,7 @@ function solveAtMagnitude(
       pose = [ZERO_EULER, localEuler(rootMatrix, orientation(e1, normal))];
       break;
     case "coincident":
-      // The rest pose lays the effective link and second segment in member-local +x.
+      // Rest pose: effective link and second segment along member-local +x.
       pose = [ZERO_EULER, ZERO_EULER];
       quality = {
         kind: "coincident",

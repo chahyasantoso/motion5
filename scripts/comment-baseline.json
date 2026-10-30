@@ -568,10 +568,6 @@
     "count": 6
   },
   {
-    "path": "packages/core/src/runtime/project-handles.ts",
-    "count": 22
-  },
-  {
     "path": "packages/core/src/runtime/publish-request.ts",
     "count": 7
   },
@@ -636,10 +632,6 @@
     "count": 24
   },
   {
-    "path": "packages/plugins/src/ik-constraint.ts",
-    "count": 37
-  },
-  {
     "path": "packages/plugins/src/ik-descent.ts",
     "count": 13
   },
@@ -656,16 +648,8 @@
     "count": 17
   },
   {
-    "path": "packages/plugins/src/ik-solve.ts",
-    "count": 21
-  },
-  {
     "path": "packages/plugins/src/ik-topology.ts",
     "count": 19
-  },
-  {
-    "path": "packages/plugins/src/ik3d-analytic.ts",
-    "count": 25
   },
   {
     "path": "packages/plugins/src/ik3d-chain.ts",
@@ -686,10 +670,6 @@
   {
     "path": "packages/plugins/src/ik3d-seed.ts",
     "count": 21
-  },
-  {
-    "path": "packages/plugins/src/ik3d-serial-recovery.ts",
-    "count": 23
   },
   {
     "path": "packages/plugins/src/ik3d-solve.ts",

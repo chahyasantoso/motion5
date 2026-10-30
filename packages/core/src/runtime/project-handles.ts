@@ -19,58 +19,10 @@ import type {
 import { requireViews } from "./authored-values";
 import type { CheapEdit, LiveEdit, StructuralEdit } from "./edit-types";
 
-/**
- * The two capability handles a project issues, as classes over one host and the pair each captured.
- *
- * `track()` allocated an eighteen-member frozen object literal per call and `motion()` a ten-member
- * one, each closing over the runtime, an id and a token, and every member of both was a delegation.
- * So what those literals bought was a per-call allocation of twenty-six closures, plus the two
- * captured ids that were the only members of either literal not to be one, to express twenty-eight
- * members that never differ between calls. A class states them once, on one prototype, and a handle
- * becomes one instance over one host and the pair it captured. What is given back is seventeen
- * forwarding closures in the host below, allocated once per runtime rather than once per handle.
- *
- * That moves what a handle exposes, which is why step 8 is two slices rather than one. A literal's
- * members are own enumerable properties; a class's are inherited and non-enumerable, so
- * `Object.keys(handle)` answers nothing and `Object.getOwnPropertyDescriptor(handle, member)` answers
- * nothing for a member the handle plainly has. Six test files read a handle exactly that way, so the
- * reader they share landed first, green over the literals, and this conversion is measured against it
- * rather than against a list rewritten beside it. No member, no signature, no refusal and no ordering
- * moves here.
- *
- * One thing besides that surface moves, and it is declared rather than discovered later: a member
- * reached off a prototype reads its host from the receiver, so a member detached from its handle no
- * longer carries one and throws where the literal's own arrow still worked. Nothing in this
- * repository detaches one, and binding each member per instance would restore exactly the per-call
- * allocation this step exists to delete, so the requirement is stated and pinned instead of paid for.
- * Both prototypes are frozen at the end of this module for the same reason the instances are: every
- * member of a literal lived on the object, so freezing it froze them, and a shared prototype left
- * mutable would let one assignment rewrite a member of every handle a process issues.
- *
- * A class cannot reach `ProjectRuntime`'s private members, so what a handle may ask is a port rather
- * than a runtime: the host below is resolved once in that constructor, exactly as `ProjectPorts` is.
- * The direction is the opposite one, which is worth stating rather than leaving to the reader: a port
- * is what the runtime reaches outward for, and a host is what something it issued reaches back for.
- * Both are total, both are frozen, and no member of either is optional.
- *
- * What stays with a handle is what belongs to one: which id and token it captured, which
- * `StructuralEdit` each structural verb means, and the `RequireView` projection of a definition it
- * can already read. What stays with the runtime is every liveness ladder, every refusal and every
- * commit, so a handle decides nothing, which is the property `SH-7` measures. Instances are frozen
- * for the reason the literals were: a handle is a capability a caller holds, and nothing may hang
- * state on one. See ADR-026, ADR-056, ADR-061 and ADR-063.
- */
+// Track and motion capability handles: one frozen instance over a host and the (id, token) pair it
+// captured. Every member delegates; liveness, refusal and commit stay with the runtime.
 
-/**
- * What a track handle may ask of the runtime that owns its token.
- *
- * One member per question rather than one per handle member, which is why `requires` is absent: it is
- * `requireViews` of the definition this record already answers, and a second member for it would put
- * one projection in two places. Every member takes the id and the token, because a handle carries
- * nothing else, and each is one rung the runtime already owned. Which of the two liveness orders a
- * member gets is that class's decision and is unmoved: a read resolves the captured token, and a
- * write asks runtime liveness first. See ADR-056.
- */
+/** What a track handle may ask of the runtime owning its token; every member takes the captured id and token. */
 export interface TrackHost {
   readonly live: (id: string, token: number) => boolean;
   readonly definition: (id: string, token: number) => TrackDefinition;
@@ -79,14 +31,7 @@ export interface TrackHost {
   readonly applyLive: (id: string, token: number, edit: LiveEdit) => PatchBatch;
 }
 
-/**
- * What a motion handle may ask of it, on the same rule and with the same two orders.
- *
- * `write` has no twin here, because tier 0 is two named seams rather than one mechanism with a flag:
- * which of a trigger and a stagger an edit asks is half of what that edit claims. Child resolution is
- * two members for the reason it is two verbs on the handle: one refuses a child this Motion does not
- * own and the other answers about it. See ADR-061.
- */
+/** What a motion handle may ask of the runtime owning its token; every member takes the captured id and token. */
 export interface MotionHost {
   readonly live: (id: string, token: number) => boolean;
   readonly definition: (id: string, token: number) => MotionDefinition;
@@ -105,14 +50,7 @@ export interface HandleHost {
   readonly motion: MotionHost;
 }
 
-/**
- * One graph node's capability handle: three fields and nine members on one prototype.
- *
- * Every member delegates, so there is no branch and no sequencing here. The three structural verbs
- * and the two under `input` mint one `StructuralEdit` each, and the two under `input.values` mint one
- * `CheapEdit` each, so the host keeps one application point per tier however the edit surface grows.
- * See ADR-056, ADR-063 and ADR-065.
- */
+/** One track's capability handle: every member delegates; each edit verb mints one `StructuralEdit`, `CheapEdit` or `LiveEdit`, so the host keeps one application point per tier. */
 export class RuntimeTrackHandle implements TrackHandle {
   readonly #host: TrackHost;
   readonly #id: string;
@@ -176,14 +114,7 @@ export class RuntimeTrackHandle implements TrackHandle {
   }
 }
 
-/**
- * The `input` member of one track handle: one replacement verb, one binding view and one values
- * view.
- *
- * The view is allocated per read and holds nothing of its own, so no stale copy of an input can
- * outlive the definition it came from; each verb resolves the token its track handle captured, and
- * the runtime decides both liveness and the edit. See ADR-056 and ADR-063.
- */
+/** The `input` member of one track handle: one replacement verb, binding and values views. Each view is minted per read and holds nothing, so none goes stale. */
 export class RuntimeTrackInputHandle implements TrackInputHandle {
   readonly #host: TrackHost;
   readonly #id: string;
@@ -213,13 +144,7 @@ export class RuntimeTrackInputHandle implements TrackInputHandle {
   }
 }
 
-/**
- * The bindings half of one track's input: two verbs over the same host, id and token.
- *
- * A structural edit is built here rather than in the runtime so the runtime keeps one application
- * point for all five shapes. An absent member key is omitted rather than written as `undefined`, so
- * an edit replayed from a fixture addresses the same slot it did in memory.
- */
+/** The bindings half of one track's input: two verbs over the same host, id and token. An absent member key is omitted, not written as `undefined`, so a replayed edit addresses the same slot. */
 export class RuntimeTrackRequiresHandle implements TrackRequiresHandle {
   readonly #host: TrackHost;
   readonly #id: string;
@@ -252,13 +177,7 @@ export class RuntimeTrackRequiresHandle implements TrackRequiresHandle {
   }
 }
 
-/**
- * The authored values of one track, reached through `TrackHandle.input.values`.
- *
- * Both verbs build one cheap edit and hand it to the runtime, which plans it against the committed
- * contract and returns the batch of its one publication. The view allocates nothing that can go
- * stale on its own and resolves the token its track handle captured on every call.
- */
+/** The authored values of one track: both verbs mint one `CheapEdit`; the runtime plans it against the committed contract and returns the one publication batch. */
 export class RuntimeTrackValuesHandle implements TrackValuesHandle {
   readonly #host: TrackHost;
   readonly #id: string;
@@ -289,12 +208,7 @@ export class RuntimeTrackValuesHandle implements TrackValuesHandle {
   }
 }
 
-/**
- * One Motion's capability handle: the same three fields, and ten members on one prototype.
- *
- * `definition` projects the tracks the Motion currently owns rather than the entry's stored array,
- * which is the runtime's projection and stays there. See ADR-061.
- */
+/** One Motion's capability handle: every member delegates; `definition` projects the tracks the Motion currently owns. */
 export class RuntimeMotionHandle implements MotionHandle {
   readonly #host: MotionHost;
   readonly #id: string;
@@ -348,8 +262,8 @@ export class RuntimeMotionHandle implements MotionHandle {
   }
 }
 
-// The capability half of what freezing a literal used to cover. An instance freeze stops a caller
-// hanging state on one handle; these stop one assignment rewriting a member of all of them.
+// Instance freeze blocks caller state on one handle; prototype freeze blocks one assignment
+// rewriting every handle. A member detached from its handle carries no host and throws.
 Object.freeze(RuntimeTrackHandle.prototype);
 Object.freeze(RuntimeTrackInputHandle.prototype);
 Object.freeze(RuntimeTrackRequiresHandle.prototype);

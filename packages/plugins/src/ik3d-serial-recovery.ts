@@ -27,47 +27,23 @@ import type { ClosedFormQuality } from "./ik-result";
 import { canonicalChain } from "./ik-topology";
 
 /**
- * The legal-hinge serial recovery (issue #527): the one owner of the geometric fallback that may
- * answer a constrained 3D chain after its tree solve missed.
- *
- * **Invariant.** A recovery publishes `reached` only for a pose whose every hinge angle lies in its
- * authored range, whose hinge locals survive the rendered Euler round trip and the shared limit
- * projection (`renderedLegalHinge3d`), and whose rendered FK tip meets the goal within
- * `FABRIK_TOLERANCE`. Anything else is `undefined`, and the caller keeps its tree result unchanged.
- *
- * **Scope.** A single-leaf serial chain of two to five members with zero pivot offsets, one goal on
- * its leaf, a free (or unconstrained) first member, and every other member free or a non-planar
- * hinge with a finite range. Such a chain splits into free-led blocks: a free member followed by the
- * hinges it carries. Once the hinge angles are fixed each block is one rigid vector, and the free
- * leaders orient those vectors independently, so the goal is attainable exactly when its distance
- * lies in the polygon interval of the block lengths (`radialInterval`). One block has a degenerate
- * interval: its length must equal the distance.
- *
- * **Search.** A block with exactly one hinge has a closed-form angle (`hingeRoots`). Otherwise the
- * hinge angles are searched in bounded stages, each run only when the one before it found nothing
- * renderable: nested legal grids, each stopped at its first bracket, a bisection along the straight joint-space segment
- * between a too-short and a too-long sample (the reach bounds are continuous, so the segment crosses
- * the interval), and, when the grids never bracket the distance, a coordinate search toward the
- * missing side before bisecting. The search is finite, so it is not a completeness proof; the
- * invariant above is what makes every published answer true.
+ * Legal-hinge serial recovery: fallback for a constrained 3D chain whose tree solve missed; `reached` only for legal hinges and an FK tip within `FABRIK_TOLERANCE`.
  */
 
-/** The relative tolerance a hinge axis is held to as a unit vector; the loader normalizes axes. */
+/** Hinge axis must be this close to unit length; the loader normalizes axes. */
 const AXIS_UNIT_TOLERANCE = 1e-12;
 
-/** A side vector shorter than this names no side, so a deterministic transverse basis is used. */
+/** Shorter side vector names no side → deterministic transverse basis. */
 const BASIS_DEGENERACY = 1e-9;
 
-/** How near a block resultant may sit to its polygon interval and still close it. */
+/** Slack for a block resultant closing its polygon interval. */
 const RADIUS_TOLERANCE = FABRIK_TOLERANCE / 8;
 
 /** Bisection steps along one bracketing joint-space segment. */
 const BRACKET_BISECTIONS = 48;
 
 /**
- * Nested legal grids, as fractions of each hinge range, tried in order. The centre probe finds a
- * multi-block pose inside its polygon interval at one sample; a single block's interval is a point,
- * which no grid sample meets, so it brackets from the coarse grid on and never pays for the probe.
+ * Grid fractions per hinge range, tried in order; a lone block's interval is a point, so it brackets from `COARSE_GRID`.
  */
 const CENTRE_GRID: readonly number[] = Object.freeze([0.5]);
 const COARSE_GRID: readonly number[] = Object.freeze([0, 0.5, 1]);
@@ -79,22 +55,16 @@ const POLYGON_GRIDS: readonly (readonly number[])[] = Object.freeze([
 ]);
 const BRACKET_GRIDS: readonly (readonly number[])[] = Object.freeze([COARSE_GRID, FINE_GRID]);
 
-/** Uniform samples per hinge range, sweeps, and golden-section steps of the coordinate search. */
 const SEARCH_SAMPLES = 16;
 const SEARCH_SWEEPS = 3;
 const SEARCH_GOLDEN_STEPS = 24;
 const GOLDEN = (Math.sqrt(5) - 1) / 2;
 
-/**
- * Private, unfrozen unit values for the hot loops. The shared frozen `IDENTITY_MATRIX3` and
- * `LOCAL_X3` would hand `multiplyMatrix3` and `scale3` a second array shape and deoptimize them for
- * every caller, the FABRIK passes included, measured at 2.6x on the #527 corpus (`frame3d.ts` keeps
- * the same rule for its own identity).
- */
+/** Private unfrozen units: frozen shared arrays would add a second element shape and deoptimize hot loops. */
 const UNIT_X: Vec3 = [1, 0, 0];
 const IDENTITY: Matrix3 = [1, 0, 0, 0, 1, 0, 0, 0, 1];
 
-/** The largest chain the bounded grids are priced for: four hinges, at most 7^4 grid samples. */
+/** Largest chain the bounded grids are priced for: five members → four hinges. */
 const MAX_MEMBERS = 5;
 
 type HingeLimit3d = Extract<JointLimit3d, { readonly kind: "hinge" }>;
@@ -111,7 +81,7 @@ interface Block {
   readonly hinges: readonly LegalHinge[];
 }
 
-/** The validated rig one recovery reads: everything below trusts these fields. */
+/** Validated rig; everything below trusts these fields. */
 interface SerialRig {
   readonly rootFrame: Matrix3;
   readonly origin: Vec3;
@@ -123,7 +93,7 @@ interface SerialRig {
   readonly leafId: string;
 }
 
-/** Every block's local resultant for one set of hinge angles, in the block leader's frame. */
+/** Every block's local resultant for one angle set, in the leader's frame. */
 interface Sample {
   readonly angles: readonly number[];
   readonly vectors: readonly Vec3[];
@@ -133,7 +103,7 @@ interface Sample {
 /** Where the distance lies against a sample's polygon interval. */
 type Reach = "short" | "within" | "long";
 
-/** The attainable resultant lengths of freely orientable vectors: the polygon interval. */
+/** Attainable resultant lengths of freely orientable vectors: the polygon interval. */
 function radialInterval(lengths: readonly number[]): readonly [number, number] {
   const total = lengths.reduce((sum, length) => sum + length, 0);
   return [Math.max(0, 2 * Math.max(...lengths) - total), total];
@@ -163,7 +133,7 @@ function legalHinge(member: ChainMember3d, limit: HingeLimit3d): LegalHinge | un
   return { member, limit, min: range.min, max: range.max };
 }
 
-/** The rig in recovery scope, split into free-led blocks, or `undefined` for any other shape. */
+/** Rig in recovery scope, split into free-led blocks, or `undefined` for any other shape. */
 function readSerialRig(
   root: WorldFrame3d,
   members: readonly ChainMember3d[],
@@ -242,9 +212,7 @@ function sampleAt(rig: SerialRig, angles: readonly number[]): Sample | undefined
 }
 
 /**
- * The legal angles of a one-hinge block whose length meets the distance. The hinge's +x direction
- * has x component a.x² + (1 - a.x²) cos(theta) about unit axis a, so the length equation fixes
- * cos(theta) and at most two signed roots; the one nearer the range centre is tried first.
+ * One-hinge block meeting the distance: length equation fixes cos(theta) → ≤2 signed roots, nearer the range centre first.
  */
 function hingeRoots(rig: SerialRig, block: Block, hinge: LegalHinge): readonly number[] {
   const l1 = block.free.length;
@@ -255,7 +223,7 @@ function hingeRoots(rig: SerialRig, block: Block, hinge: LegalHinge): readonly n
   const radial = 2 * a * b * (1 - ax * ax);
   if (!(radial > 0)) return [];
   const cosine = (d * d - a * a - b * b - 2 * a * b * ax * ax) / radial;
-  // Roundoff at a shell endpoint may move the cosine by a few ulps; the rendered FK gate decides.
+  // Shell-endpoint roundoff may shift the cosine a few ulps; the rendered FK gate decides.
   if (!(Math.abs(cosine) <= 1 + 64 * Number.EPSILON)) return [];
   const angle = (Math.acos(Math.max(-1, Math.min(1, cosine))) * 180) / Math.PI;
   const centre = (hinge.min + hinge.max) / 2;
@@ -264,7 +232,7 @@ function hingeRoots(rig: SerialRig, block: Block, hinge: LegalHinge): readonly n
     .sort((p, q) => Math.abs(p - centre) - Math.abs(q - centre) || p - q);
 }
 
-/** Hinge angles at `fractions` of every range, in lexicographic order, until `visit` answers. */
+/** Hinge angles at `fractions` of every range, lexicographic, until `visit` answers. */
 function visitGrid<R>(
   hinges: readonly LegalHinge[],
   fractions: readonly number[],
@@ -285,7 +253,7 @@ function visitGrid<R>(
   return descend(0);
 }
 
-/** Bisect the joint-space segment from a short to a long sample to one within the interval. */
+/** Bisect short→long joint-space segment to a sample within the interval. */
 function bisect(rig: SerialRig, short: Sample, long: Sample): Sample | undefined {
   let low = short;
   let high = long;
@@ -312,14 +280,11 @@ function bisect(rig: SerialRig, short: Sample, long: Sample): Sample | undefined
   return undefined;
 }
 
-/** The side of the interval a search starts from; `within` needs no search. */
+/** Side of the interval a search starts from; `within` needs none. */
 type Side = Exclude<Reach, "within">;
 
 /**
- * A coordinate search from `start` that pushes the reach bound on the missing side toward the
- * distance: the interval maximum up from a short sample, the minimum down from a long one. Each
- * sweep scans every hinge range uniformly, then refines around the best angle by golden section.
- * Returns the first sample no longer on `side`, or `undefined` once a sweep stops improving.
+ * Missing-side reach bound pushed toward the distance by uniform sweeps + golden-section refine; stops at first sample off `side` or a sweep with no gain.
  */
 function searchAcross(rig: SerialRig, start: Sample, side: Side): Sample | undefined {
   const score = (sample: Sample): number => {
@@ -335,7 +300,6 @@ function searchAcross(rig: SerialRig, start: Sample, side: Side): Sample | undef
   };
   let best = start;
   let bestScore = score(start);
-  /** The sample's score, recording the best; `crossed` once it left `side`. */
   const probe = (angles: readonly number[]) => {
     const sample = sampleAt(rig, angles);
     if (sample === undefined) return undefined;
@@ -370,21 +334,19 @@ function searchAcross(rig: SerialRig, start: Sample, side: Side): Sample | undef
   return undefined;
 }
 
-/** Why a grid scan stopped early: a rendered answer, or a sample on each side of the distance. */
+/** Why a grid scan stopped: a rendered answer, or a sample on each side of the distance. */
 type GridStop<R> =
   | { readonly kind: "rendered"; readonly answer: R }
   | { readonly kind: "bracketed" };
 
-/** The first samples found on each side of the distance. */
+/** First samples found on each side of the distance. */
 interface Bracket {
   short?: Sample;
   long?: Sample;
 }
 
 /**
- * The bounded search over hinge angles, handing each candidate in order to `render` until one
- * renders: the closed-form roots of a lone one-hinge block, else the grids, a bisection of the first
- * bracket after each grid, and a coordinate search when no grid brackets the distance.
+ * Candidates in order: lone-hinge roots, grids → bisect first bracket, then coordinate search toward the missing side when unbracketed.
  */
 function searchAngles<R>(
   rig: SerialRig,
@@ -466,9 +428,7 @@ function searchAngles<R>(
 }
 
 /**
- * Side vectors with prescribed lengths summing to `target`: each step picks the next remaining
- * radius at the middle of its attainable interval and closes the triangle in the pole's plane. A
- * zero-length side is the zero vector; a zero resultant has no preferred direction.
+ * Side vectors of given lengths summing to `target`, each closed in the pole's plane at the middle remaining radius; zero length stays zero.
  */
 function polygon(rig: SerialRig, lengths: readonly number[], pole: Pole3d): Vec3[] | undefined {
   const sides: Vec3[] = [];
@@ -506,7 +466,7 @@ function polygon(rig: SerialRig, lengths: readonly number[], pole: Pole3d): Vec3
   return sides;
 }
 
-/** A right-handed basis whose first column is `direction`, its second leaning on `lean`. */
+/** Right-handed basis: first column `direction`, second leaning on `lean`. */
 function basisAlong(direction: Vec3, lean: Vec3): Matrix3 {
   const candidate = subtract3(lean, scale3(direction, dot3(lean, direction)));
   const side = normalize3(
@@ -530,9 +490,7 @@ function basisAlong(direction: Vec3, lean: Vec3): Matrix3 {
 }
 
 /**
- * The world orientation that carries a block's local resultant onto its world side. The local
- * basis leans on local +x (the elbow side), the world basis on the pole side, so the free roll
- * follows the same pole rule as the ordinary closed form (ADR-118).
+ * World orientation carrying a block's local resultant onto its world side; local basis leans on +x, world basis on the pole side.
  */
 function alignedWorld(local: Vec3, world: Vec3, poleSide: Vec3): Matrix3 {
   const localBasis = basisAlong(normalize3(local, UNIT_X), UNIT_X);
@@ -540,7 +498,7 @@ function alignedWorld(local: Vec3, world: Vec3, poleSide: Vec3): Matrix3 {
   return multiplyMatrix3(worldBasis, transposeMatrix3(localBasis));
 }
 
-/** Render one candidate through the published Euler image and gate it on its rendered FK tip. */
+/** Render candidate through the published Euler image, gated on its rendered FK tip. */
 function renderRecovery(
   rig: SerialRig,
   angles: readonly number[],
@@ -580,9 +538,7 @@ function renderRecovery(
 }
 
 /**
- * The legal serial recovery for a constrained chain whose tree solve missed, or `undefined` when
- * the chain is out of scope or no bounded candidate renders within tolerance. Pure, deterministic,
- * and independent of member delivery order. See the module note above.
+ * Legal serial recovery for a constrained chain whose tree solve missed; `undefined` when out of scope or no bounded candidate renders within `FABRIK_TOLERANCE`; pure, deterministic.
  */
 export function solveSerialRecovery3d(
   root: WorldFrame3d,
@@ -591,7 +547,7 @@ export function solveSerialRecovery3d(
 ): SolveResult3d<ClosedFormQuality> | undefined {
   const rig = readSerialRig(root, members);
   if (rig === undefined) return undefined;
-  // The unrestricted polygon interval is necessary for every legal pose: refuse before any search.
+  // Every legal pose stays inside the unrestricted interval → refuse before searching.
   const [minimum, maximum] = radialInterval(
     rig.blocks
       .flatMap((block) => [block.free, ...block.hinges.map(({ member }) => member)])
