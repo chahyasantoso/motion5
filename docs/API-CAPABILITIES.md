@@ -11,7 +11,6 @@ This is navigation and an activation contract, not a second status file. [SESSIO
 
 - **Format manually**, [format.yml](../.github/workflows/format.yml), is the deliberate mechanical repair escape hatch: a repository-wide `npm run format` on a branch a maintainer names, and nothing else.
 - **Recovery audit**, [recovery-audit.yml](../.github/workflows/recovery-audit.yml), owns its additional mutation and acceptance evidence.
-- **Lockfile bootstrap**, [bootstrap-lockfile.yml](../.github/workflows/bootstrap-lockfile.yml), and **Prepare GSAP lockfile**, [prepare-gsap-lockfile.yml](../.github/workflows/prepare-gsap-lockfile.yml), remain maintainer-dispatch routes; each names its inputs and its one-time purpose in its own header. The authored-leaf migration route and its script are deleted, because no authored `stops` wrapper remains in the tree to migrate.
 
 ## Maintenance not activated
 
