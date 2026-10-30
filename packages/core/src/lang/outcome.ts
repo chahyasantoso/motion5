@@ -1,17 +1,7 @@
 import { unreachable } from "./exhaustive";
 
-/**
- * A computation that either carries its value or is refused with at least one diagnostic.
- *
- * The discriminant makes success and refusal mutually exclusive, while the non-empty refusal tuple
- * makes a refusal without a reason impossible to write down. Diagnostics on an accepted outcome are
- * warnings or other non-blocking findings; diagnostics on a refused outcome explain why no value is
- * available. `E` carries no default, and that absence is the decision ADR-103 records: a default
- * naming `Diagnostic` was the only project-specific token in this module, and it made a
- * dependency-free primitive import the contract layer while the contract layer imported back. The
- * `diagnostics` property keeps its name, because it is the shape `validateV5` already returns to a
- * caller. This is an internal language-level primitive and is intentionally absent from every
- * package entrypoint.
+/** A computation that either carries its value or is refused with at least one diagnostic.
+ * `kind` makes the branches exclusive; the tuple makes a reasonless refusal unwritable.
  */
 export type Outcome<T, E> =
   | { readonly kind: "accepted"; readonly value: T; readonly diagnostics: readonly E[] }
@@ -27,24 +17,13 @@ export function refusedOutcome<T, E>(diagnostics: readonly [E, ...E[]]): Outcome
   return { kind: "refused", diagnostics: Object.freeze(diagnostics) };
 }
 
-/**
- * A collection with at least one member, proven to the compiler rather than asserted at a call.
- *
- * The length test is the whole rule, and it is stated here so the refusal constructor receives a
- * tuple the type system already accepts. Reading the first element to decide emptiness was the
- * earlier spelling, and it refused a valid collection whose first member is legitimately
- * `undefined`, which an `Outcome<T, undefined>` may carry.
- */
+// Length, not first element: a member may legitimately be `undefined`.
 function isNonEmpty<E>(values: readonly E[]): values is readonly [E, ...E[]] {
   return values.length > 0;
 }
 
-/**
- * Convert a runtime diagnostic collection into a refused outcome without permitting an empty one.
- *
- * The boundary survives for the callers that genuinely accumulate: `graph/order.ts`'s cycle site
- * and the three validation sites, where the count is a property of the input rather than of the
- * call. A caller that carries exactly one diagnostic reaches `refusedOutcome` directly instead.
+/** Convert a runtime diagnostic collection into a refused outcome, rejecting an empty one.
+ * For callers that accumulate; a caller holding one diagnostic uses `refusedOutcome` directly.
  */
 export function refusedOutcomeFrom<T, E>(diagnostics: readonly E[]): Outcome<T, E> {
   if (!isNonEmpty(diagnostics))
@@ -52,9 +31,7 @@ export function refusedOutcomeFrom<T, E>(diagnostics: readonly E[]): Outcome<T, 
   return refusedOutcome([...diagnostics]);
 }
 
-/**
- * Read either outcome branch exactly once, failing loudly if an unknown kind crosses the boundary.
- */
+/** Read either branch exactly once, failing loudly on an unknown kind. */
 export function readOutcome<T, E, R>(
   outcome: Outcome<T, E>,
   accepted: (value: T, diagnostics: readonly E[]) => R,

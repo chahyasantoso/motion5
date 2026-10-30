@@ -8,17 +8,7 @@ import type {
 } from "../contract/v5";
 import { unreachable } from "../lang/exhaustive";
 
-/**
- * Every edit the public edit surface can build, as serializable data.
- *
- * An edit names its target node and nothing else that is not authored data, so a caller can clone
- * one, log one, or write one to a fixture and replay it. Structural edits carry whole definitions or
- * one binding, cheap edits carry authored values or one addressed cell, and live edits carry one
- * whole evaluated value or the instruction to drop it.
- *
- * `replace-input` omits `input` rather than holding `undefined` when the caller removes the input
- * wholly, so an edit survives a JSON round-trip as the same shape it was built with.
- */
+/** Serializable edit data: one target node plus its payload; clone, log, replay. */
 interface ReplaceTrackShape {
   readonly kind: "replace-track";
   readonly nodeId: string;
@@ -51,7 +41,7 @@ interface UnbindShape {
   readonly memberKey?: string;
 }
 
-/** The five edits that rebuild the graph and may move the committed contract. */
+/** The five edits that rebuild the graph; may move the committed contract. */
 export type StructuralEdit =
   | ReplaceTrackShape
   | ReplaceInputShape
@@ -72,7 +62,7 @@ interface SetFieldShape {
   readonly cell: AuthoredCell;
 }
 
-/** The two authored edits that move values without a rebuild and without re-inferring a contract. */
+/** The two authored edits: move values without a rebuild or a contract re-inference. */
 export type CheapEdit = SetValuesShape | SetFieldShape;
 
 interface WriteLiveShape {
@@ -86,7 +76,7 @@ interface ReleaseLiveShape {
   readonly nodeId: string;
 }
 
-/** The two live edits: a whole evaluated value stands over the authored one, or is dropped. */
+/** The two live edits: an evaluated value stands over the authored one, or is dropped. */
 export type LiveEdit = WriteLiveShape | ReleaseLiveShape;
 
 /** Every edit the runtime applies through one plan. */
@@ -95,10 +85,7 @@ export type Edit = StructuralEdit | CheapEdit | LiveEdit;
 /** Which path one edit takes through a commit. */
 export type EditTier = "structural" | "cheap";
 
-/**
- * Whether one edit is structural. The one total decision over the union, so a new kind owes an
- * answer here; `isValueEdit`, `tierOf` and the batch classifier all read it.
- */
+/** Whether one edit is structural: the one total decision over the union, so a new kind owes an answer; `isValueEdit`, `tierOf` and the batch classifier read it. */
 export function isStructuralEdit(edit: Edit): edit is StructuralEdit {
   switch (edit.kind) {
     case "replace-track":
@@ -117,7 +104,7 @@ export function isStructuralEdit(edit: Edit): edit is StructuralEdit {
   }
 }
 
-/** Whether one edit is a cheap or live value edit: exactly the edits that are not structural. */
+/** Whether one edit is a cheap or live edit: exactly the non-structural kinds. */
 export function isValueEdit(edit: Edit): edit is CheapEdit | LiveEdit {
   return !isStructuralEdit(edit);
 }
@@ -127,15 +114,7 @@ export function tierOf(edit: Edit): EditTier {
   return isStructuralEdit(edit) ? "structural" : "cheap";
 }
 
-/**
- * Whether one edit drops a live overlay.
- *
- * A replacement or a removal compiles a fresh Track, and the live writer has no inverse, so the
- * overlay cannot survive either. A binding edit rebuilds the graph but not the timeline, which is
- * what keeps the overlay standing across it, and an authored edit moves only the values beneath an
- * overlay that remains in force. `release-live` drops one too, but by its own explicit verb rather
- * than as a side effect of a structural change, so it answers false here.
- */
+/** Whether one edit clears the live overlay as a side effect: replace/remove compile a fresh Track; bind/unbind leave the timeline standing. */
 export function clearsOverlay(edit: Edit): boolean {
   switch (edit.kind) {
     case "replace-track":
@@ -154,7 +133,7 @@ export function clearsOverlay(edit: Edit): boolean {
   }
 }
 
-/** The public API verb corresponding to a value edit. */
+/** Public API verb for one cheap or live edit. */
 export type PublicValueVerb =
   | "input.values.set"
   | "input.values.setField"
@@ -168,7 +147,7 @@ const PUBLIC_VERB: Readonly<Record<(CheapEdit | LiveEdit)["kind"], PublicValueVe
   "release-live": "releaseValues",
 };
 
-/** The public API verb corresponding to a cheap or live value edit kind. */
+/** Public API verb for a cheap or live edit kind. */
 export function publicVerbOf(kind: (CheapEdit | LiveEdit)["kind"]): PublicValueVerb {
   return PUBLIC_VERB[kind];
 }

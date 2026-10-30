@@ -340,10 +340,6 @@
     "count": 2
   },
   {
-    "path": "packages/core/src/graph/committed-contract.ts",
-    "count": 7
-  },
-  {
     "path": "packages/core/src/graph/compare.ts",
     "count": 2
   },
@@ -364,20 +360,12 @@
     "count": 2
   },
   {
-    "path": "packages/core/src/graph/references.ts",
-    "count": 10
-  },
-  {
     "path": "packages/core/src/graph/slot-check.ts",
     "count": 6
   },
   {
     "path": "packages/core/src/lang/exhaustive.ts",
     "count": 3
-  },
-  {
-    "path": "packages/core/src/lang/outcome.ts",
-    "count": 7
   },
   {
     "path": "packages/core/src/lang/own-property.ts",
@@ -422,10 +410,6 @@
   {
     "path": "packages/core/src/runtime/edit-plan.ts",
     "count": 11
-  },
-  {
-    "path": "packages/core/src/runtime/edit-types.ts",
-    "count": 5
   },
   {
     "path": "packages/core/src/runtime/evaluate-values.ts",

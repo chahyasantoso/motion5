@@ -4,10 +4,7 @@ import type { Diagnostic } from "../contract/v5";
 import { unreachable } from "../lang/exhaustive";
 import type { GraphEdge } from "./ir";
 
-/**
- * Rule id for a diagnostic reported when an edge's source is a known graph node whose value is not
- * currently available for publication.
- */
+/** Diagnostic rule for an edge whose source is a known node with no published value. */
 export const PENDING_REFERENCE_RULE_ID = "source-pending" satisfies RuleId;
 
 export type ReferenceStatus = "resolved" | "pending";
@@ -16,22 +13,13 @@ export type ReferenceResolution =
   | { readonly status: "resolved" }
   | { readonly status: "pending"; readonly diagnostic: Diagnostic };
 
-/** A pending edge together with the diagnostic that blocks its publication. */
+/** A pending edge with the diagnostic that blocks its publication. */
 export interface PendingEdge {
   readonly edge: GraphEdge;
   readonly diagnostic: Diagnostic;
 }
 
-/**
- * The deterministic diagnostic for a pending edge.
- *
- * `source-pending` is one of the warning rules, and this was one of the four raw literals that
- * spelled a severity for itself. It reaches the one constructor now, so the `"warning"` it used to
- * hand-write is read from `contract/rule.ts` instead. This producer is the reason that mattered
- * most: a raw literal naming a warning rule is the one shape where a later edit could have silently
- * disagreed with the registry in the quieter direction and published an error where the rule asks
- * for a warning. See ADR-097 and issue #449.
- */
+/** Deterministic diagnostic for a pending edge. */
 export function pendingReferenceDiagnostic(edge: GraphEdge): Diagnostic {
   return diagnostic(
     PENDING_REFERENCE_RULE_ID,
@@ -42,19 +30,8 @@ export function pendingReferenceDiagnostic(edge: GraphEdge): Diagnostic {
 }
 
 /**
- * The single owner of pending-versus-resolved classification for an edge.
- *
- * An edge whose source id does not exist anywhere in the authored project is already
- * rejected as a load-time error by `graph/ir.ts`, before a `GraphEdge` referencing it is ever
- * constructed: this function is never reached for that case. Given an edge that graph
- * construction has already accepted, there are exactly two outcomes: the source currently has
- * a published value (`resolved`), or it does not (`pending`). There is no third state, and a
- * pending reference carries a diagnostic but never a fabricated value.
- *
- * `hasValue` is supplied by the caller so this module stays free of any dependency on the
- * patch registry, the publisher, or the runtime: it only knows how to classify an edge, not
- * where published values live or how membership is tracked.
- */
+ * Classifies a constructed edge as resolved or pending against `hasValue`.
+ * A source id missing from the authored project was rejected at load, so it never arrives. */
 export function classifyReference(
   edge: GraphEdge,
   hasValue: (sourceId: string) => boolean,
@@ -64,11 +41,8 @@ export function classifyReference(
 }
 
 /**
- * The first edge (in canonical edge order) among `edges` whose source is pending, or
- * `undefined` if every source is currently resolved. The comparator is injected, and
- * `compareEdges` in `graph/ir.ts` owns it, so which pending source is named in a node's
- * diagnostic never depends on authored edge order or on an identity encoding.
- */
+ * First edge in canonical order whose source is pending, else `undefined`.
+ * `compareEdges` owns the order, so authored order or identity encoding never decides. */
 export function firstPendingEdge(
   edges: readonly GraphEdge[],
   compareEdges: (a: GraphEdge, b: GraphEdge) => number,
