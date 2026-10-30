@@ -20,34 +20,20 @@ import {
 export interface GapDetectorOptions {
   /** Visibility below this is a `low-visibility` gap. In [0, 1]. */
   readonly threshold: number;
-  /**
-   * Speed since the joint's last trusted sample above this is a `gate` gap, in lengths of the
-   * joint's scale bone per second (`scaleBone`), so one gate fits every joint, space and distance
-   * from the camera. `Infinity` disables the gate.
-   */
+  /** Speed since the last trusted sample, in `scaleBone` lengths per second; above this, a `gate` gap. `Infinity` disables. */
   readonly gate: number;
-  /** On by default. `false` is only for explicit legacy/calibration ablations. */
+  /** On by default; `false` disables innovation checks. */
   readonly innovation?: InnovationOptions | false;
 }
 
-/**
- * MediaPipe's own default pose presence confidence, and a gate of 20 scale-bone lengths per second:
- * above the synthetic exercise's 99.9th-percentile joint speed (about 12 in image space, 9 in
- * world space) and a fifth of a left/right wrist swap in one 30 fps frame (over 100). Calibration
- * from a still recording can tighten the threshold and raise the gate, never the reverse.
- */
+/** MediaPipe's own pose presence confidence, and 20 scale-bone lengths per second. Calibration tightens `threshold` and raises `gate` only. */
 export const DEFAULT_DETECTOR: GapDetectorOptions = Object.freeze({ threshold: 0.5, gate: 20 });
 
-/** No joint forced: the one empty set every unforced frame shares. */
+/** The one empty set every unforced frame shares. */
 export const NO_FORCED: ReadonlySet<JointId> = new Set<JointId>();
 
 export interface GapDetector {
-  /**
-   * The one owner of "is this joint trusted". Reasons are decided in a fixed order: `absent` (the
-   * adapter measured nothing), `forced`, invalid numeric input, `low-visibility`, then speed and
-   * innovation. Invalid joints consume this frame as gaps; invalid time/space reject the frame.
-   * `lengths` is read, never written: the gate scales by what earlier raw frames measured.
-   */
+  /** The one owner of "is this joint trusted", its reasons decided in a fixed order; `lengths` is read, never written. */
   detect(frame: LandmarkFrame, forced: ReadonlySet<JointId>, lengths: BoneLengths): TrustedFrame;
   reset(): void;
 }
@@ -58,10 +44,7 @@ export interface JointSample {
   readonly tMs: number;
 }
 
-/**
- * Speed from `from` to `to` in lengths of `scale` per second: the one speed the gate and its
- * calibration both measure. A move with no elapsed time is infinitely fast; standing still is 0.
- */
+/** Speed from `from` to `to` in `scale` per second; no elapsed time is infinitely fast, standing still is 0. */
 export function jointSpeed(from: JointSample, to: JointSample, scale: number): number {
   const moved = distance(to.position, from.position) / scale;
   const elapsedS = (to.tMs - from.tMs) / 1000;
@@ -75,12 +58,7 @@ export function validateDetectorOptions(options: GapDetectorOptions): GapDetecto
   return options;
 }
 
-/**
- * Detector-owned raw history, never a filler/solver prediction. The pipeline supplies raw accepted
- * motion scales so smoother selection cannot change admission. Innovation rejection uses bounded
- * prediction and explicit temporal confirmation; only accepted positions teach either history.
- * `innovation: false` retains the legacy elapsed-speed ablation. Slow drift can still pass.
- */
+/** Detector-owned raw history, never a prediction: raw accepted scales decide admission, so smoother choice cannot change it. */
 export function createGapDetector(options: GapDetectorOptions = DEFAULT_DETECTOR): GapDetector {
   const { threshold, gate } = validateDetectorOptions(options);
   const last = new Map<JointId, JointSample>();

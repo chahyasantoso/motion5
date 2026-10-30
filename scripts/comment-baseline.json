@@ -56,10 +56,6 @@
     "count": 4
   },
   {
-    "path": "apps/pose-gap-filler/src/filler/gap-detector.ts",
-    "count": 9
-  },
-  {
     "path": "apps/pose-gap-filler/src/filler/gap-filler.ts",
     "count": 3
   },
@@ -132,10 +128,6 @@
     "count": 2
   },
   {
-    "path": "apps/pose-gap-filler/src/live/source.ts",
-    "count": 7
-  },
-  {
     "path": "apps/pose-gap-filler/src/live/sources.ts",
     "count": 6
   },
@@ -150,10 +142,6 @@
   {
     "path": "apps/pose-gap-filler/src/replay/metrics.ts",
     "count": 4
-  },
-  {
-    "path": "apps/pose-gap-filler/src/replay/recording.ts",
-    "count": 7
   },
   {
     "path": "apps/pose-gap-filler/src/replay/replay.ts",
@@ -274,10 +262,6 @@
   {
     "path": "packages/core/src/domain/lifecycle.ts",
     "count": 1
-  },
-  {
-    "path": "packages/core/src/domain/plugin-catalog.ts",
-    "count": 10
   },
   {
     "path": "packages/core/src/domain/values.ts",
@@ -414,10 +398,6 @@
   {
     "path": "packages/react/src/dom-patch.ts",
     "count": 3
-  },
-  {
-    "path": "packages/three/src/skeleton-capture.ts",
-    "count": 8
   },
   {
     "path": "packages/three/src/skeleton-driver.ts",

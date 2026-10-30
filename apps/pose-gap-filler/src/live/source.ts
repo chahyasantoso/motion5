@@ -1,27 +1,21 @@
-/** One producer result: the raw `unknown` result, its frame time and what detecting it cost. */
+/** One producer result: raw `unknown`, its frame time and detection cost. */
 export interface SourceSample {
   readonly result: unknown;
-  /** The producer's frame time, the only clock downstream reads. */
+  /** Producer frame time; the only clock downstream reads. */
   readonly tMs: number;
-  /** Wall time the detector took for this result, live instrumentation only. */
+  /** Wall time the detector took; live instrumentation only. */
   readonly detectMs: number;
 }
 
-/**
- * The port every landmark producer sits behind. A result is `unknown` on purpose: the adapter
- * (`filler/adapter.ts`) is the only owner of MediaPipe's shape, so no producer types it.
- */
+/** Producer port; results stay `unknown` since `filler/adapter.ts` alone owns MediaPipe's shape. */
 export interface LandmarkSource {
-  /** Starts producing. Resolves once running, or once a `stop` during startup has cancelled it. */
+  /** Starts producing; resolves once running or once a startup `stop` cancels it. */
   start(onSample: (sample: SourceSample) => void): Promise<void>;
-  /** Stops producing and releases the camera and the detector, including a startup in flight. */
+  /** Stops producing; releases camera and detector, including a startup in flight. */
   stop(): void;
 }
 
-/**
- * MediaPipe Tasks Vision, loaded at runtime from a pinned, versioned URL rather than installed, so
- * `npm ci`, the lockfile and CI (which builds no app) never carry it. Bump all three together.
- */
+/** MediaPipe Tasks Vision: pinned CDN URLs, not installed; `npm ci`, lockfile, CI never carry it. Bump the URLs together. */
 export const MEDIAPIPE_VERSION = "0.10.35";
 export const MEDIAPIPE_BUNDLE_URL = `https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${MEDIAPIPE_VERSION}/vision_bundle.mjs`;
 export const MEDIAPIPE_WASM_URL = `https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${MEDIAPIPE_VERSION}/wasm`;
@@ -34,7 +28,6 @@ function member(target: unknown, name: string): unknown {
   return (target as Record<string, unknown>)[name];
 }
 
-/** Calls `target[name](...args)`, refusing anything that is not a function by name. */
 function call(target: unknown, name: string, ...args: readonly unknown[]): unknown {
   const fn = member(target, name);
   if (typeof fn !== "function") throw new Error(`MediaPipe: ${name} is not a function.`);
@@ -56,11 +49,7 @@ async function loadLandmarker(): Promise<unknown> {
   });
 }
 
-/**
- * One timed detection. MediaPipe's VIDEO mode refuses a timestamp that does not increase, so the
- * frame time is the clock or one past the previous one, whichever is later; `detectMs` is the wall
- * time `detect` itself took.
- */
+/** Times one `detect` call. VIDEO mode needs increasing timestamps, so `tMs` is the later of the clock and one past `lastMs`. */
 export function detectSample(
   detect: (tMs: number) => unknown,
   lastMs: number,
@@ -72,13 +61,7 @@ export function detectSample(
   return { result, tMs, detectMs: now() - startedAt };
 }
 
-/**
- * The webcam through MediaPipe Pose Landmarker, one detection per animation frame.
- *
- * Every start is a generation: `stop` ends the current one, and a startup that resumes after its
- * generation ended releases what it acquired instead of running, so a `pagehide` during the model
- * download or the camera prompt cannot resurrect the source after teardown.
- */
+/** Webcam source dependencies: model loading, camera, frame scheduling. */
 export interface WebcamSourcePorts {
   loadLandmarker(): Promise<unknown>;
   getUserMedia(): Promise<MediaStream>;
@@ -93,6 +76,7 @@ const WEB_CAM_PORTS: WebcamSourcePorts = {
   cancelFrame: (id) => cancelAnimationFrame(id),
 };
 
+/** Webcam via MediaPipe Pose Landmarker, one detection per frame. A startup whose generation ended frees what it acquired instead of running. */
 export function createMediaPipeWebcamSource(
   video: HTMLVideoElement,
   ports: WebcamSourcePorts = WEB_CAM_PORTS,
@@ -137,11 +121,10 @@ export function createMediaPipeWebcamSource(
             );
             lastMs = sample.tMs;
             onSample(sample);
-            // A consumer may stop the source from inside `onSample`: no frame after that.
+            // Consumer may stop in `onSample`: no next frame.
             if (live()) frame = ports.requestFrame(tick);
           } catch (error) {
-            // start() has already resolved: its catch cannot release a running frame's resources.
-            // A consumer may have started a new generation; never stop that newer source.
+            // start() resolved: release own generation, never a newer one.
             if (live()) stop();
             else releaseAll();
             throw error;
