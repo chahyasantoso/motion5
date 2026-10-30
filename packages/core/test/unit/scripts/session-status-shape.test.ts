@@ -7,9 +7,8 @@ import { describe, expect, it } from "vitest";
 /**
  * `docs/SESSION-STATUS.md` is the one document allowed to claim what has landed, and it is also the
  * file every pull request is asked to update. Those two facts together made it append-only: it
- * reached 99,180 bytes while its own first paragraph called it deliberately small, and issue #267's
- * read-budget scan named it on the way past without gating it, because that scan reads
- * `packages/core/src` and no documentation.
+ * reached 99,180 bytes while its own first paragraph called it deliberately small, and no size gate
+ * reached it, because the ceiling that existed measured source under `src` and no documentation.
  *
  * Three of its sections grew once per slice and none of them had to, because each already had an
  * owner named in the file itself. The per-slice narrative belongs to the pull request that landed
