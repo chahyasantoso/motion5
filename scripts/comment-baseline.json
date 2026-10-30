@@ -340,10 +340,6 @@
     "count": 12
   },
   {
-    "path": "packages/core/src/contract/diagnostics.ts",
-    "count": 9
-  },
-  {
     "path": "packages/core/src/contract/handle.ts",
     "count": 8
   },
@@ -374,10 +370,6 @@
   {
     "path": "packages/core/src/contract/schema-transaction.ts",
     "count": 10
-  },
-  {
-    "path": "packages/core/src/contract/solver-shape.ts",
-    "count": 20
   },
   {
     "path": "packages/core/src/contract/solver-slots.ts",
@@ -568,10 +560,6 @@
     "count": 8
   },
   {
-    "path": "packages/core/src/runtime/run-plan.ts",
-    "count": 17
-  },
-  {
     "path": "packages/core/src/runtime/value-state.ts",
     "count": 11
   },
@@ -600,20 +588,12 @@
     "count": 2
   },
   {
-    "path": "packages/plugins/src/ik-descent.ts",
-    "count": 13
-  },
-  {
     "path": "packages/plugins/src/ik-goal-reading.ts",
     "count": 11
   },
   {
     "path": "packages/plugins/src/ik-member.ts",
     "count": 11
-  },
-  {
-    "path": "packages/plugins/src/ik-scale.ts",
-    "count": 17
   },
   {
     "path": "packages/plugins/src/ik-topology.ts",

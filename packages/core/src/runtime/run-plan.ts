@@ -3,45 +3,9 @@ import { unreachable } from "../lang/exhaustive";
 import { rejectAfterRollback, runSteps } from "./report";
 import { invert, type CommitPlan, type Effect, type Settlement } from "./commit-plan";
 import type { StagedTrack } from "./project-ports";
-/**
- * The one impure walk over a derived commit, and the only module in this folder that performs one.
- *
- * `commit-plan.ts` answers what a commit does; this answers when. Keeping them apart is what lets
- * the planner be tested with no spies at all, and it is also what keeps this module small enough to
- * read in one sitting: every decision left here is about failure, because every decision about
- * content was already taken upstream.
- *
- * Three orderings live here and nowhere else. Liveness is re-asked after each effect, because an
- * effect reaches injected code that can dispose this project, and it is asked after the effect has
- * been recorded rather than before, so a disposal arriving mid-flight rolls that effect back instead
- * of leaking it. Inverses run in apply order, which restores a displaced compiled Track before
- * Motion resolves it. Settlement attempts every step and collects, because an accepted graph cannot
- * be rolled back and one failing release must not skip the releases after it.
- *
- * Issue #443, phase A step 6. See ADR-031, ADR-035, ADR-045, ADR-067, ADR-069 and ADR-071.
- */
+/** Sole impure walk over a derived commit. Liveness re-asked after each recorded effect, so mid-flight disposal rolls it back; inverses in apply order; settlement attempts all, collects failures. */
 
-/**
- * Every seam one plan can reach, as one total record.
- *
- * Total rather than optional, and that is the point of the type: the runtime holds its hooks as
- * optional and answers nothing for the ones a host never installed, and it collapses that question
- * to a call that does nothing before reaching here. So no member below is optional, no reader in
- * this file writes `?.`, and a seam that does nothing is a seam whose implementation does nothing
- * rather than a seam whose absence every reader has to remember.
- *
- * `assertLive`, `accept` and `adopt` are ports for the same reason the other thirteen are. This
- * module owns when each happens and owns nothing whatever about what any of them means.
- *
- * A stage handle is `project-ports.ts`'s `StagedTrack` rather than a second declaration of the same
- * two methods. This module carried its own copy, on the reason that it may not depend on the runtime
- * that calls it, and that reason expired when the seam types left the runtime: `project-ports.ts`
- * holds port types and domain imports and nothing else, so importing the shape is what depending on
- * the contract rather than on the caller now looks like. Two declarations of one shape is the defect
- * the port slice exists to remove, so it is not one this module may keep. `undefined` wherever a
- * handle is expected is a stage that was never taken, which is the ordinary answer when no staging
- * seam is installed at all.
- */
+/** Every seam one plan can reach, none optional: absent host hooks arrive as no-ops. */
 export interface PlanPorts {
   readonly createMotion: (definition: MotionDefinition) => void;
   readonly destroyMotion: (motionId: string) => void;
@@ -61,23 +25,9 @@ export interface PlanPorts {
   readonly publish: (seeds: readonly string[]) => void;
 }
 
-/**
- * The stage each node's replacement produced, held for whichever of two later steps claims it.
- *
- * A stage is the one effect that answers something a later step needs, and the two steps that can
- * claim it are opposites: `commit-staged` finalizes it and `rollback-stage` releases it. Keyed by
- * node here rather than carried on the settlement, because the settlement was planned before the
- * stage existed.
- */
+// Stage produced by each node's replacement, held for whichever later step claims it.
 type StagedByNode = Map<string, StagedTrack | undefined>;
 
-/**
- * Performs one effect, and is the one place an effect kind becomes a call.
- *
- * Total, so an eighth effect breaks the build here as well as in `invert`, which is the pair the
- * retired closure-per-effect design could not have had: a push site that forgot its port and a push
- * site that forgot its inverse were both just a shorter object literal.
- */
 function perform(effect: Effect, ports: PlanPorts, staged: StagedByNode): void {
   switch (effect.kind) {
     case "create-motion":
@@ -99,7 +49,7 @@ function perform(effect: Effect, ports: PlanPorts, staged: StagedByNode): void {
   }
 }
 
-/** Performs one settlement, on the same terms. Nothing here has an inverse or may be retried. */
+/** Applies one settlement: no inverse, never retried. */
 function settleOne(
   settlement: Settlement,
   ports: PlanPorts,
@@ -127,13 +77,7 @@ function settleOne(
   }
 }
 
-/**
- * The inverses owed for what was applied, in apply order, skipping the effects that have none.
- *
- * Read off `invert` rather than paired at a push site, so a rollback cannot disagree with the effect
- * it is rolling back, and built here rather than inline in the `catch` so the ordering is a
- * declaration rather than a detail of a `flatMap`. See ADR-035 and ADR-045.
- */
+// In apply order, read off `invert` so a rollback cannot disagree with the effect it undoes.
 function inversesOf(
   applied: readonly Effect[],
   ports: PlanPorts,
@@ -147,19 +91,9 @@ function inversesOf(
   return steps;
 }
 
-/**
- * Runs one plan: apply, accept, adopt, settle, and restore anything applied before a failure.
- *
- * `accept` is the seam between reversible and irreversible. Everything before it owes an inverse, so
- * a failure there restores what was applied and rethrows through `rejectAfterRollback`, and no step
- * after it runs at all: adoption never happens and settlement never happens. Everything from
- * `adopt` on has no inverse, so every settlement is attempted and the failures are collected into
- * one report rather than letting the first of them skip the rest.
- *
- * `adopt` sits outside the collector deliberately. It is a pointer move over maps this module was
- * handed and cannot throw, and putting it inside would make which pair the runtime retains depend on
- * whether a host's release threw. See ADR-064, ADR-067 and ADR-071.
- */
+/** Runs one plan: apply, accept, adopt, settle.
+ * Failure before adopt restores applied effects; after, every settlement attempts and collects.
+ * adopt cannot throw: outside the collector. */
 export function runPlan(plan: CommitPlan, ports: PlanPorts): void {
   const staged: StagedByNode = new Map();
   const applied: Effect[] = [];
