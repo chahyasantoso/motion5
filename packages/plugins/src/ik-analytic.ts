@@ -5,67 +5,7 @@ import { readGoal } from "./ik-goal-reading";
 import type { ClosedFormQuality, SolveResult } from "./ik-result";
 
 /**
- * The analytic two-bone solve, in `fk`'s own degrees and rotate-then-translate convention.
- *
- * Both members' rotations are local, so the returned angles are exactly what `fk` substitutes for
- * an authored `rotation`: the first is measured from the root's own rotation, the second from the
- * first bone's world direction.
- *
- * The two members arrive as two parameters rather than as an array, because the closed form is
- * defined for exactly two and nothing else. `ik-solve.ts` is the one caller that decides a chain
- * has that shape, and it hands over the pair it proved rather than a list this function would have
- * to index and trust. A `members.length < 2` branch used to answer a one-member chain with zeros;
- * it stays deleted, because a one-member chain is a real solve that points at its goal.
- *
- * The default elbow is the positive branch. `flip: false` takes `phi + alpha`, so the worked rig
- * (root `200,300`, target `320,340`, lengths `80` and `60`) solves to `40.168` and `-51.318`, and
- * `flip: true` is its mirror across the root-to-target line. Both configurations put the tip on
- * the target exactly, so the convention has to be pinned by the two numbers rather than by a
- * reachability assertion that either branch satisfies. `IK-1` owns the default and `IK-3` owns the
- * mirror.
- *
- * **Pivot offsets are solved rather than ignored, and the closed form survives them.** Two authored
- * offsets enter the geometry in two different places, and neither is an approximation:
- *
- * The first member's offset moves the point the whole chain pivots about. It is read in the root's
- * own rotated frame, so it is fixed the moment the root frame is known and no rotation this solve
- * publishes can move it. The triangle is therefore solved from that pivot rather than from the
- * root's own position.
- *
- * The second member's offset fuses with the first member's extension into one rigid link, because
- * both are read in the first member's frame and turn with it: a length of `hypot(l1 + x2, y2)` at a
- * fixed twist of `atan2(y2, l1 + x2)` off the first bone's own direction. The law of cosines then
- * runs on that link and `l2` unchanged, and the twist is subtracted from the first angle and added
- * to the second, which is exactly the accounting that leaves the composed tip on the target. See
- * ADR-054 and `PV-1` through `PV-4`.
- *
- * A member that authors no offset contributes an effective link of exactly `l1` at exactly zero
- * twist, and `frame.ts` guarantees both by short-circuit rather than by arithmetic that happens to
- * round that way. Every zero-offset rig therefore publishes the doubles it always published, which
- * `PV-4` pins as byte identity against every branch of this function.
- *
- * An unreachable target is clamped into `[|a - l2|, a + l2]` rather than refused, so the chain
- * extends toward it instead of producing `NaN` out of `acos`. The bound is stated on the effective
- * link rather than on `l1`, because the reach an offset chain actually has is the link's. The
- * `clamp` it is stated with is `frame.ts`', shared with the bone's blend weight rather than held
- * privately here. See ADR-055.
- *
- * Every exit returns through one frozen record. The degenerate cases are a pair of angles each,
- * not a return statement each, so the record's key order and freezing are stated once.
- *
- * **The result says how well the angles answer the goal, and it is stated rather than measured.**
- * The rotations are exact for every goal in the reach band, so the residual is the clamp's own
- * `|d - clampedD|` rather than a forward composition this function would have to run: zero inside
- * the band, and the distance to the nearer bound outside it. The degenerate exits read the same
- * band, because with extents already clamped to zero `[|reach - l2|, reach + l2]` is exactly
- * `[reach, reach]` when the second segment has no extent and `[l2, l2]` when the link has none, so
- * no exit needs a band of its own. The one miss inside the band is the coincident goal, which the
- * rest pose answers; its residual is where that pose leaves the tip. `IR-6` holds every residual to
- * the miss `fk`'s own composition measures. See `ik-result.ts` and ADR-107.
- *
- * The closed form addresses exactly one leaf, `second`, so its per-leaf `residuals` record has one
- * entry, keyed by that member and equal to the quality's own residual. It is stated from the same
- * number rather than measured again, so the two can never disagree. See ADR-110.
+ * The analytic two-bone solve: local rotations in `fk`'s degrees; offsets fold into `reach`/`twist`; exact in `[|reach - l2|, reach + l2]`, clamped outside; `flip` mirrors the elbow.
  */
 export function solveTwoBone(
   root: WorldFrame,
@@ -102,8 +42,7 @@ function twoBone(
 ): TwoBoneAnswer {
   const l1 = solveLength(first);
   const l2 = solveLength(second);
-  // The chain's own base, and the rigid link that leaves it. Both are pure functions of the root
-  // frame and the two authored offsets, so neither depends on the angles solved below.
+  // Base and link: pure functions of the root frame and the authored offsets, never of the angles.
   const base = pivotFromBaseTip(root, root.rotation, solveOffset(first));
   const link = effectiveLink(l1, solveOffset(second));
   const reach = link.length;
@@ -113,6 +52,7 @@ function twoBone(
     ["x", target.x],
     ["y", target.y],
   ]);
+  // One band serves every exit: `l2 === 0` collapses it to `[reach, reach]`, `reach === 0` to `[l2, l2]`.
   const minReach = Math.abs(reach - l2);
   const maxReach = reach + l2;
   let targetAngle: number;
@@ -129,6 +69,7 @@ function twoBone(
       break;
     }
     case "direction":
+      // No distance to a direction goal: fully extended along it, hence `too-far` with an infinite residual.
       targetAngle = (Math.atan2(reading.direction[1]!, reading.direction[0]!) * 180) / Math.PI;
       clampedD = maxReach;
       band = { kind: "too-far", residual: Number.POSITIVE_INFINITY };
@@ -137,15 +78,13 @@ function twoBone(
       return unreachable(reading);
   }
 
-  // A link with no extent has no twist either, which `effectiveLink` guarantees, so the degenerate
-  // cases aim whichever segment is left and subtract a twist that is exactly zero. A missing second
-  // segment aims the link, whether or not the link itself has extent; a missing link with a real
-  // second segment aims the second segment.
+  // `l2 === 0`: the first angle aims the link, twist included; second angle 0.
+  // `reach === 0`: the second angle aims the segment, first 0; no link -> no twist, `effectiveLink`.
   if (l2 <= 0) return { angles: [targetAngle - twist - root.rotation, 0], quality: band };
   if (reach <= 0) return { angles: [0, targetAngle - root.rotation], quality: band };
 
-  // Only a goal on the base with `reach === l2` clamps to zero: the band's lower bound is zero only
-  // then, and a positive distance clamps to itself. It has no direction, so the rest pose answers.
+  // `clampedD === 0` only for a goal at the base with `reach === l2`; positive `d` clamps to itself.
+  // No direction there, so the rest pose answers: the band's only in-band miss.
   if (clampedD <= 0) {
     return {
       angles: [0, 0],
@@ -153,6 +92,8 @@ function twoBone(
     };
   }
 
+  // `flip` takes `-alpha`, the mirror across the base-goal line; both branches hit the goal exactly.
+  // Twist out of the first angle, into the second: that lands the composed tip on the goal.
   const alpha = (Math.acos(cosineOpposite(reach, clampedD, l2)) * 180) / Math.PI;
   const beta = (Math.acos(cosineOpposite(reach, l2, clampedD)) * 180) / Math.PI;
 
@@ -163,50 +104,24 @@ function twoBone(
 }
 
 /**
- * The cosine of the angle between sides `a` and `b` of a triangle whose third side is `opposite`,
- * held inside the `acos` domain: the law of cosines, stated once for both of the closed form's
- * angles.
- *
- * **Solved at unit magnitude, which is exact.** The law is homogeneous of degree zero, so every
- * side is first scaled by the power of two nearest the largest side's reciprocal. A power-of-two
- * scale is exact on every normal double, and so is every square, sum and quotient of the scaled
- * sides that stays normal, so for every triangle whose arithmetic never left the normal range the
- * scaled quotient is bit for bit the unscaled one. The worked rig still publishes `40.168` and
- * `-51.318`, `SD-1` pins the scale-freeness, and ADR-111 records the 200,000-rig measurement of
- * byte identity against the unscaled expression. What the scale changes is the triangle whose
- * unscaled squares did leave the normal range: sides near `1e160` squared to `Infinity`, sides near
- * `1e-170` squared to zero, and both quotients were `NaN`, which the clamp propagates and the
- * publisher refuses. Before issue #349's sixth phase a two-bone rig at either scale, or a goal on a
- * root at `x: 1` with lengths of `1e-200`, published `NaN`.
- *
- * The exponent is held inside `[-1000, 1000]` so the scale itself is a normal power of two, which
- * `2 ** 1074` and `2 ** -1024` are not; a largest side outside that range is left at most `2 ** 24`
- * from unit magnitude, which is still far inside it. A quotient that is still `NaN` is `0 / 0`: an
- * adjacent side below `2 ** -1074` of the largest has no extent even at unit magnitude, and the
- * angle beside a side of no extent reads nothing. It answers the aligned angle, a cosine of one,
- * rather than a value the publisher would refuse; `SD-1` pins it. See ADR-111.
+ * The law of cosines for the angle between `a` and `b`, opposite `opposite`, clamped into `acos`'s domain; sides scaled by the nearest power of two so their squares stay in range.
  */
 export function cosineOpposite(a: number, b: number, opposite: number): number {
+  // Capped so `2 ** -exponent` stays a normal power of two; a side past the cap lands within `2 ** 24` of unit.
   const exponent = clamp(Math.round(Math.log2(Math.max(a, b, opposite))), -1000, 1000);
+  // Exact, not approximated: a power-of-two scale, and every square, sum and quotient that stays
+  // normal, are bit-identical to the unscaled ones.
   const scale = 2 ** -exponent;
   const x = a * scale;
   const y = b * scale;
   const z = opposite * scale;
   const cosine = (x * x + y * y - z * z) / (2 * x * y);
+  // `NaN` only from `0 / 0`: a side with no extent even at unit magnitude reads the aligned angle.
   return Number.isNaN(cosine) ? 1 : clamp(cosine, -1, 1);
 }
 
 /**
- * Where a goal at distance `d` sits against the reach band, and the residual the clamp leaves.
- *
- * Read in this order so a band that has collapsed to one point still names the side it was missed
- * on. The quality reports the geometry it was handed rather than validating it, and a non-finite
- * residual is never laundered to zero. It reads a finite distance only: a goal with an infinite
- * coordinate never reaches it, because `readGoal` names that goal a direction and the closed form
- * reports it as `too-far` with an infinite residual itself, and a `NaN` coordinate is refused by
- * name before any distance exists. A `NaN` bound still compares false against both bounds and reads
- * as `reached` with a `NaN` residual, so `residual <= tolerance` stays false for it. `IR-9` and the
- * `SD-15` to `SD-17` cases pin the goal side.
+ * Which side of `[minReach, maxReach]` the goal at distance `d` sits on; `residual` is the caller's clamp miss, passed through, never laundered to zero.
  */
 export function bandQuality(
   d: number,
@@ -214,17 +129,14 @@ export function bandQuality(
   maxReach: number,
   residual: number,
 ): ClosedFormQuality {
+  // Tested far-first: a band collapsed to one point still names the side it was missed on.
+  // `NaN` in `d` or a bound fails both tests -> `reached`, so `residual <= tolerance` stays false.
   if (d > maxReach) return { kind: "too-far", residual };
   if (d < minReach) return { kind: "too-near", residual };
   return { kind: "reached", residual };
 }
 
-/**
- * The distance the rest pose leaves the tip from the chain's own base, which is where a coincident
- * goal sits. With both local angles zero the link leaves the base at the root's rotation plus its
- * twist and the second segment continues at the root's rotation, so the tip is the sum of those two
- * vectors.
- */
+/** The distance a coincident goal's rest pose leaves the tip from the base: link at `root.rotation + twist` plus `l2` at `root.rotation`. */
 function restMiss(root: WorldFrame, reach: number, twist: number, l2: number): number {
   const link = toRadians(root.rotation + twist);
   const segment = toRadians(root.rotation);

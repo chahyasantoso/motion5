@@ -384,10 +384,6 @@
     "count": 10
   },
   {
-    "path": "packages/core/src/contract/solver-constraints.ts",
-    "count": 24
-  },
-  {
     "path": "packages/core/src/contract/solver-shape.ts",
     "count": 20
   },
@@ -536,10 +532,6 @@
     "count": 15
   },
   {
-    "path": "packages/core/src/runtime/commit-plan.ts",
-    "count": 38
-  },
-  {
     "path": "packages/core/src/runtime/diagnostics.ts",
     "count": 5
   },
@@ -662,10 +654,6 @@
   {
     "path": "packages/plugins/src/fabrik-select.ts",
     "count": 46
-  },
-  {
-    "path": "packages/plugins/src/ik-analytic.ts",
-    "count": 14
   },
   {
     "path": "packages/plugins/src/ik-chain.ts",
