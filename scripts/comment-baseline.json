@@ -428,10 +428,6 @@
     "count": 6
   },
   {
-    "path": "packages/core/src/runtime/publish-request.ts",
-    "count": 7
-  },
-  {
     "path": "packages/core/src/runtime/publisher-reach.ts",
     "count": 10
   },
@@ -442,10 +438,6 @@
   {
     "path": "packages/core/src/runtime/value-state.ts",
     "count": 11
-  },
-  {
-    "path": "packages/core/src/runtime/value-track.ts",
-    "count": 7
   },
   {
     "path": "packages/core/src/runtime/value-validation.ts",
@@ -466,10 +458,6 @@
   {
     "path": "packages/plugins/src/builtin-catalog.ts",
     "count": 2
-  },
-  {
-    "path": "packages/plugins/src/ik3d-compromise.ts",
-    "count": 7
   },
   {
     "path": "packages/plugins/src/ik3d-result.ts",

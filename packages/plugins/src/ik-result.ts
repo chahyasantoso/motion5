@@ -1,6 +1,6 @@
 import { INSPECT_KEY, INSPECTION_KEY, unreachable } from "@motion5/core/plugin-api";
 
-/** One IK solve answer, same shape every strategy: rotations plus how well they meet the goal. */
+/** One IK solve answer, same shape every strategy: rotations plus quality. */
 export interface SolveResult<Q extends SolveQuality = SolveQuality> extends SolveEvidence<Q> {
   readonly rotations: Readonly<Record<string, number>>;
 }
@@ -11,10 +11,10 @@ export interface SolveEvidence<Q extends SolveQuality = SolveQuality> {
   readonly quality: Q;
 }
 
-/** How well the rotations answered the goal: one flat union over both strategies. Residual is the
- * distance left; the kind says why. */
+/** How well rotations met the goal: one flat union over both strategies. Residual is distance left;
+ * kind says why. */
 export type SolveQuality =
-  /** Goal inside the reach band; hinge-limit pair recovery leaves the tiny residual of its recomposed pose. */
+  /** Goal inside reach band; hinge-limit pair recovery leaves a tiny residual of its recomposed pose. */
   | { readonly kind: "reached"; readonly residual: number }
   /** Goal beyond the outer reach; chain extended toward it, residual = clamp distance. */
   | { readonly kind: "too-far"; readonly residual: number }
@@ -38,13 +38,13 @@ export type SolveQuality =
       readonly atBound: readonly string[];
     };
 
-/** Quality kinds the closed form answers: a subset of SolveQuality, not a second union. */
+/** Closed-form quality kinds: a subset of SolveQuality, not a second union. */
 export type ClosedFormQuality = Extract<
   SolveQuality,
   { readonly kind: "reached" | "too-far" | "too-near" | "coincident" }
 >;
 
-/** Quality kinds FABRIK answers: a subset of SolveQuality, not a second union. */
+/** FABRIK quality kinds: a subset of SolveQuality, not a second union. */
 export type IterativeQuality = Extract<
   SolveQuality,
   { readonly kind: "converged" | "stalled" | "iteration-cap" | "conflicted" | "limited" }
@@ -62,7 +62,7 @@ export type SolveInspection = {
 
 const NO_BOUNDS: readonly string[] = Object.freeze([]);
 
-/** Project a result into one frozen, renderer-neutral shape; residual and bound copies never alias solver state. */
+/** Project into one frozen, renderer-neutral shape; residual and bound copies never alias solver state. */
 export function inspectSolve(result: SolveEvidence): SolveInspection {
   const { quality } = result;
   const residuals: Readonly<Record<string, number>> = Object.freeze({ ...result.residuals });
@@ -102,7 +102,7 @@ export function inspectSolve(result: SolveEvidence): SolveInspection {
   }
 }
 
-/** What a solver adds to published values for inspection: the record, or nothing. */
+/** What a solver adds for inspection: the record, or nothing. */
 export type InspectionOutput =
   | Readonly<Record<typeof INSPECTION_KEY, SolveInspection>>
   | Readonly<Record<never, never>>;

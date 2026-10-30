@@ -1,28 +1,8 @@
 import { unreachable } from "../lang/exhaustive";
 
-/**
- * What one caller asked a `GraphRuntime` to publish: a seed list, or a seed list at a frame.
- *
- * `flush(seeds, tick?)` carried both operations behind one name until issue #374, so which of the two
- * a caller meant was stated by whether a second argument was present, and the one that consumes a
- * frame number the clock will reuse was the one reachable by accident. Splitting them into two verbs
- * fixed that and left the publication mechanics duplicated around one difference: both assert
- * liveness, both ask the reentrancy question, both publish, and one of them also advances the frame.
- *
- * A variant states that difference better than a second method does, and it keeps what the split
- * bought: a frame cannot be selected by omission, because it is a variant rather than a missing
- * argument, and `flushAtTick` still states its own frame as a required parameter. What it retires is
- * the optional `tick` parameter the reentrancy answer carried for the same reason, where optional meant
- * "one of my two callers has no frame" rather than "a caller may leave this out".
- *
- * The seeds are held rather than copied, because every reader of them either copies or dedupes
- * downstream, and a copy here would be a second one per publication on the hot path.
- *
- * Issue #443, phase B step 12. See ADR-082 and ADR-084.
- */
+/** Brand key that closes the union and discriminates its variants. */
 declare const REQUEST_BRAND: unique symbol;
 
-/** The mint mark that keeps the union below closed as well as discriminated. Issue #387. */
 interface RequestBrand {
   readonly [REQUEST_BRAND]: true;
 }
@@ -44,20 +24,22 @@ interface FrameShape {
   readonly tick: number;
 }
 
-/** One publication request, and the whole set of them. */
+/**
+ * One publication request: a seed list, or a seed list at a required frame; seeds held, not copied.
+ */
 export type PublishRequest = Minted<SeedsShape> | Minted<FrameShape>;
 
-/** The request the seed-list verb mints, which cannot reach the clock's frame number. */
+/** Mints a request carrying seeds and no frame. */
 export function seedRequest(seeds: readonly string[]): PublishRequest {
   return mint<SeedsShape>({ kind: "seeds", seeds });
 }
 
-/** The request the clock's verb mints, whose frame is required rather than selected by omission. */
+/** Mints a request carrying seeds and a required frame. */
 export function frameRequest(seeds: readonly string[], tick: number): PublishRequest {
   return mint<FrameShape>({ kind: "frame", seeds, tick });
 }
 
-/** The seeds a request names, which both variants carry. */
+/** Returns the seeds both variants carry. */
 export function requestSeeds(request: PublishRequest): readonly string[] {
   switch (request.kind) {
     case "seeds":
@@ -68,7 +50,7 @@ export function requestSeeds(request: PublishRequest): readonly string[] {
   }
 }
 
-/** The frame a request names, or `undefined` for the verb that has none to name. */
+/** Returns the frame, or `undefined` when the request carries none. */
 export function requestTick(request: PublishRequest): number | undefined {
   switch (request.kind) {
     case "seeds":

@@ -5,18 +5,7 @@ import { createValueEvaluator, type ValueEvaluator } from "./evaluate-values";
 import { replaceEvaluator } from "./evaluator-replacement";
 
 /**
- * The compiled form of one identified-table track that selects no plugin.
- *
- * A value track holds the evaluator rather than a timeline of grouped keyframes, so its published
- * pose is the authored table or record reconstructed at the current progress. It answers the two
- * members a Motion drives (`progress` and `setProgress`) and the one member the publisher reads
- * (`outputs`), and nothing else: the plugin chain, live mask and interpolated-state seams the
- * legacy `Track` carries are absent here rather than stubbed, because a no-plugin track has no
- * plugin to chain and Phase 4 owns shape-matched live writes.
- *
- * `outputs` is a named-output map with the main output `values`, which is the one shape the ready
- * patch publishes for a no-plugin track. No slot id reaches it: `evaluate-values.ts` owns the
- * slot plan and reconstructs the authored rows and fields before this module sees them.
+ * Compiled form of a no-plugin track: authored values evaluated at `progress`, not grouped keyframes. `outputs` is `{ values }`; `evaluate-values.ts` owns slot ids.
  */
 export class ValueTrack {
   readonly kind = "values";
@@ -43,12 +32,7 @@ export class ValueTrack {
   }
 
   /**
-   * Evaluates the authored values this track was last given, at the current progress.
-   *
-   * A cheap authored edit reaches this rather than the graph: the evaluator is the whole compiled
-   * cost of a value change, so replacing it leaves identity, progress and the surrounding graph
-   * untouched. The candidate evaluator is built before the previous evaluator is disposed, so a
-   * throwing rebuild leaves the prior evaluator active and undisposed.
+   * Rebuilds the evaluator for the given authored values, the whole cost of an authored edit. Candidate builds before the prior evaluator is disposed; a throwing rebuild keeps it active.
    */
   replaceValues(values: ParsedValues | undefined): void {
     this.assertActive();
@@ -62,17 +46,14 @@ export class ValueTrack {
   }
 
   /**
-   * The whole value this track publishes, or `undefined` to resume authored evaluation.
-   *
-   * A live overlay sits above the evaluator at every progress and is replaced wholesale, so a write
-   * never merges and a release is the removal of the one record rather than an inverse write.
+   * Sets the whole live value, or `undefined` to resume authored evaluation. A write never merges; a release removes one record.
    */
   replaceOverlay(value: Value | undefined): void {
     this.assertActive();
     this.#overlay = value;
   }
 
-  /** A no-plugin track declares no plugin chain, which is what `renderMetadata` answers. */
+  /** A no-plugin track has no plugin chain; `renderMetadata` reads this. */
   get plugins(): undefined {
     return undefined;
   }
@@ -86,7 +67,7 @@ export class ValueTrack {
     return true;
   }
 
-  /** The live value when one stands, otherwise the authored shape evaluated at this progress. */
+  /** Live value when set, else the authored shape evaluated at this progress. */
   outputs(): Outputs {
     this.assertActive();
     const value = this.#overlay ?? this.#evaluator.evaluate(this.#progress);

@@ -1,25 +1,25 @@
-/** The world frame the kinematic plugins share, and the composition they may not each copy. */
+/** Shared world frame; the one composition plugins may not copy. */
 
-/** A pivot and a direction in world space: the keys a kinematic plugin publishes. */
+/** Pivot and direction in world space: keys a plugin publishes. */
 export interface WorldFrame {
   readonly x: number;
   readonly y: number;
   readonly rotation: number;
 }
 
-/** A position in world space, with no direction of its own. */
+/** World-space position; no direction. */
 export interface WorldPoint {
   readonly x: number;
   readonly y: number;
 }
 
-/** A member's authored pivot offset, read in its base's rotated frame. */
+/** Authored pivot offset, in base's rotated frame. */
 export interface PivotOffset {
   readonly x: number;
   readonly y: number;
 }
 
-/** A member's extension and its child's offset reduced to one rigid link and a twist in degrees. */
+/** Extent and child offset as one rigid link: length, twist in degrees. */
 export interface EffectiveLink {
   readonly length: number;
   readonly twist: number;
@@ -27,29 +27,29 @@ export interface EffectiveLink {
 
 const ORIGIN: WorldFrame = Object.freeze({ x: 0, y: 0, rotation: 0 });
 
-/** The offset a member authoring no pivot carries, shared rather than allocated. */
+/** Offset when no pivot is authored; shared, not allocated. */
 export const ZERO_PIVOT_OFFSET: PivotOffset = Object.freeze({ x: 0, y: 0 });
 
-/** A finite number, or `fallback`: a non-finite value is replaced, not propagated. */
+/** Finite number or `fallback`; non-finite replaced, not propagated. */
 export function readNumber(value: unknown, fallback = 0): number {
   return typeof value === "number" && Number.isFinite(value) ? value : fallback;
 }
 
-/** `value` held inside `[min, max]`, propagating `NaN`, so callers use `readNumber` first. */
+/** `value` in `[min, max]`; `NaN` propagates, so `readNumber` first. */
 export function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
 }
 
-/** `from` blended toward `to` by `weight` along the shorter arc; 0 or 1 returns that endpoint untouched, not computed. */
+/** `from` toward `to` by `weight`, shorter arc; 0 or 1 returns that endpoint untouched. */
 export function lerpAngle(from: number, to: number, weight: number): number {
   if (weight <= 0) return from;
   if (weight >= 1) return to;
   const delta = to - from;
-  // Wrapped into `(-180, 180]`: `ceil` puts the half-turn tie positive, `floor` negative.
+  // Wrapped to `(-180, 180]`: `ceil` makes half-turn tie positive, `floor` negative.
   return from + (delta - 360 * Math.ceil((delta - 180) / 360)) * weight;
 }
 
-/** A requirement slot read as a world frame, each part defaulting to zero, so an unbound root gets the origin. */
+/** Requirement slot as world frame; parts default zero, so unbound root gets origin. */
 export function readFrame(input: unknown): WorldFrame {
   if (input === null || typeof input !== "object" || Array.isArray(input)) return ORIGIN;
   const record = input as Readonly<Record<string, unknown>>;
@@ -60,12 +60,12 @@ export function readFrame(input: unknown): WorldFrame {
   };
 }
 
-/** Reads a value namespace as a pivot offset, both keys defaulting to zero. */
+/** Value namespace as pivot offset; both keys default to zero. */
 export function readPivotOffset(values: { readonly [key: string]: unknown }): PivotOffset {
   return { x: readNumber(values.x), y: readNumber(values.y) };
 }
 
-/** Degrees as radians, `(degrees * Math.PI) / 180`, whole turns reduced only where that product overflows. */
+/** Degrees to radians, `(degrees * Math.PI) / 180`; overflow reduces whole turns. */
 export function toRadians(degrees: number): number {
   const radians = (degrees * Math.PI) / 180;
   return Number.isFinite(radians) || !Number.isFinite(degrees)
@@ -73,7 +73,7 @@ export function toRadians(degrees: number): number {
     : ((degrees % 360) * Math.PI) / 180;
 }
 
-/** The package's only rotate-then-translate: `local` in `parent`'s frame, rotated then translated. */
+/** Sole rotate-then-translate: `local` in `parent`'s frame. */
 export function composeWorld(
   parent: { x: number; y: number; rotation: number },
   local: { x: number; y: number; rotation: number },
@@ -88,7 +88,7 @@ export function composeWorld(
   };
 }
 
-/** The base's tip moved by the offset in the base's rotated frame; a zero offset returns the tip, since computing it flips a `-0`. */
+/** Base tip moved by offset in base's rotated frame; zero offset returns tip, keeping `-0`. */
 export function pivotFromBaseTip(
   tip: WorldPoint,
   direction: number,
@@ -102,7 +102,7 @@ export function pivotFromBaseTip(
   return { x: composed.x, y: composed.y };
 }
 
-/** The inverse: the base's tip that puts a member's pivot on `pivot`, negating the offset. */
+/** Inverse: base tip landing the pivot on `pivot`; offset negated. */
 export function baseTipFromPivot(
   pivot: WorldPoint,
   direction: number,
@@ -111,12 +111,12 @@ export function baseTipFromPivot(
   return pivotFromBaseTip(pivot, direction, { x: -offset.x, y: -offset.y });
 }
 
-/** The one owner of a negative authored `length`: no extent, not an error, and a test rather than `Math.max`, so `-0` keeps its sign. */
+/** Sole owner of negative `length`: zero extent, not error; a test, not `Math.max`, keeping `-0`. */
 export function segmentExtent(length: number): number {
   return length < 0 ? 0 : length;
 }
 
-/** The member's extent and its child's offset as one rigid link; a zero offset returns the extent and no twist, which `hypot` would not. */
+/** Extent plus offset as one rigid link; zero offset keeps extent, twist 0, unlike `hypot`. */
 export function effectiveLink(length: number, offset: PivotOffset): EffectiveLink {
   const extent = segmentExtent(length);
   if (offset.x === 0 && offset.y === 0) return { length: extent, twist: 0 };
