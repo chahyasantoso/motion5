@@ -63,13 +63,13 @@ import {
 import { restoreResult3d, type SolveResult3d } from "./ik3d-result";
 import { ROOT_INDEX, defaultTreeSeed3d, seedTree3d, type SeedTree3d } from "./ik3d-seed";
 
-/** 3D FABRIK for chains the closed form skips (serial chains, trees). Roll = the rest frame swung onto the solved direction; pure over root, members and pole, so a seek replays identically. */
+/** 3D FABRIK for chains the closed form skips: serial chains, trees. Roll = rest frame swung onto solved direction; pure over root/members/pole -> seek replays identically. */
 
 const ROOT = ROOT_INDEX;
 
 const X_AXIS: Vec3 = [1, 0, 0];
 
-/** Canonical geometry and addressed aims, shared across attempts and retry stages. */
+/** Canonical geometry + addressed aims, shared across attempts and retry stages. */
 function prepareSeedTree3d(
   root: WorldFrame3d,
   members: readonly ChainMember3d[],
@@ -143,7 +143,7 @@ function prepareSeedTree3d(
 
 type PreparedSeedTree3d = ReturnType<typeof prepareSeedTree3d>;
 
-/** The point at distance `length` from `from` toward `to`: zero length collapses onto `from`, zero distance takes world +x, infinite ratio scales by the largest component. */
+/** Point at distance `length` from `from` toward `to`: zero length -> `from`; zero distance -> world +x; infinite ratio -> scaled by largest component. */
 export function place3d(from: Vec3, to: Vec3, length: number): Vec3 {
   if (length <= 0) return from;
   const delta = subtract3(to, from);
@@ -156,7 +156,7 @@ export function place3d(from: Vec3, to: Vec3, length: number): Vec3 {
   return add3(from, scale3(unit, length / norm3(unit)));
 }
 
-/** One attempt from one seed side and compromise rule: alternating inward and outward passes until the worst addressed miss is inside `FABRIK_TOLERANCE` or the pass budget settles it. */
+/** One attempt per seed side, compromise rule: alternating inward/outward passes until the worst addressed miss is inside `FABRIK_TOLERANCE` or the budget settles. */
 export function solveTree3dAttempt(
   root: WorldFrame3d,
   members: readonly ChainMember3d[],
@@ -170,7 +170,7 @@ export function solveTree3dAttempt(
   const { byId, ids, serialDepth, chain, addressed, addressedIds, readings } = prepared;
   const { parent, lengths, offsets: offset, rests, limits, rootPoint, rootMatrix } = prepared.tree;
   const count = ids.length;
-  // Limited children in canonical order: the inward pass bounds the member's frame by their limits.
+  // Limited children, canonical order: inward pass bounds member frame by their limits.
   const limitedChildren = new Array<number[] | undefined>(count);
   for (let index = 0; index < count; index += 1)
     if (parent[index] !== ROOT && constrains(limits[index]!))
@@ -180,10 +180,10 @@ export function solveTree3dAttempt(
   const pivots: Vec3[] = new Array<Vec3>(count);
   const frames: Matrix3[] = new Array<Matrix3>(count);
   const settled: Vec3[] = new Array<Vec3>(count);
-  // Largest coordinate magnitude from the root down each member's path, re-measured every outward pass: the scale movement is judged against.
+  // Largest coordinate magnitude down each path from root, re-measured every outward pass: the scale movement is judged against.
   const pathScales: number[] = new Array<number>(count);
   const rootScale = Math.max(Math.abs(root.x), Math.abs(root.y), Math.abs(root.z));
-  // A limited member's legal local from the last outward pass, published as-is not re-derived from the frames, plus its bound flag. Free members hold `undefined`/`false`.
+  // Limited member's legal local from the last outward pass, published as-is not re-derived from frames, plus its bound flag; free members hold `undefined`/`false`.
   const locals: (Matrix3 | undefined)[] = new Array<Matrix3 | undefined>(count);
   const bounded: boolean[] = new Array<boolean>(count).fill(false);
   const parentFrame = (index: number): Matrix3 => {
@@ -197,10 +197,10 @@ export function solveTree3dAttempt(
   const aims: Vec3[] = new Array<Vec3>(count);
   for (let step = 0; step < addressed.length; step += 1)
     aims[addressed[step]!] = prepared.tree.aims[step]!;
-  // Tips start at the seed: arc, or the legal seed when the arc needs a hinge-pose projection; 3D authors never set `flip`, so an authored solve starts on the pole's side.
+  // Tips start at seed: arc, or legal seed when arc needs hinge-pose projection; 3D authors never set `flip` -> authored solve starts on pole's side.
   const tips: Vec3[] = seedTree3d(prepared.tree, pole, flip, seed);
 
-  /** Outward: sole enforcer of lengths, frames, limits; depth order, so a member reads its base's final frame. Limited local -> nearest legal, tip re-placed: legal by construction, not clamped. */
+  /** Outward: sole enforcer of lengths, frames, limits; depth order -> member reads base's final frame. Limited local -> nearest legal, tip re-placed: legal by construction, not clamped. */
   const outward = (): FabrikPassMotion => {
     let relative = 0;
     let farthest = 0;
@@ -259,10 +259,9 @@ export function solveTree3dAttempt(
     }
     return { relative, moved: farthest };
   };
-  // Inward frame a limited member settled earlier in this pass: its last outward frame swung onto
-  // its inward direction. Only limited members with a member base write one.
+  // Inward frame a limited member settled earlier this pass: last outward frame swung onto inward direction; only limited members with a member base write one.
   const inwardFrames: (Matrix3 | undefined)[] = new Array<Matrix3 | undefined>(count);
-  /** Inward pivot: `length` back from the settled tip toward the old pivot; limited children turn the frame via `boundBaseFrame3d`, deepest-first, then the pivot re-placed on the bounded +x. */
+  /** Inward pivot: `length` back from settled tip toward old pivot; limited children turn the frame via `boundBaseFrame3d`, deepest-first; pivot re-placed on bounded +x. */
   const inwardPivot = (index: number, tip: Vec3): Vec3 => {
     const length = lengths[index]!;
     const placed = place3d(tip, pivots[index]!, length);
@@ -308,7 +307,7 @@ export function solveTree3dAttempt(
   const bestFrames: (Matrix3 | undefined)[] = new Array<Matrix3 | undefined>(count);
   const bestLocals: (Matrix3 | undefined)[] = new Array<Matrix3 | undefined>(count);
   const bestBounded: boolean[] = new Array<boolean>(count);
-  // Incumbent pass's inward spread: branch agreement is part of that pose.
+  // Incumbent pass inward spread: branch agreement is part of the pose.
   let bestSpread = 0;
   const saveIncumbent = (): void => {
     bestSpread = spread;
@@ -327,8 +326,7 @@ export function solveTree3dAttempt(
     inwardFrames.fill(undefined);
     for (const leaf of addressed)
       proposals[leaf]!.push({ kind: "goal", point: aims[leaf]!, weight: 1 });
-    // Inward pass, deepest first: a member settles on its proposals, then proposes its pivot,
-    // un-offset through its base's frame, to that base. The root never moves -> no proposal for it.
+    // Inward pass, deepest first: member settles on proposals, then proposes its pivot, un-offset via base frame, to base. Root never moves -> no proposal.
     for (let index = count - 1; index >= 0; index -= 1) {
       const proposed = proposals[index]!;
       if (proposed.length > 0) {
@@ -364,8 +362,7 @@ export function solveTree3dAttempt(
     }
   }
 
-  // Publish the incumbent pass, not the last; nothing is held when no pass ran. The budget settles
-  // at a fixed point: a pass that moved nothing, or two consecutive passes moved by rounding only.
+  // Publish incumbent pass, not the last; nothing held if no pass ran. Budget settles at a fixed point: no movement, or two consecutive passes moved only by rounding.
   const held = incumbent.residual;
   if (held !== undefined) {
     for (let index = 0; index < count; index += 1) {
@@ -408,7 +405,7 @@ export function solveTree3dAttempt(
   });
 }
 
-/** Retry scale: longest addressed path holding a non-planar hinge, world units; the max gives the selector one conservative scale. Goal-free siblings and planar paths never enlarge it. */
+/** Retry scale: longest addressed path holding a non-planar hinge, world units; max = one conservative selector scale. Goal-free siblings, planar paths never enlarge it. */
 export function legalRetryReach3d(members: readonly ChainMember3d[]): number {
   const byId = new Map(members.map((member) => [member.id, member]));
   let reach = 0;
@@ -431,7 +428,7 @@ export function legalRetryReach3d(members: readonly ChainMember3d[]): number {
   return reach;
 }
 
-/** Legal starts a 3D rig may use: an arc-default non-planar hinge pays the centre, a legal-seed default pays reach-gated stages; the descent follows only while each goal sits within path reach. */
+/** Legal starts for a 3D rig: arc-default non-planar hinge pays centre, legal-seed default pays reach-gated stages; descent follows only while each goal sits within path reach. */
 export function legalStarts3d(
   root: WorldFrame3d,
   members: readonly ChainMember3d[],
@@ -460,13 +457,13 @@ export function legalStarts3d(
   return arcLegalStarts(addressedReach(members, offsetExtent), within());
 }
 
-/** Authored-side attempt, conflicted-baseline alternatives, opposite-seed centroid retry and legalStarts3d's starts run through the shared selector, which owns their order and ceiling. */
+/** Authored-side attempt, conflicted-baseline alternatives, opposite-seed centroid retry, legalStarts3d starts: shared selector owns their order and ceiling. */
 function selectTree3d(
   root: WorldFrame3d,
   members: readonly ChainMember3d[],
   pole: Pole3d,
 ): SolveResult3d<IterativeQuality> {
-  // Canonical geometry and addressed goals are invariant across sides and stages.
+  // Canonical geometry + addressed goals: invariant across sides and stages.
   const prepared = prepareSeedTree3d(root, members);
   return selectFabrik(
     root,
@@ -483,7 +480,7 @@ function selectTree3d(
   );
 }
 
-/** Member re-read through the frame readers: a non-finite length or offset reads as zero, as a delivered one does. Once per solve, before the magnitude policy or an attempt reads a field. */
+/** Member re-read through frame readers: non-finite length/offset reads as zero, as a delivered one does. Once per solve, before magnitude policy or attempt reads a field. */
 function rereadMember3d(member: ChainMember3d): ChainMember3d {
   return {
     ...member,
@@ -492,7 +489,7 @@ function rereadMember3d(member: ChainMember3d): ChainMember3d {
   };
 }
 
-/** Member image under `factor`: world-unit fields scaled, orientation carried. */
+/** Member image at `factor`: world-unit fields scaled, orientation kept. */
 function scaleMember(member: ChainMember3d, factor: number): ChainMember3d {
   const { goal } = member;
   return {
@@ -503,7 +500,7 @@ function scaleMember(member: ChainMember3d, factor: number): ChainMember3d {
   };
 }
 
-/** 3D tree solve, total over finite rigs: the magnitude policy picks native or the exact power-of-two image; the solve is scale-free, so angles match and residuals restore via `restoreResult3d`. */
+/** 3D tree solve, total over finite rigs: magnitude policy picks native or exact power-of-two image; solve is scale-free, so angles match; residuals restore via `restoreResult3d`. */
 export function solveTree3d(
   root: WorldFrame3d,
   members: readonly ChainMember3d[],

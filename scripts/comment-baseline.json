@@ -228,10 +228,6 @@
     "count": 3
   },
   {
-    "path": "apps/pose-gap-filler/src/synthetic/observation.ts",
-    "count": 10
-  },
-  {
     "path": "apps/pose-gap-filler/src/synthetic/occlusion.ts",
     "count": 10
   },
@@ -456,10 +452,6 @@
     "count": 3
   },
   {
-    "path": "packages/core/src/runtime/authored-values.ts",
-    "count": 15
-  },
-  {
     "path": "packages/core/src/runtime/diagnostics.ts",
     "count": 5
   },
@@ -502,10 +494,6 @@
   {
     "path": "packages/core/src/runtime/publisher-reach.ts",
     "count": 10
-  },
-  {
-    "path": "packages/core/src/runtime/report.ts",
-    "count": 2
   },
   {
     "path": "packages/core/src/runtime/results.ts",

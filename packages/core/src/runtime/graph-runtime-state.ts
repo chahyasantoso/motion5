@@ -9,7 +9,7 @@ export type DrainBooking = "unbooked" | "booked";
 declare const PHASE_BRAND: unique symbol;
 declare const MEMO_BRAND: unique symbol;
 
-/** Mint marks that keep a union closed as well as discriminated; never exported or assigned. */
+/** Brand keeping a union closed and discriminated; never exported or assigned. */
 interface PhaseBrand {
   readonly [PHASE_BRAND]: true;
 }
@@ -18,12 +18,12 @@ interface MemoBrand {
   readonly [MEMO_BRAND]: true;
 }
 
-/** Mints one phase, the only expression that produces a `RuntimePhase`. */
+/** Mints a phase; sole producer of a `RuntimePhase`. */
 function mintPhase<Shape extends { readonly kind: string }>(shape: Shape): Shape & PhaseBrand {
   return Object.freeze(shape) as unknown as Shape & PhaseBrand;
 }
 
-/** Mints one memo, the only expression that produces a `SnapshotMemo`. */
+/** Mints a memo; sole producer of a `SnapshotMemo`. */
 function mintMemo<Shape extends { readonly kind: string }>(shape: Shape): Shape & MemoBrand {
   return Object.freeze(shape) as unknown as Shape & MemoBrand;
 }
@@ -52,10 +52,10 @@ type FlushingPhase = FlushingShape & PhaseBrand;
 type DisposingPhase = DisposingShape & PhaseBrand;
 type DisposedPhase = DisposedShape & PhaseBrand;
 
-/** The lifecycle of one `GraphRuntime`: a live kind with or without a booked drain, or `disposed`. */
+/** One `GraphRuntime` lifecycle: a live kind with or without booked drain, or `disposed`. */
 export type RuntimePhase = IdlePhase | FlushingPhase | DisposingPhase | DisposedPhase;
 
-// Interned and reachable only through the transitions below.
+// Interned; reachable only via transitions below.
 const IDLE_UNBOOKED = mintPhase<IdleShape>({ kind: "idle", drain: "unbooked" });
 const IDLE_BOOKED = mintPhase<IdleShape>({ kind: "idle", drain: "booked" });
 const FLUSHING_UNBOOKED = mintPhase<FlushingShape>({ kind: "flushing", drain: "unbooked" });
@@ -63,20 +63,20 @@ const FLUSHING_BOOKED = mintPhase<FlushingShape>({ kind: "flushing", drain: "boo
 const DISPOSING_UNBOOKED = mintPhase<DisposingShape>({ kind: "disposing", drain: "unbooked" });
 const DISPOSING_BOOKED = mintPhase<DisposingShape>({ kind: "disposing", drain: "booked" });
 
-// The two axes of a live phase as one table, indexed by the axis a transition carries.
+// Two live-phase axes as one table, keyed by transition axis.
 const PHASES = {
   idle: { unbooked: IDLE_UNBOOKED, booked: IDLE_BOOKED },
   flushing: { unbooked: FLUSHING_UNBOOKED, booked: FLUSHING_BOOKED },
   disposing: { unbooked: DISPOSING_UNBOOKED, booked: DISPOSING_BOOKED },
 } as const;
 
-/** The phase a runtime starts in: live and owing the scheduler nothing. */
+/** Start phase: live, owing the scheduler nothing. */
 export const IDLE: RuntimePhase = IDLE_UNBOOKED;
 
-/** The one terminal phase, and it carries nothing. */
+/** Sole terminal phase; carries nothing. */
 export const DISPOSED: RuntimePhase = mintPhase<DisposedShape>({ kind: "disposed" });
 
-/** Answers whether this runtime is retired. */
+/** Whether this runtime is retired. */
 export function isDisposed(phase: RuntimePhase): boolean {
   switch (phase.kind) {
     case "idle":
@@ -90,13 +90,13 @@ export function isDisposed(phase: RuntimePhase): boolean {
   }
 }
 
-/** The phase of a runtime being retired, keeping its booking; idempotent, never lowered. */
+/** Retiring phase; keeps its booking; idempotent, never lowered. */
 export function retiring(phase: RuntimePhase): RuntimePhase {
   switch (phase.kind) {
     case "idle":
     case "flushing":
       return PHASES.disposing[phase.drain];
-    // Nothing may lower this phase once it is raised.
+    // Nothing lowers this phase once raised.
     case "disposing":
     case "disposed":
       return phase;
@@ -105,7 +105,7 @@ export function retiring(phase: RuntimePhase): RuntimePhase {
   }
 }
 
-/** Answers whether teardown has begun, which is how `dispose` runs exactly once. */
+/** Whether teardown has begun; makes `dispose` run exactly once. */
 export function isRetiring(phase: RuntimePhase): boolean {
   switch (phase.kind) {
     case "idle":
@@ -119,7 +119,7 @@ export function isRetiring(phase: RuntimePhase): boolean {
   }
 }
 
-/** Answers whether subscribers are being notified, which is the reentrancy question. */
+/** Whether subscribers are notified; the reentrancy question. */
 export function isFlushing(phase: RuntimePhase): boolean {
   switch (phase.kind) {
     case "flushing":
@@ -133,7 +133,7 @@ export function isFlushing(phase: RuntimePhase): boolean {
   }
 }
 
-/** Answers the sink a phase may hand a diagnostic to, and none once retirement has finished. */
+/** Sink a phase may hand a diagnostic to; none once retirement finishes. */
 export function reportSink<Sink>(phase: RuntimePhase, sink: Sink | undefined): Sink | undefined {
   switch (phase.kind) {
     case "idle":
@@ -147,13 +147,13 @@ export function reportSink<Sink>(phase: RuntimePhase, sink: Sink | undefined): S
   }
 }
 
-/** Answers the phase a publication opens, keeping its booking; a terminal phase stays terminal. */
+/** Phase a publication opens; keeps booking; terminal stays terminal. */
 export function beginFlush(phase: RuntimePhase): RuntimePhase {
   switch (phase.kind) {
     case "idle":
     case "flushing":
       return PHASES.flushing[phase.drain];
-    // Retiring is terminal here too: nothing walks a torn-down runtime back into a live phase.
+    // Retirement is terminal: torn-down runtime never returns to a live phase.
     case "disposing":
     case "disposed":
       return phase;
@@ -162,7 +162,7 @@ export function beginFlush(phase: RuntimePhase): RuntimePhase {
   }
 }
 
-/** Answers the phase a publication closes into, keeping the booking and the terminal state. */
+/** Phase a publication closes into; keeps booking and terminal state. */
 export function endFlush(phase: RuntimePhase): RuntimePhase {
   switch (phase.kind) {
     case "idle":
@@ -176,14 +176,14 @@ export function endFlush(phase: RuntimePhase): RuntimePhase {
   }
 }
 
-/** Answers the phase carrying a booked drain, or `undefined` when there is nothing to book. */
+/** Phase carrying a booked drain; `undefined` when nothing to book. */
 export function bookingDrain(phase: RuntimePhase): RuntimePhase | undefined {
   switch (phase.kind) {
-    // A booking already carried is nothing to book: one drain gets one job.
+    // Already booked: nothing to book; one drain, one job.
     case "idle":
     case "flushing":
       return phase.drain === "booked" ? undefined : PHASES[phase.kind].booked;
-    // A runtime being retired has no follow-up to run either.
+    // Retiring runtime has no follow-up to run.
     case "disposing":
     case "disposed":
       return undefined;
@@ -192,10 +192,10 @@ export function bookingDrain(phase: RuntimePhase): RuntimePhase | undefined {
   }
 }
 
-/** Releases a booking and keeps the phase carrying it. Total, and terminal-safe. */
+/** Releases a booking, keeps the phase; total, terminal-safe. */
 export function unbookDrain(phase: RuntimePhase): RuntimePhase {
   switch (phase.kind) {
-    // Lowered in place, so a runtime that is retiring stays retiring.
+    // Lowered in place: a retiring runtime stays retiring.
     case "idle":
     case "flushing":
     case "disposing":
@@ -221,13 +221,13 @@ interface WarmShape {
 type ColdMemo = ColdShape & MemoBrand;
 type WarmMemo = WarmShape & MemoBrand;
 
-/** A memoised snapshot with the whole key it is answered by, so cold is a variant. */
+/** Memoised snapshot with whole lookup key; cold is a variant. */
 export type SnapshotMemo = ColdMemo | WarmMemo;
 
-/** No snapshot and no key: the initial memo, and the one a reset assigns. */
+/** No snapshot, no key: initial memo, also assigned by reset. */
 export const COLD_MEMO: SnapshotMemo = mintMemo<ColdShape>({ kind: "cold" });
 
-/** Answers a warm memo, whose whole key is required, so a partial one cannot be built. */
+/** Warm memo; whole key required, so no partial memo. */
 export function warmMemo(
   snapshot: PublisherSnapshot,
   graph: GraphIR,
@@ -236,7 +236,7 @@ export function warmMemo(
   return mintMemo<WarmShape>({ kind: "warm", snapshot, graph, membersRevision });
 }
 
-/** Answers the memoised snapshot for `graph` at `membersRevision`, or `undefined` on a miss. */
+/** Memoised snapshot for `graph` at `membersRevision`; `undefined` on miss. */
 export function memoHit(
   memo: SnapshotMemo,
   graph: GraphIR,
@@ -255,7 +255,7 @@ export function memoHit(
 
 declare const PENDING_BRAND: unique symbol;
 
-/** The mint mark that keeps `PendingPublication` closed as well as discriminated. */
+/** Brand keeping `PendingPublication` closed and discriminated. */
 interface PendingBrand {
   readonly [PENDING_BRAND]: true;
 }
@@ -273,20 +273,20 @@ interface DeferredShape {
 type NothingPending = NothingPendingShape & PendingBrand;
 type DeferredPublication = DeferredShape & PendingBrand;
 
-/** What a reentrant call deferred: nothing at all, or a publication owed with its seeds and frame. */
+/** Reentrant deferral: nothing, or a publication with seeds and optional frame. */
 export type PendingPublication = NothingPending | DeferredPublication;
 
-/** Mints one payload, the only expression that produces a pending one. */
+/** Mints a payload; sole producer of a pending one. */
 function mintPending<Shape extends { readonly kind: string }>(shape: Shape): Shape & PendingBrand {
   return Object.freeze(shape) as unknown as Shape & PendingBrand;
 }
 
-/** Nothing deferred, carrying no collection rather than an empty one to share. */
+/** Nothing deferred; no collection, not a shared empty one. */
 export const NOTHING_PENDING: PendingPublication = mintPending<NothingPendingShape>({
   kind: "nothing",
 });
 
-/** Adds `seeds` and `tick` to what is pending, keeping the later frame and minting a fresh set. */
+/** Adds `seeds` and `tick` to pending; keeps later frame, mints fresh set. */
 export function deferring(
   pending: PendingPublication,
   seeds: readonly string[],
@@ -296,12 +296,12 @@ export function deferring(
   const merged = new Set(deferredSeeds(pending));
   for (const seed of seeds) merged.add(seed);
   const frame = tick === undefined ? carried : Math.max(carried ?? tick, tick);
-  // Nothing asked for is nothing deferred.
+  // Nothing asked: nothing deferred.
   if (merged.size === 0 && frame === undefined) return NOTHING_PENDING;
   return mintPending<DeferredShape>({ kind: "deferred", seeds: merged, tick: frame });
 }
 
-/** Answers whether anything is deferred, which is the discriminant and nothing else. */
+/** Whether anything is deferred; the discriminant alone. */
 export function isPending(pending: PendingPublication): boolean {
   switch (pending.kind) {
     case "nothing":
@@ -313,7 +313,7 @@ export function isPending(pending: PendingPublication): boolean {
   }
 }
 
-/** The seeds a deferral carries, or none, always as a copy so the set never leaves this module. */
+/** Seeds a deferral carries, or none; always a copy, set never leaves module. */
 export function deferredSeeds(pending: PendingPublication): readonly string[] {
   switch (pending.kind) {
     case "nothing":
@@ -325,7 +325,7 @@ export function deferredSeeds(pending: PendingPublication): readonly string[] {
   }
 }
 
-/** The frame a deferral carries, or `undefined` when it named none or nothing is deferred. */
+/** Frame a deferral carries; `undefined` if none named or nothing deferred. */
 export function deferredTick(pending: PendingPublication): number | undefined {
   switch (pending.kind) {
     case "nothing":
@@ -337,13 +337,13 @@ export function deferredTick(pending: PendingPublication): number | undefined {
   }
 }
 
-/** What a deferral owes: nothing, the seeds it named, or the frame it carried with no seeds. */
+/** What a deferral owes: nothing, named seeds, or frame with no seeds. */
 export type DeferredWork =
   | { readonly kind: "nothing" }
   | { readonly kind: "seeds"; readonly seeds: DeferredSeeds }
   | { readonly kind: "frame"; readonly tick: number };
 
-/** Answers what `pending` owes, total over both of its variants. */
+/** What `pending` owes; total over both variants. */
 export function deferredWork(pending: PendingPublication): DeferredWork {
   switch (pending.kind) {
     case "nothing":
@@ -359,15 +359,14 @@ export function deferredWork(pending: PendingPublication): DeferredWork {
   }
 }
 
-/** What a publication reaching `reached` keeps of its payload: only a frame it has not reached. */
+/** What a publication at `reached` keeps: only a frame not yet reached. */
 export function retaining(pending: PendingPublication, reached: number): PendingPublication {
   const tick = deferredTick(pending);
   if (tick === undefined || tick <= reached) return NOTHING_PENDING;
   return mintPending<DeferredShape>({ kind: "deferred", seeds: new Set<string>(), tick });
 }
 
-/** The payload a failed publication leaves: its seeds re-deferred, or nothing once retired. */
-/** Re-books what a drain left pending, and re-books nothing once the runtime is disposed. */
+/** Re-books a failed publication's seeds and drain leftovers; nothing once disposed. */
 export function requeuing(
   phase: RuntimePhase,
   pending: PendingPublication,
