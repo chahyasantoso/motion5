@@ -4,75 +4,40 @@
 
 ## Context
 
-Composition roots register several plugins into the registry an Engine holds by reference. A loop
-over `register` publishes a prefix when a later definition fails. Recovering at the caller would
-require every caller to know every registry index and reverse its writes.
+Composition roots register several plugins into registry Engine holds by reference. Loop over `register` publishes prefix when later definition fails. Caller-side recovery would make every caller know every registry index, reverse its writes.
 
-Admission also read caller properties repeatedly, then stored an own-property spread. A changing
-getter could supply one keys array to validation and another to storage. A class prototype method
-could pass the compose guard but disappear from that spread. Those are validation/storage
-disagreements, not reasons to add another public registration mechanism.
+Admission also read caller properties repeatedly, then stored own-property spread. Getter could supply one keys array to validation, another to storage. Class prototype method could pass compose guard, vanish from spread. Validation/storage disagreements, not reason to add another public registration mechanism.
 
 ## Decision
 
-`PluginRegistry.registerAll` admits an array entirely before storing any member. `register` delegates
-to a one-member batch. `plugin-admission.ts` owns validation and the frozen definition snapshot;
-the registry supplies the names and input owners already registered or admitted earlier in the
-batch. Only name/input collisions read staged state. Registration order is assigned during commit.
+`PluginRegistry.registerAll` admits array entirely before storing any member. `register` delegates to one-member batch. `plugin-admission.ts` owns validation + frozen definition snapshot; registry supplies names + input owners already registered or admitted earlier in batch. Only name/input collisions read staged state. Registration order assigned at commit.
 
-Every definition is copied once from own enumerable properties, and all checks read that snapshot.
-Non-objects are refused before spreading. A prototype-only compose method is refused with the
-existing compose TypeError; an own compose field remains valid. Array metadata is copied and frozen.
-Requirement freezing retains the existing nested-object behavior. Shared `isRecord` and `deepFreeze`
-helpers move to admission and are imported by composition, with no additional copy or runtime cycle.
+Every definition copied once from own enumerable properties; all checks read that snapshot. Non-objects refused before spreading. Prototype-only compose method refused with existing compose TypeError; own compose field stays valid. Array metadata copied + frozen. Requirement freezing keeps existing nested-object behavior. Shared `isRecord` + `deepFreeze` helpers move to admission, imported by composition, no extra copy or runtime cycle.
 
-Existing guards keep their order and messages. Duplicate keys and requirement slots remain legal.
-Two distinct definitions owning the same input are refused; repeated input entries within one
-definition retain their previous acceptance. Output collisions remain resolution-time diagnostics.
-An empty array is a no-op. Non-arrays throw `TypeError("Plugin definitions must be an array.")`.
+Existing guards keep order + messages. Duplicate keys + requirement slots stay legal. Two distinct definitions owning same input refused; repeated input entries within one definition keep previous acceptance. Output collisions stay resolution-time diagnostics. Empty array no-op. Non-arrays throw `TypeError("Plugin definitions must be an array.")`.
 
-Admission invokes no plugin hooks, but own getters and metadata proxies can run arbitrary code.
-Nested registration on the same registry during admission is therefore refused with
-`TypeError("Plugin registration is already in progress.")`; a `finally` resets the guard after
-success or refusal. Without this guard a getter could publish a nested registration before its
-outer batch failed. The commit phase reads only admitted objects and performs map/array writes.
+Admission invokes no plugin hooks, but own getters + metadata proxies can run arbitrary code. Nested registration on same registry during admission refused with `TypeError("Plugin registration is already in progress.")`; `finally` resets guard after success or refusal. Without guard, getter could publish nested registration before outer batch failed. Commit phase reads only admitted objects, performs map/array writes.
 
-The existing stage union still uses the exhaustive `stageRank` switch. A batch has one shape and
-synchronous exceptions, so it needs no new union or asynchronous failure type.
+Existing stage union still uses exhaustive `stageRank` switch. Batch has one shape + synchronous exceptions → needs no new union or asynchronous failure type.
 
 ## Alternatives rejected
 
-**Loop and unregister on failure.** Requires an inverse for every registry index and publishes
-partial state before rollback. The published registry is held by reference.
+**Loop and unregister on failure.** Needs inverse for every registry index; publishes partial state before rollback. Published registry held by reference.
 
-**Swap a fresh registry.** Breaks the Engine's retained registry identity and duplicates its state.
+**Swap a fresh registry.** Breaks Engine's retained registry identity; duplicates state.
 
-**Keep separate single and batch validation.** Two owners would drift in guard order, diagnostics,
-snapshot reads and freeze behavior.
+**Keep separate single and batch validation.** Two owners drift in guard order, diagnostics, snapshot reads, freeze behavior.
 
-**Ignore reentrant getters.** A user callback can register into the same registry while admission
-is underway, defeating the all-or-nothing invariant before the store phase starts.
+**Ignore reentrant getters.** User callback can register into same registry mid-admission, defeating all-or-nothing invariant before store phase starts.
 
 ## Consequences
 
-Composition roots use one batch in historical order. No plugin implementation or graph behavior
-changes. Validation is linear in the batch's metadata plus constant-time name/input lookups;
-staging costs one entry per definition and one owner per declared input.
+Composition roots use one batch in historical order. No plugin implementation or graph behavior changes. Validation linear in batch metadata + constant-time name/input lookups; staging costs one entry per definition + one owner per declared input.
 
-Top-level getter reads now occur once while constructing the snapshot. A throwing getter propagates
-before insertion; its own external side effects are not transactional. Requirements are stored as a
-frozen copy, so admission no longer freezes caller-owned nested objects. Non-string `keys`,
-`inputs` or `outputs` entries are refused by name instead of failing inside the colon check. No impossible guarantee about memory
-exhaustion or modified host built-ins is made.
+Top-level getter reads now happen once while constructing snapshot. Throwing getter propagates before insertion; own external side effects not transactional. Requirements stored as frozen copy → admission no longer freezes caller-owned nested objects. Non-string `keys`, `inputs`, `outputs` entries refused by name, not failing inside colon check. No impossible guarantee about memory exhaustion or modified host built-ins.
 
 ## Evidence
 
-`plugin-register-all.test.ts` covers TH-205 through TH-214: malformed members anywhere, in-batch
-name/input collisions, existing collisions, input order, empty/non-array demand, one keys read,
-prototype-only compose refusal, non-string metadata entries and
-requirement copying. Additional cases pin own compose fields, frozen metadata,
-unchanged output-collision timing, getter failure, reentrancy and exact guard messages.
+`plugin-register-all.test.ts` covers TH-205 through TH-214: malformed members anywhere, in-batch name/input collisions, existing collisions, input order, empty/non-array demand, one keys read, prototype-only compose refusal, non-string metadata entries, requirement copying. Extra cases pin own compose fields, frozen metadata, unchanged output-collision timing, getter failure, reentrancy, exact guard messages.
 
-Failing-first assertion reports and exact local checkpoint identities belong in the owning handover
-and, after publication, its pull request. Supplemental sandbox verification is not exact-head
-Node 24 CI, which remains required before merge.
+Failing-first assertion reports + exact local checkpoint identities belong in owning handover and, after publication, its pull request. Supplemental sandbox verification is not exact-head Node 24 CI, still required before merge.

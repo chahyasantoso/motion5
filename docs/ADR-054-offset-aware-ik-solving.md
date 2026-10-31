@@ -2,91 +2,91 @@
 
 **Status:** Accepted, 2026-08-29
 
-**Supersedes the pivot half of [ADR-053](./ADR-053-solver-chain-load-contract.md).** That record's `ik-solved-pivot-unsupported` refused a non-zero authored `x` or `y` on a solved member, and it said in its own alternatives section that the refusal was a safety stop rather than the desired end state. This record lands the geometry the refusal was waiting for and deletes the rule. Everything else in ADR-053 stands, including `ik-solver-no-goal`, the shared `authoredByBinders` reader, and the ownership boundary this record keeps.
+**Supersedes the pivot half of [ADR-053](./ADR-053-solver-chain-load-contract.md).** Its `ik-solved-pivot-unsupported` refused non-zero authored `x` or `y` on solved member; own alternatives section called refusal safety stop, not desired end state. This record lands geometry refusal awaited, deletes rule. Rest of ADR-053 stands, including `ik-solver-no-goal`, shared `authoredByBinders` reader, ownership boundary kept here.
 
-Extends [ADR-051](./ADR-051-derived-solver-membership.md), which owns how a solver finds its bones and what a solve publishes, and slice A of issue #195, which gave `fk` the authored pivot in the first place.
+Extends [ADR-051](./ADR-051-derived-solver-membership.md) (owns how solver finds bones, what solve publishes), and slice A of issue #195 (gave `fk` authored pivot).
 
 ## Context
 
-`fk` composes a bone as two rotate-then-translates: its pivot at the authored `x`, `y` read in its base's rotated frame, and then its extension by `length` along its own direction. Both solves were written against the geometry that preceded that, so both assumed a member's pivot sits exactly on its base's tip. `solveTwoBone` measured its triangle from the root's own position and read `length` alone; `solveFabrik` carried one tip per member and placed each from the previous tip.
+`fk` composes bone as two rotate-then-translates: pivot at authored `x`, `y` in base's rotated frame, then extension by `length` along own direction. Both solves written against preceding geometry → both assumed pivot exactly on base tip. `solveTwoBone` measured triangle from root position, read `length` alone; `solveFabrik` carried one tip per member, placed each from previous tip.
 
-A member with a non-zero offset therefore composed a tip displaced from the one the solve placed, and the chain missed its goal by exactly that vector, with a `ready` patch and no diagnostic anywhere. ADR-053 refused the shape rather than shipping half the fix, because the analytic case was tractable and the tree case was not, and two conventions for one authored key is the outcome it existed to prevent.
+Non-zero offset therefore composed tip displaced from solve's, chain missed goal by exactly that vector, `ready` patch, no diagnostic. ADR-053 refused shape rather than ship half fix: analytic case tractable, tree case not; two conventions for one authored key = outcome it existed to prevent.
 
-Refusing it has a cost that grows. A pivot offset is the authored answer to a shoulder that hangs off a spine, a hip that is not on the pelvis' centreline, and a knee whose axis is inboard of the thigh. Those are the rigs an IK chain is for, and the one keyword they need was legal everywhere except on the bones being solved.
+Refusal cost grows. Pivot offset = authored answer to shoulder off spine, hip off pelvis centreline, knee axis inboard of thigh. Those rigs are what IK chain is for; one needed keyword legal everywhere except solved bones.
 
 ## Decision
 
 ### The offsets enter the geometry, and only the geometry
 
-`fk` keeps sole ownership of applying an authored offset. `ik` gains ownership of predicting the frame that application composes, and it still publishes rotations and nothing else. No runtime pre-pass, no second evaluation, no solver state, and no offset applied twice: the publisher and the renderer are untouched, and the composition that puts a pivot where the solve predicted it is the same `fk.compose` every bone in the rig already ran through.
+`fk` keeps sole ownership of applying authored offset. `ik` gains ownership of predicting frame application composes; still publishes rotations only. No runtime pre-pass, second evaluation, solver state, doubled offset: publisher and renderer untouched; composition placing pivot where solve predicted = same `fk.compose` every bone already ran.
 
-**Amended by [ADR-109](./ADR-109-opt-in-solve-inspection.md), 2026-09-24.** "Publishes rotations and nothing else" holds for every rig that does not opt into inspection. An author who writes the static `ik.values.inspect: true` receives one additional `inspection` output, the fixed-shape projection of the solve's quality record; the rotations, and so every offset this record puts into the geometry, are unchanged bit for bit.
+**Amended by [ADR-109](./ADR-109-opt-in-solve-inspection.md), 2026-09-24.** "Publishes rotations and nothing else" holds for rigs not opting into inspection. Static `ik.values.inspect: true` → one extra `inspection` output, fixed-shape projection of solve quality record; rotations, hence every offset here, unchanged bit for bit.
 
-That is the split the refusal was protecting, and it is why the fix is a change to two pure functions rather than to a pipeline.
+That split refusal protected; why fix = two pure functions, not pipeline.
 
 ### One rotate-then-translate, in `plugins/frame.ts`
 
-`composeWorld` moves from `fk.ts` to `frame.ts` and is re-exported from `fk.ts`, and `pivotFromBaseTip`, `baseTipFromPivot`, `readPivotOffset` and `effectiveLink` land beside it.
+`composeWorld` moves `fk.ts` → `frame.ts`, re-exported from `fk.ts`; `pivotFromBaseTip`, `baseTipFromPivot`, `readPivotOffset`, `effectiveLink` beside it.
 
-`frame.ts` already existed because `fk` and `ik` are halves of one composition and each held a private `readNumber` that had drifted, so an authored `length: NaN` was zeroed by the solver and passed through by the bone. The trigonometry is the same failure one level up and a worse one: a solve that rotated an offset by the member's own direction instead of its base's would miss every goal by roughly twice the offset, and nothing in the suite outside a reachability assertion would notice. There is one rotate-then-translate in this package now, and every kinematic caller reaches it through that module.
+`frame.ts` existed because `fk` and `ik` = halves of one composition, each private `readNumber` drifted: solver zeroed authored `length: NaN`, bone passed it through. Trigonometry = same failure one level up, worse: solve rotating offset by member direction instead of base's misses every goal by roughly twice offset; suite outside reachability assertion would not notice. One rotate-then-translate in package now; every kinematic caller reaches it through that module.
 
-`readPivotOffset` is the same argument as `readNumber`'s. The bone that applies the offset and the solve that accounts for it read one function, so an authored `x: NaN` or an absent `y` cannot mean two things inside one tick.
+`readPivotOffset` = `readNumber` argument. Bone applying offset and solve accounting for it read one function → authored `x: NaN` or absent `y` cannot mean two things in one tick.
 
 ### The closed form survives, as a fixed base and a rigid link
 
-Two authored offsets enter the two-bone solve in two different places, and neither is an approximation.
+Two authored offsets enter two-bone solve in two places; neither approximation.
 
-The first member's offset moves the point the chain pivots about. It is read in the root's own rotated frame, so it is fixed the moment the root frame is known and no rotation the solve publishes can move it. The triangle is solved from that pivot.
+First member offset moves point chain pivots about. Read in root's rotated frame → fixed once root frame known; no published rotation moves it. Triangle solved from that pivot.
 
-The second member's offset cannot be handled that way, and this is the part a naive fix gets wrong: it is read in the _first_ member's frame, so it turns with the angle being solved and cannot be subtracted from the goal up front. It fuses with the first member's extension into one rigid link instead, because both are read in that same frame and turn together: a length of `hypot(l1 + x2, y2)` at a fixed twist of `atan2(y2, l1 + x2)` off the first bone's own direction. The law of cosines runs on that link and `l2` unchanged, and the twist is subtracted from the first published angle and added to the second.
+Second member offset not handled that way — naive fix's error: read in _first_ member frame → turns with solved angle, cannot subtract from goal up front. Fuses with first extension into one rigid link instead: both read in same frame, turn together: length `hypot(l1 + x2, y2)` at fixed twist `atan2(y2, l1 + x2)` off first bone direction. Law of cosines runs on link + `l2` unchanged; twist subtracted from first published angle, added to second.
 
-The reach clamp moves onto the link for the same reason. `[|a - l2|, a + l2]` is the reach an offset chain actually has, and a second member offset backwards past its base's own length genuinely shortens it.
+Reach clamp moves onto link: `[|a - l2|, a + l2]` = reach offset chain actually has; second member offset backwards past base length genuinely shortens it.
 
-`effectiveLink` returns the length untouched and no twist for a zero offset, by short-circuit rather than by arithmetic that happens to round that way. `Math.hypot(l, 0)` is not guaranteed to be the identity on `l`, and every rig that already solves has its published angles riding on it being one. `pivotFromBaseTip` short-circuits for the same reason: `tip.x + (0 * cos - 0 * sin)` is `tip.x` for every finite double and not for a negative zero.
+`effectiveLink` returns length untouched, no twist for zero offset, by short-circuit not rounding arithmetic. `Math.hypot(l, 0)` not guaranteed identity on `l`; every solving rig rides on it being one. `pivotFromBaseTip` short-circuits same reason: `tip.x + (0 * cos - 0 * sin)` = `tip.x` for every finite double, not negative zero.
 
 ### FABRIK carries pivots beside tips
 
-The working state is a pivot and a tip per member. A member's length is the distance between its own two points, its pivot is its base's tip moved by the authored offset in the base's own direction, and the outward pass composes both in canonical depth order, which makes that pass exactly `fk`'s forward composition over the current guesses. Length preservation is therefore exact by construction rather than approached, and it is a statement about a member's own segment rather than about the gap between two consecutive tips, which is the same thing only at zero offset.
+Working state: pivot + tip per member. Length = distance between own two points; pivot = base tip moved by authored offset in base direction; outward pass composes both in canonical depth order → exactly `fk` forward composition over current guesses. Length preservation exact by construction, not approached; statement about member segment, not gap between tips — same only at zero offset.
 
-The inward pass is where the offsets are actually accounted for. Each member proposes where its own pivot must sit for its length to hold, then converts that pivot into a proposal about its base's _tip_ by removing its own offset in the base's current direction.
+Inward pass accounts for offsets: member proposes own pivot for length to hold, converts to proposal about base _tip_ by removing own offset in base's current direction.
 
 ### The shared sub-base convention: average tips, never twists
 
-That conversion is the whole of the branch case, and it is stated here because ADR-053 named it as the reason the work needed its own slice.
+Conversion = whole branch case; stated because ADR-053 named it as reason for own slice.
 
-A sub-base carries one direction, and every child hangs off that one direction at its own offset. The children's pivots are therefore not independent quantities to average: they are one tip and one direction, read through several different offsets. Averaging the pivots would average geometry that is incompatible by construction, and it would leave the sub-base's direction over-determined, with each branch implying a different one.
+Sub-base carries one direction; every child hangs off it at own offset. Children pivots therefore not independent to average: one tip + one direction, read through several offsets. Averaging pivots averages incompatible geometry, leaves sub-base direction over-determined, each branch implying different one.
 
-So each branch un-offsets first, and the average is taken over the sub-base's tip, in the canonical order `resolveSolvers` already produces. Positions are averaged and twists never are. The forward pass then re-derives every child's pivot from that one tip and direction, so no branch can hold a pose the composition would not compose.
+Each branch un-offsets first; average over sub-base tip, canonical order `resolveSolvers` produces. Positions averaged, twists never. Forward pass re-derives every child pivot from that tip + direction → no branch holds pose composition would not compose.
 
-The direction a branch un-offsets in is the sub-base's current one, which lags by an iteration. That is ordinary FABRIK: the whole method is a fixed-point iteration over positions, the outward pass re-composes exactly, and the residual it reports is measured on the composed pose rather than on the proposal. It converges, and `PV-5` and `PV-8` pin that it does on linear and branching offset chains.
+Branch un-offsets in sub-base current direction, lags one iteration. Ordinary FABRIK: fixed-point iteration over positions, outward pass re-composes exactly, residual measured on composed pose not proposal. Converges; `PV-5`, `PV-8` pin linear and branching offset chains.
 
 ### The refusal is deleted rather than replaced
 
-`ik-solved-pivot-unsupported` goes, and `PIVOT_KEYS` and `isZeroOffset` go with it. No diagnostic replaces it, because there is no longer a class of solved-member offset geometry that is unsupported: an offset that shortens a chain's reach past its goal is an unreachable target, which is clamped exactly as an unreachable target without an offset already was, and has never been a diagnostic.
+`ik-solved-pivot-unsupported` goes; `PIVOT_KEYS`, `isZeroOffset` with it. No replacement diagnostic: no unsupported solved-member offset class remains. Offset shortening reach past goal = unreachable target, clamped exactly as unreachable target without offset, never diagnostic.
 
-`authoredByBinders` stays generalised to a key even though the dead rotation is now its only caller. It was generalised so that two readers of one question could not drift about which group bound the solver, and narrowing it back to `authorsSolvedRotation` would re-specialise a reader on the way out of a change that widened what the layer accepts. `RS-13` carries the whole of its scope evidence now.
+`authoredByBinders` stays generalised to key though dead rotation now sole caller. Generalised so two readers of one question could not drift on group binding solver; narrowing to `authorsSolvedRotation` re-specialises reader leaving change that widened layer. `RS-13` carries all scope evidence.
 
 ## Alternatives rejected
 
-1. **Subtracting every offset from the goal before solving.** Correct for the first member and wrong for every member after it. Only the first member's offset is fixed in a frame the solve does not move; the second's turns with the first bone, so subtracting it up front solves a different rig and lands the tip somewhere the composition never puts it. It is green on a rig whose second offset is zero and on a root rotation of zero, which is most of the suite, which is exactly why it is named here.
-2. **Rotating a member's offset by the member's own direction.** Off by one bone, and `fk` already made this choice the other way: a pivot that stopped following its parent when the parent turned would not be a pivot. It misses by roughly twice the offset and reaches no goal, so it fails loudly, but it fails in the one place a reviewer reads as arithmetic rather than as a convention.
-3. **A runtime pre-pass that composes pivots and hands the solve world-space joints.** It works and it moves the ownership boundary. The solve would then read positions the runtime derived, the runtime would need to know which authored keys are pivots, and a second evaluation per tick would have to be memoised against the first. The pure-function seam ADR-051 draws is worth more than the arithmetic it saves, and issue #214 names the single pass as a requirement.
-4. **Averaging child pivots at a sub-base.** The convention above exists to refuse this. It averages incompatible geometry, leaves the sub-base's direction implied differently by each branch, and produces a pose whose composition disagrees with the positions the solve reported.
-5. **Replacing the analytic path with FABRIK now that both account for offsets.** `IK-1` and `IK-3` pin exact angles, `flip` at arity two selects an exact branch rather than a basin, and an iterative solve reaches a goal within a tolerance. Every rig that already solves would move. `PV-7` holds the two paths to each other on an offset rig instead, which is the assertion that says they share one convention.
-6. **Keeping the refusal for the branch case only.** Two conventions for one authored key, decided by a derived member count the author never wrote. This is alternative 2 of ADR-053, and defining the sub-base convention rather than avoiding it is what this record is for.
-7. **Seeding the arc from the effective links rather than the segment lengths.** A better first guess and a second geometry to keep in step with the composition. The first outward pass overwrites every point the seed produces, and the seed's only job is to say which way the chain bends.
+1. **Subtracting every offset from the goal before solving.** Correct first member, wrong all later. Only first offset fixed in frame solve does not move; second turns with first bone → solves different rig, lands tip composition never puts there. Green when second offset zero and root rotation zero — most of suite — why named.
+2. **Rotating a member's offset by the member's own direction.** Off one bone; `fk` chose opposite: pivot stopping parent-following would not be pivot. Misses by roughly twice offset, reaches no goal → fails loudly, in place reviewer reads as arithmetic not convention.
+3. **A runtime pre-pass that composes pivots and hands the solve world-space joints.** Works, moves ownership boundary. Solve reads runtime-derived positions; runtime must know pivot keys; second evaluation per tick memoised. Pure seam ADR-051 draws worth more than saved arithmetic; issue #214 requires single pass.
+4. **Averaging child pivots at a sub-base.** Convention above refuses it: averages incompatible geometry, sub-base direction implied differently per branch, pose composition disagrees with reported positions.
+5. **Replacing the analytic path with FABRIK now that both account for offsets.** `IK-1`, `IK-3` pin exact angles; `flip` at arity two selects exact branch not basin; iterative solve reaches tolerance. Every solving rig moves. `PV-7` holds paths to each other on offset rig — shared-convention assertion.
+6. **Keeping the refusal for the branch case only.** Two conventions for one authored key, decided by derived member count author never wrote. ADR-053 alternative 2; defining sub-base convention is this record's purpose.
+7. **Seeding the arc from the effective links rather than the segment lengths.** Better first guess, second geometry to keep in step. First outward pass overwrites seed points; seed only says which way chain bends.
 
 ## Consequences, stated as costs
 
-1. **`plugins/frame.ts` is no longer only readers.** It holds the kinematic convention as well, which is a wider module than the one ADR-051 left behind. Accepted, because the alternative is two copies of the convention in two files that are halves of one composition, and that is the drift the module was created to end.
-2. **`FabrikSolution` gains `pivots`.** A published patch is unchanged and still carries `rotations` alone, so this is a test surface rather than a runtime one. It has to be returned rather than derived: a case that recomputed a pivot from a rotation would re-derive the thing under test.
-3. **`SolveMember.pivot` is optional** (`FabrikMember.pivot` when this record was written; ADR-106 replaced that type with `SolveMember` in `plugins/ik-member.ts`). Absent means zero, which is exactly what `fk` composes for a bone that authored neither key, and `PV-6` pins that an absent offset and an authored zero are byte-identical solves. A required field would have put `{ x: 0, y: 0 }` on every fixture in the suite to say nothing.
-4. **A branching rig with incompatible offset geometry still solves rather than reporting.** It converges to the same kind of compromise a branching rig with incompatible goals already converges to, and `FB-5` already documents that shape. Naming it would need a per-tick diagnostic, which is the decision ADR-051 closed for convergence generally.
-5. **The offset gap ADR-053 named stays open and stays harmless.** `fk` composes its pivot from the flattened value namespace, so an `x` authored under a group that did not bind `solver` still reaches it. Under the refusal that was an unaccounted-for offset; now it is simply an offset the solve does not know about, on a member whose rotation that plugin owns. The wide read ADR-053's alternative 6 rejects is still not needed.
-6. **No mode is added, so no new numbered record is owed.** Dispatch is unchanged, neither solve gained a branch, no published key moves, and no authored spelling is new. This record is the whole of the change's architecture.
+1. **`plugins/frame.ts` is no longer only readers.** Holds kinematic convention, wider than ADR-051 left. Accepted: alternative = two convention copies in two files that are halves of one composition — drift module created to end.
+2. **`FabrikSolution` gains `pivots`.** Published patch unchanged, `rotations` alone → test surface, not runtime. Returned not derived: recomputing pivot from rotation re-derives thing under test.
+3. **`SolveMember.pivot` is optional** (`FabrikMember.pivot` when written; ADR-106 replaced type with `SolveMember` in `plugins/ik-member.ts`). Absent = zero, exactly `fk` composition for bone authoring neither key; `PV-6` pins absent vs authored zero byte-identical. Required field would put `{ x: 0, y: 0 }` on every fixture to say nothing.
+4. **A branching rig with incompatible offset geometry solves, not reports.** Converges to compromise incompatible goals already converge to; `FB-5` documents shape. Naming it needs per-tick diagnostic — decision ADR-051 closed generally.
+5. **The offset gap ADR-053 named stays open, harmless.** `fk` composes pivot from flattened value namespace → `x` under non-`solver` group reaches it. Under refusal = unaccounted offset; now offset solve does not know, on member whose rotation plugin owns. Wide read ADR-053 alternative 6 rejects still unnecessary.
+6. **No mode added → no new numbered record owed.** Dispatch unchanged, no solve branch, no published key moves, no new authored spelling. This record = whole architecture change.
 
 ## Evidence
 
-- `PV-1` through `PV-10`: `packages/plugins/test/unit/pivot-offset-solve.test.ts`. Each member's offset alone and both together reaching the target on both elbow branches and at three root rotations; the analytic path byte-identical to its pre-offset arithmetic over 180 zero-offset combinations; a three- and a five-bone chain keeping every segment length and reaching tolerance; an absent offset and an authored zero as one solve; the two paths agreeing on an offset rig; a branching offset chain solving both goals and deterministic under twenty authored permutations; the chain root's offset moving the chain rigidly; and an unreachable offset chain clamped to the effective link's reach. The oracle throughout is `fkPlugin.compose` rather than a copy of the trigonometry.
-- `RS-11` through `RS-13`: `packages/core/test/unit/graph/solved-pivot-offset.test.ts`. The three refusal cases inverted into acceptances, with the graph and the derived chain asserted rather than only an empty diagnostics array; every offset the loader already accepted still accepted; and the shared reader's scope, which the dead rotation now carries alone.
-- Unchanged, which is what makes the geometry safe rather than merely new: `IK-1` through `IK-4` and `IK-18`, `FB-1` through `FB-9`, `FB-13` and `FB-15`, the walker demo's cases 11 and 13, `IK-13` end to end, and `FO-1` through `FO-6`. No fixture in the suite is re-authored and no pinned number moves.
+- `PV-1` through `PV-10`: `packages/plugins/test/unit/pivot-offset-solve.test.ts`. Each member offset alone + both together reaching target on both elbow branches at three root rotations; analytic path byte-identical to pre-offset arithmetic over 180 zero-offset combinations; three- and five-bone chain keeping every segment length, reaching tolerance; absent offset + authored zero one solve; two paths agreeing on offset rig; branching offset chain solving both goals, deterministic under twenty authored permutations; chain root offset moving chain rigidly; unreachable offset chain clamped to effective link reach. Oracle `fkPlugin.compose`, not trigonometry copy.
+- `RS-11` through `RS-13`: `packages/core/test/unit/graph/solved-pivot-offset.test.ts`. Three refusal cases inverted into acceptances, graph + derived chain asserted not only empty diagnostics; every offset loader accepted still accepted; shared reader scope, dead rotation sole carrier.
+- Unchanged, making geometry safe not merely new: `IK-1` through `IK-4` and `IK-18`, `FB-1` through `FB-9`, `FB-13` and `FB-15`, walker demo cases 11 and 13, `IK-13` end to end, `FO-1` through `FO-6`. No fixture re-authored, no pinned number moves.

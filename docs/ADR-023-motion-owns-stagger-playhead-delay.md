@@ -2,4 +2,4 @@
 
 **Status:** Accepted, 2026-08-15
 
-**Decision.** Motion computes per-track staggered progress; Track remains a passive leaf.
+**Decision.** Motion computes per-track staggered progress; Track stays passive leaf.

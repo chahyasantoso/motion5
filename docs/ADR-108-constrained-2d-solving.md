@@ -4,146 +4,79 @@
 phase 3, squash-merged from [#484](https://github.com/chahyasantoso/motion5/pull/484) as `0f75d101`.
 Phase 4 is [ADR-109](./ADR-109-opt-in-solve-inspection.md).
 
-**Extended by [ADR-123](./ADR-123-3d-joint-limits.md), 2026-09-27.** The range reader, the
-nearer-bound rule and `atBound` are reused for 3D hinge and twist ranges through `readAngleRange`,
-and under a joint-declaring group (`fk3d`) `minRotation` and `maxRotation` are a hinge's range,
-classified with its `joint`; under every other group they keep this record's meaning and rules.
+**Extended by [ADR-123](./ADR-123-3d-joint-limits.md), 2026-09-27.** Range reader,
+nearer-bound rule and `atBound` reused for 3D hinge and twist ranges through `readAngleRange`; under a
+joint-declaring group (`fk3d`) `minRotation` and `maxRotation` are a hinge's range, classified with its
+`joint`; under every other group they keep this record's meaning and rules.
 
-**Amended by [ADR-121](./ADR-121-grouped-only-keyframes.md), 2026-09-26.** The Invariant's flat
-`minRotation`, `maxRotation`, and `bend` spellings; the **Every spelling is validated**, **Limit
-keys are solver vocabulary**, and **Solver keys belong to the node that bound `root`** passages;
-and the Evidence sentence about flat spellings no longer describe authored input. Only grouped
-spellings reach the solver-spelling readers; ungrouped spellings are `keyframes-ungrouped-key`, so
-the flat branches described there are unreachable from authored input.
+**Amended by [ADR-121](./ADR-121-grouped-only-keyframes.md), 2026-09-26.** Invariant's flat
+`minRotation`, `maxRotation` and `bend` spellings; **Every spelling is validated**, **Limit
+keys are solver vocabulary** and **Solver keys belong to the node that bound `root`** passages;
+Evidence sentence about flat spellings no longer describe authored input. Only grouped
+spellings reach solver-spelling readers; ungrouped spellings are `keyframes-ungrouped-key` → flat
+branches described there unreachable from authored input.
 **Extended by [ADR-126][adr126],
-2026-09-27** (issue #514): limited 2D FABRIK also enforces child limits during the inward pass,
-selects one opposite seed side only for a `limited` baseline, records `atBound` from the enforced
-angle, and uses a progress-gated pass budget.
+2026-09-27** (issue #514): limited 2D FABRIK also enforces child limits during inward pass,
+selects one opposite seed side only for a `limited` baseline, records `atBound` from enforced
+angle, uses a progress-gated pass budget.
 
 ## Invariant
 
-A member may author a finite local angle range as `minRotation` and `maxRotation`, grouped under
-the plugin that bound its `solver` slot (`fk.values.minRotation` in core) or flat on a node that binds
-a solver, and a solver may author one static `bend` hint, flat or under the group that bound its
-`root`. The graph owns load
-refusals; the constraint module owns runtime interpretation; FABRIK owns constrained positions. Every
-published limited rotation is inside its declared range, and unconstrained output remains byte
-identical.
+Member may author finite local angle range as `minRotation` and `maxRotation`, grouped under
+plugin that bound its `solver` slot (`fk.values.minRotation` in core) or flat on node binding
+a solver; solver may author one static `bend` hint, flat or under group that bound its
+`root`. Graph owns load refusals; constraint module owns runtime interpretation; FABRIK owns
+constrained positions. Every published limited rotation inside declared range; unconstrained output stays
+byte identical.
 
 ## Why
 
-The old solver had no joint-limit contract. Clamping a finished closed-form pose would constrain an
-answer that was solved without the limit, rather than solving the best pose available under the
-limit. A constrained chain therefore takes FABRIK first, while an unconstrained two-member chain
-keeps the exact closed form. The distinction is structural and visible in `ChainShape`.
+Old solver had no joint-limit contract. Clamping finished closed-form pose constrains answer solved without limit -- not best pose available under it. Constrained chain therefore takes FABRIK first; unconstrained two-member chain keeps exact closed form. Distinction structural, visible in `ChainShape`.
 
 ## Decisions (taken, not asked)
 
-**FK owns the authored member keys; IK reads them.** Limits are per-member local-frame metadata, so
-they belong beside `length`, `rotation`, and `weight` under `fk.values`. FK composition does not read
-them. `ik.values.bend` is a solver-level static string, with `positive` meaning exactly `flip: true`
-and `negative` meaning exactly `flip: false`. Authoring both spellings is refused.
+**FK owns the authored member keys; IK reads them.** Limits are per-member local-frame metadata → belong beside `length`, `rotation`, `weight` under `fk.values`. FK composition does not read them. `ik.values.bend` solver-level static string: `positive` means exactly `flip: true`, `negative` exactly `flip: false`. Authoring both spellings refused.
 
-**`bend` names a geometric sign, not only a boolean.** `positive` turns the solved second joint toward
-increasing local rotation: on the worked rig it publishes `+51.318` for the elbow, and `negative`, the
-default branch, publishes `-51.318`. `CL-19` pins the sign itself, because an equivalence test between
-`bend` and `flip` stays green if both are inverted together.
+**`bend` names a geometric sign, not only a boolean.** `positive` turns solved second joint toward increasing local rotation: on worked rig publishes `+51.318` for elbow; `negative`, default branch, publishes `-51.318`. `CL-19` pins sign itself: equivalence test between `bend` and `flip` stays green if both inverted together.
 
-**Every spelling is validated, because the solve reads the flat bag.** A member's values reach `ik`
-flattened (ADR-043), so a flat `minRotation` and a grouped one are the same key to the reader. The load
-rules therefore read every spelling through `authoredSpellings`, flat and grouped, never only
-`fk.values`. The first revision read the grouped spelling alone, so a keyframed flat bound loaded
-cleanly and then animated the limit at runtime; `CL-24` to `CL-27` pin the widened rules.
+**Every spelling is validated, because the solve reads the flat bag.** Member's values reach `ik` flattened (ADR-043) → flat `minRotation` and grouped one same key to reader. Load rules read every spelling through `authoredSpellings`, flat and grouped, never only `fk.values`. First revision read grouped spelling alone → keyframed flat bound loaded cleanly, animated limit at runtime; `CL-24` to `CL-27` pin widened rules.
 
-**Limit keys are solver vocabulary.** A limit is read by the solve and by nothing else, so a limit the
-solve cannot reach is a field accepted and ignored (ADR-033 rule 6). Grouped, it must sit under a group
-that bound a `solver` slot, the same scope `ik-weight-without-solver` reads; flat, the node must bind a
-solver somewhere. The first revision accepted `spring.values.minRotation` on a member whose solver was
-bound under `fk` (old `CL-18`), and because the solve reads the flat bag, that limit silently
-constrained the solve. It is now refused as `ik-limit-without-solver`.
+**Limit keys are solver vocabulary.** Limit read by solve and nothing else → limit solve cannot reach is field accepted and ignored (ADR-033 rule 6). Grouped: must sit under group that bound `solver` slot, same scope `ik-weight-without-solver` reads; flat: node must bind solver somewhere. First revision accepted `spring.values.minRotation` on member whose solver bound under `fk` (old `CL-18`); solve reads flat bag → that limit silently constrained solve. Now refused as `ik-limit-without-solver`.
 
-**Solver keys belong to the node that bound `root`.** `bend` and `flip` are read by the solve of the
-node that bound `root`, so the load rules read them on that node alone, flat or under the group that
-bound `root`, which is the same scope `reachesSolve` gives limits. The first revision read `bend` under
-any group on any node, so a third-party plugin's own `spring.values.bend` on a node that is no solver
-was refused as `ik-bend-malformed`, and a `flip` under another group raised `ik-bend-conflicts-flip`.
-On a node that bound no `root` the keys are not solver vocabulary, so nothing is read or refused
-there (`CL-28`). On a solver node a spelling under any other group still reaches the solve through the
-flat bag, so it is refused as `ik-solver-key-misgrouped` rather than steering the solve from a group
-that does not own it (`CL-29`), and the conflict rule compares only the spellings the solve owns
-(`CL-30`). Withdrawn: ignoring a misgrouped spelling on a solver node. The solve would read it anyway,
-which is the silent constraint `ik-limit-without-solver` already refuses for limits.
+**Solver keys belong to the node that bound `root`.** `bend` and `flip` read by solve of node that bound `root` → load rules read them on that node alone, flat or under group that bound `root`, same scope `reachesSolve` gives limits. First revision read `bend` under any group on any node → third-party plugin's own `spring.values.bend` on node that is no solver refused as `ik-bend-malformed`; `flip` under another group raised `ik-bend-conflicts-flip`. On node binding no `root` keys are not solver vocabulary → nothing read or refused there (`CL-28`). On solver node spelling under any other group still reaches solve through flat bag → refused as `ik-solver-key-misgrouped`, not steering solve from group that does not own it (`CL-29`); conflict rule compares only spellings solve owns (`CL-30`). Withdrawn: ignoring misgrouped spelling on solver node. Solve would read it anyway -- silent constraint `ik-limit-without-solver` already refuses for limits.
 
-**One contract owner.** `contract/solver-constraints.ts` owns names, static-value classification, the
-finite degree domain, default bounds, and bend classification. `graph/solver-constraints.ts` owns the
-six load rules. `plugins/ik-constraint.ts` owns runtime limit arithmetic and bend reading.
+**One contract owner.** `contract/solver-constraints.ts` owns names, static-value classification, finite degree domain, default bounds, bend classification. `graph/solver-constraints.ts` owns six load rules. `plugins/ik-constraint.ts` owns runtime limit arithmetic and bend reading.
 
-**Malformed runtime bounds are absent.** `SolveMember.limit` holds only the `range` variant, and an
-absent limit means free, so no strategy branches on a third state. A malformed bound is ignored
-independently. The other well-formed bound still applies, and the missing side defaults to `-180` or `180`; if neither bound is
-well formed the runtime reads a free joint. An empty range at runtime is answered as `[min, min]` so
-live value-tier writes remain total even when they bypass load validation.
+**Malformed runtime bounds are absent.** `SolveMember.limit` holds only `range` variant; absent limit means free → no strategy branches on third state. Malformed bound ignored independently; other well-formed bound still applies; missing side defaults to `-180` or `180`; neither well formed → runtime reads free joint. Empty range at runtime answered `[min, min]` → live value-tier writes stay total even bypassing load validation.
 
-**Constrained dispatch is first, after the no-goal refusal.** `ChainShape` chooses `constrained`
-whenever any member carries a range. That arm uses FABRIK even for two members. The no-goal refusal is
-read before it, so a limited chain with no goal gets the same message it always did (`CL-21`). The
-unconstrained two-bone and tree routes are unchanged.
+**Constrained dispatch is first, after the no-goal refusal.** `ChainShape` chooses `constrained` whenever any member carries range. That arm uses FABRIK even for two members. No-goal refusal read before it → limited chain with no goal gets same message as always (`CL-21`). Unconstrained two-bone and tree routes unchanged.
 
-**Limits are enforced during FABRIK.** The outward pass places a segment, computes its local angle,
-limits it, and re-places the tip along the limited direction. The inward pass also moves a base with
-limited children to the nearest legal angle while holding the child direction, so both ends preserve
-the same range; [ADR-126][adr126] owns the retry and progress-gated budget around these passes.
+**Limits are enforced during FABRIK.** Outward pass places segment, computes local angle, limits it, re-places tip along limited direction. Inward pass also moves base with limited children to nearest legal angle while holding child direction → both ends preserve same range; [ADR-126][adr126] owns retry and progress-gated budget around these passes.
 
-**An out-of-range angle goes to the bound nearer on the circle.** The angle is wrapped into
-`(-180, 180]` first, and an angle outside the range is answered by the bound with the smaller angular
-distance, not the smaller numeric distance: for `[90, 170]`, `-170` is 20 degrees from `170` and 100
-from `90`, so it limits to `170`, where a numeric clamp would swing the bone the long way round to
-`90`. A tie takes `min`, so the answer never depends on evaluation order. `wrapRotation` returns an
-angle already in range unchanged rather than re-deriving it, because `(x + 180) - 180` is not `x` in
-floating point, and a one-ulp move would report a legal angle as moved (`CL-20`). A free joint's
-`limitRotation` is the identity (`CL-23`). Zero-extent limited members use their base direction plus
-the limited zero angle. Unlimited members retain their existing placement and
-published-angle expressions.
+**An out-of-range angle goes to the bound nearer on the circle.** Angle wrapped into `(-180, 180]` first; outside range answered by bound with smaller angular distance, not smaller numeric distance: for `[90, 170]`, `-170` is 20 degrees from `170`, 100 from `90` → limits to `170`; numeric clamp would swing bone long way round to `90`. Tie takes `min` → answer never depends on evaluation order. `wrapRotation` returns angle already in range unchanged, not re-derived: `(x + 180) - 180` is not `x` in floating point; one-ulp move would report legal angle as moved (`CL-20`). Free joint's `limitRotation` is identity (`CL-23`). Zero-extent limited members use base direction plus limited zero angle. Unlimited members retain existing placement and published-angle expressions.
 
-**Quality names a limited miss.** `limited` carries `iterations`, `residual`, and frozen canonical
-`atBound` member IDs. It is reported only when the residual exceeds tolerance and a limited member is
-at a bound. Other quality kinds remain unchanged.
+**Quality names a limited miss.** `limited` carries `iterations`, `residual`, frozen canonical `atBound` member IDs. Reported only when residual exceeds tolerance and limited member at bound. Other quality kinds unchanged.
 
-**Withdrawn: post-hoc closed-form clamping.** It can clamp the unconstrained pose into the range but
-cannot find the best limited pose, so it was rejected instead of implemented. Also withdrawn is a
-new solver compatibility flag: `bend` and `flip` conflict rather than silently selecting one.
+**Withdrawn: post-hoc closed-form clamping.** Can clamp unconstrained pose into range but cannot find best limited pose → rejected, not implemented. Also withdrawn: new solver compatibility flag; `bend` and `flip` conflict rather than silently selecting one.
 
 ## Found, and left to its own issue
 
-The negative-length FK disagreement recorded by ADR-107 was not changed by this phase; [#482](https://github.com/chahyasantoso/motion5/issues/482) later closed it by composing `fk` through `segmentExtent`, as ADR-107 now records.
+Negative-length FK disagreement recorded by ADR-107 unchanged by this phase; [#482](https://github.com/chahyasantoso/motion5/issues/482) later closed it by composing `fk` through `segmentExtent`, as ADR-107 now records.
 
 ## Evidence
 
-`packages/plugins/test/unit/ik-constraint.test.ts` covers wrapping, limit arithmetic, constrained
-dispatch, seeded constrained poses, quality, bend/flip equivalence and precedence, zero extent, and
-runtime totality under `CL-1` through `CL-3`, `CL-7` through `CL-11`, and `CL-19` through `CL-23`.
-`packages/core/test/unit/graph/solver-constraints.test.ts` covers each refusal and accepting direction
-under `CL-4` through `CL-6`, `CL-12` through `CL-18`, and `CL-24` through `CL-30`, `CL-24` to `CL-27`
-being the flat spellings and `CL-28` to `CL-30` the solver-key scope. Both files are registered in
-`docs/acceptance-map.json`, and `CL-` is registered by the evidence-id gate.
+`packages/plugins/test/unit/ik-constraint.test.ts` covers wrapping, limit arithmetic, constrained dispatch, seeded constrained poses, quality, bend/flip equivalence and precedence, zero extent, runtime totality under `CL-1` through `CL-3`, `CL-7` through `CL-11`, `CL-19` through `CL-23`.
+`packages/core/test/unit/graph/solver-constraints.test.ts` covers each refusal and accepting direction under `CL-4` through `CL-6`, `CL-12` through `CL-18`, `CL-24` through `CL-30`: `CL-24` to `CL-27` flat spellings, `CL-28` to `CL-30` solver-key scope. Both files registered in `docs/acceptance-map.json`; `CL-` registered by evidence-id gate.
 
-Sandbox measurements, taken with an esbuild vitest shim and without `tsc` or `gsap`, so they are
-reviewed rather than trusted and the pull request's CI run is the evidence that counts:
+Sandbox measurements, esbuild vitest shim, no `tsc` or `gsap` → reviewed, not trusted; pull request's CI run is evidence that counts:
 
 - `CL-1` to `CL-30`: 30 of 30 pass.
-- Full suite: 958 pass against 931 at `c03c6b19`, with an identical failure set, every member of which
-  is blocked by the sandbox environment rather than by this change.
-- 200,000 seeded unconstrained rigs publish byte-identical rotations to `c03c6b19`, under both the
-  `flip` and the `bend` spellings of the branch.
-- 50,000 seeded constrained rigs: 0 rotations outside their declared range, 0 non-finite values, and
-  0 impure solves (a repeated solve of the same input is byte-identical).
+- Full suite: 958 pass against 931 at `c03c6b19`; identical failure set, every member blocked by sandbox environment, not this change.
+- 200,000 seeded unconstrained rigs publish byte-identical rotations to `c03c6b19`, under both `flip` and `bend` spellings of branch.
+- 50,000 seeded constrained rigs: 0 rotations outside declared range, 0 non-finite values, 0 impure solves (repeated solve of same input byte-identical).
 
 ## Consequences
 
-Authors gain static per-member limits and an explicit bend spelling. Invalid authored values fail with
-named diagnostics at load, while live writes remain total. Limited chains may miss their goals and now
-explain that miss with `limited` quality. Unconstrained rigs retain the old closed-form and unlimited
-FABRIK behavior. The runtime plugin surface still publishes rotations only by default; ADR-109 adds
-the opt-in fixed-shape `inspection` projection without changing unopted patches.
+Authors gain static per-member limits and explicit bend spelling. Invalid authored values fail with named diagnostics at load; live writes stay total. Limited chains may miss goals; now explain miss with `limited` quality. Unconstrained rigs retain old closed-form and unlimited FABRIK behavior. Runtime plugin surface still publishes rotations only by default; ADR-109 adds opt-in fixed-shape `inspection` projection without changing unopted patches.
 
 [adr126]: ./ADR-126-limited-fabrik-seed-side-bidirectional-limits-and-pass-budget.md

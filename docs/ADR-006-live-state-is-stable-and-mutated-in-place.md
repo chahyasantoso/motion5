@@ -2,10 +2,10 @@
 
 **Status:** Accepted, 2026-08-10
 
-**Context.** Recreating an observation bridge after a graph commit invalidates references held by subscribers and makes rollback ambiguous.
+**Context.** Recreating observation bridge after graph commit invalidates subscriber references, makes rollback ambiguous.
 
-**Decision.** Each project has one long-lived ObservationState. GraphBinding mutates it transactionally with an undo journal. Commit replaces the immutable graph snapshot, not the live state object.
+**Decision.** Each project one long-lived ObservationState. GraphBinding mutates it transactionally with undo journal. Commit replaces immutable graph snapshot, not live state object.
 
-**Alternatives rejected.** Rebuilding from the entire graph after every change is simpler locally but loses identity and makes side effects difficult to undo.
+**Alternatives rejected.** Rebuild from entire graph after every change simpler locally, but loses identity, makes side effects hard to undo.
 
-**Consequences.** Mutation code must be explicit and reversible. Invariants I-1 and I-2 are mandatory evidence.
+**Consequences.** Mutation code must be explicit, reversible. Invariants I-1 and I-2 mandatory evidence.

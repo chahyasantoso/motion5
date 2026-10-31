@@ -2,4 +2,4 @@
 
 **Status:** Accepted, 2026-08-10
 
-**Decision.** Published patches, batches, and nested values are deeply frozen in every environment. There is no production opt-out.
+**Decision.** Published patches, batches, nested values deeply frozen in every environment. No production opt-out.

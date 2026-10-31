@@ -2,4 +2,4 @@
 
 **Status:** Accepted, 2026-08-10
 
-**Decision.** Same-repository pull requests receive automatic mechanical formatting commits; fork pull requests remain check-only.
+**Decision.** Same-repo pull requests get automatic mechanical formatting commits; fork pull requests stay check-only.

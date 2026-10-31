@@ -4,40 +4,20 @@
 
 ## Context
 
-The immutable value type, its freezer, and graph publication each answered whether a leaf could be
-`null`. The type and freezer disagreed with the publisher: a composed `null` could reach a patch,
-while a typed value could not safely describe it. DOM consumers would serialize it as `"null"` and
-3D readers would turn it into zero, so accepting it is not a neutral representation.
+Immutable value type, its freezer, graph publication each answered whether a leaf could be `null`. Type and freezer disagreed with publisher: composed `null` could reach a patch, while typed value could not safely describe it. DOM consumers serialize it as `"null"`, 3D readers turn it into zero → accepting it not neutral representation.
 
 ## Decision
 
-`isImmutableLeaf` in `packages/core/src/domain/values.ts` is the one owner of renderer-neutral leaf
-admission. It accepts strings, booleans, and finite numbers. `ImmutableValue` excludes `null`,
-`freezeValue` uses the predicate after preserving its non-finite-number refusal, and the graph
-publisher uses the same predicate. Structural rules remain with their owners: plain records,
-arrays, cycles, and underscore-prefixed publisher keys are not folded into the leaf predicate.
+`isImmutableLeaf` in `packages/core/src/domain/values.ts` one owner of renderer-neutral leaf admission. Accepts strings, booleans, finite numbers. `ImmutableValue` excludes `null`; `freezeValue` uses predicate after preserving its non-finite-number refusal; graph publisher uses same predicate. Structural rules stay with owners: plain records, arrays, cycles, underscore-prefixed publisher keys not folded into leaf predicate.
 
-The invariant reads: one leaf rule (`isImmutableLeaf`) decides which leaves are allowed; structural
-rules stay with their owners. Authored `null` was already refused by the validator
-(`keyframes-ungrouped-key` at the top level, the leaf path inside `values`), so only composed
-output changes. Fixtures that composed `null` for "absent" now omit the key.
+Invariant: one leaf rule (`isImmutableLeaf`) decides which leaves allowed; structural rules stay with owners. Authored `null` already refused by validator (`keyframes-ungrouped-key` at top level, leaf path inside `values`) → only composed output changes. Fixtures composing `null` for "absent" now omit key.
 
-`ImmutableLeaf` names the leaf type. Labels are `ImmutableLeaf` and `readLabel` calls
-`isImmutableLeaf`; both, with `patchRender`, are re-exported from `@motion5/core/plugin-api`, so
-plugin-package consumers reuse the core leaf rule and the ADR-094 status policy rather than copying
-them. A label read is a closed union (`label`, `retained`, `gone`) read by exhaustive switches. A
-listener retains its prior value through blocked and error patches, emits one destroyed edge only
-when a label was delivered, and a synchronous write from a listener is refused with
-`schema-commit-reentrant`.
+`ImmutableLeaf` names leaf type. Labels are `ImmutableLeaf`; `readLabel` calls `isImmutableLeaf`; both, with `patchRender`, re-exported from `@motion5/core/plugin-api` → plugin-package consumers reuse core leaf rule and ADR-094 status policy rather than copying them. Label read is closed union (`label`, `retained`, `gone`) read by exhaustive switches. Listener retains prior value through blocked and error patches, emits one destroyed edge only when label delivered; synchronous write from listener refused with `schema-commit-reentrant`.
 
 ## Rejected
 
-Accepting `null` everywhere was rejected because it makes the renderer boundary ambiguous and gives
-multiple consumers different implicit conversions. A second label-specific status mapping was
-rejected because `patchRender` already owns that transition.
+Accepting `null` everywhere rejected: makes renderer boundary ambiguous, gives multiple consumers different implicit conversions. Second label-specific status mapping rejected: `patchRender` already owns that transition.
 
 ## Evidence
 
-N1 to N10 are in `packages/core/test/unit/domain/values.test.ts` and
-`packages/plugins/test/labels.test.ts`. The public plugin subpath test pins `labels` and the
-plugin-api closure test pins the new re-export.
+N1 to N10 in `packages/core/test/unit/domain/values.test.ts` and `packages/plugins/test/labels.test.ts`. Public plugin subpath test pins `labels`; plugin-api closure test pins new re-export.
