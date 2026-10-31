@@ -2,79 +2,156 @@
 
 **Status:** Accepted, 2026-08-29. **The pivot half is superseded by [ADR-054](./ADR-054-offset-aware-ik-solving.md), 2026-08-29.**
 
-> **Amendment.** This record has two halves and only one of them still stands.
+> **Amendment.** Two halves, one still standing.
 >
-> `ik-solver-no-goal` and everything about it is current: the rule, the throw it sits behind, and the one-reader-per-authored-question refactor that landed with it.
+> `ik-solver-no-goal` and everything about it current: rule, throw behind it, one-reader-per-authored-question
+> refactor landing with it.
 >
-> `ik-solved-pivot-unsupported` is gone. This record called it a safety stop rather than the desired end state, and its own alternative 1 sketched the geometry that would retire it, down to the effective link and the twist. ADR-054 lands that geometry in both solves, defines the shared sub-base convention alternative 1 said was missing, and deletes the rule. Read every paragraph below about the pivot as the reasoning that was correct at the time and is now history: the refusal, its consequence 1, and its `RS-11` through `RS-13` evidence, which is inverted into acceptance rather than deleted. Nothing else in this record moves.
+> `ik-solved-pivot-unsupported` gone. This record called it safety stop not desired end state, own alternative 1
+> sketched geometry retiring it — down to effective link and twist. ADR-054 lands that geometry in both solves,
+> defines shared sub-base convention alternative 1 said missing, deletes rule. Read every pivot paragraph below as
+> reasoning correct at time, now history: refusal, its consequence 1, `RS-11` through `RS-13` evidence, inverted
+> into acceptance rather than deleted. Nothing else moves.
 
-**Supersedes nothing.** Extends [ADR-051](./ADR-051-derived-solver-membership.md), which owns how a solver finds its bones, and [ADR-052](./ADR-052-goal-addressing-by-member-id.md), which owns how it is told what to reach for. This record owns two shapes those two left reachable: a solver with nothing to reach for, and a member whose pivot neither solve accounts for.
+**Supersedes nothing.** Extends [ADR-051](./ADR-051-derived-solver-membership.md) (how solver finds bones) and
+[ADR-052](./ADR-052-goal-addressing-by-member-id.md) (how it is told what to reach for). This record owns two
+shapes those left reachable: solver with nothing to reach for, member whose pivot neither solve accounts for.
 
-**Amended by [ADR-121](./ADR-121-grouped-only-keyframes.md), 2026-09-26.** The `flat key names no
- group at all` passage and Alternative 6's acceptance of a flat level no longer describe authored
-input. Flat keys are no longer authored: an ungrouped `x` or `y` is refused as
-`keyframes-ungrouped-key` before binder scope or graph reads it.
+**Amended by [ADR-121](./ADR-121-grouped-only-keyframes.md), 2026-09-26.** `flat key names no group at all`
+passage and Alternative 6's acceptance of flat level no longer describe authored input. Flat keys no longer
+authored: ungrouped `x` or `y` refused as `keyframes-ungrouped-key` before binder scope or graph reads it.
 
 ## Context
 
-Both shapes come out of the review of `feat/d-base` against the consolidated slice D plan, and they fail the same way. Neither errors at load, and both were only noticed downstream of the loader that could have named them.
+Both shapes out of review of `feat/d-base` against consolidated slice D plan, fail same way. Neither errors at
+load, both noticed only downstream of loader that could have named them.
 
-**A solver with a root, members, and no goal loaded clean.** `ik-leaf-without-goal` is guarded by the goal dict having been used at all, because a bare `target` names no member and has no leaf to be missing, and the bare slot is a separate read. The one shape that binds neither therefore met no rule: `resolveSolvers` derived its chain, `orderGraph` linearised it, and `solveChain` threw on an empty goal map on the first tick and every tick after it. The solver published `error`, every member of it published `blocked-upstream`, and every descendant of those blocked behind them, once per frame, for a shape that is a pure function of the authored document. ADR-052 already documents that a no-goal solver is refused at load, so the implementation contradicted its own record, which is the one documentation failure worse than no documentation.
+**Solver with root, members, no goal loaded clean.** `ik-leaf-without-goal` guarded by goal dict having been used
+at all — bare `target` names no member, has no leaf to be missing, bare slot separate read. Shape binding neither
+met no rule: `resolveSolvers` derived chain, `orderGraph` linearised, `solveChain` threw on empty goal map first
+tick and every tick after. Solver published `error`, every member `blocked-upstream`, every descendant of those
+blocked behind them, once per frame — for shape pure function of authored document. ADR-052 already documents
+no-goal solver refused at load → implementation contradicted own record, one documentation failure worse than no
+documentation.
 
-**Neither solve accounts for a member's pivot offset.** Slice A gave `fk` an authored `x` and `y`, read in the base's rotated space, so a bone composes its pivot at that offset and then extends by `length`. Both solves were written against the geometry that preceded it: `solveTwoBone` reads `length` off each member and measures from the root's own frame, and `fabrikMembers` hands the iterative solve a length and a `base` per member and nothing else. A member with a non-zero offset therefore composes a tip displaced from the one the solve placed, and the chain misses its goal by exactly that vector, with a `ready` patch and no diagnostic anywhere. That is silent wrongness rather than a failure, which is the class this project refuses everywhere else.
+**Neither solve accounts for member's pivot offset.** Slice A gave `fk` authored `x`, `y`, read in base's rotated
+space → bone composes pivot at offset then extends by `length`. Both solves written against preceding geometry:
+`solveTwoBone` reads `length` off each member, measures from root's own frame; `fabrikMembers` hands iterative
+solve length + `base` per member, nothing else. Member with non-zero offset composes tip displaced from one solve
+placed, chain misses goal by exactly that vector — `ready` patch, no diagnostic anywhere. Silent wrongness not
+failure: class project refuses everywhere else.
 
 ## Decision
 
 ### A solver with no goal is refused at load
 
-`ik-solver-no-goal`, in `resolveSolvers`, beside `ik-solver-no-root` and `ik-solver-no-members`. It fires when a solver binds neither the bare `target` slot nor a single goal through the dict, and it is about absence rather than about spelling: either spelling satisfies it, because `target` is exactly the degenerate case of the dict and neither is deprecated.
+`ik-solver-no-goal` in `resolveSolvers`, beside `ik-solver-no-root`, `ik-solver-no-members`. Fires when solver
+binds neither bare `target` slot nor single goal through dict; about absence not spelling — either spelling
+satisfies, because `target` = exactly degenerate case of dict and neither deprecated.
 
-The throw inside `solveChain` stays exactly as it is, and becomes what `readMembers`' throw already is: the invariant guard behind a named rule rather than the first owner to notice. A composition that reaches it is a publisher invariant violation, not an authoring mistake, and answering with the seed pose instead would publish a rig reaching for nothing with status `ready`.
+Throw inside `solveChain` stays exactly as is, becomes what `readMembers`' throw already is: invariant guard
+behind named rule, not first owner to notice. Composition reaching it = publisher invariant violation not
+authoring mistake; answering with seed pose would publish rig reaching for nothing with status `ready`.
 
-It reports without skipping the rest of the derivation, unlike the two refusals it sits beside. A goal-less solver still has a derivable chain, so a broken one is worth naming in the same pass rather than one run later. It cannot report beside `ik-leaf-without-goal`: that rule needs the dict to have been used, and this one needs it not to have been, so one absence is never two diagnostics.
+Reports without skipping rest of derivation, unlike two refusals beside it. Goal-less solver still has derivable
+chain → broken one worth naming same pass not one run later. Cannot report beside `ik-leaf-without-goal`: that
+rule needs dict used, this one needs it not used → one absence never two diagnostics.
 
 ### A solved member's pivot sits on its base's tip
 
 **Superseded by ADR-054.** The rule described in this section no longer exists. Both solves account for the offset, and a solved member's pivot sits wherever its authored `x` and `y` put it, exactly as on every other bone. The reasoning is kept because ADR-054's own decision is a reply to it.
 
-`ik-solved-pivot-unsupported` refuses an authored non-zero `x` or `y` on a member bound to a solver, naming the keys it found in one diagnostic per member rather than one per key.
+`ik-solved-pivot-unsupported` refused authored non-zero `x` or `y` on member bound to solver, naming keys found,
+one diagnostic per member not per key.
 
-By value rather than by presence, which is the one difference between it and `ik-solved-rotation-dead` beside it. An authored zero composes exactly the frame an unauthored pivot composes, so refusing it would refuse a rig that is already right; a ramp that never leaves zero is read the same way. A solved rotation, by contrast, is replaced whatever it was, so authoring one at all is dead input.
+By value not presence — one difference from `ik-solved-rotation-dead` beside it. Authored zero composes exactly
+frame unauthored pivot composes → refusing it refuses rig already right; ramp never leaving zero read same way.
+Solved rotation, contrast, replaced whatever it was → authoring one at all dead input.
 
-Scoped to the group that bound `solver`, which is the scope `RS-9` pins for the dead rotation. A solve answers for the plugin that asked for it, so a key under any other group is that plugin's own live input, and a flat key names no group at all in a layer that holds no registry.
+Scoped to group that bound `solver` — scope `RS-9` pins for dead rotation. Solve answers for plugin that asked →
+key under any other group that plugin's own live input, flat key names no group at all in layer holding no
+registry.
 
-**Both solve paths share this convention rather than holding one each,** and the loader is where that is guaranteed. Enforcing it at load means neither `solveTwoBone` nor `solveFabrik` needs a line and neither can drift from the other, and it means the refusal is a property of the rig rather than of the arity that happens to dispatch it. A convention that held at arity two and not above it would be the arity-dependent meaning that killed reviving a member's authored `rotation` as a FABRIK seed.
+**Both solve paths share this convention rather than holding one each,** loader where guaranteed. Enforcing at load
+→ neither `solveTwoBone` nor `solveFabrik` needs a line, neither can drift from other, refusal property of rig not
+arity that happens to dispatch it. Convention holding at arity two not above = arity-dependent meaning that killed
+reviving member's authored `rotation` as FABRIK seed.
 
-ADR-054 keeps the last paragraph's requirement and drops its mechanism: both paths still share one convention, and it is now guaranteed by both reading one module rather than by neither being allowed to meet the shape.
+ADR-054 keeps last paragraph's requirement, drops mechanism: both paths still share one convention, now guaranteed
+by both reading one module rather than by neither allowed to meet shape.
 
 ### One reader per authored question
 
-Both rules exist because two readers of one question had already drifted, so each lands with its readers merged rather than beside them.
+Both rules exist because two readers of one question already drifted → each lands with readers merged not beside
+them.
 
-`goalBindingsOf` returns the bare slot and the dict entries together, and four callers read it: `ik-mode-ambiguous` needs to know whether a node bound a goal at all, `ik-goal-conflict` needs both spellings, `ik-solver-no-goal` needs neither of them, and the chain derivation needs every dict entry with its authored key. Two of those used to read the literal `"target"` in one loop while the grammar was read in another, which is exactly how a member binding `solver` beside a goal dict loaded clean with every one of its goals ignored.
+`goalBindingsOf` returns bare slot + dict entries together, four callers read it: `ik-mode-ambiguous` needs whether
+node bound goal at all, `ik-goal-conflict` needs both spellings, `ik-solver-no-goal` needs neither, chain derivation
+needs every dict entry with authored key. Two used to read literal `"target"` in one loop while grammar read in
+another — exactly how member binding `solver` beside goal dict loaded clean with every goal ignored.
 
-`authoredByBinders` generalises `authorsSolvedRotation` to a key, so the dead rotation and the pivot offset ask one function which group bound the solver, and it reads `readPluginValues` rather than reaching into a group itself, so what a `values` section is keeps its single owner. It stays generalised under ADR-054 even though the dead rotation is its only caller now, because re-specialising a reader on the way out of a widening is how the drift it was created to end comes back.
+`authoredByBinders` generalises `authorsSolvedRotation` to a key → dead rotation and pivot offset ask one function
+which group bound solver, reads `readPluginValues` rather than reaching into group itself → what `values` section is
+keeps single owner. Stays generalised under ADR-054 though dead rotation its only caller now: re-specialising reader
+on way out of widening = how drift it created to end comes back.
 
 ## Alternatives rejected
 
-1. **Incorporating the pivot offsets into both solves now.** **Taken up by ADR-054**, which follows this sketch: the analytic case survives as written here, and the tree case is closed by defining the sub-base convention rather than by averaging incompatible twists. The reasoning below is why it was a separate slice rather than why it is wrong. The analytic case is tractable and the tree case is not, and shipping half of it would be the two conventions this record exists to prevent. For a two-bone chain the first pivot is fixed once the root frame is known, and the link from it to the second pivot is rigid: a length of `hypot(l1 + x2, y2)` at a fixed twist of `atan2(y2, l1 + x2)` from the first bone's own direction, so the closed form survives with the twist subtracted from one angle and added to the other. FABRIK generalises the same way over pivots rather than tips for a linear chain, and stops generalising at a branch: a sub-base carries a different twist per child, so the averaged inward pass has no single direction to recover. That is a geometry change to both solves, it moves the numbers `IK-1`, `IK-3` and every `FB-` tolerance pin, and it is its own slice with its own evidence.
-2. **Refusing the offsets for the iterative path only.** Two conventions for one authored key, decided by a derived member count the author never wrote. The review asked for one convention across both paths for this reason, and ADR-054 satisfies it by supporting the key on both rather than by refusing it on both.
-3. **Documenting the offsets as unsupported without refusing them.** A field accepted and then ignored, which is what rule 6 of [ADR-033](./ADR-033-no-manual-trigger-fallback.md) forbids, and the silent miss is the whole finding.
-4. **Guarding the offsets in `readMembers` instead of at load.** The plugin reads a member's composed value namespace, which is flat, so it cannot see which group authored a key. It would refuse an `x` authored under `transform` that the load rule accepts, and two owners answering one question differently is precisely the drift that had two copies of `readNumber` disagreeing about `length: NaN`. The load rule is the only owner that can see the authored group.
-5. **Refusing the presence of `x` or `y` rather than a non-zero value.** Cheaper to implement and it re-authors rigs that are already correct, including any bone that spells its zeros out for symmetry with its siblings.
-6. **Reading every group and the flat level for the pivot.** Wider than the scope `RS-9` pins for the dead rotation, and it would have this rule answering for a plugin it knows nothing about. The residual gap is stated as a cost below rather than closed by a wide read.
-7. **Leaving the no-goal refusal to the throw.** A shape the loader can name should never be a per-tick composition error, and the throw's own message names a publisher invariant rather than an authoring mistake, so the author is told about the wrong layer.
+1. **Incorporating pivot offsets into both solves now.** **Taken up by ADR-054**, following this sketch: analytic
+   case survives as written here, tree case closed by defining sub-base convention rather than averaging
+   incompatible twists. Reasoning below why separate slice, not why wrong. Analytic case tractable, tree case not,
+   shipping half = two conventions record exists to prevent. Two-bone chain: first pivot fixed once root frame
+   known, link to second pivot rigid — length `hypot(l1 + x2, y2)` at fixed twist `atan2(y2, l1 + x2)` from first
+   bone's own direction → closed form survives with twist subtracted from one angle, added to other. FABRIK
+   generalises same way over pivots not tips for linear chain, stops generalising at branch: sub-base carries
+   different twist per child → averaged inward pass has no single direction to recover. Geometry change to both
+   solves, moves numbers `IK-1`, `IK-3`, every `FB-` tolerance pin, own slice with own evidence.
+2. **Refusing offsets for iterative path only.** Two conventions for one authored key, decided by derived member
+   count author never wrote. Review asked one convention across both paths for this reason; ADR-054 satisfies by
+   supporting key on both rather than refusing on both.
+3. **Documenting offsets unsupported without refusing.** Field accepted then ignored — what rule 6 of
+   [ADR-033](./ADR-033-no-manual-trigger-fallback.md) forbids; silent miss whole finding.
+4. **Guarding offsets in `readMembers` instead of at load.** Plugin reads member's composed value namespace, flat →
+   cannot see which group authored key. Would refuse `x` authored under `transform` that load rule accepts; two
+   owners answering one question differently precisely drift that had two copies of `readNumber` disagreeing about
+   `length: NaN`. Load rule only owner able to see authored group.
+5. **Refusing presence of `x`/`y` rather than non-zero value.** Cheaper to implement, re-authors rigs already
+   correct, including bone spelling zeros out for symmetry with siblings.
+6. **Reading every group and flat level for pivot.** Wider than scope `RS-9` pins for dead rotation, would have this
+   rule answering for plugin it knows nothing about. Residual gap stated as cost below, not closed by wide read.
+7. **Leaving no-goal refusal to throw.** Shape loader can name should never be per-tick composition error; throw's
+   own message names publisher invariant not authoring mistake → author told about wrong layer.
 
 ## Consequences, stated as costs
 
-1. **A solved member cannot carry a pivot offset at all.** **Superseded by ADR-054: it can, and the cost is retired rather than paid.** The two keys stay fully available everywhere else, including on the chain root and on every bone below the chain, which is where the walker rig already uses them: its shoulder hangs off the pelvis at `y: -50` and is the arm solver's root, not one of its members. No fixture, demo, or playground rig is re-authored by either rule.
-2. **The narrow scope leaves one gap, and it is named rather than discovered.** `fk` composes its pivot from the flattened value namespace, so an `x` authored under a group that did not bind `solver` still reaches it and is still unaccounted for by the solve. Accepted for consistency with `ik-solved-rotation-dead`, which `RS-9` pins at the same scope for the same reason, and closing it needs the wide read alternative 6 rejects. Under ADR-054 the gap is still open and no longer costs anything: the offset simply is not one the solve knows about, on a member whose rotation that other plugin owns.
-3. **`PIVOT_KEYS` puts two of `fk`'s key names in the graph layer,** beside the `rotation` that was already there. This layer holds no plugin registry by design, so a kinematic key it reads is a literal or nothing. ADR-054 deletes `PIVOT_KEYS` with the rule, so only `rotation` remains.
-4. **Two rules for two adjacent absences.** `ik-solver-no-goal` and `ik-leaf-without-goal` both say a chain has nothing to reach for, and which one an author meets depends on whether they used the dict. One rule covering both would have to report a leaf for a solver that named no leaves.
-5. **No mode is added, so no new numbered record is owed.** Dispatch is exactly what ADR-051's clarification says it is, neither solve gained a branch, and no published value moves. This record is the whole of the change's architecture.
+1. **Solved member cannot carry pivot offset at all.** **Superseded by ADR-054: it can, and the cost is retired
+   rather than paid.** Two keys stay fully available everywhere else, including chain root and every bone below —
+   where walker rig already uses them: shoulder hangs off pelvis at `y: -50`, arm solver's root not one of its
+   members. No fixture, demo, playground rig re-authored by either rule.
+2. **Narrow scope leaves one gap, named not discovered.** `fk` composes pivot from flattened value namespace → `x`
+   authored under group not binding `solver` still reaches it, still unaccounted by solve. Accepted for consistency
+   with `ik-solved-rotation-dead`, `RS-9` pinning same scope same reason; closing needs wide read alternative 6
+   rejects. Under ADR-054 gap still open, costs nothing: offset simply not one solve knows about, on member whose
+   rotation that other plugin owns.
+3. **`PIVOT_KEYS` puts two of `fk`'s key names in graph layer,** beside `rotation` already there. Layer holds no
+   plugin registry by design → kinematic key it reads is literal or nothing. ADR-054 deletes `PIVOT_KEYS` with
+   rule, only `rotation` remains.
+4. **Two rules for two adjacent absences.** `ik-solver-no-goal`, `ik-leaf-without-goal` both say chain has nothing
+   to reach for; which one author meets depends on dict used. One rule covering both would report leaf for solver
+   naming no leaves.
+5. **No mode added → no new numbered record owed.** Dispatch exactly ADR-051's clarification says, neither solve
+   gained branch, no published value moves. This record whole of change's architecture.
 
 ## Evidence
 
-- `MG-14`, `MG-15`: `packages/core/test/unit/graph/solver-goal-required.test.ts`. The refusal by name with its participant ids, both builders bailing at the same point, either goal spelling satisfying it, and the mutual exclusion with `ik-leaf-without-goal`.
-- `RS-11`, `RS-12`, `RS-13`: `packages/core/test/unit/graph/solved-pivot-offset.test.ts`. **Inverted by ADR-054.** They pinned a static, an animated and a two-key offset refused with the keys named; an authored zero, a zero ramp, the chain root's own offset and a bone below the chain all accepted; and the binder scope, asserted through the `spring` and flat-key fixtures `RS-9` uses for the dead rotation. They now pin the same fixtures accepted and the same scope read, which is why the ids are kept rather than retired: an acceptance needs evidence exactly as a refusal did.
-- Unchanged, which is what makes the refusals safe rather than merely narrow: the walker demo's cases 11 and 13, `IK-13` end to end, `FB-9`'s byte identity, and `FB-15`'s bare-target join. Every solver in the suite, in the demo, and in the playground binds a goal, and no member of any of them authors a pivot.
+- `MG-14`, `MG-15`: `packages/core/test/unit/graph/solver-goal-required.test.ts`. Refusal by name with participant
+  ids, both builders bailing same point, either goal spelling satisfying, mutual exclusion with
+  `ik-leaf-without-goal`.
+- `RS-11`, `RS-12`, `RS-13`: `packages/core/test/unit/graph/solved-pivot-offset.test.ts`. **Inverted by ADR-054.**
+  Pinned static, animated, two-key offset refused with keys named; authored zero, zero ramp, chain root's own
+  offset, bone below chain all accepted; binder scope asserted through `spring` and flat-key fixtures `RS-9` uses
+  for dead rotation. Now pin same fixtures accepted, same scope read — why ids kept not retired: acceptance needs
+  evidence exactly as refusal did.
+- Unchanged, what makes refusals safe not merely narrow: walker demo cases 11 and 13, `IK-13` end to end, `FB-9`'s
+  byte identity, `FB-15`'s bare-target join. Every solver in suite, demo, playground binds goal, no member of any
+  authors pivot.
