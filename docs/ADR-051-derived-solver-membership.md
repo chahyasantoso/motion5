@@ -4,20 +4,25 @@
 **Date:** 2026-08-27  
 **Closes:** issue [#195](https://github.com/chahyasantoso/motion5/issues/195)
 
-This record defines the Inverse Kinematics (IK) solver architecture in motion5. It establishes how solvers participate in the single-pass transactional dataflow graph, how member chains are derived without cyclic requirement edges, and how forward kinematics (FK) bones apply solved rotations without mutating published output schemas.
+This record defines IK solver architecture in motion5: how solvers join single-pass transactional dataflow
+graph, how member chains derive without cyclic requirement edges, how FK bones apply solved rotations
+without mutating published output schemas.
 
 ---
 
 ## Context
 
-In Forward Kinematics (FK), each bone's world transform is computed relative to its parent frame (`base`) using authored `length` and `rotation`. Inverse Kinematics (IK) allows an end-effector (such as a hand or foot) to reach toward a world-space target by calculating the requisite joint rotations across an ancestor bone chain.
+FK: each bone's world transform computed from parent frame (`base`) using authored `length` + `rotation`.
+IK: end-effector (hand, foot) reaches world-space target by calculating joint rotations across ancestor
+bone chain.
 
-In an immutable single-pass transactional graph, IK introduces a fundamental dependency paradox:
+Immutable single-pass transactional graph gives IK a dependency paradox:
 
-1. The solver requires the bone lengths and pre-composition states of every member in the chain.
-2. The members require the calculated joint rotations from the solver to compose their world frames.
+1. solver needs bone lengths + pre-composition states of every chain member;
+2. members need solver's joint rotations to compose world frames.
 
-If both relationships were expressed as standard requirement edges (`solver -> member.length` and `member -> solver.rotations`), the graph builder would report an immediate dependency cycle (`graph-cycle`), violating single-pass topological execution.
+Both as standard requirement edges (`solver -> member.length`, `member -> solver.rotations`) → graph builder
+reports dependency cycle (`graph-cycle`), violating single-pass topological execution.
 
 ---
 
@@ -25,12 +30,14 @@ If both relationships were expressed as standard requirement edges (`solver -> m
 
 ### 1. Syntactic Solver and Member Binding
 
-An IK setup is authored using standard plugin requirement bindings without introducing new edge types or multi-pass execution:
+IK setup authors with standard plugin requirement bindings — no new edge types, no multi-pass execution:
 
 - **Solver Node (`ikPlugin`)**:
-  - Claims key `flip` (boolean configuration selecting the elbow/knee bend direction).
-  - Declares requirement slots `root` (world frame from which the chain hangs) and `target` (world-space coordinate the chain reaches for).
-  - Outputs `rotations`: a frozen dictionary mapping qualified member node IDs to solved local rotation angles (`Record<string, number>`).
+  - Claims key `flip` (boolean selecting elbow/knee bend direction).
+  - Declares requirement slots `root` (world frame chain hangs from), `target` (world-space coordinate chain
+    reaches for).
+  - Outputs `rotations`: frozen dictionary mapping qualified member node IDs to solved local rotation angles
+    (`Record<string, number>`).
 
 ```text
 {
@@ -46,8 +53,9 @@ An IK setup is authored using standard plugin requirement bindings without intro
 
 - **Member Nodes (`fkPlugin`)**:
   - Bound hierarchically via `keyframes.fk.requires.base`.
-  - Declare an optional `solver` slot: `keyframes.fk.requires.solver: "walk/arm-solve"`.
-  - Author bone dimensions (`length`, optional pivot offsets `x`, `y`) under `values`. Authored `rotation` is prohibited when bound to a solver with no blend `weight` beside it, and refused at load time. See ADR-055.
+  - Optional `solver` slot: `keyframes.fk.requires.solver: "walk/arm-solve"`.
+  - Bone dimensions (`length`, optional pivot offsets `x`, `y`) authored under `values`. Authored `rotation`
+    prohibited when bound to solver with no blend `weight` beside it, refused at load. See ADR-055.
 
 ```text
 {
@@ -74,17 +82,31 @@ An IK setup is authored using standard plugin requirement bindings without intro
 
 ### 2. Derived Solver Membership (`resolveSolvers`)
 
-Graph finalization (`finalizeGraph`) runs a pure derivation pass, `resolveSolvers`, only once reference validation has reported no error, and before topological ordering. That precondition is load-bearing rather than tidy: the derivation reads the nodes its `base` edges name, so over a graph whose sources may not resolve it answers about a chain that was never valid and reports `ik-solver-unreachable-root` against a member for a typo one node up. One cause, one diagnostic.
+`finalizeGraph` runs pure derivation pass `resolveSolvers` only once reference validation reports no error,
+before topological ordering. Precondition load-bearing not tidy: derivation reads nodes its `base` edges
+name, so over graph whose sources may not resolve it answers about chain that was never valid, reports
+`ik-solver-unreachable-root` against a member for typo one node up. One cause, one diagnostic.
 
-1. **Solver Identification**: Any node with a `root` requirement slot edge is classified as a solver. A node that at least one member binds its `solver` slot to, and which holds no `root` edge, is therefore not a solver at all, and it is refused as `ik-solver-no-root` rather than skipped. Skipping it silently was the one IK misconfiguration with no symptom: no `solves` was derived, no `rotations` were published, every member fell back to its own authored rotation, and the rig held a broken pose with no error and no diagnostic.
-2. **Member Discovery**: Any node declaring a `solver` requirement slot edge pointing to solver `S` is collected into `S`'s member list.
-3. **Chain Verification**: One walk per member, confined to the member set. It starts at the member, so the member's own `base` edge is its first step, and it follows `base` edges through `S`'s members until it arrives at `S`'s bound `root`. A step with no `base` edge to take, or one that would leave the member set without arriving at the root, is `ik-solver-unreachable-root` against the member whose own `base` broke the chain rather than against the member the walk started from, so one bad ancestor reports once and not once per descendant that inherited it. Verification and depth are one traversal: they cannot disagree, and the walk cannot leave the set it is confined to.
-4. **Deterministic Ordering**: Members are ordered root-most first (depth from root ascending, ties broken by `authoredIndex` and qualified ID).
-5. **Frozen Derivation**: Solver nodes are minted with `readonly solves: readonly SolveMember[]`. Non-solver nodes remain untouched.
+1. **Solver Identification**: node with `root` requirement slot edge = solver. Node that ≥1 member binds its
+   `solver` slot to, holding no `root` edge = not a solver, refused as `ik-solver-no-root` rather than
+   skipped. Silent skipping was the one IK misconfiguration with no symptom: no `solves` derived, no
+   `rotations` published, every member fell back to own authored rotation, rig held broken pose with no error
+   and no diagnostic.
+2. **Member Discovery**: node declaring `solver` requirement slot edge pointing to solver `S` → collected into
+   `S`'s member list.
+3. **Chain Verification**: one walk per member, confined to member set. Starts at member (own `base` edge =
+   first step), follows `base` edges through `S`'s members until arriving at `S`'s bound `root`. Step with no
+   `base` edge, or leaving member set without arriving at root = `ik-solver-unreachable-root` against member
+   whose own `base` broke chain, not against walk's start → one bad ancestor reports once, not once per
+   descendant inheriting it. Verification + depth = one traversal: cannot disagree, cannot leave confined set.
+4. **Deterministic Ordering**: members ordered root-most first (depth from root ascending, ties by
+   `authoredIndex` then qualified ID).
+5. **Frozen Derivation**: solver nodes minted with `readonly solves: readonly SolveMember[]`. Non-solver nodes
+   untouched.
 
 #### Load-Time IK Diagnostics
 
-The loader enforces structural integrity across these deterministic diagnostics (`severity: "error"`):
+Loader enforces structural integrity via deterministic diagnostics (`severity: "error"`):
 
 | Diagnostic Rule ID           | Condition                                                                                       |
 | ---------------------------- | ----------------------------------------------------------------------------------------------- |
@@ -95,27 +117,51 @@ The loader enforces structural integrity across these deterministic diagnostics 
 | `ik-solved-rotation-dead`    | A bone authors a `rotation` inside the same plugin group in which it bound its `solver` slot.   |
 | `ik-target-not-single-leaf`  | A solver binds the bare `target` slot over a chain with more than one leaf.                     |
 
-`ik-solver-unsupported-arity` was here and is deleted. It refused every derived member count other than two, which was honest while the closed form was the only solve a rig could reach and false the moment `solveChain` dispatches on derived shape. A rule that refuses a shape the code solves is worse than no rule. What the cap was guaranteeing silently is that a chain had exactly one leaf, which is the only thing the bare `target` slot can address, and `ik-target-not-single-leaf` is that guarantee stated rather than implied: the slot names no member, so a branching chain gives it two candidates and the rig is refused instead of solved with the goal applied to whichever leaf the derivation ordered first. `FB-14` pins it, and the throw in `readGoals` is the invariant guard behind it. The goal-addressing rules slices D0 and D1 introduced belong to ADR-052.
+`ik-solver-unsupported-arity` was here, now deleted. It refused every derived member count but two — honest
+while closed form was only solve a rig could reach, false the moment `solveChain` dispatches on derived shape.
+Rule refusing a shape code solves is worse than no rule. Cap silently guaranteed chain had exactly one leaf —
+only thing bare `target` slot can address — and `ik-target-not-single-leaf` states that guarantee rather than
+implies it: slot names no member, so branching chain gives two candidates → rig refused instead of solved with
+goal applied to whichever leaf derivation ordered first. `FB-14` pins it, throw in `readGoals` is invariant
+guard behind it. Goal-addressing rules slices D0 + D1 introduced belong to ADR-052.
 
-`ik-solved-rotation-dead` reads that group and no other. The solved rotation replaces the authored one inside the plugin that reads `rotations` back, which is the plugin that bound the slot, so a `rotation` under any other group is that plugin's own live input. A flat `rotation` is likewise not this rule's: attributing a flat key to a plugin is the registry's question, and this pass holds no registry by design, so a member authoring one meets `plugin-ambiguous-key` in any registry with two claimants and `plugin-unknown-key` in one with none. See ADR-043 and ADR-044. **Superseded in part by [ADR-121](./ADR-121-grouped-only-keyframes.md), 2026-09-26.** A flat `rotation` no longer reaches this pass or the registry: it is refused at schema validation as `keyframes-ungrouped-key`, and `plugin-ambiguous-key` is deleted.
+`ik-solved-rotation-dead` reads that group, no other. Solved rotation replaces authored one inside plugin that
+reads `rotations` back — plugin that bound slot — so `rotation` under any other group is that plugin's own live
+input. Flat `rotation` likewise not this rule's: attributing flat key to plugin is registry's question, this
+pass holds no registry by design → member authoring one meets `plugin-ambiguous-key` in any registry with two
+claimants, `plugin-unknown-key` in one with none. See ADR-043 and ADR-044. **Superseded in part by
+[ADR-121](./ADR-121-grouped-only-keyframes.md), 2026-09-26.** Flat `rotation` no longer reaches this pass or
+registry: refused at schema validation as `keyframes-ungrouped-key`, `plugin-ambiguous-key` deleted.
 
-**Amended by ADR-055**, and stated here rather than inside the table above, because a hand-padded Markdown table is what this project's formatting gate fails on rather than a fact it records. The dead-rotation row now carries one condition more: a bone bound to a `solver` is refused for an authored `rotation` only while no `weight` sits beside it in that same group, which is byte-identically the old rule for every rig authored before the key existed. And there is a seventh rule, `ik-weight-without-solver`, its mirror: a node that bound a `solver` slot under one plugin and authored `weight` under another, where the solve cannot reach it. Both rules keep the group scope this section already describes, and both speak only about a node that bound a solver at all, for the reason the flat-key sentence above gives: `weight` may have claimants this pass cannot see, so a weight with no solve in reach is not its to attribute.
+**Amended by ADR-055**, stated here not inside table above, because hand-padded Markdown table is what this
+project's formatting gate fails on rather than a fact it records. Dead-rotation row now carries one condition
+more: bone bound to `solver` refused for authored `rotation` only while no `weight` sits beside it in same
+group — byte-identically old rule for every rig authored before key existed. Seventh rule exists, its mirror:
+`ik-weight-without-solver` — node binding `solver` slot under one plugin, authoring `weight` under another,
+where solve cannot reach it. Both keep group scope this section describes, both speak only of node that bound
+solver at all, for flat-key sentence's reason: `weight` may have claimants this pass cannot see → weight with
+no solve in reach not its to attribute.
 
 ---
 
 ### 3. Pre-Composition Member State Delivery
 
-To supply member lengths to solvers without requirement cycle edges, `Track` separates timeline evaluation from plugin execution (ADR-047 amendment, Slice B):
+Member lengths reach solvers without requirement cycle edges: `Track` separates timeline evaluation from
+plugin execution (ADR-047 amendment, Slice B):
 
-- `Track.prototype.interpolated()`: Returns renderer-neutral timeline state (`values`, `progress`) prior to plugin composition. It reports what the timeline holds and nothing about topology, so it carries no `base`.
-- In `GraphPublisher.flush()`, solver nodes look up their derived `node.solves` members, invoke `memberNode.interpolated()`, join the derived `SolveMember.base` onto each reported state, and inject the frozen array into `inputs[solvingPlugin].members`.
-- Because timeline interpolation runs during `Motion.setProgress` before graph flush begins, member timeline states are already immutable and available when the solver composes.
+- `Track.prototype.interpolated()`: renderer-neutral timeline state (`values`, `progress`) before plugin
+  composition. Reports what timeline holds, nothing about topology → carries no `base`.
+- In `GraphPublisher.flush()` solver nodes look up derived `node.solves` members, invoke
+  `memberNode.interpolated()`, join derived `SolveMember.base` onto each reported state, inject frozen array
+  into `inputs[solvingPlugin].members`.
+- Timeline interpolation runs during `Motion.setProgress` before graph flush begins → member timeline states
+  already immutable and available when solver composes.
 
 ---
 
 ### 4. FK Solver Override and Composer Contract
 
-`domain/plugins.ts` extends `PluginComposer` with a 4th parameter:
+`domain/plugins.ts` extends `PluginComposer` with 4th parameter:
 
 ```ts
 export type PluginComposer = (
@@ -126,121 +172,212 @@ export type PluginComposer = (
 ) => ImmutableRecord;
 ```
 
-When `fkPlugin.compose` executes:
+`fkPlugin.compose` execution:
 
-1. It reads `inputs.solver?.rotations?.[nodeId]`.
-2. If present as a finite number, the solved rotation overrides the local rotation before computing parent frame extension and tip coordinates via `composeWorld`.
-3. If absent or unbound, it falls back cleanly to authored `values.rotation`.
+1. reads `inputs.solver?.rotations?.[nodeId]`;
+2. present + finite → solved rotation overrides local rotation before `composeWorld` computes parent frame
+   extension and tip coordinates;
+3. absent or unbound → clean fallback to authored `values.rotation`.
 
-`ikPlugin.compose` returns the values it was given with `rotations` added, not `rotations` alone. `Track.composeFrom` chains by replacement, so a bare return deletes every key the solver track authored, starting with the `flip` the solver reads itself. `IK-18` pins the spread.
+`ikPlugin.compose` returns values it was given with `rotations` added, not `rotations` alone.
+`Track.composeFrom` chains by replacement → bare return deletes every key solver track authored, starting with
+`flip` solver reads itself. `IK-18` pins spread.
 
-**Amended by slice D3.** `ikPlugin.compose` no longer calls `solveTwoBone` directly. `solveChain` owns the choice: two members and one goal take the closed form, and everything else takes the iterative solve in `plugins/fabrik.ts`. Dispatch is on derived shape rather than on an authored mode, so nothing new is authorable and no rig selects its own solver. The two paths cannot be one: `IK-1` and `IK-3` pin exact numbers an iterative solve reaches only within a tolerance, and `flip` at arity two selects an exact branch rather than a basin, so the DRY guarantee is an equivalence assertion (`FB-2`) rather than a shared code path, and `FB-9` pins the analytic path as byte-identical with the dispatcher in front of it. Neither `tips` nor `convergence` reaches a patch. `FB-13` pins that, and the convergence paragraph below is where the reasoning lives.
+**Amended by slice D3.** `ikPlugin.compose` no longer calls `solveTwoBone` directly. `solveChain` owns choice:
+two members + one goal → closed form, everything else → iterative solve in `plugins/fabrik.ts`. Dispatch on
+derived shape not authored mode → nothing new authorable, no rig selects own solver. Two paths cannot be one:
+`IK-1` + `IK-3` pin exact numbers iterative solve reaches only within tolerance, `flip` at arity two selects
+exact branch not basin → DRY guarantee is equivalence assertion (`FB-2`) not shared code path, `FB-9` pins
+analytic path byte-identical with dispatcher in front. Neither `tips` nor `convergence` reaches patch. `FB-13`
+pins that, convergence paragraphs below own reasoning.
 
-**Amended by ADR-055.** The override is a blend. A bound `solver` composes the authored rotation blended toward the solved one by the member's own `weight`, which defaults to `1`, so step 2 above is exactly the case that default describes and every rig authored before the key composes byte-identically. Step 3 is unchanged and is what keeps "no solve" and "a solve this bone weights to zero" two distinguishable things: an unbound slot short-circuits to the authored value and never reads the weight at all.
+**Amended by ADR-055.** Override is blend. Bound `solver` composes authored rotation blended toward solved one
+by member's own `weight`, default `1` → step 2 above is exactly default's case, every rig authored before key
+composes byte-identically. Step 3 unchanged, keeps "no solve" and "solve this bone weights to zero"
+distinguishable: unbound slot short-circuits to authored value, never reads weight.
 
-**Convergence metadata is not published, and that is a decision rather than an omission.**
-`solveFabrik` returns a closed convergence kind beside `residual`, because an unreachable goal and a
-merely slow chain both end without converging and reporting them as one thing tells a caller to raise a
-cap that is not the problem.
+**Convergence metadata not published — decision, not omission.** `solveFabrik` returns closed convergence kind
+beside `residual`, because unreachable goal and merely slow chain both end unconverged, reporting them as one
+thing tells caller raise cap that is not problem.
 
-**Amended by [ADR-107](./ADR-107-one-solve-result.md).** The convergence kind is now the `quality` of the one `SolveResult` both strategies return, and the closed form reports its own reachability beside it; `FabrikConvergence` is deleted. Nothing about publication changes: `ik.ts` publishes `rotations` only, `FB-13` still pins that, and the reasoning above still owns why.
+**Amended by [ADR-107](./ADR-107-one-solve-result.md).** Convergence kind now `quality` of one `SolveResult`
+both strategies return, closed form reports own reachability beside it, `FabrikConvergence` deleted. Nothing
+about publication changes: `ik.ts` publishes `rotations` only, `FB-13` still pins, reasoning above still owns
+why.
 
-**Amended by [ADR-109](./ADR-109-opt-in-solve-inspection.md), 2026-09-24.** The policy above is
-kept for every unopted rig: solve quality is not published and no tick emits a diagnostic. An author
-who writes the static `ik.values.inspect: true` opts into one declared `inspection` output carrying
-the fixed-shape projection of the existing `SolveQuality` record. The authored `inspect` value stays
-beside `rotations`, the output uses the separate `inspection` name, and nothing about it depends on
-arity. The visible FK composition-space tip gap is not part of it.
+**Amended by [ADR-109](./ADR-109-opt-in-solve-inspection.md), 2026-09-24.** Policy above kept for every
+unopted rig: solve quality not published, no tick emits diagnostic. Author writing static
+`ik.values.inspect: true` opts into one declared `inspection` output carrying fixed-shape projection of
+existing `SolveQuality` record. Authored `inspect` value stays beside `rotations`, output uses separate
+`inspection` name, nothing depends on arity. Visible FK composition-space tip gap not part of it.
 
-**Extended by [ADR-052](./ADR-052-goal-addressing-by-member-id.md), 2026-08-28.** This record owns how a solver finds its bones. How a solver is told what to reach for is ADR-052: the goal-addressing grammar keyed by member id, the split across the contract layer, the plugin registry and graph construction, the rules that police it, and the withdrawal of the FABRIK benchmark claim. The dispatch clarifications above are the dispatch half of that work and stay here, because dispatch is a property of this record's solve.
+**Extended by [ADR-052](./ADR-052-goal-addressing-by-member-id.md), 2026-08-28.** This record owns how solver
+finds bones. How solver is told what to reach for is ADR-052: goal-addressing grammar keyed by member id,
+split across contract layer / plugin registry / graph construction, rules policing it, withdrawal of FABRIK
+benchmark claim. Dispatch clarifications above = dispatch half of that work, stay here because dispatch is
+property of this record's solve.
 
 ---
 
 ### 5. Dirty-Check Memoization and Invalidation Propagation
 
-- **Memoization**: there is one memo and `Track.composeFrom` owns it. Its key is the composing track's own seed as well as the requirement inputs, and a solver's members travel inside those inputs, so the comparison that covers `root` and `target` covers every member length, the solver's own interpolated values, and its progress. `GraphPublisher` holds no solver cache. A `#solverCache` existed, keyed on the requirement inputs and the member states alone, and it was not a fixable optimisation but a strictly weaker copy of the memo it sat in front of: an animated value on a solver track changed nothing in that key, so the solver answered from tick one forever with no error and no diagnostic. Widening its key would have reproduced `Track`'s key beside `Track`, so it is deleted instead. `IK-11` runs against a real `Track` for that reason; a fake composer only pins whichever cache the publisher happens to hold.
-- **Seed Propagation**: In the publisher's affected BFS pass, solver members register their solver as a dependant. Invalidating an animated bone's length automatically schedules the solver for re-evaluation.
-- **Member Scope**: the publisher delivers members under the plugin that owns the solver's `root` edge, read off that edge rather than named in the publisher. A hardcoded `ik` would deliver a spring integrator's or a spline sampler's members under the name of the plugin that happened to be IK's, which would make the first non-kinematic solver an edit to `graph-publisher.ts` instead of a plugin. `IK-19` pins it, and a solver reaching the publisher with no root edge throws, which `ik-solver-no-root` is what keeps unreachable.
-- **Renderer Shielding**: `renderableValues` skips a value that is still a plain record after serialization, so a composite output such as `rotations` reaches the nodes that read it and never a renderer. Skipping it after serialization is deliberate: a plugin that serializes a composite into something renderable still renders. Without the guard, the default `resolveTarget` sends a solver's patch to the stage, `defaultWriter` falls through to `target[key] = value`, and `stage.rotations` is assigned on every frame forever, because the adapter's own suppression is `Object.is` against a freshly built object and can never match. `IK-16` asserts the object property rather than `style`, which is what the property is set on.
+- **Memoization**: one memo, `Track.composeFrom` owns it. Key = composing track's own seed plus requirement
+  inputs; solver's members travel inside those inputs → comparison covering `root` + `target` covers every
+  member length, solver's own interpolated values, its progress. `GraphPublisher` holds no solver cache. A
+  `#solverCache` existed, keyed on requirement inputs + member states alone — not fixable optimisation but
+  strictly weaker copy of memo it sat in front of: animated value on solver track changed nothing in key →
+  solver answered from tick one forever, no error, no diagnostic. Widening key would reproduce `Track`'s key
+  beside `Track` → deleted instead. `IK-11` runs against real `Track` for that reason; fake composer pins
+  whichever cache publisher holds.
+- **Seed Propagation**: publisher's affected BFS registers solver members' solver as dependant. Invalidating
+  animated bone length automatically schedules solver re-evaluation.
+- **Member Scope**: publisher delivers members under plugin owning solver's `root` edge, read off that edge
+  not named in publisher. Hardcoded `ik` would deliver spring integrator's or spline sampler's members under
+  name of plugin that happened to be IK's → first non-kinematic solver becomes edit to
+  `graph-publisher.ts` instead of plugin. `IK-19` pins it; solver reaching publisher with no root edge throws,
+  and `ik-solver-no-root` keeps that unreachable.
+- **Renderer Shielding**: `renderableValues` skips value still plain record after serialization → composite
+  output such as `rotations` reaches reading nodes, never renderer. Skipping after serialization deliberate:
+  plugin serializing composite into something renderable still renders. Without guard, default `resolveTarget`
+  sends solver patch to stage, `defaultWriter` falls through to `target[key] = value`, `stage.rotations`
+  assigned every frame forever — adapter's own suppression is `Object.is` against freshly built object, can
+  never match. `IK-16` asserts object property not `style`, which is what property is set on.
 
 ---
 
 ## Invariants Preserved
 
-1. **`J-5` Equivalence (ADR-047)**: Every authored `requires` binding maps 1:1 to exactly one `GraphEdge`. No artificial cycles or hidden edges are added.
-2. **`TR-R-03` / `TR-R-04` (Single-Pass Purity)**: Composition remains single-pass and deterministic. No node is evaluated twice per tick, and no published values are patched retroactively.
-3. **Deterministic Ordering**: Evaluation order is a pure function of qualified IDs and topological dependency structure.
-4. **Full Backwards Compatibility**: Existing FK chains and walker rigs compose byte-identical outputs with zero performance penalty.
+1. **`J-5` Equivalence (ADR-047)**: every authored `requires` binding maps 1:1 to one `GraphEdge`. No
+   artificial cycles, no hidden edges.
+2. **`TR-R-03` / `TR-R-04` (Single-Pass Purity)**: composition stays single-pass, deterministic. No node
+   evaluated twice per tick, no published values patched retroactively.
+3. **Deterministic Ordering**: evaluation order pure function of qualified IDs + topological dependency
+   structure.
+4. **Full Backwards Compatibility**: existing FK chains and walker rigs compose byte-identical outputs, zero
+   performance penalty.
 
 ---
 
 ## Alternatives Rejected
 
 1. **S1: Internal Key Chain Accumulation (`fkChain`)**:
-   - _Proposal_: Bones accumulate ancestor frames into an internal key passed down the `base` requirement.
-   - _Rejected_: Pushes topological chain state down to leaf bones and introduces implicit order couplings across motions.
+   - _Proposal_: bones accumulate ancestor frames into internal key passed down `base` requirement.
+   - _Rejected_: pushes topological chain state to leaf bones, implicit order couplings across motions.
 2. **S2: Multi-Pass Execution / Solver Pre-Pass**:
-   - _Proposal_: Execute a separate pre-pass for solvers before normal graph flushes.
-   - _Rejected_: Breaks transactional atomicity, complicates rollback, and violates single-pass scheduling guarantees.
+   - _Proposal_: separate pre-pass for solvers before normal graph flushes.
+   - _Rejected_: breaks transactional atomicity, complicates rollback, violates single-pass scheduling.
 3. **Context Injection / Runtime Handles in Plugins**:
-   - _Proposal_: Inject `ProjectRuntime` or engine track stores directly into plugin composers.
-   - _Rejected_: Gives plugins arbitrary side-effect capability and bypasses the explicit requirement inputs boundary.
-4. **A Publisher-Side Solver Cache**:
-   - _Proposal_: Keep `#solverCache`, widening its key until it covers the solver's own seed and progress.
-   - _Rejected_: The widened key is `Track`'s key. Two caches with two invalidation rules are cheaper per tick and wrong the first time one of them drifts, which is exactly how the narrow key shipped.
+   - _Proposal_: inject `ProjectRuntime` or engine track stores directly into plugin composers.
+   - _Rejected_: arbitrary side-effect capability for plugins, bypasses explicit requirement inputs boundary.
+4. **Publisher-Side Solver Cache**:
+   - _Proposal_: keep `#solverCache`, widen key until covering solver's own seed + progress.
+   - _Rejected_: widened key is `Track`'s key. Two caches, two invalidation rules = cheaper per tick, wrong
+     the first time one drifts — exactly how narrow key shipped.
 5. **Deriving Chains Over Unresolved References**:
-   - _Proposal_: Keep `resolveSolvers` ahead of the reference bail, so one build reports every rule a rig breaks.
-   - _Rejected_: A derivation over edges whose sources do not resolve reports about a chain that never existed. The second diagnostic names a member for a typo one node up, which is a worse first thing to read than the typo.
-6. **Replacing the Closed Form With FABRIK (slice D3)**:
-   - _Proposal_: Delete `solveTwoBone` and let one iterative solve answer for every arity.
-   - _Rejected_: `IK-1` and `IK-3` pin exact rotations an iterative solve reaches only within a tolerance, and `flip` at arity two is an exact branch rather than a basin, so one solver would move published values for every rig that already solves.
+   - _Proposal_: keep `resolveSolvers` ahead of reference bail, one build reports every rule rig breaks.
+   - _Rejected_: derivation over edges whose sources don't resolve reports chain that never existed. Second
+     diagnostic names member for typo one node up — worse first thing to read than typo.
+6. **Replacing Closed Form With FABRIK (slice D3)**:
+   - _Proposal_: delete `solveTwoBone`, one iterative solve answers every arity.
+   - _Rejected_: `IK-1` + `IK-3` pin exact rotations iterative solve reaches only within tolerance, `flip` at
+     arity two is exact branch not basin → one solver moves published values for every rig already solving.
 
 ---
 
 ## Stagger Semantics
 
-`Motion.#effectiveProgress` calculates timeline progress per track index. If a solver member's length is animated with non-zero stagger, the member's length advances on its own staggered timeline, while the solver reads that length accurately on each tick. This enables natural dynamic effects (such as whips, tentacles, and follow-through) without requiring specialized stagger exceptions.
+`Motion.#effectiveProgress` calculates timeline progress per track index. Solver member length animated with
+non-zero stagger → length advances on own staggered timeline, solver reads length accurately each tick. Gives
+natural dynamic effects (whips, tentacles, follow-through) without specialized stagger exceptions.
 
 ---
 
 ## Evidence
 
-- **Slice A (`FO-1`..`FO-6`)**: `packages/core/test/unit/plugins/fk-pivot-offset.test.ts` (Pivot offsets `x`, `y`).
-- **Slice B (`CF-1`..`CF-7`)**: `packages/core/test/unit/domain/track-compose-from.test.ts` (Composition split).
+- **Slice A (`FO-1`..`FO-6`)**: `packages/core/test/unit/plugins/fk-pivot-offset.test.ts` (pivot offsets `x`,
+  `y`).
+- **Slice B (`CF-1`..`CF-7`)**: `packages/core/test/unit/domain/track-compose-from.test.ts` (composition split).
 - **Slice C0**: `packages/core/test/unit/graph/finalize-graph.test.ts` (`finalizeGraph` deduplication).
-- **Slice C1 (`CN-1`..`CN-3`)**: `packages/core/test/unit/domain/track-node-id.test.ts` (`nodeId` in composer contract).
-- **Slice C2 (`RS-1`..`RS-10`)**: `packages/core/test/unit/graph/resolve-solvers.test.ts` (Load-time IK diagnostics, determinism under permutation, derivation from live state alone, the one confined member walk, the scope of the dead-rotation read, and the reference bail).
+- **Slice C1 (`CN-1`..`CN-3`)**: `packages/core/test/unit/domain/track-node-id.test.ts` (`nodeId` in composer
+  contract).
+- **Slice C2 (`RS-1`..`RS-10`)**: `packages/core/test/unit/graph/resolve-solvers.test.ts` (load-time IK
+  diagnostics, determinism under permutation, derivation from live state alone, one confined member walk,
+  scope of dead-rotation read, reference bail).
 - **Slice C3 (`IK-1`..`IK-19`)**:
-  - `packages/plugins/test/unit/ik-solve.test.ts` (Analytical 2-bone solve math, both elbow branches, and the composed-values spread).
+  - `packages/plugins/test/unit/ik-solve.test.ts` (analytical 2-bone solve math, both elbow branches,
+    composed-values spread).
   - `packages/plugins/test/unit/fk-solver-override.test.ts` (FK rotation override).
-  - `packages/core/test/unit/runtime/publisher-solver-members.test.ts` (Publisher member gathering, member scope, failure semantics, and the one memo).
-  - `packages/core/test/integration/ik-two-bone.test.ts` (Full 6-node rig integration and renderer shielding).
-- **Slice C4**: `packages/core/test/integration/phase7-walker-demo.test.ts` (Hybrid FK/IK walker demo & `T-C4.1` dynamic mutation rollback).
-- **Slice D2 (`FB-1`..`FB-8`)**: `packages/plugins/test/unit/fabrik-solve.test.ts` (The iterative solve as arithmetic, unwired: the derived seed, the closed-form equivalence, sub-base averaging, permutation determinism, and the two non-convergent exits).
+  - `packages/core/test/unit/runtime/publisher-solver-members.test.ts` (publisher member gathering, member
+    scope, failure semantics, one memo).
+  - `packages/core/test/integration/ik-two-bone.test.ts` (full 6-node rig integration, renderer shielding).
+- **Slice C4**: `packages/core/test/integration/phase7-walker-demo.test.ts` (hybrid FK/IK walker demo,
+  `T-C4.1` dynamic mutation rollback).
+- **Slice D2 (`FB-1`..`FB-8`)**: `packages/plugins/test/unit/fabrik-solve.test.ts` (iterative solve as
+  arithmetic, unwired: derived seed, closed-form equivalence, sub-base averaging, permutation determinism, two
+  non-convergent exits).
 - **Slice D3 (`FB-9`..`FB-15`)**:
-  - `packages/plugins/test/unit/fabrik-dispatch.test.ts` (The analytic path byte-identical behind the dispatcher, the unpublished convergence record, and the bare-target join).
-  - `packages/core/test/unit/graph/arity-lift.test.ts` (Chains past and short of arity two loading, and `ik-target-not-single-leaf`).
-  - `packages/core/test/integration/ik-fabrik-chain.test.ts` (A five-bone chain tracking an animated goal, and a two-arm tree solved once).
-- **Blend weight (`WT-1`..`WT-16`)**: ADR-055 and the three files it names, which own the seam between an authored rest pose and the solve this record derives.
+  - `packages/plugins/test/unit/fabrik-dispatch.test.ts` (analytic path byte-identical behind dispatcher,
+    unpublished convergence record, bare-target join).
+  - `packages/core/test/unit/graph/arity-lift.test.ts` (chains past and short of arity two loading,
+    `ik-target-not-single-leaf`).
+  - `packages/core/test/integration/ik-fabrik-chain.test.ts` (five-bone chain tracking animated goal, two-arm
+    tree solved once).
+- **Blend weight (`WT-1`..`WT-16`)**: ADR-055 and three files it names, owning seam between authored rest pose
+  and solve this record derives.
 
 ---
 
 ## Amendment, 2026-09-03: which nodes read one node has one owner, and a removal seeds them
 
-Recorded here as the promotion half of the read-budget audit in [issue #267](https://github.com/chahyasantoso/motion5/issues/267). The reasoning below lived in two docblocks inside `packages/core/src/runtime/project-runtime.ts` and nowhere else, and the audit that shrinks that file would otherwise have deleted the only record of it along with the comments that held it. Nothing about the behaviour changes here.
+Recorded here as promotion half of read-budget audit in
+[issue #267](https://github.com/chahyasantoso/motion5/issues/267). Reasoning below lived in two docblocks
+inside `packages/core/src/runtime/project-runtime.ts` and nowhere else; audit shrinking that file would
+otherwise delete only record of it along with comments holding it. Nothing about behaviour changes here.
 
-**One owner, and it is the reverse topology `finalizeGraph` already derived.** `ProjectRuntime.#readersOf` reads `GraphIR.dependants`, which is frozen onto the `GraphIR` once per graph by the walk that already had the solver fan-in in hand, and it is never rederived. The walk it replaced filtered `graph.nodes` on `edges`, one property access away from the frozen answer, and the duplicate was not the defect: it was the weaker of the two derivations. `deriveDependants` names both kinds of reader because only one of them is an edge. A solver reads every member `resolveSolvers` derived onto its `solves` and no edge points that way, so an edge walk missed every member of every chain. Over a live IK chain the query answered nothing for the leaf and named no solver for any member, which is a preflight telling an editor that deleting a chain member breaks nothing.
+**One owner, the reverse topology `finalizeGraph` already derived.** `ProjectRuntime.#readersOf` reads
+`GraphIR.dependants`, frozen onto `GraphIR` once per graph by walk already holding solver fan-in, never
+rederived. Walk it replaced filtered `graph.nodes` on `edges`, one property access from frozen answer, and
+duplicate was not defect: weaker of two derivations. `deriveDependants` names both reader kinds because only
+one is an edge. Solver reads every member `resolveSolvers` derived onto its `solves`, no edge points that way
+→ edge walk missed every member of every chain. Over live IK chain query answered nothing for leaf, named no
+solver for any member = preflight telling editor deleting chain member breaks nothing.
 
-**Two consumers, one question.** What a caller is told before it removes a node, which is `dependantsOf`, and which nodes have to publish once it did, which is the flush seed a structural commit derives. Those two coincide by construction only while one mechanism answers both, and this file had already paid once for two derivations of exactly this fact, so the second consumer reads the first's owner rather than the graph. Enforcement does not move: a candidate that would orphan a live dependant is still refused by the candidate graph, where ADR-050 put it, and a preflight that is wrong in the permissive direction is worse than none, because it is read.
+**Two consumers, one question.** What caller is told before removing node (`dependantsOf`), which nodes must
+publish once it did (flush seed structural commit derives). Coincide by construction only while one mechanism
+answers both; this file already paid once for two derivations of this fact → second consumer reads first's
+owner rather than graph. Enforcement does not move: candidate orphaning live dependant still refused by
+candidate graph, where ADR-050 put it; preflight wrong in permissive direction worse than none, because it is
+read.
 
-`#readersOf` stays private, and the commit path deliberately does not call `dependantsOf` instead. That member owns a public contract, which is about a caller from outside, so binding a commit's own invariant to it would make the seed depend on a preflight's promises and point the dependency at the class's own surface rather than away from it. It is not passed in as a parameter either, because the derivation already reads the retained pair off the same object under the same ordering rule, and a parameter for one of two identically ordered reads would claim the two are different.
+`#readersOf` stays private, commit path deliberately does not call `dependantsOf` instead. That member owns
+public contract about caller from outside → binding commit's own invariant to it makes seed depend on
+preflight's promises, points dependency at class's own surface rather than away. Not passed as parameter
+either: derivation already reads retained pair off same object under same ordering rule, parameter for one of
+two identically ordered reads would claim they differ.
 
-Deduplication and freezing belong to the consumers rather than to the derivation. `deriveDependants` keeps a reader once per dependency deliberately, because a consumer walking it guards on its own visited set; both consumers here want a set, so the collapse happens where they both are. First occurrence wins, which is the committed node order the old filter produced, so no existing expectation about ordering moves.
+Deduplication + freezing belong to consumers not derivation. `deriveDependants` keeps reader once per
+dependency deliberately — consumer walking it guards on own visited set; both consumers want set → collapse
+where both are. First occurrence wins, committed node order old filter produced → no existing ordering
+expectation moves.
 
-**A removal seeds the nodes that were reading it,** not the removed node, which is gone. The premise this replaces said a removal needs no seed at all, because `finalizeGraph` would have refused a candidate anything still depended on, and that premise is half right. It holds for every reader that is an edge: `finalizeGraph` walks every edge of every node rather than only the observation ones, so a removal whose node is still bound by an ordinary `requires` slot is refused before anything commits, which `RA-98` pins. It fails for the reader that is not an edge. A solver reads its chain members through `solves`, and under the bare `target` slot a chain that loses its leaf still has exactly one leaf, so every rule in `resolveSolvers` passes, the commit lands, the solver's member set moves and nothing publishes. On a manual clock with no tick the subscribers hold the old pose forever, which is the failure single-pass publication exists to end, one node downstream.
+**Removal seeds nodes that were reading it,** not removed node (gone). Premise this replaced said removal
+needs no seed, because `finalizeGraph` would refuse candidate anything still depended on — half right. Holds
+for every reader that is edge: `finalizeGraph` walks every edge of every node not only observation ones →
+removal whose node still bound by ordinary `requires` slot refused before anything commits, `RA-98` pins.
+Fails for reader that is not edge. Solver reads chain members through `solves`; under bare `target` slot,
+chain losing leaf still has exactly one leaf → every rule in `resolveSolvers` passes, commit lands, solver's
+member set moves, nothing publishes. Manual clock with no tick → subscribers hold old pose forever, the
+failure single-pass publication exists to end, one node downstream.
 
-**The seed is read before the graph is replaced, and that ordering is the whole correctness of it.** The commit path derives before it asks, so this reads the graph the removal is replacing, which is the only one that still knows who read a node it no longer contains. `RA-99` fails if it moves after `replaceGraph`, because the answer becomes empty.
+**Seed read before graph replaced; that ordering is whole correctness.** Commit path derives before it asks →
+this reads graph removal is replacing, only one still knowing who read node it no longer contains. `RA-99`
+fails if moved after `replaceGraph`, answer becomes empty.
 
-Two seeds are deliberately not filtered. A reader the same commit also removed is seeded and harmless, because the publisher walks the committed order and a seed the graph does not contain publishes nothing, so a membership test here would be a second opinion about what the committed pair holds. A reader a replacement in the same commit already seeded is seeded twice and harmless, because `flush` collapses its seeds.
+Two seeds deliberately unfiltered. Reader same commit also removed is seeded, harmless — publisher walks
+committed order, seed graph doesn't contain publishes nothing → membership test here = second opinion about
+committed pair. Reader replacement in same commit already seeded is seeded twice, harmless — `flush` collapses
+seeds.
 
-Evidence `RA-86` through `RA-88` for the unified derivation, and `RA-98` and `RA-99` for the seed. The flush this seed reaches, and why an empty seed set is not a cheap flush, are [ADR-064](./ADR-064-schema-transaction-derived-hooks.md)'s.
+Evidence `RA-86` through `RA-88` for unified derivation, `RA-98` + `RA-99` for seed. Flush this seed reaches,
+and why empty seed set is not cheap flush, are
+[ADR-064](./ADR-064-schema-transaction-derived-hooks.md)'s.
