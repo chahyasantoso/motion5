@@ -4,90 +4,212 @@
 
 ## Context
 
-[AI edit](./AI-EDIT-WORKFLOW.md) transports a described intention: an anchored `find` that must occur exactly once, and the `replace` that supersedes it. The validator can adjudicate that description completely, because an anchor either occurs once in the original blob or it does not, and uniqueness is decidable in the same trusted code that performs the replacement. Nothing about the result is left to a second implementation's judgement.
+[AI edit](./AI-EDIT-WORKFLOW.md) transports described intention: anchored `find` occurring exactly once, `replace`
+superseding it. Validator adjudicates description completely — anchor either occurs once in original blob or not,
+uniqueness decidable in same trusted code performing replacement. Nothing about result left to second
+implementation's judgement.
 
-A unified diff is not that kind of artifact. Its hunks are located by line number with surrounding context, and the question "does this patch apply" has no single answer: it has an answer per applier, per fuzz setting, per whitespace mode. Issue [#466](https://github.com/chahyasantoso/motion5/issues/466) asked for a reviewed CI route for a diff because prepared work is handed off as a diff, and the handoff across [#462](https://github.com/chahyasantoso/motion5/pull/462) had no such route. The obvious implementation is the wrong one: parse the diff in trusted JavaScript, apply the hunks, and publish the result. That reimplements a hunk applier, which is more code than the rest of this transport combined, and every defect in it is a defect that publishes wrong bytes under a reviewed runner's authority.
+Unified diff is not that artifact. Hunks located by line number + surrounding context, "does this patch apply"
+has no single answer: one answer per applier, per fuzz setting, per whitespace mode. Issue
+[#466](https://github.com/chahyasantoso/motion5/issues/466) asked reviewed CI route for diff because prepared
+work handed off as diff, handoff across
+[#462](https://github.com/chahyasantoso/motion5/pull/462) had no such route. Obvious implementation is wrong
+one: parse diff in trusted JavaScript, apply hunks, publish result. Reimplements hunk applier — more code than
+rest of this transport combined — every defect publishes wrong bytes under reviewed runner's authority.
 
-The alternative is to let Git apply the patch, which is a correct and well-exercised applier that this repository already depends on. That moves the problem rather than solving it. A clean `git apply` exit does not mean the patch applied where its author meant. It means the hunks found matching context somewhere within the applier's search. Context that shifted by four lines applies cleanly. A hunk whose context appears twice in the file applies cleanly against whichever occurrence the search reached first. A block duplicated earlier in the file, a function with a near-identical sibling, an offset that lands the edit in a neighbouring declaration: all of these exit zero and produce a file nobody intended. The author knows which file they meant, and a patch has no way to say so.
+Alternative: let Git apply patch, correct well-exercised applier repository already depends on. Moves problem,
+does not solve. Clean `git apply` exit ≠ patch applied where author meant. Means hunks found matching context
+somewhere within applier's search. Context shifted by four lines applies cleanly. Hunk whose context appears
+twice applies cleanly against whichever occurrence search reached first. Block duplicated earlier, function with
+near-identical sibling, offset landing edit in neighbouring declaration: all exit zero, produce file nobody
+intended. Author knows which file meant, patch cannot say so.
 
-Separately, a patch artifact committed to this repository is bytes in a contributor tree, and the reviewed runner is not permitted to trust a contributor tree. The AI edit route already refuses to: its publisher re-reads the request from immutable GitHub data and re-checks every precondition rather than believing what the candidate job reported. A checkpoint that gated only on "the parser accepted it and Git applied it" would have no equivalent, because both of those facts are produced inside the candidate job, by the same run that produced the artifact.
+Separately, patch artifact committed to this repository = bytes in contributor tree, reviewed runner not
+permitted to trust contributor tree. AI edit route already refuses: publisher re-reads request from immutable
+GitHub data, re-checks every precondition rather than believing candidate job. Checkpoint gating only on "parser
+accepted it and Git applied it" would have no equivalent — both facts produced inside candidate job, by same run
+producing artifact.
 
 ## Decision
 
-A checkpoint patch is authority for **what changes**. Its manifest's declared post-image Git blob ids are authority for **what resulted**. Both are required, and the second adjudicates.
+Checkpoint patch = authority for **what changes**. Manifest's declared post-image Git blob ids = authority for
+**what resulted**. Both required, second adjudicates.
 
-Three layers own three different questions, and none of them answers another's.
+Three layers own three questions, none answers another's.
 
-[checkpoint-policy.mjs](../scripts/checkpoint-policy.mjs) owns **shape**. It is pure: no filesystem, no network, no Git, no credential. It decides whether a manifest is well formed, whether a path is one a checkpoint may touch, and whether the patch text is inside the accepted protocol v1 grammar. Every refusal here is a property of the bytes alone, decidable without applying anything, which is why it is decidable in a unit test.
+[checkpoint-policy.mjs](../scripts/checkpoint-policy.mjs) owns **shape**. Pure: no filesystem, network, Git,
+credential. Decides manifest well formed, path one checkpoint may touch, patch text inside accepted protocol v1
+grammar. Every refusal here property of bytes alone, decidable without applying anything → decidable in unit
+test.
 
-Git owns **applicability**, through `git apply --check` and then `git apply`, in a disposable candidate checkout with no credential. It is not reimplemented, wrapped, or second-guessed on the question it is good at.
+Git owns **applicability** through `git apply --check` then `git apply`, in disposable candidate checkout with no
+credential. Not reimplemented, wrapped, second-guessed on question it is good at.
 
-The apply flags are `--unidiff-zero --whitespace=nowarn -p1`, and `--unidiff-zero` is a decision this record owns rather than an invocation detail, because the script cites this record for it. Without the flag the two layers accept different sets of patches: `parsePatch` blesses a zero-context hunk and `git apply` then refuses it with `patch does not apply`, which is precisely the late and opaque failure this design exists to remove. It was measured before it was chosen. Across 1,095 real `git diff` apply comparisons from `-U0` through `-U10` the flag produced no regression, and all 199 cases it newly allowed were `-U0`. It does not loosen context checking, which is the reason to fear it: with the flag set, a hunk whose context lines disagree with the file and a zero-context deletion whose removed line disagrees are both still refused. The single class it leaves to another layer is a zero-context pure insertion, which carries neither context nor a removed line for the applier to match, and placement is the declared post-image's question by the paragraph below rather than the applier's. A misdeclared insertion is refused as `patch N left "path" at <observed> rather than its declared <declared>`, and that case is in the committed suite.
+Apply flags `--unidiff-zero --whitespace=nowarn -p1`; `--unidiff-zero` decision this record owns, not invocation
+detail, because script cites this record for it. Without flag the two layers accept different patch sets:
+`parsePatch` blesses zero-context hunk, `git apply` refuses it `patch does not apply` — precisely late, opaque
+failure design exists to remove. Measured before chosen. Across 1,095 real `git diff` apply comparisons `-U0`
+through `-U10`, flag produced no regression, all 199 cases it newly allowed were `-U0`. Does not loosen context
+checking — reason to fear it: with flag set, hunk whose context lines disagree with file and zero-context
+deletion whose removed line disagrees both still refused. Single class left to another layer: zero-context pure
+insertion, carrying neither context nor removed line for applier to match; placement is declared post-image's
+question by paragraph below, not applier's. Misdeclared insertion refused
+`patch N left "path" at <observed> rather than its declared <declared>`, case in committed suite.
 
-The declared post-image owns **the result**. For every path a patch declares, the prepared content is read back and hashed with Git's blob algorithm, `sha1("blob " + byteLength + "\0" + bytes)`, and compared to the `post` entry the manifest declared for that path. A mismatch is refused with both ids named: `patch N left "path" at <observed> rather than its declared <declared>`. Every case in the paragraphs above, shifted context, a duplicated block, an offset into a neighbour, produces a blob id other than the declared one and is therefore refused after a clean `git apply` rather than published because of one.
+Declared post-image owns **result**. For every path patch declares, prepared content read back, hashed with Git's
+blob algorithm `sha1("blob " + byteLength + "\0" + bytes)`, compared to `post` entry manifest declared for that
+path. Mismatch refused with both ids named: `patch N left "path" at <observed> rather than its declared
+<declared>`. Every case above — shifted context, duplicated block, offset into neighbour — produces blob id other
+than declared, refused after clean `git apply` rather than published because of one.
 
-This is what makes the layering safe rather than merely tidy. The parser is permitted to be narrower than Git and is not required to be exactly as strict, because its refusals are a first filter over shape and not the gate on correctness. Two consequences follow, and both are deliberate.
+What makes layering safe not merely tidy. Parser permitted narrower than Git, not required exactly as strict: its
+refusals first filter over shape, not gate on correctness. Two consequences, both deliberate.
 
-An unmarked empty line inside a hunk body is accepted as an empty context line, incrementing both the before and the after count. A conforming applier writes a single space for an empty context line, and several tools that touch a diff on its way through a system strip that trailing space. Refusing the stripped form would refuse patches that are byte-correct about their own content while being cosmetically damaged in a way no applier cares about, and accepting it cannot produce a wrong published file, because the declared post-image still has to match.
+Unmarked empty line inside hunk body accepted as empty context line, incrementing before and after count.
+Conforming applier writes single space for empty context line, several tools touching diff en route strip that
+trailing space. Refusing stripped form refuses patches byte-correct about own content, cosmetically damaged in
+way no applier cares about; accepting cannot produce wrong published file — declared post-image still must match.
 
-Hunk coordinates are checked for monotonicity and non-overlap, and that check was added by the quality pass over this change rather than being present in the first draft. It is here because it is a shape property, which makes it this layer's question by the rule above, and because the diagnostic is worth having: a hunk that overlaps its predecessor fails locally in a pure function that can name the patch line, instead of failing as an opaque applier error after a push and a queue wait. No applier this repository uses emits out-of-order or overlapping hunks, so the check refuses nothing a real `git diff` produces. It is defence in depth and better failure locality, not a correctness fix, and it is written down here rather than left for a later reader to mistake for one.
+Hunk coordinates checked for monotonicity + non-overlap, added by quality pass over this change, absent from
+first draft. Here because shape property → this layer's question by rule above, and diagnostic worth having:
+hunk overlapping predecessor fails locally in pure function naming patch line, instead of opaque applier error
+after push and queue wait. No applier this repository uses emits out-of-order or overlapping hunks → check
+refuses nothing real `git diff` produces. Defence in depth, better failure locality, not correctness fix — written
+here rather than left for later reader to mistake for one.
 
-The publisher trusts the artifact's bytes for nothing. [validateCheckpointCandidate](../scripts/automation-checkpoint.mjs) re-derives the manifest from immutable GitHub data at the request commit, then for every commit the candidate proposes it requires the sequence, the subject, the patch path, the patch digest, the path set, and the Git blob id of every file's content to equal what that reviewed manifest declared. It does not apply a hunk in the credentialed job; it writes bytes that have already been matched to an already-reviewed declaration. A tampered artifact can therefore only publish content that hashes to something a human reviewed, which is a strictly stronger property than "the candidate job said it was fine".
+Publisher trusts artifact bytes for nothing.
+[validateCheckpointCandidate](../scripts/automation-checkpoint.mjs) re-derives manifest from immutable GitHub data
+at request commit, then for every commit candidate proposes requires sequence, subject, patch path, patch digest,
+path set, Git blob id of every file's content to equal reviewed manifest's declaration. Applies no hunk in
+credentialed job; writes bytes already matched to already-reviewed declaration. Tampered artifact can therefore
+only publish content hashing to something human reviewed — strictly stronger than "candidate job said it was
+fine".
 
-The formatting commit is the one exception, and it is stated out loud rather than left for a reader to infer. The preparing implementor cannot run Prettier, so the formatted bytes have no declared digest and none can be required. They are checked as bounded text on a path the checkpoint leaves behind, under the exact subject `style(checkpoint): normalise cpNNN with the pinned formatter`. That is exactly the trust posture AI Edit's candidate files already have, no more and no less, and it is the reason the formatting delta is its own commit: folding it into the last patch commit would leave one commit whose bytes are not the bytes its manifest declared, which is the single property this record exists to provide.
+Formatting commit is one exception, stated aloud not left inferred. Preparing implementor cannot run Prettier →
+formatted bytes have no declared digest, none can be required. Checked as bounded text on path checkpoint leaves
+behind, under exact subject `style(checkpoint): normalise cpNNN with the pinned formatter`. Exactly trust posture
+AI Edit's candidate files already have, no more no less — reason formatting delta is own commit: folding into
+last patch commit leaves one commit whose bytes are not bytes its manifest declared, single property this record
+exists to provide.
 
 ## What this does not fix, measured rather than assumed
 
-A declared post-image proves the resulting bytes, and it proves nothing about whether those bytes are correct. A patch that compiles, applies, hashes as declared and implements the wrong behaviour passes every gate here. That is review's question and CI's question, and this record does not claim either.
+Declared post-image proves resulting bytes, proves nothing about whether bytes correct. Patch that compiles,
+applies, hashes as declared, implements wrong behaviour passes every gate here. Review's question, CI's question —
+this record claims neither.
 
-The gate is only as good as the declaration, and the declaration comes from the implementor's sandbox. An implementor who mirrors the repository, makes a change they misunderstand, and honestly records its blob ids gets a clean publication of a change they misunderstood. What the digest removes is the class of failure where the published bytes differ from the bytes that were prepared and reviewed. It does not remove the class where the prepared bytes were wrong.
+Gate only as good as declaration, declaration comes from implementor's sandbox. Implementor who mirrors repo,
+makes change they misunderstand, honestly records blob ids → clean publication of misunderstood change. Digest
+removes class where published bytes differ from prepared and reviewed bytes. Does not remove class where prepared
+bytes were wrong.
 
-`git apply` is still the applier, so its behaviour is still upstream of the result. What changed is that its behaviour is no longer the last word: a surprising application is caught rather than trusted.
+`git apply` still applier, behaviour still upstream of result. Changed: its behaviour no longer last word —
+surprising application caught rather than trusted.
 
-The formatting commit's bytes remain unverifiable against a declaration, by construction. If the pinned formatter is compromised at the reviewed revision, this design does not detect it, and neither does AI Edit's.
+Formatting commit's bytes remain unverifiable against declaration, by construction. Pinned formatter compromised
+at reviewed revision → this design does not detect, neither does AI Edit's.
 
-Publication is not a CI claim. A confirmed receipt records `ci: pending`, because the commit it published has not yet been tested by anything.
+Publication is not CI claim. Confirmed receipt records `ci: pending` — commit it published not yet tested by
+anything.
 
 ## Alternatives rejected
 
-**Apply the hunks in trusted JavaScript.** The reason to want this is that it removes Git from the trusted path and makes the whole transport decidable in unit tests. It is refused because a hunk applier is a substantial amount of subtle code whose defects publish wrong bytes with a reviewed runner's authority, and because it would be a second owner of a question Git already owns correctly. The digest gives the same assurance without the code: an independently computed result is compared against an independently declared one.
+**Apply hunks in trusted JavaScript.** Want: removes Git from trusted path, whole transport decidable in unit
+tests. Refused: hunk applier substantial subtle code whose defects publish wrong bytes with reviewed runner's
+authority, second owner of question Git already owns correctly. Digest gives same assurance without code:
+independently computed result compared against independently declared one.
 
-**Trust a clean `git apply` and publish.** Refused for the reason this record opens with. A zero exit means the hunks matched context somewhere, not that they matched where the author meant, and every one of shifted context, a duplicated block and a neighbouring-function offset exits zero.
+**Trust clean `git apply`, publish.** Refused for opening reason. Zero exit = hunks matched context somewhere,
+not where author meant; shifted context, duplicated block, neighbouring-function offset all exit zero.
 
-**Declare a content checksum instead of a Git blob id.** A plain SHA-256 over the file would work as an adjudicator, and it was refused because the publisher has to compare against something it can compute from a Git tree without materialising a checkout, and because the implementor can produce a blob id with `git hash-object` rather than a bespoke tool. Using Git's own object id means the declaration, the source precondition and the tree entry are all the same kind of value. The patch file itself is digested with SHA-256, because it is an artifact rather than tree content and is never compared with a tree entry.
+**Content checksum instead of Git blob id.** Plain SHA-256 over file would work as adjudicator. Refused:
+publisher must compare against something computable from Git tree without materialising checkout, implementor can
+produce blob id with `git hash-object` not bespoke tool. Git's own object id → declaration, source precondition,
+tree entry all same kind of value. Patch file itself digested with SHA-256: artifact not tree content, never
+compared with tree entry.
 
-**Declare only pre-images.** Refused, and this is the interesting one. Pre-images alone make the transport safe against a stale base, which is the failure the issue's design comment led with, and they say nothing about the result. A stale-base check refuses applying to the wrong input; it cannot refuse a surprising application to the right input. Both are declared, and they answer different questions.
+**Declare only pre-images.** Refused, the interesting one. Pre-images alone make transport safe against stale
+base — failure issue's design comment led with — say nothing about result. Stale-base check refuses applying to
+wrong input, cannot refuse surprising application to right input. Both declared, answer different questions.
 
-**Teach the parser the applier's zero-context rule rather than passing `--unidiff-zero`.** Refused, and it was the closer of the two. It keeps the local diagnostic, which is a real gain, and it pays for that by encoding a reverse-engineered heuristic into the one layer that has to be trustworthy. The rule to encode is an applier behaviour rather than a property of a diff: `git apply` without the flag accepts a zero-context hunk covering a whole one-line file and refuses a zero-context partial change to a five-line file. A guess about that in a security boundary is worse than widening applicability and leaning on the post-image digest, which is the layering this record already argues for everywhere else. The parser therefore stays honest about shape instead of impersonating the applier.
+**Teach parser applier's zero-context rule instead of passing `--unidiff-zero`.** Refused, closer of two. Keeps
+local diagnostic (real gain), pays by encoding reverse-engineered heuristic into one layer that must be
+trustworthy. Rule to encode is applier behaviour not property of diff: `git apply` without flag accepts
+zero-context hunk covering whole one-line file, refuses zero-context partial change to five-line file. Guess about
+that in security boundary worse than widening applicability and leaning on post-image digest — layering this
+record argues everywhere else. Parser stays honest about shape instead of impersonating applier.
 
-**Run the formatter between patches.** Refused, and this corrects the design posted on issue #466. Patch two declares its pre-image as patch one's post-image, computed in a sandbox where Prettier never ran. Formatting patch one first invalidates the declaration patch two depends on, or worse, shifts the context its hunks match. The stack is applied with no formatting in between and the surviving tip is formatted exactly once. Intermediate commits are therefore not required to be Prettier-clean and nothing asks them to be: `format:check` runs against the branch head, which is the formatted tip.
+**Run formatter between patches.** Refused, corrects design posted on issue #466. Patch two declares pre-image as
+patch one's post-image, computed in sandbox where Prettier never ran. Formatting patch one first invalidates
+declaration patch two depends on, or worse shifts context its hunks match. Stack applied with no formatting
+between, surviving tip formatted exactly once. Intermediate commits therefore not required Prettier-clean, nothing
+asks: `format:check` runs against branch head = formatted tip.
 
-**Store the artifacts under `docs/checkpoints/`,** as the issue proposed. Refused for mechanical reasons rather than aesthetic ones. `.ai` is already in the parser's protected prefixes, so a checkpoint cannot mutate the store or a sibling checkpoint. `.prettierignore` already lists `.ai`, so the formatter cannot rewrite an artifact whose digest is computed over its exact bytes. `docs/` has neither property and would need both added. `.gitattributes` gains `*.diff -text -diff` in the first commit, before a patch file can exist, because `* text=auto eol=lf` is end-of-line normalisation applied to bytes that certify themselves.
+**Store artifacts under `docs/checkpoints/`,** as issue proposed. Refused for mechanical not aesthetic reasons.
+`.ai` already in parser's protected prefixes → checkpoint cannot mutate store or sibling checkpoint.
+`.prettierignore` already lists `.ai` → formatter cannot rewrite artifact whose digest computed over exact bytes.
+`docs/` has neither, would need both added. `.gitattributes` gains `*.diff -text -diff` in first commit, before
+patch file can exist, because `* text=auto eol=lf` is end-of-line normalisation applied to bytes that certify
+themselves.
 
 ## Consequences
 
-The implementor owes a materialised mirror. Post-image blob ids cannot be authored from blob reads alone, so a checkpoint requires the full final bytes of every touched file to exist somewhere the implementor can hash them. [AUTOMATION-TRANSPORT-CHOICE.md](./AUTOMATION-TRANSPORT-CHOICE.md) owns when that cost is worth paying and when AI Edit is the cheaper route.
+Implementor owes materialised mirror. Post-image blob ids cannot be authored from blob reads alone → checkpoint
+requires full final bytes of every touched file existing somewhere implementor can hash.
+[AUTOMATION-TRANSPORT-CHOICE.md](./AUTOMATION-TRANSPORT-CHOICE.md) owns when cost worth paying, when AI Edit
+cheaper route.
 
-A refusal names both ids. The post-image diagnostic is `patch N left "path" at <observed> rather than its declared <declared>`, and a base that moved under the stack is `stale pre-image for "path"; the base changed under the patch set`. Either one names the path and the ids, which is a far more actionable failure than a conflict hunk, and it is the compensation for failing late and remotely rather than early and locally.
+Refusal names both ids. Post-image diagnostic `patch N left "path" at <observed> rather than its declared
+<declared>`, base moved under stack `stale pre-image for "path"; the base changed under the patch set`. Either
+names path + ids — far more actionable than conflict hunk, compensation for failing late and remotely rather than
+early and locally.
 
-The candidate envelope is the binding limit, not the patch size. Full final content travels per commit, so a path touched by five patches in a stack appears five times, and the 1,800,000-byte candidate bound arrives sooner than a reader of the patch sizes expects. The validator refuses on budget with the sentence `The candidate exceeds 1800000 bytes; split the work into more, smaller checkpoints` rather than silently chunking.
+Candidate envelope binding limit, not patch size. Full final content travels per commit → path touched by five
+patches appears five times, 1,800,000-byte candidate bound arrives sooner than reader of patch sizes expects.
+Validator refuses on budget with `The candidate exceeds 1800000 bytes; split the work into more, smaller
+checkpoints` rather than silently chunking.
 
-Retained evidence carries its own bound and its own honesty requirement. The combined patch bytes a set retains on `ci-logs` may not exceed 1,000,000, and preparation enforces that alongside the publisher so the refusal costs no round trip, while the publisher keeps its own check because it owns what it writes. The retained chunks are sanitised rather than byte-exact, since a token-shaped string or a control character is redacted out of them, so the evidence manifest states `retained_text: sanitised_not_byte_exact` and the declared `sha256` over the original bytes remains the authority. A reader who digests a chunk and finds a mismatch has found the redaction, not a wrong declaration.
+Retained evidence carries own bound + honesty requirement. Combined patch bytes set retains on `ci-logs` may not
+exceed 1,000,000; preparation enforces alongside publisher so refusal costs no round trip, publisher keeps own
+check because it owns what it writes. Retained chunks sanitised not byte-exact — token-shaped string or control
+character redacted out → evidence manifest states `retained_text: sanitised_not_byte_exact`, declared `sha256`
+over original bytes stays authority. Reader digesting chunk, finding mismatch, found redaction not wrong
+declaration.
 
-Intermediate commits in a published stack are not Prettier-clean, and that is not a defect. Only the tip is, and only the tip is checked.
+Intermediate commits in published stack not Prettier-clean, not defect. Only tip is, only tip checked.
 
-`publishCandidate()` is reused unchanged, so intent-before-push, the single `force: false` ref update, the re-read of the remote head, treating a lost HTTP response as uncertainty rather than failure, and refusing a divergent branch are inherited rather than copied. A checkpoint cannot regress a publication property that AI Edit holds, because it does not own one.
+`publishCandidate()` reused unchanged → intent-before-push, single `force: false` ref update, re-read of remote
+head, lost HTTP response treated as uncertainty not failure, divergent branch refused: inherited not copied.
+Checkpoint cannot regress publication property AI Edit holds, owns none.
 
-One duplication is knowing. The artifact reader in [automation-checkpoint.mjs](../scripts/automation-checkpoint.mjs) is copied from the AI edit publisher. It belongs in the GitHub adapter, and lifting it there is its own slice rather than a drive-by edit to a credentialed path.
+One duplication knowing. Artifact reader in [automation-checkpoint.mjs](../scripts/automation-checkpoint.mjs)
+copied from AI edit publisher. Belongs in GitHub adapter; lifting there = own slice, not drive-by edit to
+credentialed path.
 
 ## Evidence
 
-[checkpoint-policy.test.ts](../packages/core/test/unit/scripts/checkpoint-policy.test.ts) covers the manifest schema, the accepted grammar, and the refusals that are decidable over bytes: an unknown manifest key, a filename disagreeing with its `seq`, a traversing path, a path outside `allow`, a protected prefix, a binary patch, a rename, a mode change, a hunk header disagreeing with its body, a CI-skip subject, and the hunk-coordinate ordering this record adds.
+[checkpoint-policy.test.ts](../packages/core/test/unit/scripts/checkpoint-policy.test.ts) covers manifest schema,
+accepted grammar, refusals decidable over bytes: unknown manifest key, filename disagreeing with `seq`, traversing
+path, path outside `allow`, protected prefix, binary patch, rename, mode change, hunk header disagreeing with
+body, CI-skip subject, hunk-coordinate ordering this record adds.
 
-[automation-checkpoint.test.ts](../packages/core/test/unit/scripts/automation-checkpoint.test.ts) covers the two functions it imports, `prepareCheckpoint` and `validateCheckpointCandidate`, against a real Git repository: a stack applying with a create, a modify and a delete with each patch gated on its declared post-image, the formatting delta collapsing into a separate `style(checkpoint)` commit, a stale base, a moved pre-image, an undeclared path, a declared post-image the patch does not produce, and a tampered candidate refused by the publisher's independent validation.
+[automation-checkpoint.test.ts](../packages/core/test/unit/scripts/automation-checkpoint.test.ts) covers two
+functions it imports, `prepareCheckpoint`, `validateCheckpointCandidate`, against real Git repository: stack
+applying with create/modify/delete, each patch gated on declared post-image, formatting delta collapsing into
+separate `style(checkpoint)` commit, stale base, moved pre-image, undeclared path, declared post-image patch does
+not produce, tampered candidate refused by publisher's independent validation.
 
-The topology is now measured rather than reviewed, which an earlier revision of this record correctly refused to claim. `buildCommits` and `reconcileCheckpointIntent` are exported as seams and driven through a recording writer and a scripted read adapter, so the commit count, the three trailers in order, a deletion carried as a null blob keeping its source mode, the consumption commit deleting exactly the store, linear ancestry, a twenty-patch stack, recovery of a lost HTTP response without replaying a patch, and the twenty-two-commit walk with its refusals are all executed by the committed suite.
+Topology now measured not reviewed — earlier revision of this record correctly refused to claim. `buildCommits` +
+`reconcileCheckpointIntent` exported as seams, driven through recording writer and scripted read adapter → commit
+count, three trailers in order, deletion carried as null blob keeping source mode, consumption commit deleting
+exactly store, linear ancestry, twenty-patch stack, recovery of lost HTTP response without replaying patch,
+twenty-two-commit walk with refusals: all executed by committed suite.
 
-Still not claimed, and named so a reader does not infer it. `publishCheckpointRun`, `checkpointSnapshot`, the artifact reader, evidence retention and the non-force ref update in situ are **reviewed rather than tested**, and the last of those is inherited from the AI edit route's own coverage of the shared publisher, which is an argument about a shared owner rather than a measurement of this route. `automation-receipt.test.ts` does not cover the `checkpoint` kind. Those tests are owed.
+Still not claimed, named so reader does not infer. `publishCheckpointRun`, `checkpointSnapshot`, artifact reader,
+evidence retention, non-force ref update in situ are **reviewed rather than tested**; last inherited from AI edit
+route's coverage of shared publisher — argument about shared owner, not measurement of this route.
+`automation-receipt.test.ts` does not cover `checkpoint` kind. Those tests owed.
 
-No live run of [ai-checkpoint.yml](../.github/workflows/ai-checkpoint.yml) is evidence for anything here either. The workflow no-ops until a human moves `MOTION5_AUTOMATION_SHA` to a reviewed SHA, and rollback is pointing that variable back. [AI-CHECKPOINT-WORKFLOW.md](./AI-CHECKPOINT-WORKFLOW.md) owns the activation gate and the live exercises that are still owed.
+No live run of [ai-checkpoint.yml](../.github/workflows/ai-checkpoint.yml) evidence for anything here. Workflow
+no-ops until human moves `MOTION5_AUTOMATION_SHA` to reviewed SHA, rollback points variable back.
+[AI-CHECKPOINT-WORKFLOW.md](./AI-CHECKPOINT-WORKFLOW.md) owns activation gate and live exercises still owed.
