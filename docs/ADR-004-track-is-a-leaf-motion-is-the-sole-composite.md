@@ -2,10 +2,10 @@
 
 **Status:** Accepted, 2026-08-10
 
-**Context.** The predecessor allowed Track to own children, group hosts, playback delegation, graph recursion while Motion also owned scheduling. That produced two composite owners and unclear teardown.
+**Context.** Predecessor let Track own children, group hosts, playback delegation and graph recursion while Motion also owned scheduling → two composite owners, unclear teardown.
 
-**Decision.** Track owns only playhead/progress, interpolation inputs, local plugin composition, renderer-neutral snapshots, and local lifecycle. Motion owns child membership, hierarchy, stagger, layout, scheduling, triggers, playback, and child teardown. Graph traversal belongs to the graph layer.
+**Decision.** Track owns only playhead/progress, interpolation inputs, local plugin composition, renderer-neutral snapshots, local lifecycle. Motion owns child membership, hierarchy, stagger, layout, scheduling, triggers, playback, child teardown. Graph traversal belongs to graph layer.
 
-**Alternatives rejected.** Keeping convenience methods on Track would preserve a second composite API. Having Motion delegate graph composition to Track would bypass the project-wide publisher.
+**Alternatives rejected.** Keeping convenience methods on Track preserves a second composite API. Motion delegating graph composition to Track bypasses the project-wide publisher.
 
-**Consequences.** Callers use Motion for hierarchy and the runtime for graph observation. Track becomes simpler to test and safe to reuse as a leaf.
+**Consequences.** Callers use Motion for hierarchy, runtime for graph observation. Track simpler to test, safe to reuse as leaf.
