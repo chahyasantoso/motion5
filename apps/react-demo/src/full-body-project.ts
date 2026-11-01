@@ -6,6 +6,9 @@ import type { ProjectDefinition, TrackDefinition } from "@motion5/core";
  */
 export const WALK_SCROLL_SOURCE = "walk";
 
+// Zeroes FK weight so members keep authored rest pose instead of collapsing to inert solved zeros.
+const REST = { weight: 0 } as const;
+
 export const coreWalkerTracks: readonly TrackDefinition[] = [
   // 1. Pelvis (Root record track)
   {
@@ -47,6 +50,7 @@ export const coreWalkerTracks: readonly TrackDefinition[] = [
         {
           id: "chest",
           cells: {
+            ...REST,
             length: 80,
             rotation: [
               { p: 0, v: -87 },
@@ -60,6 +64,7 @@ export const coreWalkerTracks: readonly TrackDefinition[] = [
         {
           id: "head",
           cells: {
+            ...REST,
             parentId: "chest",
             length: 45,
             rotation: [
@@ -74,6 +79,7 @@ export const coreWalkerTracks: readonly TrackDefinition[] = [
         {
           id: "legL_thigh",
           cells: {
+            ...REST,
             length: 85,
             rotation: [
               { p: 0, v: 65 },
@@ -91,6 +97,7 @@ export const coreWalkerTracks: readonly TrackDefinition[] = [
         {
           id: "legL_shin",
           cells: {
+            ...REST,
             parentId: "legL_thigh",
             length: 80,
             rotation: [
@@ -109,6 +116,7 @@ export const coreWalkerTracks: readonly TrackDefinition[] = [
         {
           id: "legL_foot",
           cells: {
+            ...REST,
             parentId: "legL_shin",
             length: 38,
             rotation: [
@@ -127,6 +135,7 @@ export const coreWalkerTracks: readonly TrackDefinition[] = [
         {
           id: "legR_thigh",
           cells: {
+            ...REST,
             length: 85,
             rotation: [
               { p: 0, v: 115 },
@@ -144,6 +153,7 @@ export const coreWalkerTracks: readonly TrackDefinition[] = [
         {
           id: "legR_shin",
           cells: {
+            ...REST,
             parentId: "legR_thigh",
             length: 80,
             rotation: [
@@ -162,6 +172,7 @@ export const coreWalkerTracks: readonly TrackDefinition[] = [
         {
           id: "legR_foot",
           cells: {
+            ...REST,
             parentId: "legR_shin",
             length: 38,
             rotation: [
@@ -222,6 +233,7 @@ export const armTracks: readonly TrackDefinition[] = [
         {
           id: "chest",
           cells: {
+            ...REST,
             length: 80,
             rotation: [
               { p: 0, v: -87 },
@@ -235,6 +247,7 @@ export const armTracks: readonly TrackDefinition[] = [
         {
           id: "armL_upper",
           cells: {
+            ...REST,
             parentId: "chest",
             length: 62,
             rotation: [
@@ -253,24 +266,26 @@ export const armTracks: readonly TrackDefinition[] = [
         {
           id: "armL_lower",
           cells: {
+            ...REST,
             parentId: "armL_upper",
             length: 58,
             rotation: [
-              { p: 0, v: 20 },
-              { p: 0.125, v: 35 },
-              { p: 0.25, v: 45 },
-              { p: 0.375, v: 25 },
-              { p: 0.5, v: 20 },
-              { p: 0.625, v: 35 },
-              { p: 0.75, v: 45 },
-              { p: 0.875, v: 25 },
-              { p: 1, v: 20 },
+              { p: 0, v: -20 },
+              { p: 0.125, v: -35 },
+              { p: 0.25, v: -45 },
+              { p: 0.375, v: -25 },
+              { p: 0.5, v: -20 },
+              { p: 0.625, v: -35 },
+              { p: 0.75, v: -45 },
+              { p: 0.875, v: -25 },
+              { p: 1, v: -20 },
             ],
           },
         },
         {
           id: "armR_upper",
           cells: {
+            ...REST,
             parentId: "chest",
             length: 62,
             rotation: [
@@ -289,18 +304,19 @@ export const armTracks: readonly TrackDefinition[] = [
         {
           id: "armR_lower",
           cells: {
+            ...REST,
             parentId: "armR_upper",
             length: 58,
             rotation: [
-              { p: 0, v: 45 },
-              { p: 0.125, v: 25 },
-              { p: 0.25, v: 20 },
-              { p: 0.375, v: 35 },
-              { p: 0.5, v: 45 },
-              { p: 0.625, v: 25 },
-              { p: 0.75, v: 20 },
-              { p: 0.875, v: 35 },
-              { p: 1, v: 45 },
+              { p: 0, v: -45 },
+              { p: 0.125, v: -25 },
+              { p: 0.25, v: -20 },
+              { p: 0.375, v: -35 },
+              { p: 0.5, v: -45 },
+              { p: 0.625, v: -25 },
+              { p: 0.75, v: -20 },
+              { p: 0.875, v: -35 },
+              { p: 1, v: -45 },
             ],
           },
         },

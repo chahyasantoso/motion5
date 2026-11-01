@@ -112,6 +112,23 @@ describe("react-demo walker on the real project", () => {
     }
   });
 
+  it("composes the authored rest pose, not a flat rig (weight 0 against inert solved rows)", () => {
+    const { project } = load();
+    try {
+      project.seek("walk/pose", 0);
+      const rows = poseRows(project, "walk/pose");
+      const chest = selectRow(rows, "chest");
+      const head = selectRow(rows, "head");
+      if (chest.kind !== "row" || head.kind !== "row") throw new Error("rows missing");
+      // pelvis rotation -3 + chest rest -87 = -90: the chest points straight up (negative y).
+      expect(chest.cells.rotation).toBeCloseTo(-90, 5);
+      expect(chest.cells.y).toBeLessThan(230 - 70);
+      expect(head.cells.y).toBeLessThan(chest.cells.y as number);
+    } finally {
+      project.dispose();
+    }
+  });
+
   it("keeps a scroll-driven pose still across a clock tick", () => {
     const { project, clock } = load();
     try {
