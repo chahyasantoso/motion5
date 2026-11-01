@@ -2,4 +2,4 @@
 
 **Status:** Accepted, 2026-08-15
 
-**Decision.** Export TriggerSignal from the core entrypoint.
+**Decision.** Export TriggerSignal from core entrypoint.

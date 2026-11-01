@@ -12,9 +12,9 @@ import { recordValues } from "../../support/v5-builders";
  * `tsc` stayed clean and every case below ran. What they then were is worth stating exactly, because
  * an independent pass caught this sentence overclaiming: each threw `TypeError: registry.lastReady is
  * not a function` at the call rather than reaching a failed expectation. That is a red test file and
- * not a red compile, which is the distinction `docs/GUARDRAILS.md` draws, and it is also not the
- * failed-assertion shape that document names, so it is recorded as what it was rather than
- * relabelled. The member exists now, so the cast is deleted and every case reads it off the class.
+ * not a red compile, and it is also not the failed-assertion shape, so it is recorded as what it was
+ * rather than relabelled. The member exists now, so the cast is deleted and every case reads it off
+ * the class.
  */
 function open(): PatchRegistry {
   return new PatchRegistry();

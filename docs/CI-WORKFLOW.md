@@ -26,7 +26,7 @@ These contexts intentionally depend on all quality evidence, including formattin
 
 ## Distinct assertions retained
 
-`boundaries (node 24.21.0)` runs `node scripts/boundary-scan.mjs` against the actual repository. `read-budget (node 24.21.0)` runs `node scripts/read-budget-scan.mjs` against the actual core source and sister documents. Their scanner unit tests remain in the single full suite instead of running twice. The existing convenience package scripts still run scans plus their self-tests for manual use.
+`boundaries (node 24.21.0)` runs `node scripts/boundary-scan.mjs` against the actual repository. Its scanner unit tests remain in the single full suite instead of running twice. The existing convenience package scripts still run scans plus their self-tests for manual use.
 
 `build (node 24.21.0)` compiles declaration output and checks both `packages/core/dist/index.js` and `packages/core/dist/index.d.ts`. These assertions are unchanged.
 
@@ -34,7 +34,7 @@ These contexts intentionally depend on all quality evidence, including formattin
 
 ## Formatting and contributions
 
-Formatting is read-only in CI. [FORMATTING.md](./FORMATTING.md) owns the pinned formatter and manual repair contract. Historical touched-file normalization in the retired AI automation routes was superseded by plain pull requests; `format:check` runs against the branch head.
+Formatting is read-only in CI: `format:check` runs against the branch head and writes nothing. Prettier is pinned at the `package.json` version, `printWidth` 100, double quotes, trailing commas everywhere and `proseWrap` preserve, and it formats code only -- markdown is outside its reach by decision, so prose is laid out by hand and never rewrapped by a toolchain. A repository-wide repair is the [format.yml](../.github/workflows/format.yml) dispatch route and never a step inside a behavior pull request. Historical touched-file normalization in the retired AI automation routes was superseded by plain pull requests.
 
 A contributor without the installed repository toolchain can submit pull requests and use exact-head CI as verification. Do not claim local checks. The manual formatter requires workflow dispatch, which is not exposed by every connection. No temporary privileged formatter is introduced here.
 

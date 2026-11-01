@@ -14,9 +14,9 @@ export type RunnerStep =
   | { readonly kind: "release" };
 
 export interface Runner {
-  /** Exclusive owner within this attachment: each overlay replaces the previous overlay wholesale. */
+  /** The node this runner exclusively owns; each overlay replaces the previous one wholesale. */
   readonly nodeId: string;
-  /** Synchronous. Read published state here; return an overlay rather than writing to the project. */
+  /** Synchronous. Reads published state; returns an overlay instead of writing the project. */
   step(tick: ClockTick, read: (nodeId: string) => LivePatch | undefined): RunnerStep;
   dispose?(): void;
 }
@@ -26,13 +26,13 @@ export type RunnerFailure =
   | { readonly kind: "write-refused"; readonly nodeId: string; readonly cause: unknown }
   | { readonly kind: "node-missing"; readonly nodeId: string }
   | { readonly kind: "dispose-threw"; readonly nodeId: string; readonly cause: unknown }
-  /** Any failure of the batch call itself; transient or not, it stops the whole attachment. */
+  /** Batch call failure, transient or not; stops the whole attachment. */
   | { readonly kind: "project-unavailable"; readonly cause: unknown };
 
 export interface AttachRunnersOptions {
-  /** The same instance given to the Engine; attach after engine creation for engine-first ordering. */
+  /** The instance given to the Engine; attach after engine creation for engine-first ordering. */
   readonly clock: Clock;
-  /** Runs after the batch closes. Every queued report is attempted before the first throw escapes. */
+  /** Runs after the batch closes; every report is attempted before the first throw escapes. */
   readonly onFailure: (failure: RunnerFailure) => void;
 }
 
@@ -69,24 +69,8 @@ function snapshotRunners(project: RunnerProject, runners: readonly Runner[]): En
 }
 
 /**
- * Owns runner lifecycle outside the graph (ADR-139).
- *
- * All steps read the engine's published state before any queued runner writes land. At most one
- * value batch is opened per tick. A refusal detaches only its runner, releases its overlay when
- * possible, and disposes it once. The array and ownership ids are snapshotted at attachment.
- *
- * A write step carries one whole evaluated value whose shape matches the target track, and `release`
- * drops the overlay it stood. A `hold` makes no call at all. Identical writes still republish and
- * recompute downstream; returning hold is the runner's decision. Separate attachments must not own
- * the same node. Steps must not write to the project synchronously.
- *
- * Dispose before project.dispose(). Reversed cleanup still disposes every runner, then rethrows
- * the batch error once. Any failure of the batch call itself stops the attachment, transient or
- * not (project-unavailable); that stop has already cleaned up, so disposal is silent.
- * Recursive clock dispatch and disposal during a running tick are refused before changing state.
- * Dispose outside step, runner cleanup and onFailure; after a terminal stop disposal is a no-op.
- * Native async work stays outside step: offer its completed result to a LatestSlot.
- */
+ * Attaches runners to a project and clock; returns a disposer. Steps read published state
+ * first; one batch per tick. A refusal retires only its runner; batch failure stops the attachment. */
 export function attachRunners(
   project: RunnerProject,
   runners: readonly Runner[],
@@ -98,17 +82,16 @@ export function attachRunners(
   const pendingDisposal = new Set<Entry>();
   let stopped = false;
   let dispatching = false;
-  // Assigned once subscribe returns. A clock that fires inside subscribe can stop the attachment
-  // before then; stop() records it and the subscription is released as soon as it exists.
+  // Set after subscribe returns; a tick inside subscribe can stop first, and that subscription is released.
   let unsubscribe: (() => void) | undefined;
 
-  // The only transition to stopped; idempotent with respect to the clock subscription.
+  // Only transition to stopped; idempotent over the clock subscription.
   function stop(): void {
     stopped = true;
     unsubscribe?.();
   }
 
-  // This is the only transition out of live; deletion before disposal makes cleanup reentrant.
+  // Only transition out of live; delete before disposal keeps cleanup reentrant.
   function retire(entry: Entry): void {
     if (live.delete(entry)) pendingDisposal.add(entry);
   }
@@ -136,7 +119,7 @@ export function attachRunners(
     return errors;
   }
 
-  // Per-write refusals stay inside the recipe. Only a values() failure can stop the attachment.
+  // Per-write refusals stay in the recipe; only a values() failure stops the attachment.
   function applyWrite(
     tx: ValueTransaction,
     write: Write,
@@ -164,8 +147,7 @@ export function attachRunners(
     } catch (cause) {
       failures.push({ kind: "write-refused", nodeId: entry.nodeId, cause });
       retire(entry);
-      // A batch is not atomic. Clear an earlier successful overlay even when this write refused.
-      // Do not retry a failed release, but do report a second failure if recovery itself refuses.
+      // Batch not atomic: refused write still releases its earlier overlay; failed release not retried, recovery refusal reported.
       if (write.kind === "write") {
         try {
           track.releaseValues();
@@ -218,8 +200,7 @@ export function attachRunners(
     if (errors.length > 0) throw errors[0];
   }
 
-  // A tick that throws before subscribe returns has no disposer to reach the caller yet. Keep the
-  // first such error, finish subscribing, clean up completely, then let it escape attachment.
+  // Tick throws before subscribe returns: keep first error, finish subscribing, clean up, rethrow.
   let attaching = true;
   let attachFailure: { readonly error: unknown } | undefined;
   const subscription = clock.subscribe((tick) => {
@@ -241,8 +222,7 @@ export function attachRunners(
 
   const dispose = () => {
     if (stopped) return;
-    // Cleanup would otherwise open a second batch from step, disposal or a failure callback.
-    // Refuse before any state transition; the caller can retry after dispatch has returned.
+    // Refuse before any state transition: cleanup would open a second batch; retry after dispatch returns.
     if (dispatching) throw new Error("Runner disposal cannot run during clock dispatch.");
     stop();
     const entries = [...live];
@@ -266,7 +246,7 @@ export function attachRunners(
     try {
       dispose();
     } catch {
-      // The attachment error is the first error; cleanup errors after it are secondary.
+      // Attachment error is first; cleanup errors after it are secondary.
     }
     throw attachFailure.error;
   }
@@ -287,7 +267,7 @@ function readOptions(options: AttachRunnersOptions): AttachRunnersOptions {
   return { clock, onFailure };
 }
 
-/** The only owner of runner failure wording. Causes remain available without coercing caller data. */
+/** The only owner of runner failure wording; causes stay available without coercing caller data. */
 export function describeRunnerFailure(failure: RunnerFailure): string {
   switch (failure.kind) {
     case "step-threw":
@@ -305,13 +285,13 @@ export function describeRunnerFailure(failure: RunnerFailure): string {
   }
 }
 
-/** `undefined` means empty, so it is not an offerable value; wrap optional results in a record. */
+/** `undefined` means empty, so it is not offerable; wrap optional results in a record. */
 export interface LatestSlot<T extends {} | null> {
   offer(value: T): void;
   take(): T | undefined;
 }
 
-/** Bounded storage for an asynchronous producer: latest offered value wins, take consumes once. */
+/** Bounded store for an async producer: latest offer wins, take consumes once. */
 export function createLatestSlot<T extends {} | null>(): LatestSlot<T> {
   let latest: T | undefined;
   return {

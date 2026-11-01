@@ -1,17 +1,10 @@
 /**
- * The one perspective projection every 3D stage on the page shares.
- *
- * CSS `perspective: d` with the default centred `perspective-origin` scales a point at depth `z`
- * about the box centre by `d / (d - z)`; a three.js camera placed at the box centre, `d` in front
- * of it, with a vertical field of view of `2·atan(height / 2d)` projects the same point to the same
- * pixel (`threeCamera` below). So one pair of functions answers both "where is this frame drawn"
- * and "which world point is under this pointer at this depth", and the CSS and WebGL drags cannot
- * disagree about where the goal went.
- */
+ * One projection all 3D stages share: CSS `perspective: d` scales depth `z` by `d / (d - z)`,
+ * and `threeCamera` matches it, so CSS and WebGL drags agree where the goal went. */
 export interface PerspectiveView {
   readonly width: number;
   readonly height: number;
-  /** The viewer distance, CSS `perspective`, in the same pixels as the frames. */
+  /** Viewer distance, CSS `perspective`, in the frames' pixels. */
   readonly perspective: number;
 }
 
@@ -25,9 +18,8 @@ export interface Point3 extends Point2 {
 }
 
 /**
- * The screen rectangle a stage draws, in the box's own unscaled pixels. It may be larger than the
- * box: a point toward the viewer is drawn outside the box it was authored in.
- */
+ * Screen rectangle a stage draws, in the box's unscaled pixels; may exceed the box nearer
+ * the viewer. */
 export interface ScreenFrame {
   readonly x: number;
   readonly y: number;
@@ -48,11 +40,8 @@ function depthScale(view: PerspectiveView, z: number): number | undefined {
 }
 
 /**
- * How many box pixels a marker of world radius `radius` spans when drawn at depth `z`: a marker
- * that lives in the 3D world (a CSS element translated in depth, or a mesh) is scaled by the same
- * perspective as its centre, so a handle toward the viewer is drawn larger than it was authored.
- * `undefined` at or behind the viewer.
- */
+ * Box pixels a world marker of radius `radius` spans at depth `z`: scaled like its centre, so a
+ * nearer handle draws larger. `undefined` at or behind the viewer. */
 export function drawnRadius(view: PerspectiveView, radius: number, z: number): number | undefined {
   const scale = depthScale(view, z);
   return scale === undefined ? undefined : radius * scale;
@@ -81,15 +70,8 @@ export function unprojectPoint(
 }
 
 /**
- * The frame, centred on the box, that draws every point of `bounds` with a marker of world radius
- * `radius` around it, so nothing a drag can reach is ever clipped by the stage. The marker is
- * scaled by perspective like its centre (`drawnRadius`), so the margin a corner needs grows toward
- * the viewer; a constant screen margin under-framed the nearest corners by the depth scale.
- *
- * Centred because CSS `perspective-origin` and the three.js camera both look at the box centre; a
- * centred frame keeps them agreeing without an off-axis camera. `bounds` must lie in front of the
- * viewer, which a drag clamp guarantees.
- */
+ * Centred frame drawing every `bounds` point plus its world-radius `radius` marker, margin scaled
+ * by depth; throws behind the viewer, so no drag target is clipped. */
 export function frameAround(
   view: PerspectiveView,
   bounds: WorldBounds,
@@ -113,10 +95,8 @@ export function frameAround(
 }
 
 /**
- * The point nearest `point` at its (clamped) depth whose marker of world radius `radius`, drawn at
- * that depth (`drawnRadius`), lies whole inside `frame`: a drag can move the goal anywhere the stage
- * draws it whole, and no further. `depth` bounds the depth; it must lie in front of the viewer.
- */
+ * `point` with z clamped to `depth` and screen position pulled inside `frame`, so its `radius`
+ * marker drawn there lies whole; `depth` must lie in front of the viewer. */
 export function clampToFrame(
   view: PerspectiveView,
   frame: ScreenFrame,
@@ -138,14 +118,8 @@ export function clampToFrame(
 }
 
 /**
- * The three.js camera that sees exactly what the CSS stage draws in `frame`, in the renderer's
- * y-up space.
- *
- * Frames publish in CSS space (y down, z toward the viewer). A stage that mirrors its rig group by
- * `scale.y = -1` puts world `(x, y, z)` at three.js `(x, -y, z)`, so the camera sits over the box
- * centre at `(width/2, -height/2, d)` looking down `-z`, with the field of view that spans the
- * frame's height at the box plane.
- */
+ * The three.js camera drawing what the CSS stage draws in `frame`, in y-up space: over the box
+ * centre at `(width/2, -height/2, d)`, looking down `-z`, fov spanning the frame. */
 export function threeCamera(
   view: PerspectiveView,
   frame: ScreenFrame,

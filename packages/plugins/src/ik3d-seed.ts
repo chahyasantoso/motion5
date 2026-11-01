@@ -34,39 +34,15 @@ import {
 } from "./ik3d-constraint";
 
 /**
- * The 3D FABRIK seed: where every member's tip starts before the first outward pass, and the one
- * owner of that question for the 3D tree solve (issue #523, ADR-129).
- *
- * Two seeds, a closed union read exhaustively (`TreeSeed3d`). The **arc** is the 2D seed's
- * constant-curvature arc in the closed form's bend plane (ADR-118, ADR-122); it is kept whenever it
- * keeps each hinge's axis fixed as well as its direction on the hinge circle. Planar +z rigs do,
- * so they seed, solve and publish exactly the bytes they did and stay in agreement with 2D. The
- * **legal** seed is taken when the arc leaves that pose (including rest roll on the circle): the
- * first outward pass would otherwise spend itself projecting the seed. The legal seed is built in
- * joint space rather than point space: every limited member sits at the centre of its legal set
- * (`centreLocal3d`), and every free member on an addressed path turns its subtree so the mean of
- * the subtree's addressed tips points at the mean of their aims. It is legal by construction, so
- * the first outward pass re-derives it rather than repairs it.
- *
- * `flip` is the same geometric act for both seeds. Mirroring the arc across the line to its goal
- * is a half turn about that line, so the legal seed's opposite side is the half turn of each
- * topmost aimed free member's subtree about the line from its pivot to its aim: legal, because
- * only a free member turns. A rig whose addressed paths hold no free member has one legal seed, and
- * its flip reproduces it.
- *
- * The seed is a pure function of the tree, the pole and `flip`, with a fixed amount of arithmetic,
- * so a solve stays reproducible (ADR-111).
- */
+ * 3D FABRIK seed: each tip before the outward pass. Arc when every hinge pose survives,
+ * else legal seed, legal by construction. Pure in tree, pole, `flip`; flip = half turn. */
 
-/** The index `parent` holds for a member that hangs from the root rather than from a member. */
+/** `parent` index of a member hanging from the root. */
 export const ROOT_INDEX = -1;
 
 /**
- * The chain as the 3D attempt reads it, indexed by canonical position, so a member's base always
- * sits at a smaller index. `offsets` holds `undefined` for a zero offset. `paths` are the
- * addressed root-to-leaf paths in canonical leaf order and `aims` their goals' aim points, one per
- * path.
- */
+ * Chain as the 3D attempt reads it, canonical order (base before member); `paths` addressed
+ * root-to-leaf; `offsets` `undefined` = zero shift; `aims` one per path. */
 export interface SeedTree3d {
   readonly rootPoint: Vec3;
   readonly rootMatrix: Matrix3;
@@ -79,19 +55,13 @@ export interface SeedTree3d {
   readonly aims: readonly Vec3[];
 }
 
-/** Which seed a tree takes; `legal` when the arc requires a hinge-pose projection. */
+/** Which seed a tree takes; `legal` when the arc needs a hinge-pose projection. */
 export type TreeSeed3d = { readonly kind: "arc" } | { readonly kind: "legal" };
 
 const ARC_SEED: TreeSeed3d = Object.freeze({ kind: "arc" });
 const LEGAL_SEED: TreeSeed3d = Object.freeze({ kind: "legal" });
 
-/**
- * The seed for one root-to-leaf path: the joints of a constant-curvature arc from `origin` to
- * `goal` exactly as long as the path, in the plane spanned by `along` (toward the goal) and
- * `across` (the side it bulges to). The 2D `seedArc` arithmetic with its two axes replaced by
- * vectors, and the same `arcHalfAngle` bisection, so a planar rig seeds the same points. `lengths`
- * are already clamped through `segmentExtent`.
- */
+/** `seedArc` with two axis vectors; planar rigs seed the same points. `lengths` clamped. */
 function seedArc3d(
   origin: Vec3,
   goal: Vec3,
@@ -116,12 +86,7 @@ function seedArc3d(
   return points;
 }
 
-/**
- * The arc seed for the whole tree: each addressed path on its arc in the bend plane toward the
- * pole (`bendBasis3d`, the one owner of the pole rule), one path at a time in canonical leaf
- * order, a shared member taking the first path's point; a member on no addressed path lies
- * straight out along the root's own +x. The first outward pass enforces every length.
- */
+/** First path wins a shared member; unaddressed members continue along the root +x. */
 function arcTips(tree: SeedTree3d, pole: Pole3d, flip: boolean): Vec3[] {
   const { rootPoint, rootMatrix, parent, lengths, paths, aims } = tree;
   const tips = new Array<Vec3 | undefined>(lengths.length);
@@ -151,14 +116,7 @@ function arcTips(tree: SeedTree3d, pole: Pole3d, flip: boolean): Vec3[] {
   return tips as Vec3[];
 }
 
-/**
- * Which seed the tree takes: `legal` when composing the arc the way the outward pass composes a
- * pose (each member's rest frame under its base, swung onto its seeded direction) leaves some
- * hinge's legal orientation (`leavesHingePose`), otherwise `arc`.
- *
- * A range, a cone's swing or a twist the arc exceeds is a bound the pose can be projected onto
- * without changing this seed choice; issue #524 owns those limits.
- */
+/** `legal` when composing `arc` as the outward pass does leaves a hinge off its legal pose. */
 export function treeSeed3d(tree: SeedTree3d, arc: readonly Vec3[]): TreeSeed3d {
   const { rootPoint, rootMatrix, parent, lengths, offsets, rests, limits } = tree;
   const frames = new Array<Matrix3>(lengths.length);
@@ -177,26 +135,17 @@ export function treeSeed3d(tree: SeedTree3d, arc: readonly Vec3[]): TreeSeed3d {
   return ARC_SEED;
 }
 
-/** Classify the same authored-side arc that the default attempt would actually use. */
+/** Seed kind for the arc the default, unflipped attempt would use. */
 export function defaultTreeSeed3d(tree: SeedTree3d, pole: Pole3d): TreeSeed3d {
   return treeSeed3d(tree, arcTips(tree, pole, false));
 }
 
-/**
- * The legal seed (see the module docblock). Built as `fk3d` composes: each member's pivot is its
- * base's tip plus its offset in the base's frame, its frame the base's frame times its local
- * orientation, and its tip `length` along that frame's +x. Limited members hold their limit's
- * centre; each free member with an addressed leaf below it is then turned, in canonical order so
- * an ancestor turns first, by the minimal rotation that points its subtree's mean addressed tip at
- * the mean of those aims, and on the opposite side a topmost such member is also half-turned about
- * that line. Only the members at and after a turned member are recomposed.
- */
+/** Legal start: limits centred, free members turn subtree mean tip onto mean aim. */
 function legalTips(tree: SeedTree3d, flip: boolean, start: LegalSeed): Vec3[] {
   const fraction = legalFraction(start);
   const { rootPoint, rootMatrix, parent, lengths, offsets, rests, limits, paths, aims } = tree;
   const count = lengths.length;
-  // A collapsed member has no tip direction to carry its requested fraction into the outward
-  // pass. Project its authored rest, exactly as that pass does, before composing child offsets.
+  // Collapsed member has no tip direction: project its rest as the outward pass does.
   const locals = limits.map((limit, index) => {
     const rest = rests[index]!;
     if (lengths[index]! > 0) return legalLocal3d(limit, rest, fraction);
@@ -220,7 +169,7 @@ function legalTips(tree: SeedTree3d, flip: boolean, start: LegalSeed): Vec3[] {
     }
   };
   compose(0);
-  // The addressed paths each member lies on, and whether an ancestor is an aimed free member.
+  // Path steps holding each member; `turnedAbove` gates the flip to a topmost member.
   const below: number[][] = Array.from({ length: count }, () => []);
   paths.forEach((path, step) => path.forEach((index) => below[index]!.push(step)));
   const turnedAbove = new Array<boolean>(count).fill(false);
@@ -240,7 +189,7 @@ function legalTips(tree: SeedTree3d, flip: boolean, start: LegalSeed): Vec3[] {
     const pivot = pivots[index]!;
     const from = subtract3(scale3(tipSum, 1 / steps.length), pivot);
     const to = subtract3(scale3(aimSum, 1 / steps.length), pivot);
-    // The minimal rotation taking `from` to `to`: a frame swung onto `from`, then onto `to`.
+    // Minimal rotation `from` to `to`: swing a frame onto `from`, then onto `to`.
     const onFrom = swingFrame3d(frames[index]!, from);
     let turn = multiplyMatrix3(swingFrame3d(onFrom, to), transposeMatrix3(onFrom));
     if (flip && !inherited)
@@ -272,20 +221,13 @@ function legalTips(tree: SeedTree3d, flip: boolean, start: LegalSeed): Vec3[] {
   }
 }
 
-/**
- * The legal descent's view of a 3D pose (ADR-132): each member's local orientation, and a hinge's
- * angle beside it so its range is read in the angle it limits. A member with extent on an addressed
- * path moves; a hinge by one angle through `turnRotation`, any other member by two turns that tilt
- * its +x about its own +y and +z. A tilted member is rebuilt as the outward pass composes it, its
- * rest swung onto the new direction and then limited (`limitLocal3d`), so the walk's pose is the
- * one FABRIK's first pass recovers from its tips. Members that do not move keep their orientation.
- */
+/** Descent view: local orientations plus hinge angles, so a range reads in its own angle. */
 interface DescentPose3d {
   readonly locals: readonly Matrix3[];
   readonly angles: readonly number[];
 }
 
-/** One angle the 3D walk turns: a hinge's own angle, or a member's tilt about a local axis. */
+/** One walk angle: a hinge's own angle, or a member's tilt about a local axis. */
 type Dof3d =
   | {
       readonly kind: "hinge";
@@ -385,7 +327,7 @@ function descentOf(
     },
   };
   const start = (locals: readonly Matrix3[], fraction: number): DescentPose3d => ({
-    // A tilted member starts as the outward pass would compose it, so the walk is smooth.
+    // Tilted member starts as the outward pass composes it, so the walk stays smooth.
     locals: locals.map((local, index) =>
       moving[index] && limits[index]!.kind !== "hinge" ? rebuild(index, local) : local,
     ),
@@ -396,10 +338,7 @@ function descentOf(
   return { problem, start };
 }
 
-/**
- * Every member's seeded tip for one attempt, from `flip`'s side: the arc when it is legal for
- * every hinge's pose, else the legal seed (`treeSeed3d`). A fresh array the attempt owns.
- */
+/** Every member's tip for one attempt from `flip`'s side: arc when legal, else legal seed. */
 export function seedTree3d(
   tree: SeedTree3d,
   pole: Pole3d,

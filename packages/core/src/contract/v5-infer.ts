@@ -5,14 +5,8 @@ import type { Diagnostic } from "./v5";
 import type { ParsedCell, ParsedRecord, ParsedTable, ParsedValues, ScalarKind } from "./v5-parse";
 import type { FieldSpec, Scalar, ValueSpec } from "./v5";
 
-/**
- * The source contract a no-plugin track hands to the graph.
- *
- * `proven` is the difference between "nothing was observed" and "a complete observation says this
- * field is absent". An empty inferred table or record has no evidence for any kind, so a typed
- * consumer requiring a column is unproven rather than incompatible. A declaration proves its own
- * fields even when the authored values are empty.
- */
+/** The source contract a no-plugin track hands to the graph.
+ * `proven: false` means nothing was observed; a declaration proves its own fields even when empty. */
 export interface SourceContract {
   readonly spec: ValueSpec;
   readonly proven: boolean;
@@ -23,12 +17,7 @@ type RecordSpec = Extract<ValueSpec, { readonly kind: "record" }>;
 
 const EMPTY_DIAGNOSTICS: readonly Diagnostic[] = Object.freeze([]);
 
-/**
- * One frozen empty table, as `input.values` omitted means for a no-plugin source.
- *
- * It is the inferred contract too when no rows exist, and it is closed because an inferred contract
- * names exactly the columns that were observed.
- */
+/** Frozen empty table for an omitted `input.values` or zero rows; closed, since inference names only observed columns. */
 const EMPTY_TABLE_SPEC: ValueSpec = Object.freeze({
   kind: "table",
   schema: Object.freeze({
@@ -48,14 +37,7 @@ interface ColumnEvidence {
   conflict: boolean;
 }
 
-/**
- * Infer exactly the observed columns, from every row and every stop.
- *
- * A column present in every row is required; one missing from any row is optional with no implicit
- * default. The cell's scalar kind is computed by the parser over every stop in that cell, so this
- * reads the whole sequence rather than its first member. Nothing here manufactures `static`, a
- * range, an enum or a row-count promise: those are authored decisions, not observations.
- */
+/** Observed columns only: `static`, ranges, enums and row counts stay authored. */
 function inferTable(table: ParsedTable, path: string, diagnostics: Diagnostic[]): SourceContract {
   const columns = new Map<string, ColumnEvidence>();
   for (const [index, row] of table.rows.entries()) {
@@ -107,7 +89,7 @@ function inferTable(table: ParsedTable, path: string, diagnostics: Diagnostic[])
   });
 }
 
-/** Every record field is required; an empty record observes no field and so proves nothing. */
+/** Every field is required; an empty record proves nothing. */
 function inferRecord(record: ParsedRecord): SourceContract {
   const fields = Object.fromEntries(
     Object.entries(record.fields).map(([name, cell]) => [
@@ -152,12 +134,7 @@ function stripFields(
   return Object.freeze(Object.fromEntries(entries));
 }
 
-/**
- * The declared contract with authored-only flags removed.
- *
- * `static` forbids a stop sequence in the local input; it says nothing about the output contract,
- * where a column's current value may still change through an authored edit or a live write.
- */
+/** Declared spec minus authored-only `static`, which bounds the local input, not the output. */
 function withoutStatic(spec: ValueSpec): ValueSpec {
   switch (spec.kind) {
     case "table":
@@ -193,7 +170,7 @@ function valueRule(staticCell: boolean): "cell-form-invalid" | "cell-stops-inval
   return staticCell ? "cell-form-invalid" : "cell-stops-invalid";
 }
 
-/** Every authored value a cell contributes to a declared enum or range. */
+/** Every value the cell contributes to an enum or range check. */
 function cellValues(cell: ParsedCell, path: string): readonly { value: Scalar; path: string }[] {
   switch (cell.kind) {
     case "static":
@@ -340,7 +317,7 @@ function validateRecord(
       );
 }
 
-/** Where a contract spec originated, deciding how a shape mismatch is described. */
+/** Where a contract spec came from; it words a shape-mismatch diagnostic. */
 export type SpecOrigin = "declared" | "plugin" | "inferred";
 
 const SHAPE_SOURCE: Readonly<Record<SpecOrigin, (kind: ValueSpec["kind"]) => string>> = {
@@ -384,14 +361,9 @@ function validateDeclared(
   }
 }
 
-/**
- * Derive the source contract for one no-plugin track.
- *
- * A declaration is validated against every authored cell and stop and is then published as written,
- * minus `static`; it is never merged with inference. Without a declaration the contract is inferred
- * from the complete authored snapshot, and an empty snapshot is accepted with `proven: false` rather
- * than being treated as compatible with every typed consumer.
- */
+/** Derives the source contract for one no-plugin track.
+ * Declared spec: validated against authored values, published minus `static`. Else inferred; an
+ * empty snapshot yields `proven: false`. */
 export function deriveSourceContract(
   values: ParsedValues | undefined,
   schema: ValueSpec | undefined,

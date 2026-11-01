@@ -12,16 +12,7 @@ import { readValueSpec } from "../contract/v5-parse";
 import type { PluginCapabilities, PluginCapability } from "../ports/plugin-capabilities";
 
 /**
- * The admitted-plugin registry for the identified-table path.
- *
- * The grouped registry in `domain/plugins.ts` is a different contract and stays untouched until
- * Phase 7 removes it. This one is keyed by the authored `id`, admits one complete definition at a
- * time, and stores nothing until every definition in a batch has passed.
- *
- * The public overloads take `PluginDefinition`; the implementation takes `unknown`, because
- * admission is also reachable from JavaScript and from separately built modules. That is where the
- * unchecked declarations stop: every field read below is proved before it reaches a stored
- * definition, and a caller's objects are never frozen in place.
+ * Identified-table plugin registry keyed by authored `id`: admits whole definitions, all-or-none per batch.
  */
 
 const PLUGIN_FIELDS = new Set(["id", "inputs", "outputs", "validate", "transform"]);
@@ -34,7 +25,7 @@ const EMPTY_MEMBERS: readonly string[] = Object.freeze([]);
 type TransformHook = PluginDefinition["transform"];
 type ValidateHook = NonNullable<PluginDefinition["validate"]>;
 
-/** One admission refusal, carrying the rule id and the definition path that refused it. */
+/** One admission refusal carrying its rule id and definition path. */
 export class PluginAdmissionError extends TypeError {
   readonly ruleId: RuleId;
 
@@ -182,12 +173,7 @@ function readOutputs(value: unknown, path: string): Readonly<Record<string, Valu
   return Object.freeze(outputs);
 }
 
-/**
- * One definition, read exactly once and frozen before it can be stored.
- *
- * `staged` is the set of ids earlier members of the same batch reserved, so a batch refuses a
- * duplicate that is not in the registry yet. Nothing is written by this function.
- */
+/** Reads and freezes one definition; `staged` holds ids reserved earlier in the batch. */
 function admitPlugin(
   value: unknown,
   staged: ReadonlySet<string>,
@@ -212,10 +198,7 @@ function admitPlugin(
   );
   if (rawTransform === undefined)
     refuse("plugin-shape", "plugin.transform", "transform must be a function.");
-  // The wrappers are the one place an authored-time type meets the shared ResolvedInput. The
-  // runtime validates the values before calling them and validates the result after, so this is a
-  // checked boundary rather than an unchecked spread through plugins. The remaining authored-type
-  // gap is recorded as Phase 3 follow-up in the report.
+  // Runtime validates values before and result after; wrapper rebinds `this` and casts.
   const transform: TransformHook = (input: ResolvedInput, context: EvaluationContext) =>
     Reflect.apply(rawTransform, source, [input, context]) as Outputs;
   const validate: ValidateHook | undefined =
@@ -232,7 +215,7 @@ function admitPlugin(
   });
 }
 
-/** The identified-table plugin registry. One instance belongs to one host composition. */
+/** Identified-table registry; one instance belongs to one host composition. */
 export class PluginCatalog implements PluginCapabilities {
   readonly #plugins = new Map<string, PluginDefinition>();
 
@@ -242,12 +225,7 @@ export class PluginCatalog implements PluginCapabilities {
     this.#registerBatch([plugin]);
   }
 
-  /**
-   * Admit every definition in one batch, or none of them.
-   *
-   * Every definition is read and checked against the ids registered before this call and the ids
-   * staged earlier in the batch. The map is written only after the last definition has passed.
-   */
+  /** Admit a batch atomically: every definition passes or none is stored. */
   registerAll<Input extends ResolvedInput>(plugins: readonly PluginDefinition<Input>[]): void;
   registerAll(plugins: unknown): void {
     this.#registerBatch(plugins);
@@ -278,7 +256,7 @@ export class PluginCatalog implements PluginCapabilities {
     return this.#plugins.size;
   }
 
-  /** The registry answers no grouped solver capability; that belongs to the retired registry. */
+  /** Answers no grouped solver capability; always undefined. */
   capabilityOf(_plugin: string): PluginCapability | undefined {
     return undefined;
   }

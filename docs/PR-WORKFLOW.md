@@ -13,7 +13,7 @@ docs(architecture): define blocked publication
 chore: apply prettier
 ```
 
-Touched-file normalization may accompany its requested change. Unrelated formatting stays in a separate mechanical commit. [FORMATTING.md](./FORMATTING.md) owns that distinction.
+Touched-file normalization may accompany its requested change. Unrelated formatting stays in a separate mechanical commit, and [../AGENTS.md](../AGENTS.md) owns that rule in one line.
 
 ## Pull request body
 
@@ -47,7 +47,7 @@ Cite the original Actions run as primary evidence and the readable retained diag
 
 ## Evidence case ids
 
-A cited case id names exactly one test in the suite. Use a flat series per plan, never restart it per file. `packages/core/test/unit/scripts/evidence-case-ids.test.ts` enforces uniqueness and refuses unregistered series-shaped titles. Plain descriptive test names need no new series.
+A cited case id names exactly one test in the suite. Use a flat series per plan, never restart it per file. `packages/core/test/unit/scripts/evidence-case-ids.test.ts` discovers the series itself from the test titles the tree declares and enforces uniqueness across them. Plain descriptive test names need no new series.
 
 A plan slice prefix containing a digit, such as `T4-3`, and architecture invariant `I-n` are not evidence-id series. An invariant may be cited by multiple tests. See issue #289.
 
@@ -55,7 +55,7 @@ A plan slice prefix containing a digit, such as `T4-3`, and architecture invaria
 
 [SESSION-STATUS.md](./SESSION-STATUS.md) is the sole project-status owner. Rewrite the entry your slice makes stale rather than appending a parallel history. Its four sections remain **Now**, **Next in line**, **Open, and not scheduled**, and **Where the rest of it lives**; `packages/core/test/unit/scripts/session-status-shape.test.ts` enforces the shape and byte ceiling.
 
-A standing rule belongs in [GUARDRAILS.md](./GUARDRAILS.md), caller cost in [LIVE-EDIT-COST.md](./LIVE-EDIT-COST.md), and slice narrative and run ids in the PR or ADR. Do not create another completion matrix or handoff status database.
+A standing rule belongs in [AGENTS.md](../AGENTS.md) as one line, caller cost in [LIVE-EDIT-COST.md](./LIVE-EDIT-COST.md), and slice narrative and run ids in the PR or ADR. Do not create another completion matrix or handoff status database.
 
 ## Superseding a decision
 

@@ -153,9 +153,10 @@ rig count grows; they should not be read as an invariant cost.
 
 ## Reproduce
 
-Run `npm run bench:ik` from the repository root, or run `node scripts/bench-ik.mjs --out <file>`
-to write JSON directly. The command uses the same envelope rigs as the `EN-` tests and prints the
-conditions, solve scenarios, and engine scenarios as JSON. Use a fresh report's conditions beside
+Run `npm run bench:ik -- --full` from the repository root, or run `node scripts/bench-ik.mjs --out <file>`
+to write JSON directly. A plain run prints one line per scenario. The command uses the same envelope
+rigs as the `EN-` tests and the full report carries the conditions, solve scenarios, and engine
+scenarios as JSON. Use a fresh report's conditions beside
 any numbers copied into a review; do not compare runs while treating machine-dependent timing as a
 pass/fail threshold.
 

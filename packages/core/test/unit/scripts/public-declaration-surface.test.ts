@@ -7,6 +7,8 @@ import { describe, expect, it } from "vitest";
 
 const execFileAsync = promisify(execFile);
 const root = fileURLToPath(new URL("../../../../..", import.meta.url));
+// The local compiler run by this Node binary, so the spawn carries no shell and no batch file.
+const tsc = join(root, "node_modules", "typescript", "bin", "tsc");
 const FORBIDDEN_DIRECTORY = /\/(?:runtime|graph)\//;
 
 async function declarationFiles(directory: string): Promise<string[]> {
@@ -86,10 +88,7 @@ async function withEmitted<T>(
         files: sources.map((source) => join(root, source)),
       }),
     );
-    await execFileAsync(process.platform === "win32" ? "npx.cmd" : "npx", ["tsc", "-p", config], {
-      cwd: root,
-      shell: process.platform === "win32",
-    });
+    await execFileAsync(process.execPath, [tsc, "-p", config], { cwd: root });
     const emitted = join(out, "emitted");
     return await use(emitted, new Set(await declarationFiles(emitted)));
   } finally {

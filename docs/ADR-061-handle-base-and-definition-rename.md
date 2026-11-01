@@ -2,52 +2,127 @@
 
 **Status:** Accepted, 2026-08-31. Amended 2026-08-31 to record tier 0.
 
-**Context.** `TrackHandle` was the only capability handle in the package. [ADR-056](./ADR-056-uniform-stale-track-handle.md) gave it one failure contract and one non-throwing probe, and that contract was stated on the interface that happened to need it first. A Motion had no handle at all: `addMotion` returned `{ id }` and `destroyMotion` took an id, so every question about a live Motion was addressed by id against a map, with `Unknown motion "x"` as the only refusal.
+**Context.** `TrackHandle` was only capability handle in package. [ADR-056](./ADR-056-uniform-stale-track-handle.md)
+gave it one failure contract, one non-throwing probe — contract stated on interface that happened to need it first.
+Motion had no handle at all: `addMotion` returned `{ id }`, `destroyMotion` took id → every question about live Motion
+addressed by id against map, `Unknown motion "x"` only refusal.
 
-Adding a second handle beside the first would have copied three things rather than shared them. The asymmetry that makes a handle usable, `live` never throwing while every other member refuses once the captured token is stale, was written on `TrackHandle` and would have been written again on `MotionHandle`. The refusal sentence had one author and would have had two. And the read-back member would have been spelled `track` on one handle and `motion` on the other, which is one fact under two names: the `SolverMember` drift the type system cannot see, one level up.
+Adding second handle beside first copies three things rather than sharing. Asymmetry making handle usable — `live`
+never throwing while every other member refuses once captured token stale — written on `TrackHandle`, would be written
+again on `MotionHandle`. Refusal sentence had one author, would have two. Read-back member spelled `track` on one
+handle, `motion` on other = one fact under two names: `SolverMember` drift type system cannot see, one level up.
 
-**Decision.** One base. `Handle<T>` carries `id`, `live` and `definition`, and the asymmetry is documented there rather than per implementor: `live` never throws, on either side of any invalidation and on a disposed project, and `definition` and every other member throw the named refusal once the captured token is not current. Both handles extend it, so a consumer can write a generic over either.
+**Decision.** One base. `Handle<T>` carries `id`, `live`, `definition`; asymmetry documented there not per implementor:
+`live` never throws — either side of any invalidation, on disposed project — `definition` and every other member throw
+named refusal once captured token not current. Both handles extend it → consumer can write generic over either.
 
-One error family. An abstract `StaleHandleError extends TypeError` owns the sentence both refusals read and takes the noun as its only per-subclass argument. `StaleTrackHandleError` and `StaleMotionHandleError` are siblings under it, each keeping its own `ruleId`, `stale-track-handle` and `stale-motion-handle`, and its own id field, `nodeId` and `motionId`, because a qualified graph node id and a motion id are two facts rather than one fact with two names. Inserting a base under a shipped class is a narrowing, so every existing `instanceof TypeError` and `instanceof StaleTrackHandleError` catch keeps matching and `StaleTrackHandleError`'s message is byte-identical to what the getter already threw. The Liskov argument for choosing `TypeError` as the root is ADR-056's and is unchanged.
+One error family. Abstract `StaleHandleError extends TypeError` owns sentence both refusals read, takes noun as only
+per-subclass argument. `StaleTrackHandleError`, `StaleMotionHandleError` siblings under it, each keeping own `ruleId`
+(`stale-track-handle`, `stale-motion-handle`) and own id field (`nodeId`, `motionId`) — qualified graph node id and
+motion id two facts not one fact two names. Inserting base under shipped class = narrowing → every existing
+`instanceof TypeError` and `instanceof StaleTrackHandleError` catch keeps matching, `StaleTrackHandleError`'s message
+byte-identical to what getter already threw. Liskov argument for `TypeError` root is ADR-056's, unchanged.
 
-One spelling. `TrackHandle.track` is renamed to `Handle.definition` and no alias survives it. That is a break on a shipped, exported, documented member, and it is taken rather than aliased, because keeping both spellings is the path the guardrails refuse and the second name is the drift this record exists to prevent.
+One spelling. `TrackHandle.track` renamed `Handle.definition`, no alias survives. Break on shipped, exported,
+documented member — taken not aliased: keeping both spellings path guardrails refuse, second name drift this record
+exists to prevent.
 
-Ownership does not move. `ProjectRuntime` holds every token, builds every handle, and stays the only thing that throws. Motion entries gain a token from the same `#nextToken` the track entries already use, because the staleness machinery is per-entry rather than per-track-ness, and one generic `#liveOf` compares a captured token against the live one for both maps. `SH-7` measures that as a number: the module holds exactly one token comparison, so a second handle family cost a second probe name rather than a second comparison.
+Ownership does not move. `ProjectRuntime` holds every token, builds every handle, stays only thing throwing. Motion
+entries gain token from same `#nextToken` track entries use — staleness machinery per-entry not per-track-ness — one
+generic `#liveOf` compares captured against live for both maps. `SH-7` measures as number: module holds exactly one
+token comparison → second handle family cost second probe name not second comparison.
 
-**Alternatives rejected.** Keeping `track` beside `definition` is an alias, and ADR-003's reasoning reaches a member as much as a flag: the second name becomes permanent the moment a caller depends on it. Declaring the asymmetry twice, once per handle, is the shape the two private `readNumber` copies had before `plugins/frame.ts` existed. A `motion` getter on `MotionHandle` mirroring `track` was the first sketch in issue #223 and is the two-names-per-handle drift itself. A second token mechanism for motions was unnecessary, because the existing one was never about track-ness. Structural typing with no shared base would have left `StaleHandleError` with nothing to be the parent of, and a caller wanting to catch staleness from any handle with nothing to name.
+**Alternatives rejected.** Keeping `track` beside `definition` = alias, ADR-003's reasoning reaches member as much as
+flag: second name permanent moment caller depends. Declaring asymmetry twice, once per handle = shape two private
+`readNumber` copies had before `plugins/frame.ts`. `motion` getter on `MotionHandle` mirroring `track` = first sketch in
+issue #223, two-names-per-handle drift itself. Second token mechanism for motions unnecessary: existing one never about
+track-ness. Structural typing with no shared base leaves `StaleHandleError` nothing to parent of, caller wanting to
+catch staleness from any handle nothing to name.
 
-**Consequences.** Every reader of `handle.track` moves in the same push, and the compiler is what finds them. Seven call sites across two test files were missed on the first attempt and reported as four assertion failures plus seven `TS2339`s. That is the rename being unfinished rather than the design being wrong, and the rule it earns is stated in `SESSION-STATUS.md`: a rename with no alias is finished at every reader before the push that lands it, and `typecheck` is the gate that proves it.
+**Consequences.** Every reader of `handle.track` moves same push, compiler finds them. Seven call sites across two test
+files missed first attempt, reported four assertion failures plus seven `TS2339`s. Rename unfinished, not design wrong —
+rule earned, stated in `SESSION-STATUS.md`: rename with no alias finished at every reader before push landing it,
+`typecheck` gate proving it.
 
-`adopt` keeps returning `{ id, track }`. It is not a handle, its `track` field is a value rather than a live read, and renaming it would be a second break with no evidence in this slice.
+`adopt` keeps returning `{ id, track }`. Not handle, its `track` field value not live read, renaming = second break with
+no evidence in this slice.
 
-`MotionHandle.definition` projects the tracks a motion currently owns through the same `#ownedBy` that `#snapshot` and the destroy refusal read, rather than answering from the retained entry. The entry a runtime `addMotion` accepts carries an empty `tracks` list by construction, so answering from it would report no tracks for a motion that owns three, and the count in the destroy refusal could disagree with the list `trackIds` shows.
+`MotionHandle.definition` projects tracks motion currently owns through same `#ownedBy` `#snapshot` and destroy refusal
+read, not from retained entry. Entry runtime `addMotion` accepts carries empty `tracks` list by construction → answering
+from it reports no tracks for motion owning three, count in destroy refusal could disagree with list `trackIds` shows.
 
-A stale handle refuses `tryTrack` as well, which the plan left implicit. The probe never throws about an id it cannot find, but whether the handle is the live one at all is a different question, and it is answered before any id is read.
+Stale handle refuses `tryTrack` too, plan left implicit. Probe never throws about id it cannot find, but whether handle is
+live one at all different question — answered before any id read.
 
-`addMotion` still returns `{ id }` rather than a `MotionHandle`. Changing a create verb's return is a second break with no evidence here, and `motion(id)` reaches the same handle.
+`addMotion` still returns `{ id }` not `MotionHandle`. Changing create verb's return = second break no evidence here,
+`motion(id)` reaches same handle.
 
-**Amendment, 2026-08-31: tier 0 lands here, as B2.** `MotionHandle` gains `setTrigger` and `setStagger`. They amend this record rather than opening one, because it recorded the base and left this half open by name, and one decision trail is worth more than a second file agreeing with the first.
+**Amendment, 2026-08-31: tier 0 lands here, as B2.** `MotionHandle` gains `setTrigger`, `setStagger`. Amend this record
+rather than opening one: it recorded base, left this half open by name, one decision trail worth more than second file
+agreeing with first.
 
-One invariant rather than two slices. `Motion` holds `#stagger` as its own state and no driver reads it, so both verbs are one edit with one refusal set and one pair of seams. Neither field appears in `collectTrack`, `readPluginBindings` or `GraphNode`, re-verified against `e7a6d3f`, so `#commit` is the wrong mechanism here rather than an expensive one: there is no candidate graph for it to accept. `RA-33` measures that as a `replaceGraph` call count rather than as a timing.
+One invariant not two slices. `Motion` holds `#stagger` own state, no driver reads → both verbs one edit, one refusal set,
+one pair seams. Neither field appears in `collectTrack`, `readPluginBindings`, `GraphNode`, re-verified against
+`e7a6d3f` → `#commit` wrong mechanism here not expensive one: no candidate graph for it to accept. `RA-33` measures as
+`replaceGraph` call count not timing.
 
-The order is the contract. Staleness first, through the one resolver every member of the handle reads. Then the trigger's own validity, asked of `validateMotionTrigger`, which is the owner `addMotion` already asks rather than a copy of it, so a refusal costs no teardown at all: a verb that released the live driver and then refused the replacement would leave the Motion with none and no way back. Then the redundant edit, which asks the seam nothing, because installing the trigger a Motion already has means disposing a live driver and resubscribing a host source the caller cannot see and did not ask for. Then the seam itself, whose failure is reported verbatim rather than wrapped, which is ADR-035's precedence rule at a new call site. The retained definition moves last, once nothing that can refuse is left.
+Order is contract. Staleness first, through one resolver every handle member reads. Then trigger's own validity, asked of
+`validateMotionTrigger` — owner `addMotion` already asks not copy → refusal costs no teardown at all: verb releasing live
+driver then refusing replacement leaves Motion with none, no way back. Then redundant edit, asks seam nothing: installing
+trigger Motion already has means disposing live driver, resubscribing host source caller cannot see and did not ask for.
+Then seam itself, failure reported verbatim not wrapped — ADR-035's precedence rule at new call site. Retained definition
+moves last, once nothing that can refuse left.
 
-Idempotence has one owner, and it is the runtime. `Motion.setTrigger` carries no redundant-install guard of its own, because a second owner of that rule is the shape ADR-056 collapsed.
+Idempotence has one owner: runtime. `Motion.setTrigger` carries no redundant-install guard of own — second owner of that
+rule shape ADR-056 collapsed.
 
-The swap is in place rather than a rebuilt instance. `#attachTrigger` was already isolated and guarded, detach is the two lines `pause()` uses, and `TriggerPort` declares no `dispose`, so the host resource and ADR-035's throw risk live one layer up, in whatever builds `created.port`. A rebuilt `Motion` over the same entries would have satisfied `RA-37` as well, because the compiled Tracks are owned by the `tracks` map and `disposeTracks` is already false, but it loses the playhead and re-runs `play()`, and that is a behaviour change rather than an implementation detail. The port and its `clockBinding` move together. `acceptsExternalSignal(clockBinding)` is false exactly for a driver-backed trigger, so a swap cannot leave the capability behind and let `signal()` scrub a Motion whose driver owns time. The clock consumer registration is therefore made by one function the build and the swap both call, rather than by two copies of an exhaustive switch that can disagree about a binding kind.
+Swap in place not rebuilt instance. `#attachTrigger` already isolated, guarded; detach two lines `pause()` uses;
+`TriggerPort` declares no `dispose` → host resource and ADR-035's throw risk one layer up, in whatever builds
+`created.port`. Rebuilt `Motion` over same entries would satisfy `RA-37` too — compiled Tracks owned by `tracks` map,
+`disposeTracks` already false — but loses playhead, re-runs `play()` = behaviour change not implementation detail. Port
+and its `clockBinding` move together. `acceptsExternalSignal(clockBinding)` false exactly for driver-backed trigger → swap
+cannot leave capability behind letting `signal()` scrub Motion whose driver owns time. Clock consumer registration made by
+one function build and swap both call, not two copies of exhaustive switch that can disagree about binding kind.
 
-Two hooks, `replaceMotionTrigger` and `setMotionStagger`, beside the existing `addMotionTrack` / `replaceMotionTrack` / `removeMotionTrack` family. Two rather than one, because which one an edit asks is half of what the edit claims: a stagger routed through the trigger hook would dispose a live driver and resubscribe a host source for a field no driver reads, and one hook taking both fields could not tell that from a correct edit. The verbs are not decoration either. A trigger carries a disposable resource behind it and a stagger is a bare field, so one name over both would hide real teardown behind a name that reads as a plain write.
+Two hooks, `replaceMotionTrigger`, `setMotionStagger`, beside existing `addMotionTrack` / `replaceMotionTrack` /
+`removeMotionTrack` family. Two not one: which one edit asks half of what edit claims — stagger routed through trigger hook
+would dispose live driver, resubscribe host source for field no driver reads; one hook taking both fields could not tell
+that from correct edit. Verbs not decoration either: trigger carries disposable resource behind it, stagger bare field →
+one name over both hides real teardown behind name reading as plain write.
 
-The stagger rule is not copied into the runtime. `validateV5` has never had one, `Motion` has refused a non-finite or negative stagger since it existed, and construction and the edit now ask that one function, so the seam is where the refusal already lives. A cleared stagger leaves no key behind, because the authored field is optional and a Motion reporting `stagger: undefined` would answer a shape no author can write. The re-layout is synchronous, matching `addTrack` and `replaceTrack`, which already re-seed the moment they land: one answer to when a layout-affecting mutation becomes visible rather than two, and a deferred one would be a silent no-op from the caller's side until some unrelated later event fired.
+Stagger rule not copied into runtime. `validateV5` never had one, `Motion` refused non-finite or negative stagger since it
+existed, construction and edit now ask that one function → seam where refusal already lives. Cleared stagger leaves no key
+behind: authored field optional, Motion reporting `stagger: undefined` would answer shape no author can write. Re-layout
+synchronous, matching `addTrack`, `replaceTrack` — already re-seed moment they land: one answer when layout-affecting
+mutation becomes visible not two, deferred one silent no-op from caller's side until unrelated later event fired.
 
-No new export and no new rule id. `stale-motion-handle` already covers both verbs through the base, which is what B1 buying the family paid for, and `RA-32` derives the refusing surface from the handle's own keys, so both members were covered the moment they existed.
+No new export, no new rule id. `stale-motion-handle` already covers both verbs through base — what B1 buying family paid
+for — `RA-32` derives refusing surface from handle's own keys → both members covered moment they existed.
 
-One residual, stated rather than hidden. The displaced created trigger is released last, so every step that can refuse has refused before the driver layer moved. A host `dispose` that throws after that point is reported rather than swallowed: it is a teardown failure at the layer that owns the host resource, and the swap it follows has already landed while the retained definition has not.
+One residual, stated not hidden. Displaced created trigger released last → every step that can refuse has refused before
+driver layer moved. Host `dispose` throwing after that point reported not swallowed: teardown failure at layer owning host
+resource, swap it follows already landed while retained definition has not.
 
-**Alternatives rejected in the amendment.** `setMotion(definition)` as an upsert: it takes a whole `MotionDefinition`, so it has to do something with a required `tracks` array, and dropping the live tracks, refusing, and accepting-then-ignoring are all wrong. One verb over both fields: it prices a bare field at a driver teardown. A record of its own: two files for one decision trail, against a half this record left open by name. A rule id of its own for a stale tier 0 edit: the base already answers, and a second id would be a second thing for a caller to branch on for one condition.
+**Alternatives rejected in the amendment.** `setMotion(definition)` as upsert: takes whole `MotionDefinition`, must do
+something with required `tracks` array — dropping live tracks, refusing, accepting-then-ignoring all wrong. One verb over
+both fields: prices bare field at driver teardown. Record of own: two files for one decision trail, against half this
+record left open by name. Rule id of own for stale tier 0 edit: base already answers, second id second thing caller branches
+on for one condition.
 
-**Evidence.** Cases `RA-27` through `RA-32` in `packages/core/test/unit/runtime/handle-base.test.ts`. Red run [33359083134](https://github.com/chahyasantoso/motion5/actions/runs/33359083134), archived at `logs/33359083134/` on `ci-logs`: `typecheck` and `format:check` passed first, then 6 failed and 810 passed, all six on assertions. Green run [33361911006](https://github.com/chahyasantoso/motion5/actions/runs/33361911006) on `2bad344`, all six checks.
+**Evidence.** Cases `RA-27` through `RA-32` in `packages/core/test/unit/runtime/handle-base.test.ts`. Red run
+[33359083134](https://github.com/chahyasantoso/motion5/actions/runs/33359083134), archived `logs/33359083134/` on
+`ci-logs`: `typecheck`, `format:check` passed first, then 6 failed 810 passed, all six on assertions. Green run
+[33361911006](https://github.com/chahyasantoso/motion5/actions/runs/33361911006) on `2bad344`, all six checks.
 
-A third run sits between them and is deliberately not cited as evidence. [33360485220](https://github.com/chahyasantoso/motion5/actions/runs/33360485220), archived at `logs/33360485220/` on `ci-logs`, failed `typecheck` on the seven unmigrated call sites, so `npm test` never ran inside `quality` and the four `integration` failures beside it were the same single cause read through a member that no longer existed. Per the working constraint, a run that failed `typecheck` is a broken file rather than a failing assertion.
+Third run between them, deliberately not cited as evidence.
+[33360485220](https://github.com/chahyasantoso/motion5/actions/runs/33360485220), archived `logs/33360485220/` on `ci-logs`,
+failed `typecheck` on seven unmigrated call sites → `npm test` never ran inside `quality`, four `integration` failures beside
+it same single cause read through member that no longer existed. Per working constraint, run failing `typecheck` = broken
+file not failing assertion.
 
-**Evidence for the amendment.** Cases `RA-33` through `RA-38` in `packages/core/test/unit/runtime/motion-driver-edit.test.ts`, and `RA-32` beside them: its argument record named both members ahead of the source, so the coverage gate went red in the same run rather than being weakened. Red run [33363271700](https://github.com/chahyasantoso/motion5/actions/runs/33363271700), archived at `logs/33363271700/` on `ci-logs`: `typecheck` and `format:check` passed first, then 7 failed and 815 passed, all seven on assertions, with `integration`, `boundaries`, `build`, `end-to-end` and `performance` green. The green run and its head sha live in the pull request body.
+**Evidence for the amendment.** Cases `RA-33` through `RA-38` in
+`packages/core/test/unit/runtime/motion-driver-edit.test.ts`, `RA-32` beside them: its argument record named both members
+ahead of source → coverage gate red in same run rather than weakened. Red run
+[33363271700](https://github.com/chahyasantoso/motion5/actions/runs/33363271700), archived `logs/33363271700/` on `ci-logs`:
+`typecheck`, `format:check` passed first, then 7 failed 815 passed, all seven on assertions, `integration`, `boundaries`,
+`build`, `end-to-end`, `performance` green. Green run and head sha live in pull request body.

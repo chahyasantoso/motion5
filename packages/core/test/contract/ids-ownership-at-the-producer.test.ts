@@ -37,7 +37,7 @@ import { code } from "../helpers/source-region";
  * The accepting direction is asserted in the same file, because a producer that refused every payload
  * would be green against the refusal alone. Those last two cases are green on both sides of this
  * change on purpose: nothing a diagnostic carries at run time moved, and saying so is the report
- * `docs/GUARDRAILS.md` asks for rather than a red count engineered by asserting less.
+ * a case green on both sides owes rather than a red count engineered by asserting less.
  */
 
 const source = (relative: string): string =>

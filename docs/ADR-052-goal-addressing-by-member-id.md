@@ -2,23 +2,32 @@
 
 **Status:** Accepted, 2026-08-28
 
-**Supersedes nothing.** Extends [ADR-051](./ADR-051-derived-solver-membership.md), which derived solver membership and delivered member state pre-composition. ADR-051 answered how a solver finds its bones. This record answers how a solver is told what to reach for, and which arithmetic answers once a chain is longer than two bones.
+**Supersedes nothing.** Extends [ADR-051](./ADR-051-derived-solver-membership.md), which derived solver
+membership and delivered member state pre-composition. ADR-051 answered how solver finds bones. This record
+answers how solver told what to reach for, and which arithmetic answers once chain longer than two bones.
 
 ## Context
 
-ADR-051 shipped one goal per solver, bound to a named `target` slot, and a load-time refusal of any derived member count other than two. Both were honest for a two-bone analytic solve and both stop being honest the moment a chain may branch or run long.
+ADR-051 shipped one goal per solver bound to named `target` slot, plus load-time refusal of any derived member
+count other than two. Both honest for two-bone analytic solve, both stop being honest the moment chain may branch
+or run long.
 
-A chain with two leaves needs two goals. A named slot cannot express that: the publisher delivers a source's values as `collected[plugin][slot]`, so two bindings sharing one slot name overwrite each other and the last one authored is the only one that arrives, with no diagnostic. And a goal that derives no edge is invisible to `firstPendingEdge`, to the failed, blocked and pending classification, and to `orderGraph`, none of which needed a line changed for the first goal and all of which are load-bearing for the second.
+Chain with two leaves needs two goals. Named slot cannot express: publisher delivers source's values as
+`collected[plugin][slot]` → two bindings sharing one slot name overwrite, last authored only one arrives, no
+diagnostic. Goal deriving no edge invisible to `firstPendingEdge`, failed/blocked/pending classification,
+`orderGraph` — none needed a line changed for first goal, all load-bearing for second.
 
-A chain longer than two bones needs an iterative solve. The analytic closed form reads `members[0]` and `members[1]` off a depth-sorted flat list, which for a tree is simply the wrong pair.
+Chain longer than two bones needs iterative solve. Analytic closed form reads `members[0]`, `members[1]` off
+depth-sorted flat list — for tree simply wrong pair.
 
-The question this record closes is who owns each half of that, because the two halves live in layers that deliberately cannot see each other. `contract/` holds no plugin registry, and a plugin holds no graph.
+Question closed here: who owns each half, because halves live in layers deliberately unable to see each other.
+`contract/` holds no plugin registry, plugin holds no graph.
 
 ## Decision
 
 ### The authored surface is one dict keyed by member id
 
-A solver addresses its goals by naming the member each goal belongs to:
+Solver addresses goals by naming member each goal belongs to:
 
 ```js
 {
@@ -34,98 +43,176 @@ A solver addresses its goals by naming the member each goal belongs to:
 }
 ```
 
-Keyed by id rather than by position. An index can never be wrong: it silently means whatever the rig currently makes it mean, so inserting a bone or reordering two tracks keeps loading and pulls the wrong limb. A member id can be wrong, so it can be checked. That is the same argument that retired `reach` in favour of a named `root`, and it applies here without modification.
+Keyed by id not position. Index can never be wrong: silently means whatever rig currently makes it mean →
+inserting bone or reordering two tracks keeps loading, pulls wrong limb. Member id can be wrong → can be checked.
+Same argument that retired `reach` for named `root`, applies here unmodified.
 
-Object keys are unique, so two goals for one member are unrepresentable rather than diagnosed. What qualification leaves behind is narrower and real: `forearm` and `walk/forearm` are two authored keys that resolve to one node id, and that is what `ik-goal-duplicate` refuses.
+Object keys unique → two goals for one member unrepresentable rather than diagnosed. What qualification leaves
+behind narrower and real: `forearm` and `walk/forearm` two authored keys resolving to one node id — what
+`ik-goal-duplicate` refuses.
 
 ### The bare `target` slot stays supported, and is not deprecated
 
-`target` is exactly the degenerate case of the dict, so retiring it would re-author every existing rig to buy one spelling and would cost the two numbers that pin the closed form on the rig that already exists. Two spellings for one binding is an alias, which this project normally refuses, and it is accepted here on that trade. `ik-goal-conflict` refuses a solver that authored both, so there is never a question of which one won.
+`target` = exactly degenerate case of dict → retiring re-authors every existing rig to buy one spelling, costs
+two numbers pinning closed form on rig that exists. Two spellings for one binding = alias, project normally
+refuses; accepted here on that trade. `ik-goal-conflict` refuses solver authoring both → never question which won.
 
-A bare `target` names no member, so it is joined onto the chain's one leaf. That is a guarantee only while a chain has exactly one leaf, which the arity cap used to provide for free. With the cap gone it is stated rather than implied: `ik-target-not-single-leaf` refuses the bare slot over a branching chain, naming both leaves, because a binding accepted and then applied to whichever member the derivation happened to order first is the shape rule 6 of [ADR-033](./ADR-033-no-manual-trigger-fallback.md) forbids.
+Bare `target` names no member → joined onto chain's one leaf. Guarantee only while chain has exactly one leaf,
+which arity cap provided free. Cap gone → stated not implied: `ik-target-not-single-leaf` refuses bare slot over
+branching chain, names both leaves, because binding accepted then applied to whichever member derivation ordered
+first = shape rule 6 of [ADR-033](./ADR-033-no-manual-trigger-fallback.md) forbids.
 
 ### One authored section, one derived binding per goal
 
-`readPluginBindings` expands the dict into one binding per member, at the derived slot identity `targets[<memberId>]`. That identity is never authored and never spelled by hand, and both spellings are refused as declared requirement slot names at registration, so there is no second, unreachable way to reach the same binding.
+`readPluginBindings` expands dict into one binding per member, derived slot identity `targets[<memberId>]`.
+Identity never authored, never spelled by hand, both spellings refused as declared requirement slot names at
+registration → no second unreachable way to reach same binding.
 
-The grammar has exactly one owner, `contract/solver-slots.ts`, for the reason `keyframe-shape.ts` lives in the same layer: `graph/ir.ts` must read it with no plugin registry in reach, a solver plugin must read it identically, and both already depend on that layer. Two private copies of one syntax rule is how `readNumber` drifted between `fk` and `ik`.
+Grammar has exactly one owner, `contract/solver-slots.ts`, reason `keyframe-shape.ts` lives same layer:
+`graph/ir.ts` must read with no plugin registry in reach, solver plugin must read identically, both already depend
+on that layer. Two private copies of one syntax rule = how `readNumber` drifted between `fk` and `ik`.
 
-The consequence worth stating plainly is what it preserves. Every binding, a goal included, still derives exactly one edge, so `J-5` holds verbatim and `graph/order.ts`, `graph/observation-state.ts`, `PatchRegistry`, `GraphBinding`'s transaction, `ProjectRuntime.#snapshot`, `engine.ts`'s compiled-track map, `Track`, every adapter and `packages/react` are all unchanged.
+Consequence worth stating plainly = what it preserves. Every binding, goal included, still derives exactly one
+edge → `J-5` holds verbatim, `graph/order.ts`, `graph/observation-state.ts`, `PatchRegistry`, `GraphBinding`'s
+transaction, `ProjectRuntime.#snapshot`, `engine.ts`'s compiled-track map, `Track`, every adapter,
+`packages/react` all unchanged.
 
 ### Three layers answer three different questions about one goal
 
-This is the split the record exists to protect, and each boundary is forced rather than chosen.
+Split record exists to protect, each boundary forced not chosen.
 
-The contract layer owns spelling. Whether `targets` is a record, whether it is empty, whether a member key is well formed, and whether the goal names a non-empty source id are all answerable with no registry and no graph, and they are the four `keyframes-targets-*` rules.
+Contract layer owns spelling. Whether `targets` is record, whether empty, whether member key well formed, whether
+goal names non-empty source id — all answerable with no registry and no graph = four `keyframes-targets-*` rules.
 
-The plugin registry owns whether a bound slot is declared at all. A record of named slots cannot express a family whose members the rig names rather than the plugin, so `PluginDefinition.claimsSlot` is the slot-side counterpart to `claimsKey`. It is a boolean predicate deliberately: a predicate returning a shape descriptor would make the registry a validation engine for a type system it does not have, and the interesting question about a goal slot is not its shape but whether the member it names exists, which is unanswerable from there.
+Plugin registry owns whether bound slot declared at all. Record of named slots cannot express family whose
+members rig names rather than plugin → `PluginDefinition.claimsSlot` = slot-side counterpart to `claimsKey`.
+Boolean predicate deliberately: predicate returning shape descriptor makes registry validation engine for type
+system it does not have; interesting question about goal slot not shape but whether named member exists —
+unanswerable from there.
 
-Graph construction owns whether a goal resolves. Membership is derived from the `solver` edges the members authored, so `resolveSolvers` is the only owner that can answer whether a key names a member of this chain and whether that member is a leaf. It holds no plugin registry and needs none, because it keys on the syntactic slot names.
+Graph construction owns whether goal resolves. Membership derived from `solver` edges members authored →
+`resolveSolvers` only owner able to answer whether key names member of this chain, whether that member is leaf.
+Holds no plugin registry, needs none, keys on syntactic slot names.
 
 ### The solve dispatches on derived shape, not on an authored mode
 
-`solveChain` sends two members and one goal to the analytic `solveTwoBone`, and everything else to the iterative `solveFabrik`. Dispatch reads shape the loader already derived, so nothing new is authorable and no rig selects its own solver.
+`solveChain` sends two members + one goal to analytic `solveTwoBone`, everything else to iterative
+`solveFabrik`. Dispatch reads shape loader already derived → nothing new authorable, no rig selects own solver.
 
-The two paths are deliberately not one. `IK-1` and `IK-3` pin exact rotations an iterative solve reaches only within a tolerance, and `flip` at arity two selects an exact branch rather than a basin, so a single solver would move published values for every rig that already solves. The DRY guarantee is therefore an equivalence assertion rather than a shared code path: `FB-2` holds FABRIK to the analytic numbers on ADR-051's worked rig, and `FB-9` holds the analytic path to itself with the dispatcher in front of it.
+Two paths deliberately not one. `IK-1`, `IK-3` pin exact rotations iterative solve reaches only within tolerance,
+`flip` at arity two selects exact branch not basin → single solver moves published values for every rig already
+solving. DRY guarantee therefore equivalence assertion not shared code path: `FB-2` holds FABRIK to analytic
+numbers on ADR-051's worked rig, `FB-9` holds analytic path to itself with dispatcher in front.
 
-Tolerance and the iteration cap are module constants (`FABRIK_TOLERANCE`, `FABRIK_ARC_BISECTIONS`, and the depth-scaled cap owned by `fabrik-cap.ts`, see ADR-115), exported so a test imports the tolerance rather than typing one beside every assertion. They are not authored values, because an interpolatable tolerance would make the operation count a function of the timeline and a determinism case could not be written at all: one rig at two progresses would take two different numbers of steps toward two different residuals.
+Tolerance and iteration cap module constants (`FABRIK_TOLERANCE`, `FABRIK_ARC_BISECTIONS`, depth-scaled cap owned
+by `fabrik-cap.ts`, see ADR-115), exported so test imports tolerance rather than typing one beside every
+assertion. Not authored values: interpolatable tolerance makes operation count function of timeline, determinism
+case unwritable at all — one rig at two progresses takes two different step counts toward two different residuals.
 
-Convergence metadata is not published. The reasoning is recorded in [ADR-051](./ADR-051-derived-solver-membership.md) and is unchanged here.
+Convergence metadata not published. Reasoning recorded in
+[ADR-051](./ADR-051-derived-solver-membership.md), unchanged here.
 
 ## Load-time diagnostics this record introduces
 
-Deliberately not a table. Prettier reflows a markdown table's column padding on every unrelated edit, so a one-word change to one row rewrites every line of the block and the next reviewer reads whitespace instead of a rule.
+Deliberately not a table. Prettier reflows markdown table column padding on every unrelated edit → one-word
+change to one row rewrites every line of block, next reviewer reads whitespace not rule.
 
-Shape, in the contract layer, with no registry:
+Shape, in contract layer, no registry:
 
-- `keyframes-targets-shape`, when `targets` is present but is not an object mapping member ids to source ids. An array lands here too. `keyframes-requires-source` cannot answer for this slot, because it refuses a record outright, which is what made the dict unauthorable before D0.
-- `keyframes-targets-empty`, when `targets` is an empty object. Omitting the slot is already how a solver authors no goals through the dict, so an empty one would be a field accepted and then ignored.
-- `keyframes-targets-member`, when a member key is empty, or contains `:`, `[` or `]`. The brackets are refused because an authored name containing them could forge the derived `targets[<memberId>]` slot identity, which is the same reservation argument the colon rule makes for internal keys.
-- `keyframes-targets-source`, when the goal a member is mapped to is not a non-empty source id.
+- `keyframes-targets-shape`, when `targets` present but not object mapping member ids to source ids. Array lands
+  here too. `keyframes-requires-source` cannot answer for this slot, refuses record outright — what made dict
+  unauthorable before D0.
+- `keyframes-targets-empty`, when `targets` empty object. Omitting slot already how solver authors no goals
+  through dict → empty one = field accepted then ignored.
+- `keyframes-targets-member`, when member key empty, or contains `:`, `[`, `]`. Brackets refused because authored
+  name containing them could forge derived `targets[<memberId>]` slot identity — same reservation argument colon
+  rule makes for internal keys.
+- `keyframes-targets-source`, when goal member mapped to is not non-empty source id.
 
-Topology, in graph construction, where the member set exists:
+Topology, in graph construction, where member set exists:
 
-- `ik-goal-unknown-member`, when an authored key qualifies to no member of this solver's chain.
-- `ik-goal-not-leaf`, when a goal is authored on a member another member hangs from. A goal is a thing a chain tip reaches for; an interior joint has no separate destination.
-- `ik-leaf-without-goal`, when the dict was used at all and a leaf it never named is left with nothing to reach for. It does not fire for a bare `target`, which has no goal to be missing.
+- `ik-goal-unknown-member`, when authored key qualifies to no member of this solver's chain.
+- `ik-goal-not-leaf`, when goal authored on member another member hangs from. Goal = thing chain tip reaches for;
+  interior joint has no separate destination.
+- `ik-leaf-without-goal`, when dict used at all and leaf it never named left with nothing to reach for. Does not
+  fire for bare `target` — no goal to be missing.
 - `ik-goal-duplicate`, when two authored keys qualify to one member id.
 - `ik-goal-conflict`, when one solver authors both `target` and `targets`.
-- `ik-target-not-single-leaf`, when a solver binds the bare `target` slot over a chain with more than one leaf. The diagnostic names both leaves, because choosing between them is the author's decision and the dict is the spelling that makes it.
+- `ik-target-not-single-leaf`, when solver binds bare `target` over chain with more than one leaf. Names both
+  leaves, because choosing between them is author's decision and dict is spelling that makes it.
 
-One existing rule widened rather than being added: `ik-mode-ambiguous` read the literal string `"target"`, so a member binding `solver` beside a goal dict of its own loaded clean, with one real input edge per goal, and had every one of them ignored. It reads the grammar now.
+One existing rule widened not added: `ik-mode-ambiguous` read literal `"target"` → member binding `solver` beside
+goal dict of its own loaded clean, one real input edge per goal, every one ignored. Reads grammar now.
 
-And one deleted. `ik-solver-unsupported-arity` refused every derived member count other than two. That was honest while the closed form was the only solve a rig could reach and false the moment the dispatcher landed, and a rule that refuses a shape the code solves is worse than no rule, so it is deleted rather than widened. The guarantee it was making silently is `ik-target-not-single-leaf`.
+One deleted. `ik-solver-unsupported-arity` refused every derived member count but two. Honest while closed form
+only solve rig could reach, false moment dispatcher landed; rule refusing shape code solves worse than no rule →
+deleted not widened. Guarantee it made silently = `ik-target-not-single-leaf`.
 
-Goal derivation is skipped over a chain that already broke, for the reason `finalizeGraph` bails on reference errors before the rest of the derivation runs: over a chain that was never valid, leafhood reports about a shape the author did not author, and one cause would be reported twice.
+Goal derivation skipped over chain already broke, reason `finalizeGraph` bails on reference errors before rest of
+derivation: over chain never valid, leafhood reports shape author did not author, one cause reported twice.
 
 ## Alternatives rejected
 
-1. **Positional goals, `target0` through `targetN`, paired to leaf `i` in derived order.** Derived order is depth, then authored index, then qualified id. Reorder two tracks and the pairing keeps loading and pulls the wrong limb. An index cannot be wrong, which is exactly why it cannot be checked.
-2. **Bracket-addressed authoring, `targets[forearm]` typed by hand.** Two spellings where one dict does, and the author pays a bracket pair for nothing. The bracket survives as derived identity, which is where it earns its keep.
-3. **One slot holding N sources.** The publisher's `collected[plugin][slot]` overwrites, so the last goal authored would be the only one delivered, silently. And a goal with no edge of its own is invisible to ordering and to pending classification.
-4. **A plugin-side `keyValidator` over member ids.** `PluginDefinition` is a frozen plain record with no instance for a validator to close over, and the member set is derived from `solver` edges in a layer that holds no registry. A plugin cannot know the member set at registration and the registry cannot ask the graph.
-5. **Reviving a member's authored `rotation` as the FABRIK seed.** That key is dead at arity two, where the solve owns rotation outright, so reading it at arity three would leave one authored key live or dead depending on how many bones its neighbours happen to have. The seed is derived instead: a constant-curvature arc, which is what keeps FABRIK off the colinear fixed point a straight seed sits on.
-6. **Authored `tolerance` and `maxIterations`.** An interpolatable value would make the operation count a function of the timeline.
-7. **Replacing the closed form outright.** Rejected on evidence rather than caution: `IK-1` and `IK-3` pin exact numbers, and an iterative solve reaches a goal within a tolerance rather than exactly.
+1. **Positional goals `target0`..`targetN`, paired to leaf `i` in derived order.** Derived order = depth, then
+   authored index, then qualified id. Reorder two tracks → pairing keeps loading, pulls wrong limb. Index cannot
+   be wrong — exactly why it cannot be checked.
+2. **Bracket-addressed authoring `targets[forearm]` typed by hand.** Two spellings where one dict does, author
+   pays bracket pair for nothing. Bracket survives as derived identity — where it earns keep.
+3. **One slot holding N sources.** Publisher's `collected[plugin][slot]` overwrites → last goal authored only one
+   delivered, silently. Goal with no own edge invisible to ordering and pending classification.
+4. **Plugin-side `keyValidator` over member ids.** `PluginDefinition` frozen plain record, no instance for
+   validator to close over; member set derived from `solver` edges in layer holding no registry. Plugin cannot
+   know member set at registration, registry cannot ask graph.
+5. **Reviving member's authored `rotation` as FABRIK seed.** Key dead at arity two where solve owns rotation
+   outright → reading at arity three leaves one authored key live or dead depending how many bones neighbours
+   have. Seed derived instead: constant-curvature arc — keeps FABRIK off colinear fixed point straight seed sits
+   on.
+6. **Authored `tolerance`, `maxIterations`.** Interpolatable value makes operation count function of timeline.
+7. **Replacing closed form outright.** Rejected on evidence not caution: `IK-1`, `IK-3` pin exact numbers,
+   iterative solve reaches goal within tolerance not exactly.
 
 ## Consequences, stated as costs
 
-1. `targets`, and anything matching the derived spelling, are reserved requirement slot names no plugin may declare. One word out of the namespace, for the reason the colon is out of it.
-2. A predicate-claimed slot carries no `description`, so the goal grammar is documented in prose here and in [AUTHORED-SCHEMA.md](./AUTHORED-SCHEMA.md) where a named slot documents itself.
-3. Two spellings for one binding survive on purpose. This is the alias the pull request template dislikes, accepted on the trade named above.
-4. `rotations` grows with the chain, so `equalValues` deep-compares an n-entry record per solver per tick.
-5. One `flip` per solver applies to every limb of a tree. Defined and documented rather than refused, in the same spirit as stagger under ADR-051.
-6. FABRIK is approximate, so every assertion above arity two is a tolerance imported from the module rather than a literal. That is weaker evidence than the two numbers that pin the closed form, and it is why the closed form is kept rather than absorbed.
-7. **The FABRIK cost claim is withdrawn rather than carried.** The sequencing plan gated this slice on benchmark evidence. `performance/graph-benchmark.mjs` traverses a synthetic adjacency list and cannot observe a solve, and `performance/budgets.json` is advisory and expired, so no number in the harness answers the question. The estimate is stated and left as an estimate: the iterative solve is `O(members x iterations)` per solver per tick, once per chain rather than once per member, bounded by the depth-scaled `fabrikIterationCap`. Renewing an expiry on a budget that measures something else would be the dishonest option, so the budget file is deliberately left as it is and a solve-observing harness is its own change, on its own evidence.
+1. `targets` and anything matching derived spelling reserved requirement slot names no plugin may declare. One
+   word out of namespace, reason colon is out of it.
+2. Predicate-claimed slot carries no `description` → goal grammar documented in prose here and in
+   [AUTHORED-SCHEMA.md](./AUTHORED-SCHEMA.md) where named slot documents itself.
+3. Two spellings for one binding survive on purpose. Alias pull request template dislikes, accepted on trade above.
+4. `rotations` grows with chain → `equalValues` deep-compares n-entry record per solver per tick.
+5. One `flip` per solver applies to every limb of tree. Defined and documented rather than refused, same spirit as
+   stagger under ADR-051.
+6. FABRIK approximate → every assertion above arity two is tolerance imported from module not literal. Weaker
+   evidence than two numbers pinning closed form — why closed form kept not absorbed.
+7. **FABRIK cost claim withdrawn not carried.** Sequencing plan gated slice on benchmark evidence.
+   `performance/graph-benchmark.mjs` traverses synthetic adjacency list, cannot observe solve;
+   `performance/budgets.json` advisory and expired → no number in harness answers question. Estimate stated, left
+   as estimate: iterative solve `O(members x iterations)` per solver per tick, once per chain not once per member,
+   bounded by depth-scaled `fabrikIterationCap`. Renewing expiry on budget measuring something else = dishonest
+   option → budget file deliberately left as is; solve-observing harness is own change on own evidence.
 
 ## Evidence
 
-- **Slice D0** (`SL-1` … `SL-8`): `packages/core/test/unit/domain/plugin-slot-claim.test.ts`. Slot arity, the grammar's round trip and its near misses, one binding and one edge per goal, the four shape rules registry-free, and both reserved spellings refused as declared slots.
-- **Slice D1** (`MG-1` … `MG-11`): `packages/core/test/unit/graph/solver-goals.test.ts`. Chain derivation carrying `SolveMember.goal`, qualification of a bare and a qualified key to one member, one case per rule, determinism over twenty real permutations, and `solves` reconstructed from `ObservationState` alone, which is what proves no journal variant is needed.
-- **Slice D1** (`MG-12`, `MG-13`): `packages/core/test/integration/ik-multi-goal.test.ts`. ADR-051's worked rig re-expressed with `targets`, solving to the same `40.168` and `-51.318`, and seeding the goal node alone re-solving the chain.
-- **Slice D2** (`FB-1` … `FB-8`): `packages/plugins/test/unit/fabrik-solve.test.ts`. The iterative solve as arithmetic, unwired: the derived seed, the closed-form equivalence, sub-base averaging, permutation determinism, and the two non-convergent exits.
-- **Slice D3** (`FB-9`, `FB-13`, `FB-15`): `packages/plugins/test/unit/fabrik-dispatch.test.ts`. The analytic path byte-identical behind the dispatcher, the unpublished convergence record, and the bare-target join.
-- **Slice D3** (`FB-10`, `FB-14`): `packages/core/test/unit/graph/arity-lift.test.ts`. Chains past and short of arity two loading, and `ik-target-not-single-leaf`.
-- **Slice D3** (`FB-11`, `FB-12`): `packages/core/test/integration/ik-fabrik-chain.test.ts`. A five-bone chain tracking an animated goal with every segment length intact, and two arms off one spine solved once.
-- **Slice D4** (`FB-16`): `packages/plugins/test/unit/fabrik-arity-one.test.ts`. A one-member chain points at its goal. This is the behaviour the deleted `members.length < 2` fallback answered with zeros, and the arity-lift case proved only that such a chain loads.
-- **Slice D4** (case 13): `packages/core/test/integration/phase7-walker-demo.test.ts`. A three-bone tail on the walker rig reaching an animated goal, beside the assertion that every FK bone and the existing two-bone arm publish exactly what they published before the tail existed. A second solver in one project is the regression surface the unit fixtures cannot reach.
+- **Slice D0** (`SL-1` … `SL-8`): `packages/core/test/unit/domain/plugin-slot-claim.test.ts`. Slot arity, grammar
+  round trip and near misses, one binding + one edge per goal, four shape rules registry-free, both reserved
+  spellings refused as declared slots.
+- **Slice D1** (`MG-1` … `MG-11`): `packages/core/test/unit/graph/solver-goals.test.ts`. Chain derivation carrying
+  `SolveMember.goal`, qualification of bare and qualified key to one member, one case per rule, determinism over
+  twenty real permutations, `solves` reconstructed from `ObservationState` alone — proves no journal variant
+  needed.
+- **Slice D1** (`MG-12`, `MG-13`): `packages/core/test/integration/ik-multi-goal.test.ts`. ADR-051's worked rig
+  re-expressed with `targets`, solving to same `40.168` and `-51.318`, seeding goal node alone re-solving chain.
+- **Slice D2** (`FB-1` … `FB-8`): `packages/plugins/test/unit/fabrik-solve.test.ts`. Iterative solve as arithmetic,
+  unwired: derived seed, closed-form equivalence, sub-base averaging, permutation determinism, two non-convergent
+  exits.
+- **Slice D3** (`FB-9`, `FB-13`, `FB-15`): `packages/plugins/test/unit/fabrik-dispatch.test.ts`. Analytic path
+  byte-identical behind dispatcher, unpublished convergence record, bare-target join.
+- **Slice D3** (`FB-10`, `FB-14`): `packages/core/test/unit/graph/arity-lift.test.ts`. Chains past and short of
+  arity two loading, `ik-target-not-single-leaf`.
+- **Slice D3** (`FB-11`, `FB-12`): `packages/core/test/integration/ik-fabrik-chain.test.ts`. Five-bone chain
+  tracking animated goal with every segment length intact, two arms off one spine solved once.
+- **Slice D4** (`FB-16`): `packages/plugins/test/unit/fabrik-arity-one.test.ts`. One-member chain points at goal.
+  Behaviour deleted `members.length < 2` fallback answered with zeros; arity-lift case proved only such a chain
+  loads.
+- **Slice D4** (case 13): `packages/core/test/integration/phase7-walker-demo.test.ts`. Three-bone tail on walker
+  rig reaching animated goal, beside assertion every FK bone and existing two-bone arm publish exactly what
+  published before tail existed. Second solver in one project = regression surface unit fixtures cannot reach.

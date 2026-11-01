@@ -9,10 +9,9 @@ This is navigation and an activation contract, not a second status file. [SESSIO
 
 ## Human-dispatch-only through the current connection
 
-- **Format manually**, [format.yml](../.github/workflows/format.yml), is the deliberate mechanical repair escape hatch. [FORMATTING.md](./FORMATTING.md) owns its use.
+- **Format manually**, [format.yml](../.github/workflows/format.yml), is the deliberate mechanical repair escape hatch: a repository-wide `npm run format` on a branch a maintainer names, and nothing else.
 - **Recovery audit**, [recovery-audit.yml](../.github/workflows/recovery-audit.yml), owns its additional mutation and acceptance evidence.
-- Historical lockfile bootstrap, GSAP dependency maintenance, and authored-leaf migration remain maintainer-dispatch routes. [MAINTENANCE-WORKFLOWS.md](./MAINTENANCE-WORKFLOWS.md) owns their distinct inputs/outputs, replacement requirements, trust limits, and separately confirmed retirement gates.
 
 ## Maintenance not activated
 
-Dependency and general maintenance operations are refused, including when a PAT is configured. There is no arbitrary shell, npm argument, plugin, workflow-generation, or package-install request. [MAINTENANCE-WORKFLOWS.md](./MAINTENANCE-WORKFLOWS.md) documents the distinct bootstrap-lockfile, GSAP maintenance, and authored-leaf migration capabilities and the evidence required before any retirement. Keep those human-dispatch routes while usage or a working replacement cannot be verified; an inventory is not replacement validation.
+Dependency and general maintenance operations are refused, including when a PAT is configured. There is no arbitrary shell, npm argument, plugin, workflow-generation, or package-install request. The only maintenance paths that exist are the human-dispatch workflows named above, and retiring one is its own confirmed change rather than a consequence of this map.

@@ -2,18 +2,16 @@ import { Bone, Object3D, Quaternion, Skeleton, Vector3 } from "three";
 import { normalizeDirection } from "./skeleton-direction";
 
 export interface SkeletonBindingOptions {
-  /** Authored bone.name to rig key. Unmapped bones still participate in the hierarchy. */
+  /** Maps authored bone.name to rig key; an unmapped bone still joins the hierarchy. */
   readonly boneKeys: Readonly<Record<string, string>>;
   /**
-   * Authored bone.name to the authored name of the direct child bone it aims at. A bone with
-   * exactly one child bone aims at it by default; a branching bone has a rest aim only when named
-   * here, because skeleton child order is not a stable choice.
-   */
+   * Maps authored bone.name to the direct child name aimed at; a sole child is the default aim.
+   * A branching bone needs an entry because child order is not stable. */
   readonly aimChildren?: Readonly<Record<string, string>>;
 }
 
 export interface CapturedBone {
-  /** Stable live bone identity; Skeleton.bones may be reordered without retargeting the binding. */
+  /** Stable live bone identity; Skeleton.bones may reorder without retargeting the binding. */
   readonly bone: Bone;
   readonly key: string | undefined;
   readonly index: number;
@@ -22,9 +20,8 @@ export interface CapturedBone {
   readonly restPosition: Readonly<Vector3>;
   readonly restQuaternion: Readonly<Quaternion>;
   /**
-   * restQuaternion applied to normalize(aim child restPosition), in the bone's parent space.
-   * Undefined for a bone with no unambiguous, non-degenerate aim child: an aim drive then holds.
-   */
+   * restQuaternion applied to normalize(aim child restPosition), in parent space.
+   * Undefined without one unambiguous, non-degenerate aim child; an aim drive then holds. */
   readonly restAim: Readonly<Vector3> | undefined;
 }
 
@@ -37,19 +34,13 @@ export interface SkeletonBinding {
 }
 
 /**
- * Export noise, not authored scale: a Mixamo FBX converted through float32 matrices lands near
- * 2e-5 off unit, which is 0.002% of a bone's length. Above this a bone is really scaled.
- */
+ * Bone scale tolerance: float32 Mixamo FBX lands ~2e-5 off unit, 0.002% of a bone length;
+ * above it a bone is really scaled. */
 export const SCALE_NOISE_TOLERANCE = 1e-3;
 
 /**
- * Rigid FK cannot represent bone scale or non-uniform ancestor scale.
- *
- * The one owner of the scale rule, shared by capture, tracks and the driver. Bone scale is judged
- * absolutely against 1. Ancestor uniformity is judged relative to the ancestor's own scale, because
- * a metre-to-centimetre armature sits near 0.01, where an absolute tolerance would be 100 times
- * tighter than the same noise on a unit scale.
- */
+ * Throws TypeError when rigid FK cannot represent bone scale or non-uniform ancestor scale.
+ * Bone scale is absolute against 1; ancestor uniformity is relative to its own scale. */
 export function assertSkeletonScale(bones: readonly Bone[], rootParent: Object3D): void {
   for (const bone of bones) {
     const scale = bone.scale.toArray();
@@ -79,9 +70,8 @@ export function assertSkeletonScale(bones: readonly Bone[], rootParent: Object3D
 }
 
 /**
- * glTF stores rotations as float32, so a valid unit quaternion is off by up to ~1e-7 in lengthSq.
- * 1e-6 keeps a 10x margin and still refuses a genuinely unnormalized rotation.
- */
+ * Unit-quaternion lengthSq tolerance: glTF float32 rotation lands up to ~1e-7 off in lengthSq;
+ * 1e-6 keeps a 10x margin and still refuses a genuinely unnormalized rotation. */
 export const ROTATION_NOISE_TOLERANCE = 1e-6;
 
 function assertRestTransform(object: Object3D): void {
@@ -93,7 +83,7 @@ function assertRestTransform(object: Object3D): void {
     throw new TypeError(`Object "${object.name}" must have a finite rigid rest transform.`);
 }
 
-/** Changing the hierarchy invalidates captured topology; refuse rather than drive the wrong bones. */
+/** Throws when hierarchy differs from captured topology; never drive the wrong bones. */
 export function assertCapturedHierarchy(binding: SkeletonBinding): void {
   for (const captured of binding.bones) {
     const expectedParent =
@@ -103,7 +93,7 @@ export function assertCapturedHierarchy(binding: SkeletonBinding): void {
   }
 }
 
-/** Capture rest data once; never edits bind matrices, inverse binds or the live pose. */
+/** Reads rest data once without editing bind matrices, inverse binds or the live pose. */
 export function captureSkeleton(
   skeleton: Skeleton,
   options: SkeletonBindingOptions,
@@ -170,7 +160,7 @@ export function captureSkeleton(
     return depth;
   };
   const captured = bones.map((bone, index): CapturedBone => {
-    // Accepted within tolerance above; store it exactly unit so the driver never re-applies noise.
+    // Already validated; store exactly unit so the driver never re-applies noise.
     const restQuaternion = bone.quaternion.clone().normalize();
     const child = aimChildOf(bone);
     const direction = child?.position.clone();

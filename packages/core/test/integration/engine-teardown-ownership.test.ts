@@ -366,8 +366,8 @@ describe("Engine owns the teardown of everything a failed operation created", ()
     expect(ENGINE_SOURCE).not.toContain("motions.set(definition.id, buildMotion(");
     expect(ENGINE_SOURCE).not.toContain("motions.set(motionDefinition.id, buildMotion(");
     // The state is read exhaustively, so the disposed arm is a decision this owner owes rather than
-    // a case a later reader may quietly omit. `engine.md` owns why that arm has no behavioural
-    // case, and this is what stops it being deleted as dead instead.
+    // a case a later reader may quietly omit. It has no behavioural case because a host holds no
+    // handle to dispose mid-build, and this is what stops the arm being deleted as dead instead.
     expect(ADOPT_MOTION).toContain('case "disposed":');
     expect(ADOPT_MOTION).toContain("unreachable(state)");
   });

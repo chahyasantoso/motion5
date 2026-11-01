@@ -41,17 +41,17 @@ export class AggregateTopologyError extends TypeError {
 }
 
 export interface AggregateTopologyOptions {
-  /** Optional expected external-base children, used when a caller owns the root set explicitly. */
+  /** Expected external-base children; omit to infer roots from rows lacking parentId. */
   readonly roots?: readonly string[];
 }
 
 export interface AggregateTopology {
-  /** Body rows in canonical root-first order. The row objects and cell records are preserved. */
+  /** Body rows, canonical root-first order; row objects and cell records preserved. */
   readonly rows: readonly AggregateRow[];
   readonly byId: ReadonlyMap<string, AggregateRow>;
   readonly parentById: ReadonlyMap<string, string | undefined>;
   readonly childrenById: ReadonlyMap<string, readonly string[]>;
-  /** Members whose optional parentId is absent and therefore attach to the external base. */
+  /** Members with absent parentId; they attach to the external base. */
   readonly roots: readonly string[];
   readonly leaves: readonly string[];
   readonly ids: readonly string[];
@@ -80,7 +80,7 @@ const BODY_2D_FIELDS = {
   },
 } as const;
 
-/** Core's `JOINT_KINDS`, mirrored because `@motion5/core/plugin-api` does not export the list. */
+/** Core's `JOINT_KINDS`, mirrored: `@motion5/core/plugin-api` does not export the list. */
 const JOINT_VOCABULARY = ["free", "hinge", "cone", "swing-twist"] as const;
 
 const BODY_3D_FIELDS = {
@@ -129,10 +129,7 @@ const BODY_3D_FIELDS = {
   maxSwing: { kind: "number", optional: true, static: true, min: 0, max: LIMIT_CEILING },
 } as const;
 
-/**
- * `Number.MIN_VALUE` is the least positive double, so the `min` below states the documented
- * domain "greater than 0" exactly: every representable positive influence passes, zero is refused.
- */
+/** The least positive double: min states "greater than 0" exactly, so zero is refused. */
 const INFLUENCE = { kind: "number", optional: true, static: true, min: Number.MIN_VALUE } as const;
 
 const GOALS_2D_FIELDS = {
@@ -243,11 +240,8 @@ function withoutStatic(fields: FieldMap): FieldMap {
   );
 }
 
-/**
- * The slot-side reading of an authored spec: the same fields with the local-input-only `static`
- * flag removed. Core refuses `static` inside a dependency slot's output spec, and the slot check
- * compares kinds and field presence, never staticness, so one field list serves both sides.
- */
+/** An authored spec read slot-side: the same fields minus `static`. Core refuses `static` in a slot
+ * output, and the slot check compares kinds and field presence, never staticness. */
 export function slotSpec(spec: ValueSpec): ValueSpec {
   switch (spec.kind) {
     case "table":
@@ -272,13 +266,8 @@ export const GOALS_3D_SLOT = slotSpec(GOALS_3D_SPEC);
 export const SOLVED_2D_SLOT = slotSpec(SOLVED_2D_SPEC);
 export const SOLVED_3D_SLOT = slotSpec(SOLVED_3D_SPEC);
 
-/**
- * The node a member hangs from when its `parentId` is absent: the external base frame.
- *
- * The empty string is the one id this module refuses as a body row id, so no authored row can
- * collide with it, and every solver walk already treats a base naming no member as the external
- * root, exactly as the pre-aggregate authored `parentId: "root"` spelling did.
- */
+/** The node a member hangs from when `parentId` is absent (`""`). No row may use that id, so
+ * nothing collides; a solver walk reads a base naming no member as the external root. */
 export const EXTERNAL_BASE = "";
 
 function compareCodeUnits(left: string, right: string): number {
@@ -330,14 +319,8 @@ function readParent(row: AggregateRow): string | undefined {
   return parent;
 }
 
-/**
- * Reads one aggregate body table and derives its topology exactly once.
- *
- * The optional `roots` argument is an internal validation seam for callers that already own the
- * expected external-base children. Without it, every row omitting `parentId` is a valid external-base
- * child, so branching at the base is explicitly supported. Rows and cells are copied into immutable
- * records; canonical ordering never changes row ids or cell values as observed by consumers.
- */
+/** Reads one body table and derives its topology once. `roots` is a validation seam for callers
+ * owning the expected base children; else any row omitting `parentId` is a valid base child. */
 export function readAggregateTopology(
   value: unknown,
   options: AggregateTopologyOptions = {},

@@ -3,46 +3,21 @@ import { compareCodeUnits } from "./compare";
 import type { GraphEdge } from "./ir";
 import { compareEdges, describeEdge, edgeKey } from "./ir";
 
-/** A read-only structural view of live state, used for evidence and inspection. */
+/** Read-only structural view of live state for evidence and inspection. */
 export interface ObservationStateSnapshot {
   readonly nodes: readonly string[];
   readonly edges: readonly GraphEdge[];
 }
 
-/**
- * Each entry names the action that undoes one applied mutation.
- *
- * Closed, and since ADR-092 read as closed: `rollback` names all four verbs and hands its subject to
- * `unreachable`, so a fifth one fails `typecheck` at the only reader that owes it a decision. The
- * `if`/`else if`/bare-`else` chain this replaced meant that a variant nobody wrote an arm for was
- * `remove-edge`, and the two verbs that carry an edge are the two that made that dangerous: a new
- * edge-carrying verb would have deleted a live edge during the one operation in this class that must
- * not invent a mutation, and it would have done it silently, because a rollback that removes an edge
- * is exactly what a rollback is allowed to look like. Nothing in this file could have caught it.
- */
+// Undo per applied mutation. Closed union: a new verb fails typecheck at rollback's exhaustive switch.
 type JournalEntry =
   | { readonly undo: "add-node"; readonly id: string }
   | { readonly undo: "remove-node"; readonly id: string }
   | { readonly undo: "add-edge"; readonly edge: GraphEdge }
   | { readonly undo: "remove-edge"; readonly edge: GraphEdge };
 
-/**
- * The one long-lived live-state object per loaded project.
- *
- * Live nodes and edges are mutated in place and never rebuilt, so a reference held by a
- * subscriber before a commit is still authoritative after it. Every mutation records the
- * action that undoes it; `rollback` replays that journal in reverse and `commit` releases
- * it. There is deliberately no method that reconstructs this object from a graph snapshot:
- * population is the transaction coordinator's job, and a rebuild seam would destroy the
- * identity that makes an undo journal meaningful.
- *
- * Identity, ordering, and labels all come from `graph/ir.ts`: `edgeKey` indexes, `compareEdges`
- * orders every snapshot and adjacency read, and `describeEdge` writes the error text. A private
- * comparator here would be a second ordering owner that could silently disagree with the
- * publisher about which edge comes first.
- *
- * Implements I-1 and ADR-006. Satisfies FR-8, TR-G-08, and TR-G-12.
- */
+/** One live-state object per loaded project; nodes and edges mutate in place, so held references stay valid.
+ * Each mutation journals its inverse; `rollback` replays it, `commit` releases it. */
 export class ObservationState {
   readonly #nodes = new Set<string>();
   readonly #edges = new Map<string, GraphEdge>();
@@ -51,7 +26,7 @@ export class ObservationState {
   #journal: JournalEntry[] = [];
   #replaying = false;
 
-  /** Number of applied mutations that are still reversible. */
+  /** Applied mutations that are still reversible. */
   get journalLength(): number {
     return this.#journal.length;
   }
@@ -64,12 +39,12 @@ export class ObservationState {
     return this.#edges.has(edgeKey(edge));
   }
 
-  /** Live edges whose observer is `observerId`, in canonical order. */
+  /** Live edges observed by `observerId`, in canonical order. */
   sourcesOf(observerId: string): readonly GraphEdge[] {
     return this.#collect(this.#byObserver.get(observerId));
   }
 
-  /** Live edges whose source is `sourceId`, in canonical order. */
+  /** Live edges sourced by `sourceId`, in canonical order. */
   observersOf(sourceId: string): readonly GraphEdge[] {
     return this.#collect(this.#bySource.get(sourceId));
   }
@@ -116,12 +91,12 @@ export class ObservationState {
     this.#record({ undo: "add-edge", edge: live });
   }
 
-  /** Accept every applied mutation and release the journal. Live identity is untouched. */
+  /** Keep applied mutations and release the journal. Live identity untouched. */
   commit(): void {
     this.#journal = [];
   }
 
-  /** Replay the journal in reverse, then release it. Live identity is untouched. */
+  /** Replay the journal in reverse, then release it. Live identity untouched. */
   rollback(): void {
     this.#replaying = true;
     const errors: { index: number; undo: string; error: unknown }[] = [];

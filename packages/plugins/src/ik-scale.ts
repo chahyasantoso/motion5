@@ -2,64 +2,24 @@ import type { WorldFrame } from "./frame";
 import type { SolveMember } from "./ik-member";
 import type { SolveQuality, SolveResult } from "./ik-result";
 
-/**
- * The magnitude a solve runs at, decided once per solve and read exhaustively by `solveChain`.
- *
- * Every solve strategy sums lengths, squares distances and multiplies them into denominators, and
- * a finite rig can overflow any of those: `Number.MAX_VALUE` is finite, and three members of that
- * length sum to `Infinity` in FABRIK's seed, where the arithmetic that follows turns it into `NaN`.
- * A `NaN` rotation fails the publisher's renderer-neutrality check, so a rig that merely grew large
- * would error its node and block every child of it. Load cannot refuse the magnitude, because a
- * length or a goal is live and animates past any bound load could check, so the solve is made total
- * instead. See ADR-111.
- *
- * `native` is every rig whose largest magnitude is at most `SOLVE_MAGNITUDE_CEILING`, and it is
- * solved exactly as it always was, so its output is byte-identical by construction rather than by
- * measurement. `rescaled` is a rig past the ceiling, solved as its image under an exact
- * power-of-two scale that lands its largest magnitude at the ceiling. Rotations are scale-free and
- * scaling by a power of two is exact on every normal double, so the image publishes the angles the
- * rig would have if the arithmetic had the range; the residuals are world distances and are scaled
- * back.
- *
- * A closed union rather than a boolean with a number beside it, so the exponent exists only on the
- * arm that has one and `solveChain` reads the two with a `switch` that ends in `unreachable`. See
- * ADR-092.
- */
+/** Magnitude a solve runs at: native or an exact power-of-two image.
+ * Finite rigs can overflow sums into `NaN` rotations; rescale keeps solves total.
+ * Rotations scale-free; residuals restored. */
 export type SolveMagnitude =
   | { readonly kind: "native" }
   | { readonly kind: "rescaled"; readonly exponent: number };
 
-/**
- * The largest magnitude solved natively: `2 ** 500`.
- *
- * Chosen for headroom on both sides rather than tuned. A sum of every member and the root at this
- * magnitude stays finite for any chain shorter than `2 ** 500` members, and the square of a sum of
- * sixteen of them is under `2 ** 1016`, so no strategy's intermediate overflows at or below it. And
- * it is far past anything a rig in screen units authors, so no ordinary rig takes the other arm.
- */
+/** Largest magnitude solved natively: `2 ** 500`.
+ * Sums and squared sums stay finite at or below it; screen-unit rigs never approach it. */
 export const SOLVE_MAGNITUDE_CEILING = 2 ** 500;
 
 const CEILING_EXPONENT = 500;
 
 const NATIVE: SolveMagnitude = Object.freeze({ kind: "native" });
 
-/**
- * Whether a solve runs natively or as its power-of-two image, from every finite world-unit
- * magnitude it reads: the root position, each member's length and pivot offset, and each goal
- * position.
- *
- * A non-finite field is not a magnitude and is left out. An infinite goal is directional, and
- * ADR-107 answers it `too-far` with an infinite residual; counting it would make the exponent
- * infinite and the scale zero, and `0 * Infinity` would turn that answer into `NaN`. Left out, it
- * stays infinite in the image, where the strategies read it exactly as they read it natively, and
- * a `NaN` field reaches them unchanged as well rather than silently switching the scale off.
- *
- * Rotations are not read: they are angles, and a scale leaves them alone. The exponent is the
- * whole number of binary orders the largest magnitude sits above the ceiling, rounded up, so the
- * image's largest magnitude is at most the ceiling. `Math.log2` may round an exact power of two by
- * one order either way, which costs one binary order of headroom and no exactness, because any
- * power-of-two scale is exact; a result below one order is raised to one.
- */
+/** Magnitude from root, lengths, pivots and goals.
+ * Non-finite fields skipped → infinite goal keeps `too-far`; `NaN` passes unchanged.
+ * Rotations ignored. */
 export function solveMagnitude(root: WorldFrame, members: readonly SolveMember[]): SolveMagnitude {
   const magnitudes = [root.x, root.y];
   for (const member of members) {
@@ -70,14 +30,9 @@ export function solveMagnitude(root: WorldFrame, members: readonly SolveMember[]
   return magnitudeOf(magnitudes);
 }
 
-/**
- * The magnitude decision itself, over world-unit magnitudes a solve of any dimension reads.
- *
- * `solveMagnitude` gathers the 2D rig's fields and the internal 3D closed form gathers its own, and
- * both answer through this one policy, so the ceiling, the exponent and the rule for non-finite
- * fields have one owner across dimensions rather than a sibling per solver. See ADR-111 and
- * ADR-114.
- */
+/** Shared magnitude policy over world-unit magnitudes for every solver dimension.
+ * Exponent is binary orders above the ceiling, at least one.
+ * `Math.log2` rounding costs headroom only. */
 export function magnitudeOf(magnitudes: readonly number[]): SolveMagnitude {
   let largest = 0;
   for (const magnitude of magnitudes)
@@ -87,18 +42,12 @@ export function magnitudeOf(magnitudes: readonly number[]): SolveMagnitude {
   return Object.freeze({ kind: "rescaled", exponent });
 }
 
-/** A frame's position scaled by `factor`, its rotation untouched. */
 function scaleFrame(frame: WorldFrame, factor: number): WorldFrame {
   return Object.freeze({ x: frame.x * factor, y: frame.y * factor, rotation: frame.rotation });
 }
 
-/**
- * The rig's image under `2 ** -exponent`: the root and every member, each world-unit field scaled
- * and every other field carried as it is.
- *
- * An absent pivot or goal stays absent rather than being written as a scaled default, so the image
- * reads through `solveOffset` and `chainShape` exactly as the rig does.
- */
+/** Rig's image under `2 ** -exponent`: world-unit fields scaled, rest carried.
+ * Absent pivot or goal stays absent, so the image reads exactly like the rig. */
 export function scaleRig(
   root: WorldFrame,
   members: readonly SolveMember[],
@@ -119,29 +68,17 @@ export function scaleRig(
   return Object.freeze({ root: scaleFrame(root, factor), members: Object.freeze(scaled) });
 }
 
-/**
- * A distance solved in the image, back in the rig's world units, saturating at `Number.MAX_VALUE`.
- *
- * Saturating rather than overflowing, because the one promise this module makes is a finite
- * answer for a finite rig, and a miss larger than the largest double is a miss no caller can act on
- * differently from one that is merely the largest double. Only a finite distance saturates: an
- * infinite one is the answer to an infinite goal and stays infinite, and a `NaN` is a defect to
- * surface rather than a miss to launder into the largest double.
- */
+/** Image distance back in world units, saturating at `Number.MAX_VALUE`.
+ * Only finite values saturate; infinite stays infinite, `NaN` surfaces unchanged. */
 export function restoreDistance(distance: number, exponent: number): number {
   if (!Number.isFinite(distance)) return distance;
   const restored = distance * 2 ** exponent;
   return restored <= Number.MAX_VALUE ? restored : Number.MAX_VALUE;
 }
 
-/**
- * The image's result read back into the rig: the same rotations, and every residual restored.
- *
- * The quality record keeps its kind, its iteration count and its bound members, and its key order,
- * because the spread replaces `residual` in place. The kind is the image's, and it is the rig's
- * too: the ceiling is far below where a scale could move a miss across `FABRIK_TOLERANCE` at any
- * representable precision, since one ulp at the ceiling is `2 ** 448` world units.
- */
+/** Image result read back: same rotations, every residual restored.
+ * Quality keeps kind, iterations, atBound.
+ * Scale cannot move a miss across `FABRIK_TOLERANCE`. */
 export function restoreResult(result: SolveResult, exponent: number): SolveResult {
   const residuals: Record<string, number> = {};
   for (const [id, residual] of Object.entries(result.residuals))

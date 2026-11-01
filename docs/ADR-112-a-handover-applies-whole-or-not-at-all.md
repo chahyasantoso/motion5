@@ -7,264 +7,92 @@ stacked on #349 phase 6 (ADR-111) in the same pull request. Closes
 
 ## Context
 
-Issue #487 is infrastructure for a human who has access to Codespaces, not an AI automation
-workflow. The intended procedure is deliberately small: download a handover zip, put it in the
-dedicated folder, run one command, and have the command scan the folder, extract the zip, apply the
-patches, and remove the folder contents only after success. The contract needs to make that
-procedure safe without making the human understand the AI checkpoint transport. The human-facing
-contract is [HANDOVER-FORMAT.md](./HANDOVER-FORMAT.md); this record owns why its application is
-atomic.
+Issue #487 = infrastructure for human with Codespaces access, not AI automation. Procedure deliberately small: download handover zip into dedicated folder, run one command; command scans folder, extracts zip, applies patches, clears contents only after success. Contract must make procedure safe without human understanding AI checkpoint transport. Human-facing contract [HANDOVER-FORMAT.md](./HANDOVER-FORMAT.md); this record owns why application atomic.
 
-This is infrastructure, and AGENTS.md asks that it land separately from the #349 behavior work.
-Pull request #488 carries both, the phase 6 commits first and these after them, so the two stay
-separable commit by commit even though they share one review. ADR-111 is phase 6's record, so
-this record takes ADR-112. The #349 phase 7 plan had earmarked 112 for its
-envelope record; whichever lands second takes the next free number, and `adr-integrity` refuses
-a collision either way.
+Infrastructure; AGENTS.md asks separate landing from #349 behavior work. Pull request #488 carries both, phase 6 commits first, these after → separable commit by commit despite one review. ADR-111 = phase 6 record → this record takes ADR-112. #349 phase 7 plan earmarked 112 for envelope record; second to land takes next free number; `adr-integrity` refuses collision.
 
-The following measurements were taken in the sandbox on 2026-09-24 against main snapshot
-`7e6f4edc` and the sample `motion5-349-handover-p6-cp001.zip`.
+Measurements: sandbox 2026-09-24, main snapshot `7e6f4edc`, sample `motion5-349-handover-p6-cp001.zip`.
 
-**The patch series was sufficient.** Running `git am -3 p6/patches/*.patch` on a repository
-built from the main snapshot applied all three commits cleanly. The resulting blob ids equalled
-the final `post` ids that the sample's `p6/cpstore/cp001/manifest.json` declared for all nine of
-nine touched paths. The application source can therefore remain the authored format-patch
-series, with post-image ids as a gate after every patch.
+**The patch series was sufficient.** `git am -3 p6/patches/*.patch` on repository built from main snapshot: all three commits clean. Blob ids = final `post` ids declared in sample `p6/cpstore/cp001/manifest.json`, all nine of nine touched paths. Application source stays authored format-patch series; post-image ids = gate after each patch.
 
-**The bundle was not portable as received.** `git bundle verify work.bundle` failed with
-`Repository lacks these prerequisite commits: 24e14071c39c...`. The sandbox's local mirror had
-the same tree as `7e6f4edc` but a different commit id. A bundle names commit prerequisites, not
-just a tree, so a bundle cut from that local base was unusable to a consumer holding the
-declared base.
+**The bundle was not portable as received.** `git bundle verify work.bundle` failed: `Repository lacks these prerequisite commits: 24e14071c39c...`. Sandbox local mirror: same tree as `7e6f4edc`, different commit id. Bundle names commit prerequisites, not just tree → bundle from that base unusable to consumer holding declared base.
 
-**The sample had no owner for its layout.** It had no manifest. Its shape was whatever the
-sandbox build script copied: `tools/`, `p6/{cpstore,patches,corpus,probe}`, `NOTES.md`,
-`harness-baseline.sum`, and `work.bundle`. A consumer could not distinguish required input from
-supporting evidence, could not detect a missing or stray file, and could not reject a future
-layout without inventing a second version.
+**The sample had no owner for its layout.** No manifest. Shape = whatever sandbox build script copied: `tools/`, `p6/{cpstore,patches,corpus,probe}`, `NOTES.md`, `harness-baseline.sum`, `work.bundle`. Consumer could not separate required input from supporting evidence, detect missing or stray file, reject future layout without second version.
 
-**The same change had two unlinked representations.** The sample carried both a format-patch
-series and checkpoint diffs, but nothing stated that they agreed. Two representations without a
-comparison are two owners of the change, so a consumer could apply bytes that the other
-representation did not certify.
+**The same change had two unlinked representations.** Sample carried format-patch series + checkpoint diffs; nothing stated agreement. Two representations, no comparison = two owners → consumer could apply bytes other representation never certified.
 
 ## Decision
 
-The invariant is: **a handover changes the checkout only after its complete archive, base, patch
-chain, and every declared post-image have passed validation in a disposable worktree; otherwise
-the checkout and the inbox zip remain unchanged.** The patch series is the single owner of what
-changes; notes, a checkpoint store, a bundle, and opaque evidence are declared components with
-narrower roles.
+Invariant: **handover changes checkout only after complete archive, base, patch chain, every declared post-image pass validation in disposable worktree; else checkout and inbox zip unchanged.** Patch series = sole change owner; notes, checkpoint store, bundle, opaque evidence = declared components, narrower roles.
 
 ### The inbox and human command
 
-The repository-root `.handover/` directory is gitignored and is the inbox. `npm run patches`
-finds exactly one zip there. An empty inbox returns `nothing-to-do` with exit status 0. More
-than one zip returns `ambiguous-inbox`; any non-zip entry returns `foreign-entry`. The command
-has `--dry-run` for the same pipeline without the final fast-forward and `--keep` for retaining
-an archive after a successful apply.
+Repository-root `.handover/` gitignored = inbox. `npm run patches` finds exactly one zip. Empty inbox → `nothing-to-do`, exit 0. Multiple zips → `ambiguous-inbox`; non-zip entry → `foreign-entry`. `--dry-run` = same pipeline, no final fast-forward; `--keep` = retain archive after successful apply.
 
-Preflight refuses a missing committer identity, detached HEAD, an operation in progress (`am`,
-rebase, merge, cherry-pick, or revert), and a dirty tree including untracked files. The human
-must commit or stash with `git stash -u`; the command never hides those changes as part of its
-recovery. The inbox itself is excluded from the dirty-tree check by pathspec rather than trusted
-to `.gitignore`: the first handover lands on a checkout that does not carry the ignore rule yet,
-where the zip is an untracked file, and relying on the rule refused exactly that handover.
-`discoverInbox` already owns what may sit in the inbox, so the exclusion hides nothing the check
-was for.
+Preflight refuses missing committer identity, detached HEAD, operation in progress (`am`, rebase, merge, cherry-pick, revert), dirty tree including untracked files. Human must commit or stash `git stash -u`; command never hides those changes in recovery. Inbox excluded from dirty-tree check by pathspec, not `.gitignore`: first handover lands on checkout without ignore rule, zip untracked; rule reliance refused exactly that handover. `discoverInbox` already owns inbox contents → exclusion hides nothing check was for.
 
 ### The v1 archive and manifest
 
-The archive has exactly one top-level folder whose name equals `handover.json`'s `name`. The
-listing is read before extraction. It allows at most 2,000 entries and 64 MiB uncompressed, only
-regular files and directories, no symlinks or special entries, and only path segments matching
-`[A-Za-z0-9_.@+-]`. Absolute paths, backslashes, dot segments, empty segments, and files outside
-the one root are refused. The extracted file set must equal the listing.
+Archive: exactly one top-level folder, name = `handover.json` `name`. Listing read before extraction. Max 2,000 entries, 64 MiB uncompressed, regular files and directories only, no symlinks or special entries, path segments matching `[A-Za-z0-9_.@+-]`. Refuses absolute paths, backslashes, dot segments, empty segments, files outside one root. Extracted set must equal listing.
 
-The manifest has exactly the keys `format`, `version`, `name`, `issue`, `base`, `patches`, and
-`components`. Format `motion5-handover` and version `1` are required; an unknown format or
-version is refused by name rather than guessed. Every patch has exactly `seq`, `file`, `sha256`,
-`pre`, and `post`. Its sequence number and four-digit filename agree, its digest covers the
-patch bytes, and its pre and post maps cover the same paths with full blob ids or null.
+Manifest: exactly keys `format`, `version`, `name`, `issue`, `base`, `patches`, `components`. Format `motion5-handover`, version `1` required; unknown format or version refused by name, not guessed. Every patch: exactly `seq`, `file`, `sha256`, `pre`, `post`. Sequence number + four-digit filename agree; digest covers patch bytes; pre/post maps cover same paths, full blob ids or null.
 
-The chain reuses `checkpointChain()` from `checkpoint-policy.mjs`, so the existing maximum of 20
-patches and 50 paths is inherited rather than restated by a second owner. The first patch's pre
-image for each path equals the base's blob, and each later pre image equals the preceding post
-image. `base-disagrees` is the refusal when the checkout's base bytes do not match that first
-pre image. Commit subjects are not duplicated in the manifest because the patch file owns commit
-metadata.
+Chain reuses `checkpointChain()` from `checkpoint-policy.mjs` → existing max 20 patches, 50 paths inherited, not restated by second owner. First patch pre image per path = base blob; later pre image = preceding post image. `base-disagrees` = checkout base bytes differ from first pre image. Commit subjects not duplicated: patch file owns commit metadata.
 
-Components form a closed union: exactly one Markdown `notes` file is required; at most one
-`checkpoint` folder named `cpNNN` and at most one `.bundle` file may be present; and `opaque`
-components may carry extracted material that the consumer never executes. The manifest must
-declare every stored file and every declaration must be present. A checkpoint is derived from
-the series: its own manifest and declared diff digests must match, its base must be the handover
-base, and its final post-image map must equal the series tip. This comparison is the one owner
-of agreement; the checkpoint is never applied instead of the series.
+Components: closed union. Exactly one Markdown `notes`; at most one `checkpoint` folder `cpNNN`, one `.bundle`; `opaque` may carry extracted material consumer never executes. Manifest declares every stored file; every declaration present. Checkpoint derived from series: own manifest + declared diff digests match, base = handover base, final post-image map = series tip. Comparison = sole agreement owner; checkpoint never applied instead of series.
 
 ### Validation and application
 
-The producer and consumer share `inspectArchive`. It checks the listing, extraction, manifest,
-exact contents, patch SHA-256 digests, checkpoint agreement, and bundle header before repository
-validation. A bundle is accepted only when it has exactly one prerequisite and that prerequisite
-is the handover base. The producer refuses `--bundle` when `--from` is not the base, which
-prevents a sandbox-only commit id from being shipped as a portable prerequisite.
+Producer and consumer share `inspectArchive`: listing, extraction, manifest, exact contents, patch SHA-256 digests, checkpoint agreement, bundle header, before repository validation. Bundle accepted only with exactly one prerequisite = handover base. Producer refuses `--bundle` when `--from` not base → no sandbox-only commit id shipped as portable prerequisite.
 
-Repository validation proves the base by commit where the checkout holds it and by content
-where it does not. A held base commit must be an ancestor of HEAD and carry every first pre-image.
-Paths changed in the checkout since that base are allowed through `git am --3way`, but are
-reported as `reconciled` for human review rather than being silently treated as the author's
-post-image. A base commit the checkout does not hold is proved by content: HEAD must carry every
-first pre-image, nothing is reconciled, and every post-image is compared; otherwise the refusal is
-`base-missing`, naming the first differing path. The fallback exists because of a measurement
-rather than a preference: this very slice is stacked on the unpublished #349 phase 6 series,
-whose commit ids exist only in the sandbox that produced it and are different again after a
-human's `git am`, so a commit-only rule would refuse every stacked handover while the bytes it
-needs are present. Content is the rule the checkpoint route already chains by
-([ADR-101](./ADR-101-a-stacked-patch-chains-by-content.md)), and it is strictly stronger per path
-than the ancestry check, because every post-image is then compared. A declared bundle is also
-checked with Git.
+Base proved by commit where checkout holds it, by content where not. Held base commit: ancestor of HEAD, carries every first pre-image. Paths changed since base allowed through `git am --3way`, reported `reconciled` for human review, not silently author's post-image. Base commit not held: content proof — HEAD carries every first pre-image, nothing reconciled, every post-image compared; else `base-missing`, naming first differing path. Fallback = measurement, not preference: slice stacked on unpublished #349 phase 6 series, commit ids exist only in producing sandbox, differ again after human `git am` → commit-only rule refuses every stacked handover while bytes present. Content = rule checkpoint route already chains by ([ADR-101](./ADR-101-a-stacked-patch-chains-by-content.md)), strictly stronger per path than ancestry: every post-image compared. Declared bundle also Git-checked.
 
-The series is applied patch by patch with `git am --3way` in a detached `git worktree` of HEAD in a
-temporary directory. After each patch, every declared post blob is read back from that worktree.
-Only when every patch passes does the real checkout run `git merge --ff-only` to the temporary tip.
-Nothing holds the checkout while the series is proved, so a fast-forward that fails because HEAD
-moved is the refusal `head-moved`, and one that fails because the tree was edited in the meantime is
-`dirty-tree`; both leave the checkout as the other process left it and keep the zip. An edit the
-fast-forward does not touch, such as a new file beside the series, is carried by Git as it would be
-by any `merge --ff-only`: the series lands on its proved tip and the edit survives. Refusing or
-rolling back a proved publication because another writer touched something else was rejected,
-because it would discard or undo bytes the command does not own. A lock was considered and not
-taken: Git's own index lock already makes the fast-forward atomic, and a second lock would be a
-second owner of that question that a crash can leave behind. A conflict aborts the temporary
-`git am`, leaves the real checkout untouched, keeps the inbox zip, and retains the extracted series
-so the printed recovery command can run `git am --3way` with all patches, resolve and stage
-conflicts, then use `git am --continue` or `git am --abort`.
+Series applied patch by patch, `git am --3way` in detached `git worktree` of HEAD, temporary directory. After each patch, every declared post blob read back from worktree. Only all patches passing → real checkout `git merge --ff-only` to temporary tip. Nothing holds checkout while series proved → HEAD moved = `head-moved`; tree edited meantime = `dirty-tree`; both leave checkout as other process left it, keep zip. Edit fast-forward does not touch (new file beside series) carried by Git as any `merge --ff-only`: series lands on proved tip, edit survives. Refusing or rolling back proved publication because another writer touched something else rejected: would discard or undo bytes command does not own. Lock considered, not taken: Git index lock already atomic; second lock = second owner crash can leave behind. Conflict aborts temporary `git am`, real checkout untouched, inbox zip kept, extracted series retained → printed recovery command: `git am --3way` all patches, resolve and stage conflicts, `git am --continue` or `git am --abort`.
 
-`describeRefusal` is the single owner of refusal words and `describeOutcome` is the single owner
-of outcome words and exit status. Their closed switches cover inbox discovery, refusal kinds,
-outcome kinds, component kinds, and zip entry kinds exhaustively. The separate format, apply,
-pack, and CLI modules therefore do not grow competing interpretations of a failure.
+`describeRefusal` = sole refusal-word owner; `describeOutcome` = sole outcome-word + exit-status owner. Closed switches exhaustively cover inbox discovery, refusal kinds, outcome kinds, component kinds, zip entry kinds. Format/apply/pack/CLI modules therefore no competing failure interpretations.
 
 ### Producer and ownership
 
-The producer command is `node scripts/handover.mjs pack --issue <n> --from <rev> [--to <rev>]
-[--base <sha>] --notes <file> --out <name>.zip [--checkpoint <dir>] [--bundle] [--opaque
-<path>]...`. It creates a versioned archive and inspects its own output with the consumer's
-inspection pipeline. `--base` permits a sandbox commit id with the same tree as the intended
-base to declare the intended GitHub commit. It does not turn an unrelated tree into the same
-base.
+Producer: `node scripts/handover.mjs pack --issue <n> --from <rev> [--to <rev>] [--base <sha>] --notes <file> --out <name>.zip [--checkpoint <dir>] [--bundle] [--opaque <path>]...`. Creates versioned archive; inspects own output with consumer pipeline. `--base` lets sandbox commit id with same tree declare intended GitHub commit; unrelated tree stays unrelated.
 
-The patch series is the only change owner. The checkpoint component is an [AI checkpoint
-transport view](./AI-CHECKPOINT-WORKFLOW.md) and is validated against the series. Applying
-checkpoint diffs with `git apply` is not an alternative, because it loses the authored commit
-sequence and authorship that `git am` preserves.
+Patch series = only change owner. Checkpoint = [AI checkpoint transport view](./AI-CHECKPOINT-WORKFLOW.md), validated against series. `git apply` of checkpoint diffs not alternative: loses authored commit sequence, authorship `git am` preserves.
 
 ### What a patch and a recipient may not decide
 
-Every commit `git am` makes is read back: the paths it touched must be declared by its manifest
-entry (`undeclared-change` otherwise), because a digest proves which patch was packed and not that
-the manifest describes it. The commit is proved to exist first. `git am --3way` exits zero without
-committing when a patch's change is already in the tree, and reading `HEAD^..HEAD` then read
-whichever commit came before: an unrelated one was reported as an undeclared change, and one on the
-same path as a clean application of zero commits. A patch that makes no commit now stops the series
-as `already-applied`, naming the patch, with the checkout and the zip unchanged. Skipping it and
-carrying on was rejected, because a partly present series is exactly the state a human has to look
-at, and a handover that reports success for bytes it did not write is not whole. The apply commands
-run with an empty scratch `core.hooksPath`, `--whitespace=nowarn` and `--no-gpg-sign`, so repository
-hooks, `apply.whitespace` and `commit.gpgSign` cannot run code or refuse a valid handover. After the
-fast-forward the inbox state is a closed union (`emptied`, `kept`, `cleanup-failed`) so a cleanup
-failure never reads as "nothing changed". The producer refuses a range whose start is not an
-ancestor of its end, an empty commit, a gitlink (its id names a commit in another repository, while
-every image the format declares is a blob, so the consumer proved it absent at the very base it was
-cut from), and an output path inside the checkout, and copies the archive out only after its own
-inspection passes. `core.autocrlf` was considered and not pinned: it changed no blob id when
-measured, and the post-image comparison catches any divergence.
+Every `git am` commit read back: touched paths must be declared by manifest entry (`undeclared-change` otherwise) — digest proves which patch packed, not that manifest describes it. Commit proved to exist first. `git am --3way` exits zero without committing when change already in tree; `HEAD^..HEAD` then reads previous commit: unrelated → undeclared change; same path → clean application of zero commits. Patch making no commit stops series as `already-applied`, naming patch, checkout + zip unchanged. Skipping rejected: partly present series = state human must inspect; handover reporting success for bytes not written is not whole. Apply commands: empty scratch `core.hooksPath`, `--whitespace=nowarn`, `--no-gpg-sign` → repository hooks, `apply.whitespace`, `commit.gpgSign` cannot run code or refuse valid handover. After fast-forward inbox state closed union (`emptied`, `kept`, `cleanup-failed`) → cleanup failure never reads "nothing changed". Producer refuses range start not ancestor of end, empty commit, gitlink (id names commit in another repository; every declared image blob → consumer proved it absent at base cut from), output path inside checkout; copies archive out only after own inspection. `core.autocrlf` considered, not pinned: no blob id changed when measured; post-image comparison catches divergence.
 
 ## Rejected
 
-**The unversioned sample as format v0.** This would make the copied sandbox layout a second
-owner and leave missing-versus-foreign files undefined. The sample is repacked through `pack`
-instead of being accepted as an implicit version.
+**The unversioned sample as format v0.** Copied sandbox layout = second owner; missing-versus-foreign undefined. Sample repacked through `pack`, not implicit version.
 
-**Applying checkpoint diffs.** The checkpoint is an AI transport representation. `git apply`
-would lose commit authorship and sequence, while the patch series already applies cleanly and
-carries the post-image assertions. The checkpoint can certify the series but cannot replace it.
+**Applying checkpoint diffs.** Checkpoint = AI transport representation. `git apply` loses authorship + sequence; series applies cleanly, carries post-image assertions. Checkpoint certifies, never replaces.
 
-**Deleting the inbox after a conflict.** A conflict is precisely the case where the human needs
-the zip and extracted patches for recovery. Cleanup is restricted to `applied`, and `--keep`
-gives an explicit successful-retention choice.
+**Deleting inbox after a conflict.** Conflict = case human needs zip + extracted patches for recovery. Cleanup restricted to `applied`; `--keep` = explicit successful retention.
 
-**A pure-Node zip reader.** The repository already relies on `unzip` in
-`scripts/automation-checkpoint.mjs`. Replacing that existing dependency with a new reader would
-add another archive parser and another security surface without a measured need.
+**A pure-Node zip reader.** Repository already relies on `unzip` in `scripts/automation-checkpoint.mjs`. New reader = another parser + security surface, no measured need.
 
-**Fake Git ports for pipeline tests.** A fake of `git am` tests the fake rather than the atomic
-property. The pipeline is tested with real temporary Git repositories; pure format decisions
-remain in the pure module.
+**Fake Git ports for pipeline tests.** Fake `git am` tests fake, not atomic property. Pipeline uses real temporary Git repositories; pure format decisions stay in pure module.
 
-**A separate `inspect` command.** `--dry-run` already runs the complete inspect, validate,
-apply, and post-image pipeline without changing the checkout. A second command would create a
-second user surface and another owner of what inspection means.
+**A separate `inspect` command.** `--dry-run` runs complete inspect/validate/apply/post-image pipeline without checkout change. Second command = second user surface + another owner of inspection meaning.
 
 ## Consequences
 
-A human has one durable procedure and receives a named outcome rather than a half-applied
-checkout. The inbox is safe to leave in place after every failure, and the worktree fast-forward
-makes the last publication step all-or-nothing from the checkout's perspective. The archive
-listing and exact manifest membership make the handover reviewable and reject zip bombs, path
-tricks, unknown layouts, and silent omissions before patch application.
+Human: one durable procedure, named outcome, not half-applied checkout. Inbox safe after every failure; worktree fast-forward = last publication step, all-or-nothing for checkout. Archive listing + exact manifest membership = reviewable handover; reject zip bombs, path tricks, unknown layouts, silent omissions before patch application.
 
-The design carries a modest temporary-worktree cost and retains no partial commits in the real
-checkout. A branch that changed since the base can be reconciled by Git's three-way merge, but
-those paths are explicitly reported for review. A post-image mismatch is not repaired
-automatically; it requires a new handover because the archive failed to describe its own bytes.
+Modest temporary-worktree cost; no partial commits in real checkout. Branch changed since base reconciled by Git three-way merge, paths explicitly reported. Post-image mismatch not auto-repaired; new handover required — archive failed to describe own bytes.
 
-The optional checkpoint and bundle are useful evidence only under their declared contracts. A
-checkpoint must agree with the patch series, and a bundle must be cut from the declared base. A
-sandbox whose base commit id differs from the intended base can still produce patches with
-`--base`, but it cannot produce a valid bundle for that range.
+Optional checkpoint/bundle = evidence only under declared contracts. Checkpoint must agree with series; bundle cut from declared base. Sandbox base commit id differing from intended still produces patches with `--base`; no valid bundle for that range.
 
-The implementation has no run in this repository's CI yet. Typecheck was not run in the sandbox
-because TypeScript was unavailable. Sandbox tests ran under Node 22 with a vitest shim, not
-vitest; those facts limit the evidence and are not claims of repository CI coverage.
+No CI run yet. Typecheck not run in sandbox (TypeScript unavailable). Sandbox tests Node 22 + vitest shim, not vitest; these limit evidence, not claims of repository CI coverage.
 
 ## Evidence
 
-The 2026-09-24 measurements above are the load-bearing evidence for the design: three
-format-patch commits applied cleanly, nine of nine declared touched paths reached their final
-post ids, the sample bundle named an unavailable mirror prerequisite, the sample had no
-manifest, and its two representations had no agreement statement.
+2026-09-24 measurements = load-bearing evidence: three format-patch commits clean, nine of nine declared paths final post ids, bundle named unavailable mirror prerequisite, no manifest, two representations without agreement statement.
 
-The cases are the `HO-` series. `HO-1` through `HO-14` in
-`packages/core/test/unit/scripts/handover-format.test.ts` hold the pure layer: the listing
-parser and its count check, every unsafe entry kind, the manifest schema and version refusal,
-the chain, exact contents, checkpoint agreement, the bundle prerequisite, inbox discovery, and a
-word for every refusal kind. `HO-15` through `HO-30` in
-`packages/core/test/unit/scripts/handover-apply.test.ts` build real temporary repositories, pack
-with the producer and apply with the consumer: whole application and cleanup, the dry run and
-`--keep`, a conflict that leaves checkout and inbox untouched, reconciliation on a newer branch,
-every preflight and base refusal, tampered, undeclared, unversioned, linked and future archives,
-a series that applies onto undeclared bytes, the three inbox states, the bundle rule, checkpoint
-agreement end to end, every outcome's words and exit status, and the command line.
+`HO-` series. `HO-1` through `HO-14` in `packages/core/test/unit/scripts/handover-format.test.ts` = pure layer: listing parser + count check, every unsafe entry kind, manifest schema + version refusal, chain, exact contents, checkpoint agreement, bundle prerequisite, inbox discovery, word per refusal kind. `HO-15` through `HO-30` in `packages/core/test/unit/scripts/handover-apply.test.ts` = real temporary repositories, producer pack + consumer apply: whole application + cleanup, dry run + `--keep`, conflict leaving checkout and inbox untouched, reconciliation on newer branch, every preflight and base refusal, tampered/undeclared/unversioned/linked/future archives, series onto undeclared bytes, three inbox states, bundle rule, checkpoint agreement end to end, every outcome's words + exit status, command line.
 
-The review of #488 added `HO-31` to `HO-34` in the same file: a patch already on the branch stops
-as `already-applied` whether the commit before it is related or not, `pack` refuses a gitlink and
-writes no archive, a checkout whose HEAD moves or whose tree is edited before the fast-forward is
-refused as `head-moved` or `dirty-tree` with the zip kept and no worktree left, while an
-unrelated edit survives an applied fast-forward, and the first
-handover applies on a checkout without the ignore rule while an untracked file elsewhere is still
-refused. Each is killed by removing its fix: the pathspec exclusion, the commit check, the
-`head-moved` and `dirty-tree` mapping, and the gitlink refusal.
+Review of #488 added `HO-31` to `HO-34` in same file: patch already on branch stops `already-applied`, related or not; `pack` refuses gitlink, writes no archive; HEAD moves or tree edited before fast-forward → `head-moved`/`dirty-tree`, zip kept, no worktree left; unrelated edit survives applied fast-forward; first handover applies without ignore rule, untracked file elsewhere still refused. Each killed by removing its fix: pathspec exclusion, commit check, `head-moved`/`dirty-tree` mapping, gitlink refusal.
 
-In the sandbox all 30 original cases passed, and each of these mutations was killed by at least one
-case: skipping the post-image comparison, applying on a dry run, emptying the inbox under `--keep`,
-skipping the patch digest, skipping the dirty-tree refusal, discarding the extracted series on a
-conflict, treating every path as unreconciled, skipping the extraction-equals-listing check,
-admitting a stray file, skipping checkpoint tip agreement, admitting a second bundle prerequisite,
-admitting any path segment, and skipping the base pre-image comparison. The last two survivors of
-the first mutation round, extraction-equals-listing and a second bundle prerequisite, were what
-added the smuggling case to `HO-21` and the two-prerequisite case to `HO-12`.
+Sandbox: all 30 original cases passed; each mutation killed by at least one case: skipping post-image comparison, applying on dry run, emptying inbox under `--keep`, skipping patch digest, skipping dirty-tree refusal, discarding extracted series on conflict, treating every path unreconciled, skipping extraction-equals-listing check, admitting stray file, skipping checkpoint tip agreement, admitting second bundle prerequisite, admitting any path segment, skipping base pre-image comparison. Last two first-round survivors (extraction-equals-listing, second bundle prerequisite) added smuggling case to `HO-21`, two-prerequisite case to `HO-12`.
 
-The consumer and producer both call `inspectArchive`, so a producer cannot silently create an
-archive the consumer would reject. No live CI run is claimed until one exists.
+Consumer + producer both call `inspectArchive` → producer cannot silently create archive consumer rejects. No live CI run claimed until exists.

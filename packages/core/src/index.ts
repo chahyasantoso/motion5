@@ -1,9 +1,4 @@
-/**
- * `@motion5/core` public entrypoint.
- *
- * Graph internals remain private to the package.
- *
- */
+/** `@motion5/core` public entrypoint. Graph internals stay private. */
 
 export {
   AUTHORED_SCHEMA_VERSION,
@@ -45,69 +40,20 @@ export { parseGolden, serializeGolden } from "./contract/golden";
 export type { GoldenFixture, GoldenValidationFixture } from "./contract/golden";
 export { Engine } from "./engine";
 export type { EngineOptions, ProjectHandle } from "./engine";
-/**
- * The handle base and the one failure family every handle reports.
- *
- * `StaleHandleError` is a runtime export rather than a type, on the rule ADR-056 set for the class it
- * is now the parent of: a caller cannot `instanceof` a type it cannot name, and this is the name for
- * "whatever handle I was holding is no longer live". `Handle` is the shape a consumer writes a generic
- * over, which is the whole reason it exists rather than being spelled twice.
- */
+/** Handle base + failure family. `StaleHandleError` is a value for `instanceof`; `Handle` is the shape to write a generic over. */
 export { StaleHandleError } from "./contract/handle";
 export type { Handle } from "./contract/handle";
-/**
- * The track mutation capability and the one failure it reports.
- *
- * `StaleTrackHandleError` is a runtime export rather than a type, because a caller cannot
- * `instanceof` a type it cannot name, and branching on its `ruleId` is the whole point of giving
- * the failure a name instead of a message to match. Named from its owner rather than re-exported
- * through `./engine`, so there is one declaration and one export path. See ADR-056.
- *
- * `LiveValues` is the narrow half of the live write boundary and stays exported. `AuthoredValues`
- * is deliberately not added beside it: `public-export-surface` is allow-listed, and widening that
- * list is a decision of its own. A caller that has to spell the wider type already can, because
- * `AuthoredProperty` is exported above and `AuthoredValues` is a record of it. See ADR-060.
- *
- * `RequireView` joins them because `TrackHandle.requires` is typed with it, and a member whose type
- * cannot be named is a member a consumer cannot hold in a variable.
- */
+/** Track mutation + failure. `StaleTrackHandleError` is a value for `instanceof`/`ruleId`; `LiveValues` is the narrow live-write half, `RequireView` types `TrackHandle.requires`. */
 export { StaleTrackHandleError } from "./contract/track-handle";
 export type { LiveValues, RequireView, TrackHandle } from "./contract/track-handle";
-/**
- * The motion capability and its refusal, exported on the same two rules as the pair above: the error
- * is a value because a caller has to name it to catch it, and the handle is a type because
- * `ProjectHandle.motion` returns one.
- */
+/** Motion capability + refusal: error is a value to catch, handle is a type `ProjectHandle.motion` returns. */
 export { StaleMotionHandleError } from "./contract/motion-handle";
 export type { MotionHandle } from "./contract/motion-handle";
-/**
- * The structural authoring surface one recipe is handed.
- *
- * A type rather than a value, and exported on the parameter half of the declaration-surface rule
- * rather than the return half: `ProjectHandle.edit` takes a function of this type, and a member the
- * entry exposes is unusable if its argument type cannot be imported. Declared in `contract/` for the
- * same reason the gate enforces, so naming it here adds no `runtime/` module to the entry's
- * declaration closure. Its two refusals travel as `TypeError` under `schema-transaction-nested` and
- * `schema-transaction-immediate`, so nothing new has to be exported to catch them. See ADR-064.
- */
+/** Structural authoring surface `ProjectHandle.edit` takes. Type only, declared in `contract/`; refusals are `TypeError`s, nothing more to export. */
 export type { SchemaTransaction } from "./contract/schema-transaction";
-/**
- * The value authoring surface one batch is handed, exported on the same half of the
- * declaration-surface rule as the structural one above: `ProjectHandle.values` takes a function of
- * this type, and a member the entry exposes is unusable if its argument type cannot be imported.
- * Declared in `contract/` for the reason the gate enforces, so naming it here adds no `runtime/`
- * module to the entry's declaration closure. Its two refusals travel as `TypeError` under
- * `value-batch-immediate` and `value-batch-structural`, and the diagnostic a staged write carries is
- * `value-batch-deferred`, so nothing new has to be exported to catch or to branch on them. See
- * ADR-078.
- */
+/** Value authoring surface `ProjectHandle.values` takes. Type only, declared in `contract/`; refusals arrive as `TypeError`, deferred writes carry `value-batch-deferred`. */
 export type { ValueTransaction } from "./contract/value-transaction";
-/**
- * The identified-table plugin registry and its admission refusal.
- *
- * `EngineOptions.plugins` takes one of these. The definition type is still exported as the
- * identified alias until the mechanical rename lands.
- */
+/** Identified-table plugin registry + admission refusal. `EngineOptions.plugins` takes a `PluginCatalog`. */
 export { PluginAdmissionError, PluginCatalog } from "./domain/plugin-catalog";
 export type {
   DependencySpec,
@@ -118,11 +64,7 @@ export type {
   ValueSpec,
 } from "./contract/v5";
 export { assertClock, createManualClock } from "./ports/clock";
-/**
- * The port contracts a reusable adapter has to name in order to be written at all. Types only, so
- * the assertions above remain the runtime surface, and the declaration closure is unchanged because
- * every module named here is already reachable through it. Issue #158.
- */
+/** Port contracts an adapter must name. Types only; the assertions above stay the runtime surface. */
 export type { Clock, ClockTick } from "./ports/clock";
 export { assertTriggerPort, createManualTriggerPort } from "./ports/trigger";
 export type { TriggerPort } from "./ports/trigger";
@@ -134,10 +76,7 @@ export type {
   TriggerFactory,
   TriggerFactoryContext,
 } from "./ports/trigger-factory";
-/**
- * Trigger drivers are opt-in at the composition root, so the factory has to be reachable through
- * the package exports map, not only through a deep source path.
- */
+/** Trigger drivers are opt-in at the composition root, so the factory is reachable through the exports map. */
 export {
   createDefaultTriggerFactory,
   createTriggerFactory,
@@ -152,14 +91,9 @@ export { assertInterpolator } from "./ports/interpolator";
 export type { InterpolationTimeline, Interpolator, PatchKeysResult } from "./ports/interpolator";
 export { assertScheduler } from "./ports/scheduler";
 export type { Cancel, Scheduler } from "./ports/scheduler";
-/**
- * The Scheduler implementation. Microtask-paced through an injected host, so core reaches for no
- * global and `createFakeScheduler` stays a test double instead of the only thing that works. Named
- * here as well as in the adapters barrel, the same shape as the trigger factory above, so no new
- * subpath is declared. Issue #155 and ADR-038.
- */
+/** Scheduler on an injected microtask host: no globals, `createFakeScheduler` stays a test double. */
 export { createMicrotaskScheduler } from "./adapters/microtask-scheduler";
 export type { MicrotaskSchedulerOptions, SchedulerHost } from "./adapters/microtask-scheduler";
 
-/** Version of this package. Independent of the authored schema version. */
+/** Package version, independent of the authored schema version. */
 export const CORE_VERSION = "0.0.0";

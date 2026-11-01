@@ -29,7 +29,7 @@ byte ceiling.
 ## Where the rest of it lives
 
 - Exact commits, runs, decisions and equivalence evidence: the owning pull request.
-- Standing rules: [GUARDRAILS.md](./GUARDRAILS.md). Caller cost:
+- Standing rules: [AGENTS.md](../AGENTS.md). Caller cost:
   [LIVE-EDIT-COST.md](./LIVE-EDIT-COST.md).
 - Contributor discipline: [PR-WORKFLOW.md](./PR-WORKFLOW.md). API navigation:
   [API-CAPABILITIES.md](./API-CAPABILITIES.md).

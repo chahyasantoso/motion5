@@ -18,33 +18,7 @@ export interface GsapScrollSourceOptions {
   readonly markers?: boolean;
 }
 
-/**
- * GSAP ScrollTrigger-backed ScrollSource producer.
- *
- * Core never imports GSAP. The real `ScrollTrigger` is injected by the app layer,
- * which also owns `gsap.registerPlugin(ScrollTrigger)`. Real `ScrollTrigger`
- * satisfies `GsapScrollTriggerLike` structurally, the same way real `gsap`
- * satisfies `GsapLike` in the interpolator seam.
- *
- * Each subscription receives a fresh measured snapshot in a microtask, never during
- * subscribe/create. A qualifying onUpdate supersedes pending initialization. Updates
- * require changed measured position; GSAP does not promise callbacks for movement at
- * clamped endpoints. Refresh holds existing consumers while late subscribers read
- * fresh measurements. This source never normalizes progress or schedules Motion.
- *
- * Subscriptions have independent identity, including repeated callback functions.
- * Detachment cancels pending delivery; the last detachment invalidates the generation
- * before killing its producer. Stale callbacks cannot reach a later generation.
- * Listener failures do not acknowledge acceptance or cause replay: remaining live
- * listeners are attempted, then one failure is rethrown unchanged or multiple failures
- * are aggregated in occurrence order. A reentrant qualifying update supersedes the
- * remainder of the older fan-out. New subscriptions are not in that older fan-out.
- *
- * Producer creation/read failures invalidate the generation and release an acquired
- * instance. The original failure is preserved, or aggregated first if kill also fails.
- * Deferred snapshot/read and listener failures surface from their microtask; synchronous
- * producer callback failures surface to its caller. A failed generation permits retry.
- */
+/** Wraps an injected GSAP ScrollTrigger as a ScrollSource; core never imports GSAP. */
 export function createGsapScrollSource(
   scrollTrigger: GsapScrollTriggerLike,
   options: GsapScrollSourceOptions,
@@ -122,7 +96,7 @@ export function createGsapScrollSource(
               generation.refreshing = false;
             },
             onUpdate() {
-              // Real GSAP can call back from create(). Ownership is not acquired yet.
+              // Can fire during create(), before instance assignment.
               if (!generation.live || generation.instance === undefined || generation.refreshing)
                 return;
               const measured = snapshot(generation);

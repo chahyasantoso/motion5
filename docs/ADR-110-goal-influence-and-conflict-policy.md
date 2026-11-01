@@ -6,296 +6,251 @@ Phase 6 is [ADR-111](./ADR-111-stability-and-determinism.md).
 
 **Superseded by [ADR-144](./ADR-144-identified-tables-records-and-explicit-plugins.md), 2026-10-29.** Identified tables and records with an explicit `PluginCatalog` are the one supported contract; the grouped machinery this record describes is deleted.
 
-**Amended by [ADR-121](./ADR-121-grouped-only-keyframes.md), 2026-09-26.** The **Load rules and
-scope** passage saying a flat spelling is in scope when the node binds a solver no longer holds for
-authored input. Only grouped `values.influence` reaches `resolveSolvers`; an ungrouped spelling is
-`keyframes-ungrouped-key`, so the flat branch is unreachable from authored input.
+**Amended by [ADR-121](./ADR-121-grouped-only-keyframes.md), 2026-09-26.** **Load rules and scope**
+passage saying flat spelling is in scope when node binds a solver no longer holds for authored input. Only
+grouped `values.influence` reaches `resolveSolvers`; ungrouped spelling is `keyframes-ungrouped-key` → flat
+branch unreachable from authored input.
 
 **Extended by [ADR-124](./ADR-124-3d-goal-influence-and-end-effector-orientation.md), 2026-09-27.**
-Influence is read on an addressed `fk3d` leaf too, through the same `readInfluence` and
-`branchPulls`, and its two load rules are now stated with the 3D `orient` rules over one
-`GOAL_WEIGHT_RULES` table with byte-identical messages. The `validateGoalInfluence` that
-**Evidence** names is now `validateGoalWeights`.
+Influence read on addressed `fk3d` leaf too, same `readInfluence` + `branchPulls`; its two load rules now
+stated with 3D `orient` rules over one `GOAL_WEIGHT_RULES` table, byte-identical messages.
+`validateGoalInfluence` that **Evidence** names is now `validateGoalWeights`.
 
 ## Context
 
-A branching IK solve can ask one shared member to support several goals. Phase 4 made the solve's
-quality inspectable, but an equal branch average was still an implicit policy: it gave each branch
-one vote without saying whether that vote represented one goal, a branch, or a bone's FK blend
-weight. The goal's intent belongs inside the solve, while the FK member weight belongs to the later
-composition of a solved rotation with an authored pose. They must not be conflated.
+Branching IK solve can ask one shared member support several goals. Phase 4 made solve quality inspectable,
+equal branch average still implicit policy: each branch one vote, without saying whether vote represented one
+goal, a branch, or bone's FK blend weight. Goal's intent belongs inside solve, FK member weight belongs to
+later composition of solved rotation with authored pose. Must not conflate.
 
-The phase 4 rotation contract also has a compatibility requirement. Adding intent must not make an
-unweighted rig take a numerically equivalent but bit-different path. A caller that did not author
-influence must receive the phase 4 rotations exactly, while a caller that does author it needs a
-rule that is total for every shared-member compromise and an inspection result that explains which
-goals paid for a remaining miss.
+Phase 4 rotation contract also has compatibility requirement. Adding intent must not make unweighted rig take
+numerically equivalent but bit-different path. Caller not authoring influence must receive phase 4 rotations
+exactly; caller authoring it needs rule total for every shared-member compromise, and inspection result
+explaining which goals paid for remaining miss.
 
 ## Decision
 
-A chain member may author `influence` as a static finite number greater than zero. It is the weight
-of the goal addressed by that member's leaf when branches disagree about a shared member. The
-runtime default is exactly `1`.
+Chain member may author `influence` as static finite number > 0. It is weight of goal addressed by that
+member's leaf when branches disagree about shared member. Runtime default exactly `1`.
 
-For a shared member, the pull of a branch is the mean influence of the addressed leaves in that
-branch's subtree. The compromise of the branch proposals is the weighted mean `Σw·p/Σw`, where `p`
-is a proposal point and `w` is that branch's pull. A branch with no addressed leaf contributes the
-default pull, as the unweighted solve did. The mean is deliberate: a branch's say is what its goals
-want, not how many addressed leaves happen to be under it.
+Shared member: pull of branch = mean influence of addressed leaves in branch's subtree. Compromise of branch
+proposals = weighted mean `Σw·p/Σw`, `p` proposal point, `w` that branch's pull. Branch with no addressed leaf
+contributes default pull, as unweighted solve did. Mean deliberate: branch's say = what its goals want, not
+how many addressed leaves happen under it.
 
-The compromise also measures its witness: the spread is the greatest distance from the settled point
-to any proposal. FABRIK classifies `conflicted` when the final residual is outside tolerance and the
-last inward pass left a spread outside tolerance. One function, `iterativeQuality` in `fabrik.ts`,
-owns that naming for every FABRIK outcome in one order: `limited` for a miss with any joint at a
-bound, then `converged` within tolerance, then `conflicted` for a spread strictly above
-`FABRIK_TOLERANCE`, then `stalled`, then `iteration-cap`. A spread exactly at tolerance is not a
-conflict, which is the same strict bound the residual is judged by. This means that the branches
-still disagreed about a shared member; it does not claim that no pose exists, because FABRIK is not
-a global solver. The result carries a residual for every addressed leaf in canonical member order,
-so a caller can see which goal paid for the compromise while `quality.residual` remains the worst of
-those residuals.
+Compromise also measures witness: spread = greatest distance from settled point to any proposal. FABRIK
+classifies `conflicted` when final residual outside tolerance and last inward pass left spread outside
+tolerance. One function, `iterativeQuality` in `fabrik.ts`, owns naming for every FABRIK outcome in one order:
+`limited` for miss with any joint at bound, then `converged` within tolerance, then `conflicted` for spread
+strictly above `FABRIK_TOLERANCE`, then `stalled`, then `iteration-cap`. Spread exactly at tolerance is not
+conflict — same strict bound residual judged by. Means branches still disagreed about shared member; does not
+claim no pose exists, FABRIK not global solver. Result carries residual for every addressed leaf in canonical
+member order → caller sees which goal paid for compromise while `quality.residual` stays worst of those.
 
-An unweighted rig publishes the phase 4 rotations bit for bit. With every influence at its default,
-every pull is exactly `1`, so the weighted sums and divisor are the old equal-average sums and
-count. Equal non-default influences produce the equal mean up to ordinary floating-point rounding.
-A lone goal's influence is its whole share, so it has no effect on a single-goal chain. That is
-normalisation, not a field accepted and ignored: the one proposal settles at itself because
-`(w·p)/w` is the same point, and the implementation deliberately uses a unit divisor for that
-lone proposal to preserve the phase 4 arithmetic exactly.
+Unweighted rig publishes phase 4 rotations bit for bit. Every influence at default → every pull exactly `1` →
+weighted sums and divisor are old equal-average sums and count. Equal non-default influences produce equal
+mean up to ordinary floating-point rounding. Lone goal's influence = its whole share → no effect on
+single-goal chain. Normalisation, not field accepted and ignored: one proposal settles at itself because
+`(w·p)/w` same point, implementation deliberately uses unit divisor for lone proposal to preserve phase 4
+arithmetic exactly.
 
-Both means are taken relative to their largest weight, which leaves them unchanged in exact
-arithmetic and keeps them total in floating point. Every admitted influence is finite, but a sum of
-admitted influences need not be: two leaves at `Number.MAX_VALUE` overflow `Σv` to `Infinity`, and
-the compromise would then settle the shared member on `Infinity / Infinity`, which is `NaN`. A
-branch pull is therefore `max · (Σ(v / max) / n)` over the addressed leaves under it, and the
-compromise weighs each proposal by `w / max` over the proposals it is settling. Each ratio is at
-most `1` and the largest is exactly `1`, so every sum is finite and every divisor is at least `1`.
-With every influence at its default the scale is `1` and both formulas are the old ones bit for
-bit.
+Both means taken relative to largest weight — unchanged in exact arithmetic, total in floating point. Every
+admitted influence finite, but sum of admitted influences need not be: two leaves at `Number.MAX_VALUE`
+overflow `Σv` to `Infinity` → compromise would settle shared member on `Infinity / Infinity` = `NaN`. Branch
+pull therefore `max · (Σ(v / max) / n)` over addressed leaves under it, compromise weighs each proposal by
+`w / max` over proposals it settles. Each ratio ≤ 1, largest exactly 1 → every sum finite, every divisor ≥ 1.
+Every influence at default → scale `1`, both formulas old ones bit for bit.
 
-The closed result union now has nine kinds: `reached`, `too-far`, `too-near`, `coincident`,
-`converged`, `stalled`, `iteration-cap`, `conflicted`, and `limited`. Inspection adds frozen
-`residuals` beside its existing fixed-shape fields, and the `conflicted` kind carries the same
-iterative `iterations` and `residual` fields as the other FABRIK kinds.
+Closed result union now nine kinds: `reached`, `too-far`, `too-near`, `coincident`, `converged`, `stalled`,
+`iteration-cap`, `conflicted`, `limited`. Inspection adds frozen `residuals` beside existing fixed-shape
+fields, `conflicted` kind carries same iterative `iterations` + `residual` fields as other FABRIK kinds.
 
 ## Ownership
 
-Ownership is split by question rather than by the path that happens to call it:
+Split by question, not by path that happens to call it:
 
-- `packages/core/src/plugins/ik-goal.ts` owns `DEFAULT_INFLUENCE`, the influence reader, branch
-  pulls, the weighted compromise, its spread witness, and the goal-influence policy.
-- `packages/core/src/contract/solver-constraints.ts` owns the `influence` key, its finite-positive
-  domain, and authored static-versus-animated classification.
-- `packages/core/src/graph/solver-constraints.ts` owns the two load rules and their authored
-  spelling and scope checks.
-- `resolveSolvers` in `packages/core/src/graph/ir.ts` owns `GoalScope` and computes each member's
-  goal reach after goal resolution; the rule module does not re-derive leafhood or addressing.
-- `packages/core/src/plugins/ik-result.ts` owns `SolveResult`, the nine-kind `SolveQuality` union,
-  and the inspection projection, including the copied and frozen `residuals` record.
-- `packages/core/src/plugins/fk.ts` claims `influence` because the author writes it on a member,
-  but FK never reads it. The solve reads it through the delivered member values; FK continues to
-  own composition and its separate `weight` question.
+- `packages/core/src/plugins/ik-goal.ts` owns `DEFAULT_INFLUENCE`, influence reader, branch pulls, weighted
+  compromise, its spread witness, goal-influence policy.
+- `packages/core/src/contract/solver-constraints.ts` owns `influence` key, finite-positive domain, authored
+  static-versus-animated classification.
+- `packages/core/src/graph/solver-constraints.ts` owns two load rules, their authored spelling and scope
+  checks.
+- `resolveSolvers` in `packages/core/src/graph/ir.ts` owns `GoalScope`, computes each member's goal reach after
+  goal resolution; rule module does not re-derive leafhood or addressing.
+- `packages/core/src/plugins/ik-result.ts` owns `SolveResult`, nine-kind `SolveQuality` union, inspection
+  projection including copied and frozen `residuals` record.
+- `packages/core/src/plugins/fk.ts` claims `influence` because author writes it on member, but FK never reads
+  it. Solve reads through delivered member values; FK keeps composition and separate `weight` question.
 
 ## Load rules and scope
 
-The rules are `ik-influence-malformed` and `ik-influence-without-goal`. A malformed influence is
-not a static finite number greater than zero, including an animated value. A value in the right
-domain is still refused when its placement gives no addressed goal a meaning.
+Rules: `ik-influence-malformed`, `ik-influence-without-goal`. Malformed influence = not static finite number
+> 0, animated value included. Value in right domain still refused when placement gives no addressed goal a
+meaning.
 
-The load pass reads every authored spelling because the runtime reads the flattened values bag. A
-flat spelling is in scope when the node binds a solver somewhere. A grouped spelling is in scope
-only under the group that bound that node's `solver` slot. A spelling under a group that did not
-bind `solver` is first refused as `ik-influence-without-goal`; its value is not classified, because
-placement is the first error. On a node that bound no solver at all, the pass does nothing: it has
-no registry with which to distinguish FK's `influence` from another plugin's key, so it must not
-refuse a bystander key.
+Load pass reads every authored spelling because runtime reads flattened values bag. Flat spelling in scope when
+node binds solver somewhere. Grouped spelling in scope only under group that bound node's `solver` slot.
+Spelling under group that did not bind `solver` first refused as `ik-influence-without-goal`; value not
+classified, placement is first error. On node binding no solver at all pass does nothing: no registry to
+distinguish FK's `influence` from another plugin's key → must not refuse bystander key.
 
-`resolveSolvers` builds `GoalScope` once, after it has resolved each solve's goals. `addressed`
-means the solve reaches a goal through that member's leaf, `unaddressed` means it provably does
-not, and `undecided` means goal resolution was not safe to classify. A broken chain, a solver with
-no goal, both goal spellings, a bare target over several leaves, a missed or duplicate dict goal,
-and a refused goal leave members undecided. A member absent from the scope is also undecided.
-Undecided members are not reported as `ik-influence-without-goal`, because the existing diagnostic
-already owns that unresolved cause and one cause must never be reported twice.
+`resolveSolvers` builds `GoalScope` once, after resolving each solve's goals. `addressed` = solve reaches goal
+through that member's leaf, `unaddressed` = provably does not, `undecided` = goal resolution not safe to
+classify. Broken chain, solver with no goal, both goal spellings, bare target over several leaves, missed or
+duplicate dict goal, refused goal → members undecided. Member absent from scope also undecided. Undecided
+members not reported as `ik-influence-without-goal`: existing diagnostic already owns that unresolved cause,
+one cause never reported twice.
 
-When a member belongs to several solves, `GoalScope` combines their answers with the precedence
-`undecided` over `addressed` over `unaddressed`. This keeps an unresolved chain from being spoken
-over and accepts a placement when any resolved solve actually reads it. The influence rule is
-therefore about placement and reach, not about duplicating goal derivation in the validator.
+Member in several solves → `GoalScope` combines answers with precedence `undecided` over `addressed` over
+`unaddressed`. Keeps unresolved chain from being spoken over, accepts placement when any resolved solve
+actually reads it. Influence rule therefore about placement + reach, not duplicating goal derivation in
+validator.
 
 ## Measurement that changed the design
 
-A measurement of 20,000 rigs, taken while the source was drafted, showed that iteration outcome
-could not classify goal conflict. In multi-goal rigs with reachable-by-construction goals, 4,899
-ended at the iteration cap (`FABRIK_MAX_ITERATIONS`, 64), 203 stalled, and 4,898 converged.
-With random goals, 7,031 stalled and 2,865 reached the cap. Stall and
-cap describe FABRIK's progress, not whether branches still disagree. Random-goal misses had a
-fifth-percentile branch spread of 27 units, so the policy uses the last-pass spread witness rather
-than guessing conflict from a stall or cap.
+Measurement of 20,000 rigs, taken while source drafted, showed iteration outcome could not classify goal
+conflict. Multi-goal rigs with reachable-by-construction goals: 4,899 ended at iteration cap
+(`FABRIK_MAX_ITERATIONS`, 64), 203 stalled, 4,898 converged. Random goals: 7,031 stalled, 2,865 reached cap.
+Stall and cap describe FABRIK's progress, not whether branches disagree. Random-goal misses had
+fifth-percentile branch spread 27 units → policy uses last-pass spread witness rather than guessing conflict
+from stall or cap.
 
 ## Withdrawn
 
-**Strict priorities are withdrawn.** A priority would promise that one goal is met exactly and a
-later goal receives only the remaining freedom. FABRIK has no null-space projection, so strict
-priority would either be an approximation with an unowned failure mode or a second solver. The
-weighted compromise states the achievable policy instead.
+**Strict priorities withdrawn.** Priority would promise one goal met exactly, later goal receives only
+remaining freedom. FABRIK has no null-space projection → strict priority either approximation with unowned
+failure mode, or second solver. Weighted compromise states achievable policy instead.
 
-**An influence dictionary on the solver is withdrawn.** Influence is the goal's intent, authored on
-the addressed leaf, rather than a solver-level setting that would need a second key-to-leaf
-mapping. The member key is the one place the author already names the goal-bearing bone.
+**Influence dictionary on solver withdrawn.** Influence is goal's intent, authored on addressed leaf, not
+solver-level setting needing second key-to-leaf mapping. Member key is one place author already names
+goal-bearing bone.
 
-**Summing influence is withdrawn.** A sum would give a branch more say merely because it contains
-more addressed leaves. The mean says what that branch's goals want and preserves the default pull
-of `1` for an unweighted rig.
+**Summing influence withdrawn.** Sum gives branch more say merely because more addressed leaves under it. Mean
+says what branch's goals want, preserves default pull `1` for unweighted rig.
 
-**Classifying conflict from stall or cap is withdrawn.** The measurement above shows neither is a
-witness of branch disagreement. The classification reads the last inward-pass spread instead.
+**Classifying conflict from stall or cap withdrawn.** Measurement above shows neither witness of branch
+disagreement. Classification reads last inward-pass spread instead.
 
 ## Evidence
 
-`packages/core/test/unit/plugins/ik-goal-influence.test.ts` pins the phase as `GI-1` to `GI-12`:
-`GI-1` the compromise (equal weights reproduce the old `sum / count` bit for bit, `-0` normalised,
-weighted mean, lone proposal weighed `1`, spread), `GI-2` mean rather than summed branch pulls,
-`GI-3` the influence domain and its omission from the member record, `GI-4` a symmetric unlimited
-two-branch rig moving toward the goal whose influence rose while explicit equal influences stay
-byte-identical to none, `GI-5` unweighted FABRIK rotations `Object.is`-identical to the same rig
-with influence stripped, `GI-6` per-leaf residuals in canonical order with one entry on the closed
-form and `quality.residual` their maximum, `GI-7` `conflicted` against a reachable multi-goal rig, a
-single-chain stall and a limited miss, `GI-8` the opted-in inspection through the engine with an
-unchanged unopted patch, `GI-9` `ik-influence-malformed` beside the accepting direction in the same
-rig, `GI-10` `ik-influence-without-goal` on a non-leaf and under a group that did not bind the
-solver, `GI-11` no second report over a broken chain, a leaf the dict missed or a goal on a
-non-leaf, and `GI-12` the bystander exemption, bare `target` placement and the `fk` key claim. The
-quality pass on the pull request added `GI-13` (extreme finite influences, `Number.MAX_VALUE` and
-`Number.MIN_VALUE`, publish finite rotations and residuals, and equal extremes publish the
-unweighted rotations exactly), `GI-14` (`iterativeQuality` at its exact tolerance boundaries and in
-its precedence order), `GI-15` (a branching miss with a joint at its bound is `limited`, not
-`conflicted`, through a real solve) and `GI-16` (the `GoalScope` precedence over every ordered pair
-of reaches). `IR-7`, `IN-1`, `IN-6`, `IN-9` and `N-7` were updated for the new result and inspection
-shape and the new key.
+`packages/core/test/unit/plugins/ik-goal-influence.test.ts` pins phase `GI-1` to `GI-12`: `GI-1` compromise
+(equal weights reproduce old `sum / count` bit for bit, `-0` normalised, weighted mean, lone proposal weighed
+`1`, spread), `GI-2` mean rather than summed branch pulls, `GI-3` influence domain and omission from member
+record, `GI-4` symmetric unlimited two-branch rig moving toward goal whose influence rose while explicit equal
+influences stay byte-identical to none, `GI-5` unweighted FABRIK rotations `Object.is`-identical to same rig
+with influence stripped, `GI-6` per-leaf residuals in canonical order, one entry on closed form,
+`quality.residual` their maximum, `GI-7` `conflicted` against reachable multi-goal rig, single-chain stall,
+limited miss, `GI-8` opted-in inspection through engine with unchanged unopted patch, `GI-9`
+`ik-influence-malformed` beside accepting direction in same rig, `GI-10` `ik-influence-without-goal` on
+non-leaf and under group that did not bind solver, `GI-11` no second report over broken chain, leaf dict
+missed, goal on non-leaf, `GI-12` bystander exemption, bare `target` placement, `fk` key claim. Quality pass
+on pull request added `GI-13` (extreme finite influences `Number.MAX_VALUE` and `Number.MIN_VALUE` publish
+finite rotations and residuals, equal extremes publish unweighted rotations exactly), `GI-14`
+(`iterativeQuality` at exact tolerance boundaries, in precedence order), `GI-15` (branching miss with joint at
+bound is `limited` not `conflicted`, through real solve), `GI-16` (`GoalScope` precedence over every ordered
+pair of reaches). `IR-7`, `IN-1`, `IN-6`, `IN-9`, `N-7` updated for new result and inspection shape and new key.
 
-Failing-first, by mutation in the sandbox harness: weighing every proposal `1` fails `GI-1`,
-summing pulls fails `GI-2`, dropping the `conflicted` arm fails `GI-7`, dropping residual entries
-fails `GI-6`, dropping `validateGoalInfluence` fails `GI-9`, and dropping `influence` from
-`fk.keys` fails `GI-12`. Summing raw weights again fails `GI-13`; judging spread with `>=` or
-against `0`, or naming `conflicted` before `limited`, fails `GI-14` and `GI-15`; and swapping any
-two `GoalScope` precedence ranks fails `GI-16`.
+Failing-first, by mutation in sandbox harness: weighing every proposal `1` fails `GI-1`, summing pulls fails
+`GI-2`, dropping `conflicted` arm fails `GI-7`, dropping residual entries fails `GI-6`, dropping
+`validateGoalInfluence` fails `GI-9`, dropping `influence` from `fk.keys` fails `GI-12`. Summing raw weights
+again fails `GI-13`; judging spread with `>=` or against `0`, or naming `conflicted` before `limited`, fails
+`GI-14` and `GI-15`; swapping any two `GoalScope` precedence ranks fails `GI-16`.
 
-Corpus, 200,000 seeded rigs (arity 1 to 8, 1 to 4 leaves, offsets, limits, reachable and random
-goals, master seed `0x3495e349`), phase 5 against phase 4 at `2d8ac606`: unweighted `solveChain`
-rotations `Object.is`-identical on 200,000; the unopted `ik` patch identical on 200,000; opted-in
-rotations identical on 200,000 with 0 inspection-shape violations (`residuals` keys are exactly the
-addressed leaves in canonical order and `residual` is their maximum); explicit influence `1` on
-every leaf identical to none on 200,000. Opted-in kinds migrated only `stalled` to `conflicted`
-(5,446) and `iteration-cap` to `conflicted` (2,895), all on multi-goal rigs. Among multi-goal
-rigs, `conflicted` was 9.51% for reachable-by-construction goals and 16.06% for random goals.
-Mean solve time moved from 194.5 to 204.6 microseconds per rig in the same process, generation
-included, which is directional rather than a benchmark.
+Corpus, 200,000 seeded rigs (arity 1 to 8, 1 to 4 leaves, offsets, limits, reachable and random goals, master
+seed `0x3495e349`), phase 5 against phase 4 at `2d8ac606`: unweighted `solveChain` rotations
+`Object.is`-identical on 200,000; unopted `ik` patch identical on 200,000; opted-in rotations identical on
+200,000 with 0 inspection-shape violations (`residuals` keys exactly addressed leaves in canonical order,
+`residual` their maximum); explicit influence `1` on every leaf identical to none on 200,000. Opted-in kinds
+migrated only `stalled` to `conflicted` (5,446) and `iteration-cap` to `conflicted` (2,895), all multi-goal
+rigs. Among multi-goal rigs `conflicted` 9.51% for reachable-by-construction goals, 16.06% for random goals.
+Mean solve time moved 194.5 → 204.6 microseconds per rig in same process, generation included — directional,
+not benchmark.
 
-Influence is a bias on each compromise, not a guarantee about the final pose. Raising one leaf's
-influence tenfold did not increase that leaf's residual on 79.8% of 66,648 multi-goal rigs; of the
-rigs where it did, most carried a joint limit, which moves the pose along its bound rather than
-toward either goal, and on the 1,847 multi-goal rigs with no limit it rose by more than tolerance
-and 1% on 177. That is FABRIK's heuristic iteration and it is why `GI-4` asserts direction on a
-symmetric unlimited rig only and why nothing here promises monotonicity.
+Influence = bias on each compromise, not guarantee about final pose. Raising one leaf's influence tenfold did
+not increase that leaf's residual on 79.8% of 66,648 multi-goal rigs; of rigs where it did, most carried joint
+limit (moves pose along bound rather than toward either goal), and on 1,847 multi-goal rigs with no limit it
+rose by more than tolerance and 1% on 177. FABRIK's heuristic iteration — why `GI-4` asserts direction on
+symmetric unlimited rig only, why nothing here promises monotonicity.
 
-The corpus ran in a sandbox esbuild bundle without `tsc`, and it is reviewed rather than trusted.
-`CI` on the published head of the pull request is the authority, and the pull request links it.
+Corpus ran in sandbox esbuild bundle without `tsc`, reviewed rather than trusted. `CI` on published head of
+pull request is authority, pull request links it.
 
 ## Issue #490 decision (2026-09-25)
 
-A feasible tree may still settle at a fixed point: the inward centroid can lie inside the parent
-reach circle, and the outward projection then reproduces that centroid. The minimal repro on the
-issue stalls with `m0`'s tip at norm exactly 20, its two branch proposals averaging to a point of
-norm `19.6133249073`, and the outward pass projecting that average back onto the tip it started
-from. The kind is honest (`conflicted`); the compromise rule is what is weak.
+Feasible tree may still settle at fixed point: inward centroid can lie inside parent reach circle, outward
+projection then reproduces centroid. Minimal repro on issue stalls with `m0`'s tip at norm exactly 20, two
+branch proposals averaging to point of norm `19.6133249073`, outward pass projecting that average back onto tip
+it started from. Kind honest (`conflicted`); compromise rule what is weak.
 
-**The compromise rule is a closed union owned here**,
-`CompromiseRule = "centroid" | "reach-circle"`, read by one exhaustive `switch` in `compromise`
-ending in `unreachable` (ADR-092). `centroid` is the historical rule and the default, so a caller
-that names no rule settles exactly where it always did. `reach-circle` is a fixed six-step damped
-Gauss-Newton fit seeded at that same centroid.
+**Compromise rule closed union owned here**, `CompromiseRule = "centroid" | "reach-circle"`, read by one
+exhaustive `switch` in `compromise` ending in `unreachable` (ADR-092). `centroid` = historical rule and default
+→ caller naming no rule settles exactly where always did. `reach-circle` = fixed six-step damped Gauss-Newton
+fit seeded at that same centroid.
 
-**A proposal is a closed union too.** `Pull` is `{ kind: "goal", point, weight }` or
-`{ kind: "branch", point, weight, reach: { centre, radius } }`, and `reachCircleOf` reads it
-exhaustively; no reader probes for an optional field. A `goal` pull is an addressed leaf's aim and
-is the only proposal a leaf receives, because a goal is read only on a leaf; its reach circle is the
-aim itself at radius `0`. A `branch` pull is a child's proposal about its base's tip. FABRIK builds
-both halves of it from one conversion: `point` is the child's placed pivot un-offset through the
-base's current direction (`baseTipFromPivot`), and `reach.centre` is the child's current tip
-un-offset through the same direction, at `reach.radius` the child's solve length. That circle is
-exactly the set of base tips that keep the child's tip where the inward pass left it and its length
-held, pivot offset included, and `point` lies on it by construction.
+**Proposal closed union too.** `Pull` is `{ kind: "goal", point, weight }` or
+`{ kind: "branch", point, weight, reach: { centre, radius } }`, `reachCircleOf` reads exhaustively, no reader
+probes optional field. `goal` pull = addressed leaf's aim, only proposal a leaf receives (goal read only on
+leaf); its reach circle is aim itself at radius `0`. `branch` pull = child's proposal about base's tip. FABRIK
+builds both halves from one conversion: `point` = child's placed pivot un-offset through base's current
+direction (`baseTipFromPivot`), `reach.centre` = child's current tip un-offset through same direction, at
+`reach.radius` child's solve length. Circle exactly set of base tips keeping child's tip where inward pass left
+it and length held, pivot offset included; `point` lies on it by construction.
 
-The fit minimises `Σ (w_i / max w) · (|p − centre_i| − radius_i)²` over the member's tip `p`.
-**Weights are normalised by the largest pull, exactly as the centroid normalises them**: every
-relative weight is in `(0, 1]`, the largest is `1`, the normal equations stay finite for pulls near
-`Number.MAX_VALUE`, and scaling every influence by one factor changes neither rule's answer. A lone
-pull settles on its own proposal exactly, as under the centroid. A centre coinciding with the
-current point takes the positive x axis for its Jacobian row. The damping (`1e-6`) and the step
-count are fixed, so the cost and the answer are fixed. A singular system, a non-finite step or a
-final objective that does not strictly improve the centroid's keeps the centroid, so the fit is
-never worse than its seed under its own objective. The proposal spread is still measured around the
-centroid rather than the fitted point, so `conflicted` keeps one witness whichever rule placed the
-member.
+Fit minimises `Σ (w_i / max w) · (|p − centre_i| − radius_i)²` over member's tip `p`. **Weights normalised by
+largest pull, exactly as centroid normalises**: every relative weight in `(0, 1]`, largest `1`, normal
+equations stay finite for pulls near `Number.MAX_VALUE`, scaling every influence by one factor changes neither
+rule's answer. Lone pull settles on own proposal exactly, as under centroid. Centre coinciding with current
+point takes positive x axis for Jacobian row. Damping (`1e-6`) and step count fixed → cost and answer fixed.
+Singular system, non-finite step, or final objective not strictly improving centroid's → keeps centroid, so fit
+never worse than its seed under own objective. Proposal spread still measured around centroid not fitted point →
+`conflicted` keeps one witness whichever rule placed member.
 
-**The selector** (`fabrik-select.ts`) runs the authored seed with the centroid rule first. Every
-non-`conflicted` result is returned as the same object, so every rig that did not conflict before is
-bit-identical and pays nothing. A conflict pays for three fixed alternatives, in this order:
-opposite seed with centroid, authored seed with reach-circle, opposite seed with reach-circle. One
-comparator, `outranks`, selects: a `converged` result outranks every miss (a tier read by an
-exhaustive `switch` over FABRIK's five kinds), then the strictly lower `quality.residual` wins, and
-an exact tie keeps the earlier candidate. The comparator is total: the tier is read first, so a
-`NaN` residual never crosses a tier, and within a tier it ranks below every number in either
-position, while `Infinity` orders like any number. Finite FABRIK output never produces a `NaN`
-residual, and `converged` cannot carry one because `NaN <= FABRIK_TOLERANCE` is false; the rule
-exists so the answer cannot depend on candidate order if that invariant is ever broken. No restart
-metadata is published (ADR-107), and `quality.iterations` is the selected candidate's own count. The
-baseline is a candidate, so the selected result is never worse than the prior result under the
-comparator.
+**Selector** (`fabrik-select.ts`) runs authored seed with centroid rule first. Every non-`conflicted` result
+returned as same object → every rig not conflicting before is bit-identical and pays nothing. Conflict pays for
+three fixed alternatives, in order: opposite seed with centroid, authored seed with reach-circle, opposite seed
+with reach-circle. One comparator `outranks` selects: `converged` outranks every miss (tier read by exhaustive
+`switch` over FABRIK's five kinds), then strictly lower `quality.residual` wins, exact tie keeps earlier
+candidate. Comparator total: tier read first → `NaN` residual never crosses tier, within tier ranks below every
+number in either position, `Infinity` orders like any number. Finite FABRIK output never produces `NaN`
+residual, `converged` cannot carry one because `NaN <= FABRIK_TOLERANCE` false; rule exists so answer cannot
+depend on candidate order if that invariant ever broken. No restart metadata published (ADR-107),
+`quality.iterations` = selected candidate's own count. Baseline is candidate → selected result never worse than
+prior result under comparator.
 
-**Measured** (sandbox, esbuild bundles of the real modules, Node `v22.23.1`; reviewed, not trusted):
-the envelope moves from 190 to 3 conflicted tree-14 rigs and from 200 to 61 tree-30 rigs, with no
-regression and every non-conflicted baseline `Object.is`-identical. The offset-exact reach circle
-was measured against the first implementation's circle, which was centred on the child's raw tip:
-the two agree bit for bit on every rig without a pivot offset, which is every envelope rig, and on
-feasible trees with pivot offsets (goals composed from one pose, 200 rigs per shape) the exact
-circle converges 189 against 171 tree-6 rigs (two shared members, four leaves), 105 against 21
-tree-14 rigs, 19 against 0 tree-30 rigs and 40 against 18 tree-14 rigs with large offsets, strictly
-improving 238 rigs and worsening none. On the 2,000-rig adversarial corpus, dominated by infeasible
-and limited rigs, the two circles differ on 100 rigs, 44 better and 38 worse among misses, with
-equal converged counts, and neither regresses any rig against the pre-#490 solve. `docs/BENCH-IK.md`
-carries the full numbers.
+**Measured** (sandbox, esbuild bundles of real modules, Node `v22.23.1`; reviewed, not trusted): envelope moves
+190 → 3 conflicted tree-14 rigs, 200 → 61 tree-30 rigs, no regression, every non-conflicted baseline
+`Object.is`-identical. Offset-exact reach circle measured against first implementation's circle (centred on
+child's raw tip): agree bit for bit on every rig without pivot offset (every envelope rig), and on feasible
+trees with pivot offsets (goals composed from one pose, 200 rigs per shape) exact circle converges 189 against
+171 tree-6 rigs (two shared members, four leaves), 105 against 21 tree-14 rigs, 19 against 0 tree-30 rigs, 40
+against 18 tree-14 rigs with large offsets — strictly improving 238 rigs, worsening none. On 2,000-rig
+adversarial corpus (dominated by infeasible and limited rigs) circles differ on 100 rigs, 44 better, 38 worse
+among misses, equal converged counts, neither regresses any rig against pre-#490 solve. `docs/BENCH-IK.md`
+carries full numbers.
 
-The four-candidate gate was chosen instead of changing FABRIK's ordinary trajectory because it keeps
-bit identity for every non-conflicted baseline by construction rather than by measurement. It is
-deliberately not a promise that every feasible tree converges: 61 of 200 feasible tree-30 rigs, and
-every independently conflicting rig, remain `conflicted`, and their residuals remain useful
-inspection evidence.
+Four-candidate gate chosen instead of changing FABRIK's ordinary trajectory because it keeps bit identity for
+every non-conflicted baseline by construction, not by measurement. Deliberately not promise every feasible tree
+converges: 61 of 200 feasible tree-30 rigs, and every independently conflicting rig, remain `conflicted`,
+residuals still useful inspection evidence.
 
-**Withdrawn on the way.** A reach circle centred on the child's raw tip (the first implementation)
-was withdrawn because it ignores the child's pivot offset, so the circle it fits is not the
-constraint FABRIK enforces; the measurement above is why. An optional `childTip` and `childLength`
-on `Pull`, with a fallback to the centroid when either was missing, was withdrawn for the closed
-union, because a probe on optional fields is the predicate chain ADR-092 forbids and the fallback
-hid a shape FABRIK never produces. The ungated best-of, restarts alone and per-branch sequential
-passes were withdrawn on the issue for the reasons recorded there.
+**Withdrawn on the way.** Reach circle centred on child's raw tip (first implementation) withdrawn: ignores
+child's pivot offset → circle fitted is not constraint FABRIK enforces; measurement above is why. Optional
+`childTip` and `childLength` on `Pull` with fallback to centroid when either missing, withdrawn for closed
+union: probe on optional fields = predicate chain ADR-092 forbids, fallback hid shape FABRIK never produces.
+Ungated best-of, restarts alone, per-branch sequential passes withdrawn on issue for reasons recorded there.
 
-**Evidence.** `FB-17` (the issue's minimal repro converges through a reach-circle candidate),
-`FB-18` (the opposite-seed reach-circle result is published and the loser is not), `FB-19` (a
-feasible tree with a pivot offset converges through the offset-exact circle; red on the raw-tip
-circle) and `FB-20` (the comparator's tiers, ties, `NaN` and `Infinity`) in
-`packages/plugins/test/unit/fabrik-solve.test.ts`; `GI-17` (the weighted objective, the shared
-spread, weight-scale invariance, both pull kinds, the lone pull and the keep-the-centroid guard) in
-`ik-goal-influence.test.ts`; `SD-20` (no-regression, bit identity, permutation, repeat and
-interleave over a seeded corpus) in `ik-stability.test.ts`; and `EN-5` (envelope quality counts and
-finite output) in `ik-envelope.test.ts`.
+**Evidence.** `FB-17` (issue's minimal repro converges through reach-circle candidate), `FB-18` (opposite-seed
+reach-circle result published, loser not), `FB-19` (feasible tree with pivot offset converges through
+offset-exact circle; red on raw-tip circle), `FB-20` (comparator's tiers, ties, `NaN`, `Infinity`) in
+`packages/plugins/test/unit/fabrik-solve.test.ts`; `GI-17` (weighted objective, shared spread, weight-scale
+invariance, both pull kinds, lone pull, keep-the-centroid guard) in `ik-goal-influence.test.ts`; `SD-20`
+(no-regression, bit identity, permutation, repeat, interleave over seeded corpus) in `ik-stability.test.ts`;
+`EN-5` (envelope quality counts, finite output) in `ik-envelope.test.ts`.
 
 ## Consequences
 
-Authors can state how much each addressed goal should count when a branching solve must compromise,
-without changing the meaning of FK's per-member blend `weight`. Unweighted rigs retain phase 4
-rotations bit for bit. Opted-in inspection reports the fixed quality shape plus frozen per-leaf
-`residuals`; an unopted solver still publishes no inspection value. A remaining disagreement is
-named `conflicted` with the residual record that makes the trade-off visible, while a caller is not
-told the stronger and unsupported claim that no pose exists.
+Authors state how much each addressed goal counts when branching solve must compromise, without changing
+meaning of FK's per-member blend `weight`. Unweighted rigs retain phase 4 rotations bit for bit. Opted-in
+inspection reports fixed quality shape plus frozen per-leaf `residuals`; unopted solver still publishes no
+inspection value. Remaining disagreement named `conflicted` with residual record making trade-off visible, while
+caller not told stronger unsupported claim that no pose exists.

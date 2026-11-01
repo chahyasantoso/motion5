@@ -29,15 +29,7 @@ export interface GsapTimelineLike {
     vars: Record<string, unknown>,
     position?: number,
   ): GsapTimelineLike;
-  /**
-   * The most recently added child, whatever it is.
-   *
-   * `to()` returns the timeline rather than the tween it added, so collecting its return value
-   * gives N references to one object and the first `kill()` takes every sibling with it. This one
-   * read is what makes per-key handles possible at all, and a real `gsap.timeline()` already
-   * answers it, so no host shim moves. Typed as `unknown` because gsap's own answer is a union
-   * with a callback in it: this adapter narrows what it retains rather than asking a host to.
-   */
+  /** The most recently added child; `to()` answers the timeline, so per-key handles need this read. */
   recent(): unknown;
   kill(): void;
 }
@@ -45,7 +37,7 @@ export interface GsapLike {
   timeline?(vars?: Record<string, unknown>): GsapTimelineLike;
   to?(target: Record<string, unknown>, vars: Record<string, unknown>): GsapTweenLike;
 }
-/** One frozen value, so a key with nothing compiled allocates nothing. */
+/** One frozen value; a key with nothing compiled allocates nothing. */
 const NO_STOPS: readonly AuthoredStop[] = Object.freeze([]);
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
@@ -61,13 +53,7 @@ function readKeyframes(config: unknown): Readonly<Record<string, unknown>> {
 function readTweenVars(config: unknown): Readonly<Record<string, unknown>> {
   return !isRecord(config) || !isRecord(config.tweenVars) ? {} : config.tweenVars;
 }
-/**
- * Whether this record's eases belong to their own keys rather than to a shared percent.
- *
- * A flattened cell plan gives every cell its own key and its own ease, which the per-key tween this
- * adapter builds can express. The default reading stays the grouped one, where an ease at a percent
- * is a property of the frame. See `KeyframeCompileOptions`.
- */
+/** `perKeyEase` → each cell keeps its own ease; default groups one ease per percent frame. */
 function readCompileOptions(config: unknown): KeyframeCompileOptions {
   return isRecord(config) && config.perKeyEase === true ? { ease: "per-key" } : {};
 }
@@ -75,25 +61,13 @@ function hasError(diagnostics: readonly Diagnostic[]): boolean {
   return diagnostics.some(({ severity }) => severity === "error");
 }
 /**
- * The most recently added child, or nothing when the host cannot answer.
- *
- * The member is declared on `GsapTimelineLike`, so a host written against the type has it. A cast
- * fixture is not held to the type, and there are older ones in the suite that predate it. Reading
- * through one guard rather than adding a branch at the call site keeps the cost of an unanswering
- * host to exactly one thing: that timeline retains no per-key handles, so `patchKeys` finds nothing
- * to kill and declines, and the caller recompiles. A `TypeError` from a shim that was correct
- * yesterday is the alternative, and it is worse.
- */
+ * The recent child, or nothing when the host cannot answer.
+ * Unanswering host retains no handles → `patchKeys` declines → caller recompiles instead of a `TypeError`. */
 function recentChild(timeline: GsapTimelineLike): unknown {
   const read = timeline.recent;
   return typeof read === "function" ? read.call(timeline) : undefined;
 }
-/**
- * The child this adapter is allowed to retain: anything that can be killed on its own.
- *
- * Narrowed here rather than in `GsapTimelineLike`, because gsap's `recent()` answers with a tween,
- * a nested timeline, or a plain callback, and only two of those have a `kill`.
- */
+/** A child this adapter may retain: anything killable alone; gsap may answer a callback. */
 function asTween(child: unknown): GsapTweenLike | undefined {
   if (!isRecord(child)) return undefined;
   return typeof child.kill === "function" ? (child as unknown as GsapTweenLike) : undefined;
@@ -110,13 +84,8 @@ function sameStops(left: readonly AuthoredStop[], right: readonly AuthoredStop[]
   });
 }
 /**
- * Whether two compiles produced the same animated keys, in the compiler's own order.
- *
- * A difference is never a patch. A scalar written over an animated key deletes that key from the
- * compiled properties and a stop list over a static one adds it, and the retired `{ stops: [...] }`
- * wrapper compiles to nothing at all, so all three are recompiles of a different shape and all
- * three decline here rather than being half-applied.
- */
+ * Same animated keys; any difference is a recompile, never a patch.
+ * Scalar over animated key, stop list over static one, retired `{ stops: [...] }` wrapper compiles to nothing → new shape. */
 function sameKeys(left: CompiledKeyframes, right: CompiledKeyframes): boolean {
   const before = left.properties.map(({ key }) => key);
   const after = right.properties.map(({ key }) => key);
@@ -141,9 +110,8 @@ export function createGsapInterpolator(gsap: GsapLike): Interpolator {
   }
   return {
     create(config): InterpolationTimeline {
-      // The base record and the compile that is currently on the timeline. The overlay is not
-      // retained beside them, because it is the live record minus the base and retaining it as well
-      // would be two answers to one question. A rebase is therefore one assignment rather than two.
+      // Base record and the compile now on the timeline; the overlay is not retained (live minus
+      // base), so a rebase is one assignment.
       const compileOptions = readCompileOptions(config);
       let base = readKeyframes(config);
       let compiled = compilePercentKeyframes(base, "keyframes", compileOptions);
@@ -155,14 +123,8 @@ export function createGsapInterpolator(gsap: GsapLike): Interpolator {
       const timeline = createTimeline.call(gsap, { paused: true });
       const tweensByKey = new Map<string, readonly GsapTweenLike[]>();
 
-      // Tween construction is untouched. The only thing added is reading back the child each `to()`
-      // appended, so one key's tweens can later be killed without touching a sibling's.
-      //
-      // What is load-bearing here, and what `patchKeys` below has to reproduce, is the state this
-      // runs in: the proxy holds every key's first compiled stop and nothing has rendered yet. A
-      // tween built by `to()` carries no start value of its own, it reads one off the target, so
-      // this precondition is the whole reason a chain of segments starts where the previous one
-      // ended rather than somewhere else.
+      // Read back each `to()` child → per-key kill. `to()` reads its start off the proxy, so a
+      // rebuild must first hold each key's first compiled stop, unrendered.
       const buildKey = (key: string, stops: readonly AuthoredStop[]): readonly GsapTweenLike[] => {
         const handles: GsapTweenLike[] = [];
         for (let index = 1; index < stops.length; index += 1) {
@@ -184,9 +146,8 @@ export function createGsapInterpolator(gsap: GsapLike): Interpolator {
       };
 
       for (const { key, stops } of compiled.properties) tweensByKey.set(key, buildKey(key, stops));
-      // The terminal padding tween owns no key and pins the total length, so it is added after every
-      // per-key handle has been collected and never enters the retained map. Killing it would
-      // renormalize `progress()` against a shorter timeline and move every mapped time silently.
+      // Terminal padding tween owns no key and pins total length; never in the map, since killing
+      // it would renormalize `progress()` and move every mapped time.
       if (duration > 0) timeline.to(proxy, { duration: 0 }, duration);
 
       function progress(): number;
@@ -198,26 +159,19 @@ export function createGsapInterpolator(gsap: GsapLike): Interpolator {
       function patchKeys(overlay: Readonly<Record<string, unknown>>, rebase = false) {
         const effective = { ...base, ...overlay };
         const next = compilePercentKeyframes(effective, "keyframes", compileOptions);
-        // Declined, not refused. The caller recompiles, and the recompile raises the diagnostic
-        // exactly as a fresh `create()` of the same record would, from the one place that owns it.
+        // Declined, not refused: the caller recompiles, and that compile raises the diagnostic
+        // exactly as a fresh `create()` would, from its one owner.
         if (hasError(next.diagnostics)) return RECOMPILE;
         if (!sameKeys(next, compiled)) return RECOMPILE;
         const changed = next.properties.filter(
           ({ key, stops }) => !sameStops(stops, stopsOf(compiled, key)),
         );
-        // A host that answered nothing for `recent()` retains no handles, so there is nothing to
-        // kill and a rebuild would double the tweens. Decline instead, which is the same answer the
-        // one-tween adapter gives by not declaring the member at all.
+        // Host answered nothing for `recent()` → no handles → a rebuild would double the tweens;
+        // decline, as the one-tween adapter does by omission.
         if (changed.some(({ key }) => (tweensByKey.get(key) ?? []).length === 0)) return RECOMPILE;
         const at = timeline.progress();
-        // Wind the playhead back before anything is rebuilt, and re-seed from the recompiled
-        // initial before any `to()` is called. That order is the correctness here rather than
-        // tidiness: a rebuilt tween reads its start value off the proxy, and the only state in
-        // which that read is right is the one `create()` builds in, with the proxy holding each
-        // key's first compiled stop. A mid-animation progress is not that state, so a key patched
-        // at 50% animated from whatever the replaced tween happened to be holding instead of from
-        // its own first stop. `PK-11` asks for indistinguishability from a fresh create, and
-        // restoring the precondition rather than compensating after the fact is what earns it.
+        // Rewind to 0, re-seed `next.initial`, rebuild: rebuilt tweens read start off the proxy.
+        // Mid-progress would animate from the replaced tween's value, not that key's first stop.
         timeline.progress(0);
         Object.assign(proxy, next.initial);
         for (const { key, stops } of changed) {
@@ -226,9 +180,8 @@ export function createGsapInterpolator(gsap: GsapLike): Interpolator {
         }
         compiled = next;
         if (rebase) base = effective;
-        // Re-applying the progress renders the rebuilt keys and returns every sibling the rewind
-        // moved. A timeline that was already holding 0 needs no render at all, because the re-seed
-        // above is the state at 0.
+        // Re-applying `at` renders rebuilt keys and returns siblings the rewind moved; at 0 the
+        // re-seed already is that state, so no render is needed.
         timeline.progress(at);
         return PATCHED;
       }
@@ -290,10 +243,8 @@ export function createGsapOneTweenInterpolator(gsap: GsapLike): Interpolator {
         tween.progress(value);
       }
 
-      // Deliberately no per-key capability. One `gsap.to` carrying a `keyframes` map has no per-key
-      // child to kill, so declaring the member here would be a lie and the caller's recompile is
-      // the honest answer. Interface segregation because an implementation genuinely cannot honor
-      // it, not because it was inconvenient. See ADR-060.
+      // No per-key capability: one `gsap.to` with a `keyframes` map has no per-key child to kill,
+      // so declaring the member would lie; the caller's recompile is the honest answer.
       return {
         get duration() {
           return duration;

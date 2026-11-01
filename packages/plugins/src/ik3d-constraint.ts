@@ -45,24 +45,7 @@ import {
   type JointLimit,
 } from "./ik-constraint";
 
-/**
- * The one runtime owner of 3D joint limits: what a member's live values declare, and the legal local
- * orientation nearest to the one the solve proposes (issue #500 phase 6, ADR-123).
- *
- * The 3D counterpart of `ik-constraint.ts`, and a reader of it rather than a restatement: a hinge's
- * angle range and a swing-twist's twist range are that module's `JointLimit`, read by its
- * `readAngleRange` and limited by its `limitRotation`, so the nearer-bound-on-the-circle rule, the
- * tie to `min` and the unchanged in-range angle hold in both dimensions from one statement. The
- * rotation arithmetic is `frame3d.ts`'s (`rotationAboutAxis3d`, `swingTwist3d`, `twistAbout3d`),
- * and 3D FABRIK enforces a limit by calling `limitLocal3d` inside its outward pass and never
- * restates a bound, which is the ADR-108 split carried into 3D.
- *
- * Every limit is stated in the member's local orientation, its rotation relative to its parent's
- * solved frame, exactly as a 2D range bounds the local angle rather than a turn from rest. So a
- * hinge about the parent's +z over `[min, max]` is the 2D range itself, a cone is centred on the
- * direction a member with no local rotation continues its parent in, and the authored rest
- * orientation stays what `fk3d` composes with no solve, not a second centre for the limit.
- */
+/** Sole owner of 3D joint limits: the legal local orientation, relative to the parent's solved frame, nearest the one the solve proposes. */
 export type JointLimit3d =
   | { readonly kind: "free" }
   | { readonly kind: "hinge"; readonly axis: Vec3; readonly range: JointLimit }
@@ -75,17 +58,14 @@ export type JointLimit3d =
 
 export const FREE_JOINT3D: JointLimit3d = Object.freeze({ kind: "free" });
 
-/** The axis a hinge turns about when it authors none: the parent's +z, the 2D plane's normal. */
+/** Hinge axis when none is authored: the parent's +z, the 2D plane's normal. */
 const DEFAULT_HINGE_AXIS: Vec3 = Object.freeze([0, 0, 1] as const);
 
-/**
- * How little of a member's direction may lie off a hinge's axis before the direction is read as
- * naming no hinge angle, relative to the size of the swept circle. The same `1e-9` the pole rule
- * reads a line with (ADR-118): below it the angle is rounding, not geometry.
- */
+/** Share of the swept circle's size a direction may lie off a hinge axis by and still name an
+ *  angle; below it the offset is rounding, not geometry. */
 const HINGE_DIRECTION_TOLERANCE = 1e-9;
 
-/** A hinge plane materially different from the planar +/-z plane, on its own axis scale. */
+/** A hinge plane materially off the planar +/-z plane, on its own axis scale. */
 export function nonPlanarHinge3d(limit: JointLimit3d): boolean {
   if (limit.kind !== "hinge") return false;
   const [x, y, z] = limit.axis;
@@ -93,11 +73,8 @@ export function nonPlanarHinge3d(limit: JointLimit3d): boolean {
   return largest > 0 && Math.max(Math.abs(x), Math.abs(y)) > HINGE_DIRECTION_TOLERANCE * largest;
 }
 
-/**
- * The unit hinge axis the live values declare. Every finite component is a direction load accepts,
- * so the vector is first divided by its largest magnitude: `normalize3`'s length would overflow to
- * infinity for components near `Number.MAX_VALUE` and read a legal axis as the +z fallback.
- */
+/** The unit hinge axis live values declare, divided by its largest magnitude first:
+ *  `normalize3`'s length overflows near `Number.MAX_VALUE`, reading a legal axis as +z fallback. */
 function readHingeAxis(values: Readonly<Record<string, unknown>>): Vec3 {
   const axis: Vec3 = [
     readAxisComponent(values[AXIS_X_KEY]) ?? 0,
@@ -109,16 +86,7 @@ function readHingeAxis(values: Readonly<Record<string, unknown>>): Vec3 {
   return normalize3([axis[0] / largest, axis[1] / largest, axis[2] / largest], DEFAULT_HINGE_AXIS);
 }
 
-/**
- * The limit a member's live values declare, total over any value a live write can deliver.
- *
- * Load refuses every malformed, unused, incomplete or empty authored joint (`ik-joint-malformed`,
- * `ik-joint-key-unused`, `ik-limit-malformed`, `ik-limit-empty`), but a live value-tier write
- * bypasses load, so this reader answers everything rather than trusting it, by ADR-108's rules: a
- * `joint` that names no kind is free; a bound outside its domain is absent and an absent bound is
- * its domain edge, so a cone with no readable `maxSwing` bounds nothing; an axis with no direction
- * is the default +z; and a range is read by the 2D `readAngleRange`, `[min, min]` when inverted.
- */
+/** Live values bypass load, so this is total: no `joint` kind -> free; a bound outside its domain -> absent -> its domain edge; a directionless axis -> +z; inverted range -> `[min, min]`. */
 export function readJointLimit3d(values: Readonly<Record<string, unknown>>): JointLimit3d {
   const kind = readJointKind(values[JOINT_KEY]);
   const maxSwing = (): number => readSwingDegree(values[MAX_SWING_KEY]) ?? LIMIT_CEILING;
@@ -145,35 +113,20 @@ export function readJointLimit3d(values: Readonly<Record<string, unknown>>): Joi
   }
 }
 
-/** Whether `limit` constrains a solve at all, which is what sends a chain to the iterative solve. */
+/** Whether `limit` bounds a solve at all; decides whether a chain goes iterative. */
 export function constrains(limit: JointLimit3d): boolean {
   return jointConstrains(limit.kind);
 }
 
-/**
- * A proposed local orientation, limited: the legal one nearest to it, or `unmoved` when the proposal
- * is already legal (never for a hinge, see `limitHinge`), and whether it rests on a bound. Unmoved carries no orientation, so a caller
- * keeps the frame and tip it already had and an in-range member publishes the bytes it would
- * unlimited, rather than a copy of the proposal that invites re-deriving it.
- */
+/** The nearest legal local to a proposal, or `unmoved` when already legal (never for a hinge, see `limitHinge`), plus whether it rests on a bound; `unmoved` carries no orientation. */
 export type LimitedLocal3d =
   | { readonly kind: "unmoved"; readonly atBound: boolean }
   | { readonly kind: "moved"; readonly local: Matrix3; readonly atBound: boolean };
 
 const UNLIMITED: LimitedLocal3d = Object.freeze({ kind: "unmoved", atBound: false });
 
-/**
- * The hinge angle a proposed local orientation asks for: the turn about `axis` that points the
- * member's +x nearest the proposed direction.
- *
- * Turning +x about a unit axis sweeps a circle; with `u` the part of +x off the axis and `v = axis ×
- * u`, the turned direction is `x·a a + cos θ u + sin θ v`, so the angle whose direction lies nearest
- * `d` is `atan2(v·d, u·d)`. On the planar hinge (+z) that is the 2D local angle, `atan2(dy, dx)`.
- * When the circle has no size (the axis is the member's own +x, so the bone only rolls) or the
- * direction has no part off the axis (it points along the hinge), the direction names no angle, and
- * the proposed orientation's own turn about the axis answers instead, which is where the solve's
- * reconstructed roll already puts it.
- */
+/** `u` = +x off `axis`, `v = axis × u`: the hinge angle nearest direction `d` is atan2(v·d, u·d),
+ *  the 2D local angle on +z. Zero-size circle, or `d` along the axis -> the proposal's own roll. */
 function hingeAngle(axis: Vec3, local: Matrix3): number {
   const along = axis[0];
   const u: Vec3 = [1 - along * axis[0], -along * axis[1], -along * axis[2]];
@@ -186,25 +139,15 @@ function hingeAngle(axis: Vec3, local: Matrix3): number {
   return canonicalDegrees(Math.atan2(s, c));
 }
 
-/**
- * A hinge has one degree of freedom, so its legal orientation is always rebuilt from the limited
- * angle and answered `moved`, in range or not: a proposal is legal only when it is exactly a turn
- * about the axis, and a solve's floating-point orientation never is, so an `unmoved` arm here would
- * publish a tilt off the hinge whenever the angle happened to sit inside the range.
- */
+/** 1 DOF: always rebuilt from the limited angle and answered `moved`, in range or not. A float
+ *  proposal is never exactly a turn about the axis, so `unmoved` would publish its off-hinge tilt. */
 function limitHinge(axis: Vec3, range: JointLimit, local: Matrix3): LimitedLocal3d {
   const angle = limitRotation(range, hingeAngle(axis, local));
   return { kind: "moved", local: rotationAboutAxis3d(axis, angle), atBound: atBound(range, angle) };
 }
 
-/**
- * A cone or swing-twist limit, through the swing-twist split about the member's own +x.
- *
- * The swing is capped at `maxSwing` about its own axis, which moves the direction the least, and
- * the twist is limited by the 2D rule, nearer bound on the circle. A cone's twist is `FREE_JOINT`,
- * which `limitRotation` returns unchanged, so a cone keeps the roll the solve reconstructed. An
- * orientation inside both is returned as it came.
- */
+/** Swing capped at `maxSwing` about its own axis (least direction move); twist by the 2D
+ *  nearer-bound rule. A cone's twist is `FREE_JOINT`, so a cone keeps the reconstructed roll. */
 function limitSwingTwist(maxSwing: number, twist: JointLimit, local: Matrix3): LimitedLocal3d {
   const split = swingTwist3d(local);
   const twistDegrees = limitRotation(twist, split.twistDegrees);
@@ -220,15 +163,7 @@ function limitSwingTwist(maxSwing: number, twist: JointLimit, local: Matrix3): L
   };
 }
 
-/**
- * The legal local orientation nearest to `local` under `limit`: the one question 3D FABRIK asks this
- * module, once per member per outward pass (ADR-123).
- *
- * `proposed` is read only by a limit that needs it, because deriving a local orientation from the
- * solve's world frame costs a matrix product per member per pass that a free joint never reads. A
- * free joint answers unmoved and never at a bound without calling it, so an unconstrained member
- * takes exactly the path, the cost and the bytes it took before limits existed.
- */
+/** The legal local nearest `local` under `limit`: 3D FABRIK's one question per member per outward pass. `proposed` is lazy, so a free joint never pays that matrix product. */
 export function limitLocal3d(limit: JointLimit3d, proposed: () => Matrix3): LimitedLocal3d {
   switch (limit.kind) {
     case "free":
@@ -244,14 +179,10 @@ export function limitLocal3d(limit: JointLimit3d, proposed: () => Matrix3): Limi
   }
 }
 
-/** The largest matrix-entry drift a rendered hinge local may show and still be the same pose. */
+/** Most entrywise drift a rendered hinge local may show and still be the same pose. */
 const RENDERED_HINGE_TOLERANCE = 1e-9;
 
-/**
- * Validate a sampled hinge pose in the actual Euler image the renderer receives. The ideal
- * axis turn, Euler round-trip, and shared limit projection must all agree before an analytic
- * recovery may publish it. This is deliberately separate from the ordinary FABRIK projection.
- */
+/** Accept a sampled hinge pose only where the axis turn, its Euler round trip and `limitLocal3d` agree to `RENDERED_HINGE_TOLERANCE`; else undefined, so it is never published. */
 export function renderedLegalHinge3d(
   limit: Extract<JointLimit3d, { kind: "hinge" }>,
   angle: number,
@@ -272,12 +203,7 @@ export function renderedLegalHinge3d(
   return { euler, matrix };
 }
 
-/**
- * The legal local orientation at the centre of `limit`, the pose the 3D legal seed holds a limited
- * member in (issue #523, ADR-129): a hinge turned to its range's centre about its axis, a cone with
- * no swing, a swing-twist with no swing and its twist range's centre, each legal by construction.
- * A free member has no centre and keeps `rest`, what `fk3d` composes for it with no solve.
- */
+/** The legal local at the centre of `limit`, the pose the 3D legal seed holds a limited member in; a free member has no centre and keeps `rest`, what `fk3d` composes with no solve. */
 export function centreLocal3d(limit: JointLimit3d, rest: Matrix3): Matrix3 {
   return legalLocal3d(limit, rest, 0.5);
 }
@@ -298,15 +224,7 @@ export function legalLocal3d(limit: JointLimit3d, rest: Matrix3, fraction: numbe
   }
 }
 
-/**
- * Whether a local orientation points its member off the circle a hinge's axis sweeps, so that no
- * hinge angle holds it: the member's +x turned about a unit axis keeps its component along the axis,
- * `x·a = a[0]`, so a direction is on the circle exactly when its own component `d·a` equals that, to
- * `HINGE_DIRECTION_TOLERANCE`. Only a hinge names a plane; a free joint, a cone and a swing-twist
- * answer `false`, because a direction they bound is projected onto a bound without leaving the
- * plane it was proposed in. `leavesHingePose` adds the full-frame condition for seed selection
- * (issue #523, ADR-129).
- */
+/** True when +x lies off the circle the hinge axis sweeps, so no hinge angle holds it: a turn about a unit axis keeps +x's component `a[0]`, so on-circle means `d·a == a[0]` to tolerance. */
 export function leavesHingeCircle(limit: JointLimit3d, local: Matrix3): boolean {
   switch (limit.kind) {
     case "hinge":
@@ -320,13 +238,7 @@ export function leavesHingeCircle(limit: JointLimit3d, local: Matrix3): boolean 
   }
 }
 
-/**
- * Whether a proposed frame requires projection onto a pure hinge pose. A direction on
- * the swept circle is not enough: authored rest roll can keep +x on the circle while tilting the
- * other axes. A proper rotation is a turn about `axis` exactly when it fixes that axis. Compare
- * that invariant to the frame tolerance used by inward enforcement; range clipping is deliberately
- * not part of seed selection, because planar arcs may be clipped without leaving their plane.
- */
+/** True when the frame is not a pure turn about `axis`: rest roll can hold +x on the circle yet tilt the other axes. A rotation is such a turn exactly when it fixes `axis`. */
 export function leavesHingePose(limit: JointLimit3d, local: Matrix3): boolean {
   if (leavesHingeCircle(limit, local)) return true;
   switch (limit.kind) {
@@ -345,17 +257,8 @@ export function leavesHingePose(limit: JointLimit3d, local: Matrix3): boolean {
   }
 }
 
-/**
- * How far, entry by entry, a legal local orientation may sit from the proposal it was rebuilt from
- * and still count as that proposal for the inward pass.
- *
- * A hinge rebuilds its local from the limited angle even when the angle is in range (`limitHinge`
- * says why the outward pass must), so a legal child always came back `moved`, and every limited
- * hinge re-derived its base's frame and re-placed its pivot for a turn of a few ulps. The 2D rule
- * returns the base it was given for a legal child, so a planar +z hinge answered differently from
- * the same 2D rig. A rotation matrix's entries are at most one, so a reconstruction of a legal pose
- * differs from it by rounding, around `1e-16`, while a real tilt or overrun is many orders larger.
- */
+/** How far a legal local, rebuilt from its proposal, may sit from it entrywise and still count as
+ *  that proposal inward: reconstruction drifts ~1e-16, a real tilt or overrun far more. */
 const INWARD_FRAME_TOLERANCE = 1e-12;
 
 function sameFrame(a: Matrix3, b: Matrix3): boolean {
@@ -364,21 +267,7 @@ function sameFrame(a: Matrix3, b: Matrix3): boolean {
   return true;
 }
 
-/**
- * A base member's world frame, turned the least that makes a limited child's local orientation
- * legal with the child's frame held: the inward half of bidirectional enforcement (ADR-126, issue
- * #514), and the 3D statement of `boundBaseDirection`.
- *
- * The child's local orientation is `base^T child`, the one `limitLocal3d` bounds in the outward
- * pass. Holding `child` and replacing that local by the legal one nearest it gives `base' = child
- * legal^T`, which is exactly the outward rule solved for the other end. On a planar +z hinge the
- * local is a turn by `dir(child) - dir(base)` and the answer is the base turned to `dir(child) -
- * limitRotation(range, dir(child) - dir(base))`, the 2D formula, so the planar agreement between the
- * dimensions holds. An `unmoved` answer carries no frame, so a caller keeps the placement it
- * already had and a legal pose costs no re-derivation. A legal child is `unmoved` here even for a
- * hinge, whose outward answer is always `moved`: a rebuilt local within `INWARD_FRAME_TOLERANCE` of
- * the proposal is the proposal, which is what `boundBaseDirection` answers for the same planar rig.
- */
+/** The base frame turned least so a held child's local `base^T child` is legal: `child · legal^T`. `unmoved` carries no frame, so the caller keeps its placement. */
 export type BoundBase3d =
   | { readonly kind: "unmoved" }
   | { readonly kind: "moved"; readonly frame: Matrix3 };
@@ -386,7 +275,7 @@ export type BoundBase3d =
 const UNMOVED_BASE: BoundBase3d = Object.freeze({ kind: "unmoved" });
 
 export function boundBaseFrame3d(limit: JointLimit3d, child: Matrix3, base: Matrix3): BoundBase3d {
-  // Read eagerly: the inward pass asks only about a limited child, and every limit reads it.
+  // Eager: the inward pass asks only about a limited child, and every limit reads its local.
   const local = multiplyMatrix3(transposeMatrix3(base), child);
   const limited = limitLocal3d(limit, () => local);
   switch (limited.kind) {

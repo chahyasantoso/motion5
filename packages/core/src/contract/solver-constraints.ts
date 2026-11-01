@@ -1,62 +1,52 @@
 import { unreachable } from "../lang/exhaustive";
 import { readAuthoredLeaf } from "./authored-leaf";
 
-/**
- * The authored vocabulary of a constrained 2D solve, and the one owner of what a well-formed value
- * of it is. See ADR-108, ADR-109 and ADR-110.
- *
- * `minRotation` and `maxRotation` are per-member local-angle bounds in degrees, `bend` is the
- * solver's branch hint and `flip` its older boolean spelling. `inspect` is the solver's static
- * opt-in to its `inspection` output, and `inspection` is the name of that output, kept beside the
- * switch so the authored name and the published one cannot drift apart. `influence` is a member's
- * static positive weight on the goal its leaf is addressed with, read inside the solve when branches
- * disagree about a shared member. `orient` is a 3D leaf's static weight in `[0, 1]` on its goal's
- * orientation, read by `ik3d` after the position solve (ADR-124). The graph layer asks this module
- * whether an authored value is well formed, and the runtime asks it whether a live value is in the
- * domain, so the limit domain `[-180, 180]`, the influence domain (finite, greater than zero) and the
- * orient domain (finite, in `[0, 1]`) are each stated once and read by both.
- */
+/** Lower local-angle bound, in degrees. */
 export const MIN_ROTATION_KEY = "minRotation" as const;
+/** Upper local-angle bound, in degrees. */
 export const MAX_ROTATION_KEY = "maxRotation" as const;
+/** The solver's branch hint for a shared member. */
 export const BEND_KEY = "bend" as const;
+/** `bend`'s boolean spelling. */
 export const FLIP_KEY = "flip" as const;
+/** Static opt-in to the solve's `inspection` output. */
 export const INSPECT_KEY = "inspect" as const;
+/** Authored name of the `inspection` output, beside its switch. */
 export const INSPECTION_KEY = "inspection" as const;
+/** Member's static positive weight on its leaf's goal; read when branches disagree. */
 export const INFLUENCE_KEY = "influence" as const;
+/** 3D leaf's static `[0, 1]` weight on goal orientation; `ik3d` reads after position solve. */
 export const ORIENT_KEY = "orient" as const;
 
+/** Per-member local-angle bounds, in degrees. */
 export type LimitKey = typeof MIN_ROTATION_KEY | typeof MAX_ROTATION_KEY;
 export const LIMIT_KEYS: readonly LimitKey[] = Object.freeze([MIN_ROTATION_KEY, MAX_ROTATION_KEY]);
 
-/** A key the solver node authors itself, scoped to the group that bound its `root`. */
+/** Solver-authored key, scoped to the group that bound its `root`. */
 export type SolverKey = typeof BEND_KEY | typeof FLIP_KEY | typeof INSPECT_KEY;
 
-/** The bound an omitted `minRotation` means, and the floor of the limit domain. */
+/** Default for omitted `minRotation`; domain floor. */
 export const LIMIT_FLOOR = -180;
-/** The bound an omitted `maxRotation` means, and the ceiling of the limit domain. */
+/** Default for omitted `maxRotation`; domain ceiling. */
 export const LIMIT_CEILING = 180;
 
-/** One authored limit pair, classified. `empty` keeps both bounds so its diagnostic can cite them. */
+/** Authored limit pair: free, range, empty (min > max), or malformed key. */
 export type LimitAuthored =
   | { readonly kind: "free" }
   | { readonly kind: "range"; readonly min: number; readonly max: number }
   | { readonly kind: "malformed"; readonly key: LimitKey }
   | { readonly kind: "empty"; readonly min: number; readonly max: number };
 
+/** The two branches a solve can take. */
 export type Bend = "positive" | "negative";
 
+/** Authored `bend`: absent, branch name, or malformed. */
 export type BendAuthored =
   | { readonly kind: "absent" }
   | { readonly kind: "bend"; readonly bend: Bend }
   | { readonly kind: "malformed" };
 
-/**
- * A degree in the limit domain, or `undefined` for anything else.
- *
- * The one predicate for the domain. A live value reaching the solve is read through it directly;
- * an authored leaf is read through it after `readAuthoredLeaf` has proved the leaf static, so a
- * keyframed bound is malformed at load rather than an animated constraint at runtime.
- */
+/** Sole limit-domain predicate: a degree in `[-180, 180]`, else `undefined`. */
 export function readLimitDegree(value: unknown): number | undefined {
   return typeof value === "number" &&
     Number.isFinite(value) &&
@@ -71,13 +61,7 @@ function readStaticLimit(value: unknown): number | undefined {
   return leaf.kind === "static" ? readLimitDegree(leaf.value) : undefined;
 }
 
-/**
- * Classifies the limit a member authored, from the bounds it authored under any spelling.
- *
- * `values` holds only the limit keys the member actually authored. An absent side defaults to the
- * domain edge; a present side that is not a static in-domain number is `malformed` and names its
- * key, minimum first.
- */
+/** Authored limits: absent side → domain edge, present side static degree; first bad key malformed. */
 export function classifyLimit(values: Readonly<Partial<Record<LimitKey, unknown>>>): LimitAuthored {
   const bounds: Partial<Record<LimitKey, number>> = {};
   for (const key of LIMIT_KEYS) {
@@ -92,7 +76,7 @@ export function classifyLimit(values: Readonly<Partial<Record<LimitKey, unknown>
   return min > max ? { kind: "empty", min, max } : { kind: "range", min, max };
 }
 
-/** Classifies one `bend` value: absent, one of the two branch names, or malformed. */
+/** Classify `bend`: absent, branch name, or malformed. */
 export function classifyBend(value: unknown): BendAuthored {
   if (value === undefined) return { kind: "absent" };
   const leaf = readAuthoredLeaf(value);
@@ -103,25 +87,22 @@ export function classifyBend(value: unknown): BendAuthored {
     : { kind: "malformed" };
 }
 
-/**
- * The authored vocabulary of a 3D joint limit (ADR-123), read by `ik3d` from its `fk3d` members.
- *
- * `joint` names the member's limit kind and is the union's discriminant, so which keys a limit reads
- * is decided by one authored word rather than inferred from whichever keys happen to be present:
- * `free` (the default, no limit), `hinge` (one degree of freedom, a turn about an axis in the parent
- * frame, `axisX`/`axisY`/`axisZ`, default the parent's +z, through the 2D `minRotation` and
- * `maxRotation` range), `cone` (the member's direction within `maxSwing` degrees of its parent's +x)
- * and `swing-twist` (a cone plus a `minTwist`/`maxTwist` range about the member's own +x). Every
- * angle bound is static degrees: `maxSwing` in `[0, 180]`, the others in the 2D limit domain.
- */
+/** 3D joint-limit discriminator, read by `ik3d` from `fk3d`; kind decides bound keys. */
 export const JOINT_KEY = "joint" as const;
+/** Hinge axis in parent frame; default `+z`; angle is `minRotation`/`maxRotation` range. */
 export const AXIS_X_KEY = "axisX" as const;
+/** Hinge axis component, as for `axisX`. */
 export const AXIS_Y_KEY = "axisY" as const;
+/** Hinge axis component, as for `axisX`. */
 export const AXIS_Z_KEY = "axisZ" as const;
+/** Cone opening `[0, 180]` static degrees from parent `+x`; `cone`/`swing-twist` require it. */
 export const MAX_SWING_KEY = "maxSwing" as const;
+/** Lower twist bound about member's `+x`, static limit-domain degrees. */
 export const MIN_TWIST_KEY = "minTwist" as const;
+/** Upper twist bound about member's `+x`. */
 export const MAX_TWIST_KEY = "maxTwist" as const;
 
+/** Four 3D joint kinds; omitted `joint` = `free`, constraining nothing. */
 export type JointKind = "free" | "hinge" | "cone" | "swing-twist";
 export const JOINT_KINDS: readonly JointKind[] = Object.freeze([
   "free",
@@ -135,7 +116,7 @@ export type TwistKey = typeof MIN_TWIST_KEY | typeof MAX_TWIST_KEY;
 export const AXIS_KEYS: readonly AxisKey[] = Object.freeze([AXIS_X_KEY, AXIS_Y_KEY, AXIS_Z_KEY]);
 export const TWIST_KEYS: readonly TwistKey[] = Object.freeze([MIN_TWIST_KEY, MAX_TWIST_KEY]);
 
-/** Every key a 3D joint limit reads besides `joint` itself, the 2D range keys among them. */
+/** Every bound key a 3D joint reads besides `joint`, 2D range keys included. */
 export type JointBoundKey = AxisKey | LimitKey | typeof MAX_SWING_KEY | TwistKey;
 export type JointVocabularyKey = typeof JOINT_KEY | JointBoundKey;
 export const JOINT_BOUND_KEYS: readonly JointBoundKey[] = Object.freeze([
@@ -144,12 +125,12 @@ export const JOINT_BOUND_KEYS: readonly JointBoundKey[] = Object.freeze([
   MAX_SWING_KEY,
   ...TWIST_KEYS,
 ]);
-/** The whole 3D joint vocabulary, `joint` first: what `fk3d` claims and the load rules read. */
+/** Whole 3D joint vocabulary, `joint` first: what `fk3d` claims, what load rules read. */
 export const JOINT_VOCABULARY_KEYS: readonly JointVocabularyKey[] = Object.freeze([
   JOINT_KEY,
   ...JOINT_BOUND_KEYS,
 ]);
-/** The keys only a 3D joint reads: its vocabulary without the 2D range it shares with `fk`. */
+/** Keys only a 3D joint reads: vocabulary minus 2D range shared with `fk`. */
 export const JOINT_ONLY_KEYS: readonly JointVocabularyKey[] = Object.freeze([
   JOINT_KEY,
   ...AXIS_KEYS,
@@ -157,7 +138,7 @@ export const JOINT_ONLY_KEYS: readonly JointVocabularyKey[] = Object.freeze([
   ...TWIST_KEYS,
 ]);
 
-/** The bound keys a joint of `kind` reads; any other bound key authored beside it is unused. */
+/** Bound keys `kind` reads; other authored bound keys unused. */
 export function jointBoundKeys(kind: JointKind): readonly JointBoundKey[] {
   switch (kind) {
     case "free":
@@ -173,7 +154,7 @@ export function jointBoundKeys(kind: JointKind): readonly JointBoundKey[] {
   }
 }
 
-/** Whether a joint of `kind` constrains the solve at all: every kind but `free`. */
+/** Whether `kind` constrains the solve: all but `free`. */
 export function jointConstrains(kind: JointKind): boolean {
   switch (kind) {
     case "free":
@@ -187,33 +168,24 @@ export function jointConstrains(kind: JointKind): boolean {
   }
 }
 
-/** A `joint` value naming one of the four kinds, or `undefined` for anything else. */
+/** A `joint` naming one of the four kinds, else `undefined`. */
 export function readJointKind(value: unknown): JointKind | undefined {
   return JOINT_KINDS.find((kind) => kind === value);
 }
 
-/** A swing bound in its domain `[0, 180]` degrees, or `undefined` for anything else. */
+/** A swing bound in its domain `[0, 180]` degrees, else `undefined`. */
 export function readSwingDegree(value: unknown): number | undefined {
   return typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= LIMIT_CEILING
     ? value
     : undefined;
 }
 
-/** A hinge axis component: any finite number, or `undefined` for anything else. */
+/** A hinge axis component: any finite number, else `undefined`. */
 export function readAxisComponent(value: unknown): number | undefined {
   return typeof value === "number" && Number.isFinite(value) ? value : undefined;
 }
 
-/**
- * One authored 3D joint limit, classified, each refusal arm naming what its diagnostic cites.
- *
- * `valid` carries the kind only: the runtime reader in `packages/plugins/src/ik3d-constraint.ts`
- * owns the numbers it solves with, and the load rules need nothing else from an accepted limit.
- * `malformed-kind` is a `joint` that is not one static kind name; `malformed` a bound outside its
- * domain or not static; `missing` a `maxSwing` a cone or swing-twist cannot do without; `zero-axis`
- * an authored hinge axis with no direction; `unused` a bound key the declared kind does not read,
- * including every bound on a member that declared no joint or `free`; `empty` an inverted range.
- */
+/** Classified 3D joint limit: `valid` carries kind only; `ik3d` owns the numbers it solves with. */
 export type JointAuthored =
   | { readonly kind: "valid"; readonly joint: JointKind }
   | { readonly kind: "malformed-kind" }
@@ -233,7 +205,7 @@ function readStatic<T>(value: unknown, read: (inner: unknown) => T | undefined):
   return leaf.kind === "static" ? read(leaf.value) : undefined;
 }
 
-/** An authored range pair: each present side a static degree in the limit domain, min <= max. */
+/** Authored range pair: present sides static limit-domain degrees, min <= max. */
 function classifyPair(
   values: Readonly<Partial<Record<JointVocabularyKey, unknown>>>,
   minKey: LimitKey | TwistKey,
@@ -251,7 +223,7 @@ function classifyPair(
   return min > max ? { kind: "empty", key: minKey, min, max } : undefined;
 }
 
-/** A hinge's authored axis: each present component static and finite, not all of them zero. */
+/** Hinge axis: present components static, finite, not all zero. */
 function classifyAxis(
   values: Readonly<Partial<Record<JointVocabularyKey, unknown>>>,
 ): JointAuthored | undefined {
@@ -267,7 +239,7 @@ function classifyAxis(
   return authored && !direction ? { kind: "zero-axis" } : undefined;
 }
 
-/** The `maxSwing` a cone or swing-twist cannot do without: present, static and in `[0, 180]`. */
+/** `maxSwing` required by `cone`/`swing-twist`: present, static, `[0, 180]`. */
 function classifySwing(
   values: Readonly<Partial<Record<JointVocabularyKey, unknown>>>,
   joint: JointKind,
@@ -278,16 +250,7 @@ function classifySwing(
     : undefined;
 }
 
-/**
- * Classifies the 3D joint a member authored, from the joint keys it authored under the spellings
- * that reach the solve.
- *
- * Read in the order a reader fixes them: the kind first, because every other answer depends on it;
- * then any bound the kind does not read, in `JOINT_BOUND_KEYS` order, because a value nothing reads
- * is refused for being there before it is judged; then each read bound. An absent `joint` is
- * `free`, so a member that authored nothing is valid and one that authored only bounds is told
- * those bounds are unused rather than having a kind guessed for it.
- */
+/** Classify joint: kind, then unread bound keys in `JOINT_BOUND_KEYS` order, then read bounds. */
 export function classifyJoint(
   values: Readonly<Partial<Record<JointVocabularyKey, unknown>>>,
 ): JointAuthored {
@@ -318,17 +281,12 @@ export function classifyJoint(
   }
 }
 
-/**
- * One authored `inspect` spelling, classified. There is no `absent` arm, unlike `BendAuthored`,
- * because the rule reads only spellings `authoredSpellings` found, so every value here was written.
- */
+/** Classified `inspect` spelling; no `absent` arm. */
 export type InspectAuthored =
   | { readonly kind: "valid"; readonly enabled: boolean }
   | { readonly kind: "malformed" };
 
-/**
- * Inspection is a static boolean opt-in, never an animated value, so a keyframed switch is refused.
- */
+/** `inspect` is a static boolean, never animated. */
 export function classifyInspect(value: unknown): InspectAuthored {
   const leaf = readAuthoredLeaf(value);
   return leaf.kind === "static" && typeof leaf.value === "boolean"
@@ -336,58 +294,38 @@ export function classifyInspect(value: unknown): InspectAuthored {
     : { kind: "malformed" };
 }
 
-/**
- * An influence in its domain, a finite number greater than zero, or `undefined` for anything else.
- *
- * The one predicate for the domain, read like `readLimitDegree`: a live value reaching the solve is
- * read through it directly, and an authored leaf through it after `readAuthoredLeaf` has proved the
- * leaf static. Zero is outside it on purpose, because a goal that pulls with nothing is a goal the
- * author did not want, and the weighted compromise divides by a sum of influences.
- */
+/** Sole influence predicate: finite and > 0, else `undefined`. */
 export function readInfluenceValue(value: unknown): number | undefined {
+  // Zero excluded: weighted compromise divides by influence sum.
   return typeof value === "number" && Number.isFinite(value) && value > 0 ? value : undefined;
 }
 
-/**
- * One authored `influence` spelling, classified. No `absent` arm, as for `InspectAuthored`, because
- * the rule reads only spellings `authoredSpellings` found.
- */
+/** Classified `influence` spelling; no `absent` arm. */
 export type InfluenceAuthored =
   | { readonly kind: "valid"; readonly influence: number }
   | { readonly kind: "malformed" };
 
-/** Influence is a static weight, never an animated value, so a keyframed influence is refused. */
+/** `influence` is a static weight, never animated. */
 export function classifyInfluence(value: unknown): InfluenceAuthored {
   const leaf = readAuthoredLeaf(value);
   const influence = leaf.kind === "static" ? readInfluenceValue(leaf.value) : undefined;
   return influence === undefined ? { kind: "malformed" } : { kind: "valid", influence };
 }
 
-/**
- * An orient weight in its domain, a finite number in `[0, 1]`, or `undefined` for anything else.
- *
- * The one predicate for the domain, read like `readInfluenceValue`: a live value reaching the solve
- * is read through it directly, and an authored leaf through it after `readAuthoredLeaf` has proved
- * the leaf static. Zero is inside it, unlike influence, because it divides nothing: it is the weight
- * at which the orientation step returns the position solve's pose unchanged, the anchor a live write
- * fades an orientation in from (ADR-124). Past `1` a blend is undefined rather than designed, so it
- * is outside rather than clamped, and a live value past it reads as absent.
- */
+/** Sole orient predicate: finite weight in `[0, 1]`, else `undefined`; past `1` excludes, never clamps. */
 export function readOrientValue(value: unknown): number | undefined {
+  // Zero inside, unlike influence: leaves position solve unchanged, fade-in anchor; live >1 reads absent.
   return typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= 1
     ? value
     : undefined;
 }
 
-/**
- * One authored `orient` spelling, classified, with no `absent` arm for the reason `InfluenceAuthored`
- * has none: the rule reads only spellings `authoredSpellings` found.
- */
+/** Classified `orient` spelling; no `absent` arm. */
 export type OrientAuthored =
   | { readonly kind: "valid"; readonly orient: number }
   | { readonly kind: "malformed" };
 
-/** Orient is a static weight, as influence is, so a keyframed orient is refused (ADR-124). */
+/** `orient` is a static weight, never animated. */
 export function classifyOrient(value: unknown): OrientAuthored {
   const leaf = readAuthoredLeaf(value);
   const orient = leaf.kind === "static" ? readOrientValue(leaf.value) : undefined;

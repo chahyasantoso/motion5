@@ -9,7 +9,7 @@ import { batchFor } from "../../src/runtime/report";
  * the rule is defined rather than restated by whoever reports it.
  *
  * Two claims, each red before the registry lands and neither of them a `typecheck` failure, because
- * `docs/GUARDRAILS.md` says a failed compile is not assertion-level failing-first evidence. Every
+ * because a failed compile is not assertion-level failing-first evidence. Every
  * case here compiles against the shape it is replacing and fails on an assertion.
  *
  * The first is about severity. It arrives as a caller-supplied argument with a default today, so a

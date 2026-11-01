@@ -4,19 +4,16 @@ import { unreachable } from "../filler/unreachable";
 import { actorPose, standingRoot, type ActorPose } from "./actor";
 import { add3, type Vec3 } from "./rotation";
 
-/** One key pose of a scenario: at a fraction of its period, these angles and this root offset. */
+/** One key pose: at this fraction of the period, these angles and this root offset. */
 interface Key {
   readonly at: number;
   readonly angles: Readonly<Record<DofId, number>>;
-  /** The pelvis offset from standing, metres. */
+  /** Pelvis offset from standing, metres. */
   readonly root?: Vec3;
 }
 
-/**
- * A scripted detector failure over a window of the period, `from` inclusive to `to` exclusive, a
- * closed union: `landmarks` loses the named landmarks together (MediaPipe's missing landmarks, not
- * low scores), `pose` loses the whole detection, as MediaPipe reports no pose.
- */
+/** Detector failure over `[from, to)` of the period: `landmarks` loses the named points
+ * together (absent, not low scores); `pose` loses the whole detection. */
 export type ScriptedLoss =
   | {
       readonly kind: "landmarks";
@@ -35,9 +32,9 @@ export type LossAt =
 interface Scenario {
   readonly label: string;
   readonly periodMs: number;
-  /** Ascending `at` from 0; the last key eases back into the first, so every scenario loops. */
+  /** Ascending `at` from 0; last key eases into first, so every scenario loops. */
   readonly keys: readonly Key[];
-  /** Detector failures the scenario scripts; the truth moves through them unchanged. */
+  /** Scripted detector failures; ground truth moves through them unchanged. */
   readonly losses?: readonly ScriptedLoss[];
 }
 
@@ -50,12 +47,7 @@ const LOST = {
 const ARMS_DOWN = { "left-shoulder-abduct": 10, "right-shoulder-abduct": 10 };
 const RELAXED = { ...ARMS_DOWN, "left-elbow-flex": 10, "right-elbow-flex": 10 };
 
-/**
- * The scripted motions, data read by one interpolator (`scenarioPose`), each chosen for a question
- * the pipeline has to answer: a still person, a reversal inside a gap, a squat, a half turn (front
- * and back), a wrist behind the torso, crossed arms, a person stepping out of frame and back,
- * joints lost together, a short loss of the whole pose, and a loss long enough to reacquire after.
- */
+/** Scripted motions, interpolated by `scenarioPose`, each exercising one pipeline question. */
 export const SCENARIOS = {
   standing: {
     label: "Standing, slow sway",
@@ -208,14 +200,11 @@ export const SCENARIOS = {
 export type ScenarioId = keyof typeof SCENARIOS;
 export const SCENARIO_IDS = Object.keys(SCENARIOS) as readonly ScenarioId[];
 
-/** Smoothstep: zero velocity at both keys, so a scripted reversal has no kink. */
+/** Smoothstep: zero velocity at both keys → a reversal has no kink. */
 const ease = (t: number) => t * t * (3 - 2 * t);
 
-/**
- * The scenario's pose at `tMs`: the two keys around the instant's phase, eased. An angle a key
- * does not name is 0 at that key, so every key is a whole pose. Deterministic in `tMs`, and
- * periodic: `scenarioPose(id, t)` equals `scenarioPose(id, t + periodMs)`.
- */
+/** Pose at `tMs`: the keys around the phase, eased; an unnamed angle is 0. Deterministic and
+ * periodic: `scenarioPose(id, t)` equals `scenarioPose(id, t + periodMs). */
 export function scenarioPose(id: ScenarioId, tMs: number): ActorPose {
   const scenario: Scenario = SCENARIOS[id];
   const phase = phaseOf(scenario, tMs);
@@ -245,10 +234,8 @@ function phaseOf(scenario: Scenario, tMs: number): number {
   return (((tMs % scenario.periodMs) + scenario.periodMs) % scenario.periodMs) / scenario.periodMs;
 }
 
-/**
- * What the scenario's script loses at `tMs`. A whole-pose loss outranks a landmark loss in the same
- * instant, as no pose has no landmarks to lose; landmark losses that overlap are lost together.
- */
+/** What the script loses at `tMs`: a whole-pose loss outranks a landmark loss in the same
+ * instant; overlapping landmark losses combine. */
 export function scenarioLoss(id: ScenarioId, tMs: number): LossAt {
   const scenario: Scenario = SCENARIOS[id];
   const phase = phaseOf(scenario, tMs);
