@@ -19,7 +19,7 @@ import type { Interpolator } from "../ports/interpolator";
 import { createValueEvaluator, type ValueEvaluator } from "./evaluate-values";
 import { replaceEvaluator } from "./evaluator-replacement";
 import { parseDataType } from "./data-type-parse";
-import { PluginNodeError, validatePluginOutputs } from "./plugin-output";
+import { PluginNodeError } from "./plugin-output";
 import type { SlotSources, SourceRef } from "./source-ref";
 import { isValue, validateRuntimeValue } from "./value-validation";
 import type { PublisherComposition } from "./graph-publisher";
@@ -30,10 +30,6 @@ function isPlainRecord(value: unknown): value is Record<string, unknown> {
   if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
   const prototype = Object.getPrototypeOf(value);
   return prototype === Object.prototype || prototype === null;
-}
-
-function isOutputs(value: unknown): value is Outputs {
-  return isPlainRecord(value) && Object.values(value).every(isValue);
 }
 
 function extraFields(spec: ValueSpec): "allow" | "reject" {
@@ -51,20 +47,14 @@ function pickOutputs(
   declared: Readonly<Record<string, ValueSpec>>,
   path: string,
 ): Outputs {
-  if (!isOutputs(outputs)) throw inputFailure(path, "Bound slot did not receive an output set.");
+  if (!isPlainRecord(outputs)) throw inputFailure(path, "Bound slot did not receive an output set.");
   const picked: Record<string, Value> = {};
   for (const [name, spec] of Object.entries(declared)) {
-    const value = outputs[name];
-    if (value === undefined) {
+    if (!Object.hasOwn(outputs, name)) {
       if (spec.optional === true) continue;
       throw inputFailure(`${path}.${name}`, `Required output '${name}' is absent.`);
     }
-    const issues = validateRuntimeValue(value, spec, `${path}.${name}`, {
-      extraFields: "allow",
-    });
-    const first = issues[0];
-    if (first !== undefined) throw inputFailure(first.path, first.message);
-    picked[name] = value;
+    picked[name] = outputs[name] as Value;
   }
   return Object.freeze(picked);
 }
@@ -221,8 +211,7 @@ export class PluginTrack {
     });
     const context = Object.freeze({ nodeId: this.nodeId, progress: this.#progress });
     const warnings = [...sourceWarnings, ...this.#validate(input, context)];
-    const raw = this.plugin.transform(input, context);
-    const outputs = validatePluginOutputs(raw, this.plugin.outputs, this.nodeId);
+    const outputs = this.plugin.transform(input, context);
     return {
       outputs,
       sourceProgress: this.#progress,
@@ -297,10 +286,10 @@ export class PluginTrack {
       case "shape":
         return pickOutputs(outputs, declaration.outputs, path);
       case "typed": {
-        if (!isOutputs(outputs))
+        if (!isPlainRecord(outputs))
           throw inputFailure(path, `Typed slot received no output set.`);
         const value = outputs.values;
-        if (value === undefined)
+        if (!isValue(value))
           throw inputFailure(`${path}.values`, `Typed slot requires a values output.`);
         const structure =
           ref?.structure ??

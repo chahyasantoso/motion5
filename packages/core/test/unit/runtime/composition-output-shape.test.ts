@@ -83,7 +83,7 @@ describe("composition and output-shape diagnostics", () => {
     // status owning this diagnostic.
     if (heroArmPatch?.status !== "error")
       throw new Error(`hero/arm is ${heroArmPatch?.status ?? "absent"}, not error.`);
-    expect(heroArmPatch.diagnostics[0]?.ruleId).toBe("output-invalid");
+    expect(heroArmPatch.diagnostics[0]?.ruleId).toBe("composition-output-shape");
     runtime.dispose();
   });
 

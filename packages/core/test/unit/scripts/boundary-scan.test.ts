@@ -548,6 +548,19 @@ describe("boundary scan: the public 3D surface", () => {
     ]);
   });
 
+  it("TH-203a refuses a core import from a plugin domain layer", async () => {
+    const violations = await withTree(
+      {
+        "packages/plugins/src/body/domain.ts":
+          'import { diagnostic } from "@motion5/core/plugin-api";\nexport const value = diagnostic;',
+      },
+      (tree) => scan(tree),
+    );
+    expect(violations).toEqual([
+      "packages/plugins/src/body/domain.ts: domain layer must import zero core code",
+    ]);
+  });
+
   it("TH-204 checks nested, dynamic, and re-export plugin edges after path normalization", async () => {
     const violations = await withTree(
       {

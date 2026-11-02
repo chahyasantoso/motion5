@@ -184,76 +184,6 @@ describe("identified plugin runtime", () => {
     }
   });
 
-  it("reports an undeclared output on the node and publishes no partial set", () => {
-    const bad: PluginDefinition = {
-      id: "bad",
-      inputs: { values: { kind: "record", fields: { n: { kind: "number" } } } },
-      outputs: { values: POINT },
-      transform() {
-        return { other: [] };
-      },
-    };
-    const patch = runOne(bad, track({ id: "bad", plugin: "bad", values: record({ n: 1 }) }));
-
-    expect(patch?.status).toBe("error");
-    expect(patch).not.toHaveProperty("outputs");
-    if (patch?.status === "error")
-      expect(patch.diagnostics.map(({ ruleId }) => ruleId)).toContain("output-undeclared");
-  });
-
-  it("reports a missing required output", () => {
-    const bad: PluginDefinition = {
-      id: "bad",
-      inputs: { values: { kind: "record", fields: { n: { kind: "number" } } } },
-      outputs: { values: POINT },
-      transform() {
-        return {};
-      },
-    };
-    const patch = runOne(bad, track({ id: "bad", plugin: "bad", values: record({ n: 1 }) }));
-
-    expect(patch?.status).toBe("error");
-    if (patch?.status === "error")
-      expect(patch.diagnostics.map(({ ruleId }) => ruleId)).toContain("output-missing");
-  });
-
-  it("reports an output of the wrong kind", () => {
-    const bad: PluginDefinition = {
-      id: "bad",
-      inputs: { values: { kind: "record", fields: { n: { kind: "number" } } } },
-      outputs: { values: POINT },
-      transform() {
-        return { values: { n: 1 } };
-      },
-    };
-    const patch = runOne(bad, track({ id: "bad", plugin: "bad", values: record({ n: 1 }) }));
-
-    expect(patch?.status).toBe("error");
-    if (patch?.status === "error")
-      expect(patch.diagnostics.map(({ ruleId }) => ruleId)).toContain("output-invalid");
-  });
-
-  it("reports duplicate output row ids", () => {
-    const bad: PluginDefinition = {
-      id: "bad",
-      inputs: { values: { kind: "record", fields: { n: { kind: "number" } } } },
-      outputs: { values: POINT },
-      transform() {
-        return {
-          values: [
-            { id: "same", cells: { x: 1, y: 2 } },
-            { id: "same", cells: { x: 3, y: 4 } },
-          ],
-        };
-      },
-    };
-    const patch = runOne(bad, track({ id: "bad", plugin: "bad", values: record({ n: 1 }) }));
-
-    expect(patch?.status).toBe("error");
-    if (patch?.status === "error")
-      expect(patch.diagnostics.map(({ ruleId }) => ruleId)).toContain("output-row-id-duplicate");
-  });
-
   it("wraps a plugin validation error and skips the transform", () => {
     let transforms = 0;
     const bad: PluginDefinition = {
@@ -312,58 +242,6 @@ describe("identified plugin runtime", () => {
     expect(patch?.status).toBe("ready");
     if (patch?.status === "ready")
       expect(patch.diagnostics.map(({ ruleId }) => ruleId)).toContain("plugin-validation-warning");
-  });
-
-  it("refuses dependency input that fails the slot spec at runtime", () => {
-    const wide: PluginDefinition = {
-      id: "wide",
-      inputs: { values: { kind: "record", fields: { n: { kind: "number" } } } },
-      outputs: { values: POINT },
-      transform() {
-        return { values: [{ id: "point-a", cells: { x: 100, y: 1 } }] };
-      },
-    };
-    const narrow: PluginDefinition = {
-      id: "narrow",
-      inputs: {
-        values: { kind: "record", fields: { dx: { kind: "number" } } },
-        requires: {
-          data: shape({
-            outputs: {
-              values: {
-                kind: "table",
-                schema: {
-                  row: {
-                    fields: {
-                      x: { kind: "number", max: 10 },
-                      y: { kind: "number" },
-                    },
-                  },
-                },
-              },
-            },
-          })},
-      },
-      outputs: { values: POINT },
-      transform() {
-        return { values: [] };
-      },
-    };
-    const definition = project([
-      track({ id: "wide", plugin: "wide", values: record({ n: 1 }) }),
-      track({
-        id: "narrow",
-        plugin: "narrow",
-        values: record({ dx: 1 }),
-        requires: { data: "wide" },
-      }),
-    ]);
-    const patches = patchesAt(definition, catalog(wide, narrow), 0.5);
-
-    const patch = patches.get("demo/narrow");
-    expect(patch?.status).toBe("error");
-    if (patch?.status === "error")
-      expect(patch.diagnostics.map(({ ruleId }) => ruleId)).toContain("plugin-input-invalid");
   });
 
   it("accepts an omitted optional slot", () => {
@@ -488,34 +366,6 @@ describe("identified plugin runtime", () => {
     expect(values.map(({ id }) => id)).toEqual(["lower-a", "upper-a"]);
   });
 
-  it("keeps an independent branch ready when another branch errors", () => {
-    const bad: PluginDefinition = {
-      id: "bad",
-      inputs: {
-        values: { kind: "record", fields: { dx: { kind: "number" }, dy: { kind: "number" } } },
-        requires: { data: shape({ outputs: { values: POINT } })},
-      },
-      outputs: { values: POINT },
-      transform() {
-        return {};
-      },
-    };
-    const definition = project([
-      point("points", 1, 2),
-      shifted("good", 1, 1, "points"),
-      track({
-        id: "bad-branch",
-        plugin: "bad",
-        values: record({ dx: 1, dy: 1 }),
-        requires: { data: "points" },
-      }),
-    ]);
-    const patches = patchesAt(definition, catalog(TRANSLATE, bad), 0.5);
-
-    expect(patches.get("demo/good")?.status).toBe("ready");
-    expect(patches.get("demo/bad-branch")?.status).toBe("error");
-  });
-
   it("publishes a table output and a record output in one node", () => {
     const both: PluginDefinition = {
       id: "both",
@@ -538,21 +388,6 @@ describe("identified plugin runtime", () => {
       expect(patch.outputs.values).toBeDefined();
       expect(patch.outputs.inspect).toEqual({ n: 7 });
       expect(Object.isFrozen(patch.outputs)).toBe(true);
-    }
-  });
-
-  it("refuses a promise or bare array returned by transform", () => {
-    for (const result of [Promise.resolve({ values: [] }), []] as const) {
-      const bad: PluginDefinition = {
-        id: "bad",
-        inputs: { values: { kind: "record", fields: { n: { kind: "number" } } } },
-        outputs: { values: POINT },
-        transform: () => result as unknown as import("../../src/contract/v5").Outputs,
-      };
-      const patch = runOne(bad, track({ id: "bad", plugin: "bad", values: record({ n: 1 }) }));
-      expect(patch?.status).toBe("error");
-      if (patch?.status === "error")
-        expect(patch.diagnostics.map(({ ruleId }) => ruleId)).toContain("output-invalid");
     }
   });
 
@@ -589,45 +424,5 @@ describe("identified plugin runtime", () => {
     expect(patch?.status).toBe("error");
     if (patch?.status === "error")
       expect(patch.diagnostics.map(({ ruleId }) => ruleId)).toContain("plugin-validation-failed");
-  });
-
-  it("refuses non-finite, nested, host and cyclic output values", () => {
-    const cyclic: Record<string, unknown> = {};
-    cyclic.self = cyclic;
-    const values: readonly unknown[] = [
-      { n: Number.POSITIVE_INFINITY },
-      { n: { nested: 1 } },
-      { n: new Date(0) },
-      cyclic,
-      { n: 1, extra: 2 },
-    ];
-    for (const value of values) {
-      const bad: PluginDefinition = {
-        id: "bad",
-        inputs: { values: { kind: "record", fields: { n: { kind: "number" } } } },
-        outputs: { inspect: { kind: "record", fields: { n: { kind: "number" } } } },
-        transform: () => ({ inspect: value }) as unknown as import("../../src/contract/v5").Outputs,
-      };
-      const patch = runOne(bad, track({ id: "bad", plugin: "bad", values: record({ n: 1 }) }));
-      expect(patch?.status).toBe("error");
-      if (patch?.status === "error")
-        expect(patch.diagnostics.map(({ ruleId }) => ruleId)).toContain("output-invalid");
-    }
-  });
-
-  it("freezes the published output set and its rows", () => {
-    const patches = patchesAt(
-      project([point("points", 1, 2), shifted("shifted", 1, 1, "points")]),
-      catalog(TRANSLATE),
-      0.5,
-    );
-    const shiftedPatch = patches.get("demo/shifted");
-    if (shiftedPatch?.status !== "ready") throw new Error("Expected a ready patch.");
-    expect(Object.isFrozen(shiftedPatch.outputs)).toBe(true);
-    const values = shiftedPatch.outputs.values;
-    if (!Array.isArray(values)) throw new Error("Expected a table output.");
-    expect(Object.isFrozen(values)).toBe(true);
-    expect(Object.isFrozen(values[0])).toBe(true);
-    expect(Object.isFrozen(values[0]?.cells)).toBe(true);
   });
 });

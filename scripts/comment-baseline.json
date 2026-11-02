@@ -328,10 +328,6 @@
     "count": 2
   },
   {
-    "path": "packages/core/src/runtime/plugin-output.ts",
-    "count": 4
-  },
-  {
     "path": "packages/core/src/runtime/plugin-track.ts",
     "count": 6
   },

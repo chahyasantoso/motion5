@@ -1,4 +1,14 @@
-import { LIMIT_CEILING, LIMIT_FLOOR, unreachable, type ValueSpec } from "@motion5/core/plugin-api";
+import type { ValueSpec } from "@motion5/core/plugin-api";
+
+export { BODY_2D_SPEC } from "./body/fields";
+export { BODY_3D_SPEC } from "./body3d/fields";
+export { EXTERNAL_BASE } from "./body/domain";
+export { GOALS_2D_SPEC } from "./goals/fields";
+export { GOALS_3D_SPEC } from "./goals3d/fields";
+export { ROOT_2D_SPEC } from "./root/fields";
+export { ROOT_3D_SPEC } from "./root3d/fields";
+export { SOLVED_2D_SPEC } from "./solved/fields";
+export { SOLVED_3D_SPEC } from "./solved3d/fields";
 
 export type AggregateScalar = number | string | boolean;
 export type AggregateCells = Readonly<Record<string, AggregateScalar>>;
@@ -57,128 +67,6 @@ export interface AggregateTopology {
   readonly ids: readonly string[];
 }
 
-const BODY_2D_FIELDS = {
-  parentId: { kind: "string", optional: true, static: true },
-  length: { kind: "number" },
-  rotation: { kind: "number" },
-  weight: { kind: "number", optional: true },
-  x: { kind: "number", optional: true },
-  y: { kind: "number", optional: true },
-  minRotation: {
-    kind: "number",
-    optional: true,
-    static: true,
-    min: LIMIT_FLOOR,
-    max: LIMIT_CEILING,
-  },
-  maxRotation: {
-    kind: "number",
-    optional: true,
-    static: true,
-    min: LIMIT_FLOOR,
-    max: LIMIT_CEILING,
-  },
-} as const;
-
-/** Core's `JOINT_KINDS`, mirrored: `@motion5/core/plugin-api` does not export the list. */
-const JOINT_VOCABULARY = ["free", "hinge", "cone", "swing-twist"] as const;
-
-const BODY_3D_FIELDS = {
-  parentId: { kind: "string", optional: true, static: true },
-  length: { kind: "number" },
-  rotation: { kind: "number", optional: true },
-  rotationX: { kind: "number", optional: true },
-  rotationY: { kind: "number", optional: true },
-  weight: { kind: "number", optional: true },
-  x: { kind: "number", optional: true },
-  y: { kind: "number", optional: true },
-  z: { kind: "number", optional: true },
-  orient: { kind: "number", optional: true, static: true, min: 0, max: 1 },
-  joint: { kind: "string", optional: true, static: true, enum: JOINT_VOCABULARY },
-  axisX: { kind: "number", optional: true, static: true },
-  axisY: { kind: "number", optional: true, static: true },
-  axisZ: { kind: "number", optional: true, static: true },
-  minRotation: {
-    kind: "number",
-    optional: true,
-    static: true,
-    min: LIMIT_FLOOR,
-    max: LIMIT_CEILING,
-  },
-  maxRotation: {
-    kind: "number",
-    optional: true,
-    static: true,
-    min: LIMIT_FLOOR,
-    max: LIMIT_CEILING,
-  },
-  minTwist: {
-    kind: "number",
-    optional: true,
-    static: true,
-    min: LIMIT_FLOOR,
-    max: LIMIT_CEILING,
-  },
-  maxTwist: {
-    kind: "number",
-    optional: true,
-    static: true,
-    min: LIMIT_FLOOR,
-    max: LIMIT_CEILING,
-  },
-  maxSwing: { kind: "number", optional: true, static: true, min: 0, max: LIMIT_CEILING },
-} as const;
-
-/** The least positive double: min states "greater than 0" exactly, so zero is refused. */
-const INFLUENCE = { kind: "number", optional: true, static: true, min: Number.MIN_VALUE } as const;
-
-const GOALS_2D_FIELDS = {
-  memberId: { kind: "string", static: true },
-  x: { kind: "number" },
-  y: { kind: "number" },
-  influence: INFLUENCE,
-} as const;
-
-const GOALS_3D_FIELDS = {
-  memberId: { kind: "string", static: true },
-  x: { kind: "number" },
-  y: { kind: "number" },
-  z: { kind: "number" },
-  rotation: { kind: "number", optional: true },
-  rotationX: { kind: "number", optional: true },
-  rotationY: { kind: "number", optional: true },
-  influence: INFLUENCE,
-} as const;
-
-const ROOT_2D_FIELDS = {
-  x: { kind: "number" },
-  y: { kind: "number" },
-  rotation: { kind: "number" },
-} as const;
-
-const ROOT_3D_FIELDS = {
-  x: { kind: "number" },
-  y: { kind: "number" },
-  z: { kind: "number" },
-  rotation: { kind: "number" },
-  rotationX: { kind: "number" },
-  rotationY: { kind: "number" },
-} as const;
-
-const SOLVED_2D_FIELDS = {
-  rotation: { kind: "number" },
-  residual: { kind: "number", optional: true },
-  atBound: { kind: "boolean", optional: true },
-} as const;
-
-const SOLVED_3D_FIELDS = {
-  rotation: { kind: "number" },
-  rotationX: { kind: "number" },
-  rotationY: { kind: "number" },
-  residual: { kind: "number", optional: true },
-  atBound: { kind: "boolean", optional: true },
-} as const;
-
 const POSE_2D_FIELDS = {
   x: { kind: "number" },
   y: { kind: "number" },
@@ -194,32 +82,6 @@ const POSE_3D_FIELDS = {
   rotationY: { kind: "number" },
 } as const;
 
-export const BODY_2D_SPEC: ValueSpec = {
-  kind: "table",
-  schema: { row: { fields: BODY_2D_FIELDS } },
-};
-export const BODY_3D_SPEC: ValueSpec = {
-  kind: "table",
-  schema: { row: { fields: BODY_3D_FIELDS } },
-};
-export const GOALS_2D_SPEC: ValueSpec = {
-  kind: "table",
-  schema: { row: { fields: GOALS_2D_FIELDS } },
-};
-export const GOALS_3D_SPEC: ValueSpec = {
-  kind: "table",
-  schema: { row: { fields: GOALS_3D_FIELDS } },
-};
-export const ROOT_2D_SPEC: ValueSpec = { kind: "record", fields: ROOT_2D_FIELDS };
-export const ROOT_3D_SPEC: ValueSpec = { kind: "record", fields: ROOT_3D_FIELDS };
-export const SOLVED_2D_SPEC: ValueSpec = {
-  kind: "table",
-  schema: { row: { fields: SOLVED_2D_FIELDS } },
-};
-export const SOLVED_3D_SPEC: ValueSpec = {
-  kind: "table",
-  schema: { row: { fields: SOLVED_3D_FIELDS } },
-};
 export const POSE_2D_SPEC: ValueSpec = {
   kind: "table",
   schema: { row: { fields: POSE_2D_FIELDS } },
@@ -228,47 +90,6 @@ export const POSE_3D_SPEC: ValueSpec = {
   kind: "table",
   schema: { row: { fields: POSE_3D_FIELDS } },
 };
-
-type FieldMap = Extract<ValueSpec, { readonly kind: "record" }>["fields"];
-
-function withoutStatic(fields: FieldMap): FieldMap {
-  return Object.fromEntries(
-    Object.entries(fields).map(([name, field]) => {
-      const { static: _local, ...slotField } = field;
-      return [name, slotField];
-    }),
-  );
-}
-
-/** An authored spec read slot-side: the same fields minus `static`. Core refuses `static` in a slot
- * output, and the slot check compares kinds and field presence, never staticness. */
-export function slotSpec(spec: ValueSpec): ValueSpec {
-  switch (spec.kind) {
-    case "table":
-      return {
-        ...spec,
-        schema: {
-          ...spec.schema,
-          row: { ...spec.schema.row, fields: withoutStatic(spec.schema.row.fields) },
-        },
-      };
-    case "record":
-      return { ...spec, fields: withoutStatic(spec.fields) };
-    default:
-      return unreachable(spec);
-  }
-}
-
-export const BODY_2D_SLOT = slotSpec(BODY_2D_SPEC);
-export const BODY_3D_SLOT = slotSpec(BODY_3D_SPEC);
-export const GOALS_2D_SLOT = slotSpec(GOALS_2D_SPEC);
-export const GOALS_3D_SLOT = slotSpec(GOALS_3D_SPEC);
-export const SOLVED_2D_SLOT = slotSpec(SOLVED_2D_SPEC);
-export const SOLVED_3D_SLOT = slotSpec(SOLVED_3D_SPEC);
-
-/** The node a member hangs from when `parentId` is absent (`""`). No row may use that id, so
- * nothing collides; a solver walk reads a base naming no member as the external root. */
-export const EXTERNAL_BASE = "";
 
 function compareCodeUnits(left: string, right: string): number {
   return left < right ? -1 : left > right ? 1 : 0;

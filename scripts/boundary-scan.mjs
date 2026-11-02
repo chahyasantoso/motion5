@@ -550,6 +550,13 @@ function checkPluginSource(source, file, specifiers, violations) {
     return target.startsWith("packages/plugins/src/");
   });
   if (!allowed) violations.push(`${file}: import outside plugin package contract`);
+  if (
+    /(?:^|\/)(?:domain|fields)\.ts$/.test(file) &&
+    specifiers.some(
+      (specifier) => specifier === "@motion5/core" || specifier === "@motion5/core/plugin-api",
+    )
+  )
+    violations.push(`${file}: domain layer must import zero core code`);
   if (bannedSymbol(source)) violations.push(`${file}: banned compatibility symbol`);
 }
 /**

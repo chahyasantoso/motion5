@@ -14,11 +14,6 @@ import {
   SOLVED_3D_SPEC,
   readAggregateTopology,
   readGoalTargets,
-  slotSpec,
-  BODY_2D_SLOT,
-  BODY_3D_SLOT,
-  GOALS_2D_SLOT,
-  GOALS_3D_SLOT,
   EXTERNAL_BASE,
 } from "../../src/aggregate-topology";
 
@@ -201,24 +196,7 @@ describe("aggregate goal targets", () => {
     expect(error.kind).toBe("goal-leaf-unaddressed");
     expect(error.ids).toEqual(["b"]);
   });
-  it("GT-9 slotSpec removes only static and keeps every other field fact", () => {
-    for (const [authored, slot] of [
-      [BODY_2D_SPEC, BODY_2D_SLOT],
-      [BODY_3D_SPEC, BODY_3D_SLOT],
-      [GOALS_2D_SPEC, GOALS_2D_SLOT],
-      [GOALS_3D_SPEC, GOALS_3D_SLOT],
-    ] as const) {
-      const a = authored.kind === "table" ? authored.schema.row.fields : authored.fields;
-      const b = slot.kind === "table" ? slot.schema.row.fields : slot.fields;
-      expect(Object.keys(b)).toEqual(Object.keys(a));
-      for (const name of Object.keys(a)) {
-        expect(b[name]).not.toHaveProperty("static");
-        const { static: _s, ...rest } = a[name]!;
-        expect(b[name]).toEqual(rest);
-      }
-    }
-    expect(slotSpec(ROOT_2D_SPEC)).toEqual(ROOT_2D_SPEC);
-    expect(slotSpec(ROOT_3D_SPEC)).toEqual(ROOT_3D_SPEC);
+  it("GT-9 reserves the external base id", () => {
     expect(EXTERNAL_BASE).toBe("");
     expect(() => readAggregateTopology([{ id: EXTERNAL_BASE, cells: { length: 1 } }])).toThrow();
   });
