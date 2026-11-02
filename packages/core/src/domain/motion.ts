@@ -27,7 +27,8 @@ export interface MotionOptions {
   /** Resolves a track id to its compiled Track; called at every use, never stored. */
   readonly resolveTrack: (id: string) => MotionTrack | undefined;
   readonly trigger?: TriggerPort;
-  readonly invalidate?: (progress: number) => void;
+  /** Runs once per sweep with the ids whose progress changed and can still change output. */
+  readonly invalidate?: (progress: number, changedIds: readonly string[]) => void;
   readonly stagger?: number;
   /** Set when the resolver's owner delegates Track lifetime here. */
   readonly disposeTracks?: boolean;
@@ -52,7 +53,7 @@ export class Motion {
   readonly #trackMap = new Map<string, MotionTrackEntry>();
   readonly #resolveTrack: (id: string) => MotionTrack | undefined;
   #trigger: TriggerPort | undefined;
-  readonly #invalidate: (progress: number) => void;
+  readonly #invalidate: (progress: number, changedIds: readonly string[]) => void;
   #stagger: number;
   readonly #disposeTracks: boolean;
   readonly #listenToClock: boolean;
@@ -173,7 +174,7 @@ export class Motion {
   /** Accepts a validated schedule; returned completion re-seeds synchronously. */
   acceptStagger(
     stagger?: number,
-    invalidate: (progress: number) => void = this.#invalidate,
+    invalidate: (progress: number, changedIds: readonly string[]) => void = this.#invalidate,
   ): () => void {
     this.assertActive();
     this.#stagger = acceptStagger(stagger);
@@ -302,9 +303,13 @@ export class Motion {
     if (track === undefined) throw new TypeError(`Motion track "${id}" has no compiled Track.`);
     return track;
   }
-  #setProgress(progress: number, invalidate: (progress: number) => void = this.#invalidate): void {
+  #setProgress(
+    progress: number,
+    invalidate: (progress: number, changedIds: readonly string[]) => void = this.#invalidate,
+  ): void {
     this.#position = progress;
     const unresolved: string[] = [];
+    const changedIds: string[] = [];
     for (let index = 0; index < this.#tracks.length; index += 1) {
       const entry = this.#tracks[index]!;
       const track = this.#resolveTrack(entry.id);
@@ -313,9 +318,10 @@ export class Motion {
         unresolved.push(entry.id);
         continue;
       }
-      track.setProgress(this.#effectiveProgress(index, entry, this.#tracks));
+      if (track.setProgress(this.#effectiveProgress(index, entry, this.#tracks)))
+        changedIds.push(entry.id);
     }
-    invalidate(progress);
+    invalidate(progress, Object.freeze(changedIds));
     if (unresolved.length > 0)
       throw new TypeError(`Motion tracks have no compiled Track: ${unresolved.join(", ")}.`);
   }

@@ -373,21 +373,19 @@ export class Engine {
           disposeTracks: false,
           listenToClock: false,
           acceptsExternalSignal: acceptsExternalSignal(built.trigger.clockBinding),
-          invalidate: () => {
+          invalidate: (_progress, changedIds) => {
             switch (built.kind) {
               case "trigger-created":
                 // Pre-Motion closure runs only here; nothing to invalidate.
                 return;
               case "motion-created": {
-                const ids = built.motion.tracks.map((t) => t.id);
-                // Runtime exists once a Motion can invalidate; state names owner.
-                if (ids.length === 0) return;
+                if (changedIds.length === 0) return;
                 switch (state.kind) {
                   case "building":
                   case "disposed":
                     return;
                   case "ready":
-                    state.runtime.invalidate(ids);
+                    state.runtime.invalidate(changedIds);
                     return;
                   default:
                     return unreachable(state);

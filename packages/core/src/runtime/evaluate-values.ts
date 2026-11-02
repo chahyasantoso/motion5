@@ -45,11 +45,14 @@ type Plan =
 interface Skeleton {
   readonly plan: Plan;
   readonly keyframes: Readonly<Record<string, readonly ParsedStop[]>>;
+  readonly timeInvariant: boolean;
 }
 
 export interface ValueEvaluator {
   /** Evaluates the authored shape at `progress`, clamped into `[0, 1]`. */
   evaluate(progress: number): Value;
+  /** True when no cell changes with progress, so a seek need not recompose the node. */
+  readonly timeInvariant: boolean;
   dispose(): void;
 }
 
@@ -80,14 +83,17 @@ function discreteAt(stops: readonly ParsedStop[], progress: number): Scalar {
 }
 
 function planValues(values: ParsedValues | undefined): Skeleton {
-  if (values === undefined) return { plan: EMPTY_TABLE, keyframes: NO_KEYFRAMES };
+  if (values === undefined)
+    return { plan: EMPTY_TABLE, keyframes: NO_KEYFRAMES, timeInvariant: true };
 
+  let animated = false;
   const numericStops: (readonly ParsedStop[])[] = [];
   const planCell = (cell: ParsedCell): PlannedCell => {
     switch (cell.kind) {
       case "static":
         return { kind: "static", value: cell.value };
       case "animated":
+        animated = true;
         switch (cell.scalar) {
           case "number": {
             const slot = `s${numericStops.length}`;
@@ -113,14 +119,22 @@ function planValues(values: ParsedValues | undefined): Skeleton {
       const keyframes = Object.fromEntries(
         numericStops.map((stops, index) => [`s${index}`, stops] as const),
       );
-      return { plan: { kind: "table", rows }, keyframes: Object.freeze(keyframes) };
+      return {
+        plan: { kind: "table", rows },
+        keyframes: Object.freeze(keyframes),
+        timeInvariant: !animated,
+      };
     }
     case "record": {
       const entries = planEntries(values.fields);
       const keyframes = Object.fromEntries(
         numericStops.map((stops, index) => [`s${index}`, stops] as const),
       );
-      return { plan: { kind: "record", entries }, keyframes: Object.freeze(keyframes) };
+      return {
+        plan: { kind: "record", entries },
+        keyframes: Object.freeze(keyframes),
+        timeInvariant: !animated,
+      };
     }
     default:
       return unreachable(values);
@@ -131,7 +145,7 @@ export function createValueEvaluator(
   values: ParsedValues | undefined,
   interpolator: Interpolator,
 ): ValueEvaluator {
-  const { plan, keyframes } = planValues(values);
+  const { plan, keyframes, timeInvariant } = planValues(values);
   const hasNumeric = Object.keys(keyframes).length > 0;
   // Duration 1 makes progress the normalized position the authored stops already use. The flag is
   // the one thing a backend must honor for per-cell stops: eases at one position stay independent.
@@ -181,6 +195,7 @@ export function createValueEvaluator(
   };
 
   return {
+    timeInvariant,
     evaluate(progress) {
       if (disposed) throw new TypeError("Value evaluator is disposed.");
       if (!Number.isFinite(progress)) throw new TypeError("Value progress must be finite.");

@@ -14,6 +14,7 @@ export class ValueTrack {
   #evaluator: ValueEvaluator;
   #overlay: Value | undefined;
   #progress = 0;
+  #ticked = false;
   #disposed = false;
 
   constructor(options: {
@@ -64,6 +65,9 @@ export class ValueTrack {
     const next = Math.max(0, Math.min(1, value));
     if (Object.is(next, this.#progress)) return false;
     this.#progress = next;
+    // A static track still composes on its first move; later seeks cannot change its output.
+    if (this.#evaluator.timeInvariant && this.#ticked) return false;
+    this.#ticked = true;
     return true;
   }
 

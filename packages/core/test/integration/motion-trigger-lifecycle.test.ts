@@ -50,7 +50,7 @@ describe("Motion and trigger lifecycle", () => {
     scheduler.flush();
 
     expect(track.setProgress).toHaveBeenCalledWith(0.5);
-    expect(invalidate).toHaveBeenCalledWith(0.5);
+    expect(invalidate).toHaveBeenCalledWith(0.5, ["arm"]);
     expect(motion.position).toBe(0.5);
 
     motion.pause();
@@ -63,7 +63,7 @@ describe("Motion and trigger lifecycle", () => {
     trigger.emit(1);
     scheduler.flush();
     expect(track.setProgress).toHaveBeenLastCalledWith(1);
-    expect(invalidate).toHaveBeenLastCalledWith(1);
+    expect(invalidate).toHaveBeenLastCalledWith(1, ["arm"]);
 
     motion.dispose();
     expect(track.dispose).toHaveBeenCalledTimes(1);
