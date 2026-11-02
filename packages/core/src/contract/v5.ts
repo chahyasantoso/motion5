@@ -267,7 +267,7 @@ export interface PluginDefinition<Input extends ResolvedInput = ResolvedInput> {
   readonly outputs: Readonly<Record<string, ValueSpec>>;
   /** Cross-source rules over the structures typed slots deliver; pure, never per frame. */
   checkSources?(structures: SourceStructures): readonly Diagnostic[];
-  readonly validate?: (input: Input, context: EvaluationContext) => readonly Diagnostic[];
+  validate?(input: Input, context: EvaluationContext): readonly Diagnostic[];
   transform(input: Input, context: EvaluationContext): Outputs;
 }
 /** Payload by status; only ready owns outputs. */

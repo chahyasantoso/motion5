@@ -1,21 +1,24 @@
-import { shape, type PluginDefinition, type Outputs, type ValueSpec } from "@motion5/core/plugin-api";
 import {
-  BODY_2D_SLOT,
-  EXTERNAL_BASE,
-  GOALS_2D_SLOT,
-  ROOT_2D_SPEC,
-  SOLVED_2D_SPEC,
-  readAggregateTopology,
-  readGoalTargets,
-  type AggregateRow,
-  type AggregateTopology,
-} from "./aggregate-topology";
+  typed,
+  type PluginDefinition,
+  type SourceStructures,
+  type Structure,
+  type ValueSpec,
+} from "@motion5/core/plugin-api";
+import { EXTERNAL_BASE, type Body, type BodyStructure } from "./body/domain";
+import { body2d } from "./body/type";
 import { readFrame, readNumber, readPivotOffset } from "./frame";
-import type { SolveMember } from "./ik-member";
+import { goalDiagnostics } from "./goals/check";
+import type { Goals, GoalsStructure } from "./goals/domain";
+import { goals2d } from "./goals/type";
 import { readJointLimit } from "./ik-constraint";
 import { readInfluence } from "./ik-goal";
 import { inspectSolve } from "./ik-result";
 import { solveChain } from "./ik-solve";
+import type { SolveMember } from "./ik-member";
+import type { Root } from "./root/domain";
+import { root2d } from "./root/type";
+import { SOLVED_2D_SPEC } from "./solved/fields";
 
 const INSPECT: ValueSpec = {
   kind: "record",
@@ -29,35 +32,29 @@ const INSPECT: ValueSpec = {
 
 type FlatRecord = Readonly<Record<string, number | string | boolean>>;
 
+type IkInput = {
+  readonly values: FlatRecord;
+  readonly requires: {
+    readonly chain: Body;
+    readonly goals: Goals;
+    readonly base: Root;
+  };
+};
+
 function flatRecord(value: unknown, path: string): FlatRecord {
   if (value === null || typeof value !== "object" || Array.isArray(value))
     throw new TypeError(`IK requires a record at ${path}.`);
   return value as FlatRecord;
 }
 
-function recordOutput(outputs: Outputs, path: string): FlatRecord {
-  const values = outputs.values;
-  if (
-    values === undefined ||
-    Array.isArray(values) ||
-    values === null ||
-    typeof values !== "object"
-  )
-    throw new TypeError(`IK requires a record output at ${path}.`);
-  return flatRecord(values, `${path}.values`);
-}
-
-function solveMembers(
-  topology: AggregateTopology,
-  goals: ReadonlyMap<string, AggregateRow>,
-): readonly SolveMember[] {
-  return topology.rows.map((row): SolveMember => {
-    const goal = goals.get(row.id);
+function solveMembers(chain: Body, goals: Goals): readonly SolveMember[] {
+  return chain.rows.map((row): SolveMember => {
+    const goal = goals.byMember.get(row.id);
     const limit = readJointLimit(row.cells);
     const influence = goal === undefined ? undefined : readInfluence(goal.cells);
     return {
       id: row.id,
-      base: topology.parentById.get(row.id) ?? EXTERNAL_BASE,
+      base: chain.parentById.get(row.id) ?? EXTERNAL_BASE,
       length: readNumber(row.cells.length),
       pivot: readPivotOffset(row.cells),
       ...(goal === undefined ? {} : { goal: readFrame(goal.cells) }),
@@ -81,7 +78,11 @@ function outputRows(result: ReturnType<typeof solveChain>, members: readonly Sol
   }));
 }
 
-export const ikPlugin: PluginDefinition = {
+function structureOf<T>(structures: SourceStructures, slot: string): Structure<T> | undefined {
+  return structures[slot] as Structure<T> | undefined;
+}
+
+export const ikPlugin: PluginDefinition<IkInput> = {
   id: "ik",
   inputs: {
     values: {
@@ -92,22 +93,22 @@ export const ikPlugin: PluginDefinition = {
       },
     },
     requires: {
-      chain: shape({ outputs: { values: BODY_2D_SLOT } }),
-      goals: shape({ outputs: { values: GOALS_2D_SLOT } }),
-      base: shape({ outputs: { values: ROOT_2D_SPEC } }),
+      chain: typed(body2d),
+      goals: typed(goals2d),
+      base: typed(root2d),
     },
   },
   outputs: { values: SOLVED_2D_SPEC, inspect: { ...INSPECT, optional: true } },
+  checkSources(structures) {
+    const chain = structureOf<BodyStructure>(structures, "chain");
+    const goals = structureOf<GoalsStructure>(structures, "goals");
+    if (chain === undefined || goals === undefined) return Object.freeze([]);
+    return goalDiagnostics(chain, goals);
+  },
   transform({ values, requires }) {
     const local = flatRecord(values, "input.values");
-    const topology = readAggregateTopology((requires.chain as Outputs).values);
-    const goals = readGoalTargets(topology, (requires.goals as Outputs).values);
-    const members = solveMembers(topology, goals);
-    const result = solveChain(
-      readFrame(recordOutput(requires.base as Outputs, "base")),
-      members,
-      local.flip === true,
-    );
+    const members = solveMembers(requires.chain, requires.goals);
+    const result = solveChain(readFrame(requires.base), members, local.flip === true);
     const inspection = inspectSolve(result);
     return {
       values: outputRows(result, members),

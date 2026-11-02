@@ -1,8 +1,8 @@
-import type { PluginDefinition, ResolvedInput } from "@motion5/core/plugin-api";
+import type { PluginDefinition } from "@motion5/core/plugin-api";
 
 /** A source-controlled loader entry for the identified-table plugin catalog. */
 export interface PluginDescriptor {
-  readonly load: () => Promise<PluginDefinition<ResolvedInput>>;
+  readonly load: () => Promise<PluginDefinition<never>>;
 }
 
 /**

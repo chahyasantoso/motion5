@@ -10,6 +10,7 @@ export const coreWalkerTracks: readonly TrackDefinition[] = [
   // 1. Pelvis (Root record track)
   {
     id: "pelvis",
+    type: "root2d",
     input: {
       values: {
         x: [
@@ -42,6 +43,7 @@ export const coreWalkerTracks: readonly TrackDefinition[] = [
   // 2. Body Aggregate Table (Chest, Head, Legs)
   {
     id: "body",
+    type: "body2d",
     input: {
       values: [
         {
@@ -199,6 +201,7 @@ export const armTracks: readonly TrackDefinition[] = [
   // 1. Arms Body Table
   {
     id: "arms-body",
+    type: "body2d",
     input: {
       values: [
         {

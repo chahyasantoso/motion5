@@ -13,24 +13,24 @@ function hold(value: number) {
 
 const PELVIS: TrackDefinition = {
   id: "pelvis",
+  type: "root2d",
   input: {
-    schema: ROOT_2D_SPEC,
     values: { x: hold(0), y: hold(0), rotation: hold(30) },
   },
 };
 
 const BODY: TrackDefinition = {
   id: "body",
+  type: "body2d",
   input: {
-    schema: BODY_2D_SPEC,
     values: [{ id: "thigh", cells: { length: 50, rotation: 45, weight: 1 } }],
   },
 };
 
 const SOLVED: TrackDefinition = {
   id: "solved",
+  type: "solved2d",
   input: {
-    schema: SOLVED_2D_SPEC,
     values: [{ id: "thigh", cells: { rotation: 45 } }],
   },
 };

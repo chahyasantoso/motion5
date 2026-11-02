@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
-import type { Outputs, ResolvedInput } from "../../../src/contract/v5";
+import type { Outputs } from "../../../src/contract/v5";
+import { bindData } from "../../../src/testing/fakes";
 import { composeWorld } from "../../../../plugins/src/frame";
+import { body2d } from "../../../../plugins/src/body/type";
+import { root2d } from "../../../../plugins/src/root/type";
+import { solved2d } from "../../../../plugins/src/solved/type";
 import { fkPlugin } from "@motion5/plugins/fk";
 
 // Slice A of issue #195. A bone's pivot is not always exactly at its parent's tip, so `fk` claims
@@ -49,12 +53,12 @@ function toFrame(values: Readonly<Record<string, unknown>>): Frame {
 
 /** One identified `fk` composition: a one-row body table, a solved row and the base record. */
 function bone(values: Readonly<Record<string, number>>, base: Frame = ORIGIN): Frame {
-  const input: ResolvedInput = {
+  const input = {
     values: {},
     requires: {
-      chain: { values: [{ id: "bone", cells: { ...values, weight: 0 } }] },
-      solved: { values: [{ id: "bone", cells: { rotation: 0 } }] },
-      base: { values: base },
+      chain: bindData(body2d, [{ id: "bone", cells: { ...values, weight: 0 } }]),
+      solved: bindData(solved2d, [{ id: "bone", cells: { rotation: 0 } }]),
+      base: bindData(root2d, base),
     },
   };
   const outputs = fkPlugin.transform(input, { nodeId: "~/bone", progress: 1 }) as Outputs;

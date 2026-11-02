@@ -10,6 +10,7 @@ import { BODY_2D_SPEC, GOALS_2D_SPEC, ROOT_2D_SPEC } from "../../src/aggregate-t
 import { FABRIK_TOLERANCE, solveFabrik, solveFabrikAttempt } from "../../src/fabrik";
 import { fabrikAlternatives, outranks } from "../../src/fabrik-select";
 import { composeWorld, pivotFromBaseTip, type WorldFrame } from "../../src/frame";
+import { goalsEntity, rootEntity } from "../support/typed-rig";
 import type { JointRange } from "../../src/ik-constraint";
 import { solveLength, solveOffset, type SolveMember } from "../../src/ik-member";
 import type { SolveResult } from "../../src/ik-result";
@@ -496,8 +497,8 @@ describe("IK stability and determinism (issue #349 phase 6)", () => {
           tracks: [
             {
               id: "root",
+              type: "root2d",
               input: {
-                schema: ROOT_2D_SPEC,
                 values: {
                   x: [stop(0, 0), stop(1, 40)],
                   y: [stop(0, 0), stop(1, 20)],
@@ -507,8 +508,8 @@ describe("IK stability and determinism (issue #349 phase 6)", () => {
             },
             {
               id: "body",
+              type: "body2d",
               input: {
-                schema: BODY_2D_SPEC,
                 values: [
                   { id: "a", cells: { length: 60, rotation: 0 } },
                   { id: "b", cells: { parentId: "a", length: 50, rotation: 0 } },
@@ -517,8 +518,8 @@ describe("IK stability and determinism (issue #349 phase 6)", () => {
             },
             {
               id: "goal",
+              type: "goals2d",
               input: {
-                schema: GOALS_2D_SPEC,
                 values: [
                   {
                     id: "g",
@@ -801,25 +802,20 @@ describe("IK stability and determinism (issue #349 phase 6)", () => {
   it("SD-18 delivered Infinity goals publish finite rotations; live NaN refusal is pinned above", () => {
     // `readFrame` sanitizes authored requirement records before compose. The direct solve cases above
     // pin the live-value refusal; this seam pins that an infinite delivered goal still publishes.
+    const rig = goalsEntity(
+      [
+        { id: "a", cells: { length: 80, rotation: 0 } },
+        { id: "b", cells: { parentId: "a", length: 60, rotation: 0 } },
+      ],
+      [{ id: "g", cells: { memberId: "b", x: Number.POSITIVE_INFINITY, y: 0 } }],
+    );
     const composed = ikPlugin.transform(
       {
         values: {},
         requires: {
-          chain: {
-            values: [
-              { id: "a", cells: { length: 80, rotation: 0 } },
-              { id: "b", cells: { parentId: "a", length: 60, rotation: 0 } },
-            ],
-          },
-          goals: {
-            values: [
-              {
-                id: "g",
-                cells: { memberId: "b", x: Number.POSITIVE_INFINITY, y: 0 },
-              },
-            ],
-          },
-          base: { values: { x: 0, y: 0, rotation: 0 } },
+          chain: rig.body,
+          goals: rig.goals,
+          base: rootEntity({ x: 0, y: 0, rotation: 0 }),
         },
       } as never,
       { nodeId: "rig/solve", progress: 1 },

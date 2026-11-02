@@ -849,6 +849,7 @@ function readInput(
   value: unknown,
   path: string,
   authoredPlugin: boolean,
+  typedSpec: ValueSpec | undefined,
   diagnostics: Diagnostic[],
 ): ParsedInput {
   if (value === undefined) return EMPTY_INPUT;
@@ -882,7 +883,12 @@ function readInput(
       );
     else schema = readValueSpec(value.schema, `${path}.schema`, diagnostics);
   }
-  const values = readValues(value.values, `${path}.values`, schema, diagnostics);
+  const values = readValues(
+    value.values,
+    `${path}.values`,
+    schema ?? typedSpec,
+    diagnostics,
+  );
   return Object.freeze({
     ...(values === undefined ? {} : { values }),
     requires,
@@ -930,7 +936,15 @@ export function parseTrackDefinition(
       diagnostic("track-shape", `${path}.type`, "A track is either typed data or a plugin track."),
     );
   const duration = readDuration(track.duration, `${path}.duration`, diagnostics);
-  const input = readInput(track.input, `${path}.input`, track.plugin !== undefined, diagnostics);
+  const typedSpec =
+    type === undefined ? undefined : context.dataType?.(type)?.spec;
+  const input = readInput(
+    track.input,
+    `${path}.input`,
+    track.plugin !== undefined,
+    typedSpec,
+    diagnostics,
+  );
   if (type !== undefined && input.schema !== undefined)
     diagnostics.push(
       diagnostic("track-shape", `${path}.input.schema`, "A typed track takes its schema from its type."),

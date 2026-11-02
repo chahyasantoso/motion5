@@ -4,6 +4,7 @@ import { Engine, PluginCatalog, createManualClock, type ProjectDefinition } from
 import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/testing";
 import { ikPlugin } from "../../src/ik";
 import { AggregateTopologyError, BODY_2D_SPEC, GOALS_2D_SPEC } from "../../src/aggregate-topology";
+import { goalsEntity, rootEntity } from "../support/typed-rig";
 
 const solver = vi.hoisted(() => ({ calls: 0 }));
 vi.mock("../../src/ik-solve", async (importOriginal) => {
@@ -36,12 +37,13 @@ function input(
   chain: unknown = BODY,
   goals: unknown = GOALS,
 ) {
+  const rig = goalsEntity(chain, goals);
   return {
     values,
     requires: {
-      chain: { values: chain },
-      goals: { values: goals },
-      base: { values: { x: 0, y: 0, rotation: 0 } },
+      chain: rig.body,
+      goals: rig.goals,
+      base: rootEntity({ x: 0, y: 0, rotation: 0 }),
     },
   } as never;
 }
@@ -67,11 +69,11 @@ function project(ids: Ids = IDS, goalX: unknown = 12, motion = "demo"): ProjectD
         id: motion,
         trigger: { type: "manual" },
         tracks: [
-          { id: ids.root, input: { values: { x: 0, y: 0, rotation: 0 } } },
+          { id: ids.root, type: "root2d", input: { values: { x: 0, y: 0, rotation: 0 } } },
           {
             id: ids.body,
+            type: "body2d",
             input: {
-              schema: BODY_2D_SPEC,
               values: [
                 { id: "trunk", cells: { length: 20, rotation: 0 } },
                 { id: "left-upper", cells: { parentId: "trunk", length: 10, rotation: 0 } },
@@ -81,8 +83,8 @@ function project(ids: Ids = IDS, goalX: unknown = 12, motion = "demo"): ProjectD
           },
           {
             id: ids.goals,
+            type: "goals2d",
             input: {
-              schema: GOALS_2D_SPEC,
               values: [{ id: "left-hand", cells: { memberId: "left-lower", x: goalX, y: 8 } }],
             },
           },
@@ -239,13 +241,14 @@ describe("aggregate 2D IK", () => {
   it("AI-12 reproduces every case captured from the grouped plugin bit for bit", () => {
     expect(Object.keys(GOLDENS).length).toBeGreaterThanOrEqual(12);
     for (const [name, { input: twin, expected }] of Object.entries(GOLDENS)) {
+      const rig = goalsEntity(twin.body, twin.goals);
       const result = ikPlugin.transform(
         {
           values: twin.values ?? { inspect: true },
           requires: {
-            chain: { values: twin.body },
-            goals: { values: twin.goals },
-            base: { values: twin.base },
+            chain: rig.body,
+            goals: rig.goals,
+            base: rootEntity(twin.base),
           },
         } as never,
         CTX,

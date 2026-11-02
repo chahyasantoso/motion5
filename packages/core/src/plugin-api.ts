@@ -12,15 +12,19 @@ export { shape, typed } from "./contract/slot-spec";
 export type {
   DataType,
   DependencySpec,
+  Diagnostic,
   EvaluationContext,
   Outputs,
   Parsed,
   PluginDefinition as PluginDefinition,
   ResolvedInput,
+  Scalar,
   SlotSpec,
   SourceStructures,
   Structure,
+  Table,
   TypeIssue,
+  Value,
   ValueSpec,
 } from "./contract/v5";
 export type {

@@ -4,6 +4,7 @@ import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/testi
 import { ikPlugin } from "../../src/ik";
 import { fkPlugin } from "../../src/fk";
 import { BODY_2D_SPEC, GOALS_2D_SPEC, POSE_2D_SPEC } from "../../src/aggregate-topology";
+import { bodyEntity, rootEntity, solvedEntity } from "../support/typed-rig";
 
 const composer = vi.hoisted(() => ({ calls: 0 }));
 vi.mock("../../src/frame", async (importOriginal) => {
@@ -18,6 +19,31 @@ vi.mock("../../src/frame", async (importOriginal) => {
 });
 
 const CTX = { nodeId: "rig/pose", progress: 0 };
+
+type RawFkInput = {
+  readonly values: unknown;
+  readonly requires: {
+    readonly chain: { readonly values: unknown };
+    readonly solved?: { readonly values: unknown };
+    readonly base: { readonly values: unknown };
+  };
+};
+
+function runFk(raw: RawFkInput, _ctx?: unknown) {
+  return fkPlugin.transform(
+    {
+      values: raw.values,
+      requires: {
+        chain: bodyEntity(raw.requires.chain.values),
+        ...(raw.requires.solved === undefined
+          ? {}
+          : { solved: solvedEntity(raw.requires.solved.values) }),
+        base: rootEntity(raw.requires.base.values),
+      },
+    } as never,
+    CTX,
+  );
+}
 
 type Ids = { root: string; body: string; goals: string; solve: string; pose: string };
 const IDS: Ids = {
@@ -37,11 +63,11 @@ function project(ids: Ids = IDS, motion = "demo"): ProjectDefinition {
         id: motion,
         trigger: { type: "manual" },
         tracks: [
-          { id: ids.root, input: { values: { x: 0, y: 0, rotation: 0 } } },
+          { id: ids.root, type: "root2d", input: { values: { x: 0, y: 0, rotation: 0 } } },
           {
             id: ids.body,
+            type: "body2d",
             input: {
-              schema: BODY_2D_SPEC,
               values: [
                 { id: "trunk", cells: { length: 20, rotation: 0 } },
                 { id: "left-upper", cells: { parentId: "trunk", length: 10, rotation: 0 } },
@@ -51,8 +77,8 @@ function project(ids: Ids = IDS, motion = "demo"): ProjectDefinition {
           },
           {
             id: ids.goals,
+            type: "goals2d",
             input: {
-              schema: GOALS_2D_SPEC,
               values: [{ id: "left-hand", cells: { memberId: "left-lower", x: 12, y: 8 } }],
             },
           },
@@ -111,7 +137,7 @@ describe("aggregate 2D FK", () => {
   });
 
   it("AK-2a evaluates to rest pose with weight 0 when solved is unbound", () => {
-    const output = fkPlugin.transform(
+    const output = runFk(
       {
         values: {},
         requires: {
@@ -138,7 +164,7 @@ describe("aggregate 2D FK", () => {
   });
 
   it("AK-2 single-bone golden parity matches fk-v5 bit for bit", () => {
-    const output = fkPlugin.transform(
+    const output = runFk(
       {
         values: {},
         requires: {
@@ -166,7 +192,7 @@ describe("aggregate 2D FK", () => {
   });
 
   it("AK-3 multi-bone tree hierarchy composes child bones inheriting parent tip coordinates", () => {
-    const output = fkPlugin.transform(
+    const output = runFk(
       {
         values: {},
         requires: {
@@ -221,7 +247,7 @@ describe("aggregate 2D FK", () => {
 
   it("AK-4 refuses a missing solved row with TypeError", () => {
     expect(() =>
-      fkPlugin.transform(
+      runFk(
         {
           values: {},
           requires: {
@@ -237,7 +263,7 @@ describe("aggregate 2D FK", () => {
 
   it("AK-5 refuses non-finite solved rotation with TypeError", () => {
     expect(() =>
-      fkPlugin.transform(
+      runFk(
         {
           values: {},
           requires: {
@@ -251,7 +277,7 @@ describe("aggregate 2D FK", () => {
     ).toThrow('FK solver row for member "bone" has no finite rotation.');
 
     expect(() =>
-      fkPlugin.transform(
+      runFk(
         {
           values: {},
           requires: {
@@ -267,7 +293,7 @@ describe("aggregate 2D FK", () => {
 
   it("AK-6 blends authored and solved rotation along short arc with clamping", () => {
     const solve = (weight: number | undefined, authored = 20, solved = 80) => {
-      const output = fkPlugin.transform(
+      const output = runFk(
         {
           values: {},
           requires: {
@@ -301,7 +327,7 @@ describe("aggregate 2D FK", () => {
   });
 
   it("AK-7 applies pivot offsets in rotated parent space", () => {
-    const withOffset = fkPlugin.transform(
+    const withOffset = runFk(
       {
         values: {},
         requires: {
@@ -320,7 +346,7 @@ describe("aggregate 2D FK", () => {
   });
 
   it("AK-8 clamps zero or negative bone length to zero extent", () => {
-    const zeroLen = fkPlugin.transform(
+    const zeroLen = runFk(
       {
         values: {},
         requires: {
@@ -336,7 +362,7 @@ describe("aggregate 2D FK", () => {
     expect(zeroLen.values[0].cells.x).toBe(5);
     expect(zeroLen.values[0].cells.y).toBe(10);
 
-    const negLen = fkPlugin.transform(
+    const negLen = runFk(
       {
         values: {},
         requires: {
@@ -354,7 +380,7 @@ describe("aggregate 2D FK", () => {
   });
 
   it("AK-9 is independent of authored body row order", () => {
-    const forward = fkPlugin.transform(
+    const forward = runFk(
       {
         values: {},
         requires: {
@@ -377,7 +403,7 @@ describe("aggregate 2D FK", () => {
       } as never,
       CTX,
     );
-    const reversed = fkPlugin.transform(
+    const reversed = runFk(
       {
         values: {},
         requires: {

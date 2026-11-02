@@ -5,7 +5,10 @@ import { fkPlugin } from "../../src/fk";
 import { transformPlugin } from "../../src/transform";
 import { BODY_2D_SPEC, ROOT_2D_SPEC, SOLVED_2D_SPEC } from "../../src/aggregate-topology";
 import { createManualClock } from "@motion5/core";
-import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/testing";
+import { bindData, createFakeInterpolator, createFakeScheduler } from "@motion5/core/testing";
+import { body2d } from "../../src/body/type";
+import { root2d } from "../../src/root/type";
+import { solved2d } from "../../src/solved/type";
 
 function hold(value: number) {
   return value;
@@ -29,24 +32,24 @@ const thigh: TrackDefinition = {
 
 const bodyTrack: TrackDefinition = {
   id: "body",
+  type: "body2d",
   input: {
-    schema: BODY_2D_SPEC,
     values: [{ id: "thigh", cells: { length: 50, rotation: 45, weight: 1 } }],
   },
 };
 
 const solvedTrack: TrackDefinition = {
   id: "solved",
+  type: "solved2d",
   input: {
-    schema: SOLVED_2D_SPEC,
     values: [{ id: "thigh", cells: { rotation: 45 } }],
   },
 };
 
 const rootTrack: TrackDefinition = {
   id: "pelvis",
+  type: "root2d",
   input: {
-    schema: ROOT_2D_SPEC,
     values: { x: ramp(0, 200), y: hold(100), rotation: hold(0) },
   },
 };
@@ -98,9 +101,9 @@ describe("per-plugin keyframe key ownership", () => {
       {
         values: {},
         requires: {
-          chain: { values: [{ id: "thigh", cells: { length: 50, rotation: 45 } }] },
-          solved: { values: [{ id: "thigh", cells: { rotation: 45 } }] },
-          base: { values: { x: 0, y: 100, rotation: 0 } },
+          chain: bindData(body2d, [{ id: "thigh", cells: { length: 50, rotation: 45 } }]),
+          solved: bindData(solved2d, [{ id: "thigh", cells: { rotation: 45 } }]),
+          base: bindData(root2d, { x: 0, y: 100, rotation: 0 }),
         },
       },
       { nodeId: "walk/thigh", progress: 0 },

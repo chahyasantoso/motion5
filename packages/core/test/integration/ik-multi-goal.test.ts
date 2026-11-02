@@ -20,10 +20,12 @@ function goalRig(goalsTrack: TrackDefinition): ProjectDefinition {
         tracks: [
           {
             id: "shoulder",
+            type: "root2d",
             input: { values: { x: 200, y: 300, rotation: 0 } },
           },
           {
             id: "body",
+            type: "body2d",
             input: {
               values: [
                 { id: "upper-arm", cells: { length: 80, rotation: 0 } },
@@ -57,6 +59,7 @@ function goalRig(goalsTrack: TrackDefinition): ProjectDefinition {
 
 const STATIC_GOAL = goalRig({
   id: "goals",
+  type: "goals2d",
   input: {
     values: [{ id: "hand-target", cells: { memberId: "hand", x: 320, y: 340 } }],
   },
@@ -64,6 +67,7 @@ const STATIC_GOAL = goalRig({
 
 const ANIMATED_GOAL = goalRig({
   id: "goals",
+  type: "goals2d",
   input: {
     values: [
       {

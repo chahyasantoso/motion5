@@ -150,13 +150,9 @@ function readDataType(value: unknown, path: string): DataType<unknown, unknown> 
   );
   if (parse === undefined) refuse("plugin-shape", `${path}.parse`, "parse must be a function.");
   if (bind === undefined) refuse("plugin-shape", `${path}.bind`, "bind must be a function.");
-  return Object.freeze({
-    id,
-    spec,
-    parse: (input: Value) => Reflect.apply(parse, source, [input]) as Parsed<unknown>,
-    bind: (structure: Structure<unknown>, input: Value) =>
-      Reflect.apply(bind, source, [structure, input]) as unknown,
-  });
+  const type = source as unknown as DataType<unknown, unknown>;
+  if (type.id !== id) refuse("plugin-shape", `${path}.id`, "data type id moved during admission.");
+  return type;
 }
 
 function readShapeSlot(
@@ -333,7 +329,7 @@ export class PluginCatalog implements PluginCapabilities {
   }
 
   /** Admit a batch atomically: every definition passes or none is stored. */
-  registerAll<Input extends ResolvedInput>(plugins: readonly PluginDefinition<Input>[]): void;
+  registerAll(plugins: readonly PluginDefinition<never>[]): void;
   registerAll(plugins: unknown): void {
     this.#registerBatch(plugins);
   }

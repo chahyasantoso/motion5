@@ -237,11 +237,11 @@ export function independentRigsProject(count: number): ProjectDefinition {
         id: `rig-${index}`,
         trigger: { type: "manual" as const },
         tracks: [
-          { id: "root", input: { schema: ROOT_2D_SPEC, values: { x, y, rotation: 0 } } },
+          { id: "root", type: "root2d", input: { values: { x, y, rotation: 0 } } },
           {
             id: "body",
+            type: "body2d",
             input: {
-              schema: BODY_2D_SPEC,
               values: [
                 { id: "upper", cells: { length: 60, rotation: 0 } },
                 { id: "fore", cells: { parentId: "upper", length: 50, rotation: 0 } },
@@ -250,8 +250,8 @@ export function independentRigsProject(count: number): ProjectDefinition {
           },
           {
             id: "goal",
+            type: "goals2d",
             input: {
-              schema: GOALS_2D_SPEC,
               values: [
                 {
                   id: "g",

@@ -35,8 +35,8 @@ function ramp(from: number, to: number) {
 
 const rootTrack: TrackDefinition = {
   id: "root",
+  type: "root2d",
   input: {
-    schema: ROOT_2D_SPEC,
     values: {
       x: ramp(0, 100),
       y: ramp(0, 0),
@@ -47,16 +47,16 @@ const rootTrack: TrackDefinition = {
 
 const bodyTrack: TrackDefinition = {
   id: "body",
+  type: "body2d",
   input: {
-    schema: BODY_2D_SPEC,
     values: [{ id: "elbow", cells: { length: 40, rotation: 0, weight: 1 } }],
   },
 };
 
 const solvedTrack: TrackDefinition = {
   id: "solved",
+  type: "solved2d",
   input: {
-    schema: SOLVED_2D_SPEC,
     values: [{ id: "elbow", cells: { rotation: 0 } }],
   },
 };

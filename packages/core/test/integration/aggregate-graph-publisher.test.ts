@@ -66,15 +66,15 @@ function createAggregateProject(overrides?: {
   const tracks: TrackDefinition[] = [
     {
       id: "root",
+      type: "root2d",
       input: {
-        schema: ROOT_2D_SPEC,
         values: { x: 0, y: 0, rotation: 0 },
       },
     },
     {
       id: "body",
+      type: "body2d",
       input: {
-        schema: BODY_2D_SPEC,
         values: [
           { id: "upper", cells: { length: 20, rotation: 0 } },
           { id: "lower", cells: { parentId: "upper", length: 15, rotation: 0 } },
@@ -83,8 +83,8 @@ function createAggregateProject(overrides?: {
     },
     {
       id: "goals",
+      type: "goals2d",
       input: {
-        schema: GOALS_2D_SPEC,
         values: [{ id: "target", cells: { memberId: "lower", x: 25, y: 10 } }],
       },
     },
@@ -438,15 +438,18 @@ describe("Explicit Aggregate Graph and Publisher (AM-1..10)", () => {
           tracks: [
             {
               id: "root",
-              input: { schema: ROOT_2D_SPEC, values: { x: 0, y: 0, rotation: 0 } },
+              type: "root2d",
+              input: { values: { x: 0, y: 0, rotation: 0 } },
             },
             {
               id: "body",
-              input: { schema: BODY_2D_SPEC, values: bodyValues },
+              type: "body2d",
+              input: { values: bodyValues },
             },
             {
               id: "goals",
-              input: { schema: GOALS_2D_SPEC, values: goalValues },
+              type: "goals2d",
+              input: { values: goalValues },
             },
             {
               id: "solve",

@@ -17,7 +17,7 @@ import {
 import { unreachable, type PluginDefinition } from "@motion5/core/plugin-api";
 
 export interface PluginDescriptor {
-  readonly load: () => Promise<PluginDefinition>;
+  readonly load: () => Promise<PluginDefinition<never>>;
   /** Register this with the plugin although no authored track names it. */
   readonly dependencies?: readonly string[];
 }
@@ -40,7 +40,7 @@ export interface PluginLoader {
   ensure(registry: PluginCatalog, demand: PluginDemand): Promise<EnsuredDemand>;
 }
 interface SnapshotDescriptor {
-  readonly load: () => Promise<PluginDefinition>;
+  readonly load: () => Promise<PluginDefinition<never>>;
   readonly dependencies: readonly string[];
 }
 type PlannedPlugin = readonly [name: string, descriptor: SnapshotDescriptor];
@@ -48,7 +48,7 @@ type PlanResult =
   | { readonly kind: "planned"; readonly plugins: readonly PlannedPlugin[] }
   | { readonly kind: "refused"; readonly failure: PluginLoadFailure };
 type LoadResult =
-  | { readonly kind: "loaded"; readonly definition: PluginDefinition }
+  | { readonly kind: "loaded"; readonly definition: PluginDefinition<never> }
   | { readonly kind: "failed"; readonly failure: PluginLoadFailure };
 
 function snapshotCatalog(catalog: PluginCatalogSource): ReadonlyMap<string, SnapshotDescriptor> {
@@ -223,7 +223,7 @@ async function loadDefinition(name: string, descriptor: SnapshotDescriptor): Pro
         : undefined;
     if (receivedId !== name)
       return { kind: "failed", failure: { kind: "identity-mismatch", name, received } };
-    return { kind: "loaded", definition: received as PluginDefinition };
+    return { kind: "loaded", definition: received as PluginDefinition<never> };
   } catch (cause) {
     return { kind: "failed", failure: { kind: "import-failed", name, cause } };
   }
@@ -265,7 +265,7 @@ export function createPluginLoader(catalog: PluginCatalogSource): PluginLoader {
           loadOne(name, descriptor).then((result) => [name, result] as const),
         ),
       );
-      const loaded: (readonly [name: string, definition: PluginDefinition])[] = [];
+      const loaded: (readonly [name: string, definition: PluginDefinition<never>])[] = [];
       for (const [name, result] of results) {
         if (result.kind === "failed") return { kind: "refused", failure: result.failure };
         loaded.push([name, result.definition]);

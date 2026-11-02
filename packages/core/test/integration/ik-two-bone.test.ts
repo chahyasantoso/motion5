@@ -20,10 +20,12 @@ const SIX_NODE_IK_PROJECT: ProjectDefinition = {
       tracks: [
         {
           id: "shoulder",
+          type: "root2d",
           input: { values: { x: 200, y: 300, rotation: 0 } },
         },
         {
           id: "body",
+          type: "body2d",
           input: {
             values: [
               { id: "upper-arm", cells: { length: 80, rotation: 0 } },
@@ -34,6 +36,7 @@ const SIX_NODE_IK_PROJECT: ProjectDefinition = {
         },
         {
           id: "goals",
+          type: "goals2d",
           input: {
             values: [{ id: "hand-target", cells: { memberId: "hand", x: 320, y: 340 } }],
           },
@@ -123,10 +126,12 @@ describe("Two-bone IK Integration (Slice C3)", () => {
           tracks: [
             {
               id: "shoulder",
+              type: "root2d",
               input: { values: { x: 200, y: 300, rotation: 0 } },
             },
             {
               id: "body",
+              type: "body2d",
               input: {
                 values: [
                   { id: "upper-arm", cells: { length: 80, rotation: 0 } },
@@ -137,6 +142,7 @@ describe("Two-bone IK Integration (Slice C3)", () => {
             },
             {
               id: "goals",
+              type: "goals2d",
               input: {
                 values: [
                   {

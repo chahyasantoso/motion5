@@ -183,12 +183,13 @@ describe("aggregate pose-classify binding (AP)", () => {
           tracks: [
             {
               id: "root",
-              input: { values: { x: 0, y: 0, z: 0, rotation: 0, rotationX: 0, rotationY: 0 } },
+              type: "root2d",
+              input: { values: { x: 0, y: 0, rotation: 0 } },
             },
             {
               id: "body",
+              type: "body2d",
               input: {
-                schema: BODY_2D_SPEC,
                 values: [
                   { id: "upper", cells: { length: 20, rotation: 0 } },
                   { id: "wrist", cells: { parentId: "upper", length: 20, rotation: 0 } },
@@ -197,8 +198,8 @@ describe("aggregate pose-classify binding (AP)", () => {
             },
             {
               id: "goals",
+              type: "goals2d",
               input: {
-                schema: GOALS_2D_SPEC,
                 values: [{ id: "goal", cells: { memberId: "wrist", x: 40, y: 0 } }],
               },
             },

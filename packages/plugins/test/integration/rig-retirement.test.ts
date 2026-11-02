@@ -109,10 +109,15 @@ describe("Phase 5 closeout and rig retirement (AQ)", () => {
           id: "m",
           trigger: { type: "manual" },
           tracks: [
-            { id: "root", input: { values: { x: 0, y: 0, rotation: 0 } } },
-            { id: "body", input: { values: [{ id: "u", cells: { length: 50, rotation: 0 } }] } },
+            { id: "root", type: "root2d", input: { values: { x: 0, y: 0, rotation: 0 } } },
+            {
+              id: "body",
+              type: "body2d",
+              input: { values: [{ id: "u", cells: { length: 50, rotation: 0 } }] },
+            },
             {
               id: "goals",
+              type: "goals2d",
               input: { values: [{ id: "g", cells: { memberId: "u", x: 10, y: 10 } }] },
             },
             {
