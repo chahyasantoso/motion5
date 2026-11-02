@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { AuthoredValues, PluginDefinition, ValueSpec } from "../../../src/contract/v5";
+import { shape } from "../../../src/contract/slot-spec";
 import { PluginCatalog } from "../../../src/domain/plugin-catalog";
 import {
   deriveCommittedContract,
@@ -32,7 +33,7 @@ function consumerPlugin(
 ): PluginDefinition {
   return {
     id,
-    inputs: { values: PLUGIN_VALUES, requires: { data: { outputs } } },
+    inputs: { values: PLUGIN_VALUES, requires: { data: shape({ outputs }) } },
     outputs: { values: POINT },
     transform: () => ({ values: [] }),
   };

@@ -145,9 +145,13 @@ function readTrack(
       return;
     case "accepted": {
       if (parsed.value.plugin === undefined) {
+        const declared =
+          parsed.value.type === undefined
+            ? parsed.value.input.schema
+            : context.dataType?.(parsed.value.type)?.spec;
         const inferred = deriveSourceContract(
           parsed.value.input.values,
-          parsed.value.input.schema,
+          declared,
           `${path}.input.values`,
           "declared",
         );
@@ -202,9 +206,13 @@ export function validateTrackDefinition(
     case "accepted": {
       const diagnostics: Diagnostic[] = [...parsed.diagnostics];
       if (parsed.value.plugin === undefined) {
+        const declared =
+          parsed.value.type === undefined
+            ? parsed.value.input.schema
+            : context.dataType?.(parsed.value.type)?.spec;
         const inferred = deriveSourceContract(
           parsed.value.input.values,
-          parsed.value.input.schema,
+          declared,
           `${path}.input.values`,
           "declared",
         );

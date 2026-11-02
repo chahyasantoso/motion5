@@ -33,6 +33,9 @@ export function validateV5(
 ): ValidationResult {
   const context: ParseContext = {
     isPluginRegistered: (pluginId) => admitsPlugin(capabilities, pluginId),
+    ...(capabilities.dataType === undefined
+      ? {}
+      : { dataType: (typeId: string) => capabilities.dataType?.(typeId) }),
   };
   const schema = validateSchemaV5(input, context);
   switch (schema.kind) {

@@ -1,4 +1,5 @@
 import { describe, expect, expectTypeOf, it } from "vitest";
+import { shape } from "@motion5/core/plugin-api";
 import type { Patch, ProjectDefinition } from "../../src/contract/v5";
 import type { RuleId } from "../../src/contract/rule-id";
 import type {
@@ -49,7 +50,7 @@ const translatePlugin: PluginDefinition<
       fields: { dx: { kind: "number" }, dy: { kind: "number" } },
     },
     requires: {
-      data: {
+      data: shape({
         outputs: {
           values: {
             kind: "table",
@@ -58,8 +59,7 @@ const translatePlugin: PluginDefinition<
             },
           },
         },
-      },
-    },
+      })},
   },
   outputs: {
     values: {
@@ -163,7 +163,9 @@ function malformed(trackDefinition: unknown): unknown {
 
 describe("v5 contract direction", () => {
   it("settles the authored track and input member sets", () => {
-    expectTypeOf<keyof TrackDefinition>().toEqualTypeOf<"id" | "plugin" | "input" | "duration">();
+    expectTypeOf<keyof TrackDefinition>().toEqualTypeOf<
+      "id" | "type" | "plugin" | "input" | "duration"
+    >();
     expectTypeOf<keyof TrackInput>().toEqualTypeOf<"values" | "requires" | "schema">();
   });
 
@@ -532,15 +534,14 @@ describe("v5 registration-dependent refusals", () => {
       inputs: {
         values: { kind: "record", fields: { n: { kind: "number" } } },
         requires: {
-          data: {
+          data: shape({
             outputs: {
               values: {
                 kind: "table",
                 schema: { row: { fields: { x: { kind: "number", max: 10 } } } },
               },
             },
-          },
-        },
+          })},
       },
     };
     const source = track({ id: "wide", plugin: "wide", values: record({ n: 1 }) });

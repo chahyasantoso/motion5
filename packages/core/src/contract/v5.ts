@@ -142,6 +142,25 @@ export interface AuthoredRow {
 export type AuthoredRecord = Readonly<Record<string, AuthoredCell>>;
 /** Top-level shape picks table or record. */
 export type AuthoredValues = readonly AuthoredRow[] | AuthoredRecord;
+/** One relative complaint a data type reports about a value. */
+export interface TypeIssue {
+  readonly path: readonly string[];
+  readonly message: string;
+}
+/** Domain parse either yields a plain structure or refuses it. */
+export type Parsed<S> =
+  | { readonly kind: "parsed"; readonly structure: S; readonly warnings: readonly TypeIssue[] }
+  | { readonly kind: "refused"; readonly errors: readonly TypeIssue[] };
+declare const STRUCTURE: unique symbol;
+/** Frozen, core-branded structure a data type produced at commit. */
+export type Structure<S> = S & { readonly [STRUCTURE]: true };
+/** A named domain value: commit-time parse, frame-time bind. */
+export interface DataType<S, E> {
+  readonly id: string;
+  readonly spec: ValueSpec;
+  parse(value: Value): Parsed<S>;
+  bind(structure: Structure<S>, value: Value): E;
+}
 /** `row` present = table cell, absent = record field. */
 export interface CellAddress {
   readonly row?: string;
@@ -185,6 +204,20 @@ export interface DependencySpec {
   readonly optional?: true;
   readonly binding?: BindingMode;
 }
+/** A slot that admits one named data type. */
+export interface TypedSlotSpec {
+  readonly kind: "typed";
+  readonly type: DataType<unknown, unknown>;
+  readonly optional?: true;
+  readonly binding?: BindingMode;
+}
+/** A slot that admits named output shapes. */
+export type ShapeSlotSpec = { readonly kind: "shape" } & DependencySpec;
+/** How a plugin slot receives its bound source. */
+export type SlotSpec = TypedSlotSpec | ShapeSlotSpec;
+/** Structures delivered to a plugin's cross-source check. */
+export type SourceStructure = Structure<unknown> | Readonly<Record<string, Structure<unknown>>>;
+export type SourceStructures = Readonly<Record<string, SourceStructure>>;
 /** What a track authors: values, slots, source schema. */
 export interface TrackInput {
   readonly values?: AuthoredValues;
@@ -194,9 +227,11 @@ export interface TrackInput {
 }
 /** Stops or a static value. */
 export type AuthoredProperty = readonly AuthoredStop[] | AuthoredStaticValue;
-/** Dataflow node: optional plugin, input, duration. */
+/** Dataflow node: optional data type or plugin, input, duration. */
 export interface TrackDefinition {
   readonly id: string;
+  /** Data track type id; omitted data tracks are generic `data`. */
+  readonly type?: string;
   readonly plugin?: string;
   readonly input?: TrackInput;
   readonly duration?: number;
@@ -214,10 +249,8 @@ export interface EvaluationContext {
   readonly nodeId: string;
   readonly progress: number;
 }
-/** Bound outputs by slot; map slots add a member level. */
-export type ResolvedRequires = Readonly<
-  Record<string, Outputs | Readonly<Record<string, Outputs>>>
->;
+/** Resolved slot values: output sets for shape slots, entities for typed slots. */
+export type ResolvedRequires = Readonly<Record<string, unknown>>;
 /** Plugin input: local values plus bound slots. */
 export interface ResolvedInput<Values extends Value = Value> {
   readonly values: Values;
@@ -229,9 +262,11 @@ export interface PluginDefinition<Input extends ResolvedInput = ResolvedInput> {
   readonly inputs: {
     // Admission refuses `optional` on local values.
     readonly values: ValueSpec;
-    readonly requires?: Readonly<Record<string, DependencySpec>>;
+    readonly requires?: Readonly<Record<string, SlotSpec>>;
   };
   readonly outputs: Readonly<Record<string, ValueSpec>>;
+  /** Cross-source rules over the structures typed slots deliver; pure, never per frame. */
+  checkSources?(structures: SourceStructures): readonly Diagnostic[];
   readonly validate?: (input: Input, context: EvaluationContext) => readonly Diagnostic[];
   transform(input: Input, context: EvaluationContext): Outputs;
 }

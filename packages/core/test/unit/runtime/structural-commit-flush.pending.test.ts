@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { shape } from "@motion5/core/plugin-api";
 import type {
   MotionDefinition,
   PluginDefinition,
@@ -20,11 +21,10 @@ const DEMO: PluginDefinition = {
   inputs: {
     values: { kind: "record", fields: {} },
     requires: {
-      chain: {
+      chain: shape({
         outputs: { values: { kind: "table", schema: { row: { fields: {} } } } },
         optional: true,
-      },
-    },
+      })},
   },
   outputs: { values: { kind: "table", schema: { row: { fields: {} } } } },
   transform() {

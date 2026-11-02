@@ -1,23 +1,25 @@
 import type {
-  DependencySpec,
+  SlotSpec,
   TrackDefinition,
   PluginDefinition,
   SourceBinding,
 } from "../contract/v5";
+import { GENERIC_DATA_TYPE_ID } from "../contract/generic-data";
 import { deriveSourceContract, type SourceContract } from "../contract/v5-infer";
 import { parseTrackDefinition } from "../contract/v5-parse";
 import type { PluginCapabilities } from "../ports/plugin-capabilities";
 
 /** Committed shape of a node at its last structural commit; slot and dependency checks read it because cheap edits move values without re-inferring. */
 export interface CommittedContract {
+  readonly typeId?: string;
   readonly plugin?: string;
   readonly input: SourceContract;
   readonly outputs: Readonly<Record<string, SourceContract>>;
   readonly requires: Readonly<Record<string, SourceBinding>>;
-  readonly slots: Readonly<Record<string, DependencySpec>>;
+  readonly slots: Readonly<Record<string, SlotSpec>>;
 }
 
-const NO_SLOTS: Readonly<Record<string, DependencySpec>> = Object.freeze({});
+const NO_SLOTS: Readonly<Record<string, SlotSpec>> = Object.freeze({});
 
 function freeze<T>(value: T): T {
   return Object.freeze(value);
@@ -61,14 +63,19 @@ export function deriveCommittedContract(
   }
   const parsed = parseTrackDefinition(track, nodeId);
   if (parsed.kind === "refused") return undefined;
+  const declared =
+    parsed.value.type === undefined
+      ? parsed.value.input.schema
+      : capabilities.dataType?.(parsed.value.type)?.spec;
   const input = deriveSourceContract(
     parsed.value.input.values,
-    parsed.value.input.schema,
+    declared,
     `${nodeId}.input.values`,
     "declared",
   );
   if (input.kind === "refused") return undefined;
   return freeze({
+    typeId: parsed.value.type ?? GENERIC_DATA_TYPE_ID,
     input: input.value,
     outputs: freeze({ values: input.value }),
     requires: freeze({ ...parsed.value.input.requires }),

@@ -1,4 +1,5 @@
 import {
+  shape,
   unreachable,
   type PluginDefinition,
   type Outputs,
@@ -197,7 +198,7 @@ export function createPoseClassifyPlugin(options: PoseClassifyOptions): PluginDe
     inputs: {
       values: { kind: "record", fields: {} },
       requires: {
-        pose: { outputs: { values: POSE } },
+        pose: shape({ outputs: { values: POSE } }),
       },
     },
     outputs: { values: VALUES },

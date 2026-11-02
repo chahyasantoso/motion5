@@ -4,6 +4,8 @@ import type {
   PatchBatch,
   PatchListener,
   ProjectDefinition,
+  Structure,
+  SourceStructure,
   TrackDefinition,
   TriggerSignal,
 } from "./contract/v5";
@@ -29,6 +31,7 @@ import { collect, report } from "./domain/completion";
 import type { PluginCatalog } from "./domain/plugin-catalog";
 import type { RenderMetadata } from "./ports/render-metadata";
 import { qualifyFreeTrack, qualifyMotionTrack } from "./graph/ids";
+import { qualifySource } from "./graph/dependency-edges";
 import type { ComposeIdentifiedResolver, ComposeResolver } from "./runtime/graph-runtime";
 import { ValueTrack } from "./runtime/value-track";
 import { PluginTrack } from "./runtime/plugin-track";
@@ -40,6 +43,8 @@ import { acceptsExternalSignal } from "./ports/trigger-factory";
 import type { ClockConsumer, CreatedTrigger, TriggerFactory } from "./ports/trigger-factory";
 import { afterCleanup } from "./runtime/report";
 import { ProjectRuntime, type StagedTrack } from "./runtime/project-runtime";
+import type { SlotSources, SourceRef } from "./runtime/source-ref";
+import type { GraphNode } from "./graph/ir";
 
 export interface EngineOptions {
   readonly clock: Clock;
@@ -219,10 +224,17 @@ export class Engine {
         tracks.set(nodeId, track);
         return track;
       }
+      const dataType =
+        parsed.type === undefined ? undefined : this.#capabilities.dataType?.(parsed.type);
+      if (parsed.type !== undefined && dataType === undefined)
+        throw new TypeError(
+          `data-type-unknown at ${nodeId}.type: '${parsed.type}' is not admitted.`,
+        );
       const track = new ValueTrack({
         nodeId,
         values: parsed.input.values,
         interpolator: this.#options.interpolator,
+        ...(dataType === undefined ? {} : { dataType }),
       });
       tracks.set(nodeId, track);
       return track;
@@ -452,6 +464,52 @@ export class Engine {
     };
     try {
       for (const nodeId of nodes.keys()) compile(nodeId);
+      const checkCommittedSources = (): void => {
+        const checkTrack = (
+          track: TrackDefinition,
+          sourceId: (source: string) => string,
+        ): void => {
+          const pluginId = track.plugin;
+          const requires = track.input?.requires;
+          if (pluginId === undefined || requires === undefined) return;
+          const plugin = this.#capabilities.pluginDefinition?.(pluginId);
+          if (plugin === undefined) return;
+          const check = plugin.checkSources;
+          if (check === undefined) return;
+          const declared = plugin.inputs.requires ?? {};
+          const structures: Record<string, SourceStructure> = {};
+          for (const [slotName, slot] of Object.entries(declared)) {
+            if (slot.kind !== "typed") continue;
+            const binding = requires[slotName];
+            if (binding === undefined) {
+              if (slot.optional === true) continue;
+              return;
+            }
+            if (typeof binding === "string") {
+              const source = tracks.get(sourceId(binding));
+              if (!(source instanceof ValueTrack) || source.structure === undefined) return;
+              structures[slotName] = source.structure;
+              continue;
+            }
+            const members: Record<string, Structure<unknown>> = {};
+            for (const [key, memberSource] of Object.entries(binding)) {
+              const source = tracks.get(sourceId(memberSource));
+              if (!(source instanceof ValueTrack) || source.structure === undefined) return;
+              members[key] = source.structure;
+            }
+            structures[slotName] = Object.freeze(members);
+          }
+          const diagnostics = check(Object.freeze(structures));
+          const errors = diagnostics.filter(({ severity }) => severity === "error");
+          if (errors.length > 0) throw new TypeError(describeDiagnostics(errors));
+        };
+        for (const motion of acceptedProject.motions)
+          for (const track of motion.tracks)
+            checkTrack(track, (source) => qualifySource(source, motion.id));
+        for (const track of acceptedProject.freeTracks ?? [])
+          checkTrack(track, (source) => qualifySource(source, "~"));
+      };
+      checkCommittedSources();
       const compose: ComposeResolver = (node) => () => {
         const track = tracks.get(node.id);
         if (!track) throw new TypeError(`Unknown graph node "${node.id}".`);
@@ -469,7 +527,29 @@ export class Engine {
       const composeIdentified: ComposeIdentifiedResolver = (node) => {
         const track = tracks.get(node.id);
         if (!(track instanceof PluginTrack)) return undefined;
-        return (requires) => track.compose(requires);
+        return (requires) => track.compose(requires, sourceRefs(node));
+      };
+      const sourceRefs = (node: GraphNode): SlotSources => {
+        const refs: Record<string, SourceRef | Record<string, SourceRef>> = {};
+        for (const edge of node.edges) {
+          const sourceTrack = tracks.get(edge.sourceId);
+          const structure =
+            sourceTrack instanceof ValueTrack ? sourceTrack.structure : undefined;
+          const ref: SourceRef = {
+            sourceId: edge.sourceId,
+            ...(structure === undefined ? {} : { structure }),
+          };
+          const requirement = edge.requirement;
+          if (requirement === undefined) continue;
+          if (requirement.memberKey === undefined) {
+            refs[requirement.slot] = ref;
+            continue;
+          }
+          const members = (refs[requirement.slot] as Record<string, SourceRef> | undefined) ?? {};
+          members[requirement.memberKey] = ref;
+          refs[requirement.slot] = members;
+        }
+        return Object.freeze(refs);
       };
       const created = new ProjectRuntime(acceptedProject, {
         clock: this.#options.clock,

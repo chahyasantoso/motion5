@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { shape } from "@motion5/core/plugin-api";
 import type {
   AuthoredRecord,
   AuthoredValues,
@@ -32,7 +33,7 @@ const TRANSLATE: PluginDefinition = {
   id: "translate",
   inputs: {
     values: { kind: "record", fields: { dx: { kind: "number" } } },
-    requires: { data: { outputs: { values: POINT } } },
+    requires: { data: shape({ outputs: { values: POINT } })},
   },
   outputs: { values: POINT },
   transform() {

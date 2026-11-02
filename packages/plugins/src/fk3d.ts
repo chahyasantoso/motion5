@@ -1,4 +1,4 @@
-import { unreachable } from "@motion5/core/plugin-api";
+import { shape, unreachable } from "@motion5/core/plugin-api";
 import type { PluginDefinition, Outputs } from "@motion5/core/plugin-api";
 import {
   BODY_3D_SLOT,
@@ -92,9 +92,9 @@ export const fk3dPlugin: PluginDefinition = {
   inputs: {
     values: { kind: "record", fields: {} },
     requires: {
-      chain: { outputs: { values: BODY_3D_SLOT } },
-      solved: { outputs: { values: SOLVED_3D_SLOT }, optional: true },
-      base: { outputs: { values: ROOT_3D_SPEC } },
+      chain: shape({ outputs: { values: BODY_3D_SLOT } }),
+      solved: shape({ outputs: { values: SOLVED_3D_SLOT }, optional: true }),
+      base: shape({ outputs: { values: ROOT_3D_SPEC } }),
     },
   },
   outputs: { values: POSE_3D_SPEC },

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { shape } from "@motion5/core/plugin-api";
 import type { PluginDefinition, TrackDefinition, ValueSpec } from "../../../src/contract/v5";
 import { PluginCatalog } from "../../../src/domain/plugin-catalog";
 import { qualifyMotionTrack } from "../../../src/graph/ids";
@@ -17,7 +18,7 @@ const TRANSLATE: PluginDefinition = {
   id: "translate",
   inputs: {
     values: { kind: "record", fields: { dx: { kind: "number" } } },
-    requires: { data: { outputs: { values: POINT } } },
+    requires: { data: shape({ outputs: { values: POINT } })},
   },
   outputs: { values: POINT },
   transform() {

@@ -1,6 +1,7 @@
 import type { Diagnostic, FieldSpec, ValueSpec } from "../contract/v5";
 import type { SourceContract } from "../contract/v5-infer";
 import { diagnostic } from "../contract/diagnostics";
+import { unreachable } from "../lang/exhaustive";
 import { compareEdges, type GraphEdge, type GraphNode } from "./ir";
 
 /** Load-time structural verdicts: `compatible` found every stated requirement, `incompatible` is a known contradiction, and `unproven` is missing evidence, not the same as compatible. */
@@ -83,6 +84,13 @@ function pathFor(edge: GraphEdge, output: string): string {
   return `${edge.observerId}.input.requires.${requirement.slot}${member}.outputs.${output}`;
 }
 
+function slotPath(edge: GraphEdge): string {
+  const requirement = edge.requirement;
+  if (requirement === undefined) return edge.observerId;
+  const member = requirement.memberKey === undefined ? "" : `.${requirement.memberKey}`;
+  return `${edge.observerId}.input.requires.${requirement.slot}${member}`;
+}
+
 /** Every slot check the graph can answer, in canonical order, from committed contracts only; contractless nodes and unbound slots are skipped; `graph/dependency-check.ts` owns admission. */
 export function checkSlotFit(nodes: readonly GraphNode[]): readonly Diagnostic[] {
   const nodeById = new Map(nodes.map((node) => [node.id, node] as const));
@@ -97,23 +105,66 @@ export function checkSlotFit(nodes: readonly GraphNode[]): readonly Diagnostic[]
       const found = edgeBySlot.get(requirement.slot) ?? [];
       edgeBySlot.set(requirement.slot, [...found, edge]);
     }
-    for (const [slot, edges] of edgeBySlot) {
-      const spec = contract.slots[slot];
-      if (spec === undefined) continue;
+    for (const [slotName, edges] of edgeBySlot) {
+      const slot = contract.slots[slotName];
+      if (slot === undefined) continue;
       for (const edge of [...edges].sort(compareEdges)) {
-        const producer = nodeById.get(edge.sourceId)?.contract?.outputs;
-        if (producer === undefined) continue;
-        for (const [output, required] of Object.entries(spec.outputs)) {
-          const result = checkSlotOutput(producer[output], required);
-          if (result.outcome === "compatible") continue;
-          const ruleId = result.outcome === "incompatible" ? "slot-incompatible" : "slot-unproven";
-          diagnostics.push(
-            diagnostic(
-              ruleId,
-              pathFor(edge, output),
-              `Slot '${slot}' output '${output}' (${describeOutputSpec(required)}) ${result.message ?? ""}`.trim(),
-            ),
-          );
+        const source = nodeById.get(edge.sourceId)?.contract;
+        if (source === undefined) continue;
+        switch (slot.kind) {
+          case "typed": {
+            if (source.typeId !== undefined) {
+              if (source.typeId !== slot.type.id)
+                diagnostics.push(
+                  diagnostic(
+                    "slot-type-mismatch",
+                    slotPath(edge),
+                    `Slot '${slotName}' requires data type '${slot.type.id}' but the source is '${source.typeId}'.`,
+                  ),
+                );
+              continue;
+            }
+            const producer = source.outputs.values;
+            if (producer === undefined) {
+              diagnostics.push(
+                diagnostic(
+                  "slot-type-unsatisfied",
+                  slotPath(edge),
+                  `Slot '${slotName}' requires data type '${slot.type.id}' but the producer publishes no values output.`,
+                ),
+              );
+              continue;
+            }
+            const result = checkSlotOutput(producer, slot.type.spec);
+            if (result.outcome === "compatible") continue;
+            diagnostics.push(
+              diagnostic(
+                result.outcome === "incompatible" ? "slot-type-mismatch" : "slot-unproven",
+                slotPath(edge),
+                `Slot '${slotName}' requires data type '${slot.type.id}' (${describeOutputSpec(slot.type.spec)}). ${result.message ?? ""}`.trim(),
+              ),
+            );
+            continue;
+          }
+          case "shape": {
+            const producer = source.outputs;
+            for (const [output, required] of Object.entries(slot.outputs)) {
+              const result = checkSlotOutput(producer[output], required);
+              if (result.outcome === "compatible") continue;
+              const ruleId =
+                result.outcome === "incompatible" ? "slot-incompatible" : "slot-unproven";
+              diagnostics.push(
+                diagnostic(
+                  ruleId,
+                  pathFor(edge, output),
+                  `Slot '${slotName}' output '${output}' (${describeOutputSpec(required)}) ${result.message ?? ""}`.trim(),
+                ),
+              );
+            }
+            continue;
+          }
+          default:
+            return unreachable(slot);
         }
       }
     }

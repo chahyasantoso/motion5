@@ -6,12 +6,21 @@
  * the mechanical rename lands, and registers through `PluginCatalog`.
  */
 export { PluginAdmissionError, PluginCatalog } from "./domain/plugin-catalog";
+export { diagnostic } from "./contract/diagnostics";
+export { GENERIC_DATA_TYPE_ID } from "./contract/generic-data";
+export { shape, typed } from "./contract/slot-spec";
 export type {
+  DataType,
   DependencySpec,
   EvaluationContext,
   Outputs,
+  Parsed,
   PluginDefinition as PluginDefinition,
   ResolvedInput,
+  SlotSpec,
+  SourceStructures,
+  Structure,
+  TypeIssue,
   ValueSpec,
 } from "./contract/v5";
 export type {

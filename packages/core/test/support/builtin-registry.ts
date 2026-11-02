@@ -1,4 +1,5 @@
 import { PluginCatalog } from "../../src/domain/plugin-catalog";
+import { shape } from "@motion5/core/plugin-api";
 import type { PluginDefinition } from "../../src/contract/v5";
 import { transformPlugin } from "@motion5/plugins/transform";
 import { fkPlugin } from "@motion5/plugins/fk";
@@ -19,11 +20,10 @@ export const GRAPH_EDGE_PLUGIN: PluginDefinition = {
   inputs: {
     values: { kind: "record", fields: {} },
     requires: {
-      chain: {
+      chain: shape({
         optional: true,
         outputs: { values: { kind: "table", schema: { row: { fields: {} } } } },
-      },
-    },
+      })},
   },
   outputs: { values: { kind: "table", schema: { row: { fields: {} } } } },
   transform() {

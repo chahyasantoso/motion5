@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { shape } from "@motion5/core/plugin-api";
 import type { ProjectDefinition, TrackDefinition } from "@motion5/core";
 import { Engine, PluginCatalog } from "@motion5/core";
 import type { PluginDefinition } from "@motion5/core/plugin-api";
@@ -36,9 +37,8 @@ const reachPlugin: PluginDefinition = {
   inputs: {
     values: { kind: "record", fields: { weight: { kind: "number" } } },
     requires: {
-      base: { outputs: { values: ROOT_2D_SPEC } },
-      destination: { outputs: { values: ROOT_2D_SPEC } },
-    },
+      base: shape({ outputs: { values: ROOT_2D_SPEC } }),
+      destination: shape({ outputs: { values: ROOT_2D_SPEC } })},
   },
   outputs: {
     values: { kind: "record", fields: { span: { kind: "number" } } },
@@ -143,8 +143,7 @@ describe("plugin-owned requirements end to end", () => {
       inputs: {
         values: { kind: "record", fields: { length: { kind: "number" } } },
         requires: {
-          base: { outputs: { values: ROOT_2D_SPEC }, optional: true },
-        },
+          base: shape({ outputs: { values: ROOT_2D_SPEC }, optional: true })},
       },
       outputs: {
         values: { kind: "record", fields: { x: { kind: "number" }, y: { kind: "number" } } },
@@ -266,8 +265,7 @@ describe("plugin-owned requirements end to end", () => {
           chain: "walk/body",
           solved: "walk/solved",
           base: "walk/pelvis",
-          debug: "walk/pelvis",
-        },
+          debug: "walk/pelvis"},
       },
     };
     expect(() => load(rig(bad), rigRegistry())).toThrow(/slot-unknown/);

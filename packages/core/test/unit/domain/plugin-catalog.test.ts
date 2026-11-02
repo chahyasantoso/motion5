@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import type { DependencySpec, PluginDefinition, ValueSpec } from "../../../src/contract/v5";
+import type { PluginDefinition, SlotSpec, ValueSpec } from "../../../src/contract/v5";
+import { shape } from "../../../src/contract/slot-spec";
 import { PluginAdmissionError, PluginCatalog } from "../../../src/domain/plugin-catalog";
 import { validateV5 } from "../../../src/validate-v5";
 
@@ -102,7 +103,7 @@ describe("admission refuses a malformed definition by rule", () => {
     kind: "table",
     schema: { row: { fields: { x: { kind: "number" } } } },
   };
-  const dependency: DependencySpec = { outputs: { values: table } };
+  const dependency: SlotSpec = shape({ outputs: { values: table } });
 
   it("refuses the retired type alias in a ValueSpec", () => {
     const plugin = malformed({

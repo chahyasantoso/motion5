@@ -18,6 +18,7 @@ import { acceptedOutcome, refusedOutcomeFrom, type Outcome } from "../lang/outco
 import { unreachable } from "../lang/exhaustive";
 import type { PluginCapabilities } from "../ports/plugin-capabilities";
 import { validateRuntimeValue } from "./value-validation";
+import { authoredStaticView, runtimeStaticView, sameStaticView } from "./static-view";
 import { AUTHORED, buildOwed, LIVE, type ValueState } from "./value-state";
 import type { CheapEdit, LiveEdit } from "./edit-types";
 
@@ -386,6 +387,21 @@ function planWriteLive(
 ): ValueOutcome {
   const current = requiredTrack(view, edit.nodeId);
   const committed = committedInputSpec(current.track, current.contract, environment);
+  const typeId = current.track.type;
+  const staticSpec =
+    typeId === undefined ? undefined : environment.capabilities.dataType?.(typeId)?.spec;
+  if (staticSpec !== undefined) {
+    const expected = authoredStaticView(current.track.input?.values, staticSpec);
+    const incoming = runtimeStaticView(edit.value, staticSpec);
+    if (!sameStaticView(expected, incoming))
+      return refused([
+        diagnostic(
+          "live-values-invalid",
+          `${edit.nodeId}.input.values`,
+          "A live write cannot modify static cells.",
+        ),
+      ]);
+  }
   const issues = validateRuntimeValue(edit.value, committed.spec, `${edit.nodeId}.input.values`, {
     extraFields: liveExtraFields(committed.spec),
   });

@@ -1,4 +1,4 @@
-import type { PluginDefinition, Outputs, ValueSpec } from "@motion5/core/plugin-api";
+import { shape, type PluginDefinition, type Outputs, type ValueSpec } from "@motion5/core/plugin-api";
 import {
   BODY_3D_SLOT,
   EXTERNAL_BASE,
@@ -117,10 +117,10 @@ export const ik3dPlugin: PluginDefinition = {
       },
     },
     requires: {
-      chain: { outputs: { values: BODY_3D_SLOT } },
-      goals: { outputs: { values: GOALS_3D_SLOT } },
-      base: { outputs: { values: ROOT_3D_SPEC } },
-      pole: { optional: true, outputs: { values: FRAME } },
+      chain: shape({ outputs: { values: BODY_3D_SLOT } }),
+      goals: shape({ outputs: { values: GOALS_3D_SLOT } }),
+      base: shape({ outputs: { values: ROOT_3D_SPEC } }),
+      pole: shape({ optional: true, outputs: { values: FRAME } }),
     },
   },
   outputs: { values: SOLVED_3D_SPEC, inspect: { ...INSPECT, optional: true } },

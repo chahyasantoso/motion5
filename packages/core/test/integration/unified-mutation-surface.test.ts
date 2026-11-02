@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { shape } from "@motion5/core/plugin-api";
 import { Engine } from "../../src/engine";
 import { StaleTrackHandleError } from "../../src/contract/track-handle";
 import type { PluginDefinition, ProjectDefinition, TrackDefinition } from "../../src/contract/v5";
@@ -18,10 +19,9 @@ const LINK: PluginDefinition = {
   inputs: {
     values: { kind: "record", fields: {} },
     requires: {
-      parent: {
+      parent: shape({
         outputs: { values: { kind: "record", fields: { x: { kind: "number" } } } },
-      },
-    },
+      })},
   },
   outputs: { values: { kind: "record", fields: { x: { kind: "number" } } } },
   transform() {

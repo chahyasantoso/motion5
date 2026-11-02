@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { shape } from "@motion5/core/plugin-api";
 import type {
   Diagnostic,
   Patch,
@@ -33,7 +34,7 @@ const consumerPlugin: PluginDefinition = {
   id: "consumer-plugin",
   inputs: {
     values: { kind: "record", fields: {} },
-    requires: { source: { outputs: { values: POSE_2D_SPEC } } },
+    requires: { source: shape({ outputs: { values: POSE_2D_SPEC } })},
   },
   outputs: { values: CONSUMER_SPEC },
   transform() {

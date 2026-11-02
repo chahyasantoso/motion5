@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { shape } from "@motion5/core/plugin-api";
 import type { PluginDefinition, ProjectDefinition, ValueSpec } from "../../src/contract/v5";
 import { PluginCatalog } from "../../src/domain/plugin-catalog";
 import { createManualClock } from "../../src/ports/clock";
@@ -18,7 +19,7 @@ const PASS: PluginDefinition = {
   id: "pass",
   inputs: {
     values: { kind: "record", fields: {} },
-    requires: { upstream: { outputs: { values: EMPTY_TABLE } } },
+    requires: { upstream: shape({ outputs: { values: EMPTY_TABLE } })},
   },
   outputs: { values: EMPTY_TABLE },
   transform() {

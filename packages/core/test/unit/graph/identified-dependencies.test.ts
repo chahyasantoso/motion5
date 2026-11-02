@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
 import type {
-  DependencySpec,
   PluginDefinition,
   ProjectDefinition,
+  SlotSpec,
   ValueSpec,
 } from "../../../src/contract/v5";
+import { shape } from "../../../src/contract/slot-spec";
 import { PluginCatalog } from "../../../src/domain/plugin-catalog";
 import { buildGraphIR, compareEdges, edgeKey, type GraphEdge } from "../../../src/graph/ir";
 import { record, row, table, track } from "../../support/v5-builders";
@@ -14,7 +15,7 @@ const POINT: ValueSpec = {
   schema: { row: { fields: { x: { kind: "number" }, y: { kind: "number" } } } },
 };
 
-function plugin(id: string, requires?: Readonly<Record<string, DependencySpec>>): PluginDefinition {
+function plugin(id: string, requires?: Readonly<Record<string, SlotSpec>>): PluginDefinition {
   return {
     id,
     inputs: {
@@ -34,7 +35,7 @@ function catalog(...plugins: readonly PluginDefinition[]): PluginCatalog {
   return result;
 }
 
-const SINGLE: DependencySpec = { outputs: { values: POINT } };
+const SINGLE: SlotSpec = shape({ outputs: { values: POINT } });
 
 function point(id: string): ReturnType<typeof track> {
   return track({
@@ -97,7 +98,7 @@ describe("identified-table dependencies build one node-level edge per bound sour
       ),
       catalog(
         plugin("bones", {
-          data: { outputs: { values: POINT }, binding: "map" },
+          data: shape({ outputs: { values: POINT }, binding: "map" }),
         }),
       ),
     );

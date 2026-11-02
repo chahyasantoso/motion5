@@ -5,6 +5,7 @@ import type {
   ProjectDefinition,
   ValueSpec,
 } from "../../../src/contract/v5";
+import { shape } from "../../../src/contract/slot-spec";
 import { PluginCatalog } from "../../../src/domain/plugin-catalog";
 import { buildGraphIR } from "../../../src/graph/ir";
 import { record, row, table, track } from "../../support/v5-builders";
@@ -31,7 +32,7 @@ function plugin(
     id,
     inputs: {
       values: { kind: "record", fields: { dx: { kind: "number" } } },
-      requires: { data: { outputs, binding } },
+      requires: { data: shape({ outputs, binding }) },
     },
     outputs: { values: POINT },
     transform() {

@@ -1,10 +1,15 @@
 import type {
-  DependencySpec,
+  DataType,
   Diagnostic,
   EvaluationContext,
   Outputs,
+  Parsed,
   PluginDefinition,
   ResolvedInput,
+  SlotSpec,
+  SourceStructures,
+  Structure,
+  Value,
   ValueSpec,
 } from "../contract/v5";
 import type { RuleId } from "../contract/rule-id";
@@ -15,15 +20,26 @@ import type { PluginCapabilities, PluginCapability } from "../ports/plugin-capab
  * Identified-table plugin registry keyed by authored `id`: admits whole definitions, all-or-none per batch.
  */
 
-const PLUGIN_FIELDS = new Set(["id", "inputs", "outputs", "validate", "transform"]);
+const PLUGIN_FIELDS = new Set([
+  "id",
+  "inputs",
+  "outputs",
+  "checkSources",
+  "validate",
+  "transform",
+]);
 const INPUT_FIELDS = new Set(["values", "requires"]);
-const DEPENDENCY_FIELDS = new Set(["outputs", "optional", "binding"]);
+const DEPENDENCY_FIELDS = new Set(["kind", "outputs", "optional", "binding"]);
+const TYPED_FIELDS = new Set(["kind", "type", "optional", "binding"]);
+const DATA_TYPE_FIELDS = new Set(["id", "spec", "parse", "bind"]);
 const RESERVED_NAMES = new Set(["__proto__", "constructor", "prototype"]);
 const BINDING_MODES = new Set(["single", "map"]);
 const EMPTY_MEMBERS: readonly string[] = Object.freeze([]);
+const EMPTY_TYPES: readonly DataType<unknown, unknown>[] = Object.freeze([]);
 
 type TransformHook = PluginDefinition["transform"];
 type ValidateHook = NonNullable<PluginDefinition["validate"]>;
+type CheckSourcesHook = NonNullable<PluginDefinition["checkSources"]>;
 
 /** One admission refusal carrying its rule id and definition path. */
 export class PluginAdmissionError extends TypeError {
@@ -117,9 +133,37 @@ function readHook<T>(value: unknown, path: string, name: string): T | undefined 
   return value as T;
 }
 
-function readDependency(value: unknown, path: string): DependencySpec {
+function readDataType(value: unknown, path: string): DataType<unknown, unknown> {
   const source = requireRecord(value, path);
-  assertKnownKeys(source, DEPENDENCY_FIELDS, path, "DependencySpec");
+  assertKnownKeys(source, DATA_TYPE_FIELDS, path, "DataType");
+  const id = readName(own(source, "id"), `${path}.id`, "Data type id");
+  const spec = readSpec(own(source, "spec"), `${path}.spec`, true);
+  const parse = readHook<DataType<unknown, unknown>["parse"]>(
+    own(source, "parse"),
+    `${path}.parse`,
+    "parse",
+  );
+  const bind = readHook<DataType<unknown, unknown>["bind"]>(
+    own(source, "bind"),
+    `${path}.bind`,
+    "bind",
+  );
+  if (parse === undefined) refuse("plugin-shape", `${path}.parse`, "parse must be a function.");
+  if (bind === undefined) refuse("plugin-shape", `${path}.bind`, "bind must be a function.");
+  return Object.freeze({
+    id,
+    spec,
+    parse: (input: Value) => Reflect.apply(parse, source, [input]) as Parsed<unknown>,
+    bind: (structure: Structure<unknown>, input: Value) =>
+      Reflect.apply(bind, source, [structure, input]) as unknown,
+  });
+}
+
+function readShapeSlot(
+  source: Readonly<Record<string, unknown>>,
+  path: string,
+): SlotSpec {
+  assertKnownKeys(source, DEPENDENCY_FIELDS, path, "Shape slot");
   const outputsSource = requireRecord(own(source, "outputs"), `${path}.outputs`);
   const outputs: Record<string, ValueSpec> = {};
   for (const [name, spec] of Object.entries(outputsSource)) {
@@ -127,12 +171,41 @@ function readDependency(value: unknown, path: string): DependencySpec {
     outputs[outputName] = readSpec(spec, `${path}.outputs.${outputName}`, false);
   }
   return Object.freeze({
+    kind: "shape",
     outputs: Object.freeze(outputs),
     ...(readTrue(own(source, "optional"), `${path}.optional`, "optional") === undefined
       ? {}
       : { optional: true as const }),
     binding: readBinding(own(source, "binding"), `${path}.binding`),
   });
+}
+
+function readTypedSlot(
+  source: Readonly<Record<string, unknown>>,
+  path: string,
+): SlotSpec {
+  assertKnownKeys(source, TYPED_FIELDS, path, "Typed slot");
+  return Object.freeze({
+    kind: "typed",
+    type: readDataType(own(source, "type"), `${path}.type`),
+    ...(readTrue(own(source, "optional"), `${path}.optional`, "optional") === undefined
+      ? {}
+      : { optional: true as const }),
+    binding: readBinding(own(source, "binding"), `${path}.binding`),
+  });
+}
+
+function readSlotSpec(value: unknown, path: string): SlotSpec {
+  const source = requireRecord(value, path);
+  const kind = own(source, "kind");
+  switch (kind) {
+    case "shape":
+      return readShapeSlot(source, path);
+    case "typed":
+      return readTypedSlot(source, path);
+    default:
+      return refuse("plugin-shape", `${path}.kind`, 'Slot kind must be "typed" or "shape".');
+  }
 }
 
 function readInputs(value: unknown, path: string): PluginDefinition["inputs"] {
@@ -147,13 +220,13 @@ function readInputs(value: unknown, path: string): PluginDefinition["inputs"] {
       `${path}.values.optional`,
       "optional is not valid on inputs.values.",
     );
-  let requires: Readonly<Record<string, DependencySpec>> | undefined;
+  let requires: Readonly<Record<string, SlotSpec>> | undefined;
   if (source.requires !== undefined) {
     const requiresSource = requireRecord(source.requires, `${path}.requires`);
-    const slots: Record<string, DependencySpec> = {};
+    const slots: Record<string, SlotSpec> = {};
     for (const [slot, dependency] of Object.entries(requiresSource)) {
       const slotName = readName(slot, `${path}.requires.${slot}`, "Dependency slot");
-      slots[slotName] = readDependency(dependency, `${path}.requires.${slotName}`);
+      slots[slotName] = readSlotSpec(dependency, `${path}.requires.${slotName}`);
     }
     requires = Object.freeze(slots);
   }
@@ -198,6 +271,11 @@ function admitPlugin(
   );
   if (rawTransform === undefined)
     refuse("plugin-shape", "plugin.transform", "transform must be a function.");
+  const rawCheckSources = readHook<CheckSourcesHook>(
+    own(source, "checkSources"),
+    "plugin.checkSources",
+    "checkSources",
+  );
   // Runtime validates values before and result after; wrapper rebinds `this` and casts.
   const transform: TransformHook = (input: ResolvedInput, context: EvaluationContext) =>
     Reflect.apply(rawTransform, source, [input, context]) as Outputs;
@@ -206,18 +284,47 @@ function admitPlugin(
       ? undefined
       : (input: ResolvedInput, context: EvaluationContext) =>
           Reflect.apply(rawValidate, source, [input, context]) as readonly Diagnostic[];
+  const checkSources: CheckSourcesHook | undefined =
+    rawCheckSources === undefined
+      ? undefined
+      : (structures: SourceStructures) =>
+          Reflect.apply(rawCheckSources, source, [structures]) as readonly Diagnostic[];
   return Object.freeze({
     id,
     inputs,
     outputs,
+    ...(checkSources === undefined ? {} : { checkSources }),
     ...(validate === undefined ? {} : { validate }),
     transform,
   });
 }
 
+interface TypeBatch {
+  readonly types: ReadonlyMap<string, DataType<unknown, unknown>>;
+}
+
+function collectTypes(definitions: readonly PluginDefinition[]): TypeBatch {
+  const types = new Map<string, DataType<unknown, unknown>>();
+  for (const definition of definitions) {
+    for (const slot of Object.values(definition.inputs.requires ?? {})) {
+      if (slot.kind !== "typed") continue;
+      const existing = types.get(slot.type.id);
+      if (existing !== undefined && existing !== slot.type)
+        throw new PluginAdmissionError(
+          "plugin-shape",
+          `plugin.${definition.id}.inputs.requires`,
+          `Data type '${slot.type.id}' is declared twice with different definitions.`,
+        );
+      types.set(slot.type.id, slot.type);
+    }
+  }
+  return { types };
+}
+
 /** Identified-table registry; one instance belongs to one host composition. */
 export class PluginCatalog implements PluginCapabilities {
   readonly #plugins = new Map<string, PluginDefinition>();
+  readonly #dataTypes = new Map<string, DataType<unknown, unknown>>();
 
   /** Admit one definition atomically. */
   register<Input extends ResolvedInput>(plugin: PluginDefinition<Input>): void;
@@ -241,6 +348,17 @@ export class PluginCatalog implements PluginCapabilities {
       staged.add(definition.id);
       admitted.push(definition);
     }
+    const batch = collectTypes(admitted);
+    for (const [id, type] of batch.types) {
+      const existing = this.#dataTypes.get(id);
+      if (existing !== undefined && existing !== type)
+        throw new PluginAdmissionError(
+          "plugin-shape",
+          `plugin.dataTypes.${id}`,
+          `Data type '${id}' conflicts with an admitted definition.`,
+        );
+    }
+    for (const [id, type] of batch.types) this.#dataTypes.set(id, type);
     for (const definition of admitted) this.#plugins.set(definition.id, definition);
   }
 
@@ -271,5 +389,19 @@ export class PluginCatalog implements PluginCapabilities {
 
   pluginDefinition(id: string): PluginDefinition | undefined {
     return this.#plugins.get(id);
+  }
+
+  dataType(id: string): DataType<unknown, unknown> | undefined {
+    return this.#dataTypes.get(id);
+  }
+
+  /** Sorted admitted type ids; rebuilt on demand, never cached beside the registry. */
+  dataTypeIds(): readonly string[] {
+    return Object.freeze([...this.#dataTypes.keys()].sort());
+  }
+
+  /** Admitted types for diagnostics tooling. */
+  dataTypes(): readonly DataType<unknown, unknown>[] {
+    return this.#dataTypes.size === 0 ? EMPTY_TYPES : Object.freeze([...this.#dataTypes.values()]);
   }
 }

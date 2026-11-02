@@ -1,4 +1,5 @@
 import { describe, expect, expectTypeOf, it } from "vitest";
+import { shape } from "@motion5/core/plugin-api";
 import type {
   EvaluationContext,
   Outputs,
@@ -26,7 +27,7 @@ const translate: PluginDefinition<TranslateInput> = {
       fields: { dx: { kind: "number" }, dy: { kind: "number" } },
     },
     requires: {
-      data: {
+      data: shape({
         outputs: {
           values: {
             kind: "table",
@@ -35,8 +36,7 @@ const translate: PluginDefinition<TranslateInput> = {
             },
           },
         },
-      },
-    },
+      })},
   },
   outputs: {
     values: {

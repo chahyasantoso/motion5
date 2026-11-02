@@ -1,4 +1,9 @@
-import { isFlatRecord, type PluginDefinition, type ValueSpec } from "@motion5/core/plugin-api";
+import {
+  isFlatRecord,
+  shape,
+  type PluginDefinition,
+  type ValueSpec,
+} from "@motion5/core/plugin-api";
 
 const POINT: ValueSpec = {
   kind: "table",
@@ -12,7 +17,7 @@ export const transformPlugin: PluginDefinition = {
       kind: "record",
       fields: { dx: { kind: "number" }, dy: { kind: "number" } },
     },
-    requires: { data: { outputs: { values: POINT } } },
+    requires: { data: shape({ outputs: { values: POINT } }) },
   },
   outputs: { values: POINT },
   transform({ values, requires }) {
@@ -21,7 +26,7 @@ export const transformPlugin: PluginDefinition = {
     const dy = values.dy;
     if (typeof dx !== "number" || typeof dy !== "number")
       throw new TypeError("Transform values require numeric dx and dy.");
-    const data = requires.data;
+    const data = requires.data as { readonly values?: unknown } | undefined;
     if (data === undefined || Array.isArray(data) || data === null || typeof data !== "object")
       throw new TypeError("Transform requires a data output.");
     const source = data.values;

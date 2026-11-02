@@ -1,6 +1,9 @@
-import type { Outputs, Value } from "../contract/v5";
+import type { DataType, Outputs, Structure, Value } from "../contract/v5";
+import { describeDiagnostics } from "../contract/diagnostics";
 import type { ParsedValues } from "../contract/v5-parse";
 import type { Interpolator } from "../ports/interpolator";
+import { authoringValue } from "./authoring-value";
+import { parseDataType } from "./data-type-parse";
 import { createValueEvaluator, type ValueEvaluator } from "./evaluate-values";
 import { replaceEvaluator } from "./evaluator-replacement";
 
@@ -10,8 +13,10 @@ import { replaceEvaluator } from "./evaluator-replacement";
 export class ValueTrack {
   readonly kind = "values";
   readonly nodeId: string;
+  readonly #dataType: DataType<unknown, unknown> | undefined;
   readonly #interpolator: Interpolator;
   #evaluator: ValueEvaluator;
+  #structure: Structure<unknown> | undefined;
   #overlay: Value | undefined;
   #progress = 0;
   #ticked = false;
@@ -21,11 +26,27 @@ export class ValueTrack {
     readonly nodeId: string;
     readonly values: ParsedValues | undefined;
     readonly interpolator: Interpolator;
+    readonly dataType?: DataType<unknown, unknown>;
   }) {
     if (options.nodeId.length === 0) throw new TypeError("Track node id must be non-empty.");
     this.nodeId = options.nodeId;
     this.#interpolator = options.interpolator;
+    this.#dataType = options.dataType;
     this.#evaluator = createValueEvaluator(options.values, options.interpolator);
+    this.#structure = this.#parseStructure(options.values);
+  }
+
+  /** Commit-time structure for a typed data track; `undefined` for an untyped track. */
+  get structure(): Structure<unknown> | undefined {
+    return this.#structure;
+  }
+
+  #parseStructure(values: ParsedValues | undefined): Structure<unknown> | undefined {
+    const type = this.#dataType;
+    if (type === undefined) return undefined;
+    const parsed = parseDataType(type, authoringValue(values), `${this.nodeId}.input.values`);
+    if (parsed.kind === "refused") throw new TypeError(describeDiagnostics(parsed.diagnostics));
+    return parsed.value;
   }
 
   get progress(): number {
@@ -37,11 +58,16 @@ export class ValueTrack {
    */
   replaceValues(values: ParsedValues | undefined): void {
     this.assertActive();
+    let nextStructure: Structure<unknown> | undefined;
     replaceEvaluator(
       this.#evaluator,
-      () => createValueEvaluator(values, this.#interpolator),
+      () => {
+        nextStructure = this.#parseStructure(values);
+        return createValueEvaluator(values, this.#interpolator);
+      },
       (next) => {
         this.#evaluator = next;
+        this.#structure = nextStructure;
       },
     );
   }

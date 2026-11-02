@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { shape } from "@motion5/core/plugin-api";
 import type {
   Patch,
   PluginDefinition,
@@ -27,7 +28,7 @@ const TRANSLATE: PluginDefinition<TranslateInput> = {
   id: "translate",
   inputs: {
     values: { kind: "record", fields: { dx: { kind: "number" }, dy: { kind: "number" } } },
-    requires: { data: { outputs: { values: POINT } } },
+    requires: { data: shape({ outputs: { values: POINT } })},
   },
   outputs: { values: POINT },
   transform(input) {
@@ -327,7 +328,7 @@ describe("identified plugin runtime", () => {
       inputs: {
         values: { kind: "record", fields: { dx: { kind: "number" } } },
         requires: {
-          data: {
+          data: shape({
             outputs: {
               values: {
                 kind: "table",
@@ -341,8 +342,7 @@ describe("identified plugin runtime", () => {
                 },
               },
             },
-          },
-        },
+          })},
       },
       outputs: { values: POINT },
       transform() {
@@ -371,7 +371,7 @@ describe("identified plugin runtime", () => {
       id: "optional",
       inputs: {
         values: { kind: "record", fields: { n: { kind: "number" } } },
-        requires: { data: { outputs: { values: POINT }, optional: true } },
+        requires: { data: shape({ outputs: { values: POINT }, optional: true })},
       },
       outputs: { values: POINT },
       transform() {
@@ -392,7 +392,7 @@ describe("identified plugin runtime", () => {
       id: "optional",
       inputs: {
         values: { kind: "record", fields: { n: { kind: "number" } } },
-        requires: { data: { outputs: { values: POINT }, optional: true } },
+        requires: { data: shape({ outputs: { values: POINT }, optional: true })},
       },
       outputs: { values: POINT },
       transform() {
@@ -425,7 +425,7 @@ describe("identified plugin runtime", () => {
       id: "empty-ok",
       inputs: {
         values: { kind: "record", fields: { n: { kind: "number" } } },
-        requires: { data: { outputs: { values: POINT } } },
+        requires: { data: shape({ outputs: { values: POINT } })},
       },
       outputs: { values: POINT },
       transform() {
@@ -462,7 +462,7 @@ describe("identified plugin runtime", () => {
       id: "concat",
       inputs: {
         values: { kind: "record", fields: { n: { kind: "number" } } },
-        requires: { data: { outputs: { values: POINT }, binding: "map" } },
+        requires: { data: shape({ outputs: { values: POINT }, binding: "map" })},
       },
       outputs: { values: POINT },
       transform(input) {
@@ -493,7 +493,7 @@ describe("identified plugin runtime", () => {
       id: "bad",
       inputs: {
         values: { kind: "record", fields: { dx: { kind: "number" }, dy: { kind: "number" } } },
-        requires: { data: { outputs: { values: POINT } } },
+        requires: { data: shape({ outputs: { values: POINT } })},
       },
       outputs: { values: POINT },
       transform() {
