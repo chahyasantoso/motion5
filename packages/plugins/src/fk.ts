@@ -81,7 +81,7 @@ export const fkPlugin: PluginDefinition = {
     values: { kind: "record", fields: {} },
     requires: {
       chain: { outputs: { values: BODY_2D_SLOT } },
-      solved: { outputs: { values: SOLVED_2D_SLOT } },
+      solved: { outputs: { values: SOLVED_2D_SLOT }, optional: true },
       base: { outputs: { values: ROOT_2D_SPEC } },
     },
   },
@@ -89,17 +89,23 @@ export const fkPlugin: PluginDefinition = {
   transform({ requires }) {
     const topology = readAggregateTopology((requires.chain as Outputs).values);
     const baseFrame = readFrame(recordOutput(requires.base as Outputs, "base"));
-    const solvedRows = tableOutput(requires.solved as Outputs, "solved");
+    const solvedOutput = requires.solved as Outputs | undefined;
+    const solvedRows = solvedOutput === undefined ? undefined : tableOutput(solvedOutput, "solved");
     const solvedById = new Map<string, AggregateRow>();
-    for (const row of solvedRows) {
+    for (const row of solvedRows ?? []) {
       solvedById.set(row.id, row as AggregateRow);
     }
     const worldFrames = new Map<string, WorldFrame>();
     const rows = topology.rows.map((row) => {
-      const solved = solveRotation(lookupSolvedRow(solvedById, row.id));
       const authored = readNumber(row.cells.rotation);
-      const weight = clamp(readNumber(row.cells.weight, 1), 0, 1);
-      const rotation = lerpAngle(authored, solved, weight);
+      const rotation =
+        solvedRows === undefined
+          ? authored
+          : lerpAngle(
+              authored,
+              solveRotation(lookupSolvedRow(solvedById, row.id)),
+              clamp(readNumber(row.cells.weight, 1), 0, 1),
+            );
       const parent = topology.parentById.get(row.id);
       const parentFrame = parent === undefined ? baseFrame : worldFrames.get(parent)!;
       const pivot = composeWorld(parentFrame, {

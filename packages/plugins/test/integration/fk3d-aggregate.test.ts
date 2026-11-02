@@ -115,6 +115,24 @@ describe("aggregate 3D FK", () => {
     expect(Object.keys(fk3dPlugin.outputs)).toEqual(["values"]);
   });
 
+  it("AL-2a evaluates to rest pose with weight 0 when solved is unbound", () => {
+    const output = fk3dPlugin.transform(
+      {
+        values: {},
+        requires: {
+          chain: { values: [{ id: "bone", cells: { length: 10, weight: 1 } }] },
+          base: { values: { x: 1, y: 2, z: 3, rotation: 0, rotationX: 0, rotationY: 0 } },
+        },
+      } as never,
+      CTX,
+    );
+    expect(output).toEqual({
+      values: [
+        { id: "bone", cells: { x: 11, y: 2, z: 3, rotation: 0, rotationX: 0, rotationY: 0 } },
+      ],
+    });
+  });
+
   it("AL-2 single-bone golden parity matches fk3d-v5 bit for bit", () => {
     const output = fk3dPlugin.transform(
       {

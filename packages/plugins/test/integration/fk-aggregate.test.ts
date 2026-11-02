@@ -110,6 +110,33 @@ describe("aggregate 2D FK", () => {
     expect(Object.keys(fkPlugin.outputs)).toEqual(["values"]);
   });
 
+  it("AK-2a evaluates to rest pose with weight 0 when solved is unbound", () => {
+    const output = fkPlugin.transform(
+      {
+        values: {},
+        requires: {
+          chain: {
+            values: [{ id: "bone", cells: { length: 10, rotation: 20, weight: 1 } }],
+          },
+          base: { values: { x: 5, y: 6, rotation: 30 } },
+        },
+      } as never,
+      CTX,
+    );
+    expect(output).toEqual({
+      values: [
+        {
+          id: "bone",
+          cells: {
+            x: 5 + 10 * Math.cos((50 * Math.PI) / 180),
+            y: 6 + 10 * Math.sin((50 * Math.PI) / 180),
+            rotation: 50,
+          },
+        },
+      ],
+    });
+  });
+
   it("AK-2 single-bone golden parity matches fk-v5 bit for bit", () => {
     const output = fkPlugin.transform(
       {

@@ -6,9 +6,6 @@ import type { ProjectDefinition, TrackDefinition } from "@motion5/core";
  */
 export const WALK_SCROLL_SOURCE = "walk";
 
-// Zeroes FK weight so members keep authored rest pose instead of collapsing to inert solved zeros.
-const REST = { weight: 0 } as const;
-
 export const coreWalkerTracks: readonly TrackDefinition[] = [
   // 1. Pelvis (Root record track)
   {
@@ -50,7 +47,6 @@ export const coreWalkerTracks: readonly TrackDefinition[] = [
         {
           id: "chest",
           cells: {
-            ...REST,
             length: 80,
             rotation: [
               { p: 0, v: -87 },
@@ -64,7 +60,6 @@ export const coreWalkerTracks: readonly TrackDefinition[] = [
         {
           id: "head",
           cells: {
-            ...REST,
             parentId: "chest",
             length: 45,
             rotation: [
@@ -79,7 +74,6 @@ export const coreWalkerTracks: readonly TrackDefinition[] = [
         {
           id: "legL_thigh",
           cells: {
-            ...REST,
             length: 85,
             rotation: [
               { p: 0, v: 65 },
@@ -97,7 +91,6 @@ export const coreWalkerTracks: readonly TrackDefinition[] = [
         {
           id: "legL_shin",
           cells: {
-            ...REST,
             parentId: "legL_thigh",
             length: 80,
             rotation: [
@@ -116,7 +109,6 @@ export const coreWalkerTracks: readonly TrackDefinition[] = [
         {
           id: "legL_foot",
           cells: {
-            ...REST,
             parentId: "legL_shin",
             length: 38,
             rotation: [
@@ -135,7 +127,6 @@ export const coreWalkerTracks: readonly TrackDefinition[] = [
         {
           id: "legR_thigh",
           cells: {
-            ...REST,
             length: 85,
             rotation: [
               { p: 0, v: 115 },
@@ -153,7 +144,6 @@ export const coreWalkerTracks: readonly TrackDefinition[] = [
         {
           id: "legR_shin",
           cells: {
-            ...REST,
             parentId: "legR_thigh",
             length: 80,
             rotation: [
@@ -172,7 +162,6 @@ export const coreWalkerTracks: readonly TrackDefinition[] = [
         {
           id: "legR_foot",
           cells: {
-            ...REST,
             parentId: "legR_shin",
             length: 38,
             rotation: [
@@ -192,24 +181,7 @@ export const coreWalkerTracks: readonly TrackDefinition[] = [
     },
   },
 
-  // 3. Solved Table
-  {
-    id: "solved",
-    input: {
-      values: [
-        "chest",
-        "head",
-        "legL_thigh",
-        "legL_shin",
-        "legL_foot",
-        "legR_thigh",
-        "legR_shin",
-        "legR_foot",
-      ].map((id) => ({ id, cells: { rotation: 0 } })),
-    },
-  },
-
-  // 4. Pose Track (fk plugin)
+  // 3. Pose Track (fk plugin)
   {
     id: "pose",
     plugin: "fk",
@@ -217,7 +189,6 @@ export const coreWalkerTracks: readonly TrackDefinition[] = [
       values: {},
       requires: {
         chain: "walk/body",
-        solved: "walk/solved",
         base: "walk/pelvis",
       },
     },
@@ -233,7 +204,6 @@ export const armTracks: readonly TrackDefinition[] = [
         {
           id: "chest",
           cells: {
-            ...REST,
             length: 80,
             rotation: [
               { p: 0, v: -87 },
@@ -247,7 +217,6 @@ export const armTracks: readonly TrackDefinition[] = [
         {
           id: "armL_upper",
           cells: {
-            ...REST,
             parentId: "chest",
             length: 62,
             rotation: [
@@ -266,7 +235,6 @@ export const armTracks: readonly TrackDefinition[] = [
         {
           id: "armL_lower",
           cells: {
-            ...REST,
             parentId: "armL_upper",
             length: 58,
             rotation: [
@@ -285,7 +253,6 @@ export const armTracks: readonly TrackDefinition[] = [
         {
           id: "armR_upper",
           cells: {
-            ...REST,
             parentId: "chest",
             length: 62,
             rotation: [
@@ -304,7 +271,6 @@ export const armTracks: readonly TrackDefinition[] = [
         {
           id: "armR_lower",
           cells: {
-            ...REST,
             parentId: "armR_upper",
             length: 58,
             rotation: [
@@ -324,18 +290,7 @@ export const armTracks: readonly TrackDefinition[] = [
     },
   },
 
-  // 2. Arms Solved Table
-  {
-    id: "arms-solved",
-    input: {
-      values: ["chest", "armL_upper", "armL_lower", "armR_upper", "armR_lower"].map((id) => ({
-        id,
-        cells: { rotation: 0 },
-      })),
-    },
-  },
-
-  // 3. Arms Pose Track (fk plugin)
+  // 2. Arms Pose Track (fk plugin)
   {
     id: "arms-pose",
     plugin: "fk",
@@ -343,7 +298,6 @@ export const armTracks: readonly TrackDefinition[] = [
       values: {},
       requires: {
         chain: "walk/arms-body",
-        solved: "walk/arms-solved",
         base: "walk/pelvis",
       },
     },

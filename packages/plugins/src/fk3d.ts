@@ -93,7 +93,7 @@ export const fk3dPlugin: PluginDefinition = {
     values: { kind: "record", fields: {} },
     requires: {
       chain: { outputs: { values: BODY_3D_SLOT } },
-      solved: { outputs: { values: SOLVED_3D_SLOT } },
+      solved: { outputs: { values: SOLVED_3D_SLOT }, optional: true },
       base: { outputs: { values: ROOT_3D_SPEC } },
     },
   },
@@ -101,17 +101,23 @@ export const fk3dPlugin: PluginDefinition = {
   transform({ requires }) {
     const topology = readAggregateTopology((requires.chain as Outputs).values);
     const baseFrame = readFrame3d(recordOutput(requires.base as Outputs, "base"));
-    const solvedRows = tableOutput(requires.solved as Outputs, "solved");
+    const solvedOutput = requires.solved as Outputs | undefined;
+    const solvedRows = solvedOutput === undefined ? undefined : tableOutput(solvedOutput, "solved");
     const solvedById = new Map<string, AggregateRow>();
-    for (const row of solvedRows) {
+    for (const row of solvedRows ?? []) {
       solvedById.set(row.id, row as AggregateRow);
     }
     const worldFrames = new Map<string, WorldFrame3d>();
     const rows = topology.rows.map((row) => {
-      const solved = solvedOrientation(lookupSolvedRow3d(solvedById, row.id));
       const rest = readEuler3d(row.cells);
-      const weight = clamp(readNumber(row.cells.weight, 1), 0, 1);
-      const local = blendOrientation3d(rest, solved, weight);
+      const local =
+        solvedRows === undefined
+          ? rest
+          : blendOrientation3d(
+              rest,
+              solvedOrientation(lookupSolvedRow3d(solvedById, row.id)),
+              clamp(readNumber(row.cells.weight, 1), 0, 1),
+            );
       const parent = topology.parentById.get(row.id);
       const parentFrame = parent === undefined ? baseFrame : worldFrames.get(parent)!;
       const pivot = composeWorld3d(parentFrame, {
