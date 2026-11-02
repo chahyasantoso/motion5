@@ -8,7 +8,9 @@ import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/testi
 import { FABRIK_TOLERANCE } from "../../src/fabrik";
 import { fk3dPlugin } from "@motion5/plugins/fk3d";
 import { ik3dPlugin } from "@motion5/plugins/ik3d";
-import { BODY_3D_SPEC, GOALS_3D_SPEC, ROOT_3D_SPEC } from "../../src/aggregate-topology";
+import { BODY_3D_SPEC } from "../support/aggregate-topology";
+import { GOALS_3D_SPEC } from "../../src/goals3d/fields";
+import { ROOT_3D_SPEC } from "../../src/root3d/fields";
 import {
   matrixFromEuler3d,
   multiplyMatrix3,

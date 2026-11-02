@@ -17,6 +17,8 @@ import type { CommittedContract } from "../graph/committed-contract";
 import { acceptedOutcome, refusedOutcomeFrom, type Outcome } from "../lang/outcome";
 import { unreachable } from "../lang/exhaustive";
 import type { PluginCapabilities } from "../ports/plugin-capabilities";
+import { authoringValue } from "./authoring-value";
+import { parseDataType } from "./data-type-parse";
 import { validateRuntimeValue } from "./value-validation";
 import { authoredStaticView, runtimeStaticView, sameStaticView } from "./static-view";
 import { AUTHORED, buildOwed, LIVE, type ValueState } from "./value-state";
@@ -212,6 +214,20 @@ function validateAuthoredValues(
     const staticStops = staticStopDiagnostics(values, committed.spec, `${nodeId}.input.values`);
     if (staticStops.length > 0)
       return refusedOutcomeFrom(hintDiagnostics(staticStops, REPLACE_HINT));
+  }
+  if (track.type !== undefined) {
+    const type = environment.capabilities.dataType?.(track.type);
+    if (type === undefined)
+      return refusedOutcomeFrom([
+        diagnostic(
+          "data-type-unknown",
+          `${nodeId}.type`,
+          `Data type '${track.type}' is not admitted.`,
+        ),
+      ]);
+    const structure = parseDataType(type, authoringValue(values), `${nodeId}.input.values`);
+    if (structure.kind === "refused")
+      return refusedOutcomeFrom([...parsed.diagnostics, ...structure.diagnostics]);
   }
   return acceptedOutcome({ track, values }, parsed.diagnostics);
 }

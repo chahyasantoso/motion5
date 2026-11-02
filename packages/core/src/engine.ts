@@ -230,11 +230,13 @@ export class Engine {
         throw new TypeError(
           `data-type-unknown at ${nodeId}.type: '${parsed.type}' is not admitted.`,
         );
+      const spec = dataType?.spec ?? parsed.input.schema;
       const track = new ValueTrack({
         nodeId,
         values: parsed.input.values,
         interpolator: this.#options.interpolator,
         ...(dataType === undefined ? {} : { dataType }),
+        ...(spec === undefined ? {} : { spec }),
       });
       tracks.set(nodeId, track);
       return track;
@@ -465,7 +467,11 @@ export class Engine {
     try {
       for (const nodeId of nodes.keys()) compile(nodeId);
       const checkCommittedSources = (): void => {
-        const checkTrack = (track: TrackDefinition, sourceId: (source: string) => string): void => {
+        const checkTrack = (
+          track: TrackDefinition,
+          consumerId: string,
+          sourceId: (source: string) => string,
+        ): void => {
           const pluginId = track.plugin;
           const requires = track.input?.requires;
           if (pluginId === undefined || requires === undefined) return;
@@ -499,12 +505,19 @@ export class Engine {
           const diagnostics = check(Object.freeze(structures));
           const errors = diagnostics.filter(({ severity }) => severity === "error");
           if (errors.length > 0) throw new TypeError(describeDiagnostics(errors));
+          const consumer = tracks.get(consumerId);
+          if (consumer instanceof PluginTrack)
+            consumer.markSourcesChecked(Object.freeze(structures), diagnostics);
         };
         for (const motion of acceptedProject.motions)
-          for (const track of motion.tracks)
-            checkTrack(track, (source) => qualifySource(source, motion.id));
-        for (const track of acceptedProject.freeTracks ?? [])
-          checkTrack(track, (source) => qualifySource(source, "~"));
+          for (const track of motion.tracks) {
+            const consumerId = qualifyMotionTrack(motion.id, track.id).value;
+            checkTrack(track, consumerId, (source) => qualifySource(source, motion.id));
+          }
+        for (const track of acceptedProject.freeTracks ?? []) {
+          const consumerId = qualifyFreeTrack(track.id).value;
+          checkTrack(track, consumerId, (source) => qualifySource(source, "~"));
+        }
       };
       checkCommittedSources();
       const compose: ComposeResolver = (node) => () => {

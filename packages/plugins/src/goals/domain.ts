@@ -94,6 +94,10 @@ export function bindGoals(structure: GoalsStructure, value: unknown): Goals {
       throw new TypeError(`Goal row at index ${index} must have id and cells.`);
     byId.set(raw.id, raw.cells);
   }
+  if (byId.size !== value.length)
+    throw new TypeError("Goal row ids changed or duplicated after commit.");
+  if (byId.size !== structure.rows.length)
+    throw new TypeError("Goal row set changed after commit.");
   for (const row of structure.rows) {
     const rawCells = byId.get(row.id);
     if (rawCells === undefined)
@@ -109,7 +113,5 @@ export function bindGoals(structure: GoalsStructure, value: unknown): Goals {
     rows.push(goal);
     byMember.set(row.memberId, goal);
   }
-  if (rows.length !== structure.rows.length)
-    throw new TypeError("Goal row set changed after commit.");
   return Object.freeze({ rows: Object.freeze(rows), byMember });
 }

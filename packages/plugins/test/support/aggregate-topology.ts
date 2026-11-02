@@ -1,14 +1,14 @@
 import type { ValueSpec } from "@motion5/core/plugin-api";
 
-export { BODY_2D_SPEC } from "./body/fields";
-export { BODY_3D_SPEC } from "./body3d/fields";
-export { EXTERNAL_BASE } from "./body/domain";
-export { GOALS_2D_SPEC } from "./goals/fields";
-export { GOALS_3D_SPEC } from "./goals3d/fields";
-export { ROOT_2D_SPEC } from "./root/fields";
-export { ROOT_3D_SPEC } from "./root3d/fields";
-export { SOLVED_2D_SPEC } from "./solved/fields";
-export { SOLVED_3D_SPEC } from "./solved3d/fields";
+export { BODY_2D_SPEC } from "../../src/body/fields";
+export { BODY_3D_SPEC } from "../../src/body3d/fields";
+export { EXTERNAL_BASE } from "../../src/body/domain";
+export { GOALS_2D_SPEC } from "../../src/goals/fields";
+export { GOALS_3D_SPEC } from "../../src/goals3d/fields";
+export { ROOT_2D_SPEC } from "../../src/root/fields";
+export { ROOT_3D_SPEC } from "../../src/root3d/fields";
+export { SOLVED_2D_SPEC } from "../../src/solved/fields";
+export { SOLVED_3D_SPEC } from "../../src/solved3d/fields";
 
 export type AggregateScalar = number | string | boolean;
 export type AggregateCells = Readonly<Record<string, AggregateScalar>>;

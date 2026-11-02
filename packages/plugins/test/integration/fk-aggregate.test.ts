@@ -3,7 +3,9 @@ import { Engine, PluginCatalog, createManualClock, type ProjectDefinition } from
 import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/testing";
 import { ikPlugin } from "../../src/ik";
 import { fkPlugin } from "../../src/fk";
-import { BODY_2D_SPEC, GOALS_2D_SPEC, POSE_2D_SPEC } from "../../src/aggregate-topology";
+import { BODY_2D_SPEC } from "../support/aggregate-topology";
+import { GOALS_2D_SPEC } from "../../src/goals/fields";
+import { POSE_2D_SPEC } from "../../src/pose/fields";
 import { bodyEntity, rootEntity, solvedEntity } from "../support/typed-rig";
 
 const composer = vi.hoisted(() => ({ calls: 0 }));
@@ -447,6 +449,21 @@ describe("aggregate 2D FK", () => {
       ),
     );
     expect(poses(renamed, "other/pose")).toEqual(poses(open(project())));
+  });
+
+  it("AK-12a refreshes a computed solved structure when the producer row set changes", () => {
+    const handle = open(project());
+    handle.track("demo/body").input.values.set([
+      { id: "trunk", cells: { length: 20, rotation: 0 } },
+      { id: "left-upper", cells: { parentId: "trunk", length: 10, rotation: 0 } },
+      { id: "left-lower", cells: { parentId: "left-upper", length: 10, rotation: 0 } },
+      { id: "left-lower-2", cells: { parentId: "left-upper", length: 8, rotation: 0 } },
+    ]);
+    handle.track("demo/goals").input.values.set([
+      { id: "left-hand", cells: { memberId: "left-lower", x: 12, y: 8 } },
+      { id: "left-hand-2", cells: { memberId: "left-lower-2", x: 4, y: 12 } },
+    ]);
+    expect(handle.get("demo/pose")?.status).toBe("ready");
   });
 
   it("AK-12 runs composition once and publishes once per value batch", () => {

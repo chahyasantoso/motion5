@@ -12,6 +12,12 @@ export interface StableProducer {
   transform(input: never, context: { readonly nodeId: string; readonly progress: number }): Outputs;
 }
 
+export interface StabilityOptions {
+  readonly progressSamples?: readonly number[];
+  /** Field names whose numeric cells are static and must not move. */
+  readonly staticFields?: readonly string[];
+}
+
 const DEFAULT_SAMPLES = Object.freeze([0, 0.5, 1]);
 
 function tableSignature(outputs: Outputs): string {
@@ -24,7 +30,7 @@ function tableSignature(outputs: Outputs): string {
   return parts.join("|");
 }
 
-function staticSignature(outputs: Outputs): string {
+function staticSignature(outputs: Outputs, staticFields: ReadonlySet<string>): string {
   const cells: string[] = [];
   for (const name of Object.keys(outputs).sort()) {
     const value = outputs[name];
@@ -37,7 +43,7 @@ function staticSignature(outputs: Outputs): string {
         for (const [field, cell] of Object.entries(row.cells).sort(([a], [b]) =>
           a < b ? -1 : a > b ? 1 : 0,
         ))
-          if (!isNumericCell(cell))
+          if (!isNumericCell(cell) || staticFields.has(field))
             cells.push(`${name}.${row.id}.${field}=${JSON.stringify(cell)}`);
       }
       continue;
@@ -45,7 +51,8 @@ function staticSignature(outputs: Outputs): string {
     for (const [field, cell] of Object.entries(value).sort(([a], [b]) =>
       a < b ? -1 : a > b ? 1 : 0,
     ))
-      if (!isNumericCell(cell)) cells.push(`${name}.${field}=${JSON.stringify(cell)}`);
+      if (!isNumericCell(cell) || staticFields.has(field))
+        cells.push(`${name}.${field}=${JSON.stringify(cell)}`);
   }
   return cells.join("|");
 }
@@ -54,15 +61,14 @@ function isNumericCell(value: Scalar): boolean {
   return typeof value === "number";
 }
 
-/**
- * Replays producer fixtures across progress samples and refuses a row id set or non-numeric static
- * cell that moves. Numeric cells are the animated half and are deliberately ignored.
- */
+/** Replays fixtures across progress and refuses a moving row id set or static cell. */
 export function assertStable(
   plugin: StableProducer,
   fixtures: readonly StabilityFixture[],
-  progressSamples: readonly number[] = DEFAULT_SAMPLES,
+  options: StabilityOptions = {},
 ): void {
+  const progressSamples = options.progressSamples ?? DEFAULT_SAMPLES;
+  const staticFields = new Set(options.staticFields ?? []);
   if (progressSamples.length === 0)
     throw new TypeError("assertStable requires at least one progress sample.");
   for (const fixture of fixtures) {
@@ -76,7 +82,7 @@ export function assertStable(
         progress,
       });
       const nextRows = tableSignature(outputs);
-      const nextStatics = staticSignature(outputs);
+      const nextStatics = staticSignature(outputs, staticFields);
       if (rows === undefined) {
         rows = nextRows;
         statics = nextStatics;

@@ -5,6 +5,7 @@ import type {
   PluginDefinition,
   ResolvedInput,
   ResolvedRequires,
+  Scalar,
   SlotSpec,
   SourceStructure,
   SourceStructures,
@@ -19,9 +20,9 @@ import type { Interpolator } from "../ports/interpolator";
 import { createValueEvaluator, type ValueEvaluator } from "./evaluate-values";
 import { replaceEvaluator } from "./evaluator-replacement";
 import { parseDataType } from "./data-type-parse";
-import { PluginNodeError } from "./plugin-output";
+import { PluginNodeError, validatePluginOutputs } from "./plugin-output";
 import type { SlotSources, SourceRef } from "./source-ref";
-import { isValue, validateRuntimeValue } from "./value-validation";
+import { isValue } from "./value-validation";
 import type { PublisherComposition } from "./graph-publisher";
 
 const EMPTY_RECORD: ParsedRecord = Object.freeze({ kind: "record", fields: Object.freeze({}) });
@@ -30,12 +31,6 @@ function isPlainRecord(value: unknown): value is Record<string, unknown> {
   if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
   const prototype = Object.getPrototypeOf(value);
   return prototype === Object.prototype || prototype === null;
-}
-
-function extraFields(spec: ValueSpec): "allow" | "reject" {
-  if (spec.kind === "table")
-    return spec.schema.row.additionalProperties === true ? "allow" : "reject";
-  return spec.additionalProperties === true ? "allow" : "reject";
 }
 
 function inputFailure(path: string, message: string): PluginNodeError {
@@ -58,6 +53,28 @@ function pickOutputs(
     picked[name] = outputs[name] as Value;
   }
   return Object.freeze(picked);
+}
+
+function staticFieldNames(spec: ValueSpec): readonly string[] {
+  const fields = spec.kind === "table" ? spec.schema.row.fields : spec.fields;
+  return Object.entries(fields)
+    .filter(([, field]) => field.static === true)
+    .map(([name]) => name)
+    .sort();
+}
+
+function isTable(
+  value: Value,
+): value is readonly { readonly id: string; readonly cells: Readonly<Record<string, Scalar>> }[] {
+  return Array.isArray(value);
+}
+
+function structureSignature(type: DataType<unknown, unknown>, value: Value): string {
+  const staticNames = staticFieldNames(type.spec);
+  const staticOf = (cells: Readonly<Record<string, Scalar>>): string =>
+    staticNames.map((name) => `${name}=${JSON.stringify(cells[name])}`).join(",");
+  if (!isTable(value)) return `record:${staticOf(value)}`;
+  return `table:${value.map((row) => `${row.id}{${staticOf(row.cells)}}`).join("|")}`;
 }
 
 function sameSourceStructures(
@@ -85,15 +102,6 @@ function sameSourceStructures(
   return true;
 }
 
-function isValidateDiagnostic(value: unknown): value is Diagnostic {
-  return (
-    isPlainRecord(value) &&
-    typeof value.path === "string" &&
-    typeof value.message === "string" &&
-    (value.severity === "error" || value.severity === "warning")
-  );
-}
-
 /**
  * The compiled form of one identified-table track that selects a plugin.
  *
@@ -113,8 +121,12 @@ export class PluginTrack {
   #evaluator: ValueEvaluator;
   #overlay: Value | undefined;
   #progress = 0;
+  #outputsChecked = false;
   #disposed = false;
-  readonly #computedStructures = new Map<string, Structure<unknown>>();
+  readonly #computedStructures = new Map<
+    string,
+    { readonly structure: Structure<unknown>; readonly signature: string }
+  >();
   #checkedStructures: SourceStructures | undefined;
   #checkedWarnings: readonly Diagnostic[] = Object.freeze([]);
 
@@ -128,7 +140,11 @@ export class PluginTrack {
     this.nodeId = options.nodeId;
     this.plugin = options.plugin;
     this.#interpolator = options.interpolator;
-    this.#evaluator = createValueEvaluator(this.#withDefault(options.values), options.interpolator);
+    this.#evaluator = createValueEvaluator(
+      this.#withDefault(options.values),
+      options.interpolator,
+      this.plugin.inputs.values,
+    );
   }
 
   get progress(): number {
@@ -147,7 +163,12 @@ export class PluginTrack {
     this.assertActive();
     replaceEvaluator(
       this.#evaluator,
-      () => createValueEvaluator(this.#withDefault(values), this.#interpolator),
+      () =>
+        createValueEvaluator(
+          this.#withDefault(values),
+          this.#interpolator,
+          this.plugin.inputs.values,
+        ),
       (next) => {
         this.#evaluator = next;
       },
@@ -198,26 +219,23 @@ export class PluginTrack {
           `Plugin '${this.plugin.id}' declares ${spec.kind} input.`,
         ),
       ]);
-    const localIssues = validateRuntimeValue(local, spec, `${this.nodeId}.input.values`, {
-      extraFields: extraFields(spec),
-    });
-    const localIssue = localIssues[0];
-    if (localIssue !== undefined) throw inputFailure(localIssue.path, localIssue.message);
-
     const { values: resolved, structures } = this.#resolve(requires, sources);
-    const sourceWarnings = this.#checkSources(structures);
+    const warnings = this.#checkSources(structures);
     const input: ResolvedInput = Object.freeze({
       values: local,
       requires: Object.freeze(resolved),
     });
     const context = Object.freeze({ nodeId: this.nodeId, progress: this.#progress });
-    const warnings = [...sourceWarnings, ...this.#validate(input, context)];
-    const outputs = this.plugin.transform(input, context);
+    const raw = this.plugin.transform(input, context);
+    const outputs = this.#outputsChecked
+      ? raw
+      : validatePluginOutputs(raw, this.plugin.outputs, this.nodeId);
+    this.#outputsChecked = true;
     return {
       outputs,
       sourceProgress: this.#progress,
       sourceRevisions: {},
-      ...(warnings.length === 0 ? {} : { diagnostics: Object.freeze(warnings) }),
+      ...(warnings.length === 0 ? {} : { diagnostics: warnings }),
     };
   }
 
@@ -254,6 +272,7 @@ export class PluginTrack {
             ref,
             `${path}.${key}`,
             memberStructures,
+            key,
           );
           members[key] = member;
         }
@@ -269,6 +288,7 @@ export class PluginTrack {
         source as SourceRef | undefined,
         path,
         singleStructures,
+        slot,
       );
       const structure = singleStructures[slot];
       if (structure !== undefined) structures[slot] = structure;
@@ -282,6 +302,7 @@ export class PluginTrack {
     ref: SourceRef | undefined,
     path: string,
     structures: Record<string, Structure<unknown>>,
+    structureKey: string,
   ): unknown {
     switch (declaration.kind) {
       case "shape":
@@ -294,8 +315,7 @@ export class PluginTrack {
         const structure =
           ref?.structure ??
           this.#computedStructure(declaration.type, ref?.sourceId ?? path, value, path);
-        const slotKey = path.slice(path.lastIndexOf(".") + 1);
-        structures[slotKey] = structure;
+        structures[structureKey] = structure;
         return declaration.type.bind(structure, value);
       }
       default:
@@ -310,12 +330,22 @@ export class PluginTrack {
     path: string,
   ): Structure<unknown> {
     const key = `${sourceId}\u0000${type.id}`;
+    const signature = structureSignature(type, value);
     const cached = this.#computedStructures.get(key);
-    if (cached !== undefined) return cached;
+    if (cached?.signature === signature) return cached.structure;
     const parsed = parseDataType(type, value, `${path}.values`);
     if (parsed.kind === "refused") throw new PluginNodeError(parsed.diagnostics);
-    this.#computedStructures.set(key, parsed.value);
+    this.#computedStructures.set(key, { structure: parsed.value, signature });
     return parsed.value;
+  }
+
+  /** Seeds the commit-time cross-source verdict so the first frame does not repeat it. */
+  markSourcesChecked(
+    structures: SourceStructures,
+    warnings: readonly Diagnostic[] = Object.freeze([]),
+  ): void {
+    this.#checkedStructures = structures;
+    this.#checkedWarnings = warnings;
   }
 
   #checkSources(structures: SourceStructures): readonly Diagnostic[] {
@@ -346,51 +376,6 @@ export class PluginTrack {
     this.#checkedStructures = structures;
     this.#checkedWarnings = Object.freeze([...warnings]);
     return this.#checkedWarnings;
-  }
-
-  #validate(
-    input: ResolvedInput,
-    context: { nodeId: string; progress: number },
-  ): readonly Diagnostic[] {
-    const validate = this.plugin.validate;
-    if (validate === undefined) return Object.freeze([]);
-    let raw: unknown;
-    try {
-      raw = validate(input, context);
-    } catch (error) {
-      throw new PluginNodeError([
-        diagnostic(
-          "plugin-validation-failed",
-          this.nodeId,
-          `Plugin '${this.plugin.id}' validate threw: ${error instanceof Error ? error.message : String(error)}`,
-        ),
-      ]);
-    }
-    if (!Array.isArray(raw))
-      throw new PluginNodeError([
-        diagnostic(
-          "plugin-validation-failed",
-          this.nodeId,
-          `Plugin '${this.plugin.id}' validate must return an array of diagnostics.`,
-        ),
-      ]);
-    const wrapped: Diagnostic[] = [];
-    for (const entry of raw) {
-      if (!isValidateDiagnostic(entry))
-        throw new PluginNodeError([
-          diagnostic(
-            "plugin-validation-failed",
-            this.nodeId,
-            `Plugin '${this.plugin.id}' validate returned a malformed diagnostic.`,
-          ),
-        ]);
-      const ruleId =
-        entry.severity === "warning" ? "plugin-validation-warning" : "plugin-validation-failed";
-      wrapped.push(diagnostic(ruleId, entry.path, entry.message));
-    }
-    const errors = wrapped.filter(({ severity }) => severity === "error");
-    if (errors.length > 0) throw new PluginNodeError(errors);
-    return Object.freeze(wrapped);
   }
 
   private assertActive(): void {

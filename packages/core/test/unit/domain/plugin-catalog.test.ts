@@ -140,11 +140,8 @@ describe("admission refuses a malformed definition by rule", () => {
     expect(reason(() => new PluginCatalog().register(plugin))).toMatch(/^name-reserved at /);
   });
 
-  it("refuses a non-callable transform and validate", () => {
+  it("refuses a non-callable transform", () => {
     expect(reason(() => new PluginCatalog().register(malformed({ transform: 1 })))).toMatch(
-      /^plugin-shape at /,
-    );
-    expect(reason(() => new PluginCatalog().register(malformed({ validate: 1 })))).toMatch(
       /^plugin-shape at /,
     );
   });

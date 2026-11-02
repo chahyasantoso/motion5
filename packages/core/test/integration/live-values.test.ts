@@ -45,37 +45,6 @@ const TRANSLATE: PluginDefinition<TranslateInput> = {
     };
   },
 };
-type GuardedInput = ResolvedInput<TranslateValues>;
-const GUARDED: PluginDefinition<GuardedInput> = {
-  id: "guarded",
-  inputs: { values: { kind: "record", fields: { dx: { kind: "number" } } } },
-  outputs: { values: { kind: "record", fields: { n: { kind: "number" } } } },
-  validate(input) {
-    return input.values.dx < 0
-      ? [diagnostic("plugin-validation-failed", "dx", "dx must be non-negative.")]
-      : [];
-  },
-  transform(input) {
-    return { values: { n: input.values.dx } };
-  },
-};
-const WATCHFUL: PluginDefinition<TranslateInput> = {
-  id: "watchful",
-  inputs: {
-    values: { kind: "record", fields: { dx: { kind: "number" } } },
-    requires: { data: shape({ outputs: { values: POINT } }) },
-  },
-  outputs: { values: POINT },
-  validate(input) {
-    return input.requires.data.values.length === 0
-      ? [diagnostic("plugin-validation-failed", "data", "data must not be empty.")]
-      : [];
-  },
-  transform() {
-    return { values: [] };
-  },
-};
-
 function catalog<Input extends ResolvedInput>(
   ...plugins: readonly PluginDefinition<Input>[]
 ): PluginCatalog {
@@ -146,15 +115,6 @@ const SHIFTED = track({
   values: record({ dx: 10 }),
   requires: { data: "points" },
 });
-const GUARDED_TRACK = track({ id: "guarded", plugin: "guarded", values: record({ dx: -1 }) });
-const GUARDED_OFF = track({ id: "guarded-off", plugin: "guarded", values: record({ dx: 1 }) });
-const WATCHED = track({
-  id: "watched",
-  plugin: "watchful",
-  values: record({ dx: 1 }),
-  requires: { data: "points" },
-});
-
 describe("a live overlay replaces the whole value and releases back to authored", () => {
   it("writes, replaces wholesale and releases at the current progress", () => {
     const handle = engine().load(project([POINTS, RECORD]));
@@ -316,53 +276,6 @@ describe("a live overlay replaces the whole value and releases back to authored"
 });
 
 describe("a live overlay on an errored node", () => {
-  it("lets a valid write and a release clear the error", () => {
-    const handle = engine(GUARDED).load(project([GUARDED_TRACK, GUARDED_OFF]));
-    try {
-      handle.mount("demo/guarded");
-      handle.mount("demo/guarded-off");
-      const guarded = handle.track("demo/guarded");
-      const error = handle.seek("demo/guarded", 0);
-      expect(patchFor(error, "demo/guarded").status).toBe("error");
-
-      const valid = guarded.writeValues({ dx: 2 });
-      expect(patchFor(valid, "demo/guarded").status).toBe("ready");
-      expect(readyValues(valid, "demo/guarded")).toEqual({ n: 2 });
-
-      // Authored dx is one, so an invalid overlay errors and releasing it recovers.
-      const off = handle.track("demo/guarded-off");
-      expect(patchFor(handle.seek("demo/guarded-off", 0), "demo/guarded-off").status).toBe("ready");
-      expect(patchFor(off.writeValues({ dx: -1 }), "demo/guarded-off").status).toBe("error");
-
-      const released = off.releaseValues();
-      expect(patchFor(released, "demo/guarded-off").status).toBe("ready");
-      expect(readyValues(released, "demo/guarded-off")).toEqual({ n: 1 });
-    } finally {
-      handle.dispose();
-    }
-  });
-
-  it("turns a valid overlay into a node error when a dependency changes", () => {
-    const handle = engine(WATCHFUL).load(project([POINTS, WATCHED]));
-    try {
-      handle.mount("demo/points");
-      handle.mount("demo/watched");
-      const watched = handle.track("demo/watched");
-      expect(patchFor(watched.writeValues({ dx: 5 }), "demo/watched").status).toBe("ready");
-
-      const emptied = handle.track("demo/points").input.values.set([]);
-      expect(patchFor(emptied, "demo/watched").status).toBe("error");
-
-      // The overlay still stands, so releasing onto the empty source leaves the same error. The
-      // identical republication is suppressed, as every unchanged error patch is.
-      const released = watched.releaseValues();
-      expect(released.patches.some((patch) => patch.nodeId === "demo/watched")).toBe(false);
-      expect(runtimeOf(handle).graph.registry.get("demo/watched")?.status).toBe("error");
-    } finally {
-      handle.dispose();
-    }
-  });
-
   it("still passes a plugin write through the transform", () => {
     const handle = engine(TRANSLATE).load(project([POINTS, SHIFTED]));
     try {

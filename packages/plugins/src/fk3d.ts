@@ -22,7 +22,7 @@ import type { Root } from "./root/domain";
 import { root3d } from "./root3d/type";
 import type { Solved, SolvedRow, SolvedStructure } from "./solved/domain";
 import { solved3d } from "./solved3d/type";
-import { POSE_3D_SPEC } from "./aggregate-topology";
+import { POSE_3D_SPEC } from "./pose/fields";
 
 type Fk3dInput = {
   readonly values: Readonly<Record<string, never>>;

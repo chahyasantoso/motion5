@@ -494,15 +494,15 @@ export class ProjectRuntime {
     return Object.freeze([...this.#instances.keys()]);
   }
   #acceptTrack(track: TrackDefinition, path: string): TrackDefinition {
-    return expectValid(
-      validateTrackDefinition(
-        track,
-        path,
-        this.#isPluginRegistered === undefined
-          ? {}
-          : { isPluginRegistered: this.#isPluginRegistered },
-      ),
-    );
+    const context = {
+      ...(this.#isPluginRegistered === undefined
+        ? {}
+        : { isPluginRegistered: this.#isPluginRegistered }),
+      ...(this.#capabilities.dataType === undefined
+        ? {}
+        : { dataType: (typeId: string) => this.#capabilities.dataType?.(typeId) }),
+    };
+    return expectValid(validateTrackDefinition(track, path, context));
   }
 
   #addTrack(track: TrackDefinition, options?: { motionId?: string }): TrackHandle {
@@ -776,13 +776,15 @@ export class ProjectRuntime {
     if (entry === undefined) throw new TypeError(`Unknown graph node "${id}".`);
     switch (change.kind) {
       case "authored-values":
+        // Compile the candidate before adopting its definition: a domain refusal must leave both
+        // the authored entry and the compiled track untouched.
+        this.#ports.value.rewrite(id, change.values);
         this.#tracks.set(id, {
           ...entry,
           track: change.track.track,
           valueState: change.track.valueState,
           contract: change.track.contract,
         });
-        this.#ports.value.rewrite(id, change.values);
         return;
       case "live-values":
         this.#tracks.set(id, { ...entry, valueState: change.track.valueState });

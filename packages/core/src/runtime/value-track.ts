@@ -1,4 +1,4 @@
-import type { DataType, Outputs, Structure, Value } from "../contract/v5";
+import type { DataType, Outputs, Structure, Value, ValueSpec } from "../contract/v5";
 import { describeDiagnostics } from "../contract/diagnostics";
 import type { ParsedValues } from "../contract/v5-parse";
 import type { Interpolator } from "../ports/interpolator";
@@ -14,6 +14,7 @@ export class ValueTrack {
   readonly kind = "values";
   readonly nodeId: string;
   readonly #dataType: DataType<unknown, unknown> | undefined;
+  readonly #spec: ValueSpec | undefined;
   readonly #interpolator: Interpolator;
   #evaluator: ValueEvaluator;
   #structure: Structure<unknown> | undefined;
@@ -27,12 +28,14 @@ export class ValueTrack {
     readonly values: ParsedValues | undefined;
     readonly interpolator: Interpolator;
     readonly dataType?: DataType<unknown, unknown>;
+    readonly spec?: ValueSpec;
   }) {
     if (options.nodeId.length === 0) throw new TypeError("Track node id must be non-empty.");
     this.nodeId = options.nodeId;
     this.#interpolator = options.interpolator;
     this.#dataType = options.dataType;
-    this.#evaluator = createValueEvaluator(options.values, options.interpolator);
+    this.#spec = options.spec;
+    this.#evaluator = createValueEvaluator(options.values, options.interpolator, options.spec);
     this.#structure = this.#parseStructure(options.values);
   }
 
@@ -63,7 +66,7 @@ export class ValueTrack {
       this.#evaluator,
       () => {
         nextStructure = this.#parseStructure(values);
-        return createValueEvaluator(values, this.#interpolator);
+        return createValueEvaluator(values, this.#interpolator, this.#spec);
       },
       (next) => {
         this.#evaluator = next;

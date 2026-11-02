@@ -1,4 +1,4 @@
-import { readAggregateTopology, readGoalTargets } from "../../src/aggregate-topology";
+import { readAggregateTopology, readGoalTargets } from "./aggregate-topology";
 import type { Body } from "../../src/body/domain";
 import type { Goals } from "../../src/goals/domain";
 import type { Root } from "../../src/root/domain";

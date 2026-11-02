@@ -10,7 +10,9 @@ import {
   type PoseTemplate,
 } from "../src/pose-classify";
 import { fk3dPlugin } from "../src/fk3d";
-import { BODY_3D_SPEC, ROOT_3D_SPEC, SOLVED_3D_SPEC } from "../src/aggregate-topology";
+import { BODY_3D_SPEC } from "./support/aggregate-topology";
+import { ROOT_3D_SPEC } from "../src/root3d/fields";
+import { SOLVED_3D_SPEC } from "../src/solved3d/fields";
 
 const ZERO: Euler3d = { rotation: 0, rotationX: 0, rotationY: 0 };
 const template = (label = "idle", angles: Euler3d = ZERO): PoseTemplate => ({

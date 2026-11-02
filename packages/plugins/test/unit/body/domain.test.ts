@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { bindBody, parseBody } from "../../../src/body/domain";
 import { BODY_2D_FIELDS } from "../../../src/body/fields";
+import { BODY_3D_FIELDS } from "../../../src/body3d/fields";
 
 const parse = (value: unknown) => parseBody(value, BODY_2D_FIELDS);
 
@@ -43,6 +44,23 @@ describe("body domain", () => {
     ]);
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.errors[0]?.kind).toBe("range-inverted");
+  });
+
+  it("refuses inverted 3D twist bounds", () => {
+    const result = parseBody(
+      [
+        {
+          id: "root",
+          cells: { length: 10, minTwist: 20, maxTwist: -20 },
+        },
+      ],
+      BODY_3D_FIELDS,
+    );
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.errors[0]?.kind).toBe("range-inverted");
+      expect(result.errors[0]).toMatchObject({ field: "twist" });
+    }
   });
 
   it("binds a changed row set as an error", () => {

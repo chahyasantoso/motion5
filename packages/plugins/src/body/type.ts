@@ -27,7 +27,7 @@ export function bodyIssue(error: BodyError): TypeIssue {
     case "range-inverted":
       return {
         path: [],
-        message: `Body row '${error.id}' has minRotation ${error.min} above maxRotation ${error.max}.`,
+        message: `Body row '${error.id}' has inverted ${error.field} bounds ${error.min}..${error.max}.`,
       };
     default:
       return unreachable(error);

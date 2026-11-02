@@ -109,7 +109,6 @@ const BASE_RULES = {
   "plugin-unknown-key": ERROR_WITH_IDS,
   "plugin-unknown-requirement": ERROR_WITH_IDS,
   "plugin-validation-failed": ERROR_NO_IDS,
-  "plugin-validation-warning": WARNING_NO_IDS,
   "project-id": ERROR_NO_IDS,
   "project-release-failed": ERROR_NO_IDS,
   "project-shape": ERROR_NO_IDS,

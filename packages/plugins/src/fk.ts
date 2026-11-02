@@ -21,7 +21,7 @@ import type { Root } from "./root/domain";
 import { root2d } from "./root/type";
 import type { Solved, SolvedRow, SolvedStructure } from "./solved/domain";
 import { solved2d } from "./solved/type";
-import { POSE_2D_SPEC } from "./aggregate-topology";
+import { POSE_2D_SPEC } from "./pose/fields";
 
 type FkInput = {
   readonly values: Readonly<Record<string, never>>;

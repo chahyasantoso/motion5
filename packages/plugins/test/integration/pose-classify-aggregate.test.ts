@@ -6,7 +6,9 @@ import { fk3dPlugin } from "../../src/fk3d";
 import { ikPlugin } from "../../src/ik";
 import { ik3dPlugin } from "../../src/ik3d";
 import { createPoseClassifyPlugin, type PoseTemplate } from "../../src/pose-classify";
-import { BODY_2D_SPEC, GOALS_2D_SPEC, POSE_2D_SPEC } from "../../src/aggregate-topology";
+import { BODY_2D_SPEC } from "../support/aggregate-topology";
+import { GOALS_2D_SPEC } from "../../src/goals/fields";
+import { POSE_2D_SPEC } from "../../src/pose/fields";
 
 const ZERO_EULER = { rotation: 0, rotationX: 0, rotationY: 0 };
 const T_POSE: PoseTemplate = {

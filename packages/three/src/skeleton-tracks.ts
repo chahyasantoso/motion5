@@ -1,5 +1,6 @@
 import { validateTrackDefinition, type TrackDefinition } from "@motion5/core";
-import { BODY_3D_SPEC, SOLVED_3D_SPEC } from "../../plugins/src/aggregate-topology";
+import { BODY_3D_SPEC } from "../../plugins/src/body3d/fields";
+import { SOLVED_3D_SPEC } from "../../plugins/src/solved3d/fields";
 import { Matrix4, Vector3 } from "three";
 import { frameFromMatrix } from "./index";
 import {

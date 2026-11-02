@@ -3,7 +3,9 @@ import type { WorldFrame } from "../../src/frame";
 import type { JointRange } from "../../src/ik-constraint";
 import type { SolveMember } from "../../src/ik-member";
 import type { ChainShape } from "../../src/ik-solve";
-import { BODY_2D_SPEC, GOALS_2D_SPEC, ROOT_2D_SPEC } from "../../src/aggregate-topology";
+import { BODY_2D_SPEC } from "../../src/body/fields";
+import { GOALS_2D_SPEC } from "../../src/goals/fields";
+import { ROOT_2D_SPEC } from "../../src/root/fields";
 
 /**
  * The rigs the 2D IK envelope is measured on, built once for the two readers that need them.

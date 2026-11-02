@@ -1,5 +1,5 @@
 import type { ParsedCell, ParsedStop, ParsedValues } from "../contract/v5-parse";
-import type { FlatRecord, Scalar, Table, Value } from "../contract/v5";
+import type { FieldSpec, FlatRecord, Scalar, Table, Value, ValueSpec } from "../contract/v5";
 import { freezeValue } from "../domain/values";
 import { unreachable } from "../lang/exhaustive";
 import type { Interpolator } from "../ports/interpolator";
@@ -42,9 +42,15 @@ type Plan =
   | { readonly kind: "table"; readonly rows: readonly PlannedRow[] }
   | { readonly kind: "record"; readonly entries: readonly PlannedEntry[] };
 
+interface FieldBounds {
+  readonly min?: number;
+  readonly max?: number;
+}
+
 interface Skeleton {
   readonly plan: Plan;
   readonly keyframes: Readonly<Record<string, readonly ParsedStop[]>>;
+  readonly bounds: ReadonlyMap<string, FieldBounds>;
   readonly timeInvariant: boolean;
 }
 
@@ -58,6 +64,7 @@ export interface ValueEvaluator {
 
 const EMPTY_TABLE: Plan = Object.freeze({ kind: "table", rows: Object.freeze([]) });
 const NO_KEYFRAMES: Readonly<Record<string, readonly ParsedStop[]>> = Object.freeze({});
+const NO_BOUNDS: ReadonlyMap<string, FieldBounds> = new Map();
 
 /**
  * The last stop whose position has been reached, or the first stop before any is.
@@ -82,13 +89,14 @@ function discreteAt(stops: readonly ParsedStop[], progress: number): Scalar {
   return (stops[reached] ?? first).v;
 }
 
-function planValues(values: ParsedValues | undefined): Skeleton {
+function planValues(values: ParsedValues | undefined, spec: ValueSpec | undefined): Skeleton {
   if (values === undefined)
-    return { plan: EMPTY_TABLE, keyframes: NO_KEYFRAMES, timeInvariant: true };
+    return { plan: EMPTY_TABLE, keyframes: NO_KEYFRAMES, bounds: NO_BOUNDS, timeInvariant: true };
 
   let animated = false;
   const numericStops: (readonly ParsedStop[])[] = [];
-  const planCell = (cell: ParsedCell): PlannedCell => {
+  const numericBounds: (FieldBounds | undefined)[] = [];
+  const planCell = (cell: ParsedCell, field: FieldSpec | undefined): PlannedCell => {
     switch (cell.kind) {
       case "static":
         return { kind: "static", value: cell.value };
@@ -98,6 +106,14 @@ function planValues(values: ParsedValues | undefined): Skeleton {
           case "number": {
             const slot = `s${numericStops.length}`;
             numericStops.push(cell.stops);
+            numericBounds.push(
+              field?.min === undefined && field?.max === undefined
+                ? undefined
+                : {
+                    ...(field?.min === undefined ? {} : { min: field.min }),
+                    ...(field?.max === undefined ? {} : { max: field.max }),
+                  },
+            );
             return { kind: "numeric", slot };
           }
           case "string":
@@ -110,29 +126,42 @@ function planValues(values: ParsedValues | undefined): Skeleton {
         return unreachable(cell);
     }
   };
-  const planEntries = (cells: Readonly<Record<string, ParsedCell>>): readonly PlannedEntry[] =>
-    Object.entries(cells).map(([name, cell]) => ({ name, cell: planCell(cell) }));
+  const planEntries = (
+    cells: Readonly<Record<string, ParsedCell>>,
+    fields: Readonly<Record<string, FieldSpec>> | undefined,
+  ): readonly PlannedEntry[] =>
+    Object.entries(cells).map(([name, cell]) => ({
+      name,
+      cell: planCell(cell, fields?.[name]),
+    }));
 
   switch (values.kind) {
     case "table": {
-      const rows = values.rows.map((row) => ({ id: row.id, entries: planEntries(row.cells) }));
+      const fields = spec?.kind === "table" ? spec.schema.row.fields : undefined;
+      const rows = values.rows.map((row) => ({
+        id: row.id,
+        entries: planEntries(row.cells, fields),
+      }));
       const keyframes = Object.fromEntries(
         numericStops.map((stops, index) => [`s${index}`, stops] as const),
       );
       return {
         plan: { kind: "table", rows },
         keyframes: Object.freeze(keyframes),
+        bounds: boundsOf(numericBounds),
         timeInvariant: !animated,
       };
     }
     case "record": {
-      const entries = planEntries(values.fields);
+      const fields = spec?.kind === "record" ? spec.fields : undefined;
+      const entries = planEntries(values.fields, fields);
       const keyframes = Object.fromEntries(
         numericStops.map((stops, index) => [`s${index}`, stops] as const),
       );
       return {
         plan: { kind: "record", entries },
         keyframes: Object.freeze(keyframes),
+        bounds: boundsOf(numericBounds),
         timeInvariant: !animated,
       };
     }
@@ -141,11 +170,20 @@ function planValues(values: ParsedValues | undefined): Skeleton {
   }
 }
 
+function boundsOf(entries: readonly (FieldBounds | undefined)[]): ReadonlyMap<string, FieldBounds> {
+  const bounds = new Map<string, FieldBounds>();
+  entries.forEach((entry, index) => {
+    if (entry !== undefined) bounds.set(`s${index}`, entry);
+  });
+  return bounds;
+}
+
 export function createValueEvaluator(
   values: ParsedValues | undefined,
   interpolator: Interpolator,
+  spec?: ValueSpec,
 ): ValueEvaluator {
-  const { plan, keyframes, timeInvariant } = planValues(values);
+  const { plan, keyframes, bounds, timeInvariant } = planValues(values, spec);
   const hasNumeric = Object.keys(keyframes).length > 0;
   // Duration 1 makes progress the normalized position the authored stops already use. The flag is
   // the one thing a backend must honor for per-cell stops: eases at one position stay independent.
@@ -162,7 +200,12 @@ export function createValueEvaluator(
         const value = timeline?.state[cell.slot];
         if (typeof value !== "number" || !Number.isFinite(value))
           throw new TypeError(`Interpolator slot '${cell.slot}' did not produce a finite number.`);
-        return value;
+        const bound = bounds.get(cell.slot);
+        if (bound === undefined) return value;
+        return Math.max(
+          bound.min ?? Number.NEGATIVE_INFINITY,
+          Math.min(bound.max ?? Number.POSITIVE_INFINITY, value),
+        );
       }
       case "discrete":
         return discreteAt(cell.stops, progress);

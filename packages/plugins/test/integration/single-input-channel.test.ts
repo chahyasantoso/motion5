@@ -3,7 +3,9 @@ import type { ProjectDefinition, TrackDefinition } from "@motion5/core";
 import { PluginCatalog, Engine } from "@motion5/core";
 import { fkPlugin } from "../../src/fk";
 import { transformPlugin } from "../../src/transform";
-import { BODY_2D_SPEC, ROOT_2D_SPEC, SOLVED_2D_SPEC } from "../../src/aggregate-topology";
+import { BODY_2D_SPEC } from "../support/aggregate-topology";
+import { ROOT_2D_SPEC } from "../../src/root/fields";
+import { SOLVED_2D_SPEC } from "../../src/solved/fields";
 import { createManualClock } from "@motion5/core";
 import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/testing";
 

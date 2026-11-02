@@ -243,6 +243,31 @@ describe("value evaluation", () => {
     expect(() => evaluator.evaluate(0.5)).toThrow(/disposed/);
   });
 
+  it("clamps an interpolated numeric cell to its declared bounds", () => {
+    const values = recordOf({
+      x: [
+        { p: 0, v: 0 },
+        { p: 1, v: 200 },
+      ],
+    });
+    const spec: import("../../../src/contract/v5").ValueSpec = {
+      kind: "record",
+      fields: { x: { kind: "number", min: 0, max: 100 } },
+    };
+    const interpolator: Interpolator = {
+      create: () =>
+        ({
+          duration: 1,
+          state: { s0: 500 },
+          progress: () => 0,
+          kill: () => undefined,
+        }) as InterpolationTimeline,
+    };
+    const evaluator = createValueEvaluator(values, interpolator, spec);
+    expect(evaluator.evaluate(0.5)).toEqual({ x: 100 });
+    evaluator.dispose();
+  });
+
   it("creates no timeline for a plan without a numeric cell", () => {
     const values = recordOf({
       label: [

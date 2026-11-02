@@ -48,6 +48,7 @@ export type BodyError =
   | {
       readonly kind: "range-inverted";
       readonly id: string;
+      readonly field: "rotation" | "twist";
       readonly min: number;
       readonly max: number;
     };
@@ -106,12 +107,18 @@ function readParent(row: BodyRow): string | undefined | BodyError {
   return parent;
 }
 
-function invertedRange(row: BodyRow): BodyError | undefined {
-  const min = row.cells.minRotation;
-  const max = row.cells.maxRotation;
-  if (typeof min === "number" && typeof max === "number" && min > max)
-    return { kind: "range-inverted", id: row.id, min, max };
-  return undefined;
+function invertedRanges(row: BodyRow): readonly BodyError[] {
+  const errors: BodyError[] = [];
+  for (const [minKey, maxKey, field] of [
+    ["minRotation", "maxRotation", "rotation"],
+    ["minTwist", "maxTwist", "twist"],
+  ] as const) {
+    const min = row.cells[minKey];
+    const max = row.cells[maxKey];
+    if (typeof min === "number" && typeof max === "number" && min > max)
+      errors.push({ kind: "range-inverted", id: row.id, field, min, max });
+  }
+  return errors;
 }
 
 /** Parses one body table into its frozen topology; roots are rows that omit `parentId`. */
@@ -123,8 +130,7 @@ export function parseBody(value: unknown, fields: FieldShape): BodyResult {
   for (const row of rows) {
     if (byId.has(row.id)) errors.push({ kind: "row-id-duplicate", id: row.id });
     else byId.set(row.id, row);
-    const inverted = invertedRange(row);
-    if (inverted !== undefined) errors.push(inverted);
+    errors.push(...invertedRanges(row));
   }
   const parentById = new Map<string, string | undefined>();
   const children = new Map<string, string[]>(rows.map((row) => [row.id, []]));

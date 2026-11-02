@@ -18,12 +18,10 @@ import { GraphPublisher } from "../../src/runtime/graph-publisher";
 import { PatchRegistry } from "../../src/runtime/patch-registry";
 import { ikPlugin } from "../../../plugins/src/ik";
 import { fkPlugin } from "../../../plugins/src/fk";
-import {
-  BODY_2D_SPEC,
-  GOALS_2D_SPEC,
-  POSE_2D_SPEC,
-  ROOT_2D_SPEC,
-} from "../../../plugins/src/aggregate-topology";
+import { BODY_2D_SPEC } from "../../../plugins/src/body/fields";
+import { GOALS_2D_SPEC } from "../../../plugins/src/goals/fields";
+import { POSE_2D_SPEC } from "../../../plugins/src/pose/fields";
+import { ROOT_2D_SPEC } from "../../../plugins/src/root/fields";
 
 const CONSUMER_SPEC: ValueSpec = {
   kind: "record",

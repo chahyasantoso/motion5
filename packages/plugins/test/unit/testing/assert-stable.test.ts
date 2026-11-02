@@ -46,6 +46,33 @@ describe("assertStable", () => {
     expect(() => assertStable(MOVING, fixtures)).toThrow(/changed row ids/);
   });
 
+  it("checks declared numeric static fields", () => {
+    const numeric = {
+      ...STABLE,
+      id: "numeric",
+      outputs: {
+        values: {
+          kind: "table",
+          schema: {
+            row: {
+              fields: {
+                limit: { kind: "number" },
+                x: { kind: "number" },
+              },
+            },
+          },
+        },
+      },
+      transform: (_input: never, context: { readonly progress: number }) => ({
+        values: [{ id: "bone", cells: { limit: context.progress, x: context.progress } }],
+      }),
+    };
+    expect(() => assertStable(numeric, fixtures)).not.toThrow();
+    expect(() => assertStable(numeric, fixtures, { staticFields: ["limit"] })).toThrow(
+      /changed static cells/,
+    );
+  });
+
   it("refuses a static cell that moves across progress", () => {
     const dynamic = {
       ...STABLE,

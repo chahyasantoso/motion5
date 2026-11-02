@@ -3,7 +3,9 @@ import { Engine, PluginCatalog, createManualClock, type ProjectDefinition } from
 import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/testing";
 import { ik3dPlugin } from "../../src/ik3d";
 import { fk3dPlugin } from "../../src/fk3d";
-import { BODY_3D_SPEC, GOALS_3D_SPEC, POSE_3D_SPEC } from "../../src/aggregate-topology";
+import { BODY_3D_SPEC } from "../support/aggregate-topology";
+import { GOALS_3D_SPEC } from "../../src/goals3d/fields";
+import { POSE_3D_SPEC } from "../../src/pose/fields";
 import { bodyEntity, rootEntity, solvedEntity } from "../support/typed-rig";
 
 const composer = vi.hoisted(() => ({ calls: 0 }));

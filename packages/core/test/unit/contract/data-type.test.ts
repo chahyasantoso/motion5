@@ -46,6 +46,8 @@ const point2d: DataType<PointStructure, PointEntity> = {
   parse(value: Value): Parsed<PointStructure> {
     if (!Array.isArray(value))
       return { kind: "refused", errors: [{ path: [], message: "Expected a table." }] };
+    if (value.some((row) => Number(row.cells.y) > 10))
+      return { kind: "refused", errors: [{ path: [], message: "y must stay at or below 10." }] };
     return { kind: "parsed", structure: { ids: value.map((row) => row.id) }, warnings: [] };
   },
   bind(structure: Structure<PointStructure>, value: Value): PointEntity {
@@ -150,8 +152,103 @@ describe("self-validating data tracks", () => {
     ).toThrow(/live-values-invalid/);
   });
 
+  it("refuses a domain-invalid authored edit before adopting it", () => {
+    const handle = open(project("point2d"));
+    const before = handle.track("demo/points").definition;
+    expect(() =>
+      handle
+        .track("demo/points")
+        .input.values.set([{ id: "a", cells: { owner: "acme", x: 0, y: 20 } }]),
+    ).toThrow(/data-type-invalid/);
+    expect(handle.track("demo/points").definition).toBe(before);
+  });
+
   it("rejects connecting a generic data track to a typed slot", () => {
     expect(() => open(project())).toThrow(/slot-type-mismatch/);
+  });
+
+  it("keys a dotted typed slot's structure by the full slot name", () => {
+    const producer: PluginDefinition = {
+      id: "producer",
+      inputs: { values: { kind: "record", fields: {} } },
+      outputs: {
+        values: {
+          kind: "table",
+          schema: {
+            row: {
+              fields: {
+                owner: { kind: "string" },
+                x: { kind: "number" },
+                y: { kind: "number" },
+              },
+            },
+          },
+        },
+      },
+      transform() {
+        return { values: [{ id: "bad", cells: { owner: "acme", x: 1, y: 2 } }] };
+      },
+    };
+    const guard: PluginDefinition = {
+      id: "guard",
+      inputs: {
+        values: { kind: "record", fields: {} },
+        requires: { "data.points": typed(point2d) },
+      },
+      outputs: { values: OUTPUT_SPEC },
+      checkSources(structures) {
+        const structure = structures["data.points"] as Structure<PointStructure> | undefined;
+        return structure?.ids.includes("bad") === true
+          ? [
+              {
+                ruleId: "plugin-validation-failed",
+                path: "data.points",
+                message: "identifier is reserved",
+                severity: "error",
+                ids: [],
+              },
+            ]
+          : [];
+      },
+      transform() {
+        return { values: [] };
+      },
+    };
+    const catalog = new PluginCatalog();
+    catalog.registerAll([producer, guard]);
+    const handle = new Engine({
+      clock: createManualClock(),
+      interpolator: createFakeInterpolator(),
+      scheduler: createFakeScheduler(),
+      plugins: catalog,
+    }).load({
+      schemaVersion: 5,
+      motions: [
+        {
+          id: "demo",
+          trigger: { type: "manual" },
+          tracks: [
+            { id: "producer", plugin: "producer", input: { values: {} } },
+            {
+              id: "guard",
+              plugin: "guard",
+              input: { values: {}, requires: { "data.points": "producer" } },
+            },
+          ],
+        },
+      ],
+    });
+    handle.mount("demo/producer");
+    handle.mount("demo/guard");
+    handle.seek("demo/guard", 0.5);
+    expect(handle.get("demo/guard")?.status).toBe("error");
+  });
+
+  it("validates a typed track added through the structural tier", () => {
+    const handle = open(project("point2d"));
+    expect(() => handle.addTrack({ id: "bad", type: "missing", input: { values: [] } })).toThrow(
+      /data-type-unknown/,
+    );
   });
 
   it("keeps a frozen structure on the compiled value track", () => {

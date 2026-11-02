@@ -184,66 +184,6 @@ describe("identified plugin runtime", () => {
     }
   });
 
-  it("wraps a plugin validation error and skips the transform", () => {
-    let transforms = 0;
-    const bad: PluginDefinition = {
-      id: "bad",
-      inputs: { values: { kind: "record", fields: { n: { kind: "number" } } } },
-      outputs: { values: POINT },
-      validate() {
-        return [
-          {
-            ruleId: "composition-failure",
-            path: "input.n",
-            message: "n must be positive",
-            severity: "error",
-            ids: [],
-          },
-        ];
-      },
-      transform() {
-        transforms += 1;
-        return { values: [] };
-      },
-    };
-    const patch = runOne(bad, track({ id: "bad", plugin: "bad", values: record({ n: 1 }) }));
-
-    expect(transforms).toBe(0);
-    expect(patch?.status).toBe("error");
-    if (patch?.status === "error")
-      expect(patch.diagnostics.map(({ ruleId }) => ruleId)).toContain("plugin-validation-failed");
-  });
-
-  it("carries a validation warning on the ready patch", () => {
-    const warned: PluginDefinition = {
-      id: "warned",
-      inputs: { values: { kind: "record", fields: { n: { kind: "number" } } } },
-      outputs: { values: POINT },
-      validate() {
-        return [
-          {
-            ruleId: "composition-failure",
-            path: "input.n",
-            message: "n is small",
-            severity: "warning",
-            ids: [],
-          },
-        ];
-      },
-      transform() {
-        return { values: [] };
-      },
-    };
-    const patch = runOne(
-      warned,
-      track({ id: "warned", plugin: "warned", values: record({ n: 1 }) }),
-    );
-
-    expect(patch?.status).toBe("ready");
-    if (patch?.status === "ready")
-      expect(patch.diagnostics.map(({ ruleId }) => ruleId)).toContain("plugin-validation-warning");
-  });
-
   it("accepts an omitted optional slot", () => {
     const optional: PluginDefinition = {
       id: "optional",
@@ -366,6 +306,22 @@ describe("identified plugin runtime", () => {
     expect(values.map(({ id }) => id)).toEqual(["lower-a", "upper-a"]);
   });
 
+  it("refuses a malformed first output set", () => {
+    const bad: PluginDefinition = {
+      id: "bad",
+      inputs: { values: { kind: "record", fields: { n: { kind: "number" } } } },
+      outputs: { values: POINT },
+      transform() {
+        return { other: [] };
+      },
+    };
+    const patch = runOne(bad, track({ id: "bad", plugin: "bad", values: record({ n: 1 }) }));
+
+    expect(patch?.status).toBe("error");
+    if (patch?.status === "error")
+      expect(patch.diagnostics.map(({ ruleId }) => ruleId)).toContain("output-undeclared");
+  });
+
   it("publishes a table output and a record output in one node", () => {
     const both: PluginDefinition = {
       id: "both",
@@ -405,24 +361,5 @@ describe("identified plugin runtime", () => {
     expect(patch?.status).toBe("error");
     if (patch?.status === "error")
       expect(patch.diagnostics.map(({ ruleId }) => ruleId)).toContain("composition-failure");
-  });
-
-  it("turns a thrown validator into a validation error", () => {
-    const bad: PluginDefinition = {
-      id: "bad",
-      inputs: { values: { kind: "record", fields: { n: { kind: "number" } } } },
-      outputs: { values: POINT },
-      validate() {
-        throw new Error("validate failed");
-      },
-      transform() {
-        return { values: [] };
-      },
-    };
-    const patch = runOne(bad, track({ id: "bad", plugin: "bad", values: record({ n: 1 }) }));
-
-    expect(patch?.status).toBe("error");
-    if (patch?.status === "error")
-      expect(patch.diagnostics.map(({ ruleId }) => ruleId)).toContain("plugin-validation-failed");
   });
 });

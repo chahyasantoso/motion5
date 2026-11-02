@@ -15,7 +15,7 @@ import {
   readAggregateTopology,
   readGoalTargets,
   EXTERNAL_BASE,
-} from "../../src/aggregate-topology";
+} from "../support/aggregate-topology";
 
 function body(...rows: readonly { readonly id: string; readonly parentId?: string }[]) {
   return rows.map(({ id, parentId }) => ({

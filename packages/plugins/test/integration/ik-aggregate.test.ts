@@ -3,7 +3,9 @@ import { describe, expect, it, vi } from "vitest";
 import { Engine, PluginCatalog, createManualClock, type ProjectDefinition } from "@motion5/core";
 import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/testing";
 import { ikPlugin } from "../../src/ik";
-import { AggregateTopologyError, BODY_2D_SPEC, GOALS_2D_SPEC } from "../../src/aggregate-topology";
+import { AggregateTopologyError } from "../support/aggregate-topology";
+import { BODY_2D_SPEC } from "../../src/body/fields";
+import { GOALS_2D_SPEC } from "../../src/goals/fields";
 import { goalsEntity, rootEntity } from "../support/typed-rig";
 
 const solver = vi.hoisted(() => ({ calls: 0 }));

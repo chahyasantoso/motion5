@@ -20,7 +20,7 @@ import type { PluginCapabilities, PluginCapability } from "../ports/plugin-capab
  * Identified-table plugin registry keyed by authored `id`: admits whole definitions, all-or-none per batch.
  */
 
-const PLUGIN_FIELDS = new Set(["id", "inputs", "outputs", "checkSources", "validate", "transform"]);
+const PLUGIN_FIELDS = new Set(["id", "inputs", "outputs", "checkSources", "transform"]);
 const INPUT_FIELDS = new Set(["values", "requires"]);
 const DEPENDENCY_FIELDS = new Set(["kind", "outputs", "optional", "binding"]);
 const TYPED_FIELDS = new Set(["kind", "type", "optional", "binding"]);
@@ -31,7 +31,6 @@ const EMPTY_MEMBERS: readonly string[] = Object.freeze([]);
 const EMPTY_TYPES: readonly DataType<unknown, unknown>[] = Object.freeze([]);
 
 type TransformHook = PluginDefinition["transform"];
-type ValidateHook = NonNullable<PluginDefinition["validate"]>;
 type CheckSourcesHook = NonNullable<PluginDefinition["checkSources"]>;
 
 /** One admission refusal carrying its rule id and definition path. */
@@ -145,7 +144,8 @@ function readDataType(value: unknown, path: string): DataType<unknown, unknown> 
   if (bind === undefined) refuse("plugin-shape", `${path}.bind`, "bind must be a function.");
   const type = source as unknown as DataType<unknown, unknown>;
   if (type.id !== id) refuse("plugin-shape", `${path}.id`, "data type id moved during admission.");
-  return type;
+  Object.freeze(type.spec);
+  return Object.freeze(type);
 }
 
 function readShapeSlot(source: Readonly<Record<string, unknown>>, path: string): SlotSpec {
@@ -242,11 +242,6 @@ function admitPlugin(
     refuse("plugin-duplicate-id", "plugin.id", `Plugin '${id}' is already admitted.`);
   const inputs = readInputs(own(source, "inputs"), "plugin.inputs");
   const outputs = readOutputs(own(source, "outputs"), "plugin.outputs");
-  const rawValidate = readHook<ValidateHook>(
-    own(source, "validate"),
-    "plugin.validate",
-    "validate",
-  );
   const rawTransform = readHook<TransformHook>(
     own(source, "transform"),
     "plugin.transform",
@@ -262,11 +257,6 @@ function admitPlugin(
   // Runtime validates values before and result after; wrapper rebinds `this` and casts.
   const transform: TransformHook = (input: ResolvedInput, context: EvaluationContext) =>
     Reflect.apply(rawTransform, source, [input, context]) as Outputs;
-  const validate: ValidateHook | undefined =
-    rawValidate === undefined
-      ? undefined
-      : (input: ResolvedInput, context: EvaluationContext) =>
-          Reflect.apply(rawValidate, source, [input, context]) as readonly Diagnostic[];
   const checkSources: CheckSourcesHook | undefined =
     rawCheckSources === undefined
       ? undefined
@@ -277,7 +267,6 @@ function admitPlugin(
     inputs,
     outputs,
     ...(checkSources === undefined ? {} : { checkSources }),
-    ...(validate === undefined ? {} : { validate }),
     transform,
   });
 }
