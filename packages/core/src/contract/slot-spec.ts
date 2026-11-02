@@ -1,10 +1,4 @@
-import type {
-  BindingMode,
-  DataType,
-  DependencySpec,
-  SlotSpec,
-  TypedSlotSpec,
-} from "./v5";
+import type { BindingMode, DataType, DependencySpec, SlotSpec, TypedSlotSpec } from "./v5";
 
 export interface SlotOptions {
   readonly optional?: true;

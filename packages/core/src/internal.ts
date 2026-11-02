@@ -16,6 +16,8 @@ export { liveOrAbsent } from "./runtime/patch-registry";
  * One `never` sink for closed unions, internal so `packages/react` reads it too; off the
  * public entry and boundary allow-list, a second sink being a second answer on variants. */
 export { unreachable } from "./lang/exhaustive";
+export { explain } from "./graph/explain";
+export type { ExplainNode, ExplainReport, ExplainSlot } from "./graph/explain";
 
 /**
  * Metadata half of a renderer-facing source: how a node's plugin output serializes.

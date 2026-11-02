@@ -1,5 +1,11 @@
 import type { DataType, Parsed, Structure, Value } from "@motion5/core/plugin-api";
-import { bindRoot, parseRoot, ROOT_3D_FIELDS_REQUIRED, type Root, type RootStructure } from "../root/domain";
+import {
+  bindRoot,
+  parseRoot,
+  ROOT_3D_FIELDS_REQUIRED,
+  type Root,
+  type RootStructure,
+} from "../root/domain";
 import { rootIssue } from "../root/type";
 import { ROOT_3D_SPEC } from "./fields";
 

@@ -19,7 +19,7 @@ const PASS: PluginDefinition = {
   id: "pass",
   inputs: {
     values: { kind: "record", fields: {} },
-    requires: { upstream: shape({ outputs: { values: EMPTY_TABLE } })},
+    requires: { upstream: shape({ outputs: { values: EMPTY_TABLE } }) },
   },
   outputs: { values: EMPTY_TABLE },
   transform() {

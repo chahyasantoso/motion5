@@ -59,7 +59,8 @@ const translatePlugin: PluginDefinition<
             },
           },
         },
-      })},
+      }),
+    },
   },
   outputs: {
     values: {

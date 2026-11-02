@@ -36,7 +36,8 @@ const translate: PluginDefinition<TranslateInput> = {
             },
           },
         },
-      })},
+      }),
+    },
   },
   outputs: {
     values: {

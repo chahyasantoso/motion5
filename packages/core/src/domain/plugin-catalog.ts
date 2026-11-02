@@ -20,14 +20,7 @@ import type { PluginCapabilities, PluginCapability } from "../ports/plugin-capab
  * Identified-table plugin registry keyed by authored `id`: admits whole definitions, all-or-none per batch.
  */
 
-const PLUGIN_FIELDS = new Set([
-  "id",
-  "inputs",
-  "outputs",
-  "checkSources",
-  "validate",
-  "transform",
-]);
+const PLUGIN_FIELDS = new Set(["id", "inputs", "outputs", "checkSources", "validate", "transform"]);
 const INPUT_FIELDS = new Set(["values", "requires"]);
 const DEPENDENCY_FIELDS = new Set(["kind", "outputs", "optional", "binding"]);
 const TYPED_FIELDS = new Set(["kind", "type", "optional", "binding"]);
@@ -155,10 +148,7 @@ function readDataType(value: unknown, path: string): DataType<unknown, unknown> 
   return type;
 }
 
-function readShapeSlot(
-  source: Readonly<Record<string, unknown>>,
-  path: string,
-): SlotSpec {
+function readShapeSlot(source: Readonly<Record<string, unknown>>, path: string): SlotSpec {
   assertKnownKeys(source, DEPENDENCY_FIELDS, path, "Shape slot");
   const outputsSource = requireRecord(own(source, "outputs"), `${path}.outputs`);
   const outputs: Record<string, ValueSpec> = {};
@@ -176,10 +166,7 @@ function readShapeSlot(
   });
 }
 
-function readTypedSlot(
-  source: Readonly<Record<string, unknown>>,
-  path: string,
-): SlotSpec {
+function readTypedSlot(source: Readonly<Record<string, unknown>>, path: string): SlotSpec {
   assertKnownKeys(source, TYPED_FIELDS, path, "Typed slot");
   return Object.freeze({
     kind: "typed",
@@ -317,6 +304,56 @@ function collectTypes(definitions: readonly PluginDefinition[]): TypeBatch {
   return { types };
 }
 
+/** One declared plugin slot, flattened for inspection. */
+export type DescribedSlot =
+  | {
+      readonly kind: "typed";
+      readonly typeId: string;
+      readonly spec: ValueSpec;
+      readonly optional?: true;
+      readonly binding: "single" | "map";
+    }
+  | {
+      readonly kind: "shape";
+      readonly outputs: Readonly<Record<string, ValueSpec>>;
+      readonly optional?: true;
+      readonly binding: "single" | "map";
+    };
+
+/** A plugin's declared input and output contracts. */
+export interface PluginDescription {
+  readonly id: string;
+  readonly values: ValueSpec;
+  readonly requires: Readonly<Record<string, DescribedSlot>>;
+  readonly outputs: Readonly<Record<string, ValueSpec>>;
+}
+
+function describeSlot(slot: SlotSpec): DescribedSlot {
+  switch (slot.kind) {
+    case "typed":
+      return Object.freeze({
+        kind: "typed",
+        typeId: slot.type.id,
+        spec: slot.type.spec,
+        ...(slot.optional === true ? { optional: true as const } : {}),
+        binding: slot.binding ?? "single",
+      });
+    case "shape":
+      return Object.freeze({
+        kind: "shape",
+        outputs: slot.outputs,
+        ...(slot.optional === true ? { optional: true as const } : {}),
+        binding: slot.binding ?? "single",
+      });
+    default:
+      return unreachableSlot(slot);
+  }
+}
+
+function unreachableSlot(slot: never): never {
+  throw new TypeError(`Unknown slot kind: ${JSON.stringify(slot)}`);
+}
+
 /** Identified-table registry; one instance belongs to one host composition. */
 export class PluginCatalog implements PluginCapabilities {
   readonly #plugins = new Map<string, PluginDefinition>();
@@ -385,6 +422,21 @@ export class PluginCatalog implements PluginCapabilities {
 
   pluginDefinition(id: string): PluginDefinition | undefined {
     return this.#plugins.get(id);
+  }
+
+  /** The admitted plugin's declarations, or `undefined` when the id is not admitted. */
+  describe(id: string): PluginDescription | undefined {
+    const definition = this.#plugins.get(id);
+    if (definition === undefined) return undefined;
+    const requires: Record<string, DescribedSlot> = {};
+    for (const [slot, spec] of Object.entries(definition.inputs.requires ?? {}))
+      requires[slot] = describeSlot(spec);
+    return Object.freeze({
+      id: definition.id,
+      values: definition.inputs.values,
+      requires: Object.freeze(requires),
+      outputs: definition.outputs,
+    });
   }
 
   dataType(id: string): DataType<unknown, unknown> | undefined {

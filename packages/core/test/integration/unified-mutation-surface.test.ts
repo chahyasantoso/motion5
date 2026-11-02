@@ -21,7 +21,8 @@ const LINK: PluginDefinition = {
     requires: {
       parent: shape({
         outputs: { values: { kind: "record", fields: { x: { kind: "number" } } } },
-      })},
+      }),
+    },
   },
   outputs: { values: { kind: "record", fields: { x: { kind: "number" } } } },
   transform() {

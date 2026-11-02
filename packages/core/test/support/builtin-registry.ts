@@ -23,7 +23,8 @@ export const GRAPH_EDGE_PLUGIN: PluginDefinition = {
       chain: shape({
         optional: true,
         outputs: { values: { kind: "table", schema: { row: { fields: {} } } } },
-      })},
+      }),
+    },
   },
   outputs: { values: { kind: "table", schema: { row: { fields: {} } } } },
   transform() {

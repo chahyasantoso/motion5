@@ -47,7 +47,8 @@ function pickOutputs(
   declared: Readonly<Record<string, ValueSpec>>,
   path: string,
 ): Outputs {
-  if (!isPlainRecord(outputs)) throw inputFailure(path, "Bound slot did not receive an output set.");
+  if (!isPlainRecord(outputs))
+    throw inputFailure(path, "Bound slot did not receive an output set.");
   const picked: Record<string, Value> = {};
   for (const [name, spec] of Object.entries(declared)) {
     if (!Object.hasOwn(outputs, name)) {
@@ -286,8 +287,7 @@ export class PluginTrack {
       case "shape":
         return pickOutputs(outputs, declaration.outputs, path);
       case "typed": {
-        if (!isPlainRecord(outputs))
-          throw inputFailure(path, `Typed slot received no output set.`);
+        if (!isPlainRecord(outputs)) throw inputFailure(path, `Typed slot received no output set.`);
         const value = outputs.values;
         if (!isValue(value))
           throw inputFailure(`${path}.values`, `Typed slot requires a values output.`);
@@ -328,8 +328,7 @@ export class PluginTrack {
     if (typed.length === 0) return Object.freeze([]);
     for (const [slot, spec] of typed)
       if (structures[slot] === undefined && spec.optional !== true) return Object.freeze([]);
-    if (sameSourceStructures(this.#checkedStructures, structures))
-      return this.#checkedWarnings;
+    if (sameSourceStructures(this.#checkedStructures, structures)) return this.#checkedWarnings;
     let warnings: readonly Diagnostic[];
     try {
       warnings = check(structures);

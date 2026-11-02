@@ -24,7 +24,8 @@ const DEMO: PluginDefinition = {
       chain: shape({
         outputs: { values: { kind: "table", schema: { row: { fields: {} } } } },
         optional: true,
-      })},
+      }),
+    },
   },
   outputs: { values: { kind: "table", schema: { row: { fields: {} } } } },
   transform() {

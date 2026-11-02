@@ -40,8 +40,8 @@ export function rootEntity(value: unknown): Root {
 }
 
 export function solvedEntity(value: unknown): Solved {
-  const rows = (value as readonly { readonly id: string; readonly cells: Readonly<Record<string, never>> }[]).map(
-    (row) => ({ id: row.id, cells: row.cells }),
-  );
+  const rows = (
+    value as readonly { readonly id: string; readonly cells: Readonly<Record<string, never>> }[]
+  ).map((row) => ({ id: row.id, cells: row.cells }));
   return { rows, byId: new Map(rows.map((row) => [row.id, row])) };
 }

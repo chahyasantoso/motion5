@@ -18,7 +18,7 @@ const TRANSLATE: PluginDefinition = {
   id: "translate",
   inputs: {
     values: { kind: "record", fields: { dx: { kind: "number" } } },
-    requires: { data: shape({ outputs: { values: POINT } })},
+    requires: { data: shape({ outputs: { values: POINT } }) },
   },
   outputs: { values: POINT },
   transform() {

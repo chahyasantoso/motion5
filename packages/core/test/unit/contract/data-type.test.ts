@@ -159,7 +159,16 @@ describe("self-validating data tracks", () => {
       nodeId: "~/points",
       values: {
         kind: "table",
-        rows: [{ id: "a", cells: { owner: { kind: "static", scalar: "string", value: "acme" }, x: { kind: "static", scalar: "number", value: 0 }, y: { kind: "static", scalar: "number", value: 1 } } }],
+        rows: [
+          {
+            id: "a",
+            cells: {
+              owner: { kind: "static", scalar: "string", value: "acme" },
+              x: { kind: "static", scalar: "number", value: 0 },
+              y: { kind: "static", scalar: "number", value: 1 },
+            },
+          },
+        ],
       },
       interpolator: createFakeInterpolator(),
       dataType: point2d,

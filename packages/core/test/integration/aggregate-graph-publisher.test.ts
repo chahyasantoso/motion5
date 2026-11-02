@@ -34,7 +34,7 @@ const consumerPlugin: PluginDefinition = {
   id: "consumer-plugin",
   inputs: {
     values: { kind: "record", fields: {} },
-    requires: { source: shape({ outputs: { values: POSE_2D_SPEC } })},
+    requires: { source: shape({ outputs: { values: POSE_2D_SPEC } }) },
   },
   outputs: { values: CONSUMER_SPEC },
   transform() {

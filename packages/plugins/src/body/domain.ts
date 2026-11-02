@@ -210,8 +210,7 @@ export function bindBody(structure: BodyStructure, value: unknown): Body {
     }
     byId.set(raw.id, { id: raw.id, cells: Object.freeze(cells) });
   }
-  if (byId.size !== structure.ids.length)
-    throw new TypeError("Body row set changed after commit.");
+  if (byId.size !== structure.ids.length) throw new TypeError("Body row set changed after commit.");
   const rows = structure.ids.map((id) => {
     const row = byId.get(id);
     if (row === undefined) throw new TypeError(`Body row '${id}' is missing after commit.`);

@@ -1,9 +1,4 @@
-import type {
-  SlotSpec,
-  TrackDefinition,
-  PluginDefinition,
-  SourceBinding,
-} from "../contract/v5";
+import type { SlotSpec, TrackDefinition, PluginDefinition, SourceBinding } from "../contract/v5";
 import { GENERIC_DATA_TYPE_ID } from "../contract/generic-data";
 import { deriveSourceContract, type SourceContract } from "../contract/v5-infer";
 import { parseTrackDefinition } from "../contract/v5-parse";

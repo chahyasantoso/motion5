@@ -10,14 +10,9 @@ function issuePath(parent: string, issue: TypeIssue): string {
   return `${parent}${suffix}`;
 }
 
-function issueDiagnostics(
-  issues: readonly TypeIssue[],
-  path: string,
-): readonly Diagnostic[] {
+function issueDiagnostics(issues: readonly TypeIssue[], path: string): readonly Diagnostic[] {
   return Object.freeze(
-    issues.map((issue) =>
-      diagnostic("data-type-invalid", issuePath(path, issue), issue.message),
-    ),
+    issues.map((issue) => diagnostic("data-type-invalid", issuePath(path, issue), issue.message)),
   );
 }
 

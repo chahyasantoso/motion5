@@ -29,7 +29,7 @@ const TRANSLATE: PluginDefinition = {
   id: "translate",
   inputs: {
     values: { kind: "record", fields: { dx: { kind: "number" } } },
-    requires: { data: shape({ outputs: { values: POINT } })},
+    requires: { data: shape({ outputs: { values: POINT } }) },
   },
   outputs: { values: POINT },
   transform() {
@@ -134,7 +134,7 @@ describe("the edit union answers its tier and its overlay verdict", () => {
       id: "optional-translate",
       inputs: {
         values: { kind: "record", fields: { dx: { kind: "number" } } },
-        requires: { data: shape({ outputs: { values: POINT }, optional: true })},
+        requires: { data: shape({ outputs: { values: POINT }, optional: true }) },
       },
       outputs: { values: POINT },
       transform() {

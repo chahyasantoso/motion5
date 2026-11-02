@@ -8,6 +8,4 @@ export interface SourceRef {
 }
 
 /** Source refs by slot; map slots add one member level. */
-export type SlotSources = Readonly<
-  Record<string, SourceRef | Readonly<Record<string, SourceRef>>>
->;
+export type SlotSources = Readonly<Record<string, SourceRef | Readonly<Record<string, SourceRef>>>>;

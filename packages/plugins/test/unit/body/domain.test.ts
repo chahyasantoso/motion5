@@ -18,7 +18,9 @@ describe("body domain", () => {
   });
 
   it("refuses an unknown parent", () => {
-    const result = parse([{ id: "child", cells: { parentId: "missing", length: 10, rotation: 0 } }]);
+    const result = parse([
+      { id: "child", cells: { parentId: "missing", length: 10, rotation: 0 } },
+    ]);
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.errors[0]?.kind).toBe("parent-unknown");
   });

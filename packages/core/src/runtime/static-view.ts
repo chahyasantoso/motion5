@@ -12,7 +12,9 @@ function isAuthoredTable(values: AuthoredValues): values is readonly AuthoredRow
   return Array.isArray(values);
 }
 
-function isTable(value: Value): value is readonly { readonly id: string; readonly cells: Readonly<Record<string, Scalar>> }[] {
+function isTable(
+  value: Value,
+): value is readonly { readonly id: string; readonly cells: Readonly<Record<string, Scalar>> }[] {
   return Array.isArray(value);
 }
 
@@ -40,13 +42,13 @@ function pickCells(
   names: readonly string[],
 ): Readonly<Record<string, Scalar>> {
   const picked: Record<string, Scalar> = {};
-  for (const name of names)
-    if (Object.hasOwn(cells, name)) picked[name] = cells[name]!;
+  for (const name of names) if (Object.hasOwn(cells, name)) picked[name] = cells[name]!;
   return Object.freeze(picked);
 }
 
 function authoredScalar(cell: AuthoredCell): Scalar | undefined {
-  if (typeof cell === "number" || typeof cell === "string" || typeof cell === "boolean") return cell;
+  if (typeof cell === "number" || typeof cell === "string" || typeof cell === "boolean")
+    return cell;
   const first = cell[0];
   return first === undefined ? undefined : (first.v as Scalar);
 }

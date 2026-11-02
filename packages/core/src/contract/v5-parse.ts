@@ -185,7 +185,9 @@ function readType(
     return undefined;
   }
   if (context.dataType !== undefined && context.dataType(value) === undefined)
-    diagnostics.push(diagnostic("data-type-unknown", path, `Data type '${value}' is not admitted.`));
+    diagnostics.push(
+      diagnostic("data-type-unknown", path, `Data type '${value}' is not admitted.`),
+    );
   return value;
 }
 
@@ -883,12 +885,7 @@ function readInput(
       );
     else schema = readValueSpec(value.schema, `${path}.schema`, diagnostics);
   }
-  const values = readValues(
-    value.values,
-    `${path}.values`,
-    schema ?? typedSpec,
-    diagnostics,
-  );
+  const values = readValues(value.values, `${path}.values`, schema ?? typedSpec, diagnostics);
   return Object.freeze({
     ...(values === undefined ? {} : { values }),
     requires,
@@ -936,8 +933,7 @@ export function parseTrackDefinition(
       diagnostic("track-shape", `${path}.type`, "A track is either typed data or a plugin track."),
     );
   const duration = readDuration(track.duration, `${path}.duration`, diagnostics);
-  const typedSpec =
-    type === undefined ? undefined : context.dataType?.(type)?.spec;
+  const typedSpec = type === undefined ? undefined : context.dataType?.(type)?.spec;
   const input = readInput(
     track.input,
     `${path}.input`,
@@ -947,7 +943,11 @@ export function parseTrackDefinition(
   );
   if (type !== undefined && input.schema !== undefined)
     diagnostics.push(
-      diagnostic("track-shape", `${path}.input.schema`, "A typed track takes its schema from its type."),
+      diagnostic(
+        "track-shape",
+        `${path}.input.schema`,
+        "A typed track takes its schema from its type.",
+      ),
     );
   if (id === undefined || hasError(diagnostics)) return refusedOutcomeFrom(diagnostics);
   return acceptedOutcome(

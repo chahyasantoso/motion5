@@ -465,10 +465,7 @@ export class Engine {
     try {
       for (const nodeId of nodes.keys()) compile(nodeId);
       const checkCommittedSources = (): void => {
-        const checkTrack = (
-          track: TrackDefinition,
-          sourceId: (source: string) => string,
-        ): void => {
+        const checkTrack = (track: TrackDefinition, sourceId: (source: string) => string): void => {
           const pluginId = track.plugin;
           const requires = track.input?.requires;
           if (pluginId === undefined || requires === undefined) return;
@@ -533,8 +530,7 @@ export class Engine {
         const refs: Record<string, SourceRef | Record<string, SourceRef>> = {};
         for (const edge of node.edges) {
           const sourceTrack = tracks.get(edge.sourceId);
-          const structure =
-            sourceTrack instanceof ValueTrack ? sourceTrack.structure : undefined;
+          const structure = sourceTrack instanceof ValueTrack ? sourceTrack.structure : undefined;
           const ref: SourceRef = {
             sourceId: edge.sourceId,
             ...(structure === undefined ? {} : { structure }),

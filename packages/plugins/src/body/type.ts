@@ -16,7 +16,10 @@ export function bodyIssue(error: BodyError): TypeIssue {
     case "parent-shape":
       return { path: [], message: `Body row '${error.id}' parentId must be a non-empty string.` };
     case "parent-unknown":
-      return { path: [], message: `Body row '${error.id}' names unknown parent '${error.parentId}'.` };
+      return {
+        path: [],
+        message: `Body row '${error.id}' names unknown parent '${error.parentId}'.`,
+      };
     case "parent-self":
       return { path: [], message: `Body row '${error.id}' cannot parent itself.` };
     case "parent-cycle":

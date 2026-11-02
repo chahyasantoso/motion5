@@ -73,11 +73,7 @@ export const fk3dPlugin: PluginDefinition<Fk3dInput> = {
     const diagnostics = chain.ids
       .filter((id) => !solvedIds.has(id))
       .map((id) =>
-        diagnostic(
-          "plugin-validation-failed",
-          "solved",
-          `Solver row missing for member "${id}".`,
-        ),
+        diagnostic("plugin-validation-failed", "solved", `Solver row missing for member "${id}".`),
       );
     return Object.freeze(diagnostics);
   },

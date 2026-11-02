@@ -55,6 +55,7 @@ export type { SchemaTransaction } from "./contract/schema-transaction";
 export type { ValueTransaction } from "./contract/value-transaction";
 /** Identified-table plugin registry + admission refusal. `EngineOptions.plugins` takes a `PluginCatalog`. */
 export { PluginAdmissionError, PluginCatalog } from "./domain/plugin-catalog";
+export type { DescribedSlot, PluginDescription } from "./domain/plugin-catalog";
 export type {
   DependencySpec,
   EvaluationContext,

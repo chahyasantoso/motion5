@@ -5,20 +5,21 @@ are the complete shape. **Now** and **Next in line** carry exactly one bullet ea
 states a phase; `packages/core/test/unit/scripts/session-status-shape.test.ts` enforces the shape and
 byte ceiling.
 
-- **Captured:** 2026-10-29, Asia/Jakarta.
-- **Read against:** `refactor/v5-identified-tables` after the removal gate.
+- **Captured:** 2026-11-02, Asia/Jakarta.
+- **Read against:** `feat/v5.1-self-validating-tracks` after the full check gate.
 
 ## Now
 
-- **One v5 contract is live:** identified tables and records under `input.values`, one
-  `PluginCatalog`, one input-edge graph, one core selector and one React row projection. The grouped
-  registry, authored grouped readers, output-edge merge, legacy plugin layer and v4 converter are
-  deleted; the pending ledger is empty and all three apps build and pass their smoke evidence.
+- **One v5.1 contract is live:** a data track declares its type, commit brands one `Structure` on
+  the compiled track, typed slots verify nominal fit, live writes cannot move static cells, and 2D
+  and 3D body, goal, root and solved rules live in pure domain modules. `fk`/`fk3d` solved slots are
+  optional at rest, idle tracks are not reseeded, and catalog `describe`, graph `explain` and
+  `assertStable` tooling are present.
 
 ## Next in line
 
-- **Await the owner's decision before any v5.1 work:** Phase 6 and Phase 7 are complete, and the
-  validation-contract plan is not started until the owner says so.
+- **Await the owner's review before any further slice:** the v5.1 branch is green and ready for
+  review; no new phase starts until the owner decides.
 
 ## Open, and not scheduled
 

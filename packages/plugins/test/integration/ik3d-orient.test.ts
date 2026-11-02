@@ -377,9 +377,9 @@ describe("3D orientation and goal influence through Engine", () => {
       for (const t of ARM_TRACKS) live.runtime.seek(t, progress);
       expect(live.seek(progress)).toEqual(plain(progress));
 
-      expect(() =>
-        bodyTrack.input.values.setField({ row: "fore", field: "orient" }, 2),
-      ).toThrow(/cell-form-invalid .*above the declared maximum 1/);
+      expect(() => bodyTrack.input.values.setField({ row: "fore", field: "orient" }, 2)).toThrow(
+        /cell-form-invalid .*above the declared maximum 1/,
+      );
       expect(() =>
         bodyTrack.writeValues([
           { id: "upper", cells: { length: 55, rotation: 0, rotationX: 0, rotationY: 0 } },

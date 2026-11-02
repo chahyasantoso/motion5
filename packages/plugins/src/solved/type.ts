@@ -1,6 +1,12 @@
 import type { DataType, Parsed, Structure, TypeIssue, Value } from "@motion5/core/plugin-api";
 import { unreachable } from "@motion5/core/plugin-api";
-import { bindSolved, parseSolved, type Solved, type SolvedError, type SolvedStructure } from "./domain";
+import {
+  bindSolved,
+  parseSolved,
+  type Solved,
+  type SolvedError,
+  type SolvedStructure,
+} from "./domain";
 import { SOLVED_2D_SPEC } from "./fields";
 
 export function solvedIssue(error: SolvedError): TypeIssue {
@@ -8,7 +14,10 @@ export function solvedIssue(error: SolvedError): TypeIssue {
     case "table-shape":
       return { path: [], message: error.message };
     case "row-shape":
-      return { path: [String(error.index)], message: "A solved row needs an id and a cells object." };
+      return {
+        path: [String(error.index)],
+        message: "A solved row needs an id and a cells object.",
+      };
     case "row-id":
       return { path: [String(error.index), "id"], message: "A solved row id must be non-empty." };
     case "row-id-duplicate":
