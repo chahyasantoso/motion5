@@ -4,6 +4,7 @@ import { Engine, PluginCatalog, createManualClock, type ProjectDefinition } from
 import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/testing";
 import { ik3dPlugin } from "../../src/ik3d";
 import { AggregateTopologyError, BODY_3D_SPEC, GOALS_3D_SPEC } from "../../src/aggregate-topology";
+import { goalsEntity, rootEntity } from "../support/typed-rig";
 
 const solver = vi.hoisted(() => ({ calls: 0 }));
 vi.mock("../../src/ik3d-solve", async (importOriginal) => {
@@ -45,12 +46,13 @@ function input(
   options: { inspect?: boolean; chain?: unknown; goals?: unknown; pole?: object | null } = {},
 ) {
   const { inspect = true, chain = BODY, goals = GOALS, pole = POLE } = options;
+  const rig = goalsEntity(chain, goals);
   return {
     values: { inspect },
     requires: {
-      chain: { values: chain },
-      goals: { values: goals },
-      base: { values: ROOT },
+      chain: rig.body,
+      goals: rig.goals,
+      base: rootEntity(ROOT),
       ...(pole === null ? {} : { pole: { values: pole } }),
     },
   } as never;
@@ -206,12 +208,12 @@ function project(
         id: motion,
         trigger: { type: "manual" },
         tracks: [
-          { id: ids.root, input: { values: ROOT } },
+          { id: ids.root, type: "root3d", input: { values: ROOT } },
           { id: ids.pole, input: { values: { x: 0, y: 0, z: 100 } } },
           {
             id: ids.body,
+            type: "body3d",
             input: {
-              schema: BODY_3D_SPEC,
               values: [
                 { id: "upper", cells: { length: 50 } },
                 { id: "left", cells: { parentId: "upper", length: 35 } },
@@ -220,8 +222,8 @@ function project(
           },
           {
             id: ids.goals,
+            type: "goals3d",
             input: {
-              schema: GOALS_3D_SPEC,
               values: [{ id: "g", cells: { memberId: "left", x: 60, y: 20, z: goalZ } }],
             },
           },
@@ -345,13 +347,14 @@ describe("aggregate 3D IK captured twins", () => {
   it("AJ-10 reproduces every case captured from the grouped plugin bit for bit", () => {
     expect(Object.keys(GOLDENS).length).toBeGreaterThanOrEqual(17);
     for (const [name, { input: twin, expected }] of Object.entries(GOLDENS)) {
+      const rig = goalsEntity(twin.body, twin.goals);
       const result = ik3dPlugin.transform(
         {
           values: twin.values ?? { inspect: true },
           requires: {
-            chain: { values: twin.body },
-            goals: { values: twin.goals },
-            base: { values: twin.base },
+            chain: rig.body,
+            goals: rig.goals,
+            base: rootEntity(twin.base),
             ...(twin.pole === undefined ? {} : { pole: { values: twin.pole } }),
           },
         } as never,

@@ -160,12 +160,14 @@ function armProject(orient: boolean | number, zeroHand = false): ProjectDefiniti
         tracks: [
           {
             id: "root",
+            type: "root3d",
             input: {
               values: { x: 5, y: -4, z: 7, rotation: 12, rotationX: -8, rotationY: 15 },
             },
           },
           {
             id: "goals",
+            type: "goals3d",
             input: {
               values: [
                 {
@@ -183,6 +185,7 @@ function armProject(orient: boolean | number, zeroHand = false): ProjectDefiniti
           },
           {
             id: "body",
+            type: "body3d",
             input: { values: bodyRows },
           },
           {
@@ -220,10 +223,12 @@ function branchProject(influences?: readonly [number, number]): ProjectDefinitio
         tracks: [
           {
             id: "root",
+            type: "root3d",
             input: { values: { x: 0, y: 0, z: 0, rotation: 0, rotationX: 0, rotationY: 0 } },
           },
           {
             id: "goals",
+            type: "goals3d",
             input: {
               values: [
                 {
@@ -251,6 +256,7 @@ function branchProject(influences?: readonly [number, number]): ProjectDefinitio
           },
           {
             id: "body",
+            type: "body3d",
             input: {
               values: [
                 { id: "shared", cells: { length: 50, rotation: 0, rotationX: 0, rotationY: 0 } },
@@ -357,67 +363,39 @@ describe("3D orientation and goal influence through Engine", () => {
     expect(weightedB).toBeGreaterThan(plainB);
   });
 
-  it("TH-109 a live orient write turns the leaf exactly as the authored one does, a write back to 0 restores the solve, and an out-of-domain write reads as no orientation", () => {
+  it("TH-109 an authored orient edit turns the leaf exactly as the other authored case, restoring 0 restores the solve, and a live write to it is refused", () => {
     const authored = mounted(armProject(true), ARM_TRACKS);
     const plain = mounted(armProject(false), ARM_TRACKS);
     const live = mountedHandle(armProject(0), ARM_TRACKS);
     const bodyTrack = live.runtime.track("rig/body");
     for (const progress of PROGRESS) {
-      bodyTrack.writeValues([
-        { id: "upper", cells: { length: 55, rotation: 0, rotationX: 0, rotationY: 0 } },
-        {
-          id: "fore",
-          cells: {
-            parentId: "upper",
-            length: 45,
-            rotation: 0,
-            rotationX: 0,
-            rotationY: 0,
-            orient: 1,
-          },
-        },
-      ]);
+      bodyTrack.input.values.setField({ row: "fore", field: "orient" }, 1);
       for (const t of ARM_TRACKS) live.runtime.seek(t, progress);
       expect(live.seek(progress)).toEqual(authored(progress));
 
-      bodyTrack.writeValues([
-        { id: "upper", cells: { length: 55, rotation: 0, rotationX: 0, rotationY: 0 } },
-        {
-          id: "fore",
-          cells: {
-            parentId: "upper",
-            length: 45,
-            rotation: 0,
-            rotationX: 0,
-            rotationY: 0,
-            orient: 0,
-          },
-        },
-      ]);
+      bodyTrack.input.values.setField({ row: "fore", field: "orient" }, 0);
       for (const t of ARM_TRACKS) live.runtime.seek(t, progress);
       expect(live.seek(progress)).toEqual(plain(progress));
 
-      const batch = bodyTrack.writeValues([
-        { id: "upper", cells: { length: 55, rotation: 0, rotationX: 0, rotationY: 0 } },
-        {
-          id: "fore",
-          cells: {
-            parentId: "upper",
-            length: 45,
-            rotation: 0,
-            rotationX: 0,
-            rotationY: 0,
-            orient: 2,
+      expect(() =>
+        bodyTrack.input.values.setField({ row: "fore", field: "orient" }, 2),
+      ).toThrow(/cell-form-invalid .*above the declared maximum 1/);
+      expect(() =>
+        bodyTrack.writeValues([
+          { id: "upper", cells: { length: 55, rotation: 0, rotationX: 0, rotationY: 0 } },
+          {
+            id: "fore",
+            cells: {
+              parentId: "upper",
+              length: 45,
+              rotation: 0,
+              rotationX: 0,
+              rotationY: 0,
+              orient: 1,
+            },
           },
-        },
-      ]);
-      expect(
-        batch.diagnostics.some(
-          (d) =>
-            d.ruleId === "plugin-input-invalid" &&
-            d.message.includes("expected at most 1, received 2"),
-        ),
-      ).toBe(true);
+        ]),
+      ).toThrow(/live-values-invalid/);
     }
     live.runtime.dispose();
   });

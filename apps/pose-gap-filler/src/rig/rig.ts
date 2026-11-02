@@ -24,10 +24,12 @@ function imageLimbTracks(limb: LimbId): readonly TrackDefinition[] {
   return [
     {
       id: ids.root,
+      type: "root2d",
       input: { values: { x: 0, y: 0, rotation: 0 } },
     },
     {
       id: ids.body,
+      type: "body2d",
       input: {
         values: [
           { id: ids.upper, cells: { length: INITIAL_LENGTH, rotation: 0, weight: 1 } },
@@ -40,6 +42,7 @@ function imageLimbTracks(limb: LimbId): readonly TrackDefinition[] {
     },
     {
       id: ids.goal,
+      type: "goals2d",
       input: {
         values: [{ id: ids.goal, cells: { memberId: ids.lower, x: 0, y: INITIAL_LENGTH * 1.5 } }],
       },
@@ -90,6 +93,7 @@ function worldLimbTracks(limb: LimbId): readonly TrackDefinition[] {
   return [
     {
       id: ids.root,
+      type: "root3d",
       input: {
         values: {
           x: 0,
@@ -103,6 +107,7 @@ function worldLimbTracks(limb: LimbId): readonly TrackDefinition[] {
     },
     {
       id: ids.body,
+      type: "body3d",
       input: {
         values: [
           {
@@ -131,6 +136,7 @@ function worldLimbTracks(limb: LimbId): readonly TrackDefinition[] {
     },
     {
       id: ids.goal,
+      type: "goals3d",
       input: {
         values: [
           {
@@ -147,6 +153,7 @@ function worldLimbTracks(limb: LimbId): readonly TrackDefinition[] {
     },
     {
       id: ids.pole,
+      type: "root3d",
       input: {
         values: { x: 0, y: 0, z: INITIAL_LENGTH, rotation: 0, rotationX: 0, rotationY: 0 },
       },

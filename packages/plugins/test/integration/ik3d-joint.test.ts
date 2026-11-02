@@ -45,15 +45,15 @@ const PROJECT: ProjectDefinition = {
       tracks: [
         {
           id: "root",
+          type: "root3d",
           input: {
-            schema: ROOT_3D_SPEC,
             values: { x: 4, y: -2, z: 1, rotation: 15, rotationX: 0, rotationY: 0 },
           },
         },
         {
           id: "body",
+          type: "body3d",
           input: {
-            schema: BODY_3D_SPEC,
             values: [
               {
                 id: "upper",
@@ -84,8 +84,8 @@ const PROJECT: ProjectDefinition = {
         },
         {
           id: "goal",
+          type: "goals3d",
           input: {
-            schema: GOALS_3D_SPEC,
             values: [
               {
                 id: "g",

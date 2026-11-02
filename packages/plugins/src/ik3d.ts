@@ -1,18 +1,19 @@
-import { shape, type PluginDefinition, type Outputs, type ValueSpec } from "@motion5/core/plugin-api";
 import {
-  BODY_3D_SLOT,
-  EXTERNAL_BASE,
-  GOALS_3D_SLOT,
-  ROOT_3D_SPEC,
-  SOLVED_3D_SPEC,
-  readAggregateTopology,
-  readGoalTargets,
-  type AggregateRow,
-  type AggregateTopology,
-} from "./aggregate-topology";
+  typed,
+  type Outputs,
+  type PluginDefinition,
+  type SourceStructures,
+  type Structure,
+  type ValueSpec,
+} from "@motion5/core/plugin-api";
+import { EXTERNAL_BASE, type Body, type BodyStructure } from "./body/domain";
+import { body3d } from "./body3d/type";
 import { readNumber } from "./frame";
 import { readEuler3d, readFrame3d, readPivotOffset3d } from "./frame3d";
 import type { Euler3d } from "./frame3d";
+import { goalDiagnostics } from "./goals/check";
+import type { Goals, GoalsStructure } from "./goals/domain";
+import { goals3d } from "./goals3d/type";
 import { readInfluence } from "./ik-goal";
 import { inspectSolve } from "./ik-result";
 import { readPole3d } from "./ik3d-analytic";
@@ -20,6 +21,9 @@ import { constrains, readJointLimit3d } from "./ik3d-constraint";
 import { readOrient } from "./ik3d-orient";
 import type { ChainMember3d } from "./ik3d-chain";
 import { solveChain3d } from "./ik3d-solve";
+import type { Root } from "./root/domain";
+import { root3d } from "./root3d/type";
+import { SOLVED_3D_SPEC } from "./solved3d/fields";
 
 const FRAME: ValueSpec = {
   kind: "record",
@@ -45,6 +49,16 @@ const INSPECT: ValueSpec = {
 
 type FlatRecord = Readonly<Record<string, number | string | boolean>>;
 
+type Ik3dInput = {
+  readonly values: FlatRecord;
+  readonly requires: {
+    readonly chain: Body;
+    readonly goals: Goals;
+    readonly base: Root;
+    readonly pole?: Outputs;
+  };
+};
+
 function flatRecord(value: unknown, path: string): FlatRecord {
   if (value === null || typeof value !== "object" || Array.isArray(value))
     throw new TypeError(`IK3d requires a record at ${path}.`);
@@ -63,18 +77,15 @@ function recordOutput(outputs: Outputs, path: string): FlatRecord {
   return flatRecord(values, `${path}.values`);
 }
 
-function solveMembers3d(
-  topology: AggregateTopology,
-  goals: ReadonlyMap<string, AggregateRow>,
-): readonly ChainMember3d[] {
-  return topology.rows.map((row): ChainMember3d => {
-    const goal = goals.get(row.id);
+function solveMembers3d(chain: Body, goals: Goals): readonly ChainMember3d[] {
+  return chain.rows.map((row): ChainMember3d => {
+    const goal = goals.byMember.get(row.id);
     const limit = readJointLimit3d(row.cells);
     const influence = goal === undefined ? undefined : readInfluence(goal.cells);
     const orient = readOrient(row.cells);
     return {
       id: row.id,
-      base: topology.parentById.get(row.id) ?? EXTERNAL_BASE,
+      base: chain.parentById.get(row.id) ?? EXTERNAL_BASE,
       length: readNumber(row.cells.length),
       offset: readPivotOffset3d(row.cells),
       rest: readEuler3d(row.cells),
@@ -107,7 +118,11 @@ function outputRows(result: ReturnType<typeof solveChain3d>, members: readonly C
   });
 }
 
-export const ik3dPlugin: PluginDefinition = {
+function structureOf<T>(structures: SourceStructures, slot: string): Structure<T> | undefined {
+  return structures[slot] as Structure<T> | undefined;
+}
+
+export const ik3dPlugin: PluginDefinition<Ik3dInput> = {
   id: "ik3d",
   inputs: {
     values: {
@@ -117,26 +132,26 @@ export const ik3dPlugin: PluginDefinition = {
       },
     },
     requires: {
-      chain: shape({ outputs: { values: BODY_3D_SLOT } }),
-      goals: shape({ outputs: { values: GOALS_3D_SLOT } }),
-      base: shape({ outputs: { values: ROOT_3D_SPEC } }),
-      pole: shape({ optional: true, outputs: { values: FRAME } }),
+      chain: typed(body3d),
+      goals: typed(goals3d),
+      base: typed(root3d),
+      pole: { kind: "shape", optional: true, outputs: { values: FRAME } },
     },
   },
   outputs: { values: SOLVED_3D_SPEC, inspect: { ...INSPECT, optional: true } },
+  checkSources(structures) {
+    const chain = structureOf<BodyStructure>(structures, "chain");
+    const goals = structureOf<GoalsStructure>(structures, "goals");
+    if (chain === undefined || goals === undefined) return Object.freeze([]);
+    return goalDiagnostics(chain, goals);
+  },
   transform({ values, requires }) {
     const local = flatRecord(values, "input.values");
-    const topology = readAggregateTopology((requires.chain as Outputs).values);
-    const goals = readGoalTargets(topology, (requires.goals as Outputs).values);
-    const members = solveMembers3d(topology, goals);
+    const members = solveMembers3d(requires.chain, requires.goals);
     const pole = readPole3d(
-      requires.pole === undefined ? undefined : recordOutput(requires.pole as Outputs, "pole"),
+      requires.pole === undefined ? undefined : recordOutput(requires.pole, "pole"),
     );
-    const result = solveChain3d(
-      readFrame3d(recordOutput(requires.base as Outputs, "base")),
-      members,
-      pole,
-    );
+    const result = solveChain3d(readFrame3d(requires.base), members, pole);
     const inspection = inspectSolve(result);
     return {
       values: outputRows(result, members),

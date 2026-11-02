@@ -220,15 +220,15 @@ describe("pose classifier graph integration", () => {
           tracks: [
             {
               id: "root",
+              type: "root3d",
               input: {
-                schema: ROOT_3D_SPEC,
                 values: { x: 0, y: 0, z: 0, rotation: 0, rotationX: 0, rotationY: 0 },
               },
             },
             {
               id: "body",
+              type: "body3d",
               input: {
-                schema: BODY_3D_SPEC,
                 values: [
                   {
                     id: "wrist",
@@ -248,8 +248,8 @@ describe("pose classifier graph integration", () => {
             },
             {
               id: "solved",
+              type: "solved3d",
               input: {
-                schema: SOLVED_3D_SPEC,
                 values: [
                   {
                     id: "wrist",

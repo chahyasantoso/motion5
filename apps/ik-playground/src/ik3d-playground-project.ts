@@ -56,6 +56,7 @@ export const IK3D = {
 function bodyTrack(): TrackDefinition {
   return {
     id: IK3D.bodyTrack,
+    type: "body3d",
     input: {
       values: IK3D.memberTracks.map((id, index) => {
         const [rotation, rotationX, rotationY] = IK3D.rest[index]!;
@@ -81,6 +82,7 @@ function bodyTrack(): TrackDefinition {
 function goalsTrack(): TrackDefinition {
   return {
     id: IK3D.goalsTrack,
+    type: "goals3d",
     input: {
       values: [
         {
@@ -95,6 +97,7 @@ function goalsTrack(): TrackDefinition {
 export const ik3dPlaygroundTracks: readonly TrackDefinition[] = [
   {
     id: IK3D.rootTrack,
+    type: "root3d",
     input: {
       values: {
         x: IK3D.root.x,

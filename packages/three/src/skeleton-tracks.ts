@@ -80,21 +80,22 @@ export function skeletonTracks(
   return [
     {
       id: rootId,
+      type: "root3d",
       input: {
         values: { x: 0, y: 0, z: 0, rotation: 0, rotationX: 0, rotationY: 0 },
       },
     },
     {
       id: bodyId,
+      type: "body3d",
       input: {
-        schema: BODY_3D_SPEC,
         values: bodyValues,
       },
     },
     {
       id: solvedId,
+      type: "solved3d",
       input: {
-        schema: SOLVED_3D_SPEC,
         values: solvedValues,
       },
     },

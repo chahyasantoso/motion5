@@ -1,13 +1,12 @@
-import { shape, unreachable } from "@motion5/core/plugin-api";
-import type { PluginDefinition, Outputs } from "@motion5/core/plugin-api";
 import {
-  BODY_3D_SLOT,
-  POSE_3D_SPEC,
-  ROOT_3D_SPEC,
-  SOLVED_3D_SLOT,
-  readAggregateTopology,
-  type AggregateRow,
-} from "./aggregate-topology";
+  diagnostic,
+  typed,
+  type PluginDefinition,
+  type SourceStructures,
+  type Structure,
+} from "@motion5/core/plugin-api";
+import type { Body, BodyStructure } from "./body/domain";
+import { body3d } from "./body3d/type";
 import {
   blendOrientation3d,
   composeWorld3d,
@@ -19,106 +18,85 @@ import {
   type WorldFrame3d,
 } from "./frame3d";
 import { clamp, readNumber, segmentExtent } from "./frame";
+import type { Root } from "./root/domain";
+import { root3d } from "./root3d/type";
+import type { Solved, SolvedRow, SolvedStructure } from "./solved/domain";
+import { solved3d } from "./solved3d/type";
+import { POSE_3D_SPEC } from "./aggregate-topology";
 
-type FlatRecord = Readonly<Record<string, number | string | boolean>>;
-type TableOutput = {
-  readonly values: readonly { readonly id: string; readonly cells: FlatRecord }[];
+type Fk3dInput = {
+  readonly values: Readonly<Record<string, never>>;
+  readonly requires: {
+    readonly chain: Body;
+    readonly solved?: Solved;
+    readonly base: Root;
+  };
 };
 
-type SolvedRowLookup3d =
-  | { readonly kind: "found"; readonly row: AggregateRow }
-  | { readonly kind: "missing"; readonly id: string };
-
-function flatRecord(value: unknown, path: string): FlatRecord {
-  if (value === null || typeof value !== "object" || Array.isArray(value))
-    throw new TypeError(`FK3d requires a record at ${path}.`);
-  return value as FlatRecord;
-}
-
-function recordOutput(outputs: Outputs, path: string): FlatRecord {
-  const values = outputs.values;
+function solvedOrientation(row: SolvedRow | undefined, id: string): Euler3d {
+  if (row === undefined) throw new TypeError(`FK3d solver row missing for member "${id}".`);
+  const rotation = row.cells.rotation;
+  const rotationX = row.cells.rotationX;
+  const rotationY = row.cells.rotationY;
   if (
-    values === undefined ||
-    Array.isArray(values) ||
-    values === null ||
-    typeof values !== "object"
+    typeof rotation !== "number" ||
+    !Number.isFinite(rotation) ||
+    typeof rotationX !== "number" ||
+    !Number.isFinite(rotationX) ||
+    typeof rotationY !== "number" ||
+    !Number.isFinite(rotationY)
   )
-    throw new TypeError(`FK3d requires a record output at ${path}.`);
-  return flatRecord(values, `${path}.values`);
+    throw new TypeError(`FK3d solver row for member "${row.id}" has no finite orientation.`);
+  return { rotation, rotationX, rotationY };
 }
 
-function tableOutput(outputs: Outputs, path: string): TableOutput["values"] {
-  const values = outputs.values;
-  if (!Array.isArray(values)) throw new TypeError(`FK3d requires a table output at ${path}.`);
-  return values as TableOutput["values"];
+function structureOf<T>(structures: SourceStructures, slot: string): Structure<T> | undefined {
+  return structures[slot] as Structure<T> | undefined;
 }
 
-function lookupSolvedRow3d(
-  solvedById: ReadonlyMap<string, AggregateRow>,
-  id: string,
-): SolvedRowLookup3d {
-  const row = solvedById.get(id);
-  return row === undefined ? { kind: "missing", id } : { kind: "found", row };
-}
-
-function solvedOrientation(lookup: SolvedRowLookup3d): Euler3d {
-  switch (lookup.kind) {
-    case "found": {
-      const rotation = lookup.row.cells.rotation;
-      const rotationX = lookup.row.cells.rotationX;
-      const rotationY = lookup.row.cells.rotationY;
-      if (
-        typeof rotation !== "number" ||
-        !Number.isFinite(rotation) ||
-        typeof rotationX !== "number" ||
-        !Number.isFinite(rotationX) ||
-        typeof rotationY !== "number" ||
-        !Number.isFinite(rotationY)
-      )
-        throw new TypeError(
-          `FK3d solver row for member "${lookup.row.id}" has no finite orientation.`,
-        );
-      return { rotation, rotationX, rotationY };
-    }
-    case "missing":
-      throw new TypeError(`FK3d solver row missing for member "${lookup.id}".`);
-    default:
-      return unreachable(lookup);
-  }
-}
-
-export const fk3dPlugin: PluginDefinition = {
+export const fk3dPlugin: PluginDefinition<Fk3dInput> = {
   id: "fk3d",
   inputs: {
     values: { kind: "record", fields: {} },
     requires: {
-      chain: shape({ outputs: { values: BODY_3D_SLOT } }),
-      solved: shape({ outputs: { values: SOLVED_3D_SLOT }, optional: true }),
-      base: shape({ outputs: { values: ROOT_3D_SPEC } }),
+      chain: typed(body3d),
+      solved: typed(solved3d, { optional: true }),
+      base: typed(root3d),
     },
   },
   outputs: { values: POSE_3D_SPEC },
+  checkSources(structures) {
+    const chain = structureOf<BodyStructure>(structures, "chain");
+    const solved = structureOf<SolvedStructure>(structures, "solved");
+    if (chain === undefined || solved === undefined) return Object.freeze([]);
+    const solvedIds = new Set(solved.ids);
+    const diagnostics = chain.ids
+      .filter((id) => !solvedIds.has(id))
+      .map((id) =>
+        diagnostic(
+          "plugin-validation-failed",
+          "solved",
+          `Solver row missing for member "${id}".`,
+        ),
+      );
+    return Object.freeze(diagnostics);
+  },
   transform({ requires }) {
-    const topology = readAggregateTopology((requires.chain as Outputs).values);
-    const baseFrame = readFrame3d(recordOutput(requires.base as Outputs, "base"));
-    const solvedOutput = requires.solved as Outputs | undefined;
-    const solvedRows = solvedOutput === undefined ? undefined : tableOutput(solvedOutput, "solved");
-    const solvedById = new Map<string, AggregateRow>();
-    for (const row of solvedRows ?? []) {
-      solvedById.set(row.id, row as AggregateRow);
-    }
+    const chain = requires.chain;
+    const solved = requires.solved;
+    const baseFrame = readFrame3d(requires.base);
     const worldFrames = new Map<string, WorldFrame3d>();
-    const rows = topology.rows.map((row) => {
+    const rows = chain.rows.map((row) => {
       const rest = readEuler3d(row.cells);
       const local =
-        solvedRows === undefined
+        solved === undefined
           ? rest
           : blendOrientation3d(
               rest,
-              solvedOrientation(lookupSolvedRow3d(solvedById, row.id)),
+              solvedOrientation(solved.byId.get(row.id), row.id),
               clamp(readNumber(row.cells.weight, 1), 0, 1),
             );
-      const parent = topology.parentById.get(row.id);
+      const parent = chain.parentById.get(row.id);
       const parentFrame = parent === undefined ? baseFrame : worldFrames.get(parent)!;
       const pivot = composeWorld3d(parentFrame, {
         ...readPivotOffset3d(row.cells),

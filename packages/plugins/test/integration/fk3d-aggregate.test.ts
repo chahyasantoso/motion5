@@ -4,6 +4,7 @@ import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/testi
 import { ik3dPlugin } from "../../src/ik3d";
 import { fk3dPlugin } from "../../src/fk3d";
 import { BODY_3D_SPEC, GOALS_3D_SPEC, POSE_3D_SPEC } from "../../src/aggregate-topology";
+import { bodyEntity, rootEntity, solvedEntity } from "../support/typed-rig";
 
 const composer = vi.hoisted(() => ({ calls: 0 }));
 vi.mock("../../src/frame3d", async (importOriginal) => {
@@ -18,6 +19,31 @@ vi.mock("../../src/frame3d", async (importOriginal) => {
 });
 
 const CTX = { nodeId: "rig/pose", progress: 0 };
+
+type RawFk3dInput = {
+  readonly values: unknown;
+  readonly requires: {
+    readonly chain: { readonly values: unknown };
+    readonly solved?: { readonly values: unknown };
+    readonly base: { readonly values: unknown };
+  };
+};
+
+function runFk3d(raw: RawFk3dInput, _ctx?: unknown) {
+  return fk3dPlugin.transform(
+    {
+      values: raw.values,
+      requires: {
+        chain: bodyEntity(raw.requires.chain.values),
+        ...(raw.requires.solved === undefined
+          ? {}
+          : { solved: solvedEntity(raw.requires.solved.values) }),
+        base: rootEntity(raw.requires.base.values),
+      },
+    } as never,
+    CTX,
+  );
+}
 
 type Ids = { root: string; pole: string; body: string; goals: string; solve: string; pose: string };
 const IDS: Ids = {
@@ -40,13 +66,14 @@ function project(ids: Ids = IDS, motion = "demo"): ProjectDefinition {
         tracks: [
           {
             id: ids.root,
+            type: "root3d",
             input: { values: { x: 0, y: 0, z: 0, rotation: 0, rotationX: 0, rotationY: 0 } },
           },
           { id: ids.pole, input: { values: { x: 0, y: 0, z: 100 } } },
           {
             id: ids.body,
+            type: "body3d",
             input: {
-              schema: BODY_3D_SPEC,
               values: [
                 { id: "trunk", cells: { length: 20 } },
                 { id: "left-upper", cells: { parentId: "trunk", length: 10 } },
@@ -56,8 +83,8 @@ function project(ids: Ids = IDS, motion = "demo"): ProjectDefinition {
           },
           {
             id: ids.goals,
+            type: "goals3d",
             input: {
-              schema: GOALS_3D_SPEC,
               values: [{ id: "left-hand", cells: { memberId: "left-lower", x: 12, y: 8, z: 5 } }],
             },
           },
@@ -116,7 +143,7 @@ describe("aggregate 3D FK", () => {
   });
 
   it("AL-2a evaluates to rest pose with weight 0 when solved is unbound", () => {
-    const output = fk3dPlugin.transform(
+    const output = runFk3d(
       {
         values: {},
         requires: {
@@ -134,7 +161,7 @@ describe("aggregate 3D FK", () => {
   });
 
   it("AL-2 single-bone golden parity matches fk3d-v5 bit for bit", () => {
-    const output = fk3dPlugin.transform(
+    const output = runFk3d(
       {
         values: {},
         requires: {
@@ -188,7 +215,7 @@ describe("aggregate 3D FK", () => {
   });
 
   it("AL-3 multi-bone 3D tree hierarchy composes child bones inheriting parent tip coordinates", () => {
-    const output = fk3dPlugin.transform(
+    const output = runFk3d(
       {
         values: {},
         requires: {
@@ -247,7 +274,7 @@ describe("aggregate 3D FK", () => {
 
   it("AL-4 refuses a missing solved row with TypeError", () => {
     expect(() =>
-      fk3dPlugin.transform(
+      runFk3d(
         {
           values: {},
           requires: {
@@ -267,7 +294,7 @@ describe("aggregate 3D FK", () => {
     for (const key of ["rotation", "rotationX", "rotationY"] as const) {
       for (const badValue of [Number.NaN, Number.POSITIVE_INFINITY]) {
         expect(() =>
-          fk3dPlugin.transform(
+          runFk3d(
             {
               values: {},
               requires: {
@@ -297,7 +324,7 @@ describe("aggregate 3D FK", () => {
 
   it("AL-6 blends authored rest and solved orientation via blendOrientation3d", () => {
     const solve = (weight: number | undefined) => {
-      const output = fk3dPlugin.transform(
+      const output = runFk3d(
         {
           values: {},
           requires: {
@@ -356,7 +383,7 @@ describe("aggregate 3D FK", () => {
   });
 
   it("AL-7 applies 3D pivot offsets in rotated parent space", () => {
-    const withOffset = fk3dPlugin.transform(
+    const withOffset = runFk3d(
       {
         values: {},
         requires: {
@@ -376,7 +403,7 @@ describe("aggregate 3D FK", () => {
   });
 
   it("AL-8 clamps zero or negative bone length to zero extent", () => {
-    const zeroLen = fk3dPlugin.transform(
+    const zeroLen = runFk3d(
       {
         values: {},
         requires: {
@@ -398,7 +425,7 @@ describe("aggregate 3D FK", () => {
     expect(zeroLen.values[0].cells.y).toBe(10);
     expect(zeroLen.values[0].cells.z).toBe(15);
 
-    const negLen = fk3dPlugin.transform(
+    const negLen = runFk3d(
       {
         values: {},
         requires: {
@@ -422,7 +449,7 @@ describe("aggregate 3D FK", () => {
   });
 
   it("AL-9 is independent of authored body row order", () => {
-    const forward = fk3dPlugin.transform(
+    const forward = runFk3d(
       {
         values: {},
         requires: {
@@ -468,7 +495,7 @@ describe("aggregate 3D FK", () => {
       } as never,
       CTX,
     );
-    const reversed = fk3dPlugin.transform(
+    const reversed = runFk3d(
       {
         values: {},
         requires: {
@@ -548,7 +575,7 @@ describe("aggregate 3D FK", () => {
       cells: { rotation: 10, rotationX: 5, rotationY: -5 },
     }));
     const calls = composer.calls;
-    const result = fk3dPlugin.transform(
+    const result = runFk3d(
       {
         values: {},
         requires: {

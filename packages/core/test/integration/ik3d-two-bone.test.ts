@@ -31,9 +31,10 @@ const PROJECT: ProjectDefinition = {
       id: "rig",
       trigger: { type: "manual" },
       tracks: [
-        { id: "root", input: { values: ROOT_DEFAULT } },
+        { id: "root", type: "root3d", input: { values: ROOT_DEFAULT } },
         {
           id: "goals",
+          type: "goals3d",
           input: {
             values: [
               {
@@ -50,6 +51,7 @@ const PROJECT: ProjectDefinition = {
         },
         {
           id: "body",
+          type: "body3d",
           input: {
             values: [
               { id: "upper", cells: { length: 80, rotation: 0, rotationX: 0, rotationY: 0 } },
@@ -109,16 +111,18 @@ function staticPoleRig(
         id: "rig",
         trigger: { type: "manual" },
         tracks: [
-          { id: "root", input: { values: ROOT_DEFAULT } },
+          { id: "root", type: "root3d", input: { values: ROOT_DEFAULT } },
           {
             id: "goals",
+            type: "goals3d",
             input: { values: [{ id: "goal", cells: { memberId: "fore", ...GOAL } }] },
           },
           {
             id: "knee",
+            type: "root3d",
             input: { values: { x: 30, y: poleY, z: 10, rotation: 0, rotationX: 0, rotationY: 0 } },
           },
-          { id: "body", input: { values: bodyCells } },
+          { id: "body", type: "body3d", input: { values: bodyCells } },
           { id: "solve", plugin: "ik3d", input: { values: {}, requires } },
           {
             id: "pose",
@@ -164,11 +168,17 @@ const RESTED: ProjectDefinition = {
       tracks: [
         {
           id: "root",
+          type: "root3d",
           input: { values: { x: 5, y: -5, z: 0, rotation: 0, rotationX: 0, rotationY: 0 } },
         },
-        { id: "goals", input: { values: [{ id: "goal", cells: { memberId: "fore", ...GOAL } }] } },
+        {
+          id: "goals",
+          type: "goals3d",
+          input: { values: [{ id: "goal", cells: { memberId: "fore", ...GOAL } }] },
+        },
         {
           id: "body",
+          type: "body3d",
           input: {
             values: [
               { id: "upper", cells: { length: 80, ...UPPER_REST, weight: RAMP } },
@@ -201,14 +211,17 @@ const OFFSET_PROJECT: ProjectDefinition = {
       tracks: [
         {
           id: "root",
+          type: "root3d",
           input: { values: { x: 5, y: -3, z: 2, rotation: 25, rotationX: -15, rotationY: 20 } },
         },
         {
           id: "goals",
+          type: "goals3d",
           input: { values: [{ id: "goal", cells: { memberId: "fore", x: 70, y: 40, z: 50 } }] },
         },
         {
           id: "body",
+          type: "body3d",
           input: {
             values: [
               {
@@ -254,10 +267,15 @@ const POLE_PROJECT: ProjectDefinition = {
       id: "rig",
       trigger: { type: "manual" },
       tracks: [
-        { id: "root", input: { values: ROOT_DEFAULT } },
-        { id: "goals", input: { values: [{ id: "goal", cells: { memberId: "fore", ...GOAL } }] } },
+        { id: "root", type: "root3d", input: { values: ROOT_DEFAULT } },
+        {
+          id: "goals",
+          type: "goals3d",
+          input: { values: [{ id: "goal", cells: { memberId: "fore", ...GOAL } }] },
+        },
         {
           id: "knee",
+          type: "root3d",
           input: {
             values: {
               x: 30,
@@ -274,6 +292,7 @@ const POLE_PROJECT: ProjectDefinition = {
         },
         {
           id: "body",
+          type: "body3d",
           input: {
             values: [
               { id: "upper", cells: { length: 80, rotation: 0, rotationX: 0, rotationY: 0 } },

@@ -29,12 +29,14 @@ const PROJECT: ProjectDefinition = {
       tracks: [
         {
           id: "root",
+          type: "root3d",
           input: {
             values: { x: 5, y: -3, z: 2, rotation: 20, rotationX: -15, rotationY: 0 },
           },
         },
         {
           id: "chain-body",
+          type: "body3d",
           input: {
             values: [
               { id: "c0", cells: { length: 25, rotation: 0, rotationX: 0, rotationY: 0 } },
@@ -63,6 +65,7 @@ const PROJECT: ProjectDefinition = {
         },
         {
           id: "chain-goals",
+          type: "goals3d",
           input: {
             values: [
               {
@@ -95,6 +98,7 @@ const PROJECT: ProjectDefinition = {
         },
         {
           id: "tree-body",
+          type: "body3d",
           input: {
             values: [
               { id: "trunk", cells: { length: 25, rotation: 0, rotationX: 0, rotationY: 0 } },
@@ -126,6 +130,7 @@ const PROJECT: ProjectDefinition = {
         },
         {
           id: "tree-goals",
+          type: "goals3d",
           input: {
             values: [
               {
