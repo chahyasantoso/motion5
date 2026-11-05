@@ -55,7 +55,6 @@ import {
 } from "./graph-runtime-state";
 export type ComposeNode = PublisherNode["compose"];
 export type ComposeResolver = (node: GraphNode) => ComposeNode;
-export type ComposeIdentifiedResolver = (node: GraphNode) => PublisherNode["composeIdentified"];
 export const CLOCK_REGRESSION_RULE = "clock-tick-regression" satisfies RuleId;
 export const CLOCK_CONSUMER_FAILURE_RULE = "clock-consumer-failure" satisfies RuleId;
 export const FLUSH_FAILURE_RULE = "flush-failure" satisfies RuleId;
@@ -67,8 +66,6 @@ export interface GraphRuntimeOptions {
   readonly onFlushError?: (diagnostic: Diagnostic) => void;
   readonly onClockTick?: (event: ClockTick) => void;
   readonly graphBuilder?: GraphBuilder;
-  /** Identified-table composition seam; undefined for grouped-only runtimes. */
-  readonly composeIdentified?: ComposeIdentifiedResolver;
 }
 export class GraphRuntime {
   readonly #binding: GraphBinding;
@@ -76,7 +73,6 @@ export class GraphRuntime {
   readonly #publisher: GraphPublisher;
   readonly #clock: Clock;
   readonly #compose: ComposeResolver;
-  readonly #composeIdentified: ComposeIdentifiedResolver | undefined;
 
   readonly #scheduler: Scheduler | undefined;
   readonly #onFlushError: ((diagnostic: Diagnostic) => void) | undefined;
@@ -108,7 +104,6 @@ export class GraphRuntime {
     this.#publisher = new GraphPublisher(this.#registry);
     this.#clock = clock;
     this.#compose = compose;
-    this.#composeIdentified = options.composeIdentified;
 
     this.#scheduler =
       options.scheduler === undefined ? undefined : deferredScheduler(options.scheduler);
@@ -292,11 +287,9 @@ export class GraphRuntime {
   #publisherNode(node: GraphNode): PublisherNode {
     const cached = this.#publisherNodes.get(node);
     if (cached) return cached;
-    const composeIdentified = this.#composeIdentified?.(node);
     const publisherNode: PublisherNode = Object.freeze({
       ...node,
       compose: this.#compose(node),
-      ...(composeIdentified === undefined ? {} : { composeIdentified }),
     });
     this.#publisherNodes.set(node, publisherNode);
     return publisherNode;

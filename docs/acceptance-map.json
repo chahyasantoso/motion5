@@ -152,10 +152,6 @@
       "test": "packages/core/test/unit/runtime/clock-tick-identity.test.ts"
     },
     {
-      "id": "requirement-scoped-inputs",
-      "test": "packages/core/test/unit/runtime/publisher-requirement-inputs.test.ts"
-    },
-    {
       "id": "registry-change-detection",
       "test": "packages/core/test/unit/runtime/patch-registry-structural-change.test.ts"
     },

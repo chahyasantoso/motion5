@@ -1,11 +1,20 @@
-import type { DataType, Outputs, Structure, Value, ValueSpec } from "../contract/v5";
+import type {
+  DataType,
+  Outputs,
+  ResolvedRequires,
+  Structure,
+  Value,
+  ValueSpec,
+} from "../contract/v5";
 import { describeDiagnostics } from "../contract/diagnostics";
 import type { ParsedValues } from "../contract/v5-parse";
 import type { Interpolator } from "../ports/interpolator";
 import { authoringValue } from "./authoring-value";
 import { parseDataType } from "./data-type-parse";
 import { createValueEvaluator } from "./evaluate-values";
+import type { PublisherComposition } from "./graph-publisher";
 import { LocalInput } from "./local-input";
+import type { SlotSources } from "./source-ref";
 
 /**
  * Compiled form of a no-plugin track: authored values evaluated at `progress`, not grouped keyframes. `outputs` is `{ values }`; `evaluate-values.ts` owns slot ids.
@@ -95,6 +104,14 @@ export class ValueTrack {
   /** Live value when set, else the authored shape evaluated at this progress. */
   outputs(): Outputs {
     return Object.freeze({ values: this.#localInput.evaluate() });
+  }
+
+  compose(_requires?: ResolvedRequires, _sources?: SlotSources): PublisherComposition {
+    return {
+      outputs: this.outputs(),
+      sourceProgress: this.progress,
+      sourceRevisions: {},
+    };
   }
 
   dispose(): void {

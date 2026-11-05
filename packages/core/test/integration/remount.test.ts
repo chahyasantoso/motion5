@@ -4,7 +4,6 @@ import type { PluginDefinition, ProjectDefinition, ValueSpec } from "../../src/c
 import { PluginCatalog } from "../../src/domain/plugin-catalog";
 import { createManualClock } from "../../src/ports/clock";
 import { ProjectRuntime } from "../../src/runtime/project-runtime";
-import type { ComposeIdentifiedResolver } from "../../src/runtime/graph-runtime";
 import { record, track } from "../support/v5-builders";
 
 const sourceId = "~/source";
@@ -46,10 +45,6 @@ function createRuntime() {
   const runtime = new ProjectRuntime(project, {
     clock: createManualClock(),
     compose: () => () => ({ outputs: { values: [] }, sourceProgress: 0, sourceRevisions: {} }),
-    composeIdentified: ((node) =>
-      node.id === consumerId
-        ? () => ({ outputs: { values: [] }, sourceProgress: 0, sourceRevisions: {} })
-        : undefined) satisfies ComposeIdentifiedResolver,
     capabilities: CATALOG,
     isPluginRegistered: (pluginId) => CATALOG.isPluginAdmitted(pluginId),
   });

@@ -76,11 +76,7 @@ import {
 } from "./edit-types";
 import { sameTrigger, withStagger } from "./authored-values";
 import { Diagnostics, type DiagnosticsSnapshot } from "./diagnostics";
-import {
-  GraphRuntime,
-  type ComposeIdentifiedResolver,
-  type ComposeResolver,
-} from "./graph-runtime";
+import { GraphRuntime, type ComposeResolver } from "./graph-runtime";
 import type { GraphNode } from "../graph/ir";
 import type { CommittedContract } from "../graph/committed-contract";
 
@@ -177,8 +173,6 @@ export interface ProjectRuntimeOptions {
   readonly clock: Clock;
   readonly scheduler?: Scheduler;
   readonly compose: ComposeResolver;
-  /** The identified-table composition seam, forwarded to `GraphRuntime` untouched. */
-  readonly composeIdentified?: ComposeIdentifiedResolver;
   /** Whether an authored `track.plugin` id names an admitted plugin; the structural tier needs it to validate plugin tracks. Absent keeps no-plugin paths. */
   readonly isPluginRegistered?: (pluginId: string) => boolean;
 
@@ -312,9 +306,6 @@ export class ProjectRuntime {
         ...(options.scheduler === undefined ? {} : { scheduler: options.scheduler }),
         ...(options.onClockTick === undefined ? {} : { onClockTick: options.onClockTick }),
         ...(options.graphBuilder === undefined ? {} : { graphBuilder: options.graphBuilder }),
-        ...(options.composeIdentified === undefined
-          ? {}
-          : { composeIdentified: options.composeIdentified }),
         onFlushError: (diagnostic) => this.#diagnostics.record(diagnostic),
       });
     } catch (error) {

@@ -33,7 +33,7 @@ import type { PluginCatalog } from "./domain/plugin-catalog";
 import type { RenderMetadata } from "./ports/render-metadata";
 import { qualifyFreeTrack, qualifyMotionTrack } from "./graph/ids";
 import { qualifySource } from "./graph/dependency-edges";
-import type { ComposeIdentifiedResolver, ComposeResolver } from "./runtime/graph-runtime";
+import type { ComposeResolver } from "./runtime/graph-runtime";
 import { ValueTrack } from "./runtime/value-track";
 import { PluginTrack } from "./runtime/plugin-track";
 import { deriveSourceContract } from "./contract/v5-infer";
@@ -521,23 +521,9 @@ export class Engine {
         }
       };
       checkCommittedSources();
-      const compose: ComposeResolver = (node) => () => {
+      const compose: ComposeResolver = (node) => {
         const track = tracks.get(node.id);
         if (!track) throw new TypeError(`Unknown graph node "${node.id}".`);
-        if (track instanceof PluginTrack) {
-          throw new TypeError(
-            `Plugin track "${node.id}" composes through its identified input path.`,
-          );
-        }
-        return {
-          outputs: track.outputs(),
-          sourceProgress: track.progress,
-          sourceRevisions: {},
-        };
-      };
-      const composeIdentified: ComposeIdentifiedResolver = (node) => {
-        const track = tracks.get(node.id);
-        if (!(track instanceof PluginTrack)) return undefined;
         return (requires) => track.compose(requires, sourceRefs(node));
       };
       const sourceRefs = (node: GraphNode): SlotSources => {
@@ -565,7 +551,6 @@ export class Engine {
         clock: this.#options.clock,
         scheduler: this.#options.scheduler,
         compose,
-        composeIdentified,
         isPluginRegistered: (pluginId) => admitsPlugin(this.#capabilities, pluginId),
         capabilities: this.#capabilities,
         graphBuilder: new IncrementalGraphBuilder(this.#capabilities),

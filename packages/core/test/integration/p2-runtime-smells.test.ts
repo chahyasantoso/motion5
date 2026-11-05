@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import type { Outputs } from "../../src/contract/v5";
 import { deriveDependants, type GraphEdge } from "../../src/graph/ir";
 import {
   GraphPublisher,
@@ -8,7 +9,6 @@ import {
 import { PatchRegistry } from "../../src/runtime/patch-registry";
 import { Track } from "../support/track";
 import type { Interpolator } from "../../src/ports/interpolator";
-import { slotOf } from "../helpers/requirement-inputs";
 import { recordValues } from "../support/v5-builders";
 
 const node = (id: string, edges: GraphEdge[], compose: PublisherNode["compose"]): PublisherNode =>
@@ -86,11 +86,15 @@ describe("P2 runtime smell hardening", () => {
       sourceProgress: 0,
       sourceRevisions: {},
     }));
-    const consumer = node("consumer", [requires("consumer", "source", "s")], (inputs) => ({
-      outputs: { values: slotOf(inputs, "p", "s") },
-      sourceProgress: 0,
-      sourceRevisions: {},
-    }));
+    const consumer = node("consumer", [requires("consumer", "source", "s")], (requires) => {
+      const upstream = requires.s as Outputs | undefined;
+      const values = upstream?.values ?? {};
+      return {
+        outputs: { values },
+        sourceProgress: 0,
+        sourceRevisions: {},
+      };
+    });
     publisher.flush(snapshot([source, consumer]), ["source", "consumer"], 1);
     const consumerPatch = registry.get("consumer");
     if (consumerPatch?.status !== "ready")
@@ -101,11 +105,15 @@ describe("P2 runtime smell hardening", () => {
   it("reports a pending reference instead of silently composing with an input hole", () => {
     const registry = new PatchRegistry();
     const publisher = new GraphPublisher(registry);
-    const consumer = node("consumer", [requires("consumer", "missing", "s")], (inputs) => ({
-      outputs: { values: slotOf(inputs, "p", "s") },
-      sourceProgress: 0,
-      sourceRevisions: {},
-    }));
+    const consumer = node("consumer", [requires("consumer", "missing", "s")], (requires) => {
+      const upstream = requires.s as Outputs | undefined;
+      const values = upstream?.values ?? {};
+      return {
+        outputs: { values },
+        sourceProgress: 0,
+        sourceRevisions: {},
+      };
+    });
     publisher.flush(snapshot([consumer]), ["consumer"], 1);
     const blocked = registry.get("consumer");
     expect(blocked?.status).toBe("blocked");

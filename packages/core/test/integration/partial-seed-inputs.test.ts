@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import type { Outputs } from "../../src/contract/v5";
 import { deriveDependants, type GraphEdge } from "../../src/graph/ir";
 import {
   GraphPublisher,
@@ -6,7 +7,6 @@ import {
   type PublisherSnapshot,
 } from "../../src/runtime/graph-publisher";
 import { PatchRegistry } from "../../src/runtime/patch-registry";
-import { slotOf } from "../helpers/requirement-inputs";
 
 const snapshot = (nodes: readonly PublisherNode[]): PublisherSnapshot => ({
   nodes,
@@ -63,9 +63,13 @@ describe("GraphPublisher partial-seed requirement inputs", () => {
           requirement: { plugin: "sum", slot: "right" },
         },
       ],
-      (requirementInputs) => {
-        const left = Number(slotOf(requirementInputs, "sum", "left").a ?? 0);
-        const right = Number(slotOf(requirementInputs, "sum", "right").b ?? 0);
+      (requires) => {
+        const leftOutputs = requires.left as Outputs | undefined;
+        const rightOutputs = requires.right as Outputs | undefined;
+        const leftValues = leftOutputs?.values as Record<string, unknown> | undefined;
+        const rightValues = rightOutputs?.values as Record<string, unknown> | undefined;
+        const left = Number(leftValues?.a ?? 0);
+        const right = Number(rightValues?.b ?? 0);
         return {
           outputs: { values: { total: left + right } },
           sourceProgress: 0,

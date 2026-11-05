@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { ProjectDefinition } from "../../src/contract/v5";
+import type { ProjectDefinition, ResolvedRequires } from "../../src/contract/v5";
 import { createManualClock } from "../../src/ports/clock";
-import type { ComposeIdentifiedResolver } from "../../src/runtime/graph-runtime";
 import { GraphRuntime } from "../../src/runtime/graph-runtime";
 import { record, track } from "../support/v5-builders";
 
@@ -32,15 +31,9 @@ const project: ProjectDefinition = {
   ],
 };
 
-const compose = (node: { id: string }) => () => ({
-  outputs: { values: { self: node.id } },
-  sourceProgress: 0,
-  sourceRevisions: {},
-});
-
-const composeIdentified: ComposeIdentifiedResolver = (node) =>
+const compose = (node: { id: string }) => (requires: ResolvedRequires) =>
   node.id === "arm/child"
-    ? (requires) => ({
+    ? {
         outputs: {
           values: Object.freeze({
             parent: requires.parent === undefined ? "none" : "bound",
@@ -49,13 +42,15 @@ const composeIdentified: ComposeIdentifiedResolver = (node) =>
         },
         sourceProgress: 0,
         sourceRevisions: {},
-      })
-    : undefined;
+      }
+    : {
+        outputs: { values: { self: node.id } },
+        sourceProgress: 0,
+        sourceRevisions: {},
+      };
 
 function runtime(source: ProjectDefinition = project): GraphRuntime {
-  return new GraphRuntime(source, createManualClock(), compose, {
-    composeIdentified,
-  });
+  return new GraphRuntime(source, createManualClock(), compose);
 }
 
 describe("P5-01 cross-motion references", () => {

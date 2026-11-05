@@ -525,7 +525,6 @@ describe("Explicit Aggregate Graph and Publisher (AM-1..10)", () => {
         ...nodes[0],
         id: "demo/legacy-solver",
         track: { id: "legacy-solver", keyframes: { ik: {} } },
-        composeIdentified: undefined,
         solves: [{ id: "demo/root", base: "demo/root" }],
       };
       // In current code, lines 407-446 execute and fail with status "error" (kind "member-interpolation")!
