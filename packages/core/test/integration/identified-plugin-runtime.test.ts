@@ -386,7 +386,8 @@ describe("identified plugin runtime", () => {
         },
       };
 
-      let capturedStructures: SourceStructures | undefined;
+      let commitCapturedStructures: SourceStructures | undefined;
+      let composeCapturedStructures: SourceStructures | undefined;
       let capturedRequires: Record<string, unknown> | undefined;
 
       const consumerPlugin: PluginDefinition = {
@@ -397,7 +398,11 @@ describe("identified plugin runtime", () => {
         },
         outputs: { values: POINT },
         checkSources(structures) {
-          capturedStructures = structures;
+          if (commitCapturedStructures === undefined) {
+            commitCapturedStructures = structures;
+          } else {
+            composeCapturedStructures = structures;
+          }
           return [];
         },
         transform(input) {
@@ -430,17 +435,17 @@ describe("identified plugin runtime", () => {
           handle.mount("demo/src");
           handle.mount("demo/consumer-track");
           handle.seek("demo/src", 0.5);
-          handle.seek("demo/consumer-track", 0.5);
 
-          expect(capturedStructures).toBeDefined();
-          const structuresRecord = capturedStructures?.data;
-          expect(typeof structuresRecord).toBe("object");
-          if (typeof structuresRecord === "object" && structuresRecord !== null) {
-            expect(Object.hasOwn(structuresRecord, memberKey)).toBe(true);
-            expect(Object.getPrototypeOf(structuresRecord)).toBe(Object.prototype);
-            const memberStructure = (structuresRecord as Record<string, unknown>)[memberKey] as
-              | Structure<HardeningStructure>
-              | undefined;
+          // 1. Commit-time structures passed to checkSources (from checkCommittedSources in engine)
+          expect(commitCapturedStructures).toBeDefined();
+          const commitStructuresRecord = commitCapturedStructures?.data;
+          expect(typeof commitStructuresRecord).toBe("object");
+          if (typeof commitStructuresRecord === "object" && commitStructuresRecord !== null) {
+            expect(Object.hasOwn(commitStructuresRecord, memberKey)).toBe(true);
+            expect(Object.getPrototypeOf(commitStructuresRecord)).toBe(Object.prototype);
+            const memberStructure = (commitStructuresRecord as Record<string, unknown>)[
+              memberKey
+            ] as Structure<HardeningStructure> | undefined;
             expect(memberStructure).toBeDefined();
           }
 
@@ -475,4 +480,70 @@ describe("identified plugin runtime", () => {
       }
     });
   }
+
+  it("PluginTrack.compose preserves __proto__ as an own member key in resolved memberStructures", () => {
+    interface HardeningStructure {
+      readonly tag: string;
+    }
+    const hardeningType: DataType<HardeningStructure, { readonly values: Table }> = {
+      id: "hardening-type-2",
+      spec: POINT,
+      parse(_value: Value) {
+        return { kind: "parsed", structure: { tag: "parsed-tag" }, warnings: [] };
+      },
+      bind(_structure: Structure<HardeningStructure>, value: Value) {
+        if (!Array.isArray(value)) throw new TypeError("Expected table");
+        return { values: value as Table };
+      },
+    };
+
+    let composeStructures: SourceStructures | undefined;
+    const testPlugin: PluginDefinition = {
+      id: "test-plugin-proto",
+      inputs: {
+        values: { kind: "record", fields: {} },
+        requires: { data: typed(hardeningType, { binding: "map" }) },
+      },
+      outputs: { values: POINT },
+      checkSources(structures) {
+        composeStructures = structures;
+        return [];
+      },
+      transform() {
+        return { values: table() };
+      },
+    };
+
+    const trackInstance = new PluginTrack({
+      nodeId: "test-node",
+      plugin: testPlugin,
+      values: undefined,
+      interpolator: createFakeInterpolator(),
+    });
+
+    const memberStructure = { tag: "parsed-tag" } as Structure<HardeningStructure>;
+    const rawRequires = JSON.parse(
+      '{"__proto__": {"values": [{"id": "p", "cells": {"x": 1, "y": 2}}]}}',
+    ) as Record<string, unknown>;
+    const rawSourcesMap = JSON.parse('{"__proto__": null}') as Record<string, unknown>;
+    Object.defineProperty(rawSourcesMap, "__proto__", {
+      value: { sourceId: "src", structure: memberStructure },
+      enumerable: true,
+      configurable: true,
+      writable: true,
+    });
+
+    trackInstance.compose(
+      { data: rawRequires },
+      { data: rawSourcesMap as Record<string, SourceRef> },
+    );
+    expect(composeStructures).toBeDefined();
+    const dataStructures = composeStructures?.data;
+    expect(dataStructures).toBeDefined();
+    if (dataStructures !== undefined) {
+      expect(Object.hasOwn(dataStructures, "__proto__")).toBe(true);
+      expect(Object.getPrototypeOf(dataStructures)).toBe(Object.prototype);
+      expect((dataStructures as Record<string, unknown>)["__proto__"]).toBe(memberStructure);
+    }
+  });
 });
