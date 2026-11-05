@@ -1,14 +1,11 @@
 import type {
-  DataType,
   Diagnostic,
   Model,
-  OptionalModel,
   Outputs,
   PluginDefinition,
   Prepared,
   ResolvedInput,
   ResolvedRequires,
-  Scalar,
   SlotSpec,
   SourceStructure,
   SourceStructures,
@@ -16,16 +13,21 @@ import type {
   Value,
   ValueSpec,
 } from "../../contract/v5";
-import { isModel, isOptionalModel } from "../../contract/v5";
+import { isModel } from "../../contract/v5";
 import type { ParsedRecord, ParsedValues } from "../../contract/v5-parse";
 import { describeDiagnostics, diagnostic } from "../../contract/diagnostics";
 import { unreachable } from "../../lang/exhaustive";
 import { defineOwnValue } from "../../lang/own-property";
 import type { Interpolator } from "../../ports/interpolator";
 import { createValueEvaluator } from "../evaluate-values";
-import { parseDataType, parseModel } from "../data-type-parse";
+import { parseModel } from "../model-parse";
 import { PluginNodeError, validatePluginOutputs } from "../plugin-output";
 import type { BoundSlot, BoundSlots } from "../bound-slot";
+import {
+  isOptionalSlot,
+  needsSlotStructure,
+  slotDeclaration,
+} from "../../contract/slot-declaration";
 import { isValue } from "../value-validation";
 import type { PublisherComposition } from "../graph-publisher";
 import { LocalInput } from "../local-input";
@@ -75,28 +77,6 @@ function pickOutputs(
     picked[name] = outputs[name] as Value;
   }
   return Object.freeze(picked);
-}
-
-function staticFieldNames(spec: ValueSpec): readonly string[] {
-  const fields = spec.kind === "table" ? spec.schema.row.fields : spec.fields;
-  return Object.entries(fields)
-    .filter(([, field]) => field.static === true)
-    .map(([name]) => name)
-    .sort();
-}
-
-function isTable(
-  value: Value,
-): value is readonly { readonly id: string; readonly cells: Readonly<Record<string, Scalar>> }[] {
-  return Array.isArray(value);
-}
-
-function structureSignature(type: DataType<unknown, unknown>, value: Value): string {
-  const staticNames = staticFieldNames(type.spec);
-  const staticOf = (cells: Readonly<Record<string, Scalar>>): string =>
-    staticNames.map((name) => `${name}=${JSON.stringify(cells[name])}`).join(",");
-  if (!isTable(value)) return `record:${staticOf(value)}`;
-  return `table:${value.map((row) => `${row.id}{${staticOf(row.cells)}}`).join("|")}`;
 }
 
 function sameSourceStructures(
@@ -151,10 +131,7 @@ export class ComputedProcessor implements Processor {
   readonly #interpolator: Interpolator;
   #paramInput: LocalInput | undefined;
   #outputsChecked = false;
-  readonly #computedStructures = new Map<
-    string,
-    { readonly structure: Structure<unknown>; readonly signature: string }
-  >();
+  readonly #computedStructures = new Map<string, Structure<unknown>>();
   #checkedStructures: SourceStructures | undefined;
   #checkedWarnings: readonly Diagnostic[] = Object.freeze([]);
   #preparedState: unknown;
@@ -405,11 +382,12 @@ export class ComputedProcessor implements Processor {
   } {
     const resolved: Record<string, unknown> = {};
     const structures: Record<string, SourceStructure> = {};
-    for (const [slot, declaration] of Object.entries(this.plugin.inputs.requires ?? {})) {
+    for (const [slot, declaredSlot] of Object.entries(this.plugin.inputs.requires ?? {})) {
+      const declaration = slotDeclaration(declaredSlot);
       const entry = slots[slot];
       const path = `${this.nodeId}.input.requires.${slot}`;
       if (entry === undefined) {
-        if (declaration.optional === true) continue;
+        if (isOptionalSlot(declaration)) continue;
         throw inputFailure(path, `Required slot '${slot}' is not bound.`);
       }
       switch (entry.kind) {
@@ -449,27 +427,13 @@ export class ComputedProcessor implements Processor {
   }
 
   #resolveSlot(
-    declaration: SlotSpec | Model<unknown, unknown> | OptionalModel<Model<unknown, unknown>>,
+    declaration: SlotSpec,
     bound: BoundSlot,
     path: string,
     structures: Record<string, Structure<unknown>>,
     structureKey: string,
   ): unknown {
     const outputs = bound.values;
-    if (isModel(declaration) || isOptionalModel(declaration)) {
-      if (!isPlainRecord(outputs)) throw inputFailure(path, `Model slot received no output set.`);
-      const value = outputs.values;
-      if (!isValue(value))
-        throw inputFailure(`${path}.values`, `Model slot requires a values output.`);
-      const model = isModel(declaration) ? declaration : declaration.model;
-      const structure =
-        bound.structure ??
-        (model.parse !== undefined
-          ? this.#computedModelStructure(model, bound.sourceId, value, path)
-          : undefined);
-      if (structure !== undefined) defineOwnValue(structures, structureKey, structure);
-      return value;
-    }
     switch (declaration.kind) {
       case "model": {
         if (!isPlainRecord(outputs)) throw inputFailure(path, `Model slot received no output set.`);
@@ -486,16 +450,6 @@ export class ComputedProcessor implements Processor {
       }
       case "shape":
         return pickOutputs(outputs, declaration.outputs, path);
-      case "typed": {
-        if (!isPlainRecord(outputs)) throw inputFailure(path, `Typed slot received no output set.`);
-        const value = outputs.values;
-        if (!isValue(value))
-          throw inputFailure(`${path}.values`, `Typed slot requires a values output.`);
-        const structure =
-          bound.structure ?? this.#computedStructure(declaration.type, bound.sourceId, value, path);
-        defineOwnValue(structures, structureKey, structure);
-        return declaration.type.bind(structure, value);
-      }
       default:
         return unreachable(declaration);
     }
@@ -509,28 +463,12 @@ export class ComputedProcessor implements Processor {
   ): Structure<unknown> | undefined {
     const key = `${sourceId}\u0000${model.id}`;
     const cached = this.#computedStructures.get(key);
-    if (cached !== undefined) return cached.structure;
+    if (cached !== undefined) return cached;
     const parsed = parseModel(model, value, `${path}.values`);
     if (parsed.kind === "refused") throw new PluginNodeError(parsed.diagnostics);
     if (parsed.value !== undefined) {
-      this.#computedStructures.set(key, { structure: parsed.value, signature: "" });
+      this.#computedStructures.set(key, parsed.value);
     }
-    return parsed.value;
-  }
-
-  #computedStructure(
-    type: DataType<unknown, unknown>,
-    sourceId: string,
-    value: Value,
-    path: string,
-  ): Structure<unknown> {
-    const key = `${sourceId}\u0000${type.id}`;
-    const signature = structureSignature(type, value);
-    const cached = this.#computedStructures.get(key);
-    if (cached?.signature === signature) return cached.structure;
-    const parsed = parseDataType(type, value, `${path}.values`);
-    if (parsed.kind === "refused") throw new PluginNodeError(parsed.diagnostics);
-    this.#computedStructures.set(key, { structure: parsed.value, signature });
     return parsed.value;
   }
 
@@ -546,13 +484,11 @@ export class ComputedProcessor implements Processor {
     const check = this.plugin.checkSources;
     if (check === undefined) return Object.freeze([]);
     const declared = this.plugin.inputs.requires ?? {};
-    const typed: [string, Extract<SlotSpec, { kind: "typed" }>][] = [];
-    for (const [slot, spec] of Object.entries(declared))
-      if (!isModel(spec) && !isOptionalModel(spec) && spec.kind === "typed")
-        typed.push([slot, spec]);
-    if (typed.length === 0) return Object.freeze([]);
-    for (const [slot, spec] of typed)
-      if (structures[slot] === undefined && spec.optional !== true) return Object.freeze([]);
+    const structured = Object.entries(declared).filter(([, slot]) =>
+      needsSlotStructure(slotDeclaration(slot)),
+    );
+    if (structured.length === 0) return Object.freeze([]);
+    for (const [slot] of structured) if (structures[slot] === undefined) return Object.freeze([]);
     if (sameSourceStructures(this.#checkedStructures, structures)) return this.#checkedWarnings;
     let warnings: readonly Diagnostic[];
     try {

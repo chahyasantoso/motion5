@@ -4,16 +4,15 @@ import type {
   Model,
   PluginDefinition,
   ProjectDefinition,
+  SourceStructures,
   ValueSpec,
 } from "../../../src/contract/v5";
 import { PluginCatalog } from "../../../src/domain/plugin-catalog";
 import { Engine } from "../../../src/engine";
 import { createManualClock } from "../../../src/ports/clock";
 import { createFakeInterpolator, createFakeScheduler } from "../../../src/testing/fakes";
-import { Body2d } from "../../../../plugins/src/models";
+import { Body2d, Point2d } from "../../../../plugins/src/models";
 import { fkPlugin } from "../../../../plugins/src/fk";
-import { parseDataType } from "../../../src/runtime/data-type-parse";
-import { body2d } from "../../../../plugins/src/body/type";
 import { testModels } from "../../support/test-models";
 
 const BONE_SPEC: ValueSpec = {
@@ -60,6 +59,63 @@ function createEngine(catalog: PluginCatalog): Engine {
 }
 
 describe("structures and prepare hook", () => {
+  it("prepare runs at load when a required model has no parse", () => {
+    let observed: SourceStructures | undefined;
+    const reader: PluginDefinition = {
+      id: "base-reader",
+      inputs: {
+        values: { kind: "record", fields: {} },
+        requires: { chain: Body2d, base: Point2d },
+      },
+      outputs: { values: { kind: "record", fields: {} } },
+      prepare({ structures }) {
+        observed = structures;
+        return ok(undefined);
+      },
+      transform() {
+        return { values: {} };
+      },
+    };
+
+    const catalog = new PluginCatalog({ models: testModels });
+    catalog.register(reader);
+    const engine = createEngine(catalog);
+
+    engine.load({
+      schemaVersion: 5,
+      motions: [
+        {
+          id: "m",
+          trigger: { type: "manual" },
+          tracks: [
+            {
+              id: "chain",
+              output: { model: "Body2d" },
+              input: {
+                values: [{ id: "root", cells: { length: 10, rotation: 0 } }],
+              },
+            },
+            {
+              id: "base",
+              output: { model: "Point2d" },
+              input: { values: { x: 0, y: 0, rotation: 0 } },
+            },
+            {
+              id: "read",
+              output: { plugin: "base-reader" },
+              input: { values: {}, requires: { chain: "chain", base: "base" } },
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(observed?.chain).toBeDefined();
+    expect(observed?.base).toBeUndefined();
+    const chain = observed?.chain;
+    expect(chain !== undefined && "ids" in chain && chain.ids).toEqual(["root"]);
+  });
+
   it("prepare receives static param cells only", () => {
     let observedParam: unknown;
     const testPlugin: PluginDefinition = {

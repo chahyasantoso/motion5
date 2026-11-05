@@ -1,15 +1,15 @@
 import {
   diagnostic,
   ok,
+  optional,
   refused,
-  typed,
   type PluginDefinition,
   type Prepared,
+  type Scalar,
   type SourceStructures,
-  type Structure,
+  type Table,
 } from "@motion5/core/plugin-api";
-import type { Body, BodyStructure } from "./body/domain";
-import { body2d } from "./body/type";
+import { bindBody, type BodyStructure } from "./body/domain";
 import {
   clamp,
   composeWorld,
@@ -20,19 +20,18 @@ import {
   segmentExtent,
   type WorldFrame,
 } from "./frame";
-import type { Root } from "./root/domain";
-import { root2d } from "./root/type";
-import type { Solved, SolvedRow, SolvedStructure } from "./solved/domain";
-import { solved2d } from "./solved/type";
-import { POSE_2D_SPEC } from "./pose/fields";
+import { bindSolved, type SolvedRow, type SolvedStructure } from "./solved/domain";
+import { Body2d, Point2d, Points2d, Solved2d } from "./models";
+import { requireStructure, structureOf } from "./slot-structure";
 
 type FkInput = {
   readonly values: Readonly<Record<string, never>>;
   readonly requires: {
-    readonly chain: Body;
-    readonly solved?: Solved;
-    readonly base: Root;
+    readonly chain: Table;
+    readonly solved?: Table;
+    readonly base: Readonly<Record<string, Scalar>>;
   };
+  readonly structures?: SourceStructures;
 };
 
 function solveRotation(row: SolvedRow | undefined, id: string): number {
@@ -43,21 +42,17 @@ function solveRotation(row: SolvedRow | undefined, id: string): number {
   return rotation;
 }
 
-function structureOf<T>(structures: SourceStructures, slot: string): Structure<T> | undefined {
-  return structures[slot] as Structure<T> | undefined;
-}
-
 export const fkPlugin: PluginDefinition<FkInput> = {
   id: "fk",
   inputs: {
     values: { kind: "record", fields: {} },
     requires: {
-      chain: typed(body2d),
-      solved: typed(solved2d, { optional: true }),
-      base: typed(root2d),
+      chain: Body2d,
+      solved: optional(Solved2d),
+      base: Point2d,
     },
   },
-  outputs: { values: POSE_2D_SPEC },
+  outputs: { values: Points2d },
   checkSources(structures) {
     const chain = structureOf<BodyStructure>(structures, "chain");
     const solved = structureOf<SolvedStructure>(structures, "solved");
@@ -86,9 +81,18 @@ export const fkPlugin: PluginDefinition<FkInput> = {
     }
     return ok(undefined);
   },
-  transform({ requires }) {
-    const chain = requires.chain;
-    const solved = requires.solved;
+  transform({ requires, structures }) {
+    const chain = bindBody(
+      requireStructure<BodyStructure>(structures, "chain", "FK"),
+      requires.chain,
+    );
+    const solved =
+      requires.solved === undefined
+        ? undefined
+        : bindSolved(
+            requireStructure<SolvedStructure>(structures, "solved", "FK"),
+            requires.solved,
+          );
     const baseFrame = readFrame(requires.base);
     const worldFrames = new Map<string, WorldFrame>();
     const rows = chain.rows.map((row) => {

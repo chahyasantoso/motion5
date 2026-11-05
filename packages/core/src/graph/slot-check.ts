@@ -136,40 +136,6 @@ export function checkSlotFit(nodes: readonly GraphNode[]): readonly Diagnostic[]
             );
             continue;
           }
-          case "typed": {
-            if (source.typeId !== undefined) {
-              if (source.typeId !== slot.type.id)
-                diagnostics.push(
-                  diagnostic(
-                    "slot-type-mismatch",
-                    slotPath(edge),
-                    `Slot '${slotName}' requires data type '${slot.type.id}' but the source is '${source.typeId}'.`,
-                  ),
-                );
-              continue;
-            }
-            const producer = source.outputs.values;
-            if (producer === undefined) {
-              diagnostics.push(
-                diagnostic(
-                  "slot-type-unsatisfied",
-                  slotPath(edge),
-                  `Slot '${slotName}' requires data type '${slot.type.id}' but the producer publishes no values output.`,
-                ),
-              );
-              continue;
-            }
-            const result = checkSlotOutput(producer, slot.type.spec);
-            if (result.outcome === "compatible") continue;
-            diagnostics.push(
-              diagnostic(
-                result.outcome === "incompatible" ? "slot-type-mismatch" : "slot-unproven",
-                slotPath(edge),
-                `Slot '${slotName}' requires data type '${slot.type.id}' (${describeOutputSpec(slot.type.spec)}). ${result.message ?? ""}`.trim(),
-              ),
-            );
-            continue;
-          }
           case "shape": {
             const producer = source.outputs;
             for (const [output, required] of Object.entries(slot.outputs)) {

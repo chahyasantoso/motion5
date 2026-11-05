@@ -115,6 +115,18 @@ describe("admission refuses a malformed definition by rule", () => {
     );
   });
 
+  it("refuses a model member outside id, spec and parse", () => {
+    expect(
+      reason(() =>
+        new PluginCatalog().registerModel({
+          id: "LegacyModel",
+          spec: table,
+          legacyTypeId: "legacy",
+        }),
+      ),
+    ).toMatch(/^plugin-shape at model.legacyTypeId/);
+  });
+
   it("refuses optional on inputs.values", () => {
     const plugin = malformed({
       inputs: {

@@ -16,8 +16,8 @@ import { UNJUDGED_CAPABILITIES, type PluginCapabilities } from "../ports/plugin-
 /** One slot's fit in the committed graph, as an inspection answer rather than a refusal. */
 export interface ExplainSlot {
   readonly slot: string;
-  readonly kind: "model" | "typed" | "shape";
-  /** Model id for a model slot; data type id for a typed slot; output names for a shape slot. */
+  readonly kind: "model" | "shape";
+  /** Model id for a model slot; output names for a shape slot. */
   readonly requires: readonly string[];
   readonly sources: readonly string[];
   readonly outcome: "compatible" | "incompatible" | "unproven" | "unbound";
@@ -40,8 +40,6 @@ function requirementNames(slot: SlotSpec): readonly string[] {
   switch (slot.kind) {
     case "model":
       return Object.freeze([slot.model.id]);
-    case "typed":
-      return Object.freeze([slot.type.id]);
     case "shape":
       return Object.freeze(Object.keys(slot.outputs));
     default:
@@ -57,30 +55,6 @@ function worse(left: SlotOutcome, right: SlotOutcome): SlotOutcome {
 
 function slotEdges(node: GraphNode, slot: string): readonly GraphEdge[] {
   return node.edges.filter((edge) => edge.requirement?.slot === slot).sort(compareEdges);
-}
-
-function typedOutcome(
-  slot: Extract<SlotSpec, { kind: "typed" }>,
-  source: GraphNode | undefined,
-): { outcome: SlotOutcome; message?: string } {
-  const contract = source?.contract;
-  if (contract === undefined)
-    return { outcome: "unproven", message: "the source has no committed contract." };
-  if (contract.typeId !== undefined) {
-    if (contract.typeId === slot.type.id) return { outcome: "compatible" };
-    return {
-      outcome: "incompatible",
-      message: `the source is '${contract.typeId}', not '${slot.type.id}'.`,
-    };
-  }
-  const producer = contract.outputs.values;
-  if (producer === undefined)
-    return { outcome: "incompatible", message: "the producer publishes no values output." };
-  const checked = checkSlotOutput(producer, slot.type.spec);
-  return {
-    outcome: checked.outcome,
-    ...(checked.message === undefined ? {} : { message: checked.message }),
-  };
 }
 
 function modelOutcome(
@@ -151,9 +125,6 @@ function explainNode(node: GraphNode, nodeById: ReadonlyMap<string, GraphNode>):
       switch (slot.kind) {
         case "model":
           checked = modelOutcome(slot, source);
-          break;
-        case "typed":
-          checked = typedOutcome(slot, source);
           break;
         case "shape":
           checked = shapeOutcome(slot, source);

@@ -16,8 +16,9 @@ local data. Reader-pull structures made a plugin rebuild its inputs per frame.
 - Every authored track is `{ id, input?, output, duration? }` with exactly one of
   `output: { model }` or `output: { plugin }`.
 - A model owns its id, value spec and optional `parse`; plugins implement and require models by id.
-  S5 lands the authored shape and model outputs; first-party plugins keep their typed slots and the
-  `legacyTypeId` bridge until S6 rewrites them to model slots.
+  The first-party plugins publish `Solved2d`/`Solved3d` and `Points2d`/`Points3d` and require
+  `Body2d`/`Body3d`, `Goals2d`/`Goals3d` and `Point2d`/`Point3d`. A model object carries exactly
+  `id`, `spec` and optional `parse`.
   A source is a model output run through the engine's passthrough processor.
 - Plugin parameters live in `input.param` and are written through `input.param.set` and `setField`.
   `input.values` stays the model's data or the plugin's local data.
@@ -28,7 +29,8 @@ local data. Reader-pull structures made a plugin rebuild its inputs per frame.
 
 ## Consequences
 
-- Every track has a declared contract and a static guard; matching is nominal.
+- Every track in a catalog-backed engine has a declared contract and a static guard; matching is
+  nominal. An engine without a catalog keeps the unjudged mode and no model spec.
 - One resolved slot map and one compose path replace the two-map/two-resolver pipeline.
 - Documents migrate once; published values stay plain tables and records.
-- The v5.1 type machinery remains internal until the S6 removal slice deletes it.
+- The v5.1 type machinery, the Pose specs and `legacyTypeId` are removed.

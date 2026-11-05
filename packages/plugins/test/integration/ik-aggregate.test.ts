@@ -3,10 +3,12 @@ import { describe, expect, it, vi } from "vitest";
 import { Engine, PluginCatalog, createManualClock, type ProjectDefinition } from "@motion5/core";
 import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/testing";
 import { ikPlugin } from "../../src/ik";
-import { AggregateTopologyError } from "../support/aggregate-topology";
+import { Body2d, Goals2d, Point2d, Solved2d } from "../../src/models";
+import { goalDiagnostics } from "../../src/goals/check";
 import { BODY_2D_SPEC } from "../../src/body/fields";
 import { GOALS_2D_SPEC } from "../../src/goals/fields";
-import { goalsEntity, rootEntity } from "../support/typed-rig";
+import { bodyStructure, goalsStructure, rigStructures } from "../support/rig-input";
+import { isValue } from "../../../core/src/runtime/value-validation";
 import { testModels } from "../../../core/test/support/test-models";
 
 const solver = vi.hoisted(() => ({ calls: 0 }));
@@ -40,15 +42,15 @@ function input(
   chain: unknown = BODY,
   goals: unknown = GOALS,
 ) {
-  const rig = goalsEntity(chain, goals);
   return {
     values: {},
     param: values,
     requires: {
-      chain: rig.body,
-      goals: rig.goals,
-      base: rootEntity({ x: 0, y: 0, rotation: 0 }),
+      chain,
+      goals,
+      base: { x: 0, y: 0, rotation: 0 },
     },
+    structures: rigStructures(chain, goals),
   } as never;
 }
 
@@ -132,12 +134,16 @@ function solved(handle: ReturnType<typeof open>, node = "demo/solve") {
 }
 
 describe("aggregate 2D IK", () => {
-  it("AI-1 declares chain, goals and base single slots and the solved table", () => {
+  it("AI-1 declares chain, goals and base model slots and the solved model", () => {
     const requires = ikPlugin.inputs.requires!;
     expect(Object.keys(requires)).toEqual(["chain", "goals", "base"]);
-    for (const slot of Object.values(requires)) expect(slot.binding).toBeUndefined();
+    expect(requires.chain).toBe(Body2d);
+    expect(requires.goals).toBe(Goals2d);
+    expect(requires.base).toBe(Point2d);
     expect(requires.members).toBeUndefined();
-    expect(ikPlugin.outputs.inspect?.optional).toBe(true);
+    expect(ikPlugin.outputs.values).toBe(Solved2d);
+    const inspect = ikPlugin.outputs.inspect;
+    expect(inspect !== undefined && !("id" in inspect) && inspect.optional).toBe(true);
     expect(Object.keys(ikPlugin.outputs)).toEqual(["values", "inspect"]);
   });
 
@@ -149,30 +155,40 @@ describe("aggregate 2D IK", () => {
     expect(ikPlugin.transform(input(undefined, [...BODY].reverse()), CTX)).toEqual(GOLDEN);
   });
 
-  it("AI-4 refuses malformed goal tables by kind through the transform", () => {
-    const kindOf = (goals: unknown) => {
-      try {
-        ikPlugin.transform(input(undefined, BODY, goals), CTX);
-      } catch (error) {
-        if (error instanceof AggregateTopologyError) return error.kind;
-        throw error;
-      }
-      return "accepted";
+  it("AI-4 refuses malformed goal tables at the model and cross-source boundary", () => {
+    const refusal = (goals: unknown): string => {
+      if (!isValue(goals)) return "invalid-value";
+      const parsed = Goals2d.parse?.(goals);
+      if (parsed === undefined) return "no-parse";
+      if (!parsed.ok) return parsed.issues[0]?.message ?? "refused";
+      return goalDiagnostics(bodyStructure(BODY), parsed.value)[0]?.ruleId ?? "accepted";
     };
-    expect(kindOf({})).toBe("goal-table-shape");
-    expect(kindOf([])).toBe("goal-empty");
-    expect(kindOf([{ id: "g" }])).toBe("goal-row-shape");
-    expect(kindOf([{ id: "", cells: { memberId: "left", x: 0, y: 0 } }])).toBe("goal-row-id");
-    expect(kindOf([{ id: "g", cells: { memberId: "zzz", x: 0, y: 0 } }])).toBe(
-      "goal-member-unknown",
+    expect(refusal({})).toContain("table");
+    expect(refusal([])).toBe("ik-solver-no-goal");
+    expect(refusal([{ id: "g" }])).toContain("id and a cells");
+    expect(refusal([{ id: "", cells: { memberId: "left", x: 0, y: 0 } }])).toContain("non-empty");
+    expect(refusal([{ id: "g", cells: { memberId: "zzz", x: 0, y: 0 } }])).toBe(
+      "ik-goal-unknown-member",
     );
-    expect(kindOf([{ id: "g", cells: { memberId: "upper", x: 0, y: 0 } }])).toBe(
-      "goal-member-not-leaf",
+    expect(refusal([{ id: "g", cells: { memberId: "upper", x: 0, y: 0 } }])).toBe(
+      "ik-goal-not-leaf",
     );
-    expect(kindOf([GOALS[0], { id: "dup", cells: { memberId: "left", x: 1, y: 1 } }])).toBe(
-      "goal-member-duplicate",
+    expect(refusal([GOALS[0], { id: "dup", cells: { memberId: "left", x: 1, y: 1 } }])).toContain(
+      "Two goal rows",
     );
-    expect(kindOf([GOALS[0]])).toBe("goal-leaf-unaddressed");
+    expect(refusal([GOALS[0]])).toBe("ik-leaf-without-goal");
+  });
+
+  it("AI-4b keeps the goal refusal in the plugin hooks", () => {
+    const structures = {
+      chain: bodyStructure(BODY),
+      goals: goalsStructure([{ id: "g", cells: { memberId: "zzz", x: 0, y: 0 } }]),
+    };
+    expect(ikPlugin.checkSources?.(structures).map((d) => d.ruleId)).toContain(
+      "ik-goal-unknown-member",
+    );
+    const prepared = ikPlugin.prepare?.({ values: {}, param: {}, structures });
+    expect(prepared?.ok).toBe(false);
   });
 
   it("AI-5 reads a rest edit", () => {
@@ -249,16 +265,16 @@ describe("aggregate 2D IK", () => {
   it("AI-12 reproduces every case captured from the grouped plugin bit for bit", () => {
     expect(Object.keys(GOLDENS).length).toBeGreaterThanOrEqual(12);
     for (const [name, { input: twin, expected }] of Object.entries(GOLDENS)) {
-      const rig = goalsEntity(twin.body, twin.goals);
       const result = ikPlugin.transform(
         {
           values: {},
           param: twin.values ?? { inspect: true },
           requires: {
-            chain: rig.body,
-            goals: rig.goals,
-            base: rootEntity(twin.base),
+            chain: twin.body,
+            goals: twin.goals,
+            base: twin.base,
           },
+          structures: rigStructures(twin.body, twin.goals),
         } as never,
         CTX,
       );

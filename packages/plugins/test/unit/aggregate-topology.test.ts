@@ -6,8 +6,6 @@ import {
   BODY_3D_SPEC,
   GOALS_2D_SPEC,
   GOALS_3D_SPEC,
-  POSE_2D_SPEC,
-  POSE_3D_SPEC,
   ROOT_2D_SPEC,
   ROOT_3D_SPEC,
   SOLVED_2D_SPEC,
@@ -16,6 +14,7 @@ import {
   readGoalTargets,
   EXTERNAL_BASE,
 } from "../support/aggregate-topology";
+import { Points2d, Points3d } from "../../src/models";
 
 function body(...rows: readonly { readonly id: string; readonly parentId?: string }[]) {
   return rows.map(({ id, parentId }) => ({
@@ -43,8 +42,8 @@ describe("aggregate kinematics contracts", () => {
       GOALS_3D_SPEC,
       SOLVED_2D_SPEC,
       SOLVED_3D_SPEC,
-      POSE_2D_SPEC,
-      POSE_3D_SPEC,
+      Points2d.spec,
+      Points3d.spec,
     ])
       expect(spec.kind).toBe("table");
 
@@ -85,10 +84,10 @@ describe("aggregate kinematics contracts", () => {
     expect(SOLVED_3D_SPEC).toMatchObject({
       schema: { row: { fields: { rotationX: { kind: "number" } } } },
     });
-    expect(POSE_2D_SPEC).toMatchObject({
+    expect(Points2d.spec).toMatchObject({
       schema: { row: { fields: { x: { kind: "number" }, rotation: { kind: "number" } } } },
     });
-    expect(POSE_3D_SPEC).toMatchObject({
+    expect(Points3d.spec).toMatchObject({
       schema: { row: { fields: { z: { kind: "number" }, rotationY: { kind: "number" } } } },
     });
   });

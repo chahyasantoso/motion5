@@ -6,8 +6,8 @@ import { ik3dPlugin } from "../../src/ik3d";
 import { fk3dPlugin } from "../../src/fk3d";
 import { BODY_3D_SPEC } from "../support/aggregate-topology";
 import { GOALS_3D_SPEC } from "../../src/goals3d/fields";
-import { POSE_3D_SPEC } from "../../src/pose/fields";
-import { bodyEntity, rootEntity, solvedEntity } from "../support/typed-rig";
+import { Body3d, Point3d, Points3d, Solved3d } from "../../src/models";
+import { bodyStructure, solvedStructure } from "../support/rig-input";
 import { testModels } from "../../../core/test/support/test-models";
 
 const Pole3d = defineModel({
@@ -46,11 +46,15 @@ function runFk3d(raw: RawFk3dInput, _ctx?: unknown) {
     {
       values: raw.values,
       requires: {
-        chain: bodyEntity(raw.requires.chain.values),
+        chain: raw.requires.chain.values,
+        ...(raw.requires.solved === undefined ? {} : { solved: raw.requires.solved.values }),
+        base: raw.requires.base.values,
+      },
+      structures: {
+        chain: bodyStructure(raw.requires.chain.values, true),
         ...(raw.requires.solved === undefined
           ? {}
-          : { solved: solvedEntity(raw.requires.solved.values) }),
-        base: rootEntity(raw.requires.base.values),
+          : { solved: solvedStructure(raw.requires.solved.values, true) }),
       },
     } as never,
     CTX,
@@ -148,13 +152,15 @@ function poses(handle: ReturnType<typeof open>, node = "demo/pose") {
 }
 
 describe("aggregate 3D FK", () => {
-  it("AL-1 declares chain, solved and base single slots and POSE_3D_SPEC output", () => {
+  it("AL-1 declares chain, solved and base single slots and Points3d output", () => {
     const requires = fk3dPlugin.inputs.requires!;
     expect(Object.keys(requires)).toEqual(["chain", "solved", "base"]);
-    for (const slot of Object.values(requires)) expect(slot.binding).toBeUndefined();
+    expect(requires.chain).toBe(Body3d);
+    expect(requires.base).toBe(Point3d);
+    expect(requires.solved).toMatchObject({ optional: true, model: Solved3d });
     expect((requires as Record<string, unknown>).member).toBeUndefined();
     expect((requires as Record<string, unknown>).solver).toBeUndefined();
-    expect(fk3dPlugin.outputs.values).toEqual(POSE_3D_SPEC);
+    expect(fk3dPlugin.outputs.values).toBe(Points3d);
     expect(Object.keys(fk3dPlugin.outputs)).toEqual(["values"]);
   });
 
@@ -306,7 +312,7 @@ describe("aggregate 3D FK", () => {
     ).toThrow('FK3d solver row missing for member "bone".');
   });
 
-  it("AL-5 refuses non-finite solved orientation with TypeError", () => {
+  it("AL-5 refuses non-finite solved orientation at the model boundary", () => {
     for (const key of ["rotation", "rotationX", "rotationY"] as const) {
       for (const badValue of [Number.NaN, Number.POSITIVE_INFINITY]) {
         expect(() =>
@@ -333,7 +339,7 @@ describe("aggregate 3D FK", () => {
             } as never,
             CTX,
           ),
-        ).toThrow('FK3d solver row for member "bone" has no finite orientation.');
+        ).toThrow(/model-value-invalid/);
       }
     }
   });

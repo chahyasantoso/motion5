@@ -1,9 +1,9 @@
-import type { DataType, Model, Structure, ValueSpec } from "../../contract/v5";
+import type { Model, Structure, ValueSpec } from "../../contract/v5";
 import { describeDiagnostics } from "../../contract/diagnostics";
 import type { ParsedValues } from "../../contract/v5-parse";
 import type { Interpolator } from "../../ports/interpolator";
 import { authoringValue } from "../authoring-value";
-import { parseDataType, parseModel } from "../data-type-parse";
+import { parseModel } from "../model-parse";
 import { createValueEvaluator } from "../evaluate-values";
 import type { PublisherComposition } from "../graph-publisher";
 import type { LocalInput } from "../local-input";
@@ -14,7 +14,6 @@ export interface PassthroughProcessorOptions {
   readonly nodeId: string;
   readonly values: ParsedValues | undefined;
   readonly interpolator: Interpolator;
-  readonly dataType?: DataType<unknown, unknown>;
   readonly model?: Model<unknown, unknown>;
   readonly spec?: ValueSpec;
 }
@@ -22,7 +21,6 @@ export interface PassthroughProcessorOptions {
 export class PassthroughProcessor implements Processor {
   readonly kind = "passthrough" as const;
   readonly nodeId: string;
-  readonly #dataType: DataType<unknown, unknown> | undefined;
   readonly #model: Model<unknown, unknown> | undefined;
   readonly #spec: ValueSpec | undefined;
   readonly #interpolator: Interpolator;
@@ -31,33 +29,21 @@ export class PassthroughProcessor implements Processor {
 
   constructor(options: PassthroughProcessorOptions) {
     this.nodeId = options.nodeId;
-    this.#dataType = options.dataType;
     this.#model = options.model;
-    this.#spec = options.spec ?? options.dataType?.spec ?? options.model?.spec;
+    this.#spec = options.spec ?? options.model?.spec;
     this.#interpolator = options.interpolator;
     this.#structure = this.#parseStructure(options.values);
   }
 
   #parseStructure(values: ParsedValues | undefined): Structure<unknown> | undefined {
-    if (this.#dataType !== undefined) {
-      const parsed = parseDataType(
-        this.#dataType,
-        authoringValue(values, this.#dataType.spec),
-        `${this.nodeId}.input.values`,
-      );
-      if (parsed.kind === "refused") throw new TypeError(describeDiagnostics(parsed.diagnostics));
-      return parsed.value;
-    }
-    if (this.#model !== undefined) {
-      const parsed = parseModel(
-        this.#model,
-        authoringValue(values, this.#model.spec),
-        `${this.nodeId}.input.values`,
-      );
-      if (parsed.kind === "refused") throw new TypeError(describeDiagnostics(parsed.diagnostics));
-      return parsed.value;
-    }
-    return undefined;
+    if (this.#model === undefined) return undefined;
+    const parsed = parseModel(
+      this.#model,
+      authoringValue(values, this.#model.spec),
+      `${this.nodeId}.input.values`,
+    );
+    if (parsed.kind === "refused") throw new TypeError(describeDiagnostics(parsed.diagnostics));
+    return parsed.value;
   }
 
   structureAtCommit(): Structure<unknown> | undefined {

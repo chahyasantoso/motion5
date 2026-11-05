@@ -14,7 +14,6 @@ const SPEC_A: ValueSpec = {
 const Body2d = defineModel({
   id: "Body2d",
   spec: SPEC_A,
-  legacyTypeId: "body2d",
 });
 
 const Mocap2d = defineModel({

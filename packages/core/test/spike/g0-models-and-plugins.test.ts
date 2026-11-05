@@ -35,7 +35,6 @@ export interface Model<
   readonly kind: Kind;
   readonly spec: ValueSpec;
   readonly parse?: (value: unknown) => Parsed<Structure>;
-  readonly legacyTypeId?: string;
 }
 
 export function defineModel<
@@ -47,7 +46,6 @@ export function defineModel<
   readonly kind: Kind;
   readonly spec: ValueSpec;
   readonly parse?: (value: unknown) => Parsed<Structure>;
-  readonly legacyTypeId?: string;
 }): Model<Cells, Structure, Kind> {
   return Object.freeze({ ...decl });
 }

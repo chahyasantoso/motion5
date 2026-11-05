@@ -20,7 +20,7 @@ import { acceptedOutcome, refusedOutcomeFrom, type Outcome } from "../lang/outco
 import { unreachable } from "../lang/exhaustive";
 import type { PluginCapabilities } from "../ports/plugin-capabilities";
 import { authoringValue } from "./authoring-value";
-import { parseModel } from "./data-type-parse";
+import { parseModel } from "./model-parse";
 import { validateRuntimeValue } from "./value-validation";
 import { authoredStaticView, runtimeStaticView, sameStaticView } from "./static-view";
 import { AUTHORED, buildOwed, LIVE, type ValueState } from "./value-state";

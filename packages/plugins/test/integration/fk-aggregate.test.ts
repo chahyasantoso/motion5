@@ -5,8 +5,8 @@ import { ikPlugin } from "../../src/ik";
 import { fkPlugin } from "../../src/fk";
 import { BODY_2D_SPEC } from "../support/aggregate-topology";
 import { GOALS_2D_SPEC } from "../../src/goals/fields";
-import { POSE_2D_SPEC } from "../../src/pose/fields";
-import { bodyEntity, rootEntity, solvedEntity } from "../support/typed-rig";
+import { Body2d, Point2d, Points2d, Solved2d } from "../../src/models";
+import { bodyStructure, solvedStructure } from "../support/rig-input";
 import { testModels } from "../../../core/test/support/test-models";
 
 const composer = vi.hoisted(() => ({ calls: 0 }));
@@ -37,11 +37,15 @@ function runFk(raw: RawFkInput, _ctx?: unknown) {
     {
       values: raw.values,
       requires: {
-        chain: bodyEntity(raw.requires.chain.values),
+        chain: raw.requires.chain.values,
+        ...(raw.requires.solved === undefined ? {} : { solved: raw.requires.solved.values }),
+        base: raw.requires.base.values,
+      },
+      structures: {
+        chain: bodyStructure(raw.requires.chain.values),
         ...(raw.requires.solved === undefined
           ? {}
-          : { solved: solvedEntity(raw.requires.solved.values) }),
-        base: rootEntity(raw.requires.base.values),
+          : { solved: solvedStructure(raw.requires.solved.values) }),
       },
     } as never,
     CTX,
@@ -133,13 +137,15 @@ function poses(handle: ReturnType<typeof open>, node = "demo/pose") {
 }
 
 describe("aggregate 2D FK", () => {
-  it("AK-1 declares chain, solved and base single slots and POSE_2D_SPEC output", () => {
+  it("AK-1 declares chain, solved and base single slots and Points2d output", () => {
     const requires = fkPlugin.inputs.requires!;
     expect(Object.keys(requires)).toEqual(["chain", "solved", "base"]);
-    for (const slot of Object.values(requires)) expect(slot.binding).toBeUndefined();
+    expect(requires.chain).toBe(Body2d);
+    expect(requires.base).toBe(Point2d);
+    expect(requires.solved).toMatchObject({ optional: true, model: Solved2d });
     expect((requires as Record<string, unknown>).member).toBeUndefined();
     expect((requires as Record<string, unknown>).solver).toBeUndefined();
-    expect(fkPlugin.outputs.values).toEqual(POSE_2D_SPEC);
+    expect(fkPlugin.outputs.values).toBe(Points2d);
     expect(Object.keys(fkPlugin.outputs)).toEqual(["values"]);
   });
 
@@ -268,7 +274,7 @@ describe("aggregate 2D FK", () => {
     ).toThrow('Solver row missing for member "bone".');
   });
 
-  it("AK-5 refuses non-finite solved rotation with TypeError", () => {
+  it("AK-5 refuses non-finite solved rotation at the model boundary", () => {
     expect(() =>
       runFk(
         {
@@ -281,7 +287,7 @@ describe("aggregate 2D FK", () => {
         } as never,
         CTX,
       ),
-    ).toThrow('FK solver row for member "bone" has no finite rotation.');
+    ).toThrow(/model-value-invalid/);
 
     expect(() =>
       runFk(
@@ -295,7 +301,7 @@ describe("aggregate 2D FK", () => {
         } as never,
         CTX,
       ),
-    ).toThrow('FK solver row for member "bone" has no finite rotation.');
+    ).toThrow(/model-value-invalid/);
   });
 
   it("AK-6 blends authored and solved rotation along short arc with clamping", () => {
@@ -456,7 +462,7 @@ describe("aggregate 2D FK", () => {
     expect(poses(renamed, "other/pose")).toEqual(poses(open(project())));
   });
 
-  it("AK-12a refreshes a computed solved structure when the producer row set changes", () => {
+  it("AK-12a refuses computed row-set changes and recovers when the chain is replaced", () => {
     const handle = open(project());
     handle.track("demo/body").input.replace({
       values: [
@@ -472,7 +478,31 @@ describe("aggregate 2D FK", () => {
         { id: "left-hand-2", cells: { memberId: "left-lower-2", x: 4, y: 12 } },
       ],
     });
+    expect(handle.get("demo/pose")?.status).toBe("blocked");
+    expect(handle.get("demo/solve")?.diagnostics.map((d) => d.ruleId)).toContain(
+      "output-static-changed",
+    );
+
+    handle.track("demo/solve").replace({
+      id: "solve",
+      output: { plugin: "ik" },
+      input: {
+        param: { flip: false },
+        requires: { chain: "body", goals: "goals", base: "root" },
+      },
+    });
+    handle.track("demo/pose").replace({
+      id: "pose",
+      output: { plugin: "fk" },
+      input: { values: {}, requires: { chain: "body", solved: "solve", base: "root" } },
+    });
     expect(handle.get("demo/pose")?.status).toBe("ready");
+    expect(poses(handle).map((row) => row.id)).toEqual([
+      "trunk",
+      "left-upper",
+      "left-lower",
+      "left-lower-2",
+    ]);
   });
 
   it("AK-12 runs composition once and publishes once per value batch", () => {

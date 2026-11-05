@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
-import { shape, typed } from "@motion5/core/plugin-api";
+import { shape } from "@motion5/core/plugin-api";
 import {
   defineModel,
   isModel,
-  type DataType,
+  type ModelSlotSpec,
   type Patch,
   type PluginDefinition,
   type ProjectDefinition,
@@ -11,7 +11,6 @@ import {
   type SourceStructures,
   type Structure,
   type Table,
-  type Value,
   type ValueSpec,
 } from "../../src/contract/v5";
 import { PluginCatalog } from "../../src/domain/plugin-catalog";
@@ -43,7 +42,6 @@ const PointTable = defineModel({
 
 const HardeningSource = defineModel({
   id: "HardeningSource",
-  legacyTypeId: "hardening-type",
   spec: POINT,
   parse: () => ({ ok: true, value: { tag: "parsed-tag" } }),
 });
@@ -429,16 +427,10 @@ describe("identified plugin runtime", () => {
       interface HardeningStructure {
         readonly tag: string;
       }
-      const hardeningType: DataType<HardeningStructure, { readonly values: Table }> = {
-        id: "hardening-type",
-        spec: POINT,
-        parse(_value: Value) {
-          return { kind: "parsed", structure: { tag: "parsed-tag" }, warnings: [] };
-        },
-        bind(_structure: Structure<HardeningStructure>, value: Value) {
-          if (!Array.isArray(value)) throw new TypeError("Expected table");
-          return { values: value as Table };
-        },
+      const hardeningSlot: ModelSlotSpec = {
+        kind: "model",
+        model: HardeningSource,
+        binding: "map",
       };
 
       let commitCapturedStructures: SourceStructures | undefined;
@@ -449,7 +441,7 @@ describe("identified plugin runtime", () => {
         id: "consumer",
         inputs: {
           values: { kind: "record", fields: { n: { kind: "number" } } },
-          requires: { data: typed(hardeningType, { binding: "map" }) },
+          requires: { data: hardeningSlot },
         },
         outputs: { values: POINT },
         checkSources(structures) {
@@ -523,10 +515,8 @@ describe("identified plugin runtime", () => {
           if (capturedRequires !== undefined) {
             expect(Object.hasOwn(capturedRequires, memberKey)).toBe(true);
             expect(Object.getPrototypeOf(capturedRequires)).toBe(Object.prototype);
-            const memberValue = capturedRequires[memberKey] as
-              | { readonly values: Table }
-              | undefined;
-            expect(memberValue?.values).toEqual(table(row("p1", { x: 1, y: 2 })));
+            const memberValue = capturedRequires[memberKey] as Table | undefined;
+            expect(memberValue).toEqual(table(row("p1", { x: 1, y: 2 })));
           }
         } finally {
           handle.dispose();
@@ -541,16 +531,10 @@ describe("identified plugin runtime", () => {
     interface HardeningStructure {
       readonly tag: string;
     }
-    const hardeningType: DataType<HardeningStructure, { readonly values: Table }> = {
-      id: "hardening-type-2",
-      spec: POINT,
-      parse(_value: Value) {
-        return { kind: "parsed", structure: { tag: "parsed-tag" }, warnings: [] };
-      },
-      bind(_structure: Structure<HardeningStructure>, value: Value) {
-        if (!Array.isArray(value)) throw new TypeError("Expected table");
-        return { values: value as Table };
-      },
+    const hardeningSlot: ModelSlotSpec = {
+      kind: "model",
+      model: HardeningSource,
+      binding: "map",
     };
 
     let composeStructures: SourceStructures | undefined;
@@ -558,7 +542,7 @@ describe("identified plugin runtime", () => {
       id: "test-plugin-proto",
       inputs: {
         values: { kind: "record", fields: {} },
-        requires: { data: typed(hardeningType, { binding: "map" }) },
+        requires: { data: hardeningSlot },
       },
       outputs: { values: POINT },
       checkSources(structures) {

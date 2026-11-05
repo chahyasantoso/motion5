@@ -4,7 +4,6 @@ import { readAuthoredLeaf } from "./authored-leaf";
 import { diagnostic } from "./diagnostics";
 import type { Diagnostic } from "./v5";
 import type {
-  DataType,
   FieldSpec,
   Model,
   OutputDefinition,
@@ -87,8 +86,6 @@ export interface ParseContext {
   readonly isPluginRegistered?: (pluginId: string) => boolean;
   /** Answers the admitted plugin definition for an id; absent leaves the declaration unjudged. */
   readonly pluginDefinition?: (pluginId: string) => PluginDefinition | undefined;
-  /** Answers the admitted data type for an id; absent leaves the declaration unjudged. */
-  readonly dataType?: (typeId: string) => DataType<unknown, unknown> | undefined;
   /** Answers the admitted model for an id; absent leaves the declaration unjudged. */
   readonly model?: (modelId: string) => Model<unknown, unknown> | undefined;
   /** Lists admitted model ids for diagnostics; absent omits the list. */

@@ -1,6 +1,6 @@
 import { describe, expect, expectTypeOf, it } from "vitest";
 import { shape } from "@motion5/core/plugin-api";
-import { defineModel } from "../../src/contract/v5";
+import { defineModel, isModel } from "../../src/contract/v5";
 import type { Patch, ProjectDefinition } from "../../src/contract/v5";
 import type { RuleId } from "../../src/contract/rule-id";
 import type {
@@ -563,8 +563,8 @@ describe("v5 plugin type direction", () => {
   it("[Phase 3] translate's declared input spec and authored type agree", () => {
     expectTypeOf<keyof TranslateValues>().toEqualTypeOf<"dx" | "dy">();
     const spec = translatePlugin.inputs.values;
-    expect(spec?.kind).toBe("record");
-    if (spec !== undefined && "fields" in spec)
+    expect(spec !== undefined && !isModel(spec) && spec.kind).toBe("record");
+    if (spec !== undefined && !isModel(spec) && "fields" in spec)
       expect(Object.keys(spec.fields)).toEqual(["dx", "dy"]);
   });
 });

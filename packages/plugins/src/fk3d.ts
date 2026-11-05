@@ -1,15 +1,15 @@
 import {
   diagnostic,
   ok,
+  optional,
   refused,
-  typed,
   type PluginDefinition,
   type Prepared,
+  type Scalar,
   type SourceStructures,
-  type Structure,
+  type Table,
 } from "@motion5/core/plugin-api";
-import type { Body, BodyStructure } from "./body/domain";
-import { body3d } from "./body3d/type";
+import { bindBody, type BodyStructure } from "./body/domain";
 import {
   blendOrientation3d,
   composeWorld3d,
@@ -21,19 +21,18 @@ import {
   type WorldFrame3d,
 } from "./frame3d";
 import { clamp, readNumber, segmentExtent } from "./frame";
-import type { Root } from "./root/domain";
-import { root3d } from "./root3d/type";
-import type { Solved, SolvedRow, SolvedStructure } from "./solved/domain";
-import { solved3d } from "./solved3d/type";
-import { POSE_3D_SPEC } from "./pose/fields";
+import { bindSolved, type SolvedRow, type SolvedStructure } from "./solved/domain";
+import { Body3d, Point3d, Points3d, Solved3d } from "./models";
+import { requireStructure, structureOf } from "./slot-structure";
 
 type Fk3dInput = {
   readonly values: Readonly<Record<string, never>>;
   readonly requires: {
-    readonly chain: Body;
-    readonly solved?: Solved;
-    readonly base: Root;
+    readonly chain: Table;
+    readonly solved?: Table;
+    readonly base: Readonly<Record<string, Scalar>>;
   };
+  readonly structures?: SourceStructures;
 };
 
 function solvedOrientation(row: SolvedRow | undefined, id: string): Euler3d {
@@ -53,21 +52,17 @@ function solvedOrientation(row: SolvedRow | undefined, id: string): Euler3d {
   return { rotation, rotationX, rotationY };
 }
 
-function structureOf<T>(structures: SourceStructures, slot: string): Structure<T> | undefined {
-  return structures[slot] as Structure<T> | undefined;
-}
-
 export const fk3dPlugin: PluginDefinition<Fk3dInput> = {
   id: "fk3d",
   inputs: {
     values: { kind: "record", fields: {} },
     requires: {
-      chain: typed(body3d),
-      solved: typed(solved3d, { optional: true }),
-      base: typed(root3d),
+      chain: Body3d,
+      solved: optional(Solved3d),
+      base: Point3d,
     },
   },
-  outputs: { values: POSE_3D_SPEC },
+  outputs: { values: Points3d },
   checkSources(structures) {
     const chain = structureOf<BodyStructure>(structures, "chain");
     const solved = structureOf<SolvedStructure>(structures, "solved");
@@ -96,9 +91,18 @@ export const fk3dPlugin: PluginDefinition<Fk3dInput> = {
     }
     return ok(undefined);
   },
-  transform({ requires }) {
-    const chain = requires.chain;
-    const solved = requires.solved;
+  transform({ requires, structures }) {
+    const chain = bindBody(
+      requireStructure<BodyStructure>(structures, "chain", "FK3d"),
+      requires.chain,
+    );
+    const solved =
+      requires.solved === undefined
+        ? undefined
+        : bindSolved(
+            requireStructure<SolvedStructure>(structures, "solved", "FK3d"),
+            requires.solved,
+          );
     const baseFrame = readFrame3d(requires.base);
     const worldFrames = new Map<string, WorldFrame3d>();
     const rows = chain.rows.map((row) => {

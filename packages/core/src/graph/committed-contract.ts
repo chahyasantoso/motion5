@@ -1,12 +1,12 @@
 import type {
   Model,
-  OptionalModel,
   SlotSpec,
   TrackDefinition,
   PluginDefinition,
   SourceBinding,
 } from "../contract/v5";
-import { isModel, isOptionalModel, outputModelId, outputPluginId } from "../contract/v5";
+import { isModel, outputModelId, outputPluginId } from "../contract/v5";
+import { slotDeclaration } from "../contract/slot-declaration";
 import { deriveSourceContract, type SourceContract } from "../contract/v5-infer";
 import { parseTrackDefinition } from "../contract/v5-parse";
 import type { PluginCapabilities } from "../ports/plugin-capabilities";
@@ -14,7 +14,6 @@ import type { PluginCapabilities } from "../ports/plugin-capabilities";
 /** Committed shape of a node at its last structural commit; slot and dependency checks read it because cheap edits move values without re-inferring. */
 export interface CommittedContract {
   readonly modelId?: string;
-  readonly typeId?: string;
   readonly plugin?: string;
   readonly input: SourceContract;
   readonly outputs: Readonly<Record<string, SourceContract>>;
@@ -52,18 +51,7 @@ function pluginContract(
   }
   const slots: Record<string, SlotSpec> = {};
   for (const [slot, spec] of Object.entries(definition.inputs.requires ?? {})) {
-    if (isModel(spec)) {
-      slots[slot] = freeze({ kind: "model", model: spec, binding: "single" });
-    } else if (isOptionalModel(spec)) {
-      slots[slot] = freeze({
-        kind: "model",
-        model: spec.model,
-        optional: true,
-        binding: spec.binding ?? "single",
-      });
-    } else {
-      slots[slot] = spec;
-    }
+    slots[slot] = slotDeclaration(spec);
   }
   return freeze({
     plugin,
@@ -106,7 +94,6 @@ export function deriveCommittedContract(
     model !== undefined ? freeze({ ...input.value, modelId: model.id }) : input.value;
   return freeze({
     ...(model === undefined ? {} : { modelId: model.id }),
-    ...(model?.legacyTypeId === undefined ? {} : { typeId: model.legacyTypeId }),
     input: sourceContract,
     outputs: freeze({ values: sourceContract }),
     requires: freeze({ ...parsed.value.input.requires }),

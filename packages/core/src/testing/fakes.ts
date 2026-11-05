@@ -8,10 +8,11 @@ import {
   readAuthoredLeaf,
   readCompilableStops,
 } from "../contract/authored-leaf";
-import type { AuthoredStaticValue, AuthoredStop, DataType, Structure, Value } from "../contract/v5";
+import type { AuthoredStaticValue, AuthoredStop, Model, Structure } from "../contract/v5";
 import { describeDiagnostics } from "../contract/diagnostics";
 import { unreachable } from "../lang/exhaustive";
-import { parseDataType } from "../runtime/data-type-parse";
+import { parseModel } from "../runtime/model-parse";
+import { isValue } from "../runtime/value-validation";
 import type { InterpolationTimeline, Interpolator } from "../ports/interpolator";
 import type { Cancel, Scheduler } from "../ports/scheduler";
 import type { TriggerPort } from "../ports/trigger";
@@ -193,22 +194,20 @@ export function createFakeTriggerPort(): TriggerPort & {
   };
 }
 
-/** Parses and brands a value exactly as commit does; test-only access to the core brand. */
-export function commitStructure<S, E>(type: DataType<S, E>, value: Value): Structure<S> {
-  const parsed = parseDataType(type as DataType<unknown, unknown>, value, "test");
+/** Parses, brands and returns one model structure; test-only access to the core brand. */
+export function commitModelStructure<S>(model: Model<unknown, S>, value: unknown): Structure<S> {
+  if (!isValue(value)) throw new TypeError("A model value must be a table or a record.");
+  const parsed = parseModel(model, value, "test");
   switch (parsed.kind) {
     case "accepted":
-      return parsed.value as Structure<S>;
+      if (parsed.value === undefined)
+        throw new TypeError(`Model '${model.id}' declares no parse hook.`);
+      return parsed.value;
     case "refused":
       throw new TypeError(describeDiagnostics(parsed.diagnostics));
     default:
       return unreachable(parsed);
   }
-}
-
-/** Parses, brands and binds one value with a declared data type. */
-export function bindData<S, E>(type: DataType<S, E>, value: Value): E {
-  return type.bind(commitStructure(type, value), value);
 }
 
 /**

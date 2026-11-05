@@ -1,10 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
+  defineModel,
   isModel,
-  type DataType,
+  type Model,
   type PluginDefinition,
-  type Structure,
-  type Value,
   type ValueSpec,
 } from "../../../src/contract/v5";
 import { parseTrackDefinition, type ParsedValues } from "../../../src/contract/v5-parse";
@@ -22,9 +21,9 @@ function createPassthroughTrack(options: {
   readonly nodeId: string;
   readonly values: ParsedValues | undefined;
   readonly interpolator: Interpolator;
-  readonly dataType?: DataType<unknown, unknown>;
+  readonly model?: Model<unknown, unknown>;
 }): Track {
-  const spec = options.dataType?.spec;
+  const spec = options.model?.spec;
   const localInput = new LocalInput(
     createValueEvaluator(options.values, options.interpolator, spec),
   );
@@ -79,8 +78,8 @@ function pluginWithValues(spec: ValueSpec = RECORD_SPEC): PluginDefinition {
   };
 }
 
-const FAILING_TYPE: DataType<{ readonly valid: true }, Value> = {
-  id: "failing-type",
+const FAILING_MODEL: Model<unknown, { readonly valid: true }> = defineModel({
+  id: "FailingModel",
   spec: RECORD_SPEC,
   parse(value) {
     if (
@@ -88,14 +87,11 @@ const FAILING_TYPE: DataType<{ readonly valid: true }, Value> = {
       value !== null &&
       (value as Record<string, unknown>).x === 999
     ) {
-      return { kind: "refused", errors: [{ path: ["x"], message: "forbidden value 999" }] };
+      return { ok: false, issues: [{ path: "x", message: "forbidden value 999" }] };
     }
-    return { kind: "parsed", structure: { valid: true }, warnings: [] };
+    return { ok: true, value: { valid: true } };
   },
-  bind(_structure: Structure<{ readonly valid: true }>, value: Value) {
-    return value;
-  },
-};
+});
 
 describe("ValueTrack and PluginTrack local-input characterization", () => {
   describe("ValueTrack recompose rules", () => {
@@ -227,7 +223,7 @@ describe("ValueTrack and PluginTrack local-input characterization", () => {
         nodeId: "demo/track",
         values: valuesOf({ x: 10 }),
         interpolator: createFakeInterpolator(),
-        dataType: FAILING_TYPE,
+        model: FAILING_MODEL,
       });
 
       expect(track.outputs()).toEqual({ values: { x: 10 } });

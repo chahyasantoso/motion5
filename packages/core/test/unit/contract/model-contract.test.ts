@@ -1,13 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
-import { typed } from "../../../src/contract/slot-spec";
 import type {
-  DataType,
-  DataTypeParsed,
   PluginDefinition,
   ProjectDefinition,
-  Structure,
   Table,
-  Value,
   ValueSpec,
 } from "../../../src/contract/v5";
 import { PluginCatalog } from "../../../src/domain/plugin-catalog";
@@ -41,54 +36,14 @@ const OUTPUT_SPEC: ValueSpec = {
 interface PointStructure {
   readonly ids: readonly string[];
 }
-interface PointEntity {
-  readonly rows: Table;
-}
-
-const point2d: DataType<PointStructure, PointEntity> = {
-  id: "point2d",
-  spec: POINT_SPEC,
-  parse(value: Value): DataTypeParsed<PointStructure> {
-    if (!Array.isArray(value))
-      return { kind: "refused", errors: [{ path: [], message: "Expected a table." }] };
-    if (value.some((row) => Number(row.cells.y) > 10))
-      return { kind: "refused", errors: [{ path: [], message: "y must stay at or below 10." }] };
-    return { kind: "parsed", structure: { ids: value.map((row) => row.id) }, warnings: [] };
-  },
-  bind(structure: Structure<PointStructure>, value: Value): PointEntity {
-    if (!Array.isArray(value)) throw new TypeError("A point entity requires a table.");
-    const ids = value.map((row) => row.id);
-    if (ids.length !== structure.ids.length || ids.some((id, index) => id !== structure.ids[index]))
-      throw new TypeError("Point rows changed after commit.");
-    return { rows: value };
-  },
-};
 
 type ConsumeInput = {
   readonly values: Readonly<Record<string, never>>;
-  readonly requires: { readonly data: PointEntity };
-};
-
-const CONSUME: PluginDefinition<ConsumeInput> = {
-  id: "consume",
-  inputs: {
-    values: { kind: "record", fields: {} },
-    requires: { data: typed(point2d) },
-  },
-  outputs: { values: OUTPUT_SPEC },
-  transform(input) {
-    return {
-      values: input.requires.data.rows.map((row) => ({
-        id: row.id,
-        cells: { x: Number(row.cells.x), y: Number(row.cells.y) },
-      })),
-    };
-  },
+  readonly requires: { readonly data: Table };
 };
 
 const PointSource = defineModel<unknown, PointStructure>({
   id: "PointSource",
-  legacyTypeId: "point2d",
   spec: POINT_SPEC,
   parse(value) {
     if (!Array.isArray(value))
@@ -99,7 +54,24 @@ const PointSource = defineModel<unknown, PointStructure>({
   },
 });
 
-function project(model = "PointSource"): ProjectDefinition {
+const CONSUME: PluginDefinition<ConsumeInput> = {
+  id: "consume",
+  inputs: {
+    values: { kind: "record", fields: {} },
+    requires: { data: PointSource },
+  },
+  outputs: { values: OUTPUT_SPEC },
+  transform(input) {
+    return {
+      values: input.requires.data.map((row) => ({
+        id: row.id,
+        cells: { x: Number(row.cells.x), y: Number(row.cells.y) },
+      })),
+    };
+  },
+};
+
+function project(model = "PointSource", plugin = "consume"): ProjectDefinition {
   return {
     schemaVersion: 5,
     motions: [
@@ -114,7 +86,7 @@ function project(model = "PointSource"): ProjectDefinition {
           },
           {
             id: "consumer",
-            output: { plugin: "consume" },
+            output: { plugin },
             input: { values: {}, requires: { data: "points" } },
           },
         ],
@@ -134,23 +106,27 @@ function open(definition: ProjectDefinition) {
   }).load(definition);
 }
 
-describe("self-validating data tracks", () => {
-  it("brands structure at commit and binds it without per-frame parsing", () => {
+describe("self-validating model tracks", () => {
+  it("brands structure at commit and resolves it without per-frame parsing", () => {
     const parse = vi.fn(PointSource.parse!);
     const trackedSource = defineModel({
       id: "TrackedPointSource",
-      legacyTypeId: "point2d",
       spec: POINT_SPEC,
       parse,
     });
+    const trackedConsumer: PluginDefinition<ConsumeInput> = {
+      ...CONSUME,
+      id: "consume-tracked",
+      inputs: { ...CONSUME.inputs, requires: { data: trackedSource } },
+    };
     const catalog = new PluginCatalog({ models: [...testModels, trackedSource] });
-    catalog.registerAll([CONSUME]);
+    catalog.registerAll([CONSUME, trackedConsumer]);
     const handle = new Engine({
       clock: createManualClock(),
       interpolator: createFakeInterpolator(),
       scheduler: createFakeScheduler(),
       plugins: catalog,
-    }).load(project("TrackedPointSource"));
+    }).load(project("TrackedPointSource", "consume-tracked"));
     handle.mount("demo/points");
     handle.mount("demo/consumer");
     handle.seek("demo/points", 0.5);
@@ -174,32 +150,19 @@ describe("self-validating data tracks", () => {
       handle
         .track("demo/points")
         .input.values.set([{ id: "a", cells: { owner: "acme", x: 0, y: 20 } }]),
-    ).toThrow(/data-type-invalid/);
+    ).toThrow(/model-value-invalid/);
     expect(handle.track("demo/points").definition).toBe(before);
   });
 
-  it("rejects connecting a generic data track to a typed slot", () => {
-    expect(() => open(project("TestTable"))).toThrow(/slot-type-mismatch/);
+  it("rejects connecting a different model even when the value fits its spec", () => {
+    expect(() => open(project("TestTable"))).toThrow(/slot-model-unsatisfied/);
   });
 
-  it("keys a dotted typed slot's structure by the full slot name", () => {
+  it("keys a dotted model slot's structure by the full slot name", () => {
     const producer: PluginDefinition = {
       id: "producer",
       inputs: { values: { kind: "record", fields: {} } },
-      outputs: {
-        values: {
-          kind: "table",
-          schema: {
-            row: {
-              fields: {
-                owner: { kind: "string" },
-                x: { kind: "number" },
-                y: { kind: "number" },
-              },
-            },
-          },
-        },
-      },
+      outputs: { values: PointSource },
       transform() {
         return { values: [{ id: "bad", cells: { owner: "acme", x: 1, y: 2 } }] };
       },
@@ -208,11 +171,11 @@ describe("self-validating data tracks", () => {
       id: "guard",
       inputs: {
         values: { kind: "record", fields: {} },
-        requires: { "data.points": typed(point2d) },
+        requires: { "data.points": PointSource },
       },
       outputs: { values: OUTPUT_SPEC },
       checkSources(structures) {
-        const structure = structures["data.points"] as Structure<PointStructure> | undefined;
+        const structure = structures["data.points"] as PointStructure | undefined;
         return structure?.ids.includes("bad") === true
           ? [
               {
@@ -281,12 +244,12 @@ describe("self-validating data tracks", () => {
       ],
     };
     const interpolator = createFakeInterpolator();
-    const localInput = new LocalInput(createValueEvaluator(values, interpolator, point2d.spec));
+    const localInput = new LocalInput(createValueEvaluator(values, interpolator, PointSource.spec));
     const processor = new PassthroughProcessor({
       nodeId: "~/points",
       values,
       interpolator,
-      dataType: point2d,
+      model: PointSource,
     });
     const track = new Track("~/points", localInput, processor);
     expect(track.structureAtCommit()).toBeDefined();

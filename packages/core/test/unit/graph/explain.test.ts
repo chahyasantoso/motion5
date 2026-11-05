@@ -1,14 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { typed } from "../../../src/contract/slot-spec";
-import type {
-  DataType,
-  DataTypeParsed,
-  PluginDefinition,
-  ProjectDefinition,
-  Structure,
-  Value,
-  ValueSpec,
-} from "../../../src/contract/v5";
+import type { PluginDefinition, ProjectDefinition, ValueSpec } from "../../../src/contract/v5";
 import { defineModel } from "../../../src/contract/v5";
 import { PluginCatalog } from "../../../src/domain/plugin-catalog";
 import { explain } from "../../../src/graph/explain";
@@ -19,27 +10,22 @@ const POINT: ValueSpec = {
   schema: { row: { fields: { x: { kind: "number" } } } },
 };
 
-const pointType: DataType<{ readonly ids: readonly string[] }, Value> = {
-  id: "point2d",
+const PointSource = defineModel<unknown, { readonly ids: readonly string[] }>({
+  id: "PointSource",
   spec: POINT,
-  parse(value: Value): DataTypeParsed<{ readonly ids: readonly string[] }> {
+  parse(value) {
     return {
-      kind: "parsed",
-      structure: { ids: Array.isArray(value) ? value.map((row) => row.id) : [] },
-      warnings: [],
+      ok: true,
+      value: { ids: Array.isArray(value) ? value.map((row) => row.id) : [] },
     };
   },
-  bind(structure: Structure<{ readonly ids: readonly string[] }>, value: Value): Value {
-    void structure;
-    return value;
-  },
-};
+});
 
 const CONSUMER: PluginDefinition = {
   id: "consume",
   inputs: {
     values: { kind: "record", fields: {} },
-    requires: { data: typed(pointType) },
+    requires: { data: PointSource },
   },
   outputs: { values: POINT },
   transform() {
@@ -52,12 +38,6 @@ function catalog(): PluginCatalog {
   result.register(CONSUMER);
   return result;
 }
-
-const PointSource = defineModel({
-  id: "PointSource",
-  legacyTypeId: "point2d",
-  spec: POINT,
-});
 
 function project(model = "PointSource"): ProjectDefinition {
   return {
@@ -84,7 +64,7 @@ function project(model = "PointSource"): ProjectDefinition {
 }
 
 describe("explain", () => {
-  it("reports a matching typed edge as compatible", () => {
+  it("reports a matching model edge as compatible", () => {
     const report = explain(project(), catalog());
     expect(report.diagnostics).toEqual([]);
     expect(report.nodes.find((node) => node.nodeId === "demo/consumer")?.output).toEqual({
@@ -94,18 +74,18 @@ describe("explain", () => {
     expect(consumer?.slots).toEqual([
       {
         slot: "data",
-        kind: "typed",
-        requires: ["point2d"],
+        kind: "model",
+        requires: ["PointSource"],
         sources: ["demo/points"],
         outcome: "compatible",
       },
     ]);
-    expect(report.lines).toContain("demo/consumer [typed:point2d] <- demo/points: compatible");
+    expect(report.lines).toContain("demo/consumer [model:PointSource] <- demo/points: compatible");
   });
 
-  it("reports a generic source as a type mismatch", () => {
+  it("reports a different model as incompatible", () => {
     const report = explain(project("TestTable"), catalog());
-    expect(report.diagnostics.map(({ ruleId }) => ruleId)).toContain("slot-type-mismatch");
+    expect(report.diagnostics.map(({ ruleId }) => ruleId)).toContain("slot-model-unsatisfied");
     const consumer = report.nodes.find((node) => node.nodeId === "demo/consumer");
     expect(consumer?.slots[0]?.outcome).toBe("incompatible");
   });
@@ -114,7 +94,6 @@ describe("explain", () => {
     const bodyModel = defineModel({
       id: "Body2d",
       spec: POINT,
-      legacyTypeId: "body2d",
     });
     const modelConsumer = {
       id: "consume-model",

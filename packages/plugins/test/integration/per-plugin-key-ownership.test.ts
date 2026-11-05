@@ -7,10 +7,12 @@ import { BODY_2D_SPEC } from "../support/aggregate-topology";
 import { ROOT_2D_SPEC } from "../../src/root/fields";
 import { SOLVED_2D_SPEC } from "../../src/solved/fields";
 import { createManualClock } from "@motion5/core";
-import { bindData, createFakeInterpolator, createFakeScheduler } from "@motion5/core/testing";
-import { body2d } from "../../src/body/type";
-import { root2d } from "../../src/root/type";
-import { solved2d } from "../../src/solved/type";
+import {
+  commitModelStructure,
+  createFakeInterpolator,
+  createFakeScheduler,
+} from "@motion5/core/testing";
+import { Body2d, Solved2d } from "../../src/models";
 import { testModels } from "../../../core/test/support/test-models";
 
 function hold(value: number) {
@@ -100,13 +102,19 @@ describe("per-plugin keyframe key ownership", () => {
       (BODY_2D_SPEC as Extract<typeof BODY_2D_SPEC, { kind: "table" }>).schema.row.fields,
     ).toHaveProperty("parentId");
 
+    const chain = [{ id: "thigh", cells: { length: 50, rotation: 45 } }];
+    const solved = [{ id: "thigh", cells: { rotation: 45 } }];
     const composed = fkPlugin.transform(
       {
         values: {},
         requires: {
-          chain: bindData(body2d, [{ id: "thigh", cells: { length: 50, rotation: 45 } }]),
-          solved: bindData(solved2d, [{ id: "thigh", cells: { rotation: 45 } }]),
-          base: bindData(root2d, { x: 0, y: 100, rotation: 0 }),
+          chain,
+          solved,
+          base: { x: 0, y: 100, rotation: 0 },
+        },
+        structures: {
+          chain: commitModelStructure(Body2d, chain),
+          solved: commitModelStructure(Solved2d, solved),
         },
       },
       { nodeId: "walk/thigh", progress: 0 },

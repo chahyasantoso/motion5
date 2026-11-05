@@ -1,13 +1,6 @@
-import type {
-  DataType,
-  DataTypeParsed,
-  Structure,
-  TypeIssue,
-  Value,
-} from "@motion5/core/plugin-api";
+import type { TypeIssue } from "@motion5/core/plugin-api";
 import { unreachable } from "@motion5/core/plugin-api";
-import { bindGoals, parseGoals, type Goals, type GoalsError, type GoalsStructure } from "./domain";
-import { GOALS_2D_SPEC } from "./fields";
+import type { GoalsError } from "./domain";
 
 export function goalsIssue(error: GoalsError): TypeIssue {
   switch (error.kind) {
@@ -27,17 +20,3 @@ export function goalsIssue(error: GoalsError): TypeIssue {
       return unreachable(error);
   }
 }
-
-export const goals2d: DataType<GoalsStructure, Goals> = {
-  id: "goals2d",
-  spec: GOALS_2D_SPEC,
-  parse(value: Value): DataTypeParsed<GoalsStructure> {
-    const parsed = parseGoals(value);
-    return parsed.ok
-      ? { kind: "parsed", structure: parsed.value, warnings: [] }
-      : { kind: "refused", errors: parsed.errors.map(goalsIssue) };
-  },
-  bind(structure: Structure<GoalsStructure>, value: Value): Goals {
-    return bindGoals(structure, value);
-  },
-};

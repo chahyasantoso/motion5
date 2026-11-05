@@ -4,10 +4,12 @@ import { Engine, PluginCatalog, createManualClock, type ProjectDefinition } from
 import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/testing";
 import { defineModel } from "@motion5/core/plugin-api";
 import { ik3dPlugin } from "../../src/ik3d";
-import { AggregateTopologyError } from "../support/aggregate-topology";
+import { Body3d, Goals3d, Point3d, Solved3d } from "../../src/models";
+import { goalDiagnostics } from "../../src/goals/check";
 import { BODY_3D_SPEC } from "../../src/body3d/fields";
 import { GOALS_3D_SPEC } from "../../src/goals3d/fields";
-import { goalsEntity, rootEntity } from "../support/typed-rig";
+import { bodyStructure, goalsStructure, rigStructures } from "../support/rig-input";
+import { isValue } from "../../../core/src/runtime/value-validation";
 import { testModels } from "../../../core/test/support/test-models";
 
 const Pole3d = defineModel({
@@ -58,16 +60,16 @@ function input(
   options: { inspect?: boolean; chain?: unknown; goals?: unknown; pole?: object | null } = {},
 ) {
   const { inspect = true, chain = BODY, goals = GOALS, pole = POLE } = options;
-  const rig = goalsEntity(chain, goals);
   return {
     values: {},
     param: { inspect },
     requires: {
-      chain: rig.body,
-      goals: rig.goals,
-      base: rootEntity(ROOT),
+      chain,
+      goals,
+      base: ROOT,
       ...(pole === null ? {} : { pole: { values: pole } }),
     },
+    structures: rigStructures(chain, goals, true),
   } as never;
 }
 const run = (options: Parameters<typeof input>[0] = {}) =>
@@ -117,8 +119,11 @@ describe("aggregate 3D IK", () => {
   it("AJ-1 declares chain, goals, base and an optional pole, and nothing else", () => {
     const requires = ik3dPlugin.inputs.requires!;
     expect(Object.keys(requires)).toEqual(["chain", "goals", "base", "pole"]);
-    expect(requires.pole!.optional).toBe(true);
-    for (const slot of Object.values(requires)) expect(slot.binding).toBeUndefined();
+    expect(requires.chain).toBe(Body3d);
+    expect(requires.goals).toBe(Goals3d);
+    expect(requires.base).toBe(Point3d);
+    expect("optional" in requires.pole! && requires.pole.optional).toBe(true);
+    expect(ik3dPlugin.outputs.values).toBe(Solved3d);
     expect(Object.keys(ik3dPlugin.outputs)).toEqual(["values", "inspect"]);
   });
 
@@ -138,30 +143,42 @@ describe("aggregate 3D IK", () => {
     expect(rowsOf(run({ chain: [...BODY].reverse() }))).toEqual(GOLDEN_ROWS);
   });
 
-  it("AJ-4 refuses malformed goal tables by kind through the transform", () => {
-    const kindOf = (goals: unknown) => {
-      try {
-        run({ goals });
-      } catch (error) {
-        if (error instanceof AggregateTopologyError) return error.kind;
-        throw error;
-      }
-      return "accepted";
+  it("AJ-4 refuses malformed goal tables at the model and cross-source boundary", () => {
+    const refusal = (goals: unknown): string => {
+      if (!isValue(goals)) return "invalid-value";
+      const parsed = Goals3d.parse?.(goals);
+      if (parsed === undefined) return "no-parse";
+      if (!parsed.ok) return parsed.issues[0]?.message ?? "refused";
+      return goalDiagnostics(bodyStructure(BODY, true), parsed.value)[0]?.ruleId ?? "accepted";
     };
-    expect(kindOf({})).toBe("goal-table-shape");
-    expect(kindOf([])).toBe("goal-empty");
-    expect(kindOf([{ id: "g" }])).toBe("goal-row-shape");
-    expect(kindOf([{ id: "", cells: { memberId: "left", x: 0, y: 0, z: 0 } }])).toBe("goal-row-id");
-    expect(kindOf([{ id: "g", cells: { memberId: "zzz", x: 0, y: 0, z: 0 } }])).toBe(
-      "goal-member-unknown",
+    expect(refusal({})).toContain("table");
+    expect(refusal([])).toBe("ik-solver-no-goal");
+    expect(refusal([{ id: "g" }])).toContain("id and a cells");
+    expect(refusal([{ id: "", cells: { memberId: "left", x: 0, y: 0, z: 0 } }])).toContain(
+      "non-empty",
     );
-    expect(kindOf([{ id: "g", cells: { memberId: "upper", x: 0, y: 0, z: 0 } }])).toBe(
-      "goal-member-not-leaf",
+    expect(refusal([{ id: "g", cells: { memberId: "zzz", x: 0, y: 0, z: 0 } }])).toBe(
+      "ik-goal-unknown-member",
     );
-    expect(kindOf([GOALS[0], { id: "dup", cells: { memberId: "left", x: 1, y: 1, z: 1 } }])).toBe(
-      "goal-member-duplicate",
+    expect(refusal([{ id: "g", cells: { memberId: "upper", x: 0, y: 0, z: 0 } }])).toBe(
+      "ik-goal-not-leaf",
     );
-    expect(kindOf([GOALS[0]])).toBe("goal-leaf-unaddressed");
+    expect(
+      refusal([GOALS[0], { id: "dup", cells: { memberId: "left", x: 1, y: 1, z: 1 } }]),
+    ).toContain("Two goal rows");
+    expect(refusal([GOALS[0]])).toBe("ik-leaf-without-goal");
+  });
+
+  it("AJ-4b keeps the goal refusal in the plugin hooks", () => {
+    const structures = {
+      chain: bodyStructure(BODY, true),
+      goals: goalsStructure([{ id: "g", cells: { memberId: "zzz", x: 0, y: 0, z: 0 } }], true),
+    };
+    expect(ik3dPlugin.checkSources?.(structures).map((d) => d.ruleId)).toContain(
+      "ik-goal-unknown-member",
+    );
+    const prepared = ik3dPlugin.prepare?.({ values: {}, param: {}, structures });
+    expect(prepared?.ok).toBe(false);
   });
 
   it("AJ-5 reads an optional pole and is still total without one", () => {
@@ -364,17 +381,17 @@ describe("aggregate 3D IK captured twins", () => {
   it("AJ-10 reproduces every case captured from the grouped plugin bit for bit", () => {
     expect(Object.keys(GOLDENS).length).toBeGreaterThanOrEqual(17);
     for (const [name, { input: twin, expected }] of Object.entries(GOLDENS)) {
-      const rig = goalsEntity(twin.body, twin.goals);
       const result = ik3dPlugin.transform(
         {
           values: {},
           param: twin.values ?? { inspect: true },
           requires: {
-            chain: rig.body,
-            goals: rig.goals,
-            base: rootEntity(twin.base),
+            chain: twin.body,
+            goals: twin.goals,
+            base: twin.base,
             ...(twin.pole === undefined ? {} : { pole: { values: twin.pole } }),
           },
+          structures: rigStructures(twin.body, twin.goals, true),
         } as never,
         CTX,
       );

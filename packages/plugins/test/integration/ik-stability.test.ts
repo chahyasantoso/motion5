@@ -12,7 +12,6 @@ import { ROOT_2D_SPEC } from "../../src/root/fields";
 import { FABRIK_TOLERANCE, solveFabrik, solveFabrikAttempt } from "../../src/fabrik";
 import { fabrikAlternatives, outranks } from "../../src/fabrik-select";
 import { composeWorld, pivotFromBaseTip, type WorldFrame } from "../../src/frame";
-import { goalsEntity, rootEntity } from "../support/typed-rig";
 import type { JointRange } from "../../src/ik-constraint";
 import { solveLength, solveOffset, type SolveMember } from "../../src/ik-member";
 import type { SolveResult } from "../../src/ik-result";
@@ -802,35 +801,36 @@ describe("IK stability and determinism (issue #349 phase 6)", () => {
     }
   });
 
-  it("SD-18 delivered Infinity goals publish finite rotations; live NaN refusal is pinned above", () => {
-    // `readFrame` sanitizes authored requirement records before compose. The direct solve cases above
-    // pin the live-value refusal; this seam pins that an infinite delivered goal still publishes.
-    const rig = goalsEntity(
-      [
-        { id: "a", cells: { length: 80, rotation: 0 } },
-        { id: "b", cells: { parentId: "a", length: 60, rotation: 0 } },
-      ],
-      [{ id: "g", cells: { memberId: "b", x: Number.POSITIVE_INFINITY, y: 0 } }],
-    );
-    const composed = ikPlugin.transform(
-      {
-        values: {},
-        param: {},
-        requires: {
-          chain: rig.body,
-          goals: rig.goals,
-          base: rootEntity({ x: 0, y: 0, rotation: 0 }),
-        },
-      } as never,
-      { nodeId: "rig/solve", progress: 1 },
-    );
-    expect(
-      (
-        composed.values as unknown as readonly {
-          readonly cells: { readonly rotation: number };
-        }[]
-      ).every((row) => Number.isFinite(row.cells.rotation)),
-    ).toBe(true);
+  it("SD-18 refuses an infinite goal at source commit", () => {
+    const catalog = new PluginCatalog({ models: testModels });
+    const engine = new Engine({
+      clock: createManualClock(),
+      interpolator: createFakeInterpolator(),
+      scheduler: createFakeScheduler(),
+      plugins: catalog,
+    });
+    expect(() =>
+      engine.load({
+        schemaVersion: 5,
+        motions: [
+          {
+            id: "m",
+            trigger: { type: "manual" },
+            tracks: [
+              {
+                id: "goals",
+                output: { model: "Goals2d" },
+                input: {
+                  values: [
+                    { id: "g", cells: { memberId: "b", x: Number.POSITIVE_INFINITY, y: 0 } },
+                  ],
+                },
+              },
+            ],
+          },
+        ],
+      }),
+    ).toThrow(/cell-form-invalid/);
   });
 
   it("SD-19 a finite root rotation past the product's range solves as the frame it names", () => {

@@ -1,19 +1,6 @@
-import type {
-  DataType,
-  DataTypeParsed,
-  Structure,
-  TypeIssue,
-  Value,
-} from "@motion5/core/plugin-api";
+import type { TypeIssue } from "@motion5/core/plugin-api";
 import { unreachable } from "@motion5/core/plugin-api";
-import {
-  bindSolved,
-  parseSolved,
-  type Solved,
-  type SolvedError,
-  type SolvedStructure,
-} from "./domain";
-import { SOLVED_2D_SPEC } from "./fields";
+import type { SolvedError } from "./domain";
 
 export function solvedIssue(error: SolvedError): TypeIssue {
   switch (error.kind) {
@@ -32,17 +19,3 @@ export function solvedIssue(error: SolvedError): TypeIssue {
       return unreachable(error);
   }
 }
-
-export const solved2d: DataType<SolvedStructure, Solved> = {
-  id: "solved2d",
-  spec: SOLVED_2D_SPEC,
-  parse(value: Value): DataTypeParsed<SolvedStructure> {
-    const parsed = parseSolved(value);
-    return parsed.ok
-      ? { kind: "parsed", structure: parsed.value, warnings: [] }
-      : { kind: "refused", errors: parsed.errors.map(solvedIssue) };
-  },
-  bind(structure: Structure<SolvedStructure>, value: Value): Solved {
-    return bindSolved(structure, value);
-  },
-};

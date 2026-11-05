@@ -1,22 +1,20 @@
 import {
   ok,
   refused,
-  typed,
   type Outputs,
   type PluginDefinition,
   type Prepared,
+  type Scalar,
   type SourceStructures,
-  type Structure,
+  type Table,
   type ValueSpec,
 } from "@motion5/core/plugin-api";
-import { EXTERNAL_BASE, type Body, type BodyStructure } from "./body/domain";
-import { body3d } from "./body3d/type";
+import { EXTERNAL_BASE, bindBody, type Body, type BodyStructure } from "./body/domain";
 import { readNumber } from "./frame";
 import { readEuler3d, readFrame3d, readPivotOffset3d } from "./frame3d";
 import type { Euler3d } from "./frame3d";
 import { goalDiagnostics } from "./goals/check";
-import type { Goals, GoalsStructure } from "./goals/domain";
-import { goals3d } from "./goals3d/type";
+import { bindGoals, type Goals, type GoalsStructure } from "./goals/domain";
 import { readInfluence } from "./ik-goal";
 import { inspectSolve } from "./ik-result";
 import { readPole3d } from "./ik3d-analytic";
@@ -24,9 +22,9 @@ import { constrains, readJointLimit3d } from "./ik3d-constraint";
 import { readOrient } from "./ik3d-orient";
 import type { ChainMember3d } from "./ik3d-chain";
 import { solveChain3d } from "./ik3d-solve";
-import type { Root } from "./root/domain";
-import { root3d } from "./root3d/type";
-import { SOLVED_3D_SPEC } from "./solved3d/fields";
+import { bindRoot } from "./root/domain";
+import { Body3d, Goals3d, Point3d, Solved3d } from "./models";
+import { requireStructure, structureOf } from "./slot-structure";
 
 const FRAME: ValueSpec = {
   kind: "record",
@@ -56,11 +54,12 @@ type Ik3dInput = {
   readonly values: FlatRecord;
   readonly param: FlatRecord;
   readonly requires: {
-    readonly chain: Body;
-    readonly goals: Goals;
-    readonly base: Root;
+    readonly chain: Table;
+    readonly goals: Table;
+    readonly base: Readonly<Record<string, Scalar>>;
     readonly pole?: Outputs;
   };
+  readonly structures?: SourceStructures;
 };
 
 function flatRecord(value: unknown, path: string): FlatRecord {
@@ -122,10 +121,6 @@ function outputRows(result: ReturnType<typeof solveChain3d>, members: readonly C
   });
 }
 
-function structureOf<T>(structures: SourceStructures, slot: string): Structure<T> | undefined {
-  return structures[slot] as Structure<T> | undefined;
-}
-
 export const ik3dPlugin: PluginDefinition<Ik3dInput> = {
   id: "ik3d",
   inputs: {
@@ -136,13 +131,13 @@ export const ik3dPlugin: PluginDefinition<Ik3dInput> = {
       },
     },
     requires: {
-      chain: typed(body3d),
-      goals: typed(goals3d),
-      base: typed(root3d),
+      chain: Body3d,
+      goals: Goals3d,
+      base: Point3d,
       pole: { kind: "shape", optional: true, outputs: { values: FRAME } },
     },
   },
-  outputs: { values: SOLVED_3D_SPEC, inspect: { ...INSPECT, optional: true } },
+  outputs: { values: Solved3d, inspect: { ...INSPECT, optional: true } },
   checkSources(structures) {
     const chain = structureOf<BodyStructure>(structures, "chain");
     const goals = structureOf<GoalsStructure>(structures, "goals");
@@ -164,13 +159,22 @@ export const ik3dPlugin: PluginDefinition<Ik3dInput> = {
     }
     return ok(undefined);
   },
-  transform({ param, requires }) {
+  transform({ param, requires, structures }) {
     const local = flatRecord(param ?? {}, "input.param");
-    const members = solveMembers3d(requires.chain, requires.goals);
+    const chain = bindBody(
+      requireStructure<BodyStructure>(structures, "chain", "IK3d"),
+      requires.chain,
+    );
+    const goals = bindGoals(
+      requireStructure<GoalsStructure>(structures, "goals", "IK3d"),
+      requires.goals,
+    );
+    const members = solveMembers3d(chain, goals);
     const pole = readPole3d(
       requires.pole === undefined ? undefined : recordOutput(requires.pole, "pole"),
     );
-    const result = solveChain3d(readFrame3d(requires.base), members, pole);
+    const base = bindRoot(requires.base);
+    const result = solveChain3d(readFrame3d(base), members, pole);
     const inspection = inspectSolve(result);
     return {
       values: outputRows(result, members),

@@ -1,13 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { shape, typed } from "../../../src/contract/slot-spec";
-import type {
-  DataType,
-  DataTypeParsed,
-  PluginDefinition,
-  Structure,
-  Value,
-  ValueSpec,
-} from "../../../src/contract/v5";
+import { shape } from "../../../src/contract/slot-spec";
+import { defineModel, type PluginDefinition, type ValueSpec } from "../../../src/contract/v5";
 import { PluginCatalog } from "../../../src/domain/plugin-catalog";
 import { testModels } from "../../support/test-models";
 
@@ -16,28 +9,23 @@ const POINT: ValueSpec = {
   schema: { row: { fields: { x: { kind: "number" } } } },
 };
 
-const pointType: DataType<{ readonly ids: readonly string[] }, Value> = {
-  id: "point2d",
+const PointModel = defineModel<unknown, { readonly ids: readonly string[] }>({
+  id: "PointModel",
   spec: POINT,
-  parse(value: Value): DataTypeParsed<{ readonly ids: readonly string[] }> {
+  parse(value) {
     return {
-      kind: "parsed",
-      structure: { ids: Array.isArray(value) ? value.map((row) => row.id) : [] },
-      warnings: [],
+      ok: true,
+      value: { ids: Array.isArray(value) ? value.map((row) => row.id) : [] },
     };
   },
-  bind(structure: Structure<{ readonly ids: readonly string[] }>, value: Value): Value {
-    void structure;
-    return value;
-  },
-};
+});
 
 const PLUGIN: PluginDefinition = {
   id: "probe",
   inputs: {
     values: { kind: "record", fields: {} },
     requires: {
-      body: typed(pointType),
+      body: PointModel,
       extra: shape({ outputs: { values: POINT }, optional: true }),
     },
   },
@@ -48,7 +36,7 @@ const PLUGIN: PluginDefinition = {
 };
 
 describe("catalog describe", () => {
-  it("reports declared typed and shape slots without exposing the definition", () => {
+  it("reports declared model and shape slots without exposing the definition", () => {
     const catalog = new PluginCatalog({ models: testModels });
     catalog.register(PLUGIN);
 
@@ -56,9 +44,8 @@ describe("catalog describe", () => {
     expect(description?.id).toBe("probe");
     expect(description?.outputs).toEqual({ values: POINT });
     expect(description?.requires.body).toEqual({
-      kind: "typed",
-      typeId: "point2d",
-      spec: POINT,
+      kind: "model",
+      modelId: "PointModel",
       binding: "single",
     });
     expect(description?.requires.extra).toEqual({

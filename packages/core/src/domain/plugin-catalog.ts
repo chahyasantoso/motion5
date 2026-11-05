@@ -1,5 +1,4 @@
 import type {
-  DataType,
   Diagnostic,
   EvaluationContext,
   Model,
@@ -17,6 +16,7 @@ import type {
   ValueSpec,
 } from "../contract/v5";
 import { isModel, isOptionalModel } from "../contract/v5";
+import { slotDeclaration } from "../contract/slot-declaration";
 import type { RuleId } from "../contract/rule-id";
 import { readValueSpec } from "../contract/v5-parse";
 import type { PluginCapabilities, PluginCapability } from "../ports/plugin-capabilities";
@@ -28,14 +28,12 @@ import type { PluginCapabilities, PluginCapability } from "../ports/plugin-capab
 const PLUGIN_FIELDS = new Set(["id", "inputs", "outputs", "checkSources", "prepare", "transform"]);
 const INPUT_FIELDS = new Set(["param", "values", "requires"]);
 const DEPENDENCY_FIELDS = new Set(["kind", "outputs", "optional", "binding"]);
-const TYPED_FIELDS = new Set(["kind", "type", "optional", "binding"]);
 const MODEL_SLOT_FIELDS = new Set(["kind", "model", "optional", "binding"]);
-const DATA_TYPE_FIELDS = new Set(["id", "spec", "parse", "bind"]);
+const MODEL_FIELDS = new Set(["id", "spec", "parse"]);
 const RESERVED_NAMES = new Set(["__proto__", "constructor", "prototype"]);
 const BINDING_MODES = new Set(["single", "map"]);
 const PASCAL_CASE_RE = /^[A-Z][A-Za-z0-9]*$/;
 const EMPTY_MEMBERS: readonly string[] = Object.freeze([]);
-const EMPTY_TYPES: readonly DataType<unknown, unknown>[] = Object.freeze([]);
 const EMPTY_MODELS: readonly Model<unknown, unknown>[] = Object.freeze([]);
 const EMPTY_RECORD_SPEC: ValueSpec = Object.freeze({ kind: "record", fields: Object.freeze({}) });
 
@@ -75,6 +73,7 @@ function requireRecord(value: unknown, path: string): Record<string, unknown> {
 
 function admitModel(value: unknown, path: string): Model<unknown, unknown> {
   const source = requireRecord(value, path);
+  assertKnownKeys(source, MODEL_FIELDS, path, "Model");
   const idValue = own(source, "id");
   if (typeof idValue !== "string" || !PASCAL_CASE_RE.test(idValue)) {
     refuse(
@@ -87,10 +86,6 @@ function admitModel(value: unknown, path: string): Model<unknown, unknown> {
   const parse = own(source, "parse");
   if (parse !== undefined && typeof parse !== "function") {
     refuse("plugin-shape", `${path}.parse`, "parse must be a function.");
-  }
-  const legacyTypeId = own(source, "legacyTypeId");
-  if (legacyTypeId !== undefined && typeof legacyTypeId !== "string") {
-    refuse("plugin-shape", `${path}.legacyTypeId`, "legacyTypeId must be a string when present.");
   }
   if (!isModel(value)) {
     refuse("plugin-shape", path, "must be a Model.");
@@ -160,29 +155,6 @@ function readHook<T>(value: unknown, path: string, name: string): T | undefined 
   return value as T;
 }
 
-function readDataType(value: unknown, path: string): DataType<unknown, unknown> {
-  const source = requireRecord(value, path);
-  assertKnownKeys(source, DATA_TYPE_FIELDS, path, "DataType");
-  const id = readName(own(source, "id"), `${path}.id`, "Data type id");
-  const spec = readSpec(own(source, "spec"), `${path}.spec`, true);
-  const parse = readHook<DataType<unknown, unknown>["parse"]>(
-    own(source, "parse"),
-    `${path}.parse`,
-    "parse",
-  );
-  const bind = readHook<DataType<unknown, unknown>["bind"]>(
-    own(source, "bind"),
-    `${path}.bind`,
-    "bind",
-  );
-  if (parse === undefined) refuse("plugin-shape", `${path}.parse`, "parse must be a function.");
-  if (bind === undefined) refuse("plugin-shape", `${path}.bind`, "bind must be a function.");
-  const type = source as unknown as DataType<unknown, unknown>;
-  if (type.id !== id) refuse("plugin-shape", `${path}.id`, "data type id moved during admission.");
-  Object.freeze(type.spec);
-  return Object.freeze(type);
-}
-
 function readShapeSlot(source: Readonly<Record<string, unknown>>, path: string): SlotSpec {
   assertKnownKeys(source, DEPENDENCY_FIELDS, path, "Shape slot");
   const outputsSource = requireRecord(own(source, "outputs"), `${path}.outputs`);
@@ -194,18 +166,6 @@ function readShapeSlot(source: Readonly<Record<string, unknown>>, path: string):
   return Object.freeze({
     kind: "shape",
     outputs: Object.freeze(outputs),
-    ...(readTrue(own(source, "optional"), `${path}.optional`, "optional") === undefined
-      ? {}
-      : { optional: true as const }),
-    binding: readBinding(own(source, "binding"), `${path}.binding`),
-  });
-}
-
-function readTypedSlot(source: Readonly<Record<string, unknown>>, path: string): SlotSpec {
-  assertKnownKeys(source, TYPED_FIELDS, path, "Typed slot");
-  return Object.freeze({
-    kind: "typed",
-    type: readDataType(own(source, "type"), `${path}.type`),
     ...(readTrue(own(source, "optional"), `${path}.optional`, "optional") === undefined
       ? {}
       : { optional: true as const }),
@@ -234,14 +194,8 @@ function readSlotSpec(value: unknown, path: string): SlotSpec {
       return readModelSlot(source, path);
     case "shape":
       return readShapeSlot(source, path);
-    case "typed":
-      return readTypedSlot(source, path);
     default:
-      return refuse(
-        "plugin-shape",
-        `${path}.kind`,
-        'Slot kind must be "model", "typed", or "shape".',
-      );
+      return refuse("plugin-shape", `${path}.kind`, 'Slot kind must be "model" or "shape".');
   }
 }
 
@@ -284,30 +238,19 @@ function readInputs(
     const slots: Record<string, SlotSpec> = {};
     for (const [slot, dependency] of Object.entries(requiresSource)) {
       const slotName = readName(slot, `${path}.requires.${slot}`, "Dependency slot");
-      if (isModel(dependency)) {
-        const model = admitModel(dependency, `${path}.requires.${slotName}`);
-        referencedModels.push(model);
-        slots[slotName] = Object.freeze({
-          kind: "model",
-          model,
-          binding: "single",
-        });
-      } else if (isOptionalModel(dependency)) {
-        const model = admitModel(dependency.model, `${path}.requires.${slotName}.model`);
-        referencedModels.push(model);
-        slots[slotName] = Object.freeze({
-          kind: "model",
-          model,
-          optional: true,
-          binding: dependency.binding ?? "single",
-        });
+      let slotSpec: SlotSpec;
+      if (isModel(dependency) || isOptionalModel(dependency)) {
+        const model = isModel(dependency) ? dependency : dependency.model;
+        const modelPath = isModel(dependency)
+          ? `${path}.requires.${slotName}`
+          : `${path}.requires.${slotName}.model`;
+        admitModel(model, modelPath);
+        slotSpec = slotDeclaration(dependency);
       } else {
-        const slotSpec = readSlotSpec(dependency, `${path}.requires.${slotName}`);
-        if (slotSpec.kind === "model") {
-          referencedModels.push(slotSpec.model);
-        }
-        slots[slotName] = slotSpec;
+        slotSpec = readSlotSpec(dependency, `${path}.requires.${slotName}`);
       }
+      if (slotSpec.kind === "model") referencedModels.push(slotSpec.model);
+      slots[slotName] = slotSpec;
     }
     requires = Object.freeze(slots);
   }
@@ -397,40 +340,11 @@ function admitPlugin(
   return { definition, models: referencedModels };
 }
 
-interface TypeBatch {
-  readonly types: ReadonlyMap<string, DataType<unknown, unknown>>;
-}
-
-function collectTypes(definitions: readonly PluginDefinition[]): TypeBatch {
-  const types = new Map<string, DataType<unknown, unknown>>();
-  for (const definition of definitions) {
-    for (const slot of Object.values(definition.inputs.requires ?? {})) {
-      if (!("type" in slot) || slot.kind !== "typed") continue;
-      const existing = types.get(slot.type.id);
-      if (existing !== undefined && existing !== slot.type)
-        throw new PluginAdmissionError(
-          "plugin-shape",
-          `plugin.${definition.id}.inputs.requires`,
-          `Data type '${slot.type.id}' is declared twice with different definitions.`,
-        );
-      types.set(slot.type.id, slot.type);
-    }
-  }
-  return { types };
-}
-
 /** One declared plugin slot, flattened for inspection. */
 export type DescribedSlot =
   | {
       readonly kind: "model";
       readonly modelId: string;
-      readonly optional?: true;
-      readonly binding: "single" | "map";
-    }
-  | {
-      readonly kind: "typed";
-      readonly typeId: string;
-      readonly spec: ValueSpec;
       readonly optional?: true;
       readonly binding: "single" | "map";
     }
@@ -455,14 +369,6 @@ function describeSlot(slot: SlotSpec): DescribedSlot {
       return Object.freeze({
         kind: "model",
         modelId: slot.model.id,
-        ...(slot.optional === true ? { optional: true as const } : {}),
-        binding: slot.binding ?? "single",
-      });
-    case "typed":
-      return Object.freeze({
-        kind: "typed",
-        typeId: slot.type.id,
-        spec: slot.type.spec,
         ...(slot.optional === true ? { optional: true as const } : {}),
         binding: slot.binding ?? "single",
       });
@@ -491,7 +397,6 @@ export interface PluginCatalogOptions {
 /** Identified-table registry; one instance belongs to one host composition. */
 export class PluginCatalog implements PluginCapabilities {
   readonly #plugins = new Map<string, PluginDefinition>();
-  readonly #dataTypes = new Map<string, DataType<unknown, unknown>>();
   readonly #models = new Map<string, Model<unknown, unknown>>();
 
   constructor(options?: PluginCatalogOptions | readonly PluginDefinition<never>[]) {
@@ -593,19 +498,7 @@ export class PluginCatalog implements PluginCapabilities {
       }
     }
 
-    const typeBatch = collectTypes(admitted);
-    for (const [id, type] of typeBatch.types) {
-      const existing = this.#dataTypes.get(id);
-      if (existing !== undefined && existing !== type)
-        throw new PluginAdmissionError(
-          "plugin-shape",
-          `plugin.dataTypes.${id}`,
-          `Data type '${id}' conflicts with an admitted definition.`,
-        );
-    }
-
     for (const [id, model] of stagedModels) this.#models.set(id, model);
-    for (const [id, type] of typeBatch.types) this.#dataTypes.set(id, type);
     for (const definition of admitted) this.#plugins.set(definition.id, definition);
   }
 
@@ -644,18 +537,7 @@ export class PluginCatalog implements PluginCapabilities {
     if (definition === undefined) return undefined;
     const requires: Record<string, DescribedSlot> = {};
     for (const [slot, spec] of Object.entries(definition.inputs.requires ?? {})) {
-      if (isModel(spec)) {
-        requires[slot] = describeSlot({ kind: "model", model: spec, binding: "single" });
-      } else if (isOptionalModel(spec)) {
-        requires[slot] = describeSlot({
-          kind: "model",
-          model: spec.model,
-          optional: true,
-          binding: spec.binding ?? "single",
-        });
-      } else {
-        requires[slot] = describeSlot(spec);
-      }
+      requires[slot] = describeSlot(slotDeclaration(spec));
     }
     const outputs: Record<string, ValueSpec> = {};
     for (const [name, output] of Object.entries(definition.outputs)) {
@@ -669,20 +551,6 @@ export class PluginCatalog implements PluginCapabilities {
       requires: Object.freeze(requires),
       outputs: Object.freeze(outputs),
     });
-  }
-
-  dataType(id: string): DataType<unknown, unknown> | undefined {
-    return this.#dataTypes.get(id);
-  }
-
-  /** Sorted admitted type ids; rebuilt on demand, never cached beside the registry. */
-  dataTypeIds(): readonly string[] {
-    return Object.freeze([...this.#dataTypes.keys()].sort());
-  }
-
-  /** Admitted types for diagnostics tooling. */
-  dataTypes(): readonly DataType<unknown, unknown>[] {
-    return this.#dataTypes.size === 0 ? EMPTY_TYPES : Object.freeze([...this.#dataTypes.values()]);
   }
 
   /** Returns the admitted model matching the id, or undefined if not admitted. */

@@ -20,7 +20,7 @@ import { ikPlugin } from "../../../plugins/src/ik";
 import { fkPlugin } from "../../../plugins/src/fk";
 import { BODY_2D_SPEC } from "../../../plugins/src/body/fields";
 import { GOALS_2D_SPEC } from "../../../plugins/src/goals/fields";
-import { POSE_2D_SPEC } from "../../../plugins/src/pose/fields";
+import { Points2d } from "../../../plugins/src/models";
 import { ROOT_2D_SPEC } from "../../../plugins/src/root/fields";
 import { testModels } from "../support/test-models";
 
@@ -33,7 +33,7 @@ const consumerPlugin: PluginDefinition = {
   id: "consumer-plugin",
   inputs: {
     values: { kind: "record", fields: {} },
-    requires: { source: shape({ outputs: { values: POSE_2D_SPEC } }) },
+    requires: { source: shape({ outputs: { values: Points2d.spec } }) },
   },
   outputs: { values: CONSUMER_SPEC },
   transform() {

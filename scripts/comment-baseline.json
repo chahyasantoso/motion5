@@ -4,10 +4,6 @@
     "count": 3
   },
   {
-    "path": "apps/ik-playground/src/components/goal-drag.ts",
-    "count": 4
-  },
-  {
     "path": "apps/ik-playground/src/components/Ik3dFrame.tsx",
     "count": 5
   },
@@ -18,6 +14,10 @@
   {
     "path": "apps/ik-playground/src/components/ThreeStage.tsx",
     "count": 5
+  },
+  {
+    "path": "apps/ik-playground/src/components/goal-drag.ts",
+    "count": 4
   },
   {
     "path": "apps/ik-playground/src/ik-playground-project.ts",
@@ -200,12 +200,12 @@
     "count": 2
   },
   {
-    "path": "apps/react-demo/src/components/marker-position.ts",
-    "count": 2
-  },
-  {
     "path": "apps/react-demo/src/components/SkeletonRig.tsx",
     "count": 3
+  },
+  {
+    "path": "apps/react-demo/src/components/marker-position.ts",
+    "count": 2
   },
   {
     "path": "apps/react-demo/src/full-body-project.ts",

@@ -1,13 +1,6 @@
-import type {
-  DataType,
-  DataTypeParsed,
-  Structure,
-  TypeIssue,
-  Value,
-} from "@motion5/core/plugin-api";
+import type { TypeIssue } from "@motion5/core/plugin-api";
 import { unreachable } from "@motion5/core/plugin-api";
-import { bindBody, parseBody, type Body, type BodyError, type BodyStructure } from "./domain";
-import { BODY_2D_FIELDS, BODY_2D_SPEC } from "./fields";
+import type { BodyError } from "./domain";
 
 export function bodyIssue(error: BodyError): TypeIssue {
   switch (error.kind) {
@@ -39,18 +32,3 @@ export function bodyIssue(error: BodyError): TypeIssue {
       return unreachable(error);
   }
 }
-
-/** The 2D body domain type; `static` cells live in the structure, every other cell in the entity. */
-export const body2d: DataType<BodyStructure, Body> = {
-  id: "body2d",
-  spec: BODY_2D_SPEC,
-  parse(value: Value): DataTypeParsed<BodyStructure> {
-    const parsed = parseBody(value, BODY_2D_FIELDS);
-    return parsed.ok
-      ? { kind: "parsed", structure: parsed.value, warnings: [] }
-      : { kind: "refused", errors: parsed.errors.map(bodyIssue) };
-  },
-  bind(structure: Structure<BodyStructure>, value: Value): Body {
-    return bindBody(structure, value);
-  },
-};

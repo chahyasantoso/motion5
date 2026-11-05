@@ -496,9 +496,6 @@ export class ProjectRuntime {
         : {
             pluginDefinition: (pluginId: string) => this.#capabilities.pluginDefinition?.(pluginId),
           }),
-      ...(this.#capabilities.dataType === undefined
-        ? {}
-        : { dataType: (typeId: string) => this.#capabilities.dataType?.(typeId) }),
       ...(this.#capabilities.model === undefined
         ? {}
         : { model: (modelId: string) => this.#capabilities.model?.(modelId) }),

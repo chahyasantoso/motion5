@@ -11,7 +11,7 @@ import type {
   TrackDefinition,
   TriggerSignal,
 } from "./contract/v5";
-import { isModel, isOptionalModel, outputModelId, outputPluginId } from "./contract/v5";
+import { isModel, outputModelId, outputPluginId } from "./contract/v5";
 import { unknownNameMessage } from "./contract/registry-message";
 import { parseTrackDefinition } from "./contract/v5-parse";
 import type { MotionHandle } from "./contract/motion-handle";
@@ -54,6 +54,12 @@ import { ProjectRuntime, type StagedTrack } from "./runtime/project-runtime";
 import type { BoundSlot, BoundSlotEntry, BoundSlots } from "./runtime/bound-slot";
 import { isRecord } from "./runtime/publisher-outcome";
 import { compareEdges, type GraphNode } from "./graph/ir";
+import {
+  isOptionalSlot,
+  isShapeSlot,
+  needsSlotStructure,
+  slotDeclaration,
+} from "./contract/slot-declaration";
 
 export interface EngineOptions {
   readonly clock: Clock;
@@ -520,56 +526,49 @@ export class Engine {
           const requires = track.input?.requires;
           const declared = plugin.inputs.requires ?? {};
           const structures: Record<string, SourceStructure> = {};
-          let canRunPrepare = plugin.prepare !== undefined;
-          for (const [slotName, slot] of Object.entries(declared)) {
-            const isOptional = isOptionalModel(slot) || (!isModel(slot) && slot.optional === true);
-            const slotKind = isModel(slot) || isOptionalModel(slot) ? "model" : slot.kind;
+          let ready = true;
+          for (const [slotName, declaredSlot] of Object.entries(declared)) {
+            const slot = slotDeclaration(declaredSlot);
             const binding = requires?.[slotName];
             if (binding === undefined) {
-              if (isOptional) continue;
-              canRunPrepare = false;
-              break;
+              if (!isOptionalSlot(slot)) ready = false;
+              continue;
             }
-            switch (slotKind) {
-              case "model":
-              case "typed": {
-                if (typeof binding === "string") {
-                  const source = tracks.get(sourceId(binding));
-                  const structure = source?.structureAtCommit();
-                  if (structure === undefined) {
-                    canRunPrepare = false;
-                    break;
-                  }
-                  structures[slotName] = structure;
-                  continue;
-                }
-                const members: Record<string, Structure<unknown>> = {};
-                for (const [key, memberSource] of Object.entries(binding)) {
-                  const source = tracks.get(sourceId(memberSource));
-                  const structure = source?.structureAtCommit();
-                  if (structure === undefined) {
-                    canRunPrepare = false;
-                    break;
-                  }
-                  defineOwnValue(members, key, structure);
-                }
-                structures[slotName] = Object.freeze(members);
+            if (isShapeSlot(slot)) continue;
+            const requiredStructure = needsSlotStructure(slot);
+            if (typeof binding === "string") {
+              const structure = tracks.get(sourceId(binding))?.structureAtCommit();
+              if (structure === undefined) {
+                if (requiredStructure) ready = false;
                 continue;
               }
-              case "shape": {
-                continue;
-              }
-              default:
-                return unreachable(slotKind);
+              defineOwnValue(structures, slotName, structure);
+              continue;
             }
+            const members: Record<string, Structure<unknown>> = {};
+            let complete = true;
+            for (const [key, memberSource] of Object.entries(binding)) {
+              const structure = tracks.get(sourceId(memberSource))?.structureAtCommit();
+              if (structure === undefined) {
+                complete = false;
+                break;
+              }
+              defineOwnValue(members, key, structure);
+            }
+            if (!complete) {
+              if (requiredStructure) ready = false;
+              continue;
+            }
+            defineOwnValue(structures, slotName, Object.freeze(members));
           }
+          if (!ready) return;
           if (plugin.checkSources !== undefined) {
             const diagnostics = plugin.checkSources(Object.freeze(structures));
             const errors = diagnostics.filter(({ severity }) => severity === "error");
             if (errors.length > 0) throw new TypeError(describeDiagnostics(errors));
             consumer.markSourcesChecked(Object.freeze(structures), diagnostics);
           }
-          if (canRunPrepare) {
+          if (plugin.prepare !== undefined) {
             consumer.prepareCommit(Object.freeze(structures));
           }
         };

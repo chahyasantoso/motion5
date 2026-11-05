@@ -36,9 +36,6 @@ export function validateV5(
     ...(capabilities.pluginDefinition === undefined
       ? {}
       : { pluginDefinition: (pluginId: string) => capabilities.pluginDefinition?.(pluginId) }),
-    ...(capabilities.dataType === undefined
-      ? {}
-      : { dataType: (typeId: string) => capabilities.dataType?.(typeId) }),
     ...(capabilities.model === undefined
       ? {}
       : { model: (modelId: string) => capabilities.model?.(modelId) }),

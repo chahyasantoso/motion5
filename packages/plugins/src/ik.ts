@@ -1,27 +1,25 @@
 import {
   ok,
   refused,
-  typed,
   type PluginDefinition,
   type Prepared,
+  type Scalar,
   type SourceStructures,
-  type Structure,
+  type Table,
   type ValueSpec,
 } from "@motion5/core/plugin-api";
-import { EXTERNAL_BASE, type Body, type BodyStructure } from "./body/domain";
-import { body2d } from "./body/type";
+import { EXTERNAL_BASE, bindBody, type Body, type BodyStructure } from "./body/domain";
 import { readFrame, readNumber, readPivotOffset } from "./frame";
 import { goalDiagnostics } from "./goals/check";
-import type { Goals, GoalsStructure } from "./goals/domain";
-import { goals2d } from "./goals/type";
+import { bindGoals, type Goals, type GoalsStructure } from "./goals/domain";
 import { readJointLimit } from "./ik-constraint";
 import { readInfluence } from "./ik-goal";
 import { inspectSolve } from "./ik-result";
 import { solveChain } from "./ik-solve";
 import type { SolveMember } from "./ik-member";
-import type { Root } from "./root/domain";
-import { root2d } from "./root/type";
-import { SOLVED_2D_SPEC } from "./solved/fields";
+import { bindRoot } from "./root/domain";
+import { Body2d, Goals2d, Point2d, Solved2d } from "./models";
+import { requireStructure, structureOf } from "./slot-structure";
 
 const INSPECT: ValueSpec = {
   kind: "record",
@@ -39,10 +37,11 @@ type IkInput = {
   readonly values: FlatRecord;
   readonly param: FlatRecord;
   readonly requires: {
-    readonly chain: Body;
-    readonly goals: Goals;
-    readonly base: Root;
+    readonly chain: Table;
+    readonly goals: Table;
+    readonly base: Readonly<Record<string, Scalar>>;
   };
+  readonly structures?: SourceStructures;
 };
 
 function flatRecord(value: unknown, path: string): FlatRecord {
@@ -82,10 +81,6 @@ function outputRows(result: ReturnType<typeof solveChain>, members: readonly Sol
   }));
 }
 
-function structureOf<T>(structures: SourceStructures, slot: string): Structure<T> | undefined {
-  return structures[slot] as Structure<T> | undefined;
-}
-
 export const ikPlugin: PluginDefinition<IkInput> = {
   id: "ik",
   inputs: {
@@ -97,12 +92,12 @@ export const ikPlugin: PluginDefinition<IkInput> = {
       },
     },
     requires: {
-      chain: typed(body2d),
-      goals: typed(goals2d),
-      base: typed(root2d),
+      chain: Body2d,
+      goals: Goals2d,
+      base: Point2d,
     },
   },
-  outputs: { values: SOLVED_2D_SPEC, inspect: { ...INSPECT, optional: true } },
+  outputs: { values: Solved2d, inspect: { ...INSPECT, optional: true } },
   checkSources(structures) {
     const chain = structureOf<BodyStructure>(structures, "chain");
     const goals = structureOf<GoalsStructure>(structures, "goals");
@@ -124,10 +119,19 @@ export const ikPlugin: PluginDefinition<IkInput> = {
     }
     return ok(undefined);
   },
-  transform({ param, requires }) {
+  transform({ param, requires, structures }) {
     const local = flatRecord(param ?? {}, "input.param");
-    const members = solveMembers(requires.chain, requires.goals);
-    const result = solveChain(readFrame(requires.base), members, local.flip === true);
+    const chain = bindBody(
+      requireStructure<BodyStructure>(structures, "chain", "IK"),
+      requires.chain,
+    );
+    const goals = bindGoals(
+      requireStructure<GoalsStructure>(structures, "goals", "IK"),
+      requires.goals,
+    );
+    const members = solveMembers(chain, goals);
+    const base = bindRoot(requires.base);
+    const result = solveChain(readFrame(base), members, local.flip === true);
     const inspection = inspectSolve(result);
     return {
       values: outputRows(result, members),

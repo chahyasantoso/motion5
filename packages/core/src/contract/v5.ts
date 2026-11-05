@@ -142,7 +142,7 @@ export interface AuthoredRow {
 export type AuthoredRecord = Readonly<Record<string, AuthoredCell>>;
 /** Top-level shape picks table or record. */
 export type AuthoredValues = readonly AuthoredRow[] | AuthoredRecord;
-/** One relative complaint a data type reports about a value. */
+/** One relative complaint a model validation reports. */
 export interface TypeIssue {
   readonly path: readonly string[];
   readonly message: string;
@@ -152,10 +152,6 @@ export interface Issue {
   readonly path: string;
   readonly message: string;
 }
-/** Result of parsing a legacy data type. */
-export type DataTypeParsed<S> =
-  | { readonly kind: "parsed"; readonly structure: S; readonly warnings: readonly TypeIssue[] }
-  | { readonly kind: "refused"; readonly errors: readonly TypeIssue[] };
 /** Domain parse either yields a plain structure or refuses it. */
 export type Parsed<Structure> =
   | { readonly ok: true; readonly value: Structure }
@@ -176,36 +172,19 @@ export function refused(issues: readonly Issue[]): Parsed<never> {
 export interface Model<Cells = unknown, Structure = undefined> {
   readonly id: string;
   readonly spec: ValueSpec;
-  readonly kind?: "table" | "record";
   readonly parse?: (value: Value) => Parsed<Structure>;
-  readonly legacyTypeId?: string;
-  readonly optional?: boolean;
-  readonly binding?: BindingMode;
 }
 /** Defines an immutable model contract. */
 export function defineModel<Cells = unknown, Structure = undefined>(decl: {
   readonly id: string;
   readonly spec: ValueSpec;
-  readonly kind?: "table" | "record";
   readonly parse?: (value: Value) => Parsed<Structure>;
-  readonly legacyTypeId?: string;
 }): Model<Cells, Structure> {
-  const kind = decl.kind ?? decl.spec.kind;
-  return Object.freeze({
-    ...decl,
-    kind,
-  });
+  return Object.freeze({ ...decl });
 }
 declare const STRUCTURE: unique symbol;
-/** Frozen, core-branded structure a data type produced at commit. */
+/** Frozen, core-branded structure a model produced at commit. */
 export type Structure<S> = S & { readonly [STRUCTURE]: true };
-/** A named domain value: commit-time parse, frame-time bind. */
-export interface DataType<S, E> {
-  readonly id: string;
-  readonly spec: ValueSpec;
-  parse(value: Value): DataTypeParsed<S>;
-  bind(structure: Structure<S>, value: Value): E;
-}
 /** `row` present = table cell, absent = record field. */
 export interface CellAddress {
   readonly row?: string;
@@ -289,17 +268,10 @@ export function isOptionalModel(value: unknown): value is OptionalModel<Model<un
   if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
   return "optional" in value && value.optional === true && "model" in value && isModel(value.model);
 }
-/** A slot that admits one named data type. */
-export interface TypedSlotSpec {
-  readonly kind: "typed";
-  readonly type: DataType<unknown, unknown>;
-  readonly optional?: true;
-  readonly binding?: BindingMode;
-}
 /** A slot that admits named output shapes. */
 export type ShapeSlotSpec = { readonly kind: "shape" } & DependencySpec;
 /** How a plugin slot receives its bound source. */
-export type SlotSpec = ModelSlotSpec | TypedSlotSpec | ShapeSlotSpec;
+export type SlotSpec = ModelSlotSpec | ShapeSlotSpec;
 /** A requirement declared on a plugin slot. */
 export type PluginRequirement =
   | SlotSpec
@@ -346,7 +318,7 @@ export interface EvaluationContext {
   readonly nodeId: string;
   readonly progress: number;
 }
-/** Resolved slot values: output sets for shape slots, entities for typed slots. */
+/** Resolved slot values: output sets for shape slots, values for model slots. */
 export type ResolvedRequires = Readonly<Record<string, unknown>>;
 /** Plugin input: local values plus bound slots. */
 export interface ResolvedInput<Values extends Value = Value> {
@@ -383,7 +355,7 @@ export interface PluginDefinition<
     >;
   };
   readonly outputs: OutputsDecl;
-  /** Cross-source rules over the structures typed slots deliver; pure, never per frame. */
+  /** Cross-source rules over the structures model slots deliver; pure, never per frame. */
   checkSources?(structures: SourceStructures): readonly Diagnostic[];
   prepare?(ctx: {
     readonly values: unknown;

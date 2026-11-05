@@ -171,14 +171,16 @@ A plugin definition has:
 - `id`: the public name, matching its `@motion5/plugins/<id>` path.
 - `inputs.param`: optional record spec for authored `input.param`.
 - `inputs.values`: optional local value spec or model.
-- `inputs.requires`: optional slot declarations, each a model, an optional model, a shape spec, or a
-  legacy `typed` slot (retained until the S6 removal).
+- `inputs.requires`: optional slot declarations, each a model, an optional model, or a shape spec.
 - `outputs`: the named outputs the plugin publishes; `values` is the main one.
 - `prepare`: optional commit-time check that returns `ok(state)` or `refused(issues)`.
 - `transform`: required; one transformation from resolved inputs to named outputs.
 
 `PluginCatalog.registerAll` admits a batch atomically. `EngineOptions.plugins` accepts a
-`PluginCatalog`.
+`PluginCatalog`. First-party kinematics publish models: `ik`/`ik3d` publish `Solved2d`/`Solved3d`,
+`fk`/`fk3d` publish `Points2d`/`Points3d`, and their slots require `Body2d`/`Body3d`,
+`Goals2d`/`Goals3d`, `Point2d`/`Point3d` and optionally the solved model. A model object carries
+exactly `id`, `spec` and optional `parse`; any other member is refused at admission.
 
 The main output is `values`; a plugin may publish additional named outputs. A table output is a
 table of rows; a record output is a flat scalar record. Consumers select a row explicitly through the

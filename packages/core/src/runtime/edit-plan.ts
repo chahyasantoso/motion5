@@ -116,9 +116,6 @@ function validateTrack(
           pluginDefinition: (pluginId: string) =>
             environment.capabilities.pluginDefinition?.(pluginId),
         }),
-    ...(environment.capabilities.dataType === undefined
-      ? {}
-      : { dataType: (typeId: string) => environment.capabilities.dataType?.(typeId) }),
     ...(environment.capabilities.model === undefined
       ? {}
       : { model: (typeId: string) => environment.capabilities.model?.(typeId) }),
