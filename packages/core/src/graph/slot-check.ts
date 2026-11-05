@@ -115,8 +115,8 @@ export function checkSlotFit(nodes: readonly GraphNode[]): readonly Diagnostic[]
           case "model": {
             if (source.typeId !== undefined) {
               if (
-                slot.model.legacyTypeId !== undefined &&
-                source.typeId === slot.model.legacyTypeId
+                source.typeId === slot.model.id ||
+                (slot.model.legacyTypeId !== undefined && source.typeId === slot.model.legacyTypeId)
               ) {
                 continue;
               }

@@ -1,4 +1,4 @@
-import type { DataType, PluginDefinition } from "../contract/v5";
+import type { DataType, Model, PluginDefinition } from "../contract/v5";
 import type { SolverChainShape } from "../contract/solver-shape";
 
 export type PluginCapability = Readonly<{
@@ -26,6 +26,8 @@ export interface PluginCapabilities {
   pluginDefinition?(plugin: string): PluginDefinition | undefined;
   /** A data type admitted through a plugin slot, or `undefined` when no slot names it. */
   dataType?(id: string): DataType<unknown, unknown> | undefined;
+  /** An admitted model, or `undefined` when not admitted. */
+  model?(id: string): Model<unknown, unknown> | undefined;
 }
 
 const NONE: readonly string[] = Object.freeze([]);

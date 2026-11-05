@@ -148,7 +148,8 @@ function readTrack(
         const declared =
           parsed.value.type === undefined
             ? parsed.value.input.schema
-            : context.dataType?.(parsed.value.type)?.spec;
+            : (context.dataType?.(parsed.value.type)?.spec ??
+              context.model?.(parsed.value.type)?.spec);
         const inferred = deriveSourceContract(
           parsed.value.input.values,
           declared,
@@ -209,7 +210,8 @@ export function validateTrackDefinition(
         const declared =
           parsed.value.type === undefined
             ? parsed.value.input.schema
-            : context.dataType?.(parsed.value.type)?.spec;
+            : (context.dataType?.(parsed.value.type)?.spec ??
+              context.model?.(parsed.value.type)?.spec);
         const inferred = deriveSourceContract(
           parsed.value.input.values,
           declared,

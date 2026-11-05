@@ -7,6 +7,8 @@ import type {
   Outputs,
   Parsed,
   PluginDefinition,
+  Prepared,
+  RecordSpec,
   ResolvedInput,
   SlotSpec,
   SourceStructures,
@@ -23,8 +25,8 @@ import type { PluginCapabilities, PluginCapability } from "../ports/plugin-capab
  * Identified-table plugin registry keyed by authored `id`: admits whole definitions, all-or-none per batch.
  */
 
-const PLUGIN_FIELDS = new Set(["id", "inputs", "outputs", "checkSources", "transform"]);
-const INPUT_FIELDS = new Set(["values", "requires"]);
+const PLUGIN_FIELDS = new Set(["id", "inputs", "outputs", "checkSources", "prepare", "transform"]);
+const INPUT_FIELDS = new Set(["param", "values", "requires"]);
 const DEPENDENCY_FIELDS = new Set(["kind", "outputs", "optional", "binding"]);
 const TYPED_FIELDS = new Set(["kind", "type", "optional", "binding"]);
 const MODEL_SLOT_FIELDS = new Set(["kind", "model", "optional", "binding"]);
@@ -35,9 +37,11 @@ const PASCAL_CASE_RE = /^[A-Z][A-Za-z0-9]*$/;
 const EMPTY_MEMBERS: readonly string[] = Object.freeze([]);
 const EMPTY_TYPES: readonly DataType<unknown, unknown>[] = Object.freeze([]);
 const EMPTY_MODELS: readonly Model<unknown, unknown>[] = Object.freeze([]);
+const EMPTY_RECORD_SPEC: ValueSpec = Object.freeze({ kind: "record", fields: Object.freeze({}) });
 
 type TransformHook = PluginDefinition["transform"];
 type CheckSourcesHook = NonNullable<PluginDefinition["checkSources"]>;
+type PrepareHook = NonNullable<PluginDefinition["prepare"]>;
 
 /** One admission refusal carrying its rule id and definition path. */
 export class PluginAdmissionError extends TypeError {
@@ -248,22 +252,32 @@ function readInputs(
 ): PluginDefinition["inputs"] {
   const source = requireRecord(value, path);
   assertKnownKeys(source, INPUT_FIELDS, path, "Plugin inputs");
-  if (!Object.hasOwn(source, "values"))
-    refuse("plugin-shape", `${path}.values`, "Plugin inputs must declare values.");
-  let values: ValueSpec;
-  if (isModel(source.values)) {
-    const model = admitModel(source.values, `${path}.values`);
-    referencedModels.push(model);
-    values = model.spec;
-  } else {
-    values = readSpec(source.values, `${path}.values`, true);
+  let param: RecordSpec | undefined;
+  if (source.param !== undefined) {
+    const spec = readSpec(source.param, `${path}.param`, true);
+    if (spec.kind !== "record") {
+      refuse("plugin-input-invalid", `${path}.param`, "Plugin param must be a record spec.");
+    }
+    param = spec;
   }
-  if (values.optional === true)
-    refuse(
-      "plugin-input-invalid",
-      `${path}.values.optional`,
-      "optional is not valid on inputs.values.",
-    );
+  let values: ValueSpec | undefined;
+  if (source.values !== undefined) {
+    if (isModel(source.values)) {
+      const model = admitModel(source.values, `${path}.values`);
+      referencedModels.push(model);
+      values = model.spec;
+    } else {
+      values = readSpec(source.values, `${path}.values`, true);
+    }
+    if (values.optional === true)
+      refuse(
+        "plugin-input-invalid",
+        `${path}.values.optional`,
+        "optional is not valid on inputs.values.",
+      );
+  } else if (param === undefined) {
+    refuse("plugin-shape", `${path}.values`, "Plugin inputs must declare values.");
+  }
   let requires: Readonly<Record<string, SlotSpec>> | undefined;
   if (source.requires !== undefined) {
     const requiresSource = requireRecord(source.requires, `${path}.requires`);
@@ -298,7 +312,8 @@ function readInputs(
     requires = Object.freeze(slots);
   }
   return Object.freeze({
-    values,
+    ...(param === undefined ? {} : { param }),
+    values: values ?? Object.freeze({ kind: "record", fields: Object.freeze({}) }),
     ...(requires === undefined ? {} : { requires }),
   });
 }
@@ -358,6 +373,7 @@ function admitPlugin(
     "plugin.checkSources",
     "checkSources",
   );
+  const rawPrepare = readHook<PrepareHook>(own(source, "prepare"), "plugin.prepare", "prepare");
   // Runtime validates values before and result after; wrapper rebinds `this` and casts.
   const transform: TransformHook = (input: ResolvedInput, context: EvaluationContext) =>
     Reflect.apply(rawTransform, source, [input, context]) as Outputs;
@@ -366,11 +382,16 @@ function admitPlugin(
       ? undefined
       : (structures: SourceStructures) =>
           Reflect.apply(rawCheckSources, source, [structures]) as readonly Diagnostic[];
+  const prepare: PrepareHook | undefined =
+    rawPrepare === undefined
+      ? undefined
+      : (ctx) => Reflect.apply(rawPrepare, source, [ctx]) as Prepared<unknown>;
   const definition = Object.freeze({
     id,
     inputs,
     outputs,
     ...(checkSources === undefined ? {} : { checkSources }),
+    ...(prepare === undefined ? {} : { prepare }),
     transform,
   });
   return { definition, models: referencedModels };
@@ -644,7 +665,7 @@ export class PluginCatalog implements PluginCapabilities {
       id: definition.id,
       values: isModel(definition.inputs.values)
         ? definition.inputs.values.spec
-        : definition.inputs.values,
+        : (definition.inputs.values ?? EMPTY_RECORD_SPEC),
       requires: Object.freeze(requires),
       outputs: Object.freeze(outputs),
     });

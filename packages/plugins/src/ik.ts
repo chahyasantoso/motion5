@@ -1,6 +1,9 @@
 import {
+  ok,
+  refused,
   typed,
   type PluginDefinition,
+  type Prepared,
   type SourceStructures,
   type Structure,
   type ValueSpec,
@@ -104,6 +107,21 @@ export const ikPlugin: PluginDefinition<IkInput> = {
     const goals = structureOf<GoalsStructure>(structures, "goals");
     if (chain === undefined || goals === undefined) return Object.freeze([]);
     return goalDiagnostics(chain, goals);
+  },
+  prepare({ structures }) {
+    const chain = structureOf<BodyStructure>(structures, "chain");
+    const goals = structureOf<GoalsStructure>(structures, "goals");
+    if (chain === undefined || goals === undefined) return ok(undefined);
+    const diagnostics = goalDiagnostics(chain, goals);
+    if (diagnostics.length > 0) {
+      return refused(
+        diagnostics.map((d) => ({
+          path: d.path,
+          message: d.message,
+        })),
+      );
+    }
+    return ok(undefined);
   },
   transform({ values, requires }) {
     const local = flatRecord(values, "input.values");

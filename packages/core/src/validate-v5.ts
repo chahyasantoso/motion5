@@ -36,6 +36,9 @@ export function validateV5(
     ...(capabilities.dataType === undefined
       ? {}
       : { dataType: (typeId: string) => capabilities.dataType?.(typeId) }),
+    ...(capabilities.model === undefined
+      ? {}
+      : { model: (modelId: string) => capabilities.model?.(modelId) }),
   };
   const schema = validateSchemaV5(input, context);
   switch (schema.kind) {

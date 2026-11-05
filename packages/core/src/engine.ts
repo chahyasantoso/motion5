@@ -4,11 +4,13 @@ import type {
   PatchBatch,
   PatchListener,
   ProjectDefinition,
+  SlotSpec,
   Structure,
   SourceStructure,
   TrackDefinition,
   TriggerSignal,
 } from "./contract/v5";
+import { isModel, isOptionalModel } from "./contract/v5";
 import { parseTrackDefinition } from "./contract/v5-parse";
 import type { MotionHandle } from "./contract/motion-handle";
 import type { SchemaTransaction } from "./contract/schema-transaction";
@@ -203,14 +205,12 @@ export class Engine {
           throw new TypeError(
             `plugin-unknown at ${nodeId}.plugin: '${parsed.plugin}' is not admitted.`,
           );
+        const valuesSpec = isModel(plugin.inputs.values)
+          ? plugin.inputs.values.spec
+          : plugin.inputs.values;
         // Contract-checked pre-compile, rechecked at runtime: easing can leave a declared range.
         readOutcome(
-          deriveSourceContract(
-            parsed.input.values,
-            plugin.inputs.values,
-            `${nodeId}.input.values`,
-            "plugin",
-          ),
+          deriveSourceContract(parsed.input.values, valuesSpec, `${nodeId}.input.values`, "plugin"),
           () => undefined,
           (diagnostics) => {
             throw new TypeError(describeDiagnostics(diagnostics));
@@ -221,22 +221,25 @@ export class Engine {
           plugin,
           values: parsed.input.values,
           interpolator: this.#options.interpolator,
+          ...(parsed.input.param === undefined ? {} : { param: parsed.input.param }),
         });
         tracks.set(nodeId, track);
         return track;
       }
       const dataType =
         parsed.type === undefined ? undefined : this.#capabilities.dataType?.(parsed.type);
-      if (parsed.type !== undefined && dataType === undefined)
+      const model = parsed.type === undefined ? undefined : this.#capabilities.model?.(parsed.type);
+      if (parsed.type !== undefined && dataType === undefined && model === undefined)
         throw new TypeError(
           `data-type-unknown at ${nodeId}.type: '${parsed.type}' is not admitted.`,
         );
-      const spec = dataType?.spec ?? parsed.input.schema;
+      const spec = dataType?.spec ?? model?.spec ?? parsed.input.schema;
       const track = new ValueTrack({
         nodeId,
         values: parsed.input.values,
         interpolator: this.#options.interpolator,
         ...(dataType === undefined ? {} : { dataType }),
+        ...(model === undefined ? {} : { model }),
         ...(spec === undefined ? {} : { spec }),
       });
       tracks.set(nodeId, track);
@@ -474,41 +477,64 @@ export class Engine {
           sourceId: (source: string) => string,
         ): void => {
           const pluginId = track.plugin;
-          const requires = track.input?.requires;
-          if (pluginId === undefined || requires === undefined) return;
+          if (pluginId === undefined) return;
           const plugin = this.#capabilities.pluginDefinition?.(pluginId);
           if (plugin === undefined) return;
-          const check = plugin.checkSources;
-          if (check === undefined) return;
+          const consumer = tracks.get(consumerId);
+          if (!(consumer instanceof PluginTrack)) return;
+          const requires = track.input?.requires;
           const declared = plugin.inputs.requires ?? {};
           const structures: Record<string, SourceStructure> = {};
+          let canRunPrepare = plugin.prepare !== undefined;
           for (const [slotName, slot] of Object.entries(declared)) {
-            if (slot.kind !== "typed") continue;
-            const binding = requires[slotName];
+            const isOptional = isOptionalModel(slot) || (!isModel(slot) && slot.optional === true);
+            const slotKind = isModel(slot) || isOptionalModel(slot) ? "model" : slot.kind;
+            const binding = requires?.[slotName];
             if (binding === undefined) {
-              if (slot.optional === true) continue;
-              return;
+              if (isOptional) continue;
+              canRunPrepare = false;
+              break;
             }
-            if (typeof binding === "string") {
-              const source = tracks.get(sourceId(binding));
-              if (!(source instanceof ValueTrack) || source.structure === undefined) return;
-              structures[slotName] = source.structure;
-              continue;
+            switch (slotKind) {
+              case "model":
+              case "typed": {
+                if (typeof binding === "string") {
+                  const source = tracks.get(sourceId(binding));
+                  if (!(source instanceof ValueTrack) || source.structure === undefined) {
+                    canRunPrepare = false;
+                    break;
+                  }
+                  structures[slotName] = source.structure;
+                  continue;
+                }
+                const members: Record<string, Structure<unknown>> = {};
+                for (const [key, memberSource] of Object.entries(binding)) {
+                  const source = tracks.get(sourceId(memberSource));
+                  if (!(source instanceof ValueTrack) || source.structure === undefined) {
+                    canRunPrepare = false;
+                    break;
+                  }
+                  defineOwnValue(members, key, source.structure);
+                }
+                structures[slotName] = Object.freeze(members);
+                continue;
+              }
+              case "shape": {
+                continue;
+              }
+              default:
+                return unreachable(slotKind);
             }
-            const members: Record<string, Structure<unknown>> = {};
-            for (const [key, memberSource] of Object.entries(binding)) {
-              const source = tracks.get(sourceId(memberSource));
-              if (!(source instanceof ValueTrack) || source.structure === undefined) return;
-              defineOwnValue(members, key, source.structure);
-            }
-            structures[slotName] = Object.freeze(members);
           }
-          const diagnostics = check(Object.freeze(structures));
-          const errors = diagnostics.filter(({ severity }) => severity === "error");
-          if (errors.length > 0) throw new TypeError(describeDiagnostics(errors));
-          const consumer = tracks.get(consumerId);
-          if (consumer instanceof PluginTrack)
+          if (plugin.checkSources !== undefined) {
+            const diagnostics = plugin.checkSources(Object.freeze(structures));
+            const errors = diagnostics.filter(({ severity }) => severity === "error");
+            if (errors.length > 0) throw new TypeError(describeDiagnostics(errors));
             consumer.markSourcesChecked(Object.freeze(structures), diagnostics);
+          }
+          if (canRunPrepare) {
+            consumer.prepareCommit(Object.freeze(structures));
+          }
         };
         for (const motion of acceptedProject.motions)
           for (const track of motion.tracks) {
@@ -530,7 +556,12 @@ export class Engine {
         const refs: Record<string, SourceRef | Record<string, SourceRef>> = {};
         for (const edge of node.edges) {
           const sourceTrack = tracks.get(edge.sourceId);
-          const structure = sourceTrack instanceof ValueTrack ? sourceTrack.structure : undefined;
+          const structure =
+            sourceTrack instanceof ValueTrack
+              ? sourceTrack.structure
+              : sourceTrack instanceof PluginTrack
+                ? sourceTrack.outputStructure("values")
+                : undefined;
           const ref: SourceRef = {
             sourceId: edge.sourceId,
             ...(structure === undefined ? {} : { structure }),

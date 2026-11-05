@@ -10,6 +10,7 @@ import type {
   Value,
   ValueSpec,
 } from "../contract/v5";
+import { isModel } from "../contract/v5";
 import { diagnostic, hintDiagnostic, hintDiagnostics } from "../contract/diagnostics";
 import { deriveSourceContract, type SpecOrigin } from "../contract/v5-infer";
 import { parseTrackDefinition, type ParsedValues } from "../contract/v5-parse";
@@ -18,7 +19,7 @@ import { acceptedOutcome, refusedOutcomeFrom, type Outcome } from "../lang/outco
 import { unreachable } from "../lang/exhaustive";
 import type { PluginCapabilities } from "../ports/plugin-capabilities";
 import { authoringValue } from "./authoring-value";
-import { parseDataType } from "./data-type-parse";
+import { parseDataType, parseModel } from "./data-type-parse";
 import { validateRuntimeValue } from "./value-validation";
 import { authoredStaticView, runtimeStaticView, sameStaticView } from "./static-view";
 import { AUTHORED, buildOwed, LIVE, type ValueState } from "./value-state";
@@ -115,9 +116,8 @@ function committedInputSpec(
   environment: ValueEnvironment,
 ): CommittedInputSpec {
   if (track.plugin !== undefined) {
-    const spec =
-      environment.capabilities.pluginDefinition?.(track.plugin)?.inputs.values ??
-      contract?.input.spec;
+    const raw = environment.capabilities.pluginDefinition?.(track.plugin)?.inputs.values;
+    const spec = (isModel(raw) ? raw.spec : raw) ?? contract?.input.spec;
     if (spec === undefined) throw new TypeError(`Track "${track.id}" has no committed input spec.`);
     return { spec, origin: "plugin" };
   }
@@ -217,7 +217,8 @@ function validateAuthoredValues(
   }
   if (track.type !== undefined) {
     const type = environment.capabilities.dataType?.(track.type);
-    if (type === undefined)
+    const model = environment.capabilities.model?.(track.type);
+    if (type === undefined && model === undefined)
       return refusedOutcomeFrom([
         diagnostic(
           "data-type-unknown",
@@ -225,9 +226,15 @@ function validateAuthoredValues(
           `Data type '${track.type}' is not admitted.`,
         ),
       ]);
-    const structure = parseDataType(type, authoringValue(values), `${nodeId}.input.values`);
-    if (structure.kind === "refused")
-      return refusedOutcomeFrom([...parsed.diagnostics, ...structure.diagnostics]);
+    if (type !== undefined) {
+      const structure = parseDataType(type, authoringValue(values), `${nodeId}.input.values`);
+      if (structure.kind === "refused")
+        return refusedOutcomeFrom([...parsed.diagnostics, ...structure.diagnostics]);
+    } else if (model !== undefined) {
+      const structure = parseModel(model, authoringValue(values), `${nodeId}.input.values`);
+      if (structure.kind === "refused")
+        return refusedOutcomeFrom([...parsed.diagnostics, ...structure.diagnostics]);
+    }
   }
   return acceptedOutcome({ track, values }, parsed.diagnostics);
 }

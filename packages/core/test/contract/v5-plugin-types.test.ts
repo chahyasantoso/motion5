@@ -2,6 +2,7 @@ import { describe, expect, expectTypeOf, it } from "vitest";
 import { shape } from "@motion5/core/plugin-api";
 import type {
   EvaluationContext,
+  Model,
   Outputs,
   PatchPayload,
   PluginDefinition,
@@ -9,6 +10,7 @@ import type {
   Table,
   ValueSpec,
 } from "../../src/contract/v5";
+import { isModel } from "../../src/contract/v5";
 
 type TranslateValues = Readonly<Record<"dx" | "dy", number>>;
 
@@ -92,7 +94,9 @@ describe("v5 plugin types", () => {
   it("types a translate-shaped plugin from its declared evaluated input", () => {
     expectTypeOf(translate.transform).parameter(0).toEqualTypeOf<TranslateInput>();
     expectTypeOf(translate.transform).returns.toEqualTypeOf<Outputs>();
-    expectTypeOf<PluginDefinition<TranslateInput>["inputs"]["values"]>().toEqualTypeOf<ValueSpec>();
+    expectTypeOf<PluginDefinition<TranslateInput>["inputs"]["values"]>().toEqualTypeOf<
+      ValueSpec | Model<unknown, unknown> | undefined
+    >();
   });
 
   it("keeps a resolved input generic over its evaluated values", () => {
@@ -108,7 +112,8 @@ describe("v5 plugin types", () => {
 
   it("proves the declared spec and authored type agree for the translate plugin", () => {
     const valuesSpec = translate.inputs.values;
-    if (valuesSpec.kind !== "record") throw new Error("Expected record spec.");
+    if (valuesSpec === undefined || isModel(valuesSpec) || valuesSpec.kind !== "record")
+      throw new Error("Expected record spec.");
     expect(Object.keys(valuesSpec.fields).sort()).toEqual(["dx", "dy"]);
     expect(valuesSpec.fields.dx?.kind).toBe("number");
     expect(valuesSpec.fields.dy?.kind).toBe("number");

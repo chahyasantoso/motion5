@@ -167,7 +167,7 @@ describe("v5 contract direction", () => {
     expectTypeOf<keyof TrackDefinition>().toEqualTypeOf<
       "id" | "type" | "plugin" | "input" | "duration"
     >();
-    expectTypeOf<keyof TrackInput>().toEqualTypeOf<"values" | "requires" | "schema">();
+    expectTypeOf<keyof TrackInput>().toEqualTypeOf<"values" | "param" | "requires" | "schema">();
   });
 
   it("refuses old grouped, flat-row, structured-cell and type-alias forms", () => {
@@ -504,7 +504,8 @@ describe("v5 plugin type direction", () => {
   it("[Phase 3] translate's declared input spec and authored type agree", () => {
     expectTypeOf<keyof TranslateValues>().toEqualTypeOf<"dx" | "dy">();
     const spec = translatePlugin.inputs.values;
-    expect(spec.kind).toBe("record");
-    if (spec.kind === "record") expect(Object.keys(spec.fields)).toEqual(["dx", "dy"]);
+    expect(spec?.kind).toBe("record");
+    if (spec !== undefined && "fields" in spec)
+      expect(Object.keys(spec.fields)).toEqual(["dx", "dy"]);
   });
 });

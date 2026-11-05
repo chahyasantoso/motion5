@@ -160,6 +160,10 @@ export type DataTypeParsed<S> =
 export type Parsed<Structure> =
   | { readonly ok: true; readonly value: Structure }
   | { readonly ok: false; readonly issues: readonly Issue[] };
+/** Result of preparing plugin static state. */
+export type Prepared<State = unknown> =
+  | { readonly ok: true; readonly value: State }
+  | { readonly ok: false; readonly issues: readonly Issue[] };
 /** Successful parse result for a model structure. */
 export function ok<Structure>(value: Structure): Parsed<Structure> {
   return { ok: true, value };
@@ -176,6 +180,7 @@ export interface Model<Cells = unknown, Structure = undefined> {
   readonly parse?: (value: Value) => Parsed<Structure>;
   readonly legacyTypeId?: string;
   readonly optional?: boolean;
+  readonly binding?: BindingMode;
 }
 /** Defines an immutable model contract. */
 export function defineModel<Cells = unknown, Structure = undefined>(decl: {
@@ -306,6 +311,7 @@ export type SourceStructures = Readonly<Record<string, SourceStructure>>;
 /** What a track authors: values, slots, source schema. */
 export interface TrackInput {
   readonly values?: AuthoredValues;
+  readonly param?: AuthoredValues;
   readonly requires?: Readonly<Record<string, SourceBinding>>;
   /** No-plugin sources only. */
   readonly schema?: ValueSpec;
@@ -340,23 +346,44 @@ export type ResolvedRequires = Readonly<Record<string, unknown>>;
 export interface ResolvedInput<Values extends Value = Value> {
   readonly values: Values;
   readonly requires: ResolvedRequires;
+  readonly param?: unknown;
+  readonly structures?: SourceStructures;
+  readonly state?: unknown;
 }
+/** Record-kind value specification. */
+export type RecordSpec = Extract<ValueSpec, { readonly kind: "record" }>;
+
+/** Context passed to plugin prepare hook. */
+export interface PluginPrepareContext<TRequires = SourceStructures> {
+  readonly values: unknown;
+  readonly param?: unknown;
+  readonly structures: TRequires;
+}
+
 /** Admitted plugin; `Input` is its evaluated input shape. */
 export interface PluginDefinition<
   Input extends ResolvedInput = ResolvedInput,
   OutputsDecl extends Readonly<Record<string, ValueSpec | Model<unknown, unknown>>> = Readonly<
     Record<string, ValueSpec | Model<unknown, unknown>>
   >,
+  TState = unknown,
 > {
   readonly id: string;
   readonly inputs: {
-    // Admission refuses `optional` on local values.
-    readonly values: ValueSpec;
-    readonly requires?: Readonly<Record<string, SlotSpec>>;
+    readonly param?: RecordSpec;
+    readonly values?: ValueSpec | Model<unknown, unknown>;
+    readonly requires?: Readonly<
+      Record<string, SlotSpec | Model<unknown, unknown> | OptionalModel<Model<unknown, unknown>>>
+    >;
   };
   readonly outputs: OutputsDecl;
   /** Cross-source rules over the structures typed slots deliver; pure, never per frame. */
   checkSources?(structures: SourceStructures): readonly Diagnostic[];
+  prepare?(ctx: {
+    readonly values: unknown;
+    readonly param?: unknown;
+    readonly structures: SourceStructures;
+  }): Prepared<TState>;
   transform(input: Input, context: EvaluationContext): Outputs;
 }
 /** Payload by status; only ready owns outputs. */

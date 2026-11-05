@@ -1,7 +1,10 @@
 import {
   diagnostic,
+  ok,
+  refused,
   typed,
   type PluginDefinition,
+  type Prepared,
   type SourceStructures,
   type Structure,
 } from "@motion5/core/plugin-api";
@@ -66,6 +69,22 @@ export const fkPlugin: PluginDefinition<FkInput> = {
         diagnostic("plugin-validation-failed", "solved", `Solver row missing for member "${id}".`),
       );
     return Object.freeze(diagnostics);
+  },
+  prepare({ structures }) {
+    const chain = structureOf<BodyStructure>(structures, "chain");
+    const solved = structureOf<SolvedStructure>(structures, "solved");
+    if (chain === undefined || solved === undefined) return ok(undefined);
+    const solvedIds = new Set(solved.ids);
+    const missing = chain.ids.filter((id) => !solvedIds.has(id));
+    if (missing.length > 0) {
+      return refused(
+        missing.map((id) => ({
+          path: "solved",
+          message: `Solver row missing for member "${id}".`,
+        })),
+      );
+    }
+    return ok(undefined);
   },
   transform({ requires }) {
     const chain = requires.chain;

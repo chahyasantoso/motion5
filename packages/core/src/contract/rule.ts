@@ -96,6 +96,7 @@ const BASE_RULES = {
   "output-missing": ERROR_NO_IDS,
   "output-row-id-duplicate": ERROR_NO_IDS,
   "output-source-shape": ERROR_WITH_IDS,
+  "output-static-changed": ERROR_NO_IDS,
   "output-undeclared": ERROR_NO_IDS,
   "perspective-shape": ERROR_NO_IDS,
   "perspective-usage": WARNING_WITH_IDS,

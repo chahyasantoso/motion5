@@ -75,6 +75,7 @@ export const BASE_RULE_IDS = [
   "output-missing",
   "output-row-id-duplicate",
   "output-source-shape",
+  "output-static-changed",
   "output-undeclared",
   "perspective-shape",
   "perspective-usage",

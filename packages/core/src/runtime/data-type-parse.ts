@@ -1,4 +1,4 @@
-import type { DataType, Diagnostic, Structure, TypeIssue, Value } from "../contract/v5";
+import type { DataType, Diagnostic, Model, Structure, TypeIssue, Value } from "../contract/v5";
 import { diagnostic } from "../contract/diagnostics";
 import { brandStructure } from "../contract/structure";
 import { acceptedOutcome, refusedOutcomeFrom, type Outcome } from "../lang/outcome";
@@ -36,4 +36,34 @@ export function parseDataType(
     default:
       return unreachable(parsed);
   }
+}
+
+/** Validates a value against the model's declared spec, runs model.parse if defined, and brands the result. */
+export function parseModel(
+  model: Model<unknown, unknown>,
+  value: Value,
+  path: string,
+): Outcome<Structure<unknown> | undefined, Diagnostic> {
+  const issues = validateRuntimeValue(value, model.spec, path, { extraFields: "reject" });
+  if (issues.length > 0)
+    return refusedOutcomeFrom(
+      issues.map((issue) => diagnostic("data-type-invalid", issue.path, issue.message)),
+    );
+  if (model.parse === undefined) {
+    return acceptedOutcome(undefined, Object.freeze([]));
+  }
+  const parsed = model.parse(value);
+  if (parsed.ok) {
+    return acceptedOutcome(brandStructure(parsed.value), Object.freeze([]));
+  }
+  const diagnostics = parsed.issues.map((issue) => {
+    const issueP =
+      issue.path.length === 0
+        ? path
+        : issue.path.startsWith(path)
+          ? issue.path
+          : `${path}.${issue.path}`;
+    return diagnostic("data-type-invalid", issueP, issue.message);
+  });
+  return refusedOutcomeFrom(Object.freeze(diagnostics));
 }

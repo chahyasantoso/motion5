@@ -23,6 +23,7 @@ export interface CommittedContract {
 }
 
 const NO_SLOTS: Readonly<Record<string, SlotSpec>> = Object.freeze({});
+const EMPTY_RECORD_SPEC = freeze({ kind: "record" as const, fields: freeze({}) });
 
 function freeze<T>(value: T): T {
   return Object.freeze(value);
@@ -66,7 +67,12 @@ function pluginContract(
   }
   return freeze({
     plugin,
-    input: freeze({ spec: definition.inputs.values, proven: true }),
+    input: freeze({
+      spec: isModel(definition.inputs.values)
+        ? definition.inputs.values.spec
+        : (definition.inputs.values ?? EMPTY_RECORD_SPEC),
+      proven: true,
+    }),
     outputs: freeze(outputs),
     requires: freeze({ ...track.input?.requires }),
     slots: freeze(slots),
@@ -86,10 +92,12 @@ export function deriveCommittedContract(
   }
   const parsed = parseTrackDefinition(track, nodeId);
   if (parsed.kind === "refused") return undefined;
+  const model =
+    parsed.value.type === undefined ? undefined : capabilities.model?.(parsed.value.type);
   const declared =
     parsed.value.type === undefined
       ? parsed.value.input.schema
-      : capabilities.dataType?.(parsed.value.type)?.spec;
+      : (capabilities.dataType?.(parsed.value.type)?.spec ?? model?.spec);
   const input = deriveSourceContract(
     parsed.value.input.values,
     declared,
@@ -97,10 +105,12 @@ export function deriveCommittedContract(
     "declared",
   );
   if (input.kind === "refused") return undefined;
+  const sourceContract =
+    model !== undefined ? freeze({ ...input.value, modelId: model.id }) : input.value;
   return freeze({
     typeId: parsed.value.type ?? GENERIC_DATA_TYPE_ID,
-    input: input.value,
-    outputs: freeze({ values: input.value }),
+    input: sourceContract,
+    outputs: freeze({ values: sourceContract }),
     requires: freeze({ ...parsed.value.input.requires }),
     slots: NO_SLOTS,
   });

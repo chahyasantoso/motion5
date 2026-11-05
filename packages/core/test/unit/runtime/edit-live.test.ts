@@ -66,7 +66,8 @@ function contractFor(
   });
   if (parsed.kind === "refused") throw new Error("Fixture track does not parse.");
   const plugin = plugins.find((candidate) => candidate.id === definition.plugin);
-  const spec = plugin === undefined ? parsed.value.input.schema : plugin.inputs.values;
+  const rawSpec = plugin === undefined ? parsed.value.input.schema : plugin.inputs.values;
+  const spec = isModel(rawSpec) ? rawSpec.spec : rawSpec;
   const derived = deriveSourceContract(
     parsed.value.input.values,
     spec,
@@ -81,7 +82,7 @@ function contractFor(
   const input =
     plugin === undefined
       ? derived.value
-      : Object.freeze({ spec: plugin.inputs.values, proven: true });
+      : Object.freeze({ spec: spec ?? { kind: "record" as const, fields: {} }, proven: true });
   const outputs =
     plugin === undefined
       ? Object.freeze({ values: input })

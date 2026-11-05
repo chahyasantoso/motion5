@@ -5,6 +5,7 @@ import type {
   OptionalModel,
   Outputs,
   PluginDefinition,
+  Prepared,
   ResolvedInput,
   ResolvedRequires,
   Scalar,
@@ -17,19 +18,35 @@ import type {
 } from "../contract/v5";
 import { isModel, isOptionalModel } from "../contract/v5";
 import type { ParsedRecord, ParsedValues } from "../contract/v5-parse";
-import { diagnostic } from "../contract/diagnostics";
+import { describeDiagnostics, diagnostic } from "../contract/diagnostics";
 import { unreachable } from "../lang/exhaustive";
 import { defineOwnValue } from "../lang/own-property";
 import type { Interpolator } from "../ports/interpolator";
 import { createValueEvaluator } from "./evaluate-values";
-import { parseDataType } from "./data-type-parse";
+import { parseDataType, parseModel } from "./data-type-parse";
 import { PluginNodeError, validatePluginOutputs } from "./plugin-output";
 import type { SlotSources, SourceRef } from "./source-ref";
 import { isValue } from "./value-validation";
 import type { PublisherComposition } from "./graph-publisher";
 import { LocalInput } from "./local-input";
+import { authoringValue } from "./authoring-value";
+import { runtimeStaticView, sameStaticView, type StaticView } from "./static-view";
 
 const EMPTY_RECORD: ParsedRecord = Object.freeze({ kind: "record", fields: Object.freeze({}) });
+const EMPTY_RECORD_SPEC: ValueSpec = Object.freeze({ kind: "record", fields: Object.freeze({}) });
+
+function staticPayload(view: StaticView, spec: ValueSpec): unknown {
+  switch (view.kind) {
+    case "record":
+      return view.fields;
+    case "table":
+      return view.rows;
+    case "absent":
+      return spec.kind === "record" ? Object.freeze({}) : Object.freeze([]);
+    default:
+      return unreachable(view);
+  }
+}
 
 function isPlainRecord(value: unknown): value is Record<string, unknown> {
   if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
@@ -123,6 +140,7 @@ export class PluginTrack {
   readonly plugin: PluginDefinition;
   readonly #interpolator: Interpolator;
   readonly #localInput: LocalInput;
+  readonly #paramInput: LocalInput | undefined;
   #outputsChecked = false;
   readonly #computedStructures = new Map<
     string,
@@ -130,24 +148,36 @@ export class PluginTrack {
   >();
   #checkedStructures: SourceStructures | undefined;
   #checkedWarnings: readonly Diagnostic[] = Object.freeze([]);
+  #preparedState: unknown;
+  #isPrepared = false;
+  readonly #parsedValues: ParsedValues | undefined;
+  readonly #parsedParam: ParsedValues | undefined;
+  readonly #outputStructures = new Map<string, Structure<unknown> | undefined>();
+  readonly #outputStaticSnapshots = new Map<string, StaticView>();
 
   constructor(options: {
     readonly nodeId: string;
     readonly plugin: PluginDefinition;
     readonly values: ParsedValues | undefined;
+    readonly param?: ParsedValues;
     readonly interpolator: Interpolator;
   }) {
     if (options.nodeId.length === 0) throw new TypeError("Track node id must be non-empty.");
     this.nodeId = options.nodeId;
     this.plugin = options.plugin;
     this.#interpolator = options.interpolator;
+    this.#parsedValues = options.values;
+    this.#parsedParam = options.param;
+    const rawSpec = this.plugin.inputs.values;
+    const valuesSpec = isModel(rawSpec) ? rawSpec.spec : (rawSpec ?? EMPTY_RECORD_SPEC);
     this.#localInput = new LocalInput(
-      createValueEvaluator(
-        this.#withDefault(options.values),
-        options.interpolator,
-        this.plugin.inputs.values,
-      ),
+      createValueEvaluator(this.#withDefault(options.values), options.interpolator, valuesSpec),
     );
+    if (this.plugin.inputs.param !== undefined) {
+      this.#paramInput = new LocalInput(
+        createValueEvaluator(options.param, options.interpolator, this.plugin.inputs.param),
+      );
+    }
   }
 
   get progress(): number {
@@ -163,13 +193,14 @@ export class PluginTrack {
    * active and undisposed.
    */
   replaceValues(values: ParsedValues | undefined): void {
+    const rawSpec = this.plugin.inputs.values;
+    const valuesSpec = isModel(rawSpec) ? rawSpec.spec : (rawSpec ?? EMPTY_RECORD_SPEC);
     this.#localInput.replaceEvaluator(() =>
-      createValueEvaluator(
-        this.#withDefault(values),
-        this.#interpolator,
-        this.plugin.inputs.values,
-      ),
+      createValueEvaluator(this.#withDefault(values), this.#interpolator, valuesSpec),
     );
+    this.#isPrepared = false;
+    this.#outputStaticSnapshots.clear();
+    this.#outputStructures.clear();
   }
 
   /**
@@ -190,17 +221,22 @@ export class PluginTrack {
 
   #withDefault(values: ParsedValues | undefined): ParsedValues | undefined {
     if (values !== undefined) return values;
-    return this.plugin.inputs.values.kind === "record" ? EMPTY_RECORD : undefined;
+    const raw = this.plugin.inputs.values;
+    const spec = isModel(raw) ? raw.spec : (raw ?? EMPTY_RECORD_SPEC);
+    return spec.kind === "record" ? EMPTY_RECORD : undefined;
   }
 
   setProgress(value: number): boolean {
-    return this.#localInput.setProgress(value);
+    const p1 = this.#localInput.setProgress(value);
+    const p2 = this.#paramInput?.setProgress(value) ?? false;
+    return p1 || p2;
   }
 
   /** Evaluate local values and the bound slots, then run the one plugin. */
   compose(requires: ResolvedRequires, sources: SlotSources = {}): PublisherComposition {
     this.#localInput.assertActive();
-    const spec = this.plugin.inputs.values;
+    const rawValues = this.plugin.inputs.values;
+    const spec = isModel(rawValues) ? rawValues.spec : (rawValues ?? EMPTY_RECORD_SPEC);
     const local = this.#localInput.evaluate();
     if (spec.kind === "table" ? !Array.isArray(local) : Array.isArray(local))
       throw new PluginNodeError([
@@ -212,9 +248,14 @@ export class PluginTrack {
       ]);
     const { values: resolved, structures } = this.#resolve(requires, sources);
     const warnings = this.#checkSources(structures);
+    this.#runPrepare(structures);
+    const evaluatedParam = this.#paramInput?.evaluate();
     const input: ResolvedInput = Object.freeze({
       values: local,
       requires: Object.freeze(resolved),
+      ...(evaluatedParam !== undefined ? { param: evaluatedParam } : {}),
+      structures,
+      state: this.#preparedState,
     });
     const context = Object.freeze({ nodeId: this.nodeId, progress: this.#localInput.progress });
     const raw = this.plugin.transform(input, context);
@@ -222,6 +263,7 @@ export class PluginTrack {
       ? raw
       : validatePluginOutputs(raw, this.plugin.outputs, this.nodeId);
     this.#outputsChecked = true;
+    this.#checkOutputModels(raw);
     return {
       outputs,
       sourceProgress: this.#localInput.progress,
@@ -232,6 +274,146 @@ export class PluginTrack {
 
   dispose(): void {
     this.#localInput.dispose();
+    this.#paramInput?.dispose();
+  }
+
+  /** Seeds the commit-time prepared state so runtime does not re-evaluate it. */
+  markPrepared(state: unknown, structures: SourceStructures): void {
+    this.#preparedState = state;
+    this.#isPrepared = true;
+    this.#checkedStructures = structures;
+  }
+
+  /** Evaluates prepare at commit time when source structures are present. */
+  prepareCommit(structures: SourceStructures): void {
+    const prepare = this.plugin.prepare;
+    if (prepare === undefined) return;
+    const staticValues = this.#staticValuesView();
+    const staticParam = this.#staticParamView();
+    let res: Prepared<unknown>;
+    try {
+      res = prepare({
+        values: staticValues,
+        param: staticParam,
+        structures,
+      });
+    } catch (error) {
+      throw new TypeError(
+        describeDiagnostics([
+          diagnostic(
+            "plugin-validation-failed",
+            this.nodeId,
+            `Plugin '${this.plugin.id}' prepare threw: ${error instanceof Error ? error.message : String(error)}`,
+          ),
+        ]),
+      );
+    }
+    if (!res.ok) {
+      const diagnostics = res.issues.map((issue) =>
+        diagnostic(
+          "plugin-validation-failed",
+          issue.path.length === 0
+            ? this.nodeId
+            : issue.path.startsWith(this.nodeId)
+              ? issue.path
+              : `${this.nodeId}.input.requires.${issue.path}`,
+          issue.message,
+        ),
+      );
+      throw new TypeError(describeDiagnostics(diagnostics));
+    }
+    this.#preparedState = res.value;
+    this.#isPrepared = true;
+    this.#checkedStructures = structures;
+  }
+
+  /** The cached structure of a published model output, if declared and parsed. */
+  outputStructure(outputName: string): Structure<unknown> | undefined {
+    return this.#outputStructures.get(outputName);
+  }
+
+  #staticValuesView(): unknown {
+    const raw = this.plugin.inputs.values;
+    const spec = isModel(raw) ? raw.spec : (raw ?? EMPTY_RECORD_SPEC);
+    const view = runtimeStaticView(authoringValue(this.#parsedValues), spec);
+    return staticPayload(view, spec);
+  }
+
+  #staticParamView(): unknown {
+    const spec = this.plugin.inputs.param;
+    if (spec === undefined) return undefined;
+    const view = runtimeStaticView(authoringValue(this.#parsedParam), spec);
+    return staticPayload(view, spec);
+  }
+
+  #runPrepare(structures: SourceStructures): void {
+    const prepare = this.plugin.prepare;
+    if (prepare === undefined) return;
+    if (this.#isPrepared && sameSourceStructures(this.#checkedStructures, structures)) {
+      return;
+    }
+    const staticValues = this.#staticValuesView();
+    const staticParam = this.#staticParamView();
+    let res: Prepared<unknown>;
+    try {
+      res = prepare({
+        values: staticValues,
+        param: staticParam,
+        structures,
+      });
+    } catch (error) {
+      throw new PluginNodeError([
+        diagnostic(
+          "plugin-validation-failed",
+          this.nodeId,
+          `Plugin '${this.plugin.id}' prepare threw: ${error instanceof Error ? error.message : String(error)}`,
+        ),
+      ]);
+    }
+    if (!res.ok) {
+      const diagnostics = res.issues.map((issue) =>
+        diagnostic(
+          "plugin-validation-failed",
+          issue.path.length === 0
+            ? this.nodeId
+            : issue.path.startsWith(this.nodeId)
+              ? issue.path
+              : `${this.nodeId}.input.requires.${issue.path}`,
+          issue.message,
+        ),
+      );
+      throw new PluginNodeError(diagnostics);
+    }
+    this.#preparedState = res.value;
+    this.#isPrepared = true;
+    this.#checkedStructures = structures;
+  }
+
+  #checkOutputModels(raw: Outputs): void {
+    for (const [name, specOrModel] of Object.entries(this.plugin.outputs)) {
+      if (!isModel(specOrModel)) continue;
+      const rawValue = raw[name];
+      if (!isValue(rawValue)) continue;
+      const snapshot = this.#outputStaticSnapshots.get(name);
+      if (snapshot === undefined) {
+        const parsed = parseModel(specOrModel, rawValue, `${this.nodeId}.output.${name}`);
+        if (parsed.kind === "refused") throw new PluginNodeError(parsed.diagnostics);
+        this.#outputStructures.set(name, parsed.value);
+        const staticView = runtimeStaticView(rawValue, specOrModel.spec);
+        this.#outputStaticSnapshots.set(name, staticView);
+      } else {
+        const currentView = runtimeStaticView(rawValue, specOrModel.spec);
+        if (!sameStaticView(snapshot, currentView)) {
+          throw new PluginNodeError([
+            diagnostic(
+              "output-static-changed",
+              `${this.nodeId}.output.${name}`,
+              `Static cells of output '${name}' changed between frames.`,
+            ),
+          ]);
+        }
+      }
+    }
   }
 
   #resolve(
@@ -298,6 +480,13 @@ export class PluginTrack {
       const value = outputs.values;
       if (!isValue(value))
         throw inputFailure(`${path}.values`, `Model slot requires a values output.`);
+      const model = isModel(declaration) ? declaration : declaration.model;
+      const structure =
+        ref?.structure ??
+        (model.parse !== undefined
+          ? this.#computedModelStructure(model, ref?.sourceId ?? path, value, path)
+          : undefined);
+      if (structure !== undefined) defineOwnValue(structures, structureKey, structure);
       return value;
     }
     switch (declaration.kind) {
@@ -306,6 +495,12 @@ export class PluginTrack {
         const value = outputs.values;
         if (!isValue(value))
           throw inputFailure(`${path}.values`, `Model slot requires a values output.`);
+        const structure =
+          ref?.structure ??
+          (declaration.model.parse !== undefined
+            ? this.#computedModelStructure(declaration.model, ref?.sourceId ?? path, value, path)
+            : undefined);
+        if (structure !== undefined) defineOwnValue(structures, structureKey, structure);
         return value;
       }
       case "shape":
@@ -324,6 +519,23 @@ export class PluginTrack {
       default:
         return unreachable(declaration);
     }
+  }
+
+  #computedModelStructure(
+    model: Model<unknown, unknown>,
+    sourceId: string,
+    value: Value,
+    path: string,
+  ): Structure<unknown> | undefined {
+    const key = `${sourceId}\u0000${model.id}`;
+    const cached = this.#computedStructures.get(key);
+    if (cached !== undefined) return cached.structure;
+    const parsed = parseModel(model, value, `${path}.values`);
+    if (parsed.kind === "refused") throw new PluginNodeError(parsed.diagnostics);
+    if (parsed.value !== undefined) {
+      this.#computedStructures.set(key, { structure: parsed.value, signature: "" });
+    }
+    return parsed.value;
   }
 
   #computedStructure(
@@ -357,7 +569,8 @@ export class PluginTrack {
     const declared = this.plugin.inputs.requires ?? {};
     const typed: [string, Extract<SlotSpec, { kind: "typed" }>][] = [];
     for (const [slot, spec] of Object.entries(declared))
-      if (spec.kind === "typed") typed.push([slot, spec]);
+      if (!isModel(spec) && !isOptionalModel(spec) && spec.kind === "typed")
+        typed.push([slot, spec]);
     if (typed.length === 0) return Object.freeze([]);
     for (const [slot, spec] of typed)
       if (structures[slot] === undefined && spec.optional !== true) return Object.freeze([]);

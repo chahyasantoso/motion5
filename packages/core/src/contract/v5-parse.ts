@@ -3,7 +3,7 @@ import { acceptedOutcome, refusedOutcomeFrom, type Outcome } from "../lang/outco
 import { readAuthoredLeaf } from "./authored-leaf";
 import { diagnostic } from "./diagnostics";
 import type { Diagnostic } from "./v5";
-import type { DataType, FieldSpec, Scalar, SourceBinding, ValueSpec } from "./v5";
+import type { DataType, FieldSpec, Model, Scalar, SourceBinding, ValueSpec } from "./v5";
 
 /**
  * The authored boundary for an identified-table track.
@@ -60,6 +60,7 @@ export type ParsedValues = ParsedTable | ParsedRecord;
 
 export interface ParsedInput {
   readonly values?: ParsedValues;
+  readonly param?: ParsedValues;
   readonly requires: Readonly<Record<string, SourceBinding>>;
   readonly schema?: ValueSpec;
 }
@@ -77,12 +78,14 @@ export interface ParseContext {
   readonly isPluginRegistered?: (pluginId: string) => boolean;
   /** Answers the admitted data type for an id; absent leaves the declaration unjudged. */
   readonly dataType?: (typeId: string) => DataType<unknown, unknown> | undefined;
+  /** Answers the admitted model for an id; absent leaves the declaration unjudged. */
+  readonly model?: (modelId: string) => Model<unknown, unknown> | undefined;
 }
 
 const RESERVED_NAMES: ReadonlySet<string> = new Set(["__proto__", "constructor", "prototype"]);
 const TRACK_FIELDS: ReadonlySet<string> = new Set(["id", "type", "plugin", "input", "duration"]);
 const LEGACY_FIELDS: ReadonlySet<string> = new Set(["keyframes", "observes"]);
-const INPUT_FIELDS: ReadonlySet<string> = new Set(["values", "requires", "schema"]);
+const INPUT_FIELDS: ReadonlySet<string> = new Set(["values", "param", "requires", "schema"]);
 const ROW_FIELDS: ReadonlySet<string> = new Set(["id", "cells"]);
 const STOP_FIELDS: ReadonlySet<string> = new Set(["p", "v", "ease"]);
 const TABLE_SPEC_FIELDS: ReadonlySet<string> = new Set(["kind", "schema", "optional"]);
@@ -184,7 +187,11 @@ function readType(
     diagnostics.push(diagnostic("track-shape", path, "Track type must be a non-empty string."));
     return undefined;
   }
-  if (context.dataType !== undefined && context.dataType(value) === undefined)
+  if (
+    (context.dataType !== undefined || context.model !== undefined) &&
+    context.dataType?.(value) === undefined &&
+    context.model?.(value) === undefined
+  )
     diagnostics.push(
       diagnostic("data-type-unknown", path, `Data type '${value}' is not admitted.`),
     );
@@ -886,8 +893,13 @@ function readInput(
     else schema = readValueSpec(value.schema, `${path}.schema`, diagnostics);
   }
   const values = readValues(value.values, `${path}.values`, schema ?? typedSpec, diagnostics);
+  const param =
+    value.param === undefined
+      ? undefined
+      : readValues(value.param, `${path}.param`, undefined, diagnostics);
   return Object.freeze({
     ...(values === undefined ? {} : { values }),
+    ...(param === undefined ? {} : { param }),
     requires,
     ...(schema === undefined ? {} : { schema }),
   });
@@ -933,7 +945,10 @@ export function parseTrackDefinition(
       diagnostic("track-shape", `${path}.type`, "A track is either typed data or a plugin track."),
     );
   const duration = readDuration(track.duration, `${path}.duration`, diagnostics);
-  const typedSpec = type === undefined ? undefined : context.dataType?.(type)?.spec;
+  const typedSpec =
+    type === undefined
+      ? undefined
+      : (context.dataType?.(type)?.spec ?? context.model?.(type)?.spec);
   const input = readInput(
     track.input,
     `${path}.input`,

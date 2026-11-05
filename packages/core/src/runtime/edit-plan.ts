@@ -1,4 +1,5 @@
 import type { Diagnostic, SourceBinding, TrackDefinition, TrackInput } from "../contract/v5";
+import { isModel } from "../contract/v5";
 import { diagnostic } from "../contract/diagnostics";
 import { validateTrackDefinition } from "../contract/validate-v5";
 import type { CommittedContract } from "../graph/committed-contract";
@@ -115,13 +116,15 @@ function pluginShapeDiagnostics(
   if (definition === undefined) return Object.freeze([]);
   const values = track.input?.values;
   if (values === undefined) return Object.freeze([]);
+  const raw = definition.inputs.values;
+  const spec = isModel(raw) ? raw.spec : (raw ?? { kind: "record" as const });
   const authored = Array.isArray(values) ? "table" : "record";
-  if (authored === definition.inputs.values.kind) return Object.freeze([]);
+  if (authored === spec.kind) return Object.freeze([]);
   return Object.freeze([
     diagnostic(
       "values-shape-invalid",
       `${nodeId}.input.values`,
-      `Plugin '${plugin}' declares ${definition.inputs.values.kind} input.`,
+      `Plugin '${plugin}' declares ${spec.kind} input.`,
     ),
   ]);
 }
@@ -138,6 +141,9 @@ function validateTrack(
     ...(environment.capabilities.dataType === undefined
       ? {}
       : { dataType: (typeId: string) => environment.capabilities.dataType?.(typeId) }),
+    ...(environment.capabilities.model === undefined
+      ? {}
+      : { model: (typeId: string) => environment.capabilities.model?.(typeId) }),
   };
   const validated = validateTrackDefinition(track, path, context);
   switch (validated.kind) {

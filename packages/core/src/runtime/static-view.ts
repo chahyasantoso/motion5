@@ -18,7 +18,7 @@ function isTable(
   return Array.isArray(value);
 }
 
-type StaticView =
+export type StaticView =
   | { readonly kind: "record"; readonly fields: Readonly<Record<string, Scalar>> }
   | {
       readonly kind: "table";
