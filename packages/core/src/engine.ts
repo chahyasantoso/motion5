@@ -27,6 +27,7 @@ import { IncrementalGraphBuilder } from "./graph/builders/incremental";
 import { createDefaultTriggerFactory } from "./adapters/trigger-factory/default";
 import { Motion, type MotionTrackEntry } from "./domain/motion";
 import { unreachable } from "./lang/exhaustive";
+import { defineOwnValue } from "./lang/own-property";
 import { collect, report } from "./domain/completion";
 import type { PluginCatalog } from "./domain/plugin-catalog";
 import type { RenderMetadata } from "./ports/render-metadata";
@@ -498,7 +499,7 @@ export class Engine {
             for (const [key, memberSource] of Object.entries(binding)) {
               const source = tracks.get(sourceId(memberSource));
               if (!(source instanceof ValueTrack) || source.structure === undefined) return;
-              members[key] = source.structure;
+              defineOwnValue(members, key, source.structure);
             }
             structures[slotName] = Object.freeze(members);
           }
@@ -555,7 +556,7 @@ export class Engine {
             continue;
           }
           const members = (refs[requirement.slot] as Record<string, SourceRef> | undefined) ?? {};
-          members[requirement.memberKey] = ref;
+          defineOwnValue(members, requirement.memberKey, ref);
           refs[requirement.slot] = members;
         }
         return Object.freeze(refs);

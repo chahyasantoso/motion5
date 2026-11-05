@@ -327,7 +327,7 @@ export class GraphPublisher {
       if (sourcePatch) sourceRevisions[edge.sourceId] = sourcePatch.revision;
       const entry = slots.get(requirement.slot) ?? {};
       if (requirement.memberKey === undefined) entry.single = outputs;
-      else (entry.members ??= {})[requirement.memberKey] = outputs;
+      else defineOwnValue((entry.members ??= {}), requirement.memberKey, outputs);
       slots.set(requirement.slot, entry);
     }
     const requires: Record<string, Outputs | Record<string, Outputs>> = {};

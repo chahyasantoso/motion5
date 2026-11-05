@@ -1,16 +1,22 @@
-import { describe, expect, it } from "vitest";
-import { shape } from "@motion5/core/plugin-api";
+import { describe, expect, it, vi } from "vitest";
+import { shape, typed } from "@motion5/core/plugin-api";
 import type {
+  DataType,
   Patch,
   PluginDefinition,
   ProjectDefinition,
   ResolvedInput,
+  SourceStructures,
+  Structure,
   Table,
+  Value,
   ValueSpec,
 } from "../../src/contract/v5";
 import { PluginCatalog } from "../../src/domain/plugin-catalog";
 import { Engine } from "../../src/engine";
 import { createManualClock } from "../../src/ports/clock";
+import { PluginTrack } from "../../src/runtime/plugin-track";
+import type { SourceRef } from "../../src/runtime/source-ref";
 import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
 import { outputOf, project, record, row, table, track } from "../support/v5-builders";
 
@@ -362,4 +368,111 @@ describe("identified plugin runtime", () => {
     if (patch?.status === "error")
       expect(patch.diagnostics.map(({ ruleId }) => ruleId)).toContain("composition-failure");
   });
+
+  for (const memberKey of ["__proto__", "constructor"] as const) {
+    it(`preserves ${memberKey} as an own member key in requires, structures, and refs`, () => {
+      interface HardeningStructure {
+        readonly tag: string;
+      }
+      const hardeningType: DataType<HardeningStructure, { readonly values: Table }> = {
+        id: "hardening-type",
+        spec: POINT,
+        parse(_value: Value) {
+          return { kind: "parsed", structure: { tag: "parsed-tag" }, warnings: [] };
+        },
+        bind(_structure: Structure<HardeningStructure>, value: Value) {
+          if (!Array.isArray(value)) throw new TypeError("Expected table");
+          return { values: value as Table };
+        },
+      };
+
+      let capturedStructures: SourceStructures | undefined;
+      let capturedRequires: Record<string, unknown> | undefined;
+
+      const consumerPlugin: PluginDefinition = {
+        id: "consumer",
+        inputs: {
+          values: { kind: "record", fields: { n: { kind: "number" } } },
+          requires: { data: typed(hardeningType, { binding: "map" }) },
+        },
+        outputs: { values: POINT },
+        checkSources(structures) {
+          capturedStructures = structures;
+          return [];
+        },
+        transform(input) {
+          const map = input.requires.data;
+          if (typeof map === "object" && map !== null) {
+            capturedRequires = map as Record<string, unknown>;
+          }
+          return { values: table(row("out", { x: 0, y: 0 })) };
+        },
+      };
+
+      const sourceTrack = {
+        ...track({ id: "src", values: table(row("p1", { x: 1, y: 2 })) }),
+        type: "hardening-type",
+      };
+
+      const binding = JSON.parse(`{"${memberKey}": "src"}`) as Record<string, string>;
+      const consumerTrack = track({
+        id: "consumer-track",
+        plugin: "consumer",
+        values: record({ n: 0 }),
+        requires: { data: binding },
+      });
+
+      const composeSpy = vi.spyOn(PluginTrack.prototype, "compose");
+      try {
+        const cat = catalog(consumerPlugin);
+        const handle = engine(cat).load(project([sourceTrack, consumerTrack]));
+        try {
+          handle.mount("demo/src");
+          handle.mount("demo/consumer-track");
+          handle.seek("demo/src", 0.5);
+          handle.seek("demo/consumer-track", 0.5);
+
+          expect(capturedStructures).toBeDefined();
+          const structuresRecord = capturedStructures?.data;
+          expect(typeof structuresRecord).toBe("object");
+          if (typeof structuresRecord === "object" && structuresRecord !== null) {
+            expect(Object.hasOwn(structuresRecord, memberKey)).toBe(true);
+            expect(Object.getPrototypeOf(structuresRecord)).toBe(Object.prototype);
+            const memberStructure = (structuresRecord as Record<string, unknown>)[memberKey] as
+              | Structure<HardeningStructure>
+              | undefined;
+            expect(memberStructure).toBeDefined();
+          }
+
+          expect(composeSpy).toHaveBeenCalled();
+          const sources = composeSpy.mock.calls[0]?.[1];
+          expect(sources).toBeDefined();
+          const sourcesRecord = sources?.data;
+          expect(typeof sourcesRecord).toBe("object");
+          if (typeof sourcesRecord === "object" && sourcesRecord !== null) {
+            expect(Object.hasOwn(sourcesRecord, memberKey)).toBe(true);
+            expect(Object.getPrototypeOf(sourcesRecord)).toBe(Object.prototype);
+            const memberRef = (sourcesRecord as Record<string, unknown>)[memberKey] as
+              | SourceRef
+              | undefined;
+            expect(memberRef?.sourceId).toBe("demo/src");
+          }
+
+          expect(capturedRequires).toBeDefined();
+          if (capturedRequires !== undefined) {
+            expect(Object.hasOwn(capturedRequires, memberKey)).toBe(true);
+            expect(Object.getPrototypeOf(capturedRequires)).toBe(Object.prototype);
+            const memberValue = capturedRequires[memberKey] as
+              | { readonly values: Table }
+              | undefined;
+            expect(memberValue?.values).toEqual(table(row("p1", { x: 1, y: 2 })));
+          }
+        } finally {
+          handle.dispose();
+        }
+      } finally {
+        composeSpy.mockRestore();
+      }
+    });
+  }
 });

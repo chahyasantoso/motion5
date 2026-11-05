@@ -16,6 +16,7 @@ import type {
 import type { ParsedRecord, ParsedValues } from "../contract/v5-parse";
 import { diagnostic } from "../contract/diagnostics";
 import { unreachable } from "../lang/exhaustive";
+import { defineOwnValue } from "../lang/own-property";
 import type { Interpolator } from "../ports/interpolator";
 import { createValueEvaluator, type ValueEvaluator } from "./evaluate-values";
 import { replaceEvaluator } from "./evaluator-replacement";
@@ -274,7 +275,7 @@ export class PluginTrack {
             memberStructures,
             key,
           );
-          members[key] = member;
+          defineOwnValue(members, key, member);
         }
         resolved[slot] = Object.freeze(members);
         if (Object.keys(memberStructures).length > 0)
@@ -315,7 +316,7 @@ export class PluginTrack {
         const structure =
           ref?.structure ??
           this.#computedStructure(declaration.type, ref?.sourceId ?? path, value, path);
-        structures[structureKey] = structure;
+        defineOwnValue(structures, structureKey, structure);
         return declaration.type.bind(structure, value);
       }
       default:
