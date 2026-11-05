@@ -18,13 +18,13 @@ import { diagnostic } from "../contract/diagnostics";
 import { unreachable } from "../lang/exhaustive";
 import { defineOwnValue } from "../lang/own-property";
 import type { Interpolator } from "../ports/interpolator";
-import { createValueEvaluator, type ValueEvaluator } from "./evaluate-values";
-import { replaceEvaluator } from "./evaluator-replacement";
+import { createValueEvaluator } from "./evaluate-values";
 import { parseDataType } from "./data-type-parse";
 import { PluginNodeError, validatePluginOutputs } from "./plugin-output";
 import type { SlotSources, SourceRef } from "./source-ref";
 import { isValue } from "./value-validation";
 import type { PublisherComposition } from "./graph-publisher";
+import { LocalInput } from "./local-input";
 
 const EMPTY_RECORD: ParsedRecord = Object.freeze({ kind: "record", fields: Object.freeze({}) });
 
@@ -119,11 +119,8 @@ export class PluginTrack {
   readonly nodeId: string;
   readonly plugin: PluginDefinition;
   readonly #interpolator: Interpolator;
-  #evaluator: ValueEvaluator;
-  #overlay: Value | undefined;
-  #progress = 0;
+  readonly #localInput: LocalInput;
   #outputsChecked = false;
-  #disposed = false;
   readonly #computedStructures = new Map<
     string,
     { readonly structure: Structure<unknown>; readonly signature: string }
@@ -141,15 +138,17 @@ export class PluginTrack {
     this.nodeId = options.nodeId;
     this.plugin = options.plugin;
     this.#interpolator = options.interpolator;
-    this.#evaluator = createValueEvaluator(
-      this.#withDefault(options.values),
-      options.interpolator,
-      this.plugin.inputs.values,
+    this.#localInput = new LocalInput(
+      createValueEvaluator(
+        this.#withDefault(options.values),
+        options.interpolator,
+        this.plugin.inputs.values,
+      ),
     );
   }
 
   get progress(): number {
-    return this.#progress;
+    return this.#localInput.progress;
   }
 
   /**
@@ -161,18 +160,12 @@ export class PluginTrack {
    * active and undisposed.
    */
   replaceValues(values: ParsedValues | undefined): void {
-    this.assertActive();
-    replaceEvaluator(
-      this.#evaluator,
-      () =>
-        createValueEvaluator(
-          this.#withDefault(values),
-          this.#interpolator,
-          this.plugin.inputs.values,
-        ),
-      (next) => {
-        this.#evaluator = next;
-      },
+    this.#localInput.replaceEvaluator(() =>
+      createValueEvaluator(
+        this.#withDefault(values),
+        this.#interpolator,
+        this.plugin.inputs.values,
+      ),
     );
   }
 
@@ -184,8 +177,7 @@ export class PluginTrack {
    * that is valid alone still turn the node into an error when a bound source changes.
    */
   replaceOverlay(value: Value | undefined): void {
-    this.assertActive();
-    this.#overlay = value;
+    this.#localInput.replaceOverlay(value);
   }
 
   /** A plugin track has no grouped chain; the identified-table output set is the plugin's. */
@@ -199,19 +191,14 @@ export class PluginTrack {
   }
 
   setProgress(value: number): boolean {
-    this.assertActive();
-    if (!Number.isFinite(value)) throw new TypeError("Track progress must be finite.");
-    const next = Math.max(0, Math.min(1, value));
-    if (Object.is(next, this.#progress)) return false;
-    this.#progress = next;
-    return true;
+    return this.#localInput.setProgress(value);
   }
 
   /** Evaluate local values and the bound slots, then run the one plugin. */
   compose(requires: ResolvedRequires, sources: SlotSources = {}): PublisherComposition {
-    this.assertActive();
+    this.#localInput.assertActive();
     const spec = this.plugin.inputs.values;
-    const local = this.#overlay ?? this.#evaluator.evaluate(this.#progress);
+    const local = this.#localInput.evaluate();
     if (spec.kind === "table" ? !Array.isArray(local) : Array.isArray(local))
       throw new PluginNodeError([
         diagnostic(
@@ -226,7 +213,7 @@ export class PluginTrack {
       values: local,
       requires: Object.freeze(resolved),
     });
-    const context = Object.freeze({ nodeId: this.nodeId, progress: this.#progress });
+    const context = Object.freeze({ nodeId: this.nodeId, progress: this.#localInput.progress });
     const raw = this.plugin.transform(input, context);
     const outputs = this.#outputsChecked
       ? raw
@@ -234,16 +221,14 @@ export class PluginTrack {
     this.#outputsChecked = true;
     return {
       outputs,
-      sourceProgress: this.#progress,
+      sourceProgress: this.#localInput.progress,
       sourceRevisions: {},
       ...(warnings.length === 0 ? {} : { diagnostics: warnings }),
     };
   }
 
   dispose(): void {
-    if (this.#disposed) return;
-    this.#disposed = true;
-    this.#evaluator.dispose();
+    this.#localInput.dispose();
   }
 
   #resolve(
@@ -380,6 +365,6 @@ export class PluginTrack {
   }
 
   private assertActive(): void {
-    if (this.#disposed) throw new Error("Track is disposed.");
+    this.#localInput.assertActive();
   }
 }
