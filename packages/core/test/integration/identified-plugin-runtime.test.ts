@@ -1,22 +1,26 @@
 import { describe, expect, it, vi } from "vitest";
 import { shape, typed } from "@motion5/core/plugin-api";
-import type {
-  DataType,
-  Patch,
-  PluginDefinition,
-  ProjectDefinition,
-  ResolvedInput,
-  SourceStructures,
-  Structure,
-  Table,
-  Value,
-  ValueSpec,
+import {
+  isModel,
+  type DataType,
+  type Patch,
+  type PluginDefinition,
+  type ProjectDefinition,
+  type ResolvedInput,
+  type SourceStructures,
+  type Structure,
+  type Table,
+  type Value,
+  type ValueSpec,
 } from "../../src/contract/v5";
 import { PluginCatalog } from "../../src/domain/plugin-catalog";
 import { Engine } from "../../src/engine";
 import { createManualClock } from "../../src/ports/clock";
-import { PluginTrack } from "../../src/runtime/plugin-track";
+import { createValueEvaluator } from "../../src/runtime/evaluate-values";
+import { LocalInput } from "../../src/runtime/local-input";
+import { ComputedProcessor, defaultPluginValues } from "../../src/runtime/processors/computed";
 import type { SourceRef } from "../../src/runtime/source-ref";
+import { Track } from "../../src/runtime/track";
 import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
 import { outputOf, project, record, row, table, track } from "../support/v5-builders";
 
@@ -427,7 +431,7 @@ describe("identified plugin runtime", () => {
         requires: { data: binding },
       });
 
-      const composeSpy = vi.spyOn(PluginTrack.prototype, "compose");
+      const composeSpy = vi.spyOn(ComputedProcessor.prototype, "compose");
       try {
         const cat = catalog(consumerPlugin);
         const handle = engine(cat).load(project([sourceTrack, consumerTrack]));
@@ -514,12 +518,20 @@ describe("identified plugin runtime", () => {
       },
     };
 
-    const trackInstance = new PluginTrack({
+    const interpolator = createFakeInterpolator();
+    const valuesSpec = isModel(testPlugin.inputs.values)
+      ? testPlugin.inputs.values.spec
+      : testPlugin.inputs.values;
+    const localInput = new LocalInput(
+      createValueEvaluator(defaultPluginValues(undefined, testPlugin), interpolator, valuesSpec),
+    );
+    const processor = new ComputedProcessor({
       nodeId: "test-node",
       plugin: testPlugin,
       values: undefined,
-      interpolator: createFakeInterpolator(),
+      interpolator,
     });
+    const trackInstance = new Track("test-node", localInput, processor);
 
     const memberStructure = { tag: "parsed-tag" } as Structure<HardeningStructure>;
     const rawRequires = JSON.parse(

@@ -1,11 +1,14 @@
 import { describe, expect, it } from "vitest";
-import type { PluginDefinition } from "../../../src/contract/v5";
+import { isModel, type PluginDefinition } from "../../../src/contract/v5";
 import { parseTrackDefinition } from "../../../src/contract/v5-parse";
 import type { ParsedValues } from "../../../src/contract/v5-parse";
 import type { Interpolator } from "../../../src/ports/interpolator";
 import { replaceEvaluator } from "../../../src/runtime/evaluator-replacement";
-import { PluginTrack } from "../../../src/runtime/plugin-track";
-import { ValueTrack } from "../../../src/runtime/value-track";
+import { createValueEvaluator } from "../../../src/runtime/evaluate-values";
+import { LocalInput } from "../../../src/runtime/local-input";
+import { ComputedProcessor } from "../../../src/runtime/processors/computed";
+import { PassthroughProcessor } from "../../../src/runtime/processors/passthrough";
+import { Track } from "../../../src/runtime/track";
 import { createFakeInterpolator } from "../../../src/testing/fakes";
 
 const PATH = "motions[0].tracks[0]";
@@ -147,11 +150,15 @@ describe("ValueTrack replaceValues build transactionality", () => {
         },
       },
     ]);
-    const track = new ValueTrack({
+    const localInput = new LocalInput(
+      createValueEvaluator(initialValues, controllable.interpolator),
+    );
+    const processor = new PassthroughProcessor({
       nodeId: "track-1",
       values: initialValues,
       interpolator: controllable.interpolator,
     });
+    const track = new Track("track-1", localInput, processor);
 
     expect(track.outputs()).toEqual({
       values: [{ id: "row-1", cells: { x: 10 } }],
@@ -217,12 +224,19 @@ describe("PluginTrack replaceValues build transactionality", () => {
         },
       },
     ]);
-    const track = new PluginTrack({
+    const valuesSpec = isModel(TEST_PLUGIN.inputs.values)
+      ? TEST_PLUGIN.inputs.values.spec
+      : TEST_PLUGIN.inputs.values;
+    const localInput = new LocalInput(
+      createValueEvaluator(initialValues, controllable.interpolator, valuesSpec),
+    );
+    const processor = new ComputedProcessor({
       nodeId: "plugin-track-1",
       plugin: TEST_PLUGIN,
       values: initialValues,
       interpolator: controllable.interpolator,
     });
+    const track = new Track("plugin-track-1", localInput, processor);
 
     expect(track.compose({}).outputs).toEqual({
       values: [{ id: "row-1", cells: { x: 10 } }],

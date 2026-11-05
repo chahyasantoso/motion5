@@ -36,8 +36,11 @@ import type { RenderMetadata } from "./ports/render-metadata";
 import { qualifyFreeTrack, qualifyMotionTrack } from "./graph/ids";
 import { qualifySource } from "./graph/dependency-edges";
 import type { ComposeResolver } from "./runtime/graph-runtime";
-import { ValueTrack } from "./runtime/value-track";
-import { PluginTrack } from "./runtime/plugin-track";
+import { Track } from "./runtime/track";
+import { PassthroughProcessor } from "./runtime/processors/passthrough";
+import { ComputedProcessor, defaultPluginValues } from "./runtime/processors/computed";
+import { LocalInput } from "./runtime/local-input";
+import { createValueEvaluator } from "./runtime/evaluate-values";
 import { deriveSourceContract } from "./contract/v5-infer";
 import { assertClock, type Clock } from "./ports/clock";
 import { assertInterpolator, type Interpolator } from "./ports/interpolator";
@@ -85,7 +88,7 @@ export interface ProjectHandle {
   dispose(): void;
 }
 interface Composition {
-  readonly tracks: Map<string, ValueTrack | PluginTrack>;
+  readonly tracks: Map<string, Track>;
   readonly nodes: Map<string, TrackDefinition>;
   readonly motionTrackIds: Map<string, readonly string[]>;
   readonly motions: Map<string, Motion>;
@@ -175,7 +178,7 @@ export class Engine {
   }
   load(project: ProjectDefinition): ProjectHandle {
     const acceptedProject = assertValidProject(project, this.#capabilities);
-    const tracks = new Map<string, ValueTrack | PluginTrack>();
+    const tracks = new Map<string, Track>();
     const nodes = new Map<string, TrackDefinition>();
     const motionTrackIds = new Map<string, readonly string[]>();
     for (const motion of acceptedProject.motions) {
@@ -186,7 +189,7 @@ export class Engine {
     }
     for (const track of acceptedProject.freeTracks ?? [])
       nodes.set(qualifyFreeTrack(track.id).value, track);
-    const compileTrack = (trackDef: TrackDefinition, nodeId: string): ValueTrack | PluginTrack => {
+    const compileTrack = (trackDef: TrackDefinition, nodeId: string): Track => {
       const existing = tracks.get(nodeId);
       if (existing) return existing;
       const parsed = readOutcome(
@@ -200,7 +203,7 @@ export class Engine {
       );
       if (parsed.plugin !== undefined) {
         const plugin = this.#capabilities.pluginDefinition?.(parsed.plugin);
-        // Admitted id, no definition -> refuse before any PluginTrack: no slots, never publishes.
+        // Admitted id, no definition -> refuse before any Track: no slots, never publishes.
         if (plugin === undefined)
           throw new TypeError(
             `plugin-unknown at ${nodeId}.plugin: '${parsed.plugin}' is not admitted.`,
@@ -216,13 +219,21 @@ export class Engine {
             throw new TypeError(describeDiagnostics(diagnostics));
           },
         );
-        const track = new PluginTrack({
+        const localInput = new LocalInput(
+          createValueEvaluator(
+            defaultPluginValues(parsed.input.values, plugin),
+            this.#options.interpolator,
+            valuesSpec,
+          ),
+        );
+        const processor = new ComputedProcessor({
           nodeId,
           plugin,
           values: parsed.input.values,
           interpolator: this.#options.interpolator,
           ...(parsed.input.param === undefined ? {} : { param: parsed.input.param }),
         });
+        const track = new Track(nodeId, localInput, processor);
         tracks.set(nodeId, track);
         return track;
       }
@@ -234,7 +245,10 @@ export class Engine {
           `data-type-unknown at ${nodeId}.type: '${parsed.type}' is not admitted.`,
         );
       const spec = dataType?.spec ?? model?.spec ?? parsed.input.schema;
-      const track = new ValueTrack({
+      const localInput = new LocalInput(
+        createValueEvaluator(parsed.input.values, this.#options.interpolator, spec),
+      );
+      const processor = new PassthroughProcessor({
         nodeId,
         values: parsed.input.values,
         interpolator: this.#options.interpolator,
@@ -242,10 +256,11 @@ export class Engine {
         ...(model === undefined ? {} : { model }),
         ...(spec === undefined ? {} : { spec }),
       });
+      const track = new Track(nodeId, localInput, processor);
       tracks.set(nodeId, track);
       return track;
     };
-    const compile = (nodeId: string): ValueTrack | PluginTrack => {
+    const compile = (nodeId: string): Track => {
       const definition = nodes.get(nodeId);
       if (!definition) throw new TypeError(`Unknown graph node "${nodeId}".`);
       return compileTrack(definition, nodeId);
@@ -260,7 +275,7 @@ export class Engine {
       const displaced = tracks.get(nodeId);
       // `compileTrack` reuses live entries -> remove, restore on reject; gap unobservable outside this owner.
       tracks.delete(nodeId);
-      let replacement: ValueTrack | PluginTrack;
+      let replacement: Track;
       try {
         replacement = compileTrack(trackDef, nodeId);
       } catch (error) {
@@ -481,7 +496,7 @@ export class Engine {
           const plugin = this.#capabilities.pluginDefinition?.(pluginId);
           if (plugin === undefined) return;
           const consumer = tracks.get(consumerId);
-          if (!(consumer instanceof PluginTrack)) return;
+          if (consumer?.processorKind !== "computed") return;
           const requires = track.input?.requires;
           const declared = plugin.inputs.requires ?? {};
           const structures: Record<string, SourceStructure> = {};
@@ -500,21 +515,23 @@ export class Engine {
               case "typed": {
                 if (typeof binding === "string") {
                   const source = tracks.get(sourceId(binding));
-                  if (!(source instanceof ValueTrack) || source.structure === undefined) {
+                  const structure = source?.structureAtCommit();
+                  if (structure === undefined) {
                     canRunPrepare = false;
                     break;
                   }
-                  structures[slotName] = source.structure;
+                  structures[slotName] = structure;
                   continue;
                 }
                 const members: Record<string, Structure<unknown>> = {};
                 for (const [key, memberSource] of Object.entries(binding)) {
                   const source = tracks.get(sourceId(memberSource));
-                  if (!(source instanceof ValueTrack) || source.structure === undefined) {
+                  const structure = source?.structureAtCommit();
+                  if (structure === undefined) {
                     canRunPrepare = false;
                     break;
                   }
-                  defineOwnValue(members, key, source.structure);
+                  defineOwnValue(members, key, structure);
                 }
                 structures[slotName] = Object.freeze(members);
                 continue;
@@ -557,11 +574,7 @@ export class Engine {
         for (const edge of node.edges) {
           const sourceTrack = tracks.get(edge.sourceId);
           const structure =
-            sourceTrack instanceof ValueTrack
-              ? sourceTrack.structure
-              : sourceTrack instanceof PluginTrack
-                ? sourceTrack.outputStructure("values")
-                : undefined;
+            sourceTrack?.structureAtCommit() ?? sourceTrack?.outputStructure("values");
           const ref: SourceRef = {
             sourceId: edge.sourceId,
             ...(structure === undefined ? {} : { structure }),

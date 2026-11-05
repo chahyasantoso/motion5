@@ -1,17 +1,52 @@
 import { describe, expect, it } from "vitest";
-import type {
-  DataType,
-  PluginDefinition,
-  Structure,
-  Value,
-  ValueSpec,
+import {
+  isModel,
+  type DataType,
+  type PluginDefinition,
+  type Structure,
+  type Value,
+  type ValueSpec,
 } from "../../../src/contract/v5";
 import { parseTrackDefinition, type ParsedValues } from "../../../src/contract/v5-parse";
-import { PluginTrack } from "../../../src/runtime/plugin-track";
-import { ValueTrack } from "../../../src/runtime/value-track";
+import type { Interpolator } from "../../../src/ports/interpolator";
+import { createValueEvaluator } from "../../../src/runtime/evaluate-values";
+import { LocalInput } from "../../../src/runtime/local-input";
+import { ComputedProcessor } from "../../../src/runtime/processors/computed";
+import { PassthroughProcessor } from "../../../src/runtime/processors/passthrough";
+import { Track } from "../../../src/runtime/track";
 import { createFakeInterpolator } from "../../../src/testing/fakes";
 
 const PATH = "motions[0].tracks[0]";
+
+function createPassthroughTrack(options: {
+  readonly nodeId: string;
+  readonly values: ParsedValues | undefined;
+  readonly interpolator: Interpolator;
+  readonly dataType?: DataType<unknown, unknown>;
+}): Track {
+  const spec = options.dataType?.spec;
+  const localInput = new LocalInput(
+    createValueEvaluator(options.values, options.interpolator, spec),
+  );
+  const processor = new PassthroughProcessor(options);
+  return new Track(options.nodeId, localInput, processor);
+}
+
+function createComputedTrack(options: {
+  readonly nodeId: string;
+  readonly plugin: PluginDefinition;
+  readonly values: ParsedValues | undefined;
+  readonly interpolator: Interpolator;
+}): Track {
+  const valuesSpec = isModel(options.plugin.inputs.values)
+    ? options.plugin.inputs.values.spec
+    : options.plugin.inputs.values;
+  const localInput = new LocalInput(
+    createValueEvaluator(options.values, options.interpolator, valuesSpec),
+  );
+  const processor = new ComputedProcessor(options);
+  return new Track(options.nodeId, localInput, processor);
+}
 
 function valuesOf(values: unknown, schema?: ValueSpec): ParsedValues {
   const outcome = parseTrackDefinition(
@@ -61,7 +96,7 @@ const FAILING_TYPE: DataType<{ readonly valid: true }, Value> = {
 describe("ValueTrack and PluginTrack local-input characterization", () => {
   describe("ValueTrack recompose rules", () => {
     it("returns true on first move, false on same progress, false on later seek when time-invariant", () => {
-      const track = new ValueTrack({
+      const track = createPassthroughTrack({
         nodeId: "demo/static",
         values: valuesOf({ x: 10 }),
         interpolator: createFakeInterpolator(),
@@ -74,7 +109,7 @@ describe("ValueTrack and PluginTrack local-input characterization", () => {
     });
 
     it("returns true on first move, false on same progress, true on later seek when animated", () => {
-      const track = new ValueTrack({
+      const track = createPassthroughTrack({
         nodeId: "demo/animated",
         values: valuesOf({
           x: [
@@ -95,7 +130,7 @@ describe("ValueTrack and PluginTrack local-input characterization", () => {
 
   describe("PluginTrack recompose rules", () => {
     it("returns true for every changed progress and false for unchanged", () => {
-      const track = new PluginTrack({
+      const track = createComputedTrack({
         nodeId: "demo/plugin",
         plugin: pluginWithValues(),
         values: valuesOf({ x: 10 }),
@@ -112,7 +147,7 @@ describe("ValueTrack and PluginTrack local-input characterization", () => {
 
   describe("Both classes overlay behavior", () => {
     it("ValueTrack: overlay wins over authored evaluation and undefined resumes it", () => {
-      const track = new ValueTrack({
+      const track = createPassthroughTrack({
         nodeId: "demo/track",
         values: valuesOf({ x: 10 }),
         interpolator: createFakeInterpolator(),
@@ -126,7 +161,7 @@ describe("ValueTrack and PluginTrack local-input characterization", () => {
     });
 
     it("PluginTrack: overlay wins over authored evaluation and undefined resumes it", () => {
-      const track = new PluginTrack({
+      const track = createComputedTrack({
         nodeId: "demo/track",
         plugin: pluginWithValues(),
         values: valuesOf({ x: 10 }),
@@ -143,7 +178,7 @@ describe("ValueTrack and PluginTrack local-input characterization", () => {
 
   describe("Both classes progress validation and disposal", () => {
     it("ValueTrack: throws TypeError on non-finite progress and throws after disposal", () => {
-      const track = new ValueTrack({
+      const track = createPassthroughTrack({
         nodeId: "demo/track",
         values: valuesOf({ x: 10 }),
         interpolator: createFakeInterpolator(),
@@ -162,7 +197,7 @@ describe("ValueTrack and PluginTrack local-input characterization", () => {
     });
 
     it("PluginTrack: throws TypeError on non-finite progress and throws after disposal", () => {
-      const track = new PluginTrack({
+      const track = createComputedTrack({
         nodeId: "demo/track",
         plugin: pluginWithValues(),
         values: valuesOf({ x: 10 }),
@@ -184,7 +219,7 @@ describe("ValueTrack and PluginTrack local-input characterization", () => {
 
   describe("Both classes throwing replaceValues keeps previous evaluator active", () => {
     it("ValueTrack: throwing replaceValues keeps previous evaluator active", () => {
-      const track = new ValueTrack({
+      const track = createPassthroughTrack({
         nodeId: "demo/track",
         values: valuesOf({ x: 10 }),
         interpolator: createFakeInterpolator(),
@@ -199,7 +234,7 @@ describe("ValueTrack and PluginTrack local-input characterization", () => {
     it("PluginTrack: throwing replaceValues keeps previous evaluator active", () => {
       let failRebuild = false;
       const baseInterpolator = createFakeInterpolator();
-      const track = new PluginTrack({
+      const track = createComputedTrack({
         nodeId: "demo/track",
         plugin: pluginWithValues(),
         values: valuesOf({ x: 10 }),

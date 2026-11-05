@@ -13,7 +13,10 @@ import type {
 import { PluginCatalog } from "../../../src/domain/plugin-catalog";
 import { Engine } from "../../../src/engine";
 import { createManualClock } from "../../../src/ports/clock";
-import { ValueTrack } from "../../../src/runtime/value-track";
+import { createValueEvaluator } from "../../../src/runtime/evaluate-values";
+import { LocalInput } from "../../../src/runtime/local-input";
+import { PassthroughProcessor } from "../../../src/runtime/processors/passthrough";
+import { Track } from "../../../src/runtime/track";
 import { createFakeInterpolator, createFakeScheduler } from "../../../src/testing/fakes";
 
 const POINT_SPEC: ValueSpec = {
@@ -251,26 +254,30 @@ describe("self-validating data tracks", () => {
     );
   });
 
-  it("keeps a frozen structure on the compiled value track", () => {
-    const track = new ValueTrack({
-      nodeId: "~/points",
-      values: {
-        kind: "table",
-        rows: [
-          {
-            id: "a",
-            cells: {
-              owner: { kind: "static", scalar: "string", value: "acme" },
-              x: { kind: "static", scalar: "number", value: 0 },
-              y: { kind: "static", scalar: "number", value: 1 },
-            },
+  it("keeps a frozen structure on the compiled track", () => {
+    const values = {
+      kind: "table" as const,
+      rows: [
+        {
+          id: "a",
+          cells: {
+            owner: { kind: "static" as const, scalar: "string" as const, value: "acme" },
+            x: { kind: "static" as const, scalar: "number" as const, value: 0 },
+            y: { kind: "static" as const, scalar: "number" as const, value: 1 },
           },
-        ],
-      },
-      interpolator: createFakeInterpolator(),
+        },
+      ],
+    };
+    const interpolator = createFakeInterpolator();
+    const localInput = new LocalInput(createValueEvaluator(values, interpolator, point2d.spec));
+    const processor = new PassthroughProcessor({
+      nodeId: "~/points",
+      values,
+      interpolator,
       dataType: point2d,
     });
-    expect(track.structure).toBeDefined();
-    expect(Object.isFrozen(track.structure)).toBe(true);
+    const track = new Track("~/points", localInput, processor);
+    expect(track.structureAtCommit()).toBeDefined();
+    expect(Object.isFrozen(track.structureAtCommit())).toBe(true);
   });
 });

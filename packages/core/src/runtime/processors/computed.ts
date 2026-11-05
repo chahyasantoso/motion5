@@ -15,22 +15,23 @@ import type {
   Structure,
   Value,
   ValueSpec,
-} from "../contract/v5";
-import { isModel, isOptionalModel } from "../contract/v5";
-import type { ParsedRecord, ParsedValues } from "../contract/v5-parse";
-import { describeDiagnostics, diagnostic } from "../contract/diagnostics";
-import { unreachable } from "../lang/exhaustive";
-import { defineOwnValue } from "../lang/own-property";
-import type { Interpolator } from "../ports/interpolator";
-import { createValueEvaluator } from "./evaluate-values";
-import { parseDataType, parseModel } from "./data-type-parse";
-import { PluginNodeError, validatePluginOutputs } from "./plugin-output";
-import type { SlotSources, SourceRef } from "./source-ref";
-import { isValue } from "./value-validation";
-import type { PublisherComposition } from "./graph-publisher";
-import { LocalInput } from "./local-input";
-import { authoringValue } from "./authoring-value";
-import { runtimeStaticView, sameStaticView, type StaticView } from "./static-view";
+} from "../../contract/v5";
+import { isModel, isOptionalModel } from "../../contract/v5";
+import type { ParsedRecord, ParsedValues } from "../../contract/v5-parse";
+import { describeDiagnostics, diagnostic } from "../../contract/diagnostics";
+import { unreachable } from "../../lang/exhaustive";
+import { defineOwnValue } from "../../lang/own-property";
+import type { Interpolator } from "../../ports/interpolator";
+import { createValueEvaluator } from "../evaluate-values";
+import { parseDataType, parseModel } from "../data-type-parse";
+import { PluginNodeError, validatePluginOutputs } from "../plugin-output";
+import type { SlotSources, SourceRef } from "../source-ref";
+import { isValue } from "../value-validation";
+import type { PublisherComposition } from "../graph-publisher";
+import { LocalInput } from "../local-input";
+import { authoringValue } from "../authoring-value";
+import { runtimeStaticView, sameStaticView, type StaticView } from "../static-view";
+import type { Processor } from "./processor";
 
 const EMPTY_RECORD: ParsedRecord = Object.freeze({ kind: "record", fields: Object.freeze({}) });
 const EMPTY_RECORD_SPEC: ValueSpec = Object.freeze({ kind: "record", fields: Object.freeze({}) });
@@ -123,23 +124,31 @@ function sameSourceStructures(
   return true;
 }
 
-/**
- * The compiled form of one identified-table track that selects a plugin.
- *
- * It owns local evaluation, dependency narrowing, custom validation and the transform call. The
- * publisher owns readiness and same-batch ordering; this class is reached only after the publisher
- * has proved every bound source is ready.
- *
- * The slot receives only the outputs its declaration names. Authored stops, local input, private
- * runtime state and undeclared upstream outputs never enter `requires`; `pickOutputs` is the one
- * place that narrowing happens.
- */
-export class PluginTrack {
-  readonly kind = "plugin";
+export function defaultPluginValues(
+  values: ParsedValues | undefined,
+  plugin: PluginDefinition,
+): ParsedValues | undefined {
+  if (values !== undefined) return values;
+  const raw = plugin.inputs.values;
+  const spec = isModel(raw) ? raw.spec : (raw ?? EMPTY_RECORD_SPEC);
+  return spec.kind === "record" ? EMPTY_RECORD : undefined;
+}
+
+export interface ComputedProcessorOptions {
+  readonly nodeId: string;
+  readonly plugin?: PluginDefinition;
+  readonly definition?: PluginDefinition;
+  readonly values: ParsedValues | undefined;
+  readonly param?: ParsedValues;
+  readonly interpolator: Interpolator;
+  readonly requires?: Record<string, unknown>;
+}
+
+export class ComputedProcessor implements Processor {
+  readonly kind = "computed" as const;
   readonly nodeId: string;
   readonly plugin: PluginDefinition;
   readonly #interpolator: Interpolator;
-  readonly #localInput: LocalInput;
   readonly #paramInput: LocalInput | undefined;
   #outputsChecked = false;
   readonly #computedStructures = new Map<
@@ -150,29 +159,20 @@ export class PluginTrack {
   #checkedWarnings: readonly Diagnostic[] = Object.freeze([]);
   #preparedState: unknown;
   #isPrepared = false;
-  readonly #parsedValues: ParsedValues | undefined;
+  #parsedValues: ParsedValues | undefined;
   readonly #parsedParam: ParsedValues | undefined;
   readonly #outputStructures = new Map<string, Structure<unknown> | undefined>();
   readonly #outputStaticSnapshots = new Map<string, StaticView>();
 
-  constructor(options: {
-    readonly nodeId: string;
-    readonly plugin: PluginDefinition;
-    readonly values: ParsedValues | undefined;
-    readonly param?: ParsedValues;
-    readonly interpolator: Interpolator;
-  }) {
+  constructor(options: ComputedProcessorOptions) {
     if (options.nodeId.length === 0) throw new TypeError("Track node id must be non-empty.");
+    const plugin = options.definition ?? options.plugin;
+    if (plugin === undefined) throw new TypeError("Plugin definition must be provided.");
     this.nodeId = options.nodeId;
-    this.plugin = options.plugin;
+    this.plugin = plugin;
     this.#interpolator = options.interpolator;
     this.#parsedValues = options.values;
     this.#parsedParam = options.param;
-    const rawSpec = this.plugin.inputs.values;
-    const valuesSpec = isModel(rawSpec) ? rawSpec.spec : (rawSpec ?? EMPTY_RECORD_SPEC);
-    this.#localInput = new LocalInput(
-      createValueEvaluator(this.#withDefault(options.values), options.interpolator, valuesSpec),
-    );
     if (this.plugin.inputs.param !== undefined) {
       this.#paramInput = new LocalInput(
         createValueEvaluator(options.param, options.interpolator, this.plugin.inputs.param),
@@ -180,64 +180,45 @@ export class PluginTrack {
     }
   }
 
-  get progress(): number {
-    return this.#localInput.progress;
+  structureAtCommit(): Structure<unknown> | undefined {
+    return undefined;
   }
 
-  /**
-   * Evaluates the local values this track was last given, at the current progress.
-   *
-   * The plugin, its declared slots and the surrounding graph are untouched: a cheap authored edit
-   * changes only the local table or record the transform reads. The candidate evaluator is built
-   * before the previous evaluator is disposed, so a throwing rebuild leaves the prior evaluator
-   * active and undisposed.
-   */
-  replaceValues(values: ParsedValues | undefined): void {
+  outputStructure(outputName: string): Structure<unknown> | undefined {
+    return this.#outputStructures.get(outputName);
+  }
+
+  setProgress(value: number, localInput: LocalInput): boolean {
+    const p1 = localInput.setProgress(value);
+    const p2 = this.#paramInput?.setProgress(value) ?? false;
+    return p1 || p2;
+  }
+
+  replaceValues(values: ParsedValues | undefined, localInput: LocalInput): void {
     const rawSpec = this.plugin.inputs.values;
     const valuesSpec = isModel(rawSpec) ? rawSpec.spec : (rawSpec ?? EMPTY_RECORD_SPEC);
-    this.#localInput.replaceEvaluator(() =>
-      createValueEvaluator(this.#withDefault(values), this.#interpolator, valuesSpec),
+    this.#parsedValues = values;
+    localInput.replaceEvaluator(() =>
+      createValueEvaluator(
+        defaultPluginValues(values, this.plugin),
+        this.#interpolator,
+        valuesSpec,
+      ),
     );
     this.#isPrepared = false;
     this.#outputStaticSnapshots.clear();
     this.#outputStructures.clear();
   }
 
-  /**
-   * The whole local value this track publishes, or `undefined` to resume authored evaluation.
-   *
-   * The plugin still runs on every composition: a live overlay replaces the local table or record
-   * the transform reads, not the transform or its dependency validation. That is what lets a write
-   * that is valid alone still turn the node into an error when a bound source changes.
-   */
-  replaceOverlay(value: Value | undefined): void {
-    this.#localInput.replaceOverlay(value);
-  }
-
-  /** A plugin track has no grouped chain; the identified-table output set is the plugin's. */
-  get plugins(): undefined {
-    return undefined;
-  }
-
-  #withDefault(values: ParsedValues | undefined): ParsedValues | undefined {
-    if (values !== undefined) return values;
-    const raw = this.plugin.inputs.values;
-    const spec = isModel(raw) ? raw.spec : (raw ?? EMPTY_RECORD_SPEC);
-    return spec.kind === "record" ? EMPTY_RECORD : undefined;
-  }
-
-  setProgress(value: number): boolean {
-    const p1 = this.#localInput.setProgress(value);
-    const p2 = this.#paramInput?.setProgress(value) ?? false;
-    return p1 || p2;
-  }
-
-  /** Evaluate local values and the bound slots, then run the one plugin. */
-  compose(requires: ResolvedRequires, sources: SlotSources = {}): PublisherComposition {
-    this.#localInput.assertActive();
+  compose(
+    requires: ResolvedRequires,
+    sources: SlotSources = {},
+    localInput: LocalInput,
+  ): PublisherComposition {
+    localInput.assertActive();
     const rawValues = this.plugin.inputs.values;
     const spec = isModel(rawValues) ? rawValues.spec : (rawValues ?? EMPTY_RECORD_SPEC);
-    const local = this.#localInput.evaluate();
+    const local = localInput.evaluate();
     if (spec.kind === "table" ? !Array.isArray(local) : Array.isArray(local))
       throw new PluginNodeError([
         diagnostic(
@@ -257,7 +238,7 @@ export class PluginTrack {
       structures,
       state: this.#preparedState,
     });
-    const context = Object.freeze({ nodeId: this.nodeId, progress: this.#localInput.progress });
+    const context = Object.freeze({ nodeId: this.nodeId, progress: localInput.progress });
     const raw = this.plugin.transform(input, context);
     const outputs = this.#outputsChecked
       ? raw
@@ -266,25 +247,18 @@ export class PluginTrack {
     this.#checkOutputModels(raw);
     return {
       outputs,
-      sourceProgress: this.#localInput.progress,
+      sourceProgress: localInput.progress,
       sourceRevisions: {},
       ...(warnings.length === 0 ? {} : { diagnostics: warnings }),
     };
   }
 
-  dispose(): void {
-    this.#localInput.dispose();
-    this.#paramInput?.dispose();
-  }
-
-  /** Seeds the commit-time prepared state so runtime does not re-evaluate it. */
   markPrepared(state: unknown, structures: SourceStructures): void {
     this.#preparedState = state;
     this.#isPrepared = true;
     this.#checkedStructures = structures;
   }
 
-  /** Evaluates prepare at commit time when source structures are present. */
   prepareCommit(structures: SourceStructures): void {
     const prepare = this.plugin.prepare;
     if (prepare === undefined) return;
@@ -325,11 +299,6 @@ export class PluginTrack {
     this.#preparedState = res.value;
     this.#isPrepared = true;
     this.#checkedStructures = structures;
-  }
-
-  /** The cached structure of a published model output, if declared and parsed. */
-  outputStructure(outputName: string): Structure<unknown> | undefined {
-    return this.#outputStructures.get(outputName);
   }
 
   #staticValuesView(): unknown {
@@ -554,7 +523,6 @@ export class PluginTrack {
     return parsed.value;
   }
 
-  /** Seeds the commit-time cross-source verdict so the first frame does not repeat it. */
   markSourcesChecked(
     structures: SourceStructures,
     warnings: readonly Diagnostic[] = Object.freeze([]),
@@ -594,7 +562,7 @@ export class PluginTrack {
     return this.#checkedWarnings;
   }
 
-  private assertActive(): void {
-    this.#localInput.assertActive();
+  dispose(): void {
+    this.#paramInput?.dispose();
   }
 }
