@@ -175,6 +175,7 @@ export interface Model<Cells = unknown, Structure = undefined> {
   readonly kind?: "table" | "record";
   readonly parse?: (value: Value) => Parsed<Structure>;
   readonly legacyTypeId?: string;
+  readonly optional?: boolean;
 }
 /** Defines an immutable model contract. */
 export function defineModel<Cells = unknown, Structure = undefined>(decl: {
@@ -230,18 +231,58 @@ export interface TableSchema {
 }
 /** One vocabulary for local input, slot and plugin outputs. */
 export type ValueSpec =
-  | { readonly kind: "table"; readonly schema: TableSchema; readonly optional?: true }
+  | { readonly kind: "table"; readonly schema: TableSchema; readonly optional?: boolean }
   | {
       readonly kind: "record";
       readonly fields: Readonly<Record<string, FieldSpec>>;
       readonly additionalProperties?: boolean;
-      readonly optional?: true;
+      readonly optional?: boolean;
     };
 /** Slot reads from bound node; output shapes. */
 export interface DependencySpec {
   readonly outputs: Readonly<Record<string, ValueSpec>>;
+  readonly optional?: boolean;
+  readonly binding?: BindingMode;
+}
+/** A slot that admits one named model. */
+export interface ModelSlotSpec {
+  readonly kind: "model";
+  readonly model: Model<unknown, unknown>;
   readonly optional?: true;
   readonly binding?: BindingMode;
+}
+/** Wrapper declaring an optional dependency on a model. */
+export interface OptionalModel<M extends Model<unknown, unknown> = Model<unknown, unknown>> {
+  readonly optional: true;
+  readonly model: M;
+  readonly binding?: BindingMode;
+}
+/** Declares an optional model slot requirement. */
+export function optional<M extends Model<unknown, unknown>>(
+  model: M,
+  options?: { readonly binding?: BindingMode },
+): OptionalModel<M> {
+  return Object.freeze({
+    optional: true,
+    model,
+    ...(options?.binding !== undefined ? { binding: options.binding } : {}),
+  });
+}
+/** Model predicate recognizing nominal models. */
+export function isModel(value: unknown): value is Model<unknown, unknown> {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
+  return (
+    "id" in value &&
+    typeof value.id === "string" &&
+    "spec" in value &&
+    !("transform" in value) &&
+    !("bind" in value)
+  );
+}
+/** Predicate recognizing optional model declarations. */
+export function isOptionalModel(value: unknown): value is OptionalModel<Model<unknown, unknown>> {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
+  return "optional" in value && value.optional === true && "model" in value && isModel(value.model);
 }
 /** A slot that admits one named data type. */
 export interface TypedSlotSpec {
@@ -253,7 +294,12 @@ export interface TypedSlotSpec {
 /** A slot that admits named output shapes. */
 export type ShapeSlotSpec = { readonly kind: "shape" } & DependencySpec;
 /** How a plugin slot receives its bound source. */
-export type SlotSpec = TypedSlotSpec | ShapeSlotSpec;
+export type SlotSpec = ModelSlotSpec | TypedSlotSpec | ShapeSlotSpec;
+/** A requirement declared on a plugin slot. */
+export type PluginRequirement =
+  | SlotSpec
+  | Model<unknown, unknown>
+  | OptionalModel<Model<unknown, unknown>>;
 /** Structures delivered to a plugin's cross-source check. */
 export type SourceStructure = Structure<unknown> | Readonly<Record<string, Structure<unknown>>>;
 export type SourceStructures = Readonly<Record<string, SourceStructure>>;
@@ -296,14 +342,19 @@ export interface ResolvedInput<Values extends Value = Value> {
   readonly requires: ResolvedRequires;
 }
 /** Admitted plugin; `Input` is its evaluated input shape. */
-export interface PluginDefinition<Input extends ResolvedInput = ResolvedInput> {
+export interface PluginDefinition<
+  Input extends ResolvedInput = ResolvedInput,
+  OutputsDecl extends Readonly<Record<string, ValueSpec | Model<unknown, unknown>>> = Readonly<
+    Record<string, ValueSpec | Model<unknown, unknown>>
+  >,
+> {
   readonly id: string;
   readonly inputs: {
     // Admission refuses `optional` on local values.
     readonly values: ValueSpec;
     readonly requires?: Readonly<Record<string, SlotSpec>>;
   };
-  readonly outputs: Readonly<Record<string, ValueSpec>>;
+  readonly outputs: OutputsDecl;
   /** Cross-source rules over the structures typed slots deliver; pure, never per frame. */
   checkSources?(structures: SourceStructures): readonly Diagnostic[];
   transform(input: Input, context: EvaluationContext): Outputs;

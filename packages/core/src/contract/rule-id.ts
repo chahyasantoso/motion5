@@ -104,6 +104,7 @@ export const BASE_RULE_IDS = [
   "schema-version",
   "slot-binding-mode",
   "slot-incompatible",
+  "slot-model-unsatisfied",
   "slot-required-missing",
   "slot-type-mismatch",
   "slot-type-unsatisfied",

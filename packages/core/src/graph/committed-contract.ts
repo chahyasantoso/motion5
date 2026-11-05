@@ -1,4 +1,12 @@
-import type { SlotSpec, TrackDefinition, PluginDefinition, SourceBinding } from "../contract/v5";
+import type {
+  Model,
+  OptionalModel,
+  SlotSpec,
+  TrackDefinition,
+  PluginDefinition,
+  SourceBinding,
+} from "../contract/v5";
+import { isModel, isOptionalModel } from "../contract/v5";
 import { GENERIC_DATA_TYPE_ID } from "../contract/generic-data";
 import { deriveSourceContract, type SourceContract } from "../contract/v5-infer";
 import { parseTrackDefinition } from "../contract/v5-parse";
@@ -34,14 +42,34 @@ function pluginContract(
   definition: PluginDefinition,
 ): CommittedContract {
   const outputs: Record<string, SourceContract> = {};
-  for (const [name, spec] of Object.entries(definition.outputs))
-    outputs[name] = freeze({ spec, proven: true });
+  for (const [name, output] of Object.entries(definition.outputs)) {
+    if (isModel(output)) {
+      outputs[name] = freeze({ spec: output.spec, modelId: output.id, proven: true });
+    } else {
+      outputs[name] = freeze({ spec: output, proven: true });
+    }
+  }
+  const slots: Record<string, SlotSpec> = {};
+  for (const [slot, spec] of Object.entries(definition.inputs.requires ?? {})) {
+    if (isModel(spec)) {
+      slots[slot] = freeze({ kind: "model", model: spec, binding: "single" });
+    } else if (isOptionalModel(spec)) {
+      slots[slot] = freeze({
+        kind: "model",
+        model: spec.model,
+        optional: true,
+        binding: spec.binding ?? "single",
+      });
+    } else {
+      slots[slot] = spec;
+    }
+  }
   return freeze({
     plugin,
     input: freeze({ spec: definition.inputs.values, proven: true }),
     outputs: freeze(outputs),
     requires: freeze({ ...track.input?.requires }),
-    slots: freeze({ ...definition.inputs.requires }),
+    slots: freeze(slots),
   });
 }
 

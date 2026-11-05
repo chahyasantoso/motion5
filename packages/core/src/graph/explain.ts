@@ -1,4 +1,11 @@
-import type { Diagnostic, ProjectDefinition, SlotSpec } from "../contract/v5";
+import { unreachable } from "../lang/exhaustive";
+import {
+  isModel,
+  isOptionalModel,
+  type Diagnostic,
+  type ProjectDefinition,
+  type SlotSpec,
+} from "../contract/v5";
 import { deriveCommittedContract } from "./committed-contract";
 import { checkSlotOutput } from "./slot-check";
 import type { SlotOutcome } from "./slot-check";
@@ -8,8 +15,8 @@ import { UNJUDGED_CAPABILITIES, type PluginCapabilities } from "../ports/plugin-
 /** One slot's fit in the committed graph, as an inspection answer rather than a refusal. */
 export interface ExplainSlot {
   readonly slot: string;
-  readonly kind: "typed" | "shape";
-  /** Data type id for a typed slot; output names for a shape slot. */
+  readonly kind: "model" | "typed" | "shape";
+  /** Model id for a model slot; data type id for a typed slot; output names for a shape slot. */
   readonly requires: readonly string[];
   readonly sources: readonly string[];
   readonly outcome: "compatible" | "incompatible" | "unproven" | "unbound";
@@ -31,12 +38,14 @@ export interface ExplainReport {
 
 function requirementNames(slot: SlotSpec): readonly string[] {
   switch (slot.kind) {
+    case "model":
+      return Object.freeze([slot.model.id]);
     case "typed":
       return Object.freeze([slot.type.id]);
     case "shape":
       return Object.freeze(Object.keys(slot.outputs));
     default:
-      return Object.freeze([]);
+      return unreachable(slot);
   }
 }
 
@@ -75,11 +84,42 @@ function typedOutcome(
   };
 }
 
+function modelOutcome(
+  edge: GraphEdge,
+  slot: Extract<SlotSpec, { kind: "model" }>,
+  source: GraphNode | undefined,
+): { outcome: SlotOutcome; message?: string } {
+  void edge;
+  const contract = source?.contract;
+  if (contract === undefined)
+    return { outcome: "unproven", message: "the source has no committed contract." };
+  if (contract.typeId !== undefined) {
+    if (slot.model.legacyTypeId !== undefined && contract.typeId === slot.model.legacyTypeId) {
+      return { outcome: "compatible" };
+    }
+    return {
+      outcome: "incompatible",
+      message: `the source is '${contract.typeId}', not '${slot.model.id}'.`,
+    };
+  }
+  const producer = contract.outputs.values;
+  if (producer === undefined)
+    return { outcome: "incompatible", message: "the producer publishes no values output." };
+  if (producer.modelId === slot.model.id) {
+    return { outcome: "compatible" };
+  }
+  return {
+    outcome: "incompatible",
+    message: `the source implements '${producer.modelId ?? "none"}', not '${slot.model.id}'.`,
+  };
+}
+
 function shapeOutcome(
   edge: GraphEdge,
   slot: Extract<SlotSpec, { kind: "shape" }>,
   source: GraphNode | undefined,
 ): { outcome: SlotOutcome; message?: string } {
+  void edge;
   const contract = source?.contract;
   if (contract === undefined)
     return { outcome: "unproven", message: "the source has no committed contract." };
@@ -121,8 +161,20 @@ function explainNode(node: GraphNode, nodeById: ReadonlyMap<string, GraphNode>):
     let message: string | undefined;
     for (const edge of edges) {
       const source = nodeById.get(edge.sourceId);
-      const checked =
-        slot.kind === "typed" ? typedOutcome(edge, slot, source) : shapeOutcome(edge, slot, source);
+      let checked: { outcome: SlotOutcome; message?: string };
+      switch (slot.kind) {
+        case "model":
+          checked = modelOutcome(edge, slot, source);
+          break;
+        case "typed":
+          checked = typedOutcome(edge, slot, source);
+          break;
+        case "shape":
+          checked = shapeOutcome(edge, slot, source);
+          break;
+        default:
+          return unreachable(slot);
+      }
       outcome = worse(outcome, checked.outcome);
       if (message === undefined && checked.message !== undefined) message = checked.message;
     }

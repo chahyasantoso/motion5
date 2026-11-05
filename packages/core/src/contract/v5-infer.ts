@@ -3,13 +3,14 @@ import { acceptedOutcome, refusedOutcomeFrom, type Outcome } from "../lang/outco
 import { diagnostic } from "./diagnostics";
 import type { Diagnostic } from "./v5";
 import type { ParsedCell, ParsedRecord, ParsedTable, ParsedValues, ScalarKind } from "./v5-parse";
-import type { FieldSpec, Scalar, ValueSpec } from "./v5";
+import type { FieldSpec, Model, Scalar, ValueSpec } from "./v5";
 
 /** The source contract a no-plugin track hands to the graph.
  * `proven: false` means nothing was observed; a declaration proves its own fields even when empty. */
 export interface SourceContract {
   readonly spec: ValueSpec;
   readonly proven: boolean;
+  readonly modelId?: string;
 }
 
 type TableSpec = Extract<ValueSpec, { readonly kind: "table" }>;

@@ -19,3 +19,5 @@ export function typed(type: DataType<unknown, unknown>, options: SlotOptions = {
 export function shape(spec: DependencySpec): SlotSpec {
   return Object.freeze({ kind: "shape", ...spec });
 }
+
+export { optional, type OptionalModel } from "./v5";

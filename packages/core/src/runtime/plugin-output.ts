@@ -1,4 +1,4 @@
-import type { Diagnostic, Outputs, ValueSpec } from "../contract/v5";
+import { isModel, type Diagnostic, type Model, type Outputs, type ValueSpec } from "../contract/v5";
 import { describeDiagnostics, diagnostic } from "../contract/diagnostics";
 import { freezeValue, type ImmutableValue } from "../domain/values";
 import { isValue, validateRuntimeValue, type ValueIssue } from "./value-validation";
@@ -35,7 +35,7 @@ function outputIssue(issue: ValueIssue): Diagnostic {
 /** Validates and freezes the first output set a plugin publishes; later frames trust it. */
 export function validatePluginOutputs(
   raw: unknown,
-  declared: Readonly<Record<string, ValueSpec>>,
+  declared: Readonly<Record<string, ValueSpec | Model<unknown, unknown>>>,
   nodeId: string,
 ): Outputs {
   if (!isPlainRecord(raw)) throw invalidOutput(nodeId, "Plugin transform must return an object.");
@@ -57,7 +57,8 @@ export function validatePluginOutputs(
       );
   }
   const validated: Record<string, Outputs[string]> = {};
-  for (const [name, spec] of Object.entries(declared)) {
+  for (const [name, declaredOutput] of Object.entries(declared)) {
+    const spec = isModel(declaredOutput) ? declaredOutput.spec : declaredOutput;
     if (!Object.hasOwn(raw, name)) {
       if (spec.optional !== true)
         diagnostics.push(

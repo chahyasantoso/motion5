@@ -1,6 +1,8 @@
 import type {
   DataType,
   Diagnostic,
+  Model,
+  OptionalModel,
   Outputs,
   PluginDefinition,
   ResolvedInput,
@@ -13,6 +15,7 @@ import type {
   Value,
   ValueSpec,
 } from "../contract/v5";
+import { isModel, isOptionalModel } from "../contract/v5";
 import type { ParsedRecord, ParsedValues } from "../contract/v5-parse";
 import { diagnostic } from "../contract/diagnostics";
 import { unreachable } from "../lang/exhaustive";
@@ -283,14 +286,28 @@ export class PluginTrack {
   }
 
   #resolveSlot(
-    declaration: SlotSpec,
+    declaration: SlotSpec | Model<unknown, unknown> | OptionalModel<Model<unknown, unknown>>,
     outputs: unknown,
     ref: SourceRef | undefined,
     path: string,
     structures: Record<string, Structure<unknown>>,
     structureKey: string,
   ): unknown {
+    if (isModel(declaration) || isOptionalModel(declaration)) {
+      if (!isPlainRecord(outputs)) throw inputFailure(path, `Model slot received no output set.`);
+      const value = outputs.values;
+      if (!isValue(value))
+        throw inputFailure(`${path}.values`, `Model slot requires a values output.`);
+      return value;
+    }
     switch (declaration.kind) {
+      case "model": {
+        if (!isPlainRecord(outputs)) throw inputFailure(path, `Model slot received no output set.`);
+        const value = outputs.values;
+        if (!isValue(value))
+          throw inputFailure(`${path}.values`, `Model slot requires a values output.`);
+        return value;
+      }
       case "shape":
         return pickOutputs(outputs, declaration.outputs, path);
       case "typed": {

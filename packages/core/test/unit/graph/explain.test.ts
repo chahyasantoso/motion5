@@ -9,6 +9,7 @@ import type {
   Value,
   ValueSpec,
 } from "../../../src/contract/v5";
+import { defineModel } from "../../../src/contract/v5";
 import { PluginCatalog } from "../../../src/domain/plugin-catalog";
 import { explain } from "../../../src/graph/explain";
 
@@ -97,5 +98,61 @@ describe("explain", () => {
     expect(report.diagnostics.map(({ ruleId }) => ruleId)).toContain("slot-type-mismatch");
     const consumer = report.nodes.find((node) => node.nodeId === "demo/consumer");
     expect(consumer?.slots[0]?.outcome).toBe("incompatible");
+  });
+
+  it("reports a model slot edge as compatible or incompatible", () => {
+    const bodyModel = defineModel({
+      id: "Body2d",
+      spec: POINT,
+      legacyTypeId: "body2d",
+    });
+    const modelConsumer = {
+      id: "consume-model",
+      inputs: {
+        values: { kind: "record", fields: {} },
+        requires: { body: bodyModel },
+      },
+      outputs: { values: POINT },
+      transform() {
+        return { values: [] };
+      },
+    };
+    const cat = new PluginCatalog();
+    cat.register(modelConsumer);
+
+    const validProject: ProjectDefinition = {
+      schemaVersion: 5,
+      motions: [
+        {
+          id: "demo",
+          trigger: { type: "manual" },
+          tracks: [
+            {
+              id: "source",
+              type: "body2d",
+              input: { values: [{ id: "a", cells: { x: 1 } }] },
+            },
+            {
+              id: "consumer",
+              plugin: "consume-model",
+              input: { values: {}, requires: { body: "source" } },
+            },
+          ],
+        },
+      ],
+    };
+    const report = explain(validProject, cat);
+    expect(report.diagnostics).toEqual([]);
+    const consumer = report.nodes.find((node) => node.nodeId === "demo/consumer");
+    expect(consumer?.slots).toEqual([
+      {
+        slot: "body",
+        kind: "model",
+        requires: ["Body2d"],
+        sources: ["demo/source"],
+        outcome: "compatible",
+      },
+    ]);
+    expect(report.lines).toContain("demo/consumer [model:Body2d] <- demo/source: compatible");
   });
 });

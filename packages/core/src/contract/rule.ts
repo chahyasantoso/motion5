@@ -125,6 +125,7 @@ const BASE_RULES = {
   "schema-version": ERROR_NO_IDS,
   "slot-binding-mode": ERROR_NO_IDS,
   "slot-incompatible": ERROR_NO_IDS,
+  "slot-model-unsatisfied": ERROR_NO_IDS,
   "slot-required-missing": ERROR_NO_IDS,
   "slot-type-mismatch": ERROR_NO_IDS,
   "slot-type-unsatisfied": ERROR_NO_IDS,

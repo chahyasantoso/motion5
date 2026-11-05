@@ -3,6 +3,7 @@ import type {
   Diagnostic,
   EvaluationContext,
   Model,
+  ModelSlotSpec,
   Outputs,
   Parsed,
   PluginDefinition,
@@ -13,6 +14,7 @@ import type {
   Value,
   ValueSpec,
 } from "../contract/v5";
+import { isModel, isOptionalModel } from "../contract/v5";
 import type { RuleId } from "../contract/rule-id";
 import { readValueSpec } from "../contract/v5-parse";
 import type { PluginCapabilities, PluginCapability } from "../ports/plugin-capabilities";
@@ -25,6 +27,7 @@ const PLUGIN_FIELDS = new Set(["id", "inputs", "outputs", "checkSources", "trans
 const INPUT_FIELDS = new Set(["values", "requires"]);
 const DEPENDENCY_FIELDS = new Set(["kind", "outputs", "optional", "binding"]);
 const TYPED_FIELDS = new Set(["kind", "type", "optional", "binding"]);
+const MODEL_SLOT_FIELDS = new Set(["kind", "model", "optional", "binding"]);
 const DATA_TYPE_FIELDS = new Set(["id", "spec", "parse", "bind"]);
 const RESERVED_NAMES = new Set(["__proto__", "constructor", "prototype"]);
 const BINDING_MODES = new Set(["single", "map"]);
@@ -64,17 +67,6 @@ function refuse(ruleId: RuleId, path: string, message: string): never {
 function requireRecord(value: unknown, path: string): Record<string, unknown> {
   if (!isRecord(value)) refuse("plugin-shape", path, "must be a plain object.");
   return value;
-}
-
-function isModel(value: unknown): value is Model<unknown, unknown> {
-  if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
-  return (
-    "id" in value &&
-    typeof (value as { readonly id: unknown }).id === "string" &&
-    "spec" in value &&
-    !("transform" in value) &&
-    !("bind" in value)
-  );
 }
 
 function admitModel(value: unknown, path: string): Model<unknown, unknown> {
@@ -217,16 +209,35 @@ function readTypedSlot(source: Readonly<Record<string, unknown>>, path: string):
   });
 }
 
+function readModelSlot(source: Readonly<Record<string, unknown>>, path: string): SlotSpec {
+  assertKnownKeys(source, MODEL_SLOT_FIELDS, path, "Model slot");
+  const model = admitModel(own(source, "model"), `${path}.model`);
+  return Object.freeze({
+    kind: "model",
+    model,
+    ...(readTrue(own(source, "optional"), `${path}.optional`, "optional") === undefined
+      ? {}
+      : { optional: true as const }),
+    binding: readBinding(own(source, "binding"), `${path}.binding`),
+  });
+}
+
 function readSlotSpec(value: unknown, path: string): SlotSpec {
   const source = requireRecord(value, path);
   const kind = own(source, "kind");
   switch (kind) {
+    case "model":
+      return readModelSlot(source, path);
     case "shape":
       return readShapeSlot(source, path);
     case "typed":
       return readTypedSlot(source, path);
     default:
-      return refuse("plugin-shape", `${path}.kind`, 'Slot kind must be "typed" or "shape".');
+      return refuse(
+        "plugin-shape",
+        `${path}.kind`,
+        'Slot kind must be "model", "typed", or "shape".',
+      );
   }
 }
 
@@ -262,21 +273,26 @@ function readInputs(
       if (isModel(dependency)) {
         const model = admitModel(dependency, `${path}.requires.${slotName}`);
         referencedModels.push(model);
-      } else if (
-        typeof dependency === "object" &&
-        dependency !== null &&
-        "optional" in dependency &&
-        (dependency as { readonly optional: unknown }).optional === true &&
-        "model" in dependency &&
-        isModel((dependency as { readonly model: unknown }).model)
-      ) {
-        const model = admitModel(
-          (dependency as { readonly model: unknown }).model,
-          `${path}.requires.${slotName}.model`,
-        );
+        slots[slotName] = Object.freeze({
+          kind: "model",
+          model,
+          binding: "single",
+        });
+      } else if (isOptionalModel(dependency)) {
+        const model = admitModel(dependency.model, `${path}.requires.${slotName}.model`);
         referencedModels.push(model);
+        slots[slotName] = Object.freeze({
+          kind: "model",
+          model,
+          optional: true,
+          binding: dependency.binding ?? "single",
+        });
       } else {
-        slots[slotName] = readSlotSpec(dependency, `${path}.requires.${slotName}`);
+        const slotSpec = readSlotSpec(dependency, `${path}.requires.${slotName}`);
+        if (slotSpec.kind === "model") {
+          referencedModels.push(slotSpec.model);
+        }
+        slots[slotName] = slotSpec;
       }
     }
     requires = Object.freeze(slots);
@@ -291,9 +307,9 @@ function readOutputs(
   value: unknown,
   path: string,
   referencedModels: Model<unknown, unknown>[],
-): Readonly<Record<string, ValueSpec>> {
+): PluginDefinition["outputs"] {
   const source = requireRecord(value, path);
-  const outputs: Record<string, ValueSpec> = {};
+  const outputs: Record<string, ValueSpec | Model<unknown, unknown>> = {};
   const outputModelIds = new Set<string>();
   for (const [name, specOrModel] of Object.entries(source)) {
     const outputName = readName(name, `${path}.${name}`, "Output name");
@@ -308,7 +324,7 @@ function readOutputs(
       }
       outputModelIds.add(model.id);
       referencedModels.push(model);
-      outputs[outputName] = readSpec(model.spec, `${path}.${outputName}.spec`, false);
+      outputs[outputName] = model;
     } else {
       outputs[outputName] = readSpec(specOrModel, `${path}.${outputName}`, false);
     }
@@ -368,7 +384,7 @@ function collectTypes(definitions: readonly PluginDefinition[]): TypeBatch {
   const types = new Map<string, DataType<unknown, unknown>>();
   for (const definition of definitions) {
     for (const slot of Object.values(definition.inputs.requires ?? {})) {
-      if (slot.kind !== "typed") continue;
+      if (!("type" in slot) || slot.kind !== "typed") continue;
       const existing = types.get(slot.type.id);
       if (existing !== undefined && existing !== slot.type)
         throw new PluginAdmissionError(
@@ -384,6 +400,12 @@ function collectTypes(definitions: readonly PluginDefinition[]): TypeBatch {
 
 /** One declared plugin slot, flattened for inspection. */
 export type DescribedSlot =
+  | {
+      readonly kind: "model";
+      readonly modelId: string;
+      readonly optional?: true;
+      readonly binding: "single" | "map";
+    }
   | {
       readonly kind: "typed";
       readonly typeId: string;
@@ -403,11 +425,18 @@ export interface PluginDescription {
   readonly id: string;
   readonly values: ValueSpec;
   readonly requires: Readonly<Record<string, DescribedSlot>>;
-  readonly outputs: Readonly<Record<string, ValueSpec>>;
+  readonly outputs: Readonly<Record<string, ValueSpec | Model<unknown, unknown>>>;
 }
 
 function describeSlot(slot: SlotSpec): DescribedSlot {
   switch (slot.kind) {
+    case "model":
+      return Object.freeze({
+        kind: "model",
+        modelId: slot.model.id,
+        ...(slot.optional === true ? { optional: true as const } : {}),
+        binding: slot.binding ?? "single",
+      });
     case "typed":
       return Object.freeze({
         kind: "typed",
@@ -593,13 +622,31 @@ export class PluginCatalog implements PluginCapabilities {
     const definition = this.#plugins.get(id);
     if (definition === undefined) return undefined;
     const requires: Record<string, DescribedSlot> = {};
-    for (const [slot, spec] of Object.entries(definition.inputs.requires ?? {}))
-      requires[slot] = describeSlot(spec);
+    for (const [slot, spec] of Object.entries(definition.inputs.requires ?? {})) {
+      if (isModel(spec)) {
+        requires[slot] = describeSlot({ kind: "model", model: spec, binding: "single" });
+      } else if (isOptionalModel(spec)) {
+        requires[slot] = describeSlot({
+          kind: "model",
+          model: spec.model,
+          optional: true,
+          binding: spec.binding ?? "single",
+        });
+      } else {
+        requires[slot] = describeSlot(spec);
+      }
+    }
+    const outputs: Record<string, ValueSpec> = {};
+    for (const [name, output] of Object.entries(definition.outputs)) {
+      outputs[name] = isModel(output) ? output.spec : output;
+    }
     return Object.freeze({
       id: definition.id,
-      values: definition.inputs.values,
+      values: isModel(definition.inputs.values)
+        ? definition.inputs.values.spec
+        : definition.inputs.values,
       requires: Object.freeze(requires),
-      outputs: definition.outputs,
+      outputs: Object.freeze(outputs),
     });
   }
 

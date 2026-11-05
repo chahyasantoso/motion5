@@ -1,4 +1,4 @@
-import type { Diagnostic, FieldSpec, ValueSpec } from "../contract/v5";
+import type { Diagnostic, FieldSpec, SlotSpec, ValueSpec } from "../contract/v5";
 import type { SourceContract } from "../contract/v5-infer";
 import { diagnostic } from "../contract/diagnostics";
 import { unreachable } from "../lang/exhaustive";
@@ -112,6 +112,46 @@ export function checkSlotFit(nodes: readonly GraphNode[]): readonly Diagnostic[]
         const source = nodeById.get(edge.sourceId)?.contract;
         if (source === undefined) continue;
         switch (slot.kind) {
+          case "model": {
+            if (source.typeId !== undefined) {
+              if (
+                slot.model.legacyTypeId !== undefined &&
+                source.typeId === slot.model.legacyTypeId
+              ) {
+                continue;
+              }
+              diagnostics.push(
+                diagnostic(
+                  "slot-model-unsatisfied",
+                  slotPath(edge),
+                  `Slot '${slotName}' requires model '${slot.model.id}', but source '${edge.sourceId}' has type '${source.typeId}'.`,
+                ),
+              );
+              continue;
+            }
+            const producer = source.outputs.values;
+            if (producer === undefined) {
+              diagnostics.push(
+                diagnostic(
+                  "slot-model-unsatisfied",
+                  slotPath(edge),
+                  `Slot '${slotName}' requires model '${slot.model.id}', but source '${edge.sourceId}' implements 'none'.`,
+                ),
+              );
+              continue;
+            }
+            if (producer.modelId === slot.model.id) {
+              continue;
+            }
+            diagnostics.push(
+              diagnostic(
+                "slot-model-unsatisfied",
+                slotPath(edge),
+                `Slot '${slotName}' requires model '${slot.model.id}', but source '${edge.sourceId}' implements '${producer.modelId ?? "none"}'.`,
+              ),
+            );
+            continue;
+          }
           case "typed": {
             if (source.typeId !== undefined) {
               if (source.typeId !== slot.type.id)

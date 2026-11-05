@@ -5,9 +5,11 @@ import type {
   AuthoredValues,
   Diagnostic,
   PluginDefinition,
+  SlotSpec,
   TrackDefinition,
   ValueSpec,
 } from "../../../src/contract/v5";
+import { isModel, isOptionalModel } from "../../../src/contract/v5";
 import { PluginCatalog } from "../../../src/domain/plugin-catalog";
 import { qualifyMotionTrack } from "../../../src/graph/ids";
 import type { CommittedContract } from "../../../src/graph/committed-contract";
@@ -108,16 +110,34 @@ function contractFor(
           Object.fromEntries(
             Object.entries(plugin.outputs).map(([name, outputSpec]) => [
               name,
-              Object.freeze({ spec: outputSpec, proven: true }),
+              Object.freeze({
+                spec: isModel(outputSpec) ? outputSpec.spec : outputSpec,
+                proven: true,
+              }),
             ]),
           ),
         );
+  const slots: Record<string, SlotSpec> = {};
+  for (const [slot, spec] of Object.entries(plugin?.inputs.requires ?? {})) {
+    if (isModel(spec)) {
+      slots[slot] = Object.freeze({ kind: "model", model: spec, binding: "single" });
+    } else if (isOptionalModel(spec)) {
+      slots[slot] = Object.freeze({
+        kind: "model",
+        model: spec.model,
+        optional: true,
+        binding: spec.binding ?? "single",
+      });
+    } else {
+      slots[slot] = spec;
+    }
+  }
   return Object.freeze({
     ...(plugin === undefined ? {} : { plugin: plugin.id }),
     input,
     outputs,
     requires: Object.freeze({ ...parsed.value.input.requires }),
-    slots: Object.freeze(plugin?.inputs.requires ?? {}),
+    slots: Object.freeze(slots),
   });
 }
 
