@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { AuthoredValues, PluginDefinition, ValueSpec } from "../../../src/contract/v5";
+import { defineModel } from "../../../src/contract/v5";
 import { shape } from "../../../src/contract/slot-spec";
 import { PluginCatalog } from "../../../src/domain/plugin-catalog";
 import {
@@ -8,6 +9,8 @@ import {
 } from "../../../src/graph/committed-contract";
 import { buildGraphIR } from "../../../src/graph/ir";
 import { project, record, row, table, track } from "../../support/v5-builders";
+import { TestTable } from "../../support/test-models";
+import { testModels } from "../../support/test-models";
 
 const POINT: ValueSpec = {
   kind: "table",
@@ -39,14 +42,27 @@ function consumerPlugin(
   };
 }
 
+const PointTable = defineModel({
+  id: "PointTable",
+  spec: {
+    kind: "table",
+    schema: {
+      row: {
+        fields: { x: { kind: "number" }, y: { kind: "number" } },
+        additionalProperties: false,
+      },
+    },
+  },
+});
+
 function catalog(...plugins: readonly PluginDefinition[]): PluginCatalog {
-  const result = new PluginCatalog();
+  const result = new PluginCatalog({ models: [...testModels, PointTable] });
   result.registerAll(plugins);
   return result;
 }
 
 function source(id: string, values: AuthoredValues): ReturnType<typeof track> {
-  return track({ id, values });
+  return track({ id, values, model: Array.isArray(values) ? "PointTable" : "TestRecord" });
 }
 
 function consumer(
@@ -54,7 +70,7 @@ function consumer(
   pluginId: string,
   requires: Readonly<Record<string, string>> = { data: "points" },
 ): ReturnType<typeof track> {
-  return track({ id, plugin: pluginId, values: record({ dx: 1 }), requires });
+  return track({ id, plugin: pluginId, values: record({ dx: 1 }), requires, model: "TestRecord" });
 }
 
 function carriedOf(built: ReturnType<typeof buildGraphIR>): Map<string, CommittedContract> {
@@ -82,6 +98,7 @@ describe("committed contract", () => {
     expect(built.diagnostics).toEqual([]);
     const contract = built.graph?.nodeById["~/points"]?.contract;
     expect(contract?.input).toEqual({
+      modelId: "PointTable",
       spec: {
         kind: "table",
         schema: {
@@ -97,7 +114,7 @@ describe("committed contract", () => {
     expect(contract?.slots).toEqual({});
   });
 
-  it("stores a declared input.schema as declared, with authored-only flags removed", () => {
+  it("stores the output model's spec on the committed input", () => {
     const built = buildGraphIR(
       {
         schemaVersion: 5,
@@ -106,10 +123,7 @@ describe("committed contract", () => {
           track({
             id: "points",
             values: table(),
-            schema: {
-              kind: "table",
-              schema: { row: { fields: { x: { kind: "number", static: true } } } },
-            },
+            model: "TestTable",
           }),
         ],
       },
@@ -118,7 +132,8 @@ describe("committed contract", () => {
 
     expect(built.diagnostics).toEqual([]);
     expect(built.graph?.nodeById["~/points"]?.contract?.input).toEqual({
-      spec: { kind: "table", schema: { row: { fields: { x: { kind: "number" } } } } },
+      modelId: "TestTable",
+      spec: TestTable.spec,
       proven: true,
     });
   });
@@ -126,7 +141,7 @@ describe("committed contract", () => {
   it("checks a typed consumer against the stored contract, not the current authored values", () => {
     const plugins = catalog(consumerPlugin("translate", { values: VALUES }));
     const full = project([
-      source("points", table(row("a", { x: 0 }))),
+      source("points", table(row("a", { x: 0, y: 0 }))),
       consumer("shifted", "translate"),
     ]);
     const accepted = buildGraphIR(full, plugins);
@@ -134,7 +149,6 @@ describe("committed contract", () => {
     const carried = carriedOf(accepted);
 
     const emptied = project([source("points", table()), consumer("shifted", "translate")]);
-    expect(rules(buildGraphIR(emptied, plugins))).toContain("slot-unproven");
 
     const rebuilt = buildGraphIR(emptied, plugins, carried);
     expect(rebuilt.diagnostics).toEqual([]);

@@ -22,6 +22,7 @@ import {
   type Matrix3,
   type Vec3,
 } from "../../src/frame3d";
+import { testModels } from "../../../core/test/support/test-models";
 
 type Values = Readonly<Record<string, unknown>>;
 
@@ -47,14 +48,14 @@ const PROJECT: ProjectDefinition = {
       tracks: [
         {
           id: "root",
-          type: "root3d",
+          output: { model: "Point3d" },
           input: {
             values: { x: 4, y: -2, z: 1, rotation: 15, rotationX: 0, rotationY: 0 },
           },
         },
         {
           id: "body",
-          type: "body3d",
+          output: { model: "Body3d" },
           input: {
             values: [
               {
@@ -86,7 +87,7 @@ const PROJECT: ProjectDefinition = {
         },
         {
           id: "goal",
-          type: "goals3d",
+          output: { model: "Goals3d" },
           input: {
             values: [
               {
@@ -103,15 +104,15 @@ const PROJECT: ProjectDefinition = {
         },
         {
           id: "solve",
-          plugin: "ik3d",
+          output: { plugin: "ik3d" },
           input: {
-            values: { inspect: true },
+            param: { inspect: true },
             requires: { chain: "body", goals: "goal", base: "root" },
           },
         },
         {
           id: "pose",
-          plugin: "fk3d",
+          output: { plugin: "fk3d" },
           input: {
             values: {},
             requires: { chain: "body", solved: "solve", base: "root" },
@@ -125,7 +126,7 @@ const PROJECT: ProjectDefinition = {
 const NODES = ["root", "goal", "solve", "body", "pose"].map((id) => `rig/${id}`);
 
 function mounted() {
-  const plugins = new PluginCatalog();
+  const plugins = new PluginCatalog({ models: testModels });
   plugins.registerAll([fk3dPlugin, ik3dPlugin]);
   const runtime = new Engine({
     clock: createManualClock(),

@@ -1,16 +1,9 @@
-import type {
-  Diagnostic,
-  Outputs,
-  ResolvedRequires,
-  SourceStructures,
-  Structure,
-  Value,
-} from "../contract/v5";
+import type { Diagnostic, Outputs, SourceStructures, Structure, Value } from "../contract/v5";
 import type { ParsedValues } from "../contract/v5-parse";
 import type { PublisherComposition } from "./graph-publisher";
 import { LocalInput } from "./local-input";
 import type { Processor } from "./processors/processor";
-import type { SlotSources } from "./source-ref";
+import type { BoundSlots } from "./bound-slot";
 
 export class Track {
   readonly nodeId: string;
@@ -69,6 +62,10 @@ export class Track {
     }
   }
 
+  replaceParam(param: ParsedValues | undefined): void {
+    this.#processor.replaceParam?.(param);
+  }
+
   replaceOverlay(value: Value | undefined): void {
     this.#localInput.replaceOverlay(value);
   }
@@ -77,8 +74,8 @@ export class Track {
     return Object.freeze({ values: this.#localInput.evaluate() });
   }
 
-  compose(requires: ResolvedRequires, sourceRefs: SlotSources = {}): PublisherComposition {
-    return this.#processor.compose(requires, sourceRefs, this.#localInput);
+  compose(slots: BoundSlots = {}): PublisherComposition {
+    return this.#processor.compose(slots, this.#localInput);
   }
 
   dispose(): void {

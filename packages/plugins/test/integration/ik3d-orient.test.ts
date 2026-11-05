@@ -12,6 +12,7 @@ import {
 import { fk3dPlugin } from "@motion5/plugins/fk3d";
 import { ik3dPlugin } from "@motion5/plugins/ik3d";
 import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/testing";
+import { testModels } from "../../../core/test/support/test-models";
 
 type Values = Readonly<Record<string, any>>;
 type Published = Readonly<Record<string, Values>>;
@@ -24,7 +25,7 @@ const ramp = (from: number, to: number) => [
 ];
 
 function registry(): PluginCatalog {
-  const plugins = new PluginCatalog();
+  const plugins = new PluginCatalog({ models: testModels });
   plugins.registerAll([fk3dPlugin, ik3dPlugin]);
   return plugins;
 }
@@ -160,14 +161,14 @@ function armProject(orient: boolean | number, zeroHand = false): ProjectDefiniti
         tracks: [
           {
             id: "root",
-            type: "root3d",
+            output: { model: "Point3d" },
             input: {
               values: { x: 5, y: -4, z: 7, rotation: 12, rotationX: -8, rotationY: 15 },
             },
           },
           {
             id: "goals",
-            type: "goals3d",
+            output: { model: "Goals3d" },
             input: {
               values: [
                 {
@@ -185,12 +186,12 @@ function armProject(orient: boolean | number, zeroHand = false): ProjectDefiniti
           },
           {
             id: "body",
-            type: "body3d",
+            output: { model: "Body3d" },
             input: { values: bodyRows },
           },
           {
             id: "solve",
-            plugin: "ik3d",
+            output: { plugin: "ik3d" },
             input: {
               values: {},
               requires: { chain: "body", goals: "goals", base: "root" },
@@ -198,7 +199,7 @@ function armProject(orient: boolean | number, zeroHand = false): ProjectDefiniti
           },
           {
             id: "pose",
-            plugin: "fk3d",
+            output: { plugin: "fk3d" },
             input: {
               values: {},
               requires: { chain: "body", solved: "solve", base: "root" },
@@ -223,12 +224,12 @@ function branchProject(influences?: readonly [number, number]): ProjectDefinitio
         tracks: [
           {
             id: "root",
-            type: "root3d",
+            output: { model: "Point3d" },
             input: { values: { x: 0, y: 0, z: 0, rotation: 0, rotationX: 0, rotationY: 0 } },
           },
           {
             id: "goals",
-            type: "goals3d",
+            output: { model: "Goals3d" },
             input: {
               values: [
                 {
@@ -256,7 +257,7 @@ function branchProject(influences?: readonly [number, number]): ProjectDefinitio
           },
           {
             id: "body",
-            type: "body3d",
+            output: { model: "Body3d" },
             input: {
               values: [
                 { id: "shared", cells: { length: 50, rotation: 0, rotationX: 0, rotationY: 0 } },
@@ -285,7 +286,7 @@ function branchProject(influences?: readonly [number, number]): ProjectDefinitio
           },
           {
             id: "solve",
-            plugin: "ik3d",
+            output: { plugin: "ik3d" },
             input: {
               values: {},
               requires: { chain: "body", goals: "goals", base: "root" },
@@ -293,7 +294,7 @@ function branchProject(influences?: readonly [number, number]): ProjectDefinitio
           },
           {
             id: "pose",
-            plugin: "fk3d",
+            output: { plugin: "fk3d" },
             input: {
               values: {},
               requires: { chain: "body", solved: "solve", base: "root" },
@@ -368,18 +369,25 @@ describe("3D orientation and goal influence through Engine", () => {
     const plain = mounted(armProject(false), ARM_TRACKS);
     const live = mountedHandle(armProject(0), ARM_TRACKS);
     const bodyTrack = live.runtime.track("rig/body");
+    const replaceOrient = (value: number): void => {
+      const rows = bodyTrack.definition.input?.values;
+      if (!Array.isArray(rows)) throw new Error("Expected authored body rows.");
+      bodyTrack.input.replace({
+        values: rows.map((row) =>
+          row.id === "fore" ? { ...row, cells: { ...row.cells, orient: value } } : row,
+        ),
+      });
+    };
     for (const progress of PROGRESS) {
-      bodyTrack.input.values.setField({ row: "fore", field: "orient" }, 1);
+      replaceOrient(1);
       for (const t of ARM_TRACKS) live.runtime.seek(t, progress);
       expect(live.seek(progress)).toEqual(authored(progress));
 
-      bodyTrack.input.values.setField({ row: "fore", field: "orient" }, 0);
+      replaceOrient(0);
       for (const t of ARM_TRACKS) live.runtime.seek(t, progress);
       expect(live.seek(progress)).toEqual(plain(progress));
 
-      expect(() => bodyTrack.input.values.setField({ row: "fore", field: "orient" }, 2)).toThrow(
-        /cell-form-invalid .*above the declared maximum 1/,
-      );
+      expect(() => replaceOrient(2)).toThrow(/above the declared maximum 1/);
       expect(() =>
         bodyTrack.writeValues([
           { id: "upper", cells: { length: 55, rotation: 0, rotationX: 0, rotationY: 0 } },

@@ -30,7 +30,16 @@ const HANDLES_SOURCE = fileURLToPath(
 );
 const PROJECT: ProjectDefinition = {
   schemaVersion: 5,
-  motions: [{ id: "hero", trigger: { type: "manual" }, tracks: [{ id: "arm" }, { id: "leg" }] }],
+  motions: [
+    {
+      id: "hero",
+      trigger: { type: "manual" },
+      tracks: [
+        { id: "arm", output: { model: "TestRecord" } },
+        { id: "leg", output: { model: "TestRecord" } },
+      ],
+    },
+  ],
 };
 const compose = (node: { id: string }) => () => ({
   outputs: { values: { node: node.id } },
@@ -54,7 +63,7 @@ const MEMBER_ARGUMENTS: Readonly<Record<string, readonly unknown[]>> = {
   definition: [],
   requires: [],
   remove: [],
-  replace: [{ id: "arm" } satisfies TrackDefinition],
+  replace: [{ id: "arm", output: { model: "TestTable" } } satisfies TrackDefinition],
   writeValues: [[]],
   releaseValues: [],
 };
@@ -188,7 +197,7 @@ describe("a stale TrackHandle refuses uniformly, and `live` asks without throwin
 
     // A handle survives its own replacement, because replacement preserves node identity and
     // therefore the token. That is the one boundary the issue's wording did not draw.
-    handle.replace({ id: "arm", duration: 250 });
+    handle.replace({ id: "arm", duration: 250, output: { model: "TestRecord" } });
     expect(handle.live).toBe(true);
 
     handle.remove();
@@ -196,7 +205,10 @@ describe("a stale TrackHandle refuses uniformly, and `live` asks without throwin
 
     // The id comes back under a fresh token. The old handle stays refused, which is the guarantee
     // ADR-026 made and this slice keeps.
-    const readded = project.addTrack({ id: "arm" }, { motionId: "hero" });
+    const readded = project.addTrack(
+      { id: "arm", output: { model: "TestRecord" } },
+      { motionId: "hero" },
+    );
     expect(handle.live).toBe(false);
     expect(readded.live).toBe(true);
 

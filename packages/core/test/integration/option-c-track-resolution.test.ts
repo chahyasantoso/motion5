@@ -16,6 +16,7 @@ function track(id: string, from: number, to: number, duration?: number): TrackDe
     id,
     ...(duration === undefined ? {} : { duration }),
     input: { values: { x: ramp(from, to) } },
+    output: { model: "TestRecord" },
   };
 }
 const baseProject = (tracks: readonly TrackDefinition[], stagger = 0): ProjectDefinition => ({

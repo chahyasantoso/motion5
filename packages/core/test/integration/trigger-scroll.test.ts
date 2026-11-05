@@ -28,6 +28,7 @@ function track(id = "arm") {
         ],
       }),
     },
+    output: { model: "TestRecord" },
   };
 }
 

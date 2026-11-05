@@ -10,12 +10,14 @@ import type {
 } from "../../src/contract/v5";
 import { diagnostic } from "../../src/contract/diagnostics";
 import { PluginCatalog } from "../../src/domain/plugin-catalog";
+import { defineModel } from "../../src/contract/v5";
 import { Engine, type ProjectHandle } from "../../src/engine";
 import { createManualClock } from "../../src/ports/clock";
 import { ProjectRuntime } from "../../src/runtime/project-runtime";
 import { isValue } from "../../src/runtime/value-validation";
 import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
 import { project, record, row, table, track } from "../support/v5-builders";
+import { testModels } from "../support/test-models";
 
 const POINT: ValueSpec = {
   kind: "table",
@@ -48,7 +50,7 @@ const TRANSLATE: PluginDefinition<TranslateInput> = {
 function catalog<Input extends ResolvedInput>(
   ...plugins: readonly PluginDefinition<Input>[]
 ): PluginCatalog {
-  const result = new PluginCatalog();
+  const result = new PluginCatalog({ models: [...testModels, PointTable] });
   result.registerAll(plugins);
   return result;
 }
@@ -97,8 +99,21 @@ function thrownBy(operation: () => unknown): unknown {
   throw new Error("Expected the operation to throw.");
 }
 
-const POINTS = track({ id: "points", values: table(row("r1", { x: 1, y: 2 })) });
-const RECORD = track({ id: "record", values: record({ a: 1, b: 2 }) });
+const PointTable = defineModel({
+  id: "PointTable",
+  spec: POINT,
+});
+
+const POINTS = track({
+  id: "points",
+  values: table(row("r1", { x: 1, y: 2 })),
+  model: "PointTable",
+});
+const RECORD = track({
+  id: "record",
+  values: record({ a: 1, b: 2 }),
+  model: "TestRecord",
+});
 const ANIMATED = track({
   id: "animated",
   values: record({
@@ -108,6 +123,7 @@ const ANIMATED = track({
     ],
     b: 2,
   }),
+  model: "TestRecord",
 });
 const SHIFTED = track({
   id: "shifted",
@@ -127,19 +143,13 @@ describe("a live overlay replaces the whole value and releases back to authored"
       const flush = vi.spyOn(runtime.graph, "flush");
       const points = handle.track("demo/points");
 
-      const first = points.writeValues([
-        { id: "r2", cells: { x: 5, y: 6 } },
-        { id: "r3", cells: { x: 7, y: 8 } },
-      ]);
+      const first = points.writeValues([{ id: "r1", cells: { x: 5, y: 6 } }]);
       expect(flush).toHaveBeenCalledTimes(1);
-      expect(readyValues(first, "demo/points")).toEqual([
-        { id: "r2", cells: { x: 5, y: 6 } },
-        { id: "r3", cells: { x: 7, y: 8 } },
-      ]);
+      expect(readyValues(first, "demo/points")).toEqual([{ id: "r1", cells: { x: 5, y: 6 } }]);
 
       // No partial merge: the second write is the whole published table.
-      const second = points.writeValues([{ id: "r3", cells: { x: 9, y: 9 } }]);
-      expect(readyValues(second, "demo/points")).toEqual([{ id: "r3", cells: { x: 9, y: 9 } }]);
+      const second = points.writeValues([{ id: "r1", cells: { x: 9, y: 9 } }]);
+      expect(readyValues(second, "demo/points")).toEqual([{ id: "r1", cells: { x: 9, y: 9 } }]);
       expect(flush).toHaveBeenCalledTimes(2);
 
       // The authored definition never moved, which is what says a write names no authored row.
@@ -163,7 +173,7 @@ describe("a live overlay replaces the whole value and releases back to authored"
       handle.mount("demo/points");
       handle.mount("demo/record");
       const points = handle.track("demo/points");
-      points.writeValues([{ id: "over", cells: { x: 4, y: 4 } }]);
+      points.writeValues([{ id: "r1", cells: { x: 4, y: 4 } }]);
       const record = handle.track("demo/record");
       record.writeValues({ a: 9, b: 2 });
 
@@ -175,7 +185,7 @@ describe("a live overlay replaces the whole value and releases back to authored"
       expect((wrongForRecord as Error).message).toMatch(/live-values-invalid/);
 
       expect(publishedValues(runtimeOf(handle), "demo/points")).toEqual([
-        { id: "over", cells: { x: 4, y: 4 } },
+        { id: "r1", cells: { x: 4, y: 4 } },
       ]);
       expect(publishedValues(runtimeOf(handle), "demo/record")).toEqual({ a: 9, b: 2 });
     } finally {
@@ -237,7 +247,11 @@ describe("a live overlay replaces the whole value and releases back to authored"
       const animated = handle.track("demo/animated");
       animated.writeValues({ a: 9, b: 2 });
 
-      animated.replace({ id: "animated", input: { values: record({ a: 1, b: 2 }) } });
+      animated.replace({
+        id: "animated",
+        input: { values: record({ a: 1, b: 2 }) },
+        output: { model: "TestRecord" },
+      });
       expect(publishedValues(runtimeOf(handle), "demo/animated")).toEqual({
         a: 1,
         b: 2,
@@ -292,15 +306,10 @@ describe("a live overlay on an errored node", () => {
   });
 
   it("retains the first valid overlay when a subsequent live write with an invalid extra throws", () => {
-    const openRecordSpec: ValueSpec = {
-      kind: "record",
-      fields: { a: { kind: "number" } },
-      additionalProperties: true,
-    };
     const openTrack = track({
       id: "open-record",
-      schema: openRecordSpec,
       values: record({ a: 1 }),
+      model: "TestRecord",
     });
     const handle = engine().load(project([openTrack]));
     try {
@@ -339,7 +348,7 @@ describe("a value batch owns one publication for live writes too", () => {
       const flush = vi.spyOn(runtimeOf(handle).graph, "flush");
       const batch = handle.values((transaction) => {
         transaction.writeValues("demo/record", { a: 4, b: 5 });
-        transaction.writeValues("demo/points", [{ id: "r2", cells: { x: 8, y: 9 } }]);
+        transaction.writeValues("demo/points", [{ id: "r1", cells: { x: 8, y: 9 } }]);
       });
 
       expect(flush).toHaveBeenCalledTimes(1);

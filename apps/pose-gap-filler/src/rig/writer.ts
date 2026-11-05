@@ -173,7 +173,7 @@ function planLimb(
         ]);
       }
       if (flip !== published.flip) {
-        transaction.track(poseNodeId(ids.solve)).input.values.set({ flip });
+        transaction.track(poseNodeId(ids.solve)).input.param.set({ flip });
       }
     },
   };

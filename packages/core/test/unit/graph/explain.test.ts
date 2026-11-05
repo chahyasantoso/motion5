@@ -12,6 +12,7 @@ import type {
 import { defineModel } from "../../../src/contract/v5";
 import { PluginCatalog } from "../../../src/domain/plugin-catalog";
 import { explain } from "../../../src/graph/explain";
+import { testModels } from "../../support/test-models";
 
 const POINT: ValueSpec = {
   kind: "table",
@@ -47,12 +48,18 @@ const CONSUMER: PluginDefinition = {
 };
 
 function catalog(): PluginCatalog {
-  const result = new PluginCatalog();
+  const result = new PluginCatalog({ models: [...testModels, PointSource] });
   result.register(CONSUMER);
   return result;
 }
 
-function project(sourceType?: string): ProjectDefinition {
+const PointSource = defineModel({
+  id: "PointSource",
+  legacyTypeId: "point2d",
+  spec: POINT,
+});
+
+function project(model = "PointSource"): ProjectDefinition {
   return {
     schemaVersion: 5,
     motions: [
@@ -62,12 +69,12 @@ function project(sourceType?: string): ProjectDefinition {
         tracks: [
           {
             id: "points",
-            ...(sourceType === undefined ? {} : { type: sourceType }),
             input: { values: [{ id: "a", cells: { x: 1 } }] },
+            output: { model },
           },
           {
             id: "consumer",
-            plugin: "consume",
+            output: { plugin: "consume" },
             input: { values: {}, requires: { data: "points" } },
           },
         ],
@@ -78,8 +85,11 @@ function project(sourceType?: string): ProjectDefinition {
 
 describe("explain", () => {
   it("reports a matching typed edge as compatible", () => {
-    const report = explain(project("point2d"), catalog());
+    const report = explain(project(), catalog());
     expect(report.diagnostics).toEqual([]);
+    expect(report.nodes.find((node) => node.nodeId === "demo/consumer")?.output).toEqual({
+      plugin: "consume",
+    });
     const consumer = report.nodes.find((node) => node.nodeId === "demo/consumer");
     expect(consumer?.slots).toEqual([
       {
@@ -94,7 +104,7 @@ describe("explain", () => {
   });
 
   it("reports a generic source as a type mismatch", () => {
-    const report = explain(project(), catalog());
+    const report = explain(project("TestTable"), catalog());
     expect(report.diagnostics.map(({ ruleId }) => ruleId)).toContain("slot-type-mismatch");
     const consumer = report.nodes.find((node) => node.nodeId === "demo/consumer");
     expect(consumer?.slots[0]?.outcome).toBe("incompatible");
@@ -117,7 +127,7 @@ describe("explain", () => {
         return { values: [] };
       },
     };
-    const cat = new PluginCatalog();
+    const cat = new PluginCatalog({ models: [bodyModel] });
     cat.register(modelConsumer);
 
     const validProject: ProjectDefinition = {
@@ -129,12 +139,12 @@ describe("explain", () => {
           tracks: [
             {
               id: "source",
-              type: "body2d",
+              output: { model: "Body2d" },
               input: { values: [{ id: "a", cells: { x: 1 } }] },
             },
             {
               id: "consumer",
-              plugin: "consume-model",
+              output: { plugin: "consume-model" },
               input: { values: {}, requires: { body: "source" } },
             },
           ],
@@ -143,6 +153,9 @@ describe("explain", () => {
     };
     const report = explain(validProject, cat);
     expect(report.diagnostics).toEqual([]);
+    expect(report.nodes.find((node) => node.nodeId === "demo/source")?.output).toEqual({
+      model: "Body2d",
+    });
     const consumer = report.nodes.find((node) => node.nodeId === "demo/consumer");
     expect(consumer?.slots).toEqual([
       {

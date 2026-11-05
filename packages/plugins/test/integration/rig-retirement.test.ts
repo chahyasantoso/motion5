@@ -6,6 +6,7 @@ import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/testi
 import { builtinCatalog } from "../../src/builtin-catalog";
 import { fkPlugin } from "../../src/fk";
 import { ikPlugin } from "../../src/ik";
+import { testModels } from "../../../core/test/support/test-models";
 
 const PLUGINS_PKG = resolve(import.meta.dirname, "../../package.json");
 const PENDING_PATH = resolve(import.meta.dirname, "../../../../test/pending.json");
@@ -36,7 +37,7 @@ describe("Phase 5 closeout and rig retirement (AQ)", () => {
   });
 
   it("AQ-4 unknown plugin refusal: attempting to load plugin rig fails validation", () => {
-    const catalog = new PluginCatalog();
+    const catalog = new PluginCatalog({ models: testModels });
     catalog.registerAll([fkPlugin, ikPlugin]);
     const project: ProjectDefinition = {
       schemaVersion: 5,
@@ -47,7 +48,7 @@ describe("Phase 5 closeout and rig retirement (AQ)", () => {
           tracks: [
             {
               id: "t",
-              plugin: "rig",
+              output: { plugin: "rig" },
               input: { values: {} },
             },
           ],
@@ -70,7 +71,7 @@ describe("Phase 5 closeout and rig retirement (AQ)", () => {
   });
 
   it("AQ-6 GraphNode solves absence: static and runtime compiled nodes lack solves property", () => {
-    const catalog = new PluginCatalog();
+    const catalog = new PluginCatalog({ models: testModels });
     catalog.registerAll([fkPlugin, ikPlugin]);
     const engine = new Engine({
       clock: createManualClock(),
@@ -84,7 +85,7 @@ describe("Phase 5 closeout and rig retirement (AQ)", () => {
         {
           id: "m",
           trigger: { type: "manual" },
-          tracks: [{ id: "t", input: { values: { x: 1 } } }],
+          tracks: [{ id: "t", input: { values: { x: 1 } }, output: { model: "TestRecord" } }],
         },
       ],
     });
@@ -94,7 +95,7 @@ describe("Phase 5 closeout and rig retirement (AQ)", () => {
   });
 
   it("AQ-7 reverse topology cleanly explicit: no solver fan-in edges exist", () => {
-    const catalog = new PluginCatalog();
+    const catalog = new PluginCatalog({ models: testModels });
     catalog.registerAll([fkPlugin, ikPlugin]);
     const engine = new Engine({
       clock: createManualClock(),
@@ -109,25 +110,29 @@ describe("Phase 5 closeout and rig retirement (AQ)", () => {
           id: "m",
           trigger: { type: "manual" },
           tracks: [
-            { id: "root", type: "root2d", input: { values: { x: 0, y: 0, rotation: 0 } } },
+            {
+              id: "root",
+              output: { model: "Point2d" },
+              input: { values: { x: 0, y: 0, rotation: 0 } },
+            },
             {
               id: "body",
-              type: "body2d",
+              output: { model: "Body2d" },
               input: { values: [{ id: "u", cells: { length: 50, rotation: 0 } }] },
             },
             {
               id: "goals",
-              type: "goals2d",
+              output: { model: "Goals2d" },
               input: { values: [{ id: "g", cells: { memberId: "u", x: 10, y: 10 } }] },
             },
             {
               id: "solve",
-              plugin: "ik",
+              output: { plugin: "ik" },
               input: { values: {}, requires: { chain: "body", goals: "goals", base: "root" } },
             },
             {
               id: "pose",
-              plugin: "fk",
+              output: { plugin: "fk" },
               input: { values: {}, requires: { chain: "body", solved: "solve", base: "root" } },
             },
           ],
@@ -145,7 +150,7 @@ describe("Phase 5 closeout and rig retirement (AQ)", () => {
   });
 
   it("AQ-8 no hidden member reads during flush: single flush completes cleanly", () => {
-    const catalog = new PluginCatalog();
+    const catalog = new PluginCatalog({ models: testModels });
     catalog.registerAll([fkPlugin, ikPlugin]);
     const engine = new Engine({
       clock: createManualClock(),
@@ -159,7 +164,7 @@ describe("Phase 5 closeout and rig retirement (AQ)", () => {
         {
           id: "m",
           trigger: { type: "manual" },
-          tracks: [{ id: "t", input: { values: { x: 1 } } }],
+          tracks: [{ id: "t", input: { values: { x: 1 } }, output: { model: "TestRecord" } }],
         },
       ],
     });

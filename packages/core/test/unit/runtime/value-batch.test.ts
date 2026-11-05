@@ -27,13 +27,13 @@ const PROJECT: ProjectDefinition = {
       id: "rig",
       trigger: { type: "manual" },
       tracks: [
-        { id: "a", input: { values: record({ x: 0 }) } },
-        { id: "b", input: { values: record({ x: 0 }) } },
-        { id: "c", input: { values: record({ x: 0 }) } },
+        { id: "a", input: { values: record({ x: 0 }) }, output: { model: "TestRecord" } },
+        { id: "b", input: { values: record({ x: 0 }) }, output: { model: "TestRecord" } },
+        { id: "c", input: { values: record({ x: 0 }) }, output: { model: "TestRecord" } },
       ],
     },
   ],
-  freeTracks: [{ id: "cursor" }],
+  freeTracks: [{ id: "cursor", output: { model: "TestTable" } }],
 };
 
 // The prototype rather than the instance, because `GraphRuntime` owns its publisher and never hands
@@ -188,9 +188,9 @@ describe("the value tier publishes once for a batch, and refuses every tier that
         expect(() => runtime.signal("rig", { type: "manual" })).toThrow("value-batch-immediate");
         // The structural family refuses at the one member all of them reach, and it names the
         // condition rather than a verb, because the caller wrote no verb list.
-        expect(() => runtime.addTrack({ id: "d" }, { motionId: "rig" })).toThrow(
-          "value-batch-structural",
-        );
+        expect(() =>
+          runtime.addTrack({ id: "d", output: { model: "TestRecord" } }, { motionId: "rig" }),
+        ).toThrow("value-batch-structural");
         expect(() => runtime.track("rig/a").remove()).toThrow("value-batch-structural");
       });
 
@@ -204,7 +204,9 @@ describe("the value tier publishes once for a batch, and refuses every tier that
       expect(() => runtime.mount("~/cursor")).not.toThrow();
       expect(() => runtime.unmount("rig/a")).not.toThrow();
       expect(() => runtime.signal("rig", { type: "manual" })).not.toThrow();
-      expect(runtime.addTrack({ id: "d" }, { motionId: "rig" }).live).toBe(true);
+      expect(
+        runtime.addTrack({ id: "d", output: { model: "TestRecord" } }, { motionId: "rig" }).live,
+      ).toBe(true);
     } finally {
       runtime.dispose();
     }

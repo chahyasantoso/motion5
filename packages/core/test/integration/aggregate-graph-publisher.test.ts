@@ -22,6 +22,7 @@ import { BODY_2D_SPEC } from "../../../plugins/src/body/fields";
 import { GOALS_2D_SPEC } from "../../../plugins/src/goals/fields";
 import { POSE_2D_SPEC } from "../../../plugins/src/pose/fields";
 import { ROOT_2D_SPEC } from "../../../plugins/src/root/fields";
+import { testModels } from "../support/test-models";
 
 const CONSUMER_SPEC: ValueSpec = {
   kind: "record",
@@ -41,7 +42,7 @@ const consumerPlugin: PluginDefinition = {
 };
 
 function createCatalog(...additional: readonly PluginDefinition[]): PluginCatalog {
-  const result = new PluginCatalog();
+  const result = new PluginCatalog({ models: testModels });
   result.registerAll([ikPlugin, fkPlugin, consumerPlugin, ...additional]);
   return result;
 }
@@ -64,14 +65,14 @@ function createAggregateProject(overrides?: {
   const tracks: TrackDefinition[] = [
     {
       id: "root",
-      type: "root2d",
+      output: { model: "Point2d" },
       input: {
         values: { x: 0, y: 0, rotation: 0 },
       },
     },
     {
       id: "body",
-      type: "body2d",
+      output: { model: "Body2d" },
       input: {
         values: [
           { id: "upper", cells: { length: 20, rotation: 0 } },
@@ -81,22 +82,22 @@ function createAggregateProject(overrides?: {
     },
     {
       id: "goals",
-      type: "goals2d",
+      output: { model: "Goals2d" },
       input: {
         values: [{ id: "target", cells: { memberId: "lower", x: 25, y: 10 } }],
       },
     },
     {
       id: "solve",
-      plugin: "ik",
+      output: { plugin: "ik" },
       input: {
-        values: { flip: false },
+        param: { flip: false },
         requires: { chain: "body", goals: "goals", base: "root" },
       },
     },
     {
       id: "pose",
-      plugin: "fk",
+      output: { plugin: "fk" },
       input: {
         values: {},
         requires: { chain: "body", solved: "solve", base: "root" },
@@ -108,13 +109,14 @@ function createAggregateProject(overrides?: {
     tracks.push({
       id: "unrelated",
       input: { values: { counter: 42 } },
+      output: { model: "TestRecord" },
     });
   }
 
   if (overrides?.includeConsumer) {
     tracks.push({
       id: "consumer",
-      plugin: "consumer-plugin",
+      output: { plugin: "consumer-plugin" },
       input: {
         values: {},
         requires: { source: "pose" },
@@ -187,12 +189,18 @@ describe("Explicit Aggregate Graph and Publisher (AM-1..10)", () => {
 
     // deriveDependants must derive reverse topology purely from node.edges, ignoring legacy solves
     const testNodes: readonly GraphNode[] = [
-      { id: "demo/root", owner: "motion", authoredIndex: 0, track: { id: "root" }, edges: [] },
+      {
+        id: "demo/root",
+        owner: "motion",
+        authoredIndex: 0,
+        track: { id: "root", output: { model: "TestRecord" } },
+        edges: [],
+      },
       {
         id: "demo/solver",
         owner: "motion",
         authoredIndex: 1,
-        track: { id: "solver" },
+        track: { id: "solver", output: { model: "TestRecord" } },
         edges: [],
         solves: [{ id: "demo/root", base: "demo/root" }],
       } as any,
@@ -278,7 +286,7 @@ describe("Explicit Aggregate Graph and Publisher (AM-1..10)", () => {
     const spiedIkPlugin = { ...ikPlugin, transform: ikTransformSpy };
     const spiedFkPlugin = { ...fkPlugin, transform: fkTransformSpy };
 
-    const catalog = new PluginCatalog();
+    const catalog = new PluginCatalog({ models: testModels });
     catalog.registerAll([spiedIkPlugin, spiedFkPlugin]);
     const engine = createEngine(catalog);
     const project = createAggregateProject();
@@ -385,7 +393,7 @@ describe("Explicit Aggregate Graph and Publisher (AM-1..10)", () => {
         throw new Error("IK computation singularity");
       },
     };
-    const catalog = new PluginCatalog();
+    const catalog = new PluginCatalog({ models: testModels });
     catalog.registerAll([throwingIkPlugin, fkPlugin]);
     const engine = createEngine(catalog);
     const project = createAggregateProject();
@@ -436,30 +444,30 @@ describe("Explicit Aggregate Graph and Publisher (AM-1..10)", () => {
           tracks: [
             {
               id: "root",
-              type: "root2d",
+              output: { model: "Point2d" },
               input: { values: { x: 0, y: 0, rotation: 0 } },
             },
             {
               id: "body",
-              type: "body2d",
+              output: { model: "Body2d" },
               input: { values: bodyValues },
             },
             {
               id: "goals",
-              type: "goals2d",
+              output: { model: "Goals2d" },
               input: { values: goalValues },
             },
             {
               id: "solve",
-              plugin: "ik",
+              output: { plugin: "ik" },
               input: {
-                values: { flip: false },
+                param: { flip: false },
                 requires: { chain: "body", goals: "goals", base: "root" },
               },
             },
             {
               id: "pose",
-              plugin: "fk",
+              output: { plugin: "fk" },
               input: {
                 values: {},
                 requires: { chain: "body", solved: "solve", base: "root" },
@@ -524,7 +532,7 @@ describe("Explicit Aggregate Graph and Publisher (AM-1..10)", () => {
       const nodeWithSolves = {
         ...nodes[0],
         id: "demo/legacy-solver",
-        track: { id: "legacy-solver", keyframes: { ik: {} } },
+        track: { id: "legacy-solver", keyframes: { ik: {} }, output: { model: "TestRecord" } },
         solves: [{ id: "demo/root", base: "demo/root" }],
       };
       // In current code, lines 407-446 execute and fail with status "error" (kind "member-interpolation")!

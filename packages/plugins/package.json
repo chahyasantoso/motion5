@@ -47,6 +47,10 @@
       "types": "./dist/labels.d.ts",
       "default": "./dist/labels.js"
     },
+    "./models": {
+      "types": "./dist/models.d.ts",
+      "default": "./dist/models.js"
+    },
     "./pose-classify": {
       "types": "./dist/pose-classify.d.ts",
       "default": "./dist/pose-classify.js"

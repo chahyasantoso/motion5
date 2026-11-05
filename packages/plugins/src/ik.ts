@@ -37,6 +37,7 @@ type FlatRecord = Readonly<Record<string, number | string | boolean>>;
 
 type IkInput = {
   readonly values: FlatRecord;
+  readonly param: FlatRecord;
   readonly requires: {
     readonly chain: Body;
     readonly goals: Goals;
@@ -88,7 +89,7 @@ function structureOf<T>(structures: SourceStructures, slot: string): Structure<T
 export const ikPlugin: PluginDefinition<IkInput> = {
   id: "ik",
   inputs: {
-    values: {
+    param: {
       kind: "record",
       fields: {
         flip: { kind: "boolean", optional: true },
@@ -123,8 +124,8 @@ export const ikPlugin: PluginDefinition<IkInput> = {
     }
     return ok(undefined);
   },
-  transform({ values, requires }) {
-    const local = flatRecord(values, "input.values");
+  transform({ param, requires }) {
+    const local = flatRecord(param ?? {}, "input.param");
     const members = solveMembers(requires.chain, requires.goals);
     const result = solveChain(readFrame(requires.base), members, local.flip === true);
     const inspection = inspectSolve(result);

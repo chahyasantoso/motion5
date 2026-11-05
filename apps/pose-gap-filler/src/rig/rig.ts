@@ -10,6 +10,7 @@ import { selectRow } from "@motion5/core/plugin-api";
 import { fkPlugin } from "@motion5/plugins/fk";
 import { ikPlugin } from "@motion5/plugins/ik";
 import { fk3dPlugin } from "@motion5/plugins/fk3d";
+import { builtinModels } from "@motion5/plugins/models";
 import { ik3dPlugin } from "@motion5/plugins/ik3d";
 import { unreachable } from "../filler/unreachable";
 import { LIMBS, type LimbId } from "../filler/landmarks";
@@ -24,12 +25,12 @@ function imageLimbTracks(limb: LimbId): readonly TrackDefinition[] {
   return [
     {
       id: ids.root,
-      type: "root2d",
+      output: { model: "Point2d" },
       input: { values: { x: 0, y: 0, rotation: 0 } },
     },
     {
       id: ids.body,
-      type: "body2d",
+      output: { model: "Body2d" },
       input: {
         values: [
           { id: ids.upper, cells: { length: INITIAL_LENGTH, rotation: 0, weight: 1 } },
@@ -42,16 +43,16 @@ function imageLimbTracks(limb: LimbId): readonly TrackDefinition[] {
     },
     {
       id: ids.goal,
-      type: "goals2d",
+      output: { model: "Goals2d" },
       input: {
         values: [{ id: ids.goal, cells: { memberId: ids.lower, x: 0, y: INITIAL_LENGTH * 1.5 } }],
       },
     },
     {
       id: ids.solve,
-      plugin: "ik",
+      output: { plugin: "ik" },
       input: {
-        values: { flip: false },
+        param: { flip: false },
         requires: {
           chain: ids.body,
           goals: ids.goal,
@@ -61,7 +62,7 @@ function imageLimbTracks(limb: LimbId): readonly TrackDefinition[] {
     },
     {
       id: ids.pose,
-      plugin: "fk",
+      output: { plugin: "fk" },
       input: {
         values: {},
         requires: {
@@ -93,7 +94,7 @@ function worldLimbTracks(limb: LimbId): readonly TrackDefinition[] {
   return [
     {
       id: ids.root,
-      type: "root3d",
+      output: { model: "Point3d" },
       input: {
         values: {
           x: 0,
@@ -107,7 +108,7 @@ function worldLimbTracks(limb: LimbId): readonly TrackDefinition[] {
     },
     {
       id: ids.body,
-      type: "body3d",
+      output: { model: "Body3d" },
       input: {
         values: [
           {
@@ -136,7 +137,7 @@ function worldLimbTracks(limb: LimbId): readonly TrackDefinition[] {
     },
     {
       id: ids.goal,
-      type: "goals3d",
+      output: { model: "Goals3d" },
       input: {
         values: [
           {
@@ -153,14 +154,14 @@ function worldLimbTracks(limb: LimbId): readonly TrackDefinition[] {
     },
     {
       id: ids.pole,
-      type: "root3d",
+      output: { model: "Point3d" },
       input: {
         values: { x: 0, y: 0, z: INITIAL_LENGTH, rotation: 0, rotationX: 0, rotationY: 0 },
       },
     },
     {
       id: ids.solve,
-      plugin: "ik3d",
+      output: { plugin: "ik3d" },
       input: {
         values: {},
         requires: {
@@ -173,7 +174,7 @@ function worldLimbTracks(limb: LimbId): readonly TrackDefinition[] {
     },
     {
       id: ids.pose,
-      plugin: "fk3d",
+      output: { plugin: "fk3d" },
       input: {
         values: {},
         requires: {
@@ -211,7 +212,7 @@ export function loadWorldRig(ports: RigPorts): ProjectHandle {
 }
 
 function loadRig(ports: RigPorts, space: "image" | "world"): ProjectHandle {
-  const plugins = new PluginCatalog();
+  const plugins = new PluginCatalog({ models: builtinModels });
   let definition: ProjectDefinition;
   switch (space) {
     case "image":

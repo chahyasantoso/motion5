@@ -10,7 +10,7 @@ export const coreWalkerTracks: readonly TrackDefinition[] = [
   // 1. Pelvis (Root record track)
   {
     id: "pelvis",
-    type: "root2d",
+    output: { model: "Point2d" },
     input: {
       values: {
         x: [
@@ -43,7 +43,7 @@ export const coreWalkerTracks: readonly TrackDefinition[] = [
   // 2. Body Aggregate Table (Chest, Head, Legs)
   {
     id: "body",
-    type: "body2d",
+    output: { model: "Body2d" },
     input: {
       values: [
         {
@@ -186,7 +186,7 @@ export const coreWalkerTracks: readonly TrackDefinition[] = [
   // 3. Pose Track (fk plugin)
   {
     id: "pose",
-    plugin: "fk",
+    output: { plugin: "fk" },
     input: {
       values: {},
       requires: {
@@ -201,7 +201,7 @@ export const armTracks: readonly TrackDefinition[] = [
   // 1. Arms Body Table
   {
     id: "arms-body",
-    type: "body2d",
+    output: { model: "Body2d" },
     input: {
       values: [
         {
@@ -296,7 +296,7 @@ export const armTracks: readonly TrackDefinition[] = [
   // 2. Arms Pose Track (fk plugin)
   {
     id: "arms-pose",
-    plugin: "fk",
+    output: { plugin: "fk" },
     input: {
       values: {},
       requires: {

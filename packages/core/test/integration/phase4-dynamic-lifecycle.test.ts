@@ -20,7 +20,10 @@ describe("Phase 4: Dynamic Graph Lifecycle Hardening", () => {
   it("1. A runtime add produces ready patches and publishes through the ordinary graph path", () => {
     const runtime = new ProjectRuntime(project, { clock: createManualClock(), compose });
     try {
-      const added = runtime.addTrack({ id: "cursor" } as TrackDefinition);
+      const added = runtime.addTrack({
+        id: "cursor",
+        output: { model: "TestRecord" },
+      } as TrackDefinition);
       expect(added.id).toBe("~/cursor");
 
       // The ordinary graph path, and it is the commit's own flush rather than the next seek:
@@ -39,11 +42,13 @@ describe("Phase 4: Dynamic Graph Lifecycle Hardening", () => {
   it("2. Failed adoption (duplicate id) is observationally atomic — graph, membership, and patches are unchanged", () => {
     const runtime = new ProjectRuntime(project, { clock: createManualClock(), compose });
     try {
-      runtime.addTrack({ id: "cursor" } as TrackDefinition);
+      runtime.addTrack({ id: "cursor", output: { model: "TestTable" } } as TrackDefinition);
       const snapshotBefore = runtime.graph.state.snapshot();
       const countBefore = runtime.instanceCount;
 
-      expect(() => runtime.addTrack({ id: "cursor" } as TrackDefinition)).toThrow(/already exists/);
+      expect(() =>
+        runtime.addTrack({ id: "cursor", output: { model: "TestTable" } } as TrackDefinition),
+      ).toThrow(/already exists/);
 
       const snapshotAfter = runtime.graph.state.snapshot();
       expect(snapshotAfter.nodes).toEqual(snapshotBefore.nodes);
@@ -71,7 +76,10 @@ describe("Phase 4: Dynamic Graph Lifecycle Hardening", () => {
     });
     try {
       for (let index = 0; index < 5; index += 1) {
-        const added = runtime.addTrack({ id: `track${index}` } as TrackDefinition);
+        const added = runtime.addTrack({
+          id: `track${index}`,
+          output: { model: "TestRecord" },
+        } as TrackDefinition);
         runtime.seek(added.id, 0);
         added.remove();
       }
@@ -116,7 +124,7 @@ describe("Phase 4: Dynamic Graph Lifecycle Hardening", () => {
         schemaVersion: 5,
         motions: [{ id: "hero", trigger: { type: "manual" as const }, tracks: [] }],
         freeTracks: [
-          track({ id: "source" }),
+          track({ id: "source", model: "TestRecord" }),
           track({
             id: "observer",
             plugin: "rig",
@@ -153,6 +161,7 @@ describe("Phase 4: Dynamic Graph Lifecycle Hardening", () => {
             { p: 0, v: 100 },
           ],
         }),
+        model: "TestRecord",
       });
 
       expect(() => runtime.addTrack(badTrack)).toThrow(/cell-stops-invalid/);

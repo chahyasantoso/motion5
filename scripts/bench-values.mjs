@@ -56,7 +56,10 @@ function buildValues(rows, columns) {
 
 function parseValues(rows, columns) {
   const authored = buildValues(rows, columns);
-  const outcome = parseTrackDefinition({ id: "values", input: { values: authored } }, "tracks[0]");
+  const outcome = parseTrackDefinition(
+    { id: "values", output: { model: "BenchTable" }, input: { values: authored } },
+    "tracks[0]",
+  );
   if (outcome.kind !== "accepted") throw new Error(JSON.stringify(outcome.diagnostics));
   const parsed = outcome.value.input.values;
   if (parsed === undefined) throw new Error("The fixture authored no values.");

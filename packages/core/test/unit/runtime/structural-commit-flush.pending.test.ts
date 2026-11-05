@@ -10,6 +10,7 @@ import { PluginCatalog } from "../../../src/domain/plugin-catalog";
 import { createManualClock } from "../../../src/ports/clock";
 import { ProjectRuntime } from "../../../src/runtime/project-runtime";
 import { record, track } from "../../support/v5-builders";
+import { testModels } from "../../support/test-models";
 
 const MOTION_ID = "hero";
 const ARM_ID = "hero/arm";
@@ -32,17 +33,17 @@ const DEMO: PluginDefinition = {
     return { values: [] };
   },
 };
-const CATALOG = new PluginCatalog();
+const CATALOG = new PluginCatalog({ models: testModels });
 CATALOG.register(DEMO);
 const MOTION: MotionDefinition = {
   id: MOTION_ID,
   trigger: { type: "manual" },
-  tracks: [track({ id: "arm" }), track({ id: "leg" })],
+  tracks: [track({ id: "arm", model: "TestRecord" }), track({ id: "leg", model: "TestRecord" })],
 };
 const PROJECT: ProjectDefinition = {
   schemaVersion: 5,
   motions: [MOTION],
-  freeTracks: [track({ id: "cursor" })],
+  freeTracks: [track({ id: "cursor", model: "TestTable" })],
 };
 /** Reads a node the graph accepted and nothing mounted, so its source publishes nothing. */
 const PENDING_TRACK: TrackDefinition = track({

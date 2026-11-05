@@ -12,7 +12,10 @@ import { createFakeInterpolator } from "../../../src/testing/fakes";
 const PATH = "motions[0].tracks[0]";
 
 function valuesOf(values: unknown): ParsedValues {
-  const outcome = parseTrackDefinition({ id: "values", input: { values } }, PATH);
+  const outcome = parseTrackDefinition(
+    { id: "values", input: { values }, output: { model: "TestRecord" } },
+    PATH,
+  );
   if (outcome.kind !== "accepted") throw new Error(JSON.stringify(outcome.diagnostics));
   const parsed = outcome.value.input.values;
   if (parsed === undefined) throw new Error("The fixture authored no values.");

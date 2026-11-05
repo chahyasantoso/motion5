@@ -10,6 +10,7 @@ import {
 } from "@motion5/core";
 import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/testing";
 import { onLabelChange, readLabel } from "../src/labels";
+import { testModels } from "../../core/test/support/test-models";
 
 function ready(value: unknown): LivePatch {
   return {
@@ -48,7 +49,7 @@ function source(initial?: LivePatch) {
 }
 
 function tagProject() {
-  const plugins = new PluginCatalog();
+  const plugins = new PluginCatalog({ models: testModels });
   plugins.register({
     id: "tag",
     inputs: { values: { kind: "record", fields: { mode: { kind: "string" } } } },
@@ -66,7 +67,7 @@ function tagProject() {
       {
         id: "scene",
         trigger: { type: "manual" },
-        tracks: [{ id: "tag", plugin: "tag", input: { values: { mode: "idle" } } }],
+        tracks: [{ id: "tag", output: { plugin: "tag" }, input: { values: { mode: "idle" } } }],
       },
     ],
   });
@@ -176,7 +177,13 @@ describe("label edges over published state", () => {
     let refusal: unknown;
     const dispose = onLabelChange(project, "~/tag", "mode", () => {
       try {
-        project.edit((transaction: any) => transaction.addTrack({ id: "other" }));
+        project.edit((transaction: any) =>
+          transaction.addTrack({
+            id: "other",
+            output: { model: "TestRecord" },
+            input: { values: { mode: "idle" } },
+          }),
+        );
       } catch (error) {
         refusal = error;
       }
@@ -192,7 +199,12 @@ describe("label edges over published state", () => {
     const events: unknown[] = [];
     onLabelChange(project, "scene/tag", "mode", (next, previous) => events.push([next, previous]));
     project.edit((transaction) => transaction.track("scene/tag").remove());
-    project.edit((transaction) => transaction.addTrack({ id: "tag" }, { motionId: "scene" }));
+    project.edit((transaction) =>
+      transaction.addTrack(
+        { id: "tag", output: { model: "TestRecord" }, input: { values: { mode: "idle" } } },
+        { motionId: "scene" },
+      ),
+    );
     expect(events).toEqual([[undefined, "walk"]]);
     project.dispose();
   });

@@ -1,4 +1,4 @@
-import type { DataType, Model, ResolvedRequires, Structure, ValueSpec } from "../../contract/v5";
+import type { DataType, Model, Structure, ValueSpec } from "../../contract/v5";
 import { describeDiagnostics } from "../../contract/diagnostics";
 import type { ParsedValues } from "../../contract/v5-parse";
 import type { Interpolator } from "../../ports/interpolator";
@@ -7,7 +7,7 @@ import { parseDataType, parseModel } from "../data-type-parse";
 import { createValueEvaluator } from "../evaluate-values";
 import type { PublisherComposition } from "../graph-publisher";
 import type { LocalInput } from "../local-input";
-import type { SlotSources } from "../source-ref";
+import type { BoundSlots } from "../bound-slot";
 import type { Processor } from "./processor";
 
 export interface PassthroughProcessorOptions {
@@ -42,14 +42,18 @@ export class PassthroughProcessor implements Processor {
     if (this.#dataType !== undefined) {
       const parsed = parseDataType(
         this.#dataType,
-        authoringValue(values),
+        authoringValue(values, this.#dataType.spec),
         `${this.nodeId}.input.values`,
       );
       if (parsed.kind === "refused") throw new TypeError(describeDiagnostics(parsed.diagnostics));
       return parsed.value;
     }
     if (this.#model !== undefined) {
-      const parsed = parseModel(this.#model, authoringValue(values), `${this.nodeId}.input.values`);
+      const parsed = parseModel(
+        this.#model,
+        authoringValue(values, this.#model.spec),
+        `${this.nodeId}.input.values`,
+      );
       if (parsed.kind === "refused") throw new TypeError(describeDiagnostics(parsed.diagnostics));
       return parsed.value;
     }
@@ -85,11 +89,7 @@ export class PassthroughProcessor implements Processor {
     );
   }
 
-  compose(
-    _requires: ResolvedRequires,
-    _sourceRefs: SlotSources,
-    localInput: LocalInput,
-  ): PublisherComposition {
+  compose(_slots: BoundSlots, localInput: LocalInput): PublisherComposition {
     return {
       outputs: Object.freeze({ values: localInput.evaluate() }),
       sourceProgress: localInput.progress,

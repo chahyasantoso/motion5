@@ -17,11 +17,25 @@ import { project, record, track } from "../support/v5-builders";
 
 function load(idle: number): { handle: ProjectHandle; runtime: ProjectRuntime } {
   const tracks = [
-    track({ id: "target", values: record({ x: 1 }) }),
-    track({ id: "other", values: record({ x: 1 }) }),
+    track({
+      id: "target",
+      values: record({ x: 1 }),
+      model: "TestRecord",
+    }),
+    track({
+      id: "other",
+      values: record({ x: 1 }),
+      model: "TestRecord",
+    }),
   ];
   for (let index = 0; index < idle; index += 1)
-    tracks.push(track({ id: `idle${index}`, values: record({ x: 1 }) }));
+    tracks.push(
+      track({
+        id: `idle${index}`,
+        values: record({ x: 1 }),
+        model: "TestRecord",
+      }),
+    );
   const handle = new Engine({
     clock: createManualClock(),
     interpolator: createFakeInterpolator(),

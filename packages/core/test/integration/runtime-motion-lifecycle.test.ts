@@ -30,6 +30,7 @@ function track(id: string, from: number, to: number, duration?: number): TrackDe
     id,
     ...(duration === undefined ? {} : { duration }),
     input: { values: { x: ramp(from, to) } },
+    output: { model: "TestRecord" },
   };
 }
 
@@ -115,7 +116,13 @@ describe("runtime Motion lifecycle (W4)", () => {
       scheduler,
     }).load({
       schemaVersion: 5,
-      motions: [{ id: "authored", trigger: { type: "manual" }, tracks: [{ id: "arm" }] }],
+      motions: [
+        {
+          id: "authored",
+          trigger: { type: "manual" },
+          tracks: [{ id: "arm", output: { model: "TestRecord" } }],
+        },
+      ],
     });
 
     expect(() => handle.destroyMotion("authored")).toThrow(/authored tracks|still has/);
@@ -124,9 +131,12 @@ describe("runtime Motion lifecycle (W4)", () => {
 
   it("rejects addMotion with pre-populated tracks instead of dropping them", () => {
     const { handle } = makeRuntime();
-    expect(() => handle.addMotion({ ...motion("scene"), tracks: [{ id: "arm" }] })).toThrow(
-      /empty|tracks/,
-    );
+    expect(() =>
+      handle.addMotion({
+        ...motion("scene"),
+        tracks: [{ id: "arm", output: { model: "TestRecord" } }],
+      }),
+    ).toThrow(/empty|tracks/);
     handle.dispose();
   });
 });

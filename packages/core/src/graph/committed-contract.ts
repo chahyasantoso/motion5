@@ -6,14 +6,14 @@ import type {
   PluginDefinition,
   SourceBinding,
 } from "../contract/v5";
-import { isModel, isOptionalModel } from "../contract/v5";
-import { GENERIC_DATA_TYPE_ID } from "../contract/generic-data";
+import { isModel, isOptionalModel, outputModelId, outputPluginId } from "../contract/v5";
 import { deriveSourceContract, type SourceContract } from "../contract/v5-infer";
 import { parseTrackDefinition } from "../contract/v5-parse";
 import type { PluginCapabilities } from "../ports/plugin-capabilities";
 
 /** Committed shape of a node at its last structural commit; slot and dependency checks read it because cheap edits move values without re-inferring. */
 export interface CommittedContract {
+  readonly modelId?: string;
   readonly typeId?: string;
   readonly plugin?: string;
   readonly input: SourceContract;
@@ -85,30 +85,28 @@ export function deriveCommittedContract(
   nodeId: string,
   capabilities: PluginCapabilities,
 ): CommittedContract | undefined {
-  const plugin = track.plugin;
-  if (plugin !== undefined) {
-    const definition = capabilities.pluginDefinition?.(plugin);
-    return definition === undefined ? undefined : pluginContract(track, plugin, definition);
+  const pluginId = outputPluginId(track.output);
+  if (pluginId !== undefined) {
+    const definition = capabilities.pluginDefinition?.(pluginId);
+    return definition === undefined ? undefined : pluginContract(track, pluginId, definition);
   }
+  const modelId = outputModelId(track.output);
+  if (modelId === undefined) return undefined;
   const parsed = parseTrackDefinition(track, nodeId);
   if (parsed.kind === "refused") return undefined;
-  const model =
-    parsed.value.type === undefined ? undefined : capabilities.model?.(parsed.value.type);
-  const declared =
-    parsed.value.type === undefined
-      ? parsed.value.input.schema
-      : (capabilities.dataType?.(parsed.value.type)?.spec ?? model?.spec);
+  const model = capabilities.model?.(modelId);
   const input = deriveSourceContract(
     parsed.value.input.values,
-    declared,
+    model?.spec,
     `${nodeId}.input.values`,
-    "declared",
+    "model",
   );
   if (input.kind === "refused") return undefined;
   const sourceContract =
     model !== undefined ? freeze({ ...input.value, modelId: model.id }) : input.value;
   return freeze({
-    typeId: parsed.value.type ?? GENERIC_DATA_TYPE_ID,
+    ...(model === undefined ? {} : { modelId: model.id }),
+    ...(model?.legacyTypeId === undefined ? {} : { typeId: model.legacyTypeId }),
     input: sourceContract,
     outputs: freeze({ values: sourceContract }),
     requires: freeze({ ...parsed.value.input.requires }),

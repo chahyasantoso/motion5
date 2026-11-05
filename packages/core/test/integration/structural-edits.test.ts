@@ -9,12 +9,14 @@ import type {
   ValueSpec,
 } from "../../src/contract/v5";
 import { PluginCatalog } from "../../src/domain/plugin-catalog";
+import { defineModel } from "../../src/contract/v5";
 import { Engine, type ProjectHandle } from "../../src/engine";
 import { createManualClock } from "../../src/ports/clock";
 import { ProjectRuntime, type StagedTrack } from "../../src/runtime/project-runtime";
 import type { RefusalError } from "../../src/runtime/refusal";
 import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
 import { project, record, row, table, track } from "../support/v5-builders";
+import { testModels } from "../support/test-models";
 
 const POINT: ValueSpec = {
   kind: "table",
@@ -59,12 +61,21 @@ const OPTIONAL: PluginDefinition<TranslateInput> = {
 function catalog<Input extends ResolvedInput>(
   ...plugins: readonly PluginDefinition<Input>[]
 ): PluginCatalog {
-  const result = new PluginCatalog();
+  const result = new PluginCatalog({ models: [...testModels, PointTable] });
   result.registerAll(plugins);
   return result;
 }
 
-const POINTS = track({ id: "points", values: table(row("a", { x: 1, y: 2 })) });
+const PointTable = defineModel({
+  id: "PointTable",
+  spec: POINT,
+});
+
+const POINTS = track({
+  id: "points",
+  values: table(row("a", { x: 1, y: 2 })),
+  model: "PointTable",
+});
 const SHIFTED = track({
   id: "shifted",
   plugin: "translate",

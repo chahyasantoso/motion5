@@ -16,7 +16,13 @@ export function fixture(ids = ["a", "b"], values: LiveValues = { x: 0 }) {
       {
         id: "scene",
         trigger: { type: "manual" },
-        tracks: ids.map((id) => track({ id, values: record(values) })),
+        tracks: ids.map((id) =>
+          track({
+            id,
+            values: record(values),
+            model: "TestRecord",
+          }),
+        ),
       },
     ],
   });

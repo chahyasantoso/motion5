@@ -31,6 +31,25 @@ const { createManualClock } = await import(
 const { createFakeInterpolator, createFakeScheduler } = await import(
   new URL("../packages/core/src/testing/fakes.ts", import.meta.url)
 );
+const { PluginCatalog } = await import(
+  new URL("../packages/core/src/domain/plugin-catalog.ts", import.meta.url)
+);
+const { defineModel } = await import(
+  new URL("../packages/core/src/contract/v5.ts", import.meta.url)
+);
+
+const BenchTable = defineModel({
+  id: "BenchTable",
+  spec: {
+    kind: "table",
+    schema: { row: { fields: { x: { kind: "number" }, y: { kind: "number" } } } },
+  },
+});
+const BenchRecord = defineModel({
+  id: "BenchRecord",
+  spec: { kind: "record", fields: { a: { kind: "number" }, b: { kind: "number" } } },
+});
+const BENCH_CATALOG = new PluginCatalog({ models: [BenchTable, BenchRecord] });
 
 const CALLS = 100;
 const SAMPLES = 7;
@@ -62,8 +81,8 @@ const definition = {
       id: "bench",
       trigger: { type: "manual" },
       tracks: [
-        { id: "rows", input: { values: tableValues() } },
-        { id: "record", input: { values: { a: 1, b: 2 } } },
+        { id: "rows", output: { model: "BenchTable" }, input: { values: tableValues() } },
+        { id: "record", output: { model: "BenchRecord" }, input: { values: { a: 1, b: 2 } } },
       ],
     },
   ],
@@ -73,6 +92,7 @@ const project = new Engine({
   clock: createManualClock(),
   interpolator: createFakeInterpolator(),
   scheduler: createFakeScheduler(),
+  plugins: BENCH_CATALOG,
 }).load(definition);
 const ids = project.motion("bench").trackIds;
 for (const id of ids) project.mount(id);
@@ -80,9 +100,15 @@ const rows = project.track(ids[0]);
 const record = project.track(ids[1]);
 
 function idleDefinition(idleTracks) {
-  const tracks = [{ id: "target", input: { values: { a: 1, b: 2 } } }];
+  const tracks = [
+    { id: "target", output: { model: "BenchRecord" }, input: { values: { a: 1, b: 2 } } },
+  ];
   for (let index = 0; index < idleTracks; index += 1)
-    tracks.push({ id: `idle-${index}`, input: { values: { a: index } } });
+    tracks.push({
+      id: `idle-${index}`,
+      output: { model: "BenchRecord" },
+      input: { values: { a: index } },
+    });
   return {
     schemaVersion: 5,
     projectId: "edit-cost-idle",
@@ -95,6 +121,7 @@ function measureIdleTracks(idleTracks) {
     clock: createManualClock(),
     interpolator: createFakeInterpolator(),
     scheduler: createFakeScheduler(),
+    plugins: BENCH_CATALOG,
   }).load(idleDefinition(idleTracks));
   const target = idle.track("bench/target");
   for (const id of idle.motion("bench").trackIds) idle.mount(id);

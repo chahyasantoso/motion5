@@ -13,6 +13,7 @@ import { createFakeInterpolator, createFakeScheduler } from "../../core/src/test
 import { captureSkeleton, skeletonTracks, tableFrameSource } from "../src/skeleton";
 import { EULER_ORDER_3D, createObject3dPatchAdapter, writeFrame3d } from "../src/index";
 import { syntheticSkeleton } from "./support/synthetic-skeleton";
+import { testModels } from "../../core/test/support/test-models";
 
 const DEGREES = 180 / Math.PI;
 
@@ -64,7 +65,7 @@ function distance(a: Vector3, b: Vector3): number {
 }
 
 function load(tracks: readonly TrackDefinition[]) {
-  const plugins = new PluginCatalog();
+  const plugins = new PluginCatalog({ models: testModels });
   plugins.register(fk3dPlugin);
   const project = new Engine({
     plugins,

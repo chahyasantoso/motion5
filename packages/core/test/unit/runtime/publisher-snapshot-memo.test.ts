@@ -21,12 +21,27 @@ import { GraphPublisher } from "../../../src/runtime/graph-publisher";
  */
 const PROJECT: ProjectDefinition = {
   schemaVersion: 5,
-  motions: [{ id: "hero", trigger: { type: "manual" }, tracks: [{ id: "arm" }, { id: "hand" }] }],
+  motions: [
+    {
+      id: "hero",
+      trigger: { type: "manual" },
+      tracks: [
+        { id: "arm", output: { model: "TestRecord" } },
+        { id: "hand", output: { model: "TestRecord" } },
+      ],
+    },
+  ],
 };
 
 const REPLACEMENT: ProjectDefinition = {
   schemaVersion: 5,
-  motions: [{ id: "hero", trigger: { type: "manual" }, tracks: [{ id: "arm" }] }],
+  motions: [
+    {
+      id: "hero",
+      trigger: { type: "manual" },
+      tracks: [{ id: "arm", output: { model: "TestRecord" } }],
+    },
+  ],
 };
 
 const compose = (node: { id: string }) => () => ({

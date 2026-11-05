@@ -7,6 +7,7 @@ import { AggregateTopologyError } from "../support/aggregate-topology";
 import { BODY_2D_SPEC } from "../../src/body/fields";
 import { GOALS_2D_SPEC } from "../../src/goals/fields";
 import { goalsEntity, rootEntity } from "../support/typed-rig";
+import { testModels } from "../../../core/test/support/test-models";
 
 const solver = vi.hoisted(() => ({ calls: 0 }));
 vi.mock("../../src/ik-solve", async (importOriginal) => {
@@ -41,7 +42,8 @@ function input(
 ) {
   const rig = goalsEntity(chain, goals);
   return {
-    values,
+    values: {},
+    param: values,
     requires: {
       chain: rig.body,
       goals: rig.goals,
@@ -71,10 +73,14 @@ function project(ids: Ids = IDS, goalX: unknown = 12, motion = "demo"): ProjectD
         id: motion,
         trigger: { type: "manual" },
         tracks: [
-          { id: ids.root, type: "root2d", input: { values: { x: 0, y: 0, rotation: 0 } } },
+          {
+            id: ids.root,
+            output: { model: "Point2d" },
+            input: { values: { x: 0, y: 0, rotation: 0 } },
+          },
           {
             id: ids.body,
-            type: "body2d",
+            output: { model: "Body2d" },
             input: {
               values: [
                 { id: "trunk", cells: { length: 20, rotation: 0 } },
@@ -85,16 +91,16 @@ function project(ids: Ids = IDS, goalX: unknown = 12, motion = "demo"): ProjectD
           },
           {
             id: ids.goals,
-            type: "goals2d",
+            output: { model: "Goals2d" },
             input: {
               values: [{ id: "left-hand", cells: { memberId: "left-lower", x: goalX, y: 8 } }],
             },
           },
           {
             id: ids.solve,
-            plugin: "ik",
+            output: { plugin: "ik" },
             input: {
-              values: { flip: false },
+              param: { flip: false },
               requires: { chain: ids.body, goals: ids.goals, base: ids.root },
             },
           },
@@ -105,7 +111,7 @@ function project(ids: Ids = IDS, goalX: unknown = 12, motion = "demo"): ProjectD
 }
 
 function open(definition: ProjectDefinition) {
-  const plugins = new PluginCatalog();
+  const plugins = new PluginCatalog({ models: testModels });
   plugins.registerAll([ikPlugin]);
   const handle = new Engine({
     clock: createManualClock(),
@@ -246,7 +252,8 @@ describe("aggregate 2D IK", () => {
       const rig = goalsEntity(twin.body, twin.goals);
       const result = ikPlugin.transform(
         {
-          values: twin.values ?? { inspect: true },
+          values: {},
+          param: twin.values ?? { inspect: true },
           requires: {
             chain: rig.body,
             goals: rig.goals,

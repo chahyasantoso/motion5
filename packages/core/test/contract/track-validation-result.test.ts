@@ -16,6 +16,7 @@ const VALID_TRACK: TrackDefinition = {
       ],
     },
   },
+  output: { model: "TestRecord" },
 };
 
 function read(result: TrackValidationResult): TrackDefinition {
@@ -36,7 +37,7 @@ describe("track validation uses one Outcome discriminant", () => {
     expect(read(accepted)).not.toBe(VALID_TRACK);
     expect("valid" in accepted).toBe(false);
 
-    const refused = validateTrackDefinition({ id: "" }, "track");
+    const refused = validateTrackDefinition({ id: "", output: { model: "TestRecord" } }, "track");
     expect(refused.kind).toBe("refused");
     expect(refused.diagnostics.length).toBeGreaterThan(0);
     expect("value" in refused).toBe(false);

@@ -105,7 +105,7 @@ function readDriver(state: Foreign<DriverState>): boolean {
   }
 }
 
-const TRACK: TrackDefinition = { id: "arm" };
+const TRACK: TrackDefinition = { id: "arm", output: { model: "TestRecord" } };
 const FREE: TrackEntry = { kind: "free", track: TRACK, token: 1, valueState: AUTHORED };
 const OWNED: TrackEntry = {
   kind: "owned",

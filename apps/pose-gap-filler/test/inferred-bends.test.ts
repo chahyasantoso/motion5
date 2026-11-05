@@ -18,6 +18,7 @@ import { POSE_MOTION_ID, limbTracks, poseNodeId } from "../src/rig/tracks";
 import { fakePorts } from "./engine";
 import { frameOf, trustedOf } from "./frames";
 import { bendPose, legacyTrace, recordingValues } from "./phase5-fixtures";
+import { testModels } from "../../../packages/core/test/support/test-models";
 
 const lengths = { length: () => 100 };
 const raw = createGapFiller({ kind: "raw" });
@@ -244,7 +245,10 @@ describe("inferred bends through the real world rig", () => {
               if (solvers.has(track.id))
                 return {
                   ...track,
-                  input: { ...track.input, values: { inspect: true } },
+                  input: {
+                    ...track.input,
+                    param: { ...(track.input?.param ?? {}), inspect: true },
+                  },
                 };
               if (constrained && bodies.has(track.id))
                 return {
@@ -274,7 +278,7 @@ describe("inferred bends through the real world rig", () => {
           },
         ],
       };
-      const plugins = new PluginCatalog();
+      const plugins = new PluginCatalog({ models: testModels });
       plugins.registerAll([fk3dPlugin, ik3dPlugin]);
       const project = new Engine({ ...fakePorts(), plugins }).load(changed);
       for (const node of project.motion(POSE_MOTION_ID).trackIds) project.mount(node);

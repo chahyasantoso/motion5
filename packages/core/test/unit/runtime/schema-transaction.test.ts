@@ -49,7 +49,16 @@ const CAPE_ID = "villain/cape";
 const VILLAIN: MotionDefinition = { id: "villain", trigger: { type: "manual" }, tracks: [] };
 const PROJECT: ProjectDefinition = {
   schemaVersion: 5,
-  motions: [{ id: MOTION_ID, trigger: { type: "manual" }, tracks: [{ id: "arm" }, { id: "leg" }] }],
+  motions: [
+    {
+      id: MOTION_ID,
+      trigger: { type: "manual" },
+      tracks: [
+        { id: "arm", output: { model: "TestRecord" }, input: { values: { x: 0 } } },
+        { id: "leg", output: { model: "TestRecord" } },
+      ],
+    },
+  ],
 };
 /** One key per node, so a shared key cannot hide a missing publication behind an output merge. */
 const compose = (node: { id: string }) => () => ({
@@ -187,10 +196,10 @@ describe("one recipe is one transaction", () => {
 
     editing(test.runtime).edit((tx) => {
       const villain = tx.addMotion(VILLAIN);
-      villain.addTrack({ id: "cape" });
-      tx.addTrack({ id: "hand" }, { motionId: MOTION_ID });
-      tx.track(LEG_ID).replace({ id: "leg", duration: 50 });
-      tx.track(ARM_ID).replace({ id: "arm", duration: 250 });
+      villain.addTrack({ id: "cape", output: { model: "TestRecord" } });
+      tx.addTrack({ id: "hand", output: { model: "TestRecord" } }, { motionId: MOTION_ID });
+      tx.track(LEG_ID).replace({ id: "leg", duration: 50, output: { model: "TestRecord" } });
+      tx.track(ARM_ID).replace({ id: "arm", duration: 250, output: { model: "TestRecord" } });
     });
 
     // Five ops over three tracks and one motion. Today each of them is a whole transaction, which
@@ -220,8 +229,11 @@ describe("one recipe is one transaction", () => {
 
     const thrown = thrownBy(() =>
       editing(test.runtime).edit((tx) => {
-        escaped = tx.addTrack({ id: "hand" }, { motionId: MOTION_ID });
-        tx.track(LEG_ID).replace({ id: "leg", duration: 75 });
+        escaped = tx.addTrack(
+          { id: "hand", output: { model: "TestRecord" } },
+          { motionId: MOTION_ID },
+        );
+        tx.track(LEG_ID).replace({ id: "leg", duration: 75, output: { model: "TestRecord" } });
         tx.addMotion(VILLAIN);
         throw refusal;
       }),
@@ -251,7 +263,10 @@ describe("one recipe is one transaction", () => {
     const test = rig();
 
     editing(test.runtime).edit((tx) => {
-      const hand = tx.addTrack({ id: "hand", duration: 100 }, { motionId: MOTION_ID });
+      const hand = tx.addTrack(
+        { id: "hand", duration: 100, output: { model: "TestRecord" } },
+        { motionId: MOTION_ID },
+      );
 
       // A two-step edit sees its own first step, or "each step individually correct" is a claim
       // about a step that cannot read what the step before it wrote.
@@ -260,15 +275,19 @@ describe("one recipe is one transaction", () => {
       expect(tx.track(HAND_ID).definition).toBe(hand.definition);
       expect(tx.motion(MOTION_ID).trackIds).toEqual([ARM_ID, LEG_ID, HAND_ID]);
 
-      tx.track(HAND_ID).replace({ id: "hand", duration: 250 });
+      tx.track(HAND_ID).replace({ id: "hand", duration: 250, output: { model: "TestRecord" } });
       expect(tx.track(HAND_ID).definition.duration).toBe(250);
 
-      tx.track(HAND_ID).replace({ id: "hand", duration: 400 });
+      tx.track(HAND_ID).replace({ id: "hand", duration: 400, output: { model: "TestRecord" } });
       expect(tx.track(HAND_ID).definition.duration).toBe(400);
     });
 
     // And the committed graph is what the last step staged rather than what the first one did.
-    expect(test.runtime.track(HAND_ID).definition).toEqual({ id: "hand", duration: 400 });
+    expect(test.runtime.track(HAND_ID).definition).toEqual({
+      id: "hand",
+      duration: 400,
+      output: { model: "TestRecord" },
+    });
     expect(test.runtime.graph.graph.nodes.map((node) => node.id)).toContain(HAND_ID);
 
     test.runtime.dispose();
@@ -278,9 +297,12 @@ describe("one recipe is one transaction", () => {
     const test = rig();
 
     editing(test.runtime).edit((tx) => {
-      tx.addTrack({ id: "hand", duration: 100 }, { motionId: MOTION_ID });
-      tx.track(HAND_ID).replace({ id: "hand", duration: 250 });
-      tx.track(HAND_ID).replace({ id: "hand", duration: 400 });
+      tx.addTrack(
+        { id: "hand", duration: 100, output: { model: "TestRecord" } },
+        { motionId: MOTION_ID },
+      );
+      tx.track(HAND_ID).replace({ id: "hand", duration: 250, output: { model: "TestRecord" } });
+      tx.track(HAND_ID).replace({ id: "hand", duration: 400, output: { model: "TestRecord" } });
     });
 
     // Three ops on one node, and the hooks are what one add costs rather than what three ops
@@ -294,7 +316,11 @@ describe("one recipe is one transaction", () => {
     expect(test.journal.filter((line) => line.startsWith("motion-replace"))).toEqual([]);
     expect(test.journal.filter((line) => line.startsWith("stage "))).toEqual([]);
     // The compile was handed the definition the recipe ends on, not the one it opened with.
-    expect(test.runtime.track(HAND_ID).definition).toEqual({ id: "hand", duration: 400 });
+    expect(test.runtime.track(HAND_ID).definition).toEqual({
+      id: "hand",
+      duration: 400,
+      output: { model: "TestRecord" },
+    });
     expect(test.runtime.instanceCount).toBe(1);
 
     test.runtime.dispose();
@@ -305,7 +331,7 @@ describe("one recipe is one transaction", () => {
 
     const thrown = thrownBy(() =>
       editing(test.runtime).edit((tx) => {
-        tx.addTrack({ id: "hand" }, { motionId: MOTION_ID });
+        tx.addTrack({ id: "hand", output: { model: "TestRecord" } }, { motionId: MOTION_ID });
         editing(test.runtime).edit(() => undefined);
       }),
     );
@@ -321,8 +347,12 @@ describe("one recipe is one transaction", () => {
 
     // The accepting direction, in the same rig, because a verb that refuses everything is green
     // against the refusal alone: a recipe after a recipe is two transactions, not a wedged surface.
-    editing(test.runtime).edit((tx) => tx.addTrack({ id: "hand" }, { motionId: MOTION_ID }));
-    editing(test.runtime).edit((tx) => tx.addTrack({ id: "foot" }, { motionId: MOTION_ID }));
+    editing(test.runtime).edit((tx) =>
+      tx.addTrack({ id: "hand", output: { model: "TestRecord" } }, { motionId: MOTION_ID }),
+    );
+    editing(test.runtime).edit((tx) =>
+      tx.addTrack({ id: "foot", output: { model: "TestRecord" } }, { motionId: MOTION_ID }),
+    );
 
     expect(test.runtime.track(HAND_ID).live).toBe(true);
     expect(test.runtime.track(FOOT_ID).live).toBe(true);
@@ -349,7 +379,7 @@ describe("one recipe is one transaction", () => {
     // The value tier is refused through the same guard and for the same reason: it ends at its own
     // invalidate, so it publishes inside the recipe and survives an abort.
     const tierTwo = thrownBy(() =>
-      editing(test.runtime).edit(() => test.runtime.writeValues(ARM_ID, [])),
+      editing(test.runtime).edit(() => test.runtime.writeValues(ARM_ID, { x: 1 })),
     );
 
     expect((tierTwo as Error).message).toMatch(/^schema-transaction-immediate: /);
@@ -361,7 +391,7 @@ describe("one recipe is one transaction", () => {
     expect((releaseLiveErr as Error).message).toContain("releaseValues");
 
     const inputValuesSetErr = thrownBy(() =>
-      editing(test.runtime).edit(() => test.runtime.track(ARM_ID).input.values.set([])),
+      editing(test.runtime).edit(() => test.runtime.track(ARM_ID).input.values.set({ x: 1 })),
     );
     expect((inputValuesSetErr as Error).message).toContain("input.values.set");
 
@@ -378,7 +408,7 @@ describe("one recipe is one transaction", () => {
 
     expect(test.journal).toEqual(["motion-stagger hero 0.25"]);
     expect(test.runtime.motion(MOTION_ID).definition.stagger).toBe(0.25);
-    expect(test.runtime.writeValues(ARM_ID, []).diagnostics).toEqual([]);
+    expect(test.runtime.writeValues(ARM_ID, { x: 1 }).diagnostics).toEqual([]);
 
     test.runtime.dispose();
   });
@@ -395,7 +425,10 @@ describe("one recipe is one transaction", () => {
     // holds and `edit` decides it has something to commit.
     const outcome = settled(() =>
       editing(test.runtime).edit((tx) => {
-        tx.addTrack({ id: "hand", duration: 100 }, { motionId: MOTION_ID });
+        tx.addTrack(
+          { id: "hand", duration: 100, output: { model: "TestRecord" } },
+          { motionId: MOTION_ID },
+        );
         test.runtime.dispose();
         return answer;
       }),

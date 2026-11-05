@@ -15,7 +15,7 @@ const node = (id: string, authoredIndex: number, sources: readonly string[] = []
     id,
     owner: id.startsWith("~/") ? "free" : "motion",
     authoredIndex,
-    track: { id: id.slice(id.indexOf("/") + 1) },
+    track: { id: id.slice(id.indexOf("/") + 1), output: { model: "TestRecord" } },
     edges: Object.freeze(edges),
   };
   return Object.freeze(built);
@@ -94,10 +94,16 @@ describe("canonical order and cycle detection", () => {
         {
           id: "hero",
           trigger: { type: "manual" },
-          tracks: [{ id: "arm", plugin: "graph-edge", input: { requires: { chain: "~/cursor" } } }],
+          tracks: [
+            {
+              id: "arm",
+              output: { plugin: "graph-edge" },
+              input: { requires: { chain: "~/cursor" } },
+            },
+          ],
         },
       ],
-      freeTracks: [{ id: "cursor" }],
+      freeTracks: [{ id: "cursor", output: { model: "TestTable" } }],
     };
     const result = buildGraphIR(project, builtinRegistry());
     expect(result.diagnostics).toEqual([]);
@@ -113,8 +119,8 @@ describe("canonical order and cycle detection", () => {
           id: "rig",
           trigger: { type: "manual" },
           tracks: [
-            { id: "a", plugin: "graph-edge", input: { requires: { chain: "b" } } },
-            { id: "b", plugin: "graph-edge", input: { requires: { chain: "a" } } },
+            { id: "a", output: { plugin: "graph-edge" }, input: { requires: { chain: "b" } } },
+            { id: "b", output: { plugin: "graph-edge" }, input: { requires: { chain: "a" } } },
           ],
         },
       ],

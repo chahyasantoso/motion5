@@ -26,7 +26,7 @@ function contract(values: ParsedValues | undefined, schema: ValueSpec | undefine
     values,
     schema,
     VALUES_PATH,
-    schema === undefined ? "inferred" : "declared",
+    schema === undefined ? "inferred" : "model",
   );
   if (outcome.kind !== "accepted")
     throw new Error(`Expected acceptance, received ${JSON.stringify(outcome.diagnostics)}.`);
@@ -41,7 +41,7 @@ function refusal(
     values,
     schema,
     VALUES_PATH,
-    schema === undefined ? "inferred" : "declared",
+    schema === undefined ? "inferred" : "model",
   );
   if (outcome.kind !== "refused") throw new Error("Expected refusal.");
   return outcome.diagnostics;
@@ -81,6 +81,7 @@ describe("deriveSourceContract infers from the complete authored source", () => 
           { id: "b", cells: { x: 200, z: "north" } },
         ],
       },
+      output: { model: "TestTable" },
     });
 
     const inferred = contract(values, undefined);
@@ -113,6 +114,7 @@ describe("deriveSourceContract infers from the complete authored source", () => 
           ],
         },
       },
+      output: { model: "TestRecord" },
     });
 
     const inferred = contract(values, undefined);
@@ -132,6 +134,7 @@ describe("deriveSourceContract infers from the complete authored source", () => 
     const values = valuesOf({
       id: "points",
       input: { values: [{ id: "a", cells: { x: 10, label: "idle" } }] },
+      output: { model: "TestTable" },
     });
 
     const inferred = contract(values, undefined);
@@ -160,8 +163,8 @@ describe("deriveSourceContract infers from the complete authored source", () => 
     } as const;
     const emptyRecord = { kind: "record", fields: {}, additionalProperties: false } as const;
     const cases = [
-      [valuesOf({ id: "a", input: { values: [] } }), emptyTable],
-      [valuesOf({ id: "b", input: { values: {} } }), emptyRecord],
+      [valuesOf({ id: "a", input: { values: [] }, output: { model: "TestTable" } }), emptyTable],
+      [valuesOf({ id: "b", input: { values: {} }, output: { model: "TestRecord" } }), emptyRecord],
       [undefined, emptyTable],
     ] as const;
 
@@ -181,6 +184,7 @@ describe("deriveSourceContract infers from the complete authored source", () => 
           { id: "b", cells: {} },
         ],
       },
+      output: { model: "TestTable" },
     });
 
     expect(contract(values, undefined).spec).toEqual({
@@ -219,6 +223,7 @@ describe("deriveSourceContract infers from the complete authored source", () => 
           },
         ],
       },
+      output: { model: "TestTable" },
     });
 
     const found = expectRule(values, undefined, "cell-kind-conflict");
@@ -240,7 +245,8 @@ describe("deriveSourceContract validates a declared schema without merging", () 
     };
     const values = valuesOf({
       id: "parameters",
-      input: { values: { mode: "idle", speed: 5, locked: true }, schema },
+      input: { values: { mode: "idle", speed: 5, locked: true } },
+      output: { model: "TestRecord" },
     });
 
     const declared = contract(values, schema);
@@ -273,7 +279,8 @@ describe("deriveSourceContract validates a declared schema without merging", () 
     };
     const values = valuesOf({
       id: "points",
-      input: { values: [{ id: "a", cells: { x: 1, y: 2 } }], schema },
+      input: { values: [{ id: "a", cells: { x: 1, y: 2 } }] },
+      output: { model: "TestTable" },
     });
 
     expect(contract(values, schema).spec).toEqual({
@@ -300,7 +307,8 @@ describe("deriveSourceContract validates a declared schema without merging", () 
     };
     const values = valuesOf({
       id: "parameters",
-      input: { values: { dx: 10, dy: 5 }, schema },
+      input: { values: { dx: 10, dy: 5 } },
+      output: { model: "TestRecord" },
     });
 
     expect(contract(values, schema).spec).toEqual({
@@ -314,7 +322,8 @@ describe("deriveSourceContract validates a declared schema without merging", () 
     const schema: ValueSpec = { kind: "record", fields: { x: { kind: "number" } } };
     const values = valuesOf({
       id: "parameters",
-      input: { values: { x: "one" }, schema },
+      input: { values: { x: "one" } },
+      output: { model: "TestRecord" },
     });
 
     const found = expectRule(values, schema, "cell-kind-conflict");
@@ -328,7 +337,8 @@ describe("deriveSourceContract validates a declared schema without merging", () 
     };
     const recordValues = valuesOf({
       id: "parameters",
-      input: { values: { dx: 10 }, schema },
+      input: { values: { dx: 10 } },
+      output: { model: "TestRecord" },
     });
     expect(expectRule(recordValues, schema, "cell-form-invalid").path).toBe(`${VALUES_PATH}.dy`);
 
@@ -343,8 +353,8 @@ describe("deriveSourceContract validates a declared schema without merging", () 
           { id: "a", cells: { x: 1 } },
           { id: "b", cells: {} },
         ],
-        schema: tableSchema,
       },
+      output: { model: "TestTable" },
     });
     expect(expectRule(tableValues, tableSchema, "cell-form-invalid").path).toBe(
       `${VALUES_PATH}[1].cells.x`,
@@ -358,7 +368,8 @@ describe("deriveSourceContract validates a declared schema without merging", () 
     };
     const values = valuesOf({
       id: "parameters",
-      input: { values: { dx: 10 }, schema },
+      input: { values: { dx: 10 } },
+      output: { model: "TestRecord" },
     });
 
     expect(contract(values, schema).spec).toEqual({
@@ -375,7 +386,8 @@ describe("deriveSourceContract validates a declared schema without merging", () 
     };
     const closedValues = valuesOf({
       id: "parameters",
-      input: { values: { dx: 10, dy: 5 }, schema: closed },
+      input: { values: { dx: 10, dy: 5 } },
+      output: { model: "TestRecord" },
     });
     expect(expectRule(closedValues, closed, "cell-form-invalid").path).toBe(`${VALUES_PATH}.dy`);
 
@@ -386,7 +398,8 @@ describe("deriveSourceContract validates a declared schema without merging", () 
     };
     const openValues = valuesOf({
       id: "parameters",
-      input: { values: { dx: 10, dy: 5 }, schema: open },
+      input: { values: { dx: 10, dy: 5 } },
+      output: { model: "TestRecord" },
     });
     expect(contract(openValues, open).spec).toEqual(open);
   });
@@ -398,7 +411,8 @@ describe("deriveSourceContract validates a declared schema without merging", () 
     };
     const values = valuesOf({
       id: "parameters",
-      input: { values: { mode: "running" }, schema },
+      input: { values: { mode: "running" } },
+      output: { model: "TestRecord" },
     });
 
     expect(expectRule(values, schema, "cell-form-invalid").path).toBe(`${VALUES_PATH}.mode`);
@@ -418,8 +432,8 @@ describe("deriveSourceContract validates a declared schema without merging", () 
             { p: 1, v: "running" },
           ],
         },
-        schema,
       },
+      output: { model: "TestRecord" },
     });
 
     expect(expectRule(values, schema, "cell-stops-invalid").path).toBe(`${VALUES_PATH}.mode[1].v`);
@@ -432,7 +446,8 @@ describe("deriveSourceContract validates a declared schema without merging", () 
     };
     const values = valuesOf({
       id: "parameters",
-      input: { values: { speed: 5 }, schema },
+      input: { values: { speed: 5 } },
+      output: { model: "TestRecord" },
     });
 
     expect(expectRule(values, schema, "cell-form-invalid").path).toBe(`${VALUES_PATH}.speed`);
@@ -452,8 +467,8 @@ describe("deriveSourceContract validates a declared schema without merging", () 
             { p: 1, v: 5 },
           ],
         },
-        schema,
       },
+      output: { model: "TestRecord" },
     });
 
     expect(expectRule(values, schema, "cell-stops-invalid").path).toBe(`${VALUES_PATH}.speed[1].v`);
@@ -466,7 +481,8 @@ describe("deriveSourceContract validates a declared schema without merging", () 
     };
     const values = valuesOf({
       id: "points",
-      input: { values: [{ id: "a", cells: {} }], schema },
+      input: { values: [{ id: "a", cells: {} }] },
+      output: { model: "TestTable" },
     });
 
     const found = expectRule(values, schema, "values-shape-invalid");
@@ -479,7 +495,10 @@ describe("deriveSourceContract validates a declared schema without merging", () 
       schema: { row: { fields: { x: { kind: "number", static: true } } } },
     };
 
-    for (const values of [valuesOf({ id: "points", input: { values: [], schema } }), undefined]) {
+    for (const values of [
+      valuesOf({ id: "points", input: { values: [] }, output: { model: "TestTable" } }),
+      undefined,
+    ]) {
       const declared = contract(values, schema);
       expect(declared.proven).toBe(true);
       expect(declared.spec).toEqual({

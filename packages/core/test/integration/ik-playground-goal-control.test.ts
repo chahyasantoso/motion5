@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { Patch, ProjectDefinition } from "../../src/contract/v5";
+import type { Patch, PluginDefinition, ProjectDefinition } from "../../src/contract/v5";
 import { Engine, type ProjectHandle } from "../../src/engine";
 import { PluginCatalog } from "../../src/domain/plugin-catalog";
 import { createManualClock } from "../../src/ports/clock";
@@ -12,6 +12,7 @@ import {
   nodeId,
 } from "../../../../apps/ik-playground/src/ik-playground-project";
 import { IK3D, IK3D_NODE_ID } from "../../../../apps/ik-playground/src/ik3d-playground-project";
+import { testModels } from "../support/test-models";
 
 const PLANAR_GOALS = [
   { id: "main", cells: { memberId: TENTACLE.tipTrack, x: 180, y: 290, influence: 0.75 } },
@@ -23,6 +24,23 @@ const SPATIAL_GOALS = [
   { id: "spare", cells: { memberId: "wrist", x: 1, y: 2, z: 3, influence: 0.25 } },
 ];
 
+const SOLVER = (id: string): PluginDefinition => ({
+  id,
+  inputs: {
+    param: {
+      kind: "record",
+      fields: {
+        flip: { kind: "boolean", optional: true },
+        inspect: { kind: "boolean", optional: true, static: true },
+      },
+    },
+  },
+  outputs: { values: { kind: "record", fields: {} } },
+  transform() {
+    return { values: {} };
+  },
+});
+
 function goalProject(): ProjectDefinition {
   return {
     schemaVersion: 5,
@@ -31,10 +49,15 @@ function goalProject(): ProjectDefinition {
         id: "rig",
         trigger: { type: "manual" },
         tracks: [
-          { id: TENTACLE.goalsTrack, input: { values: PLANAR_GOALS } },
+          {
+            id: TENTACLE.goalsTrack,
+            input: { values: PLANAR_GOALS },
+            output: { model: "TestTable" },
+          },
           {
             id: TENTACLE.solverTrack,
-            input: { values: { flip: false, inspect: true } },
+            input: { param: { flip: false, inspect: true } },
+            output: { plugin: TENTACLE.solverTrack },
           },
         ],
       },
@@ -42,8 +65,16 @@ function goalProject(): ProjectDefinition {
         id: "rig3d",
         trigger: { type: "manual" },
         tracks: [
-          { id: IK3D.goalsTrack, input: { values: SPATIAL_GOALS } },
-          { id: IK3D.solverTrack, input: { values: { inspect: true } } },
+          {
+            id: IK3D.goalsTrack,
+            input: { values: SPATIAL_GOALS },
+            output: { model: "TestTable" },
+          },
+          {
+            id: IK3D.solverTrack,
+            input: { param: { inspect: true } },
+            output: { plugin: IK3D.solverTrack },
+          },
         ],
       },
     ],
@@ -55,11 +86,13 @@ function runtimeOf(handle: ProjectHandle): ProjectRuntime {
 }
 
 function loaded(): ProjectHandle {
+  const catalog = new PluginCatalog({ models: testModels });
+  catalog.registerAll([SOLVER(TENTACLE.solverTrack), SOLVER(IK3D.solverTrack)]);
   return new Engine({
     clock: createManualClock(),
     interpolator: createFakeInterpolator(),
     scheduler: createFakeScheduler(),
-    plugins: new PluginCatalog(),
+    plugins: catalog,
   }).load(goalProject());
 }
 
@@ -182,7 +215,10 @@ describe("a goal move is one whole-table value write", () => {
       flush.mockClear();
       goals.flip(true);
       expect(flush).toHaveBeenCalledTimes(1);
-      expect(authored(handle, solverNode)).toEqual({ flip: true, inspect: true });
+      expect(handle.track(solverNode).definition.input?.param).toEqual({
+        flip: true,
+        inspect: true,
+      });
     } finally {
       handle.dispose();
     }
@@ -200,6 +236,7 @@ describe("a goal move is one whole-table value write", () => {
               {
                 id: TENTACLE.goalsTrack,
                 input: { values: { x: 0, y: 0 } },
+                output: { model: "TestRecord" },
               },
             ],
           },
@@ -215,6 +252,7 @@ describe("a goal move is one whole-table value write", () => {
               {
                 id: TENTACLE.goalsTrack,
                 input: { values: [{ id: "other", cells: { memberId: "seg-5", x: 1, y: 2 } }] },
+                output: { model: "TestTable" },
               },
             ],
           },
@@ -235,6 +273,7 @@ describe("a goal move is one whole-table value write", () => {
                     { id: "b", cells: { memberId: TENTACLE.tipTrack, x: 3, y: 4 } },
                   ],
                 },
+                output: { model: "TestTable" },
               },
             ],
           },
@@ -256,6 +295,7 @@ describe("a goal move is one whole-table value write", () => {
                     { id: "c", cells: { memberId: "seg-5", x: 5, y: 6 } },
                   ],
                 },
+                output: { model: "TestTable" },
               },
             ],
           },
@@ -267,7 +307,7 @@ describe("a goal move is one whole-table value write", () => {
         clock: createManualClock(),
         interpolator: createFakeInterpolator(),
         scheduler: createFakeScheduler(),
-        plugins: new PluginCatalog(),
+        plugins: new PluginCatalog({ models: testModels }),
       }).load(project);
       try {
         const goals = createGoalControl(handle);

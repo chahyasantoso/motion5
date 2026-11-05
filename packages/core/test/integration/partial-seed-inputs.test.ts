@@ -26,7 +26,7 @@ const node = (
     id,
     owner: "motion",
     authoredIndex,
-    track: { id },
+    track: { id, output: { model: "TestRecord" } },
     edges: Object.freeze(edges),
     compose,
   });

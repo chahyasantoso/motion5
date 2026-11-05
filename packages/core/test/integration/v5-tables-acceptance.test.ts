@@ -1,5 +1,6 @@
 import { describe, expect, expectTypeOf, it } from "vitest";
 import { shape } from "@motion5/core/plugin-api";
+import { defineModel } from "../../src/contract/v5";
 import type { Patch, ProjectDefinition } from "../../src/contract/v5";
 import type { RuleId } from "../../src/contract/rule-id";
 import type {
@@ -27,6 +28,7 @@ import {
   track,
   type BuilderProject,
 } from "../support/v5-builders";
+import { testModels } from "../support/test-models";
 
 /**
  * Phase 1 acceptance suite for the identified-table contract.
@@ -86,14 +88,22 @@ const translatePlugin: PluginDefinition<
   },
 };
 
+const PointTable = defineModel({
+  id: "PointTable",
+  spec: {
+    kind: "table",
+    schema: { row: { fields: { x: { kind: "number" }, y: { kind: "number" } } } },
+  },
+});
+
 function defaultCatalog(): PluginCatalog {
-  const catalog = new PluginCatalog();
+  const catalog = new PluginCatalog({ models: [...testModels, PointTable] });
   catalog.register(translatePlugin);
   return catalog;
 }
 
 function catalogOf(...plugins: readonly PluginDefinition[]): PluginCatalog {
-  const catalog = new PluginCatalog();
+  const catalog = new PluginCatalog({ models: [...testModels, PointTable] });
   catalog.registerAll(plugins);
   return catalog;
 }
@@ -164,19 +174,25 @@ function malformed(trackDefinition: unknown): unknown {
 
 describe("v5 contract direction", () => {
   it("settles the authored track and input member sets", () => {
-    expectTypeOf<keyof TrackDefinition>().toEqualTypeOf<
-      "id" | "type" | "plugin" | "input" | "duration"
-    >();
-    expectTypeOf<keyof TrackInput>().toEqualTypeOf<"values" | "param" | "requires" | "schema">();
+    expectTypeOf<keyof TrackDefinition>().toEqualTypeOf<"id" | "output" | "input" | "duration">();
+    expectTypeOf<keyof TrackInput>().toEqualTypeOf<"values" | "param" | "requires">();
   });
 
   it("refuses old grouped, flat-row, structured-cell and type-alias forms", () => {
     // Excess-property checking is the refusal here: structural assignability would accept the
     // extra key, and `keyof` above is what proves the target track has no slot for it.
-    // @ts-expect-error grouped keyframes are not part of the target track
-    const grouped: TrackDefinition = { id: "legacy", keyframes: {} };
-    // @ts-expect-error observes is not part of the target track
-    const observes: TrackDefinition = { id: "legacy", observes: [] };
+    const grouped: TrackDefinition = {
+      id: "legacy",
+      // @ts-expect-error grouped keyframes are not part of the target track
+      keyframes: {},
+      output: { model: "TestRecord" },
+    };
+    const observes: TrackDefinition = {
+      id: "legacy",
+      // @ts-expect-error observes is not part of the target track
+      observes: [],
+      output: { model: "TestRecord" },
+    };
     void grouped;
     void observes;
     expectTypeOf<{ x: number }>().not.toExtend<AuthoredRow>();
@@ -200,6 +216,7 @@ describe("v5 source evaluation", () => {
         }),
         row("point-b", { x: 200, y: 40 }),
       ),
+      model: "PointTable",
     });
 
     const patch = patchAt(project([points]), "demo/points", 0.5);
@@ -220,6 +237,7 @@ describe("v5 source evaluation", () => {
           { p: 1, v: 10 },
         ],
       }),
+      model: "TestRecord",
     });
 
     const patch = patchAt(project([parameters]), "demo/parameters", 0.5);
@@ -243,6 +261,7 @@ describe("v5 explicit plugin slice", () => {
         }),
         row("point-b", { x: 200, y: 40 }),
       ),
+      model: "PointTable",
     });
     const shifted = track({
       id: "shifted-points",
@@ -276,7 +295,11 @@ describe("v5 authored refusals", () => {
   it("[staged Phase 2] refuses a flat row without the id/cells envelope", () => {
     expect(() =>
       loadAndDispose(
-        malformed({ id: "points", input: { values: [{ point: "point-a", x: 0, y: 0 }] } }),
+        malformed({
+          id: "points",
+          input: { values: [{ point: "point-a", x: 0, y: 0 }] },
+          output: { model: "TestTable" },
+        }),
       ),
     ).toThrow(rule("row-id-invalid"));
   });
@@ -287,12 +310,13 @@ describe("v5 authored refusals", () => {
         malformed({
           id: "points",
           input: { values: [{ id: "point-a", cells: { x: { literal: 1 } } }] },
+          output: { model: "TestTable" },
         }),
       ),
     ).toThrow(rule("cell-form-invalid"));
   });
 
-  it("[staged Phase 2] refuses a type descriptor in place of kind", () => {
+  it("[staged Phase 2] refuses a retired schema descriptor", () => {
     expect(() =>
       loadAndDispose(
         malformed({
@@ -301,9 +325,10 @@ describe("v5 authored refusals", () => {
             values: { dx: 10 },
             schema: { type: "record", fields: { dx: { kind: "number" } } },
           },
+          output: { model: "TestRecord" },
         }),
       ),
-    ).toThrow(rule("spec-field-unknown"));
+    ).toThrow(rule("input-schema-retired"));
   });
 
   it("[staged Phase 2] refuses a table authored where the declared schema is a record", () => {
@@ -313,10 +338,7 @@ describe("v5 authored refusals", () => {
           track({
             id: "parameters",
             values: table(row("point-a", { dx: 10, dy: 5 })),
-            schema: {
-              kind: "record",
-              fields: { dx: { kind: "number" }, dy: { kind: "number" } },
-            },
+            model: "TestRecord",
           }),
         ),
       ),
@@ -335,8 +357,8 @@ describe("v5 authored refusals", () => {
                 { p: 1, v: 20 },
               ],
             },
-            schema: { kind: "record", fields: { dx: { kind: "number", static: true } } },
           },
+          output: { model: "StaticRecord" },
         }),
       ),
     ).toThrow(rule("static-field-stops"));
@@ -350,7 +372,7 @@ describe("v5 authored refusals", () => {
     ).toThrow(rule("plugin-unknown"));
   });
 
-  it("[staged Phase 2] refuses requires without a plugin as plugin-requires-without-plugin", () => {
+  it("[staged Phase 2] refuses requires on a model output as requires-not-allowed", () => {
     expect(() =>
       loadAndDispose(
         malformed(
@@ -358,25 +380,26 @@ describe("v5 authored refusals", () => {
             id: "points",
             values: record({ x: 0 }),
             requires: { data: "points" },
+            model: "TestRecord",
           }),
         ),
       ),
-    ).toThrow(rule("plugin-requires-without-plugin"));
+    ).toThrow(rule("requires-not-allowed"));
   });
 
-  it("[staged Phase 2] refuses a source schema on a plugin track as input-schema-on-plugin-track", () => {
+  it("[staged Phase 2] refuses a retired source schema as input-schema-retired", () => {
     expect(() =>
       loadAndDispose(
-        malformed(
-          track({
-            id: "shifted",
-            plugin: "translate",
+        malformed({
+          id: "shifted",
+          output: { plugin: "translate" },
+          input: {
             values: record({ dx: 10 }),
             schema: { kind: "record", fields: { dx: { kind: "number" } } },
-          }),
-        ),
+          },
+        }),
       ),
-    ).toThrow(rule("input-schema-on-plugin-track"));
+    ).toThrow(rule("input-schema-retired"));
   });
 
   it("[staged Phase 2] refuses duplicate row ids as row-id-duplicate", () => {
@@ -386,6 +409,7 @@ describe("v5 authored refusals", () => {
           track({
             id: "points",
             values: table(row("point-a", { x: 0 }), row("point-a", { x: 1 })),
+            model: "TestTable",
           }),
         ),
       ),
@@ -394,20 +418,42 @@ describe("v5 authored refusals", () => {
 
   it("[staged Phase 2] refuses a reserved row id as name-reserved", () => {
     expect(() =>
-      loadAndDispose(malformed(track({ id: "points", values: table(row("__proto__", { x: 0 })) }))),
+      loadAndDispose(
+        malformed(
+          track({
+            id: "points",
+            values: table(row("__proto__", { x: 0 })),
+            model: "TestTable",
+          }),
+        ),
+      ),
     ).toThrow(rule("name-reserved"));
   });
 
   it("[staged Phase 2] refuses an empty bare stop array as cell-stops-invalid", () => {
     expect(() =>
-      loadAndDispose(malformed(track({ id: "parameters", values: record({ dx: [] }) }))),
+      loadAndDispose(
+        malformed(
+          track({
+            id: "parameters",
+            values: record({ dx: [] }),
+            model: "TestRecord",
+          }),
+        ),
+      ),
     ).toThrow(rule("cell-stops-invalid"));
   });
 
   it("[staged Phase 2] refuses a stop position outside [0, 1] as cell-stops-invalid", () => {
     expect(() =>
       loadAndDispose(
-        malformed(track({ id: "parameters", values: record({ dx: [{ p: 1.5, v: 0 }] }) })),
+        malformed(
+          track({
+            id: "parameters",
+            values: record({ dx: [{ p: 1.5, v: 0 }] }),
+            model: "TestRecord",
+          }),
+        ),
       ),
     ).toThrow(rule("cell-stops-invalid"));
   });
@@ -424,6 +470,7 @@ describe("v5 authored refusals", () => {
                 { p: 1, v: "one" },
               ],
             }),
+            model: "TestRecord",
           }),
         ),
       ),
@@ -455,6 +502,7 @@ describe("v5 registration-dependent refusals", () => {
       id: plugin.id,
       plugin: plugin.id,
       values: record({ n: 1 }),
+      model: "TestRecord",
     });
     return patchAt(project([malformedTrack]), `demo/${plugin.id}`, 0.5, catalogOf(plugin));
   }
@@ -463,6 +511,7 @@ describe("v5 registration-dependent refusals", () => {
     const points = track({
       id: "points",
       values: table(row("point-a", { x: 0, y: 1 })),
+      model: "TestTable",
     });
     const shifted = track({
       id: "shifted",
@@ -475,7 +524,11 @@ describe("v5 registration-dependent refusals", () => {
   });
 
   it("[Phase 3] slot-incompatible refuses a mismatched slot output", () => {
-    const parameters = track({ id: "parameters", values: record({ x: 0, y: 1 }) });
+    const parameters = track({
+      id: "parameters",
+      values: record({ x: 0, y: 1 }),
+      model: "TestRecord",
+    });
     const shifted = track({
       id: "shifted",
       plugin: "translate",
@@ -487,7 +540,13 @@ describe("v5 registration-dependent refusals", () => {
   });
 
   it("[Phase 4] live-values-invalid refuses a live write that breaks the shape", () => {
-    const definition = project([track({ id: "rows", values: table(row("r1", { x: 1, y: 2 })) })]);
+    const definition = project([
+      track({
+        id: "rows",
+        values: table(row("r1", { x: 1, y: 2 })),
+        model: "TestTable",
+      }),
+    ]);
     const handle = load(definition);
     try {
       handle.mount("demo/rows");

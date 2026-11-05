@@ -1,6 +1,16 @@
 import type { MotionDefinition, TrackDefinition } from "@motion5/core";
+import { defineModel } from "@motion5/core/plugin-api";
 import { SCROLL_SOURCE } from "./ik-playground-project";
 import { frameAround } from "./projection";
+
+/** A 3D pole hint: one point, no rotation. */
+export const Pole3d = defineModel({
+  id: "Pole3d",
+  spec: {
+    kind: "record",
+    fields: { x: { kind: "number" }, y: { kind: "number" }, z: { kind: "number" } },
+  },
+});
 
 /**
  * 3D playground: four-member chain solved as one aggregate table on the 2D chain's scroll source.
@@ -56,7 +66,7 @@ export const IK3D = {
 function bodyTrack(): TrackDefinition {
   return {
     id: IK3D.bodyTrack,
-    type: "body3d",
+    output: { model: "Body3d" },
     input: {
       values: IK3D.memberTracks.map((id, index) => {
         const [rotation, rotationX, rotationY] = IK3D.rest[index]!;
@@ -82,7 +92,7 @@ function bodyTrack(): TrackDefinition {
 function goalsTrack(): TrackDefinition {
   return {
     id: IK3D.goalsTrack,
-    type: "goals3d",
+    output: { model: "Goals3d" },
     input: {
       values: [
         {
@@ -97,7 +107,7 @@ function goalsTrack(): TrackDefinition {
 export const ik3dPlaygroundTracks: readonly TrackDefinition[] = [
   {
     id: IK3D.rootTrack,
-    type: "root3d",
+    output: { model: "Point3d" },
     input: {
       values: {
         x: IK3D.root.x,
@@ -112,14 +122,15 @@ export const ik3dPlaygroundTracks: readonly TrackDefinition[] = [
   {
     id: IK3D.poleTrack,
     input: { values: { x: IK3D.pole.x, y: IK3D.pole.y, z: IK3D.pole.z } },
+    output: { model: "Pole3d" },
   },
   bodyTrack(),
   goalsTrack(),
   {
     id: IK3D.solverTrack,
-    plugin: "ik3d",
+    output: { plugin: "ik3d" },
     input: {
-      values: { inspect: true },
+      param: { inspect: true },
       requires: {
         chain: IK3D.bodyTrack,
         goals: IK3D.goalsTrack,
@@ -130,7 +141,7 @@ export const ik3dPlaygroundTracks: readonly TrackDefinition[] = [
   },
   {
     id: IK3D.poseTrack,
-    plugin: "fk3d",
+    output: { plugin: "fk3d" },
     input: {
       values: {},
       requires: {

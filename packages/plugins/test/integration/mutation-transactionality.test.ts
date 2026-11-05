@@ -8,6 +8,7 @@ import { SOLVED_2D_SPEC } from "../../src/solved/fields";
 import { createManualClock } from "@motion5/core";
 import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/testing";
 import type { Patch, ProjectDefinition, TrackDefinition } from "@motion5/core";
+import { testModels } from "../../../core/test/support/test-models";
 
 const project: ProjectDefinition = {
   schemaVersion: 5,
@@ -16,7 +17,7 @@ const project: ProjectDefinition = {
 };
 
 function makeHandle() {
-  const plugins = new PluginCatalog();
+  const plugins = new PluginCatalog({ models: testModels });
   plugins.registerAll([transformPlugin, fkPlugin]);
   const scheduler = createFakeScheduler();
   const handle = new Engine({
@@ -37,7 +38,7 @@ function ramp(from: number, to: number) {
 
 const rootTrack: TrackDefinition = {
   id: "root",
-  type: "root2d",
+  output: { model: "Point2d" },
   input: {
     values: {
       x: ramp(0, 100),
@@ -49,7 +50,7 @@ const rootTrack: TrackDefinition = {
 
 const bodyTrack: TrackDefinition = {
   id: "body",
-  type: "body2d",
+  output: { model: "Body2d" },
   input: {
     values: [{ id: "elbow", cells: { length: 40, rotation: 0, weight: 1 } }],
   },
@@ -57,7 +58,7 @@ const bodyTrack: TrackDefinition = {
 
 const solvedTrack: TrackDefinition = {
   id: "solved",
-  type: "solved2d",
+  output: { model: "Solved2d" },
   input: {
     values: [{ id: "elbow", cells: { rotation: 0 } }],
   },
@@ -65,7 +66,7 @@ const solvedTrack: TrackDefinition = {
 
 const dependentTrack: TrackDefinition = {
   id: "elbow",
-  plugin: "fk",
+  output: { plugin: "fk" },
   input: {
     values: {},
     requires: { chain: "~/body", solved: "~/solved", base: "~/root" },
@@ -75,7 +76,7 @@ const dependentTrack: TrackDefinition = {
 function addable(id: string): TrackDefinition {
   return {
     id,
-    plugin: "transform",
+    output: { plugin: "transform" },
     input: {
       values: { dx: ramp(0, 10), dy: 0 },
       requires: { data: "~/elbow" },

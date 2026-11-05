@@ -21,10 +21,10 @@ const PROJECT: ProjectDefinition = {
       id: MOTION_ID,
       trigger: { type: "manual" },
       tracks: [
-        { id: "arm" },
+        { id: "arm", output: { model: "TestRecord" } },
         {
           id: "leg",
-          plugin: "demo",
+          output: { plugin: "demo" },
           input: { values: {}, requires: { base: ARM_ID } },
         },
       ],

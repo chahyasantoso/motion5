@@ -9,6 +9,7 @@ import type {
   ValueSpec,
 } from "../../../src/contract/v5";
 import { PluginCatalog } from "../../../src/domain/plugin-catalog";
+import { testModels } from "../../support/test-models";
 
 const POINT: ValueSpec = {
   kind: "table",
@@ -48,7 +49,7 @@ const PLUGIN: PluginDefinition = {
 
 describe("catalog describe", () => {
   it("reports declared typed and shape slots without exposing the definition", () => {
-    const catalog = new PluginCatalog();
+    const catalog = new PluginCatalog({ models: testModels });
     catalog.register(PLUGIN);
 
     const description = catalog.describe("probe");

@@ -4,6 +4,7 @@ import { PluginCatalog, Engine, createManualClock } from "@motion5/core";
 import { fkPlugin } from "@motion5/plugins/fk";
 import { ikPlugin } from "@motion5/plugins/ik";
 import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/testing";
+import { testModels } from "../../../core/test/support/test-models";
 
 const UPPER = "upper-arm";
 const FOREARM = "forearm";
@@ -22,10 +23,14 @@ const PROJECT: ProjectDefinition = {
       id: "walker",
       trigger: { type: "manual" },
       tracks: [
-        { id: "shoulder", type: "root2d", input: { values: { x: 200, y: 300, rotation: 0 } } },
+        {
+          id: "shoulder",
+          output: { model: "Point2d" },
+          input: { values: { x: 200, y: 300, rotation: 0 } },
+        },
         {
           id: "body",
-          type: "body2d",
+          output: { model: "Body2d" },
           input: {
             values: [
               { id: "upper-arm", cells: { length: 80, rotation: 0 } },
@@ -35,19 +40,19 @@ const PROJECT: ProjectDefinition = {
         },
         {
           id: "goals",
-          type: "goals2d",
+          output: { model: "Goals2d" },
           input: {
             values: [{ id: "hand-target", cells: { memberId: "forearm", x: 320, y: 340 } }],
           },
         },
         {
           id: "arm-solve",
-          plugin: "ik",
+          output: { plugin: "ik" },
           input: { values: {}, requires: { chain: "body", goals: "goals", base: "shoulder" } },
         },
         {
           id: "pose",
-          plugin: "fk",
+          output: { plugin: "fk" },
           input: {
             values: {},
             requires: { chain: "body", solved: "arm-solve", base: "shoulder" },
@@ -63,7 +68,7 @@ function seekAll(handle: ProjectHandle): void {
 }
 
 function load(): ProjectHandle {
-  const plugins = new PluginCatalog();
+  const plugins = new PluginCatalog({ models: testModels });
   plugins.registerAll([fkPlugin, ikPlugin]);
   const handle = new Engine({
     clock: createManualClock(),

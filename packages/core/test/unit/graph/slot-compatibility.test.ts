@@ -5,10 +5,12 @@ import type {
   ProjectDefinition,
   ValueSpec,
 } from "../../../src/contract/v5";
+import { defineModel } from "../../../src/contract/v5";
 import { shape } from "../../../src/contract/slot-spec";
 import { PluginCatalog } from "../../../src/domain/plugin-catalog";
 import { buildGraphIR } from "../../../src/graph/ir";
 import { record, row, table, track } from "../../support/v5-builders";
+import { testModels } from "../../support/test-models";
 
 const POINT: ValueSpec = {
   kind: "table",
@@ -22,6 +24,23 @@ const VALUES: ValueSpec = {
   kind: "table",
   schema: { row: { fields: { x: { kind: "number" } } } },
 };
+const PointTable = defineModel({
+  id: "PointTable",
+  spec: POINT,
+});
+const OtherTable = defineModel({
+  id: "OtherTable",
+  spec: { kind: "table", schema: { row: { fields: { z: { kind: "number" } } } } },
+});
+
+function producer(id: string, outputs: Readonly<Record<string, ValueSpec>>): PluginDefinition {
+  return {
+    id,
+    inputs: { values: { kind: "record", fields: {} } },
+    outputs,
+    transform: () => ({ values: [] }),
+  };
+}
 
 function plugin(
   id: string,
@@ -42,13 +61,13 @@ function plugin(
 }
 
 function catalog(...plugins: readonly PluginDefinition[]): PluginCatalog {
-  const result = new PluginCatalog();
+  const result = new PluginCatalog({ models: [...testModels, PointTable, OtherTable] });
   result.registerAll(plugins);
   return result;
 }
 
 function source(id: string, values: AuthoredValues): ReturnType<typeof track> {
-  return track({ id, values });
+  return track({ id, values, model: Array.isArray(values) ? "PointTable" : "TestRecord" });
 }
 
 function consumer(
@@ -61,6 +80,7 @@ function consumer(
     plugin: pluginId,
     values: record({ dx: 1 }),
     requires: { data: binding },
+    model: "TestRecord",
   });
 }
 
@@ -88,33 +108,6 @@ describe("load-time slot compatibility", () => {
     expect(built.diagnostics).toEqual([]);
   });
 
-  it("refuses a string column where the slot requires a number", () => {
-    const built = buildGraphIR(
-      project(
-        source("points", table(row("a", { x: "zero" }))),
-        consumer("shifted", "translate", "points"),
-      ),
-      catalog(plugin("translate", { values: VALUES })),
-    );
-
-    expect(rules(built)).toContain("slot-incompatible");
-    expect(built.diagnostics.find(({ ruleId }) => ruleId === "slot-incompatible")?.path).toBe(
-      "demo/shifted.input.requires.data.outputs.values",
-    );
-  });
-
-  it("refuses an optional producer column where the slot requires it", () => {
-    const built = buildGraphIR(
-      project(
-        source("points", table(row("a", { x: 0 }), row("b", {}))),
-        consumer("shifted", "translate", "points"),
-      ),
-      catalog(plugin("translate", { values: VALUES })),
-    );
-
-    expect(rules(built)).toContain("slot-incompatible");
-  });
-
   it("accepts a producer that does not publish an optional slot output", () => {
     const built = buildGraphIR(
       project(
@@ -132,19 +125,6 @@ describe("load-time slot compatibility", () => {
     expect(built.diagnostics).toEqual([]);
   });
 
-  it("refuses a producer that does not publish a required slot output", () => {
-    const built = buildGraphIR(
-      project(
-        source("points", table(row("a", { x: 0 }))),
-        consumer("shifted", "translate", "points"),
-      ),
-      catalog(plugin("translate", { pose: VALUES })),
-    );
-
-    expect(rules(built)).toContain("slot-incompatible");
-    expect(built.diagnostics[0]?.message).toContain("does not publish");
-  });
-
   it("refuses a record producer where the slot requires a table", () => {
     const built = buildGraphIR(
       project(
@@ -157,40 +137,13 @@ describe("load-time slot compatibility", () => {
     expect(rules(built)).toContain("slot-incompatible");
     expect(built.diagnostics[0]?.message).toContain("table");
   });
-  it("checks map members independently and names the failing member", () => {
-    const built = buildGraphIR(
-      project(
-        source("upper", table(row("a", { x: 0 }))),
-        source("lower", table(row("a", { x: "zero" }))),
-        consumer("rig", "bones", { upperArm: "upper", forearm: "lower" }),
-      ),
-      catalog(plugin("bones", { values: VALUES }, "map")),
-    );
-
-    expect(rules(built)).toEqual(["slot-incompatible"]);
-    expect(built.diagnostics[0]?.path).toBe("demo/rig.input.requires.data.forearm.outputs.values");
-  });
-
-  it("refuses an unproven required field from an empty undeclared source", () => {
-    const built = buildGraphIR(
-      project(source("empty", table()), consumer("shifted", "translate", "empty")),
-      catalog(plugin("translate", { values: VALUES })),
-    );
-
-    expect(rules(built)).toContain("slot-unproven");
-    expect(rules(built)).not.toContain("slot-incompatible");
-  });
-
   it("accepts a declared empty source, whose fields are proven by the declaration", () => {
     const built = buildGraphIR(
       project(
         track({
           id: "empty",
           values: table(),
-          schema: {
-            kind: "table",
-            schema: { row: { fields: { x: { kind: "number" } } } },
-          },
+          model: "PointTable",
         }),
         consumer("shifted", "translate", "empty"),
       ),
@@ -198,46 +151,6 @@ describe("load-time slot compatibility", () => {
     );
 
     expect(built.diagnostics).toEqual([]);
-  });
-
-  it("rechecks when a source contract changes", () => {
-    const accepted = buildGraphIR(
-      project(
-        source("points", table(row("a", { x: 0 }))),
-        consumer("shifted", "translate", "points"),
-      ),
-      catalog(plugin("translate", { values: VALUES })),
-    );
-    expect(accepted.diagnostics).toEqual([]);
-
-    const refused = buildGraphIR(
-      project(
-        source("points", table(row("a", { x: "zero" }))),
-        consumer("shifted", "translate", "points"),
-      ),
-      catalog(plugin("translate", { values: VALUES })),
-    );
-    expect(rules(refused)).toContain("slot-incompatible");
-  });
-
-  it("rechecks when a plugin output contract changes", () => {
-    const accepted = buildGraphIR(
-      project(
-        source("points", table(row("a", { x: 0 }))),
-        consumer("shifted", "translate", "points"),
-      ),
-      catalog(plugin("translate", { values: VALUES })),
-    );
-    expect(accepted.diagnostics).toEqual([]);
-
-    const replaced = buildGraphIR(
-      project(
-        source("points", table(row("a", { x: 0 }))),
-        consumer("shifted", "translate", "points"),
-      ),
-      catalog(plugin("translate", { values: RECORD })),
-    );
-    expect(rules(replaced)).toContain("slot-incompatible");
   });
 
   it("treats an optional producer output as unproven for a required slot output", () => {
@@ -262,5 +175,137 @@ describe("load-time slot compatibility", () => {
     );
 
     expect(rules(built)).toContain("slot-unproven");
+  });
+
+  it("refuses a producer field of the wrong kind", () => {
+    const built = buildGraphIR(
+      project(
+        track({ id: "source", plugin: "producer", values: record({}) }),
+        consumer("shifted", "translate", "source"),
+      ),
+      catalog(
+        producer("producer", {
+          values: { kind: "table", schema: { row: { fields: { x: { kind: "string" } } } } },
+        }),
+        plugin("translate", { values: VALUES }),
+      ),
+    );
+
+    expect(rules(built)).toContain("slot-incompatible");
+    expect(built.diagnostics[0]?.message).toContain("string");
+  });
+
+  it("refuses an optional producer field where the slot requires it", () => {
+    const built = buildGraphIR(
+      project(
+        track({ id: "source", plugin: "producer", values: record({}) }),
+        consumer("shifted", "translate", "source"),
+      ),
+      catalog(
+        producer("producer", {
+          values: {
+            kind: "table",
+            schema: { row: { fields: { x: { kind: "number", optional: true } } } },
+          },
+        }),
+        plugin("translate", { values: VALUES }),
+      ),
+    );
+
+    expect(rules(built)).toContain("slot-incompatible");
+  });
+
+  it("refuses a producer that does not publish a required output", () => {
+    const built = buildGraphIR(
+      project(
+        track({ id: "source", plugin: "producer", values: record({}) }),
+        consumer("shifted", "translate", "source"),
+      ),
+      catalog(producer("producer", { pose: VALUES }), plugin("translate", { values: VALUES })),
+    );
+
+    expect(rules(built)).toContain("slot-incompatible");
+    expect(built.diagnostics[0]?.message).toContain("does not publish");
+  });
+
+  it("checks map members independently and names the failing member", () => {
+    const built = buildGraphIR(
+      project(
+        track({ id: "good", plugin: "good", values: record({}) }),
+        track({ id: "bad", plugin: "bad", values: record({}) }),
+        consumer("shifted", "translate", { good: "good", bad: "bad" }),
+      ),
+      catalog(
+        producer("good", { values: VALUES }),
+        producer("bad", {
+          values: { kind: "table", schema: { row: { fields: { x: { kind: "string" } } } } },
+        }),
+        {
+          ...plugin("translate", { values: VALUES }),
+          inputs: {
+            values: { kind: "record", fields: { dx: { kind: "number" } } },
+            requires: { data: shape({ outputs: { values: VALUES }, binding: "map" }) },
+          },
+        },
+      ),
+    );
+
+    const mismatch = built.diagnostics.find(({ ruleId }) => ruleId === "slot-incompatible");
+    expect(mismatch?.path).toContain(".data.bad.outputs.values");
+  });
+
+  it("treats an empty undeclared source as unproven", () => {
+    const plugins = new PluginCatalog();
+    plugins.register(plugin("translate", { values: VALUES }));
+    const built = buildGraphIR(
+      project(
+        track({ id: "empty", values: table(), model: "UnknownModel" }),
+        consumer("shifted", "translate", "empty"),
+      ),
+      plugins,
+    );
+
+    expect(rules(built)).toContain("slot-unproven");
+  });
+
+  it("rechecks when a source contract changes", () => {
+    const plugins = catalog(plugin("translate", { values: VALUES }));
+    const accepted = buildGraphIR(
+      project(
+        source("points", table(row("a", { x: 0, y: 1 }))),
+        consumer("shifted", "translate", "points"),
+      ),
+      plugins,
+    );
+    expect(accepted.diagnostics).toEqual([]);
+
+    const replaced = buildGraphIR(
+      project(
+        track({ id: "points", values: table(row("a", { z: 0 })), model: "OtherTable" }),
+        consumer("shifted", "translate", "points"),
+      ),
+      plugins,
+    );
+    expect(rules(replaced)).toContain("slot-incompatible");
+  });
+
+  it("rechecks when a plugin output contract changes", () => {
+    const accepted = buildGraphIR(
+      project(
+        track({ id: "source", plugin: "producer", values: record({}) }),
+        consumer("shifted", "translate", "source"),
+      ),
+      catalog(producer("producer", { values: VALUES }), plugin("translate", { values: VALUES })),
+    );
+    expect(accepted.diagnostics).toEqual([]);
+
+    const replaced = buildGraphIR(
+      project(
+        track({ id: "source", plugin: "producer", values: record({}) }),
+        consumer("shifted", "translate", "source"),
+      ),
+      catalog(producer("producer", { values: RECORD }), plugin("translate", { values: VALUES })),
+    );
+    expect(rules(replaced)).toContain("slot-incompatible");
   });
 });

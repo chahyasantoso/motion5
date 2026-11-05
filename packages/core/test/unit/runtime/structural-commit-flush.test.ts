@@ -56,12 +56,15 @@ const HAND_ID = "hero/hand";
 const MOTION: MotionDefinition = {
   id: MOTION_ID,
   trigger: { type: "manual" },
-  tracks: [{ id: "arm" }, { id: "leg" }],
+  tracks: [
+    { id: "arm", output: { model: "TestRecord" } },
+    { id: "leg", output: { model: "TestRecord" } },
+  ],
 };
 const PROJECT: ProjectDefinition = {
   schemaVersion: 5,
   motions: [MOTION],
-  freeTracks: [{ id: "cursor" }],
+  freeTracks: [{ id: "cursor", output: { model: "TestTable" } }],
 };
 /**
  * One key per node, so an output merge cannot hide a missing publication behind a shared key.
@@ -78,7 +81,7 @@ const compose = (node: { id: string }) => () => ({
 /** Refused by the candidate graph rather than by authored validation, so a commit is attempted. */
 const REJECTED_TRACK: TrackDefinition = {
   id: "hand",
-  plugin: "translate",
+  output: { plugin: "translate" },
   input: { requires: { data: "~/missing" } },
 };
 
@@ -206,10 +209,10 @@ describe("a structural commit ends at one flush", () => {
     const runtime = create();
     runtime.mount(ARM_ID);
 
-    runtime.track(ARM_ID).replace({ id: "arm", duration: 100 });
+    runtime.track(ARM_ID).replace({ id: "arm", duration: 100, output: { model: "TestRecord" } });
     expect(runtime.graph.registry.get(ARM_ID)?.revision).toBe(1);
 
-    runtime.track(ARM_ID).replace({ id: "arm", duration: 250 });
+    runtime.track(ARM_ID).replace({ id: "arm", duration: 250, output: { model: "TestRecord" } });
 
     // The flush happened and the candidate was dropped, because this composition does not read
     // duration. Seeding a flush is not the same claim as publishing a patch, and the registry is
@@ -232,7 +235,7 @@ describe("a structural commit ends at one flush", () => {
     expect(registry.get(ARM_ID)?.revision).toBe(1);
     const before = runtime.graph.sequence;
 
-    runtime.addTrack({ id: "hand" }, { motionId: MOTION_ID });
+    runtime.addTrack({ id: "hand", output: { model: "TestRecord" } }, { motionId: MOTION_ID });
 
     expect(rig.entries).toEqual(["compile hero/hand", `intrusion ${REENTRANT}`]);
 
@@ -256,7 +259,7 @@ describe("a structural commit ends at one flush", () => {
     runtime.mount(ARM_ID);
     const before = runtime.graph.sequence;
 
-    runtime.track(ARM_ID).replace({ id: "arm", duration: 500 });
+    runtime.track(ARM_ID).replace({ id: "arm", duration: 500, output: { model: "TestRecord" } });
 
     // The sharpest single measurement in this issue, and it is a position rather than a value. The
     // staged Track has not been committed when this hook runs, because `staged.commit()` is a settle
@@ -273,7 +276,11 @@ describe("a structural commit ends at one flush", () => {
     // One flush, and the replacement still lands whole, which is the other half: a refusal the hook
     // kept to itself costs the commit it is part of nothing at all.
     expect(runtime.graph.sequence).toBe(before + 1);
-    expect(runtime.track(ARM_ID).definition).toEqual({ id: "arm", duration: 500 });
+    expect(runtime.track(ARM_ID).definition).toEqual({
+      id: "arm",
+      duration: 500,
+      output: { model: "TestRecord" },
+    });
 
     runtime.dispose();
   });
@@ -284,7 +291,7 @@ describe("a structural commit ends at one flush", () => {
     const registry = runtime.graph.registry;
     const before = runtime.graph.sequence;
 
-    runtime.addTrack({ id: "hand" }, { motionId: MOTION_ID });
+    runtime.addTrack({ id: "hand", output: { model: "TestRecord" } }, { motionId: MOTION_ID });
 
     // The version where the seed names a node the candidate graph does not have. The compile has
     // already written this node into the compiled map and `replaceGraph` has not run, so the publisher

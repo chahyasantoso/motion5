@@ -10,8 +10,8 @@ export const freeTrackProject = {
     {
       id: "hero",
       trigger: { type: "manual" },
-      tracks: [{ id: "pointer" }],
+      tracks: [{ id: "pointer", output: { model: "TestRecord" } }],
     },
   ],
-  freeTracks: [{ id: "cursor" }],
+  freeTracks: [{ id: "cursor", output: { model: "TestTable" } }],
 } as const;

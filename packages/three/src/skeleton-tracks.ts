@@ -21,7 +21,10 @@ export function skeletonTracks(
   binding: SkeletonBinding,
   { idPrefix }: SkeletonTracksOptions,
 ): readonly TrackDefinition[] {
-  const validation = validateTrackDefinition({ id: idPrefix, input: {} }, "track");
+  const validation = validateTrackDefinition(
+    { id: idPrefix, input: {}, output: { model: "Point3d" } },
+    "track",
+  );
   if (validation.diagnostics.some((diagnostic) => diagnostic.path.endsWith(".id")))
     throw new TypeError("Skeleton track idPrefix must be a non-empty unqualified track id.");
   assertCapturedHierarchy(binding);
@@ -81,28 +84,28 @@ export function skeletonTracks(
   return [
     {
       id: rootId,
-      type: "root3d",
+      output: { model: "Point3d" },
       input: {
         values: { x: 0, y: 0, z: 0, rotation: 0, rotationX: 0, rotationY: 0 },
       },
     },
     {
       id: bodyId,
-      type: "body3d",
+      output: { model: "Body3d" },
       input: {
         values: bodyValues,
       },
     },
     {
       id: solvedId,
-      type: "solved3d",
+      output: { model: "Solved3d" },
       input: {
         values: solvedValues,
       },
     },
     {
       id: poseId,
-      plugin: "fk3d",
+      output: { plugin: "fk3d" },
       input: {
         values: {},
         requires: {

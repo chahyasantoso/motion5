@@ -16,6 +16,7 @@ import {
   type EnvelopeScenario,
 } from "../support/ik-envelope";
 import { iterationsOf } from "../support/solve-quality";
+import { testModels } from "../../../core/test/support/test-models";
 
 // Issue #349 phase 7 and ADR-113: the deterministic half of the 2D IK envelope.
 //
@@ -119,7 +120,7 @@ describe("IK envelope (#349 phase 7, ADR-113)", () => {
 
   it("EN-4 independent rigs in one runtime republish alone: a seek on one rig reaches no other", () => {
     const count = 24;
-    const plugins = new PluginCatalog();
+    const plugins = new PluginCatalog({ models: testModels });
     plugins.registerAll([fkPlugin, ikPlugin]);
     const runtime = new Engine({
       clock: createManualClock(),

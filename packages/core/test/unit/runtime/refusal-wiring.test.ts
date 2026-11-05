@@ -28,7 +28,13 @@ const NODE_ID = "hero/arm";
 
 const PROJECT: ProjectDefinition = {
   schemaVersion: 5,
-  motions: [{ id: "hero", trigger: { type: "manual" }, tracks: [{ id: "arm" }] }],
+  motions: [
+    {
+      id: "hero",
+      trigger: { type: "manual" },
+      tracks: [{ id: "arm", output: { model: "TestRecord" } }],
+    },
+  ],
 };
 
 const compose = (node: { id: string }) => () => ({
@@ -78,7 +84,11 @@ describe("the project runtime refuses through the union rather than inline", () 
 
     const read = refusalIn(thrownBy(() => project.motion("nope")));
     const destroyed = refusalIn(thrownBy(() => project.destroyMotion("nope")));
-    const added = refusalIn(thrownBy(() => project.addTrack({ id: "a" }, { motionId: "nope" })));
+    const added = refusalIn(
+      thrownBy(() =>
+        project.addTrack({ id: "a", output: { model: "TestRecord" } }, { motionId: "nope" }),
+      ),
+    );
 
     for (const refusal of [read, destroyed, added]) {
       expect(refusal.kind).toBe("unknown-motion");

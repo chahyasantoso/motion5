@@ -1,4 +1,4 @@
-import type { FlatRecord, Scalar, Table, Value } from "../contract/v5";
+import type { FlatRecord, Scalar, Table, Value, ValueSpec } from "../contract/v5";
 import type { ParsedCell, ParsedValues } from "../contract/v5-parse";
 import { freezeValue } from "../domain/values";
 import { unreachable } from "../lang/exhaustive";
@@ -24,8 +24,9 @@ function cellsOf(cells: Readonly<Record<string, ParsedCell>>): Record<string, Sc
 }
 
 /** The value a parsed track stands for at its first stop; commit checks read only its shape and static cells. */
-export function authoringValue(values: ParsedValues | undefined): Value {
-  if (values === undefined) return freezeValue([]) as Table;
+export function authoringValue(values: ParsedValues | undefined, spec?: ValueSpec): Value {
+  if (values === undefined)
+    return spec?.kind === "record" ? (freezeValue({}) as FlatRecord) : (freezeValue([]) as Table);
   switch (values.kind) {
     case "table": {
       const rows = values.rows.map((row) => ({ id: row.id, cells: cellsOf(row.cells) }));

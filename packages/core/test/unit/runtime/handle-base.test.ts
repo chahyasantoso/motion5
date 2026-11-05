@@ -56,7 +56,7 @@ const RUNTIME_SOURCE = fileURLToPath(
  */
 const LEG_TRACK: TrackDefinition = {
   id: "leg",
-  plugin: "fk",
+  output: { plugin: "fk" },
   input: { values: {}, requires: { base: ARM, members: { left: HAND } } },
 };
 const PROJECT: ProjectDefinition = {
@@ -65,7 +65,11 @@ const PROJECT: ProjectDefinition = {
     {
       id: MOTION,
       trigger: { type: "manual" },
-      tracks: [{ id: "arm" }, { id: "hand" }, LEG_TRACK],
+      tracks: [
+        { id: "arm", output: { model: "TestRecord" } },
+        { id: "hand", output: { model: "TestRecord" } },
+        LEG_TRACK,
+      ],
     },
   ],
 };
@@ -91,7 +95,7 @@ const compose = (node: { id: string }) => () => ({
 const MOTION_MEMBER_ARGUMENTS: Readonly<Record<string, readonly unknown[]>> = {
   definition: [],
   trackIds: [],
-  addTrack: [{ id: "tail" } satisfies TrackDefinition],
+  addTrack: [{ id: "tail", output: { model: "TestTable" } } satisfies TrackDefinition],
   track: ["tail"],
   tryTrack: ["tail"],
   setTrigger: [{ type: "manual" } satisfies MotionDefinition["trigger"]],

@@ -21,9 +21,9 @@ import { runPlan, type PlanPorts } from "../../../src/runtime/run-plan";
  * and nothing after it is rolled back. See ADR-035, ADR-045, ADR-067 and ADR-071.
  */
 
-const ARM: TrackDefinition = { id: "arm" };
-const ARM_LONGER: TrackDefinition = { id: "arm", duration: 500 };
-const HAND: TrackDefinition = { id: "hand", duration: 250 };
+const ARM: TrackDefinition = { id: "arm", output: { model: "TestRecord" } };
+const ARM_LONGER: TrackDefinition = { id: "arm", duration: 500, output: { model: "TestRecord" } };
+const HAND: TrackDefinition = { id: "hand", duration: 250, output: { model: "TestRecord" } };
 const HERO: MotionDefinition = { id: "hero", trigger: { type: "manual" }, tracks: [] };
 const ARM_NODE = "hero/arm";
 const HAND_NODE = "hero/hand";

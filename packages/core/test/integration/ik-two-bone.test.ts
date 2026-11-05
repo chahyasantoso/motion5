@@ -10,6 +10,7 @@ import { PluginCatalog } from "../../src/domain/plugin-catalog";
 import { fkPlugin } from "@motion5/plugins/fk";
 import { ikPlugin } from "@motion5/plugins/ik";
 import { transformPlugin } from "@motion5/plugins/transform";
+import { testModels } from "../support/test-models";
 
 const SIX_NODE_IK_PROJECT: ProjectDefinition = {
   schemaVersion: 5,
@@ -20,12 +21,12 @@ const SIX_NODE_IK_PROJECT: ProjectDefinition = {
       tracks: [
         {
           id: "shoulder",
-          type: "root2d",
+          output: { model: "Point2d" },
           input: { values: { x: 200, y: 300, rotation: 0 } },
         },
         {
           id: "body",
-          type: "body2d",
+          output: { model: "Body2d" },
           input: {
             values: [
               { id: "upper-arm", cells: { length: 80, rotation: 0 } },
@@ -36,14 +37,14 @@ const SIX_NODE_IK_PROJECT: ProjectDefinition = {
         },
         {
           id: "goals",
-          type: "goals2d",
+          output: { model: "Goals2d" },
           input: {
             values: [{ id: "hand-target", cells: { memberId: "hand", x: 320, y: 340 } }],
           },
         },
         {
           id: "arm-solve",
-          plugin: "ik",
+          output: { plugin: "ik" },
           input: {
             values: {},
             requires: { chain: "body", goals: "goals", base: "shoulder" },
@@ -51,7 +52,7 @@ const SIX_NODE_IK_PROJECT: ProjectDefinition = {
         },
         {
           id: "pose",
-          plugin: "fk",
+          output: { plugin: "fk" },
           input: {
             values: {},
             requires: { chain: "body", solved: "arm-solve", base: "shoulder" },
@@ -64,7 +65,7 @@ const SIX_NODE_IK_PROJECT: ProjectDefinition = {
 
 function createEngine(project: ProjectDefinition) {
   const seam = createRealGsapSeam();
-  const plugins = new PluginCatalog();
+  const plugins = new PluginCatalog({ models: testModels });
   plugins.registerAll([transformPlugin, fkPlugin, ikPlugin]);
   return new Engine({
     clock: createManualClock(),
@@ -126,12 +127,12 @@ describe("Two-bone IK Integration (Slice C3)", () => {
           tracks: [
             {
               id: "shoulder",
-              type: "root2d",
+              output: { model: "Point2d" },
               input: { values: { x: 200, y: 300, rotation: 0 } },
             },
             {
               id: "body",
-              type: "body2d",
+              output: { model: "Body2d" },
               input: {
                 values: [
                   { id: "upper-arm", cells: { length: 80, rotation: 0 } },
@@ -142,7 +143,7 @@ describe("Two-bone IK Integration (Slice C3)", () => {
             },
             {
               id: "goals",
-              type: "goals2d",
+              output: { model: "Goals2d" },
               input: {
                 values: [
                   {
@@ -164,7 +165,7 @@ describe("Two-bone IK Integration (Slice C3)", () => {
             },
             {
               id: "arm-solve",
-              plugin: "ik",
+              output: { plugin: "ik" },
               input: {
                 values: {},
                 requires: { chain: "body", goals: "goals", base: "shoulder" },
@@ -172,7 +173,7 @@ describe("Two-bone IK Integration (Slice C3)", () => {
             },
             {
               id: "pose",
-              plugin: "fk",
+              output: { plugin: "fk" },
               input: {
                 values: {},
                 requires: { chain: "body", solved: "arm-solve", base: "shoulder" },

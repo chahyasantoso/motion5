@@ -10,6 +10,7 @@ import { ROOT_2D_SPEC } from "../../src/root/fields";
 import { SOLVED_2D_SPEC } from "../../src/solved/fields";
 import { createManualClock } from "@motion5/core";
 import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/testing";
+import { testModels } from "../../../core/test/support/test-models";
 
 function hold(value: number) {
   return value;
@@ -57,7 +58,7 @@ const reachPlugin: PluginDefinition = {
 
 const bone: TrackDefinition = {
   id: "thigh",
-  plugin: "fk",
+  output: { plugin: "fk" },
   input: {
     values: {},
     requires: { chain: "walk/body", solved: "walk/solved", base: "walk/pelvis" },
@@ -66,7 +67,7 @@ const bone: TrackDefinition = {
 
 const bodyTrack: TrackDefinition = {
   id: "body",
-  type: "body2d",
+  output: { model: "Body2d" },
   input: {
     values: [{ id: "thigh", cells: { length: 50, rotation: 45, weight: 1 } }],
   },
@@ -74,7 +75,7 @@ const bodyTrack: TrackDefinition = {
 
 const solvedTrack: TrackDefinition = {
   id: "solved",
-  type: "solved2d",
+  output: { model: "Solved2d" },
   input: {
     values: [{ id: "thigh", cells: { rotation: 45 } }],
   },
@@ -90,7 +91,7 @@ function rig(child: TrackDefinition): ProjectDefinition {
         tracks: [
           {
             id: "pelvis",
-            type: "root2d",
+            output: { model: "Point2d" },
             input: {
               values: { x: ramp(0, 200), y: hold(100), rotation: hold(0) },
             },
@@ -105,7 +106,7 @@ function rig(child: TrackDefinition): ProjectDefinition {
 }
 
 function rigRegistry(): PluginCatalog {
-  const plugins = new PluginCatalog();
+  const plugins = new PluginCatalog({ models: testModels });
   plugins.registerAll([transformPlugin, fkPlugin]);
   return plugins;
 }
@@ -159,7 +160,7 @@ describe("plugin-owned requirements end to end", () => {
     };
     const unbound: TrackDefinition = {
       id: "thigh",
-      plugin: "opt-reach",
+      output: { plugin: "opt-reach" },
       input: { values: { length: 50 } },
     };
     const plugins = rigRegistry();
@@ -181,7 +182,7 @@ describe("plugin-owned requirements end to end", () => {
   it("Q-9 refuses a binding whose source is not a node in the graph with edge-unknown-source", () => {
     const dangling: TrackDefinition = {
       id: "thigh",
-      plugin: "fk",
+      output: { plugin: "fk" },
       input: {
         values: {},
         requires: { chain: "walk/body", solved: "walk/solved", base: "walk/missing" },
@@ -193,7 +194,7 @@ describe("plugin-owned requirements end to end", () => {
   it("Q-10 treats two slots bound to one source as two edges rather than a duplicate", () => {
     const span: TrackDefinition = {
       id: "span",
-      plugin: "reach",
+      output: { plugin: "reach" },
       input: {
         values: { weight: hold(1) },
         requires: { base: "walk/pelvis", destination: "walk/pelvis" },
@@ -225,7 +226,7 @@ describe("plugin-owned requirements end to end", () => {
           tracks: [
             {
               id: "pelvis",
-              type: "root2d",
+              output: { model: "Point2d" },
               input: {
                 values: { x: hold(0), y: hold(0), rotation: hold(30) },
               },
@@ -234,7 +235,7 @@ describe("plugin-owned requirements end to end", () => {
             solvedTrack,
             {
               id: "thigh",
-              plugin: "fk",
+              output: { plugin: "fk" },
               input: {
                 values: {},
                 requires: { chain: "walk/body", solved: "walk/solved", base: "walk/pelvis" },
@@ -262,7 +263,7 @@ describe("plugin-owned requirements end to end", () => {
   it("Q-12 refuses a binding to a slot the plugin never declared with slot-unknown", () => {
     const bad: TrackDefinition = {
       id: "thigh",
-      plugin: "fk",
+      output: { plugin: "fk" },
       input: {
         values: {},
         requires: {

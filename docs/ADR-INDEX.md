@@ -149,3 +149,4 @@ as superseded is still the record to read for why.
 - ADR-142 — The AI edit, checkpoint and handover automation is removed — Accepted, 2026-10-23 — [ADR-142-the-ai-edit-checkpoint-and-handover-automation-is-removed.md](./ADR-142-the-ai-edit-checkpoint-and-handover-automation-is-removed.md)
 - ADR-143 — Identified plugins cut over at their existing public paths — Accepted, 2026-10-25 — [ADR-143-identified-plugin-public-cutover.md](./ADR-143-identified-plugin-public-cutover.md)
 - ADR-144 — Identified tables, table-or-record values, and explicit plugins — Accepted, 2026-10-29 — [ADR-144-identified-tables-records-and-explicit-plugins.md](./ADR-144-identified-tables-records-and-explicit-plugins.md)
+- ADR-145 — One track kind and nominal models (v5.2) — Accepted, 2026-11-05 — [ADR-145-one-track-kind-and-models.md](./ADR-145-one-track-kind-and-models.md)

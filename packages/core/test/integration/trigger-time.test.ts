@@ -21,6 +21,7 @@ function track(id: string) {
         ],
       }),
     },
+    output: { model: "TestRecord" },
   };
 }
 function loadTimeMotion() {

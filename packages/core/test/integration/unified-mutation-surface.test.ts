@@ -2,11 +2,13 @@ import { describe, expect, it } from "vitest";
 import { shape } from "@motion5/core/plugin-api";
 import { Engine } from "../../src/engine";
 import { StaleTrackHandleError } from "../../src/contract/track-handle";
+import { defineModel } from "../../src/contract/v5";
 import type { PluginDefinition, ProjectDefinition, TrackDefinition } from "../../src/contract/v5";
 import { PluginCatalog } from "../../src/domain/plugin-catalog";
 import { createManualClock } from "../../src/ports/clock";
 import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
 import { record } from "../support/v5-builders";
+import { testModels } from "../support/test-models";
 
 function ramp(from: number, to: number) {
   return [
@@ -14,6 +16,11 @@ function ramp(from: number, to: number) {
     { p: 1, v: to },
   ];
 }
+const XRecord = defineModel({
+  id: "XRecord",
+  spec: { kind: "record", fields: { x: { kind: "number" } } },
+});
+
 const LINK: PluginDefinition = {
   id: "link",
   inputs: {
@@ -30,15 +37,20 @@ const LINK: PluginDefinition = {
   },
 };
 function catalog(): PluginCatalog {
-  const plugins = new PluginCatalog();
+  const plugins = new PluginCatalog({ models: [...testModels, XRecord] });
   plugins.register(LINK);
   return plugins;
 }
 function track(id: string, from: number, to: number, parent?: string): TrackDefinition {
-  if (parent === undefined) return { id, input: { values: record({ x: ramp(from, to) }) } };
+  if (parent === undefined)
+    return {
+      id,
+      input: { values: record({ x: ramp(from, to) }) },
+      output: { model: "XRecord" },
+    };
   return {
     id,
-    plugin: LINK.id,
+    output: { plugin: LINK.id },
     input: { values: record({}), requires: { parent } },
   };
 }

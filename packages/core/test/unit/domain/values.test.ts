@@ -27,7 +27,7 @@ describe("immutable value snapshots", () => {
       id: "~/tag",
       owner: "free",
       authoredIndex: 0,
-      track: { id: "tag" },
+      track: { id: "tag", output: { model: "TestRecord" } },
       edges: [],
       // @ts-expect-error null is not a scalar, which is the composition the publisher must refuse.
       compose,

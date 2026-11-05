@@ -239,10 +239,10 @@ export function independentRigsProject(count: number): ProjectDefinition {
         id: `rig-${index}`,
         trigger: { type: "manual" as const },
         tracks: [
-          { id: "root", type: "root2d", input: { values: { x, y, rotation: 0 } } },
+          { id: "root", output: { model: "Point2d" }, input: { values: { x, y, rotation: 0 } } },
           {
             id: "body",
-            type: "body2d",
+            output: { model: "Body2d" },
             input: {
               values: [
                 { id: "upper", cells: { length: 60, rotation: 0 } },
@@ -252,7 +252,7 @@ export function independentRigsProject(count: number): ProjectDefinition {
           },
           {
             id: "goal",
-            type: "goals2d",
+            output: { model: "Goals2d" },
             input: {
               values: [
                 {
@@ -268,7 +268,7 @@ export function independentRigsProject(count: number): ProjectDefinition {
           },
           {
             id: "solve",
-            plugin: "ik",
+            output: { plugin: "ik" },
             input: {
               values: {},
               requires: { chain: "body", goals: "goal", base: "root" },
@@ -276,7 +276,7 @@ export function independentRigsProject(count: number): ProjectDefinition {
           },
           {
             id: "pose",
-            plugin: "fk",
+            output: { plugin: "fk" },
             input: {
               values: {},
               requires: { chain: "body", solved: "solve", base: "root" },

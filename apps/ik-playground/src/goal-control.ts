@@ -141,7 +141,7 @@ export function createGoalControl(project: Pick<ProjectHandle, "track">): GoalCo
       }
     },
     flip(value) {
-      project.track(nodeId(TENTACLE.solverTrack)).input.values.setField({ field: "flip" }, value);
+      project.track(nodeId(TENTACLE.solverTrack)).input.param.setField({ field: "flip" }, value);
     },
   };
 }

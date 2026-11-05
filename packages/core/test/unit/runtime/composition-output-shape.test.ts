@@ -12,6 +12,7 @@ import {
 } from "../../../src/runtime/graph-publisher";
 import { PatchRegistry } from "../../../src/runtime/patch-registry";
 import { record, track } from "../../support/v5-builders";
+import { testModels } from "../../support/test-models";
 
 const node = (
   id: string,
@@ -22,7 +23,7 @@ const node = (
     id,
     owner: "motion",
     authoredIndex: 0,
-    track: { id },
+    track: { id, output: { model: "TestRecord" } },
     edges: Object.freeze(edges),
     compose,
   });
@@ -46,7 +47,7 @@ const BAD_OUTPUT: PluginDefinition = {
 
 describe("composition and output-shape diagnostics", () => {
   it("diagnoses a plugin returning a non-record composition value", () => {
-    const plugins = new PluginCatalog();
+    const plugins = new PluginCatalog({ models: testModels });
     plugins.register(BAD_OUTPUT);
     const engine = new Engine({
       clock: createManualClock(),
@@ -70,6 +71,7 @@ describe("composition and output-shape diagnostics", () => {
                   { p: 1, v: 1 },
                 ],
               }),
+              model: "TestRecord",
             }),
           ],
         },

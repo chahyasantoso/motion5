@@ -9,6 +9,7 @@ import { createManualClock } from "../../src/ports/clock";
 import type { Patch } from "../../src/runtime/patch-registry";
 import { createFakeScheduler } from "../../src/testing/fakes";
 import { createRealGsapSeam } from "../support/real-gsap";
+import { testModels } from "../support/test-models";
 
 function goalRig(goalsTrack: TrackDefinition): ProjectDefinition {
   return {
@@ -20,12 +21,12 @@ function goalRig(goalsTrack: TrackDefinition): ProjectDefinition {
         tracks: [
           {
             id: "shoulder",
-            type: "root2d",
+            output: { model: "Point2d" },
             input: { values: { x: 200, y: 300, rotation: 0 } },
           },
           {
             id: "body",
-            type: "body2d",
+            output: { model: "Body2d" },
             input: {
               values: [
                 { id: "upper-arm", cells: { length: 80, rotation: 0 } },
@@ -37,7 +38,7 @@ function goalRig(goalsTrack: TrackDefinition): ProjectDefinition {
           goalsTrack,
           {
             id: "arm-solve",
-            plugin: "ik",
+            output: { plugin: "ik" },
             input: {
               values: {},
               requires: { chain: "body", goals: "goals", base: "shoulder" },
@@ -45,7 +46,7 @@ function goalRig(goalsTrack: TrackDefinition): ProjectDefinition {
           },
           {
             id: "pose",
-            plugin: "fk",
+            output: { plugin: "fk" },
             input: {
               values: {},
               requires: { chain: "body", solved: "arm-solve", base: "shoulder" },
@@ -59,7 +60,7 @@ function goalRig(goalsTrack: TrackDefinition): ProjectDefinition {
 
 const STATIC_GOAL = goalRig({
   id: "goals",
-  type: "goals2d",
+  output: { model: "Goals2d" },
   input: {
     values: [{ id: "hand-target", cells: { memberId: "hand", x: 320, y: 340 } }],
   },
@@ -67,7 +68,7 @@ const STATIC_GOAL = goalRig({
 
 const ANIMATED_GOAL = goalRig({
   id: "goals",
-  type: "goals2d",
+  output: { model: "Goals2d" },
   input: {
     values: [
       {
@@ -98,7 +99,7 @@ const NODE_IDS = [
 
 function createEngine(project: ProjectDefinition) {
   const seam = createRealGsapSeam();
-  const plugins = new PluginCatalog();
+  const plugins = new PluginCatalog({ models: testModels });
   plugins.registerAll([transformPlugin, fkPlugin, ikPlugin]);
   return new Engine({
     clock: createManualClock(),

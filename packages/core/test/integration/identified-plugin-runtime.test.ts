@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { shape, typed } from "@motion5/core/plugin-api";
 import {
+  defineModel,
   isModel,
   type DataType,
   type Patch,
@@ -19,10 +20,11 @@ import { createManualClock } from "../../src/ports/clock";
 import { createValueEvaluator } from "../../src/runtime/evaluate-values";
 import { LocalInput } from "../../src/runtime/local-input";
 import { ComputedProcessor, defaultPluginValues } from "../../src/runtime/processors/computed";
-import type { SourceRef } from "../../src/runtime/source-ref";
+import type { BoundSlot, BoundSlots } from "../../src/runtime/bound-slot";
 import { Track } from "../../src/runtime/track";
 import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
 import { outputOf, project, record, row, table, track } from "../support/v5-builders";
+import { testModels } from "../support/test-models";
 
 type TranslateValues = Readonly<Record<"dx" | "dy", number>>;
 type TranslateInput = ResolvedInput<TranslateValues> & {
@@ -33,6 +35,18 @@ const POINT: ValueSpec = {
   kind: "table",
   schema: { row: { fields: { x: { kind: "number" }, y: { kind: "number" } } } },
 };
+
+const PointTable = defineModel({
+  id: "PointTable",
+  spec: POINT,
+});
+
+const HardeningSource = defineModel({
+  id: "HardeningSource",
+  legacyTypeId: "hardening-type",
+  spec: POINT,
+  parse: () => ({ ok: true, value: { tag: "parsed-tag" } }),
+});
 
 const TRANSLATE: PluginDefinition<TranslateInput> = {
   id: "translate",
@@ -60,7 +74,7 @@ const TRANSLATE: PluginDefinition<TranslateInput> = {
 function catalog<Input extends ResolvedInput>(
   ...plugins: readonly PluginDefinition<Input>[]
 ): PluginCatalog {
-  const result = new PluginCatalog();
+  const result = new PluginCatalog({ models: [...testModels, PointTable, HardeningSource] });
   result.registerAll(plugins);
   return result;
 }
@@ -95,7 +109,11 @@ function patchesAt(
 }
 
 function point(id: string, x: number, y: number) {
-  return track({ id, values: table(row("point-a", { x, y })) });
+  return track({
+    id,
+    values: table(row("point-a", { x, y })),
+    model: "PointTable",
+  });
 }
 
 function shifted(id: string, dx: number, dy: number, source: string) {
@@ -264,10 +282,7 @@ describe("identified plugin runtime", () => {
       track({
         id: "points",
         values: table(),
-        schema: {
-          kind: "table",
-          schema: { row: { fields: { x: { kind: "number" }, y: { kind: "number" } } } },
-        },
+        model: "PointTable",
       }),
       track({
         id: "empty-ok",
@@ -299,8 +314,16 @@ describe("identified plugin runtime", () => {
       },
     };
     const definition = project([
-      track({ id: "upper", values: table(row("upper-a", { x: 1, y: 2 })) }),
-      track({ id: "lower", values: table(row("lower-a", { x: 3, y: 4 })) }),
+      track({
+        id: "upper",
+        values: table(row("upper-a", { x: 1, y: 2 })),
+        model: "PointTable",
+      }),
+      track({
+        id: "lower",
+        values: table(row("lower-a", { x: 3, y: 4 })),
+        model: "PointTable",
+      }),
       track({
         id: "both",
         plugin: "concat",
@@ -314,6 +337,34 @@ describe("identified plugin runtime", () => {
     const values = outputOf(patches.get("demo/both"), "values");
     if (!Array.isArray(values)) throw new Error("Expected a table output.");
     expect(values.map(({ id }) => id)).toEqual(["lower-a", "upper-a"]);
+  });
+
+  it("keeps the map binding diagnostic for an authored empty map", () => {
+    const emptyMap: PluginDefinition = {
+      id: "empty-map",
+      inputs: {
+        values: { kind: "record", fields: { n: { kind: "number" } } },
+        requires: { data: shape({ outputs: { values: POINT }, binding: "map" }) },
+      },
+      outputs: { values: POINT },
+      transform() {
+        return { values: table() };
+      },
+    };
+    const patch = runOne(
+      emptyMap,
+      track({
+        id: "empty-map",
+        plugin: "empty-map",
+        values: record({ n: 1 }),
+        requires: { data: {} },
+      }),
+    );
+    expect(patch?.status).toBe("error");
+    if (patch?.status === "error")
+      expect(patch.diagnostics.map(({ message }) => message)).toContain(
+        "Slot 'data' requires a map binding.",
+      );
   });
 
   it("refuses a malformed first output set", () => {
@@ -374,7 +425,7 @@ describe("identified plugin runtime", () => {
   });
 
   for (const memberKey of ["__proto__", "constructor"] as const) {
-    it(`preserves ${memberKey} as an own member key in requires, structures, and refs`, () => {
+    it(`preserves ${memberKey} as an own member key in requires, structures, and bound slots`, () => {
       interface HardeningStructure {
         readonly tag: string;
       }
@@ -418,10 +469,11 @@ describe("identified plugin runtime", () => {
         },
       };
 
-      const sourceTrack = {
-        ...track({ id: "src", values: table(row("p1", { x: 1, y: 2 })) }),
-        type: "hardening-type",
-      };
+      const sourceTrack = track({
+        id: "src",
+        values: table(row("p1", { x: 1, y: 2 })),
+        model: "HardeningSource",
+      });
 
       const binding = JSON.parse(`{"${memberKey}": "src"}`) as Record<string, string>;
       const consumerTrack = track({
@@ -454,17 +506,17 @@ describe("identified plugin runtime", () => {
           }
 
           expect(composeSpy).toHaveBeenCalled();
-          const sources = composeSpy.mock.calls[0]?.[1];
-          expect(sources).toBeDefined();
-          const sourcesRecord = sources?.data;
-          expect(typeof sourcesRecord).toBe("object");
-          if (typeof sourcesRecord === "object" && sourcesRecord !== null) {
-            expect(Object.hasOwn(sourcesRecord, memberKey)).toBe(true);
-            expect(Object.getPrototypeOf(sourcesRecord)).toBe(Object.prototype);
-            const memberRef = (sourcesRecord as Record<string, unknown>)[memberKey] as
-              | SourceRef
-              | undefined;
-            expect(memberRef?.sourceId).toBe("demo/src");
+          const slots = composeSpy.mock.calls[0]?.[0];
+          expect(slots).toBeDefined();
+          const entry = slots?.data;
+          expect(entry?.kind).toBe("map");
+          if (entry?.kind === "map") {
+            expect(Object.hasOwn(entry.members, memberKey)).toBe(true);
+            expect(Object.getPrototypeOf(entry.members)).toBe(Object.prototype);
+            const member = entry.members[memberKey];
+            expect(member?.sourceId).toBe("demo/src");
+            expect(member?.structure).toBeDefined();
+            expect(member?.values).toEqual({ values: table(row("p1", { x: 1, y: 2 })) });
           }
 
           expect(capturedRequires).toBeDefined();
@@ -485,7 +537,7 @@ describe("identified plugin runtime", () => {
     });
   }
 
-  it("PluginTrack.compose preserves __proto__ as an own member key in resolved memberStructures", () => {
+  it("ComputedProcessor.compose preserves __proto__ as an own member key in resolved memberStructures", () => {
     interface HardeningStructure {
       readonly tag: string;
     }
@@ -534,21 +586,23 @@ describe("identified plugin runtime", () => {
     const trackInstance = new Track("test-node", localInput, processor);
 
     const memberStructure = { tag: "parsed-tag" } as Structure<HardeningStructure>;
-    const rawRequires = JSON.parse(
-      '{"__proto__": {"values": [{"id": "p", "cells": {"x": 1, "y": 2}}]}}',
-    ) as Record<string, unknown>;
-    const rawSourcesMap = JSON.parse('{"__proto__": null}') as Record<string, unknown>;
-    Object.defineProperty(rawSourcesMap, "__proto__", {
-      value: { sourceId: "src", structure: memberStructure },
+    const member: BoundSlot = Object.freeze({
+      sourceId: "src",
+      values: { values: table(row("p", { x: 1, y: 2 })) },
+      structure: memberStructure,
+    });
+    const members: Record<string, BoundSlot> = {};
+    Object.defineProperty(members, "__proto__", {
+      value: member,
       enumerable: true,
       configurable: true,
       writable: true,
     });
+    const slots: BoundSlots = Object.freeze({
+      data: Object.freeze({ kind: "map", members: Object.freeze(members) }),
+    });
 
-    trackInstance.compose(
-      { data: rawRequires },
-      { data: rawSourcesMap as Record<string, SourceRef> },
-    );
+    trackInstance.compose(slots);
     expect(composeStructures).toBeDefined();
     const dataStructures = composeStructures?.data;
     expect(dataStructures).toBeDefined();

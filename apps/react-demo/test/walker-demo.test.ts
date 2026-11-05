@@ -15,6 +15,7 @@ import {
 } from "../../../packages/core/src/testing/fakes";
 import type { ProjectRuntime } from "../../../packages/core/src/runtime/project-runtime";
 import { armTracks, initialWalkerProject, WALK_SCROLL_SOURCE } from "../src/full-body-project";
+import { testModels } from "../../../packages/core/test/support/test-models";
 
 interface FakeScroll {
   subscribe(onProgress: (progress: number) => void): () => void;
@@ -44,7 +45,7 @@ function load() {
   const clock = createManualClock();
   const scheduler = createFakeScheduler();
   const scroll = scrollSource();
-  const plugins = new PluginCatalog();
+  const plugins = new PluginCatalog({ models: testModels });
   plugins.register(fkPlugin);
   const project = new Engine({
     clock,

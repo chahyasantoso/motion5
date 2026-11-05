@@ -178,3 +178,17 @@ export const Points3d: Model<unknown, PointsStructure> = defineModel({
     return ok({ ids: value.map((r) => r.id) });
   },
 });
+
+/** Every first-party model a host registers so authored sources can name it. */
+export const builtinModels: readonly Model<unknown, unknown>[] = Object.freeze([
+  Body2d,
+  Body3d,
+  Goals2d,
+  Goals3d,
+  Point2d,
+  Point3d,
+  Solved2d,
+  Solved3d,
+  Points2d,
+  Points3d,
+]);

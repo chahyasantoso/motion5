@@ -20,12 +20,16 @@ function ramp(from: number, to: number) {
   ];
 }
 function armTrack(from: number, to: number): TrackDefinition {
-  return { id: "arm", input: { values: record({ x: ramp(from, to) }) } };
+  return {
+    id: "arm",
+    input: { values: record({ x: ramp(from, to) }) },
+    output: { model: "TestRecord" },
+  };
 }
 /** Refused because the plugin id names nothing the engine admits. */
 const UNRESOLVABLE: TrackDefinition = {
   id: "arm",
-  plugin: "nope",
+  output: { plugin: "nope" },
   input: { values: record({ x: ramp(0, 250) }) },
 };
 /** Refused by the owning Motion after the compiled replacement has already succeeded. */
@@ -33,6 +37,7 @@ const REFUSED_BY_MOTION: TrackDefinition = {
   id: "arm",
   duration: 0,
   input: { values: record({ x: ramp(0, 400) }) },
+  output: { model: "TestRecord" },
 };
 
 function load(): ProjectHandle {

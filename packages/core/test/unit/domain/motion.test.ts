@@ -118,7 +118,7 @@ describe("Motion composite", () => {
       "track-added",
       new Track({ interpolator, nodeId: "~/track-added" }),
     );
-    (motion as any).addTrack({ id: "track-added" });
+    (motion as any).addTrack({ id: "track-added", output: { model: "TestRecord" } });
     expect(motion.tracks.map(({ id }) => id)).toEqual([
       "track-0",
       "track-1",
@@ -129,7 +129,8 @@ describe("Motion composite", () => {
   });
   it("addTrack throws on duplicate track id", () => {
     const { motion } = createMotion();
-    const addDuplicate = () => (motion as any).addTrack({ id: "track-0" });
+    const addDuplicate = () =>
+      (motion as any).addTrack({ id: "track-0", output: { model: "TestRecord" } });
     expect(addDuplicate).toThrow(/Duplicate Motion track id/);
   });
   it("removeTrack removes a track and updates snapshot", () => {
@@ -142,7 +143,7 @@ describe("Motion composite", () => {
     const initialSchedule = motion.schedule();
     expect(initialSchedule).toEqual([0, 0.1, 0.2]);
     registry.register("track-added", new Track({ interpolator, nodeId: "~/track-added" }));
-    (motion as any).addTrack({ id: "track-added" });
+    (motion as any).addTrack({ id: "track-added", output: { model: "TestRecord" } });
     // schedule() evaluates based on current tracks, but schedule offset formula is tracks.map
     // When reflow() is called, it returns the updated schedule
     expect(motion.reflow()).toEqual([0, 0.1, 0.2, 0.30000000000000004]);

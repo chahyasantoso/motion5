@@ -14,9 +14,10 @@ import {
   type BoneOutcome,
 } from "../src/skeleton";
 import { syntheticSkeleton } from "./support/synthetic-skeleton";
+import { testModels } from "../../core/test/support/test-models";
 
 function load(tracks: readonly TrackDefinition[]) {
-  const plugins = new PluginCatalog();
+  const plugins = new PluginCatalog({ models: testModels });
   plugins.register(fk3dPlugin);
   const project = new Engine({
     plugins,
@@ -88,7 +89,9 @@ describe("captured skeleton tracks", () => {
     const tracks = skeletonTracks(captureSkeleton(rig.skeleton, rig), { idPrefix: "a" });
     expect(tracks.map((track) => track.id)).toEqual(["a-root", "a-body", "a-solved", "a-pose"]);
     const pose = tracks.find((track) => track.id === "a-pose");
-    expect(pose?.plugin).toBe("fk3d");
+    expect(pose !== undefined && "plugin" in pose.output ? pose.output.plugin : undefined).toBe(
+      "fk3d",
+    );
     expect(pose?.input?.requires).toEqual({
       chain: "a-body",
       solved: "a-solved",

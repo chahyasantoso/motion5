@@ -1,4 +1,5 @@
 import type { Diagnostic, TrackDefinition } from "../contract/v5";
+import { outputPluginId } from "../contract/v5";
 
 interface RequiresBinding {
   readonly plugin: string;
@@ -75,7 +76,7 @@ export function collectDependencyEdges(
   edges: GraphEdge[],
   diagnostics: Diagnostic[],
 ): void {
-  const plugin = track.plugin;
+  const plugin = outputPluginId(track.output);
   const requires = track.input?.requires;
   if (plugin === undefined || requires === undefined) return;
   if (!isRecord(requires)) {

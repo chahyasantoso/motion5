@@ -28,6 +28,7 @@ function ramp(id: string) {
         ],
       }),
     },
+    output: { model: "TestRecord" },
   };
 }
 

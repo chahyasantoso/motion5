@@ -1,5 +1,4 @@
 import type { Diagnostic, SourceBinding, TrackDefinition, TrackInput } from "../contract/v5";
-import { isModel } from "../contract/v5";
 import { diagnostic } from "../contract/diagnostics";
 import { validateTrackDefinition } from "../contract/validate-v5";
 import type { CommittedContract } from "../graph/committed-contract";
@@ -8,7 +7,6 @@ import { collectTrack, finalizeGraph, type GraphNode } from "../graph/ir";
 import { qualifyFreeTrack, qualifyMotionTrack } from "../graph/ids";
 import { acceptedOutcome, refusedOutcomeFrom, type Outcome } from "../lang/outcome";
 import { unreachable } from "../lang/exhaustive";
-import type { PluginCapabilities } from "../ports/plugin-capabilities";
 import { AUTHORED, type ValueState } from "./value-state";
 import {
   clearsOverlay,
@@ -103,32 +101,6 @@ function withRequiresInput(
   return { ...track, input };
 }
 
-/** Parser holds no registry, so only the declared input kind is compared here; composition owns
- * the full value check. */
-function pluginShapeDiagnostics(
-  track: TrackDefinition,
-  nodeId: string,
-  capabilities: PluginCapabilities,
-): readonly Diagnostic[] {
-  const plugin = track.plugin;
-  if (plugin === undefined) return Object.freeze([]);
-  const definition = capabilities.pluginDefinition?.(plugin);
-  if (definition === undefined) return Object.freeze([]);
-  const values = track.input?.values;
-  if (values === undefined) return Object.freeze([]);
-  const raw = definition.inputs.values;
-  const spec = isModel(raw) ? raw.spec : (raw ?? { kind: "record" as const });
-  const authored = Array.isArray(values) ? "table" : "record";
-  if (authored === spec.kind) return Object.freeze([]);
-  return Object.freeze([
-    diagnostic(
-      "values-shape-invalid",
-      `${nodeId}.input.values`,
-      `Plugin '${plugin}' declares ${spec.kind} input.`,
-    ),
-  ]);
-}
-
 function validateTrack(
   track: TrackDefinition,
   path: string,
@@ -138,22 +110,31 @@ function validateTrack(
   // Absent predicate refuses every plugin; the graph admitted these already, so admit all.
   const context = {
     isPluginRegistered: environment.isPluginRegistered ?? (() => true),
+    ...(environment.capabilities.pluginDefinition === undefined
+      ? {}
+      : {
+          pluginDefinition: (pluginId: string) =>
+            environment.capabilities.pluginDefinition?.(pluginId),
+        }),
     ...(environment.capabilities.dataType === undefined
       ? {}
       : { dataType: (typeId: string) => environment.capabilities.dataType?.(typeId) }),
     ...(environment.capabilities.model === undefined
       ? {}
       : { model: (typeId: string) => environment.capabilities.model?.(typeId) }),
+    ...(environment.capabilities.modelIds === undefined
+      ? {}
+      : { modelIds: () => environment.capabilities.modelIds?.() }),
+    ...(environment.capabilities.pluginIds === undefined
+      ? {}
+      : { pluginIds: () => environment.capabilities.pluginIds?.() }),
   };
   const validated = validateTrackDefinition(track, path, context);
   switch (validated.kind) {
     case "refused":
       return validated;
-    case "accepted": {
-      const shape = pluginShapeDiagnostics(validated.value, nodeId, environment.capabilities);
-      if (shape.length > 0) return refusedOutcomeFrom([...validated.diagnostics, ...shape]);
+    case "accepted":
       return validated;
-    }
     default:
       return unreachable(validated);
   }
@@ -384,6 +365,8 @@ export function plan(state: PlanState, edit: Edit, environment: PlanEnvironment)
       return planBinding(state, edit, environment);
     case "set-values":
     case "set-field":
+    case "set-param":
+    case "set-param-field":
     case "write-live":
     case "release-live":
       return planValueAsState(state, edit, environment);

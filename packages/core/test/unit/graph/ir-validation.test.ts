@@ -5,8 +5,14 @@ import type { ProjectDefinition } from "../../../src/contract/v5";
 
 const project = (overrides: Partial<ProjectDefinition> = {}): ProjectDefinition => ({
   schemaVersion: 5,
-  motions: [{ id: "hero", trigger: { type: "manual" }, tracks: [{ id: "arm" }] }],
-  freeTracks: [{ id: "cursor" }],
+  motions: [
+    {
+      id: "hero",
+      trigger: { type: "manual" },
+      tracks: [{ id: "arm", output: { model: "TestRecord" } }],
+    },
+  ],
+  freeTracks: [{ id: "cursor", output: { model: "TestTable" } }],
   ...overrides,
 });
 
@@ -30,14 +36,22 @@ describe("graph IR and candidate validation", () => {
             id: "hero",
             trigger: { type: "manual" },
             tracks: [
-              { id: "arm", plugin: "graph-edge", input: { requires: { chain: "~/cursor" } } },
+              {
+                id: "arm",
+                output: { plugin: "graph-edge" },
+                input: { requires: { chain: "~/cursor" } },
+              },
             ],
           },
           {
             id: "caption",
             trigger: { type: "manual" },
             tracks: [
-              { id: "label", plugin: "graph-edge", input: { requires: { chain: "hero/arm" } } },
+              {
+                id: "label",
+                output: { plugin: "graph-edge" },
+                input: { requires: { chain: "hero/arm" } },
+              },
             ],
           },
         ],
@@ -58,8 +72,16 @@ describe("graph IR and candidate validation", () => {
             id: "hero",
             trigger: { type: "manual" },
             tracks: [
-              { id: "arm", plugin: "graph-edge", input: { requires: { chain: "missing" } } },
-              { id: "leg", plugin: "graph-edge", input: { requires: { chain: "leg" } } },
+              {
+                id: "arm",
+                output: { plugin: "graph-edge" },
+                input: { requires: { chain: "missing" } },
+              },
+              {
+                id: "leg",
+                output: { plugin: "graph-edge" },
+                input: { requires: { chain: "leg" } },
+              },
             ],
           },
         ],
@@ -76,8 +98,16 @@ describe("graph IR and candidate validation", () => {
     const result = buildGraphIR(
       project({
         motions: [
-          { id: "hero", trigger: { type: "manual" }, tracks: [{ id: "arm" }] },
-          { id: "hero", trigger: { type: "manual" }, tracks: [{ id: "arm" }] },
+          {
+            id: "hero",
+            trigger: { type: "manual" },
+            tracks: [{ id: "arm", output: { model: "TestRecord" } }],
+          },
+          {
+            id: "hero",
+            trigger: { type: "manual" },
+            tracks: [{ id: "arm", output: { model: "TestRecord" } }],
+          },
         ],
       }),
       builtinRegistry(),
@@ -94,7 +124,11 @@ describe("graph IR and candidate validation", () => {
             id: "hero",
             trigger: { type: "manual" },
             tracks: [
-              { id: "arm", plugin: "graph-edge", input: { requires: { chain: "missing" } } },
+              {
+                id: "arm",
+                output: { plugin: "graph-edge" },
+                input: { requires: { chain: "missing" } },
+              },
             ],
           },
         ],
@@ -108,7 +142,11 @@ describe("graph IR and candidate validation", () => {
             id: "hero",
             trigger: { type: "manual" },
             tracks: [
-              { id: "arm", plugin: "graph-edge", input: { requires: { chain: "missing" } } },
+              {
+                id: "arm",
+                output: { plugin: "graph-edge" },
+                input: { requires: { chain: "missing" } },
+              },
             ],
           },
         ],
@@ -125,12 +163,24 @@ describe("graph IR and candidate validation", () => {
           {
             id: "a",
             trigger: { type: "manual" },
-            tracks: [{ id: "bx", plugin: "graph-edge", input: { requires: { chain: "~/nope" } } }],
+            tracks: [
+              {
+                id: "bx",
+                output: { plugin: "graph-edge" },
+                input: { requires: { chain: "~/nope" } },
+              },
+            ],
           },
           {
             id: "a-b",
             trigger: { type: "manual" },
-            tracks: [{ id: "x", plugin: "graph-edge", input: { requires: { chain: "~/nope" } } }],
+            tracks: [
+              {
+                id: "x",
+                output: { plugin: "graph-edge" },
+                input: { requires: { chain: "~/nope" } },
+              },
+            ],
           },
         ],
       }),

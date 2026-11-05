@@ -57,6 +57,14 @@ export interface TrackInputHandle {
   readonly requires: TrackRequiresHandle;
   /** Authored values this track evaluates, as edit view not record. */
   readonly values: TrackValuesHandle;
+  /** Authored params this track passes to its plugin, as edit view not record. */
+  readonly param: TrackParamHandle;
+}
+
+/** Authored params half of one computed track's input: `set` swaps whole, `setField` writes one cell. */
+export interface TrackParamHandle {
+  set(param: InputValues): PatchBatch;
+  setField(address: CellAddress, cell: AuthoredCell): PatchBatch;
 }
 
 /** Authored values half of one track's input: `set` swaps whole, `setField` writes one cell. Both validate against committed contract, cause one publication; no shape moves. */

@@ -308,23 +308,29 @@ export type PluginRequirement =
 /** Structures delivered to a plugin's cross-source check. */
 export type SourceStructure = Structure<unknown> | Readonly<Record<string, Structure<unknown>>>;
 export type SourceStructures = Readonly<Record<string, SourceStructure>>;
-/** What a track authors: values, slots, source schema. */
+/** What a track's output is: a source model or a computed plugin. Exactly one key. */
+export type OutputDefinition = { readonly model: string } | { readonly plugin: string };
+/** The model id an output names, or undefined when it names a plugin. */
+export function outputModelId(output: OutputDefinition): string | undefined {
+  return "model" in output ? output.model : undefined;
+}
+/** The plugin id an output names, or undefined when it names a model. */
+export function outputPluginId(output: OutputDefinition): string | undefined {
+  return "plugin" in output ? output.plugin : undefined;
+}
+/** What a track authors: values, params, slots. */
 export interface TrackInput {
   readonly values?: AuthoredValues;
   readonly param?: AuthoredValues;
   readonly requires?: Readonly<Record<string, SourceBinding>>;
-  /** No-plugin sources only. */
-  readonly schema?: ValueSpec;
 }
 /** Stops or a static value. */
 export type AuthoredProperty = readonly AuthoredStop[] | AuthoredStaticValue;
-/** Dataflow node: optional data type or plugin, input, duration. */
+/** Dataflow node: input, named output, duration. */
 export interface TrackDefinition {
   readonly id: string;
-  /** Data track type id; omitted data tracks are generic `data`. */
-  readonly type?: string;
-  readonly plugin?: string;
   readonly input?: TrackInput;
+  readonly output: OutputDefinition;
   readonly duration?: number;
 }
 export interface MotionDefinition {

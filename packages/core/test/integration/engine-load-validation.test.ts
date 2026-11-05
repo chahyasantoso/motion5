@@ -5,6 +5,7 @@ import { Engine } from "../../src/engine";
 import { createManualClock } from "../../src/ports/clock";
 import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
 import { record, track } from "../support/v5-builders";
+import { testModels } from "../support/test-models";
 
 const options = () => ({
   clock: createManualClock(),
@@ -18,7 +19,13 @@ const projectWith = (values: unknown) => ({
     {
       id: "hero",
       trigger: { type: "manual" },
-      tracks: [track({ id: "arm", values: values as never })],
+      tracks: [
+        track({
+          id: "arm",
+          values: values as never,
+          model: "TestRecord",
+        }),
+      ],
     },
   ],
 });
@@ -59,7 +66,7 @@ describe("Engine product-load validation (X-1 follow-up)", () => {
   });
 
   it("resolves authored plugin ownership during load, not on the first seek", () => {
-    const plugins = new PluginCatalog();
+    const plugins = new PluginCatalog({ models: testModels });
     plugins.register(OPACITY);
     const interpolator = createFakeInterpolator();
     const create = vi.spyOn(interpolator, "create");
@@ -73,7 +80,14 @@ describe("Engine product-load validation (X-1 follow-up)", () => {
           {
             id: "hero",
             trigger: { type: "manual" },
-            tracks: [track({ id: "arm", plugin: OPACITY.id, values: record({ other: 1 }) })],
+            tracks: [
+              track({
+                id: "arm",
+                plugin: OPACITY.id,
+                values: record({ other: 1 }),
+                model: "TestRecord",
+              }),
+            ],
           },
         ],
       } as never),

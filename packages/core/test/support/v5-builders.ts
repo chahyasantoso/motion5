@@ -10,7 +10,6 @@ import type {
   TrackDefinition,
   TriggerDefinition,
   Value,
-  ValueSpec,
 } from "../../src/contract/v5";
 
 /**
@@ -42,28 +41,38 @@ export function record<Values extends AuthoredRecord>(values: Values): Values {
   return values;
 }
 
+export const TEST_RECORD_MODEL = "TestRecord";
+export const TEST_TABLE_MODEL = "TestTable";
+
 export interface TrackOptions {
   readonly id: string;
+  readonly model?: string;
   readonly plugin?: string;
   readonly values?: AuthoredValues;
+  readonly param?: AuthoredValues;
   readonly requires?: Readonly<Record<string, SourceBinding>>;
-  readonly schema?: ValueSpec;
   readonly duration?: number;
 }
 
 export function track(options: TrackOptions): TrackDefinition {
+  const output =
+    options.plugin !== undefined
+      ? { plugin: options.plugin }
+      : options.model !== undefined
+        ? { model: options.model }
+        : { model: Array.isArray(options.values) ? TEST_TABLE_MODEL : TEST_RECORD_MODEL };
   const hasInput =
-    options.values !== undefined || options.requires !== undefined || options.schema !== undefined;
+    options.values !== undefined || options.param !== undefined || options.requires !== undefined;
   const input = hasInput
     ? {
         ...(options.values !== undefined ? { values: options.values } : {}),
+        ...(options.param !== undefined ? { param: options.param } : {}),
         ...(options.requires !== undefined ? { requires: options.requires } : {}),
-        ...(options.schema !== undefined ? { schema: options.schema } : {}),
       }
     : undefined;
   return {
     id: options.id,
-    ...(options.plugin !== undefined ? { plugin: options.plugin } : {}),
+    output,
     ...(input !== undefined ? { input } : {}),
     ...(options.duration !== undefined ? { duration: options.duration } : {}),
   };

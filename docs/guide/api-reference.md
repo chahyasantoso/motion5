@@ -49,13 +49,13 @@ ADR-036 and ADR-048.
 - `motionIds()`, `freeTrackIds()` and `mountedNodeIds()` enumerate a loaded project: every Motion id, every track node no Motion owns, and every node currently mounted. All three answer a frozen, total array in committed order, they resolve against a recipe's staged pair while one is open, and they refuse on a disposed project exactly as `dependantsOf` does. A Motion's own children stay `MotionHandle.trackIds`, so mounting a whole document is a loop over these rather than over a copy of its ids kept beside the definition.
 - `dispose()` releases the project, motions, triggers, and compiled tracks.
 
-A `TrackHandle` carries `id`, `live`, `definition`, `input`, `requires`, `writeValues(value)`, `releaseValues()`, `remove()`, and `replace(next)`. `input` is the authored input view: `input.replace(next)` replaces the whole input, `input.requires.set(slot, source, memberKey?)` and `input.requires.remove(slot, memberKey?)` edit one dependency binding, and `input.values.set(values)` and `input.values.setField(address, cell)` edit authored values. A dependency that feeds a track's own composition is authored under `input.requires`, which is the only way a value enters composition.
+A `TrackHandle` carries `id`, `live`, `definition`, `input`, `requires`, `writeValues(value)`, `releaseValues()`, `remove()`, and `replace(next)`. `input` is the authored input view: `input.replace(next)` replaces the whole input, `input.requires.set(slot, source, memberKey?)` and `input.requires.remove(slot, memberKey?)` edit one dependency binding, `input.values.set(values)` and `input.values.setField(address, cell)` edit authored values, and `input.param.set(param)` and `input.param.setField(address, cell)` edit a plugin's parameters. A dependency that feeds a track's own composition is authored under `input.requires`, which is the only way a value enters composition.
 
 `remove`, `replace`, `input.replace` and the `input.requires` pair are the structural tier, and each returns `void` because the return type carries the tier: a structural edit replaced the graph. Bindings preserve the rest of the input, redirect rather than append, and support `memberKey` for map-valued slots. A refused candidate is rolled back with the handle unchanged; the dependency rules are `edge-unknown-source`, `input-source-shape` and the plugin's declared-slot refusals, all thrown or reported before anything is committed.
 
 `writeValues(value)` and `releaseValues()` are the live tier. `writeValues` replaces the whole evaluated local value with a table or record that matches the track's committed contract; `releaseValues` drops the overlay and resumes authored evaluation. Both return the `PatchBatch` of one publication, stage no Track and rebuild no graph. The overlay survives authored value edits, binding edits and seeks, and is cleared only by a structural replacement or removal, `releaseValues`, and destroy. `input.values.set(values)` is the sticky authored equivalent: it rewrites `input.values`, so `definition` and the live composition cannot disagree, and validates against the committed contract without re-inferring. A write is replaced wholesale rather than accumulated. See ADR-059, ADR-060 and ADR-078.
 
-`input.values.setField(address, cell)` is the same authored tier narrowed to one cell or field. `address.row` selects a table cell and must be absent for a record field; a mismatch between the address form and the track's shape is `values-shape-invalid`, and an address that does not exist is `cell-address-unknown`. It returns the `PatchBatch` of one publication and stages no Track.
+`input.values.setField(address, cell)` is the same authored tier narrowed to one cell or field. `address.row` selects a table cell and must be absent for a record field; a mismatch between the address form and the track's shape is `values-shape-invalid`, and an address that does not exist is `cell-address-unknown`. A static cell cannot move through a cheap edit; the refusal is `live-values-invalid` with the replace hint. It returns the `PatchBatch` of one publication and stages no Track. `input.param.set` and `input.param.setField` are the same verbs for a plugin's `inputs.param`.
 
 `edit(recipe)` on `ProjectHandle` runs `n` authored ops across `m` tracks as one transaction: one candidate build, one graph replacement, one `ObservationState` commit and one flush. The recipe is handed a `SchemaTransaction`, which carries `addMotion`, `motion`, `tryMotion`, `addTrack`, `track` and `tryTrack` and nothing else, so `mount`, `seek`, `subscribeNode` and `dispose` are not reachable through it. Reads inside the recipe resolve against what it has staged, so a two-step edit sees its own first step, and a throw commits nothing: no hook is reached and a handle issued inside the recipe never becomes live. A recipe inside a recipe is `schema-transaction-nested`, and a verb that applies immediately rather than committing is `schema-transaction-immediate`, named at the verb. See ADR-064.
 
@@ -145,26 +145,26 @@ Each public subpath exports exactly one identified definition named for the path
 with each row's world frame. Body rows carry `parentId?`, `length`, `rotation`, `weight?`, `x?`, `y?`
 and optional joint-limit static fields.
 
-`ikPlugin` takes a record `values` with optional `flip` and `inspect`, and binds `chain`, `goals` and
+`ikPlugin` takes a `param` record with optional `flip` and `inspect`, and binds `chain`, `goals` and
 `base`. It publishes `values` as one solved row per member (`rotation`, optional `residual` and
 `atBound`) and, when `inspect` is authored, an `inspect` record.
 
 Author a 2D chain as one body table and one goals table:
 
 ```js
-{ id: "body", input: { values: [
+{ id: "body", output: { model: "Body2d" }, input: { values: [
   { id: "upper", cells: { length: 40, rotation: 90, weight: 1 } },
   { id: "fore", cells: { parentId: "upper", length: 36, rotation: 0 } },
 ] } }
-{ id: "goals", input: { values: [
+{ id: "goals", output: { model: "Goals2d" }, input: { values: [
   { id: "goal", cells: { memberId: "fore", x: 60, y: 20 } },
 ] } }
-{ id: "solve", plugin: "ik", input: {
-  values: { inspect: true },
+{ id: "root", output: { model: "Point2d" }, input: { values: { x: 0, y: 0, rotation: 0 } } }
+{ id: "solve", output: { plugin: "ik" }, input: {
+  param: { inspect: true },
   requires: { chain: "body", goals: "goals", base: "root" },
 } }
-{ id: "pose", plugin: "fk", input: {
-  values: {},
+{ id: "pose", output: { plugin: "fk" }, input: {
   requires: { chain: "body", solved: "solve", base: "root" },
 } }
 ```
@@ -227,9 +227,8 @@ const project = new Engine({ clock, interpolator, scheduler, plugins }).load(def
 const tracks: readonly TrackDefinition[] = [
   {
     id: "bone",
-    plugin: "fk",
+    output: { plugin: "fk" },
     input: {
-      values: { length: 20, rotation: 0 },
       requires: { chain: "body", solved: "solve", base: "~/root" },
     },
   },

@@ -3,7 +3,18 @@ import { acceptedOutcome, refusedOutcomeFrom, type Outcome } from "../lang/outco
 import { readAuthoredLeaf } from "./authored-leaf";
 import { diagnostic } from "./diagnostics";
 import type { Diagnostic } from "./v5";
-import type { DataType, FieldSpec, Model, Scalar, SourceBinding, ValueSpec } from "./v5";
+import type {
+  DataType,
+  FieldSpec,
+  Model,
+  OutputDefinition,
+  PluginDefinition,
+  Scalar,
+  SourceBinding,
+  ValueSpec,
+} from "./v5";
+import { isModel } from "./v5";
+import { unknownNameMessage } from "./registry-message";
 
 /**
  * The authored boundary for an identified-table track.
@@ -62,13 +73,11 @@ export interface ParsedInput {
   readonly values?: ParsedValues;
   readonly param?: ParsedValues;
   readonly requires: Readonly<Record<string, SourceBinding>>;
-  readonly schema?: ValueSpec;
 }
 
 export interface ParsedTrack {
   readonly id: string;
-  readonly type?: string;
-  readonly plugin?: string;
+  readonly output: OutputDefinition;
   readonly input: ParsedInput;
   readonly duration?: number;
 }
@@ -76,16 +85,23 @@ export interface ParsedTrack {
 export interface ParseContext {
   /** Answers whether a plugin id names an admitted plugin. Phase 3 supplies the real registry. */
   readonly isPluginRegistered?: (pluginId: string) => boolean;
+  /** Answers the admitted plugin definition for an id; absent leaves the declaration unjudged. */
+  readonly pluginDefinition?: (pluginId: string) => PluginDefinition | undefined;
   /** Answers the admitted data type for an id; absent leaves the declaration unjudged. */
   readonly dataType?: (typeId: string) => DataType<unknown, unknown> | undefined;
   /** Answers the admitted model for an id; absent leaves the declaration unjudged. */
   readonly model?: (modelId: string) => Model<unknown, unknown> | undefined;
+  /** Lists admitted model ids for diagnostics; absent omits the list. */
+  readonly modelIds?: () => readonly string[] | undefined;
+  /** Lists admitted plugin ids for diagnostics; absent omits the list. */
+  readonly pluginIds?: () => readonly string[] | undefined;
 }
 
 const RESERVED_NAMES: ReadonlySet<string> = new Set(["__proto__", "constructor", "prototype"]);
-const TRACK_FIELDS: ReadonlySet<string> = new Set(["id", "type", "plugin", "input", "duration"]);
+const TRACK_FIELDS: ReadonlySet<string> = new Set(["id", "input", "output", "duration"]);
 const LEGACY_FIELDS: ReadonlySet<string> = new Set(["keyframes", "observes"]);
-const INPUT_FIELDS: ReadonlySet<string> = new Set(["values", "param", "requires", "schema"]);
+const INPUT_FIELDS: ReadonlySet<string> = new Set(["values", "param", "requires"]);
+const OUTPUT_FIELDS: ReadonlySet<string> = new Set(["model", "plugin"]);
 const ROW_FIELDS: ReadonlySet<string> = new Set(["id", "cells"]);
 const STOP_FIELDS: ReadonlySet<string> = new Set(["p", "v", "ease"]);
 const TABLE_SPEC_FIELDS: ReadonlySet<string> = new Set(["kind", "schema", "optional"]);
@@ -111,6 +127,10 @@ const EMPTY_DIAGNOSTICS: readonly Diagnostic[] = Object.freeze([]);
 const EMPTY_REQUIRES: Readonly<Record<string, SourceBinding>> = Object.freeze({});
 const EMPTY_STATIC_FIELDS: ReadonlySet<string> = new Set<string>();
 const EMPTY_INPUT: ParsedInput = Object.freeze({ requires: EMPTY_REQUIRES });
+const EMPTY_RECORD_SPEC: ValueSpec = Object.freeze({
+  kind: "record",
+  fields: Object.freeze({}),
+});
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
@@ -176,48 +196,83 @@ function readDuration(value: unknown, path: string, diagnostics: Diagnostic[]): 
   return value;
 }
 
-function readType(
+function readOutput(
   value: unknown,
   path: string,
   context: ParseContext,
   diagnostics: Diagnostic[],
-): string | undefined {
-  if (value === undefined) return undefined;
-  if (typeof value !== "string" || value.length === 0) {
-    diagnostics.push(diagnostic("track-shape", path, "Track type must be a non-empty string."));
-    return undefined;
-  }
-  if (
-    (context.dataType !== undefined || context.model !== undefined) &&
-    context.dataType?.(value) === undefined &&
-    context.model?.(value) === undefined
-  )
-    diagnostics.push(
-      diagnostic("data-type-unknown", path, `Data type '${value}' is not admitted.`),
-    );
-  return value;
-}
-
-function readPlugin(
-  value: unknown,
-  path: string,
-  context: ParseContext,
-  diagnostics: Diagnostic[],
-): string | undefined {
-  if (value === undefined) return undefined;
-  if (typeof value !== "string" || value.length === 0) {
+): OutputDefinition | undefined {
+  if (value === undefined) {
     diagnostics.push(
       diagnostic(
-        "plugin-unknown",
+        "output-missing",
         path,
-        "Plugin id must be a non-empty string naming a registered plugin.",
+        "Every track names its output: output: { model } for a source or output: { plugin } for a computed track.",
       ),
     );
     return undefined;
   }
-  if (!context.isPluginRegistered?.(value))
-    diagnostics.push(diagnostic("plugin-unknown", path, `Plugin '${value}' is not registered.`));
-  return value;
+  if (!isRecord(value)) {
+    diagnostics.push(
+      diagnostic(
+        "output-invalid",
+        path,
+        "Track output must be an object with exactly one of model or plugin.",
+      ),
+    );
+    return undefined;
+  }
+  for (const key of Object.keys(value))
+    if (!OUTPUT_FIELDS.has(key))
+      diagnostics.push(
+        diagnostic(
+          "output-invalid",
+          `${path}.${key}`,
+          "Output member is not part of the contract; use model or plugin.",
+        ),
+      );
+  const hasModel = Object.hasOwn(value, "model");
+  const hasPlugin = Object.hasOwn(value, "plugin");
+  if (hasModel === hasPlugin) {
+    diagnostics.push(
+      diagnostic("output-invalid", path, "Track output must name exactly one of model or plugin."),
+    );
+    return undefined;
+  }
+  if (hasModel) {
+    const model = value.model;
+    if (typeof model !== "string" || model.length === 0) {
+      diagnostics.push(
+        diagnostic("output-invalid", `${path}.model`, "Model name must be a non-empty string."),
+      );
+      return undefined;
+    }
+    if (context.model !== undefined && context.model(model) === undefined)
+      diagnostics.push(
+        diagnostic(
+          "model-unknown",
+          `${path}.model`,
+          unknownNameMessage("model", model, context.modelIds?.()),
+        ),
+      );
+    return Object.freeze({ model });
+  }
+  const plugin = value.plugin;
+  if (typeof plugin !== "string" || plugin.length === 0) {
+    diagnostics.push(
+      diagnostic("output-invalid", `${path}.plugin`, "Plugin name must be a non-empty string."),
+    );
+    return undefined;
+  }
+  if (!context.isPluginRegistered?.(plugin))
+    diagnostics.push(
+      diagnostic(
+        "plugin-unknown",
+        `${path}.plugin`,
+        unknownNameMessage("plugin", plugin, context.pluginIds?.()),
+      ),
+    );
+  return Object.freeze({ plugin });
 }
 
 function readRequires(
@@ -824,7 +879,7 @@ function readValues(
         diagnostic(
           "values-shape-invalid",
           path,
-          `Authored values are a table but input.schema declares a ${schema.kind}.`,
+          `Authored values are a table but the declared input is a ${schema.kind}.`,
         ),
       );
       return undefined;
@@ -837,7 +892,7 @@ function readValues(
         diagnostic(
           "values-shape-invalid",
           path,
-          `Authored values are a record but input.schema declares a ${schema.kind}.`,
+          `Authored values are a record but the declared input is a ${schema.kind}.`,
         ),
       );
       return undefined;
@@ -854,11 +909,17 @@ function readValues(
   return undefined;
 }
 
+function pluginValuesSpec(definition: PluginDefinition | undefined): ValueSpec | undefined {
+  if (definition === undefined) return undefined;
+  const raw = definition.inputs.values;
+  return isModel(raw) ? raw.spec : (raw ?? EMPTY_RECORD_SPEC);
+}
+
 function readInput(
   value: unknown,
   path: string,
-  authoredPlugin: boolean,
-  typedSpec: ValueSpec | undefined,
+  output: OutputDefinition | undefined,
+  context: ParseContext,
   diagnostics: Diagnostic[],
 ): ParsedInput {
   if (value === undefined) return EMPTY_INPUT;
@@ -866,42 +927,70 @@ function readInput(
     diagnostics.push(trackFieldUnknown(path, "Track input must be an object."));
     return EMPTY_INPUT;
   }
-  for (const key of Object.keys(value))
-    if (!INPUT_FIELDS.has(key))
+  for (const key of Object.keys(value)) {
+    if (key === "schema") {
+      diagnostics.push(
+        diagnostic(
+          "input-schema-retired",
+          `${path}.schema`,
+          "A track takes its spec from its output model or plugin; remove input.schema and register the model instead.",
+        ),
+      );
+    } else if (!INPUT_FIELDS.has(key))
       diagnostics.push(
         trackFieldUnknown(`${path}.${key}`, "Input member is not part of the contract."),
       );
+  }
   const requires = readRequires(value.requires, `${path}.requires`, diagnostics);
-  if (!authoredPlugin && Object.keys(requires).length > 0)
-    diagnostics.push(
-      diagnostic(
-        "plugin-requires-without-plugin",
-        `${path}.requires`,
-        "A track without a plugin has nothing that owns its required inputs.",
-      ),
-    );
-  let schema: ValueSpec | undefined;
-  if (value.schema !== undefined) {
-    if (authoredPlugin)
+  const plugin =
+    output !== undefined && "plugin" in output
+      ? context.pluginDefinition?.(output.plugin)
+      : undefined;
+  if (output !== undefined && "model" in output) {
+    if (value.param !== undefined)
       diagnostics.push(
         diagnostic(
-          "input-schema-on-plugin-track",
-          `${path}.schema`,
-          "A plugin track takes its input contract from the plugin, not input.schema.",
+          "param-not-allowed",
+          `${path}.param`,
+          "A model output has no processor and takes no params.",
         ),
       );
-    else schema = readValueSpec(value.schema, `${path}.schema`, diagnostics);
+    if (Object.hasOwn(value, "requires"))
+      diagnostics.push(
+        diagnostic(
+          "requires-not-allowed",
+          `${path}.requires`,
+          "A model output has no processor and takes no requires.",
+        ),
+      );
+  } else if (
+    output !== undefined &&
+    "plugin" in output &&
+    value.param !== undefined &&
+    plugin !== undefined &&
+    plugin.inputs.param === undefined
+  ) {
+    diagnostics.push(
+      diagnostic(
+        "param-not-allowed",
+        `${path}.param`,
+        `Plugin '${output.plugin}' declares no params.`,
+      ),
+    );
   }
-  const values = readValues(value.values, `${path}.values`, schema ?? typedSpec, diagnostics);
+  const valuesSpec =
+    output !== undefined && "model" in output
+      ? context.model?.(output.model)?.spec
+      : pluginValuesSpec(plugin);
+  const values = readValues(value.values, `${path}.values`, valuesSpec, diagnostics);
   const param =
-    value.param === undefined
+    value.param === undefined || (output !== undefined && "model" in output)
       ? undefined
-      : readValues(value.param, `${path}.param`, undefined, diagnostics);
+      : readValues(value.param, `${path}.param`, plugin?.inputs.param, diagnostics);
   return Object.freeze({
     ...(values === undefined ? {} : { values }),
     ...(param === undefined ? {} : { param }),
     requires,
-    ...(schema === undefined ? {} : { schema }),
   });
 }
 
@@ -932,44 +1021,34 @@ export function parseTrackDefinition(
           "Grouped keyframes and observes are not part of the identified-table contract.",
         ),
       );
+    else if (key === "type")
+      diagnostics.push(
+        diagnostic(
+          "type-field-retired",
+          `${path}.type`,
+          "A track names its source model under output: { model }, not type.",
+        ),
+      );
     else if (!TRACK_FIELDS.has(key))
       diagnostics.push(
-        trackFieldUnknown(`${path}.${key}`, "Track member is not part of the contract."),
+        trackFieldUnknown(
+          `${path}.${key}`,
+          key === "plugin"
+            ? "A track names its plugin under output: { plugin }, not plugin."
+            : "Track member is not part of the contract.",
+        ),
       );
   }
   const id = readId(track.id, `${path}.id`, diagnostics);
-  const type = readType(track.type, `${path}.type`, context, diagnostics);
-  const plugin = readPlugin(track.plugin, `${path}.plugin`, context, diagnostics);
-  if (type !== undefined && plugin !== undefined)
-    diagnostics.push(
-      diagnostic("track-shape", `${path}.type`, "A track is either typed data or a plugin track."),
-    );
+  const output = readOutput(track.output, `${path}.output`, context, diagnostics);
   const duration = readDuration(track.duration, `${path}.duration`, diagnostics);
-  const typedSpec =
-    type === undefined
-      ? undefined
-      : (context.dataType?.(type)?.spec ?? context.model?.(type)?.spec);
-  const input = readInput(
-    track.input,
-    `${path}.input`,
-    track.plugin !== undefined,
-    typedSpec,
-    diagnostics,
-  );
-  if (type !== undefined && input.schema !== undefined)
-    diagnostics.push(
-      diagnostic(
-        "track-shape",
-        `${path}.input.schema`,
-        "A typed track takes its schema from its type.",
-      ),
-    );
-  if (id === undefined || hasError(diagnostics)) return refusedOutcomeFrom(diagnostics);
+  const input = readInput(track.input, `${path}.input`, output, context, diagnostics);
+  if (id === undefined || output === undefined || hasError(diagnostics))
+    return refusedOutcomeFrom(diagnostics);
   return acceptedOutcome(
     Object.freeze({
       id,
-      ...(type === undefined ? {} : { type }),
-      ...(plugin === undefined ? {} : { plugin }),
+      output,
       input,
       ...(duration === undefined ? {} : { duration }),
     }),

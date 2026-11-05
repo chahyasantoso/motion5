@@ -5,6 +5,7 @@ import { PluginCatalog } from "../../src/domain/plugin-catalog";
 import { createManualClock } from "../../src/ports/clock";
 import { ProjectRuntime } from "../../src/runtime/project-runtime";
 import { record, track } from "../support/v5-builders";
+import { testModels } from "../support/test-models";
 
 const sourceId = "~/source";
 const consumerId = "~/consumer";
@@ -29,16 +30,17 @@ const project: ProjectDefinition = {
   schemaVersion: 5,
   motions: [],
   freeTracks: [
-    track({ id: "source" }),
+    track({ id: "source", model: "TestRecord" }),
     track({
       id: "consumer",
       plugin: PASS.id,
       values: record({}),
       requires: { upstream: sourceId },
+      model: "TestRecord",
     }),
   ],
 };
-const CATALOG = new PluginCatalog();
+const CATALOG = new PluginCatalog({ models: testModels });
 CATALOG.register(PASS);
 
 function createRuntime() {

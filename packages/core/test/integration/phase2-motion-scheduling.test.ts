@@ -33,6 +33,7 @@ describe("Phase 2: Motion Scheduling & Coalescing", () => {
                 ],
               }),
             },
+            output: { model: "TestRecord" },
           },
         ],
       },

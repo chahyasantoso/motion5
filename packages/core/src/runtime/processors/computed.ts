@@ -25,7 +25,7 @@ import type { Interpolator } from "../../ports/interpolator";
 import { createValueEvaluator } from "../evaluate-values";
 import { parseDataType, parseModel } from "../data-type-parse";
 import { PluginNodeError, validatePluginOutputs } from "../plugin-output";
-import type { SlotSources, SourceRef } from "../source-ref";
+import type { BoundSlot, BoundSlots } from "../bound-slot";
 import { isValue } from "../value-validation";
 import type { PublisherComposition } from "../graph-publisher";
 import { LocalInput } from "../local-input";
@@ -149,7 +149,7 @@ export class ComputedProcessor implements Processor {
   readonly nodeId: string;
   readonly plugin: PluginDefinition;
   readonly #interpolator: Interpolator;
-  readonly #paramInput: LocalInput | undefined;
+  #paramInput: LocalInput | undefined;
   #outputsChecked = false;
   readonly #computedStructures = new Map<
     string,
@@ -160,7 +160,7 @@ export class ComputedProcessor implements Processor {
   #preparedState: unknown;
   #isPrepared = false;
   #parsedValues: ParsedValues | undefined;
-  readonly #parsedParam: ParsedValues | undefined;
+  #parsedParam: ParsedValues | undefined;
   readonly #outputStructures = new Map<string, Structure<unknown> | undefined>();
   readonly #outputStaticSnapshots = new Map<string, StaticView>();
 
@@ -174,8 +174,13 @@ export class ComputedProcessor implements Processor {
     this.#parsedValues = options.values;
     this.#parsedParam = options.param;
     if (this.plugin.inputs.param !== undefined) {
+      const paramSpec = this.plugin.inputs.param;
       this.#paramInput = new LocalInput(
-        createValueEvaluator(options.param, options.interpolator, this.plugin.inputs.param),
+        createValueEvaluator(
+          options.param ?? (paramSpec.kind === "record" ? EMPTY_RECORD : undefined),
+          options.interpolator,
+          paramSpec,
+        ),
       );
     }
   }
@@ -210,11 +215,20 @@ export class ComputedProcessor implements Processor {
     this.#outputStructures.clear();
   }
 
-  compose(
-    requires: ResolvedRequires,
-    sources: SlotSources = {},
-    localInput: LocalInput,
-  ): PublisherComposition {
+  replaceParam(param: ParsedValues | undefined): void {
+    const spec = this.plugin.inputs.param;
+    if (spec === undefined) return;
+    this.#parsedParam = param;
+    this.#paramInput?.replaceEvaluator(() =>
+      createValueEvaluator(
+        param ?? (spec.kind === "record" ? EMPTY_RECORD : undefined),
+        this.#interpolator,
+        spec,
+      ),
+    );
+  }
+
+  compose(slots: BoundSlots = {}, localInput: LocalInput): PublisherComposition {
     localInput.assertActive();
     const rawValues = this.plugin.inputs.values;
     const spec = isModel(rawValues) ? rawValues.spec : (rawValues ?? EMPTY_RECORD_SPEC);
@@ -227,7 +241,7 @@ export class ComputedProcessor implements Processor {
           `Plugin '${this.plugin.id}' declares ${spec.kind} input.`,
         ),
       ]);
-    const { values: resolved, structures } = this.#resolve(requires, sources);
+    const { values: resolved, structures } = this.#resolve(slots);
     const warnings = this.#checkSources(structures);
     this.#runPrepare(structures);
     const evaluatedParam = this.#paramInput?.evaluate();
@@ -304,14 +318,14 @@ export class ComputedProcessor implements Processor {
   #staticValuesView(): unknown {
     const raw = this.plugin.inputs.values;
     const spec = isModel(raw) ? raw.spec : (raw ?? EMPTY_RECORD_SPEC);
-    const view = runtimeStaticView(authoringValue(this.#parsedValues), spec);
+    const view = runtimeStaticView(authoringValue(this.#parsedValues, spec), spec);
     return staticPayload(view, spec);
   }
 
   #staticParamView(): unknown {
     const spec = this.plugin.inputs.param;
     if (spec === undefined) return undefined;
-    const view = runtimeStaticView(authoringValue(this.#parsedParam), spec);
+    const view = runtimeStaticView(authoringValue(this.#parsedParam, spec), spec);
     return staticPayload(view, spec);
   }
 
@@ -385,65 +399,63 @@ export class ComputedProcessor implements Processor {
     }
   }
 
-  #resolve(
-    requires: ResolvedRequires,
-    sources: SlotSources,
-  ): { readonly values: ResolvedRequires; readonly structures: SourceStructures } {
+  #resolve(slots: BoundSlots): {
+    readonly values: ResolvedRequires;
+    readonly structures: SourceStructures;
+  } {
     const resolved: Record<string, unknown> = {};
     const structures: Record<string, SourceStructure> = {};
     for (const [slot, declaration] of Object.entries(this.plugin.inputs.requires ?? {})) {
-      const bound = requires[slot];
-      const source = sources[slot];
+      const entry = slots[slot];
       const path = `${this.nodeId}.input.requires.${slot}`;
-      if (bound === undefined) {
+      if (entry === undefined) {
         if (declaration.optional === true) continue;
         throw inputFailure(path, `Required slot '${slot}' is not bound.`);
       }
-      if ((declaration.binding ?? "single") === "map") {
-        if (!isPlainRecord(bound) || !isPlainRecord(source))
-          throw inputFailure(path, `Slot '${slot}' requires a map binding.`);
-        const members: Record<string, unknown> = {};
-        const memberStructures: Record<string, Structure<unknown>> = {};
-        for (const [key, outputs] of Object.entries(bound)) {
-          const ref = source[key] as SourceRef | undefined;
-          const member = this.#resolveSlot(
-            declaration,
-            outputs,
-            ref,
-            `${path}.${key}`,
-            memberStructures,
-            key,
+      switch (entry.kind) {
+        case "single": {
+          const singleStructures: Record<string, Structure<unknown>> = {};
+          defineOwnValue(
+            resolved,
+            slot,
+            this.#resolveSlot(declaration, entry.bound, path, singleStructures, slot),
           );
-          defineOwnValue(members, key, member);
+          const structure = singleStructures[slot];
+          if (structure !== undefined) defineOwnValue(structures, slot, structure);
+          break;
         }
-        resolved[slot] = Object.freeze(members);
-        if (Object.keys(memberStructures).length > 0)
-          structures[slot] = Object.freeze(memberStructures);
-        continue;
+        case "map": {
+          if (Object.keys(entry.members).length === 0)
+            throw inputFailure(path, `Slot '${slot}' requires a map binding.`);
+          const members: Record<string, unknown> = {};
+          const memberStructures: Record<string, Structure<unknown>> = {};
+          for (const [key, bound] of Object.entries(entry.members)) {
+            defineOwnValue(
+              members,
+              key,
+              this.#resolveSlot(declaration, bound, `${path}.${key}`, memberStructures, key),
+            );
+          }
+          defineOwnValue(resolved, slot, Object.freeze(members));
+          if (Object.keys(memberStructures).length > 0)
+            defineOwnValue(structures, slot, Object.freeze(memberStructures));
+          break;
+        }
+        default:
+          return unreachable(entry);
       }
-      const singleStructures: Record<string, Structure<unknown>> = {};
-      resolved[slot] = this.#resolveSlot(
-        declaration,
-        bound,
-        source as SourceRef | undefined,
-        path,
-        singleStructures,
-        slot,
-      );
-      const structure = singleStructures[slot];
-      if (structure !== undefined) structures[slot] = structure;
     }
     return { values: Object.freeze(resolved), structures: Object.freeze(structures) };
   }
 
   #resolveSlot(
     declaration: SlotSpec | Model<unknown, unknown> | OptionalModel<Model<unknown, unknown>>,
-    outputs: unknown,
-    ref: SourceRef | undefined,
+    bound: BoundSlot,
     path: string,
     structures: Record<string, Structure<unknown>>,
     structureKey: string,
   ): unknown {
+    const outputs = bound.values;
     if (isModel(declaration) || isOptionalModel(declaration)) {
       if (!isPlainRecord(outputs)) throw inputFailure(path, `Model slot received no output set.`);
       const value = outputs.values;
@@ -451,9 +463,9 @@ export class ComputedProcessor implements Processor {
         throw inputFailure(`${path}.values`, `Model slot requires a values output.`);
       const model = isModel(declaration) ? declaration : declaration.model;
       const structure =
-        ref?.structure ??
+        bound.structure ??
         (model.parse !== undefined
-          ? this.#computedModelStructure(model, ref?.sourceId ?? path, value, path)
+          ? this.#computedModelStructure(model, bound.sourceId, value, path)
           : undefined);
       if (structure !== undefined) defineOwnValue(structures, structureKey, structure);
       return value;
@@ -465,9 +477,9 @@ export class ComputedProcessor implements Processor {
         if (!isValue(value))
           throw inputFailure(`${path}.values`, `Model slot requires a values output.`);
         const structure =
-          ref?.structure ??
+          bound.structure ??
           (declaration.model.parse !== undefined
-            ? this.#computedModelStructure(declaration.model, ref?.sourceId ?? path, value, path)
+            ? this.#computedModelStructure(declaration.model, bound.sourceId, value, path)
             : undefined);
         if (structure !== undefined) defineOwnValue(structures, structureKey, structure);
         return value;
@@ -480,8 +492,7 @@ export class ComputedProcessor implements Processor {
         if (!isValue(value))
           throw inputFailure(`${path}.values`, `Typed slot requires a values output.`);
         const structure =
-          ref?.structure ??
-          this.#computedStructure(declaration.type, ref?.sourceId ?? path, value, path);
+          bound.structure ?? this.#computedStructure(declaration.type, bound.sourceId, value, path);
         defineOwnValue(structures, structureKey, structure);
         return declaration.type.bind(structure, value);
       }

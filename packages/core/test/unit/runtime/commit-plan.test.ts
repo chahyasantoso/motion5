@@ -4,8 +4,8 @@ import type { MotionDefinition, TrackDefinition } from "../../../src/contract/v5
 import { code } from "../../helpers/source-region";
 import { AUTHORED } from "../../../src/runtime/value-state";
 import { invert, planCommit, type CommitDocument } from "../../../src/runtime/commit-plan";
-const A: TrackDefinition = { id: "arm" },
-  H: TrackDefinition = { id: "hand", duration: 250 },
+const A: TrackDefinition = { id: "arm", output: { model: "TestRecord" } },
+  H: TrackDefinition = { id: "hand", duration: 250, output: { model: "TestRecord" } },
   M: MotionDefinition = { id: "hero", trigger: { type: "manual" }, tracks: [] };
 const ent = (track: TrackDefinition, motionId?: string) =>
   motionId === undefined
@@ -39,7 +39,7 @@ describe("commit plan", () => {
     const b = doc(
         [
           ["hero/arm", ent(A, "hero")],
-          ["~/old", ent({ id: "old" })],
+          ["~/old", ent({ id: "old", output: { model: "TestTable" } })],
         ],
         [["hero", { definition: M }]],
       ),
@@ -62,7 +62,10 @@ describe("commit plan", () => {
     ]);
     const q = planCommit(
       doc([["hero/arm", ent(A, "hero")]], [["hero", { definition: M }]]),
-      doc([["hero/arm", ent({ id: "arm", duration: 500 }, "hero")]], [["hero", { definition: M }]]),
+      doc(
+        [["hero/arm", ent({ id: "arm", duration: 500, output: { model: "TestTable" } }, "hero")]],
+        [["hero", { definition: M }]],
+      ),
       { needsBuild: new Set(["hero/arm"]), readers: new Map(), noBuild: new Set() },
     );
     expect(invert(q.effects[0]!)).toEqual({ kind: "rollback-stage", nodeId: "hero/arm" });

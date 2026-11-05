@@ -48,9 +48,13 @@ function createComputedTrack(options: {
   return new Track(options.nodeId, localInput, processor);
 }
 
-function valuesOf(values: unknown, schema?: ValueSpec): ParsedValues {
+function valuesOf(values: unknown): ParsedValues {
   const outcome = parseTrackDefinition(
-    { id: "track", input: { values, ...(schema ? { schema } : {}) } },
+    {
+      id: "track",
+      input: { values },
+      output: { model: "TestRecord" },
+    },
     PATH,
   );
   if (outcome.kind !== "accepted") throw new Error(JSON.stringify(outcome.diagnostics));

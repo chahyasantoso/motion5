@@ -25,6 +25,7 @@ import {
 import { chainShape, solveChain } from "../../src/ik-solve";
 import { readFrame3d, ZERO_PIVOT_OFFSET3D } from "../../src/frame3d";
 import { solveTwoBone3d } from "../../src/ik3d-analytic";
+import { testModels } from "../../../core/test/support/test-models";
 
 // Issue #349 phase 6 and ADR-111: stability and determinism of the 2D solve.
 //
@@ -499,7 +500,7 @@ describe("IK stability and determinism (issue #349 phase 6)", () => {
           tracks: [
             {
               id: "root",
-              type: "root2d",
+              output: { model: "Point2d" },
               input: {
                 values: {
                   x: [stop(0, 0), stop(1, 40)],
@@ -510,7 +511,7 @@ describe("IK stability and determinism (issue #349 phase 6)", () => {
             },
             {
               id: "body",
-              type: "body2d",
+              output: { model: "Body2d" },
               input: {
                 values: [
                   { id: "a", cells: { length: 60, rotation: 0 } },
@@ -520,7 +521,7 @@ describe("IK stability and determinism (issue #349 phase 6)", () => {
             },
             {
               id: "goal",
-              type: "goals2d",
+              output: { model: "Goals2d" },
               input: {
                 values: [
                   {
@@ -536,15 +537,15 @@ describe("IK stability and determinism (issue #349 phase 6)", () => {
             },
             {
               id: "solve",
-              plugin: "ik",
+              output: { plugin: "ik" },
               input: {
-                values: { inspect: true },
+                param: { inspect: true },
                 requires: { chain: "body", goals: "goal", base: "root" },
               },
             },
             {
               id: "pose",
-              plugin: "fk",
+              output: { plugin: "fk" },
               input: {
                 values: {},
                 requires: { chain: "body", solved: "solve", base: "root" },
@@ -565,7 +566,7 @@ describe("IK stability and determinism (issue #349 phase 6)", () => {
       );
     };
     const replay = (sequence: readonly number[]): ReadonlyMap<number, unknown> => {
-      const plugins = new PluginCatalog();
+      const plugins = new PluginCatalog({ models: testModels });
       plugins.registerAll([fkPlugin, ikPlugin]);
       const runtime = new Engine({
         clock: createManualClock(),
@@ -814,6 +815,7 @@ describe("IK stability and determinism (issue #349 phase 6)", () => {
     const composed = ikPlugin.transform(
       {
         values: {},
+        param: {},
         requires: {
           chain: rig.body,
           goals: rig.goals,

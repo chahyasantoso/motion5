@@ -1,7 +1,7 @@
 /**
  * Demand-driven loading for approved identified plugin definitions.
  *
- * A project names plugins by `track.plugin`; the loader resolves only those ids from the approved
+ * A project names plugins by `output.plugin`; the loader resolves only those ids from the approved
  * catalog, loads each one once, and admits the batch into a `PluginCatalog` atomically. Native
  * imports cannot be aborted, so a late ensure is harmless: definitions are immutable and the
  * registry rechecks every id immediately before commit. See ADR-135.
@@ -14,7 +14,7 @@ import {
   type ProjectDefinition,
   type TrackDefinition,
 } from "@motion5/core";
-import { unreachable, type PluginDefinition } from "@motion5/core/plugin-api";
+import { unreachable, outputPluginId, type PluginDefinition } from "@motion5/core/plugin-api";
 
 export interface PluginDescriptor {
   readonly load: () => Promise<PluginDefinition<never>>;
@@ -85,7 +85,8 @@ type DemandResult =
 function demandPlugins(demand: PluginDemand): DemandResult {
   const ids: string[] = [];
   const add = (track: TrackDefinition): void => {
-    if (track.plugin !== undefined && !ids.includes(track.plugin)) ids.push(track.plugin);
+    const plugin = outputPluginId(track.output);
+    if (plugin !== undefined && !ids.includes(plugin)) ids.push(plugin);
   };
   switch (demand.kind) {
     case "project": {

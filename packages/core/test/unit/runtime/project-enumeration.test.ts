@@ -47,22 +47,22 @@ const FLOOR = "~/floor";
 const CEILING = "~/ceiling";
 
 /** The chain base. Bound by `upper`, so it is the one node this rig cannot remove on its own. */
-const BASE_TRACK: TrackDefinition = { id: "base" };
+const BASE_TRACK: TrackDefinition = { id: "base", output: { model: "TestRecord" } };
 const UPPER_TRACK: TrackDefinition = {
   id: "upper",
-  plugin: "fk",
+  output: { plugin: "fk" },
   input: { values: {}, requires: { base: "base" } },
 };
 /** The leaf, bound to its parent rather than to the base, so the two removals are ordered. */
 const LOWER_TRACK: TrackDefinition = {
   id: "lower",
-  plugin: "fk",
+  output: { plugin: "fk" },
   input: { values: {}, requires: { base: "upper" } },
 };
 /** A second motion's only child, so destroying that motion needs one removal before it. */
-const BANNER_TRACK: TrackDefinition = { id: "banner" };
-const FLOOR_TRACK: TrackDefinition = { id: "floor" };
-const CEILING_TRACK: TrackDefinition = { id: "ceiling" };
+const BANNER_TRACK: TrackDefinition = { id: "banner", output: { model: "TestRecord" } };
+const FLOOR_TRACK: TrackDefinition = { id: "floor", output: { model: "TestRecord" } };
+const CEILING_TRACK: TrackDefinition = { id: "ceiling", output: { model: "TestRecord" } };
 
 const PROJECT: ProjectDefinition = {
   schemaVersion: 5,
@@ -174,7 +174,7 @@ describe("a loaded project is enumerable through its own API", () => {
     const project = runtime();
 
     const seen = project.edit((transaction) => {
-      const late = transaction.addTrack({ id: "late" });
+      const late = transaction.addTrack({ id: "late", output: { model: "TestRecord" } });
       transaction.addMotion(EXTRA_MOTION);
       return {
         id: late.id,
@@ -208,7 +208,7 @@ describe("a loaded project is enumerable through its own API", () => {
 
     expect(() =>
       project.edit((transaction) => {
-        transaction.addTrack({ id: "late" });
+        transaction.addTrack({ id: "late", output: { model: "TestRecord" } });
         transaction.addMotion(EXTRA_MOTION);
         throw failure;
       }),
@@ -236,7 +236,7 @@ describe("a loaded project is enumerable through its own API", () => {
     });
 
     project.addMotion(EXTRA_MOTION);
-    project.addTrack({ id: "late" });
+    project.addTrack({ id: "late", output: { model: "TestRecord" } });
 
     // A hook is caller code the commit is still inside, and reading from one is free: a mutation is
     // `schema-commit-reentrant` at that depth and a read is not. What it answers is the retained

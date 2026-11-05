@@ -5,7 +5,13 @@ import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/f
 
 const project = {
   schemaVersion: 5 as const,
-  motions: [{ id: "hero", trigger: { type: "manual" as const }, tracks: [{ id: "arm" }] }],
+  motions: [
+    {
+      id: "hero",
+      trigger: { type: "manual" as const },
+      tracks: [{ id: "arm", output: { model: "TestRecord" } }],
+    },
+  ],
 };
 
 describe("public project handle surface (P1-9)", () => {

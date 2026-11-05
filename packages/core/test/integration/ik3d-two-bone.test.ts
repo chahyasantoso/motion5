@@ -20,6 +20,7 @@ import { ik3dPlugin } from "@motion5/plugins/ik3d";
 import { transform3dPlugin } from "@motion5/plugins/transform3d";
 import type { Patch } from "../../src/runtime/patch-registry";
 import { builtinRegistry } from "../support/builtin-registry";
+import { testModels } from "../support/test-models";
 
 const ROOT_DEFAULT = { x: 0, y: 0, z: 0, rotation: 0, rotationX: 0, rotationY: 0 };
 
@@ -31,10 +32,10 @@ const PROJECT: ProjectDefinition = {
       id: "rig",
       trigger: { type: "manual" },
       tracks: [
-        { id: "root", type: "root3d", input: { values: ROOT_DEFAULT } },
+        { id: "root", output: { model: "Point3d" }, input: { values: ROOT_DEFAULT } },
         {
           id: "goals",
-          type: "goals3d",
+          output: { model: "Goals3d" },
           input: {
             values: [
               {
@@ -51,7 +52,7 @@ const PROJECT: ProjectDefinition = {
         },
         {
           id: "body",
-          type: "body3d",
+          output: { model: "Body3d" },
           input: {
             values: [
               { id: "upper", cells: { length: 80, rotation: 0, rotationX: 0, rotationY: 0 } },
@@ -64,12 +65,12 @@ const PROJECT: ProjectDefinition = {
         },
         {
           id: "solve",
-          plugin: "ik3d",
+          output: { plugin: "ik3d" },
           input: { values: {}, requires: { chain: "body", goals: "goals", base: "root" } },
         },
         {
           id: "pose",
-          plugin: "fk3d",
+          output: { plugin: "fk3d" },
           input: { values: {}, requires: { chain: "body", solved: "solve", base: "root" } },
         },
       ],
@@ -111,22 +112,22 @@ function staticPoleRig(
         id: "rig",
         trigger: { type: "manual" },
         tracks: [
-          { id: "root", type: "root3d", input: { values: ROOT_DEFAULT } },
+          { id: "root", output: { model: "Point3d" }, input: { values: ROOT_DEFAULT } },
           {
             id: "goals",
-            type: "goals3d",
+            output: { model: "Goals3d" },
             input: { values: [{ id: "goal", cells: { memberId: "fore", ...GOAL } }] },
           },
           {
             id: "knee",
-            type: "root3d",
+            output: { model: "Point3d" },
             input: { values: { x: 30, y: poleY, z: 10, rotation: 0, rotationX: 0, rotationY: 0 } },
           },
-          { id: "body", type: "body3d", input: { values: bodyCells } },
-          { id: "solve", plugin: "ik3d", input: { values: {}, requires } },
+          { id: "body", output: { model: "Body3d" }, input: { values: bodyCells } },
+          { id: "solve", output: { plugin: "ik3d" }, input: { values: {}, requires } },
           {
             id: "pose",
-            plugin: "fk3d",
+            output: { plugin: "fk3d" },
             input: { values: {}, requires: { chain: "body", solved: "solve", base: "root" } },
           },
         ],
@@ -140,7 +141,7 @@ function refusedRuleIds(project: ProjectDefinition): readonly string[] {
 }
 
 function createRuntime(project: ProjectDefinition = PROJECT) {
-  const plugins = new PluginCatalog();
+  const plugins = new PluginCatalog({ models: testModels });
   plugins.registerAll([transform3dPlugin, fk3dPlugin, ik3dPlugin]);
   return new Engine({
     clock: createManualClock(),
@@ -168,17 +169,17 @@ const RESTED: ProjectDefinition = {
       tracks: [
         {
           id: "root",
-          type: "root3d",
+          output: { model: "Point3d" },
           input: { values: { x: 5, y: -5, z: 0, rotation: 0, rotationX: 0, rotationY: 0 } },
         },
         {
           id: "goals",
-          type: "goals3d",
+          output: { model: "Goals3d" },
           input: { values: [{ id: "goal", cells: { memberId: "fore", ...GOAL } }] },
         },
         {
           id: "body",
-          type: "body3d",
+          output: { model: "Body3d" },
           input: {
             values: [
               { id: "upper", cells: { length: 80, ...UPPER_REST, weight: RAMP } },
@@ -188,12 +189,12 @@ const RESTED: ProjectDefinition = {
         },
         {
           id: "solve",
-          plugin: "ik3d",
+          output: { plugin: "ik3d" },
           input: { values: {}, requires: { chain: "body", goals: "goals", base: "root" } },
         },
         {
           id: "pose",
-          plugin: "fk3d",
+          output: { plugin: "fk3d" },
           input: { values: {}, requires: { chain: "body", solved: "solve", base: "root" } },
         },
       ],
@@ -211,17 +212,17 @@ const OFFSET_PROJECT: ProjectDefinition = {
       tracks: [
         {
           id: "root",
-          type: "root3d",
+          output: { model: "Point3d" },
           input: { values: { x: 5, y: -3, z: 2, rotation: 25, rotationX: -15, rotationY: 20 } },
         },
         {
           id: "goals",
-          type: "goals3d",
+          output: { model: "Goals3d" },
           input: { values: [{ id: "goal", cells: { memberId: "fore", x: 70, y: 40, z: 50 } }] },
         },
         {
           id: "body",
-          type: "body3d",
+          output: { model: "Body3d" },
           input: {
             values: [
               {
@@ -246,12 +247,12 @@ const OFFSET_PROJECT: ProjectDefinition = {
         },
         {
           id: "solve",
-          plugin: "ik3d",
+          output: { plugin: "ik3d" },
           input: { values: {}, requires: { chain: "body", goals: "goals", base: "root" } },
         },
         {
           id: "pose",
-          plugin: "fk3d",
+          output: { plugin: "fk3d" },
           input: { values: {}, requires: { chain: "body", solved: "solve", base: "root" } },
         },
       ],
@@ -267,15 +268,15 @@ const POLE_PROJECT: ProjectDefinition = {
       id: "rig",
       trigger: { type: "manual" },
       tracks: [
-        { id: "root", type: "root3d", input: { values: ROOT_DEFAULT } },
+        { id: "root", output: { model: "Point3d" }, input: { values: ROOT_DEFAULT } },
         {
           id: "goals",
-          type: "goals3d",
+          output: { model: "Goals3d" },
           input: { values: [{ id: "goal", cells: { memberId: "fore", ...GOAL } }] },
         },
         {
           id: "knee",
-          type: "root3d",
+          output: { model: "Point3d" },
           input: {
             values: {
               x: 30,
@@ -292,7 +293,7 @@ const POLE_PROJECT: ProjectDefinition = {
         },
         {
           id: "body",
-          type: "body3d",
+          output: { model: "Body3d" },
           input: {
             values: [
               { id: "upper", cells: { length: 80, rotation: 0, rotationX: 0, rotationY: 0 } },
@@ -305,7 +306,7 @@ const POLE_PROJECT: ProjectDefinition = {
         },
         {
           id: "solve",
-          plugin: "ik3d",
+          output: { plugin: "ik3d" },
           input: {
             values: {},
             requires: { chain: "body", goals: "goals", base: "root", pole: "knee" },
@@ -313,7 +314,7 @@ const POLE_PROJECT: ProjectDefinition = {
         },
         {
           id: "pose",
-          plugin: "fk3d",
+          output: { plugin: "fk3d" },
           input: { values: {}, requires: { chain: "body", solved: "solve", base: "root" } },
         },
       ],
@@ -343,7 +344,10 @@ describe("3D seam through engine and DOM", () => {
     runtime.seek("rig/pose", 0);
     for (const patch of patches.values()) if (patch.status === "ready") adapter.apply(patch);
     const pose = patches.get("rig/pose");
-    if (pose?.status !== "ready") throw new Error("3D pose did not publish");
+    if (pose?.status !== "ready")
+      throw new Error(
+        `3D pose did not publish: ${JSON.stringify(pose)} solve: ${JSON.stringify(patches.get("rig/solve"))}`,
+      );
     const foreCells = (pose.outputs.values as any[]).find((r) => r.id === "fore")?.cells;
     const scalarPatch = {
       nodeId: "rig/fore",

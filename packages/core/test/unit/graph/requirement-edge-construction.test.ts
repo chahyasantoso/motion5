@@ -57,7 +57,7 @@ describe("requirement edge construction", () => {
     const node = collectTrack(
       {
         id: "chest",
-        plugin: "fk",
+        output: { plugin: "fk" },
         input: {
           values: { length: [{ p: 0, v: 1 }], rotation: 0 },
           requires: { chain: "pelvis" },

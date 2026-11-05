@@ -9,6 +9,7 @@ import { createPoseClassifyPlugin, type PoseTemplate } from "../../src/pose-clas
 import { BODY_2D_SPEC } from "../support/aggregate-topology";
 import { GOALS_2D_SPEC } from "../../src/goals/fields";
 import { POSE_2D_SPEC } from "../../src/pose/fields";
+import { testModels } from "../../../core/test/support/test-models";
 
 const ZERO_EULER = { rotation: 0, rotationX: 0, rotationY: 0 };
 const T_POSE: PoseTemplate = {
@@ -167,7 +168,7 @@ describe("aggregate pose-classify binding (AP)", () => {
   });
 
   it("AP-10 end-to-end Engine integration with 2D and 3D pipelines", () => {
-    const plugins = new PluginCatalog();
+    const plugins = new PluginCatalog({ models: testModels });
     plugins.registerAll([
       ikPlugin,
       fkPlugin,
@@ -185,12 +186,12 @@ describe("aggregate pose-classify binding (AP)", () => {
           tracks: [
             {
               id: "root",
-              type: "root2d",
+              output: { model: "Point2d" },
               input: { values: { x: 0, y: 0, rotation: 0 } },
             },
             {
               id: "body",
-              type: "body2d",
+              output: { model: "Body2d" },
               input: {
                 values: [
                   { id: "upper", cells: { length: 20, rotation: 0 } },
@@ -200,24 +201,24 @@ describe("aggregate pose-classify binding (AP)", () => {
             },
             {
               id: "goals",
-              type: "goals2d",
+              output: { model: "Goals2d" },
               input: {
                 values: [{ id: "goal", cells: { memberId: "wrist", x: 40, y: 0 } }],
               },
             },
             {
               id: "solve",
-              plugin: "ik",
+              output: { plugin: "ik" },
               input: { values: {}, requires: { chain: "body", goals: "goals", base: "root" } },
             },
             {
               id: "pose",
-              plugin: "fk",
+              output: { plugin: "fk" },
               input: { values: {}, requires: { chain: "body", solved: "solve", base: "root" } },
             },
             {
               id: "classifier",
-              plugin: "pose-classify",
+              output: { plugin: "pose-classify" },
               input: { values: {}, requires: { pose: "pose" } },
             },
           ],

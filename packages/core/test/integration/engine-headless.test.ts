@@ -29,11 +29,12 @@ const project: ProjectDefinition = {
               ],
             },
           },
+          output: { model: "TestRecord" },
         },
       ],
     },
   ],
-  freeTracks: [{ id: "cursor" }],
+  freeTracks: [{ id: "cursor", output: { model: "TestTable" } }],
 };
 
 describe("Engine", () => {

@@ -5,8 +5,14 @@ import { GraphRuntime } from "../../src/runtime/graph-runtime";
 
 const project: ProjectDefinition = {
   schemaVersion: 5,
-  motions: [{ id: "hero", trigger: { type: "manual" }, tracks: [{ id: "arm" }] }],
-  freeTracks: [{ id: "cursor" }],
+  motions: [
+    {
+      id: "hero",
+      trigger: { type: "manual" },
+      tracks: [{ id: "arm", output: { model: "TestRecord" } }],
+    },
+  ],
+  freeTracks: [{ id: "cursor", output: { model: "TestTable" } }],
 };
 
 const compose = (node: { id: string }) => () => ({

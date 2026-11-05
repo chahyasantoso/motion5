@@ -6,7 +6,13 @@ import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/f
 
 const project = {
   schemaVersion: 5 as const,
-  motions: [{ id: "hero", trigger: { type: "manual" as const }, tracks: [{ id: "arm" }] }],
+  motions: [
+    {
+      id: "hero",
+      trigger: { type: "manual" as const },
+      tracks: [{ id: "arm", output: { model: "TestRecord" } }],
+    },
+  ],
 };
 
 function makeHandle() {
@@ -20,7 +26,7 @@ function makeHandle() {
 describe("runtime track addition through ProjectHandle (G2)", () => {
   it("adds a free track and publishes a ready patch on the commit", () => {
     const handle = makeHandle();
-    const added = handle.addTrack({ id: "cursor" });
+    const added = handle.addTrack({ id: "cursor", output: { model: "TestTable" } });
     expect(added.id).toBe("~/cursor");
     // On the commit, not on a following seek. A structural commit seeds its own flush, so the
     // added node is ready through the handle before anything else is asked of it, and the seek
@@ -35,7 +41,7 @@ describe("runtime track addition through ProjectHandle (G2)", () => {
 
   it("remove() takes the node out of the graph", () => {
     const handle = makeHandle();
-    const added = handle.addTrack({ id: "cursor" });
+    const added = handle.addTrack({ id: "cursor", output: { model: "TestTable" } });
     added.remove();
     // Seeking a removed node should produce no patch for that node.
     const batch = handle.seek("hero/arm", 0);
@@ -55,6 +61,7 @@ describe("runtime track addition through ProjectHandle (G2)", () => {
           ],
         },
       },
+      output: { model: "TestRecord" },
     };
     expect(() => handle.addTrack(bad)).toThrow(/cell-stops-invalid/);
     handle.dispose();
@@ -78,6 +85,7 @@ describe("runtime track addition through ProjectHandle (G2)", () => {
             ],
           },
         },
+        output: { model: "TestRecord" },
       },
       { motionId: "hero" },
     );

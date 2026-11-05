@@ -32,10 +32,15 @@ const PROJECT: ProjectDefinition = {
     {
       id: "hero",
       trigger: { type: "manual" },
-      tracks: [{ id: "arm" }, { id: "hand" }, { id: "leg" }, { id: "foot" }],
+      tracks: [
+        { id: "arm", output: { model: "TestRecord" } },
+        { id: "hand", output: { model: "TestRecord" } },
+        { id: "leg", output: { model: "TestRecord" } },
+        { id: "foot", output: { model: "TestRecord" } },
+      ],
     },
   ],
-  freeTracks: [{ id: "cursor" }],
+  freeTracks: [{ id: "cursor", output: { model: "TestTable" } }],
 };
 
 const compose = (node: { id: string }) => () => ({

@@ -23,6 +23,7 @@ const animated = (id: string) => ({
       ],
     },
   },
+  output: { model: "TestRecord" },
 });
 const project = (withTracks = true): ProjectDefinition => ({
   schemaVersion: 5,

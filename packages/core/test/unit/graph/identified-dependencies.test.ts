@@ -5,10 +5,20 @@ import type {
   SlotSpec,
   ValueSpec,
 } from "../../../src/contract/v5";
+import { defineModel } from "../../../src/contract/v5";
 import { shape } from "../../../src/contract/slot-spec";
 import { PluginCatalog } from "../../../src/domain/plugin-catalog";
 import { buildGraphIR, compareEdges, edgeKey, type GraphEdge } from "../../../src/graph/ir";
 import { record, row, table, track } from "../../support/v5-builders";
+import { testModels } from "../../support/test-models";
+
+const PointTable = defineModel({
+  id: "PointTable",
+  spec: {
+    kind: "table",
+    schema: { row: { fields: { x: { kind: "number" }, y: { kind: "number" } } } },
+  },
+});
 
 const POINT: ValueSpec = {
   kind: "table",
@@ -30,7 +40,7 @@ function plugin(id: string, requires?: Readonly<Record<string, SlotSpec>>): Plug
 }
 
 function catalog(...plugins: readonly PluginDefinition[]): PluginCatalog {
-  const result = new PluginCatalog();
+  const result = new PluginCatalog({ models: [...testModels, PointTable] });
   result.registerAll(plugins);
   return result;
 }
@@ -41,6 +51,7 @@ function point(id: string): ReturnType<typeof track> {
   return track({
     id,
     values: table(row(`${id}-a`, { x: 0, y: 0 })),
+    model: "PointTable",
   });
 }
 
@@ -54,6 +65,7 @@ function consumer(
     plugin: pluginId,
     values: record({ dx: 1, dy: 2 }),
     requires,
+    model: "TestRecord",
   });
 }
 

@@ -65,7 +65,7 @@ export const TENTACLE: RigGeometry = {
 function bodyTrack(rig: RigGeometry): TrackDefinition {
   return {
     id: rig.bodyTrack,
-    type: "body2d",
+    output: { model: "Body2d" },
     input: {
       values: rig.memberTracks.map((id, index) => ({
         id,
@@ -87,7 +87,7 @@ function bodyTrack(rig: RigGeometry): TrackDefinition {
 function goalsTrack(rig: RigGeometry): TrackDefinition {
   return {
     id: rig.goalsTrack,
-    type: "goals2d",
+    output: { model: "Goals2d" },
     input: {
       values: [
         {
@@ -103,16 +103,16 @@ function rigTracks(rig: RigGeometry): readonly TrackDefinition[] {
   return [
     {
       id: rig.rootTrack,
-      type: "root2d",
+      output: { model: "Point2d" },
       input: { values: { x: rig.root.x, y: rig.root.y, rotation: 0 } },
     },
     bodyTrack(rig),
     goalsTrack(rig),
     {
       id: rig.solverTrack,
-      plugin: "ik",
+      output: { plugin: "ik" },
       input: {
-        values: { flip: false, inspect: true },
+        param: { flip: false, inspect: true },
         requires: {
           chain: rig.bodyTrack,
           goals: rig.goalsTrack,
@@ -122,7 +122,7 @@ function rigTracks(rig: RigGeometry): readonly TrackDefinition[] {
     },
     {
       id: rig.poseTrack,
-      plugin: "fk",
+      output: { plugin: "fk" },
       input: {
         values: {},
         requires: {

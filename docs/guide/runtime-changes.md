@@ -36,7 +36,7 @@ track.remove();
 
 `input.requires.set` and `input.requires.remove` edit one dependency binding. They redirect rather than append, support `memberKey` for map-valued slots, and leave the section absent when its last binding is removed. They rebuild the graph because an authored requirement is topology, and a refused candidate leaves the handle unchanged: an unknown source is `edge-unknown-source`.
 
-`input.replace` replaces the whole authored input, values and `requires` together. Crossing the authored input contract belongs to it or to `replace()`, rather than to a value edit. `input.values.set` and `input.values.setField` edit authored values without re-inferring, and `writeValues`/`releaseValues` own the live overlay. All four value verbs validate against the committed contract; a table/record change is `values-shape-invalid`, an undeclared or absent field is `cell-form-invalid`, and an unknown row address is `cell-address-unknown`.
+`input.replace` replaces the whole authored input: `values`, `param` and `requires`. Table row ids are static, so a row-set change through `input.values.set` is refused. Crossing the authored input contract belongs to it or to `replace()`, rather than to a value edit. `input.values.set` and `input.values.setField` edit authored values without re-inferring, and `writeValues`/`releaseValues` own the live overlay. All four value verbs validate against the committed contract; a table/record change is `values-shape-invalid`, an undeclared or absent field is `cell-form-invalid`, and an unknown row address is `cell-address-unknown`.
 
 A live write replaces the whole evaluated value rather than a key at a time, and a dependency that feeds composition is bound under `input.requires`. See ADR-046 and ADR-047.
 
@@ -58,7 +58,7 @@ handle.edit((tx) => {
 
 The recipe is handed a `SchemaTransaction`, which carries `addMotion`, `motion`, `tryMotion`, `addTrack`, `track` and `tryTrack` and nothing else: `mount`, `seek`, `subscribeNode` and `dispose` are not reachable through it. Reads inside it resolve against what it has staged, so a two-step edit sees its own first step, and the recipe's own return value is yours. A throw commits nothing, reaches no hook, and leaves every handle the recipe issued permanently not live.
 
-Two refusals name where a call was made rather than what it does. A recipe opened inside a recipe is `schema-transaction-nested`. A verb that applies immediately is `schema-transaction-immediate`, named at the verb, which covers `setTrigger` and `setStagger` on a `MotionHandle` and `seek`, `writeValues`, `releaseValues`, `input.values.set` and `input.values.setField` on a `TrackHandle`: a settle step cannot refuse, so deferring one of those into the transaction would move its failure to after the graph had committed. See ADR-064.
+Two refusals name where a call was made rather than what it does. A recipe opened inside a recipe is `schema-transaction-nested`. A verb that applies immediately is `schema-transaction-immediate`, named at the verb, which covers `setTrigger` and `setStagger` on a `MotionHandle` and `seek`, `writeValues`, `releaseValues`, `input.values.set`, `input.values.setField`, `input.param.set` and `input.param.setField` on a `TrackHandle`: a settle step cannot refuse, so deferring one of those into the transaction would move its failure to after the graph had committed. See ADR-064.
 
 ## Many value writes, one publication
 

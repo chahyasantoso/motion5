@@ -27,6 +27,7 @@ const project = {
       tracks: [
         {
           id: "card",
+          output: { model: "Card" },
           input: {
             values: {
               x: [
@@ -43,7 +44,7 @@ const project = {
   freeTracks: [
     {
       id: "cursor",
-      schema: { kind: "record", fields: { x: { kind: "number" } } },
+      output: { model: "Camera" },
       input: { values: { x: 40 } },
     },
   ],
@@ -80,26 +81,30 @@ refused. `yoyo` requires a repeat that actually repeats.
 ```js
 {
   id: "arm",
-  plugin: "fk",
+  output: { plugin: "ik" },
   input: {
-    values: { length: 40, rotation: 10 },
-    requires: { chain: "body", solved: "solver", base: "root" },
-    schema: undefined,
+    param: { flip: false },
+    requires: { chain: "body", goals: "targets", base: "root" },
   },
   duration: 600,
 }
 ```
 
 - `id` is a non-empty unqualified id: no `/` and no `:`.
-- `plugin` is optional. It names one identified definition admitted in `PluginCatalog`.
-- `input.values` is optional and is the track's local authored value.
-- `input.requires` is optional and binds declared plugin slots to source node ids. One slot takes one
-  source id; a map-valued slot takes `{ memberKey: "sourceId" }`.
-- `input.schema` is source-only. A plugin track takes its input contract from the plugin.
+- `output` is exactly one of `{ model: "<PascalCase>" }` for a source track or
+  `{ plugin: "<camelCase>" }` for a computed track. A track without `output`, or with both or
+  neither key, is refused.
+- `input.values` is optional and is the track's local authored value. A source track publishes the
+  evaluated value; a computed track passes it to the plugin as `values`.
+- `input.param` is optional and carries the plugin's parameters. It is refused on a model output
+  and on a plugin that declares no `inputs.param`.
+- `input.requires` is optional, computed tracks only, and binds declared plugin slots to source node
+  ids. One slot takes one source id; a map-valued slot takes `{ memberKey: "sourceId" }`.
 - `duration` is optional; absent means the source-derived duration.
 
-Grouped `keyframes` and `observes` are refused as `track-legacy-field`. There is no flat,
-ungrouped property form.
+The retired `type` field is refused as `type-field-retired`, and `input.schema` as
+`input-schema-retired`. Grouped `keyframes` and `observes` are refused as `track-legacy-field`.
+There is no flat, ungrouped property form.
 
 ## Values: a table or a record
 
@@ -139,21 +144,23 @@ wrapper is refused as `property-stops-wrapper`.
 
 ## Sources
 
-A track without `plugin` may declare `input.schema`, a `ValueSpec` describing what it will publish.
-Without a schema its contract is inferred from `input.values`.
+A source track names a registered model with `output: { model }`. The model supplies the value
+spec and the optional `parse`; the engine publishes the evaluated local values and parses them at
+commit. There is no authored schema to infer from.
 
 ```js
 {
   id: "cursor",
-  schema: {
-    kind: "record",
-    fields: { x: { kind: "number" }, visible: { kind: "boolean", optional: true } },
-  },
+  output: { model: "Camera" },
   input: { values: { x: 10 } },
 }
 ```
 
-Tables use `{ kind: "table", schema: { row: { fields }, minRows?, maxRows? } }`. Records use
+Models are registered in the catalog's `models` list, or by a plugin declaration naming them. The
+first-party models are exported as `builtinModels` from `@motion5/plugins/models`; hosts that author
+`Body2d`, `Point2d`, `Goals2d` and their 3D counterparts register that list. A model carries `id`
+(PascalCase, equal to its exported name), `spec`, and optional `parse`. Tables use
+`{ kind: "table", schema: { row: { fields }, minRows?, maxRows? } }`. Records use
 `{ kind: "record", fields, additionalProperties? }`. A field declares `kind`, optional `optional`,
 `enum`, `min`, `max`, or source-only `static`.
 
@@ -162,11 +169,13 @@ Tables use `{ kind: "table", schema: { row: { fields }, minRows?, maxRows? } }`.
 A plugin definition has:
 
 - `id`: the public name, matching its `@motion5/plugins/<id>` path.
-- `inputs.values`: the local value spec.
-- `inputs.requires`: optional slot declarations, each a dependency spec with declared output specs.
-- `outputs`: the named outputs the plugin publishes.
-- `validate`: optional diagnostics.
-- `transform`: one transformation from resolved inputs to named outputs.
+- `inputs.param`: optional record spec for authored `input.param`.
+- `inputs.values`: optional local value spec or model.
+- `inputs.requires`: optional slot declarations, each a model, an optional model, a shape spec, or a
+  legacy `typed` slot (retained until the S6 removal).
+- `outputs`: the named outputs the plugin publishes; `values` is the main one.
+- `prepare`: optional commit-time check that returns `ok(state)` or `refused(issues)`.
+- `transform`: required; one transformation from resolved inputs to named outputs.
 
 `PluginCatalog.registerAll` admits a batch atomically. `EngineOptions.plugins` accepts a
 `PluginCatalog`.
@@ -181,6 +190,13 @@ core selector; no consumer receives a first-row fallback.
 runs the same validation path. Duplicate motion ids, duplicate track ids, cycles, an unknown source,
 an unbound required slot, an incompatible slot contract and a retired member all refuse the load
 rather than loading partially.
+
+Track shape refusals are `output-missing` when no output is named, `output-invalid` when the output
+is malformed or names both keys, `model-unknown` and `plugin-unknown` for unregistered names,
+`type-field-retired` and `input-schema-retired` for the retired authored members, `param-not-allowed`
+for a param on a model output or a plugin without `inputs.param`, and `requires-not-allowed` for
+bindings on a model output. An unregistered plugin id is refused by the parser; a plugin without a
+`transform` is refused at admission as `plugin-transform-missing`.
 
 There is no migration entry point. An authored v4 document or an authored grouped document must be
 rewritten to this contract before it is loaded; retaining `migrateV4ToV5` was rejected because its

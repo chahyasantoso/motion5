@@ -54,6 +54,7 @@ type FlatRecord = Readonly<Record<string, number | string | boolean>>;
 
 type Ik3dInput = {
   readonly values: FlatRecord;
+  readonly param: FlatRecord;
   readonly requires: {
     readonly chain: Body;
     readonly goals: Goals;
@@ -128,7 +129,7 @@ function structureOf<T>(structures: SourceStructures, slot: string): Structure<T
 export const ik3dPlugin: PluginDefinition<Ik3dInput> = {
   id: "ik3d",
   inputs: {
-    values: {
+    param: {
       kind: "record",
       fields: {
         inspect: { kind: "boolean", optional: true, static: true },
@@ -163,8 +164,8 @@ export const ik3dPlugin: PluginDefinition<Ik3dInput> = {
     }
     return ok(undefined);
   },
-  transform({ values, requires }) {
-    const local = flatRecord(values, "input.values");
+  transform({ param, requires }) {
+    const local = flatRecord(param ?? {}, "input.param");
     const members = solveMembers3d(requires.chain, requires.goals);
     const pole = readPole3d(
       requires.pole === undefined ? undefined : recordOutput(requires.pole, "pole"),

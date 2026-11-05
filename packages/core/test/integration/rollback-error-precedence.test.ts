@@ -32,13 +32,19 @@ import { ProjectRuntime } from "../../src/runtime/project-runtime";
 
 const BASE_PROJECT: ProjectDefinition = {
   schemaVersion: 5,
-  motions: [{ id: "hero", trigger: { type: "manual" }, tracks: [{ id: "arm" }] }],
+  motions: [
+    {
+      id: "hero",
+      trigger: { type: "manual" },
+      tracks: [{ id: "arm", output: { model: "TestRecord" } }],
+    },
+  ],
 };
 
 /** Rejected by the candidate graph rather than by authored validation, so the rollback runs. */
 const REJECTED_TRACK: TrackDefinition = {
   id: "child",
-  plugin: "translate",
+  output: { plugin: "translate" },
   input: { requires: { data: "~/missing" } },
 };
 

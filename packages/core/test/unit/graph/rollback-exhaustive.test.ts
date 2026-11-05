@@ -34,12 +34,12 @@ const project: ProjectDefinition = {
       id: "hero",
       trigger: { type: "manual" },
       tracks: [
-        { id: "arm", plugin: "graph-edge", input: { requires: { chain: "~/cursor" } } },
-        { id: "halo", plugin: "graph-edge", input: { requires: { chain: "arm" } } },
+        { id: "arm", output: { plugin: "graph-edge" }, input: { requires: { chain: "~/cursor" } } },
+        { id: "halo", output: { plugin: "graph-edge" }, input: { requires: { chain: "arm" } } },
       ],
     },
   ],
-  freeTracks: [{ id: "cursor" }],
+  freeTracks: [{ id: "cursor", output: { model: "TestTable" } }],
 };
 
 function load(state: ObservationState): void {

@@ -5,21 +5,22 @@ are the complete shape. **Now** and **Next in line** carry exactly one bullet ea
 states a phase; `packages/core/test/unit/scripts/session-status-shape.test.ts` enforces the shape and
 byte ceiling.
 
-- **Captured:** 2026-11-02, Asia/Jakarta.
-- **Read against:** `feat/v5.1-self-validating-tracks` after the full check gate.
+- **Captured:** 2026-11-05, Asia/Jakarta.
+- **Read against:** `feat/v5.2-models-and-plugin-tracks` after the full check gate.
 
 ## Now
 
-- **One v5.1 contract is live:** a data track declares its type, commit brands one `Structure` on
-  the compiled track, typed slots verify nominal fit, live writes cannot move static cells, and 2D
-  and 3D body, goal, root and solved rules live in pure domain modules. `fk`/`fk3d` solved slots are
-  optional at rest, idle tracks are not reseeded, and catalog `describe`, graph `explain` and
-  `assertStable` tooling are present.
+- **One track kind is live:** every authored track names `output: { model }` or `output: { plugin }`,
+  `input.param` carries plugin parameters through `input.param.set` and `setField`, models are
+  registered beside plugins, and a catalog-backed engine gives every track a static guard and parses
+  a source at commit. A computed output's static cells are fixed after first compose. Cheap writes
+  and live writes refuse static-cell changes; `type`, top-level `plugin` and `input.schema` are
+  refused by name. S1 to S5 are green; the legacy `DataType`/typed-slot bridge remains until S6.
 
 ## Next in line
 
-- **Await the owner's review before any further slice:** the v5.1 branch is green and ready for
-  review; no new phase starts until the owner decides.
+- **S6 waits for the owner's go-ahead:** delete `DataType`, typed slots, `legacyTypeId`, the Pose
+  specs and the second runtime path that S5 left unreachable.
 
 ## Open, and not scheduled
 

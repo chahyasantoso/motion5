@@ -28,6 +28,10 @@ export interface PluginCapabilities {
   dataType?(id: string): DataType<unknown, unknown> | undefined;
   /** An admitted model, or `undefined` when not admitted. */
   model?(id: string): Model<unknown, unknown> | undefined;
+  /** Sorted admitted plugin ids, for diagnostics. */
+  pluginIds?(): readonly string[];
+  /** Sorted admitted model ids, for diagnostics. */
+  modelIds?(): readonly string[];
 }
 
 const NONE: readonly string[] = Object.freeze([]);

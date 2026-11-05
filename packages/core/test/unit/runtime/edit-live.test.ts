@@ -7,7 +7,7 @@ import type {
   TrackDefinition,
   ValueSpec,
 } from "../../../src/contract/v5";
-import { isModel, isOptionalModel } from "../../../src/contract/v5";
+import { defineModel, isModel, isOptionalModel } from "../../../src/contract/v5";
 import { deriveSourceContract } from "../../../src/contract/v5-infer";
 import { parseTrackDefinition } from "../../../src/contract/v5-parse";
 import { PluginCatalog } from "../../../src/domain/plugin-catalog";
@@ -23,6 +23,7 @@ import {
 import { isValue } from "../../../src/runtime/value-validation";
 import { AUTHORED, LIVE } from "../../../src/runtime/value-state";
 import { record, row, table, track } from "../../support/v5-builders";
+import { testModel, testModels } from "../../support/test-models";
 
 const POINT: ValueSpec = {
   kind: "table",
@@ -39,8 +40,28 @@ const TRANSLATE: PluginDefinition = {
     return { values: [] };
   },
 };
-const POINTS = track({ id: "points", values: table(row("r1", { x: 1, y: 2 })) });
-const RECORD = track({ id: "record", values: record({ a: 1, b: 2 }) });
+const PointTable = defineModel({
+  id: "PointTable",
+  spec: {
+    kind: "table",
+    schema: { row: { fields: { x: { kind: "number" }, y: { kind: "number" } } } },
+  },
+});
+const ABRecord = defineModel({
+  id: "ABRecord",
+  spec: { kind: "record", fields: { a: { kind: "number" }, b: { kind: "number" } } },
+});
+
+const POINTS = track({
+  id: "points",
+  values: table(row("r1", { x: 1, y: 2 })),
+  model: "PointTable",
+});
+const RECORD = track({
+  id: "record",
+  values: record({ a: 1, b: 2 }),
+  model: "ABRecord",
+});
 const SHIFTED = track({
   id: "shifted",
   plugin: "translate",
@@ -49,7 +70,7 @@ const SHIFTED = track({
 });
 
 function environment(plugins: readonly PluginDefinition[] = []): PlanEnvironment {
-  const catalog = new PluginCatalog();
+  const catalog = new PluginCatalog({ models: [...testModels, PointTable, ABRecord] });
   catalog.registerAll(plugins);
   return {
     capabilities: catalog,
@@ -63,20 +84,24 @@ function contractFor(
 ): CommittedContract {
   const parsed = parseTrackDefinition(definition, definition.id, {
     isPluginRegistered: (pluginId) => plugins.some((plugin) => plugin.id === pluginId),
+    model: (modelId) =>
+      [PointTable, ABRecord].find((model) => model.id === modelId) ?? testModel(modelId),
   });
   if (parsed.kind === "refused") throw new Error("Fixture track does not parse.");
-  const plugin = plugins.find((candidate) => candidate.id === definition.plugin);
-  const rawSpec = plugin === undefined ? parsed.value.input.schema : plugin.inputs.values;
+  const pluginId = "plugin" in definition.output ? definition.output.plugin : undefined;
+  const plugin = plugins.find((candidate) => candidate.id === pluginId);
+  const rawSpec =
+    plugin === undefined
+      ? "model" in definition.output
+        ? testModel(definition.output.model)?.spec
+        : undefined
+      : plugin.inputs.values;
   const spec = isModel(rawSpec) ? rawSpec.spec : rawSpec;
   const derived = deriveSourceContract(
     parsed.value.input.values,
     spec,
     `${definition.id}.input.values`,
-    plugin === undefined
-      ? parsed.value.input.schema !== undefined
-        ? "declared"
-        : "inferred"
-      : "plugin",
+    plugin === undefined ? "model" : "plugin",
   );
   if (derived.kind === "refused") throw new Error("Fixture track does not derive a contract.");
   const input =
@@ -167,7 +192,7 @@ describe("write-live validates the whole evaluated value and moves nothing autho
   it("accepts a shape the contract declares and carries the definition by identity", () => {
     const committed = state([POINTS]);
     const before = committed.tracks.get("demo/points");
-    const value = table(row("r1", { x: 9, y: 8 }), row("r2", { x: 7, y: 6 }));
+    const value = table(row("r1", { x: 9, y: 8 }));
     const outcome = accepted(
       plan(committed, { kind: "write-live", nodeId: "demo/points", value }, environment()),
     );
@@ -182,16 +207,14 @@ describe("write-live validates the whole evaluated value and moves nothing autho
     expect(after?.valueState).toBe(LIVE);
   });
 
-  it("accepts a row-count change within the committed contract", () => {
-    const outcome = accepted(
-      plan(
-        state([POINTS]),
-        { kind: "write-live", nodeId: "demo/points", value: [] },
-        environment(),
-      ),
+  it("refuses a row-count change because row ids are static", () => {
+    const outcome = plan(
+      state([POINTS]),
+      { kind: "write-live", nodeId: "demo/points", value: [] },
+      environment(),
     );
 
-    expect(outcome.state.tracks.get("demo/points")?.valueState).toBe(LIVE);
+    expect(outcome.kind).toBe("refused");
   });
 
   it("refuses either shape mismatch as live-values-invalid", () => {
@@ -244,7 +267,6 @@ describe("write-live validates the whole evaluated value and moves nothing autho
       environment(),
     );
     expect(rules(duplicate)[0]?.split(" at ")[0]).toBe("live-values-invalid");
-    expect(rules(duplicate)[0]).toContain("[1].id");
 
     const infinite = plan(
       state([POINTS]),
@@ -289,24 +311,15 @@ describe("write-live validates the whole evaluated value and moves nothing autho
   });
 
   it("validates extra fields for open and closed record and table specs", () => {
-    const openRecordSpec: ValueSpec = {
-      kind: "record",
-      fields: { a: { kind: "number" } },
-      additionalProperties: true,
-    };
-    const openTableSpec: ValueSpec = {
-      kind: "table",
-      schema: { row: { fields: { x: { kind: "number" } }, additionalProperties: true } },
-    };
     const openRecordTrack = track({
       id: "open-record",
-      schema: openRecordSpec,
       values: record({ a: 1 }),
+      model: "TestRecord",
     });
     const openTableTrack = track({
       id: "open-table",
-      schema: openTableSpec,
       values: table(row("r1", { x: 1 })),
+      model: "TestTable",
     });
 
     const openRecordState = state([openRecordTrack]);
@@ -400,7 +413,7 @@ describe("write-live validates the whole evaluated value and moves nothing autho
   });
 
   it("fails closed and throws TypeError when a track has no committed input spec", () => {
-    const noSpecTrack: TrackDefinition = { id: "no-spec" };
+    const noSpecTrack: TrackDefinition = { id: "no-spec", output: { model: "UnregisteredModel" } };
     const noSpecState: PlanState = {
       tracks: new Map([
         [

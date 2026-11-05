@@ -16,7 +16,7 @@ const node = (id: string, edges: GraphEdge[], compose: PublisherNode["compose"])
     id,
     owner: "motion",
     authoredIndex: 0,
-    track: { id },
+    track: { id, output: { model: "TestRecord" } },
     edges: Object.freeze(edges),
     compose,
   });

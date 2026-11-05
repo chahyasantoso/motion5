@@ -15,7 +15,11 @@ function readyValues(patch: LivePatch | undefined): unknown {
   return patch.outputs.values;
 }
 
-const ROWS = track({ id: "rows", values: table(row("r1", { x: 1, y: 2 })) });
+const ROWS = track({
+  id: "rows",
+  values: table(row("r1", { x: 1, y: 2 })),
+  model: "TestTable",
+});
 
 describe("a runner's write step carries the whole evaluated value", () => {
   it("writes a table, holds without a call, and releases to authored", () => {
@@ -33,7 +37,7 @@ describe("a runner's write step carries the whole evaluated value", () => {
 
       let step: RunnerStep = {
         kind: "write",
-        values: table(row("r2", { x: 9, y: 8 })),
+        values: table(row("r1", { x: 9, y: 8 })),
       };
       let read: unknown;
       const stop = attachRunners(
@@ -53,7 +57,7 @@ describe("a runner's write step carries the whole evaluated value", () => {
       clock.tick();
       expect(flush).toHaveBeenCalledTimes(1);
       expect(read).toEqual([{ id: "r1", cells: { x: 1, y: 2 } }]);
-      expect(readyValues(handle.get("demo/rows"))).toEqual([{ id: "r2", cells: { x: 9, y: 8 } }]);
+      expect(readyValues(handle.get("demo/rows"))).toEqual([{ id: "r1", cells: { x: 9, y: 8 } }]);
       expect(handle.track("demo/rows").definition.input?.values).toEqual([
         { id: "r1", cells: { x: 1, y: 2 } },
       ]);
@@ -61,7 +65,7 @@ describe("a runner's write step carries the whole evaluated value", () => {
       step = { kind: "hold" };
       clock.tick();
       expect(flush).toHaveBeenCalledTimes(1);
-      expect(readyValues(handle.get("demo/rows"))).toEqual([{ id: "r2", cells: { x: 9, y: 8 } }]);
+      expect(readyValues(handle.get("demo/rows"))).toEqual([{ id: "r1", cells: { x: 9, y: 8 } }]);
 
       step = { kind: "release" };
       clock.tick();

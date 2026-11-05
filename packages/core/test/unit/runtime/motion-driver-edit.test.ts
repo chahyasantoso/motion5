@@ -47,7 +47,16 @@ const MANUAL: MotionDefinition["trigger"] = { type: "manual" };
 const TIMED: MotionDefinition["trigger"] = { type: "time", duration: 1000 };
 const PROJECT: ProjectDefinition = {
   schemaVersion: 5,
-  motions: [{ id: MOTION, trigger: MANUAL, tracks: [{ id: "arm" }, { id: "leg" }] }],
+  motions: [
+    {
+      id: MOTION,
+      trigger: MANUAL,
+      tracks: [
+        { id: "arm", output: { model: "TestRecord" } },
+        { id: "leg", output: { model: "TestRecord" } },
+      ],
+    },
+  ],
 };
 const compose = (node: { id: string }) => () => ({
   outputs: { values: { node: node.id } },
@@ -181,7 +190,7 @@ function reentrantRig(): DisposingRig {
     compose,
     replaceMotionTrigger: (motionId) => {
       entries.push(`trigger ${motionId}`);
-      project?.addTrack({ id: "tail" }, { motionId: MOTION });
+      project?.addTrack({ id: "tail", output: { model: "TestRecord" } }, { motionId: MOTION });
     },
     setMotionStagger: () => undefined,
   });

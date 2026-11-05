@@ -12,7 +12,7 @@ const compose = (node: { id: string }) => () => ({
   sourceProgress: 0,
   sourceRevisions: {},
 });
-const freeTrack: TrackDefinition = { id: "cursor" };
+const freeTrack: TrackDefinition = { id: "cursor", output: { model: "TestTable" } };
 
 describe("P5-02 runtime free tracks", () => {
   it("adds a free track under ~/id and publishes through the ordinary graph path", () => {
@@ -54,8 +54,8 @@ describe("P5-02 runtime free tracks", () => {
 
   it("keeps every track independently addressable across sequential add and remove calls", () => {
     const runtime = new ProjectRuntime(project, { clock: createManualClock(), compose });
-    const cursor = runtime.addTrack({ id: "cursor" });
-    const drag = runtime.addTrack({ id: "drag" });
+    const cursor = runtime.addTrack({ id: "cursor", output: { model: "TestTable" } });
+    const drag = runtime.addTrack({ id: "drag", output: { model: "TestRecord" } });
     expect(runtime.graph.state.snapshot().nodes).toEqual(
       expect.arrayContaining(["~/cursor", "~/drag"]),
     );
@@ -84,6 +84,7 @@ describe("P5-02 runtime free tracks", () => {
       runtime.addTrack({
         id: "bad",
         input: { values: { x: [{ p: Number.NaN, v: 0 }] } },
+        output: { model: "TestRecord" },
       }),
     ).toThrow(/cell-stops-invalid/);
     runtime.dispose();
@@ -102,6 +103,7 @@ describe("P5-02 runtime free tracks", () => {
             ],
           },
         },
+        output: { model: "TestRecord" },
       }),
     ).toThrow(/cell-stops-invalid/);
     runtime.dispose();
@@ -120,6 +122,7 @@ describe("P5-02 runtime free tracks", () => {
             ],
           },
         },
+        output: { model: "TestRecord" },
       }),
     ).toThrow(/cell-stops-invalid/);
     runtime.dispose();
@@ -136,7 +139,10 @@ describe("P5-02 runtime free tracks", () => {
         addedTrack = tId;
       },
     });
-    const added = runtime.addTrack({ id: "opacity" }, { motionId: "hero" });
+    const added = runtime.addTrack(
+      { id: "opacity", output: { model: "TestRecord" } },
+      { motionId: "hero" },
+    );
     expect(added.id).toBe("hero/opacity");
     expect(runtime.graph.state.snapshot().nodes).toContain("hero/opacity");
     expect(addedMotion).toBe("hero");
@@ -153,9 +159,12 @@ describe("P5-02 runtime free tracks", () => {
 
   it("rejects adding into a non-existent motion", () => {
     const runtime = new ProjectRuntime(project, { clock: createManualClock(), compose });
-    expect(() => runtime.addTrack({ id: "opacity" }, { motionId: "nonexistent" })).toThrow(
-      /nonexistent/,
-    );
+    expect(() =>
+      runtime.addTrack(
+        { id: "opacity", output: { model: "TestRecord" } },
+        { motionId: "nonexistent" },
+      ),
+    ).toThrow(/nonexistent/);
     runtime.dispose();
   });
 
@@ -170,7 +179,10 @@ describe("P5-02 runtime free tracks", () => {
         removedTrack = tId;
       },
     });
-    const added = runtime.addTrack({ id: "opacity" }, { motionId: "hero" });
+    const added = runtime.addTrack(
+      { id: "opacity", output: { model: "TestRecord" } },
+      { motionId: "hero" },
+    );
     expect(runtime.graph.state.snapshot().nodes).toContain("hero/opacity");
 
     added.remove();

@@ -13,12 +13,17 @@ const armTrack: TrackDefinition = track({
       { p: 1, v: 100 },
     ],
   }),
+  model: "TestRecord",
 });
 
 const project = {
   schemaVersion: 5 as const,
   motions: [
-    { id: "walk", trigger: { type: "manual" as const }, tracks: [track({ id: "pelvis" })] },
+    {
+      id: "walk",
+      trigger: { type: "manual" as const },
+      tracks: [track({ id: "pelvis", model: "TestRecord" })],
+    },
   ],
 };
 

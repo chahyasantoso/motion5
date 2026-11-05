@@ -62,8 +62,21 @@ interface SetFieldShape {
   readonly cell: AuthoredCell;
 }
 
-/** The two authored edits: move values without a rebuild or a contract re-inference. */
-export type CheapEdit = SetValuesShape | SetFieldShape;
+interface SetParamShape {
+  readonly kind: "set-param";
+  readonly nodeId: string;
+  readonly param: AuthoredValues;
+}
+
+interface SetParamFieldShape {
+  readonly kind: "set-param-field";
+  readonly nodeId: string;
+  readonly address: CellAddress;
+  readonly cell: AuthoredCell;
+}
+
+/** The four authored edits: move local values or params without a rebuild. */
+export type CheapEdit = SetValuesShape | SetFieldShape | SetParamShape | SetParamFieldShape;
 
 interface WriteLiveShape {
   readonly kind: "write-live";
@@ -96,6 +109,8 @@ export function isStructuralEdit(edit: Edit): edit is StructuralEdit {
       return true;
     case "set-values":
     case "set-field":
+    case "set-param":
+    case "set-param-field":
     case "write-live":
     case "release-live":
       return false;
@@ -125,6 +140,8 @@ export function clearsOverlay(edit: Edit): boolean {
     case "unbind":
     case "set-values":
     case "set-field":
+    case "set-param":
+    case "set-param-field":
     case "write-live":
     case "release-live":
       return false;
@@ -137,12 +154,16 @@ export function clearsOverlay(edit: Edit): boolean {
 export type PublicValueVerb =
   | "input.values.set"
   | "input.values.setField"
+  | "input.param.set"
+  | "input.param.setField"
   | "writeValues"
   | "releaseValues";
 
 const PUBLIC_VERB: Readonly<Record<(CheapEdit | LiveEdit)["kind"], PublicValueVerb>> = {
   "set-values": "input.values.set",
   "set-field": "input.values.setField",
+  "set-param": "input.param.set",
+  "set-param-field": "input.param.setField",
   "write-live": "writeValues",
   "release-live": "releaseValues",
 };

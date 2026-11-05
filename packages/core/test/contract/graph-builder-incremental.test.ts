@@ -29,6 +29,7 @@ describe("IncrementalGraphBuilder Equivalence", () => {
                 },
               ],
             },
+            output: { model: "TestTable" },
           },
         ],
       },
@@ -49,6 +50,7 @@ describe("IncrementalGraphBuilder Equivalence", () => {
             },
           ],
         },
+        output: { model: "TestTable" },
       },
     ],
   });
@@ -86,6 +88,7 @@ describe("IncrementalGraphBuilder Equivalence", () => {
           },
         ],
       },
+      output: { model: "TestTable" },
     };
 
     const nextProject: ProjectDefinition = {

@@ -55,8 +55,12 @@ describe("slot model fit", () => {
           id: "m",
           trigger: { type: "manual" },
           tracks: [
-            { id: "p", plugin: "producer-body", input: { values: {} } },
-            { id: "c", plugin: "consumer-body", input: { values: {}, requires: { chain: "p" } } },
+            { id: "p", output: { plugin: "producer-body" }, input: { values: {} } },
+            {
+              id: "c",
+              output: { plugin: "consumer-body" },
+              input: { values: {}, requires: { chain: "p" } },
+            },
           ],
         },
       ],
@@ -93,8 +97,12 @@ describe("slot model fit", () => {
           id: "m",
           trigger: { type: "manual" },
           tracks: [
-            { id: "p", plugin: "producer-mocap", input: { values: {} } },
-            { id: "c", plugin: "consumer-body", input: { values: {}, requires: { chain: "p" } } },
+            { id: "p", output: { plugin: "producer-mocap" }, input: { values: {} } },
+            {
+              id: "c",
+              output: { plugin: "consumer-body" },
+              input: { values: {}, requires: { chain: "p" } },
+            },
           ],
         },
       ],
@@ -138,7 +146,7 @@ describe("slot model fit", () => {
         {
           id: "m",
           trigger: { type: "manual" },
-          tracks: [{ id: "c", plugin: "consumer-optional", input: { values: {} } }],
+          tracks: [{ id: "c", output: { plugin: "consumer-optional" }, input: { values: {} } }],
         },
       ],
     };
@@ -151,10 +159,10 @@ describe("slot model fit", () => {
           id: "m",
           trigger: { type: "manual" },
           tracks: [
-            { id: "p", plugin: "producer-solved", input: { values: {} } },
+            { id: "p", output: { plugin: "producer-solved" }, input: { values: {} } },
             {
               id: "c",
-              plugin: "consumer-optional",
+              output: { plugin: "consumer-optional" },
               input: { values: {}, requires: { solved: "p" } },
             },
           ],
@@ -170,10 +178,10 @@ describe("slot model fit", () => {
           id: "m",
           trigger: { type: "manual" },
           tracks: [
-            { id: "p", plugin: "producer-body", input: { values: {} } },
+            { id: "p", output: { plugin: "producer-body" }, input: { values: {} } },
             {
               id: "c",
-              plugin: "consumer-optional",
+              output: { plugin: "consumer-optional" },
               input: { values: {}, requires: { solved: "p" } },
             },
           ],
@@ -211,8 +219,12 @@ describe("slot model fit", () => {
           id: "m",
           trigger: { type: "manual" },
           tracks: [
-            { id: "p", plugin: "producer-shape", input: { values: {} } },
-            { id: "c", plugin: "consumer-shape", input: { values: {}, requires: { data: "p" } } },
+            { id: "p", output: { plugin: "producer-shape" }, input: { values: {} } },
+            {
+              id: "c",
+              output: { plugin: "consumer-shape" },
+              input: { values: {}, requires: { data: "p" } },
+            },
           ],
         },
       ],
@@ -222,7 +234,7 @@ describe("slot model fit", () => {
     expect(built.diagnostics).toEqual([]);
   });
 
-  it("satisfies a model slot through transitional legacyTypeId bridge", () => {
+  it("satisfies a model slot by model id", () => {
     const consumer = {
       id: "consumer-bridge",
       inputs: {
@@ -232,7 +244,7 @@ describe("slot model fit", () => {
       outputs: { values: SPEC_A },
       transform: () => ({ values: [] }),
     };
-    const catalog = new PluginCatalog();
+    const catalog = new PluginCatalog({ models: [Mocap2d] });
     catalog.register(consumer);
 
     const projectMatching: ProjectDefinition = {
@@ -244,12 +256,12 @@ describe("slot model fit", () => {
           tracks: [
             {
               id: "data-track",
-              type: "body2d",
+              output: { model: "Body2d" },
               input: { values: [{ id: "row1", cells: { x: 1, y: 2 } }] },
             },
             {
               id: "c",
-              plugin: "consumer-bridge",
+              output: { plugin: "consumer-bridge" },
               input: { values: {}, requires: { chain: "data-track" } },
             },
           ],
@@ -267,12 +279,12 @@ describe("slot model fit", () => {
           tracks: [
             {
               id: "data-track",
-              type: "point2d",
+              output: { model: "Mocap2d" },
               input: { values: [{ id: "row1", cells: { x: 1, y: 2 } }] },
             },
             {
               id: "c",
-              plugin: "consumer-bridge",
+              output: { plugin: "consumer-bridge" },
               input: { values: {}, requires: { chain: "data-track" } },
             },
           ],
@@ -312,12 +324,12 @@ describe("slot model fit", () => {
           tracks: [
             {
               id: "source-track",
-              type: "body2d",
+              output: { model: "Body2d" },
               input: { values: [{ id: "r1", cells: { x: 1, y: 2 } }] },
             },
             {
               id: "c",
-              plugin: "consumer-describe",
+              output: { plugin: "consumer-describe" },
               input: { values: {}, requires: { chain: "source-track" } },
             },
           ],

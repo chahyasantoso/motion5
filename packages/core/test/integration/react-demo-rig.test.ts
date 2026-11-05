@@ -21,6 +21,7 @@ import {
   nodePosition,
   createWalkerRowSource,
 } from "../../../../apps/react-demo/src/components/marker-position";
+import { testModels } from "../support/test-models";
 
 interface FakeStyle extends Record<string, unknown> {
   removeProperty(property: string): void;
@@ -53,7 +54,7 @@ function loadRig(): {
   flush(): void;
 } {
   const scheduler = createFakeScheduler();
-  const plugins = new PluginCatalog();
+  const plugins = new PluginCatalog({ models: testModels });
   plugins.register(fkPlugin);
   const definition: ProjectDefinition = {
     ...initialWalkerProject,

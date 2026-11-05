@@ -63,6 +63,7 @@ export interface ValueEvaluator {
 }
 
 const EMPTY_TABLE: Plan = Object.freeze({ kind: "table", rows: Object.freeze([]) });
+const EMPTY_RECORD: Plan = Object.freeze({ kind: "record", entries: Object.freeze([]) });
 const NO_KEYFRAMES: Readonly<Record<string, readonly ParsedStop[]>> = Object.freeze({});
 const NO_BOUNDS: ReadonlyMap<string, FieldBounds> = new Map();
 
@@ -91,7 +92,12 @@ function discreteAt(stops: readonly ParsedStop[], progress: number): Scalar {
 
 function planValues(values: ParsedValues | undefined, spec: ValueSpec | undefined): Skeleton {
   if (values === undefined)
-    return { plan: EMPTY_TABLE, keyframes: NO_KEYFRAMES, bounds: NO_BOUNDS, timeInvariant: true };
+    return {
+      plan: spec?.kind === "record" ? EMPTY_RECORD : EMPTY_TABLE,
+      keyframes: NO_KEYFRAMES,
+      bounds: NO_BOUNDS,
+      timeInvariant: true,
+    };
 
   let animated = false;
   const numericStops: (readonly ParsedStop[])[] = [];

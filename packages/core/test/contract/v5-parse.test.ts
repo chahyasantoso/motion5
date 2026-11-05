@@ -63,6 +63,7 @@ describe("parseTrackDefinition accepts the target shape", () => {
           { id: "point-b", cells: { x: 200, y: 40 } },
         ],
       },
+      output: { model: "TestTable" },
     });
 
     expect(parsed.input.values).toEqual({
@@ -101,6 +102,7 @@ describe("parseTrackDefinition accepts the target shape", () => {
           ],
         },
       },
+      output: { model: "TestRecord" },
     });
 
     expect(parsed.input.values).toEqual({
@@ -131,6 +133,7 @@ describe("parseTrackDefinition accepts the target shape", () => {
           ],
         },
       },
+      output: { model: "TestRecord" },
     });
 
     expect(parsed.input.values?.kind).toBe("record");
@@ -157,6 +160,7 @@ describe("parseTrackDefinition accepts the target shape", () => {
           },
         ],
       },
+      output: { model: "TestTable" },
     });
 
     expect(parsed.input.values).toMatchObject({
@@ -176,16 +180,24 @@ describe("parseTrackDefinition accepts the target shape", () => {
   });
 
   it("keeps empty tables, empty records and rows with empty cells distinct", () => {
-    expect(accepted({ id: "a", input: { values: [] } }).input.values).toEqual({
+    expect(
+      accepted({ id: "a", input: { values: [] }, output: { model: "TestTable" } }).input.values,
+    ).toEqual({
       kind: "table",
       rows: [],
     });
-    expect(accepted({ id: "b", input: { values: {} } }).input.values).toEqual({
+    expect(
+      accepted({ id: "b", input: { values: {} }, output: { model: "TestRecord" } }).input.values,
+    ).toEqual({
       kind: "record",
       fields: {},
     });
     expect(
-      accepted({ id: "c", input: { values: [{ id: "row", cells: {} }] } }).input.values,
+      accepted({
+        id: "c",
+        input: { values: [{ id: "row", cells: {} }] },
+        output: { model: "TestTable" },
+      }).input.values,
     ).toEqual({
       kind: "table",
       rows: [{ id: "row", cells: {} }],
@@ -193,41 +205,33 @@ describe("parseTrackDefinition accepts the target shape", () => {
   });
 
   it("defaults an omitted input to no local values and no bindings", () => {
-    const parsed = accepted({ id: "points" });
+    const parsed = accepted({ id: "points", output: { model: "TestRecord" } });
 
-    expect(parsed).toEqual({ id: "points", input: { requires: {} } });
+    expect(parsed).toEqual({
+      id: "points",
+      input: { requires: {} },
+      output: { model: "TestRecord" },
+    });
     expect(parsed.input.values).toBeUndefined();
-    expect(parsed.input.schema).toBeUndefined();
   });
 
-  it("accepts a declared schema that matches the authored shape", () => {
-    const schema = {
-      kind: "table",
-      schema: {
-        row: {
-          fields: {
-            x: { kind: "number" },
-            label: { kind: "string", optional: true, enum: ["idle", "busy"] },
-          },
-          additionalProperties: false,
-        },
-        minRows: 0,
-        maxRows: 4,
+  it("refuses a retired input schema", () => {
+    const found = expectRule(
+      {
+        id: "points",
+        input: { values: [], schema: { kind: "table", schema: { row: { fields: {} } } } },
+        output: { model: "TestTable" },
       },
-    };
-    const parsed = accepted({
-      id: "points",
-      input: { values: [], schema },
-    });
-
-    expect(parsed.input.schema).toEqual(schema);
+      "input-schema-retired",
+    );
+    expect(found.message).toContain("output");
   });
 
   it("accepts a registered plugin track with single and map bindings", () => {
     const parsed = accepted(
       {
         id: "shifted",
-        plugin: "translate",
+        output: { plugin: "translate" },
         input: {
           values: { dx: 10 },
           requires: { data: "points", mapped: { a: "one", b: "two" } },
@@ -236,21 +240,25 @@ describe("parseTrackDefinition accepts the target shape", () => {
       ["translate"],
     );
 
-    expect(parsed.plugin).toBe("translate");
+    expect(parsed.output).toEqual({ plugin: "translate" });
     expect(parsed.input.requires).toEqual({
       data: "points",
       mapped: { a: "one", b: "two" },
     });
   });
 
-  it("accepts an empty requires object without a plugin", () => {
-    expect(accepted({ id: "points", input: { requires: {} } }).input.requires).toEqual({});
+  it("refuses an empty requires object on a model output", () => {
+    expectRule(
+      { id: "points", input: { requires: {} }, output: { model: "TestRecord" } },
+      "requires-not-allowed",
+    );
   });
 
   it("keeps an envelope id and a cell named id as separate members", () => {
     const parsed = accepted({
       id: "points",
       input: { values: [{ id: "row", cells: { id: "external-1", x: 1 } }] },
+      output: { model: "TestTable" },
     });
 
     expect(parsed.input.values).toMatchObject({
@@ -262,6 +270,7 @@ describe("parseTrackDefinition accepts the target shape", () => {
     const parsed = accepted({
       id: "points",
       input: { values: [{ id: "row", cells: { x: [{ p: 0, v: 0 }] } }] },
+      output: { model: "TestTable" },
     });
 
     expect(Object.isFrozen(parsed)).toBe(true);
@@ -282,12 +291,19 @@ describe("parseTrackDefinition refuses the retired and unknown members", () => {
   });
 
   it("refuses an unknown input member as track-field-unknown", () => {
-    expectRule({ id: "points", input: { claims: {} } }, "track-field-unknown");
+    expectRule(
+      { id: "points", input: { claims: {} }, output: { model: "TestRecord" } },
+      "track-field-unknown",
+    );
   });
 
   it("refuses an unknown row member as track-field-unknown", () => {
     expectRule(
-      { id: "points", input: { values: [{ id: "a", cells: {}, label: "x" }] } },
+      {
+        id: "points",
+        input: { values: [{ id: "a", cells: {}, label: "x" }] },
+        output: { model: "TestTable" },
+      },
       "track-field-unknown",
     );
   });
@@ -311,22 +327,28 @@ describe("parseTrackDefinition refuses the retired and unknown members", () => {
   });
 
   it("refuses a non-object input as track-field-unknown", () => {
-    expectRule({ id: "points", input: [] }, "track-field-unknown");
+    expectRule({ id: "points", input: [], output: { model: "TestRecord" } }, "track-field-unknown");
   });
 });
 
 describe("parseTrackDefinition owns the row envelope", () => {
   it("refuses a flat row without id and cells as row-id-invalid", () => {
     const found = expectRule(
-      { id: "points", input: { values: [{ point: "a", x: 0 }] } },
+      { id: "points", input: { values: [{ point: "a", x: 0 }] }, output: { model: "TestTable" } },
       "row-id-invalid",
     );
     expect(found.path).toBe(`${PATH}.input.values[0].id`);
   });
 
   it("refuses an empty or non-string row id as row-id-invalid", () => {
-    expectRule({ id: "points", input: { values: [{ id: "", cells: {} }] } }, "row-id-invalid");
-    expectRule({ id: "points", input: { values: [{ id: 1, cells: {} }] } }, "row-id-invalid");
+    expectRule(
+      { id: "points", input: { values: [{ id: "", cells: {} }] }, output: { model: "TestTable" } },
+      "row-id-invalid",
+    );
+    expectRule(
+      { id: "points", input: { values: [{ id: 1, cells: {} }] }, output: { model: "TestTable" } },
+      "row-id-invalid",
+    );
   });
 
   it("refuses duplicate row ids as row-id-duplicate", () => {
@@ -339,6 +361,7 @@ describe("parseTrackDefinition owns the row envelope", () => {
             { id: "a", cells: {} },
           ],
         },
+        output: { model: "TestTable" },
       },
       "row-id-duplicate",
     );
@@ -347,51 +370,95 @@ describe("parseTrackDefinition owns the row envelope", () => {
 
   it("refuses reserved row ids as name-reserved", () => {
     expectRule(
-      { id: "points", input: { values: [{ id: "__proto__", cells: {} }] } },
+      {
+        id: "points",
+        input: { values: [{ id: "__proto__", cells: {} }] },
+        output: { model: "TestTable" },
+      },
       "name-reserved",
     );
   });
 
   it("refuses a row without a cells object as cell-form-invalid", () => {
-    expectRule({ id: "points", input: { values: [{ id: "a" }] } }, "cell-form-invalid");
-    expectRule({ id: "points", input: { values: [{ id: "a", cells: [] }] } }, "cell-form-invalid");
+    expectRule(
+      { id: "points", input: { values: [{ id: "a" }] }, output: { model: "TestTable" } },
+      "cell-form-invalid",
+    );
+    expectRule(
+      { id: "points", input: { values: [{ id: "a", cells: [] }] }, output: { model: "TestTable" } },
+      "cell-form-invalid",
+    );
   });
 });
 
 describe("parseTrackDefinition owns cells and stops", () => {
   it("refuses a structured, empty-object, wrapper or null cell as cell-form-invalid", () => {
-    expectRule({ id: "values", input: { values: { x: { literal: 1 } } } }, "cell-form-invalid");
-    expectRule({ id: "values", input: { values: { x: {} } } }, "cell-form-invalid");
-    expectRule({ id: "values", input: { values: { x: RETIRED_WRAPPER } } }, "cell-form-invalid");
-    expectRule({ id: "values", input: { values: { x: null } } }, "cell-form-invalid");
+    expectRule(
+      { id: "values", input: { values: { x: { literal: 1 } } }, output: { model: "TestRecord" } },
+      "cell-form-invalid",
+    );
+    expectRule(
+      { id: "values", input: { values: { x: {} } }, output: { model: "TestRecord" } },
+      "cell-form-invalid",
+    );
+    expectRule(
+      { id: "values", input: { values: { x: RETIRED_WRAPPER } }, output: { model: "TestRecord" } },
+      "cell-form-invalid",
+    );
+    expectRule(
+      { id: "values", input: { values: { x: null } }, output: { model: "TestRecord" } },
+      "cell-form-invalid",
+    );
   });
 
   it("refuses an empty stop array as cell-stops-invalid", () => {
-    expectRule({ id: "values", input: { values: { x: [] } } }, "cell-stops-invalid");
+    expectRule(
+      { id: "values", input: { values: { x: [] } }, output: { model: "TestRecord" } },
+      "cell-stops-invalid",
+    );
   });
 
   it("refuses a non-object stop as cell-stops-invalid", () => {
-    expectRule({ id: "values", input: { values: { x: [1] } } }, "cell-stops-invalid");
+    expectRule(
+      { id: "values", input: { values: { x: [1] } }, output: { model: "TestRecord" } },
+      "cell-stops-invalid",
+    );
   });
 
   it("refuses a stop position outside [0, 1] as cell-stops-invalid", () => {
     expectRule(
-      { id: "values", input: { values: { x: [{ p: 1.5, v: 0 }] } } },
+      {
+        id: "values",
+        input: { values: { x: [{ p: 1.5, v: 0 }] } },
+        output: { model: "TestRecord" },
+      },
       "cell-stops-invalid",
     );
     expectRule(
-      { id: "values", input: { values: { x: [{ p: -0.1, v: 0 }] } } },
+      {
+        id: "values",
+        input: { values: { x: [{ p: -0.1, v: 0 }] } },
+        output: { model: "TestRecord" },
+      },
       "cell-stops-invalid",
     );
   });
 
   it("refuses a non-finite stop position as cell-stops-invalid", () => {
     expectRule(
-      { id: "values", input: { values: { x: [{ p: Number.NaN, v: 0 }] } } },
+      {
+        id: "values",
+        input: { values: { x: [{ p: Number.NaN, v: 0 }] } },
+        output: { model: "TestRecord" },
+      },
       "cell-stops-invalid",
     );
     expectRule(
-      { id: "values", input: { values: { x: [{ p: Number.POSITIVE_INFINITY, v: 0 }] } } },
+      {
+        id: "values",
+        input: { values: { x: [{ p: Number.POSITIVE_INFINITY, v: 0 }] } },
+        output: { model: "TestRecord" },
+      },
       "cell-stops-invalid",
     );
   });
@@ -408,6 +475,7 @@ describe("parseTrackDefinition owns cells and stops", () => {
             ],
           },
         },
+        output: { model: "TestRecord" },
       },
       "cell-stops-invalid",
     );
@@ -422,6 +490,7 @@ describe("parseTrackDefinition owns cells and stops", () => {
             ],
           },
         },
+        output: { model: "TestRecord" },
       },
       "cell-stops-invalid",
     );
@@ -444,6 +513,7 @@ describe("parseTrackDefinition owns cells and stops", () => {
             },
           ],
         },
+        output: { model: "TestTable" },
       },
       "cell-stops-invalid",
     );
@@ -451,17 +521,35 @@ describe("parseTrackDefinition owns cells and stops", () => {
   });
 
   it("refuses a missing, non-scalar or non-finite stop value as cell-stops-invalid", () => {
-    expectRule({ id: "values", input: { values: { x: [{ p: 0 }] } } }, "cell-stops-invalid");
-    expectRule({ id: "values", input: { values: { x: [{ p: 0, v: {} }] } } }, "cell-stops-invalid");
     expectRule(
-      { id: "values", input: { values: { x: [{ p: 0, v: Number.NaN }] } } },
+      { id: "values", input: { values: { x: [{ p: 0 }] } }, output: { model: "TestRecord" } },
+      "cell-stops-invalid",
+    );
+    expectRule(
+      {
+        id: "values",
+        input: { values: { x: [{ p: 0, v: {} }] } },
+        output: { model: "TestRecord" },
+      },
+      "cell-stops-invalid",
+    );
+    expectRule(
+      {
+        id: "values",
+        input: { values: { x: [{ p: 0, v: Number.NaN }] } },
+        output: { model: "TestRecord" },
+      },
       "cell-stops-invalid",
     );
   });
 
   it("refuses an unknown stop member as cell-stops-invalid", () => {
     expectRule(
-      { id: "values", input: { values: { x: [{ p: 0, v: 1, curve: "linear" }] } } },
+      {
+        id: "values",
+        input: { values: { x: [{ p: 0, v: 1, curve: "linear" }] } },
+        output: { model: "TestRecord" },
+      },
       "cell-stops-invalid",
     );
   });
@@ -478,6 +566,7 @@ describe("parseTrackDefinition owns cells and stops", () => {
             ],
           },
         },
+        output: { model: "TestRecord" },
       },
       "cell-stops-invalid",
     );
@@ -496,6 +585,7 @@ describe("parseTrackDefinition owns cells and stops", () => {
             ],
           },
         },
+        output: { model: "TestRecord" },
       },
       "cell-stops-invalid",
     );
@@ -510,6 +600,7 @@ describe("parseTrackDefinition owns cells and stops", () => {
             ],
           },
         },
+        output: { model: "TestRecord" },
       },
       "cell-stops-invalid",
     );
@@ -527,6 +618,7 @@ describe("parseTrackDefinition owns cells and stops", () => {
             ],
           },
         },
+        output: { model: "TestRecord" },
       },
       "cell-kind-conflict",
     );
@@ -542,6 +634,7 @@ describe("parseTrackDefinition owns cells and stops", () => {
             ],
           },
         },
+        output: { model: "TestRecord" },
       },
       "cell-kind-conflict",
     );
@@ -549,311 +642,106 @@ describe("parseTrackDefinition owns cells and stops", () => {
 
   it("refuses reserved column and record field names as name-reserved", () => {
     expectRule(
-      { id: "points", input: { values: [{ id: "a", cells: { constructor: 1 } }] } },
+      {
+        id: "points",
+        input: { values: [{ id: "a", cells: { constructor: 1 } }] },
+        output: { model: "TestTable" },
+      },
       "name-reserved",
     );
-    expectRule({ id: "values", input: { values: { prototype: 1 } } }, "name-reserved");
+    expectRule(
+      { id: "values", input: { values: { prototype: 1 } }, output: { model: "TestRecord" } },
+      "name-reserved",
+    );
+  });
+});
+
+describe("parseTrackDefinition owns the output member", () => {
+  it("refuses a missing output", () => {
+    expectRule({ id: "points" }, "output-missing");
+  });
+
+  it("refuses an output with both keys or neither", () => {
+    expectRule(
+      { id: "points", output: { model: "TestRecord", plugin: "translate" } },
+      "output-invalid",
+    );
+    expectRule({ id: "points", output: {} }, "output-invalid");
+  });
+
+  it("refuses the retired type field by name", () => {
+    expectRule(
+      { id: "points", type: "body2d", output: { model: "TestRecord" } },
+      "type-field-retired",
+    );
+  });
+
+  it("refuses param on a model output", () => {
+    expectRule(
+      {
+        id: "points",
+        output: { model: "TestRecord" },
+        input: { param: { x: 1 } },
+      },
+      "param-not-allowed",
+    );
+  });
+
+  it("names the registered models and plugins in unknown-name refusals", () => {
+    const model = parseTrackDefinition({ id: "points", output: { model: "Nope" } }, PATH, {
+      model: () => undefined,
+      modelIds: () => ["Body2d", "Camera"],
+    });
+    expect(model.kind).toBe("refused");
+    if (model.kind === "refused") expect(model.diagnostics[0]?.message).toContain("Body2d, Camera");
+
+    const plugin = parseTrackDefinition({ id: "points", output: { plugin: "nope" } }, PATH, {
+      isPluginRegistered: () => false,
+      pluginIds: () => ["fk", "ik"],
+    });
+    expect(plugin.kind).toBe("refused");
+    if (plugin.kind === "refused") expect(plugin.diagnostics[0]?.message).toContain("fk, ik");
+  });
+
+  it("refuses an unknown model when a model registry answers", () => {
+    const outcome = parseTrackDefinition({ id: "points", output: { model: "Nope" } }, PATH, {
+      model: () => undefined,
+    });
+    expect(outcome.kind).toBe("refused");
+    if (outcome.kind === "refused")
+      expect(outcome.diagnostics.map(({ ruleId }) => ruleId)).toContain("model-unknown");
   });
 });
 
 describe("parseTrackDefinition selects plugins", () => {
   it("refuses an unregistered, empty or non-string plugin id as plugin-unknown", () => {
-    expectRule({ id: "shifted", plugin: "missing" }, "plugin-unknown");
-    expectRule({ id: "shifted", plugin: "" }, "plugin-unknown");
-    expectRule({ id: "shifted", plugin: 4 }, "plugin-unknown");
+    expectRule({ id: "shifted", output: { plugin: "missing" } }, "plugin-unknown");
+    expectRule({ id: "shifted", output: { plugin: "" } }, "output-invalid");
+    expectRule({ id: "shifted", output: { plugin: 4 } }, "output-invalid");
   });
 
-  it("refuses nonempty requires without a plugin as plugin-requires-without-plugin", () => {
+  it("refuses requires on a model output as requires-not-allowed", () => {
     const found = expectRule(
-      { id: "points", input: { requires: { data: "points" } } },
-      "plugin-requires-without-plugin",
+      { id: "points", input: { requires: { data: "points" } }, output: { model: "TestRecord" } },
+      "requires-not-allowed",
     );
     expect(found.path).toBe(`${PATH}.input.requires`);
   });
 
-  it("refuses input.schema on a plugin track as input-schema-on-plugin-track", () => {
+  it("refuses input.schema on a plugin track as input-schema-retired", () => {
     const found = expectRule(
       {
         id: "shifted",
-        plugin: "translate",
+        output: { plugin: "translate" },
         input: {
           values: { dx: 10 },
           schema: { kind: "record", fields: { dx: { kind: "number" } } },
         },
       },
-      "input-schema-on-plugin-track",
+      "input-schema-retired",
       ["translate"],
     );
     expect(found.path).toBe(`${PATH}.input.schema`);
-  });
-});
-
-describe("parseTrackDefinition owns the spec vocabulary", () => {
-  it("refuses the retired type alias as spec-field-unknown", () => {
-    const found = expectRule(
-      {
-        id: "values",
-        input: { values: { x: 1 }, schema: { type: "record", fields: { x: { kind: "number" } } } },
-      },
-      "spec-field-unknown",
-    );
-    expect(found.path).toBe(`${PATH}.input.schema.type`);
-  });
-
-  it("refuses a missing or unknown kind as spec-field-unknown", () => {
-    expectRule(
-      { id: "values", input: { values: {}, schema: { fields: {} } } },
-      "spec-field-unknown",
-    );
-    expectRule(
-      { id: "values", input: { values: {}, schema: { kind: "map", fields: {} } } },
-      "spec-field-unknown",
-    );
-  });
-
-  it("refuses unknown members in a spec, its schema, its row and a field as spec-field-unknown", () => {
-    expectRule(
-      { id: "values", input: { values: {}, schema: { kind: "record", fields: {}, extra: 1 } } },
-      "spec-field-unknown",
-    );
-    expectRule(
-      {
-        id: "values",
-        input: {
-          values: [],
-          schema: { kind: "table", schema: { row: { fields: {} }, extra: 1 } },
-        },
-      },
-      "spec-field-unknown",
-    );
-    expectRule(
-      {
-        id: "values",
-        input: {
-          values: [],
-          schema: { kind: "table", schema: { row: { fields: {}, extra: 1 } } },
-        },
-      },
-      "spec-field-unknown",
-    );
-    expectRule(
-      {
-        id: "values",
-        input: {
-          values: {},
-          schema: { kind: "record", fields: { x: { kind: "number", step: 1 } } },
-        },
-      },
-      "spec-field-unknown",
-    );
-  });
-
-  it("refuses an optional or static flag that is not true as spec-field-unknown", () => {
-    expectRule(
-      {
-        id: "values",
-        input: {
-          values: { x: 1 },
-          schema: { kind: "record", fields: { x: { kind: "number", optional: false } } },
-        },
-      },
-      "spec-field-unknown",
-    );
-    expectRule(
-      {
-        id: "values",
-        input: {
-          values: { x: 1 },
-          schema: { kind: "record", fields: { x: { kind: "number", static: false } } },
-        },
-      },
-      "spec-field-unknown",
-    );
-  });
-
-  it("refuses descriptors that do not belong to the field kind as spec-field-unknown", () => {
-    expectRule(
-      {
-        id: "values",
-        input: {
-          values: { x: "a" },
-          schema: { kind: "record", fields: { x: { kind: "string", min: 0 } } },
-        },
-      },
-      "spec-field-unknown",
-    );
-    expectRule(
-      {
-        id: "values",
-        input: {
-          values: { x: 1 },
-          schema: { kind: "record", fields: { x: { kind: "number", enum: ["a"] } } },
-        },
-      },
-      "spec-field-unknown",
-    );
-    expectRule(
-      {
-        id: "values",
-        input: {
-          values: { x: "a" },
-          schema: { kind: "record", fields: { x: { kind: "string", enum: [1] } } },
-        },
-      },
-      "spec-field-unknown",
-    );
-  });
-
-  it("refuses inverted bounds and row counts as spec-field-unknown", () => {
-    expectRule(
-      {
-        id: "values",
-        input: {
-          values: {},
-          schema: { kind: "record", fields: { x: { kind: "number", min: 5, max: 1 } } },
-        },
-      },
-      "spec-field-unknown",
-    );
-    expectRule(
-      {
-        id: "values",
-        input: {
-          values: [],
-          schema: { kind: "table", schema: { row: { fields: {} }, minRows: 3, maxRows: 1 } },
-        },
-      },
-      "spec-field-unknown",
-    );
-    expectRule(
-      {
-        id: "values",
-        input: {
-          values: [],
-          schema: { kind: "table", schema: { row: { fields: {} }, minRows: -1 } },
-        },
-      },
-      "spec-field-unknown",
-    );
-  });
-
-  it("refuses reserved field names in a spec as name-reserved", () => {
-    expectRule(
-      {
-        id: "values",
-        input: {
-          values: { a: 1 },
-          schema: {
-            kind: "record",
-            fields: { ["__proto__"]: { kind: "number" } },
-          },
-        },
-      },
-      "name-reserved",
-    );
-  });
-});
-
-describe("parseTrackDefinition matches authored values to the declared shape", () => {
-  it("refuses a table where a record is declared as values-shape-invalid", () => {
-    const found = expectRule(
-      {
-        id: "parameters",
-        input: {
-          values: [{ id: "point-a", cells: { dx: 10 } }],
-          schema: { kind: "record", fields: { dx: { kind: "number" } } },
-        },
-      },
-      "values-shape-invalid",
-    );
-    expect(found.message).toContain("table");
-    expect(found.message).toContain("record");
-  });
-
-  it("refuses a record where a table is declared as values-shape-invalid", () => {
-    expectRule(
-      {
-        id: "points",
-        input: {
-          values: { x: 10 },
-          schema: { kind: "table", schema: { row: { fields: { x: { kind: "number" } } } } },
-        },
-      },
-      "values-shape-invalid",
-    );
-  });
-
-  it("refuses values that are neither a table nor a record as values-shape-invalid", () => {
-    expectRule({ id: "values", input: { values: "x" } }, "values-shape-invalid");
-    expectRule({ id: "values", input: { values: 4 } }, "values-shape-invalid");
-  });
-
-  it("refuses any stop sequence in a static field as static-field-stops", () => {
-    expectRule(
-      {
-        id: "values",
-        input: {
-          values: {
-            dx: [
-              { p: 0, v: 10 },
-              { p: 1, v: 20 },
-            ],
-          },
-          schema: { kind: "record", fields: { dx: { kind: "number", static: true } } },
-        },
-      },
-      "static-field-stops",
-    );
-    expectRule(
-      {
-        id: "values",
-        input: {
-          values: { dx: [{ p: 0, v: 10 }] },
-          schema: { kind: "record", fields: { dx: { kind: "number", static: true } } },
-        },
-      },
-      "static-field-stops",
-    );
-  });
-
-  it("refuses a stop sequence in a static table column as static-field-stops", () => {
-    expectRule(
-      {
-        id: "points",
-        input: {
-          values: [
-            {
-              id: "a",
-              cells: {
-                x: [
-                  { p: 0, v: 0 },
-                  { p: 1, v: 1 },
-                ],
-              },
-            },
-          ],
-          schema: {
-            kind: "table",
-            schema: { row: { fields: { x: { kind: "number", static: true } } } },
-          },
-        },
-      },
-      "static-field-stops",
-    );
-  });
-
-  it("accepts an absent static field", () => {
-    const parsed = accepted({
-      id: "values",
-      input: {
-        values: { dy: 1 },
-        schema: { kind: "record", fields: { dx: { kind: "number", static: true } } },
-      },
-    });
-    expect(parsed.input.values).toEqual({
-      kind: "record",
-      fields: { dy: { kind: "static", scalar: "number", value: 1 } },
-    });
   });
 });
 
@@ -862,7 +750,7 @@ describe("parseTrackDefinition owns binding sources", () => {
     expectRule(
       {
         id: "shifted",
-        plugin: "translate",
+        output: { plugin: "translate" },
         input: { requires: { data: "" } },
       },
       "requirement-source",
@@ -871,7 +759,7 @@ describe("parseTrackDefinition owns binding sources", () => {
     expectRule(
       {
         id: "shifted",
-        plugin: "translate",
+        output: { plugin: "translate" },
         input: { requires: { data: 4 } },
       },
       "requirement-source",
@@ -883,7 +771,7 @@ describe("parseTrackDefinition owns binding sources", () => {
     expectRule(
       {
         id: "shifted",
-        plugin: "translate",
+        output: { plugin: "translate" },
         input: { requires: { data: { a: "points", b: "" } } },
       },
       "requirement-source",

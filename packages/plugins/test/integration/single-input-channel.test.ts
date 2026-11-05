@@ -8,6 +8,7 @@ import { ROOT_2D_SPEC } from "../../src/root/fields";
 import { SOLVED_2D_SPEC } from "../../src/solved/fields";
 import { createManualClock } from "@motion5/core";
 import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/testing";
+import { testModels } from "../../../core/test/support/test-models";
 
 function hold(value: number) {
   return value;
@@ -15,7 +16,7 @@ function hold(value: number) {
 
 const PELVIS: TrackDefinition = {
   id: "pelvis",
-  type: "root2d",
+  output: { model: "Point2d" },
   input: {
     values: { x: hold(0), y: hold(0), rotation: hold(30) },
   },
@@ -23,7 +24,7 @@ const PELVIS: TrackDefinition = {
 
 const BODY: TrackDefinition = {
   id: "body",
-  type: "body2d",
+  output: { model: "Body2d" },
   input: {
     values: [{ id: "thigh", cells: { length: 50, rotation: 45, weight: 1 } }],
   },
@@ -31,7 +32,7 @@ const BODY: TrackDefinition = {
 
 const SOLVED: TrackDefinition = {
   id: "solved",
-  type: "solved2d",
+  output: { model: "Solved2d" },
   input: {
     values: [{ id: "thigh", cells: { rotation: 45 } }],
   },
@@ -39,7 +40,7 @@ const SOLVED: TrackDefinition = {
 
 const THIGH: TrackDefinition = {
   id: "thigh",
-  plugin: "fk",
+  output: { plugin: "fk" },
   input: {
     values: {},
     requires: { chain: "walk/body", solved: "walk/solved", base: "walk/pelvis" },
@@ -52,7 +53,7 @@ const project: ProjectDefinition = {
 };
 
 function load() {
-  const plugins = new PluginCatalog();
+  const plugins = new PluginCatalog({ models: testModels });
   plugins.registerAll([transformPlugin, fkPlugin]);
   return new Engine({
     clock: createManualClock(),

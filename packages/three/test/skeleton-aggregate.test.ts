@@ -9,6 +9,7 @@ import {
   tableFrameSource,
 } from "../src/skeleton";
 import { syntheticSkeleton } from "./support/synthetic-skeleton";
+import { testModels } from "../../core/test/support/test-models";
 
 describe("three aggregate skeleton migration (AO)", () => {
   it("AO-1 emits exactly four aggregate tracks and zero rig tracks", () => {
@@ -22,9 +23,10 @@ describe("three aggregate skeleton migration (AO)", () => {
       "avatar-pose",
     ]);
     for (const t of tracks) {
-      expect(t.plugin !== "rig").toBe(true);
+      const plugin = "plugin" in t.output ? t.output.plugin : undefined;
+      expect(plugin !== "rig").toBe(true);
       if (t.id === "avatar-pose") {
-        expect(t.plugin).toBe("fk3d");
+        expect(plugin).toBe("fk3d");
         expect(t.input?.requires).toEqual({
           chain: "avatar-body",
           solved: "avatar-solved",
@@ -161,7 +163,7 @@ describe("three aggregate skeleton migration (AO)", () => {
         },
       ],
     };
-    const plugins = new PluginCatalog();
+    const plugins = new PluginCatalog({ models: testModels });
     plugins.register(fk3dPlugin);
     const engine = new Engine({
       clock: createManualClock(),

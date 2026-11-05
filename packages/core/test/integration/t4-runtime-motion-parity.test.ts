@@ -128,6 +128,7 @@ function ramp(id: string): TrackDefinition {
         ],
       },
     },
+    output: { model: "TestRecord" },
   };
 }
 

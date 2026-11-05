@@ -15,7 +15,11 @@ const PENDING_REFERENCE_RULE_ID = "source-pending";
 const project: ProjectDefinition = {
   schemaVersion: 5,
   motions: [
-    { id: "base", trigger: { type: "manual" }, tracks: [track({ id: "root" })] },
+    {
+      id: "base",
+      trigger: { type: "manual" },
+      tracks: [track({ id: "root", model: "TestRecord" })],
+    },
     {
       id: "arm",
       trigger: { type: "manual" },
@@ -111,7 +115,11 @@ describe("P5-01 cross-motion references", () => {
     const invalid: ProjectDefinition = {
       schemaVersion: 5,
       motions: [
-        { id: "base", trigger: { type: "manual" }, tracks: [track({ id: "root" })] },
+        {
+          id: "base",
+          trigger: { type: "manual" },
+          tracks: [track({ id: "root", model: "TestRecord" })],
+        },
         {
           id: "arm",
           trigger: { type: "manual" },

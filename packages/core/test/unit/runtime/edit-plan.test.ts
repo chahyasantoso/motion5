@@ -20,6 +20,8 @@ import { clearsOverlay, publicVerbOf, tierOf, type Edit } from "../../../src/run
 import { AUTHORED, LIVE } from "../../../src/runtime/value-state";
 import { code } from "../../helpers/source-region";
 import { record, row, table, track } from "../../support/v5-builders";
+import { testModels } from "../../support/test-models";
+import { defineModel } from "../../../src/contract/v5";
 
 const POINT: ValueSpec = {
   kind: "table",
@@ -36,8 +38,23 @@ const TRANSLATE: PluginDefinition = {
     return { values: [] };
   },
 };
-const POINTS = track({ id: "points", values: table(row("a", { x: 0, y: 0 })) });
-const OTHER = track({ id: "other", values: table(row("b", { x: 1, y: 1 })) });
+const PointTable = defineModel({
+  id: "PointTable",
+  spec: {
+    kind: "table",
+    schema: { row: { fields: { x: { kind: "number" }, y: { kind: "number" } } } },
+  },
+});
+const POINTS = track({
+  id: "points",
+  values: table(row("a", { x: 0, y: 0 })),
+  model: "PointTable",
+});
+const OTHER = track({
+  id: "other",
+  values: table(row("b", { x: 1, y: 1 })),
+  model: "PointTable",
+});
 /** The builder's authored input, narrowed for tests that need identity rather than optionality. */
 const POINTS_INPUT: TrackInput = POINTS.input ?? {};
 const SHIFTED: TrackDefinition = track({
@@ -48,7 +65,7 @@ const SHIFTED: TrackDefinition = track({
 });
 
 function environment(plugins: readonly PluginDefinition[] = [], admitted = true): PlanEnvironment {
-  const catalog = new PluginCatalog();
+  const catalog = new PluginCatalog({ models: [...testModels, PointTable] });
   catalog.registerAll(plugins);
   return {
     capabilities: catalog,
@@ -95,7 +112,11 @@ function rules(outcome: PlanOutcome): readonly string[] {
 describe("the edit union answers its tier and its overlay verdict", () => {
   it("names every kind, and only replacement or removal clears an overlay", () => {
     const edits: readonly Edit[] = [
-      { kind: "replace-track", nodeId: "demo/a", track: { id: "a" } },
+      {
+        kind: "replace-track",
+        nodeId: "demo/a",
+        track: { id: "a", output: { model: "TestRecord" } },
+      },
       { kind: "replace-input", nodeId: "demo/a" },
       { kind: "remove-track", nodeId: "demo/a" },
       { kind: "bind", nodeId: "demo/a", slot: "data", source: "demo/b" },
@@ -221,7 +242,11 @@ describe("the edit union answers its tier and its overlay verdict", () => {
 describe("an edit is plain data", () => {
   it("survives structuredClone and a JSON round-trip as itself", () => {
     const edits: readonly Edit[] = [
-      { kind: "replace-track", nodeId: "demo/a", track: { id: "a", duration: 120 } },
+      {
+        kind: "replace-track",
+        nodeId: "demo/a",
+        track: { id: "a", duration: 120, output: { model: "TestRecord" } },
+      },
       { kind: "replace-input", nodeId: "demo/a", input: { values: table(row("a", { x: 1 })) } },
       { kind: "replace-input", nodeId: "demo/a" },
       { kind: "remove-track", nodeId: "demo/a" },
@@ -297,7 +322,11 @@ describe("plan refuses a structural edit with the graph's own rules and paths", 
       {
         kind: "replace-track",
         nodeId: "demo/points",
-        track: { id: "points", claims: {} } as unknown as TrackDefinition,
+        track: {
+          id: "points",
+          claims: {},
+          output: { model: "PointTable" },
+        } as unknown as TrackDefinition,
       },
       environment(),
     );
@@ -336,7 +365,9 @@ describe("plan refuses a structural edit with the graph's own rules and paths", 
       },
       environment([TRANSLATE]),
     );
-    expect(rules(outcome)).toEqual(["values-shape-invalid at demo/points.input.values"]);
+    expect(rules(outcome)).toEqual([
+      "values-shape-invalid at replaceTrack(demo/points).input.values",
+    ]);
   });
 
   it("refuses nonempty requires on a track without a plugin", () => {
@@ -345,11 +376,15 @@ describe("plan refuses a structural edit with the graph's own rules and paths", 
       {
         kind: "replace-track",
         nodeId: "demo/points",
-        track: track({ id: "points", requires: { data: "shifted" } }),
+        track: track({
+          id: "points",
+          requires: { data: "shifted" },
+          model: "TestRecord",
+        }),
       },
       environment(),
     );
-    expect(rules(outcome)[0]?.split(" at ")[0]).toBe("plugin-requires-without-plugin");
+    expect(rules(outcome)[0]?.split(" at ")[0]).toBe("requires-not-allowed");
   });
 });
 
@@ -387,7 +422,7 @@ describe("plan answers the staged view rather than the committed one", () => {
         {
           kind: "replace-input",
           nodeId: "demo/points",
-          input: { schema: POINT, values: table(row("a", { x: 1, y: 2 })) },
+          input: { values: table(row("a", { x: 1, y: 2 })) },
         },
         environment([TRANSLATE]),
       ),
@@ -404,7 +439,7 @@ describe("plan answers the staged view rather than the committed one", () => {
           nodeId: "demo/shifted",
           track: {
             id: "shifted",
-            plugin: "translate",
+            output: { plugin: "translate" },
             input: { values: record({ dx: 2 }), requires: { data: "points" } },
           },
         },

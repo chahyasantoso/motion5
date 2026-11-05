@@ -11,6 +11,7 @@ import type {
   ValueSpec,
 } from "../../../src/contract/v5";
 import { PluginCatalog } from "../../../src/domain/plugin-catalog";
+import { defineModel } from "../../../src/contract/v5";
 import { Engine } from "../../../src/engine";
 import { createManualClock } from "../../../src/ports/clock";
 import { createValueEvaluator } from "../../../src/runtime/evaluate-values";
@@ -18,6 +19,7 @@ import { LocalInput } from "../../../src/runtime/local-input";
 import { PassthroughProcessor } from "../../../src/runtime/processors/passthrough";
 import { Track } from "../../../src/runtime/track";
 import { createFakeInterpolator, createFakeScheduler } from "../../../src/testing/fakes";
+import { testModels } from "../../support/test-models";
 
 const POINT_SPEC: ValueSpec = {
   kind: "table",
@@ -84,7 +86,20 @@ const CONSUME: PluginDefinition<ConsumeInput> = {
   },
 };
 
-function project(sourceType?: string): ProjectDefinition {
+const PointSource = defineModel<unknown, PointStructure>({
+  id: "PointSource",
+  legacyTypeId: "point2d",
+  spec: POINT_SPEC,
+  parse(value) {
+    if (!Array.isArray(value))
+      return { ok: false, issues: [{ path: "", message: "Expected a table." }] };
+    if (value.some((row) => Number(row.cells.y) > 10))
+      return { ok: false, issues: [{ path: "", message: "y must stay at or below 10." }] };
+    return { ok: true, value: { ids: value.map((row) => row.id) } };
+  },
+});
+
+function project(model = "PointSource"): ProjectDefinition {
   return {
     schemaVersion: 5,
     motions: [
@@ -94,12 +109,12 @@ function project(sourceType?: string): ProjectDefinition {
         tracks: [
           {
             id: "points",
-            ...(sourceType === undefined ? {} : { type: sourceType }),
             input: { values: [{ id: "a", cells: { owner: "acme", x: 0, y: 1 } }] },
+            output: { model },
           },
           {
             id: "consumer",
-            plugin: "consume",
+            output: { plugin: "consume" },
             input: { values: {}, requires: { data: "points" } },
           },
         ],
@@ -109,7 +124,7 @@ function project(sourceType?: string): ProjectDefinition {
 }
 
 function open(definition: ProjectDefinition) {
-  const catalog = new PluginCatalog();
+  const catalog = new PluginCatalog({ models: [...testModels, PointSource] });
   catalog.registerAll([CONSUME]);
   return new Engine({
     clock: createManualClock(),
@@ -121,24 +136,21 @@ function open(definition: ProjectDefinition) {
 
 describe("self-validating data tracks", () => {
   it("brands structure at commit and binds it without per-frame parsing", () => {
-    const parse = vi.fn(point2d.parse);
-    const tracked: DataType<PointStructure, PointEntity> = { ...point2d, parse };
-    const catalog = new PluginCatalog();
-    catalog.registerAll([
-      {
-        ...CONSUME,
-        inputs: {
-          values: { kind: "record", fields: {} },
-          requires: { data: typed(tracked) },
-        },
-      },
-    ]);
+    const parse = vi.fn(PointSource.parse!);
+    const trackedSource = defineModel({
+      id: "TrackedPointSource",
+      legacyTypeId: "point2d",
+      spec: POINT_SPEC,
+      parse,
+    });
+    const catalog = new PluginCatalog({ models: [...testModels, trackedSource] });
+    catalog.registerAll([CONSUME]);
     const handle = new Engine({
       clock: createManualClock(),
       interpolator: createFakeInterpolator(),
       scheduler: createFakeScheduler(),
       plugins: catalog,
-    }).load(project("point2d"));
+    }).load(project("TrackedPointSource"));
     handle.mount("demo/points");
     handle.mount("demo/consumer");
     handle.seek("demo/points", 0.5);
@@ -149,14 +161,14 @@ describe("self-validating data tracks", () => {
   });
 
   it("rejects live-write modifying a static cell directly", () => {
-    const handle = open(project("point2d"));
+    const handle = open(project());
     expect(() =>
       handle.track("demo/points").writeValues([{ id: "a", cells: { owner: "other", x: 0, y: 1 } }]),
     ).toThrow(/live-values-invalid/);
   });
 
   it("refuses a domain-invalid authored edit before adopting it", () => {
-    const handle = open(project("point2d"));
+    const handle = open(project());
     const before = handle.track("demo/points").definition;
     expect(() =>
       handle
@@ -167,7 +179,7 @@ describe("self-validating data tracks", () => {
   });
 
   it("rejects connecting a generic data track to a typed slot", () => {
-    expect(() => open(project())).toThrow(/slot-type-mismatch/);
+    expect(() => open(project("TestTable"))).toThrow(/slot-type-mismatch/);
   });
 
   it("keys a dotted typed slot's structure by the full slot name", () => {
@@ -217,7 +229,7 @@ describe("self-validating data tracks", () => {
         return { values: [] };
       },
     };
-    const catalog = new PluginCatalog();
+    const catalog = new PluginCatalog({ models: [...testModels, PointSource] });
     catalog.registerAll([producer, guard]);
     const handle = new Engine({
       clock: createManualClock(),
@@ -231,10 +243,10 @@ describe("self-validating data tracks", () => {
           id: "demo",
           trigger: { type: "manual" },
           tracks: [
-            { id: "producer", plugin: "producer", input: { values: {} } },
+            { id: "producer", output: { plugin: "producer" }, input: { values: {} } },
             {
               id: "guard",
-              plugin: "guard",
+              output: { plugin: "guard" },
               input: { values: {}, requires: { "data.points": "producer" } },
             },
           ],
@@ -247,11 +259,11 @@ describe("self-validating data tracks", () => {
     expect(handle.get("demo/guard")?.status).toBe("error");
   });
 
-  it("validates a typed track added through the structural tier", () => {
-    const handle = open(project("point2d"));
-    expect(() => handle.addTrack({ id: "bad", type: "missing", input: { values: [] } })).toThrow(
-      /data-type-unknown/,
-    );
+  it("refuses an unknown model added through the structural tier", () => {
+    const handle = open(project());
+    expect(() =>
+      handle.addTrack({ id: "bad", output: { model: "MissingModel" }, input: { values: [] } }),
+    ).toThrow(/model-unknown/);
   });
 
   it("keeps a frozen structure on the compiled track", () => {

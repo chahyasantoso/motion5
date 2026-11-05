@@ -29,6 +29,12 @@ function recordingPort() {
                   return EMPTY;
                 },
               },
+              param: {
+                set(value: unknown) {
+                  writes.push([node, value]);
+                  return EMPTY;
+                },
+              },
             },
           } as unknown as TrackHandle;
         },

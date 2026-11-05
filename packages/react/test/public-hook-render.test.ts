@@ -9,6 +9,7 @@ import { Engine, type ProjectHandle } from "../../core/src/engine";
 import { createManualClock } from "../../core/src/ports/clock";
 import { createFakeInterpolator, createFakeScheduler } from "../../core/src/testing/fakes";
 import { project, record, track } from "../../core/test/support/v5-builders";
+import { testModels } from "../../core/test/support/test-models";
 
 const NODE = "demo/rig";
 const ALIAS = "marker/upper";
@@ -49,7 +50,7 @@ const POSE: PluginDefinition<PoseInput> = {
 };
 
 function setup(): { handle: ProjectHandle; dispose(): void } {
-  const plugins = new PluginCatalog();
+  const plugins = new PluginCatalog({ models: testModels });
   plugins.register(POSE);
   const engine = new Engine({
     clock: createManualClock(),

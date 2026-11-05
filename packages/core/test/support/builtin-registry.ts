@@ -7,6 +7,7 @@ import { ikPlugin } from "@motion5/plugins/ik";
 import { transform3dPlugin } from "@motion5/plugins/transform3d";
 import { fk3dPlugin } from "@motion5/plugins/fk3d";
 import { ik3dPlugin } from "@motion5/plugins/ik3d";
+import { testModels } from "./test-models";
 
 /**
  * A dependency-only plugin for graph tests.
@@ -39,7 +40,7 @@ export const GRAPH_EDGE_PLUGIN: PluginDefinition = {
  * the host's catalogue would pass while the app's own admission was missing a plugin.
  */
 export function builtinRegistry(...additional: readonly PluginDefinition[]): PluginCatalog {
-  const registry = new PluginCatalog();
+  const registry = new PluginCatalog({ models: testModels });
   registry.registerAll([
     transformPlugin,
     fkPlugin,

@@ -97,6 +97,7 @@ const SEAMS: readonly (readonly [option: string, absent: string])[] = [
   ["signalMotion", "NO_PORTS.motion.signal"],
   ["overlayValues", "NO_PORTS.value.overlay"],
   ["rewriteValues", "NO_PORTS.value.rewrite"],
+  ["rewriteParamValues", "NO_PORTS.value.rewriteParam"],
   ["setProgress", "NO_PORTS.value.seek"],
   ["disposeComposition", "NO_PORTS.host.disposeComposition"],
 ];
@@ -134,7 +135,13 @@ const NOT_CALLABLE = 1 as unknown as () => void;
 
 const PROJECT: ProjectDefinition = {
   schemaVersion: 5,
-  motions: [{ id: "hero", trigger: { type: "manual" }, tracks: [{ id: "arm" }] }],
+  motions: [
+    {
+      id: "hero",
+      trigger: { type: "manual" },
+      tracks: [{ id: "arm", output: { model: "TestRecord" } }],
+    },
+  ],
 };
 
 const compose = (node: { id: string }) => () => ({
@@ -166,8 +173,8 @@ describe("the project ports", () => {
   it("states every uninstalled seam once, as a call that answers nothing", () => {
     const ports = leaves();
 
-    // Fifteen, which is the count the constructor resolves and the count the class used to declare.
-    expect(ports).toHaveLength(15);
+    // Sixteen, which is the count the constructor resolves and the count the class used to declare.
+    expect(ports).toHaveLength(16);
     expect(ports.every((port) => typeof port === "function")).toBe(true);
     expect(ports.every((port) => (port as () => unknown)() === undefined)).toBe(true);
   });
@@ -290,7 +297,7 @@ describe("the project ports", () => {
     // the case above. Coverage one seam wide was the finding: a constructor edit that bypassed
     // `installed` for a different seam left every receiver case green, and the pairing above cannot
     // see a receiver at all, so the two halves are asked of four owners rather than of one.
-    project.addTrack({ id: "tail" }, { motionId: "hero" });
+    project.addTrack({ id: "tail", output: { model: "TestRecord" } }, { motionId: "hero" });
     project.seek("hero/arm", 0.5);
     project.motion("hero").setStagger(40);
 

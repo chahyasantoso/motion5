@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { PluginCatalog } from "@motion5/core/plugin-api";
 import { transform3dPlugin } from "../../src/transform3d";
+import { testModels } from "../../../core/test/support/test-models";
 
 describe("identified 3D transform plugin", () => {
   it("declares one dependency and preserves source row identity", () => {
-    const catalog = new PluginCatalog();
+    const catalog = new PluginCatalog({ models: testModels });
     catalog.register(transform3dPlugin);
 
     expect(catalog.get("transform3d")).toBeDefined();

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { PluginCatalog, type PluginDefinition } from "@motion5/core/plugin-api";
 import { builtinCatalog } from "../../src/builtin-catalog";
+import { testModels } from "../../../core/test/support/test-models";
 
 const MINIMAL_PLUGIN: PluginDefinition = {
   id: "slice-a-test",
@@ -33,7 +34,7 @@ describe("identified plugin boundary", () => {
   });
 
   it("admits one identified definition through the v5 catalog atomically", () => {
-    const catalog = new PluginCatalog();
+    const catalog = new PluginCatalog({ models: testModels });
 
     catalog.registerAll([MINIMAL_PLUGIN]);
 

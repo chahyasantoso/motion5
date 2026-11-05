@@ -13,6 +13,7 @@ import { fk3dPlugin } from "../src/fk3d";
 import { BODY_3D_SPEC } from "./support/aggregate-topology";
 import { ROOT_3D_SPEC } from "../src/root3d/fields";
 import { SOLVED_3D_SPEC } from "../src/solved3d/fields";
+import { testModels } from "../../core/test/support/test-models";
 
 const ZERO: Euler3d = { rotation: 0, rotationX: 0, rotationY: 0 };
 const template = (label = "idle", angles: Euler3d = ZERO): PoseTemplate => ({
@@ -203,7 +204,7 @@ describe("pose classifier geodesic distance", () => {
 
 describe("pose classifier graph integration", () => {
   it("G7 downstream label changes follow the pose edge and notify only when the label changes", () => {
-    const plugins = new PluginCatalog();
+    const plugins = new PluginCatalog({ models: testModels });
     plugins.registerAll([
       fk3dPlugin,
       createPoseClassifyPlugin({ templates: [template()], maxDistance: 10 }),
@@ -222,14 +223,14 @@ describe("pose classifier graph integration", () => {
           tracks: [
             {
               id: "root",
-              type: "root3d",
+              output: { model: "Point3d" },
               input: {
                 values: { x: 0, y: 0, z: 0, rotation: 0, rotationX: 0, rotationY: 0 },
               },
             },
             {
               id: "body",
-              type: "body3d",
+              output: { model: "Body3d" },
               input: {
                 values: [
                   {
@@ -250,7 +251,7 @@ describe("pose classifier graph integration", () => {
             },
             {
               id: "solved",
-              type: "solved3d",
+              output: { model: "Solved3d" },
               input: {
                 values: [
                   {
@@ -262,12 +263,12 @@ describe("pose classifier graph integration", () => {
             },
             {
               id: "pose",
-              plugin: "fk3d",
+              output: { plugin: "fk3d" },
               input: { values: {}, requires: { chain: "body", solved: "solved", base: "root" } },
             },
             {
               id: "classifier",
-              plugin: "pose-classify",
+              output: { plugin: "pose-classify" },
               input: { values: {}, requires: { pose: "pose" } },
             },
           ],
@@ -309,7 +310,7 @@ describe("pose classifier graph integration", () => {
       templates: [template()],
       maxDistance: 10,
     });
-    const catalog = new PluginCatalog();
+    const catalog = new PluginCatalog({ models: testModels });
     catalog.registerAll([fk3dPlugin, definition]);
     expect(catalog.get("tag-pose")?.id).toBe("tag-pose");
     expect(catalog.get("fk3d")?.id).toBe("fk3d");

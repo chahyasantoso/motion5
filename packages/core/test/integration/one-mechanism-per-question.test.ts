@@ -42,6 +42,7 @@ const PROJECT: ProjectDefinition = {
               ],
             },
           },
+          output: { model: "TestRecord" },
         },
       ],
     },
@@ -103,7 +104,7 @@ describe("one question, one mechanism on the runtime surface", () => {
       expect("destroyAdopted" in handle).toBe(false);
 
       const seen: Patch[] = [];
-      const added = handle.addTrack({ id: "cursor" });
+      const added = handle.addTrack({ id: "cursor", output: { model: "TestTable" } });
       handle.subscribeNode(added.id, (patch) => {
         seen.push(patch);
       });
@@ -135,7 +136,7 @@ describe("one question, one mechanism on the runtime surface", () => {
       // than a comparison against an object the caller invented.
       // `unified-mutation-surface.test.ts` owns that refusal; this asserts only that a removal asks
       // for no owner at all.
-      const added = runtime.addTrack({ id: "cursor" });
+      const added = runtime.addTrack({ id: "cursor", output: { model: "TestTable" } });
       added.remove();
 
       expect(runtime.tryTrack(added.id)).toBeUndefined();

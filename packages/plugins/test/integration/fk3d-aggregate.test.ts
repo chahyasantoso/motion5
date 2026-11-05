@@ -1,12 +1,22 @@
 import { describe, expect, it, vi } from "vitest";
 import { Engine, PluginCatalog, createManualClock, type ProjectDefinition } from "@motion5/core";
 import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/testing";
+import { defineModel } from "@motion5/core/plugin-api";
 import { ik3dPlugin } from "../../src/ik3d";
 import { fk3dPlugin } from "../../src/fk3d";
 import { BODY_3D_SPEC } from "../support/aggregate-topology";
 import { GOALS_3D_SPEC } from "../../src/goals3d/fields";
 import { POSE_3D_SPEC } from "../../src/pose/fields";
 import { bodyEntity, rootEntity, solvedEntity } from "../support/typed-rig";
+import { testModels } from "../../../core/test/support/test-models";
+
+const Pole3d = defineModel({
+  id: "Pole3d",
+  spec: {
+    kind: "record",
+    fields: { x: { kind: "number" }, y: { kind: "number" }, z: { kind: "number" } },
+  },
+});
 
 const composer = vi.hoisted(() => ({ calls: 0 }));
 vi.mock("../../src/frame3d", async (importOriginal) => {
@@ -68,13 +78,17 @@ function project(ids: Ids = IDS, motion = "demo"): ProjectDefinition {
         tracks: [
           {
             id: ids.root,
-            type: "root3d",
+            output: { model: "Point3d" },
             input: { values: { x: 0, y: 0, z: 0, rotation: 0, rotationX: 0, rotationY: 0 } },
           },
-          { id: ids.pole, input: { values: { x: 0, y: 0, z: 100 } } },
+          {
+            id: ids.pole,
+            input: { values: { x: 0, y: 0, z: 100 } },
+            output: { model: "Pole3d" },
+          },
           {
             id: ids.body,
-            type: "body3d",
+            output: { model: "Body3d" },
             input: {
               values: [
                 { id: "trunk", cells: { length: 20 } },
@@ -85,22 +99,22 @@ function project(ids: Ids = IDS, motion = "demo"): ProjectDefinition {
           },
           {
             id: ids.goals,
-            type: "goals3d",
+            output: { model: "Goals3d" },
             input: {
               values: [{ id: "left-hand", cells: { memberId: "left-lower", x: 12, y: 8, z: 5 } }],
             },
           },
           {
             id: ids.solve,
-            plugin: "ik3d",
+            output: { plugin: "ik3d" },
             input: {
-              values: { inspect: false },
+              param: { inspect: false },
               requires: { chain: ids.body, goals: ids.goals, base: ids.root, pole: ids.pole },
             },
           },
           {
             id: ids.pose,
-            plugin: "fk3d",
+            output: { plugin: "fk3d" },
             input: {
               values: {},
               requires: { chain: ids.body, solved: ids.solve, base: ids.root },
@@ -113,7 +127,7 @@ function project(ids: Ids = IDS, motion = "demo"): ProjectDefinition {
 }
 
 function open(definition: ProjectDefinition) {
-  const plugins = new PluginCatalog();
+  const plugins = new PluginCatalog({ models: [...testModels, Pole3d] });
   plugins.registerAll([ik3dPlugin, fk3dPlugin]);
   const handle = new Engine({
     clock: createManualClock(),

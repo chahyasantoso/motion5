@@ -10,8 +10,9 @@ world-frame pose row per member.
 import { PluginCatalog } from "@motion5/core";
 import { fk3dPlugin } from "@motion5/plugins/fk3d";
 import { ik3dPlugin } from "@motion5/plugins/ik3d";
+import { builtinModels } from "@motion5/plugins/models";
 
-const plugins = new PluginCatalog();
+const plugins = new PluginCatalog({ models: builtinModels });
 plugins.registerAll([fk3dPlugin, ik3dPlugin]);
 ```
 
@@ -32,10 +33,12 @@ Pass the catalog to `EngineOptions.plugins`. There is no implicit 3D plugin.
 const tracks = [
   {
     id: "root",
+    output: { model: "Point3d" },
     input: { values: { x: 110, y: 70, z: 0, rotation: 0, rotationX: 0, rotationY: 0 } },
   },
   {
     id: "body",
+    output: { model: "Body3d" },
     input: {
       values: [
         { id: "upper", cells: { length: 50, rotation: 70, rotationX: -8, rotationY: 8 } },
@@ -56,20 +59,21 @@ const tracks = [
   },
   {
     id: "goals",
+    output: { model: "Goals3d" },
     input: { values: [{ id: "goal", cells: { memberId: "hand", x: 205, y: 170, z: 30 } }] },
   },
   {
     id: "solve",
-    plugin: "ik3d",
+    output: { plugin: "ik3d" },
     input: {
-      values: { inspect: true },
+      param: { inspect: true },
       requires: { chain: "body", goals: "goals", base: "root" },
     },
   },
   {
     id: "pose",
-    plugin: "fk3d",
-    input: { values: {}, requires: { chain: "body", solved: "solve", base: "root" } },
+    output: { plugin: "fk3d" },
+    input: { requires: { chain: "body", solved: "solve", base: "root" } },
   },
 ];
 ```

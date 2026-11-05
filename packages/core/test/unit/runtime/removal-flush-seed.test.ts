@@ -35,7 +35,7 @@ const READER_TRACK: TrackDefinition = track({
 const EDGE_PROJECT: ProjectDefinition = {
   schemaVersion: 5,
   motions: [],
-  freeTracks: [track({ id: "a" }), READER_TRACK],
+  freeTracks: [track({ id: "a", model: "TestRecord" }), READER_TRACK],
 };
 
 describe("what a removal owes the nodes that read it", () => {

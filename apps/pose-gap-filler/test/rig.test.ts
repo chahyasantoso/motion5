@@ -25,7 +25,7 @@ describe("image rig and writer", () => {
           { id: ids.upper, cells: { length: 90, rotation: 0, weight: 1 } },
           { id: ids.lower, cells: { parentId: ids.upper, length: 80, rotation: 0, weight: 1 } },
         ]);
-        transaction.track(poseNodeId(ids.solve)).input.values.set({ flip });
+        transaction.track(poseNodeId(ids.solve)).input.param.set({ flip });
       });
       const solved = readSolvedLimb(project, "left-arm")!;
       expect(imageBendFlip([100, 100], [130, 250], solved.middle)).toBe(flip);

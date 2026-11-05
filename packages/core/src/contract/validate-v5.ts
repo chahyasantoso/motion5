@@ -5,13 +5,13 @@ import {
   type TrackDefinition,
   type TriggerDefinition,
 } from "./v5";
-import { SUPPORTED_TRIGGER_TYPES } from "./v5";
+import { SUPPORTED_TRIGGER_TYPES, isModel } from "./v5";
 import { unreachable } from "../lang/exhaustive";
 import { acceptedOutcome, refusedOutcome, refusedOutcomeFrom, type Outcome } from "../lang/outcome";
 import { describeDiagnostics, diagnostic } from "./diagnostics";
 import { defineOwnValue } from "../lang/own-property";
 import { deriveSourceContract } from "./v5-infer";
-import { parseTrackDefinition, type ParseContext } from "./v5-parse";
+import { parseTrackDefinition, type ParseContext, type ParsedTrack } from "./v5-parse";
 
 const TEMPLATES_UNSUPPORTED =
   "Project templates are not supported; author keyframes on the tracks that use them.";
@@ -130,7 +130,42 @@ export function resolveTriggerDefinition(trigger: unknown, path: string): Trigge
   if (diagnostics.length > 0) throw new TypeError(describeDiagnostics(diagnostics));
   return trigger as TriggerDefinition;
 }
-// Duplicate ids scoped to the caller's set; source contract inferred only for plugin-free tracks.
+function derivedInputDiagnostics(
+  parsed: ParsedTrack,
+  path: string,
+  context: ParseContext,
+): readonly Diagnostic[] {
+  if ("plugin" in parsed.output) {
+    const definition = context.pluginDefinition?.(parsed.output.plugin);
+    if (definition === undefined) return [];
+    const rawValues = definition.inputs.values;
+    const valuesSpec = isModel(rawValues)
+      ? rawValues.spec
+      : (rawValues ?? { kind: "record" as const, fields: {} });
+    const diagnostics = [
+      ...deriveSourceContract(parsed.input.values, valuesSpec, `${path}.input.values`, "plugin")
+        .diagnostics,
+    ];
+    if (definition.inputs.param !== undefined)
+      diagnostics.push(
+        ...deriveSourceContract(
+          parsed.input.param,
+          definition.inputs.param,
+          `${path}.input.param`,
+          "plugin",
+        ).diagnostics,
+      );
+    return diagnostics;
+  }
+  return deriveSourceContract(
+    parsed.input.values,
+    context.model?.(parsed.output.model)?.spec,
+    `${path}.input.values`,
+    "model",
+  ).diagnostics;
+}
+
+// Duplicate ids scoped to the caller's set; source contract inferred only for model outputs.
 function readTrack(
   track: unknown,
   path: string,
@@ -144,20 +179,7 @@ function readTrack(
     case "refused":
       return;
     case "accepted": {
-      if (parsed.value.plugin === undefined) {
-        const declared =
-          parsed.value.type === undefined
-            ? parsed.value.input.schema
-            : (context.dataType?.(parsed.value.type)?.spec ??
-              context.model?.(parsed.value.type)?.spec);
-        const inferred = deriveSourceContract(
-          parsed.value.input.values,
-          declared,
-          `${path}.input.values`,
-          "declared",
-        );
-        diagnostics.push(...inferred.diagnostics);
-      }
+      diagnostics.push(...derivedInputDiagnostics(parsed.value, path, context));
       const { id } = parsed.value;
       if (seenIds.has(id))
         diagnostics.push(
@@ -205,21 +227,10 @@ export function validateTrackDefinition(
     case "refused":
       return refusedOutcomeFrom(parsed.diagnostics);
     case "accepted": {
-      const diagnostics: Diagnostic[] = [...parsed.diagnostics];
-      if (parsed.value.plugin === undefined) {
-        const declared =
-          parsed.value.type === undefined
-            ? parsed.value.input.schema
-            : (context.dataType?.(parsed.value.type)?.spec ??
-              context.model?.(parsed.value.type)?.spec);
-        const inferred = deriveSourceContract(
-          parsed.value.input.values,
-          declared,
-          `${path}.input.values`,
-          "declared",
-        );
-        diagnostics.push(...inferred.diagnostics);
-      }
+      const diagnostics: Diagnostic[] = [
+        ...parsed.diagnostics,
+        ...derivedInputDiagnostics(parsed.value, path, context),
+      ];
       const frozen = Object.freeze(diagnostics);
       if (frozen.some(({ severity }) => severity === "error")) return refusedOutcomeFrom(frozen);
       return acceptedOutcome(deepFreeze(clone(track) as TrackDefinition), frozen);

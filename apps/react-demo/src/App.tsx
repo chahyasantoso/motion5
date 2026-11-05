@@ -11,6 +11,7 @@ import {
 import { createBrowserClock } from "@motion5/core/adapters/browser-clock";
 import { createGsapInterpolator } from "@motion5/core/adapters";
 import { fkPlugin } from "@motion5/plugins/fk";
+import { builtinModels } from "@motion5/plugins/models";
 import { armTracks, initialWalkerProject, WALK_SCROLL_SOURCE } from "./full-body-project";
 import { createWalkScrollSource } from "./scroll-source-gsap";
 import { SkeletonRig } from "./components/SkeletonRig";
@@ -25,7 +26,7 @@ export const App: React.FC = () => {
   useLayoutEffect(() => {
     // Layout phase ⇒ GSAP measures committed DOM ⇒ pin spacer exists before native scroll restoration.
     // Source defers its snapshot; load and mount publish nothing.
-    const plugins = new PluginCatalog();
+    const plugins = new PluginCatalog({ models: builtinModels });
     plugins.register(fkPlugin);
 
     const clock = createBrowserClock({

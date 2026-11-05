@@ -3,6 +3,7 @@ import type {
   RequireView,
   TrackHandle,
   TrackInputHandle,
+  TrackParamHandle,
   TrackRequiresHandle,
   TrackValuesHandle,
 } from "../contract/track-handle";
@@ -142,6 +143,10 @@ export class RuntimeTrackInputHandle implements TrackInputHandle {
   get values(): TrackValuesHandle {
     return new RuntimeTrackValuesHandle(this.#host, this.#id, this.#token);
   }
+
+  get param(): TrackParamHandle {
+    return new RuntimeTrackParamHandle(this.#host, this.#id, this.#token);
+  }
 }
 
 /** The bindings half of one track's input: two verbs over the same host, id and token. An absent member key is omitted, not written as `undefined`, so a replayed edit addresses the same slot. */
@@ -201,6 +206,37 @@ export class RuntimeTrackValuesHandle implements TrackValuesHandle {
   setField(address: CellAddress, cell: AuthoredCell): PatchBatch {
     return this.#host.applyCheap(this.#id, this.#token, {
       kind: "set-field",
+      nodeId: this.#id,
+      address,
+      cell,
+    });
+  }
+}
+
+/** The authored params of one track: both verbs mint one `CheapEdit`; the runtime plans it against the plugin's param spec and returns the one publication batch. */
+export class RuntimeTrackParamHandle implements TrackParamHandle {
+  readonly #host: TrackHost;
+  readonly #id: string;
+  readonly #token: number;
+
+  constructor(host: TrackHost, id: string, token: number) {
+    this.#host = host;
+    this.#id = id;
+    this.#token = token;
+    Object.freeze(this);
+  }
+
+  set(param: InputValues): PatchBatch {
+    return this.#host.applyCheap(this.#id, this.#token, {
+      kind: "set-param",
+      nodeId: this.#id,
+      param,
+    });
+  }
+
+  setField(address: CellAddress, cell: AuthoredCell): PatchBatch {
+    return this.#host.applyCheap(this.#id, this.#token, {
+      kind: "set-param-field",
       nodeId: this.#id,
       address,
       cell,
@@ -268,4 +304,5 @@ Object.freeze(RuntimeTrackHandle.prototype);
 Object.freeze(RuntimeTrackInputHandle.prototype);
 Object.freeze(RuntimeTrackRequiresHandle.prototype);
 Object.freeze(RuntimeTrackValuesHandle.prototype);
+Object.freeze(RuntimeTrackParamHandle.prototype);
 Object.freeze(RuntimeMotionHandle.prototype);

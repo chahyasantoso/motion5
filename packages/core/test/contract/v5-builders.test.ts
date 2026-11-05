@@ -36,7 +36,7 @@ describe("v5 fixture builders", () => {
 
     expect(built).toEqual({
       id: "shifted",
-      plugin: "translate",
+      output: { plugin: "translate" },
       input: {
         values: { dx: 10 },
         requires: { data: "points" },
@@ -45,28 +45,19 @@ describe("v5 fixture builders", () => {
     });
   });
 
-  it("maps a source schema, which only a no-plugin track may declare", () => {
-    const built = track({
-      id: "parameters",
-      values: record({ dx: 10 }),
-      schema: { kind: "record", fields: { dx: { kind: "number" } } },
-    });
-
-    expect(built).toEqual({
-      id: "parameters",
-      input: {
-        values: { dx: 10 },
-        schema: { kind: "record", fields: { dx: { kind: "number" } } },
-      },
-    });
-  });
-
   it("omits input rather than writing an empty object", () => {
-    expect(track({ id: "empty" })).toEqual({ id: "empty" });
+    expect(track({ id: "empty", model: "TestRecord" })).toEqual({
+      id: "empty",
+      output: { model: "TestRecord" },
+    });
   });
 
   it("wraps tracks in one manual motion", () => {
-    const points = track({ id: "points", values: table(row("a", { x: 0 })) });
+    const points = track({
+      id: "points",
+      values: table(row("a", { x: 0 })),
+      model: "TestTable",
+    });
     expect(project([points])).toEqual({
       schemaVersion: 5,
       motions: [{ id: "demo", trigger: { type: "manual" }, tracks: [points] }],

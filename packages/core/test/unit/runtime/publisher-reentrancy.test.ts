@@ -13,8 +13,16 @@ import { PatchRegistry, type PatchBatch } from "../../../src/runtime/patch-regis
 const project: ProjectDefinition = {
   schemaVersion: 5,
   motions: [
-    { id: "hero", trigger: { type: "manual" }, tracks: [{ id: "arm" }] },
-    { id: "caption", trigger: { type: "manual" }, tracks: [{ id: "label" }] },
+    {
+      id: "hero",
+      trigger: { type: "manual" },
+      tracks: [{ id: "arm", output: { model: "TestRecord" } }],
+    },
+    {
+      id: "caption",
+      trigger: { type: "manual" },
+      tracks: [{ id: "label", output: { model: "TestRecord" } }],
+    },
   ],
 };
 
@@ -29,7 +37,7 @@ const soleNode = (id: string): PublisherNode =>
     id,
     owner: "motion",
     authoredIndex: 0,
-    track: { id },
+    track: { id, output: { model: "TestRecord" } },
     edges: Object.freeze([]),
     compose: () => ({ outputs: { values: { x: 1 } }, sourceProgress: 0, sourceRevisions: {} }),
   });

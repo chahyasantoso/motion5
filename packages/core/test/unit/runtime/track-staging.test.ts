@@ -21,12 +21,18 @@ import { ProjectRuntime, type StagedTrack } from "../../../src/runtime/project-r
 const NODE_ID = "hero/arm";
 const BASE_PROJECT: ProjectDefinition = {
   schemaVersion: 5,
-  motions: [{ id: "hero", trigger: { type: "manual" }, tracks: [{ id: "arm" }] }],
+  motions: [
+    {
+      id: "hero",
+      trigger: { type: "manual" },
+      tracks: [{ id: "arm", output: { model: "TestRecord" } }],
+    },
+  ],
 };
 /** Rejected by the candidate graph rather than by authored validation, so the rollback runs. */
 const REJECTED_REPLACEMENT: TrackDefinition = {
   id: "arm",
-  plugin: "demo",
+  output: { plugin: "demo" },
   input: { values: {}, requires: { chain: "~/missing" } },
 };
 const compose = (node: { id: string }) => () => ({
@@ -102,10 +108,14 @@ describe("a Track replacement is staged once and committed once", () => {
     const hooks = journal();
     const runtime = runtimeWith(hooks);
 
-    runtime.track(NODE_ID).replace({ id: "arm", duration: 250 });
+    runtime.track(NODE_ID).replace({ id: "arm", duration: 250, output: { model: "TestRecord" } });
 
     expect(hooks.entries).toEqual(["stage hero/arm", "motion hero/arm 250", "commit hero/arm"]);
-    expect(runtime.track(NODE_ID).definition).toEqual({ id: "arm", duration: 250 });
+    expect(runtime.track(NODE_ID).definition).toEqual({
+      id: "arm",
+      duration: 250,
+      output: { model: "TestRecord" },
+    });
 
     runtime.dispose();
   });
@@ -122,7 +132,10 @@ describe("a Track replacement is staged once and committed once", () => {
     expect(thrown).toBeInstanceOf(TypeError);
     expect((thrown as Error).message).toMatch(/^edge-unknown-source at /);
     expect(hooks.entries).toEqual([]);
-    expect(runtime.track(NODE_ID).definition).toEqual({ id: "arm" });
+    expect(runtime.track(NODE_ID).definition).toEqual({
+      id: "arm",
+      output: { model: "TestRecord" },
+    });
 
     runtime.dispose();
   });
@@ -132,13 +145,18 @@ describe("a Track replacement is staged once and committed once", () => {
     const hooks = journal({ motion: refusal });
     const runtime = runtimeWith(hooks);
 
-    const thrown = thrownBy(() => runtime.track(NODE_ID).replace({ id: "arm", duration: 250 }));
+    const thrown = thrownBy(() =>
+      runtime.track(NODE_ID).replace({ id: "arm", duration: 250, output: { model: "TestRecord" } }),
+    );
 
     expect(thrown).toBe(refusal);
     // The Motion refuses before it writes anything (ADR-031), so it is not restored a second time.
     const expected = ["stage hero/arm", "motion hero/arm 250", "rollback hero/arm"];
     expect(hooks.entries).toEqual(expected);
-    expect(runtime.track(NODE_ID).definition).toEqual({ id: "arm" });
+    expect(runtime.track(NODE_ID).definition).toEqual({
+      id: "arm",
+      output: { model: "TestRecord" },
+    });
 
     runtime.dispose();
   });

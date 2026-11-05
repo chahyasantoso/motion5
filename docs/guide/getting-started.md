@@ -24,13 +24,15 @@ npx tsc -p packages/core/tsconfig.build.json
 - **Scheduler** decides when a pending progress change is applied. `createMicrotaskScheduler()` is
   the shipped implementation.
 
-Plugins are admitted by a `PluginCatalog`. A track that names `plugin: "fk"` loads only when the
-catalog admitted `fk`; a track without a plugin needs no catalog entry.
+Plugins are admitted by a `PluginCatalog`. A track that names `output: { plugin: "fk" }` loads only
+when the catalog admitted `fk`; a track with `output: { model }` needs that model registered in the
+catalog's `models` list.
 
 ## A complete first project
 
 ```ts
 import { Engine, PluginCatalog, createManualClock } from "@motion5/core";
+import { defineModel } from "@motion5/core/plugin-api";
 import type { ProjectDefinition } from "@motion5/core";
 import { createGsapInterpolator, createMicrotaskScheduler } from "@motion5/core/adapters";
 import { transformPlugin } from "@motion5/plugins/transform";
@@ -38,7 +40,12 @@ import gsap from "gsap";
 
 const nextTurn = () => new Promise((resolve) => setTimeout(resolve, 0));
 
-const plugins = new PluginCatalog();
+const Card = defineModel({
+  id: "Card",
+  spec: { kind: "record", fields: { x: { kind: "number" } } },
+});
+
+const plugins = new PluginCatalog({ models: [Card] });
 plugins.register(transformPlugin);
 
 const clock = createManualClock();
@@ -59,6 +66,7 @@ const project: ProjectDefinition = {
       tracks: [
         {
           id: "title",
+          output: { model: "Card" },
           input: {
             values: {
               x: [
@@ -77,7 +85,8 @@ const handle = engine.load(project);
 ```
 
 `input.values` is a table of identified rows or a flat record; the authored form above is a record
-with one animated field. See [the authored schema](../AUTHORED-SCHEMA.md).
+with one animated field. The source names its registered model with `output: { model }`. See
+[the authored schema](../AUTHORED-SCHEMA.md).
 
 ## Loading plugins lazily
 
@@ -88,9 +97,10 @@ The loader takes an explicit catalog of approved descriptors and admits the dema
 import { Engine, PluginCatalog } from "@motion5/core";
 import { createPluginLoader, ensuredOrThrow } from "@motion5/plugins/loader";
 import { fkPlugin } from "@motion5/plugins/fk";
+import { builtinModels } from "@motion5/plugins/models";
 
 const approved = new Map([["fk", { load: async () => fkPlugin }]]);
-const plugins = new PluginCatalog();
+const plugins = new PluginCatalog({ models: builtinModels });
 ensuredOrThrow(await createPluginLoader(approved).ensure(plugins, { kind: "project", project }));
 const handle = new Engine({ clock, interpolator, scheduler, plugins }).load(project);
 ```

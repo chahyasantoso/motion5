@@ -15,6 +15,7 @@ export interface StagedTrack {
  * value or drop it, move playhead. */
 export interface ValuePort {
   readonly rewrite: (nodeId: string, values: ParsedValues) => void;
+  readonly rewriteParam: (nodeId: string, values: ParsedValues) => void;
   readonly overlay: (nodeId: string, value: Value | undefined) => void;
   readonly seek: (nodeId: string, progress: number) => void;
 }
@@ -81,7 +82,12 @@ export const NO_PORTS: ProjectPorts = Object.freeze({
     setStagger: NOTHING,
     signal: NOTHING,
   }),
-  value: Object.freeze<ValuePort>({ rewrite: NOTHING, overlay: NOTHING, seek: NOTHING }),
+  value: Object.freeze<ValuePort>({
+    rewrite: NOTHING,
+    rewriteParam: NOTHING,
+    overlay: NOTHING,
+    seek: NOTHING,
+  }),
   host: Object.freeze<HostPort>({ disposeComposition: NOTHING }),
 });
 

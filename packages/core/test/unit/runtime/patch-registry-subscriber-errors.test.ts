@@ -12,7 +12,7 @@ const soleNode = (id: string): PublisherNode =>
     id,
     owner: "motion",
     authoredIndex: 0,
-    track: { id },
+    track: { id, output: { model: "TestRecord" } },
     edges: Object.freeze([]),
     compose: () => ({ outputs: { values: { x: 1 } }, sourceProgress: 0, sourceRevisions: {} }),
   });

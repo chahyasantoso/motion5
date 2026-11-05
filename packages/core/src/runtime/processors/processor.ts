@@ -1,8 +1,8 @@
-import type { Diagnostic, ResolvedRequires, SourceStructures, Structure } from "../../contract/v5";
+import type { Diagnostic, SourceStructures, Structure } from "../../contract/v5";
 import type { ParsedValues } from "../../contract/v5-parse";
 import type { PublisherComposition } from "../graph-publisher";
 import type { LocalInput } from "../local-input";
-import type { SlotSources } from "../source-ref";
+import type { BoundSlots } from "../bound-slot";
 
 export interface Processor {
   readonly kind: "passthrough" | "computed";
@@ -12,10 +12,7 @@ export interface Processor {
   prepareCommit?(structures: SourceStructures): void;
   setProgress(value: number, localInput: LocalInput): boolean;
   replaceValues?(values: ParsedValues | undefined, localInput: LocalInput): void;
-  compose(
-    requires: ResolvedRequires,
-    sourceRefs: SlotSources,
-    localInput: LocalInput,
-  ): PublisherComposition;
+  replaceParam?(param: ParsedValues | undefined): void;
+  compose(slots: BoundSlots, localInput: LocalInput): PublisherComposition;
   dispose?(): void;
 }

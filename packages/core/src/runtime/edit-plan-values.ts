@@ -10,16 +10,17 @@ import type {
   Value,
   ValueSpec,
 } from "../contract/v5";
-import { isModel } from "../contract/v5";
+import { isModel, outputModelId, outputPluginId } from "../contract/v5";
 import { diagnostic, hintDiagnostic, hintDiagnostics } from "../contract/diagnostics";
 import { deriveSourceContract, type SpecOrigin } from "../contract/v5-infer";
 import { parseTrackDefinition, type ParsedValues } from "../contract/v5-parse";
+import { unknownNameMessage } from "../contract/registry-message";
 import type { CommittedContract } from "../graph/committed-contract";
 import { acceptedOutcome, refusedOutcomeFrom, type Outcome } from "../lang/outcome";
 import { unreachable } from "../lang/exhaustive";
 import type { PluginCapabilities } from "../ports/plugin-capabilities";
 import { authoringValue } from "./authoring-value";
-import { parseDataType, parseModel } from "./data-type-parse";
+import { parseModel } from "./data-type-parse";
 import { validateRuntimeValue } from "./value-validation";
 import { authoredStaticView, runtimeStaticView, sameStaticView } from "./static-view";
 import { AUTHORED, buildOwed, LIVE, type ValueState } from "./value-state";
@@ -51,6 +52,7 @@ export interface ValueEnvironment {
  * travels so runtime applies what this plan validated; `track` carries contract and value state. */
 export interface AuthoredValuesChange {
   readonly kind: "authored-values";
+  readonly channel: "values" | "param";
   readonly track: CheapTrack;
   readonly values: ParsedValues;
 }
@@ -95,38 +97,50 @@ function freezeAuthored<T>(value: T): T {
   return Object.freeze(value);
 }
 
-function withInputValues(track: TrackDefinition, values: AuthoredValues): TrackDefinition {
+function withInputChannel(
+  track: TrackDefinition,
+  channel: InputChannel,
+  values: AuthoredValues,
+): TrackDefinition {
   const input: TrackInput = Object.freeze({
     ...(track.input ?? {}),
-    values: freezeAuthored(values),
+    [channel]: freezeAuthored(values),
   });
   return Object.freeze({ ...track, input });
 }
 
-/** Spec cheap edits validate against: declared schema as written (`static` flags apply), plugin's
- * local spec, else stored contract, which covers a plugin the capabilities cannot answer. */
+/** Spec cheap edits validate against: the plugin's local spec, or the source model's spec. */
 interface CommittedInputSpec {
   readonly spec: ValueSpec;
   readonly origin: SpecOrigin;
 }
 
+type InputChannel = "values" | "param";
+
 function committedInputSpec(
   track: TrackDefinition,
+  channel: InputChannel,
   contract: CommittedContract | undefined,
   environment: ValueEnvironment,
 ): CommittedInputSpec {
-  if (track.plugin !== undefined) {
-    const raw = environment.capabilities.pluginDefinition?.(track.plugin)?.inputs.values;
-    const spec = (isModel(raw) ? raw.spec : raw) ?? contract?.input.spec;
-    if (spec === undefined) throw new TypeError(`Track "${track.id}" has no committed input spec.`);
+  const pluginId = outputPluginId(track.output);
+  if (pluginId !== undefined) {
+    const definition = environment.capabilities.pluginDefinition?.(pluginId);
+    const raw = channel === "values" ? definition?.inputs.values : definition?.inputs.param;
+    const spec =
+      (isModel(raw) ? raw.spec : raw) ?? (channel === "values" ? contract?.input.spec : undefined);
+    if (spec === undefined)
+      throw new TypeError(`Track "${track.id}" has no committed ${channel} spec.`);
     return { spec, origin: "plugin" };
   }
-  if (track.input?.schema !== undefined) {
-    return { spec: track.input.schema, origin: "declared" };
-  }
-  const spec = contract?.input.spec;
+  if (channel === "param")
+    throw new TypeError(`Track "${track.id}" has a model output and no params.`);
+  const modelId = outputModelId(track.output);
+  const modelSpec =
+    modelId === undefined ? undefined : environment.capabilities.model?.(modelId)?.spec;
+  const spec = modelSpec ?? contract?.input.spec;
   if (spec === undefined) throw new TypeError(`Track "${track.id}" has no committed input spec.`);
-  return { spec, origin: "inferred" };
+  return { spec, origin: "model" };
 }
 
 type AuthoredShape = "table" | "record";
@@ -135,15 +149,19 @@ function isAuthoredTable(values: AuthoredValues | undefined): values is readonly
   return Array.isArray(values);
 }
 
-function authoredShape(track: TrackDefinition, spec: ValueSpec): AuthoredShape {
-  const values = track.input?.values;
+function authoredShape(
+  track: TrackDefinition,
+  spec: ValueSpec,
+  channel: InputChannel,
+): AuthoredShape {
+  const values = channel === "values" ? track.input?.values : track.input?.param;
   if (isAuthoredTable(values)) return "table";
   if (values !== undefined) return "record";
   return spec.kind;
 }
 
-/** Stops on a field the plugin declares static. The parser checks `input.schema`, which a plugin
- * track cannot carry, so its local spec is checked here against the parser's own rule. */
+/** Stops on a field the model or plugin declares static. The parser checks the authored channel
+ * against that spec, so its own stop rule is repeated here for the replacement path. */
 function staticStopDiagnostics(
   values: ParsedValues,
   spec: ValueSpec,
@@ -182,6 +200,7 @@ interface ValidatedAuthored {
 
 function validateAuthoredValues(
   track: TrackDefinition,
+  channel: InputChannel,
   path: string,
   nodeId: string,
   contract: CommittedContract | undefined,
@@ -191,50 +210,61 @@ function validateAuthoredValues(
   // would read absence as "nothing is registered".
   const context = {
     isPluginRegistered: environment.isPluginRegistered ?? (() => true),
+    ...(environment.capabilities.pluginDefinition === undefined
+      ? {}
+      : {
+          pluginDefinition: (pluginId: string) =>
+            environment.capabilities.pluginDefinition?.(pluginId),
+        }),
+    ...(environment.capabilities.model === undefined
+      ? {}
+      : { model: (modelId: string) => environment.capabilities.model?.(modelId) }),
+    ...(environment.capabilities.modelIds === undefined
+      ? {}
+      : { modelIds: () => environment.capabilities.modelIds?.() }),
+    ...(environment.capabilities.pluginIds === undefined
+      ? {}
+      : { pluginIds: () => environment.capabilities.pluginIds?.() }),
   };
   const parsed = parseTrackDefinition(track, path, context);
   if (parsed.kind === "refused") {
-    const diagnostics = parsed.diagnostics.map((entry) =>
-      entry.ruleId === "static-field-stops" ? hintDiagnostic(entry, REPLACE_HINT) : entry,
-    );
-    return refusedOutcomeFrom(diagnostics);
+    return refusedOutcomeFrom(hintDiagnostics(parsed.diagnostics, REPLACE_HINT));
   }
-  const values = parsed.value.input.values;
-  if (values === undefined) throw new TypeError(`Authored edit at "${nodeId}" carries no values.`);
-  const committed = committedInputSpec(track, contract, environment);
+  const values = channel === "values" ? parsed.value.input.values : parsed.value.input.param;
+  if (values === undefined)
+    throw new TypeError(`Authored ${channel} edit at "${nodeId}" carries no ${channel}.`);
+  const committed = committedInputSpec(track, channel, contract, environment);
   const checked = deriveSourceContract(
     values,
     committed.spec,
-    `${nodeId}.input.values`,
+    `${nodeId}.input.${channel}`,
     committed.origin,
   );
   if (checked.kind === "refused")
     return refusedOutcomeFrom(hintDiagnostics(checked.diagnostics, REPLACE_HINT));
-  if (track.plugin !== undefined) {
-    const staticStops = staticStopDiagnostics(values, committed.spec, `${nodeId}.input.values`);
+  if (outputPluginId(track.output) !== undefined) {
+    const staticStops = staticStopDiagnostics(values, committed.spec, `${nodeId}.input.${channel}`);
     if (staticStops.length > 0)
       return refusedOutcomeFrom(hintDiagnostics(staticStops, REPLACE_HINT));
-  }
-  if (track.type !== undefined) {
-    const type = environment.capabilities.dataType?.(track.type);
-    const model = environment.capabilities.model?.(track.type);
-    if (type === undefined && model === undefined)
+  } else if (environment.capabilities.model !== undefined) {
+    const modelId = outputModelId(track.output);
+    if (modelId === undefined) throw new TypeError(`Track "${nodeId}" names no model output.`);
+    const model = environment.capabilities.model(modelId);
+    if (model === undefined)
       return refusedOutcomeFrom([
         diagnostic(
-          "data-type-unknown",
-          `${nodeId}.type`,
-          `Data type '${track.type}' is not admitted.`,
+          "model-unknown",
+          `${nodeId}.output.model`,
+          unknownNameMessage("model", modelId, environment.capabilities.modelIds?.()),
         ),
       ]);
-    if (type !== undefined) {
-      const structure = parseDataType(type, authoringValue(values), `${nodeId}.input.values`);
-      if (structure.kind === "refused")
-        return refusedOutcomeFrom([...parsed.diagnostics, ...structure.diagnostics]);
-    } else if (model !== undefined) {
-      const structure = parseModel(model, authoringValue(values), `${nodeId}.input.values`);
-      if (structure.kind === "refused")
-        return refusedOutcomeFrom([...parsed.diagnostics, ...structure.diagnostics]);
-    }
+    const structure = parseModel(
+      model,
+      authoringValue(values, model.spec),
+      `${nodeId}.input.${channel}`,
+    );
+    if (structure.kind === "refused")
+      return refusedOutcomeFrom([...parsed.diagnostics, ...structure.diagnostics]);
   }
   return acceptedOutcome({ track, values }, parsed.diagnostics);
 }
@@ -251,28 +281,31 @@ function refusedAddress(diagnostic: Diagnostic): AddressedValues {
  * cells travel by identity. Table row found by id; record field must be declared or authored. */
 function addressedValues(
   track: TrackDefinition,
+  channel: InputChannel,
   address: CellAddress,
   shape: AuthoredShape,
   spec: ValueSpec | undefined,
   cell: AuthoredCell,
   nodeId: string,
 ): AddressedValues {
-  const values = track.input?.values;
+  const values = channel === "values" ? track.input?.values : track.input?.param;
   switch (shape) {
     case "record": {
       if (address.row !== undefined)
         return refusedAddress(
           diagnostic(
             "values-shape-invalid",
-            `${nodeId}.input.values`,
+            `${nodeId}.input.${channel}`,
             `Track '${nodeId}' has a record input; omit 'row'.`,
           ),
         );
       const record: AuthoredRecord | undefined = isAuthoredTable(values) ? undefined : values;
       const fields = spec?.kind === "record" ? spec.fields : undefined;
+      const open = spec?.kind === "record" && spec.additionalProperties === true;
       const known =
         fields !== undefined
-          ? Object.hasOwn(fields, address.field)
+          ? Object.hasOwn(fields, address.field) ||
+            (open && Object.hasOwn(record ?? {}, address.field))
           : Object.hasOwn(record ?? {}, address.field);
       if (!known)
         return refusedAddress(
@@ -292,7 +325,7 @@ function addressedValues(
         return refusedAddress(
           diagnostic(
             "values-shape-invalid",
-            `${nodeId}.input.values`,
+            `${nodeId}.input.${channel}`,
             `Track '${nodeId}' has a table input; give 'row' (the row id).`,
           ),
         );
@@ -308,9 +341,11 @@ function addressedValues(
           ),
         );
       const fields = spec?.kind === "table" ? spec.schema.row.fields : undefined;
+      const open = spec?.kind === "table" && spec.schema.row.additionalProperties === true;
       const known =
         fields !== undefined
-          ? Object.hasOwn(fields, address.field)
+          ? Object.hasOwn(fields, address.field) ||
+            (open && rows.some((candidate) => Object.hasOwn(candidate.cells, address.field)))
           : rows.some((candidate) => Object.hasOwn(candidate.cells, address.field));
       if (!known)
         return refusedAddress(
@@ -331,6 +366,103 @@ function addressedValues(
   }
 }
 
+function emptyStaticView(spec: ValueSpec) {
+  return spec.kind === "table"
+    ? { kind: "table" as const, rows: [] as const }
+    : { kind: "record" as const, fields: {} as const };
+}
+
+function staticChangeDiagnostic(
+  current: TrackDefinition,
+  next: TrackDefinition,
+  channel: InputChannel,
+  spec: ValueSpec,
+  nodeId: string,
+): Diagnostic | undefined {
+  const before = channel === "values" ? current.input?.values : current.input?.param;
+  const after = channel === "values" ? next.input?.values : next.input?.param;
+  const beforeView = authoredStaticView(before, spec);
+  const afterView = authoredStaticView(after, spec);
+  if (
+    sameStaticView(
+      beforeView.kind === "absent" ? emptyStaticView(spec) : beforeView,
+      afterView.kind === "absent" ? emptyStaticView(spec) : afterView,
+    )
+  )
+    return undefined;
+  return hintDiagnostic(
+    diagnostic(
+      "live-values-invalid",
+      `${nodeId}.input.${channel}`,
+      "A cheap write cannot modify static cells.",
+    ),
+    REPLACE_HINT,
+  );
+}
+
+function planAuthoredChannel(
+  current: CheapTrack,
+  channel: InputChannel,
+  values: AuthoredValues,
+  path: string,
+  environment: ValueEnvironment,
+): ValueOutcome {
+  const track = withInputChannel(current.track, channel, values);
+  const committed = committedInputSpec(current.track, channel, current.contract, environment);
+  const validated = validateAuthoredValues(
+    track,
+    channel,
+    path,
+    current.nodeId,
+    current.contract,
+    environment,
+  );
+  if (validated.kind === "refused") return refused(validated.diagnostics);
+  const staticChange = staticChangeDiagnostic(
+    current.track,
+    track,
+    channel,
+    committed.spec,
+    current.nodeId,
+  );
+  if (staticChange !== undefined) return refused([staticChange]);
+  const planned: CheapTrack = { ...current, track: validated.value.track };
+  return acceptedOutcome(
+    {
+      change: {
+        kind: "authored-values",
+        channel,
+        track: planned,
+        values: validated.value.values,
+      },
+    },
+    validated.diagnostics,
+  );
+}
+
+function planAuthoredField(
+  current: CheapTrack,
+  channel: InputChannel,
+  address: CellAddress,
+  cell: AuthoredCell,
+  path: string,
+  environment: ValueEnvironment,
+): ValueOutcome {
+  const committed = committedInputSpec(current.track, channel, current.contract, environment);
+  const shape = authoredShape(current.track, committed.spec, channel);
+  const addressed = addressedValues(
+    current.track,
+    channel,
+    address,
+    shape,
+    committed.spec,
+    cell,
+    current.nodeId,
+  );
+  if (addressed.kind === "refused") return refused([addressed.diagnostic]);
+  return planAuthoredChannel(current, channel, addressed.values, path, environment);
+}
+
 function planSetValues(
   view: TrackLookup,
   edit: Extract<CheapEdit, { kind: "set-values" }>,
@@ -338,19 +470,12 @@ function planSetValues(
 ): ValueOutcome {
   const current = requiredTrack(view, edit.nodeId);
   if (current.track.input?.values === edit.values) return unchanged();
-  const track = withInputValues(current.track, edit.values);
-  const validated = validateAuthoredValues(
-    track,
+  return planAuthoredChannel(
+    current,
+    "values",
+    edit.values,
     `values.set(${edit.nodeId})`,
-    edit.nodeId,
-    current.contract,
     environment,
-  );
-  if (validated.kind === "refused") return refused(validated.diagnostics);
-  const planned: CheapTrack = { ...current, track: validated.value.track };
-  return acceptedOutcome(
-    { change: { kind: "authored-values", track: planned, values: validated.value.values } },
-    validated.diagnostics,
   );
 }
 
@@ -360,38 +485,75 @@ function planSetField(
   environment: ValueEnvironment,
 ): ValueOutcome {
   const current = requiredTrack(view, edit.nodeId);
-  const committed = committedInputSpec(current.track, current.contract, environment);
-  const shape = authoredShape(current.track, committed.spec);
-  if (shape === undefined)
-    return refused([
-      diagnostic(
-        "cell-address-unknown",
-        `setField(${edit.nodeId})`,
-        `Track '${edit.nodeId}' has no committed input shape.`,
-      ),
-    ]);
-  const addressed = addressedValues(
-    current.track,
+  return planAuthoredField(
+    current,
+    "values",
     edit.address,
-    shape,
-    committed.spec,
     edit.cell,
-    edit.nodeId,
-  );
-  if (addressed.kind === "refused") return refused([addressed.diagnostic]);
-  const track = withInputValues(current.track, addressed.values);
-  const validated = validateAuthoredValues(
-    track,
-    `setField(${edit.nodeId})`,
-    edit.nodeId,
-    current.contract,
+    `values.setField(${edit.nodeId})`,
     environment,
   );
-  if (validated.kind === "refused") return refused(validated.diagnostics);
-  const planned: CheapTrack = { ...current, track: validated.value.track };
-  return acceptedOutcome(
-    { change: { kind: "authored-values", track: planned, values: validated.value.values } },
-    validated.diagnostics,
+}
+
+function paramRefusal(
+  track: TrackDefinition,
+  nodeId: string,
+  environment: ValueEnvironment,
+): ValueOutcome | undefined {
+  const pluginId = outputPluginId(track.output);
+  if (pluginId === undefined)
+    return refused([
+      diagnostic(
+        "param-not-allowed",
+        `${nodeId}.input.param`,
+        "A model output has no processor and takes no params.",
+      ),
+    ]);
+  const definition = environment.capabilities.pluginDefinition?.(pluginId);
+  if (definition !== undefined && definition.inputs.param === undefined)
+    return refused([
+      diagnostic(
+        "param-not-allowed",
+        `${nodeId}.input.param`,
+        `Plugin '${pluginId}' declares no params.`,
+      ),
+    ]);
+  return undefined;
+}
+
+function planSetParam(
+  view: TrackLookup,
+  edit: Extract<CheapEdit, { kind: "set-param" }>,
+  environment: ValueEnvironment,
+): ValueOutcome {
+  const current = requiredTrack(view, edit.nodeId);
+  const refusal = paramRefusal(current.track, current.nodeId, environment);
+  if (refusal !== undefined) return refusal;
+  if (current.track.input?.param === edit.param) return unchanged();
+  return planAuthoredChannel(
+    current,
+    "param",
+    edit.param,
+    `param.set(${edit.nodeId})`,
+    environment,
+  );
+}
+
+function planSetParamField(
+  view: TrackLookup,
+  edit: Extract<CheapEdit, { kind: "set-param-field" }>,
+  environment: ValueEnvironment,
+): ValueOutcome {
+  const current = requiredTrack(view, edit.nodeId);
+  const refusal = paramRefusal(current.track, current.nodeId, environment);
+  if (refusal !== undefined) return refusal;
+  return planAuthoredField(
+    current,
+    "param",
+    edit.address,
+    edit.cell,
+    `param.setField(${edit.nodeId})`,
+    environment,
   );
 }
 
@@ -409,22 +571,20 @@ function planWriteLive(
   environment: ValueEnvironment,
 ): ValueOutcome {
   const current = requiredTrack(view, edit.nodeId);
-  const committed = committedInputSpec(current.track, current.contract, environment);
-  const typeId = current.track.type;
-  const staticSpec =
-    typeId === undefined ? undefined : environment.capabilities.dataType?.(typeId)?.spec;
-  if (staticSpec !== undefined) {
-    const expected = authoredStaticView(current.track.input?.values, staticSpec);
-    const incoming = runtimeStaticView(edit.value, staticSpec);
-    if (!sameStaticView(expected, incoming))
-      return refused([
+  const committed = committedInputSpec(current.track, "values", current.contract, environment);
+  const expected = authoredStaticView(current.track.input?.values, committed.spec);
+  const incoming = runtimeStaticView(edit.value, committed.spec);
+  if (!sameStaticView(expected, incoming))
+    return refused([
+      hintDiagnostic(
         diagnostic(
           "live-values-invalid",
           `${edit.nodeId}.input.values`,
           "A live write cannot modify static cells.",
         ),
-      ]);
-  }
+        REPLACE_HINT,
+      ),
+    ]);
   const issues = validateRuntimeValue(edit.value, committed.spec, `${edit.nodeId}.input.values`, {
     extraFields: liveExtraFields(committed.spec),
   });
@@ -465,6 +625,10 @@ export function planValueEdit(
       return planSetValues(view, edit, environment);
     case "set-field":
       return planSetField(view, edit, environment);
+    case "set-param":
+      return planSetParam(view, edit, environment);
+    case "set-param-field":
+      return planSetParamField(view, edit, environment);
     case "write-live":
       return planWriteLive(view, edit, environment);
     case "release-live":

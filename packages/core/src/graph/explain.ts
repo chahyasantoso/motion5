@@ -3,6 +3,7 @@ import {
   isModel,
   isOptionalModel,
   type Diagnostic,
+  type OutputDefinition,
   type ProjectDefinition,
   type SlotSpec,
 } from "../contract/v5";
@@ -25,8 +26,7 @@ export interface ExplainSlot {
 
 export interface ExplainNode {
   readonly nodeId: string;
-  readonly plugin?: string;
-  readonly typeId?: string;
+  readonly output: OutputDefinition;
   readonly slots: readonly ExplainSlot[];
 }
 
@@ -60,7 +60,6 @@ function slotEdges(node: GraphNode, slot: string): readonly GraphEdge[] {
 }
 
 function typedOutcome(
-  edge: GraphEdge,
   slot: Extract<SlotSpec, { kind: "typed" }>,
   source: GraphNode | undefined,
 ): { outcome: SlotOutcome; message?: string } {
@@ -85,23 +84,12 @@ function typedOutcome(
 }
 
 function modelOutcome(
-  edge: GraphEdge,
   slot: Extract<SlotSpec, { kind: "model" }>,
   source: GraphNode | undefined,
 ): { outcome: SlotOutcome; message?: string } {
-  void edge;
   const contract = source?.contract;
   if (contract === undefined)
     return { outcome: "unproven", message: "the source has no committed contract." };
-  if (contract.typeId !== undefined) {
-    if (slot.model.legacyTypeId !== undefined && contract.typeId === slot.model.legacyTypeId) {
-      return { outcome: "compatible" };
-    }
-    return {
-      outcome: "incompatible",
-      message: `the source is '${contract.typeId}', not '${slot.model.id}'.`,
-    };
-  }
   const producer = contract.outputs.values;
   if (producer === undefined)
     return { outcome: "incompatible", message: "the producer publishes no values output." };
@@ -115,11 +103,9 @@ function modelOutcome(
 }
 
 function shapeOutcome(
-  edge: GraphEdge,
   slot: Extract<SlotSpec, { kind: "shape" }>,
   source: GraphNode | undefined,
 ): { outcome: SlotOutcome; message?: string } {
-  void edge;
   const contract = source?.contract;
   if (contract === undefined)
     return { outcome: "unproven", message: "the source has no committed contract." };
@@ -138,7 +124,7 @@ function explainNode(node: GraphNode, nodeById: ReadonlyMap<string, GraphNode>):
   if (contract?.plugin === undefined) {
     return Object.freeze({
       nodeId: node.id,
-      ...(contract?.typeId === undefined ? {} : { typeId: contract.typeId }),
+      output: node.track.output,
       slots: Object.freeze([]),
     });
   }
@@ -164,13 +150,13 @@ function explainNode(node: GraphNode, nodeById: ReadonlyMap<string, GraphNode>):
       let checked: { outcome: SlotOutcome; message?: string };
       switch (slot.kind) {
         case "model":
-          checked = modelOutcome(edge, slot, source);
+          checked = modelOutcome(slot, source);
           break;
         case "typed":
-          checked = typedOutcome(edge, slot, source);
+          checked = typedOutcome(slot, source);
           break;
         case "shape":
-          checked = shapeOutcome(edge, slot, source);
+          checked = shapeOutcome(slot, source);
           break;
         default:
           return unreachable(slot);
@@ -191,8 +177,7 @@ function explainNode(node: GraphNode, nodeById: ReadonlyMap<string, GraphNode>):
   }
   return Object.freeze({
     nodeId: node.id,
-    plugin: contract.plugin,
-    ...(contract.typeId === undefined ? {} : { typeId: contract.typeId }),
+    output: node.track.output,
     slots: Object.freeze(slots),
   });
 }

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { shape } from "@motion5/core/plugin-api";
 import type { PluginDefinition, TrackDefinition, ValueSpec } from "../../../src/contract/v5";
 import { PluginCatalog } from "../../../src/domain/plugin-catalog";
+import { defineModel } from "../../../src/contract/v5";
 import { qualifyMotionTrack } from "../../../src/graph/ids";
 import { RefusalError } from "../../../src/runtime/refusal";
 import { applyEdits } from "../../../src/runtime/edit-apply";
@@ -9,6 +10,15 @@ import type { PlanEnvironment, PlanState, PlannedTrack } from "../../../src/runt
 import type { Edit } from "../../../src/runtime/edit-types";
 import { AUTHORED } from "../../../src/runtime/value-state";
 import { record, row, table, track } from "../../support/v5-builders";
+import { testModels } from "../../support/test-models";
+
+const PointTable = defineModel({
+  id: "PointTable",
+  spec: {
+    kind: "table",
+    schema: { row: { fields: { x: { kind: "number" }, y: { kind: "number" } } } },
+  },
+});
 
 const POINT: ValueSpec = {
   kind: "table",
@@ -25,7 +35,11 @@ const TRANSLATE: PluginDefinition = {
     return { values: [] };
   },
 };
-const POINTS = track({ id: "points", values: table(row("a", { x: 0, y: 0 })) });
+const POINTS = track({
+  id: "points",
+  values: table(row("a", { x: 0, y: 0 })),
+  model: "PointTable",
+});
 const SHIFTED: TrackDefinition = track({
   id: "shifted",
   plugin: "translate",
@@ -34,7 +48,7 @@ const SHIFTED: TrackDefinition = track({
 });
 
 function environment(): PlanEnvironment {
-  const catalog = new PluginCatalog();
+  const catalog = new PluginCatalog({ models: [...testModels, PointTable] });
   catalog.registerAll([TRANSLATE]);
   return {
     capabilities: catalog,

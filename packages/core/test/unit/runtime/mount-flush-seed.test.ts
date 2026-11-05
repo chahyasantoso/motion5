@@ -48,9 +48,9 @@ const OTHER = "~/b";
 const PROJECT: ProjectDefinition = {
   schemaVersion: 5,
   motions: [],
-  freeTracks: [{ id: "a" }],
+  freeTracks: [{ id: "a", output: { model: "TestRecord" } }],
 };
-const ADDED: TrackDefinition = { id: "b" };
+const ADDED: TrackDefinition = { id: "b", output: { model: "TestRecord" } };
 const compose = (node: { id: string }) => () => ({
   outputs: { values: { node: node.id } },
   sourceProgress: 0,
@@ -65,6 +65,7 @@ const HIP = "rig/hip";
 const HIP_TRACK: TrackDefinition = {
   id: "hip",
   input: { values: record({ x: 100, y: 200, rotation: 0 }) },
+  output: { model: "TestRecord" },
 };
 /** A real load, because what the refusal is about is the node a document brought with it. */
 function load(): ProjectHandle {

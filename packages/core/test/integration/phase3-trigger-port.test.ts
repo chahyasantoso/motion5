@@ -35,6 +35,7 @@ describe("Phase 3: TriggerPort Migration & Boundary Neutrality", () => {
                 ],
               }),
             },
+            output: { model: "TestRecord" },
           },
         ],
       },

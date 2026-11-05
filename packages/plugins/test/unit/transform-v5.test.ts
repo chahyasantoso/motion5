@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { PluginCatalog } from "@motion5/core/plugin-api";
 import { transformPlugin } from "../../src/transform";
+import { testModels } from "../../../core/test/support/test-models";
 
 describe("identified 2D transform plugin", () => {
   it("declares one dependency and preserves source row identity", () => {
-    const catalog = new PluginCatalog();
+    const catalog = new PluginCatalog({ models: testModels });
     catalog.register(transformPlugin);
 
     expect(catalog.get("transform")).toBeDefined();

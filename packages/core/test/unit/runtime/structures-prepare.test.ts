@@ -14,6 +14,7 @@ import { Body2d } from "../../../../plugins/src/models";
 import { fkPlugin } from "../../../../plugins/src/fk";
 import { parseDataType } from "../../../src/runtime/data-type-parse";
 import { body2d } from "../../../../plugins/src/body/type";
+import { testModels } from "../../support/test-models";
 
 const BONE_SPEC: ValueSpec = {
   kind: "table",
@@ -90,7 +91,7 @@ describe("structures and prepare hook", () => {
       },
     };
 
-    const catalog = new PluginCatalog();
+    const catalog = new PluginCatalog({ models: testModels });
     catalog.register(testPlugin);
     const engine = createEngine(catalog);
 
@@ -103,7 +104,7 @@ describe("structures and prepare hook", () => {
           tracks: [
             {
               id: "t",
-              plugin: "param-test-plugin",
+              output: { plugin: "param-test-plugin" },
               input: {
                 param: {
                   inspect: true,
@@ -176,14 +177,14 @@ describe("structures and prepare hook", () => {
           tracks: [
             {
               id: "src",
-              type: "LocalSourceModel",
+              output: { model: "LocalSourceModel" },
               input: {
                 values: [{ id: "root", cells: { length: 10, rotation: 0 } }],
               },
             },
             {
               id: "comp",
-              plugin: "computed-producer",
+              output: { plugin: "computed-producer" },
               input: {
                 values: {},
                 requires: { src: "src" },
@@ -273,7 +274,7 @@ describe("structures and prepare hook", () => {
           tracks: [
             {
               id: "prod",
-              plugin: "animated-producer",
+              output: { plugin: "animated-producer" },
               input: {
                 values: {
                   rot: [
@@ -285,7 +286,7 @@ describe("structures and prepare hook", () => {
             },
             {
               id: "cons",
-              plugin: "animated-consumer",
+              output: { plugin: "animated-consumer" },
               input: {
                 values: {},
                 requires: { bone: "prod" },
@@ -361,14 +362,14 @@ describe("structures and prepare hook", () => {
           tracks: [
             {
               id: "bones",
-              type: "DynamicBoneModel",
+              output: { model: "DynamicBoneModel" },
               input: {
                 values: [{ id: "b1", cells: { length: 10, rotation: 0 } }],
               },
             },
             {
               id: "reader",
-              plugin: "structure-reader",
+              output: { plugin: "structure-reader" },
               input: {
                 values: {},
                 requires: { bones: "bones" },
@@ -388,7 +389,7 @@ describe("structures and prepare hook", () => {
     handle.edit((tx) => {
       tx.track("m/bones").replace({
         id: "bones",
-        type: "DynamicBoneModel",
+        output: { model: "DynamicBoneModel" },
         input: {
           values: [
             { id: "b1", cells: { length: 10, rotation: 0 } },
@@ -405,7 +406,7 @@ describe("structures and prepare hook", () => {
   });
 
   it("prepare refusal names the slot", () => {
-    const catalog = new PluginCatalog();
+    const catalog = new PluginCatalog({ models: testModels });
     catalog.register(fkPlugin);
     const engine = createEngine(catalog);
 
@@ -418,7 +419,7 @@ describe("structures and prepare hook", () => {
           tracks: [
             {
               id: "chain",
-              type: "body2d",
+              output: { model: "Body2d" },
               input: {
                 values: [
                   { id: "root", cells: { length: 10, rotation: 0 } },
@@ -428,19 +429,19 @@ describe("structures and prepare hook", () => {
             },
             {
               id: "base",
-              type: "root2d",
+              output: { model: "Point2d" },
               input: { values: { x: 0, y: 0, rotation: 0 } },
             },
             {
               id: "solved",
-              type: "solved2d",
+              output: { model: "Solved2d" },
               input: {
                 values: [{ id: "root", cells: { rotation: 0 } }],
               },
             },
             {
               id: "fkNode",
-              plugin: "fk",
+              output: { plugin: "fk" },
               input: {
                 values: {},
                 requires: {
@@ -478,7 +479,7 @@ describe("structures and prepare hook", () => {
       },
     };
 
-    const catalog = new PluginCatalog();
+    const catalog = new PluginCatalog({ models: testModels });
     catalog.register(StateTestingPlugin);
     const engine = createEngine(catalog);
 
@@ -491,7 +492,7 @@ describe("structures and prepare hook", () => {
           tracks: [
             {
               id: "t",
-              plugin: "state-test-plugin",
+              output: { plugin: "state-test-plugin" },
               input: { values: {} },
             },
           ],
@@ -518,7 +519,7 @@ describe("structures and prepare hook", () => {
           tracks: [
             {
               id: "cyclicBody",
-              type: "Body2d",
+              output: { model: "Body2d" },
               input: {
                 values: [
                   { id: "a", cells: { parentId: "b", length: 10, rotation: 0 } },
@@ -566,7 +567,7 @@ describe("structures and prepare hook", () => {
           tracks: [
             {
               id: "mut",
-              plugin: "mutating-plugin",
+              output: { plugin: "mutating-plugin" },
               input: { values: {} },
             },
           ],

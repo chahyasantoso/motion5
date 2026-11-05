@@ -16,6 +16,7 @@ function track(id: string, from: number, to: number, duration?: number): TrackDe
     id,
     ...(duration === undefined ? {} : { duration }),
     input: { values: record({ x: ramp(from, to) }) },
+    output: { model: "TestRecord" },
   };
 }
 

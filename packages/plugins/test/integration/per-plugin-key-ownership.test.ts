@@ -11,6 +11,7 @@ import { bindData, createFakeInterpolator, createFakeScheduler } from "@motion5/
 import { body2d } from "../../src/body/type";
 import { root2d } from "../../src/root/type";
 import { solved2d } from "../../src/solved/type";
+import { testModels } from "../../../core/test/support/test-models";
 
 function hold(value: number) {
   return value;
@@ -25,7 +26,7 @@ function ramp(from: number, to: number) {
 
 const thigh: TrackDefinition = {
   id: "thigh",
-  plugin: "fk",
+  output: { plugin: "fk" },
   input: {
     values: {},
     requires: { chain: "walk/body", solved: "walk/solved", base: "walk/pelvis" },
@@ -34,7 +35,7 @@ const thigh: TrackDefinition = {
 
 const bodyTrack: TrackDefinition = {
   id: "body",
-  type: "body2d",
+  output: { model: "Body2d" },
   input: {
     values: [{ id: "thigh", cells: { length: 50, rotation: 45, weight: 1 } }],
   },
@@ -42,7 +43,7 @@ const bodyTrack: TrackDefinition = {
 
 const solvedTrack: TrackDefinition = {
   id: "solved",
-  type: "solved2d",
+  output: { model: "Solved2d" },
   input: {
     values: [{ id: "thigh", cells: { rotation: 45 } }],
   },
@@ -50,7 +51,7 @@ const solvedTrack: TrackDefinition = {
 
 const rootTrack: TrackDefinition = {
   id: "pelvis",
-  type: "root2d",
+  output: { model: "Point2d" },
   input: {
     values: { x: ramp(0, 200), y: hold(100), rotation: hold(0) },
   },
@@ -70,7 +71,7 @@ function rig(thighTrack: TrackDefinition): ProjectDefinition {
 }
 
 function rigRegistry(): PluginCatalog {
-  const plugins = new PluginCatalog();
+  const plugins = new PluginCatalog({ models: testModels });
   plugins.registerAll([transformPlugin, fkPlugin]);
   return plugins;
 }

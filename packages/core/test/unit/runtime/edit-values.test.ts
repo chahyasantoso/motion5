@@ -26,6 +26,35 @@ import { planValueEdit, type TrackLookup } from "../../../src/runtime/edit-plan-
 import type { CheapEdit, LiveEdit } from "../../../src/runtime/edit-types";
 import { AUTHORED } from "../../../src/runtime/value-state";
 import { record, row, table, track } from "../../support/v5-builders";
+import { testModel, testModels } from "../../support/test-models";
+
+import { defineModel } from "../../../src/contract/v5";
+
+const PointTable = defineModel({
+  id: "PointTable",
+  spec: {
+    kind: "table",
+    schema: {
+      row: {
+        fields: { x: { kind: "number" }, y: { kind: "number", optional: true } },
+      },
+    },
+  },
+});
+const ABRecord = defineModel({
+  id: "ABRecord",
+  spec: {
+    kind: "record",
+    fields: { a: { kind: "number" }, b: { kind: "number" } },
+  },
+});
+const LabelCount = defineModel({
+  id: "LabelCount",
+  spec: {
+    kind: "record",
+    fields: { label: { kind: "string" }, count: { kind: "number" } },
+  },
+});
 
 const POINT: ValueSpec = {
   kind: "table",
@@ -45,13 +74,18 @@ const TRANSLATE: PluginDefinition = {
 const POINTS = track({
   id: "points",
   values: table(row("r1", { x: 1, y: 2 }), row("r2", { x: 3 })),
+  model: "PointTable",
 });
-const RECORD = track({ id: "record", values: record({ label: "a", count: 1 }) });
-const STATIC_SCHEMA: ValueSpec = {
-  kind: "record",
-  fields: { flip: { kind: "boolean", static: true }, n: { kind: "number" } },
-};
-const FLAGS = track({ id: "flags", values: record({ flip: false, n: 1 }), schema: STATIC_SCHEMA });
+const RECORD = track({
+  id: "record",
+  values: record({ label: "a", count: 1 }),
+  model: "LabelCount",
+});
+const FLAGS = track({
+  id: "flags",
+  values: record({ flip: false, n: 1 }),
+  model: "StaticFlags",
+});
 const SHIFTED = track({
   id: "shifted",
   plugin: "translate",
@@ -60,7 +94,7 @@ const SHIFTED = track({
 });
 
 function environment(plugins: readonly PluginDefinition[] = []): PlanEnvironment {
-  const catalog = new PluginCatalog();
+  const catalog = new PluginCatalog({ models: [...testModels, PointTable, ABRecord, LabelCount] });
   catalog.registerAll(plugins);
   return {
     capabilities: catalog,
@@ -74,6 +108,9 @@ function contractFor(
 ): CommittedContract {
   const parsed = parseTrackDefinition(definition, definition.id, {
     isPluginRegistered: (pluginId) => plugins.some((plugin) => plugin.id === pluginId),
+    model: (modelId) =>
+      [PointTable, ABRecord, LabelCount].find((model) => model.id === modelId) ??
+      testModel(modelId),
   });
   if (parsed.kind === "refused")
     throw new Error(
@@ -81,18 +118,20 @@ function contractFor(
         .map((entry) => `${entry.ruleId} at ${entry.path}`)
         .join(", ")}`,
     );
-  const plugin = plugins.find((candidate) => candidate.id === definition.plugin);
-  const rawSpec = plugin === undefined ? parsed.value.input.schema : plugin.inputs.values;
+  const pluginId = "plugin" in definition.output ? definition.output.plugin : undefined;
+  const plugin = plugins.find((candidate) => candidate.id === pluginId);
+  const rawSpec =
+    plugin === undefined
+      ? "model" in definition.output
+        ? testModel(definition.output.model)?.spec
+        : undefined
+      : plugin.inputs.values;
   const spec = isModel(rawSpec) ? rawSpec.spec : rawSpec;
   const derived = deriveSourceContract(
     parsed.value.input.values,
     spec,
     `${definition.id}.input.values`,
-    plugin === undefined
-      ? parsed.value.input.schema !== undefined
-        ? "declared"
-        : "inferred"
-      : "plugin",
+    plugin === undefined ? "model" : "plugin",
   );
   if (derived.kind === "refused")
     throw new Error(
@@ -191,45 +230,40 @@ function message(outcome: PlanOutcome): string {
 }
 
 describe("set-values validates against the committed contract, never an inference", () => {
-  it("accepts an empty table on an inferred source and keeps the contract by identity", () => {
-    const committed = state([POINTS]);
-    const outcome = accepted(
-      plan(committed, { kind: "set-values", nodeId: "demo/points", values: [] }, environment()),
+  it("refuses an empty table because row ids are static", () => {
+    const outcome = plan(
+      state([POINTS]),
+      { kind: "set-values", nodeId: "demo/points", values: [] },
+      environment(),
     );
 
-    expect(outcome.change?.kind).toBe("authored-values");
-    expect(outcome.state.tracks.get("demo/points")?.track.input?.values).toEqual([]);
-    expect(outcome.state.tracks.get("demo/points")?.contract).toBe(
-      committed.tracks.get("demo/points")?.contract,
-    );
-    expect(outcome.state.tracks.get("demo/points")?.valueState).toBe(AUTHORED);
+    expect(rules(outcome)[0]?.split(" at ")[0]).toBe("live-values-invalid");
+    expect(message(outcome)).toContain("track.input.replace(...)");
   });
 
-  it("accepts a table with any row count inside the committed fields", () => {
+  it("refuses a different row set because row ids are static", () => {
     const values = table(
       row("r1", { x: 1, y: 2 }),
       row("r2", { x: 3, y: 4 }),
       row("r3", { x: 5, y: 6 }),
     );
-    const outcome = accepted(
-      plan(state([POINTS]), { kind: "set-values", nodeId: "demo/points", values }, environment()),
+    const outcome = plan(
+      state([POINTS]),
+      { kind: "set-values", nodeId: "demo/points", values },
+      environment(),
     );
 
-    expect(outcome.state.tracks.get("demo/points")?.track.input?.values).toEqual(values);
+    expect(rules(outcome)[0]?.split(" at ")[0]).toBe("live-values-invalid");
   });
 
-  it("accepts dropping the only row that omitted an optional column", () => {
-    const outcome = accepted(
-      plan(
-        state([POINTS]),
-        { kind: "set-values", nodeId: "demo/points", values: table(row("r2", { x: 3 })) },
-        environment(),
-      ),
+  it("refuses dropping the only row that omitted an optional column", () => {
+    const outcome = plan(
+      state([POINTS]),
+      { kind: "set-values", nodeId: "demo/points", values: table(row("r2", { x: 3 })) },
+      environment(),
     );
 
-    expect(outcome.state.tracks.get("demo/points")?.track.input?.values).toEqual([
-      { id: "r2", cells: { x: 3 } },
-    ]);
+    expect(rules(outcome)[0]?.split(" at ")[0]).toBe("live-values-invalid");
   });
 
   it("refuses a missing required field, an unknown field, and a changed kind, each naming the replacement", () => {
@@ -279,13 +313,11 @@ describe("set-values validates against the committed contract, never an inferenc
     );
 
     expect(rules(outcome)[0]?.split(" at ")[0]).toBe("values-shape-invalid");
-    expect(message(outcome)).toContain(
-      "the track's input is a table (inferred from its authored values)",
-    );
+    expect(message(outcome)).toContain("the declared input is a table");
     expect(message(outcome)).toContain("track.input.replace(...) or track.replace(...)");
   });
 
-  it("refuses a record-to-table change with inferred shape wording when no schema declared", () => {
+  it("refuses a record-to-table change with model shape wording", () => {
     const outcome = plan(
       state([RECORD]),
       { kind: "set-values", nodeId: "demo/record", values: table(row("r1", { label: "b" })) },
@@ -293,12 +325,10 @@ describe("set-values validates against the committed contract, never an inferenc
     );
 
     expect(rules(outcome)[0]?.split(" at ")[0]).toBe("values-shape-invalid");
-    expect(message(outcome)).toContain(
-      "the track's input is a record (inferred from its authored values)",
-    );
+    expect(message(outcome)).toContain("the declared input is a record");
   });
 
-  it("refuses a shape change with declared schema wording when schema declared", () => {
+  it("refuses a shape change against a source model", () => {
     const outcome = plan(
       state([FLAGS]),
       { kind: "set-values", nodeId: "demo/flags", values: table(row("r1", { flip: true })) },
@@ -306,10 +336,10 @@ describe("set-values validates against the committed contract, never an inferenc
     );
 
     expect(rules(outcome)[0]?.split(" at ")[0]).toBe("values-shape-invalid");
-    expect(message(outcome)).toContain("input.schema declares a record");
+    expect(message(outcome)).toContain("the declared input is a record");
   });
 
-  it("refuses a shape change with plugin declaration wording when plugin declared", () => {
+  it("refuses a shape change with declared input wording", () => {
     const plugins = [TRANSLATE];
     const outcome = plan(
       state([POINTS, SHIFTED], plugins),
@@ -318,7 +348,7 @@ describe("set-values validates against the committed contract, never an inferenc
     );
 
     expect(rules(outcome)[0]?.split(" at ")[0]).toBe("values-shape-invalid");
-    expect(message(outcome)).toContain("the plugin declares a record input");
+    expect(message(outcome)).toContain("the declared input is a record");
   });
 
   it("refuses stops on a field the declared schema marks static", () => {
@@ -336,19 +366,19 @@ describe("set-values validates against the committed contract, never an inferenc
     expect(message(outcome)).toContain("track.input.replace(...)");
   });
 
-  it("keeps a declared schema and its contract unchanged", () => {
+  it("keeps the source model and its contract unchanged", () => {
     const committed = state([FLAGS]);
     const outcome = accepted(
       plan(
         committed,
-        { kind: "set-values", nodeId: "demo/flags", values: record({ flip: true, n: 2 }) },
+        { kind: "set-values", nodeId: "demo/flags", values: record({ flip: false, n: 2 }) },
         environment(),
       ),
     );
 
     const before = committed.tracks.get("demo/flags");
     const after = outcome.state.tracks.get("demo/flags");
-    expect(after?.track.input?.schema).toBe(before?.track.input?.schema);
+    expect(after?.track.output).toBe(before?.track.output);
     expect(after?.contract).toBe(before?.contract);
   });
 

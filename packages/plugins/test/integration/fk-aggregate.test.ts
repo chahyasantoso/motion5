@@ -7,6 +7,7 @@ import { BODY_2D_SPEC } from "../support/aggregate-topology";
 import { GOALS_2D_SPEC } from "../../src/goals/fields";
 import { POSE_2D_SPEC } from "../../src/pose/fields";
 import { bodyEntity, rootEntity, solvedEntity } from "../support/typed-rig";
+import { testModels } from "../../../core/test/support/test-models";
 
 const composer = vi.hoisted(() => ({ calls: 0 }));
 vi.mock("../../src/frame", async (importOriginal) => {
@@ -65,10 +66,14 @@ function project(ids: Ids = IDS, motion = "demo"): ProjectDefinition {
         id: motion,
         trigger: { type: "manual" },
         tracks: [
-          { id: ids.root, type: "root2d", input: { values: { x: 0, y: 0, rotation: 0 } } },
+          {
+            id: ids.root,
+            output: { model: "Point2d" },
+            input: { values: { x: 0, y: 0, rotation: 0 } },
+          },
           {
             id: ids.body,
-            type: "body2d",
+            output: { model: "Body2d" },
             input: {
               values: [
                 { id: "trunk", cells: { length: 20, rotation: 0 } },
@@ -79,22 +84,22 @@ function project(ids: Ids = IDS, motion = "demo"): ProjectDefinition {
           },
           {
             id: ids.goals,
-            type: "goals2d",
+            output: { model: "Goals2d" },
             input: {
               values: [{ id: "left-hand", cells: { memberId: "left-lower", x: 12, y: 8 } }],
             },
           },
           {
             id: ids.solve,
-            plugin: "ik",
+            output: { plugin: "ik" },
             input: {
-              values: { flip: false },
+              param: { flip: false },
               requires: { chain: ids.body, goals: ids.goals, base: ids.root },
             },
           },
           {
             id: ids.pose,
-            plugin: "fk",
+            output: { plugin: "fk" },
             input: {
               values: {},
               requires: { chain: ids.body, solved: ids.solve, base: ids.root },
@@ -107,7 +112,7 @@ function project(ids: Ids = IDS, motion = "demo"): ProjectDefinition {
 }
 
 function open(definition: ProjectDefinition) {
-  const plugins = new PluginCatalog();
+  const plugins = new PluginCatalog({ models: testModels });
   plugins.registerAll([ikPlugin, fkPlugin]);
   const handle = new Engine({
     clock: createManualClock(),
@@ -453,16 +458,20 @@ describe("aggregate 2D FK", () => {
 
   it("AK-12a refreshes a computed solved structure when the producer row set changes", () => {
     const handle = open(project());
-    handle.track("demo/body").input.values.set([
-      { id: "trunk", cells: { length: 20, rotation: 0 } },
-      { id: "left-upper", cells: { parentId: "trunk", length: 10, rotation: 0 } },
-      { id: "left-lower", cells: { parentId: "left-upper", length: 10, rotation: 0 } },
-      { id: "left-lower-2", cells: { parentId: "left-upper", length: 8, rotation: 0 } },
-    ]);
-    handle.track("demo/goals").input.values.set([
-      { id: "left-hand", cells: { memberId: "left-lower", x: 12, y: 8 } },
-      { id: "left-hand-2", cells: { memberId: "left-lower-2", x: 4, y: 12 } },
-    ]);
+    handle.track("demo/body").input.replace({
+      values: [
+        { id: "trunk", cells: { length: 20, rotation: 0 } },
+        { id: "left-upper", cells: { parentId: "trunk", length: 10, rotation: 0 } },
+        { id: "left-lower", cells: { parentId: "left-upper", length: 10, rotation: 0 } },
+        { id: "left-lower-2", cells: { parentId: "left-upper", length: 8, rotation: 0 } },
+      ],
+    });
+    handle.track("demo/goals").input.replace({
+      values: [
+        { id: "left-hand", cells: { memberId: "left-lower", x: 12, y: 8 } },
+        { id: "left-hand-2", cells: { memberId: "left-lower-2", x: 4, y: 12 } },
+      ],
+    });
     expect(handle.get("demo/pose")?.status).toBe("ready");
   });
 

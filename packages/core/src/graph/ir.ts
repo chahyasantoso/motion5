@@ -1,5 +1,6 @@
 import { unreachable } from "../lang/exhaustive";
 import type { Diagnostic, TrackDefinition, ProjectDefinition } from "../contract/v5";
+import { outputModelId, outputPluginId } from "../contract/v5";
 import { diagnostic } from "../contract/diagnostics";
 import {
   acceptsChain,
@@ -229,13 +230,20 @@ export function deriveDependants(
   return freeze(dependants);
 }
 
+function sameOutput(contract: CommittedContract, track: TrackDefinition): boolean {
+  return (
+    contract.plugin === outputPluginId(track.output) &&
+    contract.modelId === outputModelId(track.output)
+  );
+}
+
 function withContract(
   node: GraphNode,
   capabilities: PluginCapabilities,
   carried: ReadonlyMap<string, CommittedContract> | undefined,
 ): GraphNode {
   const stored = carried?.get(node.id);
-  if (stored !== undefined && stored.plugin === node.track.plugin)
+  if (stored !== undefined && sameOutput(stored, node.track))
     return node.contract === stored ? node : freeze({ ...node, contract: stored });
   if (node.contract !== undefined) return node;
   const derived = deriveCommittedContract(node.track, node.id, capabilities);

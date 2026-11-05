@@ -9,11 +9,13 @@ import type {
   ValueSpec,
 } from "../../src/contract/v5";
 import { PluginCatalog } from "../../src/domain/plugin-catalog";
+import { defineModel } from "../../src/contract/v5";
 import { Engine, type ProjectHandle } from "../../src/engine";
 import { createManualClock } from "../../src/ports/clock";
 import { ProjectRuntime } from "../../src/runtime/project-runtime";
 import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
 import { project, record, row, table, track } from "../support/v5-builders";
+import { testModels } from "../support/test-models";
 
 const POINT: ValueSpec = {
   kind: "table",
@@ -46,13 +48,33 @@ const TRANSLATE: PluginDefinition<TranslateInput> = {
 function catalog<Input extends ResolvedInput>(
   ...plugins: readonly PluginDefinition<Input>[]
 ): PluginCatalog {
-  const result = new PluginCatalog();
+  const result = new PluginCatalog({ models: [...testModels, ABRecord, PointTable] });
   result.registerAll(plugins);
   return result;
 }
 
-const POINTS = track({ id: "points", values: table(row("r1", { x: 1, y: 2 })) });
-const RECORD = track({ id: "record", values: record({ a: 1, b: 2 }) });
+const PointTable = defineModel({
+  id: "PointTable",
+  spec: {
+    kind: "table",
+    schema: { row: { fields: { x: { kind: "number" }, y: { kind: "number" } } } },
+  },
+});
+const ABRecord = defineModel({
+  id: "ABRecord",
+  spec: { kind: "record", fields: { a: { kind: "number" }, b: { kind: "number" } } },
+});
+
+const POINTS = track({
+  id: "points",
+  values: table(row("r1", { x: 1, y: 2 })),
+  model: "PointTable",
+});
+const RECORD = track({
+  id: "record",
+  values: record({ a: 1, b: 2 }),
+  model: "ABRecord",
+});
 const SHIFTED = track({
   id: "shifted",
   plugin: "translate",
@@ -113,53 +135,18 @@ describe("cheap authored edits move values without a rebuild", () => {
     }
   });
 
-  it("replaces a whole table, keeps row ids and order, and accepts an empty table", () => {
+  it("refuses a row-set change because row ids are static", () => {
     const handle = engine().load(DEFINITION);
     try {
       handle.mount("demo/points");
-      const flush = vi.spyOn(runtimeOf(handle).graph, "flush");
-
-      const batch = handle.track("demo/points").input.values.set([
-        { id: "b", cells: { x: 5, y: 6 } },
-        { id: "a", cells: { x: 7, y: 8 } },
-      ]);
-      expect(flush).toHaveBeenCalledTimes(1);
-      expect(outputsIn(batch, "demo/points")).toEqual([
-        { id: "b", cells: { x: 5, y: 6 } },
-        { id: "a", cells: { x: 7, y: 8 } },
-      ]);
-
-      const emptied = handle.track("demo/points").input.values.set([]);
-      expect(outputsIn(emptied, "demo/points")).toEqual([]);
-      expect(handle.track("demo/points").definition.input?.values).toEqual([]);
-    } finally {
-      handle.dispose();
-    }
-  });
-
-  it("keeps the stored contract for a typed consumer after emptying an inferred source", () => {
-    const handle = engine().load(DEFINITION);
-    try {
-      handle.mount("demo/points");
-      handle.mount("demo/shifted");
-      expect(outputsOf(handle, "demo/shifted")).toEqual([{ id: "r1", cells: { x: 11, y: 2 } }]);
-
-      const emptied = handle.track("demo/points").input.values.set([]);
-      expect(outputsIn(emptied, "demo/shifted")).toEqual([]);
-
-      // Structural replacement of the consumer re-derives only its own contract and reads the
-      // source's stored one, so the source's empty values do not make it unproven.
+      const before = handle.track("demo/points").definition;
       expect(() =>
-        handle.track("demo/shifted").input.replace({
-          values: record({ dx: 2 }),
-          requires: { data: "points" },
-        }),
-      ).not.toThrow();
-
-      // A structural input replacement is the edit that re-infers, and it is then refused for the
-      // consumer the stored contract protected a moment earlier.
-      const thrown = thrownBy(() => handle.track("demo/points").input.replace({ values: [] }));
-      expect((thrown as Error).message).toMatch(/slot-unproven/);
+        handle.track("demo/points").input.values.set([
+          { id: "b", cells: { x: 5, y: 6 } },
+          { id: "a", cells: { x: 7, y: 8 } },
+        ]),
+      ).toThrow(/track\.input\.replace/);
+      expect(handle.track("demo/points").definition).toBe(before);
     } finally {
       handle.dispose();
     }

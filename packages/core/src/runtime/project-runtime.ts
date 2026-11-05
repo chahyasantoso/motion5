@@ -173,12 +173,13 @@ export interface ProjectRuntimeOptions {
   readonly clock: Clock;
   readonly scheduler?: Scheduler;
   readonly compose: ComposeResolver;
-  /** Whether an authored `track.plugin` id names an admitted plugin; the structural tier needs it to validate plugin tracks. Absent keeps no-plugin paths. */
+  /** Whether an authored plugin id (`output.plugin`) names an admitted plugin; the structural tier needs it to validate computed tracks. Absent keeps no-plugin paths. */
   readonly isPluginRegistered?: (pluginId: string) => boolean;
 
   readonly setProgress?: (nodeId: string, progress: number) => void;
   /** Replaces the authored values a compiled Track evaluates, cheap tier; values arrive parsed and validated, a node with no compiled Track is a no-op. */
   readonly rewriteValues?: (nodeId: string, values: ParsedValues) => void;
+  readonly rewriteParamValues?: (nodeId: string, values: ParsedValues) => void;
   /** Stands one whole evaluated value over a compiled Track, or `undefined` drops it; validated by the runtime; no compiled Track = no-op; the authored definition never moves. */
   readonly overlayValues?: (nodeId: string, value: Value | undefined) => void;
   readonly compileTrack?: (track: TrackDefinition, nodeId?: string) => void;
@@ -263,6 +264,7 @@ export class ProjectRuntime {
       }),
       value: Object.freeze({
         rewrite: installed(this, options.rewriteValues, NO_PORTS.value.rewrite),
+        rewriteParam: installed(this, options.rewriteParamValues, NO_PORTS.value.rewriteParam),
         overlay: installed(this, options.overlayValues, NO_PORTS.value.overlay),
         seek: installed(this, options.setProgress, NO_PORTS.value.seek),
       }),
@@ -489,9 +491,23 @@ export class ProjectRuntime {
       ...(this.#isPluginRegistered === undefined
         ? {}
         : { isPluginRegistered: this.#isPluginRegistered }),
+      ...(this.#capabilities.pluginDefinition === undefined
+        ? {}
+        : {
+            pluginDefinition: (pluginId: string) => this.#capabilities.pluginDefinition?.(pluginId),
+          }),
       ...(this.#capabilities.dataType === undefined
         ? {}
         : { dataType: (typeId: string) => this.#capabilities.dataType?.(typeId) }),
+      ...(this.#capabilities.model === undefined
+        ? {}
+        : { model: (modelId: string) => this.#capabilities.model?.(modelId) }),
+      ...(this.#capabilities.modelIds === undefined
+        ? {}
+        : { modelIds: () => this.#capabilities.modelIds?.() }),
+      ...(this.#capabilities.pluginIds === undefined
+        ? {}
+        : { pluginIds: () => this.#capabilities.pluginIds?.() }),
     };
     return expectValid(validateTrackDefinition(track, path, context));
   }
@@ -769,7 +785,8 @@ export class ProjectRuntime {
       case "authored-values":
         // Compile the candidate before adopting its definition: a domain refusal must leave both
         // the authored entry and the compiled track untouched.
-        this.#ports.value.rewrite(id, change.values);
+        if (change.channel === "param") this.#ports.value.rewriteParam(id, change.values);
+        else this.#ports.value.rewrite(id, change.values);
         this.#tracks.set(id, {
           ...entry,
           track: change.track.track,

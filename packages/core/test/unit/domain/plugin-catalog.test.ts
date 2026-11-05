@@ -3,6 +3,7 @@ import type { PluginDefinition, SlotSpec, ValueSpec } from "../../../src/contrac
 import { shape } from "../../../src/contract/slot-spec";
 import { PluginAdmissionError, PluginCatalog } from "../../../src/domain/plugin-catalog";
 import { validateV5 } from "../../../src/validate-v5";
+import { testModels } from "../../support/test-models";
 
 type ScaleValues = Readonly<Record<"factor", number>>;
 type ScaleInput = { readonly values: ScaleValues; readonly requires: {} };
@@ -44,7 +45,7 @@ function project(track: unknown): unknown {
 
 describe("plugin admission is keyed by id and atomic", () => {
   it("admits a typed definition and answers it by id", () => {
-    const catalog = new PluginCatalog();
+    const catalog = new PluginCatalog({ models: testModels });
     catalog.register(SCALE);
 
     expect(catalog.size).toBe(1);
@@ -57,7 +58,7 @@ describe("plugin admission is keyed by id and atomic", () => {
   });
 
   it("refuses a duplicate id without changing the admitted definition", () => {
-    const catalog = new PluginCatalog();
+    const catalog = new PluginCatalog({ models: testModels });
     catalog.register(SCALE);
     const before = catalog.get("scale");
 
@@ -67,7 +68,7 @@ describe("plugin admission is keyed by id and atomic", () => {
   });
 
   it("leaves the registry unchanged when one member of a batch is invalid", () => {
-    const catalog = new PluginCatalog();
+    const catalog = new PluginCatalog({ models: testModels });
     const invalid = malformed({
       id: "broken",
       inputs: { values: { kind: "record", fields: {} }, extra: 1 },
@@ -79,14 +80,14 @@ describe("plugin admission is keyed by id and atomic", () => {
   });
 
   it("refuses a duplicate inside one batch, not only against the committed registry", () => {
-    const catalog = new PluginCatalog();
+    const catalog = new PluginCatalog({ models: testModels });
 
     expect(reason(() => catalog.registerAll([SCALE, SCALE]))).toMatch(/^plugin-duplicate-id at /);
     expect(catalog.size).toBe(0);
   });
 
   it("carries the rule id as data on the admission refusal", () => {
-    const catalog = new PluginCatalog();
+    const catalog = new PluginCatalog({ models: testModels });
     catalog.register(SCALE);
     try {
       catalog.register(SCALE);
@@ -109,7 +110,9 @@ describe("admission refuses a malformed definition by rule", () => {
     const plugin = malformed({
       outputs: { values: { type: "record", fields: {} } },
     });
-    expect(reason(() => new PluginCatalog().register(plugin))).toMatch(/^spec-field-unknown at /);
+    expect(reason(() => new PluginCatalog({ models: testModels }).register(plugin))).toMatch(
+      /^spec-field-unknown at /,
+    );
   });
 
   it("refuses optional on inputs.values", () => {
@@ -118,7 +121,9 @@ describe("admission refuses a malformed definition by rule", () => {
         values: { kind: "record", fields: { factor: { kind: "number" } }, optional: true },
       },
     });
-    expect(reason(() => new PluginCatalog().register(plugin))).toMatch(/^plugin-input-invalid at /);
+    expect(reason(() => new PluginCatalog({ models: testModels }).register(plugin))).toMatch(
+      /^plugin-input-invalid at /,
+    );
   });
 
   it("refuses static on a plugin output", () => {
@@ -130,20 +135,24 @@ describe("admission refuses a malformed definition by rule", () => {
         },
       },
     });
-    expect(reason(() => new PluginCatalog().register(plugin))).toMatch(/^spec-field-unknown at /);
+    expect(reason(() => new PluginCatalog({ models: testModels }).register(plugin))).toMatch(
+      /^spec-field-unknown at /,
+    );
   });
 
   it("refuses a reserved output name", () => {
     const plugin = malformed({
       outputs: Object.fromEntries([["__proto__", table]]),
     });
-    expect(reason(() => new PluginCatalog().register(plugin))).toMatch(/^name-reserved at /);
+    expect(reason(() => new PluginCatalog({ models: testModels }).register(plugin))).toMatch(
+      /^name-reserved at /,
+    );
   });
 
   it("refuses a non-callable transform", () => {
-    expect(reason(() => new PluginCatalog().register(malformed({ transform: 1 })))).toMatch(
-      /^plugin-shape at /,
-    );
+    expect(
+      reason(() => new PluginCatalog({ models: testModels }).register(malformed({ transform: 1 }))),
+    ).toMatch(/^plugin-shape at /);
   });
 
   it("refuses an invalid dependency binding mode", () => {
@@ -153,30 +162,34 @@ describe("admission refuses a malformed definition by rule", () => {
         requires: { data: { ...dependency, binding: "many" } },
       },
     });
-    expect(reason(() => new PluginCatalog().register(plugin))).toMatch(/^slot-binding-mode at /);
+    expect(reason(() => new PluginCatalog({ models: testModels }).register(plugin))).toMatch(
+      /^slot-binding-mode at /,
+    );
   });
 
   it("refuses an unknown plugin definition member", () => {
-    expect(reason(() => new PluginCatalog().register(malformed({ stage: "prepare" })))).toMatch(
-      /^plugin-shape at /,
-    );
+    expect(
+      reason(() =>
+        new PluginCatalog({ models: testModels }).register(malformed({ stage: "prepare" })),
+      ),
+    ).toMatch(/^plugin-shape at /);
   });
 });
 
 describe("a track selects a plugin only by its authored id", () => {
   it("accepts a registered id and refuses an unknown one", () => {
-    const catalog = new PluginCatalog();
+    const catalog = new PluginCatalog({ models: testModels });
     catalog.register(SCALE);
 
     expect(
       validateV5(
-        project({ id: "scaled", plugin: "scale", input: { values: { factor: 2 } } }),
+        project({ id: "scaled", output: { plugin: "scale" }, input: { values: { factor: 2 } } }),
         catalog,
       ).kind,
     ).toBe("accepted");
 
     const refused = validateV5(
-      project({ id: "scaled", plugin: "missing", input: { values: { factor: 2 } } }),
+      project({ id: "scaled", output: { plugin: "missing" }, input: { values: { factor: 2 } } }),
       catalog,
     );
     expect(refused.kind).toBe("refused");
@@ -185,11 +198,15 @@ describe("a track selects a plugin only by its authored id", () => {
   });
 
   it("creates no plugin demand for a track that names no plugin", () => {
-    const catalog = new PluginCatalog();
+    const catalog = new PluginCatalog({ models: testModels });
     const demand = vi.spyOn(catalog, "pluginDefinition");
 
     const result = validateV5(
-      project({ id: "points", input: { values: [{ id: "a", cells: { x: 1 } }] } }),
+      project({
+        id: "points",
+        input: { values: [{ id: "a", cells: { x: 1 } }] },
+        output: { model: "TestTable" },
+      }),
       catalog,
     );
 

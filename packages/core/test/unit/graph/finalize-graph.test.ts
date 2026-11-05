@@ -36,8 +36,8 @@ const CORPUS: ReadonlyArray<{
   {
     label: "clean",
     project: freeProject([
-      { id: "root" },
-      { id: "leaf", plugin: "graph-edge", input: { requires: { chain: "~/root" } } },
+      { id: "root", output: { model: "TestTable" } },
+      { id: "leaf", output: { plugin: "graph-edge" }, input: { requires: { chain: "~/root" } } },
     ]),
     expectOrder: ["~/root", "~/leaf"],
     expectRuleIds: [],
@@ -45,8 +45,8 @@ const CORPUS: ReadonlyArray<{
   {
     label: "cycle",
     project: freeProject([
-      { id: "a", plugin: "graph-edge", input: { requires: { chain: "~/b" } } },
-      { id: "b", plugin: "graph-edge", input: { requires: { chain: "~/a" } } },
+      { id: "a", output: { plugin: "graph-edge" }, input: { requires: { chain: "~/b" } } },
+      { id: "b", output: { plugin: "graph-edge" }, input: { requires: { chain: "~/a" } } },
     ]),
     expectOrder: null,
     expectRuleIds: ["graph-cycle"],
@@ -54,7 +54,7 @@ const CORPUS: ReadonlyArray<{
   {
     label: "unknown-source",
     project: freeProject([
-      { id: "arm", plugin: "graph-edge", input: { requires: { chain: "~/missing" } } },
+      { id: "arm", output: { plugin: "graph-edge" }, input: { requires: { chain: "~/missing" } } },
     ]),
     expectOrder: null,
     expectRuleIds: ["edge-unknown-source"],
@@ -62,7 +62,7 @@ const CORPUS: ReadonlyArray<{
   {
     label: "self-reference",
     project: freeProject([
-      { id: "arm", plugin: "graph-edge", input: { requires: { chain: "~/arm" } } },
+      { id: "arm", output: { plugin: "graph-edge" }, input: { requires: { chain: "~/arm" } } },
     ]),
     expectOrder: null,
     expectRuleIds: ["edge-self-reference"],
@@ -147,7 +147,7 @@ describe("finalizeGraph", () => {
       id,
       owner: "free",
       authoredIndex,
-      track: { id: id.slice(2) },
+      track: { id: id.slice(2), output: { model: "TestRecord" } },
       edges,
     });
     const result = finalizeGraph(

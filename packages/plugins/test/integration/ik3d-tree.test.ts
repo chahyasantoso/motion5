@@ -6,6 +6,7 @@ import { FABRIK_TOLERANCE } from "../../src/fabrik";
 import { fk3dPlugin } from "@motion5/plugins/fk3d";
 import { readFrame3d } from "../../src/frame3d";
 import { ik3dPlugin } from "@motion5/plugins/ik3d";
+import { testModels } from "../../../core/test/support/test-models";
 
 type Values = Readonly<Record<string, unknown>>;
 
@@ -29,14 +30,14 @@ const PROJECT: ProjectDefinition = {
       tracks: [
         {
           id: "root",
-          type: "root3d",
+          output: { model: "Point3d" },
           input: {
             values: { x: 5, y: -3, z: 2, rotation: 20, rotationX: -15, rotationY: 0 },
           },
         },
         {
           id: "chain-body",
-          type: "body3d",
+          output: { model: "Body3d" },
           input: {
             values: [
               { id: "c0", cells: { length: 25, rotation: 0, rotationX: 0, rotationY: 0 } },
@@ -65,7 +66,7 @@ const PROJECT: ProjectDefinition = {
         },
         {
           id: "chain-goals",
-          type: "goals3d",
+          output: { model: "Goals3d" },
           input: {
             values: [
               {
@@ -82,7 +83,7 @@ const PROJECT: ProjectDefinition = {
         },
         {
           id: "chain-solve",
-          plugin: "ik3d",
+          output: { plugin: "ik3d" },
           input: {
             values: {},
             requires: { chain: "chain-body", goals: "chain-goals", base: "root" },
@@ -90,7 +91,7 @@ const PROJECT: ProjectDefinition = {
         },
         {
           id: "chain-pose",
-          plugin: "fk3d",
+          output: { plugin: "fk3d" },
           input: {
             values: {},
             requires: { chain: "chain-body", solved: "chain-solve", base: "root" },
@@ -98,7 +99,7 @@ const PROJECT: ProjectDefinition = {
         },
         {
           id: "tree-body",
-          type: "body3d",
+          output: { model: "Body3d" },
           input: {
             values: [
               { id: "trunk", cells: { length: 25, rotation: 0, rotationX: 0, rotationY: 0 } },
@@ -130,7 +131,7 @@ const PROJECT: ProjectDefinition = {
         },
         {
           id: "tree-goals",
-          type: "goals3d",
+          output: { model: "Goals3d" },
           input: {
             values: [
               {
@@ -156,15 +157,15 @@ const PROJECT: ProjectDefinition = {
         },
         {
           id: "tree-solve",
-          plugin: "ik3d",
+          output: { plugin: "ik3d" },
           input: {
-            values: { inspect: true },
+            param: { inspect: true },
             requires: { chain: "tree-body", goals: "tree-goals", base: "root" },
           },
         },
         {
           id: "tree-pose",
-          plugin: "fk3d",
+          output: { plugin: "fk3d" },
           input: {
             values: {},
             requires: { chain: "tree-body", solved: "tree-solve", base: "root" },
@@ -194,7 +195,7 @@ const LEAVES = [
 ] as const;
 
 function mountedRig() {
-  const plugins = new PluginCatalog();
+  const plugins = new PluginCatalog({ models: testModels });
   plugins.registerAll([fk3dPlugin, ik3dPlugin]);
   const runtime = new Engine({
     clock: createManualClock(),

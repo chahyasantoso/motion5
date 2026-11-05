@@ -1,4 +1,5 @@
 import type { Diagnostic } from "../contract/v5";
+import { outputPluginId } from "../contract/v5";
 import { diagnostic } from "../contract/diagnostics";
 import type { GraphNode } from "./ir";
 import type { PluginCapabilities } from "../ports/plugin-capabilities";
@@ -22,20 +23,10 @@ function checkNode(
   diagnostics: Diagnostic[],
 ): void {
   const contract = node.contract;
-  const pluginId = contract?.plugin ?? node.track.plugin;
+  const pluginId = contract?.plugin ?? outputPluginId(node.track.output);
   const authored = contract?.requires ?? node.track.input?.requires;
   const path = `${node.id}.input.requires`;
-  if (pluginId === undefined) {
-    if (authored !== undefined && isRecord(authored) && Object.keys(authored).length > 0)
-      diagnostics.push(
-        diagnostic(
-          "plugin-requires-without-plugin",
-          path,
-          "A track without a plugin has nothing that owns its required inputs.",
-        ),
-      );
-    return;
-  }
+  if (pluginId === undefined) return;
   const declared = contract?.slots ?? capabilities.pluginDefinition?.(pluginId)?.inputs.requires;
   if (declared === undefined) {
     // A registry that answers the identified-table question but does not know this id is the
@@ -43,7 +34,11 @@ function checkNode(
     // above already refused the id where it could.
     if (capabilities.pluginDefinition !== undefined)
       diagnostics.push(
-        diagnostic("plugin-unknown", `${node.id}.plugin`, `Plugin '${pluginId}' is not admitted.`),
+        diagnostic(
+          "plugin-unknown",
+          `${node.id}.output.plugin`,
+          `Plugin '${pluginId}' is not admitted.`,
+        ),
       );
     return;
   }

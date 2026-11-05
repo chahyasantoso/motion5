@@ -367,7 +367,7 @@ function admitPlugin(
     "transform",
   );
   if (rawTransform === undefined)
-    refuse("plugin-shape", "plugin.transform", "transform must be a function.");
+    refuse("plugin-transform-missing", "plugin.transform", "transform must be a function.");
   const rawCheckSources = readHook<CheckSourcesHook>(
     own(source, "checkSources"),
     "plugin.checkSources",
@@ -693,6 +693,11 @@ export class PluginCatalog implements PluginCapabilities {
   /** Whether the model id is admitted in the catalog. */
   hasModel(id: string): boolean {
     return this.#models.has(id);
+  }
+
+  /** Sorted admitted plugin ids. */
+  pluginIds(): readonly string[] {
+    return Object.freeze([...this.#plugins.keys()].sort());
   }
 
   /** Sorted admitted model ids. */

@@ -106,9 +106,7 @@ describe("pose-gap-filler aggregate migration (AN-1 through AN-10)", () => {
     if (bodyPatch.status !== "ready" || !Array.isArray(bodyPatch.outputs.values))
       throw new Error("Expected ready body table");
     const rows = [...bodyPatch.outputs.values].reverse();
-    handle.values((transaction) => {
-      transaction.track(poseNodeId(ids.body)).input.values.set(rows);
-    });
+    handle.track(poseNodeId(ids.body)).input.replace({ values: rows });
     const reversed = readSolvedLimb(handle, "left-arm")!;
     expect(distance(reversed.middle, forward.middle)).toBeLessThan(1e-6);
     expect(distance(reversed.tip, forward.tip)).toBeLessThan(1e-6);

@@ -1,4 +1,12 @@
-import type { DataType, Diagnostic, Model, Structure, TypeIssue, Value } from "../contract/v5";
+import type {
+  DataType,
+  Diagnostic,
+  Model,
+  Structure,
+  TypeIssue,
+  Value,
+  ValueSpec,
+} from "../contract/v5";
 import { diagnostic } from "../contract/diagnostics";
 import { brandStructure } from "../contract/structure";
 import { acceptedOutcome, refusedOutcomeFrom, type Outcome } from "../lang/outcome";
@@ -16,13 +24,21 @@ function issueDiagnostics(issues: readonly TypeIssue[], path: string): readonly 
   );
 }
 
+function runtimeExtraFields(spec: ValueSpec): "allow-scalar" | "reject" {
+  if (spec.kind === "table")
+    return spec.schema.row.additionalProperties === true ? "allow-scalar" : "reject";
+  return spec.additionalProperties === true ? "allow-scalar" : "reject";
+}
+
 /** Validates a value against the type's declared spec, then runs the domain parse and brands the result. */
 export function parseDataType(
   type: DataType<unknown, unknown>,
   value: Value,
   path: string,
 ): Outcome<Structure<unknown>, Diagnostic> {
-  const issues = validateRuntimeValue(value, type.spec, path, { extraFields: "reject" });
+  const issues = validateRuntimeValue(value, type.spec, path, {
+    extraFields: runtimeExtraFields(type.spec),
+  });
   if (issues.length > 0)
     return refusedOutcomeFrom(
       issues.map((issue) => diagnostic("data-type-invalid", issue.path, issue.message)),
@@ -44,7 +60,9 @@ export function parseModel(
   value: Value,
   path: string,
 ): Outcome<Structure<unknown> | undefined, Diagnostic> {
-  const issues = validateRuntimeValue(value, model.spec, path, { extraFields: "reject" });
+  const issues = validateRuntimeValue(value, model.spec, path, {
+    extraFields: runtimeExtraFields(model.spec),
+  });
   if (issues.length > 0)
     return refusedOutcomeFrom(
       issues.map((issue) => diagnostic("data-type-invalid", issue.path, issue.message)),

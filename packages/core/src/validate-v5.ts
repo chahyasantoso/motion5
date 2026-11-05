@@ -33,12 +33,19 @@ export function validateV5(
 ): ValidationResult {
   const context: ParseContext = {
     isPluginRegistered: (pluginId) => admitsPlugin(capabilities, pluginId),
+    ...(capabilities.pluginDefinition === undefined
+      ? {}
+      : { pluginDefinition: (pluginId: string) => capabilities.pluginDefinition?.(pluginId) }),
     ...(capabilities.dataType === undefined
       ? {}
       : { dataType: (typeId: string) => capabilities.dataType?.(typeId) }),
     ...(capabilities.model === undefined
       ? {}
       : { model: (modelId: string) => capabilities.model?.(modelId) }),
+    ...(capabilities.modelIds === undefined ? {} : { modelIds: () => capabilities.modelIds?.() }),
+    ...(capabilities.pluginIds === undefined
+      ? {}
+      : { pluginIds: () => capabilities.pluginIds?.() }),
   };
   const schema = validateSchemaV5(input, context);
   switch (schema.kind) {

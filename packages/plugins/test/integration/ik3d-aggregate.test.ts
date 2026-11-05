@@ -2,11 +2,21 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
 import { Engine, PluginCatalog, createManualClock, type ProjectDefinition } from "@motion5/core";
 import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/testing";
+import { defineModel } from "@motion5/core/plugin-api";
 import { ik3dPlugin } from "../../src/ik3d";
 import { AggregateTopologyError } from "../support/aggregate-topology";
 import { BODY_3D_SPEC } from "../../src/body3d/fields";
 import { GOALS_3D_SPEC } from "../../src/goals3d/fields";
 import { goalsEntity, rootEntity } from "../support/typed-rig";
+import { testModels } from "../../../core/test/support/test-models";
+
+const Pole3d = defineModel({
+  id: "Pole3d",
+  spec: {
+    kind: "record",
+    fields: { x: { kind: "number" }, y: { kind: "number" }, z: { kind: "number" } },
+  },
+});
 
 const solver = vi.hoisted(() => ({ calls: 0 }));
 vi.mock("../../src/ik3d-solve", async (importOriginal) => {
@@ -50,7 +60,8 @@ function input(
   const { inspect = true, chain = BODY, goals = GOALS, pole = POLE } = options;
   const rig = goalsEntity(chain, goals);
   return {
-    values: { inspect },
+    values: {},
+    param: { inspect },
     requires: {
       chain: rig.body,
       goals: rig.goals,
@@ -210,11 +221,15 @@ function project(
         id: motion,
         trigger: { type: "manual" },
         tracks: [
-          { id: ids.root, type: "root3d", input: { values: ROOT } },
-          { id: ids.pole, input: { values: { x: 0, y: 0, z: 100 } } },
+          { id: ids.root, output: { model: "Point3d" }, input: { values: ROOT } },
+          {
+            id: ids.pole,
+            input: { values: { x: 0, y: 0, z: 100 } },
+            output: { model: "Pole3d" },
+          },
           {
             id: ids.body,
-            type: "body3d",
+            output: { model: "Body3d" },
             input: {
               values: [
                 { id: "upper", cells: { length: 50 } },
@@ -224,16 +239,16 @@ function project(
           },
           {
             id: ids.goals,
-            type: "goals3d",
+            output: { model: "Goals3d" },
             input: {
               values: [{ id: "g", cells: { memberId: "left", x: 60, y: 20, z: goalZ } }],
             },
           },
           {
             id: ids.solve,
-            plugin: "ik3d",
+            output: { plugin: "ik3d" },
             input: {
-              values: { inspect: true },
+              param: { inspect: true },
               requires: { chain: ids.body, goals: ids.goals, base: ids.root, pole: ids.pole },
             },
           },
@@ -244,7 +259,7 @@ function project(
 }
 
 function open(definition: ProjectDefinition) {
-  const plugins = new PluginCatalog();
+  const plugins = new PluginCatalog({ models: [...testModels, Pole3d] });
   plugins.registerAll([ik3dPlugin]);
   const handle = new Engine({
     clock: createManualClock(),
@@ -352,7 +367,8 @@ describe("aggregate 3D IK captured twins", () => {
       const rig = goalsEntity(twin.body, twin.goals);
       const result = ik3dPlugin.transform(
         {
-          values: twin.values ?? { inspect: true },
+          values: {},
+          param: twin.values ?? { inspect: true },
           requires: {
             chain: rig.body,
             goals: rig.goals,

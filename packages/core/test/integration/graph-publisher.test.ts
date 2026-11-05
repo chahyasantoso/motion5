@@ -22,7 +22,7 @@ const makeNode = (
     id,
     owner: "motion",
     authoredIndex,
-    track: { id: id.split("/")[1] ?? id },
+    track: { id: id.split("/")[1] ?? id, output: { model: "TestRecord" } },
     edges: Object.freeze(edges),
     compose,
   });

@@ -9,8 +9,10 @@ import {
 } from "@motion5/core";
 import { fkPlugin } from "@motion5/plugins/fk";
 import { fk3dPlugin } from "@motion5/plugins/fk3d";
+import { builtinModels } from "@motion5/plugins/models";
 import { ikPlugin } from "@motion5/plugins/ik";
 import { ik3dPlugin } from "@motion5/plugins/ik3d";
+import { Pole3d } from "./ik3d-playground-project";
 import { afterCleanup } from "./cleanup";
 import { createGoalControl, type GoalControl } from "./goal-control";
 import { SCROLL_SOURCE, ikPlaygroundProject } from "./ik-playground-project";
@@ -53,7 +55,7 @@ export async function loadPlayground(
   options: PlaygroundRuntimeOptions,
 ): Promise<PlaygroundRuntime> {
   const { scroll, ...ports } = options;
-  const plugins = new PluginCatalog();
+  const plugins = new PluginCatalog({ models: [...builtinModels, Pole3d] });
   plugins.registerAll([fkPlugin, ikPlugin, fk3dPlugin, ik3dPlugin]);
   const project = new Engine({
     ...ports,

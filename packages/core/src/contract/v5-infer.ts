@@ -319,10 +319,10 @@ function validateRecord(
 }
 
 /** Where a contract spec came from; it words a shape-mismatch diagnostic. */
-export type SpecOrigin = "declared" | "plugin" | "inferred";
+export type SpecOrigin = "model" | "plugin" | "inferred";
 
 const SHAPE_SOURCE: Readonly<Record<SpecOrigin, (kind: ValueSpec["kind"]) => string>> = {
-  declared: (kind) => `input.schema declares a ${kind}`,
+  model: (kind) => `the output model declares a ${kind}`,
   plugin: (kind) => `the plugin declares a ${kind} input`,
   inferred: (kind) => `the track's input is a ${kind} (inferred from its authored values)`,
 };

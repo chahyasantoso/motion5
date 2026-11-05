@@ -41,6 +41,7 @@ describe("runtime track validation and immutability (W3)", () => {
     const source: TrackDefinition = {
       id: "arm",
       input: { values: { x: ramp(0, 100) } },
+      output: { model: "TestRecord" },
     };
 
     const added = handle.addTrack(source);
@@ -63,6 +64,7 @@ describe("runtime track validation and immutability (W3)", () => {
     const source: TrackDefinition = {
       id: "arm",
       input: { values: { x: ramp(0, 100) } },
+      output: { model: "TestRecord" },
     };
     const added = handle.addTrack(source);
 
@@ -86,11 +88,16 @@ describe("runtime track validation and immutability (W3)", () => {
       id: "broken",
       input: { values: { x: ramp(0, 1) } },
       observes: "not-an-array",
+      output: { model: "TestRecord" },
     } as unknown as TrackDefinition;
 
     expect(() => handle.addTrack(malformed)).toThrow(/track-legacy-field/);
     expect(() =>
-      handle.addTrack({ id: "broken", input: { values: { x: ramp(0, 1) } } }),
+      handle.addTrack({
+        id: "broken",
+        input: { values: { x: ramp(0, 1) } },
+        output: { model: "TestRecord" },
+      }),
     ).not.toThrow();
 
     handle.dispose();
@@ -101,6 +108,7 @@ describe("runtime track validation and immutability (W3)", () => {
     const source: TrackDefinition = {
       id: "arm",
       input: { values: { x: ramp(0, 100) } },
+      output: { model: "TestRecord" },
     };
 
     const first = handle.addTrack(source);

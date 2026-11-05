@@ -25,6 +25,7 @@ const project: ProjectDefinition = {
               ],
             },
           },
+          output: { model: "TestRecord" },
         },
       ],
     },

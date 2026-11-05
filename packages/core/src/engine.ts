@@ -4,13 +4,15 @@ import type {
   PatchBatch,
   PatchListener,
   ProjectDefinition,
+  ResolvedRequires,
   SlotSpec,
   Structure,
   SourceStructure,
   TrackDefinition,
   TriggerSignal,
 } from "./contract/v5";
-import { isModel, isOptionalModel } from "./contract/v5";
+import { isModel, isOptionalModel, outputModelId, outputPluginId } from "./contract/v5";
+import { unknownNameMessage } from "./contract/registry-message";
 import { parseTrackDefinition } from "./contract/v5-parse";
 import type { MotionHandle } from "./contract/motion-handle";
 import type { SchemaTransaction } from "./contract/schema-transaction";
@@ -49,8 +51,9 @@ import { acceptsExternalSignal } from "./ports/trigger-factory";
 import type { ClockConsumer, CreatedTrigger, TriggerFactory } from "./ports/trigger-factory";
 import { afterCleanup } from "./runtime/report";
 import { ProjectRuntime, type StagedTrack } from "./runtime/project-runtime";
-import type { SlotSources, SourceRef } from "./runtime/source-ref";
-import type { GraphNode } from "./graph/ir";
+import type { BoundSlot, BoundSlotEntry, BoundSlots } from "./runtime/bound-slot";
+import { isRecord } from "./runtime/publisher-outcome";
+import { compareEdges, type GraphNode } from "./graph/ir";
 
 export interface EngineOptions {
   readonly clock: Clock;
@@ -195,18 +198,33 @@ export class Engine {
       const parsed = readOutcome(
         parseTrackDefinition(trackDef, nodeId, {
           isPluginRegistered: (pluginId) => admitsPlugin(this.#capabilities, pluginId),
+          pluginDefinition: (pluginId) => this.#capabilities.pluginDefinition?.(pluginId),
+          ...(this.#capabilities.model === undefined
+            ? {}
+            : { model: (modelId: string) => this.#capabilities.model?.(modelId) }),
+          ...(this.#capabilities.modelIds === undefined
+            ? {}
+            : { modelIds: () => this.#capabilities.modelIds?.() }),
+          ...(this.#capabilities.pluginIds === undefined
+            ? {}
+            : { pluginIds: () => this.#capabilities.pluginIds?.() }),
         }),
         (value) => value,
         (diagnostics) => {
           throw new TypeError(describeDiagnostics(diagnostics));
         },
       );
-      if (parsed.plugin !== undefined) {
-        const plugin = this.#capabilities.pluginDefinition?.(parsed.plugin);
+      const pluginId = outputPluginId(parsed.output);
+      if (pluginId !== undefined) {
+        const plugin = this.#capabilities.pluginDefinition?.(pluginId);
         // Admitted id, no definition -> refuse before any Track: no slots, never publishes.
         if (plugin === undefined)
           throw new TypeError(
-            `plugin-unknown at ${nodeId}.plugin: '${parsed.plugin}' is not admitted.`,
+            `plugin-unknown at ${nodeId}.output.plugin: ${unknownNameMessage(
+              "plugin",
+              pluginId,
+              this.#capabilities.pluginIds?.(),
+            )}`,
           );
         const valuesSpec = isModel(plugin.inputs.values)
           ? plugin.inputs.values.spec
@@ -237,14 +255,18 @@ export class Engine {
         tracks.set(nodeId, track);
         return track;
       }
-      const dataType =
-        parsed.type === undefined ? undefined : this.#capabilities.dataType?.(parsed.type);
-      const model = parsed.type === undefined ? undefined : this.#capabilities.model?.(parsed.type);
-      if (parsed.type !== undefined && dataType === undefined && model === undefined)
+      const modelId = outputModelId(parsed.output);
+      if (modelId === undefined) throw new TypeError(`Track "${nodeId}" names no model output.`);
+      const model = this.#capabilities.model?.(modelId);
+      if (this.#capabilities.model !== undefined && model === undefined)
         throw new TypeError(
-          `data-type-unknown at ${nodeId}.type: '${parsed.type}' is not admitted.`,
+          `model-unknown at ${nodeId}.output.model: ${unknownNameMessage(
+            "model",
+            modelId,
+            this.#capabilities.modelIds?.(),
+          )}`,
         );
-      const spec = dataType?.spec ?? model?.spec ?? parsed.input.schema;
+      const spec = model?.spec;
       const localInput = new LocalInput(
         createValueEvaluator(parsed.input.values, this.#options.interpolator, spec),
       );
@@ -252,9 +274,7 @@ export class Engine {
         nodeId,
         values: parsed.input.values,
         interpolator: this.#options.interpolator,
-        ...(dataType === undefined ? {} : { dataType }),
         ...(model === undefined ? {} : { model }),
-        ...(spec === undefined ? {} : { spec }),
       });
       const track = new Track(nodeId, localInput, processor);
       tracks.set(nodeId, track);
@@ -491,7 +511,7 @@ export class Engine {
           consumerId: string,
           sourceId: (source: string) => string,
         ): void => {
-          const pluginId = track.plugin;
+          const pluginId = outputPluginId(track.output);
           if (pluginId === undefined) return;
           const plugin = this.#capabilities.pluginDefinition?.(pluginId);
           if (plugin === undefined) return;
@@ -564,32 +584,71 @@ export class Engine {
         }
       };
       checkCommittedSources();
-      const compose: ComposeResolver = (node) => {
-        const track = tracks.get(node.id);
-        if (!track) throw new TypeError(`Unknown graph node "${node.id}".`);
-        return (requires) => track.compose(requires, sourceRefs(node));
-      };
-      const sourceRefs = (node: GraphNode): SlotSources => {
-        const refs: Record<string, SourceRef | Record<string, SourceRef>> = {};
-        for (const edge of node.edges) {
+      const boundSlots = (node: GraphNode, requires: ResolvedRequires): BoundSlots => {
+        type MutableEntry =
+          | { readonly kind: "single"; readonly bound: BoundSlot }
+          | { readonly kind: "map"; readonly members: Record<string, BoundSlot> };
+        const entries: Record<string, MutableEntry> = {};
+        for (const [slot, binding] of Object.entries(node.track.input?.requires ?? {}))
+          if (isRecord(binding)) defineOwnValue(entries, slot, { kind: "map", members: {} });
+        for (const edge of [...node.edges].sort(compareEdges)) {
+          const requirement = edge.requirement;
           const sourceTrack = tracks.get(edge.sourceId);
           const structure =
             sourceTrack?.structureAtCommit() ?? sourceTrack?.outputStructure("values");
-          const ref: SourceRef = {
+          const slotValues = requires[requirement.slot];
+          let values: unknown;
+          if (requirement.memberKey === undefined) values = slotValues;
+          else values = isRecord(slotValues) ? slotValues[requirement.memberKey] : undefined;
+          const bound: BoundSlot = Object.freeze({
             sourceId: edge.sourceId,
+            values,
             ...(structure === undefined ? {} : { structure }),
-          };
-          const requirement = edge.requirement;
-          if (requirement === undefined) continue;
+          });
           if (requirement.memberKey === undefined) {
-            refs[requirement.slot] = ref;
+            defineOwnValue(entries, requirement.slot, { kind: "single", bound });
             continue;
           }
-          const members = (refs[requirement.slot] as Record<string, SourceRef> | undefined) ?? {};
-          defineOwnValue(members, requirement.memberKey, ref);
-          refs[requirement.slot] = members;
+          const existing = entries[requirement.slot];
+          if (existing === undefined) {
+            const members: Record<string, BoundSlot> = {};
+            defineOwnValue(members, requirement.memberKey, bound);
+            defineOwnValue(entries, requirement.slot, { kind: "map", members });
+            continue;
+          }
+          switch (existing.kind) {
+            case "map":
+              defineOwnValue(existing.members, requirement.memberKey, bound);
+              break;
+            case "single":
+              throw new TypeError(`Slot '${requirement.slot}' mixes single and member bindings.`);
+            default:
+              return unreachable(existing);
+          }
         }
-        return Object.freeze(refs);
+        const slots: Record<string, BoundSlotEntry> = {};
+        for (const [slot, entry] of Object.entries(entries)) {
+          switch (entry.kind) {
+            case "single":
+              defineOwnValue(slots, slot, Object.freeze({ kind: "single", bound: entry.bound }));
+              break;
+            case "map":
+              defineOwnValue(
+                slots,
+                slot,
+                Object.freeze({ kind: "map", members: Object.freeze(entry.members) }),
+              );
+              break;
+            default:
+              return unreachable(entry);
+          }
+        }
+        return Object.freeze(slots);
+      };
+      const compose: ComposeResolver = (node) => {
+        const track = tracks.get(node.id);
+        if (!track) throw new TypeError(`Unknown graph node "${node.id}".`);
+        return (requires) => track.compose(boundSlots(node, requires));
       };
       const created = new ProjectRuntime(acceptedProject, {
         clock: this.#options.clock,
@@ -600,6 +659,7 @@ export class Engine {
         graphBuilder: new IncrementalGraphBuilder(this.#capabilities),
         setProgress: (nodeId, progress) => tracks.get(nodeId)?.setProgress(progress),
         rewriteValues: (nodeId, values) => tracks.get(nodeId)?.replaceValues(values),
+        rewriteParamValues: (nodeId, param) => tracks.get(nodeId)?.replaceParam(param),
         overlayValues: (nodeId, value) => tracks.get(nodeId)?.replaceOverlay(value),
         compileTrack: compileTrackDefinition,
         disposeTrack,

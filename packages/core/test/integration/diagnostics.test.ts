@@ -15,16 +15,16 @@ import { ProjectRuntime } from "../../src/runtime/project-runtime";
 function pendingProject(): ProjectDefinition {
   const consumer = (id: string, source: string) => ({
     id,
-    plugin: "fk",
+    output: { plugin: "fk" },
     input: { values: { length: 1, rotation: 0 }, requires: { chain: source } },
   });
   return {
     schemaVersion: 5,
     motions: [{ id: "hero", trigger: { type: "manual" }, tracks: [] }],
     freeTracks: [
-      { id: "source1" },
-      { id: "source2" },
-      { id: "source3" },
+      { id: "source1", output: { model: "TestRecord" } },
+      { id: "source2", output: { model: "TestRecord" } },
+      { id: "source3", output: { model: "TestRecord" } },
       consumer("consumer1", "~/source1"),
       consumer("consumer2", "~/source2"),
       consumer("consumer3", "~/source3"),

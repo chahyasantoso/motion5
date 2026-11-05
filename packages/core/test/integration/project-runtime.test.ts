@@ -7,8 +7,14 @@ import { buildGraphIR } from "../../src/graph/ir";
 
 const project: ProjectDefinition = {
   schemaVersion: 5,
-  motions: [{ id: "hero", trigger: { type: "manual" }, tracks: [{ id: "arm" }] }],
-  freeTracks: [{ id: "cursor" }],
+  motions: [
+    {
+      id: "hero",
+      trigger: { type: "manual" },
+      tracks: [{ id: "arm", output: { model: "TestRecord" } }],
+    },
+  ],
+  freeTracks: [{ id: "cursor", output: { model: "TestTable" } }],
 };
 const compose = (node: { id: string }) => () => ({
   outputs: { values: { node: node.id } },
@@ -39,10 +45,16 @@ describe("ProjectRuntime", () => {
         {
           id: "hero",
           trigger: { type: "manual" },
-          tracks: [{ id: "arm", plugin: "graph-edge", input: { requires: { chain: "missing" } } }],
+          tracks: [
+            {
+              id: "arm",
+              output: { plugin: "graph-edge" },
+              input: { requires: { chain: "missing" } },
+            },
+          ],
         },
       ],
-      freeTracks: [{ id: "cursor" }],
+      freeTracks: [{ id: "cursor", output: { model: "TestTable" } }],
     };
     expect(() => new ProjectRuntime(invalid, { clock, compose })).toThrow(TypeError);
   });
@@ -85,7 +97,7 @@ describe("ProjectRuntime", () => {
     expect(buildCount).toBe(1);
 
     // 1 call during the runtime add
-    runtime.addTrack({ id: "added_1" });
+    runtime.addTrack({ id: "added_1", output: { model: "TestRecord" } });
     expect(buildCount).toBe(2);
 
     runtime.dispose();

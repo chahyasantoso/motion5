@@ -7,17 +7,17 @@ import { builtinRegistry } from "../support/builtin-registry";
 const project = (tracks: readonly TrackDefinition[]): ProjectDefinition => ({
   schemaVersion: 5,
   motions: [{ id: "hero", trigger: { type: "manual" }, tracks }],
-  freeTracks: [{ id: "cursor" }],
+  freeTracks: [{ id: "cursor", output: { model: "TestTable" } }],
 });
 
 const base = project([
-  { id: "arm", plugin: "graph-edge", input: { requires: { chain: "~/cursor" } } },
-  { id: "halo", plugin: "graph-edge", input: { requires: { chain: "arm" } } },
+  { id: "arm", output: { plugin: "graph-edge" }, input: { requires: { chain: "~/cursor" } } },
+  { id: "halo", output: { plugin: "graph-edge" }, input: { requires: { chain: "arm" } } },
 ]);
 
 const changed = project([
-  { id: "arm", plugin: "graph-edge", input: { requires: { chain: "~/cursor" } } },
-  { id: "badge", plugin: "graph-edge", input: { requires: { chain: "arm" } } },
+  { id: "arm", output: { plugin: "graph-edge" }, input: { requires: { chain: "~/cursor" } } },
+  { id: "badge", output: { plugin: "graph-edge" }, input: { requires: { chain: "arm" } } },
 ]);
 
 describe("GraphBinding transactions", () => {
@@ -49,9 +49,9 @@ describe("GraphBinding transactions", () => {
     const beforeGraph = binding.graph;
     const beforeState = binding.state.snapshot();
     const invalid = project([
-      { id: "arm", plugin: "graph-edge", input: { requires: { chain: "~/cursor" } } },
-      { id: "newcomer", plugin: "graph-edge", input: { requires: { chain: "arm" } } },
-      { id: "broken", plugin: "graph-edge", input: { requires: { chain: "missing" } } },
+      { id: "arm", output: { plugin: "graph-edge" }, input: { requires: { chain: "~/cursor" } } },
+      { id: "newcomer", output: { plugin: "graph-edge" }, input: { requires: { chain: "arm" } } },
+      { id: "broken", output: { plugin: "graph-edge" }, input: { requires: { chain: "missing" } } },
     ]);
 
     // A valid node and an invalid edge arrive in one candidate: nothing of it may survive.
