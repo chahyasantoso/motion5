@@ -1,4 +1,4 @@
-import type { DataType, Parsed, Structure, Value } from "@motion5/core/plugin-api";
+import type { DataType, DataTypeParsed, Structure, Value } from "@motion5/core/plugin-api";
 import {
   bindRoot,
   parseRoot,
@@ -12,7 +12,7 @@ import { ROOT_3D_SPEC } from "./fields";
 export const root3d: DataType<RootStructure, Root> = {
   id: "root3d",
   spec: ROOT_3D_SPEC,
-  parse(value: Value): Parsed<RootStructure> {
+  parse(value: Value): DataTypeParsed<RootStructure> {
     const parsed = parseRoot(value, ROOT_3D_FIELDS_REQUIRED);
     return parsed.ok
       ? { kind: "parsed", structure: parsed.value, warnings: [] }

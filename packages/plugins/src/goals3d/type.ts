@@ -1,4 +1,4 @@
-import type { DataType, Parsed, Structure, Value } from "@motion5/core/plugin-api";
+import type { DataType, DataTypeParsed, Structure, Value } from "@motion5/core/plugin-api";
 import { bindGoals, parseGoals, type Goals, type GoalsStructure } from "../goals/domain";
 import { goalsIssue } from "../goals/type";
 import { GOALS_3D_SPEC } from "./fields";
@@ -6,7 +6,7 @@ import { GOALS_3D_SPEC } from "./fields";
 export const goals3d: DataType<GoalsStructure, Goals> = {
   id: "goals3d",
   spec: GOALS_3D_SPEC,
-  parse(value: Value): Parsed<GoalsStructure> {
+  parse(value: Value): DataTypeParsed<GoalsStructure> {
     const parsed = parseGoals(value);
     return parsed.ok
       ? { kind: "parsed", structure: parsed.value, warnings: [] }

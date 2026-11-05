@@ -1,4 +1,10 @@
-import type { DataType, Parsed, Structure, TypeIssue, Value } from "@motion5/core/plugin-api";
+import type {
+  DataType,
+  DataTypeParsed,
+  Structure,
+  TypeIssue,
+  Value,
+} from "@motion5/core/plugin-api";
 import { unreachable } from "@motion5/core/plugin-api";
 import { bindGoals, parseGoals, type Goals, type GoalsError, type GoalsStructure } from "./domain";
 import { GOALS_2D_SPEC } from "./fields";
@@ -25,7 +31,7 @@ export function goalsIssue(error: GoalsError): TypeIssue {
 export const goals2d: DataType<GoalsStructure, Goals> = {
   id: "goals2d",
   spec: GOALS_2D_SPEC,
-  parse(value: Value): Parsed<GoalsStructure> {
+  parse(value: Value): DataTypeParsed<GoalsStructure> {
     const parsed = parseGoals(value);
     return parsed.ok
       ? { kind: "parsed", structure: parsed.value, warnings: [] }

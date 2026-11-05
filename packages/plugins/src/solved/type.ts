@@ -1,4 +1,10 @@
-import type { DataType, Parsed, Structure, TypeIssue, Value } from "@motion5/core/plugin-api";
+import type {
+  DataType,
+  DataTypeParsed,
+  Structure,
+  TypeIssue,
+  Value,
+} from "@motion5/core/plugin-api";
 import { unreachable } from "@motion5/core/plugin-api";
 import {
   bindSolved,
@@ -30,7 +36,7 @@ export function solvedIssue(error: SolvedError): TypeIssue {
 export const solved2d: DataType<SolvedStructure, Solved> = {
   id: "solved2d",
   spec: SOLVED_2D_SPEC,
-  parse(value: Value): Parsed<SolvedStructure> {
+  parse(value: Value): DataTypeParsed<SolvedStructure> {
     const parsed = parseSolved(value);
     return parsed.ok
       ? { kind: "parsed", structure: parsed.value, warnings: [] }

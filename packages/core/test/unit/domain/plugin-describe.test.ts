@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { shape, typed } from "../../../src/contract/slot-spec";
 import type {
   DataType,
-  Parsed,
+  DataTypeParsed,
   PluginDefinition,
   Structure,
   Value,
@@ -18,7 +18,7 @@ const POINT: ValueSpec = {
 const pointType: DataType<{ readonly ids: readonly string[] }, Value> = {
   id: "point2d",
   spec: POINT,
-  parse(value: Value): Parsed<{ readonly ids: readonly string[] }> {
+  parse(value: Value): DataTypeParsed<{ readonly ids: readonly string[] }> {
     return {
       kind: "parsed",
       structure: { ids: Array.isArray(value) ? value.map((row) => row.id) : [] },

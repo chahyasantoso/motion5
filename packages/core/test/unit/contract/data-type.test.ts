@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { typed } from "../../../src/contract/slot-spec";
 import type {
   DataType,
-  Parsed,
+  DataTypeParsed,
   PluginDefinition,
   ProjectDefinition,
   Structure,
@@ -43,7 +43,7 @@ interface PointEntity {
 const point2d: DataType<PointStructure, PointEntity> = {
   id: "point2d",
   spec: POINT_SPEC,
-  parse(value: Value): Parsed<PointStructure> {
+  parse(value: Value): DataTypeParsed<PointStructure> {
     if (!Array.isArray(value))
       return { kind: "refused", errors: [{ path: [], message: "Expected a table." }] };
     if (value.some((row) => Number(row.cells.y) > 10))

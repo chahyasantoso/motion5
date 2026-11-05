@@ -147,10 +147,49 @@ export interface TypeIssue {
   readonly path: readonly string[];
   readonly message: string;
 }
-/** Domain parse either yields a plain structure or refuses it. */
-export type Parsed<S> =
+/** A problem reported when parsing or validating a model. */
+export interface Issue {
+  readonly path: string;
+  readonly message: string;
+}
+/** Result of parsing a legacy data type. */
+export type DataTypeParsed<S> =
   | { readonly kind: "parsed"; readonly structure: S; readonly warnings: readonly TypeIssue[] }
   | { readonly kind: "refused"; readonly errors: readonly TypeIssue[] };
+/** Domain parse either yields a plain structure or refuses it. */
+export type Parsed<Structure> =
+  | { readonly ok: true; readonly value: Structure }
+  | { readonly ok: false; readonly issues: readonly Issue[] };
+/** Successful parse result for a model structure. */
+export function ok<Structure>(value: Structure): Parsed<Structure> {
+  return { ok: true, value };
+}
+/** Refused parse result with issues. */
+export function refused(issues: readonly Issue[]): Parsed<never> {
+  return { ok: false, issues };
+}
+/** Nominal model contract specifying value shape and optional structure parse. */
+export interface Model<Cells = unknown, Structure = undefined> {
+  readonly id: string;
+  readonly spec: ValueSpec;
+  readonly kind?: "table" | "record";
+  readonly parse?: (value: Value) => Parsed<Structure>;
+  readonly legacyTypeId?: string;
+}
+/** Defines an immutable model contract. */
+export function defineModel<Cells = unknown, Structure = undefined>(decl: {
+  readonly id: string;
+  readonly spec: ValueSpec;
+  readonly kind?: "table" | "record";
+  readonly parse?: (value: Value) => Parsed<Structure>;
+  readonly legacyTypeId?: string;
+}): Model<Cells, Structure> {
+  const kind = decl.kind ?? decl.spec.kind;
+  return Object.freeze({
+    ...decl,
+    kind,
+  });
+}
 declare const STRUCTURE: unique symbol;
 /** Frozen, core-branded structure a data type produced at commit. */
 export type Structure<S> = S & { readonly [STRUCTURE]: true };
@@ -158,7 +197,7 @@ export type Structure<S> = S & { readonly [STRUCTURE]: true };
 export interface DataType<S, E> {
   readonly id: string;
   readonly spec: ValueSpec;
-  parse(value: Value): Parsed<S>;
+  parse(value: Value): DataTypeParsed<S>;
   bind(structure: Structure<S>, value: Value): E;
 }
 /** `row` present = table cell, absent = record field. */
