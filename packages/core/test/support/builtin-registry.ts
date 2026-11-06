@@ -1,6 +1,9 @@
 import { PluginCatalog } from "../../src/domain/plugin-catalog";
 import { shape } from "@motion5/core/plugin-api";
-import type { PluginDefinition } from "../../src/contract/v5";
+import type { PluginDefinition, ValueSpec } from "../../src/contract/v5";
+import { Engine, type EngineOptions } from "../../src/engine";
+import { IncrementalGraphBuilder } from "../../src/graph/builders/incremental";
+import type { GraphBuilder } from "../../src/ports/graph-builder";
 import { transformPlugin } from "@motion5/plugins/transform";
 import { fkPlugin } from "@motion5/plugins/fk";
 import { ikPlugin } from "@motion5/plugins/ik";
@@ -8,6 +11,56 @@ import { transform3dPlugin } from "@motion5/plugins/transform3d";
 import { fk3dPlugin } from "@motion5/plugins/fk3d";
 import { ik3dPlugin } from "@motion5/plugins/ik3d";
 import { testModels } from "./test-models";
+
+const OPEN_RECORD: ValueSpec = {
+  kind: "record",
+  fields: {},
+  additionalProperties: true,
+};
+
+/** A permissive computed observer for runtime tests that are not about a solver contract. */
+export function testObserver(id: string): PluginDefinition {
+  return {
+    id,
+    inputs: {
+      values: OPEN_RECORD,
+      requires: {
+        base: shape({ optional: true, outputs: { values: OPEN_RECORD } }),
+        parent: shape({ optional: true, outputs: { values: OPEN_RECORD } }),
+        chain: shape({ optional: true, outputs: { values: OPEN_RECORD } }),
+        upstream: shape({ optional: true, outputs: { values: OPEN_RECORD } }),
+        members: shape({
+          optional: true,
+          binding: "map",
+          outputs: { values: OPEN_RECORD },
+        }),
+      },
+    },
+    outputs: { values: OPEN_RECORD },
+    transform() {
+      return { values: {} };
+    },
+  };
+}
+
+/** The model catalog every test engine uses; no test runs without a catalog. */
+export function testCatalog(...plugins: readonly PluginDefinition[]): PluginCatalog {
+  const catalog = new PluginCatalog({ models: testModels });
+  catalog.registerAll(plugins);
+  return catalog;
+}
+
+/** The default builder for a test runtime; one catalog owns both the engine and its graph. */
+export function testGraphBuilder(...plugins: readonly PluginDefinition[]): GraphBuilder {
+  return new IncrementalGraphBuilder(testCatalog(...plugins));
+}
+
+/** An engine with the test catalog unless the caller supplies one. */
+export function testEngine(
+  options: Omit<EngineOptions, "plugins"> & { readonly plugins?: PluginCatalog },
+): Engine {
+  return new Engine({ ...options, plugins: options.plugins ?? testCatalog() });
+}
 
 /**
  * A dependency-only plugin for graph tests.

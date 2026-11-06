@@ -3,6 +3,7 @@ import type { FlatRecord, ProjectDefinition, Table, Value } from "../../src/cont
 import { Engine } from "../../src/engine";
 import { createManualClock } from "../../src/ports/clock";
 import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
+import { testEngine } from "../support/builtin-registry";
 
 function isTable(value: Value): value is Table {
   return Array.isArray(value);
@@ -39,7 +40,7 @@ const project: ProjectDefinition = {
 
 describe("Engine", () => {
   it("publishes a progress change through the public project handle", () => {
-    const runtime = new Engine({
+    const runtime = testEngine({
       clock: createManualClock(),
       interpolator: createFakeInterpolator(),
       scheduler: createFakeScheduler(),
@@ -64,7 +65,7 @@ describe("Engine", () => {
   it("keeps one clock owner while clock progress publishes once", () => {
     const clock = createManualClock();
     const subscribe = vi.spyOn(clock, "subscribe");
-    const runtime = new Engine({
+    const runtime = testEngine({
       clock,
       interpolator: createFakeInterpolator(),
       scheduler: createFakeScheduler(),
@@ -77,7 +78,7 @@ describe("Engine", () => {
 
   it("routes a manual trigger through the public handle into a published patch", () => {
     const scheduler = createFakeScheduler();
-    const runtime = new Engine({
+    const runtime = testEngine({
       clock: createManualClock(),
       interpolator: createFakeInterpolator(),
       scheduler,

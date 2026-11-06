@@ -10,6 +10,7 @@ import {
   createFakeScheduler,
   createFakeTriggerPort,
 } from "../../../src/testing/fakes";
+import { testEngine } from "../../support/builtin-registry";
 
 /**
  * `bindClock` is total and exhaustive, with no `??` fallback, and ADR-032 calls it
@@ -60,7 +61,7 @@ const project: ProjectDefinition = {
 
 function load(binding: TriggerBinding) {
   const clock = createManualClock();
-  const handle = new Engine({
+  const handle = testEngine({
     clock,
     scheduler: createFakeScheduler(),
     interpolator: createFakeInterpolator(),

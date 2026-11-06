@@ -1,8 +1,6 @@
 import type { Diagnostic, ProjectDefinition } from "../contract/v5";
 import type { Clock, ClockTick } from "../ports/clock";
 import { GraphBinding } from "../graph/binding";
-import { createDefaultGraphBuilder } from "../graph/builders/default";
-import { UNJUDGED_CAPABILITIES } from "../ports/plugin-capabilities";
 import type { GraphNode, GraphIR } from "../graph/ir";
 import type { CommittedContract } from "../graph/committed-contract";
 import { GraphPublisher, type PublisherNode, type PublisherSnapshot } from "./graph-publisher";
@@ -65,7 +63,7 @@ export interface GraphRuntimeOptions {
   readonly scheduler?: Scheduler;
   readonly onFlushError?: (diagnostic: Diagnostic) => void;
   readonly onClockTick?: (event: ClockTick) => void;
-  readonly graphBuilder?: GraphBuilder;
+  readonly graphBuilder: GraphBuilder;
 }
 export class GraphRuntime {
   readonly #binding: GraphBinding;
@@ -95,10 +93,10 @@ export class GraphRuntime {
     project: ProjectDefinition,
     clock: Clock,
     compose: ComposeResolver,
-    options: GraphRuntimeOptions = {},
+    options: GraphRuntimeOptions,
   ) {
     this.#binding = new GraphBinding(project, {
-      builder: options.graphBuilder ?? createDefaultGraphBuilder(UNJUDGED_CAPABILITIES),
+      builder: options.graphBuilder,
     });
     this.#registry = new PatchRegistry();
     this.#publisher = new GraphPublisher(this.#registry);

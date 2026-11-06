@@ -6,6 +6,7 @@ import { createManualClock } from "../../src/ports/clock";
 import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
 import { record, track } from "../support/v5-builders";
 import { testModels } from "../support/test-models";
+import { testEngine } from "../support/builtin-registry";
 
 const options = () => ({
   clock: createManualClock(),
@@ -43,7 +44,7 @@ describe("Engine product-load validation (X-1 follow-up)", () => {
   it("rejects malformed authored stops before constructing a runtime", () => {
     const interpolator = createFakeInterpolator();
     const create = vi.spyOn(interpolator, "create");
-    const engine = new Engine({ ...options(), interpolator });
+    const engine = testEngine({ ...options(), interpolator });
     const invalid = projectWith({ opacity: [{ p: Number.NaN, v: 1 }] });
 
     expect(() => engine.load(invalid as never)).toThrow(/cell-stops-invalid/);
@@ -53,7 +54,7 @@ describe("Engine product-load validation (X-1 follow-up)", () => {
   it("rejects malformed authored stops before any timeline is created", () => {
     const interpolator = createFakeInterpolator();
     const create = vi.spyOn(interpolator, "create");
-    const engine = new Engine({ ...options(), interpolator });
+    const engine = testEngine({ ...options(), interpolator });
     const invalid = projectWith({
       opacity: [
         { p: 0.8, v: 0 },
@@ -98,7 +99,7 @@ describe("Engine product-load validation (X-1 follow-up)", () => {
   it("accepts a valid project and creates its timelines during load", () => {
     const interpolator = createFakeInterpolator();
     const create = vi.spyOn(interpolator, "create");
-    const engine = new Engine({ ...options(), interpolator });
+    const engine = testEngine({ ...options(), interpolator });
 
     const runtime = engine.load(
       projectWith({

@@ -81,7 +81,8 @@ import type { GraphNode } from "../graph/ir";
 import type { CommittedContract } from "../graph/committed-contract";
 
 import type { GraphBuilder } from "../ports/graph-builder";
-import { UNJUDGED_CAPABILITIES, type PluginCapabilities } from "../ports/plugin-capabilities";
+import { IncrementalGraphBuilder } from "../graph/builders/incremental";
+import type { PluginCapabilities } from "../ports/plugin-capabilities";
 import { unreachable } from "../lang/exhaustive";
 
 interface FreeTrackEntry {
@@ -202,8 +203,8 @@ export interface ProjectRuntimeOptions {
   readonly disposeComposition?: () => void;
   readonly diagnosticsCapacity?: number;
   readonly graphBuilder?: GraphBuilder;
-  /** What a structural plan may ask about plugins, as data; absent = `UNJUDGED_CAPABILITIES`, which asks nothing and refuses nothing. */
-  readonly capabilities?: PluginCapabilities;
+  /** What a structural plan may ask about plugins, as data. */
+  readonly capabilities: PluginCapabilities;
 }
 export class ProjectRuntime {
   readonly #project: ProjectDefinition;
@@ -223,7 +224,7 @@ export class ProjectRuntime {
   constructor(project: ProjectDefinition, options: ProjectRuntimeOptions) {
     this.#project = project;
     this.#isPluginRegistered = options.isPluginRegistered;
-    this.#capabilities = options.capabilities ?? UNJUDGED_CAPABILITIES;
+    this.#capabilities = options.capabilities;
     for (const motion of project.motions) {
       this.#motions.set(motion.id, { definition: motion, token: this.#nextToken++ });
       for (const track of motion.tracks)
@@ -307,7 +308,7 @@ export class ProjectRuntime {
       this.#graph = new GraphRuntime(project, options.clock, options.compose, {
         ...(options.scheduler === undefined ? {} : { scheduler: options.scheduler }),
         ...(options.onClockTick === undefined ? {} : { onClockTick: options.onClockTick }),
-        ...(options.graphBuilder === undefined ? {} : { graphBuilder: options.graphBuilder }),
+        graphBuilder: options.graphBuilder ?? new IncrementalGraphBuilder(this.#capabilities),
         onFlushError: (diagnostic) => this.#diagnostics.record(diagnostic),
       });
     } catch (error) {

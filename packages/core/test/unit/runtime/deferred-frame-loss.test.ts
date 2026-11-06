@@ -4,6 +4,7 @@ import { createManualClock } from "../../../src/ports/clock";
 import { createFakeScheduler } from "../../../src/testing/fakes";
 import { GraphRuntime } from "../../../src/runtime/graph-runtime";
 import { recordValues } from "../../support/v5-builders";
+import { testGraphBuilder } from "../../support/builtin-registry";
 
 /**
  * Issues #395, #411 and #417: which frame a failed publication carries, and which it does not.
@@ -72,7 +73,10 @@ describe("a publisher failure re-queues the seeds, and carries only a frame it n
         sourceRevisions: {},
       });
     };
-    const runtime = new GraphRuntime(project, clock, compose, { scheduler });
+    const runtime = new GraphRuntime(project, clock, compose, {
+      graphBuilder: testGraphBuilder(),
+      scheduler,
+    });
     runtime.attach("hero/arm");
 
     let acted = false;
@@ -138,7 +142,10 @@ describe("a publisher failure re-queues the seeds, and carries only a frame it n
         sourceRevisions: {},
       });
     };
-    const runtime = new GraphRuntime(project, clock, compose, { scheduler });
+    const runtime = new GraphRuntime(project, clock, compose, {
+      graphBuilder: testGraphBuilder(),
+      scheduler,
+    });
     runtime.attach("hero/arm");
 
     let acted = false;

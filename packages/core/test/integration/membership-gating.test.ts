@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { ProjectDefinition } from "../../src/contract/v5";
 import { createManualClock } from "../../src/ports/clock";
 import { GraphRuntime } from "../../src/runtime/graph-runtime";
+import { testGraphBuilder } from "../support/builtin-registry";
 
 const project: ProjectDefinition = {
   schemaVersion: 5,
@@ -24,7 +25,7 @@ const compose = (node: { id: string }) => () => ({
 describe("GraphRuntime membership", () => {
   it("publishes the attached nodes a tick seeds, and answers a named list as named", () => {
     const clock = createManualClock();
-    const runtime = new GraphRuntime(project, clock, compose);
+    const runtime = new GraphRuntime(project, clock, compose, { graphBuilder: testGraphBuilder() });
     expect(runtime.memberCount).toBe(0);
 
     // Where the gate is, measured rather than assumed. `GraphPublisher.flush` publishes every node
@@ -54,7 +55,9 @@ describe("GraphRuntime membership", () => {
   });
 
   it("separates the seed list from the clock transition, and keeps one name per operation", () => {
-    const runtime = new GraphRuntime(project, createManualClock(), compose);
+    const runtime = new GraphRuntime(project, createManualClock(), compose, {
+      graphBuilder: testGraphBuilder(),
+    });
     runtime.attach("hero/arm");
 
     // Issue #374. `flush(seeds, tick?)` carried two operations behind one name: publish, and

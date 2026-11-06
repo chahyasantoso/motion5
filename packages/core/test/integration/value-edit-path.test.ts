@@ -6,6 +6,7 @@ import { RefusalError } from "../../src/runtime/refusal";
 import type { ProjectRuntime } from "../../src/runtime/project-runtime";
 import type { Edit } from "../../src/runtime/edit-types";
 import { project, record, track } from "../support/v5-builders";
+import { testEngine } from "../support/builtin-registry";
 
 /**
  * The value tier's runtime path: one target read, one delta, and one batch entry.
@@ -36,7 +37,7 @@ function load(idle: number): { handle: ProjectHandle; runtime: ProjectRuntime } 
         model: "TestRecord",
       }),
     );
-  const handle = new Engine({
+  const handle = testEngine({
     clock: createManualClock(),
     interpolator: createFakeInterpolator(),
     scheduler: createFakeScheduler(),

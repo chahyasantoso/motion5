@@ -32,12 +32,6 @@ export interface PluginCapabilities {
   modelIds?(): readonly string[];
 }
 
-const NONE: readonly string[] = Object.freeze([]);
-export const UNJUDGED_CAPABILITIES: PluginCapabilities = Object.freeze({
-  capabilityOf: () => undefined,
-  dedicatedMembers: () => NONE,
-});
-
 /** The one answer to whether a plugin is admitted, so load and live recompile cannot disagree. */
 export function admitsPlugin(capabilities: PluginCapabilities, pluginId: string): boolean {
   return (

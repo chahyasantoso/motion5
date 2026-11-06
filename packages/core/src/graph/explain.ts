@@ -11,7 +11,7 @@ import { deriveCommittedContract } from "./committed-contract";
 import { checkSlotOutput } from "./slot-check";
 import type { SlotOutcome } from "./slot-check";
 import { buildGraphIR, collectTrack, compareEdges, type GraphEdge, type GraphNode } from "./ir";
-import { UNJUDGED_CAPABILITIES, type PluginCapabilities } from "../ports/plugin-capabilities";
+import type { PluginCapabilities } from "../ports/plugin-capabilities";
 
 /** One slot's fit in the committed graph, as an inspection answer rather than a refusal. */
 export interface ExplainSlot {
@@ -177,7 +177,7 @@ function uncommittedNodes(
 /** Inspects every node, slot binding and type fit without publishing anything. */
 export function explain(
   project: ProjectDefinition,
-  capabilities: PluginCapabilities = UNJUDGED_CAPABILITIES,
+  capabilities: PluginCapabilities,
 ): ExplainReport {
   const built = buildGraphIR(project, capabilities);
   const graphNodes = built.graph?.nodes ?? uncommittedNodes(project, capabilities);

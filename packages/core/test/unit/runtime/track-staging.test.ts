@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { ProjectDefinition, TrackDefinition } from "../../../src/contract/v5";
 import { createManualClock } from "../../../src/ports/clock";
 import { ProjectRuntime, type StagedTrack } from "../../../src/runtime/project-runtime";
+import { testCatalog } from "../../support/builtin-registry";
 
 /**
  * Issue #176, the seam half.
@@ -87,6 +88,7 @@ function journal(failures: JournalFailures = {}): Journal {
 }
 function runtimeWith(hooks: Journal): ProjectRuntime {
   return new ProjectRuntime(BASE_PROJECT, {
+    capabilities: testCatalog(),
     clock: createManualClock(),
     compose,
     stageTrack: hooks.stageTrack,

@@ -31,7 +31,7 @@ ADR-036 and ADR-048.
 
 **Engine and handles.** `Engine`, `StaleTrackHandleError`, and the types `EngineOptions`, `ProjectHandle`, `TrackHandle`, and `LiveValues`.
 
-`new Engine({ clock, interpolator, scheduler, plugins?, triggerFactory? })` validates all three ports. `engine.load(project)` returns a `ProjectHandle`:
+`new Engine({ clock, interpolator, scheduler, plugins, triggerFactory? })` validates all three ports. `engine.load(project)` returns a `ProjectHandle`:
 
 - `mount(nodeId, instance?)` and `unmount(nodeId)` control membership.
 - `get(nodeId)` returns the retained `LivePatch` or `undefined`. It cannot answer `destroyed`: eviction drops the node's entry before its terminal patch is delivered, so a subscriber hears that publication exactly once and a reader of current state is never handed it.
@@ -72,7 +72,7 @@ A `TrackHandle` carries `id`, `live`, `definition`, `input`, `requires`, `writeV
 reference and cycle diagnostics are owned by graph construction and are run by the engine load
 use-case after schema validation.
 
-`validateV5(input, capabilities?)` accepts `PluginCapabilities`, which `PluginCatalog` implements.
+`validateV5(input, capabilities)` accepts `PluginCapabilities`, which `PluginCatalog` implements.
 Without the port it does not judge plugin-dependent chain, pole, joint, limit, goal-weight or
 dead-orientation rules. Pass the catalog to obtain those checks; Engine does so automatically.
 

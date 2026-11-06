@@ -1,4 +1,6 @@
-import { UNJUDGED_CAPABILITIES } from "../../../src/ports/plugin-capabilities";
+import { testCatalog, testObserver } from "../../support/builtin-registry";
+
+const DEMO = testObserver("demo");
 import { describe, expect, it } from "vitest";
 import type { MotionDefinition, ProjectDefinition } from "../../../src/contract/v5";
 import { IncrementalGraphBuilder } from "../../../src/graph/builders/incremental";
@@ -55,7 +57,7 @@ function rig(): Rig {
   const record = (line: string): void => {
     entries.push(line);
   };
-  const inner = new IncrementalGraphBuilder(UNJUDGED_CAPABILITIES);
+  const inner = new IncrementalGraphBuilder(testCatalog(DEMO));
   let builds = 0;
   const staged = (nodeId: string): StagedTrack => ({
     commit: () => record(`stage-commit ${nodeId}`),
@@ -63,6 +65,7 @@ function rig(): Rig {
   });
   const options: ProjectRuntimeOptions = {
     clock: createManualClock(),
+    capabilities: testCatalog(DEMO),
     compose,
     graphBuilder: {
       build: (project) => {

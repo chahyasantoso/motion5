@@ -13,6 +13,7 @@ import type {
   TriggerFactory,
   TriggerFactoryContext,
 } from "../../src/ports/trigger-factory";
+import { testEngine } from "../support/builtin-registry";
 
 type FakeScheduler = ReturnType<typeof createFakeScheduler>;
 type ManualClock = ReturnType<typeof createManualClock>;
@@ -145,7 +146,7 @@ interface Loaded {
 function load(motions: readonly MotionDefinition[], factory?: TriggerFactory): Loaded {
   const clock = createManualClock();
   const scheduler = createFakeScheduler();
-  const handle = new Engine({
+  const handle = testEngine({
     clock,
     interpolator: createFakeInterpolator(),
     scheduler,
@@ -412,7 +413,7 @@ describe("T4 runtime Motion parity and creation ordering", () => {
       },
     };
     const scheduler = createFakeScheduler();
-    const handle = new Engine({
+    const handle = testEngine({
       clock,
       interpolator: createFakeInterpolator(),
       scheduler,

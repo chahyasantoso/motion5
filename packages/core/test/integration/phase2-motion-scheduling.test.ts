@@ -10,6 +10,7 @@ import {
 import { Motion } from "../../src/domain/motion";
 import { Track } from "../support/track";
 import { record } from "../support/v5-builders";
+import { testEngine } from "../support/builtin-registry";
 
 function isTable(value: unknown): value is Table {
   return Array.isArray(value);
@@ -44,7 +45,7 @@ describe("Phase 2: Motion Scheduling & Coalescing", () => {
     const clock = createManualClock();
     const scheduler = createFakeScheduler();
 
-    const handle = new Engine({
+    const handle = testEngine({
       clock,
       interpolator: createFakeInterpolator(),
       scheduler,
@@ -81,7 +82,7 @@ describe("Phase 2: Motion Scheduling & Coalescing", () => {
     const clock = createManualClock();
     const scheduler = createFakeScheduler();
 
-    const handle = new Engine({
+    const handle = testEngine({
       clock,
       interpolator: createFakeInterpolator(),
       scheduler,
@@ -173,7 +174,7 @@ describe("Phase 2: Motion Scheduling & Coalescing", () => {
     const clock = createManualClock();
     const scheduler = createFakeScheduler();
 
-    const handle = new Engine({
+    const handle = testEngine({
       clock,
       interpolator: createFakeInterpolator(),
       scheduler,

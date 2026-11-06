@@ -11,6 +11,7 @@ import {
 } from "../../../src/testing/fakes";
 import type { CreatedTrigger, TriggerFactory } from "../../../src/ports/trigger-factory";
 import { code, member } from "../../helpers/source-region";
+import { testEngine } from "../../support/builtin-registry";
 
 describe("Motion compiled Track disposal ownership", () => {
   it("C-14 does not dispose resolver-owned Tracks when Motion is disposed", () => {
@@ -157,7 +158,7 @@ function manual(id: string): MotionDefinition {
 }
 
 function loadWith(factory: TriggerFactory, motions: readonly MotionDefinition[]) {
-  const engine = new Engine({
+  const engine = testEngine({
     clock: createManualClock(),
     interpolator: createFakeInterpolator(),
     scheduler: createFakeScheduler(),

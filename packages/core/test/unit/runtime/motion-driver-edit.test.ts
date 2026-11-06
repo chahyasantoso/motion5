@@ -4,6 +4,7 @@ import type { MotionDefinition, ProjectDefinition } from "../../../src/contract/
 import type { MotionHandle } from "../../../src/contract/motion-handle";
 import { createManualClock } from "../../../src/ports/clock";
 import { ProjectRuntime, type ProjectRuntimeOptions } from "../../../src/runtime/project-runtime";
+import { testCatalog } from "../../support/builtin-registry";
 
 /**
  * Slice B2 of issue #223, on top of B1.
@@ -107,6 +108,7 @@ function journal(failures: JournalFailures = {}): Journal {
 }
 function runtimeWith(hooks: Journal): ProjectRuntime {
   return new ProjectRuntime(PROJECT, {
+    capabilities: testCatalog(),
     clock: createManualClock(),
     compose,
     replaceMotionTrigger: hooks.replaceMotionTrigger,
@@ -152,6 +154,7 @@ function disposingRig(from: "trigger" | "stagger"): DisposingRig {
   const entries: string[] = [];
   let project: ProjectRuntime | undefined;
   const created = new ProjectRuntime(PROJECT, {
+    capabilities: testCatalog(),
     clock: createManualClock(),
     compose,
     disposeComposition: () => {
@@ -186,6 +189,7 @@ function reentrantRig(): DisposingRig {
   const entries: string[] = [];
   let project: ProjectRuntime | undefined;
   const created = new ProjectRuntime(PROJECT, {
+    capabilities: testCatalog(),
     clock: createManualClock(),
     compose,
     replaceMotionTrigger: (motionId) => {

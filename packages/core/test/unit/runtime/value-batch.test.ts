@@ -5,6 +5,7 @@ import { createManualClock } from "../../../src/ports/clock";
 import { GraphPublisher } from "../../../src/runtime/graph-publisher";
 import { ProjectRuntime } from "../../../src/runtime/project-runtime";
 import { record } from "../../support/v5-builders";
+import { testCatalog } from "../../support/builtin-registry";
 
 /**
  * Phase 6 of issue #362: the value tier gets the transaction the structural tier already had.
@@ -59,6 +60,7 @@ function recordFromParsed(values: ParsedValues): Record<string, unknown> {
 function rig(options: { project?: ProjectDefinition } = {}) {
   const state = new Map<string, Record<string, unknown>>();
   const runtime = new ProjectRuntime(options.project ?? PROJECT, {
+    capabilities: testCatalog(),
     clock: createManualClock(),
     compose: (node) => () => ({
       outputs: { values: { x: 0, ...(state.get(node.id) ?? {}) } },

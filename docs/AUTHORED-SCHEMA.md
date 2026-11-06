@@ -188,7 +188,7 @@ core selector; no consumer receives a first-row fallback.
 
 ## Validation and refusal
 
-`validateV5(project)` answers either an accepted, frozen project or closed diagnostics. `Engine.load`
+`validateV5(project, catalog)` answers either an accepted, frozen project or closed diagnostics. `Engine.load`
 runs the same validation path. Duplicate motion ids, duplicate track ids, cycles, an unknown source,
 an unbound required slot, an incompatible slot contract and a retired member all refuse the load
 rather than loading partially.

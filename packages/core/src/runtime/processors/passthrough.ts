@@ -1,4 +1,4 @@
-import type { Model, Structure, ValueSpec } from "../../contract/v5";
+import type { Model, Structure } from "../../contract/v5";
 import { describeDiagnostics } from "../../contract/diagnostics";
 import type { ParsedValues } from "../../contract/v5-parse";
 import type { Interpolator } from "../../ports/interpolator";
@@ -14,15 +14,13 @@ export interface PassthroughProcessorOptions {
   readonly nodeId: string;
   readonly values: ParsedValues | undefined;
   readonly interpolator: Interpolator;
-  readonly model?: Model<unknown, unknown>;
-  readonly spec?: ValueSpec;
+  readonly model: Model<unknown, unknown>;
 }
 
 export class PassthroughProcessor implements Processor {
   readonly kind = "passthrough" as const;
   readonly nodeId: string;
-  readonly #model: Model<unknown, unknown> | undefined;
-  readonly #spec: ValueSpec | undefined;
+  readonly #model: Model<unknown, unknown>;
   readonly #interpolator: Interpolator;
   #structure: Structure<unknown> | undefined;
   #ticked = false;
@@ -30,13 +28,11 @@ export class PassthroughProcessor implements Processor {
   constructor(options: PassthroughProcessorOptions) {
     this.nodeId = options.nodeId;
     this.#model = options.model;
-    this.#spec = options.spec ?? options.model?.spec;
     this.#interpolator = options.interpolator;
     this.#structure = this.#parseStructure(options.values);
   }
 
   #parseStructure(values: ParsedValues | undefined): Structure<unknown> | undefined {
-    if (this.#model === undefined) return undefined;
     const parsed = parseModel(
       this.#model,
       authoringValue(values, this.#model.spec),
@@ -67,7 +63,7 @@ export class PassthroughProcessor implements Processor {
     localInput.replaceEvaluator(
       () => {
         nextStructure = this.#parseStructure(values);
-        return createValueEvaluator(values, this.#interpolator, this.#spec);
+        return createValueEvaluator(values, this.#interpolator, this.#model.spec);
       },
       () => {
         this.#structure = nextStructure;

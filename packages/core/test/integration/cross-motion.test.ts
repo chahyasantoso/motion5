@@ -3,6 +3,7 @@ import type { ProjectDefinition, ResolvedRequires } from "../../src/contract/v5"
 import { createManualClock } from "../../src/ports/clock";
 import { GraphRuntime } from "../../src/runtime/graph-runtime";
 import { record, track } from "../support/v5-builders";
+import { testGraphBuilder, testObserver } from "../support/builtin-registry";
 
 /**
  * Deterministic diagnostic rule id a pending cross-motion reference must carry. Written as a
@@ -10,8 +11,8 @@ import { record, track } from "../support/v5-builders";
  */
 const PENDING_REFERENCE_RULE_ID = "source-pending";
 
-// The cross-motion dependency is a declared plugin slot. Graph construction reads the binding
-// syntactically and holds no registry, so `rig` here names nothing that has to be registered.
+// The cross-motion dependency is a declared plugin slot, and the observer is explicitly admitted.
+const RIG = testObserver("rig");
 const project: ProjectDefinition = {
   schemaVersion: 5,
   motions: [
@@ -54,7 +55,9 @@ const compose = (node: { id: string }) => (requires: ResolvedRequires) =>
       };
 
 function runtime(source: ProjectDefinition = project): GraphRuntime {
-  return new GraphRuntime(source, createManualClock(), compose);
+  return new GraphRuntime(source, createManualClock(), compose, {
+    graphBuilder: testGraphBuilder(RIG),
+  });
 }
 
 describe("P5-01 cross-motion references", () => {

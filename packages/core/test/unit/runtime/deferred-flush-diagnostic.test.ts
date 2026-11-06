@@ -4,6 +4,7 @@ import { createManualClock } from "../../../src/ports/clock";
 import { createFakeScheduler } from "../../../src/testing/fakes";
 import { GraphRuntime } from "../../../src/runtime/graph-runtime";
 import type { PatchBatch } from "../../../src/runtime/patch-registry";
+import { testGraphBuilder } from "../../support/builtin-registry";
 
 /**
  * Issue #383, found by the quality pass over #375.
@@ -62,7 +63,10 @@ describe("the deferred-flush diagnostic says what actually happens to the work",
   it("names a scheduled drain when a scheduler took the work", () => {
     const clock = createManualClock();
     const scheduler = createFakeScheduler();
-    const runtime = new GraphRuntime(project, clock, compose, { scheduler });
+    const runtime = new GraphRuntime(project, clock, compose, {
+      graphBuilder: testGraphBuilder(),
+      scheduler,
+    });
     runtime.attach("hero/arm");
 
     const carried = deferralFrom(runtime, clock);
@@ -74,7 +78,7 @@ describe("the deferred-flush diagnostic says what actually happens to the work",
 
   it("names the next flush when there is no scheduler to take it", () => {
     const clock = createManualClock();
-    const runtime = new GraphRuntime(project, clock, compose);
+    const runtime = new GraphRuntime(project, clock, compose, { graphBuilder: testGraphBuilder() });
     runtime.attach("hero/arm");
 
     const carried = deferralFrom(runtime, clock);
@@ -92,12 +96,17 @@ describe("the deferred-flush diagnostic says what actually happens to the work",
   it("names no operation this tier retired, on either side", () => {
     const bookedClock = createManualClock();
     const scheduler = createFakeScheduler();
-    const booked = new GraphRuntime(project, bookedClock, compose, { scheduler });
+    const booked = new GraphRuntime(project, bookedClock, compose, {
+      graphBuilder: testGraphBuilder(),
+      scheduler,
+    });
     booked.attach("hero/arm");
     const first = deferralFrom(booked, bookedClock);
 
     const carriedClock = createManualClock();
-    const carrying = new GraphRuntime(project, carriedClock, compose);
+    const carrying = new GraphRuntime(project, carriedClock, compose, {
+      graphBuilder: testGraphBuilder(),
+    });
     carrying.attach("hero/arm");
     const second = deferralFrom(carrying, carriedClock);
 

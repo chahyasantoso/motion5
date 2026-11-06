@@ -1,4 +1,4 @@
-import { builtinRegistry } from "../../support/builtin-registry";
+import { builtinRegistry, testCatalog } from "../../support/builtin-registry";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import type { ProjectDefinition } from "../../../src/contract/v5";
@@ -100,6 +100,7 @@ function rig(onCompile: (nodeId: string) => void = () => undefined): Rig {
   let releases = 0;
   const options = {
     clock: createManualClock(),
+    capabilities: testCatalog(),
     compose,
     graphBuilder: { build: (project: ProjectDefinition) => inner.build(project) },
     compileTrack: (_track: { duration?: number }, nodeId?: string) => {

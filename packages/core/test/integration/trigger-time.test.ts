@@ -9,6 +9,7 @@ import {
 } from "../../src/testing/fakes";
 import type { TriggerFactory } from "../../src/ports/trigger-factory";
 import { record } from "../support/v5-builders";
+import { testEngine } from "../support/builtin-registry";
 
 function track(id: string) {
   return {
@@ -27,7 +28,7 @@ function track(id: string) {
 function loadTimeMotion() {
   const clock = createManualClock();
   const scheduler = createFakeScheduler();
-  const handle = new Engine({ clock, interpolator: createFakeInterpolator(), scheduler }).load({
+  const handle = testEngine({ clock, interpolator: createFakeInterpolator(), scheduler }).load({
     schemaVersion: 5,
     motions: [
       { id: "timeMotion", trigger: { type: "time", duration: 1000 }, tracks: [track("arm")] },
@@ -112,7 +113,7 @@ describe("time trigger integration T2", () => {
         return base.subscribe(listener);
       },
     };
-    const handle = new Engine({
+    const handle = testEngine({
       clock,
       interpolator: createFakeInterpolator(),
       scheduler: createFakeScheduler(),
@@ -131,7 +132,11 @@ describe("time trigger integration T2", () => {
   it("keeps manual signals working and preserves range validation", () => {
     const clock = createManualClock();
     const scheduler = createFakeScheduler();
-    const handle = new Engine({ clock, interpolator: createFakeInterpolator(), scheduler }).load({
+    const handle = testEngine({
+      clock,
+      interpolator: createFakeInterpolator(),
+      scheduler,
+    }).load({
       schemaVersion: 5,
       motions: [{ id: "manualMotion", trigger: { type: "manual" }, tracks: [track("arm")] }],
     });
@@ -169,7 +174,7 @@ describe("time trigger integration T2", () => {
         };
       },
     };
-    const handle = new Engine({
+    const handle = testEngine({
       clock,
       scheduler,
       interpolator: createFakeInterpolator(),

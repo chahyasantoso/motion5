@@ -2,11 +2,12 @@ import { createManualClock, Engine, type LiveValues, type ProjectHandle } from "
 import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/testing";
 import { record, track } from "../../../core/test/support/v5-builders";
 import { attachRunners, type Runner, type RunnerFailure } from "../../src/runner";
+import { testEngine } from "../../../core/test/support/builtin-registry";
 
 /** One Engine-backed fixture for ordinary and adversarial runner contracts. */
 export function fixture(ids = ["a", "b"], values: LiveValues = { x: 0 }) {
   const clock = createManualClock();
-  const project = new Engine({
+  const project = testEngine({
     clock,
     interpolator: createFakeInterpolator(),
     scheduler: createFakeScheduler(),
@@ -20,7 +21,7 @@ export function fixture(ids = ["a", "b"], values: LiveValues = { x: 0 }) {
           track({
             id,
             values: record(values),
-            model: "TestRecord",
+            model: "LiveRecord",
           }),
         ),
       },

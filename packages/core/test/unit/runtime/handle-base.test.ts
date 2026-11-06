@@ -12,6 +12,9 @@ import { createManualClock } from "../../../src/ports/clock";
 import { ProjectRuntime } from "../../../src/runtime/project-runtime";
 import { declaresMembers, handleMembers, touchMember } from "../../helpers/handle-surface";
 import { code, member } from "../../helpers/source-region";
+import { testCatalog, testObserver } from "../../support/builtin-registry";
+
+const OBSERVER = testObserver("observer");
 
 /**
  * Slice B1 of issue #223, on top of A1 through A3, 7a and 7c.
@@ -56,7 +59,7 @@ const RUNTIME_SOURCE = fileURLToPath(
  */
 const LEG_TRACK: TrackDefinition = {
   id: "leg",
-  output: { plugin: "fk" },
+  output: { plugin: "observer" },
   input: { values: {}, requires: { base: ARM, members: { left: HAND } } },
 };
 const PROJECT: ProjectDefinition = {
@@ -127,7 +130,11 @@ const MOTION_WRITERS = ["addTrack", "setTrigger", "setStagger", "destroy"] as co
 const MOTION_READERS = ["definition", "trackIds", "track", "tryTrack"] as const;
 
 function runtime(): ProjectRuntime {
-  return new ProjectRuntime(PROJECT, { clock: createManualClock(), compose });
+  return new ProjectRuntime(PROJECT, {
+    capabilities: testCatalog(OBSERVER),
+    clock: createManualClock(),
+    compose,
+  });
 }
 /** Returns the thrown value, because each case asserts on more than one facet of it. */
 function thrownBy(operation: () => unknown): unknown {

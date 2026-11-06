@@ -3,6 +3,7 @@ import { Engine } from "../../src/engine";
 import { createManualClock } from "../../src/ports/clock";
 import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
 import type { ProjectDefinition, TrackDefinition } from "../../src/contract/v5";
+import { testEngine } from "../support/builtin-registry";
 
 function ramp(from: number, to: number) {
   return [
@@ -21,7 +22,7 @@ function track(id: string, from: number, to: number, duration?: number): TrackDe
 function load(project: ProjectDefinition) {
   const clock = createManualClock();
   const scheduler = createFakeScheduler();
-  const handle = new Engine({ clock, interpolator: createFakeInterpolator(), scheduler }).load(
+  const handle = testEngine({ clock, interpolator: createFakeInterpolator(), scheduler }).load(
     project,
   );
   return { clock, scheduler, handle };

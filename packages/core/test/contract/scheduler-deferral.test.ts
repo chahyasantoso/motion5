@@ -10,6 +10,7 @@ import {
 import { GraphRuntime } from "../../src/runtime/graph-runtime";
 import type { PatchBatch } from "../../src/runtime/patch-registry";
 import { recordValues } from "../support/v5-builders";
+import { testGraphBuilder } from "../support/builtin-registry";
 
 /**
  * Issue #377, found by the quality pass over #375.
@@ -183,6 +184,7 @@ describe("a Scheduler defers, and the port is what says so", () => {
     const clock = createManualClock();
     let attempts = 0;
     const runtime = new GraphRuntime(project, clock, compose, {
+      graphBuilder: testGraphBuilder(),
       scheduler: {
         schedule(job: () => void): Cancel {
           attempts += 1;
@@ -310,6 +312,7 @@ describe("a Scheduler defers, and the port is what says so", () => {
     const clock = createManualClock();
     let calls = 0;
     const runtime = new GraphRuntime(project, clock, compose, {
+      graphBuilder: testGraphBuilder(),
       scheduler: {
         schedule(job: () => void): Cancel {
           calls += 1;
@@ -349,6 +352,7 @@ describe("a Scheduler defers, and the port is what says so", () => {
     const clock = createManualClock();
     let attempts = 0;
     const runtime = new GraphRuntime(project, clock, compose, {
+      graphBuilder: testGraphBuilder(),
       scheduler: {
         schedule(job: () => void): Cancel {
           attempts += 1;

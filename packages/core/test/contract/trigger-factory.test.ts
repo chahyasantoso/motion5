@@ -20,9 +20,10 @@ import {
   type CreatedTrigger,
   type TriggerFactoryContext,
 } from "../../src/ports/trigger-factory";
+import { testEngine } from "../support/builtin-registry";
 
 function engine(options: { triggerFactory?: TriggerFactory } = {}) {
-  return new Engine({
+  return testEngine({
     clock: createManualClock(),
     interpolator: createFakeInterpolator(),
     scheduler: createFakeScheduler(),

@@ -11,6 +11,7 @@ import { Engine, type ProjectHandle } from "../../src/engine";
 import { createManualClock } from "../../src/ports/clock";
 import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
 import { record } from "../support/v5-builders";
+import { testEngine } from "../support/builtin-registry";
 
 const LOOPING: MotionDefinition["trigger"] = { type: "time", duration: 100, repeat: 1, yoyo: true };
 const TWICE: MotionDefinition["trigger"] = { type: "time", duration: 100, repeat: 1 };
@@ -51,7 +52,7 @@ interface Loaded {
 function load(motions: readonly MotionDefinition[]): Loaded {
   const clock = createManualClock();
   const scheduler = createFakeScheduler();
-  const handle = new Engine({ clock, interpolator: createFakeInterpolator(), scheduler }).load({
+  const handle = testEngine({ clock, interpolator: createFakeInterpolator(), scheduler }).load({
     schemaVersion: 5,
     motions,
   });
@@ -181,7 +182,11 @@ describe("time loop semantics", () => {
       },
     };
     const scheduler = createFakeScheduler();
-    const handle = new Engine({ clock, interpolator: createFakeInterpolator(), scheduler }).load({
+    const handle = testEngine({
+      clock,
+      interpolator: createFakeInterpolator(),
+      scheduler,
+    }).load({
       schemaVersion: 5,
       motions: [
         { id: "a", trigger: FOREVER, tracks: [ramp("arm")] },

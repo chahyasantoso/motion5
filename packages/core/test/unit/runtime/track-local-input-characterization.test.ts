@@ -14,6 +14,7 @@ import { ComputedProcessor } from "../../../src/runtime/processors/computed";
 import { PassthroughProcessor } from "../../../src/runtime/processors/passthrough";
 import { Track } from "../../../src/runtime/track";
 import { createFakeInterpolator } from "../../../src/testing/fakes";
+import { TestRecord } from "../../support/test-models";
 
 const PATH = "motions[0].tracks[0]";
 
@@ -23,11 +24,12 @@ function createPassthroughTrack(options: {
   readonly interpolator: Interpolator;
   readonly model?: Model<unknown, unknown>;
 }): Track {
-  const spec = options.model?.spec;
+  const model = options.model ?? TestRecord;
+  const spec = model.spec;
   const localInput = new LocalInput(
     createValueEvaluator(options.values, options.interpolator, spec),
   );
-  const processor = new PassthroughProcessor(options);
+  const processor = new PassthroughProcessor({ ...options, model });
   return new Track(options.nodeId, localInput, processor);
 }
 

@@ -4,6 +4,7 @@ import { createManualClock } from "../../../src/ports/clock";
 import { createFakeScheduler } from "../../../src/testing/fakes";
 import { GraphRuntime } from "../../../src/runtime/graph-runtime";
 import { recordValues } from "../../support/v5-builders";
+import { testGraphBuilder } from "../../support/builtin-registry";
 
 /**
  * Issue #378, found by the quality pass over #375.
@@ -52,7 +53,10 @@ describe("the publication boundary covers everything after the drain", () => {
         sourceRevisions: {},
       });
     };
-    const runtime = new GraphRuntime(project, clock, compose, { scheduler });
+    const runtime = new GraphRuntime(project, clock, compose, {
+      graphBuilder: testGraphBuilder(),
+      scheduler,
+    });
     runtime.attach("hero/arm");
 
     let acted = false;

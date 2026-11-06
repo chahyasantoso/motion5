@@ -2,6 +2,9 @@ import { describe, expect, it, vi } from "vitest";
 import type { ProjectDefinition, TrackDefinition } from "../../../src/contract/v5";
 import { createManualClock } from "../../../src/ports/clock";
 import { ProjectRuntime, type ProjectRuntimeOptions } from "../../../src/runtime/project-runtime";
+import { testCatalog, testObserver } from "../../support/builtin-registry";
+
+const OBSERVER = testObserver("observer");
 
 /**
  * Issue #362, phase 2: a loaded project can be enumerated through the public API.
@@ -50,13 +53,13 @@ const CEILING = "~/ceiling";
 const BASE_TRACK: TrackDefinition = { id: "base", output: { model: "TestRecord" } };
 const UPPER_TRACK: TrackDefinition = {
   id: "upper",
-  output: { plugin: "fk" },
+  output: { plugin: "observer" },
   input: { values: {}, requires: { base: "base" } },
 };
 /** The leaf, bound to its parent rather than to the base, so the two removals are ordered. */
 const LOWER_TRACK: TrackDefinition = {
   id: "lower",
-  output: { plugin: "fk" },
+  output: { plugin: "observer" },
   input: { values: {}, requires: { base: "upper" } },
 };
 /** A second motion's only child, so destroying that motion needs one removal before it. */
@@ -83,6 +86,7 @@ type Hooks = Pick<ProjectRuntimeOptions, "createMotion" | "compileTrack">;
 
 function runtime(hooks: Hooks = {}): ProjectRuntime {
   return new ProjectRuntime(PROJECT, {
+    capabilities: testCatalog(OBSERVER),
     clock: createManualClock(),
     compose,
     ...hooks,

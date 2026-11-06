@@ -10,6 +10,7 @@ import {
   type Refusal,
 } from "../../../src/runtime/refusal";
 import { ProjectRuntime } from "../../../src/runtime/project-runtime";
+import { testCatalog } from "../../support/builtin-registry";
 
 /**
  * Issue #443, phase A step 3b: the refusals `ProjectRuntime` spells are the union, not prose.
@@ -44,7 +45,11 @@ const compose = (node: { id: string }) => () => ({
 });
 
 function loaded(): ProjectRuntime {
-  return new ProjectRuntime(PROJECT, { clock: createManualClock(), compose });
+  return new ProjectRuntime(PROJECT, {
+    capabilities: testCatalog(),
+    clock: createManualClock(),
+    compose,
+  });
 }
 
 /** Returns the thrown value, because each case asserts on the class and on the payload. */

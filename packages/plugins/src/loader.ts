@@ -9,7 +9,6 @@
 import {
   PluginCatalog,
   validateTrackDefinition,
-  validateV5,
   type Diagnostic,
   type ProjectDefinition,
   type TrackDefinition,
@@ -90,12 +89,21 @@ function demandPlugins(demand: PluginDemand): DemandResult {
   };
   switch (demand.kind) {
     case "project": {
-      const validation = validateV5(demand.project);
-      if (validation.kind === "refused")
-        return { kind: "invalid", diagnostics: validation.diagnostics };
-      const project = validation.value;
-      project.motions.forEach((motion) => motion.tracks.forEach(add));
-      project.freeTracks?.forEach(add);
+      // Demand collection is structural: plugin and model names stay unjudged until the engine
+      // validates the loaded project against the catalog.
+      const diagnostics: Diagnostic[] = [];
+      const collect = (track: TrackDefinition, path: string): void => {
+        const validation = validateTrackDefinition(track, path);
+        if (validation.kind === "accepted") add(validation.value);
+        else diagnostics.push(...validation.diagnostics);
+      };
+      for (const [motionIndex, motion] of demand.project.motions.entries())
+        for (const [trackIndex, track] of motion.tracks.entries())
+          collect(track, `motions[${motionIndex}].tracks[${trackIndex}]`);
+      for (const [trackIndex, track] of (demand.project.freeTracks ?? []).entries())
+        collect(track, `freeTracks[${trackIndex}]`);
+      if (diagnostics.some(({ severity }) => severity === "error"))
+        return { kind: "invalid", diagnostics };
       return { kind: "ids", ids };
     }
     case "tracks": {

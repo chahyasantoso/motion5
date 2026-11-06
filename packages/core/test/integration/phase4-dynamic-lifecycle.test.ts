@@ -5,6 +5,9 @@ import { createManualClock } from "../../src/ports/clock";
 import { PatchRegistry } from "../../src/runtime/patch-registry";
 import { ProjectRuntime } from "../../src/runtime/project-runtime";
 import { record, track } from "../support/v5-builders";
+import { testCatalog, testObserver } from "../support/builtin-registry";
+
+const RIG = testObserver("rig");
 
 const project = {
   schemaVersion: 5 as const,
@@ -18,7 +21,11 @@ const compose = (node: { id: string }) => () => ({
 
 describe("Phase 4: Dynamic Graph Lifecycle Hardening", () => {
   it("1. A runtime add produces ready patches and publishes through the ordinary graph path", () => {
-    const runtime = new ProjectRuntime(project, { clock: createManualClock(), compose });
+    const runtime = new ProjectRuntime(project, {
+      capabilities: testCatalog(RIG),
+      clock: createManualClock(),
+      compose,
+    });
     try {
       const added = runtime.addTrack({
         id: "cursor",
@@ -40,7 +47,11 @@ describe("Phase 4: Dynamic Graph Lifecycle Hardening", () => {
   });
 
   it("2. Failed adoption (duplicate id) is observationally atomic — graph, membership, and patches are unchanged", () => {
-    const runtime = new ProjectRuntime(project, { clock: createManualClock(), compose });
+    const runtime = new ProjectRuntime(project, {
+      capabilities: testCatalog(RIG),
+      clock: createManualClock(),
+      compose,
+    });
     try {
       runtime.addTrack({ id: "cursor", output: { model: "TestTable" } } as TrackDefinition);
       const snapshotBefore = runtime.graph.state.snapshot();
@@ -71,6 +82,7 @@ describe("Phase 4: Dynamic Graph Lifecycle Hardening", () => {
     };
 
     const runtime = new ProjectRuntime(project, {
+      capabilities: testCatalog(RIG),
       clock: createManualClock(),
       compose: trackingCompose,
     });
@@ -133,7 +145,11 @@ describe("Phase 4: Dynamic Graph Lifecycle Hardening", () => {
           }),
         ],
       },
-      { clock: createManualClock(), compose },
+      {
+        capabilities: testCatalog(RIG),
+        clock: createManualClock(),
+        compose,
+      },
     );
     try {
       const snapshot = runtime.graph.state.snapshot();
@@ -150,7 +166,11 @@ describe("Phase 4: Dynamic Graph Lifecycle Hardening", () => {
   });
 
   it("6. Authored stop validation is shared: malformed stops are rejected before graph commit", () => {
-    const runtime = new ProjectRuntime(project, { clock: createManualClock(), compose });
+    const runtime = new ProjectRuntime(project, {
+      capabilities: testCatalog(RIG),
+      clock: createManualClock(),
+      compose,
+    });
     try {
       const snapshotBefore = runtime.graph.state.snapshot();
       const badTrack = track({

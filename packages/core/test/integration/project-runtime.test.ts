@@ -4,6 +4,7 @@ import type { ProjectDefinition } from "../../src/contract/v5";
 import { createManualClock } from "../../src/ports/clock";
 import { ProjectRuntime } from "../../src/runtime/project-runtime";
 import { buildGraphIR } from "../../src/graph/ir";
+import { testCatalog } from "../support/builtin-registry";
 
 const project: ProjectDefinition = {
   schemaVersion: 5,
@@ -25,7 +26,11 @@ const compose = (node: { id: string }) => () => ({
 describe("ProjectRuntime", () => {
   it("TR-R-14 mounts through one project-owned GraphRuntime", () => {
     const clock = createManualClock();
-    const runtime = new ProjectRuntime(project, { clock, compose });
+    const runtime = new ProjectRuntime(project, {
+      capabilities: testCatalog(),
+      clock,
+      compose,
+    });
     const first = {};
     runtime.mount("hero/arm", first);
     expect(runtime.instanceCount).toBe(1);
@@ -56,7 +61,14 @@ describe("ProjectRuntime", () => {
       ],
       freeTracks: [{ id: "cursor", output: { model: "TestTable" } }],
     };
-    expect(() => new ProjectRuntime(invalid, { clock, compose })).toThrow(TypeError);
+    expect(
+      () =>
+        new ProjectRuntime(invalid, {
+          capabilities: testCatalog(),
+          clock,
+          compose,
+        }),
+    ).toThrow(TypeError);
   });
 
   it("releases every mounted instance and clock subscription on repeated dispose", () => {
@@ -67,7 +79,11 @@ describe("ProjectRuntime", () => {
       subscriptions += 1;
       return subscribe(listener);
     }) as typeof clock.subscribe;
-    const runtime = new ProjectRuntime(project, { clock, compose });
+    const runtime = new ProjectRuntime(project, {
+      capabilities: testCatalog(),
+      clock,
+      compose,
+    });
     runtime.mount("hero/arm");
     runtime.dispose();
     runtime.dispose();
@@ -88,6 +104,7 @@ describe("ProjectRuntime", () => {
     };
 
     const runtime = new ProjectRuntime(project, {
+      capabilities: testCatalog(),
       clock,
       compose,
       graphBuilder: customBuilder,

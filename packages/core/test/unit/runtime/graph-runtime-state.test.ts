@@ -31,6 +31,7 @@ import {
   type RuntimePhase,
   type SnapshotMemo,
 } from "../../../src/runtime/graph-runtime-state";
+import { testGraphBuilder } from "../../support/builtin-registry";
 
 /**
  * Issue #376, the deferred half of #374 that ADR-082 recorded as owed.
@@ -380,7 +381,10 @@ describe("what the runtime does with them does not move", () => {
   it("drops a drain the scheduler accepted before disposal, without a flag to clear", () => {
     const clock = createManualClock();
     const scheduler = createFakeScheduler();
-    const runtime = new GraphRuntime(project, clock, compose, { scheduler });
+    const runtime = new GraphRuntime(project, clock, compose, {
+      graphBuilder: testGraphBuilder(),
+      scheduler,
+    });
     runtime.attach("hero/arm");
 
     const batches: number[] = [];

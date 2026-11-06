@@ -7,6 +7,7 @@ import { createFakeScheduler } from "../../src/testing/fakes";
 import type { Patch } from "../../src/runtime/patch-registry";
 import { createRealGsapSeam } from "../support/real-gsap";
 import { recordValues } from "../support/v5-builders";
+import { testEngine } from "../support/builtin-registry";
 
 const project: ProjectDefinition = {
   schemaVersion: 5,
@@ -40,7 +41,7 @@ describe("real end-to-end product path (E2)", () => {
       nodeId === "hero/arm" ? target : undefined,
     );
     const seam = createRealGsapSeam();
-    const runtime = new Engine({
+    const runtime = testEngine({
       clock: createManualClock(),
       interpolator: seam.interpolator,
       scheduler: createFakeScheduler(),

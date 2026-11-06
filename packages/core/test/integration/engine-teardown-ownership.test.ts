@@ -12,6 +12,7 @@ import type {
   TriggerFactory,
   TriggerFactoryContext,
 } from "../../src/ports/trigger-factory";
+import { testEngine } from "../support/builtin-registry";
 
 /**
  * Issues #143 and #145. One defect in two places: a teardown that stops at its first failing step.
@@ -176,7 +177,7 @@ function probeMotions(): MotionProbe {
 }
 
 function load(clock: Clock, factory: TriggerFactory, project: ProjectDefinition): ProjectHandle {
-  return new Engine({
+  return testEngine({
     clock,
     interpolator: createFakeInterpolator(),
     scheduler: createFakeScheduler(),

@@ -3,6 +3,7 @@ import type { ProjectDefinition } from "../../../src/contract/v5";
 import { createManualClock } from "../../../src/ports/clock";
 import { GraphRuntime } from "../../../src/runtime/graph-runtime";
 import { GraphPublisher } from "../../../src/runtime/graph-publisher";
+import { testGraphBuilder } from "../../support/builtin-registry";
 
 /**
  * Issue #223, optimisation 7c.
@@ -63,7 +64,7 @@ afterEach(() => {
 describe("the snapshot a flush runs over is memoised per graph", () => {
   it("RA-23 hands the publisher one frozen snapshot for as long as nothing in it moved", () => {
     const clock = createManualClock();
-    const runtime = new GraphRuntime(PROJECT, clock, compose);
+    const runtime = new GraphRuntime(PROJECT, clock, compose, { graphBuilder: testGraphBuilder() });
     runtime.attach("hero/arm");
 
     clock.tick();
@@ -83,7 +84,7 @@ describe("the snapshot a flush runs over is memoised per graph", () => {
 
   it("RA-24 keys it on membership, so neither a stale member set nor a live alias is possible", () => {
     const clock = createManualClock();
-    const runtime = new GraphRuntime(PROJECT, clock, compose);
+    const runtime = new GraphRuntime(PROJECT, clock, compose, { graphBuilder: testGraphBuilder() });
     runtime.attach("hero/arm");
 
     clock.tick();
@@ -107,7 +108,7 @@ describe("the snapshot a flush runs over is memoised per graph", () => {
 
   it("RA-25 rebuilds it when a member leaves, by either exit", () => {
     const clock = createManualClock();
-    const runtime = new GraphRuntime(PROJECT, clock, compose);
+    const runtime = new GraphRuntime(PROJECT, clock, compose, { graphBuilder: testGraphBuilder() });
     runtime.attach("hero/arm");
     runtime.attach("hero/hand");
 
@@ -127,7 +128,7 @@ describe("the snapshot a flush runs over is memoised per graph", () => {
 
   it("RA-26 rebuilds it when the graph is replaced, and reuses no node the rebuild displaced", () => {
     const clock = createManualClock();
-    const runtime = new GraphRuntime(PROJECT, clock, compose);
+    const runtime = new GraphRuntime(PROJECT, clock, compose, { graphBuilder: testGraphBuilder() });
     runtime.attach("hero/arm");
 
     clock.tick();

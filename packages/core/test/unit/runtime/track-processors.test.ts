@@ -13,6 +13,7 @@ import { ComputedProcessor, defaultPluginValues } from "../../../src/runtime/pro
 import { PassthroughProcessor } from "../../../src/runtime/processors/passthrough";
 import { Track } from "../../../src/runtime/track";
 import { createFakeInterpolator } from "../../../src/testing/fakes";
+import { TestRecord } from "../../support/test-models";
 
 const here = fileURLToPath(import.meta.url);
 
@@ -118,6 +119,7 @@ describe("Track and Processors", () => {
       nodeId: "track-1",
       values,
       interpolator,
+      model: TestRecord,
     });
     const track = new Track("track-1", localInput, passthrough);
     track.setProgress(0.5);
@@ -140,6 +142,7 @@ describe("Track and Processors", () => {
       nodeId: "static-track",
       values: staticValues,
       interpolator,
+      model: TestRecord,
     });
     const passthroughTrack = new Track("static-track", localInput1, passthrough);
     expect(passthroughTrack.setProgress(0.2)).toBe(true);
@@ -178,6 +181,7 @@ describe("Track and Processors", () => {
       nodeId: "track-repl",
       values: initialValues,
       interpolator,
+      model: TestRecord,
     });
     const track = new Track("track-repl", localInput, passthrough);
     expect(track.compose({}).outputs).toEqual({ values: { x: 1 } });

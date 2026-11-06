@@ -10,6 +10,7 @@ import { ComputedProcessor } from "../../../src/runtime/processors/computed";
 import { PassthroughProcessor } from "../../../src/runtime/processors/passthrough";
 import { Track } from "../../../src/runtime/track";
 import { createFakeInterpolator } from "../../../src/testing/fakes";
+import { TestTable } from "../../support/test-models";
 
 const PATH = "motions[0].tracks[0]";
 
@@ -160,6 +161,7 @@ describe("ValueTrack replaceValues build transactionality", () => {
       nodeId: "track-1",
       values: initialValues,
       interpolator: controllable.interpolator,
+      model: TestTable,
     });
     const track = new Track("track-1", localInput, processor);
 

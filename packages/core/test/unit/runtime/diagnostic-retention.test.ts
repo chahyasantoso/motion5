@@ -4,6 +4,7 @@ import { createManualClock } from "../../../src/ports/clock";
 import type { Cancel } from "../../../src/ports/scheduler";
 import { createFakeScheduler } from "../../../src/testing/fakes";
 import { GraphRuntime } from "../../../src/runtime/graph-runtime";
+import { testGraphBuilder } from "../../support/builtin-registry";
 
 /**
  * Issues #415 and #410, found by the quality pass over #405.
@@ -67,6 +68,7 @@ describe("a reentrant sink cannot win the race backwards", () => {
       });
     };
     const runtime = new GraphRuntime(project, clock, refusingCompose, {
+      graphBuilder: testGraphBuilder(),
       scheduler,
       onClockTick: () => {
         throw new Error("consumer refused");
@@ -123,6 +125,7 @@ describe("a sink that throws is contained, and leaves a trace of its own", () =>
   it("retains the runtime diagnostic a throwing sink never accepted", () => {
     const clock = createManualClock();
     const runtime = new GraphRuntime(project, clock, compose, {
+      graphBuilder: testGraphBuilder(),
       scheduler: refusingSchedule,
       onFlushError: () => {
         throw new Error("diagnostic sink refused");
@@ -150,6 +153,7 @@ describe("a sink that throws is contained, and leaves a trace of its own", () =>
     const clock = createManualClock();
     const delivered: Diagnostic[] = [];
     const runtime = new GraphRuntime(project, clock, compose, {
+      graphBuilder: testGraphBuilder(),
       scheduler: refusingSchedule,
       onFlushError: (diagnostic) => {
         delivered.push(diagnostic);
@@ -187,6 +191,7 @@ describe("a sink that throws is contained, and leaves a trace of its own", () =>
     const clock = createManualClock();
     const received: Diagnostic[] = [];
     const runtime = new GraphRuntime(project, clock, compose, {
+      graphBuilder: testGraphBuilder(),
       scheduler: refusingSchedule,
       onFlushError: (diagnostic) => received.push(diagnostic),
     });

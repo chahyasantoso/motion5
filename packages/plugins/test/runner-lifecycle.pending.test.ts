@@ -117,7 +117,7 @@ describe("runner lifecycle adversarial contracts", () => {
 
     // A write carries the whole value, so omitting an authored field is refused and releases the
     // overlay rather than leaving a half-merged pose.
-    values = { x: 5 };
+    values = {};
     f.clock.tick();
     expect(f.failures.map((failure) => failure.kind)).toEqual(["write-refused"]);
     expect([readyValues(f.project).x, readyValues(f.project).y]).toEqual([0, 0]);

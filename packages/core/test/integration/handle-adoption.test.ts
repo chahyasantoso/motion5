@@ -3,6 +3,7 @@ import type { Patch } from "../../src/contract/v5";
 import { Engine } from "../../src/engine";
 import { createManualClock } from "../../src/ports/clock";
 import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
+import { testEngine } from "../support/builtin-registry";
 
 const project = {
   schemaVersion: 5 as const,
@@ -16,7 +17,7 @@ const project = {
 };
 
 function makeHandle() {
-  return new Engine({
+  return testEngine({
     clock: createManualClock(),
     interpolator: createFakeInterpolator(),
     scheduler: createFakeScheduler(),
@@ -69,7 +70,7 @@ describe("runtime track addition through ProjectHandle (G2)", () => {
 
   it("adds a track into an existing motion and receives motion signals", () => {
     const scheduler = createFakeScheduler();
-    const handle = new Engine({
+    const handle = testEngine({
       clock: createManualClock(),
       interpolator: createFakeInterpolator(),
       scheduler,

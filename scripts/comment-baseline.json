@@ -340,10 +340,6 @@
     "count": 9
   },
   {
-    "path": "packages/core/src/validate-v5.ts",
-    "count": 5
-  },
-  {
     "path": "packages/plugins/src/builtin-catalog.ts",
     "count": 2
   },

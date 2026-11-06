@@ -5,6 +5,7 @@ import type { ProjectDefinition } from "../../../src/contract/v5";
 import { createManualClock } from "../../../src/ports/clock";
 import { NO_PORTS, completing, installed } from "../../../src/runtime/project-ports";
 import { ProjectRuntime } from "../../../src/runtime/project-runtime";
+import { testCatalog } from "../../support/builtin-registry";
 
 /**
  * Issue #443, phase A step 7: the seams are total, and the optionality stops at construction.
@@ -265,6 +266,7 @@ describe("the project ports", () => {
   it("calls a host's own seam on the runtime, through a real project", () => {
     const receivers: unknown[] = [];
     const project = new ProjectRuntime(PROJECT, {
+      capabilities: testCatalog(),
       clock: createManualClock(),
       compose,
       disposeComposition: recordingReceiver(receivers),
@@ -284,6 +286,7 @@ describe("the project ports", () => {
       setMotionStagger: [] as unknown[],
     };
     const project = new ProjectRuntime(PROJECT, {
+      capabilities: testCatalog(),
       clock: createManualClock(),
       compose,
       compileTrack: recordingReceiver(seams.compileTrack),
@@ -314,6 +317,7 @@ describe("the project ports", () => {
 
   it("still fails a stagger edit whose host answered a completion it cannot call", () => {
     const project = new ProjectRuntime(PROJECT, {
+      capabilities: testCatalog(),
       clock: createManualClock(),
       compose,
       setMotionStagger: () => NOT_CALLABLE,

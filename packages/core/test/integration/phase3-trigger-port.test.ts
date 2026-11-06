@@ -12,6 +12,7 @@ import {
 } from "../../src/testing/fakes";
 import { createManualTriggerPort, assertTriggerPort } from "../../src/ports/trigger";
 import { record } from "../support/v5-builders";
+import { testEngine } from "../support/builtin-registry";
 
 function isTable(value: unknown): value is Table {
   return Array.isArray(value);
@@ -109,7 +110,7 @@ describe("Phase 3: TriggerPort Migration & Boundary Neutrality", () => {
     const clock = createManualClock();
     const scheduler = createFakeScheduler();
 
-    const handle = new Engine({
+    const handle = testEngine({
       clock,
       interpolator: createFakeInterpolator(),
       scheduler,
@@ -140,7 +141,7 @@ describe("Phase 3: TriggerPort Migration & Boundary Neutrality", () => {
     const subscribeSpy = vi.spyOn(clock, "subscribe");
     const scheduler = createFakeScheduler();
 
-    const handle = new Engine({
+    const handle = testEngine({
       clock,
       interpolator: createFakeInterpolator(),
       scheduler,

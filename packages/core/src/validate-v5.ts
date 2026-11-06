@@ -1,48 +1,22 @@
-/**
- * Compose the public authored-project validation contract.
- *
- * The contract validator owns schema shape. Graph IR owns reference and topology validation. This
- * outer composition module is the one use-case path that combines them for callers of `validateV5`.
- * Keeping the composition here preserves the dependency direction: contract never imports graph.
- */
+/** The public validation path: contract shape then graph topology, from one capability source. */
 import type { Diagnostic, ProjectDefinition } from "./contract/v5";
 import { validateSchemaV5 } from "./contract/validate-v5";
 import { acceptedOutcome, refusedOutcomeFrom, type Outcome } from "./lang/outcome";
 import { unreachable } from "./lang/exhaustive";
 import { buildGraphIR } from "./graph/ir";
-import {
-  UNJUDGED_CAPABILITIES,
-  admitsPlugin,
-  type PluginCapabilities,
-} from "./ports/plugin-capabilities";
+import { admitsPlugin, type PluginCapabilities } from "./ports/plugin-capabilities";
 import type { ParseContext } from "./contract/v5-parse";
 
 export type ValidationResult = Outcome<ProjectDefinition, Diagnostic>;
 
-/**
- * Validate a complete authored project, preserving schema and graph diagnostics in their original
- * order and values. Without capabilities, declaration-dependent rules are unjudged (ADR-136).
- *
- * The same capabilities answer the parser's plugin-admission question, so an id a host never
- * registered is refused as `plugin-unknown` here rather than accepted and discovered at compile.
- * One capability reader answers both, which is why this is a projection rather than a second rule.
- */
-export function validateV5(
-  input: unknown,
-  capabilities: PluginCapabilities = UNJUDGED_CAPABILITIES,
-): ValidationResult {
+/** Validates a project with the caller's catalog; schema and graph diagnostics keep their order. */
+export function validateV5(input: unknown, capabilities: PluginCapabilities): ValidationResult {
   const context: ParseContext = {
     isPluginRegistered: (pluginId) => admitsPlugin(capabilities, pluginId),
-    ...(capabilities.pluginDefinition === undefined
-      ? {}
-      : { pluginDefinition: (pluginId: string) => capabilities.pluginDefinition?.(pluginId) }),
-    ...(capabilities.model === undefined
-      ? {}
-      : { model: (modelId: string) => capabilities.model?.(modelId) }),
-    ...(capabilities.modelIds === undefined ? {} : { modelIds: () => capabilities.modelIds?.() }),
-    ...(capabilities.pluginIds === undefined
-      ? {}
-      : { pluginIds: () => capabilities.pluginIds?.() }),
+    pluginDefinition: (pluginId) => capabilities.pluginDefinition?.(pluginId),
+    model: (modelId: string) => capabilities.model?.(modelId),
+    modelIds: () => capabilities.modelIds?.(),
+    pluginIds: () => capabilities.pluginIds?.(),
   };
   const schema = validateSchemaV5(input, context);
   switch (schema.kind) {

@@ -3,6 +3,9 @@ import type { ProjectDefinition, TrackDefinition } from "../../../src/contract/v
 import { createManualClock } from "../../../src/ports/clock";
 import { ProjectRuntime } from "../../../src/runtime/project-runtime";
 import { record, track } from "../../support/v5-builders";
+import { testCatalog, testObserver } from "../../support/builtin-registry";
+
+const DEMO = testObserver("demo");
 
 /**
  * Issue #223, finding 4 of the re-review: what a removal owes the nodes that read it.
@@ -40,7 +43,11 @@ const EDGE_PROJECT: ProjectDefinition = {
 
 describe("what a removal owes the nodes that read it", () => {
   it("RA-98 refuses a removal whose node is still read through an edge", () => {
-    const runtime = new ProjectRuntime(EDGE_PROJECT, { clock: createManualClock(), compose });
+    const runtime = new ProjectRuntime(EDGE_PROJECT, {
+      capabilities: testCatalog(DEMO),
+      clock: createManualClock(),
+      compose,
+    });
     try {
       const before = runtime.graph.sequence;
 

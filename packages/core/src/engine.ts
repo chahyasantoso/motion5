@@ -21,11 +21,7 @@ import type { TrackHandle } from "./contract/track-handle";
 import { describeDiagnostics } from "./contract/diagnostics";
 import { resolveTriggerDefinition } from "./contract/validate-v5";
 import { validateV5 } from "./validate-v5";
-import {
-  UNJUDGED_CAPABILITIES,
-  admitsPlugin,
-  type PluginCapabilities,
-} from "./ports/plugin-capabilities";
+import { type PluginCapabilities } from "./ports/plugin-capabilities";
 import { readOutcome } from "./lang/outcome";
 import { IncrementalGraphBuilder } from "./graph/builders/incremental";
 import { createDefaultTriggerFactory } from "./adapters/trigger-factory/default";
@@ -65,7 +61,7 @@ export interface EngineOptions {
   readonly clock: Clock;
   readonly interpolator: Interpolator;
   readonly scheduler: Scheduler;
-  readonly plugins?: PluginCatalog;
+  readonly plugins: PluginCatalog;
   readonly triggerFactory?: TriggerFactory;
 }
 export interface ProjectHandle {
@@ -177,13 +173,13 @@ function runAllAndReportOnce(steps: readonly (() => void)[], context: string): v
 }
 export class Engine {
   readonly #options: EngineOptions;
-  readonly #capabilities: PluginCapabilities;
+  readonly #capabilities: PluginCatalog;
   constructor(options: EngineOptions) {
     assertClock(options.clock);
     assertInterpolator(options.interpolator);
     assertScheduler(options.scheduler);
     this.#options = options;
-    this.#capabilities = options.plugins ?? UNJUDGED_CAPABILITIES;
+    this.#capabilities = options.plugins;
   }
   load(project: ProjectDefinition): ProjectHandle {
     const acceptedProject = assertValidProject(project, this.#capabilities);
@@ -203,17 +199,11 @@ export class Engine {
       if (existing) return existing;
       const parsed = readOutcome(
         parseTrackDefinition(trackDef, nodeId, {
-          isPluginRegistered: (pluginId) => admitsPlugin(this.#capabilities, pluginId),
-          pluginDefinition: (pluginId) => this.#capabilities.pluginDefinition?.(pluginId),
-          ...(this.#capabilities.model === undefined
-            ? {}
-            : { model: (modelId: string) => this.#capabilities.model?.(modelId) }),
-          ...(this.#capabilities.modelIds === undefined
-            ? {}
-            : { modelIds: () => this.#capabilities.modelIds?.() }),
-          ...(this.#capabilities.pluginIds === undefined
-            ? {}
-            : { pluginIds: () => this.#capabilities.pluginIds?.() }),
+          isPluginRegistered: (pluginId) => this.#capabilities.isPluginAdmitted(pluginId),
+          pluginDefinition: (pluginId) => this.#capabilities.pluginDefinition(pluginId),
+          model: (modelId: string) => this.#capabilities.model(modelId),
+          modelIds: () => this.#capabilities.modelIds(),
+          pluginIds: () => this.#capabilities.pluginIds(),
         }),
         (value) => value,
         (diagnostics) => {
@@ -263,16 +253,16 @@ export class Engine {
       }
       const modelId = outputModelId(parsed.output);
       if (modelId === undefined) throw new TypeError(`Track "${nodeId}" names no model output.`);
-      const model = this.#capabilities.model?.(modelId);
-      if (this.#capabilities.model !== undefined && model === undefined)
+      const model = this.#capabilities.model(modelId);
+      if (model === undefined)
         throw new TypeError(
           `model-unknown at ${nodeId}.output.model: ${unknownNameMessage(
             "model",
             modelId,
-            this.#capabilities.modelIds?.(),
+            this.#capabilities.modelIds(),
           )}`,
         );
-      const spec = model?.spec;
+      const spec = model.spec;
       const localInput = new LocalInput(
         createValueEvaluator(parsed.input.values, this.#options.interpolator, spec),
       );
@@ -280,7 +270,7 @@ export class Engine {
         nodeId,
         values: parsed.input.values,
         interpolator: this.#options.interpolator,
-        ...(model === undefined ? {} : { model }),
+        model,
       });
       const track = new Track(nodeId, localInput, processor);
       tracks.set(nodeId, track);
@@ -647,7 +637,7 @@ export class Engine {
         clock: this.#options.clock,
         scheduler: this.#options.scheduler,
         compose,
-        isPluginRegistered: (pluginId) => admitsPlugin(this.#capabilities, pluginId),
+        isPluginRegistered: (pluginId) => this.#capabilities.isPluginAdmitted(pluginId),
         capabilities: this.#capabilities,
         graphBuilder: new IncrementalGraphBuilder(this.#capabilities),
         setProgress: (nodeId, progress) => tracks.get(nodeId)?.setProgress(progress),

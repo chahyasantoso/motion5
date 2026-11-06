@@ -6,6 +6,7 @@ import { createManualClock } from "../../../src/ports/clock";
 import { ProjectRuntime } from "../../../src/runtime/project-runtime";
 import { handleMembers, touchMember } from "../../helpers/handle-surface";
 import { code, member } from "../../helpers/source-region";
+import { testCatalog } from "../../support/builtin-registry";
 
 /**
  * Issue #217, split from #212.
@@ -88,7 +89,11 @@ const WRITERS = ["remove", "replace", "writeValues", "releaseValues"] as const;
 const READERS = ["definition", "requires"] as const;
 
 function runtime(): ProjectRuntime {
-  return new ProjectRuntime(PROJECT, { clock: createManualClock(), compose });
+  return new ProjectRuntime(PROJECT, {
+    capabilities: testCatalog(),
+    clock: createManualClock(),
+    compose,
+  });
 }
 function handleFor(project: ProjectRuntime, id: string = NODE_ID): TrackHandle {
   return project.track(id);

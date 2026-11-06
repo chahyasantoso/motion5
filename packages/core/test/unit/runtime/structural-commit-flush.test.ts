@@ -14,6 +14,7 @@ import {
 // `structural-commit-path.test.ts` already gives: how a thrown value that is not an `Error` reads has
 // an owner, and a second spelling of it in this file could disagree with the first.
 import { describeError } from "../../../src/runtime/schema-refusals";
+import { testCatalog } from "../../support/builtin-registry";
 
 /**
  * Issue #223, slice A2.
@@ -87,6 +88,7 @@ const REJECTED_TRACK: TrackDefinition = {
 
 function create(): ProjectRuntime {
   return new ProjectRuntime(PROJECT, {
+    capabilities: testCatalog(),
     clock: createManualClock(),
     compose,
     isPluginRegistered: () => true,
@@ -169,6 +171,7 @@ function intruding(
     },
     options: {
       clock: createManualClock(),
+      capabilities: testCatalog(),
       compose,
       setProgress: (nodeId, progress) => record(`progress ${nodeId} ${progress}`),
       compileTrack: (_track, nodeId) => {

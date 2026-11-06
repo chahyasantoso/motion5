@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { Engine } from "../../src/engine";
 import { createManualClock } from "../../src/ports/clock";
 import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
+import { testEngine } from "../support/builtin-registry";
 
 const project = {
   schemaVersion: 5 as const,
@@ -16,7 +17,7 @@ const project = {
 
 describe("public project handle surface (P1-9)", () => {
   it("does not expose graph internals through Engine.load", () => {
-    const runtime = new Engine({
+    const runtime = testEngine({
       clock: createManualClock(),
       interpolator: createFakeInterpolator(),
       scheduler: createFakeScheduler(),

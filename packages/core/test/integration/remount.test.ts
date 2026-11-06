@@ -30,7 +30,7 @@ const project: ProjectDefinition = {
   schemaVersion: 5,
   motions: [],
   freeTracks: [
-    track({ id: "source", model: "TestRecord" }),
+    track({ id: "source", model: "TestTable" }),
     track({
       id: "consumer",
       plugin: PASS.id,

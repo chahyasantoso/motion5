@@ -10,6 +10,7 @@ import type { Interpolator } from "../../../src/ports/interpolator";
 import { createFakeInterpolator, createFakeScheduler } from "../../../src/testing/fakes";
 import type { CreatedTrigger, TriggerFactory } from "../../../src/ports/trigger-factory";
 import type { ProjectRuntime } from "../../../src/runtime/project-runtime";
+import { testEngine } from "../../support/builtin-registry";
 
 // Real Engine, Motion, Track and graph; only the host ports are controlled.
 const animated = (id: string) => ({
@@ -55,7 +56,7 @@ function rig(definition = project(), triggerFactory?: TriggerFactory, onProgress
       return { ...timeline, progress, kill };
     },
   };
-  const handle = new Engine({
+  const handle = testEngine({
     clock,
     scheduler,
     interpolator,

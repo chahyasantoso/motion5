@@ -9,6 +9,7 @@ import {
   type PublisherSnapshot,
 } from "../../../src/runtime/graph-publisher";
 import { PatchRegistry, type PatchBatch } from "../../../src/runtime/patch-registry";
+import { testGraphBuilder } from "../../support/builtin-registry";
 
 const project: ProjectDefinition = {
   schemaVersion: 5,
@@ -56,7 +57,7 @@ const soleSnapshot = (id: string): PublisherSnapshot => {
 describe("subscriber-triggered reentrancy (recovery A3)", () => {
   it("defers a subscriber-triggered invalidate instead of running it inside the current flush", () => {
     const clock = createManualClock();
-    const runtime = new GraphRuntime(project, clock, compose);
+    const runtime = new GraphRuntime(project, clock, compose, { graphBuilder: testGraphBuilder() });
     runtime.attach("hero/arm");
 
     const ticks: number[] = [];
@@ -90,7 +91,7 @@ describe("subscriber-triggered reentrancy (recovery A3)", () => {
 
   it("runs the queued follow-up exactly once on the next tick and then clears it", () => {
     const clock = createManualClock();
-    const runtime = new GraphRuntime(project, clock, compose);
+    const runtime = new GraphRuntime(project, clock, compose, { graphBuilder: testGraphBuilder() });
     runtime.attach("hero/arm");
 
     const ticks: number[] = [];
@@ -126,7 +127,7 @@ describe("subscriber-triggered reentrancy (recovery A3)", () => {
 
   it("coalesces several subscriber-triggered invalidations into one follow-up", () => {
     const clock = createManualClock();
-    const runtime = new GraphRuntime(project, clock, compose);
+    const runtime = new GraphRuntime(project, clock, compose, { graphBuilder: testGraphBuilder() });
     runtime.attach("hero/arm");
 
     const ticks: number[] = [];

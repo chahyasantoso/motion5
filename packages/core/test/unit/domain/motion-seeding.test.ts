@@ -6,6 +6,7 @@ import { createValueEvaluator } from "../../../src/runtime/evaluate-values";
 import { LocalInput } from "../../../src/runtime/local-input";
 import { PassthroughProcessor } from "../../../src/runtime/processors/passthrough";
 import { Track } from "../../../src/runtime/track";
+import { TestRecord } from "../../support/test-models";
 
 describe("idle and static track seeding", () => {
   it("does not invalidate tracks whose progress did not change", () => {
@@ -45,6 +46,7 @@ describe("idle and static track seeding", () => {
       nodeId: "~/static",
       values,
       interpolator,
+      model: TestRecord,
     });
     const track = new Track("~/static", localInput, processor);
 

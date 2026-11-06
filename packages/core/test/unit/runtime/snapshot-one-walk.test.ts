@@ -9,6 +9,7 @@ import type {
 import type { GraphBuildResult } from "../../../src/graph/ir";
 import { createManualClock } from "../../../src/ports/clock";
 import { ProjectRuntime } from "../../../src/runtime/project-runtime";
+import { testCatalog } from "../../support/builtin-registry";
 
 /**
  * Issue #223, finding 3 of the re-review: the authoring side of a structural commit is quadratic.
@@ -101,6 +102,7 @@ function rig(project: ProjectDefinition): Rig {
   const seen: ProjectDefinition[] = [];
   const inner = new IncrementalGraphBuilder(builtinRegistry());
   const runtime = new ProjectRuntime(project, {
+    capabilities: testCatalog(),
     clock: createManualClock(),
     compose,
     graphBuilder: {
@@ -146,8 +148,16 @@ function borrowed(runtime: ProjectRuntime, document: ProjectDefinition): readonl
 
 describe("the committed pair is walked once, not once per motion", () => {
   it("RA-89 pays the same snapshot cost for 12 motions as for 2 over the same tracks", () => {
-    const wide = new ProjectRuntime(evenly(12, 2), { clock: createManualClock(), compose });
-    const deep = new ProjectRuntime(evenly(2, 12), { clock: createManualClock(), compose });
+    const wide = new ProjectRuntime(evenly(12, 2), {
+      capabilities: testCatalog(),
+      clock: createManualClock(),
+      compose,
+    });
+    const deep = new ProjectRuntime(evenly(2, 12), {
+      capabilities: testCatalog(),
+      clock: createManualClock(),
+      compose,
+    });
 
     // The premise of the case, stated rather than assumed: both rigs hold 24 tracks, so the motion
     // count is the only thing that differs below.

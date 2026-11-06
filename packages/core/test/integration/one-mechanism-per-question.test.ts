@@ -4,6 +4,7 @@ import { Engine, type ProjectHandle } from "../../src/engine";
 import { createManualClock } from "../../src/ports/clock";
 import type { ProjectRuntime } from "../../src/runtime/project-runtime";
 import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
+import { testEngine } from "../support/builtin-registry";
 
 /**
  * Phase 3 of issue #362: where two mechanisms answer one question, the weaker one is deleted.
@@ -50,7 +51,7 @@ const PROJECT: ProjectDefinition = {
 };
 
 function load(): ProjectHandle {
-  return new Engine({
+  return testEngine({
     clock: createManualClock(),
     interpolator: createFakeInterpolator(),
     scheduler: createFakeScheduler(),

@@ -4,6 +4,7 @@ import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/testi
 import { project, row, table, track } from "../../core/test/support/v5-builders";
 import { ProjectRuntime } from "../../core/src/runtime/project-runtime";
 import { attachRunners, type RunnerStep } from "../src/runner";
+import { testEngine } from "../../core/test/support/builtin-registry";
 
 function runtimeOf(handle: ProjectHandle): ProjectRuntime {
   return (handle as ProjectHandle & { readonly _runtime: ProjectRuntime })._runtime;
@@ -24,7 +25,7 @@ const ROWS = track({
 describe("a runner's write step carries the whole evaluated value", () => {
   it("writes a table, holds without a call, and releases to authored", () => {
     const clock = createManualClock();
-    const handle = new Engine({
+    const handle = testEngine({
       clock,
       interpolator: createFakeInterpolator(),
       scheduler: createFakeScheduler(),

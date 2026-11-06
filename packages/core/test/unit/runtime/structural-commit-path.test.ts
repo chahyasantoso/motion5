@@ -18,6 +18,7 @@ import {
 // The project's own describer rather than a copy of it in this rig. The journal records what a
 // re-entry came back with, and how a thrown value that is not an `Error` reads already has an owner.
 import { describeError } from "../../../src/runtime/schema-refusals";
+import { testCatalog } from "../../support/builtin-registry";
 
 /**
  * Issue #223, slice A1.
@@ -831,6 +832,7 @@ describe("a structural change runs one transaction, in one order", () => {
     let handle: MotionHandle | undefined;
     const options: ProjectRuntimeOptions = {
       clock: createManualClock(),
+      capabilities: testCatalog(),
       compose,
       compileTrack: () => {
         host?.dispose();

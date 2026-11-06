@@ -3,12 +3,13 @@ import { Engine } from "../../src/engine";
 import { createManualClock } from "../../src/ports/clock";
 import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
 import type { MotionDefinition, TrackDefinition } from "../../src/contract/v5";
+import { testEngine } from "../support/builtin-registry";
 
 const emptyProject = { schemaVersion: 5 as const, projectId: "runtime-motion", motions: [] };
 
 function makeRuntime() {
   const scheduler = createFakeScheduler();
-  const handle = new Engine({
+  const handle = testEngine({
     clock: createManualClock(),
     interpolator: createFakeInterpolator(),
     scheduler,
@@ -110,7 +111,7 @@ describe("runtime Motion lifecycle (W4)", () => {
 
   it("rejects non-empty authored motions without deleting their schema tracks", () => {
     const scheduler = createFakeScheduler();
-    const handle = new Engine({
+    const handle = testEngine({
       clock: createManualClock(),
       interpolator: createFakeInterpolator(),
       scheduler,

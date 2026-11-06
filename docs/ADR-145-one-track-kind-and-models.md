@@ -32,8 +32,8 @@ local data. Reader-pull structures made a plugin rebuild its inputs per frame.
 
 ## Consequences
 
-- Every track in a catalog-backed engine has a declared contract and a static guard; matching is
-  nominal. An engine without a catalog keeps the unjudged mode and no model spec.
+- Every track has a declared contract and a static guard; matching is nominal. An engine
+  requires a catalog.
 - One resolved slot map and one compose path replace the two-map/two-resolver pipeline.
 - Documents migrate once; published values stay plain tables and records.
 - The v5.1 type machinery, the Pose specs and `legacyTypeId` are removed.

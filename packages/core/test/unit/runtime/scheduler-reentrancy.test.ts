@@ -3,6 +3,7 @@ import type { ProjectDefinition } from "../../../src/contract/v5";
 import { createManualClock } from "../../../src/ports/clock";
 import { createFakeScheduler } from "../../../src/testing/fakes";
 import { GraphRuntime } from "../../../src/runtime/graph-runtime";
+import { testGraphBuilder } from "../../support/builtin-registry";
 
 const project: ProjectDefinition = {
   schemaVersion: 5,
@@ -30,7 +31,10 @@ describe("scheduler-driven reentrancy (P1-7/P1-8)", () => {
   it("drains a subscriber invalidation with zero clock ticks", () => {
     const clock = createManualClock();
     const scheduler = createFakeScheduler();
-    const runtime = new GraphRuntime(project, clock, compose, { scheduler });
+    const runtime = new GraphRuntime(project, clock, compose, {
+      graphBuilder: testGraphBuilder(),
+      scheduler,
+    });
     runtime.attach("hero/arm");
 
     let notifications = 0;
@@ -57,7 +61,10 @@ describe("scheduler-driven reentrancy (P1-7/P1-8)", () => {
   it("coalesces repeated invalidations into one scheduled follow-up", () => {
     const clock = createManualClock();
     const scheduler = createFakeScheduler();
-    const runtime = new GraphRuntime(project, clock, compose, { scheduler });
+    const runtime = new GraphRuntime(project, clock, compose, {
+      graphBuilder: testGraphBuilder(),
+      scheduler,
+    });
     runtime.attach("hero/arm");
 
     let notifications = 0;
@@ -88,7 +95,10 @@ describe("scheduler-driven reentrancy (P1-7/P1-8)", () => {
         return { cancel() {} };
       },
     };
-    const runtime = new GraphRuntime(project, clock, compose, { scheduler });
+    const runtime = new GraphRuntime(project, clock, compose, {
+      graphBuilder: testGraphBuilder(),
+      scheduler,
+    });
     runtime.attach("hero/arm");
     const diagnostics: string[] = [];
     runtime.registry.subscribeNode("hero/arm", () => {
@@ -110,7 +120,10 @@ describe("scheduler-driven reentrancy (P1-7/P1-8)", () => {
   it("does not expose the publisher as a second public reentrancy entry point", () => {
     const clock = createManualClock();
     const scheduler = createFakeScheduler();
-    const runtime = new GraphRuntime(project, clock, compose, { scheduler });
+    const runtime = new GraphRuntime(project, clock, compose, {
+      graphBuilder: testGraphBuilder(),
+      scheduler,
+    });
     expect((runtime as unknown as { publisher?: unknown }).publisher).toBeUndefined();
     runtime.dispose();
   });

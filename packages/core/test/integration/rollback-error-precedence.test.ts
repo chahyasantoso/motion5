@@ -10,6 +10,7 @@ import type {
   TriggerFactoryContext,
 } from "../../src/ports/trigger-factory";
 import { ProjectRuntime } from "../../src/runtime/project-runtime";
+import { testCatalog, testEngine } from "../support/builtin-registry";
 
 /**
  * Issue #133. Both mutating entry points in `ProjectRuntime` roll back by calling a hook that
@@ -74,7 +75,7 @@ const compose = (node: { id: string }) => () => ({
 });
 
 function load(motions: readonly MotionDefinition[], factory?: TriggerFactory): ProjectHandle {
-  return new Engine({
+  return testEngine({
     clock: createManualClock(),
     interpolator: createFakeInterpolator(),
     scheduler: createFakeScheduler(),
@@ -165,6 +166,7 @@ describe("a rollback failure never outranks the rejection that triggered it", ()
     const failure = new Error("compiled Track dispose failed");
     let disposals = 0;
     const runtime = new ProjectRuntime(BASE_PROJECT, {
+      capabilities: testCatalog(),
       clock: createManualClock(),
       compose,
       isPluginRegistered: () => true,
@@ -200,6 +202,7 @@ describe("a rollback failure never outranks the rejection that triggered it", ()
 
     let disposals = 0;
     const runtime = new ProjectRuntime(BASE_PROJECT, {
+      capabilities: testCatalog(),
       clock: createManualClock(),
       compose,
       isPluginRegistered: () => true,
@@ -244,6 +247,7 @@ describe("a construction failure outranks the composition release it triggers", 
     const thrown = thrownBy(
       () =>
         new ProjectRuntime(REFUSED_PROJECT, {
+          capabilities: testCatalog(),
           clock: createManualClock(),
           compose,
           compileTrack: () => undefined,
@@ -275,6 +279,7 @@ describe("a construction failure outranks the composition release it triggers", 
     const thrown = thrownBy(
       () =>
         new ProjectRuntime(REFUSED_PROJECT, {
+          capabilities: testCatalog(),
           clock: createManualClock(),
           compose,
           compileTrack: () => undefined,

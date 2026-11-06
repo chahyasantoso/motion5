@@ -5,6 +5,7 @@ import type { GraphNode } from "../../../src/graph/ir";
 import { createManualClock } from "../../../src/ports/clock";
 import { GraphRuntime, type ComposeResolver } from "../../../src/runtime/graph-runtime";
 import { ProjectRuntime } from "../../../src/runtime/project-runtime";
+import { testCatalog, testGraphBuilder } from "../../support/builtin-registry";
 
 const project: ProjectDefinition = {
   schemaVersion: 5,
@@ -38,7 +39,11 @@ function countingCompose(): ComposeResolver {
 describe("clock and batch identity are independent (P0-1)", () => {
   it("keeps the clock running after a seek published without a frame", () => {
     const clock = createManualClock();
-    const runtime = new ProjectRuntime(project, { clock, compose: countingCompose() });
+    const runtime = new ProjectRuntime(project, {
+      capabilities: testCatalog(),
+      clock,
+      compose: countingCompose(),
+    });
     runtime.mount("hero/arm");
 
     // seek() publishes outside the frame loop. It must not consume a clock frame number,
@@ -54,7 +59,9 @@ describe("clock and batch identity are independent (P0-1)", () => {
 
   it("separates the clock's frame number from batch identity", () => {
     const clock = createManualClock();
-    const runtime = new GraphRuntime(project, clock, countingCompose());
+    const runtime = new GraphRuntime(project, clock, countingCompose(), {
+      graphBuilder: testGraphBuilder(),
+    });
     runtime.attach("hero/arm");
 
     const batchTicks: number[] = [];
@@ -77,6 +84,7 @@ describe("clock and batch identity are independent (P0-1)", () => {
     const clock = createManualClock();
     const failures: Diagnostic[] = [];
     const runtime = new GraphRuntime(project, clock, countingCompose(), {
+      graphBuilder: testGraphBuilder(),
       onFlushError: (diagnostic) => failures.push(diagnostic),
     });
     runtime.attach("hero/arm");

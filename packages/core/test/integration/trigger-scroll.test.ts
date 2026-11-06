@@ -10,6 +10,7 @@ import {
   type ScrollSourceResolver,
 } from "../../src/adapters/trigger-factory/default";
 import { record } from "../support/v5-builders";
+import { testEngine } from "../support/builtin-registry";
 
 interface FakeScrollSource extends ScrollSource {
   emit(progress: number): void;
@@ -60,7 +61,7 @@ function source(): FakeScrollSource {
 function load(resolve: ScrollSourceResolver, motions: readonly MotionDefinition[]) {
   const clock = createManualClock();
   const scheduler = createFakeScheduler();
-  const handle = new Engine({
+  const handle = testEngine({
     clock,
     interpolator: createFakeInterpolator(),
     scheduler,

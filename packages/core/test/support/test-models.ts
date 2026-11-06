@@ -34,12 +34,22 @@ export const StaticFlags: Model = defineModel({
   },
 });
 
+/** Live-write record: x required, y optional, so partial writes stay explicit about x. */
+export const LiveRecord: Model = defineModel({
+  id: "LiveRecord",
+  spec: {
+    kind: "record",
+    fields: { x: { kind: "number" }, y: { kind: "number", optional: true } },
+  },
+});
+
 export const testModels: readonly Model<unknown, unknown>[] = Object.freeze([
   ...builtinModels,
   TestRecord,
   TestTable,
   StaticRecord,
   StaticFlags,
+  LiveRecord,
 ]);
 
 export function testModel(id: string): Model<unknown, unknown> | undefined {

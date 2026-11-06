@@ -2,6 +2,9 @@ import { describe, expect, it } from "vitest";
 import type { ProjectDefinition } from "../../src/contract/v5";
 import { createManualClock } from "../../src/ports/clock";
 import { ProjectRuntime } from "../../src/runtime/project-runtime";
+import { testCatalog, testObserver } from "../support/builtin-registry";
+
+const PENDING = testObserver("pending");
 
 /**
  * Three independent consumer/source pairs. Each consumer binds a requirement slot to a free track
@@ -15,8 +18,8 @@ import { ProjectRuntime } from "../../src/runtime/project-runtime";
 function pendingProject(): ProjectDefinition {
   const consumer = (id: string, source: string) => ({
     id,
-    output: { plugin: "fk" },
-    input: { values: { length: 1, rotation: 0 }, requires: { chain: source } },
+    output: { plugin: "pending" },
+    input: { values: {}, requires: { chain: source } },
   });
   return {
     schemaVersion: 5,
@@ -40,6 +43,7 @@ const compose = (node: { id: string }) => () => ({
 describe("P5-03 unified inline diagnostics", () => {
   it("bounds the retained diagnostic history at a fixed capacity and reports a drop count once exceeded", () => {
     const runtime = new ProjectRuntime(pendingProject(), {
+      capabilities: testCatalog(PENDING),
       clock: createManualClock(),
       compose,
       diagnosticsCapacity: 2,
@@ -55,7 +59,11 @@ describe("P5-03 unified inline diagnostics", () => {
   });
 
   it("still surfaces the same diagnostic inline on the affected patch and the batch summary", () => {
-    const runtime = new ProjectRuntime(pendingProject(), { clock: createManualClock(), compose });
+    const runtime = new ProjectRuntime(pendingProject(), {
+      capabilities: testCatalog(PENDING),
+      clock: createManualClock(),
+      compose,
+    });
     const batch = runtime.seek("~/consumer1", 0);
     const patch = batch.patches.find(({ nodeId }) => nodeId === "~/consumer1");
     // A pending reference is published as `blocked`, so this narrows on that rather than on
@@ -71,7 +79,11 @@ describe("P5-03 unified inline diagnostics", () => {
   });
 
   it("uses the one shared Diagnostic shape for every retained entry, load-time or runtime", () => {
-    const runtime = new ProjectRuntime(pendingProject(), { clock: createManualClock(), compose });
+    const runtime = new ProjectRuntime(pendingProject(), {
+      capabilities: testCatalog(PENDING),
+      clock: createManualClock(),
+      compose,
+    });
     runtime.seek("~/consumer1", 0);
     const [entry] = runtime.diagnostics.entries;
     expect(entry).toBeDefined();
@@ -86,7 +98,11 @@ describe("P5-03 unified inline diagnostics", () => {
   });
 
   it("exposes diagnostics as one bounded read-only snapshot, never a second subscribe/emit surface", () => {
-    const runtime = new ProjectRuntime(pendingProject(), { clock: createManualClock(), compose });
+    const runtime = new ProjectRuntime(pendingProject(), {
+      capabilities: testCatalog(PENDING),
+      clock: createManualClock(),
+      compose,
+    });
     const snapshot = runtime.diagnostics;
     expect(Object.isFrozen(snapshot)).toBe(true);
     expect(Object.isFrozen(snapshot.entries)).toBe(true);

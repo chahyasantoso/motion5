@@ -9,6 +9,7 @@ import type {
   AuthoredValues,
   TrackDefinition,
 } from "../../src/contract/v5";
+import { testEngine } from "../support/builtin-registry";
 
 function isTableValues(value: AuthoredValues): value is readonly AuthoredRow[] {
   return Array.isArray(value);
@@ -21,7 +22,7 @@ function recordOf(track: TrackDefinition): Readonly<Record<string, AuthoredCell>
 }
 
 function makeHandle() {
-  return new Engine({
+  return testEngine({
     clock: createManualClock(),
     interpolator: createFakeInterpolator(),
     scheduler: createFakeScheduler(),

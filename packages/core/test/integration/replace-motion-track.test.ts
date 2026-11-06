@@ -4,6 +4,7 @@ import { createManualClock } from "../../src/ports/clock";
 import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
 import type { ProjectDefinition, TrackDefinition } from "../../src/contract/v5";
 import { record } from "../support/v5-builders";
+import { testEngine } from "../support/builtin-registry";
 
 function ramp(from: number, to: number) {
   return [
@@ -24,7 +25,7 @@ describe("motion-owned Track replacement", () => {
   it("re-registers the compiled Track without throwing on the next Motion update", () => {
     const clock = createManualClock();
     const scheduler = createFakeScheduler();
-    const handle = new Engine({
+    const handle = testEngine({
       clock,
       interpolator: createFakeInterpolator(),
       scheduler,
@@ -64,7 +65,7 @@ describe("motion-owned Track replacement", () => {
         },
       ],
     };
-    const handle = new Engine({
+    const handle = testEngine({
       clock,
       interpolator: createFakeInterpolator(),
       scheduler,

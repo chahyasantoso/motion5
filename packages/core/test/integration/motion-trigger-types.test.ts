@@ -13,6 +13,7 @@ import {
 } from "../../src/testing/fakes";
 import { createManualTriggerPort } from "../../src/ports/trigger";
 import { record } from "../support/v5-builders";
+import { testEngine } from "../support/builtin-registry";
 
 const DRIVER_BACKED =
   "Motion has a configured trigger driver and does not accept external signals.";
@@ -61,7 +62,7 @@ const HERO: ScrollSource = { subscribe: () => () => undefined };
 function loadOne(motion: MotionDefinition) {
   const clock = createManualClock();
   const scheduler = createFakeScheduler();
-  const handle = new Engine({
+  const handle = testEngine({
     clock,
     interpolator: createFakeInterpolator(),
     scheduler,

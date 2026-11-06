@@ -1,4 +1,4 @@
-import { builtinRegistry } from "../../support/builtin-registry";
+import { builtinRegistry, testCatalog } from "../../support/builtin-registry";
 import { describe, expect, it } from "vitest";
 import type { MotionDefinition, ProjectDefinition, TriggerSignal } from "../../../src/contract/v5";
 import { IncrementalGraphBuilder } from "../../../src/graph/builders/incremental";
@@ -131,6 +131,7 @@ function rig(): Rig {
   });
   const options = {
     clock: createManualClock(),
+    capabilities: testCatalog(),
     compose,
     graphBuilder: {
       build: (project: ProjectDefinition) => {

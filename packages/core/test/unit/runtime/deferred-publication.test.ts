@@ -5,6 +5,7 @@ import { createFakeScheduler } from "../../../src/testing/fakes";
 import { GraphRuntime } from "../../../src/runtime/graph-runtime";
 import type { PatchBatch } from "../../../src/runtime/patch-registry";
 import { recordValues } from "../../support/v5-builders";
+import { testGraphBuilder } from "../../support/builtin-registry";
 
 /**
  * Issues #380, #388 and #389, found by the quality passes over #375 and #386.
@@ -55,7 +56,10 @@ const compose = (node: { id: string }) => () => ({
 function harness() {
   const clock = createManualClock();
   const scheduler = createFakeScheduler();
-  const runtime = new GraphRuntime(project, clock, compose, { scheduler });
+  const runtime = new GraphRuntime(project, clock, compose, {
+    graphBuilder: testGraphBuilder(),
+    scheduler,
+  });
   runtime.attach("hero/arm");
   const batches: number[] = [];
   runtime.registry.subscribeBatch((batch) => batches.push(batch.tick));
@@ -197,7 +201,10 @@ describe("a drain booking is a claim about the scheduler", () => {
         };
       },
     };
-    const runtime = new GraphRuntime(project, clock, compose, { scheduler });
+    const runtime = new GraphRuntime(project, clock, compose, {
+      graphBuilder: testGraphBuilder(),
+      scheduler,
+    });
     runtime.attach("hero/arm");
 
     let deferrals = 0;

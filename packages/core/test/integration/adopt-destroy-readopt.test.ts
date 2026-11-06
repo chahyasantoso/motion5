@@ -4,6 +4,7 @@ import { Engine } from "../../src/engine";
 import { createManualClock } from "../../src/ports/clock";
 import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
 import { record, track } from "../support/v5-builders";
+import { testEngine } from "../support/builtin-registry";
 
 const armTrack: TrackDefinition = track({
   id: "arm",
@@ -29,7 +30,7 @@ const project = {
 
 function makeHandle() {
   const scheduler = createFakeScheduler();
-  const handle = new Engine({
+  const handle = testEngine({
     clock: createManualClock(),
     interpolator: createFakeInterpolator(),
     scheduler,

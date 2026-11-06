@@ -4,6 +4,7 @@ import { IncrementalGraphBuilder } from "../../../src/graph/builders/incremental
 import { createManualClock } from "../../../src/ports/clock";
 import { ProjectRuntime } from "../../../src/runtime/project-runtime";
 import type { ProjectDefinition, TrackDefinition } from "../../../src/contract/v5";
+import { testCatalog } from "../../support/builtin-registry";
 
 /**
  * Issue #225.
@@ -48,6 +49,7 @@ function freeProject(tracks: readonly TrackDefinition[]): ProjectDefinition {
 /** Drives the real runtime path, which is what the issue reports, rather than `build` directly. */
 function runtimeOn(project: ProjectDefinition, builder: IncrementalGraphBuilder): ProjectRuntime {
   return new ProjectRuntime(project, {
+    capabilities: testCatalog(),
     clock: createManualClock(),
     compose,
     graphBuilder: builder,

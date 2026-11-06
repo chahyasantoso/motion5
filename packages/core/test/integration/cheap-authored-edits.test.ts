@@ -196,6 +196,7 @@ describe("an authored edit under an overlay keeps the overlay", () => {
     const overlay = new Map<string, Value>();
     const fallback = { a: 1, b: 2 } as const;
     const runtime = new ProjectRuntime(project([RECORD]), {
+      capabilities: catalog(),
       clock: createManualClock(),
       compose: (node) => () => ({
         outputs: { values: overlay.get(node.id) ?? fallback },

@@ -5,6 +5,7 @@ import { createManualClock } from "../../../src/ports/clock";
 import { ProjectRuntime } from "../../../src/runtime/project-runtime";
 import { createFakeInterpolator, createFakeScheduler } from "../../../src/testing/fakes";
 import { record } from "../../support/v5-builders";
+import { testCatalog, testEngine } from "../../support/builtin-registry";
 
 /**
  * Issue #223, part 6 of the re-review: the deferral with no owner, decided as a refusal.
@@ -58,7 +59,11 @@ const compose = (node: { id: string }) => () => ({
 });
 
 function runtime(): ProjectRuntime {
-  return new ProjectRuntime(PROJECT, { clock: createManualClock(), compose });
+  return new ProjectRuntime(PROJECT, {
+    capabilities: testCatalog(),
+    clock: createManualClock(),
+    compose,
+  });
 }
 
 const HIP = "rig/hip";
@@ -69,7 +74,7 @@ const HIP_TRACK: TrackDefinition = {
 };
 /** A real load, because what the refusal is about is the node a document brought with it. */
 function load(): ProjectHandle {
-  return new Engine({
+  return testEngine({
     clock: createManualClock(),
     interpolator: createFakeInterpolator(),
     scheduler: createFakeScheduler(),

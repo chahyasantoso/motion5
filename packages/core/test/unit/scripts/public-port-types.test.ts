@@ -54,8 +54,14 @@ export function compose(
   clock: Clock,
   interpolator: EngineOptions["interpolator"],
   scheduler: Scheduler,
+  plugins: EngineOptions["plugins"],
 ): EngineOptions {
-  return { clock, interpolator, scheduler };
+  return { clock, interpolator, scheduler, plugins };
+}
+
+export function withoutCatalog(): EngineOptions {
+  // @ts-expect-error plugins is required
+  return { clock: null as never, interpolator: null as never, scheduler: null as never };
 }
 `;
 

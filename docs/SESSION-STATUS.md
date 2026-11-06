@@ -12,9 +12,9 @@ byte ceiling.
 
 - **One track kind is live:** every authored track names `output: { model }` or `output: { plugin }`,
   `input.param` carries plugin parameters through `input.param.set` and `setField`, models are
-  registered beside plugins, and a catalog-backed engine gives every track a static guard and parses
-  a source at commit. A computed track that publishes a model fixes its output static cells at
-  first compose. Cheap writes and live writes refuse static-cell changes; `type`, top-level
+  registered beside plugins, and an engine requires a catalog and gives every track a static guard
+  and parses a source at commit. A computed track that publishes a model fixes its output static
+  cells at first compose. Cheap writes and live writes refuse static-cell changes; `type`, top-level
   `plugin` and `input.schema` are refused by name. S1 to S6 are green; the `DataType`/typed-slot
   system, the Pose specs and the `legacyTypeId` bridge are gone.
 

@@ -84,9 +84,9 @@ export interface ParsedTrack {
 export interface ParseContext {
   /** Answers whether a plugin id names an admitted plugin. Phase 3 supplies the real registry. */
   readonly isPluginRegistered?: (pluginId: string) => boolean;
-  /** Answers the admitted plugin definition for an id; absent leaves the declaration unjudged. */
+  /** Answers the admitted plugin definition for an id; absent leaves that check to the caller. */
   readonly pluginDefinition?: (pluginId: string) => PluginDefinition | undefined;
-  /** Answers the admitted model for an id; absent leaves the declaration unjudged. */
+  /** Answers the admitted model for an id; absent leaves that check to the caller. */
   readonly model?: (modelId: string) => Model<unknown, unknown> | undefined;
   /** Lists admitted model ids for diagnostics; absent omits the list. */
   readonly modelIds?: () => readonly string[] | undefined;

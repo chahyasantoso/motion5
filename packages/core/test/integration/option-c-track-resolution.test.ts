@@ -4,6 +4,7 @@ import { Engine } from "../../src/engine";
 import { createManualClock } from "../../src/ports/clock";
 import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
 import type { Interpolator } from "../../src/ports/interpolator";
+import { testEngine } from "../support/builtin-registry";
 
 function ramp(from: number, to: number) {
   return [
@@ -26,7 +27,7 @@ const baseProject = (tracks: readonly TrackDefinition[], stagger = 0): ProjectDe
 function load(project: ProjectDefinition, interpolator?: Interpolator) {
   const clock = createManualClock();
   const scheduler = createFakeScheduler();
-  const handle = new Engine({
+  const handle = testEngine({
     clock,
     interpolator: interpolator ?? createFakeInterpolator(),
     scheduler,

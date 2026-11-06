@@ -4,6 +4,7 @@ import { Engine, type ProjectHandle } from "@motion5/core";
 import { createManualClock } from "@motion5/core";
 import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/testing";
 import { record } from "../../../core/test/support/v5-builders";
+import { testEngine } from "../../../core/test/support/builtin-registry";
 
 /**
  * Issue #176. A refused replacement must leave the live compiled Track, the graph and the retained
@@ -46,7 +47,7 @@ function load(): ProjectHandle {
     projectId: "replace-transactionality",
     motions: [{ id: "scene", trigger: { type: "manual" }, tracks: [armTrack(0, 100)] }],
   };
-  const handle = new Engine({
+  const handle = testEngine({
     clock: createManualClock(),
     interpolator: createFakeInterpolator(),
     scheduler: createFakeScheduler(),

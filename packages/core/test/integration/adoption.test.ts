@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { TrackDefinition } from "../../src/contract/v5";
 import { createManualClock } from "../../src/ports/clock";
 import { ProjectRuntime } from "../../src/runtime/project-runtime";
+import { testCatalog } from "../support/builtin-registry";
 
 const project = {
   schemaVersion: 5 as const,
@@ -16,7 +17,11 @@ const freeTrack: TrackDefinition = { id: "cursor", output: { model: "TestTable" 
 
 describe("P5-02 runtime free tracks", () => {
   it("adds a free track under ~/id and publishes through the ordinary graph path", () => {
-    const runtime = new ProjectRuntime(project, { clock: createManualClock(), compose });
+    const runtime = new ProjectRuntime(project, {
+      capabilities: testCatalog(),
+      clock: createManualClock(),
+      compose,
+    });
     const added = runtime.addTrack(freeTrack);
     expect(added.id).toBe("~/cursor");
     expect(runtime.instanceCount).toBe(1);
@@ -32,7 +37,11 @@ describe("P5-02 runtime free tracks", () => {
   });
 
   it("rejects duplicate ids instead of silently replacing membership", () => {
-    const runtime = new ProjectRuntime(project, { clock: createManualClock(), compose });
+    const runtime = new ProjectRuntime(project, {
+      capabilities: testCatalog(),
+      clock: createManualClock(),
+      compose,
+    });
     runtime.addTrack(freeTrack);
     expect(() => runtime.addTrack(freeTrack)).toThrow(/already exists/);
     runtime.dispose();
@@ -42,7 +51,11 @@ describe("P5-02 runtime free tracks", () => {
   // moving: what refuses a removal now is the token the handle captured, and
   // `unified-mutation-surface.test.ts` owns that refusal.
   it("lets a borrower unmount without removing the track", () => {
-    const runtime = new ProjectRuntime(project, { clock: createManualClock(), compose });
+    const runtime = new ProjectRuntime(project, {
+      capabilities: testCatalog(),
+      clock: createManualClock(),
+      compose,
+    });
     const added = runtime.addTrack(freeTrack);
     runtime.unmount(added.id);
     expect(runtime.instanceCount).toBe(0);
@@ -53,7 +66,11 @@ describe("P5-02 runtime free tracks", () => {
   });
 
   it("keeps every track independently addressable across sequential add and remove calls", () => {
-    const runtime = new ProjectRuntime(project, { clock: createManualClock(), compose });
+    const runtime = new ProjectRuntime(project, {
+      capabilities: testCatalog(),
+      clock: createManualClock(),
+      compose,
+    });
     const cursor = runtime.addTrack({ id: "cursor", output: { model: "TestTable" } });
     const drag = runtime.addTrack({ id: "drag", output: { model: "TestRecord" } });
     expect(runtime.graph.state.snapshot().nodes).toEqual(
@@ -79,7 +96,11 @@ describe("P5-02 runtime free tracks", () => {
   });
 
   it("rejects tracks with non-finite stop positions", () => {
-    const runtime = new ProjectRuntime(project, { clock: createManualClock(), compose });
+    const runtime = new ProjectRuntime(project, {
+      capabilities: testCatalog(),
+      clock: createManualClock(),
+      compose,
+    });
     expect(() =>
       runtime.addTrack({
         id: "bad",
@@ -91,7 +112,11 @@ describe("P5-02 runtime free tracks", () => {
   });
 
   it("rejects tracks with non-monotonic stop positions", () => {
-    const runtime = new ProjectRuntime(project, { clock: createManualClock(), compose });
+    const runtime = new ProjectRuntime(project, {
+      capabilities: testCatalog(),
+      clock: createManualClock(),
+      compose,
+    });
     expect(() =>
       runtime.addTrack({
         id: "bad",
@@ -110,7 +135,11 @@ describe("P5-02 runtime free tracks", () => {
   });
 
   it("rejects tracks with duplicate stop positions", () => {
-    const runtime = new ProjectRuntime(project, { clock: createManualClock(), compose });
+    const runtime = new ProjectRuntime(project, {
+      capabilities: testCatalog(),
+      clock: createManualClock(),
+      compose,
+    });
     expect(() =>
       runtime.addTrack({
         id: "bad",
@@ -132,6 +161,7 @@ describe("P5-02 runtime free tracks", () => {
     let addedMotion: string | undefined;
     let addedTrack: string | undefined;
     const runtime = new ProjectRuntime(project, {
+      capabilities: testCatalog(),
       clock: createManualClock(),
       compose,
       addMotionTrack: (mId, tId) => {
@@ -158,7 +188,11 @@ describe("P5-02 runtime free tracks", () => {
   });
 
   it("rejects adding into a non-existent motion", () => {
-    const runtime = new ProjectRuntime(project, { clock: createManualClock(), compose });
+    const runtime = new ProjectRuntime(project, {
+      capabilities: testCatalog(),
+      clock: createManualClock(),
+      compose,
+    });
     expect(() =>
       runtime.addTrack(
         { id: "opacity", output: { model: "TestRecord" } },
@@ -172,6 +206,7 @@ describe("P5-02 runtime free tracks", () => {
     let removedMotion: string | undefined;
     let removedTrack: string | undefined;
     const runtime = new ProjectRuntime(project, {
+      capabilities: testCatalog(),
       clock: createManualClock(),
       compose,
       removeMotionTrack: (mId, tId) => {

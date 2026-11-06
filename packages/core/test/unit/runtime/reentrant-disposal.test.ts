@@ -3,6 +3,7 @@ import type { Diagnostic, ProjectDefinition } from "../../../src/contract/v5";
 import { createManualClock, type Clock, type ClockTick } from "../../../src/ports/clock";
 import type { Cancel } from "../../../src/ports/scheduler";
 import { GraphRuntime } from "../../../src/runtime/graph-runtime";
+import { testGraphBuilder } from "../../support/builtin-registry";
 
 /**
  * Issue #408, found by the quality pass over #405.
@@ -68,6 +69,7 @@ describe("disposal runs once, however host code re-enters it", () => {
       countingClock(base, () => (releases += 1)),
       compose,
       {
+        graphBuilder: testGraphBuilder(),
         scheduler: {
           schedule(): Cancel {
             return {
@@ -116,6 +118,7 @@ describe("disposal runs once, however host code re-enters it", () => {
       countingClock(base, () => (releases += 1)),
       compose,
       {
+        graphBuilder: testGraphBuilder(),
         scheduler: {
           schedule(): Cancel {
             return {
@@ -158,6 +161,7 @@ describe("disposal runs once, however host code re-enters it", () => {
       countingClock(base, () => (releases += 1)),
       compose,
       {
+        graphBuilder: testGraphBuilder(),
         scheduler: {
           schedule(): Cancel {
             return {
