@@ -34,19 +34,11 @@ import {
   wrapRotation,
   type JointLimit,
 } from "../shared/constraint";
-import type { IterativeQuality, SolveResult } from "../shared/result";
+import type { IterativeQuality } from "../shared/result";
+import type { FabrikPoint, FabrikSolution } from "./solution";
 
 /** Residual, world units, at or below which a solve is converged; fixed so pass count is frame-independent. */
 export const FABRIK_TOLERANCE = 1e-3;
-
-/** A point in the solve's working state. */
-export type FabrikPoint = WorldPoint;
-
-/** Local rotations plus pivots and tips; length is a member's pivot-to-tip distance. */
-export interface FabrikSolution extends SolveResult<IterativeQuality> {
-  readonly pivots: Readonly<Record<string, FabrikPoint>>;
-  readonly tips: Readonly<Record<string, FabrikPoint>>;
-}
 
 const DEGREES = 180 / Math.PI;
 const RADIANS = Math.PI / 180;

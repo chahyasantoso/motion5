@@ -1,6 +1,6 @@
 import { segmentExtent, type WorldFrame } from "../../frame/frame";
 import type { SolveMember } from "../shared/member";
-import type { FabrikSolution } from "./fabrik";
+import type { FabrikSolution } from "./solution";
 import type { CompromiseRule } from "../shared/goal";
 import type { IterativeQuality } from "../shared/result";
 import { unreachable } from "@motion5/core/plugin-api";

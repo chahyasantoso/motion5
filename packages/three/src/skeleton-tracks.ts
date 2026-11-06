@@ -1,4 +1,4 @@
-import { Body3d, Solved3d } from "../../plugins/src/models/index";
+import { Body3d, Solved3d } from "@motion5/plugins/models";
 import { validateTrackDefinition, type TrackDefinition } from "@motion5/core";
 import { Matrix4, Vector3 } from "three";
 import { frameFromMatrix } from "./index";

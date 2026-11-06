@@ -3,8 +3,8 @@ import {
   FABRIK_TOLERANCE,
   solveFabrik,
   solveFabrikAttempt,
-  type FabrikPoint,
 } from "../../../../src/ik/fabrik/fabrik";
+import type { FabrikPoint } from "../../../../src/ik/fabrik/solution";
 import { arcHalfAngle, seedArc } from "../../../../src/ik/fabrik/seed";
 import type { WorldFrame } from "../../../../src/frame/frame";
 import type { IterativeQuality } from "../../../../src/ik/shared/result";

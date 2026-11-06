@@ -13,8 +13,8 @@ import {
   FABRIK_TOLERANCE,
   solveFabrik,
   solveFabrikAttempt,
-  type FabrikSolution,
 } from "../../../../src/ik/fabrik/fabrik";
+import type { FabrikSolution } from "../../../../src/ik/fabrik/solution";
 import {
   FABRIK_LIMITED_CAP_FACTOR,
   FABRIK_MIN_ITERATIONS,
