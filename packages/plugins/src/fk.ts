@@ -54,18 +54,6 @@ export const fkPlugin: PluginDefinition<FkInput> = {
     },
   },
   outputs: { values: Points2d },
-  checkSources(structures) {
-    const chain = structureOf<BodyStructure>(structures, "chain");
-    const solved = structureOf<SolvedStructure>(structures, "solved");
-    if (chain === undefined || solved === undefined) return Object.freeze([]);
-    const solvedIds = new Set(solved.ids);
-    const diagnostics = chain.ids
-      .filter((id) => !solvedIds.has(id))
-      .map((id) =>
-        diagnostic("plugin-validation-failed", "solved", `Solver row missing for member "${id}".`),
-      );
-    return Object.freeze(diagnostics);
-  },
   prepare({ structures }) {
     const chain = structureOf<BodyStructure>(structures, "chain");
     const solved = structureOf<SolvedStructure>(structures, "solved");

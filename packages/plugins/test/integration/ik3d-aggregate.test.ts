@@ -174,11 +174,10 @@ describe("aggregate 3D IK", () => {
       chain: bodyStructure(BODY, true),
       goals: goalsStructure([{ id: "g", cells: { memberId: "zzz", x: 0, y: 0, z: 0 } }], true),
     };
-    expect(ik3dPlugin.checkSources?.(structures).map((d) => d.ruleId)).toContain(
-      "ik-goal-unknown-member",
-    );
     const prepared = ik3dPlugin.prepare?.({ values: {}, param: {}, structures });
     expect(prepared?.ok).toBe(false);
+    if (prepared?.ok === false)
+      expect(prepared.diagnostics[0]?.ruleId).toBe("ik-goal-unknown-member");
   });
 
   it("AJ-5 reads an optional pole and is still total without one", () => {

@@ -24,11 +24,7 @@ import { createValueEvaluator } from "../evaluate-values";
 import { parseModel } from "../model-parse";
 import { PluginNodeError, validatePluginOutputs } from "../plugin-output";
 import type { BoundSlot, BoundSlots } from "../bound-slot";
-import {
-  isOptionalSlot,
-  needsSlotStructure,
-  slotDeclaration,
-} from "../../contract/slot-declaration";
+import { isOptionalSlot, slotDeclaration } from "../../contract/slot-declaration";
 import { isValue } from "../value-validation";
 import type { PublisherComposition } from "../graph-publisher";
 import { LocalInput } from "../local-input";
@@ -145,7 +141,6 @@ export class ComputedProcessor implements Processor {
   #outputsChecked = false;
   readonly #computedStructures = new Map<string, Structure<unknown>>();
   #checkedStructures: SourceStructures | undefined;
-  #checkedWarnings: readonly Diagnostic[] = Object.freeze([]);
   #preparedState: unknown;
   #isPrepared = false;
   #parsedValues: ParsedValues | undefined;
@@ -231,7 +226,6 @@ export class ComputedProcessor implements Processor {
         ),
       ]);
     const { values: resolved, structures } = this.#resolve(slots);
-    const warnings = this.#checkSources(structures);
     this.#runPrepare(structures);
     const evaluatedParam = this.#paramInput?.evaluate();
     const input: ResolvedInput = Object.freeze({
@@ -252,14 +246,7 @@ export class ComputedProcessor implements Processor {
       outputs,
       sourceProgress: localInput.progress,
       sourceRevisions: {},
-      ...(warnings.length === 0 ? {} : { diagnostics: warnings }),
     };
-  }
-
-  markPrepared(state: unknown, structures: SourceStructures): void {
-    this.#preparedState = state;
-    this.#isPrepared = true;
-    this.#checkedStructures = structures;
   }
 
   prepareCommit(structures: SourceStructures): void {
@@ -460,43 +447,6 @@ export class ComputedProcessor implements Processor {
       this.#computedStructures.set(key, parsed.value);
     }
     return parsed.value;
-  }
-
-  markSourcesChecked(
-    structures: SourceStructures,
-    warnings: readonly Diagnostic[] = Object.freeze([]),
-  ): void {
-    this.#checkedStructures = structures;
-    this.#checkedWarnings = warnings;
-  }
-
-  #checkSources(structures: SourceStructures): readonly Diagnostic[] {
-    const check = this.plugin.checkSources;
-    if (check === undefined) return Object.freeze([]);
-    const declared = this.plugin.inputs.requires ?? {};
-    const structured = Object.entries(declared).filter(([, slot]) =>
-      needsSlotStructure(slotDeclaration(slot)),
-    );
-    if (structured.length === 0) return Object.freeze([]);
-    for (const [slot] of structured) if (structures[slot] === undefined) return Object.freeze([]);
-    if (sameSourceStructures(this.#checkedStructures, structures)) return this.#checkedWarnings;
-    let warnings: readonly Diagnostic[];
-    try {
-      warnings = check(structures);
-    } catch (error) {
-      throw new PluginNodeError([
-        diagnostic(
-          "plugin-validation-failed",
-          this.nodeId,
-          `Plugin '${this.plugin.id}' checkSources threw: ${error instanceof Error ? error.message : String(error)}`,
-        ),
-      ]);
-    }
-    const errors = warnings.filter(({ severity }) => severity === "error");
-    if (errors.length > 0) throw new PluginNodeError(errors);
-    this.#checkedStructures = structures;
-    this.#checkedWarnings = Object.freeze([...warnings]);
-    return this.#checkedWarnings;
   }
 
   dispose(): void {

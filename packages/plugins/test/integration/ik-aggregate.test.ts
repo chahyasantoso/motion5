@@ -184,11 +184,10 @@ describe("aggregate 2D IK", () => {
       chain: bodyStructure(BODY),
       goals: goalsStructure([{ id: "g", cells: { memberId: "zzz", x: 0, y: 0 } }]),
     };
-    expect(ikPlugin.checkSources?.(structures).map((d) => d.ruleId)).toContain(
-      "ik-goal-unknown-member",
-    );
     const prepared = ikPlugin.prepare?.({ values: {}, param: {}, structures });
     expect(prepared?.ok).toBe(false);
+    if (prepared?.ok === false)
+      expect(prepared.diagnostics[0]?.ruleId).toBe("ik-goal-unknown-member");
   });
 
   it("AI-5 reads a rest edit", () => {

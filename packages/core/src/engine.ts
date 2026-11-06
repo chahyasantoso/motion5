@@ -562,12 +562,6 @@ export class Engine {
             defineOwnValue(structures, slotName, Object.freeze(members));
           }
           if (!ready) return;
-          if (plugin.checkSources !== undefined) {
-            const diagnostics = plugin.checkSources(Object.freeze(structures));
-            const errors = diagnostics.filter(({ severity }) => severity === "error");
-            if (errors.length > 0) throw new TypeError(describeDiagnostics(errors));
-            consumer.markSourcesChecked(Object.freeze(structures), diagnostics);
-          }
           if (plugin.prepare !== undefined) {
             consumer.prepareCommit(Object.freeze(structures));
           }

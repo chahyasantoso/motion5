@@ -361,8 +361,6 @@ export interface PluginDefinition<
     >;
   };
   readonly outputs: OutputsDecl;
-  /** Cross-source rules over the structures model slots deliver; pure, never per frame. */
-  checkSources?(structures: SourceStructures): readonly Diagnostic[];
   prepare?(ctx: {
     readonly values: unknown;
     readonly param?: unknown;

@@ -99,12 +99,6 @@ export const ikPlugin: PluginDefinition<IkInput> = {
     },
   },
   outputs: { values: Solved2d, inspect: { ...INSPECT, optional: true } },
-  checkSources(structures) {
-    const chain = structureOf<BodyStructure>(structures, "chain");
-    const goals = structureOf<GoalsStructure>(structures, "goals");
-    if (chain === undefined || goals === undefined) return Object.freeze([]);
-    return goalDiagnostics(chain, goals);
-  },
   prepare({ structures }) {
     const chain = structureOf<BodyStructure>(structures, "chain");
     const goals = structureOf<GoalsStructure>(structures, "goals");

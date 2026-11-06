@@ -3,6 +3,7 @@ import { shape } from "@motion5/core/plugin-api";
 import {
   defineModel,
   isModel,
+  ok,
   type ModelSlotSpec,
   type Patch,
   type PluginDefinition,
@@ -434,7 +435,6 @@ describe("identified plugin runtime", () => {
       };
 
       let commitCapturedStructures: SourceStructures | undefined;
-      let composeCapturedStructures: SourceStructures | undefined;
       let capturedRequires: Record<string, unknown> | undefined;
 
       const consumerPlugin: PluginDefinition = {
@@ -444,13 +444,9 @@ describe("identified plugin runtime", () => {
           requires: { data: hardeningSlot },
         },
         outputs: { values: POINT },
-        checkSources(structures) {
-          if (commitCapturedStructures === undefined) {
-            commitCapturedStructures = structures;
-          } else {
-            composeCapturedStructures = structures;
-          }
-          return [];
+        prepare({ structures }) {
+          commitCapturedStructures = structures;
+          return ok(undefined);
         },
         transform(input) {
           const map = input.requires.data;
@@ -484,7 +480,7 @@ describe("identified plugin runtime", () => {
           handle.mount("demo/consumer-track");
           handle.seek("demo/src", 0.5);
 
-          // 1. Commit-time structures passed to checkSources (from checkCommittedSources in engine)
+          // 1. Commit-time structures passed to prepare (from checkCommittedSources in engine)
           expect(commitCapturedStructures).toBeDefined();
           const commitStructuresRecord = commitCapturedStructures?.data;
           expect(typeof commitStructuresRecord).toBe("object");
@@ -545,9 +541,9 @@ describe("identified plugin runtime", () => {
         requires: { data: hardeningSlot },
       },
       outputs: { values: POINT },
-      checkSources(structures) {
+      prepare({ structures }) {
         composeStructures = structures;
-        return [];
+        return ok(undefined);
       },
       transform() {
         return { values: table() };

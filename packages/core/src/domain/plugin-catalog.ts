@@ -25,7 +25,7 @@ import type { PluginCapabilities, PluginCapability } from "../ports/plugin-capab
  * Identified-table plugin registry keyed by authored `id`: admits whole definitions, all-or-none per batch.
  */
 
-const PLUGIN_FIELDS = new Set(["id", "inputs", "outputs", "checkSources", "prepare", "transform"]);
+const PLUGIN_FIELDS = new Set(["id", "inputs", "outputs", "prepare", "transform"]);
 const INPUT_FIELDS = new Set(["param", "values", "requires"]);
 const DEPENDENCY_FIELDS = new Set(["kind", "outputs", "optional", "binding"]);
 const MODEL_SLOT_FIELDS = new Set(["kind", "model", "optional", "binding"]);
@@ -38,7 +38,6 @@ const EMPTY_MODELS: readonly Model<unknown, unknown>[] = Object.freeze([]);
 const EMPTY_RECORD_SPEC: ValueSpec = Object.freeze({ kind: "record", fields: Object.freeze({}) });
 
 type TransformHook = PluginDefinition["transform"];
-type CheckSourcesHook = NonNullable<PluginDefinition["checkSources"]>;
 type PrepareHook = NonNullable<PluginDefinition["prepare"]>;
 
 /** One admission refusal carrying its rule id and definition path. */
@@ -311,20 +310,10 @@ function admitPlugin(
   );
   if (rawTransform === undefined)
     refuse("plugin-transform-missing", "plugin.transform", "transform must be a function.");
-  const rawCheckSources = readHook<CheckSourcesHook>(
-    own(source, "checkSources"),
-    "plugin.checkSources",
-    "checkSources",
-  );
   const rawPrepare = readHook<PrepareHook>(own(source, "prepare"), "plugin.prepare", "prepare");
   // Runtime validates values before and result after; wrapper rebinds `this` and casts.
   const transform: TransformHook = (input: ResolvedInput, context: EvaluationContext) =>
     Reflect.apply(rawTransform, source, [input, context]) as Outputs;
-  const checkSources: CheckSourcesHook | undefined =
-    rawCheckSources === undefined
-      ? undefined
-      : (structures: SourceStructures) =>
-          Reflect.apply(rawCheckSources, source, [structures]) as readonly Diagnostic[];
   const prepare: PrepareHook | undefined =
     rawPrepare === undefined
       ? undefined
@@ -333,7 +322,6 @@ function admitPlugin(
     id,
     inputs,
     outputs,
-    ...(checkSources === undefined ? {} : { checkSources }),
     ...(prepare === undefined ? {} : { prepare }),
     transform,
   });

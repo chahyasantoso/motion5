@@ -127,6 +127,13 @@ describe("admission refuses a malformed definition by rule", () => {
     ).toMatch(/^plugin-shape at model.legacyTypeId/);
   });
 
+  it("refuses the retired checkSources hook", () => {
+    const plugin = malformed({ checkSources: () => [] });
+    expect(reason(() => new PluginCatalog({ models: testModels }).register(plugin))).toMatch(
+      /^plugin-shape at plugin\.checkSources/,
+    );
+  });
+
   it("refuses optional on inputs.values", () => {
     const plugin = malformed({
       inputs: {

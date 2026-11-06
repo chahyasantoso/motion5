@@ -1,4 +1,4 @@
-import type { Diagnostic, Outputs, SourceStructures, Structure, Value } from "../contract/v5";
+import type { Outputs, SourceStructures, Structure, Value } from "../contract/v5";
 import type { ParsedValues } from "../contract/v5-parse";
 import type { PublisherComposition } from "./graph-publisher";
 import { LocalInput } from "./local-input";
@@ -39,13 +39,6 @@ export class Track {
 
   outputStructure(outputName: string): Structure<unknown> | undefined {
     return this.#processor.outputStructure(outputName);
-  }
-
-  markSourcesChecked(
-    structures: SourceStructures,
-    diagnostics: readonly Diagnostic[] = Object.freeze([]),
-  ): void {
-    this.#processor.markSourcesChecked?.(structures, diagnostics);
   }
 
   prepareCommit(structures: SourceStructures): void {

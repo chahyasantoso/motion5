@@ -6,7 +6,8 @@ import type {
   ValueSpec,
 } from "../../../src/contract/v5";
 import { PluginCatalog } from "../../../src/domain/plugin-catalog";
-import { defineModel } from "../../../src/contract/v5";
+import { defineModel, ok, prepareRefused } from "../../../src/contract/v5";
+import { diagnostic } from "../../../src/contract/diagnostics";
 import { Engine } from "../../../src/engine";
 import { createManualClock } from "../../../src/ports/clock";
 import { createValueEvaluator } from "../../../src/runtime/evaluate-values";
@@ -174,19 +175,13 @@ describe("self-validating model tracks", () => {
         requires: { "data.points": PointSource },
       },
       outputs: { values: OUTPUT_SPEC },
-      checkSources(structures) {
+      prepare({ structures }) {
         const structure = structures["data.points"] as PointStructure | undefined;
         return structure?.ids.includes("bad") === true
-          ? [
-              {
-                ruleId: "plugin-validation-failed",
-                path: "data.points",
-                message: "identifier is reserved",
-                severity: "error",
-                ids: [],
-              },
-            ]
-          : [];
+          ? prepareRefused([
+              diagnostic("plugin-validation-failed", "data.points", "identifier is reserved"),
+            ])
+          : ok(undefined);
       },
       transform() {
         return { values: [] };
