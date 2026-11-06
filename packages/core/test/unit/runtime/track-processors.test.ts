@@ -2,8 +2,8 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import type { Model, PluginDefinition, ValueSpec } from "../../../src/contract/v5";
-import { isModel } from "../../../src/contract/v5";
+import type { AdmittedPlugin, Model, ValueSpec } from "../../../src/contract/v5";
+import { admitDeclaration } from "../../../src/domain/plugin-catalog";
 import { brandStructure } from "../../../src/contract/structure";
 import { parseTrackDefinition, type ParsedValues } from "../../../src/contract/v5-parse";
 import { createValueEvaluator } from "../../../src/runtime/evaluate-values";
@@ -45,19 +45,21 @@ const testModel: Model<{ readonly count: number }, { readonly count: number }> =
   },
 };
 
-function computedTrack(plugin: PluginDefinition): Track {
+function computedTrack(plugin: AdmittedPlugin): Track {
   const interpolator = createFakeInterpolator();
-  const rawSpec = plugin.inputs.values;
-  const valuesSpec: ValueSpec = isModel(rawSpec)
-    ? rawSpec.spec
-    : (rawSpec ?? { kind: "record", fields: {} });
+  const valuesSpec: ValueSpec = plugin.inputs.values?.spec ?? { kind: "record", fields: {} };
   const localInput = new LocalInput(
     createValueEvaluator(defaultPluginValues(undefined, plugin), interpolator, valuesSpec),
   );
   return new Track(
     "node",
     localInput,
-    new ComputedProcessor({ nodeId: "node", plugin, values: undefined, interpolator }),
+    new ComputedProcessor({
+      nodeId: "node",
+      plugin: plugin,
+      values: undefined,
+      interpolator,
+    }),
   );
 }
 
@@ -88,12 +90,12 @@ describe("Track and Processors", () => {
     );
     const computed = new ComputedProcessor({
       nodeId: "consumer",
-      plugin: {
+      plugin: admitDeclaration({
         id: "plugin",
         inputs: { values: { kind: "record", fields: {} } },
         outputs: { values: { kind: "record", fields: {} } },
         transform: () => ({ values: {} }),
-      },
+      }),
       values: undefined,
       interpolator: createFakeInterpolator(),
     });
@@ -153,12 +155,12 @@ describe("Track and Processors", () => {
     );
     const computed = new ComputedProcessor({
       nodeId: "computed-track",
-      plugin: {
+      plugin: admitDeclaration({
         id: "plugin",
         inputs: { values: { kind: "record", fields: {} } },
         outputs: { values: { kind: "record", fields: {} } },
         transform: () => ({ values: {} }),
-      },
+      }),
       values: undefined,
       interpolator,
     });
@@ -195,10 +197,10 @@ describe("Track and Processors", () => {
     const track = computedTrack({
       id: "dotted-slot",
       inputs: {
-        values: { kind: "record", fields: {} },
+        values: { spec: { kind: "record", fields: {} } },
         requires: { "chain.main": { kind: "model", model: testModel } },
       },
-      outputs: { values: { kind: "record", fields: {} } },
+      outputs: { values: { kind: "spec", spec: { kind: "record", fields: {} } } },
       transform(input) {
         requires = input.requires;
         return { values: {} };
@@ -226,10 +228,10 @@ describe("Track and Processors", () => {
     const track = computedTrack({
       id: "map-slot",
       inputs: {
-        values: { kind: "record", fields: {} },
+        values: { spec: { kind: "record", fields: {} } },
         requires: { data: { kind: "model", model: testModel, binding: "map" } },
       },
-      outputs: { values: { kind: "record", fields: {} } },
+      outputs: { values: { kind: "spec", spec: { kind: "record", fields: {} } } },
       transform(input) {
         requires = input.requires;
         structures = input.structures;
@@ -268,10 +270,10 @@ describe("Track and Processors", () => {
     const track = computedTrack({
       id: "optional-slot",
       inputs: {
-        values: { kind: "record", fields: {} },
-        requires: { maybe: { optional: true, model: testModel } },
+        values: { spec: { kind: "record", fields: {} } },
+        requires: { maybe: { kind: "model", optional: true, model: testModel } },
       },
-      outputs: { values: { kind: "record", fields: {} } },
+      outputs: { values: { kind: "spec", spec: { kind: "record", fields: {} } } },
       transform(input) {
         requires = input.requires;
         structures = input.structures;
@@ -289,10 +291,10 @@ describe("Track and Processors", () => {
     const track = computedTrack({
       id: "empty-map",
       inputs: {
-        values: { kind: "record", fields: {} },
+        values: { spec: { kind: "record", fields: {} } },
         requires: { data: { kind: "model", model: testModel, binding: "map" } },
       },
-      outputs: { values: { kind: "record", fields: {} } },
+      outputs: { values: { kind: "spec", spec: { kind: "record", fields: {} } } },
       transform() {
         return { values: {} };
       },
@@ -308,10 +310,10 @@ describe("Track and Processors", () => {
     const track = computedTrack({
       id: "proto-slot",
       inputs: {
-        values: { kind: "record", fields: {} },
+        values: { spec: { kind: "record", fields: {} } },
         requires: { [slotName]: { kind: "model", model: testModel } },
       },
-      outputs: { values: { kind: "record", fields: {} } },
+      outputs: { values: { kind: "spec", spec: { kind: "record", fields: {} } } },
       transform(input) {
         requires = input.requires;
         return { values: {} };

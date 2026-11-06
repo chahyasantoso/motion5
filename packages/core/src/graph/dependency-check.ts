@@ -1,7 +1,7 @@
 import type { Diagnostic } from "../contract/v5";
 import { outputPluginId } from "../contract/v5";
 import { diagnostic } from "../contract/diagnostics";
-import { isOptionalSlot, slotDeclaration } from "../contract/slot-declaration";
+import { isOptionalSlot } from "../contract/slot-declaration";
 import type { GraphNode } from "./ir";
 import type { PluginCapabilities } from "../ports/plugin-capabilities";
 
@@ -33,11 +33,7 @@ function checkNode(
     return;
   }
   const bindings = isRecord(authored) ? authored : {};
-  const slots = new Map(
-    Object.entries(declared).map(
-      ([slot, requirement]) => [slot, slotDeclaration(requirement)] as const,
-    ),
-  );
+  const slots = new Map(Object.entries(declared));
   for (const [slot, spec] of slots) {
     if (isOptionalSlot(spec)) continue;
     if (!Object.hasOwn(bindings, slot))

@@ -1,4 +1,9 @@
-import { isModel, type Diagnostic, type Model, type Outputs, type ValueSpec } from "../contract/v5";
+import {
+  admittedOutputSpec,
+  type AdmittedPlugin,
+  type Diagnostic,
+  type Outputs,
+} from "../contract/v5";
 import { describeDiagnostics, diagnostic } from "../contract/diagnostics";
 import { freezeValue, type ImmutableValue } from "../domain/values";
 import { isValue, validateRuntimeValue, type ValueIssue } from "./value-validation";
@@ -32,11 +37,7 @@ function outputIssue(issue: ValueIssue): Diagnostic {
   return diagnostic(ruleId, issue.path, issue.message);
 }
 
-type DeclaredOutputs = Readonly<Record<string, ValueSpec | Model<unknown, unknown>>>;
-
-function specOf(declared: ValueSpec | Model<unknown, unknown>): ValueSpec {
-  return isModel(declared) ? declared.spec : declared;
-}
+type DeclaredOutputs = AdmittedPlugin["outputs"];
 
 function outputNameDiagnostics(
   raw: Readonly<Record<string, unknown>>,
@@ -61,7 +62,7 @@ function outputNameDiagnostics(
       );
   }
   for (const [name, declaredOutput] of Object.entries(declared))
-    if (!Object.hasOwn(raw, name) && specOf(declaredOutput).optional !== true)
+    if (!Object.hasOwn(raw, name) && admittedOutputSpec(declaredOutput).optional !== true)
       diagnostics.push(
         diagnostic(
           "output-missing",
@@ -82,7 +83,7 @@ export function validatePluginOutputs(
   const diagnostics = outputNameDiagnostics(raw, declared, nodeId);
   const validated: Record<string, Outputs[string]> = {};
   for (const [name, declaredOutput] of Object.entries(declared)) {
-    const spec = specOf(declaredOutput);
+    const spec = admittedOutputSpec(declaredOutput);
     if (!Object.hasOwn(raw, name)) continue;
     const value = raw[name];
     const issues = validateRuntimeValue(value, spec, `${nodeId}.outputs.${name}`, {
@@ -112,7 +113,7 @@ export function checkLaterOutputs(
   const diagnostics = outputNameDiagnostics(raw, declared, nodeId);
   for (const [name, declaredOutput] of Object.entries(declared)) {
     if (!Object.hasOwn(raw, name)) continue;
-    const isTable = specOf(declaredOutput).kind === "table";
+    const isTable = admittedOutputSpec(declaredOutput).kind === "table";
     if (Array.isArray(raw[name]) !== isTable)
       diagnostics.push(
         diagnostic(

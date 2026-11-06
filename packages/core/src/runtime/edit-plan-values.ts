@@ -1,19 +1,18 @@
 import type {
+  AdmittedPlugin,
   AuthoredCell,
   AuthoredRecord,
   AuthoredRow,
   AuthoredValues,
   CellAddress,
   Diagnostic,
-  Model,
-  PluginDefinition,
   TrackDefinition,
   TrackInput,
   Value,
   ValueChannel,
   ValueSpec,
 } from "../contract/v5";
-import { isModel, outputModelId, outputPluginId } from "../contract/v5";
+import { outputRef } from "../contract/v5";
 import { diagnostic, hintDiagnostic, hintDiagnostics } from "../contract/diagnostics";
 import { deriveSourceContract, type SpecOrigin } from "../contract/v5-infer";
 import { parseTrackDefinition, type ParsedInput, type ParsedValues } from "../contract/v5-parse";
@@ -133,12 +132,12 @@ function parsedChannel(input: ParsedInput, channel: ValueChannel): ParsedValues 
 }
 
 function declaredChannel(
-  definition: PluginDefinition | undefined,
+  definition: AdmittedPlugin | undefined,
   channel: ValueChannel,
-): ValueSpec | Model<unknown, unknown> | undefined {
+): ValueSpec | undefined {
   switch (channel) {
     case "values":
-      return definition?.inputs.values;
+      return definition?.inputs.values?.spec;
     case "param":
       return definition?.inputs.param;
     default:
@@ -158,26 +157,49 @@ function committedInputSpec(
   contract: CommittedContract | undefined,
   environment: ValueEnvironment,
 ): CommittedInputSpec {
-  const pluginId = outputPluginId(track.output);
-  if (pluginId !== undefined) {
-    const definition = environment.capabilities.pluginDefinition(pluginId);
-    const raw = declaredChannel(definition, channel);
-    const declared = isModel(raw) ? raw.spec : raw;
-    let spec: ValueSpec | undefined;
-    switch (channel) {
-      case "values":
-        spec = declared ?? contract?.input.spec;
-        break;
-      case "param":
-        spec = declared;
-        break;
-      default:
-        return unreachable(channel);
-    }
-    if (spec === undefined)
-      throw new TypeError(`Track "${track.id}" has no committed ${channel} spec.`);
-    return { spec, origin: "plugin" };
+  const ref = outputRef(track.output);
+  switch (ref.kind) {
+    case "plugin":
+      return pluginInputSpec(track, ref.id, channel, contract, environment);
+    case "model":
+      return modelInputSpec(track, ref.id, channel, contract, environment);
+    default:
+      return unreachable(ref);
   }
+}
+
+function pluginInputSpec(
+  track: TrackDefinition,
+  pluginId: string,
+  channel: ValueChannel,
+  contract: CommittedContract | undefined,
+  environment: ValueEnvironment,
+): CommittedInputSpec {
+  const definition = environment.capabilities.pluginDefinition(pluginId);
+  const declared = declaredChannel(definition, channel);
+  let spec: ValueSpec | undefined;
+  switch (channel) {
+    case "values":
+      spec = declared ?? contract?.input.spec;
+      break;
+    case "param":
+      spec = declared;
+      break;
+    default:
+      return unreachable(channel);
+  }
+  if (spec === undefined)
+    throw new TypeError(`Track "${track.id}" has no committed ${channel} spec.`);
+  return { spec, origin: "plugin" };
+}
+
+function modelInputSpec(
+  track: TrackDefinition,
+  modelId: string,
+  channel: ValueChannel,
+  contract: CommittedContract | undefined,
+  environment: ValueEnvironment,
+): CommittedInputSpec {
   switch (channel) {
     case "param":
       throw new TypeError(`Track "${track.id}" has a model output and no params.`);
@@ -186,9 +208,7 @@ function committedInputSpec(
     default:
       return unreachable(channel);
   }
-  const modelId = outputModelId(track.output);
-  const modelSpec =
-    modelId === undefined ? undefined : environment.capabilities.model(modelId)?.spec;
+  const modelSpec = environment.capabilities.model(modelId)?.spec;
   const spec = modelSpec ?? contract?.input.spec;
   if (spec === undefined) throw new TypeError(`Track "${track.id}" has no committed input spec.`);
   return { spec, origin: "model" };
@@ -282,10 +302,22 @@ function validateAuthoredValues(
   );
   if (checked.kind === "refused")
     return refusedOutcomeFrom(hintDiagnostics(checked.diagnostics, REPLACE_HINT));
-  if (outputPluginId(track.output) !== undefined) {
-    const staticStops = staticStopDiagnostics(values, committed.spec, `${nodeId}.input.${channel}`);
-    if (staticStops.length > 0)
-      return refusedOutcomeFrom(hintDiagnostics(staticStops, REPLACE_HINT));
+  const ref = outputRef(track.output);
+  switch (ref.kind) {
+    case "plugin": {
+      const staticStops = staticStopDiagnostics(
+        values,
+        committed.spec,
+        `${nodeId}.input.${channel}`,
+      );
+      if (staticStops.length > 0)
+        return refusedOutcomeFrom(hintDiagnostics(staticStops, REPLACE_HINT));
+      break;
+    }
+    case "model":
+      break;
+    default:
+      return unreachable(ref);
   }
   return acceptedOutcome({ track, values }, parsed.diagnostics);
 }
@@ -526,10 +558,47 @@ function channelRefusal(
   nodeId: string,
   environment: ValueEnvironment,
 ): ValueOutcome | undefined {
-  const pluginId = outputPluginId(track.output);
+  const ref = outputRef(track.output);
   switch (channel) {
     case "values": {
-      if (pluginId === undefined) return undefined;
+      switch (ref.kind) {
+        case "model":
+          return undefined;
+        case "plugin":
+          return pluginChannelRefusal(ref.id, channel, nodeId, environment);
+        default:
+          return unreachable(ref);
+      }
+    }
+    case "param": {
+      switch (ref.kind) {
+        case "model":
+          return refused([
+            diagnostic(
+              "param-not-allowed",
+              `${nodeId}.input.param`,
+              "A model output has no processor and takes no params.",
+            ),
+          ]);
+        case "plugin":
+          return pluginChannelRefusal(ref.id, channel, nodeId, environment);
+        default:
+          return unreachable(ref);
+      }
+    }
+    default:
+      return unreachable(channel);
+  }
+}
+
+function pluginChannelRefusal(
+  pluginId: string,
+  channel: ValueChannel,
+  nodeId: string,
+  environment: ValueEnvironment,
+): ValueOutcome | undefined {
+  switch (channel) {
+    case "values": {
       const definition = environment.capabilities.pluginDefinition(pluginId);
       if (definition === undefined) return undefined;
       if (definition.inputs.values === undefined)
@@ -543,14 +612,6 @@ function channelRefusal(
       return undefined;
     }
     case "param": {
-      if (pluginId === undefined)
-        return refused([
-          diagnostic(
-            "param-not-allowed",
-            `${nodeId}.input.param`,
-            "A model output has no processor and takes no params.",
-          ),
-        ]);
       const definition = environment.capabilities.pluginDefinition(pluginId);
       if (definition === undefined) return undefined;
       if (definition.inputs.param === undefined)

@@ -6,6 +6,7 @@ import {
   type PluginDefinition,
   type ValueSpec,
 } from "../../../src/contract/v5";
+import { admitDeclaration } from "../../../src/domain/plugin-catalog";
 import { parseTrackDefinition, type ParsedValues } from "../../../src/contract/v5-parse";
 import type { Interpolator } from "../../../src/ports/interpolator";
 import { createValueEvaluator } from "../../../src/runtime/evaluate-values";
@@ -45,7 +46,7 @@ function createComputedTrack(options: {
   const localInput = new LocalInput(
     createValueEvaluator(options.values, options.interpolator, valuesSpec),
   );
-  const processor = new ComputedProcessor(options);
+  const processor = new ComputedProcessor({ ...options, plugin: admitDeclaration(options.plugin) });
   return new Track(options.nodeId, localInput, processor);
 }
 

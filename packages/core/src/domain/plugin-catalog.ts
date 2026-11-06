@@ -1,4 +1,7 @@
 import type {
+  AdmittedOutput,
+  AdmittedPlugin,
+  AdmittedValues,
   Diagnostic,
   EvaluationContext,
   Model,
@@ -15,7 +18,7 @@ import type {
   Value,
   ValueSpec,
 } from "../contract/v5";
-import { isModel, isOptionalModel } from "../contract/v5";
+import { admittedOutputSpec, isModel, isOptionalModel } from "../contract/v5";
 import { slotDeclaration } from "../contract/slot-declaration";
 import type { RuleId } from "../contract/rule-id";
 import { readValueSpec } from "../contract/v5-parse";
@@ -200,7 +203,7 @@ function readInputs(
   value: unknown,
   path: string,
   referencedModels: Model<unknown, unknown>[],
-): PluginDefinition["inputs"] {
+): AdmittedPlugin["inputs"] {
   const source = requireRecord(value, path);
   assertKnownKeys(source, INPUT_FIELDS, path, "Plugin inputs");
   let param: RecordSpec | undefined;
@@ -211,19 +214,16 @@ function readInputs(
     }
     param = spec;
   }
-  let values: ValueSpec | Model<unknown, unknown> | undefined;
+  let values: AdmittedValues | undefined;
   if (source.values !== undefined) {
-    let valuesSpec: ValueSpec;
     if (isModel(source.values)) {
       const model = admitModel(source.values, `${path}.values`);
       referencedModels.push(model);
-      values = model;
-      valuesSpec = model.spec;
+      values = Object.freeze({ spec: model.spec, model });
     } else {
-      valuesSpec = readSpec(source.values, `${path}.values`, true);
-      values = valuesSpec;
+      values = Object.freeze({ spec: readSpec(source.values, `${path}.values`, true) });
     }
-    if (valuesSpec.optional === true)
+    if (values.spec.optional === true)
       refuse(
         "plugin-input-invalid",
         `${path}.values.optional`,
@@ -263,9 +263,9 @@ function readOutputs(
   value: unknown,
   path: string,
   referencedModels: Model<unknown, unknown>[],
-): PluginDefinition["outputs"] {
+): AdmittedPlugin["outputs"] {
   const source = requireRecord(value, path);
-  const outputs: Record<string, ValueSpec | Model<unknown, unknown>> = {};
+  const outputs: Record<string, AdmittedOutput> = {};
   const outputModelIds = new Set<string>();
   for (const [name, specOrModel] of Object.entries(source)) {
     const outputName = readName(name, `${path}.${name}`, "Output name");
@@ -280,9 +280,10 @@ function readOutputs(
       }
       outputModelIds.add(model.id);
       referencedModels.push(model);
-      outputs[outputName] = model;
+      outputs[outputName] = Object.freeze({ kind: "model", model });
     } else {
-      outputs[outputName] = readSpec(specOrModel, `${path}.${outputName}`, false);
+      const spec = readSpec(specOrModel, `${path}.${outputName}`, false);
+      outputs[outputName] = Object.freeze({ kind: "spec", spec });
     }
   }
   return Object.freeze(outputs);
@@ -293,7 +294,7 @@ function admitPlugin(
   value: unknown,
   staged: ReadonlySet<string>,
   registered: (id: string) => boolean,
-): { readonly definition: PluginDefinition; readonly models: readonly Model<unknown, unknown>[] } {
+): { readonly definition: AdmittedPlugin; readonly models: readonly Model<unknown, unknown>[] } {
   const source = requireRecord(value, "plugin");
   assertKnownKeys(source, PLUGIN_FIELDS, "plugin", "Plugin definition");
   const id = readName(own(source, "id"), "plugin.id", "Plugin id");
@@ -317,7 +318,7 @@ function admitPlugin(
     rawPrepare === undefined
       ? undefined
       : (ctx) => Reflect.apply(rawPrepare, source, [ctx]) as Prepared<unknown>;
-  const definition = Object.freeze({
+  const definition: AdmittedPlugin = Object.freeze({
     id,
     inputs,
     outputs,
@@ -325,6 +326,11 @@ function admitPlugin(
     transform,
   });
   return { definition, models: referencedModels };
+}
+
+/** Normalizes one declaration with no registry; admission refusals throw as in a catalog. */
+export function admitDeclaration(declaration: unknown): AdmittedPlugin {
+  return admitPlugin(declaration, new Set(), () => false).definition;
 }
 
 /** One declared plugin slot, flattened for inspection. */
@@ -348,7 +354,7 @@ export interface PluginDescription {
   readonly values?: ValueSpec;
   readonly param?: RecordSpec;
   readonly requires: Readonly<Record<string, DescribedSlot>>;
-  readonly outputs: Readonly<Record<string, ValueSpec | Model<unknown, unknown>>>;
+  readonly outputs: Readonly<Record<string, ValueSpec>>;
 }
 
 function describeSlot(slot: SlotSpec): DescribedSlot {
@@ -384,7 +390,7 @@ export interface PluginCatalogOptions {
 
 /** Identified-table registry; one instance belongs to one host composition. */
 export class PluginCatalog implements PluginCapabilities {
-  readonly #plugins = new Map<string, PluginDefinition>();
+  readonly #plugins = new Map<string, AdmittedPlugin>();
   readonly #models = new Map<string, Model<unknown, unknown>>();
 
   constructor(options?: PluginCatalogOptions | readonly PluginDefinition<never>[]) {
@@ -476,7 +482,7 @@ export class PluginCatalog implements PluginCapabilities {
     }
 
     const stagedPlugins = new Set<string>();
-    const admitted: PluginDefinition[] = [];
+    const admitted: AdmittedPlugin[] = [];
     for (const candidate of batch.plugins) {
       const result = admitPlugin(candidate, stagedPlugins, (id) => this.#plugins.has(id));
       stagedPlugins.add(result.definition.id);
@@ -490,7 +496,7 @@ export class PluginCatalog implements PluginCapabilities {
     for (const definition of admitted) this.#plugins.set(definition.id, definition);
   }
 
-  get(id: string): PluginDefinition | undefined {
+  get(id: string): AdmittedPlugin | undefined {
     return this.#plugins.get(id);
   }
 
@@ -506,7 +512,7 @@ export class PluginCatalog implements PluginCapabilities {
     return this.#plugins.has(id);
   }
 
-  pluginDefinition(id: string): PluginDefinition | undefined {
+  pluginDefinition(id: string): AdmittedPlugin | undefined {
     return this.#plugins.get(id);
   }
 
@@ -516,15 +522,13 @@ export class PluginCatalog implements PluginCapabilities {
     if (definition === undefined) return undefined;
     const requires: Record<string, DescribedSlot> = {};
     for (const [slot, spec] of Object.entries(definition.inputs.requires ?? {})) {
-      requires[slot] = describeSlot(slotDeclaration(spec));
+      requires[slot] = describeSlot(spec);
     }
     const outputs: Record<string, ValueSpec> = {};
     for (const [name, output] of Object.entries(definition.outputs)) {
-      outputs[name] = isModel(output) ? output.spec : output;
+      outputs[name] = admittedOutputSpec(output);
     }
-    const rawValues = definition.inputs.values;
-    const values =
-      rawValues === undefined ? undefined : isModel(rawValues) ? rawValues.spec : rawValues;
+    const values = definition.inputs.values?.spec;
     return Object.freeze({
       id: definition.id,
       ...(values === undefined ? {} : { values }),

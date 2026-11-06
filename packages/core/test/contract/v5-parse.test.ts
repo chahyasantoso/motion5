@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { parseTrackDefinition, type ParsedTrack } from "../../src/contract/v5-parse";
 import type { Diagnostic, PluginDefinition } from "../../src/contract/v5";
+import { admitDeclaration } from "../../src/domain/plugin-catalog";
 
 const PATH = "motions[0].tracks[0]";
 
@@ -694,7 +695,10 @@ describe("parseTrackDefinition owns the output member", () => {
       outputs: { values: { kind: "record", fields: {} } },
       transform: () => ({ values: {} }),
     };
-    const context = { isPluginRegistered: () => true, pluginDefinition: () => plugin };
+    const context = {
+      isPluginRegistered: () => true,
+      pluginDefinition: () => admitDeclaration(plugin),
+    };
     const refused = parseTrackDefinition(
       { id: "converted", output: { plugin: "converter" }, input: { values: { n: 1 } } },
       PATH,

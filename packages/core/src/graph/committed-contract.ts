@@ -1,12 +1,12 @@
 import type {
+  AdmittedPlugin,
   Model,
   SlotSpec,
   TrackDefinition,
-  PluginDefinition,
   SourceBinding,
 } from "../contract/v5";
-import { isModel, outputModelId, outputPluginId } from "../contract/v5";
-import { slotDeclaration } from "../contract/slot-declaration";
+import { outputRef } from "../contract/v5";
+import { unreachable } from "../lang/exhaustive";
 import { deriveSourceContract, type SourceContract } from "../contract/v5-infer";
 import { parseTrackDefinition } from "../contract/v5-parse";
 import type { PluginCapabilities } from "../ports/plugin-capabilities";
@@ -39,25 +39,27 @@ export function withRequires(
 function pluginContract(
   track: TrackDefinition,
   plugin: string,
-  definition: PluginDefinition,
+  definition: AdmittedPlugin,
 ): CommittedContract {
   const outputs: Record<string, SourceContract> = {};
   for (const [name, output] of Object.entries(definition.outputs)) {
-    if (isModel(output)) {
-      outputs[name] = freeze({ spec: output.spec, modelId: output.id, proven: true });
-    } else {
-      outputs[name] = freeze({ spec: output, proven: true });
+    switch (output.kind) {
+      case "model":
+        outputs[name] = freeze({ spec: output.model.spec, modelId: output.model.id, proven: true });
+        break;
+      case "spec":
+        outputs[name] = freeze({ spec: output.spec, proven: true });
+        break;
+      default:
+        return unreachable(output);
     }
   }
-  const slots: Record<string, SlotSpec> = {};
-  for (const [slot, spec] of Object.entries(definition.inputs.requires ?? {})) {
-    slots[slot] = slotDeclaration(spec);
-  }
+  const slots: Record<string, SlotSpec> = { ...definition.inputs.requires };
   const values = definition.inputs.values;
   return freeze({
     plugin,
     input: freeze({
-      spec: isModel(values) ? values.spec : (values ?? EMPTY_RECORD_SPEC),
+      spec: values?.spec ?? EMPTY_RECORD_SPEC,
       proven: values !== undefined,
     }),
     outputs: freeze(outputs),
@@ -72,13 +74,25 @@ export function deriveCommittedContract(
   nodeId: string,
   capabilities: PluginCapabilities,
 ): CommittedContract | undefined {
-  const pluginId = outputPluginId(track.output);
-  if (pluginId !== undefined) {
-    const definition = capabilities.pluginDefinition(pluginId);
-    return definition === undefined ? undefined : pluginContract(track, pluginId, definition);
+  const ref = outputRef(track.output);
+  switch (ref.kind) {
+    case "plugin": {
+      const definition = capabilities.pluginDefinition(ref.id);
+      return definition === undefined ? undefined : pluginContract(track, ref.id, definition);
+    }
+    case "model":
+      return modelContract(track, nodeId, ref.id, capabilities);
+    default:
+      return unreachable(ref);
   }
-  const modelId = outputModelId(track.output);
-  if (modelId === undefined) return undefined;
+}
+
+function modelContract(
+  track: TrackDefinition,
+  nodeId: string,
+  modelId: string,
+  capabilities: PluginCapabilities,
+): CommittedContract | undefined {
   const parsed = parseTrackDefinition(track, nodeId, {
     isPluginRegistered: (pluginId) => capabilities.isPluginAdmitted(pluginId),
     pluginDefinition: (pluginId) => capabilities.pluginDefinition(pluginId),

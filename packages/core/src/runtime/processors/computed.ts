@@ -3,7 +3,7 @@ import type {
   Model,
   NonEmptyDiagnostics,
   Outputs,
-  PluginDefinition,
+  AdmittedPlugin,
   Prepared,
   ResolvedInput,
   ResolvedRequires,
@@ -14,7 +14,6 @@ import type {
   Value,
   ValueSpec,
 } from "../../contract/v5";
-import { isModel } from "../../contract/v5";
 import type { ParsedRecord, ParsedValues } from "../../contract/v5-parse";
 import { describeDiagnostics, diagnostic } from "../../contract/diagnostics";
 import { unreachable } from "../../lang/exhaustive";
@@ -24,7 +23,7 @@ import { createValueEvaluator } from "../evaluate-values";
 import { parseModel } from "../model-parse";
 import { checkLaterOutputs, PluginNodeError, validatePluginOutputs } from "../plugin-output";
 import type { BoundSlot, BoundSlots } from "../bound-slot";
-import { isOptionalSlot, slotDeclaration } from "../../contract/slot-declaration";
+import { isOptionalSlot } from "../../contract/slot-declaration";
 import { isValue, findNonFinite } from "../value-validation";
 import type { PublisherComposition } from "../graph-publisher";
 import { LocalInput } from "../local-input";
@@ -114,28 +113,25 @@ function sameSourceStructures(
 
 export function defaultPluginValues(
   values: ParsedValues | undefined,
-  plugin: PluginDefinition,
+  plugin: AdmittedPlugin,
 ): ParsedValues | undefined {
   if (values !== undefined) return values;
-  const raw = plugin.inputs.values;
-  const spec = isModel(raw) ? raw.spec : (raw ?? EMPTY_RECORD_SPEC);
+  const spec = plugin.inputs.values?.spec ?? EMPTY_RECORD_SPEC;
   return spec.kind === "record" ? EMPTY_RECORD : undefined;
 }
 
 export interface ComputedProcessorOptions {
   readonly nodeId: string;
-  readonly plugin?: PluginDefinition;
-  readonly definition?: PluginDefinition;
+  readonly plugin: AdmittedPlugin;
   readonly values: ParsedValues | undefined;
   readonly param?: ParsedValues;
   readonly interpolator: Interpolator;
-  readonly requires?: Record<string, unknown>;
 }
 
 export class ComputedProcessor implements Processor {
   readonly kind = "computed" as const;
   readonly nodeId: string;
-  readonly plugin: PluginDefinition;
+  readonly plugin: AdmittedPlugin;
   readonly #interpolator: Interpolator;
   #paramInput: LocalInput | undefined;
   #outputsChecked = false;
@@ -150,10 +146,8 @@ export class ComputedProcessor implements Processor {
 
   constructor(options: ComputedProcessorOptions) {
     if (options.nodeId.length === 0) throw new TypeError("Track node id must be non-empty.");
-    const plugin = options.definition ?? options.plugin;
-    if (plugin === undefined) throw new TypeError("Plugin definition must be provided.");
     this.nodeId = options.nodeId;
-    this.plugin = plugin;
+    this.plugin = options.plugin;
     this.#interpolator = options.interpolator;
     this.#parsedValues = options.values;
     this.#parsedParam = options.param;
@@ -166,11 +160,15 @@ export class ComputedProcessor implements Processor {
     }
   }
 
+  get #valuesSpec(): ValueSpec {
+    return this.plugin.inputs.values?.spec ?? EMPTY_RECORD_SPEC;
+  }
+
   #parseLocalModel(values: ParsedValues | undefined): void {
-    const local = this.plugin.inputs.values;
-    if (!isModel(local)) return;
+    const model = this.plugin.inputs.values?.model;
+    if (model === undefined) return;
     const path = `${this.nodeId}.input.values`;
-    const parsed = parseModel(local, authoringValue(values, local.spec), path);
+    const parsed = parseModel(model, authoringValue(values, model.spec), path);
     if (parsed.kind === "refused") throw new TypeError(describeDiagnostics(parsed.diagnostics));
   }
 
@@ -195,8 +193,7 @@ export class ComputedProcessor implements Processor {
   }
 
   replaceValues(values: ParsedValues | undefined, localInput: LocalInput): void {
-    const rawSpec = this.plugin.inputs.values;
-    const valuesSpec = isModel(rawSpec) ? rawSpec.spec : (rawSpec ?? EMPTY_RECORD_SPEC);
+    const valuesSpec = this.#valuesSpec;
     localInput.replaceEvaluator(
       () =>
         createValueEvaluator(
@@ -227,8 +224,7 @@ export class ComputedProcessor implements Processor {
 
   compose(slots: BoundSlots = {}, localInput: LocalInput): PublisherComposition {
     localInput.assertActive();
-    const rawValues = this.plugin.inputs.values;
-    const spec = isModel(rawValues) ? rawValues.spec : (rawValues ?? EMPTY_RECORD_SPEC);
+    const spec = this.#valuesSpec;
     const local = localInput.evaluate();
     if (spec.kind === "table" ? !Array.isArray(local) : Array.isArray(local))
       throw new PluginNodeError([
@@ -294,8 +290,7 @@ export class ComputedProcessor implements Processor {
   }
 
   #staticValuesView(): unknown {
-    const raw = this.plugin.inputs.values;
-    const spec = isModel(raw) ? raw.spec : (raw ?? EMPTY_RECORD_SPEC);
+    const spec = this.#valuesSpec;
     const view = runtimeStaticView(authoringValue(this.#parsedValues, spec), spec);
     return staticPayload(view, spec);
   }
@@ -340,7 +335,7 @@ export class ComputedProcessor implements Processor {
   }
 
   #checkOutputs(raw: Outputs): void {
-    for (const [name, specOrModel] of Object.entries(this.plugin.outputs)) {
+    for (const [name, output] of Object.entries(this.plugin.outputs)) {
       const rawValue = raw[name];
       if (rawValue === undefined) continue;
       const badPath = findNonFinite(rawValue, "");
@@ -354,8 +349,16 @@ export class ComputedProcessor implements Processor {
           ),
         ]);
       }
-      if (!isModel(specOrModel)) continue;
+      switch (output.kind) {
+        case "spec":
+          continue;
+        case "model":
+          break;
+        default:
+          return unreachable(output);
+      }
       if (!isValue(rawValue)) continue;
+      const specOrModel = output.model;
       const snapshot = this.#outputStaticSnapshots.get(name);
       if (snapshot === undefined) {
         const parsed = parseModel(specOrModel, rawValue, `${this.nodeId}.output.${name}`);
@@ -384,8 +387,7 @@ export class ComputedProcessor implements Processor {
   } {
     const resolved: Record<string, unknown> = {};
     const structures: Record<string, SourceStructure> = {};
-    for (const [slot, declaredSlot] of Object.entries(this.plugin.inputs.requires ?? {})) {
-      const declaration = slotDeclaration(declaredSlot);
+    for (const [slot, declaration] of Object.entries(this.plugin.inputs.requires ?? {})) {
       const entry = slots[slot];
       const path = `${this.nodeId}.input.requires.${slot}`;
       if (entry === undefined) {

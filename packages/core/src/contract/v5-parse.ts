@@ -4,15 +4,15 @@ import { readAuthoredLeaf } from "./authored-leaf";
 import { diagnostic } from "./diagnostics";
 import type { Diagnostic } from "./v5";
 import type {
+  AdmittedPlugin,
   FieldSpec,
   Model,
   OutputDefinition,
-  PluginDefinition,
   Scalar,
   SourceBinding,
   ValueSpec,
 } from "./v5";
-import { isModel } from "./v5";
+import { outputRef } from "./v5";
 import { unknownNameMessage } from "./registry-message";
 
 /**
@@ -85,7 +85,7 @@ export interface ParseContext {
   /** Answers whether a plugin id names an admitted plugin. Phase 3 supplies the real registry. */
   readonly isPluginRegistered?: (pluginId: string) => boolean;
   /** Answers the admitted plugin definition for an id; absent leaves that check to the caller. */
-  readonly pluginDefinition?: (pluginId: string) => PluginDefinition | undefined;
+  readonly pluginDefinition?: (pluginId: string) => AdmittedPlugin | undefined;
   /** Answers the admitted model for an id; absent leaves that check to the caller. */
   readonly model?: (modelId: string) => Model<unknown, unknown> | undefined;
   /** Lists admitted model ids for diagnostics; absent omits the list. */
@@ -902,12 +902,6 @@ function readValues(
   return undefined;
 }
 
-function pluginValuesSpec(definition: PluginDefinition | undefined): ValueSpec | undefined {
-  if (definition === undefined) return undefined;
-  const raw = definition.inputs.values;
-  return isModel(raw) ? raw.spec : raw;
-}
-
 function readInput(
   value: unknown,
   path: string,
@@ -935,66 +929,67 @@ function readInput(
       );
   }
   const requires = readRequires(value.requires, `${path}.requires`, diagnostics);
-  const plugin =
-    output !== undefined && "plugin" in output
-      ? context.pluginDefinition?.(output.plugin)
-      : undefined;
-  if (output !== undefined && "model" in output) {
-    if (value.param !== undefined)
-      diagnostics.push(
-        diagnostic(
-          "param-not-allowed",
-          `${path}.param`,
-          "A model output has no processor and takes no params.",
-        ),
-      );
-    if (Object.hasOwn(value, "requires"))
-      diagnostics.push(
-        diagnostic(
-          "requires-not-allowed",
-          `${path}.requires`,
-          "A model output has no processor and takes no requires.",
-        ),
-      );
-  } else if (
-    output !== undefined &&
-    "plugin" in output &&
-    value.param !== undefined &&
-    plugin !== undefined &&
-    plugin.inputs.param === undefined
-  ) {
-    diagnostics.push(
-      diagnostic(
-        "param-not-allowed",
-        `${path}.param`,
-        `Plugin '${output.plugin}' declares no params.`,
-      ),
-    );
+  const ref = output === undefined ? undefined : outputRef(output);
+  let valuesSpec: ValueSpec | undefined;
+  let paramSpec: ValueSpec | undefined;
+  let paramRead = value.param !== undefined;
+  if (ref !== undefined) {
+    switch (ref.kind) {
+      case "model": {
+        if (value.param !== undefined)
+          diagnostics.push(
+            diagnostic(
+              "param-not-allowed",
+              `${path}.param`,
+              "A model output has no processor and takes no params.",
+            ),
+          );
+        if (Object.hasOwn(value, "requires"))
+          diagnostics.push(
+            diagnostic(
+              "requires-not-allowed",
+              `${path}.requires`,
+              "A model output has no processor and takes no requires.",
+            ),
+          );
+        valuesSpec = context.model?.(ref.id)?.spec;
+        paramRead = false;
+        break;
+      }
+      case "plugin": {
+        const plugin = context.pluginDefinition?.(ref.id);
+        if (value.param !== undefined && plugin !== undefined && plugin.inputs.param === undefined)
+          diagnostics.push(
+            diagnostic(
+              "param-not-allowed",
+              `${path}.param`,
+              `Plugin '${ref.id}' declares no params.`,
+            ),
+          );
+        if (
+          value.values !== undefined &&
+          plugin !== undefined &&
+          plugin.inputs.values === undefined
+        )
+          diagnostics.push(
+            diagnostic(
+              "values-not-allowed",
+              `${path}.values`,
+              `Plugin '${ref.id}' declares no local values.`,
+            ),
+          );
+        valuesSpec = plugin?.inputs.values?.spec;
+        paramSpec = plugin?.inputs.param;
+        break;
+      }
+      default:
+        return unreachable(ref);
+    }
   }
-  if (
-    output !== undefined &&
-    "plugin" in output &&
-    value.values !== undefined &&
-    plugin !== undefined &&
-    plugin.inputs.values === undefined
-  ) {
-    diagnostics.push(
-      diagnostic(
-        "values-not-allowed",
-        `${path}.values`,
-        `Plugin '${output.plugin}' declares no local values.`,
-      ),
-    );
-  }
-  const valuesSpec =
-    output !== undefined && "model" in output
-      ? context.model?.(output.model)?.spec
-      : pluginValuesSpec(plugin);
   const values = readValues(value.values, `${path}.values`, valuesSpec, diagnostics);
-  const param =
-    value.param === undefined || (output !== undefined && "model" in output)
-      ? undefined
-      : readValues(value.param, `${path}.param`, plugin?.inputs.param, diagnostics);
+  const param = paramRead
+    ? readValues(value.param, `${path}.param`, paramSpec, diagnostics)
+    : undefined;
   return Object.freeze({
     ...(values === undefined ? {} : { values }),
     ...(param === undefined ? {} : { param }),

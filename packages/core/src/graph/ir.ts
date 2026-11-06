@@ -1,6 +1,6 @@
 import { unreachable } from "../lang/exhaustive";
 import type { Diagnostic, TrackDefinition, ProjectDefinition } from "../contract/v5";
-import { outputModelId, outputPluginId } from "../contract/v5";
+import { outputRef } from "../contract/v5";
 import { diagnostic } from "../contract/diagnostics";
 import { readOutcome } from "../lang/outcome";
 
@@ -223,10 +223,15 @@ export function deriveDependants(
 }
 
 function sameOutput(contract: CommittedContract, track: TrackDefinition): boolean {
-  return (
-    contract.plugin === outputPluginId(track.output) &&
-    contract.modelId === outputModelId(track.output)
-  );
+  const ref = outputRef(track.output);
+  switch (ref.kind) {
+    case "model":
+      return contract.modelId === ref.id && contract.plugin === undefined;
+    case "plugin":
+      return contract.plugin === ref.id && contract.modelId === undefined;
+    default:
+      return unreachable(ref);
+  }
 }
 
 function withContract(

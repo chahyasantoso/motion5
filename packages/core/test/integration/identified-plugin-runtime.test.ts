@@ -14,7 +14,7 @@ import {
   type Table,
   type ValueSpec,
 } from "../../src/contract/v5";
-import { PluginCatalog } from "../../src/domain/plugin-catalog";
+import { PluginCatalog, admitDeclaration } from "../../src/domain/plugin-catalog";
 import { Engine } from "../../src/engine";
 import { createManualClock } from "../../src/ports/clock";
 import { createValueEvaluator } from "../../src/runtime/evaluate-values";
@@ -555,11 +555,15 @@ describe("identified plugin runtime", () => {
       ? testPlugin.inputs.values.spec
       : testPlugin.inputs.values;
     const localInput = new LocalInput(
-      createValueEvaluator(defaultPluginValues(undefined, testPlugin), interpolator, valuesSpec),
+      createValueEvaluator(
+        defaultPluginValues(undefined, admitDeclaration(testPlugin)),
+        interpolator,
+        valuesSpec,
+      ),
     );
     const processor = new ComputedProcessor({
       nodeId: "test-node",
-      plugin: testPlugin,
+      plugin: admitDeclaration(testPlugin),
       values: undefined,
       interpolator,
     });

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { isModel, type PluginDefinition } from "../../../src/contract/v5";
+import { admitDeclaration } from "../../../src/domain/plugin-catalog";
 import { parseTrackDefinition } from "../../../src/contract/v5-parse";
 import type { ParsedValues } from "../../../src/contract/v5-parse";
 import type { Interpolator } from "../../../src/ports/interpolator";
@@ -237,7 +238,7 @@ describe("Computed processor replaceValues build transactionality", () => {
     );
     const processor = new ComputedProcessor({
       nodeId: "plugin-track-1",
-      plugin: TEST_PLUGIN,
+      plugin: admitDeclaration(TEST_PLUGIN),
       values: initialValues,
       interpolator: controllable.interpolator,
     });

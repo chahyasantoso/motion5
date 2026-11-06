@@ -1,16 +1,18 @@
 import type {
   LivePatch,
   MotionDefinition,
+  OutputDefinition,
   PatchBatch,
   PatchListener,
   ProjectDefinition,
+  ResolvedOutput,
   SlotSpec,
   Structure,
   SourceStructure,
   TrackDefinition,
   TriggerSignal,
 } from "./contract/v5";
-import { isModel, outputModelId, outputPluginId } from "./contract/v5";
+import { outputPluginId, outputRef } from "./contract/v5";
 import { unknownNameMessage } from "./contract/registry-message";
 import { parseTrackDefinition } from "./contract/v5-parse";
 import type { MotionHandle } from "./contract/motion-handle";
@@ -46,12 +48,7 @@ import { acceptsExternalSignal } from "./ports/trigger-factory";
 import type { ClockConsumer, CreatedTrigger, TriggerFactory } from "./ports/trigger-factory";
 import { afterCleanup } from "./runtime/report";
 import { ProjectRuntime, type StagedTrack } from "./runtime/project-runtime";
-import {
-  isOptionalSlot,
-  isShapeSlot,
-  needsSlotStructure,
-  slotDeclaration,
-} from "./contract/slot-declaration";
+import { isOptionalSlot, isShapeSlot, needsSlotStructure } from "./contract/slot-declaration";
 
 export interface EngineOptions {
   readonly clock: Clock;
@@ -194,6 +191,38 @@ export class Engine {
     }
     for (const track of acceptedProject.freeTracks ?? [])
       nodes.set(qualifyFreeTrack(track.id).value, track);
+    const resolveOutput = (output: OutputDefinition, nodeId: string): ResolvedOutput => {
+      const ref = outputRef(output);
+      switch (ref.kind) {
+        case "plugin": {
+          const plugin = this.#capabilities.pluginDefinition(ref.id);
+          // Admitted id, no definition -> refuse before any Track: no slots, never publishes.
+          if (plugin === undefined)
+            throw new TypeError(
+              `plugin-unknown at ${nodeId}.output.plugin: ${unknownNameMessage(
+                "plugin",
+                ref.id,
+                this.#capabilities.pluginIds(),
+              )}`,
+            );
+          return { kind: "computed", plugin };
+        }
+        case "model": {
+          const model = this.#capabilities.model(ref.id);
+          if (model === undefined)
+            throw new TypeError(
+              `model-unknown at ${nodeId}.output.model: ${unknownNameMessage(
+                "model",
+                ref.id,
+                this.#capabilities.modelIds(),
+              )}`,
+            );
+          return { kind: "source", model };
+        }
+        default:
+          return unreachable(ref);
+      }
+    };
     const compileTrack = (trackDef: TrackDefinition, nodeId: string): Track => {
       const existing = tracks.get(nodeId);
       if (existing) return existing;
@@ -210,71 +239,60 @@ export class Engine {
           throw new TypeError(describeDiagnostics(diagnostics));
         },
       );
-      const pluginId = outputPluginId(parsed.output);
-      if (pluginId !== undefined) {
-        const plugin = this.#capabilities.pluginDefinition(pluginId);
-        // Admitted id, no definition -> refuse before any Track: no slots, never publishes.
-        if (plugin === undefined)
-          throw new TypeError(
-            `plugin-unknown at ${nodeId}.output.plugin: ${unknownNameMessage(
+      const resolved = resolveOutput(parsed.output, nodeId);
+      switch (resolved.kind) {
+        case "computed": {
+          const plugin = resolved.plugin;
+          const valuesSpec = plugin.inputs.values?.spec;
+          // Contract-checked pre-compile, rechecked at runtime: easing can leave a declared range.
+          readOutcome(
+            deriveSourceContract(
+              parsed.input.values,
+              valuesSpec,
+              `${nodeId}.input.values`,
               "plugin",
-              pluginId,
-              this.#capabilities.pluginIds(),
-            )}`,
+            ),
+            () => undefined,
+            (diagnostics) => {
+              throw new TypeError(describeDiagnostics(diagnostics));
+            },
           );
-        const valuesSpec = isModel(plugin.inputs.values)
-          ? plugin.inputs.values.spec
-          : plugin.inputs.values;
-        // Contract-checked pre-compile, rechecked at runtime: easing can leave a declared range.
-        readOutcome(
-          deriveSourceContract(parsed.input.values, valuesSpec, `${nodeId}.input.values`, "plugin"),
-          () => undefined,
-          (diagnostics) => {
-            throw new TypeError(describeDiagnostics(diagnostics));
-          },
-        );
-        const localInput = new LocalInput(
-          createValueEvaluator(
-            defaultPluginValues(parsed.input.values, plugin),
-            this.#options.interpolator,
-            valuesSpec,
-          ),
-        );
-        const processor = new ComputedProcessor({
-          nodeId,
-          plugin,
-          values: parsed.input.values,
-          interpolator: this.#options.interpolator,
-          ...(parsed.input.param === undefined ? {} : { param: parsed.input.param }),
-        });
-        const track = new Track(nodeId, localInput, processor);
-        tracks.set(nodeId, track);
-        return track;
+          const localInput = new LocalInput(
+            createValueEvaluator(
+              defaultPluginValues(parsed.input.values, plugin),
+              this.#options.interpolator,
+              valuesSpec,
+            ),
+          );
+          const processor = new ComputedProcessor({
+            nodeId,
+            plugin,
+            values: parsed.input.values,
+            interpolator: this.#options.interpolator,
+            ...(parsed.input.param === undefined ? {} : { param: parsed.input.param }),
+          });
+          const track = new Track(nodeId, localInput, processor);
+          tracks.set(nodeId, track);
+          return track;
+        }
+        case "source": {
+          const model = resolved.model;
+          const localInput = new LocalInput(
+            createValueEvaluator(parsed.input.values, this.#options.interpolator, model.spec),
+          );
+          const processor = new PassthroughProcessor({
+            nodeId,
+            values: parsed.input.values,
+            interpolator: this.#options.interpolator,
+            model,
+          });
+          const track = new Track(nodeId, localInput, processor);
+          tracks.set(nodeId, track);
+          return track;
+        }
+        default:
+          return unreachable(resolved);
       }
-      const modelId = outputModelId(parsed.output);
-      if (modelId === undefined) throw new TypeError(`Track "${nodeId}" names no model output.`);
-      const model = this.#capabilities.model(modelId);
-      if (model === undefined)
-        throw new TypeError(
-          `model-unknown at ${nodeId}.output.model: ${unknownNameMessage(
-            "model",
-            modelId,
-            this.#capabilities.modelIds(),
-          )}`,
-        );
-      const spec = model.spec;
-      const localInput = new LocalInput(
-        createValueEvaluator(parsed.input.values, this.#options.interpolator, spec),
-      );
-      const processor = new PassthroughProcessor({
-        nodeId,
-        values: parsed.input.values,
-        interpolator: this.#options.interpolator,
-        model,
-      });
-      const track = new Track(nodeId, localInput, processor);
-      tracks.set(nodeId, track);
-      return track;
     };
     const compile = (nodeId: string): Track => {
       const definition = nodes.get(nodeId);
@@ -533,8 +551,7 @@ export class Engine {
         const declared = plugin.inputs.requires ?? {};
         const structures: Record<string, SourceStructure> = {};
         let ready = true;
-        for (const [slotName, declaredSlot] of Object.entries(declared)) {
-          const slot = slotDeclaration(declaredSlot);
+        for (const [slotName, slot] of Object.entries(declared)) {
           const entries = grouped.get(slotName);
           if (entries === undefined) {
             if (!isOptionalSlot(slot)) ready = false;

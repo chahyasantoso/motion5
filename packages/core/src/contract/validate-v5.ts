@@ -5,7 +5,7 @@ import {
   type TrackDefinition,
   type TriggerDefinition,
 } from "./v5";
-import { SUPPORTED_TRIGGER_TYPES, isModel } from "./v5";
+import { SUPPORTED_TRIGGER_TYPES, outputRef } from "./v5";
 import { unreachable } from "../lang/exhaustive";
 import { acceptedOutcome, refusedOutcome, refusedOutcomeFrom, type Outcome } from "../lang/outcome";
 import { describeDiagnostics, diagnostic } from "./diagnostics";
@@ -135,32 +135,40 @@ function derivedInputDiagnostics(
   path: string,
   context: ParseContext,
 ): readonly Diagnostic[] {
-  if ("plugin" in parsed.output) {
-    const definition = context.pluginDefinition?.(parsed.output.plugin);
-    if (definition === undefined) return [];
-    const rawValues = definition.inputs.values;
-    const valuesSpec = isModel(rawValues) ? rawValues.spec : rawValues;
-    const diagnostics = [
-      ...deriveSourceContract(parsed.input.values, valuesSpec, `${path}.input.values`, "plugin")
-        .diagnostics,
-    ];
-    if (definition.inputs.param !== undefined)
-      diagnostics.push(
+  const ref = outputRef(parsed.output);
+  switch (ref.kind) {
+    case "plugin": {
+      const definition = context.pluginDefinition?.(ref.id);
+      if (definition === undefined) return [];
+      const diagnostics = [
         ...deriveSourceContract(
-          parsed.input.param,
-          definition.inputs.param,
-          `${path}.input.param`,
+          parsed.input.values,
+          definition.inputs.values?.spec,
+          `${path}.input.values`,
           "plugin",
         ).diagnostics,
-      );
-    return diagnostics;
+      ];
+      if (definition.inputs.param !== undefined)
+        diagnostics.push(
+          ...deriveSourceContract(
+            parsed.input.param,
+            definition.inputs.param,
+            `${path}.input.param`,
+            "plugin",
+          ).diagnostics,
+        );
+      return diagnostics;
+    }
+    case "model":
+      return deriveSourceContract(
+        parsed.input.values,
+        context.model?.(ref.id)?.spec,
+        `${path}.input.values`,
+        "model",
+      ).diagnostics;
+    default:
+      return unreachable(ref);
   }
-  return deriveSourceContract(
-    parsed.input.values,
-    context.model?.(parsed.output.model)?.spec,
-    `${path}.input.values`,
-    "model",
-  ).diagnostics;
 }
 
 // Duplicate ids scoped to the caller's set; source contract inferred only for model outputs.

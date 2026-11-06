@@ -8,7 +8,7 @@ import type {
   SourceStructures,
   ValueSpec,
 } from "../../../src/contract/v5";
-import { PluginCatalog } from "../../../src/domain/plugin-catalog";
+import { PluginCatalog, admitDeclaration } from "../../../src/domain/plugin-catalog";
 import { Engine } from "../../../src/engine";
 import { createManualClock } from "../../../src/ports/clock";
 import { createValueEvaluator } from "../../../src/runtime/evaluate-values";
@@ -103,7 +103,7 @@ describe("structures and prepare hook", () => {
     );
     const processor = new ComputedProcessor({
       nodeId: "node",
-      plugin,
+      plugin: admitDeclaration(plugin),
       values: undefined,
       interpolator: createFakeInterpolator(),
     });
@@ -135,7 +135,7 @@ describe("structures and prepare hook", () => {
     };
     const processor = new ComputedProcessor({
       nodeId: "node",
-      plugin,
+      plugin: admitDeclaration(plugin),
       values: undefined,
       interpolator: createFakeInterpolator(),
     });

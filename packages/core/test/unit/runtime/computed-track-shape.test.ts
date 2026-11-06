@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { isModel, type PluginDefinition, type ValueSpec } from "../../../src/contract/v5";
+import { admitDeclaration } from "../../../src/domain/plugin-catalog";
 import { parseTrackDefinition } from "../../../src/contract/v5-parse";
 import type { ParsedValues } from "../../../src/contract/v5-parse";
 import { createValueEvaluator } from "../../../src/runtime/evaluate-values";
@@ -45,7 +46,7 @@ function createComputedTrack(options: {
   const localInput = new LocalInput(createValueEvaluator(options.values, interpolator, valuesSpec));
   const processor = new ComputedProcessor({
     nodeId: options.nodeId,
-    plugin: options.plugin,
+    plugin: admitDeclaration(options.plugin),
     values: options.values,
     interpolator,
   });

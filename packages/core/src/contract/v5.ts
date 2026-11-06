@@ -1,3 +1,4 @@
+import { unreachable } from "../lang/exhaustive";
 import type { RuleId } from "./rule-id";
 
 export const AUTHORED_SCHEMA_VERSION = 5 as const;
@@ -292,13 +293,27 @@ export type SourceStructure = Structure<unknown> | Readonly<Record<string, Struc
 export type SourceStructures = Readonly<Record<string, SourceStructure>>;
 /** What a track's output is: a source model or a computed plugin. Exactly one key. */
 export type OutputDefinition = { readonly model: string } | { readonly plugin: string };
-/** The model id an output names, or undefined when it names a plugin. */
-export function outputModelId(output: OutputDefinition): string | undefined {
-  return "model" in output ? output.model : undefined;
+/** An authored output read once into a tagged form; `switch` on `kind`. */
+export type OutputRef =
+  | { readonly kind: "model"; readonly id: string }
+  | { readonly kind: "plugin"; readonly id: string };
+/** The single owner of telling a model output from a plugin output. */
+export function outputRef(output: OutputDefinition): OutputRef {
+  return "model" in output
+    ? { kind: "model", id: output.model }
+    : { kind: "plugin", id: output.plugin };
 }
-/** The plugin id an output names, or undefined when it names a model. */
+/** The plugin id an output names, for a reader with no work on a model output. */
 export function outputPluginId(output: OutputDefinition): string | undefined {
-  return "plugin" in output ? output.plugin : undefined;
+  const ref = outputRef(output);
+  switch (ref.kind) {
+    case "plugin":
+      return ref.id;
+    case "model":
+      return undefined;
+    default:
+      return unreachable(ref);
+  }
 }
 /** One authored input channel a value edit can address. */
 export type ValueChannel = "values" | "param";
@@ -371,6 +386,42 @@ export interface PluginDefinition<
   prepare?(ctx: PluginPrepareContext<TStructures>): Prepared<TState>;
   transform(input: Input, context: EvaluationContext): Outputs;
 }
+/** A plugin's local values channel after admission; `model` present means it parses at commit. */
+export interface AdmittedValues {
+  readonly spec: ValueSpec;
+  readonly model?: Model<unknown, unknown>;
+}
+/** One declared output after admission: a nominal model or a plain spec. */
+export type AdmittedOutput =
+  | { readonly kind: "model"; readonly model: Model<unknown, unknown> }
+  | { readonly kind: "spec"; readonly spec: ValueSpec };
+/** The spec an admitted output publishes under. */
+export function admittedOutputSpec(output: AdmittedOutput): ValueSpec {
+  switch (output.kind) {
+    case "model":
+      return output.model.spec;
+    case "spec":
+      return output.spec;
+    default:
+      return unreachable(output);
+  }
+}
+/** A plugin after admission: every declaration form normalized, so readers never branch on form. */
+export interface AdmittedPlugin {
+  readonly id: string;
+  readonly inputs: {
+    readonly param?: RecordSpec;
+    readonly values?: AdmittedValues;
+    readonly requires?: Readonly<Record<string, SlotSpec>>;
+  };
+  readonly outputs: Readonly<Record<string, AdmittedOutput>>;
+  prepare?(ctx: PluginPrepareContext): Prepared<unknown>;
+  transform(input: ResolvedInput, context: EvaluationContext): Outputs;
+}
+/** A track output resolved against the catalog at load. */
+export type ResolvedOutput =
+  | { readonly kind: "source"; readonly model: Model<unknown, unknown> }
+  | { readonly kind: "computed"; readonly plugin: AdmittedPlugin };
 /** Payload by status; only ready owns outputs. */
 export type PatchPayload =
   | { readonly status: "ready"; readonly outputs: Outputs }
