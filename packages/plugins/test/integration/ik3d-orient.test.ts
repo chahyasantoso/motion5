@@ -26,7 +26,7 @@ const ramp = (from: number, to: number) => [
 
 function registry(): PluginCatalog {
   const plugins = new PluginCatalog({ models: testModels });
-  plugins.registerAll([fk3dPlugin, ik3dPlugin]);
+  plugins.register({ plugins: [fk3dPlugin, ik3dPlugin] });
   return plugins;
 }
 

@@ -17,6 +17,7 @@ import { deriveCommittedContract, type CommittedContract } from "./committed-con
 import { orderGraph } from "./order";
 import { checkDependencyBindings } from "./dependency-check";
 import { checkSlotFit } from "./slot-check";
+import { isObjectRecord } from "../lang/plain-record";
 
 interface ScalarEdgeRequirement {
   readonly plugin: string;
@@ -99,10 +100,6 @@ function freeze<T>(value: T): T {
 
 export function compareDiagnostics(a: Diagnostic, b: Diagnostic): number {
   return compareCodeUnits(a.ruleId, b.ruleId) || compareCodeUnits(a.path, b.path);
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
 export function collectTrack(

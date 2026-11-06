@@ -1,6 +1,5 @@
 import type {
   Diagnostic,
-  Model,
   NonEmptyDiagnostics,
   Outputs,
   AdmittedPlugin,
@@ -17,6 +16,7 @@ import type {
 import type { ParsedRecord, ParsedValues } from "../../contract/v5-parse";
 import { describeDiagnostics, diagnostic } from "../../contract/diagnostics";
 import { unreachable } from "../../lang/exhaustive";
+import { isPlainRecord } from "../../lang/plain-record";
 import { defineOwnValue } from "../../lang/own-property";
 import type { Interpolator } from "../../ports/interpolator";
 import { createValueEvaluator } from "../evaluate-values";
@@ -45,12 +45,6 @@ function staticPayload(view: StaticView, spec: ValueSpec): unknown {
     default:
       return unreachable(view);
   }
-}
-
-function isPlainRecord(value: unknown): value is Record<string, unknown> {
-  if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
-  const prototype = Object.getPrototypeOf(value);
-  return prototype === Object.prototype || prototype === null;
 }
 
 function inputFailure(path: string, message: string): PluginNodeError {
@@ -126,16 +120,22 @@ export interface ComputedProcessorOptions {
   readonly values: ParsedValues | undefined;
   readonly param?: ParsedValues;
   readonly interpolator: Interpolator;
+  readonly localInput: LocalInput;
 }
+
+type PrepareResult =
+  | { readonly kind: "ok" }
+  | { readonly kind: "threw"; readonly message: string }
+  | { readonly kind: "refused"; readonly diagnostics: NonEmptyDiagnostics };
 
 export class ComputedProcessor implements Processor {
   readonly kind = "computed" as const;
   readonly nodeId: string;
   readonly plugin: AdmittedPlugin;
   readonly #interpolator: Interpolator;
+  readonly #localInput: LocalInput;
   #paramInput: LocalInput | undefined;
   #outputsChecked = false;
-  readonly #computedStructures = new Map<string, Structure<unknown>>();
   #checkedStructures: SourceStructures | undefined;
   #preparedState: unknown;
   #isPrepared = false;
@@ -149,6 +149,7 @@ export class ComputedProcessor implements Processor {
     this.nodeId = options.nodeId;
     this.plugin = options.plugin;
     this.#interpolator = options.interpolator;
+    this.#localInput = options.localInput;
     this.#parsedValues = options.values;
     this.#parsedParam = options.param;
     this.#parseLocalModel(options.values);
@@ -186,15 +187,15 @@ export class ComputedProcessor implements Processor {
     return this.#outputStructures.get(outputName);
   }
 
-  setProgress(value: number, localInput: LocalInput): boolean {
-    const p1 = localInput.setProgress(value);
+  setProgress(value: number): boolean {
+    const p1 = this.#localInput.setProgress(value);
     const p2 = this.#paramInput?.setProgress(value) ?? false;
     return p1 || p2;
   }
 
-  replaceValues(values: ParsedValues | undefined, localInput: LocalInput): void {
+  replaceValues(values: ParsedValues | undefined): void {
     const valuesSpec = this.#valuesSpec;
-    localInput.replaceEvaluator(
+    this.#localInput.replaceEvaluator(
       () =>
         createValueEvaluator(
           defaultPluginValues(values, this.plugin),
@@ -222,7 +223,8 @@ export class ComputedProcessor implements Processor {
     this.#paramInput?.replaceOverlay(value);
   }
 
-  compose(slots: BoundSlots = {}, localInput: LocalInput): PublisherComposition {
+  compose(slots: BoundSlots = {}): PublisherComposition {
+    const localInput = this.#localInput;
     localInput.assertActive();
     const spec = this.#valuesSpec;
     const local = localInput.evaluate();
@@ -259,8 +261,30 @@ export class ComputedProcessor implements Processor {
   }
 
   prepareCommit(structures: SourceStructures): void {
+    const result = this.#prepareWith(structures);
+    switch (result.kind) {
+      case "ok":
+        return;
+      case "threw":
+        throw new TypeError(describeDiagnostics([this.#prepareThrew(result.message)]));
+      case "refused":
+        throw new TypeError(describeDiagnostics(result.diagnostics));
+      default:
+        return unreachable(result);
+    }
+  }
+
+  #prepareThrew(message: string): Diagnostic {
+    return diagnostic(
+      "plugin-validation-failed",
+      this.nodeId,
+      `Plugin '${this.plugin.id}' prepare threw: ${message}`,
+    );
+  }
+
+  #prepareWith(structures: SourceStructures): PrepareResult {
     const prepare = this.plugin.prepare;
-    if (prepare === undefined) return;
+    if (prepare === undefined) return { kind: "ok" };
     const staticValues = this.#staticValuesView();
     const staticParam = this.#staticParamView();
     let res: Prepared<unknown>;
@@ -271,22 +295,14 @@ export class ComputedProcessor implements Processor {
         structures,
       });
     } catch (error) {
-      throw new TypeError(
-        describeDiagnostics([
-          diagnostic(
-            "plugin-validation-failed",
-            this.nodeId,
-            `Plugin '${this.plugin.id}' prepare threw: ${error instanceof Error ? error.message : String(error)}`,
-          ),
-        ]),
-      );
+      return { kind: "threw", message: error instanceof Error ? error.message : String(error) };
     }
-    if (!res.ok) {
-      throw new TypeError(describeDiagnostics(refusalDiagnostics(res.diagnostics, this.plugin.id)));
-    }
+    if (!res.ok)
+      return { kind: "refused", diagnostics: refusalDiagnostics(res.diagnostics, this.plugin.id) };
     this.#preparedState = res.value;
     this.#isPrepared = true;
     this.#checkedStructures = structures;
+    return { kind: "ok" };
   }
 
   #staticValuesView(): unknown {
@@ -308,30 +324,17 @@ export class ComputedProcessor implements Processor {
     if (this.#isPrepared && sameSourceStructures(this.#checkedStructures, structures)) {
       return;
     }
-    const staticValues = this.#staticValuesView();
-    const staticParam = this.#staticParamView();
-    let res: Prepared<unknown>;
-    try {
-      res = prepare({
-        values: staticValues,
-        param: staticParam,
-        structures,
-      });
-    } catch (error) {
-      throw new PluginNodeError([
-        diagnostic(
-          "plugin-validation-failed",
-          this.nodeId,
-          `Plugin '${this.plugin.id}' prepare threw: ${error instanceof Error ? error.message : String(error)}`,
-        ),
-      ]);
+    const result = this.#prepareWith(structures);
+    switch (result.kind) {
+      case "ok":
+        return;
+      case "threw":
+        throw new PluginNodeError([this.#prepareThrew(result.message)]);
+      case "refused":
+        throw new PluginNodeError(result.diagnostics);
+      default:
+        return unreachable(result);
     }
-    if (!res.ok) {
-      throw new PluginNodeError(refusalDiagnostics(res.diagnostics, this.plugin.id));
-    }
-    this.#preparedState = res.value;
-    this.#isPrepared = true;
-    this.#checkedStructures = structures;
   }
 
   #checkOutputs(raw: Outputs): void {
@@ -444,12 +447,10 @@ export class ComputedProcessor implements Processor {
         const value = outputs.values;
         if (!isValue(value))
           throw inputFailure(`${path}.values`, `Model slot requires a values output.`);
-        const structure =
-          bound.structure ??
-          (declaration.model.parse !== undefined
-            ? this.#computedModelStructure(declaration.model, bound.sourceId, value, path)
-            : undefined);
-        if (structure !== undefined) defineOwnValue(structures, structureKey, structure);
+        if (bound.structure === undefined && declaration.model.parse !== undefined)
+          throw inputFailure(path, "Model slot has no parsed structure.");
+        if (bound.structure !== undefined)
+          defineOwnValue(structures, structureKey, bound.structure);
         return value;
       }
       case "shape":
@@ -457,23 +458,6 @@ export class ComputedProcessor implements Processor {
       default:
         return unreachable(declaration);
     }
-  }
-
-  #computedModelStructure(
-    model: Model<unknown, unknown>,
-    sourceId: string,
-    value: Value,
-    path: string,
-  ): Structure<unknown> | undefined {
-    const key = `${sourceId}\u0000${model.id}`;
-    const cached = this.#computedStructures.get(key);
-    if (cached !== undefined) return cached;
-    const parsed = parseModel(model, value, `${path}.values`);
-    if (parsed.kind === "refused") throw new PluginNodeError(parsed.diagnostics);
-    if (parsed.value !== undefined) {
-      this.#computedStructures.set(key, parsed.value);
-    }
-    return parsed.value;
   }
 
   dispose(): void {

@@ -142,7 +142,7 @@ function refusedRuleIds(project: ProjectDefinition): readonly string[] {
 
 function createRuntime(project: ProjectDefinition = PROJECT) {
   const plugins = new PluginCatalog({ models: testModels });
-  plugins.registerAll([transform3dPlugin, fk3dPlugin, ik3dPlugin]);
+  plugins.register({ plugins: [transform3dPlugin, fk3dPlugin, ik3dPlugin] });
   return new Engine({
     clock: createManualClock(),
     interpolator: createFakeInterpolator(),

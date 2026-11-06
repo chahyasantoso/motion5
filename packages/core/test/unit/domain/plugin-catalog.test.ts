@@ -1,9 +1,15 @@
 import { describe, expect, it, vi } from "vitest";
 import type { PluginDefinition, SlotSpec, ValueSpec } from "../../../src/contract/v5";
 import { shape } from "../../../src/contract/slot-spec";
-import { PluginAdmissionError, PluginCatalog } from "../../../src/domain/plugin-catalog";
+import {
+  PluginAdmissionError,
+  PluginCatalog,
+  type PluginCatalogOptions,
+} from "../../../src/domain/plugin-catalog";
 import { validateV5 } from "../../../src/validate-v5";
 import { testModels } from "../../support/test-models";
+
+const untyped = (batch: unknown) => batch as PluginCatalogOptions;
 
 type ScaleValues = Readonly<Record<"factor", number>>;
 type ScaleInput = { readonly values: ScaleValues; readonly requires: {} };
@@ -46,7 +52,7 @@ function project(track: unknown): unknown {
 describe("plugin admission is keyed by id and atomic", () => {
   it("admits a typed definition and answers it by id", () => {
     const catalog = new PluginCatalog({ models: testModels });
-    catalog.register(SCALE);
+    catalog.register({ plugins: [SCALE] });
 
     expect(catalog.size).toBe(1);
     expect(catalog.has("scale")).toBe(true);
@@ -67,7 +73,7 @@ describe("plugin admission is keyed by id and atomic", () => {
       },
     };
 
-    catalog.register(converter);
+    catalog.register({ plugins: [converter] });
     expect(catalog.has("converter")).toBe(true);
     expect(catalog.get("converter")?.inputs.values).toBeUndefined();
     expect(catalog.get("converter")?.inputs.param).toBeUndefined();
@@ -75,10 +81,12 @@ describe("plugin admission is keyed by id and atomic", () => {
 
   it("refuses a duplicate id without changing the admitted definition", () => {
     const catalog = new PluginCatalog({ models: testModels });
-    catalog.register(SCALE);
+    catalog.register({ plugins: [SCALE] });
     const before = catalog.get("scale");
 
-    expect(reason(() => catalog.register(SCALE))).toMatch(/^plugin-duplicate-id at /);
+    expect(reason(() => catalog.register({ plugins: [SCALE] }))).toMatch(
+      /^plugin-duplicate-id at /,
+    );
     expect(catalog.size).toBe(1);
     expect(catalog.get("scale")).toBe(before);
   });
@@ -90,7 +98,9 @@ describe("plugin admission is keyed by id and atomic", () => {
       inputs: { values: { kind: "record", fields: {} }, extra: 1 },
     });
 
-    expect(reason(() => catalog.registerAll([SCALE, invalid]))).toMatch(/^plugin-shape at /);
+    expect(reason(() => catalog.register({ plugins: [SCALE, invalid] }))).toMatch(
+      /^plugin-shape at /,
+    );
     expect(catalog.size).toBe(0);
     expect(catalog.has("scale")).toBe(false);
   });
@@ -98,15 +108,17 @@ describe("plugin admission is keyed by id and atomic", () => {
   it("refuses a duplicate inside one batch, not only against the committed registry", () => {
     const catalog = new PluginCatalog({ models: testModels });
 
-    expect(reason(() => catalog.registerAll([SCALE, SCALE]))).toMatch(/^plugin-duplicate-id at /);
+    expect(reason(() => catalog.register({ plugins: [SCALE, SCALE] }))).toMatch(
+      /^plugin-duplicate-id at /,
+    );
     expect(catalog.size).toBe(0);
   });
 
   it("carries the rule id as data on the admission refusal", () => {
     const catalog = new PluginCatalog({ models: testModels });
-    catalog.register(SCALE);
+    catalog.register({ plugins: [SCALE] });
     try {
-      catalog.register(SCALE);
+      catalog.register({ plugins: [SCALE] });
       throw new Error("Expected the duplicate to refuse.");
     } catch (error) {
       expect(error).toBeInstanceOf(PluginAdmissionError);
@@ -126,28 +138,34 @@ describe("admission refuses a malformed definition by rule", () => {
     const plugin = malformed({
       outputs: { values: { type: "record", fields: {} } },
     });
-    expect(reason(() => new PluginCatalog({ models: testModels }).register(plugin))).toMatch(
-      /^spec-field-unknown at /,
-    );
+    expect(
+      reason(() => new PluginCatalog({ models: testModels }).register({ plugins: [plugin] })),
+    ).toMatch(/^spec-field-unknown at /);
   });
 
   it("refuses a model member outside id, spec and parse", () => {
     expect(
       reason(() =>
-        new PluginCatalog().registerModel({
-          id: "LegacyModel",
-          spec: table,
-          legacyTypeId: "legacy",
-        }),
+        new PluginCatalog().register(
+          untyped({
+            models: [
+              {
+                id: "LegacyModel",
+                spec: table,
+                legacyTypeId: "legacy",
+              },
+            ],
+          }),
+        ),
       ),
     ).toMatch(/^plugin-shape at model.legacyTypeId/);
   });
 
   it("refuses the retired checkSources hook", () => {
     const plugin = malformed({ checkSources: () => [] });
-    expect(reason(() => new PluginCatalog({ models: testModels }).register(plugin))).toMatch(
-      /^plugin-shape at plugin\.checkSources/,
-    );
+    expect(
+      reason(() => new PluginCatalog({ models: testModels }).register({ plugins: [plugin] })),
+    ).toMatch(/^plugin-shape at plugin\.checkSources/);
   });
 
   it("refuses optional on inputs.values", () => {
@@ -156,9 +174,9 @@ describe("admission refuses a malformed definition by rule", () => {
         values: { kind: "record", fields: { factor: { kind: "number" } }, optional: true },
       },
     });
-    expect(reason(() => new PluginCatalog({ models: testModels }).register(plugin))).toMatch(
-      /^plugin-input-invalid at /,
-    );
+    expect(
+      reason(() => new PluginCatalog({ models: testModels }).register({ plugins: [plugin] })),
+    ).toMatch(/^plugin-input-invalid at /);
   });
 
   it("refuses static on a plugin output", () => {
@@ -170,23 +188,27 @@ describe("admission refuses a malformed definition by rule", () => {
         },
       },
     });
-    expect(reason(() => new PluginCatalog({ models: testModels }).register(plugin))).toMatch(
-      /^spec-field-unknown at /,
-    );
+    expect(
+      reason(() => new PluginCatalog({ models: testModels }).register({ plugins: [plugin] })),
+    ).toMatch(/^spec-field-unknown at /);
   });
 
   it("refuses a reserved output name", () => {
     const plugin = malformed({
       outputs: Object.fromEntries([["__proto__", table]]),
     });
-    expect(reason(() => new PluginCatalog({ models: testModels }).register(plugin))).toMatch(
-      /^name-reserved at /,
-    );
+    expect(
+      reason(() => new PluginCatalog({ models: testModels }).register({ plugins: [plugin] })),
+    ).toMatch(/^name-reserved at /);
   });
 
   it("refuses a non-callable transform", () => {
     expect(
-      reason(() => new PluginCatalog({ models: testModels }).register(malformed({ transform: 1 }))),
+      reason(() =>
+        new PluginCatalog({ models: testModels }).register({
+          plugins: [malformed({ transform: 1 })],
+        }),
+      ),
     ).toMatch(/^plugin-shape at /);
   });
 
@@ -197,15 +219,17 @@ describe("admission refuses a malformed definition by rule", () => {
         requires: { data: { ...dependency, binding: "many" } },
       },
     });
-    expect(reason(() => new PluginCatalog({ models: testModels }).register(plugin))).toMatch(
-      /^slot-binding-mode at /,
-    );
+    expect(
+      reason(() => new PluginCatalog({ models: testModels }).register({ plugins: [plugin] })),
+    ).toMatch(/^slot-binding-mode at /);
   });
 
   it("refuses an unknown plugin definition member", () => {
     expect(
       reason(() =>
-        new PluginCatalog({ models: testModels }).register(malformed({ stage: "prepare" })),
+        new PluginCatalog({ models: testModels }).register({
+          plugins: [malformed({ stage: "prepare" })],
+        }),
       ),
     ).toMatch(/^plugin-shape at /);
   });
@@ -214,7 +238,7 @@ describe("admission refuses a malformed definition by rule", () => {
 describe("a track selects a plugin only by its authored id", () => {
   it("accepts a registered id and refuses an unknown one", () => {
     const catalog = new PluginCatalog({ models: testModels });
-    catalog.register(SCALE);
+    catalog.register({ plugins: [SCALE] });
 
     expect(
       validateV5(

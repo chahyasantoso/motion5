@@ -16,6 +16,7 @@ import {
   type StructuralEdit,
 } from "./edit-types";
 import {
+  planParseContext,
   planValueEdit,
   type CheapTrack,
   type ValueChange,
@@ -104,26 +105,9 @@ function withRequiresInput(
 function validateTrack(
   track: TrackDefinition,
   path: string,
-  nodeId: string,
   environment: PlanEnvironment,
 ): Outcome<TrackDefinition, Diagnostic> {
-  // Absent predicate refuses every plugin; the graph admitted these already, so admit all.
-  const context = {
-    isPluginRegistered: environment.isPluginRegistered ?? (() => true),
-    pluginDefinition: (pluginId: string) => environment.capabilities.pluginDefinition(pluginId),
-    model: (modelId: string) => environment.capabilities.model(modelId),
-    modelIds: () => environment.capabilities.modelIds(),
-    pluginIds: () => environment.capabilities.pluginIds(),
-  };
-  const validated = validateTrackDefinition(track, path, context);
-  switch (validated.kind) {
-    case "refused":
-      return validated;
-    case "accepted":
-      return validated;
-    default:
-      return unreachable(validated);
-  }
+  return validateTrackDefinition(track, path, planParseContext(environment));
 }
 
 // A carried contract survives cheap value edits; absent means a replacement, which derives fresh.
@@ -173,12 +157,7 @@ function planReplaceTrack(
   const current = requiredTrack(state, edit.nodeId);
   if (expectedNodeId(current, edit.track.id) !== edit.nodeId)
     throw new TypeError(`Replacement must preserve node id "${edit.nodeId}".`);
-  const validated = validateTrack(
-    edit.track,
-    `replaceTrack(${edit.nodeId})`,
-    edit.nodeId,
-    environment,
-  );
+  const validated = validateTrack(edit.track, `replaceTrack(${edit.nodeId})`, environment);
   if (validated.kind === "refused") return refused(validated.diagnostics);
   const next = new Map(state.tracks);
   next.set(edit.nodeId, {
@@ -207,7 +186,7 @@ function planReplaceInput(
   if (current.track.input === edit.input && current.valueState === AUTHORED)
     return accepted(state, undefined);
   const track = withInput(current.track, edit.input);
-  const validated = validateTrack(track, `replaceInput(${edit.nodeId})`, edit.nodeId, environment);
+  const validated = validateTrack(track, `replaceInput(${edit.nodeId})`, environment);
   if (validated.kind === "refused") return refused(validated.diagnostics);
   const next = new Map(state.tracks);
   next.set(edit.nodeId, {
@@ -297,7 +276,7 @@ function planBinding(
       : unboundSource(current.track, edit.slot, edit.memberKey);
   if (track === undefined) return accepted(state, undefined);
   const path = edit.kind === "bind" ? `bind(${edit.nodeId})` : `unbind(${edit.nodeId})`;
-  const validated = validateTrack(track, path, edit.nodeId, environment);
+  const validated = validateTrack(track, path, environment);
   if (validated.kind === "refused") return refused(validated.diagnostics);
   const requires = validated.value.input?.requires ?? {};
   const contract =

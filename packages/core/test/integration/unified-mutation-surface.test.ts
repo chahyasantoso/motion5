@@ -38,7 +38,7 @@ const LINK: PluginDefinition = {
 };
 function catalog(): PluginCatalog {
   const plugins = new PluginCatalog({ models: [...testModels, XRecord] });
-  plugins.register(LINK);
+  plugins.register({ plugins: [LINK] });
   return plugins;
 }
 function track(id: string, from: number, to: number, parent?: string): TrackDefinition {

@@ -18,7 +18,7 @@ const project: ProjectDefinition = {
 
 function makeHandle() {
   const plugins = new PluginCatalog({ models: testModels });
-  plugins.registerAll([transformPlugin, fkPlugin]);
+  plugins.register({ plugins: [transformPlugin, fkPlugin] });
   const scheduler = createFakeScheduler();
   const handle = new Engine({
     clock: createManualClock(),

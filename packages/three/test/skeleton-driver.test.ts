@@ -18,7 +18,7 @@ import { testModels } from "../../core/test/support/test-models";
 
 function load(tracks: readonly TrackDefinition[]) {
   const plugins = new PluginCatalog({ models: testModels });
-  plugins.register(fk3dPlugin);
+  plugins.register({ plugins: [fk3dPlugin] });
   const project = new Engine({
     plugins,
     clock: createManualClock(),

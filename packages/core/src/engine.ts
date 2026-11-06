@@ -22,7 +22,7 @@ import type { TrackHandle } from "./contract/track-handle";
 import { describeDiagnostics } from "./contract/diagnostics";
 import { resolveTriggerDefinition } from "./contract/validate-v5";
 import { validateV5 } from "./validate-v5";
-import { type PluginCapabilities } from "./ports/plugin-capabilities";
+import { parseContextOf, type PluginCapabilities } from "./ports/plugin-capabilities";
 import { readOutcome } from "./lang/outcome";
 import { IncrementalGraphBuilder } from "./graph/builders/incremental";
 import { createDefaultTriggerFactory } from "./adapters/trigger-factory/default";
@@ -36,10 +36,6 @@ import { qualifyFreeTrack, qualifyMotionTrack } from "./graph/ids";
 import { boundSources, type BoundSource } from "./graph/dependency-edges";
 import type { ComposeResolver } from "./runtime/graph-runtime";
 import { Track } from "./runtime/track";
-import { PassthroughProcessor } from "./runtime/processors/passthrough";
-import { ComputedProcessor, defaultPluginValues } from "./runtime/processors/computed";
-import { LocalInput } from "./runtime/local-input";
-import { createValueEvaluator } from "./runtime/evaluate-values";
 import { deriveSourceContract } from "./contract/v5-infer";
 import { assertClock, type Clock } from "./ports/clock";
 import { assertInterpolator, type Interpolator } from "./ports/interpolator";
@@ -227,13 +223,7 @@ export class Engine {
       const existing = tracks.get(nodeId);
       if (existing) return existing;
       const parsed = readOutcome(
-        parseTrackDefinition(trackDef, nodeId, {
-          isPluginRegistered: (pluginId) => this.#capabilities.isPluginAdmitted(pluginId),
-          pluginDefinition: (pluginId) => this.#capabilities.pluginDefinition(pluginId),
-          model: (modelId: string) => this.#capabilities.model(modelId),
-          modelIds: () => this.#capabilities.modelIds(),
-          pluginIds: () => this.#capabilities.pluginIds(),
-        }),
+        parseTrackDefinition(trackDef, nodeId, parseContextOf(this.#capabilities)),
         (value) => value,
         (diagnostics) => {
           throw new TypeError(describeDiagnostics(diagnostics));
@@ -257,36 +247,24 @@ export class Engine {
               throw new TypeError(describeDiagnostics(diagnostics));
             },
           );
-          const localInput = new LocalInput(
-            createValueEvaluator(
-              defaultPluginValues(parsed.input.values, plugin),
-              this.#options.interpolator,
-              valuesSpec,
-            ),
-          );
-          const processor = new ComputedProcessor({
+          const track = Track.computed({
             nodeId,
             plugin,
             values: parsed.input.values,
             interpolator: this.#options.interpolator,
             ...(parsed.input.param === undefined ? {} : { param: parsed.input.param }),
           });
-          const track = new Track(nodeId, localInput, processor);
           tracks.set(nodeId, track);
           return track;
         }
         case "source": {
           const model = resolved.model;
-          const localInput = new LocalInput(
-            createValueEvaluator(parsed.input.values, this.#options.interpolator, model.spec),
-          );
-          const processor = new PassthroughProcessor({
+          const track = Track.source({
             nodeId,
             values: parsed.input.values,
             interpolator: this.#options.interpolator,
             model,
           });
-          const track = new Track(nodeId, localInput, processor);
           tracks.set(nodeId, track);
           return track;
         }

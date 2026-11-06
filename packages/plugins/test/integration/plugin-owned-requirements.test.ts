@@ -106,7 +106,7 @@ function rig(child: TrackDefinition): ProjectDefinition {
 
 function rigRegistry(): PluginCatalog {
   const plugins = new PluginCatalog({ models: testModels });
-  plugins.registerAll([transformPlugin, fkPlugin]);
+  plugins.register({ plugins: [transformPlugin, fkPlugin] });
   return plugins;
 }
 
@@ -163,7 +163,7 @@ describe("plugin-owned requirements end to end", () => {
       input: { values: { length: 50 } },
     };
     const plugins = rigRegistry();
-    plugins.register(optionalPlugin);
+    plugins.register({ plugins: [optionalPlugin] });
     const handle = load(rig(unbound), plugins);
     handle.mount("walk/thigh");
     handle.seek("walk/thigh", 0);
@@ -199,7 +199,7 @@ describe("plugin-owned requirements end to end", () => {
       },
     };
     const plugins = rigRegistry();
-    plugins.register(reachPlugin);
+    plugins.register({ plugins: [reachPlugin] });
 
     const handle = load(rig(span), plugins);
     handle.mount("walk/pelvis");

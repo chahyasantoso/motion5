@@ -9,7 +9,7 @@ import { outputRef } from "../contract/v5";
 import { unreachable } from "../lang/exhaustive";
 import { deriveSourceContract, type SourceContract } from "../contract/v5-infer";
 import { parseTrackDefinition } from "../contract/v5-parse";
-import type { PluginCapabilities } from "../ports/plugin-capabilities";
+import { parseContextOf, type PluginCapabilities } from "../ports/plugin-capabilities";
 
 /** Committed shape of a node at its last structural commit; slot and dependency checks read it because cheap edits move values without re-inferring. */
 export interface CommittedContract {
@@ -93,13 +93,7 @@ function modelContract(
   modelId: string,
   capabilities: PluginCapabilities,
 ): CommittedContract | undefined {
-  const parsed = parseTrackDefinition(track, nodeId, {
-    isPluginRegistered: (pluginId) => capabilities.isPluginAdmitted(pluginId),
-    pluginDefinition: (pluginId) => capabilities.pluginDefinition(pluginId),
-    model: (modelId) => capabilities.model(modelId),
-    modelIds: () => capabilities.modelIds(),
-    pluginIds: () => capabilities.pluginIds(),
-  });
+  const parsed = parseTrackDefinition(track, nodeId, parseContextOf(capabilities));
   if (parsed.kind === "refused") return undefined;
   const model = capabilities.model(modelId);
   const input = deriveSourceContract(

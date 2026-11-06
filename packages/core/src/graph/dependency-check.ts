@@ -4,12 +4,9 @@ import { diagnostic } from "../contract/diagnostics";
 import { isOptionalSlot } from "../contract/slot-declaration";
 import type { GraphNode } from "./ir";
 import type { PluginCapabilities } from "../ports/plugin-capabilities";
+import { isObjectRecord } from "../lang/plain-record";
 
 /** Graph-layer dependency admission: the plugin declares slots, and bindings are checked against them. */
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return value !== null && typeof value === "object" && !Array.isArray(value);
-}
 
 function checkNode(
   node: GraphNode,
@@ -32,7 +29,7 @@ function checkNode(
     );
     return;
   }
-  const bindings = isRecord(authored) ? authored : {};
+  const bindings = isObjectRecord(authored) ? authored : {};
   const slots = new Map(Object.entries(declared));
   for (const [slot, spec] of slots) {
     if (isOptionalSlot(spec)) continue;
@@ -56,7 +53,7 @@ function checkNode(
     }
     const mode = spec.binding ?? "single";
     const authoredMode =
-      typeof binding === "string" ? "single" : isRecord(binding) ? "map" : undefined;
+      typeof binding === "string" ? "single" : isObjectRecord(binding) ? "map" : undefined;
     if (authoredMode === undefined) continue;
     if (authoredMode !== mode)
       diagnostics.push(

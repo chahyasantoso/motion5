@@ -74,7 +74,7 @@ function catalog<Input extends ResolvedInput>(
   ...plugins: readonly PluginDefinition<Input>[]
 ): PluginCatalog {
   const result = new PluginCatalog({ models: [...testModels, PointTable, HardeningSource] });
-  result.registerAll(plugins);
+  result.register({ plugins: plugins });
   return result;
 }
 
@@ -551,23 +551,12 @@ describe("identified plugin runtime", () => {
     };
 
     const interpolator = createFakeInterpolator();
-    const valuesSpec = isModel(testPlugin.inputs.values)
-      ? testPlugin.inputs.values.spec
-      : testPlugin.inputs.values;
-    const localInput = new LocalInput(
-      createValueEvaluator(
-        defaultPluginValues(undefined, admitDeclaration(testPlugin)),
-        interpolator,
-        valuesSpec,
-      ),
-    );
-    const processor = new ComputedProcessor({
+    const trackInstance = Track.computed({
       nodeId: "test-node",
       plugin: admitDeclaration(testPlugin),
       values: undefined,
       interpolator,
     });
-    const trackInstance = new Track("test-node", localInput, processor);
 
     const memberStructure = { tag: "parsed-tag" } as Structure<HardeningStructure>;
     const member: BoundSlot = Object.freeze({

@@ -79,7 +79,7 @@ describe("Engine product-load validation (X-1 follow-up)", () => {
 
   it("resolves authored plugin ownership during load, not on the first seek", () => {
     const plugins = new PluginCatalog({ models: testModels });
-    plugins.register(OPACITY);
+    plugins.register({ plugins: [OPACITY] });
     const interpolator = createFakeInterpolator();
     const create = vi.spyOn(interpolator, "create");
     const engine = new Engine({ ...options(), interpolator, plugins });

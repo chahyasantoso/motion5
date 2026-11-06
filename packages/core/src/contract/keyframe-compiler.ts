@@ -2,6 +2,7 @@ import { authoredLeafPartition, readAuthoredLeaf, readCompilableStops } from "./
 import { diagnostic } from "./diagnostics";
 import type { AuthoredStop, Diagnostic } from "./v5";
 import { unreachable } from "../lang/exhaustive";
+import { isObjectRecord } from "../lang/plain-record";
 
 export interface CompiledKeyframes {
   readonly map: Readonly<Record<string, Readonly<Record<string, unknown>>>>;
@@ -25,9 +26,6 @@ export interface KeyframeCompileOptions {
   readonly ease?: "shared" | "per-key";
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return value !== null && typeof value === "object" && !Array.isArray(value);
-}
 function toPercentKey(position: number): string {
   return `${position * 100}%`;
 }
@@ -44,7 +42,7 @@ export function compilePercentKeyframes(
   path = "keyframes",
   options: KeyframeCompileOptions = {},
 ): CompiledKeyframes {
-  if (!isRecord(keyframes))
+  if (!isObjectRecord(keyframes))
     return Object.freeze({
       map: Object.freeze({}),
       initial: Object.freeze({}),

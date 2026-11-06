@@ -89,8 +89,8 @@ types are named through `@motion5/core/plugin-api`.
 `DependencySpec`, `EvaluationContext`, `Outputs`, `ResolvedInput` and `ValueSpec` from
 `@motion5/core/plugin-api`.
 
-`PluginCatalog.registerAll(definitions)` admits every definition or none: a refusal stores nothing
-and preserves existing plugins. `register(definition)` uses the same admission path for one member.
+`PluginCatalog.register({ plugins, models })` admits every definition or none: a refusal stores nothing
+and preserves existing plugins.
 Definitions are validated from one own-property snapshot and frozen before storage; a duplicate id,
 unknown member, reserved name or malformed value spec refuses under its named rule.
 `EngineOptions.plugins` accepts this catalog only. See
@@ -193,7 +193,7 @@ descriptors and returns a `PluginLoader` with
 tracks name.
 
 Ensure validates demand and plans its dependency closure before importing, then registers only the
-missing definitions in one atomic `registerAll` on the caller's `PluginCatalog`. The Engine retains
+missing definitions in one atomic `register` on the caller's `PluginCatalog`. The Engine retains
 that same catalog by reference, so ensure also works after loading a project.
 
 `EnsuredDemand` is `{ kind: "ensured", added }` or `{ kind: "refused", failure }`.

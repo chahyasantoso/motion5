@@ -41,7 +41,7 @@ describe("Phase 5 closeout and rig retirement (AQ)", () => {
 
   it("AQ-4 unknown plugin refusal: attempting to load plugin rig fails validation", () => {
     const catalog = new PluginCatalog({ models: testModels });
-    catalog.registerAll([fkPlugin, ikPlugin]);
+    catalog.register({ plugins: [fkPlugin, ikPlugin] });
     const project: ProjectDefinition = {
       schemaVersion: 5,
       motions: [
@@ -75,7 +75,7 @@ describe("Phase 5 closeout and rig retirement (AQ)", () => {
 
   it("AQ-6 GraphNode solves absence: static and runtime compiled nodes lack solves property", () => {
     const catalog = new PluginCatalog({ models: testModels });
-    catalog.registerAll([fkPlugin, ikPlugin]);
+    catalog.register({ plugins: [fkPlugin, ikPlugin] });
     const engine = new Engine({
       clock: createManualClock(),
       interpolator: createFakeInterpolator(),
@@ -99,7 +99,7 @@ describe("Phase 5 closeout and rig retirement (AQ)", () => {
 
   it("AQ-7 reverse topology cleanly explicit: no solver fan-in edges exist", () => {
     const catalog = new PluginCatalog({ models: testModels });
-    catalog.registerAll([fkPlugin, ikPlugin]);
+    catalog.register({ plugins: [fkPlugin, ikPlugin] });
     const engine = new Engine({
       clock: createManualClock(),
       interpolator: createFakeInterpolator(),
@@ -154,7 +154,7 @@ describe("Phase 5 closeout and rig retirement (AQ)", () => {
 
   it("AQ-8 no hidden member reads during flush: single flush completes cleanly", () => {
     const catalog = new PluginCatalog({ models: testModels });
-    catalog.registerAll([fkPlugin, ikPlugin]);
+    catalog.register({ plugins: [fkPlugin, ikPlugin] });
     const engine = new Engine({
       clock: createManualClock(),
       interpolator: createFakeInterpolator(),

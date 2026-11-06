@@ -41,7 +41,7 @@ function plugin(id: string, requires?: Readonly<Record<string, SlotSpec>>): Plug
 
 function catalog(...plugins: readonly PluginDefinition[]): PluginCatalog {
   const result = new PluginCatalog({ models: [...testModels, PointTable] });
-  result.registerAll(plugins);
+  result.register({ plugins: plugins });
   return result;
 }
 

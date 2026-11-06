@@ -9,10 +9,6 @@ import {
 import { admitDeclaration } from "../../../src/domain/plugin-catalog";
 import { parseTrackDefinition, type ParsedValues } from "../../../src/contract/v5-parse";
 import type { Interpolator } from "../../../src/ports/interpolator";
-import { createValueEvaluator } from "../../../src/runtime/evaluate-values";
-import { LocalInput } from "../../../src/runtime/local-input";
-import { ComputedProcessor } from "../../../src/runtime/processors/computed";
-import { PassthroughProcessor } from "../../../src/runtime/processors/passthrough";
 import { Track } from "../../../src/runtime/track";
 import { createFakeInterpolator } from "../../../src/testing/fakes";
 import { TestRecord } from "../../support/test-models";
@@ -25,13 +21,7 @@ function createPassthroughTrack(options: {
   readonly interpolator: Interpolator;
   readonly model?: Model<unknown, unknown>;
 }): Track {
-  const model = options.model ?? TestRecord;
-  const spec = model.spec;
-  const localInput = new LocalInput(
-    createValueEvaluator(options.values, options.interpolator, spec),
-  );
-  const processor = new PassthroughProcessor({ ...options, model });
-  return new Track(options.nodeId, localInput, processor);
+  return Track.source({ ...options, model: options.model ?? TestRecord });
 }
 
 function createComputedTrack(options: {
@@ -40,14 +30,7 @@ function createComputedTrack(options: {
   readonly values: ParsedValues | undefined;
   readonly interpolator: Interpolator;
 }): Track {
-  const valuesSpec = isModel(options.plugin.inputs.values)
-    ? options.plugin.inputs.values.spec
-    : options.plugin.inputs.values;
-  const localInput = new LocalInput(
-    createValueEvaluator(options.values, options.interpolator, valuesSpec),
-  );
-  const processor = new ComputedProcessor({ ...options, plugin: admitDeclaration(options.plugin) });
-  return new Track(options.nodeId, localInput, processor);
+  return Track.computed({ ...options, plugin: admitDeclaration(options.plugin) });
 }
 
 function valuesOf(values: unknown): ParsedValues {
@@ -141,11 +124,11 @@ describe("Passthrough and computed track local-input characterization", () => {
         interpolator: createFakeInterpolator(),
       });
 
-      expect(track.outputs()).toEqual({ values: { x: 10 } });
+      expect(track.compose({}).outputs).toEqual({ values: { x: 10 } });
       track.replaceOverlay({ x: 42 });
-      expect(track.outputs()).toEqual({ values: { x: 42 } });
+      expect(track.compose({}).outputs).toEqual({ values: { x: 42 } });
       track.replaceOverlay(undefined);
-      expect(track.outputs()).toEqual({ values: { x: 10 } });
+      expect(track.compose({}).outputs).toEqual({ values: { x: 10 } });
     });
 
     it("Computed: overlay wins over authored evaluation and undefined resumes it", () => {
@@ -181,7 +164,7 @@ describe("Passthrough and computed track local-input characterization", () => {
       expect(() => track.setProgress(0.5)).toThrow(/disposed/);
       expect(() => track.replaceOverlay({ x: 1 })).toThrow(/disposed/);
       expect(() => track.replaceValues(valuesOf({ x: 2 }))).toThrow(/disposed/);
-      expect(() => track.outputs()).toThrow(/disposed/);
+      expect(() => track.compose({}).outputs).toThrow(/disposed/);
     });
 
     it("Computed: throws TypeError on non-finite progress and throws after disposal", () => {
@@ -220,7 +203,7 @@ describe("Passthrough and computed track local-input characterization", () => {
         },
       });
 
-      expect(track.outputs()).toEqual({ values: { x: 10 } });
+      expect(track.compose({}).outputs).toEqual({ values: { x: 10 } });
       failRebuild = true;
       expect(() =>
         track.replaceValues(
@@ -233,7 +216,7 @@ describe("Passthrough and computed track local-input characterization", () => {
         ),
       ).toThrow("rebuild failure");
       failRebuild = false;
-      expect(track.outputs()).toEqual({ values: { x: 10 } });
+      expect(track.compose({}).outputs).toEqual({ values: { x: 10 } });
     });
 
     it("Computed: throwing replaceValues keeps previous evaluator active", () => {

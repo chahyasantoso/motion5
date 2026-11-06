@@ -28,13 +28,13 @@ const Solved2d = defineModel({
 
 describe("slot model fit", () => {
   it("accepts a producer implementing the required model", () => {
-    const producer = {
+    const producer: PluginDefinition = {
       id: "producer-body",
       inputs: { values: { kind: "record", fields: {} } },
       outputs: { values: Body2d },
       transform: () => ({ values: [] }),
     };
-    const consumer = {
+    const consumer: PluginDefinition = {
       id: "consumer-body",
       inputs: {
         values: { kind: "record", fields: {} },
@@ -44,8 +44,8 @@ describe("slot model fit", () => {
       transform: () => ({ values: [] }),
     };
     const catalog = new PluginCatalog();
-    catalog.register(producer);
-    catalog.register(consumer);
+    catalog.register({ plugins: [producer] });
+    catalog.register({ plugins: [consumer] });
 
     const project: ProjectDefinition = {
       schemaVersion: 5,
@@ -70,13 +70,13 @@ describe("slot model fit", () => {
   });
 
   it("refuses a track whose plugin implements a different model with an identical shape", () => {
-    const producer = {
+    const producer: PluginDefinition = {
       id: "producer-mocap",
       inputs: { values: { kind: "record", fields: {} } },
       outputs: { values: Mocap2d },
       transform: () => ({ values: [] }),
     };
-    const consumer = {
+    const consumer: PluginDefinition = {
       id: "consumer-body",
       inputs: {
         values: { kind: "record", fields: {} },
@@ -86,8 +86,8 @@ describe("slot model fit", () => {
       transform: () => ({ values: [] }),
     };
     const catalog = new PluginCatalog();
-    catalog.register(producer);
-    catalog.register(consumer);
+    catalog.register({ plugins: [producer] });
+    catalog.register({ plugins: [consumer] });
 
     const project: ProjectDefinition = {
       schemaVersion: 5,
@@ -113,19 +113,19 @@ describe("slot model fit", () => {
   });
 
   it("handles bare model slot and optional model", () => {
-    const producerSolved = {
+    const producerSolved: PluginDefinition = {
       id: "producer-solved",
       inputs: { values: { kind: "record", fields: {} } },
       outputs: { values: Solved2d },
       transform: () => ({ values: [] }),
     };
-    const producerBody = {
+    const producerBody: PluginDefinition = {
       id: "producer-body",
       inputs: { values: { kind: "record", fields: {} } },
       outputs: { values: Body2d },
       transform: () => ({ values: [] }),
     };
-    const consumerOptional = {
+    const consumerOptional: PluginDefinition = {
       id: "consumer-optional",
       inputs: {
         values: { kind: "record", fields: {} },
@@ -135,9 +135,9 @@ describe("slot model fit", () => {
       transform: () => ({ values: [] }),
     };
     const catalog = new PluginCatalog();
-    catalog.register(producerSolved);
-    catalog.register(producerBody);
-    catalog.register(consumerOptional);
+    catalog.register({ plugins: [producerSolved] });
+    catalog.register({ plugins: [producerBody] });
+    catalog.register({ plugins: [consumerOptional] });
 
     const projectUnbound: ProjectDefinition = {
       schemaVersion: 5,
@@ -192,13 +192,13 @@ describe("slot model fit", () => {
   });
 
   it("still compares shape slots by spec", () => {
-    const producerShape = {
+    const producerShape: PluginDefinition = {
       id: "producer-shape",
       inputs: { values: { kind: "record", fields: {} } },
       outputs: { values: SPEC_A },
       transform: () => ({ values: [] }),
     };
-    const consumerShape = {
+    const consumerShape: PluginDefinition = {
       id: "consumer-shape",
       inputs: {
         values: { kind: "record", fields: {} },
@@ -208,8 +208,8 @@ describe("slot model fit", () => {
       transform: () => ({ values: [] }),
     };
     const catalog = new PluginCatalog();
-    catalog.register(producerShape);
-    catalog.register(consumerShape);
+    catalog.register({ plugins: [producerShape] });
+    catalog.register({ plugins: [consumerShape] });
 
     const project: ProjectDefinition = {
       schemaVersion: 5,
@@ -234,7 +234,7 @@ describe("slot model fit", () => {
   });
 
   it("satisfies a model slot by model id", () => {
-    const consumer = {
+    const consumer: PluginDefinition = {
       id: "consumer-bridge",
       inputs: {
         values: { kind: "record", fields: {} },
@@ -244,7 +244,7 @@ describe("slot model fit", () => {
       transform: () => ({ values: [] }),
     };
     const catalog = new PluginCatalog({ models: [Mocap2d] });
-    catalog.register(consumer);
+    catalog.register({ plugins: [consumer] });
 
     const projectMatching: ProjectDefinition = {
       schemaVersion: 5,
@@ -295,7 +295,7 @@ describe("slot model fit", () => {
   });
 
   it("reports model contracts in describe and explain", () => {
-    const consumer = {
+    const consumer: PluginDefinition = {
       id: "consumer-describe",
       inputs: {
         values: { kind: "record", fields: {} },
@@ -305,7 +305,7 @@ describe("slot model fit", () => {
       transform: () => ({ values: [] }),
     };
     const catalog = new PluginCatalog();
-    catalog.register(consumer);
+    catalog.register({ plugins: [consumer] });
 
     const desc = catalog.describe("consumer-describe");
     expect(desc?.requires.chain).toEqual({

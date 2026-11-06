@@ -15,12 +15,17 @@ import type {
 import { outputRef } from "../contract/v5";
 import { diagnostic, hintDiagnostic, hintDiagnostics } from "../contract/diagnostics";
 import { deriveSourceContract, type SpecOrigin } from "../contract/v5-infer";
-import { parseTrackDefinition, type ParsedInput, type ParsedValues } from "../contract/v5-parse";
+import {
+  parseTrackDefinition,
+  type ParseContext,
+  type ParsedInput,
+  type ParsedValues,
+} from "../contract/v5-parse";
+import { parseContextOf, type PluginCapabilities } from "../ports/plugin-capabilities";
 import type { CommittedContract } from "../graph/committed-contract";
 import { acceptedOutcome, refusedOutcomeFrom, type Outcome } from "../lang/outcome";
 import { unreachable } from "../lang/exhaustive";
-import type { PluginCapabilities } from "../ports/plugin-capabilities";
-import { validateRuntimeValue } from "./value-validation";
+import { extraFieldsPolicy, validateRuntimeValue } from "./value-validation";
 import { authoredStaticView, runtimeStaticView, sameStaticView } from "./static-view";
 import { liveOn, withLiveChannel, withoutLiveChannel, type ValueState } from "./value-state";
 import type { CheapEdit, LiveEdit } from "./edit-types";
@@ -45,6 +50,15 @@ export interface TrackLookup {
 export interface ValueEnvironment {
   readonly capabilities: PluginCapabilities;
   readonly isPluginRegistered?: (pluginId: string) => boolean;
+}
+
+/** Parse context for a value plan. Absent predicate admits every id: the graph already admitted
+ * this plugin, while the parser would read absence as "nothing is registered". */
+export function planParseContext(environment: ValueEnvironment): ParseContext {
+  return {
+    ...parseContextOf(environment.capabilities),
+    isPluginRegistered: environment.isPluginRegistered ?? (() => true),
+  };
 }
 
 /** One authored value edit, with the parsed values the compiled Track will evaluate. Parsed form
@@ -277,16 +291,7 @@ function validateAuthoredValues(
   contract: CommittedContract | undefined,
   environment: ValueEnvironment,
 ): Outcome<ValidatedAuthored, Diagnostic> {
-  // Absent predicate admits every id: the graph already admitted this plugin, while the parser
-  // would read absence as "nothing is registered".
-  const context = {
-    isPluginRegistered: environment.isPluginRegistered ?? (() => true),
-    pluginDefinition: (pluginId: string) => environment.capabilities.pluginDefinition(pluginId),
-    model: (modelId: string) => environment.capabilities.model(modelId),
-    modelIds: () => environment.capabilities.modelIds(),
-    pluginIds: () => environment.capabilities.pluginIds(),
-  };
-  const parsed = parseTrackDefinition(track, path, context);
+  const parsed = parseTrackDefinition(track, path, planParseContext(environment));
   if (parsed.kind === "refused") {
     return refusedOutcomeFrom(hintDiagnostics(parsed.diagnostics, REPLACE_HINT));
   }
@@ -665,12 +670,6 @@ function planSetParamField(
   );
 }
 
-function liveExtraFields(spec: ValueSpec): "reject" | "allow-scalar" {
-  if (spec.kind === "table")
-    return spec.schema.row.additionalProperties === true ? "allow-scalar" : "reject";
-  return spec.additionalProperties === true ? "allow-scalar" : "reject";
-}
-
 function liveWriteChannel(
   edit: Extract<LiveEdit, { kind: "write-live" | "write-live-param" }>,
 ): ValueChannel {
@@ -727,7 +726,7 @@ function planWriteLive(
     edit.value,
     committed.spec,
     `${edit.nodeId}.input.${channel}`,
-    { extraFields: liveExtraFields(committed.spec) },
+    { extraFields: extraFieldsPolicy(committed.spec) },
   );
   if (issues.length > 0)
     return refused(

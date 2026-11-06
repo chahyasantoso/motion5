@@ -41,7 +41,7 @@ describe("identified plugin boundary", () => {
   it("admits one identified definition through the v5 catalog atomically", () => {
     const catalog = new PluginCatalog({ models: testModels });
 
-    catalog.registerAll([MINIMAL_PLUGIN]);
+    catalog.register({ plugins: [MINIMAL_PLUGIN] });
 
     expect(catalog.size).toBe(1);
     expect(catalog.get("slice-a-test")?.id).toBe("slice-a-test");

@@ -23,6 +23,7 @@ import { slotDeclaration } from "../contract/slot-declaration";
 import type { RuleId } from "../contract/rule-id";
 import { readValueSpec } from "../contract/v5-parse";
 import type { PluginCapabilities } from "../ports/plugin-capabilities";
+import { isPlainRecord, RESERVED_NAMES } from "../lang/plain-record";
 
 /**
  * Identified-table plugin registry keyed by authored `id`: admits whole definitions, all-or-none per batch.
@@ -33,7 +34,6 @@ const INPUT_FIELDS = new Set(["param", "values", "requires"]);
 const DEPENDENCY_FIELDS = new Set(["kind", "outputs", "optional", "binding"]);
 const MODEL_SLOT_FIELDS = new Set(["kind", "model", "optional", "binding"]);
 const MODEL_FIELDS = new Set(["id", "spec", "parse"]);
-const RESERVED_NAMES = new Set(["__proto__", "constructor", "prototype"]);
 const BINDING_MODES = new Set(["single", "map"]);
 const PASCAL_CASE_RE = /^[A-Z][A-Za-z0-9]*$/;
 const EMPTY_MODELS: readonly Model<unknown, unknown>[] = Object.freeze([]);
@@ -52,12 +52,6 @@ export class PluginAdmissionError extends TypeError {
   }
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
-  const prototype = Object.getPrototypeOf(value);
-  return prototype === Object.prototype || prototype === null;
-}
-
 function own(record: Record<string, unknown>, key: string): unknown {
   return Object.hasOwn(record, key) ? record[key] : undefined;
 }
@@ -67,7 +61,7 @@ function refuse(ruleId: RuleId, path: string, message: string): never {
 }
 
 function requireRecord(value: unknown, path: string): Record<string, unknown> {
-  if (!isRecord(value)) refuse("plugin-shape", path, "must be a plain object.");
+  if (!isPlainRecord(value)) refuse("plugin-shape", path, "must be a plain object.");
   return value;
 }
 
@@ -382,7 +376,7 @@ function unreachableSlot(slot: never): never {
   throw new TypeError(`Unknown slot kind: ${JSON.stringify(slot)}`);
 }
 
-/** Options for initializing a PluginCatalog with plugins and models. */
+/** One registration batch; each list is admitted together or not at all. */
 export interface PluginCatalogOptions {
   readonly plugins?: readonly PluginDefinition<never>[];
   readonly models?: readonly Model<unknown, unknown>[];
@@ -393,62 +387,19 @@ export class PluginCatalog implements PluginCapabilities {
   readonly #plugins = new Map<string, AdmittedPlugin>();
   readonly #models = new Map<string, Model<unknown, unknown>>();
 
-  constructor(options?: PluginCatalogOptions | readonly PluginDefinition<never>[]) {
-    if (options !== undefined) {
-      if (Array.isArray(options)) {
-        this.registerAll(options);
-      } else if (typeof options === "object" && options !== null) {
-        const plugins = "plugins" in options ? (options.plugins ?? []) : [];
-        const models = "models" in options ? (options.models ?? []) : [];
-        this.#admitBatch({ plugins, models });
-      }
-    }
-  }
-
-  /** Admit one definition atomically. */
-  register<Input extends ResolvedInput<Value, unknown>>(plugin: PluginDefinition<Input>): void;
-  register(model: Model<unknown, unknown>): void;
-  register(candidate: unknown): void;
-  register(candidate: unknown): void {
-    if (isModel(candidate)) {
-      this.registerModels([candidate]);
-    } else {
-      this.#admitBatch({ plugins: [candidate], models: [] });
-    }
-  }
-
-  /** Admit a single model definition atomically. */
-  registerModel(model: unknown): void {
-    this.registerModels([model]);
-  }
-
-  /** Admit an array of model definitions atomically. */
-  registerModels(models: unknown): void {
-    if (!Array.isArray(models))
-      throw new PluginAdmissionError("plugin-shape", "models", "must be an array.");
-    this.#admitBatch({ plugins: [], models });
+  constructor(options?: PluginCatalogOptions) {
+    if (options !== undefined) this.register(options);
   }
 
   /** Admit a batch atomically: every definition passes or none is stored. */
-  registerAll(plugins: readonly PluginDefinition<never>[]): void;
-  registerAll(options: PluginCatalogOptions): void;
-  registerAll(plugins: unknown): void {
-    if (isRecord(plugins) && ("plugins" in plugins || "models" in plugins)) {
-      const pluginsList = own(plugins, "plugins");
-      const modelsList = own(plugins, "models");
-      this.#admitBatch({
-        plugins: Array.isArray(pluginsList) ? pluginsList : [],
-        models: Array.isArray(modelsList) ? modelsList : [],
-      });
-      return;
-    }
+  register(batch: PluginCatalogOptions): void {
+    const plugins: unknown = batch.plugins ?? [];
+    const models: unknown = batch.models ?? [];
     if (!Array.isArray(plugins))
       throw new PluginAdmissionError("plugin-shape", "plugins", "must be an array.");
-    if (plugins.length > 0 && plugins.every((item) => isModel(item))) {
-      this.#admitBatch({ plugins: [], models: plugins });
-      return;
-    }
-    this.#admitBatch({ plugins, models: [] });
+    if (!Array.isArray(models))
+      throw new PluginAdmissionError("plugin-shape", "models", "must be an array.");
+    this.#admitBatch({ plugins, models });
   }
 
   #admitBatch(batch: {

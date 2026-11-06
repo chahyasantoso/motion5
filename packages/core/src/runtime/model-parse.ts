@@ -1,14 +1,8 @@
-import type { Diagnostic, Model, Structure, Value, ValueSpec } from "../contract/v5";
+import type { Diagnostic, Model, Structure, Value } from "../contract/v5";
 import { diagnostic } from "../contract/diagnostics";
 import { brandStructure } from "../contract/structure";
 import { acceptedOutcome, refusedOutcomeFrom, type Outcome } from "../lang/outcome";
-import { validateRuntimeValue } from "./value-validation";
-
-function runtimeExtraFields(spec: ValueSpec): "allow-scalar" | "reject" {
-  if (spec.kind === "table")
-    return spec.schema.row.additionalProperties === true ? "allow-scalar" : "reject";
-  return spec.additionalProperties === true ? "allow-scalar" : "reject";
-}
+import { extraFieldsPolicy, validateRuntimeValue } from "./value-validation";
 
 /** Validates a value against the model's declared spec, runs model.parse if defined, and brands the result. */
 export function parseModel<S>(
@@ -17,7 +11,7 @@ export function parseModel<S>(
   path: string,
 ): Outcome<Structure<S> | undefined, Diagnostic> {
   const issues = validateRuntimeValue(value, model.spec, path, {
-    extraFields: runtimeExtraFields(model.spec),
+    extraFields: extraFieldsPolicy(model.spec),
   });
   if (issues.length > 0)
     return refusedOutcomeFrom(

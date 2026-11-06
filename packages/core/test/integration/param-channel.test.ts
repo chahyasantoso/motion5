@@ -1,10 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { PluginDefinition, ProjectDefinition } from "../../src/contract/v5";
-import { PluginAdmissionError, PluginCatalog } from "../../src/domain/plugin-catalog";
+import {
+  PluginAdmissionError,
+  PluginCatalog,
+  type PluginCatalogOptions,
+} from "../../src/domain/plugin-catalog";
 import { Engine } from "../../src/engine";
 import { createManualClock } from "../../src/ports/clock";
 import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
 import { testModels } from "../support/test-models";
+
+const untyped = (batch: unknown) => batch as PluginCatalogOptions;
 
 const prepare = vi.fn(() => ({ ok: true as const, value: undefined }));
 
@@ -65,7 +71,7 @@ function project(track: ProjectDefinition["motions"][number]["tracks"][number]):
 
 function engine(...plugins: readonly PluginDefinition[]): Engine {
   const catalog = new PluginCatalog({ models: testModels });
-  catalog.registerAll(plugins);
+  catalog.register({ plugins: plugins });
   return new Engine({
     clock: createManualClock(),
     interpolator: createFakeInterpolator(),
@@ -333,11 +339,17 @@ describe("input.param", () => {
     const catalog = new PluginCatalog();
     let thrown: unknown;
     try {
-      catalog.register({
-        id: "no-transform",
-        inputs: { values: { kind: "record", fields: {} } },
-        outputs: { values: { kind: "record", fields: {} } },
-      });
+      catalog.register(
+        untyped({
+          plugins: [
+            {
+              id: "no-transform",
+              inputs: { values: { kind: "record", fields: {} } },
+              outputs: { values: { kind: "record", fields: {} } },
+            },
+          ],
+        }),
+      );
     } catch (error) {
       thrown = error;
     }

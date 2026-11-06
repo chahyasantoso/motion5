@@ -51,7 +51,7 @@ function catalog<Input extends ResolvedInput>(
   ...plugins: readonly PluginDefinition<Input>[]
 ): PluginCatalog {
   const result = new PluginCatalog({ models: [...testModels, PointTable] });
-  result.registerAll(plugins);
+  result.register({ plugins: plugins });
   return result;
 }
 

@@ -56,7 +56,7 @@ export async function loadPlayground(
 ): Promise<PlaygroundRuntime> {
   const { scroll, ...ports } = options;
   const plugins = new PluginCatalog({ models: [...builtinModels, Pole3d] });
-  plugins.registerAll([fkPlugin, ikPlugin, fk3dPlugin, ik3dPlugin]);
+  plugins.register({ plugins: [fkPlugin, ikPlugin, fk3dPlugin, ik3dPlugin] });
   const project = new Engine({
     ...ports,
     plugins,

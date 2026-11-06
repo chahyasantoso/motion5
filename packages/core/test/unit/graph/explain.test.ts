@@ -35,7 +35,7 @@ const CONSUMER: PluginDefinition = {
 
 function catalog(): PluginCatalog {
   const result = new PluginCatalog({ models: [...testModels, PointSource] });
-  result.register(CONSUMER);
+  result.register({ plugins: [CONSUMER] });
   return result;
 }
 
@@ -95,7 +95,7 @@ describe("explain", () => {
       id: "Body2d",
       spec: POINT,
     });
-    const modelConsumer = {
+    const modelConsumer: PluginDefinition = {
       id: "consume-model",
       inputs: {
         values: { kind: "record", fields: {} },
@@ -107,7 +107,7 @@ describe("explain", () => {
       },
     };
     const cat = new PluginCatalog({ models: [bodyModel] });
-    cat.register(modelConsumer);
+    cat.register({ plugins: [modelConsumer] });
 
     const validProject: ProjectDefinition = {
       schemaVersion: 5,

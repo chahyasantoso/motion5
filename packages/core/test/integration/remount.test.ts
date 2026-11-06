@@ -41,7 +41,7 @@ const project: ProjectDefinition = {
   ],
 };
 const CATALOG = new PluginCatalog({ models: testModels });
-CATALOG.register(PASS);
+CATALOG.register({ plugins: [PASS] });
 
 function createRuntime() {
   const runtime = new ProjectRuntime(project, {

@@ -6,7 +6,7 @@ import { testModels } from "../../../core/test/support/test-models";
 describe("identified 3D transform plugin", () => {
   it("declares one dependency and preserves source row identity", () => {
     const catalog = new PluginCatalog({ models: testModels });
-    catalog.register(transform3dPlugin);
+    catalog.register({ plugins: [transform3dPlugin] });
 
     expect(catalog.get("transform3d")).toBeDefined();
     expect(transform3dPlugin.inputs.requires?.data).toBeDefined();

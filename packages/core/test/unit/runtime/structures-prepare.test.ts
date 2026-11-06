@@ -11,9 +11,7 @@ import type {
 import { PluginCatalog, admitDeclaration } from "../../../src/domain/plugin-catalog";
 import { Engine } from "../../../src/engine";
 import { createManualClock } from "../../../src/ports/clock";
-import { createValueEvaluator } from "../../../src/runtime/evaluate-values";
-import { LocalInput } from "../../../src/runtime/local-input";
-import { ComputedProcessor } from "../../../src/runtime/processors/computed";
+import { Track } from "../../../src/runtime/track";
 import { PluginNodeError } from "../../../src/runtime/plugin-output";
 import type { BoundSlots } from "../../../src/runtime/bound-slot";
 import {
@@ -95,13 +93,7 @@ describe("structures and prepare hook", () => {
         bound: Object.freeze({ sourceId: "src", values: { values }, structure }),
       }),
     };
-    const localInput = new LocalInput(
-      createValueEvaluator(undefined, createFakeInterpolator(), {
-        kind: "record",
-        fields: {},
-      }),
-    );
-    const processor = new ComputedProcessor({
+    const track = Track.computed({
       nodeId: "node",
       plugin: admitDeclaration(plugin),
       values: undefined,
@@ -109,7 +101,7 @@ describe("structures and prepare hook", () => {
     });
 
     try {
-      processor.compose(slots, localInput);
+      track.compose(slots);
       throw new Error("Expected prepare to refuse.");
     } catch (error) {
       expect(error).toBeInstanceOf(PluginNodeError);
@@ -133,14 +125,14 @@ describe("structures and prepare hook", () => {
         return { values: {} };
       },
     };
-    const processor = new ComputedProcessor({
+    const track = Track.computed({
       nodeId: "node",
       plugin: admitDeclaration(plugin),
       values: undefined,
       interpolator: createFakeInterpolator(),
     });
 
-    expect(() => processor.prepareCommit({})).toThrow(
+    expect(() => track.prepareCommit({})).toThrow(
       /Plugin 'warning-prepare' refused prepare without an error diagnostic/,
     );
   });
@@ -164,7 +156,7 @@ describe("structures and prepare hook", () => {
     };
 
     const catalog = new PluginCatalog({ models: testModels });
-    catalog.register(reader);
+    catalog.register({ plugins: [reader] });
     const engine = createEngine(catalog);
 
     engine.load({
@@ -238,7 +230,7 @@ describe("structures and prepare hook", () => {
     };
 
     const catalog = new PluginCatalog({ models: testModels });
-    catalog.register(testPlugin);
+    catalog.register({ plugins: [testPlugin] });
     const engine = createEngine(catalog);
 
     const project: ProjectDefinition = {
@@ -311,7 +303,7 @@ describe("structures and prepare hook", () => {
     };
 
     const catalog = new PluginCatalog({ models: [LocalSourceModel, ComputedOutputModel] });
-    catalog.register(computedPlugin);
+    catalog.register({ plugins: [computedPlugin] });
     const engine = createEngine(catalog);
 
     const project: ProjectDefinition = {
@@ -407,8 +399,8 @@ describe("structures and prepare hook", () => {
     };
 
     const catalog = new PluginCatalog({ models: [TestedModel] });
-    catalog.register(producerPlugin);
-    catalog.register(consumerPlugin);
+    catalog.register({ plugins: [producerPlugin] });
+    catalog.register({ plugins: [consumerPlugin] });
     const engine = createEngine(catalog);
 
     const project: ProjectDefinition = {
@@ -496,7 +488,7 @@ describe("structures and prepare hook", () => {
     };
 
     const catalog = new PluginCatalog({ models: [DynamicBoneModel] });
-    catalog.register(readerPlugin);
+    catalog.register({ plugins: [readerPlugin] });
     const engine = createEngine(catalog);
 
     const project: ProjectDefinition = {
@@ -553,7 +545,7 @@ describe("structures and prepare hook", () => {
 
   it("prepare refusal names the slot", () => {
     const catalog = new PluginCatalog({ models: testModels });
-    catalog.register(fkPlugin);
+    catalog.register({ plugins: [fkPlugin] });
     const engine = createEngine(catalog);
 
     const project: ProjectDefinition = {
@@ -625,7 +617,7 @@ describe("structures and prepare hook", () => {
     };
 
     const catalog = new PluginCatalog({ models: testModels });
-    catalog.register(StateTestingPlugin);
+    catalog.register({ plugins: [StateTestingPlugin] });
     const engine = createEngine(catalog);
 
     const project: ProjectDefinition = {
@@ -700,7 +692,7 @@ describe("structures and prepare hook", () => {
     };
 
     const catalog = new PluginCatalog({ models: [BoneModel] });
-    catalog.register(MutatingOutputPlugin);
+    catalog.register({ plugins: [MutatingOutputPlugin] });
     const engine = createEngine(catalog);
 
     const project: ProjectDefinition = {
@@ -744,7 +736,7 @@ describe("structures and prepare hook", () => {
         },
       };
       const catalog = new PluginCatalog({ models: testModels });
-      catalog.register(plugin);
+      catalog.register({ plugins: [plugin] });
       const engine = createEngine(catalog);
       const handle = engine.load({
         schemaVersion: 5,
@@ -781,7 +773,7 @@ describe("structures and prepare hook", () => {
       },
     };
     const catalog = new PluginCatalog({ models: testModels });
-    catalog.register(plugin);
+    catalog.register({ plugins: [plugin] });
     const engine = createEngine(catalog);
     const handle = engine.load({
       schemaVersion: 5,
@@ -812,7 +804,7 @@ describe("structures and prepare hook", () => {
       },
     };
     const catalog = new PluginCatalog({ models: testModels });
-    catalog.registerAll([producer, fkPlugin]);
+    catalog.register({ plugins: [producer, fkPlugin] });
     const engine = createEngine(catalog);
     const handle = engine.load({
       schemaVersion: 5,
@@ -877,7 +869,7 @@ describe("structures and prepare hook", () => {
       },
     };
     const catalog = new PluginCatalog({ models: testModels });
-    catalog.registerAll([producer, ikPlugin]);
+    catalog.register({ plugins: [producer, ikPlugin] });
     const engine = createEngine(catalog);
     const handle = engine.load({
       schemaVersion: 5,
@@ -940,13 +932,13 @@ describe("structures and prepare hook", () => {
       { id: "goal", cells: { memberId: "root", x: 1, y: 2 } },
     ]);
     const catalog = new PluginCatalog({ models: testModels, plugins: [ikPlugin] });
-    const processor = new ComputedProcessor({
+    const track = Track.computed({
       nodeId: "node",
       plugin: catalog.get("ik")!,
       values: undefined,
       interpolator: createFakeInterpolator(),
     });
-    expect(() => processor.prepareCommit({ chain, goals })).toThrow(/ik-goal-not-leaf/);
+    expect(() => track.prepareCommit({ chain, goals })).toThrow(/ik-goal-not-leaf/);
   });
 
   it("D19 Property Test over Body2d static structure invariant", () => {

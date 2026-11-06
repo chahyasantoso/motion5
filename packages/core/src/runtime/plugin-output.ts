@@ -7,6 +7,7 @@ import {
 import { describeDiagnostics, diagnostic } from "../contract/diagnostics";
 import { freezeValue, type ImmutableValue } from "../domain/values";
 import { isValue, validateRuntimeValue, type ValueIssue } from "./value-validation";
+import { isPlainRecord, RESERVED_NAMES } from "../lang/plain-record";
 
 /** A plugin-side refusal carrying the diagnostics that publish as the node's error. */
 export class PluginNodeError extends Error {
@@ -17,14 +18,6 @@ export class PluginNodeError extends Error {
     this.name = diagnostics[0]?.ruleId ?? "plugin-error";
     this.diagnostics = Object.freeze([...diagnostics]);
   }
-}
-
-const RESERVED_NAMES = new Set(["__proto__", "constructor", "prototype"]);
-
-function isPlainRecord(value: unknown): value is Record<string, unknown> {
-  if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
-  const prototype = Object.getPrototypeOf(value);
-  return prototype === Object.prototype || prototype === null;
 }
 
 function outputIssue(issue: ValueIssue): Diagnostic {

@@ -131,7 +131,7 @@ function project(ids: Ids = IDS, motion = "demo"): ProjectDefinition {
 
 function open(definition: ProjectDefinition) {
   const plugins = new PluginCatalog({ models: [...testModels, Pole3d] });
-  plugins.registerAll([ik3dPlugin, fk3dPlugin]);
+  plugins.register({ plugins: [ik3dPlugin, fk3dPlugin] });
   const handle = new Engine({
     clock: createManualClock(),
     interpolator: createFakeInterpolator(),

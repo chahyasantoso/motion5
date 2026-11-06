@@ -565,7 +565,7 @@ describe("IK stability and determinism (issue #349 phase 6)", () => {
     };
     const replay = (sequence: readonly number[]): ReadonlyMap<number, unknown> => {
       const plugins = new PluginCatalog({ models: testModels });
-      plugins.registerAll([fkPlugin, ikPlugin]);
+      plugins.register({ plugins: [fkPlugin, ikPlugin] });
       const runtime = new Engine({
         clock: createManualClock(),
         interpolator: createFakeInterpolator(),

@@ -51,7 +51,7 @@ const POSE: PluginDefinition<PoseInput> = {
 
 function setup(): { handle: ProjectHandle; dispose(): void } {
   const plugins = new PluginCatalog({ models: testModels });
-  plugins.register(POSE);
+  plugins.register({ plugins: [POSE] });
   const engine = new Engine({
     clock: createManualClock(),
     interpolator: createFakeInterpolator(),

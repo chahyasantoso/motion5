@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { defineModel, ok, PluginAdmissionError, PluginCatalog } from "../../../src/plugin-api";
+import {
+  defineModel,
+  ok,
+  PluginAdmissionError,
+  PluginCatalog,
+  type Model,
+  type PluginDefinition,
+} from "../../../src/plugin-api";
 
 describe("model admission", () => {
   it("refuses two distinct model objects under one id atomically", () => {
@@ -12,7 +19,7 @@ describe("model admission", () => {
       spec: { kind: "record", fields: { y: { kind: "number" } } },
     });
     const catalog = new PluginCatalog();
-    expect(() => catalog.registerModels([modelA, modelB])).toThrow(PluginAdmissionError);
+    expect(() => catalog.register({ models: [modelA, modelB] })).toThrow(PluginAdmissionError);
     expect(catalog.model("Body2d")).toBeUndefined();
     expect(catalog.hasModel("Body2d")).toBe(false);
   });
@@ -22,7 +29,7 @@ describe("model admission", () => {
       id: "Solved2d",
       spec: { kind: "record", fields: { x: { kind: "number" } } },
     });
-    const plugin = {
+    const plugin: PluginDefinition = {
       id: "ik",
       inputs: {
         values: { kind: "record", fields: { flip: { kind: "boolean" } } },
@@ -34,7 +41,7 @@ describe("model admission", () => {
       transform: () => ({ values: { x: 1 }, secondary: { x: 2 } }),
     };
     const catalog = new PluginCatalog();
-    expect(() => catalog.register(plugin)).toThrow(PluginAdmissionError);
+    expect(() => catalog.register({ plugins: [plugin] })).toThrow(PluginAdmissionError);
     expect(catalog.has("ik")).toBe(false);
     expect(catalog.hasModel("Solved2d")).toBe(false);
   });
@@ -46,12 +53,12 @@ describe("model admission", () => {
     expect(catalog.hasModel("__proto__")).toBe(false);
     expect(catalog.hasModel("constructor")).toBe(false);
 
-    const protoModel = {
+    const protoModel: Model<unknown, unknown> = {
       id: "__proto__",
       spec: { kind: "record", fields: { x: { kind: "number" } } },
     };
     try {
-      catalog.registerModel(protoModel);
+      catalog.register({ models: [protoModel] });
       expect.unreachable();
     } catch (err) {
       expect(err).toBeInstanceOf(PluginAdmissionError);
@@ -93,12 +100,12 @@ describe("model admission", () => {
     const invalidIds = ["body2d", "2dBody", "my_model", "Body-2d"];
     for (const id of invalidIds) {
       const catalog = new PluginCatalog();
-      const model = {
+      const model: Model<unknown, unknown> = {
         id,
         spec: { kind: "record", fields: { x: { kind: "number" } } },
       };
       try {
-        catalog.registerModel(model);
+        catalog.register({ models: [model] });
         expect.unreachable();
       } catch (err) {
         expect(err).toBeInstanceOf(PluginAdmissionError);

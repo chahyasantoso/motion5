@@ -21,7 +21,6 @@ import {
   failPublication,
   failedOutcome,
   firstBlockingSource,
-  isRecord,
   outcomeOf,
   pendingOutcome,
   publishFailureRule,
@@ -30,6 +29,7 @@ import {
 import { closeUpstream, reachable } from "./publisher-reach";
 import { defineOwnValue } from "../lang/own-property";
 import { unreachable } from "../lang/exhaustive";
+import { isPlainRecord } from "../lang/plain-record";
 
 /**
  * Node state before any plugin runs, as the node reports it. No `base`: topology, owned by
@@ -76,13 +76,13 @@ function isRendererNeutral(value: unknown, seen = new WeakSet<object>()): boolea
   if (seen.has(value)) return false;
   seen.add(value);
   if (Array.isArray(value)) return value.every((item) => isRendererNeutral(item, seen));
-  if (!isRecord(value)) return false;
+  if (!isPlainRecord(value)) return false;
   return Object.entries(value).every(
     ([key, item]) => !key.startsWith("_") && isRendererNeutral(item, seen),
   );
 }
 function validateComposition(outputs: unknown): asserts outputs is Outputs {
-  if (!isRecord(outputs) || !isRendererNeutral(outputs))
+  if (!isPlainRecord(outputs) || !isRendererNeutral(outputs))
     throw new CompositionOutputError(
       "Composition output must contain only renderer-neutral values.",
     );
@@ -214,7 +214,7 @@ export class GraphPublisher {
       | { readonly kind: "map"; readonly members: Record<string, BoundSlot> };
     const entries: Record<string, MutableEntry> = {};
     for (const [slot, binding] of Object.entries(node.track.input?.requires ?? {}))
-      if (isRecord(binding)) defineOwnValue(entries, slot, { kind: "map", members: {} });
+      if (isPlainRecord(binding)) defineOwnValue(entries, slot, { kind: "map", members: {} });
     const sourceRevisions: Record<string, number> = {};
     for (const edge of [...node.edges].sort(compareEdges)) {
       const requirement = edge.requirement;

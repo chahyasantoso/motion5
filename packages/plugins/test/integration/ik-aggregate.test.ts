@@ -114,7 +114,7 @@ function project(ids: Ids = IDS, goalX: unknown = 12, motion = "demo"): ProjectD
 
 function open(definition: ProjectDefinition) {
   const plugins = new PluginCatalog({ models: testModels });
-  plugins.registerAll([ikPlugin]);
+  plugins.register({ plugins: [ikPlugin] });
   const handle = new Engine({
     clock: createManualClock(),
     interpolator: createFakeInterpolator(),

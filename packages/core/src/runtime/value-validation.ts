@@ -1,6 +1,7 @@
 import type { FieldSpec, Scalar, Value, ValueSpec } from "../contract/v5";
 import { isImmutableLeaf } from "../domain/values";
 import { unreachable } from "../lang/exhaustive";
+import { isPlainRecord, RESERVED_NAMES } from "../lang/plain-record";
 
 /** One structural complaint about a runtime value, before a caller maps it to its own rule id. */
 export interface ValueIssue {
@@ -10,14 +11,6 @@ export interface ValueIssue {
 }
 
 export type ValueShape = "table" | "record" | "invalid";
-
-const RESERVED_NAMES = new Set(["__proto__", "constructor", "prototype"]);
-
-function isPlainRecord(value: unknown): value is Record<string, unknown> {
-  if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
-  const prototype = Object.getPrototypeOf(value);
-  return prototype === Object.prototype || prototype === null;
-}
 
 export function valueShape(value: unknown): ValueShape {
   if (Array.isArray(value)) return "table";
@@ -216,6 +209,13 @@ function checkRecord(
         message: `field '${name}' is reserved.`,
       });
   checkFields(record, spec.fields, path, options, issues);
+}
+
+/** Extra-field policy for a spec: table rows and records allow scalar extras only when open. */
+export function extraFieldsPolicy(spec: ValueSpec): "allow-scalar" | "reject" {
+  if (spec.kind === "table")
+    return spec.schema.row.additionalProperties === true ? "allow-scalar" : "reject";
+  return spec.additionalProperties === true ? "allow-scalar" : "reject";
 }
 
 /**

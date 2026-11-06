@@ -1,3 +1,4 @@
+import { isPlainRecord } from "../lang/plain-record";
 export interface ImmutableArray extends ReadonlyArray<ImmutableValue> {}
 
 export interface ImmutableRecord {
@@ -16,12 +17,6 @@ export function isImmutableLeaf(value: unknown): value is ImmutableLeaf {
     typeof value === "boolean" ||
     (typeof value === "number" && Number.isFinite(value))
   );
-}
-
-function isPlainRecord(value: unknown): value is Record<string, unknown> {
-  if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
-  const prototype = Object.getPrototypeOf(value);
-  return prototype === Object.prototype || prototype === null;
 }
 
 function invalidValue(value: unknown): TypeError {

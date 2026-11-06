@@ -3,6 +3,7 @@ import type { Diagnostic, ReadyPatch } from "../contract/v5";
 import { describeEdge, type GraphEdge } from "../graph/ir";
 import { unreachable } from "../lang/exhaustive";
 import type { PublisherComposition } from "./graph-publisher";
+import { isPlainRecord } from "../lang/plain-record";
 
 /** Three closed unions per flush: node outcome, source contribution, publication failure. Exhaustive switch, not collection order or instanceof. */
 declare const OUTCOME_BRAND: unique symbol;
@@ -126,16 +127,9 @@ export type SourceValues =
 /** Nothing published; carries nothing, so nothing must be built to say so. `sourceValues` reads a never-ready source ABSENT, so readers go pending, not composed. */
 export const ABSENT: SourceValues = mint<AbsentShape>({ kind: "absent" });
 
-/** Plain-record test, and its only owner here. Refuses `null`, arrays and class instances: a composer may read a renderer-neutral record, not a foreign prototype. */
-export function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
-  if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
-  const prototype = Object.getPrototypeOf(value);
-  return prototype === Object.prototype || prototype === null;
-}
-
 function valuesOf(value: unknown): SourceValues {
   if (value === undefined) return ABSENT;
-  if (isRecord(value)) return mint<RecordValuesShape>({ kind: "record", values: value });
+  if (isPlainRecord(value)) return mint<RecordValuesShape>({ kind: "record", values: value });
   return mint<NotARecordShape>({ kind: "not-a-record", value });
 }
 

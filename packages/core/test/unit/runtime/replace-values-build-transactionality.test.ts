@@ -1,14 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { isModel, type PluginDefinition } from "../../../src/contract/v5";
+import type { PluginDefinition } from "../../../src/contract/v5";
 import { admitDeclaration } from "../../../src/domain/plugin-catalog";
 import { parseTrackDefinition } from "../../../src/contract/v5-parse";
 import type { ParsedValues } from "../../../src/contract/v5-parse";
 import type { Interpolator } from "../../../src/ports/interpolator";
 import { replaceEvaluator } from "../../../src/runtime/evaluator-replacement";
-import { createValueEvaluator } from "../../../src/runtime/evaluate-values";
-import { LocalInput } from "../../../src/runtime/local-input";
-import { ComputedProcessor } from "../../../src/runtime/processors/computed";
-import { PassthroughProcessor } from "../../../src/runtime/processors/passthrough";
 import { Track } from "../../../src/runtime/track";
 import { createFakeInterpolator } from "../../../src/testing/fakes";
 import { TestTable } from "../../support/test-models";
@@ -155,18 +151,14 @@ describe("Passthrough processor replaceValues build transactionality", () => {
         },
       },
     ]);
-    const localInput = new LocalInput(
-      createValueEvaluator(initialValues, controllable.interpolator),
-    );
-    const processor = new PassthroughProcessor({
+    const track = Track.source({
       nodeId: "track-1",
       values: initialValues,
       interpolator: controllable.interpolator,
       model: TestTable,
     });
-    const track = new Track("track-1", localInput, processor);
 
-    expect(track.outputs()).toEqual({
+    expect(track.compose({}).outputs).toEqual({
       values: [{ id: "row-1", cells: { x: 10 } }],
     });
     expect(controllable.timelines[0]?.killed).toBe(false);
@@ -190,15 +182,15 @@ describe("Passthrough processor replaceValues build transactionality", () => {
     expect(controllable.timelines[0]?.killed).toBe(false);
 
     // Old values continue to evaluate cleanly across progress
-    expect(track.outputs()).toEqual({
+    expect(track.compose({}).outputs).toEqual({
       values: [{ id: "row-1", cells: { x: 10 } }],
     });
     track.setProgress(0.5);
-    expect(track.outputs()).toEqual({
+    expect(track.compose({}).outputs).toEqual({
       values: [{ id: "row-1", cells: { x: 15 } }],
     });
     track.setProgress(1);
-    expect(track.outputs()).toEqual({
+    expect(track.compose({}).outputs).toEqual({
       values: [{ id: "row-1", cells: { x: 20 } }],
     });
 
@@ -207,7 +199,7 @@ describe("Passthrough processor replaceValues build transactionality", () => {
     track.replaceValues(replacementValues);
     expect(controllable.timelines[0]?.killed).toBe(true);
     expect(controllable.timelines[1]?.killed).toBe(false);
-    expect(track.outputs()).toEqual({
+    expect(track.compose({}).outputs).toEqual({
       values: [{ id: "row-1", cells: { x: 200 } }],
     });
 
@@ -230,19 +222,12 @@ describe("Computed processor replaceValues build transactionality", () => {
         },
       },
     ]);
-    const valuesSpec = isModel(TEST_PLUGIN.inputs.values)
-      ? TEST_PLUGIN.inputs.values.spec
-      : TEST_PLUGIN.inputs.values;
-    const localInput = new LocalInput(
-      createValueEvaluator(initialValues, controllable.interpolator, valuesSpec),
-    );
-    const processor = new ComputedProcessor({
+    const track = Track.computed({
       nodeId: "plugin-track-1",
       plugin: admitDeclaration(TEST_PLUGIN),
       values: initialValues,
       interpolator: controllable.interpolator,
     });
-    const track = new Track("plugin-track-1", localInput, processor);
 
     expect(track.compose({}).outputs).toEqual({
       values: [{ id: "row-1", cells: { x: 10 } }],

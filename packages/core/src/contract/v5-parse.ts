@@ -14,6 +14,7 @@ import type {
 } from "./v5";
 import { outputRef } from "./v5";
 import { unknownNameMessage } from "./registry-message";
+import { isObjectRecord, RESERVED_NAMES } from "../lang/plain-record";
 
 /**
  * The authored boundary for an identified-table track.
@@ -94,7 +95,6 @@ export interface ParseContext {
   readonly pluginIds?: () => readonly string[] | undefined;
 }
 
-const RESERVED_NAMES: ReadonlySet<string> = new Set(["__proto__", "constructor", "prototype"]);
 const TRACK_FIELDS: ReadonlySet<string> = new Set(["id", "input", "output", "duration"]);
 const LEGACY_FIELDS: ReadonlySet<string> = new Set(["keyframes", "observes"]);
 const INPUT_FIELDS: ReadonlySet<string> = new Set(["values", "param", "requires"]);
@@ -124,10 +124,6 @@ const EMPTY_DIAGNOSTICS: readonly Diagnostic[] = Object.freeze([]);
 const EMPTY_REQUIRES: Readonly<Record<string, SourceBinding>> = Object.freeze({});
 const EMPTY_STATIC_FIELDS: ReadonlySet<string> = new Set<string>();
 const EMPTY_INPUT: ParsedInput = Object.freeze({ requires: EMPTY_REQUIRES });
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return value !== null && typeof value === "object" && !Array.isArray(value);
-}
 
 export function isScalar(value: unknown): value is Scalar {
   return (
@@ -205,7 +201,7 @@ function readOutput(
     );
     return undefined;
   }
-  if (!isRecord(value)) {
+  if (!isObjectRecord(value)) {
     diagnostics.push(
       diagnostic(
         "output-invalid",
@@ -274,7 +270,7 @@ function readRequires(
   diagnostics: Diagnostic[],
 ): Readonly<Record<string, SourceBinding>> {
   if (value === undefined) return EMPTY_REQUIRES;
-  if (!isRecord(value)) {
+  if (!isObjectRecord(value)) {
     diagnostics.push(trackFieldUnknown(path, "Track requires must be an object of slot bindings."));
     return EMPTY_REQUIRES;
   }
@@ -296,7 +292,7 @@ function readRequires(
       entries.push([slot, binding]);
       continue;
     }
-    if (isRecord(binding)) {
+    if (isObjectRecord(binding)) {
       const members: [string, string][] = [];
       for (const [memberKey, source] of Object.entries(binding)) {
         if (typeof source !== "string" || source.length === 0) {
@@ -412,7 +408,7 @@ function readFieldSpec(
   path: string,
   diagnostics: Diagnostic[],
 ): FieldSpec | undefined {
-  if (!isRecord(value)) {
+  if (!isObjectRecord(value)) {
     diagnostics.push(specFieldUnknown(path, "A field spec must be an object."));
     return undefined;
   }
@@ -461,7 +457,7 @@ function readFields(
   path: string,
   diagnostics: Diagnostic[],
 ): Readonly<Record<string, FieldSpec>> | undefined {
-  if (!isRecord(value)) {
+  if (!isObjectRecord(value)) {
     diagnostics.push(specFieldUnknown(path, "Fields must be an object of field specs."));
     return undefined;
   }
@@ -484,7 +480,7 @@ function readTableSpec(
   diagnostics: Diagnostic[],
 ): ValueSpec | undefined {
   const schemaValue = value.schema;
-  if (!isRecord(schemaValue)) {
+  if (!isObjectRecord(schemaValue)) {
     diagnostics.push(specFieldUnknown(`${path}.schema`, "A table ValueSpec requires schema."));
     return undefined;
   }
@@ -497,7 +493,7 @@ function readTableSpec(
         ),
       );
   const rowValue = schemaValue.row;
-  if (!isRecord(rowValue)) {
+  if (!isObjectRecord(rowValue)) {
     diagnostics.push(specFieldUnknown(`${path}.schema.row`, "A table schema requires a row."));
     return undefined;
   }
@@ -560,7 +556,7 @@ export function readValueSpec(
   path: string,
   diagnostics: Diagnostic[],
 ): ValueSpec | undefined {
-  if (!isRecord(value)) {
+  if (!isObjectRecord(value)) {
     diagnostics.push(specFieldUnknown(path, "A ValueSpec must be an object."));
     return undefined;
   }
@@ -616,7 +612,7 @@ function readStops(
   let previousPosition: number | undefined;
   for (const [index, raw] of stops.entries()) {
     const stopPath = `${path}[${index}]`;
-    if (!isRecord(raw)) {
+    if (!isObjectRecord(raw)) {
       diagnostics.push(
         diagnostic("cell-stops-invalid", stopPath, "Each stop must be an object with p and v."),
       );
@@ -814,7 +810,7 @@ function readTable(
   const seen = new Set<string>();
   for (const [index, raw] of rows.entries()) {
     const rowPath = `${path}[${index}]`;
-    if (!isRecord(raw)) {
+    if (!isObjectRecord(raw)) {
       diagnostics.push(
         diagnostic(
           "row-id-invalid",
@@ -831,7 +827,7 @@ function readTable(
         );
     const id = readRowId(raw.id, `${rowPath}.id`, seen, diagnostics);
     if (id === undefined) continue;
-    if (!isRecord(raw.cells)) {
+    if (!isObjectRecord(raw.cells)) {
       diagnostics.push(
         diagnostic("cell-form-invalid", `${rowPath}.cells`, "Row cells must be an object."),
       );
@@ -879,7 +875,7 @@ function readValues(
     }
     return readTable(value, path, staticFieldsOf(schema), diagnostics);
   }
-  if (isRecord(value)) {
+  if (isObjectRecord(value)) {
     if (schema !== undefined && schema.kind !== "record") {
       diagnostics.push(
         diagnostic(
@@ -910,7 +906,7 @@ function readInput(
   diagnostics: Diagnostic[],
 ): ParsedInput {
   if (value === undefined) return EMPTY_INPUT;
-  if (!isRecord(value)) {
+  if (!isObjectRecord(value)) {
     diagnostics.push(trackFieldUnknown(path, "Track input must be an object."));
     return EMPTY_INPUT;
   }
@@ -1011,7 +1007,7 @@ export function parseTrackDefinition(
   context: ParseContext = {},
 ): Outcome<ParsedTrack, Diagnostic> {
   const diagnostics: Diagnostic[] = [];
-  if (!isRecord(track)) {
+  if (!isObjectRecord(track)) {
     diagnostics.push(diagnostic("track-shape", path, "Track must be an object."));
     return refusedOutcomeFrom(diagnostics);
   }

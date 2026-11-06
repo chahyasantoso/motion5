@@ -66,7 +66,7 @@ function distance(a: Vector3, b: Vector3): number {
 
 function load(tracks: readonly TrackDefinition[]) {
   const plugins = new PluginCatalog({ models: testModels });
-  plugins.register(fk3dPlugin);
+  plugins.register({ plugins: [fk3dPlugin] });
   const project = new Engine({
     plugins,
     clock: createManualClock(),

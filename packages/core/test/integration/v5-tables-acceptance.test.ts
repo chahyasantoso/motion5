@@ -98,13 +98,13 @@ const PointTable = defineModel({
 
 function defaultCatalog(): PluginCatalog {
   const catalog = new PluginCatalog({ models: [...testModels, PointTable] });
-  catalog.register(translatePlugin);
+  catalog.register({ plugins: [translatePlugin] });
   return catalog;
 }
 
 function catalogOf(...plugins: readonly PluginDefinition[]): PluginCatalog {
   const catalog = new PluginCatalog({ models: [...testModels, PointTable] });
-  catalog.registerAll(plugins);
+  catalog.register({ plugins: plugins });
   return catalog;
 }
 

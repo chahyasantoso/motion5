@@ -1,5 +1,6 @@
 import { unreachable } from "../lang/exhaustive";
 import type { AuthoredStaticValue, AuthoredStop } from "./v5";
+import { isObjectRecord } from "../lang/plain-record";
 
 /**
  * An authored leaf: `animated` stops array, `static` finite scalar never interpolated, `empty`
@@ -18,10 +19,6 @@ const INVALID_LEAF: AuthoredLeaf = Object.freeze({ kind: "invalid" });
 /** Frozen empty list; a leaf compiling to nothing allocates nothing. */
 const NO_STOPS: readonly AuthoredStop[] = Object.freeze([]);
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return value !== null && typeof value === "object" && !Array.isArray(value);
-}
-
 /**
  * Classify an authored leaf; sole inspector of unknown values. Arrays pass unfiltered so validation
  * sees every stop. An object carrying a `stops` array is the retired wrapper, refused. */
@@ -30,7 +27,7 @@ export function readAuthoredLeaf(value: unknown): AuthoredLeaf {
   if (typeof value === "number")
     return Number.isFinite(value) ? { kind: "static", value } : INVALID_LEAF;
   if (typeof value === "string" || typeof value === "boolean") return { kind: "static", value };
-  if (!isRecord(value)) return INVALID_LEAF;
+  if (!isObjectRecord(value)) return INVALID_LEAF;
   if (Array.isArray(value.stops)) return WRAPPER_LEAF;
   return Object.keys(value).length === 0 ? EMPTY_LEAF : INVALID_LEAF;
 }
@@ -69,7 +66,10 @@ export function readCompilableStops(value: unknown): readonly AuthoredStop[] {
     case "animated":
       return leaf.stops.filter(
         (stop): stop is AuthoredStop =>
-          isRecord(stop) && typeof stop.p === "number" && Number.isFinite(stop.p) && "v" in stop,
+          isObjectRecord(stop) &&
+          typeof stop.p === "number" &&
+          Number.isFinite(stop.p) &&
+          "v" in stop,
       );
     case "static":
     case "empty":

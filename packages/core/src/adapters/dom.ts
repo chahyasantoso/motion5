@@ -3,6 +3,7 @@ import { patchRender } from "../contract/patch-render";
 import { selectRecord } from "../contract/output-select";
 import { unreachable } from "../lang/exhaustive";
 import type { RenderMetadata } from "../ports/render-metadata";
+import { isPlainRecord } from "../lang/plain-record";
 
 export interface StageLike {
   style: { perspective?: string; [key: string]: unknown };
@@ -111,12 +112,6 @@ function createTransformWriter(
     } else if (hadTransform) removeStyleProperty(target, "transform");
     transformState.set(target, state);
   };
-}
-/** A plain record is a composite other nodes read, not a property a renderer writes. */
-function isPlainRecord(value: unknown): value is Readonly<Record<string, unknown>> {
-  if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
-  const prototype = Object.getPrototypeOf(value);
-  return prototype === Object.prototype || prototype === null;
 }
 // Internal keys are filtered upstream; only renderer artifacts (`_`, `offset`) are dropped here, no second denylist.
 function renderableValues(

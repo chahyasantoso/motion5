@@ -7,6 +7,7 @@ import {
   type Patch,
   type PatchListener,
   type ProjectHandle,
+  type Value,
 } from "@motion5/core";
 import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/testing";
 import { onLabelChange, readLabel } from "../src/labels";
@@ -51,10 +52,14 @@ function source(initial?: LivePatch) {
 function tagProject() {
   const plugins = new PluginCatalog({ models: testModels });
   plugins.register({
-    id: "tag",
-    inputs: { values: { kind: "record", fields: { mode: { kind: "string" } } } },
-    outputs: { values: { kind: "record", fields: { mode: { kind: "string" } } } },
-    transform: ({ values }) => ({ values }),
+    plugins: [
+      {
+        id: "tag",
+        inputs: { values: { kind: "record", fields: { mode: { kind: "string" } } } },
+        outputs: { values: { kind: "record", fields: { mode: { kind: "string" } } } },
+        transform: ({ values }: { readonly values: Value }) => ({ values }),
+      },
+    ],
   });
   const project = new Engine({
     plugins,

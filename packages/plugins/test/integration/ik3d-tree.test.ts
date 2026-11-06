@@ -193,7 +193,7 @@ const LEAVES = [
 
 function mountedRig() {
   const plugins = new PluginCatalog({ models: testModels });
-  plugins.registerAll([fk3dPlugin, ik3dPlugin]);
+  plugins.register({ plugins: [fk3dPlugin, ik3dPlugin] });
   const runtime = new Engine({
     clock: createManualClock(),
     interpolator: createFakeInterpolator(),

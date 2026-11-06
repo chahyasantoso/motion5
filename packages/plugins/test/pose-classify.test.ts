@@ -205,10 +205,9 @@ describe("pose classifier geodesic distance", () => {
 describe("pose classifier graph integration", () => {
   it("G7 downstream label changes follow the pose edge and notify only when the label changes", () => {
     const plugins = new PluginCatalog({ models: testModels });
-    plugins.registerAll([
-      fk3dPlugin,
-      createPoseClassifyPlugin({ templates: [template()], maxDistance: 10 }),
-    ]);
+    plugins.register({
+      plugins: [fk3dPlugin, createPoseClassifyPlugin({ templates: [template()], maxDistance: 10 })],
+    });
     const project = new Engine({
       plugins,
       clock: createManualClock(),
@@ -311,7 +310,7 @@ describe("pose classifier graph integration", () => {
       maxDistance: 10,
     });
     const catalog = new PluginCatalog({ models: testModels });
-    catalog.registerAll([fk3dPlugin, definition]);
+    catalog.register({ plugins: [fk3dPlugin, definition] });
     expect(catalog.get("tag-pose")?.id).toBe("tag-pose");
     expect(catalog.get("fk3d")?.id).toBe("fk3d");
   });

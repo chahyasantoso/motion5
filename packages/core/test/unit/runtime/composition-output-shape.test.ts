@@ -48,7 +48,7 @@ const BAD_OUTPUT: PluginDefinition = {
 describe("composition and output-shape diagnostics", () => {
   it("diagnoses a plugin returning a non-record composition value", () => {
     const plugins = new PluginCatalog({ models: testModels });
-    plugins.register(BAD_OUTPUT);
+    plugins.register({ plugins: [BAD_OUTPUT] });
     const engine = new Engine({
       clock: createManualClock(),
       interpolator: createFakeInterpolator(),

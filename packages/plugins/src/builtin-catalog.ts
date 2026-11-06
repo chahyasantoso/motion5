@@ -1,9 +1,4 @@
-import type { PluginDefinition } from "@motion5/core/plugin-api";
-
-/** A source-controlled loader entry for the identified-table plugin catalog. */
-export interface PluginDescriptor {
-  readonly load: () => Promise<PluginDefinition<never>>;
-}
+import type { PluginDescriptor } from "./loader";
 
 /** The zero-config plugins a loader resolves by name; each entry imports its module on first use. */
 export const builtinCatalog: ReadonlyMap<string, PluginDescriptor> = new Map<

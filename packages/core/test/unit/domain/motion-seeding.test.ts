@@ -41,14 +41,12 @@ describe("idle and static track seeding", () => {
       fields: { opacity: { kind: "static" as const, scalar: "number" as const, value: 1 } },
     };
     const interpolator = createFakeInterpolator();
-    const localInput = new LocalInput(createValueEvaluator(values, interpolator));
-    const processor = new PassthroughProcessor({
+    const track = Track.source({
       nodeId: "~/static",
       values,
       interpolator,
       model: TestRecord,
     });
-    const track = new Track("~/static", localInput, processor);
 
     expect(track.setProgress(0.5)).toBe(true);
     expect(track.setProgress(0.6)).toBe(false);

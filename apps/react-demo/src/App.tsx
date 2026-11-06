@@ -27,7 +27,7 @@ export const App: React.FC = () => {
     // Layout phase ⇒ GSAP measures committed DOM ⇒ pin spacer exists before native scroll restoration.
     // Source defers its snapshot; load and mount publish nothing.
     const plugins = new PluginCatalog({ models: builtinModels });
-    plugins.register(fkPlugin);
+    plugins.register({ plugins: [fkPlugin] });
 
     const clock = createBrowserClock({
       requestFrame: (cb: FrameRequestCallback) => requestAnimationFrame(cb),

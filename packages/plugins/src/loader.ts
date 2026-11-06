@@ -288,7 +288,7 @@ export function createPluginLoader(catalog: PluginCatalogSource): PluginLoader {
       // Names are the catalog keys, never re-read from the loaded definitions.
       const batch = loaded.filter(([name]) => !registry.has(name));
       try {
-        registry.registerAll(batch.map(([, definition]) => definition));
+        registry.register({ plugins: batch.map(([, definition]) => definition) });
       } catch (cause) {
         return { kind: "refused", failure: { kind: "registration-refused", cause } };
       }

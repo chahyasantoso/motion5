@@ -177,7 +177,7 @@ A plugin definition has:
 - `prepare`: optional commit-time check that returns `ok(state)` or `refused(issues)`.
 - `transform`: required; one transformation from resolved inputs to named outputs.
 
-`PluginCatalog.registerAll` admits a batch atomically. `EngineOptions.plugins` accepts a
+`PluginCatalog.register` admits a batch atomically. `EngineOptions.plugins` accepts a
 `PluginCatalog`. First-party kinematics publish models: `ik`/`ik3d` publish `Solved2d`/`Solved3d`,
 `fk`/`fk3d` publish `Points2d`/`Points3d`, and their slots require `Body2d`/`Body3d`,
 `Goals2d`/`Goals3d`, `Point2d`/`Point3d` and optionally the solved model. A model object carries

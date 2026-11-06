@@ -55,7 +55,7 @@ function loadRig(): {
 } {
   const scheduler = createFakeScheduler();
   const plugins = new PluginCatalog({ models: testModels });
-  plugins.register(fkPlugin);
+  plugins.register({ plugins: [fkPlugin] });
   const definition: ProjectDefinition = {
     ...initialWalkerProject,
     motions: [{ id: "walk", trigger: { type: "manual" }, tracks: coreWalkerTracks }],

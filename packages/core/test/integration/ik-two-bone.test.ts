@@ -64,7 +64,7 @@ const SIX_NODE_IK_PROJECT: ProjectDefinition = {
 function createEngine(project: ProjectDefinition) {
   const seam = createRealGsapSeam();
   const plugins = new PluginCatalog({ models: testModels });
-  plugins.registerAll([transformPlugin, fkPlugin, ikPlugin]);
+  plugins.register({ plugins: [transformPlugin, fkPlugin, ikPlugin] });
   return new Engine({
     clock: createManualClock(),
     interpolator: seam.interpolator,

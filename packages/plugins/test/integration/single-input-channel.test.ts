@@ -53,7 +53,7 @@ const project: ProjectDefinition = {
 
 function load() {
   const plugins = new PluginCatalog({ models: testModels });
-  plugins.registerAll([transformPlugin, fkPlugin]);
+  plugins.register({ plugins: [transformPlugin, fkPlugin] });
   return new Engine({
     clock: createManualClock(),
     interpolator: createFakeInterpolator(),

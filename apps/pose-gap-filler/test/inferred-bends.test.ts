@@ -279,7 +279,7 @@ describe("inferred bends through the real world rig", () => {
         ],
       };
       const plugins = new PluginCatalog({ models: testModels });
-      plugins.registerAll([fk3dPlugin, ik3dPlugin]);
+      plugins.register({ plugins: [fk3dPlugin, ik3dPlugin] });
       const project = new Engine({ ...fakePorts(), plugins }).load(changed);
       for (const node of project.motion(POSE_MOTION_ID).trackIds) project.mount(node);
       return project;

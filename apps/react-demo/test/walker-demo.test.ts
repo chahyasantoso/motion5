@@ -46,7 +46,7 @@ function load() {
   const scheduler = createFakeScheduler();
   const scroll = scrollSource();
   const plugins = new PluginCatalog({ models: testModels });
-  plugins.register(fkPlugin);
+  plugins.register({ plugins: [fkPlugin] });
   const project = new Engine({
     clock,
     interpolator: createFakeInterpolator(),

@@ -2,15 +2,11 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import type { AdmittedPlugin, Model, ValueSpec } from "../../../src/contract/v5";
+import type { AdmittedPlugin, Model } from "../../../src/contract/v5";
 import { admitDeclaration } from "../../../src/domain/plugin-catalog";
 import { brandStructure } from "../../../src/contract/structure";
 import { parseTrackDefinition, type ParsedValues } from "../../../src/contract/v5-parse";
-import { createValueEvaluator } from "../../../src/runtime/evaluate-values";
-import { LocalInput } from "../../../src/runtime/local-input";
 import type { BoundSlotEntry, BoundSlots } from "../../../src/runtime/bound-slot";
-import { ComputedProcessor, defaultPluginValues } from "../../../src/runtime/processors/computed";
-import { PassthroughProcessor } from "../../../src/runtime/processors/passthrough";
 import { Track } from "../../../src/runtime/track";
 import { createFakeInterpolator } from "../../../src/testing/fakes";
 import { TestRecord } from "../../support/test-models";
@@ -46,21 +42,12 @@ const testModel: Model<{ readonly count: number }, { readonly count: number }> =
 };
 
 function computedTrack(plugin: AdmittedPlugin): Track {
-  const interpolator = createFakeInterpolator();
-  const valuesSpec: ValueSpec = plugin.inputs.values?.spec ?? { kind: "record", fields: {} };
-  const localInput = new LocalInput(
-    createValueEvaluator(defaultPluginValues(undefined, plugin), interpolator, valuesSpec),
-  );
-  return new Track(
-    "node",
-    localInput,
-    new ComputedProcessor({
-      nodeId: "node",
-      plugin: plugin,
-      values: undefined,
-      interpolator,
-    }),
-  );
+  return Track.computed({
+    nodeId: "node",
+    plugin,
+    values: undefined,
+    interpolator: createFakeInterpolator(),
+  });
 }
 
 describe("Track and Processors", () => {
@@ -73,22 +60,15 @@ describe("Track and Processors", () => {
 
   it("structureAtCommit exhibits polymorphic behavior across processors", () => {
     const values = valuesOf({ count: 42 });
-    const localInput1 = new LocalInput(
-      createValueEvaluator(values, createFakeInterpolator(), testModel.spec),
-    );
-    const passthrough = new PassthroughProcessor({
+    const passthroughTrack = Track.source({
       nodeId: "source",
       values,
       interpolator: createFakeInterpolator(),
       model: testModel,
     });
-    const passthroughTrack = new Track("source", localInput1, passthrough);
     expect(passthroughTrack.structureAtCommit()).toEqual({ count: 42 });
 
-    const localInput2 = new LocalInput(
-      createValueEvaluator(undefined, createFakeInterpolator(), { kind: "record", fields: {} }),
-    );
-    const computed = new ComputedProcessor({
+    const computedTrack = Track.computed({
       nodeId: "consumer",
       plugin: admitDeclaration({
         id: "plugin",
@@ -99,7 +79,6 @@ describe("Track and Processors", () => {
       values: undefined,
       interpolator: createFakeInterpolator(),
     });
-    const computedTrack = new Track("consumer", localInput2, computed);
     expect(computedTrack.structureAtCommit()).toBeUndefined();
   });
 
@@ -111,19 +90,12 @@ describe("Track and Processors", () => {
       ],
     });
     const interpolator = createFakeInterpolator();
-    const localInput = new LocalInput(
-      createValueEvaluator(values, interpolator, {
-        kind: "record",
-        fields: { count: { kind: "number" } },
-      }),
-    );
-    const passthrough = new PassthroughProcessor({
+    const track = Track.source({
       nodeId: "track-1",
       values,
       interpolator,
       model: TestRecord,
     });
-    const track = new Track("track-1", localInput, passthrough);
     track.setProgress(0.5);
     const composition = track.compose({});
     expect(composition.outputs).toEqual({ values: { count: 15 } });
@@ -134,26 +106,16 @@ describe("Track and Processors", () => {
   it("recompose count preservation matches expected tick behavior", () => {
     const staticValues = valuesOf({ count: 10 });
     const interpolator = createFakeInterpolator();
-    const localInput1 = new LocalInput(
-      createValueEvaluator(staticValues, interpolator, {
-        kind: "record",
-        fields: { count: { kind: "number" } },
-      }),
-    );
-    const passthrough = new PassthroughProcessor({
+    const passthroughTrack = Track.source({
       nodeId: "static-track",
       values: staticValues,
       interpolator,
       model: TestRecord,
     });
-    const passthroughTrack = new Track("static-track", localInput1, passthrough);
     expect(passthroughTrack.setProgress(0.2)).toBe(true);
     expect(passthroughTrack.setProgress(0.5)).toBe(false);
 
-    const localInput2 = new LocalInput(
-      createValueEvaluator(undefined, interpolator, { kind: "record", fields: {} }),
-    );
-    const computed = new ComputedProcessor({
+    const computedTrack = Track.computed({
       nodeId: "computed-track",
       plugin: admitDeclaration({
         id: "plugin",
@@ -164,7 +126,6 @@ describe("Track and Processors", () => {
       values: undefined,
       interpolator,
     });
-    const computedTrack = new Track("computed-track", localInput2, computed);
     expect(computedTrack.setProgress(0.2)).toBe(true);
     expect(computedTrack.setProgress(0.5)).toBe(true);
   });
@@ -173,19 +134,12 @@ describe("Track and Processors", () => {
     const initialValues = valuesOf({ x: 1 });
     const nextValues = valuesOf({ x: 99 });
     const interpolator = createFakeInterpolator();
-    const localInput = new LocalInput(
-      createValueEvaluator(initialValues, interpolator, {
-        kind: "record",
-        fields: { x: { kind: "number" } },
-      }),
-    );
-    const passthrough = new PassthroughProcessor({
+    const track = Track.source({
       nodeId: "track-repl",
       values: initialValues,
       interpolator,
       model: TestRecord,
     });
-    const track = new Track("track-repl", localInput, passthrough);
     expect(track.compose({}).outputs).toEqual({ values: { x: 1 } });
 
     track.replaceValues(nextValues);

@@ -166,13 +166,15 @@ describe("aggregate pose-classify binding (AP)", () => {
 
   it("AP-10 end-to-end Engine integration with 2D and 3D pipelines", () => {
     const plugins = new PluginCatalog({ models: testModels });
-    plugins.registerAll([
-      ikPlugin,
-      fkPlugin,
-      ik3dPlugin,
-      fk3dPlugin,
-      createPoseClassifyPlugin({ templates: [T_POSE], maxDistance: 10 }),
-    ]);
+    plugins.register({
+      plugins: [
+        ikPlugin,
+        fkPlugin,
+        ik3dPlugin,
+        fk3dPlugin,
+        createPoseClassifyPlugin({ templates: [T_POSE], maxDistance: 10 }),
+      ],
+    });
 
     const projectDef = {
       schemaVersion: 5,

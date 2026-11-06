@@ -213,11 +213,11 @@ function loadRig(ports: RigPorts, space: "image" | "world"): ProjectHandle {
   let definition: ProjectDefinition;
   switch (space) {
     case "image":
-      plugins.registerAll([fkPlugin, ikPlugin]);
+      plugins.register({ plugins: [fkPlugin, ikPlugin] });
       definition = imageRigProject();
       break;
     case "world":
-      plugins.registerAll([fk3dPlugin, ik3dPlugin]);
+      plugins.register({ plugins: [fk3dPlugin, ik3dPlugin] });
       definition = worldRigProject();
       break;
     default:

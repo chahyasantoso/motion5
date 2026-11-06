@@ -50,7 +50,7 @@ const PARAM_ONLY: PluginDefinition = {
 describe("catalog describe", () => {
   it("reports declared model and shape slots without exposing the definition", () => {
     const catalog = new PluginCatalog({ models: testModels });
-    catalog.register(PLUGIN);
+    catalog.register({ plugins: [PLUGIN] });
 
     const description = catalog.describe("probe");
     expect(description?.id).toBe("probe");
@@ -73,7 +73,7 @@ describe("catalog describe", () => {
 
   it("omits values a plugin does not declare and reports its param", () => {
     const catalog = new PluginCatalog({ models: testModels });
-    catalog.register(PARAM_ONLY);
+    catalog.register({ plugins: [PARAM_ONLY] });
 
     const description = catalog.describe("param-only");
     expect(description?.values).toBeUndefined();

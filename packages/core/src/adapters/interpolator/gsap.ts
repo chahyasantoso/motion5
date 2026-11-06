@@ -11,6 +11,7 @@ import {
   type Interpolator,
   type InterpolationTimeline,
 } from "../../ports/interpolator";
+import { isObjectRecord } from "../../lang/plain-record";
 
 export interface GsapTweenLike {
   duration(): number;
@@ -39,23 +40,20 @@ export interface GsapLike {
 }
 /** One frozen value; a key with nothing compiled allocates nothing. */
 const NO_STOPS: readonly AuthoredStop[] = Object.freeze([]);
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return value !== null && typeof value === "object" && !Array.isArray(value);
-}
 function readDuration(config: unknown): number {
-  if (!isRecord(config)) return 1;
+  if (!isObjectRecord(config)) return 1;
   const duration = config.duration;
   return typeof duration === "number" && Number.isFinite(duration) && duration >= 0 ? duration : 1;
 }
 function readKeyframes(config: unknown): Readonly<Record<string, unknown>> {
-  return isRecord(config) && isRecord(config.keyframes) ? config.keyframes : {};
+  return isObjectRecord(config) && isObjectRecord(config.keyframes) ? config.keyframes : {};
 }
 function readTweenVars(config: unknown): Readonly<Record<string, unknown>> {
-  return !isRecord(config) || !isRecord(config.tweenVars) ? {} : config.tweenVars;
+  return !isObjectRecord(config) || !isObjectRecord(config.tweenVars) ? {} : config.tweenVars;
 }
 /** `perKeyEase` → each cell keeps its own ease; default groups one ease per percent frame. */
 function readCompileOptions(config: unknown): KeyframeCompileOptions {
-  return isRecord(config) && config.perKeyEase === true ? { ease: "per-key" } : {};
+  return isObjectRecord(config) && config.perKeyEase === true ? { ease: "per-key" } : {};
 }
 function hasError(diagnostics: readonly Diagnostic[]): boolean {
   return diagnostics.some(({ severity }) => severity === "error");
@@ -69,7 +67,7 @@ function recentChild(timeline: GsapTimelineLike): unknown {
 }
 /** A child this adapter may retain: anything killable alone; gsap may answer a callback. */
 function asTween(child: unknown): GsapTweenLike | undefined {
-  if (!isRecord(child)) return undefined;
+  if (!isObjectRecord(child)) return undefined;
   return typeof child.kill === "function" ? (child as unknown as GsapTweenLike) : undefined;
 }
 /** Whether two compiled stop lists are the same tween shape, value for value. */

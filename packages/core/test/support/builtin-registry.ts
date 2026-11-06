@@ -46,7 +46,7 @@ export function testObserver(id: string): PluginDefinition {
 /** The model catalog every test engine uses; no test runs without a catalog. */
 export function testCatalog(...plugins: readonly PluginDefinition[]): PluginCatalog {
   const catalog = new PluginCatalog({ models: testModels });
-  catalog.registerAll(plugins);
+  catalog.register({ plugins: plugins });
   return catalog;
 }
 
@@ -94,15 +94,17 @@ export const GRAPH_EDGE_PLUGIN: PluginDefinition = {
  */
 export function builtinRegistry(...additional: readonly PluginDefinition[]): PluginCatalog {
   const registry = new PluginCatalog({ models: testModels });
-  registry.registerAll([
-    transformPlugin,
-    fkPlugin,
-    ikPlugin,
-    transform3dPlugin,
-    fk3dPlugin,
-    ik3dPlugin,
-    GRAPH_EDGE_PLUGIN,
-    ...additional,
-  ]);
+  registry.register({
+    plugins: [
+      transformPlugin,
+      fkPlugin,
+      ikPlugin,
+      transform3dPlugin,
+      fk3dPlugin,
+      ik3dPlugin,
+      GRAPH_EDGE_PLUGIN,
+      ...additional,
+    ],
+  });
   return registry;
 }

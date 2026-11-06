@@ -66,7 +66,7 @@ const SHIFTED: TrackDefinition = track({
 
 function environment(plugins: readonly PluginDefinition[] = [], admitted = true): PlanEnvironment {
   const catalog = new PluginCatalog({ models: [...testModels, PointTable] });
-  catalog.registerAll(plugins);
+  catalog.register({ plugins: plugins });
   return {
     capabilities: catalog,
     isPluginRegistered: (pluginId) => admitted && catalog.isPluginAdmitted(pluginId),

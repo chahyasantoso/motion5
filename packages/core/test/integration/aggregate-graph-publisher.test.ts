@@ -43,7 +43,7 @@ const consumerPlugin: PluginDefinition = {
 
 function createCatalog(...additional: readonly PluginDefinition[]): PluginCatalog {
   const result = new PluginCatalog({ models: testModels });
-  result.registerAll([ikPlugin, fkPlugin, consumerPlugin, ...additional]);
+  result.register({ plugins: [ikPlugin, fkPlugin, consumerPlugin, ...additional] });
   return result;
 }
 
@@ -286,7 +286,7 @@ describe("Explicit Aggregate Graph and Publisher (AM-1..10)", () => {
     const spiedFkPlugin = { ...fkPlugin, transform: fkTransformSpy };
 
     const catalog = new PluginCatalog({ models: testModels });
-    catalog.registerAll([spiedIkPlugin, spiedFkPlugin]);
+    catalog.register({ plugins: [spiedIkPlugin, spiedFkPlugin] });
     const engine = createEngine(catalog);
     const project = createAggregateProject();
     const handle = engine.load(project);
@@ -393,7 +393,7 @@ describe("Explicit Aggregate Graph and Publisher (AM-1..10)", () => {
       },
     };
     const catalog = new PluginCatalog({ models: testModels });
-    catalog.registerAll([throwingIkPlugin, fkPlugin]);
+    catalog.register({ plugins: [throwingIkPlugin, fkPlugin] });
     const engine = createEngine(catalog);
     const project = createAggregateProject();
     const handle = engine.load(project);

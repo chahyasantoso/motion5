@@ -121,7 +121,7 @@ describe("IK envelope (#349 phase 7, ADR-113)", () => {
   it("EN-4 independent rigs in one runtime republish alone: a seek on one rig reaches no other", () => {
     const count = 24;
     const plugins = new PluginCatalog({ models: testModels });
-    plugins.registerAll([fkPlugin, ikPlugin]);
+    plugins.register({ plugins: [fkPlugin, ikPlugin] });
     const runtime = new Engine({
       clock: createManualClock(),
       interpolator: createFakeInterpolator(),

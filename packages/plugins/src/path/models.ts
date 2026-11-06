@@ -1,5 +1,19 @@
 import { defineModel, ok, refused } from "@motion5/core/plugin-api";
-import type { Model, ValueSpec } from "@motion5/core/plugin-api";
+import type { Model, Parsed, ValueSpec } from "@motion5/core/plugin-api";
+
+function parseIds(
+  value: unknown,
+  minRows: number,
+  message: string,
+): Parsed<{ readonly ids: readonly string[] }> {
+  if (!Array.isArray(value)) {
+    return refused([{ path: "", message: "Expected a table." }]);
+  }
+  if (value.length < minRows) {
+    return refused([{ path: "values", message }]);
+  }
+  return ok({ ids: value.map((r) => r.id) });
+}
 
 const ANCHORS_2D_SPEC: ValueSpec = {
   kind: "table",
@@ -96,43 +110,19 @@ export interface LocalAnchorsStructure {
 export const Anchors2d: Model<Anchor2dCells, AnchorsStructure> = defineModel({
   id: "Anchors2d",
   spec: ANCHORS_2D_SPEC,
-  parse(value) {
-    if (!Array.isArray(value)) {
-      return refused([{ path: "", message: "Expected a table." }]);
-    }
-    if (value.length < 2) {
-      return refused([{ path: "values", message: "A path needs at least 2 anchors." }]);
-    }
-    return ok({ ids: value.map((r) => r.id) });
-  },
+  parse: (value) => parseIds(value, 2, "A path needs at least 2 anchors."),
 });
 
 /** 2D cubic path model specifying absolute Bézier segment control points. */
 export const CubicPath2d: Model<CubicPath2dCells, CubicPathStructure> = defineModel({
   id: "CubicPath2d",
   spec: CUBIC_PATH_2D_SPEC,
-  parse(value) {
-    if (!Array.isArray(value)) {
-      return refused([{ path: "", message: "Expected a table." }]);
-    }
-    if (value.length < 1) {
-      return refused([{ path: "values", message: "A path needs at least 1 segment." }]);
-    }
-    return ok({ ids: value.map((r) => r.id) });
-  },
+  parse: (value) => parseIds(value, 1, "A path needs at least 1 segment."),
 });
 
 /** 2D local anchors model specifying anchor offsets in bone local coordinate frames. */
 export const LocalAnchors2d: Model<LocalAnchor2dCells, LocalAnchorsStructure> = defineModel({
   id: "LocalAnchors2d",
   spec: LOCAL_ANCHORS_2D_SPEC,
-  parse(value) {
-    if (!Array.isArray(value)) {
-      return refused([{ path: "", message: "Expected a table." }]);
-    }
-    if (value.length < 2) {
-      return refused([{ path: "values", message: "A path needs at least 2 anchors." }]);
-    }
-    return ok({ ids: value.map((r) => r.id) });
-  },
+  parse: (value) => parseIds(value, 2, "A path needs at least 2 anchors."),
 });

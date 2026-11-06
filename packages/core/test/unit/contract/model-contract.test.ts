@@ -98,7 +98,7 @@ function project(model = "PointSource", plugin = "consume"): ProjectDefinition {
 
 function open(definition: ProjectDefinition) {
   const catalog = new PluginCatalog({ models: [...testModels, PointSource] });
-  catalog.registerAll([CONSUME]);
+  catalog.register({ plugins: [CONSUME] });
   return new Engine({
     clock: createManualClock(),
     interpolator: createFakeInterpolator(),
@@ -121,7 +121,7 @@ describe("self-validating model tracks", () => {
       inputs: { ...CONSUME.inputs, requires: { data: trackedSource } },
     };
     const catalog = new PluginCatalog({ models: [...testModels, trackedSource] });
-    catalog.registerAll([CONSUME, trackedConsumer]);
+    catalog.register({ plugins: [CONSUME, trackedConsumer] });
     const handle = new Engine({
       clock: createManualClock(),
       interpolator: createFakeInterpolator(),
@@ -188,7 +188,7 @@ describe("self-validating model tracks", () => {
       },
     };
     const catalog = new PluginCatalog({ models: [...testModels, PointSource] });
-    catalog.registerAll([producer, guard]);
+    catalog.register({ plugins: [producer, guard] });
     const handle = new Engine({
       clock: createManualClock(),
       interpolator: createFakeInterpolator(),
@@ -239,14 +239,12 @@ describe("self-validating model tracks", () => {
       ],
     };
     const interpolator = createFakeInterpolator();
-    const localInput = new LocalInput(createValueEvaluator(values, interpolator, PointSource.spec));
-    const processor = new PassthroughProcessor({
+    const track = Track.source({
       nodeId: "~/points",
       values,
       interpolator,
       model: PointSource,
     });
-    const track = new Track("~/points", localInput, processor);
     expect(track.structureAtCommit()).toBeDefined();
     expect(Object.isFrozen(track.structureAtCommit())).toBe(true);
   });

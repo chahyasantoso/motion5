@@ -87,7 +87,7 @@ function runtimeOf(handle: ProjectHandle): ProjectRuntime {
 
 function loaded(): ProjectHandle {
   const catalog = new PluginCatalog({ models: testModels });
-  catalog.registerAll([SOLVER(TENTACLE.solverTrack), SOLVER(IK3D.solverTrack)]);
+  catalog.register({ plugins: [SOLVER(TENTACLE.solverTrack), SOLVER(IK3D.solverTrack)] });
   return new Engine({
     clock: createManualClock(),
     interpolator: createFakeInterpolator(),

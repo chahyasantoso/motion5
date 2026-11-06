@@ -267,11 +267,7 @@ export function optional<M extends Model<unknown, unknown>>(
 export function isModel(value: unknown): value is Model<unknown, unknown> {
   if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
   return (
-    "id" in value &&
-    typeof value.id === "string" &&
-    "spec" in value &&
-    !("transform" in value) &&
-    !("bind" in value)
+    "id" in value && typeof value.id === "string" && "spec" in value && !("transform" in value)
   );
 }
 /** Predicate recognizing optional model declarations. */

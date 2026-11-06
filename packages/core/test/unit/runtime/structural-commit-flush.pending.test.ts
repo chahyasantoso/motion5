@@ -34,7 +34,7 @@ const DEMO: PluginDefinition = {
   },
 };
 const CATALOG = new PluginCatalog({ models: testModels });
-CATALOG.register(DEMO);
+CATALOG.register({ plugins: [DEMO] });
 const MOTION: MotionDefinition = {
   id: MOTION_ID,
   trigger: { type: "manual" },

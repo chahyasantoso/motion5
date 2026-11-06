@@ -46,7 +46,7 @@ const Card = defineModel({
 });
 
 const plugins = new PluginCatalog({ models: [Card] });
-plugins.register(transformPlugin);
+plugins.register({ plugins: [transformPlugin] });
 
 const clock = createManualClock();
 const engine = new Engine({

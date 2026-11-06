@@ -276,7 +276,7 @@ function project(
 
 function open(definition: ProjectDefinition) {
   const plugins = new PluginCatalog({ models: [...testModels, Pole3d] });
-  plugins.registerAll([ik3dPlugin]);
+  plugins.register({ plugins: [ik3dPlugin] });
   const handle = new Engine({
     clock: createManualClock(),
     interpolator: createFakeInterpolator(),

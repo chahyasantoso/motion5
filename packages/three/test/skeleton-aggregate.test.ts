@@ -164,7 +164,7 @@ describe("three aggregate skeleton migration (AO)", () => {
       ],
     };
     const plugins = new PluginCatalog({ models: testModels });
-    plugins.register(fk3dPlugin);
+    plugins.register({ plugins: [fk3dPlugin] });
     const engine = new Engine({
       clock: createManualClock(),
       interpolator: createFakeInterpolator(),

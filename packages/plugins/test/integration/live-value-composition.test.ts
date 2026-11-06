@@ -68,7 +68,7 @@ function seekAll(handle: ProjectHandle): void {
 
 function load(): ProjectHandle {
   const plugins = new PluginCatalog({ models: testModels });
-  plugins.registerAll([fkPlugin, ikPlugin]);
+  plugins.register({ plugins: [fkPlugin, ikPlugin] });
   const handle = new Engine({
     clock: createManualClock(),
     interpolator: createFakeInterpolator(),

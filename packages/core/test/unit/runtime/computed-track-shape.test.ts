@@ -1,12 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { isModel, type PluginDefinition, type ValueSpec } from "../../../src/contract/v5";
+import { type PluginDefinition, type ValueSpec } from "../../../src/contract/v5";
 import { admitDeclaration } from "../../../src/domain/plugin-catalog";
 import { parseTrackDefinition } from "../../../src/contract/v5-parse";
 import type { ParsedValues } from "../../../src/contract/v5-parse";
-import { createValueEvaluator } from "../../../src/runtime/evaluate-values";
-import { LocalInput } from "../../../src/runtime/local-input";
 import { PluginNodeError } from "../../../src/runtime/plugin-output";
-import { ComputedProcessor } from "../../../src/runtime/processors/computed";
 import { Track } from "../../../src/runtime/track";
 import { createFakeInterpolator } from "../../../src/testing/fakes";
 
@@ -39,18 +36,12 @@ function createComputedTrack(options: {
   readonly plugin: PluginDefinition;
   readonly values: ParsedValues | undefined;
 }): Track {
-  const interpolator = createFakeInterpolator();
-  const valuesSpec = isModel(options.plugin.inputs.values)
-    ? options.plugin.inputs.values.spec
-    : options.plugin.inputs.values;
-  const localInput = new LocalInput(createValueEvaluator(options.values, interpolator, valuesSpec));
-  const processor = new ComputedProcessor({
+  return Track.computed({
     nodeId: options.nodeId,
     plugin: admitDeclaration(options.plugin),
     values: options.values,
-    interpolator,
+    interpolator: createFakeInterpolator(),
   });
-  return new Track(options.nodeId, localInput, processor);
 }
 
 function refusalOf(track: Track): string {

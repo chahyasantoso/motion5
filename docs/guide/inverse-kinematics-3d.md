@@ -13,7 +13,7 @@ import { ik3dPlugin } from "@motion5/plugins/ik3d";
 import { builtinModels } from "@motion5/plugins/models";
 
 const plugins = new PluginCatalog({ models: builtinModels });
-plugins.registerAll([fk3dPlugin, ik3dPlugin]);
+plugins.register({ plugins: [fk3dPlugin, ik3dPlugin] });
 ```
 
 Pass the catalog to `EngineOptions.plugins`. There is no implicit 3D plugin.

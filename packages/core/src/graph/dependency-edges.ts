@@ -12,6 +12,7 @@ import { diagnostic } from "../contract/diagnostics";
 import { acceptedOutcome, readOutcome, refusedOutcome, type Outcome } from "../lang/outcome";
 import { qualifyFreeTrack, qualifyMotionTrack } from "./ids";
 import type { EdgeRequirement, GraphEdge } from "./ir";
+import { isObjectRecord } from "../lang/plain-record";
 
 export type ResolvedEdge = Outcome<GraphEdge, Diagnostic>;
 
@@ -60,10 +61,6 @@ export function qualifySource(source: string, motionId: string): string {
       source.slice(source.indexOf("/") + 1),
     ).value;
   return qualifyMotionTrack(motionId, source).value;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
 export function resolveRequirementEdge(
@@ -115,7 +112,7 @@ export function collectDependencyEdges(
   const plugin = outputPluginId(track.output);
   const requires = track.input?.requires;
   if (plugin === undefined || requires === undefined) return;
-  if (!isRecord(requires)) {
+  if (!isObjectRecord(requires)) {
     diagnostics.push(
       diagnostic(
         "requirement-source",
@@ -150,7 +147,7 @@ export function collectDependencyEdges(
       );
       continue;
     }
-    if (!isRecord(binding)) {
+    if (!isObjectRecord(binding)) {
       diagnostics.push(
         diagnostic(
           "requirement-source",

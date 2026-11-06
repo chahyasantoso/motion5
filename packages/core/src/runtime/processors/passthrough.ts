@@ -1,4 +1,4 @@
-import type { Model, Structure } from "../../contract/v5";
+import type { Model, SourceStructures, Structure, Value } from "../../contract/v5";
 import { describeDiagnostics } from "../../contract/diagnostics";
 import type { ParsedValues } from "../../contract/v5-parse";
 import type { Interpolator } from "../../ports/interpolator";
@@ -15,6 +15,7 @@ export interface PassthroughProcessorOptions {
   readonly values: ParsedValues | undefined;
   readonly interpolator: Interpolator;
   readonly model: Model<unknown, unknown>;
+  readonly localInput: LocalInput;
 }
 
 export class PassthroughProcessor implements Processor {
@@ -22,6 +23,7 @@ export class PassthroughProcessor implements Processor {
   readonly nodeId: string;
   readonly #model: Model<unknown, unknown>;
   readonly #interpolator: Interpolator;
+  readonly #localInput: LocalInput;
   #structure: Structure<unknown> | undefined;
   #ticked = false;
 
@@ -29,6 +31,7 @@ export class PassthroughProcessor implements Processor {
     this.nodeId = options.nodeId;
     this.#model = options.model;
     this.#interpolator = options.interpolator;
+    this.#localInput = options.localInput;
     this.#structure = this.#parseStructure(options.values);
   }
 
@@ -50,29 +53,35 @@ export class PassthroughProcessor implements Processor {
     return outputName === "values" ? this.#structure : undefined;
   }
 
-  setProgress(value: number, localInput: LocalInput): boolean {
-    const changed = localInput.setProgress(value);
+  setProgress(value: number): boolean {
+    const changed = this.#localInput.setProgress(value);
     if (!changed) return false;
-    if (localInput.timeInvariant && this.#ticked) return false;
+    if (this.#localInput.timeInvariant && this.#ticked) return false;
     this.#ticked = true;
     return true;
   }
 
-  replaceValues(values: ParsedValues | undefined, localInput: LocalInput): void {
-    localInput.replaceEvaluator(() =>
+  replaceValues(values: ParsedValues | undefined): void {
+    this.#localInput.replaceEvaluator(() =>
       createValueEvaluator(values, this.#interpolator, this.#model.spec),
     );
   }
 
-  compose(_slots: BoundSlots, localInput: LocalInput): PublisherComposition {
+  compose(_slots: BoundSlots): PublisherComposition {
     return {
-      outputs: Object.freeze({ values: localInput.evaluate() }),
-      sourceProgress: localInput.progress,
+      outputs: Object.freeze({ values: this.#localInput.evaluate() }),
+      sourceProgress: this.#localInput.progress,
       sourceRevisions: {},
     };
   }
 
+  prepareCommit(_structures: SourceStructures): void {}
+
   invalidateOutputs(): void {}
+
+  replaceParam(_param: ParsedValues | undefined): void {}
+
+  replaceParamOverlay(_value: Value | undefined): void {}
 
   dispose(): void {}
 }

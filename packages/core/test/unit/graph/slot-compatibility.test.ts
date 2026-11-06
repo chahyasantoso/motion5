@@ -62,7 +62,7 @@ function plugin(
 
 function catalog(...plugins: readonly PluginDefinition[]): PluginCatalog {
   const result = new PluginCatalog({ models: [...testModels, PointTable, OtherTable] });
-  result.registerAll(plugins);
+  result.register({ plugins: plugins });
   return result;
 }
 
@@ -256,7 +256,7 @@ describe("load-time slot compatibility", () => {
 
   it("refuses an unknown source model instead of treating it as unproven", () => {
     const plugins = new PluginCatalog();
-    plugins.register(plugin("translate", { values: VALUES }));
+    plugins.register({ plugins: [plugin("translate", { values: VALUES })] });
     const built = buildGraphIR(
       project(
         track({ id: "empty", values: table(), model: "UnknownModel" }),

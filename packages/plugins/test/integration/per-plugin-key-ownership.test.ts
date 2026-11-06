@@ -73,7 +73,7 @@ function rig(thighTrack: TrackDefinition): ProjectDefinition {
 
 function rigRegistry(): PluginCatalog {
   const plugins = new PluginCatalog({ models: testModels });
-  plugins.registerAll([transformPlugin, fkPlugin]);
+  plugins.register({ plugins: [transformPlugin, fkPlugin] });
   return plugins;
 }
 

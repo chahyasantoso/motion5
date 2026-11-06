@@ -88,7 +88,7 @@ const LENIENT: PluginDefinition = {
 
 function engine(...plugins: readonly PluginDefinition[]): Engine {
   const catalog = new PluginCatalog({ models: [...testModels, Tagged] });
-  catalog.registerAll([WATCHER, ...plugins]);
+  catalog.register({ plugins: [WATCHER, ...plugins] });
   return new Engine({
     clock: createManualClock(),
     interpolator: createFakeInterpolator(),

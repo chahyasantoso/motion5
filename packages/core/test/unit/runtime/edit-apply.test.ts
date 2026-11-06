@@ -49,7 +49,7 @@ const SHIFTED: TrackDefinition = track({
 
 function environment(): PlanEnvironment {
   const catalog = new PluginCatalog({ models: [...testModels, PointTable] });
-  catalog.registerAll([TRANSLATE]);
+  catalog.register({ plugins: [TRANSLATE] });
   return {
     capabilities: catalog,
     isPluginRegistered: (pluginId) => catalog.isPluginAdmitted(pluginId),
