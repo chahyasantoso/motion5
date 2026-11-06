@@ -73,7 +73,7 @@ describe("Track and Processors", () => {
       plugin: admitDeclaration({
         id: "plugin",
         inputs: { values: { kind: "record", fields: {} } },
-        outputs: { values: { kind: "record", fields: {} } },
+        outputs: { values: TestRecord },
         transform: () => ({ values: {} }),
       }),
       values: undefined,
@@ -120,7 +120,7 @@ describe("Track and Processors", () => {
       plugin: admitDeclaration({
         id: "plugin",
         inputs: { values: { kind: "record", fields: {} } },
-        outputs: { values: { kind: "record", fields: {} } },
+        outputs: { values: TestRecord },
         transform: () => ({ values: {} }),
       }),
       values: undefined,

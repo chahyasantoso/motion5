@@ -7,8 +7,27 @@ import {
   type Model,
   type PluginDefinition,
 } from "../../../src/plugin-api";
+import type { PluginCatalogOptions } from "../../../src/domain/plugin-catalog";
 
 describe("model admission", () => {
+  it("refuses a main output that is a plain spec or absent, and admits a plain secondary", () => {
+    const spec = { kind: "record", fields: { x: { kind: "number" } } } as const;
+    const main = defineModel({ id: "MainOutput", spec });
+    const transform = () => ({});
+    const refusal = (outputs: unknown): string | undefined => {
+      const batch: unknown = { plugins: [{ id: "p", inputs: {}, outputs, transform }] };
+      try {
+        new PluginCatalog(batch as PluginCatalogOptions);
+        return undefined;
+      } catch (error) {
+        return error instanceof PluginAdmissionError ? error.ruleId : "other";
+      }
+    };
+    expect(refusal({ values: spec })).toBe("plugin-values-model-required");
+    expect(refusal({ other: main })).toBe("plugin-values-model-required");
+    expect(refusal({ values: main, inspect: spec })).toBeUndefined();
+  });
+
   it("refuses two distinct model objects under one id atomically", () => {
     const modelA = defineModel({
       id: "Body2d",

@@ -10,7 +10,7 @@ import type {
   Table,
   ValueSpec,
 } from "../../src/contract/v5";
-import { isModel } from "../../src/contract/v5";
+import { defineModel, isModel } from "../../src/contract/v5";
 
 type TranslateValues = Readonly<Record<"dx" | "dy", number>>;
 
@@ -42,12 +42,15 @@ const translate: PluginDefinition<TranslateInput> = {
     },
   },
   outputs: {
-    values: {
-      kind: "table",
-      schema: {
-        row: { fields: { x: { kind: "number" }, y: { kind: "number" } } },
+    values: defineModel({
+      id: "PluginTypesOut",
+      spec: {
+        kind: "table",
+        schema: {
+          row: { fields: { x: { kind: "number" }, y: { kind: "number" } } },
+        },
       },
-    },
+    }),
   },
   transform(input) {
     return {

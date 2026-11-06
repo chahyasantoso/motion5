@@ -173,7 +173,8 @@ A plugin definition has:
 - `inputs.param`: optional record spec for authored `input.param`.
 - `inputs.values`: optional local value spec or model.
 - `inputs.requires`: optional slot declarations, each a model, an optional model, or a shape spec.
-- `outputs`: the named outputs the plugin publishes; `values` is the main one.
+- `outputs`: the named outputs the plugin publishes. The main one, `values`, must be a model
+  (`plugin-values-model-required`); a secondary output may be a plain spec.
 - `prepare`: optional commit-time check that returns `ok(state)` or `refused(issues)`.
 - `transform`: required; one transformation from resolved inputs to named outputs.
 

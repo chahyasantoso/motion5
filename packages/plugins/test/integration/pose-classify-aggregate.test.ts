@@ -28,7 +28,7 @@ describe("aggregate pose-classify binding (AP)", () => {
 
   it("AP-2 poseClassifyPlugin.outputs.values is a flat record with label and confidence", () => {
     const plugin = createPoseClassifyPlugin({ templates: [T_POSE], maxDistance: 10 });
-    expect(plugin.outputs.values).toEqual({
+    expect(plugin.outputs.values.spec).toEqual({
       kind: "record",
       fields: {
         label: { kind: "string" },

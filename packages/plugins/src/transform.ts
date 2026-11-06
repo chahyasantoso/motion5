@@ -1,44 +1,27 @@
-import {
-  isFlatRecord,
-  shape,
-  type PluginDefinition,
-  type ValueSpec,
-} from "@motion5/core/plugin-api";
+import { definePlugin, isFlatRecord } from "@motion5/core/plugin-api";
+import { Points2d } from "./models";
 
-const POINT: ValueSpec = {
-  kind: "table",
-  schema: { row: { fields: { x: { kind: "number" }, y: { kind: "number" } } } },
-};
-
-export const transformPlugin: PluginDefinition = {
+/** Shifts each point row by `dx` and `dy`; row ids and rotation pass through. */
+export const transformPlugin = definePlugin({
   id: "transform",
   inputs: {
     values: {
       kind: "record",
       fields: { dx: { kind: "number" }, dy: { kind: "number" } },
     },
-    requires: { data: shape({ outputs: { values: POINT } }) },
+    requires: { data: Points2d },
   },
-  outputs: { values: POINT },
-  transform({ values, requires }) {
+  outputs: { values: Points2d },
+  transform({ values, requires: { data } }) {
     if (!isFlatRecord(values)) throw new TypeError("Transform values must be a record.");
-    const dx = values.dx;
-    const dy = values.dy;
+    const { dx, dy } = values;
     if (typeof dx !== "number" || typeof dy !== "number")
       throw new TypeError("Transform values require numeric dx and dy.");
-    const data = requires.data as { readonly values?: unknown } | undefined;
-    if (data === undefined || Array.isArray(data) || data === null || typeof data !== "object")
-      throw new TypeError("Transform requires a data output.");
-    const source = data.values;
-    if (!Array.isArray(source)) throw new TypeError("Transform requires a point table.");
     return {
-      values: source.map((row) => {
-        const x = row.cells.x;
-        const y = row.cells.y;
-        if (typeof x !== "number" || typeof y !== "number")
-          throw new TypeError("Transform requires numeric source cells.");
-        return { id: row.id, cells: { x: x + dx, y: y + dy } };
-      }),
+      values: data.map((row) => ({
+        id: row.id,
+        cells: { ...row.cells, x: row.cells.x + dx, y: row.cells.y + dy },
+      })),
     };
   },
-};
+});

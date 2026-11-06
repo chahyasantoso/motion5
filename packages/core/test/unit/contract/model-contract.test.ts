@@ -33,6 +33,7 @@ const OUTPUT_SPEC: ValueSpec = {
   kind: "table",
   schema: { row: { fields: { x: { kind: "number" }, y: { kind: "number" } } } },
 };
+const OUTPUT_SPEC_MODEL = defineModel({ id: "OutputSpecOut", spec: OUTPUT_SPEC });
 
 interface PointStructure {
   readonly ids: readonly string[];
@@ -61,7 +62,7 @@ const CONSUME: PluginDefinition<ConsumeInput> = {
     values: { kind: "record", fields: {} },
     requires: { data: PointSource },
   },
-  outputs: { values: OUTPUT_SPEC },
+  outputs: { values: OUTPUT_SPEC_MODEL },
   transform(input) {
     return {
       values: input.requires.data.map((row) => ({
@@ -174,7 +175,7 @@ describe("self-validating model tracks", () => {
         values: { kind: "record", fields: {} },
         requires: { "data.points": PointSource },
       },
-      outputs: { values: OUTPUT_SPEC },
+      outputs: { values: OUTPUT_SPEC_MODEL },
       prepare({ structures }) {
         const structure = structures["data.points"] as PointStructure | undefined;
         return structure?.ids.includes("bad") === true

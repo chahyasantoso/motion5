@@ -79,6 +79,7 @@ const BASE_RULES = {
   "plugin-shape": ERROR_NO_IDS,
   "plugin-transform-missing": ERROR_NO_IDS,
   "plugin-unknown": ERROR_NO_IDS,
+  "plugin-values-model-required": ERROR_NO_IDS,
   "plugin-validation-failed": ERROR_NO_IDS,
   "project-id": ERROR_NO_IDS,
   "project-release-failed": ERROR_NO_IDS,

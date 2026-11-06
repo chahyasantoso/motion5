@@ -35,6 +35,7 @@ const POINT: ValueSpec = {
   kind: "table",
   schema: { row: { fields: { x: { kind: "number" }, y: { kind: "number" } } } },
 };
+const POINT_MODEL = defineModel({ id: "PointOut", spec: POINT });
 
 const PointTable = defineModel({
   id: "PointTable",
@@ -53,7 +54,7 @@ const TRANSLATE: PluginDefinition<TranslateInput> = {
     values: { kind: "record", fields: { dx: { kind: "number" }, dy: { kind: "number" } } },
     requires: { data: shape({ outputs: { values: POINT } }) },
   },
-  outputs: { values: POINT },
+  outputs: { values: POINT_MODEL },
   transform(input) {
     return {
       values: input.requires.data.values.map((source) => {
@@ -218,7 +219,7 @@ describe("identified plugin runtime", () => {
         values: { kind: "record", fields: { n: { kind: "number" } } },
         requires: { data: shape({ outputs: { values: POINT }, optional: true }) },
       },
-      outputs: { values: POINT },
+      outputs: { values: POINT_MODEL },
       transform() {
         return { values: [] };
       },
@@ -239,7 +240,7 @@ describe("identified plugin runtime", () => {
         values: { kind: "record", fields: { n: { kind: "number" } } },
         requires: { data: shape({ outputs: { values: POINT }, optional: true }) },
       },
-      outputs: { values: POINT },
+      outputs: { values: POINT_MODEL },
       transform() {
         transforms += 1;
         return { values: [] };
@@ -272,7 +273,7 @@ describe("identified plugin runtime", () => {
         values: { kind: "record", fields: { n: { kind: "number" } } },
         requires: { data: shape({ outputs: { values: POINT } }) },
       },
-      outputs: { values: POINT },
+      outputs: { values: POINT_MODEL },
       transform() {
         return { values: [] };
       },
@@ -306,7 +307,7 @@ describe("identified plugin runtime", () => {
         values: { kind: "record", fields: { n: { kind: "number" } } },
         requires: { data: shape({ outputs: { values: POINT }, binding: "map" }) },
       },
-      outputs: { values: POINT },
+      outputs: { values: POINT_MODEL },
       transform(input) {
         const rows = Object.values(input.requires.data).flatMap(({ values }) => values);
         return { values: rows };
@@ -345,7 +346,7 @@ describe("identified plugin runtime", () => {
         values: { kind: "record", fields: { n: { kind: "number" } } },
         requires: { data: shape({ outputs: { values: POINT }, binding: "map" }) },
       },
-      outputs: { values: POINT },
+      outputs: { values: POINT_MODEL },
       transform() {
         return { values: table() };
       },
@@ -370,7 +371,7 @@ describe("identified plugin runtime", () => {
     const bad: PluginDefinition = {
       id: "bad",
       inputs: { values: { kind: "record", fields: { n: { kind: "number" } } } },
-      outputs: { values: POINT },
+      outputs: { values: POINT_MODEL },
       transform() {
         return { other: [] };
       },
@@ -387,7 +388,7 @@ describe("identified plugin runtime", () => {
       id: "both",
       inputs: { values: { kind: "record", fields: { n: { kind: "number" } } } },
       outputs: {
-        values: POINT,
+        values: POINT_MODEL,
         inspect: { kind: "record", fields: { n: { kind: "number" } } },
       },
       transform() {
@@ -411,7 +412,7 @@ describe("identified plugin runtime", () => {
     const bad: PluginDefinition = {
       id: "bad",
       inputs: { values: { kind: "record", fields: { n: { kind: "number" } } } },
-      outputs: { values: POINT },
+      outputs: { values: POINT_MODEL },
       transform() {
         throw new Error("transform failed");
       },
@@ -443,7 +444,7 @@ describe("identified plugin runtime", () => {
           values: { kind: "record", fields: { n: { kind: "number" } } },
           requires: { data: hardeningSlot },
         },
-        outputs: { values: POINT },
+        outputs: { values: POINT_MODEL },
         prepare({ structures }) {
           commitCapturedStructures = structures;
           return ok(undefined);
@@ -540,7 +541,7 @@ describe("identified plugin runtime", () => {
         values: { kind: "record", fields: {} },
         requires: { data: hardeningSlot },
       },
-      outputs: { values: POINT },
+      outputs: { values: POINT_MODEL },
       prepare({ structures }) {
         composeStructures = structures;
         return ok(undefined);

@@ -20,6 +20,8 @@ local data. Reader-pull structures made a plugin rebuild its inputs per frame.
   `Body2d`/`Body3d`, `Goals2d`/`Goals3d` and `Point2d`/`Point3d`. A model object carries exactly
   `id`, `spec` and optional `parse`.
   A source is a model output run through the engine's passthrough processor.
+- A plugin's main output `values` is a model, refused otherwise as `plugin-values-model-required`.
+  A secondary output such as `inspect` may be a plain spec.
 - Plugin parameters live in `input.param` and are written through `input.param.set` and `setField`.
   `input.values` stays the model's data or the plugin's local data.
 - `prepare` refuses with a non-empty diagnostic tuple; each diagnostic carries its own rule id and

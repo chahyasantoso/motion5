@@ -2,6 +2,9 @@ import { describe, expect, it } from "vitest";
 import { parseTrackDefinition, type ParsedTrack } from "../../src/contract/v5-parse";
 import type { Diagnostic, PluginDefinition } from "../../src/contract/v5";
 import { admitDeclaration } from "../../src/domain/plugin-catalog";
+import { defineModel } from "../../src/contract/v5";
+
+const FIXTURE_OUT_1 = defineModel({ id: "FixtureOut1", spec: { kind: "record", fields: {} } });
 
 const PATH = "motions[0].tracks[0]";
 
@@ -692,7 +695,7 @@ describe("parseTrackDefinition owns the output member", () => {
     const plugin: PluginDefinition = {
       id: "converter",
       inputs: {},
-      outputs: { values: { kind: "record", fields: {} } },
+      outputs: { values: FIXTURE_OUT_1 },
       transform: () => ({ values: {} }),
     };
     const context = {

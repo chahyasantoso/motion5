@@ -10,6 +10,11 @@ import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/f
 import { record } from "../support/v5-builders";
 import { testModels } from "../support/test-models";
 
+const FIXTURE_OUT_1 = defineModel({
+  id: "FixtureOut1",
+  spec: { kind: "record", fields: { x: { kind: "number" } } },
+});
+
 function ramp(from: number, to: number) {
   return [
     { p: 0, v: from },
@@ -31,7 +36,7 @@ const LINK: PluginDefinition = {
       }),
     },
   },
-  outputs: { values: { kind: "record", fields: { x: { kind: "number" } } } },
+  outputs: { values: FIXTURE_OUT_1 },
   transform() {
     return { values: [] };
   },

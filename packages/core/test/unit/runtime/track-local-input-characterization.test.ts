@@ -57,7 +57,7 @@ function pluginWithValues(spec: ValueSpec = RECORD_SPEC): PluginDefinition {
   return {
     id: "test-plugin",
     inputs: { values: spec },
-    outputs: { values: spec },
+    outputs: { values: defineModel({ id: "LocalInputOut", spec }) },
     transform(input) {
       return { values: input.values };
     },

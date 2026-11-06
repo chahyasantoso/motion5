@@ -13,6 +13,7 @@ import {
   type Euler3d,
   type Matrix3,
 } from "./frame3d";
+import { PoseLabel } from "./models";
 
 const POSE: ValueSpec = {
   kind: "table",
@@ -27,14 +28,6 @@ const POSE: ValueSpec = {
         rotationY: { kind: "number", optional: true },
       },
     },
-  },
-};
-
-const VALUES: ValueSpec = {
-  kind: "record",
-  fields: {
-    label: { kind: "string" },
-    confidence: { kind: "number" },
   },
 };
 
@@ -200,7 +193,7 @@ export function createPoseClassifyPlugin(options: PoseClassifyOptions): PluginDe
         pose: shape({ outputs: { values: POSE } }),
       },
     },
-    outputs: { values: VALUES },
+    outputs: { values: PoseLabel },
     transform({ requires }) {
       if (!isRecord(requires.pose) || !Array.isArray(requires.pose.values)) {
         return {

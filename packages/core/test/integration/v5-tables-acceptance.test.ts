@@ -1,7 +1,7 @@
 import { describe, expect, expectTypeOf, it } from "vitest";
 import { shape } from "@motion5/core/plugin-api";
 import { defineModel, isModel } from "../../src/contract/v5";
-import type { Patch, ProjectDefinition } from "../../src/contract/v5";
+import type { Patch, PluginOutputs, ProjectDefinition } from "../../src/contract/v5";
 import type { RuleId } from "../../src/contract/rule-id";
 import type {
   AuthoredCell,
@@ -65,12 +65,15 @@ const translatePlugin: PluginDefinition<
     },
   },
   outputs: {
-    values: {
-      kind: "table",
-      schema: {
-        row: { fields: { x: { kind: "number" }, y: { kind: "number" } } },
+    values: defineModel({
+      id: "TranslateOut",
+      spec: {
+        kind: "table",
+        schema: {
+          row: { fields: { x: { kind: "number" }, y: { kind: "number" } } },
+        },
       },
-    },
+    }),
   },
   transform(input) {
     return {
@@ -487,7 +490,7 @@ describe("v5 registration-dependent refusals", () => {
   function plainPlugin(
     id: string,
     transform: PluginDefinition["transform"],
-    outputs: Readonly<Record<string, ValueSpec>> = { values: POINT },
+    outputs: PluginOutputs = { values: defineModel({ id: "PlainPointOut", spec: POINT }) },
   ): PluginDefinition {
     return {
       id,

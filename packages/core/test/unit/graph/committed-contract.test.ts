@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { AuthoredValues, PluginDefinition, ValueSpec } from "../../../src/contract/v5";
+import type { AuthoredValues, Model, PluginDefinition, ValueSpec } from "../../../src/contract/v5";
 import { defineModel } from "../../../src/contract/v5";
 import { shape } from "../../../src/contract/slot-spec";
 import { PluginCatalog } from "../../../src/domain/plugin-catalog";
@@ -16,6 +16,7 @@ const POINT: ValueSpec = {
   kind: "table",
   schema: { row: { fields: { x: { kind: "number" }, y: { kind: "number" } } } },
 };
+const POINT_MODEL = defineModel({ id: "PointOut", spec: POINT });
 const LAST_POINT: ValueSpec = {
   kind: "record",
   fields: { x: { kind: "number" }, y: { kind: "number" } },
@@ -26,8 +27,23 @@ const VALUES: ValueSpec = {
 };
 const PLUGIN_VALUES: ValueSpec = { kind: "record", fields: { dx: { kind: "number" } } };
 
+const specModels = new Map<ValueSpec, Model>();
+
+function modelOf(spec: ValueSpec): Model {
+  const known = specModels.get(spec);
+  if (known !== undefined) return known;
+  const made = defineModel({ id: `Spec${specModels.size + 1}`, spec });
+  specModels.set(spec, made);
+  return made;
+}
+
 function sourcePlugin(id: string, outputs: Readonly<Record<string, ValueSpec>>): PluginDefinition {
-  return { id, inputs: { values: PLUGIN_VALUES }, outputs, transform: () => ({ values: [] }) };
+  return {
+    id,
+    inputs: { values: PLUGIN_VALUES },
+    outputs: { ...outputs, values: modelOf(outputs.values ?? PLUGIN_VALUES) },
+    transform: () => ({ values: [] }),
+  };
 }
 
 function consumerPlugin(
@@ -37,7 +53,7 @@ function consumerPlugin(
   return {
     id,
     inputs: { values: PLUGIN_VALUES, requires: { data: shape({ outputs }) } },
-    outputs: { values: POINT },
+    outputs: { values: POINT_MODEL },
     transform: () => ({ values: [] }),
   };
 }
@@ -166,7 +182,9 @@ describe("committed contract", () => {
     const contract = built.graph?.nodeById["demo/points"]?.contract;
     expect(contract?.plugin).toBe("source-only");
     expect(contract?.input).toEqual({ spec: PLUGIN_VALUES, proven: true });
-    expect(contract?.outputs).toEqual({ values: { spec: POINT, proven: true } });
+    expect(contract?.outputs).toEqual({
+      values: { spec: POINT, proven: true, modelId: modelOf(POINT).id },
+    });
     expect(contract?.slots).toEqual({});
     expect(contract?.requires).toEqual({});
   });
@@ -220,7 +238,7 @@ describe("committed contract", () => {
     const requiresOnly: PluginDefinition = {
       id: "requires-only",
       inputs: { requires: { data: shape({ outputs: { values: POINT } }) } },
-      outputs: { values: POINT },
+      outputs: { values: POINT_MODEL },
       transform: () => ({ values: [] }),
     };
     const contract = deriveCommittedContract(

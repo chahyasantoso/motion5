@@ -9,6 +9,13 @@ import { Engine } from "../../src/engine";
 import { createManualClock } from "../../src/ports/clock";
 import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
 import { testModels } from "../support/test-models";
+import { defineModel } from "../../src/contract/v5";
+
+const FIXTURE_OUT_1 = defineModel({
+  id: "FixtureOut1",
+  spec: { kind: "record", fields: { n: { kind: "number" } } },
+});
+const FIXTURE_OUT_2 = defineModel({ id: "FixtureOut2", spec: { kind: "record", fields: {} } });
 
 const untyped = (batch: unknown) => batch as PluginCatalogOptions;
 
@@ -25,7 +32,7 @@ const FLAGS: PluginDefinition = {
       },
     },
   },
-  outputs: { values: { kind: "record", fields: { n: { kind: "number" } } } },
+  outputs: { values: FIXTURE_OUT_1 },
   prepare,
   transform({ param }) {
     const flip =
@@ -39,7 +46,7 @@ const FLAGS: PluginDefinition = {
 const NO_PARAM: PluginDefinition = {
   id: "no-param",
   inputs: { values: { kind: "record", fields: {} } },
-  outputs: { values: { kind: "record", fields: {} } },
+  outputs: { values: FIXTURE_OUT_2 },
   transform() {
     return { values: {} };
   },
@@ -51,7 +58,7 @@ const MIXED: PluginDefinition = {
     values: { kind: "record", fields: { dx: { kind: "number" } } },
     param: { kind: "record", fields: { flip: { kind: "boolean", optional: true } } },
   },
-  outputs: { values: { kind: "record", fields: { n: { kind: "number" } } } },
+  outputs: { values: FIXTURE_OUT_1 },
   transform({ values, param }) {
     const dx = values !== null && typeof values === "object" ? Reflect.get(values, "dx") : 0;
     const flip =
@@ -345,7 +352,7 @@ describe("input.param", () => {
             {
               id: "no-transform",
               inputs: { values: { kind: "record", fields: {} } },
-              outputs: { values: { kind: "record", fields: {} } },
+              outputs: { values: FIXTURE_OUT_2 },
             },
           ],
         }),

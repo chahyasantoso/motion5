@@ -23,11 +23,13 @@ import { GOALS_2D_SPEC } from "../../../plugins/src/goals/fields";
 import { Points2d } from "../../../plugins/src/models";
 import { ROOT_2D_SPEC } from "../../../plugins/src/root/fields";
 import { testModels } from "../support/test-models";
+import { defineModel } from "../../src/contract/v5";
 
 const CONSUMER_SPEC: ValueSpec = {
   kind: "record",
   fields: { ok: { kind: "boolean" } },
 };
+const CONSUMER_SPEC_MODEL = defineModel({ id: "ConsumerSpecOut", spec: CONSUMER_SPEC });
 
 const consumerPlugin: PluginDefinition = {
   id: "consumer-plugin",
@@ -35,7 +37,7 @@ const consumerPlugin: PluginDefinition = {
     values: { kind: "record", fields: {} },
     requires: { source: shape({ outputs: { values: Points2d.spec } }) },
   },
-  outputs: { values: CONSUMER_SPEC },
+  outputs: { values: CONSUMER_SPEC_MODEL },
   transform() {
     return { values: { ok: true } };
   },

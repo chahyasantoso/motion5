@@ -8,6 +8,7 @@ const POINT: ValueSpec = {
   kind: "table",
   schema: { row: { fields: { x: { kind: "number" } } } },
 };
+const POINT_MODEL = defineModel({ id: "PointOut", spec: POINT });
 
 const PointModel = defineModel<unknown, { readonly ids: readonly string[] }>({
   id: "PointModel",
@@ -29,7 +30,7 @@ const PLUGIN: PluginDefinition = {
       extra: shape({ outputs: { values: POINT }, optional: true }),
     },
   },
-  outputs: { values: POINT },
+  outputs: { values: POINT_MODEL },
   transform() {
     return { values: [] };
   },
@@ -41,7 +42,7 @@ const PARAM_ONLY: PluginDefinition = {
     param: { kind: "record", fields: { flip: { kind: "boolean" } } },
     requires: { body: PointModel },
   },
-  outputs: { values: POINT },
+  outputs: { values: POINT_MODEL },
   transform() {
     return { values: [] };
   },

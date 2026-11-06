@@ -11,6 +11,12 @@ import { createManualClock } from "../../../src/ports/clock";
 import { ProjectRuntime } from "../../../src/runtime/project-runtime";
 import { record, track } from "../../support/v5-builders";
 import { testModels } from "../../support/test-models";
+import { defineModel } from "../../../src/contract/v5";
+
+const FIXTURE_OUT_1 = defineModel({
+  id: "FixtureOut1",
+  spec: { kind: "table", schema: { row: { fields: {} } } },
+});
 
 const MOTION_ID = "hero";
 const ARM_ID = "hero/arm";
@@ -28,7 +34,7 @@ const DEMO: PluginDefinition = {
       }),
     },
   },
-  outputs: { values: { kind: "table", schema: { row: { fields: {} } } } },
+  outputs: { values: FIXTURE_OUT_1 },
   transform() {
     return { values: [] };
   },

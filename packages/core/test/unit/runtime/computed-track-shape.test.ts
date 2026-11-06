@@ -6,6 +6,9 @@ import type { ParsedValues } from "../../../src/contract/v5-parse";
 import { PluginNodeError } from "../../../src/runtime/plugin-output";
 import { Track } from "../../../src/runtime/track";
 import { createFakeInterpolator } from "../../../src/testing/fakes";
+import { defineModel } from "../../../src/contract/v5";
+
+const FIXTURE_OUT_1 = defineModel({ id: "FixtureOut1", spec: { kind: "record", fields: {} } });
 
 const PATH = "motions[0].tracks[0]";
 
@@ -24,7 +27,7 @@ function pluginDeclaring(values: ValueSpec): PluginDefinition {
   return {
     id: "shape",
     inputs: { values },
-    outputs: { values: { kind: "record", fields: {} } },
+    outputs: { values: FIXTURE_OUT_1 },
     transform() {
       throw new Error("transform must not run for a shape mismatch");
     },

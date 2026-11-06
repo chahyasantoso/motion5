@@ -13,6 +13,12 @@ import {
 import { PatchRegistry } from "../../../src/runtime/patch-registry";
 import { record, track } from "../../support/v5-builders";
 import { testModels } from "../../support/test-models";
+import { defineModel } from "../../../src/contract/v5";
+
+const FIXTURE_OUT_1 = defineModel({
+  id: "FixtureOut1",
+  spec: { kind: "record", fields: { opacity: { kind: "number" } } },
+});
 
 const node = (
   id: string,
@@ -39,7 +45,7 @@ const snapshot = (nodes: readonly PublisherNode[]): PublisherSnapshot => ({
 const BAD_OUTPUT: PluginDefinition = {
   id: "bad-output",
   inputs: { values: { kind: "record", fields: { opacity: { kind: "number" } } } },
-  outputs: { values: { kind: "record", fields: { opacity: { kind: "number" } } } },
+  outputs: { values: FIXTURE_OUT_1 },
   transform() {
     return ["not", "a", "record"] as never;
   },

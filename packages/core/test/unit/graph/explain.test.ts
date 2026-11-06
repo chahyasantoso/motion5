@@ -9,6 +9,7 @@ const POINT: ValueSpec = {
   kind: "table",
   schema: { row: { fields: { x: { kind: "number" } } } },
 };
+const POINT_MODEL = defineModel({ id: "PointOut", spec: POINT });
 
 const PointSource = defineModel<unknown, { readonly ids: readonly string[] }>({
   id: "PointSource",
@@ -27,7 +28,7 @@ const CONSUMER: PluginDefinition = {
     values: { kind: "record", fields: {} },
     requires: { data: PointSource },
   },
-  outputs: { values: POINT },
+  outputs: { values: POINT_MODEL },
   transform() {
     return { values: [] };
   },
@@ -101,7 +102,7 @@ describe("explain", () => {
         values: { kind: "record", fields: {} },
         requires: { body: bodyModel },
       },
-      outputs: { values: POINT },
+      outputs: { values: POINT_MODEL },
       transform() {
         return { values: [] };
       },

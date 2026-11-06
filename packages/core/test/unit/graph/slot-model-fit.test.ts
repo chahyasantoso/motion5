@@ -10,6 +10,7 @@ const SPEC_A: ValueSpec = {
   kind: "table",
   schema: { row: { fields: { x: { kind: "number" }, y: { kind: "number" } } } },
 };
+const SPEC_A_MODEL = defineModel({ id: "SpecAOut", spec: SPEC_A });
 
 const Body2d = defineModel({
   id: "Body2d",
@@ -40,7 +41,7 @@ describe("slot model fit", () => {
         values: { kind: "record", fields: {} },
         requires: { chain: Body2d },
       },
-      outputs: { values: SPEC_A },
+      outputs: { values: SPEC_A_MODEL },
       transform: () => ({ values: [] }),
     };
     const catalog = new PluginCatalog();
@@ -82,7 +83,7 @@ describe("slot model fit", () => {
         values: { kind: "record", fields: {} },
         requires: { chain: Body2d },
       },
-      outputs: { values: SPEC_A },
+      outputs: { values: SPEC_A_MODEL },
       transform: () => ({ values: [] }),
     };
     const catalog = new PluginCatalog();
@@ -131,7 +132,7 @@ describe("slot model fit", () => {
         values: { kind: "record", fields: {} },
         requires: { solved: optional(Solved2d) },
       },
-      outputs: { values: SPEC_A },
+      outputs: { values: SPEC_A_MODEL },
       transform: () => ({ values: [] }),
     };
     const catalog = new PluginCatalog();
@@ -195,7 +196,7 @@ describe("slot model fit", () => {
     const producerShape: PluginDefinition = {
       id: "producer-shape",
       inputs: { values: { kind: "record", fields: {} } },
-      outputs: { values: SPEC_A },
+      outputs: { values: SPEC_A_MODEL },
       transform: () => ({ values: [] }),
     };
     const consumerShape: PluginDefinition = {
@@ -204,7 +205,7 @@ describe("slot model fit", () => {
         values: { kind: "record", fields: {} },
         requires: { data: shape({ outputs: { values: SPEC_A } }) },
       },
-      outputs: { values: SPEC_A },
+      outputs: { values: SPEC_A_MODEL },
       transform: () => ({ values: [] }),
     };
     const catalog = new PluginCatalog();
@@ -240,7 +241,7 @@ describe("slot model fit", () => {
         values: { kind: "record", fields: {} },
         requires: { chain: Body2d },
       },
-      outputs: { values: SPEC_A },
+      outputs: { values: SPEC_A_MODEL },
       transform: () => ({ values: [] }),
     };
     const catalog = new PluginCatalog({ models: [Mocap2d] });

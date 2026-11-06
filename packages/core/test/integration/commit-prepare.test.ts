@@ -15,6 +15,11 @@ import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/f
 import { project, record, track } from "../support/v5-builders";
 import { testModels } from "../support/test-models";
 
+const FIXTURE_OUT_1 = defineModel({
+  id: "FixtureOut1",
+  spec: { kind: "record", fields: { ok: { kind: "boolean" } } },
+});
+
 const Tagged = defineModel({
   id: "Tagged",
   spec: { kind: "record", fields: { tag: { kind: "string" } } },
@@ -37,7 +42,7 @@ function tagOf(structure: unknown): string | undefined {
 const WATCHER: PluginDefinition = {
   id: "watcher",
   inputs: { requires: { source: Tagged } },
-  outputs: { values: { kind: "record", fields: { ok: { kind: "boolean" } } } },
+  outputs: { values: FIXTURE_OUT_1 },
   prepare({ structures }: { structures: SourceStructures }) {
     if (tagOf(structures.source) === "ok") return ok(undefined);
     return prepareRefused([
@@ -62,7 +67,7 @@ function allTagsOk(structure: unknown): boolean {
 const MAPPER: PluginDefinition = {
   id: "mapper",
   inputs: { requires: { sources: { kind: "model", model: Tagged, binding: "map" } } },
-  outputs: { values: { kind: "record", fields: { ok: { kind: "boolean" } } } },
+  outputs: { values: FIXTURE_OUT_1 },
   prepare({ structures }: { structures: SourceStructures }) {
     if (allTagsOk(structures.sources)) return ok(undefined);
     return prepareRefused([
@@ -81,7 +86,7 @@ const MAPPER: PluginDefinition = {
 const LENIENT: PluginDefinition = {
   id: "lenient",
   inputs: { requires: { source: Tagged } },
-  outputs: { values: { kind: "record", fields: { ok: { kind: "boolean" } } } },
+  outputs: { values: FIXTURE_OUT_1 },
   prepare: () => ok(undefined),
   transform: () => ({ values: { ok: true } }),
 };

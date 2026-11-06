@@ -137,7 +137,7 @@ Optional implementations for the composition root.
 
 Each public subpath exports exactly one identified definition named for the path.
 
-`transformPlugin` takes a record `{ dx, dy }` and a `data` table, and returns the same rows shifted.
+`transformPlugin` takes a record `{ dx, dy }` and a `data` slot requiring `Points2d`, and publishes the same rows as `Points2d`, shifted, with rotation carried through.
 
 `fkPlugin` takes no local values and binds three required slots: a `chain` body table, a
 `solved` table and a `base` record. It publishes `values` as a pose table, one row per body member,
@@ -170,7 +170,7 @@ Author a 2D chain as one body table and one goals table:
 
 `fk3dPlugin` and `ik3dPlugin` use the same aggregate shape in three dimensions: body rows carry
 `rotation`, `rotationX`, `rotationY`, and goals rows address a leaf by `memberId` with `x`, `y`, `z`.
-`transform3dPlugin` shifts a 3D point table.
+`transform3dPlugin` does the same over `Points3d` with `{ dx, dy, dz }`.
 
 ## @motion5/core/testing
 

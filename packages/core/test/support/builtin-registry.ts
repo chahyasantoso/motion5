@@ -11,12 +11,19 @@ import { transform3dPlugin } from "@motion5/plugins/transform3d";
 import { fk3dPlugin } from "@motion5/plugins/fk3d";
 import { ik3dPlugin } from "@motion5/plugins/ik3d";
 import { testModels } from "./test-models";
+import { defineModel } from "../../src/contract/v5";
+
+const FIXTURE_OUT_1 = defineModel({
+  id: "FixtureOut1",
+  spec: { kind: "table", schema: { row: { fields: {} } } },
+});
 
 const OPEN_RECORD: ValueSpec = {
   kind: "record",
   fields: {},
   additionalProperties: true,
 };
+const OPEN_RECORD_MODEL = defineModel({ id: "OpenRecordOut", spec: OPEN_RECORD });
 
 /** A permissive computed observer for runtime tests that are not about a solver contract. */
 export function testObserver(id: string): PluginDefinition {
@@ -36,7 +43,7 @@ export function testObserver(id: string): PluginDefinition {
         }),
       },
     },
-    outputs: { values: OPEN_RECORD },
+    outputs: { values: OPEN_RECORD_MODEL },
     transform() {
       return { values: {} };
     },
@@ -80,7 +87,7 @@ export const GRAPH_EDGE_PLUGIN: PluginDefinition = {
       }),
     },
   },
-  outputs: { values: { kind: "table", schema: { row: { fields: {} } } } },
+  outputs: { values: FIXTURE_OUT_1 },
   transform() {
     return { values: [] };
   },

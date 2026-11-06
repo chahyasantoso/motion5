@@ -29,13 +29,14 @@ const POINT: ValueSpec = {
   kind: "table",
   schema: { row: { fields: { x: { kind: "number" }, y: { kind: "number" } } } },
 };
+const POINT_MODEL = defineModel({ id: "PointOut", spec: POINT });
 const TRANSLATE: PluginDefinition = {
   id: "translate",
   inputs: {
     values: { kind: "record", fields: { dx: { kind: "number" } } },
     requires: { data: shape({ outputs: { values: POINT } }) },
   },
-  outputs: { values: POINT },
+  outputs: { values: POINT_MODEL },
   transform() {
     return { values: [] };
   },

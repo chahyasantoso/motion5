@@ -7,6 +7,12 @@ import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/f
 import { record, track } from "../support/v5-builders";
 import { testModels } from "../support/test-models";
 import { testEngine } from "../support/builtin-registry";
+import { defineModel } from "../../src/contract/v5";
+
+const FIXTURE_OUT_1 = defineModel({
+  id: "FixtureOut1",
+  spec: { kind: "record", fields: { opacity: { kind: "number" } } },
+});
 
 const options = () => ({
   clock: createManualClock(),
@@ -34,7 +40,7 @@ const projectWith = (values: unknown) => ({
 const OPACITY: PluginDefinition = {
   id: "opacity",
   inputs: { values: { kind: "record", fields: { opacity: { kind: "number" } } } },
-  outputs: { values: { kind: "record", fields: { opacity: { kind: "number" } } } },
+  outputs: { values: FIXTURE_OUT_1 },
   transform(input) {
     return { values: input.values };
   },

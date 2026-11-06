@@ -14,6 +14,15 @@ import { Engine, type ProjectHandle } from "../../src/engine";
 import { createManualClock } from "../../src/ports/clock";
 import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
 
+const FIXTURE_OUT_1 = defineModel({
+  id: "FixtureOut1",
+  spec: { kind: "record", fields: { rows: { kind: "number" } } },
+});
+const FIXTURE_OUT_2 = defineModel({
+  id: "FixtureOut2",
+  spec: { kind: "record", fields: { n: { kind: "number" } } },
+});
+
 function rowIds(value: Value): readonly string[] {
   return Array.isArray(value) ? value.map((row) => row.id) : [];
 }
@@ -42,7 +51,7 @@ const COPY: PluginDefinition = {
 const COUNT: PluginDefinition = {
   id: "count",
   inputs: { requires: { source: Copied } },
-  outputs: { values: { kind: "record", fields: { rows: { kind: "number" } } } },
+  outputs: { values: FIXTURE_OUT_1 },
   transform: ({ structures }) => ({
     values: { rows: (Reflect.get(Object(structures), "source") as { ids: string[] }).ids.length },
   }),
@@ -138,7 +147,7 @@ describe("a cheap edit that keeps static cells runs no parse and no prepare", ()
     const reader: PluginDefinition = {
       id: "reader",
       inputs: { requires: { source: Counted } },
-      outputs: { values: { kind: "record", fields: { n: { kind: "number" } } } },
+      outputs: { values: FIXTURE_OUT_2 },
       prepare,
       transform: () => ({ values: { n: 1 } }),
     };

@@ -4,6 +4,12 @@ import { builtinCatalog } from "../../src/builtin-catalog";
 import { createPluginLoader } from "../../src/loader";
 import { builtinModels } from "../../src/models";
 import { testModels } from "../../../core/test/support/test-models";
+import { defineModel } from "@motion5/core/plugin-api";
+
+const FIXTURE_OUT_1 = defineModel({
+  id: "FixtureOut1",
+  spec: { kind: "record", fields: { value: { kind: "number" } } },
+});
 
 const MINIMAL_PLUGIN: PluginDefinition = {
   id: "slice-a-test",
@@ -11,7 +17,7 @@ const MINIMAL_PLUGIN: PluginDefinition = {
     values: { kind: "record", fields: { value: { kind: "number" } } },
   },
   outputs: {
-    values: { kind: "record", fields: { value: { kind: "number" } } },
+    values: FIXTURE_OUT_1,
   },
   transform({ values }) {
     return { values };

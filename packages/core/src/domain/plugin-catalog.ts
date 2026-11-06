@@ -280,6 +280,9 @@ function readOutputs(
       outputs[outputName] = Object.freeze({ kind: "spec", spec });
     }
   }
+  const main = Object.hasOwn(outputs, "values") ? outputs.values : undefined;
+  if (main?.kind !== "model")
+    refuse("plugin-values-model-required", `${path}.values`, "The main output must be a Model.");
   return Object.freeze(outputs);
 }
 

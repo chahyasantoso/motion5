@@ -33,6 +33,7 @@ import { GOALS_3D_FIELDS } from "../../src/goals3d/fields";
 import { ROOT_3D_FIELDS } from "../../src/root3d/fields";
 import { SOLVED_2D_FIELDS } from "../../src/solved/fields";
 import { SOLVED_3D_FIELDS } from "../../src/solved3d/fields";
+import { defineModel } from "@motion5/core/plugin-api";
 
 type RowsOf<M> = M extends Model<infer Cells, infer _Structure> ? TableOf<Cells> : never;
 type KeysOf<T extends object> = keyof T;
@@ -76,7 +77,7 @@ describe("model cell types", () => {
           solved: optional(Solved2d),
         },
       },
-      outputs: { solved: Solved2d },
+      outputs: { values: Solved2d },
       prepare({ structures }) {
         expectTypeOf(structures.chain).toEqualTypeOf<BodyStructure>();
         expectTypeOf(structures.solved).toEqualTypeOf<SolvedStructure | undefined>();
@@ -92,7 +93,7 @@ describe("model cell types", () => {
         // @ts-expect-error unknown slot name in requires fails typecheck
         const unknownSlot: unknown = requires.unknownSlot;
         void unknownSlot;
-        return { solved: [] };
+        return { values: [] };
       },
     });
 

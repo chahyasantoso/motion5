@@ -361,12 +361,15 @@ export interface PluginPrepareContext<TRequires = SourceStructures> {
   readonly structures: TRequires;
 }
 
-/** Admitted plugin; `Input` is its evaluated input shape. */
+/** A plugin's outputs: the main `values` is a model, a secondary may be a plain spec. */
+export type PluginOutputs = { readonly values: Model<unknown, unknown> } & Readonly<
+  Record<string, ValueSpec | Model<unknown, unknown>>
+>;
+
+/** A plugin as authored; `Input` is its evaluated input shape. */
 export interface PluginDefinition<
   Input extends ResolvedInput<unknown, unknown> = ResolvedInput,
-  OutputsDecl extends Readonly<Record<string, ValueSpec | Model<unknown, unknown>>> = Readonly<
-    Record<string, ValueSpec | Model<unknown, unknown>>
-  >,
+  OutputsDecl extends PluginOutputs = PluginOutputs,
   TState = unknown,
   TStructures = [Input] extends [never] ? never : SourceStructures,
 > {

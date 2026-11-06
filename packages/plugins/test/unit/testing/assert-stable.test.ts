@@ -1,22 +1,26 @@
 import { describe, expect, it } from "vitest";
 import type { Outputs, PluginDefinition } from "@motion5/core/plugin-api";
 import { assertStable } from "../../../src/testing/assert-stable";
+import { defineModel } from "@motion5/core/plugin-api";
 
 const STABLE: PluginDefinition = {
   id: "stable",
   inputs: { values: { kind: "record", fields: {} } },
   outputs: {
-    values: {
-      kind: "table",
-      schema: {
-        row: {
-          fields: {
-            owner: { kind: "string" },
-            x: { kind: "number" },
+    values: defineModel({
+      id: "StableOut",
+      spec: {
+        kind: "table",
+        schema: {
+          row: {
+            fields: {
+              owner: { kind: "string" },
+              x: { kind: "number" },
+            },
           },
         },
       },
-    },
+    }),
   },
   transform(_input, context) {
     return {

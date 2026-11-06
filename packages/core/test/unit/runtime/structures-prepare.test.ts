@@ -24,6 +24,12 @@ import { fkPlugin } from "../../../../plugins/src/fk";
 import { ikPlugin } from "../../../../plugins/src/ik";
 import { testModels } from "../../support/test-models";
 
+const FIXTURE_OUT_1 = defineModel({ id: "FixtureOut1", spec: { kind: "record", fields: {} } });
+const FIXTURE_OUT_2 = defineModel({
+  id: "FixtureOut2",
+  spec: { kind: "record", fields: { x: { kind: "number" } } },
+});
+
 const BONE_SPEC: ValueSpec = {
   kind: "table",
   schema: {
@@ -75,7 +81,7 @@ describe("structures and prepare hook", () => {
         values: { kind: "record", fields: {} },
         requires: { chain: Body2d },
       },
-      outputs: { values: { kind: "record", fields: {} } },
+      outputs: { values: FIXTURE_OUT_1 },
       prepare() {
         return prepareRefused([
           diagnostic("ik-goal-not-leaf", "goals", "not a leaf", ["row", "member"]),
@@ -117,7 +123,7 @@ describe("structures and prepare hook", () => {
     const plugin: PluginDefinition = {
       id: "warning-prepare",
       inputs: { values: { kind: "record", fields: {} } },
-      outputs: { values: { kind: "record", fields: {} } },
+      outputs: { values: FIXTURE_OUT_1 },
       prepare() {
         return prepareRefused([diagnostic("value-batch-deferred", "x", "deferred", ["id"])]);
       },
@@ -145,7 +151,7 @@ describe("structures and prepare hook", () => {
         values: { kind: "record", fields: {} },
         requires: { chain: Body2d, base: Point2d },
       },
-      outputs: { values: { kind: "record", fields: {} } },
+      outputs: { values: FIXTURE_OUT_1 },
       prepare({ structures }) {
         observed = structures;
         return ok(undefined);
@@ -208,7 +214,7 @@ describe("structures and prepare hook", () => {
         },
         values: { kind: "record", fields: {} },
       },
-      outputs: { values: { kind: "record", fields: {} } },
+      outputs: { values: FIXTURE_OUT_1 },
       prepare(ctx) {
         observedParam = ctx.param;
         if (typeof ctx.param === "object" && ctx.param !== null && "inspect" in ctx.param) {
@@ -391,7 +397,7 @@ describe("structures and prepare hook", () => {
         values: { kind: "record", fields: {} },
         requires: { bone: TestedModel },
       },
-      outputs: { values: { kind: "record", fields: {} } },
+      outputs: { values: FIXTURE_OUT_1 },
       prepare: prepareSpy,
       transform() {
         return { values: {} };
@@ -468,7 +474,7 @@ describe("structures and prepare hook", () => {
         values: { kind: "record", fields: {} },
         requires: { bones: DynamicBoneModel },
       },
-      outputs: { values: { kind: "record", fields: {} } },
+      outputs: { values: FIXTURE_OUT_1 },
       prepare(ctx) {
         prepareRunCount += 1;
         const struct = ctx.structures.bones;
@@ -606,7 +612,7 @@ describe("structures and prepare hook", () => {
       inputs: {
         values: { kind: "record", fields: {} },
       },
-      outputs: { values: { kind: "record", fields: {} } },
+      outputs: { values: FIXTURE_OUT_1 },
       prepare() {
         return ok({ boneLookup: { a: 0, b: 1 } });
       },
@@ -730,7 +736,7 @@ describe("structures and prepare hook", () => {
       const plugin: PluginDefinition = {
         id: "bad-output",
         inputs: { values: { kind: "record", fields: {} } },
-        outputs: { values: { kind: "record", fields: { x: { kind: "number" } } } },
+        outputs: { values: FIXTURE_OUT_2 },
         transform() {
           return { values: { x: frame === 0 ? 1 : bad } };
         },
@@ -765,7 +771,7 @@ describe("structures and prepare hook", () => {
       id: "bad-inspect",
       inputs: { values: { kind: "record", fields: {} } },
       outputs: {
-        values: { kind: "record", fields: {} },
+        values: FIXTURE_OUT_1,
         inspect: { kind: "record", fields: { n: { kind: "number" } } },
       },
       transform() {

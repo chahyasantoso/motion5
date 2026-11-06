@@ -24,6 +24,7 @@ const POINT: ValueSpec = {
   kind: "table",
   schema: { row: { fields: { x: { kind: "number" }, y: { kind: "number" } } } },
 };
+const POINT_MODEL = defineModel({ id: "PointOut", spec: POINT });
 
 function plugin(id: string, requires?: Readonly<Record<string, SlotSpec>>): PluginDefinition {
   return {
@@ -32,7 +33,7 @@ function plugin(id: string, requires?: Readonly<Record<string, SlotSpec>>): Plug
       values: { kind: "record", fields: { dx: { kind: "number" }, dy: { kind: "number" } } },
       ...(requires === undefined ? {} : { requires }),
     },
-    outputs: { values: POINT },
+    outputs: { values: POINT_MODEL },
     transform() {
       return { values: [] };
     },

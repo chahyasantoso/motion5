@@ -25,6 +25,7 @@ import type {
   OptionalModel,
   Outputs,
   PluginDefinition,
+  PluginOutputs,
   PluginPrepareContext,
   PluginRequirement,
   Prepared,
@@ -47,6 +48,7 @@ export type {
   Outputs,
   Parsed,
   PluginDefinition as PluginDefinition,
+  PluginOutputs,
   PluginPrepareContext,
   PluginRequirement,
   Prepared,
@@ -196,7 +198,7 @@ export interface DerivedPluginDefinition<
   Values = PrimitiveValue,
 > extends PluginDefinition<
     DerivedPluginInput<RequiresMap, StructuresMap, Param, State, Values>,
-    Readonly<Record<string, ValueSpec | Model<unknown, unknown>>>,
+    PluginOutputs,
     State,
     StructuresMap
   > {}
@@ -215,7 +217,7 @@ export function definePlugin<
     readonly values?: ValuesSpec;
     readonly requires?: Requires;
   };
-  readonly outputs: Readonly<Record<string, ValueSpec | Model<unknown, unknown>>>;
+  readonly outputs: PluginOutputs;
   prepare?(ctx: PluginPrepareContext<InferredStructures<Requires>>): Prepared<State>;
   transform(
     input: DerivedPluginInput<

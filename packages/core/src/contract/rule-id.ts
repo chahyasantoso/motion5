@@ -58,6 +58,7 @@ export const BASE_RULE_IDS = [
   "plugin-shape",
   "plugin-transform-missing",
   "plugin-unknown",
+  "plugin-values-model-required",
   "plugin-validation-failed",
   "project-id",
   "project-release-failed",

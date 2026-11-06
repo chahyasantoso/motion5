@@ -8,6 +8,13 @@ import {
 } from "../../../src/domain/plugin-catalog";
 import { validateV5 } from "../../../src/validate-v5";
 import { testModels } from "../../support/test-models";
+import { defineModel } from "../../../src/contract/v5";
+
+const FIXTURE_OUT_1 = defineModel({
+  id: "FixtureOut1",
+  spec: { kind: "record", fields: { value: { kind: "number" } } },
+});
+const FIXTURE_OUT_2 = defineModel({ id: "FixtureOut2", spec: { kind: "record", fields: {} } });
 
 const untyped = (batch: unknown) => batch as PluginCatalogOptions;
 
@@ -17,7 +24,7 @@ type ScaleInput = { readonly values: ScaleValues; readonly requires: {} };
 const SCALE: PluginDefinition<ScaleInput> = {
   id: "scale",
   inputs: { values: { kind: "record", fields: { factor: { kind: "number" } } } },
-  outputs: { values: { kind: "record", fields: { value: { kind: "number" } } } },
+  outputs: { values: FIXTURE_OUT_1 },
   transform(input) {
     return { values: { value: input.values.factor } };
   },
@@ -67,7 +74,7 @@ describe("plugin admission is keyed by id and atomic", () => {
       inputs: {
         requires: { source: shape({ outputs: { values: { kind: "record", fields: {} } } }) },
       },
-      outputs: { values: { kind: "record", fields: {} } },
+      outputs: { values: FIXTURE_OUT_2 },
       transform() {
         return { values: {} };
       },

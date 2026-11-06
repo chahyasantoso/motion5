@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import type {
   AuthoredValues,
+  Model,
   PluginDefinition,
+  PluginOutputs,
   ProjectDefinition,
   ValueSpec,
 } from "../../../src/contract/v5";
@@ -16,6 +18,7 @@ const POINT: ValueSpec = {
   kind: "table",
   schema: { row: { fields: { x: { kind: "number" }, y: { kind: "number" } } } },
 };
+const POINT_MODEL = defineModel({ id: "PointOut", spec: POINT });
 const RECORD: ValueSpec = {
   kind: "record",
   fields: { x: { kind: "number" }, y: { kind: "number" } },
@@ -33,11 +36,26 @@ const OtherTable = defineModel({
   spec: { kind: "table", schema: { row: { fields: { z: { kind: "number" } } } } },
 });
 
+const specModels = new Map<ValueSpec, Model>();
+const FILLER: ValueSpec = { kind: "record", fields: {} };
+
+function modelOf(spec: ValueSpec): Model {
+  const known = specModels.get(spec);
+  if (known !== undefined) return known;
+  const made = defineModel({ id: `Spec${specModels.size + 1}`, spec });
+  specModels.set(spec, made);
+  return made;
+}
+
+function mainModelOutputs(outputs: Readonly<Record<string, ValueSpec>>): PluginOutputs {
+  return { ...outputs, values: modelOf(outputs.values ?? FILLER) };
+}
+
 function producer(id: string, outputs: Readonly<Record<string, ValueSpec>>): PluginDefinition {
   return {
     id,
     inputs: { values: { kind: "record", fields: {} } },
-    outputs,
+    outputs: mainModelOutputs(outputs),
     transform: () => ({ values: [] }),
   };
 }
@@ -53,7 +71,7 @@ function plugin(
       values: { kind: "record", fields: { dx: { kind: "number" } } },
       requires: { data: shape({ outputs, binding }) },
     },
-    outputs: { values: POINT },
+    outputs: { values: POINT_MODEL },
     transform() {
       return { values: [] };
     },
@@ -157,7 +175,7 @@ describe("load-time slot compatibility", () => {
     const plugins = catalog(
       {
         ...plugin("optional-source", { values: VALUES }),
-        outputs: { values: { ...VALUES, optional: true } },
+        outputs: { values: modelOf({ ...VALUES, optional: true }) },
         inputs: { values: { kind: "record", fields: { dx: { kind: "number" } } } },
       },
       plugin("translate", { values: VALUES }),
@@ -221,7 +239,7 @@ describe("load-time slot compatibility", () => {
         track({ id: "source", plugin: "producer", values: record({}) }),
         consumer("shifted", "translate", "source"),
       ),
-      catalog(producer("producer", { pose: VALUES }), plugin("translate", { values: VALUES })),
+      catalog(producer("producer", { values: VALUES }), plugin("translate", { pose: VALUES })),
     );
 
     expect(rules(built)).toContain("slot-incompatible");

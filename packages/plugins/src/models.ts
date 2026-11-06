@@ -236,6 +236,21 @@ export const Points3d: Model<Points3dCells, PointsStructure> = defineModel({
   parse: parsePoints,
 });
 
+/** Cells of a pose classification. */
+export type PoseLabelCells = {
+  readonly label: string;
+  readonly confidence: number;
+};
+
+/** The template a pose matched and how close the match is, in 2D or 3D. */
+export const PoseLabel: Model<PoseLabelCells> = defineModel({
+  id: "PoseLabel",
+  spec: {
+    kind: "record",
+    fields: { label: { kind: "string" }, confidence: { kind: "number" } },
+  },
+});
+
 /** Every first-party model a host registers so authored sources can name it. */
 export const builtinModels: readonly Model<unknown, unknown>[] = Object.freeze([
   Body2d,
@@ -248,6 +263,7 @@ export const builtinModels: readonly Model<unknown, unknown>[] = Object.freeze([
   Solved3d,
   Points2d,
   Points3d,
+  PoseLabel,
   Anchors2d,
   CubicPath2d,
   LocalAnchors2d,

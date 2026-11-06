@@ -32,6 +32,7 @@ const SUPPORT_EXPORTS: Readonly<Record<string, readonly string[]>> = {
     "Point3d",
     "Points2d",
     "Points3d",
+    "PoseLabel",
     "Solved2d",
     "Solved3d",
     "builtinModels",

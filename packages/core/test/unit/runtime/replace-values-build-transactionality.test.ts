@@ -8,6 +8,7 @@ import { replaceEvaluator } from "../../../src/runtime/evaluator-replacement";
 import { Track } from "../../../src/runtime/track";
 import { createFakeInterpolator } from "../../../src/testing/fakes";
 import { TestTable } from "../../support/test-models";
+import { defineModel } from "../../../src/contract/v5";
 
 const PATH = "motions[0].tracks[0]";
 
@@ -31,10 +32,13 @@ const TEST_PLUGIN: PluginDefinition = {
     },
   },
   outputs: {
-    values: {
-      kind: "table",
-      schema: { row: { fields: { x: { kind: "number" } } } },
-    },
+    values: defineModel({
+      id: "XTableOut",
+      spec: {
+        kind: "table",
+        schema: { row: { fields: { x: { kind: "number" } } } },
+      },
+    }),
   },
   transform(input) {
     return { values: input.values };

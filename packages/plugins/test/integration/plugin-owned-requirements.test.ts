@@ -11,6 +11,16 @@ import { SOLVED_2D_SPEC } from "../../src/solved/fields";
 import { createManualClock } from "@motion5/core";
 import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/testing";
 import { testModels } from "../../../core/test/support/test-models";
+import { defineModel } from "@motion5/core/plugin-api";
+
+const FIXTURE_OUT_1 = defineModel({
+  id: "FixtureOut1",
+  spec: { kind: "record", fields: { span: { kind: "number" } } },
+});
+const FIXTURE_OUT_2 = defineModel({
+  id: "FixtureOut2",
+  spec: { kind: "record", fields: { x: { kind: "number" }, y: { kind: "number" } } },
+});
 
 function hold(value: number) {
   return value;
@@ -45,7 +55,7 @@ const reachPlugin: PluginDefinition = {
     },
   },
   outputs: {
-    values: { kind: "record", fields: { span: { kind: "number" } } },
+    values: FIXTURE_OUT_1,
   },
   transform({ values, requires }) {
     return {
@@ -150,7 +160,7 @@ describe("plugin-owned requirements end to end", () => {
         },
       },
       outputs: {
-        values: { kind: "record", fields: { x: { kind: "number" }, y: { kind: "number" } } },
+        values: FIXTURE_OUT_2,
       },
       transform({ values, requires }) {
         const len = typeof (values as any)?.length === "number" ? (values as any).length : 0;

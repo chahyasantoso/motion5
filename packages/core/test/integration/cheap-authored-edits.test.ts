@@ -21,6 +21,7 @@ const POINT: ValueSpec = {
   kind: "table",
   schema: { row: { fields: { x: { kind: "number" }, y: { kind: "number" } } } },
 };
+const POINT_MODEL = defineModel({ id: "PointOut", spec: POINT });
 type TranslateValues = Readonly<Record<"dx", number>>;
 type TranslateInput = ResolvedInput<TranslateValues> & {
   readonly requires: { readonly data: { readonly values: Table } };
@@ -31,7 +32,7 @@ const TRANSLATE: PluginDefinition<TranslateInput> = {
     values: { kind: "record", fields: { dx: { kind: "number" } } },
     requires: { data: shape({ outputs: { values: POINT } }) },
   },
-  outputs: { values: POINT },
+  outputs: { values: POINT_MODEL },
   transform(input) {
     return {
       values: input.requires.data.values.map((entry) => ({

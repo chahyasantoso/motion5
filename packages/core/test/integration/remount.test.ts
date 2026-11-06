@@ -6,6 +6,7 @@ import { createManualClock } from "../../src/ports/clock";
 import { ProjectRuntime } from "../../src/runtime/project-runtime";
 import { record, track } from "../support/v5-builders";
 import { testModels } from "../support/test-models";
+import { defineModel } from "../../src/contract/v5";
 
 const sourceId = "~/source";
 const consumerId = "~/consumer";
@@ -13,6 +14,7 @@ const EMPTY_TABLE: ValueSpec = {
   kind: "table",
   schema: { row: { fields: {} } },
 };
+const EMPTY_TABLE_MODEL = defineModel({ id: "EmptyTableOut", spec: EMPTY_TABLE });
 // The dependency is a declared plugin slot, which is the only way a value enters composition. It is
 // still an input edge, so it is still what makes the consumer pending while upstream is unmounted.
 const PASS: PluginDefinition = {
@@ -21,7 +23,7 @@ const PASS: PluginDefinition = {
     values: { kind: "record", fields: {} },
     requires: { upstream: shape({ outputs: { values: EMPTY_TABLE } }) },
   },
-  outputs: { values: EMPTY_TABLE },
+  outputs: { values: EMPTY_TABLE_MODEL },
   transform() {
     return { values: [] };
   },
