@@ -62,7 +62,7 @@ function computedTrack(plugin: PluginDefinition): Track {
 }
 
 describe("Track and Processors", () => {
-  it("engine has zero instanceof ValueTrack or instanceof PluginTrack", () => {
+  it("engine has no retired track classes", () => {
     const enginePath = join(here, "../../../../src/engine.ts");
     const engineSource = readFileSync(enginePath, "utf8");
     expect(engineSource).not.toMatch(/instanceof\s+ValueTrack/);

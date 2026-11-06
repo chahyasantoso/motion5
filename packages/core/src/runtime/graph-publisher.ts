@@ -38,8 +38,6 @@ export interface PublisherComposition {
   readonly outputs: Outputs;
   readonly sourceProgress: number;
   readonly sourceRevisions: Readonly<Record<string, number>>;
-  /** Warnings a plugin's optional `validate` returned, on the ready patch. */
-  readonly diagnostics?: readonly Diagnostic[];
 }
 
 interface BoundInputs {
@@ -189,7 +187,7 @@ export class GraphPublisher {
         sourceProgress: merged.sourceProgress,
         sourceRevisions: merged.sourceRevisions,
         status: "ready",
-        diagnostics: merged.diagnostics ?? [],
+        diagnostics: [],
       });
       return composedOutcome(merged);
     } catch (error) {

@@ -95,8 +95,8 @@ const FAILING_MODEL: Model<unknown, { readonly valid: true }> = defineModel({
   },
 });
 
-describe("ValueTrack and PluginTrack local-input characterization", () => {
-  describe("ValueTrack recompose rules", () => {
+describe("Passthrough and computed track local-input characterization", () => {
+  describe("Passthrough recompose rules", () => {
     it("returns true on first move, false on same progress, false on later seek when time-invariant", () => {
       const track = createPassthroughTrack({
         nodeId: "demo/static",
@@ -130,7 +130,7 @@ describe("ValueTrack and PluginTrack local-input characterization", () => {
     });
   });
 
-  describe("PluginTrack recompose rules", () => {
+  describe("Computed recompose rules", () => {
     it("returns true for every changed progress and false for unchanged", () => {
       const track = createComputedTrack({
         nodeId: "demo/plugin",
@@ -148,7 +148,7 @@ describe("ValueTrack and PluginTrack local-input characterization", () => {
   });
 
   describe("Both classes overlay behavior", () => {
-    it("ValueTrack: overlay wins over authored evaluation and undefined resumes it", () => {
+    it("Passthrough: overlay wins over authored evaluation and undefined resumes it", () => {
       const track = createPassthroughTrack({
         nodeId: "demo/track",
         values: valuesOf({ x: 10 }),
@@ -162,7 +162,7 @@ describe("ValueTrack and PluginTrack local-input characterization", () => {
       expect(track.outputs()).toEqual({ values: { x: 10 } });
     });
 
-    it("PluginTrack: overlay wins over authored evaluation and undefined resumes it", () => {
+    it("Computed: overlay wins over authored evaluation and undefined resumes it", () => {
       const track = createComputedTrack({
         nodeId: "demo/track",
         plugin: pluginWithValues(),
@@ -179,7 +179,7 @@ describe("ValueTrack and PluginTrack local-input characterization", () => {
   });
 
   describe("Both classes progress validation and disposal", () => {
-    it("ValueTrack: throws TypeError on non-finite progress and throws after disposal", () => {
+    it("Passthrough: throws TypeError on non-finite progress and throws after disposal", () => {
       const track = createPassthroughTrack({
         nodeId: "demo/track",
         values: valuesOf({ x: 10 }),
@@ -198,7 +198,7 @@ describe("ValueTrack and PluginTrack local-input characterization", () => {
       expect(() => track.outputs()).toThrow(/disposed/);
     });
 
-    it("PluginTrack: throws TypeError on non-finite progress and throws after disposal", () => {
+    it("Computed: throws TypeError on non-finite progress and throws after disposal", () => {
       const track = createComputedTrack({
         nodeId: "demo/track",
         plugin: pluginWithValues(),
@@ -220,7 +220,7 @@ describe("ValueTrack and PluginTrack local-input characterization", () => {
   });
 
   describe("Both classes throwing replaceValues keeps previous evaluator active", () => {
-    it("ValueTrack: throwing replaceValues keeps previous evaluator active", () => {
+    it("Passthrough: throwing replaceValues keeps previous evaluator active", () => {
       const track = createPassthroughTrack({
         nodeId: "demo/track",
         values: valuesOf({ x: 10 }),
@@ -233,7 +233,7 @@ describe("ValueTrack and PluginTrack local-input characterization", () => {
       expect(track.outputs()).toEqual({ values: { x: 10 } });
     });
 
-    it("PluginTrack: throwing replaceValues keeps previous evaluator active", () => {
+    it("Computed: throwing replaceValues keeps previous evaluator active", () => {
       let failRebuild = false;
       const baseInterpolator = createFakeInterpolator();
       const track = createComputedTrack({

@@ -33,7 +33,7 @@ function pluginDeclaring(values: ValueSpec): PluginDefinition {
   };
 }
 
-function createPluginTrack(options: {
+function createComputedTrack(options: {
   readonly nodeId: string;
   readonly plugin: PluginDefinition;
   readonly values: ParsedValues | undefined;
@@ -63,9 +63,9 @@ function refusalOf(track: Track): string {
   return "no refusal";
 }
 
-describe("plugin track local shape", () => {
+describe("computed track local shape", () => {
   it("refuses a table where the plugin declares a record as values-shape-invalid", () => {
-    const track = createPluginTrack({
+    const track = createComputedTrack({
       nodeId: "points",
       plugin: pluginDeclaring({ kind: "record", fields: { dx: { kind: "number" } } }),
       values: valuesOf([{ id: "point-a", cells: { dx: 10 } }]),
@@ -75,7 +75,7 @@ describe("plugin track local shape", () => {
   });
 
   it("refuses a record where the plugin declares a table as values-shape-invalid", () => {
-    const track = createPluginTrack({
+    const track = createComputedTrack({
       nodeId: "points",
       plugin: pluginDeclaring({
         kind: "table",

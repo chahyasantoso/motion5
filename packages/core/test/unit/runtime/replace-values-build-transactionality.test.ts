@@ -140,7 +140,7 @@ describe("replaceEvaluator", () => {
   });
 });
 
-describe("ValueTrack replaceValues build transactionality", () => {
+describe("Passthrough processor replaceValues build transactionality", () => {
   it("preserves evaluator and continues evaluating old values when replacement build throws", () => {
     const controllable = createControllableInterpolator();
     const initialValues = valuesOf([
@@ -215,7 +215,7 @@ describe("ValueTrack replaceValues build transactionality", () => {
   });
 });
 
-describe("PluginTrack replaceValues build transactionality", () => {
+describe("Computed processor replaceValues build transactionality", () => {
   it("preserves evaluator and continues evaluating old values when replacement build throws", () => {
     const controllable = createControllableInterpolator();
     const initialValues = valuesOf([
