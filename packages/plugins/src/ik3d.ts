@@ -9,12 +9,12 @@ import {
   type Table,
   type ValueSpec,
 } from "@motion5/core/plugin-api";
-import { EXTERNAL_BASE, bindBody, type Body, type BodyStructure } from "./body/domain";
+import { EXTERNAL_BASE, type BodyStructure } from "./body/domain";
 import { readNumber } from "./frame";
 import { readEuler3d, readFrame3d, readPivotOffset3d } from "./frame3d";
 import type { Euler3d } from "./frame3d";
 import { goalDiagnostics } from "./goals/check";
-import { bindGoals, type Goals, type GoalsStructure } from "./goals/domain";
+import type { GoalsStructure } from "./goals/domain";
 import { readInfluence } from "./ik-goal";
 import { inspectSolve } from "./ik-result";
 import { readPole3d } from "./ik3d-analytic";
@@ -22,10 +22,10 @@ import { constrains, readJointLimit3d } from "./ik3d-constraint";
 import { readOrient } from "./ik3d-orient";
 import type { ChainMember3d } from "./ik3d-chain";
 import { solveChain3d } from "./ik3d-solve";
-import { bindRoot } from "./root/domain";
 import { Body3d, Goals3d, Point3d, Solved3d } from "./models";
 import { nonEmptyDiagnostics } from "./prepare-diagnostics";
 import { requireStructure, structureOf } from "./slot-structure";
+import { rowAt, sameRowCount } from "./table-lookup";
 
 const FRAME: ValueSpec = {
   kind: "record",
@@ -81,22 +81,33 @@ function recordOutput(outputs: Outputs, path: string): FlatRecord {
   return flatRecord(values, `${path}.values`);
 }
 
-function solveMembers3d(chain: Body, goals: Goals): readonly ChainMember3d[] {
-  return chain.rows.map((row): ChainMember3d => {
-    const goal = goals.byMember.get(row.id);
+function solveMembers3d(
+  chainRows: Table,
+  chain: BodyStructure,
+  goalRows: Table,
+  goals: GoalsStructure,
+): readonly ChainMember3d[] {
+  sameRowCount(chainRows, chain.ids.length, "Body");
+  sameRowCount(goalRows, goals.rows.length, "Goal");
+  return chain.ids.map((id, position): ChainMember3d => {
+    const row = rowAt(chainRows, chain.tableIndex, position, id);
+    const goalIndex = goals.indexByMember.get(id);
+    const goalRow = goalIndex === undefined ? undefined : goalRows[goalIndex];
+    if (goalRow !== undefined && goalRow.cells.memberId !== id)
+      throw new TypeError(`Goal row for member '${id}' moved after commit.`);
     const limit = readJointLimit3d(row.cells);
-    const influence = goal === undefined ? undefined : readInfluence(goal.cells);
+    const influence = goalRow === undefined ? undefined : readInfluence(goalRow.cells);
     const orient = readOrient(row.cells);
     return {
-      id: row.id,
-      base: chain.parentById.get(row.id) ?? EXTERNAL_BASE,
+      id,
+      base: chain.parentById.get(id) ?? EXTERNAL_BASE,
       length: readNumber(row.cells.length),
       offset: readPivotOffset3d(row.cells),
       rest: readEuler3d(row.cells),
       ...(constrains(limit) ? { limit } : {}),
       ...(influence === undefined ? {} : { influence }),
       ...(orient === undefined ? {} : { orient }),
-      ...(goal === undefined ? {} : { goal: readFrame3d(goal.cells) }),
+      ...(goalRow === undefined ? {} : { goal: readFrame3d(goalRow.cells) }),
     };
   });
 }
@@ -148,20 +159,13 @@ export const ik3dPlugin: PluginDefinition<Ik3dInput> = {
   },
   transform({ param, requires, structures }) {
     const local = flatRecord(param ?? {}, "input.param");
-    const chain = bindBody(
-      requireStructure<BodyStructure>(structures, "chain", "IK3d"),
-      requires.chain,
-    );
-    const goals = bindGoals(
-      requireStructure<GoalsStructure>(structures, "goals", "IK3d"),
-      requires.goals,
-    );
-    const members = solveMembers3d(chain, goals);
+    const chain = requireStructure<BodyStructure>(structures, "chain", "IK3d");
+    const goals = requireStructure<GoalsStructure>(structures, "goals", "IK3d");
+    const members = solveMembers3d(requires.chain, chain, requires.goals, goals);
     const pole = readPole3d(
       requires.pole === undefined ? undefined : recordOutput(requires.pole, "pole"),
     );
-    const base = bindRoot(requires.base);
-    const result = solveChain3d(readFrame3d(base), members, pole);
+    const result = solveChain3d(readFrame3d(requires.base), members, pole);
     const inspection = inspectSolve(result);
     return {
       values: outputRows(result, members),

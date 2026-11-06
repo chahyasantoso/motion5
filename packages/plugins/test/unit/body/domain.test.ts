@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { bindBody, parseBody } from "../../../src/body/domain";
+import { parseBody } from "../../../src/body/domain";
 import { BODY_2D_FIELDS } from "../../../src/body/fields";
 import { BODY_3D_FIELDS } from "../../../src/body3d/fields";
+import { rowAt } from "../../../src/table-lookup";
 
 const parse = (value: unknown) => parseBody(value, BODY_2D_FIELDS);
 
@@ -63,9 +64,32 @@ describe("body domain", () => {
     }
   });
 
-  it("binds a changed row set as an error", () => {
-    const result = parse([{ id: "root", cells: { length: 10, rotation: 0 } }]);
+  it("records the table index for canonical row order", () => {
+    const result = parse([
+      { id: "child", cells: { parentId: "root", length: 10, rotation: 0 } },
+      { id: "root", cells: { length: 20, rotation: 0 } },
+    ]);
     if (!result.ok) throw new Error(JSON.stringify(result.errors));
-    expect(() => bindBody(result.value, [])).toThrow(/row set changed/);
+    expect(result.value.ids).toEqual(["root", "child"]);
+    expect(result.value.tableIndex).toEqual([1, 0]);
+  });
+
+  it("row lookup refuses a table whose order drifted", () => {
+    const result = parse([
+      { id: "child", cells: { parentId: "root", length: 10, rotation: 0 } },
+      { id: "root", cells: { length: 20, rotation: 0 } },
+    ]);
+    if (!result.ok) throw new Error(JSON.stringify(result.errors));
+    expect(() =>
+      rowAt(
+        [
+          { id: "child", cells: { parentId: "root", length: 10, rotation: 0 } },
+          { id: "other", cells: { length: 20, rotation: 0 } },
+        ],
+        result.value.tableIndex,
+        0,
+        "root",
+      ),
+    ).toThrow(/committed position/);
   });
 });

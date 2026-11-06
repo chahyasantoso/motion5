@@ -27,6 +27,7 @@ local data. Reader-pull structures made a plugin rebuild its inputs per frame.
   bug.
 - A source model's values are parsed at commit. A computed output is parsed at first compose, and its
   static cells never change after that; a difference is a node error.
+- Every computed output is finite-checked on every compose; a non-finite leaf is `output-invalid`.
 - `type`, the top-level `plugin` and `input.schema` are refused by name. There is no compatibility
   alias and `schemaVersion` stays 5 while every document lives in this repository.
 

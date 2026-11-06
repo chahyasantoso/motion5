@@ -8,19 +8,19 @@ import {
   type Table,
   type ValueSpec,
 } from "@motion5/core/plugin-api";
-import { EXTERNAL_BASE, bindBody, type Body, type BodyStructure } from "./body/domain";
+import { EXTERNAL_BASE, type BodyStructure } from "./body/domain";
 import { readFrame, readNumber, readPivotOffset } from "./frame";
 import { goalDiagnostics } from "./goals/check";
-import { bindGoals, type Goals, type GoalsStructure } from "./goals/domain";
+import type { GoalsStructure } from "./goals/domain";
 import { readJointLimit } from "./ik-constraint";
 import { readInfluence } from "./ik-goal";
 import { inspectSolve } from "./ik-result";
 import { solveChain } from "./ik-solve";
 import type { SolveMember } from "./ik-member";
-import { bindRoot } from "./root/domain";
 import { Body2d, Goals2d, Point2d, Solved2d } from "./models";
 import { nonEmptyDiagnostics } from "./prepare-diagnostics";
 import { requireStructure, structureOf } from "./slot-structure";
+import { rowAt, sameRowCount } from "./table-lookup";
 
 const INSPECT: ValueSpec = {
   kind: "record",
@@ -51,17 +51,28 @@ function flatRecord(value: unknown, path: string): FlatRecord {
   return value as FlatRecord;
 }
 
-function solveMembers(chain: Body, goals: Goals): readonly SolveMember[] {
-  return chain.rows.map((row): SolveMember => {
-    const goal = goals.byMember.get(row.id);
+function solveMembers(
+  chainRows: Table,
+  chain: BodyStructure,
+  goalRows: Table,
+  goals: GoalsStructure,
+): readonly SolveMember[] {
+  sameRowCount(chainRows, chain.ids.length, "Body");
+  sameRowCount(goalRows, goals.rows.length, "Goal");
+  return chain.ids.map((id, position): SolveMember => {
+    const row = rowAt(chainRows, chain.tableIndex, position, id);
+    const goalIndex = goals.indexByMember.get(id);
+    const goalRow = goalIndex === undefined ? undefined : goalRows[goalIndex];
+    if (goalRow !== undefined && goalRow.cells.memberId !== id)
+      throw new TypeError(`Goal row for member '${id}' moved after commit.`);
     const limit = readJointLimit(row.cells);
-    const influence = goal === undefined ? undefined : readInfluence(goal.cells);
+    const influence = goalRow === undefined ? undefined : readInfluence(goalRow.cells);
     return {
-      id: row.id,
-      base: chain.parentById.get(row.id) ?? EXTERNAL_BASE,
+      id,
+      base: chain.parentById.get(id) ?? EXTERNAL_BASE,
       length: readNumber(row.cells.length),
       pivot: readPivotOffset(row.cells),
-      ...(goal === undefined ? {} : { goal: readFrame(goal.cells) }),
+      ...(goalRow === undefined ? {} : { goal: readFrame(goalRow.cells) }),
       ...(limit.kind === "range" ? { limit } : {}),
       ...(influence === undefined ? {} : { influence }),
     };
@@ -108,17 +119,10 @@ export const ikPlugin: PluginDefinition<IkInput> = {
   },
   transform({ param, requires, structures }) {
     const local = flatRecord(param ?? {}, "input.param");
-    const chain = bindBody(
-      requireStructure<BodyStructure>(structures, "chain", "IK"),
-      requires.chain,
-    );
-    const goals = bindGoals(
-      requireStructure<GoalsStructure>(structures, "goals", "IK"),
-      requires.goals,
-    );
-    const members = solveMembers(chain, goals);
-    const base = bindRoot(requires.base);
-    const result = solveChain(readFrame(base), members, local.flip === true);
+    const chain = requireStructure<BodyStructure>(structures, "chain", "IK");
+    const goals = requireStructure<GoalsStructure>(structures, "goals", "IK");
+    const members = solveMembers(requires.chain, chain, requires.goals, goals);
+    const result = solveChain(readFrame(requires.base), members, local.flip === true);
     const inspection = inspectSolve(result);
     return {
       values: outputRows(result, members),

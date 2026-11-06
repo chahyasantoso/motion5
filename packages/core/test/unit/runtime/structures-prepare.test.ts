@@ -21,7 +21,7 @@ import {
   createFakeInterpolator,
   createFakeScheduler,
 } from "../../../src/testing/fakes";
-import { Body2d, Point2d } from "../../../../plugins/src/models";
+import { Body2d, Point2d, Solved2d } from "../../../../plugins/src/models";
 import { fkPlugin } from "../../../../plugins/src/fk";
 import { testModels } from "../../support/test-models";
 
@@ -730,6 +730,137 @@ describe("structures and prepare hook", () => {
     const patch = handle.get("m/mut");
     expect(patch?.status).toBe("error");
     expect(patch?.diagnostics.map((d) => d.ruleId)).toContain("output-static-changed");
+  });
+
+  it("rejects a non-finite computed output on a later frame", () => {
+    for (const bad of [Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY]) {
+      let frame = 0;
+      const plugin: PluginDefinition = {
+        id: "bad-output",
+        inputs: { values: { kind: "record", fields: {} } },
+        outputs: { values: { kind: "record", fields: { x: { kind: "number" } } } },
+        transform() {
+          return { values: { x: frame === 0 ? 1 : bad } };
+        },
+      };
+      const catalog = new PluginCatalog({ models: testModels });
+      catalog.register(plugin);
+      const engine = createEngine(catalog);
+      const handle = engine.load({
+        schemaVersion: 5,
+        motions: [
+          {
+            id: "m",
+            trigger: { type: "manual" },
+            tracks: [{ id: "t", output: { plugin: "bad-output" }, input: { values: {} } }],
+          },
+        ],
+      });
+      handle.seek("m/t", 0);
+      frame = 1;
+      handle.seek("m/t", 0.5);
+      const patch = handle.get("m/t");
+      expect(patch?.status).toBe("error");
+      expect(patch?.diagnostics.map((d) => d.ruleId)).toContain("output-invalid");
+      expect(patch?.diagnostics[0]?.path).toBe("m/t.output.values.x");
+      handle.dispose();
+    }
+  });
+
+  it("rejects a non-finite plain-spec output on a later frame", () => {
+    let frame = 0;
+    const plugin: PluginDefinition = {
+      id: "bad-inspect",
+      inputs: { values: { kind: "record", fields: {} } },
+      outputs: {
+        values: { kind: "record", fields: {} },
+        inspect: { kind: "record", fields: { n: { kind: "number" } } },
+      },
+      transform() {
+        return { values: {}, inspect: { n: frame === 0 ? 1 : Number.NaN } };
+      },
+    };
+    const catalog = new PluginCatalog({ models: testModels });
+    catalog.register(plugin);
+    const engine = createEngine(catalog);
+    const handle = engine.load({
+      schemaVersion: 5,
+      motions: [
+        {
+          id: "m",
+          trigger: { type: "manual" },
+          tracks: [{ id: "t", output: { plugin: "bad-inspect" }, input: { values: {} } }],
+        },
+      ],
+    });
+    handle.seek("m/t", 0);
+    frame = 1;
+    handle.seek("m/t", 0.5);
+    expect(handle.get("m/t")?.diagnostics.map((d) => d.ruleId)).toContain("output-invalid");
+    expect(handle.get("m/t")?.diagnostics[0]?.path).toBe("m/t.output.inspect.n");
+    handle.dispose();
+  });
+
+  it("keeps a downstream node away from a non-finite producer", () => {
+    let frame = 0;
+    const producer: PluginDefinition = {
+      id: "bad-solved",
+      inputs: { values: { kind: "record", fields: {} } },
+      outputs: { values: Solved2d },
+      transform() {
+        return { values: [{ id: "root", cells: { rotation: frame === 0 ? 0 : Number.NaN } }] };
+      },
+    };
+    const catalog = new PluginCatalog({ models: testModels });
+    catalog.registerAll([producer, fkPlugin]);
+    const engine = createEngine(catalog);
+    const handle = engine.load({
+      schemaVersion: 5,
+      motions: [
+        {
+          id: "m",
+          trigger: { type: "manual" },
+          tracks: [
+            {
+              id: "chain",
+              output: { model: "Body2d" },
+              input: { values: [{ id: "root", cells: { length: 10, rotation: 0 } }] },
+            },
+            {
+              id: "base",
+              output: { model: "Point2d" },
+              input: { values: { x: 0, y: 0, rotation: 0 } },
+            },
+            { id: "solved", output: { plugin: "bad-solved" }, input: { values: {} } },
+            {
+              id: "fkNode",
+              output: { plugin: "fk" },
+              input: {
+                values: {},
+                requires: { chain: "chain", solved: "solved", base: "base" },
+              },
+            },
+          ],
+        },
+      ],
+    });
+    handle.seek("m/chain", 0);
+    handle.seek("m/base", 0);
+    handle.seek("m/solved", 0);
+    handle.seek("m/fkNode", 0);
+    expect(handle.get("m/fkNode")?.status).toBe("ready");
+    frame = 1;
+    handle.seek("m/solved", 0.5);
+    handle.seek("m/fkNode", 0.5);
+    expect(handle.get("m/solved")?.status).toBe("error");
+    const fkPatch = handle.get("m/fkNode");
+    expect(fkPatch?.status).toBe("ready");
+    if (fkPatch?.status === "ready") {
+      const values = fkPatch.outputs.values;
+      if (!Array.isArray(values)) throw new Error("Expected a pose table.");
+      for (const row of values) expect(Number.isFinite(row.cells.rotation)).toBe(true);
+    }
+    handle.dispose();
   });
 
   it("D19 Property Test over Body2d static structure invariant", () => {

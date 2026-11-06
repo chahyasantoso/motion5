@@ -24,6 +24,26 @@ export function valueShape(value: unknown): ValueShape {
   return isPlainRecord(value) ? "record" : "invalid";
 }
 
+/** First path to a leaf that is not a finite scalar, or undefined when every leaf is finite. */
+export function findNonFinite(value: unknown, path: string): string | undefined {
+  if (isImmutableLeaf(value)) return undefined;
+  if (Array.isArray(value)) {
+    for (const [index, item] of value.entries()) {
+      const found = findNonFinite(item, `${path}[${index}]`);
+      if (found !== undefined) return found;
+    }
+    return undefined;
+  }
+  if (isPlainRecord(value)) {
+    for (const [key, item] of Object.entries(value)) {
+      const found = findNonFinite(item, path === "" ? key : `${path}.${key}`);
+      if (found !== undefined) return found;
+    }
+    return undefined;
+  }
+  return path;
+}
+
 /** A runtime value after shape validation: a table or a flat record, never a scalar or host object. */
 export function isValue(value: unknown): value is Value {
   return valueShape(value) !== "invalid";

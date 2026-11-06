@@ -9,7 +9,7 @@ import {
   type SourceStructures,
   type Table,
 } from "@motion5/core/plugin-api";
-import { bindBody, type BodyStructure } from "./body/domain";
+import { type BodyStructure } from "./body/domain";
 import {
   clamp,
   composeWorld,
@@ -20,10 +20,11 @@ import {
   segmentExtent,
   type WorldFrame,
 } from "./frame";
-import { bindSolved, type SolvedRow, type SolvedStructure } from "./solved/domain";
+import { type SolvedRow, type SolvedStructure } from "./solved/domain";
 import { Body2d, Point2d, Points2d, Solved2d } from "./models";
 import { nonEmptyDiagnostics } from "./prepare-diagnostics";
 import { requireStructure, structureOf } from "./slot-structure";
+import { rowAt, rowAtIndex, sameRowCount } from "./table-lookup";
 
 type FkInput = {
   readonly values: Readonly<Record<string, never>>;
@@ -73,30 +74,35 @@ export const fkPlugin: PluginDefinition<FkInput> = {
     return refused === undefined ? ok(undefined) : prepareRefused(refused);
   },
   transform({ requires, structures }) {
-    const chain = bindBody(
-      requireStructure<BodyStructure>(structures, "chain", "FK"),
-      requires.chain,
-    );
+    const chain = requireStructure<BodyStructure>(structures, "chain", "FK");
     const solved =
       requires.solved === undefined
         ? undefined
-        : bindSolved(
-            requireStructure<SolvedStructure>(structures, "solved", "FK"),
-            requires.solved,
-          );
+        : requireStructure<SolvedStructure>(structures, "solved", "FK");
+    sameRowCount(requires.chain, chain.ids.length, "Body");
+    if (requires.solved !== undefined && solved !== undefined)
+      sameRowCount(requires.solved, solved.ids.length, "Solved");
     const baseFrame = readFrame(requires.base);
     const worldFrames = new Map<string, WorldFrame>();
-    const rows = chain.rows.map((row) => {
+    const rows = chain.ids.map((id, position) => {
+      const row = rowAt(requires.chain, chain.tableIndex, position, id);
+      const solvedIndex = solved?.indexById.get(id);
+      if (solved !== undefined && requires.solved !== undefined && solvedIndex === undefined)
+        throw new TypeError(`Solver row missing for member "${id}".`);
+      const solvedRow =
+        requires.solved === undefined || solvedIndex === undefined
+          ? undefined
+          : rowAtIndex(requires.solved, solvedIndex, id);
       const authored = readNumber(row.cells.rotation);
       const rotation =
-        solved === undefined
+        solvedRow === undefined
           ? authored
           : lerpAngle(
               authored,
-              solveRotation(solved.byId.get(row.id), row.id),
+              solveRotation(solvedRow, id),
               clamp(readNumber(row.cells.weight, 1), 0, 1),
             );
-      const parent = chain.parentById.get(row.id);
+      const parent = chain.parentById.get(id);
       const parentFrame = parent === undefined ? baseFrame : worldFrames.get(parent)!;
       const pivot = composeWorld(parentFrame, {
         ...readPivotOffset(row.cells),
@@ -107,8 +113,8 @@ export const fkPlugin: PluginDefinition<FkInput> = {
         y: 0,
         rotation: 0,
       });
-      worldFrames.set(row.id, world);
-      return { id: row.id, cells: world };
+      worldFrames.set(id, world);
+      return { id, cells: world };
     });
     return { values: rows };
   },

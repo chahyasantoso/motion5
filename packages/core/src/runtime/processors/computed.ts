@@ -25,7 +25,7 @@ import { parseModel } from "../model-parse";
 import { PluginNodeError, validatePluginOutputs } from "../plugin-output";
 import type { BoundSlot, BoundSlots } from "../bound-slot";
 import { isOptionalSlot, slotDeclaration } from "../../contract/slot-declaration";
-import { isValue } from "../value-validation";
+import { isValue, findNonFinite } from "../value-validation";
 import type { PublisherComposition } from "../graph-publisher";
 import { LocalInput } from "../local-input";
 import { authoringValue } from "../authoring-value";
@@ -241,7 +241,7 @@ export class ComputedProcessor implements Processor {
       ? raw
       : validatePluginOutputs(raw, this.plugin.outputs, this.nodeId);
     this.#outputsChecked = true;
-    this.#checkOutputModels(raw);
+    this.#checkOutputs(raw);
     return {
       outputs,
       sourceProgress: localInput.progress,
@@ -326,10 +326,22 @@ export class ComputedProcessor implements Processor {
     this.#checkedStructures = structures;
   }
 
-  #checkOutputModels(raw: Outputs): void {
+  #checkOutputs(raw: Outputs): void {
     for (const [name, specOrModel] of Object.entries(this.plugin.outputs)) {
-      if (!isModel(specOrModel)) continue;
       const rawValue = raw[name];
+      if (rawValue === undefined) continue;
+      const badPath = findNonFinite(rawValue, "");
+      if (badPath !== undefined) {
+        const relative = badPath === "" ? name : `${name}.${badPath}`;
+        throw new PluginNodeError([
+          diagnostic(
+            "output-invalid",
+            `${this.nodeId}.output.${relative}`,
+            `Plugin '${this.plugin.id}' published a non-finite value at ${relative}.`,
+          ),
+        ]);
+      }
+      if (!isModel(specOrModel)) continue;
       if (!isValue(rawValue)) continue;
       const snapshot = this.#outputStaticSnapshots.get(name);
       if (snapshot === undefined) {

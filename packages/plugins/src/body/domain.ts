@@ -20,16 +20,7 @@ export interface BodyStructureRow {
 export interface BodyStructure {
   readonly rows: readonly BodyStructureRow[];
   readonly ids: readonly string[];
-  readonly roots: readonly string[];
-  readonly leaves: readonly string[];
-  readonly parentById: ReadonlyMap<string, string | undefined>;
-  readonly childrenById: ReadonlyMap<string, readonly string[]>;
-}
-
-export interface Body {
-  readonly rows: readonly BodyRow[];
-  readonly byId: ReadonlyMap<string, BodyRow>;
-  readonly ids: readonly string[];
+  readonly tableIndex: readonly number[];
   readonly roots: readonly string[];
   readonly leaves: readonly string[];
   readonly parentById: ReadonlyMap<string, string | undefined>;
@@ -189,46 +180,23 @@ export function parseBody(value: unknown, fields: FieldShape): BodyResult {
     ]),
   );
   const leaves = ids.filter((id) => childrenById.get(id)!.length === 0);
+  const indexById = new Map(rows.map((row, index) => [row.id, index] as const));
+  const tableIndex: number[] = [];
+  for (const id of ids) {
+    const index = indexById.get(id);
+    if (index === undefined) throw new TypeError(`Body row '${id}' is missing from the table.`);
+    tableIndex.push(index);
+  }
   return {
     ok: true,
     value: Object.freeze({
       rows: Object.freeze(ids.map((id) => ({ id, cells: staticCells(byId.get(id)!, fields) }))),
       ids: Object.freeze(ids),
+      tableIndex: Object.freeze(tableIndex),
       roots: Object.freeze(roots),
       leaves: Object.freeze(leaves),
       parentById,
       childrenById,
     }),
   };
-}
-
-/** Joins the frozen topology with one frame's evaluated cells; a changed id set is a bug. */
-export function bindBody(structure: BodyStructure, value: unknown): Body {
-  if (!Array.isArray(value)) throw new TypeError("A body entity requires a table.");
-  const byId = new Map<string, BodyRow>();
-  for (const [index, raw] of value.entries()) {
-    if (!isRecord(raw) || typeof raw.id !== "string" || !isRecord(raw.cells))
-      throw new TypeError(`Body row at index ${index} must have id and cells.`);
-    const cells: Record<string, Scalar> = {};
-    for (const [name, cell] of Object.entries(raw.cells)) {
-      if (!isScalar(cell)) throw new TypeError(`Body row '${raw.id}' has a non-scalar cell.`);
-      cells[name] = cell;
-    }
-    byId.set(raw.id, { id: raw.id, cells: Object.freeze(cells) });
-  }
-  if (byId.size !== structure.ids.length) throw new TypeError("Body row set changed after commit.");
-  const rows = structure.ids.map((id) => {
-    const row = byId.get(id);
-    if (row === undefined) throw new TypeError(`Body row '${id}' is missing after commit.`);
-    return row;
-  });
-  return Object.freeze({
-    rows: Object.freeze(rows),
-    byId,
-    ids: structure.ids,
-    roots: structure.roots,
-    leaves: structure.leaves,
-    parentById: structure.parentById,
-    childrenById: structure.childrenById,
-  });
 }

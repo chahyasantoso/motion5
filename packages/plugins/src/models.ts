@@ -1,6 +1,6 @@
 import { defineModel, ok, refused } from "@motion5/core/plugin-api";
 import type { Model, ValueSpec } from "@motion5/core/plugin-api";
-import { bindBody, parseBody, type BodyStructure } from "./body/domain";
+import { parseBody, type BodyStructure } from "./body/domain";
 import { BODY_2D_FIELDS, BODY_2D_SPEC, GOALS_2D_SPEC } from "./body/fields";
 import { bodyIssue } from "./body/type";
 import { BODY_3D_FIELDS, BODY_3D_SPEC } from "./body3d/fields";
