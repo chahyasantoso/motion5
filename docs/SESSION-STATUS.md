@@ -17,10 +17,12 @@ byte ceiling.
   its output static cells at first compose. Plugins declare only the input channels they use, and an
   authored channel the plugin does not declare is refused by name. Cheap writes and live writes refuse
   static-cell changes, live overlays cover both `input.values` and `input.param` independently, and a
-  structural commit re-runs an affected reader's `prepare` before accepting. `type`, top-level
+  structural commit re-runs an affected reader's `prepare` and lets its computed outputs re-parse
+  before accepting new static cells. Cheap writes run no `parse` or `prepare`, a plugin's local model
+  parses at commit, and later frames keep their declared output names and shapes. `type`, top-level
   `plugin` and `input.schema` are refused by name. S1 to S8 are green; `definePlugin` derives slot,
   structure and state types from model declarations, and `Anchors2d`, `CubicPath2d`, `LocalAnchors2d`
-  models and `anchorsToCubic`, `bezier`, `skinAnchors` plugins are landed.
+  models and `anchorsToCubic`, `bezier`, `skinAnchors` plugins are exported and in `builtinCatalog`.
 
 ## Next in line
 
