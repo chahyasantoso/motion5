@@ -38,8 +38,7 @@ type FkInput = {
   readonly structures?: SourceStructures;
 };
 
-function solveRotation(row: SolvedRow | undefined, id: string): number {
-  if (row === undefined) throw new TypeError(`Solver row missing for member "${id}".`);
+function solveRotation(row: SolvedRow): number {
   const rotation = row.cells.rotation;
   if (typeof rotation !== "number" || !Number.isFinite(rotation))
     throw new TypeError(`FK solver row for member "${row.id}" has no finite rotation.`);
@@ -101,7 +100,7 @@ export const fkPlugin: PluginDefinition<FkInput> = {
           ? authored
           : lerpAngle(
               authored,
-              solveRotation(solvedRow, id),
+              solveRotation(solvedRow),
               clamp(readNumber(row.cells.weight, 1), 0, 1),
             );
       const parent = chain.parentById.get(id);

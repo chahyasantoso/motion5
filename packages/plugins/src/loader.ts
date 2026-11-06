@@ -89,11 +89,13 @@ function demandPlugins(demand: PluginDemand): DemandResult {
   };
   switch (demand.kind) {
     case "project": {
-      // Demand collection is structural: plugin and model names stay unjudged until the engine
-      // validates the loaded project against the catalog.
+      // Demand collection is structural: every plugin name is admitted so the id can be loaded,
+      // and model names stay unjudged until the engine validates the loaded project.
       const diagnostics: Diagnostic[] = [];
       const collect = (track: TrackDefinition, path: string): void => {
-        const validation = validateTrackDefinition(track, path);
+        const validation = validateTrackDefinition(track, path, {
+          isPluginRegistered: () => true,
+        });
         if (validation.kind === "accepted") add(validation.value);
         else diagnostics.push(...validation.diagnostics);
       };
@@ -110,7 +112,9 @@ function demandPlugins(demand: PluginDemand): DemandResult {
       // The core validator owns refusal; a refused track is never planned around or dropped.
       const diagnostics: Diagnostic[] = [];
       for (const [index, track] of demand.tracks.entries()) {
-        const validation = validateTrackDefinition(track, `tracks[${index}]`);
+        const validation = validateTrackDefinition(track, `tracks[${index}]`, {
+          isPluginRegistered: () => true,
+        });
         if (validation.kind === "accepted") add(validation.value);
         else diagnostics.push(...validation.diagnostics);
       }

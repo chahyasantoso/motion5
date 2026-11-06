@@ -933,6 +933,23 @@ describe("structures and prepare hook", () => {
     handle.dispose();
   });
 
+  it("prepareCommit keeps ik's goal rule id", () => {
+    const chain = commitModelStructure(Body2d, [
+      { id: "root", cells: { length: 10, rotation: 0 } },
+      { id: "child", cells: { parentId: "root", length: 10, rotation: 0 } },
+    ]);
+    const goals = commitModelStructure(Goals2d, [
+      { id: "goal", cells: { memberId: "root", x: 1, y: 2 } },
+    ]);
+    const processor = new ComputedProcessor({
+      nodeId: "node",
+      plugin: ikPlugin,
+      values: undefined,
+      interpolator: createFakeInterpolator(),
+    });
+    expect(() => processor.prepareCommit({ chain, goals })).toThrow(/ik-goal-not-leaf/);
+  });
+
   it("D19 Property Test over Body2d static structure invariant", () => {
     const skeletonFixed = [
       { id: "root", parentId: undefined },

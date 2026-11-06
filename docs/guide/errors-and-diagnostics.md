@@ -39,7 +39,7 @@ The three variants that used to express that ownership, `IdlessDiagnostic`, `Ide
 
 Call `validateV5(project, catalog)` yourself if you want the diagnostics without the throw. It returns an `Outcome`, so it is either `{ kind: "accepted", value, diagnostics }` or `{ kind: "refused", diagnostics }`, and a value never arrives beside an error. It is the same validator the engine uses, schema shape and graph topology both, so there is no second opinion to keep in sync.
 
-Warnings load and stay readable. Missing `perspective` alongside 3D content, and an unused free track, are warnings. No flag promotes a warning to an error.
+Warnings load and stay readable: a blocked source publishes `source-pending`, and deferred value batches report the ids they deferred. No flag promotes a warning to an error.
 
 ## Rule ids worth knowing
 
@@ -152,7 +152,7 @@ These are your bugs, and they are loud on purpose rather than clamped or deferre
 - registering a plugin whose `keys`, `inputs`, or `outputs` contain `:` throws `TypeError`. That separator belongs to the internal-key rule, and a requirement slot is held to it too.
 - registering two plugins that declare the same `input` throws `TypeError`. Two plugins claiming the same `key` does not: that is legal, and a group names the owner. Two plugins declaring the same requirement slot is legal as well, because a slot is addressed through its owning plugin's group and delivered scoped to it, so there is no namespace to share.
 
-Declaring `targets`, or any other dict-valued slot, is ordinary rather than refused. It used to throw, because a goal reached its plugin through a slot-claim predicate and a declared slot would have been a second, unreachable spelling of the same binding. Declaring the slot with `dict: true` is now the only way the capability exists at all. See ADR-057.
+A shape slot may declare `binding: "map"`; the graph checks the authored binding mode and refuses a mismatch as `slot-binding-mode`. A map entry keeps its authored key. See ADR-057.
 
 ## When several things fail at once
 

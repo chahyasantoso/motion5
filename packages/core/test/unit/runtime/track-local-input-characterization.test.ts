@@ -147,7 +147,7 @@ describe("Passthrough and computed track local-input characterization", () => {
     });
   });
 
-  describe("Both classes overlay behavior", () => {
+  describe("Both processors overlay behavior", () => {
     it("Passthrough: overlay wins over authored evaluation and undefined resumes it", () => {
       const track = createPassthroughTrack({
         nodeId: "demo/track",
@@ -178,7 +178,7 @@ describe("Passthrough and computed track local-input characterization", () => {
     });
   });
 
-  describe("Both classes progress validation and disposal", () => {
+  describe("Both processors progress validation and disposal", () => {
     it("Passthrough: throws TypeError on non-finite progress and throws after disposal", () => {
       const track = createPassthroughTrack({
         nodeId: "demo/track",
@@ -219,7 +219,7 @@ describe("Passthrough and computed track local-input characterization", () => {
     });
   });
 
-  describe("Both classes throwing replaceValues keeps previous evaluator active", () => {
+  describe("Both processors throwing replaceValues keeps previous evaluator active", () => {
     it("Passthrough: throwing replaceValues keeps previous evaluator active", () => {
       const track = createPassthroughTrack({
         nodeId: "demo/track",

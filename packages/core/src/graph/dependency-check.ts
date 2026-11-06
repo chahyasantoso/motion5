@@ -5,14 +5,7 @@ import { isOptionalSlot, slotDeclaration } from "../contract/slot-declaration";
 import type { GraphNode } from "./ir";
 import type { PluginCapabilities } from "../ports/plugin-capabilities";
 
-/**
- * The graph-layer half of dependency admission.
- *
- * The graph owns references and topology. The registry owns which slots a plugin declares and
- * whether a slot takes one source or a map, which is why the graph asks the narrow capability port
- * rather than importing a registry. A capability source with no identified-table answer is the
- * retired grouped registry, and contributes no diagnostics here.
- */
+/** Graph-layer dependency admission: the plugin declares slots, and bindings are checked against them. */
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
@@ -30,17 +23,13 @@ function checkNode(
   if (pluginId === undefined) return;
   const declared = contract?.slots ?? capabilities.pluginDefinition(pluginId)?.inputs.requires;
   if (declared === undefined) {
-    // A registry that answers the identified-table question but does not know this id is the
-    // authoritative unknown. A registry with no answer at all is the grouped one, and the parser
-    // above already refused the id where it could.
-    if (capabilities.pluginDefinition !== undefined)
-      diagnostics.push(
-        diagnostic(
-          "plugin-unknown",
-          `${node.id}.output.plugin`,
-          `Plugin '${pluginId}' is not admitted.`,
-        ),
-      );
+    diagnostics.push(
+      diagnostic(
+        "plugin-unknown",
+        `${node.id}.output.plugin`,
+        `Plugin '${pluginId}' is not admitted.`,
+      ),
+    );
     return;
   }
   const bindings = isRecord(authored) ? authored : {};

@@ -264,10 +264,6 @@
     "count": 2
   },
   {
-    "path": "packages/core/src/graph/dependency-check.ts",
-    "count": 3
-  },
-  {
     "path": "packages/core/src/graph/dependency-edges.ts",
     "count": 3
   },

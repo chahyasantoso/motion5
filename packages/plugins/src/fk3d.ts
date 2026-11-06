@@ -39,8 +39,7 @@ type Fk3dInput = {
   readonly structures?: SourceStructures;
 };
 
-function solvedOrientation(row: SolvedRow | undefined, id: string): Euler3d {
-  if (row === undefined) throw new TypeError(`FK3d solver row missing for member "${id}".`);
+function solvedOrientation(row: SolvedRow): Euler3d {
   const rotation = row.cells.rotation;
   const rotationX = row.cells.rotationX;
   const rotationY = row.cells.rotationY;
@@ -111,7 +110,7 @@ export const fk3dPlugin: PluginDefinition<Fk3dInput> = {
           ? rest
           : blendOrientation3d(
               rest,
-              solvedOrientation(solvedRow, id),
+              solvedOrientation(solvedRow),
               clamp(readNumber(row.cells.weight, 1), 0, 1),
             );
       const parent = chain.parentById.get(id);
