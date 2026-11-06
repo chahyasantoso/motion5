@@ -254,7 +254,7 @@ describe("load-time slot compatibility", () => {
     expect(mismatch?.path).toContain(".data.bad.outputs.values");
   });
 
-  it("treats an empty undeclared source as unproven", () => {
+  it("refuses an unknown source model instead of treating it as unproven", () => {
     const plugins = new PluginCatalog();
     plugins.register(plugin("translate", { values: VALUES }));
     const built = buildGraphIR(
@@ -265,7 +265,7 @@ describe("load-time slot compatibility", () => {
       plugins,
     );
 
-    expect(rules(built)).toContain("slot-unproven");
+    expect(built.graph?.nodeById["demo/empty"]?.contract).toBeUndefined();
   });
 
   it("rechecks when a source contract changes", () => {

@@ -28,7 +28,7 @@ import { Motion, type MotionTrackEntry } from "./domain/motion";
 import { unreachable } from "./lang/exhaustive";
 import { defineOwnValue } from "./lang/own-property";
 import { collect, report } from "./domain/completion";
-import type { PluginCatalog } from "./domain/plugin-catalog";
+import { PluginCatalog } from "./domain/plugin-catalog";
 import type { RenderMetadata } from "./ports/render-metadata";
 import { qualifyFreeTrack, qualifyMotionTrack } from "./graph/ids";
 import { qualifySource } from "./graph/dependency-edges";
@@ -174,6 +174,8 @@ export class Engine {
     assertClock(options.clock);
     assertInterpolator(options.interpolator);
     assertScheduler(options.scheduler);
+    if (!(options.plugins instanceof PluginCatalog))
+      throw new TypeError("Engine requires a PluginCatalog.");
     this.#options = options;
     this.#capabilities = options.plugins;
   }

@@ -41,6 +41,17 @@ const OPACITY: PluginDefinition = {
 };
 
 describe("Engine product-load validation (X-1 follow-up)", () => {
+  it("requires a plugin catalog at runtime", () => {
+    expect(() => new Engine({ ...options(), plugins: undefined as never })).toThrow(
+      /PluginCatalog/,
+    );
+  });
+
+  it("refuses a model track when the catalog does not admit its model", () => {
+    const engine = new Engine({ ...options(), plugins: new PluginCatalog() });
+    expect(() => engine.load(projectWith({ opacity: 1 }) as never)).toThrow(/model-unknown/);
+  });
+
   it("rejects malformed authored stops before constructing a runtime", () => {
     const interpolator = createFakeInterpolator();
     const create = vi.spyOn(interpolator, "create");

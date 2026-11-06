@@ -80,7 +80,13 @@ export function deriveCommittedContract(
   }
   const modelId = outputModelId(track.output);
   if (modelId === undefined) return undefined;
-  const parsed = parseTrackDefinition(track, nodeId);
+  const parsed = parseTrackDefinition(track, nodeId, {
+    isPluginRegistered: (pluginId) => capabilities.isPluginAdmitted(pluginId),
+    pluginDefinition: (pluginId) => capabilities.pluginDefinition(pluginId),
+    model: (modelId) => capabilities.model(modelId),
+    modelIds: () => capabilities.modelIds(),
+    pluginIds: () => capabilities.pluginIds(),
+  });
   if (parsed.kind === "refused") return undefined;
   const model = capabilities.model(modelId);
   const input = deriveSourceContract(
