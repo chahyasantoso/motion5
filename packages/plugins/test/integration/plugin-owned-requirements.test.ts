@@ -1,3 +1,4 @@
+import { Point2d, Solved2d } from "../../src/models";
 import { describe, expect, it } from "vitest";
 import { Spec, shape } from "@motion5/core/plugin-api";
 import type { ProjectDefinition, TrackDefinition } from "@motion5/core";
@@ -6,8 +7,6 @@ import type { PluginDefinition } from "@motion5/core/plugin-api";
 import { fkPlugin } from "../../src/fk";
 import { transformPlugin } from "../../src/transform";
 import { BODY_2D_SPEC } from "../support/aggregate-topology";
-import { ROOT_2D_SPEC } from "../../src/root/fields";
-import { SOLVED_2D_SPEC } from "../../src/solved/fields";
 import { createManualClock } from "@motion5/core";
 import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/testing";
 import { testModels } from "../../../core/test/support/test-models";
@@ -50,8 +49,8 @@ const reachPlugin: PluginDefinition = {
   inputs: {
     values: Spec.record({ weight: Spec.number() }),
     requires: {
-      base: shape({ outputs: { values: ROOT_2D_SPEC } }),
-      destination: shape({ outputs: { values: ROOT_2D_SPEC } }),
+      base: shape({ outputs: { values: Point2d.spec } }),
+      destination: shape({ outputs: { values: Point2d.spec } }),
     },
   },
   outputs: {
@@ -156,7 +155,7 @@ describe("plugin-owned requirements end to end", () => {
       inputs: {
         values: Spec.record({ length: Spec.number() }),
         requires: {
-          base: shape({ outputs: { values: ROOT_2D_SPEC }, optional: true }),
+          base: shape({ outputs: { values: Point2d.spec }, optional: true }),
         },
       },
       outputs: {

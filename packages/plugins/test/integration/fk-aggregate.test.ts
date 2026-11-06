@@ -4,8 +4,7 @@ import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/testi
 import { ikPlugin } from "../../src/ik";
 import { fkPlugin } from "../../src/fk";
 import { BODY_2D_SPEC } from "../support/aggregate-topology";
-import { GOALS_2D_SPEC } from "../../src/goals/fields";
-import { Body2d, Point2d, Points2d, Solved2d } from "../../src/models";
+import { Body2d, Point2d, Points2d, Solved2d, Goals2d } from "../../src/models";
 import { bodyStructure, solvedStructure } from "../support/rig-input";
 import { testModels } from "../../../core/test/support/test-models";
 

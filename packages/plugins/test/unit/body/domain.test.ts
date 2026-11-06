@@ -1,7 +1,6 @@
+import { BODY_2D_FIELDS, BODY_3D_FIELDS } from "../../../src/specs";
 import { describe, expect, it } from "vitest";
 import { parseBody } from "../../../src/body/domain";
-import { BODY_2D_FIELDS } from "../../../src/body/fields";
-import { BODY_3D_FIELDS } from "../../../src/body3d/fields";
 import { rowAt } from "../../../src/table-lookup";
 
 const parse = (value: unknown) => parseBody(value, BODY_2D_FIELDS);

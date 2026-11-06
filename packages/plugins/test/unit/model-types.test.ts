@@ -1,3 +1,13 @@
+import {
+  BODY_2D_FIELDS,
+  GOALS_2D_FIELDS,
+  POINT_2D_FIELDS,
+  BODY_3D_FIELDS,
+  GOALS_3D_FIELDS,
+  POINT_3D_FIELDS,
+  SOLVED_2D_FIELDS,
+  SOLVED_3D_FIELDS,
+} from "../../src/specs";
 import { describe, expect, expectTypeOf, it } from "vitest";
 import { definePlugin, ok, optional, type Model, type TableOf } from "@motion5/core/plugin-api";
 import {
@@ -27,12 +37,6 @@ import { fkPlugin } from "../../src/fk";
 import { fk3dPlugin } from "../../src/fk3d";
 import { ikPlugin } from "../../src/ik";
 import { ik3dPlugin } from "../../src/ik3d";
-import { BODY_2D_FIELDS, GOALS_2D_FIELDS, ROOT_2D_FIELDS } from "../../src/body/fields";
-import { BODY_3D_FIELDS } from "../../src/body3d/fields";
-import { GOALS_3D_FIELDS } from "../../src/goals3d/fields";
-import { ROOT_3D_FIELDS } from "../../src/root3d/fields";
-import { SOLVED_2D_FIELDS } from "../../src/solved/fields";
-import { SOLVED_3D_FIELDS } from "../../src/solved3d/fields";
 import { defineModel } from "@motion5/core/plugin-api";
 
 type RowsOf<M> = M extends Model<infer Cells, infer _Structure> ? TableOf<Cells> : never;
@@ -59,10 +63,10 @@ describe("model cell types", () => {
     expectTypeOf<KeysOf<Body3dCells>>().toEqualTypeOf<keyof typeof BODY_3D_FIELDS>();
     expectTypeOf<KeysOf<Goals2dCells>>().toEqualTypeOf<keyof typeof GOALS_2D_FIELDS>();
     expectTypeOf<KeysOf<Goals3dCells>>().toEqualTypeOf<keyof typeof GOALS_3D_FIELDS>();
-    expectTypeOf<KeysOf<Point2dCells>>().toEqualTypeOf<keyof typeof ROOT_2D_FIELDS>();
-    expectTypeOf<KeysOf<Point3dCells>>().toEqualTypeOf<keyof typeof ROOT_3D_FIELDS>();
-    expectTypeOf<KeysOf<Points2dCells>>().toEqualTypeOf<keyof typeof ROOT_2D_FIELDS>();
-    expectTypeOf<KeysOf<Points3dCells>>().toEqualTypeOf<keyof typeof ROOT_3D_FIELDS>();
+    expectTypeOf<KeysOf<Point2dCells>>().toEqualTypeOf<keyof typeof POINT_2D_FIELDS>();
+    expectTypeOf<KeysOf<Point3dCells>>().toEqualTypeOf<keyof typeof POINT_3D_FIELDS>();
+    expectTypeOf<KeysOf<Points2dCells>>().toEqualTypeOf<keyof typeof POINT_2D_FIELDS>();
+    expectTypeOf<KeysOf<Points3dCells>>().toEqualTypeOf<keyof typeof POINT_3D_FIELDS>();
     expectTypeOf<KeysOf<Solved2dCells>>().toEqualTypeOf<keyof typeof SOLVED_2D_FIELDS>();
     expectTypeOf<KeysOf<Solved3dCells>>().toEqualTypeOf<keyof typeof SOLVED_3D_FIELDS>();
   });

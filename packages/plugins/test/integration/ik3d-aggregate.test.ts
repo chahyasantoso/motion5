@@ -6,8 +6,6 @@ import { Spec, defineModel } from "@motion5/core/plugin-api";
 import { ik3dPlugin } from "../../src/ik3d";
 import { Body3d, Goals3d, Point3d, Solved3d } from "../../src/models";
 import { goalDiagnostics } from "../../src/goals/check";
-import { BODY_3D_SPEC } from "../../src/body3d/fields";
-import { GOALS_3D_SPEC } from "../../src/goals3d/fields";
 import { bodyStructure, goalsStructure, rigStructures } from "../support/rig-input";
 import { isValue } from "../../../core/src/runtime/value-validation";
 import { testModels } from "../../../core/test/support/test-models";

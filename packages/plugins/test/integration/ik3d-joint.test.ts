@@ -1,3 +1,4 @@
+import { Goals3d, Point3d } from "../../src/models";
 import { describe, expect, it } from "vitest";
 import type { ProjectDefinition } from "@motion5/core";
 import { PluginCatalog } from "@motion5/core";
@@ -9,8 +10,6 @@ import { FABRIK_TOLERANCE } from "../../src/fabrik";
 import { fk3dPlugin } from "@motion5/plugins/fk3d";
 import { ik3dPlugin } from "@motion5/plugins/ik3d";
 import { BODY_3D_SPEC } from "../support/aggregate-topology";
-import { GOALS_3D_SPEC } from "../../src/goals3d/fields";
-import { ROOT_3D_SPEC } from "../../src/root3d/fields";
 import {
   matrixFromEuler3d,
   multiplyMatrix3,

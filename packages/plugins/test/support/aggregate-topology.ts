@@ -1,14 +1,24 @@
+import {
+  Body2d,
+  Body3d,
+  Goals2d,
+  Goals3d,
+  Point2d,
+  Point3d,
+  Solved2d,
+  Solved3d,
+} from "../../src/models";
 import type { ValueSpec } from "@motion5/core/plugin-api";
 
-export { BODY_2D_SPEC } from "../../src/body/fields";
-export { BODY_3D_SPEC } from "../../src/body3d/fields";
+export const BODY_2D_SPEC = Body2d.spec;
+export const BODY_3D_SPEC = Body3d.spec;
 export { EXTERNAL_BASE } from "../../src/body/domain";
-export { GOALS_2D_SPEC } from "../../src/goals/fields";
-export { GOALS_3D_SPEC } from "../../src/goals3d/fields";
-export { ROOT_2D_SPEC } from "../../src/root/fields";
-export { ROOT_3D_SPEC } from "../../src/root3d/fields";
-export { SOLVED_2D_SPEC } from "../../src/solved/fields";
-export { SOLVED_3D_SPEC } from "../../src/solved3d/fields";
+export const GOALS_2D_SPEC = Goals2d.spec;
+export const GOALS_3D_SPEC = Goals3d.spec;
+export const ROOT_2D_SPEC = Point2d.spec;
+export const ROOT_3D_SPEC = Point3d.spec;
+export const SOLVED_2D_SPEC = Solved2d.spec;
+export const SOLVED_3D_SPEC = Solved3d.spec;
 
 export type AggregateScalar = number | string | boolean;
 export type AggregateCells = Readonly<Record<string, AggregateScalar>>;

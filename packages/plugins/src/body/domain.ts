@@ -3,9 +3,7 @@
 export type Scalar = number | string | boolean;
 export type Cells = Readonly<Record<string, Scalar>>;
 
-export type FieldShape = Readonly<
-  Record<string, { readonly static?: true; readonly [key: string]: unknown }>
->;
+export type FieldShape = Readonly<Record<string, { readonly static?: true }>>;
 
 export interface BodyRow {
   readonly id: string;

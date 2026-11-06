@@ -552,7 +552,7 @@ function checkPluginSource(source, file, specifiers, violations) {
   });
   if (!allowed) violations.push(`${file}: import outside plugin package contract`);
   if (
-    /(?:^|\/)(?:domain|fields)\.ts$/.test(file) &&
+    /(?:^|\/)domain\.ts$/.test(file) &&
     specifiers.some(
       (specifier) => specifier === "@motion5/core" || specifier === "@motion5/core/plugin-api",
     )

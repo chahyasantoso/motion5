@@ -1,3 +1,4 @@
+import { Point3d, Solved3d } from "../src/models";
 import { describe, expect, it } from "vitest";
 import { createManualClock, Engine, PluginCatalog, type ProjectHandle } from "@motion5/core";
 import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/testing";
@@ -11,8 +12,6 @@ import {
 } from "../src/pose-classify";
 import { fk3dPlugin } from "../src/fk3d";
 import { BODY_3D_SPEC } from "./support/aggregate-topology";
-import { ROOT_3D_SPEC } from "../src/root3d/fields";
-import { SOLVED_3D_SPEC } from "../src/solved3d/fields";
 import { testModels } from "../../core/test/support/test-models";
 
 const ZERO: Euler3d = { rotation: 0, rotationX: 0, rotationY: 0 };

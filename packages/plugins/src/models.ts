@@ -1,12 +1,9 @@
 import { Spec, defineModel, ok, refused } from "@motion5/core/plugin-api";
 import type { Model, Parsed, ValueSpec } from "@motion5/core/plugin-api";
 import { parseBody, type BodyStructure } from "./body/domain";
-import { BODY_2D_FIELDS, BODY_2D_SPEC, GOALS_2D_SPEC } from "./body/fields";
 import { bodyIssue } from "./body/type";
-import { BODY_3D_FIELDS, BODY_3D_SPEC } from "./body3d/fields";
 import { parseGoals, type GoalsStructure } from "./goals/domain";
 import { goalsIssue } from "./goals/type";
-import { GOALS_3D_SPEC } from "./goals3d/fields";
 import {
   Anchors2d,
   CubicPath2d,
@@ -18,12 +15,18 @@ import {
   type CubicPathStructure,
   type LocalAnchorsStructure,
 } from "./path/models";
-import { ROOT_2D_FIELDS, ROOT_2D_SPEC } from "./root/fields";
-import { ROOT_3D_FIELDS, ROOT_3D_SPEC } from "./root3d/fields";
 import { parseSolved, type SolvedStructure } from "./solved/domain";
-import { SOLVED_2D_SPEC } from "./solved/fields";
 import { solvedIssue } from "./solved/type";
-import { SOLVED_3D_SPEC } from "./solved3d/fields";
+import {
+  BODY_2D_FIELDS,
+  BODY_3D_FIELDS,
+  GOALS_2D_FIELDS,
+  GOALS_3D_FIELDS,
+  POINT_2D_FIELDS,
+  POINT_3D_FIELDS,
+  SOLVED_2D_FIELDS,
+  SOLVED_3D_FIELDS,
+} from "./specs";
 
 function parsedOrRefused<V, E>(
   res:
@@ -50,9 +53,9 @@ function parsePoints(value: unknown): Parsed<PointsStructure> {
   });
 }
 
-const POINTS_2D_SPEC: ValueSpec = Spec.table(ROOT_2D_FIELDS);
+const POINTS_2D_SPEC: ValueSpec = Spec.table(POINT_2D_FIELDS);
 
-const POINTS_3D_SPEC: ValueSpec = Spec.table(ROOT_3D_FIELDS);
+const POINTS_3D_SPEC: ValueSpec = Spec.table(POINT_3D_FIELDS);
 
 export interface PointsStructure {
   readonly ids: readonly string[];
@@ -153,54 +156,54 @@ export type Points3dCells = Point3dCells;
 /** 2D body kinematics skeleton model with hierarchical joints and limits. */
 export const Body2d: Model<Body2dCells, BodyStructure> = defineModel({
   id: "Body2d",
-  spec: BODY_2D_SPEC,
+  spec: Spec.table(BODY_2D_FIELDS),
   parse: (value) => parsedOrRefused(parseBody(value, BODY_2D_FIELDS), bodyIssue),
 });
 
 /** 3D body kinematics skeleton model with 3D joint limits and orientation. */
 export const Body3d: Model<Body3dCells, BodyStructure> = defineModel({
   id: "Body3d",
-  spec: BODY_3D_SPEC,
+  spec: Spec.table(BODY_3D_FIELDS),
   parse: (value) => parsedOrRefused(parseBody(value, BODY_3D_FIELDS), bodyIssue),
 });
 
 /** 2D solver goals specifying target positions and influences for members. */
 export const Goals2d: Model<Goals2dCells, GoalsStructure> = defineModel({
   id: "Goals2d",
-  spec: GOALS_2D_SPEC,
+  spec: Spec.table(GOALS_2D_FIELDS),
   parse: (value) => parsedOrRefused(parseGoals(value), goalsIssue),
 });
 
 /** 3D solver goals specifying spatial targets and rotational orientations. */
 export const Goals3d: Model<Goals3dCells, GoalsStructure> = defineModel({
   id: "Goals3d",
-  spec: GOALS_3D_SPEC,
+  spec: Spec.table(GOALS_3D_FIELDS),
   parse: (value) => parsedOrRefused(parseGoals(value), goalsIssue),
 });
 
 /** 2D point record specifying spatial coordinate and planar rotation. */
 export const Point2d: Model<Point2dCells> = defineModel({
   id: "Point2d",
-  spec: ROOT_2D_SPEC,
+  spec: Spec.record(POINT_2D_FIELDS),
 });
 
 /** 3D point record specifying spatial coordinates and orientation angles. */
 export const Point3d: Model<Point3dCells> = defineModel({
   id: "Point3d",
-  spec: ROOT_3D_SPEC,
+  spec: Spec.record(POINT_3D_FIELDS),
 });
 
 /** 2D solved pose angles and convergence residuals. */
 export const Solved2d: Model<Solved2dCells, SolvedStructure> = defineModel({
   id: "Solved2d",
-  spec: SOLVED_2D_SPEC,
+  spec: Spec.table(SOLVED_2D_FIELDS),
   parse: (value) => parsedOrRefused(parseSolved(value), solvedIssue),
 });
 
 /** 3D solved joint rotations and convergence residuals. */
 export const Solved3d: Model<Solved3dCells, SolvedStructure> = defineModel({
   id: "Solved3d",
-  spec: SOLVED_3D_SPEC,
+  spec: Spec.table(SOLVED_3D_FIELDS),
   parse: (value) => parsedOrRefused(parseSolved(value), solvedIssue),
 });
 

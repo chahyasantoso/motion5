@@ -1,6 +1,5 @@
+import { Body3d, Solved3d } from "../../plugins/src/models";
 import { validateTrackDefinition, type TrackDefinition } from "@motion5/core";
-import { BODY_3D_SPEC } from "../../plugins/src/body3d/fields";
-import { SOLVED_3D_SPEC } from "../../plugins/src/solved3d/fields";
 import { Matrix4, Vector3 } from "three";
 import { frameFromMatrix } from "./index";
 import {

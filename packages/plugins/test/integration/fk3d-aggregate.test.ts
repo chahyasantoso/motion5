@@ -5,8 +5,7 @@ import { Spec, defineModel } from "@motion5/core/plugin-api";
 import { ik3dPlugin } from "../../src/ik3d";
 import { fk3dPlugin } from "../../src/fk3d";
 import { BODY_3D_SPEC } from "../support/aggregate-topology";
-import { GOALS_3D_SPEC } from "../../src/goals3d/fields";
-import { Body3d, Point3d, Points3d, Solved3d } from "../../src/models";
+import { Body3d, Point3d, Points3d, Solved3d, Goals3d } from "../../src/models";
 import { bodyStructure, solvedStructure } from "../support/rig-input";
 import { testModels } from "../../../core/test/support/test-models";
 

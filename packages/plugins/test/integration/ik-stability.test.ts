@@ -1,3 +1,4 @@
+import { Goals2d, Point2d } from "../../src/models";
 import { describe, expect, it } from "vitest";
 import type { ProjectDefinition } from "@motion5/core";
 import { PluginCatalog } from "@motion5/core";
@@ -7,8 +8,6 @@ import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/testi
 import { fkPlugin } from "@motion5/plugins/fk";
 import { ikPlugin } from "@motion5/plugins/ik";
 import { BODY_2D_SPEC } from "../support/aggregate-topology";
-import { GOALS_2D_SPEC } from "../../src/goals/fields";
-import { ROOT_2D_SPEC } from "../../src/root/fields";
 import { FABRIK_TOLERANCE, solveFabrik, solveFabrikAttempt } from "../../src/fabrik";
 import { fabrikAlternatives, outranks } from "../../src/fabrik-select";
 import { composeWorld, pivotFromBaseTip, type WorldFrame } from "../../src/frame";

@@ -5,8 +5,6 @@ import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/testi
 import { ikPlugin } from "../../src/ik";
 import { Body2d, Goals2d, Point2d, Solved2d } from "../../src/models";
 import { goalDiagnostics } from "../../src/goals/check";
-import { BODY_2D_SPEC } from "../../src/body/fields";
-import { GOALS_2D_SPEC } from "../../src/goals/fields";
 import { bodyStructure, goalsStructure, rigStructures } from "../support/rig-input";
 import { isValue } from "../../../core/src/runtime/value-validation";
 import { testModels } from "../../../core/test/support/test-models";
