@@ -71,7 +71,7 @@ const PlanarCard: React.FC<{ readonly handle: ProjectHandle; readonly goals: Goa
     numberValue(goal, "x") - numberValue(tip, "x"),
     numberValue(goal, "y") - numberValue(tip, "y"),
   );
-  const authored = handle.track(nodeId(TENTACLE.solverTrack)).definition.input?.values;
+  const authored = handle.track(nodeId(TENTACLE.solverTrack)).definition.input?.param;
   const authoredPicked = selectRecord(authored);
   const flip = authoredPicked.kind === "record" && authoredPicked.values.flip === true;
 

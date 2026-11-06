@@ -114,6 +114,12 @@ describe("ik-playground runs the aggregate pipeline", () => {
         kind: "row",
         cells: { memberId: IK3D.tipTrack, x: 190, y: 155, z: 20 },
       });
+      goals.flip(true);
+      flush();
+      expect(project.track(nodeId(TENTACLE.solverTrack)).definition.input?.param).toEqual({
+        flip: true,
+        inspect: true,
+      });
     } finally {
       project.dispose();
     }
