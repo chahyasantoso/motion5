@@ -3,7 +3,7 @@ import type { RuleId } from "../contract/rule-id";
 import type { Diagnostic } from "../contract/v5";
 import { acceptedOutcome, refusedOutcomeFrom, type Outcome } from "../lang/outcome";
 import { compareCodeUnits } from "./compare";
-import type { GraphNode } from "./ir";
+import type { GraphNode } from "./node";
 
 /** Rule id reported when the observation graph cannot be linearized. */
 export const CYCLE_RULE_ID = "graph-cycle" satisfies RuleId;

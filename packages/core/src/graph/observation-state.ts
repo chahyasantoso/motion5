@@ -1,7 +1,7 @@
 import { unreachable } from "../lang/exhaustive";
 import { compareCodeUnits } from "./compare";
-import type { GraphEdge } from "./ir";
-import { compareEdges, describeEdge, edgeKey } from "./ir";
+import type { GraphEdge } from "./node";
+import { compareEdges, describeEdge, edgeKey } from "./node";
 
 /** Read-only structural view of live state for evidence and inspection. */
 export interface ObservationStateSnapshot {

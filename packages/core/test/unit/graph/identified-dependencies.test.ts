@@ -8,7 +8,8 @@ import type {
 import { defineModel } from "../../../src/contract/v5";
 import { shape } from "../../../src/contract/slot-spec";
 import { PluginCatalog } from "../../../src/domain/plugin-catalog";
-import { buildGraphIR, compareEdges, edgeKey, type GraphEdge } from "../../../src/graph/ir";
+import { buildGraphIR } from "../../../src/graph/ir";
+import { compareEdges, edgeKey, type GraphEdge } from "../../../src/graph/node";
 import { record, row, table, track } from "../../support/v5-builders";
 import { testModels } from "../../support/test-models";
 import { Spec } from "../../../src/contract/spec-builder";

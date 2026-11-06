@@ -1,5 +1,6 @@
 import type { Diagnostic, ProjectDefinition, TrackDefinition } from "../../contract/v5";
-import { collectTrack, finalizeGraph, type GraphBuildResult, type GraphNode } from "../ir";
+import { collectTrack, finalizeGraph, type GraphBuildResult } from "../ir";
+import { type GraphNode } from "../node";
 import type { CommittedContract } from "../committed-contract";
 import { deriveCommittedContract } from "../committed-contract";
 import { diagnostic } from "../../contract/diagnostics";

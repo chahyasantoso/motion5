@@ -1,9 +1,14 @@
 import type { IdentifiedRuleId } from "../contract/rule";
-import type { Diagnostic, ReadyPatch } from "../contract/v5";
-import { describeEdge, type GraphEdge } from "../graph/ir";
+import type { Diagnostic, Outputs, ReadyPatch } from "../contract/v5";
+import { describeEdge, type GraphEdge } from "../graph/node";
 import { unreachable } from "../lang/exhaustive";
-import type { PublisherComposition } from "./graph-publisher";
 import { isPlainRecord } from "../lang/plain-record";
+
+export interface PublisherComposition {
+  readonly outputs: Outputs;
+  readonly sourceProgress: number;
+  readonly sourceRevisions: Readonly<Record<string, number>>;
+}
 
 /** Three closed unions per flush: node outcome, source contribution, publication failure. Exhaustive switch, not collection order or instanceof. */
 declare const OUTCOME_BRAND: unique symbol;

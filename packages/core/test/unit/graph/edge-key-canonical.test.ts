@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { GraphEdge } from "../../../src/graph/ir";
-import { edgeKey } from "../../../src/graph/ir";
+import type { GraphEdge } from "../../../src/graph/node";
+import { edgeKey } from "../../../src/graph/node";
 import { resolveRequirementEdge } from "../../../src/graph/dependency-edges";
 
 // Canonical identity carried two authored string fields. Projection ordering was one, and it

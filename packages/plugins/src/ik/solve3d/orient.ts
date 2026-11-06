@@ -1,4 +1,4 @@
-import { ORIENT_KEY, readOrientValue, unreachable } from "@motion5/core/plugin-api";
+import { unreachable } from "@motion5/core/plugin-api";
 import { readNumber, segmentExtent } from "../../frame/frame";
 import {
   blendOrientation3d,
@@ -20,11 +20,6 @@ import type { SolveResult3d } from "./result";
 /**
  * Sole owner of the 3D orientation goal: after the position solve, turn each oriented leaf toward its goal with its tip fixed; weight below 1 fades both goals toward rest.
  */
-
-/** Orient weight a member's live values declare, or `undefined` outside the domain; total over live values, so a value-tier write bypassing load reads absent. */
-export function readOrient(values: Readonly<Record<string, unknown>>): number | undefined {
-  return readOrientValue(values[ORIENT_KEY]);
-}
 
 /** Which rotations keep a leaf's tip where the position solve put it. */
 export type OrientFreedom = "roll" | "whole";

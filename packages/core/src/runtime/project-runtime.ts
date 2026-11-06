@@ -78,7 +78,7 @@ import {
 import { sameTrigger, withStagger } from "./authored-values";
 import { Diagnostics, type DiagnosticsSnapshot } from "./diagnostics";
 import { GraphRuntime, type ComposeResolver } from "./graph-runtime";
-import type { GraphNode } from "../graph/ir";
+import type { GraphNode } from "../graph/node";
 import type { CommittedContract } from "../graph/committed-contract";
 
 import type { GraphBuilder } from "../ports/graph-builder";

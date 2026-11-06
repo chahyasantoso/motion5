@@ -25,7 +25,7 @@ import { checkLaterOutputs, PluginNodeError, validatePluginOutputs } from "../pl
 import type { BoundSlot, BoundSlots } from "../bound-slot";
 import { isOptionalSlot } from "../../contract/slot-declaration";
 import { isValue, findNonFinite } from "../value-validation";
-import type { PublisherComposition } from "../graph-publisher";
+import type { PublisherComposition } from "../publisher-outcome";
 import { LocalInput } from "../local-input";
 import { authoringValue } from "../authoring-value";
 import { runtimeStaticView, sameStaticView, type StaticView } from "../static-view";

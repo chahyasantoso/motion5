@@ -1,8 +1,1 @@
-[
-  "packages/core/src/graph/dependency-check.ts > packages/core/src/graph/ir.ts",
-  "packages/core/src/graph/dependency-edges.ts > packages/core/src/graph/ir.ts",
-  "packages/core/src/graph/ir.ts > packages/core/src/graph/order.ts",
-  "packages/core/src/graph/ir.ts > packages/core/src/graph/slot-check.ts",
-  "packages/core/src/runtime/graph-publisher.ts > packages/core/src/runtime/publisher-outcome.ts",
-  "packages/plugins/src/ik/solve3d/chain.ts > packages/plugins/src/ik/solve3d/orient.ts"
-]
+[]

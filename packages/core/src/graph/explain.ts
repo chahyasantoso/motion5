@@ -10,7 +10,8 @@ import {
 import { deriveCommittedContract } from "./committed-contract";
 import { checkSlotOutput } from "./slot-check";
 import type { SlotOutcome } from "./slot-check";
-import { buildGraphIR, collectTrack, compareEdges, type GraphEdge, type GraphNode } from "./ir";
+import { buildGraphIR, collectTrack } from "./ir";
+import { compareEdges, type GraphEdge, type GraphNode } from "./node";
 import type { PluginCapabilities } from "../ports/plugin-capabilities";
 
 /** One slot's fit in the committed graph, as an inspection answer rather than a refusal. */

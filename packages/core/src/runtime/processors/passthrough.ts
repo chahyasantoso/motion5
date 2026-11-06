@@ -5,7 +5,7 @@ import type { Interpolator } from "../../ports/interpolator";
 import { authoringValue } from "../authoring-value";
 import { parseModel } from "../model-parse";
 import { createValueEvaluator } from "../evaluate-values";
-import type { PublisherComposition } from "../graph-publisher";
+import type { PublisherComposition } from "../publisher-outcome";
 import type { LocalInput } from "../local-input";
 import type { BoundSlots } from "../bound-slot";
 import type { Processor } from "./processor";

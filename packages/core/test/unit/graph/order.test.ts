@@ -1,7 +1,7 @@
 import { builtinRegistry } from "../../support/builtin-registry";
 import { describe, expect, it } from "vitest";
 import type { ProjectDefinition } from "../../../src/contract/v5";
-import type { GraphNode } from "../../../src/graph/ir";
+import type { GraphNode } from "../../../src/graph/node";
 import { buildGraphIR } from "../../../src/graph/ir";
 import { orderGraph } from "../../../src/graph/order";
 

@@ -1,4 +1,4 @@
-import type { GraphEdge } from "../graph/ir";
+import type { GraphEdge } from "../graph/node";
 
 /**
  * Which nodes one publication runs over: seeds and readers, then the sources those need.

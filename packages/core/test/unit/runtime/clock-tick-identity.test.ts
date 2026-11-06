@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Diagnostic, ProjectDefinition } from "../../../src/contract/v5";
 import { createBrowserClock } from "../../../src/adapters/browser-clock";
-import type { GraphNode } from "../../../src/graph/ir";
+import type { GraphNode } from "../../../src/graph/node";
 import { createManualClock } from "../../../src/ports/clock";
 import { GraphRuntime, type ComposeResolver } from "../../../src/runtime/graph-runtime";
 import { ProjectRuntime } from "../../../src/runtime/project-runtime";

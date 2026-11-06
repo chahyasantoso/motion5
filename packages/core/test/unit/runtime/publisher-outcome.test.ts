@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Diagnostic, FlatRecord, ReadyPatch } from "../../../src/contract/v5";
-import { compareEdges, type GraphEdge } from "../../../src/graph/ir";
+import { compareEdges, type GraphEdge } from "../../../src/graph/node";
 import {
   ABSENT,
   NOT_AFFECTED,

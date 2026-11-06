@@ -2,7 +2,7 @@ import type { AdmittedPlugin, Model, SourceStructures, Structure, Value } from "
 import type { ParsedValues } from "../contract/v5-parse";
 import type { Interpolator } from "../ports/interpolator";
 import { createValueEvaluator } from "./evaluate-values";
-import type { PublisherComposition } from "./graph-publisher";
+import type { PublisherComposition } from "./publisher-outcome";
 import { LocalInput } from "./local-input";
 import { ComputedProcessor, defaultPluginValues } from "./processors/computed";
 import { PassthroughProcessor } from "./processors/passthrough";

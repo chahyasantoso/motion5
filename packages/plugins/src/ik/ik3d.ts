@@ -16,7 +16,7 @@ import { readInfluence } from "./shared/goal";
 import { inspectSolve } from "./shared/result";
 import { readPole3d } from "./solve3d/analytic";
 import { constrains, readJointLimit3d } from "./solve3d/constraint";
-import { readOrient } from "./solve3d/orient";
+import { readOrient } from "./solve3d/chain";
 import type { ChainMember3d } from "./solve3d/chain";
 import { solveChain3d } from "./solve3d/solve";
 import {

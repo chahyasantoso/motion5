@@ -2,7 +2,7 @@ import type { Diagnostic } from "../contract/v5";
 import { outputPluginId } from "../contract/v5";
 import { diagnostic } from "../contract/diagnostics";
 import { isOptionalSlot } from "../contract/slot-declaration";
-import type { GraphNode } from "./ir";
+import type { GraphNode } from "./node";
 import type { PluginCapabilities } from "../ports/plugin-capabilities";
 import { isObjectRecord } from "../lang/plain-record";
 

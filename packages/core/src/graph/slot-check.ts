@@ -2,7 +2,7 @@ import type { Diagnostic, FieldSpec, SlotSpec, ValueSpec } from "../contract/v5"
 import type { SourceContract } from "../contract/v5-infer";
 import { diagnostic } from "../contract/diagnostics";
 import { unreachable } from "../lang/exhaustive";
-import { compareEdges, type GraphEdge, type GraphNode } from "./ir";
+import { compareEdges, type GraphEdge, type GraphNode } from "./node";
 
 /** Load-time structural verdicts: `compatible` found every stated requirement, `incompatible` is a known contradiction, and `unproven` is missing evidence, not the same as compatible. */
 export type SlotOutcome = "compatible" | "incompatible" | "unproven";

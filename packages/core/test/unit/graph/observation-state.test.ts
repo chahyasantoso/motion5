@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { GraphEdge } from "../../../src/graph/ir";
+import type { GraphEdge } from "../../../src/graph/node";
 import { ObservationState } from "../../../src/graph/observation-state";
 
 const NODES = ["~/cursor", "hero/arm", "hero/halo"] as const;

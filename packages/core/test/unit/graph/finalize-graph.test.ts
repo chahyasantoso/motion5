@@ -1,12 +1,8 @@
 import { builtinRegistry } from "../../support/builtin-registry";
 import { describe, expect, it } from "vitest";
 import { IncrementalGraphBuilder } from "../../../src/graph/builders/incremental";
-import {
-  buildGraphIR,
-  finalizeGraph,
-  type GraphBuildResult,
-  type GraphNode,
-} from "../../../src/graph/ir";
+import { buildGraphIR, finalizeGraph, type GraphBuildResult } from "../../../src/graph/ir";
+import { type GraphNode } from "../../../src/graph/node";
 import type { TrackDefinition, ProjectDefinition } from "../../../src/contract/v5";
 
 // Slice C0 of issue #195. Two graph builders share a post-collect tail and duplicate it almost

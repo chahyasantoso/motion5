@@ -11,7 +11,7 @@ interface RequiresBinding {
 import { diagnostic } from "../contract/diagnostics";
 import { acceptedOutcome, readOutcome, refusedOutcome, type Outcome } from "../lang/outcome";
 import { qualifyFreeTrack, qualifyMotionTrack } from "./ids";
-import type { EdgeRequirement, GraphEdge } from "./ir";
+import type { EdgeRequirement, GraphEdge } from "./node";
 import { isObjectRecord } from "../lang/plain-record";
 
 export type ResolvedEdge = Outcome<GraphEdge, Diagnostic>;

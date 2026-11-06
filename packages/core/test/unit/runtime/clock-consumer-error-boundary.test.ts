@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Diagnostic, ProjectDefinition } from "../../../src/contract/v5";
-import type { GraphNode } from "../../../src/graph/ir";
+import type { GraphNode } from "../../../src/graph/node";
 import { createManualClock, type ClockTick } from "../../../src/ports/clock";
 import { GraphRuntime, type ComposeResolver } from "../../../src/runtime/graph-runtime";
 import { testGraphBuilder } from "../../support/builtin-registry";

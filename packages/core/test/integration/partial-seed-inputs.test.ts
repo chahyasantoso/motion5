@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Outputs } from "../../src/contract/v5";
-import { deriveDependants, type GraphEdge } from "../../src/graph/ir";
+import { deriveDependants } from "../../src/graph/ir";
+import { type GraphEdge } from "../../src/graph/node";
 import {
   GraphPublisher,
   type PublisherNode,

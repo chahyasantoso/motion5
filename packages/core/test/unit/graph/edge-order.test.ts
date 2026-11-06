@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { EdgeRequirement, GraphEdge } from "../../../src/graph/ir";
-import { compareEdges, edgeKey } from "../../../src/graph/ir";
+import type { EdgeRequirement, GraphEdge } from "../../../src/graph/node";
+import { compareEdges, edgeKey } from "../../../src/graph/node";
 
 // Ids and requirement names that contain every character the identity encoding or the comparator
 // treats as punctuation, plus leading digits, which is what a length prefix looks like from the

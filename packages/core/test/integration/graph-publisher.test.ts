@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { deriveDependants, type GraphEdge } from "../../src/graph/ir";
+import { deriveDependants } from "../../src/graph/ir";
+import { type GraphEdge } from "../../src/graph/node";
 import { PatchRegistry } from "../../src/runtime/patch-registry";
 import {
   GraphPublisher,

@@ -1,8 +1,10 @@
+import type { PublisherComposition } from "./publisher-outcome";
 import { diagnostic } from "../contract/diagnostics";
 import type { Diagnostic, Outputs, Structure } from "../contract/v5";
 import type { BoundSlot, BoundSlotEntry, BoundSlots } from "./bound-slot";
 import { isImmutableLeaf } from "../domain/values";
-import { compareEdges, type GraphIR, type GraphNode } from "../graph/ir";
+import { type GraphIR } from "../graph/ir";
+import { compareEdges, type GraphNode } from "../graph/node";
 import { firstPendingEdge } from "../graph/references";
 /** One refusal of a composed value, named by the publication's rule. */
 class CompositionOutputError extends TypeError {
@@ -34,12 +36,6 @@ import { isPlainRecord } from "../lang/plain-record";
 /**
  * Node state before any plugin runs, as the node reports it. No `base`: topology, owned by
  * `resolveSolvers` on `SolveMember.base`; deriving it here = two owners. */
-export interface PublisherComposition {
-  readonly outputs: Outputs;
-  readonly sourceProgress: number;
-  readonly sourceRevisions: Readonly<Record<string, number>>;
-}
-
 interface BoundInputs {
   readonly slots: BoundSlots;
   readonly sourceRevisions: Record<string, number>;

@@ -2,7 +2,7 @@ import { diagnostic } from "../contract/diagnostics";
 import type { RuleId } from "../contract/rule-id";
 import type { Diagnostic } from "../contract/v5";
 import { unreachable } from "../lang/exhaustive";
-import type { GraphEdge } from "./ir";
+import type { GraphEdge } from "./node";
 
 /** Diagnostic rule for an edge whose source is a known node with no published value. */
 export const PENDING_REFERENCE_RULE_ID = "source-pending" satisfies RuleId;

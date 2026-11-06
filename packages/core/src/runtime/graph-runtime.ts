@@ -1,7 +1,8 @@
 import type { Diagnostic, ProjectDefinition, Structure } from "../contract/v5";
 import type { Clock, ClockTick } from "../ports/clock";
 import { GraphBinding } from "../graph/binding";
-import type { GraphNode, GraphIR } from "../graph/ir";
+import type { GraphIR } from "../graph/ir";
+import type { GraphNode } from "../graph/node";
 import type { CommittedContract } from "../graph/committed-contract";
 import { GraphPublisher, type PublisherNode, type PublisherSnapshot } from "./graph-publisher";
 import { PatchRegistry, type PatchBatch } from "./patch-registry";

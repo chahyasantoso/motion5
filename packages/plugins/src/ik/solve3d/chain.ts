@@ -3,8 +3,13 @@ import type { Euler3d, PivotOffset3d, WorldFrame3d } from "../../frame/frame3d";
 import { readNumber } from "../../frame/frame";
 import { goalInputs, readMembers } from "../shared/chain";
 import { readInfluence } from "../shared/goal";
-import { readOrient } from "./orient";
+import { ORIENT_KEY, readOrientValue } from "@motion5/core/plugin-api";
 import { constrains, readJointLimit3d, type JointLimit3d } from "./constraint";
+
+/** Orient weight a member's live values declare, or `undefined` outside the domain; total over live values, so a value-tier write bypassing load reads absent. */
+export function readOrient(values: Readonly<Record<string, unknown>>): number | undefined {
+  return readOrientValue(values[ORIENT_KEY]);
+}
 
 /**
  * One member of a 3D solver chain, as both 3D strategies read it.

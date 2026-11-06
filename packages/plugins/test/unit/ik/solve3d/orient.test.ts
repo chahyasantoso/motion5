@@ -19,7 +19,8 @@ import {
 } from "../../../../src/frame/frame3d";
 import { readChainMembers3d, type ChainMember3d } from "../../../../src/ik/solve3d/chain";
 import type { JointLimit3d } from "../../../../src/ik/solve3d/constraint";
-import { orientFreedom, orientLeaves3d, readOrient } from "../../../../src/ik/solve3d/orient";
+import { orientFreedom, orientLeaves3d } from "../../../../src/ik/solve3d/orient";
+import { readOrient } from "../../../../src/ik/solve3d/chain";
 import type { SolveResult3d } from "../../../../src/ik/solve3d/result";
 import { solveChain3d } from "../../../../src/ik/solve3d/solve";
 import { composeChain3d, frameDistance3d } from "../../../support/fk3d-compose";

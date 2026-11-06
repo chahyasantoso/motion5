@@ -1,5 +1,6 @@
 import type { ProjectDefinition } from "../contract/v5";
-import { edgeKey, type GraphBuildResult, type GraphIR } from "./ir";
+import { type GraphBuildResult, type GraphIR } from "./ir";
+import { edgeKey } from "./node";
 import type { CommittedContract } from "./committed-contract";
 import { ObservationState } from "./observation-state";
 import type { GraphBuilder } from "../ports/graph-builder";
