@@ -26,6 +26,7 @@ const POINTS_3D_SPEC: ValueSpec = {
 
 export interface PointsStructure {
   readonly ids: readonly string[];
+  readonly indexById: ReadonlyMap<string, number>;
 }
 
 /** Cells of a 2D body row. */
@@ -233,6 +234,29 @@ export const Solved3d: Model<Solved3dCells, SolvedStructure> = defineModel({
   },
 });
 
+import {
+  Anchors2d,
+  CubicPath2d,
+  LocalAnchors2d,
+  type Anchor2dCells,
+  type CubicPath2dCells,
+  type LocalAnchor2dCells,
+  type AnchorsStructure,
+  type CubicPathStructure,
+  type LocalAnchorsStructure,
+} from "./path/models";
+export {
+  Anchors2d,
+  CubicPath2d,
+  LocalAnchors2d,
+  type Anchor2dCells,
+  type CubicPath2dCells,
+  type LocalAnchor2dCells,
+  type AnchorsStructure,
+  type CubicPathStructure,
+  type LocalAnchorsStructure,
+};
+
 /** Table model of 2D points indexing frame rows by identifier. */
 export const Points2d: Model<Points2dCells, PointsStructure> = defineModel({
   id: "Points2d",
@@ -241,7 +265,10 @@ export const Points2d: Model<Points2dCells, PointsStructure> = defineModel({
     if (!Array.isArray(value)) {
       return refused([{ path: "", message: "Expected a table." }]);
     }
-    return ok({ ids: value.map((r) => r.id) });
+    return ok({
+      ids: value.map((r) => r.id),
+      indexById: new Map(value.map((r, i) => [r.id, i])),
+    });
   },
 });
 
@@ -253,7 +280,10 @@ export const Points3d: Model<Points3dCells, PointsStructure> = defineModel({
     if (!Array.isArray(value)) {
       return refused([{ path: "", message: "Expected a table." }]);
     }
-    return ok({ ids: value.map((r) => r.id) });
+    return ok({
+      ids: value.map((r) => r.id),
+      indexById: new Map(value.map((r, i) => [r.id, i])),
+    });
   },
 });
 
@@ -269,4 +299,7 @@ export const builtinModels: readonly Model<unknown, unknown>[] = Object.freeze([
   Solved3d,
   Points2d,
   Points3d,
+  Anchors2d,
+  CubicPath2d,
+  LocalAnchors2d,
 ]);

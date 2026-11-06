@@ -21,10 +21,13 @@ const SUPPORT_EXPORTS: Readonly<Record<string, readonly string[]>> = {
   loader: ["createPluginLoader", "describeLoadFailure", "ensuredOrThrow"],
   labels: ["onLabelChange", "readLabel"],
   models: [
+    "Anchors2d",
     "Body2d",
     "Body3d",
+    "CubicPath2d",
     "Goals2d",
     "Goals3d",
+    "LocalAnchors2d",
     "Point2d",
     "Point3d",
     "Points2d",

@@ -10,19 +10,19 @@ byte ceiling.
 
 ## Now
 
-- **One track kind is live:** every authored track names `output: { model }` or `output: { plugin }`,
-  `input.param` carries plugin parameters through `input.param.set` and `setField`, models are
-  registered beside plugins, and an engine requires a catalog and gives every track a static guard
-  and parses a source at commit. A computed track that publishes a model fixes its output static
-  cells at first compose. Cheap writes and live writes refuse static-cell changes; `type`, top-level
-  `plugin` and `input.schema` are refused by name. S1 to S7 are green; `definePlugin` derives slot,
-  structure and state types from model declarations, and the `DataType`/typed-slot system, Pose
-  specs, `legacyTypeId` bridge and hand-written kinematics input types are gone.
+- **One track kind and path models are live:** every authored track names `output: { model }` or
+  `output: { plugin }`, `input.param` carries plugin parameters through `input.param.set` and
+  `setField`, models are registered beside plugins, and an engine requires a catalog and gives every
+  track a static guard and parses a source at commit. A computed track that publishes a model fixes
+  its output static cells at first compose. Cheap writes and live writes refuse static-cell changes;
+  `type`, top-level `plugin` and `input.schema` are refused by name. S1 to S8 are green; `definePlugin`
+  derives slot, structure and state types from model declarations, and `Anchors2d`, `CubicPath2d`,
+  `LocalAnchors2d` models and `anchorsToCubic`, `bezier`, `skinAnchors` plugins are landed.
 
 ## Next in line
 
-- **S8 waits for the owner's go-ahead:** add the `Anchors2d`, `CubicPath2d` and `LocalAnchors2d`
-  models and the `path`, `local-path` and `path-sample` plugins.
+- **Measure follower cost and evaluate caches:** record per-frame cost for N followers over a path
+  of M segments, then decide whether to add a shared arc-length track or segment cache.
 
 ## Open, and not scheduled
 
