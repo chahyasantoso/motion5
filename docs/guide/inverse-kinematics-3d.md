@@ -117,10 +117,10 @@ the aggregate from current inputs. Seeking backward or repeatedly is determinist
 state from a previous progress, so a scrub reproduces the same published values byte for byte.
 Authored value edits are read on the next composition; changing bindings is a structural edit.
 
-A malformed or misplaced field is refused by name rather than ignored, including
-`ik-chain-unsupported`, `ik-pole-without-chain`, `ik-pole-without-bend`, `ik-joint-malformed`,
-`ik-joint-key-unused`, `ik-orient-malformed` and `ik-orient-without-goal`. See [Errors and
-diagnostics](./errors-and-diagnostics.md#inverse-kinematics-and-solver-rules).
+A malformed or misplaced field is refused by name rather than ignored: `model-value-invalid` for a
+value that fails a model, `slot-model-unsatisfied` for a source that implements another model, and
+the `ik-goal-*` rules for goal rows. A `prepare` refusal keeps the plugin's own rule id and path.
+See [Errors and diagnostics](./errors-and-diagnostics.md#inverse-kinematics-and-solver-rules).
 
 ## Reading the published tables
 

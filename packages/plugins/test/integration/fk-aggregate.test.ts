@@ -274,6 +274,25 @@ describe("aggregate 2D FK", () => {
     ).toThrow('Solver row missing for member "bone".');
   });
 
+  it("AK-4b refuses a missing solved row in prepare", () => {
+    const structures = {
+      chain: bodyStructure([
+        { id: "root", cells: { length: 10, rotation: 0 } },
+        { id: "bone", cells: { parentId: "root", length: 10, rotation: 0 } },
+      ]),
+      solved: solvedStructure([{ id: "root", cells: { rotation: 0 } }]),
+    };
+    const prepared = fkPlugin.prepare?.({ values: {}, param: {}, structures });
+    expect(prepared?.ok).toBe(false);
+    if (prepared?.ok === false) {
+      expect(prepared.diagnostics[0]).toMatchObject({
+        ruleId: "plugin-validation-failed",
+        path: "solved",
+      });
+      expect(prepared.diagnostics[0]?.message).toContain('member "bone"');
+    }
+  });
+
   it("AK-5 refuses non-finite solved rotation at the model boundary", () => {
     expect(() =>
       runFk(

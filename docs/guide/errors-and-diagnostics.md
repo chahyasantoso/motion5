@@ -73,160 +73,35 @@ Warnings load and stay readable. Missing `perspective` alongside 3D content, and
 
 Malformed or duplicate ids, reserved namespace characters, malformed edges, unknown sources, duplicate edges, self-reference, and cycles are all errors too. Track ids may not contain `/`, and motion ids may not contain `/` or equal `~`, because those characters carry the qualified namespace.
 
-### Slots whose value is a dict of sources
+### Slots, models and sources
 
-Most slots inside `requires` name one source id. A slot may take a map instead: one source id per
-key you name. Which of the two a slot takes is declared by the plugin's `DependencySpec.binding`, and
-the parser refuses a mismatch by name rather than deriving a mode from the slot.
+A slot is either a model slot or a shape slot. A model slot names one model; the source must
+publish that model id, and the graph compares the source's committed output with the declaration.
+A shape slot names output shapes and the graph compares the producer's declared fields. A slot may
+take a map of member keys to source ids; a single-source slot refuses a map and a map slot refuses
+one source.
 
-- `plugin-requirement-dict-unsupported` refuses a map at a single-source slot.
-- `plugin-requirement-dict-required` refuses one source at a map-valued slot.
-- `requirement-source` refuses a binding whose source cannot be qualified or whose shape is not a
-  source id or a map of source ids.
-
-Whether a member key names a real member of a solver chain is a graph question, not a binding-shape
-question; graph construction owns it.
+- `slot-model-unsatisfied` refuses a source that publishes a different model.
+- `slot-incompatible` refuses a shape slot whose producer contradicts a required field.
+- `slot-unproven` refuses a shape slot whose producer cannot prove a required field.
+- `slot-required-missing` refuses an unbound required slot; `slot-unknown` refuses a binding
+  to a slot the plugin does not declare.
+- `slot-binding-mode` refuses a single source where a map is declared, or the reverse.
+- `plugin-input-invalid` refuses a bound output set that does not carry the required output.
+- `model-value-invalid` refuses a source or computed value that fails its model spec or parse.
 
 ### Inverse Kinematics and solver rules
 
-Solvers (`ikPlugin`) and solved bones (`fkPlugin`) enforce topological and keyframe constraints at load time before execution begins. See ADR-051, ADR-052, ADR-053, ADR-054, and ADR-055.
+`ik`/`ik3d` declare `chain`, `goals` and `base` model slots, plus an optional `pole` shape
+slot for 3D. `fk`/`fk3d` declare `chain`, an optional `solved` model slot and `base`. The
+graph checks those declarations; there are no grouped solver keys.
 
-- `ik-solver-no-root`, when a solver node does not bind the `root` requirement slot. The root frame is the static or parent anchor from which the chain hangs.
-- `ik-solver-no-members`, when a solver node declares a `root` slot but no downstream bones bind `solver` to it. The solver would compute in a vacuum without controlling any joints.
-- `ik-solver-no-goal`, when a solver has a root and members and binds neither the bare `target` slot nor a goal through `targets`. A solve with nothing to reach for has no answer, and this is refused at load rather than left to the composition, which used to throw on it every tick and block every member of the chain behind an `error`.
-- `ik-solver-unreachable-root`, when tracing a member bone's `base` parent walk upward fails to terminate at the solver's bound `root`. The member chain must form a contiguous ancestor hierarchy rooted at `root`.
-- `ik-mode-ambiguous`, when a single node binds `solver` alongside `root` or a goal, or binds `root` under multiple plugins. A track is either a solver or a member, never both. It reads the goal classification rather than the literal slot name `target`, because a member binding `solver` beside a goal dict of its own would otherwise load clean with one real input edge per goal and have every one of them ignored.
-- `ik-solved-rotation-dead`, when a body row on a chain bound to a solver authors `rotation` and no `weight` beside it. With no weight there is no runtime state in which the authored rotation is read, so it is dead input and refused. Either drop it, or author the `weight` that gives it something to mean. The public 3D member is read the same way for each of its orientation keys: an `fk3d` body row on a solved chain that authors any of `rotation`, `rotationX` or `rotationY` with no `weight` beside it is refused by this rule when its chain takes the closed form (a parent and its one child), because that solve replaces each of them at the default weight. Under every other `ik3d` chain the 3D FABRIK tree solve reads the rest orientation as the frame each member's roll swings from, so there it is live input and loads. See ADR-116 and ADR-122.
-- `ik-weight-without-solver`, when a node that bound a `solver` slot under one plugin authors `values.weight` under another. It is the mirror of the rule above: the solve cannot reach a key outside the group that asked for it, so `fk` short-circuits to the authored rotation, never reads that weight, and the key is silently inert. Both rules read the group that bound the slot and no other, which is why binding `solver` under `spring` and authoring `weight` under `fk` is refused rather than passed.
-
-Both of those rules speak only about a node that bound a solver somewhere, and that is a boundary rather than a gap. A `weight` on a bone that bound no solver at all is inert too, and nothing refuses it: `weight` is claimed by `fkPlugin` and may be claimed by any other plugin under ADR-043, and the load-time rule holds no plugin registry, so on a node with no solve in reach it cannot tell a blend weight from another plugin's own live input and does not guess. It is the same boundary that keeps a member's `rotation` in an unrelated plugin group out of `ik-solved-rotation-dead`.
-
-The `weight` those two rules police is the blend between a bone's authored rest pose and its solver's output, per member rather than per solver, so a chain can stagger its reach. It defaults to `1`, which is the unconditional override every rig had before the key existed, `0` is exactly the authored rotation with the solve discarded, and anything between takes the shorter of the two arcs between them. Values outside `[0, 1]`, from an overshoot-easing curve for instance, are clamped rather than extrapolated, and a non-finite weight reads as `1`, identically to omitting the key. See ADR-055.
-
-Goal influence ([ADR-110](../ADR-110-goal-influence-and-conflict-policy.md)) adds two load rules:
-
-- `ik-influence-malformed`, when a member's `influence` under the group that bound its `solver`
-  is not one static finite number greater than `0`. Author a positive finite static number; animated,
-  zero, negative, non-finite, and malformed values are refused.
-- `ik-influence-without-goal`, when an influence is under a group that did not bind `solver`, or a
-  placed influence is on a member that no resolved goal addresses. Put it on the addressed chain
-  leaf and under the group that binds the member's solver. A node with no solver is not narrowed by
-  this rule, and an undecided goal shape is not reported twice; placement is checked before value
-  classification.
-
-3D goal orientation ([ADR-124](../ADR-124-3d-goal-influence-and-end-effector-orientation.md)) adds
-two more, stated with the influence rules over one table so the placement and the classification
-read alike:
-
-- `ik-orient-malformed`, when an `fk3d` member's `orient` under the group that bound its `solver`
-  is not one static finite number from `0` to `1`. Animated, negative, above `1`, non-finite and
-  non-numeric values are refused.
-- `ik-orient-without-goal`, when an `orient` is under a group that did not bind `solver`, or a
-  placed orient is on a member that no resolved goal addresses. Put it on the addressed chain leaf
-  under `fk3d`, the group that binds the member's solver.
-
-Under `fk3d` both goal weights speak on a bone that bound no solver at all, because the 3D member
-vocabulary is the contract's own: an `fk3d` `influence` or `orient` there is refused as
-`ik-influence-without-goal` or `ik-orient-without-goal`, "which did not bind its solver". Under any
-other group the no-solver narrowing above is unchanged, so no 2D rig moves.
-
-A valid influence is a goal's pull when a branching solve compromises over a shared member. The
-branch pull is the mean influence of its addressed leaves, and `conflicted` quality names a
-remaining miss whose last inward-pass branch spread exceeds tolerance. Opted-in inspection has nine
-quality kinds and the fixed shape `{ kind, residual, iterations, atBound, residuals }`; `residuals`
-reports one frozen world-unit miss per addressed leaf. See ADR-110.
-
-Constrained solving ([ADR-108](../ADR-108-constrained-2d-solving.md)) adds six load rules for
-joint limits and the bend hint:
-
-- `ik-limit-malformed`, when `minRotation` or `maxRotation` under the solver-owning group is not a
-  finite static number in `[-180, 180]`. Animated limits are not supported; author a static bound.
-  A keyframed bound is refused because the solve reads the resolved value as one static key.
-- `ik-limit-empty`, when the resolved minimum is greater than the resolved maximum. Omit either bound
-  to use `-180` or `180` respectively.
-- `ik-limit-without-solver`, when a member authors a rotation limit under a group that does not bind
-  `solver` there. Limit keys are solver vocabulary, so `spring.values.minRotation` beside
-  `fk.requires.solver` is refused rather than silently constraining the solve. Put the limit in the
-  group whose solver controls that member.
-- `ik-bend-malformed`, when a solver's `bend` value under the group that bound its `root` is not
-  the static string `"positive"` or `"negative"`.
-- `ik-bend-conflicts-flip`, when one solver authors both `bend` and the legacy `flip` spelling under
-  the group that bound its `root`. Use `bend` alone; `"positive"` is `flip: true` and bends the
-  elbow toward increasing rotation, and `"negative"` is `flip: false`.
-- `slot-unknown`, when a solver track binds a slot its plugin does not declare, including `bend`, `flip` or `inspect` misgrouped as a requirement
-  that did not bind its `root`. The solve reads the flattened values, so `spring.values.bend` beside
-  `ik.requires.root` would steer the solve from a group that does not own it. Author the key under the
-  group that bound `root`. On a node that bound no `root` these keys are not solver vocabulary, so
-  another plugin's own `bend` or `flip` there is neither read nor refused.
-
-An out-of-range solved angle is not an error: the solve moves it to the bound nearer on the circle,
-so `[90, 170]` answers `-170` with `170`, and a miss caused by a bound is reported as `limited` quality.
-
-Opt-in solve inspection ([ADR-109](../ADR-109-opt-in-solve-inspection.md)) adds one load rule, and
-`slot-unknown` above covers `inspect` exactly as it covers `bend` and `flip`:
-
-- `ik-inspect-malformed`, when a solver's `inspect` under the group that bound its `root` is not a
-  static boolean. Use `values: { inspect: true }` on the `ik` track to request the solver's fixed-shape `inspect`
-  output, or `false` to opt out. A keyframed switch is refused because an output that appears
-  mid-timeline would make the patch shape unstable. Inspection is data, not a warning.
-  The public `ik3d` solver reads the same switch under the same two rules and publishes the
-  same record ([ADR-120](../ADR-120-3d-opt-in-inspection.md)).
-
-Goal addressing has six rules of its own, and they are answered during graph construction rather than by the contract layer, because membership is derived from `solver` edges and the contract layer holds no graph:
-
-- `ik-goal-unknown-member`, when a key inside `targets` qualifies to no member of that solver's chain.
-- `ik-goal-not-leaf`, when a goal is authored on a member that another member hangs from. A goal is what a chain tip reaches for; an interior joint has no separate destination.
-- `ik-leaf-without-goal`, when the dict was used at all and a leaf it never named is left with nothing to reach for. It does not fire for a solver that bound the bare `target` slot, which has no goal to be missing, and it never fires beside `ik-solver-no-goal`, which answers for a solver that addressed nothing at all.
-- `ik-goal-duplicate`, when two authored keys qualify to one member id. The dict itself cannot repeat a key, so this is always two spellings of one id, such as `forearm` and `walker/forearm`.
-- `ik-goal-conflict`, when one solver authors both `target` and `targets`. Both spellings are supported and neither is deprecated, but a solver picks one.
-- `ik-target-not-single-leaf`, when a solver binds the bare `target` slot over a chain with more than one leaf. `target` names no member, so it can only address a leaf while there is one leaf to address; over two it has no answer, and the diagnostic names both so the choice is yours to make. A linear chain has one leaf however long it is, so the bare slot keeps working past two bones. Address goals by member id instead.
-
-Those six answer about the member a key names. Whether the slot was allowed to carry keys at all is a separate question with a separate owner, in the dict section above, and the two never report together: a solver whose `targets` binding was refused by the registry derives no goal for these rules to resolve.
-
-The 2D `ik` solver has no rule about chain length. Its derived member count is free, and the solve dispatches on it: two members and one goal take the analytic closed form, and everything else takes the iterative one. `ik-solver-unsupported-arity` refused every derived member count other than two and is deleted rather than widened, because a rule that refuses a shape the runtime solves is worse than no rule.
-
-A solver whose plugin cannot solve every derived shape declares the one it can, and the graph
-refuses the rest at load. That is one rule, and only the public `ik3d` solver declares a
-narrower shape:
-
-- `ik-chain-unsupported`, when a solver's plugin declares a narrower chain than the graph derived
-  for it. The public `ik3d` solver declares a chain of `fk3d` members only, of any count and any
-  branching: two members on one path take the closed form and every other chain takes 3D FABRIK, so
-  what is refused at load is a mixed-dimension rig, a member bound through `fk` or any plugin other
-  than `fk3d`, which would otherwise compose identity on every tick. `fk3d` is dedicated to that
-  shape, so the 2D `ik` solver, which takes a chain of any count and branching, reports the rule
-  only for an `fk3d` member bound to it. See ADR-114 and ADR-122.
-
-The public `ik3d` solver also declares an optional `pole` slot, and two rules answer where it
-was bound and whether it can bend anything:
-
-- `ik-pole-without-chain`, when a node binds `pole` under a plugin that declares the slot, today
-  `ik3d` alone, in a group that bound no `root` on the same node. The solve that reads a pole is
-  the group that bound the chain's `root`, so the usual mistake, an `ik3d` group on the elbow
-  member holding only the pole, bends nothing and is refused at load rather than throwing from
-  that group on every tick. A pole under a plugin that declares no pole slot, `fk3d` or the 2D
-  `ik`, is `plugin-unknown-requirement` from the registry instead, never both. See ADR-118.
-- `ik-pole-without-bend`, when a pole is bound where it belongs but the chain has no interior
-  joint for it to bend: every member hangs straight from the root, a single member or a fan of
-  them. Each such member is one segment pointing at its goal, so the pole would change nothing.
-  Drop the pole, or add the member it was meant to bend. See ADR-122.
-
-The public `ik3d` solver reads a 3D joint limit from each `fk3d` member's `joint`
-([ADR-123](../ADR-123-3d-joint-limits.md)). Every angle bound reuses `ik-limit-malformed` and
-`ik-limit-empty` above, `maxSwing` (in `[0, 180]`) and the twist range included, and a joint key
-anywhere on a 3D member other than the `fk3d` group that bound its solver is
-`ik-limit-without-solver`. Two rules are the joint's own:
-
-- `ik-joint-malformed`, when `joint` is not one static `"free"`, `"hinge"`, `"cone"` or
-  `"swing-twist"`, a hinge axis component is not a static finite number, an authored axis has no
-  direction, or a `"cone"` or `"swing-twist"` has no `maxSwing`. The kind is never guessed.
-- `ik-joint-key-unused`, when a bound sits beside a kind that does not read it: `minRotation` with
-  no `joint` (a 3D range is a hinge's, so declare `joint: "hinge"`), `maxSwing` on a hinge, an axis
-  on a cone, a twist bound on a cone. Declare the joint that reads it or remove it.
-
-A goal a limit holds off is `limited` quality with `atBound`, not an error, exactly as in 2D.
-
-The 2D `ik` solver has no rule about a solved bone's pivot offset either, for the same reason. A solved member may author `x` and `y` exactly as any other bone does, and `ik-solved-pivot-unsupported` is deleted. `fk` still owns applying the offset, in its parent's rotated space; `ik` accounts for it in the geometry it solves, so the rotations it publishes are the ones that put the composed tip on the goal. Both solves share one convention: the analytic path folds the two offsets into a fixed base point and a rigid link with a twist, and the iterative one solves pivot positions and averages a shared sub-base's tip rather than its children's twists. An offset that shortens a chain's reach past its goal is an unreachable target, which extends the chain toward it and has never been a diagnostic. See ADR-054.
+- `ik-solver-no-goal` refuses a solve whose goal table has no rows.
+- `ik-goal-unknown-member` refuses a goal that names a member the chain does not contain.
+- `ik-goal-not-leaf` refuses a goal on a member that has children.
+- `ik-leaf-without-goal` refuses a chain leaf with no goal row.
+- `plugin-validation-failed` refuses a `prepare` refusal, keeping the plugin's own rule id and
+  path; a prepare that refuses without an error diagnostic is a plugin bug.
 
 A diagnostic about an authored value cites the path you wrote, `motions[0].tracks[0].input.values`,
 rather than a compiled slot id. A diagnostic about a cell cites the row envelope and field,
@@ -259,7 +134,7 @@ without emitting a per-tick diagnostic or warning. The `inspect` shape includes 
 not a claim that no pose exists. The visible tip gap caused by partial FK weight is composition-space
 data owned by `fk`, not this solver-space record. See ADR-109 and ADR-110.
 
-A solver that cannot solve at all is not one of these either, and that is the point of the load-time rules above. Every shape that would make a composition throw is refused before the graph is built, so `composition-failure` on a solver node means a bug in the plugin or the publisher rather than a rig you can fix by editing it. See ADR-053. The same holds for the one refusal the solve itself makes about a goal, `Solver goal on member "<id>" has a NaN <axis> coordinate, which names no point or direction to solve toward.`: no rig can deliver it, because a goal field that is not a finite number is read as zero before the solve and no node may publish a non-finite value, so seeing it means a defect rather than an authoring mistake. An infinite goal coordinate is not refused; the solve reads it as a direction (ADR-111, #489).
+A solver that cannot solve at all is not one of these either, and that is the point of the load-time rules above. Every shape that would make a composition throw is refused before the graph is built, so `composition-failure` on a solver node means a bug in the plugin or the publisher rather than a rig you can fix by editing it. See ADR-053. The same holds for the solver's NaN goal guard: an authored non-finite value is refused as `cell-form-invalid`, and a computed one as `output-invalid`, so the guard is a last resort rather than an authoring mistake.
 
 ## Contract violations throw at the call site
 

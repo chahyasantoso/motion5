@@ -26,7 +26,6 @@ export type {
   PatchListener,
   Value,
 } from "./contract/v5";
-export type { SolverChainShape } from "./contract/solver-shape";
 export type { PluginCapabilities } from "./ports/plugin-capabilities";
 export {
   resolveTriggerDefinition,

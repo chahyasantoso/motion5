@@ -177,7 +177,6 @@ describe("rule id ids ownership", () => {
   it("names exactly the rules that refuse as warnings", () => {
     const expected = [
       "source-pending",
-      "perspective-usage",
       "reentrant-flush-deferred",
       "reentrant-flush-deferred-frame",
       "value-batch-deferred",

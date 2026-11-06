@@ -54,22 +54,15 @@ export { unreachable } from "./lang/exhaustive";
 export { patchRender, type PatchRender } from "./contract/patch-render";
 export { isFlatRecord, selectRecord, selectRow, selectSingleRow } from "./contract/output-select";
 export type { RecordSelection, RowSelection } from "./contract/output-select";
-export { POLE_SLOT } from "./contract/solver-shape";
-export type { SolverChainShape } from "./contract/solver-shape";
 export type { PluginCapabilities } from "./ports/plugin-capabilities";
 export type {
   AxisKey,
   Bend,
   BendAuthored,
-  InfluenceAuthored,
-  InspectAuthored,
   JointBoundKey,
-  JointAuthored,
   JointKind,
   JointVocabularyKey,
   LimitKey,
-  LimitAuthored,
-  OrientAuthored,
   TwistKey,
 } from "./contract/solver-constraints";
 export {

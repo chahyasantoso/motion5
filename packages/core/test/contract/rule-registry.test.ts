@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { diagnostic } from "../../src/contract/diagnostics";
 import { RULES, type OwnedIds } from "../../src/contract/rule";
 import type { RuleId } from "../../src/contract/rule-id";
+import { RULE_IDS } from "../../src/contract/rule-id";
 import { batchFor } from "../../src/runtime/report";
 
 /**
@@ -63,7 +64,7 @@ describe("every rule reaches a diagnostic whose payload is present and frozen", 
     // `Record<RuleId, RuleFacts>`, so a key of it that is not a `RuleId` is not representable.
     const everyRule = Object.keys(RULES) as readonly RuleId[];
 
-    expect(everyRule.length).toBeGreaterThan(100);
+    expect(everyRule.length).toBe(RULE_IDS.length);
 
     for (const ruleId of everyRule) {
       const payload: readonly string[] = RULES[ruleId].ids === "always" ? ["arm"] : [];

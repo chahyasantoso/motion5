@@ -2,14 +2,6 @@ import { unreachable } from "../lang/exhaustive";
 import type { Diagnostic, TrackDefinition, ProjectDefinition } from "../contract/v5";
 import { outputModelId, outputPluginId } from "../contract/v5";
 import { diagnostic } from "../contract/diagnostics";
-import {
-  acceptsChain,
-  describeChainShape,
-  describeDerivedChain,
-  poleBends,
-  POLE_SLOT,
-  readsMemberRest,
-} from "../contract/solver-shape";
 import { readOutcome } from "../lang/outcome";
 
 import { compareCodeUnits } from "./compare";

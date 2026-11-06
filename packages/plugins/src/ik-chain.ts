@@ -29,16 +29,6 @@ function chainLeaves(members: readonly DeliveredMember[]): readonly string[] {
   return members.filter((member) => !based.has(member.id)).map((member) => member.id);
 }
 
-/** Goal frames keyed by member id; a bare `target` joins the sole leaf, or throws on any other leaf count. */
-export function readGoals(
-  target: unknown,
-  members: readonly DeliveredMember[],
-): ReadonlyMap<string, WorldFrame> {
-  const goals = new Map<string, WorldFrame>();
-  for (const [id, goal] of goalInputs(target, members)) goals.set(id, readFrame(goal));
-  return goals;
-}
-
 /** Undecoded goals keyed by member id: per-leaf goals first, then bare `target` onto the sole leaf. */
 export function goalInputs(
   target: unknown,

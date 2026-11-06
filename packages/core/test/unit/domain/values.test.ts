@@ -87,4 +87,12 @@ describe("immutable value snapshots", () => {
     const shared = { x: 1 };
     expect(equalValues({ a: shared, b: shared }, { a: { x: 1 }, b: { x: 1 } })).toBe(true);
   });
+
+  it("treats two identical Body2d tables as equal", () => {
+    const rows = [
+      { id: "root", cells: { length: 20, rotation: 0 } },
+      { id: "child", cells: { parentId: "root", length: 10, rotation: 15 } },
+    ];
+    expect(equalValues(rows, JSON.parse(JSON.stringify(rows)))).toBe(true);
+  });
 });

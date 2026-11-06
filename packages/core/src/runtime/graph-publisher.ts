@@ -56,10 +56,6 @@ export interface PublisherSnapshot extends GraphIR {
   readonly nodeById: Readonly<Record<string, PublisherNode>>;
   readonly members?: ReadonlySet<string>;
 }
-export interface PublisherFailure {
-  readonly nodeId: string;
-  readonly error: unknown;
-}
 
 // Only place a thrown value is classified: plugin diagnostics, publish failure as data,
 // `CompositionOutputError`'s rule, else composition-failure.

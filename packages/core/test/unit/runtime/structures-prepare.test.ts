@@ -21,8 +21,9 @@ import {
   createFakeInterpolator,
   createFakeScheduler,
 } from "../../../src/testing/fakes";
-import { Body2d, Point2d, Solved2d } from "../../../../plugins/src/models";
+import { Body2d, Goals2d, Point2d, Solved2d } from "../../../../plugins/src/models";
 import { fkPlugin } from "../../../../plugins/src/fk";
+import { ikPlugin } from "../../../../plugins/src/ik";
 import { testModels } from "../../support/test-models";
 
 const BONE_SPEC: ValueSpec = {
@@ -860,6 +861,75 @@ describe("structures and prepare hook", () => {
       if (!Array.isArray(values)) throw new Error("Expected a pose table.");
       for (const row of values) expect(Number.isFinite(row.cells.rotation)).toBe(true);
     }
+    handle.dispose();
+  });
+
+  it("G0: a computed Body2d producer feeds ik unchanged", () => {
+    const producer: PluginDefinition = {
+      id: "computed-body",
+      inputs: { values: { kind: "record", fields: {} } },
+      outputs: { values: Body2d },
+      transform() {
+        return {
+          values: [
+            { id: "root", cells: { length: 10, rotation: 0 } },
+            { id: "child", cells: { parentId: "root", length: 10, rotation: 0 } },
+          ],
+        };
+      },
+    };
+    const catalog = new PluginCatalog({ models: testModels });
+    catalog.registerAll([producer, ikPlugin]);
+    const engine = createEngine(catalog);
+    const handle = engine.load({
+      schemaVersion: 5,
+      motions: [
+        {
+          id: "m",
+          trigger: { type: "manual" },
+          tracks: [
+            {
+              id: "bodyA",
+              output: { model: "Body2d" },
+              input: {
+                values: [
+                  { id: "root", cells: { length: 10, rotation: 0 } },
+                  { id: "child", cells: { parentId: "root", length: 10, rotation: 0 } },
+                ],
+              },
+            },
+            { id: "bodyB", output: { plugin: "computed-body" }, input: { values: {} } },
+            {
+              id: "goals",
+              output: { model: "Goals2d" },
+              input: { values: [{ id: "goal", cells: { memberId: "child", x: 12, y: 4 } }] },
+            },
+            {
+              id: "base",
+              output: { model: "Point2d" },
+              input: { values: { x: 0, y: 0, rotation: 0 } },
+            },
+            {
+              id: "ikA",
+              output: { plugin: "ik" },
+              input: { values: {}, requires: { chain: "bodyA", goals: "goals", base: "base" } },
+            },
+            {
+              id: "ikB",
+              output: { plugin: "ik" },
+              input: { values: {}, requires: { chain: "bodyB", goals: "goals", base: "base" } },
+            },
+          ],
+        },
+      ],
+    });
+    for (const id of ["bodyA", "bodyB", "goals", "base", "ikA", "ikB"]) handle.seek(`m/${id}`, 0);
+    const a = handle.get("m/ikA");
+    const b = handle.get("m/ikB");
+    expect(a?.status).toBe("ready");
+    expect(b?.status).toBe("ready");
+    if (a?.status === "ready" && b?.status === "ready")
+      expect(b.outputs.values).toEqual(a.outputs.values);
     handle.dispose();
   });
 

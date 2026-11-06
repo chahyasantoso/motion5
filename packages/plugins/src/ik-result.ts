@@ -101,21 +101,3 @@ export function inspectSolve(result: SolveEvidence): SolveInspection {
       return unreachable(quality);
   }
 }
-
-/** What a solver adds for inspection: the record, or nothing. */
-export type InspectionOutput =
-  | Readonly<Record<typeof INSPECTION_KEY, SolveInspection>>
-  | Readonly<Record<never, never>>;
-
-const NO_INSPECTION: InspectionOutput = Object.freeze({});
-
-/** One reading of the `inspect` opt-in: publish only when static `inspect` is exactly `true`.
- * Malformed switches are refused at load, so this strict compare is the whole runtime check. */
-export function inspectionOutput(
-  values: Readonly<Record<string, unknown>>,
-  result: SolveEvidence,
-): InspectionOutput {
-  return values[INSPECT_KEY] === true
-    ? Object.freeze({ [INSPECTION_KEY]: inspectSolve(result) })
-    : NO_INSPECTION;
-}

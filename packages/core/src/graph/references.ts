@@ -7,8 +7,6 @@ import type { GraphEdge } from "./ir";
 /** Diagnostic rule for an edge whose source is a known node with no published value. */
 export const PENDING_REFERENCE_RULE_ID = "source-pending" satisfies RuleId;
 
-export type ReferenceStatus = "resolved" | "pending";
-
 export type ReferenceResolution =
   | { readonly status: "resolved" }
   | { readonly status: "pending"; readonly diagnostic: Diagnostic };
